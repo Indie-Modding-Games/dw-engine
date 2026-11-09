@@ -103,7 +103,10 @@ struct Content {
           std::tuple{"texture/etcna/title256.png", 320U, 256U},
           std::tuple{"texture/stddat/time.png", 66U, 29U},
           std::tuple{"texture/stddat/stdtim/002.png", 256U, 120U},
-          std::tuple{"texture/stddat/stdtim/003.png", 256U, 256U}}) {
+          std::tuple{"texture/stddat/stdtim/003.png", 256U, 256U},
+          std::tuple{"texture/stddat/taisen1.png", 256U, 256U},
+          std::tuple{"texture/stddat/taisen2.png", 128U, 144U},
+          std::tuple{"texture/stddat/16taisen.png", 256U, 256U}}) {
       memory.addFile(std::filesystem::path{"packs/base"} / path, whitePng(width, height));
     }
     memory.addFile("packs/base/map/trai00/texture4/001.png", indexedPng(256, 256));

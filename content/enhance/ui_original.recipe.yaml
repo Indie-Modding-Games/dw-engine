@@ -17,6 +17,9 @@ select:
     - texture/etcdat/feel_ef
     - texture/stddat/time
     - texture/stddat/stdtim/002
+    - texture/stddat/taisen1
+    - texture/stddat/taisen2
+    - texture/stddat/16taisen
 scale: 4
 steps:
   - id: upscale

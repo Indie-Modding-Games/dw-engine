@@ -1,0 +1,243 @@
+/* The online versus in the original look: the battle's HUD (vs_hud.c), the "BATTLE" banner and the score screen
+   (vs_scene.c) with the original's sprites, over the layout of ui/versus/structure.rcss. The pieces the story battle
+   shares (the bars, the "FINISH!!" letters, "PUSH", the command icons and their strip, the clock, the banner) use its
+   sprites; the score screen uses STDDAT's TAISEN pictures. */
+
+/* VS_renderFighterStatusBars: BI_IN's frame and its HP and MP icons, as the story battle's partner bars. */
+.vs-bar { decorator: image(battle-bar-frame); }
+.hp .vs-icon { decorator: image(battle-hp); }
+.mp .vs-icon { decorator: image(battle-mp); }
+.vs-gauge { background-color: transparent; }
+
+/* VS_renderHPBarDigits: the English picture of "FINISH!!" (BI_IN, palette 12); in another language the word in the
+   original's font. */
+.use-menu-art .vs-word { display: none; }
+
+.use-menu-art .vs-seg.seg-0.filled { decorator: image(finish-0); }
+.use-menu-art .vs-seg.seg-1.filled { decorator: image(finish-1); }
+.use-menu-art .vs-seg.seg-2.filled { decorator: image(finish-2); }
+.use-menu-art .vs-seg.seg-3.filled { decorator: image(finish-3); }
+.use-menu-art .vs-seg.seg-4.filled { decorator: image(finish-4); }
+.use-menu-art .vs-seg.seg-5.filled { decorator: image(finish-5); }
+.use-menu-art .vs-seg.seg-6.filled { decorator: image(finish-6); }
+.use-menu-art .vs-seg.seg-7.filled { decorator: image(finish-7); }
+
+/* "PUSH" (BI_IN, palette 2) on its grey box. */
+.use-menu-art .vs-push-word {
+	width: 81dp;
+	decorator: image(finish-push);
+	color: transparent;
+}
+
+/* VS_renderCommandMenu: BTLCOMND's icons and their second frame for the blink, its cursor and the strip's pieces. */
+.vs-frame { background-color: transparent; }
+.vs-frame.frame-left { decorator: image(frame-left); }
+.vs-frame.frame-odd { decorator: image(frame-odd); }
+.vs-frame.frame-even { decorator: image(frame-even); }
+.vs-frame.frame-right-odd { decorator: image(frame-right-odd); }
+.vs-frame.frame-right-even { decorator: image(frame-right-even); }
+
+.vs-cmd { background-color: transparent; }
+
+.vs-cmd.icon-command-1 { decorator: image(command-1 scale-none center center); }
+.vs-cmd.icon-command-1.blink { decorator: image(command-1-blink scale-none center center); }
+.vs-cmd.icon-command-2 { decorator: image(command-2 scale-none center center); }
+.vs-cmd.icon-command-2.blink { decorator: image(command-2-blink scale-none center center); }
+.vs-cmd.icon-command-3 { decorator: image(command-3 scale-none center center); }
+.vs-cmd.icon-command-3.blink { decorator: image(command-3-blink scale-none center center); }
+.vs-cmd.icon-command-4 { decorator: image(command-4 scale-none center center); }
+.vs-cmd.icon-command-4.blink { decorator: image(command-4-blink scale-none center center); }
+.vs-cmd.icon-command-5 { decorator: image(command-5 scale-none center center); }
+.vs-cmd.icon-command-5.blink { decorator: image(command-5-blink scale-none center center); }
+.vs-cmd.icon-command-6 { decorator: image(command-6 scale-none center center); }
+.vs-cmd.icon-command-6.blink { decorator: image(command-6-blink scale-none center center); }
+.vs-cmd.icon-command-7 { decorator: image(command-7 scale-none center center); }
+.vs-cmd.icon-command-7.blink { decorator: image(command-7-blink scale-none center center); }
+.vs-cmd.icon-special-0 { decorator: image(special-0 scale-none center center); }
+.vs-cmd.icon-special-0.blink { decorator: image(special-0-blink scale-none center center); }
+.vs-cmd.icon-special-1 { decorator: image(special-1 scale-none center center); }
+.vs-cmd.icon-special-1.blink { decorator: image(special-1-blink scale-none center center); }
+.vs-cmd.icon-special-2 { decorator: image(special-2 scale-none center center); }
+.vs-cmd.icon-special-2.blink { decorator: image(special-2-blink scale-none center center); }
+.vs-cmd.icon-special-3 { decorator: image(special-3 scale-none center center); }
+.vs-cmd.icon-special-3.blink { decorator: image(special-3-blink scale-none center center); }
+.vs-cmd.icon-special-4 { decorator: image(special-4 scale-none center center); }
+.vs-cmd.icon-special-4.blink { decorator: image(special-4-blink scale-none center center); }
+.vs-cmd.icon-special-5 { decorator: image(special-5 scale-none center center); }
+.vs-cmd.icon-special-5.blink { decorator: image(special-5-blink scale-none center center); }
+.vs-cmd.icon-special-6 { decorator: image(special-6 scale-none center center); }
+.vs-cmd.icon-special-6.blink { decorator: image(special-6-blink scale-none center center); }
+
+.vs-cursor {
+	border-width: 0;
+	decorator: image(command-cursor);
+}
+
+/* The clock: TIME.TIM's panel, STDTIM's digits and its 1P and 2P pieces. */
+#vs-clock {
+	background-color: transparent;
+	decorator: image(std-clock-panel);
+}
+
+#vs-clock-side-0 { decorator: image(std-clock-side-1); }
+#vs-clock-side-1 { decorator: image(vs-clock-side-2); }
+
+.vs-clock-digit {
+	font-size: 0;
+	color: transparent;
+	font-effect: none;
+}
+
+.vs-clock-digit.d-0 { decorator: image(std-clock-digit-0); }
+.vs-clock-digit.d-1 { decorator: image(std-clock-digit-1); }
+.vs-clock-digit.d-2 { decorator: image(std-clock-digit-2); }
+.vs-clock-digit.d-3 { decorator: image(std-clock-digit-3); }
+.vs-clock-digit.d-4 { decorator: image(std-clock-digit-4); }
+.vs-clock-digit.d-5 { decorator: image(std-clock-digit-5); }
+.vs-clock-digit.d-6 { decorator: image(std-clock-digit-6); }
+.vs-clock-digit.d-7 { decorator: image(std-clock-digit-7); }
+.vs-clock-digit.d-8 { decorator: image(std-clock-digit-8); }
+.vs-clock-digit.d-9 { decorator: image(std-clock-digit-9); }
+
+/* The banner: BI_IN's three pieces of the word, their flashes and the trails, as the story battle's. */
+.bp { background-color: transparent; }
+.bp.texture-0 { decorator: image(banner-0-0); }
+.bp.texture-1 { decorator: image(banner-0-1); }
+.bp.texture-2 { decorator: image(banner-0-2); }
+#banner.flash-1 .bp.texture-0 { decorator: image(banner-1-0); }
+#banner.flash-1 .bp.texture-1 { decorator: image(banner-1-1); }
+#banner.flash-1 .bp.texture-2 { decorator: image(banner-1-2); }
+#banner.flash-2 .bp.texture-0 { decorator: image(banner-2-0); }
+#banner.flash-2 .bp.texture-1 { decorator: image(banner-2-1); }
+#banner.flash-2 .bp.texture-2 { decorator: image(banner-2-2); }
+
+.bt {
+	opacity: 0.5;
+	background-color: transparent;
+	decorator: image(banner-trail);
+}
+
+.bt.left { decorator: image(banner-trail flip-horizontal); }
+
+/* The score screen: TAISEN1's frame pieces, row bars, "1P", "2P" and number boxes, TAISEN2's "VS MODE", pips and
+   flash, and 16TAISEN's faces. */
+.score-edge { background-color: transparent; }
+#score-edge-11 { decorator: image(vs-edge-corner-tl); }
+#score-edge-12 { decorator: image(vs-edge-corner-bl); }
+#score-edge-13 { decorator: image(vs-edge-left); }
+#score-edge-14 { decorator: image(vs-edge-top-0); }
+#score-edge-15 { decorator: image(vs-edge-bottom-0); }
+#score-edge-16 { decorator: image(vs-edge-top-1); }
+#score-edge-17 { decorator: image(vs-edge-bottom-1); }
+#score-edge-18 { decorator: image(vs-edge-corner-tr); }
+#score-edge-19 { decorator: image(vs-edge-corner-br); }
+#score-edge-20 { decorator: image(vs-edge-right); }
+
+.use-menu-art #score-title {
+	color: transparent;
+	decorator: image(vs-mode);
+}
+
+.score-player {
+	font-size: 0;
+	color: transparent;
+}
+
+#score-player-0 { decorator: image(vs-1p); }
+#score-player-1 { decorator: image(vs-2p); }
+
+.score-row { background-color: transparent; }
+.score-row.slot-0 { decorator: image(vs-row-open-0); }
+.score-row.slot-1 { decorator: image(vs-row-open-1); }
+.score-row.slot-0.done { height: 57dp; decorator: image(vs-row-done-0); }
+.score-row.slot-1.done { height: 57dp; decorator: image(vs-row-done-1); }
+
+.score-pip {
+	font-size: 0;
+	color: transparent;
+}
+
+.score-pip.won { decorator: image(vs-pip-won); }
+.score-pip.lost { decorator: image(vs-pip-lost); }
+
+#score-flash {
+	background-color: transparent;
+	decorator: image(vs-flash);
+}
+
+.score-number {
+	border-width: 0;
+	decorator: image(vs-box-0);
+}
+
+#score-wins-1, #score-losses-1 { decorator: image(vs-box-1); }
+
+.score-face.face-3 { decorator: image(vs-face-3); }
+.score-face.face-4 { decorator: image(vs-face-4); }
+.score-face.face-5 { decorator: image(vs-face-5); }
+.score-face.face-6 { decorator: image(vs-face-6); }
+.score-face.face-7 { decorator: image(vs-face-7); }
+.score-face.face-8 { decorator: image(vs-face-8); }
+.score-face.face-9 { decorator: image(vs-face-9); }
+.score-face.face-10 { decorator: image(vs-face-10); }
+.score-face.face-11 { decorator: image(vs-face-11); }
+.score-face.face-12 { decorator: image(vs-face-12); }
+.score-face.face-13 { decorator: image(vs-face-13); }
+.score-face.face-14 { decorator: image(vs-face-14); }
+.score-face.face-15 { decorator: image(vs-face-15); }
+.score-face.face-16 { decorator: image(vs-face-16); }
+.score-face.face-17 { decorator: image(vs-face-17); }
+.score-face.face-18 { decorator: image(vs-face-18); }
+.score-face.face-19 { decorator: image(vs-face-19); }
+.score-face.face-20 { decorator: image(vs-face-20); }
+.score-face.face-21 { decorator: image(vs-face-21); }
+.score-face.face-22 { decorator: image(vs-face-22); }
+.score-face.face-23 { decorator: image(vs-face-23); }
+.score-face.face-24 { decorator: image(vs-face-24); }
+.score-face.face-25 { decorator: image(vs-face-25); }
+.score-face.face-26 { decorator: image(vs-face-26); }
+.score-face.face-27 { decorator: image(vs-face-27); }
+.score-face.face-28 { decorator: image(vs-face-28); }
+.score-face.face-29 { decorator: image(vs-face-29); }
+.score-face.face-30 { decorator: image(vs-face-30); }
+.score-face.face-31 { decorator: image(vs-face-31); }
+.score-face.face-32 { decorator: image(vs-face-32); }
+.score-face.face-33 { decorator: image(vs-face-33); }
+.score-face.face-34 { decorator: image(vs-face-34); }
+.score-face.face-35 { decorator: image(vs-face-35); }
+.score-face.face-36 { decorator: image(vs-face-36); }
+.score-face.face-37 { decorator: image(vs-face-37); }
+.score-face.face-38 { decorator: image(vs-face-38); }
+.score-face.face-39 { decorator: image(vs-face-39); }
+.score-face.face-40 { decorator: image(vs-face-40); }
+.score-face.face-41 { decorator: image(vs-face-41); }
+.score-face.face-42 { decorator: image(vs-face-42); }
+.score-face.face-43 { decorator: image(vs-face-43); }
+.score-face.face-44 { decorator: image(vs-face-44); }
+.score-face.face-45 { decorator: image(vs-face-45); }
+.score-face.face-46 { decorator: image(vs-face-46); }
+.score-face.face-47 { decorator: image(vs-face-47); }
+.score-face.face-48 { decorator: image(vs-face-48); }
+.score-face.face-49 { decorator: image(vs-face-49); }
+.score-face.face-50 { decorator: image(vs-face-50); }
+.score-face.face-51 { decorator: image(vs-face-51); }
+.score-face.face-52 { decorator: image(vs-face-52); }
+.score-face.face-53 { decorator: image(vs-face-53); }
+.score-face.face-54 { decorator: image(vs-face-54); }
+.score-face.face-55 { decorator: image(vs-face-55); }
+.score-face.face-56 { decorator: image(vs-face-56); }
+.score-face.face-57 { decorator: image(vs-face-57); }
+.score-face.face-58 { decorator: image(vs-face-58); }
+.score-face.face-59 { decorator: image(vs-face-59); }
+.score-face.face-60 { decorator: image(vs-face-60); }
+.score-face.face-61 { decorator: image(vs-face-61); }
+.score-face.face-62 { decorator: image(vs-face-62); }
+.score-face.face-63 { decorator: image(vs-face-63); }
+.score-face.face-64 { decorator: image(vs-face-64); }
+.score-face.face-65 { decorator: image(vs-face-65); }
+.score-face.face-66 { decorator: image(vs-face-66); }
+
+/* The host's setup: the arrows of the options' steppers, the battle's up arrow turned sideways (BI_IN). */
+.stepper .arrow { width: 36dp; height: 30dp; image-color: #90d9fa; }
+.stepper .arrow.less { decorator: image(battle-up-arrow scale-none center center); transform: rotate(-90deg); }
+.stepper .arrow.more { decorator: image(battle-up-arrow scale-none center center); transform: rotate(90deg); }

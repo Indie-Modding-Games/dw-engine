@@ -6,6 +6,523 @@
 	<script src="logic.lua"></script>
 </head>
 <body>
+	<!-- A battle on its arena (apps/game/src/versus_arena.hpp), as the original's versus screen draws it (vs_hud.c):
+	     each side's bars, finisher letters, command name and command strip, and the clock between them. -->
+	<div id="hud" class="hidden">
+		<div id="side-0" class="vs-side side-0">
+			<div class="vs-bar hp"><div class="vs-icon"></div><div class="vs-gauge"><div id="f0-hp-fill" class="vs-fill"></div></div><span id="f0-hp-value" class="vs-value original-look"></span></div>
+			<div class="vs-bar mp"><div class="vs-icon"></div><div class="vs-gauge"><div id="f0-mp-fill" class="vs-fill"></div></div><span id="f0-mp-value" class="vs-value original-look"></span></div>
+			<div class="vs-finish"><span id="f0-word" class="vs-word original-look"></span><div id="f0-seg-0" class="vs-seg seg-0"></div><div id="f0-seg-1" class="vs-seg seg-1"></div><div id="f0-seg-2" class="vs-seg seg-2"></div><div id="f0-seg-3" class="vs-seg seg-3"></div><div id="f0-seg-4" class="vs-seg seg-4"></div><div id="f0-seg-5" class="vs-seg seg-5"></div><div id="f0-seg-6" class="vs-seg seg-6"></div><div id="f0-seg-7" class="vs-seg seg-7"></div></div>
+			<div id="f0-push" class="vs-push hidden" onclick="act('finisher')"><span class="key" id="f0-push-key"></span><div class="vs-push-word" text-key="battle.finisher_push"></div></div>
+			<p id="f0-command" class="vs-name original-look"></p>
+			<div class="vs-strip">
+				<div id="f0-frame-0" class="vs-frame hidden"></div>
+				<div id="f0-frame-1" class="vs-frame hidden"></div>
+				<div id="f0-frame-2" class="vs-frame hidden"></div>
+				<div id="f0-frame-3" class="vs-frame hidden"></div>
+				<div id="f0-frame-4" class="vs-frame hidden"></div>
+				<div id="f0-frame-5" class="vs-frame hidden"></div>
+				<div id="f0-frame-6" class="vs-frame hidden"></div>
+				<div id="f0-frame-7" class="vs-frame hidden"></div>
+				<div id="f0-frame-8" class="vs-frame hidden"></div>
+				<div id="f0-frame-9" class="vs-frame hidden"></div>
+				<div id="f0-frame-10" class="vs-frame hidden"></div>
+				<div id="f0-cmd-0" class="vs-cmd hidden" onclick="pick_command(0, 0)"></div>
+				<div id="f0-cmd-1" class="vs-cmd hidden" onclick="pick_command(0, 1)"></div>
+				<div id="f0-cmd-2" class="vs-cmd hidden" onclick="pick_command(0, 2)"></div>
+				<div id="f0-cmd-3" class="vs-cmd hidden" onclick="pick_command(0, 3)"></div>
+				<div id="f0-cmd-4" class="vs-cmd hidden" onclick="pick_command(0, 4)"></div>
+				<div id="f0-cmd-5" class="vs-cmd hidden" onclick="pick_command(0, 5)"></div>
+				<div id="f0-cmd-6" class="vs-cmd hidden" onclick="pick_command(0, 6)"></div>
+				<div id="f0-cmd-7" class="vs-cmd hidden" onclick="pick_command(0, 7)"></div>
+				<div id="f0-cmd-8" class="vs-cmd hidden" onclick="pick_command(0, 8)"></div>
+				<div id="f0-cmd-9" class="vs-cmd hidden" onclick="pick_command(0, 9)"></div>
+				<div id="f0-cmd-10" class="vs-cmd hidden" onclick="pick_command(0, 10)"></div>
+				<div id="f0-cursor" class="vs-cursor hidden"></div>
+			</div>
+		</div>
+		<div id="side-1" class="vs-side side-1">
+			<div class="vs-bar hp"><div class="vs-icon"></div><div class="vs-gauge"><div id="f1-hp-fill" class="vs-fill"></div></div><span id="f1-hp-value" class="vs-value original-look"></span></div>
+			<div class="vs-bar mp"><div class="vs-icon"></div><div class="vs-gauge"><div id="f1-mp-fill" class="vs-fill"></div></div><span id="f1-mp-value" class="vs-value original-look"></span></div>
+			<div class="vs-finish"><span id="f1-word" class="vs-word original-look"></span><div id="f1-seg-0" class="vs-seg seg-0"></div><div id="f1-seg-1" class="vs-seg seg-1"></div><div id="f1-seg-2" class="vs-seg seg-2"></div><div id="f1-seg-3" class="vs-seg seg-3"></div><div id="f1-seg-4" class="vs-seg seg-4"></div><div id="f1-seg-5" class="vs-seg seg-5"></div><div id="f1-seg-6" class="vs-seg seg-6"></div><div id="f1-seg-7" class="vs-seg seg-7"></div></div>
+			<div id="f1-push" class="vs-push hidden" onclick="act('finisher')"><span class="key" id="f1-push-key"></span><div class="vs-push-word" text-key="battle.finisher_push"></div></div>
+			<p id="f1-command" class="vs-name original-look"></p>
+			<div class="vs-strip">
+				<div id="f1-frame-0" class="vs-frame hidden"></div>
+				<div id="f1-frame-1" class="vs-frame hidden"></div>
+				<div id="f1-frame-2" class="vs-frame hidden"></div>
+				<div id="f1-frame-3" class="vs-frame hidden"></div>
+				<div id="f1-frame-4" class="vs-frame hidden"></div>
+				<div id="f1-frame-5" class="vs-frame hidden"></div>
+				<div id="f1-frame-6" class="vs-frame hidden"></div>
+				<div id="f1-frame-7" class="vs-frame hidden"></div>
+				<div id="f1-frame-8" class="vs-frame hidden"></div>
+				<div id="f1-frame-9" class="vs-frame hidden"></div>
+				<div id="f1-frame-10" class="vs-frame hidden"></div>
+				<div id="f1-cmd-0" class="vs-cmd hidden" onclick="pick_command(1, 0)"></div>
+				<div id="f1-cmd-1" class="vs-cmd hidden" onclick="pick_command(1, 1)"></div>
+				<div id="f1-cmd-2" class="vs-cmd hidden" onclick="pick_command(1, 2)"></div>
+				<div id="f1-cmd-3" class="vs-cmd hidden" onclick="pick_command(1, 3)"></div>
+				<div id="f1-cmd-4" class="vs-cmd hidden" onclick="pick_command(1, 4)"></div>
+				<div id="f1-cmd-5" class="vs-cmd hidden" onclick="pick_command(1, 5)"></div>
+				<div id="f1-cmd-6" class="vs-cmd hidden" onclick="pick_command(1, 6)"></div>
+				<div id="f1-cmd-7" class="vs-cmd hidden" onclick="pick_command(1, 7)"></div>
+				<div id="f1-cmd-8" class="vs-cmd hidden" onclick="pick_command(1, 8)"></div>
+				<div id="f1-cmd-9" class="vs-cmd hidden" onclick="pick_command(1, 9)"></div>
+				<div id="f1-cmd-10" class="vs-cmd hidden" onclick="pick_command(1, 10)"></div>
+				<div id="f1-cursor" class="vs-cursor hidden"></div>
+			</div>
+		</div>
+		<div id="vs-clock"><div id="vs-clock-side-0" class="vs-clock-side"></div><div id="vs-clock-side-1" class="vs-clock-side"></div><div id="vs-clock-d-0" class="vs-clock-digit hidden"></div><div id="vs-clock-d-1" class="vs-clock-digit hidden"></div></div>
+		<p id="hud-stalled" class="vs-warning hidden" text-key="versus.match.stalled"></p>
+		<p id="hud-leave" class="vs-warning hidden" text-key="versus.match.leave"></p>
+	</div>
+
+	<!-- The "BATTLE" banner that opens each battle (battle_intro.hpp; the story battle's pieces). -->
+	<div id="intro" class="hidden">
+		<div id="banner">
+		<div id="banner-shadows">
+			<div id="bs-0" class="bs hidden"></div>
+			<div id="bs-1" class="bs hidden"></div>
+			<div id="bs-2" class="bs hidden"></div>
+			<div id="bs-3" class="bs hidden"></div>
+			<div id="bs-4" class="bs hidden"></div>
+			<div id="bs-5" class="bs hidden"></div>
+			<div id="bs-6" class="bs hidden"></div>
+			<div id="bs-7" class="bs hidden"></div>
+			<div id="bs-8" class="bs hidden"></div>
+			<div id="bs-9" class="bs hidden"></div>
+			<div id="bs-10" class="bs hidden"></div>
+			<div id="bs-11" class="bs hidden"></div>
+			<div id="bs-12" class="bs hidden"></div>
+			<div id="bs-13" class="bs hidden"></div>
+			<div id="bs-14" class="bs hidden"></div>
+			<div id="bs-15" class="bs hidden"></div>
+			<div id="bs-16" class="bs hidden"></div>
+			<div id="bs-17" class="bs hidden"></div>
+			<div id="bs-18" class="bs hidden"></div>
+			<div id="bs-19" class="bs hidden"></div>
+			<div id="bs-20" class="bs hidden"></div>
+			<div id="bs-21" class="bs hidden"></div>
+			<div id="bs-22" class="bs hidden"></div>
+			<div id="bs-23" class="bs hidden"></div>
+			<div id="bs-24" class="bs hidden"></div>
+			<div id="bs-25" class="bs hidden"></div>
+			<div id="bs-26" class="bs hidden"></div>
+			<div id="bs-27" class="bs hidden"></div>
+			<div id="bs-28" class="bs hidden"></div>
+			<div id="bs-29" class="bs hidden"></div>
+			<div id="bs-30" class="bs hidden"></div>
+			<div id="bs-31" class="bs hidden"></div>
+			<div id="bs-32" class="bs hidden"></div>
+			<div id="bs-33" class="bs hidden"></div>
+			<div id="bs-34" class="bs hidden"></div>
+			<div id="bs-35" class="bs hidden"></div>
+			<div id="bs-36" class="bs hidden"></div>
+			<div id="bs-37" class="bs hidden"></div>
+			<div id="bs-38" class="bs hidden"></div>
+			<div id="bs-39" class="bs hidden"></div>
+			<div id="bs-40" class="bs hidden"></div>
+			<div id="bs-41" class="bs hidden"></div>
+			<div id="bs-42" class="bs hidden"></div>
+			<div id="bs-43" class="bs hidden"></div>
+			<div id="bs-44" class="bs hidden"></div>
+			<div id="bs-45" class="bs hidden"></div>
+			<div id="bs-46" class="bs hidden"></div>
+			<div id="bs-47" class="bs hidden"></div>
+			<div id="bs-48" class="bs hidden"></div>
+			<div id="bs-49" class="bs hidden"></div>
+			<div id="bs-50" class="bs hidden"></div>
+			<div id="bs-51" class="bs hidden"></div>
+			<div id="bs-52" class="bs hidden"></div>
+			<div id="bs-53" class="bs hidden"></div>
+			<div id="bs-54" class="bs hidden"></div>
+			<div id="bs-55" class="bs hidden"></div>
+			<div id="bs-56" class="bs hidden"></div>
+			<div id="bs-57" class="bs hidden"></div>
+			<div id="bs-58" class="bs hidden"></div>
+			<div id="bs-59" class="bs hidden"></div>
+			<div id="bs-60" class="bs hidden"></div>
+			<div id="bs-61" class="bs hidden"></div>
+			<div id="bs-62" class="bs hidden"></div>
+			<div id="bs-63" class="bs hidden"></div>
+			<div id="bs-64" class="bs hidden"></div>
+			<div id="bs-65" class="bs hidden"></div>
+			<div id="bs-66" class="bs hidden"></div>
+			<div id="bs-67" class="bs hidden"></div>
+			<div id="bs-68" class="bs hidden"></div>
+			<div id="bs-69" class="bs hidden"></div>
+			<div id="bs-70" class="bs hidden"></div>
+			<div id="bs-71" class="bs hidden"></div>
+			<div id="bs-72" class="bs hidden"></div>
+			<div id="bs-73" class="bs hidden"></div>
+			<div id="bs-74" class="bs hidden"></div>
+			<div id="bs-75" class="bs hidden"></div>
+			<div id="bs-76" class="bs hidden"></div>
+			<div id="bs-77" class="bs hidden"></div>
+			<div id="bs-78" class="bs hidden"></div>
+			<div id="bs-79" class="bs hidden"></div>
+			<div id="bs-80" class="bs hidden"></div>
+			<div id="bs-81" class="bs hidden"></div>
+			<div id="bs-82" class="bs hidden"></div>
+			<div id="bs-83" class="bs hidden"></div>
+			<div id="bs-84" class="bs hidden"></div>
+			<div id="bs-85" class="bs hidden"></div>
+			<div id="bs-86" class="bs hidden"></div>
+			<div id="bs-87" class="bs hidden"></div>
+			<div id="bs-88" class="bs hidden"></div>
+			<div id="bs-89" class="bs hidden"></div>
+			<div id="bs-90" class="bs hidden"></div>
+			<div id="bs-91" class="bs hidden"></div>
+			<div id="bs-92" class="bs hidden"></div>
+			<div id="bs-93" class="bs hidden"></div>
+			<div id="bs-94" class="bs hidden"></div>
+			<div id="bs-95" class="bs hidden"></div>
+			<div id="bs-96" class="bs hidden"></div>
+			<div id="bs-97" class="bs hidden"></div>
+			<div id="bs-98" class="bs hidden"></div>
+			<div id="bs-99" class="bs hidden"></div>
+			<div id="bs-100" class="bs hidden"></div>
+			<div id="bs-101" class="bs hidden"></div>
+			<div id="bs-102" class="bs hidden"></div>
+			<div id="bs-103" class="bs hidden"></div>
+			<div id="bs-104" class="bs hidden"></div>
+			<div id="bs-105" class="bs hidden"></div>
+			<div id="bs-106" class="bs hidden"></div>
+			<div id="bs-107" class="bs hidden"></div>
+			<div id="bs-108" class="bs hidden"></div>
+			<div id="bs-109" class="bs hidden"></div>
+			<div id="bs-110" class="bs hidden"></div>
+			<div id="bs-111" class="bs hidden"></div>
+			<div id="bs-112" class="bs hidden"></div>
+			<div id="bs-113" class="bs hidden"></div>
+			<div id="bs-114" class="bs hidden"></div>
+			<div id="bs-115" class="bs hidden"></div>
+			<div id="bs-116" class="bs hidden"></div>
+			<div id="bs-117" class="bs hidden"></div>
+			<div id="bs-118" class="bs hidden"></div>
+			<div id="bs-119" class="bs hidden"></div>
+			<div id="bs-120" class="bs hidden"></div>
+			<div id="bs-121" class="bs hidden"></div>
+			<div id="bs-122" class="bs hidden"></div>
+			<div id="bs-123" class="bs hidden"></div>
+			<div id="bs-124" class="bs hidden"></div>
+			<div id="bs-125" class="bs hidden"></div>
+			<div id="bs-126" class="bs hidden"></div>
+			<div id="bs-127" class="bs hidden"></div>
+			<div id="bs-128" class="bs hidden"></div>
+			<div id="bs-129" class="bs hidden"></div>
+			<div id="bs-130" class="bs hidden"></div>
+			<div id="bs-131" class="bs hidden"></div>
+			<div id="bs-132" class="bs hidden"></div>
+			<div id="bs-133" class="bs hidden"></div>
+			<div id="bs-134" class="bs hidden"></div>
+			<div id="bs-135" class="bs hidden"></div>
+			<div id="bs-136" class="bs hidden"></div>
+			<div id="bs-137" class="bs hidden"></div>
+			<div id="bs-138" class="bs hidden"></div>
+			<div id="bs-139" class="bs hidden"></div>
+			<div id="bs-140" class="bs hidden"></div>
+			<div id="bs-141" class="bs hidden"></div>
+			<div id="bs-142" class="bs hidden"></div>
+			<div id="bs-143" class="bs hidden"></div>
+			<div id="bs-144" class="bs hidden"></div>
+			<div id="bs-145" class="bs hidden"></div>
+			<div id="bs-146" class="bs hidden"></div>
+			<div id="bs-147" class="bs hidden"></div>
+			<div id="bs-148" class="bs hidden"></div>
+			<div id="bs-149" class="bs hidden"></div>
+			<div id="bs-150" class="bs hidden"></div>
+			<div id="bs-151" class="bs hidden"></div>
+			<div id="bs-152" class="bs hidden"></div>
+			<div id="bs-153" class="bs hidden"></div>
+			<div id="bs-154" class="bs hidden"></div>
+			<div id="bs-155" class="bs hidden"></div>
+			<div id="bs-156" class="bs hidden"></div>
+			<div id="bs-157" class="bs hidden"></div>
+			<div id="bs-158" class="bs hidden"></div>
+			<div id="bs-159" class="bs hidden"></div>
+			<div id="bs-160" class="bs hidden"></div>
+			<div id="bs-161" class="bs hidden"></div>
+			<div id="bs-162" class="bs hidden"></div>
+			<div id="bs-163" class="bs hidden"></div>
+			<div id="bs-164" class="bs hidden"></div>
+			<div id="bs-165" class="bs hidden"></div>
+			<div id="bs-166" class="bs hidden"></div>
+			<div id="bs-167" class="bs hidden"></div>
+			<div id="bs-168" class="bs hidden"></div>
+			<div id="bs-169" class="bs hidden"></div>
+			<div id="bs-170" class="bs hidden"></div>
+			<div id="bs-171" class="bs hidden"></div>
+			<div id="bs-172" class="bs hidden"></div>
+			<div id="bs-173" class="bs hidden"></div>
+			<div id="bs-174" class="bs hidden"></div>
+			<div id="bs-175" class="bs hidden"></div>
+			<div id="bs-176" class="bs hidden"></div>
+			<div id="bs-177" class="bs hidden"></div>
+			<div id="bs-178" class="bs hidden"></div>
+			<div id="bs-179" class="bs hidden"></div>
+			<div id="bs-180" class="bs hidden"></div>
+			<div id="bs-181" class="bs hidden"></div>
+			<div id="bs-182" class="bs hidden"></div>
+			<div id="bs-183" class="bs hidden"></div>
+			<div id="bs-184" class="bs hidden"></div>
+			<div id="bs-185" class="bs hidden"></div>
+			<div id="bs-186" class="bs hidden"></div>
+			<div id="bs-187" class="bs hidden"></div>
+			<div id="bs-188" class="bs hidden"></div>
+			<div id="bs-189" class="bs hidden"></div>
+			<div id="bs-190" class="bs hidden"></div>
+			<div id="bs-191" class="bs hidden"></div>
+			<div id="bs-192" class="bs hidden"></div>
+			<div id="bs-193" class="bs hidden"></div>
+			<div id="bs-194" class="bs hidden"></div>
+			<div id="bs-195" class="bs hidden"></div>
+			<div id="bs-196" class="bs hidden"></div>
+			<div id="bs-197" class="bs hidden"></div>
+			<div id="bs-198" class="bs hidden"></div>
+			<div id="bs-199" class="bs hidden"></div>
+		</div>
+		<div id="banner-pieces">
+			<div id="bp-0" class="bp hidden"><div id="bt-0" class="bt hidden"></div></div>
+			<div id="bp-1" class="bp hidden"><div id="bt-1" class="bt hidden"></div></div>
+			<div id="bp-2" class="bp hidden"><div id="bt-2" class="bt hidden"></div></div>
+			<div id="bp-3" class="bp hidden"><div id="bt-3" class="bt hidden"></div></div>
+			<div id="bp-4" class="bp hidden"><div id="bt-4" class="bt hidden"></div></div>
+			<div id="bp-5" class="bp hidden"><div id="bt-5" class="bt hidden"></div></div>
+			<div id="bp-6" class="bp hidden"><div id="bt-6" class="bt hidden"></div></div>
+			<div id="bp-7" class="bp hidden"><div id="bt-7" class="bt hidden"></div></div>
+			<div id="bp-8" class="bp hidden"><div id="bt-8" class="bt hidden"></div></div>
+			<div id="bp-9" class="bp hidden"><div id="bt-9" class="bt hidden"></div></div>
+			<div id="bp-10" class="bp hidden"><div id="bt-10" class="bt hidden"></div></div>
+			<div id="bp-11" class="bp hidden"><div id="bt-11" class="bt hidden"></div></div>
+			<div id="bp-12" class="bp hidden"><div id="bt-12" class="bt hidden"></div></div>
+			<div id="bp-13" class="bp hidden"><div id="bt-13" class="bt hidden"></div></div>
+			<div id="bp-14" class="bp hidden"><div id="bt-14" class="bt hidden"></div></div>
+			<div id="bp-15" class="bp hidden"><div id="bt-15" class="bt hidden"></div></div>
+			<div id="bp-16" class="bp hidden"><div id="bt-16" class="bt hidden"></div></div>
+			<div id="bp-17" class="bp hidden"><div id="bt-17" class="bt hidden"></div></div>
+			<div id="bp-18" class="bp hidden"><div id="bt-18" class="bt hidden"></div></div>
+			<div id="bp-19" class="bp hidden"><div id="bt-19" class="bt hidden"></div></div>
+			<div id="bp-20" class="bp hidden"><div id="bt-20" class="bt hidden"></div></div>
+			<div id="bp-21" class="bp hidden"><div id="bt-21" class="bt hidden"></div></div>
+			<div id="bp-22" class="bp hidden"><div id="bt-22" class="bt hidden"></div></div>
+			<div id="bp-23" class="bp hidden"><div id="bt-23" class="bt hidden"></div></div>
+			<div id="bp-24" class="bp hidden"><div id="bt-24" class="bt hidden"></div></div>
+			<div id="bp-25" class="bp hidden"><div id="bt-25" class="bt hidden"></div></div>
+			<div id="bp-26" class="bp hidden"><div id="bt-26" class="bt hidden"></div></div>
+			<div id="bp-27" class="bp hidden"><div id="bt-27" class="bt hidden"></div></div>
+			<div id="bp-28" class="bp hidden"><div id="bt-28" class="bt hidden"></div></div>
+			<div id="bp-29" class="bp hidden"><div id="bt-29" class="bt hidden"></div></div>
+			<div id="bp-30" class="bp hidden"><div id="bt-30" class="bt hidden"></div></div>
+			<div id="bp-31" class="bp hidden"><div id="bt-31" class="bt hidden"></div></div>
+			<div id="bp-32" class="bp hidden"><div id="bt-32" class="bt hidden"></div></div>
+			<div id="bp-33" class="bp hidden"><div id="bt-33" class="bt hidden"></div></div>
+			<div id="bp-34" class="bp hidden"><div id="bt-34" class="bt hidden"></div></div>
+			<div id="bp-35" class="bp hidden"><div id="bt-35" class="bt hidden"></div></div>
+			<div id="bp-36" class="bp hidden"><div id="bt-36" class="bt hidden"></div></div>
+			<div id="bp-37" class="bp hidden"><div id="bt-37" class="bt hidden"></div></div>
+			<div id="bp-38" class="bp hidden"><div id="bt-38" class="bt hidden"></div></div>
+			<div id="bp-39" class="bp hidden"><div id="bt-39" class="bt hidden"></div></div>
+			<div id="bp-40" class="bp hidden"><div id="bt-40" class="bt hidden"></div></div>
+			<div id="bp-41" class="bp hidden"><div id="bt-41" class="bt hidden"></div></div>
+			<div id="bp-42" class="bp hidden"><div id="bt-42" class="bt hidden"></div></div>
+			<div id="bp-43" class="bp hidden"><div id="bt-43" class="bt hidden"></div></div>
+			<div id="bp-44" class="bp hidden"><div id="bt-44" class="bt hidden"></div></div>
+			<div id="bp-45" class="bp hidden"><div id="bt-45" class="bt hidden"></div></div>
+			<div id="bp-46" class="bp hidden"><div id="bt-46" class="bt hidden"></div></div>
+			<div id="bp-47" class="bp hidden"><div id="bt-47" class="bt hidden"></div></div>
+			<div id="bp-48" class="bp hidden"><div id="bt-48" class="bt hidden"></div></div>
+			<div id="bp-49" class="bp hidden"><div id="bt-49" class="bt hidden"></div></div>
+			<div id="bp-50" class="bp hidden"><div id="bt-50" class="bt hidden"></div></div>
+			<div id="bp-51" class="bp hidden"><div id="bt-51" class="bt hidden"></div></div>
+			<div id="bp-52" class="bp hidden"><div id="bt-52" class="bt hidden"></div></div>
+			<div id="bp-53" class="bp hidden"><div id="bt-53" class="bt hidden"></div></div>
+			<div id="bp-54" class="bp hidden"><div id="bt-54" class="bt hidden"></div></div>
+			<div id="bp-55" class="bp hidden"><div id="bt-55" class="bt hidden"></div></div>
+			<div id="bp-56" class="bp hidden"><div id="bt-56" class="bt hidden"></div></div>
+			<div id="bp-57" class="bp hidden"><div id="bt-57" class="bt hidden"></div></div>
+			<div id="bp-58" class="bp hidden"><div id="bt-58" class="bt hidden"></div></div>
+			<div id="bp-59" class="bp hidden"><div id="bt-59" class="bt hidden"></div></div>
+			<div id="bp-60" class="bp hidden"><div id="bt-60" class="bt hidden"></div></div>
+			<div id="bp-61" class="bp hidden"><div id="bt-61" class="bt hidden"></div></div>
+			<div id="bp-62" class="bp hidden"><div id="bt-62" class="bt hidden"></div></div>
+			<div id="bp-63" class="bp hidden"><div id="bt-63" class="bt hidden"></div></div>
+			<div id="bp-64" class="bp hidden"><div id="bt-64" class="bt hidden"></div></div>
+			<div id="bp-65" class="bp hidden"><div id="bt-65" class="bt hidden"></div></div>
+			<div id="bp-66" class="bp hidden"><div id="bt-66" class="bt hidden"></div></div>
+			<div id="bp-67" class="bp hidden"><div id="bt-67" class="bt hidden"></div></div>
+			<div id="bp-68" class="bp hidden"><div id="bt-68" class="bt hidden"></div></div>
+			<div id="bp-69" class="bp hidden"><div id="bt-69" class="bt hidden"></div></div>
+			<div id="bp-70" class="bp hidden"><div id="bt-70" class="bt hidden"></div></div>
+			<div id="bp-71" class="bp hidden"><div id="bt-71" class="bt hidden"></div></div>
+			<div id="bp-72" class="bp hidden"><div id="bt-72" class="bt hidden"></div></div>
+			<div id="bp-73" class="bp hidden"><div id="bt-73" class="bt hidden"></div></div>
+			<div id="bp-74" class="bp hidden"><div id="bt-74" class="bt hidden"></div></div>
+			<div id="bp-75" class="bp hidden"><div id="bt-75" class="bt hidden"></div></div>
+			<div id="bp-76" class="bp hidden"><div id="bt-76" class="bt hidden"></div></div>
+			<div id="bp-77" class="bp hidden"><div id="bt-77" class="bt hidden"></div></div>
+			<div id="bp-78" class="bp hidden"><div id="bt-78" class="bt hidden"></div></div>
+			<div id="bp-79" class="bp hidden"><div id="bt-79" class="bt hidden"></div></div>
+			<div id="bp-80" class="bp hidden"><div id="bt-80" class="bt hidden"></div></div>
+			<div id="bp-81" class="bp hidden"><div id="bt-81" class="bt hidden"></div></div>
+			<div id="bp-82" class="bp hidden"><div id="bt-82" class="bt hidden"></div></div>
+			<div id="bp-83" class="bp hidden"><div id="bt-83" class="bt hidden"></div></div>
+			<div id="bp-84" class="bp hidden"><div id="bt-84" class="bt hidden"></div></div>
+			<div id="bp-85" class="bp hidden"><div id="bt-85" class="bt hidden"></div></div>
+			<div id="bp-86" class="bp hidden"><div id="bt-86" class="bt hidden"></div></div>
+			<div id="bp-87" class="bp hidden"><div id="bt-87" class="bt hidden"></div></div>
+			<div id="bp-88" class="bp hidden"><div id="bt-88" class="bt hidden"></div></div>
+			<div id="bp-89" class="bp hidden"><div id="bt-89" class="bt hidden"></div></div>
+			<div id="bp-90" class="bp hidden"><div id="bt-90" class="bt hidden"></div></div>
+			<div id="bp-91" class="bp hidden"><div id="bt-91" class="bt hidden"></div></div>
+			<div id="bp-92" class="bp hidden"><div id="bt-92" class="bt hidden"></div></div>
+			<div id="bp-93" class="bp hidden"><div id="bt-93" class="bt hidden"></div></div>
+			<div id="bp-94" class="bp hidden"><div id="bt-94" class="bt hidden"></div></div>
+			<div id="bp-95" class="bp hidden"><div id="bt-95" class="bt hidden"></div></div>
+			<div id="bp-96" class="bp hidden"><div id="bt-96" class="bt hidden"></div></div>
+			<div id="bp-97" class="bp hidden"><div id="bt-97" class="bt hidden"></div></div>
+			<div id="bp-98" class="bp hidden"><div id="bt-98" class="bt hidden"></div></div>
+			<div id="bp-99" class="bp hidden"><div id="bt-99" class="bt hidden"></div></div>
+			<div id="bp-100" class="bp hidden"><div id="bt-100" class="bt hidden"></div></div>
+			<div id="bp-101" class="bp hidden"><div id="bt-101" class="bt hidden"></div></div>
+			<div id="bp-102" class="bp hidden"><div id="bt-102" class="bt hidden"></div></div>
+			<div id="bp-103" class="bp hidden"><div id="bt-103" class="bt hidden"></div></div>
+			<div id="bp-104" class="bp hidden"><div id="bt-104" class="bt hidden"></div></div>
+			<div id="bp-105" class="bp hidden"><div id="bt-105" class="bt hidden"></div></div>
+			<div id="bp-106" class="bp hidden"><div id="bt-106" class="bt hidden"></div></div>
+			<div id="bp-107" class="bp hidden"><div id="bt-107" class="bt hidden"></div></div>
+			<div id="bp-108" class="bp hidden"><div id="bt-108" class="bt hidden"></div></div>
+			<div id="bp-109" class="bp hidden"><div id="bt-109" class="bt hidden"></div></div>
+			<div id="bp-110" class="bp hidden"><div id="bt-110" class="bt hidden"></div></div>
+			<div id="bp-111" class="bp hidden"><div id="bt-111" class="bt hidden"></div></div>
+			<div id="bp-112" class="bp hidden"><div id="bt-112" class="bt hidden"></div></div>
+			<div id="bp-113" class="bp hidden"><div id="bt-113" class="bt hidden"></div></div>
+			<div id="bp-114" class="bp hidden"><div id="bt-114" class="bt hidden"></div></div>
+			<div id="bp-115" class="bp hidden"><div id="bt-115" class="bt hidden"></div></div>
+			<div id="bp-116" class="bp hidden"><div id="bt-116" class="bt hidden"></div></div>
+			<div id="bp-117" class="bp hidden"><div id="bt-117" class="bt hidden"></div></div>
+			<div id="bp-118" class="bp hidden"><div id="bt-118" class="bt hidden"></div></div>
+			<div id="bp-119" class="bp hidden"><div id="bt-119" class="bt hidden"></div></div>
+			<div id="bp-120" class="bp hidden"><div id="bt-120" class="bt hidden"></div></div>
+			<div id="bp-121" class="bp hidden"><div id="bt-121" class="bt hidden"></div></div>
+			<div id="bp-122" class="bp hidden"><div id="bt-122" class="bt hidden"></div></div>
+			<div id="bp-123" class="bp hidden"><div id="bt-123" class="bt hidden"></div></div>
+			<div id="bp-124" class="bp hidden"><div id="bt-124" class="bt hidden"></div></div>
+			<div id="bp-125" class="bp hidden"><div id="bt-125" class="bt hidden"></div></div>
+			<div id="bp-126" class="bp hidden"><div id="bt-126" class="bt hidden"></div></div>
+			<div id="bp-127" class="bp hidden"><div id="bt-127" class="bt hidden"></div></div>
+			<div id="bp-128" class="bp hidden"><div id="bt-128" class="bt hidden"></div></div>
+			<div id="bp-129" class="bp hidden"><div id="bt-129" class="bt hidden"></div></div>
+			<div id="bp-130" class="bp hidden"><div id="bt-130" class="bt hidden"></div></div>
+			<div id="bp-131" class="bp hidden"><div id="bt-131" class="bt hidden"></div></div>
+			<div id="bp-132" class="bp hidden"><div id="bt-132" class="bt hidden"></div></div>
+			<div id="bp-133" class="bp hidden"><div id="bt-133" class="bt hidden"></div></div>
+			<div id="bp-134" class="bp hidden"><div id="bt-134" class="bt hidden"></div></div>
+			<div id="bp-135" class="bp hidden"><div id="bt-135" class="bt hidden"></div></div>
+			<div id="bp-136" class="bp hidden"><div id="bt-136" class="bt hidden"></div></div>
+			<div id="bp-137" class="bp hidden"><div id="bt-137" class="bt hidden"></div></div>
+			<div id="bp-138" class="bp hidden"><div id="bt-138" class="bt hidden"></div></div>
+			<div id="bp-139" class="bp hidden"><div id="bt-139" class="bt hidden"></div></div>
+			<div id="bp-140" class="bp hidden"><div id="bt-140" class="bt hidden"></div></div>
+			<div id="bp-141" class="bp hidden"><div id="bt-141" class="bt hidden"></div></div>
+			<div id="bp-142" class="bp hidden"><div id="bt-142" class="bt hidden"></div></div>
+			<div id="bp-143" class="bp hidden"><div id="bt-143" class="bt hidden"></div></div>
+			<div id="bp-144" class="bp hidden"><div id="bt-144" class="bt hidden"></div></div>
+			<div id="bp-145" class="bp hidden"><div id="bt-145" class="bt hidden"></div></div>
+			<div id="bp-146" class="bp hidden"><div id="bt-146" class="bt hidden"></div></div>
+			<div id="bp-147" class="bp hidden"><div id="bt-147" class="bt hidden"></div></div>
+			<div id="bp-148" class="bp hidden"><div id="bt-148" class="bt hidden"></div></div>
+			<div id="bp-149" class="bp hidden"><div id="bt-149" class="bt hidden"></div></div>
+			<div id="bp-150" class="bp hidden"><div id="bt-150" class="bt hidden"></div></div>
+			<div id="bp-151" class="bp hidden"><div id="bt-151" class="bt hidden"></div></div>
+			<div id="bp-152" class="bp hidden"><div id="bt-152" class="bt hidden"></div></div>
+			<div id="bp-153" class="bp hidden"><div id="bt-153" class="bt hidden"></div></div>
+			<div id="bp-154" class="bp hidden"><div id="bt-154" class="bt hidden"></div></div>
+			<div id="bp-155" class="bp hidden"><div id="bt-155" class="bt hidden"></div></div>
+			<div id="bp-156" class="bp hidden"><div id="bt-156" class="bt hidden"></div></div>
+			<div id="bp-157" class="bp hidden"><div id="bt-157" class="bt hidden"></div></div>
+			<div id="bp-158" class="bp hidden"><div id="bt-158" class="bt hidden"></div></div>
+			<div id="bp-159" class="bp hidden"><div id="bt-159" class="bt hidden"></div></div>
+			<div id="bp-160" class="bp hidden"><div id="bt-160" class="bt hidden"></div></div>
+			<div id="bp-161" class="bp hidden"><div id="bt-161" class="bt hidden"></div></div>
+			<div id="bp-162" class="bp hidden"><div id="bt-162" class="bt hidden"></div></div>
+			<div id="bp-163" class="bp hidden"><div id="bt-163" class="bt hidden"></div></div>
+			<div id="bp-164" class="bp hidden"><div id="bt-164" class="bt hidden"></div></div>
+			<div id="bp-165" class="bp hidden"><div id="bt-165" class="bt hidden"></div></div>
+			<div id="bp-166" class="bp hidden"><div id="bt-166" class="bt hidden"></div></div>
+			<div id="bp-167" class="bp hidden"><div id="bt-167" class="bt hidden"></div></div>
+			<div id="bp-168" class="bp hidden"><div id="bt-168" class="bt hidden"></div></div>
+			<div id="bp-169" class="bp hidden"><div id="bt-169" class="bt hidden"></div></div>
+			<div id="bp-170" class="bp hidden"><div id="bt-170" class="bt hidden"></div></div>
+			<div id="bp-171" class="bp hidden"><div id="bt-171" class="bt hidden"></div></div>
+			<div id="bp-172" class="bp hidden"><div id="bt-172" class="bt hidden"></div></div>
+			<div id="bp-173" class="bp hidden"><div id="bt-173" class="bt hidden"></div></div>
+			<div id="bp-174" class="bp hidden"><div id="bt-174" class="bt hidden"></div></div>
+			<div id="bp-175" class="bp hidden"><div id="bt-175" class="bt hidden"></div></div>
+			<div id="bp-176" class="bp hidden"><div id="bt-176" class="bt hidden"></div></div>
+			<div id="bp-177" class="bp hidden"><div id="bt-177" class="bt hidden"></div></div>
+			<div id="bp-178" class="bp hidden"><div id="bt-178" class="bt hidden"></div></div>
+			<div id="bp-179" class="bp hidden"><div id="bt-179" class="bt hidden"></div></div>
+			<div id="bp-180" class="bp hidden"><div id="bt-180" class="bt hidden"></div></div>
+			<div id="bp-181" class="bp hidden"><div id="bt-181" class="bt hidden"></div></div>
+			<div id="bp-182" class="bp hidden"><div id="bt-182" class="bt hidden"></div></div>
+			<div id="bp-183" class="bp hidden"><div id="bt-183" class="bt hidden"></div></div>
+			<div id="bp-184" class="bp hidden"><div id="bt-184" class="bt hidden"></div></div>
+			<div id="bp-185" class="bp hidden"><div id="bt-185" class="bt hidden"></div></div>
+			<div id="bp-186" class="bp hidden"><div id="bt-186" class="bt hidden"></div></div>
+			<div id="bp-187" class="bp hidden"><div id="bt-187" class="bt hidden"></div></div>
+			<div id="bp-188" class="bp hidden"><div id="bt-188" class="bt hidden"></div></div>
+			<div id="bp-189" class="bp hidden"><div id="bt-189" class="bt hidden"></div></div>
+			<div id="bp-190" class="bp hidden"><div id="bt-190" class="bt hidden"></div></div>
+			<div id="bp-191" class="bp hidden"><div id="bt-191" class="bt hidden"></div></div>
+			<div id="bp-192" class="bp hidden"><div id="bt-192" class="bt hidden"></div></div>
+			<div id="bp-193" class="bp hidden"><div id="bt-193" class="bt hidden"></div></div>
+			<div id="bp-194" class="bp hidden"><div id="bt-194" class="bt hidden"></div></div>
+			<div id="bp-195" class="bp hidden"><div id="bt-195" class="bt hidden"></div></div>
+			<div id="bp-196" class="bp hidden"><div id="bt-196" class="bt hidden"></div></div>
+			<div id="bp-197" class="bp hidden"><div id="bt-197" class="bt hidden"></div></div>
+			<div id="bp-198" class="bp hidden"><div id="bt-198" class="bt hidden"></div></div>
+			<div id="bp-199" class="bp hidden"><div id="bt-199" class="bt hidden"></div></div>
+		</div>
+		</div>
+	</div>
+
+	<!-- Between battles and at the end: the score screen (vs_scene.c: VS_renderVersusIntro). -->
+	<div id="score" class="hidden">
+		<div id="score-black"></div>
+		<div id="score-board">
+			<div id="score-panel-0" class="score-panel"></div><div id="score-panel-1" class="score-panel"></div>
+			<div id="score-edge-11" class="score-edge"></div>
+			<div id="score-edge-12" class="score-edge"></div>
+			<div id="score-edge-13" class="score-edge"></div>
+			<div id="score-edge-14" class="score-edge"></div>
+			<div id="score-edge-15" class="score-edge"></div>
+			<div id="score-edge-16" class="score-edge"></div>
+			<div id="score-edge-17" class="score-edge"></div>
+			<div id="score-edge-18" class="score-edge"></div>
+			<div id="score-edge-19" class="score-edge"></div>
+			<div id="score-edge-20" class="score-edge"></div>
+			<div id="score-title" class="original-look" text-key="versus.score_title"></div>
+			<div id="score-player-0" class="score-player original-look">1P</div><div id="score-player-1" class="score-player original-look">2P</div>
+			<div id="score-row-0-0" class="score-row slot-0 hidden"><div id="score-face-0-0" class="score-face"></div><div id="score-pip-0-0" class="score-pip hidden"></div></div>
+			<div id="score-row-0-1" class="score-row slot-0 hidden"><div id="score-face-0-1" class="score-face"></div><div id="score-pip-0-1" class="score-pip hidden"></div></div>
+			<div id="score-row-0-2" class="score-row slot-0 hidden"><div id="score-face-0-2" class="score-face"></div><div id="score-pip-0-2" class="score-pip hidden"></div></div>
+			<div id="score-row-0-3" class="score-row slot-0 hidden"><div id="score-face-0-3" class="score-face"></div><div id="score-pip-0-3" class="score-pip hidden"></div></div>
+			<div id="score-row-0-4" class="score-row slot-0 hidden"><div id="score-face-0-4" class="score-face"></div><div id="score-pip-0-4" class="score-pip hidden"></div></div>
+			<div id="score-row-1-0" class="score-row slot-1 hidden"><div id="score-face-1-0" class="score-face"></div><div id="score-pip-1-0" class="score-pip hidden"></div></div>
+			<div id="score-row-1-1" class="score-row slot-1 hidden"><div id="score-face-1-1" class="score-face"></div><div id="score-pip-1-1" class="score-pip hidden"></div></div>
+			<div id="score-row-1-2" class="score-row slot-1 hidden"><div id="score-face-1-2" class="score-face"></div><div id="score-pip-1-2" class="score-pip hidden"></div></div>
+			<div id="score-row-1-3" class="score-row slot-1 hidden"><div id="score-face-1-3" class="score-face"></div><div id="score-pip-1-3" class="score-pip hidden"></div></div>
+			<div id="score-row-1-4" class="score-row slot-1 hidden"><div id="score-face-1-4" class="score-face"></div><div id="score-pip-1-4" class="score-pip hidden"></div></div>
+			<div id="score-flash" class="hidden"></div>
+			<span id="score-win-label-0" class="score-label win original-look" text-key="versus.score_win"></span><span id="score-wins-0" class="score-number wins original-look"></span>
+			<span id="score-lose-label-0" class="score-label lose original-look" text-key="versus.score_lose"></span><span id="score-losses-0" class="score-number losses original-look"></span>
+			<span id="score-win-label-1" class="score-label win original-look" text-key="versus.score_win"></span><span id="score-wins-1" class="score-number wins original-look"></span>
+			<span id="score-lose-label-1" class="score-label lose original-look" text-key="versus.score_lose"></span><span id="score-losses-1" class="score-number losses original-look"></span>
+		</div>
+	</div>
+
 	<div id="scrim">
 		<div id="panel">
 			<h1 id="title" text-key="versus.title"></h1>
@@ -21,7 +538,8 @@
 			<!-- The host's series length. -->
 			<div id="view-host_setup" class="view">
 				<p text-key="versus.host_setup.question"></p>
-				<button id="series" onclick="act('confirm')"></button>
+				<button id="setup-0" class="stepper"><span class="stepper-label" text-key="versus.host_setup.series"></span><span class="arrow less" onclick="step(0, 'left')"></span><span id="series" class="stepper-value"></span><span class="arrow more" onclick="step(0, 'right')"></span></button>
+				<button id="setup-1" class="stepper"><span class="stepper-label" text-key="versus.host_setup.arena"></span><span class="arrow less" onclick="step(1, 'left')"></span><span id="arena" class="stepper-value"></span><span class="arrow more" onclick="step(1, 'right')"></span></button>
 				<p class="about" text-key="versus.host_setup.hint"></p>
 			</div>
 

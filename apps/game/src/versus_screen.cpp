@@ -34,7 +34,7 @@ namespace dwe::app {
 namespace {
 
 constexpr std::string_view Revision = "versus.revision";
-// Off every arena: where the battle keeps the tamer nobody plays.
+// Off every arena: where the battle keeps the trainer figure nobody plays.
 constexpr std::int32_t BystanderDistance = 4000;
 
 // The saves of the saves folder with their registered partners, in the slots' order; a save that
