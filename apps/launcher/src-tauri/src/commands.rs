@@ -52,6 +52,8 @@ pub struct Status {
     has_previous: bool,
     content_installed: bool,
     content_outdated: bool,
+    /// The base pack is a loose folder of an install from before base.pak (convert_content).
+    content_loose: bool,
     content_extractor_version: Option<i32>,
     disc_source: Option<String>,
     disc_source_exists: bool,
@@ -65,7 +67,7 @@ pub struct Status {
 
 #[derive(Serialize, Clone)]
 struct TaskEvent {
-    /// unpack, download, verify, install, identify, extract.
+    /// unpack, download, verify, install, identify, extract, convert.
     task: &'static str,
     percent: Option<f64>,
     step: Option<String>,
@@ -155,6 +157,7 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
         has_previous: store.has_previous(),
         content_installed: installed,
         content_outdated: game.as_ref().is_some_and(|g| content::is_outdated(&content, g.extractor_version)),
+        content_loose: content::has_loose_base(&content),
         content_extractor_version: record.map(|r| r.extractor_version),
         disc_source_exists: settings.disc_source.as_ref().is_some_and(|d| d.is_file()),
         disc_source: settings.disc_source.as_ref().map(|d| d.display().to_string()),
@@ -177,16 +180,68 @@ pub fn status(app: AppHandle, state: State<'_, AppState>) -> Status {
 }
 
 /// Images of the player's own extracted content that make a good background, first found wins.
+/// The map backgrounds stay PNG in base.pak (the game reads their palette indices); the title is a
+/// KTX2 texture there, so only a loose base pack offers it.
 const BACKGROUNDS: [&str; 3] = ["map/gias05/background_day.png", "map/mayo06/background_day.png", "texture/etcna/title2.png"];
+
+/// A file of the installed base pack: from its loose folder when there is one (it hides the
+/// archive, as in the game), else from base.pak.
+fn base_file(content: &Path, relative: &str) -> Option<Vec<u8>> {
+    if content::has_loose_base(content) {
+        return std::fs::read(content.join(content::BASE_PACK).join(relative)).ok();
+    }
+    crate::pak::read_file(&content.join(content::BASE_ARCHIVE), relative)
+}
 
 /// A still from the player's own content (never shipped, never uploaded), as a data URL.
 #[tauri::command]
 pub fn background(state: State<'_, AppState>) -> Option<String> {
-    let base = content::content_folder(&data_folder(&state)).join(content::BASE_PACK);
+    let content = content::content_folder(&data_folder(&state));
     BACKGROUNDS.iter().find_map(|relative| {
-        let bytes = std::fs::read(base.join(relative)).ok()?;
+        let bytes = base_file(&content, relative)?;
         Some(format!("data:image/png;base64,{}", base64::engine::general_purpose::STANDARD.encode(bytes)))
     })
+}
+
+/// Room for a conversion: the cooked folder and the archive beside the loose pack, with margin.
+const CONVERT_BYTES: u64 = 1536 * 1024 * 1024;
+
+/// Cooks the loose base pack of an install from before base.pak into base.pak, without reading the
+/// disc again (content::convert); the page runs it when the launcher opens. Does nothing (but tidy
+/// up an earlier conversion) without an installed game, with content that the disc must be read
+/// again for anyway, with a game whose dwx cannot cook one, or without the room for it: the loose
+/// pack plays as it is.
+#[tauri::command]
+pub async fn convert_content(app: AppHandle, state: State<'_, AppState>) -> Result<Status> {
+    let _busy = state.begin()?;
+    let data = data_folder(&state);
+    let content = content::content_folder(&data);
+    let Some(game) = GameStore::new(&data).current() else {
+        return Ok(status_of(&app, &state));
+    };
+    let loose = content::has_loose_base(&content);
+    if loose && content::is_outdated(&content, game.extractor_version) {
+        log_line!("the loose base pack is read from the disc again before it is converted");
+        return Ok(status_of(&app, &state));
+    }
+    let free = system_check::free_bytes(&data);
+    if loose && !system_check::enough(free, CONVERT_BYTES) {
+        log_line!("no room to convert the base pack into base.pak: {free:?} free, {CONVERT_BYTES} needed");
+        return Ok(status_of(&app, &state));
+    }
+    if loose {
+        emit(&app, "convert", Some(0.0), Some("cook".into()), 0, 0);
+    }
+    let (dwx, cancel, handle) = (game.dwx(), state.cancel.clone(), app.clone());
+    joined(
+        tauri::async_runtime::spawn_blocking(move || {
+            content::convert(&dwx, &data, &cancel, |p| {
+                emit(&handle, "convert", Some(f64::from(p.percent)), Some(p.step), 0, 0);
+            })
+        })
+        .await,
+    )?;
+    Ok(status_of(&app, &state))
 }
 
 fn client(state: &AppState) -> Result<Client> {

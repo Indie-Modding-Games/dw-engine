@@ -307,10 +307,12 @@ function taskText(task) {
   switch (task.task) {
     case "download":
       return t("task.download", { done: formatBytes(task.done ?? 0), total: formatBytes(task.total ?? 0) });
-    case "extract": {
+    case "extract":
+    case "convert": {
       const step = task.step ? t(`steps.${task.step}`) : "";
       const percent = Math.round(task.percent ?? 0);
-      return step && !step.startsWith("steps.") ? `${t("task.extract", { percent })} · ${step}` : t("task.extract", { percent });
+      const text = t(`task.${task.task}`, { percent });
+      return step && !step.startsWith("steps.") ? `${text} · ${step}` : text;
     }
     default:
       return t(`task.${task.task}`);
@@ -357,7 +359,7 @@ function renderActionBar() {
   }
 
   const task = state.task;
-  $("stopButton").hidden = !task || !["download", "extract", "identify", "unpack"].includes(task.task);
+  $("stopButton").hidden = !task || !["download", "extract", "convert", "identify", "unpack"].includes(task.task);
   renderPills();
 }
 
@@ -592,6 +594,23 @@ async function runTask(work, { recheck = true, quiet = false } = {}) {
     await refresh();
     // A new game (or a fuller disk) may change what this computer can do.
     checkRequirements();
+  }
+}
+
+// An install from before base.pak keeps its base pack loose: it is cooked into base.pak once, when
+// the launcher opens, without reading the disc again. Stopped or failed, the loose pack still plays.
+async function convertLooseContent() {
+  const s = state.status;
+  if (!s?.content_loose || !s.game || s.content_outdated || state.task) return;
+  state.task = { task: "convert", percent: 0, step: "cook" };
+  renderAll();
+  try {
+    state.status = await api.convertContent();
+  } catch (failure) {
+    if (failure?.code !== "cancelled" && failure?.code !== "busy") showFailure(failure);
+  } finally {
+    state.task = null;
+    await refresh();
   }
 }
 
@@ -1146,6 +1165,7 @@ async function start() {
   } catch (failure) {
     showFailure(failure);
   }
+  await convertLooseContent();
   if (state.status.check_updates) checkUpdates();
 }
 

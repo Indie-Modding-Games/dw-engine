@@ -14,6 +14,7 @@ pub mod launch;
 pub mod links;
 pub mod log;
 pub mod manifest;
+pub mod pak;
 pub mod releases;
 pub mod settings;
 pub mod store;
@@ -167,6 +168,7 @@ pub fn run() {
             commands::check_updates,
             commands::install_disc,
             commands::reextract,
+            commands::convert_content,
             commands::update_game,
             commands::rollback_game,
             commands::cancel,

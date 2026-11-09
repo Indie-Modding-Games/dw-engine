@@ -78,6 +78,27 @@ dependencias que hacen falta para ellos.
   si encuentra una carpeta; la pantalla de primer arranque lee su fuente y sus textos del `.pak`
   (`content::readTeamPackFile`). En desarrollo se siguen montando las carpetas de `content/packs`. `dwx cook` y
   `dwx pack` aceptan `--progress` para que quien los ejecuta pueda mostrar el avance.
+- **El paquete `base` del jugador se instala como `base.pak`** (añadido el 2026-11-09, #268). `dwx cook-pak <carpeta>
+  -o <fichero.pak> --progress` cocina, empaqueta y comprueba de una vez: cocina al lado del archivo
+  (`<fichero.pak>.cook`), escribe `<fichero.pak>.partial`, relee cada entrada, comprueba que tiene los ids de la
+  carpeta y que el motor abre cada asset montado solo (`assets::checkContent`, como `dwx extract`), y solo entonces le
+  da su nombre ([dwx](../modulos/apps/dwx.md#cocinar-a-un-pak-de-una-vez-dwx-cook-pak)). El lanzador y la pantalla de
+  primer arranque (`content::DiscInstall`) lo ejecutan después de `dwx extract` en `content.partial`, borran allí la
+  carpeta `base/` y mueven `base.pak` a `content/`; el `base/` suelto de una instalación anterior se quita después, de
+  un golpe. Una instalación desde cero acaba con `base.pak`, `ui_original/` e `install.yaml`. Las instalaciones que ya
+  existían las convierte el lanzador al abrirse, sin volver a leer el disco: cocina en `content.convert/`, mueve el
+  archivo a `content/` y solo entonces retira la carpeta suelta, así que un corte deja siempre un paquete base entero
+  ([lanzador](../modulos/apps/launcher.md#instalaciones-con-el-paquete-base-suelto)). `ui_original` (lo que crece la
+  receta de `dwx extract`) sigue en carpeta: es pequeño y lo reescribe cada extracción.
+  - Lo que leía ficheros sueltos de `content/base` lee ahora cualquiera de las dos formas: el fondo del lanzador
+    (un fondo de mapa, que sigue en PNG dentro del `.pak`, leído con un lector mínimo del formato en Rust) y
+    `dwx export-images`, que monta los paquetes con el sistema de ficheros virtual y decodifica a PNG las imágenes
+    que el cocinado pasó a KTX2 (las de una sola paleta, que salen en color como `_palette0`).
+  - `--content <carpeta>` acepta `base.pak` y, para los desarrolladores, la carpeta `base/` de `dwx extract`; si
+    están las dos, gana la carpeta (`assets::findPacks`). El juego sin lanzador no convierte una instalación suelta:
+    la sigue jugando así.
+  - No cambia `ExtractorVersion`: la extracción es la misma y una instalación suelta se juega igual, así que no hace
+    falta volver a leer el disco; solo cambia la forma del paquete.
 - **Dependencias** (fijadas por el baseline de vcpkg): `ktx` 4.4.2 (KTX-Software, Apache-2.0, con Basis Universal
   dentro) para escribir y leer KTX2; `zstd` 1.5.7; `opus` 1.6.1 y `libopusenc` 0.3, que trae su propio empaquetador
   Ogg (no hacen falta `libogg` ni `opusfile`). El port de `ktx` exporta solo `KTX::ktx` (no la variante de solo
@@ -157,11 +178,12 @@ compilado en release (`linux-clang-release`). Cada tamaño, con la carpeta `movi
   descomprimir, la memoria crece con lo que el frame produce de verdad, no con el tamaño que dice la tabla, así que
   un archivo falsificado no hace reservar 2 GiB.
 - Subir la versión de un cocinero invalida su caché; hay que hacerlo cada vez que cambie su salida.
-- El paquete `base` sigue instalándose como carpeta suelta: que el lanzador lo cocine a `base.pak` (con avance) y
-  borre los ficheros sueltos queda pendiente. Antes hay que leer del `.pak` lo que hoy lee de `content/base` (el fondo
-  del lanzador y los PNG que usa `dwx export-images`, que al cocinar pasan a KTX2), convertir las instalaciones que ya
-  existen, dar a la instalación desde el propio juego el mismo camino y probar un paquete entero instalado desde cero.
-  Hasta entonces el juego empaquetado monta el base de la carpeta.
+- Instalar el disco tarda más: a la extracción (menos de un minuto) se suma `dwx cook-pak` del base entero (unos
+  4 minutos: 239 s con 12 hilos el 2026-11-09, más en un ordenador más modesto), una sola vez por lectura del disco.
+  A cambio, `content/` pasa de 5473 ficheros sueltos (1,5 GB) a un solo `base.pak` de unos 280 MB, que el juego abre
+  entero (`dwe-game --check-content`: ningún recurso falla), y las texturas ocupan una cuarta parte en la
+  GPU. Mientras se cocina hace falta sitio para la carpeta cocinada y el archivo a la vez (el lanzador pide 1,5 GB
+  libres para convertir una instalación).
 
 ## Alternativas descartadas
 

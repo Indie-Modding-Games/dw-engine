@@ -1016,6 +1016,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sevenz-rust2",
+ "sha1",
  "sha2",
  "tar",
  "tauri",
@@ -1030,6 +1031,7 @@ dependencies = [
  "windows-sys 0.59.0",
  "xz2",
  "zip 2.6.1",
+ "zstd",
 ]
 
 [[package]]

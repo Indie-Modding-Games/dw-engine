@@ -51,7 +51,10 @@ activo y el anillo de foco.
   - **Avanzado:** la carpeta de registros y el modo seguro.
 
 Las cuatro tarjetas, los iconos y el fondo son arte propio (formas y degradados, `ui/js/art.js`, `ui/art/`); ningún
-texto, nombre ni imagen de la interfaz viene del juego original. La interfaz se maneja entera con teclado (Tab y
+texto, nombre ni imagen de la interfaz viene del juego original. Con el disco ya leído, detrás se ve además un fondo
+de mapa del contenido del propio jugador (nunca incluido ni subido): lo lee de `content/base/` si el paquete está
+suelto o de `content/base.pak` (`src-tauri/src/pak.rs` lee una entrada, la descomprime con zstd y comprueba su SHA-1);
+los fondos de mapa siguen en PNG dentro del `.pak`. La interfaz se maneja entera con teclado (Tab y
 Mayús+Tab; ↑/↓ en la barra lateral y en el menú de «Configurar», que también se abre con ↓; Esc cierra menús, paneles
 y diálogos), tiene anillo de foco visible, contraste AA y respeta «reducir movimiento». Se adapta de 960×600 a
 2560×1440: el texto crece con el ancho de la ventana.
@@ -71,9 +74,39 @@ con el `dwx` del juego instalado:
 3. Ejecuta `dwx extract --progress --out <datos>/content.partial/base` y muestra el porcentaje y el paso. Si
    falla, el aviso muestra el error de `dwx` con cada archivo que nombra (en un recuadro que se desplaza; sin línea
    `dwx: `, sus últimas líneas), y `launcher.log` guarda el código de salida y las últimas 60 líneas de `dwx`.
-4. Mueve los paquetes a `<datos>/content/` y escribe `install.yaml` con la `ExtractorVersion` del juego instalado y
-   la ruta del disco elegido, con las mismas claves que el juego, así que el juego monta el resultado sin preguntar.
-   El lanzador recuerda además el archivo que eligió el jugador (`disc_source`, puede ser el `.zip`).
+4. Ejecuta `dwx cook-pak <datos>/content.partial/base -o <datos>/content.partial/base.pak --progress`, que cocina el
+   paquete base en un solo `base.pak` y comprueba que cada entrada se relee y que el motor abre cada asset
+   ([`dwx cook-pak`](dwx.md#cocinar-a-un-pak-de-una-vez-dwx-cook-pak)). La barra da el 20 % a la extracción y el 80 % a
+   esto, que es lo largo, con los pasos «cocinando», «empaquetando» y «comprobando». Solo si acaba bien se borra la
+   carpeta `base/` de `content.partial`. Un juego cuyo `dwx` no tiene `cook-pak` (anterior a `base.pak`; el lanzador lo
+   mira en el uso que `dwx` imprime sin argumentos) se salta este paso y deja el paquete suelto, como antes.
+5. Mueve los paquetes a `<datos>/content/` (cada uno sustituye al del mismo nombre, y después se quita la otra forma
+   del mismo paquete: el `base/` suelto de una instalación anterior cuando llega `base.pak`, renombrado fuera de un
+   golpe y luego borrado, así el juego nunca monta medio paquete) y escribe `install.yaml` con la
+   `ExtractorVersion` del juego instalado y la ruta del disco elegido, con las mismas claves que el juego, así que el
+   juego monta el resultado sin preguntar. El lanzador recuerda además el archivo que eligió el jugador
+   (`disc_source`, puede ser el `.zip`).
+
+Una instalación desde cero acaba con `<datos>/content/` así: `base.pak`, `ui_original/` e `install.yaml`.
+
+### Instalaciones con el paquete base suelto
+
+Las instalaciones de antes de `base.pak` tienen `<datos>/content/base/` suelto. Al abrirse, el lanzador lo cocina a
+`base.pak` sin volver a leer el disco (`convert_content`, `content::convert`), con la tarea «Preparando el contenido…»
+y su porcentaje en la píldora de estado y el botón Detener:
+
+1. Nada que hacer si no hay juego instalado, si el contenido está desactualizado (la siguiente lectura del disco ya
+   deja `base.pak`), si el `dwx` del juego no sabe cocinar un archivo o si faltan 1,5 GB libres: el paquete suelto se
+   sigue jugando y se intenta en la siguiente apertura.
+2. `dwx cook-pak <datos>/content/base -o <datos>/content.convert/base.pak --progress`. El trabajo va en
+   `content.convert/`, fuera de `content/`, porque la carpeta cocinada es un paquete con el mismo id.
+3. Con el archivo comprobado, lo mueve a `content/base.pak` y solo entonces renombra `content/base/` a
+   `content.convert/base.retired` (de un golpe) y borra `content.convert/`.
+
+`install.yaml` no cambia: la lectura del disco es la misma, solo cambia la forma del paquete. Un fallo o un Detener en
+cualquier punto deja `content/` con un paquete base entero: el suelto hasta que `base.pak` está en su sitio, y después
+`base.pak` (mientras haya los dos, la carpeta gana, como en el juego). Si se paró justo entre los dos pasos del punto 3,
+la siguiente apertura termina de quitar la carpeta. Lo prueban los tests de `content.rs` con un `dwx` falso.
 
 Si no hay juego instalado todavía, antes del paso 2 descarga la última versión publicada.
 
@@ -289,7 +322,8 @@ compatibilidad si el juego trae `lib/lavapipe`, pantalla de bloqueo si no).
 | `~/.config/indie-modding-games/dwe-launcher/settings.json` | Ajustes del lanzador (carpeta de datos, idioma, disco recordado). Nunca la clave ni el servidor. En Windows `%APPDATA%\indie-modding-games\dwe-launcher\`, en macOS `~/Library/Application Support/indie-modding-games/dwe-launcher/`. |
 | `<datos>` | Por defecto la del juego, `~/.local/share/indie-modding-games/dwe` (`$XDG_DATA_HOME`; en macOS `~/Library/Application Support/indie-modding-games/dwe`), así que el juego arrancado sin lanzador ve lo mismo. En Windows, `%LOCALAPPDATA%\indie-modding-games\dwe`: lo instalado no va al perfil itinerante, y las partidas siguen en la carpeta del juego (`%APPDATA%\indie-modding-games\dwe`). |
 | `<datos>/game/versions/`, `state.json` | Las versiones instaladas del juego. |
-| `<datos>/content/` | Lo leído del disco, como lo deja la pantalla de primer arranque. |
+| `<datos>/content/` | Lo leído del disco, como lo deja la pantalla de primer arranque: `base.pak`, `ui_original/` e `install.yaml`. |
+| `<datos>/content.partial/`, `content.convert/` | Trabajo de una lectura del disco y de la conversión de un paquete base suelto; se borran al acabar. |
 | `<datos>/logs/launcher.log`, `game.log` | El registro del lanzador y la salida de la última partida. |
 | `<datos>/addons/<id>/`, `addons.json` | Los complementos instalados y su estado (activo, permisos aceptados). |
 | `<datos>/addon-storage/<id>.json` | El almacén de cada complemento (256 KB como mucho). |
