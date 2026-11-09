@@ -1,7 +1,6 @@
 //! The launcher's own settings (settings.json in the system's configuration folder, never in the
 //! data folder, which the player may change): where the data goes, the language, the release server
-//! and the disc the content was read from. The beta key is not here: it lives in the system keyring
-//! (beta_key.rs).
+//! and the disc the content was read from. The beta key is never here (beta_key.rs).
 
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -53,6 +52,9 @@ pub struct Settings {
     /// What the player picked last: a disc image or an archive holding one. An update whose
     /// extractor reads discs differently reads it again from here.
     pub disc_source: Option<PathBuf>,
+    /// The beta key an older launcher kept in the system keyring was removed (lib.rs,
+    /// forget_old_beta_key): done once, by the first launcher with the key built in.
+    pub old_beta_key_removed: bool,
 }
 
 fn default_api_base() -> String {
@@ -76,6 +78,7 @@ impl Default for Settings {
             api_base: DEFAULT_API_BASE.into(),
             repository: DEFAULT_REPOSITORY.into(),
             disc_source: None,
+            old_beta_key_removed: false,
         }
     }
 }

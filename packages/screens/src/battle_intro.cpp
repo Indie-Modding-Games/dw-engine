@@ -92,9 +92,8 @@ constexpr std::int32_t FullPercent = 100;
 // The original shows the marks while it loads the battle from the disc (loadBattleData) and takes
 // them away once its effects are in memory, which here is at once: they show for a second.
 constexpr std::int32_t AngerFrames = 20;
-// BTL_handleBattleIntro keeps the banner up for 200 frames, or until the player has run back (the
-// timer jumps to 198), and in any case until every piece is in place.
-constexpr std::int32_t BannerFrames = 200;
+// BTL_handleBattleIntro keeps the banner up for FieldBannerFrames, or until the player has run back
+// (the timer jumps to 198), and in any case until every piece is in place.
 constexpr std::int32_t PlayerBackFrame = 198;
 
 constexpr std::string_view StepAnger = "anger";
@@ -336,6 +335,12 @@ void BattleIntro::startBurst() {
   finished_ = false;
 }
 
+void BattleIntro::skipAnger() {
+  if (step_ == IntroStep::Anger) {
+    startBanner();
+  }
+}
+
 void BattleIntro::playerBack() {
   if (step_ == IntroStep::Banner) {
     frame_ = PlayerBackFrame;
@@ -364,7 +369,7 @@ void BattleIntro::stepBanner() {
     }
   }
   gathered_ = std::ranges::all_of(pieces_, [](const Piece& piece) { return piece.trail == 0; });
-  if (done && frame_ >= BannerFrames && !burstHeld_) {
+  if (done && frame_ >= bannerFrames_ && !burstHeld_) {
     startBurst();
   }
 }

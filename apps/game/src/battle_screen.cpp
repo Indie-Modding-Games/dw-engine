@@ -13,7 +13,6 @@
 #include <dwe/screens/bag_view.hpp>
 
 #include <glm/common.hpp>
-#include <glm/geometric.hpp>
 
 #include <algorithm>
 #include <array>
@@ -33,47 +32,13 @@
 #include <vector>
 
 #include "bag_slots.hpp"
-#include "condition_point.hpp"
+#include "battle_scene_view.hpp"
 #include "field_scene.hpp"
 #include "messages.hpp"
 #include "partner_menu.hpp"
 
 namespace dwe::app {
 namespace {
-
-// What the battle's camera shows, for the effects: the window's size in original pixels (a screen
-// layer covers what it shows past the original's 320 x 240), the camera's world-to-view transform
-// in the console's axes, F V F and F t with F = diag(1, -1, -1) (GsWSMATRIX), its projection
-// distance and where its projection's centre is on screen.
-game::battle::EffectView effectViewOf(const render::MapCamera& camera) {
-  constexpr float MatrixOne = 4096.0F;
-  constexpr std::array<float, 3> Flip{1.0F, -1.0F, -1.0F};
-  game::battle::EffectView view;
-  const glm::vec2 shown = glm::ceil(camera.visibleSize());
-  view.screen = {.x = static_cast<std::int32_t>(shown.x), .y = static_cast<std::int32_t>(shown.y)};
-  const glm::mat4& worldToView = camera.view();
-  for (std::size_t row = 0; row < 3; ++row) {
-    for (std::size_t column = 0; column < 3; ++column) {
-      // glm is column-major: worldToView[column][row].
-      const float value =
-          Flip.at(row) * Flip.at(column) *
-          worldToView[static_cast<glm::length_t>(column)][static_cast<glm::length_t>(row)];
-      view.camera.m.at(row).at(column) = static_cast<std::int32_t>(std::lround(value * MatrixOne));
-    }
-  }
-  // glm::mat4's last column is the translation.
-  const glm::vec4 translation = worldToView[3];
-  view.camera.t = {.x = static_cast<std::int32_t>(std::lround(Flip[0] * translation.x)),
-                   .y = static_cast<std::int32_t>(std::lround(Flip[1] * translation.y)),
-                   .z = static_cast<std::int32_t>(std::lround(Flip[2] * translation.z))};
-  view.projection = static_cast<std::int32_t>(std::lround(camera.desc().focalLength));
-  // The projection's centre is the background's: where it is from the middle of what is shown.
-  const glm::vec2 centre =
-      (camera.desc().backgroundSize * 0.5F) - (camera.scroll() + (camera.visibleSize() * 0.5F));
-  view.centre = {.x = static_cast<std::int32_t>(std::lround(centre.x)),
-                 .y = static_cast<std::int32_t>(std::lround(centre.y))};
-  return view;
-}
 
 // The original's battle runs at 20 frames a second.
 constexpr double IntroFrameSeconds = 1.0 / 20.0;
@@ -114,6 +79,8 @@ constexpr std::int64_t EndCountSound = 0x16;
 constexpr std::int64_t EndCountedSound = 0x17;
 // btl.c: loadBattleData: the partner's species bank is in slot 4 and enemy i's in slot 4 + i.
 constexpr std::int64_t PartnerSoundSlot = 4;
+
+} // namespace
 
 // data/battle (dwx: BTL_AURA_PROJECTILE_TYPES): each original type's flattened shot sprite.
 constexpr std::string_view BattleData = "data/battle";
@@ -162,8 +129,6 @@ readShotColumns(const assets::VirtualFileSystem* files) {
   }
   return columns;
 }
-
-} // namespace
 
 core::Result<void> BattleScreen::start(session::BattleRequest request,
                                        std::vector<std::int32_t> enemyNpcs, bool fixedFight) {
@@ -337,85 +302,19 @@ void BattleScreen::tickBattle(double seconds) {
 
 // battle_effect.c: BTL_renderEFEEngine: what the effects drew on the battle's last frame.
 void BattleScreen::showEffects() const {
-  if (desc_.scene == nullptr) {
-    return;
+  if (desc_.scene != nullptr) {
+    showBattleEffects(*desc_.scene, effects_ ? &*effects_ : nullptr, battle_.has_value(),
+                      effectFrames_);
   }
-  std::vector<SceneEffect> shown;
-  if (effects_) {
-    for (const game::battle::EffectDraw& draw : effects_->draws()) {
-      shown.push_back({.move = effects_->moveOf(draw.slot),
-                       .shape = draw.shape,
-                       .palettes = effects_->palettesOf(draw.slot)});
-    }
-  }
-  desc_.scene->setEffects(std::move(shown), effectFrames_);
-  desc_.scene->setMapLayerHidden(battle_ && effects_ && effects_->mapHidden());
 }
 
 // battle_effect.c: the status visuals over the fighters (game::battle::StatusVisuals), with each
 // fighter's actor and its species' height and radius; none once the battle is over.
 void BattleScreen::showStatusVisuals() const {
-  if (desc_.scene == nullptr) {
-    return;
+  if (desc_.scene != nullptr) {
+    showBattleStatus(*desc_.scene, battle_ ? &*battle_ : nullptr, desc_.species, enemyNpcs_,
+                     shotColumns_ ? &*shotColumns_ : nullptr);
   }
-  if (!battle_) {
-    desc_.scene->setStatusVisuals(std::nullopt, {});
-    desc_.scene->setHitParticles(std::nullopt);
-    desc_.scene->setFlattenedShots({});
-    return;
-  }
-  const game::battle::BattleState& state = battle_->state();
-  // BTL_renderAuraProjectile: each shot with the sprite of its shooter's original type.
-  std::vector<FieldScene::ShotSprite> shots;
-  for (const std::optional<game::battle::FlattenedShot>& shot : state.flattenedShots) {
-    if (!shot || shot->attacker >= state.fighters.size() || !shotColumns_) {
-      continue;
-    }
-    const std::string_view type =
-        battle_->rules().effects.originalTypeOf(state.fighters[shot->attacker].combatant.species);
-    const auto column = shotColumns_->find(type);
-    if (column == shotColumns_->end()) {
-      continue;
-    }
-    const glm::vec2 facing{static_cast<float>(shot->facing.x), static_cast<float>(shot->facing.z)};
-    shots.push_back(
-        {.attacker = shot->attacker,
-         .at = {static_cast<float>(shot->at.x), static_cast<float>(shot->at.z)},
-         .height = static_cast<float>(shot->height),
-         .facing = glm::length(facing) > 0.0F ? glm::normalize(facing) : glm::vec2{0.0F, 1.0F},
-         .column = column->second});
-  }
-  desc_.scene->setFlattenedShots(std::move(shots));
-  std::vector<FieldScene::StatusBody> bodies;
-  for (std::size_t id = 0; id < state.fighters.size(); ++id) {
-    FieldScene::StatusBody body;
-    if (id > 0) {
-      if (id > enemyNpcs_.size()) {
-        break;
-      }
-      body.npc = enemyNpcs_[id - 1];
-    }
-    const assets::DigimonRow* row = desc_.species != nullptr
-                                        ? desc_.species->find(state.fighters[id].combatant.species)
-                                        : nullptr;
-    if (row != nullptr) {
-      body.height = row->height;
-      body.radius = row->radius;
-      // translateConditionFXToEntity: the point of its original type (getOriginalType).
-      const assets::DigimonRow* point = conditionPointRow(*desc_.species, &battle_->rules().effects,
-                                                          state.fighters[id].combatant.species);
-      if (point != nullptr && point->conditionFx) {
-        const auto& offset = point->conditionFx->offset;
-        body.conditionFx =
-            std::pair{point->conditionFx->node,
-                      glm::vec3{static_cast<float>(offset[0]), static_cast<float>(offset[1]),
-                                static_cast<float>(offset[2])}};
-      }
-    }
-    bodies.push_back(body);
-  }
-  desc_.scene->setStatusVisuals(battle_->statusVisuals(), std::move(bodies));
-  desc_.scene->setHitParticles(battle_->hitParticles());
 }
 
 // The world's objects tick once a battle frame (BTL_battleTickFrame: tickObjects), the field's
@@ -620,21 +519,7 @@ void BattleScreen::publishHpBars() {
 // partner's and the NPCs' entities, which the battle moves, turns and animates itself).
 void BattleScreen::takeFigures() {
   const game::battle::BattleState& state = battle_->state();
-  figures_.clear();
-  for (const game::battle::Fighter& fighter : state.fighters) {
-    figures_.push_back(
-        {.x = static_cast<float>(fighter.position.x),
-         .z = static_cast<float>(fighter.position.z),
-         .yaw = assets::yawOfDirection(
-             {static_cast<float>(fighter.facing.x), 0.0F, static_cast<float>(fighter.facing.z)}),
-         .clip = static_cast<std::uint32_t>(fighter.shown.clip),
-         .starts = fighter.shown.starts,
-         .frozen = fighter.shown.frozen,
-         .soundSlot = PartnerSoundSlot + static_cast<std::int64_t>(figures_.size()),
-         .pace = 1.0F,
-         .scale = {fighter.shown.flat.across, fighter.shown.flat.up, fighter.shown.flat.across},
-         .flatSprite = fighter.shown.flat.sprite});
-  }
+  figures_ = fighterFiguresOf(state, PartnerSoundSlot);
   partnerStance_ = static_cast<std::uint32_t>(game::battle::stanceClipOf(state.partner()));
 }
 

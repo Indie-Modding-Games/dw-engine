@@ -1379,7 +1379,8 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
   modelos» (Ampliadas / Suaves / Píxeles, «Como el original» en Píxeles). `texture_filter` vale para todos los modelos:
   el campo y el combate (los luchadores y los modelos de las técnicas son del `ModelRenderer` del campo) y las figuras
   en 3D de los menús (el compañero y el jugador de la ficha, la figura del guardado, la medalla y la entrevista de la
-  partida nueva), que comparten además la caché del escalador.
+  partida nueva), que comparten además la caché del escalador, y también las películas (con «Ampliadas», el
+  escalado de películas de abajo).
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
@@ -1387,6 +1388,8 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
 | Escenarios ampliados (`scenery_quality`) | No existe | `render::upscaleScenery` dobla el fondo en cada variante de paleta (interpolación dirigida por bordes propia, tramado fundido, enfoque adaptativo suave) en un hilo, con caché en disco (`render::UpscaleCache`); `map.slang` (`SamplingUpscaledPrefilter`) lo remuestrea a la ventana con Catmull-Rom sujeto, mezcla las variantes con los pesos del fundido y toma la clase de cada píxel del texel original más cercano | `scenery_upscale_tests.cpp` de `packages/engine/render` (bordes, diagonales sin escalones, degradados, fundidos, clases, tramado, caché); `graphics_options_tests.cpp` («the sharpness options start on their best…»); capturas del mismo frame original / HD de antes / nuevo en siete mapas | Mejora (opción) |
 | Suavizado de bordes (`antialiasing`) | No existe | `Renderer::setMultisampling`: el pase de escena con 4 muestras (`GraphicsPipeline` con variante multimuestreada), resuelto en la ventana o en la textura del paso de luz | `pipeline_test.cpp` de `packages/engine/rhi`; capturas | Mejora (opción) |
 | Texturas de modelos (`texture_filter`) | Texels cuadrados | `ModelRenderer::setTextureFilter`: filtrado con mipmaps y anisotropía (`FlagSmooth` en `skinned_model.slang`), sobre las texturas dobladas por `upscaleRgba` (alfa interpolado, sin borde oscuro) | `scenery_upscale_tests.cpp` («a model texture's cut-out edge takes no dark fringe…»); `pipeline_test.cpp` (niveles de mip); capturas | Mejora (opción) |
+| Películas restauradas | El MDEC decodifica con su IDCT entera de 8 bits y repite el croma de cada cuadro de 2 × 2: bloques en los degradados, halos en los bordes, bandas en lo oscuro | `dwx` decodifica con la IDCT exacta en dieciseisavos de nivel (`decodePreciseFrame`), quita bloques y halos con los filtros de MPEG-4 según la escala del frame (`deblock`, `dering`) y escribe 10 bits; `dwx cook` cocina AV1 de 10 bits; `video::toRgba` interpola el croma y usa la BT.601 exacta ([vídeo](../../formats/video.md#restauración)) | `mdec_tests.cpp` y `restore_tests.cpp` de `packages/formats`; `cook_tests.cpp` de `apps/dwx` («a 10-bit movie cooks…», «pictures convert to RGB with full-range BT.601…»); capturas `video-before-*` / `video-after-*` de OP1 | Mejora |
+| Películas ampliadas (`texture_filter`) | La imagen de 320 × 176 ampliada | Con «Ampliadas», `MovieDrawer` amplía la imagen a los píxeles de la ventana con un escalado adaptativo a los bordes (`movie_upscale.slang`) y la enfoca en el pase posterior con un enfoque adaptativo al contraste (`movie_sharpen.slang`); con «Suaves» o «Píxeles», estirada con filtro lineal como siempre ([películas](../../architecture/peliculas.md#escalado)) | capturas `video-compare-*` (recortes 1:1 del mismo frame antes y después) | Mejora (opción) |
 
 ## Personajes en 3D
 
@@ -1436,6 +1439,63 @@ ven los dibujos del original. La consola y las rutas lo cambian para la partida 
 | La postura del tendero del puesto | Un dibujo prerenderizado (objeto del mapa, instancia en el píxel 279, 86 de `twnb02` a `twnb09`, cuadros de 48×48, 12 ticks cada uno, igual de día y de noche): tumbado boca abajo sobre la alfombra, la cabeza hacia la cámara y a la derecha, junto a la caja registradora | `animation: 41`, `frame: 7`, `facing: 3584`, `feet: [305, 118]` en las ocho entradas de `field/sprite_characters.yaml`; el modelo se queda quieto en ese tick. Antes flotaba de pie con su reposo delante de la alfombra | `sprite_characters_tests.cpp` («a sprite character holds the pose its drawing shows…», la tabla del pack); capturas del original, antes y después | Igual (con la opción) |
 | El sonido de la celebración de la apertura | Tras la primera frase del anciano las dos entidades que saltan (10 y 12, clip 11) suenan `playSound(3, 49)` desde su animación (`tickAnimation`, instrucción 0x4000), una vez por salto; los seis bebés dibujados no suenan (son objetos del mapa) y el guion no pide ningún sonido (medido con el original: savestate `00_intro_arrival`, parada en `playSound`) | Las mismas dos llamadas, desde los sonidos del clip (`FieldScene::playClipSounds`, log `[port:anim] … playSound(3, 49)`); los modelos de los bebés no suenan, como sus dibujos | Ruta de la apertura con el log de depuración | Igual |
 
+## Imágenes a pantalla ancha
+
+Mejora opcional, encendida por defecto (solo cambia el aspecto): el ajuste `widescreen_pictures` (fila «Imágenes a
+pantalla ancha», «Widescreen pictures» en inglés, pestaña «Gráficos»; guardado en los ajustes del usuario). dwe no
+tiene otra opción de proporción: el campo y los combates ya llenan la ventana, así que esta opción es la que decide
+cómo se ven las imágenes a pantalla completa del original, hechas para una pantalla 4:3. Apagada, se ven como en él:
+en su marco 4:3, en medio, sobre negro.
+
+Las imágenes a pantalla completa que enseña el juego (el aspecto moderno no dibuja ninguna: su título es un fondo
+liso):
+
+| Imagen | Tamaño | Reescalado | Antes | Con la opción |
+|---|---|---|---|---|
+| Pantalla de antes del menú («Press Start», TITLE256; `main.c: runLandingScreen`) | 320 × 256, se dibujan las filas 0–205 | Suavizada (`upscale: smooth`) con el filtro de texturas «reescalado» | A 3 dp por píxel arriba en medio (960 × 618 dp); a los lados y debajo, negro | Cubre la ventana desde arriba: a 16:9, 4 dp por píxel (1280 dp de ancho) y se ven las filas 0–179; la línea «Press Start» sube a la fila 162 de la imagen (la 168 del original quedaría pegada al borde), debajo del logotipo |
+| Portada del menú principal (TITLE2; `main_menu.c: renderInitialMenu`), también detrás del idioma, del modo de combate, de las ranuras de guardado, de las reglas de la partida nueva y de las opciones sobre el título | 320 × 240 | Suavizada (`upscale: smooth`) | Ajustada al alto (`contain`), negro a los lados | Cubre la ventana con el borde de abajo fijo: a 16:9, 4 dp por píxel y se ven las filas 60–239 (arriba solo hay rejilla); las cajas se apartan del logotipo |
+| Películas (OP1 al arrancar y tras 600 frames en el título, OP2 en la partida nueva, ED2 al cargar tras el final, EDR en el final; `mov.c`) | Vídeo de 320 × 176 | Filtrado lineal (es vídeo, no pasa por el reescalador) | En la pantalla 4:3 del original ajustada a la ventana: a 1920 × 1080, 1440 × 792 con barras en los cuatro lados | La imagen sola ajustada a la ventana con su proporción (`movieFrame`): a 1920 × 1080, 1920 × 1056 |
+
+Cómo se llena cada una, y por qué:
+
+- **Portada y pantalla de antes del menú: la imagen ampliada hasta cubrir la ventana.** Se escala entera, igual en
+  los dos ejes, hasta llenar el ancho, y sobran filas: la portada las pierde por arriba, donde solo hay rejilla (su
+  logotipo está abajo a la derecha, filas 165–227, y queda entero con 12 filas de margen); la pantalla de antes del
+  menú las pierde por abajo, donde es negra (su logotipo está en las filas 37–149). Nunca se recorta más que en una
+  ventana 16:9 (se ven al menos 180 de sus 240 filas): en una más ancha (21:9) la imagen se queda a esa escala y cada
+  lado sigue como un espejo de sus columnas del borde (`mirror_sides` en `skin.yaml`), que se oscurece hacia el borde
+  de la ventana. Los espejos no llegan al logotipo: la portada refleja a la derecha solo las 26 columnas que deja
+  libres el logotipo y a la izquierda hasta 100, así el logotipo se va un poco a la derecha; la otra refleja 52 y 56.
+  En una ventana 4:3 se ve como el original; en una más estrecha se recortan los lados sin tocar el logotipo.
+- **Las cajas, en su sitio a lo ancho de la imagen y fuera del logotipo.** El menú, el idioma, el modo de combate,
+  las ranuras y las reglas de la partida nueva van a la columna de la imagen del original (el menú en la 72, las
+  ranuras en la 60), a su altura de siempre en la ventana. Si una tapara el logotipo, se aparta a la izquierda y, las
+  que pueden (las ranuras con su resumen, las reglas), hacia arriba, sin salirse de la ventana. Las opciones sobre el
+  título son las del menú de pausa, con su propio sitio.
+- **Nitidez.** El reescalador dobla la imagen hasta 2560 píxeles de ancho (tres veces; antes, dos hasta 1280), así a
+  1920 × 1080 y a 2560 × 1440 cada píxel de la pantalla sale de al menos un texel suavizado, sin estirar texels
+  filtrados.
+- **Películas: la imagen entera, sin recortar.** El vídeo ya es casi 16:9 (320 × 176); el original lo enseña con
+  barras arriba y abajo dentro de su pantalla 4:3. Con la opción se ajusta a la ventana: llena el ancho de una 16:9
+  con 12 píxeles de barra arriba y abajo, y en una ventana 4:3 queda igual que en el original.
+
+Los documentos del título (`main_menu`, `save_slots`, `new_game_rules`) tienen, primero en `#scrim`, los elementos
+`#picture`, `#picture-fade-left` y `#picture-fade-right`, y cargan `ui/common/title_picture.lua`. Con la opción y el
+aspecto original pone la clase `wide` en `#scrim`, calcula cada tick con el tamaño de la ventana la escala y el sitio
+de la imagen (`title_picture.layout`), coloca esos elementos y mueve las cajas que cada documento le pasa; apagada,
+las cajas vuelven al sitio de su hoja de estilo. El aspecto dibuja `#picture` con las hojas `title-wide` y
+`boot-wide` (las mismas imágenes con los lados en espejo, [ui](../../architecture/ui.md#aspectos)) y los degradados
+de los lados. Las películas leen el ajuste al empezar cada una (`MovieScreen::setFillWindow`).
+
+Pruebas: `title_picture_tests.cpp` («the title's picture covers the window, its logo whole and the menu off it», «a
+window wider than 16:9 sees the picture's mirrored sides…», «a 4:3 window draws the title as the original…», «the
+slot list and its summary move off the logo…», «the modern look's title draws no picture…»), «an image reference may
+ask for mirrored sides…» y «mirrored sides carry the edge columns on…» (`image_reference_tests.cpp`), «mirrored
+sides count the game's pixels…» (`image_replacement_tests.cpp`), «a sprite sheet may mirror its picture's sides…»
+(`skin_tests.cpp`), «a movie sits on the original's 4:3 screen, or fills a wide window with the option»
+(`movie_frame_tests.cpp`), «the widescreen pictures are the UI's option…» (`title_options_tests.cpp`); capturas a
+1920 × 1080, 2560 × 1440 y 2560 × 1080.
+
 ## Opciones en partida
 
 Las opciones se cambian sin volver al título: la página «Opciones» del menú de pausa abre con las tres acciones del
@@ -1465,7 +1525,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 | Pestaña | Filas |
 |---|---|
 | Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Sesiones de gimnasio, Combates sin espera, Dificultad, Saltar evoluciones, Cancelar cierra elecciones, Enfermar justo, Media de evolución justa, Olvidar técnicas justo, Tienda de cartas sin repetidas, Espacio tras los nombres |
-| Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
+| Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Imágenes a pantalla ancha, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua, Reverberación |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento, Extras de la tienda, Arreglos gráficos, Herramientas de desarrollo |
 
@@ -1937,17 +1997,31 @@ WebRTC de verdad (`net::RtcPeerLink`, con el servidor de señalización de `vers
 `--versus-server wss://…`); los tests usan dos flujos sobre `net::LoopbackNetwork`. Nada de esto escribe la partida: el original
 tampoco guarda nada del versus.
 
-1. **Crear partida**: el anfitrión elige 1, 3 o 5 combates. La pantalla dice en qué va (creando la sala, esperando al
+Para probarlo con una sola máquina, `--versus-loopback` (opción de desarrollo, `VersusLoopback`) pone al otro jugador en
+el mismo proceso: los dos flujos se hablan por una `net::LoopbackNetwork` con su propio reloj, y el otro jugador se une a
+la sala que se crea, trae la primera partida con compañeros suficientes, elige los primeros y no da órdenes (sus
+luchadores actúan solos). Los combates van en lockstep como en línea. Cada vez que se abre el versus hay otro jugador
+nuevo. El reloj de esa red avanza como mucho un cuarto de segundo por tick, así que pausar el juego o una carga lenta
+no cortan la serie por silencio.
+
+1. **Crear partida**: el anfitrión elige 1, 3 o 5 combates y el escenario (los tres coliseos del original). La pantalla dice en qué va (creando la sala, esperando al
    otro, abriendo la conexión directa) y enseña en grande el código de la sala, de cuatro caracteres, para dárselo al
    otro jugador. No hay que abrir puertos: el servidor solo los presenta y la partida va directa entre los dos.
 2. **Unirse a una partida**: el invitado escribe el código (letras y cifras, sin distinguir mayúsculas); un código que
    no puede serlo se queda en la pantalla con un aviso, y Volver borra la última letra.
 3. Los dos eligen la partida de la que traen compañeros (una partida necesita tantos registrados como combates tiene
    la serie) y un compañero por combate, sin repetir.
-4. Cada combate: el reloj, el marcador, los dos luchadores con barras de PV, PM y remate, las órdenes del menú de este
-   lado y lo último que pasó. Las órdenes viajan con 3 frames de retraso; si el otro se retrasa, el combate espera y
-   lo dice. Volver dos veces abandona la serie.
-5. Entre combates, el resultado y el marcador; al final, el ganador de la serie y cada combate.
+4. Cada combate se ve en la arena como en el original: la entrada de los dos luchadores con sus datos y su música, el
+   cartel «BATTLE», y el combate, en el que los dos se mueven, se animan y lanzan sus técnicas con sus efectos, chispas
+   y estados, con la cámara del versus. Encima, el HUD del versus del original: por lado, las barras de PV y PM con su
+   icono y su número, las letras de «FINISH!!» y el cuadro «PUSH», el nombre de la orden señalada y la tira de iconos de
+   las órdenes y las técnicas; el reloj con 1P y 2P en medio. Este lado elige con izquierda y derecha y acepta; el
+   remate va con su tecla (`extra`). Al caer uno, «1P WIN» o «2P WIN» en 3D y la pose del ganador; con el tiempo
+   agotado, TIME UP. Las órdenes viajan con 3 frames de retraso; si el otro se retrasa, el combate espera y lo dice.
+   Volver dos veces abandona la serie.
+5. Entre combates, el marcador del original: una fila por combate y lado con la cara del luchador y un círculo o una
+   cruz, la fila del combate que acaba sale, destella y vuelve, y las victorias y derrotas de cada lado; al final, las
+   letras del ganador de la serie sobre él.
 6. Si algo falla, un mensaje claro: no hay servidor configurado, no se llega al servidor, no hay sala con ese código,
    la sala está llena, se acabó el tiempo para conectar, no hay ruta directa (con la sugerencia de probar desde otra
    red), se cortó la conexión, el anfitrión no responde, el otro abandonó, otra versión, otro contenido, un compañero
@@ -1957,11 +2031,19 @@ tampoco guarda nada del versus.
 |---|---|---|---|---|
 | Número de combates | `vs_select.c: VS__tickSelectMode`: 1, 3 o 5 (`VS__BATTLE_COUNTS`), y 3 o 5 solo si los dos registraron al menos tantos | El anfitrión elige de `versus.series` del ruleset; como no conoce aún la partida del invitado, una partida con menos registrados que combates no se puede elegir | `vs_select.c: a partner is picked once and a save needs one per battle` | Suposición (adaptado a dos máquinas) |
 | Un compañero por combate, sin repetir | `vs_select.c: VS__isAlreadySelected`, `VS__handleDigimonSelected` | `VersusFlow::pickPartner`; Volver quita el último | el mismo test | Igual |
-| Elegir arena | `vs_select.c: VS__tickSelectMap` | Sin elección: la serie lleva arena 0 y el combate se dibuja como panel | — | Hueco |
+| Elegir arena | `vs_select.c: VS__tickSelectMap`: «STAGE SELECT», tres coliseos (`VS_ARENA_MODELS`: T_TOGI, B_TOGI y E_TOGI), izquierda y derecha dan la vuelta | El anfitrión lo elige en su preparación, una fila con las flechas junto al valor (`versus.arenas` de `battle.yaml`, la tercera arena en `tournament.yaml`); viaja en el `Setup` de la sala y las dos máquinas cargan la misma. Diferencias: es una fila de texto, sin la pantalla de las tres imágenes; el nombre del primero no se lee en la captura del original y aquí es «Coliseo» | `vs_select.c: the host's arena and each battle's entrance and score, on both machines` | Igual (adaptado a dos máquinas) |
+| Número de combates en la preparación | — | «1 combate» / «N combates» («1 battle» en inglés), con las flechas junto al número como los demás selectores | — | Mejora (texto) |
 | La serie entera | `vs_scene.c: VS_initializeVS` | `VersusFlow` sobre `session::VersusSeries` | `two machines play an online versus series from the menus to the result` | Igual (las reglas); presentación propia |
 | Abandonar y fallos de red | — (una consola) | Mensajes por motivo, tiempos de 10 s y 8 s, 30 s para abrir la ruta y salas de 5 minutos | `a code that cannot be one stays on the entry...`, `a player who leaves a battle ends the series...` | Mejora (en línea) |
 | Demostración de versus | `VS_playDemo` solo existe en la versión de prueba japonesa | La demostración del título sigue como estaba, sin red | — | No aplica |
-| Presentación 3D | `vs_scene.c: VS_playVersusIntroSequence`, cámaras `VS_*Camera*`, letreros `VS_*ModelScene` | El combate se enseña como panel (barras, reloj, órdenes y registro), no en la arena 3D | — | Hueco |
+| Carga de la arena | — (el original carga el versus antes de su menú) | La pantalla del versus abre sin cargar la arena (35 ms en Release; antes, 1,7 s de golpe). `VersusScreen` la construye mientras los jugadores se conectan, un tick después de que se vea la espera (1,5 a 3 s en Release), y en la espera carga los modelos de las otras arenas, uno por tick, para que el combate no espere al suyo | — | Mejora (carga) |
+| Combate en la arena | `vs_scene.c: VS_initializeVS`, `VS_loadVSAssets`, `VS_loadFighterEntities`; `vs_combat.c: VS__combatMain`. Medido en el original (estado `vs_fight`): `VS_BATTLE_SETUP.stage` = 0, la arena de la primera copa; en 40 vblanks las dos entidades cambian de animación (46 → 40 y 34 → 40) y de sitio | `VersusArena` (`versus_arena.hpp`) dibuja la arena elegida en su propia `FieldScene`, la de los combates de la historia: el luchador del anfitrión como compañero y el del invitado como luchador de escenario, con sus clips, efectos de técnicas, estados y chispas (`battle_scene_view.hpp`) y la cámara del versus (`game::tournament::MatchCamera`). Antes del primer frame prepara cada combate igual en las dos máquinas, con lo que da solo el contenido (los clips de los modelos y los vuelos de los guiones de efecto); la cámara tira de sus propios números y las chispas del atacante no se comparten | `vs_scene.c: VS_initializeVS: both machines show and ready each battle alike` | Igual |
+| Entrada y cartel | `vs_intro.c: VS__runIntro` (la entrada de la copa: cada luchador camina con sus datos y su música), `vs_combat.c: VS__combatSetup` (el cartel «BATTLE» sin las marcas de enfado, que estalla a los 60 frames, sonidos 0x16, 0x10 y 0x11, el clip 0x21) | `VersusArena`: `MatchIntro` de la copa y `BattleIntro` con `skipAnger` y `burstAfter(60)`; mientras se presenta, el flujo no avanza el lockstep (las dos máquinas esperan igual) y aceptar acorta la entrada | `vs_combat.c VS__combatSetup: a versus banner opens at once and bursts after 60`; el test de las dos máquinas | Igual |
+| Música | `vs_scene.c: VS_loadVSAssets`: el banco de cada arena (30, 32, 31) y sus pistas de entrada, combate, victoria y derrota | `SessionMusic` del versus con las pistas de `tournament.yaml` (`music_font` por arena) | — | Igual |
+| HUD del combate | `vs_hud.c: VS_renderFighterStatusBars`, `VS_renderHPBarDigits`, `VS_renderCommandMenu`, `VS_renderMoveName`; `vs_main.c: VS_COMMAND_NAMES`. Medido en la captura `versus2-original-fight.png` | `ui/versus` (`#hud`) con los sprites de la historia (marco y iconos de BI_IN, «FINISH!!», «PUSH», BTLCOMND, el reloj de la copa) y la pieza 2P del reloj; las órdenes con los nombres del versus («Auto», «A la defensiva»). Diferencias: la tira del rival señala su orden actual (el cursor del otro no viaja por la red); el destello de las letras al llenarse no está y «!!» sale a la vez; el cuadro «PUSH» del lado local lleva la tecla del remate en vez del botón cuadrado; en una ventana ancha cada lado se queda en su borde a la distancia del original, como en la historia | `vs_combat.c: VS__tickInput: left and right go round the commands past the finisher`; el test de las dos máquinas (iconos, señalada, nombre) | Igual; Mejora (pantalla ancha) |
+| Cámara | `vs_combat.c: VS__tickBattle`: la de la copa, que vuelve a la órbita en cuanto nadie ataca ni sale despedido | `MatchCamera` con `Kind::Versus` | `match_show_tests` | Igual |
+| Final de cada combate | `vs_combat.c: VS__deinitializeCombat`; `vs_hud.c: VS_addResultModelScene`, `VS_tickResultModelScene` (1P2PWIN.TMD; DRAW con los dos caídos), TIME UP, la pose 0x2a del ganador | `VersusArena`: `VersusWinLetters` o las letras de empate, TIME UP con la caja de la copa, la pose del ganador 140 frames y su pista; los efectos de las técnicas siguen hasta acabar (`vs_combat.c: VS__deinitializeCombat` sigue con `VS_tickFrame`) y el marcador los quita; se ve entre combates, cuando el resultado ya está asentado en las dos máquinas | `match_show_tests` | Igual |
+| Marcador entre combates | `vs_scene.c: VS_playVersusIntroSequence`, `VS_tickVersusIntro`, `VS_renderVersusIntro` (TAISEN1, TAISEN2 y 16TAISEN; paneles 0x5b7080 y 0x805b5b; la fila sale, destella y vuelve; al final las letras del ganador de la serie desde el frame 0x3c) | `VersusScoreShow` y `#score` de `ui/versus` con los sprites de STDDAT. Diferencias: los paneles van a media opacidad con el color doblado (sobre el negro dan el del original, y las letras 3D, que aquí quedan debajo de la UI, se ven a través); «Win» y «Lose» y sus cifras son texto en el idioma del jugador (la textura de textos del original no está identificada) | `vs_scene.c VS_tickVersusIntro: each row slides out, flashes, slides back and the next` | Igual, con las diferencias anotadas |
 
 Con UDP directo se probó en vivo con dos juegos en la misma máquina: unirse, elegir, órdenes de los dos lados y el
 abandono de uno, que el otro ve como «El otro jugador ha abandonado la serie». Con WebRTC la conexión se prueba con

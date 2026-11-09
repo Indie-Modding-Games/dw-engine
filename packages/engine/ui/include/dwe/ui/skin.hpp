@@ -47,7 +47,9 @@ struct SkinSprite {
 // sharper.
 struct SkinSpriteSheet {
   std::string name;
-  // The image, with the palette of an indexed image to draw it with, if not the one its file holds.
+  // The image, with the palette of an indexed image to draw it with, if not the one its file holds,
+  // and its mirrored sides when the sheet asks for them (skin.yaml `mirror_sides: [left, right]`:
+  // the image is that much wider, and original_size counts them).
   ImageReference image;
   // The image's size in original pixels; when not given, the image found is the original.
   std::optional<std::uint32_t> originalWidth;

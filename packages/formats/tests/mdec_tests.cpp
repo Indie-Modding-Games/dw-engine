@@ -313,6 +313,63 @@ TEST_CASE("a bitstream decodes to the planes of its MDEC codes") {
   CHECK_FALSE(decodeFrame(stream, 15, 16).has_value());
 }
 
+TEST_CASE("the precise IDCT basis is the orthonormal formula, rounded") {
+  for (std::size_t x = 0; x < 8; ++x) {
+    for (std::size_t u = 0; u < 8; ++u) {
+      const double scale = u == 0 ? std::numbers::sqrt2 / 2.0 : 1.0;
+      const double angle = static_cast<double>(((2 * x) + 1) * u) * std::numbers::pi / 16.0;
+      const double exact = 16777216.0 * scale / 2.0 * std::cos(angle);
+      CAPTURE(u);
+      CAPTURE(x);
+      CHECK(std::abs(PreciseIdctTable[(x * 8) + u] - exact) <= 0.5);
+    }
+  }
+}
+
+TEST_CASE("the precise IDCT keeps sixteenths and never wraps") {
+  std::array<std::int32_t, 64> coefficients{};
+  // A DC of 100: dequantised 200, times 8; a flat 25 levels, 400 sixteenths.
+  coefficients[0] = 100 * 2 * 8;
+  CHECK(std::ranges::all_of(preciseInverseDct(coefficients),
+                            [](std::int32_t sample) { return sample == 400; }));
+  // A DC of 101 is 25.25 levels: the hardware drops the quarter, the precise IDCT keeps it.
+  coefficients[0] = 101 * 2 * 8;
+  CHECK(preciseInverseDct(coefficients)[0] == 404);
+  // What the hardware wraps to -200 and saturates to -128 stays a large positive value.
+  coefficients.fill(0);
+  for (const std::size_t index : std::array<std::size_t, 4>{0, 1, 8, 9}) {
+    coefficients[index] = 7000 * 8 / 16;
+  }
+  CHECK(preciseInverseDct(coefficients)[0] > 127 * PreciseOne);
+}
+
+TEST_CASE("a precise frame is the hardware's within a level, with its scale") {
+  BitWriter bits;
+  bits.bits("110 101 11 0 10");
+  bits.bits("01 0 011 1 10");
+  for (int y = 0; y < 4; ++y) {
+    bits.bits("00 1 00101 0 10");
+  }
+  const auto stream = fixtures::makeBitstream(3, 4, 18, bits);
+  const auto hardware = decodeFrame(stream, 16, 16);
+  REQUIRE_MESSAGE(hardware.has_value(), errorOf(hardware));
+  const auto precise = decodePreciseFrame(stream, 16, 16);
+  REQUIRE_MESSAGE(precise.has_value(), errorOf(precise));
+  CHECK(precise->quantizationScale == 4);
+  const auto close = [](const std::vector<std::uint8_t>& levels,
+                        const std::vector<std::int16_t>& sixteenths) {
+    REQUIRE(levels.size() == sixteenths.size());
+    for (std::size_t i = 0; i < levels.size(); ++i) {
+      CAPTURE(i);
+      CHECK(std::abs((static_cast<double>(sixteenths[i]) / PreciseOne) - levels[i]) <= 1.0);
+    }
+  };
+  close(hardware->y, precise->y);
+  close(hardware->cb, precise->cb);
+  close(hardware->cr, precise->cr);
+  CHECK_FALSE(decodePreciseFrame(stream, 24, 16).has_value());
+}
+
 TEST_CASE("YCbCr converts to RGB with the MDEC's fixed-point formulas") {
   CHECK(toRgb(128, 128, 128) == Rgb8{.r = 128, .g = 128, .b = 128});
   CHECK(toRgb(255, 128, 128) == Rgb8{.r = 255, .g = 255, .b = 255});

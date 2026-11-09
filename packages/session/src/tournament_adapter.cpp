@@ -229,6 +229,20 @@ TournamentAdapter::arenaStage(std::string_view map) const {
     return core::fail("no arena rules");
   }
   const std::size_t index = game::tournament::arenaFor(*arena_, map);
+  core::logDebug(
+      "[port:tournament] STD_initializeTournament (std_setup.c:243): arena {} for map {}", index,
+      map);
+  return arenaStageAt(index);
+}
+
+core::Result<TournamentAdapter::ArenaStage>
+TournamentAdapter::arenaStageAt(std::size_t index) const {
+  if (!arena_ || desc_.files == nullptr) {
+    return core::fail("no arena rules");
+  }
+  if (index >= arena_->arenas.size()) {
+    return core::fail(std::format("no arena {}", index));
+  }
   const game::tournament::Arena& arena = arena_->arenas.at(index);
   auto id = assets::AssetId::parse(arena.collision);
   if (!id) {
@@ -243,9 +257,6 @@ TournamentAdapter::arenaStage(std::string_view map) const {
   if (!collision) {
     return std::unexpected{collision.error()};
   }
-  core::logDebug("[port:tournament] STD_initializeTournament (std_setup.c:243): arena {} ({}) "
-                 "for map {}",
-                 index, arena.model, map);
   return ArenaStage{.model = arena.model,
                     .collision = std::move(*collision),
                     .start = game::tournament::arenaStart(arena),

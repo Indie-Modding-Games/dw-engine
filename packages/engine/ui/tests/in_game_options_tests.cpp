@@ -63,11 +63,21 @@ constexpr std::array<std::string_view, 26> GameRows{"free-exploration",
                                                     "generous-talk",
                                                     "extra-toilets",
                                                     "name-spacing"};
-constexpr std::array<std::string_view, 14> GraphicsRows{
-    "display-mode",      "vsync",        "smooth-motion",  "hd-scenery",
-    "scenery-quality",   "antialiasing", "texture-filter", "model-characters",
-    "enhanced-lighting", "vivid-colors", "shadows",        "chibi-style",
-    "weather",           "seasons"};
+constexpr std::array<std::string_view, 15> GraphicsRows{"display-mode",
+                                                        "vsync",
+                                                        "smooth-motion",
+                                                        "hd-scenery",
+                                                        "scenery-quality",
+                                                        "antialiasing",
+                                                        "texture-filter",
+                                                        "model-characters",
+                                                        "widescreen-pictures",
+                                                        "enhanced-lighting",
+                                                        "vivid-colors",
+                                                        "shadows",
+                                                        "chibi-style",
+                                                        "weather",
+                                                        "seasons"};
 constexpr std::array<std::string_view, 4> SoundRows{"music-volume", "effects-volume",
                                                     "continuous-music", "reverb"};
 constexpr std::array<std::string_view, 14> InterfaceRows{

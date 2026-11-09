@@ -1,8 +1,10 @@
 #include "versus_flow.hpp"
 
+#include <dwe/assets/digimon_table.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/battle/moves.hpp>
 #include <dwe/net/signal.hpp>
+#include <dwe/screens/battle_view.hpp>
 #include <dwe/screens/name_keys.hpp>
 #include <dwe/session/versus_match.hpp>
 #include <dwe/ui/ui.hpp>
@@ -34,8 +36,8 @@ constexpr std::int32_t IntermissionFrames = 60;
 constexpr std::int32_t LeaveFrames = 40;
 // The lines of the battle's log on screen.
 constexpr std::size_t LogLines = 4;
-// The arena both machines place the fighters on: no map, the rules' arena radius holds them, the
-// host's fighter south and the guest's north, and nobody standing aside.
+// Where both machines place the fighters without an arena's start: no map, the rules' arena
+// radius holds them, the host's fighter south and the guest's north, and nobody standing aside.
 const session::VersusPlacement Placement{.map = "",
                                          .host = {.x = 0, .z = -300},
                                          .guest = {.x = 0, .z = 300},
@@ -43,6 +45,14 @@ const session::VersusPlacement Placement{.map = "",
 
 // The menu's entries: host, join, back.
 constexpr std::int32_t MenuEntries = 3;
+// The host's setup rows: the series' length and its arena.
+constexpr std::int32_t SetupRows = 2;
+// vs_combat.c: VS__tickInput: a move along the command strip plays playSound(0, 2) and a pick
+// playSound(0, 3).
+constexpr std::int32_t MoveSound = 2;
+constexpr std::int32_t PickSound = 3;
+// vs_hud.c: VS_tickCommandMenu turns VS_COMMAND_MENU_BLINK every 8 frames.
+constexpr std::int64_t BlinkFrames = 8;
 
 std::string_view viewName(VersusFlow::View view) {
   switch (view) {
@@ -136,6 +146,10 @@ VersusFlow::VersusFlow(VersusFlowDesc desc) : desc_{std::move(desc)} {}
 VersusFlow::~VersusFlow() = default;
 
 void VersusFlow::open() {
+  // The result comes after the view has already shown the series' end.
+  if (series_ && desc_.view != nullptr && view_ != View::Result) {
+    desc_.view->battlesOver();
+  }
   series_.reset();
   link_.reset();
   view_ = View::Menu;
@@ -145,6 +159,9 @@ void VersusFlow::open() {
   badEntry_ = false;
   picks_.clear();
   log_.clear();
+  score_.reset();
+  scoring_ = false;
+  confirmed_ = false;
 }
 
 std::int32_t VersusFlow::battles() const {
@@ -156,6 +173,17 @@ std::int32_t VersusFlow::battles() const {
     return 1;
   }
   return rules->versus->series.at(static_cast<std::size_t>(seriesChoice_));
+}
+
+std::int32_t VersusFlow::arenaOf() const {
+  if (series_ && series_->link().setup()) {
+    return series_->link().setup()->arena;
+  }
+  const auto* rules = desc_.battles != nullptr ? &desc_.battles->rules() : nullptr;
+  if (rules == nullptr || !rules->versus || rules->versus->arenas.empty()) {
+    return 0;
+  }
+  return rules->versus->arenas.at(static_cast<std::size_t>(arenaChoice_));
 }
 
 bool VersusFlow::enoughPartners(const VersusSave& save) const {
@@ -179,6 +207,9 @@ void VersusFlow::leave() {
 }
 
 void VersusFlow::fail(std::string key, std::string detail) {
+  if (desc_.view != nullptr) {
+    desc_.view->battlesOver();
+  }
   errorKey_ = std::move(key);
   errorDetail_ = std::move(detail);
   view_ = View::Error;
@@ -188,12 +219,12 @@ void VersusFlow::fail(std::string key, std::string detail) {
 void VersusFlow::startHosting() {
   link_ = desc_.host();
   const game::versus::SeriesSetup setup{.battles = battles(),
-                                        .arena = 0,
+                                        .arena = arenaOf(),
                                         .seed = desc_.seed(),
                                         .inputDelay = game::versus::DefaultInputDelay};
   series_.emplace(*desc_.battles, game::versus::VersusLink::host(*link_, desc_.identity, setup),
                   Placement);
-  core::logInfo("versus: hosting a series of {}", setup.battles);
+  core::logInfo("versus: hosting a series of {} on arena {}", setup.battles, setup.arena);
   view_ = View::Hosting;
 }
 
@@ -244,16 +275,57 @@ void VersusFlow::pickPartner() {
 }
 
 void VersusFlow::startBattle() {
-  if (auto started = series_->startNext(); !started) {
+  VersusBattleView* view = desc_.view;
+  // vs_scene.c: VS_initializeVS: VS_loadVSAssets(VS_BATTLE_SETUP.stage); vs_intro.c:
+  // VS__placePlayer1 and VS__placePlayer2 put the fighters at the arena's start.
+  const std::int32_t arena = arenaOf();
+  if (desc_.placement) {
+    if (const std::optional<session::VersusPlacement> placement = desc_.placement(arena)) {
+      series_->setPlacement(*placement);
+    }
+  }
+  if (view != nullptr) {
+    view->showScore(false, false, std::nullopt);
+    view->useArena(arena);
+  }
+  auto started = series_->startNext([view](game::battle::Battle& battle) {
+    if (view != nullptr) {
+      view->battleStarted(battle);
+    }
+  });
+  if (!started) {
     core::logWarning("versus: {}", started.error().message);
     fail("versus.error.lineup", started.error().message);
     return;
   }
   view_ = View::Match;
-  cursor_ = 0;
+  // vs_combat.c: VS__combatInit: the cursor starts on the last command (your call).
+  cursor_ = std::max(static_cast<std::int32_t>(localMenu().size()) - 1, 0);
+  confirmed_ = false;
+  shownFrames_ = 0;
   stalledFrames_ = 0;
   leaveFrames_ = 0;
   log_.clear();
+}
+
+// vs_scene.c: VS_initializeVS: VS_playVersusIntroSequence before the first battle and after each
+// one; the arena hides while it shows, and after the last battle the winner's letters show over it.
+void VersusFlow::startScore(game::tournament::VersusScoreShow::Moment moment) {
+  using Moment = game::tournament::VersusScoreShow::Moment;
+  if (!score_) {
+    score_.emplace(battles());
+  }
+  score_->start(moment);
+  std::optional<std::size_t> winner;
+  if (moment == Moment::Last) {
+    if (const auto side = series_->link().series().winner()) {
+      winner = *side == Side::Host ? 0 : 1;
+    }
+  }
+  desc_.view->showScore(true, moment == Moment::Last, winner);
+  scoring_ = true;
+  view_ = View::Intermission;
+  cursor_ = 0;
 }
 
 std::vector<Command> VersusFlow::localMenu() const {
@@ -301,12 +373,21 @@ void VersusFlow::act(std::string_view action) {
     const auto choices = rules != nullptr && rules->versus
                              ? static_cast<std::int32_t>(rules->versus->series.size())
                              : 1;
+    const auto arenas = rules != nullptr && rules->versus
+                            ? static_cast<std::int32_t>(rules->versus->arenas.size())
+                            : 1;
+    const bool across = action == "left" || action == "right";
     if (cancel) {
       open();
     } else if (confirm) {
       startHosting();
-    } else {
+    } else if (!across) {
+      moveCursor(step, SetupRows);
+    } else if (cursor_ == 0) {
       seriesChoice_ = std::clamp(seriesChoice_ + step, 0, std::max(choices - 1, 0));
+    } else {
+      // vs_select.c: VS__tickSelectMap: left and right go round the stages.
+      arenaChoice_ = (arenaChoice_ + step + std::max(arenas, 1)) % std::max(arenas, 1);
     }
     return;
   }
@@ -363,7 +444,8 @@ void VersusFlow::act(std::string_view action) {
     actInMatch(action);
     return;
   case View::Intermission:
-    if (confirm) {
+    // The score screen reads no button (VS_tickVersusIntro); without it a confirm cuts the wait.
+    if (confirm && !score_) {
       intermissionFrames_ = 0;
     } else if (cancel) {
       leave();
@@ -387,14 +469,39 @@ void VersusFlow::actInMatch(std::string_view action) {
     }
     return;
   }
+  VersusBattleView* view = desc_.view;
+  if (view != nullptr && view->presenting()) {
+    // The entrance and the banner take the confirm (vs_intro.c: VS__runIntro cuts a fighter's
+    // run short); no command goes before the fight.
+    confirmed_ = confirmed_ || action == "confirm";
+    return;
+  }
   const std::vector<Command> menu = localMenu();
-  if (action == "left" || action == "up") {
-    moveCursor(-1, static_cast<std::int32_t>(menu.size()));
-  } else if (action == "right" || action == "down") {
-    moveCursor(1, static_cast<std::int32_t>(menu.size()));
-  } else if (action == "confirm" && cursor_ >= 0 &&
-             static_cast<std::size_t>(cursor_) < menu.size()) {
+  const auto count = static_cast<std::int32_t>(menu.size());
+  // vs_combat.c: VS__tickInput: the strip runs right to left from the second command (the first is
+  // the finisher, which has its own button): left goes to the next one, right to the one before,
+  // and each end goes round to the other.
+  if (count > 1 && (action == "left" || action == "right")) {
+    const std::int32_t step = action == "left" ? 1 : -1;
+    cursor_ = cursor_ + step > count - 1 ? 1 : (cursor_ + step < 1 ? count - 1 : cursor_ + step);
+    if (view != nullptr) {
+      view->menuSound(MoveSound);
+    }
+  } else if (action == "confirm" && cursor_ >= 1 && cursor_ < count) {
     series_->command(menu.at(static_cast<std::size_t>(cursor_)));
+    if (view != nullptr) {
+      view->menuSound(PickSound);
+    }
+  } else if (action == "finisher" && series_->battle() != nullptr) {
+    // The square button calls the finisher once its gauge is full (VS__tickInput).
+    const game::battle::Fighter& own =
+        series_->battle()->state().fighters.at(series_->localFighter());
+    if (own.finisherGoal > 0 && own.finisherProgress >= own.finisherGoal) {
+      series_->command(Command::Finisher);
+      if (view != nullptr) {
+        view->menuSound(PickSound);
+      }
+    }
   }
 }
 
@@ -461,7 +568,8 @@ void VersusFlow::tick(net::Millis now) {
   }
   series_->poll(now);
   game::versus::VersusLink& link = series_->link();
-  if (link.phase() == LinkPhase::Failed) {
+  // Once the series is decided the other player may leave while this one still shows its end.
+  if (link.phase() == LinkPhase::Failed && !link.series().finished()) {
     if (view_ != View::Error && view_ != View::Result) {
       core::logWarning("versus: the series ended: {}", failureKey(link.failure()));
       fail(failureKey(link.failure()));
@@ -472,25 +580,74 @@ void VersusFlow::tick(net::Millis now) {
     enterSavePick();
   }
   if (view_ == View::WaitingLineup && link.phase() == LinkPhase::Playing) {
-    startBattle();
+    if (desc_.view != nullptr) {
+      // VS_CURRENT_BATTLE -1: the score before the first battle, on the series' arena.
+      desc_.view->useArena(arenaOf());
+      startScore(game::tournament::VersusScoreShow::Moment::First);
+    } else {
+      startBattle();
+    }
   }
   if (ticks_ % TicksPerFrame != 0) {
     return;
   }
-  if (view_ == View::Match) {
+  // A finished battle plays on until both machines agree on its result; its end shows after.
+  if (view_ == View::Match && desc_.view != nullptr && desc_.view->presenting() &&
+      !series_->battle()->finished()) {
     leaveFrames_ = std::max(leaveFrames_ - 1, 0);
+    desc_.view->presentFrame(std::exchange(confirmed_, false));
+  } else if (view_ == View::Match) {
+    leaveFrames_ = std::max(leaveFrames_ - 1, 0);
+    ++shownFrames_;
     const std::int64_t before = series_->battle()->state().frame;
-    takeEvents(series_->frame());
+    const game::battle::BattleEvents events = series_->frame();
+    takeEvents(events);
+    if (desc_.view != nullptr) {
+      desc_.view->battleFrame(*series_->battle(), events);
+    }
     stalledFrames_ = series_->battle()->state().frame == before ? stalledFrames_ + 1 : 0;
     if (series_->roundSettled()) {
-      view_ = link.phase() == LinkPhase::Finished ? View::Result : View::Intermission;
+      view_ = link.phase() == LinkPhase::Finished && desc_.view == nullptr ? View::Result
+                                                                           : View::Intermission;
       intermissionFrames_ = IntermissionFrames;
     }
   } else if (view_ == View::Intermission) {
+    tickPresentation();
+  }
+}
+
+// Between two battles: without a view, a short wait; with one, the battle's end as the view shows
+// it, then the score screen, then the next battle or, after the last, the result.
+void VersusFlow::tickPresentation() {
+  using Moment = game::tournament::VersusScoreShow::Moment;
+  VersusBattleView* view = desc_.view;
+  if (view == nullptr) {
     intermissionFrames_ = std::max(intermissionFrames_ - 1, 0);
     if (intermissionFrames_ == 0) {
       startBattle();
     }
+    return;
+  }
+  if (view->presenting()) {
+    view->presentFrame(std::exchange(confirmed_, false));
+    return;
+  }
+  if (!scoring_) {
+    // The battle's end has shown: the score after it.
+    startScore(series_->link().series().finished() ? Moment::Last : Moment::Between);
+    return;
+  }
+  score_->tick();
+  if (!score_->done()) {
+    return;
+  }
+  scoring_ = false;
+  view->showScore(false, false, std::nullopt);
+  if (score_->moment() == Moment::Last) {
+    view->battlesOver();
+    view_ = View::Result;
+  } else {
+    startBattle();
   }
 }
 
@@ -510,8 +667,12 @@ screens::ScreenSettings VersusFlow::settings() const {
   case View::HostSetup: {
     const auto* rules = battles != nullptr ? &battles->rules() : nullptr;
     const auto choices = rules != nullptr && rules->versus ? rules->versus->series.size() : 0;
+    const auto arenas = rules != nullptr && rules->versus ? rules->versus->arenas.size() : 0;
     add("versus.choice", static_cast<double>(seriesChoice_));
     add("versus.choices", static_cast<double>(choices));
+    add("versus.arena", static_cast<double>(arenaOf()));
+    add("versus.arena_choice", static_cast<double>(arenaChoice_));
+    add("versus.arenas", static_cast<double>(arenas));
     break;
   }
   case View::Hosting:
@@ -587,41 +748,7 @@ screens::ScreenSettings VersusFlow::settings() const {
         static_cast<double>(state.matchClock ? state.matchClock->seconds : std::int32_t{0}));
     add("versus.stalled", stalledFrames_ >= StalledFrames);
     add("versus.leave_asked", leaveFrames_ > 0);
-    for (game::battle::FighterId id = 0; id < state.fighters.size() && id < 2; ++id) {
-      const game::battle::Fighter& fighter = state.fighters.at(id);
-      const auto& lineup = link.lineup(id == game::battle::PartnerId ? Side::Host : Side::Guest);
-      const std::string prefix = std::format("versus.f.{}.", id);
-      add(prefix + "name", lineup && shown < lineup->size() ? lineup->at(shown).name : "");
-      add(prefix + "species", names.species(fighter.combatant.species));
-      add(prefix + "hp", static_cast<double>(std::max(fighter.hp, 0)));
-      add(prefix + "max_hp", static_cast<double>(fighter.combatant.stats.maxHp));
-      add(prefix + "mp", static_cast<double>(std::max(fighter.mp, 0)));
-      add(prefix + "max_mp", static_cast<double>(fighter.combatant.stats.maxMp));
-      add(prefix + "finisher",
-          fighter.finisherGoal > 0
-              ? std::min(100.0, 100.0 * fighter.finisherProgress / fighter.finisherGoal)
-              : 0.0);
-      add(prefix + "command", screens::commandLabelKey(state.commandsOf(id).current));
-    }
-    const std::vector<Command> menu = localMenu();
-    const game::battle::Fighter& own = state.fighters.at(series_->localFighter());
-    add("versus.menu", static_cast<double>(menu.size()));
-    for (std::size_t index = 0; index < menu.size(); ++index) {
-      const Command command = menu.at(index);
-      std::string key = screens::commandLabelKey(command);
-      if (key.empty()) {
-        // A technique's or the finisher's entry: the move's name.
-        const std::size_t slot =
-            command == Command::Finisher
-                ? game::battle::FinisherSlot
-                : static_cast<std::size_t>(command) - static_cast<std::size_t>(Command::Technique1);
-        if (slot < own.moves.size() && own.moves.at(slot)) {
-          key = names.move(*own.moves.at(slot));
-        }
-      }
-      add(screens::listEntryName("versus.menu", index, "key"), key);
-      add(screens::listEntryName("versus.menu", index, "finisher"), command == Command::Finisher);
-    }
+    addHud(out);
     add("versus.log", static_cast<double>(log_.size()));
     for (std::size_t index = 0; index < log_.size(); ++index) {
       const LogLine& line = log_.at(index);
@@ -649,7 +776,116 @@ screens::ScreenSettings VersusFlow::settings() const {
   case View::WaitingLineup:
     break;
   }
+  if (view_ == View::Intermission && scoring_) {
+    addScore(out);
+  }
+  if (desc_.view != nullptr) {
+    desc_.view->addSettings(out);
+  }
   return out;
+}
+
+// vs_hud.c: what each side's HUD shows (VS_renderFighterStatusBars, VS_renderFighterHPBar,
+// VS_renderCommandMenu, VS_renderMoveName): the bars and their numbers, the finisher's letters, and
+// the command strip with its icons, the hovered one and its name. The rival's hovered command is
+// not sent over the network: its strip shows its current command hovered.
+void VersusFlow::addHud(screens::ScreenSettings& out) const {
+  const auto add = [&](std::string name, ui::UiValue value) {
+    out.push_back({.name = std::move(name), .value = std::move(value)});
+  };
+  const session::BattleAdapter& battles = *desc_.battles;
+  const screens::NameKeys names{battles.digimonTable(), nullptr, &battles.catalog()};
+  const game::battle::Battle& battle = *series_->battle();
+  const game::battle::BattleState& state = battle.state();
+  add("versus.blink", (shownFrames_ / BlinkFrames) % 2 == 1);
+  for (game::battle::FighterId id = 0; id < state.fighters.size() && id < 2; ++id) {
+    const game::battle::Fighter& fighter = state.fighters.at(id);
+    const std::string prefix = std::format("versus.f.{}.", id);
+    add(prefix + "hp", static_cast<double>(std::max(fighter.hp, 0)));
+    add(prefix + "max_hp", static_cast<double>(fighter.combatant.stats.maxHp));
+    add(prefix + "mp", static_cast<double>(std::max(fighter.mp, 0)));
+    add(prefix + "max_mp", static_cast<double>(fighter.combatant.stats.maxMp));
+    // VS_renderFighterHPBar: one letter of "FINISH!!" per sixth of the gauge.
+    add(prefix + "segments",
+        static_cast<double>(
+            fighter.finisherGoal > 0
+                ? std::clamp(fighter.finisherProgress * 6 / fighter.finisherGoal, 0, 6)
+                : 0));
+    add(prefix + "finisher_ready",
+        fighter.finisherGoal > 0 && fighter.finisherProgress >= fighter.finisherGoal);
+    const std::vector<Command>& menu = battle.menuOf(id);
+    const bool local = id == series_->localFighter();
+    std::int32_t hovered = static_cast<std::int32_t>(menu.size()) - 1;
+    if (local) {
+      hovered = cursor_;
+    } else if (const auto found = std::ranges::find(menu, state.commandsOf(id).current);
+               found != menu.end() && found != menu.begin()) {
+      hovered = static_cast<std::int32_t>(std::distance(menu.begin(), found));
+    }
+    add(prefix + "menu", static_cast<double>(menu.size()));
+    add(prefix + "hover", static_cast<double>(hovered));
+    for (std::size_t index = 0; index < menu.size(); ++index) {
+      add(std::format("{}menu.{}.icon", prefix, index),
+          screens::commandIconOf(menu.at(index), fighter, battle.moves()));
+    }
+    std::string name;
+    if (hovered >= 0 && static_cast<std::size_t>(hovered) < menu.size()) {
+      const Command command = menu.at(static_cast<std::size_t>(hovered));
+      // vs_main.c: VS_COMMAND_NAMES: the versus' own names of the commands ("Auto",
+      // "Defensive"); a technique goes by its move's name.
+      name = command < Command::Technique1
+                 ? std::format("versus.command.{}", static_cast<std::int32_t>(command))
+                 : screens::commandLabelOf(command, fighter, names);
+    }
+    add(prefix + "command_name", name);
+  }
+}
+
+// vs_scene.c: VS_renderVersusIntro: the score screen's rows (each battle's fighters and result),
+// the sliding row, the round's flash and each side's wins and losses.
+void VersusFlow::addScore(screens::ScreenSettings& out) const {
+  const auto add = [&](std::string name, ui::UiValue value) {
+    out.push_back({.name = std::move(name), .value = std::move(value)});
+  };
+  const game::versus::VersusLink& link = series_->link();
+  const auto& results = link.series().results();
+  add("versus.score.round", static_cast<double>(score_->round()));
+  add("versus.score.offset", static_cast<double>(score_->offset()));
+  add("versus.score.flash", score_->flash());
+  add("versus.score.black", static_cast<double>(score_->black()));
+  add("versus.score.results", static_cast<double>(results.size()));
+  for (std::size_t index = 0; index < results.size(); ++index) {
+    const RoundResult result = results.at(index);
+    add(std::format("versus.score.result.{}", index),
+        std::string{result == RoundResult::HostWon    ? "host"
+                    : result == RoundResult::GuestWon ? "guest"
+                                                      : "draw"});
+  }
+  const assets::DigimonTable* species = desc_.battles->digimonTable();
+  for (const Side side : {Side::Host, Side::Guest}) {
+    const std::size_t slot = side == Side::Host ? 0 : 1;
+    std::int32_t losses = 0;
+    for (const RoundResult result : results) {
+      const bool won = (result == RoundResult::HostWon) == (side == Side::Host) &&
+                       result != RoundResult::BothLost;
+      losses += won ? 0 : 1;
+    }
+    add(std::format("versus.score.wins.{}", slot), static_cast<double>(link.series().wins(side)));
+    add(std::format("versus.score.losses.{}", slot), static_cast<double>(losses));
+    // VS_renderFighterNamePlate: each battle's fighter by its face (STDDAT\16TAISEN.TIM, by the
+    // species' number).
+    const auto& lineup = link.lineup(side);
+    for (std::int32_t index = 0; lineup && index < battles(); ++index) {
+      std::int32_t number = 0;
+      if (static_cast<std::size_t>(index) < lineup->size() && species != nullptr) {
+        const std::string& id = lineup->at(static_cast<std::size_t>(index)).species;
+        if (const assets::DigimonRow* row = species->find(id)) {
+          number = row->index;
+        }
+      }
+      add(std::format("versus.score.face.{}.{}", slot, index), static_cast<double>(number));
+    }
+  }
 }
 
 } // namespace dwe::app

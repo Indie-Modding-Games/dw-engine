@@ -19,6 +19,12 @@ inline constexpr std::string_view TitleOptionsBackCommand = "title_options_back"
 // Read by the pause menu as it shows (with pause_menu.start_page): it opens over the title, so its
 // game actions (save, back to the title) stay hidden and quit closes the game at once.
 inline constexpr std::string_view MenuAtTitleSetting = "pause_menu.at_title";
+// The widescreen pictures (an improvement, on by default; docs/modulos/apps/game.md, «Imágenes a
+// pantalla ancha»): the title's 4:3 pictures fill the window, cut and mirrored past their sides
+// (ui/common/title_picture.lua), and the movies fill the window with their shape kept
+// (MovieScreen::setFillWindow). Off keeps the original's framing: 4:3 on black.
+inline constexpr std::string_view WidescreenPicturesSetting = "widescreen_pictures";
+inline constexpr bool WidescreenPicturesDefault = true;
 
 // An on/off option of the options page that only a running game applies (PlaySession::handle and
 // the screens it owns), kept in the user's settings.
@@ -34,7 +40,7 @@ struct GameToggle {
 [[nodiscard]] std::span<const GameToggle> gameToggles();
 
 // The on/off options the UI applies by itself, at the title and in a game alike (the documents read
-// their settings): shop extras, the art fixes and the developer tools.
+// their settings): shop extras, the art fixes, the widescreen pictures and the developer tools.
 [[nodiscard]] std::span<const GameToggle> uiToggles();
 
 // Publishes each option's saved value (or its fallback), so the page shows it before any game; the

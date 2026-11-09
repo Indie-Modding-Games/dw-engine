@@ -113,10 +113,27 @@ void readOriginalSize(assets::YamlReader& reader, const core::YamlNode& node,
   }
 }
 
+// The columns mirrored past the image's left and right edges (ImageReference::mirrorLeft).
+void readMirrorSides(assets::YamlReader& reader, const core::YamlNode& node,
+                     SkinSpriteSheet& sheet) {
+  const auto values = reader.sequence(node, messages::MirrorSidesWhat, SizeValues);
+  if (values.size() != SizeValues) {
+    return;
+  }
+  const auto left = reader.integer<std::uint32_t>(values[0]);
+  const auto right = reader.integer<std::uint32_t>(values[1]);
+  if (reader.ok() && (left > MaxMirroredColumns || right > MaxMirroredColumns)) {
+    reader.fail(node, core::formatMessage(messages::TooManyMirroredColumns, MaxMirroredColumns));
+    return;
+  }
+  sheet.image.mirrorLeft = left;
+  sheet.image.mirrorRight = right;
+}
+
 std::optional<SkinSpriteSheet> readSpriteSheet(assets::YamlReader& reader,
                                                const core::YamlNode& node) {
   reader.expectKeys(node, messages::SpriteSheetWhat, {"name", "image", "sprites"},
-                    {"palette", "original_size", "dp_per_pixel", "upscale"});
+                    {"palette", "original_size", "dp_per_pixel", "upscale", "mirror_sides"});
   std::string name = styleName(reader, reader.field(node, "name"));
   std::optional<assets::AssetId> image = assetId(reader, reader.field(node, "image"));
   if (!image) {
@@ -137,6 +154,9 @@ std::optional<SkinSpriteSheet> readSpriteSheet(assets::YamlReader& reader,
       reader.fail(*upscale, core::formatMessage(messages::UnknownSheetUpscale, mode));
     }
     sheet.smooth = reader.ok();
+  }
+  if (const core::YamlNode* sides = node.find("mirror_sides")) {
+    readMirrorSides(reader, *sides, sheet);
   }
   if (const core::YamlNode* size = node.find("original_size")) {
     readOriginalSize(reader, *size, sheet);

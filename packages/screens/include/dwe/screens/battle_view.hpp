@@ -39,6 +39,18 @@ inline constexpr std::string_view BagOpenSetting = "battle.bag.open";
 inline constexpr std::string_view ItemInFlightSetting = "battle.item_in_flight";
 inline constexpr std::string_view MatchSecondsSetting = "battle.match_seconds";
 
+// A command's label: a technique's or the finisher's move name, the others the original's command
+// name (battle_main.c: BTL_COMMAND_NAMES; vs_main.c: VS_renderMoveName).
+[[nodiscard]] std::string commandLabelOf(game::battle::Command command,
+                                         const game::battle::Fighter& fighter,
+                                         const NameKeys& names);
+// A command's icon in the skins' sprites: its own ("command-<n>") or, for a technique, its move's
+// special effect's ("special-<n>"); none for the finisher (battle_main.c: BTL_setCommandIconUV;
+// vs_main.c: VS_setCommandIconUV).
+[[nodiscard]] std::string commandIconOf(game::battle::Command command,
+                                        const game::battle::Fighter& fighter,
+                                        const game::battle::MoveCatalog& moves);
+
 // A fighter's bars and name (battle_hud.c: BTL_renderPartnerStatusBars; battle_main.c:
 // BTL_renderEnemyHPBars).
 struct FighterView {

@@ -4,6 +4,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -30,6 +31,41 @@ inline constexpr std::size_t MovieMomentCount = 4;
     return MovieMoment::Boot;
   }
   return std::nullopt;
+}
+
+// The screen the original shows a movie on, and the line of it where the picture starts (mov.c:
+// MOV_initEnvironment(&MOV_ENV, 0, 32, 0, 272): 176 lines from line 32 of 240).
+inline constexpr float MovieScreenWidth = 320.0F;
+inline constexpr float MovieScreenHeight = 240.0F;
+inline constexpr float MoviePictureTop = 32.0F;
+
+// Where a movie's picture goes in the window, in pixels.
+struct MovieFrame {
+  float left = 0.0F;
+  float top = 0.0F;
+  float width = 0.0F;
+  float height = 0.0F;
+};
+
+// The picture's place in a window. As the original: its screen fitted to the window with its shape
+// kept, in the middle, and the picture on it from MoviePictureTop. Filling (the «widescreen
+// pictures» option, on by default): the picture alone fitted to the window with its shape kept, in
+// the middle; its 320 x 176 (about 16:9) then reaches a 16:9 window's edges, where the original's
+// 4:3 screen leaves bars on every side. In a 4:3 window both are the same.
+[[nodiscard]] constexpr MovieFrame movieFrame(float windowWidth, float windowHeight,
+                                              float pictureWidth, float pictureHeight, bool fill) {
+  if (fill) {
+    const float scale = std::min(windowWidth / pictureWidth, windowHeight / pictureHeight);
+    return {.left = (windowWidth - (pictureWidth * scale)) / 2.0F,
+            .top = (windowHeight - (pictureHeight * scale)) / 2.0F,
+            .width = pictureWidth * scale,
+            .height = pictureHeight * scale};
+  }
+  const float scale = std::min(windowWidth / MovieScreenWidth, windowHeight / MovieScreenHeight);
+  return {.left = (windowWidth - (MovieScreenWidth * scale)) / 2.0F,
+          .top = ((windowHeight - (MovieScreenHeight * scale)) / 2.0F) + (MoviePictureTop * scale),
+          .width = pictureWidth * scale,
+          .height = pictureHeight * scale};
 }
 
 // The movie of a moment and whether Start ends it (mov.c: MOV_playMovie skips all but EDR).

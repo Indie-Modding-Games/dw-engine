@@ -18,7 +18,7 @@ game::battle::FighterId VersusSeries::localFighter() const {
   return link_.side() == game::versus::Side::Host ? game::battle::PartnerId : game::battle::RivalId;
 }
 
-core::Result<void> VersusSeries::startNext() {
+core::Result<void> VersusSeries::startNext(const BattlePrep& prepare) {
   if (link_.phase() != game::versus::LinkPhase::Playing || link_.lockstep() != nullptr ||
       (battle_ && !roundSettled())) {
     return core::fail("versus: no battle can start now");
@@ -41,6 +41,9 @@ core::Result<void> VersusSeries::startNext() {
     return lockstep;
   }
   battle_.emplace(std::move(*started));
+  if (prepare) {
+    prepare(*battle_);
+  }
   pending_.reset();
   return {};
 }

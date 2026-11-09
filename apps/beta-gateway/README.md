@@ -2,10 +2,13 @@
 
 Un Worker de Cloudflare (`worker.js`, un solo archivo de JavaScript sin dependencias) entre el lanzador y las
 versiones del repositorio. El repositorio es público desde el 2026-11-05, pero el lanzador sigue hablando solo con la
-pasarela: es el servidor de versiones que lleva compilado. Quien prueba la beta solo necesita el lanzador y la
-**clave de la beta**, una sola clave compartida que genera el responsable. Con ella el lanzador ve las versiones,
-descarga el juego y recibe actualizaciones del juego y del propio lanzador; sin ella, nada. La clave decide quién
-recibe la beta a través del lanzador; las versiones también se ven en la página de GitHub del repositorio.
+pasarela: es el servidor de versiones que lleva compilado. Quien prueba la beta solo necesita el lanzador: la
+**clave de la beta**, una sola clave compartida que genera el responsable, va **dentro del lanzador** desde que se
+publica, y el probador nunca la escribe. Con ella el lanzador ve las versiones, descarga el juego y recibe
+actualizaciones del juego y del propio lanzador; sin ella, nada.
+
+**Es una barrera ligera, no un secreto.** El repositorio y sus versiones son públicos, y la clave va en el programa
+que se reparte: quien tenga el lanzador puede sacarla. Solo evita que la pasarela conteste a cualquiera.
 
 ```
 lanzador ──(Authorization: Bearer <clave de la beta>)──► pasarela ──(token de solo lectura)──► API de GitHub
@@ -24,8 +27,11 @@ Contesta, para un único repositorio, las peticiones de la API de GitHub que usa
 | `GET /repos/<repo>/releases/assets/<id>` con `Accept: application/octet-stream` | Un archivo: los JSON pequeños (`game-manifest.json`, `latest.json`) los sirve la pasarela; cualquier otro es un **302** al enlace firmado de GitHub. |
 | `GET /repos/<repo>/releases/download/<tag>/<nombre>` | Lo mismo, por versión y nombre. |
 
-- **La clave:** se compara en tiempo constante con el secreto `BETA_KEY`. Sin clave o con otra: `401` con un
-  mensaje JSON, que el lanzador convierte en «Falta la clave de la beta o no es válida».
+- **La clave:** se compara en tiempo constante con el secreto `BETA_KEY` y, si está puesto, con
+  `BETA_KEY_PREVIOUS` (la clave anterior, mientras dura un cambio de clave); siempre con las dos, así que el tiempo
+  no dice cuál coincide. Sin clave o con otra: `401` con un mensaje JSON, que el lanzador convierte en «El servidor
+  de la beta ya no acepta este lanzador. Actualiza el lanzador o vuelve a instalarlo desde la última versión
+  publicada.».
 - **Las URL:** todas las URL de archivos (`url`, `browser_download_url` y las que van dentro de `latest.json`) se
   reescriben para que apunten a la propia pasarela. El lanzador rechaza un archivo que esté en otro servidor, y su
   actualizador también, así que la clave nunca sale hacia otro sitio.
@@ -43,7 +49,8 @@ Contesta, para un único repositorio, las peticiones de la API de GitHub que usa
 
 | Nombre | Tipo | Valor |
 |---|---|---|
-| `BETA_KEY` | Secreto | La clave de la beta (al menos 24 caracteres; con menos, la pasarela lo rechaza todo). |
+| `BETA_KEY` | Secreto | La clave de la beta (al menos 24 caracteres; con menos, la pasarela lo rechaza todo). El mismo valor que el secreto `DWE_BETA_KEY` del repositorio. |
+| `BETA_KEY_PREVIOUS` | Secreto, opcional | La clave anterior, solo durante un cambio de clave (abajo). Si está puesta, también 24 caracteres o más. |
 | `GITHUB_TOKEN` | Secreto | El token de GitHub de solo lectura (ver abajo). |
 | `GITHUB_REPO` | Variable de texto | `Indie-Modding-Games/dw-engine` |
 
@@ -85,18 +92,31 @@ Generarla en el ordenador del responsable, nunca en un archivo del repositorio:
 openssl rand -base64 32
 ```
 
-Se pega en el secreto `BETA_KEY` y se envía a los probadores por un canal privado, junto con el lanzador. Ellos la
-pegan en **Ajustes → Cuenta y acceso → Clave de la beta**; el lanzador la guarda en el llavero del sistema.
+Se pega en **dos** sitios, con el mismo valor:
 
-**Rotarla** (si se filtra, o cuando se quiera cortar el acceso a alguien):
+- el secreto `BETA_KEY` del Worker (arriba);
+- el secreto del repositorio `DWE_BETA_KEY` (GitHub → **Settings → Secrets and variables → Actions → Secrets → New
+  repository secret**). `.github/workflows/release.yml` lo compila dentro del lanzador y se niega a publicar si falta
+  o tiene menos de 24 caracteres. Nunca se escribe en el registro de la ejecución.
+
+A los probadores no se les envía nada: el lanzador ya la lleva. Los lanzadores antiguos que la guardaban en el
+llavero del sistema la borran de ahí la primera vez que se actualizan.
+
+**Cambiarla** (si se quiere cortar el acceso a quien tenga un lanzador viejo). Como la clave va dentro del lanzador,
+un cambio necesita una versión nueva del lanzador, y la clave anterior sigue valiendo mientras los lanzadores se
+actualizan solos:
 
 1. Generar una nueva con `openssl rand -base64 32`.
-2. **Configuración → Variables y secretos → `BETA_KEY` → Editar**, pegar la nueva y **Desplegar**. La anterior deja
-   de servir al momento.
-3. Enviar la nueva clave a los probadores que sigan en la beta. Su lanzador dirá «Falta la clave de la beta o no es
-   válida» hasta que la peguen en Ajustes → Cuenta y acceso.
+2. En el Worker: copiar la clave actual de `BETA_KEY` a `BETA_KEY_PREVIOUS`, pegar la nueva en `BETA_KEY` y
+   **Desplegar**. Las dos sirven.
+3. En el repositorio: pegar la nueva en `DWE_BETA_KEY` y publicar una versión (una fusión en `main`, o
+   *Actions → Release → Run workflow*). Los lanzadores se actualizan con la clave anterior y ya traen la nueva.
+4. Cuando los probadores ya tengan el lanzador nuevo (unos días), borrar `BETA_KEY_PREVIOUS` y **Desplegar**. Un
+   lanzador que no se actualizó dirá «El servidor de la beta ya no acepta este lanzador…» y habrá que reinstalarlo
+   desde la última versión publicada.
 
-No hace falta recompilar ni publicar un lanzador nuevo.
+Si la clave se filtra de verdad, el paso 2 puede saltarse (sin `BETA_KEY_PREVIOUS`): la vieja deja de servir al
+momento y todos los probadores tienen que reinstalar el lanzador.
 
 ## El token de GitHub
 
@@ -124,6 +144,10 @@ El lanzador usa como servidor de versiones la URL con la que se compiló:
   desarrollo nunca habla con un servidor de verdad.
 - `DWE_LAUNCHER_API=<url>` lo cambia para una ejecución (pruebas). El servidor no se guarda en `settings.json`.
 
+La clave se compila igual: `DWE_LAUNCHER_BETA_KEY=<clave> scripts/launcher.sh build`, y en `release.yml` desde el
+secreto `DWE_BETA_KEY`. `DWE_LAUNCHER_BETA_KEY=<clave>` al ejecutar el lanzador la cambia para esa ejecución
+(pruebas). Una compilación a mano sin clave envía la que un lanzador antiguo guardó en el llavero, si la hay.
+
 ## Probar en local
 
 Sin instalar nada (node viene en el host o en la imagen `dwe-launcher-dev`):
@@ -136,8 +160,8 @@ scripts/launcher.sh test                    # incluye la prueba de punta a punta
 La prueba `through_the_beta_gateway` de `apps/launcher/src-tauri/tests/fake_release.rs` arranca
 `apps/launcher/tools/fake_release_server.py` como GitHub (que redirige cada archivo a otro servidor y rechaza ahí
 cualquier petición con `Authorization`, como el almacenamiento de GitHub), la pasarela con `dev/serve.js` delante, y
-el cliente del lanzador contra la pasarela: sin clave o con otra, la lista de versiones, la instalación del juego y
-`latest.json` con su lanzador.
+el cliente del lanzador contra la pasarela: sin clave o con otra, con la clave anterior (`BETA_KEY_PREVIOUS`), la
+lista de versiones, la instalación del juego y `latest.json` con su lanzador.
 
 A mano:
 
@@ -145,7 +169,8 @@ A mano:
 python3 apps/launcher/tools/fake_release_server.py <carpeta> --port 8765 --token token-falso --repo Indie-Modding-Games/dw-engine &
 BETA_KEY=clave-de-prueba-de-al-menos-24-caracteres GITHUB_TOKEN=token-falso GITHUB_REPO=Indie-Modding-Games/dw-engine \
   GITHUB_API=http://127.0.0.1:8765 node apps/beta-gateway/dev/serve.js --port 8787 &
-DWE_LAUNCHER_API=http://127.0.0.1:8787 build/launcher/release/dwe-launcher
+DWE_LAUNCHER_API=http://127.0.0.1:8787 DWE_LAUNCHER_BETA_KEY=clave-de-prueba-de-al-menos-24-caracteres \
+  build/launcher/release/dwe-launcher
 ```
 
 ## Pendiente

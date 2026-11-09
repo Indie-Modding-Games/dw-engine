@@ -11,3 +11,5 @@
 #panel.title-original button, .title-original ~ div button, #press-start { nav: none; }
 .blink-off { visibility: hidden; }
 #fade { pointer-events: none; }
+/* The title picture filling the window (../common/title_picture.lua): only a skin that draws it shows it. */
+#picture, .picture-fade { display: none; pointer-events: none; }

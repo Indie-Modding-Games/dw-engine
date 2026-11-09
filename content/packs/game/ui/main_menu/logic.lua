@@ -85,6 +85,17 @@ local function original(document)
   return document:get("panel"):has_class("title-original")
 end
 
+-- The boxes over the title's picture with the «widescreen pictures» option (title_picture.lua), at
+-- the original's places across it: the menu, the language box, the battle mode question, and the
+-- "Press Start" line pinned under TITLE256's logo, across the picture: at row 162 (the original's
+-- 168 would put it against a 16:9 window's bottom edge, which shows rows 0 to 179).
+local PictureBoxes = {
+  { { id = "panel", x = 72 } },
+  { { id = "language-box", x = 54 } },
+  { { id = "battle-box", x = 60 } },
+  { { id = "press-start-text", x = 0, row = 162, width = 320 } },
+}
+
 local function index_of(list, value)
   for index, item in ipairs(list) do
     if item == value then
@@ -208,6 +219,7 @@ local function lay_out(document)
   end
   show("battle-box", shown == "battle")
   document:get("scrim"):set_class("boot", shown == "boot")
+  title_picture.apply(document, PictureBoxes)
   document:get("press-start-text"):set_class("blink-off", false)
   refresh(document)
 end
@@ -353,6 +365,7 @@ end
 function on_show(document)
   -- The game forgets the screen whenever it shows or hides the title (TitleScreen::showMenu).
   landing = false
+  title_picture.apply(document, PictureBoxes)
   refresh_prompts(document)
   was_original = original(document)
   local boot = ui.setting("title.boot") == true
@@ -377,6 +390,7 @@ function on_show(document)
 end
 
 function on_setting(document, _name)
+  title_picture.apply(document, PictureBoxes)
   refresh(document)
 end
 
@@ -403,6 +417,7 @@ local function follow_layout(document)
 end
 
 function on_tick(document, seconds)
+  title_picture.apply(document, PictureBoxes)
   if original(document) ~= was_original then
     follow_layout(document)
   end

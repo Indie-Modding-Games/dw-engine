@@ -110,6 +110,31 @@ TEST_CASE("a player's image of a palette is drawn instead, at the size of the ga
   CHECK(size->height == 4);
 }
 
+TEST_CASE("mirrored sides count the game's pixels, in a player's image and a remaster's alike") {
+  const Packs packs;
+  const auto size = [&](std::string_view path) {
+    auto reference = parseImageReference(path);
+    REQUIRE(reference.has_value());
+    auto found = imageSize(*packs.files, *reference);
+    REQUIRE_MESSAGE(found.has_value(), found.error().message);
+    return found->width;
+  };
+  // The player's image is twice the game's 4 pixels: 2 more of its own for each one mirrored, and
+  // the drawn size the game's own, wider by the mirrored columns.
+  const auto player = packs.load("/texture/sheet.png?palette=1&mirror_left=1&mirror_right=2");
+  REQUIRE_MESSAGE(player.has_value(), player.error().message);
+  CHECK(player->pixels.width == 8 + 2 + 4);
+  CHECK(player->pixels.height == 8);
+  CHECK(player->size.width == 4 + 1 + 2);
+  CHECK(size("/texture/sheet?palette=1&mirror_left=1&mirror_right=2") == 4 + 1 + 2);
+  // The remaster's copy, 4 times the game's, is drawn at its own size: 4 of its pixels each.
+  const auto remaster = packs.load("/texture/sheet.png?palette=0&mirror_left=1&mirror_right=2");
+  REQUIRE_MESSAGE(remaster.has_value(), remaster.error().message);
+  CHECK(remaster->pixels.width == 16 + 4 + 8);
+  CHECK(remaster->size.width == 16 + 4 + 8);
+  CHECK(size("/texture/sheet?palette=0&mirror_left=1&mirror_right=2") == 16 + 4 + 8);
+}
+
 TEST_CASE("a player's image of another aspect ratio is left out: the game's is drawn") {
   const Packs packs;
   const auto drawn = packs.load("/texture/sheet.png?palette=0");

@@ -396,6 +396,51 @@ core::Result<void> readBlock(std::span<const std::uint16_t> codes, std::size_t& 
   return {};
 }
 
+// readBlock with exact dequantisation: each coefficient times 8 (DC: dc * weight * 8, AC: level *
+// scale * weight), so nothing is rounded before the IDCT.
+core::Result<void> readPreciseBlock(std::span<const std::uint16_t> codes, std::size_t& position,
+                                    std::array<std::int32_t, CoefficientCount>& coefficients) {
+  coefficients.fill(0);
+  while (position < codes.size() && codes[position] == MdecEndOfBlock) {
+    ++position;
+  }
+  if (position >= codes.size()) {
+    return core::fail("the MDEC codes end before the last block");
+  }
+  const unsigned first = codes[position++];
+  const auto scale = static_cast<int>(first >> 10U);
+  coefficients[ZigZag[0]] = signed10(first) * QuantizationMatrix[0] * 8;
+  std::size_t index = 1;
+  while (index < CoefficientCount) {
+    if (position >= codes.size()) {
+      return core::fail("the MDEC codes end inside a block");
+    }
+    const unsigned code = codes[position++];
+    if (code == MdecEndOfBlock) {
+      break;
+    }
+    index += code >> 10U;
+    if (index < CoefficientCount) {
+      const std::uint8_t natural = ZigZag[index];
+      coefficients[natural] = signed10(code) * scale * QuantizationMatrix[natural];
+      ++index;
+    }
+  }
+  return {};
+}
+
+// Places a precise block: centred samples plus grey, saturated to 0..PreciseMax.
+void placePreciseBlock(const std::array<std::int32_t, CoefficientCount>& samples,
+                       std::vector<std::int16_t>& plane, std::size_t planeWidth, std::size_t left,
+                       std::size_t top) {
+  for (std::size_t row = 0; row < 8; ++row) {
+    for (std::size_t column = 0; column < 8; ++column) {
+      plane[((top + row) * planeWidth) + left + column] = static_cast<std::int16_t>(
+          std::clamp(samples[(row * 8) + column] + (128 * PreciseOne), 0, PreciseMax));
+    }
+  }
+}
+
 void placeBlock(const std::array<std::int8_t, CoefficientCount>& samples,
                 std::vector<std::uint8_t>& plane, std::size_t planeWidth, std::size_t left,
                 std::size_t top) {
@@ -596,6 +641,80 @@ std::array<std::int8_t, 64> inverseDct(const std::array<std::int16_t, 64>& coeff
         sum += columns[(y * 8) + u] * IdctMatrix[(x * 8) + u];
       }
       samples[(y * 8) + x] = static_cast<std::int8_t>(wrapToByte((sum + 0x4000) >> 15));
+    }
+  }
+  return samples;
+}
+
+core::Result<PreciseFrame> decodePreciseFrame(std::span<const std::byte> bitstream,
+                                              std::uint32_t width, std::uint32_t height) {
+  const auto count = countMacroblocks(width, height);
+  if (!count) {
+    return std::unexpected{count.error()};
+  }
+  const auto header = readBitstreamHeader(bitstream);
+  if (!header) {
+    return std::unexpected{header.error()};
+  }
+  const auto codes = decodeBitstream(bitstream, *count);
+  if (!codes) {
+    return std::unexpected{codes.error()};
+  }
+  PreciseFrame frame{.width = width,
+                     .height = height,
+                     .quantizationScale = header->quantizationScale,
+                     .y = std::vector<std::int16_t>(std::size_t{width} * height),
+                     .cb = std::vector<std::int16_t>(std::size_t{width} * height / 4),
+                     .cr = std::vector<std::int16_t>(std::size_t{width} * height / 4)};
+  std::array<std::int32_t, CoefficientCount> coefficients{};
+  std::size_t position = 0;
+  for (std::size_t column = 0; column < width / 16; ++column) {
+    for (std::size_t row = 0; row < height / 16; ++row) {
+      for (std::size_t block = 0; block < BlocksPerMacroblock; ++block) {
+        if (auto read = readPreciseBlock(*codes, position, coefficients); !read) {
+          return std::unexpected{read.error()};
+        }
+        const auto samples = preciseInverseDct(coefficients);
+        if (block < 2) {
+          placePreciseBlock(samples, block == 0 ? frame.cr : frame.cb, width / 2, column * 8,
+                            row * 8);
+        } else {
+          const std::size_t luma = block - 2;
+          placePreciseBlock(samples, frame.y, width, (column * 16) + ((luma % 2) * 8),
+                            (row * 16) + ((luma / 2) * 8));
+        }
+      }
+    }
+  }
+  return frame;
+}
+
+std::array<std::int32_t, 64>
+preciseInverseDct(const std::array<std::int32_t, 64>& coefficientsTimesEight) {
+  // Coefficients times 8 and the basis times 2^24: the column pass keeps 2^15 of its 2^27 scale,
+  // the row pass ends at 2^39 and one rounding brings that to sixteenths (2^4). The worst case
+  // (levels of 511 at scale 63 and weight 83 everywhere) stays below 2^62.
+  constexpr int ColumnShift = 12;
+  constexpr int RowShift = 35;
+  std::array<std::int64_t, CoefficientCount> columns{};
+  for (std::size_t u = 0; u < 8; ++u) {
+    for (std::size_t y = 0; y < 8; ++y) {
+      std::int64_t sum = 0;
+      for (std::size_t v = 0; v < 8; ++v) {
+        sum += std::int64_t{coefficientsTimesEight[(v * 8) + u]} * PreciseIdctTable[(y * 8) + v];
+      }
+      columns[(y * 8) + u] = (sum + (std::int64_t{1} << (ColumnShift - 1))) >> ColumnShift;
+    }
+  }
+  std::array<std::int32_t, CoefficientCount> samples{};
+  for (std::size_t y = 0; y < 8; ++y) {
+    for (std::size_t x = 0; x < 8; ++x) {
+      std::int64_t sum = 0;
+      for (std::size_t u = 0; u < 8; ++u) {
+        sum += columns[(y * 8) + u] * PreciseIdctTable[(x * 8) + u];
+      }
+      samples[(y * 8) + x] =
+          static_cast<std::int32_t>((sum + (std::int64_t{1} << (RowShift - 1))) >> RowShift);
     }
   }
   return samples;

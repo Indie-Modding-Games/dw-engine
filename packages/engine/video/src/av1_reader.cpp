@@ -47,20 +47,15 @@ core::Result<std::size_t> readFully(assets::FileReader& file, std::span<std::byt
 
 // Copies one plane of the decoder's picture, whatever its row stride and sample size.
 void copyPlane(const aom_image_t& image, int plane, std::uint32_t width, std::uint32_t height,
-               std::vector<std::uint8_t>& into) {
+               std::vector<std::uint16_t>& into) {
   into.resize(static_cast<std::size_t>(width) * height);
   const bool wide = (image.fmt & AOM_IMG_FMT_HIGHBITDEPTH) != 0;
-  const unsigned shift = image.bit_depth > 8 ? image.bit_depth - 8 : 0;
   const auto stride = static_cast<std::size_t>(image.stride[plane]);
   for (std::uint32_t y = 0; y < height; ++y) {
     const unsigned char* row = image.planes[plane] + (y * stride);
-    std::uint8_t* out = into.data() + (static_cast<std::size_t>(y) * width);
+    std::uint16_t* out = into.data() + (static_cast<std::size_t>(y) * width);
     if (wide) {
-      for (std::uint32_t x = 0; x < width; ++x) {
-        std::uint16_t sample = 0;
-        std::copy_n(row + (x * 2), 2, reinterpret_cast<unsigned char*>(&sample));
-        out[x] = static_cast<std::uint8_t>(sample >> shift);
-      }
+      std::copy_n(reinterpret_cast<const std::uint16_t*>(row), width, out);
     } else {
       std::copy_n(row, width, out);
     }
@@ -176,6 +171,7 @@ core::Result<bool> Av1Reader::decodeNext(YuvPicture* picture) {
     if (picture != nullptr) {
       picture->width = stream_.width;
       picture->height = stream_.height;
+      picture->bitDepth = image->bit_depth;
       const std::uint32_t chromaWidth = (stream_.width + 1) / 2;
       const std::uint32_t chromaHeight = (stream_.height + 1) / 2;
       copyPlane(*image, AOM_PLANE_Y, stream_.width, stream_.height, picture->luma);

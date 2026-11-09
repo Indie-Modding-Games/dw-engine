@@ -11,8 +11,8 @@ independent project, unaffiliated with and not endorsed by the original rights h
 
 ## Play the beta
 
-Install the launcher from the [releases](https://github.com/Indie-Modding-Games/dw-engine/releases) page, enter your
-beta key and pick your disc. The launcher installs and updates the game for Linux, Windows and macOS. Details:
+Install the launcher from the [releases](https://github.com/Indie-Modding-Games/dw-engine/releases) page and pick
+your disc. The launcher installs and updates the game for Linux, Windows and macOS. Details:
 [Linux beta](https://indie-modding-games.github.io/dw-engine/guides/beta-linux),
 [Windows and macOS beta](https://indie-modding-games.github.io/dw-engine/guides/beta-windows-macos).
 

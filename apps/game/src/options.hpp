@@ -46,6 +46,10 @@ struct Options {
   // The online versus' signaling server (--versus-server <wss://...>), over the game pack's
   // versus/network.yaml.
   std::string versusServer;
+  // Set by --versus-loopback: the versus' other player is a second flow in this process over a
+  // simulated network, which joins the room and picks on its own (a developer's way to play and
+  // look at the versus with one machine).
+  bool versusLoopback = false;
   // Set by --list-saves: log the save slots and quit, without a window.
   bool listSaves = false;
   // Set by --check-content: open every asset of the folder's packs and quit, without a window.

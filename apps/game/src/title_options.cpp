@@ -78,10 +78,14 @@ constexpr std::array Toggles{
 };
 
 // The options the UI applies by itself (the documents read their settings), at the title and in a
-// game alike: shop extras, the art fixes and the developer tools.
+// game alike: shop extras, the art fixes, the widescreen pictures (the movies read it too, as each
+// starts: game.cpp) and the developer tools.
 constexpr std::array UiToggles{
     GameToggle{.setting = "shop_extras", .saved = &UserSettings::shopExtras, .fallback = false},
     GameToggle{.setting = "art_fixes", .saved = &UserSettings::artFixes, .fallback = false},
+    GameToggle{.setting = WidescreenPicturesSetting,
+               .saved = &UserSettings::widescreenPictures,
+               .fallback = WidescreenPicturesDefault},
     GameToggle{
         .setting = DevToolsSetting, .saved = &UserSettings::devTools, .fallback = DevToolsDefault},
 };

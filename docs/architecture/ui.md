@@ -540,6 +540,7 @@ sprite_sheets:                      # opcional: hojas de sprites para RCSS
     original_size: [66, 29]         # opcional: el tamaño del original, para copias escaladas
     dp_per_pixel: 3                 # opcional: cuántos dp ocupa un píxel del original (1 por defecto)
     upscale: smooth                 # opcional: suavizada por el reescalador de texturas (ver abajo)
+    mirror_sides: [100, 26]         # opcional: columnas en espejo a izquierda y derecha (ver abajo)
     sprites:
       corner: [0, 0, 8, 8]          # x, y, ancho, alto en píxeles del original
 document_classes:                   # opcional: clases que pone en elementos de los documentos compartidos
@@ -556,12 +557,20 @@ document_classes:                   # opcional: clases que pone en elementos de 
 
 - **Imágenes suavizadas (`upscale: smooth`).** Una hoja que lo dice se dibuja, con el filtro de texturas
   «reescalado» (`Ui::setSmoothPictures`, que el juego llama al publicar las opciones gráficas), pasada por el mismo
-  reescalador que las texturas de los modelos (`render::upscaleRgba`): se dobla hasta 1280 píxeles de ancho (dos veces
-  como mucho; `smoothDoublings`), el alfa se interpola como un color y se filtra en vez de dibujarse nítida. El
+  reescalador que las texturas de los modelos (`render::upscaleRgba`): se dobla hasta 2560 píxeles de ancho (tres veces
+  como mucho; `smoothDoublings`), así una imagen que cubre una ventana de 1440 líneas tiene al menos tantos texels como
+  píxeles ocupa y no se ve borrosa; el alfa se interpola como un color y se filtra en vez de dibujarse nítida. El
   resultado queda en la caché del reescalador (`Ui::setUpscaleCache`). La referencia de la imagen lleva entonces
   `&upscale=smooth`, así que al cambiar el filtro RmlUi la carga de nuevo. Así se dibujan las dos imágenes de la
-  portada del aspecto original; una extracción anterior a la versión 14 trae su copia ×4 de `index_scale`, que no se
-  dobla más y se dibuja filtrada.
+  portada del aspecto original; una extracción anterior a la versión 14 trae su copia ×4 de `index_scale`, que se dobla
+  una vez y se dibuja filtrada.
+- **Lados en espejo (`mirror_sides: [izquierda, derecha]`).** Una hoja que lo dice dibuja su imagen más ancha: cada
+  lado sigue como un espejo de sus columnas del borde (la del borde repetida, así no se ve la costura al filtrarla ni
+  al suavizarla; `withMirroredSides`). La referencia lleva `&mirror_left=N&mirror_right=M`; los números son píxeles de
+  la imagen del juego (la del primer paquete), así una copia mayor (de un remaster o del jugador) refleja el mismo
+  trozo de dibujo, y `original_size` los cuenta (TITLE2 con `[100, 26]` mide `[446, 240]`). El espejo se hace antes del
+  reescalador, que suaviza la imagen entera de una vez. El aspecto original lo usa para que la portada llene ventanas
+  más anchas que 16:9 ([Imágenes a pantalla ancha](../modulos/apps/game.md#imágenes-a-pantalla-ancha)).
 - **Cambio en vivo:** `Ui::setSkin(id)` cambia la hoja de cada documento abierto sin volver a cargarlo: los scripts,
   su estado, el foco y lo que está visible siguen igual. Solo un documento cuyo RML cambia (`document`) se carga de
   nuevo, y se muestra donde estaba. `Ui::skins()` da el catálogo, `Ui::skin()` el aspecto actual. Desde Lua,

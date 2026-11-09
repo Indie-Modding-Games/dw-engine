@@ -53,6 +53,7 @@
           "original_size": { "description": "The image's size in original pixels, [width, height]; a larger image is an upscaled copy and the sprites grow with it.", "type": "array", "items": { "type": "integer", "minimum": 1 }, "minItems": 2, "maxItems": 2 },
           "dp_per_pixel": { "description": "How many dp an original pixel covers (3 draws the original's 240 lines over the UI's 720 dp).", "type": "number", "minimum": 0.0625, "maximum": 16 },
           "upscale": { "description": "smooth: drawn smoothed by the texture upscaler when the player's texture filter is the upscaler (a picture whose curves and cut-out edges show stairs as pixel art).", "enum": ["smooth"] },
+          "mirror_sides": { "description": "[left, right]: columns of the game's own image mirrored past its left and right edges (the image reference's mirror_left and mirror_right), so a picture that fills a wider window carries on past its edges; original_size counts them.", "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 1024 }, "minItems": 2, "maxItems": 2 },
           "sprites": {
             "description": "Each sprite's rectangle in original pixels: [x, y, width, height].",
             "type": "object",

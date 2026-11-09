@@ -44,9 +44,11 @@ paleta y su tamaño en el original (`original_size`); si un paquete de capa rema
 original: `dwx extract` las agranda ×4 con la receta incluida `content/enhance/ui_original.recipe.yaml`. Una hoja
 con `upscale: smooth` (las dos de la portada) se dibuja en cambio suavizada por el reescalador de texturas de los
 modelos (`render::upscaleRgba`, el alfa interpolado como un color, así el borde recortado no hace escalones), desde
-los píxeles del original hasta 1280 de ancho, cuando el filtro de texturas del jugador es «reescalado»; con los otros
-filtros se dibuja nítida como el resto. Un aspecto
-de un mod que quiere sus propias imágenes agrandadas escribe una receta igual (las imágenes que dibuja, `scale` y el
+los píxeles del original hasta 2560 de ancho, cuando el filtro de texturas del jugador es «reescalado»; con los otros
+filtros se dibuja nítida como el resto. Una hoja con `mirror_sides: [izquierda, derecha]` dibuja su imagen más ancha,
+con esas columnas de cada borde en espejo: así la portada sigue en una ventana más ancha que ella
+(`ui/common/title_picture.lua`).
+Un aspecto de un mod que quiere sus propias imágenes agrandadas escribe una receta igual (las imágenes que dibuja, `scale` y el
 modo de `index_scale`) y la pasa a mano por `dwx upscale <receta> <paquetes> -o <carpeta>`, que escribe un paquete
 remaster para montar al lado ([página de dwx](../modulos/apps/dwx.md#dwx-upscale-y-las-recetas-incluidas)). Nunca
 se reparte arte del original: cada jugador lo saca de su disco. Las medidas del aspecto original están en
@@ -117,7 +119,7 @@ API disponible:
 | `element:set_text(texto)`, `element:text()` | Cambia el texto (siempre como texto, nunca como RML) o lee el contenido |
 | `element:set_class(clase, sí)`, `element:has_class(clase)` | Clases |
 | `element:attribute(nombre)`, `element:set_attribute(nombre, valor)` | Atributos (`set_attribute` no acepta los de evento, `on...`) |
-| `element:set_property(nombre, valor)` | Una propiedad de estilo, como `display` |
+| `element:set_property(nombre, valor)`, `element:remove_property(nombre)` | Una propiedad de estilo, como `display`; quitarla devuelve la de la hoja de estilo |
 | `element:focus()`, `element:has_focus()`, `element:click()` | Foco y clic |
 | `element:scroll_to_top()` | Lleva una lista que se desplaza a su principio (una lista que se llena de nuevo) |
 | `element:rect()` | Izquierda, arriba, ancho y alto del elemento en dp desde la esquina de la ventana |

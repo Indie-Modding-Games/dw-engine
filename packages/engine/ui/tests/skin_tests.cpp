@@ -130,6 +130,24 @@ TEST_CASE(
           .contains("upscale must be smooth"));
 }
 
+TEST_CASE("a sprite sheet may mirror its picture's sides, the original size counting them") {
+  const SkinSpriteSheet sheet = sheetOf(
+      "id: p\nname: x\nsprite_sheets:\n- {name: s, image: a/b, palette: 0, mirror_sides: [3, 1], original_size: [6, 2], sprites: {c: [0, 0, 6, 2]}}\n");
+  CHECK(sheet.image.mirrorLeft == 3);
+  CHECK(sheet.image.mirrorRight == 1);
+  const auto rcss = spriteSheetRcss(sheet, 6, 2);
+  REQUIRE(rcss.has_value());
+  CHECK(rcss->contains("src: /a/b?palette=0&mirror_left=3&mirror_right=1;"));
+  CHECK(
+      errorOf(
+          "id: p\nname: x\nsprite_sheets:\n- {name: s, image: a, mirror_sides: [1], sprites: {b: [0, 0, 1, 1]}}\n")
+          .contains("mirror_sides: [left, right]"));
+  CHECK(
+      errorOf(
+          "id: p\nname: x\nsprite_sheets:\n- {name: s, image: a, mirror_sides: [2000, 0], sprites: {b: [0, 0, 1, 1]}}\n")
+          .contains("at most 1024 columns"));
+}
+
 TEST_CASE("ui/ui_skin.yaml names the skin the game starts with") {
   const auto choice = parseSkinChoice("default: modern\n");
   REQUIRE(choice.has_value());

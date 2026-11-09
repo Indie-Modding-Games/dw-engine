@@ -1,4 +1,4 @@
-// The launcher's privileged calls (src-tauri/src/commands.rs): disc, keyring, downloads and
+// The launcher's privileged calls (src-tauri/src/commands.rs): disc, downloads and
 // starting the game. Only the launcher's own code imports this module; the add-on bridge
 // (addons.js) forwards nothing but addonCall, for the calls the backend checks per add-on.
 const tauri = window.__TAURI__;
@@ -19,8 +19,6 @@ export const api = {
   setLanguage: (language) => call("set_language", { language }),
   setCheckUpdates: (enabled) => call("set_check_updates", { enabled }),
   setDataFolder: (path) => call("set_data_folder", { path }),
-  saveToken: (token) => call("save_token", { token }),
-  clearToken: () => call("clear_token"),
   openLogs: () => call("open_logs"),
   installLauncherUpdate: () => call("install_launcher_update"),
   restartLauncher: () => call("restart_launcher"),

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import worker from "./worker.js";
 
 const KEY = "placeholder-beta-key-for-tests-0123456789";
+const PREVIOUS = "placeholder-previous-beta-key-0123456789";
 const TOKEN = "placeholder-github-token-for-tests";
 const REPO = "team/game";
 const GATEWAY = "https://beta.example.test";
@@ -88,9 +89,28 @@ test("no key, a wrong key or a key of another length: 401 with a JSON message", 
   assert.equal(calls.length, 0, "GitHub is never asked for an unauthorized request");
 });
 
+test("after a key change both the new key and the previous one open the releases", async () => {
+  let base;
+  const fake = fakeGithub({ [`/repos/${REPO}/releases?per_page=100`]: () => json(releases(base)) });
+  base = fake.base;
+  const env = { ...fake.env, BETA_KEY_PREVIOUS: PREVIOUS };
+  for (const key of [KEY, PREVIOUS, ` ${PREVIOUS} `]) {
+    assert.equal((await ask(env, `/repos/${REPO}/releases`, { key })).status, 200, `key ${key}`);
+  }
+  for (const key of [null, "", "wrong", PREVIOUS.slice(0, -1), PREVIOUS + "x", KEY + PREVIOUS, TOKEN]) {
+    assert.equal((await ask(env, `/repos/${REPO}/releases`, { key })).status, 401, `key ${key}`);
+  }
+  // Without BETA_KEY_PREVIOUS (or with it empty), only the new key opens them.
+  for (const previous of [undefined, "", "   "]) {
+    const only = { ...fake.env, BETA_KEY_PREVIOUS: previous };
+    assert.equal((await ask(only, `/repos/${REPO}/releases`, { key: PREVIOUS })).status, 401);
+    assert.equal((await ask(only, `/repos/${REPO}/releases`, { key: KEY })).status, 200);
+  }
+});
+
 test("a gateway without its settings refuses everything", async () => {
   const { env } = fakeGithub({});
-  for (const broken of [{ ...env, BETA_KEY: "" }, { ...env, BETA_KEY: "short" }, { ...env, GITHUB_TOKEN: "" }, { ...env, GITHUB_REPO: "nope" }]) {
+  for (const broken of [{ ...env, BETA_KEY: "" }, { ...env, BETA_KEY: "short" }, { ...env, BETA_KEY_PREVIOUS: "short" }, { ...env, GITHUB_TOKEN: "" }, { ...env, GITHUB_REPO: "nope" }]) {
     const response = await ask(broken, `/repos/${REPO}/releases`, { key: broken.BETA_KEY || "x" });
     assert.equal(response.status, 503);
   }
@@ -244,10 +264,12 @@ test("the GitHub token and the beta key never appear in any answer", async () =>
     [`/repos/${REPO}/releases`, { key: "wrong" }],
     [`/`, {}],
   ];
+  const env = { ...fake.env, BETA_KEY_PREVIOUS: PREVIOUS };
   for (const [path, options] of requests) {
-    const text = await visible(await ask(fake.env, path, options));
+    const text = await visible(await ask(env, path, options));
     assert.ok(!text.includes(TOKEN), `${path} shows the GitHub token`);
     assert.ok(!text.includes(KEY), `${path} shows the beta key`);
+    assert.ok(!text.includes(PREVIOUS), `${path} shows the previous beta key`);
     assert.ok(!text.includes(fake.base), `${path} shows the upstream server`);
   }
 });

@@ -45,7 +45,6 @@ activo y el anillo de foco.
   - **General:** idioma (español por defecto, inglés), carpeta de datos y requisitos del equipo.
   - **Actualizaciones:** el canal, buscar al abrir, buscar ahora, las actualizaciones automáticas, las versiones
     instaladas y volver a la anterior.
-  - **Cuenta y acceso:** la clave de la beta.
   - **Disco:** el disco recordado y volver a leerlo.
   - **Complementos:** instalar, la lista de instalados (encender, apagar, quitar) y la sección de ajustes de cada
     complemento (ver [Complementos](#complementos)).
@@ -179,15 +178,32 @@ descarga a otro servidor `reqwest` quita la cabecera `Authorization` (lo prueba 
 
 ### La clave de la beta
 
-Los probadores no necesitan cuenta de GitHub. El responsable les da el lanzador y una sola clave
-compartida, que genera él y guarda en la pasarela (cómo crearla y rotarla:
-[pasarela de la beta](https://github.com/Indie-Modding-Games/dw-engine/blob/main/apps/beta-gateway/README.md)). El probador la pega en Ajustes → Cuenta y acceso
-la primera vez; si falta o no vale, el lanzador dice «Falta la clave de la beta o no es válida». La guarda en el
-llavero del sistema (Secret Service en Linux, como GNOME Keyring o KWallet; el administrador de credenciales en
-Windows; el llavero en macOS) con el servicio `dwe-launcher` y la cuenta `beta-key`, y nunca en un archivo ni en un
-registro. Sin llavero disponible, el lanzador lo dice y no guarda nada. La clave solo abre las versiones: no da
-ningún permiso en el repositorio. Los nombres internos de la página (`save_token`, `clear_token`, el campo `token` del estado) se
-quedan como estaban.
+Los probadores no necesitan cuenta de GitHub ni escribir nada: el lanzador lleva **dentro** la única clave compartida
+de la beta y la envía a la pasarela (cómo crearla y cambiarla:
+[pasarela de la beta](https://github.com/Indie-Modding-Games/dw-engine/blob/main/apps/beta-gateway/README.md)). No hay
+campo, aviso ni pestaña para pegarla. La clave solo abre las versiones: no da ningún permiso en el repositorio.
+
+**Es una barrera ligera, no un secreto.** El repositorio y sus versiones son públicos y la clave va en el programa que
+se reparte: quien tenga el lanzador puede sacarla. Sirve para que la pasarela no conteste a cualquiera, nada más.
+
+- **De dónde sale:** `release.yml` la compila dentro desde el secreto del repositorio `DWE_BETA_KEY`, que tiene el
+  **mismo valor** que el secreto `BETA_KEY` de la pasarela (24 caracteres o más, sin espacios). El paso de
+  comprobación del plan falla si falta o es más corta, y cada lanzador comprueba que su programa la lleva; ninguno de
+  los dos la escribe en el registro. A mano: `DWE_LAUNCHER_BETA_KEY=<clave> scripts/launcher.sh build` (el contenedor
+  la recibe por nombre, nunca en la línea de órdenes) o `scripts/release_local.sh` con esa variable puesta.
+- **Cuál envía**, la primera que haya: `DWE_LAUNCHER_BETA_KEY` en el entorno al ejecutarlo (pruebas, como
+  `DWE_LAUNCHER_API`), la compilada dentro y, solo en una compilación a mano sin clave, la que un lanzador antiguo
+  guardó en el llavero del sistema (servicio `dwe-launcher`, cuenta `beta-key`). Un lanzador con la clave dentro
+  borra esa entrada del llavero una vez, sin avisar (`old_beta_key_removed` en `settings.json`).
+- **Nunca se muestra:** no llega a la página, no se escribe en el registro y, si apareciera en un mensaje de error,
+  se cambia por `[beta key]`.
+- **Si la pasarela contesta `401`** (la clave cambió y este lanzador es de antes), el lanzador dice «El servidor de la
+  beta ya no acepta este lanzador. Actualiza el lanzador o vuelve a instalarlo desde la última versión publicada.» y
+  no pide ninguna clave. Para que no pase, al cambiar la clave la anterior sigue valiendo un tiempo
+  (`BETA_KEY_PREVIOUS` en la pasarela), mientras los lanzadores se actualizan solos.
+- **Cambiarla:** ver «Cambiar la clave» en el README de la pasarela. En corto: nueva clave en `DWE_BETA_KEY` y en
+  `BETA_KEY`, la vieja en `BETA_KEY_PREVIOUS`, publicar una versión y, cuando los probadores ya tengan el lanzador
+  nuevo, borrar `BETA_KEY_PREVIOUS`.
 
 ### La clave de firma
 
@@ -358,13 +374,14 @@ respaldo para Linux y Windows ([Publicar desde este PC](#publicar-desde-este-pc)
 (*Actions → Release → Run workflow*). Si llega una fusión nueva mientras otra se compila, la nueva cancela la vieja:
 solo el commit más nuevo sale como versión. Lo que hace, por orden:
 
-1. **Plan** (segundos): están el secreto `DWE_SIGNING_KEY`, la variable `DWE_SIGNING_PUBKEY` y `DWE_BETA_GATEWAY` con
-   una URL `https`; calcula la versión y la etiqueta; se niega si ese commit ya tiene versión publicada, si la versión
-   del juego no es mayor que la de la versión más nueva, o si la **versión del lanzador** no vale (ver abajo).
+1. **Plan** (segundos): están el secreto `DWE_SIGNING_KEY`, la variable `DWE_SIGNING_PUBKEY`, `DWE_BETA_GATEWAY` con
+   una URL `https` y el secreto `DWE_BETA_KEY` con 24 caracteres o más; calcula la versión y la etiqueta; se niega
+   si ese commit ya tiene versión publicada, si la versión del juego no es mayor que la de la versión más nueva, o si
+   la **versión del lanzador** no vale (ver abajo).
 2. **Un trabajo por ordenador**, todos en paralelo e independientes: el juego para Linux, Windows, macOS Apple silicon
    y macOS Intel, y el lanzador para Linux, Windows y macOS. Si uno falla, los demás terminan igual. El trabajo del
    lanzador de Linux prueba primero que la clave firma y que la clave pública verifica esa firma. Cada lanzador
-   comprueba que su programa lleva dentro la pasarela y la clave pública.
+   comprueba que su programa lleva dentro la pasarela, la clave pública y la clave de la beta.
 3. **Publicar**: si falta algún ordenador, el resumen de la ejecución lo marca como `MISSING` y **no se publica
    nada**; lo compilado queda en los artefactos de la ejecución y *Re-run failed jobs* repite solo lo que falló. Si
    están todos: firma los paquetes del juego, el `.deb` y el `.dmg`; escribe `game-manifest.json`; comprueba cada
@@ -438,7 +455,9 @@ scripts/release_local.sh --tag v0.1.0-beta.1 --notes-file notas.md --upload
 - Antes de compilar comprueba que la clave firma y que su `.pub` (`--pubkey`, por defecto `<clave>.pub`) es la
   variable `DWE_SIGNING_PUBKEY` del repositorio: una contraseña equivocada falla en segundos, no tras la compilación.
   La pasarela es la variable `DWE_BETA_GATEWAY` (`--gateway` para otra) y los enlaces de la pantalla principal la
-  variable opcional `DWE_LAUNCHER_LINKS` (`--links` para otros; sin ella, ninguno), como en el flujo.
+  variable opcional `DWE_LAUNCHER_LINKS` (`--links` para otros; sin ella, ninguno), como en el flujo. La clave de la
+  beta sale de `DWE_LAUNCHER_BETA_KEY` en el entorno (el valor de `BETA_KEY`; un secreto de GitHub no se puede
+  leer): sin ella no compila.
 - Todo va a `build/release-local/<tag>/` (`--out`, siempre dentro de `build/`): lo que se sube en `dist/`, el
   registro con los tiempos en `logs/`.
 - Antes de subir comprueba que cada archivo tiene su `.sig` y que la clave pública la verifica (también el `.deb`),
@@ -465,7 +484,7 @@ con ella sin preguntar nada (nunca sube).
 
 La interfaz se organiza en cuatro ranuras con nombre (`ui/js/slots.js`): `sidebar` (la barra lateral), `tabs` (las
 páginas que ocupan el centro: hoy, las de los complementos), `news` (las tarjetas del panel de novedades) y `settings` (las secciones de ajustes). Las piezas del lanzador se
-registran ahí igual que lo hará un complemento. Las órdenes con privilegios (disco, llavero, descargas, extracción,
+registran ahí igual que lo hará un complemento. Las órdenes con privilegios (disco, descargas, extracción,
 arrancar programas) están solo en `ui/js/api.js` y en los comandos de Rust (`src-tauri/src/commands.rs`); lo que una
 pieza recibe para pintarse (`context()`) no lleva ni la clave de la beta ni la ruta del disco.
 

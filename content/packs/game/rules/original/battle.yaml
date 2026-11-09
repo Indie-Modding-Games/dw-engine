@@ -544,6 +544,9 @@ versus:
   series: [1, 3, 5]
   # El reloj de cada combate en segundos (VS__combatInit: VS_addFighterCounter(99)).
   time_limit_seconds: 99
+  # Las arenas que se eligen antes de la serie (vs_select.c: VS__tickSelectMap, VS_BATTLE_SETUP.stage), por su número
+  # en tournament.yaml (arena.arenas): T_TOGI, B_TOGI y E_TOGI (vs_scene.c: VS_ARENA_MODELS).
+  arenas: [0, 1, 2]
 
 # Rarezas del original (docs/reference/battle.md, "Rarezas"). true reproduce el original; otro ruleset las apaga.
 quirks:

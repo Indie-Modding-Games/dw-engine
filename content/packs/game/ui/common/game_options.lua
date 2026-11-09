@@ -383,6 +383,18 @@ game_options = {
     help = "pause_menu.help.model_characters",
     original = false,
   },
+  -- Widescreen pictures: in a window wider than 4:3 the title's pictures fill its sides with a
+  -- blurred copy of themselves and the movies fill its width, their shape kept (on by default; off
+  -- shows them in the original's 4:3 frame on black). Only the look changes.
+  {
+    id = "widescreen-pictures",
+    setting = "widescreen_pictures",
+    label = "pause_menu.widescreen_pictures",
+    default = true,
+    tab = "graphics",
+    help = "pause_menu.help.widescreen_pictures",
+    original = false,
+  },
   -- Enhanced lighting: the time of day tints the scene (warm morning, orange dusk, blue night) and
   -- the lamps, fires and crystals painted in some maps light what is around them (on by default).
   {

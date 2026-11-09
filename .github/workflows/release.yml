@@ -27,6 +27,10 @@ name: Release
 #   vars.DWE_SIGNING_PUBKEY            the public key (the .pub file's text), built into the launcher
 #   vars.DWE_BETA_GATEWAY              the beta gateway's URL (apps/beta-gateway), built into the
 #                                      launcher as its release server
+#   secrets.DWE_BETA_KEY               the beta key, the same value as the gateway's BETA_KEY (24
+#                                      characters or more), built into the launcher so testers
+#                                      never type it; a light barrier, not a secret: anyone with
+#                                      the launcher can read it out of the program
 #   vars.DWE_LAUNCHER_LINKS            optional: the main screen's links, a JSON object of https URLs
 #                                      by kind ({"repo", "community", "web"}); unset, none are shown
 on:
@@ -70,7 +74,9 @@ jobs:
           fetch-depth: 0
           filter: blob:none
 
-      - name: Check the signing key and the gateway
+      - name: Check the signing key, the gateway and the beta key
+        env:
+          DWE_LAUNCHER_BETA_KEY: ${{ secrets.DWE_BETA_KEY }}
         run: |
           [ -n "$TAURI_SIGNING_PRIVATE_KEY" ] && [ -n "$DWE_LAUNCHER_PUBKEY" ] || {
             echo "Set secrets.DWE_SIGNING_KEY and vars.DWE_SIGNING_PUBKEY first" >&2
@@ -78,6 +84,12 @@ jobs:
           }
           [[ "$DWE_LAUNCHER_GATEWAY" =~ ^https://[^[:space:]]+$ ]] || {
             echo "Set vars.DWE_BETA_GATEWAY to the beta gateway's https URL first" >&2
+            exit 1
+          }
+          # Never printed: only whether it is there, long enough and without spaces.
+          [[ "$DWE_LAUNCHER_BETA_KEY" =~ ^[^[:space:]]{24,}$ ]] || {
+            echo "Set secrets.DWE_BETA_KEY to the beta gateway's BETA_KEY first" \
+              "(24 characters or more, no spaces)" >&2
             exit 1
           }
 
@@ -287,6 +299,9 @@ jobs:
           - { system: windows, runner: ubuntu-24.04 }
           - { system: macos, runner: macos-15 }
     runs-on: ${{ matrix.runner }}
+    env:
+      # Built into the launcher (apps/launcher/src-tauri/src/beta_key.rs); the log never shows it.
+      DWE_LAUNCHER_BETA_KEY: ${{ secrets.DWE_BETA_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -372,9 +387,10 @@ jobs:
           mkdir -p out
           cp "$bundle"/dmg/*.dmg "$bundle"/macos/*.app.tar.gz "$bundle"/macos/*.app.tar.gz.sig out/
 
-      # The program a tester runs has the beta gateway and the public key built in, and the bundle
-      # carries LICENSE and THIRD_PARTY_NOTICES.txt (on Windows, the files the installer packs).
-      - name: Check the gateway, the public key and the notices in the launcher
+      # The program a tester runs has the beta gateway, the public key and the beta key built in,
+      # and the bundle carries LICENSE and THIRD_PARTY_NOTICES.txt (on Windows, the files the
+      # installer packs).
+      - name: Check the gateway, the public key, the beta key and the notices in the launcher
         env:
           SYSTEM: ${{ matrix.system }}
         run: |
@@ -402,8 +418,9 @@ jobs:
             [ -f "$binary" ] || { echo "No launcher program at $binary" >&2; exit 1; }
             grep -q -a -F "$DWE_LAUNCHER_GATEWAY" "$binary" || { echo "$binary does not have the gateway" >&2; exit 1; }
             grep -q -a -F "$public_key" "$binary" || { echo "$binary does not have the public key" >&2; exit 1; }
+            grep -q -a -F -e "$DWE_LAUNCHER_BETA_KEY" "$binary" || { echo "$binary does not have the beta key" >&2; exit 1; }
           done
-          echo "The launcher has the gateway $DWE_LAUNCHER_GATEWAY and the public key"
+          echo "The launcher has the gateway $DWE_LAUNCHER_GATEWAY, the public key and the beta key"
 
       - uses: actions/upload-artifact@v4
         with:

@@ -76,12 +76,12 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 40 | 40 | 0 | 0 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 12 | 12 | 0 | 0 | 100 % |
 | [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 113 | 113 | 0 | 0 | 100 % |
-| [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 93 | 27 | 2 | 64 | 30 % |
+| [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 104 | 40 | 4 | 60 | 40 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 44 | 44 | 0 | 0 | 100 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#vídeos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 30 | 30 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#núcleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1443 funciones a portar | 1443 | 1376 | 3 | 64 | 95 % |
+| **Total** | 1454 funciones a portar | 1454 | 1389 | 5 | 60 | 96 % |
 
 ## Batalla
 
@@ -205,11 +205,11 @@ El modo versus de dos jugadores y la demo de combate del título.
 
 Ficheros del decomp: `main/sound.c`, `vs/vs_camera.c`, `vs/vs_combat.c`, `vs/vs_demo.c`, `vs/vs_effect.c`, `vs/vs_hud.c`, `vs/vs_intro.c`, `vs/vs_main.c`, `vs/vs_scene.c`, `vs/vs_select.c`.
 
-Portado 27, parcial 2, falta 64.
+Portado 40, parcial 4, falta 60.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `VSLoadSounds` | `main/sound.c:710` | falta (citada en docs) | Carga los sonidos del modo versus. | — |
+| `VSLoadSounds` | `main/sound.c:710` | falta | Carga los sonidos del modo versus. | `apps/game/src/versus_arena.cpp:200` |
 | `VS_setCameraOrbit` | `vs/vs_camera.c:179` | falta | Cámara del versus que orbita según la distancia entre luchadores. | — |
 | `VS_setCameraYXZ` | `vs/vs_camera.c:221` | falta | Cámara del versus que encuadra a ambos luchadores. | — |
 | `VS_setViewpointRotationFromEntity` | `vs/vs_camera.c:241` | falta | Cámara del versus que gira con el luchador enfocado. | — |
@@ -248,33 +248,31 @@ Portado 27, parcial 2, falta 64.
 | `VS_setupTrialBattle` | `vs/vs_demo.c:348` | falta | Prepara el versus de prueba con tres criaturas al azar por bando. | — |
 | `VS_randomizeTrialDigimonList` | `vs/vs_demo.c:373` | falta | Rellena la lista de criaturas al azar de un bando del versus de prueba. | — |
 | `VS_randomizeTrialDigimon` | `vs/vs_demo.c:383` | falta | Genera valores y técnicas al azar para una criatura del versus de prueba. | — |
-| `VS_playDemo` | `vs/vs_demo.c:477` | falta | Reproduce la demostración automática de combate de la pantalla de título. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
+| `VS_playDemo` | `vs/vs_demo.c:477` | falta (citada en docs) | Reproduce la demostración automática de combate de la pantalla de título. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
 | `VS_initializeTrialBattle` | `vs/vs_demo.c:486` | falta | Inicia el versus de prueba con las listas de ambos jugadores. | — |
 | `VS_addCommandMenu` | `vs/vs_hud.c:449` | falta | Muestra el menú de órdenes de un jugador del versus. | — |
 | `VS_tickTargetCursor` | `vs/vs_hud.c:652` | falta | Mueve el cursor de objetivo del jugador del versus. | — |
 | `VS_addVersusModelScene` | `vs/vs_hud.c:1349` | falta | Inicia la animación del letrero de enfrentamiento del versus. | — |
 | `VS_tickVersusModelScene` | `vs/vs_hud.c:1355` | falta | Anima el letrero de enfrentamiento del versus. | — |
 | `VS_isVersusModelSceneFinished` | `vs/vs_hud.c:1401` | falta | Indica si terminó el letrero de enfrentamiento del versus. | — |
-| `VS_loadStageModels` | `vs/vs_hud.c:1410` | falta | Calcula las curvas de los letreros de resultado y carga sus modelos. | — |
-| `VS_addResultModelScene` | `vs/vs_hud.c:1445` | falta | Muestra el letrero de victoria del jugador ganador del versus. | — |
-| `VS_setVersusModelSceneTimer` | `vs/vs_hud.c:1549` | falta | Fija el temporizador de la escena de letreros del versus. | — |
+| `VS_loadStageModels` | `vs/vs_hud.c:1410` | falta | Calcula las curvas de los letreros de resultado y carga sus modelos. | `apps/game/src/arena_letters.hpp:27` |
+| `VS_addResultModelScene` | `vs/vs_hud.c:1445` | falta | Muestra el letrero de victoria del jugador ganador del versus. | `apps/game/src/versus_arena.cpp:281` |
+| `VS_setVersusModelSceneTimer` | `vs/vs_hud.c:1549` | falta | Fija el temporizador de la escena de letreros del versus. | `apps/game/src/versus_arena.cpp:46` |
 | `VS__setPostIntroPosition` | `vs/vs_intro.c:256` | falta | Deja al luchador en su posición final tras la presentación del versus. | — |
 | `VS__tickIntroName` | `vs/vs_intro.c:540` | falta | Muestra el nombre del luchador durante la presentación del versus. | — |
 | `VS_startAttackAnimation` | `vs/vs_main.c:553` | falta | Inicia la animación y partículas de una técnica. | — |
 | `VS_resolveAttack` | `vs/vs_main.c:562` | falta | Resuelve los impactos de las técnicas en vuelo. | — |
 | `VS_startFighterMove` | `vs/vs_main.c:797` | falta | Hace que el luchador empiece a ejecutar una técnica. | — |
 | `VS_selectMoveTarget` | `vs/vs_main.c:856` | falta | Elige el objetivo de la técnica del luchador en el versus. | — |
-| `VS_playMoveEffect` | `vs/vs_main.c:895` | falta | Lanza el efecto visual y sonoro de una técnica. | — |
-| `VS_updateFighterStatusVisuals` | `vs/vs_main.c:1035` | falta | Actualiza los efectos visibles de estados alterados en el versus. | — |
 | `VS_applyMoveResult` | `vs/vs_main.c:1151` | falta | Aplica el daño y efectos de una técnica que impacta en el versus. | — |
 | `VS_queueRandomMove` | `vs/vs_main.c:1735` | falta | Elige al azar técnica y objetivo para la IA del luchador. | — |
-| `VS_loadVSAssets` | `vs/vs_scene.c:1147` | falta | Prepara la arena del versus: música por escenario, cámara, luces y efectos. | solo lo cita la extracción del disco |
-| `VS_playVersusIntroSequence` | `vs/vs_scene.c:1558` | falta | Reproduce la presentación inicial del versus. | `apps/game/src/versus_flow.cpp:29` |
-| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | falta | Avanza la presentación del versus por estados. | — |
-| `VS_initializeCamera` | `vs/vs_scene.c:1851` | falta | Coloca la cámara inicial de la arena del versus. | — |
+| `VS_loadVSAssets` | `vs/vs_scene.c:1147` | parcial | Prepara la arena del versus: música por escenario, cámara, luces y efectos. | `apps/game/src/versus_arena.cpp:1` · la arena 0 con su cámara, sus luces y los efectos; sin la música por escenario |
+| `VS_playVersusIntroSequence` | `vs/vs_scene.c:1558` | falta | Reproduce la presentación inicial del versus. | `apps/game/src/versus_arena.cpp:45` |
+| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | falta | Avanza la presentación del versus por estados. | `apps/game/src/versus_flow.cpp:447` |
+| `VS_initializeCamera` | `vs/vs_scene.c:1851` | parcial | Coloca la cámara inicial de la arena del versus. | `apps/game/src/versus_arena.cpp:1` · la cámara de la copa (game::tournament::MatchCamera); sin medir contra la del versus |
 | `VS__createPressStartToBeginBox` | `vs/vs_select.c:409` | falta | Muestra el aviso de pulsar Start para empezar. | — |
 | `VS__initialize` | `vs/vs_select.c:442` | parcial | Flujo de preparación del versus: modo, mapa y selección de criaturas. | `apps/game/src/versus_flow.cpp:1` · sin elección de arena (VS__tickSelectMap) |
-| `VS__tickSelectMap` | `vs/vs_select.c:1166` | falta (citada en docs) | Pantalla de elección del escenario del versus. | — |
+| `VS__tickSelectMap` | `vs/vs_select.c:1166` | falta | Pantalla de elección del escenario del versus. | `apps/game/src/versus_flow.cpp:389` |
 
 ## Minijuego de piedras
 
@@ -310,6 +308,6 @@ Portado 51, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-995 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+984 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

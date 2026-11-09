@@ -7,9 +7,12 @@
 #include <dwe/core/message.hpp>
 #include <dwe/ui/image_reference.hpp>
 
+#include <algorithm>
 #include <charconv>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -47,9 +50,23 @@ struct ImageOptions {
   std::optional<std::size_t> palette;
   ImageTone tone = ImageTone::Natural;
   bool smooth = false;
+  std::uint32_t mirrorLeft = 0;
+  std::uint32_t mirrorRight = 0;
 };
 
-// Reads the options after an image's path: `palette=3&tone=grey&upscale=smooth`.
+// A count of mirrored columns: a whole number from 0 to MaxMirroredColumns.
+core::Result<std::uint32_t> parseMirroredColumns(std::string_view text) {
+  std::uint32_t columns = 0;
+  const auto [last, error] = std::from_chars(text.data(), text.data() + text.size(), columns);
+  if (text.empty() || error != std::errc{} || last != text.data() + text.size() ||
+      columns > MaxMirroredColumns) {
+    return core::fail(core::formatMessage(messages::BadMirroredColumns, text, MaxMirroredColumns));
+  }
+  return columns;
+}
+
+// Reads the options after an image's path:
+// `palette=3&tone=grey&upscale=smooth&mirror_left=100&mirror_right=26`.
 core::Result<ImageOptions> parseImageOptions(std::string_view options) {
   ImageOptions parsed;
   while (true) {
@@ -70,6 +87,13 @@ core::Result<ImageOptions> parseImageOptions(std::string_view options) {
     } else if (equals != std::string_view::npos && name == UpscaleOption &&
                value == SmoothUpscaleName) {
       parsed.smooth = true;
+    } else if (equals != std::string_view::npos &&
+               (name == MirrorLeftOption || name == MirrorRightOption)) {
+      auto columns = parseMirroredColumns(value);
+      if (!columns) {
+        return std::unexpected{columns.error()};
+      }
+      (name == MirrorLeftOption ? parsed.mirrorLeft : parsed.mirrorRight) = *columns;
     } else {
       return core::fail(core::formatMessage(messages::BadImageOption, option));
     }
@@ -146,7 +170,9 @@ core::Result<ImageReference> parseImageReference(std::string_view path) {
   return ImageReference{.asset = std::move(*asset),
                         .palette = options.palette,
                         .tone = options.tone,
-                        .smooth = options.smooth};
+                        .smooth = options.smooth,
+                        .mirrorLeft = options.mirrorLeft,
+                        .mirrorRight = options.mirrorRight};
 }
 
 bool isPixelArt(const ImageReference& reference) {
@@ -175,7 +201,49 @@ std::string imageReferenceText(const ImageReference& reference) {
     text += text.contains('?') ? "&" : "?";
     text += std::string{UpscaleOption} + "=" + std::string{SmoothUpscaleName};
   }
+  const auto addMirror = [&text](std::string_view option, std::uint32_t columns) {
+    if (columns > 0) {
+      text += text.contains('?') ? "&" : "?";
+      text += std::string{option} + "=" + std::to_string(columns);
+    }
+  };
+  addMirror(MirrorLeftOption, reference.mirrorLeft);
+  addMirror(MirrorRightOption, reference.mirrorRight);
   return text;
+}
+
+assets::Image withMirroredSides(const assets::Image& image, std::uint32_t left,
+                                std::uint32_t right) {
+  const std::size_t row = std::size_t{image.width} * BytesPerRgbaPixel;
+  if (image.width == 0 || image.height == 0 || image.pixels.size() != row * image.height ||
+      (left == 0 && right == 0)) {
+    return image;
+  }
+  left = std::min(left, image.width);
+  right = std::min(right, image.width);
+  assets::Image wide{.width = image.width + left + right, .height = image.height, .pixels = {}};
+  const std::size_t wideRow = std::size_t{wide.width} * BytesPerRgbaPixel;
+  wide.pixels.resize(wideRow * wide.height);
+  const auto copyPixel = [&](std::size_t from, std::size_t to) {
+    std::copy_n(image.pixels.begin() + static_cast<std::ptrdiff_t>(from), BytesPerRgbaPixel,
+                wide.pixels.begin() + static_cast<std::ptrdiff_t>(to));
+  };
+  for (std::uint32_t y = 0; y < image.height; ++y) {
+    const std::size_t source = y * row;
+    const std::size_t target = y * wideRow;
+    std::copy_n(image.pixels.begin() + static_cast<std::ptrdiff_t>(source), row,
+                wide.pixels.begin() +
+                    static_cast<std::ptrdiff_t>(target + (left * BytesPerRgbaPixel)));
+    for (std::uint32_t column = 0; column < left; ++column) {
+      copyPixel(source + (std::size_t{column} * BytesPerRgbaPixel),
+                target + (std::size_t{left - 1 - column} * BytesPerRgbaPixel));
+    }
+    for (std::uint32_t column = 0; column < right; ++column) {
+      copyPixel(source + (std::size_t{image.width - 1 - column} * BytesPerRgbaPixel),
+                target + (std::size_t{left + image.width + column} * BytesPerRgbaPixel));
+    }
+  }
+  return wide;
 }
 
 namespace {
@@ -320,6 +388,29 @@ std::optional<Replacement> findReplacement(const assets::VirtualFileSystem& file
       .reference = std::move(replacement), .file = std::move(*file), .size = *original};
 }
 
+// How many of an image's pixels one pixel of the game's own image covers across (1 when the game's
+// is the one drawn, or when it cannot be read).
+std::uint32_t pixelsPerOriginalPixel(const assets::VirtualFileSystem& files,
+                                     const assets::AssetId& image, std::uint32_t width) {
+  auto original = originalSize(files, image);
+  if (!original || original->width == 0 || width < original->width) {
+    return 1;
+  }
+  return width / original->width;
+}
+
+// The size of an image as a reference draws it: wider by its mirrored sides.
+ImageSize withMirroredWidth(const assets::VirtualFileSystem& files, const ImageReference& reference,
+                            ImageSize size) {
+  if (reference.mirrorLeft == 0 && reference.mirrorRight == 0) {
+    return size;
+  }
+  const std::uint32_t scale = pixelsPerOriginalPixel(files, reference.asset, size.width);
+  size.width += std::min(reference.mirrorLeft * scale, size.width) +
+                std::min(reference.mirrorRight * scale, size.width);
+  return size;
+}
+
 } // namespace
 
 core::Result<void> checkUiImageBudget(const assets::Ktx2Header& header) {
@@ -335,13 +426,17 @@ core::Result<void> checkUiImageBudget(const assets::Ktx2Header& header) {
 core::Result<ImageSize> imageSize(const assets::VirtualFileSystem& files,
                                   const ImageReference& reference) {
   if (std::optional<Replacement> replacement = findReplacement(files, reference)) {
-    return replacement->size;
+    return withMirroredWidth(files, reference, replacement->size);
   }
   auto file = readImageFile(files, reference);
   if (!file) {
     return std::unexpected{file.error()};
   }
-  return headerSize(reference, *file);
+  auto size = headerSize(reference, *file);
+  if (!size) {
+    return std::unexpected{size.error()};
+  }
+  return withMirroredWidth(files, reference, *size);
 }
 
 void applyImageTone(assets::Image& image, ImageTone tone) {
@@ -371,6 +466,23 @@ core::Result<assets::Image> decodeImage(const assets::VirtualFileSystem& files,
   return assets::decodePng(file.bytes);
 }
 
+// The pixels and their drawn size as a reference draws them: wider by the mirrored sides it asks
+// for, as many of the image's pixels as the game's own image's pixels it names, and its drawn size
+// as many more of its own.
+DrawnImage withMirroredSidesIfAsked(const assets::VirtualFileSystem& files,
+                                    const ImageReference& reference, assets::Image pixels,
+                                    ImageSize size) {
+  if (reference.mirrorLeft == 0 && reference.mirrorRight == 0) {
+    return DrawnImage{.pixels = std::move(pixels), .size = size};
+  }
+  const std::uint32_t drawnScale = pixelsPerOriginalPixel(files, reference.asset, size.width);
+  const std::uint32_t texels = size.width > 0 ? std::max(1U, pixels.width / size.width) : 1U;
+  const std::uint32_t left = std::min(reference.mirrorLeft * drawnScale, size.width);
+  const std::uint32_t right = std::min(reference.mirrorRight * drawnScale, size.width);
+  return DrawnImage{.pixels = withMirroredSides(pixels, left * texels, right * texels),
+                    .size = {.width = size.width + left + right, .height = size.height}};
+}
+
 } // namespace
 
 core::Result<DrawnImage> loadDrawnImage(const assets::VirtualFileSystem& files,
@@ -379,7 +491,7 @@ core::Result<DrawnImage> loadDrawnImage(const assets::VirtualFileSystem& files,
     auto image = decodeImage(files, replacement->reference, replacement->file);
     if (image) {
       applyImageTone(*image, reference.tone);
-      return DrawnImage{.pixels = std::move(*image), .size = replacement->size};
+      return withMirroredSidesIfAsked(files, reference, std::move(*image), replacement->size);
     }
     core::logWarning("{}", core::formatMessage(messages::ReplacementUnusable,
                                                replacement->reference.asset.str(),
@@ -400,7 +512,7 @@ core::Result<DrawnImage> loadDrawnImage(const assets::VirtualFileSystem& files,
   }
   applyImageTone(*image, reference.tone);
   const ImageSize size{.width = image->width, .height = image->height};
-  return DrawnImage{.pixels = std::move(*image), .size = size};
+  return withMirroredSidesIfAsked(files, reference, std::move(*image), size);
 }
 
 core::Result<assets::Image> loadImage(const assets::VirtualFileSystem& files,

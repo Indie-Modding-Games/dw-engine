@@ -891,7 +891,7 @@ int runGame(const Options& requested) {
   }};
   TitleScreen title{files, options, !autotest, **ui};
   // «Versus en línea» from the title's menu (versus_screen.hpp): no game behind it.
-  VersusScreen versus{files, options, !autotest, **ui};
+  VersusScreen versus{files, options, !autotest, **ui, renderer->get(), &sound};
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
   // What waits for the movie that plays: the title, or a game to start (main.c: main).
@@ -917,6 +917,7 @@ int runGame(const Options& requested) {
     // playMovie, initializeMusic): a game playing under the movie holds its music until afterMovie.
     core::logDebug("[port:movie] playMovie (main.c:{}): movie {} '{}'", movieCallSite(moment),
                    static_cast<int>(moment), movieRules->of(moment).file);
+    movies->setFillWindow(userSettings.widescreenPictures.value_or(WidescreenPicturesDefault));
     if (!movies->play(files, movieRules->of(moment))) {
       return false;
     }
@@ -1556,6 +1557,9 @@ int runGame(const Options& requested) {
         continue;
       }
       if (flow.playing() == nullptr && versus.active()) {
+        if (input.wasPressed("extra")) {
+          versus.pressFinisher();
+        }
         versus.tick(platform->nowSeconds());
         if (versus.takeClosed()) {
           title.show();
@@ -1653,7 +1657,8 @@ int runGame(const Options& requested) {
     }
 
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
-      // The options the documents apply by themselves: shop extras, art fixes, developer tools.
+      // The options the documents apply by themselves: shop extras, art fixes, widescreen pictures
+      // (the movies read it as each starts), developer tools.
       if (changeUiToggle(command, **ui, userSettings, settingsFile)) {
         continue;
       }
@@ -1831,6 +1836,9 @@ int runGame(const Options& requested) {
         beginNewGame(start);
       }
     }
+    if (flow.playing() == nullptr) {
+      versus.update(gameSeconds, static_cast<float>(step.alpha()), graphics.options());
+    }
     if (PlaySession* play = flow.playing()) {
       play->update(sessionCommands, autotest.get(), frameStats, gameSeconds,
                    static_cast<float>(step.alpha()));
@@ -1924,6 +1932,9 @@ int runGame(const Options& requested) {
     render::Drawer* postDrawer = nullptr;
     if (showingMovie) {
       sceneDrawers = movieDrawers;
+      // The texture filter «upscaled» upscales the movie too, with a sharpen pass after it.
+      movies->setUpscaled(graphics.options().textureFilter == TextureFilter::Upscaled);
+      postDrawer = movies->postDrawer();
     } else if (flow.playing() != nullptr) {
       FieldScene& field = flow.playing()->scene();
       field.setGraphics(graphics.options());
@@ -1931,6 +1942,10 @@ int runGame(const Options& requested) {
       postDrawer = field.postDrawer();
     } else if (interview) {
       sceneDrawers = interview->drawers();
+    } else if (FieldScene* arena = versus.arenaScene()) {
+      // The versus' battle on its arena, under the versus document.
+      sceneDrawers = arena->drawers();
+      postDrawer = arena->postDrawer();
     }
     std::vector<render::TextureScene> portraitScenes;
     // HD scenery's background pass: what the scroll uncovered, before the scene pass reads it.

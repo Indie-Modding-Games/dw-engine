@@ -75,16 +75,13 @@ paquete del juego. `dwx` corre como proceso aparte (`platform::ChildProcess`): e
 
 ## Con el lanzador (beta cerrada)
 
-Durante la beta cerrada, el responsable entrega a cada probador, por un canal privado, el lanzador y la **clave de la
-beta** (la misma para todos). El probador:
+El probador instala el lanzador y lo abre: busca la última versión, descarga el juego y pide el disco como siempre.
+No hay que escribir ninguna clave ni crear ninguna cuenta: la **clave de la beta** va dentro del lanzador
+([cómo](../modulos/apps/launcher.md#la-clave-de-la-beta)).
 
-1. Abre el lanzador y va a **Ajustes → Cuenta y acceso → Clave de la beta**.
-2. Pega la clave y pulsa **Guardar**. Queda en el llavero del sistema, no en un archivo.
-3. Vuelve a Inicio: el lanzador busca la última versión, descarga el juego y pide el disco como siempre.
-
-Si la clave falta, está mal copiada o el responsable la cambió, el lanzador dice «Falta la clave de la beta o no es
-válida»: basta con pegar la nueva en el mismo sitio. La clave solo sirve para descargar el juego y sus
-actualizaciones (y las del lanzador); no da acceso a nada más. No hay que crear ninguna cuenta.
+Si el responsable cambió la clave y el lanzador es muy antiguo, dice «El servidor de la beta ya no acepta este
+lanzador. Actualiza el lanzador o vuelve a instalarlo desde la última versión publicada.»: basta con instalar el
+lanzador de la última versión.
 
 ## Valores por defecto de la beta
 

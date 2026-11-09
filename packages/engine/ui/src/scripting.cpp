@@ -617,6 +617,14 @@ void Scripting::registerApi() {
           self.element->SetProperty(Rml::String{name}, Rml::String{value});
         }
       },
+      // Takes back a property set_property wrote: the style sheet's value applies again.
+      "remove_property",
+      [](const LuaElement& self, std::string_view name, sol::this_state lua) {
+        checkName(lua, name);
+        if (self.element) {
+          self.element->RemoveProperty(Rml::String{name});
+        }
+      },
       // The element's border box in dp from the window's top left corner: left, top, width,
       // height (for a box that grows from another element, as the original's).
       "rect",

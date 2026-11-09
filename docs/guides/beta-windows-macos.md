@@ -13,7 +13,6 @@ botón a la página de controladores del fabricante y, en Windows, a Windows Upd
 | Paquete del juego | `dwe-game-<versión>-windows-x86_64.tar.xz` | `dwe-game-<versión>-darwin-aarch64.tar.xz` y `-darwin-x86_64.tar.xz` |
 | Datos del lanzador | `%LOCALAPPDATA%\indie-modding-games\dwe` | `~/Library/Application Support/indie-modding-games/dwe` |
 | Partidas y ajustes del juego | `%APPDATA%\indie-modding-games\dwe` | La misma carpeta que los datos |
-| Clave de la beta | Administrador de credenciales | Llavero |
 | Probado | Con Wine: el paquete del juego (arranca hasta el título, `dwx` identifica el disco), la instalación del lanzador y sus pruebas | Nada todavía: falta un Mac |
 
 El lanzador elige el paquete de su ordenador en `game-manifest.json` por la clave `<sistema>-<procesador>`

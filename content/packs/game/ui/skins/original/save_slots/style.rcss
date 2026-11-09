@@ -9,6 +9,33 @@
 	decorator: image(title-screen contain center center);
 }
 
+/* The «widescreen pictures» option, as the title's (../main_menu/style.rcss). */
+#scrim.wide {
+	decorator: none;
+}
+
+#scrim.wide #picture {
+	display: block;
+	position: absolute;
+	decorator: image(title-wide fill);
+}
+
+#scrim.wide .picture-fade {
+	display: block;
+	position: absolute;
+	top: 0;
+	height: 100%;
+}
+
+#picture-fade-left {
+	left: 0;
+	decorator: horizontal-gradient(#000000b0 #00000000);
+}
+
+#picture-fade-right {
+	decorator: horizontal-gradient(#00000000 #000000b0);
+}
+
 #panel.slots-original {
 	left: 340dp;
 	top: 150dp;

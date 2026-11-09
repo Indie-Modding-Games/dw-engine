@@ -49,9 +49,9 @@ screens:
   # El menú de desarrollo (F2), también.
   dev_menu:
     styles: [ui/skins/original/pause_menu/style]
-  # El versus en línea: los paneles del menú de pausa.
+  # El versus en línea: los paneles del menú de pausa, y el combate y el marcador con los sprites del original.
   versus:
-    styles: [ui/skins/original/pause_menu/style]
+    styles: [ui/skins/original/pause_menu/style, ui/skins/original/versus/style]
   item_keeper:
     styles: [ui/skins/original/item_keeper/style]
   # El menú para elegir un objeto de la bolsa (tirar uno con la bolsa llena): las cajas y los rótulos del guardián.
@@ -692,6 +692,8 @@ sprite_sheets:
       std-clock-digit-9: [108, 48, 12, 15]
       std-clock-side-1: [120, 48, 8, 18]
       std-clock-side-2: [136, 48, 8, 18]
+      # The versus clock's 2P piece (vs_hud.c: the STD clock with 1P and 2P at its sides).
+      vs-clock-side-2: [128, 48, 8, 18]
   # Lo que dibuja un combate de copa con la misma página de STDTIM (std_main.c: STD_renderIntroStatNumber,
   # STD_tickBattleResultScreen): las cifras de 12 x 12 de los datos y del daño en u = cifra x 12, v 32, y TIME UP,
   # 144 x 24 en (0, 8).
@@ -836,6 +838,147 @@ sprite_sheets:
       special-5-blink: [176, 16, 16, 16]
       special-6: [192, 16, 16, 16]
       special-6-blink: [208, 16, 16, 16]
+  # The versus score screen (vs_scene.c: VS_renderVersusIntro; STDDAT\TAISEN1.TIM with the CLUT rows 0x1e8 and 0x1e9):
+  # each side's row bar played (v 0xec) and to play (v 0xd8), 134 pixels wide, "1P" and "2P", the number boxes and the
+  # frame's pieces (VS_VERSUS_TEXT_PIECES 11 to 20).
+  - name: ow-vs-score-0
+    image: texture/stddat/taisen1
+    palette: 0
+    original_size: [256, 256]
+    dp_per_pixel: 3
+    sprites:
+      vs-row-done-0: [0, 236, 134, 19]
+      vs-row-open-0: [0, 216, 134, 20]
+      vs-1p: [150, 156, 20, 10]
+      vs-box-0: [168, 200, 14, 14]
+      vs-edge-corner-tl: [0, 15, 4, 4]
+      vs-edge-corner-bl: [0, 212, 4, 4]
+      vs-edge-left: [0, 19, 4, 8]
+      vs-edge-top-0: [4, 15, 8, 3]
+      vs-edge-bottom-0: [4, 213, 8, 3]
+  - name: ow-vs-score-1
+    image: texture/stddat/taisen1
+    palette: 1
+    original_size: [256, 256]
+    dp_per_pixel: 3
+    sprites:
+      vs-row-done-1: [0, 236, 134, 19]
+      vs-row-open-1: [0, 216, 134, 20]
+      vs-2p: [170, 156, 20, 10]
+      vs-box-1: [168, 200, 14, 14]
+      vs-edge-corner-tr: [146, 15, 4, 4]
+      vs-edge-corner-br: [146, 212, 4, 4]
+      vs-edge-right: [0, 19, 4, 8]
+      vs-edge-top-1: [4, 15, 8, 3]
+      vs-edge-bottom-1: [4, 213, 8, 3]
+  # "VS MODE", the won and lost pips and the round's flash (STDDAT\TAISEN2.TIM, its second CLUT).
+  - name: ow-vs-title
+    image: texture/stddat/taisen2
+    palette: 1
+    original_size: [128, 144]
+    dp_per_pixel: 3
+    sprites:
+      vs-mode: [48, 0, 77, 14]
+      vs-pip-won: [48, 40, 16, 16]
+      vs-pip-lost: [64, 40, 16, 16]
+      vs-flash: [48, 16, 78, 24]
+  # Each fighter's face on the score screen (VS_renderFighterNamePlate; STDDAT\16TAISEN.TIM): the 16 x 16 corner of
+  # a 32 x 32 cell by the species' number less 3, eight to a row, each with its species' CLUT (vs_scene.c's sprite CLUT
+  # table).
+  - name: ow-vs-faces-0
+    image: texture/stddat/16taisen
+    palette: 0
+    original_size: [256, 256]
+    dp_per_pixel: 3
+    sprites:
+      vs-face-3: [0, 0, 16, 16]
+      vs-face-8: [160, 0, 16, 16]
+      vs-face-9: [192, 0, 16, 16]
+      vs-face-12: [32, 32, 16, 16]
+      vs-face-13: [64, 32, 16, 16]
+      vs-face-14: [96, 32, 16, 16]
+      vs-face-15: [128, 32, 16, 16]
+      vs-face-16: [160, 32, 16, 16]
+      vs-face-18: [224, 32, 16, 16]
+      vs-face-19: [0, 64, 16, 16]
+      vs-face-20: [32, 64, 16, 16]
+      vs-face-21: [64, 64, 16, 16]
+      vs-face-23: [128, 64, 16, 16]
+      vs-face-24: [160, 64, 16, 16]
+      vs-face-26: [224, 64, 16, 16]
+      vs-face-27: [0, 96, 16, 16]
+      vs-face-28: [32, 96, 16, 16]
+      vs-face-30: [96, 96, 16, 16]
+      vs-face-31: [128, 96, 16, 16]
+      vs-face-32: [160, 96, 16, 16]
+      vs-face-33: [192, 96, 16, 16]
+      vs-face-36: [32, 128, 16, 16]
+      vs-face-37: [64, 128, 16, 16]
+      vs-face-38: [96, 128, 16, 16]
+      vs-face-39: [128, 128, 16, 16]
+      vs-face-41: [192, 128, 16, 16]
+      vs-face-42: [224, 128, 16, 16]
+      vs-face-43: [0, 160, 16, 16]
+      vs-face-50: [224, 160, 16, 16]
+      vs-face-51: [0, 192, 16, 16]
+      vs-face-52: [32, 192, 16, 16]
+      vs-face-53: [64, 192, 16, 16]
+      vs-face-54: [96, 192, 16, 16]
+      vs-face-55: [128, 192, 16, 16]
+      vs-face-57: [192, 192, 16, 16]
+      vs-face-58: [224, 192, 16, 16]
+      vs-face-59: [0, 224, 16, 16]
+      vs-face-61: [64, 224, 16, 16]
+      vs-face-66: [224, 224, 16, 16]
+  - name: ow-vs-faces-1
+    image: texture/stddat/16taisen
+    palette: 1
+    original_size: [256, 256]
+    dp_per_pixel: 3
+    sprites:
+      vs-face-4: [32, 0, 16, 16]
+      vs-face-5: [64, 0, 16, 16]
+      vs-face-7: [128, 0, 16, 16]
+      vs-face-10: [224, 0, 16, 16]
+      vs-face-11: [0, 32, 16, 16]
+      vs-face-25: [192, 64, 16, 16]
+      vs-face-34: [224, 96, 16, 16]
+      vs-face-44: [32, 160, 16, 16]
+      vs-face-56: [160, 192, 16, 16]
+  - name: ow-vs-faces-2
+    image: texture/stddat/16taisen
+    palette: 2
+    original_size: [256, 256]
+    dp_per_pixel: 3
+    sprites:
+      vs-face-17: [192, 32, 16, 16]
+      vs-face-22: [96, 64, 16, 16]
+      vs-face-29: [64, 96, 16, 16]
+      vs-face-35: [0, 128, 16, 16]
+      vs-face-45: [64, 160, 16, 16]
+      vs-face-46: [96, 160, 16, 16]
+      vs-face-62: [96, 224, 16, 16]
+  - name: ow-vs-faces-3
+    image: texture/stddat/16taisen
+    palette: 3
+    original_size: [256, 256]
+    dp_per_pixel: 3
+    sprites:
+      vs-face-6: [96, 0, 16, 16]
+      vs-face-40: [160, 128, 16, 16]
+      vs-face-47: [128, 160, 16, 16]
+      vs-face-48: [160, 160, 16, 16]
+      vs-face-49: [192, 160, 16, 16]
+      vs-face-63: [128, 224, 16, 16]
+      vs-face-65: [192, 224, 16, 16]
+  - name: ow-vs-faces-4
+    image: texture/stddat/16taisen
+    palette: 4
+    original_size: [256, 256]
+    dp_per_pixel: 3
+    sprites:
+      vs-face-60: [32, 224, 16, 16]
+      vs-face-64: [160, 224, 16, 16]
   # El cursor de las órdenes y las piezas del marco de la tira (paleta 1).
   - name: ow-command-frame
     image: texture/etcdat/btlcomnd
@@ -934,3 +1077,26 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       boot-screen: [0, 0, 320, 206]
+  # Las mismas dos imágenes más anchas, para la opción «Imágenes a pantalla ancha» (ui/common/title_picture.lua): cada
+  # lado sigue como un espejo de sus columnas del borde (mirror_sides: [izquierda, derecha], en píxeles de la imagen del
+  # juego; original_size las cuenta), y así una ventana más ancha que la imagen ampliada ve la rejilla seguir en vez de
+  # negro. Los espejos no llegan al logotipo: TITLE2 lo tiene entre las columnas 172 y 293 (a la derecha quedan 26
+  # columnas libres) y TITLE256 su marco entre la 52 y la 263.
+  - name: ow-title-wide
+    image: texture/etcna/title2
+    palette: 0
+    upscale: smooth
+    mirror_sides: [100, 26]
+    original_size: [446, 240]
+    dp_per_pixel: 3
+    sprites:
+      title-wide: [0, 0, 446, 240]
+  - name: ow-boot-wide
+    image: texture/etcna/title256
+    palette: 0
+    upscale: smooth
+    mirror_sides: [52, 56]
+    original_size: [428, 256]
+    dp_per_pixel: 3
+    sprites:
+      boot-wide: [0, 0, 428, 206]

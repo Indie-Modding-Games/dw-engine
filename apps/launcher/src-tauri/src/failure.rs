@@ -36,7 +36,8 @@ pub mod code {
     pub const NO_GAME: &str = "no-game";
     /// The release server could not be reached.
     pub const NETWORK: &str = "network";
-    /// The release server refused us: the beta gateway needs the beta key (missing or wrong).
+    /// The release server refused us: the beta key this launcher sends is missing or no longer
+    /// accepted (an old launcher after the key changed: a new one has the new key).
     pub const AUTH: &str = "auth";
     /// No release has a game package for this computer.
     pub const NO_RELEASE: &str = "no-release";

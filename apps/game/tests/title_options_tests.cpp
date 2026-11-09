@@ -92,6 +92,25 @@ TEST_CASE("every game option's row on the title's options page changes and saves
   }
 }
 
+TEST_CASE("the widescreen pictures are the UI's option: on until the player turns them off") {
+  const test_support::TempFolder folder;
+  const std::filesystem::path file = folder.path() / "settings.yaml";
+  test::MenuUi menu;
+  UserSettings settings;
+  publishGameToggles(*menu.ui, settings);
+  CHECK(menu.ui->setting(WidescreenPicturesSetting) == ui::UiValue{WidescreenPicturesDefault});
+  CHECK(WidescreenPicturesDefault);
+  // Changed at the title and in a game alike, kept in the settings.
+  CHECK_FALSE(changeGameToggle(
+      ui::UiCommand{.name = std::string{WidescreenPicturesSetting}, .value = false}, *menu.ui,
+      settings, file));
+  CHECK(
+      changeUiToggle(ui::UiCommand{.name = std::string{WidescreenPicturesSetting}, .value = false},
+                     *menu.ui, settings, file));
+  CHECK(menu.ui->setting(WidescreenPicturesSetting) == ui::UiValue{false});
+  CHECK(loadUserSettings(file).widescreenPictures == std::optional<bool>{false});
+}
+
 TEST_CASE("a game option's command keeps a true or false and leaves other commands alone") {
   test::MenuUi menu;
   UserSettings settings;

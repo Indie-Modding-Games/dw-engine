@@ -12,7 +12,9 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string_view>
+#include <vector>
 
 namespace dwe::dwx {
 
@@ -28,7 +30,8 @@ struct Y4mHeader {
   std::uint32_t height = 0;
   std::uint32_t fpsNumerator = 0;
   std::uint32_t fpsDenominator = 0;
-  std::size_t frames = 0;
+  // 8, or 10 for C420p10 (16-bit little-endian samples).
+  unsigned bitDepth = 8;
 };
 
 std::string_view textOf(std::span<const std::byte> bytes) {
@@ -97,8 +100,10 @@ core::Result<Y4mHeader> readHeader(std::string_view line) {
       }
       break;
     case 'C':
-      if (!value.starts_with("420")) {
-        return core::fail(std::format("the Y4M's chroma '{}' is not 4:2:0", value));
+      if (value == "420p10") {
+        header.bitDepth = 10;
+      } else if (!value.starts_with("420") || value.starts_with("420p")) {
+        return core::fail(std::format("the Y4M's chroma '{}' is not 8- or 10-bit 4:2:0", value));
       }
       break;
     default:
@@ -185,7 +190,9 @@ core::Result<std::vector<std::byte>> cookVideo(std::span<const std::byte> source
   const std::size_t lumaSize = std::size_t{header->width} * header->height;
   const std::size_t chromaSize =
       std::size_t{(header->width + 1) / 2} * std::size_t{(header->height + 1) / 2};
-  const std::size_t pictureSize = lumaSize + (2 * chromaSize);
+  const bool tenBit = header->bitDepth == 10;
+  const std::size_t sampleBytes = tenBit ? 2 : 1;
+  const std::size_t pictureSize = (lumaSize + (2 * chromaSize)) * sampleBytes;
 
   aom_codec_iface_t* iface = aom_codec_av1_cx();
   aom_codec_enc_cfg_t config{};
@@ -201,11 +208,13 @@ core::Result<std::vector<std::byte>> cookVideo(std::span<const std::byte> source
   config.g_timebase = {.num = static_cast<int>(header->fpsDenominator),
                        .den = static_cast<int>(header->fpsNumerator)};
   config.g_threads = 1;
-  config.g_input_bit_depth = 8;
-  config.g_bit_depth = AOM_BITS_8;
+  config.g_input_bit_depth = header->bitDepth;
+  config.g_bit_depth = tenBit ? AOM_BITS_10 : AOM_BITS_8;
   config.rc_end_usage = AOM_Q;
   config.kf_max_dist = VideoKeyFrameDistance;
-  if (auto started = check(encoder.codec, aom_codec_enc_init(&encoder.codec, iface, &config, 0),
+  if (auto started = check(encoder.codec,
+                           aom_codec_enc_init(&encoder.codec, iface, &config,
+                                              tenBit ? AOM_CODEC_USE_HIGHBITDEPTH : 0),
                            "start the encoder");
       !started) {
     return std::unexpected{started.error()};
@@ -217,7 +226,10 @@ core::Result<std::vector<std::byte>> cookVideo(std::span<const std::byte> source
         std::pair{aom_codec_control(&encoder.codec, AOME_SET_CQ_LEVEL, VideoQuality),
                   "set the quality"},
         std::pair{aom_codec_control(&encoder.codec, AV1E_SET_COLOR_RANGE, AOM_CR_FULL_RANGE),
-                  "set the full range"}}) {
+                  "set the full range"},
+        std::pair{
+            aom_codec_control(&encoder.codec, AV1E_SET_MATRIX_COEFFICIENTS, AOM_CICP_MC_BT_601),
+            "set the colour matrix"}}) {
     // NOLINTEND(cppcoreguidelines-pro-type-vararg)
     if (auto set = check(encoder.codec, result, what); !set) {
       return std::unexpected{set.error()};
@@ -243,6 +255,8 @@ core::Result<std::vector<std::byte>> cookVideo(std::span<const std::byte> source
   put32(ivf, 0);
 
   aom_image_t image{};
+  // A 10-bit picture is copied out of the source, whose samples need not be aligned.
+  std::vector<std::uint16_t> wide(tenBit ? lumaSize + (2 * chromaSize) : 0);
   std::uint32_t written = 0;
   std::int64_t pts = 0;
   for (std::size_t offset = first->second; offset < source.size();) {
@@ -256,14 +270,24 @@ core::Result<std::vector<std::byte>> cookVideo(std::span<const std::byte> source
     if (source.size() - frame->second < pictureSize) {
       return core::fail(std::format("the Y4M ends inside frame {}", pts));
     }
-    // The picture's planes, in place in the source.
+    // The picture's planes: in place in the source, or copied when 10-bit.
     auto* planes =
         reinterpret_cast<unsigned char*>(const_cast<std::byte*>(source.data() + frame->second));
-    if (aom_img_wrap(&image, AOM_IMG_FMT_I420, header->width, header->height, 1, planes) ==
-        nullptr) {
+    if (tenBit) {
+      const std::byte* sample = source.data() + frame->second;
+      for (std::uint16_t& value : wide) {
+        value = static_cast<std::uint16_t>(std::to_integer<unsigned>(sample[0]) |
+                                           (std::to_integer<unsigned>(sample[1]) << 8U));
+        sample += 2;
+      }
+      planes = reinterpret_cast<unsigned char*>(wide.data());
+    }
+    if (aom_img_wrap(&image, tenBit ? AOM_IMG_FMT_I42016 : AOM_IMG_FMT_I420, header->width,
+                     header->height, 1, planes) == nullptr) {
       return core::fail("libaom cannot wrap a picture");
     }
     image.range = AOM_CR_FULL_RANGE;
+    image.bit_depth = header->bitDepth;
     if (auto encoded = check(encoder.codec, aom_codec_encode(&encoder.codec, &image, pts, 1, 0),
                              "encode a frame");
         !encoded) {

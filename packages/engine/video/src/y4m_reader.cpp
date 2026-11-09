@@ -80,7 +80,11 @@ bool readParameter(std::string_view token, Y4mStream& stream) {
     return true;
   }
   case 'C':
-    return value.starts_with("420");
+    if (value == "420p10") {
+      stream.bitDepth = 10;
+      return true;
+    }
+    return value.starts_with("420") && !value.starts_with("420p");
   case 'I':
     return value == "p" || value == "?";
   default:
@@ -147,14 +151,24 @@ core::Result<bool> Y4mReader::read(YuvPicture& picture) {
   if (!started || !*started) {
     return started;
   }
+  const std::size_t sampleBytes = stream_.bitDepth > 8 ? 2 : 1;
   picture.width = stream_.width;
   picture.height = stream_.height;
+  picture.bitDepth = stream_.bitDepth;
   picture.luma.resize(std::size_t{stream_.width} * stream_.height);
   picture.blue.resize(YuvPicture::chromaSize(stream_.width, stream_.height));
   picture.red.resize(picture.blue.size());
-  for (std::vector<std::uint8_t>* plane : {&picture.luma, &picture.blue, &picture.red}) {
-    if (auto done = readExactly(std::as_writable_bytes(std::span{*plane})); !done) {
+  for (std::vector<std::uint16_t>* plane : {&picture.luma, &picture.blue, &picture.red}) {
+    buffer_.resize(plane->size() * sampleBytes);
+    if (auto done = readExactly(buffer_); !done) {
       return std::unexpected{done.error()};
+    }
+    for (std::size_t i = 0; i < plane->size(); ++i) {
+      const auto low = std::to_integer<std::uint16_t>(buffer_[i * sampleBytes]);
+      (*plane)[i] = sampleBytes == 1
+                        ? low
+                        : static_cast<std::uint16_t>(
+                              low | (std::to_integer<std::uint16_t>(buffer_[(i * 2) + 1]) << 8U));
     }
   }
   return true;
@@ -165,9 +179,11 @@ core::Result<bool> Y4mReader::skip() {
   if (!started || !*started) {
     return started;
   }
-  discarded_.resize((std::size_t{stream_.width} * stream_.height) +
-                    (2 * YuvPicture::chromaSize(stream_.width, stream_.height)));
-  if (auto done = readExactly(discarded_); !done) {
+  const std::size_t sampleBytes = stream_.bitDepth > 8 ? 2 : 1;
+  buffer_.resize(((std::size_t{stream_.width} * stream_.height) +
+                  (2 * YuvPicture::chromaSize(stream_.width, stream_.height))) *
+                 sampleBytes);
+  if (auto done = readExactly(buffer_); !done) {
     return std::unexpected{done.error()};
   }
   return true;

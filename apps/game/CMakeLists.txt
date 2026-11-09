@@ -3,6 +3,7 @@ dwe_add_app(game
     SOURCES
         src/autotest.cpp
         src/battle_ground.cpp
+        src/battle_scene_view.cpp
         src/battle_screen.cpp
         src/battle_screen_exit.cpp
         src/battle_screen_retreat.cpp
@@ -73,6 +74,7 @@ dwe_add_app(game
         src/free_exploration.cpp
         src/game_saves.cpp
         src/model_viewer.cpp
+        src/movie_drawer.cpp
         src/movie_rules.cpp
         src/movie_screen.cpp
         src/naming_box.cpp
@@ -136,6 +138,7 @@ dwe_add_app(game
         src/story_naming.cpp
         src/story_item_keeper.cpp
         src/story_shop.cpp
+        src/arena_letters.cpp
         src/story_tournament.cpp
         src/tournament_bracket_screen.cpp
         src/tournament_match_screen.cpp
@@ -160,7 +163,9 @@ dwe_add_app(game
         src/ui_demo.cpp
         src/ui_skin_setting.cpp
         src/user_settings.cpp
+        src/versus_arena.cpp
         src/versus_flow.cpp
+        src/versus_loopback.cpp
         src/versus_screen.cpp
         src/field_scene_weather.cpp
         src/weather_particles.cpp
@@ -169,7 +174,8 @@ dwe_add_app(game
     DEPS core platform audio video rhi assets localization animation render signs input script ui debug scene ruleset field partner save content session battle inventory screens story evolution gym fishing tournament curling weather modes versus net
     OUTPUT_NAME dwe-game)
 
-dwe_add_shaders(game FILES shaders/test_scene.slang shaders/scene_prims.slang shaders/weather.slang)
+dwe_add_shaders(game FILES shaders/test_scene.slang shaders/scene_prims.slang shaders/weather.slang
+                 shaders/movie_upscale.slang shaders/movie_sharpen.slang)
 
 # The first start's screen asks for the player's disc before the game's UI has any content to draw with, so it uses
 # Dear ImGui on the game's window and device (first_run_screen.hpp).

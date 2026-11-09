@@ -27,7 +27,7 @@
           }
         },
         "bitstream_version": { "type": "integer" },
-        "chroma": { "description": "Chroma layout of video.y4m (YUV4MPEG2 C tag).", "enum": ["420jpeg"] },
+        "chroma": { "description": "Chroma layout and depth of video.y4m (YUV4MPEG2 C tag): 420p10 since the restored decode, 420jpeg in older extractions.", "enum": ["420p10", "420jpeg"] },
         "range": { "description": "Sample range of video.y4m.", "enum": ["full"] }
       }
     },

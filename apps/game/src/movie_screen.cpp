@@ -13,12 +13,6 @@ namespace dwe::app {
 
 namespace {
 
-// The screen the original shows a movie on, and where on it the picture goes (mov.c:
-// MOV_initEnvironment(&MOV_ENV, 0, 32, 0, 272): 176 lines from line 32 of 240).
-constexpr float ScreenWidth = 320.0F;
-constexpr float ScreenHeight = 240.0F;
-constexpr float PictureTop = 32.0F;
-
 // The actions that skip a movie. The original reads only Start (mov.c: MOV_playMovie reads
 // PadRead & 0x800), here "pause"; on a PC menu, confirm and cancel skip too, as Tab, Return or
 // Escape would be the first key a player tries.
@@ -28,7 +22,7 @@ constexpr std::array<std::string_view, 4> SkipActions = {"pause", "menu", "confi
 
 core::Result<std::unique_ptr<MovieScreen>> MovieScreen::create(render::Renderer& renderer,
                                                                audio::Audio& sound) {
-  auto quads = render::QuadBatch::create(renderer, rhi::BlendMode::Opaque);
+  auto quads = MovieDrawer::create(renderer);
   if (!quads) {
     return std::unexpected{quads.error()};
   }
@@ -165,22 +159,21 @@ void MovieScreen::logDrift() {
   }
 }
 
-// The original's screen fitted to the window with its shape kept, and the picture on it.
+// The picture where movieFrame puts it: on the original's screen fitted to the window, or fitted to
+// the window alone with fillWindow_.
 void MovieScreen::showPicture(const video::MoviePlayer& player, render::TextureId texture) {
   quads_.clear();
   if (player.picture().empty()) {
     return;
   }
   const rhi::Extent target = renderer_->targetExtent();
-  const float scale = std::min(static_cast<float>(target.width) / ScreenWidth,
-                               static_cast<float>(target.height) / ScreenHeight);
-  const glm::vec2 screenOrigin{(static_cast<float>(target.width) - (ScreenWidth * scale)) / 2.0F,
-                               (static_cast<float>(target.height) - (ScreenHeight * scale)) / 2.0F};
   const auto& info = player.info();
-  quads_.add(
-      {.position = screenOrigin + glm::vec2{0.0F, PictureTop * scale},
-       .size = glm::vec2{static_cast<float>(info.width), static_cast<float>(info.height)} * scale,
-       .texture = texture});
+  const MovieFrame frame =
+      movieFrame(static_cast<float>(target.width), static_cast<float>(target.height),
+                 static_cast<float>(info.width), static_cast<float>(info.height), fillWindow_);
+  quads_.add({.position = glm::vec2{frame.left, frame.top},
+              .size = glm::vec2{frame.width, frame.height},
+              .texture = texture});
 }
 
 // The original pauses the stream and clears the screen (mov.c: MOV_playMovie, after its loop).

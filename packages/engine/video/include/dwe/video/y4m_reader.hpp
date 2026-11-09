@@ -20,10 +20,13 @@ struct Y4mStream {
   std::uint32_t height = 0;
   std::uint32_t fpsNumerator = 0;
   std::uint32_t fpsDenominator = 1;
+  // 8, or 10 for C420p10 (16-bit little-endian samples).
+  unsigned bitDepth = 8;
 };
 
 // Reads a YUV4MPEG2 (.y4m) video frame by frame from a file read in pieces: only the frame being
-// read is in memory. Only 4:2:0 progressive streams, as dwx extract writes the movies.
+// read is in memory. Only 8- and 10-bit 4:2:0 progressive streams, as dwx extract writes the
+// movies.
 class Y4mReader {
 public:
   // Reads and checks the stream header. name is for the errors.
@@ -47,7 +50,7 @@ private:
   std::unique_ptr<assets::FileReader> file_;
   std::string name_;
   Y4mStream stream_;
-  std::vector<std::byte> discarded_;
+  std::vector<std::byte> buffer_;
 };
 
 } // namespace dwe::video

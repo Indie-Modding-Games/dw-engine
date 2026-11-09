@@ -27,6 +27,9 @@
 #   --no-build           with --upload: upload what an earlier run left in --out (checked again)
 #   --dry-run-key <dir>  tests only: generate a throwaway key in <dir> (its password stays in
 #                        memory) and build with it, without asking anything; refuses --upload
+# The beta key built into the launcher comes from DWE_LAUNCHER_BETA_KEY in the environment: the
+# gateway's BETA_KEY, the value of the repository's DWE_BETA_KEY secret (which gh cannot read
+# back). It is never printed. --dry-run-key builds with a placeholder when it is unset.
 # The key's password is asked once, on the terminal, at the start. The key and the password reach
 # the signing containers only through TAURI_SIGNING_PRIVATE_KEY and
 # TAURI_SIGNING_PRIVATE_KEY_PASSWORD (never on a command line, in a file or in the log) and are
@@ -236,6 +239,12 @@ if [[ -n "$links" ]]; then
     2>/dev/null || die "the links must be a JSON object: $links"
 fi
 echo "release_local: links ${links:-none}"
+if [[ -z "${DWE_LAUNCHER_BETA_KEY:-}" && -n "$dry_run_dir" ]]; then
+  DWE_LAUNCHER_BETA_KEY="placeholder-beta-key-for-a-dry-run"
+fi
+[[ "${DWE_LAUNCHER_BETA_KEY:-}" =~ ^[^[:space:]]{24,}$ ]] \
+  || die "set DWE_LAUNCHER_BETA_KEY to the beta gateway's BETA_KEY (24 characters or more)"
+export DWE_LAUNCHER_BETA_KEY
 avail="$(df -Pk "$out" | awk 'NR == 2 { print int($4 / 1048576) }')"
 ((build == 0 || avail >= 15)) \
   || echo "release_local: WARNING: only ${avail} GB free; a build takes ~10 GB"
@@ -386,7 +395,7 @@ done
 for deb in "$dist"/*.deb; do
   dpkg-deb -c "$deb" | awk '{ printf "%s%c", $6, 0 }' | policy_forbidden_paths_in >&2 \
     && die "$(basename "$deb") holds disc data"
-  # The program a tester runs has the gateway and the public key built in.
+  # The program a tester runs has the gateway, the public key and the beta key built in.
   dpkg-deb --fsys-tarfile "$deb" | tar -x -C "$work" --wildcards '*/bin/*'
 done
 binaries=("$work"/usr/bin/* "$root/build/launcher/x86_64-pc-windows-msvc/release/dwe-launcher.exe")
@@ -395,10 +404,12 @@ for binary in "${binaries[@]}"; do
   grep -q -a -F "$gateway" "$binary" \
     || die "$(basename "$binary") does not have the gateway $gateway"
   grep -q -a -F "$public_key" "$binary" || die "$(basename "$binary") does not have the public key"
+  grep -q -a -F -e "$DWE_LAUNCHER_BETA_KEY" "$binary" \
+    || die "$(basename "$binary") does not have the beta key"
 done
 rm -rf "$work"
 work=""
-echo "release_local: no disc data; the launchers have the gateway and the public key"
+echo "release_local: no disc data; the launchers have the gateway, the public key and the beta key"
 step_done
 
 if ((upload)); then
