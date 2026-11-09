@@ -7,6 +7,7 @@
 #include <dwe/assets/indexed_image.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/pak.hpp>
+#include <dwe/assets/texture.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/core/yaml.hpp>
@@ -27,6 +28,8 @@ namespace dwe::dwx {
 namespace {
 
 constexpr std::string_view PngExtension = ".png";
+// A cooked base pack keeps an image as a KTX2 texture when the game loads it as one (ADR 0017).
+constexpr std::string_view Ktx2Extension = ".ktx2";
 constexpr std::string_view MapPrefix = "map/";
 constexpr std::string_view BackgroundPrefix = "background_";
 constexpr std::string_view TexturePrefix = "texture/";
@@ -56,14 +59,44 @@ bool isBackground(std::string_view id) {
   return slash > MapPrefix.size() && id.substr(slash + 1).starts_with(BackgroundPrefix);
 }
 
-// The base pack's copy of an image: replacements are measured against it.
-const assets::AssetSource* basePng(const assets::VirtualFileSystem& files,
-                                   const assets::AssetId& id) {
+bool isKtx2(const assets::AssetSource& source) {
+  return assets::pathText(source.file.extension()) == Ktx2Extension;
+}
+
+// The base pack's copy of an image, a PNG or, in a cooked pack, a KTX2 texture: replacements are
+// measured against it.
+const assets::AssetSource* baseImage(const assets::VirtualFileSystem& files,
+                                     const assets::AssetId& id) {
   const auto sources = files.sources(id);
-  if (sources.empty() || assets::pathText(sources.front().file.extension()) != PngExtension) {
+  if (sources.empty()) {
     return nullptr;
   }
-  return &sources.front();
+  const std::string extension = assets::pathText(sources.front().file.extension());
+  return extension == PngExtension || extension == Ktx2Extension ? &sources.front() : nullptr;
+}
+
+// A KTX2 texture's largest level as an RGBA PNG.
+core::Result<std::vector<std::byte>> pngOfKtx2(std::span<const std::byte> ktx2) {
+  auto texture = assets::decodeKtx2(ktx2, assets::TexelEncoding::Rgba8);
+  if (!texture) {
+    return std::unexpected{texture.error()};
+  }
+  if (texture->levels.empty()) {
+    return core::fail("the texture has no level");
+  }
+  return assets::encodePng(assets::Image{.width = texture->width,
+                                         .height = texture->height,
+                                         .pixels = std::move(texture->levels.front())});
+}
+
+// The image's file as a PNG: a PNG as it is, a KTX2 texture decoded.
+core::Result<std::vector<std::byte>> pngOf(const assets::VirtualFileSystem& files,
+                                           const assets::AssetSource& source) {
+  auto bytes = files.read(source);
+  if (!bytes || !isKtx2(source)) {
+    return bytes;
+  }
+  return pngOfKtx2(*bytes);
 }
 
 core::Result<void> writeText(const std::filesystem::path& file, std::string_view text) {
@@ -113,7 +146,7 @@ core::Result<std::size_t> exportTexture(const assets::VirtualFileSystem& files,
                                         const assets::AssetId& id,
                                         const assets::AssetSource& source,
                                         const std::filesystem::path& folder) {
-  auto bytes = files.read(source);
+  auto bytes = pngOf(files, source);
   if (!bytes) {
     return std::unexpected{bytes.error()};
   }
@@ -121,7 +154,9 @@ core::Result<std::size_t> exportTexture(const assets::VirtualFileSystem& files,
   if (!palettes) {
     return std::unexpected{palettes.error()};
   }
-  if (palettes->empty()) {
+  // A cooked texture is already in colour: dwx cook keeps every image with more than one palette
+  // as an indexed PNG, so it has its only palette applied.
+  if (palettes->empty() || isKtx2(source)) {
     if (auto written = writePaletteImage(id, 0, *bytes, folder); !written) {
       return std::unexpected{written.error()};
     }
@@ -197,12 +232,12 @@ core::Result<ExportSummary> writeExport(const assets::VirtualFileSystem& files,
   }
   summary.maps = *maps;
   for (const assets::AssetId& id : files.ids()) {
-    const assets::AssetSource* source = basePng(files, id);
+    const assets::AssetSource* source = baseImage(files, id);
     if (source == nullptr) {
       continue;
     }
     if (isBackground(id.str())) {
-      auto bytes = files.read(*source);
+      auto bytes = pngOf(files, *source);
       if (!bytes) {
         return std::unexpected{bytes.error()};
       }

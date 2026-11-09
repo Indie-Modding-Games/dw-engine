@@ -72,7 +72,9 @@ dwx export-images <contenido> [--with <carpeta de paquetes>]... [--language es] 
 ```
 
 Escribe la exportación que lee el lanzador (sin `LEEME.txt`, que añade el lanzador): las imágenes de la base a su
-tamaño y `maps.tsv` (`<id>\t<nombre>`). Solo sustituye una carpeta vacía o una exportación anterior.
+tamaño y `maps.tsv` (`<id>\t<nombre>`). Solo sustituye una carpeta vacía o una exportación anterior. Lee el paquete
+base como lo deje la instalación, carpeta o `base.pak`: en `base.pak` las imágenes de una sola paleta están cocinadas a
+KTX2, y la exportación las decodifica a PNG en color (la paleta ya va aplicada, como `_palette0`).
 
 Para probar en el juego sin lanzador: crea una carpeta con el `pack.yaml` de
 `apps/launcher/src-tauri/src/custom_images/pack.yaml` y las imágenes con los nombres de arriba, y arranca el juego con

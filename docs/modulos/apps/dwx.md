@@ -20,9 +20,29 @@ del informe escribe en la salida de error una línea `progress <porcentaje> <pas
 Con `--progress` al final, `dwx cook` y `dwx pack` escriben en la salida de error una línea
 `progress <porcentaje> <paso>` (`cook` o `pack`) cada vez que cambia el porcentaje de ficheros cocinados o copiados, o escritos en el
 `.pak`. Lo que la caché ya tiene no cuenta, así que un segundo `dwx cook` sin cambios no escribe ninguna. Los scripts
-de empaquetado los usan para los paquetes del equipo (`scripts/package/cook_team_packs.sh`); el lanzador puede
-usarlos cuando cocine el paquete `base`. Lo prueban `tests/cook_tests.cpp` y el test de avance de
-`packages/engine/assets/tests/pak_tests.cpp`.
+de empaquetado los usan para los paquetes del equipo (`scripts/package/cook_team_packs.sh`). Lo prueban
+`tests/cook_tests.cpp` y el test de avance de `packages/engine/assets/tests/pak_tests.cpp`.
+
+## Cocinar a un `.pak` de una vez (`dwx cook-pak`)
+
+`dwx cook-pak <carpeta del paquete> -o <fichero.pak> [--progress]` es lo que usan el lanzador y la pantalla de primer
+arranque para dejar el paquete `base` en un solo `base.pak` ([ADR 0017](../../adr/0017-cocinado-y-archivos-pak.md)):
+
+1. Cocina el paquete en `<fichero.pak>.cook`, al lado del archivo (`dwx cook`, con su caché).
+2. Lo empaqueta en `<fichero.pak>.partial` (`dwx pack`).
+3. Comprueba el archivo: cada entrada se relee y coincide con su SHA-1, el manifiesto es el del paquete, tiene los
+   mismos ids de asset que la carpeta de origen y el motor abre cada asset montándolo solo, como `dwx extract` comprueba
+   la extracción (`assets::checkContent`).
+4. Solo entonces le da su nombre (sustituye al que hubiera) y borra la carpeta cocinada.
+
+Nunca toca la carpeta de origen: borrarla es cosa de quien lo llama, después de que `dwx cook-pak` acabe bien. Si
+falla, el `.partial` se borra, el `.pak` anterior se queda y la carpeta cocinada también, para el siguiente intento.
+Como esa carpeta es un paquete con el mismo id, el archivo tiene que ir fuera de las carpetas que monta el juego
+mientras se cocina (el lanzador usa `<datos>/content.partial` o `<datos>/content.convert`).
+
+Con `--progress` escribe `progress <porcentaje> <paso>` en la salida de error, con el porcentaje del trabajo entero:
+`cook` hasta el 80, `pack` hasta el 95, `check` y `done` en el 100. Lo prueban `tests/cook_pak_tests.cpp`, entre ellos
+una instalación desde cero con un disco sintético que acaba solo con `base.pak` y que el juego monta.
 
 ## La caché de desarrollo (`dwx extract --cache`)
 

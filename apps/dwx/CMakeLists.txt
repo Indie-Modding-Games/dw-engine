@@ -24,6 +24,7 @@ dwe_add_module(dwx
         src/audio_extractors.cpp
         src/base_pack.cpp
         src/cook.cpp
+        src/cook_pak.cpp
         src/disc_cache.cpp
         src/disc_description.cpp
         src/effect_extractors.cpp
