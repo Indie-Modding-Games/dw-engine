@@ -10,9 +10,12 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <set>
+#include <thread>
 #include <utility>
+#include <vector>
 
 #include "rml_interfaces.hpp"
 #include "ui_renderer_impl.hpp"
@@ -26,7 +29,8 @@ public:
   RenderBridge(TextureSources& sources, UiRenderer* renderer)
       : sources_{&sources}, gpu_{renderer == nullptr ? nullptr : &renderer->impl()} {}
 
-  // Forgets the last frame's draws, before RmlUi renders the next one.
+  // Forgets the last frame's draws, before RmlUi renders the next one, and swaps in the smoothed
+  // pixels of the images whose smoothing finished (LoadTexture).
   void beginFrame();
 
   Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices,
@@ -56,8 +60,23 @@ public:
   }
 
 private:
+  // An image smoothed on a thread of its own (smoothed in render_bridge.cpp), so the frame that
+  // first draws it does not wait: the title's pictures take seconds to smooth the first time.
+  struct Smoothing;
+  struct SmoothingWork {
+    std::shared_ptr<Smoothing> job;
+    std::jthread thread;
+  };
+
   // A texture for premultiplied RGBA pixels: a renderer texture, or a plain handle when headless.
   Rml::TextureHandle createTexture(Rml::Vector2i dimensions, std::span<const std::byte> pixels);
+  // Smooths a texture's straight-alpha pixels on a thread; it draws as it is until they are ready.
+  void startSmoothing(Rml::TextureHandle texture, std::uint32_t width, std::uint32_t height,
+                      std::vector<std::byte> pixels, std::uint32_t doublings);
+  // Makes a texture of each finished smoothing, drawn from then on instead of its image's.
+  void finishSmoothings();
+  // The renderer texture a handle draws: its smoothed one once there is one.
+  [[nodiscard]] render::TextureId drawnTexture(Rml::TextureHandle texture) const;
 
   TextureSources* sources_;
   UiRenderer::Impl* gpu_;
@@ -67,6 +86,14 @@ private:
   // edges.
   std::set<Rml::TextureHandle> sharpTextures_;
   std::shared_ptr<const render::UpscaleCache> upscaleCache_;
+  // The smoothings under way, by the texture they smooth, and those whose texture was released
+  // first (joined once finished, so none blocks a frame). One smooths at a time: the upscaler
+  // already spreads each image over the processor's threads.
+  std::map<Rml::TextureHandle, SmoothingWork> smoothings_;
+  std::vector<SmoothingWork> abandonedSmoothings_;
+  std::shared_ptr<std::mutex> smoothingTurn_ = std::make_shared<std::mutex>();
+  // The smoothed textures, drawn instead of the handles' own.
+  std::map<Rml::TextureHandle, render::TextureId> smoothedTextures_;
   bool scissorEnabled_ = false;
   rhi::Rect scissor_;
   glm::mat4 transform_{1.0F};
