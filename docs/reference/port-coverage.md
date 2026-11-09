@@ -255,7 +255,7 @@ Portado 40, parcial 4, falta 60.
 | `VS_addVersusModelScene` | `vs/vs_hud.c:1349` | falta | Inicia la animación del letrero de enfrentamiento del versus. | — |
 | `VS_tickVersusModelScene` | `vs/vs_hud.c:1355` | falta | Anima el letrero de enfrentamiento del versus. | — |
 | `VS_isVersusModelSceneFinished` | `vs/vs_hud.c:1401` | falta | Indica si terminó el letrero de enfrentamiento del versus. | — |
-| `VS_loadStageModels` | `vs/vs_hud.c:1410` | falta | Calcula las curvas de los letreros de resultado y carga sus modelos. | `packages/game/tournament/include/dwe/game/tournament/match_show.hpp:345` |
+| `VS_loadStageModels` | `vs/vs_hud.c:1410` | falta | Calcula las curvas de los letreros de resultado y carga sus modelos. | `apps/game/src/arena_letters.hpp:27` |
 | `VS_addResultModelScene` | `vs/vs_hud.c:1445` | falta | Muestra el letrero de victoria del jugador ganador del versus. | `apps/game/src/versus_arena.cpp:281` |
 | `VS_setVersusModelSceneTimer` | `vs/vs_hud.c:1549` | falta | Fija el temporizador de la escena de letreros del versus. | `apps/game/src/versus_arena.cpp:46` |
 | `VS__setPostIntroPosition` | `vs/vs_intro.c:256` | falta | Deja al luchador en su posición final tras la presentación del versus. | — |
