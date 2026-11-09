@@ -260,12 +260,26 @@ void FieldScene::submitBattleVisualModels() {
         odd ? repaintedStatusModel(BuffModel, DiskRow, CommonSheet, DiskOtherPalette)
             : statusModel(BuffModel);
     const std::optional<StatusAnchor> anchor = statusAnchor(disk->fighter);
+    // Smooth motion: its size and turn between the last frame's and this one's
+    // (battle_glide.hpp).
+    const StatusVisuals* last = lastStatusFrame();
+    const StatusVisuals::BuffDisk* before = last != nullptr && last->buffDisk() &&
+                                                    last->buffDisk()->fighter == disk->fighter &&
+                                                    last->buffDisk()->frame + 1 == disk->frame
+                                                ? &*last->buffDisk()
+                                                : nullptr;
+    const auto mixed = [before, this](std::int32_t was, std::int32_t is) {
+      return before != nullptr
+                 ? between(static_cast<float>(was), static_cast<float>(is), visualsProgress_)
+                 : static_cast<float>(is);
+    };
     if (model != nullptr && anchor) {
-      const float across = static_cast<float>(disk->scaleXZ) / One;
-      const float up = static_cast<float>(disk->scaleY) / One;
+      const float across = mixed(before ? before->scaleXZ : 0, disk->scaleXZ) / One;
+      const float up = mixed(before ? before->scaleY : 0, disk->scaleY) / One;
       submit(*model, anchor->feet,
-             {{DiskObject, consoleTransform({0.0F, static_cast<float>(disk->rotationY), 0.0F},
-                                            {across, up, across})}},
+             {{DiskObject, consoleTransform(
+                               {0.0F, mixed(before ? before->rotationY : 0, disk->rotationY), 0.0F},
+                               {across, up, across})}},
              1.0F);
     }
   }
@@ -306,18 +320,31 @@ void FieldScene::addBattleVisualBillboards(std::vector<render::MapBillboard>& bi
     return;
   }
   // BTL_renderItemParticles: every glow in the first one's brightness, where the item landed.
-  for (const auto& burst : statusVisuals_->itemBursts()) {
+  // Smooth motion: each glow between its last frame's place and this one's (battle_glide.hpp).
+  const StatusVisuals* last = lastStatusFrame();
+  const auto& bursts = statusVisuals_->itemBursts();
+  for (std::size_t index = 0; index < bursts.size(); ++index) {
+    const auto& burst = bursts.at(index);
     if (!burst) {
       continue;
     }
+    const StatusVisuals::ItemBurst* before = lastFramesOf(
+        last ? &last->itemBursts() : nullptr, index, *burst, [](const auto& was, const auto& is) {
+          return was.fighter == is.fighter && was.origin == is.origin && was.timer == is.timer + 1;
+        });
     const std::optional<StatusAnchor> anchor = statusAnchor(burst->fighter);
     const float feet = anchor ? anchor->feet.y : 0.0F;
     const float grey = static_cast<float>(burst->particles.front().brightness >> 4) / ColorOne;
-    for (const StatusVisuals::ItemParticle& particle : burst->particles) {
+    for (std::size_t k = 0; k < burst->particles.size(); ++k) {
+      const StatusVisuals::ItemParticle& particle = burst->particles.at(k);
       if (particle.life < 0) {
         continue;
       }
-      const glm::vec3 offset = worldOf(vectorOf(particle.position) / SubUnit);
+      glm::vec3 position = vectorOf(particle.position);
+      if (before != nullptr && before->particles.at(k).life == particle.life + 1) {
+        position = glm::mix(vectorOf(before->particles.at(k).position), position, visualsProgress_);
+      }
+      const glm::vec3 offset = worldOf(position / SubUnit);
       billboards.push_back({.centre = glm::vec3{static_cast<float>(burst->origin.x), feet,
                                                 static_cast<float>(burst->origin.z)} +
                                       offset,
@@ -397,20 +424,34 @@ void FieldScene::addBattleVisualPrims(std::vector<ScenePrim>& prims) {
   }
 
   // BTL_renderBuffTrails: the streaks still alive, fading with their life, over the feet.
+  // Smooth motion: each rising between its last frame's corners and this one's
+  // (battle_glide.hpp).
   if (const auto& trails = statusVisuals_->buffTrails()) {
     const std::optional<StatusAnchor> anchor = statusAnchor(trails->fighter);
     const float ground = anchor ? anchor->feet.y : 0.0F;
-    for (const StatusVisuals::BuffTrail& trail : trails->trails) {
+    const StatusVisuals* last = lastStatusFrame();
+    const StatusVisuals::BuffTrails* before =
+        last != nullptr && last->buffTrails() && last->buffTrails()->fighter == trails->fighter
+            ? &*last->buffTrails()
+            : nullptr;
+    for (std::size_t k = 0; k < trails->trails.size(); ++k) {
+      const StatusVisuals::BuffTrail& trail = trails->trails.at(k);
       if (trail.life <= 0) {
         continue;
       }
+      const StatusVisuals::BuffTrail* was =
+          before != nullptr && before->trails.at(k).life == trail.life + 1 ? &before->trails.at(k)
+                                                                           : nullptr;
       const glm::vec3 color = glm::floor(TrailColor * static_cast<float>(trail.life) / TrailLife);
       ScenePrim prim{.shape = ScenePrim::Shape::Quad,
                      .color = glm::vec4{color / ColorOne, 1.0F},
                      .texture = *sheet,
                      .blend = ScenePrimBlend::Additive};
       for (std::size_t i = 0; i < prim.corners.size(); ++i) {
-        const glm::vec3 corner = vectorOf(trail.corners.at(i));
+        glm::vec3 corner = vectorOf(trail.corners.at(i));
+        if (was != nullptr) {
+          corner = glm::mix(vectorOf(was->corners.at(i)), corner, visualsProgress_);
+        }
         prim.corners.at(i) = {.clip = frame.clip({corner.x, ground + corner.y, corner.z}),
                               .uv = TrailTexels.at(i) / SheetSize};
       }

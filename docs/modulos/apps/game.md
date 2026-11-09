@@ -862,13 +862,35 @@ fotogramas (el punto de cada sprite, la traslación de cada objeto de modelo, lo
 emparejando cada dibujo con el del mismo orden entre los de su técnica y su clase; si una técnica cambió cuántos
 dibuja de una clase, ese fotograma se dibuja tal cual. Las sombras, las auras, los anillos y los demás efectos de
 estado que cuelgan de un luchador (`statusAnchor`, `nodePoint`) siguen su sitio deslizado; la lógica del combate
-(`BattleEffectBodies`, las probetas de vuelo) lee el del fotograma. Las animaciones de los luchadores siguen avanzando
-por ticks enteros (60 por segundo). Apagado, todo se dibuja como antes.
+(`BattleEffectBodies`, las probetas de vuelo) lee el del fotograma.
+
+Las animaciones de los luchadores avanzan por ticks enteros (60 por segundo, `FieldScene::runFighters`): a 120 imágenes
+por segundo o más el cuerpo salta de pose en pose. Con el movimiento suave, `ClipTween` dibuja el clip en el tiempo
+que hay entre los dos últimos ticks según el alfa del bucle, un tick por detrás como el campo: solo se mezcla el tiempo
+dentro del clip que suena ahora, así que un clip nuevo, o el mismo empezado otra vez, se dibuja desde su principio sin
+arrastrar nada del anterior; un clip congelado se queda quieto. El reproductor del luchador guarda la pose y el tiempo
+del tick, que es lo que lee la lógica (`fighterPose`, `fighterPlayedThrough`). Las chispas de los golpes (las
+partículas de cada chispa: separación y color; las nubes de polvo: altura, tamaño y tono) y los efectos de estado (las
+burbujas del veneno, los objetos que giran con la confusión, la señal del aturdimiento al encogerse y los anillos que
+caen de ella, el disco y las estelas de las mejoras, los brillos de los objetos) cambian una vez por fotograma de
+combate; `FieldScene::setStatusVisuals` guarda los del fotograma anterior y se dibujan entre los dos, un fotograma por
+detrás. Cada cosa se empareja con la misma del fotograma anterior (misma ranura, mismo dueño, un fotograma más joven);
+lo que acaba de aparecer, termina o salta se dibuja tal cual, sin estelas. Los dibujos que cambian de imagen (el
+destello de la chispa, el cuadro de la burbuja, las cifras de la cuenta atrás) cambian en su fotograma. Quedan como el
+original el aura del remate y los anillos de la cura (sus tablas cambian a saltos de objeto). Los luchadores de la
+arena del versus se dibujan igual, con el ajuste del jugador (`VersusScreen::setSmoothMotion`). Apagado, todo se dibuja
+como antes, igual que el original.
+
+Para capturas entre dos ticks, el canal de control acepta `pause {"alpha": 0.5}`: con la lógica parada, cada imagen se
+dibuja esa fracción de tick después del último (ver `docs/guides/control-remoto.md`).
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
 | Luchadores entre fotogramas | Se dibujan en el sitio de cada fotograma (20 por segundo) | `PoseGlide` desliza la posición y el giro durante el fotograma, un fotograma por detrás; saltos de más de 500 unidades de golpe | `battle_glide_tests.cpp` («a fighter glides over the battle's frame…», «a fighter's turn glides the short way…»); capturas | Mejora opcional (`smooth_motion`, encendida por defecto) |
 | Efectos de las técnicas entre fotogramas | Se redibujan en cada fotograma | `blendEffects`: sprites, objetos de modelo y partículas emparejados por técnica, clase y orden | `battle_glide_tests.cpp` («the effects glide between two frames…», «an effect model glides its translation…») | Mejora opcional (`smooth_motion`) |
+| Animaciones de los luchadores entre ticks | El cuerpo cambia de pose en cada fotograma | `ClipTween`: el clip en el tiempo entre los dos últimos ticks, un tick por detrás; un clip nuevo o reiniciado desde su principio | `battle_glide_tests.cpp` («a held fighter's clip is drawn between its last two ticks…», «a fighter's new clip…»); capturas | Mejora opcional (`smooth_motion`) |
+| Chispas de los golpes y efectos de estado entre fotogramas | Se redibujan en cada fotograma | Los del fotograma anterior emparejados por ranura y dueño (`sparkBehind`, `cloudBehind`, `betweenFrames`) | `battle_glide_tests.cpp` («the status visuals' counts…», «a hit spark and a cloud…») | Mejora opcional (`smooth_motion`) |
+| La lógica del combate con y sin movimiento suave | | Misma secuencia de ticks: el hash por tick del combate y de lo que lee del dibujo es igual encendido y apagado | `battle_glide_tests.cpp` («smooth motion changes only the drawing…») | Igual |
 
 ## Estilo chibi
 

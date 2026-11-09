@@ -395,9 +395,18 @@ core::Result<ControlRequest> requestFrom(const JsonValue& request) {
   case Kind::PreviewClear:
   case Kind::Rescan:
   case Kind::Status:
-  case Kind::Pause:
   case Kind::Resume:
   case Kind::Quit:
+    break;
+  case Kind::Pause:
+    if (const JsonValue* alpha = request.find("alpha"); alpha != nullptr && !alpha->isNull()) {
+      const double* number = alpha->number();
+      if (number == nullptr || *number < 0.0 || *number > 1.0) {
+        read = core::fail("'alpha' must be a number from 0 to 1");
+        break;
+      }
+      out.alpha = *number;
+    }
     break;
   }
   if (!read) {
@@ -630,11 +639,13 @@ void RemoteControl::handle(std::uint64_t client, const std::string& id,
   case Kind::Pause:
     paused_ = true;
     pending_ = 0;
+    drawAlpha_ = request.alpha;
     reply(client, id, statusFields());
     return;
   case Kind::Resume:
     paused_ = false;
     pending_ = 0;
+    drawAlpha_.reset();
     reply(client, id, statusFields());
     return;
   case Kind::Advance:

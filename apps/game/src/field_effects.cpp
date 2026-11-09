@@ -437,20 +437,26 @@ std::vector<ScenePrim> FieldEffects::draw(const FieldEffectView& view) const {
       return;
     }
     const auto state = static_cast<std::size_t>(cloud.state);
-    const glm::vec3 world = worldOf({cloud.x, CloudY.at(state), cloud.z});
+    // Smooth motion: its height, size and shade on the way from the last frame's.
+    const auto look = [&cloud, state](const std::array<std::int32_t, CloudFrames>& table) {
+      const auto now = static_cast<float>(table.at(state));
+      if (cloud.behind <= 0.0F || state == 0) {
+        return now;
+      }
+      const auto last = static_cast<float>(table.at(state - 1));
+      return now + ((last - now) * std::min(cloud.behind, 1.0F));
+    };
+    const glm::vec3 world{static_cast<float>(cloud.x), -look(CloudY), -static_cast<float>(cloud.z)};
     const float depth = frame.depth(world);
     if (depth <= 0.0F || depth >= SpriteFarDepth) {
       return;
     }
-    const float side =
-        CloudSide * static_cast<float>(CloudScale.at(state)) / ScaleOne * view.focalLength / depth;
+    const float side = CloudSide * look(CloudScale) / ScaleOne * view.focalLength / depth;
     const auto u = static_cast<float>(CloudU.at(state));
-    sorted.push_back(
-        {.depth = depth,
-         .prim = upright(
-             frame.clip(world), glm::vec2{side / 2.0F}, {u, 0.0F}, glm::vec2{CloudSide},
-             EffectImageSize, *view.images.clouds,
-             glm::vec4{glm::vec3{static_cast<float>(CloudShade.at(state)) / ShadeOne}, 1.0F})});
+    sorted.push_back({.depth = depth,
+                      .prim = upright(frame.clip(world), glm::vec2{side / 2.0F}, {u, 0.0F},
+                                      glm::vec2{CloudSide}, EffectImageSize, *view.images.clouds,
+                                      glm::vec4{glm::vec3{look(CloudShade) / ShadeOne}, 1.0F})});
   };
 
   // renderParticleFX.
@@ -489,11 +495,32 @@ std::vector<ScenePrim> FieldEffects::draw(const FieldEffectView& view) const {
     if (spark.state >= spark.timer) {
       return;
     }
-    const glm::ivec3 color{originalLerp(spark.color.r, 0, 0, spark.timer, spark.state),
-                           originalLerp(spark.color.g, 0, 0, spark.timer, spark.state),
-                           originalLerp(spark.color.b, 0, 0, spark.timer, spark.state)};
-    const std::int32_t spread =
-        sin512(originalLerp(0, SpreadAngle, 0, spark.timer, spark.state)) >> SpreadShift;
+    const auto colorAt = [&spark](std::int32_t state) {
+      return glm::ivec3{originalLerp(spark.color.r, 0, 0, spark.timer, state),
+                        originalLerp(spark.color.g, 0, 0, spark.timer, state),
+                        originalLerp(spark.color.b, 0, 0, spark.timer, state)};
+    };
+    const auto spreadAt = [&spark](std::int32_t state) {
+      return sin512(originalLerp(0, SpreadAngle, 0, spark.timer, state)) >> SpreadShift;
+    };
+    if (spark.behind > 0.0F && spark.state > 0) {
+      // Smooth motion: the spread and the colour on the way from the last frame's.
+      const float behind = std::min(spark.behind, 1.0F);
+      const glm::vec3 color =
+          glm::mix(glm::vec3{colorAt(spark.state)}, glm::vec3{colorAt(spark.state - 1)}, behind);
+      const float spread = glm::mix(static_cast<float>(spreadAt(spark.state)),
+                                    static_cast<float>(spreadAt(spark.state - 1)), behind);
+      constexpr float DirectionOne = 1 << DirectionShift;
+      for (std::size_t i = 0; i < static_cast<std::size_t>(ParticleCounts.at(mode)); ++i) {
+        const glm::vec3 offset =
+            glm::round(spread * glm::vec3{ParticleDirections.at(i)} / DirectionOne);
+        addParticle(sorted, view, spark.position + OriginalPoint{offset}, SparkParticleSize,
+                    glm::ivec3{glm::round(color)});
+      }
+      return;
+    }
+    const glm::ivec3 color = colorAt(spark.state);
+    const std::int32_t spread = spreadAt(spark.state);
     for (std::size_t i = 0; i < static_cast<std::size_t>(ParticleCounts.at(mode)); ++i) {
       const glm::ivec3& direction = ParticleDirections.at(i);
       addParticle(sorted, view,

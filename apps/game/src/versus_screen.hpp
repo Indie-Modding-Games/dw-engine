@@ -70,6 +70,9 @@ public:
   [[nodiscard]] FieldScene* arenaScene();
   // Once per drawn frame, before the arena is drawn: alpha between the last two ticks.
   void update(double frameSeconds, float alpha, const GraphicsOptions& graphics);
+  // The smooth_motion setting (game::field::Field::setSmoothMotion) for the arena's drawing, now
+  // and for an arena built later.
+  void setSmoothMotion(bool on);
 
 private:
   void close();
@@ -84,6 +87,7 @@ private:
   ui::Ui* ui_;
   render::Renderer* renderer_;
   audio::Audio* audio_;
+  bool smoothMotion_ = true;
   std::unique_ptr<ruleset::Ruleset> rules_;
   std::unique_ptr<session::BattleAdapter> battles_;
   // Where each arena's battles start (vs_intro.c: VS__placePlayer1), once the arena is built.

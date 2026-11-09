@@ -325,6 +325,7 @@ void VersusScreen::buildArena() {
   if (!arena_) {
     return;
   }
+  arena_->scene().field().setSmoothMotion(smoothMotion_);
   flow_->attachView(arena_.get());
   if (rivalDesc_) {
     rivalView_ = std::make_unique<ReadiedOnly>(*arena_);
@@ -356,6 +357,13 @@ FieldScene* VersusScreen::arenaScene() {
 void VersusScreen::update(double frameSeconds, float alpha, const GraphicsOptions& graphics) {
   if (arenaScene() != nullptr) {
     arena_->update(frameSeconds, alpha, graphics);
+  }
+}
+
+void VersusScreen::setSmoothMotion(bool on) {
+  smoothMotion_ = on;
+  if (arena_) {
+    arena_->scene().field().setSmoothMotion(on);
   }
 }
 

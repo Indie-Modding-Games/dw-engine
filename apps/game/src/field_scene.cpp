@@ -1123,6 +1123,12 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   // The held fighters and the effects are drawn gliding between the battle's frames with smooth
   // motion (battle_glide.hpp); the anchors that hang on them (nodePoint, statusAnchor) follow.
   drawAhead_ = static_cast<double>(alpha) * tickSeconds_;
+  drawAlpha_ = alpha;
+  // The status visuals and the hit sparks: between the last frame's and this one's likewise.
+  visualsProgress_ = field_->smoothMotion() && statusVisualsFrom_
+                         ? static_cast<float>(std::clamp(
+                               (visualsSeconds_ + *drawAhead_) / BattleFrameSeconds, 0.0, 1.0))
+                         : 1.0F;
   if (field_->smoothMotion() && !effectsTo_.empty()) {
     effects_ = blendEffects(effectsFrom_, effectsTo_,
                             static_cast<float>(std::clamp(
@@ -1323,6 +1329,14 @@ std::optional<glm::mat4> FieldScene::playerNodeTransform(std::uint32_t node) con
 }
 
 std::span<const glm::mat4> FieldScene::drawnJoints(const Actor& actor) const {
+  // While update draws a held fighter with smooth motion, its clip between the ticks
+  // (battle_glide.hpp: ClipTween); the battle's logic reads the tick's pose.
+  if (drawAhead_ && actor.fighter && field_->smoothMotion() && actor.clipTween.posed()) {
+    return drawsChibi(chibiMode_, actor.originalModel)
+               ? chibiJoints_.of(*actor.model, actor.chibi, actor.clipTween.nodes(),
+                                 actor.clipTween.joints())
+               : actor.clipTween.joints();
+  }
   // The chibi style reshapes the drawing only (chibi_style.hpp).
   return drawsChibi(chibiMode_, actor.originalModel)
              ? chibiJoints_.of(*actor.model, actor.chibi, *actor.player)

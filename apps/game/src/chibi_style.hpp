@@ -98,6 +98,12 @@ public:
   [[nodiscard]] std::span<const glm::mat4> of(const assets::ModelData& model,
                                               const animation::ChibiRig& rig,
                                               const animation::AnimationPlayer& player);
+  // The same for a pose and its joint matrices of the player's model drawn otherwise (a held
+  // fighter's clip between ticks, battle_glide.hpp).
+  [[nodiscard]] std::span<const glm::mat4> of(const assets::ModelData& model,
+                                              const animation::ChibiRig& rig,
+                                              std::span<const assets::NodeTransform> pose,
+                                              std::span<const glm::mat4> joints);
 
 private:
   std::vector<glm::mat4> world_;

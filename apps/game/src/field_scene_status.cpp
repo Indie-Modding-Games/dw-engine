@@ -132,9 +132,9 @@ float lerp(float from, float to, float frames, float frame) {
 
 // libgte RotMatrix(0, y, z) = Ry · Rz in the original's axes, then F M F with F = diag(1, -1, -1)
 // in the world's.
-glm::mat4 rotationYZ(std::int32_t y, std::int32_t z) {
-  const float sy = std::sin(radiansOf(static_cast<float>(y)));
-  const float cy = std::cos(radiansOf(static_cast<float>(y)));
+glm::mat4 rotationYZ(float y, std::int32_t z) {
+  const float sy = std::sin(radiansOf(y));
+  const float cy = std::cos(radiansOf(y));
   const float sz = std::sin(radiansOf(static_cast<float>(z)));
   const float cz = std::cos(radiansOf(static_cast<float>(z)));
   const std::array<std::array<float, 3>, 3> ry{{{cy, 0, sy}, {0, 1, 0}, {-sy, 0, cy}}};
@@ -253,6 +253,33 @@ const FieldScene::EffectModelEntry* FieldScene::statusModel(std::string_view mod
   return at->second ? &*at->second : nullptr;
 }
 
+void FieldScene::setStatusVisuals(std::optional<game::battle::StatusVisuals> visuals,
+                                  std::vector<StatusBody> bodies) {
+  // A new frame keeps the last one's to draw from, the hit particles' too (setHitParticles comes
+  // next, so hitParticles_ still holds the last frame's); a tick with no frame keeps both; a new
+  // battle or a jump keeps none.
+  const auto frames = [](const std::optional<game::battle::StatusVisuals>& shown) {
+    return shown ? std::optional<std::int64_t>{shown->frames()} : std::nullopt;
+  };
+  const std::optional<std::int64_t> now = frames(visuals);
+  const std::optional<std::int64_t> last = frames(statusVisuals_);
+  if (now && last && *now == *last + 1) {
+    statusVisualsFrom_ = std::move(statusVisuals_);
+    hitParticlesFrom_ = hitParticles_;
+    visualsSeconds_ = 0.0;
+  } else if (!now || !last || *now != *last) {
+    statusVisualsFrom_.reset();
+    hitParticlesFrom_.reset();
+    visualsSeconds_ = BattleFrameSeconds;
+  }
+  statusVisuals_ = std::move(visuals);
+  statusBodies_ = std::move(bodies);
+}
+
+const game::battle::StatusVisuals* FieldScene::lastStatusFrame() const {
+  return visualsProgress_ < 1.0F && statusVisualsFrom_ ? &*statusVisualsFrom_ : nullptr;
+}
+
 std::optional<FieldScene::StatusAnchor> FieldScene::statusAnchor(std::size_t fighter) const {
   if (fighter >= statusBodies_.size()) {
     return std::nullopt;
@@ -329,7 +356,12 @@ void FieldScene::addStatusBillboards(std::vector<render::MapBillboard>& billboar
   const render::MapCamera& camera = mapRenderer_->camera();
   const glm::mat4& view = camera.view();
   const glm::vec3 right{view[0][0], view[1][0], view[2][0]};
-  for (const auto& slot : statusVisuals_->bubbles()) {
+  // Smooth motion: each between the last frame's and this one's (battle_glide.hpp).
+  const StatusVisuals* last = lastStatusFrame();
+  const float progress = visualsProgress_;
+  const auto& bubbles = statusVisuals_->bubbles();
+  for (std::size_t index = 0; index < bubbles.size(); ++index) {
+    const auto& slot = bubbles.at(index);
     if (!slot) {
       continue;
     }
@@ -338,7 +370,13 @@ void FieldScene::addStatusBillboards(std::vector<render::MapBillboard>& billboar
     if (!anchor || !texture) {
       continue;
     }
-    const auto frame = static_cast<float>(slot->frame);
+    const StatusVisuals::Bubble* before = lastFramesOf(
+        last ? &last->bubbles() : nullptr, index, *slot, [](const auto& was, const auto& is) {
+          return was.fighter == is.fighter && was.offsetX == is.offsetX &&
+                 was.offsetZ == is.offsetZ;
+        });
+    const float frame = before != nullptr ? betweenFrames(before->frame, slot->frame, progress)
+                                          : static_cast<float>(slot->frame);
     const auto frames = static_cast<float>(StatusVisuals::BubbleFrames);
     const float sway =
         std::sin(sineRadiansOf(lerp(0.0F, BubbleSwayTurn, frames, frame))) * BubbleSway;
@@ -362,7 +400,9 @@ void FieldScene::addStatusBillboards(std::vector<render::MapBillboard>& billboar
                           .blend = assets::SpriteBlend::Add,
                           .color = glm::vec3{1.0F}});
   }
-  for (const auto& slot : statusVisuals_->stuns()) {
+  const auto& stuns = statusVisuals_->stuns();
+  for (std::size_t index = 0; index < stuns.size(); ++index) {
+    const auto& slot = stuns.at(index);
     if (!slot) {
       continue;
     }
@@ -370,6 +410,10 @@ void FieldScene::addStatusBillboards(std::vector<render::MapBillboard>& billboar
     if (!anchor) {
       continue;
     }
+    const StatusVisuals::Stun* before = lastFramesOf(
+        last ? &last->stuns() : nullptr, index, *slot, [](const auto& was, const auto& is) {
+          return was.fighter == is.fighter && was.stage == is.stage;
+        });
     std::int32_t value = 0;
     float scale = 1.0F;
     std::int32_t flash = 0;
@@ -382,7 +426,8 @@ void FieldScene::addStatusBillboards(std::vector<render::MapBillboard>& billboar
       break;
     case StatusVisuals::StunStage::Shrink:
       scale = lerp(One, ShrinkTo, static_cast<float>(StatusVisuals::StunShrinkFrames),
-                   static_cast<float>(slot->frame)) /
+                   before != nullptr ? betweenFrames(before->frame, slot->frame, progress)
+                                     : static_cast<float>(slot->frame)) /
               One;
       break;
     }
@@ -449,29 +494,52 @@ void FieldScene::submitStatusModels() {
                      .joints = joints,
                      .tint = glm::vec4{1.0F}});
   };
+  // Smooth motion: each between the last frame's and this one's (battle_glide.hpp).
+  const StatusVisuals* last = lastStatusFrame();
+  const float progress = visualsProgress_;
   if (const EffectModelEntry* model = statusModel(ConfusionModel)) {
-    for (const auto& slot : statusVisuals_->confusions()) {
+    const auto& confusions = statusVisuals_->confusions();
+    for (std::size_t index = 0; index < confusions.size(); ++index) {
+      const auto& slot = confusions.at(index);
       const std::optional<StatusAnchor> anchor = slot ? statusAnchor(slot->fighter) : std::nullopt;
       if (!anchor) {
         continue;
       }
+      const StatusVisuals::Confusion* before = lastFramesOf(
+          last ? &last->confusions() : nullptr, index, *slot, [](const auto& was, const auto& is) {
+            return was.fighter == is.fighter && was.offsets == is.offsets;
+          });
+      // Without the last frame's (no smooth motion, a new one) the frame's own, as the original.
+      const float angleNow = before != nullptr ? between(static_cast<float>(before->angle),
+                                                         static_cast<float>(slot->angle), progress)
+                                               : static_cast<float>(slot->angle);
+      const float spinNow = before != nullptr ? between(static_cast<float>(before->spin),
+                                                        static_cast<float>(slot->spin), progress)
+                                              : static_cast<float>(slot->spin);
       for (std::int32_t object = 0; object < 3; ++object) {
-        const auto angle = static_cast<float>(slot->angle + (object * ConfusionApart));
+        const float angle = angleNow + static_cast<float>(object * ConfusionApart);
         const glm::vec3 offset{std::sin(sineRadiansOf(angle)) * ConfusionRadius, -ConfusionLift,
                                std::cos(sineRadiansOf(angle)) * ConfusionRadius};
-        const std::int32_t facing = slot->offsets.at(static_cast<std::size_t>(object)) +
-                                    slot->spin + ConfusionFacing + (object * ConfusionThird);
+        const float facing =
+            spinNow + static_cast<float>(slot->offsets.at(static_cast<std::size_t>(object)) +
+                                         ConfusionFacing + (object * ConfusionThird));
         submit(*model, anchor->condition + worldOf(offset), rotationYZ(facing, ConfusionTilt));
       }
     }
   }
   if (const EffectModelEntry* model = statusModel(StunRingModel)) {
-    for (const auto& slot : statusVisuals_->stunRings()) {
+    const auto& rings = statusVisuals_->stunRings();
+    for (std::size_t index = 0; index < rings.size(); ++index) {
+      const auto& slot = rings.at(index);
       const std::optional<StatusAnchor> anchor = slot ? statusAnchor(slot->fighter) : std::nullopt;
       if (!anchor) {
         continue;
       }
-      const auto frame = static_cast<float>(slot->frame);
+      const StatusVisuals::StunRing* before =
+          lastFramesOf(last ? &last->stunRings() : nullptr, index, *slot,
+                       [](const auto& was, const auto& is) { return was.fighter == is.fighter; });
+      const float frame = before != nullptr ? betweenFrames(before->frame, slot->frame, progress)
+                                            : static_cast<float>(slot->frame);
       const float top = static_cast<float>(anchor->body.height) * SignLift / Percent;
       const float height = lerp(top, anchor->feet.y, StunRingFall, frame);
       float width = static_cast<float>(anchor->body.radius) * StunRingWidth / One;

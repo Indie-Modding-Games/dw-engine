@@ -51,7 +51,8 @@ struct ControlRequest {
     Press,        // press {keys, ticks = 6}: the keys down for exactly that many ticks
     Hold,         // hold {keys}: the keys down until released
     Release,      // release {keys?}: those keys, or all of them, up
-    Pause,        // pause: no logic tick runs until resume or advance
+    Pause,        // pause {alpha?}: no logic tick runs until resume or advance; with alpha, the
+                  // frames are drawn that fraction of a tick past the last (0 to 1)
     Resume,       // resume: the logic runs at its pace again
     Advance,      // advance {ticks}: that many ticks run; paused, exactly them and no more
     Screenshot,   // screenshot {path}: the next frame drawn, as a PNG
@@ -78,6 +79,8 @@ struct ControlRequest {
   std::vector<std::string> keyNames;
   // press: how long the keys stay down; advance: how many ticks run.
   std::uint64_t ticks = 0;
+  // pause: where between two ticks the paused frames are drawn; none for the clock's.
+  std::optional<double> alpha;
   // state: the path; script: the line; place: its argument; battle: the target; load: the map.
   std::string text;
   // screenshot: the picture; load: the save; trace: the file, none to stop it.
@@ -261,6 +264,12 @@ public:
   void afterFrame(std::uint64_t ticksRun);
 
   [[nodiscard]] bool paused() const { return paused_; }
+  // While paused with an alpha (pause {alpha}): the drawing stands that fraction of a tick past
+  // the last tick instead of the clock's, so that captures between two ticks (smooth motion) come
+  // out the same every time.
+  [[nodiscard]] std::optional<double> drawAlpha() const {
+    return paused_ ? drawAlpha_ : std::nullopt;
+  }
   // Paused with nothing to advance or press: the game may rest between frames.
   [[nodiscard]] bool idle() const;
 
@@ -298,6 +307,7 @@ private:
 
   ControlHost host_;
   bool paused_ = false;
+  std::optional<double> drawAlpha_;
   // The ticks the logic has run, as afterFrame last heard.
   std::uint64_t ticks_ = 0;
   // Ticks still to run while paused.
