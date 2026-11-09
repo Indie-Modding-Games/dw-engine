@@ -1,6 +1,9 @@
 # The upstream vcpkg port, built with Mbed TLS instead of OpenSSL: OpenSSL needs kernel headers on
 # Linux and cmd.exe for the Windows cross build. Only the build files change, apart from the
-# <algorithm> includes newer libc++ (macOS) no longer brings in through other headers.
+# <algorithm> includes newer libc++ (macOS) no longer brings in through other headers, and
+# ws-ca-certificates.patch: the C API takes the CA certificates a wss:// server's certificate must
+# chain up to (the C++ API already does), and Windows verifies against them too. With Mbed TLS the
+# library has no system roots, so without it the WebSocket client cannot verify the server.
 
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
@@ -12,6 +15,7 @@ vcpkg_from_github(
         dependencies.diff
         uwp-warnings.patch
         algorithm-include.patch
+        ws-ca-certificates.patch
 )
 
 vcpkg_check_features(OUT_FEATURE_OPTIONS FEATURE_OPTIONS

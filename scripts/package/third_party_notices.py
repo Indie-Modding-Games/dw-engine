@@ -50,9 +50,11 @@ APACHE_NOTICES = {
 }
 
 # Where the source of each MPL-2.0 component is: section 3.2 of the licence asks a program shipped
-# in executable form to tell its users how to get it. They are built unmodified from these tags.
+# in executable form to tell its users how to get it. They are built from these tags, with the
+# patches of their port in the repository where it has any.
 MPL_SOURCES = {
-    "libdatachannel": "https://github.com/paullouisageneau/libdatachannel",
+    "libdatachannel": "https://github.com/paullouisageneau/libdatachannel, with the patches in "
+                      "https://github.com/Indie-Modding-Games/dw-engine/tree/main/tooling/vcpkg-ports/libdatachannel",
     "libjuice": "https://github.com/paullouisageneau/libjuice",
 }
 
@@ -61,8 +63,8 @@ def mpl_credit(names: set[str]) -> list[str]:
     shipped = sorted(name for name in MPL_SOURCES if name in names)
     if not shipped:
         return []
-    lines = ["The following components are under the Mozilla Public License 2.0, unmodified; their "
-             "source code is available at:"]
+    lines = ["The following components are under the Mozilla Public License 2.0; their source code "
+             "is available at:"]
     lines += [f"  {name}: {MPL_SOURCES[name]}" for name in shipped]
     return ["\n".join(lines)]
 

@@ -54,8 +54,9 @@ instalarlas a mano ensucia la máquina de cada desarrollador y da builds que sol
   - en Linux usa el triplet `x64-linux-libcxx-release`, que compila cada dependencia una vez en lugar de dos. Ese
     triplet compila libdatachannel con AddressSanitizer, como los tests que la usan: su código de `std::vector` en
     release, sin instrumentar, se mezcla al enlazar con el del motor y escribe en la capacidad que libc++ marca como
-    envenenada, y ASan lo da como desbordamiento. En depuración (`x64-linux-libcxx`) no pasa, porque nada se expande
-    en línea.
+    envenenada, y ASan lo da como desbordamiento. En depuración (`x64-linux-libcxx`) pasa lo mismo cuando el
+    enlazador se queda con la copia sin instrumentar de una función de `std::vector` (el cliente WebSocket lo hace al
+    leer la URL), así que su build de depuración, que solo usan los presets con ASan, también lo lleva.
 - La caché binaria de vcpkg guarda cada paquete por separado, así que una dependencia nueva solo compila esa.
 - La imagen no puede ser más nueva que el sistema donde se juega: el ejecutable enlaza la glibc de la imagen. Por eso
   es Ubuntu 24.04 aunque 26.04 ya trae LLVM 22 en sus repositorios.
