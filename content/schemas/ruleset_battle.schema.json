@@ -1302,7 +1302,8 @@
       "type": "object",
       "required": [
         "series",
-        "time_limit_seconds"
+        "time_limit_seconds",
+        "arenas"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1319,6 +1320,14 @@
           "type": "integer",
           "minimum": 1,
           "description": "The clock of each versus battle, in seconds."
+        },
+        "arenas": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "The stages the host picks from before the series (vs_select.c: VS__tickSelectMap), by their number in tournament.yaml (arena.arenas)."
         }
       },
       "description": "The versus series (vs_scene.c: VS_initializeVS); optional, no versus without it."
