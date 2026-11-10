@@ -83,6 +83,10 @@ public:
   // it evolved.
   core::Result<bool> evolveByScript(GameSession& session, std::string_view species);
 
+  // The ids of every form the partner can evolve into (EvolutionTables::evolutionTargets), in the
+  // tables' order; empty before the rules are read.
+  [[nodiscard]] std::vector<std::string> evolutionTargets() const;
+
   // The level of a form of the tables; Level::None for an unknown one.
   [[nodiscard]] game::evolution::Level levelOf(std::string_view species) const;
   // The level of the form an evolution item turns into, if it is one.

@@ -1257,13 +1257,20 @@ El menú de desarrollo (`ui/dev_menu`, `DevMenuScreen`) es un menú modal sobre 
 consola: dar objetos (de 1, 10 o 99), fijar el dinero, la velocidad del reloj, las estadísticas, los cuidados
 (felicidad, disciplina, cansancio, errores, dormir, baño), hacer evolucionar, viajar a un mapa ya visitado y
 guardar (con el `quick_save` del menú de pausa). Las listas (objetos, especies, mapas) salen de las tablas del jugador con sus claves de nombre
-(`dev_menu.<lista>.count`, `.N.id`, `.N.name`). `Game` solo ejecuta una línea `dev_menu_run` si las herramientas
+(`dev_menu.<lista>.count`, `.N.id`, `.N.name`). La de evolucionar es la de todas las formas a las que puede evolucionar
+un compañero (`EvolutionAdapter::evolutionTargets`, `EvolutionTables::evolutionTargets`): cada especie con nivel y fila
+en la tabla de estadísticas de evolución (la que lee `EVL_applyEvolution`), en el orden de la tabla. Entran las
+especiales (las formas virus, las de objeto o evento y las Mega que añada un conjunto de reglas) y no entra ninguna que
+`evolve` rechace: antes salían todas las especies con nivel, también enemigos y personajes sin fila, que la orden no
+podía usar, y faltaban las que no tienen nivel. Con los datos del original son 64 (los índices 1 a 65 salvo el 62, una
+forma sin nivel que ninguna evolución alcanza; el 0 es el del jugador). `Game` solo ejecuta una línea `dev_menu_run` si las herramientas
 están encendidas y la orden es de las que ofrece el menú (`devMenuLineAllowed`). Para ello la consola ganó:
 
 - `warp("<mapa> [salida]")`: cambia de mapa como un guion (`startScriptedMapChange`), con la salida 0 si no se da.
 - `partner_set("happiness <n>")` y `partner_set("tiredness <n>")`, de 0 a 100.
 
-Pruebas: `dev_tools_tests.cpp` (qué líneas acepta el menú y cómo publica sus listas), `partner_set_command_tests.cpp`
+Pruebas: `dev_tools_tests.cpp` (qué líneas acepta el menú y cómo publica sus listas), `tables_tests.cpp` y
+`evolution_adapter_tests.cpp` (la lista de evolucionar tiene todas las formas y cada una evoluciona), `partner_set_command_tests.cpp`
 y la ruta `route-dev-menu.yaml` (F2, dinero, un objeto, y con la opción apagada F2 no abre nada).
 
 ## Barras de reclutamiento

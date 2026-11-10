@@ -395,6 +395,18 @@ core::Result<bool> EvolutionAdapter::evolveByScript(GameSession& session,
   return true;
 }
 
+std::vector<std::string> EvolutionAdapter::evolutionTargets() const {
+  std::vector<std::string> ids;
+  if (!evolution_) {
+    return ids;
+  }
+  const EvolutionTables& tables = evolution_->tables();
+  for (const game::evolution::Species target : tables.evolutionTargets()) {
+    ids.emplace_back(tables.idOf(target));
+  }
+  return ids;
+}
+
 game::evolution::Level EvolutionAdapter::levelOf(std::string_view species) const {
   if (!evolution_) {
     return game::evolution::Level::None;

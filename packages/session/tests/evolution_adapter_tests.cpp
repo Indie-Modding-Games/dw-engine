@@ -313,6 +313,27 @@ TEST_CASE("an event script's evolution needs a form of the tables") {
   CHECK(session->partner().state().species == "species_b");
 }
 
+TEST_CASE(
+    "the developer menu's evolution list has every form of the tables, and each one evolves") {
+  // The dev menu's evolve page lists evolutionTargets and runs evolve("<id>") (evolveByScript) for
+  // the one picked: every form a partner can be, and none the command refuses.
+  const TestPacks packs;
+  const TableFixture fixture;
+  EvolutionAdapter* adapter = nullptr;
+  auto session = sessionWithEvolution(packs, fixture, adapter);
+  const std::vector<std::string> targets = adapter->evolutionTargets();
+  CHECK(targets.size() == dwe::game::evolution::testing::FixtureForms.size() - 1);
+  CHECK(std::ranges::contains(targets, "scum"));
+  CHECK(std::ranges::contains(targets, "mtet"));
+  CHECK_FALSE(std::ranges::contains(targets, "species_g"));
+  for (const std::string& target : targets) {
+    const auto evolved = adapter->evolveByScript(*session, target);
+    REQUIRE_MESSAGE(evolved.has_value(), errorOf(evolved));
+    CHECK_MESSAGE(*evolved, target);
+    CHECK(session->partner().state().species == target);
+  }
+}
+
 TEST_CASE("the evolution state goes in the save and comes back") {
   const TestPacks packs;
   const TableFixture fixture;

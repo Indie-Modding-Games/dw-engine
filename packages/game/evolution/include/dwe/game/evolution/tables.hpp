@@ -126,6 +126,12 @@ public:
   // The reference stats of a target, or nullptr when the table has no row for it.
   [[nodiscard]] const StatReference* statReference(Species target) const;
 
+  // Every form a partner can evolve into, ascending: a species with a level and the reference stats
+  // its evolution loads (EVL_applyEvolution reads the target's EvoStatsGains row). The rows of the
+  // stat table that name no partner form (the player's, a form without a level) are left out; so
+  // are the enemies and characters with a level but no row, which no evolution reaches.
+  [[nodiscard]] std::vector<Species> evolutionTargets() const;
+
   // The targets of a species' evolution chart, in the table's order, without the empty ones.
   [[nodiscard]] std::span<const Species> pathTargets(Species from) const;
 

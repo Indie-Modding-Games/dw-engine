@@ -8,6 +8,8 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <vector>
 
 #include "fixture.hpp"
 
@@ -62,4 +64,32 @@ TEST_CASE(
   const EvolutionTables tables = fixture.build();
   CHECK(tables.requirement(TableFixture::index("aird"))->weight == 33);
   CHECK_FALSE(anyRequirementWeighs(tables, 44));
+}
+
+TEST_CASE(
+    "every form with a level and an evolution row is an evolution target, the special ones too") {
+  TableFixture fixture;
+  // An enemy-only form: a level, but no row of the stat table, so no evolution reaches it.
+  dwe::assets::DigimonRow enemy = fixture.form("agum");
+  enemy.id = "fixture_enemy";
+  enemy.index = static_cast<std::int32_t>(FixtureForms.size());
+  fixture.digimon.digimon.push_back(enemy);
+  const EvolutionTables tables = fixture.build();
+  const std::vector<dwe::game::evolution::Species> targets = tables.evolutionTargets();
+  REQUIRE(std::ranges::is_sorted(targets));
+  const auto targeted = [&](std::string_view id) {
+    return std::ranges::contains(targets, TableFixture::index(id));
+  };
+  for (const auto& form : FixtureForms) {
+    // The level-less row (the player's in the original) is no partner form.
+    CHECK_MESSAGE(targeted(form.id) == (form.level > 0), form.id);
+  }
+  // The virus, item and event forms are targets like any other.
+  for (const std::string_view id : {"nume", "scum", "nani", "veda", "panj", "ggdr", "mtet"}) {
+    CHECK_MESSAGE(targeted(id), id);
+  }
+  const auto enemyIndex = tables.find("fixture_enemy");
+  REQUIRE(enemyIndex.has_value());
+  CHECK_FALSE(std::ranges::contains(targets, *enemyIndex));
+  CHECK(targets.size() == FixtureForms.size() - 1);
 }

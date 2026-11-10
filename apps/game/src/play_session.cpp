@@ -804,13 +804,11 @@ void PlaySession::toggleDevMenu() {
   for (const assets::ItemEntry& entry : items.entries()) {
     lists.items.push_back({.id = entry.id, .nameKey = names.item(items.handleOf(entry))});
   }
-  if (species_) {
-    for (const assets::DigimonRow& row : species_->digimon) {
-      // Only the partner's species (a level), not the enemies and NPCs that are no partner.
-      if (row.level > 0) {
-        lists.species.push_back({.id = row.id, .nameKey = names.species(row.id)});
-      }
-    }
+  // Every form the partner can evolve into, the special ones too (the virus forms, the item and
+  // event forms, a ruleset's Mega step), and nothing the evolve command would refuse: the enemies
+  // and characters with a level have no evolution row.
+  for (const std::string& form : game_.systems.evolution->evolutionTargets()) {
+    lists.species.push_back({.id = form, .nameKey = names.species(form)});
   }
   if (const session::MapVisits* visits = game_.systems.mapVisits; visits != nullptr) {
     for (const std::string& map : visits->maps()) {

@@ -362,6 +362,16 @@ const StatReference* EvolutionTables::statReference(Species target) const {
   return found == statReferences_.end() ? nullptr : &found->second;
 }
 
+std::vector<Species> EvolutionTables::evolutionTargets() const {
+  std::vector<Species> targets;
+  for (const auto& [target, reference] : statReferences_) {
+    if (levelOf(target) != Level::None && species(reference.loads) != nullptr) {
+      targets.push_back(target);
+    }
+  }
+  return targets;
+}
+
 std::span<const Species> EvolutionTables::pathTargets(Species from) const {
   const auto found = paths_.find(from);
   if (found == paths_.end()) {
