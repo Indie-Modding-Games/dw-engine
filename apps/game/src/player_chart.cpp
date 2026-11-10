@@ -106,10 +106,12 @@ assets::EvolutionChart chartWithExtraCells(const assets::EvolutionChart& chart,
     }
     const bool onChart = std::ranges::any_of(
         result.entries, [&](const assets::ChartCell& cell) { return cell.digimon == id; });
-    // Only a form some path leads to: a patch that adds none leaves the chart alone.
-    const bool reached = std::ranges::any_of(evolution.paths, [&](const auto& path) {
-      return std::ranges::find(path.to, std::optional<std::string>{id}) != path.to.end();
-    });
+    // Only a form some path or special leads to: a patch that adds none leaves the chart alone.
+    const bool reached =
+        std::ranges::contains(extra.specialTargets, id) ||
+        std::ranges::any_of(evolution.paths, [&](const auto& path) {
+          return std::ranges::find(path.to, std::optional<std::string>{id}) != path.to.end();
+        });
     const auto icon =
         std::ranges::find(chart.entries, patch.chart->icon, &assets::ChartCell::digimon);
     if (onChart || !reached || icon == chart.entries.end()) {

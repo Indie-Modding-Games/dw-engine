@@ -31,6 +31,9 @@ namespace {
 // The game pack's ruleset with the Ultimate to Mega step, which the new game's rules offer when the
 // packs have it.
 constexpr std::string_view MegaRuleset = "oculto_mega";
+// The ruleset of every species as a partner (docs/modulos/game/evoluciones-extra.md), which the new
+// game's rules offer, on, when the packs have it.
+constexpr std::string_view AllSpeciesRuleset = "todas";
 
 bool hasRuleset(const assets::VirtualFileSystem& files, std::string_view id) {
   const std::vector<std::string> ids = ruleset::listRulesets(files);
@@ -79,7 +82,8 @@ TitleScreen::TitleScreen(const assets::VirtualFileSystem& files, const Options& 
     : ui_(&ui), storage_(saveStorageFor(options, keepsSaves)),
       slots_(slotsIn(files, storage_.get())),
       flow_(slots_ ? &*slots_ : nullptr, namesOf(files, options)),
-      modes_(game::modes::ModeCatalog::load(files)), megaOffered_(hasRuleset(files, MegaRuleset)) {}
+      modes_(game::modes::ModeCatalog::load(files)), megaOffered_(hasRuleset(files, MegaRuleset)),
+      allOffered_(hasRuleset(files, AllSpeciesRuleset)) {}
 
 void TitleScreen::show() {
   showMenu(false);
@@ -264,7 +268,9 @@ void TitleScreen::chooseMode(std::string_view mode) {
 }
 
 void TitleScreen::showRules() {
-  screens::publish(*ui_, {{.name = "new_game_rules.mega", .value = megaOffered_}},
+  screens::publish(*ui_,
+                   {{.name = "new_game_rules.mega", .value = megaOffered_},
+                    {.name = "new_game_rules.all", .value = allOffered_}},
                    "new_game_rules.revision");
   ui_->show(NewGameRulesDocument, true);
 }

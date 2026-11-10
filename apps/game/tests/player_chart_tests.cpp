@@ -31,7 +31,7 @@ TEST_CASE("a ruleset's new species gets its cell, with another species' icon, on
   extra.species["panj"] = ruleset::SpeciesPatch{
       .chart = ruleset::ChartCell{.x = 189, .y = 176, .icon = "leom", .palette = 2}};
   assets::EvolutionTable evolution;
-  evolution.paths.push_back({.digimon = "elec", .index = 18, .from = {}, .to = {}});
+  evolution.paths.push_back({.digimon = "elec", .index = 18});
   // No path leads to it: no cell.
   CHECK(chartWithExtraCells(smallChart(), extra, evolution, nullptr).entries.size() == 2);
 
@@ -51,6 +51,19 @@ TEST_CASE("a ruleset's new species gets its cell, with another species' icon, on
       .chart = ruleset::ChartCell{.x = 1, .y = 1, .icon = "elec", .palette = 0}};
   evolution.paths.front().to.at(4) = std::string{"leom"};
   CHECK(chartWithExtraCells(smallChart(), extra, evolution, nullptr).entries.size() == 3);
+}
+
+TEST_CASE("a form only a ruleset's wake-up special leads to gets its cell") {
+  ruleset::SpeciesExtra extra;
+  extra.species["flar"] = ruleset::SpeciesPatch{
+      .chart = ruleset::ChartCell{.x = 104, .y = 0, .icon = "elec", .palette = 2}};
+  const assets::EvolutionTable evolution;
+  CHECK(chartWithExtraCells(smallChart(), extra, evolution, nullptr).entries.size() == 2);
+  extra.specialTargets.emplace_back("flar");
+  const assets::EvolutionChart chart = chartWithExtraCells(smallChart(), extra, evolution, nullptr);
+  REQUIRE(chart.entries.size() == 3);
+  CHECK(chart.entries.back().digimon == "flar");
+  CHECK(chart.entries.back().u == 32);
 }
 
 } // namespace dwe::app

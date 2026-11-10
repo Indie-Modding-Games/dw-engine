@@ -25,6 +25,10 @@ constexpr std::string_view CheckHoursKey = "check_hours";
 constexpr std::string_view LifetimeHoursKey = "lifetime_hours";
 constexpr std::string_view TamerLevelChanceKey = "tamer_level_chance";
 constexpr std::string_view MegaKey = "mega";
+// all_species: the wake-up specials, in the format of evolution.yaml's specials.wake_up.
+constexpr std::string_view WakeUpKey = "wake_up";
+constexpr std::string_view TargetKey = "target";
+constexpr std::string_view CopyKey = "copy";
 
 constexpr std::string_view RequirementKey = "requirement";
 constexpr std::string_view GateKey = "gate";
@@ -38,6 +42,7 @@ constexpr std::string_view PartnerMovesKey = "partner_moves";
 constexpr std::string_view EffectTypeKey = "effect_type";
 constexpr std::string_view ClipsKey = "clips";
 constexpr std::string_view FieldScaleKey = "field_scale";
+constexpr std::string_view LevelKey = "level";
 constexpr std::string_view ChartKey = "chart";
 
 constexpr std::int32_t NoRequirement = -1;
@@ -46,6 +51,8 @@ constexpr std::int32_t BattlesAreMaximumFlag = 0x01;
 constexpr std::int32_t CareIsMaximumFlag = 0x10;
 
 constexpr std::int32_t HoursPerDay = 24;
+// The highest level of a species row (ultimate).
+constexpr std::int32_t HighestLevel = 5;
 
 std::int32_t optionalValue(YamlReader& reader, const YamlNode& node, std::string_view key) {
   return reader.optionalInteger<std::int32_t>(node, key).value_or(NoRequirement);
@@ -135,9 +142,9 @@ assets::EvolutionStatsGainEntry readStats(YamlReader& reader, const YamlNode& no
 
 RaisePatch readRaise(YamlReader& reader, const YamlNode& node) {
   reader.expectKeys(
-      node, RaiseKey, {"copy"},
+      node, RaiseKey, {CopyKey},
       {"favorite_food", "default_weight", "energy_cap", "energy_usage", "hunger_times"});
-  RaisePatch patch{.copy = reader.text(reader.field(node, "copy"))};
+  RaisePatch patch{.copy = reader.text(reader.field(node, CopyKey))};
   if (const YamlNode* food = node.find("favorite_food")) {
     patch.favoriteFood = reader.text(*food);
   }
@@ -169,7 +176,7 @@ void readPatch(YamlReader& reader, const YamlNode& node, std::string_view specie
   reader.expectKeys(node, species, {},
                     {RequirementKey, GateKey, EvolvesFromKey, EvolvesToKey, StatsGainsKey, RaiseKey,
                      MovesKey, PartnerTypeKey, PartnerMovesKey, EffectTypeKey, ClipsKey,
-                     FieldScaleKey, ChartKey});
+                     FieldScaleKey, ChartKey, LevelKey});
   if (const YamlNode* value = node.find(RequirementKey)) {
     patch.requirement = readRequirement(reader, *value, species);
   }
@@ -183,13 +190,29 @@ void readPatch(YamlReader& reader, const YamlNode& node, std::string_view specie
     patch.evolvesTo = ids(reader, *value, EvolvesToKey);
   }
   if (const YamlNode* value = node.find(StatsGainsKey)) {
-    patch.statsGains = readStats(reader, *value, species);
+    if (value->find(CopyKey) != nullptr) {
+      reader.expectKeys(*value, StatsGainsKey, {CopyKey});
+      patch.statsGainsCopy = reader.text(reader.field(*value, CopyKey));
+    } else {
+      patch.statsGains = readStats(reader, *value, species);
+    }
   }
   if (const YamlNode* value = node.find(RaiseKey)) {
     patch.raise = readRaise(reader, *value);
   }
   if (const YamlNode* value = node.find(MovesKey)) {
-    patch.moves = ids(reader, *value, MovesKey);
+    if (value->isMapping()) {
+      reader.expectKeys(*value, MovesKey, {CopyKey});
+      patch.movesCopy = reader.text(reader.field(*value, CopyKey));
+    } else {
+      patch.moves = ids(reader, *value, MovesKey);
+    }
+  }
+  if (const YamlNode* value = node.find(LevelKey)) {
+    patch.level = reader.integer<std::int32_t>(*value);
+    if (*patch.level < 1 || *patch.level > HighestLevel) {
+      reader.fail(*value, std::format("level must be from 1 to {}", HighestLevel));
+    }
   }
   if (const YamlNode* value = node.find(PartnerTypeKey)) {
     patch.partnerType = reader.integer<std::int32_t>(*value);
@@ -239,14 +262,21 @@ void overlay(SpeciesPatch& base, SpeciesPatch over) {
   if (over.evolvesTo) {
     base.evolvesTo = std::move(over.evolvesTo);
   }
-  if (over.statsGains) {
+  if (over.statsGains || over.statsGainsCopy) {
     base.statsGains = std::move(over.statsGains);
+    base.statsGainsCopy = std::move(over.statsGainsCopy);
   }
   if (over.raise) {
     base.raise = std::move(over.raise);
   }
   if (!over.moves.empty()) {
     base.moves = std::move(over.moves);
+  }
+  if (over.movesCopy) {
+    base.movesCopy = std::move(over.movesCopy);
+  }
+  if (over.level) {
+    base.level = over.level;
   }
   if (over.partnerType) {
     base.partnerType = over.partnerType;
@@ -312,19 +342,47 @@ core::Result<void> readMegaSection(const Section& section, SpeciesExtra& extra) 
   return reader.finish(std::monostate{}, section.file).transform([](auto) {});
 }
 
+// all_species: patches only for the species no other section patches, as fallback targets, and the
+// targets of its wake-up specials.
+core::Result<void> readAllSection(const Section& section, SpeciesExtra& extra) {
+  YamlReader reader;
+  const YamlNode& root = section.node;
+  reader.expectKeys(root, section.name, {}, {SpeciesKey, WakeUpKey});
+  SpeciesExtra own;
+  readSpecies(reader, root, own);
+  for (auto& [id, patch] : own.species) {
+    if (!extra.species.contains(id)) {
+      patch.yields = true;
+      extra.species.emplace(id, std::move(patch));
+    }
+  }
+  if (const YamlNode* wakeUp = root.find(WakeUpKey)) {
+    for (const YamlNode& rule : reader.sequence(*wakeUp, WakeUpKey)) {
+      std::string target = reader.text(reader.field(rule, TargetKey));
+      if (reader.ok() && !std::ranges::contains(extra.specialTargets, target)) {
+        extra.specialTargets.push_back(std::move(target));
+      }
+    }
+  }
+  return reader.finish(std::monostate{}, section.file).transform([](auto) {});
+}
+
 core::Error tableError(std::string_view table, std::string_view problem) {
   return core::Error{std::format("species_extra: {}: {}", table, problem)};
 }
 
-// The first free `to` slot after the last target of a path row, or nothing.
-std::optional<std::size_t> slotAfterLast(const assets::EvolutionPathEntry& row) {
+// The first free `to` slot after the last target of a path row; past the last slot, a new one.
+assets::TableReference& slotAfterLast(assets::EvolutionPathEntry& row) {
   std::size_t next = 0;
   for (std::size_t slot = 0; slot < row.to.size(); ++slot) {
     if (row.to.at(slot)) {
       next = slot + 1;
     }
   }
-  return next < row.to.size() ? std::optional{next} : std::nullopt;
+  if (next == row.to.size()) {
+    row.to.emplace_back();
+  }
+  return row.to.at(next);
 }
 
 assets::EvolutionPathEntry& pathRow(assets::EvolutionTable& table, std::string_view species) {
@@ -349,17 +407,17 @@ void replaceOrAdd(std::vector<Row>& rows, Row row) {
   }
 }
 
-core::Result<void> addSource(assets::EvolutionPathEntry& row, std::string_view source) {
+// A source in the first free `from` slot; past the last slot, a new one.
+void addSource(assets::EvolutionPathEntry& row, std::string_view source) {
   if (std::ranges::find(row.from, std::optional<std::string>{source}) != row.from.end()) {
-    return {};
+    return;
   }
   const auto free = std::ranges::find_if(row.from, [](const auto& slot) { return !slot; });
   if (free == row.from.end()) {
-    return std::unexpected{tableError("paths", std::format("{} has no free 'from' slot for {}",
-                                                           row.digimon.value_or(""), source))};
+    row.from.emplace_back(std::string{source});
+  } else {
+    *free = std::string{source};
   }
-  *free = std::string{source};
-  return {};
 }
 
 } // namespace
@@ -385,23 +443,45 @@ core::Result<SpeciesExtra> readSpeciesExtra(const Ruleset& ruleset) {
       return std::unexpected{read.error()};
     }
   }
+  if (const Section* section = ruleset.section(AllSpeciesSection)) {
+    if (auto read = readAllSection(*section, extra); !read) {
+      return std::unexpected{read.error()};
+    }
+  }
   return extra;
 }
 
 core::Result<void> checkSpeciesExtraSection(const Section& section) {
   SpeciesExtra extra;
-  return section.name == MegaStepSection ? readMegaSection(section, extra)
-                                         : readExtraSection(section, extra);
+  if (section.name == MegaStepSection) {
+    return readMegaSection(section, extra);
+  }
+  return section.name == AllSpeciesSection ? readAllSection(section, extra)
+                                           : readExtraSection(section, extra);
 }
 
 core::Result<void> applySpeciesExtra(const SpeciesExtra& extra, assets::DigimonTable& table) {
+  // A copied move row is the disc's, whatever the other patches put in it.
+  const assets::DigimonTable disc = table;
   for (const auto& [id, patch] : extra.species) {
-    if (patch.moves.empty()) {
+    if (patch.moves.empty() && !patch.movesCopy && !patch.level) {
       continue;
     }
     const auto row = std::ranges::find(table.digimon, id, &assets::DigimonRow::id);
     if (row == table.digimon.end()) {
       return std::unexpected{tableError("digimon", std::format("no species {}", id))};
+    }
+    if (patch.level) {
+      row->level = *patch.level;
+    }
+    if (patch.movesCopy) {
+      const assets::DigimonRow* source = disc.find(*patch.movesCopy);
+      if (source == nullptr) {
+        return std::unexpected{
+            tableError(MovesKey, std::format("{} copies the move row of {}, which has none", id,
+                                             *patch.movesCopy))};
+      }
+      row->moves = source->moves;
     }
     for (const std::string& move : patch.moves) {
       if (std::ranges::find(row->moves, std::optional<std::string>{move}) != row->moves.end()) {
@@ -469,17 +549,28 @@ core::Result<void> applySpeciesExtra(const SpeciesExtra& extra, assets::Evolutio
     if (patch.evolvesTo) {
       assets::EvolutionPathEntry& own = pathRow(table, id);
       for (const std::string& target : *patch.evolvesTo) {
-        if (std::ranges::find(own.to, std::optional<std::string>{target}) != own.to.end()) {
-          continue;
+        if (std::ranges::find(own.to, std::optional<std::string>{target}) == own.to.end()) {
+          slotAfterLast(own) = target;
         }
-        const auto slot = slotAfterLast(own);
-        if (!slot) {
-          return std::unexpected{
-              tableError("paths", std::format("{} has no free slot for {}", id, target))};
-        }
-        own.to.at(*slot) = target;
       }
     }
+  }
+  // Copied rows after the designed ones, from the disc's rows.
+  for (const auto& [id, patch] : extra.species) {
+    if (!patch.statsGainsCopy) {
+      continue;
+    }
+    const auto source = std::ranges::find(table.statsGains, patch.statsGainsCopy,
+                                          &assets::EvolutionStatsGainEntry::target);
+    if (source == table.statsGains.end()) {
+      return std::unexpected{tableError(
+          "stats_gains", std::format("{} copies {}, which has no row", id, *patch.statsGainsCopy))};
+    }
+    assets::EvolutionStatsGainEntry row = *source;
+    row.target = id;
+    row.index = std::nullopt;
+    row.targetDigimon = id;
+    replaceOrAdd(table.statsGains, std::move(row));
   }
   // The targets go in after every own row exists, so a new species can be a source.
   for (const auto& [id, patch] : extra.species) {
@@ -489,16 +580,9 @@ core::Result<void> applySpeciesExtra(const SpeciesExtra& extra, assets::Evolutio
     for (const std::string& source : *patch.evolvesFrom) {
       assets::EvolutionPathEntry& row = pathRow(table, source);
       if (std::ranges::find(row.to, std::optional<std::string>{id}) == row.to.end()) {
-        const auto slot = slotAfterLast(row);
-        if (!slot) {
-          return std::unexpected{
-              tableError("paths", std::format("{} has no free slot for {}", source, id))};
-        }
-        row.to.at(*slot) = id;
+        slotAfterLast(row) = id;
       }
-      if (auto added = addSource(pathRow(table, id), source); !added) {
-        return added;
-      }
+      addSource(pathRow(table, id), source);
     }
   }
   return {};

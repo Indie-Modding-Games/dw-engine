@@ -37,6 +37,7 @@ constexpr std::string_view DescriptionKey = "description";
 constexpr std::string_view ExtendsKey = "extends";
 constexpr std::string_view TablesKey = assets::RulesetTablesKey;
 constexpr std::string_view SectionsKey = "sections";
+constexpr std::string_view SectionsFromKey = "sections_from";
 constexpr std::string_view ScriptsKey = "scripts";
 
 constexpr std::string_view ScriptExtension = ".lua";
@@ -94,6 +95,8 @@ struct Manifest {
   std::optional<std::string> extends;
   std::map<std::string, AssetId, std::less<>> tables;
   std::vector<std::string> sections;
+  // Sections whose file is in another ruleset's folder (sections_from): section -> that ruleset.
+  std::map<std::string, std::string, std::less<>> sectionsFrom;
   std::vector<AssetId> scripts;
 };
 
@@ -178,6 +181,34 @@ void readSections(YamlReader& reader, const YamlNode& root, Manifest& manifest) 
   }
 }
 
+// sections_from: a mapping of a section to the ruleset whose folder has its file, so rulesets that
+// extend different ones share one file.
+void readSectionsFrom(YamlReader& reader, const YamlNode& root, Manifest& manifest) {
+  const YamlNode* shared = root.find(SectionsFromKey);
+  if (shared == nullptr) {
+    return;
+  }
+  if (!shared->isMapping()) {
+    reader.fail(*shared, messages::SectionsFromNotMapping);
+    return;
+  }
+  for (const core::YamlEntry& entry : shared->entries()) {
+    std::string owner = reader.text(entry.value);
+    if (!reader.ok()) {
+      return;
+    }
+    if (!isName(entry.key) || entry.key == ManifestLeaf) {
+      reader.fail(entry.value, formatMessage(messages::BadSection, entry.key, ManifestLeaf));
+    } else if (!isName(owner)) {
+      reader.fail(entry.value, formatMessage(messages::BadSectionOwner, entry.key));
+    } else if (std::ranges::contains(manifest.sections, entry.key)) {
+      reader.fail(entry.value, formatMessage(messages::RepeatedSection, entry.key));
+    } else {
+      manifest.sectionsFrom.insert_or_assign(entry.key, std::move(owner));
+    }
+  }
+}
+
 void readScript(YamlReader& reader, const YamlNode& item, const assets::VirtualFileSystem& vfs,
                 Manifest& manifest) {
   const std::string file = reader.text(item);
@@ -220,7 +251,7 @@ core::Result<Manifest> readManifest(const assets::VirtualFileSystem& vfs, std::s
   const YamlNode& root = parsed->node;
   YamlReader reader;
   if (!reader.expectKeys(root, messages::ManifestText, {IdKey, NameKey, VersionKey, SectionsKey},
-                         {DescriptionKey, ExtendsKey, TablesKey, ScriptsKey})) {
+                         {DescriptionKey, ExtendsKey, TablesKey, SectionsFromKey, ScriptsKey})) {
     return std::unexpected{reader.error(parsed->file)};
   }
   Manifest manifest;
@@ -228,6 +259,7 @@ core::Result<Manifest> readManifest(const assets::VirtualFileSystem& vfs, std::s
   manifest.extends = readExtends(reader, root);
   readTables(reader, root, vfs, manifest);
   readSections(reader, root, manifest);
+  readSectionsFrom(reader, root, manifest);
   readScripts(reader, root, vfs, manifest);
   return reader.finish(std::move(manifest), parsed->file);
 }
@@ -298,21 +330,34 @@ struct RulesetParts {
   std::vector<AssetId> scripts;
 };
 
+core::Result<void> addSection(const assets::VirtualFileSystem& vfs, const std::string& name,
+                              const std::string& folder, RulesetParts& parts) {
+  auto asset = AssetId::parse(rulesetPath(folder, name));
+  if (!asset) {
+    return std::unexpected{asset.error()};
+  }
+  auto parsed = readYamlAsset(vfs, *asset, messages::SectionText);
+  if (!parsed) {
+    return std::unexpected{parsed.error()};
+  }
+  parts.sections.insert_or_assign(name, Section{.name = name,
+                                                .owner = folder,
+                                                .file = std::move(parsed->file),
+                                                .node = std::move(parsed->node)});
+  return {};
+}
+
 core::Result<void> addSections(const assets::VirtualFileSystem& vfs, const Manifest& manifest,
                                RulesetParts& parts) {
   for (const std::string& name : manifest.sections) {
-    auto asset = AssetId::parse(rulesetPath(manifest.info.id, name));
-    if (!asset) {
-      return std::unexpected{asset.error()};
+    if (auto added = addSection(vfs, name, manifest.info.id, parts); !added) {
+      return added;
     }
-    auto parsed = readYamlAsset(vfs, *asset, messages::SectionText);
-    if (!parsed) {
-      return std::unexpected{parsed.error()};
+  }
+  for (const auto& [name, folder] : manifest.sectionsFrom) {
+    if (auto added = addSection(vfs, name, folder, parts); !added) {
+      return added;
     }
-    parts.sections.insert_or_assign(name, Section{.name = name,
-                                                  .owner = manifest.info.id,
-                                                  .file = std::move(parsed->file),
-                                                  .node = std::move(parsed->node)});
   }
   return {};
 }

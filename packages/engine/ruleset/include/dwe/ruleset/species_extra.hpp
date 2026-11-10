@@ -23,13 +23,16 @@ class VirtualFileSystem;
 // especie»): `extends` replaces whole sections and tables, and a whole evolution or raise table is
 // disc data that cannot be committed, so a ruleset that adds partners (the hidden content) says
 // only what it adds: new requirement and stat rows, targets in the free slots of existing paths,
-// raise rows copied from another species, moves in empty slots, the gates the original has not,
-// and what the screens need (clip stand-ins, field scale, chart cells).
+// raise rows copied from another species, moves in empty slots or a copied move row, levels, the
+// gates the original has not, and what the screens need (clip stand-ins, field scale, chart cells).
 namespace dwe::ruleset {
 
-// The sections: the species patches, and the Ultimate to Mega step, which patches the same way.
+// The sections: the species patches, the Ultimate to Mega step, which patches the same way, and
+// every species as a partner (docs/modulos/game/evoluciones-extra.md), whose patches are fallback
+// targets and which adds wake-up specials.
 inline constexpr std::string_view SpeciesExtraSection = "species_extra";
 inline constexpr std::string_view MegaStepSection = "mega_step";
+inline constexpr std::string_view AllSpeciesSection = "all_species";
 
 // Hours of the game day, from `from` up to before `to`; it wraps past midnight when to < from.
 struct HourRange {
@@ -88,11 +91,19 @@ struct SpeciesPatch {
   std::optional<std::vector<std::string>> evolvesFrom = {};
   // Its own targets, when it has no path row of its own.
   std::optional<std::vector<std::string>> evolvesTo = {};
-  // Its stat reference row (EVOLUTION_STATS_GAINS), loading itself.
+  // Its stat reference row (EVOLUTION_STATS_GAINS), loading itself, or the species whose row it
+  // copies (stats_gains: {copy: id}).
   std::optional<assets::EvolutionStatsGainEntry> statsGains = {};
+  std::optional<std::string> statsGainsCopy = {};
   std::optional<RaisePatch> raise = {};
   // Moves put in the empty slots of its Digimon row, in order.
   std::vector<std::string> moves = {};
+  // The species whose whole move row replaces its own (moves: {copy: id}), before `moves` fill the
+  // empty slots: a form whose partner clips are made from that species' (animations/partner_clips)
+  // plays the technique clip of the same slot.
+  std::optional<std::string> movesCopy = {};
+  // Its level in its species row (1 baby to 5 ultimate), for a species the table leaves at 0.
+  std::optional<std::int32_t> level = {};
   // The type the partner of this species fights with.
   std::optional<std::int32_t> partnerType = {};
   std::map<std::string, MoveOverride, std::less<>> partnerMoves = {};
@@ -103,6 +114,9 @@ struct SpeciesPatch {
   // The size of the partner in the field, 1 for the original's.
   std::optional<float> fieldScale = {};
   std::optional<ChartCell> chart = {};
+  // A fallback target (all_species): the natural check picks it only when none of the original's
+  // targets passes.
+  bool yields = false;
 };
 
 // The Ultimate to Mega step (an option, off in the original): a partner of level 5 that is not a
@@ -121,23 +135,30 @@ struct SpeciesExtra {
   // to tournament.yaml's, so a ruleset that extends another need not copy its tournament section).
   bool extraPrizes = false;
   std::optional<MegaStep> megaStep = {};
+  // The targets of all_species' wake-up specials (game/evolution reads the rules): forms no path
+  // may lead to that still get a chart cell.
+  std::vector<std::string> specialTargets = {};
 
-  [[nodiscard]] bool empty() const { return species.empty() && !extraPrizes && !megaStep; }
+  [[nodiscard]] bool empty() const {
+    return species.empty() && !extraPrizes && !megaStep && specialTargets.empty();
+  }
   // The patch of a species, or nullptr.
   [[nodiscard]] const SpeciesPatch* find(std::string_view id) const;
   // Whether a species is a Mega of the Mega step.
   [[nodiscard]] bool isMega(std::string_view id) const;
 };
 
-// Reads the species_extra and mega_step sections of a ruleset; nothing for a ruleset without them.
-// The errors name the file, line and column.
+// Reads the species_extra, mega_step and all_species sections of a ruleset; nothing for a ruleset
+// without them. A species species_extra or mega_step patches keeps that patch: its all_species
+// entry is skipped. The errors name the file, line and column.
 core::Result<SpeciesExtra> readSpeciesExtra(const Ruleset& ruleset);
 
-// The checks of both sections for RulesetStore.
+// The checks of the three sections for RulesetStore (all_species' wake-up rules are
+// game/evolution's).
 core::Result<void> checkSpeciesExtraSection(const Section& section);
 
-// The patches applied to the disc's tables. An id the table lacks, or a path row with no free
-// slot left, is an error.
+// The patches applied to the disc's tables. An id the table lacks is an error. A path row with no
+// free slot left grows: the disc's rows keep their slots and order, new targets go after.
 core::Result<void> applySpeciesExtra(const SpeciesExtra& extra, assets::DigimonTable& table);
 core::Result<void> applySpeciesExtra(const SpeciesExtra& extra, assets::RaiseTable& table);
 core::Result<void> applySpeciesExtra(const SpeciesExtra& extra, assets::EvolutionTable& table);

@@ -6,16 +6,19 @@
 #include <dwe/game/evolution/evolution.hpp>
 #include <dwe/game/evolution/simulation.hpp>
 #include <dwe/ruleset/ruleset.hpp>
+#include <dwe/ruleset/species_extra.hpp>
 #include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <optional>
 #include <ostream>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -485,6 +488,303 @@ TEST_CASE("the user's disc, extracted: the Mega step's paths") {
     REQUIRE(scored);
     CHECK(scored->points >= evolution.rules().requirements.passPoints);
     CHECK(evolution.outlook(meeting, {}).next == target);
+  }
+}
+
+} // namespace dwe::game::evolution
+
+namespace dwe::game::evolution {
+
+namespace {
+
+// Every species as a partner (docs/modulos/game/evoluciones-extra.md) on the user's disc.
+constexpr std::string_view AllSpeciesRuleset = "todas";
+constexpr std::int32_t WitnessTries = 20000;
+constexpr std::int32_t WakeUpTries = 64;
+constexpr std::uint64_t WitnessSeed = 1;
+
+Evolution loadRulesetEvolution(const assets::VirtualFileSystem& vfs, std::string_view id) {
+  const auto ruleset = ruleset::loadRuleset(vfs, id);
+  REQUIRE_MESSAGE(ruleset.has_value(), errorOf(ruleset));
+  auto loaded = Evolution::load(vfs, *ruleset);
+  REQUIRE_MESSAGE(loaded.has_value(), errorOf(loaded));
+  return std::move(*loaded);
+}
+
+// Inputs of `from` near the requirement of `target`: each value meets it most of the time, and
+// anything otherwise, so the other targets of the path pass or fail in every mix.
+EvolutionInputs nearRequirement(const Evolution& evolution, Species from, Species target,
+                                ruleset::Random& random) {
+  constexpr std::int32_t Percent = 100;
+  constexpr std::int32_t StatsMet = 80;
+  constexpr std::int32_t ValueMet = 85;
+  constexpr std::int32_t BonusMet = 60;
+  constexpr std::int32_t Spread = 41;
+  constexpr std::int32_t RookieStat = 61;
+  constexpr std::int32_t FavouredValue = 70;
+  constexpr std::int32_t AnyStat = 1000;
+  constexpr std::int32_t WeightMargin = 5;
+  constexpr std::int32_t AnyWeight = 80;
+  constexpr std::int32_t CareSpread = 7;
+  constexpr std::int32_t AnyCare = 21;
+  constexpr std::int32_t BonusSpread = 11;
+  constexpr std::int32_t MaxPercent = 100;
+  constexpr std::int32_t AnyBattles = 201;
+  constexpr std::int32_t MaxMoves = 57;
+  constexpr std::int32_t Hours = 1000;
+  const Requirement& need = *evolution.tables().requirement(target);
+  const std::int32_t divisor = evolution.rules().requirements.hpMpDivisor;
+  const bool rookie = evolution.tables().levelOf(target) == Level::Rookie;
+  const std::array<std::int32_t BaseStats::*, 6> stats{&BaseStats::hp,      &BaseStats::mp,
+                                                       &BaseStats::offense, &BaseStats::defense,
+                                                       &BaseStats::speed,   &BaseStats::brains};
+  EvolutionInputs inputs{.species = from, .evolutionTimer = Hours};
+  std::vector<std::int32_t BaseStats::*> favoured;
+  for (std::size_t i = 0; i < stats.size(); ++i) {
+    const std::int32_t scale = i < 2 ? divisor : 1;
+    const std::int32_t wanted = need.minimum.*stats.at(i);
+    std::int32_t value = random.below(AnyStat);
+    if (rookie) {
+      value = random.below(RookieStat);
+      if (wanted == FavouredStat) {
+        favoured.push_back(stats.at(i));
+      }
+    } else if (wanted >= 0 && random.below(Percent) < StatsMet) {
+      value = wanted + random.below(Spread);
+    }
+    inputs.stats.*stats.at(i) = value * scale;
+  }
+  if (!favoured.empty()) {
+    const auto pick = favoured.at(
+        static_cast<std::size_t>(random.below(static_cast<std::int32_t>(favoured.size()))));
+    inputs.stats.*pick =
+        FavouredValue * ((pick == &BaseStats::hp || pick == &BaseStats::mp) ? divisor : 1);
+  }
+  inputs.weight =
+      need.weight >= 0 && random.below(Percent) < ValueMet
+          ? std::max(1, need.weight + random.below((2 * WeightMargin) + 1) - WeightMargin)
+          : 1 + random.below(AnyWeight);
+  if (need.careMistakes >= 0 && random.below(Percent) < ValueMet) {
+    inputs.careMistakes = need.careIsMaximum ? random.below(need.careMistakes + 1)
+                                             : need.careMistakes + random.below(CareSpread);
+  } else {
+    inputs.careMistakes = random.below(AnyCare);
+  }
+  const auto bonus = [&](std::int32_t wanted, std::int32_t low, std::int32_t high) {
+    return wanted >= 0 && random.below(Percent) < BonusMet
+               ? std::min(high, wanted + random.below(BonusSpread))
+               : low + random.below(high - low + 1);
+  };
+  inputs.discipline = bonus(need.discipline, 0, MaxPercent);
+  inputs.happiness = bonus(need.happiness, -MaxPercent, MaxPercent);
+  inputs.battles = need.battlesAreMaximum ? random.below(std::max(need.battles, 0) + 1)
+                                          : bonus(need.battles, 0, AnyBattles - 1);
+  inputs.learnedMoves = bonus(need.learnedMoves, 0, MaxMoves);
+  return inputs;
+}
+
+// Inputs with which the periodic check of `from` picks `target`, if a search finds them.
+std::optional<EvolutionInputs> witness(const Evolution& evolution, Species from, Species target) {
+  if (evolution.tables().requirement(target) == nullptr) {
+    return std::nullopt;
+  }
+  ruleset::Random random{WitnessSeed};
+  for (std::int32_t attempt = 0; attempt < WitnessTries; ++attempt) {
+    EvolutionInputs inputs = nearRequirement(evolution, from, target, random);
+    if (evolution.outlook(inputs, {}).next == target) {
+      return inputs;
+    }
+  }
+  return std::nullopt;
+}
+
+// The species a ruleset's all_species patches add as fallback targets.
+std::vector<std::string> fallbackSpecies(const assets::VirtualFileSystem& vfs) {
+  const auto ruleset = ruleset::loadRuleset(vfs, AllSpeciesRuleset);
+  REQUIRE_MESSAGE(ruleset.has_value(), errorOf(ruleset));
+  const auto extra = ruleset::readSpeciesExtra(*ruleset);
+  REQUIRE_MESSAGE(extra.has_value(), errorOf(extra));
+  std::vector<std::string> ids;
+  for (const auto& [id, patch] : extra->species) {
+    if (patch.yields) {
+      ids.push_back(id);
+    }
+  }
+  return ids;
+}
+
+// The evolution an in-training form takes waking up on `map`, rolling until the special's roll
+// passes.
+std::optional<EvolutionResult> wakeUpOn(const Evolution& evolution, Species from,
+                                        std::string_view map) {
+  EvolutionInputs inputs{.species = from, .map = std::string{map}};
+  for (std::int32_t seed = 1; seed <= WakeUpTries; ++seed) {
+    ruleset::Random random{static_cast<std::uint64_t>(seed)};
+    if (auto result = evolution.wakeUp(inputs, {}, random)) {
+      return result;
+    }
+  }
+  return std::nullopt;
+}
+
+} // namespace
+
+TEST_CASE("the user's disc, extracted: every species as a partner keeps the original's picks") {
+  const assets::DiskFileSystem disk;
+  const auto vfs = mountContent(disk);
+  if (!vfs) {
+    MESSAGE(Skipping);
+    return;
+  }
+  const Evolution original = loadOriginal(*vfs);
+  const Evolution all = loadRulesetEvolution(*vfs, AllSpeciesRuleset);
+  // The option off is the original: no fallback target and the original's specials only.
+  for (const std::string& id : fallbackSpecies(*vfs)) {
+    CAPTURE(id);
+    CHECK_FALSE(original.tables().yields(idOf(original, id)));
+    CHECK(all.tables().yields(idOf(all, id)));
+  }
+  CHECK(all.rules().specials.wakeUp.size() > original.rules().specials.wakeUp.size());
+  // Each path of the original keeps its targets first, in order.
+  constexpr std::int32_t Raisings = 400;
+  constexpr std::uint64_t PickSeed = 23;
+  ruleset::Random random{PickSeed};
+  for (const Species species : original.tables().allSpecies()) {
+    const auto before = original.tables().pathTargets(species);
+    const auto after = all.tables().pathTargets(species);
+    REQUIRE(after.size() >= before.size());
+    CHECK(std::ranges::equal(before, after.first(before.size())));
+    if (before.empty() || original.tables().levelOf(species) == Level::Ultimate) {
+      continue;
+    }
+    // Whenever the original picks a form, the option picks the same one, but where the original
+    // falls back to the rookie's own fallback form because no target passes: a fallback target
+    // takes that place (docs/modulos/game/evoluciones-extra.md, «Prioridad del original»).
+    const auto fallbackForm = original.tables().find(original.rules().fallback.rookieTarget);
+    for (std::int32_t raising = 0; raising < Raisings; ++raising) {
+      const EvolutionInputs inputs = randomInputs(species, random);
+      const auto pick = original.outlook(inputs, {}).next;
+      if (!pick) {
+        continue;
+      }
+      const auto allPick = all.outlook(inputs, {}).next;
+      CAPTURE(original.tables().idOf(species));
+      if (pick == fallbackForm && allPick && all.tables().yields(*allPick)) {
+        continue;
+      }
+      CHECK(allPick == pick);
+    }
+  }
+}
+
+TEST_CASE("the user's disc, extracted: every species as a partner is reached from an egg") {
+  const assets::DiskFileSystem disk;
+  const auto vfs = mountContent(disk);
+  if (!vfs) {
+    MESSAGE(Skipping);
+    return;
+  }
+  const Evolution evolution = loadRulesetEvolution(*vfs, AllSpeciesRuleset);
+  const std::vector<std::string> fallback = fallbackSpecies(*vfs);
+  const auto isFallback = [&](Species species) { return evolution.tables().yields(species); };
+  // From the eggs: the in-training forms, then every path step the check can take, original or
+  // new, and the new wake-up specials.
+  std::set<Species> reached;
+  for (const auto& [baby, inTraining] : evolution.rules().babyTargets) {
+    reached.insert(idOf(evolution, inTraining));
+  }
+  const std::size_t originalSpecials = loadOriginal(*vfs).rules().specials.wakeUp.size();
+  const auto& wakeUp = evolution.rules().specials.wakeUp;
+  for (std::size_t rule = originalSpecials; rule < wakeUp.size(); ++rule) {
+    const SpecialRule& special = wakeUp.at(rule);
+    CAPTURE(special.target);
+    REQUIRE(special.requirements.size() == 1);
+    for (const std::string& from : special.from) {
+      const auto result =
+          wakeUpOn(evolution, idOf(evolution, from), special.requirements.front().mapId);
+      REQUIRE(result);
+      CHECK(result->target == idOf(evolution, special.target));
+    }
+    // Elsewhere nothing happens.
+    CHECK_FALSE(wakeUpOn(evolution, idOf(evolution, special.from.front()), "twna01"));
+    reached.insert(idOf(evolution, special.target));
+  }
+  // Each step into or out of a new form is one the check picks with legal values.
+  std::set<std::pair<Species, Species>> steps;
+  for (const Species species : evolution.tables().allSpecies()) {
+    for (const Species target : evolution.tables().pathTargets(species)) {
+      if (!isFallback(species) && !isFallback(target)) {
+        steps.emplace(species, target);
+        continue;
+      }
+      CAPTURE(evolution.tables().idOf(species));
+      CAPTURE(evolution.tables().idOf(target));
+      const bool found = witness(evolution, species, target).has_value();
+      CHECK(found);
+      if (found) {
+        steps.emplace(species, target);
+      }
+    }
+  }
+  for (bool grew = true; grew;) {
+    grew = false;
+    for (const auto& [from, target] : steps) {
+      if (reached.contains(from) && reached.insert(target).second) {
+        grew = true;
+      }
+    }
+  }
+  for (const std::string& id : fallback) {
+    CAPTURE(id);
+    const Species species = idOf(evolution, id);
+    CHECK(reached.contains(species));
+    // No new form below Ultimate is a dead end.
+    if (evolution.tables().levelOf(species) != Level::Ultimate) {
+      CHECK(std::ranges::any_of(steps, [&](const auto& step) { return step.first == species; }));
+    }
+  }
+}
+
+TEST_CASE("the user's disc, extracted: a raising along new forms from in-training to ultimate") {
+  const assets::DiskFileSystem disk;
+  const auto vfs = mountContent(disk);
+  if (!vfs) {
+    MESSAGE(Skipping);
+    return;
+  }
+  const Evolution evolution = loadRulesetEvolution(*vfs, AllSpeciesRuleset);
+  struct Line {
+    std::string_view inTraining;
+    std::string_view map;
+    std::vector<std::string_view> forms;
+  };
+  // One line by a wake-up special, one by the natural check only.
+  for (const Line& line :
+       {Line{.inTraining = "koro", .map = "omoc01", .forms = {"toya", "tank", "tkka"}},
+        Line{.inTraining = "tane", .map = "", .forms = {"otam", "geco", "wrse"}}}) {
+    CAPTURE(line.inTraining);
+    Species partner = idOf(evolution, line.inTraining);
+    std::size_t step = 0;
+    if (!line.map.empty()) {
+      const auto woke = wakeUpOn(evolution, partner, line.map);
+      REQUIRE(woke);
+      CHECK(woke->target == idOf(evolution, line.forms.front()));
+      partner = woke->target;
+      step = 1;
+    }
+    for (; step < line.forms.size(); ++step) {
+      const Species target = idOf(evolution, line.forms.at(step));
+      auto inputs = witness(evolution, partner, target);
+      REQUIRE(inputs);
+      inputs->evolutionTimer = valueOf(evolution.checkHoursFor(partner));
+      ruleset::Random random{WitnessSeed};
+      const NaturalCheck check = evolution.checkNatural(*inputs, {}, CheckSpan::hourly(1), random);
+      REQUIRE(check.evolution);
+      CHECK(check.evolution->target == target);
+      // The new form has a technique to fight with.
+      CHECK(check.evolution->equippedMoves.front().has_value());
+      partner = target;
+    }
   }
 }
 

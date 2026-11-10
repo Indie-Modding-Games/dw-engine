@@ -1,6 +1,9 @@
-# Las reglas de la partida nueva (ui/new_game_rules): las del original o con su contenido oculto, y el paso Ultra →
-# Mega. Términos del glosario (docs/guides/glosario-es.md).
+# Las reglas de la partida nueva (ui/new_game_rules): todas las especies como compañero, las del original o con su
+# contenido oculto, y el paso Ultra → Mega. Términos del glosario (docs/guides/glosario-es.md).
 title: "Reglas de la partida"
+all: "Todas las especies como compañero: {value}"
+all_on: "Las especies que el original no deja criar también salen evolucionando."
+all_off: "Solo las especies del original."
 hidden: "Contenido oculto: {value}"
 hidden_off: "Las reglas del original."
 hidden_on: "Panjyamon, Gigadramon, MetalEtemon y Myotismon también por evolución."

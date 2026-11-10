@@ -4,10 +4,12 @@
 #include <dwe/game/evolution/messages.hpp>
 #include <dwe/game/evolution/rules.hpp>
 #include <dwe/game/evolution/strategies.hpp>
+#include <dwe/ruleset/species_extra.hpp>
 
 #include <algorithm>
 #include <array>
 #include <charconv>
+#include <iterator>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -494,6 +496,47 @@ core::Result<void> checkEvolutionSection(const ruleset::Section& section) {
     return selection;
   }
   return scoringStrategies().check(section, ScoringKey);
+}
+
+namespace {
+
+// all_species' wake_up list, in the format of the specials' (none without the list).
+core::Result<std::vector<SpecialRule>> readAllSpeciesWakeUp(const ruleset::Section& section) {
+  YamlReader reader;
+  std::vector<SpecialRule> rules;
+  if (const YamlNode* wakeUp = section.node.find(WakeUpKey); wakeUp != nullptr) {
+    rules = readSpecialList(reader, *wakeUp, WakeUpKey);
+  }
+  return reader.finish(std::move(rules), section.file);
+}
+
+} // namespace
+
+core::Result<EvolutionRules> readEvolutionRules(const ruleset::Ruleset& ruleset) {
+  auto section = ruleset.requireSection(EvolutionSection);
+  if (!section) {
+    return std::unexpected{section.error()};
+  }
+  auto rules = readEvolutionRules(**section);
+  if (!rules) {
+    return rules;
+  }
+  if (const ruleset::Section* all = ruleset.section(ruleset::AllSpeciesSection)) {
+    auto wakeUp = readAllSpeciesWakeUp(*all);
+    if (!wakeUp) {
+      return std::unexpected{wakeUp.error()};
+    }
+    // After the original's: its rules keep their order, and the last rule that matches wins.
+    std::ranges::move(*wakeUp, std::back_inserter(rules->specials.wakeUp));
+  }
+  return rules;
+}
+
+core::Result<void> checkAllSpeciesSection(const ruleset::Section& section) {
+  if (auto patches = ruleset::checkSpeciesExtraSection(section); !patches) {
+    return patches;
+  }
+  return readAllSpeciesWakeUp(section).transform([](const auto&) {});
 }
 
 std::optional<assets::EntryClass> MoveRules::specialtyBlock(std::int32_t specialty) const {

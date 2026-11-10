@@ -187,8 +187,7 @@ public:
                                       .brains = 100,
                                       .targetDigimon = std::string{form.id}});
       if (index > 0) {
-        evolution.paths.push_back(
-            {.digimon = std::string{form.id}, .index = index - 1, .from = {}, .to = {}});
+        evolution.paths.push_back({.digimon = std::string{form.id}, .index = index - 1});
       }
     }
   }
@@ -219,10 +218,9 @@ public:
   // Sets the targets of a form's chart, in order.
   void setPath(std::string_view from, std::initializer_list<std::string_view> targets) {
     auto& path = evolution.paths.at(static_cast<std::size_t>(index(from) - 1));
-    path.to = {};
-    std::size_t slot = 0;
+    path.to.clear();
     for (const std::string_view target : targets) {
-      path.to.at(slot++) = std::string{target};
+      path.to.emplace_back(std::string{target});
     }
   }
 

@@ -14,6 +14,8 @@
 		<div id="picture-fade-right" class="picture-fade"></div>
 		<div id="panel">
 			<h1 id="title" text-key="new_game_rules.title"></h1>
+			<button id="rules-all" onclick="toggle(document, 'all')"></button>
+			<p id="about-all" class="about"></p>
 			<button id="rules-hidden" onclick="toggle(document, 'hidden')"></button>
 			<p id="about-hidden" class="about"></p>
 			<button id="rules-mega" onclick="toggle(document, 'mega')"></button>

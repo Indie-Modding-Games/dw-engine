@@ -18,7 +18,7 @@ id: original                          # el nombre de la carpeta
 name: modes.original_name             # clave de localización del nombre
 description: modes.original_description
 ruleset: original                     # el ruleset con el que empieza
-rulesets: [original, oculto, oculto_mega]   # los que el modo admite; incluye ruleset
+rulesets: [original, oculto, oculto_mega, todas, todas_oculto, todas_oculto_mega]   # los que admite; incluye ruleset
 order: 0                              # posición en la lista (luego el id)
 ```
 

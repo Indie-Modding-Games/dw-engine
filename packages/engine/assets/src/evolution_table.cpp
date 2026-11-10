@@ -3,7 +3,10 @@
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/yaml.hpp>
 
+#include <cstddef>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 #include "game_table_document.hpp"
 
@@ -62,11 +65,11 @@ EvolutionStatsGainEntry readStatsGain(YamlReader& reader, const YamlNode& node) 
           .targetDigimon = reader.optionalText(reader.field(node, "target_digimon"))};
 }
 
-template <std::size_t Count>
 void readReferences(YamlReader& reader, const YamlNode& node, std::string_view what,
-                    std::array<TableReference, Count>& references) {
-  const auto items = reader.sequence(node, what, Count);
-  for (std::size_t i = 0; i < items.size(); ++i) {
+                    std::size_t count, std::vector<TableReference>& references) {
+  const auto items = reader.sequence(node, what, count);
+  references.assign(count, std::nullopt);
+  for (std::size_t i = 0; i < items.size() && i < count; ++i) {
     references.at(i) = reader.optionalText(items[i]);
   }
 }
@@ -76,11 +79,9 @@ EvolutionPathEntry readPath(YamlReader& reader, const YamlNode& node) {
     return {};
   }
   EvolutionPathEntry path{.digimon = reader.optionalText(reader.field(node, "digimon")),
-                          .index = reader.optionalInteger<std::int32_t>(node, EntryIndexKey),
-                          .from = {},
-                          .to = {}};
-  readReferences(reader, reader.field(node, "from"), "from", path.from);
-  readReferences(reader, reader.field(node, "to"), "to", path.to);
+                          .index = reader.optionalInteger<std::int32_t>(node, EntryIndexKey)};
+  readReferences(reader, reader.field(node, "from"), "from", EvolutionPathSources, path.from);
+  readReferences(reader, reader.field(node, "to"), "to", EvolutionPathTargets, path.to);
   return path;
 }
 

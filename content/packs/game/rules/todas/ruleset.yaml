@@ -1,0 +1,10 @@
+# Todas las especies como compañero (opción de partida nueva, encendida por defecto): las reglas del original, y las
+# especies que el original nunca deja criar salen evolucionando, siempre después de los destinos del original.
+# Diseño: docs/modulos/game/evoluciones-extra.md. Formato: docs/architecture/rulesets.md.
+id: todas
+name: "Original + todas las especies"
+version: 0.1.0
+description: "Las reglas del original; toda especie con modelo de combate se alcanza evolucionando."
+extends: original
+sections:
+  - all_species

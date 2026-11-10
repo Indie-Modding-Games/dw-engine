@@ -136,6 +136,9 @@ private:
   [[nodiscard]] std::optional<std::int32_t> checkHours(Level level) const;
   [[nodiscard]] Species require(std::string_view id) const;
 
+  // A form that learns no technique and has none equipped learns and equips the first known move
+  // of its list.
+  void fightWithFirstMove(EvolutionResult& result) const;
   // Applies EVL_applyEvolution's rules for a target.
   [[nodiscard]] std::optional<EvolutionResult> evolve(const EvolutionInputs& inputs,
                                                       const EvolutionState& state, Species target,

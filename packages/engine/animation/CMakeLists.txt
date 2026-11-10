@@ -4,6 +4,7 @@ dwe_add_module(animation
         src/clip_sampling.cpp
         src/animation_player.cpp
         src/chibi.cpp
+        src/clip_synthesis.cpp
     DEPS core assets)
 
 # The tests check the game pack's character models against the extracted ones.

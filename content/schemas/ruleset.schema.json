@@ -30,6 +30,12 @@
       "type": "array",
       "items": { "$ref": "#/$defs/name", "assetReference": "./{}" }
     },
+    "sections_from": {
+      "description": "Sections whose file is in another ruleset's folder, rules/<ruleset>/<section>.yaml: a section name -> that ruleset. Rulesets that extend different ones share one file this way.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/name" },
+      "additionalProperties": { "$ref": "#/$defs/name" }
+    },
     "scripts": {
       "description": "Lua files of the ruleset's folder, for strategies written in Lua.",
       "type": "array",

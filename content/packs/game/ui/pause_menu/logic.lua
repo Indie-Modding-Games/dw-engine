@@ -279,8 +279,9 @@ local function chart_cursor(document)
   cursor:set_property("top", chart_top(cell, 33))
 end
 
--- The chart's cells: the original's 61, and the ones a ruleset's patches add (the hidden content).
-local ChartCells = 72
+-- The chart's cells: the original's 61, and the ones a ruleset's patches add (the hidden content,
+-- every species as a partner: 113 with both).
+local ChartCells = 128
 
 local function chart_rows(first, count, step)
   local rows = {}

@@ -130,6 +130,9 @@ TEST_CASE(
   REQUIRE(table->paths.size() == 1);
   CHECK(table->paths.front().to.at(1) == "beta");
   CHECK(table->paths.front().to.at(2) == "-2");
+  // The disc's slots, which a ruleset's patches may grow.
+  CHECK(table->paths.front().from.size() == dwe::assets::EvolutionPathSources);
+  CHECK(table->paths.front().to.size() == dwe::assets::EvolutionPathTargets);
   REQUIRE(table->itemTargets.size() == 1);
   CHECK(table->itemTargets.front().item == "beta_charm");
 

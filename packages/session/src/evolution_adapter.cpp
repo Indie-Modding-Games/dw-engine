@@ -142,12 +142,13 @@ EvolutionAdapter::~EvolutionAdapter() = default;
 ruleset::SectionChecks EvolutionAdapter::sectionChecks() const {
   return {{std::string{game::evolution::EvolutionSection}, game::evolution::checkEvolutionSection},
           {std::string{ruleset::SpeciesExtraSection}, ruleset::checkSpeciesExtraSection},
-          {std::string{ruleset::MegaStepSection}, ruleset::checkSpeciesExtraSection}};
+          {std::string{ruleset::MegaStepSection}, ruleset::checkSpeciesExtraSection},
+          {std::string{ruleset::AllSpeciesSection}, game::evolution::checkAllSpeciesSection}};
 }
 
 core::Result<void> EvolutionAdapter::readRules(const ruleset::Ruleset& rules) {
   // Tables read from the packs follow the ruleset: another ruleset patches them otherwise (its
-  // species_extra and mega_step sections).
+  // species_extra, mega_step and all_species sections).
   const bool otherRuleset = tablesRuleset_ && *tablesRuleset_ != rules.id();
   if (!desc_.tables || (otherRuleset && desc_.files != nullptr)) {
     if (desc_.files == nullptr) {
@@ -164,7 +165,7 @@ core::Result<void> EvolutionAdapter::readRules(const ruleset::Ruleset& rules) {
   if (!section) {
     return std::unexpected{section.error()};
   }
-  auto evolutionRules = game::evolution::readEvolutionRules(**section);
+  auto evolutionRules = game::evolution::readEvolutionRules(rules);
   if (!evolutionRules) {
     return std::unexpected{evolutionRules.error()};
   }

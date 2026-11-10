@@ -231,6 +231,16 @@ const assets::ModelData* FieldScene::fighterModel(std::optional<std::int32_t> np
   return actor != nullptr ? actor->model.get() : nullptr;
 }
 
+std::int32_t FieldScene::fighterEffectJoint(std::optional<std::int32_t> npc,
+                                            std::int32_t joint) const {
+  const Actor* actor = fighterActor(npc);
+  if (actor == nullptr) {
+    return joint;
+  }
+  const auto found = actor->effectJoints.find(joint);
+  return found != actor->effectJoints.end() ? found->second : joint;
+}
+
 void FieldScene::releaseFighters() {
   // A fight can end with a fighter on ground the field will not let an NPC stand on: inside a
   // wall it crossed thin, behind a counter, past the map's edge. NPCs never move on their own, so

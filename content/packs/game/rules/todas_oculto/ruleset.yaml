@@ -1,0 +1,11 @@
+# Todas las especies como compañero con el contenido oculto: las reglas de oculto y la sección all_species de todas
+# (sections_from), cuyas especies con parche de oculto conservan el de oculto. Diseño:
+# docs/modulos/game/evoluciones-extra.md. Formato: docs/architecture/rulesets.md.
+id: todas_oculto
+name: "Original + contenido oculto + todas las especies"
+version: 0.1.0
+description: "El contenido oculto; toda especie con modelo de combate se alcanza evolucionando."
+extends: oculto
+sections: []
+sections_from:
+  all_species: todas

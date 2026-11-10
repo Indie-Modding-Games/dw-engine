@@ -312,6 +312,7 @@ core::Result<EvolutionTables> EvolutionTables::load(const assets::VirtualFileSys
 core::Result<void> EvolutionTables::useExtra(const ruleset::SpeciesExtra& extra) {
   gates_.clear();
   megas_.clear();
+  yielding_.clear();
   megaStep_ = extra.megaStep;
   const auto require = [&](std::string_view id) -> core::Result<Species> {
     if (const auto species = find(id)) {
@@ -321,12 +322,18 @@ core::Result<void> EvolutionTables::useExtra(const ruleset::SpeciesExtra& extra)
         messages::formatMessage(messages::UnknownForm, ruleset::SpeciesExtraSection, id));
   };
   for (const auto& [id, patch] : extra.species) {
-    if (!patch.gate) {
+    if (!patch.gate && !patch.yields) {
       continue;
     }
     auto species = require(id);
     if (!species) {
       return std::unexpected{species.error()};
+    }
+    if (patch.yields) {
+      yielding_.insert(*species);
+    }
+    if (!patch.gate) {
+      continue;
     }
     gates_.insert_or_assign(*species, *patch.gate);
   }

@@ -95,7 +95,7 @@ std::optional<EffectMatrix> BattleEffectBodies::node(game::battle::FighterId fig
     return std::nullopt;
   }
   const std::optional<std::vector<game::battle::BonePose>> chain =
-      boneChain(*model, *pose, static_cast<std::uint32_t>(index));
+      boneChain(*model, *pose, static_cast<std::uint32_t>(scene_->fighterEffectJoint(*npc, index)));
   if (!chain) {
     return std::nullopt;
   }
@@ -114,8 +114,9 @@ std::optional<EffectMatrix> BattleEffectBodies::node(game::battle::FighterId fig
   if (model == nullptr) {
     return std::nullopt;
   }
-  const std::optional<std::vector<game::battle::BonePose>> chain = clipBoneChain(
-      *model, static_cast<std::uint32_t>(clip), frame, static_cast<std::uint32_t>(index));
+  const std::optional<std::vector<game::battle::BonePose>> chain =
+      clipBoneChain(*model, static_cast<std::uint32_t>(clip), frame,
+                    static_cast<std::uint32_t>(scene_->fighterEffectJoint(*npc, index)));
   if (!chain) {
     return std::nullopt;
   }

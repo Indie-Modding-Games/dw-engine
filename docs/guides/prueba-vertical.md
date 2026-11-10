@@ -228,6 +228,13 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   de pausa abierto (el reloj se va con su caja) y la opción apagada desde el menú. Cada captura con la caja comprueba
   que no pisa nada del HUD ni de otro documento (`expect_clear: hud#field-time`) y que los textos caben (`text_fit`).
   Se corre en los dos idiomas y con los dos aspectos (`--ui-skin original` y `modern`).
+- `route-all-species.yaml`: [todas las especies como compañero](../modulos/game/evoluciones-extra.md), encendida por
+  defecto: una partida nueva desde el menú principal con las reglas que la pantalla trae, el árbol con 110 casillas (las
+  61 del original y 49 nuevas) y una línea nueva por la revisión natural: `tane` a `otam` (ataque el mayor, sin
+  errores, peso 5) y `otam` a `geco`, con valores que ningún destino del original toma. Captura las reglas y las dos
+  formas en el campo. Se corre en los dos idiomas, con `--saves` en una carpeta vacía. Las rutas que pasan por la
+  pantalla de reglas para jugar con otras (`route-hidden-content*`, `route-mega-step`, `route-canonical-stages`)
+  apagan antes «Todas las especies» (`menu_select: rules-all`).
 - `route-hidden-content.yaml`: el [contenido oculto](../modulos/apps/game.md#contenido-oculto) desde el menú principal
   con el teclado: la pantalla de reglas de la partida nueva (con las reglas del original y con el contenido oculto
   encendido), el árbol con 65 casillas y las cuatro formas nuevas por la revisión natural: `species_k` desde `species_l`,

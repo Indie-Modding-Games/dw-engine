@@ -101,7 +101,8 @@ TEST_CASE("the game pack ships the original story as its only mode, and it is th
   REQUIRE(original != nullptr);
   CHECK(original->id == OriginalMode);
   CHECK(original->ruleset == "original");
-  CHECK(original->rulesets == std::vector<std::string>{"original", "oculto", "oculto_mega"});
+  CHECK(original->rulesets == std::vector<std::string>{"original", "oculto", "oculto_mega", "todas",
+                                                       "todas_oculto", "todas_oculto_mega"});
   CHECK_FALSE(catalog.asksMode());
 }
 
