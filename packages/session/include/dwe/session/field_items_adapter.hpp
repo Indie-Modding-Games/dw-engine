@@ -43,6 +43,8 @@ struct FeedClips {
   std::uint32_t partnerIdle = 0;
   std::uint32_t partnerEat = 0;
   std::uint32_t partnerRefuse = 0;
+  // A hungry partner's joy after its favourite food or a meal that fed it (partnerHandleFoodFeed).
+  std::uint32_t partnerCheer = 0;
 };
 
 // Giving the partner an item in the field (partner.c: partnerTickFeedItem, checkEatDistance,

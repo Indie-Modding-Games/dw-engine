@@ -1204,6 +1204,37 @@ vista. Apagado, la tienda del original. Cubre las tiendas de objetos y el recicl
 méritos no. Lo comprueban la ruta `route-shop-description.yaml` (compra uno y la fila pasa a `x1`) y
 `bag_tests.cpp` («the total of an item counts every stack…», `Inventory::totalOf`).
 
+## Comida favorita
+
+Cada especie tiene una comida favorita (`favoriteFood` en la tabla de especies). El original la usa al comer y al
+rechazar objetos, pero no la enseña en ningún sitio: hay que adivinarla. dwe porta su efecto y, con la Mejora
+opcional `favorite_food` (fila «Mostrar la comida favorita», «Show favourite food» en inglés, pestaña Interfaz,
+**encendida por defecto**, guardada en los ajustes del usuario), la enseña:
+
+- En la ficha del compañero (las dos pieles), una fila «Comida favorita» con el nombre de la tabla de
+  objetos (`partner.favorite_food`). Las especies recién nacidas tienen como favorita el objeto 0, que no es una
+  comida: la fila dice «Ninguna». `InventoryAdapter::favoriteFood` solo da la favorita si es una comida
+  (`item_use.meals`). En la piel original va en el final libre de la fila del rótulo «Perfil» (las filas del perfil
+  ya están llenas); en la moderna, bajo el peso, con las filas del perfil a 24dp para que las condiciones sigan
+  acabando antes de las tarjetas.
+- En toda lista donde se da o se usa un objeto (la bolsa del campo, la bolsa de combate y la lista de la tienda), la
+  favorita sale en dorado y con una marca que no depende del color: en la piel original el corazón de la ficha junto
+  al icono, en la moderna un punto dorado; en la tienda, un borde dorado a la izquierda de la fila
+  (`bag.slot.<i>.favorite`, `shop.row.<n>.favorite`).
+- Sigue al compañero actual: el menú del compañero publica sus ajustes en cada fotograma, así que tras una
+  evolución la ficha y la bolsa ya marcan la favorita de la nueva especie.
+
+Apagada, la ficha y las listas se ven como en el original.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Comer la favorita: energía ×14/10, felicidad +2 | `item.c: handleFood` | `applyFood` | `hunger_tests` | Igual |
+| Con hambre, comer bastante o la favorita hace celebrar al compañero (clip 0xb) | `partner_impl.c: partnerHandleFoodFeed` (`startAnimation` 0xb) | `answerHunger` emite `EventKind::Cheered`; `FeedScene::cheer` toca el clip `partner_cheer` de `field_items.yaml` una vez (`FieldScene::playPartnerClipOnce`); en combate no | `hunger_tests`: «a hungry partner cheers when it eats enough or its favourite food» | Igual |
+| Sin hambre, rechaza la favorita un 20 % de las veces; la marca dura un solo ofrecimiento | `partner_impl.c: partnerWillRefuseItem` (borra `refusedFavFood` al empezar) | `OriginalItemRefusal::refuses` | `hunger_tests`: «a partner that is not hungry refuses its favourite food 20 % of the times» | Igual |
+| Un objeto con chequeo de disciplina que pasa la tirada sigue al chequeo de la favorita | `partner_impl.c: partnerWillRefuseItem` | `OriginalItemRefusal::refuses` | `hunger_tests`: «an item past the discipline roll is still refused as an unwanted favourite» | Igual |
+| Fila de la comida favorita en la ficha | No existe | `screens::setFavoriteFood`, `#status-food-line` | `partner_status_view_tests`, `ui_tests`: «the status page names the partner's favourite food…»; ruta `route-favorite-food.yaml` (en las dos pieles: la fila, el texto cabe, sigue la evolución y se oculta con la opción apagada) | Mejora (opción) |
+| Favorita marcada en la bolsa y la tienda | No existe | `BagSlotView::favorite`, `ShopScreen::settings`, `bag_slot.lua`, `shop_menu/logic.lua` | `bag_view_tests`, `ui_tests`: «the bag marks the partner's favourite food…»; ruta `route-favorite-food.yaml` | Mejora (opción) |
+
 ## Arreglos gráficos
 
 Mejora opcional, apagada por defecto: el ajuste `art_fixes` (fila «Arreglos gráficos», «Art fixes», pestaña

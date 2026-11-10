@@ -156,7 +156,8 @@ Igual: hace lo mismo que el decomp. Desviación aprobada: distinto a propósito.
 | Energía y peso sin energía | `partner_impl.c: tickHungerMechanics` | `tickHunger` | `hunger_tests`: energy falls | Igual |
 | Cansancio adelanta el hambre | `partner_impl.c: tickTirednessMechanics` | `tickTiredness`, `tickHunger` | `hunger_tests`: long tiredness | Igual |
 | Comer: alimentado, sobrealimentado, favorita, tope | `partner_impl.c: partnerHandleFoodFeed`; `item.c: handleFood` | `eat`, `applyFood`, `answerHunger` | `hunger_tests` | Igual |
-| Rechazo de objetos | `partner_impl.c: partnerWillRefuseItem` | `OriginalItemRefusal` | `hunger_tests`, `mood_tests` | Igual |
+| Celebra al comer con hambre si come bastante o su favorita (clip 0xb) | `partner_impl.c: partnerHandleFoodFeed` | `answerHunger` → `EventKind::Cheered`; `FeedScene::cheer` | `hunger_tests`: a hungry partner cheers... | Igual |
+| Rechazo de objetos; la marca de favorita dura un ofrecimiento; el chequeo de disciplina sigue al de la favorita | `partner_impl.c: partnerWillRefuseItem` | `OriginalItemRefusal` | `hunger_tests`, `mood_tests` | Igual |
 | Horario de sueño | `partner_impl.c: setSleepTimes` | `setSleepTimes`, `scheduleNextSleep` | `sleep_tests`: pattern, baby | Igual |
 | El cansancio adelanta el sueño | `partner_impl.c: tickSleepMechanics` | `tickSleep`, `cutAwakeTime` | `sleep_tests`: cut of 10 minutes | Igual |
 | Penalización con sueño, sueño perdido | `partner_impl.c: tickSleepMechanics` | `tickSleep`, `missSleep` | `sleep_tests`: sleepy adult, misses its sleep | Igual |

@@ -79,14 +79,18 @@ void Partner::answerHunger(const FoodEffect& food, std::int32_t hour, std::int32
     changeMood(care().hunger.overfed);
     return;
   }
-  if (state_.hunger.energy < species_->energyThreshold) {
-    return;
+  const bool fed = state_.hunger.energy >= species_->energyThreshold;
+  if (fed) {
+    changeMood(care().hunger.fed);
+    state_.conditions.clear(Condition::Hungry);
+    setFoodTimer(hour, minute);
+    state_.hunger.windowSteps = 0;
+    emit(EventKind::HungerWindowClosed, 1);
   }
-  changeMood(care().hunger.fed);
-  state_.conditions.clear(Condition::Hungry);
-  setFoodTimer(hour, minute);
-  state_.hunger.windowSteps = 0;
-  emit(EventKind::HungerWindowClosed, 1);
+  // A hungry partner that ate its favourite food, or enough, shows its joy (startAnimation 0xb).
+  if (fed || species_->favoriteFood == food.item) {
+    emit(EventKind::Cheered);
+  }
 }
 
 bool Partner::cure(const CureEffect& cure) {

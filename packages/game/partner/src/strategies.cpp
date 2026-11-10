@@ -61,7 +61,9 @@ public:
   [[nodiscard]] bool refuses(const ItemOffer& offer, PartnerState& state,
                              const SpeciesCare& species, const CareRules& rules,
                              ruleset::Random& random) const override {
-    // The original rolls the favourite food's chance before anything else.
+    // The original clears the mark and rolls the favourite food's chance before anything else
+    // (partner_impl.c:1440): a refusal of the favourite lasts for that offer only.
+    state.hunger.refusedFavorite = false;
     const bool favoriteRoll = random.below(PercentRoll) < rules.refusal.favoriteRefusalPercent;
     if (offer.check == RefusalCheck::Always) {
       return true;
@@ -70,8 +72,11 @@ public:
       state.mood.scoldBoost = ScoldBoost::None;
       return false;
     }
-    if (offer.check == RefusalCheck::Discipline) {
-      return refusesForDiscipline(state, rules.refusal, random);
+    // An item that passes the discipline roll still meets the favourite food's check (a species
+    // whose favourite is item 0, the fresh forms', may turn the small recovery down).
+    if (offer.check == RefusalCheck::Discipline &&
+        refusesForDiscipline(state, rules.refusal, random)) {
+      return true;
     }
     const bool hungry = state.conditions.has(Condition::Hungry);
     if (!hungry && species.favoriteFood == offer.item && favoriteRoll) {

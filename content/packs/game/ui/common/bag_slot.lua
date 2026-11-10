@@ -8,7 +8,8 @@
 -- `<img id="<id>-icon">` and the spans `<id>-name` and `<id>-count` (the icon is optional).
 -- bag_slot.draw fills them and sets the slot's classes: `empty`, `dimmed` (an item the bag never
 -- uses, item colour 255), and `item-field`, `item-battle`, `item-shared` (item colour 0, 1, 2:
--- TEXT_COLORS 5, 6, 7 in the original).
+-- TEXT_COLORS 5, 6, 7 in the original), and `favorite` for the partner's favourite food while the
+-- favorite_food option is on (an engine improvement; the skins draw it in gold with a heart).
 
 bag_slot = {}
 
@@ -76,6 +77,10 @@ function bag_slot.draw(document, id, index, empty_text)
   slot:set_class("item-field", filled and color == 0)
   slot:set_class("item-battle", filled and color == 1)
   slot:set_class("item-shared", filled and color == 2)
+  slot:set_class(
+    "favorite",
+    filled and ui.setting("favorite_food") ~= false and bag_slot.setting(index, "favorite", false)
+  )
   local icon = document:get(id .. "-icon")
   if icon ~= nil then
     local source = filled and bag_slot.setting(index, "icon", "") or ""

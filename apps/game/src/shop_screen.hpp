@@ -5,6 +5,7 @@
 #include <dwe/input/input_state.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/game_session.hpp>
+#include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/shop_counter.hpp>
 #include <dwe/ui/ui.hpp>
 
@@ -22,6 +23,8 @@ struct ShopScreenDesc {
   session::GameSession* session = nullptr;
   session::ShopCounter* shop = nullptr;
   ui::Ui* ui = nullptr;
+  // The bag's rules, for the partner's favourite food the list marks; none marks nothing.
+  const session::InventoryAdapter* inventory = nullptr;
 };
 
 // The shop the story opens (script_common.c: openShop), on the shop_menu document: the keeper

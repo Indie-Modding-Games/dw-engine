@@ -895,7 +895,8 @@ void BattleScreen::openBag() {
   screens::publish(
       *desc_.ui,
       screens::settingsOf(screens::bagViewOf(desc_.inventory->inventory(), desc_.inventory->items(),
-                                             names(), game::inventory::UseContext::Battle)),
+                                             names(), game::inventory::UseContext::Battle,
+                                             desc_.inventory->favoriteFood(*desc_.session))),
       screens::BagRevisionSetting);
   publish();
   // addInventoryUI opens the field's bag (createInventoryView), growing from the player as there.

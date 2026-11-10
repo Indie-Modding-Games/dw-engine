@@ -202,6 +202,18 @@ local function draw_extras(document)
   document:get("status-evolution-value"):set_text(evolution)
 end
 
+-- The species' favourite food (the favorite_food option, an engine improvement on by default; the
+-- original shows none): a row under the weight with the item's name, «None» for a species without.
+local function draw_favorite_food(document)
+  local shown = ui.setting("favorite_food") ~= false
+  document:get("scrim"):set_class("favorite-food", shown)
+  document:get("status-food-line"):set_class("hidden", not shown)
+  local food = setting("partner.favorite_food", "")
+  document
+    :get("status-food")
+    :set_text(food ~= "" and t(food) or t("partner_menu.favorite_food.none"))
+end
+
 local function draw_status(document)
   -- The partner's own name when the player gave one, else its species' (PARTNER_ENTITY.name); the
   -- species on its own line.
@@ -227,6 +239,7 @@ local function draw_status(document)
     original and tostring(number("partner.weight"))
       or t("partner_menu.weight.value", { weight = number("partner.weight") })
   )
+  draw_favorite_food(document)
   for index = 0, 2 do
     local icon = document:get("status-special-" .. index)
     local value = math.floor(setting("partner.profile.special." .. index, -1))
@@ -972,6 +985,7 @@ function on_setting(document, name)
   if
     name == "partner.revision"
     or name == "status_extras"
+    or name == "favorite_food"
     or name == "bag.revision"
     or name == "bag.result"
     or name == "partner.care_result"

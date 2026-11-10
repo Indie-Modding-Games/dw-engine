@@ -12,6 +12,7 @@
 #include <dwe/session/messages.hpp>
 
 #include <algorithm>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -450,6 +451,18 @@ const game::inventory::Inventory& InventoryAdapter::inventory() const {
 const assets::ItemTable& InventoryAdapter::items() const {
   DWE_ASSERT(desc_.items.has_value());
   return *desc_.items;
+}
+
+std::optional<std::string> InventoryAdapter::favoriteFood(const GameSession& session) const {
+  const std::optional<std::string>& food = session.partner().species().favoriteFood;
+  if (!food || !desc_.items) {
+    return std::nullopt;
+  }
+  const assets::ItemEntry* entry = desc_.items->find(*food);
+  if (entry == nullptr || !itemUse_.meals.contains(*entry)) {
+    return std::nullopt;
+  }
+  return food;
 }
 
 } // namespace dwe::session

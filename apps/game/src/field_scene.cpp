@@ -342,6 +342,7 @@ core::Result<void> FieldScene::enterOriginalMap(std::int32_t index, std::int32_t
 }
 
 void FieldScene::playPartnerClip(std::optional<std::uint32_t> clipId, bool moves) {
+  partnerClipOnceAt_.reset();
   partnerClip_ = clipId;
   partnerClipStarted_ = false;
   // The clip's root motion carries the partner as a script's clip does (Field::moveByClip); a
@@ -354,6 +355,20 @@ void FieldScene::playPartnerClip(std::optional<std::uint32_t> clipId, bool moves
   partnerLook_ = {};
   // The partner's motion picks its clip again from the next update.
   partnerActor_->motion.reset();
+}
+
+void FieldScene::playPartnerClipOnce(std::uint32_t clipId) {
+  playPartnerClip(clipId);
+  partnerClipOnceAt_ = field_->partner().position;
+}
+
+void FieldScene::releasePartnerClipOnce() {
+  if (!partnerClipOnceAt_) {
+    return;
+  }
+  if (partnerClipFinished() || field_->partner().position != *partnerClipOnceAt_) {
+    playPartnerClip(std::nullopt);
+  }
 }
 
 bool FieldScene::partnerClipFinished() const {
@@ -1149,6 +1164,7 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
     animate(*playerActor_, playerSceneClip_ ? frameSeconds : animationSeconds);
   }
   playClipSounds(*playerActor_);
+  releasePartnerClipOnce();
   if (menuRest && !partnerClip_) {
     restOnIdle(*partnerActor_, frameSeconds);
     playClipSounds(*partnerActor_);

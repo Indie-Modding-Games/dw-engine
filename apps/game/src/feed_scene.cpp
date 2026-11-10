@@ -2,6 +2,7 @@
 
 #include <dwe/core/log.hpp>
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 
@@ -185,6 +186,18 @@ bool FeedScene::tick(float seconds) {
     break;
   }
   return false;
+}
+
+void FeedScene::cheer(std::span<const game::partner::PartnerEvent> events) {
+  const session::FeedRules* feed = feedRulesOf(*fieldItems_);
+  const bool cheered = std::ranges::contains(events, game::partner::EventKind::Cheered,
+                                             &game::partner::PartnerEvent::kind);
+  if (feed == nullptr || !cheered) {
+    return;
+  }
+  core::logDebug("[port:feed] partnerHandleFoodFeed (partner_impl.c:1641): glad, clip {}",
+                 feed->clips.partnerCheer);
+  scene_->playPartnerClipOnce(feed->clips.partnerCheer);
 }
 
 } // namespace dwe::app

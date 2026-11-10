@@ -25,6 +25,7 @@ constexpr std::string_view DiscardableField = "discardable";
 constexpr std::string_view ItemColorField = "item_color";
 constexpr std::string_view IconField = "icon";
 constexpr std::string_view IconRectField = "icon_rect";
+constexpr std::string_view FavoriteField = "favorite";
 
 // The items' icons (utils2.c: setItemTexture): ETCDAT/ITEM.TIM, a 16 x 16 cell per item in rows of
 // 16, by the item's original number, with the item's palette. A cell that starts at texel 0xF0 is
@@ -44,8 +45,8 @@ bool usableIn(const assets::ItemEntry* entry, const game::inventory::UseRules& r
 
 BagSlotView slotViewOf(const std::optional<game::inventory::Stack>& slot,
                        const assets::ItemTable& items, const NameKeys& names,
-                       const game::inventory::UseRules& rules,
-                       game::inventory::UseContext context) {
+                       const game::inventory::UseRules& rules, game::inventory::UseContext context,
+                       std::optional<std::string_view> favoriteFood) {
   if (!slot) {
     return {};
   }
@@ -63,7 +64,8 @@ BagSlotView slotViewOf(const std::optional<game::inventory::Stack>& slot,
                          entry->droppable == rules.discardDroppable,
           .itemColor = entry->itemColor,
           .icon = std::move(icon.image),
-          .iconRect = std::move(icon.rect)};
+          .iconRect = std::move(icon.rect),
+          .favorite = favoriteFood.has_value() && entry->id == *favoriteFood};
 }
 
 } // namespace
@@ -83,10 +85,12 @@ std::optional<ItemIconView> itemIconOf(const assets::ItemEntry& entry) {
 }
 
 BagView bagViewOf(const game::inventory::Inventory& inventory, const assets::ItemTable& items,
-                  const NameKeys& names, game::inventory::UseContext context) {
+                  const NameKeys& names, game::inventory::UseContext context,
+                  std::optional<std::string_view> favoriteFood) {
   BagView view{.slots = {}, .money = inventory.money()};
   for (const std::optional<game::inventory::Stack>& slot : inventory.slots()) {
-    view.slots.push_back(slotViewOf(slot, items, names, inventory.rules().use, context));
+    view.slots.push_back(
+        slotViewOf(slot, items, names, inventory.rules().use, context, favoriteFood));
   }
   return view;
 }
@@ -120,6 +124,8 @@ ScreenSettings settingsOf(const BagView& view) {
     settings.push_back({.name = listEntryName(BagSlotList, index, IconField), .value = slot.icon});
     settings.push_back(
         {.name = listEntryName(BagSlotList, index, IconRectField), .value = slot.iconRect});
+    settings.push_back(
+        {.name = listEntryName(BagSlotList, index, FavoriteField), .value = slot.favorite});
   }
   return settings;
 }

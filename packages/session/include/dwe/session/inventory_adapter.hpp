@@ -14,6 +14,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -86,6 +87,10 @@ public:
   [[nodiscard]] const game::inventory::Inventory& inventory() const;
   [[nodiscard]] const assets::ItemTable& items() const;
   [[nodiscard]] const ItemUseRules& itemUseRules() const { return itemUse_; }
+  // The partner's favourite food as the screens show it (the favorite_food option): its species'
+  // (RAISE_DATA.favoriteFood) when that item is a meal (item_use.meals). None for a species whose
+  // entry names another item: the original gives the fresh forms item 0, which is no food.
+  [[nodiscard]] std::optional<std::string> favoriteFood(const GameSession& session) const;
   // The healing particles the last item used in the field asks for (particle.c:
   // addHealingParticleEffect), once: the field's scene draws them.
   [[nodiscard]] std::optional<game::inventory::HealingParticles> takeHealingParticles() {

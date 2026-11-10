@@ -4,11 +4,14 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
 #include <variant>
 #include <vector>
+
+#include "packages/game/inventory/tests/fixture.hpp"
 
 namespace {
 
@@ -94,6 +97,26 @@ TEST_CASE("the status page shows what the original's does, in its order") {
   CHECK(std::ranges::any_of(settings, [](const dwe::screens::ScreenSetting& setting) {
     return setting.name == "partner.pool.1.max";
   }));
+}
+
+TEST_CASE("the status page names the species' favourite food, empty for a species without one") {
+  const auto& items = dwe::game::inventory::testing::fixtureItems();
+  const dwe::screens::NameKeys names{nullptr, &items, nullptr};
+  auto view = dwe::screens::partnerStatusViewOf(partner(), names);
+  CHECK(view.favoriteFoodKey.empty());
+  dwe::screens::setFavoriteFood(view, dwe::game::inventory::testing::Bun, names);
+  CHECK(view.favoriteFoodKey == names.item(dwe::game::inventory::testing::Bun));
+  CHECK_FALSE(view.favoriteFoodKey.empty());
+  const auto settings = dwe::screens::settingsOf(view);
+  CHECK(std::ranges::any_of(settings, [&](const dwe::screens::ScreenSetting& setting) {
+    return setting.name == "partner.favorite_food" &&
+           setting.value == dwe::ui::UiValue{view.favoriteFoodKey};
+  }));
+  dwe::screens::setFavoriteFood(view, std::nullopt, names);
+  CHECK(view.favoriteFoodKey.empty());
+  // An id the item table does not know names nothing either.
+  dwe::screens::setFavoriteFood(view, "no_such_item", names);
+  CHECK(view.favoriteFoodKey.empty());
 }
 
 TEST_CASE("the status page's extras carry the tiredness and the care mistakes the original hides") {

@@ -34,7 +34,8 @@ TEST_CASE("the bag view lists the usable slots with the items' names, counts and
                                                    .discardable = true,
                                                    .itemColor = 2,
                                                    .icon = "/texture/etcdat/item?palette=3",
-                                                   .iconRect = "0 0 16 16"});
+                                                   .iconRect = "0 0 16 16",
+                                                   .favorite = false});
   CHECK(view.slots[1].item == GateKey);
   CHECK(view.slots[1].dimmed);
   // utils2.c: setItemTexture: the cell of the item's number in rows of 16.
@@ -65,6 +66,31 @@ TEST_CASE("the bag view says which items are used where the bag is open, by thei
   CHECK(battle.slots[0].usable);
   CHECK(battle.slots[1].usable);
   CHECK_FALSE(battle.slots[2].usable);
+}
+
+TEST_CASE(
+    "the bag view marks the partner's favourite food, and nothing for a partner without one") {
+  auto inventory = originalInventory();
+  const auto& items = fixtureItems();
+  inventory.add(handleOf(Tonic), 1);
+  inventory.add(handleOf(Bun), 2);
+  const dwe::screens::NameKeys names{nullptr, &items, nullptr};
+  using dwe::game::inventory::UseContext;
+
+  const auto view = dwe::screens::bagViewOf(inventory, items, names, UseContext::Field, Bun);
+  CHECK_FALSE(view.slots[0].favorite);
+  CHECK(view.slots[1].favorite);
+  CHECK_FALSE(view.slots[2].favorite);
+  const auto settings = dwe::screens::settingsOf(view);
+  CHECK(std::ranges::any_of(settings, [](const dwe::screens::ScreenSetting& setting) {
+    return setting.name == "bag.slot.1.favorite" && setting.value == dwe::ui::UiValue{true};
+  }));
+  // Another partner's favourite moves the mark; a species with none marks nothing.
+  const auto other = dwe::screens::bagViewOf(inventory, items, names, UseContext::Battle, Tonic);
+  CHECK(other.slots[0].favorite);
+  CHECK_FALSE(other.slots[1].favorite);
+  const auto none = dwe::screens::bagViewOf(inventory, items, names);
+  CHECK(std::ranges::none_of(none.slots, &dwe::screens::BagSlotView::favorite));
 }
 
 TEST_CASE("an item's icon is its cell of the items' image, the last column 15 texels wide") {

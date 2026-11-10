@@ -746,6 +746,70 @@ TEST_CASE("the original bag's boxes stop at their ends, ask No first and sort un
   CHECK(commands[0].value == UiValue{2.0});
 }
 
+TEST_CASE("the bag marks the partner's favourite food while the favorite_food option is on") {
+  Content content;
+  auto ui = createUi(content.mount());
+  input::InputState input{input::defaultActionMap()};
+  ui->setSetting("bag.slot.1.favorite", true);
+  openOriginalBag(*ui, input);
+  // On by default: the game has not published the option yet.
+  CHECK_FALSE(ui->elementHasClass("partner_menu", "slot-0", "favorite"));
+  CHECK(ui->elementHasClass("partner_menu", "slot-1", "favorite"));
+
+  // The partner evolves into a species that likes the other item: the game publishes the bag again.
+  ui->setSetting("bag.slot.0.favorite", true);
+  ui->setSetting("bag.slot.1.favorite", false);
+  ui->setSetting("bag.revision", 1.0);
+  frame(*ui, input);
+  CHECK(ui->elementHasClass("partner_menu", "slot-0", "favorite"));
+  CHECK_FALSE(ui->elementHasClass("partner_menu", "slot-1", "favorite"));
+
+  // Off, the original's look: no mark.
+  ui->setSetting("favorite_food", false);
+  frame(*ui, input);
+  CHECK_FALSE(ui->elementHasClass("partner_menu", "slot-0", "favorite"));
+  ui->setSetting("favorite_food", true);
+  frame(*ui, input);
+  CHECK(ui->elementHasClass("partner_menu", "slot-0", "favorite"));
+}
+
+TEST_CASE("the status page names the partner's favourite food, in both skins, unless the option is "
+          "off") {
+  Content content;
+  auto ui = createUi(content.mount());
+  input::InputState input{input::defaultActionMap()};
+  REQUIRE(ui->loadDocument("partner_menu", idOf("ui/partner_menu/document")));
+  for (const std::string_view skin : {"original", "modern"}) {
+    CAPTURE(skin);
+    ui->setSetting("ui_skin", std::string{skin});
+    ui->setSetting("favorite_food", true);
+    ui->setSetting("partner.favorite_food", std::string{"main.item_names.0038"});
+    ui->setSetting("partner_menu.start_page", std::string{"status"});
+    ui->show("partner_menu", true);
+    settle(*ui, input);
+    CHECK_FALSE(ui->elementHasClass("partner_menu", "status-food-line", "hidden"));
+    CHECK(ui->elementText("partner_menu", "status-food") == "main.item_names.0038");
+
+    // An evolution into a species that likes another food.
+    ui->setSetting("partner.favorite_food", std::string{"main.item_names.0041"});
+    ui->setSetting("partner.revision", 1.0);
+    frame(*ui, input);
+    CHECK(ui->elementText("partner_menu", "status-food") == "main.item_names.0041");
+
+    // A species without one.
+    ui->setSetting("partner.favorite_food", std::string{});
+    ui->setSetting("partner.revision", 2.0);
+    frame(*ui, input);
+    CHECK(ui->elementText("partner_menu", "status-food") == "None");
+
+    ui->setSetting("favorite_food", false);
+    frame(*ui, input);
+    CHECK(ui->elementHasClass("partner_menu", "status-food-line", "hidden"));
+    ui->hide("partner_menu");
+    settle(*ui, input);
+  }
+}
+
 TEST_CASE("the original egg box grows before its eggs move and shrinks before it closes") {
   // doo2.c: DOO2_openEggBox grows the box out of the screen's middle; DOO2_tickEggInput ignores the
   // eggs until it stands and ends once it has shrunk away (ui.c: 5 frames each way at 20 a second).

@@ -93,6 +93,7 @@ name_spacing: "Space after names"
 # Shop extras: the item's description under the list, how many of each the player has and the money the trade leaves
 # (off by default: the original's shop only shows the description with Pause).
 shop_extras: "Shop extras"
+favorite_food: "Show favourite food"
 # Art fixes: the original look draws right what the original reads from the wrong part of its textures (the status
 # page's happiness label). Off by default, as the original.
 art_fixes: "Art fixes"
@@ -303,6 +304,7 @@ help.need_bubble_stack: "Your partner's bubble shows up to five needs at once, t
 help.shop_job_bar: "A bar shows how close you are while a job or a match decides whether someone joins."
 help.name_spacing: "A name inside a text never runs into the next word."
 help.shop_extras: "In shops: the chosen item's description, how many you have and the money you will have left."
+help.favorite_food: "The status page shows your partner's favourite food, and item lists mark it in gold with a heart."
 help.art_fixes: "Fixes pictures the original takes from the wrong part of its texture (the status page's happiness)."
 help.dev_tools: "Turns on the console (F1), the developer menu (F2) and the map overlay (F3). For testing."
 help.options_reset: "Puts this tab's options back to their defaults. Asks first."

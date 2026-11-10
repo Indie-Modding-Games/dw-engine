@@ -41,12 +41,16 @@ se acaba, muere y renace como bebé con parte de sus stats.
     americana) **(comprobado)**.
   - Si no tenía hambre (sobrealimentar): felicidad −3, disciplina −2.
   - La comida favorita de la especie da un 40 % más de energía y +2 de felicidad.
+  - Con hambre, si come su favorita o ya come bastante, celebra con la animación 0xb (`startAnimation`).
   - La energía tiene un tope por especie.
   - Todo **(comprobado)**.
 - **Rechazar comida u objetos** (`partnerWillRefuseItem`) **(comprobado)**:
   - Algunos objetos se rechazan con una probabilidad que baja con la disciplina: aleatorio(100) < 110 − (disciplina
     + 10..19).
-  - Si no tiene hambre, rechaza su comida favorita un 20 % de las veces.
+  - Si no tiene hambre, rechaza su comida favorita un 20 % de las veces. Un objeto con chequeo de disciplina que
+    pasa la tirada sigue al chequeo de la favorita: la especie cuya favorita es ese objeto también puede
+    rechazarlo.
+  - La marca de favorita rechazada se borra al empezar cada ofrecimiento: dura un solo objeto.
   - Después de un rechazo, regañar da más disciplina (ver felicidad y disciplina).
   - Solo cuentan para el hambre las comidas; los demás objetos que pasan por `handleFood` cambian stats y necesidades
     pero no quitan el hambre ni cuentan como sobrealimentar (`partnerHandleFoodFeed`) **(comprobado)**.

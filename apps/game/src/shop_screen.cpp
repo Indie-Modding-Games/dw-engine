@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <variant>
 
@@ -347,6 +348,11 @@ screens::ScreenSettings ShopScreen::settings() const {
        .value = static_cast<double>(phase_ == Phase::Description ? cursor_ : -1)},
   };
   const std::vector<Row> shown = rows();
+  // The partner's favourite food, which the list marks with the favorite_food option.
+  std::optional<std::string> favorite;
+  if (desc_.inventory != nullptr && desc_.session != nullptr && desc_.session->playing()) {
+    favorite = desc_.inventory->favoriteFood(*desc_.session);
+  }
   out.push_back({.name = "shop.rows", .value = static_cast<double>(shown.size())});
   for (std::size_t i = 0; i < shown.size(); ++i) {
     out.push_back(
@@ -363,6 +369,9 @@ screens::ScreenSettings ShopScreen::settings() const {
                    .value = names.itemDescription(shown[i].item)});
     out.push_back({.name = screens::listEntryName(RowsList, i, "description_species"),
                    .value = names.itemDescriptionSpecies(shown[i].item)});
+    out.push_back(
+        {.name = screens::listEntryName(RowsList, i, "favorite"),
+         .value = favorite.has_value() && shop.items().at(shown[i].item).id == *favorite});
   }
   if (picked_) {
     const std::int32_t price =

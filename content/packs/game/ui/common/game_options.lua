@@ -616,6 +616,18 @@ game_options = {
     help = "pause_menu.help.shop_extras",
     original = false,
   },
+  -- Favourite food: the partner menu's status page names the partner's favourite food and the item
+  -- lists (the bag, the battle's bag, a shop) mark it in gold with a heart (on by default; off, the
+  -- original's look). The documents read the setting themselves.
+  {
+    id = "favorite-food",
+    setting = "favorite_food",
+    label = "pause_menu.favorite_food",
+    default = true,
+    tab = "interface",
+    help = "pause_menu.help.favorite_food",
+    original = false,
+  },
   -- Art fixes: the original look draws right what the original reads from the wrong part of its
   -- textures, the status page's happiness label (off by default, as the original).
   {

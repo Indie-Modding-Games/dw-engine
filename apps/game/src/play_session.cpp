@@ -483,7 +483,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                   .species = species_ ? &*species_ : nullptr,
                   .scene = scene_.get(),
                   .ui = context.ui}),
-      shopScreen_({.session = game_.session.get(), .shop = game_.systems.shop, .ui = context.ui}),
+      shopScreen_({.session = game_.session.get(),
+                   .shop = game_.systems.shop,
+                   .ui = context.ui,
+                   .inventory = game_.systems.inventory}),
       devMenu_(*context.ui),
       itemKeeperScreen_({.keeper = game_.systems.itemKeeper, .ui = context.ui}),
       discardScreen_({.menu = game_.systems.discardMenu,
@@ -1737,6 +1740,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
         row != nullptr ? row->height : 0, row != nullptr ? row->radius : 0, healing->ring);
   }
   const auto partnerEvents = session.takePartnerEvents();
+  if (!battleScreen_.active()) {
+    feedScene_.cheer(partnerEvents);
+  }
   if (fellSick(partnerEvents)) {
     awardScreen_.noteSickness(partnerNameOf(session, species_ ? &*species_ : nullptr));
   }
