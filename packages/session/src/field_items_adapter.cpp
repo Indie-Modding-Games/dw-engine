@@ -45,6 +45,7 @@ constexpr std::string_view PlayerRefusedKey = "player_refused";
 constexpr std::string_view PartnerIdleKey = "partner_idle";
 constexpr std::string_view PartnerEatKey = "partner_eat";
 constexpr std::string_view PartnerRefuseKey = "partner_refuse";
+constexpr std::string_view PartnerCheerKey = "partner_cheer";
 constexpr std::string_view ToiletWalkKey = "toilet_walk";
 constexpr std::string_view CameraFramesKey = "camera_frames";
 constexpr std::string_view PartnerClipKey = "partner_clip";
@@ -87,9 +88,9 @@ SoundCue soundCue(YamlReader& reader, const YamlNode& root, std::string_view key
 
 FeedClips feedClips(YamlReader& reader, const YamlNode& root) {
   const YamlNode& node = reader.field(root, ClipsKey);
-  if (!reader.expectKeys(
-          node, ClipsKey,
-          {PlayerOfferKey, PlayerRefusedKey, PartnerIdleKey, PartnerEatKey, PartnerRefuseKey})) {
+  if (!reader.expectKeys(node, ClipsKey,
+                         {PlayerOfferKey, PlayerRefusedKey, PartnerIdleKey, PartnerEatKey,
+                          PartnerRefuseKey, PartnerCheerKey})) {
     return {};
   }
   const auto clip = [&](std::string_view key) {
@@ -99,7 +100,8 @@ FeedClips feedClips(YamlReader& reader, const YamlNode& root) {
           .playerRefused = clip(PlayerRefusedKey),
           .partnerIdle = clip(PartnerIdleKey),
           .partnerEat = clip(PartnerEatKey),
-          .partnerRefuse = clip(PartnerRefuseKey)};
+          .partnerRefuse = clip(PartnerRefuseKey),
+          .partnerCheer = clip(PartnerCheerKey)};
 }
 
 std::optional<FeedRules> feedRules(YamlReader& reader, const YamlNode& root) {

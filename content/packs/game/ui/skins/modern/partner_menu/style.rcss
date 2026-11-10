@@ -289,6 +289,9 @@ button:focus .original-look, button.original-look:focus {
 	border-radius: 10dp; background-color: #0e131a;
 }
 #partner-portrait { position: absolute; left: -65dp; top: -163dp; width: 512dp; height: 384dp; }
+/* The portrait is a picture only: its image reaches past its clip, over the tabs, and RmlUi does not clip where the
+   pointer hits, so a click there would land on it and not on the tab. */
+#partner-portrait-clip, #partner-portrait { pointer-events: none; }
 #status-head { position: absolute; left: 200dp; top: 0; width: 512dp; margin: 0; }
 #status-species-line, #status-age-line, #status-weight-line {
 	display: block; position: absolute; left: 200dp; width: 512dp; margin: 0;
@@ -713,3 +716,32 @@ button:focus .original-look, button.original-look:focus {
 #scrim.status-extras #panel:not(.skin-original) #page-status { height: 448dp; }
 #scrim.status-extras #panel:not(.skin-original) #status-parameters,
 #scrim.status-extras #panel:not(.skin-original) #status-condition { height: 248dp; }
+
+/* The partner's favourite food (the favorite_food option, an engine improvement): in the bag its name in gold and a
+   gold pip after the icon, so it does not rest on the colour alone. */
+.fav-mark { display: none; }
+#panel:not(.skin-original) .slot.favorite .original-look { color: #ffd34a; }
+#panel:not(.skin-original) .slot.favorite .slot-count { color: #ffd34a; }
+#panel:not(.skin-original) .slot.favorite .fav-mark {
+	display: inline-block;
+	width: 10dp;
+	height: 10dp;
+	margin: 0 8dp 0 -4dp;
+	border: 2dp #8a5a00;
+	border-radius: 7dp;
+	background-color: #ffd34a;
+	vertical-align: middle;
+}
+/* Its row on the status page, under the weight: with it the profile's rows come 24dp apart so that the conditions still
+   end before the cards. Off, the rows are as above. */
+#panel:not(.skin-original) #status-food-line { display: block; position: absolute; left: 200dp; margin: 0; }
+#panel:not(.skin-original) #status-food-line.hidden { display: none; }
+#scrim.favorite-food #panel:not(.skin-original) #status-food-line { top: 130dp; }
+#scrim.favorite-food #panel:not(.skin-original) #conditions { top: 162dp; }
+#scrim.favorite-food.status-extras #panel:not(.skin-original) #status-species-line { top: 46dp; }
+#scrim.favorite-food.status-extras #panel:not(.skin-original) #status-age-line { top: 70dp; }
+#scrim.favorite-food.status-extras #panel:not(.skin-original) #status-weight-line { top: 94dp; }
+#scrim.favorite-food.status-extras #panel:not(.skin-original) #status-food-line { top: 118dp; }
+#scrim.favorite-food.status-extras #panel:not(.skin-original) #status-mistakes,
+#scrim.favorite-food.status-extras #panel:not(.skin-original) #status-battles { top: 142dp; }
+#scrim.favorite-food.status-extras #panel:not(.skin-original) #conditions { top: 168dp; }

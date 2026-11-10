@@ -43,17 +43,22 @@ struct SpeciesCare {
 // The care data of every species that has a raise row.
 class SpeciesTable {
 public:
-  // The species with this Digimon id, or nullptr.
+  // The species with this Digimon id, its own row or a borrowed one, or nullptr.
   [[nodiscard]] const SpeciesCare* find(std::string_view id) const;
 
+  // The species with their own raise rows.
   [[nodiscard]] const std::map<std::string, SpeciesCare, std::less<>>& species() const {
     return species_;
   }
 
   void add(SpeciesCare species);
+  // The care of a species with no raise row, borrowed from another's (assets::standInRow), so that
+  // the developer's evolve can make it the partner. Its own row, added later, wins.
+  void addBorrowed(SpeciesCare species);
 
 private:
   std::map<std::string, SpeciesCare, std::less<>> species_;
+  std::map<std::string, SpeciesCare, std::less<>> borrowed_;
 };
 
 // The table roles a ruleset names for the species data (rules/<id>/ruleset.yaml: tables).
@@ -61,7 +66,8 @@ inline constexpr std::string_view DigimonTableRole = "digimon";
 inline constexpr std::string_view RaiseTableRole = "raise";
 
 // Joins the raise rows with the level of their Digimon. A raise row whose Digimon is not in the
-// table is an error.
+// table is an error. Every other species with a model borrows the raise row of its stand-in
+// (assets::standInRow) with its own id and level.
 core::Result<SpeciesTable> buildSpeciesTable(const assets::DigimonTable& digimon,
                                              const assets::RaiseTable& raise);
 

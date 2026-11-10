@@ -68,6 +68,7 @@ constexpr std::string_view BattleSpeedKey = "battle_speed";
 constexpr std::string_view EnemyHpBarsKey = "enemy_hp_bars";
 constexpr std::string_view ShopExtrasKey = "shop_extras";
 constexpr std::string_view ArtFixesKey = "art_fixes";
+constexpr std::string_view FavoriteFoodKey = "favorite_food";
 constexpr std::string_view WidescreenPicturesKey = "widescreen_pictures";
 constexpr std::string_view DevToolsKey = "dev_tools";
 constexpr std::string_view GymSessionsKey = "gym_sessions";
@@ -253,6 +254,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* fixes = tree->find(ArtFixesKey)) {
       settings.artFixes = reader.boolean(*fixes);
+    }
+    if (const core::YamlNode* favorite = tree->find(FavoriteFoodKey)) {
+      settings.favoriteFood = reader.boolean(*favorite);
     }
     if (const core::YamlNode* wide = tree->find(WidescreenPicturesKey)) {
       settings.widescreenPictures = reader.boolean(*wide);
@@ -455,6 +459,7 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   };
   flag(ShopExtrasKey, settings.shopExtras);
   flag(ArtFixesKey, settings.artFixes);
+  flag(FavoriteFoodKey, settings.favoriteFood);
   flag(WidescreenPicturesKey, settings.widescreenPictures);
   flag(DevToolsKey, settings.devTools);
   return core::emitYaml(root);

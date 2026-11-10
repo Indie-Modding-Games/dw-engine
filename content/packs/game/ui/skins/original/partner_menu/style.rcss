@@ -820,9 +820,6 @@ button:focus .original-look, button.original-look:focus {
 #scrim.digimon-screen #tab-tech { left: 225dp; width: 186dp; }
 #scrim.digimon-screen .tab.selected { height: 48dp; }
 .tab-edge { position: absolute; display: block; top: 0; height: 100%; pointer-events: none; }
-/* The partner's portrait is a picture only: its image reaches past its clip, over the tabs, and RmlUi does not clip
-   where the pointer hits, so a click there would land on it and not on the tab. */
-#partner-portrait-clip, #partner-portrait { pointer-events: none; }
 .tab-left { left: 0; width: 21dp; decorator: image(digimon-tab-left-idle); }
 .tab-middle { left: 21dp; right: 21dp; decorator: image(digimon-tab-middle-idle); }
 .tab-right { right: 0; width: 21dp; decorator: image(digimon-tab-right-idle); }
@@ -1169,4 +1166,25 @@ button:focus .original-look, button.original-look:focus {
     left: 696dp; top: 108dp; width: 153dp; height: 42dp; box-sizing: border-box; margin: 0; padding: 0;
     line-height: 36dp; text-align: center; white-space: nowrap;
     border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0; background-color: #354b5c;
+}
+
+/* The partner's favourite food (the favorite_food option, an engine improvement; the original marks none): in the bag
+   its name in gold and the status page's life heart over the icon's corner, so it does not rest on the colour alone. */
+.fav-mark { display: none; }
+#scrim .slot.favorite .slot-name, #scrim.item-screen .slot.favorite .slot-name { color: #ffd040; }
+.slot.favorite .fav-mark {
+	display: block; position: absolute; left: 33dp; top: 24dp; width: 24dp; height: 22dp;
+	decorator: image(status-life-full);
+}
+/* Its row on the status page: the Profile heading's free end (the profile rows below are full), a field label as small
+   as the extras' with an inset ending where the species' does. The longest name, 14 letters, fits the inset. */
+#status-food-line { left: 0; top: 18dp; width: 894dp; height: 42dp; }
+#status-food-line.hidden { display: none; }
+#status-food-label {
+    position: absolute; top: 0; left: 240dp; width: 260dp; height: 42dp; font-size: 20dp; line-height: 42dp;
+    color: #52def7; text-align: right; white-space: nowrap;
+}
+#status-food {
+    position: absolute; top: 0; left: 506dp; width: 343dp; height: 42dp; box-sizing: border-box; margin: 0;
+    padding: 0 9dp; line-height: 36dp; white-space: nowrap;
 }

@@ -395,6 +395,40 @@ core::Result<bool> EvolutionAdapter::evolveByScript(GameSession& session,
   return true;
 }
 
+core::Result<bool> EvolutionAdapter::evolveByCheat(GameSession& session, std::string_view species) {
+  if (!evolution_) {
+    return core::fail(std::string{messages::EvolutionNotRead});
+  }
+  const auto target = evolution_->tables().find(species);
+  if (!target) {
+    return core::fail(formatMessage(messages::UnknownEvolutionForm, species));
+  }
+  const auto inputs = inputsOf(session, ScriptRunning);
+  if (!inputs) {
+    return false;
+  }
+  syncRaised(desc_.story, state_);
+  auto result = evolution_->evolveByCheat(*inputs, state_, *target);
+  if (!result) {
+    return false;
+  }
+  apply(session, *result);
+  session.afterSystemCommand();
+  return true;
+}
+
+std::vector<std::string> EvolutionAdapter::cheatTargets() const {
+  std::vector<std::string> ids;
+  if (!evolution_) {
+    return ids;
+  }
+  const EvolutionTables& tables = evolution_->tables();
+  for (const game::evolution::Species target : tables.cheatTargets()) {
+    ids.emplace_back(tables.idOf(target));
+  }
+  return ids;
+}
+
 game::evolution::Level EvolutionAdapter::levelOf(std::string_view species) const {
   if (!evolution_) {
     return game::evolution::Level::None;

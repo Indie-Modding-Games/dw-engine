@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -52,6 +53,21 @@ struct DigimonTable {
   // The row with this id, or nullptr.
   [[nodiscard]] const DigimonRow* find(std::string_view id) const;
 };
+
+// The level of the rookies (DigimonRow::level).
+inline constexpr std::int32_t RookieLevel = 3;
+
+// The species whose rows of another table (care, evolution stats) stand in for one that has none,
+// for the developer's evolve into a species only enemies or characters use: the first row with
+// rows (`hasRows`) among those of the same name (an enemy's copy of a partner form), then of the
+// same level and type, then of the same level, then the rookies. nullptr when none has rows; the
+// species itself when it has its own.
+[[nodiscard]] const DigimonRow* standInRow(const DigimonTable& table, const DigimonRow& species,
+                                           const std::function<bool(const DigimonRow&)>& hasRows);
+
+// Whether a species' row lists any move: the enemies' copies of the partner forms list none (they
+// fight with their map's moves), so the developer's evolve gives them their stand-in's list.
+[[nodiscard]] bool listsMoves(const DigimonRow& species);
 
 // How the packs' files of the table compose: rows by id (table_composition.hpp).
 inline constexpr std::array<EntrySection, 1> DigimonEntrySections{

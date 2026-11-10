@@ -356,7 +356,8 @@ public:
     return game_.session->partner().state().conditions;
   }
   // The game's raise table with its ruleset's species patches: where the status portrait places a
-  // form the patches add (the hidden content), which the disc's table lacks.
+  // form the patches add (the hidden content), which the disc's table lacks, and a form with no
+  // row the developer's evolve reaches (an enemy's, a character's), as its stand-in.
   [[nodiscard]] core::Result<assets::RaiseTable>
   raiseTable(const assets::VirtualFileSystem& files) const;
   // A species' size in the field (its patch's field_scale, else 1), which the portrait keeps too.

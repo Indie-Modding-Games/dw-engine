@@ -1105,6 +1105,48 @@ TEST_CASE("a pile's scene runs the partner up to the player, and leaves it where
   field.holdForCare(false);
 }
 
+TEST_CASE("an evolution walks the partner up to its running distance, and not from nearer") {
+  // partner.c: partnerTickEvolving sub state 1 walks the partner (clip 2) until
+  // getPartnerTamerCloseness > 0: 3.5 radii (measured: from 1196 away it stops 414 short, radius
+  // 120), through a wall: only the clip's momentum moves it (anim.c: tickAnimation; measured, it
+  // crosses the hut in front of the player); one already that near does not move.
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  const dwe::assets::CollisionCell wall = dwe::assets::originalCellAt({-600.0F, 0.0F, 0.0F});
+  fill(map, {.column = wall.column - 1, .row = wall.row - 1},
+       {.column = wall.column + 1, .row = wall.row + 1}, Blocked);
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  auto& partner = world.registry().get<dwe::scene::Transform>(field.partnerEntity());
+  const float runRange = field.rules().partner.runDistance * field.rules().partner.mover.radius;
+
+  dwe::scene::place(partner, {-1000.0F, 0.0F, 0.0F}, 0.0F);
+  field.holdForCare(true, dwe::game::field::CareClock::Stops);
+  field.walkPartnerUp();
+  bool ran = false;
+  bool walked = false;
+  for (int i = 0; i < 400 && field.partnerWalking(); ++i) {
+    field.tick(Tick);
+    ran = ran || field.partner().motion == Motion::Run;
+    walked = walked || field.partner().motion == Motion::Walk;
+  }
+  CHECK(walked);
+  CHECK_FALSE(ran);
+  CHECK_FALSE(field.partnerWalking());
+  CHECK(partnerDistance(field) <= runRange);
+  CHECK(partnerDistance(field) >
+        field.rules().partner.walkDistance * field.rules().partner.mover.radius);
+  CHECK_FALSE(field.gameTimeRan());
+
+  const float near = 50.0F - runRange;
+  dwe::scene::place(partner, {near, 0.0F, 0.0F}, 0.0F);
+  field.walkPartnerUp();
+  field.tick(Tick);
+  CHECK_FALSE(field.partnerWalking());
+  CHECK(field.partner().position.x == doctest::Approx(near));
+  field.holdForCare(false);
+}
+
 TEST_CASE("click-to-move walks around walls to the target") {
   auto map = roomMap("room");
   fill(map, {.column = 50, .row = 30}, {.column = 50, .row = 65}, Blocked); // gap at z 1600 to 2000

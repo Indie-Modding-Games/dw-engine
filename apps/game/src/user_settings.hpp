@@ -184,6 +184,9 @@ struct UserSettings {
   // from the wrong part of its textures (the partner card's happiness label) where they are; off,
   // as the original, when not chosen yet.
   std::optional<bool> artFixes = std::nullopt;
+  // Favourite food (favorite_food: true, false; the partner menu and the shop read it): the status
+  // page names the partner's favourite food and the item lists mark it; on when not chosen yet.
+  std::optional<bool> favoriteFood = std::nullopt;
   // Widescreen pictures (widescreen_pictures: true, false; the title's documents read it, and
   // MovieScreen::setFillWindow): the title's pictures and the movies fill the window; on when not
   // chosen yet.

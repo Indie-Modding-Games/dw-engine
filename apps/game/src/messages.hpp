@@ -187,7 +187,7 @@ inline constexpr std::string_view SaveWaitsForCare =
 inline constexpr std::string_view WakeMapNotEntered = "game: the wake map {} cannot be entered: {}";
 // The clip id, the model.
 inline constexpr std::string_view PartnerClipMissing =
-    "field: the partner's model {1} has no clip {0}";
+    "field: the partner's model {1} has no clip {0}; it plays its idle";
 inline constexpr std::string_view FighterNotShown =
     "battle: fighter {} is not shown: the field draws no NPC with script id {}";
 inline constexpr std::string_view FighterClipMissing =

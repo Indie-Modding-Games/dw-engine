@@ -126,6 +126,15 @@ public:
   // The reference stats of a target, or nullptr when the table has no row for it.
   [[nodiscard]] const StatReference* statReference(Species target) const;
 
+  // The reference stats the developer's evolve loads for a target: its own row when it loads a
+  // known species, else those borrowed from its stand-in (assets::standInRow) for any species with
+  // a model, an enemy's or a character's too, which loads the target itself. nullptr for a species
+  // without a model.
+  [[nodiscard]] const StatReference* cheatReference(Species target) const;
+
+  // Every species the developer's evolve can make the partner (cheatReference), ascending.
+  [[nodiscard]] std::vector<Species> cheatTargets() const;
+
   // The targets of a species' evolution chart, in the table's order, without the empty ones.
   [[nodiscard]] std::span<const Species> pathTargets(Species from) const;
 
@@ -152,10 +161,14 @@ public:
   [[nodiscard]] bool isMega(Species species) const { return megas_.contains(species); }
 
 private:
+  void borrowReferences(const assets::DigimonTable& digimon);
+
   std::map<Species, SpeciesData> species_;
   std::map<std::string, Species, std::less<>> speciesById_;
   std::map<Species, Requirement> requirements_;
   std::map<Species, StatReference> statReferences_;
+  // The developer's evolve's references of the species with a model and no row (cheatReference).
+  std::map<Species, StatReference> borrowedReferences_;
   std::map<Species, std::vector<Species>> paths_;
   assets::MoveTable moves_;
   std::map<std::string, Species, std::less<>> itemTargets_;

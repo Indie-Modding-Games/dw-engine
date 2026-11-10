@@ -1,0 +1,90 @@
+# The favourite food (an engine improvement, docs/modulos/apps/game.md, «Comida favorita»): the partner's status page
+# names the species' favourite food and the bag marks it, following the partner through an evolution; with the option
+# off both are gone, as in the original. From a new game with the keyboard; run it with each --ui-skin.
+name: favorite-food
+device: keyboard
+timeout: 240
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {favorite_food: "true"}
+  - script: give_item("meat 3")
+  - script: give_item("sirloin 2")
+  - script: give_item("sm_recovery 1")
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.8}
+  - expect_setting: {has_class.partner_menu#status-food-line.hidden: "false"}
+  - expect_text_fits: all
+  - screenshot: status-on
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-items
+  - wait: {shown: partner_menu, seconds: 0.6}
+  - expect_setting: {bag.slot.0.favorite: "true"}
+  - expect_setting: {has_class.partner_menu#slot-0.favorite: "true"}
+  - expect_setting: {has_class.partner_menu#slot-1.favorite: "false"}
+  - screenshot: bag-on
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  # The favourite follows the species: after the evolution the second food is the marked one.
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.8}
+  - screenshot: status-evolved
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-items
+  - wait: {shown: partner_menu, seconds: 0.6}
+  - expect_setting: {has_class.partner_menu#slot-0.favorite: "false"}
+  - expect_setting: {has_class.partner_menu#slot-1.favorite: "true"}
+  - screenshot: bag-evolved
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - wait: {seconds: 0.3}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.3}
+  - menu_select: favorite-food
+  - expect_setting: {favorite_food: "false"}
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.8}
+  - expect_setting: {has_class.partner_menu#status-food-line.hidden: "true"}
+  - screenshot: status-off
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-items
+  - wait: {shown: partner_menu, seconds: 0.6}
+  - expect_setting: {has_class.partner_menu#slot-1.favorite: "false"}
+  - screenshot: bag-off

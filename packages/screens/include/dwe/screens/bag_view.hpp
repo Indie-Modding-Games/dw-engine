@@ -58,6 +58,9 @@ struct BagSlotView {
   // The item's icon (itemIconOf); both empty for an empty slot or an item without an icon.
   std::string icon;
   std::string iconRect;
+  // The partner's favourite food (RAISE_DATA.favoriteFood): the bag marks it with the
+  // favorite_food option.
+  bool favorite = false;
 
   friend bool operator==(const BagSlotView&, const BagSlotView&) = default;
 };
@@ -68,11 +71,13 @@ struct BagView {
   std::int32_t money = 0;
 };
 
-// `context` is where the bag is open: the field's menu or the battle.
+// `context` is where the bag is open: the field's menu or the battle; `favoriteFood` is the id of
+// the partner's favourite food, if it has one.
 [[nodiscard]] BagView
 bagViewOf(const game::inventory::Inventory& inventory, const assets::ItemTable& items,
           const NameKeys& names,
-          game::inventory::UseContext context = game::inventory::UseContext::Field);
+          game::inventory::UseContext context = game::inventory::UseContext::Field,
+          std::optional<std::string_view> favoriteFood = std::nullopt);
 
 [[nodiscard]] ScreenSettings settingsOf(const BagView& view);
 

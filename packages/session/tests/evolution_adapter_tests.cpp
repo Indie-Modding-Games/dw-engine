@@ -313,6 +313,76 @@ TEST_CASE("an event script's evolution needs a form of the tables") {
   CHECK(session->partner().state().species == "species_b");
 }
 
+TEST_CASE(
+    "the developer menu's evolution list has every form of the tables, and each one evolves") {
+  // The dev menu's evolve page lists cheatTargets and runs evolve("<id>") (evolveByCheat) for the
+  // one picked: every form with a row, the level-less one too, and none the command refuses.
+  const TestPacks packs;
+  const TableFixture fixture;
+  EvolutionAdapter* adapter = nullptr;
+  auto session = sessionWithEvolution(packs, fixture, adapter);
+  const std::vector<std::string> targets = adapter->cheatTargets();
+  CHECK(targets.size() == dwe::game::evolution::testing::FixtureForms.size());
+  CHECK(std::ranges::contains(targets, "scum"));
+  CHECK(std::ranges::contains(targets, "mtet"));
+  CHECK(std::ranges::contains(targets, "species_g"));
+  for (const std::string& target : targets) {
+    const auto evolved = adapter->evolveByCheat(*session, target);
+    REQUIRE_MESSAGE(evolved.has_value(), errorOf(evolved));
+    CHECK_MESSAGE(*evolved, target);
+    CHECK(session->partner().state().species == target);
+  }
+}
+
+namespace {
+
+// How many evolutions (Evolved) the partner reported since the last call, routed as after any
+// command: each one starts the field's evolution scene and with it the evolving bubble (apps/game:
+// evolution_scene.hpp).
+std::size_t evolvedEvents(GameSession& session) {
+  session.afterSystemCommand();
+  return static_cast<std::size_t>(std::ranges::count(
+      session.takePartnerEvents(), EventKind::Evolved, &dwe::game::partner::PartnerEvent::kind));
+}
+
+} // namespace
+
+TEST_CASE("every way to evolve reports one evolution, which the field shows with its scene") {
+  // partner_impl.c: tickConditions (natural and virus), item.c: handleEvoItems, partner.c (back
+  // from the virus form) and the event scripts (and the console's evolve) all set the partner's
+  // state 13: partnerTickEvolving, and its bubble (main/evl.c:47).
+  const TestPacks packs;
+  const TableFixture fixture;
+  EvolutionAdapter* adapter = nullptr;
+  auto session = sessionWithEvolution(packs, fixture, adapter);
+  static_cast<void>(evolvedEvents(*session));
+
+  SUBCASE("natural") {
+    changePartner(*session, [](PartnerState& state) {
+      state.species = "bota";
+      state.evolution.hours = BabyHours;
+    });
+    static_cast<void>(evolvedEvents(*session));
+    session->clock().setSpeed(1.0);
+    session->tick(0.1);
+    CHECK(session->partner().state().species == "koro");
+  }
+  SUBCASE("item") {
+    REQUIRE(adapter->useItem(*session, "giga_hand"));
+  }
+  SUBCASE("event script or console") {
+    REQUIRE(adapter->evolveByScript(*session, "species_b").value_or(false));
+  }
+  SUBCASE("virus and back") {
+    adapter->routePartnerEvent(*session, {.kind = EventKind::VirusBarFull, .value = 0});
+    CHECK(session->partner().state().species == "scum");
+    CHECK(evolvedEvents(*session) == 1);
+    REQUIRE(adapter->returnFromVirus(*session));
+    CHECK(session->partner().state().species == "agum");
+  }
+  CHECK(evolvedEvents(*session) == 1);
+}
+
 TEST_CASE("the evolution state goes in the save and comes back") {
   const TestPacks packs;
   const TableFixture fixture;

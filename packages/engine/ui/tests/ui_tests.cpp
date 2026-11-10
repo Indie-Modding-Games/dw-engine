@@ -746,6 +746,70 @@ TEST_CASE("the original bag's boxes stop at their ends, ask No first and sort un
   CHECK(commands[0].value == UiValue{2.0});
 }
 
+TEST_CASE("the bag marks the partner's favourite food while the favorite_food option is on") {
+  Content content;
+  auto ui = createUi(content.mount());
+  input::InputState input{input::defaultActionMap()};
+  ui->setSetting("bag.slot.1.favorite", true);
+  openOriginalBag(*ui, input);
+  // On by default: the game has not published the option yet.
+  CHECK_FALSE(ui->elementHasClass("partner_menu", "slot-0", "favorite"));
+  CHECK(ui->elementHasClass("partner_menu", "slot-1", "favorite"));
+
+  // The partner evolves into a species that likes the other item: the game publishes the bag again.
+  ui->setSetting("bag.slot.0.favorite", true);
+  ui->setSetting("bag.slot.1.favorite", false);
+  ui->setSetting("bag.revision", 1.0);
+  frame(*ui, input);
+  CHECK(ui->elementHasClass("partner_menu", "slot-0", "favorite"));
+  CHECK_FALSE(ui->elementHasClass("partner_menu", "slot-1", "favorite"));
+
+  // Off, the original's look: no mark.
+  ui->setSetting("favorite_food", false);
+  frame(*ui, input);
+  CHECK_FALSE(ui->elementHasClass("partner_menu", "slot-0", "favorite"));
+  ui->setSetting("favorite_food", true);
+  frame(*ui, input);
+  CHECK(ui->elementHasClass("partner_menu", "slot-0", "favorite"));
+}
+
+TEST_CASE("the status page names the partner's favourite food, in both skins, unless the option is "
+          "off") {
+  Content content;
+  auto ui = createUi(content.mount());
+  input::InputState input{input::defaultActionMap()};
+  REQUIRE(ui->loadDocument("partner_menu", idOf("ui/partner_menu/document")));
+  for (const std::string_view skin : {"original", "modern"}) {
+    CAPTURE(skin);
+    ui->setSetting("ui_skin", std::string{skin});
+    ui->setSetting("favorite_food", true);
+    ui->setSetting("partner.favorite_food", std::string{"main.item_names.0038"});
+    ui->setSetting("partner_menu.start_page", std::string{"status"});
+    ui->show("partner_menu", true);
+    settle(*ui, input);
+    CHECK_FALSE(ui->elementHasClass("partner_menu", "status-food-line", "hidden"));
+    CHECK(ui->elementText("partner_menu", "status-food") == "main.item_names.0038");
+
+    // An evolution into a species that likes another food.
+    ui->setSetting("partner.favorite_food", std::string{"main.item_names.0041"});
+    ui->setSetting("partner.revision", 1.0);
+    frame(*ui, input);
+    CHECK(ui->elementText("partner_menu", "status-food") == "main.item_names.0041");
+
+    // A species without one.
+    ui->setSetting("partner.favorite_food", std::string{});
+    ui->setSetting("partner.revision", 2.0);
+    frame(*ui, input);
+    CHECK(ui->elementText("partner_menu", "status-food") == "None");
+
+    ui->setSetting("favorite_food", false);
+    frame(*ui, input);
+    CHECK(ui->elementHasClass("partner_menu", "status-food-line", "hidden"));
+    ui->hide("partner_menu");
+    settle(*ui, input);
+  }
+}
+
 TEST_CASE("the original egg box grows before its eggs move and shrinks before it closes") {
   // doo2.c: DOO2_openEggBox grows the box out of the screen's middle; DOO2_tickEggInput ignores the
   // eggs until it stands and ends once it has shrunk away (ui.c: 5 frames each way at 20 a second).
@@ -1107,6 +1171,56 @@ TEST_CASE("the field's bag uses an item at once and goes back to the pause menu"
   settleBoxes(*ui, input);
   CHECK_FALSE(ui->isVisible("partner_menu"));
   CHECK(ui->isVisible("pause_menu"));
+}
+
+TEST_CASE("the partner menu's pages stay shown however often the tabs switch and it reopens") {
+  // The menu closed from the Tech page used to leave that page shrunk (box-closed) for good: the
+  // next menu opened on Status, and the Tech page came up empty under its tabs. Original skin
+  // first, so the modern one starts from a page the original look closed.
+  Content content;
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("partner_menu", idOf("ui/partner_menu/document")));
+  REQUIRE(ui->loadDocument("pause_menu", idOf("ui/pause_menu/document")));
+  input::InputState input{input::defaultActionMap()};
+  const auto pageShown = [&](std::string_view page) {
+    const std::string id = std::format("page-{}", page);
+    return ui->elementShown("partner_menu", id) &&
+           !ui->elementHasClass("partner_menu", id, "box-closed") &&
+           !ui->elementHasClass("partner_menu", id, "box-animating");
+  };
+  for (const std::string_view skin : {"original", "modern"}) {
+    CAPTURE(skin);
+    ui->setSetting("ui_skin", std::string{skin});
+    ui->setSetting("partner_menu.start_page", std::string{"status"});
+    for (int round = 0; round < 3; ++round) {
+      CAPTURE(round);
+      ui->show("partner_menu", true);
+      settleBoxes(*ui, input);
+      REQUIRE(pageShown("status"));
+      for (int step = 0; step < 6; ++step) {
+        press(*ui, input, input::keys::Right);
+        CHECK(pageShown("tech"));
+        CHECK_FALSE(pageShown("status"));
+        press(*ui, input, input::keys::Left);
+        CHECK(pageShown("status"));
+      }
+      // The mouse on the tabs too: the Status page's portrait reaches up over them and must not
+      // take the click.
+      CHECK(click(*ui, input, "partner_menu", "tab-tech"));
+      frame(*ui, input);
+      CHECK(pageShown("tech"));
+      CHECK(click(*ui, input, "partner_menu", "tab-status"));
+      frame(*ui, input);
+      CHECK(pageShown("status"));
+      // Leave from the Tech page.
+      press(*ui, input, input::keys::Right);
+      REQUIRE(pageShown("tech"));
+      press(*ui, input, input::keys::LeftCtrl);
+      settleBoxes(*ui, input);
+      REQUIRE_FALSE(ui->isVisible("partner_menu"));
+      ui->hide("pause_menu");
+    }
+  }
 }
 
 TEST_CASE("the HUD's menu button asks the game to open the menu and names the key that does it") {
@@ -1581,6 +1695,59 @@ TEST_CASE("the need bubble plays the original's frames: growth, the need's anima
   ui->tick(input, 1.0);
   placePartner(*ui, true);
   CHECK(onFrame(1));
+}
+
+namespace {
+
+// The evolving bubble's frame the game publishes (hud.partner.evolving), with a new revision.
+void setEvolvingFrame(Ui& ui, int frame) {
+  ui.setSetting("hud.partner.evolving", static_cast<double>(frame));
+  placePartner(ui, true);
+}
+
+} // namespace
+
+TEST_CASE("the evolving bubble shows over the partner on the game's frames, over any need") {
+  // main/evl.c: tickEvoSequenceLoading makes bubble 7 (bubble.c: CONDITION_ICON_EVOLVING) as the
+  // partner starts to evolve; the game steps it and publishes its frame.
+  for (const bool stacked : {false, true}) {
+    CAPTURE(stacked);
+    Content content;
+    auto ui = createUi(content.mount());
+    input::InputState input{input::defaultActionMap()};
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->show("hud");
+    ui->setSetting("need_bubble_stack", stacked);
+    placePartner(*ui, true);
+    // A need left from before the evolution: the evolving bubble takes the balloon.
+    setFieldNeeds(*ui, true, true, false);
+    setEvolvingFrame(*ui, 1);
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble", "shown"));
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble", "evolving"));
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble", "frame-1"));
+    CHECK(bubbleNeed(*ui).empty());
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "stack-2"));
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble-icon-0", "evolving"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble-icon-0", "sleep"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble-icon-1", "hunger"));
+    // The game's frames, not the script's count.
+    ui->tick(input, 1.0);
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble", "frame-1"));
+    setEvolvingFrame(*ui, 30);
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble", "frame-30"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "frame-1"));
+    setEvolvingFrame(*ui, 51);
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble", "frame-51"));
+    // Gone after the burst; the new form has no need.
+    setFieldNeeds(*ui, false, false, false);
+    setEvolvingFrame(*ui, 0);
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "shown"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "evolving"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble-icon-0", "evolving"));
+    // A need after it is the need bubble again.
+    setFieldNeeds(*ui, true, false, false);
+    CHECK(bubbleNeed(*ui) == "hunger");
+  }
 }
 
 TEST_CASE("the HUD shows the minimap unless it is off or the game does not allow it now") {

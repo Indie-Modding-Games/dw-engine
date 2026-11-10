@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "evolution_effects.hpp"
+#include "evolving_bubble.hpp"
 #include "field_scene.hpp"
 #include "scene_sounds.hpp"
 
@@ -39,10 +40,11 @@ struct EvolutionSceneDesc {
 };
 
 // The evolution scene on the field (partner.c: partnerTickEvolving; main/evl.c:
-// tickEvoSequenceLoading; evl.c: EVL_tickEvoSequence): the field and the game time wait while the
-// scenery goes, the camera closes in on the partner and circles it, the partner bursts, grows to
-// its new form's size and is drawn as that form on the original's frame. The session evolved the
-// partner already; the scene only shows it.
+// tickEvoSequenceLoading; evl.c: EVL_tickEvoSequence): the field holds the player and the game time
+// stops while the partner walks up to the player, then the field waits while the scenery goes, the
+// camera closes in on the partner and circles it, the partner bursts, grows to its new form's size
+// and is drawn as that form on the original's frame. The session evolved the partner already; the
+// scene only shows it.
 class EvolutionScene {
 public:
   // The desc's pointees must outlive the scene.
@@ -50,6 +52,15 @@ public:
 
   // Whether the field and the game time wait for the scene.
   [[nodiscard]] bool active() const { return phase_ != Phase::Idle; }
+
+  // The frame of the evolving bubble over the partner (evolving_bubble.hpp), 1 to 51, or 0 while
+  // it is not drawn. It hangs over the form the field draws (drawnSpecies), as the original's over
+  // the entity that has not changed yet.
+  [[nodiscard]] std::int32_t bubbleFrame() const {
+    return phase_ == Phase::Gathering ? evolvingBubbleFrame(frame_) : 0;
+  }
+  // The form the field draws now: the old one until the scene shows the new one.
+  [[nodiscard]] const std::string& drawnSpecies() const { return drawn_; }
 
   // Takes the partner's evolutions (Evolved) for the scene and returns the events left for
   // showPartnerEvents; a rebirth (Reborn) tells the scene the form the field now draws.
@@ -65,10 +76,12 @@ public:
   void skip();
 
 private:
-  // The original's states: the two waits of tickEvoSequenceLoading, then EVL_tickEvoSequence's
-  // 0 (dimming), 1 (camera), 2 (burst), 3 (camera back) and 4 (the last clip).
+  // The original's states: the partner's walk up to the player (partnerTickEvolving sub state 1),
+  // the two waits of tickEvoSequenceLoading, then EVL_tickEvoSequence's 0 (dimming), 1 (camera),
+  // 2 (burst), 3 (camera back) and 4 (the last clip).
   enum class Phase : std::uint8_t {
     Idle,
+    Approaching,
     Glowing,
     Gathering,
     Dimming,
@@ -91,6 +104,12 @@ private:
   };
 
   void start(const std::string& target);
+  // partnerTickEvolving sub state 1: the field holds the player with the game time stopped and the
+  // partner walks up to it; once it is near, glow().
+  void approach(float seconds);
+  // getEvoSequenceState (main/evl.c:77): the partner stands idle where it got to, the scene's
+  // sounds, and tickEvoSequenceLoading's first wait.
+  void glow();
   void step();
   void stepClosing();
   void stepBursting();
@@ -143,6 +162,11 @@ private:
   float focalLength_ = 1.0F;
   float drop_ = 0.0F;
   float recentre_ = 0.0F;
+  // Whether the next approach tick holds the field and sends the partner to the player: on the
+  // scene's first tick, once a care scene the evolution came from has let the field go.
+  bool approachPending_ = false;
+  // Whether the scene holds the field for care (the walk), to let it go at the end.
+  bool heldField_ = false;
   // The burst clip ends in the ready one (EVL_tickEvoSequence's first check).
   bool burstClipPlaying_ = false;
   std::int32_t waitFrames_ = 0;

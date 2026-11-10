@@ -29,6 +29,7 @@
 #include "battle_motion.hpp"
 #include "flame_texture.hpp"
 #include "messages.hpp"
+#include "partner_clip_fallbacks.hpp"
 
 namespace dwe::app {
 namespace {
@@ -321,7 +322,7 @@ core::Result<void> FieldScene::showPartnerSpecies(std::string_view species) {
   }
   const ClipStandIns standIns = speciesClips_ ? speciesClips_(species) : ClipStandIns{};
   auto partner = loadActor(PartnerCharacter, partnerActor_->entity, partnerMover_, *model,
-                           MissingClips::Refuse, standIns);
+                           MissingClips::StandIn, standIns);
   if (!partner) {
     return std::unexpected{partner.error()};
   }
@@ -342,6 +343,7 @@ core::Result<void> FieldScene::enterOriginalMap(std::int32_t index, std::int32_t
 }
 
 void FieldScene::playPartnerClip(std::optional<std::uint32_t> clipId, bool moves) {
+  partnerClipOnceAt_.reset();
   partnerClip_ = clipId;
   partnerClipStarted_ = false;
   // The clip's root motion carries the partner as a script's clip does (Field::moveByClip); a
@@ -354,6 +356,20 @@ void FieldScene::playPartnerClip(std::optional<std::uint32_t> clipId, bool moves
   partnerLook_ = {};
   // The partner's motion picks its clip again from the next update.
   partnerActor_->motion.reset();
+}
+
+void FieldScene::playPartnerClipOnce(std::uint32_t clipId) {
+  playPartnerClip(clipId);
+  partnerClipOnceAt_ = field_->partner().position;
+}
+
+void FieldScene::releasePartnerClipOnce() {
+  if (!partnerClipOnceAt_) {
+    return;
+  }
+  if (partnerClipFinished() || field_->partner().position != *partnerClipOnceAt_) {
+    playPartnerClip(std::nullopt);
+  }
 }
 
 bool FieldScene::partnerClipFinished() const {
@@ -386,8 +402,11 @@ void FieldScene::animatePartnerClip(double seconds) {
     const std::uint32_t clip = *partnerClip_;
     partnerClipPlays_ = actor.player->play(clip);
     if (!partnerClipPlays_) {
+      // A form the developer's evolve makes the partner (an enemy's, a character's) lacks some of
+      // the partners' clips: it stands in its idle, and the clip counts as played through.
       core::logWarning("{}", core::formatMessage(messages::PartnerClipMissing, clip,
                                                  actor.character.model.str()));
+      static_cast<void>(actor.player->play(0));
     }
     actor.player->setSpeed(1.0F);
   }
@@ -420,6 +439,14 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
   for (const std::uint32_t clip : assets::addClipStandIns(*model, standIns)) {
     core::logDebug("field: {} plays clip {} as {}", character->model.str(), clip,
                    standIns.at(clip));
+  }
+  if (missingClips == MissingClips::StandIn) {
+    const auto fallbacks = partnerClipFallbacks(
+        *character, [&](std::uint32_t clip) { return model->findClip(clip) != nullptr; });
+    for (const std::uint32_t clip : assets::addClipStandIns(*model, fallbacks)) {
+      core::logDebug("field: {} has no clip {}: the partner plays {} instead",
+                     character->model.str(), clip, fallbacks.at(clip));
+    }
   }
   if (missingClips == MissingClips::Drop) {
     for (const std::string& animation : assets::dropMissingClips(*character, *model)) {
@@ -1149,6 +1176,7 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
     animate(*playerActor_, playerSceneClip_ ? frameSeconds : animationSeconds);
   }
   playClipSounds(*playerActor_);
+  releasePartnerClipOnce();
   if (menuRest && !partnerClip_) {
     restOnIdle(*partnerActor_, frameSeconds);
     playClipSounds(*partnerActor_);

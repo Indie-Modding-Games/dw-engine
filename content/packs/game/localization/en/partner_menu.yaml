@@ -33,6 +33,9 @@ evolution: "Evo. timer"
 hours.value: "{hours} h"
 # {hours} is the evolution counter and {check} the hours its level checks its evolution from.
 evolution.value: "{hours}/{check} h"
+# Its species' favourite food (the favorite_food option), with the item's name; "None" when it has none.
+favorite_food: "Favourite food"
+favorite_food.none: "None"
 condition.none: "In good shape"
 condition.sleepy: "Sleepy"
 condition.tired: "Tired"

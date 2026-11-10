@@ -10,7 +10,7 @@
 -- shop_amount_max, shop_confirm and shop_back. Pages of eight rows, turned with left and right.
 -- Shop extras (the shop_extras setting, an engine improvement) add the focused item's description
 -- under the list, the bag's count in the buy list and in the amount box, and the money a trade
--- leaves.
+-- leaves. The favorite_food option (another, on by default) marks the partner's favourite food.
 
 local PageSize = 8
 local ChoiceCount = 3
@@ -129,6 +129,9 @@ local function refresh_list(document)
     if row ~= nil then
       entry:set_text(row_label(row))
       entry:set_class("disabled", not ui.setting("shop.row." .. row .. ".enabled"))
+      -- The partner's favourite food (the favorite_food option, an engine improvement).
+      local favorite = ui.setting("shop.row." .. row .. ".favorite") == true
+      entry:set_class("favorite", favorite and ui.setting("favorite_food") ~= false)
     end
   end
   local several = pages() > 1

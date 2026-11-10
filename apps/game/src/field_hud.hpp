@@ -4,6 +4,7 @@
 #include <dwe/session/game_session.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <cstdint>
 #include <optional>
 
 namespace dwe::app {
@@ -19,13 +20,15 @@ public:
   // Publishes the views when they changed; once per frame. `fieldRunning` is false while a menu or
   // a battle stops the field; `bubbleRuns` whether the partner's need bubble shows (the field
   // runs, or a training course does); `partnerBubble` is where the bubble settles in the window, if
-  // it projects.
+  // it projects; `evolvingFrame` the evolving bubble's frame (EvolutionScene::bubbleFrame), 0 for
+  // none.
   void update(bool fieldRunning, bool bubbleRuns,
-              std::optional<screens::WindowFraction> partnerBubble);
+              std::optional<screens::WindowFraction> partnerBubble, std::int32_t evolvingFrame = 0);
 
 private:
   void publishStatus(bool fieldRunning);
-  void publishPartner(bool fieldRunning, std::optional<screens::WindowFraction> partnerBubble);
+  void publishPartner(bool fieldRunning, std::optional<screens::WindowFraction> partnerBubble,
+                      std::int32_t evolvingFrame);
 
   ui::Ui* ui_;
   const session::GameSession* session_;

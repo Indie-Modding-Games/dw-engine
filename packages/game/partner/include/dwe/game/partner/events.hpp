@@ -24,6 +24,9 @@ enum class EventKind : std::uint8_t {
   UsedToilet,
   // The partner refused an offered item.
   Refused,
+  // A hungry partner ate its favourite food or enough of a meal and is glad of it
+  // (partner_impl.c: partnerHandleFoodFeed plays its clip 0xb).
+  Cheered,
   // The partner slept and woke up at its wake hour; the session autosaves.
   Slept,
   // A new day started (midnight was crossed while playing, sleeping or training); value: the days

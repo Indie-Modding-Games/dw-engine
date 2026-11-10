@@ -50,6 +50,7 @@
 #include "bulk_amount.hpp"
 #include "common.hpp"
 #include "condition_point.hpp"
+#include "evolving_bubble.hpp"
 #include "gym_box_close.hpp"
 #include "hd_scenery_setting.hpp"
 #include "messages.hpp"
@@ -483,7 +484,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                   .species = species_ ? &*species_ : nullptr,
                   .scene = scene_.get(),
                   .ui = context.ui}),
-      shopScreen_({.session = game_.session.get(), .shop = game_.systems.shop, .ui = context.ui}),
+      shopScreen_({.session = game_.session.get(),
+                   .shop = game_.systems.shop,
+                   .ui = context.ui,
+                   .inventory = game_.systems.inventory}),
       devMenu_(*context.ui),
       itemKeeperScreen_({.keeper = game_.systems.itemKeeper, .ui = context.ui}),
       discardScreen_({.menu = game_.systems.discardMenu,
@@ -801,13 +805,11 @@ void PlaySession::toggleDevMenu() {
   for (const assets::ItemEntry& entry : items.entries()) {
     lists.items.push_back({.id = entry.id, .nameKey = names.item(items.handleOf(entry))});
   }
-  if (species_) {
-    for (const assets::DigimonRow& row : species_->digimon) {
-      // Only the partner's species (a level), not the enemies and NPCs that are no partner.
-      if (row.level > 0) {
-        lists.species.push_back({.id = row.id, .nameKey = names.species(row.id)});
-      }
-    }
+  // Every species with a model: the forms the partner can evolve into (the virus, item and event
+  // forms and a ruleset's Mega step too) and the enemies' and characters', which borrow the rows
+  // they lack (EvolutionTables::cheatReference, the species table's borrowed care).
+  for (const std::string& form : game_.systems.evolution->cheatTargets()) {
+    lists.species.push_back({.id = form, .nameKey = names.species(form)});
   }
   if (const session::MapVisits* visits = game_.systems.mapVisits; visits != nullptr) {
     for (const std::string& map : visits->maps()) {
@@ -1646,7 +1648,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (const auto evolution = std::exchange(commands.evolution, std::nullopt)) {
     guardFactsChanged = true;
     const std::string& form = *evolution;
-    if (auto evolved = game_.systems.evolution->evolveByScript(session, form); !evolved) {
+    if (auto evolved = game_.systems.evolution->evolveByCheat(session, form); !evolved) {
       core::logWarning("{}", core::formatMessage(messages::EvolveFailed, evolved.error().message));
     } else if (!*evolved) {
       core::logWarning("{}", core::formatMessage(messages::EvolveRefused, form));
@@ -1737,6 +1739,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
         row != nullptr ? row->height : 0, row != nullptr ? row->radius : 0, healing->ring);
   }
   const auto partnerEvents = session.takePartnerEvents();
+  if (!battleScreen_.active()) {
+    feedScene_.cheer(partnerEvents);
+  }
   if (fellSick(partnerEvents)) {
     awardScreen_.noteSickness(partnerNameOf(session, species_ ? &*species_ : nullptr));
   }
@@ -1776,9 +1781,15 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   const bool partnerHeld =
       field.heldForCare() || field.heldForItem() == game::field::ItemHold::Chest;
   showButterfly(fieldIdle && !partnerHeld, session);
+  // The evolving bubble hangs over the form the field still draws (the session evolved the partner
+  // before the scene): bubble.c: addConditionBubble takes the height of the entity's type.
+  const std::string& bubbleSpecies =
+      evolutionScene_.active() ? evolutionScene_.drawnSpecies() : session.partnerView().species;
   fieldHud_.update(fieldRunning, fieldRunning || (!paused() && gymScreen_.active()),
-                   partnerHeld ? std::nullopt
-                               : partnerBubbleOf(*scene_, species, session.partnerView().species));
+                   partnerBubblePlaced(partnerHeld, evolutionScene_.active())
+                       ? partnerBubbleOf(*scene_, species, bubbleSpecies)
+                       : std::nullopt,
+                   evolutionScene_.bubbleFrame());
   publishShopJob();
   battleScreen_.showIntro([&](const game::battle::Combatant& enemy, float lift) {
     return angerAnchorOf(*scene_, species, enemy, lift);
@@ -1910,7 +1921,28 @@ void PlaySession::showButterfly(bool partnerNormal, const session::GameSession& 
 
 core::Result<assets::RaiseTable>
 PlaySession::raiseTable(const assets::VirtualFileSystem& files) const {
-  return ruleset::loadPatchedRaiseTable(files, game_.session->rules().current());
+  auto table = ruleset::loadPatchedRaiseTable(files, game_.session->rules().current());
+  if (!table || !species_) {
+    return table;
+  }
+  // The developer's evolve makes any species with a model the partner: one with no row is placed
+  // as its stand-in is (assets::standInRow), as it cares as that one does (game/partner).
+  const auto hasRow = [&](const assets::DigimonRow& row) { return table->find(row.id) != nullptr; };
+  std::vector<assets::RaiseRow> borrowed;
+  for (const assets::DigimonRow& row : species_->digimon) {
+    if (row.boneCount <= 0 || hasRow(row)) {
+      continue;
+    }
+    if (const assets::DigimonRow* standIn = assets::standInRow(*species_, row, hasRow);
+        standIn != nullptr) {
+      assets::RaiseRow copy = *table->find(standIn->id);
+      copy.digimon = row.id;
+      copy.index.reset();
+      borrowed.push_back(std::move(copy));
+    }
+  }
+  std::ranges::move(borrowed, std::back_inserter(table->raise));
+  return table;
 }
 
 float PlaySession::speciesScale(std::string_view species) const {

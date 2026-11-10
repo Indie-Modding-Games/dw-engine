@@ -245,6 +245,7 @@ screens::ScreenSettings PartnerMenu::statusSettings() const {
       screens::setProfileSpecies(view, *species, desc_.session->partner().species().sleepPattern);
     }
   }
+  screens::setFavoriteFood(view, desc_.inventory->favoriteFood(*desc_.session), names);
   if (const auto* evolution = desc_.evolution != nullptr ? desc_.evolution->evolution() : nullptr;
       evolution != nullptr) {
     if (const auto form = evolution->tables().find(desc_.session->partner().state().species)) {
@@ -256,10 +257,8 @@ screens::ScreenSettings PartnerMenu::statusSettings() const {
       view.techniques = screens::equippedTechniqueViewsOf(*partner, *catalog, names);
       // The fighter carries the ruleset's partner type (a species with no table type).
       view.type = static_cast<std::int32_t>(partner->type);
-      if (desc_.species != nullptr) {
-        if (const auto* species = desc_.species->find(partner->species)) {
-          screens::setTechniqueChoices(view, *species, desc_.battle->moves(), *catalog, names);
-        }
+      if (const auto* species = desc_.battle->partnerRow(partner->species)) {
+        screens::setTechniqueChoices(view, *species, desc_.battle->moves(), *catalog, names);
       }
     }
   }
@@ -274,7 +273,8 @@ void PartnerMenu::publish() const {
   screens::publish(*desc_.ui, statusSettings(), screens::PartnerRevisionSetting);
   screens::publish(*desc_.ui,
                    screens::settingsOf(screens::bagViewOf(
-                       desc_.inventory->inventory(), desc_.inventory->items(), names, bagContext_)),
+                       desc_.inventory->inventory(), desc_.inventory->items(), names, bagContext_,
+                       desc_.inventory->favoriteFood(*desc_.session))),
                    screens::BagRevisionSetting);
 }
 

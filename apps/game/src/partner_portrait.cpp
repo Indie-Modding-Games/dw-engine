@@ -8,12 +8,20 @@
 #include <format>
 
 namespace dwe::app {
+namespace {
+
+// The original's screen, which the menu's page shows the figure in.
+constexpr std::uint32_t ScreenWidth = 320;
+constexpr std::uint32_t ScreenHeight = 240;
+
+} // namespace
 
 core::Result<std::unique_ptr<PartnerPortrait>> PartnerPortrait::create(render::Renderer& renderer) {
   auto models = render::ModelRenderer::create(renderer);
   if (!models)
     return std::unexpected{models.error()};
-  auto texture = renderer.createSceneTexture({.width = 320, .height = 240});
+  // Drawn at the window's size, not the original's: the page shows it up to the window's height.
+  auto texture = renderer.createScreenSceneTexture({.width = ScreenWidth, .height = ScreenHeight});
   if (!texture)
     return std::unexpected{texture.error()};
   return std::unique_ptr<PartnerPortrait>{
@@ -28,8 +36,9 @@ PartnerPortrait::PartnerPortrait(render::Renderer& renderer,
   // The extractor rotates original coordinates (x,y,z) to glTF (x,-y,-z).
   models_->setCamera(
       {.view = glm::lookAt(glm::vec3{1300, 0, 3280}, glm::vec3{0}, glm::vec3{0, 1, 0}),
-       .projection =
-           render::perspective(2.F * std::atan(120.F / 512.F), 320.F / 240.F, 10.F, 20000.F),
+       .projection = render::perspective(
+           2.F * std::atan(120.F / 512.F),
+           static_cast<float>(ScreenWidth) / static_cast<float>(ScreenHeight), 10.F, 20000.F),
        .viewport = {}});
   render::ModelLighting light{};
   // Field/new-game ambient persists when the menu replaces the three flat lights.

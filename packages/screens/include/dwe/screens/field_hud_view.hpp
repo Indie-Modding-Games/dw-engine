@@ -106,6 +106,9 @@ inline constexpr std::string_view FieldPartnerRevisionSetting = "hud.partner.rev
 inline constexpr std::string_view FieldPartnerXSetting = "hud.partner.x";
 inline constexpr std::string_view FieldPartnerYSetting = "hud.partner.y";
 inline constexpr std::string_view FieldPartnerVisibleSetting = "hud.partner.visible";
+// The evolving bubble's frame (bubble.c: CONDITION_ICON_EVOLVING; apps/game: evolving_bubble.hpp),
+// 1 to 51, or 0 while the partner shows none.
+inline constexpr std::string_view FieldPartnerEvolvingSetting = "hud.partner.evolving";
 
 // A point of the window as fractions of its width and height from the top-left corner, y down.
 struct WindowFraction {
@@ -123,14 +126,19 @@ struct FieldPartnerView {
   bool visible = false;
   double x = 0.0;
   double y = 0.0;
+  // The evolving bubble's frame while the partner starts to evolve, else 0.
+  std::int32_t evolvingFrame = 0;
 
   friend bool operator==(const FieldPartnerView&, const FieldPartnerView&) = default;
 };
 
-// The partner's view from where its bubble's point projects (nothing when it does not) and whether
-// the field runs.
+// The partner's view from where its bubble's point projects (nothing when it does not), whether
+// the field runs and the evolving bubble's frame (0 for none). The evolving bubble shows while the
+// field waits for the evolution (partner.c: partnerTickEvolving stops the game time), so the point
+// is visible while it does too.
 [[nodiscard]] FieldPartnerView fieldPartnerViewOf(std::optional<WindowFraction> bubble,
-                                                  bool fieldRunning);
+                                                  bool fieldRunning,
+                                                  std::int32_t evolvingFrame = 0);
 
 [[nodiscard]] ScreenSettings settingsOf(const FieldPartnerView& view);
 

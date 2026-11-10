@@ -2,7 +2,9 @@
 
 #include <array>
 #include <cstddef>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace dwe::screens {
@@ -100,6 +102,7 @@ PartnerStatusView partnerStatusViewOf(const session::PartnerView& partner, const
                          .wakeMinute = partner.wakeMinute,
                          .sleepyHour = partner.sleepyHour,
                          .sleepyMinute = partner.sleepyMinute,
+                         .favoriteFoodKey = {},
                          .conditionKeys = {}};
   for (std::size_t index = 0; index < PoolStats.size(); ++index) {
     const Stat stat = PoolStats.at(index);
@@ -152,6 +155,11 @@ void setProfileSpecies(PartnerStatusView& view, const assets::DigimonRow& specie
   view.specials = species.special;
   view.type = species.type;
   view.activePattern = activePattern;
+}
+
+void setFavoriteFood(PartnerStatusView& view, std::optional<std::string_view> item,
+                     const NameKeys& names) {
+  view.favoriteFoodKey = item ? names.item(*item) : std::string{};
 }
 
 void setTechniqueChoices(PartnerStatusView& view, const assets::DigimonRow& species,
@@ -242,6 +250,8 @@ ScreenSettings settingsOf(const PartnerStatusView& view) {
       {.name = tiredness + ".max", .value = static_cast<double>(view.tiredness.max)});
   settings.push_back({.name = std::string{PartnerCareMistakesSetting},
                       .value = static_cast<double>(view.careMistakes)});
+  settings.push_back(
+      {.name = std::string{PartnerFavoriteFoodSetting}, .value = view.favoriteFoodKey});
   const std::array<std::pair<std::string_view, std::int32_t>, 8> extras{{
       {PartnerBattlesSetting, view.battles},
       {PartnerLifetimeSetting, view.lifetimeHours},

@@ -47,6 +47,9 @@ inline constexpr std::string_view PartnerWakeHourSetting = "partner.awake.wake_h
 inline constexpr std::string_view PartnerWakeMinuteSetting = "partner.awake.wake_minute";
 inline constexpr std::string_view PartnerSleepyHourSetting = "partner.awake.sleepy_hour";
 inline constexpr std::string_view PartnerSleepyMinuteSetting = "partner.awake.sleepy_minute";
+// The key of the name of the species' favourite food (RAISE_DATA.favoriteFood), empty for a species
+// without one; the page shows it with the favorite_food option.
+inline constexpr std::string_view PartnerFavoriteFoodSetting = "partner.favorite_food";
 
 // A bar of the status page: its label, value and range. A two-tone bar fills its whole width once
 // from the minimum to the middle of the range, then fills it again in a second colour from the
@@ -116,6 +119,8 @@ struct PartnerStatusView {
   std::int32_t wakeMinute = 0;
   std::int32_t sleepyHour = 0;
   std::int32_t sleepyMinute = 0;
+  // The key of the favourite food's name; empty for a species without one.
+  std::string favoriteFoodKey;
   // The keys of the conditions it has (partner_menu.condition.<name>).
   std::vector<std::string> conditionKeys;
   std::array<TechniqueChoiceView, 56> techniqueChoices{};
@@ -133,6 +138,11 @@ equippedTechniqueViewsOf(const game::battle::Combatant& partner,
 
 void setProfileSpecies(PartnerStatusView& view, const assets::DigimonRow& species,
                        std::int32_t activePattern);
+
+// The partner's favourite food (session::InventoryAdapter::favoriteFood), none for a species
+// without one.
+void setFavoriteFood(PartnerStatusView& view, std::optional<std::string_view> item,
+                     const NameKeys& names);
 
 void setTechniqueChoices(PartnerStatusView& view, const assets::DigimonRow& species,
                          const session::PartnerMoves& moves,

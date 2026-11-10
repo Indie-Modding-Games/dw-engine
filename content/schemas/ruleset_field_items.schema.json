@@ -93,14 +93,15 @@
         "clips": {
           "description": "The clips, by the original's animation ids.",
           "type": "object",
-          "required": ["player_offer", "player_refused", "partner_idle", "partner_eat", "partner_refuse"],
+          "required": ["player_offer", "player_refused", "partner_idle", "partner_eat", "partner_refuse", "partner_cheer"],
           "additionalProperties": false,
           "properties": {
             "player_offer": { "type": "integer", "minimum": 0 },
             "player_refused": { "type": "integer", "minimum": 0 },
             "partner_idle": { "type": "integer", "minimum": 0 },
             "partner_eat": { "type": "integer", "minimum": 0 },
-            "partner_refuse": { "type": "integer", "minimum": 0 }
+            "partner_refuse": { "type": "integer", "minimum": 0 },
+            "partner_cheer": { "description": "A hungry partner's joy after its favourite food or a meal that fed it.", "type": "integer", "minimum": 0 }
           }
         }
       }

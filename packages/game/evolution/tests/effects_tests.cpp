@@ -122,6 +122,12 @@ TEST_CASE(
     const EvolutionResult none = evolveTo(fixture.makeEvolution(), inputsOf("agum"), "species_b");
     CHECK_FALSE(none.learnedMove);
     CHECK_FALSE(none.equippedMoves.front());
+    // The developer's evolve still gives it a technique: the first move of its list.
+    const auto cheat = fixture.makeEvolution().evolveByCheat(inputsOf("agum"), {},
+                                                             TableFixture::index("species_b"));
+    REQUIRE(cheat);
+    CHECK(cheat->learnedMove == fixture.form("species_b").moves.at(0));
+    CHECK(cheat->equippedMoves.front() == 0);
   }
   SUBCASE(
       "a pack's move joins a block or the finishers only by its id, whatever number the engine gave it") {

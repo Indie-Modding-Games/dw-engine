@@ -123,11 +123,16 @@ FieldHudView fieldHudViewOf(const ruleset::GameTime& time, const session::Partne
   return view;
 }
 
-FieldPartnerView fieldPartnerViewOf(std::optional<WindowFraction> bubble, bool fieldRunning) {
-  if (!fieldRunning || !bubble || !onScreen(*bubble)) {
+FieldPartnerView fieldPartnerViewOf(std::optional<WindowFraction> bubble, bool fieldRunning,
+                                    std::int32_t evolvingFrame) {
+  const bool evolving = evolvingFrame > 0;
+  if ((!fieldRunning && !evolving) || !bubble || !onScreen(*bubble)) {
     return {};
   }
-  return {.visible = true, .x = percentOf(bubble->x), .y = percentOf(bubble->y)};
+  return {.visible = true,
+          .x = percentOf(bubble->x),
+          .y = percentOf(bubble->y),
+          .evolvingFrame = evolving ? evolvingFrame : 0};
 }
 
 ScreenSettings settingsOf(const FieldPartnerView& view) {
@@ -135,6 +140,8 @@ ScreenSettings settingsOf(const FieldPartnerView& view) {
       {.name = std::string{FieldPartnerVisibleSetting}, .value = view.visible},
       {.name = std::string{FieldPartnerXSetting}, .value = view.x},
       {.name = std::string{FieldPartnerYSetting}, .value = view.y},
+      {.name = std::string{FieldPartnerEvolvingSetting},
+       .value = static_cast<double>(view.evolvingFrame)},
   };
 }
 

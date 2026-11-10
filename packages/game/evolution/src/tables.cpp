@@ -233,7 +233,34 @@ core::Result<EvolutionTables> EvolutionTables::build(const assets::DigimonTable&
   if (resolver.error()) {
     return std::unexpected{*resolver.error()};
   }
+  tables.borrowReferences(digimon);
   return tables;
+}
+
+void EvolutionTables::borrowReferences(const assets::DigimonTable& digimon) {
+  // A partner form's own reference stands in: one whose evolution loads a known species.
+  const auto hasReference = [this](const assets::DigimonRow& row) {
+    const StatReference* reference = statReference(row.index);
+    return levelFrom(row.level) != Level::None && reference != nullptr &&
+           species(reference->loads) != nullptr;
+  };
+  for (const assets::DigimonRow& row : digimon.digimon) {
+    if (row.boneCount <= 0 || statReferences_.contains(row.index)) {
+      continue;
+    }
+    if (const assets::DigimonRow* standIn = assets::standInRow(digimon, row, hasReference);
+        standIn != nullptr) {
+      borrowedReferences_.insert_or_assign(
+          row.index,
+          StatReference{.stats = statReferences_.at(standIn->index).stats, .loads = row.index});
+    }
+    // With no move of its own it learns and equips from its stand-in's list.
+    const assets::DigimonRow* mover =
+        assets::listsMoves(row) ? nullptr : assets::standInRow(digimon, row, assets::listsMoves);
+    if (mover != nullptr && species_.contains(row.index) && species_.contains(mover->index)) {
+      species_.at(row.index).moves = species_.at(mover->index).moves;
+    }
+  }
 }
 
 core::Result<EvolutionTables> EvolutionTables::load(const assets::VirtualFileSystem& vfs,
@@ -360,6 +387,25 @@ const Requirement* EvolutionTables::requirement(Species target) const {
 const StatReference* EvolutionTables::statReference(Species target) const {
   const auto found = statReferences_.find(target);
   return found == statReferences_.end() ? nullptr : &found->second;
+}
+
+const StatReference* EvolutionTables::cheatReference(Species target) const {
+  if (const StatReference* own = statReference(target);
+      own != nullptr && species(own->loads) != nullptr) {
+    return own;
+  }
+  const auto borrowed = borrowedReferences_.find(target);
+  return borrowed == borrowedReferences_.end() ? nullptr : &borrowed->second;
+}
+
+std::vector<Species> EvolutionTables::cheatTargets() const {
+  std::vector<Species> targets;
+  for (const auto& [index, data] : species_) {
+    if (cheatReference(index) != nullptr) {
+      targets.push_back(index);
+    }
+  }
+  return targets;
 }
 
 std::span<const Species> EvolutionTables::pathTargets(Species from) const {

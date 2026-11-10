@@ -585,6 +585,10 @@ public:
   // frameCount - animFrame): infinite before it starts, 0 or less once it has ended, and 0 for a
   // clip the model lacks.
   [[nodiscard]] double partnerClipFramesLeft() const;
+  // Plays the partner's clip once with no scene waiting for it, as the original's partner does
+  // back in its normal state (partner_impl.c: partnerHandleFoodFeed, clip 0xb): the partner goes
+  // back to its motion once the clip ends or the field moves it.
+  void playPartnerClipOnce(std::uint32_t clipId);
 
   // The battle holds the partner (no slot) or the map's NPC in this slot (MapDocument::npcs
   // index; NPCs can share a script id, never a slot): it stands,
@@ -810,10 +814,11 @@ private:
 
   explicit FieldScene(const assets::VirtualFileSystem& files);
 
-  // What loading a character does with an animation whose clip the model lacks: the player and the
-  // partner need them all; an NPC is drawn with the clips it has, as the original draws any
-  // species on a map.
-  enum class MissingClips : std::uint8_t { Refuse, Drop };
+  // What loading a character does with an animation whose clip the model lacks: the player needs
+  // them all; the partner plays another of its own instead (partner_clip_fallbacks.hpp, for the
+  // enemies' and characters' models the developer's evolve gives it); an NPC is drawn with the
+  // clips it has, as the original draws any species on a map.
+  enum class MissingClips : std::uint8_t { Refuse, StandIn, Drop };
 
   // Loads a character; `otherModel` draws it with another model than its document's, with the same
   // animations.
@@ -923,6 +928,7 @@ private:
                                                const game::battle::EffectPalettes& palettes);
   void addEffectPrims(std::vector<ScenePrim>& prims);
   void animatePartnerClip(double seconds);
+  void releasePartnerClipOnce();
   // The partner's animation for its motion (partner.c: partnerTickWalking).
   // The partner while the field's follow moves it: the clip it picked; false when something
   // else moves it. `followed`: whether the follow drew the partner's last frame too.
@@ -1044,6 +1050,8 @@ private:
   bool partnerClipStarted_ = false;
   bool partnerClipPlays_ = false;
   bool partnerClipMoves_ = false;
+  // Where the partner stood when a clip played once started (playPartnerClipOnce).
+  std::optional<glm::vec3> partnerClipOnceAt_;
   // What the partner shows while something else than the field's follow moves it (a care walk,
   // making room; partner.c: partnerTickWalking): the motion it last had, the clip it walks or
   // stands with, the gesture under way, how long it has stood (STOP_DISTANCE_TIMER) and how many

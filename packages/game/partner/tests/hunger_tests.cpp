@@ -141,6 +141,34 @@ TEST_CASE("care.md hunger: the favourite food gives 40 % more energy and +2 happ
   CHECK(raising.state().mood.happiness == 52);
 }
 
+TEST_CASE("care.md hunger: a hungry partner cheers when it eats enough or its favourite food") {
+  OriginalRuleset original;
+  Raising raising(original.rules());
+  raising.quiet();
+  raising.edit([](PartnerState& state) {
+    state.hunger.foodLevel = 0;
+    state.hunger.energy = 0;
+  });
+  raising.playMinutes(10);
+  REQUIRE(raising.state().conditions.has(Condition::Hungry));
+  static_cast<void>(raising.partner().takeEvents());
+  // Not enough and not its favourite: no cheer.
+  raising.partner().eat(meal(1), raising.clock());
+  CHECK_FALSE(has(raising.partner().takeEvents(), EventKind::Cheered));
+  // Its favourite, still not enough: a cheer, and it stays hungry.
+  FoodEffect favorite = meal(1);
+  favorite.item = "meat";
+  raising.partner().eat(favorite, raising.clock());
+  CHECK(raising.state().conditions.has(Condition::Hungry));
+  CHECK(has(raising.partner().takeEvents(), EventKind::Cheered));
+  // Enough: a cheer as the hunger ends.
+  raising.partner().eat(meal(100), raising.clock());
+  CHECK(has(raising.partner().takeEvents(), EventKind::Cheered));
+  // Not hungry any more: even the favourite gets no cheer.
+  raising.partner().eat(favorite, raising.clock());
+  CHECK_FALSE(has(raising.partner().takeEvents(), EventKind::Cheered));
+}
+
 TEST_CASE("care.md hunger: the energy has a cap per species") {
   OriginalRuleset original;
   Raising raising(original.rules());
@@ -211,11 +239,32 @@ TEST_CASE(
   }
   CHECK(refused > 150);
   CHECK(refused < 250);
-  // Once refused, it refuses every food until it is scolded.
+  // The mark lasts for one offer only (partner_impl.c:1440 clears it first): the next food that is
+  // not the favourite is taken.
   raising.edit([](PartnerState& state) { state.hunger.refusedFavorite = true; });
-  CHECK(raising.partner().refuses({.item = "plain"}));
-  raising.partner().scold();
   CHECK_FALSE(raising.partner().refuses({.item = "plain"}));
+  CHECK_FALSE(raising.state().hunger.refusedFavorite);
+}
+
+TEST_CASE("care.md hunger: an item past the discipline roll is still refused as an unwanted "
+          "favourite") {
+  // partner_impl.c: partnerWillRefuseItem goes on to the favourite food's check after the
+  // discipline roll: a species whose favourite is a discipline-checked item turns it down 20 % of
+  // the times when it is not hungry, however disciplined.
+  OriginalRuleset original;
+  Raising raising(original.rules());
+  const ItemOffer favorite{.item = "meat", .check = RefusalCheck::Discipline};
+  const ItemOffer other{.item = "plain", .check = RefusalCheck::Discipline};
+  std::int32_t refused = 0;
+  std::int32_t otherRefused = 0;
+  for (int offerCount = 0; offerCount < 1000; ++offerCount) {
+    raising.edit([](PartnerState& state) { state.mood.discipline = 100; });
+    refused += raising.partner().refuses(favorite) ? 1 : 0;
+    otherRefused += raising.partner().refuses(other) ? 1 : 0;
+  }
+  CHECK(refused > 150);
+  CHECK(refused < 250);
+  CHECK(otherRefused == 0);
 }
 
 TEST_CASE("care.md hunger: the meal clock stands still while the partner is in a care scene") {

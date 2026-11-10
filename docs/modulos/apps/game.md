@@ -347,6 +347,43 @@ Medido en el original (forzado con la hora en `twna01`) y comparado por fotogram
   quede al acabar o al saltarla (`skip_evolution`: un salto antes de 0xD6 también cortaba en dwe el bucle a medias).
   Pruebas: `scene_sounds_tests.cpp` («the burst's looping sounds stop with stopSound…»); en vivo, el registro muestra
   `thunkStopSoundMask` de los dos bucles en 0xD6 y al saltar en el cuadro 181.
+- Igual (2026-11-09, informe del usuario: «el globo de evolución no aparece en todos los casos, tampoco con los
+  trucos»): antes del fundido el compañero enseña un globo (`main/evl.c: tickEvoSequenceLoading` llama a
+  `addConditionBubble(7)` al acabar su primera espera de 56 cuadros, cuando empieza el clip `ready`; `bubble.c`:
+  `CONDITION_ICON_EVOLVING`, `CONDITION_SPRITES[9]`, los cuatro cuadros de `CONDITION_EVOLVING_FRAMES`). Sale con
+  cualquier causa (natural, objeto, guion, virus, su vuelta y `evolve` de la consola o del menú de desarrollo), porque
+  todas pasan por el estado 13 (`partnerTickEvolving`). dwe no lo dibujaba nunca: el globo del HUD solo enseñaba
+  necesidades y se ocultaba con el campo parado, y la escena para el tiempo. Medido en el original (estado
+  `01_field_outside_jijimon_house`, `EVOLUTION_TARGET` 5): `addConditionBubble(7)` desde `tickEvoSequenceLoading` y
+  `frameCount` 15 a los 45 vblanks y 30 a los 90 (un paso por cuadro, a 20 por segundo, contando el cuadro en que
+  nace); dura los cuadros 1 a 51 (crece en los 10 primeros, estalla en el 51) y desaparece antes del fundido. Ahora la
+  escena cuenta esos cuadros desde el cambio a `ready` (`EvolutionScene::bubbleFrame`, `evolving_bubble.hpp`), la
+  partida los publica (`hud.partner.evolving`, con el punto visible aunque el campo esté parado) a la altura de la forma
+  que aún se dibuja (`drawnSpecies`: la sesión ya evolucionó al compañero; `addConditionBubble` lee la altura de la
+  entidad sin cambiar), y el HUD pone la clase `evolving` en el globo en vez de las necesidades. El aspecto original lo
+  dibuja con sus sprites (`ow-evolving`, paleta 2 de `FEEL_EF`); el moderno no enseña el globo, como con las
+  necesidades. Pruebas: `evolving_bubble_tests.cpp`, `field_hud_view_tests.cpp` («the evolving bubble's frame goes to
+  the field HUD…»), `ui_tests` («the evolving bubble shows over the partner…») y `evolution_adapter_tests.cpp` («every
+  way to evolve reports one evolution…»); capturas en vivo con `evolve` desde la consola y desde el menú de desarrollo.
+- Igual (2026-11-09): antes de la escena el compañero va andando hasta el jugador (`partner.c: partnerTickEvolving`,
+  subestado 0: para la hora, cierra los menús, retiene al jugador, que se gira hacia el compañero, y pone el clip 2,
+  andar; subestado 1: el compañero se gira hacia el jugador cada cuadro hasta que `getPartnerTamerCloseness() > 0`, a
+  3,5 radios o menos, y entonces `getEvoSequenceState` lo deja quieto y empieza la primera espera de 56 cuadros). No hay
+  tope de tiempo. Medido en el original (estado `01_field_outside_jijimon_house`, `EVOLUTION_TARGET` 5, compañero a
+  1196 del jugador, radio 120): anda con el clip 2 unos 22 por cuadro en línea recta, atravesando la cabaña que hay
+  entre los dos (solo lo mueve el impulso del clip, `anim.c: tickAnimation`, sin prueba de colisión); el jugador no se
+  mueve con la cruceta ni abre el menú, la hora se queda quieta, el reloj y las barras se van, y `getEvoSequenceState`
+  llega a 414 de distancia (≤ 420) en z −871 tras 109 vblanks. Si ya estaba a 3,5 radios o menos, la escena empieza en
+  el primer cuadro. dwe empezaba la escena donde estuviera el compañero. Ahora `EvolutionScene` tiene la fase
+  `Approaching`: en su primer tick (cuando otra escena de cuidado ya soltó el campo) retiene el campo con la hora
+  parada (`holdForCare(true, CareClock::Stops)`), gira al jugador y manda andar al compañero sin chocar
+  (`Field::walkPartnerUp`, la marcha de `runPartnerUp` con el clip de andar y sin colisión); al llegar se miran y
+  empieza `Glowing`, así que el globo sale a los mismos 56 cuadros de la llegada (`partnerBubblePlaced`: la retención
+  no le quita el sitio, como sí en las escenas de cuidado). Al acabar suelta el campo. En dwe, mismo estado y mismas
+  posiciones: llega a z −872 en unos 100 ticks, sin moverse el jugador ni abrir el menú con Tab. Diferencia: con un
+  guion reteniendo el campo (rutinas 2 y 10) el compañero no anda, el guion lo mueve. Pruebas: `field_tests` («an
+  evolution walks the partner up to its running distance…», con una pared en medio) y `evolving_bubble_tests` («the
+  evolving bubble keeps its place while the walk up holds the partner»); capturas `evo-wait-*.png`.
 - Igual: al empezar, `EVL_initShardSets`, `EVL_resetParticles` y `EVL_resetSparks` dejan libres los 30 grupos de
   trozos, los 100 cuadrados y los 16 rayos; `EvolutionEffects::start` empieza con las listas vacías y los mismos topes
   (prueba `a new evolution starts with none of the last one's objects and keeps the caps`). La alineación de la
@@ -1204,6 +1241,37 @@ vista. Apagado, la tienda del original. Cubre las tiendas de objetos y el recicl
 méritos no. Lo comprueban la ruta `route-shop-description.yaml` (compra uno y la fila pasa a `x1`) y
 `bag_tests.cpp` («the total of an item counts every stack…», `Inventory::totalOf`).
 
+## Comida favorita
+
+Cada especie tiene una comida favorita (`favoriteFood` en la tabla de especies). El original la usa al comer y al
+rechazar objetos, pero no la enseña en ningún sitio: hay que adivinarla. dwe porta su efecto y, con la Mejora
+opcional `favorite_food` (fila «Mostrar la comida favorita», «Show favourite food» en inglés, pestaña Interfaz,
+**encendida por defecto**, guardada en los ajustes del usuario), la enseña:
+
+- En la ficha del compañero (las dos pieles), una fila «Comida favorita» con el nombre de la tabla de
+  objetos (`partner.favorite_food`). Las especies recién nacidas tienen como favorita el objeto 0, que no es una
+  comida: la fila dice «Ninguna». `InventoryAdapter::favoriteFood` solo da la favorita si es una comida
+  (`item_use.meals`). En la piel original va en el final libre de la fila del rótulo «Perfil» (las filas del perfil
+  ya están llenas); en la moderna, bajo el peso, con las filas del perfil a 24dp para que las condiciones sigan
+  acabando antes de las tarjetas.
+- En toda lista donde se da o se usa un objeto (la bolsa del campo, la bolsa de combate y la lista de la tienda), la
+  favorita sale en dorado y con una marca que no depende del color: en la piel original el corazón de la ficha junto
+  al icono, en la moderna un punto dorado; en la tienda, un borde dorado a la izquierda de la fila
+  (`bag.slot.<i>.favorite`, `shop.row.<n>.favorite`).
+- Sigue al compañero actual: el menú del compañero publica sus ajustes en cada fotograma, así que tras una
+  evolución la ficha y la bolsa ya marcan la favorita de la nueva especie.
+
+Apagada, la ficha y las listas se ven como en el original.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Comer la favorita: energía ×14/10, felicidad +2 | `item.c: handleFood` | `applyFood` | `hunger_tests` | Igual |
+| Con hambre, comer bastante o la favorita hace celebrar al compañero (clip 0xb) | `partner_impl.c: partnerHandleFoodFeed` (`startAnimation` 0xb) | `answerHunger` emite `EventKind::Cheered`; `FeedScene::cheer` toca el clip `partner_cheer` de `field_items.yaml` una vez (`FieldScene::playPartnerClipOnce`); en combate no | `hunger_tests`: «a hungry partner cheers when it eats enough or its favourite food» | Igual |
+| Sin hambre, rechaza la favorita un 20 % de las veces; la marca dura un solo ofrecimiento | `partner_impl.c: partnerWillRefuseItem` (borra `refusedFavFood` al empezar) | `OriginalItemRefusal::refuses` | `hunger_tests`: «a partner that is not hungry refuses its favourite food 20 % of the times» | Igual |
+| Un objeto con chequeo de disciplina que pasa la tirada sigue al chequeo de la favorita | `partner_impl.c: partnerWillRefuseItem` | `OriginalItemRefusal::refuses` | `hunger_tests`: «an item past the discipline roll is still refused as an unwanted favourite» | Igual |
+| Fila de la comida favorita en la ficha | No existe | `screens::setFavoriteFood`, `#status-food-line` | `partner_status_view_tests`, `ui_tests`: «the status page names the partner's favourite food…»; ruta `route-favorite-food.yaml` (en las dos pieles: la fila, el texto cabe, sigue la evolución y se oculta con la opción apagada) | Mejora (opción) |
+| Favorita marcada en la bolsa y la tienda | No existe | `BagSlotView::favorite`, `ShopScreen::settings`, `bag_slot.lua`, `shop_menu/logic.lua` | `bag_view_tests`, `ui_tests`: «the bag marks the partner's favourite food…»; ruta `route-favorite-food.yaml` | Mejora (opción) |
+
 ## Arreglos gráficos
 
 Mejora opcional, apagada por defecto: el ajuste `art_fixes` (fila «Arreglos gráficos», «Art fixes», pestaña
@@ -1226,13 +1294,39 @@ El menú de desarrollo (`ui/dev_menu`, `DevMenuScreen`) es un menú modal sobre 
 consola: dar objetos (de 1, 10 o 99), fijar el dinero, la velocidad del reloj, las estadísticas, los cuidados
 (felicidad, disciplina, cansancio, errores, dormir, baño), hacer evolucionar, viajar a un mapa ya visitado y
 guardar (con el `quick_save` del menú de pausa). Las listas (objetos, especies, mapas) salen de las tablas del jugador con sus claves de nombre
-(`dev_menu.<lista>.count`, `.N.id`, `.N.name`). `Game` solo ejecuta una línea `dev_menu_run` si las herramientas
+(`dev_menu.<lista>.count`, `.N.id`, `.N.name`). La de evolucionar es la de todas las especies con modelo
+(`EvolutionAdapter::cheatTargets`, `EvolutionTables::cheatTargets`), en el orden de la tabla: las formas de compañero,
+las especiales (virus, de objeto o evento, las Mega que añada un conjunto de reglas) y también los enemigos, los jefes y
+los personajes, aunque ninguna evolución del juego los alcance. Con los datos del original son 178 (todas salvo las dos
+sin modelo). El menú y `evolve` usan `evolveByCheat`, que solo se alcanza desde las herramientas de desarrollo; las
+evoluciones de la partida no cambian. Lo que le falta a una especie sin fila se toma de un sustituto
+(`assets::standInRow`): la primera especie con fila del mismo nombre (la copia de enemigo de una forma de compañero),
+luego del mismo nivel y tipo, luego del mismo nivel y si no la de un Novato. Así salen:
+
+- Las estadísticas de referencia de la evolución (`EvolutionTables::cheatReference`): las del sustituto, cargando la
+  especie pedida.
+- Los ataques: los de su fila de la tabla de especies. Las copias de enemigo no tienen ninguno en la tabla (pelean con
+  los de su mapa): esas aprenden, equipan y pelean con la lista del sustituto (`assets::listsMoves`,
+  `BattleAdapter::partnerRow`), sin cambiar la tabla que leen los enemigos. Una forma cuya primera especialidad no
+  enseña ninguno de sus ataques (la evolución no le daría ninguna técnica) aprende y equipa el primero de su lista
+  (`Evolution::evolveByCheat`).
+- Los cuidados (`game/partner`, `SpeciesTable::addBorrowed`: hambre, sueño, baño, peso, comida favorita) y la colocación
+  del retrato del estado (`PlaySession::raiseTable`): los de la fila de cuidados del sustituto.
+- Las animaciones: el modelo del compañero ya no se rechaza si le faltan clips (`MissingClips::StandIn`,
+  `partner_clip_fallbacks.hpp`). Un clip de `models/partner.yaml` que el modelo no tiene se sustituye por el de andar
+  (los de moverse) o por el de reposo (los demás), y un clip de escena que falta (comer, dormir, la evolución) toca el
+  de reposo y cuenta como terminado. En combate, un clip que falta deja el que estaba sonando.
+
+`Game` solo ejecuta una línea `dev_menu_run` si las herramientas
 están encendidas y la orden es de las que ofrece el menú (`devMenuLineAllowed`). Para ello la consola ganó:
 
 - `warp("<mapa> [salida]")`: cambia de mapa como un guion (`startScriptedMapChange`), con la salida 0 si no se da.
 - `partner_set("happiness <n>")` y `partner_set("tiredness <n>")`, de 0 a 100.
 
-Pruebas: `dev_tools_tests.cpp` (qué líneas acepta el menú y cómo publica sus listas), `partner_set_command_tests.cpp`
+Pruebas: `dev_tools_tests.cpp` (qué líneas acepta el menú y cómo publica sus listas), `tables_tests.cpp` y
+`evolution_adapter_tests.cpp` (la lista de evolucionar tiene todas las especies con modelo y cada una evoluciona),
+`game_table_tests.cpp` (el orden de los sustitutos), `species_tests.cpp` (los cuidados prestados),
+`partner_clip_fallbacks_tests.cpp` (los clips sustitutos), `battle_adapter_tests.cpp` (los ataques prestados), `partner_set_command_tests.cpp`
 y la ruta `route-dev-menu.yaml` (F2, dinero, un objeto, y con la opción apagada F2 no abre nada).
 
 ## Barras de reclutamiento

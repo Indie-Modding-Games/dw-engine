@@ -34,6 +34,9 @@ evolution: "Evolución"
 hours.value: "{hours} h"
 # {hours} es el contador de evolución y {check} las horas desde las que su nivel mira la evolución.
 evolution.value: "{hours}/{check} h"
+# La comida favorita de su especie (la opción favorite_food), con el nombre del objeto; «Ninguna» si no tiene.
+favorite_food: "Comida favorita"
+favorite_food.none: "Ninguna"
 condition.none: "En buena forma"
 condition.sleepy: "Con sueño"
 condition.tired: "Cansado"

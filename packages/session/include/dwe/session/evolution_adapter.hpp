@@ -82,6 +82,14 @@ public:
   // Into the form an event script names (script routine 10); an unknown form is an error. Whether
   // it evolved.
   core::Result<bool> evolveByScript(GameSession& session, std::string_view species);
+  // The developer's evolve (the console's and the developer menu's `evolve`): as a script's, into
+  // any species with a model (Evolution::evolveByCheat). An unknown form is an error. Whether it
+  // evolved.
+  core::Result<bool> evolveByCheat(GameSession& session, std::string_view species);
+
+  // The ids of every species the developer's evolve can make the partner
+  // (EvolutionTables::cheatTargets), in the tables' order; empty before the rules are read.
+  [[nodiscard]] std::vector<std::string> cheatTargets() const;
 
   // The level of a form of the tables; Level::None for an unknown one.
   [[nodiscard]] game::evolution::Level levelOf(std::string_view species) const;

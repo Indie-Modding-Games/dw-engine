@@ -9,12 +9,14 @@
 
 #include <doctest/doctest.h>
 
+#include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace {
 
@@ -137,6 +139,42 @@ TEST_CASE(
   const auto noItems = dwe::assets::parseEvolutionTable(withoutItems);
   REQUIRE_MESSAGE(noItems.has_value(), errorOf(noItems));
   CHECK(noItems->itemTargets.empty());
+}
+
+TEST_CASE("a species without rows borrows those of its namesake, then of its level and type") {
+  using dwe::assets::DigimonRow;
+  dwe::assets::DigimonTable table;
+  const auto row = [](std::string id, std::string name, std::int32_t type, std::int32_t level) {
+    DigimonRow made;
+    made.id = std::move(id);
+    made.name = std::move(name);
+    made.type = type;
+    made.level = level;
+    return made;
+  };
+  table.digimon = {row("alpha", "Alpha", 1, 3),  row("beta", "Beta", 2, 4),
+                   row("gamma", "Gamma", 1, 4),  row("enemy_beta", "Beta", 1, 4),
+                   row("other", "Other", 2, 4),  row("lonely", "Lonely", 3, 5),
+                   row("person", "Person", 0, 0)};
+  const auto hasRows = [](const DigimonRow& candidate) {
+    return candidate.id == "alpha" || candidate.id == "beta" || candidate.id == "gamma";
+  };
+  const auto standIn = [&](std::string_view id) {
+    const DigimonRow* found = dwe::assets::standInRow(table, *table.find(id), hasRows);
+    return found != nullptr ? found->id : std::string{"-"};
+  };
+  CHECK(standIn("beta") == "beta");
+  // An enemy's copy of a partner form takes the form's rows, whatever its type.
+  CHECK(standIn("enemy_beta") == "beta");
+  // Then the first of the same level and type, then of the same level.
+  CHECK(standIn("other") == "beta");
+  table.digimon.at(4).type = 1;
+  CHECK(standIn("other") == "gamma");
+  // A level with no rows at all, or none (a character), takes a rookie's.
+  CHECK(standIn("lonely") == "alpha");
+  CHECK(standIn("person") == "alpha");
+  CHECK(dwe::assets::standInRow(table, *table.find("person"),
+                                [](const DigimonRow&) { return false; }) == nullptr);
 }
 
 // Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it).

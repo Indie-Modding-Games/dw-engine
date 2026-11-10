@@ -95,6 +95,7 @@ name_spacing: "Espacio tras los nombres"
 # Extras de la tienda: la descripción del objeto bajo la lista, cuántos tienes de cada uno y el dinero que deja el trato
 # (apagado por defecto: la tienda del original solo enseña la descripción con Pausa).
 shop_extras: "Extras de la tienda"
+favorite_food: "Mostrar la comida favorita"
 # Arreglos gráficos: el aspecto original dibuja bien lo que el original lee de una parte equivocada de sus texturas (la
 # etiqueta de felicidad de la ficha). Apagado por defecto, como el original.
 art_fixes: "Arreglos gráficos"
@@ -306,6 +307,7 @@ help.need_bubble_stack: "La burbuja del compañero enseña hasta cinco necesidad
 help.shop_job_bar: "Una barra enseña cuánto falta mientras un trabajo o una partida decide si alguien se une."
 help.name_spacing: "Un nombre dentro de un texto nunca queda pegado a la palabra siguiente."
 help.shop_extras: "En las tiendas: descripción del objeto elegido, cuántos tienes y el dinero que te quedará."
+help.favorite_food: "La ficha muestra la comida favorita de tu compañero y las listas de objetos la marcan en dorado con un corazón."
 help.art_fixes: "Corrige dibujos que el original saca de una zona equivocada de su textura (felicidad en la ficha)."
 help.dev_tools: "Activa la consola (F1), el menú de desarrollo (F2) y la capa del mapa (F3). Para pruebas."
 help.options_reset: "Devuelve las opciones de esta pestaña a sus valores por defecto. Pregunta antes."

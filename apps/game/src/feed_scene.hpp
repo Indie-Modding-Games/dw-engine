@@ -3,6 +3,7 @@
 #include <dwe/assets/item_table.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/game/inventory/use.hpp>
+#include <dwe/game/partner/events.hpp>
 #include <dwe/session/field_items_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
@@ -10,6 +11,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <span>
 
 #include "feed_item.hpp"
 #include "field_scene.hpp"
@@ -44,6 +46,10 @@ public:
   // One tick while active, the field's and the game time's; true on the tick it ends, when the
   // item applied or the partner refused it.
   bool tick(float seconds);
+
+  // After a meal in the field (partnerTickFeedItem, then partnerHandleFoodFeed): a partner that
+  // cheered (EventKind::Cheered) plays its glad clip once, back in its normal state.
+  void cheer(std::span<const game::partner::PartnerEvent> events);
 
 private:
   enum class Step : std::uint8_t { None, Walk, Offer, Eat, Refuse, Shrug };

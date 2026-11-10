@@ -33,7 +33,9 @@ feed:
       kuwa: 15, hkab: 15, mgsd: 15}
   offer_frame: 7
   hand_down_frame: 15
-  clips: {player_offer: 5, player_refused: 4, partner_idle: 0, partner_eat: 8, partner_refuse: 13}
+  # Con hambre, tras su comida favorita o una comida que le sacia, el compañero hace la animación 11 de alegría
+  # (partner_impl.c: partnerHandleFoodFeed).
+  clips: {player_offer: 5, player_refused: 4, partner_idle: 0, partner_eat: 8, partner_refuse: 13, partner_cheer: 11}
 # El compañero va al baño (partner.c: tickPartnerToilet): la cámara va al baño y vuelve al jugador en 20 cuadros
 # (createCameraMovement), y en el baño el compañero hace la animación 10. Corre a los dos puntos del baño del mapa
 # (TOILET_DATA, en el paquete base) y vuelve andando al primero.

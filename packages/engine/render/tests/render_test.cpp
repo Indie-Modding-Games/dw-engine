@@ -2,6 +2,7 @@
 #include <dwe/render/hd_scenery_wrap.hpp>
 #include <dwe/render/quad_batch.hpp>
 #include <dwe/render/screen_fade.hpp>
+#include <dwe/render/screen_target.hpp>
 #include <dwe/render/upload_budget.hpp>
 
 #include <doctest/doctest.h>
@@ -85,6 +86,20 @@ TEST_CASE("the screen fade subtracts a grey as dark as asked, opaque so all of i
   CHECK(render::screenFadeColor(0.25F) == glm::vec4{0.25F, 0.25F, 0.25F, 1.0F});
   CHECK(render::screenFadeColor(2.0F) == glm::vec4{1.0F});
   CHECK(render::screenFadeColor(-1.0F) == glm::vec4{0.0F, 0.0F, 0.0F, 1.0F});
+}
+
+TEST_CASE("a screen target is drawn at the window's height, in the screen's shape") {
+  constexpr rhi::Extent Screen{.width = 320, .height = 240};
+  CHECK(render::screenTargetExtent(Screen, {.width = 1920, .height = 1080}) ==
+        rhi::Extent{.width = 1440, .height = 1080});
+  CHECK(render::screenTargetExtent(Screen, {.width = 3840, .height = 2160}) ==
+        rhi::Extent{.width = 2880, .height = 2160});
+  CHECK(render::screenTargetExtent(Screen, {.width = 1366, .height = 768}) ==
+        rhi::Extent{.width = 1024, .height = 768});
+  // Never smaller than the original's screen, even in a tiny window.
+  CHECK(render::screenTargetExtent(Screen, {.width = 200, .height = 100}) == Screen);
+  CHECK(render::screenTargetExtent({.width = 0, .height = 0}, {.width = 1920, .height = 1080}) ==
+        rhi::Extent{});
 }
 
 TEST_CASE("queued texture copies leave the passes a share of the frame's upload memory") {

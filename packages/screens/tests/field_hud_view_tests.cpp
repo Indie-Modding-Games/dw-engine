@@ -192,3 +192,23 @@ TEST_CASE(
   CHECK(*find(settings, "hud.partner.x") == dwe::ui::UiValue{25.0});
   CHECK(*find(settings, "hud.partner.y") == dwe::ui::UiValue{12.3});
 }
+
+TEST_CASE(
+    "the evolving bubble's frame goes to the field HUD, its point shown while the field waits") {
+  using dwe::screens::FieldPartnerView;
+  using dwe::screens::WindowFraction;
+  const WindowFraction head{.x = 0.5, .y = 0.25};
+  // partner.c: partnerTickEvolving stops the game time, and the bubble still shows (main/evl.c:47).
+  const auto evolving = dwe::screens::fieldPartnerViewOf(head, false, 12);
+  CHECK(evolving == FieldPartnerView{.visible = true, .x = 50.0, .y = 25.0, .evolvingFrame = 12});
+  CHECK(*find(dwe::screens::settingsOf(evolving), "hud.partner.evolving") ==
+        dwe::ui::UiValue{12.0});
+  // Each frame is a new view to publish.
+  CHECK_FALSE(dwe::screens::fieldPartnerViewOf(head, false, 13) == evolving);
+  // Without the bubble the stopped field shows no point, and the running one no evolving frame.
+  CHECK(dwe::screens::fieldPartnerViewOf(head, false, 0) == FieldPartnerView{});
+  CHECK(*find(dwe::screens::settingsOf(dwe::screens::fieldPartnerViewOf(head, true)),
+              "hud.partner.evolving") == dwe::ui::UiValue{0.0});
+  // Off the screen, nothing.
+  CHECK(dwe::screens::fieldPartnerViewOf(std::nullopt, false, 12) == FieldPartnerView{});
+}
