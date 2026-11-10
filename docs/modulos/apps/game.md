@@ -365,6 +365,25 @@ Medido en el original (forzado con la hora en `twna01`) y comparado por fotogram
   necesidades. Pruebas: `evolving_bubble_tests.cpp`, `field_hud_view_tests.cpp` («the evolving bubble's frame goes to
   the field HUD…»), `ui_tests` («the evolving bubble shows over the partner…») y `evolution_adapter_tests.cpp` («every
   way to evolve reports one evolution…»); capturas en vivo con `evolve` desde la consola y desde el menú de desarrollo.
+- Igual (2026-11-09): antes de la escena el compañero va andando hasta el jugador (`partner.c: partnerTickEvolving`,
+  subestado 0: para la hora, cierra los menús, retiene al jugador, que se gira hacia el compañero, y pone el clip 2,
+  andar; subestado 1: el compañero se gira hacia el jugador cada cuadro hasta que `getPartnerTamerCloseness() > 0`, a
+  3,5 radios o menos, y entonces `getEvoSequenceState` lo deja quieto y empieza la primera espera de 56 cuadros). No hay
+  tope de tiempo. Medido en el original (estado `01_field_outside_jijimon_house`, `EVOLUTION_TARGET` 5, compañero a
+  1196 del jugador, radio 120): anda con el clip 2 unos 22 por cuadro en línea recta, atravesando la cabaña que hay
+  entre los dos (solo lo mueve el impulso del clip, `anim.c: tickAnimation`, sin prueba de colisión); el jugador no se
+  mueve con la cruceta ni abre el menú, la hora se queda quieta, el reloj y las barras se van, y `getEvoSequenceState`
+  llega a 414 de distancia (≤ 420) en z −871 tras 109 vblanks. Si ya estaba a 3,5 radios o menos, la escena empieza en
+  el primer cuadro. dwe empezaba la escena donde estuviera el compañero. Ahora `EvolutionScene` tiene la fase
+  `Approaching`: en su primer tick (cuando otra escena de cuidado ya soltó el campo) retiene el campo con la hora
+  parada (`holdForCare(true, CareClock::Stops)`), gira al jugador y manda andar al compañero sin chocar
+  (`Field::walkPartnerUp`, la marcha de `runPartnerUp` con el clip de andar y sin colisión); al llegar se miran y
+  empieza `Glowing`, así que el globo sale a los mismos 56 cuadros de la llegada (`partnerBubblePlaced`: la retención
+  no le quita el sitio, como sí en las escenas de cuidado). Al acabar suelta el campo. En dwe, mismo estado y mismas
+  posiciones: llega a z −872 en unos 100 ticks, sin moverse el jugador ni abrir el menú con Tab. Diferencia: con un
+  guion reteniendo el campo (rutinas 2 y 10) el compañero no anda, el guion lo mueve. Pruebas: `field_tests` («an
+  evolution walks the partner up to its running distance…», con una pared en medio) y `evolving_bubble_tests` («the
+  evolving bubble keeps its place while the walk up holds the partner»); capturas `evo-wait-*.png`.
 - Igual: al empezar, `EVL_initShardSets`, `EVL_resetParticles` y `EVL_resetSparks` dejan libres los 30 grupos de
   trozos, los 100 cuadrados y los 16 rayos; `EvolutionEffects::start` empieza con las listas vacías y los mismos topes
   (prueba `a new evolution starts with none of the last one's objects and keeps the caps`). La alineación de la

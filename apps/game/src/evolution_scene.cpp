@@ -41,8 +41,9 @@ float progress(std::int32_t from, std::int32_t to, std::int32_t frame) {
 }
 
 const char* phaseName(std::uint8_t phase) {
-  constexpr std::array<const char*, 8> Names{"idle",    "glowing",  "gathering", "dimming",
-                                             "closing", "bursting", "restoring", "finishing"};
+  constexpr std::array<const char*, 9> Names{"idle",      "approaching", "glowing",
+                                             "gathering", "dimming",     "closing",
+                                             "bursting",  "restoring",   "finishing"};
   return phase < Names.size() ? Names.at(phase) : "?";
 }
 
@@ -85,6 +86,46 @@ void EvolutionScene::start(const std::string& target) {
   stage_ = {};
   pendingSeconds_ = 0.0;
   burstClipPlaying_ = false;
+  // partnerTickEvolving (partner.c:751): the fishing stops for the scene.
+  if (fishing_ != nullptr) {
+    fishing_->setFishingDisabled();
+  }
+  approachPending_ = true;
+  setPhase(Phase::Approaching);
+}
+
+void EvolutionScene::approach(float seconds) {
+  game::field::Field& field = scene_->field();
+  if (std::exchange(approachPending_, false)) {
+    if (field.heldByScript()) {
+      // The script holds the two and moves them itself (its routines 2 and 10 evolve the partner):
+      // the scene starts where the partner stands.
+      core::logDebug("[port:evolution] partnerTickEvolving (partner.c:758): a script holds the "
+                     "partner, no walk");
+      glow();
+      return;
+    }
+    // partner.c:746-756: sub state 0 stops the game time, closes the menus and holds the player,
+    // who turns to the partner; the partner walks (clip 2) toward the player.
+    field.holdForCare(true, game::field::CareClock::Stops);
+    heldField_ = true;
+    field.playerFacePartner();
+    field.walkPartnerUp();
+  }
+  scene_->tick({}, seconds);
+  scene_->finishTick();
+  if (field.partnerWalking()) {
+    return;
+  }
+  // partner.c:758-768: sub state 1, the partner turns to the player every frame until
+  // getPartnerTamerCloseness > 0, then getEvoSequenceState.
+  field.faceEachOther();
+  core::logDebug("[port:evolution] partnerTickEvolving (partner.c:761): the partner is near the "
+                 "player");
+  glow();
+}
+
+void EvolutionScene::glow() {
   // EVL_initEvoSequence: the order the bones break in, the squares on the partner's feet.
   effectSeed_ = effectSeed_ == 0 ? FirstEffectSeed : effectSeed_ + 1;
   const FieldScene& field = *scene_;
@@ -92,15 +133,16 @@ void EvolutionScene::start(const std::string& target) {
   // getEvoSequenceState: the idle clip, the scene's sound bank in slot 8.
   scene_->playPartnerClip(rules_.clips.idle);
   session_->useSceneSounds(rules_.soundBank);
-  // partnerTickEvolving (partner.c:751): the fishing stops for the scene.
-  if (fishing_ != nullptr) {
-    fishing_->setFishingDisabled();
-  }
+  pendingSeconds_ = 0.0;
   setPhase(Phase::Glowing);
 }
 
 void EvolutionScene::tick(double seconds) {
   if (!active()) {
+    return;
+  }
+  if (phase_ == Phase::Approaching) {
+    approach(static_cast<float>(seconds));
     return;
   }
   pendingSeconds_ += seconds;
@@ -204,6 +246,7 @@ void EvolutionScene::step() {
     }
     break;
   case Phase::Idle:
+  case Phase::Approaching:
     return;
   }
   frame_ += 1;
@@ -348,6 +391,11 @@ void EvolutionScene::finish() {
   if (fishing_ != nullptr) {
     fishing_->setFishingEnabled();
   }
+  // partner.c:782-788: the player goes on (tamerSetState(0)), unless a script holds it.
+  if (std::exchange(heldField_, false)) {
+    scene_->field().holdForCare(false);
+  }
+  approachPending_ = false;
   setPhase(Phase::Idle);
 }
 

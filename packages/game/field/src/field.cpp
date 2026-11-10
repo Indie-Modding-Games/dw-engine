@@ -1273,8 +1273,11 @@ void Field::walkPartnerToRange(float range) {
                                         registry.get<Transform>(player_).position);
   // partner.c: checkEatDistance is close at the range or nearer; close walks away (sub state 1),
   // far walks up (sub state 2).
-  careWalk_ = CareWalk{
-      .range = range, .away = distance <= range, .point = std::nullopt, .motion = Motion::Walk};
+  careWalk_ = CareWalk{.range = range,
+                       .away = distance <= range,
+                       .point = std::nullopt,
+                       .motion = Motion::Walk,
+                       .collides = true};
   partnerStuckSeconds_ = 0.0F;
   core::logDebug("[port:care] partnerTickFeedItem (partner.c:434): distance {:.0f}, range {:.0f}: "
                  "sub state {}",
@@ -1367,7 +1370,8 @@ void Field::walkPartnerTo(glm::vec3 point, Motion motion) {
   if (!careHeld_) {
     return;
   }
-  careWalk_ = CareWalk{.range = 0.0F, .away = false, .point = point, .motion = motion};
+  careWalk_ =
+      CareWalk{.range = 0.0F, .away = false, .point = point, .motion = motion, .collides = true};
   partnerStuckSeconds_ = 0.0F;
   // tickEntityWalkTo's caller starts the clip as it sets the walk (startAnimation): the partner
   // walks from this frame, not after a frame of standing. A walk on with the clip a walk just
@@ -1380,6 +1384,14 @@ void Field::walkPartnerTo(glm::vec3 point, Motion motion) {
 }
 
 void Field::runPartnerUp() {
+  comePartnerUp(Motion::Run, true);
+}
+
+void Field::walkPartnerUp() {
+  comePartnerUp(Motion::Walk, false);
+}
+
+void Field::comePartnerUp(Motion motion, bool collides) {
   if (!careHeld_) {
     return;
   }
@@ -1387,7 +1399,8 @@ void Field::runPartnerUp() {
   careWalk_ = CareWalk{.range = rules.runDistance * rules.mover.radius,
                        .away = false,
                        .point = std::nullopt,
-                       .motion = Motion::Run};
+                       .motion = motion,
+                       .collides = collides};
   partnerStuckSeconds_ = 0.0F;
 }
 
@@ -1435,7 +1448,7 @@ void Field::tickCareWalk(float seconds) {
   }
   // A walk to a point stops on it (tickEntityWalkTo); one to a range walks on until it crosses it.
   stepCareWalk(heading, toPoint ? distance : std::numeric_limits<float>::max(), careWalk_->motion,
-               seconds, !toPoint);
+               seconds, !toPoint && careWalk_->collides);
   careClipSeconds_ += seconds;
 }
 

@@ -426,6 +426,10 @@ public:
   // distance (partner.c: tickWildPoop sub state 1, getPartnerTamerCloseness > 0); it stays where it
   // is if it already is.
   void runPartnerUp();
+  // The same with the walk clip and through walls, as it comes to the player before it evolves
+  // (partner.c: partnerTickEvolving sub state 1, getPartnerTamerCloseness > 0: only the clip's
+  // momentum moves it, anim.c: tickAnimation, with no collision test).
+  void walkPartnerUp();
   // Whether either walk goes on; once a walk to a range is over, the two face each other.
   [[nodiscard]] bool partnerWalking() const { return careWalk_.has_value(); }
   // The partner and the player turn to each other at once (partner.c: entityLookAtLocation on
@@ -820,7 +824,11 @@ private:
     bool away = false;
     std::optional<glm::vec3> point;
     scene::Motion motion = scene::Motion::Walk;
+    // Whether a walk to a range stops at walls.
+    bool collides = true;
   };
+  // runPartnerUp and walkPartnerUp: up to the player's running distance with `motion`.
+  void comePartnerUp(scene::Motion motion, bool collides);
   bool careHeld_ = false;
   CareClock careClock_ = CareClock::Runs;
   ItemHold itemHold_ = ItemHold::None;

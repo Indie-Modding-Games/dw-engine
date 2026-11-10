@@ -21,4 +21,11 @@ inline constexpr std::int32_t EvolvingBubbleLastFrame = 51;
   return readyWaitFrame >= 1 && readyWaitFrame <= EvolvingBubbleLastFrame ? readyWaitFrame : 0;
 }
 
+// Whether the field's partner bubble has a place over the partner: not while a care scene or a
+// chest's notice holds the partner (out of its normal state it shows no need), but always while it
+// evolves, whose walk up holds it too (partnerTickEvolving) and whose bubble hangs over it.
+[[nodiscard]] constexpr bool partnerBubblePlaced(bool partnerHeld, bool evolving) {
+  return !partnerHeld || evolving;
+}
+
 } // namespace dwe::app

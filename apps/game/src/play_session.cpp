@@ -50,6 +50,7 @@
 #include "bulk_amount.hpp"
 #include "common.hpp"
 #include "condition_point.hpp"
+#include "evolving_bubble.hpp"
 #include "gym_box_close.hpp"
 #include "hd_scenery_setting.hpp"
 #include "messages.hpp"
@@ -1785,7 +1786,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   const std::string& bubbleSpecies =
       evolutionScene_.active() ? evolutionScene_.drawnSpecies() : session.partnerView().species;
   fieldHud_.update(fieldRunning, fieldRunning || (!paused() && gymScreen_.active()),
-                   partnerHeld ? std::nullopt : partnerBubbleOf(*scene_, species, bubbleSpecies),
+                   partnerBubblePlaced(partnerHeld, evolutionScene_.active())
+                       ? partnerBubbleOf(*scene_, species, bubbleSpecies)
+                       : std::nullopt,
                    evolutionScene_.bubbleFrame());
   publishShopJob();
   battleScreen_.showIntro([&](const game::battle::Combatant& enemy, float lift) {
