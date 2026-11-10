@@ -254,6 +254,12 @@ void EvolutionTables::borrowReferences(const assets::DigimonTable& digimon) {
           row.index,
           StatReference{.stats = statReferences_.at(standIn->index).stats, .loads = row.index});
     }
+    // With no move of its own it learns and equips from its stand-in's list.
+    const assets::DigimonRow* mover =
+        assets::listsMoves(row) ? nullptr : assets::standInRow(digimon, row, assets::listsMoves);
+    if (mover != nullptr && species_.contains(row.index) && species_.contains(mover->index)) {
+      species_.at(row.index).moves = species_.at(mover->index).moves;
+    }
   }
 }
 

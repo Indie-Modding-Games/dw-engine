@@ -65,6 +65,10 @@ inline constexpr std::int32_t RookieLevel = 3;
 [[nodiscard]] const DigimonRow* standInRow(const DigimonTable& table, const DigimonRow& species,
                                            const std::function<bool(const DigimonRow&)>& hasRows);
 
+// Whether a species' row lists any move: the enemies' copies of the partner forms list none (they
+// fight with their map's moves), so the developer's evolve gives them their stand-in's list.
+[[nodiscard]] bool listsMoves(const DigimonRow& species);
+
 // How the packs' files of the table compose: rows by id (table_composition.hpp).
 inline constexpr std::array<EntrySection, 1> DigimonEntrySections{
     {{.section = "digimon", .entryKey = "id"}}};

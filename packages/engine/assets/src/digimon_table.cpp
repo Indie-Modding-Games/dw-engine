@@ -9,7 +9,9 @@
 #include <array>
 #include <format>
 #include <functional>
+#include <optional>
 #include <span>
+#include <string>
 #include <utility>
 
 namespace dwe::assets {
@@ -105,6 +107,11 @@ DigimonRow readRow(YamlReader& reader, const YamlNode& node) {
 const DigimonRow* DigimonTable::find(std::string_view id) const {
   const auto found = std::ranges::find(digimon, id, &DigimonRow::id);
   return found == digimon.end() ? nullptr : &*found;
+}
+
+bool listsMoves(const DigimonRow& species) {
+  return std::ranges::any_of(
+      species.moves, [](const std::optional<std::string>& move) { return move.has_value(); });
 }
 
 const DigimonRow* standInRow(const DigimonTable& table, const DigimonRow& species,

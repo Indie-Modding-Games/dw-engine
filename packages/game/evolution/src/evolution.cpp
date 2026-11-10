@@ -4,6 +4,10 @@
 #include <dwe/ruleset/ruleset.hpp>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -419,7 +423,22 @@ std::optional<EvolutionResult> Evolution::evolveByCheat(const EvolutionInputs& i
     return std::nullopt;
   }
   const EvolutionEffects effects{rules_, tables_};
-  return effects.apply(inputs, state, target, *reference, EvolutionReason::Script);
+  EvolutionResult result =
+      effects.apply(inputs, state, target, *reference, EvolutionReason::Script);
+  // A form whose specialty teaches none of its moves (some enemies' and characters') still fights
+  // with a technique: the first known move of its list.
+  if (const SpeciesData* form = tables_.species(result.target);
+      form != nullptr && !result.learnedMove && !result.equippedMoves.front()) {
+    for (std::size_t slot = 0; slot < form->moves.size(); ++slot) {
+      const std::optional<std::string>& move = form->moves.at(slot);
+      if (move && tables_.moves().find(*move) != nullptr) {
+        result.learnedMove = move;
+        result.equippedMoves.front() = static_cast<std::int32_t>(slot);
+        break;
+      }
+    }
+  }
+  return result;
 }
 
 std::optional<EvolutionResult> Evolution::rebirth(const EvolutionInputs& inputs,

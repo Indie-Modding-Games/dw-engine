@@ -1304,7 +1304,12 @@ evoluciones de la partida no cambian. Lo que le falta a una especie sin fila se 
 luego del mismo nivel y tipo, luego del mismo nivel y si no la de un Novato. Así salen:
 
 - Las estadísticas de referencia de la evolución (`EvolutionTables::cheatReference`): las del sustituto, cargando la
-  especie pedida. Los ataques siguen siendo los de su fila de la tabla de especies.
+  especie pedida.
+- Los ataques: los de su fila de la tabla de especies. Las copias de enemigo no tienen ninguno en la tabla (pelean con
+  los de su mapa): esas aprenden, equipan y pelean con la lista del sustituto (`assets::listsMoves`,
+  `BattleAdapter::partnerRow`), sin cambiar la tabla que leen los enemigos. Una forma cuya primera especialidad no
+  enseña ninguno de sus ataques (la evolución no le daría ninguna técnica) aprende y equipa el primero de su lista
+  (`Evolution::evolveByCheat`).
 - Los cuidados (`game/partner`, `SpeciesTable::addBorrowed`: hambre, sueño, baño, peso, comida favorita) y la colocación
   del retrato del estado (`PlaySession::raiseTable`): los de la fila de cuidados del sustituto.
 - Las animaciones: el modelo del compañero ya no se rechaza si le faltan clips (`MissingClips::StandIn`,
@@ -1321,7 +1326,7 @@ están encendidas y la orden es de las que ofrece el menú (`devMenuLineAllowed`
 Pruebas: `dev_tools_tests.cpp` (qué líneas acepta el menú y cómo publica sus listas), `tables_tests.cpp` y
 `evolution_adapter_tests.cpp` (la lista de evolucionar tiene todas las especies con modelo y cada una evoluciona),
 `game_table_tests.cpp` (el orden de los sustitutos), `species_tests.cpp` (los cuidados prestados),
-`partner_clip_fallbacks_tests.cpp` (los clips sustitutos), `partner_set_command_tests.cpp`
+`partner_clip_fallbacks_tests.cpp` (los clips sustitutos), `battle_adapter_tests.cpp` (los ataques prestados), `partner_set_command_tests.cpp`
 y la ruta `route-dev-menu.yaml` (F2, dinero, un objeto, y con la opción apagada F2 no abre nada).
 
 ## Barras de reclutamiento

@@ -266,6 +266,7 @@ core::Result<void> BattleAdapter::loadTables(const ruleset::Ruleset& rules) {
     }
     desc_.digimon = std::move(*digimon);
   }
+  borrowMoves();
   if (!desc_.moves) {
     auto moves =
         loadTable<assets::MoveTable>(desc_.files, rules, MoveTableRole, assets::loadMoveTable);
@@ -344,7 +345,29 @@ core::Result<void> BattleAdapter::addSaveSections(game::save::SaveSections& sect
 }
 
 const assets::DigimonRow* BattleAdapter::rowOf(std::string_view species) const {
+  if (const auto borrowed = movesBorrowed_.find(species); borrowed != movesBorrowed_.end()) {
+    return &borrowed->second;
+  }
   return desc_.digimon ? desc_.digimon->find(species) : nullptr;
+}
+
+void BattleAdapter::borrowMoves() {
+  movesBorrowed_.clear();
+  // The developer's evolve makes any species with a model the partner: one whose row lists no move
+  // (an enemy's copy of a partner form) fights with its stand-in's list. No partner of the game
+  // has such a row.
+  for (const assets::DigimonRow& row : desc_.digimon->digimon) {
+    if (row.boneCount <= 0 || assets::listsMoves(row)) {
+      continue;
+    }
+    if (const assets::DigimonRow* standIn =
+            assets::standInRow(*desc_.digimon, row, assets::listsMoves);
+        standIn != nullptr) {
+      assets::DigimonRow borrowed = row;
+      borrowed.moves = standIn->moves;
+      movesBorrowed_.insert_or_assign(row.id, std::move(borrowed));
+    }
+  }
 }
 
 std::optional<MoveSlot> BattleAdapter::finisherSlot(const assets::DigimonRow& row) const {

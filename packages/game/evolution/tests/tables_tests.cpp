@@ -77,6 +77,7 @@ TEST_CASE("the developer's evolve reaches every form with a model, borrowing the
   enemy.index = static_cast<std::int32_t>(FixtureForms.size());
   enemy.boneCount = 20;
   enemy.type = 7;
+  enemy.moves = {};
   fixture.digimon.digimon.push_back(enemy);
   dwe::assets::DigimonRow character = fixture.form("agum");
   character.id = "fixture_character";
@@ -99,6 +100,10 @@ TEST_CASE("the developer's evolve reaches every form with a model, borrowing the
   CHECK(enemyStats->loads == enemyIndex);
   // No evolution of the game reaches it: only the developer's evolve.
   CHECK(tables.statReference(enemyIndex) == nullptr);
+  // It lists no move, as the enemies' copies: it learns from its namesake's list.
+  CHECK(tables.species(enemyIndex)->moves == tables.species(TableFixture::index("agum"))->moves);
+  CHECK(std::ranges::any_of(tables.species(enemyIndex)->moves,
+                            [](const auto& move) { return move.has_value(); }));
   const auto characterIndex = *tables.find("fixture_character");
   REQUIRE(tables.cheatReference(characterIndex) != nullptr);
   CHECK(tables.cheatReference(characterIndex)->loads == characterIndex);

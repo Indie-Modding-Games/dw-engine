@@ -92,6 +92,11 @@ DigimonTable madeUpDigimon() {
                                     {"punch", "shot", "dynamite_kick", "war_cry", "big_finish", "",
                                      "big_finish", "", "poison_bite"}));
   table.digimon.push_back(madeUpRow("foe", 90, {"punch"}));
+  // An enemy's copy of the partner's form: a model, the same name and no move of its own.
+  DigimonRow copy = madeUpRow("agum_copy", 91, {});
+  copy.name = "agum";
+  copy.boneCount = 20;
+  table.digimon.push_back(copy);
   return table;
 }
 
@@ -210,6 +215,18 @@ TEST_CASE(
   CHECK_FALSE(moves.equipped.at(1).has_value());
   CHECK_FALSE(moves.equipped.at(2).has_value());
   CHECK(moves.equipped.at(dwe::game::battle::FinisherSlot) == FinisherPosition);
+}
+
+TEST_CASE("a partner of a species that lists no move fights with its namesake's moves") {
+  const TestPacks packs;
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters);
+  const DigimonRow* copy = adapters.battle->partnerRow("agum_copy");
+  REQUIRE(copy != nullptr);
+  CHECK(copy->id == "agum_copy");
+  CHECK(copy->moves == adapters.battle->partnerRow("agum")->moves);
+  // The table itself keeps the enemy's row as it is.
+  CHECK_FALSE(dwe::assets::listsMoves(*adapters.battle->digimonTable()->find("agum_copy")));
 }
 
 TEST_CASE("a new game's partner of a species with its own position learns and equips that one") {
