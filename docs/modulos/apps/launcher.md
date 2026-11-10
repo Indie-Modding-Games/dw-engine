@@ -447,8 +447,9 @@ las leen también los pull requests):
 
 | Caché | Clave | Qué ahorra |
 |---|---|---|
-| Dependencias de vcpkg, por ordenador | `vcpkg.json`, `tooling/vcpkg-ports/`, `tooling/triplets/`, toolchains y la imagen | 6–8 min por ordenador; se guarda aunque el empaquetado falle. Las de Linux y Windows las leen también las comprobaciones `linux` y `windows` de los pull requests |
-| Objetos del juego (ccache), por ordenador | una por ejecución; se borran las anteriores | 12–20 min de compilación, salvo los archivos que cambiaron |
+| Dependencias de vcpkg, por ordenador | `vcpkg.json`, `tooling/vcpkg-ports/`, `tooling/triplets/`, toolchains y la imagen (en macOS, también el LLVM fijado) | 6–8 min por ordenador; se guarda aunque el empaquetado falle. Antes de guardarla, `scripts/ci/prune_vcpkg_cache.sh` borra los paquetes que el build ya no usa, para que no crezca con cada cambio de dependencias. La de Windows la lee también la comprobación `windows` de los pull requests |
+| Dependencias de vcpkg de la comprobación `linux` (`vcpkg-ci-linux-x86_64`) | las mismas | su triplete (`x64-linux-libcxx-release`) no es el del paquete: la guarda `pr-caches` para que cada pull request no compile las 44 dependencias |
+| Objetos del juego (ccache), por ordenador | una por ejecución; las anteriores se borran antes de guardarla | 12–20 min de compilación, salvo los archivos que cambiaron. El commit del paquete (`DWE_BUILD_COMMIT`) lo recibe solo `bug_reporter.cpp`, así que no invalida el resto del juego |
 | Bibliotecas de MSVC y SDK de Windows (xwin) | el Dockerfile de la imagen | ~1 min de descarga |
 | Objetos de las comprobaciones de los pull requests (`ccache-ci-linux`, `ccache-ci-windows`) | una por ejecución; las guarda el trabajo `pr-caches` | que `linux` y `windows` compilen solo lo que cambió el pull request |
 | Dependencias compiladas del lanzador y descargas de cargo, por sistema | `Cargo.lock` y el Dockerfile del lanzador | casi toda la compilación del lanzador; su propio crate se compila siempre |

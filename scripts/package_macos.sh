@@ -214,6 +214,6 @@ python3 "$root/scripts/package/third_party_notices.py" check "$stage"
 
 mkdir -p "$out_dir"
 tarball="$out_dir/$name.tar.xz"
-tar -C "$stage_root" -cJf "$tarball" "$name"
+tar -C "$stage_root" --options xz:threads=0 -cJf "$tarball" "$name"
 rm -rf "$stage_root"
 echo "package_macos: $tarball ($(du -h "$tarball" | cut -f1))"

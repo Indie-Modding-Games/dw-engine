@@ -187,8 +187,10 @@ jobs:
       - name: Install the macOS tools
         if: runner.os == 'macOS'
         run: |
-          brew install llvm molten-vk ninja nasm ccache
-          echo "DWE_LLVM_ROOT=$(brew --prefix llvm)" >> "$GITHUB_ENV"
+          # LLVM pinned to the development image's major (.devcontainer/Dockerfile LLVM_VERSION): a newer
+          # formula would change the compiler under the release and empty the compiler cache.
+          brew install llvm@22 molten-vk ninja nasm ccache
+          echo "DWE_LLVM_ROOT=$(brew --prefix llvm@22)" >> "$GITHUB_ENV"
           {
             echo "DWE_COMPILER_LAUNCHER=ccache"
             echo "CCACHE_DIR=$RUNNER_TEMP/ccache"
@@ -210,12 +212,13 @@ jobs:
 
       # Restored and saved apart, so a build that fails after its dependencies keeps them for the
       # next run. vcpkg rebuilds only the dependencies whose inputs changed.
+      # The macOS key names the pinned LLVM (above), which the hashed files do not hold.
       - name: Restore the vcpkg binary cache
         id: vcpkg-cache
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-release-${{ matrix.platform }}-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          key: vcpkg-release-${{ matrix.platform }}-${{ runner.os == 'macOS' && 'llvm22-' || '' }}${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
           restore-keys: vcpkg-release-${{ matrix.platform }}-
 
       # The game's own objects (ccache, in the development image on Linux): an unchanged file is
@@ -272,7 +275,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-release-${{ matrix.platform }}-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          key: vcpkg-release-${{ matrix.platform }}-${{ runner.os == 'macOS' && 'llvm22-' || '' }}${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
 
       - name: Show the compiler cache statistics
         if: always()

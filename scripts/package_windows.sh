@@ -151,6 +151,6 @@ python3 "$root/scripts/package/third_party_notices.py" check "$stage"
 
 mkdir -p "$out_dir"
 tarball="$out_dir/$name.tar.xz"
-tar -C "$stage_root" -cJf "$tarball" "$name"
+XZ_OPT=-T0 tar -C "$stage_root" -cJf "$tarball" "$name"
 rm -rf "$stage_root"
 echo "package_windows: $tarball ($(du -h "$tarball" | cut -f1))"
