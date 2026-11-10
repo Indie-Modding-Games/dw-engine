@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <format>
+#include <optional>
 #include <string>
 #include <utility>
 #include <variant>
@@ -50,6 +51,12 @@ bool FreeExploration::handle(const ui::UiCommand& command) {
     return true;
   }
   return false;
+}
+
+void FreeExploration::pressSettings(bool pressed) const {
+  if (pressed && desc_.scene->field().destinationChoice()) {
+    desc_.scene->chooseDestination(std::nullopt);
+  }
 }
 
 void FreeExploration::update() const {

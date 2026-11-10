@@ -376,9 +376,15 @@ Con ella, un warp de script de una casilla lleva a cualquiera de los sitios a lo
 casilla, sea cual sea su condición (`explorationWarps`: el primer warp de cada mapa y salida distintos, solo a
 mapas que el paquete tiene):
 
-- un solo sitio: se toma, y si no es el de vainilla se registra la puerta que abre;
+- un solo sitio: en una casilla de confirmar se toma, y si no es el de vainilla se registra la puerta que abre;
+  en una casilla de pisar se toma solo si es el de vainilla; si la historia la tiene cerrada, el selector lo
+  enseña y quedarse vale. Una casilla de pisar puede cruzar el camino: las franjas de ventisca de los mapas
+  nevados (script 90 sección 0x33 y script 203) llevan a la casa solo con el compañero enfermo, y tomadas en
+  cada cruce dejaban al jugador atrapado entre la casa y la franja. Si el jugador se queda en una casilla de
+  pisar, esa casilla no vuelve a preguntar hasta que cambia de mapa (después va como en vainilla);
 - varios: el campo se para y el selector `destination_choice` los enseña de 8 en 8, empezando por el de la historia;
-  se elige con teclado, ratón o mando, en en/es; cancelar es quedarse;
+  se elige con teclado, ratón o mando, en en/es; cancelar (Ctrl, Retroceso, botón derecho, Este del mando) y
+  Escape (o F10, Back del mando) es quedarse;
 - los `sets_flags` del warp elegido se aplican también (decidido por el coordinador, 2026-10-22); si se elige el
   sitio de la historia, se toma el warp que tomaría el original, con sus `sets_flags`.
 

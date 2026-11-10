@@ -107,8 +107,11 @@ if (auto change = field.takeMapChange()) {
   motor) el compañero ya no se mete en el jugador: el rastro acaba al tocarlo (como `partner.c:906` al acabar un
   paso).
 - **Exploración libre** (`setExplore`, apagada por defecto): un warp de script lleva a cualquiera de los sitios de
-  su casilla (`explorationWarps`). Con varios, el campo se para y `destinationChoice()` da el mapa, la casilla, los
-  sitios y el de vainilla; `chooseDestination(índice)` toma uno y `chooseDestination(std::nullopt)` se queda.
+  su casilla (`explorationWarps`). Con varios, o con uno solo en una casilla de pisar que la historia tiene cerrada
+  (las franjas de ventisca de los mapas nevados cruzan el camino), el campo se para y `destinationChoice()` da el
+  mapa, la casilla, los sitios y el de vainilla; `chooseDestination(índice)` toma uno y
+  `chooseDestination(std::nullopt)` se queda. Quedarse en una casilla de pisar no vuelve a preguntar en ella
+  hasta el siguiente mapa: cruzar la franja de ida y vuelta va como en vainilla, sin selector.
 
 ## Posiciones
 

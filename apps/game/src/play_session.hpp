@@ -270,6 +270,10 @@ public:
   void pressItemKeeper(const input::InputState& input);
   // The partner menu's buttons the menus do not navigate with: `extra` opens the tech help.
   void pressPartnerMenu(const input::InputState& input);
+  // Free exploration's chooser: `settings` (Escape, F10, the pad's Back) stays, as cancel does.
+  void pressDestinationChoice(const input::InputState& input) const {
+    freeExploration_.pressSettings(input.wasPressed("settings"));
+  }
   // The stones game's arrows and confirm button, while it runs.
   void pressCurling(const input::InputState& input) { curlingScreen_.press(input); }
   // The island map's key (world_map.hpp): opens the map when `canOpen` (the player walks freely and

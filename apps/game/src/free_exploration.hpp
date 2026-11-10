@@ -52,6 +52,10 @@ public:
   // Shows the chooser while the field waits for a choice, and hides it once answered.
   void update() const;
 
+  // The `settings` button while the chooser is up (Escape on the keyboard): the player stays, as
+  // with cancel. The chooser is modal, so the options page does not open under it.
+  void pressSettings(bool pressed) const;
+
 private:
   FreeExplorationDesc desc_;
 };

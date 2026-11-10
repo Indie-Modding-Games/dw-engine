@@ -1436,7 +1436,11 @@ TEST_CASE("free exploration opens a cell the story keeps closed, and logs it") {
   Field field{world,
               originalRules(),
               {.warps = {houseDoor()}, .facts = triggersSet({203}), .explore = true}};
-  const auto change = walkSouth(field, house);
+  // A step cell: the player is asked first, and the place chosen is taken.
+  CHECK_FALSE(walkSouth(field, house).has_value());
+  REQUIRE(field.destinationChoice().has_value());
+  field.chooseDestination(0);
+  const auto change = tickToChange(field);
   if (!change) {
     FAIL("no map change");
     return;
@@ -1454,6 +1458,60 @@ TEST_CASE("free exploration opens a cell the story keeps closed, and logs it") {
                 .explore = true,
                 .hasMap = [](std::string_view map) { return map != "town"; }}};
   CHECK_FALSE(walkSouth(noTown, house).has_value());
+}
+
+TEST_CASE("free exploration asks on a closed step band once a map: staying walks on past it, back "
+          "and forth") {
+  // As the snowfield maps' blizzard bands (script 90 section 0x33): a row of step cells across the
+  // whole map whose one place, the house, the story keeps closed.
+  constexpr std::int32_t BandRow = 64;
+  MapDocument snowfield = roomMap("house");
+  fill(snowfield, {.column = 30, .row = BandRow}, {.column = 69, .row = BandRow}, 51);
+  dwe::scene::World world;
+  Field field{world,
+              originalRules(),
+              {.warps = {houseDoor()}, .facts = triggersSet({203}), .explore = true}};
+  CHECK_FALSE(walkSouth(field, snowfield).has_value());
+  const auto& found = field.destinationChoice();
+  if (!found) {
+    FAIL("no destination choice");
+    return;
+  }
+  REQUIRE(found->places.size() == 1);
+  CHECK(found->places.front().map == "town");
+  CHECK_FALSE(found->vanilla.has_value());
+
+  // Staying: the walk goes on south past the band, with no warp and no second question.
+  field.chooseDestination(std::nullopt);
+  field.setInput({.stick = {0.0F, -1.0F}});
+  std::optional<MapChange> change;
+  for (int i = 0; i < 120 && !change && !field.destinationChoice(); ++i) {
+    field.tick(Tick);
+    change = field.takeMapChange();
+  }
+  CHECK_FALSE(change.has_value());
+  CHECK_FALSE(field.destinationChoice().has_value());
+  CHECK(dwe::assets::originalCellAt(field.player().position).row > BandRow);
+
+  // Back north over the band and south over it again: no second question, no warp.
+  const auto rowNow = [&field] { return dwe::assets::originalCellAt(field.player().position).row; };
+  const auto walkUntil = [&](float stick, const auto& there) {
+    field.setInput({.stick = {0.0F, stick}});
+    for (int i = 0; i < 300 && !there() && !change && !field.destinationChoice(); ++i) {
+      field.tick(Tick);
+      change = field.takeMapChange();
+    }
+  };
+  walkUntil(1.0F, [&] { return rowNow() < BandRow - 1; });
+  CHECK(rowNow() < BandRow);
+  walkUntil(-1.0F, [&] { return rowNow() > BandRow + 1; });
+  CHECK(rowNow() > BandRow);
+  CHECK_FALSE(change.has_value());
+  CHECK_FALSE(field.destinationChoice().has_value());
+
+  // On the map again (a map change in between), the band asks again.
+  CHECK_FALSE(walkSouth(field, snowfield).has_value());
+  CHECK(field.destinationChoice().has_value());
 }
 
 TEST_CASE(

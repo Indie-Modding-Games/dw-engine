@@ -63,6 +63,9 @@ inline constexpr std::string_view ExplorationOpened =
 // how many places).
 inline constexpr std::string_view ExplorationChoice =
     "field: free exploration offers {} cell {}'s {} places";
+// The player stayed on a step cell (the map, the cell's value): it asks no more on this map.
+inline constexpr std::string_view ExplorationStayed =
+    "field: free exploration: the player stays on {} cell {}; it asks no more until the next map";
 inline constexpr std::string_view ExplorationOn = "field: free exploration on";
 inline constexpr std::string_view ExplorationOff =
     "field: free exploration off; the story's conditions decide again";

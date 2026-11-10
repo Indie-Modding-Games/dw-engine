@@ -858,9 +858,11 @@ borraban al empezar cada tick y se perdían en los cuadros que corren más de un
 
 `free_exploration.cpp` lleva la [exploración libre](../../architecture/warps-de-script.md#exploración-libre):
 la enciende el ajuste `free_exploration` (menú de pausa, guardado en los ajustes del usuario) o `--explore` (solo en
-esa ejecución). Cuando el campo para en una casilla con varios sitios, abre `ui/destination_choice` con los sitios
-(`exploration_place_name.N`, `exploration_place_map.N`, `exploration_places`, `exploration_story`) y pasa al campo
-lo que se elige (`choose_destination`) o quedarse (`stay_here`).
+esa ejecución). Cuando el campo para en una casilla con varios sitios (o en una de pisar cerrada por la historia),
+abre `ui/destination_choice` con los sitios (`exploration_place_name.N`, `exploration_place_map.N`,
+`exploration_places`, `exploration_story`) y pasa al campo lo que se elige (`choose_destination`) o quedarse
+(`stay_here`, también con cancelar). El selector es modal, así que `settings` (Escape, F10, Back del mando) no abre
+las opciones debajo: `PlaySession::pressDestinationChoice` lo toma como quedarse.
 
 ## Ritmo del bucle
 
