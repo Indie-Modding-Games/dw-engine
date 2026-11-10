@@ -1,7 +1,7 @@
 name: Delete the older caches
 description: >-
-  Deletes this branch's caches whose key starts with a prefix, except the one just saved, so each
-  compiler cache keeps one copy in the repository's cache space. The job needs actions: write.
+  Deletes this branch's caches whose key starts with a prefix, except the one to keep, so each
+  compiler cache keeps one copy in the repository's cache space. Run it before saving the new copy. The job needs actions: write.
 inputs:
   prefix:
     description: The keys' prefix

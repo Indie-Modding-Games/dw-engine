@@ -271,6 +271,16 @@ jobs:
         if: always() && runner.os == 'macOS'
         run: ccache --show-stats || true
 
+      # The older copies go first: saving the new one next to them overfills the repository's
+      # cache space for a moment, and the space is freed by evicting the vcpkg caches.
+      - name: Delete the older compiler caches
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/trim-caches
+        with:
+          prefix: ccache-release-${{ matrix.platform }}-
+          keep: ccache-release-${{ matrix.platform }}-${{ github.run_id }}
+
       - name: Save the compiler cache
         id: ccache-save
         if: always()
@@ -279,14 +289,6 @@ jobs:
         with:
           path: ${{ runner.temp }}/ccache
           key: ccache-release-${{ matrix.platform }}-${{ github.run_id }}
-
-      - name: Delete the older compiler caches
-        if: always() && steps.ccache-save.outcome == 'success'
-        continue-on-error: true
-        uses: ./.github/actions/trim-caches
-        with:
-          prefix: ccache-release-${{ matrix.platform }}-
-          keep: ccache-release-${{ matrix.platform }}-${{ github.run_id }}
 
   # The launcher's installers, signed for its own updater by tauri build.
   launcher:
@@ -465,7 +467,8 @@ jobs:
     env:
       PRESET: ${{ matrix.preset }}
       GH_TOKEN: ${{ github.token }}
-      DWE_CCACHE_SIZE: 2G
+      # 1G each: with the release caches and the vcpkg ones they must fit in the repository's 10 GB.
+      DWE_CCACHE_SIZE: 1G
     steps:
       # The runner context only exists inside steps, so the cache folders go to the job here.
       - name: Cache folders
@@ -516,6 +519,16 @@ jobs:
           fi
           scripts/dev.sh build
 
+      # The older copies go first: saving the new one next to them overfills the repository's
+      # cache space for a moment, and the space is freed by evicting the vcpkg caches.
+      - name: Delete the older compiler caches
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/trim-caches
+        with:
+          prefix: ${{ matrix.cache }}-
+          keep: ${{ matrix.cache }}-${{ github.run_id }}
+
       - name: Save the compiler cache
         id: ccache-save
         if: always()
@@ -524,14 +537,6 @@ jobs:
         with:
           path: ${{ runner.temp }}/ccache
           key: ${{ matrix.cache }}-${{ github.run_id }}
-
-      - name: Delete the older compiler caches
-        if: always() && steps.ccache-save.outcome == 'success'
-        continue-on-error: true
-        uses: ./.github/actions/trim-caches
-        with:
-          prefix: ${{ matrix.cache }}-
-          keep: ${{ matrix.cache }}-${{ github.run_id }}
 
   # Runs even when a computer failed, to say which in the summary; then it publishes nothing.
   publish:
