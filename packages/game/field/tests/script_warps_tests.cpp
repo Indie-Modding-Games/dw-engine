@@ -87,6 +87,7 @@ TEST_CASE("field script warps read every warp with its guards") {
   to:
     map: twna01
     exit: 2
+  arrival_section: 60
   guard:
     terms:
     - if:
@@ -127,6 +128,7 @@ TEST_CASE("field script warps read every warp with its guards") {
   CHECK(door.section == 51);
   CHECK(door.targetMap == "twna01");
   CHECK(door.targetExit == 2);
+  CHECK(door.arrivalSection == 60);
   REQUIRE(door.guard.terms.size() == 2);
   const auto& branch = std::get<GuardBranch>(door.guard.terms[0]);
   CHECK(branch.tests[0] == trigger(203, true));
@@ -136,6 +138,7 @@ TEST_CASE("field script warps read every warp with its guards") {
   CHECK(door.setsFlags.size() == 1);
   CHECK(door.source == "script 178, section 51, offset 0x0120");
   CHECK_FALSE((*warps)[1].targetMap.has_value());
+  CHECK_FALSE((*warps)[1].arrivalSection.has_value());
   CHECK((*warps)[1].scriptGuard.unstructured);
 
   CHECK_FALSE(

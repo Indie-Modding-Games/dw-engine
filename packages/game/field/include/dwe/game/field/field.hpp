@@ -52,6 +52,9 @@ struct MapChange {
   // The collision value that fired it (110 + exit of the old map, or the cell of a script's map
   // change).
   std::int32_t trigger = 0;
+  // The section of the new map's script a script's warp_to runs on arrival (script_interp.c:
+  // scriptInstruction46to58), when the field takes that warp; nothing for an exit or none.
+  std::optional<std::int32_t> arrivalSection = std::nullopt;
 };
 
 // Whether an exit of map `from` may take the player to map `to` now (the story lock of

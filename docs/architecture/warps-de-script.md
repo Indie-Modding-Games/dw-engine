@@ -386,7 +386,13 @@ mapas que el paquete tiene):
   se elige con teclado, ratón o mando, en en/es; cancelar (Ctrl, Retroceso, botón derecho, Este del mando) y
   Escape (o F10, Back del mando) es quedarse;
 - los `sets_flags` del warp elegido se aplican también (decidido por el coordinador, 2026-10-22); si se elige el
-  sitio de la historia, se toma el warp que tomaría el original, con sus `sets_flags`.
+  sitio de la historia, se toma el warp que tomaría el original, con sus `sets_flags`;
+- el warp tomado lleva su `arrival_section` (`MapChange::arrivalSection`): al entrar, la historia corre esa sección
+  del script del mapa nuevo después de su cabecera, como el `warp_to` del original (`StoryRunner::arriveWith`; un
+  cambio de mapa del propio script en curso conserva el suyo). Sin ella, elegir la casa desde una franja de
+  ventisca dejaba al compañero enfermo y el disparador 133 sin poner, y cada franja volvía a llevar a la casa; con
+  ella corre la escena de la casa (script 132 sección 0x33): quita la enfermedad, pone el 133 y devuelve a `frzl07`
+  salida 2. Lo mismo vale para un mapa cuyas casillas no corre la historia.
 
 **Con la exploración libre encendida, el orden de los sucesos de la historia puede no ser el de vainilla**: se
 llega a mapas antes de que la historia los abra y se ponen los disparadores de los warps tomados por el camino, así

@@ -135,6 +135,11 @@ public:
   // arrival section the change left belongs to the other map's script and is dropped, so that
   // enterMap with the map the player is on ends the script there.
   void dropMapChangeArrival();
+  // The field took a script's warp_to on its own (field/script_warps: free exploration, or a map
+  // whose cells the story does not run): the next enterMap ends that change as the warp_to would,
+  // running the arrival section `section` of the new map's script after its map head. A script's
+  // own map change underway keeps its arrival.
+  void arriveWith(std::uint16_t section);
 
   // set_script: the map's script is `script`; once the section ends, the script's map-entry section
   // runs. The map was loaded by whoever entered it.

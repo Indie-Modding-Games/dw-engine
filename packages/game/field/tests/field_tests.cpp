@@ -1514,6 +1514,42 @@ TEST_CASE("free exploration asks on a closed step band once a map: staying walks
   CHECK(field.destinationChoice().has_value());
 }
 
+TEST_CASE("a script's warp the field takes keeps the arrival section its warp_to runs") {
+  // As the snowfield bands' warp into the house (script 203: warp_to screen 137, exit 1, section
+  // 51): the house's scene is that arrival section, and it is what cures the partner and sets the
+  // trigger that ends the event.
+  constexpr std::int32_t Arrival = 51;
+  dwe::game::field::ScriptWarp door = houseDoor();
+  door.arrivalSection = Arrival;
+  MapDocument house = roomMap("house");
+  fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
+
+  dwe::scene::World world;
+  Field field{world, originalRules(), {.warps = {door}, .facts = triggersSet({})}};
+  const auto vanilla = walkSouth(field, house);
+  REQUIRE(vanilla.has_value());
+  CHECK(vanilla->map == "town");
+  CHECK(vanilla->arrivalSection == Arrival);
+
+  // Free exploration, the place the story keeps closed chosen: the same arrival.
+  dwe::scene::World explored;
+  Field explorer{
+      explored, originalRules(), {.warps = {door}, .facts = triggersSet({203}), .explore = true}};
+  CHECK_FALSE(walkSouth(explorer, house).has_value());
+  REQUIRE(explorer.destinationChoice().has_value());
+  explorer.chooseDestination(0);
+  const auto chosen = tickToChange(explorer);
+  REQUIRE(chosen.has_value());
+  CHECK(chosen->arrivalSection == Arrival);
+
+  // A warp_to with no arrival section (0xFF) has none.
+  dwe::scene::World plain;
+  Field exits{plain, originalRules(), {.warps = {houseDoor()}, .facts = triggersSet({})}};
+  const auto none = walkSouth(exits, house);
+  REQUIRE(none.has_value());
+  CHECK_FALSE(none->arrivalSection.has_value());
+}
+
 TEST_CASE(
     "free exploration lets the player choose among a cell's places, starting on the story's, or stay") {
   MapDocument house = roomMap("house");

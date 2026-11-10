@@ -123,6 +123,18 @@ void StoryRunner::dropMapChangeArrival() {
   }
 }
 
+void StoryRunner::arriveWith(std::uint16_t section) {
+  if (changingMap_) {
+    core::logDebug("{}", messages::formatMessage(messages::ArrivalKept, section));
+    return;
+  }
+  // script_interp.c: scriptInstruction46to58 leaves the arrival on the stack; the field played the
+  // change, so map.c: scriptTickChangeMap's part (enterMap) runs it once the map is in.
+  core::logDebug("{}", messages::formatMessage(messages::PortArriveWith, section));
+  continuations_.emplace_back(RunSection{.section = section});
+  changingMap_ = true;
+}
+
 core::Result<void> StoryRunner::setScript(std::int64_t script, std::int64_t map) {
   if (!isSectionNumber(script)) {
     return core::fail(messages::formatMessage(messages::NoSuchScript, script));

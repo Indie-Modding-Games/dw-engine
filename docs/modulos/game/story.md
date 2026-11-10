@@ -47,6 +47,10 @@ registra en la partida guardada y se lo da al campo.
   anota en el registro de depuración), da un fotograma del original cada `ticksPerFrame` ticks del motor (3 a 60 Hz,
   del ruleset) y reanuda la sección en curso una vez por fotograma salvo que espere. Una sección empieza en el
   fotograma siguiente a la petición (`StartTiming::NextFrame`) o en el acto (`StartTiming::Now`).
+  `arriveWith(sección)` termina como un `warp_to` el cambio de mapa que tomó el campo por su cuenta (exploración
+  libre, `field/script_warps`): el siguiente `enterMap` corre la cabecera del mapa y después esa sección de llegada
+  del script del mapa (`script_interp.c: scriptInstruction46to58`, `map.c: scriptTickChangeMap`). Si ya hay un
+  cambio de mapa del propio script en curso, se queda el suyo.
 - **`SectionHost`**: cómo el runner arranca, reanuda y cierra una sección sin saber de Lua. La sesión lo implementa
   con la VM de scripts (una corrutina por sección). Una sección cede con una espera (`FrameWait`: n fotogramas, al
   menos uno, y el valor que recibe al volver; `FileJump`: salto a otro script) o acaba (`SectionEnded`,
