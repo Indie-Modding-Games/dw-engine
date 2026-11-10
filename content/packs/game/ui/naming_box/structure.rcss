@@ -4,7 +4,17 @@
    pause_menu style); the original look places the boxes as the original (skins/original/naming_box). */
 
 body { pointer-events: none; }
-body #panel { left: 50%; margin-left: -280dp; top: 40dp; width: 560dp; }
+/* Placed here, not by the skin: the modern look's panel style centres its panel with the #scrim this document does
+   not have, and a static panel takes its negative margin off the window's left edge. The width holds the buttons
+   and the ten columns. */
+body #panel {
+	position: absolute;
+	left: 50%;
+	top: 40dp;
+	width: 600dp;
+	margin-left: -300dp;
+	box-sizing: border-box;
+}
 #title { margin: 0 0 6dp 0; }
 #whose { margin: 0 0 10dp 0; }
 .letter { display: inline-block; width: 28dp; text-align: center; }
@@ -20,10 +30,11 @@ body #panel { left: 50%; margin-left: -280dp; top: 40dp; width: 560dp; }
 #name-box {
 	position: absolute;
 	left: 50%;
-	margin-left: -280dp;
+	margin-left: -300dp;
 	top: 560dp;
-	width: 560dp;
+	width: 600dp;
 	padding: 12dp 24dp;
+	box-sizing: border-box;
 	background-color: #151b24f0;
 }
 #typing { margin: 6dp 0 0 0; font-size: 22dp; }

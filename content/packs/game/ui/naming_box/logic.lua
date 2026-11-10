@@ -56,6 +56,11 @@ local function refresh(document)
 end
 
 local function refresh_prompts(document)
+  -- On a keyboard the box takes the typed text first, so Space writes a blank and Q a "q": their
+  -- hints (Write and Clear all) would lie there; the typing hint says how to write instead.
+  local keyboard = ui.device() ~= "gamepad"
+  document:get("hint-write"):set_class("hidden", keyboard)
+  document:get("hint-clear"):set_class("hidden", keyboard)
   document:get("prompt-confirm"):set_prompt("confirm")
   document:get("prompt-cancel"):set_prompt("cancel")
   -- Start on a gamepad (the original's OK button), Tab on a keyboard.

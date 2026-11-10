@@ -747,7 +747,11 @@ borra todo el nombre. En el teclado `alt` y `extra` son letras del racimo `WASD`
 **escriben** en lugar de disparar la acción (`takeTyping` corre antes que `pressButtons`, `naming_box.cpp:137`), así
 que esos dos atajos solo valen en el mando; en teclado se llega a «Atrás» con las flechas del grid. A la vez se
 puede teclear: las letras de la rejilla y el espacio se escriben (otra tecla suena rechazada) e Intro acepta el
-nombre si se ha tecleado algo desde el último movimiento del cursor. El nombre del jugador empieza vacío, como en la
+nombre si se ha tecleado algo desde el último movimiento del cursor. Por eso, con teclado, los avisos de la caja
+solo muestran Borrar y Aceptar: Espacio («Escribir») escribe un espacio y `Q` («Borrar todo») una «q», y el aviso
+de tecleo de la caja del nombre ya dice cómo escribir. La caja la coloca su propio documento (`naming_box`, centrada
+arriba en cualquier ventana), no la piel: el panel del aspecto moderno se centra con un `#scrim` que este documento
+no tiene. El nombre del jugador empieza vacío, como en la
 versión americana. Con la opción [nombres largos](#nombres-largos) (encendida por defecto) admite 12 letras en vez de
 6.
 
