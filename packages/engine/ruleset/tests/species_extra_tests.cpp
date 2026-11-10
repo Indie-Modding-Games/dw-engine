@@ -197,7 +197,9 @@ species:
     evolves_from: [rookie_b]
     stats_gains: { copy: rookie_a }
   wakemon:
+    level: 2
     stats_gains: { copy: rookie_a }
+    moves: { copy: rookie_a }
 )");
   const auto ruleset = loadRuleset(packs.mount(), "small_all");
   REQUIRE_MESSAGE(ruleset.has_value(), errorOf(ruleset));
@@ -213,6 +215,8 @@ species:
   CHECK(extra->find("othermon")->yields);
   CHECK(extra->find("othermon")->statsGainsCopy == std::optional<std::string>{"rookie_a"});
   CHECK(extra->specialTargets == std::vector<std::string>{"wakemon"});
+  CHECK(extra->find("wakemon")->level == std::optional<std::int32_t>{2});
+  CHECK(extra->find("wakemon")->movesCopy == std::optional<std::string>{"rookie_a"});
 }
 
 TEST_CASE("a manifest's sections_from names a section and a ruleset") {
@@ -377,6 +381,33 @@ TEST_CASE("the patches add requirement, stat, raise rows and moves in empty slot
   SpeciesExtra missing;
   missing.species["newmon"] = SpeciesPatch{.raise = RaisePatch{.copy = "nobody"}};
   CHECK_FALSE(applySpeciesExtra(missing, raise).has_value());
+}
+
+TEST_CASE("a copied move row replaces the species' whole row, and a level patch sets its level") {
+  assets::DigimonRow donor;
+  donor.id = "donormon";
+  donor.moves.at(0) = "claw";
+  donor.moves.at(5) = "bite";
+  assets::DigimonRow character;
+  character.id = "charmon";
+  character.moves.fill(std::optional<std::string>{"fire_tower"});
+  assets::DigimonTable species{{donor, character}};
+  SpeciesExtra extra;
+  // Copied first, then the list fills the copy's empty slots; the copy is the disc's row.
+  extra.species["charmon"] = SpeciesPatch{.moves = {"kick"}, .movesCopy = "donormon", .level = 5};
+  extra.species["donormon"] = SpeciesPatch{.moves = {"punch"}};
+  REQUIRE(applySpeciesExtra(extra, species).has_value());
+  const assets::DigimonRow* row = species.find("charmon");
+  REQUIRE(row != nullptr);
+  CHECK(row->level == 5);
+  CHECK(row->moves.at(0) == std::optional<std::string>{"claw"});
+  CHECK(row->moves.at(1) == std::optional<std::string>{"kick"});
+  CHECK(row->moves.at(5) == std::optional<std::string>{"bite"});
+  CHECK(std::ranges::count(row->moves, std::optional<std::string>{"punch"}) == 0);
+
+  SpeciesExtra missing;
+  missing.species["charmon"] = SpeciesPatch{.movesCopy = "nobody"};
+  CHECK_FALSE(applySpeciesExtra(missing, species).has_value());
 }
 
 } // namespace dwe::ruleset

@@ -1,5 +1,5 @@
 # Every species as a partner, on by default (docs/modulos/game/evoluciones-extra.md): a new game from the main menu
-# with the keyboard keeps the rules screen's defaults, the chart has the original's 61 cells and the 49 new ones,
+# with the keyboard keeps the rules screen's defaults, the chart has the original's 61 cells and the 60 new ones,
 # and a partner raised along a new line evolves by the natural check: species 44 (in-training) to species 109
 # (rookie: offense the highest, no care mistakes, weight 5), then to species 110 (champion: HP and MP 70, weight 50,
 # at most 5 care mistakes), both targets no form of the original's takes with those values. Run it with
@@ -24,7 +24,7 @@ steps:
   - screenshot: rules-default
   - menu_select: rules-start
   - wait: {map: twna01, hidden: new_game_rules, seconds: 2, timeout: 120}
-  - expect_setting: {player.chart.count: 110}
+  - expect_setting: {player.chart.count: 121}
   - script: evolve("tane")
   - wait: {setting: {partner.name: main.digimon_names.0044}, timeout: 600}
   - wait: {setting: {evolution.active: "false"}, timeout: 600}
@@ -69,4 +69,4 @@ steps:
   - wait: {seconds: 1}
   - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
   - screenshot: field-champion
-  - expect_setting: {player.chart.count: 110}
+  - expect_setting: {player.chart.count: 121}

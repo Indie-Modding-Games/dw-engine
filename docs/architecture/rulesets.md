@@ -94,7 +94,8 @@ lo aplica sobre las tablas que el ruleset nombra:
 | `evolves_to` | Sus propios destinos, si no tiene fila de caminos |
 | `stats_gains` | Su fila de referencia de stats (`EVOLUTION_STATS_GAINS`), o `{copy: <id>}` para tomar la de otra especie |
 | `raise` | Fila de crianza copiada de otra especie (`copy`) con valores cambiados (comida, peso, energía, horas de hambre) |
-| `moves` | Técnicas en las ranuras vacías de su fila de `digimon` |
+| `moves` | Técnicas en las ranuras vacías de su fila de especie; o `{copy: id}`, la fila entera de otra especie (la del disco), antes de esas ranuras: la forma cuyos [clips de compañero](../modulos/engine/animation.md#clips-de-compañero) salen de esa especie toca el clip de técnica de la misma ranura |
+| `level` | Su nivel en su fila de especie (1 bebé a 5 ultra), para una especie que la tabla deja en 0 |
 | `partner_type`, `partner_moves`, `effect_type` | El tipo con el que lucha de compañero, valores de técnica solo de compañero (`power`, `iframes`) y la especie cuyos efectos usan sus técnicas |
 | `clips`, `field_scale` | Clips del original que le faltan → el que se reproduce en su lugar, y su tamaño en el campo y en combate (el compañero lucha con su radio y su altura a ese tamaño) |
 | `chart` | Su casilla del árbol: `x`, `y` (píxeles del árbol; fuera de la rejilla de su caja, o en un hueco ocupado, va al primer hueco libre de esa caja, en la página siguiente si la caja está llena), `icon` (casilla de otra especie) y `palette` |

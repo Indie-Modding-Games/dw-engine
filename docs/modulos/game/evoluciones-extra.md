@@ -1,8 +1,8 @@
 # Evoluciones extra: todas las especies como compañero
 
 Mejora opcional, **encendida por defecto** (excepción a la regla de «el original por defecto», decidida el
-2026-11-10): toda especie con modelo y clips de combate que el original nunca deja criar se alcanza evolucionando en
-una partida normal. Se elige en la [pantalla de reglas](../apps/game.md#contenido-oculto) de la partida nueva con la
+2026-11-10): toda especie con modelo que el original nunca deja criar se alcanza evolucionando en una partida
+normal, con sus clips de combate o con los que el motor le hace. Se elige en la [pantalla de reglas](../apps/game.md#contenido-oculto) de la partida nueva con la
 fila «Todas las especies como compañero» (Sí por defecto); con No la partida usa las reglas del original sin cambiar
 nada. La partida guardada recuerda el ruleset.
 
@@ -13,18 +13,19 @@ parches está en [rulesets](../../architecture/rulesets.md#parches-por-especie) 
 ## Alcance
 
 El disco trae 178 especies con modelo: el jugador, las 61 formas de compañero, 3 que solo se crían con objetos
-(`panj`, `ggdr`, `mtet`) y 113 más. De esas 113 entran **49**:
+(`panj`, `ggdr`, `mtet`) y 113 más. De esas 113 entran **60**:
 
 - Las 47 especies que solo existen como enemigo (números 67 a 113 de la tabla): 21 novatos, 23 campeones y 3 ultras.
 - `vand` (66), que el disco solo trae como jefe, y `muge` (115), que trae como enemigo de nivel 5.
+- Los 11 modelos de personaje (`anlg`, `jiji`, `tens`, `tono`, `jure`, `hagu`, `brik`, `tirs`, `brak`, `scud`,
+  `puti`): traen solo entre 2 y 8 clips de campo, así que el motor les hace los demás al cargar el compañero
+  ([clips de compañero](../engine/animation.md#clips-de-compañero)); ver [Modelos de personaje](#modelos-de-personaje).
 
 Quedan fuera, con su razón:
 
 - **Las 53 copias de enemigo** (`egob` y los números 128 a 179): son la misma especie, con el mismo nombre, que una
   forma de compañero, con un modelo más pequeño y menos clips. Esa especie ya se cría con su forma de compañero, así
   que la copia no añade nada y solo duplicaría celdas del árbol.
-- **Los 11 modelos de personaje** (`anlg`, `jiji`, `tens`, `tono`, `jure`, `hagu`, `brik`, `tirs`, `brak`, `scud`,
-  `puti`): no tienen los clips de combate (33 a 50), solo entre 2 y 8 clips de campo, así que no pueden pelear.
 - `panj`, `ggdr` y `mtet` siguen como están: con objeto en el original y por evolución con el
   [contenido oculto](evolution.md#contenido-oculto).
 
@@ -112,7 +113,35 @@ alcance comprueba que cada camino nuevo lo elige la revisión con valores legale
 - **Técnica al evolucionar.** Una forma de reserva cuya primera especialidad no enseña ninguno de sus ataques (`clea`,
   `sabd`) aprende y equipa el primero de su lista, como la orden de evolucionar del desarrollador.
 - **Animaciones.** Los modelos de enemigo no tienen los clips de cuidado ni de gimnasio: el campo pone en su lugar uno
-  que sí tienen (`MissingClips::StandIn`), como ya hace con cualquier compañero.
+  que sí tienen (`MissingClips::StandIn`), como ya hace con cualquier compañero. Los modelos de personaje reciben antes
+  todos sus clips de compañero de su receta (ver abajo), así que no les queda ninguno por sustituir.
+
+## Modelos de personaje
+
+Los 11 modelos de personaje entran con su etapa (`level`, que la tabla deja en 0 o en otra etapa), su fila de técnicas
+copiada de la especie de la que salen sus clips (`moves: {copy}`, así cada técnica toca el clip de su ranura y lanza
+desde los huesos que esa especie usa, `effect_type`) y un tamaño para los gigantes (`field_scale`: `tirs` 0,7, `scud`
+0,5, `tono` 0,45, `jure` 0,38, `brak` 0,32: unos 450 de alto, como los compañeros Ultra grandes; en combate luchan con su radio y su altura a ese tamaño). Sus clips de compañero salen de una receta de
+`animations/partner_clips.yaml`:
+
+| Especie | Clips | Donante | Clips flojos |
+|---|---|---|---|
+| `tirs` | reasignados, misma jerarquía | `tyra` | — |
+| `scud` | reasignados, misma jerarquía | `scum` | — |
+| `puti` | reasignados, misma jerarquía | `tuno` | sin clip de renacer (28) |
+| `anlg` | reasignados con mapa de huesos | `andr` | — |
+| `jiji` | reasignados con mapa de huesos | `mtma` | la barba y el bastón siguen a su padre; el bastón se levanta con el brazo |
+| `tens` | reasignados con mapa de huesos | `mame` | — |
+| `brak` | reasignados con mapa de huesos | `mono` | el cuello largo se mueve rígido con su base |
+| `tono` | procedurales, tiempos del donante | `etem` | todos son movimientos sencillos del cuerpo; sin clip de renacer (28) |
+| `jure` | procedurales, tiempos del donante | `vegi` | todos son movimientos sencillos del cuerpo |
+| `hagu` | procedurales, tiempos del donante | `elec` | movimientos sencillos; el cuerpo no se inclina (`upright`), se desplaza; sin clip de renacer (28) |
+| `brik` | procedurales, tiempos del donante | `ogre` | todos son movimientos sencillos del cuerpo; sin clip de renacer (28) |
+
+El clip de renacer (28) no existe en `tuno`, `etem`, `elec` ni `ogre`, así que sus cuatro especies se quedan sin él,
+igual que esos donantes. `puti` es pequeño y flota a la altura del pecho del jugador: justo tras la evolución queda
+detrás de él, como cualquier compañero pequeño, y se ve en cuanto se mueven. Los personajes de las escenas no cambian:
+solo el modelo del compañero recibe los clips nuevos.
 
 ## Árbol de evolución
 
@@ -126,8 +155,8 @@ original hasta 5 orígenes y 6 destinos; los caminos de más existen pero no se 
 | Especie | Etapa | Desde | Requisito clave | Siguiente |
 |---|---|---|---|---|
 | `flar` | Novato | `koro`, `tuno`, `toko`, `tane` | despierta en `tunn01` (50 %) | `mera`, `bird`, `varm`, `blmr` |
-| `toya` | Novato | `koro`, `tuno`, `toko`, `tane` | despierta en `omoc01` (50 %) | `mono`, `tank`, `gard` |
-| `clea` | Novato | `koro`, `tuno`, `toko`, `tane` | despierta en `omoc02` (50 %) | `tyra`, `gard`, `varm` |
+| `toya` | Novato | `koro`, `tuno`, `toko`, `tane` | despierta en `omoc01` (50 %) | `mono`, `tank`, `gard`, `brik` |
+| `clea` | Novato | `koro`, `tuno`, `toko`, `tane` | despierta en `omoc02` (50 %) | `tyra`, `gard`, `varm`, `brik` |
 | `ykag` | Novato | `koro`, `tuno`, `toko`, `tane` | despierta en `frzl01` (50 %) | `yuki`, `blmr`, `gole` |
 | `icem` | Novato | `koro`, `tuno`, `toko`, `tane` | despierta en `icsa01` (50 %) | `yuki`, `hyog`, `gole` |
 | `sngb` | Novato | `koro`, `tuno`, `toko`, `tane` | despierta en `frzl05` (50 %) | `ogre`, `hyog`, `tuti` |
@@ -147,33 +176,44 @@ original hasta 5 orígenes y 6 destinos; los caminos de más existen pero no se 
 | `sndy` | Novato | `tane` | ataque el mayor; 2+ errores; peso 45 ± 5 | `akat`, `sabd`, `coca` |
 | `mcho` | Novato | `tane` | ataque el mayor; 0 errores; peso 45 ± 5 | `coca`, `akat`, `bird` |
 | `hyog` | Campeón | `icem`, `sngb`, `sham` | ataque 80, defensa 70; 6+ errores; peso 55 ± 5; batallas 15 | `skul`, `waru` |
-| `pcsc` | Campeón | `gobr` | cerebro 80; 8+ errores; peso 50 ± 5; felicidad 60 | `etem`, `digi` |
-| `sima` | Campeón | `psyc`, `elec` | velocidad 80, cerebro 70; 0–3 errores; peso 50 ± 5; disciplina 70 | `giro`, `houo` |
-| `tank` | Campeón | `toya`, `gotu` | HP 800, defensa 80; 0–5 errores; peso 60 ± 5; batallas 15 | `andr`, `tkka`, `muge` |
-| `redv` | Campeón | `arur`, `doku`, `palm` | MP 700, ataque 70; 6+ errores; peso 50 ± 5; técnicas 21 | `picc`, `digi` |
+| `pcsc` | Campeón | `gobr` | cerebro 80; 8+ errores; peso 50 ± 5; felicidad 60 | `etem`, `digi`, `scud` |
+| `sima` | Campeón | `psyc`, `elec` | velocidad 80, cerebro 70; 0–3 errores; peso 50 ± 5; disciplina 70 | `giro`, `houo`, `tens` |
+| `tank` | Campeón | `toya`, `gotu` | HP 800, defensa 80; 0–5 errores; peso 60 ± 5; batallas 15 | `andr`, `tkka`, `muge`, `brak`, `anlg` |
+| `redv` | Campeón | `arur`, `doku`, `palm` | MP 700, ataque 70; 6+ errores; peso 50 ± 5; técnicas 21 | `picc`, `digi`, `jure` |
 | `jmoj` | Campeón | `sngb` | HP 800, ataque 70; 0–5 errores; peso 55 ± 5; batallas 10 | `mame`, `skul` |
-| `nise` | Campeón | `gotu` | ataque 80, velocidad 60; 4+ errores; peso 60 ± 5; felicidad 50 | `mtgr`, `tkka` |
+| `nise` | Campeón | `gotu` | ataque 80, velocidad 60; 4+ errores; peso 60 ± 5; felicidad 50 | `mtgr`, `tkka`, `tirs`, `anlg` |
 | `tuti` | Campeón | `sngb`, `penm` | HP 700, cerebro 70; 4+ errores; peso 55 ± 5; felicidad 40 | `mame`, `mtma` |
 | `pidd` | Campeón | `tuka`, `elec`, `pata` | MP 800, velocidad 70; 0–1 errores; peso 50 ± 5; disciplina 80 | `houo`, `andr` |
-| `gere` | Campeón | `doku` | HP 700; 8+ errores; peso 60 ± 5; batallas 20 | `etem`, `monz` |
-| `varm` | Campeón | `flar`, `clea`, `inse`, `agum` | HP 700, ataque 80; 0–3 errores; peso 60 ± 5; batallas 15 | `mtgr`, `mtma` |
+| `gere` | Campeón | `doku` | HP 700; 8+ errores; peso 60 ± 5; batallas 20 | `etem`, `monz`, `scud` |
+| `varm` | Campeón | `flar`, `clea`, `inse`, `agum` | HP 700, ataque 80; 0–3 errores; peso 60 ± 5; batallas 15 | `mtgr`, `mtma`, `tirs` |
 | `fuga` | Campeón | `sham`, `gobr` | MP 600, ataque 80; 6+ errores; peso 50 ± 5; batallas 20 | `andr`, `giro`, `waru` |
 | `mris` | Campeón | `otam` | MP 700, defensa 80; 5+ errores; peso 60 ± 5; técnicas 21 | `hkab`, `mgsd` |
-| `gard` | Campeón | `toya`, `clea` | defensa 90, cerebro 70; 0–3 errores; peso 60 ± 5; disciplina 70 | `andr`, `tkka`, `muge` |
+| `gard` | Campeón | `toya`, `clea` | defensa 90, cerebro 70; 0–3 errores; peso 60 ± 5; disciplina 70 | `andr`, `tkka`, `muge`, `anlg` |
 | `akat` | Campeón | `tent`, `yanm`, `sndy`, `mcho`, `piyo` | ataque 60, velocidad 80; 4+ errores; peso 50 ± 5; técnicas 21 | `houo`, `picc` |
-| `zass` | Campeón | `arur` | MP 700, defensa 60; 6+ errores; peso 55 ± 5; felicidad 30 | `picc`, `hkab` |
+| `zass` | Campeón | `arur` | MP 700, defensa 60; 6+ errores; peso 55 ± 5; felicidad 30 | `picc`, `hkab`, `jure` |
 | `icdv` | Campeón | `dkrz`, `tuka` | MP 700, ataque 80; 6+ errores; peso 55 ± 5; batallas 20 | `skul`, `mgdr`, `vand` |
 | `blmr` | Campeón | `flar`, `ykag` | MP 800, cerebro 70; 0–3 errores; peso 50 ± 5; técnicas 25 | `andr`, `mgsd` |
 | `grur` | Campeón | `psyc`, `gabu` | ataque 80, velocidad 70; 6+ errores; peso 60 ± 5; batallas 20 | `skul`, `mgsd`, `waru` |
 | `sabd` | Campeón | `dkrz`, `yanm`, `sndy` | ataque 70, velocidad 80; 6+ errores; peso 55 ± 5; técnicas 21 | `houo`, `mgdr`, `vand` |
 | `soul` | Campeón | `tuka` | MP 800, cerebro 60; 5+ errores; peso 50 ± 5; técnicas 21 | `skul`, `vand`, `waru` |
-| `gole` | Campeón | `ykag`, `icem`, `gotu`, `inse`, `penm` | HP 700, defensa 80; 0–3 errores; peso 55 ± 5; batallas 10 | `mtma`, `mame`, `tkka` |
-| `geco` | Campeón | `modo`, `otam`, `beta` | HP 700, MP 700; 0–5 errores; peso 50 ± 5; felicidad 50 | `mgsd`, `wrse` |
+| `gole` | Campeón | `ykag`, `icem`, `gotu`, `inse`, `penm` | HP 700, defensa 80; 0–3 errores; peso 55 ± 5; batallas 10 | `mtma`, `mame`, `tkka`, `brak` |
+| `geco` | Campeón | `modo`, `otam`, `beta` | HP 700, MP 700; 0–5 errores; peso 50 ± 5; felicidad 50 | `mgsd`, `wrse`, `tono` |
 | `waru` | Ultra | `hyog`, `fuga`, `grur`, `soul`, `nume`, `ogre` | HP 3000, ataque 300, defensa 250; 10+ errores; peso 75 ± 5; batallas 50 | — |
 | `tkka` | Ultra | `tank`, `gard`, `nise`, `gole`, `dori` | defensa 300, velocidad 250, cerebro 300; 0–5 errores; peso 45 ± 5; técnicas 35 | — |
 | `wrse` | Ultra | `geco`, `sead`, `mris` | MP 3000, defensa 250, cerebro 250; 8+ errores; peso 75 ± 5; batallas 40 | — |
 | `vand` | Ultra | `icdv`, `sabd`, `soul`, `devi`, `bake` | MP 5000, velocidad 400, cerebro 500; 0–5 errores; peso 30 ± 5; disciplina 80 | — |
 | `muge` | Ultra | `tank`, `gard` | HP 5000, MP 4000, ataque 500, defensa 500, velocidad 300, cerebro 300; 0–5 errores; peso 80 ± 5; batallas 100 | — |
+| `puti` | Entrenamiento | `bota`, `puni`, `poyo`, `yura` | despierta en `tunn02` (50 %) | `agum`, `piyo` |
+| `hagu` | Novato | `koro`, `tuno`, `toko`, `tane` | despierta en `fact01` (50 %) | `tank`, `gard`, `brik` |
+| `brik` | Campeón | `toya`, `clea`, `hagu` | defensa 80, cerebro 60; 0–3 errores; peso 40 ± 5; técnicas 21 | `andr`, `giro`, `tkka` |
+| `scud` | Ultra | `scum`, `pcsc`, `gere` | HP 3000, MP 2500; 12+ errores; peso 70 ± 5; felicidad 30 | — |
+| `tirs` | Ultra | `tyra`, `varm`, `nise` | HP 4000, ataque 350, defensa 250; 0–5 errores; peso 70 ± 5; batallas 50 | — |
+| `brak` | Ultra | `mono`, `tank`, `gole` | HP 5000, defensa 350; 0–8 errores; peso 85 ± 5; batallas 40 | — |
+| `jure` | Ultra | `vegi`, `redv`, `zass` | MP 3500, defensa 250, cerebro 300; 10+ errores; peso 70 ± 5; técnicas 35 | — |
+| `tono` | Ultra | `geco`, `sira`, `hoee` | HP 3500, MP 3000, defensa 250; 8+ errores; peso 80 ± 5; felicidad 50 | — |
+| `jiji` | Ultra | `unim`, `ange`, `yuki` | MP 4000, cerebro 400; 0–3 errores; peso 30 ± 5; disciplina 90 | — |
+| `tens` | Ultra | `yuki`, `nani`, `sima` | MP 3000, velocidad 250, cerebro 300; 0–5 errores; peso 40 ± 5; felicidad 70 | — |
+| `anlg` | Ultra | `gard`, `tank`, `nise` | HP 3000, defensa 350, cerebro 300; 0–5 errores; peso 60 ± 5; técnicas 40 | — |
 
 ## Pruebas
 
@@ -187,7 +227,17 @@ original hasta 5 orígenes y 6 destinos; los caminos de más existen pero no se 
 - `packages/engine/ruleset/tests/species_extra_tests.cpp`: `sections_from`, la lectura de `all_species` (una especie
   ya parcheada se salta), `stats_gains: {copy}` y los caminos que crecen más allá de las ranuras del disco; los
   rulesets del pack siguen sus esquemas (`the game pack's optional rulesets follow their schemas and read`).
+- `the user's disc, extracted: the partner clip book gives each species every clip`
+  (`packages/engine/animation/tests/clip_synthesis_tests.cpp`, con `DWE_CONTENT`): cada modelo de personaje recibe
+  todos los clips del compañero y del combate, con la duración y el movimiento raíz del clip de su donante (los
+  fotogramas del golpe y de los efectos caen donde caen en el donante).
+- `a copied move row replaces the species' whole row, and a level patch sets its level` (`species_extra_tests.cpp`).
+- `the user's disc, extracted: each character model fights with its partner clips`
+  (`apps/game/tests/partner_clip_battle_tests.cpp`, con `DWE_CONTENT`): cada uno lucha hasta el final, sus clips de
+  combate avanzan paso a paso como los del donante y cada técnica se suelta en el mismo fotograma.
+- `an upright body moves forward where it would lean` (`clip_synthesis_tests.cpp`) y `a species drawn at another size
+  fights with its body at that size` (`packages/session/tests/battle_adapter_tests.cpp`).
 - `a form only a ruleset's wake-up special leads to gets its cell` (`apps/game/tests/player_chart_tests.cpp`).
 - Ruta `route-all-species.yaml` ([prueba vertical](../../guides/prueba-vertical.md)): la opción encendida por defecto,
-  el árbol con 110 casillas y `tane` → `otam` → `geco` en el juego. Las rutas del contenido oculto, del paso Mega y de
+  el árbol con 121 casillas y `tane` → `otam` → `geco` en el juego. Las rutas del contenido oculto, del paso Mega y de
   las etapas canónicas la apagan y siguen con sus 61, 65 y 66 casillas.

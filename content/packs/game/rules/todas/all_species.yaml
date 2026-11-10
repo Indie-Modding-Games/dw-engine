@@ -71,6 +71,18 @@ wake_up:
     from: [koro, tuno, toko, tane]
     require:
       map: { equals: saib01 }
+  # Los modelos de personaje que entran como compañero (partner_clips.yaml les da sus clips): un bebé
+  # de fuego que despierta en el túnel, y la rueda dentada, novato de la ciudad de las fábricas.
+  - target: puti
+    roll_below: 50
+    from: [bota, puni, poyo, yura]
+    require:
+      map: { equals: tunn02 }
+  - target: hagu
+    roll_below: 50
+    from: [koro, tuno, toko, tane]
+    require:
+      map: { equals: fact01 }
 
 species:
   # Novatos.
@@ -82,12 +94,12 @@ species:
     effect_type: agum
     chart: {x: 104, y: 0, icon: agum, palette: 2}
   toya:
-    evolves_to: [mono, tank, gard]
+    evolves_to: [mono, tank, gard, brik]
     stats_gains: {copy: agum}
     raise: {copy: agum, favorite_food: meat}
     chart: {x: 104, y: 0, icon: agum, palette: 2}
   clea:
-    evolves_to: [tyra, gard, varm]
+    evolves_to: [tyra, gard, varm, brik]
     stats_gains: {copy: agum}
     raise: {copy: agum, favorite_food: supercarrot}
     chart: {x: 104, y: 0, icon: agum, palette: 2}
@@ -221,6 +233,25 @@ species:
     raise: {copy: piyo, favorite_food: red_berry}
     moves: [super_slap]
     chart: {x: 104, y: 0, icon: piyo, palette: 2}
+  # Modelos de personaje (docs/modulos/game/evoluciones-extra.md, «Modelos de personaje»): level les
+  # da su etapa, que la tabla deja en 0, y moves: {copy} la fila de técnicas de la especie de la que
+  # salen sus clips, así cada técnica toca el clip de su ranura.
+  puti:
+    level: 2
+    evolves_to: [agum, piyo]
+    stats_gains: {copy: tuno}
+    raise: {copy: tuno, favorite_food: meat}
+    moves: {copy: tuno}
+    effect_type: tuno
+    chart: {x: 67, y: 0, icon: tuno, palette: 2}
+  hagu:
+    level: 3
+    evolves_to: [tank, gard, brik]
+    stats_gains: {copy: elec}
+    raise: {copy: elec, favorite_food: chain_melon}
+    moves: {copy: elec}
+    effect_type: elec
+    chart: {x: 104, y: 0, icon: elec, palette: 2}
   # Campeones.
   hyog:
     requirement: {offense: 80, defense: 70, care: 6, weight: 55, battles: 15}
@@ -233,7 +264,7 @@ species:
   pcsc:
     requirement: {brains: 80, care: 8, weight: 50, happiness: 60}
     evolves_from: [gobr]
-    evolves_to: [etem, digi]
+    evolves_to: [etem, digi, scud]
     stats_gains: {copy: vegi}
     raise: {copy: scum, favorite_food: orange_bana}
     moves: [party_time]
@@ -241,7 +272,7 @@ species:
   sima:
     requirement: {speed: 80, brains: 70, care: 3, care_is_maximum: true, weight: 50, discipline: 70}
     evolves_from: [psyc, elec]
-    evolves_to: [giro, houo]
+    evolves_to: [giro, houo, tens]
     stats_gains: {copy: unim}
     raise: {copy: unim, favorite_food: giant_meat}
     moves: [aerial_attack]
@@ -249,7 +280,7 @@ species:
   tank:
     requirement: {hp: 80, defense: 80, care: 5, care_is_maximum: true, weight: 60, battles: 15}
     evolves_from: [toya, gotu]
-    evolves_to: [andr, tkka, muge]
+    evolves_to: [andr, tkka, muge, brak, anlg]
     stats_gains: {copy: tyra}
     raise: {copy: tyra, favorite_food: big_berry}
     moves: [blaze_blast]
@@ -258,7 +289,7 @@ species:
   redv:
     requirement: {mp: 70, offense: 70, care: 6, weight: 50, techs: 21}
     evolves_from: [arur, doku, palm]
-    evolves_to: [picc, digi]
+    evolves_to: [picc, digi, jure]
     stats_gains: {copy: vegi}
     raise: {copy: vegi, favorite_food: hawk_radish}
     moves: [sweet_breath]
@@ -274,7 +305,7 @@ species:
   nise:
     requirement: {offense: 80, speed: 60, care: 4, weight: 60, happiness: 50}
     evolves_from: [gotu]
-    evolves_to: [mtgr, tkka]
+    evolves_to: [mtgr, tkka, tirs, anlg]
     stats_gains: {copy: dori}
     raise: {copy: dori, favorite_food: giant_meat}
     moves: [drill_spin]
@@ -298,7 +329,7 @@ species:
   gere:
     requirement: {hp: 70, care: 8, weight: 60, battles: 20}
     evolves_from: [doku]
-    evolves_to: [etem, monz]
+    evolves_to: [etem, monz, scud]
     stats_gains: {copy: vegi}
     raise: {copy: nume, favorite_food: moldy_meat}
     moves: [party_time_108]
@@ -306,7 +337,7 @@ species:
   varm:
     requirement: {hp: 70, offense: 80, care: 3, care_is_maximum: true, weight: 60, battles: 15}
     evolves_from: [flar, clea, inse, agum]
-    evolves_to: [mtgr, mtma]
+    evolves_to: [mtgr, mtma, tirs]
     stats_gains: {copy: mono}
     raise: {copy: mono, favorite_food: digicatfish}
     moves: [volcanic_strike]
@@ -330,7 +361,7 @@ species:
   gard:
     requirement: {defense: 90, brains: 70, care: 3, care_is_maximum: true, weight: 60, discipline: 70}
     evolves_from: [toya, clea]
-    evolves_to: [andr, tkka, muge]
+    evolves_to: [andr, tkka, muge, anlg]
     stats_gains: {copy: dori}
     raise: {copy: dori, favorite_food: chain_melon}
     chart: {x: 141, y: 0, icon: cent, palette: 2}
@@ -345,7 +376,7 @@ species:
   zass:
     requirement: {mp: 70, defense: 60, care: 6, weight: 55, happiness: 30}
     evolves_from: [arur]
-    evolves_to: [picc, hkab]
+    evolves_to: [picc, hkab, jure]
     stats_gains: {copy: vegi}
     raise: {copy: vegi, favorite_food: hawk_radish}
     moves: [sweet_breath]
@@ -393,7 +424,7 @@ species:
   gole:
     requirement: {hp: 70, defense: 80, care: 3, care_is_maximum: true, weight: 55, battles: 10}
     evolves_from: [ykag, icem, gotu, inse, penm]
-    evolves_to: [mtma, mame, tkka]
+    evolves_to: [mtma, mame, tkka, brak]
     stats_gains: {copy: yuki}
     raise: {copy: yuki, favorite_food: gold_acorn}
     moves: [subzero_ice_punch]
@@ -401,12 +432,22 @@ species:
   geco:
     requirement: {hp: 70, mp: 70, care: 5, care_is_maximum: true, weight: 50, happiness: 50}
     evolves_from: [modo, otam, beta]
-    evolves_to: [mgsd, wrse]
+    evolves_to: [mgsd, wrse, tono]
     stats_gains: {copy: sira}
     raise: {copy: sira, favorite_food: digitrout}
     moves: [hydro_pressure]
     effect_type: shel
     chart: {x: 141, y: 0, icon: shel, palette: 2}
+  brik:
+    level: 4
+    requirement: {defense: 80, brains: 60, care: 3, care_is_maximum: true, weight: 40, techs: 21}
+    evolves_from: [toya, clea, hagu]
+    evolves_to: [andr, giro, tkka]
+    stats_gains: {copy: ogre}
+    raise: {copy: ogre, favorite_food: gold_acorn}
+    moves: {copy: ogre}
+    effect_type: ogre
+    chart: {x: 141, y: 0, icon: ogre, palette: 2}
   # Ultras.
   waru:
     requirement: {hp: 300, offense: 300, defense: 250, care: 10, weight: 75, battles: 50}
@@ -471,3 +512,80 @@ species:
     partner_moves: {infinity_cannon: {power: 240, iframes: 1}}
     field_scale: 0.6
     chart: {x: 250, y: 0, icon: mgdr, palette: 2}
+  scud:
+    level: 5
+    requirement: {hp: 300, mp: 250, care: 12, weight: 70, happiness: 30}
+    evolves_from: [scum, pcsc, gere]
+    stats_gains: {copy: etem}
+    raise: {copy: etem, favorite_food: moldy_meat}
+    moves: {copy: scum}
+    effect_type: scum
+    field_scale: 0.5
+    chart: {x: 250, y: 0, icon: scum, palette: 2}
+  tirs:
+    level: 5
+    requirement: {hp: 400, offense: 350, defense: 250, care: 5, care_is_maximum: true, weight: 70, battles: 50}
+    evolves_from: [tyra, varm, nise]
+    stats_gains: {copy: mtgr}
+    raise: {copy: mtgr, favorite_food: giant_meat}
+    moves: {copy: tyra}
+    effect_type: tyra
+    field_scale: 0.7
+    chart: {x: 250, y: 0, icon: tyra, palette: 2}
+  brak:
+    level: 5
+    requirement: {hp: 500, defense: 350, care: 8, care_is_maximum: true, weight: 85, battles: 40}
+    evolves_from: [mono, tank, gole]
+    stats_gains: {copy: monz}
+    raise: {copy: monz, favorite_food: digitrout}
+    moves: {copy: mono}
+    effect_type: mono
+    field_scale: 0.32
+    chart: {x: 250, y: 0, icon: mono, palette: 2}
+  jure:
+    level: 5
+    requirement: {mp: 350, defense: 250, brains: 300, care: 10, weight: 70, techs: 35}
+    evolves_from: [vegi, redv, zass]
+    stats_gains: {copy: picc}
+    raise: {copy: picc, favorite_food: power_fruit}
+    moves: {copy: vegi}
+    effect_type: vegi
+    field_scale: 0.38
+    chart: {x: 250, y: 0, icon: vegi, palette: 2}
+  tono:
+    level: 5
+    requirement: {hp: 350, mp: 300, defense: 250, care: 8, weight: 80, happiness: 50}
+    evolves_from: [geco, sira, hoee]
+    stats_gains: {copy: mgsd}
+    raise: {copy: mgsd, favorite_food: digisnapper}
+    moves: {copy: etem}
+    effect_type: etem
+    field_scale: 0.45
+    chart: {x: 250, y: 0, icon: etem, palette: 2}
+  jiji:
+    level: 5
+    requirement: {mp: 400, brains: 400, care: 3, care_is_maximum: true, weight: 30, discipline: 90}
+    evolves_from: [unim, ange, yuki]
+    stats_gains: {copy: houo}
+    raise: {copy: houo, favorite_food: sage_fruit}
+    moves: {copy: mtma}
+    effect_type: mtma
+    chart: {x: 250, y: 0, icon: mtma, palette: 2}
+  tens:
+    level: 5
+    requirement: {mp: 300, speed: 250, brains: 300, care: 5, care_is_maximum: true, weight: 40, happiness: 70}
+    evolves_from: [yuki, nani, sima]
+    stats_gains: {copy: mame}
+    raise: {copy: mame, favorite_food: orange_bana}
+    moves: {copy: mame}
+    effect_type: mame
+    chart: {x: 250, y: 0, icon: mame, palette: 2}
+  anlg:
+    level: 5
+    requirement: {hp: 300, defense: 350, brains: 300, care: 5, care_is_maximum: true, weight: 60, techs: 40}
+    evolves_from: [gard, tank, nise]
+    stats_gains: {copy: andr}
+    raise: {copy: andr, favorite_food: chain_melon}
+    moves: {copy: andr}
+    effect_type: andr
+    chart: {x: 250, y: 0, icon: andr, palette: 2}

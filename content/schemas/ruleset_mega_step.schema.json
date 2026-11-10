@@ -241,11 +241,26 @@
           }
         },
         "moves": {
-          "description": "Moves put in the empty slots of its data/digimon row, in order.",
-          "type": "array",
+          "description": "Moves put in the empty slots of its species row, in order; or copy, the species whose whole move row replaces its own (a form whose partner clips are made from that species' plays the technique clip of the same slot).",
+          "type": [
+            "array",
+            "object"
+          ],
           "items": {
             "$ref": "#/$defs/move"
+          },
+          "additionalProperties": false,
+          "properties": {
+            "copy": {
+              "$ref": "#/$defs/species"
+            }
           }
+        },
+        "level": {
+          "description": "Its level in its species row (1 baby, 2 in-training, 3 rookie, 4 champion, 5 ultimate), for a species the table leaves at 0.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
         },
         "partner_type": {
           "description": "The type its partner fights with (0 vaccine, 1 data, 2 virus, 3 the rules' fourth).",

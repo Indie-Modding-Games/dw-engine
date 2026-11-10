@@ -42,6 +42,7 @@ constexpr std::string_view PartnerMovesKey = "partner_moves";
 constexpr std::string_view EffectTypeKey = "effect_type";
 constexpr std::string_view ClipsKey = "clips";
 constexpr std::string_view FieldScaleKey = "field_scale";
+constexpr std::string_view LevelKey = "level";
 constexpr std::string_view ChartKey = "chart";
 
 constexpr std::int32_t NoRequirement = -1;
@@ -50,6 +51,8 @@ constexpr std::int32_t BattlesAreMaximumFlag = 0x01;
 constexpr std::int32_t CareIsMaximumFlag = 0x10;
 
 constexpr std::int32_t HoursPerDay = 24;
+// The highest level of a species row (ultimate).
+constexpr std::int32_t HighestLevel = 5;
 
 std::int32_t optionalValue(YamlReader& reader, const YamlNode& node, std::string_view key) {
   return reader.optionalInteger<std::int32_t>(node, key).value_or(NoRequirement);
@@ -173,7 +176,7 @@ void readPatch(YamlReader& reader, const YamlNode& node, std::string_view specie
   reader.expectKeys(node, species, {},
                     {RequirementKey, GateKey, EvolvesFromKey, EvolvesToKey, StatsGainsKey, RaiseKey,
                      MovesKey, PartnerTypeKey, PartnerMovesKey, EffectTypeKey, ClipsKey,
-                     FieldScaleKey, ChartKey});
+                     FieldScaleKey, ChartKey, LevelKey});
   if (const YamlNode* value = node.find(RequirementKey)) {
     patch.requirement = readRequirement(reader, *value, species);
   }
@@ -198,7 +201,18 @@ void readPatch(YamlReader& reader, const YamlNode& node, std::string_view specie
     patch.raise = readRaise(reader, *value);
   }
   if (const YamlNode* value = node.find(MovesKey)) {
-    patch.moves = ids(reader, *value, MovesKey);
+    if (value->isMapping()) {
+      reader.expectKeys(*value, MovesKey, {CopyKey});
+      patch.movesCopy = reader.text(reader.field(*value, CopyKey));
+    } else {
+      patch.moves = ids(reader, *value, MovesKey);
+    }
+  }
+  if (const YamlNode* value = node.find(LevelKey)) {
+    patch.level = reader.integer<std::int32_t>(*value);
+    if (*patch.level < 1 || *patch.level > HighestLevel) {
+      reader.fail(*value, std::format("level must be from 1 to {}", HighestLevel));
+    }
   }
   if (const YamlNode* value = node.find(PartnerTypeKey)) {
     patch.partnerType = reader.integer<std::int32_t>(*value);
@@ -257,6 +271,12 @@ void overlay(SpeciesPatch& base, SpeciesPatch over) {
   }
   if (!over.moves.empty()) {
     base.moves = std::move(over.moves);
+  }
+  if (over.movesCopy) {
+    base.movesCopy = std::move(over.movesCopy);
+  }
+  if (over.level) {
+    base.level = over.level;
   }
   if (over.partnerType) {
     base.partnerType = over.partnerType;
@@ -441,13 +461,27 @@ core::Result<void> checkSpeciesExtraSection(const Section& section) {
 }
 
 core::Result<void> applySpeciesExtra(const SpeciesExtra& extra, assets::DigimonTable& table) {
+  // A copied move row is the disc's, whatever the other patches put in it.
+  const assets::DigimonTable disc = table;
   for (const auto& [id, patch] : extra.species) {
-    if (patch.moves.empty()) {
+    if (patch.moves.empty() && !patch.movesCopy && !patch.level) {
       continue;
     }
     const auto row = std::ranges::find(table.digimon, id, &assets::DigimonRow::id);
     if (row == table.digimon.end()) {
       return std::unexpected{tableError("digimon", std::format("no species {}", id))};
+    }
+    if (patch.level) {
+      row->level = *patch.level;
+    }
+    if (patch.movesCopy) {
+      const assets::DigimonRow* source = disc.find(*patch.movesCopy);
+      if (source == nullptr) {
+        return std::unexpected{
+            tableError(MovesKey, std::format("{} copies the move row of {}, which has none", id,
+                                             *patch.movesCopy))};
+      }
+      row->moves = source->moves;
     }
     for (const std::string& move : patch.moves) {
       if (std::ranges::find(row->moves, std::optional<std::string>{move}) != row->moves.end()) {

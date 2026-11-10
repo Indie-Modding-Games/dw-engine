@@ -23,8 +23,8 @@ class VirtualFileSystem;
 // especie»): `extends` replaces whole sections and tables, and a whole evolution or raise table is
 // disc data that cannot be committed, so a ruleset that adds partners (the hidden content) says
 // only what it adds: new requirement and stat rows, targets in the free slots of existing paths,
-// raise rows copied from another species, moves in empty slots, the gates the original has not,
-// and what the screens need (clip stand-ins, field scale, chart cells).
+// raise rows copied from another species, moves in empty slots or a copied move row, levels, the
+// gates the original has not, and what the screens need (clip stand-ins, field scale, chart cells).
 namespace dwe::ruleset {
 
 // The sections: the species patches, the Ultimate to Mega step, which patches the same way, and
@@ -98,6 +98,12 @@ struct SpeciesPatch {
   std::optional<RaisePatch> raise = {};
   // Moves put in the empty slots of its Digimon row, in order.
   std::vector<std::string> moves = {};
+  // The species whose whole move row replaces its own (moves: {copy: id}), before `moves` fill the
+  // empty slots: a form whose partner clips are made from that species' (animations/partner_clips)
+  // plays the technique clip of the same slot.
+  std::optional<std::string> movesCopy = {};
+  // Its level in its species row (1 baby to 5 ultimate), for a species the table leaves at 0.
+  std::optional<std::int32_t> level = {};
   // The type the partner of this species fights with.
   std::optional<std::int32_t> partnerType = {};
   std::map<std::string, MoveOverride, std::less<>> partnerMoves = {};
