@@ -810,7 +810,18 @@ local function slot_start(document, index)
   return { left + 24, top + 42, 48, 48 }
 end
 
+-- Closing the menu shrinks the page it was on, which keeps the class box-closed until it opens
+-- again (original_box.close), and the menu opens on its start page only: a page closed last time,
+-- the Tech page say, would stay invisible when the tabs reach it. A menu that opens starts with
+-- every page's box open; open_boxes then grows the start page's.
+local function reopen_pages(document)
+  for _, id in ipairs({ "page-status", "page-tech", "page-care", "bag-grid", "bag-description" }) do
+    document:get(id):set_class("box-closed", false)
+  end
+end
+
 local function open_boxes(document)
+  reopen_pages(document)
   if current ~= "items" then
     original_box.open(document, main_box(), original_box.player_rect(document))
     return

@@ -289,6 +289,9 @@ button:focus .original-look, button.original-look:focus {
 	border-radius: 10dp; background-color: #0e131a;
 }
 #partner-portrait { position: absolute; left: -65dp; top: -163dp; width: 512dp; height: 384dp; }
+/* The portrait is a picture only: its image reaches past its clip, over the tabs, and RmlUi does not clip where the
+   pointer hits, so a click there would land on it and not on the tab. */
+#partner-portrait-clip, #partner-portrait { pointer-events: none; }
 #status-head { position: absolute; left: 200dp; top: 0; width: 512dp; margin: 0; }
 #status-species-line, #status-age-line, #status-weight-line {
 	display: block; position: absolute; left: 200dp; width: 512dp; margin: 0;

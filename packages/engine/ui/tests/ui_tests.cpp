@@ -1109,6 +1109,56 @@ TEST_CASE("the field's bag uses an item at once and goes back to the pause menu"
   CHECK(ui->isVisible("pause_menu"));
 }
 
+TEST_CASE("the partner menu's pages stay shown however often the tabs switch and it reopens") {
+  // The menu closed from the Tech page used to leave that page shrunk (box-closed) for good: the
+  // next menu opened on Status, and the Tech page came up empty under its tabs. Original skin
+  // first, so the modern one starts from a page the original look closed.
+  Content content;
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("partner_menu", idOf("ui/partner_menu/document")));
+  REQUIRE(ui->loadDocument("pause_menu", idOf("ui/pause_menu/document")));
+  input::InputState input{input::defaultActionMap()};
+  const auto pageShown = [&](std::string_view page) {
+    const std::string id = std::format("page-{}", page);
+    return ui->elementShown("partner_menu", id) &&
+           !ui->elementHasClass("partner_menu", id, "box-closed") &&
+           !ui->elementHasClass("partner_menu", id, "box-animating");
+  };
+  for (const std::string_view skin : {"original", "modern"}) {
+    CAPTURE(skin);
+    ui->setSetting("ui_skin", std::string{skin});
+    ui->setSetting("partner_menu.start_page", std::string{"status"});
+    for (int round = 0; round < 3; ++round) {
+      CAPTURE(round);
+      ui->show("partner_menu", true);
+      settleBoxes(*ui, input);
+      REQUIRE(pageShown("status"));
+      for (int step = 0; step < 6; ++step) {
+        press(*ui, input, input::keys::Right);
+        CHECK(pageShown("tech"));
+        CHECK_FALSE(pageShown("status"));
+        press(*ui, input, input::keys::Left);
+        CHECK(pageShown("status"));
+      }
+      // The mouse on the tabs too: the Status page's portrait reaches up over them and must not
+      // take the click.
+      CHECK(click(*ui, input, "partner_menu", "tab-tech"));
+      frame(*ui, input);
+      CHECK(pageShown("tech"));
+      CHECK(click(*ui, input, "partner_menu", "tab-status"));
+      frame(*ui, input);
+      CHECK(pageShown("status"));
+      // Leave from the Tech page.
+      press(*ui, input, input::keys::Right);
+      REQUIRE(pageShown("tech"));
+      press(*ui, input, input::keys::LeftCtrl);
+      settleBoxes(*ui, input);
+      REQUIRE_FALSE(ui->isVisible("partner_menu"));
+      ui->hide("pause_menu");
+    }
+  }
+}
+
 TEST_CASE("the HUD's menu button asks the game to open the menu and names the key that does it") {
   Content content;
   auto ui = createUi(content.mount());
