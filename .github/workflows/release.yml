@@ -519,6 +519,12 @@ jobs:
           fi
           scripts/dev.sh build
 
+      # ccache applies a lower size limit only when it next cleans up, so the cache is trimmed to it here.
+      - name: Trim the compiler cache to its size limit
+        if: always()
+        continue-on-error: true
+        run: scripts/dev.sh shell -c 'ccache --cleanup'
+
       # The older copies go first: saving the new one next to them overfills the repository's
       # cache space for a moment, and the space is freed by evicting the vcpkg caches.
       - name: Delete the older compiler caches
