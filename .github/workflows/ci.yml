@@ -107,14 +107,14 @@ jobs:
       - name: Development image
         run: scripts/ci/image.sh dev
 
-      # The release's Linux dependencies (the same triplet, without the default features), saved
-      # on main by release.yml.
+      # This preset's Linux dependencies (x64-linux-libcxx-release, without the default features),
+      # saved on main by release.yml's pr-caches job.
       - name: Restore the vcpkg binary cache
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-release-linux-x86_64-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
-          restore-keys: vcpkg-release-linux-x86_64-
+          key: vcpkg-ci-linux-x86_64-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          restore-keys: vcpkg-ci-linux-x86_64-
 
       # main's newest objects of this preset, saved by release.yml's pr-caches job.
       - name: Restore the compiler cache
