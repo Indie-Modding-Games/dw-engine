@@ -1052,6 +1052,19 @@ sprite_sheets:
       need-sleep: [128, 48, 8, 8]
       need-sleep-1: [152, 16, 8, 8]
       need-sleep-2: [144, 16, 8, 8]
+  # El globo de la evolución (bubble.c: CONDITION_SPRITES[9], CONDITION_ICON_EVOLVING, con la CLUT de la fila 0x1E2):
+  # sus cuatro cuadros (CONDITION_EVOLVING_FRAMES, u 0x80 + 16 por cuadro); el primero solo tiene la mitad de abajo
+  # (v 0xB8, alto 8).
+  - name: ow-evolving
+    image: texture/etcdat/feel_ef
+    palette: 2
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      need-evolving: [128, 56, 16, 8]
+      need-evolving-1: [144, 48, 16, 16]
+      need-evolving-2: [160, 48, 16, 16]
+      need-evolving-3: [176, 48, 16, 16]
   # El cansancio y la enfermedad (bubble.c: CONDITION_SPRITES[6] y [7], u 0xC0 y v 0x80 y 0x90 con la CLUT de la
   # fila 0x1E1): las cuatro gotas que caen (CONDITION_TIRED_FRAME_U) y los dos cuadros de la enfermedad.
   - name: ow-tired

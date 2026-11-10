@@ -596,6 +596,48 @@ body {
 	decorator: image(need-sick-1 scale-none center 31.25%);
 }
 
+/* The evolving bubble (bubble.c: CONDITION_ICON_EVOLVING), once as the partner starts to evolve (main/evl.c:
+   tickEvoSequenceLoading): the game gives #field-partner-bubble the class "evolving" and its frame (1 to 51), the
+   balloon grows and bursts as the need bubble's and the icon plays its four pictures by the frame count
+   (CONDITION_EVOLVING_FRAMES[frame % 19]: the first on 0 to 5, then 6 and 7, 8 and 9, and 10 to 18). The full
+   pictures sit by their pivot (8, 26) as the meal; the first, the bottom half only (pivot (8, 18), 8 high), 13 pixels
+   under the balloon's top, so their bottoms meet. */
+#field-partner-bubble .need-icon.evolving { display: block; }
+#field-partner-bubble.frame-1 .need-icon.evolving, #field-partner-bubble.frame-2 .need-icon.evolving,
+#field-partner-bubble.frame-3 .need-icon.evolving, #field-partner-bubble.frame-4 .need-icon.evolving,
+#field-partner-bubble.frame-5 .need-icon.evolving, #field-partner-bubble.frame-19 .need-icon.evolving,
+#field-partner-bubble.frame-20 .need-icon.evolving, #field-partner-bubble.frame-21 .need-icon.evolving,
+#field-partner-bubble.frame-22 .need-icon.evolving, #field-partner-bubble.frame-23 .need-icon.evolving,
+#field-partner-bubble.frame-24 .need-icon.evolving, #field-partner-bubble.frame-38 .need-icon.evolving,
+#field-partner-bubble.frame-39 .need-icon.evolving, #field-partner-bubble.frame-40 .need-icon.evolving,
+#field-partner-bubble.frame-41 .need-icon.evolving, #field-partner-bubble.frame-42 .need-icon.evolving,
+#field-partner-bubble.frame-43 .need-icon.evolving {
+	decorator: image(need-evolving scale-none center 54.1667%);
+}
+#field-partner-bubble.frame-6 .need-icon.evolving, #field-partner-bubble.frame-7 .need-icon.evolving,
+#field-partner-bubble.frame-25 .need-icon.evolving, #field-partner-bubble.frame-26 .need-icon.evolving,
+#field-partner-bubble.frame-44 .need-icon.evolving, #field-partner-bubble.frame-45 .need-icon.evolving {
+	decorator: image(need-evolving-1 scale-none center 31.25%);
+}
+#field-partner-bubble.frame-8 .need-icon.evolving, #field-partner-bubble.frame-9 .need-icon.evolving,
+#field-partner-bubble.frame-27 .need-icon.evolving, #field-partner-bubble.frame-28 .need-icon.evolving,
+#field-partner-bubble.frame-46 .need-icon.evolving, #field-partner-bubble.frame-47 .need-icon.evolving {
+	decorator: image(need-evolving-2 scale-none center 31.25%);
+}
+#field-partner-bubble.frame-10 .need-icon.evolving, #field-partner-bubble.frame-11 .need-icon.evolving,
+#field-partner-bubble.frame-12 .need-icon.evolving, #field-partner-bubble.frame-13 .need-icon.evolving,
+#field-partner-bubble.frame-14 .need-icon.evolving, #field-partner-bubble.frame-15 .need-icon.evolving,
+#field-partner-bubble.frame-16 .need-icon.evolving, #field-partner-bubble.frame-17 .need-icon.evolving,
+#field-partner-bubble.frame-18 .need-icon.evolving, #field-partner-bubble.frame-29 .need-icon.evolving,
+#field-partner-bubble.frame-30 .need-icon.evolving, #field-partner-bubble.frame-31 .need-icon.evolving,
+#field-partner-bubble.frame-32 .need-icon.evolving, #field-partner-bubble.frame-33 .need-icon.evolving,
+#field-partner-bubble.frame-34 .need-icon.evolving, #field-partner-bubble.frame-35 .need-icon.evolving,
+#field-partner-bubble.frame-36 .need-icon.evolving, #field-partner-bubble.frame-37 .need-icon.evolving,
+#field-partner-bubble.frame-48 .need-icon.evolving, #field-partner-bubble.frame-49 .need-icon.evolving,
+#field-partner-bubble.frame-50 .need-icon.evolving {
+	decorator: image(need-evolving-3 scale-none center 31.25%);
+}
+
 /* The burst, alone, and the gap until the next bubble. */
 #field-partner-bubble.frame-51 {
 	decorator: image(need-bubble-burst scale-none center bottom);

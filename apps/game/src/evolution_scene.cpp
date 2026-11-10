@@ -136,9 +136,13 @@ void EvolutionScene::step() {
   }
   switch (phase_) {
   case Phase::Glowing:
-    // tickEvoSequenceLoading state 0 (main/evl.c:41); the condition bubble is not drawn yet.
+    // tickEvoSequenceLoading state 0 (main/evl.c:41): the ready clip and the evolving bubble
+    // (addConditionBubble(7), main/evl.c:47), which bubbleFrame counts from this frame on.
     if (frame_ >= rules_.waitFrames) {
       scene_->playPartnerClip(rules_.clips.ready);
+      core::logDebug("[port:evolution] tickEvoSequenceLoading (main/evl.c:47): evolving bubble "
+                     "over {}",
+                     drawn_);
       setPhase(Phase::Gathering);
     }
     break;

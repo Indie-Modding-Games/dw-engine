@@ -20,7 +20,9 @@
 -- would show, or, with several needs and need_bubble_stack (an engine improvement, on unless turned
 -- off), the class "stack-2" to "stack-5"; its icons #field-partner-bubble-icon-<i> carry the needs
 -- it shows, the most urgent first (hud.need.<i>.urgency), and the class "frame-<n>" says which of
--- the original's frames the bubble is on, for the skin. How the partner feels about the map
+-- the original's frames the bubble is on, for the skin; as the partner starts to evolve it shows
+-- the evolving bubble instead, with the class "evolving" on it and on its first icon
+-- (hud.partner.evolving). How the partner feels about the map
 -- (hud.partner.area) puts the class "area-liked" or "area-disliked" on #field-status, where a skin
 -- can swap the happiness face as the original does.
 
@@ -342,9 +344,23 @@ local function keep_bubble_inside(document, bubble, stacked)
   end
 end
 
--- Moves the class "frame-<n>" to the bubble's frame now.
+-- The evolving bubble (bubble.c: CONDITION_ICON_EVOLVING), which the partner shows once as it
+-- starts to evolve (main/evl.c: tickEvoSequenceLoading), whatever started the evolution: the game
+-- steps it with the evolution's frames and publishes its frame, 1 to 51 (the burst), as
+-- hud.partner.evolving (0 for none; apps/game: evolving_bubble.hpp). While it shows, the bubble has
+-- the class "evolving" and the game's frame instead of a need and this script's count.
+local function evolving_frame()
+  local frame = ui.setting("hud.partner.evolving")
+  if type(frame) ~= "number" or frame < 1 then
+    return nil
+  end
+  return math.floor(frame)
+end
+
+-- Moves the class "frame-<n>" to the bubble's frame now: the evolving bubble's, else the need
+-- bubble's by this script's count.
 local function draw_bubble_frame(bubble)
-  local frame = math.floor(bubble_seconds * bubble_frames_per_second) + 1
+  local frame = evolving_frame() or math.floor(bubble_seconds * bubble_frames_per_second) + 1
   if frame == bubble_frame then
     return
   end
@@ -358,26 +374,29 @@ end
 local function draw_bubble(document)
   local bubble = document:get("field-partner-bubble")
   local visible = ui.setting("hud.partner.visible") == true
+  local evolving = evolving_frame() ~= nil
   bubble:set_property("left", string.format("%.2f%%", place("hud.partner.x")))
   bubble:set_property("top", string.format("%.2f%%", place("hud.partner.y")))
-  bubble:set_class("shown", visible and bubble_need ~= nil)
+  bubble:set_class("shown", visible and (evolving or bubble_need ~= nil))
+  bubble:set_class("evolving", evolving)
   draw_bubble_frame(bubble)
   -- One need alone is the original's bubble either way: its need on the bubble and on the first
-  -- icon.
-  local stack = stacked_needs()
+  -- icon. The evolving bubble shows no need.
+  local stack = evolving and {} or stacked_needs()
   local count = #stack > 1 and #stack or 0
   for size = 2, bubble_stack_most do
     bubble:set_class("stack-" .. size, count == size)
   end
   for need in pairs(bubble_need_index) do
-    bubble:set_class(need, count == 0 and need == bubble_need)
+    bubble:set_class(need, not evolving and count == 0 and need == bubble_need)
   end
-  local icons = count > 0 and stack or { bubble_need }
+  local icons = count > 0 and stack or { not evolving and bubble_need or nil }
   for index = 0, bubble_stack_most - 1 do
     local icon = document:get("field-partner-bubble-icon-" .. index)
     for need in pairs(bubble_need_index) do
       icon:set_class(need, icons[index + 1] == need)
     end
+    icon:set_class("evolving", evolving and index == 0)
   end
   keep_bubble_inside(document, bubble, count > 0)
 end
@@ -392,7 +411,8 @@ local function pick_bubble(document)
 end
 
 local function tick_bubble(document, seconds)
-  if bubble_need == nil or ui.setting("hud.partner.visible") ~= true then
+  -- The game steps the evolving bubble itself.
+  if bubble_need == nil or ui.setting("hud.partner.visible") ~= true or evolving_frame() then
     return
   end
   bubble_seconds = bubble_seconds + seconds

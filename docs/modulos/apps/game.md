@@ -347,6 +347,24 @@ Medido en el original (forzado con la hora en `twna01`) y comparado por fotogram
   quede al acabar o al saltarla (`skip_evolution`: un salto antes de 0xD6 también cortaba en dwe el bucle a medias).
   Pruebas: `scene_sounds_tests.cpp` («the burst's looping sounds stop with stopSound…»); en vivo, el registro muestra
   `thunkStopSoundMask` de los dos bucles en 0xD6 y al saltar en el cuadro 181.
+- Igual (2026-11-09, informe del usuario: «el globo de evolución no aparece en todos los casos, tampoco con los
+  trucos»): antes del fundido el compañero enseña un globo (`main/evl.c: tickEvoSequenceLoading` llama a
+  `addConditionBubble(7)` al acabar su primera espera de 56 cuadros, cuando empieza el clip `ready`; `bubble.c`:
+  `CONDITION_ICON_EVOLVING`, `CONDITION_SPRITES[9]`, los cuatro cuadros de `CONDITION_EVOLVING_FRAMES`). Sale con
+  cualquier causa (natural, objeto, guion, virus, su vuelta y `evolve` de la consola o del menú de desarrollo), porque
+  todas pasan por el estado 13 (`partnerTickEvolving`). dwe no lo dibujaba nunca: el globo del HUD solo enseñaba
+  necesidades y se ocultaba con el campo parado, y la escena para el tiempo. Medido en el original (estado
+  `01_field_outside_jijimon_house`, `EVOLUTION_TARGET` 5): `addConditionBubble(7)` desde `tickEvoSequenceLoading` y
+  `frameCount` 15 a los 45 vblanks y 30 a los 90 (un paso por cuadro, a 20 por segundo, contando el cuadro en que
+  nace); dura los cuadros 1 a 51 (crece en los 10 primeros, estalla en el 51) y desaparece antes del fundido. Ahora la
+  escena cuenta esos cuadros desde el cambio a `ready` (`EvolutionScene::bubbleFrame`, `evolving_bubble.hpp`), la
+  partida los publica (`hud.partner.evolving`, con el punto visible aunque el campo esté parado) a la altura de la forma
+  que aún se dibuja (`drawnSpecies`: la sesión ya evolucionó al compañero; `addConditionBubble` lee la altura de la
+  entidad sin cambiar), y el HUD pone la clase `evolving` en el globo en vez de las necesidades. El aspecto original lo
+  dibuja con sus sprites (`ow-evolving`, paleta 2 de `FEEL_EF`); el moderno no enseña el globo, como con las
+  necesidades. Pruebas: `evolving_bubble_tests.cpp`, `field_hud_view_tests.cpp` («the evolving bubble's frame goes to
+  the field HUD…»), `ui_tests` («the evolving bubble shows over the partner…») y `evolution_adapter_tests.cpp` («every
+  way to evolve reports one evolution…»); capturas en vivo con `evolve` desde la consola y desde el menú de desarrollo.
 - Igual: al empezar, `EVL_initShardSets`, `EVL_resetParticles` y `EVL_resetSparks` dejan libres los 30 grupos de
   trozos, los 100 cuadrados y los 16 rayos; `EvolutionEffects::start` empieza con las listas vacías y los mismos topes
   (prueba `a new evolution starts with none of the last one's objects and keeps the caps`). La alineación de la

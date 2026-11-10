@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "evolution_effects.hpp"
+#include "evolving_bubble.hpp"
 #include "field_scene.hpp"
 #include "scene_sounds.hpp"
 
@@ -50,6 +51,15 @@ public:
 
   // Whether the field and the game time wait for the scene.
   [[nodiscard]] bool active() const { return phase_ != Phase::Idle; }
+
+  // The frame of the evolving bubble over the partner (evolving_bubble.hpp), 1 to 51, or 0 while
+  // it is not drawn. It hangs over the form the field draws (drawnSpecies), as the original's over
+  // the entity that has not changed yet.
+  [[nodiscard]] std::int32_t bubbleFrame() const {
+    return phase_ == Phase::Gathering ? evolvingBubbleFrame(frame_) : 0;
+  }
+  // The form the field draws now: the old one until the scene shows the new one.
+  [[nodiscard]] const std::string& drawnSpecies() const { return drawn_; }
 
   // Takes the partner's evolutions (Evolved) for the scene and returns the events left for
   // showPartnerEvents; a rebirth (Reborn) tells the scene the form the field now draws.

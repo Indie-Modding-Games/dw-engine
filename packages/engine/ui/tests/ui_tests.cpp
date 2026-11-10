@@ -1697,6 +1697,59 @@ TEST_CASE("the need bubble plays the original's frames: growth, the need's anima
   CHECK(onFrame(1));
 }
 
+namespace {
+
+// The evolving bubble's frame the game publishes (hud.partner.evolving), with a new revision.
+void setEvolvingFrame(Ui& ui, int frame) {
+  ui.setSetting("hud.partner.evolving", static_cast<double>(frame));
+  placePartner(ui, true);
+}
+
+} // namespace
+
+TEST_CASE("the evolving bubble shows over the partner on the game's frames, over any need") {
+  // main/evl.c: tickEvoSequenceLoading makes bubble 7 (bubble.c: CONDITION_ICON_EVOLVING) as the
+  // partner starts to evolve; the game steps it and publishes its frame.
+  for (const bool stacked : {false, true}) {
+    CAPTURE(stacked);
+    Content content;
+    auto ui = createUi(content.mount());
+    input::InputState input{input::defaultActionMap()};
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->show("hud");
+    ui->setSetting("need_bubble_stack", stacked);
+    placePartner(*ui, true);
+    // A need left from before the evolution: the evolving bubble takes the balloon.
+    setFieldNeeds(*ui, true, true, false);
+    setEvolvingFrame(*ui, 1);
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble", "shown"));
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble", "evolving"));
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble", "frame-1"));
+    CHECK(bubbleNeed(*ui).empty());
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "stack-2"));
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble-icon-0", "evolving"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble-icon-0", "sleep"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble-icon-1", "hunger"));
+    // The game's frames, not the script's count.
+    ui->tick(input, 1.0);
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble", "frame-1"));
+    setEvolvingFrame(*ui, 30);
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble", "frame-30"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "frame-1"));
+    setEvolvingFrame(*ui, 51);
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble", "frame-51"));
+    // Gone after the burst; the new form has no need.
+    setFieldNeeds(*ui, false, false, false);
+    setEvolvingFrame(*ui, 0);
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "shown"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "evolving"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble-icon-0", "evolving"));
+    // A need after it is the need bubble again.
+    setFieldNeeds(*ui, true, false, false);
+    CHECK(bubbleNeed(*ui) == "hunger");
+  }
+}
+
 TEST_CASE("the HUD shows the minimap unless it is off or the game does not allow it now") {
   Content content;
   auto ui = createUi(content.mount());

@@ -1780,9 +1780,13 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   const bool partnerHeld =
       field.heldForCare() || field.heldForItem() == game::field::ItemHold::Chest;
   showButterfly(fieldIdle && !partnerHeld, session);
+  // The evolving bubble hangs over the form the field still draws (the session evolved the partner
+  // before the scene): bubble.c: addConditionBubble takes the height of the entity's type.
+  const std::string& bubbleSpecies =
+      evolutionScene_.active() ? evolutionScene_.drawnSpecies() : session.partnerView().species;
   fieldHud_.update(fieldRunning, fieldRunning || (!paused() && gymScreen_.active()),
-                   partnerHeld ? std::nullopt
-                               : partnerBubbleOf(*scene_, species, session.partnerView().species));
+                   partnerHeld ? std::nullopt : partnerBubbleOf(*scene_, species, bubbleSpecies),
+                   evolutionScene_.bubbleFrame());
   publishShopJob();
   battleScreen_.showIntro([&](const game::battle::Combatant& enemy, float lift) {
     return angerAnchorOf(*scene_, species, enemy, lift);

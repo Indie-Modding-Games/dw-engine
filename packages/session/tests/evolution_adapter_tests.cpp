@@ -334,6 +334,55 @@ TEST_CASE(
   }
 }
 
+namespace {
+
+// How many evolutions (Evolved) the partner reported since the last call, routed as after any
+// command: each one starts the field's evolution scene and with it the evolving bubble (apps/game:
+// evolution_scene.hpp).
+std::size_t evolvedEvents(GameSession& session) {
+  session.afterSystemCommand();
+  return static_cast<std::size_t>(std::ranges::count(
+      session.takePartnerEvents(), EventKind::Evolved, &dwe::game::partner::PartnerEvent::kind));
+}
+
+} // namespace
+
+TEST_CASE("every way to evolve reports one evolution, which the field shows with its scene") {
+  // partner_impl.c: tickConditions (natural and virus), item.c: handleEvoItems, partner.c (back
+  // from the virus form) and the event scripts (and the console's evolve) all set the partner's
+  // state 13: partnerTickEvolving, and its bubble (main/evl.c:47).
+  const TestPacks packs;
+  const TableFixture fixture;
+  EvolutionAdapter* adapter = nullptr;
+  auto session = sessionWithEvolution(packs, fixture, adapter);
+  static_cast<void>(evolvedEvents(*session));
+
+  SUBCASE("natural") {
+    changePartner(*session, [](PartnerState& state) {
+      state.species = "bota";
+      state.evolution.hours = BabyHours;
+    });
+    static_cast<void>(evolvedEvents(*session));
+    session->clock().setSpeed(1.0);
+    session->tick(0.1);
+    CHECK(session->partner().state().species == "koro");
+  }
+  SUBCASE("item") {
+    REQUIRE(adapter->useItem(*session, "giga_hand"));
+  }
+  SUBCASE("event script or console") {
+    REQUIRE(adapter->evolveByScript(*session, "species_b").value_or(false));
+  }
+  SUBCASE("virus and back") {
+    adapter->routePartnerEvent(*session, {.kind = EventKind::VirusBarFull, .value = 0});
+    CHECK(session->partner().state().species == "scum");
+    CHECK(evolvedEvents(*session) == 1);
+    REQUIRE(adapter->returnFromVirus(*session));
+    CHECK(session->partner().state().species == "agum");
+  }
+  CHECK(evolvedEvents(*session) == 1);
+}
+
 TEST_CASE("the evolution state goes in the save and comes back") {
   const TestPacks packs;
   const TableFixture fixture;

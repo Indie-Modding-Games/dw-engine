@@ -11,14 +11,18 @@ FieldHud::FieldHud(ui::Ui& ui, const session::GameSession& session) : ui_(&ui), 
 }
 
 void FieldHud::update(bool fieldRunning, bool bubbleRuns,
-                      std::optional<screens::WindowFraction> partnerBubble) {
+                      std::optional<screens::WindowFraction> partnerBubble,
+                      std::int32_t evolvingFrame) {
   publishStatus(fieldRunning);
-  publishPartner(bubbleRuns && session_->playing(), partnerBubble);
+  publishPartner(bubbleRuns && session_->playing(), partnerBubble,
+                 session_->playing() ? evolvingFrame : 0);
 }
 
 void FieldHud::publishPartner(bool fieldRunning,
-                              std::optional<screens::WindowFraction> partnerBubble) {
-  const screens::FieldPartnerView view = screens::fieldPartnerViewOf(partnerBubble, fieldRunning);
+                              std::optional<screens::WindowFraction> partnerBubble,
+                              std::int32_t evolvingFrame) {
+  const screens::FieldPartnerView view =
+      screens::fieldPartnerViewOf(partnerBubble, fieldRunning, evolvingFrame);
   if (publishedPartner_ == view) {
     return;
   }
