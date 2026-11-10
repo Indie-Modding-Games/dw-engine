@@ -69,8 +69,10 @@ struct EvolutionPathEntry {
   // The place of the entry the row belongs to in the original (TableComposition: unnumbered); none
   // for a pack's new row.
   std::optional<std::int32_t> index;
-  std::array<TableReference, EvolutionPathSources> from{};
-  std::array<TableReference, EvolutionPathTargets> to{};
+  // The disc's rows have EvolutionPathSources and EvolutionPathTargets slots; a ruleset's patches
+  // may add more (ruleset/species_extra.hpp).
+  std::vector<TableReference> from = std::vector<TableReference>(EvolutionPathSources);
+  std::vector<TableReference> to = std::vector<TableReference>(EvolutionPathTargets);
 };
 
 // The form an evolution item leads to, written by hand: optional, it overrides the item effects'

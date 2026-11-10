@@ -228,6 +228,14 @@ core::Result<EvolutionRules> readEvolutionRules(const ruleset::Section& section)
 // names.
 core::Result<void> checkEvolutionSection(const ruleset::Section& section);
 
+// The evolution rules of a ruleset: its evolution section, with the wake-up specials of its
+// all_species section, if any, after the section's own (docs/modulos/game/evoluciones-extra.md).
+core::Result<EvolutionRules> readEvolutionRules(const ruleset::Ruleset& ruleset);
+
+// The check of the all_species section for RulesetStore: its species patches and its wake-up
+// specials.
+core::Result<void> checkAllSpeciesSection(const ruleset::Section& section);
+
 // How many of the learned moves (their ids in the move table) the requirements count.
 [[nodiscard]] std::int32_t countMasteredMoves(const RequirementRules& rules,
                                               std::span<const std::string> learned,

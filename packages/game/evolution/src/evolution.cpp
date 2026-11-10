@@ -158,7 +158,7 @@ core::Result<Evolution> Evolution::load(const assets::VirtualFileSystem& vfs,
   if (!section) {
     return std::unexpected{section.error()};
   }
-  auto rules = readEvolutionRules(**section);
+  auto rules = readEvolutionRules(ruleset);
   if (!rules) {
     return std::unexpected{rules.error()};
   }
@@ -425,20 +425,25 @@ std::optional<EvolutionResult> Evolution::evolveByCheat(const EvolutionInputs& i
   const EvolutionEffects effects{rules_, tables_};
   EvolutionResult result =
       effects.apply(inputs, state, target, *reference, EvolutionReason::Script);
+  fightWithFirstMove(result);
+  return result;
+}
+
+void Evolution::fightWithFirstMove(EvolutionResult& result) const {
   // A form whose specialty teaches none of its moves (some enemies' and characters') still fights
   // with a technique: the first known move of its list.
-  if (const SpeciesData* form = tables_.species(result.target);
-      form != nullptr && !result.learnedMove && !result.equippedMoves.front()) {
-    for (std::size_t slot = 0; slot < form->moves.size(); ++slot) {
-      const std::optional<std::string>& move = form->moves.at(slot);
-      if (move && tables_.moves().find(*move) != nullptr) {
-        result.learnedMove = move;
-        result.equippedMoves.front() = static_cast<std::int32_t>(slot);
-        break;
-      }
+  const SpeciesData* form = tables_.species(result.target);
+  if (form == nullptr || result.learnedMove || result.equippedMoves.front()) {
+    return;
+  }
+  for (std::size_t slot = 0; slot < form->moves.size(); ++slot) {
+    const std::optional<std::string>& move = form->moves.at(slot);
+    if (move && tables_.moves().find(*move) != nullptr) {
+      result.learnedMove = move;
+      result.equippedMoves.front() = static_cast<std::int32_t>(slot);
+      return;
     }
   }
-  return result;
 }
 
 std::optional<EvolutionResult> Evolution::rebirth(const EvolutionInputs& inputs,
@@ -461,7 +466,13 @@ std::optional<EvolutionResult> Evolution::evolve(const EvolutionInputs& inputs,
     return std::nullopt;
   }
   const EvolutionEffects effects{rules_, tables_};
-  return effects.apply(inputs, state, target, *reference, reason);
+  EvolutionResult result = effects.apply(inputs, state, target, *reference, reason);
+  // The fallback forms (all_species) are enemies' species: they fight as the developer's evolve
+  // makes them.
+  if (tables_.yields(target)) {
+    fightWithFirstMove(result);
+  }
+  return result;
 }
 
 } // namespace dwe::game::evolution

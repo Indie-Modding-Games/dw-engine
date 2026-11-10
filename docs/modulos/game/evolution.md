@@ -157,7 +157,7 @@ Tests: `packages/game/evolution/tests/hidden_tests.cpp` (puerta de disparadores 
 `the user's disc, extracted: the hidden content's paths and gates` y `the user's disc, extracted: the Mega step's
 paths` (`extracted_tests.cpp`, con `DWE_CONTENT`: los
 destinos tras los del original y cada camino elegido por la revisión),
-`the game pack's hidden content rulesets follow their schemas and read` (`packages/engine/ruleset/tests/species_extra_tests.cpp`)
+`the game pack's optional rulesets follow their schemas and read` (`packages/engine/ruleset/tests/species_extra_tests.cpp`)
 y `extra_prizes: the hidden content's species patches give each new form's item`
 (`packages/game/tournament/tests/cup_extras_tests.cpp`), `a species past the raised triggers is kept apart, and a new game clears it`
 (`packages/session/tests/evolution_adapter_tests.cpp`). Rutas: `route-hidden-content.yaml`,
@@ -224,6 +224,18 @@ Tests: `packages/session/tests/rare_items_tests.cpp` (esquema y rulesets, probab
 ids `game:`), `a pack's evolution item, a row with no original number, works as an Ultimate's does`
 (`packages/game/evolution/tests/specials_tests.cpp`), la composición del icono y la especie de la descripción en
 `table_composition_tests.cpp` y `bag_view_tests.cpp`.
+
+## Todas las especies como compañero
+
+Mejora encendida por defecto (excepción a la regla de que el original es lo de por defecto, decidida el 2026-11-10):
+las 49 especies con modelo que el original no deja criar salen evolucionando en una partida normal. Rulesets `todas`,
+`todas_oculto` y `todas_oculto_mega`, sección `all_species`; apagada, la partida usa `original`, `oculto` u
+`oculto_mega` y es el original. Diseño, árbol y tabla: [evoluciones-extra.md](evoluciones-extra.md).
+
+La selección va por niveles (`originalFirst` en `strategies.cpp`): primero solo los destinos del original; los de
+`all_species` (`EvolutionTables::yields`) solo cuando ninguno del original pasa. Los de la línea de `koro` salen por
+especiales de despertar tras los del original. Una forma de reserva que no aprende técnica al evolucionar lucha con
+la primera de su lista (`fightWithFirstMove`, la misma que usa la evolución de trucos).
 
 ## Paridad con el decomp
 

@@ -144,7 +144,8 @@ public:
   // The form an item of the evolution item table leads to, or nothing.
   [[nodiscard]] std::optional<Species> itemTarget(std::string_view item) const;
 
-  // Takes the gates and the Mega step of a ruleset's species patches (ruleset/species_extra.hpp);
+  // Takes the gates, the fallback targets and the Mega step of a ruleset's species patches
+  // (ruleset/species_extra.hpp);
   // the patches of the tables themselves are applied before build. An id the tables lack is an
   // error.
   core::Result<void> useExtra(const ruleset::SpeciesExtra& extra);
@@ -159,6 +160,9 @@ public:
 
   // Whether a species is a Mega of the Mega step: it counts as Ultimate for every other rule.
   [[nodiscard]] bool isMega(Species species) const { return megas_.contains(species); }
+  // Whether a target is a fallback one (all_species): the natural check picks it only when none of
+  // the original's targets passes (docs/modulos/game/evoluciones-extra.md).
+  [[nodiscard]] bool yields(Species target) const { return yielding_.contains(target); }
 
 private:
   void borrowReferences(const assets::DigimonTable& digimon);
@@ -175,6 +179,7 @@ private:
   std::map<Species, ruleset::SpeciesGate> gates_;
   std::optional<ruleset::MegaStep> megaStep_;
   std::set<Species> megas_;
+  std::set<Species> yielding_;
 };
 
 } // namespace dwe::game::evolution

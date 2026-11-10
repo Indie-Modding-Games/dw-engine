@@ -31,8 +31,8 @@ inline constexpr std::size_t MaxExtendsDepth = 8;
 // own struct.
 struct Section {
   std::string name;
-  // The ruleset whose file it is: the one loaded, or one it extends that this one does not
-  // override.
+  // The ruleset whose file it is: the one loaded, one it extends that this one does not
+  // override, or the one a manifest takes it from (sections_from).
   std::string owner;
   // Where it came from, for messages: the file of the pack that provides it.
   std::string file;

@@ -4,7 +4,9 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace dwe::game::evolution {
@@ -158,11 +160,24 @@ std::optional<Species> babyTarget(const EvolutionQuery& query) {
   return query.tables->find(found->second);
 }
 
+// The targets of a path in one tier: the original's (and every pack's but all_species'), or the
+// fallback ones, which are looked at only when none of the first tier passes
+// (docs/modulos/game/evoluciones-extra.md). Without fallback targets the second tier is empty.
+enum class Tier : std::uint8_t { Original, Fallback };
+
+bool inTier(const EvolutionQuery& query, Species target, Tier tier) {
+  return query.tables->yields(target) == (tier == Tier::Fallback);
+}
+
 // getInTrainingEvolutionTarget: the passing target with the most points; on a tie the first.
-std::optional<Species> bestScored(const EvolutionQuery& query, const RequirementScoring& scoring) {
+std::optional<Species> bestScored(const EvolutionQuery& query, const RequirementScoring& scoring,
+                                  Tier tier) {
   std::optional<Species> best;
   std::int32_t bestScore = 0;
   for (const Species target : query.tables->pathTargets(query.inputs->species)) {
+    if (!inTier(query, target, tier)) {
+      continue;
+    }
     const std::int32_t score = scoring.score(query, target, best);
     if (bestScore < score && score >= query.rules->requirements.passPoints) {
       best = target;
@@ -196,12 +211,16 @@ struct StatAverage {
 // getRookieEvolutionTarget and getChampionEvolutionTarget: among the passing targets, the one with
 // the highest average of the stats it asks for. The original only resets the sum and the count when
 // a target becomes the best.
-std::optional<Species> bestAverage(const EvolutionQuery& query, const RequirementScoring& scoring) {
+std::optional<Species> bestAverage(const EvolutionQuery& query, const RequirementScoring& scoring,
+                                   Tier tier) {
   const bool carriesOver = query.rules->quirks.on(SelectionAverageCarriesOver);
   std::optional<Species> best;
   std::int32_t bestValue = 0;
   StatAverage average;
   for (const Species target : query.tables->pathTargets(query.inputs->species)) {
+    if (!inTier(query, target, tier)) {
+      continue;
+    }
     if (scoring.score(query, target, best) < query.rules->requirements.passPoints) {
       continue;
     }
@@ -223,9 +242,19 @@ std::optional<Species> bestAverage(const EvolutionQuery& query, const Requiremen
   return best;
 }
 
+// Each tier in turn: a fallback target only when no target of the original's passes.
+template <typename Pick>
+std::optional<Species> originalFirst(const EvolutionQuery& query, const RequirementScoring& scoring,
+                                     Pick pick) {
+  if (const auto target = pick(query, scoring, Tier::Original); target) {
+    return target;
+  }
+  return pick(query, scoring, Tier::Fallback);
+}
+
 std::optional<Species> rookieTarget(const EvolutionQuery& query,
                                     const RequirementScoring& scoring) {
-  if (const auto target = bestAverage(query, scoring); target) {
+  if (const auto target = originalFirst(query, scoring, bestAverage); target) {
     return target;
   }
   if (query.inputs->evolutionTimer >= query.rules->fallback.rookieHours) {
@@ -273,16 +302,16 @@ std::optional<Species> OriginalSelection::select(const EvolutionQuery& query,
   case Level::Baby:
     return babyTarget(query);
   case Level::InTraining:
-    return bestScored(query, scoring);
+    return originalFirst(query, scoring, bestScored);
   case Level::Rookie:
     return rookieTarget(query, scoring);
   case Level::Champion:
-    return bestAverage(query, scoring);
+    return originalFirst(query, scoring, bestAverage);
   case Level::Ultimate:
     // The Mega step (an option): an Ultimate that is not a Mega picks among its Mega targets as a
     // champion picks among its own.
     if (query.tables->megaStep() != nullptr && !query.tables->isMega(query.inputs->species)) {
-      return bestAverage(query, scoring);
+      return originalFirst(query, scoring, bestAverage);
     }
     return std::nullopt;
   case Level::None:

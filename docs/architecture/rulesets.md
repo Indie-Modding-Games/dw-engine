@@ -46,6 +46,8 @@ tables:                      # las tablas que usa, por papel; ids de asset de lo
   digimon: data/digimon
   raise: data/raise
 sections: [clock, care]      # las secciones que define este ruleset
+sections_from:               # opcional: secciones que toma de otra carpeta de ruleset
+  all_species: todas
 scripts: [evolution.lua]     # opcional: ficheros Lua de la carpeta
 ```
 
@@ -57,6 +59,9 @@ scripts: [evolution.lua]     # opcional: ficheros Lua de la carpeta
   la que el ruleset pone en su lugar; esa la comprueba la sesión al cargar.
 - **Secciones:** cada una es `rules/<id>/<sección>.yaml` y tiene su esquema `ruleset_<sección>`, con su regla en
   `schemas:` del `pack.yaml` (`ruleset_care: [rules/*/care]`). Quien añade una sección añade los dos.
+- **`sections_from`:** sección → ruleset cuyo `rules/<ruleset>/<sección>.yaml` se lee como propio, sin estar en su
+  cadena de `extends`. Así `todas_oculto` (que extiende `oculto`) comparte el fichero de `todas` sin copiarlo. Sigue la
+  regla de `extends`: si un ruleset de la cadena nombra la misma sección, gana el más cercano.
 
 ### `extends`
 
@@ -85,21 +90,29 @@ lo aplica sobre las tablas que el ruleset nombra:
 |---|---|
 | `requirement` | Su fila de requisitos (formato de `EVOLUTION_REQS`: stats mínimos, errores, peso ± 5, un extra) |
 | `gate` | Lo que tiene que cumplirse antes de puntuar: `triggers` (disparadores de la historia), `hours` (`from`/`to`, hora del día; da la vuelta a medianoche si `to < from`) y `cup` (número de la copa en `data/tournaments`, ganada alguna vez: el disparador 15 + copa que ponen los torneos; abierta donde no hay torneos) |
-| `evolves_from` | Formas que evolucionan a ella: toma la primera ranura libre de `to` tras el último destino de cada una |
+| `evolves_from` | Formas que evolucionan a ella: toma la primera ranura libre de `to` tras el último destino de cada una, y la fila crece si no quedan |
 | `evolves_to` | Sus propios destinos, si no tiene fila de caminos |
-| `stats_gains` | Su fila de referencia de stats (`EVOLUTION_STATS_GAINS`) |
+| `stats_gains` | Su fila de referencia de stats (`EVOLUTION_STATS_GAINS`), o `{copy: <id>}` para tomar la de otra especie |
 | `raise` | Fila de crianza copiada de otra especie (`copy`) con valores cambiados (comida, peso, energía, horas de hambre) |
 | `moves` | Técnicas en las ranuras vacías de su fila de `digimon` |
 | `partner_type`, `partner_moves`, `effect_type` | El tipo con el que lucha de compañero, valores de técnica solo de compañero (`power`, `iframes`) y la especie cuyos efectos usan sus técnicas |
 | `clips`, `field_scale` | Clips del original que le faltan → el que se reproduce en su lugar, y su tamaño en el campo |
 | `chart` | Su casilla del árbol: `x`, `y` (píxeles del árbol; fuera de la rejilla de su caja, o en un hueco ocupado, va al primer hueco libre de esa caja, en la página siguiente si la caja está llena), `icon` (casilla de otra especie) y `palette` |
 
-Un id que la tabla no tiene, o una fila de caminos sin ranura libre, es un error al cargar. La sección `mega_step`
+Un id que la tabla no tiene, o un `copy` de una especie sin fila, es un error al cargar. Las filas de caminos
+tienen las 5 ranuras de origen y 6 de destino del disco, y un parche las alarga en vez de fallar. La sección `mega_step`
 (esquema `ruleset_mega_step`) se lee junto a ella con `readSpeciesExtra`: `check_hours`, `lifetime_hours`,
 `tamer_level_chance`, la lista `mega` y un `species` opcional cuyas entradas sustituyen, campo a campo, las de
 `species_extra`. Las dos son
 secciones normales, así que siguen la regla de `extends`: un ruleset que nombra `species_extra` sustituye el fichero
 entero del que extiende.
+
+La sección `all_species` (esquema `ruleset_all_species`, de `todas` y compartida por `todas_oculto` y
+`todas_oculto_mega` con `sections_from`) es la de [todas las especies como compañero](../modulos/game/evoluciones-extra.md):
+un `species` con el formato de `species_extra` y una lista `wake_up` con el de `specials.wake_up` de `evolution.yaml`,
+que se suma tras la del original. `readSpeciesExtra` la lee la última: una especie que ya parchea `species_extra` o
+`mega_step` se queda con ese parche. Sus destinos son de reserva (`SpeciesPatch::yields`): la selección solo los mira
+cuando ningún destino del original pasa.
 
 `species_extra` también puede traer `extra_prizes`, con el formato de `tournament.yaml` (`{cup, item, amount}` o
 `{cup, money}`, por número): `TournamentAdapter` los suma a los de la sección de torneos, así que un ruleset que

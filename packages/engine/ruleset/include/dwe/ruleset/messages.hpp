@@ -40,6 +40,10 @@ inline constexpr std::string_view BadSection =
     "section '{}' must be lowercase letters, digits and underscores, and not "
     "'{}'";
 inline constexpr std::string_view RepeatedSection = "section '{}' is listed twice";
+inline constexpr std::string_view SectionsFromNotMapping =
+    "sections_from must be a mapping of a section to the ruleset whose folder has its file";
+inline constexpr std::string_view BadSectionOwner =
+    "sections_from: section '{}' must name a ruleset: lowercase letters, digits and underscores";
 inline constexpr std::string_view BadScript =
     "script '{}' must be a .lua file of the ruleset's folder";
 inline constexpr std::string_view MissingScript = "script '{}' is in no pack";

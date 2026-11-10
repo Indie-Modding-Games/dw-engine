@@ -83,6 +83,8 @@ private:
   bool asksRules_ = true;
   // Whether the packs have the ruleset with the Mega step, which the rules offer.
   bool megaOffered_ = false;
+  // Whether the packs have the rulesets of every species as a partner, which the rules offer on.
+  bool allOffered_ = false;
   bool listShown_ = false;
   bool optionsShown_ = false;
   bool landing_ = false;
