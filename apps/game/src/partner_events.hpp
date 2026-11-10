@@ -13,7 +13,8 @@
 namespace dwe::app {
 
 // The console's and the scripts' evolve("<species>"): the partner becomes that species as a map
-// script makes it (EvolutionAdapter::evolveByScript). A debug aid for the console and Lua: the
+// script makes it, any species with a model, an enemy's or a character's too
+// (EvolutionAdapter::evolveByCheat). A debug aid for the console, the developer menu and Lua: the
 // map scripts evolve the partner through the story (session's story scenes). Applied between
 // frames.
 inline constexpr std::string_view EvolveCommand = "evolve";

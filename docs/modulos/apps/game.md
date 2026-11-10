@@ -1294,20 +1294,34 @@ El menú de desarrollo (`ui/dev_menu`, `DevMenuScreen`) es un menú modal sobre 
 consola: dar objetos (de 1, 10 o 99), fijar el dinero, la velocidad del reloj, las estadísticas, los cuidados
 (felicidad, disciplina, cansancio, errores, dormir, baño), hacer evolucionar, viajar a un mapa ya visitado y
 guardar (con el `quick_save` del menú de pausa). Las listas (objetos, especies, mapas) salen de las tablas del jugador con sus claves de nombre
-(`dev_menu.<lista>.count`, `.N.id`, `.N.name`). La de evolucionar es la de todas las formas a las que puede evolucionar
-un compañero (`EvolutionAdapter::evolutionTargets`, `EvolutionTables::evolutionTargets`): cada especie con nivel y fila
-en la tabla de estadísticas de evolución (la que lee `EVL_applyEvolution`), en el orden de la tabla. Entran las
-especiales (las formas virus, las de objeto o evento y las Mega que añada un conjunto de reglas) y no entra ninguna que
-`evolve` rechace: antes salían todas las especies con nivel, también enemigos y personajes sin fila, que la orden no
-podía usar, y faltaban las que no tienen nivel. Con los datos del original son 64 (los índices 1 a 65 salvo el 62, una
-forma sin nivel que ninguna evolución alcanza; el 0 es el del jugador). `Game` solo ejecuta una línea `dev_menu_run` si las herramientas
+(`dev_menu.<lista>.count`, `.N.id`, `.N.name`). La de evolucionar es la de todas las especies con modelo
+(`EvolutionAdapter::cheatTargets`, `EvolutionTables::cheatTargets`), en el orden de la tabla: las formas de compañero,
+las especiales (virus, de objeto o evento, las Mega que añada un conjunto de reglas) y también los enemigos, los jefes y
+los personajes, aunque ninguna evolución del juego los alcance. Con los datos del original son 178 (todas salvo las dos
+sin modelo). El menú y `evolve` usan `evolveByCheat`, que solo se alcanza desde las herramientas de desarrollo; las
+evoluciones de la partida no cambian. Lo que le falta a una especie sin fila se toma de un sustituto
+(`assets::standInRow`): la primera especie con fila del mismo nombre (la copia de enemigo de una forma de compañero),
+luego del mismo nivel y tipo, luego del mismo nivel y si no la de un Novato. Así salen:
+
+- Las estadísticas de referencia de la evolución (`EvolutionTables::cheatReference`): las del sustituto, cargando la
+  especie pedida. Los ataques siguen siendo los de su fila de la tabla de especies.
+- Los cuidados (`game/partner`, `SpeciesTable::addBorrowed`: hambre, sueño, baño, peso, comida favorita) y la colocación
+  del retrato del estado (`PlaySession::raiseTable`): los de la fila de cuidados del sustituto.
+- Las animaciones: el modelo del compañero ya no se rechaza si le faltan clips (`MissingClips::StandIn`,
+  `partner_clip_fallbacks.hpp`). Un clip de `models/partner.yaml` que el modelo no tiene se sustituye por el de andar
+  (los de moverse) o por el de reposo (los demás), y un clip de escena que falta (comer, dormir, la evolución) toca el
+  de reposo y cuenta como terminado. En combate, un clip que falta deja el que estaba sonando.
+
+`Game` solo ejecuta una línea `dev_menu_run` si las herramientas
 están encendidas y la orden es de las que ofrece el menú (`devMenuLineAllowed`). Para ello la consola ganó:
 
 - `warp("<mapa> [salida]")`: cambia de mapa como un guion (`startScriptedMapChange`), con la salida 0 si no se da.
 - `partner_set("happiness <n>")` y `partner_set("tiredness <n>")`, de 0 a 100.
 
 Pruebas: `dev_tools_tests.cpp` (qué líneas acepta el menú y cómo publica sus listas), `tables_tests.cpp` y
-`evolution_adapter_tests.cpp` (la lista de evolucionar tiene todas las formas y cada una evoluciona), `partner_set_command_tests.cpp`
+`evolution_adapter_tests.cpp` (la lista de evolucionar tiene todas las especies con modelo y cada una evoluciona),
+`game_table_tests.cpp` (el orden de los sustitutos), `species_tests.cpp` (los cuidados prestados),
+`partner_clip_fallbacks_tests.cpp` (los clips sustitutos), `partner_set_command_tests.cpp`
 y la ruta `route-dev-menu.yaml` (F2, dinero, un objeto, y con la opción apagada F2 no abre nada).
 
 ## Barras de reclutamiento

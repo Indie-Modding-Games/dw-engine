@@ -233,7 +233,28 @@ core::Result<EvolutionTables> EvolutionTables::build(const assets::DigimonTable&
   if (resolver.error()) {
     return std::unexpected{*resolver.error()};
   }
+  tables.borrowReferences(digimon);
   return tables;
+}
+
+void EvolutionTables::borrowReferences(const assets::DigimonTable& digimon) {
+  // A partner form's own reference stands in: one whose evolution loads a known species.
+  const auto hasReference = [this](const assets::DigimonRow& row) {
+    const StatReference* reference = statReference(row.index);
+    return levelFrom(row.level) != Level::None && reference != nullptr &&
+           species(reference->loads) != nullptr;
+  };
+  for (const assets::DigimonRow& row : digimon.digimon) {
+    if (row.boneCount <= 0 || statReferences_.contains(row.index)) {
+      continue;
+    }
+    if (const assets::DigimonRow* standIn = assets::standInRow(digimon, row, hasReference);
+        standIn != nullptr) {
+      borrowedReferences_.insert_or_assign(
+          row.index,
+          StatReference{.stats = statReferences_.at(standIn->index).stats, .loads = row.index});
+    }
+  }
 }
 
 core::Result<EvolutionTables> EvolutionTables::load(const assets::VirtualFileSystem& vfs,
@@ -362,11 +383,20 @@ const StatReference* EvolutionTables::statReference(Species target) const {
   return found == statReferences_.end() ? nullptr : &found->second;
 }
 
-std::vector<Species> EvolutionTables::evolutionTargets() const {
+const StatReference* EvolutionTables::cheatReference(Species target) const {
+  if (const StatReference* own = statReference(target);
+      own != nullptr && species(own->loads) != nullptr) {
+    return own;
+  }
+  const auto borrowed = borrowedReferences_.find(target);
+  return borrowed == borrowedReferences_.end() ? nullptr : &borrowed->second;
+}
+
+std::vector<Species> EvolutionTables::cheatTargets() const {
   std::vector<Species> targets;
-  for (const auto& [target, reference] : statReferences_) {
-    if (levelOf(target) != Level::None && species(reference.loads) != nullptr) {
-      targets.push_back(target);
+  for (const auto& [index, data] : species_) {
+    if (cheatReference(index) != nullptr) {
+      targets.push_back(index);
     }
   }
   return targets;

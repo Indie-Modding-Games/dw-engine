@@ -2,6 +2,8 @@
 #include <dwe/game/partner/species.hpp>
 #include <dwe/ruleset/species_extra.hpp>
 
+#include <functional>
+#include <map>
 #include <string>
 #include <utility>
 
@@ -33,13 +35,21 @@ SpeciesCare careOf(const assets::RaiseRow& raise, const assets::DigimonRow& digi
 } // namespace
 
 const SpeciesCare* SpeciesTable::find(std::string_view id) const {
-  const auto found = species_.find(id);
-  return found == species_.end() ? nullptr : &found->second;
+  if (const auto found = species_.find(id); found != species_.end()) {
+    return &found->second;
+  }
+  const auto borrowed = borrowed_.find(id);
+  return borrowed == borrowed_.end() ? nullptr : &borrowed->second;
 }
 
 void SpeciesTable::add(SpeciesCare species) {
   std::string id = species.id;
   species_.insert_or_assign(std::move(id), std::move(species));
+}
+
+void SpeciesTable::addBorrowed(SpeciesCare species) {
+  std::string id = species.id;
+  borrowed_.insert_or_assign(std::move(id), std::move(species));
 }
 
 core::Result<SpeciesTable> buildSpeciesTable(const assets::DigimonTable& digimon,
@@ -54,6 +64,24 @@ core::Result<SpeciesTable> buildSpeciesTable(const assets::DigimonTable& digimon
       return core::fail(formatMessage(messages::RaiseWithoutDigimon, *row.digimon));
     }
     table.add(careOf(row, *digimonRow));
+  }
+  // The developer's evolve makes any species with a model the partner, the enemies' and the
+  // characters' too: those with no raise row care as their stand-in does.
+  std::map<std::string, const assets::RaiseRow*, std::less<>> raiseOf;
+  for (const assets::RaiseRow& row : raise.raise) {
+    if (row.digimon) {
+      raiseOf.insert_or_assign(*row.digimon, &row);
+    }
+  }
+  const auto hasRaise = [&](const assets::DigimonRow& row) { return raiseOf.contains(row.id); };
+  for (const assets::DigimonRow& row : digimon.digimon) {
+    if (row.boneCount <= 0 || hasRaise(row)) {
+      continue;
+    }
+    if (const assets::DigimonRow* standIn = assets::standInRow(digimon, row, hasRaise);
+        standIn != nullptr) {
+      table.addBorrowed(careOf(*raiseOf.at(standIn->id), row));
+    }
   }
   return table;
 }

@@ -14,6 +14,7 @@
 #include "fixture.hpp"
 
 using dwe::game::evolution::EvolutionTables;
+using dwe::game::evolution::StatReference;
 using dwe::game::evolution::testing::FixtureForms;
 using dwe::game::evolution::testing::TableFixture;
 
@@ -66,30 +67,49 @@ TEST_CASE(
   CHECK_FALSE(anyRequirementWeighs(tables, 44));
 }
 
-TEST_CASE(
-    "every form with a level and an evolution row is an evolution target, the special ones too") {
+TEST_CASE("the developer's evolve reaches every form with a model, borrowing the stats it lacks") {
   TableFixture fixture;
-  // An enemy-only form: a level, but no row of the stat table, so no evolution reaches it.
+  fixture.gains("agum").hp = 1234;
+  // An enemy's copy of a partner form (same name) and a character with no level, both with a model
+  // and no stat row, and a species with neither model nor row.
   dwe::assets::DigimonRow enemy = fixture.form("agum");
   enemy.id = "fixture_enemy";
   enemy.index = static_cast<std::int32_t>(FixtureForms.size());
+  enemy.boneCount = 20;
+  enemy.type = 7;
   fixture.digimon.digimon.push_back(enemy);
+  dwe::assets::DigimonRow character = fixture.form("agum");
+  character.id = "fixture_character";
+  character.index = enemy.index + 1;
+  character.name = "Character";
+  character.level = 0;
+  character.boneCount = 17;
+  fixture.digimon.digimon.push_back(character);
+  dwe::assets::DigimonRow empty = character;
+  empty.id = "fixture_empty";
+  empty.index = character.index + 1;
+  empty.boneCount = 0;
+  fixture.digimon.digimon.push_back(empty);
   const EvolutionTables tables = fixture.build();
-  const std::vector<dwe::game::evolution::Species> targets = tables.evolutionTargets();
+
+  const auto enemyIndex = *tables.find("fixture_enemy");
+  const StatReference* enemyStats = tables.cheatReference(enemyIndex);
+  REQUIRE(enemyStats != nullptr);
+  CHECK(enemyStats->stats.hp == 1234);
+  CHECK(enemyStats->loads == enemyIndex);
+  // No evolution of the game reaches it: only the developer's evolve.
+  CHECK(tables.statReference(enemyIndex) == nullptr);
+  const auto characterIndex = *tables.find("fixture_character");
+  REQUIRE(tables.cheatReference(characterIndex) != nullptr);
+  CHECK(tables.cheatReference(characterIndex)->loads == characterIndex);
+  // A form with its own row keeps it.
+  CHECK(tables.cheatReference(TableFixture::index("mono")) ==
+        tables.statReference(TableFixture::index("mono")));
+
+  const std::vector<dwe::game::evolution::Species> targets = tables.cheatTargets();
   REQUIRE(std::ranges::is_sorted(targets));
-  const auto targeted = [&](std::string_view id) {
-    return std::ranges::contains(targets, TableFixture::index(id));
-  };
-  for (const auto& form : FixtureForms) {
-    // The level-less row (the player's in the original) is no partner form.
-    CHECK_MESSAGE(targeted(form.id) == (form.level > 0), form.id);
-  }
-  // The virus, item and event forms are targets like any other.
-  for (const std::string_view id : {"nume", "scum", "nani", "veda", "panj", "ggdr", "mtet"}) {
-    CHECK_MESSAGE(targeted(id), id);
-  }
-  const auto enemyIndex = tables.find("fixture_enemy");
-  REQUIRE(enemyIndex.has_value());
-  CHECK_FALSE(std::ranges::contains(targets, *enemyIndex));
-  CHECK(targets.size() == FixtureForms.size() - 1);
+  CHECK(targets.size() == FixtureForms.size() + 2);
+  CHECK(std::ranges::contains(targets, enemyIndex));
+  CHECK(std::ranges::contains(targets, characterIndex));
+  CHECK_FALSE(std::ranges::contains(targets, *tables.find("fixture_empty")));
 }

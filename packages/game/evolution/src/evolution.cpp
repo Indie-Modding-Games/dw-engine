@@ -411,6 +411,17 @@ std::optional<EvolutionResult> Evolution::evolveByScript(const EvolutionInputs& 
   return evolve(inputs, state, target, EvolutionReason::Script);
 }
 
+std::optional<EvolutionResult> Evolution::evolveByCheat(const EvolutionInputs& inputs,
+                                                        const EvolutionState& state,
+                                                        Species target) const {
+  const StatReference* reference = tables_.cheatReference(target);
+  if (reference == nullptr) {
+    return std::nullopt;
+  }
+  const EvolutionEffects effects{rules_, tables_};
+  return effects.apply(inputs, state, target, *reference, EvolutionReason::Script);
+}
+
 std::optional<EvolutionResult> Evolution::rebirth(const EvolutionInputs& inputs,
                                                   ruleset::Random& random) const {
   const std::vector<std::string>& babies = rules_.rebirth.babies;

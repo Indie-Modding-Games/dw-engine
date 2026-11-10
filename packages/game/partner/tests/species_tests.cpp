@@ -75,6 +75,26 @@ TEST_CASE("the species table joins the raise rows with the level of their digimo
   CHECK(tama->defaultWeight == 15);
 }
 
+TEST_CASE("a species with a model and no raise row borrows its stand-in's care") {
+  // The developer's evolve makes an enemy's form the partner: it cares as the rookie it stands in
+  // for, with its own id and level, and only its own rows count as the table's species.
+  const auto digimon =
+      assets::parseDigimonTable("digimon:\n" + digimonRow("tama", 3) + digimonRow("enemy", 4));
+  REQUIRE_MESSAGE(digimon.has_value(), testing::errorOf(digimon));
+  const auto raise = assets::parseRaiseTable("raise:\n" + raiseRow("\"tama\"", 2));
+  REQUIRE_MESSAGE(raise.has_value(), testing::errorOf(raise));
+  const auto table = buildSpeciesTable(*digimon, *raise);
+  REQUIRE_MESSAGE(table.has_value(), testing::errorOf(table));
+  CHECK(table->species().size() == 1);
+  const SpeciesCare* enemy = table->find("enemy");
+  REQUIRE(enemy != nullptr);
+  CHECK(enemy->id == "enemy");
+  CHECK(enemy->level == Level::Champion);
+  CHECK(enemy->sleepPattern == 2);
+  CHECK(enemy->favoriteFood == "fish");
+  CHECK(table->find("nobody") == nullptr);
+}
+
 TEST_CASE("a raise row for a digimon that is not in the table is an error") {
   const auto digimon = assets::parseDigimonTable("digimon:\n" + digimonRow("tama", 3));
   REQUIRE(digimon.has_value());

@@ -814,10 +814,11 @@ private:
 
   explicit FieldScene(const assets::VirtualFileSystem& files);
 
-  // What loading a character does with an animation whose clip the model lacks: the player and the
-  // partner need them all; an NPC is drawn with the clips it has, as the original draws any
-  // species on a map.
-  enum class MissingClips : std::uint8_t { Refuse, Drop };
+  // What loading a character does with an animation whose clip the model lacks: the player needs
+  // them all; the partner plays another of its own instead (partner_clip_fallbacks.hpp, for the
+  // enemies' and characters' models the developer's evolve gives it); an NPC is drawn with the
+  // clips it has, as the original draws any species on a map.
+  enum class MissingClips : std::uint8_t { Refuse, StandIn, Drop };
 
   // Loads a character; `otherModel` draws it with another model than its document's, with the same
   // animations.

@@ -805,10 +805,10 @@ void PlaySession::toggleDevMenu() {
   for (const assets::ItemEntry& entry : items.entries()) {
     lists.items.push_back({.id = entry.id, .nameKey = names.item(items.handleOf(entry))});
   }
-  // Every form the partner can evolve into, the special ones too (the virus forms, the item and
-  // event forms, a ruleset's Mega step), and nothing the evolve command would refuse: the enemies
-  // and characters with a level have no evolution row.
-  for (const std::string& form : game_.systems.evolution->evolutionTargets()) {
+  // Every species with a model: the forms the partner can evolve into (the virus, item and event
+  // forms and a ruleset's Mega step too) and the enemies' and characters', which borrow the rows
+  // they lack (EvolutionTables::cheatReference, the species table's borrowed care).
+  for (const std::string& form : game_.systems.evolution->cheatTargets()) {
     lists.species.push_back({.id = form, .nameKey = names.species(form)});
   }
   if (const session::MapVisits* visits = game_.systems.mapVisits; visits != nullptr) {
@@ -1648,7 +1648,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (const auto evolution = std::exchange(commands.evolution, std::nullopt)) {
     guardFactsChanged = true;
     const std::string& form = *evolution;
-    if (auto evolved = game_.systems.evolution->evolveByScript(session, form); !evolved) {
+    if (auto evolved = game_.systems.evolution->evolveByCheat(session, form); !evolved) {
       core::logWarning("{}", core::formatMessage(messages::EvolveFailed, evolved.error().message));
     } else if (!*evolved) {
       core::logWarning("{}", core::formatMessage(messages::EvolveRefused, form));
@@ -1921,7 +1921,28 @@ void PlaySession::showButterfly(bool partnerNormal, const session::GameSession& 
 
 core::Result<assets::RaiseTable>
 PlaySession::raiseTable(const assets::VirtualFileSystem& files) const {
-  return ruleset::loadPatchedRaiseTable(files, game_.session->rules().current());
+  auto table = ruleset::loadPatchedRaiseTable(files, game_.session->rules().current());
+  if (!table || !species_) {
+    return table;
+  }
+  // The developer's evolve makes any species with a model the partner: one with no row is placed
+  // as its stand-in is (assets::standInRow), as it cares as that one does (game/partner).
+  const auto hasRow = [&](const assets::DigimonRow& row) { return table->find(row.id) != nullptr; };
+  std::vector<assets::RaiseRow> borrowed;
+  for (const assets::DigimonRow& row : species_->digimon) {
+    if (row.boneCount <= 0 || hasRow(row)) {
+      continue;
+    }
+    if (const assets::DigimonRow* standIn = assets::standInRow(*species_, row, hasRow);
+        standIn != nullptr) {
+      assets::RaiseRow copy = *table->find(standIn->id);
+      copy.digimon = row.id;
+      copy.index.reset();
+      borrowed.push_back(std::move(copy));
+    }
+  }
+  std::ranges::move(borrowed, std::back_inserter(table->raise));
+  return table;
 }
 
 float PlaySession::speciesScale(std::string_view species) const {

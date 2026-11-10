@@ -6,7 +6,9 @@
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
+#include <array>
 #include <format>
+#include <functional>
 #include <span>
 #include <utility>
 
@@ -103,6 +105,26 @@ DigimonRow readRow(YamlReader& reader, const YamlNode& node) {
 const DigimonRow* DigimonTable::find(std::string_view id) const {
   const auto found = std::ranges::find(digimon, id, &DigimonRow::id);
   return found == digimon.end() ? nullptr : &*found;
+}
+
+const DigimonRow* standInRow(const DigimonTable& table, const DigimonRow& species,
+                             const std::function<bool(const DigimonRow&)>& hasRows) {
+  if (hasRows(species)) {
+    return &species;
+  }
+  const std::array<std::function<bool(const DigimonRow&)>, 4> choices{
+      [&](const DigimonRow& row) { return !species.name.empty() && row.name == species.name; },
+      [&](const DigimonRow& row) { return row.level == species.level && row.type == species.type; },
+      [&](const DigimonRow& row) { return row.level == species.level; },
+      [](const DigimonRow& row) { return row.level == RookieLevel; }};
+  for (const auto& choice : choices) {
+    const auto found = std::ranges::find_if(
+        table.digimon, [&](const DigimonRow& row) { return choice(row) && hasRows(row); });
+    if (found != table.digimon.end()) {
+      return &*found;
+    }
+  }
+  return nullptr;
 }
 
 core::Result<DigimonTable> parseDigimonTable(std::string_view yaml) {

@@ -100,6 +100,11 @@ public:
   [[nodiscard]] std::optional<EvolutionResult>
   evolveByScript(const EvolutionInputs& inputs, const EvolutionState& state, Species target) const;
 
+  // The developer's evolve: as a script's, into any species with a model (an enemy's or a
+  // character's too), loading the reference stats of EvolutionTables::cheatReference.
+  [[nodiscard]] std::optional<EvolutionResult>
+  evolveByCheat(const EvolutionInputs& inputs, const EvolutionState& state, Species target) const;
+
   // A new baby after death (dooa.c, evolution.c: reincarnatePartner): the egg is picked at random.
   // Only the form, the equipped moves and the raised mark come from here; the partner applies its
   // own rebirth rules (docs/reference/care.md), and the other fields repeat the inputs.
