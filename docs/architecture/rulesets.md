@@ -96,7 +96,7 @@ lo aplica sobre las tablas que el ruleset nombra:
 | `raise` | Fila de crianza copiada de otra especie (`copy`) con valores cambiados (comida, peso, energía, horas de hambre) |
 | `moves` | Técnicas en las ranuras vacías de su fila de `digimon` |
 | `partner_type`, `partner_moves`, `effect_type` | El tipo con el que lucha de compañero, valores de técnica solo de compañero (`power`, `iframes`) y la especie cuyos efectos usan sus técnicas |
-| `clips`, `field_scale` | Clips del original que le faltan → el que se reproduce en su lugar, y su tamaño en el campo |
+| `clips`, `field_scale` | Clips del original que le faltan → el que se reproduce en su lugar, y su tamaño en el campo y en combate (el compañero lucha con su radio y su altura a ese tamaño) |
 | `chart` | Su casilla del árbol: `x`, `y` (píxeles del árbol; fuera de la rejilla de su caja, o en un hueco ocupado, va al primer hueco libre de esa caja, en la página siguiente si la caja está llena), `icon` (casilla de otra especie) y `palette` |
 
 Un id que la tabla no tiene, o un `copy` de una especie sin fila, es un error al cargar. Las filas de caminos

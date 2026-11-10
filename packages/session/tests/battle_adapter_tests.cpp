@@ -328,6 +328,25 @@ TEST_CASE("a ruleset's species patches give the partner its own type and move va
   CHECK(catalog.at(*table).power == 30);
 }
 
+TEST_CASE("a species drawn at another size fights with its body at that size") {
+  const TestPacks packs{
+      {"rules/patched/ruleset.yaml",
+       "id: patched\nname: patched\nversion: 0.1.0\ndescription: test\nextends: original\n"
+       "sections:\n  - species_extra\n"},
+      {"rules/patched/species_extra.yaml", "species:\n  agum:\n    field_scale: 0.5\n"}};
+  Adapters usualAdapters;
+  auto usualSession = sessionWithBattle(packs, usualAdapters);
+  const auto usual = usualAdapters.battle->partnerCombatant(*usualSession);
+  REQUIRE_MESSAGE(usual.has_value(), errorOf(usual));
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters, nullptr, "patched");
+  const auto halved = adapters.battle->partnerCombatant(*session);
+  REQUIRE_MESSAGE(halved.has_value(), errorOf(halved));
+  REQUIRE(usual->radius > 0);
+  CHECK(halved->radius == (usual->radius + 1) / 2);
+  CHECK(halved->height == (usual->height + 1) / 2);
+}
+
 TEST_CASE("the partner fights with its own charge mode, 0 unless something changed it") {
   // battle_setup.c: BTL_initializeCombat keeps PARTNER_ENTITY's chargeMode, 0 in every measured
   // state of the original (new game, the forest fight, later saves).

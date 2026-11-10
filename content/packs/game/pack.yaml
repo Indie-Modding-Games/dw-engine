@@ -119,3 +119,5 @@ schemas:
     - signs/*
   mode:
     - modes/*/mode
+  partner_clips:
+    - animations/partner_clips

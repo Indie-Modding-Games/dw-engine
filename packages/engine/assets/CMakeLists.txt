@@ -50,6 +50,7 @@ dwe_add_module(assets
         src/image_replacement.cpp
         src/image_palettes.cpp
         src/character_model.cpp
+        src/partner_clips.cpp
         src/game_table_document.cpp
         src/move_table.cpp
         src/evolution_table.cpp

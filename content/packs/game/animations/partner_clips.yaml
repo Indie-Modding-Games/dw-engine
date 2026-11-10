@@ -1,0 +1,130 @@
+# Clips de compañero para los modelos que no los traen (los de personaje: solo tienen los pocos clips de sus escenas).
+# Se hacen al cargar el modelo del compañero, desde los modelos extraídos del disco del usuario; aquí solo están las
+# recetas. Diseño: docs/modulos/engine/animation.md («Clips de compañero») y docs/modulos/game/evoluciones-extra.md.
+# Esquema: content/schemas/partner_clips.schema.json.
+
+# Los clips que piden el campo y el combate del compañero (los ids del original): 0 quieto, 1 quieto cansado, 2 anda,
+# 3 anda cansado, 4 corre, 5 contento, 7 descontento, 8 come, 9 se tumba a dormir, 10 se agacha (caca), 11 vitorea,
+# 12 se asusta (riña), 13 rechaza, 14 herido, 15 hambre, 16 ganas de ir al baño, 17 sueño, 18 cansado, 19 enfurruñado,
+# 21 a 25 y 27 gimnasio, 28 vuelve a nacer; en combate 33 en guardia, 34 en guardia débil, 35 anda débil, 36 anda,
+# 37 bloquea, 40 recibe un golpe, 41 lo recibe por la espalda, 42 pose de victoria, 43 cae, 44 se levanta.
+clips: [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 27, 28,
+        33, 34, 35, 36, 37, 40, 41, 42, 43, 44]
+# Las técnicas: un clip por ranura de su lista de técnicas desde aquí (battle_main.c: BTL_setupQueuedMove). Se hacen
+# los del donante.
+first_technique: 46
+
+# El movimiento hecho de cada clip (recetas procedurales): ángulos en grados, alturas en partes de la altura de la
+# cadera. Cada clip dura, se repite y avanza (movimiento raíz) como el del donante con el mismo id, así que en combate
+# los fotogramas de los golpes y de los efectos caen donde caen con el donante.
+motions:
+  0: {kind: breathe, beats: 1, height: 0.02, angle: 2}
+  1: {kind: breathe, beats: 1, height: 0.02, angle: 3, lean: 15}
+  2: {kind: stride, beats: 1, height: 0.04, angle: 25}
+  3: {kind: stride, beats: 1, height: 0.03, angle: 15, lean: 15}
+  4: {kind: stride, beats: 1, height: 0.08, angle: 40, lean: 10}
+  5: {kind: bounce, beats: 2, height: 0.15, angle: 60}
+  7: {kind: shake, beats: 2, angle: 20, lean: 15}
+  8: {kind: nod, beats: 3, height: 0.05, angle: 25}
+  9: {kind: lie, beats: 2, height: 0.35, angle: 80}
+  10: {kind: squat, beats: 1, height: 0.25, angle: 30}
+  11: {kind: bounce, beats: 1, height: 0.2, angle: 80}
+  12: {kind: recoil, height: 0.05, angle: 20}
+  13: {kind: shake, beats: 3, angle: 25}
+  14: {kind: droop, beats: 1, angle: 6, lean: 20}
+  15: {kind: droop, beats: 2, angle: 5, lean: 25}
+  16: {kind: squat, beats: 1, height: 0.15, angle: 20}
+  17: {kind: droop, beats: 1, angle: 8, lean: 30}
+  18: {kind: droop, beats: 1, angle: 4, lean: 20}
+  19: {kind: shake, beats: 1, angle: 30, lean: 10}
+  21: {kind: lunge, height: 0.1, angle: 20, strike: 0.5}
+  22: {kind: nod, beats: 2, height: 0.02, angle: 15}
+  23: {kind: stride, beats: 2, height: 0.06, angle: 30, lean: 10}
+  24: {kind: guard, height: 0.1, angle: 40}
+  25: {kind: recoil, height: 0.08, angle: 30}
+  27: {kind: squat, beats: 2, height: 0.15, angle: 20}
+  28: {kind: bounce, beats: 1, height: 0.1, angle: 40}
+  33: {kind: breathe, beats: 1, height: 0.02, angle: 3, lean: 10}
+  34: {kind: droop, beats: 1, angle: 5, lean: 25}
+  35: {kind: stride, beats: 1, height: 0.03, angle: 15, lean: 20}
+  36: {kind: stride, beats: 1, height: 0.05, angle: 30, lean: 5}
+  37: {kind: guard, height: 0.08, angle: 60, lean: -10}
+  40: {kind: recoil, height: 0.06, angle: 25}
+  41: {kind: recoil, height: 0.06, angle: 25, from_behind: true}
+  42: {kind: bounce, beats: 2, height: 0.2, angle: 90}
+  43: {kind: fall, height: 0.5, angle: 85}
+  44: {kind: rise, height: 0.5, angle: 85}
+# Cada técnica: se echa atrás, golpea hacia delante en `strike` (la parte del clip) y vuelve.
+technique: {kind: lunge, height: 0.2, angle: 25, strike: 0.45}
+
+# Por especie: el donante (una forma de compañero) y el mapa de huesos (hueso propio: hueso del donante; `same` si
+# el esqueleto es el mismo). Con `retarget` los clips del donante se mueven a este esqueleto; con `procedural` se
+# hacen con los movimientos de arriba sobre los grupos de huesos, y el donante da la duración, los bucles, el avance y
+# la lista de técnicas. Las técnicas usan los puntos de efecto del donante en los huesos que el mapa le une.
+# `keep`: clips propios que se quedan (el quieto y el andar del personaje).
+species:
+  # El mismo esqueleto que su forma de compañero.
+  tirs: {donor: tyra, bones: same, keep: [0, 2]}
+  scud: {donor: scum, bones: same, keep: [0]}
+  puti: {donor: tuno, bones: same, keep: [0, 2, 4]}
+  # Bípedos con otro esqueleto: tronco, brazos, piernas y cadera al hueso que hace lo mismo en el donante.
+  anlg:
+    donor: andr
+    bones: {1: 1, 2: 2, 3: 3, 4: 5, 5: 6, 6: 7, 8: 9, 9: 10, 10: 11, 11: 12, 12: 14, 13: 15, 14: 16, 15: 18,
+            16: 19, 17: 20}
+    keep: [0, 2]
+  jiji:
+    donor: mtma
+    bones: {1: 1, 2: 10, 4: 7, 5: 8, 6: 9, 7: 3, 8: 4, 9: 5, 10: 11, 11: 12, 12: 13, 13: 14, 14: 16, 15: 17, 16: 18}
+    keep: [0, 2]
+  tens:
+    donor: mame
+    bones: {1: 1, 2: 10, 3: 7, 4: 8, 5: 9, 6: 3, 7: 4, 8: 5, 9: 11, 10: 12, 11: 13, 12: 14, 13: 16, 14: 17, 15: 18}
+    keep: [0, 2]
+  # Cuadrúpedo de cuello largo: patas, cola, base del cuello y cabeza a las del donante; el resto del cuello sigue.
+  brak:
+    donor: mono
+    bones: {1: 1, 2: 2, 3: 3, 8: 4, 9: 5, 10: 7, 11: 8, 12: 10, 13: 11, 14: 18, 15: 19, 16: 21, 17: 22, 18: 14,
+            19: 15, 20: 16}
+    keep: [0, 2]
+  # Sin forma de compañero parecida: movimientos hechos.
+  tono:
+    donor: etem
+    mode: procedural
+    bones: {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 9: 6, 10: 7, 11: 8, 12: 9, 14: 11, 15: 12, 16: 13, 19: 14, 20: 19,
+            21: 20, 22: 21, 24: 23, 25: 24, 26: 25}
+    keep: [0]
+    groups: {body: 1, head: [3], left_arm: [10], right_arm: [14], left_leg: [20], right_leg: [24]}
+  jure:
+    donor: vegi
+    mode: procedural
+    bones: {1: 1, 2: 3, 9: 8, 10: 9, 11: 10, 6: 14, 7: 15, 8: 16, 15: 8, 12: 14}
+    keep: [0]
+    groups: {body: 1, head: [2], left_arm: [9, 15], right_arm: [6, 12], left_leg: [20, 24], right_leg: [18, 22]}
+    motions:
+      # Un árbol no salta ni se tumba de lado: se mece y se inclina.
+      5: {kind: bounce, beats: 2, height: 0.04, angle: 30}
+      9: {kind: lie, beats: 2, height: 0.1, angle: 25}
+      11: {kind: bounce, beats: 1, height: 0.05, angle: 40}
+      42: {kind: bounce, beats: 2, height: 0.05, angle: 45}
+      43: {kind: fall, height: 0.2, angle: 60}
+      44: {kind: rise, height: 0.2, angle: 60}
+  hagu:
+    donor: elec
+    mode: procedural
+    bones: {1: 1, 2: 3, 3: 7, 4: 9}
+    keep: [0, 2]
+    groups:
+      body: 1
+      head: [2]
+      left_arm: [3]
+      right_arm: [4]
+      spin: {joints: [2, 3, 4], axis: z, turns_per_second: 0.5}
+      # Una rueda no se inclina: al golpear y al recibir se desplaza adelante o atrás.
+      upright: true
+  brik:
+    donor: ogre
+    mode: procedural
+    bones: {1: 1, 2: 2, 3: 3, 4: 8, 5: 5, 6: 11}
+    keep: [0, 2]
+    groups: {body: 1, head: [3], left_arm: [5], right_arm: [4]}

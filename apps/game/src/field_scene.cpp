@@ -1,6 +1,7 @@
 #include "field_scene.hpp"
 
 #include <dwe/animation/clip_sampling.hpp>
+#include <dwe/animation/clip_synthesis.hpp>
 #include <dwe/assets/content_id.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/map_warps.hpp>
@@ -20,8 +21,10 @@
 #include <format>
 #include <iterator>
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -322,7 +325,7 @@ core::Result<void> FieldScene::showPartnerSpecies(std::string_view species) {
   }
   const ClipStandIns standIns = speciesClips_ ? speciesClips_(species) : ClipStandIns{};
   auto partner = loadActor(PartnerCharacter, partnerActor_->entity, partnerMover_, *model,
-                           MissingClips::StandIn, standIns);
+                           MissingClips::StandIn, standIns, species);
   if (!partner) {
     return std::unexpected{partner.error()};
   }
@@ -417,7 +420,7 @@ core::Result<std::unique_ptr<FieldScene::Actor>>
 FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
                       const game::field::MoverRules& rules,
                       const std::optional<assets::AssetId>& otherModel, MissingClips missingClips,
-                      const ClipStandIns& standIns) {
+                      const ClipStandIns& standIns, std::string_view species) {
   const auto id = assets::AssetId::parse(characterId);
   if (!id) {
     return std::unexpected{id.error()};
@@ -435,6 +438,10 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
   auto model = assets::loadModel(*files_, character->model);
   if (!model) {
     return core::fail(std::format("{}: {}", character->model.str(), model.error().message));
+  }
+  std::map<std::int32_t, std::int32_t> effectJoints;
+  if (missingClips == MissingClips::StandIn && !species.empty()) {
+    effectJoints = addPartnerClips(species, *model);
   }
   for (const std::uint32_t clip : assets::addClipStandIns(*model, standIns)) {
     core::logDebug("field: {} plays clip {} as {}", character->model.str(), clip,
@@ -481,7 +488,52 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
   actor->originalModel = isOriginalModel(*files_, actor->character.model);
   actor->chibi =
       chibiRigOf(actor->character.model, *actor->model, chibiStyle_, actor->originalModel);
+  actor->effectJoints = std::move(effectJoints);
   return actor;
+}
+
+std::map<std::int32_t, std::int32_t> FieldScene::addPartnerClips(std::string_view species,
+                                                                 assets::ModelData& model) {
+  if (!partnerClipBook_) {
+    const auto bookId = assets::AssetId::parse(assets::PartnerClipBookAsset);
+    auto book = bookId ? assets::loadPartnerClipBook(*files_, *bookId)
+                       : core::Result<assets::PartnerClipBook>{std::unexpected{bookId.error()}};
+    if (!book) {
+      core::logWarning("field: no partner clip recipes: {}", book.error().message);
+      partnerClipBook_.emplace(std::nullopt);
+    } else {
+      partnerClipBook_.emplace(std::move(*book));
+    }
+  }
+  const assets::PartnerClipBook* book =
+      partnerClipBook_->has_value() ? &**partnerClipBook_ : nullptr;
+  const assets::PartnerClipRecipe* recipe = book != nullptr ? book->find(species) : nullptr;
+  if (recipe == nullptr) {
+    return {};
+  }
+  auto donorId = assets::AssetId::parse(speciesModelOf(recipe->donor));
+  auto donor = donorId ? assets::loadModel(*files_, *donorId)
+                       : core::Result<assets::ModelData>{std::unexpected{donorId.error()}};
+  if (!donor) {
+    core::logWarning("field: {} gets no partner clips: donor {}: {}", species, recipe->donor,
+                     donor.error().message);
+    return {};
+  }
+  auto made = animation::addPartnerClips(model, *donor, *book, *recipe);
+  if (!made) {
+    core::logWarning("field: {} gets no partner clips from {}: {}", species, recipe->donor,
+                     made.error().message);
+    return {};
+  }
+  std::string unmade;
+  for (const std::uint32_t clip : made->unmade) {
+    unmade += std::format(" {}", clip);
+  }
+  core::logInfo("field: {} gets {} partner clips from {} ({}); not made:{}", species,
+                made->made.size(), recipe->donor,
+                recipe->mode == assets::PartnerClipMode::Retarget ? "moved" : "made",
+                unmade.empty() ? std::string{" none"} : unmade);
+  return std::move(made->effectJoints);
 }
 
 core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t exit,

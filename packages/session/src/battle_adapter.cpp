@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -310,7 +311,11 @@ core::Result<void> BattleAdapter::readRules(const ruleset::Ruleset& rules) {
   }
   partnerTypes_.clear();
   partnerVariants_.clear();
+  partnerScales_.clear();
   for (const auto& [id, patch] : extra->species) {
+    if (patch.fieldScale) {
+      partnerScales_.insert_or_assign(id, *patch.fieldScale);
+    }
     if (patch.partnerType) {
       partnerTypes_.insert_or_assign(
           id, static_cast<game::battle::DigimonType>(std::clamp(
@@ -436,6 +441,18 @@ void BattleAdapter::evolveMoves(
                  learned.value_or("nothing"), place(0), place(1), place(2), place(3));
 }
 
+void BattleAdapter::scaleBody(game::battle::Combatant& fighter, std::string_view species) const {
+  const auto scale = partnerScales_.find(species);
+  if (scale == partnerScales_.end()) {
+    return;
+  }
+  const auto scaled = [&](std::int32_t length) {
+    return static_cast<std::int32_t>(std::lround(static_cast<float>(length) * scale->second));
+  };
+  fighter.radius = scaled(fighter.radius);
+  fighter.height = scaled(fighter.height);
+}
+
 core::Result<game::battle::Combatant>
 BattleAdapter::partnerCombatant(const GameSession& session) const {
   const game::partner::PartnerState& partner = session.partner().state();
@@ -447,6 +464,7 @@ BattleAdapter::partnerCombatant(const GameSession& session) const {
   if (const auto type = partnerTypes_.find(partner.species); type != partnerTypes_.end()) {
     fighter.type = type->second;
   }
+  scaleBody(fighter, partner.species);
   if (const auto variants = partnerVariants_.find(partner.species);
       variants != partnerVariants_.end()) {
     fighter.moveVariants = variants->second;
@@ -543,6 +561,7 @@ BattleAdapter::versusCombatant(const game::versus::VersusFighter& fighter) const
   if (const auto type = partnerTypes_.find(fighter.species); type != partnerTypes_.end()) {
     combatant.type = type->second;
   }
+  scaleBody(combatant, fighter.species);
   if (const auto variants = partnerVariants_.find(fighter.species);
       variants != partnerVariants_.end()) {
     combatant.moveVariants = variants->second;

@@ -1315,7 +1315,9 @@ luego del mismo nivel y tipo, luego del mismo nivel y si no la de un Novato. As�
 - Las animaciones: el modelo del compañero ya no se rechaza si le faltan clips (`MissingClips::StandIn`,
   `partner_clip_fallbacks.hpp`). Un clip de `models/partner.yaml` que el modelo no tiene se sustituye por el de andar
   (los de moverse) o por el de reposo (los demás), y un clip de escena que falta (comer, dormir, la evolución) toca el
-  de reposo y cuenta como terminado. En combate, un clip que falta deja el que estaba sonando.
+  de reposo y cuenta como terminado. En combate, un clip que falta deja el que estaba sonando. Antes de eso, una
+  especie con receta en `animations/partner_clips.yaml` (los modelos de personaje) recibe todos sus clips de compañero
+  y de combate ([clips de compañero](../engine/animation.md#clips-de-compañero)), así que no le falta ninguno.
 
 `Game` solo ejecuta una línea `dev_menu_run` si las herramientas
 están encendidas y la orden es de las que ofrece el menú (`devMenuLineAllowed`). Para ello la consola ganó:

@@ -8,6 +8,7 @@
 #include <dwe/assets/map_patch.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/model_data.hpp>
+#include <dwe/assets/partner_clips.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
@@ -620,6 +621,10 @@ public:
                                           const FighterFigure& figure);
   // The model a held fighter is drawn with; null when the field does not draw it.
   [[nodiscard]] const assets::ModelData* fighterModel(std::optional<std::int32_t> npc) const;
+  // The joint of a held fighter's model a technique effect's joint is (Actor::effectJoints): the
+  // same one unless its clips were made from another skeleton.
+  [[nodiscard]] std::int32_t fighterEffectJoint(std::optional<std::int32_t> npc,
+                                                std::int32_t joint) const;
   // The field takes the fighters back where they stand.
   void releaseFighters();
   // A fighter of a stage of the scene's own that is no NPC of the map (a tournament's rival:
@@ -775,6 +780,9 @@ private:
     // game's, which the style leaves as it is.
     animation::ChibiRig chibi{};
     bool originalModel = true;
+    // The partner made with clips of another species' skeleton (animations/partner_clips): its
+    // technique effects name that species' joints, and they go on these of its own.
+    std::map<std::int32_t, std::int32_t> effectJoints{};
   };
 
   // Behind the game menu: the actor's idle clip from its start, played on by `seconds`
@@ -821,12 +829,19 @@ private:
   enum class MissingClips : std::uint8_t { Refuse, StandIn, Drop };
 
   // Loads a character; `otherModel` draws it with another model than its document's, with the same
-  // animations.
+  // animations. The partner (StandIn) drawn as `species` first gets the partner clips its recipe
+  // makes (addPartnerClips), then the stand-ins for the rest.
   core::Result<std::unique_ptr<Actor>>
   loadActor(std::string_view characterId, scene::Entity entity,
             const game::field::MoverRules& rules,
             const std::optional<assets::AssetId>& otherModel = std::nullopt,
-            MissingClips missingClips = MissingClips::Refuse, const ClipStandIns& standIns = {});
+            MissingClips missingClips = MissingClips::Refuse, const ClipStandIns& standIns = {},
+            std::string_view species = {});
+  // Makes the partner clips of the game pack's recipe for `species` in its model, if it has one
+  // (animations/partner_clips.yaml; clip_synthesis.hpp), and returns the effect joints the
+  // technique effects use; nothing made, logged, when the book, the donor or the recipe fails.
+  std::map<std::int32_t, std::int32_t> addPartnerClips(std::string_view species,
+                                                       assets::ModelData& model);
   core::Result<void> enterMap(const std::string& mapId, std::int32_t exit,
                               std::optional<assets::SpawnPoint> at = std::nullopt,
                               std::optional<assets::SpawnPoint> partnerAt = std::nullopt);
@@ -1173,6 +1188,9 @@ private:
   game::field::MoverRules partnerMover_;
   std::function<float(std::string_view)> speciesRadius_;
   std::function<ClipStandIns(std::string_view)> speciesClips_;
+  // The game pack's partner clip recipes, read on the first partner that needs them; nothing when
+  // the pack has none or they do not read.
+  std::optional<std::optional<assets::PartnerClipBook>> partnerClipBook_;
   std::function<float(std::string_view)> speciesScale_;
   // The partner species' size (attachSpeciesScale), times the scenes' partnerScale.
   float partnerSpeciesScale_ = 1.0F;

@@ -227,6 +227,8 @@ private:
   core::Result<void> loadTables(const ruleset::Ruleset& rules);
   [[nodiscard]] const assets::DigimonRow* rowOf(std::string_view species) const;
   void borrowMoves();
+  // A partner of a species with a size patch fights with its body (radius, height) at that size.
+  void scaleBody(game::battle::Combatant& fighter, std::string_view species) const;
   [[nodiscard]] std::optional<MoveSlot> finisherSlot(const assets::DigimonRow& row) const;
   void giveRewards(GameSession& session, const game::battle::BattleResult& result,
                    BattleAftermath& aftermath) const;
@@ -241,6 +243,9 @@ private:
   std::map<std::string, game::battle::DigimonType, std::less<>> partnerTypes_;
   std::map<std::string, std::map<std::string, std::size_t, std::less<>>, std::less<>>
       partnerVariants_;
+  // A partner species' size (its patch's field_scale): its body in battle (radius, height) as
+  // drawn.
+  std::map<std::string, float, std::less<>> partnerScales_;
   PartnerMoves moves_;
   // The rows of the species with a model and no move, with their stand-in's moves (borrowMoves).
   std::map<std::string, assets::DigimonRow, std::less<>> movesBorrowed_;

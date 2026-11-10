@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Partner clips",
+  "description": "animations/partner_clips.yaml of the game pack: the recipes that give the species models with only their scenes' few clips every clip the partner plays in the field and in battle (docs/modulos/engine/animation.md, «Clips de compañero»). Nothing of the disc is here: the clips are made when the partner's model loads, from the user's extracted models. A species' clips are retargeted from a donor (its clips moved through a bone map) or made from the model's own idle with a motion and timed by the donor's clip of the same id.",
+  "type": "object",
+  "required": [
+    "clips",
+    "first_technique",
+    "motions",
+    "technique",
+    "species"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "clips": {
+      "description": "The clip ids the partner's field and battle code play.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/clipId"
+      }
+    },
+    "first_technique": {
+      "description": "The first technique clip id (one per move slot from it); every donor clip from it is made too.",
+      "$ref": "#/$defs/clipId"
+    },
+    "motions": {
+      "description": "The made motion of each clip id, for the procedural recipes.",
+      "$ref": "#/$defs/motions"
+    },
+    "technique": {
+      "description": "The made motion of every technique clip.",
+      "$ref": "#/$defs/motion"
+    },
+    "species": {
+      "description": "Species id -> its recipe.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9_]+$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/recipe"
+      }
+    }
+  },
+  "$defs": {
+    "clipId": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "joint": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "joints": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/joint"
+      }
+    },
+    "motions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[0-9]+$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/motion"
+      }
+    },
+    "motion": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "description": "The shape of the motion: breathe, stride (a step cycle), bounce (hops), shake (side to side), nod (eating), lie (onto its side), squat, droop, guard, recoil (a blow), fall, rise, lunge (wind-up, blow, back).",
+          "enum": [
+            "breathe",
+            "stride",
+            "bounce",
+            "shake",
+            "nod",
+            "lie",
+            "squat",
+            "droop",
+            "guard",
+            "recoil",
+            "fall",
+            "rise",
+            "lunge"
+          ]
+        },
+        "beats": {
+          "description": "How many cycles the clip has.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "angle": {
+          "description": "Degrees of the swing, bend or turn.",
+          "type": "number"
+        },
+        "height": {
+          "description": "The lift or drop, a fraction of the hips' height.",
+          "type": "number"
+        },
+        "lean": {
+          "description": "A held bend of the body over the whole clip, degrees forward (+) or back (-).",
+          "type": "number"
+        },
+        "strike": {
+          "description": "Lunge: the part of the clip at which the blow lands.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "from_behind": {
+          "description": "Recoil: the blow comes from behind.",
+          "type": "boolean"
+        }
+      }
+    },
+    "recipe": {
+      "type": "object",
+      "required": [
+        "donor",
+        "bones"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "donor": {
+          "description": "The species whose clips are moved over or time the made ones.",
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "mode": {
+          "enum": [
+            "retarget",
+            "procedural"
+          ],
+          "default": "retarget"
+        },
+        "bones": {
+          "description": "'same' (the same hierarchy) or joint of this model -> joint of the donor.",
+          "type": [
+            "string",
+            "object"
+          ],
+          "pattern": "^same$",
+          "propertyNames": {
+            "pattern": "^[0-9]+$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/joint"
+          }
+        },
+        "keep": {
+          "description": "Clip ids of its own the partner keeps.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/clipId"
+          }
+        },
+        "groups": {
+          "description": "The joints the made motions move; a procedural recipe needs them (the loader checks).",
+          "type": "object",
+          "required": [
+            "body"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "body": {
+              "$ref": "#/$defs/joint"
+            },
+            "head": {
+              "$ref": "#/$defs/joints"
+            },
+            "left_arm": {
+              "$ref": "#/$defs/joints"
+            },
+            "right_arm": {
+              "$ref": "#/$defs/joints"
+            },
+            "left_leg": {
+              "$ref": "#/$defs/joints"
+            },
+            "right_leg": {
+              "$ref": "#/$defs/joints"
+            },
+            "upright": {
+              "description": "The body never leans forward or back: a motion's lean moves it forward or back instead.",
+              "type": "boolean"
+            },
+            "spin": {
+              "description": "Joints that turn on their own all the time.",
+              "type": "object",
+              "required": [
+                "joints",
+                "axis",
+                "turns_per_second"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "joints": {
+                  "$ref": "#/$defs/joints"
+                },
+                "axis": {
+                  "enum": [
+                    "x",
+                    "y",
+                    "z"
+                  ]
+                },
+                "turns_per_second": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        "motions": {
+          "description": "Motions of this species that replace the book's.",
+          "$ref": "#/$defs/motions"
+        }
+      }
+    }
+  }
+}
