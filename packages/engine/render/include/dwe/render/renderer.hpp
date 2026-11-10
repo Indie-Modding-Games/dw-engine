@@ -106,6 +106,11 @@ public:
   // A transparent sampled target compatible with scene pipelines, with its own depth buffer.
   // Release with destroyTexture. Do not upload pixels into this target.
   core::Result<TextureId> createSceneTexture(rhi::Extent extent);
+  // The same for a scene showing a whole screen of `shape` (the original's 320 x 240, the menus'
+  // 3D figures): each frame draws it at the window's size (screen_target.hpp: screenTargetExtent),
+  // remade under the same id when the window's size changes. Drawers see that size in their
+  // contexts.
+  core::Result<TextureId> createScreenSceneTexture(rhi::Extent shape);
 
   // Replaces a region of a texture (region.width * region.height * 4 bytes). Frames already
   // submitted keep the old pixels. It waits for the GPU: for load time. While the game runs, use
@@ -202,7 +207,18 @@ private:
   struct SceneTarget {
     TextureId color;
     rhi::Image depth;
+    // A screen target's shape (createScreenSceneTexture): it follows the window's size.
+    std::optional<rhi::Extent> shape;
+    // Multisampled, it draws into these, averaged into its color at the end of its pass.
+    std::optional<rhi::Image> msaaColor;
+    std::optional<rhi::Image> msaaDepth;
   };
+  core::Result<TextureId> addSceneTarget(rhi::Extent extent, std::optional<rhi::Extent> shape);
+  // Remakes the screen targets whose size is not the window's.
+  void fitScreenTargets(rhi::Extent window);
+  // Whether the target draws multisampled this frame, making its multisampled images when needed.
+  bool multisampledSceneTarget(SceneTarget& target, rhi::Extent extent);
+  void drawTextureScene(rhi::CommandList& commands, const TextureScene& scene);
   std::vector<SceneTarget> sceneTargets_;
   TextureId white_;
   std::vector<PendingWrite> pending_;

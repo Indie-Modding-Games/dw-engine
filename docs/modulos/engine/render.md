@@ -14,7 +14,9 @@ El render del juego, encima de `rhi`. Ver [render.md](../../architecture/render.
   `textureWritePending` dice si una textura aún tiene una copia esperando. `setMultisampling` dibuja el pase de
   escena con 4 muestras por píxel (el ajuste `antialiasing`; [nitidez](../../architecture/render.md#nitidez-suavizado-de-bordes-y-texturas-de-modelos)).
 - `FrameDesc::textureScenes`: escenas que se dibujan en una textura propia (`createSceneTexture`) antes de los pases
-  de la ventana; con `TextureScene::keep` se dibuja encima de lo que la textura tenía en vez de borrarla.
+  de la ventana; con `TextureScene::keep` se dibuja encima de lo que la textura tenía en vez de borrarla. Con
+  `createScreenSceneTexture` la textura sigue al tamaño de la ventana (`screenTargetExtent`, mismo identificador). Con
+  el suavizado de bordes encendido, las que no usan `keep` se dibujan con 4 muestras por píxel.
 - `Drawer`, `PrepareContext` y `DrawContext`: la interfaz por la que el mapa, los modelos y la UI preparan sus datos
   antes de los pases y graban sus draws en un pase.
 - `Camera`, `perspective`, `pixelProjection`: matrices para el clip space de Vulkan (Y hacia abajo, profundidad 0..1).

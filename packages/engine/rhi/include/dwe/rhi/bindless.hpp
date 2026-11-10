@@ -68,6 +68,11 @@ public:
   // (already removed, or stale).
   bool remove(TextureId texture);
 
+  // Points a registered texture's id at another image, which must stay alive until the next
+  // replace() or remove(). No frame in flight may sample the old image: wait for the device first.
+  // Returns false, and changes nothing, when the id names no registered texture.
+  bool replace(TextureId texture, const Image& image);
+
   // Whether the id names a registered texture, generation included.
   [[nodiscard]] bool contains(TextureId texture) const;
 
@@ -78,6 +83,8 @@ public:
 
 private:
   explicit BindlessTable(Device& device) : device_(&device) {}
+  // Points the shaders' texture `slot` at the image.
+  void write(std::uint32_t slot, const Image& image);
 
   Device* device_;
   VkDescriptorSetLayout setLayout_ = VK_NULL_HANDLE;

@@ -174,20 +174,34 @@ core::Result<TextureId> BindlessTable::add(const Image& image) {
   if (!slot) {
     return core::fail(std::format("the bindless table is full ({} textures)", slots_->capacity()));
   }
+  write(*slot, image);
+  live_[*slot] = true;
+  return TextureId{.index = *slot, .generation = generations_[*slot]};
+}
+
+bool BindlessTable::replace(TextureId texture, const Image& image) {
+  if (!contains(texture)) {
+    core::logWarning("the bindless table has no texture {} (generation {}) to replace",
+                     texture.index, texture.generation);
+    return false;
+  }
+  write(texture.index, image);
+  return true;
+}
+
+void BindlessTable::write(std::uint32_t slot, const Image& image) {
   const VkDescriptorImageInfo imageInfo{.sampler = VK_NULL_HANDLE,
                                         .imageView = image.view(),
                                         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
-  VkWriteDescriptorSet write{};
-  write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  write.dstSet = set_;
-  write.dstBinding = TextureBinding;
-  write.dstArrayElement = *slot;
-  write.descriptorCount = 1;
-  write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-  write.pImageInfo = &imageInfo;
-  vkUpdateDescriptorSets(device_->nativeHandles().device, 1, &write, 0, nullptr);
-  live_[*slot] = true;
-  return TextureId{.index = *slot, .generation = generations_[*slot]};
+  VkWriteDescriptorSet descriptor{};
+  descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  descriptor.dstSet = set_;
+  descriptor.dstBinding = TextureBinding;
+  descriptor.dstArrayElement = slot;
+  descriptor.descriptorCount = 1;
+  descriptor.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+  descriptor.pImageInfo = &imageInfo;
+  vkUpdateDescriptorSets(device_->nativeHandles().device, 1, &descriptor, 0, nullptr);
 }
 
 bool BindlessTable::remove(TextureId texture) {

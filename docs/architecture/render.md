@@ -16,7 +16,7 @@ Las llamadas a Vulkan solo están en `rhi`. `render`, `ui` y los demás usan sus
 
 ## Modelos dentro de la UI
 
-`Renderer::createSceneTexture(extent)` crea un color muestreable compatible con los pipelines de escena y una profundidad independiente. `FrameDesc::textureScenes` recibe el identificador y sus drawers: se preparan antes de aplicar las subidas y se dibujan antes de los pases de la ventana. RHI sincroniza la transición de lectura de textura a attachment y de vuelta; cada uso limpia color transparente y profundidad.
+`Renderer::createSceneTexture(extent)` crea un color muestreable compatible con los pipelines de escena y una profundidad independiente. `createScreenSceneTexture(shape)` hace lo mismo para una escena que muestra una pantalla entera del original (320×240, las figuras 3D de los menús: el jugador, el compañero, la medalla): cada frame la dibuja al tamaño de la ventana (`screenTargetExtent` de `<dwe/render/screen_target.hpp>`: el alto de la ventana y el ancho por la forma), y cuando la ventana cambia la rehace con el mismo identificador (la UI lo guarda), esperando a la GPU y apuntando la entrada de la tabla bindless a la imagen nueva (`BindlessTable::replace`). Así la figura queda nítida a cualquier tamaño; antes se dibujaba a 320×240 y la página la ampliaba, pixelada. `FrameDesc::textureScenes` recibe el identificador y sus drawers: se preparan antes de aplicar las subidas y se dibujan antes de los pases de la ventana. RHI sincroniza la transición de lectura de textura a attachment y de vuelta; cada uso limpia color transparente y profundidad.
 
 `UiRenderer::bindTexture("runtime/nombre", id)` permite usar `<img src="/runtime/nombre"/>` sin copiar píxeles a CPU. Registra el préstamo antes de cargar el documento: RmlUi conoce las dimensiones y dibuja la imagen entre sus demás elementos, aplicando su recorte. El dueño conserva la textura hasta destruir la UI; liberarla desde RmlUi no destruye el recurso. No se reemplazan bindings, porque los documentos conservan las imágenes en caché. Una imagen `runtime/` sin binding (el retrato no se pudo crear, o un test sin renderer) se carga como un píxel transparente: no se ve y RmlUi no avisa de que no pudo cargarla. El contenido debe respetar el alpha premultiplicado de la UI; las partes opacas de un modelo ya tienen alpha uno.
 
@@ -225,10 +225,12 @@ medidas están en [Nitidez](remaster-pipeline.md#nitidez)):
 - **Suavizado de bordes** (`antialiasing`): `Renderer::setMultisampling` dibuja el pase de escena en un color y una
   profundidad de 4 muestras por píxel (`MsaaSamples`; Vulkan obliga a aceptar 4 en color y profundidad, así que no
   hace falta otro camino) y los promedia al final del pase en la ventana o en la textura del paso de luz. Cada
-  pipeline de `Pass::Scene` se crea con su variante multimuestreada. Las texturas de las escenas propias
-  (`textureScenes`, el pase del fondo HD, los retratos) siguen con una muestra. El fragment shader corre una vez por
-  píxel: solo se suavizan los bordes de los triángulos (los contornos de los modelos y de los cuadros), y lo que un
-  shader descarta (los texels transparentes, la máscara de las capas) sigue siendo el píxel del original.
+  pipeline de `Pass::Scene` se crea con su variante multimuestreada. Las escenas propias (`textureScenes`: los
+  retratos y figuras de los menús) se suavizan igual, con su color y profundidad de 4 muestras resueltos en su
+  textura; el pase del fondo HD (`keep`, dibuja encima de lo que tenía) sigue con una muestra. El fragment shader
+  corre una vez por píxel: solo se suavizan los bordes de los triángulos (los contornos de los modelos y de los
+  cuadros), y lo que un shader descarta (los texels transparentes, la máscara de las capas) sigue siendo el píxel
+  del original.
 - **Texturas de modelos** (`texture_filter`): `ModelRenderer::setTextureFilter`. `Nearest` es el texel del original;
   `Smooth` filtra con mipmaps y anisotropía (`FlagSmooth` en `skinned_model.slang`), y antes rellena el color de los
   texels transparentes con el de sus vecinos dibujados para que el filtrado no meta un borde oscuro; `Upscaled`, el

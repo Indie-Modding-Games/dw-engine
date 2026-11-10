@@ -57,7 +57,7 @@ core::Result<std::unique_ptr<MedalFigure>> MedalFigure::create(render::Renderer&
   if (!models) {
     return std::unexpected{models.error()};
   }
-  auto texture = renderer.createSceneTexture({.width = ScreenWidth, .height = ScreenHeight});
+  auto texture = renderer.createScreenSceneTexture({.width = ScreenWidth, .height = ScreenHeight});
   if (!texture) {
     return std::unexpected{texture.error()};
   }

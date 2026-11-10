@@ -1,6 +1,7 @@
 #include <dwe/core/log.hpp>
 #include <dwe/render/camera.hpp>
 #include <dwe/render/renderer.hpp>
+#include <dwe/render/screen_target.hpp>
 #include <dwe/render/upload_budget.hpp>
 #include <dwe/rhi/command_list.hpp>
 #include <dwe/rhi/frame_capture.hpp>
@@ -26,6 +27,21 @@ constexpr std::uint32_t MsaaSamples = 4;
 // builds, where the checked iterators copied a sprite sheet byte by byte.
 std::vector<std::byte> copied(std::span<const std::byte> pixels) {
   return {pixels.data(), pixels.data() + pixels.size()};
+}
+
+// A scene target's own depth, and its color, which the frame's later passes sample.
+core::Result<rhi::Image> sceneTargetDepth(rhi::Device& device, rhi::Extent extent,
+                                          rhi::Format format) {
+  return rhi::Image::create(
+      device, {.extent = extent, .format = format, .usage = rhi::ImageUsage::DepthTarget});
+}
+
+core::Result<rhi::Image> sceneTargetColor(rhi::Device& device, rhi::Extent extent,
+                                          rhi::Format format) {
+  return rhi::Image::create(device,
+                            {.extent = extent,
+                             .format = format,
+                             .usage = rhi::ImageUsage::Sampled | rhi::ImageUsage::ColorTarget});
 }
 
 } // namespace
@@ -162,6 +178,7 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
   const rhi::Extent extent{.width = begun->extent.width, .height = begun->extent.height};
   extent_ = extent;
   upload_.beginFrame(begun->slot);
+  fitScreenTargets(extent);
 
   rhi::CommandList commands{begun->commands, *bindless_};
   PrepareContext prepare{upload_, extent};
@@ -186,27 +203,7 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
   applyPendingWrites(commands);
 
   for (const TextureScene& scene : frame.textureScenes) {
-    const auto target = std::ranges::find(sceneTargets_, scene.target, &SceneTarget::color);
-    const rhi::Image* color = findTexture(scene.target);
-    if (target == sceneTargets_.end() || color == nullptr)
-      continue;
-    const rhi::Extent size = color->extent();
-    commands.prepareSampledTarget(*color);
-    commands.prepareDepthTarget(target->depth);
-    commands.beginRendering(
-        {.extent = size,
-         .color = {.view = color->view(),
-                   .clear =
-                       scene.keep ? std::nullopt : std::optional{std::array{0.F, 0.F, 0.F, 0.F}}},
-         .depth = {.view = target->depth.view(), .clear = 1.F}});
-    DrawContext targetContext{commands, upload_, Pass::Scene, size};
-    for (Drawer* drawer : scene.drawers) {
-      commands.setViewport(fullViewport(size));
-      commands.setScissor({.x = 0, .y = 0, .width = size.width, .height = size.height});
-      drawer->draw(targetContext);
-    }
-    commands.endRendering();
-    commands.finishSampledTarget(*color);
+    drawTextureScene(commands, scene);
   }
 
   // Multisampled, the scene draws into targets of its own, averaged into the frame (or the post
@@ -343,21 +340,126 @@ core::Result<TextureId> Renderer::queueTexture(rhi::Extent extent,
 }
 
 core::Result<TextureId> Renderer::createSceneTexture(rhi::Extent extent) {
-  auto depth = rhi::Image::create(
-      *device_, {.extent = extent, .format = depthFormat_, .usage = rhi::ImageUsage::DepthTarget});
+  return addSceneTarget(extent, std::nullopt);
+}
+
+core::Result<TextureId> Renderer::createScreenSceneTexture(rhi::Extent shape) {
+  // Drawn at the shape's size until the first frame says the window's.
+  return addSceneTarget(shape, shape);
+}
+
+core::Result<TextureId> Renderer::addSceneTarget(rhi::Extent extent,
+                                                 std::optional<rhi::Extent> shape) {
+  auto depth = sceneTargetDepth(*device_, extent, depthFormat_);
   if (!depth)
     return std::unexpected{depth.error()};
-  auto color = rhi::Image::create(
-      *device_, {.extent = extent,
-                 .format = colorFormat_,
-                 .usage = rhi::ImageUsage::Sampled | rhi::ImageUsage::ColorTarget});
+  auto color = sceneTargetColor(*device_, extent, colorFormat_);
   if (!color)
     return std::unexpected{color.error()};
   auto texture = addTexture(std::move(*color));
   if (!texture)
     return std::unexpected{texture.error()};
-  sceneTargets_.push_back({.color = *texture, .depth = std::move(*depth)});
+  sceneTargets_.push_back({.color = *texture,
+                           .depth = std::move(*depth),
+                           .shape = shape,
+                           .msaaColor = std::nullopt,
+                           .msaaDepth = std::nullopt});
   return *texture;
+}
+
+void Renderer::fitScreenTargets(rhi::Extent window) {
+  bool idle = false;
+  for (SceneTarget& target : sceneTargets_) {
+    const rhi::Image* image = findTexture(target.color);
+    if (!target.shape || image == nullptr)
+      continue;
+    const rhi::Extent wanted = screenTargetExtent(*target.shape, window);
+    if (image->extent() == wanted)
+      continue;
+    auto depth = sceneTargetDepth(*device_, wanted, depthFormat_);
+    auto color = sceneTargetColor(*device_, wanted, colorFormat_);
+    if (!depth || !color) {
+      core::logWarning("renderer: cannot remake a {}x{} screen target ({}); it keeps its size",
+                       wanted.width, wanted.height,
+                       !depth ? depth.error().message : color.error().message);
+      target.shape.reset();
+      continue;
+    }
+    // The id stays (the UI holds it), so no frame in flight may still sample the old image.
+    if (!idle) {
+      device_->waitIdle();
+      idle = true;
+    }
+    bindless_->replace(target.color, *color);
+    textures_[target.color.index] = std::move(*color);
+    target.depth = std::move(*depth);
+    target.msaaColor.reset();
+    target.msaaDepth.reset();
+    core::logDebug("renderer: screen target {} drawn at {}x{} for a {}x{} window",
+                   target.color.index, wanted.width, wanted.height, window.width, window.height);
+  }
+}
+
+bool Renderer::multisampledSceneTarget(SceneTarget& target, rhi::Extent extent) {
+  if (!multisampling_) {
+    target.msaaColor.reset();
+    target.msaaDepth.reset();
+    return false;
+  }
+  if (target.msaaColor && target.msaaDepth && target.msaaColor->extent() == extent)
+    return true;
+  target.msaaColor.reset();
+  target.msaaDepth.reset();
+  auto color = rhi::Image::create(*device_, {.extent = extent,
+                                             .format = colorFormat_,
+                                             .usage = rhi::ImageUsage::ColorTarget,
+                                             .samples = msaaSamples_});
+  auto depth = rhi::Image::create(*device_, {.extent = extent,
+                                             .format = depthFormat_,
+                                             .usage = rhi::ImageUsage::DepthTarget,
+                                             .samples = msaaSamples_});
+  if (!color || !depth) {
+    core::logWarning("renderer: cannot make a {}x{} multisampled scene target ({}); drawing it "
+                     "without antialiasing",
+                     extent.width, extent.height,
+                     !color ? color.error().message : depth.error().message);
+    return false;
+  }
+  target.msaaColor = std::move(*color);
+  target.msaaDepth = std::move(*depth);
+  return true;
+}
+
+void Renderer::drawTextureScene(rhi::CommandList& commands, const TextureScene& scene) {
+  const auto target = std::ranges::find(sceneTargets_, scene.target, &SceneTarget::color);
+  const rhi::Image* color = findTexture(scene.target);
+  if (target == sceneTargets_.end() || color == nullptr)
+    return;
+  const rhi::Extent size = color->extent();
+  // A target drawn over keeps its pixels, which multisampled targets do not: it stays single.
+  const bool multisampled = !scene.keep && multisampledSceneTarget(*target, size);
+  const rhi::Image& depth = multisampled ? *target->msaaDepth : target->depth;
+  commands.prepareSampledTarget(*color);
+  commands.prepareDepthTarget(depth);
+  if (multisampled)
+    commands.prepareColorTarget(*target->msaaColor);
+  const std::optional<std::array<float, 4>> clear =
+      scene.keep ? std::nullopt : std::optional{std::array{0.F, 0.F, 0.F, 0.F}};
+  commands.beginRendering(
+      {.extent = size,
+       .color = {.view = multisampled ? target->msaaColor->view() : color->view(),
+                 .clear = clear,
+                 .resolve = multisampled ? color->view() : VK_NULL_HANDLE},
+       .depth = {.view = depth.view(), .clear = 1.F},
+       .samples = multisampled ? msaaSamples_ : 1U});
+  DrawContext context{commands, upload_, Pass::Scene, size};
+  for (Drawer* drawer : scene.drawers) {
+    commands.setViewport(fullViewport(size));
+    commands.setScissor({.x = 0, .y = 0, .width = size.width, .height = size.height});
+    drawer->draw(context);
+  }
+  commands.endRendering();
+  commands.finishSampledTarget(*color);
 }
 
 core::Result<void> Renderer::queueTextureUpdate(TextureId texture, const rhi::Rect& region,
