@@ -23,8 +23,13 @@ struct RtcSettings {
 // Opens a text WebSocket to a URL; the tests give one to an in-process server.
 using SocketOpener = std::function<std::unique_ptr<SignalSocket>(const std::string& url)>;
 
-// A WebSocket to the signaling server (libdatachannel's client).
+// A WebSocket to the signaling server (libdatachannel's client). A wss:// server's certificate
+// must be valid for the URL's host and chain up to one of the trusted roots (PEM certificates;
+// trustedSignalRoots() unless given), or the socket fails: nobody in between can pose as the
+// server.
 std::unique_ptr<SignalSocket> openWebSocket(const std::string& url);
+std::unique_ptr<SignalSocket> openWebSocketTrusting(const std::string& url,
+                                                    const std::string& trustedRoots);
 
 // A peer link over WebRTC data channels (libdatachannel): the host makes a room on the signaling
 // server and offers, the guest joins it with the room's code and answers, both trade their ICE

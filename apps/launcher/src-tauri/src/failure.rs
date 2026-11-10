@@ -32,6 +32,8 @@ pub mod code {
     pub const OTHER_REGION: &str = "other-region";
     /// dwx extract failed, or its packs could not be moved into place.
     pub const EXTRACT_FAILED: &str = "extract-failed";
+    /// The loose base pack of an older install could not be cooked into base.pak (it stays loose).
+    pub const CONVERT_FAILED: &str = "convert-failed";
     /// No game is installed yet and none could be downloaded.
     pub const NO_GAME: &str = "no-game";
     /// The release server could not be reached.

@@ -20,6 +20,12 @@ body {
 	display: none;
 }
 
+/* A bar's value as the original's digit sprites (common/hud_digits.lua): only the skins that have the sprites show
+   them (skins/original/theme.rcss). */
+.hud-digit {
+	display: none;
+}
+
 /* A focusable entry of a menu. Focus is what the keyboard and the gamepad move and what confirm activates; the pointer
    moves it too, so there is only ever one highlighted entry. */
 button {

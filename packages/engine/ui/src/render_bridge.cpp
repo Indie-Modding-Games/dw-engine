@@ -6,9 +6,12 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <cstring>
 #include <span>
+#include <stop_token>
 #include <vector>
 
 namespace dwe::ui {
@@ -82,10 +85,68 @@ render::TextureId textureOf(Rml::TextureHandle handle) {
 
 } // namespace
 
+struct RenderBridge::Smoothing {
+  std::uint32_t width = 0;
+  std::uint32_t height = 0;
+  // Premultiplied, once finished; empty when it was abandoned before it started.
+  std::vector<std::byte> pixels;
+  double milliseconds = 0.0;
+  std::atomic<bool> finished{false};
+};
+
 void RenderBridge::beginFrame() {
   if (gpu_ != nullptr) {
     gpu_->draws.clear();
   }
+  finishSmoothings();
+}
+
+void RenderBridge::startSmoothing(Rml::TextureHandle texture, std::uint32_t width,
+                                  std::uint32_t height, std::vector<std::byte> pixels,
+                                  std::uint32_t doublings) {
+  auto job = std::make_shared<Smoothing>();
+  job->width = width << doublings;
+  job->height = height << doublings;
+  std::jthread thread{[job, turn = smoothingTurn_, cache = upscaleCache_, width, height,
+                       pixels = std::move(pixels), doublings](const std::stop_token& stop) mutable {
+    const std::scoped_lock lock{*turn};
+    if (!stop.stop_requested()) {
+      const auto start = std::chrono::steady_clock::now();
+      job->pixels = smoothed(width, height, std::move(pixels), doublings, cache.get());
+      premultiply(job->pixels);
+      job->milliseconds =
+          std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start)
+              .count();
+    }
+    job->finished.store(true, std::memory_order_release);
+  }};
+  smoothings_.insert_or_assign(texture,
+                               SmoothingWork{.job = std::move(job), .thread = std::move(thread)});
+}
+
+void RenderBridge::finishSmoothings() {
+  std::erase_if(abandonedSmoothings_, [](const SmoothingWork& work) {
+    return work.job->finished.load(std::memory_order_acquire);
+  });
+  for (auto work = smoothings_.begin(); work != smoothings_.end();) {
+    const Smoothing& job = *work->second.job;
+    if (!job.finished.load(std::memory_order_acquire)) {
+      ++work;
+      continue;
+    }
+    const Rml::Vector2i texels{static_cast<int>(job.width), static_cast<int>(job.height)};
+    if (const Rml::TextureHandle smooth = createTexture(texels, job.pixels); smooth != 0) {
+      smoothedTextures_.insert_or_assign(work->first, textureOf(smooth));
+      core::logDebug("ui: smoothed an image to {}x{} in {:.0f} ms", job.width, job.height,
+                     job.milliseconds);
+    }
+    work = smoothings_.erase(work);
+  }
+}
+
+render::TextureId RenderBridge::drawnTexture(Rml::TextureHandle texture) const {
+  const auto smooth = smoothedTextures_.find(texture);
+  return smooth != smoothedTextures_.end() ? smooth->second : textureOf(texture);
 }
 
 Rml::CompiledGeometryHandle RenderBridge::CompileGeometry(Rml::Span<const Rml::Vertex> vertices,
@@ -125,7 +186,7 @@ void RenderBridge::RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vec
   gpu_->draws.push_back(UiDraw{
       .geometry = found->second,
       .translation = {translation.x, translation.y},
-      .texture = texture == 0 ? gpu_->renderer->whiteTexture() : textureOf(texture),
+      .texture = texture == 0 ? gpu_->renderer->whiteTexture() : drawnTexture(texture),
       .sharp = sharpTextures_.contains(texture),
       .scissor = scissorEnabled_ ? std::optional{scissor_} : std::nullopt,
       .transform = transform_,
@@ -185,18 +246,24 @@ Rml::TextureHandle RenderBridge::LoadTexture(Rml::Vector2i& dimensions, const Rm
   std::uint32_t width = image->pixels.width;
   std::uint32_t height = image->pixels.height;
   std::vector<std::byte> pixels = std::move(image->pixels.pixels);
-  if (TextureSources::isSmoothed(source)) {
-    if (const std::uint32_t doublings = smoothDoublings(width); doublings > 0) {
-      pixels = smoothed(width, height, std::move(pixels), doublings, upscaleCache_.get());
-      width <<= doublings;
-      height <<= doublings;
-    }
+  const std::uint32_t doublings = TextureSources::isSmoothed(source) ? smoothDoublings(width) : 0;
+  // Headless, nothing draws: the smoothed size is all a test can see.
+  if (doublings > 0 && gpu_ == nullptr) {
+    pixels = smoothed(width, height, std::move(pixels), doublings, upscaleCache_.get());
+    width <<= doublings;
+    height <<= doublings;
   }
+  // With a renderer the image draws filtered as it is until its smoothed pixels are ready.
+  std::vector<std::byte> straight =
+      doublings > 0 && gpu_ != nullptr ? pixels : std::vector<std::byte>{};
   const Rml::Vector2i texels{static_cast<int>(width), static_cast<int>(height)};
   premultiply(pixels);
   const Rml::TextureHandle texture = createTexture(texels, pixels);
   if (texture != 0 && TextureSources::isPixelArt(source)) {
     sharpTextures_.insert(texture);
+  }
+  if (texture != 0 && !straight.empty()) {
+    startSmoothing(texture, width, height, std::move(straight), doublings);
   }
   return texture;
 }
@@ -208,7 +275,16 @@ Rml::TextureHandle RenderBridge::GenerateTexture(Rml::Span<const Rml::byte> sour
 
 void RenderBridge::ReleaseTexture(Rml::TextureHandle texture) {
   sharpTextures_.erase(texture);
+  if (const auto work = smoothings_.find(texture); work != smoothings_.end()) {
+    work->second.thread.request_stop();
+    abandonedSmoothings_.push_back(std::move(work->second));
+    smoothings_.erase(work);
+  }
   if (gpu_ != nullptr && texture != 0) {
+    if (const auto smooth = smoothedTextures_.find(texture); smooth != smoothedTextures_.end()) {
+      gpu_->renderer->destroyTexture(smooth->second);
+      smoothedTextures_.erase(smooth);
+    }
     if (std::ranges::any_of(gpu_->borrowedTextures, [texture](const auto& binding) {
           return handleOf(binding.second) == texture;
         }))

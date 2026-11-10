@@ -39,6 +39,10 @@ struct FieldCloud {
   std::int32_t x = 0;
   std::int32_t z = 0;
   std::int32_t state = 0;
+  // Smooth motion in a battle (battle_glide.hpp: cloudBehind): how far behind its frame it is
+  // drawn, 0 to 1 of a frame, its height, size and shade on the way from the last frame's; its
+  // picture is the frame's.
+  float behind = 0.0F;
 };
 
 // A spark of light that bursts into particles (efe.c: PARTICLE_FX_DATA).
@@ -52,6 +56,10 @@ struct FieldSpark {
   std::int32_t endFrame = 0;
   // spread[0..3][i]: each flash's offset and size.
   std::array<std::array<std::int32_t, 3>, 4> spread{};
+  // Smooth motion in a battle (battle_glide.hpp: sparkBehind): how far behind its frame it is
+  // drawn, 0 to 1 of a frame, its particles' spread and colour on the way from the last frame's;
+  // its flash shows on its frame.
+  float behind = 0.0F;
 };
 
 // A particle on a fighter's node (efe.c: renderEntityParticleFX): where the node is now (world

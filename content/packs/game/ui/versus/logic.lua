@@ -319,6 +319,7 @@ local function draw_bar(document, side, name)
   local pixels = total > 0 and math.floor(math.max(0, math.min(value, total)) * 50 / total) or 0
   set_property(document, "f" .. side .. "-" .. name .. "-fill", "width", (pixels * 3) .. "dp")
   set_text(document, "f" .. side .. "-" .. name .. "-value", tostring(value))
+  hud_digits.draw(document, "f" .. side .. "-" .. name .. "-d-", value, set_class)
 end
 
 -- The finisher's letters (vs_hud.c: VS_renderHPBarDigits): "FINISH" a letter per sixth of the

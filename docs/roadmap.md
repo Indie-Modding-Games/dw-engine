@@ -11,10 +11,10 @@ están en las [especificaciones por fase](plan/index.md).
 | 1 | Tubería de assets | M | Cerrada (2026-10-20): el disco US se extrae entero (0 pendientes, 0 parciales) y el motor carga el resultado, extraído y cocinado; el formato cocinado de los vídeos pasa a la fase 5 |
 | 2 | Prueba vertical | M | Cerrada (2026-10-20) |
 | 3 | Núcleo jugable | L | Cerrada (2026-10-21) |
-| 4 | El juego original entero | XL | En curso: la historia entera se juega, del título a los créditos, y la beta cerrada llega por el lanzador |
-| 5 | Mods, modos y mejoras | Continuo | Pendiente |
+| 4 | El juego original entero | XL | En curso: la historia entera se juega, del título a los créditos, y la beta cerrada llega por el lanzador; falta la primera estable ([qué la bloquea](plan/fase-4-contenido-y-modos.md#estado-2026-11-09)) |
+| 5 | Mods, modos y mejoras | Continuo | Empezada: el versus en línea y en la Arena, los modos de juego y los hooks de mods ya están en `main` |
 
-## Dónde estamos (2026-11-06)
+## Dónde estamos (2026-11-09)
 
 - **La fase 4 es solo el juego original.** Desde el 2026-10-22 la fase 4 es el juego original (vanilla) entero y
   jugable. Lo que no es del original pasa a la fase 5: modos de juego, el modo versus, la API de mods completa, la
@@ -23,11 +23,13 @@ están en las [especificaciones por fase](plan/index.md).
   (`content/packs/game/rules/original/story_lock.yaml`, opción `--story-stage`). Las nueve etapas están abiertas
   (`active_stage: stage_9`) y las rutas `tests/autotest/route-full-01` a `route-full-09` juegan la historia entera
   encadenadas ([prueba vertical](guides/prueba-vertical.md)).
-- **Cobertura del port:** 1339 de las 1438 funciones del original que hay que portar están portadas y 8 a medias.
-  Las 91 que faltan son el modo versus y la demo del título, de la fase 5 ([cobertura](reference/port-coverage.md)).
+- **Cobertura del port:** 1391 de las 1456 funciones del original que hay que portar están portadas y 5 a medias.
+  Las 60 que faltan son del versus y la demo del título, de la fase 5 ([cobertura](reference/port-coverage.md)).
+- **Fase 5 empezada.** El versus en línea y en la Arena, los modos de juego y los hooks de mods ya están en `main`.
 - **Beta cerrada por el lanzador.** Cada fusión en `main` que cambia código publica una versión de prueba
   (`<versión>-beta.<commits en main>`, canal «Pruebas» del lanzador, con la clave de la beta a través de la
-  [pasarela](modulos/services/beta-gateway.md)). Todavía no se ha promovido ninguna estable. Paquetes para Linux,
+  [pasarela](modulos/services/beta-gateway.md)). Todavía no se ha promovido ninguna estable (la última de prueba es
+  `v0.1.0-beta.1051`). Paquetes para Linux,
   Windows y macOS ([lanzador](modulos/apps/launcher.md), [beta para Linux](guides/beta-linux.md),
   [beta para Windows y macOS](guides/beta-windows-macos.md)). La primera ronda de testers empezó el 2026-11-06.
 - **Lo siguiente:** arreglar lo que encuentren los testers (reportes F12), cerrar los huecos que quedan
@@ -151,8 +153,9 @@ autotest lo recorre con el reloj acelerado.
 
 **Hecho cuando:** el juego original se juega entero, del título a los créditos, y hay una versión estable publicada.
 
-**Estado (2026-11-06): en curso.** Las nueve etapas están abiertas y la beta tiene versiones de prueba; falta lo de
-[Dónde estamos](#dónde-estamos-2026-11-06).
+**Estado (2026-11-09): en curso.** Las nueve etapas están abiertas, la cadena `route-full-01` a `route-full-09` juega
+la historia entera y la beta tiene versiones de prueba. Falta la primera versión estable y lo que lista el
+[estado de la fase](plan/fase-4-contenido-y-modos.md#estado-2026-11-09).
 
 Al principio la fase 4 era «Contenido y modos» ([especificación](plan/fase-4-contenido-y-modos.md)). De su fase 4a
 ya están en `main` la conversión de los scripts a Lua, los paquetes de mods por ID, la API de Lua versionada, los

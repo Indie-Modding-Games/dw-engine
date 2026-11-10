@@ -142,9 +142,12 @@ local function draw_fighter(document, index)
   lookup(document, prefix .. "-hp"):set_text(tostring(hp))
   lookup(document, prefix .. "-hp-fill"):set_property("width", percent(hp, max_hp) .. "%")
   if index == 0 then
-    -- The partner's HUD shows HP and MP all the time (battle_hud.c: BTL_renderPartnerStatusBars).
+    -- The partner's HUD shows HP and MP all the time (battle_hud.c: BTL_renderPartnerStatusBars),
+    -- its values with BTL_renderNumber(0, 4, x0 + 0x49, y0 - 3, value, 0xa).
+    hud_digits.draw(document, prefix .. "-hp-d-", hp, set_class)
     lookup(document, prefix .. "-mp-label"):set_text(t(stat_label_keys[1]))
     lookup(document, prefix .. "-mp"):set_text(tostring(mp))
+    hud_digits.draw(document, prefix .. "-mp-d-", mp, set_class)
     lookup(document, prefix .. "-mp-fill"):set_property("width", percent(mp, max_mp) .. "%")
   else
     -- An enemy's HP bar only shows for a while after it takes damage, and it has no MP bar

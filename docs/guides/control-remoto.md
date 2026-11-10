@@ -41,7 +41,7 @@ ticks o se ha escrito la imagen.
 | `press` | `keys`, `ticks` (6) | Las teclas abajo exactamente esos ticks y luego arriba. Con la lógica parada, corre esos ticks ella misma. Dos `press` seguidos se encadenan tick a tick |
 | `hold` | `keys` | Las teclas abajo desde el siguiente tick hasta `release` |
 | `release` | `keys` | Suelta esas teclas, o todas sin `keys` |
-| `pause` | | Para la lógica: no corre ningún tick, pero el juego sigue dibujando |
+| `pause` | `alpha` (opcional, de 0 a 1) | Para la lógica: no corre ningún tick, pero el juego sigue dibujando. Con `alpha`, las imágenes se dibujan esa fracción de tick después del último (el movimiento suave entre ticks) en vez de donde lo deja el reloj, así que las capturas entre dos ticks salen siempre iguales; `resume` o un `pause` sin `alpha` lo quitan |
 | `resume` | | La lógica vuelve a su ritmo |
 | `advance` | `ticks` | Corre esos ticks. Con la lógica parada, exactamente esos y ninguno más, a 4 por frame; si no, espera a que pasen |
 | `screenshot` | `path` | Guarda el siguiente frame dibujado como PNG en esa ruta |

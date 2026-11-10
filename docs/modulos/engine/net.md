@@ -49,15 +49,33 @@ la señalización. Se usa su API en C (`rtc.h`) porque el proyecto compila sin e
 - **TLS con Mbed TLS.** El port de vcpkg usa OpenSSL, que no compila en la imagen de Linux (le faltan las cabeceras
   del kernel) ni en la compilación cruzada a Windows. `tooling/vcpkg-ports/libdatachannel` es el port de vcpkg con
   `USE_MBEDTLS=ON`, y `tooling/vcpkg-ports/mbedtls` el de Mbed TLS con DTLS-SRTP activado (lo pide libdatachannel).
-  Solo cambian los ficheros de build de los ports; el código de las librerías no se toca.
-- **Licencias.** libdatachannel y libjuice son MPL-2.0: se pueden enlazar sin cambiar la licencia del proyecto
-  mientras no se modifiquen sus ficheros, y el aviso de terceros dice dónde está su código. usrsctp (BSD-3), plog
-  (MIT), nlohmann-json (MIT) y Mbed TLS (Apache-2.0) entran en el mismo aviso. Los textos están en
-  `scripts/package/licenses/` y los junta `scripts/package/third_party_notices.py`.
-- **El cliente WebSocket no comprueba el certificado del servidor** con Mbed TLS (libdatachannel no lo hace con esa
-  librería). Lo peor que puede hacer un servidor falso es presentar a los dos jugadores a otro par o no presentarlos:
-  la partida va cifrada por DTLS de par a par, y el versus comprueba versión y contenido antes de empezar. Si hace
-  falta más, se puede fijar el certificado o cambiar de librería TLS.
+  Del código de libdatachannel solo cambian dos cosas pequeñas, en parches del port: unos `#include <algorithm>` que
+  pide la libc++ de macOS y `ws-ca-certificates.patch` (abajo).
+- **Licencias.** libdatachannel y libjuice son MPL-2.0: se pueden enlazar sin cambiar la licencia del proyecto, y los
+  ficheros suyos que cambian siguen siendo MPL-2.0 y públicos (los parches del port). El aviso de terceros dice dónde
+  está su código y dónde los cambios. usrsctp (BSD-3), plog (MIT), nlohmann-json (MIT) y Mbed TLS (Apache-2.0) entran
+  en el mismo aviso. Los textos están en `scripts/package/licenses/` y los junta
+  `scripts/package/third_party_notices.py`.
+
+## El certificado del servidor de señalización
+
+El cliente WebSocket comprueba el certificado de un servidor `wss://`: tiene que ser válido para el nombre del
+servidor de la URL y venir de una autoridad de confianza. Si no, el socket falla y el versus lo cuenta como
+`ServerUnreachable`. Así nadie en medio puede hacerse pasar por el servidor y emparejar mal a los jugadores.
+
+- **Raíces de confianza** (`trustedSignalRoots`, `trusted_roots.hpp`): primero las que trae el juego, las raíces de
+  las autoridades con las que Cloudflare firma los certificados del servidor desplegado (Let's Encrypt, Google Trust
+  Services, SSL.com y Sectigo, que usa para sus certificados de reserva); luego las del sistema: el fichero de raíces
+  de Linux (Debian, Fedora, openSUSE...) o de macOS (`/etc/ssl/cert.pem`) y el almacén `ROOT` de Windows.
+- **Por qué raíces y no el certificado del servidor.** El del servidor se renueva cada pocos meses y fijarlo
+  rompería el juego en cada renovación; las raíces duran décadas (la primera que caduca, en 2035). Las propias del
+  juego hacen que conecte aunque el sistema no las tenga (Windows llena su almacén según las va necesitando); las del
+  sistema, que un servidor propio (`--versus-server`) con cualquier certificado público también funcione. Cuando una
+  raíz del juego se acerque a su fin, se añade la que la sustituye.
+- **Cómo.** libdatachannel con Mbed TLS no tiene las raíces del sistema: sin ellas no puede comprobar nada (y en
+  Windows ni lo intenta). `ws-ca-certificates.patch` deja que su API en C reciba las raíces (`caCertificatePemFile`,
+  como ya hace su API en C++) y que Windows también compruebe contra ellas. El juego se las da siempre.
+- `ws://` (sin TLS) sigue valiendo para un servidor de pruebas local.
 
 ## Límites
 
@@ -75,3 +93,9 @@ desincronización en su tick y los mensajes dañados; los códigos de sala; el c
 en memoria con las reglas del de verdad (pareja y reenvío, código que no existe, sala llena, servidor caído, invitado
 que se va); y dos `RtcPeerLink` de verdad que se conectan en la misma máquina por ese servidor en memoria (sin red ni
 STUN) y hablan por los dos carriles.
+
+El certificado del servidor (`tls_tests.cpp`): un servidor TLS local (el de libdatachannel) con certificados de prueba
+sintéticos (`test_certificates.hpp`). Abre con un certificado para su nombre firmado por una raíz de confianza; falla
+con uno para otro nombre, con uno firmado por una raíz que el juego no conoce y con uno autofirmado. Con
+`DWE_VERSUS_LIVE_SERVER=wss://dwe-versus-signal.regamelabs.workers.dev` (opcional, necesita internet) comprueba el
+servidor desplegado: hace una sala con todas las raíces y con solo las del juego, y falla con una raíz ajena.

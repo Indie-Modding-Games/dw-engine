@@ -89,15 +89,16 @@
 	background-color: #0068b8;
 }
 
-.partner .bar-value {
+/* BTL_renderPartnerStatusBars: BTL_renderNumber(0, 4, x0 + 0x49, y0 - 3, value, 0xa), the value as the original's
+   digits (.hud-digit, theme.rcss) from the frame's (73, -3), instead of the text. */
+.partner .bar-value { display: none; }
+
+.partner .bar-digits {
 	position: absolute;
 	left: 219dp;
 	top: 0;
-	width: 78dp;
-	font-size: 24dp;
-	line-height: 24dp;
-	text-align: right;
-	color: #d0d0d0;
+	width: 84dp;
+	height: 24dp;
 }
 
 .fighter.fainted {

@@ -12,10 +12,6 @@
 
 namespace dwe::dwx {
 
-namespace {
-
-// Opens the written archive and reads every entry back, which checks each one against its SHA-1,
-// and its manifest.
 core::Result<void> checkArchive(const std::filesystem::path& folder,
                                 const std::filesystem::path& archive,
                                 std::span<const assets::PakEntry> written) {
@@ -38,8 +34,6 @@ core::Result<void> checkArchive(const std::filesystem::path& folder,
   }
   return {};
 }
-
-} // namespace
 
 int pack(const std::filesystem::path& folder, const std::filesystem::path& archive, bool progress) {
   // An archive inside the pack would be packed into the next archive as one more file.

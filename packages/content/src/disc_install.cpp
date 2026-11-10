@@ -15,9 +15,11 @@
 #include <fstream>
 #include <iterator>
 #include <ranges>
+#include <span>
 #include <string>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 namespace dwe::content {
 namespace {
@@ -25,7 +27,9 @@ namespace {
 // What dwx identify and extract are run with.
 constexpr std::string_view IdentifyCommand = "identify";
 constexpr std::string_view ExtractCommand = "extract";
+constexpr std::string_view CookPakCommand = "cook-pak";
 constexpr std::string_view OutOption = "--out";
+constexpr std::string_view ShortOutOption = "-o";
 constexpr std::string_view ProgressOption = "--progress";
 constexpr std::string_view ProgressPrefix = "progress ";
 constexpr std::string_view DwxErrorPrefix = "dwx: ";
@@ -33,6 +37,15 @@ constexpr std::string_view DwxErrorPrefix = "dwx: ";
 constexpr int IdentifySupported = 0;
 constexpr int IdentifyUnknown = 1;
 constexpr int IdentifyOtherVersion = 3;
+// The share of the whole install's percent that the extraction takes; the cook into base.pak, most
+// of the time, takes the rest.
+constexpr int ExtractShare = 20;
+constexpr int WholePercent = 100;
+// Where a pack that an install replaces goes before it is removed, in the partial folder: renamed
+// away in one step, so the game never mounts half of it.
+constexpr std::string_view RetiredSuffix = ".retired";
+// The folder dwx cook-pak cooks in, beside the archive it writes.
+constexpr std::string_view CookedFolderSuffix = ".cook";
 // The packs a content folder may hold after an extraction: the base pack and the remastered UI the
 // bundled recipe grows next to it.
 constexpr std::string_view TeamPacksFolderName = "packs";
@@ -80,11 +93,86 @@ bool isFolder(const std::filesystem::path& path) {
   return std::filesystem::is_directory(path, error);
 }
 
+// The other form of a pack in a content folder: the archive of a folder pack, the folder of an
+// archive.
+std::filesystem::path otherForm(const std::filesystem::path& pack) {
+  if (pack.extension() == assets::PakExtension) {
+    return pack.parent_path() / pack.stem();
+  }
+  std::filesystem::path archive = pack;
+  archive += assets::PakExtension;
+  return archive;
+}
+
+// Moves a pack out of the content folder into the partial folder, in one step, then removes it.
+core::Result<void> retire(const std::filesystem::path& pack, const std::filesystem::path& partial) {
+  std::error_code error;
+  if (!std::filesystem::exists(pack, error)) {
+    return {};
+  }
+  std::filesystem::path retired = partial / pack.filename();
+  retired += RetiredSuffix;
+  std::filesystem::remove_all(retired, error);
+  std::filesystem::rename(pack, retired, error);
+  if (error) {
+    return core::fail(std::format("{}: {}", assets::pathText(pack), error.message()));
+  }
+  std::filesystem::remove_all(retired, error);
+  return {};
+}
+
+// Moves each pack of the partial folder into the content folder. It replaces the installed pack of
+// the same name, which goes only once the new one is in place, and then the other form of it (the
+// base folder of an older install, when base.pak comes): until then the game mounts the old one
+// whole. Anything else in the content folder stays.
+core::Result<void> installPacks(const std::filesystem::path& partial,
+                                const std::filesystem::path& content) {
+  std::error_code error;
+  std::filesystem::create_directories(content, error);
+  if (error) {
+    return core::fail(error.message());
+  }
+  std::vector<std::filesystem::path> packs;
+  // Only packs: an archive, or a folder with its manifest and a name without a dot, never what dwx
+  // cook-pak (base.pak.cook) or retire() (*.retired) leave beside them.
+  for (const auto& entry : std::filesystem::directory_iterator{partial, error}) {
+    const std::filesystem::path& path = entry.path();
+    std::error_code kind;
+    const bool archive =
+        path.extension() == assets::PakExtension && std::filesystem::is_regular_file(path, kind);
+    const bool folder =
+        !path.has_extension() && std::filesystem::is_regular_file(path / "pack.yaml", kind);
+    if (archive || folder) {
+      packs.push_back(path);
+    }
+  }
+  if (error) {
+    return core::fail(error.message());
+  }
+  for (const std::filesystem::path& pack : packs) {
+    const std::filesystem::path target = content / pack.filename();
+    if (isFolder(target)) {
+      if (auto retired = retire(target, partial); !retired) {
+        return retired;
+      }
+    }
+    std::filesystem::rename(pack, target, error);
+    if (error) {
+      return core::fail(std::format("{}: {}", assets::pathText(target), error.message()));
+    }
+    if (auto retired = retire(otherForm(target), partial); !retired) {
+      return retired;
+    }
+  }
+  return {};
+}
+
 } // namespace
 
 bool hasBasePack(const std::filesystem::path& content) {
   std::error_code error;
-  return std::filesystem::is_regular_file(content / BasePackFolderName / "pack.yaml", error);
+  return std::filesystem::is_regular_file(content / BasePackArchiveName, error) ||
+         std::filesystem::is_regular_file(content / BasePackFolderName / "pack.yaml", error);
 }
 
 std::filesystem::path defaultContentFolder(const std::optional<std::filesystem::path>& userData) {
@@ -345,7 +433,9 @@ void DiscInstall::update() {
   for (std::string& line : process_->readLines()) {
     core::logInfo("dwx: {}", line);
     if (const auto progress = parseProgressLine(line)) {
-      percent_ = progress->percent;
+      percent_ = cooking_ ? ExtractShare +
+                                (progress->percent * (WholePercent - ExtractShare) / WholePercent)
+                          : progress->percent * ExtractShare / WholePercent;
       step_ = progress->step;
     }
     output_.push_back(std::move(line));
@@ -357,6 +447,8 @@ void DiscInstall::update() {
   process_.reset();
   if (stage_ == Stage::Identifying) {
     finishIdentify(*code);
+  } else if (stage_ == Stage::Extracting && cooking_) {
+    finishCooking(*code);
   } else if (stage_ == Stage::Extracting) {
     finishExtraction(*code);
   }
@@ -398,12 +490,18 @@ void DiscInstall::startExtraction() {
   step_ = "read";
   core::logInfo("first run: extracting {} into {}", assets::pathText(image_),
                 assets::pathText(partial_));
-  const std::array<std::string, 6> command{
-      assets::pathText(dwx_),      std::string{ExtractCommand},
-      std::string{OutOption},      assets::pathText(partial_ / BasePackFolderName),
-      std::string{ProgressOption}, assets::pathText(image_)};
+  const std::array<std::string, 5> arguments{std::string{ExtractCommand}, std::string{OutOption},
+                                             assets::pathText(partial_ / BasePackFolderName),
+                                             std::string{ProgressOption}, assets::pathText(image_)};
+  startDwx(arguments);
+}
+
+void DiscInstall::startDwx(std::span<const std::string> arguments) {
+  std::vector<std::string> command{assets::pathText(dwx_)};
+  command.insert(command.end(), arguments.begin(), arguments.end());
   auto process = platform::ChildProcess::start(command);
   if (!process) {
+    removePartial();
     fail(InstallProblem::NoTool, process.error().message);
     return;
   }
@@ -416,27 +514,41 @@ void DiscInstall::finishExtraction(int exitCode) {
     fail(InstallProblem::ExtractFailed, dwxError(output_));
     return;
   }
-  // Each pack the extraction wrote replaces the installed one of the same name; anything else in
-  // the installed folder stays.
-  std::error_code error;
-  std::filesystem::create_directories(content_, error);
-  if (error) {
+  startCooking();
+}
+
+void DiscInstall::startCooking() {
+  output_.clear();
+  cooking_ = true;
+  percent_ = ExtractShare;
+  step_ = "cook";
+  core::logInfo("first run: cooking the base pack into {}",
+                assets::pathText(partial_ / BasePackArchiveName));
+  const std::array<std::string, 5> arguments{
+      std::string{CookPakCommand}, assets::pathText(partial_ / BasePackFolderName),
+      std::string{ShortOutOption}, assets::pathText(partial_ / BasePackArchiveName),
+      std::string{ProgressOption}};
+  startDwx(arguments);
+}
+
+void DiscInstall::finishCooking(int exitCode) {
+  cooking_ = false;
+  if (exitCode != 0) {
     removePartial();
-    fail(InstallProblem::ExtractFailed, error.message());
+    fail(InstallProblem::ExtractFailed, dwxError(output_));
     return;
   }
-  for (const auto& entry : std::filesystem::directory_iterator{partial_, error}) {
-    const std::filesystem::path target = content_ / entry.path().filename();
-    std::error_code removed;
-    std::filesystem::remove_all(target, removed);
-    std::error_code moved;
-    std::filesystem::rename(entry.path(), target, moved);
-    if (moved) {
-      removePartial();
-      fail(InstallProblem::ExtractFailed,
-           std::format("{}: {}", assets::pathText(target), moved.message()));
-      return;
-    }
+  // base.pak holds the whole base pack now: the loose folder it was cooked from goes, with the
+  // cooked folder in case dwx cook-pak could not remove it.
+  std::error_code error;
+  std::filesystem::remove_all(partial_ / BasePackFolderName, error);
+  std::filesystem::path cooked = partial_ / BasePackArchiveName;
+  cooked += CookedFolderSuffix;
+  std::filesystem::remove_all(cooked, error);
+  if (auto installed = installPacks(partial_, content_); !installed) {
+    removePartial();
+    fail(InstallProblem::ExtractFailed, installed.error().message);
+    return;
   }
   removePartial();
   if (!hasBasePack(content_)) {
@@ -472,6 +584,7 @@ void DiscInstall::cancel() {
     stage_ = Stage::Failed;
     problem_ = InstallProblem::None;
   }
+  cooking_ = false;
 }
 
 void DiscInstall::removePartial() {

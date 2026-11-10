@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <iterator>
 #include <optional>
@@ -122,7 +123,11 @@ FieldBattleParticles FieldScene::battleParticles() const {
     return out;
   }
   using game::battle::HitParticles;
-  for (const std::optional<HitParticles::SparkFx>& spark : hitParticles_->sparkSlots()) {
+  // Smooth motion draws them between the last frame's and this one's (battle_glide.hpp).
+  const HitParticles* last = hitParticlesFrom_ ? &*hitParticlesFrom_ : nullptr;
+  const auto sparks = hitParticles_->sparkSlots();
+  for (std::size_t slot = 0; slot < sparks.size(); ++slot) {
+    const std::optional<HitParticles::SparkFx>& spark = sparks[slot];
     const std::optional<glm::ivec3> color =
         spark ? FieldEffects::sparkColor(spark->kind) : std::nullopt;
     if (!color) {
@@ -134,10 +139,14 @@ FieldBattleParticles FieldScene::battleParticles() const {
                           .state = spark->state,
                           .timer = spark->timer,
                           .endFrame = spark->endFrame,
-                          .spread = spark->spread});
+                          .spread = spark->spread,
+                          .behind = sparkBehind(last, slot, *spark, visualsProgress_)});
   }
   for (const HitParticles::Cloud& cloud : hitParticles_->clouds()) {
-    out.clouds.push_back({.x = cloud.x, .z = cloud.z, .state = cloud.state});
+    out.clouds.push_back({.x = cloud.x,
+                          .z = cloud.z,
+                          .state = cloud.state,
+                          .behind = cloudBehind(last, cloud, visualsProgress_)});
   }
   for (const std::optional<HitParticles::FighterParticle>& particle :
        hitParticles_->fighterParticleSlots()) {

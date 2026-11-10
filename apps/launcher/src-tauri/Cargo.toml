@@ -1,6 +1,6 @@
 [package]
 name = "dwe-launcher"
-version = "0.1.4"
+version = "0.1.5"
 description = "Desktop launcher of dwe: reads the player's disc, keeps the game up to date and starts it"
 edition = "2021"
 publish = false
@@ -25,6 +25,8 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "io-util
 futures-util = "0.3"
 semver = "1"
 sha2 = "0.10"
+sha1 = "0.10"
+zstd = "0.13"
 base64 = "0.22"
 minisign-verify = "0.2"
 tar = "0.4"

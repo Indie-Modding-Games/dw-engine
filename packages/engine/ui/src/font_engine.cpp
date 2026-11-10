@@ -157,7 +157,7 @@ int FontEngine::GenerateString(Rml::RenderManager& renderManager, Rml::FontFaceH
   for (const TextRun& run : face->font->splitRuns({string.begin(), string.size()})) {
     const Rml::StringView text{run.text.data(), run.text.data() + run.text.size()};
     if (run.bitmap) {
-      addBitmapRun(*face, text, colour * opacity, startX, baseline, shaping.letter_spacing, penX,
+      addBitmapRun(*face, text, colour * opacity, baseline, shaping.letter_spacing, penX,
                    previousAdvance, glyphs.mesh);
       continue;
     }
@@ -267,18 +267,21 @@ float FontEngine::bitmapRunWidth(const BitmapFace& face, Rml::StringView run, fl
 }
 
 void FontEngine::addBitmapRun(const BitmapFace& face, Rml::StringView run,
-                              Rml::ColourbPremultiplied tint, float startX, float baseline,
-                              float letterSpacing, float& penX, int& previousAdvance,
-                              Rml::Mesh& mesh) {
+                              Rml::ColourbPremultiplied tint, float baseline, float letterSpacing,
+                              float& penX, int& previousAdvance, Rml::Mesh& mesh) {
   const auto cellWidth = static_cast<float>(face.font->cellWidth() * face.scale);
   const auto cellHeight = static_cast<float>(face.font->cellHeight() * face.scale);
   const float top = baseline - face.metrics.ascent;
+  // The original's text is all in its own font, so its grid starts with the text. After a glyph
+  // the modern font draws (a parenthesis) the grid starts again at the pen: counted from the
+  // text's start, the glyph after a space could land up to a grid step back and swallow it.
+  const float gridStart = penX;
   for (Rml::StringIteratorU8 it{run}; it; ++it) {
     const auto character = static_cast<char32_t>(*it);
     const BitmapGlyph& glyph = *face.font->glyph(character);
     const int advance = glyphAdvance(glyph, character, face.dialogue, previousAdvance);
     if (!isSpace(character)) {
-      const float x = startX + onGlyphGrid(penX - startX, face.scale);
+      const float x = gridStart + onGlyphGrid(penX - gridStart, face.scale);
       const Rml::Vector2f cell{static_cast<float>(glyph.x * face.scale),
                                static_cast<float>(glyph.y * face.scale)};
       Rml::MeshUtilities::GenerateQuad(

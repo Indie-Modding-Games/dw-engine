@@ -46,6 +46,10 @@ inline constexpr std::array PngOnlyImages = {
     PngOnlyImage{.pattern = "map/*/texture4/*", .reading = PngReading::Indexed},
     PngOnlyImage{.pattern = "map/*/*/texture8/*", .reading = PngReading::Indexed},
     PngOnlyImage{.pattern = "map/*/*/texture4/*", .reading = PngReading::Indexed},
+    // The original look's title pictures (skin.yaml: ow-title, ow-boot and their wide sheets): the
+    // skin asks for their only palette, smooths and mirrors them from the original's indices.
+    PngOnlyImage{.pattern = "texture/etcna/title2", .reading = PngReading::Indexed},
+    PngOnlyImage{.pattern = "texture/etcna/title256", .reading = PngReading::Indexed},
     // ui::BitmapFont: the atlas of a bitmap font, whose alpha says which pixels are ink. The
     // original look's font
     // must name an atlas here (ui::parseOriginalLook and ui_text_font.schema.json refuse any

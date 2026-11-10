@@ -15,6 +15,8 @@ namespace dwe::app {
 
 namespace {
 
+// render::QuadVertex as the upscaler reads it: without the colour, which movie_upscale.slang does
+// not read (the validation layers warn about an attribute a shader does not consume).
 constexpr std::array QuadAttributes{
     rhi::VertexAttribute{.location = 0,
                          .format = rhi::VertexFormat::Float2,
@@ -23,9 +25,6 @@ constexpr std::array QuadAttributes{
     rhi::VertexAttribute{.location = 1,
                          .format = rhi::VertexFormat::Float2,
                          .offset = static_cast<std::uint32_t>(offsetof(render::QuadVertex, uv))},
-    rhi::VertexAttribute{.location = 2,
-                         .format = rhi::VertexFormat::Float4,
-                         .offset = static_cast<std::uint32_t>(offsetof(render::QuadVertex, color))},
     rhi::VertexAttribute{.location = 3,
                          .format = rhi::VertexFormat::Uint2,
                          .offset =

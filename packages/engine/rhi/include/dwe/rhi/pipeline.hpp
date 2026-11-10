@@ -62,7 +62,8 @@ struct VertexAttribute {
 };
 
 // Interleaved vertices from one vertex buffer. A stride of 0 means no vertex buffer: the shader
-// makes its vertices from SV_VertexID.
+// makes its vertices from SV_VulkanVertexID (SV_VertexID would subtract the base vertex and need
+// the DrawParameters capability).
 struct VertexLayout {
   std::uint32_t stride = 0;
   std::span<const VertexAttribute> attributes;

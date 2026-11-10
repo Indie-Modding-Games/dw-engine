@@ -76,6 +76,7 @@ void FieldScene::settleActors(double seconds) {
     glide(*staged.second);
   }
   effectsSeconds_ = std::min(effectsSeconds_ + seconds, BattleFrameSeconds);
+  visualsSeconds_ = std::min(visualsSeconds_ + seconds, BattleFrameSeconds);
 }
 
 void FieldScene::setEffects(std::vector<SceneEffect> effects, std::uint64_t frame) {
@@ -206,6 +207,12 @@ bool FieldScene::animateFighter(Actor& actor) const {
   // A frozen clip stands on its frame (anim.c: tickAnimation skips an entity without animFlag 1).
   static_cast<void>(
       actor.player->advance(actor.fighter->frozen ? 0.0F : static_cast<float>(fighterSeconds_)));
+  // Smooth motion draws the clip between the last two ticks (battle_glide.hpp: ClipTween).
+  actor.clipTween.follow(*actor.player, fighterSeconds_ > 0.0,
+                         tickSeconds_ * static_cast<double>(actor.fighter->pace));
+  if (drawAhead_ && field_->smoothMotion()) {
+    actor.clipTween.pose(*actor.model, drawAlpha_);
+  }
   return true;
 }
 
@@ -253,6 +260,7 @@ void FieldScene::releaseFighters() {
     }
     actor.fighter.reset();
     actor.fighterGlide = {};
+    actor.clipTween = {};
     actor.motion.reset();
     scene::beginTick(world_.registry().get<scene::Transform>(actor.entity));
     // The battle moved it: an NPC's path starts over from where it stands (the engine's, as a

@@ -183,13 +183,19 @@ animation::ChibiRig chibiRigOf(const assets::AssetId& id, const assets::ModelDat
 std::span<const glm::mat4> ChibiJoints::of(const assets::ModelData& model,
                                            const animation::ChibiRig& rig,
                                            const animation::AnimationPlayer& player) {
+  return of(model, rig, player.pose(), player.jointMatrices());
+}
+
+std::span<const glm::mat4> ChibiJoints::of(const assets::ModelData& model,
+                                           const animation::ChibiRig& rig,
+                                           std::span<const assets::NodeTransform> pose,
+                                           std::span<const glm::mat4> joints) {
   if (!rig.active) {
-    return player.jointMatrices();
+    return joints;
   }
   world_.resize(model.nodes.size());
-  joints_.resize(player.jointMatrices().size());
-  animation::computeChibiJointMatrices(model, rig, player.pose(), player.jointMatrices(), world_,
-                                       joints_);
+  joints_.resize(joints.size());
+  animation::computeChibiJointMatrices(model, rig, pose, joints, world_, joints_);
   return joints_;
 }
 

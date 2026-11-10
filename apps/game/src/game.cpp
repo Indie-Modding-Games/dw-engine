@@ -1787,6 +1787,8 @@ int runGame(const Options& requested) {
         continue;
       }
       if (flow.playing() == nullptr && command.name == VersusCommand) {
+        // The arena draws with the smooth motion setting, as a game does (PlaySession).
+        versus.setSmoothMotion(userSettings.smoothMotion.value_or(true));
         if (versus.open()) {
           title.hide();
         }
@@ -1836,12 +1838,15 @@ int runGame(const Options& requested) {
         beginNewGame(start);
       }
     }
+    // Where between the last two ticks the frame is drawn: the clock's, or the control channel's
+    // while it holds the logic paused at one (captures of smooth motion).
+    const auto drawAlpha =
+        static_cast<float>(control && control->drawAlpha() ? *control->drawAlpha() : step.alpha());
     if (flow.playing() == nullptr) {
-      versus.update(gameSeconds, static_cast<float>(step.alpha()), graphics.options());
+      versus.update(gameSeconds, drawAlpha, graphics.options());
     }
     if (PlaySession* play = flow.playing()) {
-      play->update(sessionCommands, autotest.get(), frameStats, gameSeconds,
-                   static_cast<float>(step.alpha()));
+      play->update(sessionCommands, autotest.get(), frameStats, gameSeconds, drawAlpha);
       screenFade->setDarkness(play->fadeLevel());
       screenFade->setWhiteness(play->whiteLevel());
       mapChangeView.show(play->scene(), play->fadeLevel());

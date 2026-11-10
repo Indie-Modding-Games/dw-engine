@@ -1,5 +1,7 @@
 #include "battle_glide.hpp"
 
+#include <dwe/animation/clip_sampling.hpp>
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -102,6 +104,86 @@ std::vector<SceneEffect> blendEffects(std::span<const SceneEffect> from,
     }
   }
   return out;
+}
+
+void ClipTween::follow(const animation::AnimationPlayer& player, bool ticked, double tickStep) {
+  const assets::AnimationClip* clip = player.clip();
+  const double now = player.time();
+  // Another clip, or this one started over: drawn from where it is, with nothing of the last.
+  if (clip != clip_ || now < to_) {
+    clip_ = clip;
+    from_ = now;
+    to_ = now;
+    return;
+  }
+  if (ticked) {
+    // Several ticks in one drawn frame: only the last one is drawn on the way.
+    from_ = std::max(to_, now - tickStep);
+    to_ = now;
+  }
+}
+
+double ClipTween::timeAt(float alpha) const {
+  return from_ + ((to_ - from_) * static_cast<double>(std::clamp(alpha, 0.0F, 1.0F)));
+}
+
+void ClipTween::pose(const assets::ModelData& model, float alpha) {
+  if (clip_ == nullptr) {
+    return;
+  }
+  pose_.resize(model.nodes.size());
+  nodeWorld_.resize(model.nodes.size());
+  joints_.resize(animation::jointCount(model));
+  animation::sampleClip(model, *clip_, timeAt(alpha), pose_);
+  animation::computeJointMatrices(model, pose_, nodeWorld_, joints_);
+}
+
+float betweenFrames(std::int32_t from, std::int32_t to, float progress, std::int32_t step) {
+  if (progress >= 1.0F || to - from != step) {
+    return static_cast<float>(to);
+  }
+  return static_cast<float>(from) + (static_cast<float>(step) * std::max(progress, 0.0F));
+}
+
+float between(float from, float to, float progress) {
+  if (progress >= 1.0F) {
+    return to;
+  }
+  return from + ((to - from) * std::max(progress, 0.0F));
+}
+
+float betweenAngles(float from, float to, float turn, float progress) {
+  if (progress >= 1.0F) {
+    return to;
+  }
+  return to - (std::remainder(to - from, turn) * (1.0F - std::max(progress, 0.0F)));
+}
+
+float sparkBehind(const game::battle::HitParticles* last, std::size_t slot,
+                  const game::battle::HitParticles::SparkFx& now, float progress) {
+  if (last == nullptr || progress >= 1.0F) {
+    return 0.0F;
+  }
+  const auto slots = last->sparkSlots();
+  if (slot >= slots.size() || !slots[slot]) {
+    return 0.0F;
+  }
+  const auto& before = *slots[slot];
+  const bool same = before.spark == now.spark && before.kind == now.kind &&
+                    before.position == now.position && before.fighter == now.fighter &&
+                    before.spread == now.spread && before.state + 1 == now.state;
+  return same ? 1.0F - std::max(progress, 0.0F) : 0.0F;
+}
+
+float cloudBehind(const game::battle::HitParticles* last,
+                  const game::battle::HitParticles::Cloud& now, float progress) {
+  if (last == nullptr || progress >= 1.0F) {
+    return 0.0F;
+  }
+  const bool found = std::ranges::any_of(last->clouds(), [&now](const auto& before) {
+    return before.x == now.x && before.z == now.z && before.state + 1 == now.state;
+  });
+  return found ? 1.0F - std::max(progress, 0.0F) : 0.0F;
 }
 
 } // namespace dwe::app

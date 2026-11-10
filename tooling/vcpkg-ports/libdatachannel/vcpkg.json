@@ -1,7 +1,7 @@
 {
   "name": "libdatachannel",
   "version-semver": "0.24.6",
-  "description": "WebRTC data channels and WebSockets in C++ (overlay: built with Mbed TLS instead of OpenSSL).",
+  "description": "WebRTC data channels and WebSockets in C++ (overlay: built with Mbed TLS instead of OpenSSL, CA certificates in the C API).",
   "homepage": "https://github.com/paullouisageneau/libdatachannel",
   "license": "MPL-2.0",
   "supports": "!xbox",
@@ -47,5 +47,5 @@
       "description": "Web Socket support"
     }
   },
-  "port-version": 1
+  "port-version": 2
 }

@@ -41,7 +41,7 @@ una partida normal:
 
 | # | Hueco | Decomp | Motor |
 |---:|---|---|---|
-| 1 | Sin modo versus de dos jugadores ni la demo de combate del título (las 91 funciones de `vs/`); la máquina de guardar ya registra al compañero para él. Va a la fase 5 | `vs/` | — |
+| 1 | El versus de dos jugadores ya se juega, en línea y en la Arena ([versus](../modulos/game/versus.md)), pero sin la demo de combate del título ni parte de la escena del original (las 60 funciones de `vs/` que faltan y 4 a medias). Va a la fase 5 | `vs/` | `packages/game/versus` |
 
 ## Otros huecos que no son una función del índice
 
@@ -62,7 +62,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 
 | Sistema | Ficheros del decomp | A portar | Portado | Parcial | Falta | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
-| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 154 | 154 | 0 | 0 | 100 % |
+| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 155 | 155 | 0 | 0 | 100 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 240 | 240 | 0 | 0 | 100 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colisión-y-cámara) | `main/` (5 ficheros) | 82 | 82 | 0 | 0 | 100 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 80 | 80 | 0 | 0 | 100 % |
@@ -76,12 +76,12 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 40 | 40 | 0 | 0 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 12 | 12 | 0 | 0 | 100 % |
 | [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 113 | 113 | 0 | 0 | 100 % |
-| [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 104 | 40 | 4 | 60 | 40 % |
+| [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 105 | 41 | 4 | 60 | 41 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 44 | 44 | 0 | 0 | 100 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#vídeos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 30 | 30 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#núcleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1454 funciones a portar | 1454 | 1389 | 5 | 60 | 96 % |
+| **Total** | 1456 funciones a portar | 1456 | 1391 | 5 | 60 | 96 % |
 
 ## Batalla
 
@@ -89,7 +89,7 @@ El combate normal: órdenes, IA, daño, estados, HUD, inicio y final, aprendizaj
 
 Ficheros del decomp: `btl/battle_hud.c`, `btl/battle_main.c`, `btl/battle_setup.c`, `btl/command_menu.c`, `btl/command_shout.c`, `main/battle_tick.c`, `main/battle_ui.c`, `main/btl.c`, `main/entity_text.c`.
 
-Portado 154, parcial 0, falta 0.
+Portado 155, parcial 0, falta 0.
 
 ## Efectos de batalla
 
@@ -205,7 +205,7 @@ El modo versus de dos jugadores y la demo de combate del título.
 
 Ficheros del decomp: `main/sound.c`, `vs/vs_camera.c`, `vs/vs_combat.c`, `vs/vs_demo.c`, `vs/vs_effect.c`, `vs/vs_hud.c`, `vs/vs_intro.c`, `vs/vs_main.c`, `vs/vs_scene.c`, `vs/vs_select.c`.
 
-Portado 40, parcial 4, falta 60.
+Portado 41, parcial 4, falta 60.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -308,6 +308,6 @@ Portado 51, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-984 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+982 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

@@ -650,11 +650,10 @@ public:
   };
   // What the fighters' statuses show over them (game::battle::StatusVisuals), with the fighters by
   // their battle ids; nothing outside a battle (field_scene_status.cpp).
+  // A new frame of them (StatusVisuals::frames one on) keeps the last one's, and the hit
+  // particles', for smooth motion to draw between the two (battle_glide.hpp).
   void setStatusVisuals(std::optional<game::battle::StatusVisuals> visuals,
-                        std::vector<StatusBody> bodies) {
-    statusVisuals_ = std::move(visuals);
-    statusBodies_ = std::move(bodies);
-  }
+                        std::vector<StatusBody> bodies);
   // The battle's hit sparks, the particles they leave on the fighters and their clouds
   // (game::battle::HitParticles), drawn with the field's effects on the fighters of the last
   // setStatusVisuals; nothing outside a battle (field_scene_fx.cpp).
@@ -759,8 +758,10 @@ private:
     std::optional<std::uint32_t> heldClip;
     // The battle's hold on it (holdFighter).
     std::optional<FighterFigure> fighter;
-    // Where smooth motion draws it while held: gliding between the battle's frames.
+    // Where smooth motion draws it while held: gliding between the battle's frames, its clip
+    // between the ticks.
     PoseGlide fighterGlide{};
+    ClipTween clipTween{};
     // Whether it showed on screen when the battle took it: a battle does not run the field's
     // ticks that work out isOnScreen, so its fighters keep that value (playClipSounds).
     bool shownWhenHeld = false;
@@ -905,6 +906,9 @@ private:
     StatusBody body;
   };
   [[nodiscard]] std::optional<StatusAnchor> statusAnchor(std::size_t fighter) const;
+  // The status visuals of the battle's last frame while update draws between it and this one
+  // (smooth motion); null otherwise, when each is drawn as its frame has it.
+  [[nodiscard]] const game::battle::StatusVisuals* lastStatusFrame() const;
   // field_scene_effect_prims.cpp: what the effects draw as the original's own primitives (screen
   // layers, ribbons), as scene primitives with their own textures: a move's texture with a palette
   // row, its texels with STP alone, those without alone, or all opaque (the console mixes only
@@ -1122,6 +1126,8 @@ private:
   // fighters' glides; nothing outside it, where the battle's logic reads their frame's places.
   std::optional<double> drawAhead_;
   double tickSeconds_ = 0.0;
+  // The same as a fraction of the tick (the loop's alpha).
+  float drawAlpha_ = 0.0F;
   bool mapLayerHidden_ = false;
   std::map<std::tuple<std::string, std::int32_t, std::optional<game::battle::EffectPaletteRow>>,
            std::optional<std::size_t>>
@@ -1139,6 +1145,13 @@ private:
   std::optional<game::battle::StatusVisuals> statusVisuals_;
   std::vector<StatusBody> statusBodies_;
   std::optional<game::battle::HitParticles> hitParticles_;
+  // The status visuals and the hit particles of the battle's last frame, the time since this
+  // frame began, and how far update draws from them to this frame's (1: this frame's, as the
+  // original; less only with smooth motion).
+  std::optional<game::battle::StatusVisuals> statusVisualsFrom_;
+  std::optional<game::battle::HitParticles> hitParticlesFrom_;
+  double visualsSeconds_ = BattleFrameSeconds;
+  float visualsProgress_ = 1.0F;
   std::map<std::pair<std::string, std::int32_t>, std::optional<StatusTexture>, std::less<>>
       statusTextures_;
   std::map<std::string, std::optional<EffectModelEntry>, std::less<>> statusModels_;

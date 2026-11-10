@@ -1,5 +1,6 @@
 #include <dwe/core/log.hpp>
 #include <dwe/net/rtc_peer_link.hpp>
+#include <dwe/net/trusted_roots.hpp>
 
 #include <nlohmann/json.hpp>
 #include <rtc/rtc.h>
@@ -152,8 +153,11 @@ void RTC_API onSocketMessage(int /*id*/, const char* message, int size, void* po
 
 class WebSocketSignal final : public SignalSocket {
 public:
-  explicit WebSocketSignal(const std::string& url) {
+  WebSocketSignal(const std::string& url, const std::string& trustedRoots) {
+    // A wss:// server's certificate must be valid for its host and chain up to one of these
+    // roots, or the socket fails (tooling/vcpkg-ports/libdatachannel/ws-ca-certificates.patch).
     rtcWsConfiguration configuration{};
+    configuration.caCertificatePemFile = trustedRoots.c_str();
     socket_ = rtcCreateWebSocketEx(url.c_str(), &configuration);
     if (socket_ < 0) {
       core::logWarning("versus: cannot open {} ({})", url, socket_);
@@ -214,7 +218,12 @@ private:
 } // namespace
 
 std::unique_ptr<SignalSocket> openWebSocket(const std::string& url) {
-  return std::make_unique<WebSocketSignal>(url);
+  return openWebSocketTrusting(url, trustedSignalRoots());
+}
+
+std::unique_ptr<SignalSocket> openWebSocketTrusting(const std::string& url,
+                                                    const std::string& trustedRoots) {
+  return std::make_unique<WebSocketSignal>(url, trustedRoots);
 }
 
 struct RtcPeerLink::Impl {

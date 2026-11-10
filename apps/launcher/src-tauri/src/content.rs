@@ -1,7 +1,9 @@
-//! The player's content: dwx identify and dwx extract --progress into <data>/content.partial,
-//! then the packs move into <data>/content with an install.yaml record, exactly as the game's own
-//! first-run screen does (apps/content/src/disc_install.cpp), so the game mounts the result with no
-//! further question.
+//! The player's content: dwx identify and dwx extract --progress into <data>/content.partial, then
+//! dwx cook-pak --progress cooks the base pack into base.pak there, and the packs move into
+//! <data>/content with an install.yaml record, exactly as the game's own first-run screen does
+//! (packages/content/src/disc_install.cpp), so the game mounts the result with no further question.
+//! An install from before base.pak keeps a loose base folder: convert() cooks it into base.pak
+//! without reading the disc again (docs/adr/0017-cocinado-y-archivos-pak.md).
 
 use std::fs;
 use std::io::{BufRead, BufReader};
@@ -17,7 +19,20 @@ use crate::log_line;
 pub const CONTENT_FOLDER: &str = "content";
 pub const PARTIAL_FOLDER: &str = "content.partial";
 pub const BASE_PACK: &str = "base";
-pub const INSTALL_RECORD: &str = "install.yaml";
+/// The base pack as an install leaves it, cooked into one archive; a base folder hides it.
+pub const BASE_ARCHIVE: &str = "base.pak";
+/// Where convert() cooks a loose base pack; outside content/, since it holds a pack with the same
+/// id, and kept after a stop so the next try finds dwx's work.
+pub const CONVERT_FOLDER: &str = "content.convert";
+const COOK_PAK: &str = "cook-pak";
+/// dwx cook-pak cooks in <archive>.cook beside the archive.
+const COOKED_SUFFIX: &str = ".cook";
+/// A replaced pack is renamed to this in the work folder, in one step, before it is removed.
+const RETIRED_SUFFIX: &str = ".retired";
+/// The share of the install's percent that the extraction takes; the cook into base.pak, most of
+/// the time, takes the rest.
+const EXTRACT_SHARE: u8 = 20;
+const PACK_EXTENSION: &str = "pak";pub const INSTALL_RECORD: &str = "install.yaml";
 const RECORD_VERSION_KEY: &str = "extractor_version";
 const RECORD_IMAGE_KEY: &str = "disc_image";
 
@@ -31,7 +46,14 @@ pub fn content_folder(data: &Path) -> PathBuf {
     data.join(CONTENT_FOLDER)
 }
 
+/// Whether the content has the base pack: the archive an install leaves, or a loose folder.
 pub fn has_base_pack(content: &Path) -> bool {
+    content.join(BASE_ARCHIVE).is_file() || has_loose_base(content)
+}
+
+/// Whether the base pack is a loose folder, as dwx extract writes it (an install from before
+/// base.pak, or a game whose dwx cannot cook one).
+pub fn has_loose_base(content: &Path) -> bool {
     content.join(BASE_PACK).join("pack.yaml").is_file()
 }
 
@@ -122,7 +144,7 @@ pub struct Progress {
     pub step: String,
 }
 
-/// A line of dwx extract --progress: "progress <percent> <step>".
+/// A line of dwx extract --progress or dwx cook-pak --progress: "progress <percent> <step>".
 pub fn parse_progress(line: &str) -> Option<Progress> {
     let rest = line.strip_prefix("progress ")?;
     let (percent, step) = rest.split_once(' ')?;
@@ -267,9 +289,101 @@ pub fn identify(dwx: &Path, image: &Path, cancel: &AtomicBool) -> Result<Identit
     read_identity(exit, &lines)
 }
 
-/// Extracts the disc into the data folder's content: dwx writes the partial folder, then each
-/// pack it wrote replaces the installed one of the same name and the record is written. Anything
-/// else in content/ stays.
+/// Whether the game's dwx cooks a pack into an archive (dwx cook-pak). Its usage, which it prints
+/// when run without a command, names every command; a game older than base.pak has none.
+pub fn dwx_cooks_archives(dwx: &Path) -> bool {
+    let needle = format!("dwx {COOK_PAK} ");
+    run_lines(Command::new(dwx), &AtomicBool::new(false), |_| {})
+        .is_ok_and(|(_, lines)| lines.iter().any(|line| line.trim_start().starts_with(&needle)))
+}
+
+/// Runs dwx cook-pak --progress on a pack folder into an archive, handing on its progress.
+fn cook_pak(
+    dwx: &Path,
+    pack: &Path,
+    archive: &Path,
+    cancel: &AtomicBool,
+    failure: &'static str,
+    mut on_progress: impl FnMut(Progress),
+) -> Result<()> {
+    log_line!("cooking {} into {}", pack.display(), archive.display());
+    let mut command = Command::new(dwx);
+    command.arg(COOK_PAK).arg(pack).arg("-o").arg(archive).arg("--progress");
+    let (exit, lines) = run_lines(command, cancel, |line| {
+        if let Some(progress) = parse_progress(line) {
+            on_progress(progress);
+        }
+    })?;
+    if exit != Some(0) {
+        log_dwx_output(exit, &lines);
+        return Err(Failure::new(failure, dwx_error(&lines)));
+    }
+    Ok(())
+}
+
+fn with_suffix(path: &Path, suffix: &str) -> PathBuf {
+    let mut name = path.as_os_str().to_owned();
+    name.push(suffix);
+    PathBuf::from(name)
+}
+
+/// The other form of a pack in a content folder: the archive of a folder, the folder of an archive.
+fn other_form(pack: &Path) -> PathBuf {
+    if pack.extension().is_some_and(|e| e == PACK_EXTENSION) {
+        pack.with_extension("")
+    } else {
+        with_suffix(pack, &format!(".{PACK_EXTENSION}"))
+    }
+}
+
+/// Moves a pack out of content/ into a work folder in one step, then removes it: the game never
+/// sees half of it.
+fn retire(pack: &Path, work: &Path) -> Result<()> {
+    if !pack.exists() {
+        return Ok(());
+    }
+    let name = pack.file_name().unwrap_or_default().to_string_lossy();
+    let retired = work.join(format!("{name}{RETIRED_SUFFIX}"));
+    let _ = fs::remove_dir_all(&retired);
+    let _ = fs::remove_file(&retired);
+    fs::rename(pack, &retired).map_err(|e| Failure::new(code::EXTRACT_FAILED, format!("{}: {e}", pack.display())))?;
+    if retired.is_dir() {
+        let _ = fs::remove_dir_all(&retired);
+    } else {
+        let _ = fs::remove_file(&retired);
+    }
+    Ok(())
+}
+
+/// Moves each pack of the partial folder (an archive, or a folder with its manifest and a name
+/// without a dot: never dwx's work beside them) into content/. It replaces the installed pack of the
+/// same name, which goes only once the new one is in place, and then the other form of it (the base
+/// folder of an older install, when base.pak comes): until then the game mounts the old one whole.
+fn install_packs(partial: &Path, content: &Path) -> Result<()> {
+    fs::create_dir_all(content)?;
+    let mut packs = Vec::new();
+    for entry in fs::read_dir(partial)?.flatten() {
+        let path = entry.path();
+        let archive = path.extension().is_some_and(|e| e == PACK_EXTENSION) && path.is_file();
+        let folder = path.extension().is_none() && path.join("pack.yaml").is_file();
+        if archive || folder {
+            packs.push(path);
+        }
+    }
+    for pack in packs {
+        let target = content.join(pack.file_name().unwrap_or_default());
+        if target.is_dir() {
+            retire(&target, partial)?;
+        }
+        fs::rename(&pack, &target).map_err(|e| Failure::new(code::EXTRACT_FAILED, format!("{}: {e}", target.display())))?;
+        retire(&other_form(&target), partial)?;
+    }
+    Ok(())
+}
+
+/// Extracts the disc into the data folder's content: dwx writes the partial folder and cooks its
+/// base pack into base.pak there (a dwx that cannot leaves it loose), then each pack replaces the
+/// installed one of the same name and the record is written. Anything else in content/ stays.
 pub fn extract(
     dwx: &Path,
     image: &Path,
@@ -283,12 +397,14 @@ pub fn extract(
     let partial = data.join(PARTIAL_FOLDER);
     let _ = fs::remove_dir_all(&partial);
     fs::create_dir_all(&partial)?;
-    log_line!("extracting {} into {}", image.display(), partial.display());
+    let cooks = dwx_cooks_archives(dwx);
+    log_line!("extracting {} into {} (base.pak: {cooks})", image.display(), partial.display());
+    let extract_share = if cooks { EXTRACT_SHARE } else { 100 };
     let mut command = Command::new(dwx);
     command.arg("extract").arg("--out").arg(partial.join(BASE_PACK)).arg("--progress").arg(image);
     let outcome = run_lines(command, cancel, |line| {
         if let Some(progress) = parse_progress(line) {
-            on_progress(progress);
+            on_progress(Progress { percent: scaled(progress.percent, 0, extract_share), step: progress.step });
         }
     });
     let finish = || -> Result<()> {
@@ -297,13 +413,15 @@ pub fn extract(
             log_dwx_output(exit, &lines);
             return Err(Failure::new(code::EXTRACT_FAILED, dwx_error(&lines)));
         }
-        fs::create_dir_all(&content)?;
-        for entry in fs::read_dir(&partial)?.flatten() {
-            let target = content.join(entry.file_name());
-            let _ = fs::remove_dir_all(&target);
-            fs::rename(entry.path(), &target)
-                .map_err(|e| Failure::new(code::EXTRACT_FAILED, format!("{}: {e}", target.display())))?;
+        if cooks {
+            let archive = partial.join(BASE_ARCHIVE);
+            cook_pak(dwx, &partial.join(BASE_PACK), &archive, cancel, code::EXTRACT_FAILED, |progress| {
+                on_progress(Progress { percent: scaled(progress.percent, EXTRACT_SHARE, 100), step: progress.step });
+            })?;
+            let _ = fs::remove_dir_all(partial.join(BASE_PACK));
+            let _ = fs::remove_dir_all(with_suffix(&archive, COOKED_SUFFIX));
         }
+        install_packs(&partial, &content)?;
         if !has_base_pack(&content) {
             log_dwx_output(exit, &lines);
             return Err(Failure::new(code::EXTRACT_FAILED, dwx_error(&lines)));
@@ -322,6 +440,54 @@ pub fn extract(
     result
 }
 
+/// A step's percent as a share of the whole job, from `from` to `to`.
+fn scaled(percent: u8, from: u8, to: u8) -> u8 {
+    from + (u16::from(percent.min(100)) * u16::from(to - from) / 100) as u8
+}
+
+/// What convert() did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Conversion {
+    /// The loose base pack is now base.pak.
+    Converted,
+    /// There was no loose base pack (or only one a developer keeps beside base.pak).
+    NothingToDo,
+    /// The game's dwx cannot cook an archive: the base pack stays loose, and the game plays it.
+    Unsupported,
+}
+
+/// Cooks a loose base pack (an install from before base.pak) into content/base.pak, without
+/// reading the disc again. dwx cook-pak works in CONVERT_FOLDER; once it checked the archive, the
+/// archive moves into content/ and only then the loose folder goes (renamed away in one step), so
+/// a stop at any point leaves content/ with a whole base pack: the loose one until the archive is
+/// in place, then the archive. A failed or stopped conversion keeps the loose folder. With nothing
+/// to convert, removes what an earlier conversion left.
+pub fn convert(dwx: &Path, data: &Path, cancel: &AtomicBool, on_progress: impl FnMut(Progress)) -> Result<Conversion> {
+    let content = content_folder(data);
+    let work = data.join(CONVERT_FOLDER);
+    let installed = content.join(BASE_ARCHIVE);
+    if has_loose_base(&content) && installed.is_file() && work.is_dir() {
+        // A conversion that stopped after the archive was in place: the loose folder still goes.
+        retire(&content.join(BASE_PACK), &work).map_err(|f| Failure::new(code::CONVERT_FAILED, f.detail))?;
+    }
+    if !has_loose_base(&content) || installed.is_file() {
+        let _ = fs::remove_dir_all(&work);
+        return Ok(Conversion::NothingToDo);
+    }
+    if !dwx_cooks_archives(dwx) {
+        log_line!("the game's dwx cannot cook base.pak: the base pack stays loose");
+        return Ok(Conversion::Unsupported);
+    }
+    fs::create_dir_all(&work)?;
+    let archive = work.join(BASE_ARCHIVE);
+    cook_pak(dwx, &content.join(BASE_PACK), &archive, cancel, code::CONVERT_FAILED, on_progress)?;
+    fs::rename(&archive, &installed).map_err(|e| Failure::new(code::CONVERT_FAILED, format!("{}: {e}", installed.display())))?;
+    retire(&content.join(BASE_PACK), &work).map_err(|f| Failure::new(code::CONVERT_FAILED, f.detail))?;
+    let _ = fs::remove_dir_all(&work);
+    log_line!("the base pack is now {}", installed.display());
+    Ok(Conversion::Converted)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -336,6 +502,17 @@ mod tests {
         fs::write(dir.path().join(INSTALL_RECORD), "# Written by the game\nextractor_version: 9\ndisc_image: \"/a/b c.cue\"\n").unwrap();
         assert_eq!(read_record(dir.path()).unwrap().image, PathBuf::from("/a/b c.cue"));
         assert_eq!(read_record(dir.path()).unwrap().extractor_version, 9);
+    }
+
+    #[test]
+    fn a_base_archive_is_a_base_pack() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join(BASE_ARCHIVE), "x").unwrap();
+        assert!(has_base_pack(dir.path()));
+        assert!(!has_loose_base(dir.path()));
+        assert!(is_outdated(dir.path(), Some(12)));
+        assert_eq!(scaled(50, 20, 100), 60);
+        assert_eq!(scaled(100, 0, 20), 20);
     }
 
     #[test]
@@ -392,18 +569,82 @@ mod tests {
         assert_eq!(dwx_error(&lines(&["progress 1 read"])), "");
     }
 
+    /// A stand-in for dwx: without a command it prints its usage (naming cook-pak when `cooks`);
+    /// extract writes <out>/pack.yaml and a ui_original pack beside it, like the real one; cook-pak
+    /// writes the archive (a fake one) after leaving its cooked folder, or fails with `cook_exit`.
+    #[cfg(unix)]
+    fn fake_dwx(dir: &Path, cooks: bool, cook_exit: i32) -> PathBuf {
+        use std::os::unix::fs::PermissionsExt;
+        let dwx = dir.join("dwx");
+        let usage = if cooks { "  dwx cook-pak <pack folder> -o <file.pak> [--progress]" } else { "  dwx pack <pack folder> -o <file.pak>" };
+        let script = format!(
+            "#!/bin/sh\n\
+             case \"$1\" in\n\
+             extract) out=\"$3\"; echo 'progress 10 read' >&2; mkdir -p \"$out\" \"$out/../ui_original\"; \
+               echo 'id: base' > \"$out/pack.yaml\"; echo 'id: ui_original' > \"$out/../ui_original/pack.yaml\"; \
+               echo 'progress 100 done' >&2;;\n\
+             cook-pak) [ -f \"$2/pack.yaml\" ] || exit 2; echo 'progress 50 cook' >&2; mkdir -p \"$4.cook\"; \
+               echo 'id: base' > \"$4.cook/pack.yaml\"; \
+               [ {cook_exit} -eq 0 ] || {{ echo 'dwx: the cook failed' >&2; exit {cook_exit}; }}; \
+               echo 'archive' > \"$4\"; rm -rf \"$4.cook\"; echo 'progress 100 done' >&2;;\n\
+             *) echo 'Usage:' >&2; echo '{usage}' >&2; exit 2;;\n\
+             esac\n"
+        );
+        fs::write(&dwx, script).unwrap();
+        fs::set_permissions(&dwx, fs::Permissions::from_mode(0o755)).unwrap();
+        dwx
+    }
+
+    /// The names in a folder, sorted.
+    fn names(folder: &Path) -> Vec<String> {
+        let mut names: Vec<String> = fs::read_dir(folder).unwrap().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
+        names.sort();
+        names
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_fresh_install_ends_with_base_pak_alone() {
+        let dir = tempfile::tempdir().unwrap();
+        let dwx = fake_dwx(dir.path(), true, 0);
+        assert!(dwx_cooks_archives(&dwx));
+        let data = dir.path().join("data");
+        fs::create_dir_all(data.join("content")).unwrap();
+        fs::write(data.join("content/keep.txt"), "mine").unwrap();
+        let image = dir.path().join("disc.cue");
+        fs::write(&image, "").unwrap();
+        let mut seen = Vec::new();
+        extract(&dwx, &image, &image, Some(12), &data, &AtomicBool::new(false), |p| seen.push((p.percent, p.step))).unwrap();
+        // The extraction takes the first fifth of the bar, the cook the rest.
+        let percents: Vec<u8> = seen.iter().map(|(p, _)| *p).collect();
+        assert_eq!(percents, vec![2, 20, 60, 100]);
+        assert_eq!(seen[2].1, "cook");
+        let content = data.join("content");
+        assert_eq!(names(&content), vec!["base.pak", "install.yaml", "keep.txt", "ui_original"]);
+        assert!(has_base_pack(&content));
+        assert!(!has_loose_base(&content));
+        assert!(!data.join(PARTIAL_FOLDER).exists());
+        assert_eq!(read_record(&content).unwrap().extractor_version, 12);
+
+        // Reading the disc again replaces the archive; a failed cook leaves the install as it was.
+        let failing = fake_dwx(dir.path(), true, 2);
+        let failure = extract(&failing, &image, &image, Some(12), &data, &AtomicBool::new(false), |_| {}).unwrap_err();
+        assert_eq!(failure, Failure::new(code::EXTRACT_FAILED, "the cook failed"));
+        assert_eq!(names(&content), vec!["base.pak", "install.yaml", "keep.txt", "ui_original"]);
+        assert!(!data.join(PARTIAL_FOLDER).exists());
+    }
+
     #[cfg(unix)]
     #[test]
     fn a_fake_dwx_extracts_into_place() {
-        use std::os::unix::fs::PermissionsExt;
+        // A game whose dwx cannot cook base.pak installs the loose base pack, as before.
         let dir = tempfile::tempdir().unwrap();
-        let dwx = dir.path().join("dwx");
-        // Writes <out>/pack.yaml and a ui_original pack beside it, like the real one.
-        fs::write(&dwx, "#!/bin/sh\nout=\"$3\"\necho 'progress 10 read' >&2\nmkdir -p \"$out\" \"$out/../ui_original\"\necho 'id: base' > \"$out/pack.yaml\"\necho 'progress 100 done' >&2\n").unwrap();
-        fs::set_permissions(&dwx, fs::Permissions::from_mode(0o755)).unwrap();
+        let dwx = fake_dwx(dir.path(), false, 0);
+        assert!(!dwx_cooks_archives(&dwx));
         let data = dir.path().join("data");
         fs::create_dir_all(data.join("content/base")).unwrap();
         fs::write(data.join("content/base/old.txt"), "old").unwrap();
+        fs::write(data.join("content/base.pak"), "a newer game's").unwrap();
         fs::write(data.join("content/keep.txt"), "mine").unwrap();
         let image = dir.path().join("disc.cue");
         fs::write(&image, "").unwrap();
@@ -411,9 +652,10 @@ mod tests {
         extract(&dwx, &image, &image, Some(12), &data, &AtomicBool::new(false), |p| seen.push(p.percent)).unwrap();
         assert_eq!(seen, vec![10, 100]);
         let content = data.join("content");
-        assert!(has_base_pack(&content));
+        assert!(has_loose_base(&content));
         assert!(content.join("ui_original").is_dir());
         assert!(!content.join("base/old.txt").exists());
+        assert!(!content.join(BASE_ARCHIVE).exists());
         assert!(content.join("keep.txt").exists());
         assert!(!data.join(PARTIAL_FOLDER).exists());
         assert_eq!(read_record(&content).unwrap().extractor_version, 12);
@@ -423,5 +665,50 @@ mod tests {
         assert_eq!(failure, Failure::new(code::EXTRACT_FAILED, "the disc is scratched"));
         // A failed extraction leaves the installed content as it was.
         assert!(has_base_pack(&content));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_loose_install_converts_to_base_pak_and_a_stop_keeps_it_whole() {
+        let dir = tempfile::tempdir().unwrap();
+        let data = dir.path().join("data");
+        let content = data.join("content");
+        fs::create_dir_all(content.join("base/map")).unwrap();
+        fs::write(content.join("base/pack.yaml"), "id: base\n").unwrap();
+        fs::write(content.join("base/map/a.png"), "png").unwrap();
+        write_record(&content, &InstallRecord { extractor_version: 12, image: "/d.cue".into() }).unwrap();
+        let record = fs::read(content.join(INSTALL_RECORD)).unwrap();
+
+        // A cook that fails, or a player who stops it, leaves the loose pack as it was.
+        let failing = fake_dwx(dir.path(), true, 2);
+        let failure = convert(&failing, &data, &AtomicBool::new(false), |_| {}).unwrap_err();
+        assert_eq!(failure, Failure::new(code::CONVERT_FAILED, "the cook failed"));
+        assert!(has_loose_base(&content));
+        assert!(!content.join(BASE_ARCHIVE).exists());
+        let stopped = convert(&failing, &data, &AtomicBool::new(true), |_| {}).unwrap_err();
+        assert_eq!(stopped.code, code::CANCELLED);
+        assert_eq!(names(&content), vec!["base", "install.yaml"]);
+
+        // A game too old to cook one leaves it loose too.
+        assert_eq!(convert(&fake_dwx(dir.path(), false, 0), &data, &AtomicBool::new(false), |_| {}).unwrap(), Conversion::Unsupported);
+        assert!(has_loose_base(&content));
+
+        let dwx = fake_dwx(dir.path(), true, 0);
+        let mut seen = Vec::new();
+        assert_eq!(convert(&dwx, &data, &AtomicBool::new(false), |p| seen.push(p.step)).unwrap(), Conversion::Converted);
+        assert_eq!(seen, vec!["cook", "done"]);
+        // Without reading the disc again: the record stays, only the base pack changed form.
+        assert_eq!(names(&content), vec!["base.pak", "install.yaml"]);
+        assert_eq!(fs::read(content.join(INSTALL_RECORD)).unwrap(), record);
+        assert!(!data.join(CONVERT_FOLDER).exists());
+        assert_eq!(convert(&dwx, &data, &AtomicBool::new(false), |_| {}).unwrap(), Conversion::NothingToDo);
+
+        // A conversion that stopped once the archive was in place finishes on the next start.
+        fs::create_dir_all(content.join("base")).unwrap();
+        fs::write(content.join("base/pack.yaml"), "id: base\n").unwrap();
+        fs::create_dir_all(data.join(CONVERT_FOLDER)).unwrap();
+        assert_eq!(convert(&dwx, &data, &AtomicBool::new(false), |_| {}).unwrap(), Conversion::NothingToDo);
+        assert_eq!(names(&content), vec!["base.pak", "install.yaml"]);
+        assert!(!data.join(CONVERT_FOLDER).exists());
     }
 }

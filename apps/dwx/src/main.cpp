@@ -7,6 +7,7 @@
 #include <string_view>
 #include <vector>
 
+#include "cook_pak.hpp"
 #include "disc_cache.hpp"
 #include "dwx.hpp"
 #include "evolution_guide.hpp"
@@ -122,6 +123,20 @@ void printUsage() {
   std::println(stderr,
                "      Writes a pack as a single .pak archive and checks that it reads back.");
   std::println(stderr, "      --progress prints \"progress <percent> pack\" lines.");
+  std::println(stderr, "  dwx cook-pak <pack folder> -o <file.pak> [--progress]");
+  std::println(
+      stderr,
+      "      Cooks a pack and packs it into a .pak archive in one go, as the launcher installs the base");
+  std::println(
+      stderr,
+      "      pack: cooks into <file.pak>.cook, writes <file.pak>.partial, checks that every entry reads");
+  std::println(
+      stderr,
+      "      back and the engine opens every asset, and only then names it <file.pak> and removes the");
+  std::println(
+      stderr,
+      "      cooked folder. The pack itself is never changed. --progress prints \"progress <percent>");
+  std::println(stderr, "      <step>\" lines (cook, pack, check, done) for the whole job.");
   std::println(stderr, "  dwx upscale <recipe.yaml> <pack folder|content folder> -o <folder>");
   std::println(
       stderr,
@@ -284,7 +299,7 @@ int main(int argc, char** argv) {
                   : extractDisc(image, out.value_or(DefaultOutFolder), force, progress);
     }
   }
-  if ((command == "cook" || command == "pack") &&
+  if ((command == "cook" || command == "pack" || command == "cook-pak") &&
       (arguments.size() == 5 ||
        (arguments.size() == 6 && std::string_view{arguments[5]} == "--progress"))) {
     const std::string_view option{arguments[3]};
@@ -292,6 +307,9 @@ int main(int argc, char** argv) {
       const std::filesystem::path folder{arguments[2]};
       const std::filesystem::path out{arguments[4]};
       const bool progress = arguments.size() == 6;
+      if (command == "cook-pak") {
+        return cookPak(folder, out, progress);
+      }
       return command == "cook" ? cook(folder, out, progress) : pack(folder, out, progress);
     }
   }

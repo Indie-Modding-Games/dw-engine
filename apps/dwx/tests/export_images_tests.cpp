@@ -14,6 +14,8 @@
 #include <string_view>
 #include <vector>
 
+#include "cook.hpp"
+#include "cook_pak.hpp"
 #include "export_images.hpp"
 
 using dwe::dwx::exportImages;
@@ -129,4 +131,27 @@ TEST_CASE("dwx export-images writes each image as a custom image pack names it")
     CHECK_FALSE(exportImages(folders, folder.path() / "taken", "en").has_value());
     CHECK(readText(folder.path() / "taken/notes.txt") == "mine");
   }
+}
+
+TEST_CASE("dwx export-images reads a cooked base.pak, decoding the images cooked to KTX2") {
+  const TempFolder folder;
+  writeContent(folder);
+  const auto cooked = dwe::dwx::cookPakArchive(dwe::dwx::cookers(), folder.path() / "content/base",
+                                               folder.path() / "installed/base.pak");
+  REQUIRE_MESSAGE(cooked.has_value(), cooked.error().message);
+  const std::filesystem::path out = folder.path() / "export";
+  const std::array folders{folder.path() / "installed", folder.path() / "packs"};
+  auto summary = exportImages(folders, out, "es");
+  REQUIRE_MESSAGE(summary.has_value(), summary.error().message);
+  CHECK(summary->backgrounds == 1);
+  CHECK(summary->images == 3);
+  // The background and the image with two palettes stay PNG in the archive, as they were.
+  CHECK(readText(out / "map/mayo01/background_day.png") == indexedPng(8, 4));
+  CHECK(decoded(out / "texture/ui/sheet_palette1.png").width == 2);
+  // The image of one palette is a KTX2 texture there: it comes out in colour, at its size.
+  const dwe::assets::Image plain = decoded(out / "texture/ui/plain_palette0.png");
+  REQUIRE(plain.width == 2);
+  REQUIRE(plain.height == 2);
+  CHECK(std::to_integer<int>(plain.pixels[0]) > 150); // red, near lossless
+  CHECK(std::to_integer<int>(plain.pixels[2]) < 50);
 }

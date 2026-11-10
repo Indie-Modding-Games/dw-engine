@@ -15,7 +15,7 @@ files["content/packs/*/ui/**/*.lua"] = {
   ignore = { "131" },
   read_globals = {
     "ui", "t", "document_name", "skin_choice", "original_box", "bag_slot", "game_options",
-    "panel_enter", "fit_text", "screen_fit", "title_picture",
+    "panel_enter", "fit_text", "screen_fit", "title_picture", "hud_digits",
   },
 }
 
@@ -52,6 +52,11 @@ files["content/packs/*/ui/common/screen_fit.lua"] = {
 -- The title's pictures filling the window, loaded into the documents drawn over them.
 files["content/packs/*/ui/common/title_picture.lua"] = {
   globals = { "title_picture" },
+}
+
+-- A bar's value as the original's HUD digits, loaded into the versus HUD and the battle.
+files["content/packs/*/ui/common/hud_digits.lua"] = {
+  globals = { "hud_digits" },
 }
 
 -- One bag slot (icon, name, count), loaded into the documents that list the bag.

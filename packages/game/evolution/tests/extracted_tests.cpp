@@ -312,7 +312,9 @@ TEST_CASE(
   constexpr std::int32_t TableItems = 44;
   std::int32_t tableItems = 0;
   for (const assets::ItemEffectEntry& effect : itemEffects->effects) {
-    if (effect.handler != assets::ItemHandler::Evolution || !effect.evolvesTo) {
+    // A pack's own item (no original number) is not in the table: the game pack's rare items lead
+    // to forms only the hidden content's rulesets give stats to.
+    if (effect.handler != assets::ItemHandler::Evolution || !effect.evolvesTo || effect.index < 0) {
       continue;
     }
     CAPTURE(effect.item);

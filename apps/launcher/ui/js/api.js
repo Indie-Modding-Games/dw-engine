@@ -12,6 +12,7 @@ export const api = {
   checkUpdates: (record = true) => call("check_updates", { recordResult: record }),
   installDisc: (path) => call("install_disc", { path }),
   reextract: (path = null) => call("reextract", { path }),
+  convertContent: () => call("convert_content"),
   updateGame: () => call("update_game"),
   rollbackGame: () => call("rollback_game"),
   cancel: () => call("cancel"),

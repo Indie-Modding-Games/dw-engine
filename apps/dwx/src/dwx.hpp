@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/pak.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/core/sha1.hpp>
 
@@ -110,6 +111,12 @@ int cook(const std::filesystem::path& pack, const std::filesystem::path& out,
 // (weakly_canonical) first. cook and upscale use it to refuse an output folder that holds, or sits
 // in, a pack they read.
 bool isWithin(const std::filesystem::path& path, const std::filesystem::path& folder);
+
+// Opens an archive that writePak wrote from the pack in folder and reads every entry back, which
+// checks each one against its SHA-1, and its manifest against the pack's.
+core::Result<void> checkArchive(const std::filesystem::path& folder,
+                                const std::filesystem::path& archive,
+                                std::span<const assets::PakEntry> written);
 
 // dwx pack: writes the pack in a folder as a .pak archive and checks that it reads back; with
 // progress, prints "progress <percent> pack" lines as the files are written.

@@ -86,8 +86,8 @@ private:
   [[nodiscard]] static float bitmapRunWidth(const BitmapFace& face, Rml::StringView run,
                                             float letterSpacing, int& previousAdvance);
   static void addBitmapRun(const BitmapFace& face, Rml::StringView run,
-                           Rml::ColourbPremultiplied tint, float startX, float baseline,
-                           float letterSpacing, float& penX, int& previousAdvance, Rml::Mesh& mesh);
+                           Rml::ColourbPremultiplied tint, float baseline, float letterSpacing,
+                           float& penX, int& previousAdvance, Rml::Mesh& mesh);
 
   Rml::FontEngineInterface* freeType_;
   OriginalLook look_;
