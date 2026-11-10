@@ -20,6 +20,9 @@ steps:
   - wait: {shown: dialog, seconds: 0.5, timeout: 30}
   - menu_select: yes
   - wait: {shown: new_game_rules, seconds: 0.5, timeout: 30}
+  # Every species as a partner starts on (docs/modulos/game/evoluciones-extra.md): off, so the chart is this route's.
+  - menu_select: rules-all
+  - wait: {seconds: 0.3}
   - screenshot: rules-original
   - menu_select: rules-start
   - wait: {map: twna01, hidden: new_game_rules, seconds: 2, timeout: 120}

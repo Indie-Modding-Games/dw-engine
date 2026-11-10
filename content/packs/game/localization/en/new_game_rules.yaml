@@ -1,5 +1,9 @@
-# The new game's rules (ui/new_game_rules): the original's or with its hidden content, and the Ultimate to Mega step.
+# The new game's rules (ui/new_game_rules): every species as a partner, the original's or with its hidden content,
+# and the Ultimate to Mega step.
 title: "Game rules"
+all: "Every species as a partner: {value}"
+all_on: "The species the original never lets you raise evolve too."
+all_off: "Only the original's species."
 hidden: "Hidden content: {value}"
 hidden_off: "The original's rules."
 hidden_on: "Panjyamon, Gigadramon, MetalEtemon and Myotismon by evolution too."

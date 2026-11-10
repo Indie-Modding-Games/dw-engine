@@ -1826,9 +1826,20 @@ y el clima sale exactamente como sin estaciones. Las reglas están en [packages/
 
 Mejora opcional, apagada por defecto: al empezar una partida nueva desde el menú principal (Jugar → ranura → «Sí»),
 la pantalla «Reglas de la partida» (`ui/new_game_rules`, «Game rules» en inglés) deja elegir las reglas antes de que
-la partida empiece. El cursor empieza en «Empezar»; «Contenido oculto: No/Sí» cambia entre el ruleset `original` y
-`oculto` (`species_k`, `species_m` y `species_o` también por evolución: [evolution.md](../game/evolution.md#contenido-oculto)),
-y cancelar vuelve a la lista de ranuras. La fila «Paso Ultra → Mega» solo sale con el contenido oculto encendido y
+la partida empiece. El cursor empieza en «Empezar». «Todas las especies como compañero: Sí/No» (encendida por
+defecto, `new_game_rules.all`; [evoluciones-extra.md](../game/evoluciones-extra.md)) suma la sección `all_species`;
+«Contenido oculto: No/Sí» cambia entre el ruleset `original` y `oculto` (`species_k`, `species_m` y `species_o` también
+por evolución: [evolution.md](../game/evolution.md#contenido-oculto)). Las dos juntas eligen el ruleset:
+
+| Todas las especies | Contenido oculto | Paso Mega | Ruleset |
+|---|---|---|---|
+| No | No | — | `original` |
+| No | Sí | No / Sí | `oculto` / `oculto_mega` |
+| Sí | No | — | `todas` |
+| Sí | Sí | No / Sí | `todas_oculto` / `todas_oculto_mega` |
+
+La fila «Todas las especies» solo sale si los paquetes traen el ruleset `todas` (`TitleScreen` publica
+`new_game_rules.all`), y cancelar vuelve a la lista de ranuras. La fila «Paso Ultra → Mega» solo sale con el contenido oculto encendido y
 cuando los paquetes traen el ruleset `oculto_mega` (`TitleScreen` publica `new_game_rules.mega`).
 
 No es un ajuste del usuario sino de la partida: `TitleScreen` guarda el id elegido en `PlayStart::rulesetId`, la
@@ -1839,7 +1850,8 @@ campo usa el de la línea de órdenes (`--ruleset`, `original` por defecto).
 
 Con el ruleset, el árbol de evolución de la página del jugador (`player_chart.cpp`: `publishRulesetChart`) lee los
 caminos de las tablas del ruleset y añade las casillas nuevas (`player.chart.count`: 61 en el original, 65 con el
-contenido oculto y 66 con el paso Mega) y la lista de Megas del paso Mega (`player.chart.mega`, ids separados por
+contenido oculto y 66 con el paso Mega; con todas las especies, 110, 113 y 113, porque `vand` y `muge` ya los
+pone el contenido oculto o el paso Mega) y la lista de Megas del paso Mega (`player.chart.mega`, ids separados por
 comas; vacía sin él). Una casilla que no cabe en la rejilla de su caja (las de la tercera columna de Ultra del
 contenido oculto) pasa a una página siguiente del árbol ([etapas canónicas](#etapas-canónicas)).
 Una forma nueva usa el icono de otra especie con otra paleta hasta que haya iconos propios.
@@ -1852,7 +1864,8 @@ y recibe `new_game_mode` con el id o `new_game_mode_back`. El modo elegido va a 
 `original` y `oculto`; otro modo empieza con su `ruleset`.
 
 Las rutas de prueba solo ven esta pantalla si lo piden (`new_game_rules: true`); las demás empiezan con las reglas
-del original, como antes. `route-hidden-content.yaml` elige el contenido oculto y hace evolucionar al compañero a
+del original, como antes. Las que la piden apagan antes «Todas las especies» (`menu_select: rules-all`).
+`route-hidden-content.yaml` elige el contenido oculto y hace evolucionar al compañero a
 cada forma nueva; `route-hidden-content-off.yaml` deja el original y comprueba que todo sigue igual
 ([prueba vertical](../../guides/prueba-vertical.md)).
 

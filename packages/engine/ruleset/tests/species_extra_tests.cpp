@@ -92,17 +92,24 @@ assets::EvolutionTable pathsOf() {
                          .from = {},
                          .to = {std::string{"x1"}, std::string{"x2"}, std::string{"x3"},
                                 std::string{"x4"}, std::string{"x5"}, std::nullopt}});
-  table.paths.push_back({.digimon = "ultimate_b", .index = 3, .from = {}, .to = {}});
+  table.paths.push_back({.digimon = "ultimate_b", .index = 3});
   return table;
 }
 
-// The game pack's rulesets with the hidden content, and each one's sections.
+// The game pack's optional rulesets (the hidden content, every species as a partner), each one's
+// section and the folder of its file.
 struct GamePackRuleset {
   std::string_view id;
   std::string_view section;
+  std::string_view folder;
 };
-constexpr std::array<GamePackRuleset, 2> HiddenRulesets{
-    {{.id = "oculto", .section = "species_extra"}, {.id = "oculto_mega", .section = "mega_step"}}};
+constexpr std::array<GamePackRuleset, 5> OptionalRulesets{{
+    {.id = "oculto", .section = "species_extra", .folder = "oculto"},
+    {.id = "oculto_mega", .section = "mega_step", .folder = "oculto_mega"},
+    {.id = "todas", .section = "all_species", .folder = "todas"},
+    {.id = "todas_oculto", .section = "all_species", .folder = "todas"},
+    {.id = "todas_oculto_mega", .section = "all_species", .folder = "todas"},
+}};
 
 std::string_view textOf(std::span<const std::byte> bytes) {
   return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
@@ -110,7 +117,7 @@ std::string_view textOf(std::span<const std::byte> bytes) {
 
 } // namespace
 
-TEST_CASE("the game pack's hidden content rulesets follow their schemas and read") {
+TEST_CASE("the game pack's optional rulesets follow their schemas and read") {
   const assets::DiskFileSystem disk;
   // A stand-in base pack with empty tables lets the game pack mount without the disc.
   assets::MemoryFileSystem memory;
@@ -130,7 +137,7 @@ TEST_CASE("the game pack's hidden content rulesets follow their schemas and read
                            .origin = assets::PackOrigin::Engine}};
   const auto vfs = assets::VirtualFileSystem::mount(packs);
   REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
-  for (const GamePackRuleset& hidden : HiddenRulesets) {
+  for (const GamePackRuleset& hidden : OptionalRulesets) {
     CAPTURE(hidden.id);
     const auto schemaBytes = disk.readFile(std::filesystem::path{DWE_SCHEMA_DIR} /
                                            std::format("ruleset_{}.schema.json", hidden.section));
@@ -140,8 +147,9 @@ TEST_CASE("the game pack's hidden content rulesets follow their schemas and read
     constexpr std::array<std::string_view, 1> Annotations{"entryReference"};
     const auto schema = core::JsonSchema::compile(*schemaText, Annotations);
     REQUIRE_MESSAGE(schema.has_value(), errorOf(schema));
-    const auto bytes = disk.readFile(std::filesystem::path{DWE_GAME_PACK} /
-                                     std::format("rules/{}/{}.yaml", hidden.id, hidden.section));
+    const auto bytes =
+        disk.readFile(std::filesystem::path{DWE_GAME_PACK} /
+                      std::format("rules/{}/{}.yaml", hidden.folder, hidden.section));
     REQUIRE_MESSAGE(bytes.has_value(), errorOf(bytes));
     const auto document = core::parseYaml(textOf(*bytes));
     REQUIRE_MESSAGE(document.has_value(), errorOf(document));
@@ -155,8 +163,85 @@ TEST_CASE("the game pack's hidden content rulesets follow their schemas and read
     const auto extra = readSpeciesExtra(*ruleset);
     REQUIRE_MESSAGE(extra.has_value(), errorOf(extra));
     CHECK_FALSE(extra->empty());
-    CHECK(extra->megaStep.has_value() == (hidden.section == "mega_step"));
+    CHECK(extra->megaStep.has_value() == hidden.id.ends_with("mega"));
+    if (hidden.section == AllSpeciesSection) {
+      CHECK(ruleset->section(AllSpeciesSection)->owner == "todas");
+      CHECK_FALSE(extra->specialTargets.empty());
+      // The hidden content's patch of a species wins over all_species' fallback one.
+      const SpeciesPatch* boss = extra->find("vand");
+      REQUIRE(boss != nullptr);
+      CHECK(boss->yields == (hidden.id == "todas"));
+    }
   }
+}
+
+TEST_CASE("all_species adds fallback patches for the species no other section patches") {
+  FixturePacks packs;
+  addExtra(packs);
+  packs.files.addFile("rules/rules/small_all/ruleset.yaml", R"(id: small_all
+name: Small All
+version: 1.0.0
+extends: small
+sections: []
+sections_from: { all_species: small_shared }
+)");
+  packs.files.addFile("rules/rules/small_shared/all_species.yaml", R"(wake_up:
+  - target: wakemon
+    roll_below: 50
+    from: [rookie_a]
+    require: { map: { equals: room01 } }
+species:
+  newmon:
+    evolves_from: [rookie_a]
+  othermon:
+    evolves_from: [rookie_b]
+    stats_gains: { copy: rookie_a }
+  wakemon:
+    stats_gains: { copy: rookie_a }
+)");
+  const auto ruleset = loadRuleset(packs.mount(), "small_all");
+  REQUIRE_MESSAGE(ruleset.has_value(), errorOf(ruleset));
+  const Section* shared = ruleset->section(AllSpeciesSection);
+  REQUIRE(shared != nullptr);
+  CHECK(shared->owner == "small_shared");
+  const auto extra = readSpeciesExtra(*ruleset);
+  REQUIRE_MESSAGE(extra.has_value(), errorOf(extra));
+  // species_extra's newmon keeps its own patch.
+  CHECK_FALSE(extra->find("newmon")->yields);
+  CHECK(*extra->find("newmon")->evolvesFrom == std::vector<std::string>{"rookie_a", "rookie_b"});
+  REQUIRE(extra->find("othermon") != nullptr);
+  CHECK(extra->find("othermon")->yields);
+  CHECK(extra->find("othermon")->statsGainsCopy == std::optional<std::string>{"rookie_a"});
+  CHECK(extra->specialTargets == std::vector<std::string>{"wakemon"});
+}
+
+TEST_CASE("a manifest's sections_from names a section and a ruleset") {
+  FixturePacks packs;
+  packs.files.addFile("rules/rules/small_bad/ruleset.yaml", R"(id: small_bad
+name: Small Bad
+version: 1.0.0
+extends: small
+sections: [clock]
+sections_from: { clock: Other }
+)");
+  CHECK_FALSE(loadRuleset(packs.mount(), "small_bad").has_value());
+}
+
+TEST_CASE("stats_gains copy takes another species' row as the species' own") {
+  SpeciesExtra extra;
+  extra.species["newmon"] = SpeciesPatch{.statsGainsCopy = std::string{"rookie_a"}};
+  assets::EvolutionTable table;
+  table.statsGains.push_back(
+      {.target = "rookie_a", .index = 4, .hp = 1000, .brains = 50, .targetDigimon = "rookie_a"});
+  REQUIRE(applySpeciesExtra(extra, table).has_value());
+  REQUIRE(table.statsGains.size() == 2);
+  CHECK(table.statsGains.at(1).target == std::optional<std::string>{"newmon"});
+  CHECK(table.statsGains.at(1).targetDigimon == std::optional<std::string>{"newmon"});
+  CHECK_FALSE(table.statsGains.at(1).index.has_value());
+  CHECK(table.statsGains.at(1).hp == 1000);
+  CHECK(table.statsGains.at(1).brains == 50);
+  extra.species["othermon"] = SpeciesPatch{.statsGainsCopy = std::string{"missing"}};
+  CHECK_FALSE(applySpeciesExtra(extra, table).has_value());
 }
 
 TEST_CASE("species_extra reads every patch of a species, and the Mega step replaces its fields") {
@@ -233,9 +318,14 @@ TEST_CASE("the patches put a new target after the last one of each source and ke
   // rookie_b's only free slot is the last one.
   REQUIRE(applySpeciesExtra(full, other).has_value());
   CHECK(other.paths.at(1).to.at(5) == std::optional<std::string>{"newmon"});
+  // Past the disc's slots the row grows: the disc's targets keep their slots and order.
   full.species["othermon"] = SpeciesPatch{.evolvesFrom = std::vector<std::string>{"rookie_b"}};
   auto crowded = pathsOf();
-  CHECK_FALSE(applySpeciesExtra(full, crowded).has_value());
+  REQUIRE(applySpeciesExtra(full, crowded).has_value());
+  REQUIRE(crowded.paths.at(1).to.size() == 7);
+  CHECK(crowded.paths.at(1).to.at(0) == std::optional<std::string>{"x1"});
+  CHECK(crowded.paths.at(1).to.at(5) == std::optional<std::string>{"newmon"});
+  CHECK(crowded.paths.at(1).to.at(6) == std::optional<std::string>{"othermon"});
 }
 
 TEST_CASE("the patches add requirement, stat, raise rows and moves in empty slots") {

@@ -1,0 +1,11 @@
+# Todas las especies como compañero con el contenido oculto y el paso Ultra → Mega: las reglas de oculto_mega y la
+# sección all_species de todas (sections_from), cuyas especies con parche de oculto o del paso Mega conservan ese.
+# Diseño: docs/modulos/game/evoluciones-extra.md. Formato: docs/architecture/rulesets.md.
+id: todas_oculto_mega
+name: "Original + contenido oculto + paso Mega + todas las especies"
+version: 0.1.0
+description: "El contenido oculto con el paso Mega; toda especie con modelo de combate se alcanza evolucionando."
+extends: oculto_mega
+sections: []
+sections_from:
+  all_species: todas

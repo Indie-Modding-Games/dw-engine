@@ -186,4 +186,8 @@ original hasta 5 orígenes y 6 destinos; los caminos de más existen pero no se 
   evoluciones por formas nuevas de huevo a ultra.
 - `packages/engine/ruleset/tests/species_extra_tests.cpp`: `sections_from`, la lectura de `all_species` (una especie
   ya parcheada se salta), `stats_gains: {copy}` y los caminos que crecen más allá de las ranuras del disco; los
-  rulesets del pack siguen sus esquemas.
+  rulesets del pack siguen sus esquemas (`the game pack's optional rulesets follow their schemas and read`).
+- `a form only a ruleset's wake-up special leads to gets its cell` (`apps/game/tests/player_chart_tests.cpp`).
+- Ruta `route-all-species.yaml` ([prueba vertical](../../guides/prueba-vertical.md)): la opción encendida por defecto,
+  el árbol con 110 casillas y `tane` → `otam` → `geco` en el juego. Las rutas del contenido oculto, del paso Mega y de
+  las etapas canónicas la apagan y siguen con sus 61, 65 y 66 casillas.

@@ -4,7 +4,8 @@ id: original
 name: modes.original_name
 description: modes.original_description
 # La partida nueva empieza con las reglas del original; la pantalla de reglas deja elegir el contenido oculto
-# (docs/modulos/game/evolution.md, «Contenido oculto»).
+# (docs/modulos/game/evolution.md, «Contenido oculto») y todas las especies como compañero, encendida en ella
+# (docs/modulos/game/evoluciones-extra.md).
 ruleset: original
-rulesets: [original, oculto, oculto_mega]
+rulesets: [original, oculto, oculto_mega, todas, todas_oculto, todas_oculto_mega]
 order: 0
