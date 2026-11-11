@@ -382,9 +382,10 @@ mapas que el paquete tiene):
   nevados (script 90 sección 0x33 y script 203) llevan a la casa solo con el compañero enfermo, y tomadas en
   cada cruce dejaban al jugador atrapado entre la casa y la franja. Si el jugador se queda en una casilla de
   pisar, esa casilla no vuelve a preguntar hasta que cambia de mapa (después va como en vainilla);
-- varios: el campo se para y el selector `destination_choice` los enseña de 8 en 8, empezando por el de la historia;
-  se elige con teclado, ratón o mando, en en/es; cancelar (Ctrl, Retroceso, botón derecho, Este del mando) y
-  Escape (o F10, Back del mando) es quedarse;
+- varios: el campo se para y el selector `destination_choice` los enseña de 8 en 8, abierto en la página del de la
+  historia y con el foco en «Quedarse aquí» (decidido por el coordinador, 2026-11-10): confirmar sin mirar nunca
+  cambia de mapa, y abajo lleva al primer sitio de la página; se elige con teclado, ratón o mando, en en/es;
+  cancelar (Ctrl, Retroceso, botón derecho, Este del mando) y Escape (o F10, Back del mando) es quedarse;
 - los `sets_flags` del warp elegido se aplican también (decidido por el coordinador, 2026-10-22); si se elige el
   sitio de la historia, se toma el warp que tomaría el original, con sus `sets_flags`;
 - el warp tomado lleva su `arrival_section` (`MapChange::arrivalSection`): al entrar, la historia corre esa sección

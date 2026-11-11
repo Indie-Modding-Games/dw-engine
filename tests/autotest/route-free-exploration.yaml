@@ -77,14 +77,15 @@ steps:
   - tap: {key: left_ctrl}
   - wait: {hidden: destination_choice, seconds: 0.5}
   - wait: {map: mayo00}
-  # Off the cell to the other one and back: it asks again, and confirm takes the story's place, where it starts.
+  # Off the cell to the other one and back: it asks again, on the story's page (twnb01 is the 24th place, the last
+  # slot of page 3) with the focus on staying; the story's place is taken from there.
   - walk_to: {trigger: 52, encounters: true}
   - wait: {shown: destination_choice, seconds: 0.5}
   - tap: {key: left_ctrl}
   - wait: {hidden: destination_choice, seconds: 0.5}
   - walk_to: {trigger: 51, encounters: true}
   - wait: {shown: destination_choice, seconds: 0.5}
-  - tap: {key: return}
+  - menu_select: place-8
   - wait: {hidden: destination_choice}
   - wait: {map: twnb01, partner_within: 400, seconds: 0.5}
   # File City's other half: its cell 53, which the story keeps closed.

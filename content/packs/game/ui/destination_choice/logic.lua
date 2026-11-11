@@ -75,14 +75,13 @@ function turn(document, step)
 end
 
 function on_show(document)
-  -- The page of the story's place, which the choice starts on; the first place when the story takes
-  -- none.
+  -- The page of the story's place (the first one when the story takes none), with the focus on
+  -- staying: confirming without looking never changes the map.
   local story = math.floor(ui.setting("exploration_story") or -1)
   page = story >= 0 and math.floor(story / PageSize) + 1 or 1
   refresh(document)
   refresh_prompts(document)
-  local slot = story >= 0 and (story % PageSize) + 1 or 1
-  document:get("place-" .. slot):focus()
+  document:get("stay"):focus()
 end
 
 function on_setting(document, _name)
