@@ -144,7 +144,7 @@ jobs:
           - { platform: linux-x86_64, runner: ubuntu-24.04 }
           - { platform: windows-x86_64, runner: ubuntu-24.04 }
           - { platform: darwin-aarch64, runner: macos-15, arch: arm64 }
-          - { platform: darwin-x86_64, runner: macos-15-intel, arch: x64 }
+          - { platform: darwin-x86_64, runner: macos-15, arch: x64 }
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
@@ -180,39 +180,19 @@ jobs:
           path: ${{ runner.temp }}/xwin
           key: xwin-${{ hashFiles('.devcontainer/Dockerfile') }}
 
-      # Homebrew is in /opt/homebrew on Apple silicon and in /usr/local on Intel; the toolchain
-      # (tooling/cmake/toolchains/macos-llvm-libcxx.cmake) takes its LLVM from DWE_LLVM_ROOT. ccache in
-      # front of it as on Linux (the presets read DWE_COMPILER_LAUNCHER); LLVM is installed afresh
-      # on every run, so ccache knows the compiler by its contents and not its date.
+      # LLVM, vcpkg and ccache (.github/actions/macos-tools); for darwin-x86_64 also Rosetta and the
+      # Intel libc++ and MoltenVK, as the Intel package is cross-compiled on the faster Apple silicon
+      # runner.
       - name: Install the macOS tools
         if: runner.os == 'macOS'
-        run: |
-          # LLVM pinned to the development image's major (.devcontainer/Dockerfile LLVM_VERSION): a newer
-          # formula would change the compiler under the release and empty the compiler cache.
-          brew install llvm@22 molten-vk ninja nasm ccache
-          echo "DWE_LLVM_ROOT=$(brew --prefix llvm@22)" >> "$GITHUB_ENV"
-          {
-            echo "DWE_COMPILER_LAUNCHER=ccache"
-            echo "CCACHE_DIR=$RUNNER_TEMP/ccache"
-            echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
-            echo "CCACHE_NOHASHDIR=true"
-            echo "CCACHE_COMPILERCHECK=content"
-            echo "CCACHE_MAXSIZE=1G"
-          } >> "$GITHUB_ENV"
-          root="$RUNNER_TEMP/vcpkg"
-          git clone https://github.com/microsoft/vcpkg.git "$root"
-          git -C "$root" checkout "$(python3 -c 'import json; print(json.load(open("vcpkg.json"))["builtin-baseline"])')"
-          "$root/bootstrap-vcpkg.sh" -disableMetrics
-          # The sources' downloads go in the cache too, as in the development image: a source host that is
-          # down (lua.org) then stops only a run that has never downloaded it.
-          mkdir -p "$RUNNER_TEMP/vcpkg-cache/downloads"
-          echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
-          echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
-          echo "VCPKG_DOWNLOADS=$RUNNER_TEMP/vcpkg-cache/downloads" >> "$GITHUB_ENV"
+        uses: ./.github/actions/macos-tools
+        with:
+          arch: ${{ matrix.arch }}
 
       # Restored and saved apart, so a build that fails after its dependencies keeps them for the
       # next run. vcpkg rebuilds only the dependencies whose inputs changed.
-      # The macOS key names the pinned LLVM (above), which the hashed files do not hold.
+      # The macOS key names the pinned LLVM (.github/actions/macos-tools), which the hashed files do
+      # not hold.
       - name: Restore the vcpkg binary cache
         id: vcpkg-cache
         uses: actions/cache/restore@v4

@@ -1,0 +1,75 @@
+name: macOS build tools
+description: >-
+  Installs what scripts/package_macos.sh needs on a macOS runner: Homebrew's pinned LLVM, MoltenVK,
+  Ninja, NASM and ccache, and vcpkg at vcpkg.json's baseline, with the environment the presets and
+  the toolchain read. For an Intel package on an Apple silicon runner (arch x64) it also installs
+  Rosetta and restores, or builds and saves, the Intel libc++ and MoltenVK
+  (scripts/package/macos_cross_libs.sh) in DWE_MACOS_CROSS_DIR.
+inputs:
+  arch:
+    description: The package's processor, arm64 or x64
+    required: true
+runs:
+  using: composite
+  steps:
+    # Homebrew is in /opt/homebrew on Apple silicon and in /usr/local on Intel; the toolchain
+    # (tooling/cmake/toolchains/macos-llvm-libcxx.cmake) takes its LLVM from DWE_LLVM_ROOT. ccache in
+    # front of it as on Linux (the presets read DWE_COMPILER_LAUNCHER); LLVM is installed afresh
+    # on every run, so ccache knows the compiler by its contents and not its date.
+    - name: Install the macOS tools
+      shell: bash
+      run: |
+        # LLVM pinned to the development image's major (.devcontainer/Dockerfile LLVM_VERSION): a newer
+        # formula would change the compiler under the release and empty the compiler cache.
+        brew install llvm@22 molten-vk ninja nasm ccache
+        echo "DWE_LLVM_ROOT=$(brew --prefix llvm@22)" >> "$GITHUB_ENV"
+        {
+          echo "DWE_COMPILER_LAUNCHER=ccache"
+          echo "CCACHE_DIR=$RUNNER_TEMP/ccache"
+          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
+          echo "CCACHE_NOHASHDIR=true"
+          echo "CCACHE_COMPILERCHECK=content"
+          echo "CCACHE_MAXSIZE=1G"
+        } >> "$GITHUB_ENV"
+        root="$RUNNER_TEMP/vcpkg"
+        git clone https://github.com/microsoft/vcpkg.git "$root"
+        git -C "$root" checkout "$(python3 -c 'import json; print(json.load(open("vcpkg.json"))["builtin-baseline"])')"
+        "$root/bootstrap-vcpkg.sh" -disableMetrics
+        # The sources' downloads go in the cache too, as in the development image: a source host that is
+        # down (lua.org) then stops only a run that has never downloaded it.
+        mkdir -p "$RUNNER_TEMP/vcpkg-cache/downloads"
+        echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
+        echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
+        echo "VCPKG_DOWNLOADS=$RUNNER_TEMP/vcpkg-cache/downloads" >> "$GITHUB_ENV"
+
+    # The Intel package on Apple silicon: Rosetta runs its dwx (the packs' cooking) and the
+    # package's start check. The Intel libraries change only with the LLVM version and their script.
+    - name: Prepare the Intel build on Apple silicon
+      id: cross
+      if: inputs.arch == 'x64' && runner.arch == 'ARM64'
+      shell: bash
+      run: |
+        arch -x86_64 /usr/bin/true 2>/dev/null || sudo softwareupdate --install-rosetta --agree-to-license
+        echo "llvm=$("$DWE_LLVM_ROOT/bin/llvm-config" --version)" >> "$GITHUB_OUTPUT"
+        echo "DWE_MACOS_CROSS_DIR=$RUNNER_TEMP/macos-cross-x64" >> "$GITHUB_ENV"
+
+    - name: Restore the Intel libc++ and MoltenVK
+      id: cross-cache
+      if: steps.cross.outcome == 'success'
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ runner.temp }}/macos-cross-x64
+        key: macos-cross-x64-llvm${{ steps.cross.outputs.llvm }}-${{ hashFiles('scripts/package/macos_cross_libs.sh') }}
+
+    - name: Build the Intel libc++ and fetch MoltenVK
+      if: steps.cross.outcome == 'success' && steps.cross-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: scripts/package/macos_cross_libs.sh --arch x64 --out "$DWE_MACOS_CROSS_DIR"
+
+    - name: Save the Intel libc++ and MoltenVK
+      if: steps.cross.outcome == 'success' && steps.cross-cache.outputs.cache-hit != 'true'
+      continue-on-error: true
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ runner.temp }}/macos-cross-x64
+        key: macos-cross-x64-llvm${{ steps.cross.outputs.llvm }}-${{ hashFiles('scripts/package/macos_cross_libs.sh') }}

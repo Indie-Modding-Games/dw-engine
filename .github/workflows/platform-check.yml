@@ -5,6 +5,11 @@ name: Platform check
 # > Run workflow; docs/guides/beta-windows-macos.md). A pull request's windows check only
 # cross-compiles them (ci.yml). The tests that need the player's disc or extracted content skip,
 # as on Linux without DWE_DISC and DWE_CONTENT.
+#
+# The `macos_x64_package` input instead builds only the Intel macOS game package the way release.yml
+# does (cross-compiled on an Apple silicon runner) and keeps it as the run's artifact, publishing
+# nothing: a branch that changes that build is tried with
+#   gh workflow run platform-check.yml --ref <branch> -f macos_x64_package=true
 on:
   schedule:
     - cron: '0 6 * * 1'
@@ -14,12 +19,17 @@ on:
         description: Also check macOS
         type: boolean
         default: false
+      macos_x64_package:
+        description: Only build the Intel macOS game package, as release.yml (nothing is published)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   windows:
+    if: ${{ !inputs.macos_x64_package }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -144,3 +154,57 @@ jobs:
             --target aarch64-apple-darwin --extra "Noto Sans (the font)=../ui/fonts/noto_sans_license.txt" \
             --out notices/THIRD_PARTY_NOTICES.txt
           cargo test --locked
+
+  # The darwin-x86_64 job of release.yml without the release: the same tools, cache key and script.
+  # Its vcpkg cache is saved for this branch's next runs; the compiler cache is not kept.
+  macos-x64-package:
+    if: inputs.macos_x64_package
+    runs-on: macos-15
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the macOS tools
+        uses: ./.github/actions/macos-tools
+        with:
+          arch: x64
+
+      - name: Restore the vcpkg binary cache
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-release-darwin-x86_64-llvm22-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          restore-keys: vcpkg-release-darwin-x86_64-
+
+      - name: Game package
+        run: scripts/package_macos.sh --arch x64 --out dist
+
+      - name: Show the logs of a failed vcpkg step
+        if: failure()
+        run: |
+          find build -path '*vcpkg_buildtrees*' -name '*.log' -size +0 \
+            \( -name '*-err.log' -o -name 'config-*-out.log' \) 2>/dev/null | head -20 | while read -r log; do
+            echo "::group::$log"
+            tail -n 60 "$log"
+            echo "::endgroup::"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: game-darwin-x86_64
+          path: dist/dwe-beta-*-darwin-x86_64.tar.xz
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Delete the packages this build no longer uses from the vcpkg binary cache
+        if: success() && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        run: scripts/ci/prune_vcpkg_cache.sh "$RUNNER_TEMP/vcpkg-cache" build
+
+      - name: Save the vcpkg binary cache
+        if: always() && steps.vcpkg-cache.outcome == 'success' && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-release-darwin-x86_64-llvm22-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}

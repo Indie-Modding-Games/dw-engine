@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Builds the macOS package on a Mac (the CI's macOS runners; there is no cross build): a tarball
-# with the game as an application bundle and the same files around it as the Linux package.
+# Builds the macOS package on a Mac (the CI's macOS runners): a tarball with the game as an
+# application bundle and the same files around it as the Linux package. An Apple silicon Mac builds
+# the Intel package too (--arch x64): scripts/package/macos_cross_libs.sh builds the Intel libc++
+# and fetches an Intel MoltenVK, and Rosetta runs the Intel dwx that cooks the packs.
 #
 #   dwe-beta-<version>-<commit>-darwin-<arch>/
 #     dwe-game.app/Contents/MacOS/        dwe-game and dwx
@@ -16,9 +18,12 @@
 #
 # Usage: scripts/package_macos.sh [--arch arm64|x64] [--no-build] [--out <folder>]
 #   --arch       the processor (default: this Mac's)
-#   --no-build   package the build as it is (build/macos-<arch>-package)
+#   --no-build   package the build as it is (build/macos-<arch>-package, or
+#                build/macos-x64-cross-package for x64 on Apple silicon)
 #   --out        where the tarball goes (default build/package)
-# Needs Homebrew's llvm, molten-vk and ninja, cmake and VCPKG_ROOT (a vcpkg checkout).
+# Needs Homebrew's llvm, molten-vk and ninja, cmake and VCPKG_ROOT (a vcpkg checkout); x64 on Apple
+# silicon also needs Rosetta (softwareupdate --install-rosetta --agree-to-license). The Intel
+# libraries go in DWE_MACOS_CROSS_DIR (default build/macos-cross-x64), built once per LLVM.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -39,7 +44,7 @@ while (($#)); do
       shift
       ;;
     -h | --help)
-      sed -n '2,21p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,26p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -54,20 +59,48 @@ done
   echo "package_macos: runs on macOS only" >&2
   exit 1
 }
-if [[ -z "$arch" ]]; then
-  [[ "$(uname -m)" == arm64 ]] && arch=arm64 || arch=x64
-fi
+[[ "$(uname -m)" == arm64 ]] && host_arch=arm64 || host_arch=x64
+arch="${arch:-$host_arch}"
 case "$arch" in
-  arm64) key="darwin-aarch64" ;;
-  x64) key="darwin-x86_64" ;;
+  arm64)
+    key="darwin-aarch64"
+    machine=arm64
+    ;;
+  x64)
+    key="darwin-x86_64"
+    machine=x86_64
+    ;;
   *)
     echo "package_macos: --arch is arm64 or x64" >&2
     exit 2
     ;;
 esac
 preset="macos-$arch-package"
-build_dir="$root/build/$preset"
 triplet="$arch-osx-libcxx"
+moltenvk="$(brew --prefix molten-vk)/lib/libMoltenVK.dylib"
+moltenvk_licence="$(brew --prefix molten-vk)/LICENSE"
+if [[ "$arch" != "$host_arch" ]]; then
+  # The package's own dwx cooks its packs, so the other processor's programs must run here.
+  [[ "$host_arch" == arm64 ]] || {
+    echo "package_macos: an Intel Mac cannot run the arm64 programs;" \
+      "build --arch arm64 on Apple silicon" >&2
+    exit 1
+  }
+  arch -x86_64 /usr/bin/true 2>/dev/null || {
+    echo "package_macos: --arch x64 runs Intel programs under Rosetta:" \
+      "softwareupdate --install-rosetta --agree-to-license" >&2
+    exit 1
+  }
+  preset="macos-x64-cross-package"
+  cross="${DWE_MACOS_CROSS_DIR:-$root/build/macos-cross-$arch}"
+  "$root/scripts/package/macos_cross_libs.sh" --arch "$arch" --minimum-macos "$minimum_macos" \
+    --out "$cross"
+  # Read by tooling/cmake/toolchains/macos-llvm-libcxx.cmake, in the engine's build and the ports'.
+  export DWE_LIBCXX_DIR="$cross/libcxx"
+  moltenvk="$cross/moltenvk/libMoltenVK.dylib"
+  moltenvk_licence="$cross/moltenvk/LICENSE"
+fi
+build_dir="$root/build/$preset"
 
 commit="$(git -C "$root" describe --always --dirty)"
 version="$(sed -n 's/^project(dwe VERSION \([0-9.]*\).*/\1/p' "$root/CMakeLists.txt" | head -1)"
@@ -107,7 +140,6 @@ loader_name="$(otool -L "$app/MacOS/dwe-game" \
 }
 cp -L "$build_dir/vcpkg_installed/$triplet/lib/$loader_name" "$app/Frameworks/$loader_name"
 install_name_tool -id "@rpath/$loader_name" "$app/Frameworks/$loader_name"
-moltenvk="$(brew --prefix molten-vk)/lib/libMoltenVK.dylib"
 cp -L "$moltenvk" "$app/Frameworks/libMoltenVK.dylib"
 install_name_tool -id "@rpath/libMoltenVK.dylib" "$app/Frameworks/libMoltenVK.dylib"
 # The loader looks for drivers in the bundle's Contents/Resources/vulkan/icd.d; the library path is
@@ -184,6 +216,24 @@ done
 codesign --force --sign - "$stage/dwe-game.app"
 codesign --verify --deep --strict "$stage/dwe-game.app"
 
+# The packaged game starts on this Mac (an Intel one under Rosetta) and its graphics check reaches
+# MoltenVK through the bundle's Vulkan loader and ICD file: it prints its header and any result but
+# no-vulkan. Whether a GPU suits the game is not judged: the runners are virtual machines with a
+# paravirtual Metal device, so ok, unsuitable or no-device all pass; no-vulkan never depends on the
+# GPU (the loader finds no driver), and a crash or a missing header is the package's fault. Bounded,
+# as a check that hangs must not hold the build.
+check="$(perl -e 'alarm shift; exec @ARGV' 120 \
+  arch "-$machine" "$app/MacOS/dwe-game" --check-system 2>&1)" || true
+printf '%s\n' "$check" | sed -n 's/^[^[:space:]]/package_macos: dwe-game --check-system: &/p'
+grep -qx 'dwe-check-system 1' <<<"$check" || {
+  echo "package_macos: the packaged dwe-game ($machine) does not start, or crashed in its check" >&2
+  exit 1
+}
+if grep -qx 'result=no-vulkan' <<<"$check"; then
+  echo "package_macos: the packaged dwe-game ($machine) finds no Vulkan driver in its bundle" >&2
+  exit 1
+fi
+
 cp "$root/scripts/package/README-macos.md" "$stage/README.md"
 printf '%s\n' "$commit" >"$stage/VERSION"
 sed -n 's/^inline constexpr int ExtractorVersion = \([0-9]*\);.*/\1/p' \
@@ -200,7 +250,7 @@ for copyright in "$build_dir"/vcpkg_installed/"$triplet"/share/*/copyright; do
   [[ "$port" == vcpkg-* ]] || cp "$copyright" "$licences/$port.txt"
 done
 cp "$root/content/packs/game/ui/fonts/noto_sans_license.txt" "$licences/noto-sans.txt"
-cp "$(brew --prefix molten-vk)/LICENSE" "$licences/moltenvk.txt" 2>/dev/null \
+cp "$moltenvk_licence" "$licences/moltenvk.txt" 2>/dev/null \
   || echo "MoltenVK: Apache License 2.0" >"$licences/moltenvk.txt"
 llvm_licence="$(brew --prefix llvm)/LICENSE.TXT"
 [[ -f "$llvm_licence" ]] && cp "$llvm_licence" "$licences/llvm-libcxx.txt"
