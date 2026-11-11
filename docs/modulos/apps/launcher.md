@@ -405,29 +405,72 @@ respaldo para Linux y Windows ([Publicar desde este PC](#publicar-desde-este-pc)
 
 `.github/workflows/release.yml` corre en cada push a `main` que toque algo más que documentación, tests o la CI
 (`paths-ignore`), y también a mano
-(*Actions → Release → Run workflow*). Si llega una fusión nueva mientras otra se compila, la nueva cancela la vieja:
-solo el commit más nuevo sale como versión. Lo que hace, por orden:
+(*Actions → Release → Run workflow*). Si llega una fusión nueva mientras otra se publica, la nueva cancela la vieja:
+solo el commit más nuevo sale como versión.
 
-1. **Plan** (segundos): están el secreto `DWE_SIGNING_KEY`, la variable `DWE_SIGNING_PUBKEY`, `DWE_BETA_GATEWAY` con
-   una URL `https` y el secreto `DWE_BETA_KEY` con 24 caracteres o más; calcula la versión y la etiqueta; se niega
-   si ese commit ya tiene versión publicada, si la versión del juego no es mayor que la de la versión más nueva, o si
-   la **versión del lanzador** no vale (ver abajo).
-2. **Un trabajo por ordenador**, todos en paralelo e independientes: el juego para Linux, Windows, macOS Apple silicon
-   y macOS Intel (compilado en un ejecutor Apple silicon y probado con Rosetta), y el lanzador para Linux, Windows y macOS. Si uno falla, los demás terminan igual. El trabajo del
-   lanzador de Linux prueba primero que la clave firma y que la clave pública verifica esa firma. Cada lanzador
+**Se compila una vez, en el pull request.** Los trabajos `package (<ordenador>)` de `ci.yml` compilan en cada pull
+request los paquetes del juego de verdad (los mismos pasos que el trabajo `game` de `release.yml`,
+`.github/actions/game-package`), sin firmar, desde el commit de cabeza del pull request. `main` solo acepta pull
+requests al día con `main` y los fusiona con *squash*, así que el commit nuevo de `main` tiene **el mismo árbol**
+(`git rev-parse <commit>^{tree}`) que la cabeza del pull request, aunque no el mismo commit. Por eso los paquetes se
+identifican por el árbol: cada artefacto se llama `package-<ordenador>-<árbol>` y lleva un `source.json` con el árbol,
+el número del pull request, su commit de cabeza y el SHA-256 del paquete (`scripts/ci/packages.py`). Se guardan
+14 días. Los pull requests desde un fork no los compilan (no tienen acceso a nada del repositorio); su fusión usa el
+camino completo.
+
+Lo que hace `release.yml`, por orden:
+
+1. **Plan** (segundos; hasta un minuto más si espera paquetes): están el secreto `DWE_SIGNING_KEY`, la variable
+   `DWE_SIGNING_PUBKEY`, `DWE_BETA_GATEWAY` con una URL `https` y el secreto `DWE_BETA_KEY` con 24 caracteres o
+   más; calcula la versión y la etiqueta; se niega si ese commit ya tiene versión publicada, si la versión del juego
+   no es mayor que la de la versión más nueva, o si la **versión del lanzador** no vale (ver abajo). Luego decide:
+   - **Paquetes del juego.** Busca en la API de GitHub una ejecución de `ci.yml` de un pull request del mismo
+     repositorio con los cuatro paquetes del árbol de `main` y sus cuatro trabajos `package` terminados bien
+     (`scripts/ci/packages.py find`). Si un paquete aún se está subiendo, vuelve a preguntar durante un minuto. Si
+     los encuentra, se **promueven**; si no (fork, pull request fusionado antes de que terminaran sus paquetes,
+     artefactos caducados, la API de GitHub falla), se hace la **compilación completa**.
+   - **Lanzador.** Se compila solo si cambió algo de lo que lo forma desde la versión publicada más nueva
+     (`apps/launcher` sin sus tests, `scripts/launcher.sh`, su imagen, las fuentes, `LICENSE`, el script de avisos o
+     `release.yml`), si esa versión no tiene todos sus archivos firmados o `latest.json` tiene otra versión, o si su
+     programa no lleva la pasarela, la clave pública, la clave de la beta y los enlaces de esta ejecución
+     (`scripts/ci/launcher_reuse.sh`; cambiar una de esas variables o secretos recompila el lanzador en la fusión
+     siguiente). Si no, se publican otra vez los archivos del lanzador de esa versión, con la misma versión y las
+     firmas que ya tenían, así que los lanzadores instalados no ven nada nuevo.
+
+   El resumen de la ejecución dice qué camino tomó.
+2. **Compilación completa** (solo si hace falta): un trabajo `game` por ordenador (Linux, Windows, macOS Apple silicon
+   y macOS Intel, este compilado en un ejecutor Apple silicon y probado con Rosetta) y, si el lanzador cambió, un
+   trabajo `launcher` por sistema (Linux, Windows y macOS), en paralelo e independientes: si uno falla, los demás
+   terminan igual. Ninguno firma nada: el lanzador se compila sin los archivos de actualización de Tauri firmados
+   (`DWE_LAUNCHER_UNSIGNED=1`; en macOS el `.app.tar.gz` se empaqueta aparte, como lo hace Tauri). Cada lanzador
    comprueba que su programa lleva dentro la pasarela, la clave pública y la clave de la beta.
-3. **Publicar**: si falta algún ordenador, el resumen de la ejecución lo marca como `MISSING` y **no se publica
-   nada**; lo compilado queda en los artefactos de la ejecución y *Re-run failed jobs* repite solo lo que falló. Si
-   están todos: firma los paquetes del juego, el `.deb` y el `.dmg`; escribe `game-manifest.json`; comprueba cada
-   firma, los tamaños, los ordenadores, el commit y que ningún paquete lleva datos del disco; escribe las notas
-   (los títulos de los pull requests desde la versión anterior, con una cabecera en español); crea la versión como
-   borrador, sube los archivos, escribe y comprueba `latest.json`, y solo entonces la publica como prerelease. Un
+3. **Publicar**, el único trabajo con la clave de firma: reúne los paquetes (los del pull request o los recién
+   compilados) y el lanzador (el nuevo o el de la versión anterior). Si falta algún ordenador, el resumen lo marca
+   como `MISSING` y **no se publica nada**; *Re-run failed jobs* repite solo lo que falló. Si están todos: comprueba
+   que cada paquete es del árbol de `main` y es el archivo que se compiló (`scripts/ci/packages.py verify`); prueba
+   que la clave firma y que la clave pública verifica esa firma; firma los paquetes del juego y los archivos del
+   lanzador que no tienen firma; escribe `game-manifest.json` con el commit de `main`; comprueba cada firma, los
+   tamaños, los ordenadores, el commit y que ningún paquete lleva datos del disco; escribe las notas (los títulos de
+   los pull requests desde la versión anterior, con una cabecera en español); crea la versión como borrador, sube
+   los archivos (varios a la vez), escribe y comprueba `latest.json`, y solo entonces la publica como prerelease. Un
    lanzador nunca ve una versión a medio subir (la pasarela no enseña borradores); el borrador de una ejecución
    cancelada lo borra la siguiente.
 
-Con las cachés llenas tarda unos 10–12 min de reloj: los trabajos de Mac son los más largos. En frío (cachés
-vacías, o tras cambiar `vcpkg.json`, los triplets o las imágenes), unos 25 min. El juego para Mac Intel se compila en
-el ejecutor Apple silicon (`macos-15`), que es unas 2,5 veces más rápido que `macos-15-intel`.
+Con los paquetes del pull request tarda unos 2–4 min de reloj. La compilación completa, con las cachés llenas,
+unos 10–12 min (los trabajos de Mac son los más largos); en frío (cachés vacías, o tras cambiar `vcpkg.json`, los
+triplets o las imágenes), unos 25 min. El juego para Mac Intel, en los trabajos `package` y en `game`, se compila en
+el ejecutor Apple silicon (`macos-15`), unas 2,5 veces más rápido que `macos-15-intel`. Para forzarla a mano:
+*Run workflow* con **full build** marcado (compila también el lanzador). Cada lunes `release.yml` hace la
+compilación completa del juego y del lanzador sin publicar, para que ese camino no se rompa sin que nadie lo vea y
+las cachés de las que parten los trabajos `package` estén al día.
+
+**Qué commit nombra un paquete.** El commit de `main` solo existe al fusionar, después de compilar. Por eso, en la CI,
+el paquete (su archivo `VERSION`, el nombre de su carpeta y los informes de fallo F12) nombra el **árbol** del que
+se compiló, `tree-<12 cifras>` (`DWE_PACKAGE_SOURCE`, que leen `package_linux.sh`, `package_windows.sh` y
+`package_macos.sh`; en un PC siguen usando `git describe`), y `game-manifest.json` nombra el commit de `main`
+(`package_release.sh --commit`). Para pasar de un árbol de un informe a su commit:
+`git log --format='%h %T' origin/main | grep ' <árbol>'`. Reescribir `VERSION` al publicar obligaría a descomprimir y
+volver a comprimir cada paquete y no cambiaría lo que el juego lleva compilado dentro, así que no se hace.
 
 ### Versión estable: promover una prerelease
 
@@ -443,19 +486,23 @@ Cuando una versión de prueba está probada: *Actions → Promote → Run workfl
 No compila ni firma nada: los archivos, las firmas y los manifiestos son los mismos que se probaron. Un arreglo
 urgente sigue el mismo camino: un pull request a `main`, su versión de prueba, y promoverla.
 
-**Cachés.** Cada trabajo guarda en la caché de Actions lo que la siguiente ejecución puede reutilizar (las de `main`
-las leen también los pull requests):
+**Cachés.** Cada trabajo de `main` guarda en la caché de Actions lo que la siguiente ejecución puede reutilizar, y
+los pull requests las leen. Los pull requests nunca guardan: sus cachés ocuparían los 10 GB del repositorio y `main`
+no podría usarlas. Las de los paquetes (vcpkg, ccache y xwin de cada ordenador) las guarda el trabajo `game`, que con
+la promoción corre en las compilaciones completas y cada lunes:
 
 | Caché | Clave | Qué ahorra |
 |---|---|---|
 | Dependencias de vcpkg, por ordenador | `vcpkg.json`, `tooling/vcpkg-ports/`, `tooling/triplets/`, toolchains y la imagen (en macOS, también el LLVM fijado) | 6–8 min por ordenador; se guarda aunque el empaquetado falle. Antes de guardarla, `scripts/ci/prune_vcpkg_cache.sh` borra los paquetes que el build ya no usa, para que no crezca con cada cambio de dependencias. La de Windows la lee también la comprobación `windows` de los pull requests |
 | Dependencias de vcpkg de la comprobación `linux` (`vcpkg-ci-linux-x86_64`) | las mismas | su triplete (`x64-linux-libcxx-release`) no es el del paquete: la guarda `pr-caches` para que cada pull request no compile las 44 dependencias |
-| Objetos del juego (ccache), por ordenador | una por ejecución; las anteriores se borran antes de guardarla | 12–20 min de compilación, salvo los archivos que cambiaron. El commit del paquete (`DWE_BUILD_COMMIT`) lo recibe solo `bug_reporter.cpp`, así que no invalida el resto del juego |
+| Objetos del juego (ccache), por ordenador | una por ejecución; las anteriores se borran antes de guardarla | 12–20 min de compilación, salvo los archivos que cambiaron. El árbol del paquete (`DWE_BUILD_COMMIT`) lo recibe solo `bug_reporter.cpp`, así que no invalida el resto del juego. Los trabajos `package` de los pull requests parten de ella |
 | Bibliotecas de MSVC y SDK de Windows (xwin) | el Dockerfile de la imagen | ~1 min de descarga |
+| libc++ y MoltenVK de Intel para el paquete de Mac Intel (`macos-cross-x64`) | la versión de LLVM y `scripts/package/macos_cross_libs.sh` | compilar la libc++ de Intel en cada ejecución; la guarda `.github/actions/macos-tools` en `main`, los trabajos `package` solo la leen |
 | Objetos de las comprobaciones de los pull requests (`ccache-ci-linux`, `ccache-ci-windows`) | una por ejecución; las guarda el trabajo `pr-caches` | que `linux` y `windows` compilen solo lo que cambió el pull request |
 | Dependencias compiladas del lanzador y descargas de cargo, por sistema | `Cargo.lock` y el Dockerfile del lanzador | casi toda la compilación del lanzador; su propio crate se compila siempre |
 
-*Publicar* firma con el `tauri` de npm en vez de construir la imagen del lanzador (2–3 min menos). Las imágenes de
+*Publicar* firma con el `tauri` de npm (versión fijada, desde la caché de npm) en vez de construir la imagen del
+lanzador (2–3 min menos). Las imágenes de
 Docker (la de desarrollo y la del lanzador) se guardan en el registro de contenedores de GitHub
 (`ghcr.io/indie-modding-games/dwe-dev` y `dwe-launcher-dev`, con la etiqueta del hash de `.devcontainer/`):
 `scripts/ci/image.sh` las baja en vez de construirlas, y las construye y sube cuando cambia `.devcontainer/`.

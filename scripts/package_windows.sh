@@ -11,6 +11,8 @@
 #   --out        where the tarball goes (default build/package)
 # Needs the MSVC libraries and the Windows SDK once (scripts/dev.sh windows-sdk). The tarball is a
 # .tar.xz like the Linux one, since the launcher installs both the same way.
+# DWE_PACKAGE_SOURCE, when set, is what the package names as its source (VERSION, its folder and
+# bug reports) instead of git describe: CI passes the tree it builds (scripts/ci/packages.py).
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -39,7 +41,7 @@ while (($#)); do
       shift
       ;;
     -h | --help)
-      sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -50,7 +52,13 @@ while (($#)); do
   shift
 done
 
-commit="$(git -C "$root" describe --always --dirty)"
+# The source the package names; CI's is the tree, the same in a pull request and in main after the
+# squash merge, so a package built in the pull request is right for main as it is.
+commit="${DWE_PACKAGE_SOURCE:-$(git -C "$root" describe --always --dirty)}"
+[[ "$commit" =~ ^[0-9A-Za-z._-]+$ ]] || {
+  echo "package_windows: DWE_PACKAGE_SOURCE may hold only letters, digits, '.', '_' and '-'" >&2
+  exit 2
+}
 version="$(sed -n 's/^project(dwe VERSION \([0-9.]*\).*/\1/p' "$root/CMakeLists.txt" | head -1)"
 name="dwe-beta-${version:-0}-${commit}-windows-x86_64"
 stage="$stage_root/$name"

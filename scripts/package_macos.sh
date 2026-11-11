@@ -24,6 +24,8 @@
 # Needs Homebrew's llvm, molten-vk and ninja, cmake and VCPKG_ROOT (a vcpkg checkout); x64 on Apple
 # silicon also needs Rosetta (softwareupdate --install-rosetta --agree-to-license). The Intel
 # libraries go in DWE_MACOS_CROSS_DIR (default build/macos-cross-x64), built once per LLVM.
+# DWE_PACKAGE_SOURCE, when set, is what the package names as its source (VERSION, its folder and
+# bug reports) instead of git describe: CI passes the tree it builds (scripts/ci/packages.py).
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -44,7 +46,7 @@ while (($#)); do
       shift
       ;;
     -h | --help)
-      sed -n '2,26p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,28p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -102,7 +104,13 @@ if [[ "$arch" != "$host_arch" ]]; then
 fi
 build_dir="$root/build/$preset"
 
-commit="$(git -C "$root" describe --always --dirty)"
+# The source the package names; CI's is the tree, the same in a pull request and in main after the
+# squash merge, so a package built in the pull request is right for main as it is.
+commit="${DWE_PACKAGE_SOURCE:-$(git -C "$root" describe --always --dirty)}"
+[[ "$commit" =~ ^[0-9A-Za-z._-]+$ ]] || {
+  echo "package_macos: DWE_PACKAGE_SOURCE may hold only letters, digits, '.', '_' and '-'" >&2
+  exit 2
+}
 version="$(sed -n 's/^project(dwe VERSION \([0-9.]*\).*/\1/p' "$root/CMakeLists.txt" | head -1)"
 name="dwe-beta-${version:-0}-${commit}-$key"
 stage_root="$root/build/package-stage-$key"

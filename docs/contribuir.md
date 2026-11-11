@@ -24,6 +24,11 @@
 
   Un pull request que solo toca documentación no compila nada: `linux` y `windows` salen como omitidas, que cuenta como
   pasadas. Cuando cambia el lanzador, la pasarela o los scripts de publicación corre además `launcher`, sus pruebas.
+  Si la fusión va a publicar una versión, los trabajos `package (<ordenador>)` compilan además los paquetes del juego
+  de los cuatro ordenadores (no son obligatorios); la fusión publica esos mismos archivos en 2–4 min en vez de
+  compilarlos otra vez. Para eso el pull request tiene que estar **al día con `main`** (lo exige `main`) y conviene
+  fusionarlo cuando sus trabajos `package` hayan terminado: si no, la fusión compila todo de nuevo (~10–12 min)
+  ([Versión de prueba](modulos/apps/launcher.md#versión-de-prueba-cada-fusión-en-main)).
   Fuera de los pull requests quedan clang-tidy, el sitio de la documentación y las pruebas en un Windows de verdad
   (`platform-check.yml`, cada lunes): `scripts/dev.sh check-full` los pasa en local.
 - **Versiones:** cada fusión en `main` publica sola una versión de prueba (canal «Pruebas» del lanzador); una ya

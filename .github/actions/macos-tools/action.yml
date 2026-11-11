@@ -9,6 +9,10 @@ inputs:
   arch:
     description: The package's processor, arm64 or x64
     required: true
+  save-cache:
+    description: "'false' only restores the Intel libraries' cache (a pull request: its caches would be its own)"
+    required: false
+    default: 'true'
 runs:
   using: composite
   steps:
@@ -67,7 +71,7 @@ runs:
       run: scripts/package/macos_cross_libs.sh --arch x64 --out "$DWE_MACOS_CROSS_DIR"
 
     - name: Save the Intel libc++ and MoltenVK
-      if: steps.cross.outcome == 'success' && steps.cross-cache.outputs.cache-hit != 'true'
+      if: steps.cross.outcome == 'success' && steps.cross-cache.outputs.cache-hit != 'true' && inputs.save-cache == 'true'
       continue-on-error: true
       uses: actions/cache/save@v4
       with:

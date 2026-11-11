@@ -5,12 +5,15 @@
 # .github/workflows/release.yml, started by hand).
 #
 # Usage: scripts/package_release.sh [--platform <key>] [--tarball <dwe-beta-...tar.xz>]
-#                                   [--version <semver>] [--extractor-version <n>] [--out <folder>]
+#                                   [--version <semver>] [--commit <sha>] [--extractor-version <n>]
+#                                   [--out <folder>]
 #   --platform           linux-x86_64 (default, scripts/package_linux.sh), windows-x86_64
 #                        (scripts/package_windows.sh), darwin-aarch64 or darwin-x86_64 (built on a
 #                        Mac by scripts/package_macos.sh, so --tarball is required)
 #   --tarball            package this tarball instead of building one
 #   --version            the release's version (default <CMake version>-beta.<commits on HEAD>)
+#   --commit             the commit game-manifest.json names (default the package's VERSION): CI
+#                        builds from a tree and names main's commit only when it publishes
 #   --extractor-version  for a tarball without an EXTRACTOR_VERSION file (older packages)
 #   --out                where the files go, inside the repository (default build/release); a
 #                        game-manifest.json of the same version already there gets this computer's
@@ -24,6 +27,7 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 out="$root/build/release"
 tarball=""
 version=""
+commit=""
 extractor=""
 platform="linux-x86_64"
 
@@ -41,6 +45,10 @@ while (($#)); do
       version="$2"
       shift
       ;;
+    --commit)
+      commit="$2"
+      shift
+      ;;
     --extractor-version)
       extractor="$2"
       shift
@@ -50,7 +58,7 @@ while (($#)); do
       shift
       ;;
     -h | --help)
-      sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,23p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -92,7 +100,7 @@ tarball="$(cd "$(dirname "$tarball")" && pwd)/$(basename "$tarball")"
 # The package's own record of what it is.
 top="$(tar -tJf "$tarball" | sed -n '1s|/.*||p')"
 member() { tar -xJOf "$tarball" "$top/$1" 2>/dev/null | tr -d '[:space:]' || true; }
-commit="$(member VERSION)"
+[[ -n "$commit" ]] || commit="$(member VERSION)"
 [[ -n "$extractor" ]] || extractor="$(member EXTRACTOR_VERSION)"
 [[ "$extractor" =~ ^[0-9]+$ ]] || {
   echo "package_release: the package has no EXTRACTOR_VERSION; pass --extractor-version" >&2
