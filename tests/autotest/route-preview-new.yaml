@@ -1,0 +1,28 @@
+# Preview of the `new` skin on the title's main menu: the game boots with `--ui-skin new`, the
+# route waits for the main menu to be shown, resizes the window, asserts the setting, and takes
+# one capture. The `new` skin was forked from the flattened `legacy` (see scripts/new_skin.py), so
+# it needs content extracted with the original look's sprites (dwx 2 or later) — the same
+# sprites the `legacy` and `original` skins draw. Without extracted content the catalog drops
+# `new` (`ui/skins/new/skin.yaml`'s `sprite_sheets` reference `texture/etcdat/*` and friends
+# that don't resolve), the game falls back to `modern`, and the expect_setting step fails.
+#
+# How to run it (needs a build of the game binary and the extracted base pack):
+#
+#   scripts/dev.sh run \
+#       --content <carpeta con el paquete base extraido> \
+#       --ui-skin new \
+#       --autotest tests/autotest/route-preview-new.yaml \
+#       --shots build/shots
+#
+# The PNG lands at build/shots/main-menu-new.png. Run once per language, with --lang en and
+# --lang es (see docs/guides/prueba-vertical.md). Add more screens by cloning steps from
+# tests/autotest/route-skin-original.yaml.
+name: preview-new-skin
+device: keyboard
+main_menu: true
+timeout: 60
+steps:
+  - wait: {shown: main_menu, seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {ui_skin: new}
+  - screenshot: main-menu-new

@@ -585,6 +585,34 @@ struct Ui::Impl {
     }
   }
 
+  // Installs the current skin's mouse cursor through the app's hook: reads and decodes the skin's
+  // cursor image, or reports none so the system arrow shows. No-op when the app gave no hook.
+  void applyCursor() {
+    if (!desc.cursor) {
+      return;
+    }
+    const Skin* skin = styler.skin();
+    const std::optional<SkinCursor> cursor =
+        skin != nullptr ? skins.cursorOf(*skin) : std::nullopt;
+    if (!cursor) {
+      desc.cursor(std::nullopt);
+      return;
+    }
+    auto bytes = desc.files->read(cursor->image);
+    if (!bytes) {
+      core::logWarning("skin cursor {}: {}", cursor->image.str(), bytes.error().message);
+      desc.cursor(std::nullopt);
+      return;
+    }
+    auto image = assets::decodePng(std::span<const std::byte>{*bytes});
+    if (!image) {
+      core::logWarning("skin cursor {}: {}", cursor->image.str(), image.error().message);
+      desc.cursor(std::nullopt);
+      return;
+    }
+    desc.cursor(UiCursor{.image = std::move(*image), .hotX = cursor->hotX, .hotY = cursor->hotY});
+  }
+
   // Switches to a skin: every document takes its look. The documents the skin lays out with another
   // document are loaded first, hidden; if one cannot load, none of them is kept, the UI goes back
   // to the skin it had and the switch fails. Until then no document has changed, so going back
@@ -621,6 +649,7 @@ struct Ui::Impl {
     if (!documents.empty()) {
       static_cast<void>(checkSkinDocuments());
     }
+    applyCursor();
     return {};
   }
 
@@ -1343,6 +1372,7 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
   impl->skinSources = SkinCatalog::sourceFingerprint(*desc.files);
   impl->styler.use(impl->skins.find(impl->skins.defaultSkin()));
   impl->warming = impl->styler.spriteImages();
+  impl->applyCursor();
   core::logInfo("RmlUi {} started", Rml::GetVersion());
   return std::unique_ptr<Ui>{new Ui{std::move(impl)}};
 }

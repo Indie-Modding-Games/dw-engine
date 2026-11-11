@@ -1,0 +1,153 @@
+/* The naming box in the original look (script_menu.c: setupNameSelectorBox, renderNamingBox, renderSelectionBox,
+   setupNameDisplayBox, renderNameDisplayBox; captures cp05-naming-screen-empty and cp05-name-6chars-cursor-on-OK).
+   Over the pause menu's box, which gives the rim and the corners.
+
+   The letters' box is at (15, 29), 290 x 138, opaque #2D3840: "Name" in the headings' yellow at (14, 6), Back at
+   (14, 90) and OK at (14, 118); the letters from x 78 on the left side and x 190 on the right, 18 pixels apart, the
+   rows from y 6, 14 pixels apart. The cursor is the gold outline (#FFD600) round the letter, from 4 pixels left and
+   up of it, 18 x 15, or round the button. The name's box is apart at (15, 180), 149 x 42: the letters 12 pixels
+   apart and the yellow underscore (#C6C610) under the next one. The original says only "Name", not whose name, so
+   that line is hidden. The button prompts sit in the gap between the boxes, and the typing hint in the name's box:
+   the original has neither (see the theme). */
+
+body #panel {
+	top: 87dp;
+	width: 870dp;
+	height: 414dp;
+	margin-left: -435dp;
+	padding: 0;
+	box-sizing: border-box;
+	background-color: #2d3840;
+}
+
+body #title {
+	position: absolute;
+	left: 39dp;
+	top: 15dp;
+	margin: 0;
+	padding: 0;
+	border-width: 0;
+	line-height: 39dp;
+	color: #fff371;
+}
+
+body #whose {
+	display: none;
+}
+
+body #buttons {
+	float: none;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 0;
+	margin: 0;
+}
+
+body .button {
+	display: block;
+	position: absolute;
+	left: 27dp;
+	height: 45dp;
+	margin: 0;
+	padding: 0 0 0 9dp;
+	box-sizing: border-box;
+	border: 3dp transparent;
+	line-height: 39dp;
+	text-align: left;
+}
+
+body #button-back {
+	top: 255dp;
+	width: 180dp;
+}
+
+body #button-ok {
+	top: 339dp;
+	width: 144dp;
+}
+
+body #grid {
+	float: none;
+	position: absolute;
+	left: 219dp;
+	top: 3dp;
+}
+
+body .grid-row {
+	height: 42dp;
+	white-space: nowrap;
+}
+
+body .cell {
+	width: 54dp;
+	height: 45dp;
+	padding: 0 0 0 9dp;
+	box-sizing: border-box;
+	border: 3dp transparent;
+	line-height: 39dp;
+	text-align: left;
+}
+
+/* The right side starts 112 pixels after the left one: five cells of 18 and 22 more. */
+body .cell:nth-child(5) {
+	margin-right: 66dp;
+}
+
+body .cell.selected, body .button.selected {
+	decorator: none;
+	background-color: transparent;
+	border-color: #ffd600;
+}
+
+body #prompts {
+	position: absolute;
+	left: 0;
+	top: 414dp;
+	width: 870dp;
+	margin: 0;
+	padding: 6dp 0 0 0;
+	border-width: 0;
+	white-space: nowrap;
+}
+
+body #name-box {
+	top: 540dp;
+	width: 447dp;
+	height: 126dp;
+	margin-left: -435dp;
+	padding: 0;
+	box-sizing: border-box;
+	border: 3dp transparent;
+	background-color: #2d3840;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+body #name {
+	position: absolute;
+	left: 9dp;
+	top: 15dp;
+	margin: 0;
+	white-space: pre;
+}
+
+body .letter {
+	width: 36dp;
+	height: 39dp;
+	line-height: 36dp;
+	text-align: left;
+}
+
+body .letter.current {
+	border-bottom: 6dp #c6c610;
+}
+
+body #typing {
+	position: absolute;
+	left: 18dp;
+	top: 75dp;
+	margin: 0;
+	font-size: 22dp;
+	color: #b2b2b2;
+}

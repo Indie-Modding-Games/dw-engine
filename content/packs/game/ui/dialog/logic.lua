@@ -16,7 +16,10 @@ local function refresh(document)
   document:get("yes"):set_class("hidden", not question())
   document:get("no"):set_class("hidden", not question())
   document:get("ok"):set_class("hidden", question())
-  document:get("scrim"):set_class("at-title", ui.setting("dialog.at_title") == true)
+  local scrim = document:get("scrim")
+  scrim:set_class("at-title", ui.setting("dialog.at_title") == true)
+  scrim:set_class("question", question())
+  scrim:set_class("notice", not question())
 end
 
 function answer(yes)

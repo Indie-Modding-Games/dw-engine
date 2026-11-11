@@ -95,6 +95,14 @@ struct Skin {
   // scripts must not toggle these classes themselves: a switch takes them off every element a skin
   // of the catalog names.
   std::map<std::string, SkinElementClasses, std::less<>> documentClasses;
+  // The image the app installs as the OS cursor while this skin is on. Empty for skins that let
+  // the system arrow show. May be written relative to the skin folder (`cursor: cursor` reads as
+  // `ui/skins/<id>/cursor`); `parseSkin` prefixes it like a style sheet.
+  std::optional<assets::AssetId> cursor;
+  // The click point of the cursor image, in pixels of the image from its top-left corner. The
+  // hotspot for the OS cursor; (0, 0) when not given.
+  std::uint32_t cursorHotspotX = 0;
+  std::uint32_t cursorHotspotY = 0;
 };
 
 // Reads a skin.yaml. Checks its shape, not that the assets it names exist (SkinCatalog does).

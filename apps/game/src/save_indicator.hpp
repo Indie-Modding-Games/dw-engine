@@ -36,10 +36,12 @@ std::optional<bool> changeAutosave(const ui::UiValue& value, ui::Ui& ui, UserSet
 
 // Whether the player sees it now, for routes.
 inline constexpr std::string_view SaveIndicatorShownSetting = "save_indicator.shown";
-// The text key it shows: "Saving", or that an autosave was skipped for want of a free slot
-// (GameSession::autosavesSkipped), which it shows alone, without the figure.
+// The text key it shows: "Saving", "Loading" before a title-screen save is read, or that an
+// autosave was skipped for want of a free slot (GameSession::autosavesSkipped), which it shows
+// alone, without the figure.
 inline constexpr std::string_view SaveIndicatorTextSetting = "save_indicator.text";
 inline constexpr std::string_view SavingText = "save.saving";
+inline constexpr std::string_view LoadingText = "save.loading";
 inline constexpr std::string_view AutosaveNoSlotText = "save.autosave_no_slot";
 // The texture the document's figure shows (SaveFigure).
 inline constexpr std::string_view SaveFigureTexture = "runtime/save-figure";

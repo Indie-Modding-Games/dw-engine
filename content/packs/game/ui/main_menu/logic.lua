@@ -219,6 +219,7 @@ local function lay_out(document)
   end
   show("battle-box", shown == "battle")
   document:get("scrim"):set_class("boot", shown == "boot")
+  document:get("scrim"):set_class("language", shown == "language")
   title_picture.apply(document, PictureBoxes)
   document:get("press-start-text"):set_class("blink-off", false)
   refresh(document)

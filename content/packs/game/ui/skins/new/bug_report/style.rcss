@@ -1,0 +1,9 @@
+/* Developer notification: retain its utility-toast shape, tuned to the new skin's cyan palette. */
+
+#bug-report-toast {
+	border-radius: 0;
+	background-color: #0b1c2df2;
+	border: 2dp #72c7ff;
+	color: #d8f1ff;
+}
+

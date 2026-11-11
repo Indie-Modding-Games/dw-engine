@@ -1,0 +1,56 @@
+/* The modern skin's look shared by every document: the font, the entries of the menus and the button prompts. Sizes
+   are in dp: one dp is one pixel at 720 lines, scaled with the window and the player's UI scale option.
+
+   The look's type scale (docs/architecture/ui.md, «Escala tipográfica»): five sizes, and no other for its own texts.
+     14dp  captions: button prompts and their keys, hints, small labels of the HUD, column headings
+     18dp  body: menu entries, messages
+     22dp  labels and values: list rows, rows of a page, section headings
+     30dp  titles: a panel's title, the map's name
+     48dp  display: big numbers
+   Texts in the original's font (the original-look family) keep whole multiples of its 11-pixel cell (22dp, 33dp), the
+   only sizes it draws sharp. */
+
+body {
+	font-family: "Noto Sans";
+	font-weight: normal;
+	font-size: 18dp;
+	color: #e8edf3;
+}
+
+button {
+	padding: 9dp 18dp;
+	margin: 3dp 0;
+	border-radius: 8dp;
+	color: #c9d3de;
+	background-color: transparent;
+	transition: background-color color 0.12s cubic-out;
+}
+
+button:focus {
+	background-color: #f0a73a;
+	color: #1a1f27;
+}
+
+button:active {
+	background-color: #ffc36b;
+}
+
+/* A button prompt: the name of the key or gamepad button that does something. */
+.key {
+	display: inline-block;
+	min-width: 18dp;
+	padding: 1dp 8dp;
+	margin-right: 6dp;
+	border-radius: 4dp;
+	border: 1dp #5d6a7c;
+	font-weight: bold;
+	font-size: 14dp;
+	text-align: center;
+	color: #e8edf3;
+}
+
+/* A face button's glyph (../../common/base.rcss) is round; a shape or position is the engine's white drawing. */
+.key.glyph-face {
+	padding: 1dp 4dp;
+	border-radius: 10dp;
+}

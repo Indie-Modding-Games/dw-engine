@@ -1,0 +1,41 @@
+/* The card shop's menus in the original look: the original's boxes (theme.rcss .original-box), the table's MENU, PRICE
+   and COUNT labels from SYSTEM_W (palette 4), the rarity's card from SYSTEM_W (palette 5) and the original's ink.
+   Measured on the original on 2026-10-30. */
+
+body #window, body #talk, body #confirm, body #amount {
+	border: 3dp transparent;
+	background-color: #2d384080;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+/* The "is it OK?" box and the amount box are opaque (#293942 on the original's screen). */
+body #confirm, body #amount {
+	background-color: #293942;
+}
+
+/* The column labels: the original's pictures of the English words while the language is English (the engine's
+   use-menu-art class), the list_labels texts in the original's ink in any other. */
+.label { font-family: original-look; color: #d0d0d0; font-size: 15dp; line-height: 21dp; white-space: nowrap; }
+.use-menu-art .label-menu { decorator: image(keeper-menu-label scale-none left top); color: transparent; }
+.use-menu-art .label-price { decorator: image(keeper-price-label scale-none left top); color: transparent; }
+.use-menu-art .label-count { decorator: image(keeper-count-label scale-none left top); color: transparent; }
+#frame.mode-packs .label-menu, #frame.mode-packs .label-count { decorator: none; font-family: original-look; color: #d0d0d0; }
+
+.rarity-0 { decorator: image(card-rarity-0 scale-none left top); }
+.rarity-1 { decorator: image(card-rarity-1 scale-none left top); }
+.rarity-2 { decorator: image(card-rarity-2 scale-none left top); }
+.rarity-3 { decorator: image(card-rarity-3 scale-none left top); }
+.rarity-4 { decorator: image(card-rarity-4 scale-none left top); }
+
+.row, #talk, #confirm, #amount { font-family: original-look; color: #d0d0d0; }
+.row, #talk { font-family: original-look-dialogue; }
+body .row.stuck { color: #e03028; }
+body .row.new { color: #f8f800; }
+body #speaker { color: #f8f800; }
+
+/* The rows keep the original's size: the modern look this skin extends gives its own lists 22dp
+   (../../modern/original_lists/style.rcss). */
+.row {
+	font-size: 33dp;
+}

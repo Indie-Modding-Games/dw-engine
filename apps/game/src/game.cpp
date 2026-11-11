@@ -173,6 +173,17 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, r
   }
   if (command.name == "open_menu") {
     ui.show(MenuDocument, true);
+  } else if (command.name == "open_evolutions") {
+    // The compact Digimon window's Evoluciones tab (ui/partner_menu): the evolution tree lives on
+    // the pause menu's player page, so this hides the partner and hands the way in over. The
+    // one-shot setting tells the document to open on the tree and to go back here on Cancel
+    // (pause_menu/logic.lua: on_show, back).
+    ui.setSetting("pause_menu.evolutions", true);
+    ui.hide("partner_menu");
+    ui.show(MenuDocument, true);
+  } else if (command.name == "pause_menu.evolutions" && std::holds_alternative<bool>(command.value)) {
+    // The document consumed its one-shot: the next plain pause opens as usual.
+    ui.setSetting("pause_menu.evolutions", std::get<bool>(command.value));
   } else if (command.name == LanguageCommand &&
              std::holds_alternative<std::string>(command.value)) {
     language.change(std::get<std::string>(command.value));
@@ -726,6 +737,21 @@ int runGame(const Options& requested) {
       .hotReload = options.tuning,
       .clock = [&platform] { return platform->nowSeconds(); },
       .scripts = {},
+      // The current skin installs its own mouse cursor as the system pointer (so it stays on top of
+      // every screen); a skin without a cursor returns the arrow to the system.
+      .cursor = [&platform](std::optional<ui::UiCursor> cursor) {
+        if (!cursor) {
+          platform->clearColorCursor();
+          return;
+        }
+        if (auto set = platform->setColorCursor(
+                std::span<const std::byte>{cursor->image.pixels},
+                static_cast<int>(cursor->image.width), static_cast<int>(cursor->image.height),
+                static_cast<int>(cursor->hotX), static_cast<int>(cursor->hotY));
+            !set) {
+          core::logWarning("skin cursor: {}", set.error().message);
+        }
+      },
   });
   if (!ui) {
     core::logError("{}", ui.error().message);
@@ -985,6 +1011,9 @@ int runGame(const Options& requested) {
   // the UI's layout and the renderer.
   FramePhases phases;
   bool running = true;
+  std::optional<PlayStart> loadAfterIndicator;
+  double loadingIndicatorSeconds = 0.0;
+  bool loadingIndicator = false;
   debug::FrameStats overlayStats{};
   // Built once; the frame takes it by reference, so drawing it allocates nothing.
   const auto drawOverlay = [&](const rhi::Frame& frame) {
@@ -1801,7 +1830,17 @@ int runGame(const Options& requested) {
       if (flow.playing() == nullptr && title.handle(command)) {
         if (const auto start = title.takeStart()) {
           if (start->load) {
-            startPlaying(*start);
+            // Give the shared save indicator time to render and animate before the synchronous
+            // save read starts blocking this loop.
+            loadingIndicator = true;
+            loadAfterIndicator = *start;
+            loadingIndicatorSeconds = 0.0;
+            (*ui)->setSetting(SaveIndicatorTextSetting, std::string{LoadingText});
+            (*ui)->setSetting(SaveIndicatorOpacitySetting, 1.0);
+            (*ui)->setSetting(SaveIndicatorLiftSetting, 0.0);
+            (*ui)->setSetting(SaveIndicatorFigureSetting, saveFigure && (*saveFigure)->loaded());
+            (*ui)->setSetting(SaveIndicatorShownSetting, true);
+            (*ui)->show(SaveIndicatorDocument);
           } else {
             askNewGame(*start);
           }
@@ -1907,6 +1946,11 @@ int runGame(const Options& requested) {
       (*ui)->reloadChanged();
     }
     (*ui)->update();
+    // Keep the skin's mouse cursor on top: re-assert it after the UI updates (RmlUi processes hover
+    // and cursor state during update), so a window event between the title and the field, or any
+    // cursor change RmlUi asks for, can't leave the system arrow where the player expects the
+    // skin's cursor.
+    platform->reapplyColorCursor();
     phases.mark(FramePhases::Ui, platform->nowSeconds());
 
     overlayStats = {
@@ -2016,8 +2060,9 @@ int runGame(const Options& requested) {
         }
       }
     }
-    if (!showingMovie && saveFigure && (*saveFigure)->loaded() && flow.playing() != nullptr &&
-        flow.playing()->saveIndicatorShown())
+    if (!showingMovie && saveFigure && (*saveFigure)->loaded() &&
+        (loadingIndicator ||
+         (flow.playing() != nullptr && flow.playing()->saveIndicatorShown())))
       portraitScenes.push_back((*saveFigure)->scene(frameSeconds));
     mapOverlayShapes.clear();
     if (mapOverlay && !showingMovie) {
@@ -2039,6 +2084,17 @@ int runGame(const Options& requested) {
         .post = postDrawer,
     });
     phases.mark(FramePhases::Render, platform->nowSeconds());
+    if (loadAfterIndicator) {
+      loadingIndicatorSeconds += std::max(0.0, frameSeconds);
+      if (loadingIndicatorSeconds >= 0.3) {
+        PlayStart start = std::move(*loadAfterIndicator);
+        loadAfterIndicator.reset();
+        loadingIndicator = false;
+        (*ui)->setSetting(SaveIndicatorShownSetting, false);
+        (*ui)->hide(SaveIndicatorDocument);
+        startPlaying(start);
+      }
+    }
     if (!drawn || (control && control->idle())) {
       platform->waitForEvents(IdleWait);
     }

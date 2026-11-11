@@ -66,5 +66,6 @@ slots.original.no_save: "JUGAR SIN GUARDAR"
 slots.original.in_use: "Esta ranura ya tiene una aventura."
 # El aviso de guardado (una mejora del motor): junto a una figura pequeña mientras el juego guarda.
 saving: "Guardando"
+loading: "Cargando"
 # El indicador de guardado cuando se salta un autoguardado: la aventura no tiene ranura y todas tienen otra.
 autosave_no_slot: "Sin autoguardado: todas las ranuras tienen otra aventura. Guarda desde el menú."

@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <span>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -14,6 +15,7 @@
 union SDL_Event;
 struct SDL_Gamepad;
 struct SDL_Joystick;
+struct SDL_Cursor;
 
 namespace dwe::platform {
 
@@ -43,6 +45,22 @@ public:
   // Vibrates a gamepad; low and high are the strengths of the two motors, from 0 to 1.
   void rumble(GamepadId gamepad, float low, float high, std::chrono::milliseconds duration);
 
+  // Installs an RGBA cursor of size (width, height), with the click point at (hotX, hotY) from the
+  // top-left, as the window's pointer. `rgba` must be width*height*4 straight (not premultiplied)
+  // bytes. The game uses this to let the current UI skin draw its own mouse cursor; the OS arrow
+  // is replaced, so it stays on top of every document (modals included) without the UI stacking it.
+  core::Result<void> setColorCursor(std::span<const std::byte> rgba, int width, int height,
+                                     int hotX, int hotY);
+
+  // Returns the pointer to the system default arrow, undoing setColorCursor.
+  void clearColorCursor();
+
+  // Re-asserts the skin's colour cursor on the current window (a no-op if none is installed). The
+  // Windows backend can drop the cached cursor on a window event (focus, resize, fullscreen), and
+  // re-issuing the stored one each frame is a cheap way to keep the skin's cursor visible through
+  // those transitions.
+  void reapplyColorCursor();
+
   // Seconds since the platform started, from a monotonic clock.
   [[nodiscard]] double nowSeconds() const;
 
@@ -66,6 +84,9 @@ private:
   bool active_ = false;
   std::unordered_map<GamepadId, SDL_Gamepad*> gamepads_;
   std::unordered_map<GamepadId, SDL_Joystick*> virtualGamepads_;
+  // The colour cursor last installed by setColorCursor (owned here): freed on the next set and on
+  // destruction. SDL_SetCursor(nullptr) restores the system arrow.
+  SDL_Cursor* customCursor_ = nullptr;
 };
 
 // The folder where the program keeps the user's own files, such as saves, created if it does not

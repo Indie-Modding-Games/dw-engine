@@ -80,6 +80,7 @@ inline constexpr std::string_view SpriteSheetsWhat = "sprite_sheets";
 inline constexpr std::string_view SpriteSheetWhat = "a sprite sheet";
 inline constexpr std::string_view SpriteRectangleWhat = "a sprite: [x, y, width, height]";
 inline constexpr std::string_view OriginalSizeWhat = "original_size: [width, height]";
+inline constexpr std::string_view HotspotWhat = "cursor_hotspot: [x, y]";
 inline constexpr std::string_view MirrorSidesWhat = "mirror_sides: [left, right]";
 inline constexpr std::string_view TooManyMirroredColumns =
     "mirror_sides counts at most {} columns a side";

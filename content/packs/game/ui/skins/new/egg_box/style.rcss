@@ -1,0 +1,72 @@
+/* The egg box in the original look (doo2.c: DOO2_openEggBox, DOO2_renderEggIcons; measured 2026-11-03 in the original,
+   state death_egg_box_open): UI_BOX_DATA[3], the original's half-transparent box (features 2, colour 0: theme.rcss
+   .original-box) at -84, -70, 168 x 80 from the screen's centre (MAIN_D_80134B90), x 76 to 244 and y 50 to 130 of
+   its 320 x 240 screen, centred on a wide screen. Inside, the four egg icons in a row with no text: 32 x 32 sprites
+   centred at x -54, -18, 18 and 54 and y -30 from the centre (36 pixels apart), and the 40 x 40 cursor sprite centred
+   on the egg in focus. One pixel of the original is 3dp. */
+
+#scrim {
+	background-color: transparent;
+	display: block;
+}
+
+#panel {
+	position: absolute;
+	left: 50%;
+	top: 150dp;
+	width: 504dp;
+	height: 240dp;
+	margin-left: -252dp;
+	padding: 0;
+	box-sizing: border-box;
+	border-radius: 0;
+	border: 3dp transparent;
+	background-color: #2d384080;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+/* The original names nothing in the box: the question is the dialogue's, under it. */
+#title, #prompts, .egg-name {
+	display: none;
+}
+
+/* Each egg is the 40 x 40 cell of its cursor, centred on its icon: the cells' centres are 36 pixels apart from x -54,
+   which is 90dp from the panel's left (252 - 162) and 120dp from its top (y -30 is 40 pixels under the box's top); the
+   cells sit inside the 3dp border. */
+.egg, .egg:focus, .egg:hover, .egg:active {
+	position: absolute;
+	top: 57dp;
+	width: 120dp;
+	height: 120dp;
+	padding: 0;
+	margin: 0;
+	border: 0;
+	background-color: transparent;
+	decorator: none;
+}
+
+#egg-1, #egg-5 { left: 27dp; }
+#egg-2, #egg-6 { left: 135dp; }
+#egg-3, #egg-7 { left: 243dp; }
+#egg-4, #egg-8 { left: 351dp; }
+
+body #panel { background-color: #0b1c2df2; }
+
+.egg-icon {
+	position: absolute;
+	left: 12dp;
+	top: 12dp;
+	width: 96dp;
+	height: 96dp;
+	margin: 0;
+}
+
+.egg:focus .egg-cursor {
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 120dp;
+	height: 120dp;
+}

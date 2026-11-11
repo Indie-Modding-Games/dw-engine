@@ -72,6 +72,11 @@ core::Result<void> checkAssets(const assets::VirtualFileSystem& files, const Ski
       return found;
     }
   }
+  if (skin.cursor) {
+    if (auto found = checkAsset(files, *skin.cursor, {}); !found) {
+      return found;
+    }
+  }
   return {};
 }
 
@@ -270,6 +275,24 @@ SkinLook SkinCatalog::lookOf(const Skin& skin, std::string_view screen) const {
     }
   }
   return look;
+}
+
+std::optional<SkinCursor> SkinCatalog::cursorOf(const Skin& skin) const {
+  const auto chain = chainOf(skin);
+  if (!chain) {
+    return std::nullopt;
+  }
+  // The nearest skin that names a cursor wins: walk the chain from the end (the given skin) to its
+  // base, the same order lookOf resolves `document` in.
+  for (auto it = chain->rbegin(); it != chain->rend(); ++it) {
+    const Skin* layer = *it;
+    if (layer->cursor) {
+      return SkinCursor{.image = *layer->cursor,
+                        .hotX = layer->cursorHotspotX,
+                        .hotY = layer->cursorHotspotY};
+    }
+  }
+  return std::nullopt;
 }
 
 namespace {

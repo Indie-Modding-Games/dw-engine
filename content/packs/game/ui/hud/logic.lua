@@ -119,6 +119,22 @@ local hour_dot_degrees = 15
 local hour_dot_radius_percent = 50
 local night_ends_hour = 6
 local night_starts_hour = 17
+-- The parts flanking the old dial's boundaries: the clock only tells the sun and the moon apart at
+-- these same hours, so the early morning after the dawn (6) and the falling late before the dusk
+-- (17) run two hours each, the long day stretches between them, and the night fills the rest.
+local morning_ends_hour = 8
+local late_starts_hour = 15
+
+local function clock_phase(hour)
+  if hour < night_ends_hour or hour >= night_starts_hour then
+    return "night"
+  elseif hour < morning_ends_hour then
+    return "morning"
+  elseif hour >= late_starts_hour then
+    return "late"
+  end
+  return "day"
+end
 
 local function two_digits(value)
   return string.format("%02d", value)
@@ -173,6 +189,13 @@ local function draw_field_clock(document)
   if time ~= drawn_time then
     document:get("field-time"):set_text(time)
     document:get("minimap-time"):set_text(time)
+    -- the day-part chip answers on the hour, as the old dial's sun and moon did on the minute
+    local phase = clock_phase(hour)
+    local phase_chip = document:get("minimap-phase")
+    phase_chip:set_class("phase-morning", phase == "morning")
+    phase_chip:set_class("phase-day", phase == "day")
+    phase_chip:set_class("phase-late", phase == "late")
+    phase_chip:set_class("phase-night", phase == "night")
     drawn_time = time
   end
   document

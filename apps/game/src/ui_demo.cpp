@@ -41,6 +41,7 @@
 #include <format>
 #include <fstream>
 #include <optional>
+#include <span>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -622,6 +623,19 @@ int runUiDemo(const UiDemoOptions& options) {
       .hotReload = true,
       .clock = [&platform] { return platform->nowSeconds(); },
       .scripts = {},
+      .cursor = [&platform](std::optional<ui::UiCursor> cursor) {
+        if (!cursor) {
+          platform->clearColorCursor();
+          return;
+        }
+        if (auto set = platform->setColorCursor(
+                std::span<const std::byte>{cursor->image.pixels},
+                static_cast<int>(cursor->image.width), static_cast<int>(cursor->image.height),
+                static_cast<int>(cursor->hotX), static_cast<int>(cursor->hotY));
+            !set) {
+          core::logWarning("ui demo skin cursor: {}", set.error().message);
+        }
+      },
   });
   if (!ui) {
     core::logError("{}", ui.error().message);
@@ -931,6 +945,8 @@ int runUiDemo(const UiDemoOptions& options) {
     const double uiStart = platform->nowSeconds();
     (*ui)->setMinimapMarkers(walkers.player(), walkers.partner());
     (*ui)->update();
+    // Re-assert the skin's cursor after the UI update, as in the game loop.
+    platform->reapplyColorCursor();
     cost.add(platform->nowSeconds() - uiStart, (*uiRenderer)->drawCount());
     if (std::string shown =
             (*ui)->isVisible("pause_menu") ? (*ui)->elementText("pause_menu", "title") : "";

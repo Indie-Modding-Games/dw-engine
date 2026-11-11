@@ -1,0 +1,30 @@
+/* A cup match in the original look: the US intro draws no name (STD_renderIntroNameChar adds no primitive), the
+   digits and TIME UP are the sprites of stdtim 002 (sheet ow-std-match) instead of text, and the damage box is the
+   original's window. */
+
+body #name { display: none; }
+
+#damage-box {
+	border: 3dp transparent;
+	background-color: #00000080;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+#time-up, .digit {
+	font-size: 0;
+	color: transparent;
+	font-effect: none;
+}
+
+#time-up { decorator: image(std-time-up); }
+.digit.d-0 { decorator: image(std-intro-digit-0); }
+.digit.d-1 { decorator: image(std-intro-digit-1); }
+.digit.d-2 { decorator: image(std-intro-digit-2); }
+.digit.d-3 { decorator: image(std-intro-digit-3); }
+.digit.d-4 { decorator: image(std-intro-digit-4); }
+.digit.d-5 { decorator: image(std-intro-digit-5); }
+.digit.d-6 { decorator: image(std-intro-digit-6); }
+.digit.d-7 { decorator: image(std-intro-digit-7); }
+.digit.d-8 { decorator: image(std-intro-digit-8); }
+.digit.d-9 { decorator: image(std-intro-digit-9); }

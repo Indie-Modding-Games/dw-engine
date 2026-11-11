@@ -33,11 +33,14 @@
 
 			<div id="page-player" class="page hidden">
                 <div id="player-tabs" class="player-native">
-                  <button id="player-tab-player" class="player-tab selected" onclick="show_player_tab(document, 'player')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player"></span></button>
-                  <button id="player-tab-chart" class="player-tab" onclick="show_player_tab(document, 'chart')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_chart"></span></button>
-                  <button id="player-tab-medals" class="player-tab" onclick="show_player_tab(document, 'medals')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_medals"></span></button>
+                  <span id="player-tab-previous-key" class="key tab-key" onclick="player_step_tab(document, -1)"></span>
+                  <button id="player-tab-player" class="player-tab selected" onclick="show_player_tab(document, 'player')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" id="player-tab-player-label" text-key="pause_menu.player"></span></button>
+                  <button id="player-tab-chart" class="player-tab" onclick="show_player_tab(document, 'chart')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" id="player-tab-chart-label" text-key="pause_menu.player_tab_chart"></span></button>
+                  <button id="player-tab-medals" class="player-tab" onclick="show_player_tab(document, 'medals')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" id="player-tab-medals-label" text-key="pause_menu.player_tab_medals"></span></button>
                   <button id="player-tab-card" class="player-tab" onclick="show_player_tab(document, 'card')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_card"></span></button>
-                  <button id="player-tab-city" class="player-tab" onclick="show_player_tab(document, 'city')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_city"></span></button>
+                  <button id="player-tab-city" class="player-tab" onclick="show_player_tab(document, 'city')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" id="player-tab-city-label" text-key="pause_menu.player_tab_city"></span></button>
+                  <span id="player-tab-next-key" class="key tab-key" onclick="player_step_tab(document, 1)"></span>
+                  <button id="player-tab-back" class="player-tab" onclick="back(document)" text-key="common.back"></button>
                 </div>
                 <div id="player-profile">
                 <div id="player-portrait-clip" class="player-native"><img id="player-portrait" src="/runtime/player-portrait"/></div>

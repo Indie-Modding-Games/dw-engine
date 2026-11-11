@@ -1,0 +1,25 @@
+/* The save machine in the modern look: the original's boxes where the original draws them (../../../save_machine/
+   structure.rcss), as panels of the pause menu (../pause_menu/style.rcss), with the button prompts under them. */
+
+.box {
+	border: 1dp #2e3a4a;
+	border-radius: 10dp;
+	background-color: #151b24f0;
+}
+
+#heading {
+	color: #f0a73a;
+}
+
+#confirm-note {
+	color: #f0a73a;
+}
+
+.slot.empty .slot-name {
+	color: #9aa7b6;
+}
+
+#prompts {
+	font-size: 14dp;
+	color: #9aa7b6;
+}
