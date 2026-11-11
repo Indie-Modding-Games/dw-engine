@@ -170,8 +170,9 @@ std::string oneLine(std::string_view text) {
 
 SystemCheck checkSystem() {
   SystemCheck check;
-  // Not headless: the builder asks for the window-system extensions a window will need.
-  auto instance = vkb::InstanceBuilder{}
+  // Not headless: the builder asks for the window-system extensions a window will need. The
+  // linked loader's vkGetInstanceProcAddr (vulkanEntry), as for the game's own instance.
+  auto instance = vkb::InstanceBuilder{vulkanEntry()}
                       .set_app_name("dwe")
                       .set_engine_name("dwe")
                       .require_api_version(1, 3, 0)

@@ -216,16 +216,23 @@ done
 codesign --force --sign - "$stage/dwe-game.app"
 codesign --verify --deep --strict "$stage/dwe-game.app"
 
-# The packaged game starts on this Mac (an Intel one under Rosetta): its graphics check loads the
-# bundle's Vulkan loader and MoltenVK and prints its header whatever card it finds (a CI runner may
-# have none). Bounded, as a check that hangs must not hold the build.
+# The packaged game starts on this Mac (an Intel one under Rosetta) and its graphics check reaches
+# MoltenVK through the bundle's Vulkan loader and ICD file: it prints its header and any result but
+# no-vulkan. Whether a GPU suits the game is not judged: the runners are virtual machines with a
+# paravirtual Metal device, so ok, unsuitable or no-device all pass; no-vulkan never depends on the
+# GPU (the loader finds no driver), and a crash or a missing header is the package's fault. Bounded,
+# as a check that hangs must not hold the build.
 check="$(perl -e 'alarm shift; exec @ARGV' 120 \
   arch "-$machine" "$app/MacOS/dwe-game" --check-system 2>&1)" || true
-printf '%s\n' "$check" | sed 's/^/package_macos: dwe-game --check-system: /'
+printf '%s\n' "$check" | sed -n 's/^[^[:space:]]/package_macos: dwe-game --check-system: &/p'
 grep -qx 'dwe-check-system 1' <<<"$check" || {
-  echo "package_macos: the packaged dwe-game ($machine) does not start" >&2
+  echo "package_macos: the packaged dwe-game ($machine) does not start, or crashed in its check" >&2
   exit 1
 }
+if grep -qx 'result=no-vulkan' <<<"$check"; then
+  echo "package_macos: the packaged dwe-game ($machine) finds no Vulkan driver in its bundle" >&2
+  exit 1
+fi
 
 cp "$root/scripts/package/README-macos.md" "$stage/README.md"
 printf '%s\n' "$commit" >"$stage/VERSION"

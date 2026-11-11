@@ -287,7 +287,7 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
     return core::fail(std::format("Vulkan is not available: {}", SDL_GetError()));
   }
 
-  vkb::InstanceBuilder instanceBuilder;
+  vkb::InstanceBuilder instanceBuilder{vulkanEntry()};
   instanceBuilder.set_app_name("dwe").set_engine_name("dwe").require_api_version(1, 3, 0);
   for (Uint32 i = 0; i < extensionCount; ++i) {
     instanceBuilder.enable_extension(extensions[i]);
@@ -295,7 +295,7 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   if (desc.validation) {
     // Builds without the validation feature, and players' machines, may lack the layer: run without
     // it.
-    const auto system = vkb::SystemInfo::get_system_info();
+    const auto system = vkb::SystemInfo::get_system_info(vulkanEntry());
     impl->validation = system && system->validation_layers_available;
     if (impl->validation) {
       instanceBuilder.enable_validation_layers(true).set_debug_callback(logValidationMessage);

@@ -133,8 +133,11 @@ Necesita `brew install llvm@22 molten-vk ninja`, CMake y `VCPKG_ROOT`. `--arch x
 (`softwareupdate --install-rosetta --agree-to-license`): el `dwx` Intel del paquete cocina los paquetes del equipo.
 La libc++ y MoltenVK Intel se guardan en `DWE_MACOS_CROSS_DIR` (por defecto `build/macos-cross-x64`); se construyen
 una vez por versión de LLVM (unos minutos). Al final el script arranca el `dwe-game` del paquete con
-`--check-system` (el Intel, con Rosetta) y exige que conteste: prueba que el programa arranca y carga el cargador de
-Vulkan y MoltenVK del paquete, sea cual sea la tarjeta que encuentre. Deja
+`--check-system` (el Intel, con Rosetta). Exige que imprima su cabecera y un resultado distinto de `no-vulkan`: así
+prueba que el programa arranca y llega a MoltenVK por el cargador de Vulkan y el archivo ICD del paquete. No juzga si
+la tarjeta sirve, porque los ejecutores de GitHub son máquinas virtuales con un dispositivo Metal paravirtual: `ok`,
+`unsuitable` y `no-device` pasan. `no-vulkan` no depende de la tarjeta (el cargador no encuentra el controlador), y
+un cierre inesperado o la falta de cabecera son fallos del paquete. Deja
 `dwe-beta-<versión>-<commit>-darwin-aarch64.tar.xz` (o `-darwin-x86_64`) con:
 
 | Ruta | Qué es |
