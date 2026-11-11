@@ -737,7 +737,10 @@ std::optional<MapChange> Field::takeScriptWarp(WarpVia via, std::int32_t value) 
       core::logInfo("{}", core::formatMessage(messages::ScriptWarpAmbiguous, mapId_, value, places,
                                               cell.warp->source));
     }
-    MapChange change{.map = *cell.warp->targetMap, .exit = cell.warp->targetExit, .trigger = value};
+    MapChange change{.map = *cell.warp->targetMap,
+                     .exit = cell.warp->targetExit,
+                     .trigger = value,
+                     .arrivalSection = cell.warp->arrivalSection};
     if (!exitOpen(change)) {
       return std::nullopt;
     }
@@ -810,13 +813,18 @@ std::optional<MapChange> Field::takeExplored(const ScriptWarp& warp, const Scrip
     core::logInfo("{}", core::formatMessage(messages::ExplorationOpened, mapId_, value,
                                             *warp.targetMap, warp.targetExit, warp.source));
   }
-  MapChange change{.map = *warp.targetMap, .exit = warp.targetExit, .trigger = value};
+  // The story's own place is taken by the warp the original takes, so its sets_flags and its
+  // arrival section are the original's (the first warp of a place, which the chooser shows, may be
+  // another path to it).
+  const ScriptWarp& taken = vanillaPlace ? *vanilla : warp;
+  MapChange change{.map = *warp.targetMap,
+                   .exit = warp.targetExit,
+                   .trigger = value,
+                   .arrivalSection = taken.arrivalSection};
   if (!exitOpen(change)) {
     return std::nullopt;
   }
-  // The story's own place is taken by the warp the original takes, so its sets_flags are the
-  // original's (the first warp of a place, which the chooser shows, may be another path to it).
-  writeTriggersOf(vanillaPlace ? *vanilla : warp);
+  writeTriggersOf(taken);
   return change;
 }
 

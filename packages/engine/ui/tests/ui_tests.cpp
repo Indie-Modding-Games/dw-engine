@@ -950,7 +950,7 @@ TEST_CASE("the pause menu works with a gamepad alone, and the prompts follow it"
   press(*ui, input, GamepadButton::DpadDown);
   CHECK(ui->focusedElementId("pause_menu") == "open-options");
   press(*ui, input, GamepadButton::South);
-  CHECK(ui->focusedElementId("pause_menu") == "free-exploration");
+  CHECK(ui->focusedElementId("pause_menu") == "walk-control");
   // The shoulders switch the options' tabs: the Interface tab is the last, before the first.
   press(*ui, input, GamepadButton::LeftShoulder);
   CHECK(ui->elementHasClass("pause_menu", "tab-interface", "selected"));

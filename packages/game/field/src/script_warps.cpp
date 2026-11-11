@@ -397,6 +397,7 @@ ScriptWarp readWarp(YamlReader& reader, const YamlNode& item) {
     }
     warp.targetExit = reader.integer<std::int32_t>(reader.field(*to, "exit"));
   }
+  warp.arrivalSection = reader.optionalInteger<std::int32_t>(item, "arrival_section");
   warp.scriptGuard = readGuard(reader, item.find("script_guard"));
   warp.guard = readGuard(reader, item.find("guard"));
   if (const YamlNode* effects = item.find("sets_flags"); effects != nullptr) {

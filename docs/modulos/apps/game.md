@@ -1648,10 +1648,13 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 
 | Pestaña | Filas |
 |---|---|
-| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Sesiones de gimnasio, Combates sin espera, Dificultad, Saltar evoluciones, Cancelar cierra elecciones, Enfermar justo, Media de evolución justa, Olvidar técnicas justo, Tienda de cartas sin repetidas, Espacio tras los nombres |
+| Juego | Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Sesiones de gimnasio, Combates sin espera, Dificultad, Saltar evoluciones, Cancelar cierra elecciones, Enfermar justo, Media de evolución justa, Olvidar técnicas justo, Tienda de cartas sin repetidas, Espacio tras los nombres, Exploración libre |
 | Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Imágenes a pantalla ancha, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua, Reverberación |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento, Extras de la tienda, Arreglos gráficos, Herramientas de desarrollo |
+
+Exploración libre va la última de Juego (decidido por el coordinador, 2026-11-10): la pestaña se abre con el foco en
+su primera fila, así que abrir las opciones con Escape y confirmar nunca la enciende sin querer.
 
 | Qué | Teclado y ratón | Mando |
 |---|---|---|

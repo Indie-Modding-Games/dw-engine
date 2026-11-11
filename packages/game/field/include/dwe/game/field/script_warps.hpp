@@ -139,6 +139,8 @@ struct ScriptWarp {
   // Where it goes; nothing for a teleport (the map is in a variable) or a screen no map has.
   std::optional<std::string> targetMap;
   std::int32_t targetExit = 0;
+  // The section of the new map's script warp_to runs on arrival; nothing for none (0xFF).
+  std::optional<std::int32_t> arrivalSection = std::nullopt;
   WarpGuard scriptGuard; // what loads the map's script
   WarpGuard guard;       // what the section takes to get to the map change
   std::vector<FlagEffect> setsFlags;

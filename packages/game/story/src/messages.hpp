@@ -84,6 +84,11 @@ inline constexpr std::string_view PortSectionOnExit =
     "[port:story] section_on_exit (script_interp.c:2151): section {}";
 inline constexpr std::string_view PortWarpTo =
     "[port:story] warp_to (script_interp.c:1402): map {} exit {} arrival {}";
+inline constexpr std::string_view PortArriveWith =
+    "[port:story] warp_to (script_interp.c:1402) the field took: arrival section {} runs after the "
+    "map head";
+inline constexpr std::string_view ArrivalKept =
+    "[port:story] the field's arrival section {} is dropped: a script's map change is underway";
 inline constexpr std::string_view PortTeleport =
     "[port:story] teleport (script_interp.c:1534): variables {}/{} give map {} exit {}";
 inline constexpr std::string_view PortMapChangeWait =

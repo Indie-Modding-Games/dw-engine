@@ -37,8 +37,7 @@ struct Tab {
   std::string_view id;
   std::span<const std::string_view> rows;
 };
-constexpr std::array<std::string_view, 26> GameRows{"free-exploration",
-                                                    "walk-control",
+constexpr std::array<std::string_view, 26> GameRows{"walk-control",
                                                     "autosave",
                                                     "world-map",
                                                     "minimap-items",
@@ -62,7 +61,8 @@ constexpr std::array<std::string_view, 26> GameRows{"free-exploration",
                                                     "choose-egg-after-lives-lost",
                                                     "generous-talk",
                                                     "extra-toilets",
-                                                    "name-spacing"};
+                                                    "name-spacing",
+                                                    "free-exploration"};
 constexpr std::array<std::string_view, 15> GraphicsRows{"display-mode",
                                                         "vsync",
                                                         "smooth-motion",
@@ -172,10 +172,17 @@ TEST_CASE("the options key's start page opens the pause menu on its options, and
     CHECK_FALSE(screen.ui->elementHasClass(Menu, "panel", "box-closed"));
     CHECK_FALSE(screen.ui->elementHasClass(Menu, "page-options", "hidden"));
     CHECK(screen.ui->elementHasClass(Menu, "page-main", "hidden"));
-    // On its first tab, its first row.
+    // On its first tab, its first row: never free exploration, so opening the options and
+    // confirming at once cannot turn it on.
     CHECK(screen.ui->elementHasClass(Menu, "tab-game", "selected"));
-    CHECK(screen.ui->focusedElementId(Menu) == "free-exploration");
+    CHECK(screen.ui->focusedElementId(Menu) == "walk-control");
     CHECK(screen.ui->elementShown(Menu, "menu-tabs"));
+    std::ignore = screen.ui->takeCommands();
+    for (const platform::KeyCode confirm : {input::keys::Return, input::keys::Space}) {
+      screen.press(confirm);
+      screen.frames();
+    }
+    CHECK_FALSE(sentAny(screen.ui->takeCommands(), "free_exploration"));
     screen.press(input::keys::LeftCtrl);
     screen.frames();
     CHECK_FALSE(screen.ui->isVisible(Menu));
@@ -330,6 +337,7 @@ TEST_CASE("the description panel says what the focused row does, tagged improvem
   screen.skin("modern");
   screen.ui->setSetting("free_exploration", false);
   openOnOptions(screen);
+  focusRow(screen, "free-exploration");
   CHECK(screen.ui->elementText(Menu, "option-help").contains("caminos"));
   // Off, free exploration plays as the original.
   CHECK(screen.ui->elementText(Menu, "option-tag") == "Como el original");
@@ -337,7 +345,7 @@ TEST_CASE("the description panel says what the focused row does, tagged improvem
   screen.ui->setSetting("free_exploration", true);
   CHECK(screen.ui->elementText(Menu, "option-tag") == "Mejora");
   CHECK(screen.ui->elementHasClass(Menu, "option-tag", "improvement"));
-  screen.press(input::keys::Down);
+  focusRow(screen, "walk-control");
   CHECK(screen.ui->elementText(Menu, "option-help").contains("ratón"));
   // The volumes have no counterpart in the original: always an improvement.
   showTab(screen, "sound");
@@ -443,7 +451,7 @@ TEST_CASE("over the title the options page keeps its tabs and rows, without the 
     openAtTitle(screen);
     REQUIRE(screen.ui->isVisible(Menu));
     CHECK(screen.ui->elementShown(Menu, "menu-tabs"));
-    CHECK(screen.ui->focusedElementId(Menu) == "free-exploration");
+    CHECK(screen.ui->focusedElementId(Menu) == "walk-control");
     // No game to save or leave: only quit stays, and it closes the game.
     CHECK_FALSE(screen.ui->elementShown(Menu, "options-save"));
     CHECK_FALSE(screen.ui->elementShown(Menu, "options-to-title"));
@@ -731,7 +739,7 @@ TEST_CASE("a list scrolled down starts the next tab and the next opening at its 
   screen.ui->hide(Menu);
   screen.frames(2);
   openOnOptions(screen);
-  firstRowShown("free-exploration");
+  firstRowShown("walk-control");
 }
 
 TEST_CASE("the rows named after the minimap's options are not the HUD's minimap layers") {

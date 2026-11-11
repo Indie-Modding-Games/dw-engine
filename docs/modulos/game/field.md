@@ -37,8 +37,9 @@ if (auto change = field.takeMapChange()) {
 - **Estado**: `mapId()`, `player()` y `partner()` (posición, yaw y movimiento), `collision()` para el minimapa,
   `path()` y `cameraForward()` para depurar. Cada tick, `AnimationIntent` de las dos entidades dice qué animación
   poner (quieto, andar, correr) y a qué velocidad, y `Transform` guarda la posición anterior para interpolar.
-- **Cambios**: `takeMapChange()` da una vez el warp pisado (`MapChange`: mapa, salida y disparador); mientras está
-  pendiente nada se mueve. `triggerSteps()` da los disparadores que no son warps pisados en el último tick, para los
+- **Cambios**: `takeMapChange()` da una vez el warp pisado (`MapChange`: mapa, salida y disparador, y la sección de
+  llegada si es el `warp_to` de un script que tomó el campo, `arrivalSection`); mientras está pendiente nada se
+  mueve. `triggerSteps()` da los disparadores que no son warps pisados en el último tick, para los
   scripts de más adelante.
 - **Filtro de salidas**: `setExitFilter(filtro)` decide si un cambio de mapa del jugador (warp pisado, warp de script
   de una casilla, elección de la exploración libre) puede ocurrir; se pregunta antes del fundido y antes de escribir
