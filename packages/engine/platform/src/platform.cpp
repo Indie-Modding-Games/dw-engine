@@ -10,6 +10,7 @@
 #include <format>
 #include <limits>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 
@@ -211,6 +212,10 @@ Platform::~Platform() {
     SDL_CloseJoystick(joystick);
     SDL_DetachVirtualJoystick(id);
   }
+  if (customCursor_ != nullptr) {
+    SDL_DestroyCursor(customCursor_);
+    customCursor_ = nullptr;
+  }
   SDL_Quit();
 }
 
@@ -316,6 +321,53 @@ void Platform::rumble(GamepadId gamepad, float low, float high,
   };
   SDL_RumbleGamepad(found->second, strength(low), strength(high),
                     static_cast<Uint32>(duration.count()));
+}
+
+core::Result<void> Platform::setColorCursor(std::span<const std::byte> rgba, int width, int height,
+                                            int hotX, int hotY) {
+  DWE_ASSERT(active_);
+  if (width <= 0 || height <= 0 ||
+      rgba.size() < static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4) {
+    return core::fail("setColorCursor: bad cursor size or pixel count");
+  }
+  // SDL writes into the pixels a surface points at, so hand it a copy it never sees change.
+  std::vector<std::byte> copy(rgba.begin(), rgba.end());
+  SDL_Surface* surface = SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_RGBA32, copy.data(),
+                                               width * 4);
+  if (surface == nullptr) {
+    return core::fail(std::format("setColorCursor: SDL_CreateSurfaceFrom: {}", SDL_GetError()));
+  }
+  SDL_Cursor* cursor = SDL_CreateColorCursor(surface, hotX, hotY);
+  SDL_DestroySurface(surface);  // the pixels live in `copy`; the surface did not own them.
+  if (cursor == nullptr) {
+    return core::fail(std::format("setColorCursor: SDL_CreateColorCursor: {}", SDL_GetError()));
+  }
+  if (customCursor_ != nullptr) {
+    SDL_DestroyCursor(customCursor_);
+  }
+  customCursor_ = cursor;
+  SDL_SetCursor(customCursor_);
+  SDL_ShowCursor();
+  return {};
+}
+
+void Platform::clearColorCursor() {
+  if (!active_) {
+    return;
+  }
+  if (customCursor_ != nullptr) {
+    SDL_DestroyCursor(customCursor_);
+    customCursor_ = nullptr;
+  }
+  SDL_SetCursor(SDL_GetDefaultCursor());  // the system arrow again.
+  SDL_ShowCursor();
+}
+
+void Platform::reapplyColorCursor() {
+  if (!active_ || customCursor_ == nullptr) {
+    return;
+  }
+  SDL_SetCursor(customCursor_);
 }
 
 core::Result<GamepadId> Platform::attachVirtualGamepad(GamepadFamily family) {

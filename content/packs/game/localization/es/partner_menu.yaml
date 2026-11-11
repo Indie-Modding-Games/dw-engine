@@ -1,8 +1,14 @@
 # El menú del compañero (ui/partner_menu): el estado, la bolsa y los cuidados. Las etiquetas propias del original
 # (HP, MP, las estadísticas, las opciones de objeto, los órdenes, la pregunta de tirar, los bits) salen de sus tablas.
 tab.status: "Estado"
+nav.digimon: "Digimon"
+# El compacto llama "Bolsa" a la ventana de objetos (partner_menu/logic.lua: draw_navigation).
+nav.bolsa: "Bolsa"
 tab.items: "Objetos"
 tab.care: "Cuidados"
+# La pestaña Evoluciones de la ventana Digimon: solo la muestran los aspectos que declaran
+# partner-evolutions en #scrim (ui/common/base.rcss la mantiene oculta para los demás).
+tab.evolutions: "Evoluciones"
 # La especie del compañero, bajo su nombre propio (game_menu.c: drawDigimonStatsStrings).
 species: "Especie"
 age: "Edad"
@@ -109,6 +115,9 @@ tech.category.5: "Metal"
 tech.category.6: "Mugre"
 
 tech.change: "Cambiar técnicas"
+tech.assign: "Asignar técnica"
+tech.unassign: "Quitar técnica"
+tech.done: "Listo"
 tech.unavailable: "Solo técnicas aprendidas"
 tech.full: "Las tres ranuras están llenas"
 tech.need_attack: "Equipa una técnica que cause daño"

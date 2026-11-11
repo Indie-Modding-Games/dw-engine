@@ -41,6 +41,11 @@
 
 .player-native { display: none; }
 
+/* The player tabs' walk keys (Q/E on a keyboard, the pad's shoulders) and the Volver tab:
+   additions only looks with the small tab strip paint; the document carries them hidden
+   otherwise, so the classic strips keep the original's tabs and Ctrl. */
+#player-tab-previous-key, #player-tab-next-key, #player-tab-back { display: none; }
+
 #chart-detail { display: none; }
 
 #chart-detail-transition { display: none; }

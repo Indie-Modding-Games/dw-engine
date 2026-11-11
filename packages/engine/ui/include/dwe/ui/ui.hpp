@@ -30,6 +30,15 @@ namespace dwe::ui {
 // A value passed between the menus and the app: nothing, a switch, a number or a text.
 using UiValue = std::variant<std::monostate, bool, double, std::string>;
 
+// The mouse cursor a skin asks the app to install: an RGBA image (the same layout as assets::Image)
+// and the click point (hotX, hotY) from its top-left corner, in image pixels. The app turns it into
+// a system cursor; nothing (nullopt) means the skin lets the OS arrow show.
+struct UiCursor {
+  assets::Image image;
+  std::uint32_t hotX = 0;
+  std::uint32_t hotY = 0;
+};
+
 // Something a menu asks the app to do, such as {"quit"} or {"fullscreen", true}. The app decides
 // what each means.
 struct UiCommand {
@@ -115,6 +124,10 @@ struct UiDesc {
   // What the documents' scripts may use. A call from the UI and everything it causes (handlers of
   // the elements it clicks, documents it shows) share one instruction budget.
   script::ScriptLimits scripts;
+  // Called whenever the current skin changes (once with the starting skin, then on every
+  // Ui::setSkin) with the cursor that skin shows, or nullopt for the system arrow. The app turns
+  // the image into a system cursor. When unset, the UI changes no cursor.
+  std::function<void(std::optional<UiCursor> cursor)> cursor;
 };
 
 // A marker on the minimap, in world space: a position on the ground and the direction it faces.

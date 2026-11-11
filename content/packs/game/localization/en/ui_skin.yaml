@@ -2,3 +2,5 @@
 # name in a localization file of its own: one named ui_skin.yaml would replace this one whole.
 modern: "Modern"
 original: "Original"
+legacy: "Original (clasico)"
+new: "Nueva"

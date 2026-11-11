@@ -1,0 +1,11 @@
+# Minimal smoke route: boot to the title's main menu and take one capture. No skin assertion, so
+# it works with whatever skin actually loads. Used to prove the render+autotest pipeline on a
+# machine without the full extracted disc. How to run: see route-preview-new.yaml's header.
+name: preview-main-menu
+device: keyboard
+main_menu: true
+timeout: 60
+steps:
+  - wait: {shown: main_menu, seconds: 1}
+  - resize: [1280, 720]
+  - screenshot: main-menu

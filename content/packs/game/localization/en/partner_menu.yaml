@@ -1,8 +1,14 @@
 # The partner's menu (ui/partner_menu): the status page, the item bag and the care page. The original's own labels
 # (HP, MP, the stats, the item options, the sort orders, the drop's question, bits) come from its text tables.
 tab.status: "Status"
+nav.digimon: "Digimon"
+# The compact menu names the bag window "Bolsa" (partner_menu/logic.lua: draw_navigation).
+nav.bolsa: "Bag"
 tab.items: "Items"
 tab.care: "Care"
+# The Digimon window's Evoluciones tab: only skins declaring partner-evolutions on #scrim show it
+# (ui/common/base.rcss keeps it hidden for the rest).
+tab.evolutions: "Evolutions"
 # The partner's species, under its own name (game_menu.c: drawDigimonStatsStrings).
 species: "Species"
 age: "Age"
@@ -108,6 +114,9 @@ tech.category.5: "MECH"
 tech.category.6: "FILTH"
 
 tech.change: "Change Techniques"
+tech.assign: "Assign Technique"
+tech.unassign: "Remove Technique"
+tech.done: "Done"
 tech.unavailable: "Learned techniques only"
 tech.full: "Three technique slots are full"
 tech.need_attack: "Keep a damaging technique equipped"

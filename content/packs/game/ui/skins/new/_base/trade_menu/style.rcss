@@ -1,0 +1,4 @@
+/* The item trader in the modern look: the plain look of the layout, moved to the frame's left so the list and the
+   "How many?" box stay clear of the minimap in the top right corner (medium size at any aspect, large on wide ones). */
+
+body #window, body #amount { left: 30dp; }

@@ -1,0 +1,49 @@
+# Screens of the `new` skin the player reported broken: pause main (first icon focused?), the
+# PLAYER page (must be classic native, not modern), the ITEMS/bag screen (arrows must not hop
+# tabs), and the DIGIMON screen (must not carry a stray tab). Runs without --ui-skin original so
+# it exercises the new skin. How to run: see route-skin-original.yaml's header.
+name: preview-new-screens
+device: keyboard
+main_menu: true
+timeout: 120
+steps:
+  - wait: {shown: main_menu, seconds: 1}
+  - resize: [1280, 720]
+  - menu_select: play
+  - wait: {shown: save_slots, seconds: 0.5}
+  - menu_select: no-save
+  - wait: {shown: dialog, seconds: 0.5}
+  - menu_select: yes
+  - wait: {map: twna01, hidden: dialog, seconds: 1}
+  # Pause menu: the first icon must be focused (arrows work from the get-go).
+  - menu: open
+  - wait: {seconds: 0.6}
+  - screenshot: pause-main
+  # PLAYER page (must be the classic native 3D portrait + Tab utilities, not the modern tabs).
+  - menu_select: open-player
+  - wait: {seconds: 0.6}
+  - screenshot: player-page
+  - tap: {key: left_ctrl}
+  - wait: {seconds: 0.6}
+  # ITEMS bag: arrows must not hop to other tabs.
+  - menu_select: open-items
+  - wait: {shown: partner_menu, seconds: 0.8}
+  - screenshot: bag-items
+  - tap: {key: right}
+  - wait: {seconds: 0.4}
+  - screenshot: bag-after-right
+  - tap: {key: left_ctrl}
+  - wait: {seconds: 0.6}
+  # DIGIMON (partner) page: no stray tab, and the Evoluciones shortcut folder tab.
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.8}
+  - screenshot: digimon-page
+  # Evoluciones: the Digimon window's tab (skin-declared partner-evolutions) takes the player to
+  # the tree over the pause menu. Clicked, as the tab answers pointer and the arrows walk the bag.
+  - click: {element: partner_menu#tab-evolutions}
+  - wait: {shown: pause_menu, seconds: 0.8}
+  - screenshot: evolutions-tree
+  # Ctrl from the tree goes back to the Digimon window, not to the field nor to the hub.
+  - tap: {key: left_ctrl}
+  - wait: {shown: partner_menu, seconds: 0.8}
+  - screenshot: digimon-return

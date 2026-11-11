@@ -12,11 +12,13 @@
 	<div id="scrim">
 		<div id="panel">
 			<div id="tabs">
-				<button id="tab-status" class="tab" onclick="open_page(document, 'status')"><span class="tab-edge tab-left"></span><span class="tab-edge tab-middle"></span><span class="tab-edge tab-right"></span><span class="tab-label" text-key="partner_menu.tab.status"></span></button>
+				<button id="tab-status" class="tab" onclick="open_page(document, 'status')"><span class="tab-edge tab-left"></span><span class="tab-edge tab-middle"></span><span class="tab-edge tab-right"></span><span id="tab-status-label" class="tab-label" text-key="partner_menu.tab.status"></span></button>
+				<button id="tab-evolutions" class="tab" onclick="open_evolutions(document)" text-key="partner_menu.tab.evolutions"></button>
+				<span id="tabs-evolutions-key" class="key tab-key" onclick="open_evolutions(document)"></span>
 				<button id="tab-tech" class="tab" onclick="open_page(document, 'tech')"><span class="tab-edge tab-left"></span><span class="tab-edge tab-middle"></span><span class="tab-edge tab-right"></span><span class="tab-label" text-key="partner_menu.tab.tech"></span></button>
                 <button id="tab-items" class="tab" onclick="open_page(document, 'items')" text-key="partner_menu.tab.items"></button>
 				<button id="tab-care" class="tab" onclick="open_page(document, 'care')" text-key="partner_menu.tab.care"></button>
-				<button id="close" class="tab" onclick="close_menu()" text-key="common.back"></button>
+				<button id="close" class="tab" onclick="close_or_finish_tech_edit(document)" text-key="common.back"></button>
 			</div>
 
 			<div id="page-status" class="page">
@@ -41,10 +43,10 @@
 				<div class="status-bars" id="status-parameters">
 					<div class="bar-row pool"><span class="label original-look" id="pool-0-label"></span><div class="bar stat"><div class="fill" id="pool-0-fill"></div></div><span class="value original-look" id="pool-0"></span><span class="pool-slash original-look" id="pool-0-slash">/</span><span class="pool-max original-look" id="pool-0-max"></span></div>
 					<div class="bar-row pool"><span class="label original-look" id="pool-1-label"></span><div class="bar stat"><div class="fill" id="pool-1-fill"></div></div><span class="value original-look" id="pool-1"></span><span class="pool-slash original-look" id="pool-1-slash">/</span><span class="pool-max original-look" id="pool-1-max"></span></div>
-					<div class="bar-row"><span class="label original-look" id="stat-0-label"></span><div class="bar stat"><div class="fill" id="stat-0-fill"></div></div><span class="value original-look" id="stat-0"></span></div>
-					<div class="bar-row"><span class="label original-look" id="stat-1-label"></span><div class="bar stat"><div class="fill" id="stat-1-fill"></div></div><span class="value original-look" id="stat-1"></span></div>
-					<div class="bar-row"><span class="label original-look" id="stat-2-label"></span><div class="bar stat"><div class="fill" id="stat-2-fill"></div></div><span class="value original-look" id="stat-2"></span></div>
-					<div class="bar-row"><span class="label original-look" id="stat-3-label"></span><div class="bar stat"><div class="fill" id="stat-3-fill"></div></div><span class="value original-look" id="stat-3"></span></div>
+					<div id="stat-row-0" class="bar-row"><span class="label original-look" id="stat-0-label"></span><div class="bar stat"><div class="fill" id="stat-0-fill"></div></div><span class="value original-look" id="stat-0"></span></div>
+					<div id="stat-row-1" class="bar-row"><span class="label original-look" id="stat-1-label"></span><div class="bar stat"><div class="fill" id="stat-1-fill"></div></div><span class="value original-look" id="stat-1"></span></div>
+					<div id="stat-row-2" class="bar-row"><span class="label original-look" id="stat-2-label"></span><div class="bar stat"><div class="fill" id="stat-2-fill"></div></div><span class="value original-look" id="stat-2"></span></div>
+					<div id="stat-row-3" class="bar-row"><span class="label original-look" id="stat-3-label"></span><div class="bar stat"><div class="fill" id="stat-3-fill"></div></div><span class="value original-look" id="stat-3"></span></div>
 				</div>
 				<div class="status-bars" id="status-condition">
 					<div class="bar-row"><span class="label original-look" id="meter-0-label"></span><span class="status-native-happiness" id="status-happiness-name"></span><div class="bar meter"><div class="fill" id="meter-0-fill"></div><div class="fill high" id="meter-0-high"></div></div><span class="value original-look" id="meter-0"></span></div>
@@ -152,7 +154,7 @@
 <span class="tech-column column-5"></span>
 <span class="tech-column column-6"></span>
 <span class="tech-column column-7"></span>
-</div><div id="tech-info" class="hidden"><span id="tech-info-heading" text-key="partner_menu.tech.data"></span><span id="tech-info-tl" class="info-corner"></span><span id="tech-info-tr" class="info-corner"></span><span id="tech-info-bl" class="info-corner"></span><span id="tech-info-br" class="info-corner"></span><span id="tech-info-notch" class="info-corner"></span><div id="tech-info-name" class="original-look"></div><div id="tech-info-stats"><span class="info-label info-power" text-key="partner_menu.tech.power"></span><span class="info-colon info-power"></span><span class="info-value original-look info-power" id="tech-info-power"></span><span class="info-label info-mp" text-key="partner_menu.tech.mp"></span><span class="info-colon info-mp"></span><span class="info-value original-look info-mp" id="tech-info-mp"></span><span class="info-label info-range" text-key="partner_menu.tech.range"></span><span class="info-colon info-range"></span><span class="info-value original-look info-range" id="tech-info-range"></span><span class="info-label info-effect" text-key="partner_menu.tech.effect"></span><span class="info-colon info-effect"></span><span class="info-value original-look info-effect" id="tech-info-effect"></span></div></div><div id="tech-message"></div>
+</div><div id="tech-info" class="hidden"><span id="tech-info-heading" text-key="partner_menu.tech.data"></span><span id="tech-info-tl" class="info-corner"></span><span id="tech-info-tr" class="info-corner"></span><span id="tech-info-bl" class="info-corner"></span><span id="tech-info-br" class="info-corner"></span><span id="tech-info-notch" class="info-corner"></span><div id="tech-info-stats"><div id="tech-info-name" class="original-look"></div><span class="info-label info-power" text-key="partner_menu.tech.power"></span><span class="info-colon info-power"></span><span class="info-value original-look info-power" id="tech-info-power"></span><span class="info-label info-mp" text-key="partner_menu.tech.mp"></span><span class="info-colon info-mp"></span><span class="info-value original-look info-mp" id="tech-info-mp"></span><span class="info-label info-range" text-key="partner_menu.tech.range"></span><span class="info-colon info-range"></span><span class="info-value original-look info-range" id="tech-info-range"></span><span class="info-label info-effect" text-key="partner_menu.tech.effect"></span><span class="info-colon info-effect"></span><span class="info-value original-look info-effect" id="tech-info-effect"></span></div></div><div id="tech-message"></div>
             </div>
 
 			<div id="page-items" class="page hidden">

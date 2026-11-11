@@ -1,0 +1,33 @@
+/* The save dialog at the title screen in the original look (the scrim's at-title class, dialog.at_title), over the
+   pause menu's (../pause_menu/style.rcss): the original's menu box over the slot list it asks about, as the title's
+   other boxes (../main_menu/style.rcss), its question in a box of the battle question's width (main_menu.c:
+   renderConfirmVSSlot, 230 pixels) and the answers under it, one row each, with no button prompts. */
+
+#scrim.at-title #panel {
+	left: 340dp;
+	top: 240dp;
+	width: 690dp;
+	margin-left: 0;
+	box-sizing: border-box;
+	padding: 12dp 27dp 15dp 27dp;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
+		vertical-gradient(#000060 #000020);
+}
+
+#scrim.at-title #text {
+	line-height: 36dp;
+	margin-bottom: 6dp;
+}
+
+#scrim.at-title #file {
+	display: none;
+}
+
+#scrim.at-title button {
+	line-height: 30dp;
+}
+
+#scrim.at-title #prompts {
+	display: none;
+}

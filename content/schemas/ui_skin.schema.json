@@ -15,6 +15,17 @@
     "id": { "description": "The skin's id: the name of its folder under ui/skins/.", "$ref": "#/$defs/plainName" },
     "name": { "description": "The text key of the name the menus show, such as ui_skin.<id> for the game pack's skins; a mod keeps its keys in a localization file of its own.", "type": "string", "minLength": 1 },
     "extends": { "description": "The id of a skin this one adds to: its sheets apply first, so this skin's rules win.", "$ref": "#/$defs/plainName" },
+    "cursor": {
+      "description": "The image this skin installs as the system mouse cursor while it is the one on screen. Written relative to the skin's own folder (`cursor: cursor` reads as `ui/skins/<id>/cursor`). The nearest skin in the chain that names one wins; a skin that does not leaves the system arrow.",
+      "$ref": "#/$defs/assetId"
+    },
+    "cursor_hotspot": {
+      "description": "The click point of the cursor image, [x, y] in pixels of the image from its top-left corner. (0, 0) when not given.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/pixels" },
+      "minItems": 2,
+      "maxItems": 2
+    },
     "theme": { "description": "RCSS style sheets for every document, before each screen's styles.", "type": "array", "items": { "$ref": "#/$defs/assetId" } },
     "screens": {
       "description": "The look of each screen, by the name the game loads its document under (hud, main_menu, pause_menu, partner_menu, battle).",

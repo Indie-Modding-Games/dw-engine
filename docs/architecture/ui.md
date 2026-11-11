@@ -529,6 +529,8 @@ id: framed                          # igual que el nombre de la carpeta
 name: framed.skin_name              # la clave del nombre que enseñan los menús
 extends: modern                     # opcional: el aspecto al que este añade
 theme: [ui/skins/framed/theme]      # hojas para todos los documentos
+cursor: cursor                      # opcional: imagen PNG que el juego instala como cursor
+cursor_hotspot: [4, 4]              # opcional: punto que hace clic (x, y en píxeles de la imagen)
 screens:                            # por pantalla, con el nombre con el que se carga el documento
   main_menu:
     styles: [ui/skins/framed/main_menu/style]
@@ -554,6 +556,24 @@ document_classes:                   # opcional: clases que pone en elementos de 
 | `SkinCatalog` (`skin_catalog.hpp`) | Los aspectos de todos los paquetes montados, por id. Uno cuyo id no es su carpeta, que nombra un asset que falta o que extiende uno que no está (o en bucle) se queda fuera con un aviso en el log |
 | `SkinStyler` (`src/skin_styler.*`) | La hoja de cada pantalla con el aspecto actual: sus hojas de sprites y las de `theme` y `screens.<pantalla>.styles` de cada aspecto de la cadena, el aspecto base primero, encima de las hojas propias del documento |
 | `spriteSheetRcss` (`sprite_sheet_rcss.hpp`) | Escribe el `@spritesheet` de RCSS de una hoja de sprites. Si la imagen es un múltiplo entero de `original_size` (una copia escalada del remaster), multiplica los rectángulos y ajusta `resolution`, así que los sprites ocupan los mismos dp. Del archivo de la imagen solo lee la cabecera, para su tamaño (`imageSize`) |
+
+- **Ids relativos a la carpeta del aspecto.** `theme`, `screens.<pantalla>.styles`, `screens.<pantalla>.document` y
+  `cursor` se pueden escribir sin el prefijo `ui/skins/<id>/` (`theme: [theme]`, `styles: [pause_menu/style]`,
+  `cursor: cursor`): `parseSkin` se lo pone delante al leerlos. Una id que ya empieza por `ui/skins/` se queda tal
+  cual, así que los aspectos escritos con la ruta absoluta siguen valiendo. Las `sprite_sheets` **no** se relativizan:
+  nombran assets de las capas base. Para crear un aspecto sin partir de cero, `python scripts/new_skin.py fork <id>
+  --from <skin>` copia uno existente (`.rcss` y `cursor.png`), reescribe sus rutas y deja una hoja vacía por pantalla
+  (`--flatten` disuelve `extends:` en un skin autocontenido). Guía para quien moddea:
+  [modding/aspectos](../modding/aspectos.md) y `content/packs/game/ui/skins/README.md`.
+
+- **El cursor del ratón lo pone el aspecto.** Con `cursor: <imagen>` (una PNG con alfa recto, no premultiplicado) y
+  `cursor_hotspot: [x, y]` (el punto que hace clic, en píxeles desde el rincón superior izquierdo), el motor instala
+  esa imagen como **cursor del sistema** mientras el aspecto esté puesto (`SkinCatalog::cursorOf` recorre la cadena
+  `extends:` y gana el más cercano; `apps/game` lo aplica vía `platform::Platform::setColorCursor`). No es una hoja
+  de RmlUi: es el cursor del propio Windows/macOS/Linux, así que queda siempre arriba, también sobre los menús
+  modales y el HUD, sin pelear con el apilado. Si un aspecto no declara `cursor`, la flecha del sistema se queda;
+  cambiar de aspecto la restaura con `clearColorCursor`. Para redibujar la flecha desde el arte propio del aspecto,
+  usa `scripts/make_cursor.py <skin>/cursor.png`.
 
 - **Imágenes suavizadas (`upscale: smooth`).** Una hoja que lo dice se dibuja, con el filtro de texturas
   «reescalado» (`Ui::setSmoothPictures`, que el juego llama al publicar las opciones gráficas), pasada por el mismo
@@ -663,8 +683,7 @@ error en el log (`BadImageOption`).
 
 ### Escala tipográfica
 
-El aspecto moderno usa cinco tamaños de letra para sus propios textos, y ninguno más (`ui/skins/modern/theme.rcss`).
-Cada tamaño es un papel del texto, no una pantalla: el mismo papel tiene el mismo tamaño en el menú de pausa, en el del
+El aspecto moderno usa cinco tamaños de letra para sus propios textos, y ninguno más (`ui/skins/modern/theme.rcss`).Cada tamaño es un papel del texto, no una pantalla: el mismo papel tiene el mismo tamaño en el menú de pausa, en el del
 compañero y en el HUD.
 
 | Tamaño | Papel |

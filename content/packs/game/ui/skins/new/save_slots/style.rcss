@@ -1,0 +1,268 @@
+/* The title screen's slot list in the original look, over the pause menu's (../pause_menu/style.rcss): the
+   original's card slot box (main_menu.c: renderSelectCardSlot, at (60, 50), 183 pixels wide, rows from x 70 and y 55,
+   12 pixels apart) over the title image, with a row per slot (logic.lua); eight rows show at a time. A label wider
+   than the original's widens the box to the right. Below it, touching it, a box with the focused save's summary (an
+   addition). Colours and the cursor as the menu's (../main_menu/style.rcss). */
+
+#scrim {
+	background-color: #000000;
+	decorator: image(title-screen contain center center);
+}
+
+/* The «widescreen pictures» option, as the title's (../main_menu/style.rcss). */
+#scrim.wide {
+	decorator: none;
+}
+
+#scrim.wide #picture {
+	display: block;
+	position: absolute;
+	decorator: image(title-wide fill);
+}
+
+#scrim.wide .picture-fade {
+	display: block;
+	position: absolute;
+	top: 0;
+	height: 100%;
+}
+
+#picture-fade-left {
+	left: 0;
+	decorator: horizontal-gradient(#000000b0 #00000000);
+}
+
+#picture-fade-right {
+	decorator: horizontal-gradient(#00000000 #000000b0);
+}
+
+#panel.slots-original {
+	left: 340dp;
+	top: 150dp;
+	width: auto;
+	min-width: 513dp;
+	margin-left: 0;
+	padding: 12dp 18dp 15dp 18dp;
+	background-color: transparent;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
+		vertical-gradient(#000060 #000020);
+}
+
+#panel.slots-original button {
+	line-height: 30dp;
+	white-space: nowrap;
+}
+
+/* The original names no buttons on screen, and this box leaves them out, as the title menu's. */
+#panel.slots-original #prompts {
+	display: none;
+}
+
+.dimmed, button.dimmed:focus {
+	color: #686868;
+}
+
+/* The marks that there are rows above or below: the up arrow of SYSTEM's battle sprites (BI_IN), turned over for
+   down, left of the box by its first and last row. */
+#more-up, #more-down {
+	position: absolute;
+	left: 300dp;
+	width: 36dp;
+	height: 36dp;
+	decorator: image(battle-up-arrow scale-none center center);
+}
+
+#more-up {
+	top: 162dp;
+}
+
+#more-down {
+	top: 414dp;
+	transform: scaleY(-1);
+}
+
+#detail {
+	position: absolute;
+	left: 340dp;
+	top: 522dp;
+	width: 690dp;
+	box-sizing: border-box;
+	padding: 9dp 27dp 9dp 27dp;
+	border: 3dp transparent;
+	line-height: 36dp;
+	white-space: nowrap;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
+		vertical-gradient(#000060 #000020);
+}
+
+#detail-line-2 {
+	color: #fff371;
+}
+
+/* Save selection shares the new skin's bundled title terminal and framed-panel treatment. */
+#scrim {
+	background-color: #061321;
+	decorator: image(/ui/skins/new/assets/main_menu_background fill);
+}
+
+#scrim.wide {
+	background-color: #061321;
+	decorator: image(/ui/skins/new/assets/main_menu_background fill);
+}
+
+#picture, .picture-fade {
+	display: none;
+}
+
+/* title_picture.apply adds .wide and sizes #picture inline when widescreen artwork is enabled. Keep the new terminal
+   background visible in that mode too; the title image belongs to the original skin. */
+#scrim.wide #picture, #scrim.wide .picture-fade {
+	display: none;
+}
+
+#panel.slots-original {
+	border: 2dp #72c7ff;
+	background-color: #0b1c2df2;
+	decorator: vertical-gradient(#153653 #0a1929);
+	left: 50%;
+	top: 42dp;
+	width: 850dp;
+	min-width: 0;
+	margin-left: -425dp;
+	padding: 14dp 20dp 18dp 20dp;
+	box-sizing: border-box;
+}
+
+#panel.slots-original button.slot {
+	display: block;
+	width: 100%;
+	height: 48dp;
+	min-height: 48dp;
+	margin: 0 0 4dp 0;
+	padding: 0 15dp;
+	box-sizing: border-box;
+	border: 1dp #345875;
+	border-radius: 0;
+	background-color: #0a2035;
+	color: #d8f1ff;
+	font-size: 20dp;
+	line-height: 45dp;
+	text-align: left;
+	white-space: nowrap;
+	transition: background-color border-color color 0.12s cubic-out;
+}
+
+#panel.slots-original button.slot.hidden {
+	display: none;
+}
+
+#panel.slots-original #full {
+	margin: 0 0 9dp 0;
+	color: #a8c7d9;
+	font-size: 16dp;
+}
+
+#panel.slots-original button.slot:hover {
+	border-color: #72c7ff;
+	background-color: #153653;
+}
+
+#panel.slots-original button.slot:focus {
+	border: 2dp #ffd51e;
+	background-color: #153653;
+	color: #ffe64a;
+}
+
+#panel.slots-original button.slot.dimmed,
+#panel.slots-original button.slot.dimmed:focus {
+	border-color: #263b4b;
+	background-color: #0a1a29;
+	color: #7890a2;
+}
+
+#panel.slots-original #no-save {
+	display: block;
+	width: 100%;
+	height: 48dp;
+	margin: 12dp 0 0 0;
+	padding: 0 15dp;
+	box-sizing: border-box;
+	border: 1dp #397ca4;
+	border-radius: 0;
+	background-color: #102a40;
+	color: #d8f1ff;
+	font-size: 20dp;
+	line-height: 45dp;
+	text-align: left;
+}
+
+#panel.slots-original #no-save.hidden {
+	display: none;
+}
+
+#panel.slots-original #no-save:focus {
+	border: 2dp #ffd51e;
+	background-color: #153653;
+	color: #ffe64a;
+}
+
+#more-up, #more-down {
+	left: 165dp;
+	width: 36dp;
+	height: 36dp;
+	image-color: #72c7ff;
+}
+
+#more-up { top: 60dp; }
+#more-down { top: 438dp; }
+
+#detail {
+	left: 50%;
+	top: 558dp;
+	width: 850dp;
+	height: 108dp;
+	margin-left: -425dp;
+	padding: 12dp 20dp;
+	box-sizing: border-box;
+	border: 2dp #72c7ff;
+	background-color: #0b1c2df2;
+	decorator: vertical-gradient(#153653 #0a1929);
+	color: #d8f1ff;
+	font-size: 16dp;
+	line-height: 30dp;
+}
+
+#detail-line-1, #detail-line-2 {
+	margin: 0;
+	line-height: 36dp;
+}
+
+#detail-line-2 {
+	color: #ffe64a;
+}
+
+@media (max-width: 720dp) {
+	#panel.slots-original, #detail {
+		width: 92%;
+		margin-left: -46%;
+	}
+
+	#more-up, #more-down { display: none; }
+}
+
+@media (max-height: 600dp) {
+	#panel.slots-original {
+		top: 18dp;
+		padding-top: 9dp;
+		padding-bottom: 12dp;
+	}
+	#panel.slots-original button.slot { height: 42dp; min-height: 42dp; line-height: 39dp; }
+	#panel.slots-original #no-save { height: 42dp; line-height: 39dp; }
+	#detail { top: auto; bottom: 12dp; height: 84dp; }
+}
+
+@media (max-width: 1000dp) {
+	#more-up, #more-down { display: none; }
+}

@@ -119,6 +119,11 @@ player_tab_chart: "Chart"
 player_tab_medals: "Medals"
 player_tab_card: "Card"
 player_tab_city: "City"
+# Name of the Prosperity tab for a skin declaring the minimal set (pause_menu:
+# player-minimal-tabs): the player window renames it (pause_menu/logic.lua:
+# draw_player_tab_labels); classic skins keep the word above. The Trophies are part of the profile
+# now (player-medals-on-profile), so their tab is gone.
+player_tab_prosperity: "Prosperity"
 player_raised: "Raised"
 player_items: "Items"
 player_medals: "Medals"

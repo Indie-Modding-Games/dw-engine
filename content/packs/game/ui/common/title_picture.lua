@@ -205,6 +205,20 @@ function title_picture.apply(document, groups)
   local wide = ui.setting(title_picture.setting) ~= false and panel:has_class("skin-original")
   scrim:set_class("wide", wide)
   if not wide then
+    -- A skin switch can leave the previous wide-picture dimensions inline on this shared
+    -- document. Clear them so the new skin's own #picture layout takes effect.
+    local shown = document:get("picture")
+    if shown ~= nil then
+      write(shown, { { "left", "" }, { "top", "" }, { "width", "" }, { "height", "" } })
+    end
+    local fade_left = document:get("picture-fade-left")
+    if fade_left ~= nil then
+      write(fade_left, { { "width", "" } })
+    end
+    local fade_right = document:get("picture-fade-right")
+    if fade_right ~= nil then
+      write(fade_right, { { "left", "" }, { "width", "" } })
+    end
     clear_groups(document, groups)
     return
   end

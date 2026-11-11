@@ -1,0 +1,839 @@
+/* The pause menu in the original look: one of the original's boxes over the field, which stays undimmed.
+
+   The box (ui.c: renderUIBoxBorder; capture field_pause_start and menu_main): a light cyan rim (#90D9FA, the right
+   side's inner line the darker #4A9FC5), the rounded corner sprites of SYSTEM_W, and the fill #2D3840 at half
+   opacity (the box's semi-transparent mode). The original draws each side as three or four 1-pixel lines, black, cyan,
+   black; RCSS without shaders gives an element one border colour per side, so the black lines are left out. A
+   documented limit of this skin.
+
+   Placement: the original's menu box (game_menu.c: renderGameMenu) is centred and 40 pixels from the top. Its 132
+   pixels hold six icons with their names in small capitals; the main page here is that box, 132 pixels wide (396dp),
+   headed by the Year/Day line. The six field commands occupy three columns and two rows, with their FI_INFO icons
+   above their labels. Engine settings live under Player instead of occupying the field grid. */
+
+#scrim {
+	background-color: transparent;
+	display: block;
+}
+
+#panel {
+	position: absolute;
+	left: 50%;
+	top: 120dp;
+	width: 552dp;
+	margin-left: -276dp;
+	padding: 6dp 9dp 9dp 9dp;
+	border-radius: 0;
+	border: 3dp transparent;
+	background-color: #2d384080;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+#panel.on-main {
+	width: 390dp;
+	height: 324dp;
+	padding: 0;
+	margin-left: -198dp;
+}
+
+#panel.on-main #title {
+	display: none;
+}
+
+#panel.on-main #title-date {
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 390dp;
+	height: 66dp;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	line-height: 36dp;
+}
+
+#title, #title-date {
+	font-size: 33dp;
+	font-weight: normal;
+	color: #fff371;
+	margin: 0 0 6dp 0;
+	padding: 0 12dp 3dp 12dp;
+	border-bottom: 3dp #90d9fa;
+}
+
+.option .value {
+	font-weight: normal;
+	color: #fff371;
+}
+
+/* The settings pages (the engine's own, the original has none): a row is its label and its value on one line, 12
+   pixels like the other rows, and cuts what does not fit (the text-fit check finds it). The box is wide enough for the
+   longest pair of the packs' languages, Spanish's "Mostrar minimapa" and "Según el aspecto". */
+#panel.on-settings {
+	width: 780dp;
+	margin-left: -390dp;
+}
+.option {
+	height: 30dp;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.back {
+	margin-top: 6dp;
+	color: #b2b2b2;
+}
+
+/* The options page (the engine's own; the original has none), drawn with the original's parts: the box higher up and
+   wider, the PLAYER page's folder tabs over its top edge (the same sprites, the shown one lit), rows of 12 pixels with
+   the value in the heading yellow, a switch's Sí/No in a 1-pixel frame (cyan while on), a list's value between the
+   battle's arrows turned sideways, a number as a cyan bar in a frame and its digits, and the description in the grey
+   of the original's descriptions, at 22dp (twice the font's cell, one of its two sharp sizes). The list scrolls only
+   past what a 1280x720 window leaves it (the game tab's twelve rows, a larger UI scale, a mod's options), with a cyan
+   bar. No motion: the original has none. */
+#panel.on-options { top: 72dp; width: 980dp; margin-left: -490dp; }
+#panel.on-options #title { display: none; }
+#page-options { position: relative; }
+#menu-tabs { position: absolute; left: 3dp; top: -54dp; right: 3dp; height: 48dp; display: flex; flex-direction: row; align-items: flex-start; }
+.option-tab { position: relative; flex: 1 1 0; height: 45dp; margin: 0 3dp 0 0; color: #288ad0; font-size: 33dp; text-align: center; }
+.option-tab.selected { height: 48dp; color: #243640; }
+.option-tab-left, .option-tab-middle, .option-tab-right { position: absolute; display: block; top: 0; height: 100%; image-color: #646464; }
+.option-tab-left { left: 0; width: 21dp; decorator: image(digimon-tab-left-idle); }
+.option-tab-middle { left: 21dp; right: 21dp; decorator: image(digimon-tab-middle-idle); }
+.option-tab-right { right: 0; width: 21dp; decorator: image(digimon-tab-right-idle); }
+.selected .option-tab-left { decorator: image(digimon-tab-left-active); image-color: #ffffff; }
+.selected .option-tab-middle { decorator: image(digimon-tab-middle-active); image-color: #ffffff; }
+.selected .option-tab-right { decorator: image(digimon-tab-right-active); image-color: #ffffff; }
+.option-tab-label { position: relative; top: 6dp; white-space: nowrap; }
+/* The original font does not shrink, so the four folders take the whole width and the tab keys sit just outside it. */
+.tab-key { position: absolute; top: 9dp; }
+#tabs-previous-key { left: -48dp; }
+#tabs-next-key { right: -48dp; margin-right: 0; }
+/* A 4:3 window (or a larger UI scale) leaves the page 960dp: the box narrows to fit it with a margin, the folders take
+   its whole width without the tab keys beside them (the keys under the list name them, and a click on a folder picks
+   it), and the values' minimum width leaves the labels the rest. */
+@media (max-width: 1060dp) {
+	#panel.on-options { width: 916dp; margin-left: -470dp; }
+	.tab-key { display: none; }
+	#page-options .option .value { min-width: 200dp; }
+}
+/* Over the title the page covers the title's picture: a darker box keeps the rows readable. */
+#panel.on-options.at-title { background-color: #2d3840e8; }
+/* The game's own actions (Save, back to title, quit) lead the page: one line at the box's top, at its right. */
+#options-quick { display: flex; flex-direction: row; justify-content: flex-end; margin-bottom: 3dp; }
+#options-quick button { display: inline-block; margin: 0 0 0 24dp; padding: 0 6dp; font-size: 22dp; }
+#option-list { max-height: 400dp; overflow-y: auto; }
+#option-list scrollbarvertical { width: 6dp; margin-left: 6dp; }
+#option-list scrollbarvertical slidertrack { background-color: #2d3840; }
+#option-list scrollbarvertical sliderbar { min-height: 24dp; background-color: #90d9fa; }
+/* A larger UI scale also leaves the page less than the 720dp it is laid out for (115 % on a 16:10 window leaves 626dp,
+   130 % on a 16:9 one 554dp): the box moves up to just under its folders and the list scrolls in fewer rows, so the
+   description and the actions under it stay in the window. */
+@media (max-height: 700dp) {
+	#panel.on-options { top: 60dp; }
+	#option-list { max-height: 300dp; }
+}
+@media (max-height: 600dp) {
+	#option-list { max-height: 240dp; }
+}
+@media (max-height: 520dp) {
+	#option-list { max-height: 150dp; }
+}
+#page-options button.option { display: flex; align-items: center; height: 30dp; line-height: 30dp; }
+#page-options .option .label { flex: 1 1 auto; overflow: hidden; }
+#page-options .option .control { display: flex; align-items: center; }
+#page-options .option .value { float: none; min-width: 240dp; text-align: center; }
+#page-options .option.kind-toggle .value { min-width: 78dp; height: 24dp; margin-right: 36dp; padding: 0 6dp; border: 3dp #4a5a64; line-height: 24dp; color: #b2b2b2; }
+#page-options .option.kind-toggle .value.on { border-color: #90d9fa; color: #fff371; }
+#page-options .option .arrow { width: 36dp; height: 30dp; image-color: #90d9fa; }
+#page-options .option .arrow.less { decorator: image(battle-up-arrow scale-none center center); transform: rotate(-90deg); }
+#page-options .option .arrow.more { decorator: image(battle-up-arrow scale-none center center); transform: rotate(90deg); }
+#page-options .option .arrow.at-end { image-color: #4a5a64; }
+#page-options .option .bar { width: 150dp; height: 18dp; margin: 0 9dp; border: 3dp #4a9fc5; background-color: #00000080; }
+#page-options .option .bar .fill { display: block; height: 18dp; background-color: #90d9fa; }
+#page-options .option.kind-range .value { width: 66dp; min-width: 66dp; text-align: right; padding-right: 6dp; }
+#option-info { display: flex; align-items: flex-start; height: 60dp; margin-top: 6dp; padding: 6dp 9dp 0 9dp; border-top: 3dp #90d9fa; font-size: 22dp; line-height: 27dp; color: #b2b2b2; }
+#option-tag { flex: 0 0 auto; margin-right: 12dp; padding: 0 6dp; border: 3dp #4a5a64; line-height: 21dp; color: #b2b2b2; white-space: nowrap; }
+#option-help { flex: 1 1 0; }
+#option-tag.improvement { border-color: #90d9fa; color: #fff371; }
+#option-foot { margin-top: 6dp; padding-top: 6dp; border-top: 3dp #90d9fa; }
+#option-actions button { display: inline-block; margin: 0 12dp 0 0; }
+#options-hints { margin-top: 6dp; font-size: 22dp; color: #b2b2b2; text-align: right; }
+#options-hints .hint { margin-left: 12dp; white-space: nowrap; }
+#options-hints .key { margin-right: 3dp; }
+/* The reset's question: one of the original's boxes over the list. */
+#reset-confirm { position: absolute; left: 90dp; right: 90dp; top: 90dp; padding: 18dp; border: 3dp transparent; background-color: #2d3840f0; text-align: center;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box; }
+#reset-question { color: #fff371; }
+#reset-note { margin: 6dp 0 12dp 0; font-size: 22dp; color: #b2b2b2; }
+#reset-buttons button { display: inline-block; margin: 0 12dp; }
+
+#prompts {
+	margin-top: 12dp;
+	padding-top: 6dp;
+	border-top: 3dp #90d9fa;
+	font-size: 22dp;
+	color: #b2b2b2;
+}
+
+#page-main button {
+	text-align: center;
+	text-transform: uppercase;
+	font-size: 24dp;
+	line-height: 30dp;
+}
+
+#panel.on-main #page-main {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 390dp;
+	height: 324dp;
+	display: block;
+}
+
+#panel.on-main #page-main .menu-utility, #panel.on-main #prompts {
+	display: none;
+}
+
+#panel.on-main #page-main .field-entry {
+	position: absolute;
+	width: 84dp;
+	height: 105dp;
+	padding: 0;
+	margin: 0;
+	border-width: 0;
+	border-radius: 0;
+	background-color: transparent;
+}
+
+#panel.on-main .field-menu-icon {
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 60dp;
+	height: 60dp;
+	padding: 6dp 9dp;
+	margin: 0;
+	border: 3dp transparent;
+	border-radius: 6dp;
+}
+
+#panel.on-main .menu-label {
+	display: block;
+	position: absolute;
+	top: 84dp;
+	left: -12dp;
+	width: 108dp;
+	margin: 0;
+	font-size: 15dp;
+	line-height: 24dp;
+	text-align: center;
+	color: #d6d6d6;
+}
+
+/* Hub icons: the sheet sprites are drawn scaled to fit their boxes (the classic port's
+   scale-none paints them at native size, which the small 60dp tiles clip). */
+.menu-item { decorator: image(menu-item-icon contain center center); }
+.menu-digimon { decorator: image(menu-digimon-icon contain center center); }
+.menu-player { decorator: image(menu-player-icon contain center center); }
+.menu-praise { decorator: image(menu-praise-icon contain center center); }
+.menu-scold { decorator: image(menu-scold-icon contain center center); }
+.menu-sleep { decorator: image(menu-sleep-icon contain center center); }
+.menu-fish { decorator: image(menu-fish contain center center); }
+#panel.on-main .menu-fish { height: 57dp; padding-bottom: 9dp; }
+
+/* English labels are FI_INFO sprites; translated labels retain localized text. */
+#panel.on-main.use-menu-art .menu-label {
+	width: 84dp;
+	height: 21dp;
+	margin: 0 auto;
+	line-height: 21dp;
+	color: transparent;
+}
+.use-menu-art .menu-item-label { decorator: image(menu-label-item scale-none center center); }
+.use-menu-art .menu-digimon-label { decorator: image(menu-label-digimon scale-none center center); }
+.use-menu-art .menu-player-label { decorator: image(menu-label-player scale-none center center); }
+.use-menu-art .menu-praise-label { decorator: image(menu-label-praise scale-none center center); }
+.use-menu-art .menu-scold-label { decorator: image(menu-label-scold scale-none center center); }
+.use-menu-art .menu-sleep-label { decorator: image(menu-label-sleep scale-none center center); }
+.use-menu-art .menu-fish-label { decorator: image(menu-label-fish scale-none center center); }
+
+/* Unavailable commands remain selectable as in the original; their handlers reject them. */
+#panel.on-main #sleep.unavailable, #panel.on-main #fish.unavailable {
+	focus: auto;
+	tab-index: auto;
+}
+
+.player-line { color: #fff371; padding: 6dp 12dp; }
+.player-value { color: #d6d6d6; }
+
+/* Field stage: 132 × 110 original pixels (149 with the fishing entry).
+   The six regular icons start at (20,31), (56,31), (91,31), then y=71.
+   Coordinates below account for the panel's one-pixel RCSS border. */
+
+#panel.on-main.has-fishing { height: 441dp; }
+
+#panel.on-main #open-items { left: 45dp; top: 81dp; }
+#panel.on-main #open-partner { left: 153dp; top: 81dp; }
+#panel.on-main #open-player { left: 258dp; top: 81dp; }
+#panel.on-main #praise { left: 45dp; top: 201dp; }
+#panel.on-main #scold { left: 153dp; top: 201dp; }
+#panel.on-main #sleep { left: 258dp; top: 201dp; }
+#panel.on-main #fish { left: 45dp; top: 81dp; }
+#panel.on-main.has-fishing #open-items, #panel.on-main.has-fishing #open-partner, #panel.on-main.has-fishing #open-player { top: 201dp; }
+#panel.on-main.has-fishing #praise, #panel.on-main.has-fishing #scold, #panel.on-main.has-fishing #sleep { top: 321dp; }
+#panel.on-main.use-menu-art .menu-item-label { left: 9dp; width: 72dp; }
+#panel.on-main.use-menu-art .menu-digimon-label { left: 3dp; width: 84dp; }
+#panel.on-main.use-menu-art .menu-player-label { left: 9dp; width: 84dp; }
+#panel.on-main.use-menu-art .menu-praise-label { left: 15dp; width: 60dp; }
+#panel.on-main.use-menu-art .menu-scold-label { left: 15dp; width: 60dp; }
+#panel.on-main.use-menu-art .menu-sleep-label { left: 27dp; width: 60dp; }
+#panel.on-main.use-menu-art .menu-fish-label { left: 21dp; width: 48dp; }
+#panel.on-main.icon-flash .field-entry:focus .menu-item { decorator: image(menu-item-icon contain center center); }
+#panel.on-main.icon-flash .field-entry:focus .menu-digimon { decorator: image(menu-digimon-icon contain center center); }
+#panel.on-main.icon-flash .field-entry:focus .menu-player { decorator: image(menu-player-icon contain center center); }
+#panel.on-main.icon-flash .field-entry:focus .menu-praise { decorator: image(menu-praise-icon contain center center); }
+#panel.on-main.icon-flash .field-entry:focus .menu-scold { decorator: image(menu-scold-icon contain center center); }
+#panel.on-main.icon-flash .field-entry:focus .menu-sleep { decorator: image(menu-sleep-icon contain center center); }
+#panel.on-main.icon-flash .field-entry:focus .menu-fish { decorator: image(menu-fish-active contain center center); }
+
+/* Keep the selection frame bright even when the command is unavailable. */
+#panel.on-main .field-menu-focus { position: absolute; left: 0; top: 0; width: 87dp; height: 78dp; }
+#panel.on-main .field-entry:focus .field-menu-focus { display: block; }
+#panel.on-main #sleep.unavailable, #panel.on-main #fish.unavailable { opacity: 1; }
+#panel.on-main .unavailable .field-menu-icon, #panel.on-main .unavailable .menu-label { opacity: 0.45; }
+
+/* The selection frame uses the same three small sprites as the original. */
+.cursor-part { display: block; position: absolute; pointer-events: none; }
+.cursor-left, .cursor-right { top: 0; width: 12dp; height: 66dp; decorator: image(menu-cursor-side); }
+.cursor-left { left: 0; }
+.cursor-right { left: 75dp; }
+.cursor-top, .cursor-bottom { left: 12dp; width: 72dp; height: 12dp; decorator: image(menu-cursor-bar); }
+.cursor-top { top: 0; }
+.cursor-bottom { top: 66dp; transform: scaleY(-1); }
+.cursor-tl, .cursor-tr, .cursor-bl, .cursor-br { width: 12dp; height: 12dp; decorator: image(menu-cursor-corner); }
+.cursor-tl { left: 0; top: 0; }
+.cursor-tr { left: 72dp; top: 0; transform: scaleX(-1); }
+.cursor-bl { left: 0; top: 66dp; transform: scaleY(-1); }
+.cursor-br { left: 72dp; top: 66dp; transform: scale(-1, -1); }
+
+
+#field-year-label, #field-day-label { position: absolute; top: 18dp; font-size: 33dp; line-height: 36dp; }
+#field-year-label { left: 15dp; }
+#field-day-label { left: 213dp; }
+#field-year-digits, #field-day-digits { position: absolute; top: 15dp; height: 36dp; white-space: nowrap; font-size: 0dp; }
+#field-year-digits { left: 129dp; }
+#field-day-digits { left: 312dp; }
+.date-digit { display: inline-block; width: 21dp; height: 36dp; margin-right: 6dp; color: transparent; }
+.date-digit.hidden { display: none; }
+/* The original's date has no room for the season (an engine improvement): only the modern skin shows it. */
+#field-season { display: none; }
+#field-date-separator { position: absolute; left: 9dp; top: 60dp; width: 372dp; height: 3dp; background-color: #90d9fa; border-top: 3dp #020202; border-bottom: 3dp #020202; }
+.digit-0 { decorator: image(menu-digit-0 scale-none center center); }
+.digit-1 { decorator: image(menu-digit-1 scale-none center center); }
+.digit-2 { decorator: image(menu-digit-2 scale-none center center); }
+.digit-3 { decorator: image(menu-digit-3 scale-none center center); }
+.digit-4 { decorator: image(menu-digit-4 scale-none center center); }
+.digit-5 { decorator: image(menu-digit-5 scale-none center center); }
+.digit-6 { decorator: image(menu-digit-6 scale-none center center); }
+.digit-7 { decorator: image(menu-digit-7 scale-none center center); }
+.digit-8 { decorator: image(menu-digit-8 scale-none center center); }
+.digit-9 { decorator: image(menu-digit-9 scale-none center center); }
+
+/* The title follows the actual tamer level (renderPlayerInfoView), from the local disc's table. */
+.player-rank { display: block; clear: both; margin-top: 3dp; text-align: right; color: #d8f1ff; }
+
+/* renderPlayerInfoView: a 300x190 box; one native pixel is 3dp. */
+#panel.on-player { top: 93dp; width: 900dp; height: 570dp; margin-left: -450dp; padding: 0; box-sizing: border-box; background-color: #0b1c2df5; }
+#panel.on-player #title, #panel.on-player #title-date, #panel.on-player #prompts, #panel.on-player #player-tools { display: none; }
+#panel.on-player #page-player { position: relative; height: 564dp; padding: 0; margin: 0; }
+#panel.on-player .player-native { display: block; }
+#panel.on-player #player-profile { position: relative; height: 564dp; }
+/* The original's four tabs (Player and Chart 74 pixels, Med. and Card 50, a pixel apart) hold its short English words.
+   With the City tab that dwe adds and the longer Spanish ones, the five share the box's width instead: each as wide
+   as its word and a 5-pixel margin, the space left shared out evenly, a pixel apart, the word centred. */
+#player-tabs { position: absolute; left: 12dp; top: -48dp; width: 870dp; height: 48dp; }
+#panel.on-player #player-tabs.player-native { display: flex; flex-direction: row; align-items: flex-end; }
+/* The strip takes the flat folder tabs the partner windows use (no classic sprites): labels 16,
+   open bottom edge over the box's top line. Q/E (the pad's R/L) walk it as the options page's
+   tabs do. The Trophies tab lives on the profile itself (player-medals-on-profile) and the Chart
+   reaches the player from the Digimon window's Evoluciones tab; neither opens as a tab here. */
+#panel.on-player #player-tab-chart, #panel.on-player #player-tab-card { display: none; }
+#panel.on-player .player-tab, #panel.on-player .player-tab:focus, #panel.on-player .player-tab:disabled { position: relative; flex: 0 0 auto; min-width: 120dp; height: 34dp; padding: 0 14dp; margin: 0 4dp 0 0; border: 2dp #4a6b82; border-bottom-width: 0; box-sizing: border-box; background-color: #16293a; opacity: 1; color: #9cbad0; font-size: 16dp; line-height: 30dp; text-align: center; }
+#panel.on-player .player-tab.selected { background-color: #24405a; border-color: #72c7ff; color: #eaf6ff; }
+#panel.on-player .player-tab:focus { border-color: #ffd51e; color: #ffe64a; }
+#panel.on-player .player-tab .player-tab-left, #panel.on-player .player-tab .player-tab-middle, #panel.on-player .player-tab .player-tab-right { display: none; }
+#panel.on-player .player-tab-label { position: relative; top: 0; white-space: nowrap; }
+/* Q/E chips outside the strip's corners, like the options page's keys — the flat folder look on
+   the strip's own baseline. Only the look with keyboard tab-switching paints them (the document
+   carries them hidden otherwise); on the tree's visit the strip has no next page, so the E chip
+   stands down. */
+#panel.player-minimal-tabs #player-tab-previous-key, #panel.player-minimal-tabs #player-tab-next-key, #panel.player-minimal-tabs #player-tab-back { display: inline-block; }
+#panel.player-minimal-tabs #player-tab-back { margin-left: auto; margin-right: 0; }
+#panel.player-evolutions #player-tab-next-key { display: none; }
+#panel.on-player .tab-key { position: absolute; top: 14dp; min-width: 40dp; height: 34dp; padding: 0 6dp; border: 2dp #4a6b82; border-bottom-width: 0; box-sizing: border-box; background-color: #16293a; color: #9cbad0; font-size: 16dp; line-height: 30dp; text-align: center; }
+#panel.on-player #player-tab-previous-key { left: -46dp; }
+#panel.on-player #player-tab-next-key { right: -46dp; }
+/* renderMenuTab: an idle tab is the same texture shaded to 0x32/0x80 of its colour (renderRectPolyFT4 flag 1), not
+   faded into what lies behind it. */
+.player-tab-left, .player-tab-middle, .player-tab-right { position: absolute; display: block; top: 0; height: 100%; image-color: #646464; }
+.player-tab-left { left: 0; width: 21dp; decorator: image(digimon-tab-left-idle); }
+.player-tab-middle { left: 21dp; right: 21dp; decorator: image(digimon-tab-middle-idle); }
+.player-tab-right { right: 0; width: 21dp; decorator: image(digimon-tab-right-idle); }
+.selected .player-tab-left { decorator: image(digimon-tab-left-active); image-color: #ffffff; }
+.selected .player-tab-middle { decorator: image(digimon-tab-middle-active); image-color: #ffffff; }
+.selected .player-tab-right { decorator: image(digimon-tab-right-active); image-color: #ffffff; }
+.player-tab-label { position: relative; top: 9dp; white-space: nowrap; }
+/* Jugador: one screen, laid out on the compact Digimon dashboard's grid — a thin label column of
+   right-aligned words beside boxed values, the portrait as its own framed column, the trophy
+   shelf as an inset box of its own below. Small type throughout: labels 17, values 22, rank 20,
+   where the classic port ran the original's 36-point words. */
+#panel.on-player .player-line { position: absolute; margin: 0; padding: 0; height: 30dp; line-height: 30dp; font-size: 17dp; color: #9cbad0; }
+#panel.on-player .player-value { position: absolute; top: 0; float: none; color: #d8f1ff; font-size: 22dp; line-height: 30dp; }
+#player-name-line { left: 320dp; top: 10dp; width: 84dp; text-align: right; }
+#panel.on-player #player-name { left: 96dp; top: 0; width: 288dp; white-space: nowrap; text-align: left; }
+#player-level-line { left: 320dp; top: 58dp; width: 84dp; text-align: right; }
+#panel.on-player #player-level, #panel.on-player #player-raised { left: 96dp; top: 0; width: 64dp; text-align: right; }
+#panel.on-player #player-rank { position: absolute; display: block; clear: none; left: 240dp; top: 2dp; width: 314dp; margin: 0; text-align: left; white-space: nowrap; font-size: 20dp; line-height: 28dp; color: #d8f1ff; }
+#player-raised-line { left: 320dp; top: 104dp; width: 84dp; text-align: right; }
+#player-bits-line { left: 320dp; top: 150dp; width: 84dp; text-align: right; }
+#panel.on-player #player-bits { left: 96dp; top: 0; width: 142dp; text-align: right; }
+#player-time-line { left: 320dp; top: 196dp; width: 84dp; text-align: right; }
+#panel.on-player #player-time { left: 96dp; top: 0; width: 162dp; white-space: nowrap; }
+#player-items-line-label { left: 320dp; top: 248dp; width: 84dp; text-align: right; }
+#player-medals-line { left: 494dp; top: 251dp; width: 96dp; }
+#panel.on-player #player-medals { left: 336dp; top: 0; width: 44dp; text-align: right; }
+/* The value boxes, restyled flat like the partner's: a thin #345875 line over a deep fill. */
+.player-inset { position: absolute; height: 32dp; box-sizing: border-box; border: 2dp #345875; background-color: #0a2035; }
+#player-name-box { left: 410dp; top: 9dp; width: 300dp; }
+/* A name longer than the original's six letters (the engine's long names, up to twelve) widens the box by a letter's
+   12 pixels each. */
+#panel.on-player.long-player-name #player-name-box { width: 464dp; }
+#panel.on-player.long-player-name #player-name { width: 452dp; }
+#player-level-box { left: 410dp; top: 57dp; width: 76dp; }
+#player-rank-box { left: 554dp; top: 57dp; width: 326dp; }
+#player-raised-box { left: 410dp; top: 103dp; width: 76dp; }
+#player-bits-box { left: 410dp; top: 149dp; width: 150dp; }
+#player-time-box { left: 410dp; top: 195dp; width: 170dp; }
+#player-medals-box { left: 824dp; top: 250dp; width: 56dp; }
+#panel.on-player .player-item-box { top: 296dp; width: 50dp; height: 50dp; }
+#player-item-box-0 { left: 330dp; } #player-item-box-1 { left: 386dp; } #panel.on-player #player-item-box-2, #panel.on-player #player-item-box-3 { top: 352dp; }
+#panel.on-player #player-item-box-2 { left: 330dp; } #panel.on-player #player-item-box-3 { left: 386dp; }
+/* The classic port drew the icons a pixel further into each following box (21-pixel spacing over
+   20-pixel boxes); the flat grid centers them in every box alike. */
+#panel.on-player #player-item-0, #panel.on-player #player-item-1, #panel.on-player #player-item-2, #panel.on-player #player-item-3 { left: 1dp; top: 1dp; }
+.player-separator, .player-separator span { position: absolute; }
+.player-separator span { display: block; background-color: #071321; }
+.player-separator .rule-light { background-color: #397ca4; }
+#player-header-line { left: 6dp; top: 48dp; width: 885dp; height: 9dp; }
+#player-header-line span { height: 3dp; }
+#player-header-line .rule-first { left: 3dp; right: 3dp; top: 0; }
+#player-header-line .rule-light { left: 0; right: 0; top: 3dp; }
+#player-header-line .rule-last { left: 3dp; right: 3dp; top: 6dp; }
+#player-vertical-line { left: 306dp; top: 56dp; width: 9dp; height: 500dp; }
+#player-vertical-line span { width: 3dp; }
+#player-vertical-line .rule-first { left: 0; top: 3dp; bottom: 6dp; }
+#player-vertical-line .rule-light { left: 3dp; top: 0; bottom: 3dp; }
+#player-vertical-line .rule-last { left: 6dp; top: 3dp; height: 321dp; }
+#player-vertical-line .rule-tail { left: 6dp; top: 333dp; bottom: 0; }
+#player-items-line { left: 318dp; top: 236dp; width: 572dp; height: 9dp; }
+#player-items-line span { height: 3dp; }
+#player-items-line .rule-first { left: 0; right: 6dp; top: 0; }
+#player-items-line .rule-light { left: 3dp; right: 0; top: 3dp; }
+#player-items-line .rule-last { left: 3dp; right: 6dp; top: 6dp; }
+/* The portrait is a picture only: its image reaches far past the clip, over the tabs, and the pointer would hit it
+   there, as RmlUi does not clip where the pointer hits. */
+#player-portrait-clip { position: absolute; left: 6dp; top: 56dp; width: 296dp; height: 500dp; overflow: hidden; pointer-events: none; border: 1dp #345875; background-color: #071522; }
+#player-portrait { position: absolute; left: -33dp; top: -171dp; width: 960dp; height: 720dp; pointer-events: none; }
+/* Tab opens the engine's utilities separately; they are not part of the original profile. */
+#panel.on-player.player-tools-open { top: 120dp; width: 552dp; height: auto; margin-left: -276dp; padding: 6dp 9dp 9dp 9dp; box-sizing: content-box; background-color: #0b1c2df2; }
+#panel.on-player.player-tools-open #title, #panel.on-player.player-tools-open #prompts, #panel.on-player.player-tools-open #player-tools { display: block; }
+#panel.on-player.player-tools-open #page-player { height: auto; }
+#panel.on-player.player-tools-open #player-tabs, #panel.on-player.player-tools-open #player-profile { display: none; }
+#panel.on-player.player-tools-open #player-tools { display: flex; flex-direction: row; flex-wrap: wrap; width: 534dp; }
+#panel.on-player.player-tools-open #player-tools button { width: 261dp; height: 48dp; margin: 0 6dp 6dp 0; padding: 0 12dp; box-sizing: border-box; border: 2dp #397ca4; background-color: #0b2237; color: #d8f1ff; font-size: 21dp; text-align: left; }
+#panel.on-player.player-tools-open #player-tools button:focus { border-color: #ffd51e; background-color: #153653; color: #ffe64a; }
+#panel.on-player.player-tools-open #player-tools #player-back { width: 528dp; margin-bottom: 0; }
+
+#panel.on-player #player-chart { display: none; position: relative; height: 564dp; }
+#panel.on-player.player-chart #player-profile { display: none; }
+#panel.on-player.player-chart #player-chart { display: block; }
+#panel.on-player.player-tools-open #player-chart { display: none; }
+#panel.on-player .player-tab.unavailable { focus: none; tab-index: none; }
+/* The stage boxes: flat panels in deep tints of the classic columns' colours (the bevels and
+   the loud fills belonged to the original's grey cells; here the cells are dark tiles and the
+   boxes are the wash behind them). */
+.chart-stage { position: absolute; top: 21dp; height: 480dp; box-sizing: border-box; border: 2dp; }
+.chart-stage.stage-0 { left: 30dp; width: 105dp; border-color: #8c3c5a; background-color: #2d1220; }
+.chart-stage.stage-1 { left: 141dp; width: 105dp; border-color: #5e2f58; background-color: #20102a; }
+.chart-stage.stage-2 { left: 252dp; width: 105dp; height: 531dp; border-color: #3a77b8; background-color: #0c2c46; }
+.chart-stage.stage-3 { left: 363dp; width: 321dp; border-color: #3f9e5c; background-color: #0c3a20; }
+.chart-stage.stage-4 { left: 690dp; width: 171dp; border-color: #b57a4a; background-color: #3a2312; }
+/* The Mega box (canonical_stages, or the Mega step's Megas): a sixth box right of the Ultimate one, as tall, and the
+   panel as wide as the original's screen. The Champion and Ultimate columns stand 66dp apart instead of 72 and their
+   boxes' sides 21dp, so the six fit inside the panel's frame, 30dp from it on both sides. */
+#panel.on-player.player-chart.chart-wide { width: 960dp; margin-left: -480dp; }
+.chart-stage.stage-5 { display: none; left: 837dp; width: 93dp; border-color: #c76a72; background-color: #3d151b; }
+#player-chart.chart-mega .chart-stage.stage-3 { width: 297dp; }
+#player-chart.chart-mega .chart-stage.stage-4 { left: 666dp; width: 165dp; }
+#player-chart.chart-mega .chart-stage.stage-5 { display: block; }
+/* A box with more cells than its grid holds goes on to a second page (a third...) with the same boxes, right below
+   the first in #chart-pages, which slides up a page (564dp) to show it; the boxes of the page it leaves are the
+   #chart-stage-other-<n> set. #chart-clip, the panel's inside (6dp in from the chart's top and bottom, which lie under
+   the panel's frame), clips what slides past it (clip: always, as RmlUi clips overflow only past the right and bottom
+   edges), and the cells of the pages out of view are hidden (.off-page). Under the Fresh and In-Training boxes, in the
+   same place on every page: the up arrow of SYSTEM's battle sprites (BI_IN) for a previous page, the page number, and
+   the arrow turned over for a next page, as the save slots' marks. */
+#chart-clip { position: absolute; left: 0; top: 6dp; width: 100%; height: 552dp; }
+#player-chart.chart-paged #chart-clip { clip: always; }
+#chart-pages { position: absolute; left: 0; top: 0; margin-top: -6dp; width: 100%; height: 564dp; }
+#player-chart .off-page { visibility: hidden; }
+.chart-arrow, #chart-page { display: none; position: absolute; top: 510dp; height: 36dp; }
+.chart-arrow { width: 30dp; decorator: image(battle-up-arrow contain center center); }
+#chart-less { left: 66dp; }
+#chart-more { left: 180dp; transform: scaleY(-1); }
+#chart-page { left: 99dp; width: 78dp; font-size: 18dp; line-height: 36dp; color: #d8f1ff; text-align: center; white-space: nowrap; }
+#player-chart.chart-paged .chart-arrow, #player-chart.chart-paged #chart-page { display: block; }
+/* The cells: dark tiles with a thin frame; the focused one lights up gold like every control of
+   the look, and the undiscovered forms are just hidden (the old grey bevel blocks fought the
+   coloured stage washes). */
+#panel.on-player .chart-cell, #panel.on-player .chart-cell:focus { position: absolute; width: 57dp; height: 57dp; margin: 0; padding: 0; border: 2dp #345875; box-sizing: border-box; background-color: #0a2035; }
+#panel.on-player .chart-cell:focus { border-color: #ffd51e; background-color: #153653; }
+#panel.on-player .chart-cell.hidden, .chart-icon.hidden { display: none; }
+.chart-icon { display: block; width: 48dp; height: 48dp; pointer-events: none; }
+#chart-cursor { position: absolute; width: 72dp; height: 60dp; pointer-events: none; }
+#chart-cursor.hidden { display: none; }
+
+#panel.on-player.chart-detail-open #player-chart { display: none; }
+#panel.on-player.chart-detail-open #chart-detail { display: block; }
+/* The detail view: a centered frame of its own, the picked form's name lit across the top, the
+   tree in dark tiles like the page's, and the level and species words at the look's scale. */
+#panel.on-player #chart-detail { display: none; position: absolute; left: 3dp; top: 0; width: 894dp; height: 564dp; }
+.chart-detail-cell { position: absolute; width: 57dp; height: 57dp; padding: 0; border: 2dp #345875; box-sizing: border-box; background-color: #0a2035; }
+.chart-detail-cell.hidden, .chart-detail-line.hidden { display: none; }
+/* The connectors are three stacked bands the logic paints by colour: the bands lie 3dp apart, so
+   they must be 3dp tall to read as one line. */
+.chart-detail-line { position: absolute; height: 3dp; transform-origin: 0dp 0dp; pointer-events: none; }
+#chart-detail-tree, #chart-detail-level, #chart-detail-name { position: absolute; font-size: 22dp; line-height: 28dp; color: #d8f1ff; white-space: nowrap; }
+#chart-detail-tree { left: 0; width: 894dp; top: 14dp; color: #ffe64a; text-align: center; }
+#chart-detail-level { left: 81dp; top: 436dp; width: 324dp; text-align: center; }
+#chart-detail-name { left: 45dp; top: 488dp; width: 396dp; text-align: center; }
+
+#panel.on-player #chart-detail-transition { display: block; position: absolute; box-sizing: border-box; border: 2dp #72c7ff; background-color: transparent; pointer-events: none; }
+#panel.on-player #chart-detail-transition.hidden { display: none; }
+/* Evolution requirements (an engine improvement, docs/modulos/apps/game.md): a frosted panel over
+   the tree's left boxes, sitting under the detail header line; ticks and crosses are two bars
+   each. */
+#panel.on-player #chart-req { left: 51dp; top: 48dp; width: 294dp; height: 384dp; box-sizing: border-box; border: 2dp #345875; background-color: #07182ae6; padding: 8dp 12dp 4dp 12dp; }
+#panel.on-player #chart-req.hidden, .chart-req-row.hidden, .chart-req-mark.hidden, #chart-detail-cursor.hidden { display: none; }
+.chart-req-row { position: relative; display: block; height: 20dp; line-height: 20dp; font-size: 16dp; color: #b8cfe0; white-space: nowrap; }
+.chart-req-row.title { color: #ffe64a; }
+.chart-req-mark { position: absolute; left: 0; top: 2dp; width: 18dp; height: 18dp; }
+.chart-req-mark span { position: absolute; display: block; height: 3dp; transform-origin: 0dp 0dp; }
+.chart-req-mark.met span { background-color: #84f084; }
+.chart-req-mark.met .mark-a { left: 1dp; top: 8dp; width: 9dp; transform: rotate(45deg); }
+.chart-req-mark.met .mark-b { left: 6dp; top: 15dp; width: 16dp; transform: rotate(-60deg); }
+.chart-req-mark.unmet span { background-color: #f06464; }
+.chart-req-mark.unmet .mark-a { left: 2dp; top: 2dp; width: 20dp; transform: rotate(45deg); }
+.chart-req-mark.unmet .mark-b { left: 2dp; top: 16dp; width: 20dp; transform: rotate(-45deg); }
+.chart-req-label { position: absolute; left: 24dp; top: 0; }
+.chart-req-row.title .chart-req-label { left: 0; }
+.chart-req-row.item .chart-req-label { left: 33dp; }
+.chart-req-value { position: absolute; right: 0; top: 0; text-align: right; }
+.chart-req-value.met, #chart-req-score.met, #chart-req-next { color: #84f084; }
+.chart-req-value.unmet, #chart-req-score.unmet { color: #f06464; }
+#chart-req-score, #chart-req-next { position: absolute; left: 9dp; right: 9dp; height: 20dp; line-height: 20dp; font-size: 16dp; text-align: center; white-space: nowrap; }
+#chart-req-score { top: 337dp; }
+#chart-req-next { top: 360dp; }
+#chart-detail-cursor { position: absolute; width: 72dp; height: 60dp; pointer-events: none; }
+.chart-detail-cell.chart-dim { opacity: 0.4; }
+
+#panel.on-player #player-medals-view { display: none; position: relative; height: 564dp; }
+#panel.on-player.player-medals #player-profile, #panel.on-player.player-medals #player-chart { display: none; }
+#panel.on-player.player-medals #player-medals-view { display: block; }
+#panel.on-player.player-tools-open #player-medals-view { display: none; }
+#medals-title { position: absolute; left: 285dp; top: 21dp; width: 324dp; font-size: 36dp; line-height: 36dp; text-align: center; color: #fff371; }
+.medals-rule { position: absolute; left: 6dp; width: 885dp; height: 9dp; }
+.medals-rule span { position: absolute; height: 3dp; background-color: #020202; }
+.medals-rule .first { left: 3dp; right: 3dp; top: 0; }
+.medals-rule .light { left: 0; right: 0; top: 3dp; background-color: #90d9fa; }
+.medals-rule .last { left: 3dp; right: 3dp; top: 6dp; }
+#medals-rule-header { top: 63dp; }
+#medals-rule-middle { top: 306dp; }
+#medals-rule-footer { top: 501dp; }
+#medals-rule-vertical { left: 654dp; top: 72dp; width: 9dp; height: 234dp; }
+#medals-rule-vertical .first { left: 0; right: auto; top: 0; width: 3dp; height: 228dp; }
+#medals-rule-vertical .light { left: 3dp; right: auto; top: -3dp; width: 3dp; height: 243dp; }
+#medals-rule-vertical .last { left: 6dp; right: auto; top: 0; width: 3dp; height: 234dp; }
+#panel.on-player .medal-cell, #panel.on-player .medal-cell:focus { position: absolute; width: 51dp; height: 72dp; margin: 0; padding: 0; border-width: 0; background-color: transparent; }
+.medal-ribbon, .medal-shadow { position: absolute; top: 0; width: 45dp; height: 72dp; pointer-events: none; }
+.medal-ribbon { left: 6dp; } .medal-shadow { left: 0; }
+#medals-cursor { position: absolute; width: 72dp; height: 72dp; pointer-events: none; }
+#medals-cursor.hidden { display: none; }
+#medals-name-box { left: 153dp; top: 327dp; width: 531dp; height: 45dp; }
+/* renderDigiviceMedals: the held medal under the selector turns in the right box; the game draws the whole screen as
+   the original's MEDAL_VIEW sees it, so the image covers the screen from the page's corner, (11, 32) of the screen. */
+#player-medals-view #medal-figure { display: block; position: absolute; left: -33dp; top: -96dp; width: 960dp; height: 720dp; pointer-events: none; }
+#player-medals-view #medal-figure.hidden { display: none; }
+
+/* The card list (game_menu.c: renderCardsView): "Card List" in colour 3 at (-36, -80) from the screen's centre, which
+   is (113, 8) of the page; 66 slots that renderBorderBox draws 18 x 18 with a #BEBEBE line on the top and the left, a
+   #3C3C3C one on the bottom and the right and a #696969 fill; the cursor's 24 x 20 frame; the prompts at y 83. */
+#panel.on-player #player-cards-view { display: none; position: relative; height: 564dp; }
+#panel.on-player.player-cards #player-profile, #panel.on-player.player-cards #player-chart, #panel.on-player.player-cards #player-medals-view { display: none; }
+#panel.on-player.player-cards #player-cards-view { display: block; }
+#panel.on-player.player-tools-open #player-cards-view { display: none; }
+#cards-title { position: absolute; left: 339dp; top: 24dp; width: 216dp; font-size: 36dp; line-height: 36dp; text-align: center; color: #fff371; white-space: nowrap; }
+/* The pages' Select and Cancel prompts, where the original draws its pad glyphs (blue and green) and words: here the
+   key of the device in use in the glyph's colour, the two prompts one after the other and ending at the panel's
+   right edge, since a key's name is wider than a glyph. */
+.page-prompts { position: absolute; height: 36dp; font-size: 36dp; color: #d6d6d6; white-space: nowrap; }
+.page-prompt { display: inline-block; margin-right: 54dp; }
+.page-prompt:last-child { margin-right: 0; }
+.prompt-key { color: #90a8f8; margin-right: 6dp; }
+.prompt-key.cancel-key { color: #3cff3c; }
+/* The chart's prompts stay right of the rookie column, which reaches down past them: a key's name is wider than the
+   original's pad glyph, so this row is drawn a pixel tighter, closer together and nearer the edge, the key's colour
+   alone setting it off from its word: «Espacio Elegir Ctrl Cancelar» clears the column of the chart with the Mega
+   box too. */
+#chart-prompts { right: 9dp; top: 516dp; letter-spacing: -3dp; }
+#chart-prompts .page-prompt { margin-right: 12dp; }
+#chart-prompts .page-prompt:last-child { margin-right: 0; }
+#chart-prompts .prompt-key { margin-right: 0; }
+#medals-prompts { right: 30dp; top: 519dp; }
+#cards-prompts { right: 30dp; top: 513dp; }
+.card-cell { position: absolute; width: 57dp; height: 57dp; box-sizing: border-box; border: 3dp #3c3c3c; border-top-color: #bebebe; border-left-color: #bebebe; background-color: #696969; }
+#cards-cursor { position: absolute; width: 72dp; height: 60dp; pointer-events: none; }
+#cards-cursor.hidden { display: none; }
+
+/* The item boxes' icons (renderPlayerInfoView): 16 x 16 of SYSTEM_W, palette 7, one pixel inside each box. */
+.player-item-icon { position: absolute; top: 0; width: 48dp; height: 48dp; }
+/* game_menu.c: renderPlayerInfoView draws the icons 21 pixels apart, the boxes are 20 apart. */
+#player-item-0 { left: 0; decorator: image(player-item-0); } #player-item-1 { left: 3dp; decorator: image(player-item-1); }
+#player-item-2 { left: 6dp; decorator: image(player-item-2); } #player-item-3 { left: 9dp; decorator: image(player-item-3); }
+.player-item-icon.hidden { display: none; }
+
+/* renderMedalView: a held medal has no dark cover; the selected one's name in the box at (56, 111) of the page and its
+   three lines from (23, 127), 13 pixels apart. */
+.medal-cell.held .medal-shadow { display: none; }
+.medal-text { position: absolute; height: 36dp; font-size: 36dp; line-height: 36dp; color: #d6d6d6; white-space: nowrap; }
+#medal-name { left: 168dp; top: 333dp; }
+.medal-line { left: 69dp; }
+#medal-line-0 { top: 381dp; } #medal-line-1 { top: 420dp; } #medal-line-2 { top: 459dp; }
+
+/* Jugador: one screen for the profile and its trophies together (panel class
+   player-medals-on-profile). The shelf is an inset box of its own at the grid's lower right, the
+   Digimon dashboard's style: a framed panel under the Medallas label and its count, five cells
+   wide by three high — pause_menu/logic.lua (refresh_medals) lays them out inside it — and the
+   picked medal's name on a line below. The classic full-page medal furniture (the title, the
+   rules, the turning figure, the wide name box, the three description lines and the prompts)
+   stays only for the looks that keep the Trophies as their own tab. The Trophies tab itself is
+   gone from this look: the shelf is on the profile now. */
+#panel.player-medals-on-profile #player-tab-medals { display: none; }
+#panel.player-medals-on-profile #player-medals-view { display: block; position: absolute; left: 486dp; top: 248dp; width: 400dp; height: 308dp; box-sizing: border-box; border: 2dp #345875; background-color: #0a2035; z-index: 1; }
+#panel.player-medals-on-profile #player-medals-line, #panel.player-medals-on-profile #player-medals, #panel.player-medals-on-profile #player-medals-box { z-index: 2; }
+#panel.player-medals-on-profile.player-city #player-medals-view,
+#panel.player-medals-on-profile.player-chart #player-medals-view,
+#panel.player-medals-on-profile.player-tools-open #player-medals-view { display: none; }
+#panel.player-medals-on-profile #medals-title,
+#panel.player-medals-on-profile .medals-rule,
+#panel.player-medals-on-profile #medal-figure,
+#panel.player-medals-on-profile #medals-cursor,
+#panel.player-medals-on-profile #medals-name-box,
+#panel.player-medals-on-profile .medal-line,
+#panel.player-medals-on-profile #medals-prompts { display: none; }
+#panel.player-medals-on-profile .medal-cell,
+#panel.player-medals-on-profile .medal-cell:focus { width: 44dp; height: 64dp; padding: 0; border-width: 0; background-color: transparent; }
+#panel.player-medals-on-profile .medal-shadow { left: 0; width: 40dp; height: 64dp; }
+#panel.player-medals-on-profile .medal-ribbon { left: 4dp; width: 40dp; height: 64dp; }
+#panel.player-medals-on-profile #medal-name { left: 12dp; top: 254dp; width: 376dp; height: 24dp; font-size: 18dp; line-height: 24dp; text-align: center; color: #ffe64a; }
+
+/* The tree, opened for the Digimon window (its Evoluciones tab): the strip wears that window's
+   two tabs — the first reads "Digimon" (draw_player_tab_labels) and returns to the partner menu,
+   "Evoluciones" stands selected for the tree. The window's other pages are not offered here. */
+#panel.player-evolutions #player-tab-city { display: none; }
+#panel.player-evolutions #player-tab-chart { display: inline-block; }
+
+/* The card list's icons (renderCardsView), one pixel inside the slot; a card's picture (renderCardImage, 150 x 180) and
+   copies (renderCardCount) in their boxes. */
+.card-icon { position: absolute; left: 0; top: 0; width: 48dp; height: 48dp; }
+.card-icon.hidden { display: none; }
+#card-detail { position: absolute; left: 222dp; top: 15dp; width: 450dp; height: 540dp; box-sizing: border-box; z-index: 5; }
+#card-detail-image { position: absolute; left: -3dp; top: -6dp; width: 450dp; height: 540dp; }
+#card-count-box { position: absolute; left: 669dp; top: 471dp; width: 162dp; height: 72dp; box-sizing: border-box; z-index: 6; }
+#card-count { position: absolute; left: 42dp; top: 15dp; font-size: 36dp; line-height: 36dp; color: #d6d6d6; }
+
+/* The City tab (a dwe addition, docs/modulos/apps/screens.md): the prosperity and the residents over a rule like the medals
+   chart's; a cell for each species that can join, in rows of 12 across the box, filled with the colour of its level's
+   column in the evolution chart (rookies blue, champions green, ultimates brown); its 16 x 16 icon of SBOY drawn four
+   times its size (64dp, sharp at every resolution's whole scale), in colour once it lives in the city and as a light
+   grey silhouette (`&tone=grey`) while it is missing; a yellow frame round the selected cell; its name and points in a
+   box below. */
+#panel.on-player #player-city-view { position: relative; height: 564dp; }
+#panel.on-player.player-city #player-profile, #panel.on-player.player-city #player-chart,
+#panel.on-player.player-city #player-medals-view, #panel.on-player.player-city #player-cards-view { display: none; }
+#panel.on-player.player-tools-open #player-city-view { display: none; }
+#panel.on-player #player-city { display: none; }
+/* Small type like the profile's: labels 17 in the strip's grey, values 22, flat inset boxes;
+   the header sits under the strip on the grid's first rule. */
+#city-prosperity-label, #city-residents-label { position: absolute; height: 30dp; font-size: 17dp; line-height: 30dp; white-space: nowrap; color: #9cbad0; }
+#city-residents, #city-name, #city-points { position: absolute; height: 30dp; font-size: 22dp; line-height: 30dp; white-space: nowrap; }
+#city-prosperity-label { left: 24dp; top: 10dp; width: 270dp; text-align: right; }
+#city-prosperity-box { left: 306dp; top: 9dp; width: 108dp; }
+#city-prosperity { position: absolute; left: 6dp; top: 1dp; width: 94dp; height: 30dp; font-size: 22dp; line-height: 30dp; text-align: right; color: #d8f1ff; }
+#city-residents-label { left: 450dp; top: 10dp; width: 276dp; text-align: right; }
+#city-residents { left: 738dp; top: 10dp; width: 132dp; text-align: right; color: #d8f1ff; }
+/* The shelf block hides the medal page's rules by class; the city's own header rule stays. */
+#panel.player-medals-on-profile #city-rule { display: block; }
+#city-rule { top: 48dp; }
+#city-grid { position: absolute; left: 10dp; top: 84dp; width: 884dp; }
+#panel.on-player .city-cell, #panel.on-player .city-cell:focus { position: relative; float: left; width: 70dp; height: 70dp; margin: 0 3dp 3dp 0; padding: 0; border: 3dp #bebebe; border-right-color: #3c3c3c; border-bottom-color: #3c3c3c; box-sizing: border-box; background-color: #878787; }
+#panel.on-player .city-cell.level-3 { border-color: #5082c8; border-right-color: #0a375f; border-bottom-color: #0a375f; background-color: #0f5082; }
+#panel.on-player .city-cell.level-4 { border-color: #5aaf6e; border-right-color: #005a28; border-bottom-color: #005a28; background-color: #008741; }
+#panel.on-player .city-cell.level-5 { border-color: #d29669; border-right-color: #78411e; border-bottom-color: #78411e; background-color: #af642d; }
+.city-icon { position: absolute; left: 0; top: 0; width: 64dp; height: 64dp; pointer-events: none; }
+#city-cursor { position: absolute; width: 76dp; height: 76dp; border: 3dp #ffdc3c; box-sizing: border-box; pointer-events: none; }
+#city-name-box { left: 12dp; top: 456dp; width: 870dp; height: 32dp; }
+#city-name { left: 30dp; top: 458dp; width: 600dp; color: #d8f1ff; }
+#city-points { left: 700dp; top: 458dp; width: 170dp; text-align: right; color: #3cff3c; }
+#panel.on-player #city-prompts { right: 30dp; top: 500dp; height: 24dp; font-size: 17dp; line-height: 24dp; }
+
+/* Digital terminal treatment for the pause menu's field grid and its settings views.
+   Keep the original command icons, but give each command a framed tile and a readable gold focus state. */
+#panel {
+	border-color: #72c7ff;
+	background-color: #0b1c2de8;
+}
+
+#panel.on-main {
+	border: 1dp #72c7ff;
+	background-color: #0b1c2df5;
+}
+
+#panel.on-main #title-date {
+	height: 46dp;
+	padding: 12dp 16dp 0 16dp;
+	line-height: 22dp;
+	font-size: 15dp;
+	color: #9cbad0;
+	border-bottom-width: 0;
+}
+
+/* The header's numbers: the classic port paints them as fixed pixel sprites over transparent
+   text; this look drops the sprites and lets the text through, gold at the window's small
+   scale, with both groups stood off their labels in columns. */
+#panel.on-main #field-year-label, #panel.on-main #field-day-label { position: absolute; top: 10dp; line-height: 26dp; }
+#panel.on-main #field-year-label { left: 20dp; }
+#panel.on-main #field-day-label { left: 236dp; }
+/* Both groups share the labels' line box: the same top and line-height, and the digits ride
+   middle in it — an inline-block otherwise puts its bottom edge on the baseline, which lifts the
+   numbers above the words, which is what left them looking high. */
+#panel.on-main #field-year-digits, #panel.on-main #field-day-digits { top: 10dp; height: 26dp; line-height: 26dp; width: 64dp; text-align: right; }
+#panel.on-main #field-year-digits { left: 62dp; }
+#panel.on-main #field-day-digits { left: 282dp; }
+#panel.on-main .date-digit { decorator: none; width: auto; min-width: 14dp; height: 26dp; margin-right: 4dp; vertical-align: middle; color: #ffe64a; font-size: 26dp; line-height: 26dp; text-align: center; }
+
+#panel.on-main #field-date-separator {
+	left: 12dp;
+	top: 44dp;
+	width: 366dp;
+	height: 1dp;
+	background-color: #345875;
+	border: 0;
+}
+
+#panel.on-main .field-entry {
+	border: 1dp #2b4f6b;
+	background-color: #0a2035;
+	transition: background-color border-color 0.12s cubic-out;
+}
+
+#panel.on-main .field-entry:hover {
+	border-color: #72c7ff;
+	background-color: #153653;
+}
+
+#panel.on-main .field-entry:focus {
+	border: 2dp #ffd51e;
+	background-color: #183754;
+}
+
+#panel.on-main .field-menu-icon {
+	border: 0;
+	border-radius: 0;
+}
+
+#panel.on-main .menu-label {
+	color: #9cbad0;
+}
+
+#panel.on-main .field-entry:focus .menu-label {
+	color: #ffe64a;
+}
+
+#panel.on-main .field-menu-focus {
+	display: none;
+}
+
+#panel.on-settings, #panel.on-options {
+	border: 2dp #72c7ff;
+	background-color: #0b1c2df2;
+	decorator: vertical-gradient(#153653 #0a1929);
+}
+
+#panel.on-settings #title, #panel.on-options #title, #panel.on-player #title {
+	color: #d8f1ff;
+	border-bottom-color: #397ca4;
+}
+
+#panel.on-settings .option .value, #panel.on-options .option .value {
+	color: #ffe64a;
+}
+
+#panel.on-options #menu-tabs {
+	border-bottom-color: #397ca4;
+}
+
+#panel.on-options .option-tab.selected {
+	border-bottom-color: #ffd51e;
+	color: #ffe64a;
+}
+
+#panel.on-options button.option:focus {
+	border-left-color: #ffd51e;
+	background-color: #153653;
+	color: #ffe64a;
+}
+
+#panel.on-options #option-info, #panel.on-options #reset-confirm {
+	border-color: #397ca4;
+	background-color: #0a2035;
+}
+
+#panel.on-options #option-tag.improvement {
+	border-color: #72c7ff;
+	color: #ffe64a;
+}
+
+#panel.on-options #option-foot {
+	border-top-color: #397ca4;
+}
+
+#panel.on-options #option-list scrollbarvertical slidertrack {
+	background-color: #0a2035;
+}
+
+#panel.on-options #option-list scrollbarvertical sliderbar {
+	background-color: #72c7ff;
+}
+
+#panel.on-options #options-hints, #panel.on-options #reset-note {
+	color: #a8c7d9;
+}
+
+.menu-settings { decorator: image(menu-settings-icon scale-none center center); }

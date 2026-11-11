@@ -74,7 +74,49 @@ TEST_CASE("a skin.yaml names the look of the screens") {
   CHECK_FALSE(bare->extends.has_value());
 }
 
-TEST_CASE("a skin.yaml with a misspelt key, a bad name or a bad sprite is refused") {
+TEST_CASE("a skin.yaml may name its theme, styles and document relative to its own folder") {
+  const auto skin = parseSkin(
+      "id: framed\nname: x\ntheme: [theme, dark]\n"
+      "screens:\n  main_menu:\n    styles: [main_menu/style]\n    document: main_menu/document\n"
+      "  hud:\n    styles: [ui/skins/framed/hud/style]\n"
+      "sprite_sheets:\n- {name: s, image: texture/x, sprites: {c: [0, 0, 1, 1]}}\n");
+  REQUIRE_MESSAGE(skin.has_value(), skin.error().message);
+  // A relative id reads as the skin's own folder; an absolute one (already under `ui/skins/`) stays
+  // as written, so the skins that came before the relative form keep working.
+  REQUIRE(skin->theme.size() == 2);
+  CHECK(skin->theme[0].str() == "ui/skins/framed/theme");
+  CHECK(skin->theme[1].str() == "ui/skins/framed/dark");
+  const SkinScreen& menu = skin->screens.at("main_menu");
+  REQUIRE(menu.styles.size() == 1);
+  CHECK(menu.styles[0].str() == "ui/skins/framed/main_menu/style");
+  REQUIRE(menu.document.has_value());
+  CHECK(menu.document->str() == "ui/skins/framed/main_menu/document");
+  CHECK(skin->screens.at("hud").styles.at(0).str() == "ui/skins/framed/hud/style");
+  // A sprite sheet's image names a base asset: it keeps the path it was written with, not the skin's.
+  CHECK(skin->spriteSheets.at(0).image.asset.str() == "texture/x");
+}
+
+TEST_CASE("a skin may name a cursor image and its hotspot, relative to its own folder") {
+  const auto skin = parseSkin(
+      "id: framed\nname: x\ncursor: cursor\ncursor_hotspot: [3, 5]\n");
+  REQUIRE_MESSAGE(skin.has_value(), skin.error().message);
+  // The cursor id is written relative to the skin folder (like theme/styles) and absolutized by
+  // parseSkin, so a fork or a rename does not touch the cursor path.
+  REQUIRE(skin->cursor.has_value());
+  CHECK(skin->cursor->str() == "ui/skins/framed/cursor");
+  CHECK(skin->cursorHotspotX == 3U);
+  CHECK(skin->cursorHotspotY == 5U);
+
+  // Absolute cursors are kept as written (for the pre-relative form).
+  const auto abs = parseSkin("id: framed\nname: x\ncursor: ui/skins/framed/cursor\n");
+  REQUIRE(abs.has_value());
+  CHECK(abs->cursor->str() == "ui/skins/framed/cursor");
+
+  // No cursor at all: the system arrow shows (nothing to install).
+  const auto none = parseSkin("id: framed\nname: x\n");
+  REQUIRE(none.has_value());
+  CHECK_FALSE(none->cursor.has_value());
+}
   CHECK(errorOf("id: plain\nname: x\nthemes: []\n").contains("themes"));
   CHECK(errorOf("id: Plain\nname: x\n").contains("lowercase"));
   CHECK(errorOf("id: plain\nname: x\nscreens:\n  Main: {}\n").contains("lowercase"));

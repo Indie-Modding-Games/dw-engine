@@ -3,3 +3,5 @@
 # entero.
 modern: "Moderno"
 original: "Original"
+legacy: "Original (clasico)"
+new: "Nueva"

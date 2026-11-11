@@ -65,5 +65,6 @@ slots.original.no_save: "PLAY WITHOUT SAVING"
 slots.original.in_use: "This slot holds an adventure already."
 # The save indicator (an engine improvement): shown next to a small figure while the game saves.
 saving: "Saving"
+loading: "Loading"
 # The save indicator when an autosave was skipped: the adventure has no slot and every slot holds another one.
 autosave_no_slot: "Not autosaved: every slot holds another adventure. Save from the menu."

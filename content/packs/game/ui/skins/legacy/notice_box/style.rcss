@@ -1,0 +1,22 @@
+/* The notices that wait for the player in the original look, the boxes of the player's award and item pickup states:
+   the award notice (tamer.c: renderAwardSomethingTextbox) and the notice of an item on the ground or in a chest
+   (tamer.c: renderItemPickupTextbox). Both are the story's speech box (../story_textbox/style.rcss) at its place,
+   x 30 to 292 and y 162 to 221, with their text and the confirm button as the original draws them there.
+
+   The text: renderString copies rows of the text area, 12 pixels each, to x -125 and y 45, 57 and 69 from the
+   screen's centre, 5 pixels right of the box's left side and 3 below its top, where the speech box's first row starts
+   too, but 12 pixels apart, not the speech box's 13. */
+
+/* The box's fill is UI_BOX_COLORS 0, black, at half (createAnimatedUIBox color 0 with feature 2, a semi-transparent
+   GsBOXF): the field shows through at half its light (capture of the sickness notice: 0.46 of it), darker than the
+   speech box's. */
+body #box {
+	background-color: #00000080;
+}
+
+body .row {
+	height: 36dp;
+	line-height: 36dp;
+}
+
+/* The confirm button in the box's bottom right corner is the speech box's (../story_textbox/style.rcss). */

@@ -1,0 +1,44 @@
+/* The original's list screens in the modern look (the card shop, the item keeper, the merit shop, the discard menu,
+   the bird's transport and the jukebox): their boxes keep the original's places (each screen's structure.rcss), and
+   their list rows, which the original look draws in the original's font at 33dp, use the modern look's size for rows
+   (../theme.rcss, 22dp) in its own font. The row keeps its height and line, so the cursor and the list do not move. */
+
+.row {
+	font-size: 22dp;
+}
+
+/* Shared room-terminal surfaces for the keeper, discard, transport, jukebox, and shop tables. */
+body .window.original-box, body #window.original-box, body #kept-window.original-box,
+body #bag-window.original-box, body #talk.original-box, body #description.original-box,
+body #confirm.original-box, body #amount.original-box, body #points-box.original-box {
+	border-color: #72c7ff;
+	background-color: #0b1c2de8;
+	decorator: original-box(2dp) border-box;
+}
+
+body .window.active .title-bar, body #window.active .title-bar {
+	background-color: #1b4c70;
+}
+
+body .window .title, body #window .title, body #talk, body #description,
+body #confirm, body #amount, body #points-box {
+	color: #d8f1ff;
+}
+
+body .table {
+	border-color: #345875;
+	background-color: #0a2035;
+}
+
+body .label {
+	color: #8eb8d4;
+}
+
+body .cursor {
+	border-color: #ffd51e;
+	background-color: #153653b8;
+}
+
+body .row {
+	color: #d8eaf5;
+}

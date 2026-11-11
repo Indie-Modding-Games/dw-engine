@@ -79,3 +79,7 @@
 	top: 0;
 	right: 0;
 }
+
+/* The minimap clock's day-part chip (morning, day, late, night): a picture only a skin paints;
+   the document carries it hidden otherwise (ui/hud/logic.lua: clock_phase sets its class). */
+#minimap-phase { display: none; }

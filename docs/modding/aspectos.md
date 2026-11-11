@@ -22,11 +22,22 @@ id: mi_aspecto
 name: mi_aspecto.skin_name
 extends: modern                 # parte del moderno y cambia solo lo suyo
 theme:
-  - ui/skins/mi_aspecto/theme   # hojas para todas las pantallas
+  - theme                       # relativo a la carpeta del skin → ui/skins/mi_aspecto/theme
+cursor: cursor                  # opcional: PNG con alfa recto, se instala como cursor del sistema
+cursor_hotspot: [1, 1]          # opcional: el punto que hace clic (x, y en píxeles desde el rincón sup-izq.)
 screens:
   pause_menu:
-    styles: [ui/skins/mi_aspecto/pause_menu/style]   # y por pantalla
+    styles: [pause_menu/style]  # → ui/skins/mi_aspecto/pause_menu/style
 ```
+
+Las hojas de `theme`, de `screens.<pantalla>.styles`, el `document` y el `cursor` se escriben **relativos a la carpeta
+del skin** (`parseSkin` les pone `ui/skins/<id>/` delante); también vale la ruta absoluta completa, así que los
+aspectos escritos antes de esta forma siguen funcionando. Las imágenes de las `sprite_sheets` **no** se relativizan:
+nombran assets de las capas base.
+
+Para no partir de cero, `python scripts/new_skin.py fork <id> --from <skin>` copia un aspecto existente a una carpeta
+nueva, reescribe sus rutas y deja **una hoja `style.rcss` vacía por cada pantalla** que el origen no estilice;
+`--flatten` disuelve la cadena `extends:` en un skin autocontenido. Mira `content/packs/game/ui/skins/README.md`.
 
 El paquete de los tests [`tests/mods/ui_skin/test_contrast`](../modulos/tests/mods.md) es un ejemplo completo.
 
@@ -36,6 +47,9 @@ El paquete de los tests [`tests/mods/ui_skin/test_contrast`](../modulos/tests/mo
   cada pantalla son del juego. Un documento de reemplazo conserva los ids y enlaza el script de su pantalla.
 - **Imágenes por id.** Las hojas de sprites y las imágenes nombran assets por su id; un mod no reparte imágenes del
   original.
+- **El cursor del ratón es del sistema, no de RmlUi.** Con `cursor:` y `cursor_hotspot:` el aspecto instala una
+  imagen como **cursor del SO** mientras esté puesto: queda siempre arriba (sobre menús modales incluidos) sin pelear
+  con el apilado. Sin `cursor:`, la flecha del sistema se queda; cambiar de aspecto la restaura.
 - **Si algo falla**, el aspecto se deja fuera con el motivo en el log y el juego sigue con el que había.
 
 ## Probar mientras se edita

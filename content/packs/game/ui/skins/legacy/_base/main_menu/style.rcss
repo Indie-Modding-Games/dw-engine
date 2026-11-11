@@ -1,0 +1,5 @@
+/* The main menu: the pause menu's panel (../pause_menu/style.rcss) over a darker screen. */
+
+#scrim {
+	background-color: #05080cf0;
+}

@@ -18,7 +18,7 @@
 			</div>
 			<div id="minimap-north" text-key="hud.minimap.north"></div>
 		</div>
-		<div id="minimap-clock"><span id="minimap-day"></span><span id="minimap-time"></span></div>
+		<div id="minimap-clock"><span id="minimap-phase"></span><span id="minimap-day"></span><span id="minimap-time"></span></div>
 	</div>
 	<div id="field-status">
 		<div id="field-clock">

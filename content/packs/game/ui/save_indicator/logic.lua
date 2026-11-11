@@ -1,10 +1,11 @@
 -- The save indicator (apps/game/src/save_indicator.hpp): the game publishes how opaque it is
 -- (save_indicator.opacity, 0 to 1), how far above its corner it goes to stay clear of the windows
 -- there (save_indicator.lift, pixels), whether the figure's model loaded (save_indicator.figure;
--- without it the text shows alone) and the text key to show (save_indicator.text): "Saving", or
--- that an autosave was skipped for want of a free slot, which shows without the figure.
+-- without it the text shows alone) and the text key to show (save_indicator.text): "Saving",
+-- "Loading" or that an autosave was skipped for want of a free slot, which shows without the figure.
 
 local SavingText = "save.saving"
+local LoadingText = "save.loading"
 
 local function refresh(document)
   local indicator = document:get("indicator")
@@ -14,7 +15,10 @@ local function refresh(document)
   document:get("label"):set_text(t(text))
   document
     :get("figure")
-    :set_class("hidden", ui.setting("save_indicator.figure") ~= true or text ~= SavingText)
+    :set_class(
+      "hidden",
+      ui.setting("save_indicator.figure") ~= true or (text ~= SavingText and text ~= LoadingText)
+    )
 end
 
 function on_show(document)

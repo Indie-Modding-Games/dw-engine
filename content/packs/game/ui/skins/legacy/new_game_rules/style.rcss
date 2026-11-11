@@ -1,0 +1,56 @@
+/* The new game's rules in the original look, over the pause menu's (../pause_menu/style.rcss): a box of the title's
+   (main_menu.c: renderMenuBox) over the title image, as the slot list's (../save_slots/style.rcss); an addition, the
+   original has no such choice. */
+
+#scrim {
+	background-color: #000000;
+	decorator: image(title-screen contain center center);
+}
+
+/* The «widescreen pictures» option, as the title's (../main_menu/style.rcss). */
+#scrim.wide {
+	decorator: none;
+}
+
+#scrim.wide #picture {
+	display: block;
+	position: absolute;
+	decorator: image(title-wide fill);
+}
+
+#scrim.wide .picture-fade {
+	display: block;
+	position: absolute;
+	top: 0;
+	height: 100%;
+}
+
+#picture-fade-left {
+	left: 0;
+	decorator: horizontal-gradient(#000000b0 #00000000);
+}
+
+#picture-fade-right {
+	decorator: horizontal-gradient(#00000000 #000000b0);
+}
+
+#panel {
+	left: 340dp;
+	top: 150dp;
+	width: 690dp;
+	margin-left: 0;
+	box-sizing: border-box;
+	padding: 12dp 27dp 15dp 27dp;
+	background-color: transparent;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
+		vertical-gradient(#000060 #000020);
+}
+
+#panel button {
+	line-height: 30dp;
+}
+
+#panel #prompts {
+	display: none;
+}

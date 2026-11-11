@@ -250,7 +250,8 @@ core::Result<Skin> parseSkin(std::string_view yaml) {
   assets::YamlReader reader;
   Skin skin;
   reader.expectKeys(*tree, messages::SkinWhat, {"id", "name"},
-                    {"extends", "theme", "screens", "sprite_sheets", "document_classes"});
+                    {"extends", "theme", "screens", "sprite_sheets", "document_classes", "cursor",
+                     "cursor_hotspot"});
   skin.id = plainName(reader, reader.field(*tree, "id"));
   skin.nameKey = reader.text(reader.field(*tree, "name"));
   if (const core::YamlNode* extends = tree->find("extends")) {
@@ -271,6 +272,48 @@ core::Result<Skin> parseSkin(std::string_view yaml) {
   }
   if (const core::YamlNode* classes = tree->find("document_classes")) {
     readDocumentClasses(reader, *classes, skin);
+  }
+  if (const core::YamlNode* cursor = tree->find("cursor")) {
+    skin.cursor = assetId(reader, *cursor);
+  }
+  if (const core::YamlNode* hotspot = tree->find("cursor_hotspot")) {
+    const auto values = reader.sequence(*hotspot, messages::HotspotWhat, SizeValues);
+    if (values.size() == SizeValues) {
+      skin.cursorHotspotX = reader.integer<std::uint32_t>(values[0]);
+      skin.cursorHotspotY = reader.integer<std::uint32_t>(values[1]);
+    }
+  }
+  // Relative ids: `theme`, `screens.<pantalla>.styles` and `screens.<pantalla>.document` may be
+  // written without the skin's own folder prefix. They resolve to `ui/skins/<id>/…`. Ids that
+  // already start with `ui/skins/` are left as they are (the pre-relative form still parses).
+  // Sprite-sheet images and the `cursor` image name base assets too: cursor is the one exception,
+  // since a skin's own cursor lives next to it.
+  if (!skin.id.empty()) {
+    const std::string prefix = std::string{SkinsFolder} + skin.id + "/";
+    const auto absolutize = [&](assets::AssetId& id) {
+      const std::string_view text = id.str();
+      if (text.starts_with(SkinsFolder)) {
+        return;
+      }
+      if (auto joined = assets::AssetId::parse(prefix + std::string{text})) {
+        id = std::move(*joined);
+      }
+    };
+    for (assets::AssetId& id : skin.theme) {
+      absolutize(id);
+    }
+    for (auto& [screen_name, screen] : skin.screens) {
+      static_cast<void>(screen_name);
+      for (assets::AssetId& id : screen.styles) {
+        absolutize(id);
+      }
+      if (screen.document) {
+        absolutize(*screen.document);
+      }
+    }
+    if (skin.cursor) {
+      absolutize(*skin.cursor);
+    }
   }
   return reader.finish(std::move(skin), messages::SkinContext);
 }

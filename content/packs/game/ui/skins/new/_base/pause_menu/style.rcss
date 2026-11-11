@@ -1,0 +1,539 @@
+/* The pause menu in the modern look: one panel centred over the dimmed game. Many screens share this sheet (the title
+   menu, the save slots, the dialogs, the shop, the sleep menu...), so it is the modern look's panel and entry.
+
+   The look (docs/architecture/ui.md, «Aspecto moderno»): a slate panel with a hairline border and rounded corners,
+   the title in bold over a hairline divider, entries as rows that the focus tints amber with an amber bar at their
+   left edge, the button prompts at the panel's foot. Sizes follow the type scale of ../theme.rcss: 30dp titles, 18dp
+   entries, 14dp captions. Colours:
+     #121922f2 panel, #263243 its border, #243042 dividers, #1a2330 insets
+     #e9eef5 text, #9aa8ba secondary text, #5d6a7c disabled text
+     #f2a93b accent (title, focus bar, values of the focused row), #f2a93b29 the focus tint
+   The original look extends this one and marks its panels with the class skin-original (its skin.yaml): the rules it
+   does not write itself are kept off its panels with #panel:not(.skin-original). */
+
+#scrim {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background-color: #06090dc0;
+	/* Centres the panel without transforms, so the pointer hits where the layout says. */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+#panel {
+	width: 440dp;
+	padding: 20dp 20dp 14dp 20dp;
+	border-radius: 12dp;
+	background-color: #121922f2;
+	border: 1dp #263243;
+}
+
+/* The panel fades in when the menu opens: the page's logic puts .panel-enter on it for a frame (panel_enter.lua). */
+#panel:not(.skin-original) {
+	transition: opacity 0.14s cubic-out;
+}
+
+#panel:not(.skin-original).panel-enter {
+	opacity: 0;
+}
+
+#title {
+	font-size: 30dp;
+	font-weight: bold;
+	color: #e9eef5;
+	margin: 0 0 12dp 0;
+	padding: 0 12dp 10dp 12dp;
+	border-bottom: 1dp #243042;
+}
+
+/* The main page's subtitle: the in-game date, «Year 1  Day 1», under the title (the original look draws it as the
+   menu's own heading). */
+#panel:not(.skin-original).on-main #title {
+	margin-bottom: 0;
+	padding-bottom: 0;
+	border-bottom: 0;
+}
+
+#panel:not(.skin-original).on-main #title-date {
+	display: block;
+	margin: 2dp 0 10dp 0;
+	padding: 0 12dp 10dp 12dp;
+	border-bottom: 1dp #243042;
+	font-size: 14dp;
+	font-weight: normal;
+	color: #9aa8ba;
+}
+
+#panel:not(.skin-original) #field-year-digits, #panel:not(.skin-original) #field-day-digits {
+	margin: 0 14dp 0 5dp;
+	font-weight: bold;
+	color: #e9eef5;
+}
+
+/* The season after the day (the Seasons option), in the label's colour. */
+#panel:not(.skin-original) #field-season {
+	margin-left: 4dp;
+}
+
+/* An entry: a row 40dp high, its text at the left. The amber bar at its left edge is always there, transparent until
+   the row takes the focus, so the text never moves. */
+#panel:not(.skin-original) button {
+	height: 40dp;
+	margin: 1dp 0;
+	padding: 0 12dp 0 9dp;
+	border-left: 3dp transparent;
+	border-radius: 6dp;
+	line-height: 40dp;
+	color: #c9d3de;
+	background-color: transparent;
+	transition: background-color color border-left-color 0.1s cubic-out;
+}
+
+#panel:not(.skin-original) button:hover {
+	background-color: #ffffff0d;
+}
+
+#panel:not(.skin-original) button:focus {
+	border-left-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
+}
+
+#panel:not(.skin-original) button:active {
+	background-color: #f2a93b47;
+}
+
+#panel:not(.skin-original) button.unavailable {
+	color: #5d6a7c;
+	opacity: 1;
+}
+
+/* Groups of the main page: the menu's own entries, the partner's and the player's, and leaving the game, a hairline
+   apart. */
+#panel:not(.skin-original).on-main #open-items, #panel:not(.skin-original).on-main #quick-save {
+	margin-top: 9dp;
+}
+
+/* The options page: the game's own actions (Save, back to title, quit) lead it, small buttons on the title's line,
+   at its right. */
+#panel:not(.skin-original) #options-quick {
+	position: absolute;
+	top: -66dp;
+	right: 0;
+	display: flex;
+	flex-direction: row;
+}
+
+#panel:not(.skin-original) #options-quick button {
+	height: 32dp;
+	margin: 0 0 0 8dp;
+	padding: 0 14dp;
+	border: 1dp #2f3c4d;
+	border-radius: 6dp;
+	font-size: 14dp;
+	line-height: 30dp;
+	color: #c9d3de;
+}
+
+#panel:not(.skin-original) #options-quick button:focus {
+	border-color: #f0a73a;
+	background-color: #f0a73a;
+	color: #1a1f27;
+}
+
+.option .label {
+	display: inline;
+}
+
+.option .value {
+	float: right;
+	font-weight: bold;
+	color: #9aa8ba;
+}
+
+#panel:not(.skin-original) button.option:focus .value {
+	color: #f2a93b;
+}
+
+.back {
+	margin-top: 10dp;
+	color: #9aa8ba;
+}
+
+/* The options page (a dwe addition; ui-ux-pro-max pass for the look): a wider panel with four tabs, the tab's rows, a
+   description panel and a foot with the actions and the keys. Same tokens as the rest of the look (the slate panel,
+   amber for what is selected or on, #9aa8ba for what is secondary: 7:1 on the panel) and its type scale: 18dp rows and
+   tabs, 14dp captions (pills, tags, keys). Spacing on a 4dp grid. Focus is never colour alone: the focused row keeps
+   the amber bar at its left and its value turns amber; the shown tab is amber and underlined. Motion is colour and
+   opacity only, 0.12 s, never a move or a resize, so there is nothing to tone down for players who avoid motion. */
+#panel:not(.skin-original).on-options {
+	width: 860dp;
+}
+
+#panel:not(.skin-original) #page-options {
+	position: relative;
+}
+
+#panel:not(.skin-original) #menu-tabs {
+	display: flex;
+	align-items: center;
+	margin: 0 0 8dp 0;
+	border-bottom: 1dp #243042;
+}
+
+#panel:not(.skin-original) .option-tab {
+	flex: 1 1 0;
+	height: 40dp;
+	margin: 0 2dp -1dp 2dp;
+	line-height: 40dp;
+	text-align: center;
+	font-weight: bold;
+	color: #9aa8ba;
+	border-bottom: 3dp transparent;
+	border-radius: 6dp 6dp 0 0;
+	transition: color background-color border-bottom-color 0.12s cubic-out;
+}
+
+#panel:not(.skin-original) .option-tab:hover {
+	color: #e9eef5;
+	background-color: #ffffff0d;
+}
+
+#panel:not(.skin-original) .option-tab.selected {
+	color: #f2a93b;
+	border-bottom-color: #f2a93b;
+}
+
+#panel:not(.skin-original) .option-tab-left, #panel:not(.skin-original) .option-tab-middle,
+#panel:not(.skin-original) .option-tab-right {
+	display: none;
+}
+
+#panel:not(.skin-original) .tab-key {
+	margin: 0 4dp;
+}
+
+/* The rows: 34dp, the name at the left and the control at the right. Eleven rows fit 1280x720 without scrolling;
+   past that (the game tab's twelve, a larger UI scale, a mod's options) the list scrolls with a visible bar. */
+#panel:not(.skin-original) #option-list {
+	max-height: 392dp;
+	overflow-y: auto;
+}
+
+/* A larger UI scale leaves the page less than the 720dp it is laid out for (115 % on a 16:10 window leaves 626dp, 130 %
+   on a 16:9 one 554dp): the list scrolls in fewer rows, so the centred panel stays in the window. */
+@media (max-height: 660dp) {
+	#panel:not(.skin-original) #option-list { max-height: 306dp; }
+}
+@media (max-height: 600dp) {
+	#panel:not(.skin-original) #option-list { max-height: 238dp; }
+}
+@media (max-height: 520dp) {
+	#panel:not(.skin-original) #option-list { max-height: 170dp; }
+}
+
+#panel:not(.skin-original) #option-list scrollbarvertical {
+	width: 4dp;
+	margin-left: 8dp;
+}
+
+#panel:not(.skin-original) #option-list scrollbarvertical slidertrack {
+	background-color: #1a2330;
+	border-radius: 2dp;
+}
+
+#panel:not(.skin-original) #option-list scrollbarvertical sliderbar {
+	min-height: 24dp;
+	border-radius: 2dp;
+	background-color: #3a4a5e;
+}
+
+#panel:not(.skin-original) #page-options button.option {
+	display: flex;
+	align-items: center;
+	height: 34dp;
+	margin: 0 0 1dp 0;
+	line-height: 34dp;
+}
+
+/* A spare row (a tab with fewer rows than the pool) takes no room: the rule above outweighs the shared one. */
+#panel:not(.skin-original) #page-options button.option.hidden {
+	display: none;
+}
+
+#page-options .option .label {
+	flex: 1 1 auto;
+}
+
+#page-options .option .control {
+	display: flex;
+	align-items: center;
+}
+
+#panel:not(.skin-original) #page-options .option .value {
+	float: none;
+	min-width: 120dp;
+	text-align: center;
+	font-weight: bold;
+	color: #c9d3de;
+}
+
+#panel:not(.skin-original) #page-options button.option:focus .value {
+	color: #f2a93b;
+}
+
+/* A switch: a Sí/No pill, amber while on. */
+#panel:not(.skin-original) #page-options .option.kind-toggle .value {
+	min-width: 56dp;
+	height: 24dp;
+	margin-right: 28dp;
+	padding: 0 12dp;
+	border-radius: 12dp;
+	line-height: 24dp;
+	font-size: 14dp;
+	background-color: #263243;
+	color: #9aa8ba;
+	transition: background-color color 0.12s cubic-out;
+}
+
+#panel:not(.skin-original) #page-options .option.kind-toggle .value.on {
+	background-color: #f2a93b;
+	color: #1a1f27;
+}
+
+#panel:not(.skin-original) #page-options button.option.kind-toggle:focus .value {
+	color: #e9eef5;
+}
+
+#panel:not(.skin-original) #page-options button.option.kind-toggle:focus .value.on {
+	color: #1a1f27;
+}
+
+/* A list or a number: the small arrows either side, dimmed at a number's ends. */
+#panel:not(.skin-original) #page-options .option .arrow {
+	width: 30dp;
+	height: 30dp;
+	border-radius: 4dp;
+	image-color: #9aa8ba;
+	transition: background-color image-color 0.12s cubic-out;
+}
+
+#panel:not(.skin-original) #page-options .option .arrow.less {
+	decorator: image(/glyph/modern/@left contain center center);
+}
+
+#panel:not(.skin-original) #page-options .option .arrow.more {
+	decorator: image(/glyph/modern/@right contain center center);
+}
+
+#panel:not(.skin-original) #page-options .option .arrow:hover {
+	background-color: #ffffff14;
+	image-color: #e9eef5;
+}
+
+#panel:not(.skin-original) #page-options button.option:focus .arrow {
+	image-color: #f2a93b;
+}
+
+#panel:not(.skin-original) #page-options .option .arrow.at-end {
+	opacity: 0.3;
+}
+
+/* A number: a 0-10 bar and the number. */
+#panel:not(.skin-original) #page-options .option .bar {
+	width: 140dp;
+	height: 8dp;
+	margin: 0 8dp;
+	border-radius: 4dp;
+	background-color: #263243;
+}
+
+#panel:not(.skin-original) #page-options .option .bar .fill {
+	display: block;
+	height: 8dp;
+	border-radius: 4dp;
+	background-color: #9aa8ba;
+}
+
+#panel:not(.skin-original) #page-options button.option:focus .bar .fill {
+	background-color: #f2a93b;
+}
+
+#panel:not(.skin-original) #page-options .option.kind-range .value {
+	min-width: 28dp;
+}
+
+/* What the focused row does: its tag at the left, then two lines at most. */
+#panel:not(.skin-original) #option-info {
+	display: flex;
+	align-items: flex-start;
+	height: 56dp;
+	margin-top: 10dp;
+	padding: 8dp 12dp;
+	border-radius: 8dp;
+	background-color: #1a2330;
+	color: #c9d3de;
+	line-height: 26dp;
+}
+
+#panel:not(.skin-original) #option-tag {
+	flex: 0 0 auto;
+	margin: 2dp 12dp 0 0;
+	white-space: nowrap;
+	padding: 0 8dp;
+	border-radius: 4dp;
+	font-size: 14dp;
+	font-weight: bold;
+	line-height: 22dp;
+}
+
+#panel:not(.skin-original) #option-help {
+	flex: 1 1 0;
+}
+
+#panel:not(.skin-original) #option-tag.improvement {
+	background-color: #f2a93b29;
+	color: #f2a93b;
+}
+
+#panel:not(.skin-original) #option-tag.original {
+	background-color: #263243;
+	color: #9aa8ba;
+}
+
+/* The foot: Reset and Back at the left, the keys at the right. */
+#panel:not(.skin-original) #option-foot {
+	display: flex;
+	align-items: center;
+	margin-top: 12dp;
+	padding-top: 10dp;
+	border-top: 1dp #243042;
+}
+
+#panel:not(.skin-original) #option-actions {
+	flex: 0 0 auto;
+	display: flex;
+}
+
+#panel:not(.skin-original) #option-actions button {
+	margin: 0 8dp 0 0;
+	height: 36dp;
+	line-height: 36dp;
+}
+
+#panel:not(.skin-original) #options-reset {
+	color: #e9a08f;
+}
+
+#panel:not(.skin-original) #options-hints {
+	flex: 1 1 auto;
+	font-size: 14dp;
+	color: #9aa8ba;
+	text-align: right;
+	white-space: nowrap;
+}
+
+#panel:not(.skin-original) #options-hints .hint {
+	margin-left: 12dp;
+}
+
+#panel:not(.skin-original) #options-hints .key {
+	margin-right: 4dp;
+}
+
+/* The reset's question: a card over the list, Cancel focused first. */
+#panel:not(.skin-original) #reset-confirm {
+	position: absolute;
+	left: 60dp;
+	right: 60dp;
+	top: 110dp;
+	padding: 20dp 24dp;
+	border-radius: 12dp;
+	border: 1dp #3a4a5e;
+	background-color: #121922;
+	text-align: center;
+}
+
+#panel:not(.skin-original).reset-open #option-list, #panel:not(.skin-original).reset-open #menu-tabs {
+	opacity: 0.35;
+}
+
+#panel:not(.skin-original) #reset-question {
+	font-size: 22dp;
+	font-weight: bold;
+	color: #e9eef5;
+}
+
+#panel:not(.skin-original) #reset-note {
+	margin: 6dp 0 16dp 0;
+	font-size: 14dp;
+	color: #9aa8ba;
+}
+
+#panel:not(.skin-original) #reset-buttons button {
+	display: inline-block;
+	min-width: 150dp;
+	margin: 0 6dp;
+	text-align: center;
+}
+
+/* The player page's rows: a label and its value, as the options. */
+#panel:not(.skin-original) .player-line {
+	margin: 0;
+	padding: 6dp 12dp;
+	color: #9aa8ba;
+}
+
+#panel:not(.skin-original) .player-value {
+	font-weight: bold;
+	color: #e9eef5;
+}
+
+#panel:not(.skin-original) #player-profile {
+	margin-bottom: 8dp;
+	padding: 4dp 0;
+	border-radius: 8dp;
+	background-color: #1a2330;
+}
+
+#prompts {
+	margin-top: 14dp;
+	padding-top: 10dp;
+	border-top: 1dp #243042;
+	font-size: 14dp;
+	color: #9aa8ba;
+	text-align: right;
+}
+
+.prompt {
+	margin-left: 18dp;
+}
+
+/* The player page's City view (a dwe addition): the prosperity and the residents, a grid of every species that can join,
+   coloured by level (rookies blue, champions green, ultimates brown), its icon three times its size and a light grey
+   silhouette while it is missing, and the selected one's name and points. The original look extends this one and places
+   the tab its own way (#panel.on-player), so these rules leave it alone. */
+#panel.player-city:not(.on-player) { width: 726dp; }
+#panel.player-city:not(.on-player) .player-line, #panel.player-city:not(.on-player) #player-tools { display: none; }
+#panel:not(.on-player) #city-header { position: relative; height: 32dp; font-size: 18dp; line-height: 26dp; }
+#panel:not(.on-player) #city-prosperity-label, #panel:not(.on-player) #city-residents-label { color: #9aa7b6; }
+#panel:not(.on-player) #city-prosperity-label { position: absolute; left: 0; top: 0; }
+#panel:not(.on-player) #city-prosperity-box { position: absolute; left: 130dp; top: 0; width: 56dp; height: 26dp; border-radius: 4dp; background-color: #0c1118; }
+#panel:not(.on-player) #city-prosperity { display: block; padding-right: 8dp; text-align: right; font-weight: bold; color: #f0a73a; }
+#panel:not(.on-player) #city-residents-label { position: absolute; right: 70dp; top: 0; }
+#panel:not(.on-player) #city-residents { position: absolute; right: 0; top: 0; width: 64dp; text-align: right; font-weight: bold; }
+#panel:not(.on-player) #city-rule, #panel:not(.on-player) #city-cursor, #panel:not(.on-player) #city-name-box, #panel:not(.on-player) #city-prompts { display: none; }
+#panel:not(.on-player) #city-grid { width: 720dp; padding-top: 6dp; border-top: 1dp #2e3a4a; }
+#panel:not(.on-player) .city-cell, #panel:not(.on-player) .city-cell:focus { float: left; position: relative; width: 56dp; height: 56dp; margin: 0 4dp 4dp 0; padding: 0; border: 2dp transparent; border-radius: 6dp; box-sizing: border-box; background-color: #2a3442; }
+#panel:not(.on-player) .city-cell.level-3 { background-color: #1d4f7a; }
+#panel:not(.on-player) .city-cell.level-4 { background-color: #1f6b3e; }
+#panel:not(.on-player) .city-cell.level-5 { background-color: #7a4a26; }
+#panel:not(.on-player) .city-cell.cursor { border-color: #f0a73a; }
+#panel:not(.on-player) .city-icon { position: absolute; left: 2dp; top: 2dp; width: 48dp; height: 48dp; pointer-events: none; }
+#panel:not(.on-player) #city-footer { clear: both; position: relative; height: 30dp; margin-top: 6dp; font-size: 18dp; line-height: 30dp; }
+#panel:not(.on-player) #city-name { position: absolute; left: 0; top: 0; }
+#panel:not(.on-player) #city-points { position: absolute; right: 0; top: 0; font-weight: bold; color: #7ad37a; }

@@ -1,0 +1,37 @@
+/* The item menu in the original look: the original's boxes (theme.rcss .original-box), the table's MENU and COUNT labels
+   from SYSTEM_W (palette 4, the item keeper's) and the original's ink. */
+
+body #window, body #confirm, body #description {
+	border: 3dp transparent;
+	background-color: #2d384080;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+/* The "is it OK?" box and the description are opaque (#293942 on the original's screen). */
+body #confirm, body #description {
+	background-color: #293942;
+}
+
+/* The column labels: the original's pictures of the English words while the language is English (the engine's
+   use-menu-art class), the list_labels texts in the original's ink in any other. */
+.label { font-family: original-look; color: #d0d0d0; font-size: 15dp; line-height: 21dp; white-space: nowrap; }
+.use-menu-art .label-menu { decorator: image(keeper-menu-label scale-none left top); color: transparent; }
+.use-menu-art .label-count { decorator: image(keeper-count-label scale-none left top); color: transparent; }
+
+.row, #confirm, #description, #prompts { font-family: original-look; color: #d0d0d0; }
+.row { font-family: original-look-dialogue; }
+body .row.stuck { color: #e03028; }
+
+/* The rows keep the original's size: the modern look this skin extends gives its own lists 22dp
+   (../../modern/original_lists/style.rcss). */
+.row {
+	font-size: 33dp;
+}
+
+/* Terminal palette shared with the other item counters. */
+body #window, body #confirm, body #description { background-color: #0b1c2df2; }
+body #confirm, body #description { background-color: #102a40f5; }
+.label, .row, #confirm, #description, #prompts { color: #d5eaf7; }
+body .row.stuck { color: #ff7775; }
+body .cursor, body .answer.selected { border-color: #ffd51e; background-color: #153653b8; }

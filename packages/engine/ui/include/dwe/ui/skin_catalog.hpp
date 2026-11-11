@@ -6,6 +6,7 @@
 #include <dwe/ui/skin.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -20,6 +21,13 @@ struct SkinLook {
   std::vector<assets::AssetId> styles;
   // The document that replaces the screen's own, if any (the nearest skin that names one).
   std::optional<assets::AssetId> document;
+};
+
+// The mouse cursor a skin shows, with what it extends folded in (the nearest skin that names one).
+struct SkinCursor {
+  assets::AssetId image;
+  std::uint32_t hotX = 0;
+  std::uint32_t hotY = 0;
 };
 
 // The skins the mounted packs offer: every ui/skins/<id>/skin.yaml whose assets exist, so a mod
@@ -43,6 +51,10 @@ public:
 
   // The look a skin gives a screen.
   [[nodiscard]] SkinLook lookOf(const Skin& skin, std::string_view screen) const;
+
+  // The mouse cursor a skin shows: the nearest skin in the chain (this one first, then those it
+  // extends) that names a `cursor`; nullopt when none does, so the system arrow stays.
+  [[nodiscard]] std::optional<SkinCursor> cursorOf(const Skin& skin) const;
 
   // A skin's sprite sheets with those of the skins it extends, folded so the nearest skin wins: a
   // sheet replaces the one of the same name further down the chain, and a sprite name is kept only
