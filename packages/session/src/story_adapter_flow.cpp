@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -46,12 +47,20 @@ void StoryAdapter::setFieldHoldTarget(StoryHoldTarget target) {
   }
 }
 
-void StoryAdapter::mapEntered(std::int32_t map) {
+void StoryAdapter::mapEntered(std::int32_t map, std::optional<std::int32_t> arrivalSection) {
   enteredMap_ = map;
   if (!runner_) {
     return;
   }
   core::logDebug("[port:story] changeMap (map.c: changeMap): map {} entered", map);
+  if (arrivalSection) {
+    if (std::in_range<std::uint16_t>(*arrivalSection)) {
+      runner_->arriveWith(static_cast<std::uint16_t>(*arrivalSection));
+    } else {
+      core::logError("[port:story] warp_to (script_interp.c:1402): arrival {} is no section",
+                     *arrivalSection);
+    }
+  }
   runMapHead(map);
 }
 

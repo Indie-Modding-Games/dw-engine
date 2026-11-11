@@ -5,8 +5,9 @@ description: >-
   main's full build (release.yml's game job), so a package promoted from a pull request is the one
   main would have built. The caller restores the caches first (xwin, vcpkg-release-<platform>,
   ccache-release-<platform>) and saves what it may afterwards (release.yml, on main): their
-  steps' outcomes stay readable in the caller even when this build fails. Needs a checkout of the
-  commit to build.
+  steps' outcomes stay readable in the caller even when this build fails. The Intel macOS
+  libraries' cache is .github/actions/macos-tools' own, saved only with save-caches. Needs a
+  checkout of the commit to build.
 inputs:
   platform:
     description: linux-x86_64, windows-x86_64, darwin-aarch64 or darwin-x86_64
@@ -17,6 +18,10 @@ inputs:
     default: ''
   push-image:
     description: "'true' pushes a development image built here (main only)"
+    required: false
+    default: 'false'
+  save-caches:
+    description: "'true' saves the caches this action builds itself (the Intel libraries); main only"
     required: false
     default: 'false'
   pr:
@@ -58,36 +63,15 @@ runs:
         if [[ -n "$(ls -A "$DWE_XWIN_DIR" 2>/dev/null)" ]]; then echo "From the cache"
         else scripts/dev.sh windows-sdk --accept-license; fi
 
-    # Homebrew is in /opt/homebrew on Apple silicon and in /usr/local on Intel; the toolchain
-    # (tooling/cmake/toolchains/macos-llvm-libcxx.cmake) takes its LLVM from DWE_LLVM_ROOT. ccache in
-    # front of it as on Linux (the presets read DWE_COMPILER_LAUNCHER); LLVM is installed afresh
-    # on every run, so ccache knows the compiler by its contents and not its date.
+    # LLVM, vcpkg and ccache; for darwin-x86_64 also Rosetta and the Intel libc++ and MoltenVK, as
+    # the Intel package is cross-compiled on the faster Apple silicon runner. A pull request only
+    # reads the Intel libraries' cache.
     - name: Install the macOS tools
       if: runner.os == 'macOS'
-      shell: bash
-      run: |
-        # LLVM pinned to the development image's major (.devcontainer/Dockerfile LLVM_VERSION): a newer
-        # formula would change the compiler under the release and empty the compiler cache.
-        brew install llvm@22 molten-vk ninja nasm ccache
-        echo "DWE_LLVM_ROOT=$(brew --prefix llvm@22)" >> "$GITHUB_ENV"
-        {
-          echo "DWE_COMPILER_LAUNCHER=ccache"
-          echo "CCACHE_DIR=$RUNNER_TEMP/ccache"
-          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
-          echo "CCACHE_NOHASHDIR=true"
-          echo "CCACHE_COMPILERCHECK=content"
-          echo "CCACHE_MAXSIZE=1G"
-        } >> "$GITHUB_ENV"
-        root="$RUNNER_TEMP/vcpkg"
-        git clone https://github.com/microsoft/vcpkg.git "$root"
-        git -C "$root" checkout "$(python3 -c 'import json; print(json.load(open("vcpkg.json"))["builtin-baseline"])')"
-        "$root/bootstrap-vcpkg.sh" -disableMetrics
-        # The sources' downloads go in the cache too, as in the development image: a source host that is
-        # down (lua.org) then stops only a run that has never downloaded it.
-        mkdir -p "$RUNNER_TEMP/vcpkg-cache/downloads"
-        echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
-        echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
-        echo "VCPKG_DOWNLOADS=$RUNNER_TEMP/vcpkg-cache/downloads" >> "$GITHUB_ENV"
+      uses: ./.github/actions/macos-tools
+      with:
+        arch: ${{ inputs.arch }}
+        save-cache: ${{ inputs.save-caches }}
 
     - name: Game package
       shell: bash

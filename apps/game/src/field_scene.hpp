@@ -742,6 +742,8 @@ public:
   struct MapArrival {
     std::optional<std::int32_t> exit;
     std::int32_t trigger = 0;
+    // The arrival section of the script's warp the field took here (MapChange::arrivalSection).
+    std::optional<std::int32_t> section = std::nullopt;
   };
   [[nodiscard]] const MapArrival& mapArrival() const { return arrival_; }
   [[nodiscard]] const std::optional<MapChangeTiming>& lastMapChange() const { return lastChange_; }

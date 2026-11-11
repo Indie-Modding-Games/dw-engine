@@ -240,7 +240,8 @@ jobs:
           - { platform: linux-x86_64, runner: ubuntu-24.04 }
           - { platform: windows-x86_64, runner: ubuntu-24.04 }
           - { platform: darwin-aarch64, runner: macos-15, arch: arm64 }
-          - { platform: darwin-x86_64, runner: macos-15-intel, arch: x64 }
+          # Cross-compiled on Apple silicon, as in release.yml (.github/actions/macos-tools).
+          - { platform: darwin-x86_64, runner: macos-15, arch: x64 }
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
     steps:

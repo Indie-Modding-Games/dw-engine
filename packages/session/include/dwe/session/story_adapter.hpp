@@ -155,8 +155,10 @@ public:
   // waits find it raised.
   void setPartnerSync(bool raised);
   // The player is on the map with this number of the original (walked there, loaded a save or ended
-  // a script's map change): the map-head section runs at once (StoryRunner::enterMap).
-  void mapEntered(std::int32_t map);
+  // a script's map change): the map-head section runs at once (StoryRunner::enterMap). A script's
+  // warp_to the field took (game::field::MapChange::arrivalSection) runs its arrival section
+  // after it, as the script's own change would (StoryRunner::arriveWith).
+  void mapEntered(std::int32_t map, std::optional<std::int32_t> arrivalSection = std::nullopt);
   // Asks for the sections of the map's script that the player's cell asked for in the last field
   // tick (game::field::Field::cellSections), at the next frame; a running script drops them. Only
   // the tick before a frame of the original asks, as the original checks the cell once a frame.

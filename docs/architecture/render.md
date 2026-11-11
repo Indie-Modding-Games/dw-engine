@@ -262,6 +262,16 @@ no hay.
 Para probar la vida de las texturas, `dwe-game --texture-churn` crea y destruye una textura en cada frame (el cuadrito
 bajo la barra naranja); con la capa de validación no debe salir ningún mensaje `vulkan:`.
 
+## vk-bootstrap usa el cargador enlazado
+
+Cada `vkb::InstanceBuilder` (y `vkb::SystemInfo::get_system_info`) recibe el `vkGetInstanceProcAddr` del cargador de
+Vulkan que enlazan los programas (`vulkanEntry`, `packages/engine/rhi/src/renderer_requirements.hpp`). Sin él,
+vk-bootstrap abre un cargador por su nombre suelto (`dlopen("libvulkan.dylib")`). En macOS, dyld busca ese nombre solo
+en sus carpetas de reserva, nunca dentro del paquete de aplicación, así que tomaba otra librería de Vulkan del sistema
+(o ninguna). El cargador enlazado rechazaba luego la instancia que esa librería creaba: la primera prueba del paquete
+Intel en CI se cerró con `vkEnumeratePhysicalDevices: Invalid instance`. En Linux y Windows el nombre suelto ya daba
+el cargador enlazado; ahora es el mismo camino en los tres sistemas.
+
 ## AddressSanitizer y vk-bootstrap
 
 vk-bootstrap es una librería C++ de vcpkg compilada sin AddressSanitizer. Al enlazarla, sus copias de plantillas de

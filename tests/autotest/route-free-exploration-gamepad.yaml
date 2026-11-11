@@ -45,6 +45,8 @@ steps:
   - wait: {shown: destination_choice, seconds: 0.5}
   - expect_setting: {exploration_story: "0"}
   - screenshot: chooser-room08
+  # The chooser starts on staying; down wraps to the first place, the story's.
+  - tap: {button: dpad_down}
   - tap: {button: south}
   - wait: {hidden: destination_choice}
   - wait: {map: twna01, partner_within: 400, seconds: 0.5}

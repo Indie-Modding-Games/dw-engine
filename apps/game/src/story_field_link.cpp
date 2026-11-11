@@ -109,7 +109,7 @@ void StoryFieldLink::afterMapChange() {
     if (entry != nullptr && entry->originalIndex) {
       mapNumber_ = entry->index;
       followScreen(entry->index);
-      story_->mapEntered(entry->index);
+      story_->mapEntered(entry->index, scene_->mapArrival().section);
     } else {
       core::logDebug("[port:story] changeMap (map.c: changeMap): map {} has no number of the "
                      "original, so no map-head section",

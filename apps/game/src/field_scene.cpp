@@ -624,7 +624,9 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
   mistShown_.reset();
   mapNameKey_ = std::move(nameKey);
   ++mapSerial_;
-  arrival_ = {.exit = at ? std::nullopt : std::optional<std::int32_t>{exit}, .trigger = 0};
+  arrival_ = {.exit = at ? std::nullopt : std::optional<std::int32_t>{exit},
+              .trigger = 0,
+              .section = std::nullopt};
   // The map's objects go with it, the effects' too.
   fieldEffects_.clear();
   objectSmoke_.stop();
@@ -780,6 +782,7 @@ void FieldScene::finishTick() {
       core::logError("field: {}", entered.error().message);
     } else {
       arrival_.trigger = change->trigger;
+      arrival_.section = change->arrivalSection;
     }
   }
   followNpcs();

@@ -26,17 +26,6 @@
 
 game_options = {
   -- Game tab.
-  -- Free exploration: the scripts' map changes go anywhere they can, whatever the story (off by
-  -- default).
-  {
-    id = "free-exploration",
-    setting = "free_exploration",
-    label = "pause_menu.free_exploration",
-    default = false,
-    tab = "game",
-    help = "pause_menu.help.free_exploration",
-    original = false,
-  },
   -- Walk with: the keyboard and the pad (keys, the default) or the mouse, never both.
   {
     id = "walk-control",
@@ -602,6 +591,18 @@ game_options = {
     default = true,
     tab = "game",
     help = "pause_menu.help.name_spacing",
+    original = false,
+  },
+  -- Free exploration: the scripts' map changes go anywhere they can, whatever the story (off by
+  -- default). Last of its tab, after the gameplay options: the tab opens focused on its first row,
+  -- so opening the options and confirming never turns it on by chance.
+  {
+    id = "free-exploration",
+    setting = "free_exploration",
+    label = "pause_menu.free_exploration",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.free_exploration",
     original = false,
   },
   -- Shop extras: the focused item's description under a shop's list, how many of each the bag

@@ -439,11 +439,11 @@ Lo que hace `release.yml`, por orden:
 
    El resumen de la ejecución dice qué camino tomó.
 2. **Compilación completa** (solo si hace falta): un trabajo `game` por ordenador (Linux, Windows, macOS Apple silicon
-   y macOS Intel) y, si el lanzador cambió, un trabajo `launcher` por sistema (Linux, Windows y macOS), en paralelo
-   e independientes: si uno falla, los demás terminan igual. Ninguno firma nada: el lanzador se compila sin los
-   archivos de actualización de Tauri firmados (`DWE_LAUNCHER_UNSIGNED=1`; en macOS el `.app.tar.gz` se empaqueta
-   aparte, como lo hace Tauri). Cada lanzador comprueba que su programa lleva dentro la pasarela, la clave pública
-   y la clave de la beta.
+   y macOS Intel, este compilado en un ejecutor Apple silicon y probado con Rosetta) y, si el lanzador cambió, un
+   trabajo `launcher` por sistema (Linux, Windows y macOS), en paralelo e independientes: si uno falla, los demás
+   terminan igual. Ninguno firma nada: el lanzador se compila sin los archivos de actualización de Tauri firmados
+   (`DWE_LAUNCHER_UNSIGNED=1`; en macOS el `.app.tar.gz` se empaqueta aparte, como lo hace Tauri). Cada lanzador
+   comprueba que su programa lleva dentro la pasarela, la clave pública y la clave de la beta.
 3. **Publicar**, el único trabajo con la clave de firma: reúne los paquetes (los del pull request o los recién
    compilados) y el lanzador (el nuevo o el de la versión anterior). Si falta algún ordenador, el resumen lo marca
    como `MISSING` y **no se publica nada**; *Re-run failed jobs* repite solo lo que falló. Si están todos: comprueba
@@ -458,10 +458,11 @@ Lo que hace `release.yml`, por orden:
 
 Con los paquetes del pull request tarda unos 2–4 min de reloj. La compilación completa, con las cachés llenas,
 unos 10–12 min (los trabajos de Mac son los más largos); en frío (cachés vacías, o tras cambiar `vcpkg.json`, los
-triplets o las imágenes), unos 25 min. Para forzarla a mano: *Run workflow* con **full build** marcado (compila
-también el lanzador). Cada lunes `release.yml` hace la compilación completa del juego y del lanzador sin publicar,
-para que ese camino no se rompa sin que nadie lo vea y las cachés de las que parten los trabajos `package` estén al
-día.
+triplets o las imágenes), unos 25 min. El juego para Mac Intel, en los trabajos `package` y en `game`, se compila en
+el ejecutor Apple silicon (`macos-15`), unas 2,5 veces más rápido que `macos-15-intel`. Para forzarla a mano:
+*Run workflow* con **full build** marcado (compila también el lanzador). Cada lunes `release.yml` hace la
+compilación completa del juego y del lanzador sin publicar, para que ese camino no se rompa sin que nadie lo vea y
+las cachés de las que parten los trabajos `package` estén al día.
 
 **Qué commit nombra un paquete.** El commit de `main` solo existe al fusionar, después de compilar. Por eso, en la CI,
 el paquete (su archivo `VERSION`, el nombre de su carpeta y los informes de fallo F12) nombra el **árbol** del que
@@ -496,6 +497,7 @@ la promoción corre en las compilaciones completas y cada lunes:
 | Dependencias de vcpkg de la comprobación `linux` (`vcpkg-ci-linux-x86_64`) | las mismas | su triplete (`x64-linux-libcxx-release`) no es el del paquete: la guarda `pr-caches` para que cada pull request no compile las 44 dependencias |
 | Objetos del juego (ccache), por ordenador | una por ejecución; las anteriores se borran antes de guardarla | 12–20 min de compilación, salvo los archivos que cambiaron. El árbol del paquete (`DWE_BUILD_COMMIT`) lo recibe solo `bug_reporter.cpp`, así que no invalida el resto del juego. Los trabajos `package` de los pull requests parten de ella |
 | Bibliotecas de MSVC y SDK de Windows (xwin) | el Dockerfile de la imagen | ~1 min de descarga |
+| libc++ y MoltenVK de Intel para el paquete de Mac Intel (`macos-cross-x64`) | la versión de LLVM y `scripts/package/macos_cross_libs.sh` | compilar la libc++ de Intel en cada ejecución; la guarda `.github/actions/macos-tools` en `main`, los trabajos `package` solo la leen |
 | Objetos de las comprobaciones de los pull requests (`ccache-ci-linux`, `ccache-ci-windows`) | una por ejecución; las guarda el trabajo `pr-caches` | que `linux` y `windows` compilen solo lo que cambió el pull request |
 | Dependencias compiladas del lanzador y descargas de cargo, por sistema | `Cargo.lock` y el Dockerfile del lanzador | casi toda la compilación del lanzador; su propio crate se compila siempre |
 

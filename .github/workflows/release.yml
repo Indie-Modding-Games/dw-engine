@@ -240,7 +240,7 @@ jobs:
           - { platform: linux-x86_64, runner: ubuntu-24.04 }
           - { platform: windows-x86_64, runner: ubuntu-24.04 }
           - { platform: darwin-aarch64, runner: macos-15, arch: arm64 }
-          - { platform: darwin-x86_64, runner: macos-15-intel, arch: x64 }
+          - { platform: darwin-x86_64, runner: macos-15, arch: x64 }
     runs-on: ${{ matrix.runner }}
     steps:
       # The package names its tree, which one commit is enough to know.
@@ -257,8 +257,8 @@ jobs:
 
       # Restored and saved apart, so a build that fails after its dependencies keeps them for the
       # next run. vcpkg rebuilds only the dependencies whose inputs changed.
-      # The macOS key names the pinned LLVM (.github/actions/game-package), which the hashed files
-      # do not hold.
+      # The macOS key names the pinned LLVM (.github/actions/macos-tools), which the hashed files do
+      # not hold.
       - name: Restore the vcpkg binary cache
         id: vcpkg-cache
         uses: actions/cache/restore@v4
@@ -282,6 +282,7 @@ jobs:
           platform: ${{ matrix.platform }}
           arch: ${{ matrix.arch }}
           push-image: 'true'
+          save-caches: 'true'
 
       # vcpkg prints only the paths of a failed port's logs; their ends say why.
       - name: Show the logs of a failed vcpkg step

@@ -307,6 +307,59 @@ TEST_CASE("a map change the field refuses ends on the same map without the arriv
   }
 }
 
+TEST_CASE("a warp_to the field took runs its arrival section after the new map's head") {
+  // The snowfield bands' warp into the house (script 203: warp_to screen 137, exit 1, section 51)
+  // taken by the field: the house's scene is the arrival section, and it runs as the original's.
+  constexpr std::int32_t Map = 137;
+  constexpr SectionRef MapHead{.script = StoryRunner::MapHeadScript, .section = Map};
+  constexpr SectionRef Arrival{.script = 132, .section = 0x33};
+  for (const bool arrives : {false, true}) {
+    CAPTURE(arrives);
+    ScriptedHost host;
+    host.define(MapHead, {SectionEnded{}});
+    host.define(Arrival, {frames(1), SectionEnded{}});
+    StoryRunner runner = makeRunner(host);
+    runner.enterMap(Map);
+    REQUIRE(runner.setScript(Arrival.script, Map));
+    runFrames(runner, 1);
+    REQUIRE_FALSE(runner.busy());
+    host.clearLog();
+    if (arrives) {
+      runner.arriveWith(Arrival.section);
+    }
+    runner.enterMap(Map);
+    CHECK(std::ranges::contains(host.log(), std::string{"start 132:0x33"}) == arrives);
+    CHECK(runner.busy() == arrives);
+    runFrames(runner, 3);
+    CHECK_FALSE(runner.busy());
+    CHECK(host.open() == 0);
+  }
+}
+
+TEST_CASE("a warp_to the field took keeps a script's own map change and its arrival") {
+  constexpr std::int32_t Map = 35;
+  constexpr SectionRef MapHead{.script = StoryRunner::MapHeadScript, .section = Map};
+  constexpr SectionRef Arrival{.script = 105, .section = 0x3c};
+  constexpr SectionRef Other{.script = 105, .section = 0x3d};
+  ScriptedHost host;
+  host.define(MapHead, {SectionEnded{}});
+  host.define(Arrival, {SectionEnded{}});
+  host.define(Other, {SectionEnded{}});
+  host.define(Step, {Wait{MapChangeWait{.map = 226, .exit = 0, .arrival = Arrival.section}}});
+  StoryRunner runner = makeRunner(host);
+  runner.enterMap(Map);
+  REQUIRE(runner.setScript(Arrival.script, Map));
+  runFrames(runner, 1);
+  REQUIRE(runner.requestMapSection(Step.section, StartTiming::Now) == RequestOutcome::Accepted);
+  host.clearLog();
+  runner.arriveWith(Other.section);
+  runner.enterMap(Map);
+  runFrames(runner, 3);
+  CHECK(std::ranges::contains(host.log(), std::string{"start 105:0x3c"}));
+  CHECK_FALSE(std::ranges::contains(host.log(), std::string{"start 105:0x3d"}));
+  CHECK_FALSE(runner.busy());
+}
+
 TEST_CASE("script_interp.c callScriptSection: a talk on a section the script lacks ends at once") {
   ScriptedHost host;
   StoryRunner runner = makeRunner(host);
