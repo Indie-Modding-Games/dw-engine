@@ -413,7 +413,7 @@ solo el commit más nuevo sale como versión. Lo que hace, por orden:
    si ese commit ya tiene versión publicada, si la versión del juego no es mayor que la de la versión más nueva, o si
    la **versión del lanzador** no vale (ver abajo).
 2. **Un trabajo por ordenador**, todos en paralelo e independientes: el juego para Linux, Windows, macOS Apple silicon
-   y macOS Intel, y el lanzador para Linux, Windows y macOS. Si uno falla, los demás terminan igual. El trabajo del
+   y macOS Intel (compilado en un ejecutor Apple silicon y probado con Rosetta), y el lanzador para Linux, Windows y macOS. Si uno falla, los demás terminan igual. El trabajo del
    lanzador de Linux prueba primero que la clave firma y que la clave pública verifica esa firma. Cada lanzador
    comprueba que su programa lleva dentro la pasarela, la clave pública y la clave de la beta.
 3. **Publicar**: si falta algún ordenador, el resumen de la ejecución lo marca como `MISSING` y **no se publica
@@ -426,7 +426,8 @@ solo el commit más nuevo sale como versión. Lo que hace, por orden:
    cancelada lo borra la siguiente.
 
 Con las cachés llenas tarda unos 10–12 min de reloj: los trabajos de Mac son los más largos. En frío (cachés
-vacías, o tras cambiar `vcpkg.json`, los triplets o las imágenes), unos 25 min: el juego para Mac Intel tarda ~22.
+vacías, o tras cambiar `vcpkg.json`, los triplets o las imágenes), unos 25 min. El juego para Mac Intel se compila en
+el ejecutor Apple silicon (`macos-15`), que es unas 2,5 veces más rápido que `macos-15-intel`.
 
 ### Versión estable: promover una prerelease
 

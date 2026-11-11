@@ -110,18 +110,32 @@ partes de la librería a la versión del sistema. Por eso los presets `macos-arm
 Homebrew (`tooling/cmake/toolchains/macos-llvm-libcxx.cmake`) y enlazan su libc++ y libc++abi de forma estática, como en
 Linux. Mínimo: macOS 13.3 (la libc++ formatea números con coma flotante, `std::to_chars`, desde esa versión). Homebrew
 vive en `/opt/homebrew` en Apple silicon y en `/usr/local` en los Mac Intel; la toolchain usa `DWE_LLVM_ROOT` si está
-(el flujo de publicación la fija con `brew --prefix llvm`), si no `HOMEBREW_PREFIX`, y si no la primera de esas dos
-carpetas que tenga el LLVM. Sin LLVM se para con un mensaje claro en vez del error engañoso de vcpkg («unable to find
-a build program corresponding to Ninja») que tumbó la primera ejecución en Intel.
+(el flujo de publicación la fija con `brew --prefix llvm@22`), si no `HOMEBREW_PREFIX`, y si no la primera de esas
+dos carpetas que tenga el LLVM. Sin LLVM se para con un mensaje claro en vez del error engañoso de vcpkg («unable to
+find a build program corresponding to Ninja») que tumbó la primera ejecución en Intel.
+
+Homebrew instala la libc++ y MoltenVK solo para el procesador del Mac. Para compilar el paquete Intel en un Mac
+Apple silicon (como hace el flujo de publicación), `scripts/package/macos_cross_libs.sh` construye la libc++ y la
+libc++abi para x86_64 a partir de las fuentes de la misma versión de LLVM, con las opciones de Homebrew. Comprueba que
+su `__config_site` es idéntico al de los encabezados con los que compila el clang de Homebrew. También descarga
+MoltenVK de su versión oficial (universal, con la suma SHA-256 fijada) y se queda con la parte Intel. La toolchain
+enlaza esa libc++ (`DWE_LIBCXX_DIR`), da el SDK de Xcode (el clang de Homebrew solo trae configuración para el
+procesador del Mac) y se para con un mensaje claro si la libc++ es de otro procesador.
 
 ### El paquete del juego
 
 ```bash
-scripts/package_macos.sh --arch arm64 --out <carpeta>   # o --arch x64 en un Mac Intel
+scripts/package_macos.sh --arch arm64 --out <carpeta>   # o --arch x64, en un Mac Intel o en uno Apple silicon
 ```
 
-Necesita `brew install llvm molten-vk ninja`, CMake y `VCPKG_ROOT`. Deja `dwe-beta-<versión>-<commit>-darwin-aarch64.tar.xz`
-con:
+Necesita `brew install llvm@22 molten-vk ninja`, CMake y `VCPKG_ROOT`. `--arch x64` en Apple silicon usa el preset
+`macos-x64-cross-package` (las herramientas de vcpkg, como `slangc`, para `arm64-osx`) y necesita Rosetta
+(`softwareupdate --install-rosetta --agree-to-license`): el `dwx` Intel del paquete cocina los paquetes del equipo.
+La libc++ y MoltenVK Intel se guardan en `DWE_MACOS_CROSS_DIR` (por defecto `build/macos-cross-x64`); se construyen
+una vez por versión de LLVM (unos minutos). Al final el script arranca el `dwe-game` del paquete con
+`--check-system` (el Intel, con Rosetta) y exige que conteste: prueba que el programa arranca y carga el cargador de
+Vulkan y MoltenVK del paquete, sea cual sea la tarjeta que encuentre. Deja
+`dwe-beta-<versión>-<commit>-darwin-aarch64.tar.xz` (o `-darwin-x86_64`) con:
 
 | Ruta | Qué es |
 |---|---|
@@ -167,8 +181,9 @@ el paquete del juego se firmaría con la misma identidad en `package_macos.sh`.
 
 `.github/workflows/release.yml` corre en cada fusión en `main` que cambia código (no con cambios solo de
 documentación) y compila, en paralelo, el juego para Linux y
-Windows en Ubuntu (Windows por compilación cruzada), el juego para Apple silicon (`macos-15`) e Intel
-(`macos-15-intel`), y el lanzador para Linux, Windows (en Ubuntu) y macOS (el `.dmg` universal, `macos-15`). Los
+Windows en Ubuntu (Windows por compilación cruzada), el juego para Apple silicon e Intel (los dos en `macos-15`, que
+es Apple silicon; el de Intel por compilación cruzada, unas 2,5 veces más rápido que en `macos-15-intel`), y el
+lanzador para Linux, Windows (en Ubuntu) y macOS (el `.dmg` universal, `macos-15`). Los
 manifiestos nombran siempre los cuatro ordenadores. Cada ordenador se compila por su cuenta: si uno falla, los demás
 terminan, el resumen de la ejecución dice cuál falta y no se publica nada hasta que *Re-run failed jobs* lo complete.
 Qué comprueba y cómo una versión de prueba pasa a estable: [Publicar una
@@ -178,14 +193,20 @@ PC](../modulos/apps/launcher.md#publicar-desde-este-pc).
 
 Los pull requests no prueban en Windows de verdad: su comprobación `windows` solo compila por compilación cruzada.
 `.github/workflows/platform-check.yml` compila y pasa las pruebas unitarias del motor y del lanzador en
-`windows-latest` cada lunes y a mano, y también en `macos-latest` si se marca la opción `macos`.
+`windows-latest` cada lunes y a mano, y también en `macos-latest` si se marca la opción `macos`. Con la opción
+`macos_x64_package` solo compila el paquete del juego para Mac Intel igual que la publicación, sin publicar nada, y
+lo deja como artefacto de la ejecución; así se prueba una rama que toca esa compilación antes de fusionarla:
+
+```bash
+gh workflow run platform-check.yml --ref <rama> -f macos_x64_package=true
+```
 
 El repositorio es público, así que los minutos de los ejecutores estándar de GitHub (Linux, Windows y macOS) no se
 cobran. Duración aproximada (sin cachés → con cachés llenas y un cambio pequeño):
 
 | Flujo | Linux y Windows | macOS |
 |---|---|---|
-| `release.yml` | ~30 → ~5 min | ~22 → ~8 min (Intel es el más lento) |
+| `release.yml` | ~30 → ~5 min | ~22 → ~8 min (Intel, compilado en Apple silicon; la primera vez construye además su libc++) |
 | `platform-check.yml` (por defecto: Windows) | ~70 → ~35 min | — |
 | `platform-check.yml` con `macos` | ~70 → ~35 min | ~60 → ~30 min |
 
