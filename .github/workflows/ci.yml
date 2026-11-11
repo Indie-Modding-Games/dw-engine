@@ -10,6 +10,10 @@ name: CI
 # required check that never reports would hold the pull request forever), and the jobs with
 # nothing to check are skipped, which counts as passed.
 #
+# The package jobs build the release's game packages, unsigned, from the pull request's head, so
+# the merge only has to sign and publish them (release.yml finds them by the code's tree). They
+# need no secret and save no cache.
+#
 # Left out of this path, as too slow for every pull request: clang-tidy, the documentation site,
 # the tests on Windows itself (platform-check.yml, weekly and by hand) and the format and lint of
 # the files the pull request does not touch. scripts/dev.sh check-full runs them all on a
@@ -30,7 +34,7 @@ concurrency:
 
 jobs:
   # What the pull request changes: code (anything but the documentation and the map editor), the
-  # launcher and the map editor.
+  # launcher, the map editor, and whether its merge makes a release.
   changes:
     name: changes
     runs-on: ubuntu-24.04
@@ -38,6 +42,7 @@ jobs:
       code: ${{ steps.changes.outputs.code }}
       launcher: ${{ steps.changes.outputs.launcher }}
       mapper: ${{ steps.changes.outputs.mapper }}
+      release: ${{ steps.changes.outputs.release }}
       base: ${{ steps.changes.outputs.base }}
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +66,7 @@ jobs:
           code=false
           launcher=false
           mapper=false
+          release=false
           docs='^(docs/|docs-site/|\.github/ISSUE_TEMPLATE/|\.github/pull_request_template\.md$|LICENSE)|\.md$'
           # The map editor builds with cargo alone: a change only there builds no C++.
           mapper_paths='^(apps/mapper/|packages/rust/|scripts/mapper\.sh$)'
@@ -69,11 +75,16 @@ jobs:
           launcher_paths='^(apps/launcher/|apps/beta-gateway/|apps/versus-signal/|scripts/launcher\.sh$|scripts/ci/|'
           launcher_paths+='scripts/package/|scripts/release_local\.sh$|\.devcontainer/launcher\.Dockerfile$)'
           grep -qE "$launcher_paths" <<<"$files" && launcher=true
-          echo "code=$code launcher=$launcher mapper=$mapper base=$base"
+          # release.yml's paths-ignore, the same list: a merge that touches only these publishes
+          # nothing, so it needs no packages.
+          not_released='^(docs/|docs-site/|\.github/|scripts/ci/|apps/versus-signal/)|\.md$|(^|/)tests/'
+          grep -qvE "$not_released" <<<"$files" && release=true
+          echo "code=$code launcher=$launcher mapper=$mapper release=$release base=$base"
           {
             echo "code=$code"
             echo "launcher=$launcher"
             echo "mapper=$mapper"
+            echo "release=$release"
             echo "base=$base"
           } >> "$GITHUB_OUTPUT"
 
@@ -209,6 +220,95 @@ jobs:
       - name: Build
         run: scripts/dev.sh build
 
+  # Not required. The release's game package of each computer, built by the same steps as
+  # release.yml's game job (.github/actions/game-package) from the pull request's head commit,
+  # not GitHub's temporary merge commit: when the pull request is up to date with main, its
+  # squash merge has this tree, and release.yml publishes these files instead of building them
+  # again. Unsigned: only release.yml's publish job holds the key. A fork's pull request skips
+  # them (its merge builds the packages on main), and the caches are only read here.
+  package:
+    name: package (${{ matrix.platform }})
+    needs: changes
+    if: >-
+      needs.changes.outputs.release == 'true'
+      && github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: linux-x86_64, runner: ubuntu-24.04 }
+          - { platform: windows-x86_64, runner: ubuntu-24.04 }
+          - { platform: darwin-aarch64, runner: macos-15, arch: arm64 }
+          - { platform: darwin-x86_64, runner: macos-15-intel, arch: x64 }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # main's caches of the release build (release.yml's game job saves them).
+      - name: Restore the MSVC libraries and the Windows SDK
+        if: matrix.platform == 'windows-x86_64'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/xwin
+          key: xwin-${{ hashFiles('.devcontainer/Dockerfile') }}
+
+      - name: Restore the vcpkg binary cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-release-${{ matrix.platform }}-${{ runner.os == 'macOS' && 'llvm22-' || '' }}${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          restore-keys: vcpkg-release-${{ matrix.platform }}-
+
+      - name: Restore the compiler cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-release-${{ matrix.platform }}-${{ github.run_id }}
+          restore-keys: ccache-release-${{ matrix.platform }}-
+
+      - name: Game package
+        id: package
+        uses: ./.github/actions/game-package
+        with:
+          platform: ${{ matrix.platform }}
+          arch: ${{ matrix.arch }}
+          pr: ${{ github.event.pull_request.number }}
+
+      # vcpkg prints only the paths of a failed port's logs; their ends say why.
+      - name: Show the logs of a failed vcpkg step
+        if: failure()
+        run: |
+          find build -path '*vcpkg_buildtrees*' -name '*.log' -size +0 \
+            \( -name '*-err.log' -o -name 'config-*-out.log' \) 2>/dev/null | head -20 | while read -r log; do
+            echo "::group::$log"
+            tail -n 60 "$log"
+            echo "::endgroup::"
+          done
+
+      - name: Show the compiler cache statistics
+        if: always()
+        env:
+          DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
+          DWE_CCACHE_DIR: ${{ runner.temp }}/ccache
+        run: |
+          if [[ "$RUNNER_OS" == macOS ]]; then ccache --show-stats || true
+          else scripts/dev.sh shell -c 'ccache --show-stats' || true; fi
+
+      # Named by the tree, which is how release.yml looks for it (scripts/ci/packages.py find).
+      # The last step: a package job that uploaded has succeeded.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.platform }}-${{ steps.package.outputs.tree }}
+          path: |
+            dist/dwe-beta-*-${{ matrix.platform }}.tar.xz
+            dist/source.json
+          if-no-files-found: error
+          retention-days: 14
+
   # Required. The launcher's version can ship (scripts/ci/launcher_version.sh): installed
   # launchers update only to a higher version. Seconds, and run on every pull request: the newest
   # release may be newer than the pull request's base.
@@ -272,7 +372,7 @@ jobs:
       - name: Release scripts tests
         working-directory: scripts/ci/tests
         run: |
-          python3 -B -m unittest -v test_release
+          python3 -B -m unittest -v test_release test_packages
           cd ../../package/tests
           python3 -B -m unittest -v test_release_manifest test_third_party_notices
 

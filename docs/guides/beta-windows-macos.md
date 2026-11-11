@@ -165,11 +165,12 @@ el paquete del juego se firmaría con la misma identidad en `package_macos.sh`.
 
 ## Publicación y su coste
 
+Los paquetes del juego se compilan en cada pull request (los trabajos `package` de `.github/workflows/ci.yml`): Linux
+y Windows en Ubuntu (Windows por compilación cruzada), Apple silicon en `macos-15` e Intel en `macos-15-intel`.
 `.github/workflows/release.yml` corre en cada fusión en `main` que cambia código (no con cambios solo de
-documentación) y compila, en paralelo, el juego para Linux y
-Windows en Ubuntu (Windows por compilación cruzada), el juego para Apple silicon (`macos-15`) e Intel
-(`macos-15-intel`), y el lanzador para Linux, Windows (en Ubuntu) y macOS (el `.dmg` universal, `macos-15`). Los
-manifiestos nombran siempre los cuatro ordenadores. Cada ordenador se compila por su cuenta: si uno falla, los demás
+documentación) y publica esos mismos paquetes; solo si no los encuentra los compila él, igual. El lanzador para
+Linux, Windows (en Ubuntu) y macOS (el `.dmg` universal, `macos-15`) se compila solo cuando cambió desde la versión
+anterior. Los manifiestos nombran siempre los cuatro ordenadores. Cada ordenador se compila por su cuenta: si uno falla, los demás
 terminan, el resumen de la ejecución dice cuál falta y no se publica nada hasta que *Re-run failed jobs* lo complete.
 Qué comprueba y cómo una versión de prueba pasa a estable: [Publicar una
 versión](../modulos/apps/launcher.md#publicar-una-versión). `scripts/release_local.sh` sigue siendo el respaldo para
@@ -185,7 +186,8 @@ cobran. Duración aproximada (sin cachés → con cachés llenas y un cambio peq
 
 | Flujo | Linux y Windows | macOS |
 |---|---|---|
-| `release.yml` | ~30 → ~5 min | ~22 → ~8 min (Intel es el más lento) |
+| `release.yml`, compilación completa | ~30 → ~5 min | ~22 → ~8 min (Intel es el más lento) |
+| `release.yml` con los paquetes del pull request | 2–4 min | — |
 | `platform-check.yml` (por defecto: Windows) | ~70 → ~35 min | — |
 | `platform-check.yml` con `macos` | ~70 → ~35 min | ~60 → ~30 min |
 

@@ -1,0 +1,119 @@
+name: Game package
+description: >-
+  Builds one computer's unsigned game package into dist/, with dist/source.json saying which tree
+  it is (scripts/ci/packages.py). The same steps for a pull request (ci.yml's package jobs) and for
+  main's full build (release.yml's game job), so a package promoted from a pull request is the one
+  main would have built. The caller restores the caches first (xwin, vcpkg-release-<platform>,
+  ccache-release-<platform>) and saves what it may afterwards (release.yml, on main): their
+  steps' outcomes stay readable in the caller even when this build fails. Needs a checkout of the
+  commit to build.
+inputs:
+  platform:
+    description: linux-x86_64, windows-x86_64, darwin-aarch64 or darwin-x86_64
+    required: true
+  arch:
+    description: The Mac's processor (arm64 or x64); empty elsewhere
+    required: false
+    default: ''
+  push-image:
+    description: "'true' pushes a development image built here (main only)"
+    required: false
+    default: 'false'
+  pr:
+    description: The pull request's number, recorded in source.json; empty on main
+    required: false
+    default: ''
+outputs:
+  tree:
+    description: The tree the package was built from
+    value: ${{ steps.source.outputs.tree }}
+runs:
+  using: composite
+  steps:
+    # The tree, not the commit: a squash merge gives main another commit with the same tree.
+    - name: The tree this package is built from
+      id: source
+      shell: bash
+      run: |
+        tree="$(git rev-parse 'HEAD^{tree}')"
+        echo "tree=$tree" >> "$GITHUB_OUTPUT"
+        echo "DWE_PACKAGE_SOURCE=$(python3 scripts/ci/packages.py source)" >> "$GITHUB_ENV"
+
+    - name: Development image
+      if: runner.os == 'Linux'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PUSH: ${{ inputs.push-image }}
+      run: |
+        if [[ "$PUSH" == true ]]; then scripts/ci/image.sh dev --push; else scripts/ci/image.sh dev; fi
+
+    # Unless the caller restored them (the xwin cache, by the image's Dockerfile).
+    - name: Fetch the MSVC libraries and the Windows SDK
+      if: inputs.platform == 'windows-x86_64'
+      shell: bash
+      env:
+        DWE_XWIN_DIR: ${{ runner.temp }}/xwin
+      run: |
+        if [[ -n "$(ls -A "$DWE_XWIN_DIR" 2>/dev/null)" ]]; then echo "From the cache"
+        else scripts/dev.sh windows-sdk --accept-license; fi
+
+    # Homebrew is in /opt/homebrew on Apple silicon and in /usr/local on Intel; the toolchain
+    # (tooling/cmake/toolchains/macos-llvm-libcxx.cmake) takes its LLVM from DWE_LLVM_ROOT. ccache in
+    # front of it as on Linux (the presets read DWE_COMPILER_LAUNCHER); LLVM is installed afresh
+    # on every run, so ccache knows the compiler by its contents and not its date.
+    - name: Install the macOS tools
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        # LLVM pinned to the development image's major (.devcontainer/Dockerfile LLVM_VERSION): a newer
+        # formula would change the compiler under the release and empty the compiler cache.
+        brew install llvm@22 molten-vk ninja nasm ccache
+        echo "DWE_LLVM_ROOT=$(brew --prefix llvm@22)" >> "$GITHUB_ENV"
+        {
+          echo "DWE_COMPILER_LAUNCHER=ccache"
+          echo "CCACHE_DIR=$RUNNER_TEMP/ccache"
+          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
+          echo "CCACHE_NOHASHDIR=true"
+          echo "CCACHE_COMPILERCHECK=content"
+          echo "CCACHE_MAXSIZE=1G"
+        } >> "$GITHUB_ENV"
+        root="$RUNNER_TEMP/vcpkg"
+        git clone https://github.com/microsoft/vcpkg.git "$root"
+        git -C "$root" checkout "$(python3 -c 'import json; print(json.load(open("vcpkg.json"))["builtin-baseline"])')"
+        "$root/bootstrap-vcpkg.sh" -disableMetrics
+        # The sources' downloads go in the cache too, as in the development image: a source host that is
+        # down (lua.org) then stops only a run that has never downloaded it.
+        mkdir -p "$RUNNER_TEMP/vcpkg-cache/downloads"
+        echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
+        echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
+        echo "VCPKG_DOWNLOADS=$RUNNER_TEMP/vcpkg-cache/downloads" >> "$GITHUB_ENV"
+
+    - name: Game package
+      shell: bash
+      env:
+        DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
+        DWE_CCACHE_DIR: ${{ runner.temp }}/ccache
+        DWE_CCACHE_SIZE: 2G
+        DWE_XWIN_DIR: ${{ runner.temp }}/xwin
+        PLATFORM: ${{ inputs.platform }}
+        ARCH: ${{ inputs.arch }}
+      run: |
+        # The statistics the caller shows afterwards are this build's.
+        if [[ "$RUNNER_OS" == macOS ]]; then ccache --zero-stats; else scripts/dev.sh shell -c 'ccache --zero-stats'; fi
+        case "$PLATFORM" in
+          linux-x86_64) scripts/package_linux.sh --out dist ;;
+          windows-x86_64) scripts/package_windows.sh --out dist ;;
+          darwin-*) scripts/package_macos.sh --arch "$ARCH" --out dist ;;
+        esac
+
+    - name: Record what the package is
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+        PR: ${{ inputs.pr }}
+      run: |
+        tarballs=(dist/dwe-beta-*-"$PLATFORM".tar.xz)
+        [ "${#tarballs[@]}" -eq 1 ] && [ -f "${tarballs[0]}" ] || { echo "Expected one package: ${tarballs[*]}" >&2; exit 1; }
+        python3 scripts/ci/packages.py record --platform "$PLATFORM" --tarball "${tarballs[0]}" \
+          ${PR:+--pr "$PR"} --out dist/source.json

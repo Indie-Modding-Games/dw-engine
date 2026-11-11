@@ -29,6 +29,9 @@
 #   DWE_LAUNCHER_XWIN_DIR host folder for cargo-xwin's MSVC CRT and Windows SDK; default: the
 #                         dwe-launcher-xwin volume
 #   DWE_TAURI_CLI         a tauri program on the host for sign (CI signs without the image)
+#   DWE_LAUNCHER_UNSIGNED 1: bundle and bundle-windows sign nothing and write no .sig, so they need
+#                         no key; the files are signed later with sign (release.yml's publish job,
+#                         the only one that holds the key)
 #   DWE_BUILD_SLOTS       a folder of slot locks shared by every heavy build of the machine (at most
 #                         two at a time); without it the build does not wait for a slot
 set -euo pipefail
@@ -39,7 +42,7 @@ app="$root/apps/launcher"
 target_dir="$root/build/launcher"
 
 usage() {
-  sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,36p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 # One of two machine-wide build slots, held until this script ends.
@@ -117,12 +120,15 @@ run() {
 }
 
 # tauri build reads the public key from the configuration; the repository has a placeholder.
+# Without the updater's files tauri build signs nothing; the AppImage and the Windows installer
+# are the update files themselves, and sign signs them later.
 config_override() {
+  local updater="" bundle=""
   if [[ -n "${DWE_LAUNCHER_PUBKEY:-}" ]]; then
-    printf '{"plugins":{"updater":{"pubkey":"%s"}}}' "$DWE_LAUNCHER_PUBKEY"
-  else
-    printf '{}'
+    updater="$(printf '"plugins":{"updater":{"pubkey":"%s"}}' "$DWE_LAUNCHER_PUBKEY")"
   fi
+  [[ "${DWE_LAUNCHER_UNSIGNED:-}" != 1 ]] || bundle='"bundle":{"createUpdaterArtifacts":false}'
+  printf '{%s%s%s}' "$updater" "${updater:+${bundle:+,}}" "$bundle"
 }
 
 command="${1:-}"

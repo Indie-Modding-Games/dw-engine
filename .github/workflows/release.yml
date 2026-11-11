@@ -1,25 +1,40 @@
 name: Release
 
-# Every push to main (a merged pull request) builds and publishes a prerelease, the launcher's
-# «Pruebas» channel: the game packages for the launcher (no game data) for Linux, Windows and macOS,
-# the launcher's installers (AppImage and .deb, the Windows NSIS installer, the macOS .dmg), their
+# Every push to main (a merged pull request) publishes a prerelease, the launcher's «Pruebas»
+# channel: the game packages for the launcher (no game data) for Linux, Windows and macOS, the
+# launcher's installers (AppImage and .deb, the Windows NSIS installer, the macOS .dmg), their
 # signatures, game-manifest.json and latest.json. A merge that only touches documentation, tests or
-# the CI's own files builds nothing. Actions > Release > Run workflow builds main's tip by hand the
-# same way. The pr-caches job also keeps the compiler caches ci.yml's pull request checks start
+# the CI's own files publishes nothing. Actions > Release > Run workflow does the same for main's
+# tip by hand. The pr-caches job also keeps the compiler caches ci.yml's pull request checks start
 # from.
 #
+# Two ways to the same files, and the run's summary says which one was taken:
+#   - promotion, the usual one (2-4 min): the pull request's CI already built every game package
+#     (ci.yml's package jobs) from the tree main now has, since main only takes pull requests that
+#     are up to date with it. plan finds them (scripts/ci/packages.py) and publish signs them and
+#     publishes them as they are;
+#   - full build, the fallback (~10-12 min): when there are no such packages (a fork's pull
+#     request, one merged before its packages were built, packages expired, a run by hand with
+#     "full build"), the game job builds them here as the package jobs do.
+# The launcher is built only when what it is built from changed since the previous release
+# (scripts/ci/launcher_reuse.sh); otherwise that release's launcher files, the same version and
+# already signed, are published again.
+#
 # The version needs no one (scripts/ci/release.py version): <CMakeLists.txt's version>-beta.<N>, N
-# the commits on main, and the tag is v<version>. A newer merge cancels the build of an older one:
-# only the newest commit gets a release. promote.yml later makes a tested prerelease the stable
-# release, with the same files. docs/modulos/apps/launcher.md explains the versions and the
-# channels.
+# the commits on main, and the tag is v<version>. A newer merge cancels the run of an older one:
+# only the newest commit gets a release, and a cancelled run leaves at most a draft, which the next
+# run deletes. promote.yml later makes a tested prerelease the stable release, with the same files.
+# docs/modulos/apps/launcher.md explains the versions and the channels.
+#
+# Every Monday (schedule) the full build of the game and the launcher runs without publishing, so
+# the fallback never rots and the caches the package jobs start from stay warm.
 #
 # The Windows builds are cross-compiled on Linux (the same Docker images as a developer's machine);
 # only the macOS ones need macOS runners. Every computer builds on its own: one that fails does not
 # stop the others, and the publish job then says in the run's summary which computers are missing
 # and publishes nothing; "Re-run failed jobs" builds only what failed and publishes. The release is
 # uploaded as a draft and published once every file and both manifests are there and checked, so a
-# launcher never sees a half-uploaded release.
+# launcher never sees a half-uploaded release. Only the publish job holds the signing key.
 #
 # docs/modulos/apps/launcher.md explains the secrets:
 #   secrets.DWE_SIGNING_KEY            the private key of `tauri signer generate` (its text)
@@ -33,26 +48,35 @@ name: Release
 #                                      the launcher can read it out of the program
 #   vars.DWE_LAUNCHER_LINKS            optional: the main screen's links, a JSON object of https URLs
 #                                      by kind ({"repo", "community", "web"}); unset, none are shown
+# Changing one of the launcher's values (the public key, the gateway, the beta key or the links)
+# rebuilds the launcher on the next merge: plan compares them with the previous launcher.
 on:
   push:
     branches: [main]
     paths-ignore: ['docs/**', 'docs-site/**', '**/*.md', '**/tests/**', '.github/**', 'scripts/ci/**', 'apps/versus-signal/**']
+  schedule:
+    - cron: '0 4 * * 1'
   workflow_dispatch:
+    inputs:
+      full_build:
+        description: Build every game package and the launcher here instead of reusing them
+        type: boolean
+        default: false
 
 permissions:
   contents: write
-  # Deleting this workflow's older compiler caches (one is kept per computer).
+  # Deleting this workflow's older compiler caches (one is kept per computer), and reading the
+  # artifacts of ci.yml's runs.
   actions: write
   # The development images in GitHub's container registry, for the next runs and for ci.yml.
   packages: write
 
+# The weekly build has a group of its own: it must never cancel a merge's release.
 concurrency:
-  group: release
+  group: release-${{ github.event_name == 'schedule' && 'weekly' || 'main' }}
   cancel-in-progress: true
 
 env:
-  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.DWE_SIGNING_KEY }}
-  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.DWE_SIGNING_KEY_PASSWORD }}
   DWE_LAUNCHER_PUBKEY: ${{ vars.DWE_SIGNING_PUBKEY }}
   DWE_LAUNCHER_GATEWAY: ${{ vars.DWE_BETA_GATEWAY }}
   DWE_LAUNCHER_LINKS: ${{ vars.DWE_LAUNCHER_LINKS }}
@@ -61,22 +85,30 @@ jobs:
   plan:
     runs-on: ubuntu-24.04
     outputs:
+      publish: ${{ steps.mode.outputs.publish }}
+      tree: ${{ steps.mode.outputs.tree }}
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
       previous: ${{ steps.version.outputs.previous }}
+      # The ci.yml run whose packages are promoted; empty: the game job builds them.
+      packages-run: ${{ steps.packages.outputs.run }}
+      # build or reuse
+      launcher: ${{ steps.launcher.outputs.launcher }}
     env:
       GH_TOKEN: ${{ github.token }}
+      # Built into the launcher; plan only checks it and compares it with the previous launcher.
+      DWE_LAUNCHER_BETA_KEY: ${{ secrets.DWE_BETA_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
           # The version counts the commits; the launcher's sources are compared with the newest
-          # release's tag.
+          # release's tag. Without the files' contents, which none of that needs.
           fetch-depth: 0
           filter: blob:none
 
       - name: Check the signing key, the gateway and the beta key
         env:
-          DWE_LAUNCHER_BETA_KEY: ${{ secrets.DWE_BETA_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.DWE_SIGNING_KEY }}
         run: |
           [ -n "$TAURI_SIGNING_PRIVATE_KEY" ] && [ -n "$DWE_LAUNCHER_PUBKEY" ] || {
             echo "Set secrets.DWE_SIGNING_KEY and vars.DWE_SIGNING_PUBKEY first" >&2
@@ -93,11 +125,26 @@ jobs:
             exit 1
           }
 
+      # The weekly run only builds; a run by hand with "full build" builds everything here.
+      - name: What this run does
+        id: mode
+        env:
+          FULL_BUILD: ${{ github.event_name == 'schedule' || inputs.full_build == true }}
+        run: |
+          publish=true
+          [ "$GITHUB_EVENT_NAME" = schedule ] && publish=false
+          {
+            echo "publish=$publish"
+            echo "full=$FULL_BUILD"
+            echo "tree=$(git rev-parse 'HEAD^{tree}')"
+          } >> "$GITHUB_OUTPUT"
+
       # A published release is never touched; a draft of the same tag is an unfinished run's and
       # the publish job replaces it. The new game version must be above the newest release's, or
       # no launcher would install it.
       - name: Pick the version
         id: version
+        if: steps.mode.outputs.publish == 'true'
         run: |
           version="$(python3 scripts/ci/release.py version)"
           tag="v$version"
@@ -132,11 +179,60 @@ jobs:
       # Installed launchers update themselves only to a higher version: a release whose launcher
       # changed must raise it (the same check as CI's launcher-version).
       - name: Check the launcher's version
+        if: steps.mode.outputs.publish == 'true'
         run: scripts/ci/launcher_version.sh
 
-  # One unsigned game package per computer; the publish job signs them all.
+      # The pull request's packages of this tree, if its CI built them. A package job that is
+      # still uploading gets a minute; after that the game job builds them here instead. GitHub's
+      # API failing also falls back to the full build.
+      - name: Find the pull request's packages
+        id: packages
+        if: steps.mode.outputs.publish == 'true' && steps.mode.outputs.full != 'true'
+        env:
+          TREE: ${{ steps.mode.outputs.tree }}
+        run: |
+          run="$(python3 scripts/ci/packages.py find --repo "$GITHUB_REPOSITORY" --tree "$TREE" --wait 60)" \
+            || run=""
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+
+      - name: Build or reuse the launcher
+        id: launcher
+        env:
+          FULL: ${{ steps.mode.outputs.full }}
+          PREVIOUS: ${{ steps.version.outputs.previous }}
+        run: |
+          if [ "$FULL" = true ]; then launcher=build
+          else launcher="$(scripts/ci/launcher_reuse.sh "$PREVIOUS")" || launcher=build; fi
+          echo "launcher=$launcher" >> "$GITHUB_OUTPUT"
+
+      - name: Say which way this run goes
+        env:
+          PUBLISH: ${{ steps.mode.outputs.publish }}
+          TREE: ${{ steps.mode.outputs.tree }}
+          RUN: ${{ steps.packages.outputs.run }}
+          LAUNCHER: ${{ steps.launcher.outputs.launcher }}
+          PREVIOUS: ${{ steps.version.outputs.previous }}
+        run: |
+          {
+            echo "## Plan"
+            echo
+            if [ "$PUBLISH" != true ]; then echo "- Weekly full build: nothing is published."; fi
+            if [ -n "$RUN" ]; then
+              echo "- Game packages: **promoted** from the pull request's CI run" \
+                "[$RUN]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$RUN) (tree \`${TREE:0:12}\`)."
+            else
+              echo "- Game packages: **full build** here (tree \`${TREE:0:12}\`)."
+            fi
+            if [ "$LAUNCHER" = reuse ]; then echo "- Launcher: reused from $PREVIOUS (unchanged)."
+            else echo "- Launcher: built here."; fi
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+  # The full build: one unsigned game package per computer, by the same steps as ci.yml's package
+  # jobs (.github/actions/game-package), when plan found none to promote, and every Monday. The
+  # publish job signs them. This job also saves the caches the package jobs start from.
   game:
     needs: plan
+    if: needs.plan.outputs.packages-run == ''
     strategy:
       fail-fast: false
       matrix:
@@ -147,16 +243,8 @@ jobs:
           - { platform: darwin-x86_64, runner: macos-15-intel, arch: x64 }
     runs-on: ${{ matrix.runner }}
     steps:
+      # The package names its tree, which one commit is enough to know.
       - uses: actions/checkout@v4
-        with:
-          # The package names the commit it was built from.
-          fetch-depth: 0
-
-      - name: Development image
-        if: runner.os == 'Linux'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: scripts/ci/image.sh dev --push
 
       # The MSVC libraries and the Windows SDK change only with xwin's version (the image's Dockerfile).
       - name: Restore the MSVC libraries and the Windows SDK
@@ -167,52 +255,10 @@ jobs:
           path: ${{ runner.temp }}/xwin
           key: xwin-${{ hashFiles('.devcontainer/Dockerfile') }}
 
-      - name: Fetch the MSVC libraries and the Windows SDK
-        if: matrix.platform == 'windows-x86_64' && steps.xwin-cache.outputs.cache-hit != 'true'
-        env:
-          DWE_XWIN_DIR: ${{ runner.temp }}/xwin
-        run: scripts/dev.sh windows-sdk --accept-license
-
-      - name: Save the MSVC libraries and the Windows SDK
-        if: matrix.platform == 'windows-x86_64' && steps.xwin-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ${{ runner.temp }}/xwin
-          key: xwin-${{ hashFiles('.devcontainer/Dockerfile') }}
-
-      # Homebrew is in /opt/homebrew on Apple silicon and in /usr/local on Intel; the toolchain
-      # (tooling/cmake/toolchains/macos-llvm-libcxx.cmake) takes its LLVM from DWE_LLVM_ROOT. ccache in
-      # front of it as on Linux (the presets read DWE_COMPILER_LAUNCHER); LLVM is installed afresh
-      # on every run, so ccache knows the compiler by its contents and not its date.
-      - name: Install the macOS tools
-        if: runner.os == 'macOS'
-        run: |
-          # LLVM pinned to the development image's major (.devcontainer/Dockerfile LLVM_VERSION): a newer
-          # formula would change the compiler under the release and empty the compiler cache.
-          brew install llvm@22 molten-vk ninja nasm ccache
-          echo "DWE_LLVM_ROOT=$(brew --prefix llvm@22)" >> "$GITHUB_ENV"
-          {
-            echo "DWE_COMPILER_LAUNCHER=ccache"
-            echo "CCACHE_DIR=$RUNNER_TEMP/ccache"
-            echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
-            echo "CCACHE_NOHASHDIR=true"
-            echo "CCACHE_COMPILERCHECK=content"
-            echo "CCACHE_MAXSIZE=1G"
-          } >> "$GITHUB_ENV"
-          root="$RUNNER_TEMP/vcpkg"
-          git clone https://github.com/microsoft/vcpkg.git "$root"
-          git -C "$root" checkout "$(python3 -c 'import json; print(json.load(open("vcpkg.json"))["builtin-baseline"])')"
-          "$root/bootstrap-vcpkg.sh" -disableMetrics
-          # The sources' downloads go in the cache too, as in the development image: a source host that is
-          # down (lua.org) then stops only a run that has never downloaded it.
-          mkdir -p "$RUNNER_TEMP/vcpkg-cache/downloads"
-          echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
-          echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
-          echo "VCPKG_DOWNLOADS=$RUNNER_TEMP/vcpkg-cache/downloads" >> "$GITHUB_ENV"
-
       # Restored and saved apart, so a build that fails after its dependencies keeps them for the
       # next run. vcpkg rebuilds only the dependencies whose inputs changed.
-      # The macOS key names the pinned LLVM (above), which the hashed files do not hold.
+      # The macOS key names the pinned LLVM (.github/actions/game-package), which the hashed files
+      # do not hold.
       - name: Restore the vcpkg binary cache
         id: vcpkg-cache
         uses: actions/cache/restore@v4
@@ -231,21 +277,11 @@ jobs:
           restore-keys: ccache-release-${{ matrix.platform }}-
 
       - name: Game package
-        env:
-          DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
-          DWE_CCACHE_DIR: ${{ runner.temp }}/ccache
-          DWE_CCACHE_SIZE: 2G
-          DWE_XWIN_DIR: ${{ runner.temp }}/xwin
-          PLATFORM: ${{ matrix.platform }}
-          ARCH: ${{ matrix.arch }}
-        run: |
-          # The statistics shown below are this run's.
-          if [[ "$RUNNER_OS" == macOS ]]; then ccache --zero-stats; else scripts/dev.sh shell -c 'ccache --zero-stats'; fi
-          case "$PLATFORM" in
-            linux-x86_64) scripts/package_linux.sh --out dist ;;
-            windows-x86_64) scripts/package_windows.sh --out dist ;;
-            darwin-*) scripts/package_macos.sh --arch "$ARCH" --out dist ;;
-          esac
+        uses: ./.github/actions/game-package
+        with:
+          platform: ${{ matrix.platform }}
+          arch: ${{ matrix.arch }}
+          push-image: 'true'
 
       # vcpkg prints only the paths of a failed port's logs; their ends say why.
       - name: Show the logs of a failed vcpkg step
@@ -261,8 +297,19 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: game-${{ matrix.platform }}
-          path: dist/dwe-beta-*-${{ matrix.platform }}.tar.xz
+          path: |
+            dist/dwe-beta-*-${{ matrix.platform }}.tar.xz
+            dist/source.json
           if-no-files-found: error
+
+      # Only after a whole build, so a half-fetched folder is never kept.
+      - name: Save the MSVC libraries and the Windows SDK
+        if: matrix.platform == 'windows-x86_64' && steps.xwin-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/xwin
+          key: xwin-${{ hashFiles('.devcontainer/Dockerfile') }}
 
       # Only after a whole build: then the installed packages are all the ones it needs.
       - name: Delete the packages this build no longer uses from the vcpkg binary cache
@@ -305,9 +352,11 @@ jobs:
           path: ${{ runner.temp }}/ccache
           key: ccache-release-${{ matrix.platform }}-${{ github.run_id }}
 
-  # The launcher's installers, signed for its own updater by tauri build.
+  # The launcher's installers, unsigned (DWE_LAUNCHER_UNSIGNED): the publish job signs them. Only
+  # when plan says it changed since the previous release, and every Monday.
   launcher:
     needs: plan
+    if: needs.plan.outputs.launcher == 'build'
     strategy:
       fail-fast: false
       matrix:
@@ -319,6 +368,7 @@ jobs:
     env:
       # Built into the launcher (apps/launcher/src-tauri/src/beta_key.rs); the log never shows it.
       DWE_LAUNCHER_BETA_KEY: ${{ secrets.DWE_BETA_KEY }}
+      DWE_LAUNCHER_UNSIGNED: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -344,19 +394,6 @@ jobs:
           key: launcher-${{ matrix.system }}-${{ hashFiles('apps/launcher/src-tauri/Cargo.lock', '.devcontainer/launcher.Dockerfile') }}
           restore-keys: launcher-${{ matrix.system }}-
 
-      # A wrong password, or a key that is not the public key's, fails here and not after the build.
-      - name: Check that the key signs and the public key verifies it
-        if: matrix.system == 'linux'
-        run: |
-          probe="$PWD/build/key-probe"
-          mkdir -p "$probe"
-          head -c 4096 /dev/urandom > "$probe/probe"
-          printf '%s' "$DWE_LAUNCHER_PUBKEY" > "$probe/key.pub"
-          scripts/launcher.sh shell "tauri signer sign '$probe/probe' >/dev/null"
-          python3 -c 'import cryptography' 2>/dev/null || sudo apt-get install -y python3-cryptography
-          python3 scripts/package/release_manifest.py verify --pubkey "$probe/key.pub" "$probe/probe"
-          rm -rf "$probe"
-
       - name: AppImage and .deb
         if: matrix.system == 'linux'
         env:
@@ -365,7 +402,7 @@ jobs:
           scripts/launcher.sh bundle
           bundle=build/launcher/release/bundle
           mkdir -p out
-          cp "$bundle"/appimage/*.AppImage "$bundle"/appimage/*.AppImage.sig "$bundle"/deb/*.deb out/
+          cp "$bundle"/appimage/*.AppImage "$bundle"/deb/*.deb out/
 
       - name: Windows installer
         if: matrix.system == 'windows'
@@ -375,9 +412,11 @@ jobs:
         run: |
           scripts/launcher.sh bundle-windows
           mkdir -p out
-          cp build/launcher/x86_64-pc-windows-msvc/release/bundle/nsis/*-setup.exe* out/
+          cp build/launcher/x86_64-pc-windows-msvc/release/bundle/nsis/*-setup.exe out/
 
       # One universal bundle for Apple silicon and Intel Macs, signed ad hoc (tauri.macos.conf.json).
+      # Without the key tauri writes no update bundle, so it is packed here as tauri packs it (the
+      # .app folder in a .tar.gz, without macOS's extra metadata files).
       - name: macOS .dmg and update bundle
         if: matrix.system == 'macos'
         env:
@@ -398,11 +437,15 @@ jobs:
             --out apps/launcher/src-tauri/notices/THIRD_PARTY_NOTICES.txt
           cd apps/launcher/src-tauri
           tauri build --target universal-apple-darwin \
-            --config "{\"plugins\":{\"updater\":{\"pubkey\":\"$DWE_LAUNCHER_PUBKEY\"}}}"
+            --config "{\"plugins\":{\"updater\":{\"pubkey\":\"$DWE_LAUNCHER_PUBKEY\"}},\"bundle\":{\"createUpdaterArtifacts\":false}}"
           cd "$GITHUB_WORKSPACE"
           bundle=build/launcher/universal-apple-darwin/release/bundle
           mkdir -p out
-          cp "$bundle"/dmg/*.dmg "$bundle"/macos/*.app.tar.gz "$bundle"/macos/*.app.tar.gz.sig out/
+          cp "$bundle"/dmg/*.dmg out/
+          apps=("$bundle"/macos/*.app)
+          [ "${#apps[@]}" -eq 1 ] && [ -d "${apps[0]}" ] || { echo "Expected one .app: ${apps[*]}" >&2; exit 1; }
+          app="$(basename "${apps[0]}")"
+          COPYFILE_DISABLE=1 tar -C "$bundle/macos" -czf "out/$app.tar.gz" "$app"
 
       # The program a tester runs has the beta gateway, the public key and the beta key built in,
       # and the bundle carries LICENSE and THIRD_PARTY_NOTICES.txt (on Windows, the files the
@@ -576,24 +619,57 @@ jobs:
           path: ${{ runner.temp }}/ccache
           key: ${{ matrix.cache }}-${{ github.run_id }}
 
-  # Runs even when a computer failed, to say which in the summary; then it publishes nothing.
+  # Runs even when a computer failed, to say which in the summary; then it publishes nothing. The
+  # only job with the signing key.
   publish:
     needs: [plan, game, launcher]
-    if: ${{ !cancelled() && needs.plan.result == 'success' }}
+    if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.publish == 'true' }}
     runs-on: ubuntu-24.04
     env:
       TAG: ${{ needs.plan.outputs.tag }}
       VERSION: ${{ needs.plan.outputs.version }}
       PREVIOUS: ${{ needs.plan.outputs.previous }}
+      PACKAGES_RUN: ${{ needs.plan.outputs.packages-run }}
+      LAUNCHER: ${{ needs.plan.outputs.launcher }}
+      TREE: ${{ needs.plan.outputs.tree }}
       GH_TOKEN: ${{ github.token }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.DWE_SIGNING_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.DWE_SIGNING_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
+      # What this run built: the full build's game packages, a launcher that changed. The
+      # artifacts of earlier attempts of this run count too ("Re-run failed jobs").
       - uses: actions/download-artifact@v4
+        if: env.PACKAGES_RUN == '' || env.LAUNCHER == 'build'
         with:
           path: artifacts
 
-      # The artifacts of earlier attempts of this run count too ("Re-run failed jobs").
+      # The packages the pull request's CI built from this tree (plan found them), all at once.
+      - name: Fetch the pull request's packages
+        if: env.PACKAGES_RUN != ''
+        run: |
+          pids=()
+          for platform in linux-x86_64 windows-x86_64 darwin-aarch64 darwin-x86_64; do
+            gh run download "$PACKAGES_RUN" -R "$GITHUB_REPOSITORY" -n "package-$platform-$TREE" \
+              -D "artifacts/game-$platform" &
+            pids+=("$!")
+          done
+          failed=0
+          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
+          exit "$failed"
+
+      # The launcher did not change: the previous release's files, signed when they were published.
+      - name: Fetch the previous release's launcher
+        if: env.LAUNCHER == 'reuse'
+        run: |
+          from="$RUNNER_TEMP/launcher"
+          gh release download "$PREVIOUS" -R "$GITHUB_REPOSITORY" -p 'dwe-launcher*' -D "$from"
+          mkdir -p artifacts/launcher-linux artifacts/launcher-windows artifacts/launcher-macos
+          mv "$from"/*.AppImage* "$from"/*.deb* artifacts/launcher-linux/
+          mv "$from"/*-setup.exe* artifacts/launcher-windows/
+          mv "$from"/*.dmg* "$from"/*.app.tar.gz* artifacts/launcher-macos/
+
       - name: Check that every computer was built
         id: built
         run: |
@@ -609,7 +685,14 @@ jobs:
               if not files:
                   missing.append(f"{kind} {name}")
               rows.append(f"| {kind} | {name} | {'built: ' + ', '.join(files) if files else '**MISSING**'} |")
-          summary = ["## Release " + os.environ["TAG"], "", "| What | Computer | Files |", "|---|---|---|", *rows, ""]
+          run = os.environ["PACKAGES_RUN"]
+          server, repo = os.environ["GITHUB_SERVER_URL"], os.environ["GITHUB_REPOSITORY"]
+          game = (f"promoted from the pull request's CI run [{run}]({server}/{repo}/actions/runs/{run})" if run
+                  else "built in this run")
+          launcher = (f"reused from {os.environ['PREVIOUS']}" if os.environ["LAUNCHER"] == "reuse"
+                      else "built in this run")
+          summary = ["## Release " + os.environ["TAG"], "", f"Game packages {game}; launcher {launcher}.", "",
+                     "| What | Computer | Files |", "|---|---|---|", *rows, ""]
           if missing:
               summary += [f"**Not published**: {', '.join(missing)} did not build. The other files are kept as "
                           "this run's artifacts; fix the cause and use *Re-run failed jobs*.", ""]
@@ -622,15 +705,45 @@ jobs:
               out.write(f"platforms={platforms}\n")
           EOF
 
-      # tauri's signer on the runner, instead of building the launcher image only to sign.
+      # Whichever way they came, the packages are of the code main has now (its tree) and are the
+      # files their jobs built (SHA-256 in source.json).
+      - name: Check that the packages are main's
+        env:
+          PLATFORMS: ${{ steps.built.outputs.platforms }}
+        run: |
+          platform_args=()
+          for platform in $PLATFORMS; do platform_args+=(--platform "$platform"); done
+          python3 scripts/ci/packages.py verify --folder artifacts --tree "$(git rev-parse 'HEAD^{tree}')" \
+            "${platform_args[@]}"
+
+      # tauri's signer on the runner, instead of building the launcher image only to sign: the
+      # version the launcher image has, from npm's cache after the first run.
+      - name: Restore tauri's signer
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: tauri-cli-2.12.4
+
       - name: Install tauri's signer
         run: |
-          npm install -g @tauri-apps/cli@2
+          npm install -g --prefer-offline --no-audit --no-fund @tauri-apps/cli@2.12.4
           echo "DWE_TAURI_CLI=tauri" >> "$GITHUB_ENV"
 
-      # One game-manifest.json of one version names every package built; tauri signs only the
-      # updater's files, so the .deb and the .dmg get their signatures here and every file a tester
-      # downloads can be checked.
+      # A wrong password, or a key that is not the public key's, fails here, before anything is signed.
+      - name: Check that the key signs and the public key verifies it
+        run: |
+          python3 -c 'import cryptography' 2>/dev/null || sudo apt-get install -y python3-cryptography
+          probe="$RUNNER_TEMP/key-probe"
+          mkdir -p "$probe"
+          head -c 4096 /dev/urandom > "$probe/probe"
+          printf '%s' "$DWE_LAUNCHER_PUBKEY" > "$probe/key.pub"
+          tauri signer sign "$probe/probe" >/dev/null
+          python3 scripts/package/release_manifest.py verify --pubkey "$probe/key.pub" "$probe/probe"
+          rm -rf "$probe"
+
+      # One game-manifest.json of one version names every package; it names main's commit, which
+      # only exists now (the packages name their tree). Every launcher file built in this run is
+      # signed here; reused ones keep the signatures they were published with.
       - name: Sign the files and write the game manifest
         env:
           PLATFORMS: ${{ steps.built.outputs.platforms }}
@@ -639,11 +752,12 @@ jobs:
             tarballs=(artifacts/game-"$platform"/dwe-beta-*-"$platform".tar.xz)
             [ "${#tarballs[@]}" -eq 1 ] && [ -f "${tarballs[0]}" ] || { echo "Expected one package for $platform: ${tarballs[*]}" >&2; exit 1; }
             scripts/package_release.sh --platform "$platform" --tarball "${tarballs[0]}" --version "$VERSION" \
-              --out dist
+              --commit "$GITHUB_SHA" --out dist
           done
           cp artifacts/launcher-*/* dist/
-          for file in dist/*.deb dist/*.dmg; do
+          for file in dist/*.AppImage dist/*.deb dist/*-setup.exe dist/*.dmg dist/*.app.tar.gz; do
             [ -f "$file" ] || continue
+            [ -f "$file.sig" ] && continue
             scripts/launcher.sh sign "$file"
           done
 
@@ -651,7 +765,6 @@ jobs:
         env:
           PLATFORMS: ${{ steps.built.outputs.platforms }}
         run: |
-          python3 -c 'import cryptography' 2>/dev/null || sudo apt-get install -y python3-cryptography
           printf '%s' "$DWE_LAUNCHER_PUBKEY" > "$RUNNER_TEMP/key.pub"
           platform_args=()
           for platform in $PLATFORMS; do platform_args+=(--platform "$platform"); done
@@ -687,7 +800,8 @@ jobs:
           cat "$RUNNER_TEMP/notes.md"
 
       # Only this workflow makes drafts, one run at a time: a draft left is a cancelled run's,
-      # never seen by a launcher (the gateway hides drafts), and has no tag yet.
+      # never seen by a launcher (the gateway hides drafts), and has no tag yet. The files go up
+      # several at a time: the upload is most of this job.
       - name: Draft release with the files
         run: |
           gh release list --json tagName,isDraft --jq '.[] | select(.isDraft) | .tagName' | while read -r draft; do
@@ -701,7 +815,7 @@ jobs:
           fi
           gh release create "$TAG" --draft --prerelease --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md" \
             --target "$GITHUB_SHA"
-          gh release upload "$TAG" dist/*
+          find dist -maxdepth 1 -type f -print0 | xargs -0 -n 1 -P 6 gh release upload "$TAG"
 
       # latest.json names each update file by its download URL (release and file name), which
       # stays right if a file is uploaded again, unlike an asset id; the beta gateway points it at
