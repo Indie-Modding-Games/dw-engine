@@ -187,8 +187,10 @@ jobs:
       - name: Install the macOS tools
         if: runner.os == 'macOS'
         run: |
-          brew install llvm molten-vk ninja nasm ccache
-          echo "DWE_LLVM_ROOT=$(brew --prefix llvm)" >> "$GITHUB_ENV"
+          # LLVM pinned to the development image's major (.devcontainer/Dockerfile LLVM_VERSION): a newer
+          # formula would change the compiler under the release and empty the compiler cache.
+          brew install llvm@22 molten-vk ninja nasm ccache
+          echo "DWE_LLVM_ROOT=$(brew --prefix llvm@22)" >> "$GITHUB_ENV"
           {
             echo "DWE_COMPILER_LAUNCHER=ccache"
             echo "CCACHE_DIR=$RUNNER_TEMP/ccache"
@@ -210,12 +212,13 @@ jobs:
 
       # Restored and saved apart, so a build that fails after its dependencies keeps them for the
       # next run. vcpkg rebuilds only the dependencies whose inputs changed.
+      # The macOS key names the pinned LLVM (above), which the hashed files do not hold.
       - name: Restore the vcpkg binary cache
         id: vcpkg-cache
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-release-${{ matrix.platform }}-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          key: vcpkg-release-${{ matrix.platform }}-${{ runner.os == 'macOS' && 'llvm22-' || '' }}${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
           restore-keys: vcpkg-release-${{ matrix.platform }}-
 
       # The game's own objects (ccache, in the development image on Linux): an unchanged file is
@@ -236,6 +239,8 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
           ARCH: ${{ matrix.arch }}
         run: |
+          # The statistics shown below are this run's.
+          if [[ "$RUNNER_OS" == macOS ]]; then ccache --zero-stats; else scripts/dev.sh shell -c 'ccache --zero-stats'; fi
           case "$PLATFORM" in
             linux-x86_64) scripts/package_linux.sh --out dist ;;
             windows-x86_64) scripts/package_windows.sh --out dist ;;
@@ -259,17 +264,27 @@ jobs:
           path: dist/dwe-beta-*-${{ matrix.platform }}.tar.xz
           if-no-files-found: error
 
+      # Only after a whole build: then the installed packages are all the ones it needs.
+      - name: Delete the packages this build no longer uses from the vcpkg binary cache
+        if: success() && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        run: scripts/ci/prune_vcpkg_cache.sh "$RUNNER_TEMP/vcpkg-cache" build
+
       - name: Save the vcpkg binary cache
         if: always() && steps.vcpkg-cache.outcome == 'success' && steps.vcpkg-cache.outputs.cache-hit != 'true'
         continue-on-error: true
         uses: actions/cache/save@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-release-${{ matrix.platform }}-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          key: vcpkg-release-${{ matrix.platform }}-${{ runner.os == 'macOS' && 'llvm22-' || '' }}${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
 
       - name: Show the compiler cache statistics
-        if: always() && runner.os == 'macOS'
-        run: ccache --show-stats || true
+        if: always()
+        env:
+          DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
+          DWE_CCACHE_DIR: ${{ runner.temp }}/ccache
+        run: |
+          if [[ "$RUNNER_OS" == macOS ]]; then ccache --show-stats || true
+          else scripts/dev.sh shell -c 'ccache --show-stats' || true; fi
 
       # The older copies go first: saving the new one next to them overfills the repository's
       # cache space for a moment, and the space is freed by evicting the vcpkg caches.
@@ -461,8 +476,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { preset: ci, cache: ccache-ci-linux, vcpkg: linux-x86_64 }
-          - { preset: windows-cross, cache: ccache-ci-windows, vcpkg: windows-x86_64 }
+          # ci's Linux dependencies use a triplet of their own (x64-linux-libcxx-release), so this job
+          # keeps them in a cache of their own; windows-cross's are the release's.
+          - { preset: ci, cache: ccache-ci-linux, vcpkg: vcpkg-ci-linux-x86_64 }
+          - { preset: windows-cross, cache: ccache-ci-windows, vcpkg: vcpkg-release-windows-x86_64 }
     runs-on: ubuntu-24.04
     env:
       PRESET: ${{ matrix.preset }}
@@ -495,11 +512,12 @@ jobs:
         run: scripts/dev.sh windows-sdk --accept-license
 
       - name: Restore the vcpkg binary cache
+        id: vcpkg-cache
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-release-${{ matrix.vcpkg }}-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
-          restore-keys: vcpkg-release-${{ matrix.vcpkg }}-
+          key: ${{ matrix.vcpkg }}-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          restore-keys: ${{ matrix.vcpkg }}-
 
       - name: Restore the compiler cache
         uses: actions/cache/restore@v4
@@ -511,6 +529,7 @@ jobs:
       # The same configure as ci.yml's job of this preset.
       - name: Build
         run: |
+          scripts/dev.sh shell -c 'ccache --zero-stats'
           if [ "$PRESET" = ci ]; then
             scripts/dev.sh configure -DVCPKG_TARGET_TRIPLET=x64-linux-libcxx-release \
               -DVCPKG_HOST_TRIPLET=x64-linux-libcxx-release -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
@@ -518,6 +537,25 @@ jobs:
             scripts/dev.sh configure
           fi
           scripts/dev.sh build
+
+      - name: Delete the packages this build no longer uses from the vcpkg binary cache
+        if: success() && matrix.preset == 'ci' && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        run: scripts/ci/prune_vcpkg_cache.sh "$RUNNER_TEMP/vcpkg-cache" build
+
+      # Saved even when the build failed after its dependencies, as in the game job.
+      - name: Save the vcpkg binary cache
+        if: always() && matrix.preset == 'ci' && steps.vcpkg-cache.outcome == 'success' && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: ${{ matrix.vcpkg }}-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+
+      # ccache applies a lower size limit only when it next cleans up, so the cache is trimmed to it here.
+      - name: Trim the compiler cache to its size limit
+        if: always()
+        continue-on-error: true
+        run: scripts/dev.sh shell -c 'ccache --show-stats; ccache --cleanup'
 
       # The older copies go first: saving the new one next to them overfills the repository's
       # cache space for a moment, and the space is freed by evicting the vcpkg caches.

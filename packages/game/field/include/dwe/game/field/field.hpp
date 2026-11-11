@@ -83,8 +83,9 @@ struct ScriptWarpSetup {
   MapFilter hasMap = nullptr;
 };
 
-// Free exploration's choice on a cell whose scripts go to more than one place: the app shows it,
-// and the player picks one (Field::chooseDestination) or stays.
+// Free exploration's choice on a cell whose scripts go to more than one place, or on a step cell
+// whose one place the story keeps closed: the app shows it, and the player picks one
+// (Field::chooseDestination) or stays.
 struct DestinationChoice {
   std::string map; // where the player stands
   std::int32_t cell = 0;
@@ -333,7 +334,8 @@ public:
   }
 
   // Answers the choice: a place of it is taken (with the triggers its warp sets), nothing stays on
-  // the cell. Without a choice, or with a place it does not have, nothing happens.
+  // the cell (a step cell then asks no more until the next map). Without a choice, or with a place
+  // it does not have, nothing happens.
   void chooseDestination(std::optional<std::size_t> place);
 
   // The current map's collision grid, for the minimap.
@@ -686,6 +688,9 @@ private:
   // The warp of each place of the choice, and the one the original's conditions take.
   std::vector<const ScriptWarp*> choiceWarps_;
   const ScriptWarp* choiceVanilla_ = nullptr;
+  // The step cells of the current map where the player chose to stay: free exploration asks there
+  // no more until the next map, and the cell goes the original's way.
+  std::vector<std::int32_t> stayedStepCells_;
   // The step cells of the current map whose map change is taken.
   std::vector<std::int32_t> warpingStepCells_;
   // The map and cell of each section whose map change could not be decided, logged once.

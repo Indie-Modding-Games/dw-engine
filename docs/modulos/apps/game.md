@@ -747,7 +747,11 @@ borra todo el nombre. En el teclado `alt` y `extra` son letras del racimo `WASD`
 **escriben** en lugar de disparar la acción (`takeTyping` corre antes que `pressButtons`, `naming_box.cpp:137`), así
 que esos dos atajos solo valen en el mando; en teclado se llega a «Atrás» con las flechas del grid. A la vez se
 puede teclear: las letras de la rejilla y el espacio se escriben (otra tecla suena rechazada) e Intro acepta el
-nombre si se ha tecleado algo desde el último movimiento del cursor. El nombre del jugador empieza vacío, como en la
+nombre si se ha tecleado algo desde el último movimiento del cursor. Por eso, con teclado, los avisos de la caja
+solo muestran Borrar y Aceptar: Espacio («Escribir») escribe un espacio y `Q` («Borrar todo») una «q», y el aviso
+de tecleo de la caja del nombre ya dice cómo escribir. La caja la coloca su propio documento (`naming_box`, centrada
+arriba en cualquier ventana), no la piel: el panel del aspecto moderno se centra con un `#scrim` que este documento
+no tiene. El nombre del jugador empieza vacío, como en la
 versión americana. Con la opción [nombres largos](#nombres-largos) (encendida por defecto) admite 12 letras en vez de
 6.
 
@@ -854,9 +858,11 @@ borraban al empezar cada tick y se perdían en los cuadros que corren más de un
 
 `free_exploration.cpp` lleva la [exploración libre](../../architecture/warps-de-script.md#exploración-libre):
 la enciende el ajuste `free_exploration` (menú de pausa, guardado en los ajustes del usuario) o `--explore` (solo en
-esa ejecución). Cuando el campo para en una casilla con varios sitios, abre `ui/destination_choice` con los sitios
-(`exploration_place_name.N`, `exploration_place_map.N`, `exploration_places`, `exploration_story`) y pasa al campo
-lo que se elige (`choose_destination`) o quedarse (`stay_here`).
+esa ejecución). Cuando el campo para en una casilla con varios sitios (o en una de pisar cerrada por la historia),
+abre `ui/destination_choice` con los sitios (`exploration_place_name.N`, `exploration_place_map.N`,
+`exploration_places`, `exploration_story`) y pasa al campo lo que se elige (`choose_destination`) o quedarse
+(`stay_here`, también con cancelar). El selector es modal, así que `settings` (Escape, F10, Back del mando) no abre
+las opciones debajo: `PlaySession::pressDestinationChoice` lo toma como quedarse.
 
 ## Ritmo del bucle
 

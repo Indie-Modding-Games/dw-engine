@@ -283,6 +283,7 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn,
   choice_.reset();
   choiceWarps_.clear();
   choiceVanilla_ = nullptr;
+  stayedStepCells_.clear();
   changeTarget_.clear();
   fadeInSeconds_.reset();
   triggerSteps_.clear();
@@ -755,6 +756,10 @@ std::optional<MapChange> Field::exploreScriptWarp(WarpVia via, std::int32_t valu
   std::vector<const ScriptWarp*> places =
       explorationWarps(scriptWarps_, mapId_, via, value, hasMap_);
   const ScriptWarp* vanilla = cell.warp != nullptr && cell.warp->targetMap ? cell.warp : nullptr;
+  // Crossing a strip back and forth after staying on it asks no more on this map.
+  if (via == WarpVia::Step && std::ranges::contains(stayedStepCells_, value)) {
+    return std::nullopt;
+  }
   const auto samePlace = [](const ScriptWarp* left, const ScriptWarp* right) {
     return left != nullptr && right != nullptr && left->targetMap == right->targetMap &&
            left->targetExit == right->targetExit;
@@ -763,7 +768,11 @@ std::optional<MapChange> Field::exploreScriptWarp(WarpVia via, std::int32_t valu
   if (places.empty() || (places.size() == 1 && samePlace(places.front(), vanilla))) {
     return std::nullopt;
   }
-  if (places.size() == 1) {
+  // A step cell the story keeps closed may lie across the way: the snowfield maps' bands warp into
+  // the house only for a sick partner (script 90 section 0x33, script 203). Taken on every
+  // crossing, such a band traps the player, so the player chooses there, staying included; a
+  // confirm cell was asked for.
+  if (places.size() == 1 && via == WarpVia::Confirm) {
     return takeExplored(*places.front(), vanilla, value);
   }
   DestinationChoice choice{.map = mapId_, .cell = value, .places = {}, .vanilla = std::nullopt};
@@ -846,6 +855,11 @@ void Field::chooseDestination(std::optional<std::size_t> place) {
   choiceWarps_.clear();
   choiceVanilla_ = nullptr;
   if (warp == nullptr) {
+    if (warpViaOf(value, rules_.triggers) == WarpVia::Step &&
+        !std::ranges::contains(stayedStepCells_, value)) {
+      stayedStepCells_.push_back(value);
+      core::logInfo("{}", core::formatMessage(messages::ExplorationStayed, mapId_, value));
+    }
     return;
   }
   if (auto change = takeExplored(*warp, vanilla, value)) {

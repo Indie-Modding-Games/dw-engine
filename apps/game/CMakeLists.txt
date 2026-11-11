@@ -205,10 +205,11 @@ if(WIN32 AND DWE_PACKAGE)
 endif()
 
 # A package's bug reports (F12) name the commit it was built from; a development build asks git when a report is
-# written.
+# written. Only the file that reads it gets it: on the whole target, every commit would compile all of the game again
+# instead of taking it from the compiler cache.
 set(DWE_BUILD_COMMIT "" CACHE STRING "The commit a package's bug reports name; empty asks git")
 if(DWE_BUILD_COMMIT)
-    target_compile_definitions(game PRIVATE DWE_BUILD_COMMIT="${DWE_BUILD_COMMIT}")
+    set_property(SOURCE src/bug_reporter.cpp APPEND PROPERTY COMPILE_DEFINITIONS DWE_BUILD_COMMIT="${DWE_BUILD_COMMIT}")
 endif()
 
 # The version a save file names as the game that wrote it.

@@ -25,10 +25,10 @@
 			<div class="grid-row" id="row-8"><span class="cell" id="cell-8-0"></span><span class="cell" id="cell-8-1"></span><span class="cell" id="cell-8-2"></span><span class="cell" id="cell-8-3"></span><span class="cell" id="cell-8-4"></span><span class="cell" id="cell-8-5"></span><span class="cell" id="cell-8-6"></span><span class="cell" id="cell-8-7"></span><span class="cell" id="cell-8-8"></span><span class="cell" id="cell-8-9"></span></div>
 		</div>
 		<div id="prompts">
-			<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="naming.write"></span></span>
+			<span class="prompt" id="hint-write"><span class="key" id="prompt-confirm"></span><span text-key="naming.write"></span></span>
 			<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="naming.back"></span></span>
 			<span class="prompt"><span class="key" id="prompt-menu"></span><span text-key="common.accept"></span></span>
-			<span class="prompt"><span class="key" id="prompt-extra"></span><span text-key="naming.clear"></span></span>
+			<span class="prompt" id="hint-clear"><span class="key" id="prompt-extra"></span><span text-key="naming.clear"></span></span>
 		</div>
 	</div>
 	<div id="name-box">

@@ -91,7 +91,9 @@ jobs:
 
       - name: Install the tools
         run: |
-          brew install llvm ninja nasm
+          # The development image's LLVM major, as release.yml.
+          brew install llvm@22 ninja nasm
+          echo "DWE_LLVM_ROOT=$(brew --prefix llvm@22)" >> "$GITHUB_ENV"
           root="$RUNNER_TEMP/vcpkg"
           git clone https://github.com/microsoft/vcpkg.git "$root"
           git -C "$root" checkout "$(python3 -c 'import json; print(json.load(open("vcpkg.json"))["builtin-baseline"])')"

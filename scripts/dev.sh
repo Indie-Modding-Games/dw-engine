@@ -900,11 +900,13 @@ case "$command" in
     # xwin unpacks next to the result and moves the files into place, which only works on the same
     # filesystem, so it unpacks inside the volume and the unpacked copies are deleted afterwards:
     # the volume keeps only the layout of a Visual Studio installation. xwin names the SDK's folders
-    # in lower case, and /winsysroot looks for Include and Lib.
+    # in lower case, and /winsysroot looks for Include and Lib. The SDK is pinned: the newest one in
+    # the download manifest changes under xwin, and 10.0.26100 can no longer be found by it.
     ensure_caches
     in_container bash -c 'rm -rf /opt/xwin/sysroot \
-            && xwin --cache-dir /opt/xwin/unpack "$@" splat --include-debug-libs \
-            --use-winsysroot-style --preserve-ms-arch-notation --output /opt/xwin/sysroot \
+            && xwin --cache-dir /opt/xwin/unpack --sdk-version 10.0.22621 "$@" \
+            splat --include-debug-libs --use-winsysroot-style --preserve-ms-arch-notation \
+            --output /opt/xwin/sysroot \
             && rm -rf /opt/xwin/unpack \
             && ln -sfn include "/opt/xwin/sysroot/Windows Kits/10/Include" \
             && ln -sfn lib "/opt/xwin/sysroot/Windows Kits/10/Lib"' xwin "$@"
