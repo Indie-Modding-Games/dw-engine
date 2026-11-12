@@ -1,7 +1,9 @@
 /* The curling HUD in the new look (concept area C, curling_hud: 281-290). The plates, the digits, the start sign, the
    gauge and the hand are the original's pictures; the question and hint box is the story's speech box
    (story_textbox/style). The look styles the recruit bar under it (90,664 786 x 54): half a window with brackets,
-   two lines in the small 1x type, your lead in green and a perfect round in gold. */
+   two lines in the small 1x type, your lead in green and a perfect round in gold. The score plates, the portraits'
+   frames, the start sign and the power gauge are the look's own (281-287): the scores and the sign as text over
+   flat plates, the gauge a sunk box the gold fill grows in; the pictures of the plates, digits and sign hide. */
 
 #recruit {
 	padding: 4dp 18dp;
@@ -27,3 +29,105 @@
 #recruit.ahead #recruit-standing {
 	color: #5fd36a;
 }
+
+/* The plates (281): blue for the player, red for the rival (green for the second one, 287), a light rim, gold
+   brackets and the score in big pixel digits. */
+#player-box, #opponent-box, #scores, #ready {
+	display: none;
+}
+
+#score-plates {
+	display: block;
+}
+
+.score-plate {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	margin-top: -210dp;
+	width: 144dp;
+	height: 96dp;
+	box-sizing: border-box;
+	border: 4dp #9fd0ff;
+	background-color: #2e66c8;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box;
+	font-family: "Pixel Body";
+	font-size: 64dp;
+	line-height: 86dp;
+	letter-spacing: 12dp;
+	text-align: center;
+	color: #f2f0e1;
+	font-effect: shadow(3dp 3dp #0b1a3a);
+}
+
+#score-0-plate {
+	margin-left: -390dp;
+}
+
+#score-1-plate {
+	margin-left: 240dp;
+	border-color: #ffb0a0;
+	background-color: #c23a2c;
+}
+
+#score-plates.second #score-1-plate {
+	border-color: #a8f0b0;
+	background-color: #2f9a4a;
+}
+
+#player-face, #opponent-face, #opponent-face-2 {
+	border: 3dp #050a14;
+}
+
+/* The start sign (283): a dark band between gold rules, the words spaced out. */
+#ready-text {
+	display: block;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	margin-left: -156dp;
+	margin-top: -12dp;
+	width: 453dp;
+	height: 48dp;
+	box-sizing: border-box;
+	border-top: 3dp #efc63c;
+	border-bottom: 3dp #efc63c;
+	background-color: #0b1322e6;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 42dp;
+	letter-spacing: 6dp;
+	text-align: center;
+	color: #f6e7b0;
+}
+
+#ready-text.hidden {
+	display: none;
+}
+
+/* The power gauge (285, 286): a sunk dark box, the chevrons a gold fill growing from its left. Each chevron keeps the
+   logic's step (3 original pixels) and moves 4dp more per step, so the ten fill the box. */
+#gauge-frame {
+	box-sizing: border-box;
+	border: 3dp #050a14;
+	background-color: #0b1322;
+	image-color: #00000000;
+}
+
+.chevron {
+	width: 13dp;
+	height: 30dp;
+	background-color: #efc63c;
+	image-color: #00000000;
+}
+
+#chevron-1 { transform: translate(7dp, 9dp); }
+#chevron-2 { transform: translate(11dp, 9dp); }
+#chevron-3 { transform: translate(15dp, 9dp); }
+#chevron-4 { transform: translate(19dp, 9dp); }
+#chevron-5 { transform: translate(23dp, 9dp); }
+#chevron-6 { transform: translate(27dp, 9dp); }
+#chevron-7 { transform: translate(31dp, 9dp); }
+#chevron-8 { transform: translate(35dp, 9dp); }
+#chevron-9 { transform: translate(39dp, 9dp); }
+#chevron-10 { transform: translate(43dp, 9dp); background-color: #ffe58a; }

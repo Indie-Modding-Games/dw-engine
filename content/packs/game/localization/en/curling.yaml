@@ -1,6 +1,8 @@
 # The stones game (kar.c): the play or rules question (KAR_tickYesNoPrompt).
 prompt.play: "Start Game"
 prompt.rules: "Explain Game"
+# The start sign (KAR_renderReadyPrompt), for the looks that write it instead of its picture.
+ready: "LET'S PLAY!"
 # The recruit bar (the option shop_job_bar): the scores ({player} the player's, {opponent} the opponent's, {name} its
 # name), the throws left, how the match stands ({gap} points behind) and the perfect score while it can be reached.
 recruit.score: "You {player} - {opponent} {name}"

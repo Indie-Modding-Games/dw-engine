@@ -24,6 +24,7 @@ local glyphs = {
   { 0x58, 0x48 },
   { 0x00, 0x40 },
 }
+local MinusGlyph = 10
 -- KAR_renderPowerMeter: the frame's x by thrower and its palette (CLUT x 0x70 or 0x80).
 local gauge_x = { [0] = -0x32, [1] = 0x32 }
 local gauge_palette = { [0] = 7, [1] = 8 }
@@ -77,14 +78,20 @@ end
 
 local function refresh(document)
   for team = 0, 1 do
+    local written = ""
     for _, digit in ipairs({ "tens", "units" }) do
-      local glyph = glyphs[number(string.format("score_%d_%s", team, digit), 0)] or glyphs[0]
+      local index = number(string.format("score_%d_%s", team, digit), 0)
+      local glyph = glyphs[index] or glyphs[0]
       document
         :get(string.format("score-%d-%s", team, digit))
         :set_attribute("rect", string.format("%d %d 16 16", glyph[1], glyph[2]))
+      written = written .. (index == MinusGlyph and "-" or tostring(index))
     end
+    document:get(string.format("score-%d-plate", team)):set_text(written)
   end
   local second = number("second", 0) == 1
+  document:get("score-plates"):set_class("second", second)
+  document:get("ready-text"):set_class("hidden", number("ready", 0) ~= 1)
   document:get("opponent-face"):set_class("hidden", second)
   document:get("opponent-face-2"):set_class("hidden", not second)
   document:get("ready"):set_class("hidden", number("ready", 0) ~= 1)
