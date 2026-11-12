@@ -168,6 +168,18 @@ sprite_sheets:
       nb-strip-hp: [0, 0, 400, 20]
       nb-strip-mp: [0, 20, 400, 20]
       nb-strip-rd: [0, 40, 400, 20]
+  # The gym reels' seven symbols (258-261: flat shapes in the concept's colours), 42 dp each at 2 pixels per dp.
+  - name: nb-reel-symbols
+    image: ui/skins/new/assets/reel_symbols
+    dp_per_pixel: 0.5
+    sprites:
+      nb-reel-1: [0, 0, 84, 84]
+      nb-reel-2: [84, 0, 84, 84]
+      nb-reel-3: [168, 0, 84, 84]
+      nb-reel-4: [252, 0, 84, 84]
+      nb-reel-5: [336, 0, 84, 84]
+      nb-reel-6: [420, 0, 84, 84]
+      nb-reel-7: [504, 0, 84, 84]
   # The concept's icons for the field menu, owner-approved (assets/icon_sources holds the single pictures).
   - name: new-field-icons
     image: ui/skins/new/assets/menu_icons

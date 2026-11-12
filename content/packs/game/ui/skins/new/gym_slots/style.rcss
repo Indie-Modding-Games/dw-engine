@@ -1,6 +1,15 @@
 /* The gym's slot reels in the new look (concept area C, gym_slots: 258-261): the pause menu's panel (panel/style) as
-   the box, each reel sunk in a light-blue frame with a dark fill, the rows above and below the middle dimmed, a gold
-   line through the middle and the rate in gold under the reels. */
+   the box, each reel sunk in a light-blue frame with a dark fill, a gold line through the middle and the rate in gold
+   under the reels. The symbols are the look's flat shapes (a diamond, a square, a coin, a triangle, a star, a heart
+   and a cross; assets/reel_symbols.png) instead of the original's. */
+
+body .cell.symbol-1 { decorator: image(nb-reel-1 scale-none center center); }
+body .cell.symbol-2 { decorator: image(nb-reel-2 scale-none center center); }
+body .cell.symbol-3 { decorator: image(nb-reel-3 scale-none center center); }
+body .cell.symbol-4 { decorator: image(nb-reel-4 scale-none center center); }
+body .cell.symbol-5 { decorator: image(nb-reel-5 scale-none center center); }
+body .cell.symbol-6 { decorator: image(nb-reel-6 scale-none center center); }
+body .cell.symbol-7 { decorator: image(nb-reel-7 scale-none center center); }
 
 body .reel {
 	margin: -3dp 0 0 -3dp;
@@ -8,9 +17,10 @@ body .reel {
 	background-color: #0b1424;
 }
 
+/* The concept dims no row: every symbol in the window shows whole. */
 body .shade.top,
 body .shade.bottom {
-	background-color: #040812c8;
+	background-color: transparent;
 	decorator: none;
 }
 

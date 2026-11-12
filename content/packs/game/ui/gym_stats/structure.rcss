@@ -77,6 +77,11 @@ body .label {
 	top: 0;
 }
 
+/* Each stat's whole name: hidden; a look that writes the names out shows it instead of the label. */
+body .name {
+	display: none;
+}
+
 body .value {
 	position: absolute;
 	z-index: 1;
