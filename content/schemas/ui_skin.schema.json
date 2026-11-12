@@ -11,6 +11,7 @@
     "pictureLayout": { "description": "Where the title's picture and the boxes over it go in a wide window: the style sheet's places (modern), or the original's places across the widened picture while «widescreen pictures» is on (original).", "enum": ["modern", "original"] },
     "barsLayout": { "description": "How the field HUD's bars fill: smoothly (continuous), or in the original game's 25 steps (pips).", "enum": ["continuous", "pips"] },
     "pagesLayout": { "description": "How the partner menu's status, tech and item pages are drawn: in the menu's panel (modern), or as the original game's full screens (original).", "enum": ["modern", "original"] },
+    "headingLayout": { "description": "Whether the save machine's heading stays over its save question: only over the register and the slots, as in the original game (original), or over the question too (always).", "enum": ["original", "always"] },
     "boxLayout": { "description": "How the screen's boxes open: at once (modern), or growing from a grey outline as in the original game.", "enum": ["modern", "original"] },
     "styleName": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$" },
     "assetId": { "description": "An asset id: the path without its extension.", "type": "string", "pattern": "^[a-z0-9_]+(/[a-z0-9_]+)*$" },
@@ -68,7 +69,8 @@
         "new_game_rules": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" }, "picture": { "$ref": "#/$defs/pictureLayout" } } },
         "egg_box": { "type": "object", "additionalProperties": false, "properties": { "box": { "$ref": "#/$defs/boxLayout" } } },
         "field_item_notice": { "type": "object", "additionalProperties": false, "properties": { "box": { "$ref": "#/$defs/boxLayout" } } },
-        "hud": { "type": "object", "additionalProperties": false, "properties": { "bars": { "$ref": "#/$defs/barsLayout" } } }
+        "hud": { "type": "object", "additionalProperties": false, "properties": { "bars": { "$ref": "#/$defs/barsLayout" } } },
+        "save_machine": { "type": "object", "additionalProperties": false, "properties": { "heading": { "$ref": "#/$defs/headingLayout" } } }
       }
     },
     "sprite_sheets": {

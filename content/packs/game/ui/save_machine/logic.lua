@@ -152,6 +152,10 @@ local function refresh(document)
   for _, box in ipairs(Boxes[view] or {}) do
     shown[box] = true
   end
+  -- A skin may keep the heading over the save question too (layout heading: always).
+  if view == "save_question" and ui.layout("heading") == "always" then
+    shown.heading = true
+  end
   for _, box in ipairs(AllBoxes) do
     document:get(box):set_class("hidden", not shown[box])
   end

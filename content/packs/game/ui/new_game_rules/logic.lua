@@ -16,6 +16,21 @@ local function yes_no(on)
   return t(on and "common.yes" or "common.no")
 end
 
+-- A rule's line in its button: the text before the value, the value (yes or no, in a span of its
+-- own that a skin may colour, .rule-value) and the text after it.
+local value_mark = "\1"
+local function set_rule(document, id, key, on)
+  local line = t(key, { value = value_mark })
+  local at = string.find(line, value_mark, 1, true)
+  local before, after = line, ""
+  if at ~= nil then
+    before, after = string.sub(line, 1, at - 1), string.sub(line, at + #value_mark)
+  end
+  document:get(id .. "-label"):set_text(before)
+  document:get(id .. "-value"):set_text(at ~= nil and yes_no(on) or "")
+  document:get(id .. "-after"):set_text(after)
+end
+
 -- Every species as a partner, when the packs have its rulesets (new_game_rules.all, published by
 -- the game).
 local function all_offered()
@@ -24,15 +39,15 @@ end
 
 local function refresh(document)
   local all_shown = all_offered()
-  document:get("rules-all"):set_text(t("new_game_rules.all", { value = yes_no(all) }))
+  set_rule(document, "rules-all", "new_game_rules.all", all)
   document:get("about-all"):set_text(t(all and "new_game_rules.all_on" or "new_game_rules.all_off"))
   document:get("rules-all"):set_class("hidden", not all_shown)
   document:get("about-all"):set_class("hidden", not all_shown)
-  document:get("rules-hidden"):set_text(t("new_game_rules.hidden", { value = yes_no(hidden) }))
+  set_rule(document, "rules-hidden", "new_game_rules.hidden", hidden)
   document
     :get("about-hidden")
     :set_text(t(hidden and "new_game_rules.hidden_on" or "new_game_rules.hidden_off"))
-  document:get("rules-mega"):set_text(t("new_game_rules.mega", { value = yes_no(mega) }))
+  set_rule(document, "rules-mega", "new_game_rules.mega", mega)
   document:get("about-mega"):set_text(t("new_game_rules.mega_about"))
   -- The Mega step is part of the hidden content, when the packs have its ruleset
   -- (new_game_rules.mega, published by the game).

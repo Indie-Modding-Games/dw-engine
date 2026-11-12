@@ -7,6 +7,8 @@
 </head>
 <body>
 	<div id="scrim">
+		<!-- The title's logo, for a skin that draws one beside the list (the rules' #picture); hidden otherwise. -->
+		<div id="picture"></div>
 		<div id="panel">
 			<h1 id="title" text-key="modes.title"></h1>
 			<button id="mode-1" class="mode" onclick="choose(1)" onfocus="mode_focus(document, 1)"></button>

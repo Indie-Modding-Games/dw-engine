@@ -102,11 +102,12 @@ screens:
   world_map:
     styles: [world_map/style]
 # The original's layouts (extends original), but the concept draws the title, the slot list and the rules over its
-# own 4:3 picture: no widescreen title picture.
+# own 4:3 picture: no widescreen title picture; and the save machine keeps its heading over the save question.
 layout:
   main_menu: {picture: modern}
   save_slots: {picture: modern}
   new_game_rules: {picture: modern}
+  save_machine: {heading: always}
 sprite_sheets:
   # Frames, cursor, key caps, tabs, bar fills and hearts of the design system, 2 pixels per dp (made from the
   # concept's theme.css values; see the skin's page in docs/architecture/ui.md).

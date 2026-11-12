@@ -664,6 +664,7 @@ layout:                             # opcional: opciones de maquetación que lee
   | `pages` | `partner_menu` | `modern`; `original`, las páginas de estado, técnicas y bolsa como las pantallas completas del original (las clases de página de `#scrim`) |
   | `picture` | `main_menu`, `save_slots`, `new_game_rules` | `modern`; `original`, con «imágenes panorámicas» las cajas y el logo van a sus sitios del original sobre la imagen ensanchada (`common/title_picture.lua`) |
   | `bars` | `hud` | `continuous` (por defecto); `pips`, las barras del estado del campo se llenan en los 25 cuadritos del original |
+  | `heading` | `save_machine` | `original` (o sin poner), el título de la máquina solo sobre el registro y las ranuras, como el original; `always`, también sobre la pregunta de guardar |
 
   El moderno declara las suyas, y el original (y el new, que lo extiende) las del original. Las clases de `document_classes` quedan
   para el estilo (`skin-original`, `title-original`, `slots-original`, `pips`): ningún script las lee (un test lo
