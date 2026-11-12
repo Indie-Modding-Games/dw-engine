@@ -65,6 +65,8 @@ schemas:
     - ui/skins/*/skin
   ui_skin_choice:
     - ui/ui_skin
+  ui_addon:
+    - ui/addon
   ui_sounds:
     - ui/ui_sounds
   world_map_layout:

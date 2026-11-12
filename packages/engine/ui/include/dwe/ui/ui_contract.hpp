@@ -1,5 +1,6 @@
 #pragma once
 
+#include <compare>
 #include <cstdint>
 #include <span>
 #include <string>
@@ -14,8 +15,10 @@ struct UiApiVersion {
   std::uint32_t major = 0;
   std::uint32_t minor = 0;
   std::uint32_t patch = 0;
+
+  friend constexpr auto operator<=>(const UiApiVersion&, const UiApiVersion&) = default;
 };
-inline constexpr UiApiVersion CurrentUiApiVersion{.major = 0, .minor = 7, .patch = 0};
+inline constexpr UiApiVersion CurrentUiApiVersion{.major = 0, .minor = 8, .patch = 0};
 
 // What an entry of the contract is to a screen's documents.
 enum class UiContractKind : std::uint8_t {

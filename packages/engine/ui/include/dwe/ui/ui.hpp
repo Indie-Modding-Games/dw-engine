@@ -177,10 +177,26 @@ public:
   std::size_t fireEvent(std::string_view event, const UiArguments& table);
 
   // Shows a loaded document. A modal one takes the input: the game must not see it while it is
-  // shown. Its on_show handler gets the arguments as a table (empty when there are none).
+  // shown. Its on_show handler gets the arguments as a table (empty when there are none). The name
+  // is a screen's: the document the active UI maps it to (mapScreen) shows, or the one of that
+  // name. Every call below that takes a document's name reads it the same way.
   void show(std::string_view name, bool modal = false, const UiArguments& arguments = {});
   void hide(std::string_view name);
   [[nodiscard]] bool isVisible(std::string_view name) const;
+
+  // Screens: the game asks for a screen (pause_menu, hud...) and the active UI decides how it
+  // shows. The default UI names its documents after the screens; a UI addon maps the screens it
+  // covers to its own documents, and the rest keep the default UI's.
+  void mapScreen(std::string_view screen, std::string_view document);
+  // Every screen back to the default UI's document.
+  void clearScreenMap();
+  // The document that shows a screen now.
+  [[nodiscard]] std::string_view screenDocument(std::string_view screen) const;
+  // The same as show, hide and isVisible, by the screen's name.
+  void requestScreen(std::string_view screen, bool modal = false,
+                     const UiArguments& arguments = {});
+  void closeScreen(std::string_view screen);
+  [[nodiscard]] bool isScreenOpen(std::string_view screen) const;
 
   // The document the `menu` action opens, modal, when no other modal document is shown.
   void setMenuDocument(std::string_view name);

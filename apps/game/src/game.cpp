@@ -26,6 +26,7 @@
 #include <dwe/script/script_vm.hpp>
 #include <dwe/session/session_sound.hpp>
 #include <dwe/ui/ui.hpp>
+#include <dwe/ui/ui_addon.hpp>
 #include <dwe/ui/ui_renderer.hpp>
 
 #include <SDL3/SDL_events.h>
@@ -68,7 +69,6 @@
 #include "first_run_screen.hpp"
 #include "frame_stats.hpp"
 #include "game_audio.hpp"
-#include "game_documents.hpp"
 #include "graphics_options.hpp"
 #include "gym_batch.hpp"
 #include "hd_scenery_setting.hpp"
@@ -217,13 +217,15 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, r
   return true;
 }
 
-core::Result<void> loadDocuments(ui::Ui& ui) {
-  for (const auto& [name, id] : GameDocuments) {
-    auto asset = assets::AssetId::parse(id);
-    if (!asset) {
-      return std::unexpected{asset.error()};
-    }
-    if (auto loaded = ui.loadDocument(name, *asset); !loaded) {
+// Loads the default UI: the document of every screen its ui/addon.yaml names, under the screen's
+// name (ui/dev_assets, which DevAssetsBanner loads itself, is not a screen).
+core::Result<void> loadDocuments(ui::Ui& ui, const assets::VirtualFileSystem& files) {
+  auto defaultUi = ui::readUiAddon(files, ui::DefaultUiFolder);
+  if (!defaultUi) {
+    return std::unexpected{defaultUi.error()};
+  }
+  for (const auto& [screen, document] : defaultUi->screens) {
+    if (auto loaded = ui.loadDocument(screen, document); !loaded) {
       return loaded;
     }
   }
@@ -761,7 +763,7 @@ int runGame(const Options& requested) {
   // The skin goes on before the documents load, so they are styled once.
   applyStartUiSkin(**ui, startUiSkin(options.uiSkin, userSettings.uiSkin));
   UiSkinChanger uiSkinChanger{**ui, userSettings, settingsFile};
-  if (auto loaded = loadDocuments(**ui); !loaded) {
+  if (auto loaded = loadDocuments(**ui, files); !loaded) {
     core::logError("game: {}", loaded.error().message);
     return EXIT_FAILURE;
   }

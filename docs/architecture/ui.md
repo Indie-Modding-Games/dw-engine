@@ -60,6 +60,21 @@ ui->refreshTexts();                                            // tras catalog.s
 
 Se destruyen al revés: `Ui` (suelta sus texturas en el renderer), `UiRenderer`, `Renderer`.
 
+### Pantallas e interfaz por defecto
+
+El juego pide **pantallas** (`hud`, `pause_menu`, `partner_menu`...) y la interfaz activa decide qué documento las
+enseña. La interfaz por defecto se describe en `content/packs/game/ui/addon.yaml` (esquema
+`content/schemas/ui_addon.schema.json`): nombra el documento de cada pantalla, y el juego lo carga con el nombre de la
+pantalla (`ui::readUiAddon` + `loadDocument`). Un test comprueba que cada `ui/<carpeta>/document.rml` del paquete está
+ahí, salvo `ui/dev_assets`, que carga `DevAssetsBanner`.
+
+`Ui::requestScreen`, `closeScreen` e `isScreenOpen` piden una pantalla por su nombre. `Ui::mapScreen(pantalla,
+documento)` hace que esa pantalla la enseñe otro documento cargado (el de un addon de interfaz); las que no se mapean
+siguen con el documento de su nombre, y `clearScreenMap` vuelve a la interfaz por defecto. `show`, `hide`,
+`isVisible`, las llamadas que leen o cambian elementos de un documento, la tecla del menú y el `ui.show` de los
+scripts leen el nombre igual: primero como pantalla, luego como documento. Así las ~180 llamadas del juego que ya usan
+el nombre de la pantalla no cambian.
+
 ## Dibujo
 
 RmlUi dibuja en dos tiempos. `Ui::update()` hace el layout y llama a `Render()` de RmlUi fuera del frame: la

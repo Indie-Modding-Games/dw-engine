@@ -302,6 +302,8 @@ struct Ui::Impl {
   std::vector<UiCommand> commands;
   // The latest value of each name the documents report (ui.report), for the game to read.
   std::map<std::string, UiValue, std::less<>> reports;
+  // The document each screen shows when the active UI is not the default one (mapScreen).
+  std::map<std::string, std::string, std::less<>> screenDocuments;
   std::vector<UiCue> cues;
   std::map<std::string, UiValue, std::less<>> settings;
   const input::InputState* input = nullptr;
@@ -526,6 +528,18 @@ struct Ui::Impl {
     ownTexts = std::move(*loaded);
     texts = &*ownTexts;
     return {};
+  }
+
+  // The document that shows a screen: the one the active UI maps it to (mapScreen), otherwise the
+  // document of that name, as the default UI names its documents after its screens.
+  [[nodiscard]] std::string_view documentOf(std::string_view name) const {
+    auto found = screenDocuments.find(name);
+    return found == screenDocuments.end() ? name : std::string_view{found->second};
+  }
+
+  Document* findScreen(std::string_view name) { return find(documentOf(name)); }
+  [[nodiscard]] const Document* findScreen(std::string_view name) const {
+    return find(documentOf(name));
   }
 
   Document* find(std::string_view name) {
@@ -758,7 +772,8 @@ struct Ui::Impl {
     return {};
   }
 
-  void show(std::string_view name, bool modal, const UiArguments& arguments) {
+  void show(std::string_view screen, bool modal, const UiArguments& arguments) {
+    const std::string_view name = documentOf(screen);
     Document* document = find(name);
     if (document == nullptr) {
       core::logWarning("ui: no document named {}", name);
@@ -776,7 +791,8 @@ struct Ui::Impl {
     document->element->callHandler("on_show", arguments);
   }
 
-  void hide(std::string_view name) {
+  void hide(std::string_view screen) {
+    const std::string_view name = documentOf(screen);
     Document* document = find(name);
     // Always drop the name from the modal stack, even if the document was
     // already hidden (e.g. closed by another path), so capturesInput() does
@@ -789,8 +805,8 @@ struct Ui::Impl {
     document->element->callHandler("on_hide");
   }
 
-  [[nodiscard]] bool isVisible(std::string_view name) const {
-    const Document* document = find(name);
+  [[nodiscard]] bool isVisible(std::string_view screen) const {
+    const Document* document = findScreen(screen);
     return document != nullptr && document->element->IsVisible();
   }
 
@@ -932,7 +948,7 @@ struct Ui::Impl {
   void step(NavCommand command) {
     Document* modal = topModal();
     if (modal == nullptr) {
-      if (command == NavCommand::Menu && !menuShut && find(menuDocument) != nullptr) {
+      if (command == NavCommand::Menu && !menuShut && findScreen(menuDocument) != nullptr) {
         show(menuDocument, true, {});
         capturedThisTick = true;
       }
@@ -1432,6 +1448,34 @@ bool Ui::isVisible(std::string_view name) const {
   return impl_->isVisible(name);
 }
 
+void Ui::mapScreen(std::string_view screen, std::string_view document) {
+  if (document.empty() || document == screen) {
+    impl_->screenDocuments.erase(std::string{screen});
+  } else {
+    impl_->screenDocuments.insert_or_assign(std::string{screen}, std::string{document});
+  }
+}
+
+void Ui::clearScreenMap() {
+  impl_->screenDocuments.clear();
+}
+
+std::string_view Ui::screenDocument(std::string_view screen) const {
+  return impl_->documentOf(screen);
+}
+
+void Ui::requestScreen(std::string_view screen, bool modal, const UiArguments& arguments) {
+  impl_->show(screen, modal, arguments);
+}
+
+void Ui::closeScreen(std::string_view screen) {
+  impl_->hide(screen);
+}
+
+bool Ui::isScreenOpen(std::string_view screen) const {
+  return impl_->isVisible(screen);
+}
+
 void Ui::setTextFont(TextFont font) {
   impl_->setTextFont(font);
 }
@@ -1575,7 +1619,7 @@ void Ui::reloadChanged() {
 
 core::Result<void> Ui::callScript(std::string_view document, std::string_view function,
                                   std::span<const std::string> arguments) {
-  Impl::Document* found = impl_->find(document);
+  Impl::Document* found = impl_->findScreen(document);
   if (found == nullptr) {
     return core::fail(std::format("no document named {}", document));
   }
@@ -1592,7 +1636,7 @@ core::Result<void> Ui::callScript(std::string_view document, std::string_view fu
 }
 
 std::string Ui::focusedElementId(std::string_view document) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* focus = impl_->context->GetFocusElement();
   if (found == nullptr || focus == nullptr || focus->GetOwnerDocument() != found->element) {
     return {};
@@ -1602,7 +1646,7 @@ std::string Ui::focusedElementId(std::string_view document) const {
 
 std::string Ui::styleProperty(std::string_view document, std::string_view elementId,
                               std::string_view property) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   if (found == nullptr) {
     return {};
   }
@@ -1614,7 +1658,7 @@ std::string Ui::styleProperty(std::string_view document, std::string_view elemen
 }
 
 std::string Ui::elementText(std::string_view document, std::string_view elementId) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* element =
       found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
   return element != nullptr ? element->GetInnerRML() : std::string{};
@@ -1622,7 +1666,7 @@ std::string Ui::elementText(std::string_view document, std::string_view elementI
 
 bool Ui::elementHasClass(std::string_view document, std::string_view elementId,
                          std::string_view className) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* element = nullptr;
   if (found != nullptr) {
     element =
@@ -1637,7 +1681,7 @@ namespace dwe::ui {
 
 std::optional<Ui::Point> Ui::elementCenter(std::string_view document,
                                            std::string_view elementId) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* element =
       found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
   if (element == nullptr) {
@@ -1649,7 +1693,7 @@ std::optional<Ui::Point> Ui::elementCenter(std::string_view document,
 }
 
 bool Ui::elementShown(std::string_view document, std::string_view elementId) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   const Rml::Element* element =
       found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
   return element != nullptr && element->IsVisible(true);
@@ -1673,7 +1717,7 @@ std::vector<Ui::TextOverflow> Ui::overflowingTexts() const {
 
 std::optional<Ui::Rect> Ui::elementRect(std::string_view document,
                                         std::string_view elementId) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* element =
       found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
   if (element == nullptr) {
@@ -1687,7 +1731,7 @@ std::optional<Ui::Rect> Ui::elementRect(std::string_view document,
 
 std::optional<Ui::Rect> Ui::elementDrawnRect(std::string_view document,
                                              std::string_view elementId) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* element =
       found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
   if (element == nullptr) {
@@ -1716,7 +1760,7 @@ std::vector<Ui::Rect> Ui::drawnRects(std::string_view exceptDocument) const {
 }
 
 std::vector<Ui::Rect> Ui::drawnRectsIn(std::string_view document) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   if (found == nullptr) {
     return {};
   }
@@ -1726,7 +1770,7 @@ std::vector<Ui::Rect> Ui::drawnRectsIn(std::string_view document) const {
 
 std::vector<Ui::Rect> Ui::drawnRectsOf(std::string_view document,
                                        std::string_view elementId) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* element =
       found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
   if (element == nullptr) {
@@ -1738,7 +1782,7 @@ std::vector<Ui::Rect> Ui::drawnRectsOf(std::string_view document,
 
 std::vector<Ui::Rect> Ui::drawnRectsAround(std::string_view document,
                                            std::string_view elementId) const {
-  const Impl::Document* holder = impl_->find(document);
+  const Impl::Document* holder = impl_->findScreen(document);
   Rml::Element* element =
       holder != nullptr ? holder->element->GetElementById(std::string{elementId}) : nullptr;
   std::vector<Rect> found;

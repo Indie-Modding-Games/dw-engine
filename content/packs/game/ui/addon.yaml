@@ -1,0 +1,53 @@
+# The default UI (docs/modding/interfaces.md): the document that shows each of the game's screens.
+# A UI addon names its own for the screens it covers; the rest keep these. The skins (ui/skins/)
+# restyle these documents.
+id: default
+name: Interfaz del juego
+version: 1.0.0
+ui_api: "0.8"
+type: ui
+screens:
+  hud: hud/document
+  story_textbox: story_textbox/document
+  pause_menu: pause_menu/document
+  pause_box: pause_box/document
+  main_menu: main_menu/document
+  battle: battle/document
+  partner_menu: partner_menu/document
+  destination_choice: destination_choice/document
+  save_slots: save_slots/document
+  dialog: dialog/document
+  new_game_rules: new_game_rules/document
+  new_game_mode: new_game_mode/document
+  skin_picker: skin_picker/document
+  sleep_menu: sleep_menu/document
+  save_machine: save_machine/document
+  gym_stats: gym_stats/document
+  shop_menu: shop_menu/document
+  dev_menu: dev_menu/document
+  item_keeper: item_keeper/document
+  discard_menu: discard_menu/document
+  jukebox: jukebox/document
+  versus: versus/document
+  tournament_schedule: tournament_schedule/document
+  tournament_bracket: tournament_bracket/document
+  tournament_match: tournament_match/document
+  trade_menu: trade_menu/document
+  bird_transport: bird_transport/document
+  money_box: money_box/document
+  card_shop: card_shop/document
+  merit_shop: merit_shop/document
+  field_item_notice: field_item_notice/document
+  field_numbers: field_numbers/document
+  award_notice: award_notice/document
+  gym_slots: gym_slots/document
+  naming_box: naming_box/document
+  egg_box: egg_box/document
+  lives_box: lives_box/document
+  fishing_bait: fishing_bait/document
+  fishing_notice: fishing_notice/document
+  fishing_hud: fishing_hud/document
+  curling_hud: curling_hud/document
+  bug_report: bug_report/document
+  save_indicator: save_indicator/document
+  world_map: world_map/document

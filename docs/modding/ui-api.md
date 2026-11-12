@@ -55,6 +55,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.8.0 | Pantallas: el juego pide una pantalla y la interfaz activa decide qué documento la enseña. La interfaz por defecto se describe en `ui/addon.yaml` del paquete del juego |
 | 0.7.0 | Llegan los estados (`ui.report`): los menús cuentan al juego qué retrato en 3D dibujar (`pause_menu.portrait`, `pause_menu.medal`, `partner_menu.portrait`) en vez de que el juego lea sus clases |
 | 0.6.0 | Llegan los espacios `clock`, `field`, `partner`, `bag`, `player` y `options` con sus consultas, acciones y eventos, y `hooks.on`/`hooks.off`. El HUD y las opciones de los menús ya leen por ellos |
 | 0.5.0 | El HUD lee del juego sus reglas: `hud.clock.night`, `hud.clock.phase` y `hud.meter.<n>.mood`. Su script se parte en `presenter.lua` (qué enseña) y `view.lua` (cómo lo dibuja) |
@@ -72,7 +73,7 @@ después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.7.0**.
+Versión de la API de la interfaz: **0.8.0**.
 
 ### `hud`
 

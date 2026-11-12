@@ -27,6 +27,7 @@ dwe_add_module(ui
         src/sprite_sheet_rcss.cpp
         src/text_fit.cpp
         src/text_font.cpp
+        src/ui_addon.cpp
         src/ui.cpp
         src/ui_contract.cpp
         src/ui_renderer.cpp

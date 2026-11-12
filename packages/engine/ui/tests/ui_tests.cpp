@@ -2729,4 +2729,40 @@ TEST_CASE("a document reports a state the game reads when it needs it, the lates
   CHECK(ui->reported("probe.portrait") == UiValue{false});
 }
 
+TEST_CASE("the game asks for a screen and the active UI decides which document shows it") {
+  Content content;
+  content.add("ui/menu/document.rml", "<rml><head/><body id='body'>default</body></rml>");
+  content.add("ui/addons/big/menu/document.rml", "<rml><head/><body id='body'>big</body></rml>");
+  content.add("ui/caller/document.rml",
+              "<rml><head><script>function on_show(document) ui.show('menu') end"
+              "</script></head><body/></rml>");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("menu", idOf("ui/menu/document")));
+  REQUIRE(ui->loadDocument("big.menu", idOf("ui/addons/big/menu/document")));
+  REQUIRE(ui->loadDocument("caller", idOf("ui/caller/document")));
+  // The default UI: the screen is the document of its name.
+  CHECK(ui->screenDocument("menu") == "menu");
+  ui->requestScreen("menu");
+  CHECK(ui->isScreenOpen("menu"));
+  CHECK(ui->elementText("menu", "body") == "default");
+  ui->closeScreen("menu");
+  // An addon's UI: the same screen shows its document, by the game's call and by a script's.
+  ui->mapScreen("menu", "big.menu");
+  CHECK(ui->screenDocument("menu") == "big.menu");
+  ui->show("caller");
+  CHECK(ui->isVisible("big.menu"));
+  CHECK(ui->isScreenOpen("menu"));
+  CHECK(ui->elementText("menu", "body") == "big");
+  ui->closeScreen("menu");
+  CHECK_FALSE(ui->isVisible("big.menu"));
+  // The menu key opens the screen's document too.
+  ui->setMenuDocument("menu");
+  ui->requestScreen("menu", true);
+  CHECK(ui->capturesInput());
+  ui->closeScreen("menu");
+  CHECK_FALSE(ui->capturesInput());
+  ui->clearScreenMap();
+  CHECK(ui->screenDocument("menu") == "menu");
+}
+
 } // namespace dwe::ui

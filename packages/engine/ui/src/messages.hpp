@@ -69,6 +69,25 @@ inline constexpr std::string_view NoImageMeta =
     "a palette of {} is asked for, but it has no metadata with palettes";
 inline constexpr std::string_view PaletteOutOfRange = "{} has no palette {}: it has {}";
 
+// A UI addon's addon.yaml (ui_addon.cpp).
+inline constexpr std::string_view UiAddonContext = "addon.yaml";
+inline constexpr std::string_view UiAddonWhat = "a UI addon";
+inline constexpr std::string_view UiAddonDocumentsWhat = "documents";
+inline constexpr std::string_view BadUiAddonId =
+    "must be 1 to 64 lowercase letters, digits and underscores";
+inline constexpr std::string_view BadUiAddonText = "must be 1 to {} characters, on one line";
+inline constexpr std::string_view BadUiAddonType = "must be ui or plugin";
+inline constexpr std::string_view UiAddonScreensNotMapping =
+    "must map each screen to its document (screens: <screen>: <document>)";
+inline constexpr std::string_view UiAddonNeedsScreens = "a ui addon must name its screens";
+inline constexpr std::string_view UiAddonNeedsDocuments = "a plugin must name its documents";
+inline constexpr std::string_view UiAddonWrongPart = "a {} addon has no {}";
+inline constexpr std::string_view UiAddonDocumentOutside =
+    "must stay inside the addon's folder: no leading / and no ..";
+inline constexpr std::string_view BadUiApiRange =
+    "ui_api {} must be a version (0.8) or bounds (>=0.8 <0.12)";
+inline constexpr std::string_view EmptyUiApiRange = "ui_api {} holds no version";
+
 // skin.yaml and ui/ui_skin.yaml (skin.cpp).
 inline constexpr std::string_view SkinContext = "skin";
 inline constexpr std::string_view SkinChoiceContext = "ui/ui_skin";
