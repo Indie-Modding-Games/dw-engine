@@ -93,7 +93,7 @@ El documento puede definir estas funciones, que la UI llama con el documento com
 
 | Función | Cuándo |
 |---|---|
-| `on_show(document)` | Al mostrarse |
+| `on_show(document, args)` | Al mostrarse; `args` es la tabla que pasó `ui.show` (vacía si no pasó nada) |
 | `on_hide(document)` | Al ocultarse |
 | `on_action(document, acción)` | Por cada paso de navegación mientras es el documento modal de arriba: `up`, `down`, `left`, `right`, `confirm`, `cancel`, `menu`. Si devuelve `true`, la UI no hace lo de por defecto |
 | `on_setting(document, nombre)` | Cuando la app cambia un ajuste |
@@ -112,7 +112,7 @@ API disponible:
 | `ui.skins()`, `ui.skin_name_key(id)` | Los ids de los aspectos que ofrecen los paquetes (`{"modern"}`) y la clave del nombre de uno, para `t()` |
 | `ui.prompt(acción)` | El nombre del control de esa acción en el dispositivo actual (`"Enter"`, `"A"`, `"Cross"`), en el idioma del juego; los textos están en `localization/<idioma>/prompt.yaml` |
 | `ui.device()`, `ui.gamepad_family()` | `"keyboard_mouse"` o `"gamepad"`; `"xbox"`, `"playstation"`, `"nintendo"`, `"steam"` o `"generic"` |
-| `ui.show(nombre[, modal])`, `ui.hide(nombre)`, `ui.is_visible(nombre)` | Muestra u oculta un documento cargado; con `modal` verdadero el documento recibe la navegación (como el menú que abre el juego) |
+| `ui.show(nombre[, modal[, args]])`, `ui.hide(nombre)`, `ui.is_visible(nombre)` | Muestra u oculta un documento cargado; con `modal` verdadero el documento recibe la navegación (como el menú que abre el juego). `args`, una tabla de sí/no, números y textos con nombre, le llega a su `on_show` ([API de la interfaz](../modding/ui-api.md)) |
 | `ui.cue(nombre)` | Suena `box_open` o `box_close` (las cajas del aspecto original) o `confirm` (una pulsación que no pasa por la navegación, como la tecla extra), de `ui_sounds.yaml` |
 | `document_name` | El nombre del propio documento |
 | `element:get(id)` | Un elemento descendiente, o `nil` |

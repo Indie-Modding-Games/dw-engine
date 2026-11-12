@@ -121,6 +121,76 @@ std::vector<localization::TextArgument> textArgumentsOf(std::span<const LuaTextA
   return arguments;
 }
 
+// One of ui.show's arguments as Lua holds it: views into Lua's strings while its table is read.
+struct LuaShowArgument {
+  std::string_view name;
+  int type = LUA_TNIL;
+  std::string_view text;
+  double number = 0.0;
+  bool flag = false;
+};
+
+using LuaShowArguments = std::array<LuaShowArgument, MaxShowArguments>;
+
+// Reads the table of ui.show's arguments at a stack index, if there is one: named switches,
+// numbers and texts. Only plain values are alive here, because the checks raise Lua errors.
+std::size_t readShowArguments(lua_State* state, int index, LuaShowArguments& arguments) {
+  if (lua_isnoneornil(state, index)) {
+    return 0;
+  }
+  if (lua_type(state, index) != LUA_TTABLE) {
+    raise(state, "ui.show takes its arguments as a table");
+  }
+  luaL_checkstack(state, 2, "too many nested calls");
+  std::size_t count = 0;
+  lua_pushnil(state);
+  while (lua_next(state, index) != 0) {
+    if (lua_type(state, -2) != LUA_TSTRING) {
+      raise(state, "ui.show's arguments have names");
+    }
+    if (count == arguments.size()) {
+      raise(state, "too many arguments for ui.show");
+    }
+    LuaShowArgument& argument = arguments.at(count++);
+    std::size_t length = 0;
+    const char* name = lua_tolstring(state, -2, &length);
+    argument.name = {name, length};
+    checkName(state, argument.name);
+    argument.type = lua_type(state, -1);
+    if (argument.type == LUA_TBOOLEAN) {
+      argument.flag = lua_toboolean(state, -1) != 0;
+    } else if (argument.type == LUA_TNUMBER) {
+      argument.number = lua_tonumber(state, -1);
+    } else if (argument.type == LUA_TSTRING) {
+      const char* text = lua_tolstring(state, -1, &length);
+      argument.text = {text, length};
+      checkText(state, argument.text);
+    } else {
+      raise(state, "ui.show's arguments are switches, numbers or texts");
+    }
+    lua_pop(state, 1);
+  }
+  return count;
+}
+
+UiValue showValueOf(const LuaShowArgument& argument) {
+  if (argument.type == LUA_TBOOLEAN) {
+    return argument.flag;
+  }
+  if (argument.type == LUA_TNUMBER) {
+    return argument.number;
+  }
+  return std::string{argument.text};
+}
+
+UiArguments showArgumentsOf(std::span<const LuaShowArgument> read) {
+  UiArguments arguments;
+  for (const LuaShowArgument& argument : read) {
+    arguments.insert_or_assign(std::string{argument.name}, showValueOf(argument));
+  }
+  return arguments;
+}
+
 UiValue toUiValue(const sol::stack_object& value) {
   switch (value.get_type()) {
   case sol::type::boolean:
@@ -431,6 +501,15 @@ void Scripting::pushArgument(lua_State* state, std::span<const std::string> text
   }
 }
 
+void Scripting::pushArgument(lua_State* state, const UiArguments& arguments) {
+  lua_createtable(state, 0, static_cast<int>(arguments.size()));
+  for (const auto& [name, value] : arguments) {
+    lua_pushlstring(state, name.data(), name.size());
+    pushOne(state, value);
+    lua_rawset(state, -3);
+  }
+}
+
 core::Result<LuaCallResult> Scripting::protectedCall(lua_State* state, int top) {
   // call() holds the ScriptCall that gives this its budget.
   if (lua_pcall(state, 1, 2, 0) != LUA_OK) {
@@ -727,11 +806,15 @@ void Scripting::registerApi() {
   api["gamepad_family"] = [this](sol::this_state lua) {
     return result(lua, [&] { return host_.gamepadFamily(); });
   };
-  // ui.show(name, modal): a menu that hands the navigation back to another menu shows it modal,
-  // or that menu would be on screen without receiving any input.
+  // ui.show(name, modal, arguments): a menu that hands the navigation back to another menu shows
+  // it modal, or that menu would be on screen without receiving any input. The arguments, a table
+  // of named switches, numbers and texts, reach the shown document's on_show.
   api["show"] = [this](std::string_view name, sol::optional<bool> modal, sol::this_state lua) {
     checkName(lua, name);
-    host_.show(name, modal.value_or(false));
+    LuaShowArguments read{};
+    const std::size_t count = readShowArguments(lua, 3, read);
+    host_.show(name, modal.value_or(false),
+               showArgumentsOf(std::span<const LuaShowArgument>{read}.first(count)));
   };
   // ui.cue(name): the original boxes' sounds, "box_open" and "box_close".
   api["cue"] = [this](std::string_view name, sol::this_state lua) {

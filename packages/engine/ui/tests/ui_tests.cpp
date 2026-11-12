@@ -632,6 +632,53 @@ end
   CHECK_FALSE(ui->capturesInput());
 }
 
+TEST_CASE("a document shown with arguments reads them in on_show, and an empty table without") {
+  // ui.show(name, modal, args): one menu tells the next where to start without a setting of the
+  // game in between (docs/modding/ui-api.md).
+  Content content;
+  content.add("ui/menu/document.rml", R"rml(<rml><head><script>
+function open_page() ui.show("page", true, {entry = "items", step = 2.5, back = true}) end
+function open_with_function() ui.show("page", true, {entry = function() end}) end
+function open_with_list() ui.show("page", true, {"items"}) end
+</script></head><body><button id="entry">Entry</button></body></rml>)rml");
+  content.add("ui/page/document.rml", R"rml(<rml><head><script>
+function on_show(document, args)
+  local seen = {}
+  for name, value in pairs(args) do
+    seen[#seen + 1] = name .. "=" .. tostring(value)
+  end
+  table.sort(seen)
+  ui.send("shown", table.concat(seen, " "))
+end
+</script></head><body><button id="slot">Slot</button></body></rml>)rml");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("menu", idOf("ui/menu/document")));
+  REQUIRE(ui->loadDocument("page", idOf("ui/page/document")));
+  const auto shownWith = [&] {
+    const auto commands = ui->takeCommands();
+    REQUIRE(commands.size() == 1);
+    CHECK(commands[0].name == "shown");
+    const auto* text = std::get_if<std::string>(&commands[0].value);
+    REQUIRE(text != nullptr);
+    return *text;
+  };
+
+  REQUIRE(ui->callScript("menu", "open_page"));
+  CHECK(ui->isVisible("page"));
+  CHECK(shownWith() == "back=true entry=items step=2.5");
+
+  ui->hide("page");
+  ui->show("page", true);
+  CHECK(shownWith() == "");
+
+  // Only named switches, numbers and texts: anything else is the script's error, and nothing shows.
+  ui->hide("page");
+  CHECK_FALSE(ui->callScript("menu", "open_with_function"));
+  CHECK_FALSE(ui->callScript("menu", "open_with_list"));
+  CHECK_FALSE(ui->isVisible("page"));
+  CHECK(ui->takeCommands().empty());
+}
+
 TEST_CASE("a script sounds the original boxes and reads where an element is") {
   // ui.c: createAnimatedUIBox plays playSound(0, 0), renderUIBoxAnim playSound(0, 1); the tech
   // page's help opens with playSound(0, 3), the confirm sound (game_menu.c: tickDigimonMenu).

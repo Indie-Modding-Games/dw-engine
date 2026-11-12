@@ -533,7 +533,6 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, S
     const auto* page = std::get_if<std::string>(&command.value);
     const bool items = page != nullptr && *page == "items";
     ui.setSetting("partner_menu.start_page", std::string{items ? "items" : "status"});
-    ui.setSetting("pause_menu.start_entry", std::string{items ? "open-items" : "open-partner"});
     ui.hide("pause_menu");
     ui.show("partner_menu", true);
   }

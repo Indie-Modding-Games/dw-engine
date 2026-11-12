@@ -50,6 +50,8 @@ std::string_view kindWord(UiContractKind kind) {
     return "comando";
   case UiContractKind::Option:
     return "opción";
+  case UiContractKind::Argument:
+    return "argumento";
   }
   return "";
 }
@@ -62,6 +64,8 @@ std::string_view kindKey(UiContractKind kind) {
     return "command";
   case UiContractKind::Option:
     return "option";
+  case UiContractKind::Argument:
+    return "argument";
   }
   return "";
 }

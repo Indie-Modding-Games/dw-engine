@@ -13,6 +13,7 @@ using ui::UiValueKind;
 constexpr UiContractKind Setting = UiContractKind::Setting;
 constexpr UiContractKind Command = UiContractKind::Command;
 constexpr UiContractKind Option = UiContractKind::Option;
+constexpr UiContractKind Argument = UiContractKind::Argument;
 constexpr UiValueKind None = UiValueKind::None;
 constexpr UiValueKind Boolean = UiValueKind::Boolean;
 constexpr UiValueKind Number = UiValueKind::Number;
@@ -98,9 +99,6 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
           "El menú se abre sobre la portada: solo las opciones."),
     entry(PauseMenu, Setting, "pause_menu.start_page", Text,
           "options cuando Esc o Select abrieron el menú en su página de opciones."),
-    entry(
-        PauseMenu, Setting, "pause_menu.start_entry", Text,
-        "La entrada de la página principal que recibe el foco cuando el menú vuelve tras el menú del compañero."),
     entry(PauseMenu, Setting, "pause_menu.preview_player", Boolean,
           "Abre directamente la página del jugador (vistas previas)."),
     entry(PauseMenu, Setting, "pause_menu.sleep_enabled", Boolean,
@@ -267,6 +265,10 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(PauseMenu, Option, "favorite_food", Boolean, "La comida favorita del compañero."),
     entry(PauseMenu, Option, "art_fixes", Boolean, "Arreglos de arte."),
     entry(PauseMenu, Option, "dev_tools", Boolean, "Herramientas de desarrollo."),
+    // What the menu is shown with (ui.show from another menu).
+    entry(
+        PauseMenu, Argument, "entry", Text,
+        "Al volver del menú del compañero: items o partner, la entrada que recibe el foco en la maquetación original."),
 
     // The partner's menu: its status, techniques, bag and care (apps/game: partner_menu.cpp;
     // packages/screens: partner_status_view.hpp, bag_view.hpp).

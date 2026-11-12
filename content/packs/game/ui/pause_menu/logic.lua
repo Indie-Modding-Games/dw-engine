@@ -30,6 +30,11 @@ local icon_time = 0
 local icon_flash = false
 local player_tools_open = false
 local player_tab = "player"
+-- The main page's entry the original layout focuses as the menu shows: the one the partner menu was
+-- opened from, which that menu names as it shows this one again (ui.show's args.entry). It stays
+-- until the partner menu names another, as the original's cursor does.
+local ReturnEntries = { items = "open-items", partner = "open-partner" }
+local return_entry = nil
 -- The skin's layout of this menu (skin.yaml layout: pause_menu: menu): "original" lays it out as
 -- the original game's (the icon grid, the menu box, the date header, the 3D-portrait player page
 -- whose tools open with Tab), anything else as the modern look's.
@@ -2154,7 +2159,7 @@ function adjust(_document, id, step)
   end
 end
 
-function on_show(document)
+function on_show(document, args)
   panel_enter.start(document)
   shown_document = document
   chart_detail = false
@@ -2165,7 +2170,8 @@ function on_show(document)
   parents = {}
   icon_time = 0
   refresh(document)
-  local entry = original_menu() and ui.setting("pause_menu.start_entry") or nil
+  return_entry = ReturnEntries[args.entry] or return_entry
+  local entry = original_menu() and return_entry or nil
   -- Esc / F10 (Select on a pad) open the menu straight on its options page (pause_menu.start_page,
   -- «Opciones en partida»); going back from there closes the menu.
   local was_at_title = at_title
@@ -2265,9 +2271,9 @@ function on_setting(document, name)
     if name == "evoreq.version" or name == "evoreq.ready" then
       refresh_requirements(document)
     end
-  elseif name:sub(1, 13) == "partner_menu." or name == "pause_menu.start_entry" then
-    -- The partner menu's, set as it opens over this one, and the entry read as this one shows:
-    -- nothing to draw again (a whole refresh here cost two of them per opening, #221).
+  elseif name:sub(1, 13) == "partner_menu." then
+    -- The partner menu's, set as it opens over this one: nothing to draw again (a whole refresh
+    -- here cost two of them per opening, #221).
     return
   elseif name == "pause_menu.start_page" then
     -- Esc pressed with the menu already open: switch it to the options page in place, without

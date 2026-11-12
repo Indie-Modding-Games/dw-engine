@@ -95,6 +95,10 @@ local function original_pages()
   return ui.layout("pages") == "original"
 end
 
+-- The pause menu's entry this menu was opened for, "items" or "partner": the pause menu focuses
+-- it again when Cancel goes back there (close_menu).
+local opened_on = "partner"
+
 local function slot_filled(index)
   return index < number("bag.slot.count") and not setting(slot_setting(index, "empty"), true)
 end
@@ -880,7 +884,7 @@ function close_menu(document, after)
   local function leave()
     ui.hide(document_name)
     if original_menu() and not in_battle() then
-      ui.show("pause_menu", true)
+      ui.show("pause_menu", true, { entry = opened_on })
     end
     if after ~= nil then
       after()
@@ -987,7 +991,8 @@ function on_show(document)
   draw_boxes(document)
   draw_tech_help(document)
   draw_prompts(document)
-  show_page(document, ui.setting("partner_menu.start_page") == "items" and "items" or "status")
+  opened_on = ui.setting("partner_menu.start_page") == "items" and "items" or "partner"
+  show_page(document, opened_on == "items" and "items" or "status")
   open_boxes(document)
   fit_to_window(document)
 end

@@ -182,8 +182,6 @@ bool PartnerMenu::handle(const ui::UiCommand& command) {
     const auto* page = std::get_if<std::string>(&command.value);
     const bool items = page != nullptr && *page == "items";
     desc_.ui->setSetting(PartnerMenuStartPageSetting, std::string{items ? "items" : "status"});
-    desc_.ui->setSetting("pause_menu.start_entry",
-                         std::string{items ? "open-items" : "open-partner"});
     open();
   } else if (command.name == "partner_toggle_technique" && number != nullptr) {
     if (desc_.battle != nullptr && desc_.session->playing() && *number >= 0 && *number < 16 &&

@@ -121,4 +121,36 @@ TEST_CASE("every setting a screen's scripts read and every name they send is in 
   }
 }
 
+TEST_CASE("every argument a screen's scripts show another screen with is in the contract") {
+  // ui.show("pause_menu", true, { entry = opened_on }): the names of a literal table, for the
+  // screens the contract covers.
+  const std::regex show{R"(ui\.show\(\s*["']([^"']+)["'][^{})]*\{([^}]*)\})"};
+  const std::regex key{R"(([A-Za-z_][A-Za-z0-9_]*)\s*=)"};
+  const std::filesystem::path ui = std::filesystem::path{DWE_GAME_PACK} / "ui";
+  const auto contract = gameUiContract();
+  for (const ScreenScripts& screen : Screens) {
+    for (const std::string_view file : screen.files) {
+      if (file.empty()) {
+        continue;
+      }
+      const std::string text = readText(ui / file);
+      for (std::sregex_iterator found{text.begin(), text.end(), show};
+           found != std::sregex_iterator{}; ++found) {
+        const std::string target = (*found)[1].str();
+        const std::string table = (*found)[2].str();
+        for (std::sregex_iterator name{table.begin(), table.end(), key};
+             name != std::sregex_iterator{}; ++name) {
+          const std::string argument = (*name)[1].str();
+          const std::string missing =
+              std::format("{}: {} shows {} with {}, which apps/game/src/ui_contract.cpp lacks",
+                          screen.screen, file, target, argument);
+          CHECK_MESSAGE(ui::findContractEntry(contract, target, ui::UiContractKind::Argument,
+                                              argument) != nullptr,
+                        missing);
+        }
+      }
+    }
+  }
+}
+
 } // namespace dwe::app

@@ -5,7 +5,7 @@ pantalla. Un aspecto o un mod que rehace una pantalla trabaja contra esta lista:
 una versión mayor, lo que no está puede cambiar sin aviso. Cómo se cargan y se pintan los documentos está en
 [UI](../architecture/ui.md); el estilo de cada pantalla, en [aspectos](aspectos.md).
 
-## Ajustes, comandos y opciones
+## Ajustes, comandos, opciones y argumentos
 
 - Un **ajuste** es un valor que el juego publica y el documento lee con `ui.setting("nombre")`. Cuando cambia, el
   documento recibe `on_setting(document, nombre)`.
@@ -13,6 +13,10 @@ una versión mayor, lo que no está puede cambiar sin aviso. Cómo se cargan y s
   un objeto, guardar. Un comando que el juego no conoce queda en el log como aviso, no se pierde en silencio.
 - Una **opción** es un ajuste del jugador (los de «Opciones»): el documento lo lee como un ajuste y lo cambia
   mandando su nombre con el valor nuevo.
+- Un **argumento** es un valor con el que otro documento muestra este: `ui.show("nombre", modal, {clave = valor})`
+  lo pasa y el documento lo lee en `on_show(document, args)`. `args` siempre es una tabla (vacía si no hay
+  argumentos) y solo lleva sí/no, números y textos. Así un menú le dice al siguiente dónde empezar sin pasar por un
+  ajuste del juego.
 
 En un nombre, `<n>` es un número desde 0 y `<id>` un identificador (minúsculas, cifras y `_`). Así,
 `hud.meter.<n>.value` cubre `hud.meter.0.value`, `hud.meter.1.value`...
@@ -31,6 +35,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.3.0 | Llegan los argumentos de `ui.show` y `on_show(document, args)`. Se va `pause_menu.start_entry`: el menú del compañero le pasa `entry` al menú de pausa al volver |
 | 0.2.0 | Llega `ui.layout`. Se van `pause_menu.evolutions` y `open_evolutions`, la pestaña de evoluciones del menú del compañero que ya no usa ningún aspecto, y la opción `ui_skin` del menú del compañero, que ahora pregunta por su maquetación |
 | 0.1.0 | La lista de lo que usan hoy el HUD, el menú de pausa y el menú del compañero |
 
@@ -42,7 +47,7 @@ HUD, el menú de pausa y el menú del compañero; el resto de pantallas llega de
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.2.0**.
+Versión de la API de la interfaz: **0.3.0**.
 
 ### `hud`
 
@@ -94,7 +99,6 @@ Versión de la API de la interfaz: **0.2.0**.
 |---|---|---|---|
 | `pause_menu.at_title` | ajuste | sí/no | El menú se abre sobre la portada: solo las opciones. |
 | `pause_menu.start_page` | ajuste | texto | options cuando Esc o Select abrieron el menú en su página de opciones. |
-| `pause_menu.start_entry` | ajuste | texto | La entrada de la página principal que recibe el foco cuando el menú vuelve tras el menú del compañero. |
 | `pause_menu.preview_player` | ajuste | sí/no | Abre directamente la página del jugador (vistas previas). |
 | `pause_menu.sleep_enabled` | ajuste | sí/no | Si el compañero puede irse a dormir ahora. |
 | `pause_menu.fishing` | ajuste | número | 0 sin caña, 1 con caña pero sin agua, 2 el jugador puede pescar. |
@@ -212,6 +216,7 @@ Versión de la API de la interfaz: **0.2.0**.
 | `favorite_food` | opción | sí/no | La comida favorita del compañero. |
 | `art_fixes` | opción | sí/no | Arreglos de arte. |
 | `dev_tools` | opción | sí/no | Herramientas de desarrollo. |
+| `entry` | argumento | texto | Al volver del menú del compañero: items o partner, la entrada que recibe el foco en la maquetación original. |
 
 ### `partner_menu`
 

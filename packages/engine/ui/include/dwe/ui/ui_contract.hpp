@@ -15,7 +15,7 @@ struct UiApiVersion {
   std::uint32_t minor = 0;
   std::uint32_t patch = 0;
 };
-inline constexpr UiApiVersion CurrentUiApiVersion{.major = 0, .minor = 2, .patch = 0};
+inline constexpr UiApiVersion CurrentUiApiVersion{.major = 0, .minor = 3, .patch = 0};
 
 // What an entry of the contract is to a screen's documents.
 enum class UiContractKind : std::uint8_t {
@@ -25,6 +25,8 @@ enum class UiContractKind : std::uint8_t {
   Command,
   // A player option: the documents read it and send its name with a new value to change it.
   Option,
+  // A value a document is shown with (ui.show's third argument), which its on_show reads.
+  Argument,
 };
 
 // The value a setting holds or a command carries.

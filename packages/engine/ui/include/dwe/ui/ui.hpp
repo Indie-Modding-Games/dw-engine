@@ -13,6 +13,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <span>
@@ -29,6 +30,10 @@ namespace dwe::ui {
 
 // A value passed between the menus and the app: nothing, a switch, a number or a text.
 using UiValue = std::variant<std::monostate, bool, double, std::string>;
+
+// What a document is shown with (ui.show's third argument): its on_show handler gets them as a
+// table, so one menu can tell the next where to start without a setting in between.
+using UiArguments = std::map<std::string, UiValue, std::less<>>;
 
 // The mouse cursor a skin asks the app to install: an RGBA image (the same layout as assets::Image)
 // and the click point (hotX, hotY) from its top-left corner, in image pixels. The app turns it into
@@ -160,8 +165,8 @@ public:
   core::Result<void> loadDocument(std::string_view name, const assets::AssetId& document);
 
   // Shows a loaded document. A modal one takes the input: the game must not see it while it is
-  // shown.
-  void show(std::string_view name, bool modal = false);
+  // shown. Its on_show handler gets the arguments as a table (empty when there are none).
+  void show(std::string_view name, bool modal = false, const UiArguments& arguments = {});
   void hide(std::string_view name);
   [[nodiscard]] bool isVisible(std::string_view name) const;
 
