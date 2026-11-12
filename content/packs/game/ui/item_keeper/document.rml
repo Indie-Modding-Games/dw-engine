@@ -3,6 +3,7 @@
 	<title>Item keeper</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/talk_wait.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -35,6 +36,7 @@
 				<div class="talk-row"><span text-key="item_keeper.help.use"></span> <span class="help-key ten" id="key-ten"></span> <span text-key="item_keeper.help.ten"></span></div>
 				<div class="talk-row"><span text-key="item_keeper.help.and"></span> <span class="help-key all" id="key-all"></span> <span text-key="item_keeper.help.all"></span></div>
 			</div>
+			<div id="talk-wait" class="prompt-icon hidden"></div>
 		</div>
 		<div id="description" class="original-box original-look"><span id="description-text"></span></div>
 	</div>

@@ -7,3 +7,6 @@ point: "PUNTOS"
 place: "LUGAR"
 number: "N.º"
 title: "TÍTULO"
+# Los rótulos fijos del trueque: lo que pide quien cambia y lo que tendrás a cambio.
+want: "Quiero"
+have: "Tienes"

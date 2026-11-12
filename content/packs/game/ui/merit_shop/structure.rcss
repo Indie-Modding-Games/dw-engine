@@ -207,3 +207,8 @@ body {
 	background-color: #525a63;
 	border-top: 3dp #b5b5b5;
 }
+
+/* The key the talk waits on (common/talk_wait.lua): only a skin that draws it shows it. */
+#talk-wait {
+	display: none;
+}

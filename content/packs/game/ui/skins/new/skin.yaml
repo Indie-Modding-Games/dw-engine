@@ -20,9 +20,9 @@ screens:
   battle:
     styles: [battle/style]
   bird_transport:
-    styles: [bird_transport/style]
+    styles: [bird_transport/style, talk_wait/style]
   card_shop:
-    styles: [card_shop/style]
+    styles: [card_shop/style, talk_wait/style]
   curling_hud:
     styles: [story_textbox/style, curling_hud/style]
   destination_choice:
@@ -52,15 +52,15 @@ screens:
   hud:
     styles: [hud/style]
   item_keeper:
-    styles: [item_keeper/style]
+    styles: [item_keeper/style, talk_wait/style]
   jukebox:
-    styles: [jukebox/style]
+    styles: [jukebox/style, talk_wait/style]
   lives_box:
     styles: [story_textbox/style, lives_box/style]
   main_menu:
     styles: [title/style, main_menu/style]
   merit_shop:
-    styles: [merit_shop/style]
+    styles: [merit_shop/style, talk_wait/style]
   money_box:
     styles: [money_box/style]
   naming_box:
@@ -96,7 +96,7 @@ screens:
   tournament_schedule:
     styles: [tournament_schedule/style]
   trade_menu:
-    styles: [trade_menu/style]
+    styles: [trade_menu/style, talk_wait/style]
   versus:
     styles: [panel/style, versus/style]
   world_map:

@@ -34,8 +34,14 @@ body #window {
 	color: #f2f0e1;
 }
 
+/* The number column (.jb .n): two digits, a leading zero under ten. */
 .number {
+	display: none;
 	color: #93a6bc;
+}
+
+.number.padded {
+	display: block;
 }
 
 /* Long titles stop before the playing arrow: the row does not clip its placed children. */

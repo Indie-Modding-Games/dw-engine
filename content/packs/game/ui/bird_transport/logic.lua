@@ -86,6 +86,8 @@ end
 
 local function refresh(document)
   local phase = ui.setting("bird.phase") or "closed"
+  -- The talk only waits for the player to go on here (common/talk_wait.lua).
+  talk_wait.draw(document, phase == "greeting" or phase == "farewell")
   document:get("frame"):set_class("menu", MenuPhases[phase] == true)
   draw_bits(document)
   draw_menu(document)

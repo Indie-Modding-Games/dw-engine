@@ -45,6 +45,12 @@ body {
 #label-give { left: 60dp; }
 #label-get { left: 366dp; }
 
+/* Fixed column titles in the game's own words, for skins that show them instead of the story's. */
+#label-want,
+#label-have {
+	display: none;
+}
+
 /* renderHorizontalLine (script_common.c:2386): a pixel of dark (0x020202), one of blue grey (0xa08769, red last) and
    one of dark again, measured in the original's trade menu. */
 #rule {
@@ -195,4 +201,9 @@ body {
 	box-sizing: border-box;
 	border-width: 3dp;
 	border-color: #000000 #6b849c #6b849c #000000;
+}
+
+/* The key the talk waits on (common/talk_wait.lua): only a skin that draws it shows it. */
+#talk-wait {
+	display: none;
 }

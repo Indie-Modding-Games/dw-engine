@@ -25,14 +25,14 @@
 			</div>
 
 			<div id="list">
-				<button id="row-1" class="row" onclick="pick(1)" onfocus="row_focus(document, 1)"></button>
-				<button id="row-2" class="row" onclick="pick(2)" onfocus="row_focus(document, 2)"></button>
-				<button id="row-3" class="row" onclick="pick(3)" onfocus="row_focus(document, 3)"></button>
-				<button id="row-4" class="row" onclick="pick(4)" onfocus="row_focus(document, 4)"></button>
-				<button id="row-5" class="row" onclick="pick(5)" onfocus="row_focus(document, 5)"></button>
-				<button id="row-6" class="row" onclick="pick(6)" onfocus="row_focus(document, 6)"></button>
-				<button id="row-7" class="row" onclick="pick(7)" onfocus="row_focus(document, 7)"></button>
-				<button id="row-8" class="row" onclick="pick(8)" onfocus="row_focus(document, 8)"></button>
+				<button id="row-1" class="row" onclick="pick(1)" onfocus="row_focus(document, 1)"><span id="row-1-text" class="row-text"></span><span id="row-1-name" class="row-name"></span><span id="row-1-price" class="row-price"></span></button>
+				<button id="row-2" class="row" onclick="pick(2)" onfocus="row_focus(document, 2)"><span id="row-2-text" class="row-text"></span><span id="row-2-name" class="row-name"></span><span id="row-2-price" class="row-price"></span></button>
+				<button id="row-3" class="row" onclick="pick(3)" onfocus="row_focus(document, 3)"><span id="row-3-text" class="row-text"></span><span id="row-3-name" class="row-name"></span><span id="row-3-price" class="row-price"></span></button>
+				<button id="row-4" class="row" onclick="pick(4)" onfocus="row_focus(document, 4)"><span id="row-4-text" class="row-text"></span><span id="row-4-name" class="row-name"></span><span id="row-4-price" class="row-price"></span></button>
+				<button id="row-5" class="row" onclick="pick(5)" onfocus="row_focus(document, 5)"><span id="row-5-text" class="row-text"></span><span id="row-5-name" class="row-name"></span><span id="row-5-price" class="row-price"></span></button>
+				<button id="row-6" class="row" onclick="pick(6)" onfocus="row_focus(document, 6)"><span id="row-6-text" class="row-text"></span><span id="row-6-name" class="row-name"></span><span id="row-6-price" class="row-price"></span></button>
+				<button id="row-7" class="row" onclick="pick(7)" onfocus="row_focus(document, 7)"><span id="row-7-text" class="row-text"></span><span id="row-7-name" class="row-name"></span><span id="row-7-price" class="row-price"></span></button>
+				<button id="row-8" class="row" onclick="pick(8)" onfocus="row_focus(document, 8)"><span id="row-8-text" class="row-text"></span><span id="row-8-name" class="row-name"></span><span id="row-8-price" class="row-price"></span></button>
 				<p id="empty" text-key="shop.empty"></p>
 				<p id="page"></p>
 				<button id="previous" class="page-turn" onclick="turn(document, -1)" text-key="shop.previous"></button>

@@ -95,6 +95,8 @@ end
 
 local function refresh(document)
   local phase = ui.setting("item_keeper.phase") or "closed"
+  -- The talk only waits for the player to go on here (common/talk_wait.lua).
+  talk_wait.draw(document, phase == "ask" or phase == "farewell")
   local frame = document:get("frame")
   for _, name in ipairs({ "ask", "choice", "windows", "description", "farewell" }) do
     frame:set_class("phase-" .. name, phase == name)

@@ -8,3 +8,6 @@ point: "POINT"
 place: "PLACE"
 number: "NO."
 title: "TITLE"
+# The trade's fixed column titles: what the trader asks for and what you get for it.
+want: "I want"
+have: "You get"

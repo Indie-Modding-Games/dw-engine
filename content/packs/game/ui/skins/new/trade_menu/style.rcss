@@ -21,6 +21,20 @@ body #window {
 	color: #b6e4f7;
 }
 
+/* The column titles (tr-list): «Quiero» and «Tienes» in place of the story's, at the same spots. */
+#label-give,
+#label-get {
+	display: none;
+}
+
+#label-want,
+#label-have {
+	display: block;
+}
+
+#label-want { left: 60dp; }
+#label-have { left: 366dp; }
+
 #rule,
 #amount .rule {
 	height: 9dp;

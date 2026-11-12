@@ -36,10 +36,11 @@ local function draw_list(document)
     local prefix = "jukebox.row." .. row .. "."
     local name = ui.setting(prefix .. "name") or ""
     local shown = name ~= ""
-    -- calculateMusicMenuStrings: the number in two places, then the name.
-    document
-      :get("number-" .. row)
-      :set_text(shown and string.format("%2d", number(prefix .. "number")) or "")
+    -- calculateMusicMenuStrings: the number in two places, then the name; and the number with a
+    -- leading zero (01), for a skin that shows that one instead (.number.padded).
+    local song = number(prefix .. "number")
+    document:get("number-" .. row):set_text(shown and string.format("%2d", song) or "")
+    document:get("padded-" .. row):set_text(shown and string.format("%02d", song) or "")
     document:get("name-" .. row):set_text(shown and t(name) or "")
     -- The song that plays is in colour 6.
     document
@@ -80,6 +81,8 @@ end
 
 local function refresh(document)
   local phase = ui.setting("jukebox.phase") or "closed"
+  -- The talk only waits for the player to go on here (common/talk_wait.lua).
+  talk_wait.draw(document, phase == "greeting" or phase == "farewell")
   local frame = document:get("frame")
   for _, name in ipairs({ "greeting", "list", "farewell" }) do
     frame:set_class("phase-" .. name, phase == name)

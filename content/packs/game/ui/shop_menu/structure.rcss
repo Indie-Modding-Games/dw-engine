@@ -75,3 +75,9 @@
 /* The partner's favourite food (the favorite_food option, an engine improvement): its row in gold with a gold bar at
    its left, so it does not rest on the colour alone. Both skins. */
 #list .row.favorite { color: #ffd34a; border-left: 6dp #ffd34a; }
+
+/* The row split into name and price (draw_row) is for skins that set the price in its own column. */
+.row-name,
+.row-price {
+	display: none;
+}

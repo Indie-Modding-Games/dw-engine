@@ -1,0 +1,36 @@
+/* The key a shop's talk box waits on (common/talk_wait.lua), as the speech box's (../story_textbox/style.rcss): the
+   key cap of the device's confirm control in the bottom right corner, still (concept 254, 228). */
+
+#talk-wait {
+	display: block;
+	position: absolute;
+	right: 18dp;
+	bottom: 14dp;
+	min-width: 16dp;
+	height: 30dp;
+	padding: 0 6dp 4dp 6dp;
+	decorator: ninepatch(nb-key-outer, nb-key-inner, 1);
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #f2f0e1;
+	text-align: center;
+}
+
+#talk-wait.hidden {
+	display: none;
+}
+
+#talk-wait .glyph-label {
+	display: inline;
+}
+
+#talk-wait .glyph-frame,
+#talk-wait .glyph-char,
+#talk-wait .glyph-art {
+	display: none;
+}
+
+#talk-wait.family-shapes .glyph-art {
+	display: inline-block;
+}

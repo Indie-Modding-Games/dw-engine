@@ -63,6 +63,35 @@ body #description {
 	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
 }
 
+/* A row (sh-buy): the name at the left and the price right-aligned in its own muted column, gold on the cursor. */
+#list .row {
+	position: relative;
+}
+
+#list .row .row-text {
+	display: none;
+}
+
+#list .row .row-name {
+	display: inline;
+}
+
+#list .row .row-price {
+	display: block;
+	position: absolute;
+	right: 12dp;
+	top: 0;
+	color: #93a6bc;
+}
+
+#list .row:focus .row-price {
+	color: #efc63c;
+}
+
+#list .row.disabled .row-price {
+	color: #5f6f82;
+}
+
 #list .row.disabled {
 	color: #5f6f82;
 }

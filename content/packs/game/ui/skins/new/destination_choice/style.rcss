@@ -46,3 +46,8 @@
 	margin: 10dp -14dp 0 -34dp;
 	padding: 8dp 12dp 0 20dp;
 }
+
+/* The story mark after the place (dc-list: «· historia») in gold. */
+.story-mark {
+	color: #efc63c;
+}
