@@ -17,12 +17,16 @@ theme: [theme]
 screens:
   award_notice:
     styles: [story_textbox/style]
+  destination_choice:
+    styles: [panel/style, destination_choice/style]
   dev_menu:
     styles: [panel/style]
   dialog:
     styles: [panel/style, dialog/style]
   field_item_notice:
     styles: [story_textbox/style]
+  hud:
+    styles: [hud/style]
   main_menu:
     styles: [title/style, main_menu/style]
   naming_box:
@@ -31,8 +35,12 @@ screens:
     styles: [title/style, panel/style, new_game_mode/style]
   new_game_rules:
     styles: [title/style, panel/style, new_game_rules/style]
+  partner_menu:
+    styles: [partner_menu/style]
   pause_box:
     styles: [pause_box/style]
+  pause_menu:
+    styles: [panel/style, pause_menu/style]
   save_indicator:
     styles: [save_indicator/style]
   save_machine:
@@ -43,6 +51,8 @@ screens:
     styles: [panel/style, sleep_menu/style]
   story_textbox:
     styles: [story_textbox/style]
+  world_map:
+    styles: [world_map/style]
 sprite_sheets:
   # Frames, cursor, key caps, tabs, bar fills and hearts of the design system, 2 pixels per dp (made from the
   # concept's theme.css values; see the skin's page in docs/architecture/ui.md).

@@ -1,0 +1,406 @@
+/* partner_menu in the new look (concept area B, mockups 139-160): the status and technique pages and the bag in the
+   window with its gold brackets, trapezoid tabs, gold heading plates with a light-blue rim, sunk insets, the
+   original's separators in the window's blues, bars with the concept's fills and the bag's rows with a gold outline.
+   The layout is the original skin's; only where the mockup moves a box is a position set here. */
+
+/* The window (orig.css .obox.brk) for each page and box. */
+#page-status,
+#page-tech,
+#bag-grid,
+#bag-description,
+#scrim.item-screen #bag-description {
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+}
+
+/* The boxes laid over the bag (options, order, confirmation: .obox.over). */
+.box,
+#scrim.item-screen #options,
+#scrim.item-screen #sort-box,
+#scrim.item-screen #confirm-box {
+	background-color: transparent;
+	decorator: ninepatch(nb-over-outer, nb-over-inner, 1) border-box;
+	font-size: 30dp;
+}
+
+#scrim.item-screen #confirm-box {
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-over-outer, nb-over-inner, 1) border-box;
+}
+
+/* Tabs (area B .otab): 228 and 192 wide, the selected one in gold on the window's rim. */
+#scrim #tabs .tab,
+#scrim #tabs .tab:focus {
+	height: 48dp;
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-tab-outer, nb-tab-inner, 1) border-box;
+	font-size: 30dp;
+	line-height: 48dp;
+	text-align: center;
+	color: #6f9cc4;
+}
+
+#scrim #tabs .tab.selected,
+#scrim #tabs .tab.selected:focus {
+	background-color: transparent;
+	decorator: ninepatch(nb-tab-on-outer, nb-tab-on-inner, 1) border-box;
+	color: #efc63c;
+}
+
+#scrim #tabs .tab:focus {
+	color: #ffe58a;
+}
+
+#scrim #tabs #tab-status { width: 228dp; }
+#scrim #tabs #tab-tech { left: 225dp; width: 192dp; }
+
+.tab-edge {
+	display: none;
+}
+
+.tab-label {
+	left: 0;
+	top: 0;
+}
+
+/* The bag and the care actions are entries of their own in the original's layout; it has no Back tab. */
+#scrim #tabs #tab-items,
+#scrim #tabs #tab-care,
+#scrim #tabs #close {
+	display: none;
+}
+
+/* ---- Status (139-142) ---- */
+
+/* The heading plates (orig.css .ohead): gold on a dark plate with a light-blue rim, 34 tall. */
+#scrim #page-status #profile-heading,
+#scrim #page-status #condition-heading,
+#scrim #page-status #parameter-heading {
+	width: auto;
+	height: 34dp;
+	box-sizing: border-box;
+	padding: 0 14dp;
+	border: 3dp #8cc6ec;
+	decorator: vertical-gradient(#23272f #1c2028);
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 28dp;
+	color: #efc63c;
+	white-space: nowrap;
+}
+
+#scrim #page-status #profile-heading { left: 21dp; top: 12dp; }
+#scrim #page-status #condition-heading { left: 21dp; top: 219dp; }
+#scrim #page-status #parameter-heading { left: 405dp; top: 219dp; }
+
+/* The separators: the window's light blue between two ink lines (orig.css .osep). */
+#status-horizontal span,
+#status-vertical span,
+.tech-separator span {
+	background-color: #050c1a;
+}
+
+#status-horizontal .separator-light,
+#status-vertical .separator-light,
+.tech-separator .separator-light {
+	background-color: #7cb6e2;
+}
+
+/* The field labels (.fl): the small font in light blue, right-aligned before their insets. */
+#scrim #page-status #status-name-label,
+#scrim #page-status #status-species-label,
+#scrim #page-status #status-age-label,
+#scrim #page-status #status-weight-label,
+#scrim #page-status #status-mistakes-label,
+#scrim #page-status #status-battles-label,
+#scrim #page-status #status-food-label,
+#scrim #page-status #status-timers .timer-label {
+	decorator: none;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #b6e4f7;
+}
+
+/* The insets (orig.css .oinset): a dark well, its top and left in ink, its right and bottom in the rim's blue. */
+#status-name,
+.line-value,
+#status-mistakes-value,
+#status-battles-value,
+#status-timers .timer-value,
+#status-active.active-hours {
+	border-color: #050a14 #4c6a8c #4c6a8c #050a14;
+	background-color: #0b1322;
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+#status-timers .timer-value {
+	font-size: 26dp;
+	font-family: "Pixel Small";
+}
+
+/* ESPECIAL, TIPO and ACTIVO (.mk.lbl1x): the 15 font in capitals, pink, green and light blue. */
+#scrim #page-status #status-special-heading,
+#scrim #page-status #status-type-heading,
+#scrim #page-status #status-active-heading {
+	decorator: none;
+	font-family: "Pixel Body";
+	font-size: 15dp;
+	text-transform: uppercase;
+}
+
+#scrim #page-status #status-special-heading { color: #f08ac0; }
+#scrim #page-status #status-type-heading { color: #7fd67a; }
+#scrim #page-status #status-active-heading { color: #b6e4f7; }
+
+#status-active {
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+/* Lives: the word in cream and the concept's pixel hearts. */
+#scrim #page-status #status-life-label {
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+.life-fill { decorator: image(nb-heart contain center); }
+.life-outline { decorator: image(nb-heart-empty contain center); }
+
+/* The care bars (.cbar): a navy track with the rim's blue, pink fills (both halves), the virus yellow, the tiredness
+   blue. */
+#scrim #page-status #status-condition .label {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #f2f0e1;
+}
+
+#status-condition .meter,
+#scrim.status-text #status-condition .meter {
+	border: 3dp #4c6a8c;
+	background-color: #1d3a66;
+	decorator: none;
+}
+
+#status-condition .meter .fill,
+#status-condition .meter .fill.high {
+	background-color: transparent;
+	decorator: vertical-gradient(#f0c0e8 #e04080);
+}
+
+#status-condition #meter-2-fill {
+	top: 3dp;
+	height: 18dp;
+	decorator: vertical-gradient(#ecec8a #c8c83c);
+}
+
+#status-condition #tiredness-fill {
+	decorator: vertical-gradient(#90c8f0 #0080d0);
+}
+
+#scrim.status-extras #status-condition .value {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #f2f0e1;
+}
+
+/* Parameters (.prow): the names in gold, the numbers in cream, the bars on a dark track with the concept's fills. */
+#scrim #page-status #status-parameters .label {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #efc63c;
+}
+
+#scrim #page-status #status-parameters #stat-2-label { decorator: image(stat-speed scale-none left center); }
+#scrim #page-status #status-parameters #stat-3-label { decorator: image(stat-brains scale-none left center); }
+
+#status-parameters .value,
+#status-parameters .pool-max {
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+#status-parameters .bar {
+	border: 2dp #4c6a8c;
+	background-color: #0b1322;
+}
+
+#status-parameters .stat .fill {
+	background-color: transparent;
+	decorator: image(nb-fill-st);
+}
+
+#status-parameters #pool-0-fill { decorator: image(nb-fill-hp); }
+#status-parameters #pool-1-fill { decorator: image(nb-fill-mp); }
+
+/* ---- Techniques (143-149) ---- */
+
+.tech-heading {
+	font-size: 30dp;
+	color: #efc63c;
+}
+
+/* The column names (.cols) in the small font and light blue. */
+#scrim #page-tech .tech-columns .tech-power,
+#scrim #page-tech .tech-columns .tech-mp,
+#scrim #page-tech .tech-columns .tech-range,
+#scrim #page-tech .tech-columns .tech-effect {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #b6e4f7;
+}
+
+.tech-row {
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+.tech-row .tech-range {
+	font-size: 30dp;
+}
+
+/* The table's dots are not in the concept. */
+#tech-dots,
+#tech-final-dot {
+	display: none;
+}
+
+#tech-change,
+#tech-change:focus,
+#tech-cancel {
+	border-color: transparent;
+	decorator: none;
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+#tech-help {
+	border-color: #050c1a;
+	background-color: #323280;
+}
+
+#tech-help .tech-help-line {
+	border-color: #b6e4f7;
+}
+
+.tech-help-hint {
+	font-size: 30dp;
+}
+
+#tech-message {
+	font-family: "Pixel Body";
+	font-size: 15dp;
+	color: #ffe58a;
+}
+
+/* ---- Bag (150-160) ---- */
+
+/* The rows (.slot): a line in the rim's blue under each, a gold outline on the focused one, red while moving. */
+.slot {
+	border: 3dp transparent;
+	border-bottom-color: #4a5a6e;
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+.slot:focus,
+.slot.picked {
+	border-color: #efc63c;
+	background-color: #efc63c1a;
+}
+
+.slot.moving,
+.slot.moving:focus {
+	border-color: #f14a5d;
+	background-color: transparent;
+}
+
+#scrim .slot.item-field .slot-name,
+#scrim.item-screen .slot.item-field .slot-name { color: #30d0d0; }
+#scrim .slot.item-battle .slot-name,
+#scrim.item-screen .slot.item-battle .slot-name { color: #ff6aa0; }
+#scrim .slot.item-shared .slot-name,
+#scrim.item-screen .slot.item-shared .slot-name { color: #5fe86a; }
+#scrim .slot.favorite .slot-name,
+#scrim.item-screen .slot.favorite .slot-name { color: #ffd040; }
+.slot.dimmed .slot-name { color: #828282; }
+
+.slot.favorite .fav-mark {
+	decorator: image(nb-heart contain center);
+}
+
+#bag-description,
+#scrim.item-screen #bag-description {
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+#bag-foot {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #93a6bc;
+}
+
+/* The options, order and confirmation rows (.orow): cream, the focused one in the gold outline, without the ▶. */
+.box button,
+#scrim.item-screen #options button,
+#scrim.item-screen #sort-box button,
+#scrim.item-screen #confirm-box button {
+	border-color: transparent;
+	background-color: transparent;
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+.box button:focus,
+#scrim.item-screen #options button:focus,
+#scrim.item-screen #options button.active-option,
+#scrim.item-screen #sort-box button:focus,
+#scrim.item-screen #confirm-box button:focus {
+	border-color: transparent;
+	background-color: transparent;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+	color: #efc63c;
+}
+
+#scrim.item-screen #options button.unavailable {
+	color: #717171;
+}
+
+/* The scroll rail (m.scrollbar): a dark track with the rim's blue, a light-blue thumb. */
+#scrim.item-screen.large-bag #bag-scrollbar {
+	border: 2dp #4c6a8c;
+	background-color: #0b1322;
+}
+
+#bag-scroll-thumb {
+	border-width: 0;
+	background-color: #69c2ff;
+}
+
+/* ---- Care (132-138) ---- */
+
+#page-care {
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+}
+
+.care-hint {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #93a6bc;
+}
+
+#care-result {
+	font-size: 30dp;
+}
+
+/* The prompts as key caps in the small font, the labels muted. */
+#prompts {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #93a6bc;
+}

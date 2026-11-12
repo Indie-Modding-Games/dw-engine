@@ -1,0 +1,594 @@
+/* pause_menu in the new look (concept area B 161-186, area A 071-088): the main page as a half-filled window with
+   the gold brackets, the «Año / Día» header in gold and cream over a blue line, the concept's icons in the 3 x 2
+   grid under small capitals and the gold four-corner cursor (.ocur). */
+
+/* ---------------------------------------------------------------------------------------------------------------
+   Main page (mockup 161-165: .pm at 282,120 on the stage, 396 x 324, .obox.half.brk). */
+
+#panel.on-main {
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+#panel.on-main #title-date {
+	border-width: 0;
+	color: #efc63c;
+}
+
+#field-year-label,
+#field-day-label {
+	top: 15dp;
+	font-size: 30dp;
+	line-height: 36dp;
+	color: #efc63c;
+}
+
+#field-year-digits,
+#field-day-digits {
+	top: 15dp;
+	font-size: 30dp;
+	line-height: 36dp;
+}
+
+/* The date in the body font, cream, instead of the original's digit pictures. */
+.date-digit {
+	width: auto;
+	height: 36dp;
+	margin-right: 0;
+	color: #f2f0e1;
+	decorator: none;
+}
+
+/* .osep.h: the blue line between two ink ones, 372 wide at 9,57. */
+#field-date-separator {
+	top: 54dp;
+	background-color: #7cb6e2;
+	border-top: 3dp #050c1a;
+	border-bottom: 3dp #050c1a;
+}
+
+/* The entries (.ent 87 x 105 at 42/150/255, 78/198): the icon 60 across centred on 43,39, the label in the small
+   capitals (.lbl1x, 15dp) under it, gold on the focused one. */
+#panel.on-main #page-main .field-entry,
+#panel.on-main #page-main .field-entry:focus {
+	width: 87dp;
+	decorator: none;
+}
+
+#panel.on-main #open-items { left: 42dp; top: 78dp; }
+#panel.on-main #open-partner { left: 150dp; top: 78dp; }
+#panel.on-main #open-player { left: 255dp; top: 78dp; }
+#panel.on-main #praise { left: 42dp; top: 198dp; }
+#panel.on-main #scold { left: 150dp; top: 198dp; }
+#panel.on-main #sleep { left: 255dp; top: 198dp; }
+#panel.on-main #fish { left: 42dp; top: 78dp; }
+#panel.on-main.has-fishing #open-items,
+#panel.on-main.has-fishing #open-partner,
+#panel.on-main.has-fishing #open-player { top: 198dp; }
+#panel.on-main.has-fishing #praise,
+#panel.on-main.has-fishing #scold,
+#panel.on-main.has-fishing #sleep { top: 318dp; }
+
+#panel.on-main .field-menu-icon {
+	left: 13dp;
+	top: 9dp;
+	width: 60dp;
+	height: 60dp;
+	padding: 0;
+	border-width: 0;
+}
+
+.menu-item,
+#panel.on-main.icon-flash .field-entry:focus .menu-item { decorator: image(menu-item-icon contain); }
+#open-partner .field-menu-icon,
+#panel.on-main.icon-flash #open-partner:focus .field-menu-icon { decorator: image(menu-partner-icon contain); }
+.menu-player,
+#panel.on-main.icon-flash .field-entry:focus .menu-player { decorator: image(menu-player-icon contain); }
+.menu-praise,
+#panel.on-main.icon-flash .field-entry:focus .menu-praise { decorator: image(menu-praise-icon contain); }
+.menu-scold,
+#panel.on-main.icon-flash .field-entry:focus .menu-scold { decorator: image(menu-scold-icon contain); }
+.menu-sleep,
+#panel.on-main.icon-flash .field-entry:focus .menu-sleep { decorator: image(menu-sleep-icon contain); }
+#panel.on-main .menu-fish { height: 60dp; padding: 0; }
+
+#panel.on-main .menu-label {
+	top: 84dp;
+	left: -12dp;
+	width: 111dp;
+	font-family: "Pixel Body";
+	font-size: 15dp;
+	line-height: 15dp;
+	color: #d6d6d6;
+}
+
+#panel.on-main .field-entry:focus .menu-label {
+	color: #efc63c;
+}
+
+/* The cursor: the gold four corners round the icon (87 x 78) instead of the original's three sprites. */
+#panel.on-main .cursor-part {
+	display: none;
+}
+
+#panel.on-main .field-menu-focus {
+	width: 87dp;
+	height: 78dp;
+	decorator: ninepatch(nb-ocur-outer, nb-ocur-inner, 1) border-box;
+}
+
+/* ---------------------------------------------------------------------------------------------------------------
+   The «Motor» panel and its minimap page (mockups 086-087): a half-filled window, the rows with the ▶ in the box's
+   left padding, «Volver» as plain as the others, the values in gold. */
+
+#panel.on-player.player-tools-open,
+#panel.on-settings {
+	padding: 12dp 24dp 10dp 44dp;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+#panel.on-player.player-tools-open #title,
+#panel.on-settings #title {
+	margin-left: -20dp;
+	padding-left: 0;
+}
+
+#player-tools button,
+#page-minimap button {
+	display: block;
+	margin-left: -26dp;
+	padding: 3dp 12dp;
+	border-width: 0;
+	border-left-width: 26dp;
+	line-height: 30dp;
+	color: #f2f0e1;
+}
+
+#player-tools button:focus,
+#page-minimap button:focus {
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+#page-minimap .option .value {
+	color: #efc63c;
+}
+
+#panel.on-player.player-tools-open #prompts,
+#panel.on-settings #prompts {
+	margin: 10dp -14dp 0 -34dp;
+	padding: 8dp 12dp 0 20dp;
+	border-top: 3dp #7cb6e2;
+}
+
+/* ---------------------------------------------------------------------------------------------------------------
+   Options (area A, mockups 071-085): the near full-screen window (16,74 on the stage, 928 x 630) under four
+   trapezoid tabs, the quick actions small and muted at the top right, rows of 29 with the ▶, Sí/No in a small
+   box (lit: light-blue rim, gold), list values gold between light-blue arrows, numbers as a blue bar, the tag and
+   the help in the small font under a line, «Restablecer valores» and «Volver» under another, the key hints at the
+   bottom left. */
+
+#panel.on-options {
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+	top: 74dp;
+	width: 864dp;
+	margin-left: -464dp;
+	padding: 14dp 24dp 12dp 40dp;
+}
+
+#menu-tabs {
+	left: 17dp;
+	top: -49dp;
+	right: auto;
+	width: 900dp;
+	height: 46dp;
+}
+
+.option-tab,
+.option-tab.selected {
+	flex: 0 0 auto;
+	height: 46dp;
+	margin: 0 20dp 0 0;
+	decorator: ninepatch(nb-tab-outer, nb-tab-inner, 1) border-box;
+	font-size: 30dp;
+	line-height: 46dp;
+	color: #6f9cc4;
+}
+
+#tab-game { width: 200dp; }
+#tab-graphics { width: 216dp; }
+#tab-sound { width: 200dp; }
+#tab-interface { width: 208dp; }
+
+.option-tab.selected {
+	decorator: ninepatch(nb-tab-on-outer, nb-tab-on-inner, 1) border-box;
+	color: #efc63c;
+}
+
+.option-tab-left,
+.option-tab-middle,
+.option-tab-right,
+.tab-key {
+	display: none;
+}
+
+.option-tab-label {
+	top: 0;
+}
+
+#options-quick {
+	height: 30dp;
+	margin: 0 34dp 0 0;
+}
+
+#options-quick button {
+	margin: 0 0 0 30dp;
+	padding: 0 4dp;
+	border-width: 0;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #93a6bc;
+}
+
+#options-quick button:focus {
+	color: #efc63c;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
+
+/* The list clips its rows: pad it so the ▶ left of each row stays inside. */
+#option-list {
+	max-height: 377dp;
+	margin-right: 0;
+	margin-left: -26dp;
+	padding-left: 26dp;
+}
+
+#page-options button.option {
+	height: 29dp;
+	line-height: 29dp;
+	margin: 0 30dp 0 -26dp;
+	padding: 0 12dp;
+	border-width: 0;
+	border-left-width: 26dp;
+	color: #f2f0e1;
+}
+
+#page-options button.option:focus {
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+#page-options .option .value {
+	min-width: 250dp;
+	color: #efc63c;
+}
+
+#page-options .option.kind-toggle .value {
+	min-width: 84dp;
+	width: 84dp;
+	height: 30dp;
+	margin-right: 36dp;
+	padding: 0;
+	box-sizing: border-box;
+	border: 3dp #4a5a64;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 24dp;
+	color: #5f6f82;
+}
+
+#page-options .option.kind-toggle .value.on {
+	border-color: #b6e4f7;
+	background-color: #7cb6e21a;
+	color: #efc63c;
+}
+
+#page-options .option .arrow,
+#page-options .option .arrow.less,
+#page-options .option .arrow.more {
+	width: 26dp;
+	height: 29dp;
+	transform: none;
+	image-color: #b6e4f7;
+}
+
+#page-options .option .arrow.less { decorator: image(nb-tri-l scale-none center center); }
+#page-options .option .arrow.more { decorator: image(nb-tri-r scale-none center center); }
+#page-options .option:focus .arrow { image-color: #efc63c; }
+#page-options .option .arrow.at-end { image-color: #3a4a5c; }
+
+#page-options .option .bar {
+	width: 186dp;
+	height: 14dp;
+	margin: 0 9dp;
+	padding: 2dp;
+	border: 3dp #4a5a64;
+	background-color: #0b1322;
+}
+
+#page-options .option .bar .fill {
+	height: 14dp;
+	background-color: #69c2ff;
+}
+
+#page-options .option.kind-range .value {
+	width: 46dp;
+	min-width: 46dp;
+	padding-right: 0;
+}
+
+#option-list scrollbarvertical { width: 12dp; margin-left: 6dp; }
+#option-list scrollbarvertical slidertrack { background-color: #0b1424; border: 2dp #4a79a8; }
+#option-list scrollbarvertical sliderbar { margin: 2dp; background-color: #69c2ff; }
+
+#option-info {
+	height: 90dp;
+	margin: 5dp 30dp 0 -16dp;
+	padding: 8dp 12dp 0 12dp;
+	border-top: 3dp #7cb6e2;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 26dp;
+	color: #93a6bc;
+}
+
+#option-tag {
+	padding: 0 8dp;
+	border: 3dp #4a5a64;
+	line-height: 24dp;
+	color: #93a6bc;
+}
+
+#option-tag.improvement {
+	border-color: #a97c1c;
+	color: #efc63c;
+}
+
+#option-foot {
+	margin: 0 30dp 0 -16dp;
+	padding: 8dp 12dp 0 12dp;
+	border-top: 3dp #7cb6e2;
+}
+
+#option-actions button,
+#option-actions button.back {
+	margin: 0 46dp 0 0;
+	padding: 0 10dp;
+	color: #f2f0e1;
+}
+
+#options-hints {
+	margin: 10dp 0 0 -20dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #f2f0e1;
+	text-align: left;
+}
+
+#options-hints .hint {
+	margin: 0 24dp 0 0;
+}
+
+#options-hints .key {
+	margin-right: 0;
+}
+
+#options-hints .key + .key {
+	margin-left: 4dp;
+}
+
+#reset-confirm {
+	left: 134dp;
+	right: 134dp;
+	top: 176dp;
+	padding: 16dp 30dp 14dp 46dp;
+	border-width: 0;
+	background-color: transparent;
+	text-align: left;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-over-outer, nb-over-inner, 1) border-box;
+}
+
+#reset-question {
+	color: #f2f0e1;
+}
+
+#reset-note {
+	margin: 4dp 0 10dp 0;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #93a6bc;
+}
+
+#reset-buttons button {
+	display: block;
+	margin: 0 0 0 -26dp;
+	padding: 3dp 12dp;
+	border-width: 0;
+	border-left-width: 26dp;
+}
+
+#reset-buttons button:focus {
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+/* ---------------------------------------------------------------------------------------------------------------
+   Player pages (mockups 167-186): the original's layout in the window with the brackets (.obox.brk), five
+   trapezoid tabs (171 wide, 174 apart), gold labels and light-grey values at 30, sunk value fields (.pin), the
+   blue separators between ink lines, the concept's player picture, bevelled grey slots and the gold four corners
+   as the cursor. */
+
+#panel.on-player {
+	background-color: transparent;
+}
+
+#panel.on-player .player-tab,
+#panel.on-player .player-tab:focus,
+#panel.on-player .player-tab:disabled {
+	flex: 0 0 auto;
+	width: 171dp;
+	height: 48dp;
+	padding: 0;
+	margin: 0 3dp 0 0;
+	decorator: ninepatch(nb-tab-outer, nb-tab-inner, 1) border-box;
+	font-size: 30dp;
+	color: #6f9cc4;
+}
+
+#panel.on-player .player-tab.selected {
+	height: 48dp;
+	decorator: ninepatch(nb-tab-on-outer, nb-tab-on-inner, 1) border-box;
+	color: #efc63c;
+}
+
+#panel.on-player .player-tab:focus {
+	color: #ffe58a;
+}
+
+.player-tab-left,
+.player-tab-middle,
+.player-tab-right {
+	display: none;
+}
+
+.player-tab-label {
+	top: 6dp;
+}
+
+#panel.on-player .player-line,
+#medals-title,
+#cards-title,
+#chart-detail-tree,
+#city-prosperity-label,
+#city-residents-label {
+	font-size: 30dp;
+	color: #efc63c;
+}
+
+#panel.on-player .player-value,
+#chart-page,
+#chart-detail-level,
+#chart-detail-name,
+.medal-text,
+#card-count,
+#city-prosperity,
+#city-residents,
+#city-name,
+#city-points {
+	font-size: 30dp;
+}
+
+/* .pin: the sunk value field, dark with a blue rim lit on the bottom and the right. */
+.player-inset {
+	border: 3dp #050a14;
+	border-right-color: #4c6a8c;
+	border-bottom-color: #4c6a8c;
+	background-color: #0b1322;
+}
+
+/* .sk: the item slots, bevelled grey. */
+#panel.on-player .player-item-box {
+	border-color: #aab4be;
+	border-right-color: #2a3038;
+	border-bottom-color: #2a3038;
+	background-color: #4a5866;
+}
+
+/* .osep: the separators' middle line in the window's blue between ink lines. */
+.player-separator span,
+.medals-rule span {
+	background-color: #050c1a;
+}
+
+.player-separator .rule-light,
+.medals-rule .light {
+	background-color: #7cb6e2;
+}
+
+/* The player's picture: the concept's portrait instead of the model. */
+#player-portrait {
+	visibility: hidden;
+}
+
+#player-portrait-clip {
+	decorator: image(/ui/skins/new/assets/icon_sources/icon_player.png scale-down center 30%);
+}
+
+/* The page prompts as key caps. */
+.page-prompts {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #f2f0e1;
+}
+
+.page-prompt {
+	margin-right: 24dp;
+}
+
+.page-prompts .prompt-key,
+.page-prompts .prompt-key.cancel-key {
+	display: inline-block;
+	height: 30dp;
+	padding: 0 6dp 4dp 6dp;
+	margin-right: 10dp;
+	line-height: 30dp;
+	color: #f2f0e1;
+	decorator: ninepatch(nb-key-outer, nb-key-inner, 1) border-box;
+}
+
+#chart-prompts {
+	letter-spacing: 0;
+}
+
+/* The cursors (the original's frame pictures): hidden under the gold four corners. */
+#chart-cursor,
+#chart-detail-cursor,
+#medals-cursor,
+#cards-cursor {
+	image-color: #ffffff00;
+	decorator: ninepatch(nb-ocur-outer, nb-ocur-inner, 1) border-box;
+}
+
+/* Chart cells and card slots: bevelled grey (.sk), the stages keep their colours. */
+#panel.on-player .chart-cell,
+#panel.on-player .chart-cell:focus,
+.chart-detail-cell {
+	border-color: #aab4be;
+	border-right-color: #2a3038;
+	border-bottom-color: #2a3038;
+	background-color: #4a5866;
+}
+
+.card-cell {
+	border-color: #8a96a2;
+	border-right-color: #1c2228;
+	border-bottom-color: #1c2228;
+	background-color: #3a4450;
+}
+
+.chart-req-row,
+#chart-req-score,
+#chart-req-next {
+	font-size: 15dp;
+}
+
+.chart-req-row.title {
+	color: #efc63c;
+}
+
+#panel.on-player #chart-req {
+	border: 2dp #4c6a8c;
+	background-color: #0b1322;
+}
+
+.chart-arrow {
+	decorator: image(nb-tri-u scale-none center center);
+}
+
+#chart-more {
+	decorator: image(nb-tri-d scale-none center center);
+	transform: none;
+}

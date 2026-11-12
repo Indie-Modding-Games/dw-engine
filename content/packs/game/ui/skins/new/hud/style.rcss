@@ -1,0 +1,251 @@
+/* hud in the new look (concept area B, mockups 097-123): the original's dial and faces, the small boxes (.obox.thin)
+   for the times, the map's name and the menu button, the bars as thin boxes with pink or blue pips, the round
+   minimap ringed in the window's blues and the need balloon as a cream pill. On a wide screen everything keeps to
+   the window's edges at the stage's distances (mockup 095). */
+
+/* The time under the dial (.tbox at 98,238 on the stage, the clock box sits at 69,78). */
+#field-clock.digital #field-time {
+	left: 29dp;
+	top: 160dp;
+	width: 100dp;
+	height: 34dp;
+	padding: 0;
+	border-width: 0;
+	box-sizing: border-box;
+	background-color: transparent;
+	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 34dp;
+	color: #f2f0e1;
+}
+
+/* The bars (.sbar: 225 x 24, a thin box, 25 pips of 4 + 2 from x 54, 12 tall): pink for happiness, blue for
+   discipline, whatever the half; the face tells the low half. Solid for now: an image decorator cannot repeat a
+   sprite of a sheet, the pips need a tile of their own. */
+.field-meter {
+	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;
+}
+
+#field-meter-0 { bottom: 66dp; }
+#field-meter-1 { bottom: 28dp; }
+
+#field-status .field-meter .bar {
+	top: 6dp;
+	height: 12dp;
+}
+
+#field-status .field-meter .fill,
+#field-status .field-meter .fill.high {
+	height: 9dp;
+	border-top: 3dp #f0b8d0;
+	background-color: #f070a8;
+	decorator: none;
+}
+
+#field-status #field-meter-1 .fill,
+#field-status #field-meter-1 .fill.high {
+	border-top-color: #90c8f0;
+	background-color: #4aa6ff;
+}
+
+/* The need balloon: a cream pill with an ink rim (66 x 60) round the need, as wide as the stack when there are
+   several; the balloon's own pictures stay for the burst. */
+#field-partner-bubble.shown {
+	decorator: none;
+}
+
+#field-partner-bubble.shown .balloon-half {
+	display: block;
+	top: 8dp;
+	width: 33dp;
+	height: 60dp;
+	box-sizing: border-box;
+	border: 3dp #050c1a;
+	background-color: #f2f0e1;
+	decorator: none;
+}
+
+#field-partner-bubble.shown #field-partner-bubble-left {
+	left: 15dp;
+	border-right-width: 0;
+	border-radius: 30dp 0 0 30dp;
+}
+
+#field-partner-bubble.shown #field-partner-bubble-right {
+	right: 15dp;
+	border-left-width: 0;
+	border-radius: 0 30dp 30dp 0;
+}
+
+#field-partner-bubble.stack-2 .balloon-half,
+#field-partner-bubble.stack-3 .balloon-half,
+#field-partner-bubble.stack-4 .balloon-half,
+#field-partner-bubble.stack-5 .balloon-half {
+	width: 50%;
+	decorator: none;
+}
+
+#field-partner-bubble.stack-2 #field-partner-bubble-left,
+#field-partner-bubble.stack-3 #field-partner-bubble-left,
+#field-partner-bubble.stack-4 #field-partner-bubble-left,
+#field-partner-bubble.stack-5 #field-partner-bubble-left {
+	left: 0;
+}
+
+#field-partner-bubble.stack-2 #field-partner-bubble-right,
+#field-partner-bubble.stack-3 #field-partner-bubble-right,
+#field-partner-bubble.stack-4 #field-partner-bubble-right,
+#field-partner-bubble.stack-5 #field-partner-bubble-right {
+	right: 0;
+}
+
+/* The map's name over the fade (.bmaptitle): light grey with an ink drop. */
+#map-title {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #d0d0d0;
+	font-effect: shadow(3dp 3dp #050c1a);
+}
+
+/* The minimap (.mm): the disc 180 across (135 small, 236 large) 30 from the right edge, its name in a thin box
+   156 wide at the top, the north mark an ink square with a gold N on the ring, the time in a thin box under it. */
+#minimap {
+	right: 12dp;
+	top: 4dp;
+}
+
+#minimap.size-small { width: 171dp; }
+#minimap.size-medium { width: 216dp; }
+#minimap.size-large { width: 272dp; }
+
+.size-small #minimap-frame { width: 135dp; height: 135dp; }
+.size-medium #minimap-frame { width: 180dp; height: 180dp; }
+.size-large #minimap-frame { width: 236dp; height: 236dp; }
+
+#minimap-name {
+	display: inline-block;
+	margin: 0 0 2dp 0;
+	min-width: 156dp;
+	white-space: nowrap;
+	padding: 2dp 8dp;
+	box-sizing: border-box;
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #f2f0e1;
+}
+
+#minimap-frame {
+	decorator: minimap-disc(original #10203af0 #b6e4f7 #00000000 3dp 0dp);
+}
+
+#minimap-north {
+	top: 3dp;
+	width: 28dp;
+	height: 28dp;
+	margin-left: -17dp;
+	border: 3dp #b6e4f7;
+	border-radius: 0;
+	background-color: #050c1a;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 28dp;
+	color: #efc63c;
+}
+
+#minimap-player { image-color: #efc63c; }
+#minimap-partner { image-color: #b6e4f7; }
+
+#minimap-enemies .enemy {
+	width: 12dp;
+	height: 12dp;
+	margin-left: -6dp;
+	margin-top: -6dp;
+}
+
+#minimap-items .item {
+	width: 12dp;
+	height: 12dp;
+	margin-left: -6dp;
+	margin-top: -6dp;
+}
+
+#minimap-clock {
+	margin-top: -2dp;
+	padding: 2dp 12dp;
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+}
+
+#minimap-time {
+	color: #f2f0e1;
+}
+
+/* The menu button (.menu-btn: a thin box 40 from the left, 24 from the bottom, the Tab key cap and «Menú»). */
+#menu-button,
+#menu-button:hover,
+#menu-button:focus {
+	left: 40dp;
+	bottom: 24dp;
+	padding: 5dp 12dp 5dp 5dp;
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 34dp;
+	color: #f2f0e1;
+}
+
+#menu-button .key {
+	margin-right: 10dp;
+}
+
+/* The shop job's bar (.bjob): a thin box at the top centre, the small font, the bar on a dark track with a blue rim,
+   pink, blue past the better pay, light grey once the shopkeeper joins, the marks in light gold. */
+#shop-job {
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 26dp;
+	color: #d0d0d0;
+}
+
+#shop-job-bar {
+	height: 14dp;
+	margin: 6dp 0;
+	border: 2dp #4c6a8c;
+	background-color: #1a2230;
+}
+
+#shop-job-fill {
+	border-top: 4dp #f0b8d0;
+	background-color: #e05890;
+}
+
+.shop-job-mark {
+	top: -4dp;
+	bottom: -4dp;
+	width: 4dp;
+	margin-left: -2dp;
+	background-color: #ffe58a;
+}
+
+#shop-job-foot {
+	height: 26dp;
+	font-size: 26dp;
+}
+
+#shop-job-next {
+	color: #ffe58a;
+}

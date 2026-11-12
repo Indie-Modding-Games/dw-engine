@@ -1,0 +1,48 @@
+/* destination_choice in the new look (concept area B, mockups 192-193): the shared panel (panel/style) with room
+   on the left for the ▶, the places in the small font with the ▶ and the gold outline on the focused one,
+   «Quedarse aquí» muted. */
+
+#panel {
+	padding: 12dp 24dp 10dp 44dp;
+}
+
+#title {
+	margin-left: -20dp;
+}
+
+.place,
+.page-turn,
+#stay {
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-width: 0;
+	border-left-width: 26dp;
+	background-color: transparent;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 33dp;
+	color: #f2f0e1;
+}
+
+#stay {
+	color: #93a6bc;
+}
+
+.place:focus,
+.page-turn:focus,
+#stay:focus {
+	background-color: transparent;
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+	color: #efc63c;
+}
+
+#page {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #93a6bc;
+}
+
+#prompts {
+	margin: 10dp -14dp 0 -34dp;
+	padding: 8dp 12dp 0 20dp;
+}

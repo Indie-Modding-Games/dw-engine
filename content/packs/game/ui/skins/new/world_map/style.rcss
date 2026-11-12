@@ -1,0 +1,32 @@
+/* world_map in the new look (concept area B, mockups 187-191): the island's window as the concept's box over the
+   original's dark scrim, the texts in the pixel fonts (the title 30 in the original's yellow, the rest in the small
+   font), the painted map, its labels and the marker as the original draws them. */
+
+body #frame {
+	background-color: transparent;
+	decorator: ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+}
+
+#title, #here, #exits, #exits-title, .exit-area, #footer {
+	font-family: "Pixel Small";
+}
+
+body #title {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #f8f800;
+}
+
+body #here,
+body #here-label,
+body #exits-title,
+body #exits,
+body .exit-area,
+body #no-exits,
+body #footer {
+	font-size: 26dp;
+}
+
+body #exits {
+	line-height: 26dp;
+}
