@@ -1,0 +1,22 @@
+/* egg_box in the new look (concept area D, life_cycle 365): the panel's window (panel/style.rcss) in the original's
+   place, the original's egg icons, and the gold four-corner cursor (.ocur) round the egg in focus instead of the
+   original's cursor sprite. */
+
+.egg:focus {
+	decorator: ninepatch(nb-ocur-outer, nb-ocur-inner, 1) border-box;
+}
+
+.egg:focus .egg-cursor {
+	display: none;
+}
+
+/* The names, when a document shows them (366): small, muted, the one in focus gold. */
+.egg-name {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #93a6bc;
+}
+
+.egg:focus .egg-name {
+	color: #efc63c;
+}

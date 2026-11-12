@@ -17,6 +17,8 @@ theme: [theme]
 screens:
   award_notice:
     styles: [story_textbox/style]
+  battle:
+    styles: [battle/style]
   bird_transport:
     styles: [bird_transport/style]
   card_shop:
@@ -31,8 +33,12 @@ screens:
     styles: [panel/style, dialog/style]
   discard_menu:
     styles: [discard_menu/style]
+  egg_box:
+    styles: [panel/style, egg_box/style]
   field_item_notice:
     styles: [story_textbox/style]
+  field_numbers:
+    styles: [battle/style]
   fishing_bait:
     styles: [panel/style, fishing_bait/style]
   fishing_hud:
@@ -49,6 +55,8 @@ screens:
     styles: [item_keeper/style]
   jukebox:
     styles: [jukebox/style]
+  lives_box:
+    styles: [story_textbox/style, lives_box/style]
   main_menu:
     styles: [title/style, main_menu/style]
   merit_shop:
@@ -81,10 +89,14 @@ screens:
     styles: [story_textbox/style]
   tournament_bracket:
     styles: [tournament_bracket/style]
+  tournament_match:
+    styles: [tournament_match/style]
   tournament_schedule:
     styles: [tournament_schedule/style]
   trade_menu:
     styles: [trade_menu/style]
+  versus:
+    styles: [panel/style, versus/style]
   world_map:
     styles: [world_map/style]
 sprite_sheets:

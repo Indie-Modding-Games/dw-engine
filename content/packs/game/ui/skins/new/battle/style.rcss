@@ -1,0 +1,309 @@
+/* battle in the new look (concept area D, fight.html and end.html). The original skin's layout stays: the strip at
+   the top left, the partner's bars at the top right, the enemies' bars beside them, the end boxes in the middle.
+   Only the look changes. The damage digits, the banner, the anger marks and the countdown badge keep the original's
+   sprites (field_numbers loads this sheet too and keeps its digits). */
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The strip (fight.html .strip, .cmd): one thin box round the icons, each icon on a navy tile with a blue rim, the
+   hovered one inside a gold rim. The frame's pieces draw the box: top and bottom lines, the ends close it. */
+.command-frame {
+	box-sizing: border-box;
+	opacity: 1;
+	border-width: 3dp 0;
+	border-color: #b6e4f7;
+	background-color: #0a101ceb;
+}
+
+.command-frame.frame-left,
+.command-frame.frame-odd,
+.command-frame.frame-even,
+.command-frame.frame-right-odd,
+.command-frame.frame-right-even {
+	decorator: none;
+}
+
+.command-frame.frame-left {
+	border-left-width: 3dp;
+}
+
+.command-frame.frame-right-odd,
+.command-frame.frame-right-even {
+	border-right-width: 3dp;
+}
+
+/* The tile is 54dp square round the icon's centre (the original's box is 42 x 66 with the icon in its middle). */
+.command,
+.command:focus,
+.command.current {
+	width: 48dp;
+	height: 48dp;
+	margin: 6dp 0 0 -6dp;
+	padding: 0;
+	border: 3dp #7cb6e2;
+	background-color: #1d3150;
+	color: transparent;
+	font-effect: none;
+}
+
+.command.unavailable {
+	opacity: 0.4;
+}
+
+/* The order the partner follows now (.cmd.cur): a green foot on its tile. */
+.command.current {
+	border-bottom-color: #5fd36a;
+}
+
+/* The finisher answers on the PULSA box: no tile; hovered, the gold four-corner cursor (308). */
+.command.no-icon,
+.command.no-icon:focus {
+	margin: 0;
+	border-width: 0;
+	background-color: transparent;
+	decorator: none;
+}
+
+.command.no-icon:focus {
+	decorator: ninepatch(nb-ocur-outer, nb-ocur-inner, 1) border-box;
+}
+
+#command-cursor {
+	width: 48dp;
+	height: 48dp;
+	margin: 6dp 0 0 6dp;
+	border: 3dp #efc63c;
+	background-color: #efc63c30;
+	decorator: none;
+}
+
+/* The hovered command's name (.cname): gold, with an ink drop. */
+#command-name {
+	font-size: 30dp;
+	color: #efc63c;
+	font-effect: shadow(3dp 3dp #050c1a);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The partner's bars (.pbar): the HP / MP cap, the bar in its ink and blue rim with the tiled fill, the value in
+   the small font. */
+.partner .bar-row {
+	decorator: none;
+}
+
+.partner .bar-label {
+	left: -2dp;
+	top: -2dp;
+	width: 24dp;
+	height: 24dp;
+	border: 2dp #7cb6e2;
+	background-color: #050c1a;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 24dp;
+	text-align: center;
+	white-space: nowrap;
+	color: #f2f0e1;
+}
+
+#fighter-0-hp-label,
+#fighter-0-mp-label {
+	decorator: none;
+}
+
+.partner .bar {
+	left: 30dp;
+	top: 3dp;
+	width: 196dp;
+	height: 10dp;
+	padding: 2dp;
+	border: 2dp #557ea8;
+	background-color: #050c1a;
+	decorator: vertical-gradient(#0b1220 #0b1220) content-box;
+}
+
+.partner .fill {
+	height: 8dp;
+}
+
+.partner .mp .fill {
+	height: 10dp;
+}
+
+.partner .hp .fill {
+	border-top: 2dp #9bffa6;
+	background-color: #5fd36a;
+}
+
+.partner .mp .fill {
+	border-top: 2dp #9fd2ff;
+	background-color: #4aa6ff;
+}
+
+.partner .bar-value {
+	display: block;
+	position: absolute;
+	right: 0;
+	top: -2dp;
+	width: 72dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 28dp;
+	text-align: right;
+	color: #f2f0e1;
+	font-effect: shadow(2dp 2dp #050c1a);
+}
+
+.partner .bar-digits {
+	display: none;
+}
+
+/* The finisher (.fin, .push): the word in light gold over an orange and an ink drop; once full, PULSA and its key
+   in a gold-rimmed ink box. */
+#finisher-word {
+	top: 63dp;
+	height: 36dp;
+	font-size: 30dp;
+	line-height: 36dp;
+	color: #ffe58a;
+	font-effect: shadow(3dp 3dp #a33a12);
+}
+
+#finisher-ready {
+	box-sizing: border-box;
+	min-width: 123dp;
+	height: 33dp;
+	padding: 0 6dp 0 10dp;
+	border: 3dp #efc63c;
+	background-color: #050c1a;
+	text-align: left;
+}
+
+#finisher-push {
+	min-width: 0;
+	height: 27dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 27dp;
+	color: #f2f0e1;
+}
+
+#prompt-finisher {
+	float: right;
+	min-width: 18dp;
+	height: 21dp;
+	margin: 1dp 0 0 8dp;
+	padding: 0 4dp 3dp 4dp;
+	line-height: 22dp;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The enemies' bars (.ehp): green rim and line, a plain green fill 3dp in. The value stays in the original's
+   digits (the document has no text for it). */
+.hb-frame {
+	border-color: #5fd36a;
+}
+
+.hb-line {
+	background-color: #5fd36a;
+}
+
+.hb-fill {
+	height: 15dp;
+	margin: -3dp 0 0 -3dp;
+	background-color: #5fd36a;
+}
+
+.hb-segment {
+	display: none;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The finisher's charge (.chg): the half window with brackets in the middle, the title, the gold bar, the hint. */
+#charge {
+	box-sizing: border-box;
+	top: 270dp;
+	width: 480dp;
+	height: 150dp;
+	margin-left: -240dp;
+	padding: 18dp 24dp;
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+#charge-title {
+	font-size: 30dp;
+	line-height: 36dp;
+	color: #fff371;
+}
+
+#charge .bar {
+	height: 15dp;
+	margin: 14dp 12dp;
+}
+
+.charge-hint {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #b2b2b2;
+}
+
+/* The cup clock's panel (.clock): a thin box; the sides and the digits stay the original's. */
+#match-clock {
+	box-sizing: border-box;
+	border: 3dp #b6e4f7;
+	background-color: #0a101ceb;
+	decorator: none;
+}
+
+/* The fast plate (.fast). */
+#speed-plate {
+	padding: 4dp 14dp;
+	border: 2dp #4a79a8;
+	font-size: 30dp;
+	color: #ffffff;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The end boxes (end.html): half windows with brackets (the balance box without), the body font, the original's
+   colours. */
+#gains,
+#bits {
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+#balance {
+	background-color: #293942;
+	decorator: ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+#gains-divider {
+	top: 5dp;
+	height: 272dp;
+}
+
+.gain,
+#bits,
+#balance,
+.end-row {
+	font-size: 30dp;
+}
+
+#bits-line {
+	left: 3dp;
+	top: 87dp;
+	width: 516dp;
+}
+
+/* end.html .sl: the stat names in gold, the gains in light blue. */
+.gain-label {
+	color: #efc63c;
+}
+
+.gain-value {
+	color: #b6e4f7;
+}

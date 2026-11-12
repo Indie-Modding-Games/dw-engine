@@ -1,0 +1,264 @@
+/* versus in the new look (concept area D, lobby.html, board.html, arena.html). The lobby is the pause menu's panel
+   (panel/style.rcss gives the window, the title and the prompts); this sheet adds the ▶ to its lists, the setup's
+   rows on one line, the room code and the small texts. The arena's HUD follows the battle's (battle/style.rcss). */
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The lobby (lobby.html .vp). */
+#scrim {
+	background-color: #050a1c;
+	decorator: image(/ui/skins/new/assets/title_wire.png cover center center);
+}
+
+/* lobby.html .vp: 760 inside plus its padding. */
+#panel {
+	box-sizing: border-box;
+	width: 838dp;
+	padding-left: 48dp;
+	line-height: 36dp;
+}
+
+#panel p {
+	font-size: 30dp;
+	line-height: 36dp;
+}
+
+#view-menu button,
+#view-save_pick .row,
+#view-lineup .row,
+.stepper {
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-width: 0;
+	border-left-width: 26dp;
+	line-height: 36dp;
+}
+
+#view-menu button:focus,
+#view-save_pick .row:focus,
+#view-lineup .row:focus {
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+/* The setup's rows (369): the name in light blue, then ◀ value ▶ on the same line; the focused one in the gold line
+   without the ▶ (the mockup marks it with the line only). */
+.stepper-label {
+	display: inline-block;
+	width: 230dp;
+	color: #b6e4f7;
+}
+
+/* The panel's id outranks the structure's glyph arrows (a shared rule turns .arrow, hence the transform); the tint
+   gives the mockup's light blue. */
+#panel .stepper .arrow,
+#panel .stepper .arrow.less,
+#panel .stepper:focus .arrow {
+	width: 24dp;
+	height: 24dp;
+	margin: 0 14dp;
+	vertical-align: middle;
+	transform: none;
+	image-color: #90d9fa;
+}
+
+#panel .stepper .arrow.less {
+	decorator: image(nb-tri-l scale-none center center);
+}
+
+#panel .stepper .arrow.more {
+	decorator: image(nb-tri-r scale-none center center);
+}
+
+.stepper-value {
+	min-width: 260dp;
+}
+
+.stepper:focus {
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+.stepper:focus .stepper-value {
+	color: #efc63c;
+}
+
+/* The small texts: the about lines in the small font, the warnings in orange, the code's label in light blue. */
+#panel p.about,
+.about {
+	margin-top: 10dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 28dp;
+	color: #93a6bc;
+}
+
+.warning {
+	color: #ffb070;
+}
+
+.label {
+	color: #b6e4f7;
+}
+
+/* The room code (371): big, light gold, an ink drop; the guest's typing (373) in a sunk field. */
+#panel p.entry {
+	margin: 6dp 0 4dp 18dp;
+	font-size: 30dp;
+	letter-spacing: 8dp;
+}
+
+#panel p.entry.code {
+	font-size: 60dp;
+	line-height: 72dp;
+	letter-spacing: 16dp;
+	color: #ffe58a;
+	font-effect: shadow(4dp 4dp #050c1a);
+}
+
+#typed {
+	display: inline-block;
+	min-width: 180dp;
+	padding: 6dp 12dp;
+	border: 2dp #4c6a8c;
+	border-top-color: #050a14;
+	border-left-color: #050a14;
+	background-color: #0b1322;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The arena's HUD (arena.html, 384-388): each side's bars, finisher box and strip as the story battle's (not checked
+   in the game: a match needs two players). */
+.vs-bar {
+	decorator: none;
+}
+
+.vs-icon {
+	left: -2dp;
+	top: -2dp;
+	width: 24dp;
+	height: 24dp;
+	border: 2dp #7cb6e2;
+	background-color: #050c1a;
+}
+
+.hp .vs-icon {
+	decorator: image(battle-hp contain center center);
+}
+
+.mp .vs-icon {
+	decorator: image(battle-mp contain center center);
+}
+
+.vs-gauge {
+	left: 30dp;
+	top: 3dp;
+	width: 196dp;
+	height: 10dp;
+	padding: 2dp;
+	border: 2dp #557ea8;
+	background-color: #050c1a;
+	decorator: vertical-gradient(#0b1220 #0b1220) content-box;
+}
+
+.vs-fill,
+.hp .vs-fill,
+.mp .vs-fill {
+	height: 8dp;
+	border-top: 2dp #9bffa6;
+	background-color: #5fd36a;
+}
+
+.mp .vs-fill {
+	border-top-color: #9fd2ff;
+	background-color: #4aa6ff;
+}
+
+.vs-word {
+	height: 36dp;
+	font-size: 30dp;
+	line-height: 36dp;
+	color: #ffe58a;
+	font-effect: shadow(3dp 3dp #a33a12);
+}
+
+.vs-push {
+	box-sizing: border-box;
+	min-width: 123dp;
+	height: 33dp;
+	padding: 0 6dp 0 10dp;
+	border: 3dp #efc63c;
+	background-color: #050c1a;
+	text-align: left;
+}
+
+.vs-push-word {
+	min-width: 0;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #f2f0e1;
+}
+
+.vs-push .key {
+	float: right;
+	height: 21dp;
+	margin: 1dp 0 0 8dp;
+	padding: 0 4dp 3dp 4dp;
+	line-height: 22dp;
+}
+
+.vs-name {
+	font-size: 30dp;
+	color: #efc63c;
+	font-effect: shadow(3dp 3dp #050c1a);
+}
+
+.vs-frame,
+.vs-frame.frame-left,
+.vs-frame.frame-odd,
+.vs-frame.frame-even,
+.vs-frame.frame-right-odd,
+.vs-frame.frame-right-even {
+	box-sizing: border-box;
+	opacity: 1;
+	border-width: 3dp 0;
+	border-color: #b6e4f7;
+	background-color: #0a101ceb;
+	decorator: none;
+}
+
+.vs-frame.frame-left {
+	border-left-width: 3dp;
+}
+
+.vs-frame.frame-right-odd,
+.vs-frame.frame-right-even {
+	border-right-width: 3dp;
+}
+
+.vs-cmd {
+	width: 48dp;
+	height: 48dp;
+	margin: 6dp 0 0 -6dp;
+	border: 3dp #7cb6e2;
+	background-color: #1d3150;
+}
+
+.vs-cursor {
+	width: 48dp;
+	height: 48dp;
+	margin: 6dp 0 0 6dp;
+	border: 3dp #efc63c;
+	background-color: #efc63c30;
+	decorator: none;
+}
+
+/* The clock (.clock): a thin box; the 1P / 2P pieces and the digits stay the original's. */
+#vs-clock {
+	box-sizing: border-box;
+	border: 3dp #b6e4f7;
+	background-color: #0a101ceb;
+	decorator: none;
+}
+
+.vs-warning {
+	color: #ffb070;
+	font-effect: shadow(2dp 2dp #050c1a);
+}
