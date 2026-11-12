@@ -205,6 +205,12 @@ body #description {
 	color: #d8f1ff;
 }
 
+/* The money box stands at the top left of the 4:3 picture: in a wide window the shop moves right of it, as it covered
+   the box's figures centred. */
+@media (min-width: 1100dp) {
+	#panel { margin-left: -200dp; }
+}
+
 @media (max-width: 760dp) {
 	#panel {
 		width: 92%;

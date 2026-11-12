@@ -872,7 +872,12 @@ Opciones → Interfaz y en la caja del primer arranque.
   ahora las opciones de `layout` de arriba y las clases `layout-*` del `<body>`; ninguna regla de su hoja depende de
   una clase que el código ya no pone. Las cajas de una carta (`card-detail`, `card-count-box`) se cierran también
   sin la animación del original (`menu: original` con `box: modern`), y se quitaron las reglas de ids que ya no
-  existen (`#balance` del gimnasio, la tecla de la pestaña Evoluciones).
+  existen (`#balance` del gimnasio, la tecla de la pestaña Evoluciones, `.on-options` de la portada).
+- Arreglos de su diseño: el menú de la portada usa letra de 22dp, porque «Continuar partida» se salía de la caja, y
+  «Nueva partida» solo se rellena de amarillo bajo el cursor (antes había dos filas marcadas); la comida favorita es
+  una fila más del perfil del compañero, no el texto grande encima del retrato y de los parámetros; en el editor de
+  técnicas, las técnicas equipadas van bajo la cuadrícula y no detrás; y en una ventana ancha la tienda se aparta a la
+  derecha de la caja del dinero, que tapaba.
 
 ## Aspecto original
 

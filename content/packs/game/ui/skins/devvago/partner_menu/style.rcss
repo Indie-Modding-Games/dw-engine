@@ -1736,6 +1736,20 @@ body.layout-pages-compact #scrim .page.hidden { display: none; }
 #scrim.compact-partner #status-weight-label { left: 0; top: 0; width: 43dp; height: 25dp; font-size: 11dp; line-height: 25dp; }
 #scrim.compact-partner #status-weight { left: 46dp; top: 0; width: 62dp; height: 25dp; margin: 0; padding: 0 4dp; font-size: 11dp; line-height: 22dp; }
 #scrim.compact-partner #partner-portrait-clip { left: 20dp; top: 155dp; width: 220dp; height: 282dp; border: 1dp #345875; background-color: #071522; }
+/* The favourite food (the favorite_food option) as one more profile row under age and weight; the portrait gives it
+   room. Without it the line fell back to the large type over the portrait and the stats. */
+#scrim.compact-partner #status-food-line { display: block; position: absolute; left: 20dp; top: 151dp; width: 220dp; height: 25dp; margin: 0; }
+#scrim.compact-partner #status-food-line.hidden { display: none; }
+#scrim.compact-partner #status-food-label {
+	position: absolute; display: block; left: 0; top: 0; width: 114dp; height: 25dp; decorator: none;
+	color: #8edcff; font-size: 11dp; line-height: 25dp; white-space: nowrap; overflow: hidden;
+}
+#scrim.compact-partner #status-food {
+	position: absolute; left: 116dp; top: 0; width: 104dp; height: 25dp; box-sizing: border-box; margin: 0; padding: 0 4dp;
+	white-space: nowrap; overflow: hidden;
+	font-size: 11dp; line-height: 22dp;
+}
+#scrim.compact-partner.favorite-food #partner-portrait-clip { top: 185dp; height: 252dp; }
 #scrim.compact-partner #partner-portrait { left: -94dp; top: -126dp; width: 600dp; height: 450dp; }
 #scrim.compact-partner #status-life-label { left: 20dp; top: 449dp; width: 48dp; height: 25dp; font-size: 12dp; line-height: 25dp; }
 #scrim.compact-partner #status-life-hearts { left: 78dp; top: 448dp; }
@@ -2025,6 +2039,17 @@ body.layout-pages-compact #scrim .page.hidden { display: none; }
 #scrim.compact-partner.tech-editing #tech-row-0 { top: 358dp; }
 #scrim.compact-partner.tech-editing #tech-row-1 { top: 389dp; }
 #scrim.compact-partner.tech-editing #tech-row-2 { top: 420dp; }
+/* The equipped set goes under the grid, in its column: at 326dp its heading sat behind the grid (which ends at 350dp)
+   and its rows ran under the data card's message. */
+#scrim.compact-partner.tech-editing #techset-heading { left: 108dp; top: 356dp; width: 306dp; }
+#scrim.compact-partner.tech-editing .tech-row { left: 108dp; width: 306dp; }
+#scrim.compact-partner.tech-editing #tech-row-0 { top: 386dp; }
+#scrim.compact-partner.tech-editing #tech-row-1 { top: 416dp; }
+#scrim.compact-partner.tech-editing #tech-row-2 { top: 446dp; }
+#scrim.compact-partner.tech-editing .tech-row .tech-name { width: 150dp; }
+#scrim.compact-partner.tech-editing .tech-row .tech-power { left: 160dp; }
+#scrim.compact-partner.tech-editing .tech-row .tech-mp { left: 210dp; }
+#scrim.compact-partner.tech-editing .tech-row .tech-range { left: 255dp; }
 #scrim.compact-partner.tech-editing .tech-row .tech-name { left: 8dp; width: 176dp; font-size: 13dp; }
 #scrim.compact-partner.tech-editing .tech-row .tech-power { left: 190dp; width: 44dp; font-size: 12dp; }
 #scrim.compact-partner.tech-editing .tech-row .tech-mp { left: 240dp; width: 38dp; font-size: 12dp; }

@@ -295,7 +295,7 @@
 	decorator: image(/ui/skins/devvago/assets/hero_title fill);
 }
 
-#panel.title-original:not(.on-options) {
+#panel.title-original {
 	position: absolute;
 	left: 32dp;
 	right: auto;
@@ -311,11 +311,11 @@
 	decorator: vertical-gradient(#153653 #0a1929);
 }
 
-#panel.title-original:not(.on-options) #title {
+#panel.title-original #title {
 	display: none;
 }
 
-#panel.title-original:not(.on-options) button {
+#panel.title-original button {
 	width: 100%;
 	box-sizing: border-box;
 	height: 42dp;
@@ -323,6 +323,7 @@
 	padding: 0 12dp;
 	border: 1dp #345875;
 	border-radius: 0;
+	font-size: 22dp;
 	line-height: 40dp;
 	text-align: left;
 	color: #d8f1ff;
@@ -330,33 +331,33 @@
 	transition: background-color color border-color 0.12s cubic-out;
 }
 
-#panel.title-original:not(.on-options) button:hover {
+#panel.title-original button:hover {
 	border-color: #72c7ff;
 	background-color: #153653;
 }
 
-#panel.title-original:not(.on-options) button:focus {
+#panel.title-original button:focus {
 	border-color: #ffd51e;
 	background-color: #153653;
 	color: #ffe64a;
 }
 
-#panel.title-original:not(.on-options) #play {
-	border-color: #ffe03a;
-	background-color: #f4c900;
-	color: #102235;
+/* New game stands out in yellow letters; it fills in yellow only under the cursor, so that the box never shows two
+   highlighted rows. */
+#panel.title-original #play {
+	color: #ffe64a;
 	font-weight: bold;
 }
 
-#panel.title-original:not(.on-options) #play:hover,
-#panel.title-original:not(.on-options) #play:focus {
+#panel.title-original #play:hover,
+#panel.title-original #play:focus {
 	border-color: #fff39b;
 	background-color: #ffdf22;
 	color: #071321;
 }
 
-#panel.title-original:not(.on-options) .dimmed,
-#panel.title-original:not(.on-options) button.dimmed:focus {
+#panel.title-original .dimmed,
+#panel.title-original button.dimmed:focus {
 	color: #718595;
 }
 
@@ -391,7 +392,7 @@
 		margin-top: 0;
 		top: 24dp;
 	}
-	#panel.title-original:not(.on-options) {
+	#panel.title-original {
 		left: 50%;
 		right: auto;
 		width: 480dp;
