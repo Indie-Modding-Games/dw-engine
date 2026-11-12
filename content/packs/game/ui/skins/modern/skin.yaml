@@ -79,3 +79,15 @@ screens:
     styles: [ui/skins/modern/original_lists/style]
   jukebox:
     styles: [ui/skins/modern/original_lists/style]
+# Cómo se maquetan las pantallas que comparten documento y script con el aspecto original: los scripts leen estas
+# opciones con ui.layout (docs/architecture/ui.md#aspectos). menu: la disposición de la pantalla; box: cómo se abren
+# sus cajas (las del original crecen desde un contorno gris).
+layout:
+  pause_menu: {menu: modern, box: modern}
+  partner_menu: {menu: modern, box: modern, pages: modern}
+  battle: {menu: modern}
+  main_menu: {menu: modern, picture: modern}
+  save_slots: {menu: modern, picture: modern}
+  new_game_rules: {menu: modern, picture: modern}
+  egg_box: {box: modern}
+  field_item_notice: {box: modern}

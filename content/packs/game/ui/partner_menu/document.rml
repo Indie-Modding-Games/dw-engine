@@ -12,9 +12,7 @@
 	<div id="scrim">
 		<div id="panel">
 			<div id="tabs">
-				<button id="tab-status" class="tab" onclick="open_page(document, 'status')"><span class="tab-edge tab-left"></span><span class="tab-edge tab-middle"></span><span class="tab-edge tab-right"></span><span id="tab-status-label" class="tab-label" text-key="partner_menu.tab.status"></span></button>
-				<button id="tab-evolutions" class="tab" onclick="open_evolutions(document)" text-key="partner_menu.tab.evolutions"></button>
-				<span id="tabs-evolutions-key" class="key tab-key" onclick="open_evolutions(document)"></span>
+				<button id="tab-status" class="tab" onclick="open_page(document, 'status')"><span class="tab-edge tab-left"></span><span class="tab-edge tab-middle"></span><span class="tab-edge tab-right"></span><span class="tab-label" text-key="partner_menu.tab.status"></span></button>
 				<button id="tab-tech" class="tab" onclick="open_page(document, 'tech')"><span class="tab-edge tab-left"></span><span class="tab-edge tab-middle"></span><span class="tab-edge tab-right"></span><span class="tab-label" text-key="partner_menu.tab.tech"></span></button>
                 <button id="tab-items" class="tab" onclick="open_page(document, 'items')" text-key="partner_menu.tab.items"></button>
 				<button id="tab-care" class="tab" onclick="open_page(document, 'care')" text-key="partner_menu.tab.care"></button>

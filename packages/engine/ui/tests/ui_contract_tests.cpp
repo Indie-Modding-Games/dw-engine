@@ -3,6 +3,7 @@
 #include <doctest/doctest.h>
 
 #include <array>
+#include <format>
 #include <string>
 
 namespace dwe::ui {
@@ -49,14 +50,16 @@ TEST_CASE("an entry is found by its screen, its kind and a name it covers") {
 }
 
 TEST_CASE("the reference lists each screen's entries under the API's version") {
+  const std::string version = std::format("{}.{}.{}", CurrentUiApiVersion.major,
+                                          CurrentUiApiVersion.minor, CurrentUiApiVersion.patch);
   const std::string markdown = contractMarkdown(Contract);
-  CHECK(markdown.contains("**0.1.0**"));
+  CHECK(markdown.contains(std::format("**{}**", version)));
   CHECK(markdown.contains("### `hud`"));
   CHECK(markdown.contains("| `open_menu` | comando | — | Opens the menu. |"));
   CHECK(markdown.find("### `hud`") < markdown.find("### `pause_menu`"));
 
   const std::string json = contractJson(Contract);
-  CHECK(json.contains(R"("version": "0.1.0")"));
+  CHECK(json.contains(std::format(R"("version": "{}")", version)));
   CHECK(json.contains(R"("summary": "A meter's \"value\".")"));
   CHECK(json.contains(R"("kind": "command")"));
 }

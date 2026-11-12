@@ -330,6 +330,18 @@ SkinElementClasses SkinCatalog::declaredClassesOf(std::string_view document) con
   return classes;
 }
 
+SkinScreenLayout SkinCatalog::layoutOf(const Skin& skin, std::string_view document) const {
+  SkinScreenLayout options;
+  for (const Skin* layer : chainOf(skin).value_or(std::vector<const Skin*>{})) {
+    if (const auto found = layer->layout.find(document); found != layer->layout.end()) {
+      for (const auto& [option, value] : found->second) {
+        options.insert_or_assign(option, value);
+      }
+    }
+  }
+  return options;
+}
+
 std::vector<std::string> SkinCatalog::classedDocumentsOf(const Skin& skin) const {
   std::vector<std::string> documents;
   for (const Skin* layer : chainOf(skin).value_or(std::vector<const Skin*>{})) {

@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "screens": {
     "hud": [
       {"name": "hud.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambia el estado del campo de abajo."},
@@ -46,7 +46,6 @@
       {"name": "pause_menu.at_title", "kind": "setting", "value": "boolean", "summary": "El menú se abre sobre la portada: solo las opciones."},
       {"name": "pause_menu.start_page", "kind": "setting", "value": "text", "summary": "options cuando Esc o Select abrieron el menú en su página de opciones."},
       {"name": "pause_menu.start_entry", "kind": "setting", "value": "text", "summary": "La entrada de la página principal que recibe el foco cuando el menú vuelve tras el menú del compañero."},
-      {"name": "pause_menu.evolutions", "kind": "setting", "value": "boolean", "summary": "De un solo uso: el menú se abre en la tabla de evoluciones para el menú del compañero."},
       {"name": "pause_menu.preview_player", "kind": "setting", "value": "boolean", "summary": "Abre directamente la página del jugador (vistas previas)."},
       {"name": "pause_menu.sleep_enabled", "kind": "setting", "value": "boolean", "summary": "Si el compañero puede irse a dormir ahora."},
       {"name": "pause_menu.fishing", "kind": "setting", "value": "number", "summary": "0 sin caña, 1 con caña pero sin agua, 2 el jugador puede pescar."},
@@ -95,7 +94,6 @@
       {"name": "evoreq.partner.<id>", "kind": "setting", "value": "text", "summary": "Cómo cumple el compañero los requisitos de una evolución."},
       {"name": "evoreq.req.<id>", "kind": "setting", "value": "text", "summary": "Los requisitos de evolución de una especie, como rangos."},
       {"name": "open_partner_menu", "kind": "command", "value": "text", "summary": "Abre el menú del compañero en una página: items o status."},
-      {"name": "pause_menu.evolutions", "kind": "command", "value": "boolean", "summary": "Gasta el uso único de la tabla de evoluciones (false)."},
       {"name": "praise", "kind": "command", "value": "none", "summary": "Felicita al compañero."},
       {"name": "scold", "kind": "command", "value": "none", "summary": "Regaña al compañero."},
       {"name": "sleep", "kind": "command", "value": "none", "summary": "Cierra el menú y manda al compañero a dormir."},
@@ -216,9 +214,7 @@
       {"name": "partner_toggle_technique", "kind": "command", "value": "number", "summary": "Equipa o quita una técnica por su hueco en la especie."},
       {"name": "partner_praise", "kind": "command", "value": "none", "summary": "Felicita al compañero (la pestaña de cuidados)."},
       {"name": "partner_scold", "kind": "command", "value": "none", "summary": "Regaña al compañero (la pestaña de cuidados)."},
-      {"name": "open_evolutions", "kind": "command", "value": "none", "summary": "Muestra la tabla de evoluciones del menú de pausa para el compañero (la pestaña Evoluciones)."},
       {"name": "language", "kind": "option", "value": "text", "summary": "El idioma, para el texto que la página maqueta a mano."},
-      {"name": "ui_skin", "kind": "option", "value": "text", "summary": "El aspecto de la interfaz."},
       {"name": "status_extras", "kind": "option", "value": "boolean", "summary": "Los extras de la página de estado."},
       {"name": "favorite_food", "kind": "option", "value": "boolean", "summary": "La comida favorita del compañero."},
       {"name": "art_fixes", "kind": "option", "value": "boolean", "summary": "Arreglos de arte."}

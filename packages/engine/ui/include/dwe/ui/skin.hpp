@@ -78,6 +78,15 @@ struct SkinScreen {
 // copy of the document.
 using SkinElementClasses = std::map<std::string, std::vector<std::string>, std::less<>>;
 
+// A skin's layout options for one screen (skin.yaml `layout:`): option → value, such as
+// `menu: original`. The documents read them with ui.layout(option) instead of asking which skin is
+// on, and the RCSS sees each one as the class layout-<option>-<value> on the document's body
+// (docs/architecture/ui.md#aspectos).
+using SkinScreenLayout = std::map<std::string, std::string, std::less<>>;
+
+// The prefix of the body classes that mirror a document's layout options.
+inline constexpr std::string_view LayoutClassPrefix = "layout-";
+
 // A skin: the look of every screen of the UI, as ui/skins/<id>/skin.yaml describes it. A skin only
 // changes the look: the documents keep their element ids, their scripts and what they send and read
 // (docs/architecture/ui.md#aspectos).
@@ -95,6 +104,8 @@ struct Skin {
   // scripts must not toggle these classes themselves: a switch takes them off every element a skin
   // of the catalog names.
   std::map<std::string, SkinElementClasses, std::less<>> documentClasses;
+  // The layout options it sets, by the name of the document; a skin it extends sets the others.
+  std::map<std::string, SkinScreenLayout, std::less<>> layout;
   // The image the app installs as the OS cursor while this skin is on. Empty for skins that let
   // the system arrow show. May be written relative to the skin folder (`cursor: cursor` reads as
   // `ui/skins/<id>/cursor`); `parseSkin` prefixes it like a style sheet.

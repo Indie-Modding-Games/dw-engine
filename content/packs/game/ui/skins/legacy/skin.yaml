@@ -134,6 +134,17 @@ screens:
     styles: [bug_report/style]
   fishing_hud:
     styles: [fishing_hud/style]
+# La maquetación del original en las pantallas que comparten documento y script con el aspecto moderno (ui.layout,
+# docs/architecture/ui.md#aspectos): su disposición de cada pantalla y sus cajas que crecen desde un contorno gris.
+layout:
+  pause_menu: {menu: original, box: original}
+  partner_menu: {menu: original, box: original, pages: original}
+  battle: {menu: original}
+  main_menu: {menu: original, picture: original}
+  save_slots: {menu: original, picture: original}
+  new_game_rules: {menu: original, picture: original}
+  egg_box: {box: original}
+  field_item_notice: {box: original}
 document_classes:
   # La portada y su lista de ranuras se maquetan como las del original (ui/main_menu/logic.lua, ui/save_slots/logic.lua).
   # skin-original marca el panel de las pantallas que comparten las hojas del aspecto moderno (pause_menu,

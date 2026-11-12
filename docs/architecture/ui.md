@@ -549,6 +549,8 @@ sprite_sheets:                      # opcional: hojas de sprites para RCSS
 document_classes:                   # opcional: clases que pone en elementos de los documentos compartidos
   hud:                              # el nombre con el que se carga el documento
     field-meter-0-bar: [pips]       # id del elemento: sus clases
+layout:                             # opcional: opciones de maquetación que leen los scripts (ui.layout)
+  pause_menu: {menu: original, box: original}
 ```
 
 | Pieza | Qué hace |
@@ -606,6 +608,23 @@ document_classes:                   # opcional: clases que pone en elementos de 
   aspecto original lo usa para poner `pips` en las cuatro barras del estado del campo. Cambio de contrato aditivo:
   los `skin.yaml` de antes siguen valiendo (Decidido por el manager (2026-10-21): un mecanismo genérico en vez de
   copiar el documento del HUD o de un ajuste propio del aspecto original).
+- **Opciones de maquetación (`layout`).** Las pantallas que comparten documento y script entre aspectos cambian de
+  disposición según opciones con nombre, no según el id del aspecto ni sus clases: por documento, una opción y su
+  valor (`pause_menu: {menu: original}`). El script de la pantalla las lee con `ui.layout(opción)`, que da el valor o
+  `nil`; el `SkinStyler` pone además la clase `layout-<opción>-<valor>` en el `<body>` del documento para las hojas.
+  Con `extends`, el aspecto más cercano que pone una opción manda (`SkinCatalog::layoutOf`). Las opciones y sus
+  valores los fija el esquema `ui_skin` (una errata es un error al cargar el paquete):
+
+  | Opción | Pantallas | Valores |
+  |---|---|---|
+  | `menu` | `pause_menu`, `partner_menu`, `battle`, `main_menu`, `save_slots`, `new_game_rules` | `modern`; `original`, la disposición del original (la cuadrícula de iconos y la página del jugador del menú de pausa, las páginas de estado y técnicas del compañero, la tira de combate que entra deslizándose, la portada y las ranuras del original) |
+  | `box` | `pause_menu`, `partner_menu`, `egg_box`, `field_item_notice` | `modern`; `original`, las cajas que crecen desde un contorno gris (`common/original_box.lua`) |
+  | `pages` | `partner_menu` | `modern`; `original`, las páginas de estado, técnicas y bolsa como las pantallas completas del original (las clases de página de `#scrim`) |
+  | `picture` | `main_menu`, `save_slots`, `new_game_rules` | `modern`; `original`, con «imágenes panorámicas» las cajas y el logo van a sus sitios del original sobre la imagen ensanchada (`common/title_picture.lua`) |
+
+  El moderno declara las suyas y el original y `legacy` las del original. Las clases de `document_classes` quedan
+  para el estilo (`skin-original`, `title-original`, `slots-original`, `pips`): ningún script decide la disposición
+  por ellas, salvo `pips`, que el HUD lee para llenar las barras a cuadritos como las dibuja la hoja.
 - **El aspecto de reserva (`fallback`).** `ui/ui_skin.yaml` puede nombrar, además de `default`, un `fallback`: el
   aspecto con el que arranca el juego si el de `default` no se ofrece. El original necesita imágenes que extrae
   `dwx extract` del disco del usuario; sin ellas se queda fuera del catálogo y el juego arranca con el moderno. Un
@@ -873,9 +892,10 @@ las posiciones dentro de un elemento van en %.
 
 #### La portada del aspecto original
 
-El mismo documento `main_menu` sirve a los dos aspectos: el original le pone la clase `title-original` a `#panel`
-(`document_classes` de su `skin.yaml`) y `logic.lua` cambia de disposición al verla, también al cambiar de aspecto en
-marcha. Lo mismo hace `save_slots` con `slots-original`. El aspecto moderno sigue con su menú de siempre.
+El mismo documento `main_menu` sirve a los dos aspectos: el original declara `layout: main_menu: {menu: original}` y
+`logic.lua` cambia de disposición al leerlo (`ui.layout("menu")`), también al cambiar de aspecto en marcha; la clase
+`title-original` de `#panel` queda para sus hojas. Lo mismo hace `save_slots` con `slots-original`. El aspecto moderno
+sigue con su menú de siempre.
 
 | Pantalla | Cómo es | Fuente |
 |---|---|---|

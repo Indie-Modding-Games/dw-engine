@@ -738,6 +738,30 @@ TEST_CASE("a skin's document classes go on when a document loads and come off on
   CHECK(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
 }
 
+TEST_CASE("a skin's layout options go on the document's body and fold along extends") {
+  Content content;
+  content.add("ui/skins/laid/skin.yaml", "id: laid\nname: ui_skin.laid\nextends: modern\n"
+                                         "layout:\n  hud: {bars: steps, size: large}\n");
+  content.add("ui/skins/relaid/skin.yaml", "id: relaid\nname: ui_skin.relaid\nextends: laid\n"
+                                           "layout:\n  hud: {bars: fill}\n");
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "en");
+  auto ui = createUi(files, texts);
+  REQUIRE(ui->setSkin("laid"));
+  loadScreens(*ui);
+  CHECK(ui->elementHasClass("hud", "", "layout-bars-steps"));
+  CHECK(ui->elementHasClass("hud", "", "layout-size-large"));
+
+  REQUIRE(ui->setSkin("relaid"));
+  CHECK(ui->elementHasClass("hud", "", "layout-bars-fill"));
+  CHECK_FALSE(ui->elementHasClass("hud", "", "layout-bars-steps"));
+  CHECK(ui->elementHasClass("hud", "", "layout-size-large"));
+
+  REQUIRE(ui->setSkin("modern"));
+  CHECK_FALSE(ui->elementHasClass("hud", "", "layout-bars-fill"));
+  CHECK_FALSE(ui->elementHasClass("hud", "", "layout-size-large"));
+}
+
 // Happiness 30 of -100 to 100 in two tones: the upper tone fills 30 % of its half, or 28 % in whole
 // pips of 4 %.
 void setHappiness(Ui& ui) {

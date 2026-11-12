@@ -17,11 +17,22 @@ una versión mayor, lo que no está puede cambiar sin aviso. Cómo se cargan y s
 En un nombre, `<n>` es un número desde 0 y `<id>` un identificador (minúsculas, cifras y `_`). Así,
 `hud.meter.<n>.value` cubre `hud.meter.0.value`, `hud.meter.1.value`...
 
+## Maquetación
+
+Una pantalla que se maqueta de dos formas pregunta cuál quiere el aspecto con `ui.layout("opción")`, que da el valor
+que el aspecto pone a esa opción en esa pantalla o `nil` (`skin.yaml`, `layout:`; ver [aspectos](aspectos.md)). Los
+scripts no preguntan por el id del aspecto (`ui.setting("ui_skin")`) ni por sus clases para decidir la disposición.
+
 ## Versiones
 
 La API de la interfaz lleva su propia versión, aparte de la [API de Lua](api-lua.md): una versión menor añade
 nombres, una mayor quita alguno o cambia lo que significa. Mientras sea 0.x describe lo que las pantallas usan hoy y
 puede moverse entre versiones del juego.
+
+| Versión | Cambios |
+|---|---|
+| 0.2.0 | Llega `ui.layout`. Se van `pause_menu.evolutions` y `open_evolutions`, la pestaña de evoluciones del menú del compañero que ya no usa ningún aspecto, y la opción `ui_skin` del menú del compañero, que ahora pregunta por su maquetación |
+| 0.1.0 | La lista de lo que usan hoy el HUD, el menú de pausa y el menú del compañero |
 
 La lista sale de `apps/game/src/ui_contract.cpp`. Un test la compara con esta página, con
 `content/schemas/ui_api/ui_api.json` (la misma lista para herramientas y editores) y con lo que leen y mandan los
@@ -31,7 +42,7 @@ HUD, el menú de pausa y el menú del compañero; el resto de pantallas llega de
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.1.0**.
+Versión de la API de la interfaz: **0.2.0**.
 
 ### `hud`
 
@@ -84,7 +95,6 @@ Versión de la API de la interfaz: **0.1.0**.
 | `pause_menu.at_title` | ajuste | sí/no | El menú se abre sobre la portada: solo las opciones. |
 | `pause_menu.start_page` | ajuste | texto | options cuando Esc o Select abrieron el menú en su página de opciones. |
 | `pause_menu.start_entry` | ajuste | texto | La entrada de la página principal que recibe el foco cuando el menú vuelve tras el menú del compañero. |
-| `pause_menu.evolutions` | ajuste | sí/no | De un solo uso: el menú se abre en la tabla de evoluciones para el menú del compañero. |
 | `pause_menu.preview_player` | ajuste | sí/no | Abre directamente la página del jugador (vistas previas). |
 | `pause_menu.sleep_enabled` | ajuste | sí/no | Si el compañero puede irse a dormir ahora. |
 | `pause_menu.fishing` | ajuste | número | 0 sin caña, 1 con caña pero sin agua, 2 el jugador puede pescar. |
@@ -133,7 +143,6 @@ Versión de la API de la interfaz: **0.1.0**.
 | `evoreq.partner.<id>` | ajuste | texto | Cómo cumple el compañero los requisitos de una evolución. |
 | `evoreq.req.<id>` | ajuste | texto | Los requisitos de evolución de una especie, como rangos. |
 | `open_partner_menu` | comando | texto | Abre el menú del compañero en una página: items o status. |
-| `pause_menu.evolutions` | comando | sí/no | Gasta el uso único de la tabla de evoluciones (false). |
 | `praise` | comando | — | Felicita al compañero. |
 | `scold` | comando | — | Regaña al compañero. |
 | `sleep` | comando | — | Cierra el menú y manda al compañero a dormir. |
@@ -257,9 +266,7 @@ Versión de la API de la interfaz: **0.1.0**.
 | `partner_toggle_technique` | comando | número | Equipa o quita una técnica por su hueco en la especie. |
 | `partner_praise` | comando | — | Felicita al compañero (la pestaña de cuidados). |
 | `partner_scold` | comando | — | Regaña al compañero (la pestaña de cuidados). |
-| `open_evolutions` | comando | — | Muestra la tabla de evoluciones del menú de pausa para el compañero (la pestaña Evoluciones). |
 | `language` | opción | texto | El idioma, para el texto que la página maqueta a mano. |
-| `ui_skin` | opción | texto | El aspecto de la interfaz. |
 | `status_extras` | opción | sí/no | Los extras de la página de estado. |
 | `favorite_food` | opción | sí/no | La comida favorita del compañero. |
 | `art_fixes` | opción | sí/no | Arreglos de arte. |

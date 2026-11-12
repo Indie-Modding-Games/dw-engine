@@ -385,6 +385,8 @@ struct Ui::Impl {
           const Skin* skin = skins.find(id);
           return skin != nullptr ? skin->nameKey : std::string{};
         },
+        .layout = [this](std::string_view screen,
+                         std::string_view option) { return styler.layoutOption(screen, option); },
         .device = [this]() -> std::string {
           return device == input::DeviceKind::Gamepad ? "gamepad" : "keyboard_mouse";
         },
@@ -1578,8 +1580,11 @@ std::string Ui::elementText(std::string_view document, std::string_view elementI
 bool Ui::elementHasClass(std::string_view document, std::string_view elementId,
                          std::string_view className) const {
   const Impl::Document* found = impl_->find(document);
-  Rml::Element* element =
-      found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
+  Rml::Element* element = nullptr;
+  if (found != nullptr) {
+    element =
+        elementId.empty() ? found->element : found->element->GetElementById(std::string{elementId});
+  }
   return element != nullptr && element->IsClassSet(std::string{className});
 }
 

@@ -10,7 +10,8 @@
 -- A document that uses it links this script, has an element `<div id="box-outline"
 -- class="box-outline hidden"></div>` straight under its body, and calls original_box.tick from its
 -- on_tick and original_box.cancel from its on_hide. Rectangles are { left, top, width, height } in
--- dp from the window's top left corner. Outside the original skin every call finishes at once.
+-- dp from the window's top left corner. Unless the skin sets the box layout to original (skin.yaml
+-- layout: <screen>: {box: original}), every call finishes at once.
 
 original_box = {}
 
@@ -18,8 +19,9 @@ local frame_seconds = 1 / 20
 local frames = 5
 local animations = {}
 
+-- The skin's choice for the document's boxes (skin.yaml layout: <screen>: box).
 function original_box.enabled()
-  return ui.setting("ui_skin") == "original"
+  return ui.layout("box") == "original"
 end
 
 function original_box.busy()

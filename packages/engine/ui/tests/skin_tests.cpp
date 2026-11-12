@@ -152,6 +152,20 @@ TEST_CASE("a skin.yaml marks elements of shared documents with document_classes"
   CHECK_FALSE(parseSkin("id: p\nname: x\ndocument_classes: [hud]\n").has_value());
 }
 
+TEST_CASE("a skin.yaml sets layout options per screen") {
+  const auto skin =
+      parseSkin("id: p\nname: x\nlayout:\n  pause_menu: {menu: original, box: original}\n");
+  REQUIRE_MESSAGE(skin.has_value(), skin.error().message);
+  REQUIRE(skin->layout.contains("pause_menu"));
+  CHECK(skin->layout.at("pause_menu").at("menu") == "original");
+  CHECK(skin->layout.at("pause_menu").at("box") == "original");
+  CHECK_FALSE(parseSkin("id: p\nname: x\nlayout:\n  Pause: {menu: original}\n").has_value());
+  CHECK_FALSE(parseSkin("id: p\nname: x\nlayout:\n  pause_menu: {Menu: original}\n").has_value());
+  CHECK_FALSE(parseSkin("id: p\nname: x\nlayout:\n  pause_menu: {menu: a-b}\n").has_value());
+  CHECK_FALSE(parseSkin("id: p\nname: x\nlayout:\n  pause_menu: [menu]\n").has_value());
+  CHECK_FALSE(parseSkin("id: p\nname: x\nlayout: [pause_menu]\n").has_value());
+}
+
 TEST_CASE(
     "a sprite sheet may let its picture be smoothed, which its RCSS asks only when smoothing is on") {
   SkinSpriteSheet sheet = sheetOf(

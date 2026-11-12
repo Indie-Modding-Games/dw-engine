@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -37,6 +38,8 @@ inline constexpr std::size_t MaxScriptText = std::size_t{64} * 1024;
 inline constexpr std::size_t MaxTextArguments = 16;
 // The global function that gives the text of a key: t(key[, {name = value}]).
 inline constexpr std::string_view TextFunction = "t";
+// The table of the UI's functions (ui.send, ui.setting...).
+inline constexpr std::string_view UiTable = "ui";
 
 // What the Lua API asks of the UI.
 struct ScriptHost {
@@ -54,6 +57,8 @@ struct ScriptHost {
   // id).
   std::function<std::vector<std::string>()> skins;
   std::function<std::string(std::string_view)> skinNameKey;
+  // A layout option the skin sets on a screen (ui.layout), nullopt when it sets none.
+  std::function<std::optional<std::string>(std::string_view, std::string_view)> layout;
   std::function<std::string()> device;
   std::function<std::string()> gamepadFamily;
   // Shows a document; a modal one takes the navigation, as the menu document does when the game
@@ -170,6 +175,10 @@ public:
   // A fresh environment for a document: copies of the global libraries and of `ui`, and no way back
   // to the globals.
   sol::environment newEnvironment();
+
+  // Gives a document's copy of `ui` its layout(option) function, which reads the options the skin
+  // sets on that screen.
+  void bindLayout(sol::environment& environment, const std::string& screen);
 
   [[nodiscard]] CodeTrust& trust() { return *trust_; }
 

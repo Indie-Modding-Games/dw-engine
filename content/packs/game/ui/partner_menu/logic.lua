@@ -82,13 +82,17 @@ local function in_battle()
   return ui.setting("partner_menu.context") == "battle"
 end
 
--- A compact partner menu (one "Partner" page that also shows the techniques, no tab row, and the
--- only control being Back) is declared by the ACTIVE SKIN through `document_classes` on #scrim
--- (`partner-compact`), so the game keys off that class and never off a skin id
--- (docs/architecture/ui.md#aspectos: a skin changes the look, not the behaviour).
-local function compact_menu(document)
-  local scrim = document ~= nil and document:get("scrim") or nil
-  return scrim ~= nil and scrim:has_class("partner-compact")
+-- The skin's layout of this menu (skin.yaml layout: partner_menu: menu): "original" lays it out as
+-- the original game's (its status and tech pages, its item screen, Cancel closing it back to the
+-- pause menu), anything else as the modern look's tabs.
+local function original_menu()
+  return ui.layout("menu") == "original"
+end
+
+-- The skin's look of the status, tech and item pages (skin.yaml layout: partner_menu: pages):
+-- "original" draws them as the original game's full screens (the page classes on #scrim).
+local function original_pages()
+  return ui.layout("pages") == "original"
 end
 
 local function slot_filled(index)
@@ -142,7 +146,7 @@ local function draw_meter(document, index)
     document:get(prefix .. "-fill"):set_property("width", percent(value, low, middle) .. "%")
     high = percent(value, middle, top)
   end
-  if ui.setting("ui_skin") == "original" then
+  if original_menu() then
     local value, low, top = number(base .. "value"), number(base .. "min"), number(base .. "max")
     local pink = percent(value, low, (low + top) / 2)
     if extras_shown() then
@@ -174,7 +178,7 @@ end
 -- field, hour to hour, as its two-digit fields, in an inset of its own (the class active-hours).
 local function draw_extras(document)
   local extras = extras_shown()
-  local original = ui.setting("ui_skin") == "original"
+  local original = original_menu()
   document:get("scrim"):set_class("status-extras", extras)
   document:get("status-active"):set_class("active-hours", extras and original)
   -- Keep the two progression timers visible in the unified dashboard even when the optional
@@ -241,7 +245,7 @@ local function draw_status(document)
   document
     :get("status-lives")
     :set_text(t("partner_menu.lives", { lives = number("partner.lives") }))
-  local original = ui.setting("ui_skin") == "original"
+  local original = original_menu()
   document:get("status-age"):set_text(
     original and tostring(number("partner.age"))
       or t("partner_menu.age.value", { days = number("partner.age") })
@@ -294,18 +298,11 @@ local function draw_status(document)
   end
   document:get("status-life-label"):set_text(words[2] or "")
   -- HP and MP: the numbers, now and at most, and a bar of the maximum (game_menu.c:
-  -- renderDigimonStatsView). A skin may declare partner-pool-current on #scrim to fill the bar
-  -- with the current amount over the maximum instead.
+  -- renderDigimonStatsView).
   local pool_now = { number("partner.hp"), number("partner.mp") }
-  local pool_current = document:get("scrim"):has_class("partner-pool-current")
   for index = 0, pool_bars - 1 do
     draw_bar(document, "pool-" .. index, "partner.pool", index)
     local maximum = number("partner.pool." .. index .. ".value")
-    if pool_current then
-      document
-        :get("pool-" .. index .. "-fill")
-        :set_property("width", percent(pool_now[index + 1], 0, maximum) .. "%")
-    end
     document:get("pool-" .. index):set_text(
       original and tostring(pool_now[index + 1]) or (pool_now[index + 1] .. " / " .. maximum)
     )
@@ -323,7 +320,7 @@ local function draw_status(document)
   -- (status-text), and the condition names in full (the partner.meter labels).
   local pictures = (ui.setting("language") or "en") == "en"
   document:get("scrim"):set_class("status-text", not pictures)
-  if ui.setting("ui_skin") == "original" and pictures then
+  if original_menu() and pictures then
     document:get("meter-1-label"):set_text(words[1] or "")
     document:get("meter-2-label"):set_text(words[3] or "")
   end
@@ -352,15 +349,11 @@ local function draw_status(document)
 end
 
 -- Las abreviaturas se leen de las tablas del disco local, sin duplicar sus textos en el pack.
-local function original_skin()
-  return ui.setting("ui_skin") == "original"
-end
-
 local function tech_value_label(field, value)
   if value <= 0 then
     return ""
   end
-  if ui.setting("ui_skin") == "original" then
+  if original_menu() then
     if field == "range" then
       local labels = original_label("tech_view_labels", 0)
       local entries = {}
@@ -397,7 +390,7 @@ local function draw_tech(document)
       -- ranges 1, 2 and 3).
       local shown = filled
         and value > 0
-        and not (index == 3 and field == "range" and original_skin())
+        and not (index == 3 and field == "range" and original_menu())
       document
         :get("tech-" .. field .. "-" .. index)
         :set_text(shown and tech_value_label(field, value) or "")
@@ -530,12 +523,6 @@ local function assign_technique(document, slot)
 end
 
 function toggle_technique(document, slot)
-  if compact_menu(document) and editing_tech then
-    document:get("tech-choice-" .. slot):focus()
-    draw_tech_info(document)
-    assign_technique(document, slot)
-    return
-  end
   if not setting("partner.technique.choice." .. slot .. ".available", false) then
     document:get("tech-message"):set_text(t("partner_menu.tech.unavailable"))
     return
@@ -552,7 +539,7 @@ end
 
 local function draw_bag(document)
   local count = number("bag.slot.count")
-  local original = ui.setting("ui_skin") == "original"
+  local original = original_menu()
   local rows = count > 10 and 9 or 5
   row_offset = math.max(0, math.min(row_offset, math.ceil(count / 2) - rows))
   local total_rows = math.ceil(count / 2)
@@ -576,7 +563,7 @@ local function draw_bag(document)
         document,
         "slot-" .. index,
         index,
-        ui.setting("ui_skin") ~= "original" and t("partner_menu.bag.empty") or ""
+        not original_menu() and t("partner_menu.bag.empty") or ""
       )
       slot:set_class("moving", moving == index)
     end
@@ -588,7 +575,7 @@ local function draw_bag(document)
 end
 
 local function focus_slot(document, index)
-  if ui.setting("ui_skin") == "original" then
+  if original_menu() then
     local row = math.floor(index / 2)
     local rows = number("bag.slot.count") > 10 and 9 or 5
     if row < row_offset then
@@ -608,7 +595,7 @@ end
 -- instead.
 local function draw_description(document)
   local description = ""
-  if moving ~= nil and ui.setting("ui_skin") ~= "original" then
+  if moving ~= nil and not original_menu() then
     description =
       t("partner_menu.bag.move_prompt", { name = text(setting(slot_setting(moving, "name"), "")) })
   elseif box ~= nil and picked ~= nil then
@@ -710,11 +697,7 @@ local function open_box(document, name)
         not filled or not setting(slot_setting(picked, "discardable"), false)
       )
   end
-  local parent = ui.setting("ui_skin") == "original"
-      and box == "options"
-      and name ~= "options"
-      and "options"
-    or nil
+  local parent = original_menu() and box == "options" and name ~= "options" and "options" or nil
   if parent == nil then
     close_box(document)
   else
@@ -736,82 +719,30 @@ local function open_box(document, name)
 end
 
 local function show_page(document, name, focus)
-  if compact_menu(document) and name == "tech" then
-    name = "status"
-  end
-  local compact_partner = compact_menu(document) and name == "status" and not in_battle()
   close_box(document)
   moving = nil
   row_offset = 0
   current = name
-  document:get("scrim"):set_class("new-partner", compact_menu(document))
-  document:get("scrim"):set_class("compact-partner", compact_partner)
   for _, page in ipairs(pages) do
-    local visible = page == name or (compact_partner and page == "tech")
-    document:get("page-" .. page):set_class("hidden", not visible)
+    document:get("page-" .. page):set_class("hidden", page ~= name)
     document:get("tab-" .. page):set_class("selected", page == name)
   end
   document:get("scrim"):set_class("tech-editing", false)
-  document:get("scrim"):set_class(
-    "digimon-screen",
-    (name == "status" or name == "tech") and ui.setting("ui_skin") == "original"
-  )
   document
     :get("scrim")
-    :set_class("item-screen", name == "items" and ui.setting("ui_skin") == "original")
+    :set_class("digimon-screen", (name == "status" or name == "tech") and original_pages())
+  document:get("scrim"):set_class("item-screen", name == "items" and original_pages())
   document:get("scrim"):set_class("battle-bag", in_battle())
   document:get("scrim"):set_class("large-bag", number("bag.slot.count") > 10)
   draw(document)
-  local default_focus = first_entry[name]
-  -- In the compact merged partner screen the tab row is empty (status/tech/items/care all hidden);
-  -- focus the visible, interactive Change button so the arrows have a real entry point.
-  if compact_menu(document) and default_focus == "tab-status" then
-    default_focus = "tech-change"
-  end
-  document:get(focus or default_focus):focus()
+  document:get(focus or first_entry[name]):focus()
 end
 
 function open_page(document, name)
   if editing_tech or (in_battle() and name ~= "items") then
     return
   end
-  if compact_menu(document) and name == "tech" then
-    name = "status"
-  end
   show_page(document, name)
-end
-
--- The Evoluciones shortcut, declared by a skin through the partner-evolutions class on #scrim.
-local function evolutions_tab(document)
-  local scrim = document ~= nil and document:get("scrim") or nil
-  return scrim ~= nil and scrim:has_class("partner-evolutions")
-end
-
-local function draw_navigation(document)
-  local compact = compact_menu(document)
-  document
-    :get("tab-status-label")
-    :set_text(t(compact and "partner_menu.nav.partner" or "partner_menu.tab.status"))
-  -- The compact window names its bag tab "Bolsa", as the partner one names its status tab; the
-  -- classic skins keep the key's original word. Keyed off the compact class, never off a skin id.
-  document
-    :get("tab-items")
-    :set_text(t(compact and "partner_menu.nav.bolsa" or "partner_menu.tab.items"))
-  -- The chip beside the Evoluciones tab carries the device's own sign: E, or the pad's shoulder.
-  if compact and evolutions_tab(document) then
-    document:get("tabs-evolutions-key"):set_prompt("tab_next")
-  end
-end
-
--- The partner window's Evoluciones tab (hidden by ui/common/base.rcss until a skin declares
--- partner-evolutions on #scrim): the evolution tree lives in the pause menu's player page, so the
--- game takes the way in (apps/game/src/game.cpp: open_evolutions) and the menu's own Cancel
--- (pause_menu/logic.lua: back) brings the player back here. In battle the tab never answers.
-function open_evolutions(document)
-  if in_battle() or not evolutions_tab(document) then
-    return
-  end
-  ui.send("open_evolutions")
 end
 
 function pick_slot(document, index)
@@ -826,7 +757,7 @@ function pick_slot(document, index)
     draw_bag(document)
     return
   end
-  if not slot_filled(index) and ui.setting("ui_skin") ~= "original" then
+  if not slot_filled(index) and not original_menu() then
     return
   end
   picked = index
@@ -948,10 +879,7 @@ end
 function close_menu(document, after)
   local function leave()
     ui.hide(document_name)
-    -- The partner menu is a child of the pause menu in the field whenever the skin declares it
-    -- (the compact "Partner" screen, and the original look); closing it returns there. In battle it
-    -- returns to the fight, never to a pause menu.
-    if (compact_menu(document) or ui.setting("ui_skin") == "original") and not in_battle() then
+    if original_menu() and not in_battle() then
       ui.show("pause_menu", true)
     end
     if after ~= nil then
@@ -981,12 +909,7 @@ local function back(document)
     local index = moving
     moving = nil
     focus_slot(document, index)
-  elseif
-    compact_menu(document) and (current == "status" or current == "items" or current == "care")
-  then
-    -- No tab row: Cancel always closes the menu (focusing a hidden #close would never land).
-    close_menu(document)
-  elseif ui.setting("ui_skin") == "original" or in_battle() then
+  elseif original_menu() or in_battle() then
     close_menu(document)
   elseif not document:get("tab-" .. current):has_focus() then
     document:get("tab-" .. current):focus()
@@ -1006,8 +929,7 @@ local function step_box(document, step)
       at = index
     end
   end
-  local next_index = ui.setting("ui_skin") == "original"
-      and math.max(1, math.min(#entries, at + step))
+  local next_index = original_menu() and math.max(1, math.min(#entries, at + step))
     or ((at - 1 + step) % #entries) + 1
   document:get(entries[next_index]):focus()
 end
@@ -1020,7 +942,7 @@ end
 local function fit_to_window(document)
   local scrim = document:get("scrim")
   local panel = document:get("panel")
-  if panel:has_class("skin-original") then
+  if original_menu() then
     screen_fit.clear(panel)
     local left, top, width, height = panel:rect()
     local right, bottom = left + width, top + height
@@ -1045,7 +967,6 @@ local function draw_art_fixes(document)
 end
 
 function on_show(document)
-  draw_navigation(document)
   draw_art_fixes(document)
   panel_enter.start(document)
   status_condition_bob = nil
@@ -1082,7 +1003,7 @@ function on_setting(document, name)
   end
   -- tickDigimonMenu: the square opens the help page from the change view, with playSound(0, 3).
   if name == "partner_menu.extra_presses" then
-    if editing_tech and not tech_help_open and original_skin() and not original_box.busy() then
+    if editing_tech and not tech_help_open and original_menu() and not original_box.busy() then
       show_tech_help(document, true)
       ui.cue("confirm")
     end
@@ -1109,7 +1030,7 @@ function on_tick(document, seconds)
   panel_enter.tick(document)
   fit_to_window(document)
   tech_icon_time = tech_icon_time + seconds
-  if current == "status" and ui.setting("ui_skin") == "original" then
+  if current == "status" and original_menu() then
     document:get("scrim"):set_class("status-alternate", math.floor(tech_icon_time * 20) % 10 >= 5)
     local phase = math.floor(tech_icon_time * 20) % 16
     local bob = (phase < 3 or phase >= 13) and 130
@@ -1132,13 +1053,10 @@ end
 
 function on_device(document)
   draw_prompts(document)
-  -- the Evoluciones chip answers the device's own sign (E, or the pad's shoulder button)
-  draw_navigation(document)
 end
 
 function on_language(document)
   tech_info_focus = nil
-  draw_navigation(document)
   draw_boxes(document)
   draw_tech_help(document)
   draw(document)
@@ -1157,15 +1075,6 @@ function on_action(document, action)
     end
     return true
   end
-  -- Q/E (the pad's R/L) walk the window's folder tabs as the pause menu's pages do: on the partner
-  -- window E steps onto the Evoluciones shortcut, the same answer a click gives. The bag has no
-  -- other tab, and an open box keeps its hold on the input.
-  if (action == "tab_next" or action == "tab_previous") and current == "status" and box == nil then
-    if action == "tab_next" then
-      open_evolutions(document)
-    end
-    return true
-  end
   if action == "cancel" then
     back(document)
     return true
@@ -1180,7 +1089,7 @@ function on_action(document, action)
   end
   if box ~= nil then
     -- tickDropItemConfirmBox: left and right go between Yes and No, without going round.
-    if box == "confirm-box" and ui.setting("ui_skin") == "original" then
+    if box == "confirm-box" and original_menu() then
       if action == "left" then
         document:get("confirm-yes"):focus()
         return true
@@ -1247,10 +1156,7 @@ function on_action(document, action)
     end
     return false
   end
-  -- (no compact left/right intercept: the only focusable tab in the compact screen is `#close`
-  -- (Volver), so default RmlUi navigation moves through the merged status+tech content and lets the
-  -- cursor reach Volver without a hand-rolled hop that would swallow the tech grid's arrows.)
-  if (current == "status" or current == "tech") and ui.setting("ui_skin") == "original" then
+  if (current == "status" or current == "tech") and original_menu() then
     if action == "right" then
       show_page(document, "tech")
       return true
@@ -1266,12 +1172,7 @@ function on_action(document, action)
   -- The modern look's tabs: left and right on a tab open the page of the next one, as the original
   -- look's status and tech pages do, and the focus stays on the tabs. Right from the last page's
   -- tab goes on to Back, and left from Back opens the last page again.
-  if
-    (action == "left" or action == "right")
-    and not original_skin()
-    and not compact_menu(document)
-    and not in_battle()
-  then
+  if (action == "left" or action == "right") and not original_menu() and not in_battle() then
     local step = action == "left" and -1 or 1
     local at = document:get("close"):has_focus() and #pages + 1 or nil
     for index, page in ipairs(pages) do
@@ -1287,7 +1188,7 @@ function on_action(document, action)
   end
   if
     current == "items"
-    and ui.setting("ui_skin") == "original"
+    and original_menu()
     and (action == "up" or action == "down" or action == "left" or action == "right")
   then
     -- inventory.c: tickInventoryTop: up and down by a row within the bag, left and right within

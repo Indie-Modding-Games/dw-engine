@@ -312,6 +312,7 @@ ScriptedDocument::ScriptedDocument(const Rml::String& tag, Scripting& scripting)
 void ScriptedDocument::setName(std::string_view name) {
   name_ = name;
   environment_["document_name"] = name_;
+  scripting_->bindLayout(environment_, name_);
 }
 
 void ScriptedDocument::LoadInlineScript(const Rml::String& content, const Rml::String& sourcePath,
@@ -685,7 +686,7 @@ void Scripting::registerApi() {
         }
       });
 
-  sol::table api = state.create_named_table("ui");
+  sol::table api = state.create_named_table(std::string{UiTable});
   api["send"] = [this](std::string_view name, sol::stack_object value, sol::this_state lua) {
     checkName(lua, name);
     if (value.get_type() == sol::type::string) {
@@ -746,6 +747,15 @@ void Scripting::registerApi() {
   api["is_visible"] = [this](std::string_view name, sol::this_state lua) {
     checkName(lua, name);
     return host_.isVisible(name);
+  };
+}
+
+void Scripting::bindLayout(sol::environment& environment, const std::string& screen) {
+  sol::table api = environment[std::string{UiTable}];
+  // ui.layout(option): the value the skin gives the option on this document's screen, or nil.
+  api["layout"] = [this, screen](std::string_view option, sol::this_state lua) {
+    checkName(lua, option);
+    return result(lua, [&] { return host_.layout(screen, option); });
   };
 }
 

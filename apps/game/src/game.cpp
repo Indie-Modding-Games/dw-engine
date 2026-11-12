@@ -173,18 +173,6 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, r
   }
   if (command.name == "open_menu") {
     ui.show(MenuDocument, true);
-  } else if (command.name == "open_evolutions") {
-    // The compact partner window's Evoluciones tab (ui/partner_menu): the evolution tree lives on
-    // the pause menu's player page, so this hides the partner and hands the way in over. The
-    // one-shot setting tells the document to open on the tree and to go back here on Cancel
-    // (pause_menu/logic.lua: on_show, back).
-    ui.setSetting("pause_menu.evolutions", true);
-    ui.hide("partner_menu");
-    ui.show(MenuDocument, true);
-  } else if (command.name == "pause_menu.evolutions" &&
-             std::holds_alternative<bool>(command.value)) {
-    // The document consumed its one-shot: the next plain pause opens as usual.
-    ui.setSetting("pause_menu.evolutions", std::get<bool>(command.value));
   } else if (command.name == LanguageCommand &&
              std::holds_alternative<std::string>(command.value)) {
     language.change(std::get<std::string>(command.value));

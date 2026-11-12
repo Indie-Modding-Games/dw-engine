@@ -122,11 +122,6 @@ player_tab_chart: "Árbol"
 player_tab_medals: "Med."
 player_tab_card: "Cartas"
 player_tab_city: "Ciudad"
-# Nombre de la pestaña Prosperidad cuando el aspecto declara el juego mínimo (pause_menu:
-# player-minimal-tabs): la ventana de Jugador la renombra (pause_menu/logic.lua:
-# draw_player_tab_labels); los aspectos clásicos conservan la palabra de arriba. Los trofeos viven
-# ahora en el perfil (player-medals-on-profile), así que su pestaña desaparece.
-player_tab_prosperity: "Prosperidad"
 player_raised: "Criados"
 player_items: "Objetos"
 player_medals: "Medallas"

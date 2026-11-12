@@ -290,7 +290,8 @@ public:
   [[nodiscard]] std::string elementText(std::string_view document,
                                         std::string_view elementId) const;
 
-  // Whether an element of a document has a class, as its scripts set it, for tests.
+  // Whether an element of a document has a class, as its scripts set it, for tests. An empty id
+  // asks the document's body, which wears the skin's layout options.
   [[nodiscard]] bool elementHasClass(std::string_view document, std::string_view elementId,
                                      std::string_view className) const;
 
