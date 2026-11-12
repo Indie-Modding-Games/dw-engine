@@ -1,5 +1,5 @@
 {
-  "version": "0.5.0",
+  "version": "0.6.0",
   "screens": {
     "hud": [
       {"name": "hud.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambia el estado del campo de abajo."},
@@ -39,6 +39,7 @@
       {"name": "shop_job.better_pay", "kind": "setting", "value": "number", "summary": "La cuenta a partir de la cual la paga es mejor."},
       {"name": "shop_job.customers", "kind": "setting", "value": "number", "summary": "Los clientes atendidos."},
       {"name": "shop_job.customer", "kind": "setting", "value": "number", "summary": "El cliente que se está atendiendo."},
+      {"name": "shop_job.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambia algo del trabajo en la tienda."},
       {"name": "minimap", "kind": "option", "value": "text", "summary": "El minimapa: on u off."},
       {"name": "minimap_size", "kind": "option", "value": "text", "summary": "El tamaño del minimapa."},
       {"name": "digital_time", "kind": "option", "value": "boolean", "summary": "La hora en cifras."},
@@ -226,6 +227,56 @@
       {"name": "ui_skin", "kind": "option", "value": "text", "summary": "El aspecto que se ve; al confirmar una fila, el elegido, que se guarda en los ajustes."},
       {"name": "ui_skin_preview", "kind": "command", "value": "text", "summary": "Pone el aspecto de la fila enfocada sin guardarlo."},
       {"name": "skin_picker_done", "kind": "command", "value": "none", "summary": "El aspecto está elegido: la portada sigue con la caja de idiomas."}
+    ],
+    "clock": [
+      {"name": "clock.now", "kind": "query", "value": "table", "summary": "La hora: year, day, hour, minute, night, phase (morning, day, late, night) y running (si el tiempo del juego corre).", "signature": "(): table"},
+      {"name": "clock.changed", "kind": "event", "value": "table", "summary": "Cambió el estado del campo, la hora incluida.", "source": "hud.revision"}
+    ],
+    "field": [
+      {"name": "field.fade", "kind": "query", "value": "number", "summary": "Cuánto oscurece el fundido del cambio de mapa, de 0 a 1.", "signature": "(): number"},
+      {"name": "field.map_title", "kind": "query", "value": "text", "summary": "La clave de texto del nombre del mapa que se enseña al llegar, o nil.", "signature": "(): string?"},
+      {"name": "field.minimap", "kind": "query", "value": "table", "summary": "El minimapa: shown (la opción y el campo lo dejan), covered (una ventana lo tapa) y size.", "signature": "(): table"},
+      {"name": "field.player", "kind": "query", "value": "table", "summary": "Dónde está el jugador en la ventana: x e y en porcentaje.", "signature": "(): table"},
+      {"name": "field.shop_job", "kind": "query", "value": "table", "summary": "La cuenta del trabajo en la tienda mientras dura (tally, goal, better_pay, customer, customers), o nil.", "signature": "(): table?"},
+      {"name": "field.fade", "kind": "event", "value": "table", "summary": "Cambió el fundido.", "source": "screen_fade"},
+      {"name": "field.map_title", "kind": "event", "value": "table", "summary": "Cambió el nombre del mapa que se enseña.", "source": "map_title_key"},
+      {"name": "field.minimap", "kind": "event", "value": "table", "summary": "Cambió si el minimapa puede verse o si algo lo tapa.", "source": "hud.minimap_allowed hud.minimap_covered battle.active"},
+      {"name": "field.shop_job", "kind": "event", "value": "table", "summary": "Cambió el trabajo en la tienda.", "source": "shop_job.revision"}
+    ],
+    "partner": [
+      {"name": "partner.status", "kind": "query", "value": "table", "summary": "Las barras (meters: id, label_key, value, min, max, two_tone, mood), los PV y PM (pools) y lo que le parece el mapa (area: liked, disliked o nil).", "signature": "(): table"},
+      {"name": "partner.needs", "kind": "query", "value": "table", "summary": "Las necesidades en orden: id, label_key, active y urgency (1 la más urgente; 0 si no la tiene).", "signature": "(): table"},
+      {"name": "partner.bubble", "kind": "query", "value": "table", "summary": "Dónde está su cabeza en la ventana: visible, x, y (porcentaje) y evolving (el cuadro de la burbuja de evolución, o nil).", "signature": "(): table"},
+      {"name": "partner.extras", "kind": "query", "value": "table", "summary": "Errores de cuidado, combates y horas vividas; nil si el jugador tiene apagados los extras del estado.", "signature": "(): table?"},
+      {"name": "partner.praise", "kind": "action", "value": "boolean", "summary": "Pide felicitarlo.", "signature": "(): boolean"},
+      {"name": "partner.scold", "kind": "action", "value": "boolean", "summary": "Pide regañarlo.", "signature": "(): boolean"},
+      {"name": "partner.toggle_technique", "kind": "action", "value": "boolean", "summary": "Pide equipar o quitar la técnica de ese hueco de la especie.", "signature": "(slot: integer): boolean, string?"},
+      {"name": "partner.changed", "kind": "event", "value": "table", "summary": "Cambió algo del compañero; name dice qué ajuste.", "source": "hud.revision partner.revision hud.meter.0.label hud.meter.1.label hud.pool.0.label hud.pool.1.label hud.need.0.label hud.need.1.label hud.need.2.label hud.need.3.label hud.need.4.label hud.need.5.label"},
+      {"name": "partner.bubble_moved", "kind": "event", "value": "table", "summary": "Su cabeza se movió en la ventana.", "source": "hud.partner.revision"}
+    ],
+    "bag": [
+      {"name": "bag.count", "kind": "query", "value": "number", "summary": "Los huecos de la bolsa.", "signature": "(): integer"},
+      {"name": "bag.money", "kind": "query", "value": "number", "summary": "El dinero del jugador.", "signature": "(): integer"},
+      {"name": "bag.field", "kind": "query", "value": "any", "summary": "Un dato de un hueco, o su valor por defecto.", "signature": "(index: integer, name: string): any"},
+      {"name": "bag.slot", "kind": "query", "value": "table", "summary": "Un hueco: empty, name, description, description_species, count, dimmed, usable, discardable, item_color, icon, icon_rect, favorite.", "signature": "(index: integer): table"},
+      {"name": "bag.result", "kind": "query", "value": "table", "summary": "La respuesta a la última acción: key (clave del mensaje) e item; nil antes de ninguna.", "signature": "(): table?"},
+      {"name": "bag.use", "kind": "action", "value": "boolean", "summary": "Pide usar el objeto de un hueco.", "signature": "(index: integer): boolean, string?"},
+      {"name": "bag.drop", "kind": "action", "value": "boolean", "summary": "Pide tirar el objeto de un hueco.", "signature": "(index: integer): boolean, string?"},
+      {"name": "bag.move", "kind": "action", "value": "boolean", "summary": "Pide intercambiar dos huecos.", "signature": "(from: integer, to: integer): boolean, string?"},
+      {"name": "bag.sort", "kind": "action", "value": "boolean", "summary": "Pide ordenar la bolsa en un orden.", "signature": "(order: integer): boolean, string?"},
+      {"name": "bag.changed", "kind": "event", "value": "table", "summary": "Cambió la bolsa.", "source": "bag.revision"},
+      {"name": "bag.result", "kind": "event", "value": "table", "summary": "El juego respondió a una acción de la bolsa.", "source": "bag.result"}
+    ],
+    "player": [
+      {"name": "player.profile", "kind": "query", "value": "table", "summary": "El jugador: name, level, bits, seconds, raised, medals, items, cards.", "signature": "(): table"},
+      {"name": "player.medals", "kind": "query", "value": "table", "summary": "Las medallas que publica el juego (no un número fijo): held y name_key.", "signature": "(): table"},
+      {"name": "player.city", "kind": "query", "value": "table", "summary": "La ciudad: recruited, total y prosperity.", "signature": "(): table"}
+    ],
+    "options": [
+      {"name": "options.list", "kind": "query", "value": "table", "summary": "Las opciones del juego en orden: name, kind (toggle, list, range), label_key, help_key, tab, default, original, values, texts, min, max.", "signature": "(): table"},
+      {"name": "options.get", "kind": "query", "value": "any", "summary": "El valor de una opción ahora (o su valor por defecto); nil si no existe.", "signature": "(name: string): any"},
+      {"name": "options.set", "kind": "action", "value": "boolean", "summary": "Pide dar un valor a una opción; comprueba el tipo y los valores que admite.", "signature": "(name: string, value: any): boolean, string?"},
+      {"name": "options.changed", "kind": "event", "value": "table", "summary": "Cambió una opción; name dice cuál y value su valor.", "source": "@options"}
     ]
   }
 }

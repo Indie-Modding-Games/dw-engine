@@ -8,15 +8,15 @@
 -- where nothing changed writes nothing. The labels come once, as text keys. While a menu or a
 -- battle stops the field the panel and the menu's hint lose their class "shown" and each skin
 -- decides how they leave. Every skin draws this same document and script and differs only in its
--- style sheets: a bar with the class "pips" fills in the original's 25 steps, and the dial
--- (#field-clock-dial) and the class "night" on #field-clock are there for a skin that draws the
--- original's clock; the class "digital" on #field-clock asks for the time in figures (#field-time)
--- too. #field-partner-bubble hangs over the partner's head with the class of the need the
--- original's bubble would show, or, with several needs and need_bubble_stack, the class "stack-2"
--- to "stack-5"; its icons #field-partner-bubble-icon-<i> carry the needs it shows, the most urgent
--- first, and the class "frame-<n>" says which of the original's frames the bubble is on, for the
--- skin; as the partner starts to evolve it shows the evolving bubble instead, with the class
--- "evolving" on it and on its first icon. How the partner feels about the map puts the class
+-- style sheets and layout options: bars laid out in pips fill in the original's 25 steps, and the
+-- dial (#field-clock-dial) and the class "night" on #field-clock are there for a skin that draws
+-- the original's clock; the class "digital" on #field-clock asks for the time in figures
+-- (#field-time) too. #field-partner-bubble hangs over the partner's head with the class of the need
+-- the original's bubble would show, or, with several needs and need_bubble_stack, the class
+-- "stack-2" to "stack-5"; its icons #field-partner-bubble-icon-<i> carry the needs it shows, the
+-- most urgent first, and the class "frame-<n>" says which of the original's frames the bubble is
+-- on, for the skin; as the partner starts to evolve it shows the evolving bubble instead, with the
+-- class "evolving" on it and on its first icon. How the partner feels about the map puts the class
 -- "area-liked" or "area-disliked" on #field-status, where a skin can swap the happiness face as the
 -- original does.
 
@@ -62,7 +62,7 @@ local function percent(value, minimum, maximum)
 end
 
 -- The original's field bars are 25 squares of 2 pixels (partner_impl.c: renderStatusBars), so a bar
--- with the class "pips" fills in whole squares.
+-- laid out in pips (layout bars: pips) fills in whole squares.
 local pips_per_bar = 25
 
 -- The original's dial (clock.c: renderGameClock): the minute hand turns once an hour, 6 degrees a
@@ -129,11 +129,11 @@ local function draw_field_clock(document, clock)
   document:get("field-date"):set_text(t("hud.clock.date", { day = clock.day, year = clock.year }))
 end
 
--- A bar's fill in percent; in whole pips when the bar has the class "pips", rounding down as the
--- original does.
-local function bar_fill(bar, value, minimum, maximum)
+-- A bar's fill in percent; in whole pips when the skin lays the bars out in pips (skin.yaml layout:
+-- hud: bars: pips), rounding down as the original does.
+local function bar_fill(value, minimum, maximum)
   local fill = percent(value, minimum, maximum)
-  if bar:has_class("pips") then
+  if ui.layout("bars") == "pips" then
     local step = 100 / pips_per_bar
     fill = math.floor(fill / step + 1e-9) * step
   end
@@ -146,12 +146,11 @@ end
 -- of the bar's row.
 local function draw_field_meter(document, index, meter)
   local prefix = "field-meter-" .. index
-  local bar = document:get(prefix .. "-bar")
-  local fill, high = bar_fill(bar, meter.value, meter.min, meter.max), 0
+  local fill, high = bar_fill(meter.value, meter.min, meter.max), 0
   if meter.two_tone then
     local middle = (meter.min + meter.max) / 2
-    fill = bar_fill(bar, meter.value, meter.min, middle)
-    high = bar_fill(bar, meter.value, middle, meter.max)
+    fill = bar_fill(meter.value, meter.min, middle)
+    high = bar_fill(meter.value, middle, meter.max)
   end
   document:get(prefix .. "-fill"):set_property("width", fill .. "%")
   document:get(prefix .. "-high"):set_property("width", high .. "%")
@@ -160,10 +159,9 @@ local function draw_field_meter(document, index, meter)
 end
 
 local function draw_field_pool(document, index, pool)
-  local bar = document:get("field-pool-" .. index .. "-bar")
   document
     :get("field-pool-" .. index .. "-fill")
-    :set_property("width", bar_fill(bar, pool.value, 0, pool.max) .. "%")
+    :set_property("width", bar_fill(pool.value, 0, pool.max) .. "%")
   document:get("field-pool-" .. index .. "-value"):set_text(pool.value .. " / " .. pool.max)
 end
 
@@ -337,36 +335,52 @@ function on_language(document)
   draw_shop_job(document)
 end
 
-function on_setting(document, name)
-  if name == "screen_fade" then
-    refresh_fade(document)
-  elseif name == "map_title_key" then
-    refresh_title(document)
-  elseif name == "hud.revision" then
+-- The UI API's events (hooks.on): each redraws only what it changed, while the HUD shows (on_show
+-- draws everything again).
+local function on(event, handler)
+  hooks.on(event, function(fired, document)
+    if ui.is_visible(document_name) then
+      handler(fired, document)
+    end
+  end)
+end
+
+on("field.fade", function(_, document)
+  refresh_fade(document)
+end)
+on("field.map_title", function(_, document)
+  refresh_title(document)
+end)
+on("field.minimap", function(_, document)
+  refresh(document)
+end)
+on("field.shop_job", function(_, document)
+  draw_shop_job(document)
+end)
+on("partner.changed", function(event, document)
+  if string.find(event.name, "%.label$") then
+    draw_field_labels(document)
+  elseif event.name == "hud.revision" then
     draw_field(document)
-  elseif name == "hud.partner.revision" or name == "need_bubble_stack" then
+  end
+end)
+on("partner.bubble_moved", function(_, document)
+  draw_bubble(document)
+end)
+on("options.changed", function(event, document)
+  if event.name == "need_bubble_stack" then
     draw_bubble(document)
-  elseif name == "digital_time" then
+  elseif event.name == "digital_time" then
     draw_digital(document)
-  elseif name == "shop_job.revision" then
-    draw_shop_job(document)
-  elseif name == "ui_skin" then
+  elseif event.name == "ui_skin" then
     -- A new skin may set or clear classes the drawing reads (pips): draw the field status and the
     -- bubble again.
     refresh(document)
     draw_field(document)
-  elseif name == "hud.minimap_covered" or name == "hud.minimap_allowed" then
-    refresh(document)
-  elseif string.find(name, "^hud%.") or string.find(name, "^shop_job%.") then
-    if string.find(name, "%.label$") then
-      draw_field_labels(document)
-    end
-  elseif name == "minimap" or name == "minimap_size" or name == "battle.active" then
-    -- Only what refresh reads: a menu publishes hundreds of settings as it opens, and refreshing
-    -- the HUD for each of them stalled that frame (#221).
+  elseif event.name == "minimap" or event.name == "minimap_size" then
     refresh(document)
   end
-end
+end)
 
 function on_tick(document, seconds)
   tick_bubble(document, seconds)

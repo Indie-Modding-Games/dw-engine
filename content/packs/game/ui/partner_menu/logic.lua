@@ -115,7 +115,7 @@ end
 
 -- Whether the page shows its extras (the status_extras option, on unless turned off).
 local function extras_shown()
-  return ui.setting("status_extras") ~= false
+  return options.get("status_extras")
 end
 
 -- A time of day as the clock shows it, 08:30.
@@ -224,7 +224,7 @@ end
 -- The species' favourite food (the favorite_food option, an engine improvement on by default; the
 -- original shows none): a row under the weight with the item's name, «None» for a species without.
 local function draw_favorite_food(document)
-  local shown = ui.setting("favorite_food") ~= false
+  local shown = options.get("favorite_food")
   document:get("scrim"):set_class("favorite-food", shown)
   document:get("status-food-line"):set_class("hidden", not shown)
   local food = setting("partner.favorite_food", "")
@@ -967,7 +967,7 @@ end
 -- Art fixes (the art_fixes setting): the happiness label's picture from where the word is in the
 -- texture, instead of the original's columns, which cut its last letter and show a stray mark.
 local function draw_art_fixes(document)
-  document:get("status-happiness-name"):set_class("fixed", ui.setting("art_fixes") == true)
+  document:get("status-happiness-name"):set_class("fixed", options.get("art_fixes"))
 end
 
 function on_show(document)

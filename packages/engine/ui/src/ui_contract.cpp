@@ -52,6 +52,12 @@ std::string_view kindWord(UiContractKind kind) {
     return "opción";
   case UiContractKind::Argument:
     return "argumento";
+  case UiContractKind::Query:
+    return "consulta";
+  case UiContractKind::Action:
+    return "acción";
+  case UiContractKind::Event:
+    return "evento";
   }
   return "";
 }
@@ -66,6 +72,12 @@ std::string_view kindKey(UiContractKind kind) {
     return "option";
   case UiContractKind::Argument:
     return "argument";
+  case UiContractKind::Query:
+    return "query";
+  case UiContractKind::Action:
+    return "action";
+  case UiContractKind::Event:
+    return "event";
   }
   return "";
 }
@@ -82,6 +94,8 @@ std::string_view valueWord(UiValueKind value) {
     return "texto";
   case UiValueKind::Any:
     return "número o texto";
+  case UiValueKind::Table:
+    return "tabla";
   }
   return "";
 }
@@ -98,6 +112,8 @@ std::string_view valueKey(UiValueKind value) {
     return "text";
   case UiValueKind::Any:
     return "any";
+  case UiValueKind::Table:
+    return "table";
   }
   return "";
 }
@@ -153,10 +169,15 @@ std::string contractMarkdown(std::span<const UiContractEntry> contract) {
     text += std::format("\n### `{}`\n\n| Nombre | Tipo | Valor | Qué es |\n|---|---|---|---|\n",
                         screen);
     for (const UiContractEntry& entry : contract) {
-      if (entry.screen == screen) {
-        text += std::format("| `{}` | {} | {} | {} |\n", entry.name, kindWord(entry.kind),
-                            valueWord(entry.value), entry.summary);
+      if (entry.screen != screen) {
+        continue;
       }
+      std::string summary{entry.summary};
+      if (!entry.source.empty()) {
+        summary += std::format(" Sale de `{}`.", entry.source);
+      }
+      text += std::format("| `{}{}` | {} | {} | {} |\n", entry.name, entry.signature,
+                          kindWord(entry.kind), valueWord(entry.value), summary);
     }
   }
   return text + "\n";
@@ -173,10 +194,17 @@ std::string contractJson(std::span<const UiContractEntry> contract) {
       if (entry.screen != screens[screen]) {
         continue;
       }
+      std::string extra;
+      if (!entry.signature.empty()) {
+        extra += std::format(", \"signature\": {}", jsonString(entry.signature));
+      }
+      if (!entry.source.empty()) {
+        extra += std::format(", \"source\": {}", jsonString(entry.source));
+      }
       text +=
-          std::format("{}\n      {{\"name\": {}, \"kind\": {}, \"value\": {}, \"summary\": {}}}",
+          std::format("{}\n      {{\"name\": {}, \"kind\": {}, \"value\": {}, \"summary\": {}{}}}",
                       first ? "" : ",", jsonString(entry.name), jsonString(kindKey(entry.kind)),
-                      jsonString(valueKey(entry.value)), jsonString(entry.summary));
+                      jsonString(valueKey(entry.value)), jsonString(entry.summary), extra);
       first = false;
     }
     text += "\n    ]";

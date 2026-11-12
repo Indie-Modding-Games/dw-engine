@@ -279,6 +279,8 @@ struct Ui::Impl {
   std::vector<std::string> warming;
 
   std::map<std::string, Document, std::less<>> documents;
+  // The events each setting fires (the API's event_source declarations).
+  std::map<std::string, std::vector<std::string>, std::less<>> eventSources;
   std::vector<std::string> modalStack;
   std::string menuDocument;
   bool menuShut = false;
@@ -977,10 +979,25 @@ struct Ui::Impl {
     if (found != settings.end() && found->second == value) {
       return;
     }
-    settings.insert_or_assign(std::string{name}, std::move(value));
+    settings.insert_or_assign(std::string{name}, value);
     forEachVisible([name](Document& document) {
       document.element->callHandler("on_setting", std::string{name});
     });
+    if (auto sourced = eventSources.find(name); sourced != eventSources.end()) {
+      const UiArguments table{{"name", std::string{name}}, {"value", value}};
+      for (const std::string& event : sourced->second) {
+        fireEvent(event, table);
+      }
+    }
+  }
+
+  std::size_t fireEvent(std::string_view event, UiArguments table) {
+    table.insert_or_assign("version", 1.0);
+    std::size_t ran = 0;
+    for (auto& [name, document] : documents) {
+      ran += document.element->fireHook(event, table);
+    }
+    return ran;
   }
 
   void resize(int width, int height) {
@@ -1355,6 +1372,10 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
     return std::unexpected{fonts.error()};
   }
   impl->scripting->install();
+  impl->scripting->loadApi(*desc.files);
+  for (const UiEventSource& source : impl->scripting->eventSources()) {
+    impl->eventSources[source.setting].push_back(source.event);
+  }
   if (auto texts = impl->loadTexts(); !texts) {
     return std::unexpected{texts.error()};
   }
@@ -1469,6 +1490,10 @@ std::vector<UiCommand> Ui::takeCommands() {
 
 std::vector<UiCue> Ui::takeCues() {
   return std::exchange(impl_->cues, {});
+}
+
+std::size_t Ui::fireEvent(std::string_view event, const UiArguments& table) {
+  return impl_->fireEvent(event, table);
 }
 
 void Ui::setSetting(std::string_view name, UiValue value) {

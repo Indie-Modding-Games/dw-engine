@@ -1427,21 +1427,14 @@ TEST_CASE(
   CHECK(ui->styleProperty("hud", "field-meter-1-high", "width") == "0%");
 }
 
-TEST_CASE("a field bar with pips fills in whole pips of the original's 25, rounding down") {
-  // The shared document with the bars marked as a skin marks them
-  // (docs/architecture/ui.md#estado-del-campo).
-  std::ifstream stream{std::filesystem::path{DWE_GAME_PACK} / "ui/hud/document.rml",
-                       std::ios::binary};
-  std::string document{std::istreambuf_iterator<char>{stream}, std::istreambuf_iterator<char>{}};
-  for (const std::string_view bar : {"field-meter-0-bar", "field-meter-1-bar"}) {
-    const std::string plain = std::format(R"(class="bar" id="{}")", bar);
-    const std::size_t at = document.find(plain);
-    REQUIRE(at != std::string::npos);
-    document.replace(at, plain.size(), std::format(R"(class="bar pips" id="{}")", bar));
-  }
+TEST_CASE("a field bar laid out in pips fills in whole pips of the original's 25, rounding down") {
+  // A skin that lays the bars out as the original does (skin.yaml layout: hud: bars: pips;
+  // docs/architecture/ui.md#estado-del-campo).
   Content content;
-  content.add("ui/hud/document.rml", document);
+  content.add("ui/skins/stepped/skin.yaml", "id: stepped\nname: ui_skin.stepped\nextends: modern\n"
+                                            "layout:\n  hud: {bars: pips}\n");
   auto ui = createUi(content.mount());
+  useSkin(*ui, "stepped");
   REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
   ui->show("hud");
   // Happiness 30: the upper half's 25 pips are 4 points each, so 7 of them (28 %); -97 is no pip of
@@ -2643,6 +2636,77 @@ TEST_CASE("without the extracted bitmap font, original look text keeps the moder
   ui->setTextFont(TextFont::Original);
   ui->update();
   CHECK(widthOf(*ui, "bitmap") == doctest::Approx(modern));
+}
+
+TEST_CASE("the UI API's adapters load before any document, only from the engine's own packs") {
+  Content content;
+  content.add("ui/api/zz_probe.lua", "probe = { answer = function() return 42 end }");
+  content.addToMod("ui/api/zz_modded.lua", "modded = true");
+  content.add("ui/asks/document.rml",
+              "<rml><head><script>function ask() ui.send(tostring(probe.answer()) .. "
+              "tostring(modded)) end</script></head><body/></rml>");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("asks", idOf("ui/asks/document")));
+  REQUIRE(ui->callScript("asks", "ask"));
+  CHECK(commandNames(*ui) == std::vector<std::string>{"42nil"});
+}
+
+TEST_CASE("a document's hooks get the events a setting fires, while they are on") {
+  Content content;
+  content.add("ui/api/zz_probe.lua", "event_source('probe.value', 'probe.changed')");
+  content.add("ui/hooked/document.rml", R"rml(<rml><head><script>
+function got(event, document)
+  ui.send("got", event.name .. "|" .. event.value .. "|" .. math.floor(event.version) .. "|"
+    .. tostring(document ~= nil))
+end
+hooks.on("probe.changed", got)
+hooks.on("probe.changed", got)
+function stop() hooks.off("probe.changed", got) end
+function flood()
+  local failed = 0
+  for _ = 1, 70 do
+    if not pcall(hooks.on, "probe.flood", function() end) then failed = failed + 1 end
+  end
+  ui.send("failed", tostring(failed))
+end
+</script></head><body/></rml>)rml");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("hooked", idOf("ui/hooked/document")));
+  // A hidden document hears its events too, and a handler registered twice runs once.
+  ui->setSetting("probe.value", std::string{"x"});
+  auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].name == "got");
+  CHECK(commands[0].value == UiValue{std::string{"probe.value|x|1|true"}});
+  // A setting no event comes from fires nothing.
+  ui->setSetting("probe.other", std::string{"y"});
+  CHECK(ui->takeCommands().empty());
+
+  REQUIRE(ui->callScript("hooked", "stop"));
+  ui->setSetting("probe.value", std::string{"z"});
+  CHECK(ui->takeCommands().empty());
+
+  // A document keeps at most 64 handlers: with none left, 64 of 70 register.
+  REQUIRE(ui->callScript("hooked", "flood"));
+  commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].value == UiValue{std::string{"6"}});
+}
+
+TEST_CASE("the game fires a UI API event straight to the documents' hooks") {
+  Content content;
+  content.add("ui/hooked/document.rml",
+              "<rml><head><script>hooks.on('probe.fired', function(event) "
+              "ui.send('fired', event.item) end)</script></head><body/></rml>");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("hooked", idOf("ui/hooked/document")));
+  UiArguments table;
+  table.emplace("item", UiValue{std::string{"key"}});
+  CHECK(ui->fireEvent("probe.fired", table) == 1);
+  const auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].value == UiValue{std::string{"key"}});
+  CHECK(ui->fireEvent("probe.unheard", table) == 0);
 }
 
 } // namespace dwe::ui

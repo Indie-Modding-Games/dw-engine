@@ -112,7 +112,7 @@ local function cycle(list, index, step)
 end
 
 -- What each option entry does when confirmed or moved left and right.
-local options = {
+local option_actions = {
   ["minimap-mode"] = function(step)
     local index = index_of(minimap_modes, ui.setting("minimap")) or 1
     ui.send("minimap", minimap_modes[cycle(minimap_modes, index, step)])
@@ -327,7 +327,7 @@ local MEGA_ORDER = { houo = 1, hkab = 2, mtet = 3, muge = 4 }
 local STAGE_KEYS = { "fresh", "in_training", "rookie", "champion", "ultimate" }
 
 local function canonical_stages()
-  return ui.setting("canonical_stages") == true
+  return options.get("canonical_stages") == true
 end
 
 -- The stage label of a chart cell: the original's level names, or the canonical ones.
@@ -667,7 +667,7 @@ local GROUP_KEYS = { care = true, weight = true, stats = true, bonus = true, gat
 local STAT_KEYS = { hp = true, mp = true, off = true, def = true, spd = true, brn = true }
 
 local function requirements_on()
-  return ui.setting("evolution_requirements") ~= false and ui.setting("evoreq.ready") == true
+  return options.get("evolution_requirements") and ui.setting("evoreq.ready") == true
 end
 
 local function numbers(text)
@@ -1302,10 +1302,11 @@ end
 
 local function refresh_city(document)
   local chart_count = math.floor(tonumber(ui.setting("player.chart.count")) or 0)
+  local city = player.city()
   local signature = table.concat({
-    ui.setting("player.city.species") or "",
-    ui.setting("player.city.recruited") or "",
-    tostring(ui.setting("player.city.prosperity") or 0),
+    city.species,
+    city.recruited,
+    tostring(city.prosperity),
     tostring(chart_count),
   }, ";")
   if signature == city_signature then
@@ -1359,9 +1360,7 @@ local function refresh_city(document)
       end
     end
   end
-  document
-    :get("city-prosperity")
-    :set_text(tostring(math.floor(tonumber(ui.setting("player.city.prosperity")) or 0)))
+  document:get("city-prosperity"):set_text(tostring(player.city().prosperity))
   document:get("city-residents"):set_text(string.format("%d/%d", joined, #city_cells))
   if city_index >= #city_cells then
     city_index = 0
@@ -1910,8 +1909,9 @@ local function refresh(document)
   refresh_cards(document)
   refresh_chart(document)
   refresh_city(document)
-  draw_date_digits(document, "field-year-", 3, ui.setting("hud.clock.year"))
-  draw_date_digits(document, "field-day-", 2, ui.setting("hud.clock.day"))
+  local now = clock.now()
+  draw_date_digits(document, "field-year-", 3, now.year)
+  draw_date_digits(document, "field-day-", 2, now.day)
   draw_season(document)
   local original = original_menu()
   document:get("panel"):set_class("use-menu-art", (ui.setting("language") or "en") == "en")
@@ -1931,11 +1931,12 @@ end
 
 -- The PLAYER page's own fields: its name, level, rank, bits, counts, items and play time.
 refresh_player = function(document)
-  local name = ui.setting("player.name") or ""
+  local profile = player.profile()
+  local name = profile.name
   document:get("player-name"):set_text(name)
   -- A name longer than the original's six letters (the engine's long names) widens its box.
   document:get("panel"):set_class("long-player-name", ((utf8 and utf8.len(name)) or #name) > 6)
-  local level = ui.setting("player.level")
+  local level = profile.level
   document
     :get("player-level")
     :set_text(type(level) == "number" and string.format("%d", level) or "")
@@ -1948,20 +1949,20 @@ refresh_player = function(document)
     end
   end
   document:get("player-rank"):set_text(rank)
-  local bits = ui.setting("player.bits")
+  local bits = profile.bits
   document:get("player-bits"):set_text(type(bits) == "number" and string.format("%d", bits) or "")
   for _, field in ipairs({ "raised", "medals" }) do
-    local value = ui.setting("player." .. field)
+    local value = profile[field]
     document
       :get("player-" .. field)
       :set_text(type(value) == "number" and string.format("%d", value) or "")
   end
   -- renderPlayerInfoView: the item boxes show the rods and the two other items the player has.
-  local items = number_list("player.items.held")
+  local items = profile.items
   for slot = 0, 3 do
     document:get("player-item-" .. slot):set_class("hidden", (items[slot] or 0) == 0)
   end
-  local seconds = ui.setting("player.seconds")
+  local seconds = profile.seconds
   document:get("player-time"):set_text(
     type(seconds) == "number"
         and string.format(
@@ -2149,8 +2150,8 @@ end
 -- An entry of the minimap page, or a row of the options page by its option's id, confirmed (step 1)
 -- or moved left and right.
 function adjust(_document, id, step)
-  if options[id] ~= nil then
-    options[id](tonumber(step) or 1)
+  if option_actions[id] ~= nil then
+    option_actions[id](tonumber(step) or 1)
     return
   end
   local entry = entry_by_id(id)
@@ -2263,8 +2264,9 @@ function on_setting(document, name)
     return
   elseif name:sub(1, 4) == "hud." then
     if name == "hud.clock.year" or name == "hud.clock.day" then
-      draw_date_digits(document, "field-year-", 3, ui.setting("hud.clock.year"))
-      draw_date_digits(document, "field-day-", 2, ui.setting("hud.clock.day"))
+      local now = clock.now()
+      draw_date_digits(document, "field-year-", 3, now.year)
+      draw_date_digits(document, "field-day-", 2, now.day)
     end
   elseif name:sub(1, 7) == "evoreq." then
     -- The game sets evoreq.version last, once the rest of a change is in.
@@ -2509,7 +2511,7 @@ function on_action(document, action)
     end
   end
   if action == "left" or action == "right" then
-    for id, change in pairs(options) do
+    for id, change in pairs(option_actions) do
       local entry = document:get(id)
       if entry ~= nil and entry:has_focus() then
         change(action == "left" and -1 or 1)

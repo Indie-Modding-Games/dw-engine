@@ -709,7 +709,9 @@ constexpr std::string_view ClassySkin = "id: classy\nname: ui_skin.classy\nexten
                                         "  hud:\n"
                                         "    field-meter-0-bar: [pips, wide]\n"
                                         "    field-pool-1-bar: [pips]\n"
-                                        "    no-such-element: [pips]\n";
+                                        "    no-such-element: [pips]\n"
+                                        "layout:\n"
+                                        "  hud: {bars: pips}\n";
 
 TEST_CASE("a skin's document classes go on when a document loads and come off on a switch") {
   Content content;
@@ -772,7 +774,7 @@ void setHappiness(Ui& ui) {
 }
 
 TEST_CASE(
-    "a skin's classes are on before the HUD first draws and before it redraws on the switch's ui_skin") {
+    "a skin's layout is on before the HUD first draws and before it redraws on the switch's ui_skin") {
   SUBCASE("a document loaded under the skin draws with them when it shows") {
     Content content;
     content.add("ui/skins/classy/skin.yaml", ClassySkin);

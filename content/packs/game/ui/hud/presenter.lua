@@ -1,8 +1,8 @@
--- The HUD's presenter: what the field HUD shows, as plain tables, from the data the game publishes
--- for it (docs/modding/ui-api.md, screen hud). It touches no element and knows no skin: view.lua
--- draws its tables. The rules (night, the part of the day, a bar's low half) are the game's, which
--- publishes them with the clock and the bars (packages/screens: field_hud_view.hpp); only the need
--- bubble's turns are counted here, as the original's bubble counts its frames.
+-- The HUD's presenter: what the field HUD shows, as plain tables, from the UI API only (clock,
+-- partner, field, options: docs/modding/ui-api.md). It touches no element and knows no skin:
+-- view.lua draws its tables. The rules (night, the part of the day, a bar's low half) are the
+-- game's; only the need bubble's turns are counted here, as the original's bubble counts its
+-- frames.
 --
 -- Everything is in the table `hud` of the document's environment.
 
@@ -14,121 +14,79 @@ hud.meter_count = 2
 hud.need_count = 6
 hud.pool_count = 2
 
-local function number(name)
-  local value = ui.setting(name)
-  if type(value) ~= "number" then
-    return 0
-  end
-  return math.floor(value)
-end
-
-local function text_key(name)
-  local key = ui.setting(name)
-  if type(key) ~= "string" then
-    return ""
-  end
-  return key
-end
-
 hud.minimap_sizes = { small = true, medium = true, large = true }
 
--- The round minimap (an engine improvement) shows unless the player turns it off (minimap: off; on,
--- and auto from older settings, show it). It also hides while the game says the field is not the
--- player's to walk (hud.minimap_allowed false: battles, scenes and talk, minigames) and in a battle
--- (its HP bars and end box take that corner). The game hides it while a window lies over it
--- (hud.minimap_covered), whatever the skin.
+-- The round minimap (an engine improvement): hidden unless the player's option and the field allow
+-- it (field.minimap), covered while a window lies over it, and its size.
 function hud.minimap()
-  local size = ui.setting("minimap_size")
-  return {
-    hidden = ui.setting("minimap") == "off" or ui.setting("minimap") == false or ui.setting(
-      "battle.active"
-    ) == true or ui.setting("hud.minimap_allowed") == false,
-    covered = ui.setting("hud.minimap_covered") == true,
-    size = hud.minimap_sizes[size] and size or "medium",
-  }
+  local minimap = field.minimap()
+  return { hidden = not minimap.shown, covered = minimap.covered, size = minimap.size }
 end
 
--- How much of the panels shows through the map change's fade (screen_fade, 0 to 1).
+-- How much of the panels shows through the map change's fade.
 function hud.opacity()
-  local level = ui.setting("screen_fade")
-  if type(level) ~= "number" then
-    level = 0
-  end
-  return 1 - math.min(math.max(level, 0), 1)
+  return 1 - field.fade()
 end
 
 -- The text key of the map's name to show on arrival, or nil.
 function hud.map_title()
-  local key = text_key("map_title_key")
-  return key ~= "" and key or nil
+  return field.map_title()
 end
 
 -- The time in digits (digital_time, an engine improvement, on unless turned off).
 function hud.digital_time()
-  return ui.setting("digital_time") ~= false
+  return options.get("digital_time") ~= false
 end
 
 -- The labels of the bars, the needs and the pools, as text keys ("" for none), from 0.
 function hud.labels()
+  local status, needs = partner.status(), partner.needs()
   local labels = { meters = {}, needs = {}, pools = {} }
   for index = 0, hud.meter_count - 1 do
-    labels.meters[index] = text_key("hud.meter." .. index .. ".label")
+    labels.meters[index] = status.meters[index + 1].label_key
   end
   for index = 0, hud.need_count - 1 do
-    labels.needs[index] = text_key("hud.need." .. index .. ".label")
+    labels.needs[index] = needs[index + 1].label_key
   end
   for index = 0, hud.pool_count - 1 do
-    labels.pools[index] = text_key("hud.pool." .. index .. ".label")
+    labels.pools[index] = status.pools[index + 1].label_key
   end
   return labels
 end
 
--- The game clock: hour, minute, day, year, and the game's night and part of the day. Until the game
--- publishes it the clock reads 0:00, which is night.
+-- The game clock (clock.now): hour, minute, day, year, night and the part of the day.
 function hud.clock()
-  local phase = ui.setting("hud.clock.phase")
-  return {
-    hour = number("hud.clock.hour"),
-    minute = number("hud.clock.minute"),
-    day = number("hud.clock.day"),
-    year = number("hud.clock.year"),
-    night = ui.setting("hud.clock.night") ~= false,
-    phase = type(phase) == "string" and phase or "night",
-  }
+  return clock.now()
 end
 
--- The classes of hud.partner.area's values, the original's numbers: 1 the partner likes the area, 2
--- it dislikes it, 0 (none) neither.
-local areas = { [1] = "liked", [2] = "disliked" }
-
--- The field status: whether it shows, how the partner feels about the map ("liked", "disliked" or
--- nil), the clock, the bars (each with `low`, the game's mood), the needs the partner has and HP
--- and MP, from 0.
+-- The field status: whether it shows (while the game time runs), how the partner feels about the
+-- map ("liked", "disliked" or nil), the clock, the bars (each with `low` for its mood), the needs
+-- the partner has and HP and MP, from 0.
 function hud.field()
+  local now, status, needs = clock.now(), partner.status(), partner.needs()
   local state = {
-    shown = ui.setting("hud.shown") == true,
-    area = areas[ui.setting("hud.partner.area")],
-    clock = hud.clock(),
+    shown = now.running,
+    area = status.area,
+    clock = now,
     meters = {},
     needs = {},
     pools = {},
   }
   for index = 0, hud.meter_count - 1 do
-    local base = "hud.meter." .. index .. "."
+    local meter = status.meters[index + 1]
     state.meters[index] = {
-      value = number(base .. "value"),
-      min = number(base .. "min"),
-      max = number(base .. "max"),
-      two_tone = ui.setting(base .. "two_tone") == true,
-      low = ui.setting(base .. "mood") == "low",
+      value = meter.value,
+      min = meter.min,
+      max = meter.max,
+      two_tone = meter.two_tone,
+      low = meter.mood == "low",
     }
   end
   for index = 0, hud.need_count - 1 do
-    state.needs[index] = ui.setting("hud.need." .. index .. ".active") == true
+    state.needs[index] = needs[index + 1].active
   end
   for index = 0, hud.pool_count - 1 do
-    local base = "hud.pool." .. index .. "."
-    state.pools[index] = { value = number(base .. "value"), max = number(base .. "max") }
+    state.pools[index] = status.pools[index + 1]
   end
   return state
 end
@@ -145,13 +103,8 @@ hud.bubble_needs = bubble_need_index
 -- The partner's needs by id ({active, urgency}), read once per question.
 local function needs_by_id()
   local by_id = {}
-  for need, index in pairs(bubble_need_index) do
-    local base = "hud.need." .. index .. "."
-    local urgency = ui.setting(base .. "urgency")
-    by_id[need] = {
-      active = ui.setting(base .. "active") == true,
-      urgency = type(urgency) == "number" and urgency or 0,
-    }
+  for _, need in ipairs(partner.needs()) do
+    by_id[need.id] = need
   end
   return by_id
 end
@@ -204,7 +157,7 @@ end
 -- original bubble's order.
 function hud.stacked_needs()
   local needs = {}
-  if ui.setting("need_bubble_stack") == false then
+  if options.get("need_bubble_stack") == false then
     return needs
   end
   local by_id = needs_by_id()
@@ -228,32 +181,18 @@ function hud.stacked_needs()
   return needs
 end
 
--- Where the partner's head is: visible, x and y in percent of the window, and the evolving bubble
--- (bubble.c: CONDITION_ICON_EVOLVING), which the partner shows once as it starts to evolve
--- (main/evl.c: tickEvoSequenceLoading): the game steps it with the evolution's frames and publishes
--- its frame, 1 to 51 (the burst), as hud.partner.evolving (0, here nil, for none).
-local function head()
-  local x, y = ui.setting("hud.partner.x"), ui.setting("hud.partner.y")
-  local evolving = ui.setting("hud.partner.evolving")
-  return {
-    visible = ui.setting("hud.partner.visible") == true,
-    x = type(x) == "number" and x or 0,
-    y = type(y) == "number" and y or 0,
-    evolving = (type(evolving) == "number" and evolving >= 1) and math.floor(evolving) or nil,
-  }
-end
-
 -- The bubble as it is now: whether the partner is on the window, where its head is (x and y in
--- percent of the window), the evolving frame or nil, the need it shows or nil, the needs stacked in
--- it (more than one, or empty) and its frame, 1 to 60.
+-- percent of the window), the evolving frame or nil (bubble.c: CONDITION_ICON_EVOLVING, which the
+-- partner shows once as it starts to evolve; the game steps it, 1 to 51), the need it shows or nil,
+-- the needs stacked in it (more than one, or empty) and its frame, 1 to 60.
 function hud.bubble()
-  local partner_head = head()
-  local evolving = partner_head.evolving
+  local head = partner.bubble()
+  local evolving = head.evolving
   local stack = evolving and {} or hud.stacked_needs()
   return {
-    visible = partner_head.visible,
-    x = partner_head.x,
-    y = partner_head.y,
+    visible = head.visible,
+    x = head.x,
+    y = head.y,
     evolving = evolving,
     need = bubble_need,
     stack = #stack > 1 and stack or {},
@@ -273,8 +212,8 @@ end
 -- again), "frame" when only its frame may have moved, nil when it does not run.
 function hud.tick_bubble(seconds)
   -- The game steps the evolving bubble itself.
-  local partner_head = head()
-  if bubble_need == nil or not partner_head.visible or partner_head.evolving then
+  local head = partner.bubble()
+  if bubble_need == nil or not head.visible or head.evolving then
     return nil
   end
   bubble_seconds = bubble_seconds + seconds
@@ -295,15 +234,13 @@ function hud.tick_bubble(seconds)
 end
 
 -- The shop job's bar (shop_job_bar, an engine improvement, on unless turned off): while the canyon
--- shop's job runs the game publishes shop_job.* (apps/game: shop_job_bar.hpp). The bar runs from
--- nothing to the tally the shopkeeper joins from (goal), with a mark where the better pay starts.
+-- shop's job runs (field.shop_job), the bar runs from nothing to the tally the shopkeeper joins
+-- from (goal), with a mark where the better pay starts.
 function hud.shop_job()
-  return {
-    shown = ui.setting("shop_job.shown") == true,
-    tally = number("shop_job.tally"),
-    goal = number("shop_job.goal"),
-    better_pay = number("shop_job.better_pay"),
-    customer = number("shop_job.customer"),
-    customers = number("shop_job.customers"),
-  }
+  local job = field.shop_job()
+  if job == nil then
+    return { shown = false, tally = 0, goal = 0, better_pay = 0, customer = 0, customers = 0 }
+  end
+  job.shown = true
+  return job
 end

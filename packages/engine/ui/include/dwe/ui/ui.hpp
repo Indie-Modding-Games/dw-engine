@@ -35,6 +35,14 @@ using UiValue = std::variant<std::monostate, bool, double, std::string>;
 // table, so one menu can tell the next where to start without a setting in between.
 using UiArguments = std::map<std::string, UiValue, std::less<>>;
 
+// A setting whose changes the UI tells the documents as an event of the UI API (hooks.on in their
+// scripts): the event's table is {version = 1, name = the setting, value = its new value}. The
+// API's Lua declares them (ui/api/*.lua: event_source).
+struct UiEventSource {
+  std::string setting;
+  std::string event;
+};
+
 // The mouse cursor a skin asks the app to install: an RGBA image (the same layout as assets::Image)
 // and the click point (hotX, hotY) from its top-left corner, in image pixels. The app turns it into
 // a system cursor; nothing (nullopt) means the skin lets the OS arrow show.
@@ -163,6 +171,10 @@ public:
   // Loads a document (an .rml asset) under a name, hidden. Its <script> elements run in its own Lua
   // environment.
   core::Result<void> loadDocument(std::string_view name, const assets::AssetId& document);
+
+  // Fires an event of the UI API: every handler the loaded documents registered for it with
+  // hooks.on runs with a copy of the table, `version` included. Returns how many ran.
+  std::size_t fireEvent(std::string_view event, const UiArguments& table);
 
   // Shows a loaded document. A modal one takes the input: the game must not see it while it is
   // shown. Its on_show handler gets the arguments as a table (empty when there are none).

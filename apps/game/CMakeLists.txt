@@ -256,6 +256,9 @@ if(BUILD_TESTING)
                                                       ${PROJECT_SOURCE_DIR})
     target_compile_definitions(dwe_game_tests PRIVATE
         DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"
+        # Every pack and test mod, whose skins the contract test walks.
+        DWE_PACKS_DIR="${PROJECT_SOURCE_DIR}/content/packs"
+        DWE_TEST_MODS_DIR="${PROJECT_SOURCE_DIR}/tests/mods"
         DWE_SKIN_TEST_PACK="${PROJECT_SOURCE_DIR}/tests/mods/ui_skin/test_contrast"
         # The UI API's reference page and its JSON twin, which the contract test checks.
         DWE_DOCS_DIR="${PROJECT_SOURCE_DIR}/docs"

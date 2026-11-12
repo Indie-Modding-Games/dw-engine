@@ -14,20 +14,54 @@ constexpr UiContractKind Setting = UiContractKind::Setting;
 constexpr UiContractKind Command = UiContractKind::Command;
 constexpr UiContractKind Option = UiContractKind::Option;
 constexpr UiContractKind Argument = UiContractKind::Argument;
+constexpr UiContractKind Query = UiContractKind::Query;
+constexpr UiContractKind Action = UiContractKind::Action;
+constexpr UiContractKind Event = UiContractKind::Event;
 constexpr UiValueKind None = UiValueKind::None;
 constexpr UiValueKind Boolean = UiValueKind::Boolean;
 constexpr UiValueKind Number = UiValueKind::Number;
 constexpr UiValueKind Text = UiValueKind::Text;
 constexpr UiValueKind Any = UiValueKind::Any;
+constexpr UiValueKind Table = UiValueKind::Table;
 
 constexpr std::string_view Hud = "hud";
 constexpr std::string_view PauseMenu = "pause_menu";
 constexpr std::string_view PartnerMenu = "partner_menu";
 constexpr std::string_view SkinPicker = "skin_picker";
+// The UI API's namespaces (content/packs/game/ui/api/<namespace>.lua).
+constexpr std::string_view Clock = "clock";
+constexpr std::string_view Field = "field";
+constexpr std::string_view Partner = "partner";
+constexpr std::string_view Bag = "bag";
+constexpr std::string_view Player = "player";
+constexpr std::string_view Options = "options";
 
 constexpr UiContractEntry entry(std::string_view screen, UiContractKind kind, std::string_view name,
                                 UiValueKind value, std::string_view summary) {
   return {.screen = screen, .kind = kind, .name = name, .value = value, .summary = summary};
+}
+
+// A query or an action of a namespace, with its Lua signature.
+constexpr UiContractEntry api(std::string_view space, UiContractKind kind, std::string_view name,
+                              UiValueKind value, std::string_view signature,
+                              std::string_view summary) {
+  return {.screen = space,
+          .kind = kind,
+          .name = name,
+          .value = value,
+          .summary = summary,
+          .signature = signature};
+}
+
+// An event of a namespace and the settings it fires on.
+constexpr UiContractEntry event(std::string_view space, std::string_view name,
+                                std::string_view source, std::string_view summary) {
+  return {.screen = space,
+          .kind = Event,
+          .name = name,
+          .value = Table,
+          .summary = summary,
+          .source = source};
 }
 
 // The documents' use as of the UI API's first version: hud/presenter.lua, pause_menu/logic.lua and
@@ -97,6 +131,8 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
           "La cuenta a partir de la cual la paga es mejor."),
     entry(Hud, Setting, "shop_job.customers", Number, "Los clientes atendidos."),
     entry(Hud, Setting, "shop_job.customer", Number, "El cliente que se está atendiendo."),
+    entry(Hud, Setting, "shop_job.revision", Number,
+          "Sube cada vez que cambia algo del trabajo en la tienda."),
     entry(Hud, Option, "minimap", Text, "El minimapa: on u off."),
     entry(Hud, Option, "minimap_size", Text, "El tamaño del minimapa."),
     entry(Hud, Option, "digital_time", Boolean, "La hora en cifras."),
@@ -377,6 +413,79 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
           "Pone el aspecto de la fila enfocada sin guardarlo."),
     entry(SkinPicker, Command, "skin_picker_done", None,
           "El aspecto está elegido: la portada sigue con la caja de idiomas."),
+
+    // The UI API (ui/api/<namespace>.lua): what any UI reads and asks through, the default one
+    // included. The queries return fresh tables; the actions check their arguments and queue a
+    // command; the events reach the handlers of hooks.on with {version, name, value}.
+    api(Clock, Query, "clock.now", Table, "(): table",
+        "La hora: year, day, hour, minute, night, phase (morning, day, late, night) y running (si el tiempo del juego corre)."),
+    event(Clock, "clock.changed", "hud.revision", "Cambió el estado del campo, la hora incluida."),
+    api(Field, Query, "field.fade", Number, "(): number",
+        "Cuánto oscurece el fundido del cambio de mapa, de 0 a 1."),
+    api(Field, Query, "field.map_title", Text, "(): string?",
+        "La clave de texto del nombre del mapa que se enseña al llegar, o nil."),
+    api(Field, Query, "field.minimap", Table, "(): table",
+        "El minimapa: shown (la opción y el campo lo dejan), covered (una ventana lo tapa) y size."),
+    api(Field, Query, "field.player", Table, "(): table",
+        "Dónde está el jugador en la ventana: x e y en porcentaje."),
+    api(Field, Query, "field.shop_job", Table, "(): table?",
+        "La cuenta del trabajo en la tienda mientras dura (tally, goal, better_pay, customer, customers), o nil."),
+    event(Field, "field.fade", "screen_fade", "Cambió el fundido."),
+    event(Field, "field.map_title", "map_title_key", "Cambió el nombre del mapa que se enseña."),
+    event(Field, "field.minimap", "hud.minimap_allowed hud.minimap_covered battle.active",
+          "Cambió si el minimapa puede verse o si algo lo tapa."),
+    event(Field, "field.shop_job", "shop_job.revision", "Cambió el trabajo en la tienda."),
+    api(Partner, Query, "partner.status", Table, "(): table",
+        "Las barras (meters: id, label_key, value, min, max, two_tone, mood), los PV y PM (pools) y lo que le parece el mapa (area: liked, disliked o nil)."),
+    api(Partner, Query, "partner.needs", Table, "(): table",
+        "Las necesidades en orden: id, label_key, active y urgency (1 la más urgente; 0 si no la tiene)."),
+    api(Partner, Query, "partner.bubble", Table, "(): table",
+        "Dónde está su cabeza en la ventana: visible, x, y (porcentaje) y evolving (el cuadro de la burbuja de evolución, o nil)."),
+    api(Partner, Query, "partner.extras", Table, "(): table?",
+        "Errores de cuidado, combates y horas vividas; nil si el jugador tiene apagados los extras del estado."),
+    api(Partner, Action, "partner.praise", Boolean, "(): boolean", "Pide felicitarlo."),
+    api(Partner, Action, "partner.scold", Boolean, "(): boolean", "Pide regañarlo."),
+    api(Partner, Action, "partner.toggle_technique", Boolean, "(slot: integer): boolean, string?",
+        "Pide equipar o quitar la técnica de ese hueco de la especie."),
+    event(Partner, "partner.changed",
+          "hud.revision partner.revision hud.meter.0.label hud.meter.1.label hud.pool.0.label "
+          "hud.pool.1.label hud.need.0.label hud.need.1.label hud.need.2.label hud.need.3.label "
+          "hud.need.4.label hud.need.5.label",
+          "Cambió algo del compañero; name dice qué ajuste."),
+    event(Partner, "partner.bubble_moved", "hud.partner.revision",
+          "Su cabeza se movió en la ventana."),
+    api(Bag, Query, "bag.count", Number, "(): integer", "Los huecos de la bolsa."),
+    api(Bag, Query, "bag.money", Number, "(): integer", "El dinero del jugador."),
+    api(Bag, Query, "bag.field", Any, "(index: integer, name: string): any",
+        "Un dato de un hueco, o su valor por defecto."),
+    api(Bag, Query, "bag.slot", Table, "(index: integer): table",
+        "Un hueco: empty, name, description, description_species, count, dimmed, usable, discardable, item_color, icon, icon_rect, favorite."),
+    api(Bag, Query, "bag.result", Table, "(): table?",
+        "La respuesta a la última acción: key (clave del mensaje) e item; nil antes de ninguna."),
+    api(Bag, Action, "bag.use", Boolean, "(index: integer): boolean, string?",
+        "Pide usar el objeto de un hueco."),
+    api(Bag, Action, "bag.drop", Boolean, "(index: integer): boolean, string?",
+        "Pide tirar el objeto de un hueco."),
+    api(Bag, Action, "bag.move", Boolean, "(from: integer, to: integer): boolean, string?",
+        "Pide intercambiar dos huecos."),
+    api(Bag, Action, "bag.sort", Boolean, "(order: integer): boolean, string?",
+        "Pide ordenar la bolsa en un orden."),
+    event(Bag, "bag.changed", "bag.revision", "Cambió la bolsa."),
+    event(Bag, "bag.result", "bag.result", "El juego respondió a una acción de la bolsa."),
+    api(Player, Query, "player.profile", Table, "(): table",
+        "El jugador: name, level, bits, seconds, raised, medals, items, cards."),
+    api(Player, Query, "player.medals", Table, "(): table",
+        "Las medallas que publica el juego (no un número fijo): held y name_key."),
+    api(Player, Query, "player.city", Table, "(): table",
+        "La ciudad: recruited, total y prosperity."),
+    api(Options, Query, "options.list", Table, "(): table",
+        "Las opciones del juego en orden: name, kind (toggle, list, range), label_key, help_key, tab, default, original, values, texts, min, max."),
+    api(Options, Query, "options.get", Any, "(name: string): any",
+        "El valor de una opción ahora (o su valor por defecto); nil si no existe."),
+    api(Options, Action, "options.set", Boolean, "(name: string, value: any): boolean, string?",
+        "Pide dar un valor a una opción; comprueba el tipo y los valores que admite."),
+    event(Options, "options.changed", "@options",
+          "Cambió una opción; name dice cuál y value su valor."),
 });
 
 } // namespace

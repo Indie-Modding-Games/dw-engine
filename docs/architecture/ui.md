@@ -318,7 +318,7 @@ aspecto lo dibuje a su manera:
 | Elemento o clase | Qué hace el script | Para qué |
 |---|---|---|
 | clase `shown` en `#field-status` | La pone con `hud.shown` y la quita sin él | Cada aspecto decide cómo se va el panel: el moderno lo quita (`display: none`); el original puede deslizarlo, como `clock.c` (50 píxeles por frame) |
-| clase `pips` en una barra (`#field-meter-<i>-bar`, `#field-pool-<i>-bar`) | Si el aspecto se la pone (en su `skin.yaml`, ver abajo), el relleno va en 25 pasos del 4 %, redondeando hacia abajo, con la misma regla de dos tonos | Los 25 cuadritos de `partner_impl.c: renderStatusBars` (4 puntos por cuadrito en la felicidad, 2 en la disciplina) |
+| maquetación `bars: pips` del HUD (`skin.yaml`, `layout: hud:`) | Con ella el relleno va en 25 pasos del 4 %, redondeando hacia abajo, con la misma regla de dos tonos; la clase `pips` de las barras (`#field-meter-<i>-bar`, `#field-pool-<i>-bar`) es solo su estilo | Los 25 cuadritos de `partner_impl.c: renderStatusBars` (4 puntos por cuadrito en la felicidad, 2 en la disciplina) |
 | clase `area-liked` o `area-disliked` en `#field-status` | Pone `area-liked` con `hud.partner.area` a 1, `area-disliked` con 2, y ninguna con 0 | La cara de la felicidad que alterna con otra en una zona que le gusta o le disgusta al compañero (ver arriba); el moderno no la usa |
 | clase `low` en `#field-meter-<i>` | La pone si el valor está por debajo de la mitad de su rango (`(min + max) / 2`) y la quita si no | El icono de la barra: la cara de la felicidad se pone triste por debajo de 0 y el de la disciplina cambia por debajo de 50 (`partner_impl.c: renderStatusBars`); el moderno no la usa |
 | `#field-partner-bubble` | `left` y `top` desde `hud.partner.x` y `hud.partner.y` (redibuja con `hud.partner.revision`); la clase `shown` solo con `hud.partner.visible` y alguna necesidad; y una sola clase de necesidad, `hunger`, `sleep`, `toilet`, `tired`, `injured` o `sick`; una clase de necesidad en cada `#field-partner-bubble-icon-<i>` que la enseña (0 a 4, la más urgente primero por `hud.need.<i>.urgency`; con una sola, el 0); con varias necesidades y `need_bubble_stack`, `stack-2` a `stack-5` en vez de la clase de necesidad de la burbuja, y un `margin-left` que la mete en la ventana si se saldría por un lado; y `frame-<n>` (1 a 60), el frame del original en que va la burbuja; con `hud.partner.evolving`, la clase `evolving` en la burbuja y en `#field-partner-bubble-icon-0`, ninguna necesidad ni `stack-<n>`, y `frame-<n>` con el cuadro que da la partida | La burbuja del original sobre el compañero (`bubble.c`). Cuelga del centro de su borde de abajo (`ui/hud/structure.rcss`), así que el aspecto solo le da tamaño y dibujo; el moderno no la enseña porque ya tiene el panel de necesidades |
@@ -402,15 +402,13 @@ window at every UI scale», «the original's need bubble stays over the partner'
 
 Las constantes (25 cuadritos, 6° por minuto, 15° por hora, las 6 y las 17) están con nombre al principio del
 script, con su referencia a `clock.c` o `partner_impl.c`. Al cambiar de aspecto (el ajuste `ui_skin`) el script vuelve a
-dibujar el estado y la burbuja sin esperar a otra revisión, porque el aspecto nuevo puede poner o quitar clases que
-lee (`pips`). El aspecto moderno esconde la esfera
-(`#field-clock-dial`) y no pone `pips`.
+dibujar el estado y la burbuja sin esperar a otra revisión, porque el aspecto nuevo puede cambiar su maquetación
+(`bars: pips`). El aspecto moderno esconde la esfera (`#field-clock-dial`) y no llena a cuadritos.
 
 **Cómo pone un aspecto una clase.** Las hojas RCSS no pueden poner clases, así que un aspecto pone `pips`, y cualquier
 otra clase en los elementos del documento compartido, con el campo `document_classes` de su `skin.yaml`: por documento e
 id de elemento, las clases que el juego le pone al cargar el documento y cambia al cambiar de aspecto. El mecanismo
-llega con el aspecto original; hasta entonces ningún aspecto pone `pips` y las barras se llenan de forma continua. El
-script solo lee la clase (`has_class`), así que no cambia cuando llega.
+llega con el aspecto original. El script no lee esas clases: lo que cambia su cálculo lo pregunta con `ui.layout`.
 
 **El aspecto moderno** (abajo a la izquierda, `ui/skins/modern/hud/style.rcss`) dibuja todo el contrato. Lo que
 cambia frente al original es solo de presentación y es opcional, porque es del aspecto: con el aspecto original se
@@ -621,10 +619,11 @@ layout:                             # opcional: opciones de maquetación que lee
   | `box` | `pause_menu`, `partner_menu`, `egg_box`, `field_item_notice` | `modern`; `original`, las cajas que crecen desde un contorno gris (`common/original_box.lua`) |
   | `pages` | `partner_menu` | `modern`; `original`, las páginas de estado, técnicas y bolsa como las pantallas completas del original (las clases de página de `#scrim`) |
   | `picture` | `main_menu`, `save_slots`, `new_game_rules` | `modern`; `original`, con «imágenes panorámicas» las cajas y el logo van a sus sitios del original sobre la imagen ensanchada (`common/title_picture.lua`) |
+  | `bars` | `hud` | `continuous` (por defecto); `pips`, las barras del estado del campo se llenan en los 25 cuadritos del original |
 
   El moderno declara las suyas, y el original (y el new, que lo extiende) las del original. Las clases de `document_classes` quedan
-  para el estilo (`skin-original`, `title-original`, `slots-original`, `pips`): ningún script decide la disposición
-  por ellas, salvo `pips`, que el HUD lee para llenar las barras a cuadritos como las dibuja la hoja.
+  para el estilo (`skin-original`, `title-original`, `slots-original`, `pips`): ningún script las lee (un test lo
+  comprueba). El HUD llena las barras a cuadritos con la maquetación `hud: {bars: pips}`.
 - **El aspecto de reserva (`fallback`).** `ui/ui_skin.yaml` puede nombrar, además de `default`, un `fallback`: el
   aspecto con el que arranca el juego si el de `default` no se ofrece. El original necesita imágenes que extrae
   `dwx extract` del disco del usuario; sin ellas se queda fuera del catálogo y el juego arranca con el moderno. Un

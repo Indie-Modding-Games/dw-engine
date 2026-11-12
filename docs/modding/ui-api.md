@@ -21,6 +21,23 @@ una versión mayor, lo que no está puede cambiar sin aviso. Cómo se cargan y s
 En un nombre, `<n>` es un número desde 0 y `<id>` un identificador (minúsculas, cifras y `_`). Así,
 `hud.meter.<n>.value` cubre `hud.meter.0.value`, `hud.meter.1.value`...
 
+## Espacios de la API: consultas, acciones y eventos
+
+Además de los ajustes sueltos, la interfaz tiene espacios con nombre (`clock`, `field`, `partner`, `bag`, `player`,
+`options`) que cualquier documento usa igual, sea de la interfaz de serie o de otra:
+
+- Una **consulta** lee el juego y devuelve una tabla nueva: `partner.status()`, `bag.slot(3)`, `clock.now()`.
+  Cambiar esa tabla no cambia nada del juego.
+- Una **acción** pide algo al juego: `bag.use(3)`, `options.set("digital_time", false)`. Comprueba sus argumentos y
+  devuelve `true`, o `false` y por qué; el juego vuelve a comprobarlo y responde con un evento.
+- Un **evento** llega a las funciones que el documento registra con `hooks.on("bag.changed", función)`. La función
+  recibe una tabla con `version` (la de la tabla del evento), `name` (el ajuste que cambió) y `value`, y el documento.
+  `hooks.off` la quita; un documento registra como mucho 64.
+
+Los espacios viven en `ui/api/<espacio>.lua` del paquete del juego y se cargan una vez, antes que cualquier documento.
+Lo que ocultan las «Mejoras» apagadas también lo ocultan aquí: `partner.extras()` da `nil` si el jugador tiene
+apagados los extras del estado.
+
 ## Maquetación
 
 Una pantalla que se maqueta de dos formas pregunta cuál quiere el aspecto con `ui.layout("opción")`, que da el valor
@@ -35,6 +52,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.6.0 | Llegan los espacios `clock`, `field`, `partner`, `bag`, `player` y `options` con sus consultas, acciones y eventos, y `hooks.on`/`hooks.off`. El HUD y las opciones de los menús ya leen por ellos |
 | 0.5.0 | El HUD lee del juego sus reglas: `hud.clock.night`, `hud.clock.phase` y `hud.meter.<n>.mood`. Su script se parte en `presenter.lua` (qué enseña) y `view.lua` (cómo lo dibuja) |
 | 0.4.0 | Llega la pantalla `skin_picker`, la caja del primer arranque que pregunta el aspecto: `ui_skin`, `ui_skin_preview` y `skin_picker_done` |
 | 0.3.0 | Llegan los argumentos de `ui.show` y `on_show(document, args)`. Se va `pause_menu.start_entry`: el menú del compañero le pasa `entry` al menú de pausa al volver |
@@ -50,7 +68,7 @@ después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.5.0**.
+Versión de la API de la interfaz: **0.6.0**.
 
 ### `hud`
 
@@ -93,6 +111,7 @@ Versión de la API de la interfaz: **0.5.0**.
 | `shop_job.better_pay` | ajuste | número | La cuenta a partir de la cual la paga es mejor. |
 | `shop_job.customers` | ajuste | número | Los clientes atendidos. |
 | `shop_job.customer` | ajuste | número | El cliente que se está atendiendo. |
+| `shop_job.revision` | ajuste | número | Sube cada vez que cambia algo del trabajo en la tienda. |
 | `minimap` | opción | texto | El minimapa: on u off. |
 | `minimap_size` | opción | texto | El tamaño del minimapa. |
 | `digital_time` | opción | sí/no | La hora en cifras. |
@@ -289,5 +308,73 @@ Versión de la API de la interfaz: **0.5.0**.
 | `ui_skin` | opción | texto | El aspecto que se ve; al confirmar una fila, el elegido, que se guarda en los ajustes. |
 | `ui_skin_preview` | comando | texto | Pone el aspecto de la fila enfocada sin guardarlo. |
 | `skin_picker_done` | comando | — | El aspecto está elegido: la portada sigue con la caja de idiomas. |
+
+### `clock`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `clock.now(): table` | consulta | tabla | La hora: year, day, hour, minute, night, phase (morning, day, late, night) y running (si el tiempo del juego corre). |
+| `clock.changed` | evento | tabla | Cambió el estado del campo, la hora incluida. Sale de `hud.revision`. |
+
+### `field`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `field.fade(): number` | consulta | número | Cuánto oscurece el fundido del cambio de mapa, de 0 a 1. |
+| `field.map_title(): string?` | consulta | texto | La clave de texto del nombre del mapa que se enseña al llegar, o nil. |
+| `field.minimap(): table` | consulta | tabla | El minimapa: shown (la opción y el campo lo dejan), covered (una ventana lo tapa) y size. |
+| `field.player(): table` | consulta | tabla | Dónde está el jugador en la ventana: x e y en porcentaje. |
+| `field.shop_job(): table?` | consulta | tabla | La cuenta del trabajo en la tienda mientras dura (tally, goal, better_pay, customer, customers), o nil. |
+| `field.fade` | evento | tabla | Cambió el fundido. Sale de `screen_fade`. |
+| `field.map_title` | evento | tabla | Cambió el nombre del mapa que se enseña. Sale de `map_title_key`. |
+| `field.minimap` | evento | tabla | Cambió si el minimapa puede verse o si algo lo tapa. Sale de `hud.minimap_allowed hud.minimap_covered battle.active`. |
+| `field.shop_job` | evento | tabla | Cambió el trabajo en la tienda. Sale de `shop_job.revision`. |
+
+### `partner`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `partner.status(): table` | consulta | tabla | Las barras (meters: id, label_key, value, min, max, two_tone, mood), los PV y PM (pools) y lo que le parece el mapa (area: liked, disliked o nil). |
+| `partner.needs(): table` | consulta | tabla | Las necesidades en orden: id, label_key, active y urgency (1 la más urgente; 0 si no la tiene). |
+| `partner.bubble(): table` | consulta | tabla | Dónde está su cabeza en la ventana: visible, x, y (porcentaje) y evolving (el cuadro de la burbuja de evolución, o nil). |
+| `partner.extras(): table?` | consulta | tabla | Errores de cuidado, combates y horas vividas; nil si el jugador tiene apagados los extras del estado. |
+| `partner.praise(): boolean` | acción | sí/no | Pide felicitarlo. |
+| `partner.scold(): boolean` | acción | sí/no | Pide regañarlo. |
+| `partner.toggle_technique(slot: integer): boolean, string?` | acción | sí/no | Pide equipar o quitar la técnica de ese hueco de la especie. |
+| `partner.changed` | evento | tabla | Cambió algo del compañero; name dice qué ajuste. Sale de `hud.revision partner.revision hud.meter.0.label hud.meter.1.label hud.pool.0.label hud.pool.1.label hud.need.0.label hud.need.1.label hud.need.2.label hud.need.3.label hud.need.4.label hud.need.5.label`. |
+| `partner.bubble_moved` | evento | tabla | Su cabeza se movió en la ventana. Sale de `hud.partner.revision`. |
+
+### `bag`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `bag.count(): integer` | consulta | número | Los huecos de la bolsa. |
+| `bag.money(): integer` | consulta | número | El dinero del jugador. |
+| `bag.field(index: integer, name: string): any` | consulta | número o texto | Un dato de un hueco, o su valor por defecto. |
+| `bag.slot(index: integer): table` | consulta | tabla | Un hueco: empty, name, description, description_species, count, dimmed, usable, discardable, item_color, icon, icon_rect, favorite. |
+| `bag.result(): table?` | consulta | tabla | La respuesta a la última acción: key (clave del mensaje) e item; nil antes de ninguna. |
+| `bag.use(index: integer): boolean, string?` | acción | sí/no | Pide usar el objeto de un hueco. |
+| `bag.drop(index: integer): boolean, string?` | acción | sí/no | Pide tirar el objeto de un hueco. |
+| `bag.move(from: integer, to: integer): boolean, string?` | acción | sí/no | Pide intercambiar dos huecos. |
+| `bag.sort(order: integer): boolean, string?` | acción | sí/no | Pide ordenar la bolsa en un orden. |
+| `bag.changed` | evento | tabla | Cambió la bolsa. Sale de `bag.revision`. |
+| `bag.result` | evento | tabla | El juego respondió a una acción de la bolsa. Sale de `bag.result`. |
+
+### `player`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `player.profile(): table` | consulta | tabla | El jugador: name, level, bits, seconds, raised, medals, items, cards. |
+| `player.medals(): table` | consulta | tabla | Las medallas que publica el juego (no un número fijo): held y name_key. |
+| `player.city(): table` | consulta | tabla | La ciudad: recruited, total y prosperity. |
+
+### `options`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `options.list(): table` | consulta | tabla | Las opciones del juego en orden: name, kind (toggle, list, range), label_key, help_key, tab, default, original, values, texts, min, max. |
+| `options.get(name: string): any` | consulta | número o texto | El valor de una opción ahora (o su valor por defecto); nil si no existe. |
+| `options.set(name: string, value: any): boolean, string?` | acción | sí/no | Pide dar un valor a una opción; comprueba el tipo y los valores que admite. |
+| `options.changed` | evento | tabla | Cambió una opción; name dice cuál y value su valor. Sale de `@options`. |
 
 <!-- /ui-api:generated -->

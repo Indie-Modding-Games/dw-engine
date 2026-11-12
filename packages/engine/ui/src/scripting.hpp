@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/localization/catalog.hpp>
@@ -42,6 +43,13 @@ inline constexpr std::size_t MaxShowArguments = 16;
 inline constexpr std::string_view TextFunction = "t";
 // The table of the UI's functions (ui.send, ui.setting...).
 inline constexpr std::string_view UiTable = "ui";
+// The table of a document's event handlers: hooks.on(event, handler), hooks.off(event, handler).
+inline constexpr std::string_view HooksTable = "hooks";
+// The most handlers one document may register with hooks.on.
+inline constexpr std::size_t MaxDocumentHooks = 64;
+// The folder of the UI API's Lua (ui/api/<namespace>.lua): run once with the UI's globals before
+// any document, so every document's environment holds a copy of its tables.
+inline constexpr std::string_view ApiFolder = "ui/api/";
 
 // What the Lua API asks of the UI.
 struct ScriptHost {
@@ -113,11 +121,25 @@ public:
   template <typename... Arguments>
   bool callHandler(std::string_view function, const Arguments&... arguments);
 
+  // The document's handlers of the UI API's events (hooks.on). A function registered twice for one
+  // event runs once; past MaxDocumentHooks a registration fails.
+  [[nodiscard]] bool addHook(std::string_view event, sol::reference handler);
+  void removeHook(std::string_view event, const sol::reference& handler);
+  // Calls every handler of the event with a table of its own and the document, in the order they
+  // were registered. Returns how many ran; errors are logged with the document's name.
+  std::size_t fireHook(std::string_view event, const UiArguments& table);
+
 private:
+  struct Hook {
+    std::string event;
+    sol::reference handler;
+  };
+
   Scripting* scripting_;
   sol::environment environment_;
   std::string name_;
   core::Result<void> ownCode_;
+  std::vector<Hook> hooks_;
 };
 
 // A function to call: compiled code, or a function a document's environment defines (none when it
@@ -182,6 +204,19 @@ public:
   // sets on that screen.
   void bindLayout(sol::environment& environment, const std::string& screen);
 
+  // Gives a document's environment its own `hooks` table, whose handlers go to that document.
+  void bindHooks(sol::environment& environment, ScriptedDocument& document);
+
+  // Runs the UI API's Lua (ApiFolder) with the globals, in the order of the files' names. A file
+  // from outside the engine's layers does not run; an error is logged and the next file runs.
+  // While they run, and only then, the global event_source(setting, event) declares that a change
+  // of the setting fires the event (UiEventSource): the API's events over the settings the game
+  // publishes.
+  void loadApi(const assets::VirtualFileSystem& files);
+
+  // The event sources the API's Lua declared.
+  [[nodiscard]] std::span<const UiEventSource> eventSources() const { return eventSources_; }
+
   [[nodiscard]] CodeTrust& trust() { return *trust_; }
 
 private:
@@ -235,6 +270,7 @@ private:
 
   script::ScriptVm* vm_;
   ScriptHost host_;
+  std::vector<UiEventSource> eventSources_;
   CodeTrust* trust_;
   DocumentInstancer documentInstancer_{*this};
   ListenerInstancer listenerInstancer_{*this};
