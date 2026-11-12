@@ -1,0 +1,32 @@
+/* lives_box in the new look (concept area D, life_cycle 360-362): the window with its brackets, the label on the
+   heading plate (orig.css .ohead) and a heart per life from the design's hearts on a blue foot. While the box grows
+   or shrinks the structure's grey outline stays (body #box.outline wins over these rules). */
+
+#box {
+	border-color: transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+}
+
+/* The label keeps the original's picture of the word, on the plate. */
+#label {
+	box-sizing: border-box;
+	padding: 9dp 29dp;
+	border: 3dp #8cc6ec;
+	decorator: vertical-gradient(#23272f #1c2028) padding-box;
+}
+
+/* The heart: the original's picture is hidden (image-color) and the design's heart drawn 4 times its size; the
+   empty one when the document shows the original's empty cell. */
+.slot {
+	box-sizing: border-box;
+	padding: 8dp 8dp 13dp 8dp;
+	border-bottom: 3dp #4a79a8;
+	image-color: #ffffff00;
+	decorator: image(nb-heart contain center center) content-box;
+}
+
+.slot[rect="24 0 24 24"] {
+	decorator: image(nb-heart-empty contain center center) content-box;
+}

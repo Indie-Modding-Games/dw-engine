@@ -227,6 +227,34 @@ void readDocumentClasses(assets::YamlReader& reader, const core::YamlNode& node,
   }
 }
 
+SkinScreenLayout readScreenLayout(assets::YamlReader& reader, const core::YamlNode& node) {
+  SkinScreenLayout options;
+  if (!node.isMapping()) {
+    reader.fail(node, messages::LayoutNotMapping);
+    return options;
+  }
+  for (const core::YamlEntry& entry : node.entries()) {
+    if (!isPlainName(entry.key)) {
+      reader.fail(entry.value, messages::BadSkinName);
+    }
+    options.insert_or_assign(entry.key, plainName(reader, entry.value));
+  }
+  return options;
+}
+
+void readLayout(assets::YamlReader& reader, const core::YamlNode& node, Skin& skin) {
+  if (!node.isMapping()) {
+    reader.fail(node, messages::LayoutNotMapping);
+    return;
+  }
+  for (const core::YamlEntry& entry : node.entries()) {
+    if (!isPlainName(entry.key)) {
+      reader.fail(entry.value, messages::BadSkinName);
+    }
+    skin.layout.insert_or_assign(entry.key, readScreenLayout(reader, entry.value));
+  }
+}
+
 void readScreens(assets::YamlReader& reader, const core::YamlNode& node, Skin& skin) {
   if (!node.isMapping()) {
     reader.fail(node, messages::ScreensNotMapping);
@@ -250,8 +278,8 @@ core::Result<Skin> parseSkin(std::string_view yaml) {
   assets::YamlReader reader;
   Skin skin;
   reader.expectKeys(*tree, messages::SkinWhat, {"id", "name"},
-                    {"extends", "theme", "screens", "sprite_sheets", "document_classes", "cursor",
-                     "cursor_hotspot"});
+                    {"extends", "theme", "screens", "sprite_sheets", "document_classes", "layout",
+                     "cursor", "cursor_hotspot"});
   skin.id = plainName(reader, reader.field(*tree, "id"));
   skin.nameKey = reader.text(reader.field(*tree, "name"));
   if (const core::YamlNode* extends = tree->find("extends")) {
@@ -272,6 +300,9 @@ core::Result<Skin> parseSkin(std::string_view yaml) {
   }
   if (const core::YamlNode* classes = tree->find("document_classes")) {
     readDocumentClasses(reader, *classes, skin);
+  }
+  if (const core::YamlNode* layout = tree->find("layout")) {
+    readLayout(reader, *layout, skin);
   }
   if (const core::YamlNode* cursor = tree->find("cursor")) {
     skin.cursor = assetId(reader, *cursor);

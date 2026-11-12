@@ -1,9 +1,0 @@
-/* The slot list on top of the pause menu's look: a slot's line (its number, the partner, the place, the time and the
-   date) may wrap, so its row grows to hold it instead of keeping the menu's 40dp. */
-#panel:not(.skin-original) button.slot {
-	height: auto;
-	min-height: 40dp;
-	padding-top: 8dp;
-	padding-bottom: 8dp;
-	line-height: 24dp;
-}

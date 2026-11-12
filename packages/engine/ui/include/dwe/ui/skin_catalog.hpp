@@ -69,6 +69,10 @@ public:
   // the new skin's go on.
   [[nodiscard]] SkinElementClasses declaredClassesOf(std::string_view document) const;
 
+  // The layout options a skin sets on a document, with those of the skins it extends: the nearest
+  // skin that sets an option wins.
+  [[nodiscard]] SkinScreenLayout layoutOf(const Skin& skin, std::string_view document) const;
+
   // The documents a skin or a skin it extends puts classes on.
   [[nodiscard]] std::vector<std::string> classedDocumentsOf(const Skin& skin) const;
 

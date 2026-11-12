@@ -7,6 +7,10 @@
   "additionalProperties": false,
   "$defs": {
     "plainName": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+    "menuLayout": { "description": "How the screen is laid out: as the modern look's, or as the original game's.", "enum": ["modern", "original"] },
+    "pictureLayout": { "description": "Where the title's picture and the boxes over it go in a wide window: the style sheet's places (modern), or the original's places across the widened picture while «widescreen pictures» is on (original).", "enum": ["modern", "original"] },
+    "pagesLayout": { "description": "How the partner menu's status, tech and item pages are drawn: in the menu's panel (modern), or as the original game's full screens (original).", "enum": ["modern", "original"] },
+    "boxLayout": { "description": "How the screen's boxes open: at once (modern), or growing from a grey outline as in the original game.", "enum": ["modern", "original"] },
     "styleName": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$" },
     "assetId": { "description": "An asset id: the path without its extension.", "type": "string", "pattern": "^[a-z0-9_]+(/[a-z0-9_]+)*$" },
     "pixels": { "type": "integer", "minimum": 0 }
@@ -48,6 +52,21 @@
         "type": "object",
         "propertyNames": { "pattern": "^[A-Za-z0-9_-]{1,64}$" },
         "additionalProperties": { "type": "array", "items": { "$ref": "#/$defs/styleName" }, "minItems": 1 }
+      }
+    },
+    "layout": {
+      "description": "Layout options the screens' scripts read with ui.layout(option), by the name the game loads the document under; the body of the document also gets the class layout-<option>-<value>. A skin that extends another inherits the options it does not set.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pause_menu": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" }, "box": { "$ref": "#/$defs/boxLayout" } } },
+        "partner_menu": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" }, "box": { "$ref": "#/$defs/boxLayout" }, "pages": { "$ref": "#/$defs/pagesLayout" } } },
+        "battle": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" } } },
+        "main_menu": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" }, "picture": { "$ref": "#/$defs/pictureLayout" } } },
+        "save_slots": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" }, "picture": { "$ref": "#/$defs/pictureLayout" } } },
+        "new_game_rules": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" }, "picture": { "$ref": "#/$defs/pictureLayout" } } },
+        "egg_box": { "type": "object", "additionalProperties": false, "properties": { "box": { "$ref": "#/$defs/boxLayout" } } },
+        "field_item_notice": { "type": "object", "additionalProperties": false, "properties": { "box": { "$ref": "#/$defs/boxLayout" } } }
       }
     },
     "sprite_sheets": {

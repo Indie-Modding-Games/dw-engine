@@ -1,56 +1,127 @@
-/* Bird transport: terminal-blue surfaces with clear price columns and a bright travel selector. */
+/* The transport in the new look (concept area C, bird_transport: 248-253): the money box and the LUGAR / PUNTOS list
+   as half windows with brackets, a light-blue rule under the labels, the gold line on the focused row, the places
+   you cannot pay greyed, the speech box under them. */
 
-body #window, body #talk, body #bits-box {
+body #bits-box {
+	padding: 8dp 21dp 0 21dp;
 	border: 3dp transparent;
-	background-color: #0b1c2df2;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #f2f0e1;
 }
 
-.row, #talk, #bits-box {
-	font-family: original-look;
-	color: #d5eaf7;
+#bits-value {
+	width: auto;
 }
 
-.row, #talk { font-family: original-look-dialogue; }
+body #window {
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
 
-body .row.unaffordable { color: #ff7775; }
-body #speaker { color: #ffe64a; }
-body #speaker.player { color: #d5eaf7; }
-
-.label {
-	font-family: original-look;
-	color: #8edcff;
-	font-size: 15dp;
-	line-height: 21dp;
+.label,
+.use-menu-art .label-place,
+.use-menu-art .label-point {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 27dp;
+	width: auto;
 	white-space: nowrap;
+	color: #b6e4f7;
+	top: 15dp;
+	decorator: none;
 }
 
-.use-menu-art .label-place { decorator: image(keeper-place-label scale-none left top); color: transparent; }
-.use-menu-art .label-point { decorator: image(keeper-point-label scale-none left top); color: transparent; }
-
-body #rule {
-	background-color: #338bb4;
-	border-top-color: #071421;
-	border-bottom-color: #071421;
+#rule {
+	top: 45dp;
+	height: 6dp;
+	border-width: 0;
+	background-color: #7cb6e2;
 }
 
-body #track { background-color: #345875; }
-body #bar {
-	border-left-color: #90d9fa;
-	background-color: #2674a2;
+#track {
+	left: 628dp;
+	top: 78dp;
+	width: 22dp;
+	height: 288dp;
+	box-sizing: border-box;
+	border: 2dp #2c3d55;
+	background-color: #0b1322;
 }
 
-body #cursor {
-	border: 3dp #ffd51e;
-	background-color: #153653b8;
+#bar {
+	left: 630dp;
+	width: 18dp;
+	border-width: 0;
+	background-color: #b6e4f7;
 }
 
-body #talk .talk-row.selected .run {
-	background-color: #153653;
-	border-top-color: #ffd51e;
-	color: #ffe64a;
+#cursor {
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
 }
 
-/* Keep the original's compact row geometry while matching the rest of the terminal skin. */
-.row { font-size: 33dp; }
+.row {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 54dp;
+	top: 0;
+	color: #f2f0e1;
+}
+
+#row-0 { top: 54dp; }
+#row-1 { top: 108dp; }
+#row-2 { top: 162dp; }
+#row-3 { top: 216dp; }
+#row-4 { top: 270dp; }
+#row-5 { top: 324dp; }
+
+body .row.unaffordable {
+	color: #5d6b7c;
+}
+
+/* The speech box (v1 talk, 90,486 786 x 177): a window with brackets, the speaker in gold, a choice row inside the gold
+   line with the ▶ beside it. */
+body #talk {
+	padding: 12dp 30dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 36dp;
+	color: #f2f0e1;
+}
+
+#talk .talk-row {
+	height: 36dp;
+}
+
+body #speaker,
+body #speaker.player {
+	color: #efc63c;
+}
+
+#talk .talk-row .run {
+	padding: 0;
+}
+
+#talk .talk-row.selected {
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-left: 26dp transparent;
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+#talk .talk-row.selected .run {
+	border-width: 0;
+	background-color: transparent;
+}
+

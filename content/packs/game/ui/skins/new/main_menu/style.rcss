@@ -1,529 +1,97 @@
-/* The title screen in the original look (main.c: main; main_menu.c). Every box is the original's menu box
-   (main_menu.c: renderMenuBox): the light cyan rim of renderUIBoxBorder (#90D9FA, the right side's inner line the
-   darker #4A9FC5), its rounded corner sprites, and a fill that the original shades from four corners (#000070,
-   #000050, #000030, #000010); a gradient from top to bottom of the corners' averages (#000060 to #000020) stands in
-   for it, since a four-corner gradient needs shaders the UI does not have. Text is the original's: #d0d0d0, greyed
-   at half (#686868, the 0x40 of renderText's colours against 0x80), values in yellow (#fff371), the cursor a 1-pixel
-   #A0A000 outline (renderMenuSelector).
+/* The title in the new look (concept area A, main_menu: 001-007): the boot screen, the menu box, the language box
+   and the battle mode question. The backdrop and the logo are title/style.rcss. */
 
-   Positions are the original's pixels times 3dp inside the 4:3 picture, which is 960dp wide in the middle of a
-   1280dp screen: x in dp is 160 + 3x, y is 3y. */
-
-/* The title image (TITLE2, 320 x 240) behind every box keeps its 4:3 proportions in the middle, on black. */
-#scrim {
-	background-color: #000000;
-	decorator: image(title-screen contain center center);
-}
-
-/* The «widescreen pictures» option (class wide, ui/common/title_picture.lua): instead of the 4:3 frame on black, the
-   title image covers the window (title-wide, skin.yaml: TITLE2 with its sides mirrored), cut at the top where it is
-   only grid; title_picture.lua sizes and places it, and moves the boxes off its logo. In a window wider than 16:9 its
-   mirrored sides show, darker towards the window's edges. */
-#scrim.wide {
-	decorator: none;
-}
-
-#scrim.wide #picture {
-	display: block;
-	position: absolute;
-	decorator: image(title-wide fill);
-}
-
-#scrim.wide .picture-fade {
-	display: block;
-	position: absolute;
-	top: 0;
-	height: 100%;
-}
-
-#picture-fade-left {
-	left: 0;
-	decorator: horizontal-gradient(#000000b0 #00000000);
-}
-
-#picture-fade-right {
-	decorator: horizontal-gradient(#00000000 #000000b0);
-}
-
-/* The screen before the menu (runLandingScreen): TITLE256 above the line where the original's copyright notice is,
-   which is left out (the boot-screen sprite stops at row 206), on black. The whole screen is the button. */
+/* The screen before the menu (002-003): dark, the logo large at the top, the green «PULSA» line with its key. */
 #scrim.boot {
-	decorator: none;
+	decorator: image(/ui/skins/new/assets/boot.png cover center center);
+	padding: 0;
 }
 
 #press-start {
-	position: absolute;
-	left: 0;
-	top: 0;
-	width: 100%;
-	height: 100%;
-	padding: 0;
-	border: 0;
-	background-color: #000000;
-	decorator: image(boot-screen scale-none center top);
-}
-
-/* With the option, the screen before the menu fills the window the same way: TITLE256 (boot-wide, its sides
-   mirrored) covers it from the top, cut at the bottom, where it is black; the button lets it show through, and
-   title_picture.lua pins the line under its logo. */
-#scrim.wide.boot #picture {
-	decorator: image(boot-wide fill);
-}
-
-#scrim.wide #press-start {
+	box-sizing: border-box;
+	padding: 70dp 32% 459dp 32%;
 	background-color: transparent;
-	decorator: none;
+	decorator: image(/ui/skins/new/assets/hero_title.png contain center center) content-box;
 }
 
 #press-start:focus {
-	border: 0;
+	decorator: image(/ui/skins/new/assets/hero_title.png contain center center) content-box;
 }
 
-/* "Press Start Button" (renderPressStartToContinue): at (106, 170), 121 x 10, its white drawn with the colour
-   (0, 128, 0), full green. The original's line is a picture of English text naming Start; this one is text, in
-   the player's language, centred on the original's line, naming what goes on with the device in use (logic.lua). */
 #press-start-text {
-	position: absolute;
-	left: 160dp;
-	top: 504dp;
-	width: 960dp;
-	text-align: center;
-	color: #00f800;
-	line-height: 36dp;
+	color: #3cf060;
+	letter-spacing: 6dp;
 }
 
-#fade {
-	position: absolute;
-	left: 0;
-	top: 0;
-	width: 100%;
-	height: 100%;
-	background-color: #000000;
+#press-start-text .key {
+	color: #3cf060;
 }
 
-/* The menu box (renderInitialMenu): at (72, 50), 176 pixels wide, rows from x 82 and y 55, 12 pixels apart, and the
-   cursor 152 pixels wide from x 78. The original's four rows are five here (options), so the box is 70 pixels tall
-   instead of 58. A label wider than the original's (Spanish) widens the box to the right. */
+/* The menu box (004-005): the window with its brackets, capitals 6dp apart, the ▶ in its left padding. */
+#panel,
+#language-box,
+#battle-message {
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+}
+
 #panel {
-	position: absolute;
-	left: 376dp;
-	top: 150dp;
-	width: auto;
-	min-width: 528dp;
-	padding: 12dp 18dp 15dp 18dp;
-	border: 3dp transparent;
-	border-radius: 0;
-	background-color: transparent;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
-		vertical-gradient(#000060 #000020);
+	padding: 11dp 30dp 11dp 40dp;
 }
 
-#title {
-	display: none;
+#panel button,
+#language-box .language-row,
+#language-done,
+#battle-answers button {
+	margin-left: -26dp;
+	padding: 3dp 12dp;
+	border-width: 0;
+	border-left-width: 26dp;
+	letter-spacing: 6dp;
 }
 
-#panel button, #language-done, #battle-answers button {
-	line-height: 30dp;
-	white-space: nowrap;
+#panel button:focus,
+#language-box .language-row:focus,
+#language-done:focus,
+#battle-answers button:focus {
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
 }
 
-.dimmed, button.dimmed:focus {
-	color: #686868;
+.dimmed,
+button.dimmed:focus {
+	color: #5f6f82;
 }
 
-/* The original names no buttons on screen, and these boxes leave them out, as the pause menu's first page does. */
-#prompts {
-	display: none;
-}
-
-/* The language box, an addition, after a remaster's (reference 12): the original's box, taller and in the middle of
-   the 4:3 picture, 212 pixels wide; the heading small at its top left; a row per language, 20 pixels apart, its flag
-   (24 x 16) and its name in capitals; START at the bottom, in the middle. logic.lua sets its top, so that the box
-   stays in the middle of the screen whatever the number of languages. */
-#language-box {
-	position: absolute;
-	left: 322dp;
-	top: 150dp;
-	width: 636dp;
-	min-height: 420dp;
-	box-sizing: border-box;
-	display: flex;
-	flex-direction: column;
-	padding: 18dp 24dp 21dp 24dp;
-	border: 3dp transparent;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
-		vertical-gradient(#000060 #000020);
-}
-
-/* The display above outweighs the structure's .hidden, so hidden is said again here. */
-#language-box.hidden, #language-box .flag.hidden {
-	display: none;
-}
-
+/* The language box (001): the heading small and muted, rows 60dp tall. */
 #language-heading {
-	font-size: 22dp;
-	font-weight: normal;
-	line-height: 30dp;
-	padding: 0 0 18dp 0;
-	margin: 0;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #93a6bc;
+}
+
+#language-box {
+	padding: 18dp 24dp 21dp 40dp;
 }
 
 #language-box .language-row {
-	padding: 3dp 12dp;
-	margin: 0 18dp;
-	line-height: 48dp;
-	white-space: nowrap;
+	margin-left: -8dp;
+	letter-spacing: 4dp;
 }
 
-#language-box .flag {
-	display: inline-block;
-	width: 72dp;
-	height: 48dp;
-	margin-right: 30dp;
-	vertical-align: middle;
-}
-
-#language-done {
-	margin-top: auto;
-	text-align: center;
-}
-
-/* The battle mode question (renderConfirmVSSlot): a title box at (60, 28), 224 x 22, its text at (70, 33); the
-   message box at (60, 50), 230 x 46, three lines from (70, 55); the answers' box at (60, 96), 56 x 34, Yes and No
-   at (70, 101) and (70, 113). The boxes touch, one under the other, so a longer message grows its box and moves the
-   answers down. */
-#battle-box {
-	position: absolute;
-	left: 340dp;
-	top: 84dp;
-	width: 690dp;
-}
-
-#battle-heading, #battle-message, #battle-answers {
-	box-sizing: border-box;
-	border: 3dp transparent;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
-		vertical-gradient(#000060 #000020);
+/* The battle mode question (006): the heading box without brackets, the message with them, Sí / No as a list. */
+#battle-heading,
+#battle-answers {
+	decorator: ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
 }
 
 #battle-heading {
-	width: 672dp;
-	height: 60dp;
-	padding: 0 0 0 27dp;
-	line-height: 60dp;
-}
-
-#battle-message {
-	width: 690dp;
-	padding: 12dp 27dp 12dp 27dp;
-	min-height: 138dp;
-	line-height: 36dp;
+	letter-spacing: 6dp;
 }
 
 #battle-answers {
-	width: 168dp;
-	min-height: 102dp;
-	padding: 9dp 0 0 15dp;
+	padding: 9dp 0 0 36dp;
 }
 
 #battle-answers button {
-	width: 120dp;
-}
-
-/* The boxes above sit on the original's 4:3 picture, in the middle of the screen: their places are from its middle,
-   so a 4:3 window (960dp wide), where that picture fills the width, keeps them on screen. */
-#press-start-text {
-	left: 50%;
-	margin-left: -480dp;
-}
-
-#panel {
-	left: 50%;
-	margin-left: -264dp;
-}
-
-#language-box {
-	left: 50%;
-	margin-left: -318dp;
-}
-
-#battle-box {
-	left: 50%;
-	margin-left: -300dp;
-}
-
-/* The new skin's self-contained digital field background replaces the extracted TITLE2/TITLE256 art. */
-#scrim {
-	background-color: #061321;
-	decorator: image(/ui/skins/new/assets/main_menu_background fill);
-}
-
-#scrim.wide {
-	background-color: #061321;
-	decorator: image(/ui/skins/new/assets/main_menu_background fill);
-}
-
-#scrim.wide #picture, #scrim.wide .picture-fade {
-	display: none;
-}
-
-#press-start {
-	background-color: #061321;
-	decorator: image(/ui/skins/new/assets/main_menu_background fill);
-}
-
-#scrim.wide.boot #picture {
-	display: none;
-}
-
-/* Brand composition: the hero artwork is a framed title panel beside the menu, never behind its labels. */
-#scrim #picture {
-	display: block;
-	position: absolute;
-	left: auto;
-	right: 32dp;
-	top: 50%;
-	width: 640dp;
-	height: 426dp;
-	margin-top: -213dp;
-	box-sizing: border-box;
-	border: 2dp #72c7ff;
-	background-color: #071a2d;
-	decorator: image(/ui/skins/new/assets/hero_title fill);
-}
-
-#panel.title-original:not(.on-options) {
-	position: absolute;
-	left: 32dp;
-	right: auto;
-	top: 50%;
-	width: 520dp;
-	min-width: 0dp;
-	margin: -145dp 0 0 0;
-	padding: 18dp;
-	box-sizing: border-box;
-	border: 2dp #72c7ff;
-	border-radius: 0;
-	background-color: #0b1c2df2;
-	decorator: vertical-gradient(#153653 #0a1929);
-}
-
-#panel.title-original:not(.on-options) #title {
-	display: none;
-}
-
-#panel.title-original:not(.on-options) button {
-	width: 100%;
-	box-sizing: border-box;
-	height: 42dp;
-	margin: 4dp 0;
-	padding: 0 12dp;
-	border: 1dp #345875;
-	border-radius: 0;
-	line-height: 40dp;
-	text-align: left;
-	color: #d8f1ff;
-	background-color: #0a2035;
-	transition: background-color color border-color 0.12s cubic-out;
-}
-
-#panel.title-original:not(.on-options) button:hover {
-	border-color: #72c7ff;
-	background-color: #153653;
-}
-
-#panel.title-original:not(.on-options) button:focus {
-	border-color: #ffd51e;
-	background-color: #153653;
-	color: #ffe64a;
-}
-
-#panel.title-original:not(.on-options) #play {
-	border-color: #ffe03a;
-	background-color: #f4c900;
-	color: #102235;
-	font-weight: bold;
-}
-
-#panel.title-original:not(.on-options) #play:hover,
-#panel.title-original:not(.on-options) #play:focus {
-	border-color: #fff39b;
-	background-color: #ffdf22;
-	color: #071321;
-}
-
-#panel.title-original:not(.on-options) .dimmed,
-#panel.title-original:not(.on-options) button.dimmed:focus {
-	color: #718595;
-}
-
-#scrim.boot #press-start {
-	background-color: #061321;
-	decorator: image(/ui/skins/new/assets/hero_title contain center center);
-}
-
-#scrim.boot #press-start-text {
-	left: 50%;
-	top: auto;
-	bottom: 42dp;
-	width: 360dp;
-	height: 54dp;
-	margin: 0 0 0 -180dp;
-	box-sizing: border-box;
-	border: 2dp #72c7ff;
-	background-color: #0b1c2df2;
-	font-size: 25dp;
-	font-weight: bold;
-	line-height: 50dp;
-	text-align: center;
-	color: #ffe64a;
-}
-
-@media (max-width: 1050dp) {
-	#scrim #picture {
-		left: 50%;
-		width: 480dp;
-		height: 320dp;
-		margin-left: -240dp;
-		margin-top: 0;
-		top: 24dp;
-	}
-	#panel.title-original:not(.on-options) {
-		left: 50%;
-		right: auto;
-		width: 480dp;
-		margin: 0 0 0 -240dp;
-		top: 360dp;
-	}
-}
-
-/* Language selection sits beside the hero panel instead of obscuring the brand artwork. */
-#language-box {
-	left: 50%;
-	right: auto;
-	width: 520dp;
-	min-height: 420dp;
-	margin-left: -260dp;
-	padding: 22dp 24dp 20dp 24dp;
-	box-sizing: border-box;
-	border: 2dp #72c7ff;
-	border-radius: 0;
-	background-color: #0b1c2df5;
-	decorator: vertical-gradient(#153653 #0a1929);
-	font-size: 20dp;
-}
-
-#language-heading {
-	margin: 0 0 16dp 0;
-	padding: 0 0 12dp 10dp;
-	border-bottom: 2dp #72c7ff;
-	border-left: 4dp #ffd51e;
-	font-size: 18dp;
-	font-weight: bold;
-	line-height: 28dp;
-	color: #8fdcff;
-}
-
-#language-box .language-row {
-	display: flex;
-	align-items: center;
-	width: 100%;
-	height: 54dp;
-	box-sizing: border-box;
-	margin: 0 0 4dp 0;
-	padding: 0 12dp;
-	border: 1dp #345875;
-	border-radius: 0;
-	line-height: 52dp;
-	text-align: left;
-	color: #d8f1ff;
-	background-color: #0a2035;
-}
-
-#language-box .language-row.hidden {
-	display: none;
-}
-
-#language-box .language-row:hover {
-	border-color: #72c7ff;
-	background-color: #153653;
-}
-
-#language-box .language-row:focus {
-	border: 2dp #ffd51e;
-	background-color: #153653;
-	color: #ffe64a;
-}
-
-#language-box .flag {
-	flex: 0 0 auto;
-	width: 48dp;
-	height: 32dp;
-	margin-right: 18dp;
-	border: 1dp #72c7ff;
-}
-
-#language-done {
-	width: 100%;
-	height: 48dp;
-	margin-top: auto;
-	padding: 0 18dp;
-	box-sizing: border-box;
-	border: 1dp #ffe03a;
-	border-radius: 0;
-	line-height: 46dp;
-	text-align: center;
-	font-weight: bold;
-	color: #102235;
-	background-color: #f4c900;
-}
-
-#language-done:hover, #language-done:focus {
-	border-color: #fff39b;
-	background-color: #ffdf22;
-	color: #071321;
-}
-
-/* When the language picker is open, soften the hero into a centered backdrop behind the card. */
-#scrim.language #picture {
-	left: 50%;
-	right: auto;
-	top: 50%;
-	width: 1080dp;
-	height: 720dp;
-	margin: -360dp 0 0 -540dp;
-	border: 0;
-	background-color: transparent;
-	decorator: image(/ui/skins/new/assets/hero_title contain center center);
-	image-color: #a4c0d8;
-	opacity: 0.28;
-}
-
-#scrim.language #language-box {
-	left: 50%;
-	right: auto;
-	margin-left: -260dp;
-	background-color: #0b1c2df2;
-}
-
-@media (max-width: 1050dp) {
-	#language-box {
-		left: 50%;
-		right: auto;
-		width: 480dp;
-		margin-left: -240dp;
-	}
-	#scrim.language #language-box {
-		width: 480dp;
-		margin-left: -240dp;
-	}
-	#scrim.language #picture {
-		width: 840dp;
-		height: 560dp;
-		margin: -280dp 0 0 -420dp;
-		opacity: 0.22;
-	}
+	width: 110dp;
 }

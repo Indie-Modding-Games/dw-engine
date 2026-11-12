@@ -17,8 +17,9 @@
 -- top in dp, lets the group move up too (without it, the top is the document's); `row` and
 -- `width`, in the picture's pixels, pin a line of text to the picture (the "Press Start" line),
 -- which no logo moves. It puts the class `wide` on #scrim
--- while the option is on (the default, also before the game publishes it) and the skin is the
--- original look's (#panel.skin-original); off, the boxes take their style sheet's places again.
+-- while the option is on (the default, also before the game publishes it) and the skin lays the
+-- picture out as the original's (skin.yaml layout: {picture: original}); off, the boxes take their
+-- style sheet's places again.
 
 title_picture = {}
 
@@ -202,7 +203,7 @@ function title_picture.apply(document, groups)
   if scrim == nil or panel == nil then
     return
   end
-  local wide = ui.setting(title_picture.setting) ~= false and panel:has_class("skin-original")
+  local wide = ui.setting(title_picture.setting) ~= false and ui.layout("picture") == "original"
   scrim:set_class("wide", wide)
   if not wide then
     -- A skin switch can leave the previous wide-picture dimensions inline on this shared

@@ -74,8 +74,10 @@ local function played(entry)
   return string.format("%d:%02d", seconds // 3600, (seconds // 60) % 60)
 end
 
-local function original(document)
-  return document:get("panel"):has_class("slots-original")
+-- The skin's layout of the slot list (skin.yaml layout: save_slots: menu): "original" lays it out
+-- as the original game's.
+local function original()
+  return ui.layout("menu") == "original"
 end
 
 -- The list, its summary and its marks over the title's picture with the «widescreen pictures»
@@ -280,7 +282,7 @@ local function refresh_detail(document)
 end
 
 local function refresh(document)
-  if original(document) then
+  if original() then
     refresh_original(document)
     return
   end
@@ -327,7 +329,7 @@ local function focus_first(document)
 end
 
 local function focus_chosen(document)
-  if original(document) then
+  if original() then
     focus_item(document, chosen_item or first_item())
     return
   end
@@ -338,8 +340,8 @@ local function focus_chosen(document)
   end
 end
 
-function choose(document, row)
-  if original(document) then
+function choose(_document, row)
+  if original() then
     local item = rows[top + row]
     if item ~= nil and not dimmed(item) then
       chosen_item = top + row
@@ -383,7 +385,7 @@ end
 
 function on_tick(document, _seconds)
   title_picture.apply(document, PictureBoxes)
-  if original(document) then
+  if original() then
     refresh_detail(document)
   end
   fit_text.tick()
@@ -417,7 +419,7 @@ function on_action(document, action)
     back()
     return true
   end
-  if original(document) then
+  if original() then
     local item = current_item(document)
     local step = ({ up = -1, down = 1, left = -Visible, right = Visible })[action]
     if step == nil or item == nil then

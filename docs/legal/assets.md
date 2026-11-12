@@ -72,7 +72,7 @@ Lo que hay que tener claro:
 | Mecanismo | Qué hace |
 |---|---|
 | **DCO** (`git commit -s`) | El autor certifica que tiene derecho a aportar ese código o ese asset |
-| **`provenance.yaml`** | Previsto: cada asset del equipo declarará su autor, su licencia y su origen (original o derivado). Aún no hay ninguno: el paquete del juego solo lleva YAML, Lua, la interfaz, dos banderas y las fuentes Noto Sans, con su licencia (`noto_sans_license.txt`) |
+| **`provenance.yaml`** | Previsto: cada asset del equipo declarará su autor, su licencia y su origen (original o derivado). Aún no hay ninguno: el paquete del juego solo lleva YAML, Lua, la interfaz, dos banderas, las fuentes Noto Sans, con su licencia (`noto_sans_license.txt`), y dos fuentes de píxel de dominio público para el aspecto new (`pixel_fonts_license.txt`) |
 | **Hooks de git** (`scripts/dev.sh setup-hooks`) | `pre-commit` y `commit-msg` rechazan las rutas del original (imágenes de disco, ficheros del juego, savestates, trazas), otra identidad de autor y las palabras prohibidas en el mensaje (en los ficheros solo avisan) (`scripts/hooks/policy.sh`) |
 | **Paquetes sin datos del disco** | Antes de publicar, `scripts/package/no_disc_data.sh` (y su versión de macOS) comprueba que ningún paquete lleva el paquete base ni ficheros del original. Cada paquete lleva `LICENSE`, `THIRD_PARTY_NOTICES.txt` y las licencias de terceros |
 | **Chequeo de hashes en la CI** | Previsto: rechazar cualquier fichero cuyo hash coincida con uno extraído del disco. Hoy la CI no lo hace |

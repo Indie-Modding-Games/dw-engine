@@ -98,6 +98,8 @@ inline constexpr std::string_view BadSkinName =
     "must be 1 to 64 lowercase letters, digits and underscores";
 inline constexpr std::string_view BadStyleName =
     "must be 1 to 64 lowercase letters, digits, underscores and hyphens, starting with a letter";
+inline constexpr std::string_view LayoutNotMapping =
+    "must map each name to its options (layout: <document>: <option>: <value>)";
 inline constexpr std::string_view ScreensNotMapping =
     "screens must map screen names to their styles";
 inline constexpr std::string_view EmptySprite = "a sprite must be at least one pixel wide and high";

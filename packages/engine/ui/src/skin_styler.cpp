@@ -11,6 +11,11 @@
 #include <RmlUi/Core/Factory.h>
 
 #include <algorithm>
+#include <format>
+#include <optional>
+#include <ranges>
+#include <string>
+#include <string_view>
 #include <utility>
 
 #include "messages.hpp"
@@ -48,6 +53,7 @@ std::vector<std::string> SkinStyler::style(Rml::ElementDocument& document, std::
   const ScreenSheet& look = sheetOf(screen);
   document.SetStyleSheetContainer(own.CombineStyleSheetContainer(*look.sheet));
   applyClasses(document, screen);
+  applyLayout(document, screen);
   return look.paths;
 }
 
@@ -73,6 +79,32 @@ void SkinStyler::applyClasses(Rml::ElementDocument& document, std::string_view s
       element->SetClass(name, true);
     }
   }
+}
+
+void SkinStyler::applyLayout(Rml::ElementDocument& document, std::string_view screen) const {
+  const Rml::String present = document.GetClassNames();
+  for (const auto part : std::views::split(std::string_view{present}, ' ')) {
+    const std::string_view name{part};
+    if (name.starts_with(LayoutClassPrefix)) {
+      document.SetClass(Rml::String{name}, false);
+    }
+  }
+  if (skin_ == nullptr) {
+    return;
+  }
+  for (const auto& [option, value] : catalog_->layoutOf(*skin_, screen)) {
+    document.SetClass(std::format("{}{}-{}", LayoutClassPrefix, option, value), true);
+  }
+}
+
+std::optional<std::string> SkinStyler::layoutOption(std::string_view screen,
+                                                    std::string_view option) const {
+  if (skin_ == nullptr) {
+    return std::nullopt;
+  }
+  const SkinScreenLayout options = catalog_->layoutOf(*skin_, screen);
+  const auto found = options.find(option);
+  return found == options.end() ? std::nullopt : std::optional<std::string>{found->second};
 }
 
 std::vector<std::string>

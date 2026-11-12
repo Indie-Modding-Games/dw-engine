@@ -8,6 +8,7 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -19,6 +20,7 @@
 #include <string_view>
 #include <vector>
 
+#include "common.hpp"
 #include "ui_skin_setting.hpp"
 #include "user_settings.hpp"
 
@@ -116,6 +118,22 @@ struct Content {
   }
 
   [[nodiscard]] ui::UiValue published() const { return ui->setting(ui::UiSkinSetting); }
+
+  // Loads one of the game pack's documents, hidden, as the game does at start.
+  void load(std::string_view name) const {
+    auto asset = assets::AssetId::parse("ui/" + std::string{name} + "/document");
+    REQUIRE_MESSAGE(asset.has_value(), asset.error().message);
+    auto loaded = ui->loadDocument(name, *asset);
+    REQUIRE_MESSAGE(loaded.has_value(), loaded.error().message);
+  }
+
+  // The skin picker's row of a skin: the packs' skins in their order, from 1.
+  [[nodiscard]] std::string rowOf(std::string_view skin) const {
+    const auto& skins = ui->skins().skins();
+    const auto found = std::ranges::find(skins, skin, &ui::Skin::id);
+    REQUIRE(found != skins.end());
+    return std::to_string(std::distance(skins.begin(), found) + 1);
+  }
 };
 
 } // namespace
@@ -209,6 +227,106 @@ TEST_CASE(
     CHECK(saved.uiSkin == std::optional<std::string>{"test_contrast"});
     applyStartUiSkin(*next.ui, startUiSkin(std::nullopt, saved.uiSkin));
     CHECK(next.ui->skin() == "test_contrast");
+  }
+}
+
+TEST_CASE("a saved legacy skin, which the new skin replaced, starts as the original") {
+  const test_support::TempFolder folder;
+  const std::filesystem::path file = folder.path() / "settings.yaml";
+  saveUserSettings(file, UserSettings{.language = "es",
+                                      .textFont = std::nullopt,
+                                      .uiSkin = "legacy",
+                                      .minimap = std::nullopt});
+  const UserSettings saved = loadUserSettings(file);
+  CHECK(startUiSkin(std::nullopt, saved.uiSkin) == std::optional<std::string>{"original"});
+  // --ui-skin is the player's own choice of the run, taken as it is.
+  CHECK(startUiSkin(std::string{"legacy"}, saved.uiSkin) == std::optional<std::string>{"legacy"});
+  Content content{DiscArt::Extracted};
+  CHECK(content.ui->skins().find("legacy") == nullptr);
+  applyStartUiSkin(*content.ui, startUiSkin(std::nullopt, saved.uiSkin));
+  CHECK(content.ui->skin() == "original");
+  CHECK(content.published() == ui::UiValue{std::string{"original"}});
+  // It was a choice: the first run's picker does not ask again.
+  CHECK_FALSE(asksUiSkin(std::nullopt, saved.uiSkin, content.ui->skins().skins().size()));
+}
+
+TEST_CASE("the title asks the skin only when no command line or saved choice names one") {
+  CHECK(asksUiSkin(std::nullopt, std::nullopt, 2));
+  CHECK_FALSE(asksUiSkin(std::nullopt, std::string{"modern"}, 2));
+  CHECK_FALSE(asksUiSkin(std::string{"modern"}, std::nullopt, 2));
+  // Nothing to choose from.
+  CHECK_FALSE(asksUiSkin(std::nullopt, std::nullopt, 1));
+}
+
+TEST_CASE("a first run shows the skin picker, then the language box; the saved skin skips it") {
+  const test_support::TempFolder folder;
+  const std::filesystem::path file = folder.path() / "settings.yaml";
+  {
+    Content content{DiscArt::Extracted};
+    UserSettings settings = loadUserSettings(file);
+    applyStartUiSkin(*content.ui, startUiSkin(std::nullopt, settings.uiSkin));
+    UiSkinChanger changer{*content.ui, settings, file};
+    content.load(MainMenuDocument);
+    content.load(SkinPickerDocument);
+    content.ui->setSetting("title.language_first", true);
+    // As TitleScreen::showBoot and showMenu: the picker while it asks, else the main menu at
+    // "Press Start", whose language box comes first.
+    SkinPickerStep picker{
+        asksUiSkin(std::nullopt, settings.uiSkin, content.ui->skins().skins().size())};
+    const auto showBoot = [&] {
+      if (!picker.show(*content.ui)) {
+        content.ui->setSetting("title.boot", true);
+        content.ui->show(MainMenuDocument, true);
+      }
+    };
+    showBoot();
+    content.ui->update();
+    CHECK(content.ui->isVisible(SkinPickerDocument));
+    CHECK_FALSE(content.ui->isVisible(MainMenuDocument));
+    // The cursor starts on the skin shown, the packs' default.
+    CHECK(content.ui->focusedElementId(SkinPickerDocument) == "skin-" + content.rowOf("original"));
+
+    // Moving the cursor puts a skin on at once, without saving it.
+    REQUIRE(content.ui->callScript(SkinPickerDocument, "skin_focus",
+                                   std::vector<std::string>{content.rowOf("modern")}));
+    for (const ui::UiCommand& command : content.ui->takeCommands()) {
+      REQUIRE(command.name == UiSkinPreviewCommand);
+      CHECK(changer.preview(std::get<std::string>(command.value)));
+    }
+    content.ui->update();
+    CHECK(content.ui->skin() == "modern");
+    CHECK(content.published() == ui::UiValue{std::string{"modern"}});
+    CHECK(content.ui->isVisible(SkinPickerDocument));
+    CHECK_FALSE(loadUserSettings(file).uiSkin.has_value());
+
+    // Confirming one saves it, and the title goes on to the language box. Cancel does nothing.
+    REQUIRE(content.ui->callScript(SkinPickerDocument, "on_action",
+                                   std::vector<std::string>{"", "cancel"}));
+    CHECK(content.ui->takeCommands().empty());
+    CHECK(content.ui->isVisible(SkinPickerDocument));
+    REQUIRE(content.ui->callScript(SkinPickerDocument, "choose",
+                                   std::vector<std::string>{content.rowOf("original")}));
+    const std::vector<ui::UiCommand> commands = content.ui->takeCommands();
+    REQUIRE(commands.size() == 2);
+    CHECK(commands[0].name == ui::UiSkinSetting);
+    changer.change(std::get<std::string>(commands[0].value));
+    REQUIRE(picker.handle(commands[1], *content.ui));
+    showBoot();
+    content.ui->update();
+    CHECK_FALSE(content.ui->isVisible(SkinPickerDocument));
+    CHECK(content.ui->isVisible(MainMenuDocument));
+    CHECK(content.ui->elementShown(MainMenuDocument, "language-box"));
+    CHECK(loadUserSettings(file).uiSkin == std::optional<std::string>{"original"});
+
+    // Asked once: back at the title later, the language box comes first again.
+    CHECK_FALSE(picker.show(*content.ui));
+    CHECK_FALSE(content.ui->isVisible(SkinPickerDocument));
+  }
+  {
+    // The next start has the saved skin: no picker.
+    Content next{DiscArt::Extracted};
+    const UserSettings saved = loadUserSettings(file);
+    CHECK_FALSE(asksUiSkin(std::nullopt, saved.uiSkin, next.ui->skins().skins().size()));
   }
 }
 

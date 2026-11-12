@@ -1083,7 +1083,7 @@ end
 -- stretched and settles. The game moves the edges (packages/screens: command_menu.hpp); the cursor
 -- and the name stay where they are. Only the original look slides it.
 local function draw_motion(document)
-  if ui.setting("ui_skin") ~= "original" then
+  if ui.layout("menu") ~= "original" then
     return
   end
   -- Before the banner and once it has gone back up the strip waits above the screen, at its first
@@ -1122,7 +1122,7 @@ end
 -- each bar from its own BTL_STATUS_BAR_X): they come in from the right edge with the strip and
 -- leave as it goes back up. The game moves them (packages/screens: partner_bars.hpp).
 local function draw_bars(document)
-  if ui.setting("ui_skin") ~= "original" then
+  if ui.layout("menu") ~= "original" then
     return
   end
   local hp = math.floor(setting("battle.bars.hp_x", bars_x))
@@ -1163,7 +1163,7 @@ local function draw(document)
   -- the strip without its cursor or name, and then go (battle_main.c:777); the rest of the fight's
   -- screen goes.
   local after = phase == "victory" or phase == "end" or phase == "closing"
-  local strip_after = after and ui.setting("ui_skin") == "original"
+  local strip_after = after and ui.layout("menu") == "original"
   lookup(document, "fight"):set_class(
     "hidden",
     phase ~= "fight" and phase ~= "intro" and not strip_after

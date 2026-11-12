@@ -173,18 +173,6 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, r
   }
   if (command.name == "open_menu") {
     ui.show(MenuDocument, true);
-  } else if (command.name == "open_evolutions") {
-    // The compact partner window's Evoluciones tab (ui/partner_menu): the evolution tree lives on
-    // the pause menu's player page, so this hides the partner and hands the way in over. The
-    // one-shot setting tells the document to open on the tree and to go back here on Cancel
-    // (pause_menu/logic.lua: on_show, back).
-    ui.setSetting("pause_menu.evolutions", true);
-    ui.hide("partner_menu");
-    ui.show(MenuDocument, true);
-  } else if (command.name == "pause_menu.evolutions" &&
-             std::holds_alternative<bool>(command.value)) {
-    // The document consumed its one-shot: the next plain pause opens as usual.
-    ui.setSetting("pause_menu.evolutions", std::get<bool>(command.value));
   } else if (command.name == LanguageCommand &&
              std::holds_alternative<std::string>(command.value)) {
     language.change(std::get<std::string>(command.value));
@@ -211,6 +199,9 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, r
   } else if (command.name == ui::UiSkinSetting &&
              std::holds_alternative<std::string>(command.value)) {
     skin.change(std::get<std::string>(command.value));
+  } else if (command.name == UiSkinPreviewCommand &&
+             std::holds_alternative<std::string>(command.value)) {
+    static_cast<void>(skin.preview(std::get<std::string>(command.value)));
   } else if (command.name == VsyncSetting && std::holds_alternative<bool>(command.value)) {
     // The swapchain is rebuilt with the new present mode before the next frame.
     settings.vsync = std::get<bool>(command.value);
@@ -218,6 +209,9 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, r
     display.keepVsync(settings.vsync);
     core::logInfo("game: vsync {}", settings.vsync ? "on" : "off");
     ui.setSetting(VsyncSetting, settings.vsync);
+  } else {
+    core::logWarning("{}", core::formatMessage(messages::UiCommandUnhandled, command.name,
+                                               describe(command.value)));
   }
   return true;
 }
@@ -922,6 +916,11 @@ int runGame(const Options& requested) {
   VersusScreen versus{files, options, !autotest, **ui, renderer->get(), &sound};
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
+  // The player's first run asks the UI skin before the language box (an addition); an autotest only
+  // when its route asks, and a run with no settings to keep it in (the control channel's) never.
+  title.setAsksSkin(autotest ? autotest->asksSkinFirst()
+                             : settingsFile && asksUiSkin(options.uiSkin, userSettings.uiSkin,
+                                                          (*ui)->skins().skins().size()));
   // What waits for the movie that plays: the title, or a game to start (main.c: main).
   std::optional<PlayStart> startAfterMovie;
   // The new game that waits for the opening's questions.

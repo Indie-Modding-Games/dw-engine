@@ -1,8 +1,0 @@
-/* The original's list screens in the modern look (the card shop, the item keeper, the merit shop, the discard menu,
-   the bird's transport and the jukebox): their boxes keep the original's places (each screen's structure.rcss), and
-   their list rows, which the original look draws in the original's font at 33dp, use the modern look's size for rows
-   (../theme.rcss, 22dp) in its own font. The row keeps its height and line, so the cursor and the list do not move. */
-
-.row {
-	font-size: 22dp;
-}

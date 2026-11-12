@@ -1,0 +1,40 @@
+/* A fishing notice in the new look (concept area C, fishing_notice: 268-280): the pause menu's panel moved to the
+   speech box at the bottom (v1 talk, 90,486 786 x 177), the text from its top left and the confirm key in the corner.
+   The «Aceptar» button stays focused for the confirm key but takes no room. */
+
+#panel {
+	top: 486dp;
+	width: 786dp;
+	height: 177dp;
+	margin-left: -390dp;
+	padding: 12dp 30dp;
+	box-sizing: border-box;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+}
+
+#text {
+	margin: 0;
+	line-height: 36dp;
+	white-space: pre-wrap;
+}
+
+#ok,
+#ok:focus {
+	height: 0;
+	margin: 0;
+	padding: 0;
+	border-width: 0;
+	overflow: hidden;
+	color: transparent;
+	decorator: none;
+}
+
+#prompts {
+	position: absolute;
+	right: 18dp;
+	bottom: 14dp;
+	margin: 0;
+	padding: 0;
+	border-top-width: 0;
+}

@@ -1,0 +1,25 @@
+<rml>
+<head>
+	<title>UI skin picker</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<div id="panel">
+			<h1 id="title" text-key="skin_picker.title"></h1>
+			<button id="skin-1" class="skin" onclick="choose(1)" onfocus="skin_focus(1)"><span id="skin-name-1" class="skin-name"></span><span id="skin-hint-1" class="skin-hint"></span></button>
+			<button id="skin-2" class="skin" onclick="choose(2)" onfocus="skin_focus(2)"><span id="skin-name-2" class="skin-name"></span><span id="skin-hint-2" class="skin-hint"></span></button>
+			<button id="skin-3" class="skin" onclick="choose(3)" onfocus="skin_focus(3)"><span id="skin-name-3" class="skin-name"></span><span id="skin-hint-3" class="skin-hint"></span></button>
+			<button id="skin-4" class="skin" onclick="choose(4)" onfocus="skin_focus(4)"><span id="skin-name-4" class="skin-name"></span><span id="skin-hint-4" class="skin-hint"></span></button>
+			<button id="skin-5" class="skin" onclick="choose(5)" onfocus="skin_focus(5)"><span id="skin-name-5" class="skin-name"></span><span id="skin-hint-5" class="skin-hint"></span></button>
+			<button id="skin-6" class="skin" onclick="choose(6)" onfocus="skin_focus(6)"><span id="skin-name-6" class="skin-name"></span><span id="skin-hint-6" class="skin-hint"></span></button>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

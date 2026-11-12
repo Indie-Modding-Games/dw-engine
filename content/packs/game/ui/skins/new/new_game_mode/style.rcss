@@ -1,82 +1,35 @@
-/* Mode selection reuses the new game's terminal card and gives each available mode a full-width row. The current
-   mode's description follows the list so controller focus and mouse focus reveal the same information. */
+/* The mode of a new game (concept area A, new_game_mode: 008-010): the box right of the middle with its brackets,
+   the gold title over a line, the modes as a ▶ list, the focused mode's description muted, Volver (list.html .mb). */
 
 #panel {
-	width: 780dp;
-	margin-left: -390dp;
-	padding: 24dp 30dp 18dp 30dp;
+	left: 50%;
+	margin-left: -136dp;
+	top: 156dp;
+	width: 596dp;
+	min-height: 282dp;
+	padding: 12dp 22dp 12dp 36dp;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
 }
 
 #title {
-	margin-bottom: 12dp;
+	margin: 0 -10dp 8dp -24dp;
+	padding: 0 12dp 4dp 24dp;
 }
 
-#panel button.mode {
-	display: block;
-	width: 100%;
-	height: 46dp;
-	margin: 0 0 5dp 0;
-	padding: 0 15dp;
-	box-sizing: border-box;
-	border: 1dp #345875;
-	border-radius: 0;
-	background-color: #0a2035;
-	color: #d8f1ff;
-	font-size: 19dp;
-	line-height: 43dp;
-	text-align: left;
+#panel button {
+	margin-left: -26dp;
+	padding: 3dp 12dp;
+	border-width: 0;
+	border-left-width: 26dp;
 }
 
-#panel button.mode.hidden {
-	display: none;
+#panel button:focus {
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
 }
 
-#panel button.mode:hover {
-	border-color: #72c7ff;
-	background-color: #153653;
-}
-
-#panel button.mode:focus {
-	border: 2dp #ffd51e;
-	background-color: #153653;
-	color: #ffe64a;
-}
-
-#panel #about {
-	min-height: 48dp;
-	margin: 12dp 0 0 0;
-	padding: 12dp 15dp;
-	box-sizing: border-box;
-	border-left: 3dp #72c7ff;
-	background-color: #0a2035;
-	color: #a8c7d9;
-	font-size: 16dp;
-	line-height: 24dp;
-}
-
-#panel #back {
-	width: 100%;
-	margin: 12dp 0 0 0;
-	background-color: #102a40;
-}
-
-#panel #back:focus {
-	border: 2dp #ffd51e;
-	background-color: #153653;
-	color: #ffe64a;
-}
-
-@media (max-width: 820dp) {
-	#panel {
-		width: 92%;
-		margin-left: -46%;
-		padding: 18dp 20dp 15dp 20dp;
-	}
-}
-
-@media (max-height: 620dp) {
-	#panel { top: 12dp; transform: none; }
-	#panel button.mode { height: 40dp; line-height: 37dp; }
-	#panel #about { min-height: 36dp; margin-top: 6dp; padding: 6dp 12dp; }
-	#panel #back { height: 40dp; margin-top: 6dp; line-height: 37dp; }
+.about {
+	padding: 4dp 12dp 8dp 12dp;
+	line-height: 34dp;
+	color: #93a6bc;
 }

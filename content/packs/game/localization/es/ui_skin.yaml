@@ -3,5 +3,9 @@
 # entero.
 modern: "Moderno"
 original: "Original"
-legacy: "Original (clásico)"
-new: "Nueva"
+new: "Pixel art"
+# Una línea por aspecto bajo su nombre en la caja del primer arranque (ui/skin_picker); un mod la añade con la clave de
+# su nombre más .hint.
+modern.hint: "Paneles limpios y letra moderna."
+original.hint: "Los menús del juego original, nítidos."
+new.hint: "Ventanas azules y letra de píxeles."

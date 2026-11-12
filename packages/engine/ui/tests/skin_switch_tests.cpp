@@ -36,11 +36,11 @@ constexpr std::array<std::string_view, 6> Screens{"hud",    "pause_menu",   "mai
                                                   "battle", "partner_menu", "save_slots"};
 
 // The other screens that take the pause menu's panel and entries in both looks (skin.yaml).
-constexpr std::array<std::string_view, 14> PanelScreens{
+constexpr std::array<std::string_view, 15> PanelScreens{
     "destination_choice", "dialog",    "new_game_rules", "sleep_menu",
     "gym_stats",          "shop_menu", "naming_box",     "fishing_bait",
     "fishing_notice",     "gym_slots", "egg_box",        "new_game_mode",
-    "dev_menu",           "versus"};
+    "dev_menu",           "versus",    "skin_picker"};
 
 assets::AssetId idOf(std::string_view text) {
   auto id = assets::AssetId::parse(text);
@@ -317,8 +317,7 @@ TEST_CASE(
   const localization::Catalog texts = catalogIn(files, "es");
   const WarningCapture warnings;
   auto ui = createUi(files, texts);
-  CHECK(skinIds(*ui) ==
-        std::vector<std::string>{"legacy", "modern", "new", "original", "test_contrast"});
+  CHECK(skinIds(*ui) == std::vector<std::string>{"modern", "new", "original", "test_contrast"});
   CHECK(ui->skins().defaultSkin() == "original");
   CHECK(ui->skin() == "original");
   CHECK(texts.text(ui->skins().find("original")->nameKey) == "Original");
@@ -736,6 +735,30 @@ TEST_CASE("a skin's document classes go on when a document loads and come off on
 
   REQUIRE(ui->setSkin("classy"));
   CHECK(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
+}
+
+TEST_CASE("a skin's layout options go on the document's body and fold along extends") {
+  Content content;
+  content.add("ui/skins/laid/skin.yaml", "id: laid\nname: ui_skin.laid\nextends: modern\n"
+                                         "layout:\n  hud: {bars: steps, size: large}\n");
+  content.add("ui/skins/relaid/skin.yaml", "id: relaid\nname: ui_skin.relaid\nextends: laid\n"
+                                           "layout:\n  hud: {bars: fill}\n");
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "en");
+  auto ui = createUi(files, texts);
+  REQUIRE(ui->setSkin("laid"));
+  loadScreens(*ui);
+  CHECK(ui->elementHasClass("hud", "", "layout-bars-steps"));
+  CHECK(ui->elementHasClass("hud", "", "layout-size-large"));
+
+  REQUIRE(ui->setSkin("relaid"));
+  CHECK(ui->elementHasClass("hud", "", "layout-bars-fill"));
+  CHECK_FALSE(ui->elementHasClass("hud", "", "layout-bars-steps"));
+  CHECK(ui->elementHasClass("hud", "", "layout-size-large"));
+
+  REQUIRE(ui->setSkin("modern"));
+  CHECK_FALSE(ui->elementHasClass("hud", "", "layout-bars-fill"));
+  CHECK_FALSE(ui->elementHasClass("hud", "", "layout-size-large"));
 }
 
 // Happiness 30 of -100 to 100 in two tones: the upper tone fills 30 % of its half, or 28 % in whole

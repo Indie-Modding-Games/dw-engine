@@ -1,31 +1,102 @@
-/* The jukebox in the original look: the original's boxes (theme.rcss .original-box), the list's number and title
-   labels from SYSTEM_W (ITEM_MENU_HEADER_UVS 4 and 5, palette 4) and the original's ink. */
+/* The jukebox in the new look (concept area C, jukebox: 254-257): half a window with brackets, the N.º / TÍTULO
+   labels, the number muted, the gold line on the focused row, a gold mark on the song that plays, the speech box. */
 
-body #window, body #talk {
+body #window {
 	border: 3dp transparent;
-	background-color: #2d384080;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
 }
 
-/* The column labels: the original's pictures of the English words while the language is English (the engine's
-   use-menu-art class), the list_labels texts in the original's ink in any other. */
-.label { font-family: original-look; color: #d0d0d0; font-size: 15dp; line-height: 21dp; white-space: nowrap; }
-.use-menu-art .label-number { decorator: image(jukebox-number-label scale-none left top); color: transparent; }
-.use-menu-art .label-title { decorator: image(jukebox-title-label scale-none left top); color: transparent; }
+.label,
+.use-menu-art .label-number,
+.use-menu-art .label-title {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 27dp;
+	width: auto;
+	white-space: nowrap;
+	color: #b6e4f7;
+	decorator: none;
+}
 
-.row, #talk { font-family: original-look-dialogue; color: #d0d0d0; }
-body .row.playing { color: #94adff; }
-body #speaker { color: #f8f800; }
+#cursor {
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
 
-/* The rows keep the original's size: the modern look this skin extends gives its own lists 22dp
-   (../../modern/original_lists/style.rcss). */
 .row {
-	font-size: 33dp;
+	width: 594dp;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 42dp;
+	color: #f2f0e1;
 }
 
-body #window, body #talk { background-color: #0b1c2df2; }
-.label, .row, #talk { color: #d5eaf7; }
-body .row.playing { color: #ffe64a; }
-body #speaker { color: #ffe64a; }
-body .cursor { border-color: #ffd51e; background-color: #153653b8; }
+.number {
+	color: #93a6bc;
+}
+
+/* Long titles stop before the playing arrow: the row does not clip its placed children. */
+.name {
+	width: 510dp;
+	height: 42dp;
+	overflow: hidden;
+}
+
+body .row.playing {
+	color: #f2f0e1;
+	decorator: image(nb-arrow-r scale-none right center) content-box;
+}
+
+.scrollbar {
+	left: 628dp;
+	width: 22dp;
+	border: 2dp #2c3d55;
+	background-color: #0b1322;
+}
+
+.thumb {
+	background-color: #b6e4f7;
+}
+
+/* The speech box (v1 talk, 90,486 786 x 177): a window with brackets, the speaker in gold, a choice row inside the gold
+   line with the ▶ beside it. */
+body #talk {
+	padding: 12dp 30dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 36dp;
+	color: #f2f0e1;
+}
+
+#talk .talk-row {
+	height: 36dp;
+}
+
+body #speaker,
+body #speaker.player {
+	color: #efc63c;
+}
+
+#talk .talk-row .run {
+	padding: 0;
+}
+
+#talk .talk-row.selected {
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-left: 26dp transparent;
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+#talk .talk-row.selected .run {
+	border-width: 0;
+	background-color: transparent;
+}
+

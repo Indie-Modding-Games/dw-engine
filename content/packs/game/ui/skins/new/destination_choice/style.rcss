@@ -1,145 +1,48 @@
-/* Free exploration destinations: a broad, readable list over the field, with the story's current destination focused
-   when the chooser opens. */
-
-#scrim {
-	background-color: #061321a8;
-}
+/* destination_choice in the new look (concept area B, mockups 192-193): the shared panel (panel/style) with room
+   on the left for the ▶, the places in the small font with the ▶ and the gold outline on the focused one,
+   «Quedarse aquí» muted. */
 
 #panel {
-	left: 50%;
-	top: 50%;
-	width: 820dp;
-	margin-left: -410dp;
-	transform: translate(0dp, -50%);
-	padding: 18dp 24dp 15dp 24dp;
-	box-sizing: border-box;
-	border: 2dp #72c7ff;
-	border-radius: 0;
-	background-color: #0b1c2df5;
-	decorator: vertical-gradient(#153653 #0a1929);
+	padding: 12dp 24dp 10dp 44dp;
 }
 
 #title {
-	margin: 0 0 12dp 0;
-	padding: 0 12dp 9dp 12dp;
-	border-bottom: 2dp #397ca4;
-	color: #ffe64a;
+	margin-left: -20dp;
+}
+
+.place,
+.page-turn,
+#stay {
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-width: 0;
+	border-left-width: 26dp;
+	background-color: transparent;
+	font-family: "Pixel Small";
 	font-size: 26dp;
-	font-weight: bold;
+	line-height: 33dp;
+	color: #f2f0e1;
 }
 
-#panel button.place {
-	display: block;
-	width: 100%;
-	height: 44dp;
-	margin: 0 0 4dp 0;
-	padding: 0 15dp;
-	box-sizing: border-box;
-	border: 1dp #345875;
-	border-radius: 0;
-	background-color: #0a2035;
-	color: #d8f1ff;
-	font-size: 17dp;
-	line-height: 41dp;
-	text-align: left;
+#stay {
+	color: #93a6bc;
 }
 
-#panel button.place.hidden {
-	display: none;
-}
-
-#panel button.place:hover {
-	border-color: #72c7ff;
-	background-color: #153653;
-}
-
-#panel button.place:focus {
-	border: 2dp #ffd51e;
-	background-color: #153653;
-	color: #ffe64a;
+.place:focus,
+.page-turn:focus,
+#stay:focus {
+	background-color: transparent;
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+	color: #efc63c;
 }
 
 #page {
-	position: absolute;
-	right: 24dp;
-	bottom: 75dp;
-	margin: 0;
-	color: #a8c7d9;
-	font-size: 14dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #93a6bc;
 }
 
-#panel button.page-turn {
-	display: inline-block;
-	min-width: 135dp;
-	height: 36dp;
-	margin: 8dp 8dp 0 0;
-	padding: 0 12dp;
-	box-sizing: border-box;
-	border: 1dp #397ca4;
-	border-radius: 0;
-	background-color: #102a40;
-	color: #d8f1ff;
-	font-size: 14dp;
-	line-height: 33dp;
-}
-
-#panel button.page-turn.hidden {
-	display: none;
-}
-
-#panel button.page-turn:hover, #panel button.page-turn:focus {
-	border-color: #ffd51e;
-	background-color: #153653;
-	color: #ffe64a;
-}
-
-#panel #stay {
-	width: 100%;
-	height: 42dp;
-	margin: 9dp 0 0 0;
-	padding: 0 12dp;
-	box-sizing: border-box;
-	border: 1dp #345875;
-	border-radius: 0;
-	background-color: #0a2035;
-	color: #a8c7d9;
-	font-size: 16dp;
-	line-height: 39dp;
-	text-align: left;
-}
-
-#panel #stay:focus {
-	border: 2dp #ffd51e;
-	background-color: #153653;
-	color: #ffe64a;
-}
-
-#panel #prompts {
-	margin-top: 12dp;
-	padding-top: 9dp;
-	border-top: 1dp #397ca4;
-	color: #a8c7d9;
-	font-size: 14dp;
-	text-align: right;
-}
-
-#panel #prompts .key {
-	color: #72c7ff;
-}
-
-@media (max-width: 860dp) {
-	#panel {
-		width: 92%;
-		margin-left: -46%;
-		padding-right: 18dp;
-		padding-left: 18dp;
-	}
-}
-
-@media (max-height: 640dp) {
-	#panel { top: 12dp; transform: none; }
-	#title { margin-bottom: 6dp; padding-bottom: 6dp; }
-	#panel button.place { height: 39dp; line-height: 36dp; }
-	#panel #stay { height: 36dp; line-height: 33dp; margin-top: 6dp; }
-	#panel #prompts { margin-top: 6dp; padding-top: 6dp; }
+#prompts {
+	margin: 10dp -14dp 0 -34dp;
+	padding: 8dp 12dp 0 20dp;
 }

@@ -7,6 +7,7 @@
 #include <RmlUi/Core/StyleSheetContainer.h>
 
 #include <map>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -36,6 +37,11 @@ public:
   std::vector<std::string> style(Rml::ElementDocument& document, std::string_view screen,
                                  const Rml::StyleSheetContainer& own);
 
+  // A layout option the current skin sets on a screen (skin.yaml `layout:`); nullopt when no skin
+  // of its chain sets it, or with no skin.
+  [[nodiscard]] std::optional<std::string> layoutOption(std::string_view screen,
+                                                        std::string_view option) const;
+
   // Of the documents the current skin puts classes on (document_classes), those not among `loaded`,
   // each logged as a warning: a name the game never loads is likely a typo.
   [[nodiscard]] std::vector<std::string>
@@ -63,6 +69,9 @@ private:
   // Takes off the document's elements every class a skin of the catalog puts on them, then puts on
   // the current skin's, warning about the ids the document lacks.
   void applyClasses(Rml::ElementDocument& document, std::string_view screen) const;
+  // Mirrors the screen's layout options as classes on the document's body
+  // (layout-<option>-<value>), taking off those of the previous skin.
+  void applyLayout(Rml::ElementDocument& document, std::string_view screen) const;
   // A sheet's image as RmlUi reads it: smoothed when the sheet lets it and smoothing is on.
   [[nodiscard]] ImageReference imageOf(const SkinSpriteSheet& sheet) const;
   // The skin's sprite sheets as one style sheet, or nullptr for none.

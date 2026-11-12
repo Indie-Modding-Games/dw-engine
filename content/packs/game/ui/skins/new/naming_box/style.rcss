@@ -1,332 +1,41 @@
-/* The naming box in the original look (script_menu.c: setupNameSelectorBox, renderNamingBox, renderSelectionBox,
-   setupNameDisplayBox, renderNameDisplayBox; captures cp05-naming-screen-empty and cp05-name-6chars-cursor-on-OK).
-   Over the pause menu's box, which gives the rim and the corners.
+/* The names box in the new look (concept area A, naming_box: 016-020): the letters in the window with its brackets,
+   «Nombre» in gold without a line, the gold four-corner cursor on the focused letter or button, the prompts bare
+   under the window and the name in a window of its own with a gold underscore on the next letter. */
 
-   The letters' box is at (15, 29), 290 x 138, opaque #2D3840: "Name" in the headings' yellow at (14, 6), Back at
-   (14, 90) and OK at (14, 118); the letters from x 78 on the left side and x 190 on the right, 18 pixels apart, the
-   rows from y 6, 14 pixels apart. The cursor is the gold outline (#FFD600) round the letter, from 4 pixels left and
-   up of it, 18 x 15, or round the button. The name's box is apart at (15, 180), 149 x 42: the letters 12 pixels
-   apart and the yellow underscore (#C6C610) under the next one. The original says only "Name", not whose name, so
-   that line is hidden. The button prompts sit in the gap between the boxes, and the typing hint in the name's box:
-   the original has neither (see the theme). */
-
-body #panel {
-	top: 87dp;
-	width: 870dp;
-	height: 414dp;
-	margin-left: -435dp;
-	padding: 0;
-	box-sizing: border-box;
-	background-color: #2d3840;
+#title {
+	border-bottom-width: 0;
+	color: #efc63c;
 }
 
-body #title {
-	position: absolute;
-	left: 39dp;
-	top: 15dp;
-	margin: 0;
-	padding: 0;
-	border-width: 0;
-	line-height: 39dp;
-	color: #fff371;
-}
-
-body #whose {
-	display: none;
-}
-
-body #buttons {
-	float: none;
-	position: absolute;
-	left: 0;
-	top: 0;
-	width: 0;
-	margin: 0;
-}
-
+body .cell,
 body .button {
-	display: block;
-	position: absolute;
-	left: 27dp;
-	height: 45dp;
-	margin: 0;
-	padding: 0 0 0 9dp;
-	box-sizing: border-box;
 	border: 3dp transparent;
-	line-height: 39dp;
-	text-align: left;
 }
 
-body #button-back {
-	top: 255dp;
-	width: 180dp;
-}
-
-body #button-ok {
-	top: 339dp;
-	width: 144dp;
-}
-
-body #grid {
-	float: none;
-	position: absolute;
-	left: 219dp;
-	top: 3dp;
-}
-
-body .grid-row {
-	height: 42dp;
-	white-space: nowrap;
-}
-
-body .cell {
-	width: 54dp;
-	height: 45dp;
-	padding: 0 0 0 9dp;
-	box-sizing: border-box;
-	border: 3dp transparent;
-	line-height: 39dp;
-	text-align: left;
-}
-
-/* The right side starts 112 pixels after the left one: five cells of 18 and 22 more. */
-body .cell:nth-child(5) {
-	margin-right: 66dp;
-}
-
-body .cell.selected, body .button.selected {
-	decorator: none;
-	background-color: transparent;
-	border-color: #ffd600;
-}
-
-body #prompts {
-	position: absolute;
-	left: 0;
-	top: 414dp;
-	width: 870dp;
-	margin: 0;
-	padding: 6dp 0 0 0;
-	border-width: 0;
-	white-space: nowrap;
-}
-
-body #name-box {
-	top: 540dp;
-	width: 447dp;
-	height: 126dp;
-	margin-left: -435dp;
-	padding: 0;
-	box-sizing: border-box;
-	border: 3dp transparent;
-	background-color: #2d3840;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
-}
-
-body #name {
-	position: absolute;
-	left: 9dp;
-	top: 15dp;
-	margin: 0;
-	white-space: pre;
-}
-
-body .letter {
-	width: 36dp;
-	height: 39dp;
-	line-height: 36dp;
-	text-align: left;
-}
-
-body .letter.current {
-	border-bottom: 6dp #c6c610;
-}
-
-body #typing {
-	position: absolute;
-	left: 18dp;
-	top: 75dp;
-	margin: 0;
-	font-size: 22dp;
-	color: #b2b2b2;
-}
-
-/* Naming terminal: keep the familiar keyboard grid and place the live name in its own wide card below. */
-body #panel {
-	left: 50%;
-	top: 36dp;
-	width: 870dp;
-	height: 468dp;
-	margin-left: -435dp;
-	padding: 0;
-	box-sizing: border-box;
-	border: 2dp #72c7ff;
-	border-radius: 0;
-	background-color: #0b1c2df5;
-	decorator: vertical-gradient(#153653 #0a1929);
-}
-
-body #title {
-	left: 39dp;
-	top: 15dp;
-	margin: 0;
-	padding: 0;
-	border: 0;
-	color: #ffe64a;
-	font-size: 24dp;
-	font-weight: bold;
-	line-height: 36dp;
-}
-
-body #whose {
-	display: block;
-	position: absolute;
-	left: 39dp;
-	top: 57dp;
-	margin: 0;
-	color: #a8c7d9;
-	font-size: 16dp;
-}
-
-body #grid {
-	left: 219dp;
-	top: 12dp;
-}
-
-body .grid-row {
-	height: 42dp;
-}
-
-body .cell {
-	width: 54dp;
-	height: 42dp;
-	padding: 0 0 0 9dp;
-	box-sizing: border-box;
-	border: 2dp transparent;
-	background-color: #0a2035;
-	color: #d8f1ff;
-	font-size: 18dp;
-	line-height: 38dp;
-	text-align: left;
-}
-
-body .cell:nth-child(5) {
-	margin-right: 66dp;
-}
-
-body .cell.selected {
-	border-color: #ffd51e;
-	background-color: #153653;
-	color: #ffe64a;
-}
-
-body #buttons {
-	position: absolute;
-	left: 27dp;
-	top: 255dp;
-	width: 168dp;
-	margin: 0;
-}
-
-body .button {
-	left: 0;
-	width: 168dp;
-	height: 48dp;
-	margin: 0 0 24dp 0;
-	padding: 0 12dp;
-	box-sizing: border-box;
-	border: 1dp #345875;
-	border-radius: 0;
-	background-color: #0a2035;
-	color: #d8f1ff;
-	font-size: 18dp;
-	line-height: 45dp;
-	text-align: left;
-}
-
-body #button-back { top: 0; }
-body #button-ok { top: 72dp; }
-
+body .cell.selected,
 body .button.selected {
-	border: 2dp #ffd51e;
-	background-color: #153653;
-	color: #ffe64a;
+	border-color: transparent;
+	decorator: ninepatch(nb-ocur-outer, nb-ocur-inner, 1) border-box;
 }
 
-body #prompts {
-	left: 24dp;
-	top: 414dp;
-	width: 818dp;
-	margin: 0;
-	padding: 12dp 0 0 0;
-	border-top: 1dp #397ca4;
-	color: #a8c7d9;
-	font-size: 14dp;
-	text-align: right;
+#prompts {
+	border-top-width: 0;
 }
-
-body #prompts .prompt { margin-left: 12dp; }
-body #prompts .key { color: #72c7ff; }
 
 body #name-box {
-	left: 50%;
-	top: 522dp;
-	width: 660dp;
-	height: 144dp;
-	margin-left: -330dp;
-	padding: 0;
-	box-sizing: border-box;
-	border: 2dp #72c7ff;
-	border-radius: 0;
-	background-color: #0b1c2df5;
-	decorator: vertical-gradient(#153653 #0a1929);
-}
-
-body #name {
-	left: 24dp;
-	top: 18dp;
-	color: #ffffff;
-}
-
-body .letter {
-	width: 42dp;
-	height: 48dp;
-	border-bottom: 3dp transparent;
-	color: #d8f1ff;
-	font-size: 24dp;
-	line-height: 45dp;
-	text-align: center;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
 }
 
 body .letter.current {
-	border-bottom-color: #ffd51e;
-	color: #ffe64a;
+	border-bottom: 4dp #efc63c;
 }
 
 body #typing {
-	left: 24dp;
-	top: 87dp;
-	color: #a8c7d9;
-	font-size: 14dp;
-}
-
-@media (max-width: 900dp) {
-	body #panel { width: 96%; margin-left: -48%; }
-	body #name-box { width: 72%; margin-left: -36%; }
-	body #grid { left: 190dp; }
-	body .cell { width: 48dp; padding-left: 6dp; }
-	body .cell:nth-child(5) { margin-right: 54dp; }
-}
-
-@media (max-height: 620dp) {
-	body #panel { top: 12dp; height: 450dp; }
-	body #grid { top: 6dp; }
-	body .grid-row { height: 39dp; }
-	body .cell { height: 39dp; line-height: 35dp; }
-	body #prompts { top: 402dp; }
-	body #name-box { top: auto; bottom: 12dp; height: 126dp; }
-	body #name { top: 9dp; }
-	body .letter { height: 39dp; line-height: 36dp; }
-	body #typing { top: 69dp; }
+	margin-top: 6dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 27dp;
+	color: #93a6bc;
 }

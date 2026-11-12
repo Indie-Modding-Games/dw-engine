@@ -1,44 +1,107 @@
-/* Item trading: terminal-blue panels with a clear cyan frame and yellow focus. */
+/* The trade in the new look (concept area C, trade_menu: 228-235): the offer list as half a window with brackets,
+   the column titles in light blue over a light-blue rule, the gold line on the focused row, a green mark on what was
+   traded, offers you cannot pay greyed; the amount box opaque with its rules and a sunk value field. */
 
-body #window, body #talk, body #amount {
+/* Back to the base layout's x (216), which the modern look moved to the left edge. */
+body #window,
+body #amount {
+	left: 216dp;
+}
+
+body #window {
 	border: 3dp transparent;
-	background-color: #0b1c2df2;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
 }
 
-body #amount { background-color: #102a40f5; }
-
-.label, .row, #talk, #amount {
-	font-family: original-look;
-	color: #d5eaf7;
+.label {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #b6e4f7;
 }
 
-.row, #talk { font-family: original-look-dialogue; }
-
-body #rule, body #amount .rule {
-	background-color: #338bb4;
-	border-top-color: #071421;
-	border-bottom-color: #071421;
+#rule,
+#amount .rule {
+	height: 9dp;
+	border-top: 2dp #050c1a;
+	border-bottom: 2dp #050c1a;
+	background-color: #7cb6e2;
 }
 
-body #cursor {
-	border: 3dp #ffd51e;
-	background-color: #153653b8;
+#cursor {
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
 }
 
-body .row.missing .give { color: #ff7775; }
-body .row .mark { color: #ffd51e; }
-body #speaker { color: #ffe64a; }
-body #speaker.player { color: #d5eaf7; }
-
-body #talk .talk-row.selected .run {
-	background-color: #153653;
-	border-top-color: #ffd51e;
-	color: #ffe64a;
+.row {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #f2f0e1;
+	line-height: 48dp;
 }
 
-body #amount-inset {
-	border-color: #071421 #4a9fc5 #4a9fc5 #071421;
-	background-color: #0b1c2d;
+body .row .mark {
+	color: #5fd36a;
 }
+
+body .row.missing,
+body .row.missing .give {
+	color: #5d6b7c;
+}
+
+body #amount {
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-over-outer, nb-over-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+#amount-inset {
+	border: 2dp #4a79a8;
+	background-color: #0b1424;
+}
+
+/* The speech box (v1 talk, 90,486 786 x 177): a window with brackets, the speaker in gold, a choice row inside the gold
+   line with the ▶ beside it. */
+body #talk {
+	padding: 12dp 30dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 36dp;
+	color: #f2f0e1;
+}
+
+#talk .talk-row {
+	height: 36dp;
+}
+
+body #speaker,
+body #speaker.player {
+	color: #efc63c;
+}
+
+#talk .talk-row .run {
+	padding: 0;
+}
+
+#talk .talk-row.selected {
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-left: 26dp transparent;
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+#talk .talk-row.selected .run {
+	border-width: 0;
+	background-color: transparent;
+}
+

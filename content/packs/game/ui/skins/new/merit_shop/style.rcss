@@ -1,41 +1,127 @@
-/* The merit exchange in the original look: the original's boxes (theme.rcss .original-box), the table's MENU, COUNT and
-   POINT labels from SYSTEM_W (palette 4), the rarity's card from SYSTEM_W (palette 5) and the original's ink. */
+/* The merit shop in the new look (concept area C, merit_shop: 220-227): the points box and the card or item list
+   as half windows with brackets, small light-blue labels, the gold line on the focused row, the speech box. */
 
-body #window, body #talk, body #points-box {
+body #points-box {
+	padding: 8dp 21dp 0 21dp;
 	border: 3dp transparent;
-	background-color: #2d384080;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #f2f0e1;
 }
 
-/* The column labels: the original's pictures of the English words while the language is English (the engine's
-   use-menu-art class), the list_labels texts in the original's ink in any other. */
-.label { font-family: original-look; color: #d0d0d0; font-size: 15dp; line-height: 21dp; white-space: nowrap; }
-.use-menu-art .label-menu { decorator: image(keeper-menu-label scale-none left top); color: transparent; }
-.use-menu-art .label-count { decorator: image(keeper-count-label scale-none left top); color: transparent; }
-.use-menu-art .label-point { decorator: image(keeper-point-label scale-none left top); color: transparent; }
+#points-value {
+	width: auto;
+	text-align: right;
+}
 
-.rarity-0 { decorator: image(card-rarity-0 scale-none left top); }
-.rarity-1 { decorator: image(card-rarity-1 scale-none left top); }
-.rarity-2 { decorator: image(card-rarity-2 scale-none left top); }
-.rarity-3 { decorator: image(card-rarity-3 scale-none left top); }
-.rarity-4 { decorator: image(card-rarity-4 scale-none left top); }
+body #window {
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
 
-.row, #talk, #points-box { font-family: original-look; color: #d0d0d0; }
-.row, #talk { font-family: original-look-dialogue; }
-body .row.stuck { color: #e03028; }
-body #speaker { color: #f8f800; }
-body #speaker.player { color: #d0d0d0; }
+.label,
+.use-menu-art .label-menu,
+.use-menu-art .label-count,
+.use-menu-art .label-point {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 27dp;
+	width: auto;
+	white-space: nowrap;
+	color: #b6e4f7;
+	decorator: none;
+	top: 10dp;
+}
 
-/* The rows keep the original's size: the modern look this skin extends gives its own lists 22dp
-   (../../modern/original_lists/style.rcss). */
+#cursor {
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
+
 .row {
-	font-size: 33dp;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #f2f0e1;
 }
 
-body #window, body #talk, body #points-box { background-color: #0b1c2df2; }
-.label, .row, #talk, #points-box { color: #d5eaf7; }
-body .row.stuck { color: #ff7775; }
-body #speaker { color: #ffe64a; }
-body #speaker.player { color: #d5eaf7; }
-body .cursor { border-color: #ffd51e; background-color: #153653b8; }
+.name,
+.value {
+	top: 12dp;
+}
+
+.value {
+	right: 12dp;
+}
+
+.icon {
+	top: 3dp;
+	width: 42dp;
+	height: 42dp;
+}
+
+body .row.stuck {
+	color: #5d6b7c;
+}
+
+
+
+.scrollbar {
+	left: 457dp;
+	width: 22dp;
+	border: 2dp #2c3d55;
+	background-color: #0b1322;
+}
+
+#frame.list-items .scrollbar {
+	left: 529dp;
+}
+
+.thumb {
+	background-color: #b6e4f7;
+}
+
+/* The speech box (v1 talk, 90,486 786 x 177): a window with brackets, the speaker in gold, a choice row inside the gold
+   line with the ▶ beside it. */
+body #talk {
+	padding: 12dp 30dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 36dp;
+	color: #f2f0e1;
+}
+
+#talk .talk-row {
+	height: 36dp;
+}
+
+body #speaker,
+body #speaker.player {
+	color: #efc63c;
+}
+
+#talk .talk-row .run {
+	padding: 0;
+}
+
+#talk .talk-row.selected {
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-left: 26dp transparent;
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+#talk .talk-row.selected .run {
+	border-width: 0;
+	background-color: transparent;
+}
+

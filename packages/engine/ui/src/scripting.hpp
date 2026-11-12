@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -35,8 +36,12 @@ inline constexpr std::size_t MaxScriptName = 256;
 inline constexpr std::size_t MaxScriptText = std::size_t{64} * 1024;
 // The most placeholder values one call of t() may pass.
 inline constexpr std::size_t MaxTextArguments = 16;
+// The most arguments one ui.show passes to the document it shows.
+inline constexpr std::size_t MaxShowArguments = 16;
 // The global function that gives the text of a key: t(key[, {name = value}]).
 inline constexpr std::string_view TextFunction = "t";
+// The table of the UI's functions (ui.send, ui.setting...).
+inline constexpr std::string_view UiTable = "ui";
 
 // What the Lua API asks of the UI.
 struct ScriptHost {
@@ -54,11 +59,13 @@ struct ScriptHost {
   // id).
   std::function<std::vector<std::string>()> skins;
   std::function<std::string(std::string_view)> skinNameKey;
+  // A layout option the skin sets on a screen (ui.layout), nullopt when it sets none.
+  std::function<std::optional<std::string>(std::string_view, std::string_view)> layout;
   std::function<std::string()> device;
   std::function<std::string()> gamepadFamily;
   // Shows a document; a modal one takes the navigation, as the menu document does when the game
   // opens it.
-  std::function<void(std::string_view, bool)> show;
+  std::function<void(std::string_view, bool, const UiArguments&)> show;
   // A sound a script plays (ui.cue): a box's "box_open" or "box_close", or "confirm" for a press
   // the navigation does not see; false for any other name.
   std::function<bool(std::string_view)> cue;
@@ -171,6 +178,10 @@ public:
   // to the globals.
   sol::environment newEnvironment();
 
+  // Gives a document's copy of `ui` its layout(option) function, which reads the options the skin
+  // sets on that screen.
+  void bindLayout(sol::environment& environment, const std::string& screen);
+
   [[nodiscard]] CodeTrust& trust() { return *trust_; }
 
 private:
@@ -215,6 +226,7 @@ private:
   static void pushArgument(lua_State* state, std::string_view text);
   static void pushArgument(lua_State* state, double number);
   static void pushArgument(lua_State* state, std::span<const std::string> texts);
+  static void pushArgument(lua_State* state, const UiArguments& arguments);
 
   // Runs a pushed function and its arguments protected; afterwards the stack is back to `top`.
   static core::Result<LuaCallResult> protectedCall(lua_State* state, int top);

@@ -385,11 +385,14 @@ struct Ui::Impl {
           const Skin* skin = skins.find(id);
           return skin != nullptr ? skin->nameKey : std::string{};
         },
+        .layout = [this](std::string_view screen,
+                         std::string_view option) { return styler.layoutOption(screen, option); },
         .device = [this]() -> std::string {
           return device == input::DeviceKind::Gamepad ? "gamepad" : "keyboard_mouse";
         },
         .gamepadFamily = [this]() { return std::string{gamepadFamilyName(family)}; },
-        .show = [this](std::string_view name, bool modal) { show(name, modal); },
+        .show = [this](std::string_view name, bool modal,
+                       const UiArguments& arguments) { show(name, modal, arguments); },
         .cue =
             [this](std::string_view name) {
               if (name == "box_open") {
@@ -741,7 +744,7 @@ struct Ui::Impl {
     return {};
   }
 
-  void show(std::string_view name, bool modal) {
+  void show(std::string_view name, bool modal, const UiArguments& arguments) {
     Document* document = find(name);
     if (document == nullptr) {
       core::logWarning("ui: no document named {}", name);
@@ -756,7 +759,7 @@ struct Ui::Impl {
       modalStack.emplace_back(name);
       navigation.reset();
     }
-    document->element->callHandler("on_show");
+    document->element->callHandler("on_show", arguments);
   }
 
   void hide(std::string_view name) {
@@ -916,7 +919,7 @@ struct Ui::Impl {
     Document* modal = topModal();
     if (modal == nullptr) {
       if (command == NavCommand::Menu && !menuShut && find(menuDocument) != nullptr) {
-        show(menuDocument, true);
+        show(menuDocument, true, {});
         capturedThisTick = true;
       }
       return;
@@ -1318,7 +1321,7 @@ struct Ui::Impl {
         find(*above)->element->Show(Rml::ModalFlag::Modal, Rml::FocusFlag::Auto);
       }
     }
-    old.element->callHandler("on_show");
+    old.element->callHandler("on_show", UiArguments{});
   }
 };
 
@@ -1384,8 +1387,8 @@ core::Result<void> Ui::loadDocument(std::string_view name, const assets::AssetId
   return impl_->load(name, document);
 }
 
-void Ui::show(std::string_view name, bool modal) {
-  impl_->show(name, modal);
+void Ui::show(std::string_view name, bool modal, const UiArguments& arguments) {
+  impl_->show(name, modal, arguments);
 }
 
 void Ui::hide(std::string_view name) {
@@ -1578,8 +1581,11 @@ std::string Ui::elementText(std::string_view document, std::string_view elementI
 bool Ui::elementHasClass(std::string_view document, std::string_view elementId,
                          std::string_view className) const {
   const Impl::Document* found = impl_->find(document);
-  Rml::Element* element =
-      found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
+  Rml::Element* element = nullptr;
+  if (found != nullptr) {
+    element =
+        elementId.empty() ? found->element : found->element->GetElementById(std::string{elementId});
+  }
   return element != nullptr && element->IsClassSet(std::string{className});
 }
 

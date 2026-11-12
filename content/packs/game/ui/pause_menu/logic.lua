@@ -30,24 +30,16 @@ local icon_time = 0
 local icon_flash = false
 local player_tools_open = false
 local player_tab = "player"
--- Set while this pause was opened for the partner window's Evoluciones tab: the tree stands in for
--- the player page, and Cancel goes back to the partner menu instead of the hub or the field.
-local evolutions_return = false
--- The pause menu keys its behaviour off a single capability the skin declares through
--- `document_classes` on #panel, never off the skin's id (docs/architecture/ui.md#aspectos):
---   #panel.skin-original → the classic/original look: the icon main page that focuses its first
---   icon on open (so the arrows work), the menu box, the date header, and the 3D-portrait player
---   page whose utilities (Chart / Medals / City) open in their own panel with Tab.
--- `new` keeps this classic interface (the tabbed "modern" player page is NOT wanted here).
-local function panel_has(document, class)
-  local panel = document ~= nil and document:get("panel") or nil
-  return panel ~= nil and panel:has_class(class)
-end
-local function native_pause(document)
-  return panel_has(document, "skin-original")
-end
-local function has_native_player_layout(document)
-  return native_pause(document)
+-- The main page's entry the original layout focuses as the menu shows: the one the partner menu was
+-- opened from, which that menu names as it shows this one again (ui.show's args.entry). It stays
+-- until the partner menu names another, as the original's cursor does.
+local ReturnEntries = { items = "open-items", partner = "open-partner" }
+local return_entry = nil
+-- The skin's layout of this menu (skin.yaml layout: pause_menu: menu): "original" lays it out as
+-- the original game's (the icon grid, the menu box, the date header, the 3D-portrait player page
+-- whose tools open with Tab), anything else as the modern look's.
+local function original_menu()
+  return ui.layout("menu") == "original"
 end
 local chart_selecting = false
 local chart_detail = false
@@ -1154,19 +1146,10 @@ end
 local function refresh_medals(document)
   local held = number_list("player.medals.held")
   local shown = (held[medal_index] or 0) ~= 0
-  -- The profile-merged look (panel class player-medals-on-profile): the shelf becomes a framed
-  -- inset box of its own at the grid's lower right, five cells wide by three high, instead of the
-  -- classic full-size page of medals that replaces the profile.
-  local inset = panel_has(document, "player-medals-on-profile")
   for i = 0, 14 do
     local cell = document:get("medal-" .. i)
-    if inset then
-      cell:set_property("left", (34 + (i % 5) * 72) .. "dp")
-      cell:set_property("top", (42 + math.floor(i / 5) * 72) .. "dp")
-    else
-      cell:set_property("left", ((25 + (i % 5) * 38) * 3) .. "dp")
-      cell:set_property("top", ((27 + math.floor(i / 5) * 24) * 3) .. "dp")
-    end
+    cell:set_property("left", ((25 + (i % 5) * 38) * 3) .. "dp")
+    cell:set_property("top", ((27 + math.floor(i / 5) * 24) * 3) .. "dp")
     cell:set_class("held", (held[i] or 0) ~= 0)
     cell:set_class("showing", shown and i == medal_index)
   end
@@ -1282,10 +1265,6 @@ local city_cursor_outside = 3
 -- A missing resident's icon: the same image in its grey tone (packages/engine/ui
 -- image_reference.hpp).
 local city_grey_tone = "tone=grey"
-
-local function original_skin()
-  return ui.setting("ui_skin") == "original"
-end
 
 local function city_footer(document)
   local cell = city_cells[city_index + 1]
@@ -1425,48 +1404,7 @@ local function city_move(document, action)
   end
 end
 
--- A skin with the minimal player tab set (pause_menu: player-minimal-tabs) renames its Prosperity
--- tab over the classic key's word; while the tree stands open for the partner window, the strip
--- wears that window's own two names. The engine re-applies every text-key before it calls on_show
--- and on_language, so the skin's names go on after those refreshes (the classic skins, which do
--- not declare the classes, keep the document's own words untouched). The Trophies are part of the
--- profile now (player-medals-on-profile), so the City tab is the only one left to rename there.
-local function draw_player_tab_labels(document)
-  if not panel_has(document, "player-minimal-tabs") then
-    return
-  end
-  if evolutions_return then
-    -- the tree's strip wears the partner window's own two names
-    document:get("player-tab-player-label"):set_text(t("partner_menu.nav.partner"))
-    document:get("player-tab-chart-label"):set_text(t("partner_menu.tab.evolutions"))
-  else
-    document:get("player-tab-city-label"):set_text(t("pause_menu.player_tab_prosperity"))
-  end
-  -- the key chips beside the strip carry the device's own sign: Q/E, or the pad's shoulders
-  document:get("player-tab-previous-key"):set_prompt("tab_previous")
-  document:get("player-tab-next-key"):set_prompt("tab_next")
-end
-
--- Q/E (the pad's R/L) walk this window's folder tabs from anywhere on the page — key presses and
--- clicks on the strip's key chips both land here: the arrows stay free for each page's own content.
-function player_step_tab(document, delta)
-  if evolutions_return then
-    -- The strip's left tab is the partner window's own: Q goes back there, E has no further page.
-    if delta < 0 then
-      back(document)
-    end
-    return
-  end
-  show_player_tab(document, delta > 0 and "city" or "player")
-end
-
 function show_player_tab(document, tab)
-  if evolutions_return and tab == "player" then
-    -- The strip's left tab reads "Partner" during the tree's visit: it returns to the partner
-    -- menu, it is not the profile page (the visit belongs to the partner window).
-    back(document)
-    return
-  end
   chart_detail = false
   chart_transition = nil
   document:get("chart-detail-transition"):set_class("hidden", true)
@@ -1975,7 +1913,7 @@ local function refresh(document)
   draw_date_digits(document, "field-year-", 3, ui.setting("hud.clock.year"))
   draw_date_digits(document, "field-day-", 2, ui.setting("hud.clock.day"))
   draw_season(document)
-  local original = ui.setting("ui_skin") == "original"
+  local original = original_menu()
   document:get("panel"):set_class("use-menu-art", (ui.setting("language") or "en") == "en")
   document:get("sleep"):set_class("unavailable", not can_sleep())
   document:get("panel"):set_class("has-fishing", original and fishing() ~= 0)
@@ -2027,7 +1965,7 @@ refresh_player = function(document)
   document:get("player-time"):set_text(
     type(seconds) == "number"
         and string.format(
-          ui.setting("ui_skin") == "original" and "%d : %d" or "%d:%02d",
+          original_menu() and "%d : %d" or "%d:%02d",
           math.floor(seconds / 3600),
           math.floor(seconds / 60) % 60
         )
@@ -2071,9 +2009,7 @@ local function show_page(document, name, focus, tools)
   document:get("panel"):set_class("player-city", name == "player" and player_tab == "city")
   player_tools_open = tools == true
   document:get("panel"):set_class("player-tools-open", player_tools_open)
-  document
-    :get("panel")
-    :set_class("on-player", name == "player" and has_native_player_layout(document))
+  document:get("panel"):set_class("on-player", name == "player" and original_menu())
   document
     :get("title")
     :set_text(t(player_tools_open and "pause_menu.title.tools" or "pause_menu.title." .. name))
@@ -2083,12 +2019,10 @@ local function show_page(document, name, focus, tools)
   -- The settings pages: a skin may give their label-and-value rows a wider box.
   document:get("panel"):set_class("on-settings", name == "options" or name == "minimap")
   document:get("panel"):set_class("on-options", name == "options")
-  local first = name == "main"
-      and native_pause(document)
-      and (fishing() ~= 0 and "fish" or "open-items")
+  local first = name == "main" and original_menu() and (fishing() ~= 0 and "fish" or "open-items")
     or (
       name == "player"
-        and has_native_player_layout(document)
+        and original_menu()
         and (player_tools_open and "player-minimap" or "player-tab-" .. player_tab)
       or (name == "options" and first_option_row() or first_entry[name])
     )
@@ -2160,16 +2094,7 @@ local function close_city(document)
 end
 
 function back(document)
-  if evolutions_return and current == "player" then
-    -- The tree was opened for the partner window (its Evoluciones tab): go back there, not to the
-    -- hub nor to the field.
-    evolutions_return = false
-    document:get("panel"):set_class("player-evolutions", false)
-    ui.hide(document_name)
-    ui.show("partner_menu", true)
-    return
-  end
-  if current == "player" and player_tab == "city" and not original_skin() then
+  if current == "player" and player_tab == "city" and not original_menu() then
     close_city(document)
     return
   end
@@ -2192,7 +2117,7 @@ function back(document)
   else
     local parent = parents[current] or "main"
     local focus = parent == "player" and "player-" .. current or opener[current]
-    show_page(document, parent, focus, parent == "player" and has_native_player_layout(document))
+    show_page(document, parent, focus, parent == "player" and original_menu())
   end
 end
 
@@ -2234,7 +2159,7 @@ function adjust(_document, id, step)
   end
 end
 
-function on_show(document)
+function on_show(document, args)
   panel_enter.start(document)
   shown_document = document
   chart_detail = false
@@ -2245,29 +2170,15 @@ function on_show(document)
   parents = {}
   icon_time = 0
   refresh(document)
-  draw_player_tab_labels(document)
-  local entry = native_pause(document) and ui.setting("pause_menu.start_entry") or nil
+  return_entry = ReturnEntries[args.entry] or return_entry
+  local entry = original_menu() and return_entry or nil
   -- Esc / F10 (Select on a pad) open the menu straight on its options page (pause_menu.start_page,
   -- «Opciones en partida»); going back from there closes the menu.
   local was_at_title = at_title
   at_title = ui.setting("pause_menu.at_title") == true
   options_direct = at_title or ui.setting("pause_menu.start_page") == "options"
   document:get("panel"):set_class("at-title", at_title)
-  -- The partner window's Evoluciones tab had the game open this menu just for the tree (game.cpp):
-  -- the one-shot is read here, consumed at once, and the next plain pause opens as usual.
-  evolutions_return = ui.setting("pause_menu.evolutions") == true
-  if evolutions_return then
-    ui.send("pause_menu.evolutions", false)
-  end
-  document:get("panel"):set_class("player-evolutions", evolutions_return)
-  if evolutions_return then
-    parents.player = "main"
-    show_page(document, "player")
-    show_player_tab(document, "chart")
-    chart_pick(document, chart_index_on(1))
-    -- The strip wears the partner window's names now, not this page's own.
-    draw_player_tab_labels(document)
-  elseif options_direct then
+  if options_direct then
     -- From the title to a game or back the page's actions change: lay it out again, as it opens.
     if at_title ~= was_at_title then
       open_options(document)
@@ -2279,9 +2190,7 @@ function on_show(document)
   elseif ui.setting("pause_menu.preview_player") == true then
     parents.player = "main"
     show_page(document, "player")
-    if
-      ui.setting("player.chart.preview") == true and not panel_has(document, "player-minimal-tabs")
-    then
+    if ui.setting("player.chart.preview") == true then
       show_player_tab(document, "chart")
     end
   else
@@ -2334,7 +2243,7 @@ function on_tick(document, seconds)
       end
     end
   end
-  if current ~= "main" or ui.setting("ui_skin") ~= "original" then
+  if current ~= "main" or not original_menu() then
     return
   end
   icon_time = icon_time + seconds
@@ -2362,9 +2271,9 @@ function on_setting(document, name)
     if name == "evoreq.version" or name == "evoreq.ready" then
       refresh_requirements(document)
     end
-  elseif name:sub(1, 13) == "partner_menu." or name == "pause_menu.start_entry" then
-    -- The partner menu's, set as it opens over this one, and the entry read as this one shows:
-    -- nothing to draw again (a whole refresh here cost two of them per opening, #221).
+  elseif name:sub(1, 13) == "partner_menu." then
+    -- The partner menu's, set as it opens over this one: nothing to draw again (a whole refresh
+    -- here cost two of them per opening, #221).
     return
   elseif name == "pause_menu.start_page" then
     -- Esc pressed with the menu already open: switch it to the options page in place, without
@@ -2395,7 +2304,6 @@ end
 
 function on_device(document)
   refresh_prompts(document)
-  draw_player_tab_labels(document)
 end
 
 -- The language changed: the elements with a text-key are already in the new one; the rest are
@@ -2403,7 +2311,6 @@ end
 function on_language(document)
   document:get("title"):set_text(t("pause_menu.title." .. current))
   refresh(document)
-  draw_player_tab_labels(document)
   refresh_prompts(document)
 end
 
@@ -2428,7 +2335,7 @@ function on_action(document, action)
     end
     return true
   end
-  if current == "player" and player_tab == "city" and not original_skin() then
+  if current == "player" and player_tab == "city" and not original_menu() then
     if action == "up" or action == "down" or action == "left" or action == "right" then
       city_move(document, action)
       return true
@@ -2437,17 +2344,7 @@ function on_action(document, action)
       return true
     end
   end
-  if current == "player" and not player_tools_open and has_native_player_layout(document) then
-    -- Q/E (the pad's R/L) switch this window's folder tabs from anywhere on the page, so the
-    -- arrows stay free for its own content (the city's cells, the tree, the medal shelf) even
-    -- while a page holds a selection. The classic looks keep the arrows as their only walk.
-    if
-      panel_has(document, "player-minimal-tabs")
-      and (action == "tab_next" or action == "tab_previous")
-    then
-      player_step_tab(document, action == "tab_next" and 1 or -1)
-      return true
-    end
+  if current == "player" and not player_tools_open and original_menu() then
     if player_tab == "city" and city_selecting then
       if action == "cancel" then
         city_selecting = false
@@ -2498,12 +2395,6 @@ function on_action(document, action)
 
     if player_tab == "chart" and chart_selecting then
       if action == "cancel" then
-        if evolutions_return then
-          -- The visit came from the partner window's Evoluciones tab (its tree has no tab to step
-          -- back to): a Cancel ends the visit itself, going back there.
-          back(document)
-          return true
-        end
         chart_selecting = false
         chart_cursor(document)
         document:get("player-tab-chart"):focus()
@@ -2523,12 +2414,8 @@ function on_action(document, action)
     else
       if action == "right" or action == "left" then
         -- tickPlayerMenu: the four pages are always there, in this order; dwe adds the City tab.
-        -- A skin may surface only part of them (pause_menu: player-minimal-tabs): the cycle walks
-        -- the tabs the skin shows, so an arrow never lands on a page without a visible tab.
-        local tabs = panel_has(document, "player-minimal-tabs") and { "player", "city" }
-          or { "player", "chart", "medals", "card", "city" }
-        -- A page the skin hides (the Chart during the Evolutions visit) cycles as the first tab.
-        local current_index = index_of(tabs, player_tab) or 1
+        local tabs = { "player", "chart", "medals", "card", "city" }
+        local current_index = index_of(tabs, player_tab)
         local delta = action == "left" and -1 or 1
         show_player_tab(document, tabs[math.max(1, math.min(#tabs, current_index + delta))])
         return true
@@ -2566,12 +2453,7 @@ function on_action(document, action)
     back(document)
     return true
   end
-  if
-    action == "menu"
-    and current == "player"
-    and has_native_player_layout(document)
-    and not evolutions_return
-  then
+  if action == "menu" and current == "player" and original_menu() then
     player_tools_open = not player_tools_open
     document:get("panel"):set_class("player-tools-open", player_tools_open)
     document
@@ -2590,7 +2472,7 @@ function on_action(document, action)
   end
   if
     current == "main"
-    and ui.setting("ui_skin") == "original"
+    and original_menu()
     and (action == "up" or action == "down" or action == "left" or action == "right")
   then
     -- game_menu.c: tickGameMenu: rows of three; left and right go round the whole list, up and

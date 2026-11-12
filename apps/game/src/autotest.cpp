@@ -74,10 +74,11 @@ constexpr int StableFrames = 5;
 
 // The other documents menu_select picks from while they are open: the battle screen, the partner's
 // menu, free exploration's chooser, the title screen's slot list, the save dialog, the sleep
-// menu, the shop, the item keeper and the new game's rules and mode.
-constexpr std::array<std::string_view, 10> ScreenDocuments{
-    "partner_menu", "battle",    "destination_choice", "dialog",         "save_slots",
-    "sleep_menu",   "shop_menu", "item_keeper",        "new_game_rules", "new_game_mode"};
+// menu, the shop, the item keeper, the new game's rules and mode and the first run's skin picker.
+constexpr std::array<std::string_view, 11> ScreenDocuments{
+    "partner_menu",   "battle",        "destination_choice", "dialog",
+    "save_slots",     "sleep_menu",    "shop_menu",          "item_keeper",
+    "new_game_rules", "new_game_mode", "skin_picker"};
 
 // The menu menu_select picks from: the pause menu while it is open (over the title too, as its
 // options), then the main menu, then the battle screen or the partner's menu; the pause menu when
@@ -744,8 +745,8 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   AutotestRoute route;
   reader.expectKeys(*document, "route", {"name", "device", "steps"},
                     {"gamepad", "timeout", "main_menu", "boot_screen", "language_first",
-                     "new_game_rules", "new_game_scene", "walk_control", "new_game", "names",
-                     "load_save", "movies", "text_fit"});
+                     "skin_first", "new_game_rules", "new_game_scene", "walk_control", "new_game",
+                     "names", "load_save", "movies", "text_fit"});
   route.name = reader.text(reader.field(*document, "name"));
   const core::YamlNode& device = reader.field(*document, "device");
   if (const auto known = deviceNamed(reader.text(device))) {
@@ -773,6 +774,12 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
     route.languageFirst = reader.boolean(*language);
     if (route.languageFirst && !route.bootScreen) {
       reader.fail(*language, "language_first needs boot_screen: true");
+    }
+  }
+  if (const core::YamlNode* skin = document->find("skin_first")) {
+    route.skinFirst = reader.boolean(*skin);
+    if (route.skinFirst && !route.bootScreen) {
+      reader.fail(*skin, "skin_first needs boot_screen: true");
     }
   }
   if (const core::YamlNode* rules = document->find("new_game_rules")) {

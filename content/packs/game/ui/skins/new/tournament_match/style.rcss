@@ -1,36 +1,60 @@
-/* A cup match in the original look: the US intro draws no name (STD_renderIntroNameChar adds no primitive), the
-   digits and TIME UP are the sprites of stdtim 002 (sheet ow-std-match) instead of text, and the damage box is the
-   original's window. */
+/* tournament_match in the new look (concept area D, 355-358): the intro's name and values, TIME UP and the damage
+   in the pixel font (the document writes them as text too) instead of the original's sprites, the damage box as a
+   half window with brackets. The name is 4 times the body font's cell, so it stays sharp. */
 
-body #name { display: none; }
-
-#damage-box {
-	border: 3dp transparent;
-	background-color: #00000080;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+body #name {
+	display: block;
+	font-size: 60dp;
+	color: #fff371;
+	font-effect: shadow(4dp 4dp #050c1a);
 }
 
-#time-up, .digit {
-	font-size: 0;
-	color: transparent;
-	font-effect: none;
+.label {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #f2f0e1;
+	font-effect: shadow(2dp 2dp #050c1a);
 }
 
-#time-up { decorator: image(std-time-up); }
-.digit.d-0 { decorator: image(std-intro-digit-0); }
-.digit.d-1 { decorator: image(std-intro-digit-1); }
-.digit.d-2 { decorator: image(std-intro-digit-2); }
-.digit.d-3 { decorator: image(std-intro-digit-3); }
-.digit.d-4 { decorator: image(std-intro-digit-4); }
-.digit.d-5 { decorator: image(std-intro-digit-5); }
-.digit.d-6 { decorator: image(std-intro-digit-6); }
-.digit.d-7 { decorator: image(std-intro-digit-7); }
-.digit.d-8 { decorator: image(std-intro-digit-8); }
-.digit.d-9 { decorator: image(std-intro-digit-9); }
+.bar {
+	box-sizing: border-box;
+	border-top: 3dp #8ae88a;
+	background-color: #50c850;
+}
+
+#time-up,
+.digit {
+	color: #ffffff;
+	decorator: none;
+}
+
+.digit,
+.digit.d-0, .digit.d-1, .digit.d-2, .digit.d-3, .digit.d-4,
+.digit.d-5, .digit.d-6, .digit.d-7, .digit.d-8, .digit.d-9 {
+	font-size: 30dp;
+	decorator: none;
+	font-effect: shadow(2dp 2dp #050c1a);
+}
+
+#time-up {
+	font-size: 60dp;
+	color: #fff371;
+	font-effect: shadow(4dp 4dp #a33a12);
+}
 
 #damage-box {
-	border: 2dp #72c7ff;
-	background-color: #0b1c2de8;
-	decorator: vertical-gradient(#153653 #0a1929);
+	border-color: transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+.fighter {
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+#damage-label {
+	color: #efc63c;
+	line-height: 72dp;
 }

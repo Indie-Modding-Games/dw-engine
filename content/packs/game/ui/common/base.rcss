@@ -96,8 +96,3 @@ button {
 .family-positions.face-east .glyph-art { decorator: image(/glyph/modern/@east); }
 .family-positions.face-west .glyph-art { decorator: image(/glyph/modern/@west); }
 .family-positions.face-north .glyph-art { decorator: image(/glyph/modern/@north); }
-
-/* The partner window's Evoluciones tab and its key chip (ui/partner_menu): an addition shown only
-   by a skin that declares the partner-evolutions class on #scrim; its style sheet brings both
-   back. */
-#tab-evolutions, #tabs-evolutions-key { display: none; }

@@ -1,80 +1,157 @@
-/* The card shop's menus in the original look: the original's boxes (theme.rcss .original-box), the table's MENU, PRICE
-   and COUNT labels from SYSTEM_W (palette 4), the rarity's card from SYSTEM_W (palette 5) and the original's ink.
-   Measured on the original on 2026-10-30. */
+/* The card shop in the new look (concept area C, card_shop: 210-219): the card list as half a window with brackets,
+   small light-blue labels, the gold line on the focused row, new cards in light gold, cards you cannot take greyed;
+   the «is it OK?» and amount boxes opaque over it, with light-blue rules and a sunk value field. */
 
-body #window, body #talk, body #confirm, body #amount {
+body #window {
 	border: 3dp transparent;
-	background-color: #2d384080;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
 }
 
-/* The "is it OK?" box and the amount box are opaque (#293942 on the original's screen). */
-body #confirm, body #amount {
-	background-color: #293942;
+.label,
+.use-menu-art .label-menu,
+.use-menu-art .label-price,
+.use-menu-art .label-count,
+#frame.mode-packs .label-menu,
+#frame.mode-packs .label-count {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 27dp;
+	width: auto;
+	white-space: nowrap;
+	color: #b6e4f7;
+	decorator: none;
+	top: 10dp;
 }
 
-/* The column labels: the original's pictures of the English words while the language is English (the engine's
-   use-menu-art class), the list_labels texts in the original's ink in any other. */
-.label { font-family: original-look; color: #d0d0d0; font-size: 15dp; line-height: 21dp; white-space: nowrap; }
-.use-menu-art .label-menu { decorator: image(keeper-menu-label scale-none left top); color: transparent; }
-.use-menu-art .label-price { decorator: image(keeper-price-label scale-none left top); color: transparent; }
-.use-menu-art .label-count { decorator: image(keeper-count-label scale-none left top); color: transparent; }
-#frame.mode-packs .label-menu, #frame.mode-packs .label-count { decorator: none; font-family: original-look; color: #d0d0d0; }
+#frame.mode-packs .label-count {
+	width: 150dp;
+}
 
-.rarity-0 { decorator: image(card-rarity-0 scale-none left top); }
-.rarity-1 { decorator: image(card-rarity-1 scale-none left top); }
-.rarity-2 { decorator: image(card-rarity-2 scale-none left top); }
-.rarity-3 { decorator: image(card-rarity-3 scale-none left top); }
-.rarity-4 { decorator: image(card-rarity-4 scale-none left top); }
+#cursor {
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
 
-.row, #talk, #confirm, #amount { font-family: original-look; color: #d0d0d0; }
-.row, #talk { font-family: original-look-dialogue; }
-body .row.stuck { color: #e03028; }
-body .row.new { color: #f8f800; }
-body #speaker { color: #f8f800; }
-
-/* The rows keep the original's size: the modern look this skin extends gives its own lists 22dp
-   (../../modern/original_lists/style.rcss). */
 .row {
-	font-size: 33dp;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #f2f0e1;
 }
 
-/* Terminal palette for the card list, confirmation, and pack quantity panels. */
-body #window, body #talk, body #confirm, body #amount {
+.name,
+.price,
+.count {
+	top: 12dp;
+}
+
+body .row.stuck {
+	color: #5d6b7c;
+}
+
+body .row.new {
+	color: #ffe58a;
+}
+
+.scrollbar {
+	left: 529dp;
+	width: 22dp;
+	border: 2dp #2c3d55;
+	background-color: #0b1322;
+}
+
+#frame.mode-sell .scrollbar,
+#frame.mode-packs .scrollbar {
+	left: 625dp;
+}
+
+.thumb {
+	background-color: #b6e4f7;
+}
+
+body #confirm,
+body #amount {
 	border: 3dp transparent;
-	background-color: #0b1c2df2;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-over-outer, nb-over-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #f2f0e1;
 }
 
-body #confirm, body #amount { background-color: #102a40f5; }
-
-.label, .row, #talk, #confirm, #amount { color: #d5eaf7; }
-body #frame.mode-packs .label-menu, body #frame.mode-packs .label-count { color: #8edcff; }
-body .row.stuck { color: #ff7775; }
-body .row.new { color: #ffe64a; }
-body #speaker { color: #ffe64a; }
-
-body #cursor, body .answer.selected {
-	border: 3dp #ffd51e;
-	background-color: #153653b8;
+#confirm {
+	line-height: 40dp;
 }
 
-body .scrollbar {
-	border-color: #071421 #4a9fc5 #4a9fc5 #071421;
-	background-color: #102a40;
+#question {
+	left: 22dp;
+	top: 8dp;
 }
 
-body .thumb { background-color: #2674a2; }
-
-body .rule {
-	background-color: #338bb4;
-	border-top-color: #071421;
-	border-bottom-color: #071421;
+.answer {
+	padding-left: 15dp;
+	line-height: 36dp;
+	border-width: 0;
 }
 
-body #amount-inset {
-	border-color: #071421 #4a9fc5 #4a9fc5 #071421;
-	background-color: #0b1c2d;
+.answer.selected {
+	border-width: 0;
+	background-color: transparent;
+	color: #efc63c;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
 }
+
+.rule {
+	height: 9dp;
+	border-top: 2dp #050c1a;
+	border-bottom: 2dp #050c1a;
+	background-color: #7cb6e2;
+}
+
+#amount-inset {
+	border: 2dp #4a79a8;
+	background-color: #0b1424;
+}
+
+/* The speech box (v1 talk, 90,486 786 x 177): a window with brackets, the speaker in gold, a choice row inside the gold
+   line with the ▶ beside it. */
+body #talk {
+	padding: 12dp 30dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 36dp;
+	color: #f2f0e1;
+}
+
+#talk .talk-row {
+	height: 36dp;
+}
+
+body #speaker,
+body #speaker.player {
+	color: #efc63c;
+}
+
+#talk .talk-row .run {
+	padding: 0;
+}
+
+#talk .talk-row.selected {
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-left: 26dp transparent;
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+#talk .talk-row.selected .run {
+	border-width: 0;
+	background-color: transparent;
+}
+

@@ -1,31 +1,111 @@
-/* The registration in the original look: the original's boxes (theme.rcss .original-box), its ink, and the
-   selection's grey bar of the story's boxes (script_textbox.c: renderDialogueSelectionCursor). */
+/* The tournament desk in the new look (concept area C, tournament_schedule: 291-296): the title, the 5-day grid, the
+   cup's details and the speech box as windows with brackets; light-blue grid lines, the days in the small font,
+   each cup's class as a badge (gold when you can enter, grey when closed, red when your partner is above its
+   class), the gold line on the focused cell. */
 
-body #title, body #grid, body #info, body #talk {
+body #title,
+body #grid,
+body #info,
+body #talk {
 	border: 3dp transparent;
-	background-color: #2d384080;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
 }
 
-#frame { font-family: original-look; color: #d0d0d0; }
-body .vline, body .hline { background-color: #90d9fa; }
+body #talk {
+	padding: 12dp 30dp;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+	line-height: 36dp;
+}
+
+#frame {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+#title-text {
+	top: 0;
+	line-height: 54dp;
+	color: #efc63c;
+}
+
+body .vline,
+body .hline {
+	background-color: #7cb6e2;
+}
+
+.day {
+	top: 12dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #b6e4f7;
+}
+
+.cell-cursor {
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
+
+.cell {
+	height: 30dp;
+	margin-top: 4dp;
+	border: 2dp #050c1a;
+	line-height: 26dp;
+	text-align: center;
+	color: #050c1a;
+	background-color: #efc63c;
+}
+
+.cell.closed {
+	border-color: #2c3d55;
+	color: #5d6b7c;
+	background-color: #1b2638;
+}
+
+.cell.overlevel {
+	border-color: #a04050;
+	color: #ff9a8a;
+	background-color: #3a1c22;
+}
+
+.cell:empty {
+	border-width: 0;
+	background-color: transparent;
+}
+
+#info {
+	padding: 12dp 30dp;
+}
+
+.text-row {
+	height: 39dp;
+}
+
+#talk .text-row {
+	height: 36dp;
+}
+
+.color-1 { color: #f2f0e1; }
+.color-3 { color: #e2483d; }
+.color-5 { color: #5fd36a; }
+.color-6 { color: #7cb6e2; }
+.color-7 { color: #efc63c; }
+.color-9 { color: #93a6bc; }
+
+/* A choice's row: the gold line with the ▶ beside it. */
+.text-row.selected {
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-left: 26dp transparent;
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
 
 body .text-row.selected .run {
-	background-color: #525a63;
-	border-top: 3dp #b5b5b5;
+	border-width: 0;
+	background-color: transparent;
 }
-
-body #title, body #grid, body #info, body #talk {
-	border: 2dp #72c7ff;
-	background-color: #0b1c2de8;
-	decorator: vertical-gradient(#153653 #0a1929);
-}
-
-body .text-row.selected .run {
-	background-color: #ffd51e30;
-	border-top-color: #ffd51e;
-	color: #ffe64a;
-}
-
-body .vline, body .hline { background-color: #397ca4; }

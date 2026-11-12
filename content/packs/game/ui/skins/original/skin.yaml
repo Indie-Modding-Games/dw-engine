@@ -44,6 +44,9 @@ screens:
   # El modo de la partida nueva (solo con más de un modo), con la caja de las reglas.
   new_game_mode:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/new_game_rules/style]
+  # La caja del primer arranque que pregunta el aspecto (un añadido), con la caja de las reglas.
+  skin_picker:
+    styles: [ui/skins/original/pause_menu/style, ui/skins/original/new_game_rules/style, ui/skins/original/skin_picker/style]
   sleep_menu:
     styles: [ui/skins/original/pause_menu/style]
   # El menú de desarrollo (F2), también.
@@ -129,9 +132,21 @@ screens:
   # El aviso de guardado (una mejora del motor): una ventana del original con la figura y el texto.
   save_indicator:
     styles: [ui/skins/original/save_indicator/style]
+# La maquetación del original en las pantallas que comparten documento y script con el aspecto moderno (ui.layout,
+# docs/architecture/ui.md#aspectos): su disposición de cada pantalla y sus cajas que crecen desde un contorno gris.
+layout:
+  pause_menu: {menu: original, box: original}
+  partner_menu: {menu: original, box: original, pages: original}
+  battle: {menu: original}
+  main_menu: {menu: original, picture: original}
+  save_slots: {menu: original, picture: original}
+  new_game_rules: {menu: original, picture: original}
+  egg_box: {box: original}
+  field_item_notice: {box: original}
 # Las barras del estado del campo se llenan a cuadritos, 25 por barra (partner_impl.c: renderStatusBars).
 document_classes:
-  # La portada y su lista de ranuras se maquetan como las del original (ui/main_menu/logic.lua, ui/save_slots/logic.lua).
+  # Solo estilo: title-original y slots-original los leen las hojas de la portada y de la lista de ranuras (la
+  # disposición la elige layout, arriba).
   # skin-original marca el panel de las pantallas que comparten las hojas del aspecto moderno (pause_menu,
   # partner_menu): las reglas que ese aspecto no deja que este herede llevan #panel:not(.skin-original).
   main_menu:
@@ -149,6 +164,8 @@ document_classes:
   new_game_rules:
     panel: [skin-original]
   new_game_mode:
+    panel: [skin-original]
+  skin_picker:
     panel: [skin-original]
   versus:
     panel: [skin-original]

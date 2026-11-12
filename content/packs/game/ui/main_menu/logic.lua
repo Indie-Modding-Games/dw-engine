@@ -81,8 +81,10 @@ local entries = {
   },
 }
 
-local function original(document)
-  return document:get("panel"):has_class("title-original")
+-- The skin's layout of the title (skin.yaml layout: main_menu: menu): "original" lays it out as
+-- the original game's.
+local function original()
+  return ui.layout("menu") == "original"
 end
 
 -- The boxes over the title's picture with the «widescreen pictures» option (title_picture.lua), at
@@ -130,7 +132,7 @@ local function upper(text)
 end
 
 local function refresh(document)
-  local orig = original(document)
+  local orig = original()
   local saved = ui.setting("save.can_continue") == true
   local own = orig and "main_menu.original." or "main_menu."
   document:get("play"):set_text(t(own .. "new_game"))
@@ -193,7 +195,7 @@ end
 -- Shows what the layout and the view show, and hides the rest. The modern layout has only the
 -- menu, and the options page over it.
 local function lay_out(document)
-  local orig = original(document)
+  local orig = original()
   was_original = orig
   local shown = (orig or view == "options") and view or "menu"
   local function show(id, visible)
@@ -234,8 +236,8 @@ end
 
 -- The menu's first entry: continue when there is a save to continue (an addition, the original
 -- layout's), else new game.
-local function first_entry(document)
-  if original(document) and FocusContinueWhenSaved and ui.setting("save.can_continue") == true then
+local function first_entry()
+  if original() and FocusContinueWhenSaved and ui.setting("save.can_continue") == true then
     return "continue"
   end
   return "play"
@@ -246,11 +248,11 @@ end
 local function menu_focus(document)
   local id = remembered.menu
   if id == nil then
-    return first_entry(document)
+    return first_entry()
   end
   local element = document:get(id)
   if element:has_class("hidden") or element:has_class("unavailable") then
-    return first_entry(document)
+    return first_entry()
   end
   return id
 end
@@ -368,13 +370,13 @@ function on_show(document)
   landing = false
   title_picture.apply(document, PictureBoxes)
   refresh_prompts(document)
-  was_original = original(document)
+  was_original = original()
   local boot = ui.setting("title.boot") == true
   if boot then
     -- A new start of the title: the menu starts on its first entry.
     remembered.menu = nil
   end
-  if original(document) and boot then
+  if original() and boot then
     set_fade(document, 1.0)
     fade_target = 0.0
     if ui.setting("title.language_first") == true then
@@ -419,10 +421,10 @@ end
 
 function on_tick(document, seconds)
   title_picture.apply(document, PictureBoxes)
-  if original(document) ~= was_original then
+  if original() ~= was_original then
     follow_layout(document)
   end
-  if not original(document) then
+  if not original() then
     return
   end
   if darkness ~= fade_target then
@@ -485,7 +487,7 @@ function on_action(document, action)
     enter(document, "menu")
     return true
   end
-  if original(document) then
+  if original() then
     if view == "boot" then
       -- Start, confirm or a click goes on (runLandingScreen takes Start; confirm and the pointer
       -- are this game's), and nothing else does.

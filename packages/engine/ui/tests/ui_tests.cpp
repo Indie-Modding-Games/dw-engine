@@ -85,6 +85,33 @@ struct Content {
     memory.addFile(std::filesystem::path{"packs/mod"} / path, text);
   }
 
+  // White stand-ins, of the disc's sizes, for the images dwx extracts that the original skin draws
+  // its sprites from: the skin is offered only when the packs have them.
+  void addOriginalArt() {
+    for (const auto& [path, width, height] :
+         {std::tuple{"texture/etcdat/system_w.png", 256U, 128U},
+          std::tuple{"texture/etcdat/fi_info.png", 256U, 64U},
+          std::tuple{"texture/etcdat/sboy.png", 256U, 256U},
+          std::tuple{"texture/etcdat/bi_in.png", 256U, 64U},
+          std::tuple{"texture/etcdat/feel_ef.png", 256U, 64U},
+          std::tuple{"texture/etcdat/btlcomnd.png", 256U, 64U},
+          std::tuple{"texture/etcna/title2.png", 320U, 240U},
+          std::tuple{"texture/etcna/title256.png", 320U, 256U},
+          std::tuple{"texture/stddat/time.png", 66U, 29U},
+          std::tuple{"texture/stddat/stdtim/002.png", 256U, 120U},
+          std::tuple{"texture/stddat/stdtim/003.png", 256U, 256U},
+          std::tuple{"texture/stddat/taisen1.png", 256U, 256U},
+          std::tuple{"texture/stddat/taisen2.png", 128U, 144U},
+          std::tuple{"texture/stddat/16taisen.png", 256U, 256U},
+          std::tuple{"map/trai00/texture4/001.png", 256U, 256U}}) {
+      assets::Image white{.width = width, .height = height, .pixels = {}};
+      white.pixels.assign(std::size_t{width} * height * 4, std::byte{0xFF});
+      auto png = assets::encodePng(white);
+      REQUIRE(png.has_value());
+      memory.addFile(std::filesystem::path{"packs/base"} / path, *png);
+    }
+  }
+
   void addToDev(std::string_view path, std::string_view text) {
     memory.addFile(std::filesystem::path{"packs/dev"} / path, text);
     hasDevPack = true;
@@ -133,6 +160,14 @@ std::unique_ptr<Ui> createUi(const VirtualFileSystem& files, FakeClock* clock = 
   auto ui = Ui::create(desc);
   REQUIRE_MESSAGE(ui.has_value(), ui.error().message);
   return std::move(*ui);
+}
+
+// Puts on a skin the way the game does: the switch, then its mirror for the scripts
+// (apps/game/src/ui_skin_setting.cpp). The layout options come from the skin itself.
+void useSkin(Ui& ui, std::string_view skin) {
+  const auto switched = ui.setSkin(skin);
+  REQUIRE_MESSAGE(switched.has_value(), switched.error().message);
+  ui.setSetting("ui_skin", std::string{skin});
 }
 
 // A frame: a logic tick with whatever the input holds, then layout.
@@ -597,6 +632,53 @@ end
   CHECK_FALSE(ui->capturesInput());
 }
 
+TEST_CASE("a document shown with arguments reads them in on_show, and an empty table without") {
+  // ui.show(name, modal, args): one menu tells the next where to start without a setting of the
+  // game in between (docs/modding/ui-api.md).
+  Content content;
+  content.add("ui/menu/document.rml", R"rml(<rml><head><script>
+function open_page() ui.show("page", true, {entry = "items", step = 2.5, back = true}) end
+function open_with_function() ui.show("page", true, {entry = function() end}) end
+function open_with_list() ui.show("page", true, {"items"}) end
+</script></head><body><button id="entry">Entry</button></body></rml>)rml");
+  content.add("ui/page/document.rml", R"rml(<rml><head><script>
+function on_show(document, args)
+  local seen = {}
+  for name, value in pairs(args) do
+    seen[#seen + 1] = name .. "=" .. tostring(value)
+  end
+  table.sort(seen)
+  ui.send("shown", table.concat(seen, " "))
+end
+</script></head><body><button id="slot">Slot</button></body></rml>)rml");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("menu", idOf("ui/menu/document")));
+  REQUIRE(ui->loadDocument("page", idOf("ui/page/document")));
+  const auto shownWith = [&] {
+    const auto commands = ui->takeCommands();
+    REQUIRE(commands.size() == 1);
+    CHECK(commands[0].name == "shown");
+    const auto* text = std::get_if<std::string>(&commands[0].value);
+    REQUIRE(text != nullptr);
+    return *text;
+  };
+
+  REQUIRE(ui->callScript("menu", "open_page"));
+  CHECK(ui->isVisible("page"));
+  CHECK(shownWith() == "back=true entry=items step=2.5");
+
+  ui->hide("page");
+  ui->show("page", true);
+  CHECK(shownWith() == "");
+
+  // Only named switches, numbers and texts: anything else is the script's error, and nothing shows.
+  ui->hide("page");
+  CHECK_FALSE(ui->callScript("menu", "open_with_function"));
+  CHECK_FALSE(ui->callScript("menu", "open_with_list"));
+  CHECK_FALSE(ui->isVisible("page"));
+  CHECK(ui->takeCommands().empty());
+}
+
 TEST_CASE("a script sounds the original boxes and reads where an element is") {
   // ui.c: createAnimatedUIBox plays playSound(0, 0), renderUIBoxAnim playSound(0, 1); the tech
   // page's help opens with playSound(0, 3), the confirm sound (game_menu.c: tickDigimonMenu).
@@ -633,7 +715,7 @@ namespace {
 // The original skin's bag, two items in a bag of 10 slots, after its boxes have grown in.
 void openOriginalBag(Ui& ui, input::InputState& input) {
   REQUIRE(ui.loadDocument("partner_menu", idOf("ui/partner_menu/document")));
-  ui.setSetting("ui_skin", std::string{"original"});
+  useSkin(ui, "original");
   ui.setSetting("partner_menu.start_page", std::string{"items"});
   ui.setSetting("bag.slot.count", 10.0);
   for (int slot = 0; slot < 10; ++slot) {
@@ -662,6 +744,7 @@ void settle(Ui& ui, input::InputState& input) {
 
 TEST_CASE("the original bag describes the slot under the cursor, also while an item moves") {
   Content content;
+  content.addOriginalArt();
   auto ui = createUi(content.mount());
   input::InputState input{input::defaultActionMap()};
   openOriginalBag(*ui, input);
@@ -700,6 +783,7 @@ TEST_CASE("the original bag's boxes stop at their ends, ask No first and sort un
   // (createDropItemConfirmBox, tickDropItemConfirmBox); after a sort the cursor stayed on slot 3
   // (selectSorting leaves INVENTORY_POINTER alone).
   Content content;
+  content.addOriginalArt();
   auto ui = createUi(content.mount());
   input::InputState input{input::defaultActionMap()};
   openOriginalBag(*ui, input);
@@ -750,6 +834,7 @@ TEST_CASE("the original bag's boxes stop at their ends, ask No first and sort un
 
 TEST_CASE("the bag marks the partner's favourite food while the favorite_food option is on") {
   Content content;
+  content.addOriginalArt();
   auto ui = createUi(content.mount());
   input::InputState input{input::defaultActionMap()};
   ui->setSetting("bag.slot.1.favorite", true);
@@ -778,12 +863,13 @@ TEST_CASE("the bag marks the partner's favourite food while the favorite_food op
 TEST_CASE("the status page names the partner's favourite food, in both skins, unless the option is "
           "off") {
   Content content;
+  content.addOriginalArt();
   auto ui = createUi(content.mount());
   input::InputState input{input::defaultActionMap()};
   REQUIRE(ui->loadDocument("partner_menu", idOf("ui/partner_menu/document")));
   for (const std::string_view skin : {"original", "modern"}) {
     CAPTURE(skin);
-    ui->setSetting("ui_skin", std::string{skin});
+    useSkin(*ui, skin);
     ui->setSetting("favorite_food", true);
     ui->setSetting("partner.favorite_food", std::string{"main.item_names.0038"});
     ui->setSetting("partner_menu.start_page", std::string{"status"});
@@ -816,9 +902,10 @@ TEST_CASE("the original egg box grows before its eggs move and shrinks before it
   // doo2.c: DOO2_openEggBox grows the box out of the screen's middle; DOO2_tickEggInput ignores the
   // eggs until it stands and ends once it has shrunk away (ui.c: 5 frames each way at 20 a second).
   Content content;
+  content.addOriginalArt();
   auto ui = createUi(content.mount());
   REQUIRE(ui->loadDocument("egg_box", idOf("ui/egg_box/document")));
-  ui->setSetting("ui_skin", std::string{"original"});
+  useSkin(*ui, "original");
   ui->setSetting("egg_box_eggs", 4.0);
   input::InputState input{input::defaultActionMap()};
   ui->show("egg_box", true);
@@ -1078,7 +1165,7 @@ void settleBoxes(Ui& ui, input::InputState& input) {
 // The partner menu's items page with two items: the first one usable where the bag is open, the
 // second one not.
 void openBag(Ui& ui, input::InputState& input, std::string_view context) {
-  ui.setSetting("ui_skin", std::string{"original"});
+  useSkin(ui, "original");
   ui.setSetting("bag.slot.count", 2.0);
   for (const int slot : {0, 1}) {
     const std::string prefix = std::format("bag.slot.{}.", slot);
@@ -1097,6 +1184,7 @@ void openBag(Ui& ui, input::InputState& input, std::string_view context) {
 
 TEST_CASE("the battle opens the field's bag: its Use throws once the bag has closed") {
   Content content;
+  content.addOriginalArt();
   auto ui = createUi(content.mount());
   REQUIRE(ui->loadDocument("partner_menu", idOf("ui/partner_menu/document")));
   REQUIRE(ui->loadDocument("pause_menu", idOf("ui/pause_menu/document")));
@@ -1158,6 +1246,7 @@ TEST_CASE("the battle opens the field's bag: its Use throws once the bag has clo
 
 TEST_CASE("the field's bag uses an item at once and goes back to the pause menu") {
   Content content;
+  content.addOriginalArt();
   auto ui = createUi(content.mount());
   REQUIRE(ui->loadDocument("partner_menu", idOf("ui/partner_menu/document")));
   REQUIRE(ui->loadDocument("pause_menu", idOf("ui/pause_menu/document")));
@@ -1180,6 +1269,7 @@ TEST_CASE("the partner menu's pages stay shown however often the tabs switch and
   // next menu opened on Status, and the Tech page came up empty under its tabs. Original skin
   // first, so the modern one starts from a page the original look closed.
   Content content;
+  content.addOriginalArt();
   auto ui = createUi(content.mount());
   REQUIRE(ui->loadDocument("partner_menu", idOf("ui/partner_menu/document")));
   REQUIRE(ui->loadDocument("pause_menu", idOf("ui/pause_menu/document")));
@@ -1192,7 +1282,7 @@ TEST_CASE("the partner menu's pages stay shown however often the tabs switch and
   };
   for (const std::string_view skin : {"original", "modern"}) {
     CAPTURE(skin);
-    ui->setSetting("ui_skin", std::string{skin});
+    useSkin(*ui, skin);
     ui->setSetting("partner_menu.start_page", std::string{"status"});
     for (int round = 0; round < 3; ++round) {
       CAPTURE(round);

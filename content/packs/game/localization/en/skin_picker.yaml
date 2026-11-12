@@ -1,0 +1,3 @@
+# The box that asks the UI skin on the first run (ui/skin_picker), before the language box: no language is chosen yet,
+# so the title is in both. Each skin's hint is its name's key plus .hint (ui_skin.yaml).
+title: "Interfaz / Interface"

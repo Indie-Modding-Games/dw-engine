@@ -41,6 +41,24 @@ nueva, reescribe sus rutas y deja **una hoja `style.rcss` vacía por cada pantal
 
 El paquete de los tests [`tests/mods/ui_skin/test_contrast`](../modulos/tests/mods.md) es un ejemplo completo.
 
+## Maquetación
+
+Algunas pantallas tienen dos disposiciones en el mismo documento y el mismo script: la del aspecto moderno y la del
+original. Un aspecto elige con `layout:` en su `skin.yaml`, por pantalla; si extiende otro, hereda lo que no ponga:
+
+```yaml
+layout:
+  pause_menu: {menu: original, box: original}
+  main_menu: {menu: original}
+```
+
+`menu` es la disposición de la pantalla y `box`, si sus cajas se abren de golpe (`modern`) o crecen desde un contorno
+gris como en el original (`original`). Otras son más finas, para que un aspecto que extiende el original se quede con
+parte: `pages` (las páginas del compañero como pantallas completas) y `picture` (la portada ensanchada con las cajas
+en sus sitios del original). La lista completa de pantallas y opciones está en
+[UI, aspectos](../architecture/ui.md#aspectos); el documento recibe además la clase `layout-<opción>-<valor>` en su
+`<body>`, para escribir reglas que solo valgan con una disposición.
+
 ## Reglas
 
 - **El estilo, no el comportamiento.** Un aspecto no escribe `nav-*` ni scripts propios: la navegación y la lógica de

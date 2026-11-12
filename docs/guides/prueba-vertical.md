@@ -804,6 +804,7 @@ timeout: 600              # segundos para toda la ruta
 main_menu: false          # true: empieza en el menú principal en vez de en el campo
 boot_screen: false        # true (con main_menu): la portada empieza en «Press Start»
 language_first: false     # true (con boot_screen): antes, la caja de idiomas, como al arrancar el juego
+skin_first: false         # true (con boot_screen): antes de todo, la caja del aspecto, como en el primer arranque
 new_game_rules: false     # true (con main_menu): la partida nueva pasa por la pantalla de reglas (si no, empieza con las del original)
 new_game: seeded          # original: la partida nueva corre la apertura (por defecto seeded, el campo libre)
 new_game_scene: false     # true (con main_menu): la partida nueva pasa por las preguntas y los nombres del anciano

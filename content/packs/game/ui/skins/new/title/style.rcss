@@ -1,0 +1,25 @@
+/* The title's backdrop in the new look, for the title and the screens over it (save list, rules and mode of a new
+   game, the save machine's register): the concept's wireframe floor on the navy grid (assets/title_wire.png, drawn
+   from the concept's .wire and .bg-grid) and the brandless logo bottom right (assets/hero_title.png), where the
+   original has its own. */
+
+#scrim {
+	background-color: #050a1c;
+	decorator: image(/ui/skins/new/assets/title_wire.png cover center center);
+}
+
+#picture {
+	display: block;
+	position: absolute;
+	left: 50%;
+	top: 507dp;
+	width: 335dp;
+	height: 139dp;
+	margin-left: 63dp;
+	decorator: image(/ui/skins/new/assets/hero_title.png contain center center);
+}
+
+#scrim.boot #picture,
+.picture-fade {
+	display: none;
+}

@@ -549,6 +549,8 @@ sprite_sheets:                      # opcional: hojas de sprites para RCSS
 document_classes:                   # opcional: clases que pone en elementos de los documentos compartidos
   hud:                              # el nombre con el que se carga el documento
     field-meter-0-bar: [pips]       # id del elemento: sus clases
+layout:                             # opcional: opciones de maquetación que leen los scripts (ui.layout)
+  pause_menu: {menu: original, box: original}
 ```
 
 | Pieza | Qué hace |
@@ -606,6 +608,23 @@ document_classes:                   # opcional: clases que pone en elementos de 
   aspecto original lo usa para poner `pips` en las cuatro barras del estado del campo. Cambio de contrato aditivo:
   los `skin.yaml` de antes siguen valiendo (Decidido por el manager (2026-10-21): un mecanismo genérico en vez de
   copiar el documento del HUD o de un ajuste propio del aspecto original).
+- **Opciones de maquetación (`layout`).** Las pantallas que comparten documento y script entre aspectos cambian de
+  disposición según opciones con nombre, no según el id del aspecto ni sus clases: por documento, una opción y su
+  valor (`pause_menu: {menu: original}`). El script de la pantalla las lee con `ui.layout(opción)`, que da el valor o
+  `nil`; el `SkinStyler` pone además la clase `layout-<opción>-<valor>` en el `<body>` del documento para las hojas.
+  Con `extends`, el aspecto más cercano que pone una opción manda (`SkinCatalog::layoutOf`). Las opciones y sus
+  valores los fija el esquema `ui_skin` (una errata es un error al cargar el paquete):
+
+  | Opción | Pantallas | Valores |
+  |---|---|---|
+  | `menu` | `pause_menu`, `partner_menu`, `battle`, `main_menu`, `save_slots`, `new_game_rules` | `modern`; `original`, la disposición del original (la cuadrícula de iconos y la página del jugador del menú de pausa, las páginas de estado y técnicas del compañero, la tira de combate que entra deslizándose, la portada y las ranuras del original) |
+  | `box` | `pause_menu`, `partner_menu`, `egg_box`, `field_item_notice` | `modern`; `original`, las cajas que crecen desde un contorno gris (`common/original_box.lua`) |
+  | `pages` | `partner_menu` | `modern`; `original`, las páginas de estado, técnicas y bolsa como las pantallas completas del original (las clases de página de `#scrim`) |
+  | `picture` | `main_menu`, `save_slots`, `new_game_rules` | `modern`; `original`, con «imágenes panorámicas» las cajas y el logo van a sus sitios del original sobre la imagen ensanchada (`common/title_picture.lua`) |
+
+  El moderno declara las suyas, y el original (y el new, que lo extiende) las del original. Las clases de `document_classes` quedan
+  para el estilo (`skin-original`, `title-original`, `slots-original`, `pips`): ningún script decide la disposición
+  por ellas, salvo `pips`, que el HUD lee para llenar las barras a cuadritos como las dibuja la hoja.
 - **El aspecto de reserva (`fallback`).** `ui/ui_skin.yaml` puede nombrar, además de `default`, un `fallback`: el
   aspecto con el que arranca el juego si el de `default` no se ofrece. El original necesita imágenes que extrae
   `dwx extract` del disco del usuario; sin ellas se queda fuera del catálogo y el juego arranca con el moderno. Un
@@ -736,6 +755,41 @@ El aspecto original hereda las hojas del moderno (`extends: modern`), así que p
 `#panel` de cada documento que comparte este panel (`ui/skins/original/skin.yaml`), y las reglas propias del moderno se
 escriben como `#panel:not(.skin-original) …`. Así el aspecto original sigue dibujando sus cajas al píxel sin tener que
 deshacer cada regla moderna; una pantalla nueva que use `#panel` necesita esa clase en el aspecto original.
+
+### El aspecto Pixel art (id `new`)
+
+El jugador lo ve como «Pixel art» (`ui_skin.new` en los textos); el id y la carpeta siguen siendo `new`, así que los
+ajustes guardados y `--ui-skin new` siguen valiendo.
+
+`ui/skins/new` es la maqueta del concepto de interfaz llevada al juego: hereda del aspecto original
+(`extends: original`), así que conserva su disposición, sus pantallas y sus sprites, y cada pantalla solo añade una
+hoja de aspecto (`<pantalla>/style.rcss`) que cambia colores, letra, marcos y, donde la maqueta mueve o redimensiona una
+caja, su sitio. Las hojas compartidas son `theme.rcss` (letra, ventana `.original-box`, foco de los botones, teclas),
+`panel/style.rcss` (el panel del menú de pausa y de las pantallas que lo comparten) y `title/style.rcss` (el fondo de
+la portada y el logotipo, también tras la lista de partidas, las reglas, el modo de juego y la máquina de guardado).
+
+- Ventanas: azul marino casi opaco con doble línea azul clara y, en las ventanas principales, escuadras doradas en
+  dos esquinas. Son ninepatch de `assets/frames.png` (hoja `nb-frames`, dos píxeles por dp): `nb-box` (ventana),
+  `nb-half` (semitransparente), `nb-over` (opaca, encima de otra), `nb-thin` (cajas pequeñas), `nb-row` (fila con
+  foco), `nb-ocur` (cursor de cuatro esquinas), `nb-key` (tecla), `nb-tab`/`nb-tab-on` (pestañas); y como imágenes las
+  escuadras `nb-brk-tl`/`nb-brk-br`, el cursor `nb-cursor` (▶), flechas, rellenos de barra y corazones.
+- Foco: el ▶ dorado fuera de la fila y una línea dorada alrededor de ella (la fila tiene `margin-left: -26dp` y un
+  borde izquierdo transparente de 26dp donde se pinta el ▶, así el texto no se mueve); en rejillas y pestañas, el
+  cursor de cuatro esquinas.
+- Letra: dos fuentes de píxel, «Pixel Body» a 30dp para todo el texto y «Pixel Small» a 26dp para teclas, avisos,
+  descripciones y etiquetas pequeñas (`ui/fonts/pixel_body.ttf`, `pixel_small.ttf`; solo Latin-1).
+- Colores: tinta `#050c1a`, azul marino `#181f2c`, azul claro `#b6e4f7`, azul `#7cb6e2`, oro `#efc63c`, crema
+  `#f2f0e1` (texto), apagado `#93a6bc`, atenuado `#5f6f82`, verde `#5fd36a`, rojo `#e2483d`.
+- Avisos de botones: como teclas (`nb-key`), también el de la caja de historia mientras espera, en lugar del icono
+  animado del original.
+- HUD: sin el reloj de esfera de la izquierda; la hora va en la caja bajo el minimapa, con el icono de la parte del
+  día (mañana, día, tarde, noche) delante. Los aspectos original y moderno conservan su reloj.
+
+Como el aspecto original, necesita los sprites que `dwx extract` saca del disco del jugador; sin ellos queda fuera y
+el juego arranca con el aspecto de reserva. RmlUi no tiene sombras, contornos ni degradados libres en este motor, así
+que lo que la maqueta dibuja con ellos va en los ninepatch. De la disposición del original solo cambia la imagen de la
+portada, de la lista de partidas y de las reglas (`layout: {picture: modern}`): la maqueta pone su propio fondo 4:3 y
+no la imagen ancha. Lo que aún difiere de la maqueta depende de cambios en los documentos o en su lógica.
 
 ## Aspecto original
 
@@ -873,9 +927,10 @@ las posiciones dentro de un elemento van en %.
 
 #### La portada del aspecto original
 
-El mismo documento `main_menu` sirve a los dos aspectos: el original le pone la clase `title-original` a `#panel`
-(`document_classes` de su `skin.yaml`) y `logic.lua` cambia de disposición al verla, también al cambiar de aspecto en
-marcha. Lo mismo hace `save_slots` con `slots-original`. El aspecto moderno sigue con su menú de siempre.
+El mismo documento `main_menu` sirve a los dos aspectos: el original declara `layout: main_menu: {menu: original}` y
+`logic.lua` cambia de disposición al leerlo (`ui.layout("menu")`), también al cambiar de aspecto en marcha; la clase
+`title-original` de `#panel` queda para sus hojas. Lo mismo hace `save_slots` con `slots-original`. El aspecto moderno
+sigue con su menú de siempre.
 
 | Pantalla | Cómo es | Fuente |
 |---|---|---|
@@ -884,6 +939,7 @@ marcha. Lo mismo hace `save_slots` con `slots-original`. El aspecto moderno sigu
 | Listas | «CONTINUAR/BORRAR RANURA n» y los autoguardados antiguos que queden, una fila por ranura, en el cuadro de (60, 50) ([guardar-y-cargar.md](guardar-y-cargar.md#35-continuar)) | `main_menu.c: renderSelectCardSlot` |
 | Modo batalla | Cuadro de título, de mensaje y de Sí/No con «No» enfocado; las dos respuestas vuelven al menú | `main_menu.c: renderConfirmVSSlot` |
 | Opciones | La misma página de opciones por pestañas que en partida (Juego, Gráficos, Sonido, Interfaz; Q/E, ←/→, descripción de cada fila), sobre la imagen del título y sin el recuadro del menú; su barra solo tiene «Salir del juego». Volver devuelve al menú con el cursor en OPCIONES ([Desde el título](../modulos/apps/game.md#desde-el-título)) | Añadido |
+| Aspecto | Solo en el primer arranque, antes del idioma: una caja con el título bilingüe «Interfaz / Interface» y una fila por aspecto que ofrecen los paquetes (la lista y el orden de OPCIONES → Interfaz), su nombre y una pista de una línea (`<clave del nombre>.hint` en `ui_skin.yaml`) en el idioma que el juego dedujo del sistema. Mover el cursor pone el aspecto al momento sin guardarlo (`ui_skin_preview`); confirmar lo guarda como la fila de OPCIONES (`ui_skin`) y sigue al idioma (`skin_picker_done`). Sin cancelar. Sale mientras ni `--ui-skin` ni los ajustes nombran un aspecto y hay más de uno; un autotest solo si su ruta dice `skin_first: true` (`ui/skin_picker`, `TitleScreen::setAsksSkin`, `asksUiSkin`) | Añadido |
 | Idioma | Caja alta en el centro, con el encabezado «LANGUAGE - IDIOMA» pequeño arriba a la izquierda, una fila por idioma de los paquetes con su bandera y su nombre en su idioma y en mayúsculas (`language.native.<código>`), y «START» / «COMENZAR» abajo en el centro. Sale antes de cada pantalla de «Press Start», con el cursor en el idioma actual (el de los ajustes o `--lang`): un confirmar elige y pasa, con fundido, a «Press Start». En OPCIONES el idioma es una fila más de la pestaña Interfaz. Elegir cambia todos los textos al momento y se guarda en los ajustes | Captura 12 (un remaster) |
 
 **Banderas.** Cada idioma nombra la suya con `language.flag.<código>`, el asset id de una imagen, igual en los
