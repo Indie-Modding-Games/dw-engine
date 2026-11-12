@@ -134,24 +134,6 @@ body #talk {
 	height: 36dp;
 }
 
-body #speaker,
-body #speaker.player {
+body #speaker {
 	color: #efc63c;
 }
-
-#talk .talk-row .run {
-	padding: 0;
-}
-
-#talk .talk-row.selected {
-	margin-left: -26dp;
-	padding: 0 12dp;
-	border-left: 26dp transparent;
-	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
-}
-
-#talk .talk-row.selected .run {
-	border-width: 0;
-	background-color: transparent;
-}
-

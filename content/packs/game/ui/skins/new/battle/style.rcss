@@ -115,7 +115,7 @@
 	border: 2dp #7cb6e2;
 	background-color: #050c1a;
 	font-family: "Pixel Small";
-	font-size: 26dp;
+	font-size: 13dp;
 	line-height: 24dp;
 	text-align: center;
 	white-space: nowrap;
@@ -217,6 +217,23 @@
 	font-size: 26dp;
 	line-height: 27dp;
 	color: #f2f0e1;
+}
+
+/* In English the original paints FINISH!! and PUSH instead of the words (.use-menu-art); the new look writes them. */
+.use-menu-art #finisher-word {
+	display: block;
+}
+
+.use-menu-art #finisher-0.filled, .use-menu-art #finisher-1.filled, .use-menu-art #finisher-2.filled,
+.use-menu-art #finisher-3.filled, .use-menu-art #finisher-4.filled, .use-menu-art #finisher-5.filled,
+.use-menu-art #finisher-6.filled, .use-menu-art #finisher-7.filled {
+	decorator: none;
+}
+
+.use-menu-art #finisher-push {
+	width: auto;
+	color: #f2f0e1;
+	decorator: none;
 }
 
 #prompt-finisher {

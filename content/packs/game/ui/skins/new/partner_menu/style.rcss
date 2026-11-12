@@ -295,6 +295,10 @@
 	color: #ffe58a;
 }
 
+#scrim.tech-editing #tech-message {
+	font-size: 15dp;
+}
+
 /* ---- Bag (150-160) ---- */
 
 /* The rows (.slot): a line in the rim's blue under each, a gold outline on the focused one, red while moving. */

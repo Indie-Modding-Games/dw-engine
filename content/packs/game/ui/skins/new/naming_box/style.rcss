@@ -2,9 +2,15 @@
    «Nombre» in gold without a line, the gold four-corner cursor on the focused letter or button, the prompts bare
    under the window and the name in a window of its own with a gold underscore on the next letter. */
 
-#title {
+#title,
+body #title {
 	border-bottom-width: 0;
 	color: #efc63c;
+}
+
+/* The window's fill is the panel's own (panel/style), not the original's opaque grey. */
+body #panel {
+	background-color: transparent;
 }
 
 body .cell,

@@ -284,3 +284,26 @@
 	color: #ffb070;
 	font-effect: shadow(2dp 2dp #050c1a);
 }
+
+/* In English the original paints FINISH!!, PUSH and the board's title instead of the words (.use-menu-art); the new
+   look writes them as in any other language. */
+.use-menu-art .vs-word {
+	display: block;
+}
+
+.use-menu-art .vs-seg.seg-0.filled, .use-menu-art .vs-seg.seg-1.filled, .use-menu-art .vs-seg.seg-2.filled,
+.use-menu-art .vs-seg.seg-3.filled, .use-menu-art .vs-seg.seg-4.filled, .use-menu-art .vs-seg.seg-5.filled,
+.use-menu-art .vs-seg.seg-6.filled, .use-menu-art .vs-seg.seg-7.filled {
+	decorator: none;
+}
+
+.use-menu-art .vs-push-word {
+	width: auto;
+	color: #f2f0e1;
+	decorator: none;
+}
+
+.use-menu-art #score-title {
+	color: #40d040;
+	decorator: none;
+}

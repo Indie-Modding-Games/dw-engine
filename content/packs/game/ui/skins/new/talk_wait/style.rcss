@@ -31,6 +31,7 @@
 	display: none;
 }
 
-#talk-wait.family-shapes .glyph-art {
+#talk-wait.family-shapes .glyph-art,
+#talk-wait.family-positions .glyph-art {
 	display: inline-block;
 }

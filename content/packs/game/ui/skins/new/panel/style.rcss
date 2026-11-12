@@ -9,13 +9,6 @@
 		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
 }
 
-/* A box laid over another one (orig.css .obox.over): the opaque fill. */
-#panel.over,
-.nb-over {
-	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
-		ninepatch(nb-over-outer, nb-over-inner, 1) border-box;
-}
-
 #title,
 #title-date {
 	font-size: 30dp;
@@ -38,20 +31,6 @@
 .prompt-key,
 .prompt-key.cancel-key {
 	color: #f2f0e1;
-}
-
-/* A list of the panel's entries (orig.css .orow): the ▶ in the box's left padding, outside the gold line. */
-.nb-list button,
-#panel .nb-row {
-	margin-left: -26dp;
-	padding: 3dp 12dp;
-	border-width: 0;
-	border-left-width: 26dp;
-}
-
-.nb-list button:focus,
-#panel .nb-row:focus {
-	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
 }
 
 .dimmed,

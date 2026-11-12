@@ -91,7 +91,8 @@ button:active {
 	border-radius: 0;
 }
 
-.key.family-shapes {
+.key.family-shapes,
+.key.family-positions {
 	min-width: 30dp;
 	padding: 0 0 4dp 0;
 	margin-right: 10dp;
@@ -99,14 +100,15 @@ button:active {
 	font-size: 26dp;
 }
 
-/* The pad's shapes are drawn by the engine (.glyph-art) inside the cap; the original font's character and the
-   classic animated frames are the original skin's. */
+/* The pad's shapes and a generic pad's positions are drawn by the engine (.glyph-art) inside the cap; the original
+   font's character and the classic animated frames are the original skin's. */
 .glyph-char,
 .glyph-frame {
 	display: none;
 }
 
-.family-shapes .glyph-art {
+.family-shapes .glyph-art,
+.family-positions .glyph-art {
 	display: inline-block;
 }
 

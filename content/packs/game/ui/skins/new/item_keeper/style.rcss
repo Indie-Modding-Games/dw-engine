@@ -117,8 +117,7 @@ body #talk {
 	height: 36dp;
 }
 
-body #speaker,
-body #speaker.player {
+body #speaker {
 	color: #efc63c;
 }
 

@@ -92,6 +92,7 @@ button.dimmed:focus {
 	padding: 9dp 0 0 36dp;
 }
 
+/* Narrow enough that the focused answer's frame stays inside the box. */
 #battle-answers button {
-	width: 110dp;
+	width: 100dp;
 }

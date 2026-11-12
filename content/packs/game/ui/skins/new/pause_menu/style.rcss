@@ -106,6 +106,20 @@
 	color: #efc63c;
 }
 
+/* In English the original paints its word pictures over the labels (.use-menu-art); the new look writes the words. */
+#panel.on-main.use-menu-art .menu-label {
+	width: 111dp;
+	height: 15dp;
+	margin: 0;
+	line-height: 15dp;
+	color: #d6d6d6;
+	decorator: none;
+}
+
+#panel.on-main.use-menu-art .field-entry:focus .menu-label {
+	color: #efc63c;
+}
+
 /* The cursor: the gold four corners round the icon (87 x 78) instead of the original's three sprites. */
 #panel.on-main .cursor-part {
 	display: none;
@@ -517,6 +531,23 @@
 
 .page-prompt {
 	margin-right: 24dp;
+}
+
+/* The chart's row: the original draws it tighter to clear its rookie column; the new look's caps need the gaps. */
+#chart-prompts {
+	letter-spacing: 0;
+}
+
+#chart-prompts .page-prompt {
+	margin-right: 24dp;
+}
+
+#chart-prompts .page-prompt:last-child {
+	margin-right: 0;
+}
+
+#chart-prompts .prompt-key {
+	margin-right: 10dp;
 }
 
 .page-prompts .prompt-key,
