@@ -47,4 +47,6 @@ if(TARGET dwe_ui_tests)
     # And the test skin a mod pack adds, which the skin route uses too.
     target_compile_definitions(dwe_ui_tests
         PRIVATE DWE_SKIN_TEST_PACK="${PROJECT_SOURCE_DIR}/tests/mods/ui_skin/test_contrast")
+    # The contract test reads which Lua functions the scripts bind and which handlers the UI calls.
+    target_compile_definitions(dwe_ui_tests PRIVATE DWE_UI_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/src")
 endif()

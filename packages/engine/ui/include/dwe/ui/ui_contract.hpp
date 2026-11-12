@@ -18,7 +18,7 @@ struct UiApiVersion {
 
   friend constexpr auto operator<=>(const UiApiVersion&, const UiApiVersion&) = default;
 };
-inline constexpr UiApiVersion CurrentUiApiVersion{.major = 0, .minor = 8, .patch = 0};
+inline constexpr UiApiVersion CurrentUiApiVersion{.major = 0, .minor = 9, .patch = 0};
 
 // What an entry of the contract is to a screen's documents.
 enum class UiContractKind : std::uint8_t {
@@ -42,6 +42,10 @@ enum class UiContractKind : std::uint8_t {
   // A state a document reports (ui.report) and the game reads when it needs it, such as whether a
   // menu page shows a 3D model: the latest value counts, unlike a command the game handles once.
   Report,
+  // A function of the engine's own Lua API, the same for every document (ui.send, hooks.on,
+  // element:set_class), or a handler a document defines for the UI to call (on_show). Without a
+  // signature it is a field: a global (document_name) or a read-only property (element.id).
+  Function,
 };
 
 // The value a setting holds or a command carries.
@@ -82,6 +86,15 @@ struct UiContractEntry {
 [[nodiscard]] const UiContractEntry* findContractEntry(std::span<const UiContractEntry> contract,
                                                        std::string_view screen, UiContractKind kind,
                                                        std::string_view name);
+
+// The engine's own Lua API (scripting.cpp), which every game's contract starts with: the ui table,
+// hooks, t, document_name, the handlers a document defines, and the methods of its elements and
+// events.
+[[nodiscard]] std::span<const UiContractEntry> nativeUiContract();
+
+// The contract as content/schemas/ui_api/ui_api.d.lua: LuaLS definitions of every function, with
+// its parameters and results, and the names of the events, for completion in an editor.
+[[nodiscard]] std::string contractLuaStubs(std::span<const UiContractEntry> contract);
 
 // The contract as the generated part of docs/modding/ui-api.md: the version, then one table per
 // screen.

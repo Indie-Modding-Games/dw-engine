@@ -1,6 +1,62 @@
 {
-  "version": "0.8.0",
+  "version": "0.9.0",
   "screens": {
+    "ui": [
+      {"name": "ui.setting", "kind": "function", "value": "any", "summary": "El valor de un ajuste que el juego publica; nil si no lo publica.", "signature": "(name: string): any"},
+      {"name": "ui.send", "kind": "function", "value": "none", "summary": "Manda un comando al juego, que lo atiende una vez.", "signature": "(name: string, value: any?)"},
+      {"name": "ui.report", "kind": "function", "value": "none", "summary": "Cuenta un estado al juego, que lee el último valor cuando lo necesita.", "signature": "(name: string, value: any?)"},
+      {"name": "ui.show", "kind": "function", "value": "none", "summary": "Enseña una pantalla; modal toma la navegación. args llega a su on_show.", "signature": "(screen: string, modal: boolean?, args: table?)"},
+      {"name": "ui.hide", "kind": "function", "value": "none", "summary": "Esconde una pantalla.", "signature": "(screen: string)"},
+      {"name": "ui.is_visible", "kind": "function", "value": "boolean", "summary": "Si una pantalla se ve.", "signature": "(screen: string): boolean"},
+      {"name": "ui.layout", "kind": "function", "value": "text", "summary": "El valor que el aspecto da a una opción de disposición en esta pantalla; nil sin él.", "signature": "(option: string): string?"},
+      {"name": "ui.prompt", "kind": "function", "value": "text", "summary": "El nombre del control que hace una acción en el dispositivo en uso.", "signature": "(action: string): string"},
+      {"name": "ui.device", "kind": "function", "value": "text", "summary": "El dispositivo en uso: keyboard_mouse o gamepad.", "signature": "(): string"},
+      {"name": "ui.gamepad_family", "kind": "function", "value": "text", "summary": "La familia del mando en uso.", "signature": "(): string"},
+      {"name": "ui.languages", "kind": "function", "value": "table", "summary": "Los idiomas que el jugador puede elegir.", "signature": "(): string[]"},
+      {"name": "ui.skins", "kind": "function", "value": "table", "summary": "Los aspectos que el jugador puede elegir.", "signature": "(): string[]"},
+      {"name": "ui.skin_name_key", "kind": "function", "value": "text", "summary": "La clave de texto del nombre de un aspecto; vacía si no existe.", "signature": "(id: string): string"},
+      {"name": "ui.cue", "kind": "function", "value": "boolean", "summary": "Suena box_open, box_close o confirm; false con otro nombre.", "signature": "(name: string): boolean"},
+      {"name": "t", "kind": "function", "value": "text", "summary": "El texto de una clave en el idioma del jugador, con sus huecos rellenos.", "signature": "(key: string, args: table?): string"},
+      {"name": "document_name", "kind": "function", "value": "text", "summary": "El nombre con el que la interfaz cargó el documento."}
+    ],
+    "hooks": [
+      {"name": "hooks.on", "kind": "function", "value": "none", "summary": "Llama a handler cada vez que llega el evento; hasta 64 por documento.", "signature": "(event: string, handler: fun(event: table, document: Element))"},
+      {"name": "hooks.off", "kind": "function", "value": "none", "summary": "Deja de llamar a handler con ese evento.", "signature": "(event: string, handler: function)"}
+    ],
+    "document": [
+      {"name": "on_show", "kind": "function", "value": "none", "summary": "Lo llama la interfaz al enseñar el documento.", "signature": "(document: Element, args: table)"},
+      {"name": "on_hide", "kind": "function", "value": "none", "summary": "Lo llama la interfaz al esconder el documento.", "signature": "(document: Element)"},
+      {"name": "on_setting", "kind": "function", "value": "none", "summary": "Lo llama la interfaz cuando cambia un ajuste, con el documento a la vista.", "signature": "(document: Element, name: string)"},
+      {"name": "on_action", "kind": "function", "value": "boolean", "summary": "Una acción de navegación (confirm, cancel, menu...); true si el documento la atiende.", "signature": "(document: Element, action: string): boolean?"},
+      {"name": "on_tick", "kind": "function", "value": "none", "summary": "Cada frame con el documento a la vista.", "signature": "(document: Element, seconds: number)"},
+      {"name": "on_device", "kind": "function", "value": "none", "summary": "Cambió el dispositivo en uso.", "signature": "(document: Element)"},
+      {"name": "on_language", "kind": "function", "value": "none", "summary": "Cambió el idioma.", "signature": "(document: Element)"}
+    ],
+    "Element": [
+      {"name": "Element:valid", "kind": "function", "value": "boolean", "summary": "Si el elemento existe.", "signature": "(): boolean"},
+      {"name": "Element.id", "kind": "function", "value": "text", "summary": "Su id (campo de solo lectura)."},
+      {"name": "Element:get", "kind": "function", "value": "table", "summary": "El elemento con ese id dentro de este.", "signature": "(id: string): Element"},
+      {"name": "Element:set_text", "kind": "function", "value": "none", "summary": "Pone su texto.", "signature": "(text: string)"},
+      {"name": "Element:set_prompt", "kind": "function", "value": "none", "summary": "Lo convierte en el dibujo del control que hace la acción.", "signature": "(action: string, icon: boolean?)"},
+      {"name": "Element:set_prompt_text", "kind": "function", "value": "none", "summary": "Pone un texto con sus marcas {prompt:acción} dibujadas como controles.", "signature": "(text: string, original: boolean?)"},
+      {"name": "Element:text", "kind": "function", "value": "text", "summary": "Su contenido.", "signature": "(): string"},
+      {"name": "Element:set_class", "kind": "function", "value": "none", "summary": "Pone o quita una clase.", "signature": "(name: string, on: boolean)"},
+      {"name": "Element:has_class", "kind": "function", "value": "boolean", "summary": "Si tiene una clase.", "signature": "(name: string): boolean"},
+      {"name": "Element:attribute", "kind": "function", "value": "text", "summary": "El valor de un atributo; nil sin él.", "signature": "(name: string): string?"},
+      {"name": "Element:set_attribute", "kind": "function", "value": "none", "summary": "Pone un atributo; no uno de evento (on...).", "signature": "(name: string, value: string)"},
+      {"name": "Element:set_property", "kind": "function", "value": "none", "summary": "Pone una propiedad de estilo.", "signature": "(name: string, value: string)"},
+      {"name": "Element:remove_property", "kind": "function", "value": "none", "summary": "Quita una propiedad que puso set_property.", "signature": "(name: string)"},
+      {"name": "Element:rect", "kind": "function", "value": "number", "summary": "Su caja en dp desde la esquina de la ventana: izquierda, arriba, ancho y alto.", "signature": "(): number, number, number, number"},
+      {"name": "Element:focus", "kind": "function", "value": "none", "summary": "Le da el foco.", "signature": "()"},
+      {"name": "Element:has_focus", "kind": "function", "value": "boolean", "summary": "Si tiene el foco.", "signature": "(): boolean"},
+      {"name": "Element:click", "kind": "function", "value": "none", "summary": "Lo pulsa.", "signature": "()"},
+      {"name": "Element:scroll_to_top", "kind": "function", "value": "none", "summary": "Vuelve una lista arriba.", "signature": "()"}
+    ],
+    "Event": [
+      {"name": "Event.type", "kind": "function", "value": "text", "summary": "El tipo del evento (campo de solo lectura)."},
+      {"name": "Event.wheel", "kind": "function", "value": "number", "summary": "Cuánto giró la rueda, positivo hacia abajo (campo de solo lectura)."},
+      {"name": "Event:stop", "kind": "function", "value": "none", "summary": "No deja que el evento siga subiendo.", "signature": "()"}
+    ],
     "hud": [
       {"name": "hud.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambia el estado del campo de abajo."},
       {"name": "hud.shown", "kind": "setting", "value": "boolean", "summary": "Si se ven los paneles de estado del campo."},

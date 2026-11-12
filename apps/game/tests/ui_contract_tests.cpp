@@ -144,7 +144,7 @@ ui::Skin readSkin(const std::filesystem::path& folder) {
 
 } // namespace
 
-TEST_CASE("the UI API page and its JSON twin list the game's UI contract") {
+TEST_CASE("the UI API page, its JSON twin and its Lua definitions list the game's UI contract") {
   // DWE_WRITE_API_DOC=1 rewrites them instead of checking them.
   const std::filesystem::path page = std::filesystem::path{DWE_DOCS_DIR} / "modding" / "ui-api.md";
   std::string text = readText(page);
@@ -159,10 +159,14 @@ TEST_CASE("the UI API page and its JSON twin list the game's UI contract") {
   const std::filesystem::path json =
       std::filesystem::path{DWE_SCHEMA_DIR} / "ui_api" / "ui_api.json";
   const std::string generatedJson = ui::contractJson(gameUiContract());
+  const std::filesystem::path stubs =
+      std::filesystem::path{DWE_SCHEMA_DIR} / "ui_api" / "ui_api.d.lua";
+  const std::string generatedStubs = ui::contractLuaStubs(gameUiContract());
   if (writeRequested()) {
     text.replace(from, end - from, markdown);
     writeText(page, text);
     writeText(json, generatedJson);
+    writeText(stubs, generatedStubs);
     return;
   }
   CHECK_MESSAGE(text.substr(from, end - from) == markdown,
@@ -170,6 +174,9 @@ TEST_CASE("the UI API page and its JSON twin list the game's UI contract") {
                 "DWE_WRITE_API_DOC=1");
   CHECK_MESSAGE(readText(json) == generatedJson,
                 "content/schemas/ui_api/ui_api.json is out of date: run the game tests with "
+                "DWE_WRITE_API_DOC=1");
+  CHECK_MESSAGE(readText(stubs) == generatedStubs,
+                "content/schemas/ui_api/ui_api.d.lua is out of date: run the game tests with "
                 "DWE_WRITE_API_DOC=1");
 }
 

@@ -7,6 +7,7 @@
 #include <dwe/input/keys.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/ui/ui.hpp>
+#include <dwe/ui/ui_contract.hpp>
 
 #include <doctest/doctest.h>
 
@@ -21,6 +22,9 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <ranges>
+#include <regex>
+#include <set>
 #include <span>
 #include <string>
 #include <string_view>
@@ -2763,6 +2767,78 @@ TEST_CASE("the game asks for a screen and the active UI decides which document s
   CHECK_FALSE(ui->capturesInput());
   ui->clearScreenMap();
   CHECK(ui->screenDocument("menu") == "menu");
+}
+
+TEST_CASE("the engine's Lua API is the one its contract declares, no more and no less") {
+  std::set<std::string> declared;
+  for (const UiContractEntry& entry : nativeUiContract()) {
+    CHECK(entry.kind == UiContractKind::Function);
+    declared.emplace(entry.name);
+  }
+  std::set<std::string> bound;
+  // What a shown document's environment holds: the ui table, hooks, t and document_name.
+  Content content;
+  content.add("ui/names/document.rml",
+              "<rml><head><script>function on_show() local names = {} "
+              "for name in pairs(ui) do names[#names + 1] = 'ui.' .. name end "
+              "for name in pairs(hooks) do names[#names + 1] = 'hooks.' .. name end "
+              "if type(t) == 'function' then names[#names + 1] = 't' end "
+              "if type(document_name) == 'string' then names[#names + 1] = 'document_name' end "
+              "ui.send('names', table.concat(names, ' ')) end</script></head><body/></rml>");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("names", idOf("ui/names/document")));
+  ui->show("names");
+  const auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  const auto* names = std::get_if<std::string>(&commands[0].value);
+  REQUIRE(names != nullptr);
+  for (const auto part : std::views::split(*names, ' ')) {
+    bound.emplace(std::string_view{part});
+  }
+  // The methods and properties of elements and events (scripting.cpp's usertypes) and the
+  // handlers the UI calls (ui.cpp).
+  const auto readSource = [](std::string_view file) {
+    std::ifstream stream{std::filesystem::path{DWE_UI_SOURCE_DIR} / file, std::ios::binary};
+    REQUIRE(stream.good());
+    return std::string{std::istreambuf_iterator<char>{stream}, std::istreambuf_iterator<char>{}};
+  };
+  const std::string scripting = readSource("scripting.cpp");
+  const std::regex usertype{R"re(new_usertype<\w+>\(\s*"(\w+)")re"};
+  const std::regex member{R"re((?:,|\n)[ \t]*"([a-z_]+)",\s*(?:\[|sol::(readonly_property)?))re"};
+  std::vector<std::pair<std::size_t, std::string>> types;
+  for (std::sregex_iterator found{scripting.begin(), scripting.end(), usertype};
+       found != std::sregex_iterator{}; ++found) {
+    types.emplace_back(static_cast<std::size_t>(found->position()), (*found)[1].str());
+  }
+  REQUIRE(types.size() == 2);
+  const std::size_t typesEnd = scripting.find("create_named_table", types.back().first);
+  REQUIRE(typesEnd != std::string::npos);
+  for (std::size_t type = 0; type < types.size(); ++type) {
+    const std::size_t from = types[type].first;
+    const std::size_t to = type + 1 < types.size() ? types[type + 1].first : typesEnd;
+    const std::string body = scripting.substr(from, to - from);
+    for (std::sregex_iterator found{body.begin(), body.end(), member,
+                                    std::regex_constants::match_default};
+         found != std::sregex_iterator{}; ++found) {
+      const bool property = (*found)[2].matched;
+      bound.emplace(
+          std::format("{}{}{}", types[type].second, property ? "." : ":", (*found)[1].str()));
+    }
+  }
+  const std::string uiSource = readSource("ui.cpp");
+  const std::regex handler{R"re("(on_[a-z_]+)")re"};
+  for (std::sregex_iterator found{uiSource.begin(), uiSource.end(), handler};
+       found != std::sregex_iterator{}; ++found) {
+    bound.emplace((*found)[1].str());
+  }
+  for (const std::string& name : bound) {
+    CHECK_MESSAGE(declared.contains(name),
+                  std::format("{} exists but nativeUiContract() does not declare it", name));
+  }
+  for (const std::string& name : declared) {
+    CHECK_MESSAGE(bound.contains(name),
+                  std::format("nativeUiContract() declares {}, which does not exist", name));
+  }
 }
 
 } // namespace dwe::ui

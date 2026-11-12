@@ -2,6 +2,7 @@
 
 #include <array>
 #include <string_view>
+#include <vector>
 
 namespace dwe::app {
 namespace {
@@ -499,7 +500,14 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
 } // namespace
 
 std::span<const ui::UiContractEntry> gameUiContract() {
-  return Contract;
+  // The engine's own Lua API first, then the game's screens and namespaces.
+  static const std::vector<UiContractEntry> whole = [] {
+    std::vector<UiContractEntry> entries{ui::nativeUiContract().begin(),
+                                         ui::nativeUiContract().end()};
+    entries.insert(entries.end(), Contract.begin(), Contract.end());
+    return entries;
+  }();
+  return whole;
 }
 
 } // namespace dwe::app

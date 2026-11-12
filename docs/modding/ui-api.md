@@ -24,6 +24,16 @@ una versión mayor, lo que no está puede cambiar sin aviso. Cómo se cargan y s
 En un nombre, `<n>` es un número desde 0 y `<id>` un identificador (minúsculas, cifras y `_`). Así,
 `hud.meter.<n>.value` cubre `hud.meter.0.value`, `hud.meter.1.value`...
 
+## Funciones del motor y ayuda en el editor
+
+- Una **función** es parte de la API propia del motor, igual en todos los documentos: la tabla `ui`, `hooks`, `t`,
+  `document_name`, los manejadores que el documento define (`on_show`, `on_tick`...) y los métodos de sus elementos
+  (`Element:set_class`) y eventos. Sin firma es un campo de solo lectura. Un test comprueba que lo declarado es justo
+  lo que el motor da.
+- `content/schemas/ui_api/ui_api.d.lua` tiene esas funciones y las de los espacios de la API con sus parámetros, para
+  el servidor de Lua (LuaLS): añade la carpeta a `workspace.library` en tu `.luarc.json` y el editor completa nombres
+  y tipos. Los tests lo generan junto con esta página.
+
 ## Espacios de la API: consultas, acciones y eventos
 
 Además de los ajustes sueltos, la interfaz tiene espacios con nombre (`clock`, `field`, `partner`, `bag`, `player`,
@@ -55,6 +65,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.9.0 | La API propia del motor (`ui`, `hooks`, `t`, `document_name`, los manejadores `on_*` y los métodos de elementos y eventos) entra en el contrato como funciones. Se generan definiciones para el servidor de Lua en `content/schemas/ui_api/ui_api.d.lua` |
 | 0.8.0 | Pantallas: el juego pide una pantalla y la interfaz activa decide qué documento la enseña. La interfaz por defecto se describe en `ui/addon.yaml` del paquete del juego |
 | 0.7.0 | Llegan los estados (`ui.report`): los menús cuentan al juego qué retrato en 3D dibujar (`pause_menu.portrait`, `pause_menu.medal`, `partner_menu.portrait`) en vez de que el juego lea sus clases |
 | 0.6.0 | Llegan los espacios `clock`, `field`, `partner`, `bag`, `player` y `options` con sus consultas, acciones y eventos, y `hooks.on`/`hooks.off`. El HUD y las opciones de los menús ya leen por ellos |
@@ -73,7 +84,78 @@ después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.8.0**.
+Versión de la API de la interfaz: **0.9.0**.
+
+### `ui`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `ui.setting(name: string): any` | función | número o texto | El valor de un ajuste que el juego publica; nil si no lo publica. |
+| `ui.send(name: string, value: any?)` | función | — | Manda un comando al juego, que lo atiende una vez. |
+| `ui.report(name: string, value: any?)` | función | — | Cuenta un estado al juego, que lee el último valor cuando lo necesita. |
+| `ui.show(screen: string, modal: boolean?, args: table?)` | función | — | Enseña una pantalla; modal toma la navegación. args llega a su on_show. |
+| `ui.hide(screen: string)` | función | — | Esconde una pantalla. |
+| `ui.is_visible(screen: string): boolean` | función | sí/no | Si una pantalla se ve. |
+| `ui.layout(option: string): string?` | función | texto | El valor que el aspecto da a una opción de disposición en esta pantalla; nil sin él. |
+| `ui.prompt(action: string): string` | función | texto | El nombre del control que hace una acción en el dispositivo en uso. |
+| `ui.device(): string` | función | texto | El dispositivo en uso: keyboard_mouse o gamepad. |
+| `ui.gamepad_family(): string` | función | texto | La familia del mando en uso. |
+| `ui.languages(): string[]` | función | tabla | Los idiomas que el jugador puede elegir. |
+| `ui.skins(): string[]` | función | tabla | Los aspectos que el jugador puede elegir. |
+| `ui.skin_name_key(id: string): string` | función | texto | La clave de texto del nombre de un aspecto; vacía si no existe. |
+| `ui.cue(name: string): boolean` | función | sí/no | Suena box_open, box_close o confirm; false con otro nombre. |
+| `t(key: string, args: table?): string` | función | texto | El texto de una clave en el idioma del jugador, con sus huecos rellenos. |
+| `document_name` | función | texto | El nombre con el que la interfaz cargó el documento. |
+
+### `hooks`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `hooks.on(event: string, handler: fun(event: table, document: Element))` | función | — | Llama a handler cada vez que llega el evento; hasta 64 por documento. |
+| `hooks.off(event: string, handler: function)` | función | — | Deja de llamar a handler con ese evento. |
+
+### `document`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `on_show(document: Element, args: table)` | función | — | Lo llama la interfaz al enseñar el documento. |
+| `on_hide(document: Element)` | función | — | Lo llama la interfaz al esconder el documento. |
+| `on_setting(document: Element, name: string)` | función | — | Lo llama la interfaz cuando cambia un ajuste, con el documento a la vista. |
+| `on_action(document: Element, action: string): boolean?` | función | sí/no | Una acción de navegación (confirm, cancel, menu...); true si el documento la atiende. |
+| `on_tick(document: Element, seconds: number)` | función | — | Cada frame con el documento a la vista. |
+| `on_device(document: Element)` | función | — | Cambió el dispositivo en uso. |
+| `on_language(document: Element)` | función | — | Cambió el idioma. |
+
+### `Element`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `Element:valid(): boolean` | función | sí/no | Si el elemento existe. |
+| `Element.id` | función | texto | Su id (campo de solo lectura). |
+| `Element:get(id: string): Element` | función | tabla | El elemento con ese id dentro de este. |
+| `Element:set_text(text: string)` | función | — | Pone su texto. |
+| `Element:set_prompt(action: string, icon: boolean?)` | función | — | Lo convierte en el dibujo del control que hace la acción. |
+| `Element:set_prompt_text(text: string, original: boolean?)` | función | — | Pone un texto con sus marcas {prompt:acción} dibujadas como controles. |
+| `Element:text(): string` | función | texto | Su contenido. |
+| `Element:set_class(name: string, on: boolean)` | función | — | Pone o quita una clase. |
+| `Element:has_class(name: string): boolean` | función | sí/no | Si tiene una clase. |
+| `Element:attribute(name: string): string?` | función | texto | El valor de un atributo; nil sin él. |
+| `Element:set_attribute(name: string, value: string)` | función | — | Pone un atributo; no uno de evento (on...). |
+| `Element:set_property(name: string, value: string)` | función | — | Pone una propiedad de estilo. |
+| `Element:remove_property(name: string)` | función | — | Quita una propiedad que puso set_property. |
+| `Element:rect(): number, number, number, number` | función | número | Su caja en dp desde la esquina de la ventana: izquierda, arriba, ancho y alto. |
+| `Element:focus()` | función | — | Le da el foco. |
+| `Element:has_focus(): boolean` | función | sí/no | Si tiene el foco. |
+| `Element:click()` | función | — | Lo pulsa. |
+| `Element:scroll_to_top()` | función | — | Vuelve una lista arriba. |
+
+### `Event`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `Event.type` | función | texto | El tipo del evento (campo de solo lectura). |
+| `Event.wheel` | función | número | Cuánto giró la rueda, positivo hacia abajo (campo de solo lectura). |
+| `Event:stop()` | función | — | No deja que el evento siga subiendo. |
 
 ### `hud`
 
