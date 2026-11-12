@@ -1,6 +1,6 @@
 # The first run's skin picker (ui/skin_picker), then the language box: the cursor starts on the packs' default
 # (original), each move puts its skin on at once, and confirming New goes on to the language box in that skin. The
-# packs' skins in their order (legacy, modern, new, original: the game pack's with the disc's images). A manual
+# packs' skins in their order (modern, new, original: the game pack's with the disc's images). A manual
 # preview, out of the gate's route-*.yaml glob: run it without --ui-skin, so the picker starts on the default.
 name: skin-picker
 device: keyboard
@@ -22,12 +22,6 @@ steps:
   - wait: {seconds: 1}
   - expect_setting: {ui_skin: modern}
   - screenshot: modern
-  - tap: {key: up}
-  - wait: {seconds: 1}
-  - expect_setting: {ui_skin: legacy}
-  - screenshot: legacy
-  - tap: {key: down}
-  - wait: {seconds: 0.5}
   - tap: {key: down}
   - wait: {seconds: 1}
   - expect_setting: {ui_skin: new}

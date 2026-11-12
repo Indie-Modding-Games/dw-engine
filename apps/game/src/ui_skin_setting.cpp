@@ -11,7 +11,15 @@ namespace dwe::app {
 
 std::optional<std::string> startUiSkin(const std::optional<std::string>& commandLine,
                                        const std::optional<std::string>& saved) {
-  return commandLine ? commandLine : saved;
+  if (commandLine) {
+    return commandLine;
+  }
+  // The first copy of the original look, which the redrawn new skin replaced: its players keep the
+  // original's layout.
+  if (saved == "legacy") {
+    return std::string{"original"};
+  }
+  return saved;
 }
 
 bool asksUiSkin(const std::optional<std::string>& commandLine,

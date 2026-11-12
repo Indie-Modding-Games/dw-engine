@@ -317,8 +317,7 @@ TEST_CASE(
   const localization::Catalog texts = catalogIn(files, "es");
   const WarningCapture warnings;
   auto ui = createUi(files, texts);
-  CHECK(skinIds(*ui) ==
-        std::vector<std::string>{"legacy", "modern", "new", "original", "test_contrast"});
+  CHECK(skinIds(*ui) == std::vector<std::string>{"modern", "new", "original", "test_contrast"});
   CHECK(ui->skins().defaultSkin() == "original");
   CHECK(ui->skin() == "original");
   CHECK(texts.text(ui->skins().find("original")->nameKey) == "Original");

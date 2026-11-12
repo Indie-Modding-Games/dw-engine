@@ -6,7 +6,7 @@
 # fallback skin (ui/ui_skin.yaml: fallback).
 #
 # Each screen's sheet only changes the look (and a position where the design moves a box); the values come from the
-# concept's design system (docs/architecture/ui.md#el-aspecto-new).
+# concept's design system (docs/architecture/ui.md, «El aspecto Pixel art»).
 id: new
 name: ui_skin.new
 extends: original

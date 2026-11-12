@@ -622,7 +622,7 @@ layout:                             # opcional: opciones de maquetación que lee
   | `pages` | `partner_menu` | `modern`; `original`, las páginas de estado, técnicas y bolsa como las pantallas completas del original (las clases de página de `#scrim`) |
   | `picture` | `main_menu`, `save_slots`, `new_game_rules` | `modern`; `original`, con «imágenes panorámicas» las cajas y el logo van a sus sitios del original sobre la imagen ensanchada (`common/title_picture.lua`) |
 
-  El moderno declara las suyas y el original y `legacy` las del original. Las clases de `document_classes` quedan
+  El moderno declara las suyas, y el original (y el new, que lo extiende) las del original. Las clases de `document_classes` quedan
   para el estilo (`skin-original`, `title-original`, `slots-original`, `pips`): ningún script decide la disposición
   por ellas, salvo `pips`, que el HUD lee para llenar las barras a cuadritos como las dibuja la hoja.
 - **El aspecto de reserva (`fallback`).** `ui/ui_skin.yaml` puede nombrar, además de `default`, un `fallback`: el
@@ -756,7 +756,10 @@ El aspecto original hereda las hojas del moderno (`extends: modern`), así que p
 escriben como `#panel:not(.skin-original) …`. Así el aspecto original sigue dibujando sus cajas al píxel sin tener que
 deshacer cada regla moderna; una pantalla nueva que use `#panel` necesita esa clase en el aspecto original.
 
-### El aspecto new
+### El aspecto Pixel art (id `new`)
+
+El jugador lo ve como «Pixel art» (`ui_skin.new` en los textos); el id y la carpeta siguen siendo `new`, así que los
+ajustes guardados y `--ui-skin new` siguen valiendo.
 
 `ui/skins/new` es la maqueta del concepto de interfaz llevada al juego: hereda del aspecto original
 (`extends: original`), así que conserva su disposición, sus pantallas y sus sprites, y cada pantalla solo añade una

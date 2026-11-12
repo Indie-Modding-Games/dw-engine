@@ -1,4 +1,0 @@
-/* The bracket in the original look: the US board names nobody (renderBracketGlyph draws nothing) and shows no
-   round. */
-
-body .name, body #label { display: none; }

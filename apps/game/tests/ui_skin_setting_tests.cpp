@@ -230,6 +230,26 @@ TEST_CASE(
   }
 }
 
+TEST_CASE("a saved legacy skin, which the new skin replaced, starts as the original") {
+  const test_support::TempFolder folder;
+  const std::filesystem::path file = folder.path() / "settings.yaml";
+  saveUserSettings(file, UserSettings{.language = "es",
+                                      .textFont = std::nullopt,
+                                      .uiSkin = "legacy",
+                                      .minimap = std::nullopt});
+  const UserSettings saved = loadUserSettings(file);
+  CHECK(startUiSkin(std::nullopt, saved.uiSkin) == std::optional<std::string>{"original"});
+  // --ui-skin is the player's own choice of the run, taken as it is.
+  CHECK(startUiSkin(std::string{"legacy"}, saved.uiSkin) == std::optional<std::string>{"legacy"});
+  Content content{DiscArt::Extracted};
+  CHECK(content.ui->skins().find("legacy") == nullptr);
+  applyStartUiSkin(*content.ui, startUiSkin(std::nullopt, saved.uiSkin));
+  CHECK(content.ui->skin() == "original");
+  CHECK(content.published() == ui::UiValue{std::string{"original"}});
+  // It was a choice: the first run's picker does not ask again.
+  CHECK_FALSE(asksUiSkin(std::nullopt, saved.uiSkin, content.ui->skins().skins().size()));
+}
+
 TEST_CASE("the title asks the skin only when no command line or saved choice names one") {
   CHECK(asksUiSkin(std::nullopt, std::nullopt, 2));
   CHECK_FALSE(asksUiSkin(std::nullopt, std::string{"modern"}, 2));

@@ -13,7 +13,8 @@
 namespace dwe::app {
 
 // The skin the UI starts with: --ui-skin when given, else the saved setting, else nothing, which
-// keeps the packs' default (ui/ui_skin.yaml). The UI checks that the packs offer it.
+// keeps the packs' default (ui/ui_skin.yaml). The UI checks that the packs offer it. A saved skin
+// the game pack no longer has starts as the one that replaced it (legacy: original).
 std::optional<std::string> startUiSkin(const std::optional<std::string>& commandLine,
                                        const std::optional<std::string>& saved);
 

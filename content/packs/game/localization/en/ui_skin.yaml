@@ -2,11 +2,9 @@
 # name in a localization file of its own: one named ui_skin.yaml would replace this one whole.
 modern: "Modern"
 original: "Original"
-legacy: "Original (classic)"
-new: "New"
+new: "Pixel art"
 # One line per skin under its name in the first run's box (ui/skin_picker); a mod adds one with its name's key plus
 # .hint.
 modern.hint: "Clean panels and modern text."
 original.hint: "The original's menus, redrawn sharp."
-legacy.hint: "The first take on the original look."
 new.hint: "Navy windows and pixel fonts."
