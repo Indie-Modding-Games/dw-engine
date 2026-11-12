@@ -244,7 +244,7 @@ fair_sickness_chance: "Enfermar justo"
 fair_evolution_average: "Media de evolución justa"
 fair_move_forgetting: "Olvidar técnicas justo"
 fair_card_stock: "Tienda de cartas sin repetidas"
-choose_egg_after_lives_lost: "Elegir el huevo al perder todas las vidas"
+choose_egg_after_lives_lost: "Elegir el huevo al perder las vidas"
 # Hablar desde más lejos: hablar y leer carteles llega un poco más lejos (apagado por defecto).
 generous_talk: "Hablar desde más lejos"
 # Baños extra: unas pocas casetas de baño más donde el compañero puede ir (apagado por defecto).

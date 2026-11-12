@@ -598,7 +598,7 @@ de huevo y confirmar elige uno; no se puede salir sin elegir. Lo que no está: l
   línea solo sale en este caso), baja el nivel del jugador si puede, corre la rutina 47 (olvidar técnicas) y renace; y
   `DOOA_getSequenceState` sortea el huevo (`lives == 0`: `eggSlot = rand() % 4`). dwe hace lo mismo
   (`Partner::rebirth`: el huevo de la caja solo cuenta con vidas; sin ellas decide `life.rebirth.baby_choice`, al azar).
-  No es un fallo. Mejora (opción, apagada por defecto): «Elegir el huevo al perder todas las vidas»
+  No es un fallo. Mejora (opción, apagada por defecto): «Elegir el huevo al perder las vidas»
   (`choose_egg_after_lives_lost`, [Rarezas como opciones](#rarezas-como-opciones)) apaga
   `life.rebirth.random_egg_without_lives`; entonces la rutina 4 de la sección 0x49 abre antes la caja de los huevos
   (`rebirthOpensEggBox`, `StoryScenes::screenClosed` sigue con el renacer) y cuenta el huevo elegido. Los textos, la
@@ -2094,7 +2094,7 @@ igual que la dificultad.
 | Media de evolución justa («Fair evolution average») | `fair_evolution_average` | `evolution.quirks.selection_average_carries_over` | `getRookieEvolutionTarget` y `getChampionEvolutionTarget` solo reinician la suma y la cuenta de stats cuando un candidato pasa a ser el mejor; si no, se arrastran a la media del siguiente. Con la opción cada candidato se mide por la suya |
 | Olvidar técnicas justo («Fair move forgetting») | `fair_move_forgetting` | `partner_moves.quirks.forget_mask_16_bits` | `unlearnMove` (`utils2.c`) borra el bit de la técnica con una máscara de 16 bits, así que con ella se va la técnica 16 puestos más allá en su palabra de 32. Con la opción solo se olvida la elegida |
 | Tienda de cartas sin repetidas («Card stock without repeats») | `fair_card_stock` | `card_shop.quirks.stock_repeats` | `dailyPStatTrigger` compara el hueco consigo mismo, así que una carta puede ocupar dos huecos el mismo día. Con la opción la repetida se vuelve a sortear |
-| Elegir el huevo al perder todas las vidas («Choose the egg after losing all lives») | `choose_egg_after_lives_lost` | `life.rebirth.random_egg_without_lives` | Sin vidas, la sección 0x49 del script 212 no abre la caja y `DOOA_getSequenceState` sortea el huevo (`rand() % 4`). Con la opción la caja se abre antes del renacer y cuenta el huevo elegido; el resto de la sección no cambia |
+| Elegir el huevo al perder las vidas («Choose the egg after losing all lives») | `choose_egg_after_lives_lost` | `life.rebirth.random_egg_without_lives` | Sin vidas, la sección 0x49 del script 212 no abre la caja y `DOOA_getSequenceState` sortea el huevo (`rand() % 4`). Con la opción la caja se abre antes del renacer y cuenta el huevo elegido; el resto de la sección no cambia |
 
 Prueba: `rule_options_tests.cpp`.
 

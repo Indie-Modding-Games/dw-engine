@@ -252,9 +252,10 @@
 	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
 }
 
-/* The list clips its rows: pad it so the ▶ left of each row stays inside. */
+/* The list clips its rows: pad it so the ▶ left of each row stays inside. Eleven rows, so the help under it holds
+   four lines (the longest helps); with an even count the focus scrolls the rows half a row off. */
 #option-list {
-	max-height: 377dp;
+	max-height: 319dp;
 	margin-right: 0;
 	margin-left: -26dp;
 	padding-left: 26dp;
@@ -338,7 +339,7 @@
 #option-list scrollbarvertical sliderbar { margin: 2dp; background-color: #69c2ff; }
 
 #option-info {
-	height: 90dp;
+	height: 119dp;
 	margin: 5dp 30dp 0 -16dp;
 	padding: 8dp 12dp 0 12dp;
 	border-top: 3dp #7cb6e2;
@@ -391,6 +392,11 @@
 
 #options-hints .key + .key {
 	margin-left: 4dp;
+}
+
+/* The word a space after its keys (opt-juego: «Q E  Pestaña»). */
+#options-hints .hint > span:last-child {
+	margin-left: 8dp;
 }
 
 #reset-confirm {
