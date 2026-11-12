@@ -133,7 +133,7 @@
 
 		<div id="prompts">
 			<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="battle.prompt.command"></span></span>
-			<span class="prompt" id="prompt-bag"><span class="key" id="prompt-cancel"></span><span text-key="battle.prompt.bag"></span></span>
+			<span class="prompt" id="prompt-bag"><span class="key" id="prompt-menu"></span><span text-key="battle.prompt.bag"></span></span>
 		</div>
 	</div>
 

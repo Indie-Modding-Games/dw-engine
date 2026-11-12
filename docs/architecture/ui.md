@@ -491,7 +491,7 @@ La pantalla de combate (`ui/battle`) envía `battle_command` (el número del com
 `battle_charge` (cada pulsación que carga el golpe final), `battle_close` (cierra la caja del final),
 `battle_end_count` y `battle_end_counted` (la cuenta de esa caja: cada punto o bit contado, y los bits ya sumados; el juego
 toca sus sonidos),
-`battle_bag_open` y `battle_bag_close` (la bolsa del domador, que abre la acción `cancel`; el juego muestra entonces
+`battle_bag_open` y `battle_bag_close` (la bolsa del domador, que abre la acción `menu`; el juego muestra entonces
 `ui/partner_menu` en su página de objetos con `partner_menu.context = battle`, y su `bag_use` lanza el objeto) y
 `battle_throw` (el número de la ranura cuyo objeto se lanza al compañero, para la consola y las pruebas). El menú de
 pausa abre el del compañero con `open_partner_menu`, y este (`ui/partner_menu`) envía `bag_use`, `bag_drop` (el
@@ -959,7 +959,7 @@ las posiciones dentro de un elemento van en %.
 | El menú de pausa es más ancho (184 píxeles) y lista opciones con texto | Tiene más entradas que el del original, con valores en el idioma del jugador |
 | El menú del compañero tiene cuatro pestañas; las barras de HP y MP de su ficha miden 82 píxeles en vez de 104 | El menú tiene más páginas; los valores «800 / 800» necesitan sitio |
 | El golpe final se elige en el recuadro de «PUSH», que es su entrada de la lista; en la tira no tiene icono, como el original | El original lo lanza con un botón propio; aquí es una orden más para el teclado, el mando y el ratón |
-| Con el aspecto moderno, la bolsa del combate tiene una entrada «Objetos» tras el último icono de la tira (añadido del PC); con el del original no sale, como en el juego, y la bolsa se abre con cancelar (Ctrl, East o clic derecho), como el botón propio del original | El original solo dibuja los iconos de las órdenes; la entrada del aspecto moderno sirve al ratón |
+| Con el aspecto moderno, la bolsa del combate tiene una entrada «Objetos» tras el último icono de la tira (añadido del PC); con el del original no sale, como en el juego, y la bolsa se abre con la acción menú (Tab o North) | El original solo dibuja los iconos de las órdenes; la entrada del aspecto moderno sirve al ratón |
 | La marca de enfado no se inclina hacia su enemigo, no cambia de tamaño con la distancia y su cara no es semitransparente | El contrato publica dónde está la marca, no la cámara del combate |
 | No salen las marcas de huida de los demás Digimon de la pantalla ni el domador vuelve andando a su sitio antes del rótulo; el rótulo espera 60 frames en su lugar | El campo está quieto durante el combate; esos movimientos llegarán con la escena del combate |
 | Las dos últimas marcas de «FINISH!!» salen en cuanto el indicador se llena, no 3 y 5 frames después | El contrato publica si el indicador está lleno, no cuánto lleva lleno |
