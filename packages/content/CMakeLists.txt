@@ -7,6 +7,7 @@ dwe_add_module(content
         src/dev_disc.cpp
         src/disc_install.cpp
         src/game_content.cpp
+        src/user_ui_addons.cpp
     DEPS core assets platform)
 
 # The team's packs (game rules, menus, HUD, fonts) are read from the source tree when the content folder has no game

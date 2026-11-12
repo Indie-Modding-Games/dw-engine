@@ -44,6 +44,17 @@ namespace {
   std::unreachable();
 }
 
+// The same for a command an addon may not send, naming it.
+[[noreturn]] void raiseRefusedCommand(lua_State* state, std::string_view name) {
+  luaL_where(state, 1);
+  lua_pushstring(state, "an addon may not send ");
+  lua_pushlstring(state, name.data(), name.size());
+  lua_pushstring(state, ": the game takes only its declared commands from addons");
+  lua_concat(state, 4);
+  lua_error(state);
+  std::unreachable();
+}
+
 void checkName(lua_State* state, std::string_view name) {
   if (name.size() > MaxScriptName) {
     raise(state, "the name is too long");
@@ -380,6 +391,9 @@ ScriptedDocument::ScriptedDocument(const Rml::String& tag, Scripting& scripting)
     : Rml::ElementDocument{tag}, scripting_{&scripting}, environment_{scripting.newEnvironment()},
       ownCode_{scripting.trust().loadVerdict()} {
   scripting_->bindHooks(environment_, *this);
+  if (scripting.trust().sandboxed()) {
+    scripting_->sandbox(environment_);
+  }
 }
 
 bool ScriptedDocument::addHook(std::string_view event, sol::reference handler) {
@@ -909,6 +923,26 @@ void Scripting::bindHooks(sol::environment& environment, ScriptedDocument& docum
     }
   };
   environment[std::string{HooksTable}] = hooks;
+}
+
+void Scripting::sandbox(sol::environment& environment) {
+  const script::ScriptCall scope{*vm_};
+  sol::optional<sol::table> api = environment[std::string{UiTable}];
+  if (!api) {
+    return;
+  }
+  (*api)["send"] = [this](std::string_view name, sol::stack_object value, sol::this_state lua) {
+    checkName(lua, name);
+    if (!host_.addonCommand || !host_.addonCommand(name)) {
+      raiseRefusedCommand(lua, name);
+    }
+    if (value.get_type() == sol::type::string) {
+      checkText(lua, value.as<std::string_view>());
+    }
+    if (!host_.send(UiCommand{.name = std::string{name}, .value = toUiValue(value)})) {
+      raise(lua, "too many commands: the game takes them once per frame");
+    }
+  };
 }
 
 void Scripting::loadApi(const assets::VirtualFileSystem& files) {

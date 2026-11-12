@@ -28,6 +28,8 @@ class UpscaleCache;
 
 namespace dwe::ui {
 
+struct UiAddon;
+
 // A value passed between the menus and the app: nothing, a switch, a number or a text.
 using UiValue = std::variant<std::monostate, bool, double, std::string>;
 
@@ -197,6 +199,20 @@ public:
                      const UiArguments& arguments = {});
   void closeScreen(std::string_view screen);
   [[nodiscard]] bool isScreenOpen(std::string_view screen) const;
+
+  // UI addons (docs/modding/interfaces.md). A whole UI: its documents load, named "<id>.<screen>",
+  // and show the screens it covers; the others keep the default UI's. Its code runs sandboxed: it
+  // reads the UI API, and the game takes from it only the commands setAddonCommandFilter lets
+  // through. The screens shown as it switches show again in it. If the addon does not suit (a
+  // plugin, another UI API, a screen the game does not have) or a document cannot load, nothing
+  // changes and the error says why.
+  core::Result<void> useUiAddon(const UiAddon& addon);
+  // Back to the default UI: the addon's documents are unloaded.
+  void useDefaultUi();
+  // The id of the UI addon on, empty for the default UI.
+  [[nodiscard]] std::string_view uiAddon() const;
+  // Which commands the game takes from an addon's documents (ui.send); none until it is set.
+  void setAddonCommandFilter(std::function<bool(std::string_view)> filter);
 
   // The document the `menu` action opens, modal, when no other modal document is shown.
   void setMenuDocument(std::string_view name);

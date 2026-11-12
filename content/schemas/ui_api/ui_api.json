@@ -1,5 +1,5 @@
 {
-  "version": "0.9.0",
+  "version": "0.10.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "El valor de un ajuste que el juego publica; nil si no lo publica.", "signature": "(name: string): any"},
@@ -168,6 +168,11 @@
       {"name": "vsync", "kind": "option", "value": "boolean", "summary": "Sincronización vertical."},
       {"name": "ui_scale", "kind": "option", "value": "number", "summary": "La escala de la interfaz; 1 es la normal."},
       {"name": "ui_skin", "kind": "option", "value": "text", "summary": "El aspecto de la interfaz."},
+      {"name": "ui_addon", "kind": "option", "value": "text", "summary": "La interfaz entera: default (la del juego) o el id de una de ui/addons; se aplica al cerrar el menú."},
+      {"name": "ui_addons", "kind": "setting", "value": "text", "summary": "Las interfaces que se ofrecen, ids separados por espacios, default la primera."},
+      {"name": "ui_addon.name.<id>", "kind": "setting", "value": "text", "summary": "El nombre de una interfaz, de su addon.yaml."},
+      {"name": "ui_addon.safe", "kind": "setting", "value": "boolean", "summary": "Modo seguro (--safe-ui o Mayús al arrancar): solo la interfaz del juego."},
+      {"name": "ui_addon_reload", "kind": "command", "value": "none", "summary": "Vuelve a leer de sus archivos la interfaz puesta."},
       {"name": "text_font", "kind": "option", "value": "text", "summary": "La fuente del texto con aspecto original: modern u original."},
       {"name": "walk_control", "kind": "option", "value": "text", "summary": "Caminar con el teclado o con el ratón: keys o mouse."},
       {"name": "autosave", "kind": "option", "value": "boolean", "summary": "Guardado automático."},
@@ -225,6 +230,9 @@
       {"name": "art_fixes", "kind": "option", "value": "boolean", "summary": "Arreglos de arte."},
       {"name": "dev_tools", "kind": "option", "value": "boolean", "summary": "Herramientas de desarrollo."},
       {"name": "entry", "kind": "argument", "value": "text", "summary": "Al volver del menú del compañero: items o partner, la entrada que recibe el foco en la maquetación original."}
+    ],
+    "ui_notice": [
+      {"name": "ui_addon.problem", "kind": "setting", "value": "text", "summary": "Por qué no se pudo usar la interfaz elegida; vacío si se pudo."}
     ],
     "partner_menu": [
       {"name": "partner_menu.start_page", "kind": "setting", "value": "text", "summary": "La página con la que se abre el menú: items o status."},

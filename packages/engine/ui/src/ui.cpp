@@ -6,6 +6,7 @@
 #include <dwe/ui/navigation.hpp>
 #include <dwe/ui/prompts.hpp>
 #include <dwe/ui/ui.hpp>
+#include <dwe/ui/ui_addon.hpp>
 
 #include <RmlUi/Core/ComputedValues.h>
 #include <RmlUi/Core/Context.h>
@@ -304,6 +305,11 @@ struct Ui::Impl {
   std::map<std::string, UiValue, std::less<>> reports;
   // The document each screen shows when the active UI is not the default one (mapScreen).
   std::map<std::string, std::string, std::less<>> screenDocuments;
+  // The UI addon on (useUiAddon), empty for the default UI, and the folder its code runs from.
+  std::string addonId;
+  std::string addonFolder;
+  // Which commands the game takes from an addon's documents (setAddonCommandFilter).
+  std::function<bool(std::string_view)> addonCommands;
   std::vector<UiCue> cues;
   std::map<std::string, UiValue, std::less<>> settings;
   const input::InputState* input = nullptr;
@@ -359,6 +365,8 @@ struct Ui::Impl {
               commands.push_back(std::move(command));
               return true;
             },
+        .addonCommand =
+            [this](std::string_view name) { return addonCommands && addonCommands(name); },
         .report =
             [this](UiCommand command) {
               if (!reports.contains(command.name) && reports.size() >= MaxReportedNames) {
@@ -1346,6 +1354,114 @@ struct Ui::Impl {
 
   // Puts a document loaded hidden in the place of the one with its name: shown, and in the same
   // place of the modal stack, if the old one was, and told so through on_show.
+  // A screen shown now, and how.
+  struct ShownScreen {
+    std::string screen;
+    bool modal = false;
+    std::size_t stackPlace = 0;
+  };
+
+  // Which of these screens show now, the modal ones in the order they were opened.
+  [[nodiscard]] std::vector<ShownScreen>
+  shownScreens(const std::vector<std::string>& screens) const {
+    std::vector<ShownScreen> shown;
+    for (const std::string& screen : screens) {
+      if (!isVisible(screen)) {
+        continue;
+      }
+      const auto place = std::ranges::find(modalStack, documentOf(screen));
+      shown.push_back(
+          ShownScreen{.screen = screen,
+                      .modal = place != modalStack.end(),
+                      .stackPlace = static_cast<std::size_t>(place - modalStack.begin())});
+    }
+    std::ranges::stable_sort(shown, {}, &ShownScreen::stackPlace);
+    return shown;
+  }
+
+  // Makes these documents, loaded detached and named "<addon>.<screen>", show their screens in
+  // place of the ones the current UI shows them with; the screens they leave go back to the default
+  // UI's. The screens shown before show again, the same way, in the new documents.
+  void switchUi(std::string id, std::string folder,
+                std::map<std::string, Document, std::less<>> fresh) {
+    std::vector<std::string> screens;
+    for (const auto& [screen, document] : screenDocuments) {
+      screens.push_back(screen);
+    }
+    for (const auto& [screen, document] : fresh) {
+      if (!screenDocuments.contains(screen)) {
+        screens.push_back(screen);
+      }
+    }
+    const std::vector<ShownScreen> shown = shownScreens(screens);
+    for (const ShownScreen& screen : shown) {
+      hide(screen.screen);
+    }
+    for (const auto& [screen, name] : screenDocuments) {
+      if (Document* old = find(name)) {
+        context->UnloadDocument(old->element);
+        documents.erase(name);
+      }
+    }
+    screenDocuments.clear();
+    for (auto& [screen, document] : fresh) {
+      std::string name = std::string{document.element->name()};
+      documents.insert_or_assign(name, std::move(document));
+      screenDocuments.insert_or_assign(screen, std::move(name));
+    }
+    trust.forgetAddons();
+    if (!folder.empty()) {
+      trust.allowAddon(folder);
+    }
+    addonId = std::move(id);
+    addonFolder = std::move(folder);
+    markersStale = true;
+    for (const ShownScreen& screen : shown) {
+      show(screen.screen, screen.modal, {});
+    }
+  }
+
+  core::Result<void> useUiAddon(const UiAddon& addon) {
+    if (addon.type != UiAddonType::Ui) {
+      return core::fail(core::formatMessage(messages::UiAddonNotUi, addon.id));
+    }
+    if (!addon.uiApi.contains(CurrentUiApiVersion)) {
+      return core::fail(core::formatMessage(messages::UiAddonWantsOtherApi, addon.id,
+                                            uiApiRangeText(addon.uiApi),
+                                            uiApiVersionText(CurrentUiApiVersion)));
+    }
+    for (const auto& [screen, document] : addon.screens) {
+      if (!documents.contains(screen)) {
+        return core::fail(core::formatMessage(messages::UiAddonUnknownScreen, addon.id, screen));
+      }
+    }
+    const std::string folder = addon.folder + "/";
+    trust.allowAddon(folder);
+    std::map<std::string, Document, std::less<>> fresh;
+    std::string errors;
+    for (const auto& [screen, asset] : addon.screens) {
+      auto loaded = loadDetached(std::format("{}.{}", addon.id, screen), asset);
+      if (!loaded) {
+        errors += (errors.empty() ? "" : "; ") + loaded.error().message;
+        continue;
+      }
+      fresh.emplace(screen, std::move(*loaded));
+    }
+    if (!errors.empty()) {
+      for (const auto& [screen, document] : fresh) {
+        context->UnloadDocument(document.element);
+      }
+      trust.forgetAddons();
+      if (!addonFolder.empty()) {
+        trust.allowAddon(addonFolder);
+      }
+      return core::fail(core::formatMessage(messages::UiAddonFailed, addon.id, errors));
+    }
+    switchUi(addon.id, folder, std::move(fresh));
+    core::logInfo("{}", core::formatMessage(messages::UiAddonOn, addon.id));
+    return {};
+  }
+
   void swapIn(const std::string& name, Document fresh) {
     Document& old = *find(name);
     const bool visible = old.element->IsVisible();
@@ -1474,6 +1590,25 @@ void Ui::closeScreen(std::string_view screen) {
 
 bool Ui::isScreenOpen(std::string_view screen) const {
   return impl_->isVisible(screen);
+}
+
+core::Result<void> Ui::useUiAddon(const UiAddon& addon) {
+  return impl_->useUiAddon(addon);
+}
+
+void Ui::useDefaultUi() {
+  if (impl_->addonId.empty()) {
+    return;
+  }
+  impl_->switchUi({}, {}, {});
+}
+
+std::string_view Ui::uiAddon() const {
+  return impl_->addonId;
+}
+
+void Ui::setAddonCommandFilter(std::function<bool(std::string_view)> filter) {
+  impl_->addonCommands = std::move(filter);
 }
 
 void Ui::setTextFont(TextFont font) {

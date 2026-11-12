@@ -184,6 +184,45 @@ local display_entries = {
       skin_choice.change(step)
     end,
   },
+  -- The whole UI (docs/modding/interfaces.md): the game's own or a UI addon the packs or the
+  -- player's addons folder offer (ui_addons). The pick goes on as the menu closes; in safe mode
+  -- only the game's own is offered. The row shows only when there is a choice, or in safe mode.
+  {
+    id = "ui-addon",
+    tab = "interface",
+    label = "pause_menu.ui_addon",
+    help = "pause_menu.help.ui_addon",
+    kind = "list",
+    tag = false,
+    shown = function()
+      local offered = ui.setting("ui_addons") or ""
+      return ui.setting("ui_addon.safe") == true or string.find(offered, " ") ~= nil
+    end,
+    value = function()
+      return ui.setting("ui_addon")
+    end,
+    text = function()
+      local id = ui.setting("ui_addon") or "default"
+      if ui.setting("ui_addon.safe") == true then
+        return t("pause_menu.ui_addon.safe")
+      end
+      if id == "default" then
+        return t("pause_menu.ui_addon.default")
+      end
+      return ui.setting("ui_addon.name." .. id) or id
+    end,
+    change = function(step)
+      local offered = {}
+      for id in string.gmatch(ui.setting("ui_addons") or "", "%S+") do
+        offered[#offered + 1] = id
+      end
+      if #offered < 2 or ui.setting("ui_addon.safe") == true then
+        return
+      end
+      local index = index_of(offered, ui.setting("ui_addon")) or 1
+      ui.send("ui_addon", offered[cycle(offered, index, step)])
+    end,
+  },
   -- The scale stops at its smallest and largest steps, whichever way it moves.
   {
     id = "ui-scale",
@@ -1612,7 +1651,8 @@ local function tab_entries(tab)
   local list = {}
   for _, entries in ipairs({ display_entries, game_options }) do
     for _, entry in ipairs(entries) do
-      if tab_of(entry) == tab and #list < option_slots then
+      local shown = entry.shown == nil or entry.shown()
+      if tab_of(entry) == tab and #list < option_slots and shown then
         list[#list + 1] = entry
       end
     end

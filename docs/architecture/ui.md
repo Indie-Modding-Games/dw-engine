@@ -75,6 +75,30 @@ siguen con el documento de su nombre, y `clearScreenMap` vuelve a la interfaz po
 scripts leen el nombre igual: primero como pantalla, luego como documento. Así las ~180 llamadas del juego que ya usan
 el nombre de la pantalla no cambian.
 
+### Addons de interfaz
+
+Un addon de interfaz es una carpeta `ui/addons/<id>/` con su `addon.yaml` (`docs/modding/interfaces.md`). Vienen de
+dos sitios: de cualquier paquete montado y de la carpeta de datos del usuario,
+`<datos de usuario>/indie-modding-games/dwe/ui/addons/`, que `content::UserUiAddonsFileSystem` monta como un paquete
+sintético de capa `user` (`user_ui_addons`) que solo sirve esa carpeta. `ui::findUiAddons` los busca en el VFS y
+descarta los que no se leen o cuyo `id` no es el nombre de su carpeta.
+
+`Ui::useUiAddon` comprueba que es de tipo `ui`, que su rango `ui_api` contiene la versión actual y que solo cubre
+pantallas que el juego tiene; carga sus documentos como `<id>.<pantalla>` y mapea las pantallas. Si algo falla no
+cambia nada y devuelve el porqué. Las pantallas visibles al cambiar se vuelven a enseñar en el documento nuevo.
+`useDefaultUi` descarga los documentos del addon.
+
+El código del addon corre aislado: `CodeTrust::allowAddon` deja correr los documentos, plantillas y scripts de su
+carpeta, y su entorno Lua tiene un `ui.send` que solo deja pasar los comandos y opciones que declara el contrato
+(`Ui::setAddonCommandFilter`, `app::addonMaySend`); cualquier otro lanza un error de Lua. Una plantilla de un addon
+dentro de un documento del motor se rechaza.
+
+En el juego, `UiAddonChanger` (`apps/game/src/ui_addon_setting.hpp`) publica `ui_addon`, `ui_addons`,
+`ui_addon.name.<id>`, `ui_addon.safe` y `ui_addon.problem`; la fila «Interfaz» de Opciones → Interfaz manda
+`ui_addon`, que se guarda en los ajustes del usuario y se aplica al cerrar el menú. Si el addon no puede ponerse,
+vuelve la interfaz del juego y `ui/ui_notice` lo avisa unos segundos. **Modo seguro:** `--safe-ui` o Mayús pulsada al
+arrancar dejan la interfaz del juego y no montan la carpeta de addons del usuario.
+
 ## Dibujo
 
 RmlUi dibuja en dos tiempos. `Ui::update()` hace el layout y llama a `Render()` de RmlUi fuera del frame: la

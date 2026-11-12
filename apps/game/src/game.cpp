@@ -95,6 +95,7 @@
 #include "text_font_setting.hpp"
 #include "title_options.hpp"
 #include "title_screen.hpp"
+#include "ui_addon_setting.hpp"
 #include "ui_skin_setting.hpp"
 #include "user_settings.hpp"
 #include "versus_screen.hpp"
@@ -580,7 +581,10 @@ int runGame(const Options& requested) {
     core::logError("{}", renderer.error().message);
     return EXIT_FAILURE;
   }
-  auto content = mountGameContent(options);
+  // Safe mode (docs/modding/interfaces.md): --safe-ui, or Shift held as the game starts, keeps the
+  // game's own UI and leaves the player's addons folder out.
+  options.safeUi = options.safeUi || platform::shiftHeld();
+  auto content = mountGameContent(options, !options.safeUi);
   if (!content) {
     core::logError("game: {}", content.error().message);
     return EXIT_FAILURE;
@@ -769,6 +773,9 @@ int runGame(const Options& requested) {
   }
   loadPlayerChart(**ui, files);
   loadPlayerMedalsAndCards(**ui, files);
+  UiAddonChanger uiAddons{**ui, userSettings, settingsFile, ui::findUiAddons(files),
+                          options.safeUi};
+  uiAddons.start();
   LanguageChanger languageChanger{*texts, **ui, userSettings, settingsFile};
   MenuSounds menuSounds{sound, files};
   PauseBox pauseBox;
@@ -1691,6 +1698,9 @@ int runGame(const Options& requested) {
     }
 
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
+      if (uiAddons.handle(command)) {
+        continue;
+      }
       // The options the documents apply by themselves: shop extras, art fixes, widescreen pictures
       // (the movies read it as each starts), developer tools.
       if (changeUiToggle(command, **ui, userSettings, settingsFile)) {
@@ -1944,6 +1954,7 @@ int runGame(const Options& requested) {
       }
     }
     bugReporter.update(**ui, frameSeconds);
+    uiAddons.update(frameSeconds);
     // From the last frame's layout: the minimap hides under any window over it.
     minimapCover.update(**ui, frameSeconds);
     if (options.tuning) {

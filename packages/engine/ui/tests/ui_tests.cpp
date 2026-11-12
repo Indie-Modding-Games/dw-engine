@@ -7,6 +7,7 @@
 #include <dwe/input/keys.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/ui/ui.hpp>
+#include <dwe/ui/ui_addon.hpp>
 #include <dwe/ui/ui_contract.hpp>
 
 #include <doctest/doctest.h>
@@ -2767,6 +2768,112 @@ TEST_CASE("the game asks for a screen and the active UI decides which document s
   CHECK_FALSE(ui->capturesInput());
   ui->clearScreenMap();
   CHECK(ui->screenDocument("menu") == "menu");
+}
+
+// A UI addon in a mod pack: an addon.yaml and the document of the screen it covers, which sends
+// one command the game takes and one it does not.
+void addUiAddon(Content& content, std::string_view uiApi = "0.9") {
+  content.addToMod("ui/addons/big/addon.yaml",
+                   std::format("id: big\nname: Big\nversion: 1.0.0\nui_api: \"{}\"\ntype: ui\n"
+                               "screens:\n  menu: menu/document\n",
+                               uiApi));
+  content.addToMod("ui/addons/big/menu/document.rml",
+                   "<rml><head><script>function on_show(document) "
+                   "local sent = pcall(ui.send, 'quit_game') "
+                   "ui.send('opened', sent and 'sent' or 'refused') end"
+                   "</script></head><body id='body'>big</body></rml>");
+}
+
+TEST_CASE("a UI addon shows the screens it covers, its code sandboxed, and the default UI comes "
+          "back") {
+  Content content;
+  content.add("ui/menu/document.rml", "<rml><head/><body id='body'>default</body></rml>");
+  content.add("ui/hud/document.rml", "<rml><head/><body id='body'>hud</body></rml>");
+  addUiAddon(content);
+  const VirtualFileSystem& files = content.mount();
+  auto ui = createUi(files);
+  REQUIRE(ui->loadDocument("menu", idOf("ui/menu/document")));
+  REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+  const auto found = findUiAddons(files);
+  REQUIRE(found.size() == 1);
+  REQUIRE(found[0].addon);
+  ui->setAddonCommandFilter([](std::string_view name) { return name == "opened"; });
+  ui->requestScreen("menu");
+  REQUIRE(ui->useUiAddon(*found[0].addon));
+  CHECK(ui->uiAddon() == "big");
+  CHECK(ui->screenDocument("menu") == "big.menu");
+  CHECK(ui->screenDocument("hud") == "hud");
+  // The screen shown as it switched shows again, in the addon's document; its code ran sandboxed:
+  // the game took the command it lets through, and the other one raised an error.
+  CHECK(ui->isScreenOpen("menu"));
+  CHECK(ui->elementText("menu", "body") == "big");
+  const auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].name == "opened");
+  CHECK(commands[0].value == UiValue{std::string{"refused"}});
+  ui->useDefaultUi();
+  CHECK(ui->uiAddon().empty());
+  CHECK(ui->screenDocument("menu") == "menu");
+  CHECK(ui->isScreenOpen("menu"));
+  CHECK(ui->elementText("menu", "body") == "default");
+  CHECK_FALSE(ui->isVisible("big.menu"));
+  // The UI goes with the addon on.
+  REQUIRE(ui->useUiAddon(*found[0].addon));
+}
+
+TEST_CASE("a UI addon that does not suit the game changes nothing and says why") {
+  Content content;
+  content.add("ui/menu/document.rml", "<rml><head/><body id='body'>default</body></rml>");
+  addUiAddon(content, ">=0.1 <0.2");
+  const VirtualFileSystem& files = content.mount();
+  auto ui = createUi(files);
+  REQUIRE(ui->loadDocument("menu", idOf("ui/menu/document")));
+  const auto found = findUiAddons(files);
+  REQUIRE(found.size() == 1);
+  REQUIRE(found[0].addon);
+  // Another UI API.
+  auto used = ui->useUiAddon(*found[0].addon);
+  REQUIRE_FALSE(used);
+  CHECK(used.error().message.find(uiApiVersionText(CurrentUiApiVersion)) != std::string::npos);
+  // A screen the game does not have.
+  UiAddon addon = *found[0].addon;
+  addon.uiApi = UiApiRange{.minimum = CurrentUiApiVersion,
+                           .below = UiApiVersion{.major = CurrentUiApiVersion.major + 1}};
+  addon.screens.emplace("nowhere", idOf("ui/addons/big/menu/document"));
+  used = ui->useUiAddon(addon);
+  REQUIRE_FALSE(used);
+  CHECK(used.error().message.find("nowhere") != std::string::npos);
+  // A document that cannot load.
+  addon.screens.erase("nowhere");
+  addon.screens.insert_or_assign("menu", idOf("ui/addons/big/missing/document"));
+  used = ui->useUiAddon(addon);
+  REQUIRE_FALSE(used);
+  // A plugin is no whole UI.
+  addon.type = UiAddonType::Plugin;
+  CHECK_FALSE(ui->useUiAddon(addon));
+  CHECK(ui->uiAddon().empty());
+  CHECK(ui->screenDocument("menu") == "menu");
+  ui->requestScreen("menu");
+  CHECK(ui->elementText("menu", "body") == "default");
+}
+
+TEST_CASE("the packs' UI addons are found by folder, and one whose id is not its folder is not "
+          "used") {
+  Content content;
+  addUiAddon(content);
+  content.addToMod("ui/addons/other/addon.yaml",
+                   "id: elsewhere\nname: Other\nversion: 1.0.0\nui_api: \"0.9\"\ntype: plugin\n"
+                   "documents:\n  - clock/document\n");
+  content.addToMod("ui/addons/broken/addon.yaml", "id: broken\n");
+  const auto found = findUiAddons(content.mount());
+  REQUIRE(found.size() == 3);
+  CHECK(found[0].folder == "ui/addons/big");
+  CHECK(found[0].addon);
+  CHECK(found[1].folder == "ui/addons/broken");
+  CHECK_FALSE(found[1].addon);
+  CHECK(found[2].folder == "ui/addons/other");
+  REQUIRE_FALSE(found[2].addon);
+  CHECK(found[2].addon.error().message.find("elsewhere") != std::string::npos);
 }
 
 TEST_CASE("the engine's Lua API is the one its contract declares, no more and no less") {

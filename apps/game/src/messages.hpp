@@ -56,6 +56,13 @@ inline constexpr std::string_view UnknownSavedTextFont =
     "game: the saved text font '{}' is unknown; using the default";
 // The player's UI skin (ui_skin_setting.cpp): the id and why it cannot be put on.
 inline constexpr std::string_view UnusableUiSkin = "game: cannot use the UI skin '{}': {}";
+// The player's UI addon (ui_addon_setting.cpp, docs/modding/interfaces.md).
+inline constexpr std::string_view UnreadableUiAddon = "game: the UI addon in {} is not offered: {}";
+inline constexpr std::string_view UnknownUiAddon = "game: no UI addon '{}' to pick";
+inline constexpr std::string_view MissingUiAddon = "the packs have no UI addon {}";
+inline constexpr std::string_view UiAddonFellBack =
+    "game: the UI addon '{}' cannot go on, the game's own UI is back: {}";
+inline constexpr std::string_view SafeUiOn = "game: safe mode, the game's own UI only";
 
 // The player's minimap mode (minimap_setting.cpp): a saved value that is not auto, on or off.
 inline constexpr std::string_view UnknownSavedMinimap =

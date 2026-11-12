@@ -7,6 +7,10 @@
 #include <vector>
 
 namespace dwe::ui {
+std::string uiApiVersionText(UiApiVersion version) {
+  return std::format("{}.{}.{}", version.major, version.minor, version.patch);
+}
+
 namespace {
 
 constexpr std::string_view NumberPlaceholder = "<n>";
@@ -143,8 +147,7 @@ std::string jsonString(std::string_view text) {
 }
 
 std::string versionText() {
-  return std::format("{}.{}.{}", CurrentUiApiVersion.major, CurrentUiApiVersion.minor,
-                     CurrentUiApiVersion.patch);
+  return uiApiVersionText(CurrentUiApiVersion);
 }
 
 // The engine's own Lua API, the same for every document (scripting.cpp): the ui table, hooks,

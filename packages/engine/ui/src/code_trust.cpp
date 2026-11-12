@@ -1,8 +1,10 @@
 #include "code_trust.hpp"
 
 #include <dwe/core/log.hpp>
+#include <dwe/core/message.hpp>
 #include <dwe/script/engine_code.hpp>
 
+#include <algorithm>
 #include <filesystem>
 #include <string>
 
@@ -19,6 +21,7 @@ constexpr std::string_view DocumentExtension = ".rml";
 void CodeTrust::beginLoad(std::string_view documentPath) {
   loading_ = true;
   reported_ = false;
+  sandboxed_ = inAddon(documentPath);
   verdict_ = checkDocument(documentPath);
 }
 
@@ -29,6 +32,11 @@ core::Result<void> CodeTrust::endLoad() {
 
 void CodeTrust::noteRead(std::string_view path) {
   if (!loading_ || !verdict_ || std::filesystem::path{path}.extension() != DocumentExtension) {
+    return;
+  }
+  if (!sandboxed_ && inAddon(path)) {
+    // The document's environment is the engine's: an addon's template would run in it.
+    verdict_ = core::fail(core::formatMessage(messages::AddonTemplateInEngineDocument, path));
     return;
   }
   verdict_ = checkDocument(path);
@@ -49,6 +57,9 @@ core::Result<void> CodeTrust::checkInlineSource(std::string_view path) const {
 }
 
 core::Result<void> CodeTrust::checkScript(std::string_view path) const {
+  if (loading_ && sandboxed_ && inAddon(path)) {
+    return {};
+  }
   auto id = assetIdOfPath(*files_, path);
   if (!id) {
     return std::unexpected{id.error()};
@@ -64,7 +75,32 @@ void CodeTrust::reportRefusedInline() {
   core::logError("ui: {}", verdict_.error().message);
 }
 
+void CodeTrust::allowAddon(std::string_view folder) {
+  if (std::ranges::find(addonFolders_, folder) == addonFolders_.end()) {
+    addonFolders_.emplace_back(folder);
+  }
+}
+
+void CodeTrust::forgetAddons() {
+  addonFolders_.clear();
+}
+
+bool CodeTrust::inAddon(std::string_view path) const {
+  if (addonFolders_.empty()) {
+    return false;
+  }
+  auto id = assetIdOfPath(*files_, path);
+  if (!id) {
+    return false;
+  }
+  return std::ranges::any_of(
+      addonFolders_, [&](const std::string& folder) { return id->str().starts_with(folder); });
+}
+
 core::Result<void> CodeTrust::checkDocument(std::string_view path) const {
+  if (inAddon(path)) {
+    return {};
+  }
   auto id = assetIdOfPath(*files_, path);
   if (!id) {
     return std::unexpected{id.error()};

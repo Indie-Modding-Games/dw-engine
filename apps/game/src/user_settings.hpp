@@ -20,6 +20,9 @@ struct UserSettings {
   // The skin of the UI (ui_skin: the id of a skin the packs offer); the packs' default when not
   // chosen yet.
   std::optional<std::string> uiSkin;
+  // The UI addon on (ui_addon: the id of a whole UI under ui/addons, default for the game's own);
+  // the game's own when not chosen yet (docs/modding/interfaces.md).
+  std::optional<std::string> uiAddon;
   // Whether the HUD shows the minimap (minimap: auto, on, off); auto when not chosen yet.
   std::optional<std::string> minimap;
   // The minimap's size (minimap_size: small, medium, large; display_settings.hpp); medium when not

@@ -12,7 +12,9 @@ namespace dwe::app {
 // Mounts the game's content: the packs of --content and --mods and, with --dev-assets, the dev
 // assets named by the config of the current folder or, failing that, of the user's data folder,
 // with its disc image read through dwx (content::openDevAssets,
-// docs/architecture/assets-de-desarrollo.md).
-core::Result<std::unique_ptr<content::GameContent>> mountGameContent(const Options& options);
+// docs/architecture/assets-de-desarrollo.md). With UI addons, also the ones the player copied into
+// the user data folder's ui/addons/ (docs/modding/interfaces.md).
+core::Result<std::unique_ptr<content::GameContent>> mountGameContent(const Options& options,
+                                                                     bool withUiAddons = false);
 
 } // namespace dwe::app

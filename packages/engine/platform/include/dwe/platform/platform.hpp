@@ -95,4 +95,8 @@ private:
 core::Result<std::filesystem::path> userDataFolder(std::string_view organization,
                                                    std::string_view application);
 
+// Whether a Shift key is held now, as the game starts (the video subsystem must be up): it reads
+// the keyboard's state once, without taking any event from the queue.
+[[nodiscard]] bool shiftHeld();
+
 } // namespace dwe::platform

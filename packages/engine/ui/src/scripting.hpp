@@ -55,6 +55,8 @@ inline constexpr std::string_view ApiFolder = "ui/api/";
 struct ScriptHost {
   // Queues a command for the app; false when the queue is full.
   std::function<bool(UiCommand)> send;
+  // Whether an addon's document may send a command (Ui::setAddonCommandFilter).
+  std::function<bool(std::string_view)> addonCommand;
   // Keeps the latest value a document reports for the game to read when it draws; false when the
   // documents report too many names.
   std::function<bool(UiCommand)> report;
@@ -209,6 +211,9 @@ public:
 
   // Gives a document's environment its own `hooks` table, whose handlers go to that document.
   void bindHooks(sol::environment& environment, ScriptedDocument& document);
+  // An addon's document (CodeTrust::sandboxed): its ui.send takes only the commands the game
+  // allows addons (ScriptHost::addonCommand) and raises on any other.
+  void sandbox(sol::environment& environment);
 
   // Runs the UI API's Lua (ApiFolder) with the globals, in the order of the files' names. A file
   // from outside the engine's layers does not run; an error is logged and the next file runs.

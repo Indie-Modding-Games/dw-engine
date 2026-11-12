@@ -65,6 +65,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.10.0 | Addons de interfaz ([interfaces](interfaces.md)): `ui_addon`, `ui_addons`, `ui_addon.name.<id>`, `ui_addon.safe`, `ui_addon.problem` y `ui_addon_reload`; el aviso `ui_notice`. El `ui.send` de un addon solo deja pasar los comandos y opciones del contrato |
 | 0.9.0 | La API propia del motor (`ui`, `hooks`, `t`, `document_name`, los manejadores `on_*` y los métodos de elementos y eventos) entra en el contrato como funciones. Se generan definiciones para el servidor de Lua en `content/schemas/ui_api/ui_api.d.lua` |
 | 0.8.0 | Pantallas: el juego pide una pantalla y la interfaz activa decide qué documento la enseña. La interfaz por defecto se describe en `ui/addon.yaml` del paquete del juego |
 | 0.7.0 | Llegan los estados (`ui.report`): los menús cuentan al juego qué retrato en 3D dibujar (`pause_menu.portrait`, `pause_menu.medal`, `partner_menu.portrait`) en vez de que el juego lea sus clases |
@@ -84,7 +85,7 @@ después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.9.0**.
+Versión de la API de la interfaz: **0.10.0**.
 
 ### `ui`
 
@@ -274,6 +275,11 @@ Versión de la API de la interfaz: **0.9.0**.
 | `vsync` | opción | sí/no | Sincronización vertical. |
 | `ui_scale` | opción | número | La escala de la interfaz; 1 es la normal. |
 | `ui_skin` | opción | texto | El aspecto de la interfaz. |
+| `ui_addon` | opción | texto | La interfaz entera: default (la del juego) o el id de una de ui/addons; se aplica al cerrar el menú. |
+| `ui_addons` | ajuste | texto | Las interfaces que se ofrecen, ids separados por espacios, default la primera. |
+| `ui_addon.name.<id>` | ajuste | texto | El nombre de una interfaz, de su addon.yaml. |
+| `ui_addon.safe` | ajuste | sí/no | Modo seguro (--safe-ui o Mayús al arrancar): solo la interfaz del juego. |
+| `ui_addon_reload` | comando | — | Vuelve a leer de sus archivos la interfaz puesta. |
 | `text_font` | opción | texto | La fuente del texto con aspecto original: modern u original. |
 | `walk_control` | opción | texto | Caminar con el teclado o con el ratón: keys o mouse. |
 | `autosave` | opción | sí/no | Guardado automático. |
@@ -331,6 +337,12 @@ Versión de la API de la interfaz: **0.9.0**.
 | `art_fixes` | opción | sí/no | Arreglos de arte. |
 | `dev_tools` | opción | sí/no | Herramientas de desarrollo. |
 | `entry` | argumento | texto | Al volver del menú del compañero: items o partner, la entrada que recibe el foco en la maquetación original. |
+
+### `ui_notice`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `ui_addon.problem` | ajuste | texto | Por qué no se pudo usar la interfaz elegida; vacío si se pudo. |
 
 ### `partner_menu`
 

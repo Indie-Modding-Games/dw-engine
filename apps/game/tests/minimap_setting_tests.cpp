@@ -102,6 +102,7 @@ TEST_CASE("a minimap mode the player picks is saved and the next run starts on i
   dwe::app::UserSettings settings{.language = std::string{"es"},
                                   .textFont = std::nullopt,
                                   .uiSkin = std::nullopt,
+                                  .uiAddon = std::nullopt,
                                   .minimap = std::nullopt};
   dwe::app::MinimapChanger changer{settings, file};
   CHECK(changer.change(dwe::ui::UiValue{std::string{"off"}}) == dwe::app::MinimapOff);
@@ -264,6 +265,7 @@ TEST_CASE("the options page's minimap row hides the HUD's minimap at once and sa
   dwe::app::UserSettings settings{.language = std::string{"es"},
                                   .textFont = std::nullopt,
                                   .uiSkin = std::nullopt,
+                                  .uiAddon = std::nullopt,
                                   .minimap = std::nullopt};
   dwe::app::MinimapChanger changer{settings, file};
   const HudUi hud{"left: 0px; top: 0px; width: 1px; height: 1px;"};

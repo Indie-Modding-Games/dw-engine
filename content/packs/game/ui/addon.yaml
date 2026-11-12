@@ -51,3 +51,4 @@ screens:
   bug_report: bug_report/document
   save_indicator: save_indicator/document
   world_map: world_map/document
+  ui_notice: ui_notice/document

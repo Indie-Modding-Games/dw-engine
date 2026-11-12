@@ -30,6 +30,7 @@ constexpr std::string_view Hud = "hud";
 constexpr std::string_view PauseMenu = "pause_menu";
 constexpr std::string_view PartnerMenu = "partner_menu";
 constexpr std::string_view SkinPicker = "skin_picker";
+constexpr std::string_view UiNotice = "ui_notice";
 // The UI API's namespaces (content/packs/game/ui/api/<namespace>.lua).
 constexpr std::string_view Clock = "clock";
 constexpr std::string_view Field = "field";
@@ -256,6 +257,19 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(PauseMenu, Option, "vsync", Boolean, "Sincronización vertical."),
     entry(PauseMenu, Option, "ui_scale", Number, "La escala de la interfaz; 1 es la normal."),
     entry(PauseMenu, Option, "ui_skin", Text, "El aspecto de la interfaz."),
+    entry(PauseMenu, Option, "ui_addon", Text,
+          "La interfaz entera: default (la del juego) o el id de una de ui/addons; se aplica al "
+          "cerrar el menú."),
+    entry(PauseMenu, Setting, "ui_addons", Text,
+          "Las interfaces que se ofrecen, ids separados por espacios, default la primera."),
+    entry(PauseMenu, Setting, "ui_addon.name.<id>", Text,
+          "El nombre de una interfaz, de su addon.yaml."),
+    entry(PauseMenu, Setting, "ui_addon.safe", Boolean,
+          "Modo seguro (--safe-ui o Mayús al arrancar): solo la interfaz del juego."),
+    entry(PauseMenu, Command, "ui_addon_reload", None,
+          "Vuelve a leer de sus archivos la interfaz puesta."),
+    entry(UiNotice, Setting, "ui_addon.problem", Text,
+          "Por qué no se pudo usar la interfaz elegida; vacío si se pudo."),
     entry(PauseMenu, Option, "text_font", Text,
           "La fuente del texto con aspecto original: modern u original."),
     entry(PauseMenu, Option, "walk_control", Text,

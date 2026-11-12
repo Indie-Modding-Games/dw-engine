@@ -14,6 +14,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   const UserSettings settings{.language = "es",
                               .textFont = "original",
                               .uiSkin = "test_contrast",
+                              .uiAddon = "big",
                               .minimap = "off",
                               .freeExploration = true,
                               .smoothMotion = false,
@@ -60,6 +61,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK(read->language == std::optional<std::string>{"es"});
   CHECK(read->textFont == std::optional<std::string>{"original"});
   CHECK(read->uiSkin == std::optional<std::string>{"test_contrast"});
+  CHECK(read->uiAddon == std::optional<std::string>{"big"});
   CHECK(read->minimap == std::optional<std::string>{"off"});
   CHECK(read->freeExploration == std::optional<bool>{true});
   CHECK(read->smoothMotion == std::optional<bool>{false});
@@ -148,6 +150,7 @@ TEST_CASE("the player's settings file is written and read back") {
   saveUserSettings(file, UserSettings{.language = std::nullopt,
                                       .textFont = std::nullopt,
                                       .uiSkin = "modern",
+                                      .uiAddon = std::nullopt,
                                       .minimap = "on"});
   CHECK(loadUserSettings(file).uiSkin == std::optional<std::string>{"modern"});
   CHECK(loadUserSettings(file).minimap == std::optional<std::string>{"on"});

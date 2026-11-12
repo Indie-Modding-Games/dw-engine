@@ -234,10 +234,9 @@ gameStack(std::span<const assets::PackLocation> game, std::span<const assets::Pa
 
 } // namespace
 
-core::Result<std::unique_ptr<GameContent>>
-GameContent::mount(const std::filesystem::path& content,
-                   std::span<const std::filesystem::path> mods,
-                   const assets::DevAssetSources& devAssets) {
+core::Result<std::unique_ptr<GameContent>> GameContent::mount(
+    const std::filesystem::path& content, std::span<const std::filesystem::path> mods,
+    const assets::DevAssetSources& devAssets, const std::filesystem::path& userData) {
   std::unique_ptr<GameContent> mounted{new GameContent};
   auto found = findGamePacks(mounted->disk_, content);
   if (!found) {
@@ -260,6 +259,18 @@ GameContent::mount(const std::filesystem::path& content,
   }
   mounted->packs_ = std::move(*opened);
   OpenedMods modPacks = openMods(mounted->disk_, mods);
+  if (!userData.empty()) {
+    mounted->userUi_ = std::make_unique<UserUiAddonsFileSystem>(userData);
+    if (mounted->userUi_->hasAddons()) {
+      modPacks.candidates.push_back(
+          ModCandidate{.path = userData,
+                       .location = assets::PackLocation{.fileSystem = mounted->userUi_.get(),
+                                                        .root = userData,
+                                                        .fillsGaps = false,
+                                                        .origin = assets::PackOrigin::Mod},
+                       .lastError = {}});
+    }
+  }
   std::ranges::move(modPacks.archives, std::back_inserter(mounted->packs_.archives));
   const std::span<const assets::PackLocation> locations = mounted->packs_.locations;
   auto game = gameStack(locations.first(gameCount), locations.subspan(gameCount));

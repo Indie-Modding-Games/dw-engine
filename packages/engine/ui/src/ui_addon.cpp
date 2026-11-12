@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <format>
 #include <optional>
 #include <utility>
 
@@ -148,6 +149,7 @@ core::Result<UiAddon> parseUiAddon(std::string_view yaml, std::string_view folde
   }
   assets::YamlReader reader;
   UiAddon addon;
+  addon.folder = folder;
   reader.expectKeys(*tree, messages::UiAddonWhat, {"id", "name", "version", "ui_api", "type"},
                     {"screens", "documents"});
   addon.id = plainName(reader, reader.field(*tree, "id"));
@@ -221,6 +223,35 @@ core::Result<UiAddon> readUiAddon(const assets::VirtualFileSystem& files, std::s
   }
   return parseUiAddon(std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()},
                       folder);
+}
+
+std::string uiApiRangeText(const UiApiRange& range) {
+  return std::format(">={} <{}", uiApiVersionText(range.minimum), uiApiVersionText(range.below));
+}
+
+std::vector<FoundUiAddon> findUiAddons(const assets::VirtualFileSystem& files) {
+  std::vector<FoundUiAddon> found;
+  const std::string prefix = std::string{UiAddonsFolder} + "/";
+  const std::string manifest = "/" + std::string{UiAddonManifest};
+  for (const assets::AssetId& id : files.ids()) {
+    const std::string_view text = id.str();
+    if (!text.starts_with(prefix) || !text.ends_with(manifest)) {
+      continue;
+    }
+    const std::string_view name =
+        text.substr(prefix.size(), text.size() - prefix.size() - manifest.size());
+    if (name.empty() || name.find('/') != std::string_view::npos) {
+      continue;
+    }
+    const std::string folder = prefix + std::string{name};
+    core::Result<UiAddon> addon = readUiAddon(files, folder);
+    if (addon && addon->id != name) {
+      addon = core::fail(core::formatMessage(messages::UiAddonIdNotFolder, addon->id, name));
+    }
+    found.push_back(FoundUiAddon{.folder = folder, .addon = std::move(addon)});
+  }
+  std::ranges::sort(found, {}, &FoundUiAddon::folder);
+  return found;
 }
 
 } // namespace dwe::ui
