@@ -1,0 +1,7 @@
+Pixel Body and Pixel Small (pixel_body.ttf, pixel_small.ttf)
+Converted from the X11 "misc-fixed" bitmap fonts 9x15 bold (Pixel Body) and 7x13 bold (Pixel Small),
+ISO 8859-1 glyphs only, as pixel outlines in TrueType.
+Source: https://gitlab.freedesktop.org/xorg/font/misc-misc
+
+The misc-fixed fonts are in the public domain ("Public domain font. Share and enjoy.").
+The conversions are released under the same terms.

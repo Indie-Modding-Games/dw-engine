@@ -1,10 +1,10 @@
 # Preview of the `new` skin on the title's main menu: the game boots with `--ui-skin new`, the
 # route waits for the main menu to be shown, resizes the window, asserts the setting, and takes
-# one capture. The `new` skin was forked from the flattened `legacy` (see scripts/new_skin.py), so
+# one capture. The `new` skin extends `original` (docs/architecture/ui.md, «El aspecto new»), so
 # it needs content extracted with the original look's sprites (dwx 2 or later) — the same
-# sprites the `legacy` and `original` skins draw. Without extracted content the catalog drops
-# `new` (`ui/skins/new/skin.yaml`'s `sprite_sheets` reference `texture/etcdat/*` and friends
-# that don't resolve), the game falls back to `modern`, and the expect_setting step fails.
+# sprites the `original` skin draws. Without extracted content the catalog drops `new` (the
+# sprite sheets it inherits reference `texture/etcdat/*` and friends that don't resolve), the
+# game falls back to `modern`, and the expect_setting step fails.
 #
 # How to run it (needs a build of the game binary and the extracted base pack):
 #

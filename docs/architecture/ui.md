@@ -756,6 +756,36 @@ El aspecto original hereda las hojas del moderno (`extends: modern`), así que p
 escriben como `#panel:not(.skin-original) …`. Así el aspecto original sigue dibujando sus cajas al píxel sin tener que
 deshacer cada regla moderna; una pantalla nueva que use `#panel` necesita esa clase en el aspecto original.
 
+### El aspecto new
+
+`ui/skins/new` es la maqueta del concepto de interfaz llevada al juego: hereda del aspecto original
+(`extends: original`), así que conserva su disposición, sus pantallas y sus sprites, y cada pantalla solo añade una
+hoja de aspecto (`<pantalla>/style.rcss`) que cambia colores, letra, marcos y, donde la maqueta mueve o redimensiona una
+caja, su sitio. Las hojas compartidas son `theme.rcss` (letra, ventana `.original-box`, foco de los botones, teclas),
+`panel/style.rcss` (el panel del menú de pausa y de las pantallas que lo comparten) y `title/style.rcss` (el fondo de
+la portada y el logotipo, también tras la lista de partidas, las reglas, el modo de juego y la máquina de guardado).
+
+- Ventanas: azul marino casi opaco con doble línea azul clara y, en las ventanas principales, escuadras doradas en
+  dos esquinas. Son ninepatch de `assets/frames.png` (hoja `nb-frames`, dos píxeles por dp): `nb-box` (ventana),
+  `nb-half` (semitransparente), `nb-over` (opaca, encima de otra), `nb-thin` (cajas pequeñas), `nb-row` (fila con
+  foco), `nb-ocur` (cursor de cuatro esquinas), `nb-key` (tecla), `nb-tab`/`nb-tab-on` (pestañas); y como imágenes las
+  escuadras `nb-brk-tl`/`nb-brk-br`, el cursor `nb-cursor` (▶), flechas, rellenos de barra y corazones.
+- Foco: el ▶ dorado fuera de la fila y una línea dorada alrededor de ella (la fila tiene `margin-left: -26dp` y un
+  borde izquierdo transparente de 26dp donde se pinta el ▶, así el texto no se mueve); en rejillas y pestañas, el
+  cursor de cuatro esquinas.
+- Letra: dos fuentes de píxel, «Pixel Body» a 30dp para todo el texto y «Pixel Small» a 26dp para teclas, avisos,
+  descripciones y etiquetas pequeñas (`ui/fonts/pixel_body.ttf`, `pixel_small.ttf`; solo Latin-1).
+- Colores: tinta `#050c1a`, azul marino `#181f2c`, azul claro `#b6e4f7`, azul `#7cb6e2`, oro `#efc63c`, crema
+  `#f2f0e1` (texto), apagado `#93a6bc`, atenuado `#5f6f82`, verde `#5fd36a`, rojo `#e2483d`.
+- Avisos de botones: como teclas (`nb-key`), también el de la caja de historia mientras espera, en lugar del icono
+  animado del original.
+
+Como el aspecto original, necesita los sprites que `dwx extract` saca del disco del jugador; sin ellos queda fuera y
+el juego arranca con el aspecto de reserva. RmlUi no tiene sombras, contornos ni degradados libres en este motor, así
+que lo que la maqueta dibuja con ellos va en los ninepatch. Lo que aún difiere de la maqueta depende de cambios en
+los documentos o en su lógica (por ejemplo, el modo de imagen ancha de la portada se activa con la clase
+`skin-original`, que el aspecto new hereda).
+
 ## Aspecto original
 
 El texto que imita al original (de momento, el nombre del mapa del cambio de mapa) usa la clase `.original-look` de
