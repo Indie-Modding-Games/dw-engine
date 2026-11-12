@@ -246,15 +246,19 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The enemies' bars (.ehp): green rim and line, a plain green fill 3dp in, the HP over the bar's right end in the
-   small font (.ehp-n: green with an ink drop) instead of the original's digit sprites. */
-.hb-value {
+   The enemies' bars (.ehp): green rim and line, a plain green fill 3dp inside the rim, the HP over the bar's right
+   end in the small font (.ehp-n: green with an ink drop) instead of the original's digit sprites. The same with the
+   enemy_hp_bars option on: these rules also beat the modern look's compact bar (#hp-bars.always) that the original
+   inherits. */
+.hb-value,
+#hp-bars.always .hb-value {
 	width: 66dp;
 	height: 28dp;
 	margin-top: -8dp;
 }
 
-.hb-value .dd {
+.hb-value .dd,
+#hp-bars.always .hb-value .dd {
 	width: 14dp;
 	height: 28dp;
 	font-family: "Pixel Small";
@@ -266,25 +270,32 @@
 	decorator: none;
 }
 
-#hd-1-0, #hd-2-0, #hd-3-0 { left: 10dp; }
-#hd-1-1, #hd-2-1, #hd-3-1 { left: 24dp; }
-#hd-1-2, #hd-2-2, #hd-3-2 { left: 38dp; }
-#hd-1-3, #hd-2-3, #hd-3-3 { left: 52dp; }
-.hb-frame {
-	border-color: #5fd36a;
+#hd-1-0, #hd-2-0, #hd-3-0, #hp-bars.always #hd-1-0, #hp-bars.always #hd-2-0, #hp-bars.always #hd-3-0 { left: 10dp; }
+#hd-1-1, #hd-2-1, #hd-3-1, #hp-bars.always #hd-1-1, #hp-bars.always #hd-2-1, #hp-bars.always #hd-3-1 { left: 24dp; }
+#hd-1-2, #hd-2-2, #hd-3-2, #hp-bars.always #hd-1-2, #hp-bars.always #hd-2-2, #hp-bars.always #hd-3-2 { left: 38dp; }
+#hd-1-3, #hd-2-3, #hd-3-3, #hp-bars.always #hd-1-3, #hp-bars.always #hd-2-3, #hp-bars.always #hd-3-3 { left: 52dp; }
+
+/* ba-dmg: the rim round a navy well, the fill 3dp inside the rim (the frame comes first, under the fill). */
+.hb-frame,
+#hp-bars.always .hb-frame {
+	border: 3dp #5fd36a;
+	border-radius: 0;
+	background-color: #0b1322;
 }
 
-.hb-line {
+.hb-line,
+#hp-bars.always .hb-line {
+	display: block;
 	background-color: #5fd36a;
 }
 
-.hb-fill {
-	height: 15dp;
-	margin: -3dp 0 0 -3dp;
+.hb-fill,
+#hp-bars.always .hb-fill {
 	background-color: #5fd36a;
 }
 
-.hb-segment {
+.hb-segment,
+#hp-bars.always .hb-segment {
 	display: none;
 }
 
