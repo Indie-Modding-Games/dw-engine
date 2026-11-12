@@ -779,6 +779,8 @@ la portada y el logotipo, también tras la lista de partidas, las reglas, el mod
   `#f2f0e1` (texto), apagado `#93a6bc`, atenuado `#5f6f82`, verde `#5fd36a`, rojo `#e2483d`.
 - Avisos de botones: como teclas (`nb-key`), también el de la caja de historia mientras espera, en lugar del icono
   animado del original.
+- HUD: sin el reloj de esfera de la izquierda; la hora va en la caja bajo el minimapa, con el icono de la parte del
+  día (mañana, día, tarde, noche) delante. Los aspectos original y moderno conservan su reloj.
 
 Como el aspecto original, necesita los sprites que `dwx extract` saca del disco del jugador; sin ellos queda fuera y
 el juego arranca con el aspecto de reserva. RmlUi no tiene sombras, contornos ni degradados libres en este motor, así
