@@ -508,15 +508,6 @@
 	background-color: #7cb6e2;
 }
 
-/* The player's picture: the concept's portrait instead of the model. */
-#player-portrait {
-	visibility: hidden;
-}
-
-#player-portrait-clip {
-	decorator: image(/ui/skins/new/assets/icon_sources/icon_player.png scale-down center 30%);
-}
-
 /* The page prompts as key caps. */
 .page-prompts {
 	font-family: "Pixel Small";
