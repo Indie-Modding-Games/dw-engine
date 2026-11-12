@@ -821,7 +821,7 @@ la portada y el logotipo, también tras la lista de partidas, las reglas, el mod
   borde izquierdo transparente de 26dp donde se pinta el ▶, así el texto no se mueve); en rejillas y pestañas, el
   cursor de cuatro esquinas.
 - Letra: dos fuentes de píxel, «Pixel Body» a 30dp para todo el texto y «Pixel Small» a 26dp para teclas, avisos,
-  descripciones y etiquetas pequeñas (`ui/fonts/pixel_body.ttf`, `pixel_small.ttf`; solo Latin-1).
+  descripciones y etiquetas pequeñas (`ui/fonts/pixel_body.ttf`, `pixel_small.ttf`; Latin-1 más «…»).
 - Colores: tinta `#050c1a`, azul marino `#181f2c`, azul claro `#b6e4f7`, azul `#7cb6e2`, oro `#efc63c`, crema
   `#f2f0e1` (texto), apagado `#93a6bc`, atenuado `#5f6f82`, verde `#5fd36a`, rojo `#e2483d`.
 - Avisos de botones: como teclas (`nb-key`), también el de la caja de historia mientras espera, en lugar del icono
