@@ -63,6 +63,8 @@ inline constexpr std::string_view MissingUiAddon = "the packs have no UI addon {
 inline constexpr std::string_view UiAddonFellBack =
     "game: the UI addon '{}' cannot go on, the game's own UI is back: {}";
 inline constexpr std::string_view SafeUiOn = "game: safe mode, the game's own UI only";
+inline constexpr std::string_view SafeUiNoPlugins = "game: safe mode, no plugins";
+inline constexpr std::string_view UiPluginLeftOut = "game: the plugin '{}' is left out: {}";
 
 // The player's minimap mode (minimap_setting.cpp): a saved value that is not auto, on or off.
 inline constexpr std::string_view UnknownSavedMinimap =

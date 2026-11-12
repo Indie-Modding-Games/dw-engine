@@ -26,6 +26,7 @@ constexpr std::string_view SettingsFileName = "settings.yaml";
 constexpr std::string_view LanguageKey = "language";
 constexpr std::string_view TextFontKey = "text_font";
 constexpr std::string_view UiAddonKey = "ui_addon";
+constexpr std::string_view UiPluginsKey = "ui_plugins";
 constexpr std::string_view MinimapKey = "minimap";
 constexpr std::string_view MinimapSizeKey = "minimap_size";
 constexpr std::string_view FullscreenKey = "fullscreen";
@@ -108,6 +109,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* uiAddon = tree->find(UiAddonKey)) {
       settings.uiAddon = reader.text(*uiAddon);
+    }
+    if (const core::YamlNode* uiPlugins = tree->find(UiPluginsKey)) {
+      settings.uiPlugins = reader.boolean(*uiPlugins);
     }
     if (const core::YamlNode* minimap = tree->find(MinimapKey)) {
       settings.minimap = reader.text(*minimap);
@@ -285,6 +289,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   }
   if (settings.uiAddon) {
     root.set(std::string{UiAddonKey}, core::YamlNode::scalar(*settings.uiAddon));
+  }
+  if (settings.uiPlugins) {
+    root.set(std::string{UiPluginsKey},
+             core::YamlNode::scalar(*settings.uiPlugins ? "true" : "false"));
   }
   if (settings.minimap) {
     root.set(std::string{MinimapKey}, core::YamlNode::scalar(*settings.minimap));

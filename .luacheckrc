@@ -20,6 +20,16 @@ files["content/packs/*/ui/**/*.lua"] = {
   },
 }
 
+-- The example addons (examples/ui-addons/, docs/modding/interfaces.md): documents like the packs',
+-- with the UI API only, none of the game's helper scripts.
+files["examples/ui-addons/**/*.lua"] = {
+  allow_defined_top = true,
+  ignore = { "131" },
+  read_globals = {
+    "ui", "t", "document_name", "hooks", "clock", "field", "partner", "bag", "player", "options",
+  },
+}
+
 -- The UI API's adapters (ui/api/*.lua), which the engine runs once in the globals every document
 -- copies, before any document; while they load, event_source(setting, event) says which settings
 -- fire which event (docs/modding/ui-api.md).

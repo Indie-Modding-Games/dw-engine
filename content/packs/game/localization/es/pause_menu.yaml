@@ -59,6 +59,7 @@ ui_skin: "Aspecto de la interfaz"
 ui_addon: "Interfaz"
 ui_addon.default: "La del juego"
 ui_addon.safe: "La del juego (modo seguro)"
+ui_plugins: "Complementos"
 # Exploración libre: los scripts abren todos sus caminos, diga lo que diga la historia (apagada por defecto).
 free_exploration: "Exploración libre"
 # Movimiento suave: los personajes y la cámara se deslizan entre los fotogramas del original (encendido por defecto).
@@ -299,6 +300,7 @@ help.continuous_music: "Si el mapa nuevo tiene la canción que ya suena, sigue s
 help.reverb: "El eco de sala del chip de sonido en la música y los efectos, como el original. Apagada, todo suena seco."
 help.ui_skin: "El aspecto de los menús y del HUD: el del original o el moderno."
 help.ui_addon: "Una interfaz hecha por la comunidad en lugar de la del juego. Se aplica al cerrar el menú; con Mayús pulsada al arrancar vuelve la del juego."
+help.ui_plugins: "Los complementos de la comunidad (un reloj, avisos...) sobre la interfaz. Se aplica al cerrar el menú."
 help.ui_scale: "El tamaño de los menús y del HUD."
 help.language: "El idioma de los textos."
 help.text_font: "Escribe los textos con la letra del original."

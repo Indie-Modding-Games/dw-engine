@@ -308,6 +308,13 @@ struct Ui::Impl {
   // The UI addon on (useUiAddon), empty for the default UI, and the folder its code runs from.
   std::string addonId;
   std::string addonFolder;
+  // The plugins on (addUiPlugin): each one's id, folder and the names of its documents.
+  struct Plugin {
+    std::string id;
+    std::string folder;
+    std::vector<std::string> documents;
+  };
+  std::vector<Plugin> plugins;
   // Which commands the game takes from an addon's documents (setAddonCommandFilter).
   std::function<bool(std::string_view)> addonCommands;
   std::vector<UiCue> cues;
@@ -1409,16 +1416,96 @@ struct Ui::Impl {
       documents.insert_or_assign(name, std::move(document));
       screenDocuments.insert_or_assign(screen, std::move(name));
     }
-    trust.forgetAddons();
-    if (!folder.empty()) {
-      trust.allowAddon(folder);
-    }
     addonId = std::move(id);
     addonFolder = std::move(folder);
+    allowAddonCode();
     markersStale = true;
     for (const ShownScreen& screen : shown) {
       show(screen.screen, screen.modal, {});
     }
+  }
+
+  // The code that runs sandboxed: the UI addon's and the plugins'.
+  void allowAddonCode() {
+    trust.forgetAddons();
+    if (!addonFolder.empty()) {
+      trust.allowAddon(addonFolder);
+    }
+    for (const Plugin& plugin : plugins) {
+      trust.allowAddon(plugin.folder);
+    }
+  }
+
+  // A plugin's document's name: "<id>.<its path in the folder, dots for slashes>", such as
+  // "clock.document" or "clock.corner.document".
+  static std::string pluginDocumentName(const UiAddon& addon, const assets::AssetId& document) {
+    std::string path = document.str().substr(addon.folder.size() + 1);
+    std::ranges::replace(path, '/', '.');
+    return std::format("{}.{}", addon.id, path);
+  }
+
+  core::Result<void> addUiPlugin(const UiAddon& addon) {
+    if (addon.type != UiAddonType::Plugin) {
+      return core::fail(core::formatMessage(messages::UiAddonNotPlugin, addon.id));
+    }
+    if (!addon.uiApi.contains(CurrentUiApiVersion)) {
+      return core::fail(core::formatMessage(messages::UiAddonWantsOtherApi, addon.id,
+                                            uiApiRangeText(addon.uiApi),
+                                            uiApiVersionText(CurrentUiApiVersion)));
+    }
+    if (std::ranges::contains(plugins, addon.id, &Plugin::id)) {
+      return core::fail(core::formatMessage(messages::UiPluginAlreadyOn, addon.id));
+    }
+    const std::string folder = addon.folder + "/";
+    trust.allowAddon(folder);
+    std::vector<std::pair<std::string, Document>> fresh;
+    std::string errors;
+    for (const assets::AssetId& asset : addon.documents) {
+      std::string name = pluginDocumentName(addon, asset);
+      auto loaded = loadDetached(name, asset);
+      if (!loaded) {
+        errors += (errors.empty() ? "" : "; ") + loaded.error().message;
+        continue;
+      }
+      fresh.emplace_back(std::move(name), std::move(*loaded));
+    }
+    if (!errors.empty()) {
+      for (const auto& [name, document] : fresh) {
+        context->UnloadDocument(document.element);
+      }
+      allowAddonCode();
+      return core::fail(core::formatMessage(messages::UiAddonFailed, addon.id, errors));
+    }
+    Plugin plugin{.id = addon.id, .folder = folder, .documents = {}};
+    for (auto& [name, document] : fresh) {
+      documents.insert_or_assign(name, std::move(document));
+      plugin.documents.push_back(std::move(name));
+    }
+    plugins.push_back(std::move(plugin));
+    markersStale = true;
+    // Over whichever UI is on, without the focus: the screens keep the keyboard and the pad.
+    for (const std::string& name : plugins.back().documents) {
+      Document& document = *find(name);
+      document.element->Show(Rml::ModalFlag::None, Rml::FocusFlag::None);
+      document.element->callHandler("on_show", UiArguments{});
+    }
+    core::logInfo("{}", core::formatMessage(messages::UiPluginOn, addon.id));
+    return {};
+  }
+
+  void removeUiPlugins() {
+    for (const Plugin& plugin : plugins) {
+      for (const std::string& name : plugin.documents) {
+        hide(name);
+        if (Document* document = find(name)) {
+          context->UnloadDocument(document->element);
+          documents.erase(name);
+        }
+      }
+    }
+    plugins.clear();
+    allowAddonCode();
+    markersStale = true;
   }
 
   core::Result<void> useUiAddon(const UiAddon& addon) {
@@ -1451,10 +1538,7 @@ struct Ui::Impl {
       for (const auto& [screen, document] : fresh) {
         context->UnloadDocument(document.element);
       }
-      trust.forgetAddons();
-      if (!addonFolder.empty()) {
-        trust.allowAddon(addonFolder);
-      }
+      allowAddonCode();
       return core::fail(core::formatMessage(messages::UiAddonFailed, addon.id, errors));
     }
     switchUi(addon.id, folder, std::move(fresh));
@@ -1605,6 +1689,22 @@ void Ui::useDefaultUi() {
 
 std::string_view Ui::uiAddon() const {
   return impl_->addonId;
+}
+
+core::Result<void> Ui::addUiPlugin(const UiAddon& plugin) {
+  return impl_->addUiPlugin(plugin);
+}
+
+void Ui::removeUiPlugins() {
+  impl_->removeUiPlugins();
+}
+
+std::vector<std::string> Ui::uiPlugins() const {
+  std::vector<std::string> ids;
+  for (const Impl::Plugin& plugin : impl_->plugins) {
+    ids.push_back(plugin.id);
+  }
+  return ids;
 }
 
 void Ui::setAddonCommandFilter(std::function<bool(std::string_view)> filter) {

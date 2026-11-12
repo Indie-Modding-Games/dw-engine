@@ -120,9 +120,10 @@ std::vector<std::filesystem::path> skinFolders() {
   return folders;
 }
 
-// Every file of an interface (under a ui/ folder) with an extension, in every pack and test mod.
+// Every file of an interface (under a ui/ folder) with an extension, in every pack and test mod,
+// and every file of the example addons (examples/ui-addons/).
 std::vector<std::filesystem::path> interfaceFiles(std::string_view extension) {
-  std::vector<std::filesystem::path> files;
+  std::vector<std::filesystem::path> files = filesUnder(DWE_UI_EXAMPLES_DIR, extension);
   for (const std::filesystem::path& root : contentRoots()) {
     for (const std::filesystem::path& file : filesUnder(root, extension)) {
       for (const std::filesystem::path& part : file.lexically_relative(root)) {

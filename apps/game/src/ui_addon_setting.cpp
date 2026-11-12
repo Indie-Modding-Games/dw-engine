@@ -44,7 +44,8 @@ UiAddonChanger::UiAddonChanger(ui::Ui& ui, UserSettings& settings,
       core::logWarning(messages::UnreadableUiAddon, addon.folder, addon.addon.error().message);
       continue;
     }
-    if (addon.addon->type != ui::UiAddonType::Ui) {
+    if (addon.addon->type == ui::UiAddonType::Plugin) {
+      plugins_.push_back(std::move(*addon.addon));
       continue;
     }
     offered_.push_back(addon.addon->id);
@@ -62,12 +63,29 @@ void UiAddonChanger::start() {
   if (safe_) {
     core::logInfo("{}", messages::SafeUiOn);
   }
-  use(startUiAddon(safe_, settings_->uiAddon));
+  problem_.clear();
+  useUi(startUiAddon(safe_, settings_->uiAddon));
+  usePlugins(!safe_ && settings_->uiPlugins.value_or(true));
+  finish();
 }
 
 bool UiAddonChanger::handle(const ui::UiCommand& command) {
   if (command.name == UiAddonReloadCommand) {
     pending_ = ui_->uiAddon().empty() ? std::string{ui::DefaultUiId} : std::string{ui_->uiAddon()};
+    pendingPlugins_ = pluginsOn_;
+    return true;
+  }
+  if (command.name == UiPluginsSetting && std::holds_alternative<bool>(command.value)) {
+    if (safe_) {
+      core::logWarning("{}", messages::SafeUiNoPlugins);
+      return true;
+    }
+    settings_->uiPlugins = std::get<bool>(command.value);
+    if (settingsFile_) {
+      saveUserSettings(*settingsFile_, *settings_);
+    }
+    ui_->setSetting(UiPluginsSetting, *settings_->uiPlugins);
+    pendingPlugins_ = *settings_->uiPlugins;
     return true;
   }
   if (command.name != UiAddonSetting || !std::holds_alternative<std::string>(command.value)) {
@@ -89,8 +107,15 @@ bool UiAddonChanger::handle(const ui::UiCommand& command) {
 }
 
 void UiAddonChanger::update(double seconds) {
-  if (pending_ && !ui_->capturesInput()) {
-    use(*std::exchange(pending_, std::nullopt));
+  if ((pending_ || pendingPlugins_) && !ui_->capturesInput()) {
+    problem_.clear();
+    if (pending_) {
+      useUi(*std::exchange(pending_, std::nullopt));
+    }
+    if (pendingPlugins_) {
+      usePlugins(*std::exchange(pendingPlugins_, std::nullopt));
+    }
+    finish();
   }
   if (noticeLeft_ > 0.0) {
     noticeLeft_ -= seconds;
@@ -100,26 +125,49 @@ void UiAddonChanger::update(double seconds) {
   }
 }
 
-void UiAddonChanger::use(const std::string& id) {
-  problem_.clear();
+void UiAddonChanger::addProblem(std::string problem) {
+  problem_ += (problem_.empty() ? "" : "; ") + std::move(problem);
+}
+
+void UiAddonChanger::useUi(const std::string& id) {
+  std::string problem;
   if (id == ui::DefaultUiId) {
     ui_->useDefaultUi();
   } else if (const ui::UiAddon* addon = find(id); addon == nullptr) {
-    problem_ = core::formatMessage(messages::MissingUiAddon, id);
+    problem = core::formatMessage(messages::MissingUiAddon, id);
   } else {
     // Put on again from its files: a reload reads what changed.
     ui_->useDefaultUi();
     if (auto used = ui_->useUiAddon(*addon); !used) {
-      problem_ = used.error().message;
+      problem = used.error().message;
     }
   }
-  if (!problem_.empty()) {
-    core::logWarning(messages::UiAddonFellBack, id, problem_);
+  if (!problem.empty()) {
+    core::logWarning(messages::UiAddonFellBack, id, problem);
     ui_->useDefaultUi();
-    noticeLeft_ = UiNoticeSeconds;
+    addProblem(std::move(problem));
   }
+}
+
+void UiAddonChanger::usePlugins(bool on) {
+  // Off and on again: a reload reads what changed.
+  ui_->removeUiPlugins();
+  pluginsOn_ = on;
+  if (!on) {
+    return;
+  }
+  for (const ui::UiAddon& plugin : plugins_) {
+    if (auto added = ui_->addUiPlugin(plugin); !added) {
+      core::logWarning(messages::UiPluginLeftOut, plugin.id, added.error().message);
+      addProblem(added.error().message);
+    }
+  }
+}
+
+void UiAddonChanger::finish() {
   publish();
   if (!problem_.empty()) {
+    noticeLeft_ = UiNoticeSeconds;
     ui_->hide(UiNoticeDocument);
     ui_->show(UiNoticeDocument);
   }
@@ -136,6 +184,8 @@ void UiAddonChanger::publish() {
   }
   ui_->setSetting(UiAddonSafeSetting, safe_);
   ui_->setSetting(UiAddonProblemSetting, problem_);
+  ui_->setSetting(UiPluginsSetting, pluginsOn_);
+  ui_->setSetting(UiPluginsCountSetting, static_cast<double>(plugins_.size()));
   ui_->setSetting(UiAddonSetting, ui_->uiAddon().empty() ? std::string{ui::DefaultUiId}
                                                          : std::string{ui_->uiAddon()});
 }

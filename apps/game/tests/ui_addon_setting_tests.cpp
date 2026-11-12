@@ -39,6 +39,21 @@ std::vector<ui::FoundUiAddon> brokenAddons() {
   return found;
 }
 
+// A plugin whose document the packs do not have.
+ui::FoundUiAddon brokenPlugin() {
+  ui::UiAddon plugin;
+  plugin.folder = "ui/addons/ticker";
+  plugin.id = "ticker";
+  plugin.name = "Ticker";
+  plugin.version = "1.0.0";
+  plugin.type = ui::UiAddonType::Plugin;
+  plugin.uiApi =
+      ui::UiApiRange{.minimum = ui::CurrentUiApiVersion,
+                     .below = ui::UiApiVersion{.major = ui::CurrentUiApiVersion.major + 1}};
+  plugin.documents.push_back(*assets::AssetId::parse("ui/addons/ticker/document"));
+  return ui::FoundUiAddon{.folder = "ui/addons/ticker", .addon = std::move(plugin)};
+}
+
 void loadNotice(ui::Ui& ui) {
   auto notice = assets::AssetId::parse("ui/ui_notice/document");
   REQUIRE(notice.has_value());
@@ -106,6 +121,30 @@ TEST_CASE("safe mode keeps the game's own UI, whatever was saved or picked") {
   changer.update(0.0);
   CHECK(menu.ui->uiAddon().empty());
   CHECK(menu.ui->setting(UiAddonSetting) == ui::UiValue{std::string{ui::DefaultUiId}});
+}
+
+TEST_CASE("the plugins go on with the game, all of them, and a broken one is left out with a "
+          "notice") {
+  test::MenuUi menu;
+  loadNotice(*menu.ui);
+  UserSettings settings;
+  std::vector<ui::FoundUiAddon> found;
+  found.push_back(brokenPlugin());
+  UiAddonChanger changer{*menu.ui, settings, std::nullopt, std::move(found), false};
+  // A plugin is no UI to pick.
+  CHECK(changer.offered().size() == 1);
+  REQUIRE(changer.plugins().size() == 1);
+  changer.start();
+  CHECK(menu.ui->setting(UiPluginsCountSetting) == ui::UiValue{1.0});
+  CHECK(menu.ui->setting(UiPluginsSetting) == ui::UiValue{true});
+  CHECK(menu.ui->uiPlugins().empty());
+  CHECK(menu.ui->isVisible(UiNoticeDocument));
+  // Turned off: saved, and no notice the next time.
+  CHECK(changer.handle(ui::UiCommand{.name = std::string{UiPluginsSetting}, .value = false}));
+  CHECK(settings.uiPlugins == std::optional<bool>{false});
+  changer.update(0.0);
+  CHECK(menu.ui->setting(UiPluginsSetting) == ui::UiValue{false});
+  CHECK(menu.ui->setting(UiAddonProblemSetting) == ui::UiValue{std::string{}});
 }
 
 } // namespace dwe::app

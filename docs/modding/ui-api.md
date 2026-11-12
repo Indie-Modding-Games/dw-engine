@@ -65,6 +65,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.11.0 | Complementos (addons de tipo `plugin`, [interfaces](interfaces.md)): documentos sobre cualquier interfaz. Opción `ui_plugins` y ajuste `ui_plugins.count` |
 | 0.10.0 | Addons de interfaz ([interfaces](interfaces.md)): `ui_addon`, `ui_addons`, `ui_addon.name.<id>`, `ui_addon.safe`, `ui_addon.problem` y `ui_addon_reload`; el aviso `ui_notice`. El `ui.send` de un addon solo deja pasar los comandos y opciones del contrato |
 | 0.9.0 | La API propia del motor (`ui`, `hooks`, `t`, `document_name`, los manejadores `on_*` y los métodos de elementos y eventos) entra en el contrato como funciones. Se generan definiciones para el servidor de Lua en `content/schemas/ui_api/ui_api.d.lua` |
 | 0.8.0 | Pantallas: el juego pide una pantalla y la interfaz activa decide qué documento la enseña. La interfaz por defecto se describe en `ui/addon.yaml` del paquete del juego |
@@ -85,7 +86,7 @@ después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.10.0**.
+Versión de la API de la interfaz: **0.11.0**.
 
 ### `ui`
 
@@ -279,7 +280,9 @@ Versión de la API de la interfaz: **0.10.0**.
 | `ui_addons` | ajuste | texto | Las interfaces que se ofrecen, ids separados por espacios, default la primera. |
 | `ui_addon.name.<id>` | ajuste | texto | El nombre de una interfaz, de su addon.yaml. |
 | `ui_addon.safe` | ajuste | sí/no | Modo seguro (--safe-ui o Mayús al arrancar): solo la interfaz del juego. |
-| `ui_addon_reload` | comando | — | Vuelve a leer de sus archivos la interfaz puesta. |
+| `ui_plugins` | opción | sí/no | Los complementos de ui/addons (addons de tipo plugin), todos encendidos o apagados. |
+| `ui_plugins.count` | ajuste | número | Cuántos complementos se ofrecen. |
+| `ui_addon_reload` | comando | — | Vuelve a leer de sus archivos la interfaz puesta y los complementos. |
 | `text_font` | opción | texto | La fuente del texto con aspecto original: modern u original. |
 | `walk_control` | opción | texto | Caminar con el teclado o con el ratón: keys o mouse. |
 | `autosave` | opción | sí/no | Guardado automático. |

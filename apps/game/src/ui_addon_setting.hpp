@@ -28,6 +28,10 @@ inline constexpr std::string_view UiAddonNamePrefix = "ui_addon.name.";
 inline constexpr std::string_view UiAddonSafeSetting = "ui_addon.safe";
 inline constexpr std::string_view UiAddonProblemSetting = "ui_addon.problem";
 inline constexpr std::string_view UiAddonReloadCommand = "ui_addon_reload";
+// The plugins (type plugin): documents over whichever UI is on, all on or all off (ui_plugins, on
+// unless turned off), and how many the packs offer (ui_plugins.count).
+inline constexpr std::string_view UiPluginsSetting = "ui_plugins";
+inline constexpr std::string_view UiPluginsCountSetting = "ui_plugins.count";
 // The notice that the game's own UI came back, and why; it hides by itself.
 inline constexpr std::string_view UiNoticeDocument = "ui_notice";
 inline constexpr double UiNoticeSeconds = 8.0;
@@ -55,17 +59,23 @@ public:
   // Puts on the UI the run starts with and publishes the settings. The game's documents must be
   // loaded.
   void start();
-  // The ui_addon and ui_addon_reload commands; false for any other.
+  // The ui_addon, ui_plugins and ui_addon_reload commands; false for any other.
   bool handle(const ui::UiCommand& command);
-  // Puts on a pick once no modal screen is shown (the options page itself may be the addon's), and
-  // hides the notice when its time is up. Every frame.
+  // Puts on a pick once no modal screen is shown (the options page itself may be the addon's; a
+  // plugin's document must not take the menu's focus), and hides the notice when its time is up.
+  // Every frame.
   void update(double seconds);
 
   // The ids offered, the game's own first.
   [[nodiscard]] std::span<const std::string> offered() const { return offered_; }
+  // The plugins the packs offer.
+  [[nodiscard]] std::span<const ui::UiAddon> plugins() const { return plugins_; }
 
 private:
-  void use(const std::string& id);
+  void useUi(const std::string& id);
+  void usePlugins(bool on);
+  void addProblem(std::string problem);
+  void finish();
   void publish();
   [[nodiscard]] const ui::UiAddon* find(std::string_view id) const;
 
@@ -73,9 +83,12 @@ private:
   UserSettings* settings_;
   std::optional<std::filesystem::path> settingsFile_;
   std::vector<ui::UiAddon> addons_;
+  std::vector<ui::UiAddon> plugins_;
   std::vector<std::string> offered_;
   bool safe_;
+  bool pluginsOn_ = false;
   std::optional<std::string> pending_;
+  std::optional<bool> pendingPlugins_;
   std::string problem_;
   double noticeLeft_ = 0.0;
 };

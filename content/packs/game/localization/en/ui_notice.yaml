@@ -1,2 +1,2 @@
-# The notice that the game's own UI is back (ui/ui_notice): the UI the player picked could not be used.
-addon_failed: "The chosen interface could not be used: the game's own is back."
+# The notice that a community interface or plugin could not be used (ui/ui_notice): the game goes on without it.
+addon_failed: "A community interface could not be used: the game goes on without it."

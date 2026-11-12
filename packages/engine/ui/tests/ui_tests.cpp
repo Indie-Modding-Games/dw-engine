@@ -2857,6 +2857,60 @@ TEST_CASE("a UI addon that does not suit the game changes nothing and says why")
   CHECK(ui->elementText("menu", "body") == "default");
 }
 
+TEST_CASE("a plugin shows over whichever UI is on, without the focus, until it is removed") {
+  Content content;
+  content.add("ui/menu/document.rml",
+              "<rml><head/><body id='body'><button id='first'>default</button></body></rml>");
+  addUiAddon(content);
+  content.addToMod("ui/addons/clock/addon.yaml",
+                   "id: clock\nname: Clock\nversion: 1.0.0\nui_api: \"0.11\"\ntype: plugin\n"
+                   "documents:\n  - corner/document\n");
+  content.addToMod("ui/addons/clock/corner/document.rml",
+                   "<rml><head><script>function on_show(document) "
+                   "local sent = pcall(ui.send, 'quit_game') "
+                   "ui.send('opened', sent and 'sent' or 'refused') end"
+                   "</script></head><body id='body'>clock</body></rml>");
+  const VirtualFileSystem& files = content.mount();
+  auto ui = createUi(files);
+  REQUIRE(ui->loadDocument("menu", idOf("ui/menu/document")));
+  const auto found = findUiAddons(files);
+  REQUIRE(found.size() == 2);
+  REQUIRE(found[0].addon);
+  REQUIRE(found[1].addon);
+  const UiAddon& big = *found[0].addon;
+  const UiAddon& clock = *found[1].addon;
+  ui->setAddonCommandFilter([](std::string_view name) { return name == "opened"; });
+  ui->requestScreen("menu", true);
+  const std::string focused = ui->focusedElementId("menu");
+  REQUIRE(ui->addUiPlugin(clock));
+  CHECK(ui->uiPlugins() == std::vector<std::string>{"clock"});
+  CHECK(ui->isVisible("clock.corner.document"));
+  CHECK(ui->elementText("clock.corner.document", "body") == "clock");
+  // The menu keeps the focus and the input.
+  CHECK(ui->focusedElementId("menu") == focused);
+  CHECK(ui->capturesInput());
+  // Its code runs sandboxed, as a UI addon's.
+  const auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].value == UiValue{std::string{"refused"}});
+  ui->closeScreen("menu");
+  // Once on, it is on: a second time fails; a whole UI is no plugin, nor a plugin a whole UI.
+  CHECK_FALSE(ui->addUiPlugin(clock));
+  CHECK_FALSE(ui->addUiPlugin(big));
+  CHECK_FALSE(ui->useUiAddon(clock));
+  // It stays over another UI and back.
+  REQUIRE(ui->useUiAddon(big));
+  CHECK(ui->isVisible("clock.corner.document"));
+  ui->useDefaultUi();
+  CHECK(ui->isVisible("clock.corner.document"));
+  ui->removeUiPlugins();
+  CHECK(ui->uiPlugins().empty());
+  CHECK_FALSE(ui->isVisible("clock.corner.document"));
+  // And it goes on again.
+  REQUIRE(ui->addUiPlugin(clock));
+  CHECK(ui->isVisible("clock.corner.document"));
+}
+
 TEST_CASE("the packs' UI addons are found by folder, and one whose id is not its folder is not "
           "used") {
   Content content;

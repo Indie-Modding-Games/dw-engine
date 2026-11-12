@@ -709,6 +709,19 @@ TEST_CASE("the options page offers the UI addons only when there is one to pick"
   CHECK_FALSE(sentAny(screen.ui->takeCommands(), "ui_addon"));
 }
 
+TEST_CASE("the options page turns the plugins on and off when the packs offer one") {
+  Screen screen{"pause_menu", "es"};
+  screen.ui->setSetting("ui_plugins.count", 1.0);
+  screen.ui->setSetting("ui_plugins", true);
+  openOnOptions(screen);
+  showTab(screen, "interface");
+  CHECK(screen.ui->elementText(Menu, "ui-plugins-label") == "Complementos");
+  CHECK(screen.ui->elementText(Menu, "ui-plugins-value") == "Sí");
+  std::ignore = screen.ui->takeCommands();
+  adjust(screen, "ui-plugins", 1);
+  CHECK(sent(screen.ui->takeCommands(), "ui_plugins", UiValue{false}));
+}
+
 TEST_CASE("the options page turns the enemies on the minimap on and off, next to the minimap") {
   Screen screen{"pause_menu", "es"};
   openOnOptions(screen);

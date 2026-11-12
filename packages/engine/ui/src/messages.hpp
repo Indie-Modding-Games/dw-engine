@@ -97,6 +97,8 @@ inline constexpr std::string_view UiAddonNotUi = "{} is a plugin, not a whole UI
 inline constexpr std::string_view UiAddonNotPlugin = "{} is a whole UI, not a plugin";
 inline constexpr std::string_view UiAddonFailed = "the UI addon {} cannot load: {}";
 inline constexpr std::string_view UiAddonOn = "ui: the UI addon {} is on";
+inline constexpr std::string_view UiPluginOn = "ui: the plugin {} is on";
+inline constexpr std::string_view UiPluginAlreadyOn = "the plugin {} is already on";
 inline constexpr std::string_view UiAddonUnknownScreen =
     "the addon {} shows the screen {}, which the game does not have";
 

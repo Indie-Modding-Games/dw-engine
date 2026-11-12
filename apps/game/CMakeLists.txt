@@ -260,6 +260,7 @@ if(BUILD_TESTING)
         # Every pack and test mod, whose skins the contract test walks.
         DWE_PACKS_DIR="${PROJECT_SOURCE_DIR}/content/packs"
         DWE_TEST_MODS_DIR="${PROJECT_SOURCE_DIR}/tests/mods"
+        DWE_UI_EXAMPLES_DIR="${PROJECT_SOURCE_DIR}/examples/ui-addons"
         DWE_SKIN_TEST_PACK="${PROJECT_SOURCE_DIR}/tests/mods/ui_skin/test_contrast"
         # The UI API's reference page and its JSON twin, which the contract test checks.
         DWE_DOCS_DIR="${PROJECT_SOURCE_DIR}/docs"

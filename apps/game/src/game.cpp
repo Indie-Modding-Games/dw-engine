@@ -881,6 +881,11 @@ int runGame(const Options& requested) {
   (*scripts)->bindCommand(BattleSpeedSetting, [&consoleBattleSpeed](std::string_view value) {
     consoleBattleSpeed = std::string{value};
   });
+  // The console's and the routes' ui_addon("<id>"), the options' UI addon row
+  // (ui_addon_setting.hpp), applied between frames in the same way.
+  std::optional<std::string> consoleUiAddon;
+  (*scripts)->bindCommand(
+      UiAddonSetting, [&consoleUiAddon](std::string_view id) { consoleUiAddon = std::string{id}; });
   // The console's ui_skin("<id>"), the menus' skin setting, applied between frames in the same way.
   std::optional<std::string> consoleUiSkin;
   (*scripts)->bindCommand(ui::UiSkinSetting, [&consoleUiSkin](std::string_view id) {
@@ -1921,6 +1926,10 @@ int runGame(const Options& requested) {
     phases.mark(FramePhases::Update, platform->nowSeconds());
     if (consoleUiSkin) {
       uiSkinChanger.change(*std::exchange(consoleUiSkin, std::nullopt));
+    }
+    if (consoleUiAddon) {
+      uiAddons.handle(ui::UiCommand{.name = std::string{UiAddonSetting},
+                                    .value = *std::exchange(consoleUiAddon, std::nullopt)});
     }
     if (consoleTextFont) {
       textFontChanger.change(*std::exchange(consoleTextFont, std::nullopt));

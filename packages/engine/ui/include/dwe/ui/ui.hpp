@@ -211,6 +211,14 @@ public:
   void useDefaultUi();
   // The id of the UI addon on, empty for the default UI.
   [[nodiscard]] std::string_view uiAddon() const;
+  // A plugin (docs/modding/interfaces.md): its documents load, named "<id>.<path>", and show over
+  // whichever UI is on, without the focus, until removeUiPlugins. Its code runs sandboxed as a UI
+  // addon's. If it does not suit (a whole UI, another UI API, already on) or a document cannot
+  // load, nothing changes and the error says why.
+  core::Result<void> addUiPlugin(const UiAddon& plugin);
+  void removeUiPlugins();
+  // The ids of the plugins on, in the order they went on.
+  [[nodiscard]] std::vector<std::string> uiPlugins() const;
   // Which commands the game takes from an addon's documents (ui.send); none until it is set.
   void setAddonCommandFilter(std::function<bool(std::string_view)> filter);
 

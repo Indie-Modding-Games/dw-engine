@@ -1,0 +1,28 @@
+/* The clock's box, in the top right corner. It takes no input, so the game and the menus under it
+   keep the pointer. */
+body {
+	pointer-events: none;
+	z-index: 90;
+}
+
+#clock {
+	position: absolute;
+	top: 12dp;
+	right: 12dp;
+	padding: 4dp 10dp;
+	border-radius: 6dp;
+	background-color: #10141ccc;
+	color: #f2f4f7;
+	font-size: 22dp;
+	text-align: right;
+}
+
+#day {
+	display: block;
+	font-size: 14dp;
+	color: #c9d3de;
+}
+
+#clock.night {
+	color: #9fb8ff;
+}

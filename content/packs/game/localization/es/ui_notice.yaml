@@ -1,2 +1,2 @@
-# El aviso de que vuelve la interfaz del juego (ui/ui_notice): la interfaz que eligió el jugador no se pudo usar.
-addon_failed: "No se pudo usar la interfaz elegida: vuelve la del juego."
+# El aviso de que una interfaz o un complemento de la comunidad no se pudo usar (ui/ui_notice): el juego sigue sin él.
+addon_failed: "No se pudo usar una interfaz de la comunidad: el juego sigue sin ella."

@@ -223,6 +223,28 @@ local display_entries = {
       ui.send("ui_addon", offered[cycle(offered, index, step)])
     end,
   },
+  -- The plugins (docs/modding/interfaces.md): documents over whichever UI is on, all on or all
+  -- off. The row shows only when the packs offer one, and not in safe mode.
+  {
+    id = "ui-plugins",
+    tab = "interface",
+    label = "pause_menu.ui_plugins",
+    help = "pause_menu.help.ui_plugins",
+    kind = "toggle",
+    tag = false,
+    shown = function()
+      return ui.setting("ui_addon.safe") ~= true and (ui.setting("ui_plugins.count") or 0) > 0
+    end,
+    value = function()
+      return ui.setting("ui_plugins") == true
+    end,
+    text = function()
+      return on_off(ui.setting("ui_plugins"))
+    end,
+    change = function(_step)
+      ui.send("ui_plugins", not ui.setting("ui_plugins"))
+    end,
+  },
   -- The scale stops at its smallest and largest steps, whichever way it moves.
   {
     id = "ui-scale",

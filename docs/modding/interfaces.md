@@ -4,10 +4,13 @@ El juego enseña sus pantallas (el HUD, el menú de pausa, la ficha del compañe
 **interfaz de la comunidad** es una carpeta que cambia cómo se ven algunas de esas pantallas, o todas, sin tocar el
 juego: se copia la carpeta y se elige en el menú.
 
-Hay dos cosas distintas que se pueden cambiar:
+Hay tres cosas distintas que se pueden cambiar:
 
 - El **aspecto** (colores, imágenes, tipografía) de la interfaz del juego: eso es un [aspecto](aspectos.md).
-- Las **pantallas** en sí (qué enseñan, dónde y cómo): eso es una interfaz, lo que explica esta página.
+- Las **pantallas** en sí (qué enseñan, dónde y cómo): eso es una **interfaz** (`type: ui`).
+- Algo **más** encima de cualquier interfaz, como un reloj en una esquina: eso es un **complemento** (`type: plugin`).
+
+Interfaces y complementos se instalan igual y se escriben igual; esta página explica los dos.
 
 ## Instalar una interfaz
 
@@ -17,14 +20,17 @@ Hay dos cosas distintas que se pueden cambiar:
    - macOS: `~/Library/Application Support/indie-modding-games/dwe/ui/addons/`
 
    Si viene en un zip, descomprímelo ahí. Debe quedar `ui/addons/minimal/addon.yaml`.
-2. Arranca el juego y abre **Opciones → Interfaz → Interfaz**. Elige la nueva con izquierda y derecha.
+2. Arranca el juego y abre **Opciones → Interfaz → Interfaz**. Elige la nueva con izquierda y derecha. La fila solo
+   sale cuando hay alguna interfaz que elegir.
 3. Cierra el menú: la interfaz se aplica al cerrarlo.
+
+Los complementos se encienden solos. La fila **Opciones → Interfaz → Complementos** los apaga o enciende todos juntos.
 
 Un paquete (un mod) también puede traer interfaces en su carpeta `ui/addons/`.
 
 ### Si algo sale mal
 
-- Si la interfaz elegida no se puede usar (está rota, es para otra versión del juego o le falta un archivo), vuelve
+- Si la interfaz elegida o un complemento no se pueden usar (está rota, es para otra versión del juego o le falta un archivo), vuelve
   la del juego y un aviso arriba de la pantalla dice por qué durante unos segundos.
 - **Modo seguro:** mantén pulsada **Mayús** mientras arranca el juego, o arráncalo con `--safe-ui`. Se usa solo la
   interfaz del juego y no se lee la carpeta de interfaces del usuario. Sirve para volver a un juego que funciona y
@@ -56,6 +62,18 @@ screens:                 # el documento que enseña cada pantalla que cambias
   pause_box: pause_box/document
 ```
 
+Un complemento cambia `type` y, en lugar de `screens`, da la lista de sus documentos (`examples/ui-addons/clock/`):
+
+```yaml
+id: clock
+name: Reloj en la esquina
+version: 1.0.0
+ui_api: "0.11"
+type: plugin
+documents:              # los documentos que enseña encima de la interfaz
+  - document
+```
+
 - `id` tiene que ser igual al nombre de la carpeta; si no, la interfaz no se ofrece.
 - `ui_api` dice con qué versiones de la [API de la interfaz](ui-api.md) funciona. `"0.10"` quiere decir «0.10 o
   cualquier versión posterior antes de la 1.0». También se puede dar un rango: `">=0.10 <0.14"`. Si el juego tiene
@@ -63,6 +81,10 @@ screens:                 # el documento que enseña cada pantalla que cambias
 - `screens` nombra, para cada pantalla que cambias, su documento sin la extensión `.rml`, relativo a la carpeta. Las
   pantallas que no nombras siguen con el documento del juego. La lista de pantallas está en
   `content/packs/game/ui/addon.yaml` y en la [API de la interfaz](ui-api.md).
+- `documents` (solo complementos) nombra sus documentos igual. Se enseñan siempre, encima de la interfaz y sin
+  quitarle el foco al menú; el propio documento decide cuándo esconder lo suyo (el reloj se esconde cuando el tiempo
+  del juego está parado). Su `.rcss` lo coloca: `position: absolute` y la esquina que quieras, con `pointer-events:
+  none` para que el ratón siga llegando al juego.
 - El esquema del archivo está en `content/schemas/ui_addon.schema.json`.
 
 ### Los documentos

@@ -88,14 +88,19 @@ pantallas que el juego tiene; carga sus documentos como `<id>.<pantalla>` y mape
 cambia nada y devuelve el porqué. Las pantallas visibles al cambiar se vuelven a enseñar en el documento nuevo.
 `useDefaultUi` descarga los documentos del addon.
 
+Un **complemento** (`type: plugin`) no cubre pantallas: `Ui::addUiPlugin` carga sus documentos como
+`<id>.<ruta con puntos>` y los enseña, no modales y sin quitar el foco, sobre la interfaz que esté puesta, también al
+cambiarla. `removeUiPlugins` los quita todos. El juego los enciende o apaga todos juntos (`ui_plugins`).
+
 El código del addon corre aislado: `CodeTrust::allowAddon` deja correr los documentos, plantillas y scripts de su
 carpeta, y su entorno Lua tiene un `ui.send` que solo deja pasar los comandos y opciones que declara el contrato
 (`Ui::setAddonCommandFilter`, `app::addonMaySend`); cualquier otro lanza un error de Lua. Una plantilla de un addon
 dentro de un documento del motor se rechaza.
 
 En el juego, `UiAddonChanger` (`apps/game/src/ui_addon_setting.hpp`) publica `ui_addon`, `ui_addons`,
-`ui_addon.name.<id>`, `ui_addon.safe` y `ui_addon.problem`; la fila «Interfaz» de Opciones → Interfaz manda
-`ui_addon`, que se guarda en los ajustes del usuario y se aplica al cerrar el menú. Si el addon no puede ponerse,
+`ui_addon.name.<id>`, `ui_addon.safe`, `ui_addon.problem`, `ui_plugins` y `ui_plugins.count`; las filas «Interfaz» y
+«Complementos» de Opciones → Interfaz mandan `ui_addon` y `ui_plugins`, que se guardan en los ajustes del usuario y
+se aplican al cerrar el menú. La consola y las rutas usan `ui_addon("id")`. Si el addon no puede ponerse,
 vuelve la interfaz del juego y `ui/ui_notice` lo avisa unos segundos. **Modo seguro:** `--safe-ui` o Mayús pulsada al
 arrancar dejan la interfaz del juego y no montan la carpeta de addons del usuario.
 
