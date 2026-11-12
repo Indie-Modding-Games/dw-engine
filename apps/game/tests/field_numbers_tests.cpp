@@ -63,7 +63,8 @@ struct NumbersUi {
                                              .width = 1280,
                                              .height = 720,
                                              .clock = {},
-                                             .scripts = {}});
+                                             .scripts = {},
+                                             .cursor = {}});
     REQUIRE_MESSAGE(created.has_value(), created.error().message);
     ui = std::move(*created);
     auto document = assets::AssetId::parse("ui/field_numbers/document");

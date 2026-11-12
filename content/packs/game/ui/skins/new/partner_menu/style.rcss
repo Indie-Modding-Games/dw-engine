@@ -1235,7 +1235,7 @@ button:focus .original-look, button.original-look:focus {
 
 
 
-/* Compact Digimon dashboard: status and equipped attacks stay visible together. */
+/* Compact partner dashboard: status and equipped attacks stay visible together. */
 #scrim.new-partner #panel {
 	top: 30dp;
 	width: 900dp;
@@ -1254,7 +1254,7 @@ button:focus .original-look, button.original-look:focus {
 	align-items: flex-end;
 }
 
-/* The bag opens as one tall window too: the same dark page box the compact Digimon dashboard
+/* The bag opens as one tall window too: the same dark page box the compact partner dashboard
    draws under the folder tabs. Inside it the field is tidy like the stats dashboard: the money
    rides in a gold chip on the box's head, the items sit in a framed list of two slim columns
    (a longer bag scrolls inside the frame), and the picked item's description takes a framed
@@ -1282,7 +1282,7 @@ button:focus .original-look, button.original-look:focus {
 #scrim.new-partner #bag-description { position: absolute; left: 12dp; right: 12dp; top: 456dp; min-height: 0; height: 100dp; box-sizing: border-box; margin: 0; padding: 10dp 14dp; border: 2dp #345875; background-color: #07182a; color: #b8cfe0; font-size: 16dp; line-height: 22dp; decorator: none; }
 
 /* Each compact window shows only its own section as a folder tab, plus Volver. Techniques are
-   merged into Digimon and care is a field-menu action, so neither ever appears as a tab. */
+   merged into the partner page and care is a field-menu action, so neither ever appears as a tab. */
 #scrim.new-partner .tab {
 	position: relative;
 	display: none;
@@ -1304,7 +1304,7 @@ button:focus .original-look, button.original-look:focus {
 #scrim.new-partner .tab:focus { border-color: #ffd51e; color: #ffe64a; }
 #scrim.new-partner #close { display: inline-block; margin-left: auto; margin-right: 0; }
 /* The Evoluciones shortcut: a real page-tab is never this one (the tree lives in the pause menu),
-   so it shows as an idle folder tab beside the page's own — only on the Digimon window, which is
+   so it shows as an idle folder tab beside the page's own — only on the partner window, which is
    the one carrying the class "compact-partner": the bag and the battle's bag never offer it. The
    chip after it answers E (the pad's shoulder), the same step the click takes. */
 #scrim.partner-evolutions.compact-partner #tab-evolutions { display: inline-block; }
@@ -1631,7 +1631,7 @@ button:focus .original-look, button.original-look:focus {
 	color: #ffe64a;
 }
 
-/* Unified Digimon dashboard: portrait/profile, live stats, care summary and equipped techniques. */
+/* Unified partner dashboard: portrait/profile, live stats, care summary and equipped techniques. */
 #scrim.compact-partner #page-status { left: 0; width: 900dp; background-color: #0b1c2df5; }
 #scrim.compact-partner #page-tech { left: 0; width: 900dp; border: 0; background-color: transparent; decorator: none; pointer-events: none; }
 #scrim.compact-partner #page-tech #tech-change { pointer-events: auto; }

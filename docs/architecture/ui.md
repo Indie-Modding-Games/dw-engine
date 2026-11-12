@@ -565,7 +565,7 @@ document_classes:                   # opcional: clases que pone en elementos de 
   nombran assets de las capas base. Para crear un aspecto sin partir de cero, `python scripts/new_skin.py fork <id>
   --from <skin>` copia uno existente (`.rcss` y `cursor.png`), reescribe sus rutas y deja una hoja vacía por pantalla
   (`--flatten` disuelve `extends:` en un skin autocontenido). Guía para quien moddea:
-  [modding/aspectos](../modding/aspectos.md) y `content/packs/game/ui/skins/README.md`.
+  [modding/aspectos](../modding/aspectos.md).
 
 - **El cursor del ratón lo pone el aspecto.** Con `cursor: <imagen>` (una PNG con alfa recto, no premultiplicado) y
   `cursor_hotspot: [x, y]` (el punto que hace clic, en píxeles desde el rincón superior izquierdo), el motor instala
@@ -684,7 +684,8 @@ error en el log (`BadImageOption`).
 
 ### Escala tipográfica
 
-El aspecto moderno usa cinco tamaños de letra para sus propios textos, y ninguno más (`ui/skins/modern/theme.rcss`).Cada tamaño es un papel del texto, no una pantalla: el mismo papel tiene el mismo tamaño en el menú de pausa, en el del
+El aspecto moderno usa cinco tamaños de letra para sus propios textos, y ninguno más (`ui/skins/modern/theme.rcss`).
+Cada tamaño es un papel del texto, no una pantalla: el mismo papel tiene el mismo tamaño en el menú de pausa, en el del
 compañero y en el HUD.
 
 | Tamaño | Papel |

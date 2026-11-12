@@ -1,12 +1,8 @@
-# El aspecto original: la UI con la maquetación, los colores y las proporciones del juego original, redibujada nítida
-# a cualquier resolución y adaptada a pantalla ancha (docs/architecture/ui.md#aspecto-original). Las formas (cajas,
-# barras, textos) son RCSS; los iconos y sprites salen de las imágenes que dwx extract saca del disco del usuario y
-# agranda x4 con la receta ui_original (content/enhance/ui_original.recipe.yaml). Sin esas imágenes este aspecto se
-# queda fuera y el juego arranca con el de reserva (ui/ui_skin.yaml: fallback).
-#
-# Extiende el moderno para lo que no es aspecto (qué se esconde con .hidden, qué es flex) y reescribe todo lo que se
-# ve. Las medidas van en dp: un píxel del original son 3 dp (240 líneas sobre 720 dp). Cada valor cita su fuente en el
-# RCSS: un archivo y una función de la decompilación, o una captura de referencia.
+# El aspecto nuevo: una UI azul marino de pantalla ancha con portada propia (la isla con su halo y la
+# placa «PROJECT FOLDER»), un menú del compañero compacto con su pestaña Evoluciones y la página del
+# jugador en una sola pantalla. Dibuja sus cajas en RCSS y reutiliza los sprites del aspecto original
+# que dwx extract saca del disco del usuario: sin ellos se queda fuera y el juego arranca con el de
+# reserva (ui/ui_skin.yaml: fallback).
 id: new
 name: ui_skin.new
 # Flecha amarilla con borde negro, como la definió el diseñador (hotspot en la punta). La imagen
@@ -154,11 +150,12 @@ document_classes:
     panel: [skin-original, player-minimal-tabs, player-medals-on-profile]
   partner_menu:
     panel: [skin-original]
-    # Declares the compact partner menu (single "Digimon" screen: status shows the techniques too,
+    # Declares the compact partner menu (single "Partner" screen: status shows the techniques too,
     # Cancel closes) and its Evoluciones tab, which takes the player to the pause menu's evolution
     # tree and back (ui/partner_menu/logic.lua: open_evolutions). The game logic keys off these
     # classes on #scrim, never off a skin id.
-    scrim: [partner-compact, partner-evolutions]
+    # partner-pool-current fills the HP/MP bars with the current amount over the maximum.
+    scrim: [partner-compact, partner-evolutions, partner-pool-current]
   destination_choice:
     panel: [skin-original]
   dialog:
@@ -255,7 +252,7 @@ sprite_sheets:
     original_size: [896, 128]
     dp_per_pixel: 2.1333333333333333
     sprites:
-      menu-digimon-icon: [0, 0, 128, 128]
+      menu-partner-icon: [0, 0, 128, 128]
       menu-item-icon: [128, 0, 128, 128]
       menu-player-icon: [256, 0, 128, 128]
       menu-praise-icon: [384, 0, 128, 128]

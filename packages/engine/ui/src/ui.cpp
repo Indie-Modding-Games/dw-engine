@@ -592,8 +592,7 @@ struct Ui::Impl {
       return;
     }
     const Skin* skin = styler.skin();
-    const std::optional<SkinCursor> cursor =
-        skin != nullptr ? skins.cursorOf(*skin) : std::nullopt;
+    const std::optional<SkinCursor> cursor = skin != nullptr ? skins.cursorOf(*skin) : std::nullopt;
     if (!cursor) {
       desc.cursor(std::nullopt);
       return;

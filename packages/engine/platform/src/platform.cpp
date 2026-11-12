@@ -332,13 +332,13 @@ core::Result<void> Platform::setColorCursor(std::span<const std::byte> rgba, int
   }
   // SDL writes into the pixels a surface points at, so hand it a copy it never sees change.
   std::vector<std::byte> copy(rgba.begin(), rgba.end());
-  SDL_Surface* surface = SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_RGBA32, copy.data(),
-                                               width * 4);
+  SDL_Surface* surface =
+      SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_RGBA32, copy.data(), width * 4);
   if (surface == nullptr) {
     return core::fail(std::format("setColorCursor: SDL_CreateSurfaceFrom: {}", SDL_GetError()));
   }
   SDL_Cursor* cursor = SDL_CreateColorCursor(surface, hotX, hotY);
-  SDL_DestroySurface(surface);  // the pixels live in `copy`; the surface did not own them.
+  SDL_DestroySurface(surface); // the pixels live in `copy`; the surface did not own them.
   if (cursor == nullptr) {
     return core::fail(std::format("setColorCursor: SDL_CreateColorCursor: {}", SDL_GetError()));
   }
@@ -359,7 +359,7 @@ void Platform::clearColorCursor() {
     SDL_DestroyCursor(customCursor_);
     customCursor_ = nullptr;
   }
-  SDL_SetCursor(SDL_GetDefaultCursor());  // the system arrow again.
+  SDL_SetCursor(SDL_GetDefaultCursor()); // the system arrow again.
   SDL_ShowCursor();
 }
 

@@ -26,7 +26,7 @@ rutas necesitan el contenido extraído de un disco, así que no corren en la CI.
 | `training/route-training-<mapa>-<curso>.yaml` | Una sesión entera de cada curso de cada gimnasio, con `expect_range` sobre los ajustes `gym.session.*` ([comprobar el entrenamiento](../../guides/comprobar-entrenamiento.md)) |
 
 Una ruta nueva entra sola en el nivel `daily` del gate (todas las `route-*.yaml` de la carpeta, sin las de
-`training/`).
+`training/` ni las vistas previas manuales de `preview/`).
 
 ## Convenciones
 

@@ -53,7 +53,8 @@ struct MenuUi {
                                                        .width = 1280,
                                                        .height = 720,
                                                        .clock = {},
-                                                       .scripts = {}});
+                                                       .scripts = {},
+                                                       .cursor = {}});
     REQUIRE_MESSAGE(created.has_value(), created.error().message);
     ui = std::move(*created);
     auto menu = dwe::assets::AssetId::parse("ui/pause_menu/document");

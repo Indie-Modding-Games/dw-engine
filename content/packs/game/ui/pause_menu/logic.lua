@@ -30,7 +30,7 @@ local icon_time = 0
 local icon_flash = false
 local player_tools_open = false
 local player_tab = "player"
--- Set while this pause was opened for the Digimon window's Evoluciones tab: the tree stands in for
+-- Set while this pause was opened for the partner window's Evoluciones tab: the tree stands in for
 -- the player page, and Cancel goes back to the partner menu instead of the hub or the field.
 local evolutions_return = false
 -- The pause menu keys its behaviour off a single capability the skin declares through
@@ -1426,7 +1426,7 @@ local function city_move(document, action)
 end
 
 -- A skin with the minimal player tab set (pause_menu: player-minimal-tabs) renames its Prosperity
--- tab over the classic key's word; while the tree stands open for the Digimon window, the strip
+-- tab over the classic key's word; while the tree stands open for the partner window, the strip
 -- wears that window's own two names. The engine re-applies every text-key before it calls on_show
 -- and on_language, so the skin's names go on after those refreshes (the classic skins, which do
 -- not declare the classes, keep the document's own words untouched). The Trophies are part of the
@@ -1436,8 +1436,8 @@ local function draw_player_tab_labels(document)
     return
   end
   if evolutions_return then
-    -- the tree's strip wears the Digimon window's own two names
-    document:get("player-tab-player-label"):set_text(t("partner_menu.nav.digimon"))
+    -- the tree's strip wears the partner window's own two names
+    document:get("player-tab-player-label"):set_text(t("partner_menu.nav.partner"))
     document:get("player-tab-chart-label"):set_text(t("partner_menu.tab.evolutions"))
   else
     document:get("player-tab-city-label"):set_text(t("pause_menu.player_tab_prosperity"))
@@ -1451,7 +1451,7 @@ end
 -- clicks on the strip's key chips both land here: the arrows stay free for each page's own content.
 function player_step_tab(document, delta)
   if evolutions_return then
-    -- The strip's left tab is the Digimon window's own: Q goes back there, E has no further page.
+    -- The strip's left tab is the partner window's own: Q goes back there, E has no further page.
     if delta < 0 then
       back(document)
     end
@@ -1462,8 +1462,8 @@ end
 
 function show_player_tab(document, tab)
   if evolutions_return and tab == "player" then
-    -- The strip's left tab reads "Digimon" during the tree's visit: it returns to the partner
-    -- menu, it is not the profile page (the visit belongs to the Digimon window).
+    -- The strip's left tab reads "Partner" during the tree's visit: it returns to the partner
+    -- menu, it is not the profile page (the visit belongs to the partner window).
     back(document)
     return
   end
@@ -2161,7 +2161,7 @@ end
 
 function back(document)
   if evolutions_return and current == "player" then
-    -- The tree was opened for the Digimon window (its Evoluciones tab): go back there, not to the
+    -- The tree was opened for the partner window (its Evoluciones tab): go back there, not to the
     -- hub nor to the field.
     evolutions_return = false
     document:get("panel"):set_class("player-evolutions", false)
@@ -2253,7 +2253,7 @@ function on_show(document)
   at_title = ui.setting("pause_menu.at_title") == true
   options_direct = at_title or ui.setting("pause_menu.start_page") == "options"
   document:get("panel"):set_class("at-title", at_title)
-  -- The Digimon window's Evoluciones tab had the game open this menu just for the tree (game.cpp):
+  -- The partner window's Evoluciones tab had the game open this menu just for the tree (game.cpp):
   -- the one-shot is read here, consumed at once, and the next plain pause opens as usual.
   evolutions_return = ui.setting("pause_menu.evolutions") == true
   if evolutions_return then
@@ -2265,7 +2265,7 @@ function on_show(document)
     show_page(document, "player")
     show_player_tab(document, "chart")
     chart_pick(document, chart_index_on(1))
-    -- The strip wears the Digimon window's names now, not this page's own.
+    -- The strip wears the partner window's names now, not this page's own.
     draw_player_tab_labels(document)
   elseif options_direct then
     -- From the title to a game or back the page's actions change: lay it out again, as it opens.
@@ -2279,7 +2279,9 @@ function on_show(document)
   elseif ui.setting("pause_menu.preview_player") == true then
     parents.player = "main"
     show_page(document, "player")
-    if ui.setting("player.chart.preview") == true and not panel_has(document, "player-minimal-tabs") then
+    if
+      ui.setting("player.chart.preview") == true and not panel_has(document, "player-minimal-tabs")
+    then
       show_player_tab(document, "chart")
     end
   else
@@ -2439,7 +2441,10 @@ function on_action(document, action)
     -- Q/E (the pad's R/L) switch this window's folder tabs from anywhere on the page, so the
     -- arrows stay free for its own content (the city's cells, the tree, the medal shelf) even
     -- while a page holds a selection. The classic looks keep the arrows as their only walk.
-    if panel_has(document, "player-minimal-tabs") and (action == "tab_next" or action == "tab_previous") then
+    if
+      panel_has(document, "player-minimal-tabs")
+      and (action == "tab_next" or action == "tab_previous")
+    then
       player_step_tab(document, action == "tab_next" and 1 or -1)
       return true
     end
@@ -2494,7 +2499,7 @@ function on_action(document, action)
     if player_tab == "chart" and chart_selecting then
       if action == "cancel" then
         if evolutions_return then
-          -- The visit came from the Digimon window's Evoluciones tab (its tree has no tab to step
+          -- The visit came from the partner window's Evoluciones tab (its tree has no tab to step
           -- back to): a Cancel ends the visit itself, going back there.
           back(document)
           return true
@@ -2520,10 +2525,10 @@ function on_action(document, action)
         -- tickPlayerMenu: the four pages are always there, in this order; dwe adds the City tab.
         -- A skin may surface only part of them (pause_menu: player-minimal-tabs): the cycle walks
         -- the tabs the skin shows, so an arrow never lands on a page without a visible tab.
-        local tabs = panel_has(document, "player-minimal-tabs")
-          and { "player", "city" }
+        local tabs = panel_has(document, "player-minimal-tabs") and { "player", "city" }
           or { "player", "chart", "medals", "card", "city" }
-        local current_index = index_of(tabs, player_tab)
+        -- A page the skin hides (the Chart during the Evolutions visit) cycles as the first tab.
+        local current_index = index_of(tabs, player_tab) or 1
         local delta = action == "left" and -1 or 1
         show_player_tab(document, tabs[math.max(1, math.min(#tabs, current_index + delta))])
         return true
@@ -2561,7 +2566,12 @@ function on_action(document, action)
     back(document)
     return true
   end
-  if action == "menu" and current == "player" and has_native_player_layout(document) and not evolutions_return then
+  if
+    action == "menu"
+    and current == "player"
+    and has_native_player_layout(document)
+    and not evolutions_return
+  then
     player_tools_open = not player_tools_open
     document:get("panel"):set_class("player-tools-open", player_tools_open)
     document

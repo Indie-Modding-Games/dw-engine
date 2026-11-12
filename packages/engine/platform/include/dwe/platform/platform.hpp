@@ -50,7 +50,7 @@ public:
   // bytes. The game uses this to let the current UI skin draw its own mouse cursor; the OS arrow
   // is replaced, so it stays on top of every document (modals included) without the UI stacking it.
   core::Result<void> setColorCursor(std::span<const std::byte> rgba, int width, int height,
-                                     int hotX, int hotY);
+                                    int hotX, int hotY);
 
   // Returns the pointer to the system default arrow, undoing setColorCursor.
   void clearColorCursor();

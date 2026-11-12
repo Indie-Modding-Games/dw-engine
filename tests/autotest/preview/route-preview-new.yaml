@@ -11,7 +11,7 @@
 #   scripts/dev.sh run \
 #       --content <carpeta con el paquete base extraido> \
 #       --ui-skin new \
-#       --autotest tests/autotest/route-preview-new.yaml \
+#       --autotest tests/autotest/preview/route-preview-new.yaml \
 #       --shots build/shots
 #
 # The PNG lands at build/shots/main-menu-new.png. Run once per language, with --lang en and

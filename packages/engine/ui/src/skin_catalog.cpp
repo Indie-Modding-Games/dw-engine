@@ -287,9 +287,8 @@ std::optional<SkinCursor> SkinCatalog::cursorOf(const Skin& skin) const {
   for (auto it = chain->rbegin(); it != chain->rend(); ++it) {
     const Skin* layer = *it;
     if (layer->cursor) {
-      return SkinCursor{.image = *layer->cursor,
-                        .hotX = layer->cursorHotspotX,
-                        .hotY = layer->cursorHotspotY};
+      return SkinCursor{
+          .image = *layer->cursor, .hotX = layer->cursorHotspotX, .hotY = layer->cursorHotspotY};
     }
   }
   return std::nullopt;

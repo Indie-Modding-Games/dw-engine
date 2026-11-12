@@ -239,7 +239,7 @@
 /* Hub icons: the sheet sprites are drawn scaled to fit their boxes (the classic port's
    scale-none paints them at native size, which the small 60dp tiles clip). */
 .menu-item { decorator: image(menu-item-icon contain center center); }
-.menu-digimon { decorator: image(menu-digimon-icon contain center center); }
+.menu-digimon { decorator: image(menu-partner-icon contain center center); }
 .menu-player { decorator: image(menu-player-icon contain center center); }
 .menu-praise { decorator: image(menu-praise-icon contain center center); }
 .menu-scold { decorator: image(menu-scold-icon contain center center); }
@@ -295,7 +295,7 @@
 #panel.on-main.use-menu-art .menu-sleep-label { left: 27dp; width: 60dp; }
 #panel.on-main.use-menu-art .menu-fish-label { left: 21dp; width: 48dp; }
 #panel.on-main.icon-flash .field-entry:focus .menu-item { decorator: image(menu-item-icon contain center center); }
-#panel.on-main.icon-flash .field-entry:focus .menu-digimon { decorator: image(menu-digimon-icon contain center center); }
+#panel.on-main.icon-flash .field-entry:focus .menu-digimon { decorator: image(menu-partner-icon contain center center); }
 #panel.on-main.icon-flash .field-entry:focus .menu-player { decorator: image(menu-player-icon contain center center); }
 #panel.on-main.icon-flash .field-entry:focus .menu-praise { decorator: image(menu-praise-icon contain center center); }
 #panel.on-main.icon-flash .field-entry:focus .menu-scold { decorator: image(menu-scold-icon contain center center); }
@@ -362,7 +362,7 @@
 /* The strip takes the flat folder tabs the partner windows use (no classic sprites): labels 16,
    open bottom edge over the box's top line. Q/E (the pad's R/L) walk it as the options page's
    tabs do. The Trophies tab lives on the profile itself (player-medals-on-profile) and the Chart
-   reaches the player from the Digimon window's Evoluciones tab; neither opens as a tab here. */
+   reaches the player from the partner window's Evoluciones tab; neither opens as a tab here. */
 #panel.on-player #player-tab-chart, #panel.on-player #player-tab-card { display: none; }
 #panel.on-player .player-tab, #panel.on-player .player-tab:focus, #panel.on-player .player-tab:disabled { position: relative; flex: 0 0 auto; min-width: 120dp; height: 34dp; padding: 0 14dp; margin: 0 4dp 0 0; border: 2dp #4a6b82; border-bottom-width: 0; box-sizing: border-box; background-color: #16293a; opacity: 1; color: #9cbad0; font-size: 16dp; line-height: 30dp; text-align: center; }
 #panel.on-player .player-tab.selected { background-color: #24405a; border-color: #72c7ff; color: #eaf6ff; }
@@ -389,7 +389,7 @@
 .selected .player-tab-middle { decorator: image(digimon-tab-middle-active); image-color: #ffffff; }
 .selected .player-tab-right { decorator: image(digimon-tab-right-active); image-color: #ffffff; }
 .player-tab-label { position: relative; top: 9dp; white-space: nowrap; }
-/* Jugador: one screen, laid out on the compact Digimon dashboard's grid — a thin label column of
+/* Jugador: one screen, laid out on the compact partner dashboard's grid — a thin label column of
    right-aligned words beside boxed values, the portrait as its own framed column, the trophy
    shelf as an inset box of its own below. Small type throughout: labels 17, values 22, rank 20,
    where the classic port ran the original's 36-point words. */
@@ -628,7 +628,7 @@
 
 /* Jugador: one screen for the profile and its trophies together (panel class
    player-medals-on-profile). The shelf is an inset box of its own at the grid's lower right, the
-   Digimon dashboard's style: a framed panel under the Medallas label and its count, five cells
+   partner dashboard's style: a framed panel under the Medallas label and its count, five cells
    wide by three high — pause_menu/logic.lua (refresh_medals) lays them out inside it — and the
    picked medal's name on a line below. The classic full-page medal furniture (the title, the
    rules, the turning figure, the wide name box, the three description lines and the prompts)
@@ -653,8 +653,8 @@
 #panel.player-medals-on-profile .medal-ribbon { left: 4dp; width: 40dp; height: 64dp; }
 #panel.player-medals-on-profile #medal-name { left: 12dp; top: 254dp; width: 376dp; height: 24dp; font-size: 18dp; line-height: 24dp; text-align: center; color: #ffe64a; }
 
-/* The tree, opened for the Digimon window (its Evoluciones tab): the strip wears that window's
-   two tabs — the first reads "Digimon" (draw_player_tab_labels) and returns to the partner menu,
+/* The tree, opened for the partner window (its Evoluciones tab): the strip wears that window's
+   two tabs — the first reads "Partner" (draw_player_tab_labels) and returns to the partner menu,
    "Evoluciones" stands selected for the tree. The window's other pages are not offered here. */
 #panel.player-evolutions #player-tab-city { display: none; }
 #panel.player-evolutions #player-tab-chart { display: inline-block; }

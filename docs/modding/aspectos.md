@@ -37,7 +37,7 @@ nombran assets de las capas base.
 
 Para no partir de cero, `python scripts/new_skin.py fork <id> --from <skin>` copia un aspecto existente a una carpeta
 nueva, reescribe sus rutas y deja **una hoja `style.rcss` vacía por cada pantalla** que el origen no estilice;
-`--flatten` disuelve la cadena `extends:` en un skin autocontenido. Mira `content/packs/game/ui/skins/README.md`.
+`--flatten` disuelve la cadena `extends:` en un skin autocontenido.
 
 El paquete de los tests [`tests/mods/ui_skin/test_contrast`](../modulos/tests/mods.md) es un ejemplo completo.
 

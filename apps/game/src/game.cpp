@@ -174,14 +174,15 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, r
   if (command.name == "open_menu") {
     ui.show(MenuDocument, true);
   } else if (command.name == "open_evolutions") {
-    // The compact Digimon window's Evoluciones tab (ui/partner_menu): the evolution tree lives on
+    // The compact partner window's Evoluciones tab (ui/partner_menu): the evolution tree lives on
     // the pause menu's player page, so this hides the partner and hands the way in over. The
     // one-shot setting tells the document to open on the tree and to go back here on Cancel
     // (pause_menu/logic.lua: on_show, back).
     ui.setSetting("pause_menu.evolutions", true);
     ui.hide("partner_menu");
     ui.show(MenuDocument, true);
-  } else if (command.name == "pause_menu.evolutions" && std::holds_alternative<bool>(command.value)) {
+  } else if (command.name == "pause_menu.evolutions" &&
+             std::holds_alternative<bool>(command.value)) {
     // The document consumed its one-shot: the next plain pause opens as usual.
     ui.setSetting("pause_menu.evolutions", std::get<bool>(command.value));
   } else if (command.name == LanguageCommand &&
@@ -739,19 +740,20 @@ int runGame(const Options& requested) {
       .scripts = {},
       // The current skin installs its own mouse cursor as the system pointer (so it stays on top of
       // every screen); a skin without a cursor returns the arrow to the system.
-      .cursor = [&platform](std::optional<ui::UiCursor> cursor) {
-        if (!cursor) {
-          platform->clearColorCursor();
-          return;
-        }
-        if (auto set = platform->setColorCursor(
-                std::span<const std::byte>{cursor->image.pixels},
-                static_cast<int>(cursor->image.width), static_cast<int>(cursor->image.height),
-                static_cast<int>(cursor->hotX), static_cast<int>(cursor->hotY));
-            !set) {
-          core::logWarning("skin cursor: {}", set.error().message);
-        }
-      },
+      .cursor =
+          [&platform](std::optional<ui::UiCursor> cursor) {
+            if (!cursor) {
+              platform->clearColorCursor();
+              return;
+            }
+            if (auto set = platform->setColorCursor(
+                    std::span<const std::byte>{cursor->image.pixels},
+                    static_cast<int>(cursor->image.width), static_cast<int>(cursor->image.height),
+                    static_cast<int>(cursor->hotX), static_cast<int>(cursor->hotY));
+                !set) {
+              core::logWarning("skin cursor: {}", set.error().message);
+            }
+          },
   });
   if (!ui) {
     core::logError("{}", ui.error().message);
@@ -2061,8 +2063,7 @@ int runGame(const Options& requested) {
       }
     }
     if (!showingMovie && saveFigure && (*saveFigure)->loaded() &&
-        (loadingIndicator ||
-         (flow.playing() != nullptr && flow.playing()->saveIndicatorShown())))
+        (loadingIndicator || (flow.playing() != nullptr && flow.playing()->saveIndicatorShown())))
       portraitScenes.push_back((*saveFigure)->scene(frameSeconds));
     mapOverlayShapes.clear();
     if (mapOverlay && !showingMovie) {
