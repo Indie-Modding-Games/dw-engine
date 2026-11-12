@@ -23,6 +23,11 @@ inline constexpr std::string_view MenuSoundsNotMapping = "ui/ui_sounds is not a 
 inline constexpr std::string_view MenuSoundUnknownCue = "ui/ui_sounds has no cue '{}'";
 inline constexpr std::string_view MenuSoundMissing = "ui/ui_sounds gives no sound for '{}'";
 
+// The UI's commands (game.cpp: apply): one no handler took, which the UI API lacks or the game
+// cannot do now (docs/modding/ui-api.md).
+inline constexpr std::string_view UiCommandUnhandled =
+    "game: no one handled the UI command {} = {}";
+
 // The dev assets banner (dev_assets_banner.cpp), logged in the player's language.
 inline constexpr std::string_view DevAssetsBanner = "game: {}";
 

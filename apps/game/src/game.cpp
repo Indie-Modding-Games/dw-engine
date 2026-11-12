@@ -218,6 +218,9 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, r
     display.keepVsync(settings.vsync);
     core::logInfo("game: vsync {}", settings.vsync ? "on" : "off");
     ui.setSetting(VsyncSetting, settings.vsync);
+  } else {
+    core::logWarning("{}", core::formatMessage(messages::UiCommandUnhandled, command.name,
+                                               describe(command.value)));
   }
   return true;
 }

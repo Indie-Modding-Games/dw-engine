@@ -162,6 +162,7 @@ dwe_add_app(game
         src/title_screen.cpp
         src/new_game_mode.cpp
         src/ui_demo.cpp
+        src/ui_contract.cpp
         src/ui_skin_setting.cpp
         src/user_settings.cpp
         src/versus_arena.cpp
@@ -230,7 +231,8 @@ endif()
 # The game is an executable, so its tests build the sources they check into a test program of their own: the player's
 # settings (settings.yaml), how the UI skin is chosen at start and changed, the minimap mode, its enemies and its items, the sprite characters drawn as models, the save and place debug
 # commands, the state trace's lines, the control channel's requests, the title screen's and the game's save flows,
-# the battle's root steps of a model, a map battle's enemies, the discard menu's list, the trade menu's cursor and the player page's City tab.
+# the battle's root steps of a model, a map battle's enemies, the discard menu's list, the trade menu's cursor, the player page's City tab
+# and the UI API's reference.
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
     add_executable(dwe_game_tests ${game_test_sources} src/battle_glide.cpp src/battle_motion.cpp src/battle_trigger.cpp src/bug_report.cpp src/chibi_style.cpp src/chart_requirements.cpp src/control_json.cpp src/control_log.cpp src/control_socket.cpp src/curling_recruit_bar.cpp
@@ -238,7 +240,7 @@ if(BUILD_TESTING)
                                   src/death_effects.cpp src/ending_effects.cpp src/scene_sounds.cpp
                                   src/device_names.cpp src/dev_menu_screen.cpp src/dev_tools.cpp src/discard_screen.cpp src/game_saves.cpp src/money_box_screen.cpp src/hd_scenery_setting.cpp src/map_debug_overlay.cpp src/minimap_enemies.cpp src/minimap_items.cpp src/minimap_setting.cpp src/display_settings.cpp
                                   src/pause_box.cpp src/place_command.cpp src/player_chart.cpp src/player_city.cpp src/partner_set_command.cpp src/story_set_command.cpp src/story_state_json.cpp src/shop_job_bar.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
-                                  src/save_indicator.cpp src/save_machine_flow.cpp src/award_screen.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_skin_setting.cpp src/user_settings.cpp src/walk_control.cpp src/battle_speed.cpp src/gym_batch.cpp src/rule_options.cpp src/world_map.cpp
+                                  src/save_indicator.cpp src/save_machine_flow.cpp src/award_screen.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_contract.cpp src/ui_skin_setting.cpp src/user_settings.cpp src/walk_control.cpp src/battle_speed.cpp src/gym_batch.cpp src/rule_options.cpp src/world_map.cpp
                                   src/graphics_options.cpp src/weather_particles.cpp src/volume_setting.cpp src/sprite_characters.cpp src/partner_clip_fallbacks.cpp
                                   src/title_options.cpp src/new_game_mode.cpp src/versus_flow.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
@@ -254,7 +256,10 @@ if(BUILD_TESTING)
                                                       ${PROJECT_SOURCE_DIR})
     target_compile_definitions(dwe_game_tests PRIVATE
         DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"
-        DWE_SKIN_TEST_PACK="${PROJECT_SOURCE_DIR}/tests/mods/ui_skin/test_contrast")
+        DWE_SKIN_TEST_PACK="${PROJECT_SOURCE_DIR}/tests/mods/ui_skin/test_contrast"
+        # The UI API's reference page and its JSON twin, which the contract test checks.
+        DWE_DOCS_DIR="${PROJECT_SOURCE_DIR}/docs"
+        DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas")
     if(WIN32)
         target_link_libraries(dwe_game_tests PRIVATE ws2_32)
     endif()

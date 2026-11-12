@@ -28,6 +28,7 @@ dwe_add_module(ui
         src/text_fit.cpp
         src/text_font.cpp
         src/ui.cpp
+        src/ui_contract.cpp
         src/ui_renderer.cpp
         src/world_map.cpp
     DEPS core platform input assets render script
