@@ -23,6 +23,8 @@ constexpr std::int64_t BoardSoundSlot = 8;
 constexpr std::string_view RoundKey = "tournament.bracket.round";
 constexpr std::string_view FinalKey = "tournament.bracket.final";
 constexpr std::string_view ChampionKey = "tournament.bracket.champion";
+// The cup's name by its grade, for skins that write it on the intro's card.
+constexpr std::string_view CupKey = "tournament.bracket.cup";
 constexpr std::size_t FinalRound = 2;
 
 std::string setting(std::string_view name) {
@@ -55,6 +57,7 @@ bool TournamentBracketScreen::open() {
   }
   rules_ = *tournament->bracketRules();
   card_ = tournament->cardImage();
+  grade_ = tournament->grade(tournament->cup());
   species_ = bracket->entrants;
   round_ = 0;
   show_ = game::tournament::BracketShow::Match;
@@ -263,6 +266,9 @@ screens::ScreenSettings TournamentBracketScreen::settings() const {
   out.push_back({.name = setting("card_src"),
                  .value = card_.empty() ? std::string{} : std::format("/{}", card_)});
   out.push_back({.name = setting("label"), .value = label()});
+  const std::array<localization::TextArgument, 1> cup{{{.name = "grade", .value = grade_}}};
+  out.push_back({.name = setting("cup"),
+                 .value = grade_.empty() ? std::string{} : localization::tr(CupKey, cup)});
   for (std::size_t slot = 0; slot < view.slots.size(); ++slot) {
     const auto& shown = view.slots.at(slot);
     const game::tournament::BracketCell cell =

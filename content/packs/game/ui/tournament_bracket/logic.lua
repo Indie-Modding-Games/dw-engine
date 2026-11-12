@@ -2,10 +2,11 @@
 -- (apps/game/src/tournament_bracket_screen.cpp) and publishes it as settings, bumping
 -- tournament_bracket.revision once per change: .phase (hidden, intro, board, tail), .fade (0 lit to
 -- 128 dark), .card and .shade (the intro's card and shade, 128 full), .intro, .blackout (0 to 1),
--- .board and .card_src (images), .label (the round, for skins that show it), .slot.<i>.x/.y/.src/
--- .rect/.flip/.name for the eight fighters, .shots and .shot.<k>.x/.y/.src/.rect/.flip/.doubled,
--- .flashes and .flash.<k>.x/.y with .flash_src and .flash_rect. Positions are the original's
--- pixels from the screen's centre.
+-- .board and .card_src (images; #board-art fades with the board for a skin that draws its own),
+-- .cup (the cup's name on the card) and .label (the round), for skins that show them,
+-- .slot.<i>.x/.y/.src/.rect/.flip/.name for the eight fighters, .shots and
+-- .shot.<k>.x/.y/.src/.rect/.flip/.doubled, .flashes and .flash.<k>.x/.y with .flash_src and
+-- .flash_rect. Positions are the original's pixels from the screen's centre.
 
 local Slots = 8
 local MaxShots = 8
@@ -67,6 +68,7 @@ local function refresh(document)
   local board = document:get("board")
   picture(board, text("tournament_bracket.board"), nil)
   opacity(board, lit)
+  opacity(document:get("board-art"), lit)
   local first_row = nil
   for i = 0, Slots - 1 do
     local prefix = "tournament_bracket.slot." .. i .. "."
@@ -129,6 +131,10 @@ local function refresh(document)
     picture(card, card_src, nil)
   end
   opacity(card, number("tournament_bracket.card", 0) / 128)
+  local cup = document:get("cup")
+  cup:set_text(text("tournament_bracket.cup"))
+  cup:set_class("hidden", not intro)
+  opacity(cup, number("tournament_bracket.card", 0) / 128)
   local shade = document:get("intro-shade")
   shade:set_class("hidden", not intro)
   opacity(shade, number("tournament_bracket.shade", 0) / 256)

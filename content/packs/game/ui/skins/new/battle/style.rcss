@@ -321,11 +321,32 @@
 	color: #b2b2b2;
 }
 
-/* The cup clock's panel (.clock): a thin box; the sides and the digits stay the original's. */
+/* The cup clock (.clock, 337): a thin box, the blue 1P and red 2P tabs and the seconds in the body font at 4 times its
+   cell, gold. */
 #match-clock {
 	box-sizing: border-box;
 	border: 3dp #b6e4f7;
 	background-color: #0a101ceb;
+	decorator: none;
+}
+
+#match-clock #mc-side-1 {
+	decorator: image(nb-clock-1p);
+}
+
+#match-clock #mc-side-2 {
+	decorator: image(nb-clock-2p);
+}
+
+#match-clock .mc-digit {
+	top: 12dp;
+	height: 60dp;
+	font-family: "Pixel Body";
+	font-size: 60dp;
+	line-height: 60dp;
+	text-align: center;
+	color: #efc63c;
+	font-effect: shadow(3dp 3dp #7a4a10);
 	decorator: none;
 }
 

@@ -70,6 +70,7 @@ private:
   Phase phase_ = Phase::Hidden;
   game::tournament::BracketShow show_ = game::tournament::BracketShow::Match;
   std::string card_;
+  std::string grade_;
   std::array<std::int32_t, game::tournament::Entrants> species_{};
   std::size_t round_ = 0;
   double seconds_ = 0.0;

@@ -9,9 +9,10 @@ body #name {
 	font-effect: shadow(4dp 4dp #050c1a);
 }
 
+/* The labels small enough that the longest fits before its bar (355). */
 .label {
 	font-family: "Pixel Small";
-	font-size: 26dp;
+	font-size: 20dp;
 	color: #f2f0e1;
 	font-effect: shadow(2dp 2dp #050c1a);
 }
@@ -34,6 +35,19 @@ body #name {
 	font-size: 30dp;
 	decorator: none;
 	font-effect: shadow(2dp 2dp #050c1a);
+}
+
+/* The stats' values close up to the font's own pitch, right-aligned on the last cell as the original's. */
+.digit[id^="digit-"][id$="-0"] {
+	transform: translateX(54dp);
+}
+
+.digit[id^="digit-"][id$="-1"] {
+	transform: translateX(36dp);
+}
+
+.digit[id^="digit-"][id$="-2"] {
+	transform: translateX(18dp);
 }
 
 #time-up {

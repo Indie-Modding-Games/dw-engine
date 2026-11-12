@@ -9,6 +9,7 @@
 	<div id="shade"></div>
 	<div id="frame">
 		<img id="board"/>
+		<div id="board-art"></div>
 		<img class="slot" id="slot-0"/>
 		<img class="slot" id="slot-1"/>
 		<img class="slot" id="slot-2"/>
@@ -44,7 +45,7 @@
 		<div id="label"></div>
 	</div>
 	<div id="intro-shade"></div>
-	<div id="card-frame"><img id="card"/></div>
+	<div id="card-frame"><img id="card"/><div id="cup"></div></div>
 	<div id="blackout"></div>
 </body>
 </rml>

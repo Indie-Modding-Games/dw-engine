@@ -41,6 +41,10 @@ body {
 #board { position: absolute; left: 96dp; top: 69dp; width: 768dp; height: 405dp; }
 #card { position: absolute; left: 96dp; top: 168dp; width: 765dp; height: 384dp; }
 
+/* A skin's own board and card (a box drawn over the board, the cup's name on the card), shown by the skins that
+   draw them. */
+#board-art, #cup { display: none; }
+
 .slot, .flash { position: absolute; width: 48dp; height: 48dp; }
 .shot { position: absolute; width: 24dp; height: 24dp; }
 .flipped { transform: scale(-1, 1); }
