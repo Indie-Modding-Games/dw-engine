@@ -8,7 +8,7 @@ Hay tres cosas distintas que se pueden cambiar:
 
 - El **aspecto** (colores, imágenes, tipografía) de la interfaz del juego: eso es un [aspecto](aspectos.md).
 - Las **pantallas** en sí (qué enseñan, dónde y cómo): eso es una **interfaz** (`type: ui`).
-- Algo **más** encima de cualquier interfaz, como un reloj en una esquina: eso es un **complemento** (`type: plugin`).
+- Algo **más** encima de cualquier interfaz, como un reloj arriba de la pantalla: eso es un **complemento** (`type: plugin`).
 
 Interfaces y complementos se instalan igual y se escriben igual; esta página explica los dos.
 
@@ -56,7 +56,7 @@ minimal/
 id: minimal              # minúsculas, cifras y guiones bajos; el nombre de la carpeta
 name: Pausa mínima       # lo que se ve en Opciones → Interfaz
 version: 1.0.0           # la versión de tu interfaz
-ui_api: "0.10"           # la versión de la API de la interfaz con la que funciona
+ui_api: "0.12"           # la versión de la API de la interfaz con la que funciona
 type: ui                 # una interfaz entera
 screens:                 # el documento que enseña cada pantalla que cambias
   pause_box: pause_box/document
@@ -66,7 +66,7 @@ Un complemento cambia `type` y, en lugar de `screens`, da la lista de sus docume
 
 ```yaml
 id: clock
-name: Reloj en la esquina
+name: Reloj arriba
 version: 1.0.0
 ui_api: "0.11"
 type: plugin
@@ -75,16 +75,17 @@ documents:              # los documentos que enseña encima de la interfaz
 ```
 
 - `id` tiene que ser igual al nombre de la carpeta; si no, la interfaz no se ofrece.
-- `ui_api` dice con qué versiones de la [API de la interfaz](ui-api.md) funciona. `"0.10"` quiere decir «0.10 o
-  cualquier versión posterior antes de la 1.0». También se puede dar un rango: `">=0.10 <0.14"`. Si el juego tiene
+- `ui_api` dice con qué versiones de la [API de la interfaz](ui-api.md) funciona. `"0.12"` quiere decir «0.12 o
+  cualquier versión posterior antes de la 1.0». También se puede dar un rango: `">=0.12 <0.14"`. Si el juego tiene
   una versión fuera del rango, la interfaz no se usa y el aviso lo dice.
 - `screens` nombra, para cada pantalla que cambias, su documento sin la extensión `.rml`, relativo a la carpeta. Las
   pantallas que no nombras siguen con el documento del juego. La lista de pantallas está en
   `content/packs/game/ui/addon.yaml` y en la [API de la interfaz](ui-api.md).
 - `documents` (solo complementos) nombra sus documentos igual. Se enseñan siempre, encima de la interfaz y sin
   quitarle el foco al menú; el propio documento decide cuándo esconder lo suyo (el reloj se esconde cuando el tiempo
-  del juego está parado). Su `.rcss` lo coloca: `position: absolute` y la esquina que quieras, con `pointer-events:
-  none` para que el ratón siga llegando al juego.
+  del juego está parado). Su `.rcss` lo coloca: `position: absolute` donde quieras, con `pointer-events: none` para
+  que el ratón siga llegando al juego. El minimapa se esconde mientras algo le queda encima, así que deja libres las
+  esquinas que usa el HUD de cada aspecto (el reloj de ejemplo va arriba en el centro).
 - El esquema del archivo está en `content/schemas/ui_addon.schema.json`.
 
 ### Los documentos
@@ -107,14 +108,59 @@ El código de una interfaz corre aislado:
 - Lee todo lo que la API de la interfaz publica.
 - Solo puede mandar al juego los comandos y opciones que la API declara (`ui.send`). Cualquier otro nombre lanza un
   error de Lua y el juego no lo recibe.
-- No toca los archivos, la red ni el resto del juego: solo su propia carpeta.
+- No toca los archivos, la red ni el resto del juego: el Lua de la interfaz no tiene `io`, `os`, `require` ni
+  `load`, y solo se cargan los documentos, estilos y scripts de su propia carpeta.
+
+### Las pantallas que se pueden cambiar
+
+Esta versión cubre los menús, el HUD y los avisos. Estas pantallas tienen en la [API de la interfaz](ui-api.md) todo
+lo que leen y mandan:
+
+| Pantalla | Qué es |
+|---|---|
+| `hud` | El HUD del campo: reloj, medidores, necesidades, minimapa |
+| `pause_menu` | El menú de pausa y las opciones |
+| `partner_menu` | La ficha del compañero y la bolsa |
+| `skin_picker` | La pregunta del aspecto en el primer arranque |
+| `pause_box` | El recuadro de pausa |
+| `field_item_notice` | El aviso de un objeto en el suelo o en un cofre |
+| `award_notice` | El aviso de un premio |
+| `fishing_notice` | El aviso de lo pescado |
+| `save_indicator` | El indicador de guardado |
+| `money_box` | El cuadro del dinero |
+| `lives_box` | El cuadro de vidas |
+| `ui_notice` | El aviso de que una interfaz no se pudo usar |
+
+El resto de pantallas de `content/packs/game/ui/addon.yaml` también se pueden nombrar en `screens`, pero lo que leen
+todavía no está en el contrato y puede cambiar entre versiones del juego.
+
+### Versiones
+
+La API de la interfaz lleva su propia versión (la tabla está en la [API de la interfaz](ui-api.md#versiones)). Una
+versión menor (0.12 → 0.13) solo añade nombres: una interfaz hecha para la 0.12 sigue funcionando. Una mayor puede
+quitar o cambiar nombres. Pon en `ui_api` la versión con la que la probaste: `"0.12"` acepta esa y las menores
+siguientes, y el juego no la usará con una versión mayor que no conoce.
 
 ### Probar mientras la haces
 
 - Cambia los archivos y vuelve a elegir la interfaz en el menú (pasa a otra y vuelve): se vuelve a leer de sus
-  archivos.
+  archivos. Desde la consola de desarrollo, `ui_addon("minimal")` la pone sin abrir el menú.
 - Los errores de Lua y los avisos de carga salen en el registro del juego.
 - Si la interfaz deja el juego en mal estado, arranca en modo seguro (Mayús).
+
+## Repartir una interfaz
+
+Comparte la carpeta tal cual, o un zip con la carpeta dentro (`minimal.zip` → `minimal/addon.yaml`). Quien la use la
+copia en su carpeta de interfaces, como en [Instalar una interfaz](#instalar-una-interfaz). También puede ir dentro
+de un mod, en su carpeta `ui/addons/<id>/`: se ofrece cuando el mod está puesto.
+
+Antes de repartirla:
+
+- Que el `id` sea el nombre de la carpeta y no choque con el de otra interfaz conocida.
+- Que `ui_api` sea la versión con la que la probaste.
+- Que funcione con los tres aspectos del juego (Original, Moderno y Pixel art): la interfaz trae sus propios estilos,
+  pero los documentos del juego que no cambias siguen con el aspecto elegido.
+- Que no lleve material de otros juegos (imágenes, textos o música) que no puedas repartir.
 
 ## Ver también
 

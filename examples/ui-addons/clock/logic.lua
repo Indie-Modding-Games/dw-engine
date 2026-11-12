@@ -1,4 +1,4 @@
--- A clock in the corner: the game clock from the UI API (clock.now()), shown while the game time
+-- A clock at the top: the game clock from the UI API (clock.now()), shown while the game time
 -- runs. It reads the game and changes nothing, so it needs no command.
 
 local shown = nil

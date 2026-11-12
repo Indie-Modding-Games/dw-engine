@@ -144,6 +144,19 @@ bool declaredAnywhere(ui::UiContractKind kind, std::string_view name) {
 
 } // namespace
 
+TEST_CASE("there are example addons: a whole UI and a plugin") {
+  bool whole = false;
+  bool plugin = false;
+  for (const std::filesystem::path& example : examples()) {
+    const Installed installed{example};
+    const ui::UiAddon addon = readExample(installed, example);
+    whole = whole || addon.type == ui::UiAddonType::Ui;
+    plugin = plugin || addon.type == ui::UiAddonType::Plugin;
+  }
+  CHECK(whole);
+  CHECK(plugin);
+}
+
 TEST_CASE("every example addon reads, suits this UI API and uses only what the contract declares") {
   const std::regex call{R"(ui\.(setting|send|report)\(\s*["']([^"']+)["']\s*[,)])"};
   const std::regex api{R"(\b(partner|clock|bag|player|field|options)\.([a-z_]+)\()"};

@@ -1,0 +1,15 @@
+<rml>
+<head>
+	<title>Minimal pause box</title>
+	<link type="text/rcss" href="../../../common/base.rcss"/>
+	<link type="text/rcss" href="style.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="box">
+		<p id="label"></p>
+		<p id="time"></p>
+		<p id="hint"></p>
+	</div>
+</body>
+</rml>

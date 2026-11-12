@@ -65,6 +65,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.12.0 | Los avisos entran en el contrato: `pause_box`, `field_item_notice`, `award_notice`, `fishing_notice`, `save_indicator`, `money_box`, `lives_box` y `ui_notice`, con sus ajustes y comandos |
 | 0.11.0 | Complementos (addons de tipo `plugin`, [interfaces](interfaces.md)): documentos sobre cualquier interfaz. Opción `ui_plugins` y ajuste `ui_plugins.count` |
 | 0.10.0 | Addons de interfaz ([interfaces](interfaces.md)): `ui_addon`, `ui_addons`, `ui_addon.name.<id>`, `ui_addon.safe`, `ui_addon.problem` y `ui_addon_reload`; el aviso `ui_notice`. El `ui.send` de un addon solo deja pasar los comandos y opciones del contrato |
 | 0.9.0 | La API propia del motor (`ui`, `hooks`, `t`, `document_name`, los manejadores `on_*` y los métodos de elementos y eventos) entra en el contrato como funciones. Se generan definiciones para el servidor de Lua en `content/schemas/ui_api/ui_api.d.lua` |
@@ -86,7 +87,7 @@ después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.11.0**.
+Versión de la API de la interfaz: **0.12.0**.
 
 ### `ui`
 
@@ -346,6 +347,68 @@ Versión de la API de la interfaz: **0.11.0**.
 | Nombre | Tipo | Valor | Qué es |
 |---|---|---|---|
 | `ui_addon.problem` | ajuste | texto | Por qué no se pudo usar la interfaz elegida; vacío si se pudo. |
+
+### `field_item_notice`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `field_item_notice.text` | ajuste | texto | La clave del texto del aviso de un objeto en el suelo o en un cofre. |
+| `field_item_notice.item` | ajuste | texto | La clave del nombre del objeto; vacía para un cofre vacío. |
+| `field_item_notice.answer` | ajuste | texto | Si el aviso acepta confirmar ahora: sound, quiet (sin sonido) o vacío (todavía no). |
+| `field_item_notice.phase` | ajuste | texto | open mientras se ve; closing cuando el jugador ya contestó y el aviso se cierra. |
+| `field.player_x` | ajuste | número | Dónde está el jugador en la pantalla, de 0 a 1 en horizontal (el cuadro crece desde ahí). |
+| `field.player_y` | ajuste | número | Dónde está el jugador en la pantalla, de 0 a 1 en vertical. |
+| `field_item_notice_ok` | comando | — | El jugador confirma el aviso. |
+| `field_item_notice_closed` | comando | — | El cuadro terminó de cerrarse (tras closing). |
+
+### `award_notice`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `award_notice.lines` | ajuste | texto | La clave del texto del aviso de un premio o de un cambio del compañero. |
+| `award_notice.color` | ajuste | número | El color del nombre, como número. |
+| `award_notice.name` | ajuste | texto | El nombre que muestra el aviso. |
+| `award_notice_ok` | comando | — | El jugador confirma el aviso. |
+
+### `fishing_notice`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `fishing_notice.text` | ajuste | texto | La clave del texto de lo pescado. |
+| `fishing_notice.item` | ajuste | texto | La clave del nombre de lo pescado. |
+| `fishing_notice.size` | ajuste | número | El tamaño de lo pescado. |
+| `fishing_notice_ok` | comando | — | El jugador confirma el aviso. |
+
+### `save_indicator`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `save_indicator.text` | ajuste | texto | Lo que dice el indicador de guardado (guardando, cargando...). |
+| `save_indicator.opacity` | ajuste | número | Cuánto se ve el indicador, de 0 a 1. |
+| `save_indicator.lift` | ajuste | número | Cuánto ha subido el indicador al aparecer, de 0 a 1. |
+| `save_indicator.figure` | ajuste | sí/no | Si el indicador enseña la figura que gira. |
+
+### `money_box`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `money_box.money` | ajuste | número | El dinero del jugador. |
+| `money_box.bits_key` | ajuste | texto | La clave del nombre de la moneda. |
+| `money_box.revision` | ajuste | número | Sube cada vez que cambian los valores de arriba: el cuadro se vuelve a dibujar. |
+
+### `lives_box`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `lives_box.outline` | ajuste | sí/no | Si el cuadro de vidas está abriéndose o cerrándose (solo el borde). |
+| `lives_box.grow` | ajuste | número | Cuánto ha crecido el borde, de 0 a 1. |
+| `lives_box.anchor_x` | ajuste | número | Desde dónde crece, de 0 a 1 en horizontal (el compañero). |
+| `lives_box.anchor_y` | ajuste | número | Desde dónde crece, de 0 a 1 en vertical. |
+| `lives_box.lives` | ajuste | número | Las vidas que le quedan al compañero. |
+| `lives_box.slots` | ajuste | número | Cuántas vidas caben en el cuadro. |
+| `lives_box.lost_full` | ajuste | sí/no | Si la vida que se pierde aún se dibuja llena (parpadea al perderse). |
+| `lives_box.revision` | ajuste | número | Sube cada vez que cambian los valores de arriba. |
+| `screen_fade` | ajuste | número | Cuánto oscurece el fundido de pantalla, de 0 a 1. |
 
 ### `partner_menu`
 

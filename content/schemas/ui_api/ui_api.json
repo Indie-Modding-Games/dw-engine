@@ -1,5 +1,5 @@
 {
-  "version": "0.11.0",
+  "version": "0.12.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "El valor de un ajuste que el juego publica; nil si no lo publica.", "signature": "(name: string): any"},
@@ -235,6 +235,50 @@
     ],
     "ui_notice": [
       {"name": "ui_addon.problem", "kind": "setting", "value": "text", "summary": "Por qué no se pudo usar la interfaz elegida; vacío si se pudo."}
+    ],
+    "field_item_notice": [
+      {"name": "field_item_notice.text", "kind": "setting", "value": "text", "summary": "La clave del texto del aviso de un objeto en el suelo o en un cofre."},
+      {"name": "field_item_notice.item", "kind": "setting", "value": "text", "summary": "La clave del nombre del objeto; vacía para un cofre vacío."},
+      {"name": "field_item_notice.answer", "kind": "setting", "value": "text", "summary": "Si el aviso acepta confirmar ahora: sound, quiet (sin sonido) o vacío (todavía no)."},
+      {"name": "field_item_notice.phase", "kind": "setting", "value": "text", "summary": "open mientras se ve; closing cuando el jugador ya contestó y el aviso se cierra."},
+      {"name": "field.player_x", "kind": "setting", "value": "number", "summary": "Dónde está el jugador en la pantalla, de 0 a 1 en horizontal (el cuadro crece desde ahí)."},
+      {"name": "field.player_y", "kind": "setting", "value": "number", "summary": "Dónde está el jugador en la pantalla, de 0 a 1 en vertical."},
+      {"name": "field_item_notice_ok", "kind": "command", "value": "none", "summary": "El jugador confirma el aviso."},
+      {"name": "field_item_notice_closed", "kind": "command", "value": "none", "summary": "El cuadro terminó de cerrarse (tras closing)."}
+    ],
+    "award_notice": [
+      {"name": "award_notice.lines", "kind": "setting", "value": "text", "summary": "La clave del texto del aviso de un premio o de un cambio del compañero."},
+      {"name": "award_notice.color", "kind": "setting", "value": "number", "summary": "El color del nombre, como número."},
+      {"name": "award_notice.name", "kind": "setting", "value": "text", "summary": "El nombre que muestra el aviso."},
+      {"name": "award_notice_ok", "kind": "command", "value": "none", "summary": "El jugador confirma el aviso."}
+    ],
+    "fishing_notice": [
+      {"name": "fishing_notice.text", "kind": "setting", "value": "text", "summary": "La clave del texto de lo pescado."},
+      {"name": "fishing_notice.item", "kind": "setting", "value": "text", "summary": "La clave del nombre de lo pescado."},
+      {"name": "fishing_notice.size", "kind": "setting", "value": "number", "summary": "El tamaño de lo pescado."},
+      {"name": "fishing_notice_ok", "kind": "command", "value": "none", "summary": "El jugador confirma el aviso."}
+    ],
+    "save_indicator": [
+      {"name": "save_indicator.text", "kind": "setting", "value": "text", "summary": "Lo que dice el indicador de guardado (guardando, cargando...)."},
+      {"name": "save_indicator.opacity", "kind": "setting", "value": "number", "summary": "Cuánto se ve el indicador, de 0 a 1."},
+      {"name": "save_indicator.lift", "kind": "setting", "value": "number", "summary": "Cuánto ha subido el indicador al aparecer, de 0 a 1."},
+      {"name": "save_indicator.figure", "kind": "setting", "value": "boolean", "summary": "Si el indicador enseña la figura que gira."}
+    ],
+    "money_box": [
+      {"name": "money_box.money", "kind": "setting", "value": "number", "summary": "El dinero del jugador."},
+      {"name": "money_box.bits_key", "kind": "setting", "value": "text", "summary": "La clave del nombre de la moneda."},
+      {"name": "money_box.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambian los valores de arriba: el cuadro se vuelve a dibujar."}
+    ],
+    "lives_box": [
+      {"name": "lives_box.outline", "kind": "setting", "value": "boolean", "summary": "Si el cuadro de vidas está abriéndose o cerrándose (solo el borde)."},
+      {"name": "lives_box.grow", "kind": "setting", "value": "number", "summary": "Cuánto ha crecido el borde, de 0 a 1."},
+      {"name": "lives_box.anchor_x", "kind": "setting", "value": "number", "summary": "Desde dónde crece, de 0 a 1 en horizontal (el compañero)."},
+      {"name": "lives_box.anchor_y", "kind": "setting", "value": "number", "summary": "Desde dónde crece, de 0 a 1 en vertical."},
+      {"name": "lives_box.lives", "kind": "setting", "value": "number", "summary": "Las vidas que le quedan al compañero."},
+      {"name": "lives_box.slots", "kind": "setting", "value": "number", "summary": "Cuántas vidas caben en el cuadro."},
+      {"name": "lives_box.lost_full", "kind": "setting", "value": "boolean", "summary": "Si la vida que se pierde aún se dibuja llena (parpadea al perderse)."},
+      {"name": "lives_box.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambian los valores de arriba."},
+      {"name": "screen_fade", "kind": "setting", "value": "number", "summary": "Cuánto oscurece el fundido de pantalla, de 0 a 1."}
     ],
     "partner_menu": [
       {"name": "partner_menu.start_page", "kind": "setting", "value": "text", "summary": "La página con la que se abre el menú: items o status."},

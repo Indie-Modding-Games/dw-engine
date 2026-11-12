@@ -1,5 +1,5 @@
-/* The clock's box, in the top right corner. It takes no input, so the game and the menus under it
-   keep the pointer. */
+/* The clock's box, at the top centre, where no skin's HUD is: the minimap hides under any box over
+   it. It takes no input, so the game and the menus under it keep the pointer. */
 body {
 	pointer-events: none;
 	z-index: 90;
@@ -8,13 +8,15 @@ body {
 #clock {
 	position: absolute;
 	top: 12dp;
-	right: 12dp;
+	left: 50%;
+	width: 120dp;
+	margin-left: -60dp;
 	padding: 4dp 10dp;
 	border-radius: 6dp;
 	background-color: #10141ccc;
 	color: #f2f4f7;
 	font-size: 22dp;
-	text-align: right;
+	text-align: center;
 }
 
 #day {

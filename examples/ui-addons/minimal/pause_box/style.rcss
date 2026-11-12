@@ -1,0 +1,27 @@
+/* A wide band across the middle of the screen in place of the game's small box. */
+body {
+	pointer-events: none;
+	z-index: 100;
+}
+
+#box {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 40%;
+	padding: 18dp 0;
+	background-color: #0b1020e6;
+	color: #f2f4f7;
+	text-align: center;
+}
+
+#label {
+	font-size: 40dp;
+}
+
+#time,
+#hint {
+	margin-top: 6dp;
+	font-size: 18dp;
+	color: #c9d3de;
+}

@@ -41,6 +41,20 @@ constexpr auto Screens = std::to_array<ScreenScripts>({
      .files = {"common/original_box.lua", "common/panel_enter.lua", "common/bag_slot.lua",
                "common/screen_fit.lua", "partner_menu/logic.lua", "partner_menu/document.rml"}},
     {.screen = "skin_picker", .files = {"skin_picker/logic.lua", "skin_picker/document.rml"}},
+    // The notices.
+    {.screen = "pause_box", .files = {"pause_box/logic.lua", "pause_box/document.rml"}},
+    {.screen = "field_item_notice",
+     .files = {"common/screen_fit.lua", "common/original_box.lua", "field_item_notice/logic.lua",
+               "field_item_notice/document.rml"}},
+    {.screen = "award_notice",
+     .files = {"common/screen_fit.lua", "award_notice/logic.lua", "award_notice/document.rml"}},
+    {.screen = "fishing_notice",
+     .files = {"fishing_notice/logic.lua", "fishing_notice/document.rml"}},
+    {.screen = "save_indicator",
+     .files = {"save_indicator/logic.lua", "save_indicator/document.rml"}},
+    {.screen = "money_box", .files = {"money_box/logic.lua", "money_box/document.rml"}},
+    {.screen = "lives_box", .files = {"lives_box/logic.lua", "lives_box/document.rml"}},
+    {.screen = "ui_notice", .files = {"ui_notice/logic.lua", "ui_notice/document.rml"}},
 });
 
 std::string readText(const std::filesystem::path& path) {

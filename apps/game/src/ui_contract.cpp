@@ -31,6 +31,12 @@ constexpr std::string_view PauseMenu = "pause_menu";
 constexpr std::string_view PartnerMenu = "partner_menu";
 constexpr std::string_view SkinPicker = "skin_picker";
 constexpr std::string_view UiNotice = "ui_notice";
+constexpr std::string_view FieldItemNotice = "field_item_notice";
+constexpr std::string_view AwardNotice = "award_notice";
+constexpr std::string_view FishingNotice = "fishing_notice";
+constexpr std::string_view SaveIndicator = "save_indicator";
+constexpr std::string_view MoneyBox = "money_box";
+constexpr std::string_view LivesBox = "lives_box";
 // The UI API's namespaces (content/packs/game/ui/api/<namespace>.lua).
 constexpr std::string_view Clock = "clock";
 constexpr std::string_view Field = "field";
@@ -273,6 +279,61 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
           "Vuelve a leer de sus archivos la interfaz puesta y los complementos."),
     entry(UiNotice, Setting, "ui_addon.problem", Text,
           "Por qué no se pudo usar la interfaz elegida; vacío si se pudo."),
+
+    // The notices (docs/modding/interfaces.md): small boxes the game shows over the field.
+    entry(FieldItemNotice, Setting, "field_item_notice.text", Text,
+          "La clave del texto del aviso de un objeto en el suelo o en un cofre."),
+    entry(FieldItemNotice, Setting, "field_item_notice.item", Text,
+          "La clave del nombre del objeto; vacía para un cofre vacío."),
+    entry(FieldItemNotice, Setting, "field_item_notice.answer", Text,
+          "Si el aviso acepta confirmar ahora: sound, quiet (sin sonido) o vacío (todavía no)."),
+    entry(FieldItemNotice, Setting, "field_item_notice.phase", Text,
+          "open mientras se ve; closing cuando el jugador ya contestó y el aviso se cierra."),
+    entry(
+        FieldItemNotice, Setting, "field.player_x", Number,
+        "Dónde está el jugador en la pantalla, de 0 a 1 en horizontal (el cuadro crece desde ahí)."),
+    entry(FieldItemNotice, Setting, "field.player_y", Number,
+          "Dónde está el jugador en la pantalla, de 0 a 1 en vertical."),
+    entry(FieldItemNotice, Command, "field_item_notice_ok", None, "El jugador confirma el aviso."),
+    entry(FieldItemNotice, Command, "field_item_notice_closed", None,
+          "El cuadro terminó de cerrarse (tras closing)."),
+    entry(AwardNotice, Setting, "award_notice.lines", Text,
+          "La clave del texto del aviso de un premio o de un cambio del compañero."),
+    entry(AwardNotice, Setting, "award_notice.color", Number, "El color del nombre, como número."),
+    entry(AwardNotice, Setting, "award_notice.name", Text, "El nombre que muestra el aviso."),
+    entry(AwardNotice, Command, "award_notice_ok", None, "El jugador confirma el aviso."),
+    entry(FishingNotice, Setting, "fishing_notice.text", Text, "La clave del texto de lo pescado."),
+    entry(FishingNotice, Setting, "fishing_notice.item", Text,
+          "La clave del nombre de lo pescado."),
+    entry(FishingNotice, Setting, "fishing_notice.size", Number, "El tamaño de lo pescado."),
+    entry(FishingNotice, Command, "fishing_notice_ok", None, "El jugador confirma el aviso."),
+    entry(SaveIndicator, Setting, "save_indicator.text", Text,
+          "Lo que dice el indicador de guardado (guardando, cargando...)."),
+    entry(SaveIndicator, Setting, "save_indicator.opacity", Number,
+          "Cuánto se ve el indicador, de 0 a 1."),
+    entry(SaveIndicator, Setting, "save_indicator.lift", Number,
+          "Cuánto ha subido el indicador al aparecer, de 0 a 1."),
+    entry(SaveIndicator, Setting, "save_indicator.figure", Boolean,
+          "Si el indicador enseña la figura que gira."),
+    entry(MoneyBox, Setting, "money_box.money", Number, "El dinero del jugador."),
+    entry(MoneyBox, Setting, "money_box.bits_key", Text, "La clave del nombre de la moneda."),
+    entry(MoneyBox, Setting, "money_box.revision", Number,
+          "Sube cada vez que cambian los valores de arriba: el cuadro se vuelve a dibujar."),
+    entry(LivesBox, Setting, "lives_box.outline", Boolean,
+          "Si el cuadro de vidas está abriéndose o cerrándose (solo el borde)."),
+    entry(LivesBox, Setting, "lives_box.grow", Number, "Cuánto ha crecido el borde, de 0 a 1."),
+    entry(LivesBox, Setting, "lives_box.anchor_x", Number,
+          "Desde dónde crece, de 0 a 1 en horizontal (el compañero)."),
+    entry(LivesBox, Setting, "lives_box.anchor_y", Number,
+          "Desde dónde crece, de 0 a 1 en vertical."),
+    entry(LivesBox, Setting, "lives_box.lives", Number, "Las vidas que le quedan al compañero."),
+    entry(LivesBox, Setting, "lives_box.slots", Number, "Cuántas vidas caben en el cuadro."),
+    entry(LivesBox, Setting, "lives_box.lost_full", Boolean,
+          "Si la vida que se pierde aún se dibuja llena (parpadea al perderse)."),
+    entry(LivesBox, Setting, "lives_box.revision", Number,
+          "Sube cada vez que cambian los valores de arriba."),
+    entry(LivesBox, Setting, "screen_fade", Number,
+          "Cuánto oscurece el fundido de pantalla, de 0 a 1."),
     entry(PauseMenu, Option, "text_font", Text,
           "La fuente del texto con aspecto original: modern u original."),
     entry(PauseMenu, Option, "walk_control", Text,
