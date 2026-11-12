@@ -60,3 +60,8 @@ body #box.outline {
 #slot-2 { left: 426dp; }
 #slot-3 { left: 528dp; }
 #slot-4 { left: 630dp; }
+
+/* The word as text (hud.lives_box.label), for skins that write it instead of the picture. */
+#label-text {
+	display: none;
+}

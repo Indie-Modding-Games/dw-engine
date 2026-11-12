@@ -9,12 +9,25 @@
 		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
 }
 
-/* The label keeps the original's picture of the word, on the plate. */
+/* The label: the word in gold on the plate (lc-lives: 386,240 192 x 72), in place of the original's picture. */
 #label {
+	display: none;
+}
+
+#label-text {
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 192dp;
+	height: 72dp;
 	box-sizing: border-box;
-	padding: 9dp 29dp;
 	border: 3dp #8cc6ec;
 	decorator: vertical-gradient(#23272f #1c2028) padding-box;
+	font-size: 30dp;
+	line-height: 66dp;
+	text-align: center;
+	color: #efc63c;
 }
 
 /* The heart: the original's picture is hidden (image-color) and the design's heart drawn 4 times its size; the
