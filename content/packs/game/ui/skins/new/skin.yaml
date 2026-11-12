@@ -99,6 +99,12 @@ screens:
     styles: [panel/style, versus/style]
   world_map:
     styles: [world_map/style]
+# The original's layouts (extends original), but the concept draws the title, the slot list and the rules over its
+# own 4:3 picture: no widescreen title picture.
+layout:
+  main_menu: {picture: modern}
+  save_slots: {picture: modern}
+  new_game_rules: {picture: modern}
 sprite_sheets:
   # Frames, cursor, key caps, tabs, bar fills and hearts of the design system, 2 pixels per dp (made from the
   # concept's theme.css values; see the skin's page in docs/architecture/ui.md).

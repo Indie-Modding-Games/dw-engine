@@ -3,14 +3,12 @@
    from the concept's .wire and .bg-grid) and the brandless logo bottom right (assets/hero_title.png), where the
    original has its own. */
 
-#scrim,
-#scrim.wide {
+#scrim {
 	background-color: #050a1c;
 	decorator: image(/ui/skins/new/assets/title_wire.png cover center center);
 }
 
-#picture,
-#scrim.wide #picture {
+#picture {
 	display: block;
 	position: absolute;
 	left: 50%;
@@ -22,6 +20,6 @@
 }
 
 #scrim.boot #picture,
-#scrim.wide .picture-fade {
+.picture-fade {
 	display: none;
 }

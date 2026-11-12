@@ -34,16 +34,11 @@ steps:
   - screenshot: bag-after-right
   - tap: {key: left_ctrl}
   - wait: {seconds: 0.6}
-  # Partner page: no stray tab, and the Evoluciones shortcut folder tab.
+  # Partner page: the original's full pages, no stray tab.
   - menu_select: open-partner
   - wait: {shown: partner_menu, seconds: 0.8}
   - screenshot: partner-page
-  # Evoluciones: the partner window's tab (skin-declared partner-evolutions) takes the player to
-  # the tree over the pause menu. Clicked, as the tab answers pointer and the arrows walk the bag.
-  - click: {element: partner_menu#tab-evolutions}
-  - wait: {shown: pause_menu, seconds: 0.8}
-  - screenshot: evolutions-tree
-  # Ctrl from the tree goes back to the partner window, not to the field nor to the hub.
+  # Ctrl from the partner window goes back to the pause menu, not to the field.
   - tap: {key: left_ctrl}
-  - wait: {shown: partner_menu, seconds: 0.8}
+  - wait: {shown: pause_menu, hidden: partner_menu, seconds: 0.8}
   - screenshot: partner-return

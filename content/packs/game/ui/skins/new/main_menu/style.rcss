@@ -2,14 +2,12 @@
    and the battle mode question. The backdrop and the logo are title/style.rcss. */
 
 /* The screen before the menu (002-003): dark, the logo large at the top, the green «PULSA» line with its key. */
-#scrim.boot,
-#scrim.wide.boot {
+#scrim.boot {
 	decorator: image(/ui/skins/new/assets/boot.png cover center center);
 	padding: 0;
 }
 
-#press-start,
-#scrim.wide #press-start {
+#press-start {
 	box-sizing: border-box;
 	padding: 70dp 32% 459dp 32%;
 	background-color: transparent;

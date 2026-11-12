@@ -782,9 +782,9 @@ la portada y el logotipo, también tras la lista de partidas, las reglas, el mod
 
 Como el aspecto original, necesita los sprites que `dwx extract` saca del disco del jugador; sin ellos queda fuera y
 el juego arranca con el aspecto de reserva. RmlUi no tiene sombras, contornos ni degradados libres en este motor, así
-que lo que la maqueta dibuja con ellos va en los ninepatch. Lo que aún difiere de la maqueta depende de cambios en
-los documentos o en su lógica (por ejemplo, el modo de imagen ancha de la portada se activa con la clase
-`skin-original`, que el aspecto new hereda).
+que lo que la maqueta dibuja con ellos va en los ninepatch. De la disposición del original solo cambia la imagen de la
+portada, de la lista de partidas y de las reglas (`layout: {picture: modern}`): la maqueta pone su propio fondo 4:3 y
+no la imagen ancha. Lo que aún difiere de la maqueta depende de cambios en los documentos o en su lógica.
 
 ## Aspecto original
 
