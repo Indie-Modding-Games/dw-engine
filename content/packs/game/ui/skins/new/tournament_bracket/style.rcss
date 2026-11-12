@@ -1,0 +1,12 @@
+/* The tournament bracket in the new look (concept area C, tournament_bracket: 297-302). The board, the slots and the
+   cup's card are the original's pictures; the look adds the dark navy scrim over the field and the gold frame on the
+   cup's card. */
+
+#shade {
+	background-color: #03081280;
+}
+
+#card {
+	margin: -5dp 0 0 -5dp;
+	border: 5dp #efc63c;
+}

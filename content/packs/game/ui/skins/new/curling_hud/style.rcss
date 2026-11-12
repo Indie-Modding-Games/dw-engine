@@ -1,0 +1,29 @@
+/* The curling HUD in the new look (concept area C, curling_hud: 281-290). The plates, the digits, the start sign, the
+   gauge and the hand are the original's pictures; the question and hint box is the story's speech box
+   (story_textbox/style). The look styles the recruit bar under it (90,664 786 x 54): half a window with brackets,
+   two lines in the small 1x type, your lead in green and a perfect round in gold. */
+
+#recruit {
+	padding: 4dp 18dp;
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 15dp;
+	line-height: 22dp;
+	color: #f2f0e1;
+}
+
+.recruit-line {
+	height: 22dp;
+}
+
+#recruit-perfect {
+	color: #efc63c;
+}
+
+#recruit.ahead #recruit-standing {
+	color: #5fd36a;
+}

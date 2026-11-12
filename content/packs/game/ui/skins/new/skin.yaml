@@ -17,18 +17,44 @@ theme: [theme]
 screens:
   award_notice:
     styles: [story_textbox/style]
+  bird_transport:
+    styles: [bird_transport/style]
+  card_shop:
+    styles: [card_shop/style]
+  curling_hud:
+    styles: [story_textbox/style, curling_hud/style]
   destination_choice:
     styles: [panel/style, destination_choice/style]
   dev_menu:
     styles: [panel/style]
   dialog:
     styles: [panel/style, dialog/style]
+  discard_menu:
+    styles: [discard_menu/style]
   field_item_notice:
     styles: [story_textbox/style]
+  fishing_bait:
+    styles: [panel/style, fishing_bait/style]
+  fishing_hud:
+    styles: [fishing_hud/style]
+  fishing_notice:
+    styles: [panel/style, fishing_notice/style]
+  gym_slots:
+    styles: [panel/style, gym_slots/style]
+  gym_stats:
+    styles: [panel/style, gym_stats/style]
   hud:
     styles: [hud/style]
+  item_keeper:
+    styles: [item_keeper/style]
+  jukebox:
+    styles: [jukebox/style]
   main_menu:
     styles: [title/style, main_menu/style]
+  merit_shop:
+    styles: [merit_shop/style]
+  money_box:
+    styles: [money_box/style]
   naming_box:
     styles: [panel/style, naming_box/style]
   new_game_mode:
@@ -47,10 +73,18 @@ screens:
     styles: [title/style, panel/style, save_machine/style]
   save_slots:
     styles: [title/style, panel/style, save_slots/style]
+  shop_menu:
+    styles: [panel/style, shop_menu/style]
   sleep_menu:
     styles: [panel/style, sleep_menu/style]
   story_textbox:
     styles: [story_textbox/style]
+  tournament_bracket:
+    styles: [tournament_bracket/style]
+  tournament_schedule:
+    styles: [tournament_schedule/style]
+  trade_menu:
+    styles: [trade_menu/style]
   world_map:
     styles: [world_map/style]
 sprite_sheets:

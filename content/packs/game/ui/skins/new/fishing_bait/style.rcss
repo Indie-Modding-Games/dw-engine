@@ -1,0 +1,103 @@
+/* Choosing the bait in the new look (concept area C, fishing_bait: 266-267): the pause menu's panel (panel/style)
+   at 204,120 with its title in gold and no line under it, the ▶ list, the page line, «Guardar la caña» and the
+   prompts under a light-blue line. */
+
+#panel {
+	padding: 9dp 21dp 7dp 41dp;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+#title {
+	margin: 0 0 6dp 0;
+	padding: 0 0 0 10dp;
+	border-bottom-width: 0;
+	line-height: 40dp;
+}
+
+#panel button {
+	height: 30dp;
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-width: 0;
+	border-left-width: 26dp;
+	font-size: 30dp;
+	line-height: 30dp;
+	text-align: left;
+	white-space: nowrap;
+}
+
+#panel button:focus {
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+/* The page line: «◀ Anterior   1/2   Siguiente ▶» in the small font, muted, gold arrows. The three sit on one line
+   with fixed widths; the page number is first in the document, so it moves to the middle. */
+#page,
+#panel #previous,
+#panel #next {
+	display: inline-block;
+	box-sizing: border-box;
+	height: 34dp;
+	margin: 6dp 0 0 0;
+	padding: 0;
+	border-width: 0;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 34dp;
+	color: #93a6bc;
+}
+
+#page {
+	position: relative;
+	left: 180dp;
+	width: 120dp;
+	text-align: center;
+}
+
+#panel #previous {
+	position: relative;
+	left: -120dp;
+	width: 180dp;
+	padding-left: 24dp;
+	decorator: image(nb-arrow-l scale-none left center);
+}
+
+#panel #next {
+	width: 187dp;
+	padding-right: 24dp;
+	text-align: right;
+	decorator: image(nb-arrow-r scale-none right center);
+}
+
+#panel #previous:focus {
+	color: #efc63c;
+	decorator: image(nb-arrow-l scale-none left center);
+}
+
+#panel #next:focus {
+	color: #efc63c;
+	decorator: image(nb-arrow-r scale-none right center);
+}
+
+#panel .hidden,
+#panel #previous.hidden,
+#panel #next.hidden,
+#page.hidden {
+	display: none;
+}
+
+#none {
+	margin-top: 4dp;
+}
+
+/* One line, as in the mockup: the long cancel label must not wrap under its key. */
+#prompts {
+	margin: 8dp -14dp 0 -34dp;
+	padding: 8dp 12dp 0 20dp;
+	white-space: nowrap;
+}
+
+#prompts .prompt {
+	margin-right: 6dp;
+}

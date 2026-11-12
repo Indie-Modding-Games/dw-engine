@@ -1,0 +1,156 @@
+/* The item keeper in the new look (concept area C, item_keeper: 236-243): two half windows with brackets, the active
+   one's title bar lit with its title in gold, the OBJETO / CANT. strip, the gold line on the focused row, the help
+   keys as key caps. */
+
+body .window {
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+.title-bar {
+	border: 2dp #4c6a8c;
+	background-color: transparent;
+	decorator: vertical-gradient(#2b3e5a #1c2a3e);
+}
+
+.title {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #93a6bc;
+}
+
+.window.active .title {
+	color: #efc63c;
+}
+
+.table {
+	border-width: 2dp;
+	border-color: #4c6a8c #4c6a8c #2a3a52 #4c6a8c;
+	background-color: #1b2638;
+}
+
+.table-name {
+	border-right-width: 0;
+}
+
+.table-count {
+	border-left-width: 0;
+}
+
+.label,
+.use-menu-art .label-menu,
+.use-menu-art .label-count {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 27dp;
+	width: auto;
+	white-space: nowrap;
+	color: #b6e4f7;
+	decorator: none;
+}
+
+.cursor {
+	left: 21dp;
+	width: 366dp;
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
+
+.row {
+	padding-left: 10dp;
+	padding-right: 10dp;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+.count {
+	right: 10dp;
+}
+
+body .row.stuck {
+	color: #5d6b7c;
+}
+
+.scrollbar {
+	left: 403dp;
+	width: 22dp;
+	border: 2dp #2c3d55;
+	background-color: #0b1322;
+}
+
+.thumb {
+	background-color: #b6e4f7;
+}
+
+/* The description box (84,327 792 x 66), opaque over the windows. */
+body #description {
+	padding: 0 21dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-over-outer, nb-over-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 60dp;
+	color: #f2f0e1;
+}
+
+/* The speech box (v1 talk, 90,486 786 x 177): a window with brackets, the speaker in gold, a choice row inside the gold
+   line with the ▶ beside it. */
+body #talk {
+	padding: 12dp 30dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 36dp;
+	color: #f2f0e1;
+}
+
+#talk .talk-row {
+	height: 36dp;
+}
+
+body #speaker,
+body #speaker.player {
+	color: #efc63c;
+}
+
+#talk .talk-row .run {
+	padding: 0;
+}
+
+#talk .talk-row.selected {
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-left: 26dp transparent;
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+#talk .talk-row.selected .run {
+	border-width: 0;
+	background-color: transparent;
+}
+
+/* The help: three 36dp lines so they fit the box under the speaker, each key in its cap. */
+#help .talk-row {
+	height: 36dp;
+	line-height: 36dp;
+}
+
+.help-key {
+	display: inline-block;
+	height: 30dp;
+	margin: 0 6dp;
+	padding: 0 6dp 4dp 6dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	decorator: ninepatch(nb-key-outer, nb-key-inner, 1) border-box;
+}

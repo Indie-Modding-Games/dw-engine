@@ -1,0 +1,19 @@
+/* The money box in the new look (concept area C, money_box: 209): half a window with its gold brackets at 24,66
+   246 x 99, the word on top and the money right-aligned under it (area C .mb). */
+
+body #bits-box {
+	padding: 8dp 21dp 0 21dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 39dp;
+	color: #f2f0e1;
+}
+
+#bits-value {
+	width: auto;
+	text-align: right;
+}

@@ -1,0 +1,269 @@
+/* The shop in the new look (concept area C, shop_menu: 194-208). The list sits in the pause menu's panel (panel/style)
+   under the money box; the description box goes at the bottom. */
+
+/* The money box (area C .mb): 24,66 246 x 99, the word on top, the money right-aligned under it. */
+body #bits-box {
+	padding: 8dp 21dp 0 21dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 39dp;
+	color: #f2f0e1;
+}
+
+#bits-value {
+	width: auto;
+}
+
+/* The description box (84,588 792 x 66): opaque, it opens over the list. */
+body #description {
+	padding: 0 21dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-over-outer, nb-over-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 60dp;
+	color: #f2f0e1;
+}
+
+/* The panel (204,180 552 wide), as half a window over the field. */
+#panel {
+	top: 180dp;
+	padding: 9dp 21dp 7dp 41dp;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+#line {
+	padding: 0 12dp;
+	line-height: 36dp;
+	color: #f2f0e1;
+}
+
+/* Every entry: the ▶ in the box's left padding, outside the gold line. */
+#panel button {
+	height: 30dp;
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-width: 0;
+	border-left-width: 26dp;
+	font-size: 30dp;
+	line-height: 30dp;
+	text-align: left;
+	text-transform: none;
+	white-space: nowrap;
+}
+
+#panel button:focus {
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+#list .row.disabled {
+	color: #5f6f82;
+}
+
+#list .row.favorite,
+#list .row.favorite:focus {
+	color: #efc63c;
+	border-left: 26dp transparent;
+}
+
+#empty {
+	padding: 6dp 0 0 10dp;
+	color: #93a6bc;
+}
+
+/* The page line: «◀ Anterior   1/2   Siguiente ▶» in the small font, muted, gold arrows. The three sit on one line
+   with fixed widths; the page number is first in the document, so it moves to the middle. */
+#page,
+#list #previous,
+#list #next-page {
+	display: inline-block;
+	box-sizing: border-box;
+	height: 34dp;
+	margin: 6dp 0 0 0;
+	padding: 0;
+	border-width: 0;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 34dp;
+	color: #93a6bc;
+}
+
+#page {
+	position: relative;
+	left: 180dp;
+	width: 120dp;
+	text-align: center;
+}
+
+#list #previous {
+	position: relative;
+	left: -120dp;
+	width: 180dp;
+	padding-left: 24dp;
+	decorator: image(nb-arrow-l scale-none left center);
+}
+
+#list #next-page {
+	width: 187dp;
+	padding-right: 24dp;
+	text-align: right;
+	decorator: image(nb-arrow-r scale-none right center);
+}
+
+#list #previous:focus {
+	color: #efc63c;
+	decorator: image(nb-arrow-l scale-none left center);
+}
+
+#list #next-page:focus {
+	color: #efc63c;
+	decorator: image(nb-arrow-r scale-none right center);
+}
+
+#panel .hidden,
+#list #previous.hidden,
+#list #next-page.hidden,
+#page.hidden {
+	display: none;
+}
+
+#list-back {
+	margin-top: 4dp;
+}
+
+/* Shop extras: the focused item's description in the bottom box (84,588), as the mockup's half window. */
+#list-description {
+	position: absolute;
+	left: -123dp;
+	top: 405dp;
+	width: 792dp;
+	height: 66dp;
+	box-sizing: border-box;
+	padding: 0 21dp;
+	border: 3dp transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+	line-height: 60dp;
+	white-space: nowrap;
+	color: #f2f0e1;
+}
+
+/* The amount box (sh-amount): name in gold, the price, «- n / max +» with «Máx» at the right, the total, then
+   «Aceptar» and «Volver» under a light-blue line. */
+#amount {
+	position: relative;
+}
+
+#amount p {
+	display: block;
+	height: 46dp;
+	padding: 0 0 0 12dp;
+	line-height: 46dp;
+	white-space: nowrap;
+}
+
+#amount-name {
+	color: #efc63c;
+}
+
+#amount #amount-value {
+	width: 150dp;
+	height: 36dp;
+	margin: 5dp 0 5dp 68dp;
+	padding: 0;
+	border: 2dp #4a79a8;
+	background-color: #0b1424;
+	line-height: 32dp;
+	text-align: center;
+}
+
+#amount-owned,
+#amount-after {
+	color: #b6e4f7;
+}
+
+#amount-owned.hidden,
+#amount-after.hidden {
+	display: none;
+}
+
+#panel #amount-less,
+#panel #amount-more,
+#panel #amount-max {
+	position: absolute;
+	top: 97dp;
+	height: 36dp;
+	min-width: 42dp;
+	margin: 0;
+	padding: 0 8dp;
+	border: 2dp #4c6a8c;
+	line-height: 32dp;
+	text-align: center;
+	color: #b6e4f7;
+	decorator: vertical-gradient(#2b3e5a #1c2a3e);
+}
+
+#panel #amount-less {
+	left: 12dp;
+}
+
+#panel #amount-more {
+	left: 232dp;
+}
+
+#panel #amount-max {
+	right: 0;
+}
+
+#panel #amount-less:focus,
+#panel #amount-more:focus,
+#panel #amount-max:focus {
+	border: 3dp #efc63c;
+	color: #efc63c;
+	decorator: vertical-gradient(#2b3e5a #1c2a3e);
+}
+
+#panel #amount-confirm {
+	margin-top: 8dp;
+	border-top: 3dp #7cb6e2;
+	height: 33dp;
+}
+
+/* The prompts under a light-blue line that runs almost to the box's sides. */
+#prompts {
+	margin: 8dp -14dp 0 -34dp;
+	padding: 8dp 12dp 0 20dp;
+}
+
+/* With the panel's phase class (logic: phase-talk / phase-choice), the keeper's line and the choice go to the speech
+   box at the bottom (90,486 786 x 177) and the list's keeper line is left out, as in the mockup. */
+#panel.phase-talk,
+#panel.phase-choice {
+	top: 486dp;
+	width: 786dp;
+	min-height: 177dp;
+	margin-left: -390dp;
+	padding: 12dp 30dp 12dp 30dp;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+}
+
+#panel.phase-choice #choices,
+#panel.phase-talk #next {
+	padding-left: 40dp;
+}
+
+#panel.phase-talk #prompts,
+#panel.phase-choice #prompts,
+#panel.phase-list #line,
+#panel.phase-description #line,
+#panel.phase-amount #line {
+	display: none;
+}

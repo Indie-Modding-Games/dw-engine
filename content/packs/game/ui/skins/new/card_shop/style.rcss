@@ -1,0 +1,157 @@
+/* The card shop in the new look (concept area C, card_shop: 210-219): the card list as half a window with brackets,
+   small light-blue labels, the gold line on the focused row, new cards in light gold, cards you cannot take greyed;
+   the «is it OK?» and amount boxes opaque over it, with light-blue rules and a sunk value field. */
+
+body #window {
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+.label,
+.use-menu-art .label-menu,
+.use-menu-art .label-price,
+.use-menu-art .label-count,
+#frame.mode-packs .label-menu,
+#frame.mode-packs .label-count {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 27dp;
+	width: auto;
+	white-space: nowrap;
+	color: #b6e4f7;
+	decorator: none;
+	top: 10dp;
+}
+
+#frame.mode-packs .label-count {
+	width: 150dp;
+}
+
+#cursor {
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
+
+.row {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+.name,
+.price,
+.count {
+	top: 12dp;
+}
+
+body .row.stuck {
+	color: #5d6b7c;
+}
+
+body .row.new {
+	color: #ffe58a;
+}
+
+.scrollbar {
+	left: 529dp;
+	width: 22dp;
+	border: 2dp #2c3d55;
+	background-color: #0b1322;
+}
+
+#frame.mode-sell .scrollbar,
+#frame.mode-packs .scrollbar {
+	left: 625dp;
+}
+
+.thumb {
+	background-color: #b6e4f7;
+}
+
+body #confirm,
+body #amount {
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-over-outer, nb-over-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+#confirm {
+	line-height: 40dp;
+}
+
+#question {
+	left: 22dp;
+	top: 8dp;
+}
+
+.answer {
+	padding-left: 15dp;
+	line-height: 36dp;
+	border-width: 0;
+}
+
+.answer.selected {
+	border-width: 0;
+	background-color: transparent;
+	color: #efc63c;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
+
+.rule {
+	height: 9dp;
+	border-top: 2dp #050c1a;
+	border-bottom: 2dp #050c1a;
+	background-color: #7cb6e2;
+}
+
+#amount-inset {
+	border: 2dp #4a79a8;
+	background-color: #0b1424;
+}
+
+/* The speech box (v1 talk, 90,486 786 x 177): a window with brackets, the speaker in gold, a choice row inside the gold
+   line with the ▶ beside it. */
+body #talk {
+	padding: 12dp 30dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 36dp;
+	color: #f2f0e1;
+}
+
+#talk .talk-row {
+	height: 36dp;
+}
+
+body #speaker,
+body #speaker.player {
+	color: #efc63c;
+}
+
+#talk .talk-row .run {
+	padding: 0;
+}
+
+#talk .talk-row.selected {
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-left: 26dp transparent;
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+#talk .talk-row.selected .run {
+	border-width: 0;
+	background-color: transparent;
+}
+

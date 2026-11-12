@@ -1,0 +1,112 @@
+/* Throwing an item away in the new look (concept area C, discard_menu: 244-247): half a window with brackets, the
+   OBJETO / CANT. labels, the gold line on the focused row, the prompts as key caps under the window, the «is it OK?»
+   box and the description box over it. */
+
+body #window {
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+.label,
+.use-menu-art .label-menu,
+.use-menu-art .label-count {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 27dp;
+	width: auto;
+	white-space: nowrap;
+	color: #b6e4f7;
+	top: 10dp;
+	decorator: none;
+}
+
+#cursor {
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
+
+.row {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	color: #f2f0e1;
+}
+
+.icon {
+	top: 3dp;
+	width: 42dp;
+	height: 42dp;
+}
+
+.name,
+.count {
+	top: 12dp;
+}
+
+.count {
+	right: 12dp;
+}
+
+body .row.stuck {
+	color: #5d6b7c;
+}
+
+.scrollbar {
+	width: 22dp;
+	border: 2dp #2c3d55;
+	background-color: #0b1322;
+}
+
+.thumb {
+	background-color: #b6e4f7;
+}
+
+#prompts {
+	top: 462dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #f2f0e1;
+}
+
+/* The «is it OK?» box (312,297 336 x 126): the question, then the two answers on one line. */
+body #confirm {
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-over-outer, nb-over-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 40dp;
+	color: #f2f0e1;
+}
+
+#question {
+	left: 22dp;
+	top: 8dp;
+}
+
+.answer {
+	line-height: 36dp;
+	border-width: 0;
+}
+
+.answer.selected {
+	border-width: 0;
+	background-color: transparent;
+	color: #efc63c;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
+
+body #description {
+	padding: 0 21dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-over-outer, nb-over-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 60dp;
+	color: #f2f0e1;
+}

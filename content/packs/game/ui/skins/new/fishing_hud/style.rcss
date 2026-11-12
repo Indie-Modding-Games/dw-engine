@@ -1,0 +1,40 @@
+/* The line gauge in the new look (concept area C, fishing_hud: 268-269): a small box with one light-blue line at the
+   stage's bottom right (24 from its edges), «Sedal» in the small font, a sunk track with the gold fill, red when the
+   line is about to break. */
+
+#gauge {
+	right: 50%;
+	bottom: 24dp;
+	margin-right: -456dp;
+	width: 240dp;
+	padding: 8dp 12dp;
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;
+	color: #b6e4f7;
+}
+
+#label {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 28dp;
+}
+
+#track {
+	height: 12dp;
+	margin-top: 4dp;
+	border: 2dp #4a79a8;
+	background-color: #0b1424;
+}
+
+#fill {
+	height: 8dp;
+	background-color: transparent;
+	decorator: image(nb-fill-gd);
+}
+
+#fill.danger {
+	background-color: transparent;
+	decorator: image(nb-fill-rd);
+}
