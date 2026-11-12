@@ -1,86 +1,18 @@
-/* Two clear choices over the field: sleep immediately, or save first and then sleep. This screen cannot be cancelled,
-   so the confirm hint stays visible and the primary action keeps a strong focus treatment. */
-
-#scrim {
-	background-color: #06132180;
-}
+/* The sleep menu in the new look (concept area A, sleep_menu: 069): the panel half filled with its brackets, the
+   two entries as a ▶ list, the accept prompt under a light-blue line. */
 
 #panel {
-	left: 50%;
-	top: 50%;
-	width: 720dp;
-	margin-left: -360dp;
-	transform: translate(0dp, -50%);
-	padding: 18dp;
-	box-sizing: border-box;
-	border: 2dp #72c7ff;
-	border-radius: 0;
-	background-color: #0b1c2df5;
-	decorator: vertical-gradient(#153653 #0a1929);
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
 }
 
 #panel button {
-	display: block;
-	width: 100%;
-	height: 60dp;
-	margin: 0 0 9dp 0;
-	padding: 0 18dp;
-	box-sizing: border-box;
-	border: 1dp #345875;
-	border-radius: 0;
-	background-color: #0a2035;
-	color: #d8f1ff;
-	font-size: 20dp;
-	line-height: 57dp;
-	text-align: left;
-	transition: background-color border-color color 0.12s cubic-out;
-}
-
-#panel button:hover {
-	border-color: #72c7ff;
-	background-color: #153653;
+	margin-left: -26dp;
+	padding: 3dp 12dp;
+	border-width: 0;
+	border-left-width: 26dp;
 }
 
 #panel button:focus {
-	border: 2dp #ffd51e;
-	background-color: #153653;
-	color: #ffe64a;
-}
-
-#panel #sleep {
-	border-color: #ffd51e;
-	background-color: #ffd51e;
-	color: #081724;
-	font-weight: bold;
-}
-
-#panel #sleep:focus {
-	border-color: #72c7ff;
-	background-color: #153653;
-	color: #ffe64a;
-}
-
-#panel #prompts {
-	margin-top: 6dp;
-	padding-top: 9dp;
-	border-top: 1dp #397ca4;
-	color: #a8c7d9;
-	font-size: 14dp;
-	text-align: right;
-}
-
-#panel #prompts .key {
-	color: #72c7ff;
-}
-
-@media (max-width: 760dp) {
-	#panel {
-		width: 92%;
-		margin-left: -46%;
-	}
-}
-
-@media (max-height: 480dp) {
-	#panel { top: 18dp; transform: none; }
-	#panel button { height: 48dp; line-height: 45dp; }
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
 }

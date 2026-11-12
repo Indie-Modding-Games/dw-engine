@@ -1,20 +1,11 @@
-/* The save indicator in the original look: one of the original's windows (theme.rcss, .original-box: its half
-   transparent fill, its border lines and corner sprites) round the figure's strip and the text in the original-look
-   font at twice its 11-pixel cells (22dp), small beside the boxes' 33dp.
-   The original has no such box: it is part of the engine improvement. */
+/* The save indicator in the new look (concept area A, save_indicator: 064-066): a thin window, the label in the
+   small font. */
 
 #indicator {
-	right: 30dp;
-	bottom: 27dp;
-	padding: 3dp 12dp 3dp 6dp;
 	border: 3dp transparent;
-	border-radius: 0;
-	background-color: #2d384080;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
-	font-family: original-look;
-	font-size: 22dp;
-	color: #d0d0d0;
+	background-color: transparent;
+	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #f2f0e1;
 }
-
-body #indicator { background-color: #0b1c2df2; color: #d5eaf7; }

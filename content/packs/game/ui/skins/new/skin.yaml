@@ -15,8 +15,34 @@ cursor: cursor
 cursor_hotspot: [1, 1]
 theme: [theme]
 screens:
+  award_notice:
+    styles: [story_textbox/style]
+  dev_menu:
+    styles: [panel/style]
+  dialog:
+    styles: [panel/style, dialog/style]
+  field_item_notice:
+    styles: [story_textbox/style]
   main_menu:
     styles: [title/style, main_menu/style]
+  naming_box:
+    styles: [panel/style, naming_box/style]
+  new_game_mode:
+    styles: [title/style, panel/style, new_game_mode/style]
+  new_game_rules:
+    styles: [title/style, panel/style, new_game_rules/style]
+  pause_box:
+    styles: [pause_box/style]
+  save_indicator:
+    styles: [save_indicator/style]
+  save_machine:
+    styles: [title/style, panel/style, save_machine/style]
+  save_slots:
+    styles: [title/style, panel/style, save_slots/style]
+  sleep_menu:
+    styles: [panel/style, sleep_menu/style]
+  story_textbox:
+    styles: [story_textbox/style]
 sprite_sheets:
   # Frames, cursor, key caps, tabs, bar fills and hearts of the design system, 2 pixels per dp (made from the
   # concept's theme.css values; see the skin's page in docs/architecture/ui.md).

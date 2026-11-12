@@ -1,166 +1,58 @@
-/* The save machine in the original look (main_menu.c: renderMenuBox; captures orig-01 to orig-06 of the machine in
-   room08, 2026-10-30): the title screen's boxes, the original's box over a fill from #000060 at the top to #000020
-   at the bottom, with its corner sprites; the text in the ink #d0d0d0, the registration's note in yellow (#fff371),
-   an empty slot's dot in grey. The original names no buttons on screen, and these boxes leave them out, as the
-   title screen's do. The modern look's style comes first (this skin extends it), so this one sets every property it
-   sets. */
+/* The save machine in the new look (concept area A, save_machine: 057-063): the windows on the title's wireframe,
+   the heading and the lone notices with brackets, the answers in an opaque window with brackets as a ▶ list, the
+   stats' names light blue, empty rows dim, the note gold. */
 
 .box {
 	border: 3dp transparent;
-	border-radius: 0;
 	background-color: transparent;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box, vertical-gradient(#000060 #000020);
+	decorator: ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+}
+
+#heading,
+#slots-prompt,
+#no-slot,
+#in-training {
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
 }
 
 #heading {
-	color: #d0d0d0;
+	color: #f2f0e1;
+	letter-spacing: 4dp;
 }
 
-#confirm-note {
-	color: #fff371;
-}
-
-.slot.empty .slot-name {
-	color: #b2b2b2;
-}
-
-#prompts {
-	display: none;
-}
-
-/* Save machine terminal: preserve the machine's screen-by-screen positions and give each state one consistent frame,
-   a readable information hierarchy, and a clear keyboard focus. */
-.box {
-	border: 2dp #72c7ff;
-	border-radius: 0;
-	background-color: #0b1c2df2;
-	decorator: vertical-gradient(#153653 #0a1929);
-	color: #d8f1ff;
-}
-
-#heading {
-	color: #ffe64a;
-	font-size: 20dp;
-	font-weight: bold;
-}
-
-#stats {
-	color: #a8c7d9;
+#answers {
+	padding: 12dp 18dp 0 36dp;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-over-outer, nb-over-inner, 1) border-box;
 }
 
 .stat {
-	min-height: 36dp;
-	color: #a8c7d9;
-	font-size: 16dp;
-}
-
-.stat-label {
-	color: #72c7ff;
+	color: #b6e4f7;
 }
 
 .stat-value {
-	color: #d8f1ff;
-	font-weight: bold;
+	left: 273dp;
+	color: #f2f0e1;
 }
 
-#register-question, #confirm-question, #save-question, #save-dialog,
-#no-slot, #in-training, #slots-prompt {
-	color: #d8f1ff;
+#answers button,
+#slots .slot {
+	margin-left: -26dp;
+	padding: 0 12dp;
+	border-width: 0;
+	border-left-width: 26dp;
 }
 
-#confirm-name {
-	margin-top: 6dp;
-	color: #ffe64a;
-	font-size: 20dp;
-	font-weight: bold;
+#answers button:focus,
+#slots .slot:focus {
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+.slot.empty .slot-name {
+	color: #5f6f82;
 }
 
 #confirm-note {
-	border-color: #ffd51e;
-	background-color: #302b16;
-	decorator: vertical-gradient(#39351d #211f16);
-	color: #ffe64a;
-}
-
-#slots .slot {
-	border: 1dp #345875;
-	background-color: #0a2035;
-	color: #d8f1ff;
-	font-size: 17dp;
-	text-align: left;
-}
-
-#slots .slot:hover {
-	border-color: #72c7ff;
-	background-color: #153653;
-}
-
-#slots .slot:focus {
-	border: 2dp #ffd51e;
-	background-color: #153653;
-	color: #ffe64a;
-}
-
-.slot-name {
-	color: #d8f1ff;
-	font-weight: bold;
-}
-
-.slot-species {
-	color: #a8c7d9;
-}
-
-.slot.empty .slot-name, .slot.empty .slot-species {
-	color: #7890a2;
-}
-
-#slots .slot:focus .slot-name, #slots .slot:focus .slot-species {
-	color: #ffe64a;
-}
-
-#answers button {
-	width: 144dp;
-	height: 42dp;
-	margin-bottom: 6dp;
-	padding: 0 12dp;
-	box-sizing: border-box;
-	border: 1dp #397ca4;
-	border-radius: 0;
-	background-color: #102a40;
-	color: #d8f1ff;
-	font-size: 17dp;
-	line-height: 39dp;
-	text-align: left;
-}
-
-#answers button:hover {
-	border-color: #72c7ff;
-	background-color: #153653;
-}
-
-#answers button:focus {
-	border: 2dp #ffd51e;
-	background-color: #153653;
-	color: #ffe64a;
-}
-
-#prompts {
-	display: block;
-	font-size: 14dp;
-	color: #a8c7d9;
-}
-
-#prompts .key {
-	color: #72c7ff;
-}
-
-@media (max-width: 900dp) {
-	.box {
-		padding-left: 18dp;
-		padding-right: 18dp;
-	}
-
-	#slots .slot { width: 100%; }
-	#slots .slot-species { left: 45%; }
+	color: #efc63c;
 }
