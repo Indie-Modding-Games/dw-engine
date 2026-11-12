@@ -1736,7 +1736,9 @@ local function bind_tab(document)
     document:get(id):set_property("nav-up", "#options-back")
     document:get(id):set_property("nav-down", "#" .. first)
   end
-  document:get("option-list"):set_class("tab-" .. option_tab, true)
+  for _, tab in ipairs(option_tabs) do
+    document:get("option-list"):set_class("tab-" .. tab, tab == option_tab)
+  end
   -- A list that scrolls (a large UI scale) starts each tab, and each opening, at its first row,
   -- which takes the focus: the rows it was scrolled to belonged to another tab.
   document:get("option-list"):scroll_to_top()
@@ -1986,6 +1988,14 @@ local function refresh_prompts(document)
   refresh_option_hints(document)
 end
 
+-- Closes the chart's detail and its opening box at once, without the box's closing steps.
+local function drop_chart_detail(document)
+  chart_detail = false
+  chart_transition = nil
+  document:get("chart-detail-transition"):set_class("hidden", true)
+  document:get("panel"):set_class("chart-detail-open", false)
+end
+
 local function show_page(document, name, focus, tools)
   if name == "options" and current ~= "options" then
     open_options(document)
@@ -1996,9 +2006,14 @@ local function show_page(document, name, focus, tools)
   if name == "player" and current == "main" then
     player_tab = "player"
     chart_selecting = false
+    cards_selecting = false
+    card_open = false
+    document:get("card-detail"):set_class("box-closed", true)
+    document:get("card-count-box"):set_class("box-closed", true)
     document:get("player-tab-player"):set_class("selected", true)
     document:get("player-tab-chart"):set_class("selected", false)
     document:get("player-tab-medals"):set_class("selected", false)
+    document:get("player-tab-card"):set_class("selected", false)
     document:get("player-tab-city"):set_class("selected", false)
     chart_cursor(document)
     city_selecting = false
@@ -2007,6 +2022,7 @@ local function show_page(document, name, focus, tools)
   current = name
   document:get("panel"):set_class("player-chart", name == "player" and player_tab == "chart")
   document:get("panel"):set_class("player-medals", name == "player" and player_tab == "medals")
+  document:get("panel"):set_class("player-cards", name == "player" and player_tab == "card")
   document:get("panel"):set_class("player-city", name == "player" and player_tab == "city")
   player_tools_open = tools == true
   document:get("panel"):set_class("player-tools-open", player_tools_open)
@@ -2179,6 +2195,10 @@ function on_show(document, args)
   at_title = ui.setting("pause_menu.at_title") == true
   options_direct = at_title or ui.setting("pause_menu.start_page") == "options"
   document:get("panel"):set_class("at-title", at_title)
+  -- The reset's question does not outlive the menu: it opens again without it.
+  if reset_open then
+    close_reset(document)
+  end
   if options_direct then
     -- From the title to a game or back the page's actions change: lay it out again, as it opens.
     if at_title ~= was_at_title then
@@ -2201,11 +2221,36 @@ function on_show(document, args)
   refresh_prompts(document)
 end
 
+-- Tells the game what to draw in 3D over the player page (pause_menu.portrait and
+-- pause_menu.medal): the player while the page shows it, the medal held up on the medals page.
+local function send_portraits(document)
+  local panel = document:get("panel")
+  local tools = panel:has_class("player-tools-open")
+  ui.report(
+    "pause_menu.portrait",
+    panel:has_class("on-player") and not tools and not panel:has_class("player-chart")
+  )
+  local medal = -1
+  if panel:has_class("player-medals") and not tools then
+    for i = 0, 14 do
+      if document:get("medal-" .. i):has_class("showing") then
+        medal = i
+        break
+      end
+    end
+  end
+  ui.report("pause_menu.medal", medal)
+end
+
 function on_hide(document)
   original_box.cancel(document)
+  -- None while the menu is away, so they do not show for a frame on the next opening's page.
+  ui.report("pause_menu.portrait", false)
+  ui.report("pause_menu.medal", -1)
 end
 
 function on_tick(document, seconds)
+  send_portraits(document)
   original_box.tick(document, seconds)
   panel_enter.tick(document)
   chart_slide_tick(document, seconds)
@@ -2282,6 +2327,7 @@ function on_setting(document, name)
     -- closing its box (which would leave it minimized on the player page).
     if ui.setting(name) == "options" then
       options_direct = true
+      drop_chart_detail(document)
       show_page(document, "options")
     end
   elseif name == "evolution_requirements" then

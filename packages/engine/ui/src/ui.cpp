@@ -57,6 +57,8 @@ constexpr float MaxDpRatio = 8.0F;
 
 // The commands the menus may queue between two takeCommands(): more is a script gone wrong.
 constexpr std::size_t MaxPendingCommands = 256;
+// The names the menus may report (ui.report): more is a script gone wrong.
+constexpr std::size_t MaxReportedNames = 64;
 
 // The units the markers are written in: thousandths of a percent of the minimap and tenths of a
 // degree.
@@ -298,6 +300,8 @@ struct Ui::Impl {
   std::array<bool, 3> rmlButtonsDown{};
 
   std::vector<UiCommand> commands;
+  // The latest value of each name the documents report (ui.report), for the game to read.
+  std::map<std::string, UiValue, std::less<>> reports;
   std::vector<UiCue> cues;
   std::map<std::string, UiValue, std::less<>> settings;
   const input::InputState* input = nullptr;
@@ -351,6 +355,14 @@ struct Ui::Impl {
                 return false;
               }
               commands.push_back(std::move(command));
+              return true;
+            },
+        .report =
+            [this](UiCommand command) {
+              if (!reports.contains(command.name) && reports.size() >= MaxReportedNames) {
+                return false;
+              }
+              reports.insert_or_assign(std::move(command.name), std::move(command.value));
               return true;
             },
         .setting = [this](std::string_view name) -> UiValue {
@@ -1486,6 +1498,11 @@ bool Ui::hasModal() const {
 
 std::vector<UiCommand> Ui::takeCommands() {
   return std::exchange(impl_->commands, {});
+}
+
+UiValue Ui::reported(std::string_view name) const {
+  auto found = impl_->reports.find(name);
+  return found == impl_->reports.end() ? UiValue{} : found->second;
 }
 
 std::vector<UiCue> Ui::takeCues() {

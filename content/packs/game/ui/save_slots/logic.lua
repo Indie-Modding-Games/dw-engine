@@ -7,7 +7,7 @@
 -- entries, turned with left and right or the page buttons. The page and the row chosen stay while a
 -- dialog about it is open, and start over when the list is opened from the main menu.
 --
--- The original look (the skin marks #panel with slots-original) lists every slot instead, one row
+-- The original's layout (ui.layout("menu") == "original") lists every slot instead, one row
 -- each, as the original lists its memory card slots (main_menu.c: renderSelectCardSlot): "CONTINUE
 -- SLOT 1", "ERASE OLD AUTOSAVE 2"... (the game publishes save.slots.manual, the manual slots; the
 -- autosave entries are old autosave files, from when autosaves had slots of their own, listed only

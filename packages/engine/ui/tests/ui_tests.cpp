@@ -2709,4 +2709,24 @@ TEST_CASE("the game fires a UI API event straight to the documents' hooks") {
   CHECK(ui->fireEvent("probe.unheard", table) == 0);
 }
 
+TEST_CASE("a document reports a state the game reads when it needs it, the latest value only") {
+  Content content;
+  content.add("ui/reporting/document.rml",
+              "<rml><head><script>function on_show(document) "
+              "ui.report('probe.portrait', true) ui.report('probe.medal', 3) "
+              "ui.report('probe.medal', 4) end "
+              "function on_hide(document) ui.report('probe.portrait', false) end"
+              "</script></head><body/></rml>");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("reporting", idOf("ui/reporting/document")));
+  CHECK(ui->reported("probe.portrait") == UiValue{});
+  ui->show("reporting");
+  CHECK(ui->reported("probe.portrait") == UiValue{true});
+  CHECK(ui->reported("probe.medal") == UiValue{4.0});
+  // A report is no command: the game's queue stays empty.
+  CHECK(ui->takeCommands().empty());
+  ui->hide("reporting");
+  CHECK(ui->reported("probe.portrait") == UiValue{false});
+}
+
 } // namespace dwe::ui

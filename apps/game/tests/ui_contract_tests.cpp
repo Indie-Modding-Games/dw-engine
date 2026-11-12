@@ -62,12 +62,15 @@ void writeText(const std::filesystem::path& path, const std::string& text) {
 }
 
 // Whether a literal name a document reads or sends is in the contract: a setting it reads is a
-// setting or an option, a name it sends a command or an option.
+// setting or an option, a name it sends a command or an option, a name it reports a report.
 bool declared(std::string_view screen, std::string_view call, std::string_view name) {
   const auto contract = gameUiContract();
   if (call == "setting") {
     return ui::findContractEntry(contract, screen, ui::UiContractKind::Setting, name) != nullptr ||
            ui::findContractEntry(contract, screen, ui::UiContractKind::Option, name) != nullptr;
+  }
+  if (call == "report") {
+    return ui::findContractEntry(contract, screen, ui::UiContractKind::Report, name) != nullptr;
   }
   return ui::findContractEntry(contract, screen, ui::UiContractKind::Command, name) != nullptr ||
          ui::findContractEntry(contract, screen, ui::UiContractKind::Option, name) != nullptr;
@@ -173,7 +176,7 @@ TEST_CASE("the UI API page and its JSON twin list the game's UI contract") {
 TEST_CASE("every setting a screen's scripts read and every name they send is in the contract") {
   // A literal name only: a name built at run time (`"hud.meter." .. index`) is the prefix of a
   // declared pattern and is left out.
-  const std::regex call{R"(ui\.(setting|send)\(\s*["']([^"']+)["']\s*[,)])"};
+  const std::regex call{R"(ui\.(setting|send|report)\(\s*["']([^"']+)["']\s*[,)])"};
   const std::filesystem::path ui = std::filesystem::path{DWE_GAME_PACK} / "ui";
   for (const ScreenScripts& screen : Screens) {
     for (const std::string_view file : screen.files) {
@@ -318,17 +321,18 @@ TEST_CASE("every event of the UI API comes from the settings the contract names"
 }
 
 TEST_CASE("the UI API's adapters read and send only names in the contract") {
-  const std::regex call{R"(ui\.(setting|send)\(\s*["']([^"']+)["']\s*[,)])"};
+  const std::regex call{R"(ui\.(setting|send|report)\(\s*["']([^"']+)["']\s*[,)])"};
   for (const std::filesystem::path& file : apiScripts()) {
     const std::string text = readText(file);
     for (std::sregex_iterator found{text.begin(), text.end(), call};
          found != std::sregex_iterator{}; ++found) {
       const std::string kind = (*found)[1].str();
       const std::string name = (*found)[2].str();
-      const bool declared =
-          declaredAnywhere(ui::UiContractKind::Option, name) ||
-          declaredAnywhere(
-              kind == "setting" ? ui::UiContractKind::Setting : ui::UiContractKind::Command, name);
+      const bool declared = declaredAnywhere(ui::UiContractKind::Option, name) ||
+                            declaredAnywhere(kind == "setting"  ? ui::UiContractKind::Setting
+                                             : kind == "report" ? ui::UiContractKind::Report
+                                                                : ui::UiContractKind::Command,
+                                             name);
       CHECK_MESSAGE(declared,
                     std::format("{} uses ui.{}(\"{}\"), which apps/game/src/ui_contract.cpp lacks",
                                 file.filename().string(), kind, name));

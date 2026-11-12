@@ -76,6 +76,7 @@
 #include "map_debug_overlay.hpp"
 #include "medal_figure.hpp"
 #include "medal_sheet.hpp"
+#include "menu_portraits.hpp"
 #include "messages.hpp"
 #include "minimap_setting.hpp"
 #include "movie_screen.hpp"
@@ -2032,9 +2033,10 @@ int runGame(const Options& requested) {
         }
       }
     }
+    // The portraits the menus ask for (menu_portraits.hpp).
+    const MenuPortraits menuPortraits = MenuPortraits::read(**ui, MedalCount);
     if (!showingMovie && portrait && flow.playing() != nullptr &&
-        (*ui)->isVisible("partner_menu") &&
-        !(*ui)->elementHasClass("partner_menu", "page-status", "hidden")) {
+        (*ui)->isVisible("partner_menu") && menuPortraits.partner) {
       // An addition: the model plays its idle, or the gesture of its first need, as on the field.
       const auto animation = game::partner::statusAnimation(flow.playing()->partnerConditions());
       const auto clip =
@@ -2042,24 +2044,14 @@ int runGame(const Options& requested) {
       (*portrait)->play(clip.value_or(0));
       portraitScenes.push_back((*portrait)->scene(frameSeconds));
     }
-    if (!showingMovie && playerPortrait && (*ui)->isVisible("pause_menu") &&
-        (*ui)->elementHasClass("pause_menu", "panel", "on-player") &&
-        !(*ui)->elementHasClass("pause_menu", "panel", "player-tools-open") &&
-        !(*ui)->elementHasClass("pause_menu", "panel", "player-chart"))
+    if (!showingMovie && playerPortrait && (*ui)->isVisible("pause_menu") && menuPortraits.player)
       portraitScenes.push_back((*playerPortrait)->scene());
     // game_menu.c: renderMedalView draws the medal (renderDigiviceMedals) while the selected medal
-    // is held: the page marks that cell `showing`.
+    // is held: the page says which (pause_menu.medal).
     if (!showingMovie && medalFigure && (*medalFigure)->loaded() &&
-        (*ui)->isVisible("pause_menu") &&
-        (*ui)->elementHasClass("pause_menu", "panel", "player-medals") &&
-        !(*ui)->elementHasClass("pause_menu", "panel", "player-tools-open")) {
-      for (std::int32_t medal = 0; medal < MedalCount; ++medal) {
-        if ((*ui)->elementHasClass("pause_menu", std::format("medal-{}", medal), "showing")) {
-          (*medalFigure)->show(medal);
-          portraitScenes.push_back((*medalFigure)->scene(frameSeconds));
-          break;
-        }
-      }
+        (*ui)->isVisible("pause_menu") && menuPortraits.medal) {
+      (*medalFigure)->show(*menuPortraits.medal);
+      portraitScenes.push_back((*medalFigure)->scene(frameSeconds));
     }
     if (!showingMovie && saveFigure && (*saveFigure)->loaded() &&
         (loadingIndicator || (flow.playing() != nullptr && flow.playing()->saveIndicatorShown())))

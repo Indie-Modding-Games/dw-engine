@@ -217,8 +217,12 @@ function on_show(document)
   refresh_prompts(document)
 end
 
-function on_setting(document, _name)
-  refresh(document)
+-- The game publishes a view's settings in one batch and counts up save_machine.revision last: a
+-- view opened halfway would pick its cursor from the last view's question.
+function on_setting(document, name)
+  if name == "save_machine.revision" then
+    refresh(document)
+  end
 end
 
 function on_language(document)

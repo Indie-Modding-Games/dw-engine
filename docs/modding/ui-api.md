@@ -5,12 +5,15 @@ pantalla. Un aspecto o un mod que rehace una pantalla trabaja contra esta lista:
 una versión mayor, lo que no está puede cambiar sin aviso. Cómo se cargan y se pintan los documentos está en
 [UI](../architecture/ui.md); el estilo de cada pantalla, en [aspectos](aspectos.md).
 
-## Ajustes, comandos, opciones y argumentos
+## Ajustes, comandos, estados, opciones y argumentos
 
 - Un **ajuste** es un valor que el juego publica y el documento lee con `ui.setting("nombre")`. Cuando cambia, el
   documento recibe `on_setting(document, nombre)`.
 - Un **comando** es lo que el documento manda con `ui.send("nombre", valor)` y el juego atiende: abrir un menú, usar
   un objeto, guardar. Un comando que el juego no conoce queda en el log como aviso, no se pierde en silencio.
+- Un **estado** es lo que el documento cuenta con `ui.report("nombre", valor)` y el juego lee cuando lo necesita:
+  por ejemplo si una página enseña ahora un modelo en 3D. Vale el último valor; no es una petición que el juego
+  atienda una vez como un comando.
 - Una **opción** es un ajuste del jugador (los de «Opciones»): el documento lo lee como un ajuste y lo cambia
   mandando su nombre con el valor nuevo.
 - Un **argumento** es un valor con el que otro documento muestra este: `ui.show("nombre", modal, {clave = valor})`
@@ -52,6 +55,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.7.0 | Llegan los estados (`ui.report`): los menús cuentan al juego qué retrato en 3D dibujar (`pause_menu.portrait`, `pause_menu.medal`, `partner_menu.portrait`) en vez de que el juego lea sus clases |
 | 0.6.0 | Llegan los espacios `clock`, `field`, `partner`, `bag`, `player` y `options` con sus consultas, acciones y eventos, y `hooks.on`/`hooks.off`. El HUD y las opciones de los menús ya leen por ellos |
 | 0.5.0 | El HUD lee del juego sus reglas: `hud.clock.night`, `hud.clock.phase` y `hud.meter.<n>.mood`. Su script se parte en `presenter.lua` (qué enseña) y `view.lua` (cómo lo dibuja) |
 | 0.4.0 | Llega la pantalla `skin_picker`, la caja del primer arranque que pregunta el aspecto: `ui_skin`, `ui_skin_preview` y `skin_picker_done` |
@@ -68,7 +72,7 @@ después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.6.0**.
+Versión de la API de la interfaz: **0.7.0**.
 
 ### `hud`
 
@@ -172,6 +176,8 @@ Versión de la API de la interfaz: **0.6.0**.
 | `evoreq.partner.<id>` | ajuste | texto | Cómo cumple el compañero los requisitos de una evolución. |
 | `evoreq.req.<id>` | ajuste | texto | Los requisitos de evolución de una especie, como rangos. |
 | `open_partner_menu` | comando | texto | Abre el menú del compañero en una página: items o status. |
+| `pause_menu.portrait` | estado | sí/no | Si el juego dibuja en 3D al jugador sobre su página (una mejora). |
+| `pause_menu.medal` | estado | número | La medalla que el juego dibuja en 3D sobre la página de medallas, de 0 a 14; -1 ninguna. |
 | `praise` | comando | — | Felicita al compañero. |
 | `scold` | comando | — | Regaña al compañero. |
 | `sleep` | comando | — | Cierra el menú y manda al compañero a dormir. |
@@ -289,6 +295,7 @@ Versión de la API de la interfaz: **0.6.0**.
 | `bag.result_item` | ajuste | texto | El objeto de la última acción de la bolsa. |
 | `field.player_x` | ajuste | número | La posición del jugador en la ventana en porcentaje, desde donde crecen las cajas. |
 | `field.player_y` | ajuste | número | La posición del jugador en la ventana en porcentaje, desde donde crecen las cajas. |
+| `partner_menu.portrait` | estado | sí/no | Si el juego dibuja en 3D al compañero sobre la página de estado (una mejora). |
 | `bag_use` | comando | número | Usa el objeto de un hueco. |
 | `bag_drop` | comando | número | Tira el objeto de un hueco. |
 | `bag_move` | comando | texto | Intercambia dos huecos: "desde hasta". |

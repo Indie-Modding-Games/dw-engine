@@ -15,7 +15,7 @@ struct UiApiVersion {
   std::uint32_t minor = 0;
   std::uint32_t patch = 0;
 };
-inline constexpr UiApiVersion CurrentUiApiVersion{.major = 0, .minor = 6, .patch = 0};
+inline constexpr UiApiVersion CurrentUiApiVersion{.major = 0, .minor = 7, .patch = 0};
 
 // What an entry of the contract is to a screen's documents.
 enum class UiContractKind : std::uint8_t {
@@ -36,6 +36,9 @@ enum class UiContractKind : std::uint8_t {
   Action,
   // An event of the UI API (hooks.on): its handlers get a table with `version` and its fields.
   Event,
+  // A state a document reports (ui.report) and the game reads when it needs it, such as whether a
+  // menu page shows a 3D model: the latest value counts, unlike a command the game handles once.
+  Report,
 };
 
 // The value a setting holds or a command carries.

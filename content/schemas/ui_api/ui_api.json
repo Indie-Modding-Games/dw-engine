@@ -1,5 +1,5 @@
 {
-  "version": "0.6.0",
+  "version": "0.7.0",
   "screens": {
     "hud": [
       {"name": "hud.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambia el estado del campo de abajo."},
@@ -97,6 +97,8 @@
       {"name": "evoreq.partner.<id>", "kind": "setting", "value": "text", "summary": "Cómo cumple el compañero los requisitos de una evolución."},
       {"name": "evoreq.req.<id>", "kind": "setting", "value": "text", "summary": "Los requisitos de evolución de una especie, como rangos."},
       {"name": "open_partner_menu", "kind": "command", "value": "text", "summary": "Abre el menú del compañero en una página: items o status."},
+      {"name": "pause_menu.portrait", "kind": "report", "value": "boolean", "summary": "Si el juego dibuja en 3D al jugador sobre su página (una mejora)."},
+      {"name": "pause_menu.medal", "kind": "report", "value": "number", "summary": "La medalla que el juego dibuja en 3D sobre la página de medallas, de 0 a 14; -1 ninguna."},
       {"name": "praise", "kind": "command", "value": "none", "summary": "Felicita al compañero."},
       {"name": "scold", "kind": "command", "value": "none", "summary": "Regaña al compañero."},
       {"name": "sleep", "kind": "command", "value": "none", "summary": "Cierra el menú y manda al compañero a dormir."},
@@ -211,6 +213,7 @@
       {"name": "bag.result_item", "kind": "setting", "value": "text", "summary": "El objeto de la última acción de la bolsa."},
       {"name": "field.player_x", "kind": "setting", "value": "number", "summary": "La posición del jugador en la ventana en porcentaje, desde donde crecen las cajas."},
       {"name": "field.player_y", "kind": "setting", "value": "number", "summary": "La posición del jugador en la ventana en porcentaje, desde donde crecen las cajas."},
+      {"name": "partner_menu.portrait", "kind": "report", "value": "boolean", "summary": "Si el juego dibuja en 3D al compañero sobre la página de estado (una mejora)."},
       {"name": "bag_use", "kind": "command", "value": "number", "summary": "Usa el objeto de un hueco."},
       {"name": "bag_drop", "kind": "command", "value": "number", "summary": "Tira el objeto de un hueco."},
       {"name": "bag_move", "kind": "command", "value": "text", "summary": "Intercambia dos huecos: \"desde hasta\"."},

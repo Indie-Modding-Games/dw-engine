@@ -209,6 +209,11 @@ public:
   // The commands the menus sent since the last call, oldest first.
   [[nodiscard]] std::vector<UiCommand> takeCommands();
 
+  // The latest value the documents reported under a name (ui.report), such as whether a menu page
+  // shows a 3D model; none when no document reported it. Unlike a command it is a state the game
+  // reads when it needs it, not a request it handles once.
+  [[nodiscard]] UiValue reported(std::string_view name) const;
+
   // The cues of the menu actions since the last call, oldest first. Mouse clicks give none.
   [[nodiscard]] std::vector<UiCue> takeCues();
 

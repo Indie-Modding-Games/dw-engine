@@ -56,6 +56,21 @@ local function number(name)
   return math.floor(setting(name, 0))
 end
 
+-- The bag's slots the document has: the ruleset's, up to the document's slot-0 to slot-29.
+local function slot_count()
+  return math.min(number("bag.slot.count"), max_slots)
+end
+
+-- The bag slot the cursor is on, or nil.
+local function focused_slot(document)
+  for index = 0, slot_count() - 1 do
+    if document:get("slot-" .. index):has_focus() then
+      return index
+    end
+  end
+  return nil
+end
+
 local function text(key, arguments)
   if key == nil or key == "" then
     return ""
@@ -607,10 +622,9 @@ local function draw_description(document)
     -- options box does.
     description = bag_slot.description(picked)
   else
-    for index = 0, number("bag.slot.count") - 1 do
-      if document:get("slot-" .. index):has_focus() then
-        description = bag_slot.description(index)
-      end
+    local index = focused_slot(document)
+    if index ~= nil then
+      description = bag_slot.description(index)
     end
   end
   document:get("bag-description"):set_text(description)
@@ -898,7 +912,8 @@ function close_menu(document, after)
     original_box.close(document, main_box(), original_box.player_rect(document), leave)
   end
   if current == "items" then
-    original_box.close(document, "bag-description", slot_start(document, picked or 0), close_main)
+    local slot = focused_slot(document) or picked or 0
+    original_box.close(document, "bag-description", slot_start(document, slot), close_main)
   else
     close_main()
   end
@@ -997,8 +1012,16 @@ function on_show(document)
   fit_to_window(document)
 end
 
+-- Tells the game whether to draw the partner's 3D portrait over the status page
+-- (partner_menu.portrait).
+local function send_portrait(document)
+  ui.report("partner_menu.portrait", not document:get("page-status"):has_class("hidden"))
+end
+
 function on_hide(document)
   original_box.cancel(document)
+  -- None while the menu is away, so it does not show for a frame on the next opening's page.
+  ui.report("partner_menu.portrait", false)
 end
 
 function on_setting(document, name)
@@ -1031,6 +1054,7 @@ function on_setting(document, name)
 end
 
 function on_tick(document, seconds)
+  send_portrait(document)
   original_box.tick(document, seconds)
   panel_enter.tick(document)
   fit_to_window(document)
@@ -1046,6 +1070,11 @@ function on_tick(document, seconds)
       status_condition_bob = bob
       document:get("conditions"):set_property("top", ((bob - 32) * 3) .. "dp")
     end
+  elseif status_condition_bob ~= nil then
+    -- Off the original's status page (another page, or a skin switched to another layout) the
+    -- conditions go back where the style sheet puts them.
+    status_condition_bob = nil
+    document:get("conditions"):remove_property("top")
   end
   if editing_tech then
     draw_tech_info(document)
@@ -1198,7 +1227,7 @@ function on_action(document, action)
   then
     -- inventory.c: tickInventoryTop: up and down by a row within the bag, left and right within
     -- the row, without going round; the rows scroll with the cursor.
-    for index = 0, number("bag.slot.count") - 1 do
+    for index = 0, slot_count() - 1 do
       if document:get("slot-" .. index):has_focus() then
         local next_index = index
         if action == "up" and index >= 2 then

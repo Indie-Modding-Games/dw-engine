@@ -58,6 +58,8 @@ std::string_view kindWord(UiContractKind kind) {
     return "acción";
   case UiContractKind::Event:
     return "evento";
+  case UiContractKind::Report:
+    return "estado";
   }
   return "";
 }
@@ -78,6 +80,8 @@ std::string_view kindKey(UiContractKind kind) {
     return "action";
   case UiContractKind::Event:
     return "event";
+  case UiContractKind::Report:
+    return "report";
   }
   return "";
 }

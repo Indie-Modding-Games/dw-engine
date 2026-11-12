@@ -814,6 +814,15 @@ void Scripting::registerApi() {
       raise(lua, "too many commands: the game takes them once per frame");
     }
   };
+  api["report"] = [this](std::string_view name, sol::stack_object value, sol::this_state lua) {
+    checkName(lua, name);
+    if (value.get_type() == sol::type::string) {
+      checkText(lua, value.as<std::string_view>());
+    }
+    if (!host_.report(UiCommand{.name = std::string{name}, .value = toUiValue(value)})) {
+      raise(lua, "too many reported names");
+    }
+  };
   api["setting"] = [this](std::string_view name, sol::this_state lua) {
     checkName(lua, name);
     return result(lua, [&] { return host_.setting(name); });

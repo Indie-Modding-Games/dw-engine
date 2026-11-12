@@ -105,6 +105,11 @@ function on_show(document)
   refresh(document)
 end
 
+-- The close key's glyph follows the device the player last used.
+function on_device(document)
+  document:get("close-key"):set_text(ui.prompt("world_map"))
+end
+
 function on_setting(document, name)
   if name == "world_map.revision" then
     refresh(document)

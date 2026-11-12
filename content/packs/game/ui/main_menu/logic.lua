@@ -5,10 +5,10 @@
 -- meanwhile ("options" view). The language box sends the language command and shows what the game
 -- reports back (ui.setting).
 --
--- Two layouts of the same entries, as the skin marks #panel (document_classes):
+-- Two layouts of the same entries, as the skin lays them out (ui.layout("menu")):
 -- - The modern one: play (a new game), continue (greyed and skipped unless the game publishes
 --   save.can_continue), online versus, options, quit.
--- - The original look's (class title-original), the original's title screen (main.c: main):
+-- - The original's (menu: original), the original's title screen (main.c: main):
 --   - "boot": the "Press Start" screen (runLandingScreen), when the game says so (title.boot).
 --     It fades in from black, its line blinks, and Start fades it out (40 frames each).
 --   - "menu": the original's menu (main_menu.c: renderInitialMenu), faded in from black
@@ -434,9 +434,11 @@ function on_tick(document, seconds)
       darkness < fade_target and math.min(fade_target, darkness + step)
         or math.max(fade_target, darkness - step)
     )
-    if leaving and darkness >= 1.0 then
-      fade_into(document, pending_view or "menu")
-    end
+  end
+  -- Out of the fade's step: a confirm on the first tick of a fade from black finds it already
+  -- dark, with nothing left to step.
+  if leaving and darkness >= 1.0 then
+    fade_into(document, pending_view or "menu")
   end
   if view == "boot" then
     local text = document:get("press-start-text")

@@ -17,6 +17,7 @@ constexpr UiContractKind Argument = UiContractKind::Argument;
 constexpr UiContractKind Query = UiContractKind::Query;
 constexpr UiContractKind Action = UiContractKind::Action;
 constexpr UiContractKind Event = UiContractKind::Event;
+constexpr UiContractKind Report = UiContractKind::Report;
 constexpr UiValueKind None = UiValueKind::None;
 constexpr UiValueKind Boolean = UiValueKind::Boolean;
 constexpr UiValueKind Number = UiValueKind::Number;
@@ -234,6 +235,11 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
           "Los requisitos de evolución de una especie, como rangos."),
     entry(PauseMenu, Command, "open_partner_menu", Text,
           "Abre el menú del compañero en una página: items o status."),
+    entry(PauseMenu, Report, "pause_menu.portrait", Boolean,
+          "Si el juego dibuja en 3D al jugador sobre su página (una mejora)."),
+    entry(
+        PauseMenu, Report, "pause_menu.medal", Number,
+        "La medalla que el juego dibuja en 3D sobre la página de medallas, de 0 a 14; -1 ninguna."),
     entry(PauseMenu, Command, "praise", None, "Felicita al compañero."),
     entry(PauseMenu, Command, "scold", None, "Regaña al compañero."),
     entry(PauseMenu, Command, "sleep", None, "Cierra el menú y manda al compañero a dormir."),
@@ -390,6 +396,8 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
           "La posición del jugador en la ventana en porcentaje, desde donde crecen las cajas."),
     entry(PartnerMenu, Setting, "field.player_y", Number,
           "La posición del jugador en la ventana en porcentaje, desde donde crecen las cajas."),
+    entry(PartnerMenu, Report, "partner_menu.portrait", Boolean,
+          "Si el juego dibuja en 3D al compañero sobre la página de estado (una mejora)."),
     entry(PartnerMenu, Command, "bag_use", Number, "Usa el objeto de un hueco."),
     entry(PartnerMenu, Command, "bag_drop", Number, "Tira el objeto de un hueco."),
     entry(PartnerMenu, Command, "bag_move", Text, "Intercambia dos huecos: \"desde hasta\"."),

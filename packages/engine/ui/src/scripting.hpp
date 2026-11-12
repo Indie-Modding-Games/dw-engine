@@ -55,6 +55,9 @@ inline constexpr std::string_view ApiFolder = "ui/api/";
 struct ScriptHost {
   // Queues a command for the app; false when the queue is full.
   std::function<bool(UiCommand)> send;
+  // Keeps the latest value a document reports for the game to read when it draws; false when the
+  // documents report too many names.
+  std::function<bool(UiCommand)> report;
   std::function<UiValue(std::string_view)> setting;
   std::function<std::string(std::string_view)> prompt;
   // The glyph of the control that triggers an action on the device in use (prompts.hpp).
