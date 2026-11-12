@@ -1,5 +1,5 @@
 {
-  "version": "0.12.0",
+  "version": "0.13.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "El valor de un ajuste que el juego publica; nil si no lo publica.", "signature": "(name: string): any"},
@@ -390,6 +390,29 @@
       {"name": "options.get", "kind": "query", "value": "any", "summary": "El valor de una opción ahora (o su valor por defecto); nil si no existe.", "signature": "(name: string): any"},
       {"name": "options.set", "kind": "action", "value": "boolean", "summary": "Pide dar un valor a una opción; comprueba el tipo y los valores que admite.", "signature": "(name: string, value: any): boolean, string?"},
       {"name": "options.changed", "kind": "event", "value": "table", "summary": "Cambió una opción; name dice cuál y value su valor.", "source": "@options"}
+    ],
+    "battle": [
+      {"name": "battle.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambia la vista del combate de abajo."},
+      {"name": "battle.menu.count", "kind": "setting", "value": "number", "summary": "Cuántas órdenes tiene la tira."},
+      {"name": "battle.menu.<n>.command", "kind": "setting", "value": "number", "summary": "El número de la orden (1 huir... 8 a 10 las técnicas, 11 el golpe final)."},
+      {"name": "battle.menu.<n>.label", "kind": "setting", "value": "text", "summary": "La clave de texto del nombre de la orden o de la técnica."},
+      {"name": "battle.menu.<n>.icon", "kind": "setting", "value": "text", "summary": "El icono de la orden en las hojas del aspecto; vacío para el golpe final."},
+      {"name": "battle.menu.<n>.available", "kind": "setting", "value": "boolean", "summary": "Si la orden se puede dar ahora."},
+      {"name": "battle.menu.<n>.current", "kind": "setting", "value": "boolean", "summary": "Si es la orden que sigue el compañero ahora."},
+      {"name": "battle.menu.<n>.mp_cost", "kind": "setting", "value": "number", "summary": "Los PM que le cuesta la técnica al compañero ahora; 0 en las demás órdenes."},
+      {"name": "battle.fighter.count", "kind": "setting", "value": "number", "summary": "Cuántos luchadores hay: el compañero (0) y los enemigos."},
+      {"name": "battle.fighter.<n>.hp", "kind": "setting", "value": "number", "summary": "Los PV de un luchador."},
+      {"name": "battle.fighter.<n>.max_hp", "kind": "setting", "value": "number", "summary": "Los PV máximos de un luchador."},
+      {"name": "battle.fighter.<n>.mp", "kind": "setting", "value": "number", "summary": "Los PM de un luchador."},
+      {"name": "battle.fighter.<n>.max_mp", "kind": "setting", "value": "number", "summary": "Los PM máximos de un luchador."},
+      {"name": "battle.fast", "kind": "setting", "value": "boolean", "summary": "Si el combate va al doble de velocidad."},
+      {"name": "battle.hp_bars.always", "kind": "setting", "value": "boolean", "summary": "Si las barras de vida de los enemigos se ven todo el combate."},
+      {"name": "battle_command", "kind": "command", "value": "number", "summary": "Da una orden al compañero (su número, battle.menu.<n>.command)."},
+      {"name": "battle_bag_open", "kind": "command", "value": "none", "summary": "Abre la bolsa del jugador."},
+      {"name": "battle_charge", "kind": "command", "value": "none", "summary": "Una pulsación de la carga del golpe final."},
+      {"name": "battle_close", "kind": "command", "value": "none", "summary": "Cierra la caja del final del combate."},
+      {"name": "battle_end_count", "kind": "command", "value": "none", "summary": "Un paso de la cuenta de los bits del final del combate."},
+      {"name": "battle_end_counted", "kind": "command", "value": "none", "summary": "La cuenta de los bits del final del combate ha terminado."}
     ]
   }
 }

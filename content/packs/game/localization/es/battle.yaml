@@ -41,6 +41,8 @@ number_icon.defense: "DEF"
 number_icon.speed: "VEL"
 # {seconds} es el tiempo que queda para levantarse.
 revive_countdown: "¡Levántate! {seconds}"
+# Tras el nombre de una técnica en la tira: los PM que le cuesta al compañero ({mp}, un número).
+mp_cost: "{mp} MP"
 finisher: "Golpe final"
 finisher_word: "¡REMATE!"
 finisher_push: "PULSA"

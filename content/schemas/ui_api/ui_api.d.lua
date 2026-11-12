@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.12.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.13.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}

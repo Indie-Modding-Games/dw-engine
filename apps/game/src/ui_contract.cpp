@@ -44,6 +44,7 @@ constexpr std::string_view Partner = "partner";
 constexpr std::string_view Bag = "bag";
 constexpr std::string_view Player = "player";
 constexpr std::string_view Options = "options";
+constexpr std::string_view Battle = "battle";
 
 constexpr UiContractEntry entry(std::string_view screen, UiContractKind kind, std::string_view name,
                                 UiValueKind value, std::string_view summary) {
@@ -75,7 +76,7 @@ constexpr UiContractEntry event(std::string_view space, std::string_view name,
 
 // The documents' use as of the UI API's first version: hud/presenter.lua, pause_menu/logic.lua and
 // partner_menu/logic.lua with the common scripts they link (game_options.lua, bag_slot.lua...),
-// and skin_picker/logic.lua.
+// skin_picker/logic.lua and, of battle/logic.lua, the command strip, the bars and the commands.
 // The summaries are the reference page's text, so they are in Spanish, as the docs.
 constexpr auto Contract = std::to_array<UiContractEntry>({
     // The field's HUD (apps/game: field_hud.cpp; packages/screens: field_hud_view.hpp).
@@ -573,6 +574,40 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
         "Pide dar un valor a una opción; comprueba el tipo y los valores que admite."),
     event(Options, "options.changed", "@options",
           "Cambió una opción; name dice cuál y value su valor."),
+    // The battle screen (apps/game: battle_screen.cpp; packages/screens: battle_view.hpp): the
+    // command strip, the partner's bars and what the scripts send back.
+    entry(Battle, Setting, "battle.revision", Number,
+          "Sube cada vez que cambia la vista del combate de abajo."),
+    entry(Battle, Setting, "battle.menu.count", Number, "Cuántas órdenes tiene la tira."),
+    entry(Battle, Setting, "battle.menu.<n>.command", Number,
+          "El número de la orden (1 huir... 8 a 10 las técnicas, 11 el golpe final)."),
+    entry(Battle, Setting, "battle.menu.<n>.label", Text,
+          "La clave de texto del nombre de la orden o de la técnica."),
+    entry(Battle, Setting, "battle.menu.<n>.icon", Text,
+          "El icono de la orden en las hojas del aspecto; vacío para el golpe final."),
+    entry(Battle, Setting, "battle.menu.<n>.available", Boolean, "Si la orden se puede dar ahora."),
+    entry(Battle, Setting, "battle.menu.<n>.current", Boolean,
+          "Si es la orden que sigue el compañero ahora."),
+    entry(Battle, Setting, "battle.menu.<n>.mp_cost", Number,
+          "Los PM que le cuesta la técnica al compañero ahora; 0 en las demás órdenes."),
+    entry(Battle, Setting, "battle.fighter.count", Number,
+          "Cuántos luchadores hay: el compañero (0) y los enemigos."),
+    entry(Battle, Setting, "battle.fighter.<n>.hp", Number, "Los PV de un luchador."),
+    entry(Battle, Setting, "battle.fighter.<n>.max_hp", Number, "Los PV máximos de un luchador."),
+    entry(Battle, Setting, "battle.fighter.<n>.mp", Number, "Los PM de un luchador."),
+    entry(Battle, Setting, "battle.fighter.<n>.max_mp", Number, "Los PM máximos de un luchador."),
+    entry(Battle, Setting, "battle.fast", Boolean, "Si el combate va al doble de velocidad."),
+    entry(Battle, Setting, "battle.hp_bars.always", Boolean,
+          "Si las barras de vida de los enemigos se ven todo el combate."),
+    entry(Battle, Command, "battle_command", Number,
+          "Da una orden al compañero (su número, battle.menu.<n>.command)."),
+    entry(Battle, Command, "battle_bag_open", None, "Abre la bolsa del jugador."),
+    entry(Battle, Command, "battle_charge", None, "Una pulsación de la carga del golpe final."),
+    entry(Battle, Command, "battle_close", None, "Cierra la caja del final del combate."),
+    entry(Battle, Command, "battle_end_count", None,
+          "Un paso de la cuenta de los bits del final del combate."),
+    entry(Battle, Command, "battle_end_counted", None,
+          "La cuenta de los bits del final del combate ha terminado."),
 });
 
 } // namespace

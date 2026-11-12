@@ -86,7 +86,7 @@
 				<button id="open-bag" class="command bag-button" onclick="open_bag()" text-key="battle.bag.open"></button>
 			</div>
 			<div id="command-cursor" class="hidden"></div>
-			<p id="command-name" class="original-look"></p>
+			<p id="command-name" class="original-look"><span id="command-label"></span><span id="command-cost" class="hidden"></span></p>
 		</div>
 
 		<div id="enemies">

@@ -142,6 +142,8 @@ local function draw_fighter(document, index)
   lookup(document, prefix .. "-hp"):set_text(tostring(hp))
   lookup(document, prefix .. "-hp-fill"):set_property("width", percent(hp, max_hp) .. "%")
   if index == 0 then
+    -- The partner's HP row gets the class low under a fifth of its HP, for a skin that warns.
+    set_class(document, prefix .. "-hp-row", "low", max_hp > 0 and hp * 5 < max_hp)
     -- The partner's HUD shows HP and MP all the time (battle_hud.c: BTL_renderPartnerStatusBars),
     -- its values with BTL_renderNumber(0, 4, x0 + 0x49, y0 - 3, value, 0xa).
     hud_digits.draw(document, prefix .. "-hp-d-", hp, set_class)
@@ -244,15 +246,28 @@ local function draw_cursor(document)
   end
 end
 
--- The name of the focused command under the row, as the original names the hovered icon.
+-- The name of the focused command under the row, as the original names the hovered icon, and a
+-- technique's MP cost after it (a skin that shows it styles #command-cost). The name gets the class
+-- short while the command cannot be given now: the finisher before its gauge is full, a technique
+-- the partner has not the MP for.
 local function draw_command_name(document)
-  local name = ""
+  local name, cost, short = "", 0, false
   for index = 0, number("battle.menu.count") - 1 do
     if lookup(document, "command-" .. index):has_focus() then
       name = text(setting(entry("battle.menu", index, "label"), ""))
+      cost = number(entry("battle.menu", index, "mp_cost"))
+      short = not command_available(index)
+        or (cost > 0 and number(entry("battle.fighter", 0, "mp")) < cost)
     end
   end
-  lookup(document, "command-name"):set_text(name)
+  lookup(document, "command-label"):set_text(name)
+  local cost_text = cost > 0 and t("battle.mp_cost", { mp = cost }) or ""
+  if applied["command-cost text"] ~= cost_text then
+    applied["command-cost text"] = cost_text
+    lookup(document, "command-cost"):set_text(cost_text)
+  end
+  set_class(document, "command-cost", "hidden", cost_text == "")
+  set_class(document, "command-name", "short", short)
 end
 
 local function focus_command(document)

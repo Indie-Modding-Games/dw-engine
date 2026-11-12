@@ -76,11 +76,28 @@
 	decorator: none;
 }
 
-/* The hovered command's name (.cname): gold, with an ink drop. */
+/* The hovered command's name (.cname): gold, with an ink drop; dimmed while it cannot be given (.cname.off); a
+   technique's MP cost after it in the small font (.cname .mp). */
 #command-name {
 	font-size: 30dp;
 	color: #efc63c;
 	font-effect: shadow(3dp 3dp #050c1a);
+}
+
+#command-name.short {
+	color: #a89a70;
+}
+
+#command-cost {
+	display: inline;
+	margin-left: 18dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #93a6bc;
+}
+
+#command-cost.hidden {
+	display: none;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
@@ -121,22 +138,37 @@
 	decorator: vertical-gradient(#0b1220 #0b1220) content-box;
 }
 
-.partner .fill {
-	height: 8dp;
-}
-
+/* The fills in segments (.bar > i): a strip of 10 dp segments (8 of the colour, 2 of its darker step, the top 2 lit)
+   as long as the bar, of which a fill shows its width (skin.yaml, nb-bar-fills). */
+.partner .fill,
 .partner .mp .fill {
 	height: 10dp;
+	border-width: 0;
 }
 
 .partner .hp .fill {
-	border-top: 2dp #9bffa6;
-	background-color: #5fd36a;
+	background-color: transparent;
+	decorator: image(nb-strip-hp scale-none left top);
 }
 
 .partner .mp .fill {
-	border-top: 2dp #9fd2ff;
-	background-color: #4aa6ff;
+	background-color: transparent;
+	decorator: image(nb-strip-mp scale-none left top);
+}
+
+/* Under a fifth of its HP (.ic.warn, .n.warn, the red bar): the cap in red, the fill and the value red. */
+.partner .bar-row.low .bar-label {
+	border-color: #e2483d;
+	background-color: #6a1410;
+	color: #ffd0c8;
+}
+
+.partner .bar-row.low .hp .fill {
+	decorator: image(nb-strip-rd scale-none left top);
+}
+
+.partner .bar-row.low .bar-value {
+	color: #e2483d;
 }
 
 .partner .bar-value {
@@ -197,8 +229,30 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The enemies' bars (.ehp): green rim and line, a plain green fill 3dp in. The value stays in the original's
-   digits (the document has no text for it). */
+   The enemies' bars (.ehp): green rim and line, a plain green fill 3dp in, the HP over the bar's right end in the
+   small font (.ehp-n: green with an ink drop) instead of the original's digit sprites. */
+.hb-value {
+	width: 66dp;
+	height: 28dp;
+	margin-top: -8dp;
+}
+
+.hb-value .dd {
+	width: 14dp;
+	height: 28dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 28dp;
+	text-align: right;
+	color: #5fd36a;
+	font-effect: shadow(2dp 2dp #050c1a);
+	decorator: none;
+}
+
+#hd-1-0, #hd-2-0, #hd-3-0 { left: 10dp; }
+#hd-1-1, #hd-2-1, #hd-3-1 { left: 24dp; }
+#hd-1-2, #hd-2-2, #hd-3-2 { left: 38dp; }
+#hd-1-3, #hd-2-3, #hd-3-3 { left: 52dp; }
 .hb-frame {
 	border-color: #5fd36a;
 }

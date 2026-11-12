@@ -424,6 +424,11 @@
 	color: #d0d0d0;
 }
 
+/* The original names the command alone, without a technique's MP cost. */
+#command-cost {
+	display: none;
+}
+
 #fight.opening #command-cursor {
 	display: none;
 }

@@ -65,6 +65,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.13.0 | Llega la pantalla `battle` con la tira de órdenes (`battle.menu.<n>.*`, con `mp_cost`, los PM que cuesta cada técnica), las barras de los luchadores y lo que el combate manda de vuelta |
 | 0.12.0 | Los avisos entran en el contrato: `pause_box`, `field_item_notice`, `award_notice`, `fishing_notice`, `save_indicator`, `money_box`, `lives_box` y `ui_notice`, con sus ajustes y comandos |
 | 0.11.0 | Complementos (addons de tipo `plugin`, [interfaces](interfaces.md)): documentos sobre cualquier interfaz. Opción `ui_plugins` y ajuste `ui_plugins.count` |
 | 0.10.0 | Addons de interfaz ([interfaces](interfaces.md)): `ui_addon`, `ui_addons`, `ui_addon.name.<id>`, `ui_addon.safe`, `ui_addon.problem` y `ui_addon_reload`; el aviso `ui_notice`. El `ui.send` de un addon solo deja pasar los comandos y opciones del contrato |
@@ -81,13 +82,13 @@ puede moverse entre versiones del juego.
 La lista sale de `apps/game/src/ui_contract.cpp`. Un test la compara con esta página, con
 `content/schemas/ui_api/ui_api.json` (la misma lista para herramientas y editores) y con lo que leen y mandan los
 scripts de cada pantalla; `DWE_WRITE_API_DOC=1` al correr los tests del juego reescribe las dos. De momento cubre el
-HUD, el menú de pausa, el menú del compañero y la caja del aspecto del primer arranque; el resto de pantallas llega
-después.
+HUD, el menú de pausa, el menú del compañero, la caja del aspecto del primer arranque y la tira y las barras del
+combate; el resto de pantallas llega después.
 
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.12.0**.
+Versión de la API de la interfaz: **0.13.0**.
 
 ### `ui`
 
@@ -544,5 +545,31 @@ Versión de la API de la interfaz: **0.12.0**.
 | `options.get(name: string): any` | consulta | número o texto | El valor de una opción ahora (o su valor por defecto); nil si no existe. |
 | `options.set(name: string, value: any): boolean, string?` | acción | sí/no | Pide dar un valor a una opción; comprueba el tipo y los valores que admite. |
 | `options.changed` | evento | tabla | Cambió una opción; name dice cuál y value su valor. Sale de `@options`. |
+
+### `battle`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `battle.revision` | ajuste | número | Sube cada vez que cambia la vista del combate de abajo. |
+| `battle.menu.count` | ajuste | número | Cuántas órdenes tiene la tira. |
+| `battle.menu.<n>.command` | ajuste | número | El número de la orden (1 huir... 8 a 10 las técnicas, 11 el golpe final). |
+| `battle.menu.<n>.label` | ajuste | texto | La clave de texto del nombre de la orden o de la técnica. |
+| `battle.menu.<n>.icon` | ajuste | texto | El icono de la orden en las hojas del aspecto; vacío para el golpe final. |
+| `battle.menu.<n>.available` | ajuste | sí/no | Si la orden se puede dar ahora. |
+| `battle.menu.<n>.current` | ajuste | sí/no | Si es la orden que sigue el compañero ahora. |
+| `battle.menu.<n>.mp_cost` | ajuste | número | Los PM que le cuesta la técnica al compañero ahora; 0 en las demás órdenes. |
+| `battle.fighter.count` | ajuste | número | Cuántos luchadores hay: el compañero (0) y los enemigos. |
+| `battle.fighter.<n>.hp` | ajuste | número | Los PV de un luchador. |
+| `battle.fighter.<n>.max_hp` | ajuste | número | Los PV máximos de un luchador. |
+| `battle.fighter.<n>.mp` | ajuste | número | Los PM de un luchador. |
+| `battle.fighter.<n>.max_mp` | ajuste | número | Los PM máximos de un luchador. |
+| `battle.fast` | ajuste | sí/no | Si el combate va al doble de velocidad. |
+| `battle.hp_bars.always` | ajuste | sí/no | Si las barras de vida de los enemigos se ven todo el combate. |
+| `battle_command` | comando | número | Da una orden al compañero (su número, battle.menu.<n>.command). |
+| `battle_bag_open` | comando | — | Abre la bolsa del jugador. |
+| `battle_charge` | comando | — | Una pulsación de la carga del golpe final. |
+| `battle_close` | comando | — | Cierra la caja del final del combate. |
+| `battle_end_count` | comando | — | Un paso de la cuenta de los bits del final del combate. |
+| `battle_end_counted` | comando | — | La cuenta de los bits del final del combate ha terminado. |
 
 <!-- /ui-api:generated -->

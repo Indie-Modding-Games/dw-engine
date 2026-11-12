@@ -5,7 +5,10 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <format>
+#include <iterator>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -107,6 +110,28 @@ TEST_CASE("a clever partner's menu names its techniques by their moves") {
       std::ranges::find(view.menu, Command::Technique2, &dwe::screens::CommandEntry::command);
   REQUIRE(second != view.menu.end());
   CHECK(second->labelKey == "main.move_names.0001");
+}
+
+TEST_CASE("a technique's entry carries the MP it costs the partner now; the others none") {
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  Battle battle = startBattle(duel(evenStats(900, 600), evenStats(700, 80), {"punch", "shot"}), 3);
+
+  const auto view = dwe::screens::battleViewOf(battle, names);
+  const auto shot =
+      std::ranges::find(view.menu, Command::Technique2, &dwe::screens::CommandEntry::command);
+  REQUIRE(shot != view.menu.end());
+  CHECK(shot->mpCost > 0);
+  CHECK(shot->mpCost == battle.partnerMoveCost(1));
+  const auto flee =
+      std::ranges::find(view.menu, Command::Flee, &dwe::screens::CommandEntry::command);
+  REQUIRE(flee != view.menu.end());
+  CHECK(flee->mpCost == 0);
+  const auto settings = dwe::screens::settingsOf(view);
+  const auto index = static_cast<std::size_t>(std::distance(view.menu.begin(), shot));
+  const auto* cost = settingNamed(settings, std::format("battle.menu.{}.mp_cost", index));
+  REQUIRE(cost != nullptr);
+  CHECK(std::get<double>(cost->value) == doctest::Approx(shot->mpCost));
 }
 
 TEST_CASE(
