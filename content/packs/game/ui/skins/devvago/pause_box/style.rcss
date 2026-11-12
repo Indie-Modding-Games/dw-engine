@@ -1,0 +1,12 @@
+/* The pause box in the original look: the original's static box (ui.c: createStaticUIBox, renderUIBoxBorder) as the
+   pause menu's, with "Pause" in the original's text (capture orig/pause_box). */
+
+body #box {
+	border-radius: 0;
+	border: 3dp transparent;
+	background-color: #2d384080;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+body #box { background-color: #0b1c2df2; }

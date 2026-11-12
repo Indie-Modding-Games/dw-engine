@@ -1,0 +1,92 @@
+/* The original look shared by every document: the original's text, its menu cursor and its button prompts.
+
+   Scale: one pixel of the original is 3dp (its 240 lines over the UI's 720 dp), so every size below is a whole
+   number of original pixels times 3. The text is the original-look family (the bitmap font or the modern one, as the
+   player's text_font setting picks), whose 11-pixel cells keep their shape at 33dp, three times.
+
+   Sources: the colours of the text are the font's CLUT and TEXT_COLORS (font.c: drawString): #d0d0d0 the ink,
+   #fff371 the yellow of headings, #288ad0 blue, #b2b2b2 the grey of descriptions. */
+
+body {
+	font-family: original-look;
+	font-weight: normal;
+	font-size: 33dp;
+	color: #d0d0d0;
+}
+
+/* An entry of a menu: plain text with the original's selector, a 1-pixel outline round the focused row
+   (main_menu.c: renderInitialMenu, #A0A000). No hover fill and no animation: the original has neither. The rows are
+   the original's 12 pixels apart (36dp); its selector is 14 pixels tall and overlaps the rows next to it, which
+   would let a focused row overlap its neighbours and stop the keyboard's up and down from reaching them, so here the
+   outline is the row's own 12 pixels: a documented delta of 2 pixels. */
+button {
+	padding: 0 9dp;
+	margin: 0;
+	border-radius: 0;
+	border: 3dp transparent;
+	color: #d0d0d0;
+	background-color: transparent;
+	line-height: 30dp;
+	transition: none;
+}
+
+button:focus {
+	border-color: #ffd51e;
+	background-color: #153653;
+	color: #ffe64a;
+}
+
+button:active {
+	background-color: #244764;
+}
+
+/* A button prompt. The original has none (it names no buttons on screen); they stay, small and in the description
+   grey, because the game is also played with a keyboard and a mouse. A documented delta of this skin. */
+.key {
+	min-width: 18dp;
+	padding: 0 6dp;
+	margin-right: 6dp;
+	border-radius: 0;
+	border: 3dp #90d9fa;
+	font-weight: normal;
+	font-size: 22dp;
+	color: #d0d0d0;
+}
+
+/* Button glyphs (../../common/base.rcss): a shape of the original's pad is the original font's own character, drawn as
+   the text around it is, with no key frame round it, as the original writes its buttons in its texts; a face button
+   of another family is a round frame round its letter or position. */
+.glyph-char {
+	display: inline;
+}
+
+.family-shapes .glyph-art {
+	display: none;
+}
+
+.key.family-shapes {
+	min-width: 0dp;
+	padding: 0dp;
+	margin-right: 6dp;
+	border-width: 0dp;
+	font-size: 1em;
+}
+
+.key.glyph-face {
+	border-radius: 15dp;
+}
+
+/* The original's window (ui.c: renderUIBoxStatic, renderUIBoxBorder), for any document's box: the fill #2D3840 at
+   half opacity (the semi-transparent mode), the three- and four-line border the original-box decorator draws (black,
+   light cyan #90D9FA and dark cyan #4A9FC5 lines, each one original pixel, 3dp) and the rounded corner sprites of
+   SYSTEM_W. The border's 3dp keep the fill off the outer black line. A box with an opaque fill sets its own
+   background-color; one that adds a decorator repeats this list with its own last (RmlUi paints the first decorator on
+   top, as CSS does with backgrounds, so a fill listed first hides the border). Opening and closing animate with
+   ui/common/original_box.lua. */
+.original-box {
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: #0b1c2de8;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}

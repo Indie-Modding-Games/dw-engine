@@ -41,6 +41,15 @@ local return_entry = nil
 local function original_menu()
   return ui.layout("menu") == "original"
 end
+-- The player page's tabs in the original layout (skin.yaml layout: pause_menu: tabs): "minimal"
+-- offers the profile, the chart and the city only, walked with the tab keys too; anything else all.
+local function player_tabs()
+  if ui.layout("tabs") == "minimal" then
+    return { "player", "chart", "city" }
+  end
+  -- tickPlayerMenu: the four pages are always there, in this order; dwe adds the City tab.
+  return { "player", "chart", "medals", "card", "city" }
+end
 local chart_selecting = false
 local chart_detail = false
 local chart_transition = nil
@@ -1207,10 +1216,18 @@ end
 local function refresh_medals(document)
   local held = number_list("player.medals.held")
   local shown = (held[medal_index] or 0) ~= 0
+  -- skin.yaml layout: pause_menu: medals: "profile" shows the shelf in an inset box of the
+  -- profile, five cells wide by three high, instead of the original's page of medals.
+  local inset = ui.layout("medals") == "profile"
   for i = 0, 14 do
     local cell = document:get("medal-" .. i)
-    cell:set_property("left", ((25 + (i % 5) * 38) * 3) .. "dp")
-    cell:set_property("top", ((27 + math.floor(i / 5) * 24) * 3) .. "dp")
+    if inset then
+      cell:set_property("left", (34 + (i % 5) * 72) .. "dp")
+      cell:set_property("top", (42 + math.floor(i / 5) * 72) .. "dp")
+    else
+      cell:set_property("left", ((25 + (i % 5) * 38) * 3) .. "dp")
+      cell:set_property("top", ((27 + math.floor(i / 5) * 24) * 3) .. "dp")
+    end
     cell:set_class("held", (held[i] or 0) ~= 0)
     cell:set_class("showing", shown and i == medal_index)
   end
@@ -1288,8 +1305,13 @@ end
 local function close_card(document)
   card_open = false
   local to = card_from(document)
-  original_box.close(document, "card-detail", to)
-  original_box.close(document, "card-count-box", to)
+  -- Without the box animation (layout box other than original) close() only calls back: shut the
+  -- boxes there too, or they stay up after Cancel.
+  for _, id in ipairs({ "card-detail", "card-count-box" }) do
+    original_box.close(document, id, to, function()
+      document:get(id):set_class("box-closed", true)
+    end)
+  end
 end
 
 -- Picks a card of the list (tickPlayerMenu, PLAYER_MENU_STATE 3): left and right stop at the row's
@@ -1464,6 +1486,20 @@ local function city_move(document, action)
   end
 end
 
+-- The minimal tabs (skin.yaml layout: pause_menu: tabs) name the City tab Prosperity and put the
+-- tab keys' signs beside the strip. Written on every refresh, so a change of skin or language
+-- puts the right word back.
+local function draw_player_tab_labels(document)
+  local minimal = ui.layout("tabs") == "minimal"
+  document
+    :get("player-tab-city-label")
+    :set_text(t(minimal and "pause_menu.player_tab_prosperity" or "pause_menu.player_tab_city"))
+  if minimal then
+    document:get("player-tab-previous-key"):set_prompt("tab_previous")
+    document:get("player-tab-next-key"):set_prompt("tab_next")
+  end
+end
+
 function show_player_tab(document, tab)
   chart_detail = false
   chart_transition = nil
@@ -1495,6 +1531,14 @@ function show_player_tab(document, tab)
   -- The chart opens on page 1.
   chart_go_page(document, 1, chart_index_on(1), true)
   document:get("player-tab-" .. tab):focus()
+end
+
+-- The minimal tabs' keys (Q/E, a pad's shoulders) and the signs beside the strip: the next or the
+-- previous tab, without going round.
+function player_step_tab(document, step)
+  local tabs = player_tabs()
+  local at = index_of(tabs, player_tab) or 1
+  show_player_tab(document, tabs[math.max(1, math.min(#tabs, at + step))])
 end
 
 function chart_pick(document, index)
@@ -1970,6 +2014,7 @@ end
 
 local function refresh(document)
   refresh_medals(document)
+  draw_player_tab_labels(document)
   refresh_cards(document)
   refresh_chart(document)
   refresh_city(document)
@@ -2414,6 +2459,7 @@ end
 
 function on_device(document)
   refresh_prompts(document)
+  draw_player_tab_labels(document)
 end
 
 -- The language changed: the elements with a text-key are already in the new one; the rest are
@@ -2455,6 +2501,12 @@ function on_action(document, action)
     end
   end
   if current == "player" and not player_tools_open and original_menu() then
+    -- The minimal tabs: the tab keys walk them from anywhere on the page, so the arrows stay free
+    -- for the page's own content.
+    if (action == "tab_next" or action == "tab_previous") and ui.layout("tabs") == "minimal" then
+      player_step_tab(document, action == "tab_next" and 1 or -1)
+      return true
+    end
     if player_tab == "city" and city_selecting then
       if action == "cancel" then
         city_selecting = false
@@ -2523,9 +2575,9 @@ function on_action(document, action)
       end
     else
       if action == "right" or action == "left" then
-        -- tickPlayerMenu: the four pages are always there, in this order; dwe adds the City tab.
-        local tabs = { "player", "chart", "medals", "card", "city" }
-        local current_index = index_of(tabs, player_tab)
+        local tabs = player_tabs()
+        -- A page the tabs do not offer (after a change of skin) steps from the first one.
+        local current_index = index_of(tabs, player_tab) or 1
         local delta = action == "left" and -1 or 1
         show_player_tab(document, tabs[math.max(1, math.min(#tabs, current_index + delta))])
         return true

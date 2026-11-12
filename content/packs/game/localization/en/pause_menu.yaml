@@ -124,6 +124,8 @@ player_tab_chart: "Chart"
 player_tab_medals: "Medals"
 player_tab_card: "Card"
 player_tab_city: "City"
+# The city's tab with the minimal tabs (skin.yaml layout: pause_menu: tabs: minimal).
+player_tab_prosperity: "Prosperity"
 player_raised: "Raised"
 player_items: "Items"
 player_medals: "Medals"

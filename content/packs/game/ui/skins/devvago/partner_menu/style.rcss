@@ -1,0 +1,2055 @@
+/* The partner's menu in the original look: the stats view (game_menu.c, the status view) and the bag
+   (inventory.c: renderInventoryTop, renderInventoryBottom), over the field, which stays undimmed.
+
+   The original's screen is 320 x 240; here it is a 960 x 720dp stage in the middle of the screen, so a wide screen
+   only adds field to the sides. Positions are in the original's pixels times 3, from the decompilation, or measured on
+   the captures partner_status, field_item_bag_1item and field_item_option_box where they say so.
+
+   The tabs (x 15, 76 wide, and x 90, 64 wide, 16 tall at y 16) carry the active tab's text in the ink colour and the
+   others' in blue (#288ad0). La página del compañero muestra Status/Tech; ITEM mantiene su pantalla independiente. ITEM uses the independent screen below. */
+
+#scrim {
+	background-color: transparent;
+	display: block;
+}
+
+#panel {
+	position: absolute;
+	left: 50%;
+	top: 48dp;
+	width: 900dp;
+	margin-left: -450dp;
+	padding: 0;
+	border-radius: 0;
+	border-width: 0;
+	background-color: transparent;
+}
+
+#tabs {
+	height: 45dp;
+	margin: 0 0 0 15dp;
+	padding: 0;
+	border-width: 0;
+}
+
+.tab {
+	display: inline-block;
+	height: 39dp;
+	margin: 0 3dp 0 0;
+	padding: 0 18dp;
+	line-height: 36dp;
+	font-size: 33dp;
+	color: #288ad0;
+	border: 3dp #80e8f8;
+	border-bottom-width: 0;
+	background-color: #2d3840;
+}
+
+.tab.selected, .tab.selected:focus {
+	color: #d0d0d0;
+}
+
+.tab:focus {
+	border-color: #a0a000;
+}
+
+#close {
+	float: right;
+	color: #b2b2b2;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The stats view: an opaque box (10, 31), 300 x 190, its fill #2D3840. */
+
+#page-status {
+	position: relative;
+	height: 570dp;
+	box-sizing: border-box;
+	padding: 0;
+	border: 3dp transparent;
+	background-color: #2d3840;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+/* The profile (insets, game_menu.c: renderInsetBox: lines #020202 at the top and left, #6987A0 at the bottom and
+   right, fill #354B5C): the
+   name at y 52, the species on the row under it (the original's inset at y 68, 244 wide; the American version draws
+   the species at x 52, at most 120 pixels: game_menu.c, the status view) and the conditions after it, where
+   the original has its special, type and active marks, the age and the weight on the row at y 84 (insets at x 50 and
+   122), and the lives at (76, 154), here as text in the yellow of headings. */
+#status-head {
+	position: absolute;
+	left: 30dp;
+	top: 60dp;
+	width: 840dp;
+	font-size: 33dp;
+	margin: 0;
+}
+
+#status-name {
+	display: inline-block;
+	width: 294dp;
+	padding: 0 9dp;
+	border: 3dp #020202;
+	border-right-color: #6987a0;
+	border-bottom-color: #6987a0;
+	background-color: #354b5c;
+}
+
+#status-lives {
+	position: absolute;
+	left: 168dp;
+	top: 309dp;
+	font-size: 33dp;
+	color: #fff371;
+}
+
+.status-line {
+	display: block;
+	position: absolute;
+	left: 30dp;
+	top: 156dp;
+	width: 360dp;
+	font-size: 33dp;
+	margin: 0;
+}
+
+#status-species-line {
+	top: 108dp;
+	width: 480dp;
+}
+
+#status-weight-line {
+	left: 396dp;
+}
+
+.line-value {
+	float: none;
+	margin: 0 0 0 18dp;
+	padding: 0 9dp;
+	border: 3dp #020202;
+	border-right-color: #6987a0;
+	border-bottom-color: #6987a0;
+	background-color: #354b5c;
+}
+
+/* The conditions in the rest of the species row (x 180 to 294), small like the original's marks' names, on up to
+   two lines. */
+#conditions {
+	position: absolute;
+	left: 510dp;
+	top: 108dp;
+	width: 360dp;
+	margin: 0;
+	font-size: 22dp;
+	line-height: 24dp;
+	color: #d0d0d0;
+}
+
+/* The parameters (from x 142, y 108; rows 15 pixels apart from the HP bar at y 130): the icon of 11 x 11 with no
+   name, as the original, the bar inset whose fill is 2 pixels of #32C8C8 and the value. The original's HP and MP
+   bars are 104 pixels and the others' 54; HP and MP keep room for their "800 / 800" here, so theirs are 82 pixels, a
+   documented delta. */
+#status-parameters {
+	position: absolute;
+	left: 396dp;
+	top: 280dp;
+	width: 492dp;
+	margin: 0;
+}
+
+/* The condition (from x 10): happiness, discipline and the virus bar at y 173, 188 and 202, with the icons at x 22
+   and the names (small: the bars start at x 76, 54 pixels after the icons), the bars 50 x 6 (150dp), the pink #e04080 to #f0c0e8 under the blue #3060a0 to #b0d0e0, and the
+   virus bar #C8C83C. The original shows no number for them, nor does this skin. */
+#status-condition {
+	position: absolute;
+	left: 30dp;
+	top: 412dp;
+	width: 330dp;
+	margin: 0;
+}
+
+.bar-row {
+	display: flex;
+	align-items: center;
+	height: 45dp;
+	margin: 0;
+	font-size: 33dp;
+}
+
+.bar-row .label {
+	flex: none;
+	width: 123dp;
+	padding-left: 39dp;
+	font-size: 22dp;
+	color: #fff371;
+}
+
+#status-parameters .label {
+	width: 48dp;
+	padding: 0;
+	height: 45dp;
+	font-size: 0;
+	color: transparent;
+}
+
+#pool-0-label { decorator: image(stat-hp scale-none left center); }
+#pool-1-label { decorator: image(stat-mp scale-none left center); }
+#stat-0-label { decorator: image(stat-off scale-none left center); }
+#stat-1-label { decorator: image(stat-def scale-none left center); }
+#stat-2-label { decorator: image(stat-speed scale-none left center); }
+#stat-3-label { decorator: image(stat-brains scale-none left center); }
+#meter-0-label { decorator: image(face-happy scale-none left center); }
+#meter-1-label { decorator: image(discipline-high scale-none left center); }
+
+.bar {
+	flex: none;
+	width: 162dp;
+	height: 9dp;
+	margin: 0 9dp;
+	border-radius: 0;
+	border: 3dp #020202;
+	border-right-color: #6987a0;
+	border-bottom-color: #6987a0;
+	background-color: #354b5c;
+}
+
+.pool .bar {
+	flex: 1;
+	width: auto;
+}
+
+.fill {
+	height: 6dp;
+	border-radius: 0;
+}
+
+.stat .fill { background-color: #32c8c8; }
+
+.meter {
+	width: 150dp;
+	height: 18dp;
+	border-width: 0;
+	decorator: vertical-gradient(#e04080 #f0c0e8);
+}
+
+.meter .fill {
+	height: 18dp;
+	decorator: vertical-gradient(#3060a0 #b0d0e0);
+}
+
+.meter .fill.high {
+	decorator: vertical-gradient(#3060a0 #b0d0e0);
+}
+
+#meter-2-fill {
+	decorator: none;
+	background-color: #c8c83c;
+}
+
+.bar-row .value {
+	flex: 1;
+	text-align: right;
+}
+
+.pool .value {
+	flex: none;
+	width: 180dp;
+}
+
+#status-condition .value {
+	display: none;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The bag (field_item_bag_1item): the list in a box at half opacity over black, 2 columns of rows 18 pixels tall
+   (138 wide, 144 apart), the name 22 pixels in and the count at its right; the selector an outline light at the top
+   and left (#B0B0B0) and dark at the bottom and right (#121212) round a grey fill at half opacity (#808080). The
+   description in its own box at the bottom, in grey (#b2b2b2). The original's list starts at y 9; here it starts
+   under the tabs, at y 31. Each item's icon, 16 x 16, sits in the gap before its name, 3 pixels in from the row's
+   edge (utils2.c: setItemTexture). */
+
+#page-items {
+	position: relative;
+	height: 618dp;
+}
+
+#bag-grid {
+	min-height: 348dp;
+	padding: 18dp 15dp;
+	border: 3dp transparent;
+	background-color: #00000080;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+.slot {
+	display: inline-block;
+	box-sizing: border-box;
+	width: 414dp;
+	height: 54dp;
+	margin: 0 18dp 0 0;
+	position: relative;
+	padding: 0 9dp 0 66dp;
+	font-size: 33dp;
+	line-height: 48dp;
+	border: 3dp transparent;
+}
+
+.slot-icon {
+	position: absolute;
+	left: 6dp;
+	top: 0;
+	width: 48dp;
+	height: 48dp;
+	margin: 0;
+}
+
+.slot:focus, .slot.picked {
+	border-color: #b0b0b0 #121212 #121212 #b0b0b0;
+	background-color: #80808080;
+}
+
+.slot.dimmed .slot-name {
+	color: #828282;
+}
+
+.slot.moving {
+	border: 3dp #f14a5d;
+}
+
+#bag-description {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 498dp;
+	min-height: 48dp;
+	margin: 0;
+	padding: 9dp 60dp;
+	font-size: 33dp;
+	color: #b2b2b2;
+	border-radius: 0;
+	border: 3dp transparent;
+	background-color: #00000080;
+}
+
+#bag-foot {
+	position: absolute;
+	left: 18dp;
+	right: 18dp;
+	top: 462dp;
+	margin: 0;
+	font-size: 22dp;
+}
+
+/* The care page, in the stats view's box. */
+#page-care {
+	height: 552dp;
+	padding: 18dp 30dp;
+	border: 3dp transparent;
+	background-color: #2d3840;
+}
+
+#page-care button {
+	width: 300dp;
+}
+
+.care-hint {
+	margin-top: 9dp;
+	font-size: 22dp;
+	color: #b2b2b2;
+}
+
+#care-result {
+	margin-top: 9dp;
+	font-size: 33dp;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The boxes over the bag (field_item_option_box): the options box at (19, 35), 56 x 88, rows 19 pixels apart, the
+   focused row a filled grey bar; the sort orders and the drop's question as boxes of the same look (inventory.c: 72 x
+   66 and 128 x 53, the question at (96, 82)). The boxes are beside the panel, not in it: they place themselves from
+   the middle of the screen, where the panel's left edge is 450dp to the left. The bag's frame, at the original's
+   y 10 (30dp), sits at 93dp here, under the page tabs the original does not have, so the boxes are 63dp lower than
+   the original's numbers: the options box stays 25 pixels under the frame's top, below the first row of slots.
+   The cursor of every box (ui.c: renderSelectionCursor) is the bag's: outline #B0B0B0 / #121212 round a grey fill
+   at half opacity, so the entry's ink (#b5b5b5, TEXT_COLORS 9) reads over it as in the capture, where the fill over
+   the box is #525A63. The slot the options are open on keeps its cursor (.picked). */
+
+.box {
+	position: absolute;
+	left: 50%;
+	top: 168dp;
+	width: 168dp;
+	margin: 0 0 0 -423dp;
+	padding: 12dp 6dp;
+	font-size: 33dp;
+	border-radius: 0;
+	border: 3dp transparent;
+	background-color: #2d3840;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+.box button {
+	height: 51dp;
+	margin: 0 0 6dp 0;
+	padding: 0 9dp;
+	line-height: 51dp;
+}
+
+.box button:focus {
+	border-color: transparent;
+	background-color: #80808080;
+}
+
+#sort-box {
+	width: 216dp;
+}
+
+#confirm-box {
+	top: 309dp;
+	margin-left: -192dp;
+	width: 384dp;
+}
+
+#confirm-box button {
+	display: inline-block;
+	width: 150dp;
+}
+
+#prompts {
+	position: absolute;
+	right: 0;
+	top: 624dp;
+	margin: 0;
+	padding: 0;
+	border-width: 0;
+	font-size: 22dp;
+	color: #b2b2b2;
+}
+
+/* The focused entry keeps the ink colour: the original marks it with the outline or the grey bar, not with colour. */
+button:focus .original-look, button.original-look:focus {
+	color: #d0d0d0;
+}
+
+/* ITEM is a field screen, with no partner tabs or generic prompts. */
+#scrim.item-screen #panel { top: 48dp; width: 912dp; margin-left: -456dp; }
+#scrim.item-screen #tabs, #scrim.item-screen #prompts, #scrim.item-screen #bag-foot { display: none; }
+#scrim.item-screen #page-items { height: 627dp; }
+#scrim.item-screen #bag-grid { box-sizing: border-box; height: 330dp; min-height: 0; }
+#scrim.item-screen .slot.hidden { display: none; }
+#scrim.item-screen.large-bag #bag-grid { height: 546dp; overflow-y: hidden; }
+#scrim.item-screen #bag-description { top: 543dp; height: 84dp; min-height: 0; box-sizing: border-box; padding: 21dp 75dp;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box; }
+#scrim.item-screen #options { top: 120dp; width: 174dp; height: 252dp; box-sizing: border-box; margin-left: -426dp; padding: 15dp 24dp; }
+#scrim.item-screen #options button { box-sizing: border-box; width: 120dp; height: 48dp; line-height: 42dp; margin: 0 0 6dp 0; padding: 0 6dp; border: 3dp transparent; }
+#scrim.item-screen #options button:focus, #scrim.item-screen #options button.active-option { border-color: #b0b0b0 #121212 #121212 #b0b0b0; background-color: #80808080; }
+#scrim.item-screen.item-column-right #options { margin-left: 6dp; }
+#scrim.item-screen.option-row-1 #options, #scrim.item-screen.option-row-1 #sort-box { top: 174dp; }
+#scrim.item-screen.option-row-2 #options, #scrim.item-screen.option-row-2 #sort-box { top: 228dp; }
+#scrim.item-screen.option-row-3 #options, #scrim.item-screen.option-row-3 #sort-box { top: 282dp; }
+#scrim.item-screen.option-row-4 #options, #scrim.item-screen.option-row-4 #sort-box { top: 336dp; }
+#scrim.item-screen.option-row-5 #options, #scrim.item-screen.option-row-5 #sort-box { top: 90dp; }
+#scrim.item-screen.option-row-6 #options, #scrim.item-screen.option-row-6 #sort-box { top: 144dp; }
+#scrim.item-screen.option-row-7 #options, #scrim.item-screen.option-row-7 #sort-box { top: 198dp; }
+#scrim.item-screen.option-row-8 #options, #scrim.item-screen.option-row-8 #sort-box { top: 252dp; }
+#scrim.item-screen #sort-box { top: 120dp; margin-left: -252dp; width: 216dp; height: 198dp; box-sizing: border-box; padding: 15dp 24dp; }
+#scrim.item-screen.item-column-right #sort-box { margin-left: 180dp; }
+#scrim.item-screen #sort-box button { box-sizing: border-box; width: 162dp; height: 48dp; line-height: 42dp; margin: 0 0 6dp 0; padding: 0 6dp; border: 3dp transparent; }
+#scrim.item-screen #sort-box button:focus { border-color: #b0b0b0 #121212 #121212 #b0b0b0; }
+#scrim.item-screen #confirm-box { top: 246dp; width: 384dp; height: 159dp; box-sizing: border-box; padding: 21dp 24dp; }
+#scrim.item-screen #confirm-text { height: 36dp; line-height: 36dp; margin: 0 0 24dp; }
+#scrim.item-screen #confirm-box button { box-sizing: border-box; width: 150dp; height: 48dp; line-height: 42dp; margin: 0; padding: 0 6dp; border: 3dp transparent; }
+#scrim.item-screen #confirm-box button:focus { border-color: #b0b0b0 #121212 #121212 #b0b0b0; }
+#scrim.item-screen.sub-box-open #options { pointer-events: none; }
+
+/* ui.c: the box's features=4 draws a rail and a proportional thumb, without arrows. */
+#bag-scrollbar { display: none; pointer-events: none; }
+#scrim.item-screen.large-bag #bag-scrollbar {
+	display: block; position: absolute; left: 873dp; top: 39dp; width: 21dp; height: 477dp;
+	box-sizing: border-box; border: 3dp #020202; border-right-color: #6987a0;
+	border-bottom-color: #6987a0; background-color: #354b5c;
+}
+#scrim.item-screen.large-bag #bag-scrollbar.hidden { display: none; }
+#bag-scroll-thumb {
+	position: absolute; left: 0; width: 18dp; box-sizing: border-box;
+	border: 3dp #6987a0; border-right-color: #020202; border-bottom-color: #020202;
+	background-color: #5b7080; pointer-events: none;
+}
+
+/* Texture modulation from inventory.c / utils.c, expressed as text ink in the original skin. */
+#scrim.item-screen .slot.item-field .slot-name { color: #30d0d0; }
+#scrim.item-screen .slot.item-battle .slot-name { color: #ff3082; }
+#scrim.item-screen .slot.item-shared .slot-name { color: #30ff30; }
+#scrim.item-screen #options button { color: #b2b2b2; }
+#scrim.item-screen #options button.unavailable { color: #717171; }
+
+/* Status: tres regiones con separadores de doble tono. Las posiciones parten de
+   la vista de estado (STATS_VIEW_LINES); no alteran la pantalla ITEM. */
+.status-decoration { position: absolute; display: block; pointer-events: none; }
+#profile-heading, #condition-heading, #parameter-heading {
+    width: 159dp; height: 33dp; font-size: 0;
+}
+#profile-heading { left: 30dp; top: 24dp; decorator: image(status-profile); }
+#condition-heading { left: 30dp; top: 231dp; decorator: image(status-condition); }
+#parameter-heading { left: 396dp; top: 231dp; decorator: image(status-parameter); }
+#status-horizontal {
+    left: 6dp; top: 210dp; width: 885dp; height: 9dp;
+}
+#status-vertical {
+    left: 366dp; top: 216dp; width: 9dp; height: 351dp;
+}
+/* STATS_VIEW_LINES (game_menu.c: renderSeparatorLines, each line in its UI_LINES_BORDER_COLOR): three native-pixel
+   lines; the light extends one pixel at each end. */
+#status-horizontal span, #status-vertical span { position: absolute; display: block; background-color: #020202; }
+#status-horizontal .separator-light, #status-vertical .separator-light { background-color: #6987a0; }
+#status-horizontal .separator-first { left: 3dp; right: 3dp; top: 0; height: 3dp; }
+#status-horizontal .separator-light { left: 0; right: 0; top: 3dp; height: 3dp; }
+#status-horizontal .separator-last { left: 3dp; right: 3dp; top: 6dp; height: 3dp; }
+#status-vertical .separator-first { left: 0; top: 3dp; bottom: 3dp; width: 3dp; }
+#status-vertical .separator-light { left: 3dp; top: 0; bottom: 0; width: 3dp; }
+#status-vertical .separator-last { left: 6dp; top: 3dp; bottom: 3dp; width: 3dp; }
+#status-name-label { left: 30dp; top: 63dp; width: 84dp; font-size: 22dp; color: #80e8f8; }
+#status-head { left: 120dp; top: 60dp; width: 750dp; }
+#status-species-line { top: 108dp; width: 870dp; }
+#status-species-line .line-value { width: 294dp; }
+#status-age-line, #status-weight-line { top: 156dp; }
+#status-age-line { width: 210dp; }
+#status-weight-line { left: 240dp; width: 240dp; }
+#status-lives { left: 48dp; top: 297dp; }
+
+#profile-heading, #condition-heading, #parameter-heading { color: transparent; }
+/* Valores por encima de las barras: los pools reservan dos columnas de cuatro cifras. */
+#status-parameters .bar-row { display: block; position: relative; }
+/* The status view (game_menu.c:2402): HP, MP, Off and Def in the font at full size and colour 3 (#FFF773 measured),
+   13 pixels right of their icons; SPEED and BRAINS are small-caps pictures of SYSTEM_W (212, 70) and (212, 82), 36 x 12,
+   in the same place (STATS_VIEW_ELEMENTS 18 and 19). */
+#status-parameters .label {
+    position: absolute; left: 0; top: 0; width: 153dp;
+    box-sizing: border-box; padding-left: 39dp; font-size: 36dp; color: #fff371;
+}
+#status-parameters #stat-2-label, #status-parameters #stat-3-label { width: 147dp; color: transparent; }
+#status-parameters #stat-2-label { decorator: image(stat-speed scale-none left center), image(status-speed-name scale-none right center); }
+#status-parameters #stat-3-label { decorator: image(stat-brains scale-none left center), image(status-brains-name scale-none right center); }
+#status-parameters .bar {
+    position: absolute; left: 156dp; top: 27dp; width: 162dp; margin: 0;
+}
+#status-parameters .pool .bar { width: 312dp; }
+/* The values' cells start a pixel under the bar of the row above (at -12dp they covered its bottom line). */
+#status-parameters .value, #status-parameters .pool-max {
+    position: absolute; left: 156dp; top: -9dp; width: 162dp;
+    text-align: center; white-space: nowrap;
+}
+#status-parameters .pool .value { left: 156dp; width: 126dp; }
+#status-parameters .pool-max { display: block; left: 342dp; width: 126dp; }
+#status-condition .label { font-size: 18dp; }
+
+#tab-tech { width: 180dp; }
+/* The moves view sits in the same opaque box as the stats view (renderUIBoxBorder around it in the capture). */
+#page-tech {
+    position: relative; height: 552dp; padding: 0; border: 3dp transparent; background-color: #2d3840;
+    decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+        image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+.tech-heading { position: absolute; left: 21dp; top: 3dp; color: #fff371; font-size: 36dp; }
+#final-heading { top: 219dp; width: 870dp; padding-top: 0; border-width: 0; }
+/* The original's font for the column names when they are text (the modern look this skin extends gives them its own). */
+.tech-columns { position: absolute; left: 0; top: 36dp; width: 894dp; height: 24dp; font-family: original-look; font-size: 18dp; }
+#final-columns { top: 237dp; }
+.tech-row { position: absolute; left: 0; width: 894dp; height: 45dp; font-size: 36dp; }
+#tech-row-0 { top: 66dp; }
+#tech-row-1 { top: 111dp; }
+#tech-row-2 { top: 156dp; }
+#tech-row-3 { top: 267dp; }
+.tech-row span, .tech-columns span { position: absolute; display: block; }
+.tech-name { left: 75dp; width: 414dp; white-space: nowrap; overflow: hidden; }
+.tech-power { left: 495dp; width: 72dp; }
+.tech-mp { left: 618dp; width: 72dp; }
+.tech-range { left: 750dp; width: 36dp; }
+.tech-row .tech-range { font-size: 18dp; }
+.tech-effect { left: 822dp; width: 36dp; }
+#tech-mp-3 { display: none; }
+.tech-row .tech-effect { font-size: 0; color: transparent; height: 36dp; }
+.effect-1 { decorator: image(tech-poison); }
+.effect-2 { decorator: image(tech-confusion); }
+.effect-3 { decorator: image(tech-stun); }
+.effect-4 { decorator: image(tech-flatten); }
+
+.tech-columns .tech-power, .tech-columns .tech-mp,
+.tech-columns .tech-range, .tech-columns .tech-effect { color: transparent; height: 21dp; font-size: 0; }
+.tech-columns .tech-power { decorator: image(tech-power-label scale-none left top); }
+.tech-columns .tech-mp { decorator: image(tech-mp-label scale-none left top); }
+.tech-columns .tech-range { decorator: image(tech-range-label scale-none left top); }
+.tech-columns .tech-effect { decorator: image(tech-effect-label scale-none left top); }
+
+#final-columns { display: block; }
+
+#tech-picker.hidden { display: none; }
+#scrim.tech-editing #final-heading, #scrim.tech-editing #final-columns,
+#scrim.tech-editing #tech-row-3, #scrim.tech-editing #tech-change { display: none; }
+#scrim.tech-editing #tabs { pointer-events: none; }
+.tech-choice.unavailable { color: #717171; }
+
+#tech-change, #tech-change:focus, #tech-cancel { position: absolute; left: 57dp; width: 810dp; height: 36dp; margin: 0; padding: 0; border-width: 0; background-color: transparent; text-align: left; font-size: 36dp; }
+#tech-change { top: 339dp; }
+#tech-cancel { top: 381dp; }
+.tech-action-symbol { color: #90a8f8; margin-right: 9dp; }
+#tech-cancel .tech-action-symbol { color: #3cff3c; }
+.tech-action-label { white-space: nowrap; }
+.tech-row .tech-power, .tech-row .tech-mp { top: -3dp; text-align: right; }
+.tech-row .tech-effect { top: -3dp; }
+.tech-columns .tech-power { left: 513dp; width: 69dp; }
+.tech-columns .tech-mp { left: 651dp; width: 33dp; }
+.tech-columns .tech-range { left: 741dp; width: 57dp; }
+.tech-columns .tech-effect { left: 813dp; width: 48dp; }
+.tech-row .tech-range { font-size: 36dp; }
+.tech-separator { position: absolute; left: 6dp; width: 885dp; height: 9dp; }
+#techset-separator { top: 201dp; }
+#tech-final-separator { top: 312dp; }
+.tech-separator span { position: absolute; display: block; height: 3dp; background-color: #020202; }
+.tech-separator .separator-first { left: 3dp; right: 3dp; top: 0; }
+/* renderSeparatorLines colour 1 on the Tech page measured (148, 222, 255). */
+.tech-separator .separator-light { left: 0; right: 0; top: 3dp; background-color: #94deff; }
+.tech-separator .separator-last { left: 3dp; right: 3dp; top: 6dp; }
+#tech-final-separator .separator-last { right: 0; }
+#tech-dots { position: absolute; left: 0; top: 0; }
+.tech-dot { position: absolute; display: block; width: 12dp; height: 12dp; decorator: image(tech-table-dot); }
+.dot-power { left: 606dp; }
+.dot-mp { left: 729dp; }
+.dot-range { left: 798dp; }
+.dot-row-0 { top: 75dp; }
+.dot-row-1 { top: 120dp; }
+.dot-row-2 { top: 168dp; }
+#tech-final-dot { left: 798dp; top: 276dp; }
+#scrim.tech-editing #tech-final-separator, #scrim.tech-editing #tech-final-dot, #scrim.tech-editing #tech-cancel { display: none; }
+/* The change view's "Techs" heading where Final was, and the Tech help box under it (game_menu.c:
+   the techniques view, MOVES_VIEW_HELP_LINES): lines black, light and black from x -142 to -80 and y 26 to 93,
+   "Tech" at (-135, 32), "help" at (-129, 46), the arrow at (-116, 60) and, at (-116, 76), the key that opens the
+   help page (the extra action), the device's key where the original draws its pad button. */
+#techs-heading, #tech-help { display: none; }
+#scrim.tech-editing #techs-heading { display: block; top: 219dp; }
+#scrim.tech-editing #tech-help { display: block; }
+#tech-help { position: absolute; left: 21dp; top: 342dp; width: 189dp; height: 204dp; box-sizing: border-box;
+	border: 3dp #020202; font-size: 36dp; color: #d6d6d6;
+	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box; }
+#tech-help .tech-help-line { position: absolute; left: 0; top: 0; right: 0; bottom: 0; border: 3dp #94deff; }
+#tech-help .tech-help-line .tech-help-line { border-color: #020202; }
+#tech-help-first, #tech-help-second, #tech-help-arrow, #tech-help-key { position: absolute; display: block; white-space: nowrap; }
+#tech-help-first { left: 18dp; top: 15dp; }
+#tech-help-second { left: 36dp; top: 57dp; }
+#tech-help-arrow { left: 75dp; top: 99dp; width: 30dp; height: 30dp; decorator: image(tech-help-arrow scale-none left top); }
+#tech-help-key { left: 0; width: 183dp; top: 147dp; text-align: center; color: #f070d8; }
+#tech-picker { position: absolute; left: 12dp; top: 228dp; width: 870dp; height: 216dp; }
+.tech-choice { display: inline-block; width: 210dp; height: 48dp; padding: 3dp; margin: 0; overflow: hidden; white-space: nowrap; font-size: 18dp; }
+#tech-message { position: absolute; left: 12dp; top: 474dp; width: 870dp; font-size: 21dp; color: #fff371; }
+
+.tech-choice { box-sizing: border-box; }
+
+/* Editor original: casillas de 12x12, separaciÃ³n de 18x15 y cursor de 18x16.
+   Todas las medidas nativas se expresan a escala 3; no se usan nombres como botones. */
+#tech-picker { left: 315dp; top: 240dp; width: 432dp; height: 318dp; }
+.tech-choice, .tech-choice:focus {
+    position: absolute; display: block; width: 54dp; height: 48dp;
+    margin: 0; padding: 0; border-width: 0; background-color: transparent;
+    font-size: 0; color: transparent; decorator: none; overflow: visible;
+}
+.tech-choice:focus { decorator: image(tech-grid-cursor scale-none left top); }
+/* The techniques view draws every cell as a subtractive 0x68 box, black on the page (measured (0, 0, 0)), the
+   ones the partner can learn as (0x4e, 0x60, 0x6e), and the equipped ones red (200, 0, 40) at 50 % over the glyph
+   (measured (173, 74, 90) where the glyph is grey). A known technique the partner cannot use keeps its glyph under
+   the subtractive box, close to 45 % of its colour. The shade element lays those tints over the glyph. */
+.tech-cell { position: absolute; display: block; left: 9dp; top: 6dp; width: 36dp; height: 36dp;
+    background-color: #000000; color: transparent; font-size: 0; pointer-events: none; }
+.tech-choice.compatible .tech-cell { background-color: #4e606e; }
+.tech-choice.equipped .tech-cell { background-color: #c80028; }
+.tech-cell-shade { position: absolute; display: none; left: 9dp; top: 6dp; width: 36dp; height: 36dp; pointer-events: none; }
+.tech-choice.known .tech-cell-shade { display: block; background-color: #0000008c; }
+.tech-choice.known.compatible .tech-cell-shade { display: none; }
+.tech-choice.known.compatible.equipped .tech-cell-shade { display: block; background-color: #c8002880; }
+.tech-category, .tech-column { position: absolute; display: block; pointer-events: none; }
+.tech-category { width: 60dp; height: 30dp; }
+.tech-category.category-left { left: -66dp; }
+.tech-category.category-right { left: 435dp; }
+.tech-column { top: -18dp; width: 12dp; height: 15dp; }
+#tech-choice-0 { left: 0dp; top: 0dp; }
+#tech-choice-1 { left: 54dp; top: 0dp; }
+#tech-choice-2 { left: 108dp; top: 0dp; }
+#tech-choice-3 { left: 162dp; top: 0dp; }
+#tech-choice-4 { left: 216dp; top: 0dp; }
+#tech-choice-5 { left: 270dp; top: 0dp; }
+#tech-choice-6 { left: 324dp; top: 0dp; }
+#tech-choice-7 { left: 378dp; top: 0dp; }
+#tech-choice-8 { left: 0dp; top: 45dp; }
+#tech-choice-9 { left: 54dp; top: 45dp; }
+#tech-choice-10 { left: 108dp; top: 45dp; }
+#tech-choice-11 { left: 162dp; top: 45dp; }
+#tech-choice-12 { left: 216dp; top: 45dp; }
+#tech-choice-13 { left: 270dp; top: 45dp; }
+#tech-choice-14 { left: 324dp; top: 45dp; }
+#tech-choice-15 { left: 378dp; top: 45dp; }
+#tech-choice-16 { left: 0dp; top: 90dp; }
+#tech-choice-17 { left: 54dp; top: 90dp; }
+#tech-choice-18 { left: 108dp; top: 90dp; }
+#tech-choice-19 { left: 162dp; top: 90dp; }
+#tech-choice-20 { left: 216dp; top: 90dp; }
+#tech-choice-21 { left: 270dp; top: 90dp; }
+#tech-choice-22 { left: 324dp; top: 90dp; }
+#tech-choice-23 { left: 378dp; top: 90dp; }
+#tech-choice-24 { left: 0dp; top: 135dp; }
+#tech-choice-25 { left: 54dp; top: 135dp; }
+#tech-choice-26 { left: 108dp; top: 135dp; }
+#tech-choice-27 { left: 162dp; top: 135dp; }
+#tech-choice-28 { left: 216dp; top: 135dp; }
+#tech-choice-29 { left: 270dp; top: 135dp; }
+#tech-choice-30 { left: 324dp; top: 135dp; }
+#tech-choice-31 { left: 378dp; top: 135dp; }
+#tech-choice-32 { left: 0dp; top: 180dp; }
+#tech-choice-33 { left: 54dp; top: 180dp; }
+#tech-choice-34 { left: 108dp; top: 180dp; }
+#tech-choice-35 { left: 162dp; top: 180dp; }
+#tech-choice-36 { left: 216dp; top: 180dp; }
+#tech-choice-37 { left: 270dp; top: 180dp; }
+#tech-choice-38 { left: 324dp; top: 180dp; }
+#tech-choice-39 { left: 378dp; top: 180dp; }
+#tech-choice-40 { left: 0dp; top: 225dp; }
+#tech-choice-41 { left: 54dp; top: 225dp; }
+#tech-choice-42 { left: 108dp; top: 225dp; }
+#tech-choice-43 { left: 162dp; top: 225dp; }
+#tech-choice-44 { left: 216dp; top: 225dp; }
+#tech-choice-45 { left: 270dp; top: 225dp; }
+#tech-choice-46 { left: 324dp; top: 225dp; }
+#tech-choice-47 { left: 378dp; top: 225dp; }
+#tech-choice-48 { left: 0dp; top: 270dp; }
+#tech-choice-49 { left: 54dp; top: 270dp; }
+#tech-choice-50 { left: 108dp; top: 270dp; }
+#tech-choice-51 { left: 162dp; top: 270dp; }
+#tech-choice-52 { left: 216dp; top: 270dp; }
+#tech-choice-53 { left: 270dp; top: 270dp; }
+#tech-choice-54 { left: 324dp; top: 270dp; }
+#tech-choice-55 { left: 378dp; top: 270dp; }
+.category-0 { top: 3dp; decorator: image(tech-category-0); }
+.tech-choice.known.special-0 .tech-cell { decorator: image(tech-glyph-0-0); }
+#tech-picker.alternate .tech-choice.known.special-0 .tech-cell { decorator: image(tech-glyph-0-1); }
+.category-1 { top: 48dp; decorator: image(tech-category-1); }
+.tech-choice.known.special-1 .tech-cell { decorator: image(tech-glyph-1-0); }
+#tech-picker.alternate .tech-choice.known.special-1 .tech-cell { decorator: image(tech-glyph-1-1); }
+.category-2 { top: 93dp; decorator: image(tech-category-2); }
+.tech-choice.known.special-2 .tech-cell { decorator: image(tech-glyph-2-0); }
+#tech-picker.alternate .tech-choice.known.special-2 .tech-cell { decorator: image(tech-glyph-2-1); }
+.category-3 { top: 138dp; decorator: image(tech-category-3); }
+.tech-choice.known.special-3 .tech-cell { decorator: image(tech-glyph-3-0); }
+#tech-picker.alternate .tech-choice.known.special-3 .tech-cell { decorator: image(tech-glyph-3-1); }
+.category-4 { top: 183dp; decorator: image(tech-category-4); }
+.tech-choice.known.special-4 .tech-cell { decorator: image(tech-glyph-4-0); }
+#tech-picker.alternate .tech-choice.known.special-4 .tech-cell { decorator: image(tech-glyph-4-1); }
+.category-5 { top: 228dp; decorator: image(tech-category-5); }
+.tech-choice.known.special-5 .tech-cell { decorator: image(tech-glyph-5-0); }
+#tech-picker.alternate .tech-choice.known.special-5 .tech-cell { decorator: image(tech-glyph-5-1); }
+.category-6 { top: 273dp; decorator: image(tech-category-6); }
+.tech-choice.known.special-6 .tech-cell { decorator: image(tech-glyph-6-0); }
+#tech-picker.alternate .tech-choice.known.special-6 .tech-cell { decorator: image(tech-glyph-6-1); }
+.column-0 { left: 21dp; decorator: image(tech-column-0); }
+.column-1 { left: 75dp; decorator: image(tech-column-1); }
+.column-2 { left: 129dp; decorator: image(tech-column-2); }
+.column-3 { left: 183dp; decorator: image(tech-column-3); }
+.column-4 { left: 237dp; decorator: image(tech-column-4); }
+.column-5 { left: 291dp; decorator: image(tech-column-5); }
+.column-6 { left: 345dp; decorator: image(tech-column-6); }
+.column-7 { left: 399dp; decorator: image(tech-column-7); }
+
+#scrim.tech-editing #tech-message { left: 12dp; top: 300dp; width: 225dp; font-size: 18dp; }
+
+/* Technique Select Help, the page the extra action opens from the change view (the techniques view, MENU_STATE 8,
+   US branch): the heading at (-142, -82); bullets (SYSTEM_W 180, 12, palette 4) at (-129, -65) and (-129, -34)
+   before the two help lines; the separator at y -4; the legend cells at (-120, 2 + 16 n) with their labels at
+   (-102, 3 + 16 n) and the grid cursor at (-123, 80). Current and the red cell after "deselects tech" are glyph 2 in
+   palette 0 at 50 % over red (200, 0, 40); the first Unusable is glyph 3 darkened by a subtractive box. */
+#tech-help-page { display: none; position: absolute; left: 0; top: 0; width: 894dp; height: 552dp; }
+#scrim.tech-help #page-tech > * { display: none; }
+#scrim.tech-help #page-tech > #tech-help-page { display: block; }
+#tech-help-title { top: 18dp; }
+.tech-help-hint { position: absolute; left: 60dp; height: 36dp; font-size: 36dp; white-space: nowrap; color: #d6d6d6; }
+#tech-help-select { top: 69dp; }
+#tech-help-cancel { top: 162dp; }
+.tech-help-hint span { display: inline-block; vertical-align: top; height: 36dp; }
+.tech-help-bullet { width: 36dp; margin-right: 9dp; decorator: image(tech-help-bullet scale-none left top); }
+.tech-help-cell { position: relative; width: 36dp; height: 36dp; border: 3dp #000000; }
+.tech-help-hint .tech-help-cell { margin-top: -3dp; }
+#tech-help-select .tech-help-cell { margin: -3dp 12dp 0 6dp; }
+#tech-help-cancel .tech-help-cell { margin-left: 24dp; }
+#tech-help-cancel-key { margin: 0 21dp; }
+.tech-help-glyph { position: absolute; display: block; left: 0; top: 0; width: 36dp; height: 36dp; }
+.legend-cell-0 { background-color: #c80028; }
+.legend-cell-0 .tech-help-glyph { decorator: image(tech-help-current); opacity: 0.5; }
+.legend-cell-1 .tech-help-glyph { decorator: image(tech-glyph-0-0); }
+.legend-cell-2 { background-color: #4e606e; }
+.legend-cell-3 { background-color: #000000; }
+.legend-cell-3 .tech-help-glyph { decorator: image(tech-glyph-3-0); opacity: 0.45; }
+.legend-cell-4 { background-color: #000000; }
+.legend-cell-5 .tech-help-glyph { decorator: image(tech-glyph-6-0); }
+#tech-help-separator { top: 252dp; }
+.tech-help-legend { position: absolute; left: 0; width: 894dp; height: 48dp; font-size: 36dp; color: #d6d6d6; }
+.tech-help-legend .tech-help-cell { position: absolute; display: block; left: 84dp; top: 0; }
+.tech-help-legend-label { position: absolute; display: block; left: 141dp; top: 6dp; white-space: nowrap; }
+#tech-help-legend-0 { top: 267dp; }
+#tech-help-legend-1 { top: 315dp; }
+#tech-help-legend-2 { top: 363dp; }
+#tech-help-legend-3 { top: 411dp; }
+#tech-help-legend-4 { top: 459dp; }
+#tech-help-legend-5 { top: 507dp; }
+#tech-help-cursor { position: absolute; display: block; left: 78dp; top: 504dp; width: 54dp; height: 48dp;
+    decorator: image(tech-grid-cursor scale-none left top); }
+
+/* PestaÃ±as trapezoidales de renderMenuTab; la imagen se aporta con el disco del usuario. */
+.tab-edge { position: absolute; display: block; top: 0; height: 100%; pointer-events: none; }
+/* The partner's portrait is a picture only: its image reaches past its clip, over the tabs, and RmlUi does not clip
+   where the pointer hits, so a click there would land on it and not on the tab. */
+#partner-portrait-clip, #partner-portrait { pointer-events: none; }
+.tab-left { left: 0; width: 21dp; decorator: image(partner-tab-left-idle); }
+.tab-middle { left: 21dp; right: 21dp; decorator: image(partner-tab-middle-idle); }
+.tab-right { right: 0; width: 21dp; decorator: image(partner-tab-right-idle); }
+/* renderMenuTab: an idle tab is the same texture shaded to 0x32/0x80 (renderRectPolyFT4 flag 1). */
+.tab .tab-edge { image-color: #646464; }
+.tab.selected .tab-edge { image-color: #ffffff; }
+.tab.selected .tab-left { decorator: image(partner-tab-left-active); }
+.tab.selected .tab-middle { decorator: image(partner-tab-middle-active); }
+.tab.selected .tab-right { decorator: image(partner-tab-right-active); }
+.tab-label { position: relative; left: 21dp; top: 6dp; }
+#page-tech { height: 570dp; box-sizing: border-box; }
+
+/* The focused technique's panel (game_menu.c, the selected technique's view): on the right for the grid's first three
+   columns (MOVE_SELECT_BOX_X up to 0xA8, panel 1), on the left for the others (panel 0). */
+#tech-info.hidden { display: none; }
+#tech-info { position: absolute; left: 0; top: 0; width: 894dp; height: 570dp; pointer-events: none; }
+#tech-info-name, #tech-info-stats { position: absolute; background-color: #323280; border: 3dp transparent; box-sizing: border-box; decorator: original-box(3dp) border-box; }
+#tech-info-name { left: 21dp; top: 276dp; width: 384dp; height: 57dp; padding: 9dp 12dp; font-size: 33dp; }
+#tech-info-stats { left: 21dp; top: 339dp; width: 261dp; height: 207dp; }
+#tech-info.info-right #tech-info-name { left: 492dp; }
+#tech-info.info-right #tech-info-stats { left: 630dp; }
+.info-label, .info-value { position: absolute; display: block; }
+.info-label { left: 9dp; width: 72dp; height: 21dp; font-size: 0; color: transparent; }
+.info-value { left: 129dp; width: 123dp; font-size: 21dp; }
+.info-power { top: 9dp; }
+.info-mp { top: 60dp; }
+.info-range { top: 111dp; }
+.info-effect { top: 162dp; }
+.info-label.info-power { decorator: image(tech-power-label); }
+.info-label.info-mp { width: 33dp; decorator: image(tech-mp-label); }
+.info-label.info-range { width: 57dp; decorator: image(tech-range-label); }
+.info-label.info-effect { width: 48dp; decorator: image(tech-effect-label); }
+
+#tech-info { display: block; }
+
+/* Detalles de la vista de la técnica elegida: encabezado, separadores y cinco esquinas. */
+#tech-info-heading { position: absolute; left: 30dp; top: 261dp; width: 111dp; height: 21dp; decorator: image(tech-info-heading); }
+#tech-info.info-right #tech-info-heading { left: 501dp; }
+.info-colon { position: absolute; left: 90dp; width: 30dp; height: 30dp; decorator: image(tech-info-colon); }
+.info-colon.info-power { top: 9dp; }
+.info-colon.info-mp { top: 60dp; }
+.info-colon.info-range { top: 111dp; }
+.info-colon.info-effect { top: 162dp; }
+.info-value.info-power, .info-value.info-mp { font-size: 33dp; white-space: nowrap; }
+.info-corner { position: absolute; width: 12dp; height: 12dp; }
+#tech-info-tl { left: 15dp; top: 270dp; decorator: image(tech-info-tl); }
+#tech-info-tr { left: 402dp; top: 270dp; decorator: image(tech-info-tr); }
+#tech-info-bl { left: 15dp; top: 543dp; decorator: image(tech-info-bl); }
+#tech-info-br { left: 264dp; top: 543dp; decorator: image(tech-info-br); }
+#tech-info-notch { left: 402dp; top: 330dp; decorator: image(tech-info-br); }
+#tech-info.info-right #tech-info-tl { left: 486dp; }
+#tech-info.info-right #tech-info-tr { left: 873dp; }
+#tech-info.info-right #tech-info-bl { left: 624dp; }
+#tech-info.info-right #tech-info-br { left: 873dp; }
+#tech-info.info-right #tech-info-notch { left: 486dp; decorator: image(tech-info-bl); }
+
+.info-value.info-range, .info-value.info-effect { font-size: 33dp; }
+
+/* Profile: insets nativos de STATS_VIEW_INSETS y rÃ³tulos de STATS_VIEW_ELEMENTS.
+   Los offsets descuentan el borde de 1px de la pÃ¡gina. */
+#status-head { left: 117dp; top: 60dp; }
+#status-name { width: 294dp; height: 42dp; box-sizing: border-box; padding: 0; line-height: 36dp; }
+/* A name past the 12 letters the box holds (Machinedramon) gets a wider one, short of the profile headings. */
+#status-name.long { width: 324dp; }
+#status-species-line { left: 0; top: 108dp; width: 894dp; }
+#status-age-line, #status-weight-line { left: 0; top: 156dp; width: 894dp; }
+#status-species, #status-age, #status-weight {
+    position: absolute; top: 0; height: 42dp; box-sizing: border-box; margin: 0; padding: 0; line-height: 36dp;
+}
+#status-species { left: 117dp; width: 732dp; }
+/* Age and weight are right-aligned two-digit fields (game_menu.c: the partner stats view, renderNumber with n = 2):
+   a one-digit age stands in the field's second cell (screen x 59 in the capture), not at its left edge. */
+#status-age { left: 117dp; width: 78dp; text-align: right; padding-right: 24dp; }
+#status-weight { left: 333dp; width: 78dp; text-align: right; padding-right: 18dp; }
+#status-name-label, #status-species-label, #status-age-label, #status-weight-label {
+    position: absolute; display: block; height: 30dp; color: transparent; font-size: 0;
+}
+#status-name-label { left: 33dp; top: 66dp; width: 78dp; decorator: image(status-name-label); }
+#status-species-label { left: 33dp; top: 6dp; width: 78dp; decorator: image(status-species-label); }
+#status-age-label { left: 48dp; top: 6dp; width: 57dp; decorator: image(status-age-label); }
+#status-weight-label { left: 246dp; top: 6dp; width: 84dp; decorator: image(status-weight-label); }
+#no-condition { display: none; }
+
+#status-species-line #status-species { width: 732dp; }
+
+/* Datos de especie y actividad dentro de Profile; condiciones en su fila nativa inferior. */
+.profile-meta { position: absolute; display: block; }
+#status-special-heading, #status-type-heading, #status-active-heading { top: 78dp; width: 75dp; height: 24dp; }
+#status-special-heading { left: 474dp; decorator: image(status-special-heading); }
+#status-type-heading { left: 603dp; decorator: image(status-type-heading); }
+#status-active-heading { left: 702dp; decorator: image(status-active-heading); }
+#status-specials { left: 474dp; top: 111dp; width: 108dp; height: 36dp; }
+.status-special { display: inline-block; width: 36dp; height: 36dp; }
+.status-special.hidden, #status-type.hidden { display: none; }
+#status-type { left: 624dp; top: 111dp; width: 36dp; height: 36dp; }
+#status-active { left: 702dp; top: 111dp; width: 144dp; height: 36dp; font-size: 33dp; }
+#conditions { left: 33dp; top: 294dp; width: 315dp; height: 36dp; }
+#conditions .condition { position: absolute; display: block; width: 36dp; height: 36dp; margin: 0; font-size: 0; color: transparent; }
+#conditions .condition.hidden { display: none; }
+.profile-special-0 { decorator: image(tech-glyph-0-0); }
+#scrim.status-alternate .profile-special-0 { decorator: image(tech-glyph-0-1); }
+.profile-special-1 { decorator: image(tech-glyph-1-0); }
+#scrim.status-alternate .profile-special-1 { decorator: image(tech-glyph-1-1); }
+.profile-special-2 { decorator: image(tech-glyph-2-0); }
+#scrim.status-alternate .profile-special-2 { decorator: image(tech-glyph-2-1); }
+.profile-special-3 { decorator: image(tech-glyph-3-0); }
+#scrim.status-alternate .profile-special-3 { decorator: image(tech-glyph-3-1); }
+.profile-special-4 { decorator: image(tech-glyph-4-0); }
+#scrim.status-alternate .profile-special-4 { decorator: image(tech-glyph-4-1); }
+.profile-special-5 { decorator: image(tech-glyph-5-0); }
+#scrim.status-alternate .profile-special-5 { decorator: image(tech-glyph-5-1); }
+.profile-special-6 { decorator: image(tech-glyph-6-0); }
+#scrim.status-alternate .profile-special-6 { decorator: image(tech-glyph-6-1); }
+.profile-type-1 { decorator: image(status-type-1); }
+.profile-type-2 { decorator: image(status-type-2); }
+.profile-type-3 { decorator: image(status-type-3); }
+#conditions .profile-condition-sick { left: 0dp; decorator: image(status-condition-sick); }
+#conditions .profile-condition-injured { left: 45dp; decorator: image(status-condition-injured); }
+#conditions .profile-condition-hungry { left: 90dp; decorator: image(status-condition-hungry); }
+#conditions .profile-condition-sleepy { left: 135dp; decorator: image(status-condition-sleepy); }
+#conditions .profile-condition-sulking { left: 180dp; decorator: image(status-condition-sulking); }
+#conditions .profile-condition-tired { left: 225dp; decorator: image(status-condition-tired); }
+#conditions .profile-condition-needs_toilet { left: 270dp; decorator: image(status-condition-toilet); }
+
+.profile-meta { z-index: 1; }
+
+/* Condition: vidas y medidores, con sus posiciones y dimensiones nativas. */
+#status-lives { display: none; }
+.status-native-life { display: block; position: absolute; }
+#status-life-label { left: 33dp; top: 366dp; width: 144dp; font-size: 33dp; color: #fff371; }
+#status-life-hearts { left: 195dp; top: 366dp; width: 126dp; height: 33dp; }
+.life-heart { position: absolute; display: block; top: 0; width: 36dp; height: 33dp; }
+#life-heart-0 { left: 0; } #life-heart-1 { left: 42dp; } #life-heart-2 { left: 84dp; }
+.life-fill, .life-outline { position: absolute; display: block; width: 36dp; height: 33dp; }
+.life-fill { decorator: image(status-life-full); }
+.life-outline { decorator: image(status-life-outline); }
+.life-fill.hidden { display: none; }
+#status-condition { left: 33dp; top: 417dp; width: 330dp; }
+#status-condition .bar-row { display: block; position: relative; height: 45dp; }
+#status-condition .label { position: absolute; left: 0; top: -6dp; width: 159dp; height: 36dp; padding: 0 0 0 36dp; box-sizing: border-box; font-size: 33dp; }
+#meter-0-label { color: transparent; decorator: image(status-happy scale-none left top); }
+#meter-0-label.negative { decorator: image(status-sad scale-none left top); }
+#meter-1-label { decorator: image(discipline-high scale-none left top); }
+#meter-1-label.low { decorator: image(discipline-low scale-none left top); }
+#meter-2-label { decorator: image(status-virus scale-none left top); }
+.status-native-happiness { display: block; position: absolute; left: 36dp; top: -6dp; width: 108dp; height: 36dp; decorator: image(status-happiness-name); }
+/* Art fixes: the word's own rectangle, 41 x 8, two rows lower; it starts where the original's rectangle does (without
+   its stray mark) and ends where the meter begins. */
+.status-native-happiness.fixed { left: 36dp; top: 0; width: 123dp; height: 24dp; decorator: image(status-happiness-name-fixed); }
+/* renderInsetBox includes its right/bottom outline; the fills draw over the right outline at full width. */
+#status-condition .meter { position: absolute; left: 159dp; top: 0; width: 153dp; height: 27dp; box-sizing: border-box; margin: 0; overflow: visible; border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0; background-color: #354b5c; decorator: none; }
+#status-condition .meter .fill { position: absolute; left: 0; top: 3dp; height: 18dp; decorator: image(status-meter-pink scale-none left top); }
+#status-condition .meter .fill.high { decorator: image(status-meter-blue scale-none left top); }
+#status-condition #meter-2-fill { top: 0; decorator: none; background-color: #c8c83c; }
+
+/* The portrait uses the original full-screen projection, clipped to Condition. */
+#partner-portrait-clip { position: absolute; left: 0; top: 216dp; width: 366dp; height: 330dp; overflow: hidden; }
+#partner-portrait { position: absolute; left: -33dp; top: -285dp; width: 960dp; height: 720dp; }
+
+/* ------------------------------------------------------------------------------------------------------------------
+   Improvements over the original's stats view (docs/modulos/apps/screens.md, "Ficha del compaÃ±ero").
+
+   The model has its own area, right of the Condition heading and above the Life row, drawn at half the original's
+   size so that no heart, bar or need icon covers it (the original draws them over it). The need icons go under the
+   heading in two rows, and the Life row and the bars move down a little to make room. */
+#partner-portrait-clip { left: 192dp; top: 219dp; width: 168dp; height: 159dp; border-radius: 0; background-color: transparent; }
+#partner-portrait { left: -62dp; top: -150dp; width: 480dp; height: 360dp; }
+#conditions { left: 33dp; width: 156dp; height: 78dp; }
+#conditions .profile-condition-sick { left: 0; top: 0; }
+#conditions .profile-condition-injured { left: 39dp; top: 0; }
+#conditions .profile-condition-hungry { left: 78dp; top: 0; }
+#conditions .profile-condition-sleepy { left: 117dp; top: 0; }
+#conditions .profile-condition-sulking { left: 0; top: 42dp; }
+#conditions .profile-condition-tired { left: 39dp; top: 42dp; }
+#conditions .profile-condition-needs_toilet { left: 78dp; top: 42dp; }
+#status-life-label, #status-life-hearts { top: 381dp; }
+#status-condition { top: 423dp; }
+#status-condition .bar-row { height: 42dp; }
+
+/* The numbers are right-aligned in the original's four-digit fields (utils.c: renderNumber, 8 pixels a digit):
+   HP and MP now ending at x 75 and at most at x 135, the other stats at x 71. Measured against the status capture
+   (2026-11-03): the last digit of HP and MP ends at screen x 224 and 284, the other stats' at 224; the cells sit 9 and
+   5 pixels further left than they did. */
+#status-parameters .value, #status-parameters .pool-max { text-align: right; }
+#status-parameters .value { left: 102dp; width: 150dp; }
+#status-parameters .pool .value { left: 102dp; width: 150dp; }
+#status-parameters .pool-max { left: 282dp; width: 150dp; }
+/* A slash between HP's (and MP's) value now and its maximum, so the two numbers read as one: the Japanese and European
+   versions draw one there (game_menu.c, the stats view: a 12-pixel glyph at x 83, ahead of the maximum's field), the
+   American one leaves a gap. It sits in the middle of the gap between a four-digit value and a four-digit maximum, so
+   9999 / 9999 keep apart. */
+#status-parameters .pool-slash {
+    display: block; position: absolute; left: 276dp; top: -9dp; width: 36dp; text-align: center; white-space: nowrap;
+}
+
+/* The original's labels are English pictures; in other languages the page writes them with the font: headings in
+   the yellow of the Tech page's, field labels in the pictures' cyan, the small column headings in capitals with the
+   pictures' colours, the condition names in full and the stats with the glossary's abbreviations. */
+#status-special-heading, #status-type-heading, #status-active-heading, #tech-info-heading, .tech-category {
+    font-size: 0; color: transparent;
+}
+/* Headings in the yellow of the Tech page's. */
+#scrim.status-text #profile-heading, #scrim.status-text #condition-heading, #scrim.status-text #parameter-heading {
+    decorator: none; width: 330dp; height: 36dp; font-size: 33dp; line-height: 36dp; color: #fff371; white-space: nowrap;
+}
+#scrim.status-text #profile-heading, #scrim.status-text #condition-heading { left: 24dp; }
+#scrim.status-text #condition-heading { width: 201dp; }
+/* The model's area starts after the longer heading. */
+#scrim.status-text #partner-portrait-clip { left: 228dp; width: 132dp; }
+#scrim.status-text #partner-portrait { left: -80dp; }
+#scrim.status-text #parameter-heading { left: 390dp; }
+/* The field labels in the pictures' cyan, right-aligned before their insets, which move right to make room. */
+#scrim.status-text #status-name-label, #scrim.status-text #status-species-label,
+#scrim.status-text #status-age-label, #scrim.status-text #status-weight-label {
+    decorator: none; height: 36dp; font-size: 22dp; line-height: 36dp; color: #52def7; text-align: right; white-space: nowrap;
+}
+#scrim.status-text #status-name-label { left: 6dp; top: 63dp; width: 132dp; }
+#scrim.status-text #status-species-label, #scrim.status-text #status-age-label { left: 6dp; top: 3dp; width: 132dp; }
+#scrim.status-text #status-weight-label { left: 246dp; top: 3dp; width: 108dp; }
+#scrim.status-text #status-head { left: 141dp; }
+#scrim.status-text #status-species, #scrim.status-text #status-species-line #status-species { left: 141dp; width: 708dp; }
+#scrim.status-text #status-age { left: 141dp; }
+#scrim.status-text #status-weight { left: 360dp; }
+/* The marks' headings in the pictures' colours, centred over their marks. */
+#scrim.status-text #status-special-heading, #scrim.status-text #status-type-heading,
+#scrim.status-text #status-active-heading {
+    decorator: none; top: 75dp; height: 27dp; font-size: 18dp; line-height: 27dp; text-align: center; white-space: nowrap;
+}
+#scrim.status-text #status-special-heading { left: 444dp; width: 168dp; color: #18ff10; }
+/* A long name keeps a gap before the written Special heading: a snug box and the heading a step right. */
+#scrim.status-text #status-name.long { width: 316dp; }
+#scrim.status-text.long-name #status-special-heading { left: 452dp; }
+#scrim.status-text #status-type-heading { left: 600dp; width: 84dp; color: #ffde00; }
+#scrim.status-text #status-active-heading { left: 690dp; width: 168dp; color: #ff39e7; }
+/* The condition's names in full: the bars move to the right edge to make room, and Life is one of them. */
+#scrim.status-text .status-native-happiness { display: none; }
+#scrim.status-text #status-condition .label, #scrim.status-text #status-life-label {
+    width: 171dp; color: #fff371; font-size: 22dp; line-height: 36dp; white-space: nowrap;
+}
+#scrim.status-text #status-condition .meter { left: 174dp; width: 150dp; }
+#scrim.status-text #status-life-hearts { left: 207dp; }
+/* The stats with the glossary's abbreviations, at the size of HP and MP. */
+#scrim.status-text #status-parameters #stat-2-label, #scrim.status-text #status-parameters #stat-3-label {
+    width: 153dp; color: #fff371;
+}
+#scrim.status-text #status-parameters #stat-2-label { decorator: image(stat-speed scale-none left center); }
+#scrim.status-text #status-parameters #stat-3-label { decorator: image(stat-brains scale-none left center); }
+/* The Tech page's column headings and the details' labels, grey like the pictures. */
+#scrim.status-text .tech-columns .tech-power, #scrim.status-text .tech-columns .tech-mp,
+#scrim.status-text .tech-columns .tech-range, #scrim.status-text .tech-columns .tech-effect,
+#scrim.status-text .info-label, #scrim.status-text #tech-info-heading {
+    decorator: none; height: 24dp; font-size: 18dp; line-height: 24dp; color: #d6d6d6; white-space: nowrap;
+}
+#scrim.status-text .tech-columns .tech-power { left: 486dp; width: 102dp; text-align: right; }
+#scrim.status-text .tech-columns .tech-mp { left: 636dp; width: 60dp; }
+#scrim.status-text .tech-columns .tech-range { left: 708dp; width: 78dp; }
+#scrim.status-text .tech-columns .tech-effect { left: 789dp; width: 99dp; }
+#scrim.status-text #tech-info-heading { top: 258dp; width: 111dp; height: 18dp; line-height: 18dp; text-align: center; background-color: #2d3840; }
+#scrim.status-text .info-label { width: 120dp; }
+#scrim.status-text .info-colon { left: 135dp; }
+#scrim.status-text .info-value { left: 165dp; width: 93dp; }
+/* The grid's rows by name, on each side of the grid. */
+#scrim.status-text .tech-category { decorator: none; height: 36dp; font-size: 22dp; line-height: 36dp; color: #d6d6d6; white-space: nowrap; }
+#scrim.status-text .tech-category.category-left { left: -108dp; width: 102dp; text-align: right; }
+#scrim.status-text .tech-category.category-right { width: 120dp; }
+.tech-columns { text-transform: none; }
+
+/* The page's extras, which the original keeps hidden (the status_extras option, on by default;
+   docs/modulos/apps/screens.md). The care mistakes go at the end of the age and weight row, a number in an inset like
+   theirs after a label in the cyan of the field labels; the tiredness is a fourth condition bar with the tired need's
+   icon and the blue strip, with no number like the others. Life and the bars move up and closer (rows 36dp apart,
+   the model's area 6dp shorter) so the four bars fit the page. The modern skin's places for the profile are undone. */
+#page-status .status-extra { display: none; }
+#scrim.status-extras #page-status .status-extra { display: block; }
+#scrim.status-extras #page-status { height: 570dp; }
+#scrim.status-extras #status-species-line { top: 108dp; }
+#scrim.status-extras #status-age-line, #scrim.status-extras #status-weight-line { top: 156dp; }
+#scrim.status-extras #conditions { top: 294dp; }
+#scrim.status-extras #status-mistakes { left: 0; top: 156dp; width: 894dp; height: 42dp; font-size: 33dp; }
+#scrim.status-extras #status-battles {
+    display: block; position: absolute; left: 0; top: 156dp; width: 894dp; height: 42dp; font-size: 33dp;
+}
+/* Two labels share the row's end, a step smaller than the other field labels, each 6dp before its inset, whose number
+   is centred. The bitmap font draws them about 16dp a letter. With the labels written the weight's label and inset
+   move 30dp left so that Â«CombatesÂ» starts 9dp after the weight's inset. */
+#status-mistakes-label, #status-battles-label {
+    position: absolute; top: 0; height: 42dp; font-size: 20dp; line-height: 42dp;
+    color: #52def7; text-align: right; white-space: nowrap;
+}
+#status-battles-label { left: 414dp; width: 118dp; }
+#status-mistakes-label { left: 619dp; width: 146dp; }
+#scrim.status-text.status-extras #status-weight-label { left: 216dp; }
+#scrim.status-text.status-extras #status-weight { left: 330dp; }
+#scrim.status-text #status-battles-label { left: 417dp; width: 133dp; }
+#scrim.status-text #status-battles-value { left: 556dp; }
+#scrim.status-text #status-mistakes-label { left: 640dp; width: 125dp; }
+#status-mistakes-value, #status-battles-value {
+    position: absolute; float: none; top: 0; height: 42dp; box-sizing: border-box; margin: 0;
+    padding: 0; line-height: 36dp; text-align: center; border: 3dp #020202; border-right-color: #6987a0;
+    border-bottom-color: #6987a0; background-color: #354b5c;
+}
+#status-battles-value { left: 538dp; width: 75dp; }
+#status-mistakes-value { left: 771dp; width: 78dp; }
+#scrim.status-extras #partner-portrait-clip { height: 153dp; }
+#scrim.status-extras #status-life-label, #scrim.status-extras #status-life-hearts { top: 375dp; }
+#scrim.status-extras #status-condition { top: 414dp; }
+#scrim.status-extras #status-condition .bar-row { height: 36dp; }
+#tiredness-label { decorator: image(status-condition-tired scale-none left top); }
+#status-condition #tiredness-fill { background-color: transparent; decorator: image(status-meter-blue scale-none left top); }
+
+/* More extras (docs/modulos/apps/screens.md, Â«Extras de la fichaÂ»). The battles sit between the weight and the
+   mistakes, in an inset like theirs. The Active field writes the hours it is awake today, hour to hour, in place of
+   the pattern's word; the modern skin's line for them is not drawn. The care bars are narrower, with their numbers
+   after them in white. The hours of life left and the evolution counter (with the hours its level checks from) go in
+   the room right of the Off, Def, Speed and Brains bars, each a label in the field labels' cyan over an inset. */
+#scrim.status-extras #page-status #status-awake.status-extra { display: none; }
+#scrim.status-extras #status-condition .meter { width: 84dp; }
+/* Room for the widest number with its percent sign, happiness at "-100%". */
+#scrim.status-extras #status-condition .value {
+    display: block; position: absolute; left: 246dp; top: 0; width: 84dp; height: 27dp; font-size: 22dp;
+    line-height: 27dp; text-align: right; color: #ffffff; white-space: nowrap;
+}
+#scrim.status-text.status-extras #status-condition .meter { width: 69dp; }
+#scrim.status-extras #status-timers { position: absolute; left: 729dp; top: 366dp; width: 153dp; height: 180dp; }
+#status-timers .timer-line { display: block; position: absolute; left: 0; width: 153dp; height: 84dp; }
+#status-lifetime { top: 0; }
+#status-evolution { top: 90dp; }
+#status-timers .timer-label {
+    display: block; position: absolute; left: 0; top: 0; width: 153dp; height: 36dp; font-size: 22dp;
+    line-height: 36dp; color: #52def7; text-align: center; white-space: nowrap;
+}
+#status-timers .timer-value {
+    display: block; position: absolute; left: 0; top: 36dp; width: 153dp; height: 42dp; box-sizing: border-box;
+    margin: 0; padding: 0; font-size: 27dp; line-height: 36dp; text-align: center; white-space: nowrap;
+    border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0; background-color: #354b5c;
+}
+/* With the extras the Active field writes the waking hours ("08-20"), not the pattern's word: they get an inset of
+   their own under the Active heading, centred, and the species' inset ends before it. */
+#scrim.status-extras #status-species-line #status-species { width: 570dp; }
+#scrim.status-text.status-extras #status-species-line #status-species { width: 546dp; }
+#status-active.active-hours {
+    left: 696dp; top: 108dp; width: 153dp; height: 42dp; box-sizing: border-box; margin: 0; padding: 0;
+    line-height: 36dp; text-align: center; white-space: nowrap;
+    border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0; background-color: #354b5c;
+}
+
+/* Digital field terminal: preserve the original status and inventory layout while carrying the room UI's
+   navy surfaces, cyan frame, and yellow selection signal across every partner page. */
+#tabs {
+	border-bottom: 2dp #397ca4;
+}
+
+.tab {
+	border-color: #72c7ff;
+	background-color: #0b1c2d;
+	color: #8eb8d4;
+}
+
+.tab.selected, .tab.selected:focus {
+	color: #ffe64a;
+	background-color: #153653;
+}
+
+.tab:focus {
+	border-color: #ffd51e;
+}
+
+#page-status, #page-care {
+	border-color: #72c7ff;
+	background-color: #0b1c2d;
+	decorator: vertical-gradient(#153653 #0a1929);
+}
+
+#status-name, .line-value, #status-timers .timer-value, #status-active.active-hours {
+	border-color: #345875;
+	background-color: #0a2035;
+	color: #d8f1ff;
+}
+
+#bag-grid, #bag-description {
+	border-color: #72c7ff;
+	background-color: #0b1c2de8;
+}
+
+.slot:focus, .slot.picked {
+	border: 2dp #ffd51e;
+	background-color: #153653;
+}
+
+.slot.moving {
+	border: 2dp #72c7ff;
+}
+
+.box, #confirm-box {
+	border-color: #72c7ff;
+	background-color: #0b1c2df2;
+	decorator: vertical-gradient(#153653 #0a1929);
+}
+
+.box button:focus, #scrim.item-screen #options button:focus,
+#scrim.item-screen #options button.active-option,
+#scrim.item-screen #sort-box button:focus,
+#scrim.item-screen #confirm-box button:focus {
+	border-color: #ffd51e;
+	background-color: #153653;
+	color: #ffe64a;
+}
+
+
+
+/* Compact partner dashboard: status and equipped attacks stay visible together. */
+body.layout-pages-compact #scrim #panel {
+	top: 30dp;
+	width: 900dp;
+	height: 660dp;
+	margin-left: -450dp;
+}
+
+body.layout-pages-compact #scrim #tabs {
+	position: relative;
+	height: 42dp;
+	margin: 0 0 6dp;
+	padding: 0;
+	border-bottom: 1dp #345875;
+	display: flex;
+	flex-direction: row;
+	align-items: flex-end;
+}
+
+/* The bag opens as one tall window too: the same dark page box the compact partner dashboard
+   draws under the folder tabs. Inside it the field is tidy like the stats dashboard: the money
+   rides in a gold chip on the box's head, the items sit in a framed list of two slim columns
+   (a longer bag scrolls inside the frame), and the picked item's description takes a framed
+   band at the foot. The classic page floated all three over one dark field at 33-point size,
+   each in its own frame — which left strips of map showing between them. */
+body.layout-pages-compact #scrim #page-items {
+	position: absolute;
+	left: 0;
+	top: 48dp;
+	width: 900dp;
+	height: 570dp;
+	border-color: #72c7ff;
+	background-color: #0b1c2df5;
+	decorator: vertical-gradient(#153653 #0a1929);
+}
+body.layout-pages-compact #scrim #bag-foot { position: absolute; left: 0; right: 0; top: 6dp; margin: 0; font-size: 16dp; color: #9cbad0; }
+body.layout-pages-compact #scrim #bag-result { float: left; margin: 6dp 0 0 16dp; color: #a8c7d9; }
+body.layout-pages-compact #scrim #bag-money { float: right; box-sizing: border-box; height: 32dp; margin: 0 16dp 0 0; padding: 0 12dp; border: 2dp #345875; background-color: #0a2035; color: #ffe64a; font-size: 22dp; line-height: 28dp; }
+body.layout-pages-compact #scrim #bag-grid { position: absolute; left: 12dp; right: 12dp; top: 44dp; height: 408dp; min-height: 0; box-sizing: border-box; border: 2dp #345875; background-color: #07182a; padding: 8dp 12dp; decorator: none; overflow-y: auto; }
+body.layout-pages-compact #scrim .slot { box-sizing: border-box; width: 400dp; height: 44dp; margin: 0 8dp 4dp 0; padding: 0 8dp 0 54dp; font-size: 20dp; line-height: 40dp; }
+body.layout-pages-compact #scrim .slot-icon { left: 6dp; top: 2dp; width: 40dp; height: 40dp; }
+body.layout-pages-compact #scrim #bag-grid scrollbarvertical { width: 6dp; margin-left: 4dp; }
+body.layout-pages-compact #scrim #bag-grid scrollbarvertical slidertrack { background-color: #0a2035; }
+body.layout-pages-compact #scrim #bag-grid scrollbarvertical sliderbar { min-height: 24dp; background-color: #90d9fa; }
+body.layout-pages-compact #scrim #bag-description { position: absolute; left: 12dp; right: 12dp; top: 456dp; min-height: 0; height: 100dp; box-sizing: border-box; margin: 0; padding: 10dp 14dp; border: 2dp #345875; background-color: #07182a; color: #b8cfe0; font-size: 16dp; line-height: 22dp; decorator: none; }
+
+/* Each compact window shows only its own section as a folder tab, plus Volver. Techniques are
+   merged into the partner page and care is a field-menu action, so neither ever appears as a tab. */
+body.layout-pages-compact #scrim .tab {
+	position: relative;
+	display: none;
+	width: auto;
+	min-width: 96dp;
+	height: 34dp;
+	margin: 0 4dp 0 0;
+	padding: 0 14dp;
+	border: 2dp #4a6b82;
+	border-bottom: 0;
+	border-radius: 6dp 6dp 0 0;
+	background-color: #16293a;
+	color: #9cbad0;
+	font-size: 16dp;
+	line-height: 30dp;
+}
+body.layout-pages-compact #scrim .tab .tab-edge { display: none; }
+body.layout-pages-compact #scrim .tab.selected { display: inline-block; background-color: #24405a; border-color: #72c7ff; color: #eaf6ff; }
+body.layout-pages-compact #scrim .tab:focus { border-color: #ffd51e; color: #ffe64a; }
+body.layout-pages-compact #scrim #close { display: inline-block; margin-left: auto; margin-right: 0; }
+
+body.layout-pages-compact #scrim .page.hidden { display: none; }
+
+#scrim.compact-partner #page-status,
+#scrim.compact-partner #page-tech {
+	position: absolute;
+	top: 48dp;
+	height: 570dp;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	border: 2dp #72c7ff;
+	background-color: #0b1c2df2;
+	decorator: vertical-gradient(#153653 #0a1929);
+	overflow: hidden;
+}
+
+#scrim.compact-partner #page-status { left: 0; width: 444dp; }
+#scrim.compact-partner #page-tech { left: 444dp; width: 456dp; }
+#scrim.compact-partner #page-status.hidden, #scrim.compact-partner #page-tech.hidden { display: none; }
+
+#scrim.compact-partner #profile-heading,
+#scrim.compact-partner #condition-heading,
+#scrim.compact-partner #parameter-heading {
+	left: 18dp;
+	top: 12dp;
+	width: 195dp;
+	height: 27dp;
+	decorator: none;
+	color: #ffe64a;
+	font-size: 18dp;
+	font-weight: bold;
+	line-height: 27dp;
+}
+
+#scrim.compact-partner #status-head { left: 96dp; top: 42dp; width: 330dp; height: 33dp; }
+#scrim.compact-partner #status-name { width: 324dp; height: 33dp; padding: 0 6dp; font-size: 21dp; line-height: 30dp; }
+#scrim.compact-partner #status-name-label { left: 18dp; top: 42dp; width: 69dp; height: 30dp; decorator: none; color: #8edcff; font-size: 15dp; line-height: 30dp; }
+#scrim.compact-partner #status-species-line { left: 18dp; top: 78dp; width: 408dp; height: 30dp; }
+#scrim.compact-partner #status-species-label { left: 0; top: 0; width: 69dp; height: 30dp; decorator: none; color: #8edcff; font-size: 15dp; line-height: 30dp; }
+#scrim.compact-partner #status-species { left: 78dp; width: 330dp; height: 30dp; margin: 0; font-size: 18dp; line-height: 27dp; }
+#scrim.compact-partner #status-special-heading,
+#scrim.compact-partner #status-type-heading,
+#scrim.compact-partner #status-active-heading,
+#scrim.compact-partner #status-specials,
+#scrim.compact-partner #status-type,
+#scrim.compact-partner #status-active,
+#scrim.compact-partner #status-horizontal,
+#scrim.compact-partner #status-vertical,
+#scrim.compact-partner #partner-portrait-clip,
+#scrim.compact-partner #status-mistakes,
+#scrim.compact-partner #status-battles,
+#scrim.compact-partner #status-awake,
+#scrim.compact-partner #status-timers { display: none; }
+
+#scrim.compact-partner #status-age-line { left: 18dp; top: 108dp; width: 126dp; height: 24dp; }
+#scrim.compact-partner #status-weight-line { left: 156dp; top: 108dp; width: 174dp; height: 24dp; }
+#scrim.compact-partner #status-age-label { left: 0; top: 0; width: 42dp; height: 24dp; decorator: none; color: #8edcff; font-size: 13dp; line-height: 24dp; }
+#scrim.compact-partner #status-age { left: 45dp; top: 0; width: 66dp; height: 24dp; margin: 0; padding: 0; font-size: 14dp; line-height: 24dp; }
+#scrim.compact-partner #status-weight-label { left: 0; top: 0; width: 54dp; height: 24dp; decorator: none; color: #8edcff; font-size: 13dp; line-height: 24dp; }
+#scrim.compact-partner #status-weight { left: 57dp; top: 0; width: 78dp; height: 24dp; margin: 0; padding: 0; font-size: 14dp; line-height: 24dp; }
+
+#scrim.compact-partner #condition-heading { left: 18dp; top: 141dp; }
+#scrim.compact-partner #parameter-heading { left: 228dp; top: 141dp; }
+#scrim.compact-partner #conditions { left: 18dp; top: 174dp; width: 156dp; height: 72dp; }
+#scrim.compact-partner #conditions .condition { width: 30dp; height: 30dp; }
+#scrim.compact-partner #conditions .profile-condition-sick { left: 0; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-injured { left: 39dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-hungry { left: 78dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-sleepy { left: 117dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-sulking { left: 0; top: 36dp; }
+#scrim.compact-partner #conditions .profile-condition-tired { left: 39dp; top: 36dp; }
+#scrim.compact-partner #conditions .profile-condition-needs_toilet { left: 78dp; top: 36dp; }
+#scrim.compact-partner #no-condition { display: block; color: #a8c7d9; font-size: 13dp; }
+#scrim.compact-partner #status-life-label { left: 18dp; top: 249dp; width: 63dp; height: 27dp; color: #ffe64a; font-size: 15dp; line-height: 27dp; }
+#scrim.compact-partner #status-life-hearts { left: 87dp; top: 249dp; width: 108dp; height: 27dp; }
+#scrim.compact-partner .life-heart, #scrim.compact-partner .life-fill, #scrim.compact-partner .life-outline { width: 30dp; height: 27dp; }
+#scrim.compact-partner #life-heart-0 { left: 0; }
+#scrim.compact-partner #life-heart-1 { left: 36dp; }
+#scrim.compact-partner #life-heart-2 { left: 72dp; }
+
+#scrim.compact-partner #status-condition {
+	left: 18dp;
+	top: 282dp;
+	width: 198dp;
+}
+
+#scrim.compact-partner #status-condition .bar-row { height: 39dp; }
+#scrim.compact-partner #status-condition .label {
+	left: 0;
+	top: 0;
+	width: 78dp;
+	height: 30dp;
+	padding: 0;
+	decorator: none;
+	color: #a8c7d9;
+	font-size: 13dp;
+	line-height: 30dp;
+}
+#scrim.compact-partner .status-native-happiness { display: none; }
+#scrim.compact-partner #status-condition .meter { left: 81dp; top: 6dp; width: 84dp; height: 12dp; }
+#scrim.compact-partner #status-condition .meter .fill { top: 3dp; height: 6dp; }
+#scrim.compact-partner #status-condition .value { display: block; position: absolute; left: 171dp; top: 0; width: 27dp; color: #d8f1ff; font-size: 12dp; line-height: 24dp; }
+
+#scrim.compact-partner #status-parameters { left: 228dp; top: 177dp; width: 204dp; }
+#scrim.compact-partner #status-parameters .bar-row { height: 54dp; }
+#scrim.compact-partner #status-parameters .label,
+#scrim.compact-partner.status-text #status-parameters .label {
+	left: 0;
+	top: 0;
+	width: 48dp;
+	height: 21dp;
+	padding: 0;
+	decorator: none;
+	color: #8edcff;
+	font-size: 13dp;
+	line-height: 20dp;
+}
+#scrim.compact-partner #status-parameters .bar {
+	left: 0;
+	top: 31dp;
+	width: 198dp;
+	height: 9dp;
+}
+#scrim.compact-partner #status-parameters .value {
+	left: 54dp;
+	top: 0;
+	width: 144dp;
+	font-size: 15dp;
+	line-height: 21dp;
+	text-align: right;
+}
+#scrim.compact-partner #status-parameters .pool-max,
+#scrim.compact-partner #status-parameters .pool-slash { display: none; }
+
+#scrim.compact-partner #techset-heading,
+#scrim.compact-partner #final-heading {
+	left: 18dp;
+	top: 12dp;
+	width: 400dp;
+	border: 0;
+	color: #ffe64a;
+	font-size: 18dp;
+	font-weight: bold;
+	line-height: 27dp;
+}
+#scrim.compact-partner #final-heading { top: 210dp; }
+#scrim.compact-partner #tech-columns,
+#scrim.compact-partner #final-columns {
+	left: 12dp;
+	top: 45dp;
+	width: 426dp;
+	height: 21dp;
+	font-size: 12dp;
+}
+#scrim.compact-partner #final-columns { display: none; }
+#scrim.compact-partner .tech-columns span {
+	decorator: none;
+	color: #8eb8d4;
+	font-size: 12dp;
+	line-height: 18dp;
+}
+#scrim.compact-partner .tech-columns .tech-power { left: 220dp; width: 48dp; }
+#scrim.compact-partner .tech-columns .tech-mp { left: 275dp; width: 39dp; }
+#scrim.compact-partner .tech-columns .tech-range { left: 319dp; width: 54dp; }
+#scrim.compact-partner .tech-columns .tech-effect { left: 377dp; width: 45dp; }
+#scrim.compact-partner .tech-row {
+	left: 12dp;
+	width: 426dp;
+	height: 45dp;
+	font-size: 17dp;
+	line-height: 24dp;
+}
+#scrim.compact-partner #tech-row-0 { top: 72dp; }
+#scrim.compact-partner #tech-row-1 { top: 117dp; }
+#scrim.compact-partner #tech-row-2 { top: 162dp; }
+#scrim.compact-partner #tech-row-3 { top: 246dp; }
+#scrim.compact-partner .tech-name { left: 0; width: 205dp; font-size: 16dp; }
+#scrim.compact-partner .tech-row .tech-power { left: 220dp; width: 48dp; font-size: 16dp; }
+#scrim.compact-partner .tech-row .tech-mp { left: 275dp; width: 39dp; font-size: 16dp; }
+#scrim.compact-partner .tech-row .tech-range { left: 319dp; width: 54dp; font-size: 14dp; }
+#scrim.compact-partner .tech-row .tech-effect { left: 377dp; width: 36dp; }
+#scrim.compact-partner #tech-row-3 .tech-mp { display: none; }
+#scrim.compact-partner #techset-separator { left: 12dp; top: 207dp; width: 426dp; }
+#scrim.compact-partner #tech-final-separator { display: none; }
+#scrim.compact-partner #tech-dots, #scrim.compact-partner #tech-final-dot { display: none; }
+#scrim.compact-partner #tech-change {
+	left: 18dp;
+	top: 306dp;
+	width: 414dp;
+	height: 39dp;
+	border-left: 3dp #72c7ff;
+	padding-left: 12dp;
+	background-color: #102a40;
+	color: #d8f1ff;
+	font-size: 16dp;
+	line-height: 33dp;
+}
+#scrim.compact-partner #tech-cancel { display: none; }
+#scrim.compact-partner #tech-message { left: 18dp; top: 351dp; width: 414dp; color: #ffe64a; font-size: 14dp; }
+
+#scrim.compact-partner.tech-editing #page-status { display: none; }
+#scrim.compact-partner.tech-editing #page-tech {
+	left: 0;
+	width: 900dp;
+	background-color: #0b1c2df2;
+}
+#scrim.compact-partner.tech-editing #tech-picker { left: 315dp; top: 240dp; width: 432dp; height: 318dp; }
+#scrim.compact-partner.tech-editing #tech-help { left: 21dp; top: 342dp; }
+#scrim.compact-partner.tech-editing #tech-message { left: 12dp; top: 300dp; width: 225dp; }
+
+#scrim.compact-partner #prompts { top: 624dp; }
+
+#bag-foot, #prompts, .care-hint {
+	color: #a8c7d9;
+}
+
+/* Finish the partner screen as a room terminal: a clear active tab, calm status insets, and a brighter readable bag
+   selection. Keep the original's fixed field layout and icon sprites intact. */
+#tabs {
+	height: 48dp;
+	margin-bottom: 9dp;
+	padding-bottom: 0;
+	border-bottom: 2dp #397ca4;
+}
+
+.tab {
+	position: relative;
+	margin-right: 6dp;
+	padding: 0 15dp;
+	border-bottom-width: 3dp;
+	background-color: #0a2035;
+	color: #a8c7d9;
+}
+
+.tab.selected, .tab.selected:focus {
+	border-bottom-color: #ffd51e;
+	background-color: #153653;
+	color: #ffe64a;
+}
+
+.tab:focus {
+	border-color: #72c7ff;
+	border-bottom-color: #ffd51e;
+}
+
+.tab .tab-edge {
+	image-color: #397ca4;
+}
+
+.tab.selected .tab-edge {
+	image-color: #ffd51e;
+}
+
+#close {
+	padding: 0 12dp;
+	color: #a8c7d9;
+}
+
+#close:focus {
+	color: #ffe64a;
+}
+
+#status-head {
+	color: #ffe64a;
+}
+
+#status-name, .line-value, #status-timers .timer-value, #status-active.active-hours {
+	border-color: #345875;
+	border-right-color: #72c7ff;
+	border-bottom-color: #72c7ff;
+}
+
+.bar {
+	border-color: #071522;
+	border-right-color: #345875;
+	border-bottom-color: #345875;
+	background-color: #071522;
+}
+
+.stat .fill, #status-parameters .fill {
+	background-color: #34c9ed;
+}
+
+#meter-2-fill {
+	background-color: #ffd51e;
+}
+
+.slot:hover {
+	background-color: #153653;
+}
+
+.slot:focus, .slot.picked {
+	border: 2dp #ffd51e;
+	background-color: #153653;
+}
+
+.slot.moving {
+	border: 2dp #72c7ff;
+	background-color: #12304a;
+}
+
+#bag-description {
+	color: #d8f1ff;
+}
+
+.box button:hover, #scrim.item-screen #options button:hover,
+#scrim.item-screen #sort-box button:hover,
+#scrim.item-screen #confirm-box button:hover {
+	background-color: #153653;
+	color: #d8f1ff;
+}
+
+.box button:focus, #scrim.item-screen #options button:focus,
+#scrim.item-screen #options button.active-option,
+#scrim.item-screen #sort-box button:focus,
+#scrim.item-screen #confirm-box button:focus {
+	border-color: #ffd51e;
+	background-color: #153653;
+	color: #ffe64a;
+}
+
+/* Unified partner dashboard: portrait/profile, live stats, care summary and equipped techniques. */
+#scrim.compact-partner #page-status { left: 0; width: 900dp; background-color: #0b1c2df5; }
+#scrim.compact-partner #page-tech { left: 0; width: 900dp; border: 0; background-color: transparent; decorator: none; pointer-events: none; }
+#scrim.compact-partner #page-tech #tech-change { pointer-events: auto; }
+#scrim.compact-partner #profile-heading { left: 20dp; top: 12dp; width: 220dp; }
+#scrim.compact-partner #status-name-label { left: 20dp; top: 45dp; width: 60dp; }
+#scrim.compact-partner #status-head { left: 82dp; top: 43dp; width: 142dp; height: 33dp; }
+#scrim.compact-partner #status-name { width: 142dp; height: 33dp; padding: 0 7dp; font-size: 18dp; line-height: 30dp; }
+#scrim.compact-partner #status-name.long { font-size: 14dp; }
+#scrim.compact-partner #status-species-line { left: 20dp; top: 82dp; width: 220dp; height: 48dp; }
+#scrim.compact-partner #status-species-label { left: 0; top: 0; width: 62dp; height: 20dp; font-size: 12dp; line-height: 20dp; }
+#scrim.compact-partner #status-species { left: 0; top: 19dp; width: 220dp; height: 29dp; font-size: 18dp; line-height: 27dp; }
+#scrim.compact-partner #status-age-line { left: 20dp; top: 135dp; width: 100dp; }
+#scrim.compact-partner #status-weight-line { left: 128dp; top: 135dp; width: 112dp; }
+#scrim.compact-partner #status-age-label, #scrim.compact-partner #status-weight-label { font-size: 11dp; }
+#scrim.compact-partner #status-age, #scrim.compact-partner #status-weight { font-size: 12dp; }
+#scrim.compact-partner #partner-portrait-clip { display: block; left: 20dp; top: 170dp; width: 220dp; height: 270dp; overflow: hidden; border: 1dp #345875; background-color: #071522; }
+#scrim.compact-partner #partner-portrait { left: -94dp; top: -126dp; width: 600dp; height: 450dp; }
+#scrim.compact-partner #status-life-label { left: 20dp; top: 449dp; width: 54dp; font-size: 13dp; }
+#scrim.compact-partner #status-life-hearts { left: 80dp; top: 449dp; }
+#scrim.compact-partner #status-lives { display: none; }
+
+/* Center column: bars only for current HP/MP; remaining attributes are balanced text rows. */
+#scrim.compact-partner #parameter-heading { left: 263dp; top: 12dp; width: 264dp; }
+#scrim.compact-partner #status-parameters { left: 263dp; top: 49dp; width: 264dp; }
+#scrim.compact-partner #status-parameters .bar-row { height: 58dp; }
+#scrim.compact-partner #status-parameters .label { width: 46dp; padding: 0; color: #8edcff; font-size: 13dp; line-height: 20dp; }
+#scrim.compact-partner #status-parameters #stat-0-label,
+#scrim.compact-partner #status-parameters #stat-1-label,
+#scrim.compact-partner #status-parameters #stat-2-label,
+#scrim.compact-partner #status-parameters #stat-3-label { padding: 0; decorator: none; color: #8edcff; font-size: 13dp; }
+#scrim.compact-partner #status-parameters .bar-row.pool .bar { left: 0; top: 29dp; width: 256dp; height: 12dp; }
+#scrim.compact-partner #status-parameters .bar-row.pool .fill { top: 2dp; height: 8dp; }
+#scrim.compact-partner #status-parameters .bar-row.pool .value { left: 50dp; top: 0; width: 206dp; text-align: right; font-size: 15dp; }
+#scrim.compact-partner #status-parameters .pool-max, #scrim.compact-partner #status-parameters .pool-slash { display: none; }
+#scrim.compact-partner #stat-row-0, #scrim.compact-partner #stat-row-1, #scrim.compact-partner #stat-row-2, #scrim.compact-partner #stat-row-3 { display: block; position: relative; left: 0; width: 256dp; height: 35dp; border-bottom: 1dp #193c56; }
+#scrim.compact-partner #status-parameters #stat-row-0 .label, #scrim.compact-partner #status-parameters #stat-row-1 .label, #scrim.compact-partner #status-parameters #stat-row-2 .label, #scrim.compact-partner #status-parameters #stat-row-3 .label { left: 0; top: 0; width: 140dp; height: 34dp; line-height: 34dp; }
+#scrim.compact-partner #status-parameters #stat-row-0 .value, #scrim.compact-partner #status-parameters #stat-row-1 .value, #scrim.compact-partner #status-parameters #stat-row-2 .value, #scrim.compact-partner #status-parameters #stat-row-3 .value { left: 150dp; top: 0; width: 106dp; height: 34dp; line-height: 34dp; text-align: right; font-size: 15dp; }
+#scrim.compact-partner #status-parameters #stat-row-0 .bar, #scrim.compact-partner #status-parameters #stat-row-1 .bar, #scrim.compact-partner #status-parameters #stat-row-2 .bar, #scrim.compact-partner #status-parameters #stat-row-3 .bar { display: none; }
+#scrim.compact-partner #status-timers { display: block; left: 263dp; top: 369dp; width: 264dp; height: 112dp; padding: 8dp; border: 1dp #345875; background-color: #102a40; }
+#scrim.compact-partner #status-timers .timer-line { position: absolute; left: 8dp; width: 246dp; height: 44dp; }
+#scrim.compact-partner #status-lifetime { top: 8dp; }
+#scrim.compact-partner #status-evolution { top: 56dp; }
+#scrim.compact-partner #status-timers .timer-label { left: 0; top: 0; width: 246dp; font-size: 12dp; color: #8edcff; }
+#scrim.compact-partner #status-timers .timer-value { left: 0; top: 17dp; width: 246dp; height: 24dp; font-size: 16dp; line-height: 22dp; text-align: left; }
+
+/* Care is grouped in an upper-right card, with the final technique in a compact lower card. */
+#scrim.compact-partner #condition-heading { left: 557dp; top: 12dp; width: 315dp; }
+#scrim.compact-partner #conditions { left: 557dp; top: 47dp; width: 312dp; height: 52dp; padding: 8dp; border: 1dp #345875; background-color: #102a40; }
+#scrim.compact-partner #conditions .condition { width: 28dp; height: 28dp; }
+#scrim.compact-partner #conditions .profile-condition-sick { left: 0; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-injured { left: 36dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-hungry { left: 72dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-sleepy { left: 108dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-sulking { left: 144dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-tired { left: 180dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-needs_toilet { left: 216dp; top: 0; }
+#scrim.compact-partner #no-condition { display: block; color: #a8c7d9; font-size: 13dp; line-height: 25dp; }
+#scrim.compact-partner #status-condition { left: 557dp; top: 105dp; width: 312dp; height: 160dp; padding: 4dp 8dp; border: 1dp #345875; background-color: #102a40; }
+#scrim.compact-partner #status-condition .bar-row { height: 34dp; }
+#scrim.compact-partner #status-condition .label { left: 0; width: 116dp; font-size: 12dp; }
+#scrim.compact-partner #status-condition .meter { left: 122dp; top: 7dp; width: 128dp; height: 12dp; }
+#scrim.compact-partner #status-condition .meter .fill { top: 2dp; height: 8dp; }
+#scrim.compact-partner #status-condition .value { left: 257dp; width: 38dp; font-size: 12dp; }
+#scrim.compact-partner #techset-heading { left: 557dp; top: 280dp; width: 315dp; }
+#scrim.compact-partner #tech-columns { left: 557dp; top: 313dp; width: 315dp; height: 20dp; }
+#scrim.compact-partner .tech-columns .tech-power { left: 190dp; width: 42dp; }
+#scrim.compact-partner .tech-columns .tech-mp { left: 237dp; width: 36dp; }
+#scrim.compact-partner .tech-columns .tech-range { left: 276dp; width: 42dp; }
+#scrim.compact-partner .tech-columns .tech-effect { display: none; }
+#scrim.compact-partner .tech-row { left: 557dp; width: 315dp; height: 34dp; border-bottom: 1dp #193c56; font-size: 14dp; line-height: 30dp; }
+#scrim.compact-partner #tech-row-0 { top: 337dp; }
+#scrim.compact-partner #tech-row-1 { top: 371dp; }
+#scrim.compact-partner #tech-row-2 { top: 405dp; }
+#scrim.compact-partner .tech-name { left: 0; width: 184dp; font-size: 13dp; }
+#scrim.compact-partner .tech-row .tech-power { left: 190dp; width: 42dp; font-size: 13dp; }
+#scrim.compact-partner .tech-row .tech-mp { left: 237dp; width: 36dp; font-size: 13dp; }
+#scrim.compact-partner .tech-row .tech-range { left: 276dp; width: 42dp; font-size: 12dp; }
+#scrim.compact-partner .tech-row .tech-effect { display: none; }
+#scrim.compact-partner #techset-separator { display: none; }
+#scrim.compact-partner #final-heading { left: 557dp; top: 451dp; width: 315dp; height: 26dp; padding-left: 9dp; border-left: 3dp #ffd51e; background-color: #102a40; font-size: 15dp; line-height: 26dp; }
+#scrim.compact-partner #final-columns, #scrim.compact-partner #tech-final-separator { display: none; }
+#scrim.compact-partner #tech-row-3 { left: 557dp; top: 481dp; width: 315dp; height: 54dp; padding: 7dp 9dp; border: 1dp #527c98; background-color: #102a40; }
+#scrim.compact-partner #tech-row-3 .tech-name { width: 190dp; font-size: 14dp; }
+#scrim.compact-partner #tech-row-3 .tech-power { left: 205dp; width: 47dp; font-size: 13dp; }
+#scrim.compact-partner #tech-row-3 .tech-range { left: 258dp; width: 47dp; font-size: 12dp; }
+#scrim.compact-partner #tech-row-3 .tech-mp, #scrim.compact-partner #tech-row-3 .tech-effect { display: none; }
+#scrim.compact-partner #tech-dots, #scrim.compact-partner #tech-final-dot { display: none; }
+#scrim.compact-partner #tech-change { left: 557dp; top: 540dp; width: 315dp; height: 30dp; padding-left: 9dp; font-size: 13dp; line-height: 25dp; }
+#scrim.compact-partner #prompts { top: 624dp; }
+#scrim.compact-partner.tech-editing #page-status { display: none; }
+#scrim.compact-partner.tech-editing #page-tech { left: 0; width: 900dp; border: 2dp #72c7ff; background-color: #0b1c2df5; pointer-events: auto; }
+
+/* Three fixed tracks (profile 220 / stats 260 / care and techniques 320) with a 20dp gutter.
+   Each track owns its coordinates so content cannot drift into a neighboring panel. */
+#scrim.compact-partner #page-status { left: 0; top: 48dp; width: 900dp; height: 570dp; }
+#scrim.compact-partner #page-tech { left: 0; top: 48dp; width: 900dp; height: 570dp; }
+#scrim.compact-partner #profile-heading,
+#scrim.compact-partner #parameter-heading,
+#scrim.compact-partner #condition-heading,
+#scrim.compact-partner #techset-heading,
+#scrim.compact-partner #final-heading {
+	font-size: 17dp;
+	line-height: 24dp;
+	font-weight: bold;
+	color: #ffe64a;
+}
+#scrim.compact-partner #profile-heading { left: 20dp; top: 12dp; width: 220dp; }
+#scrim.compact-partner #parameter-heading { left: 260dp; top: 12dp; width: 260dp; }
+#scrim.compact-partner #condition-heading { left: 540dp; top: 12dp; width: 320dp; }
+
+/* Profile track */
+#scrim.compact-partner #status-name-label { left: 20dp; top: 47dp; width: 56dp; height: 28dp; font-size: 13dp; line-height: 28dp; }
+#scrim.compact-partner #status-head { left: 80dp; top: 45dp; width: 160dp; height: 30dp; font-size: 15dp; }
+#scrim.compact-partner #status-name { width: 160dp; height: 30dp; padding: 0 7dp; font-size: 15dp; line-height: 26dp; }
+#scrim.compact-partner #status-name.long { font-size: 12dp; }
+#scrim.compact-partner #status-species-line { left: 20dp; top: 83dp; width: 220dp; height: 28dp; }
+#scrim.compact-partner #status-species-label { left: 0; top: 0; width: 66dp; height: 28dp; font-size: 12dp; line-height: 28dp; }
+#scrim.compact-partner #status-species { left: 70dp; top: 0; width: 150dp; height: 28dp; margin: 0; padding: 0 6dp; font-size: 14dp; line-height: 24dp; }
+#scrim.compact-partner #status-age-line { left: 20dp; top: 119dp; width: 104dp; height: 25dp; }
+#scrim.compact-partner #status-age-label { left: 0; top: 0; width: 35dp; height: 25dp; font-size: 11dp; line-height: 25dp; }
+#scrim.compact-partner #status-age { left: 38dp; top: 0; width: 66dp; height: 25dp; margin: 0; padding: 0 4dp; font-size: 11dp; line-height: 22dp; }
+#scrim.compact-partner #status-weight-line { left: 132dp; top: 119dp; width: 108dp; height: 25dp; }
+#scrim.compact-partner #status-weight-label { left: 0; top: 0; width: 43dp; height: 25dp; font-size: 11dp; line-height: 25dp; }
+#scrim.compact-partner #status-weight { left: 46dp; top: 0; width: 62dp; height: 25dp; margin: 0; padding: 0 4dp; font-size: 11dp; line-height: 22dp; }
+#scrim.compact-partner #partner-portrait-clip { left: 20dp; top: 155dp; width: 220dp; height: 282dp; border: 1dp #345875; background-color: #071522; }
+#scrim.compact-partner #partner-portrait { left: -94dp; top: -126dp; width: 600dp; height: 450dp; }
+#scrim.compact-partner #status-life-label { left: 20dp; top: 449dp; width: 48dp; height: 25dp; font-size: 12dp; line-height: 25dp; }
+#scrim.compact-partner #status-life-hearts { left: 78dp; top: 448dp; }
+
+/* Stats track: fixed 58dp pool rows and 34dp text rows. */
+#scrim.compact-partner #status-parameters { left: 260dp; top: 48dp; width: 260dp; }
+#scrim.compact-partner #status-parameters .bar-row { height: 58dp; }
+#scrim.compact-partner #status-parameters .bar-row.pool .label { left: 0; top: 0; width: 42dp; height: 22dp; font-size: 12dp; line-height: 22dp; }
+#scrim.compact-partner #status-parameters .bar-row.pool .value { left: 48dp; top: 0; width: 202dp; height: 22dp; font-size: 14dp; line-height: 22dp; text-align: right; }
+#scrim.compact-partner #status-parameters .bar-row.pool .bar { left: 0; top: 29dp; width: 250dp; height: 12dp; }
+#scrim.compact-partner #status-parameters .bar-row.pool .fill { top: 2dp; height: 8dp; }
+#scrim.compact-partner #status-parameters #stat-row-0,
+#scrim.compact-partner #status-parameters #stat-row-1,
+#scrim.compact-partner #status-parameters #stat-row-2,
+#scrim.compact-partner #status-parameters #stat-row-3 {
+	position: relative;
+	left: 0;
+	width: 250dp;
+	height: 34dp;
+	border-bottom: 1dp #193c56;
+}
+#scrim.compact-partner #status-parameters #stat-row-0 .label,
+#scrim.compact-partner #status-parameters #stat-row-1 .label,
+#scrim.compact-partner #status-parameters #stat-row-2 .label,
+#scrim.compact-partner #status-parameters #stat-row-3 .label {
+	left: 0; top: 0; width: 175dp; height: 33dp; padding: 0; decorator: none;
+	color: #8edcff; font-size: 12dp; line-height: 33dp;
+}
+#scrim.compact-partner #status-parameters #stat-row-0 .value,
+#scrim.compact-partner #status-parameters #stat-row-1 .value,
+#scrim.compact-partner #status-parameters #stat-row-2 .value,
+#scrim.compact-partner #status-parameters #stat-row-3 .value {
+	left: 180dp; top: 0; width: 70dp; height: 33dp; font-size: 14dp; line-height: 33dp; text-align: right;
+}
+#scrim.compact-partner #status-parameters #stat-row-0 .bar,
+#scrim.compact-partner #status-parameters #stat-row-1 .bar,
+#scrim.compact-partner #status-parameters #stat-row-2 .bar,
+#scrim.compact-partner #status-parameters #stat-row-3 .bar { display: none; }
+
+/* Counter cards, followed by two progression cards. The counters get the strongest type on this track. */
+#scrim.compact-partner #status-battles,
+#scrim.compact-partner #status-mistakes {
+	position: absolute; top: 310dp; width: 120dp; height: 72dp; padding: 7dp 9dp;
+	border: 1dp #345875; background-color: #102a40;
+}
+#scrim.compact-partner #status-battles { left: 260dp; }
+#scrim.compact-partner #status-mistakes { left: 390dp; }
+#scrim.compact-partner #status-battles-label,
+#scrim.compact-partner #status-mistakes-label {
+	left: 8dp; top: 5dp; width: 102dp; height: 19dp; font-size: 11dp; line-height: 19dp; text-align: left; color: #8edcff;
+}
+#scrim.compact-partner #status-battles-value,
+#scrim.compact-partner #status-mistakes-value {
+	left: 8dp; top: 28dp; width: 102dp; height: 34dp; font-size: 22dp; line-height: 30dp; text-align: center;
+}
+#scrim.compact-partner #status-timers { left: 260dp; top: 397dp; width: 260dp; height: 91dp; padding: 6dp; border: 1dp #345875; background-color: #102a40; }
+#scrim.compact-partner #status-timers .timer-line { position: absolute; left: 6dp; width: 246dp; height: 36dp; }
+#scrim.compact-partner #status-lifetime { top: 7dp; }
+#scrim.compact-partner #status-evolution { top: 48dp; }
+#scrim.compact-partner #status-timers .timer-label { left: 0; top: 0; width: 246dp; height: 15dp; font-size: 10dp; line-height: 15dp; text-align: left; }
+#scrim.compact-partner #status-timers .timer-value { left: 0; top: 15dp; width: 246dp; height: 20dp; padding: 0 4dp; font-size: 13dp; line-height: 18dp; text-align: left; }
+
+/* Care and technique track. */
+#scrim.compact-partner #conditions { left: 540dp; top: 47dp; width: 320dp; height: 42dp; padding: 5dp 8dp; border: 1dp #345875; background-color: #102a40; }
+#scrim.compact-partner #conditions .condition { width: 28dp; height: 28dp; }
+#scrim.compact-partner #conditions .profile-condition-sick { left: 0; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-injured { left: 38dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-hungry { left: 76dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-sleepy { left: 114dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-sulking { left: 152dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-tired { left: 190dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-needs_toilet { left: 228dp; top: 0; }
+#scrim.compact-partner #no-condition { display: block; font-size: 12dp; line-height: 26dp; color: #a8c7d9; }
+#scrim.compact-partner #status-condition { left: 540dp; top: 99dp; width: 320dp; height: 151dp; padding: 5dp 8dp; border: 1dp #345875; background-color: #102a40; }
+#scrim.compact-partner #status-condition .bar-row { height: 34dp; }
+#scrim.compact-partner #status-condition .label { left: 0; top: 0; width: 125dp; height: 28dp; padding: 0; font-size: 11dp; line-height: 28dp; }
+#scrim.compact-partner #status-condition .meter { left: 130dp; top: 8dp; width: 132dp; height: 12dp; }
+#scrim.compact-partner #status-condition .meter .fill { top: 2dp; height: 8dp; }
+#scrim.compact-partner #status-condition .value { left: 267dp; top: 0; width: 34dp; height: 28dp; font-size: 11dp; line-height: 28dp; text-align: right; }
+#scrim.compact-partner #techset-heading { left: 540dp; top: 260dp; width: 320dp; }
+#scrim.compact-partner #tech-columns { left: 540dp; top: 291dp; width: 320dp; height: 20dp; }
+#scrim.compact-partner .tech-columns span { font-family: inherit; font-size: 11dp; line-height: 18dp; color: #8eb8d4; }
+#scrim.compact-partner .tech-columns .tech-power { left: 205dp; width: 42dp; }
+#scrim.compact-partner .tech-columns .tech-mp { left: 252dp; width: 30dp; }
+#scrim.compact-partner .tech-columns .tech-range { left: 286dp; width: 34dp; }
+#scrim.compact-partner .tech-columns .tech-effect { display: none; }
+#scrim.compact-partner .tech-row { left: 540dp; width: 320dp; height: 32dp; border-bottom: 1dp #193c56; font-family: inherit; font-size: 12dp; line-height: 29dp; }
+#scrim.compact-partner #tech-row-0 { top: 314dp; }
+#scrim.compact-partner #tech-row-1 { top: 346dp; }
+#scrim.compact-partner #tech-row-2 { top: 378dp; }
+#scrim.compact-partner .tech-name { left: 0; width: 198dp; font-size: 12dp; }
+#scrim.compact-partner .tech-row .tech-power, #scrim.compact-partner .tech-row .tech-mp, #scrim.compact-partner .tech-row .tech-range { font-family: inherit; }
+#scrim.compact-partner .tech-row .tech-power { left: 205dp; width: 42dp; font-size: 12dp; text-align: right; }
+#scrim.compact-partner .tech-row .tech-mp { left: 252dp; width: 30dp; font-size: 12dp; text-align: right; }
+#scrim.compact-partner .tech-row .tech-range { left: 286dp; width: 34dp; font-size: 11dp; }
+#scrim.compact-partner .tech-row .tech-effect { display: none; }
+#scrim.compact-partner #techset-separator,
+#scrim.compact-partner #final-columns,
+#scrim.compact-partner #tech-final-separator { display: none; }
+#scrim.compact-partner #final-heading { left: 540dp; top: 425dp; width: 320dp; height: 25dp; padding-left: 9dp; border-left: 3dp #ffd51e; background-color: #102a40; font-size: 14dp; line-height: 25dp; }
+#scrim.compact-partner #tech-row-3 { left: 540dp; top: 454dp; width: 320dp; height: 48dp; padding: 6dp 9dp; border: 1dp #527c98; background-color: #102a40; }
+#scrim.compact-partner #tech-row-3 .tech-name { width: 195dp; font-size: 12dp; }
+#scrim.compact-partner #tech-row-3 .tech-power { left: 205dp; width: 42dp; font-size: 12dp; text-align: right; }
+#scrim.compact-partner #tech-row-3 .tech-range { left: 286dp; width: 34dp; font-size: 11dp; }
+#scrim.compact-partner #tech-row-3 .tech-mp,
+#scrim.compact-partner #tech-row-3 .tech-effect,
+#scrim.compact-partner #tech-dots,
+#scrim.compact-partner #tech-final-dot { display: none; }
+#scrim.compact-partner #tech-change { left: 540dp; top: 514dp; width: 320dp; height: 32dp; padding-left: 9dp; font-size: 12dp; line-height: 27dp; }
+
+/* Spanish text rules have higher specificity in the inherited skin. Reassert the compact cells
+   after them so long translated labels and values stay inside their own track. */
+#scrim.compact-partner.status-text.status-extras #page-status { overflow: hidden; }
+#scrim.compact-partner.status-text #status-head { left: 80dp; width: 160dp; overflow: hidden; }
+#scrim.compact-partner.status-text #status-name { width: 160dp; overflow: hidden; white-space: nowrap; }
+#scrim.compact-partner.status-text #status-name.long { width: 160dp; font-size: 12dp; }
+#scrim.compact-partner.status-text #status-name-label { left: 20dp; top: 47dp; width: 56dp; font-size: 13dp; }
+#scrim.compact-partner.status-text #status-species-line { left: 20dp; top: 83dp; width: 220dp; overflow: hidden; }
+#scrim.compact-partner.status-text.status-extras #status-species-line #status-species {
+	left: 70dp; top: 0; width: 150dp; height: 28dp; padding: 0 6dp; overflow: hidden;
+	font-size: 14dp; line-height: 24dp; white-space: nowrap;
+}
+#scrim.compact-partner.status-text #status-age-line { left: 20dp; top: 119dp; width: 104dp; overflow: hidden; }
+#scrim.compact-partner.status-text #status-age-label { left: 0; top: 0; width: 35dp; height: 25dp; font-size: 11dp; line-height: 25dp; }
+#scrim.compact-partner.status-text #status-age { left: 38dp; top: 0; width: 66dp; height: 25dp; padding: 0 4dp; font-size: 11dp; line-height: 22dp; }
+#scrim.compact-partner.status-text.status-extras #status-weight-line { left: 132dp; top: 119dp; width: 108dp; overflow: hidden; }
+#scrim.compact-partner.status-text.status-extras #status-weight-label { left: 0; top: 0; width: 43dp; height: 25dp; font-size: 11dp; line-height: 25dp; text-align: left; }
+#scrim.compact-partner.status-text.status-extras #status-weight { left: 46dp; top: 0; width: 62dp; height: 25dp; padding: 0 4dp; font-size: 11dp; line-height: 22dp; text-align: left; }
+#scrim.compact-partner.status-text #status-species,
+#scrim.compact-partner.status-text #status-age,
+#scrim.compact-partner.status-text #status-weight { box-sizing: border-box; }
+#scrim.compact-partner.status-text #status-species-line,
+#scrim.compact-partner.status-text #status-age-line,
+#scrim.compact-partner.status-text #status-weight-line { box-sizing: border-box; }
+#scrim.compact-partner.status-text #partner-portrait-clip { box-sizing: border-box; }
+#scrim.compact-partner.status-text #status-battles,
+#scrim.compact-partner.status-text #status-mistakes,
+#scrim.compact-partner.status-text #status-timers,
+#scrim.compact-partner.status-text #status-condition,
+#scrim.compact-partner.status-text #conditions,
+#scrim.compact-partner.status-text #tech-row-3 { box-sizing: border-box; }
+#scrim.compact-partner.status-text #status-timers { height: 100dp; }
+#scrim.compact-partner.status-text #status-parameters { left: 260dp; width: 260dp; overflow: hidden; }
+#scrim.compact-partner.status-text #status-timers { left: 260dp; width: 260dp; overflow: hidden; }
+#scrim.compact-partner.status-text #status-condition { left: 540dp; width: 320dp; overflow: hidden; }
+#scrim.compact-partner.status-text .tech-columns .tech-power { left: 202dp; width: 44dp; text-align: center; }
+#scrim.compact-partner.status-text .tech-columns .tech-mp { left: 252dp; width: 30dp; text-align: center; }
+#scrim.compact-partner.status-text .tech-columns .tech-range { left: 288dp; width: 34dp; text-align: center; }
+#scrim.compact-partner.status-text .tech-row .tech-power { left: 202dp; width: 44dp; }
+#scrim.compact-partner.status-text .tech-row .tech-mp { left: 252dp; width: 30dp; }
+#scrim.compact-partner.status-text .tech-row .tech-range { left: 288dp; width: 34dp; }
+#scrim.compact-partner.status-text #tech-row-3 .tech-power { left: 202dp; width: 44dp; }
+#scrim.compact-partner.status-text #tech-row-3 .tech-range { left: 288dp; width: 34dp; }
+
+/* Technique editor: a smaller split workspace, with one explicit assignment action beside the preview. */
+#scrim.compact-partner.tech-editing #panel { top: 42dp; width: 780dp; height: 540dp; margin-left: -390dp; }
+#scrim.compact-partner.tech-editing #tabs { height: 42dp; }
+#scrim.compact-partner.tech-editing #page-tech {
+	left: 0; top: 48dp; width: 780dp; height: 458dp; box-sizing: border-box;
+	border: 1dp #72c7ff; background-color: #0b1c2df5; decorator: vertical-gradient(#153653 #0a1929);
+}
+#scrim.compact-partner.tech-editing #page-tech #techs-heading { display: block; left: 18dp; top: 12dp; width: 370dp; height: 28dp; font-size: 18dp; line-height: 28dp; color: #ffe64a; }
+#scrim.compact-partner.tech-editing #tech-help,
+#scrim.compact-partner.tech-editing #tech-help-page,
+#scrim.compact-partner.tech-editing #tech-change,
+#scrim.compact-partner.tech-editing #tech-cancel { display: none; }
+#scrim.compact-partner.tech-editing #tech-picker { left: 108dp; top: 96dp; width: 304dp; height: 252dp; }
+#scrim.compact-partner.tech-editing .tech-choice {
+	position: absolute; display: block; width: 36dp; height: 36dp; min-width: 0; margin: 0; padding: 0; overflow: hidden;
+	border: 1dp transparent; background-color: transparent; decorator: none;
+}
+#scrim.compact-partner.tech-editing .tech-choice:focus { border: 2dp #ffd51e; background-color: #153653; decorator: none; }
+#scrim.compact-partner.tech-editing .tech-cell,
+#scrim.compact-partner.tech-editing .tech-cell-shade { left: 0; top: 0; width: 36dp; height: 36dp; }
+#scrim.compact-partner.tech-editing .tech-category { left: -78dp; width: 72dp; height: 30dp; decorator: none; color: #9bb8cd; font-size: 11dp; line-height: 28dp; text-align: right; white-space: nowrap; }
+#scrim.compact-partner.tech-editing .tech-category.category-right { display: none; }
+#scrim.compact-partner.tech-editing .tech-column { top: -20dp; width: 12dp; height: 15dp; }
+#scrim.compact-partner.tech-editing #tech-info { left: 0; top: 0; width: 780dp; height: 458dp; pointer-events: none; }
+#scrim.compact-partner.tech-editing #tech-info-heading { left: 438dp; top: 61dp; width: 300dp; height: 24dp; decorator: none; color: #8edcff; font-size: 14dp; line-height: 24dp; }
+#scrim.compact-partner.tech-editing .info-corner,
+#scrim.compact-partner.tech-editing .info-colon { display: none; }
+#scrim.compact-partner.tech-editing #tech-info-name,
+#scrim.compact-partner.tech-editing #tech-info-stats {
+	left: 438dp; width: 300dp; border: 1dp #345875; background-color: #102a40; decorator: none; box-sizing: border-box;
+}
+#scrim.compact-partner.tech-editing #tech-info-name { top: 91dp; height: 52dp; padding: 0 12dp; font-size: 16dp; line-height: 48dp; color: #e2f3ff; overflow: hidden; white-space: nowrap; }
+#scrim.compact-partner.tech-editing #tech-info-stats { top: 151dp; height: 154dp; }
+#scrim.compact-partner.tech-editing .info-label { left: 12dp; width: 96dp; height: 30dp; decorator: none; color: #8edcff; font-size: 12dp; line-height: 30dp; }
+#scrim.compact-partner.tech-editing .info-value { left: 116dp; width: 166dp; height: 30dp; font-size: 13dp; line-height: 30dp; text-align: right; color: #e2f3ff; }
+#scrim.compact-partner.tech-editing .info-power { top: 5dp; }
+#scrim.compact-partner.tech-editing .info-mp { top: 40dp; }
+#scrim.compact-partner.tech-editing .info-range { top: 75dp; }
+#scrim.compact-partner.tech-editing .info-effect { top: 110dp; }
+#scrim.compact-partner.tech-editing #tech-info-assign,
+#scrim.compact-partner.tech-editing #tech-info-finish {
+	position: absolute; left: 438dp; width: 300dp; height: 36dp; box-sizing: border-box;
+	border: 1dp #527c98; background-color: #153653; color: #d8f1ff; font-size: 13dp; line-height: 32dp;
+	text-align: center; pointer-events: auto;
+}
+#scrim.compact-partner.tech-editing #tech-info-assign { top: 315dp; border-color: #ffd51e; background-color: #ffd51e; color: #0b1c2d; font-weight: bold; }
+#scrim.compact-partner.tech-editing #tech-info-assign.hidden { display: none; }
+#scrim.compact-partner.tech-editing #tech-info-assign:focus,
+#scrim.compact-partner.tech-editing #tech-info-finish:focus { border: 2dp #72c7ff; background-color: #1d4968; color: #ffffff; }
+#scrim.compact-partner.tech-editing #tech-info-finish { top: 360dp; }
+#scrim.compact-partner.tech-editing #tech-message { left: 438dp; top: 408dp; width: 300dp; height: 32dp; color: #ffe64a; font-size: 12dp; line-height: 18dp; }
+#scrim.compact-partner.tech-editing #prompts { top: 510dp; }
+
+/* Eight columns by seven rows; 36dp native glyph cells sit on a 38dp pitch. */
+#scrim.compact-partner.tech-editing #tech-choice-0, #scrim.compact-partner.tech-editing #tech-choice-8, #scrim.compact-partner.tech-editing #tech-choice-16, #scrim.compact-partner.tech-editing #tech-choice-24, #scrim.compact-partner.tech-editing #tech-choice-32, #scrim.compact-partner.tech-editing #tech-choice-40, #scrim.compact-partner.tech-editing #tech-choice-48 { left: 0; }
+#scrim.compact-partner.tech-editing #tech-choice-1, #scrim.compact-partner.tech-editing #tech-choice-9, #scrim.compact-partner.tech-editing #tech-choice-17, #scrim.compact-partner.tech-editing #tech-choice-25, #scrim.compact-partner.tech-editing #tech-choice-33, #scrim.compact-partner.tech-editing #tech-choice-41, #scrim.compact-partner.tech-editing #tech-choice-49 { left: 38dp; }
+#scrim.compact-partner.tech-editing #tech-choice-2, #scrim.compact-partner.tech-editing #tech-choice-10, #scrim.compact-partner.tech-editing #tech-choice-18, #scrim.compact-partner.tech-editing #tech-choice-26, #scrim.compact-partner.tech-editing #tech-choice-34, #scrim.compact-partner.tech-editing #tech-choice-42, #scrim.compact-partner.tech-editing #tech-choice-50 { left: 76dp; }
+#scrim.compact-partner.tech-editing #tech-choice-3, #scrim.compact-partner.tech-editing #tech-choice-11, #scrim.compact-partner.tech-editing #tech-choice-19, #scrim.compact-partner.tech-editing #tech-choice-27, #scrim.compact-partner.tech-editing #tech-choice-35, #scrim.compact-partner.tech-editing #tech-choice-43, #scrim.compact-partner.tech-editing #tech-choice-51 { left: 114dp; }
+#scrim.compact-partner.tech-editing #tech-choice-4, #scrim.compact-partner.tech-editing #tech-choice-12, #scrim.compact-partner.tech-editing #tech-choice-20, #scrim.compact-partner.tech-editing #tech-choice-28, #scrim.compact-partner.tech-editing #tech-choice-36, #scrim.compact-partner.tech-editing #tech-choice-44, #scrim.compact-partner.tech-editing #tech-choice-52 { left: 152dp; }
+#scrim.compact-partner.tech-editing #tech-choice-5, #scrim.compact-partner.tech-editing #tech-choice-13, #scrim.compact-partner.tech-editing #tech-choice-21, #scrim.compact-partner.tech-editing #tech-choice-29, #scrim.compact-partner.tech-editing #tech-choice-37, #scrim.compact-partner.tech-editing #tech-choice-45, #scrim.compact-partner.tech-editing #tech-choice-53 { left: 190dp; }
+#scrim.compact-partner.tech-editing #tech-choice-6, #scrim.compact-partner.tech-editing #tech-choice-14, #scrim.compact-partner.tech-editing #tech-choice-22, #scrim.compact-partner.tech-editing #tech-choice-30, #scrim.compact-partner.tech-editing #tech-choice-38, #scrim.compact-partner.tech-editing #tech-choice-46, #scrim.compact-partner.tech-editing #tech-choice-54 { left: 228dp; }
+#scrim.compact-partner.tech-editing #tech-choice-7, #scrim.compact-partner.tech-editing #tech-choice-15, #scrim.compact-partner.tech-editing #tech-choice-23, #scrim.compact-partner.tech-editing #tech-choice-31, #scrim.compact-partner.tech-editing #tech-choice-39, #scrim.compact-partner.tech-editing #tech-choice-47, #scrim.compact-partner.tech-editing #tech-choice-55 { left: 266dp; }
+#scrim.compact-partner.tech-editing #tech-choice-0, #scrim.compact-partner.tech-editing #tech-choice-1, #scrim.compact-partner.tech-editing #tech-choice-2, #scrim.compact-partner.tech-editing #tech-choice-3, #scrim.compact-partner.tech-editing #tech-choice-4, #scrim.compact-partner.tech-editing #tech-choice-5, #scrim.compact-partner.tech-editing #tech-choice-6, #scrim.compact-partner.tech-editing #tech-choice-7 { top: 0; }
+#scrim.compact-partner.tech-editing #tech-choice-8, #scrim.compact-partner.tech-editing #tech-choice-9, #scrim.compact-partner.tech-editing #tech-choice-10, #scrim.compact-partner.tech-editing #tech-choice-11, #scrim.compact-partner.tech-editing #tech-choice-12, #scrim.compact-partner.tech-editing #tech-choice-13, #scrim.compact-partner.tech-editing #tech-choice-14, #scrim.compact-partner.tech-editing #tech-choice-15 { top: 36dp; }
+#scrim.compact-partner.tech-editing #tech-choice-16, #scrim.compact-partner.tech-editing #tech-choice-17, #scrim.compact-partner.tech-editing #tech-choice-18, #scrim.compact-partner.tech-editing #tech-choice-19, #scrim.compact-partner.tech-editing #tech-choice-20, #scrim.compact-partner.tech-editing #tech-choice-21, #scrim.compact-partner.tech-editing #tech-choice-22, #scrim.compact-partner.tech-editing #tech-choice-23 { top: 72dp; }
+#scrim.compact-partner.tech-editing #tech-choice-24, #scrim.compact-partner.tech-editing #tech-choice-25, #scrim.compact-partner.tech-editing #tech-choice-26, #scrim.compact-partner.tech-editing #tech-choice-27, #scrim.compact-partner.tech-editing #tech-choice-28, #scrim.compact-partner.tech-editing #tech-choice-29, #scrim.compact-partner.tech-editing #tech-choice-30, #scrim.compact-partner.tech-editing #tech-choice-31 { top: 108dp; }
+#scrim.compact-partner.tech-editing #tech-choice-32, #scrim.compact-partner.tech-editing #tech-choice-33, #scrim.compact-partner.tech-editing #tech-choice-34, #scrim.compact-partner.tech-editing #tech-choice-35, #scrim.compact-partner.tech-editing #tech-choice-36, #scrim.compact-partner.tech-editing #tech-choice-37, #scrim.compact-partner.tech-editing #tech-choice-38, #scrim.compact-partner.tech-editing #tech-choice-39 { top: 144dp; }
+#scrim.compact-partner.tech-editing #tech-choice-40, #scrim.compact-partner.tech-editing #tech-choice-41, #scrim.compact-partner.tech-editing #tech-choice-42, #scrim.compact-partner.tech-editing #tech-choice-43, #scrim.compact-partner.tech-editing #tech-choice-44, #scrim.compact-partner.tech-editing #tech-choice-45, #scrim.compact-partner.tech-editing #tech-choice-46, #scrim.compact-partner.tech-editing #tech-choice-47 { top: 180dp; }
+#scrim.compact-partner.tech-editing #tech-choice-48, #scrim.compact-partner.tech-editing #tech-choice-49, #scrim.compact-partner.tech-editing #tech-choice-50, #scrim.compact-partner.tech-editing #tech-choice-51, #scrim.compact-partner.tech-editing #tech-choice-52, #scrim.compact-partner.tech-editing #tech-choice-53, #scrim.compact-partner.tech-editing #tech-choice-54, #scrim.compact-partner.tech-editing #tech-choice-55 { top: 216dp; }
+#scrim.compact-partner.tech-editing .tech-column.column-0 { left: 12dp; }
+#scrim.compact-partner.tech-editing .tech-column.column-1 { left: 50dp; }
+#scrim.compact-partner.tech-editing .tech-column.column-2 { left: 88dp; }
+#scrim.compact-partner.tech-editing .tech-column.column-3 { left: 126dp; }
+#scrim.compact-partner.tech-editing .tech-column.column-4 { left: 164dp; }
+#scrim.compact-partner.tech-editing .tech-column.column-5 { left: 202dp; }
+#scrim.compact-partner.tech-editing .tech-column.column-6 { left: 240dp; }
+#scrim.compact-partner.tech-editing .tech-column.column-7 { left: 278dp; }
+#scrim.compact-partner.tech-editing .tech-category.category-0 { top: 0; }
+#scrim.compact-partner.tech-editing .tech-category.category-1 { top: 36dp; }
+#scrim.compact-partner.tech-editing .tech-category.category-2 { top: 72dp; }
+#scrim.compact-partner.tech-editing .tech-category.category-3 { top: 108dp; }
+#scrim.compact-partner.tech-editing .tech-category.category-4 { top: 144dp; }
+#scrim.compact-partner.tech-editing .tech-category.category-5 { top: 180dp; }
+#scrim.compact-partner.tech-editing .tech-category.category-6 { top: 216dp; }
+#scrim.compact-partner.status-text .tech-name { overflow: hidden; white-space: nowrap; }
+
+/* Align the final-tech label, card, and action to the same outer width. The earlier rules add padding and borders outside their declared width. */
+#scrim.compact-partner #final-heading { box-sizing: border-box; }
+#scrim.compact-partner #tech-row-3 { top: 462dp; height: 50dp; box-sizing: border-box; border-radius: 3dp; }
+#scrim.compact-partner #tech-row-3 .tech-name { left: 9dp; top: 6dp; width: 300dp; height: 36dp; line-height: 36dp; }
+#scrim.compact-partner #tech-change { top: 520dp; box-sizing: border-box; }
+/* Keep the selectable attack grid above the detail layer and clip both to the editor frame. */
+#scrim.compact-partner.tech-editing #page-tech { overflow: hidden; }
+#scrim.compact-partner.tech-editing #tech-picker { z-index: 3; }
+#scrim.compact-partner.tech-editing #tech-info { z-index: 2; }
+/* Compact technique editor: keep the original selectable grid at left and place the selected name inside its data card. */
+#scrim.compact-partner.tech-editing #panel { top: 32dp; width: 900dp; height: 560dp; margin-left: -450dp; }
+#scrim.compact-partner.tech-editing #page-tech {
+	left: 0; top: 48dp; width: 900dp; height: 480dp; box-sizing: border-box; overflow: hidden;
+	border: 1dp #72c7ff; background-color: #0b1c2df5; decorator: vertical-gradient(#153653 #0a1929);
+}
+#scrim.compact-partner.tech-editing #tech-picker {
+	left: 108dp; top: 96dp; width: 306dp; height: 254dp; box-sizing: border-box;
+	border: 1dp #345875; background-color: #071522; z-index: 3;
+}
+#scrim.compact-partner.tech-editing .tech-choice {
+	position: absolute; display: block; width: 36dp; height: 36dp; min-width: 0;
+	margin: 0; padding: 0; overflow: visible; border: 1dp transparent; background-color: transparent;
+	font-size: 0; color: transparent; decorator: none;
+}
+#scrim.compact-partner.tech-editing .tech-choice:focus { border: 2dp #ffd51e; background-color: #1d4968; decorator: none; }
+#scrim.compact-partner.tech-editing .tech-cell,
+#scrim.compact-partner.tech-editing .tech-cell-shade { left: 0; top: 0; width: 36dp; height: 36dp; }
+#scrim.compact-partner.tech-editing #tech-columns,
+#scrim.compact-partner.tech-editing #tech-row-3,
+#scrim.compact-partner.tech-editing #final-heading,
+#scrim.compact-partner.tech-editing #final-columns,
+#scrim.compact-partner.tech-editing #techset-separator,
+#scrim.compact-partner.tech-editing #tech-final-separator,
+#scrim.compact-partner.tech-editing #tech-dots,
+#scrim.compact-partner.tech-editing #tech-final-dot,
+#scrim.compact-partner.tech-editing #tech-change,
+#scrim.compact-partner.tech-editing #tech-cancel { display: none; }
+#scrim.compact-partner.tech-editing #techset-heading {
+	left: 275dp; top: 326dp; width: 350dp; height: 28dp;
+	border: 0; color: #ffe64a; font-size: 17dp; font-weight: bold;
+	line-height: 28dp; text-align: center; background-color: transparent;
+}
+#scrim.compact-partner.tech-editing .tech-row {
+	left: 275dp; width: 350dp; height: 30dp; border-bottom: 1dp #193c56;
+	font-size: 13dp; line-height: 28dp;
+}
+#scrim.compact-partner.tech-editing #tech-row-0 { top: 358dp; }
+#scrim.compact-partner.tech-editing #tech-row-1 { top: 389dp; }
+#scrim.compact-partner.tech-editing #tech-row-2 { top: 420dp; }
+#scrim.compact-partner.tech-editing .tech-row .tech-name { left: 8dp; width: 176dp; font-size: 13dp; }
+#scrim.compact-partner.tech-editing .tech-row .tech-power { left: 190dp; width: 44dp; font-size: 12dp; }
+#scrim.compact-partner.tech-editing .tech-row .tech-mp { left: 240dp; width: 38dp; font-size: 12dp; }
+#scrim.compact-partner.tech-editing .tech-row .tech-range { left: 285dp; width: 45dp; font-size: 12dp; }
+#scrim.compact-partner.tech-editing .tech-row .tech-effect { display: none; }
+#scrim.compact-partner.tech-editing #tech-info { left: 0; top: 0; width: 900dp; height: 480dp; z-index: 2; }
+#scrim.compact-partner.tech-editing #tech-info-heading { left: 450dp; top: 56dp; width: 425dp; height: 24dp; text-align: center; background-color: #223b4b; }
+#scrim.compact-partner.tech-editing #tech-info-stats {
+	left: 450dp; top: 86dp; width: 425dp; height: 200dp; box-sizing: border-box;
+	border: 1dp #345875; background-color: #102a40; decorator: none;
+}
+#scrim.compact-partner.tech-editing #tech-info-stats #tech-info-name {
+	left: 12dp; top: 8dp; width: 401dp; height: 34dp; box-sizing: border-box; padding: 0 8dp;
+	border: 1dp #527c98; border-radius: 3dp; background-color: #153653; decorator: none; color: #e2f3ff;
+	font-size: 14dp; line-height: 30dp; text-align: left; white-space: nowrap; overflow: hidden;
+}
+#scrim.compact-partner.tech-editing .info-label { left: 12dp; width: 105dp; color: #8edcff; font-size: 12dp; }
+#scrim.compact-partner.tech-editing .info-value { left: 170dp; width: 240dp; color: #e2f3ff; font-size: 13dp; text-align: right; }
+#scrim.compact-partner.tech-editing .info-power { top: 52dp; }
+#scrim.compact-partner.tech-editing .info-mp { top: 86dp; }
+#scrim.compact-partner.tech-editing .info-range { top: 120dp; }
+#scrim.compact-partner.tech-editing .info-effect { top: 154dp; }
+#scrim.compact-partner.tech-editing #tech-message {
+	left: 450dp; top: 296dp; width: 425dp; height: 34dp; box-sizing: border-box;
+	margin: 0; padding: 4dp 8dp; border: 0; background-color: transparent; decorator: none;
+	color: #ffe64a; font-size: 12dp; line-height: 20dp; text-align: left; overflow: hidden;
+}
+#scrim.compact-partner.tech-editing #prompts { top: 532dp; }

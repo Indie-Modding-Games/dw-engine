@@ -20,6 +20,7 @@
 #include <fstream>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -317,7 +318,8 @@ TEST_CASE(
   const localization::Catalog texts = catalogIn(files, "es");
   const WarningCapture warnings;
   auto ui = createUi(files, texts);
-  CHECK(skinIds(*ui) == std::vector<std::string>{"modern", "new", "original", "test_contrast"});
+  CHECK(skinIds(*ui) ==
+        std::vector<std::string>{"devvago", "modern", "new", "original", "test_contrast"});
   CHECK(ui->skins().defaultSkin() == "original");
   CHECK(ui->skin() == "original");
   CHECK(texts.text(ui->skins().find("original")->nameKey) == "Original");
@@ -343,6 +345,60 @@ TEST_CASE(
   CHECK_FALSE(ui->elementHasClass("pause_menu", "panel", "skin-original"));
   REQUIRE(ui->setSkin("original"));
   CHECK(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
+}
+
+TEST_CASE(
+    "the devvago skin loads every screen cleanly, and its layout options reach the documents") {
+  Content content;
+  addOriginalArt(content);
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "es");
+  const WarningCapture warnings;
+  auto ui = createUi(files, texts);
+  const Skin* devvago = ui->skins().find("devvago");
+  REQUIRE(devvago != nullptr);
+  CHECK(texts.text(devvago->nameKey) == "DevVago");
+  CHECK(devvago->extends == std::optional<std::string>{"modern"});
+  // Its own options, and the modern look's for the rest.
+  const SkinScreenLayout pause = ui->skins().layoutOf(*devvago, "pause_menu");
+  CHECK(pause ==
+        SkinScreenLayout{
+            {"box", "modern"}, {"medals", "profile"}, {"menu", "original"}, {"tabs", "minimal"}});
+  const SkinScreenLayout partner = ui->skins().layoutOf(*devvago, "partner_menu");
+  CHECK(partner ==
+        SkinScreenLayout{
+            {"box", "modern"}, {"menu", "modern"}, {"pages", "compact"}, {"pool", "current"}});
+  CHECK(ui->skins().layoutOf(*devvago, "battle").at("menu") == "modern");
+  CHECK(ui->skins().layoutOf(*devvago, "main_menu").at("menu") == "original");
+  CHECK(ui->skins().layoutOf(*devvago, "main_menu").at("picture") == "modern");
+  // No other skin of the game pack sets the options only devvago uses.
+  constexpr std::array<std::string_view, 3> Others{"modern", "original", "new"};
+  for (const std::string_view other : Others) {
+    const Skin* skin = ui->skins().find(other);
+    REQUIRE(skin != nullptr);
+    CHECK_FALSE(ui->skins().layoutOf(*skin, "pause_menu").contains("tabs"));
+    CHECK_FALSE(ui->skins().layoutOf(*skin, "pause_menu").contains("medals"));
+    CHECK_FALSE(ui->skins().layoutOf(*skin, "partner_menu").contains("pool"));
+    CHECK(ui->skins().layoutOf(*skin, "partner_menu").at("pages") != "compact");
+  }
+
+  loadScreens(*ui);
+  for (const std::string_view screen : PanelScreens) {
+    REQUIRE(ui->loadDocument(screen, idOf(std::format("ui/{}/document", screen))));
+  }
+  REQUIRE(ui->setSkin("devvago"));
+  CHECK(ui->checkSkinDocuments().empty());
+  CHECK(ui->elementHasClass("pause_menu", "", "layout-tabs-minimal"));
+  CHECK(ui->elementHasClass("pause_menu", "", "layout-medals-profile"));
+  CHECK(ui->elementHasClass("partner_menu", "", "layout-pages-compact"));
+  CHECK(ui->elementHasClass("partner_menu", "", "layout-pool-current"));
+  CHECK(ui->elementHasClass("pause_menu", "panel", "skin-original"));
+  for (const std::string& line : warnings.all()) {
+    CHECK_MESSAGE(line.contains("font/main"), line);
+  }
+  REQUIRE(ui->setSkin("original"));
+  CHECK_FALSE(ui->elementHasClass("pause_menu", "", "layout-tabs-minimal"));
+  CHECK_FALSE(ui->elementHasClass("partner_menu", "", "layout-pages-compact"));
 }
 
 namespace {

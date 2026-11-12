@@ -3,6 +3,9 @@
 tab.status: "Status"
 tab.items: "Items"
 tab.care: "Care"
+# The pages' names in the compact menu (skin.yaml layout: partner_menu: pages: compact).
+nav.partner: "Partner"
+nav.bag: "Bag"
 # The partner's species, under its own name (game_menu.c: drawDigimonStatsStrings).
 species: "Species"
 age: "Age"

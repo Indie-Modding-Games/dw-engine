@@ -3,8 +3,10 @@
 modern: "Modern"
 original: "Original"
 new: "Pixel art"
+devvago: "DevVago"
 # One line per skin under its name in the first run's box (ui/skin_picker); a mod adds one with its name's key plus
 # .hint.
 modern.hint: "Clean panels and modern text."
 original.hint: "The original's menus, redrawn sharp."
 new.hint: "Navy windows and pixel fonts."
+devvago.hint: "DevVago's design: night blue and compact menus."

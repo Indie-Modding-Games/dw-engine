@@ -1,0 +1,28 @@
+/* The stones game's recruit bar in the original look (an engine improvement, the option shop_job_bar; the original
+   has none): one of the original's boxes, as the speech box above it, in the original-look font, the standing in
+   yellow while the player is ahead. This sheet goes over the structure's modern panel, so it sets again every
+   property that one gives the bar. */
+
+#recruit {
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: #2d384080;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	font-family: original-look;
+	font-size: 20dp;
+	line-height: 22dp;
+	padding: 2dp 12dp;
+	color: #d0d0d0;
+}
+
+.recruit-line { height: 22dp; }
+#recruit-perfect { color: #fff371; }
+#recruit.ahead #recruit-standing { color: #fff371; }
+
+body #recruit {
+	background-color: #0b1c2df2;
+	color: #d5eaf7;
+}
+
+body #recruit-perfect, body #recruit.ahead #recruit-standing { color: #ffe64a; }

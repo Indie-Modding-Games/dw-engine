@@ -190,7 +190,8 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   carpeta actual; se corre en los dos idiomas.
 - `route-skins.yaml`: empieza con el aspecto original (el de por defecto), desde las opciones del menú principal cambia en
   vivo al de prueba (el paquete sintético `tests/mods/ui_skin/test_contrast`), recorre con él el campo, el menú de pausa, el
-  del compañero y un combate, y pasa al moderno desde las opciones del menú de pausa, con capturas de cada pantalla.
+  del compañero y un combate, y pasa al DevVago y al moderno desde las opciones del menú de pausa, con capturas de cada
+  pantalla.
   Necesita `--mods tests/mods/ui_skin` y se corre en los dos idiomas, como `route-language.yaml`.
 - `route-skin-original.yaml`: el aspecto original en cada pantalla que dibuja, con una captura de cada una: el título y
   su menú, la lista de ranuras y la pregunta de jugar sin guardar (necesita `--saves` con una carpeta vacía propia, que

@@ -661,14 +661,19 @@ layout:                             # opcional: opciones de maquetación que lee
   |---|---|---|
   | `menu` | `pause_menu`, `partner_menu`, `battle`, `main_menu`, `save_slots`, `new_game_rules` | `modern`; `original`, la disposición del original (la cuadrícula de iconos y la página del jugador del menú de pausa, las páginas de estado y técnicas del compañero, la tira de combate que entra deslizándose, la portada y las ranuras del original) |
   | `box` | `pause_menu`, `partner_menu`, `egg_box`, `field_item_notice` | `modern`; `original`, las cajas que crecen desde un contorno gris (`common/original_box.lua`) |
-  | `pages` | `partner_menu` | `modern`; `original`, las páginas de estado, técnicas y bolsa como las pantallas completas del original (las clases de página de `#scrim`) |
+  | `pages` | `partner_menu` | `modern`; `original`, las páginas de estado, técnicas y bolsa como las pantallas completas del original (las clases de página de `#scrim`); `compact`, una sola página del compañero con su estado y sus técnicas, sin fila de pestañas, la bolsa como «Bolsa» y Cancelar volviendo al menú de pausa (las clases `new-partner` y `compact-partner` de `#scrim`) |
+  | `pool` | `partner_menu` | `maximum` (sin la opción, igual), la barra de PV y PM del máximo frente al tope, como el original; `current`, la barra de lo que queda frente al máximo |
+  | `tabs` | `pause_menu` | `all` (sin la opción, igual), las pestañas del jugador del original más la ciudad; `minimal`, solo Jugador, Árbol y Prosperidad (la ciudad), que Q y E (los gatillos del mando) recorren desde cualquier sitio de la página, con sus teclas a los lados y una pestaña «Volver» |
+  | `medals` | `pause_menu` | `page` (sin la opción, igual), las medallas en su página; `profile`, en una caja del perfil, sin su pestaña |
   | `picture` | `main_menu`, `save_slots`, `new_game_rules` | `modern`; `original`, con «imágenes panorámicas» las cajas y el logo van a sus sitios del original sobre la imagen ensanchada (`common/title_picture.lua`) |
   | `bars` | `hud` | `continuous` (por defecto); `pips`, las barras del estado del campo se llenan en los 25 cuadritos del original |
   | `heading` | `save_machine` | `original` (o sin poner), el título de la máquina solo sobre el registro y las ranuras, como el original; `always`, también sobre la pregunta de guardar |
 
-  El moderno declara las suyas, y el original (y el new, que lo extiende) las del original. Las clases de `document_classes` quedan
-  para el estilo (`skin-original`, `title-original`, `slots-original`, `pips`): ningún script las lee (un test lo
-  comprueba). El HUD llena las barras a cuadritos con la maquetación `hud: {bars: pips}`.
+  El moderno declara las suyas, y el original (y el new, que lo extiende) las del original. `pages: compact`, `pool`,
+  `tabs` y `medals` solo las pone el aspecto DevVago; sin ellas cada pantalla hace lo de siempre (`tabs`, `medals` y
+  `pool` solo cambian algo con la disposición del original del menú de pausa o en el menú del compañero). Las clases
+  de `document_classes` quedan para el estilo (`skin-original`, `title-original`, `slots-original`, `pips`): ningún
+  script las lee (un test lo comprueba). El HUD llena las barras a cuadritos con la maquetación `hud: {bars: pips}`.
 - **El aspecto de reserva (`fallback`).** `ui/ui_skin.yaml` puede nombrar, además de `default`, un `fallback`: el
   aspecto con el que arranca el juego si el de `default` no se ofrece. El original necesita imágenes que extrae
   `dwx extract` del disco del usuario; sin ellas se queda fuera del catálogo y el juego arranca con el moderno. Un
@@ -834,6 +839,40 @@ el juego arranca con el aspecto de reserva. RmlUi no tiene sombras, contornos ni
 que lo que la maqueta dibuja con ellos va en los ninepatch. De la disposición del original solo cambia la imagen de la
 portada, de la lista de partidas y de las reglas (`layout: {picture: modern}`): la maqueta pone su propio fondo 4:3 y
 no la imagen ancha. Lo que aún difiere de la maqueta depende de cambios en los documentos o en su lógica.
+
+### El aspecto DevVago (id `devvago`)
+
+El diseño es de **DevVago**, que lo trajo en #308 como el aspecto `new`; cuando `new` pasó a ser el «Pixel art» de la
+maqueta (#310), su diseño se quedó como un aspecto propio con su nombre («DevVago» en los menús, `ui_skin.devvago`), en
+Opciones → Interfaz y en la caja del primer arranque.
+
+- `ui/skins/devvago` extiende el moderno (`extends: modern`): cada pantalla pone su hoja encima de la del moderno, como
+  en su versión, que llevaba una copia del moderno en `new/_base`. De esa copia solo queda lo que él añadió (los colores
+  de las listas del original, `original_lists/style.rcss`). Pone `skin-original` en el `#panel` de las pantallas que
+  comparten el panel del menú de pausa, así que las reglas `#panel:not(.skin-original)` del moderno no lo tocan.
+- Imágenes propias: la portada sin marca (`assets/hero_title.png`, la de #309), su fondo, sus iconos del menú del campo
+  (`assets/menu_icons.png`, hoja `new-field-icons`), los de la parte del día junto a la hora del minimapa
+  (`assets/icon_sources/`) y su cursor. Las hojas de sprites del original van copiadas en su `skin.yaml`, con los
+  nombres sin marca, así que, como el original, necesita lo que `dwx extract` saca del disco del jugador.
+- Disposición (`layout`): la portada, la lista de ranuras, las reglas de la partida nueva y el menú de pausa como las
+  del original (`menu: original`;
+  las cajas se abren de golpe y la portada no se ensancha); el menú del compañero moderno, pero compacto
+  (`pages: compact`) y con las barras de PV y PM de lo que queda (`pool: current`); la página del jugador con las
+  pestañas mínimas (`tabs: minimal`) y las medallas en el perfil (`medals: profile`, que coloca las celdas en la caja
+  del perfil desde `pause_menu/logic.lua: refresh_medals`). El combate y lo demás, como el moderno.
+- Lo que no volvió: la pestaña «Evoluciones» del menú del compañero, que llevaba al árbol del menú de pausa y volvía.
+  Necesitaba un comando y un ajuste propios del juego (`open_evolutions`, `pause_menu.evolutions`), que la API de la
+  interfaz quitó en su 0.2.0. Por eso el árbol tiene su pestaña «Árbol» en la tira mínima, entre Jugador y
+  Prosperidad; la de Cartas no se ofrece, como en su versión.
+- Arreglos sobre su versión: la tira mínima recorre sus pestañas sin el `nil + 1` de cuando la página abierta no
+  estaba en ella (`index_of(...) or 1`); el mensaje de las técnicas no se borra al mover el foco; las barras de PV y PM
+  de los demás aspectos siguen siendo las del máximo; y los nombres de la ciudad («Prosperidad») y de las páginas del
+  compañero se escriben en cada refresco, así que un cambio de aspecto en vivo deja el nombre correcto. Sus clases de
+  documento de entonces (`player-minimal-tabs`, `player-medals-on-profile`, `partner-compact`, `new-partner`) son
+  ahora las opciones de `layout` de arriba y las clases `layout-*` del `<body>`; ninguna regla de su hoja depende de
+  una clase que el código ya no pone. Las cajas de una carta (`card-detail`, `card-count-box`) se cierran también
+  sin la animación del original (`menu: original` con `box: modern`), y se quitaron las reglas de ids que ya no
+  existen (`#balance` del gimnasio, la tecla de la pestaña Evoluciones).
 
 ## Aspecto original
 

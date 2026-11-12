@@ -4,8 +4,10 @@
 modern: "Moderno"
 original: "Original"
 new: "Pixel art"
+devvago: "DevVago"
 # Una línea por aspecto bajo su nombre en la caja del primer arranque (ui/skin_picker); un mod la añade con la clave de
 # su nombre más .hint.
 modern.hint: "Paneles limpios y letra moderna."
 original.hint: "Los menús del juego original, nítidos."
 new.hint: "Ventanas azules y letra de píxeles."
+devvago.hint: "El diseño de DevVago: azul noche y menús compactos."

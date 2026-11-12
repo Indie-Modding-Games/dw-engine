@@ -41,6 +41,11 @@
 
 .player-native { display: none; }
 
+/* The player tabs' keys (Q/E on a keyboard, the pad's shoulders) and the Back tab: only the
+   minimal tabs (skin.yaml layout: pause_menu: tabs) show them, from the skin's sheet; the
+   document carries them hidden otherwise, so the other strips keep the original's tabs. */
+#player-tab-previous-key, #player-tab-next-key, #player-tab-back { display: none; }
+
 #chart-detail { display: none; }
 
 #chart-detail-transition { display: none; }

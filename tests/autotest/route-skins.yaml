@@ -54,10 +54,15 @@ steps:
   - screenshot: battle-end
   # The end box closes by itself once it has counted, typed and waited.
   - wait: {hidden: battle, timeout: 60}
-  # On to the modern skin from the pause menu's options.
+  # On to the modern skin from the pause menu's options: past the test skin the list goes round to the first one the
+  # packs offer, devvago, and then to modern.
   - menu: open
   - menu_select: open-options
   - screenshot: pause-options-test-contrast
+  - menu_select: ui-skin
+  - expect_setting: {ui_skin: devvago}
+  - wait: {seconds: 0.5}
+  - screenshot: pause-options-devvago
   - menu_select: ui-skin
   - expect_setting: {ui_skin: modern}
   - wait: {seconds: 0.5}
