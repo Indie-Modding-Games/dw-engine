@@ -139,7 +139,8 @@ struct Screen {
                             .width = 1280,
                             .height = 720,
                             .clock = {},
-                            .scripts = {}});
+                            .scripts = {},
+                            .cursor = {}});
     REQUIRE_MESSAGE(made.has_value(), made.error().message);
     ui = std::move(*made);
     auto id = assets::AssetId::parse(std::format("ui/{}/document", document));

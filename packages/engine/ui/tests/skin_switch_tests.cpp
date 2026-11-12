@@ -119,8 +119,13 @@ struct FakeClock {
 std::unique_ptr<Ui> createUi(const assets::VirtualFileSystem& files,
                              const localization::Catalog& texts,
                              FakeClock* hotReloadClock = nullptr) {
-  UiDesc desc{
-      .files = &files, .texts = &texts, .width = 1280, .height = 720, .clock = {}, .scripts = {}};
+  UiDesc desc{.files = &files,
+              .texts = &texts,
+              .width = 1280,
+              .height = 720,
+              .clock = {},
+              .scripts = {},
+              .cursor = {}};
   if (hotReloadClock != nullptr) {
     desc.hotReload = true;
     desc.clock = [hotReloadClock] { return hotReloadClock->now; };
@@ -312,7 +317,8 @@ TEST_CASE(
   const localization::Catalog texts = catalogIn(files, "es");
   const WarningCapture warnings;
   auto ui = createUi(files, texts);
-  CHECK(skinIds(*ui) == std::vector<std::string>{"modern", "original", "test_contrast"});
+  CHECK(skinIds(*ui) ==
+        std::vector<std::string>{"legacy", "modern", "new", "original", "test_contrast"});
   CHECK(ui->skins().defaultSkin() == "original");
   CHECK(ui->skin() == "original");
   CHECK(texts.text(ui->skins().find("original")->nameKey) == "Original");
@@ -373,8 +379,13 @@ TEST_CASE(
   const assets::VirtualFileSystem& files = content.mount();
   const localization::Catalog texts = catalogIn(files, "en");
   FakeClock clock;
-  UiDesc desc{
-      .files = &files, .texts = &texts, .width = 1280, .height = 720, .clock = {}, .scripts = {}};
+  UiDesc desc{.files = &files,
+              .texts = &texts,
+              .width = 1280,
+              .height = 720,
+              .clock = {},
+              .scripts = {},
+              .cursor = {}};
   desc.clock = [&clock] { return clock.now; };
   auto created = Ui::create(desc);
   REQUIRE_MESSAGE(created.has_value(), created.error().message);
@@ -450,8 +461,13 @@ TEST_CASE(
   const assets::VirtualFileSystem& files = content.mount();
   const localization::Catalog texts = catalogIn(files, "en");
   FakeClock clock;
-  UiDesc desc{
-      .files = &files, .texts = &texts, .width = 1280, .height = 720, .clock = {}, .scripts = {}};
+  UiDesc desc{.files = &files,
+              .texts = &texts,
+              .width = 1280,
+              .height = 720,
+              .clock = {},
+              .scripts = {},
+              .cursor = {}};
   desc.clock = [&clock] { return clock.now; };
   auto created = Ui::create(desc);
   REQUIRE_MESSAGE(created.has_value(), created.error().message);

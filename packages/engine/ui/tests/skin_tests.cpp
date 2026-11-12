@@ -92,13 +92,13 @@ TEST_CASE("a skin.yaml may name its theme, styles and document relative to its o
   REQUIRE(menu.document.has_value());
   CHECK(menu.document->str() == "ui/skins/framed/main_menu/document");
   CHECK(skin->screens.at("hud").styles.at(0).str() == "ui/skins/framed/hud/style");
-  // A sprite sheet's image names a base asset: it keeps the path it was written with, not the skin's.
+  // A sprite sheet's image names a base asset: it keeps the path it was written with, not the
+  // skin's.
   CHECK(skin->spriteSheets.at(0).image.asset.str() == "texture/x");
 }
 
 TEST_CASE("a skin may name a cursor image and its hotspot, relative to its own folder") {
-  const auto skin = parseSkin(
-      "id: framed\nname: x\ncursor: cursor\ncursor_hotspot: [3, 5]\n");
+  const auto skin = parseSkin("id: framed\nname: x\ncursor: cursor\ncursor_hotspot: [3, 5]\n");
   REQUIRE_MESSAGE(skin.has_value(), skin.error().message);
   // The cursor id is written relative to the skin folder (like theme/styles) and absolutized by
   // parseSkin, so a fork or a rename does not touch the cursor path.
@@ -117,6 +117,8 @@ TEST_CASE("a skin may name a cursor image and its hotspot, relative to its own f
   REQUIRE(none.has_value());
   CHECK_FALSE(none->cursor.has_value());
 }
+
+TEST_CASE("a skin.yaml with a misspelt key, a bad name or a bad sprite is refused") {
   CHECK(errorOf("id: plain\nname: x\nthemes: []\n").contains("themes"));
   CHECK(errorOf("id: Plain\nname: x\n").contains("lowercase"));
   CHECK(errorOf("id: plain\nname: x\nscreens:\n  Main: {}\n").contains("lowercase"));

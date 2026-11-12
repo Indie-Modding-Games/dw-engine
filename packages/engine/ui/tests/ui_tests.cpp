@@ -125,7 +125,8 @@ std::unique_ptr<Ui> createUi(const VirtualFileSystem& files, FakeClock* clock = 
               .height = 720,
               .hotReload = hotReload,
               .clock = {},
-              .scripts = limits};
+              .scripts = limits,
+              .cursor = {}};
   if (clock != nullptr) {
     desc.clock = [clock] { return clock->now; };
   }
@@ -477,9 +478,10 @@ TEST_CASE("there is one UI at a time, and it needs files") {
   auto& files = content.mount();
   CHECK_FALSE(Ui::create(UiDesc{}).has_value());
   auto ui = createUi(files);
-  CHECK_FALSE(Ui::create(UiDesc{.files = &files, .clock = {}, .scripts = {}}).has_value());
+  CHECK_FALSE(
+      Ui::create(UiDesc{.files = &files, .clock = {}, .scripts = {}, .cursor = {}}).has_value());
   ui.reset();
-  auto again = Ui::create(UiDesc{.files = &files, .clock = {}, .scripts = {}});
+  auto again = Ui::create(UiDesc{.files = &files, .clock = {}, .scripts = {}, .cursor = {}});
   CHECK(again.has_value());
 }
 
@@ -1973,8 +1975,13 @@ TEST_CASE("the minimap marks the items on the ground in view, under the enemies'
 
 // A UI that shows the texts of a catalog, as the game creates it.
 std::unique_ptr<Ui> createUi(const VirtualFileSystem& files, const localization::Catalog& texts) {
-  auto ui = Ui::create(UiDesc{
-      .files = &files, .texts = &texts, .width = 1280, .height = 720, .clock = {}, .scripts = {}});
+  auto ui = Ui::create(UiDesc{.files = &files,
+                              .texts = &texts,
+                              .width = 1280,
+                              .height = 720,
+                              .clock = {},
+                              .scripts = {},
+                              .cursor = {}});
   REQUIRE_MESSAGE(ui.has_value(), ui.error().message);
   return std::move(*ui);
 }

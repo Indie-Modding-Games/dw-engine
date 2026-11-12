@@ -1,12 +1,12 @@
 # The partner's menu (ui/partner_menu): the status page, the item bag and the care page. The original's own labels
 # (HP, MP, the stats, the item options, the sort orders, the drop's question, bits) come from its text tables.
 tab.status: "Status"
-nav.digimon: "Digimon"
+nav.partner: "Partner"
 # The compact menu names the bag window "Bolsa" (partner_menu/logic.lua: draw_navigation).
 nav.bolsa: "Bag"
 tab.items: "Items"
 tab.care: "Care"
-# The Digimon window's Evoluciones tab: only skins declaring partner-evolutions on #scrim show it
+# The partner window's Evoluciones tab: only skins declaring partner-evolutions on #scrim show it
 # (ui/common/base.rcss keeps it hidden for the rest).
 tab.evolutions: "Evolutions"
 # The partner's species, under its own name (game_menu.c: drawDigimonStatsStrings).

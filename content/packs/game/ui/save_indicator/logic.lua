@@ -2,7 +2,8 @@
 -- (save_indicator.opacity, 0 to 1), how far above its corner it goes to stay clear of the windows
 -- there (save_indicator.lift, pixels), whether the figure's model loaded (save_indicator.figure;
 -- without it the text shows alone) and the text key to show (save_indicator.text): "Saving",
--- "Loading" or that an autosave was skipped for want of a free slot, which shows without the figure.
+-- "Loading" or that an autosave was skipped for want of a free slot, which shows without the
+-- figure.
 
 local SavingText = "save.saving"
 local LoadingText = "save.loading"
@@ -13,12 +14,10 @@ local function refresh(document)
   indicator:set_property("margin-bottom", tostring(ui.setting("save_indicator.lift") or 0) .. "px")
   local text = ui.setting("save_indicator.text") or SavingText
   document:get("label"):set_text(t(text))
-  document
-    :get("figure")
-    :set_class(
-      "hidden",
-      ui.setting("save_indicator.figure") ~= true or (text ~= SavingText and text ~= LoadingText)
-    )
+  document:get("figure"):set_class(
+    "hidden",
+    ui.setting("save_indicator.figure") ~= true or (text ~= SavingText and text ~= LoadingText)
+  )
 end
 
 function on_show(document)

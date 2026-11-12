@@ -1,7 +1,7 @@
 # Screens of the `new` skin the player reported broken: pause main (first icon focused?), the
 # PLAYER page (must be classic native, not modern), the ITEMS/bag screen (arrows must not hop
-# tabs), and the DIGIMON screen (must not carry a stray tab). Runs without --ui-skin original so
-# it exercises the new skin. How to run: see route-skin-original.yaml's header.
+# tabs), and the partner screen (must not carry a stray tab). A manual preview, out of the gate's
+# route-*.yaml glob: run it with --ui-skin new, as route-preview-new.yaml's header shows.
 name: preview-new-screens
 device: keyboard
 main_menu: true
@@ -34,16 +34,16 @@ steps:
   - screenshot: bag-after-right
   - tap: {key: left_ctrl}
   - wait: {seconds: 0.6}
-  # DIGIMON (partner) page: no stray tab, and the Evoluciones shortcut folder tab.
+  # Partner page: no stray tab, and the Evoluciones shortcut folder tab.
   - menu_select: open-partner
   - wait: {shown: partner_menu, seconds: 0.8}
-  - screenshot: digimon-page
-  # Evoluciones: the Digimon window's tab (skin-declared partner-evolutions) takes the player to
+  - screenshot: partner-page
+  # Evoluciones: the partner window's tab (skin-declared partner-evolutions) takes the player to
   # the tree over the pause menu. Clicked, as the tab answers pointer and the arrows walk the bag.
   - click: {element: partner_menu#tab-evolutions}
   - wait: {shown: pause_menu, seconds: 0.8}
   - screenshot: evolutions-tree
-  # Ctrl from the tree goes back to the Digimon window, not to the field nor to the hub.
+  # Ctrl from the tree goes back to the partner window, not to the field nor to the hub.
   - tap: {key: left_ctrl}
   - wait: {shown: partner_menu, seconds: 0.8}
-  - screenshot: digimon-return
+  - screenshot: partner-return

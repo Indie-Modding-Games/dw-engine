@@ -82,7 +82,7 @@ local function in_battle()
   return ui.setting("partner_menu.context") == "battle"
 end
 
--- A compact partner menu (one "Digimon" page that also shows the techniques, no tab row, and the
+-- A compact partner menu (one "Partner" page that also shows the techniques, no tab row, and the
 -- only control being Back) is declared by the ACTIVE SKIN through `document_classes` on #scrim
 -- (`partner-compact`), so the game keys off that class and never off a skin id
 -- (docs/architecture/ui.md#aspectos: a skin changes the look, not the behaviour).
@@ -293,16 +293,19 @@ local function draw_status(document)
     words[#words + 1] = word
   end
   document:get("status-life-label"):set_text(words[2] or "")
-  -- HP and MP show the current amount as a proportion of the current maximum.
+  -- HP and MP: the numbers, now and at most, and a bar of the maximum (game_menu.c:
+  -- renderDigimonStatsView). A skin may declare partner-pool-current on #scrim to fill the bar
+  -- with the current amount over the maximum instead.
   local pool_now = { number("partner.hp"), number("partner.mp") }
+  local pool_current = document:get("scrim"):has_class("partner-pool-current")
   for index = 0, pool_bars - 1 do
     draw_bar(document, "pool-" .. index, "partner.pool", index)
     local maximum = number("partner.pool." .. index .. ".value")
-    local current = pool_now[index + 1]
-    document:get("pool-" .. index .. "-fill"):set_property(
-      "width",
-      percent(current, 0, maximum) .. "%"
-    )
+    if pool_current then
+      document
+        :get("pool-" .. index .. "-fill")
+        :set_property("width", percent(pool_now[index + 1], 0, maximum) .. "%")
+    end
     document:get("pool-" .. index):set_text(
       original and tostring(pool_now[index + 1]) or (pool_now[index + 1] .. " / " .. maximum)
     )
@@ -419,13 +422,8 @@ local function draw_tech_info(document)
       tech_info_focus, tech_info_revision = index, revision
       local base = "partner.technique.choice." .. index .. "."
       local known = setting(base .. "known", false)
-      local available = setting(base .. "available", false)
-
       document:get("tech-info"):set_class("info-right", index % 8 <= 2)
       document:get("tech-info-name"):set_text(known and text(setting(base .. "name", "")) or "")
-
-
-      document:get("tech-message"):set_text("")
       for _, field in ipairs({ "power", "mp", "range", "effect" }) do
         local value = number(base .. field)
         local label = ""
@@ -765,7 +763,7 @@ local function show_page(document, name, focus)
   document:get("scrim"):set_class("large-bag", number("bag.slot.count") > 10)
   draw(document)
   local default_focus = first_entry[name]
-  -- In the compact merged Digimon screen the tab row is empty (status/tech/items/care all hidden);
+  -- In the compact merged partner screen the tab row is empty (status/tech/items/care all hidden);
   -- focus the visible, interactive Change button so the arrows have a real entry point.
   if compact_menu(document) and default_focus == "tab-status" then
     default_focus = "tech-change"
@@ -791,17 +789,21 @@ end
 
 local function draw_navigation(document)
   local compact = compact_menu(document)
-  document:get("tab-status-label"):set_text(t(compact and "partner_menu.nav.digimon" or "partner_menu.tab.status"))
-  -- The compact window names its bag tab "Bolsa", as the Digimon one names its status tab; the
+  document
+    :get("tab-status-label")
+    :set_text(t(compact and "partner_menu.nav.partner" or "partner_menu.tab.status"))
+  -- The compact window names its bag tab "Bolsa", as the partner one names its status tab; the
   -- classic skins keep the key's original word. Keyed off the compact class, never off a skin id.
-  document:get("tab-items"):set_text(t(compact and "partner_menu.nav.bolsa" or "partner_menu.tab.items"))
+  document
+    :get("tab-items")
+    :set_text(t(compact and "partner_menu.nav.bolsa" or "partner_menu.tab.items"))
   -- The chip beside the Evoluciones tab carries the device's own sign: E, or the pad's shoulder.
   if compact and evolutions_tab(document) then
     document:get("tabs-evolutions-key"):set_prompt("tab_next")
   end
 end
 
--- The Digimon window's Evoluciones tab (hidden by ui/common/base.rcss until a skin declares
+-- The partner window's Evoluciones tab (hidden by ui/common/base.rcss until a skin declares
 -- partner-evolutions on #scrim): the evolution tree lives in the pause menu's player page, so the
 -- game takes the way in (apps/game/src/game.cpp: open_evolutions) and the menu's own Cancel
 -- (pause_menu/logic.lua: back) brings the player back here. In battle the tab never answers.
@@ -947,7 +949,7 @@ function close_menu(document, after)
   local function leave()
     ui.hide(document_name)
     -- The partner menu is a child of the pause menu in the field whenever the skin declares it
-    -- (the compact "Digimon" screen, and the original look); closing it returns there. In battle it
+    -- (the compact "Partner" screen, and the original look); closing it returns there. In battle it
     -- returns to the fight, never to a pause menu.
     if (compact_menu(document) or ui.setting("ui_skin") == "original") and not in_battle() then
       ui.show("pause_menu", true)
@@ -979,7 +981,9 @@ local function back(document)
     local index = moving
     moving = nil
     focus_slot(document, index)
-  elseif compact_menu(document) and (current == "status" or current == "items" or current == "care") then
+  elseif
+    compact_menu(document) and (current == "status" or current == "items" or current == "care")
+  then
     -- No tab row: Cancel always closes the menu (focusing a hidden #close would never land).
     close_menu(document)
   elseif ui.setting("ui_skin") == "original" or in_battle() then
@@ -1153,7 +1157,7 @@ function on_action(document, action)
     end
     return true
   end
-  -- Q/E (the pad's R/L) walk the window's folder tabs as the pause menu's pages do: on the Digimon
+  -- Q/E (the pad's R/L) walk the window's folder tabs as the pause menu's pages do: on the partner
   -- window E steps onto the Evoluciones shortcut, the same answer a click gives. The bag has no
   -- other tab, and an open box keeps its hold on the input.
   if (action == "tab_next" or action == "tab_previous") and current == "status" and box == nil then
@@ -1201,7 +1205,9 @@ function on_action(document, action)
       if action == "confirm" then
         close_or_finish_tech_edit(document)
         return true
-      elseif (action == "left" or action == "up" or action == "down") and tech_info_focus ~= nil then
+      elseif
+        (action == "left" or action == "up" or action == "down") and tech_info_focus ~= nil
+      then
         document:get("tech-choice-" .. tech_info_focus):focus()
         return true
       end
@@ -1260,7 +1266,12 @@ function on_action(document, action)
   -- The modern look's tabs: left and right on a tab open the page of the next one, as the original
   -- look's status and tech pages do, and the focus stays on the tabs. Right from the last page's
   -- tab goes on to Back, and left from Back opens the last page again.
-  if (action == "left" or action == "right") and not original_skin() and not compact_menu(document) and not in_battle() then
+  if
+    (action == "left" or action == "right")
+    and not original_skin()
+    and not compact_menu(document)
+    and not in_battle()
+  then
     local step = action == "left" and -1 or 1
     local at = document:get("close"):has_focus() and #pages + 1 or nil
     for index, page in ipairs(pages) do

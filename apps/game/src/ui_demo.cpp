@@ -623,19 +623,20 @@ int runUiDemo(const UiDemoOptions& options) {
       .hotReload = true,
       .clock = [&platform] { return platform->nowSeconds(); },
       .scripts = {},
-      .cursor = [&platform](std::optional<ui::UiCursor> cursor) {
-        if (!cursor) {
-          platform->clearColorCursor();
-          return;
-        }
-        if (auto set = platform->setColorCursor(
-                std::span<const std::byte>{cursor->image.pixels},
-                static_cast<int>(cursor->image.width), static_cast<int>(cursor->image.height),
-                static_cast<int>(cursor->hotX), static_cast<int>(cursor->hotY));
-            !set) {
-          core::logWarning("ui demo skin cursor: {}", set.error().message);
-        }
-      },
+      .cursor =
+          [&platform](std::optional<ui::UiCursor> cursor) {
+            if (!cursor) {
+              platform->clearColorCursor();
+              return;
+            }
+            if (auto set = platform->setColorCursor(
+                    std::span<const std::byte>{cursor->image.pixels},
+                    static_cast<int>(cursor->image.width), static_cast<int>(cursor->image.height),
+                    static_cast<int>(cursor->hotX), static_cast<int>(cursor->hotY));
+                !set) {
+              core::logWarning("ui demo skin cursor: {}", set.error().message);
+            }
+          },
   });
   if (!ui) {
     core::logError("{}", ui.error().message);
