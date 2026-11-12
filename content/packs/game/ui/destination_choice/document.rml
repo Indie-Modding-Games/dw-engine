@@ -9,14 +9,14 @@
 	<div id="scrim">
 		<div id="panel">
 			<h1 id="title" text-key="exploration.title"></h1>
-			<button id="place-1" class="place" onclick="choose(1)"></button>
-			<button id="place-2" class="place" onclick="choose(2)"></button>
-			<button id="place-3" class="place" onclick="choose(3)"></button>
-			<button id="place-4" class="place" onclick="choose(4)"></button>
-			<button id="place-5" class="place" onclick="choose(5)"></button>
-			<button id="place-6" class="place" onclick="choose(6)"></button>
-			<button id="place-7" class="place" onclick="choose(7)"></button>
-			<button id="place-8" class="place" onclick="choose(8)"></button>
+			<button id="place-1" class="place" onclick="choose(1)"><span id="place-1-name"></span><span id="place-1-story" class="story-mark"></span></button>
+			<button id="place-2" class="place" onclick="choose(2)"><span id="place-2-name"></span><span id="place-2-story" class="story-mark"></span></button>
+			<button id="place-3" class="place" onclick="choose(3)"><span id="place-3-name"></span><span id="place-3-story" class="story-mark"></span></button>
+			<button id="place-4" class="place" onclick="choose(4)"><span id="place-4-name"></span><span id="place-4-story" class="story-mark"></span></button>
+			<button id="place-5" class="place" onclick="choose(5)"><span id="place-5-name"></span><span id="place-5-story" class="story-mark"></span></button>
+			<button id="place-6" class="place" onclick="choose(6)"><span id="place-6-name"></span><span id="place-6-story" class="story-mark"></span></button>
+			<button id="place-7" class="place" onclick="choose(7)"><span id="place-7-name"></span><span id="place-7-story" class="story-mark"></span></button>
+			<button id="place-8" class="place" onclick="choose(8)"><span id="place-8-name"></span><span id="place-8-story" class="story-mark"></span></button>
 			<p id="page"></p>
 			<button id="previous" class="page-turn" onclick="turn(document, -1)" text-key="exploration.previous"></button>
 			<button id="next" class="page-turn" onclick="turn(document, 1)" text-key="exploration.next"></button>

@@ -7,6 +7,8 @@
 #include <dwe/input/keys.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/ui/ui.hpp>
+#include <dwe/ui/ui_addon.hpp>
+#include <dwe/ui/ui_contract.hpp>
 
 #include <doctest/doctest.h>
 
@@ -21,6 +23,9 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <ranges>
+#include <regex>
+#include <set>
 #include <span>
 #include <string>
 #include <string_view>
@@ -1336,13 +1341,15 @@ TEST_CASE("the HUD's menu button asks the game to open the menu and names the ke
 
 namespace {
 
-// One field bar of the hud.* contract (docs/architecture/ui.md#estado-del-campo).
+// One field bar of the hud.* contract (docs/architecture/ui.md#estado-del-campo), with its mood as
+// the game publishes it (packages/screens: meterMoodOf): low below the middle of its range.
 void setFieldMeter(Ui& ui, int index, double value, double minimum, double maximum) {
   const std::string base = "hud.meter." + std::to_string(index) + ".";
   ui.setSetting(base + "value", value);
   ui.setSetting(base + "min", minimum);
   ui.setSetting(base + "max", maximum);
   ui.setSetting(base + "two_tone", true);
+  ui.setSetting(base + "mood", std::string{value < (minimum + maximum) / 2 ? "low" : "high"});
 }
 
 void bumpFieldRevision(Ui& ui) {
@@ -1425,21 +1432,14 @@ TEST_CASE(
   CHECK(ui->styleProperty("hud", "field-meter-1-high", "width") == "0%");
 }
 
-TEST_CASE("a field bar with pips fills in whole pips of the original's 25, rounding down") {
-  // The shared document with the bars marked as a skin marks them
-  // (docs/architecture/ui.md#estado-del-campo).
-  std::ifstream stream{std::filesystem::path{DWE_GAME_PACK} / "ui/hud/document.rml",
-                       std::ios::binary};
-  std::string document{std::istreambuf_iterator<char>{stream}, std::istreambuf_iterator<char>{}};
-  for (const std::string_view bar : {"field-meter-0-bar", "field-meter-1-bar"}) {
-    const std::string plain = std::format(R"(class="bar" id="{}")", bar);
-    const std::size_t at = document.find(plain);
-    REQUIRE(at != std::string::npos);
-    document.replace(at, plain.size(), std::format(R"(class="bar pips" id="{}")", bar));
-  }
+TEST_CASE("a field bar laid out in pips fills in whole pips of the original's 25, rounding down") {
+  // A skin that lays the bars out as the original does (skin.yaml layout: hud: bars: pips;
+  // docs/architecture/ui.md#estado-del-campo).
   Content content;
-  content.add("ui/hud/document.rml", document);
+  content.add("ui/skins/stepped/skin.yaml", "id: stepped\nname: ui_skin.stepped\nextends: modern\n"
+                                            "layout:\n  hud: {bars: pips}\n");
   auto ui = createUi(content.mount());
+  useSkin(*ui, "stepped");
   REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
   ui->show("hud");
   // Happiness 30: the upper half's 25 pips are 4 points each, so 7 of them (28 %); -97 is no pip of
@@ -1458,19 +1458,23 @@ TEST_CASE("a field bar with pips fills in whole pips of the original's 25, round
   CHECK(ui->styleProperty("hud", "field-meter-0-high", "width") == "0%");
 }
 
-TEST_CASE("the field clock is at night before 6:00 and from 17:00") {
+TEST_CASE("the field clock shows the night and the part of the day the game publishes") {
   Content content;
   auto ui = createUi(content.mount());
   REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
   ui->show("hud");
-  // clock.c: renderGameClock draws the moon with HOUR < 6 or HOUR >= 17.
-  for (const auto& [hour, night] :
-       {std::pair{0.0, true}, std::pair{5.0, true}, std::pair{6.0, false}, std::pair{16.0, false},
-        std::pair{17.0, true}, std::pair{23.0, true}}) {
+  // The game decides them (packages/screens: isNightHour, dayPhaseOf); the HUD only draws them.
+  for (const auto& [hour, phase] :
+       {std::pair{0.0, "night"}, std::pair{6.0, "morning"}, std::pair{9.0, "day"},
+        std::pair{15.0, "late"}, std::pair{17.0, "night"}}) {
     CAPTURE(hour);
+    const bool night = std::string_view{phase} == "night";
     ui->setSetting("hud.clock.hour", hour);
+    ui->setSetting("hud.clock.night", night);
+    ui->setSetting("hud.clock.phase", std::string{phase});
     bumpFieldRevision(*ui);
     CHECK(ui->elementHasClass("hud", "field-clock", "night") == night);
+    CHECK(ui->elementHasClass("hud", "minimap-phase", std::string{"phase-"} + phase));
   }
 }
 
@@ -2637,6 +2641,365 @@ TEST_CASE("without the extracted bitmap font, original look text keeps the moder
   ui->setTextFont(TextFont::Original);
   ui->update();
   CHECK(widthOf(*ui, "bitmap") == doctest::Approx(modern));
+}
+
+TEST_CASE("the UI API's adapters load before any document, only from the engine's own packs") {
+  Content content;
+  content.add("ui/api/zz_probe.lua", "probe = { answer = function() return 42 end }");
+  content.addToMod("ui/api/zz_modded.lua", "modded = true");
+  content.add("ui/asks/document.rml",
+              "<rml><head><script>function ask() ui.send(tostring(probe.answer()) .. "
+              "tostring(modded)) end</script></head><body/></rml>");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("asks", idOf("ui/asks/document")));
+  REQUIRE(ui->callScript("asks", "ask"));
+  CHECK(commandNames(*ui) == std::vector<std::string>{"42nil"});
+}
+
+TEST_CASE("a document's hooks get the events a setting fires, while they are on") {
+  Content content;
+  content.add("ui/api/zz_probe.lua", "event_source('probe.value', 'probe.changed')");
+  content.add("ui/hooked/document.rml", R"rml(<rml><head><script>
+function got(event, document)
+  ui.send("got", event.name .. "|" .. event.value .. "|" .. math.floor(event.version) .. "|"
+    .. tostring(document ~= nil))
+end
+hooks.on("probe.changed", got)
+hooks.on("probe.changed", got)
+function stop() hooks.off("probe.changed", got) end
+function flood()
+  local failed = 0
+  for _ = 1, 70 do
+    if not pcall(hooks.on, "probe.flood", function() end) then failed = failed + 1 end
+  end
+  ui.send("failed", tostring(failed))
+end
+</script></head><body/></rml>)rml");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("hooked", idOf("ui/hooked/document")));
+  // A hidden document hears its events too, and a handler registered twice runs once.
+  ui->setSetting("probe.value", std::string{"x"});
+  auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].name == "got");
+  CHECK(commands[0].value == UiValue{std::string{"probe.value|x|1|true"}});
+  // A setting no event comes from fires nothing.
+  ui->setSetting("probe.other", std::string{"y"});
+  CHECK(ui->takeCommands().empty());
+
+  REQUIRE(ui->callScript("hooked", "stop"));
+  ui->setSetting("probe.value", std::string{"z"});
+  CHECK(ui->takeCommands().empty());
+
+  // A document keeps at most 64 handlers: with none left, 64 of 70 register.
+  REQUIRE(ui->callScript("hooked", "flood"));
+  commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].value == UiValue{std::string{"6"}});
+}
+
+TEST_CASE("the game fires a UI API event straight to the documents' hooks") {
+  Content content;
+  content.add("ui/hooked/document.rml",
+              "<rml><head><script>hooks.on('probe.fired', function(event) "
+              "ui.send('fired', event.item) end)</script></head><body/></rml>");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("hooked", idOf("ui/hooked/document")));
+  UiArguments table;
+  table.emplace("item", UiValue{std::string{"key"}});
+  CHECK(ui->fireEvent("probe.fired", table) == 1);
+  const auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].value == UiValue{std::string{"key"}});
+  CHECK(ui->fireEvent("probe.unheard", table) == 0);
+}
+
+TEST_CASE("a document reports a state the game reads when it needs it, the latest value only") {
+  Content content;
+  content.add("ui/reporting/document.rml",
+              "<rml><head><script>function on_show(document) "
+              "ui.report('probe.portrait', true) ui.report('probe.medal', 3) "
+              "ui.report('probe.medal', 4) end "
+              "function on_hide(document) ui.report('probe.portrait', false) end"
+              "</script></head><body/></rml>");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("reporting", idOf("ui/reporting/document")));
+  CHECK(ui->reported("probe.portrait") == UiValue{});
+  ui->show("reporting");
+  CHECK(ui->reported("probe.portrait") == UiValue{true});
+  CHECK(ui->reported("probe.medal") == UiValue{4.0});
+  // A report is no command: the game's queue stays empty.
+  CHECK(ui->takeCommands().empty());
+  ui->hide("reporting");
+  CHECK(ui->reported("probe.portrait") == UiValue{false});
+}
+
+TEST_CASE("the game asks for a screen and the active UI decides which document shows it") {
+  Content content;
+  content.add("ui/menu/document.rml", "<rml><head/><body id='body'>default</body></rml>");
+  content.add("ui/addons/big/menu/document.rml", "<rml><head/><body id='body'>big</body></rml>");
+  content.add("ui/caller/document.rml",
+              "<rml><head><script>function on_show(document) ui.show('menu') end"
+              "</script></head><body/></rml>");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("menu", idOf("ui/menu/document")));
+  REQUIRE(ui->loadDocument("big.menu", idOf("ui/addons/big/menu/document")));
+  REQUIRE(ui->loadDocument("caller", idOf("ui/caller/document")));
+  // The default UI: the screen is the document of its name.
+  CHECK(ui->screenDocument("menu") == "menu");
+  ui->requestScreen("menu");
+  CHECK(ui->isScreenOpen("menu"));
+  CHECK(ui->elementText("menu", "body") == "default");
+  ui->closeScreen("menu");
+  // An addon's UI: the same screen shows its document, by the game's call and by a script's.
+  ui->mapScreen("menu", "big.menu");
+  CHECK(ui->screenDocument("menu") == "big.menu");
+  ui->show("caller");
+  CHECK(ui->isVisible("big.menu"));
+  CHECK(ui->isScreenOpen("menu"));
+  CHECK(ui->elementText("menu", "body") == "big");
+  ui->closeScreen("menu");
+  CHECK_FALSE(ui->isVisible("big.menu"));
+  // The menu key opens the screen's document too.
+  ui->setMenuDocument("menu");
+  ui->requestScreen("menu", true);
+  CHECK(ui->capturesInput());
+  ui->closeScreen("menu");
+  CHECK_FALSE(ui->capturesInput());
+  ui->clearScreenMap();
+  CHECK(ui->screenDocument("menu") == "menu");
+}
+
+// A UI addon in a mod pack: an addon.yaml and the document of the screen it covers, which sends
+// one command the game takes and one it does not.
+void addUiAddon(Content& content, std::string_view uiApi = "0.9") {
+  content.addToMod("ui/addons/big/addon.yaml",
+                   std::format("id: big\nname: Big\nversion: 1.0.0\nui_api: \"{}\"\ntype: ui\n"
+                               "screens:\n  menu: menu/document\n",
+                               uiApi));
+  content.addToMod("ui/addons/big/menu/document.rml",
+                   "<rml><head><script>function on_show(document) "
+                   "local sent = pcall(ui.send, 'quit_game') "
+                   "ui.send('opened', sent and 'sent' or 'refused') end"
+                   "</script></head><body id='body'>big</body></rml>");
+}
+
+TEST_CASE("a UI addon shows the screens it covers, its code sandboxed, and the default UI comes "
+          "back") {
+  Content content;
+  content.add("ui/menu/document.rml", "<rml><head/><body id='body'>default</body></rml>");
+  content.add("ui/hud/document.rml", "<rml><head/><body id='body'>hud</body></rml>");
+  addUiAddon(content);
+  const VirtualFileSystem& files = content.mount();
+  auto ui = createUi(files);
+  REQUIRE(ui->loadDocument("menu", idOf("ui/menu/document")));
+  REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+  const auto found = findUiAddons(files);
+  REQUIRE(found.size() == 1);
+  REQUIRE(found[0].addon);
+  ui->setAddonCommandFilter([](std::string_view name) { return name == "opened"; });
+  ui->requestScreen("menu");
+  REQUIRE(ui->useUiAddon(*found[0].addon));
+  CHECK(ui->uiAddon() == "big");
+  CHECK(ui->screenDocument("menu") == "big.menu");
+  CHECK(ui->screenDocument("hud") == "hud");
+  // The screen shown as it switched shows again, in the addon's document; its code ran sandboxed:
+  // the game took the command it lets through, and the other one raised an error.
+  CHECK(ui->isScreenOpen("menu"));
+  CHECK(ui->elementText("menu", "body") == "big");
+  const auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].name == "opened");
+  CHECK(commands[0].value == UiValue{std::string{"refused"}});
+  ui->useDefaultUi();
+  CHECK(ui->uiAddon().empty());
+  CHECK(ui->screenDocument("menu") == "menu");
+  CHECK(ui->isScreenOpen("menu"));
+  CHECK(ui->elementText("menu", "body") == "default");
+  CHECK_FALSE(ui->isVisible("big.menu"));
+  // The UI goes with the addon on.
+  REQUIRE(ui->useUiAddon(*found[0].addon));
+}
+
+TEST_CASE("a UI addon that does not suit the game changes nothing and says why") {
+  Content content;
+  content.add("ui/menu/document.rml", "<rml><head/><body id='body'>default</body></rml>");
+  addUiAddon(content, ">=0.1 <0.2");
+  const VirtualFileSystem& files = content.mount();
+  auto ui = createUi(files);
+  REQUIRE(ui->loadDocument("menu", idOf("ui/menu/document")));
+  const auto found = findUiAddons(files);
+  REQUIRE(found.size() == 1);
+  REQUIRE(found[0].addon);
+  // Another UI API.
+  auto used = ui->useUiAddon(*found[0].addon);
+  REQUIRE_FALSE(used);
+  CHECK(used.error().message.find(uiApiVersionText(CurrentUiApiVersion)) != std::string::npos);
+  // A screen the game does not have.
+  UiAddon addon = *found[0].addon;
+  addon.uiApi = UiApiRange{.minimum = CurrentUiApiVersion,
+                           .below = UiApiVersion{.major = CurrentUiApiVersion.major + 1}};
+  addon.screens.emplace("nowhere", idOf("ui/addons/big/menu/document"));
+  used = ui->useUiAddon(addon);
+  REQUIRE_FALSE(used);
+  CHECK(used.error().message.find("nowhere") != std::string::npos);
+  // A document that cannot load.
+  addon.screens.erase("nowhere");
+  addon.screens.insert_or_assign("menu", idOf("ui/addons/big/missing/document"));
+  used = ui->useUiAddon(addon);
+  REQUIRE_FALSE(used);
+  // A plugin is no whole UI.
+  addon.type = UiAddonType::Plugin;
+  CHECK_FALSE(ui->useUiAddon(addon));
+  CHECK(ui->uiAddon().empty());
+  CHECK(ui->screenDocument("menu") == "menu");
+  ui->requestScreen("menu");
+  CHECK(ui->elementText("menu", "body") == "default");
+}
+
+TEST_CASE("a plugin shows over whichever UI is on, without the focus, until it is removed") {
+  Content content;
+  content.add("ui/menu/document.rml",
+              "<rml><head/><body id='body'><button id='first'>default</button></body></rml>");
+  addUiAddon(content);
+  content.addToMod("ui/addons/clock/addon.yaml",
+                   "id: clock\nname: Clock\nversion: 1.0.0\nui_api: \"0.11\"\ntype: plugin\n"
+                   "documents:\n  - corner/document\n");
+  content.addToMod("ui/addons/clock/corner/document.rml",
+                   "<rml><head><script>function on_show(document) "
+                   "local sent = pcall(ui.send, 'quit_game') "
+                   "ui.send('opened', sent and 'sent' or 'refused') end"
+                   "</script></head><body id='body'>clock</body></rml>");
+  const VirtualFileSystem& files = content.mount();
+  auto ui = createUi(files);
+  REQUIRE(ui->loadDocument("menu", idOf("ui/menu/document")));
+  const auto found = findUiAddons(files);
+  REQUIRE(found.size() == 2);
+  REQUIRE(found[0].addon);
+  REQUIRE(found[1].addon);
+  const UiAddon& big = *found[0].addon;
+  const UiAddon& clock = *found[1].addon;
+  ui->setAddonCommandFilter([](std::string_view name) { return name == "opened"; });
+  ui->requestScreen("menu", true);
+  const std::string focused = ui->focusedElementId("menu");
+  REQUIRE(ui->addUiPlugin(clock));
+  CHECK(ui->uiPlugins() == std::vector<std::string>{"clock"});
+  CHECK(ui->isVisible("clock.corner.document"));
+  CHECK(ui->elementText("clock.corner.document", "body") == "clock");
+  // The menu keeps the focus and the input.
+  CHECK(ui->focusedElementId("menu") == focused);
+  CHECK(ui->capturesInput());
+  // Its code runs sandboxed, as a UI addon's.
+  const auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].value == UiValue{std::string{"refused"}});
+  ui->closeScreen("menu");
+  // Once on, it is on: a second time fails; a whole UI is no plugin, nor a plugin a whole UI.
+  CHECK_FALSE(ui->addUiPlugin(clock));
+  CHECK_FALSE(ui->addUiPlugin(big));
+  CHECK_FALSE(ui->useUiAddon(clock));
+  // It stays over another UI and back.
+  REQUIRE(ui->useUiAddon(big));
+  CHECK(ui->isVisible("clock.corner.document"));
+  ui->useDefaultUi();
+  CHECK(ui->isVisible("clock.corner.document"));
+  ui->removeUiPlugins();
+  CHECK(ui->uiPlugins().empty());
+  CHECK_FALSE(ui->isVisible("clock.corner.document"));
+  // And it goes on again.
+  REQUIRE(ui->addUiPlugin(clock));
+  CHECK(ui->isVisible("clock.corner.document"));
+}
+
+TEST_CASE("the packs' UI addons are found by folder, and one whose id is not its folder is not "
+          "used") {
+  Content content;
+  addUiAddon(content);
+  content.addToMod("ui/addons/other/addon.yaml",
+                   "id: elsewhere\nname: Other\nversion: 1.0.0\nui_api: \"0.9\"\ntype: plugin\n"
+                   "documents:\n  - clock/document\n");
+  content.addToMod("ui/addons/broken/addon.yaml", "id: broken\n");
+  const auto found = findUiAddons(content.mount());
+  REQUIRE(found.size() == 3);
+  CHECK(found[0].folder == "ui/addons/big");
+  CHECK(found[0].addon);
+  CHECK(found[1].folder == "ui/addons/broken");
+  CHECK_FALSE(found[1].addon);
+  CHECK(found[2].folder == "ui/addons/other");
+  REQUIRE_FALSE(found[2].addon);
+  CHECK(found[2].addon.error().message.find("elsewhere") != std::string::npos);
+}
+
+TEST_CASE("the engine's Lua API is the one its contract declares, no more and no less") {
+  std::set<std::string> declared;
+  for (const UiContractEntry& entry : nativeUiContract()) {
+    CHECK(entry.kind == UiContractKind::Function);
+    declared.emplace(entry.name);
+  }
+  std::set<std::string> bound;
+  // What a shown document's environment holds: the ui table, hooks, t and document_name.
+  Content content;
+  content.add("ui/names/document.rml",
+              "<rml><head><script>function on_show() local names = {} "
+              "for name in pairs(ui) do names[#names + 1] = 'ui.' .. name end "
+              "for name in pairs(hooks) do names[#names + 1] = 'hooks.' .. name end "
+              "if type(t) == 'function' then names[#names + 1] = 't' end "
+              "if type(document_name) == 'string' then names[#names + 1] = 'document_name' end "
+              "ui.send('names', table.concat(names, ' ')) end</script></head><body/></rml>");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("names", idOf("ui/names/document")));
+  ui->show("names");
+  const auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  const auto* names = std::get_if<std::string>(&commands[0].value);
+  REQUIRE(names != nullptr);
+  for (const auto part : std::views::split(*names, ' ')) {
+    bound.emplace(std::string_view{part});
+  }
+  // The methods and properties of elements and events (scripting.cpp's usertypes) and the
+  // handlers the UI calls (ui.cpp).
+  const auto readSource = [](std::string_view file) {
+    std::ifstream stream{std::filesystem::path{DWE_UI_SOURCE_DIR} / file, std::ios::binary};
+    REQUIRE(stream.good());
+    return std::string{std::istreambuf_iterator<char>{stream}, std::istreambuf_iterator<char>{}};
+  };
+  const std::string scripting = readSource("scripting.cpp");
+  const std::regex usertype{R"re(new_usertype<\w+>\(\s*"(\w+)")re"};
+  const std::regex member{R"re((?:,|\n)[ \t]*"([a-z_]+)",\s*(?:\[|sol::(readonly_property)?))re"};
+  std::vector<std::pair<std::size_t, std::string>> types;
+  for (std::sregex_iterator found{scripting.begin(), scripting.end(), usertype};
+       found != std::sregex_iterator{}; ++found) {
+    types.emplace_back(static_cast<std::size_t>(found->position()), (*found)[1].str());
+  }
+  REQUIRE(types.size() == 2);
+  const std::size_t typesEnd = scripting.find("create_named_table", types.back().first);
+  REQUIRE(typesEnd != std::string::npos);
+  for (std::size_t type = 0; type < types.size(); ++type) {
+    const std::size_t from = types[type].first;
+    const std::size_t to = type + 1 < types.size() ? types[type + 1].first : typesEnd;
+    const std::string body = scripting.substr(from, to - from);
+    for (std::sregex_iterator found{body.begin(), body.end(), member,
+                                    std::regex_constants::match_default};
+         found != std::sregex_iterator{}; ++found) {
+      const bool property = (*found)[2].matched;
+      bound.emplace(
+          std::format("{}{}{}", types[type].second, property ? "." : ":", (*found)[1].str()));
+    }
+  }
+  const std::string uiSource = readSource("ui.cpp");
+  const std::regex handler{R"re("(on_[a-z_]+)")re"};
+  for (std::sregex_iterator found{uiSource.begin(), uiSource.end(), handler};
+       found != std::sregex_iterator{}; ++found) {
+    bound.emplace((*found)[1].str());
+  }
+  for (const std::string& name : bound) {
+    CHECK_MESSAGE(declared.contains(name),
+                  std::format("{} exists but nativeUiContract() does not declare it", name));
+  }
+  for (const std::string& name : declared) {
+    CHECK_MESSAGE(bound.contains(name),
+                  std::format("nativeUiContract() declares {}, which does not exist", name));
+  }
 }
 
 } // namespace dwe::ui

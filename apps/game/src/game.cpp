@@ -26,6 +26,7 @@
 #include <dwe/script/script_vm.hpp>
 #include <dwe/session/session_sound.hpp>
 #include <dwe/ui/ui.hpp>
+#include <dwe/ui/ui_addon.hpp>
 #include <dwe/ui/ui_renderer.hpp>
 
 #include <SDL3/SDL_events.h>
@@ -68,7 +69,6 @@
 #include "first_run_screen.hpp"
 #include "frame_stats.hpp"
 #include "game_audio.hpp"
-#include "game_documents.hpp"
 #include "graphics_options.hpp"
 #include "gym_batch.hpp"
 #include "hd_scenery_setting.hpp"
@@ -76,6 +76,7 @@
 #include "map_debug_overlay.hpp"
 #include "medal_figure.hpp"
 #include "medal_sheet.hpp"
+#include "menu_portraits.hpp"
 #include "messages.hpp"
 #include "minimap_setting.hpp"
 #include "movie_screen.hpp"
@@ -94,6 +95,7 @@
 #include "text_font_setting.hpp"
 #include "title_options.hpp"
 #include "title_screen.hpp"
+#include "ui_addon_setting.hpp"
 #include "ui_skin_setting.hpp"
 #include "user_settings.hpp"
 #include "versus_screen.hpp"
@@ -216,13 +218,15 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, r
   return true;
 }
 
-core::Result<void> loadDocuments(ui::Ui& ui) {
-  for (const auto& [name, id] : GameDocuments) {
-    auto asset = assets::AssetId::parse(id);
-    if (!asset) {
-      return std::unexpected{asset.error()};
-    }
-    if (auto loaded = ui.loadDocument(name, *asset); !loaded) {
+// Loads the default UI: the document of every screen its ui/addon.yaml names, under the screen's
+// name (ui/dev_assets, which DevAssetsBanner loads itself, is not a screen).
+core::Result<void> loadDocuments(ui::Ui& ui, const assets::VirtualFileSystem& files) {
+  auto defaultUi = ui::readUiAddon(files, ui::DefaultUiFolder);
+  if (!defaultUi) {
+    return std::unexpected{defaultUi.error()};
+  }
+  for (const auto& [screen, document] : defaultUi->screens) {
+    if (auto loaded = ui.loadDocument(screen, document); !loaded) {
       return loaded;
     }
   }
@@ -577,7 +581,10 @@ int runGame(const Options& requested) {
     core::logError("{}", renderer.error().message);
     return EXIT_FAILURE;
   }
-  auto content = mountGameContent(options);
+  // Safe mode (docs/modding/interfaces.md): --safe-ui, or Shift held as the game starts, keeps the
+  // game's own UI and leaves the player's addons folder out.
+  options.safeUi = options.safeUi || platform::shiftHeld();
+  auto content = mountGameContent(options, !options.safeUi);
   if (!content) {
     core::logError("game: {}", content.error().message);
     return EXIT_FAILURE;
@@ -760,12 +767,15 @@ int runGame(const Options& requested) {
   // The skin goes on before the documents load, so they are styled once.
   applyStartUiSkin(**ui, startUiSkin(options.uiSkin, userSettings.uiSkin));
   UiSkinChanger uiSkinChanger{**ui, userSettings, settingsFile};
-  if (auto loaded = loadDocuments(**ui); !loaded) {
+  if (auto loaded = loadDocuments(**ui, files); !loaded) {
     core::logError("game: {}", loaded.error().message);
     return EXIT_FAILURE;
   }
   loadPlayerChart(**ui, files);
   loadPlayerMedalsAndCards(**ui, files);
+  UiAddonChanger uiAddons{**ui, userSettings, settingsFile, ui::findUiAddons(files),
+                          options.safeUi};
+  uiAddons.start();
   LanguageChanger languageChanger{*texts, **ui, userSettings, settingsFile};
   MenuSounds menuSounds{sound, files};
   PauseBox pauseBox;
@@ -871,6 +881,11 @@ int runGame(const Options& requested) {
   (*scripts)->bindCommand(BattleSpeedSetting, [&consoleBattleSpeed](std::string_view value) {
     consoleBattleSpeed = std::string{value};
   });
+  // The console's and the routes' ui_addon("<id>"), the options' UI addon row
+  // (ui_addon_setting.hpp), applied between frames in the same way.
+  std::optional<std::string> consoleUiAddon;
+  (*scripts)->bindCommand(
+      UiAddonSetting, [&consoleUiAddon](std::string_view id) { consoleUiAddon = std::string{id}; });
   // The console's ui_skin("<id>"), the menus' skin setting, applied between frames in the same way.
   std::optional<std::string> consoleUiSkin;
   (*scripts)->bindCommand(ui::UiSkinSetting, [&consoleUiSkin](std::string_view id) {
@@ -1688,6 +1703,9 @@ int runGame(const Options& requested) {
     }
 
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
+      if (uiAddons.handle(command)) {
+        continue;
+      }
       // The options the documents apply by themselves: shop extras, art fixes, widescreen pictures
       // (the movies read it as each starts), developer tools.
       if (changeUiToggle(command, **ui, userSettings, settingsFile)) {
@@ -1909,6 +1927,10 @@ int runGame(const Options& requested) {
     if (consoleUiSkin) {
       uiSkinChanger.change(*std::exchange(consoleUiSkin, std::nullopt));
     }
+    if (consoleUiAddon) {
+      uiAddons.handle(ui::UiCommand{.name = std::string{UiAddonSetting},
+                                    .value = *std::exchange(consoleUiAddon, std::nullopt)});
+    }
     if (consoleTextFont) {
       textFontChanger.change(*std::exchange(consoleTextFont, std::nullopt));
     }
@@ -1941,6 +1963,7 @@ int runGame(const Options& requested) {
       }
     }
     bugReporter.update(**ui, frameSeconds);
+    uiAddons.update(frameSeconds);
     // From the last frame's layout: the minimap hides under any window over it.
     minimapCover.update(**ui, frameSeconds);
     if (options.tuning) {
@@ -2032,9 +2055,10 @@ int runGame(const Options& requested) {
         }
       }
     }
+    // The portraits the menus ask for (menu_portraits.hpp).
+    const MenuPortraits menuPortraits = MenuPortraits::read(**ui, MedalCount);
     if (!showingMovie && portrait && flow.playing() != nullptr &&
-        (*ui)->isVisible("partner_menu") &&
-        !(*ui)->elementHasClass("partner_menu", "page-status", "hidden")) {
+        (*ui)->isVisible("partner_menu") && menuPortraits.partner) {
       // An addition: the model plays its idle, or the gesture of its first need, as on the field.
       const auto animation = game::partner::statusAnimation(flow.playing()->partnerConditions());
       const auto clip =
@@ -2042,24 +2066,14 @@ int runGame(const Options& requested) {
       (*portrait)->play(clip.value_or(0));
       portraitScenes.push_back((*portrait)->scene(frameSeconds));
     }
-    if (!showingMovie && playerPortrait && (*ui)->isVisible("pause_menu") &&
-        (*ui)->elementHasClass("pause_menu", "panel", "on-player") &&
-        !(*ui)->elementHasClass("pause_menu", "panel", "player-tools-open") &&
-        !(*ui)->elementHasClass("pause_menu", "panel", "player-chart"))
+    if (!showingMovie && playerPortrait && (*ui)->isVisible("pause_menu") && menuPortraits.player)
       portraitScenes.push_back((*playerPortrait)->scene());
     // game_menu.c: renderMedalView draws the medal (renderDigiviceMedals) while the selected medal
-    // is held: the page marks that cell `showing`.
+    // is held: the page says which (pause_menu.medal).
     if (!showingMovie && medalFigure && (*medalFigure)->loaded() &&
-        (*ui)->isVisible("pause_menu") &&
-        (*ui)->elementHasClass("pause_menu", "panel", "player-medals") &&
-        !(*ui)->elementHasClass("pause_menu", "panel", "player-tools-open")) {
-      for (std::int32_t medal = 0; medal < MedalCount; ++medal) {
-        if ((*ui)->elementHasClass("pause_menu", std::format("medal-{}", medal), "showing")) {
-          (*medalFigure)->show(medal);
-          portraitScenes.push_back((*medalFigure)->scene(frameSeconds));
-          break;
-        }
-      }
+        (*ui)->isVisible("pause_menu") && menuPortraits.medal) {
+      (*medalFigure)->show(*menuPortraits.medal);
+      portraitScenes.push_back((*medalFigure)->scene(frameSeconds));
     }
     if (!showingMovie && saveFigure && (*saveFigure)->loaded() &&
         (loadingIndicator || (flow.playing() != nullptr && flow.playing()->saveIndicatorShown())))

@@ -1,6 +1,8 @@
 # El juego de las piedras (kar.c): la pregunta de jugar o las reglas (KAR_tickYesNoPrompt).
 prompt.play: "Jugar"
 prompt.rules: "Cómo se juega"
+# El cartel de empezar (KAR_renderReadyPrompt), para los aspectos que lo escriben en vez de su dibujo.
+ready: "¡A JUGAR!"
 # La barra de reclutamiento (la opción shop_job_bar): los puntos ({player} los del jugador, {opponent} los del rival,
 # {name} su nombre), las tiradas que quedan, cómo va la partida ({gap} puntos por detrás) y la puntuación perfecta
 # mientras se pueda alcanzar.

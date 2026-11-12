@@ -4,8 +4,9 @@
 #slot-1 { nav-up: #back; }
 #back { nav-down: #slot-1; }
 #full { margin: 0 0 12dp 18dp; }
-/* The original look's rows (the skin's slots-original layout): logic.lua moves the cursor and stops it at the ends, as
-   the original's, so the wrapping moves above stay out. */
-#panel.slots-original button { nav: none; }
+/* The original's layout of the rows (skin.yaml layout: save_slots: menu: original, the body's class
+   layout-menu-original): logic.lua moves the cursor and stops it at the ends, as the original's, so the wrapping moves
+   above stay out. */
+.layout-menu-original #panel button { nav: none; }
 /* The title picture filling the window (../common/title_picture.lua): only a skin that draws it shows it. */
 #picture, .picture-fade { display: none; pointer-events: none; }

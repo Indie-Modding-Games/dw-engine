@@ -47,6 +47,10 @@
 	font-size: 22dp;
 }
 
+#command-cost {
+	display: none;
+}
+
 /* The fighters' panels: name, status, then HP and MP bars with four-digit values. */
 .fighter {
 	width: 330dp;

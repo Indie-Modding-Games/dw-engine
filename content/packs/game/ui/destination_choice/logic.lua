@@ -25,15 +25,16 @@ local function place_of(slot)
   return nil
 end
 
+-- A place's label, and apart the story mark when the story goes on there (empty otherwise).
 local function label_of(place)
   local key = ui.setting("exploration_place_name." .. place) or ""
   local map = ui.setting("exploration_place_map." .. place) or ""
   local name = key ~= "" and t(key) or map
-  local text = t("exploration.place", { name = name, map = map })
+  local story = ""
   if place == math.floor(ui.setting("exploration_story") or -1) then
-    text = text .. " · " .. t("exploration.story")
+    story = " · " .. t("exploration.story")
   end
-  return text
+  return t("exploration.place", { name = name, map = map }), story
 end
 
 local function refresh(document)
@@ -42,7 +43,9 @@ local function refresh(document)
     local entry = document:get("place-" .. slot)
     entry:set_class("hidden", place == nil)
     if place ~= nil then
-      entry:set_text(label_of(place))
+      local label, story = label_of(place)
+      document:get("place-" .. slot .. "-name"):set_text(label)
+      document:get("place-" .. slot .. "-story"):set_text(story)
     end
   end
   local several = pages() > 1

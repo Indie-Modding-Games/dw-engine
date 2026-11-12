@@ -21,3 +21,5 @@ shop_job.joins: "¡Se une a la ciudad!"
 # El minimapa redondo (una mejora del motor): la marca del norte en su aro y el día bajo él, junto a la hora (clock.time).
 minimap.north: "N"
 minimap.day: "Día {day}"
+# La palabra de la caja de vidas (al perder una), para los aspectos que la escriben en vez del dibujo del original.
+lives_box.label: "Vidas"

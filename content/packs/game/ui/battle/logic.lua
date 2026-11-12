@@ -69,6 +69,11 @@ local function entry(list, index, field)
   return list .. "." .. index .. "." .. field
 end
 
+-- The strip's commands, no more than the document has (command-0..10).
+local function command_count()
+  return math.min(number("battle.menu.count"), max_commands)
+end
+
 -- Elements looked up once: a lookup walks the whole document, and the opening moves over a hundred
 -- banner pieces each frame.
 local elements = {}
@@ -142,6 +147,8 @@ local function draw_fighter(document, index)
   lookup(document, prefix .. "-hp"):set_text(tostring(hp))
   lookup(document, prefix .. "-hp-fill"):set_property("width", percent(hp, max_hp) .. "%")
   if index == 0 then
+    -- The partner's HP row gets the class low under a fifth of its HP, for a skin that warns.
+    set_class(document, prefix .. "-hp-row", "low", max_hp > 0 and hp * 5 < max_hp)
     -- The partner's HUD shows HP and MP all the time (battle_hud.c: BTL_renderPartnerStatusBars),
     -- its values with BTL_renderNumber(0, 4, x0 + 0x49, y0 - 3, value, 0xa).
     hud_digits.draw(document, prefix .. "-hp-d-", hp, set_class)
@@ -195,7 +202,7 @@ local function frame_kind(index, count)
 end
 
 local function draw_commands(document)
-  local count = number("battle.menu.count")
+  local count = command_count()
   for index = 0, max_commands - 1 do
     local button = lookup(document, "command-" .. index)
     local id = "command-" .. index
@@ -224,7 +231,7 @@ end
 -- when the hovered icon shows its second frame (packages/screens: command_menu.hpp).
 local function draw_cursor(document)
   local cursor = lookup(document, "command-cursor")
-  local count = number("battle.menu.count")
+  local count = command_count()
   local blink_on = setting("battle.menu.blink", false)
   local hovered = nil
   for index = 0, count - 1 do
@@ -244,19 +251,32 @@ local function draw_cursor(document)
   end
 end
 
--- The name of the focused command under the row, as the original names the hovered icon.
+-- The name of the focused command under the row, as the original names the hovered icon, and a
+-- technique's MP cost after it (a skin that shows it styles #command-cost). The name gets the class
+-- short while the command cannot be given now: the finisher before its gauge is full, a technique
+-- the partner has not the MP for.
 local function draw_command_name(document)
-  local name = ""
-  for index = 0, number("battle.menu.count") - 1 do
+  local name, cost, short = "", 0, false
+  for index = 0, command_count() - 1 do
     if lookup(document, "command-" .. index):has_focus() then
       name = text(setting(entry("battle.menu", index, "label"), ""))
+      cost = number(entry("battle.menu", index, "mp_cost"))
+      short = not command_available(index)
+        or (cost > 0 and number(entry("battle.fighter", 0, "mp")) < cost)
     end
   end
-  lookup(document, "command-name"):set_text(name)
+  lookup(document, "command-label"):set_text(name)
+  local cost_text = cost > 0 and t("battle.mp_cost", { mp = cost }) or ""
+  if applied["command-cost text"] ~= cost_text then
+    applied["command-cost text"] = cost_text
+    lookup(document, "command-cost"):set_text(cost_text)
+  end
+  set_class(document, "command-cost", "hidden", cost_text == "")
+  set_class(document, "command-name", "short", short)
 end
 
 local function focus_command(document)
-  local count = number("battle.menu.count")
+  local count = command_count()
   if lookup(document, "open-bag"):has_focus() then
     return
   end
@@ -683,7 +703,7 @@ end
 local function draw_prompts(document)
   lookup(document, "prompt-confirm"):set_prompt("confirm")
   lookup(document, "prompt-charge"):set_prompt("confirm")
-  lookup(document, "prompt-cancel"):set_prompt("cancel")
+  lookup(document, "prompt-menu"):set_prompt("menu")
   -- The original's square button calls the finisher (battle_tick.c: handleCommands); here it is
   -- the `extra` action, so the gauge's box shows its key or button: the square itself on the
   -- original's pad. A key's name of more than two letters does not fit where the square was: a
@@ -1084,6 +1104,14 @@ end
 -- and the name stay where they are. Only the original look slides it.
 local function draw_motion(document)
   if ui.layout("menu") ~= "original" then
+    -- A skin switched live away from the original look drops a slide caught halfway.
+    if strip_moved then
+      strip_moved = false
+      for index = 0, max_commands - 1 do
+        set_property(document, "command-frame-" .. index, "transform", "none")
+        set_property(document, "command-" .. index, "transform", "none")
+      end
+    end
     return
   end
   -- Before the banner and once it has gone back up the strip waits above the screen, at its first
@@ -1123,6 +1151,11 @@ end
 -- leave as it goes back up. The game moves them (packages/screens: partner_bars.hpp).
 local function draw_bars(document)
   if ui.layout("menu") ~= "original" then
+    if bars_moved then
+      bars_moved = false
+      set_property(document, "fighter-0-hp-row", "transform", "none")
+      set_property(document, "fighter-0-mp-row", "transform", "none")
+    end
     return
   end
   local hp = math.floor(setting("battle.bars.hp_x", bars_x))

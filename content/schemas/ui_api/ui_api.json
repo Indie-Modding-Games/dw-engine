@@ -1,6 +1,62 @@
 {
-  "version": "0.4.0",
+  "version": "0.13.0",
   "screens": {
+    "ui": [
+      {"name": "ui.setting", "kind": "function", "value": "any", "summary": "El valor de un ajuste que el juego publica; nil si no lo publica.", "signature": "(name: string): any"},
+      {"name": "ui.send", "kind": "function", "value": "none", "summary": "Manda un comando al juego, que lo atiende una vez.", "signature": "(name: string, value: any?)"},
+      {"name": "ui.report", "kind": "function", "value": "none", "summary": "Cuenta un estado al juego, que lee el último valor cuando lo necesita.", "signature": "(name: string, value: any?)"},
+      {"name": "ui.show", "kind": "function", "value": "none", "summary": "Enseña una pantalla; modal toma la navegación. args llega a su on_show.", "signature": "(screen: string, modal: boolean?, args: table?)"},
+      {"name": "ui.hide", "kind": "function", "value": "none", "summary": "Esconde una pantalla.", "signature": "(screen: string)"},
+      {"name": "ui.is_visible", "kind": "function", "value": "boolean", "summary": "Si una pantalla se ve.", "signature": "(screen: string): boolean"},
+      {"name": "ui.layout", "kind": "function", "value": "text", "summary": "El valor que el aspecto da a una opción de disposición en esta pantalla; nil sin él.", "signature": "(option: string): string?"},
+      {"name": "ui.prompt", "kind": "function", "value": "text", "summary": "El nombre del control que hace una acción en el dispositivo en uso.", "signature": "(action: string): string"},
+      {"name": "ui.device", "kind": "function", "value": "text", "summary": "El dispositivo en uso: keyboard_mouse o gamepad.", "signature": "(): string"},
+      {"name": "ui.gamepad_family", "kind": "function", "value": "text", "summary": "La familia del mando en uso.", "signature": "(): string"},
+      {"name": "ui.languages", "kind": "function", "value": "table", "summary": "Los idiomas que el jugador puede elegir.", "signature": "(): string[]"},
+      {"name": "ui.skins", "kind": "function", "value": "table", "summary": "Los aspectos que el jugador puede elegir.", "signature": "(): string[]"},
+      {"name": "ui.skin_name_key", "kind": "function", "value": "text", "summary": "La clave de texto del nombre de un aspecto; vacía si no existe.", "signature": "(id: string): string"},
+      {"name": "ui.cue", "kind": "function", "value": "boolean", "summary": "Suena box_open, box_close o confirm; false con otro nombre.", "signature": "(name: string): boolean"},
+      {"name": "t", "kind": "function", "value": "text", "summary": "El texto de una clave en el idioma del jugador, con sus huecos rellenos.", "signature": "(key: string, args: table?): string"},
+      {"name": "document_name", "kind": "function", "value": "text", "summary": "El nombre con el que la interfaz cargó el documento."}
+    ],
+    "hooks": [
+      {"name": "hooks.on", "kind": "function", "value": "none", "summary": "Llama a handler cada vez que llega el evento; hasta 64 por documento.", "signature": "(event: string, handler: fun(event: table, document: Element))"},
+      {"name": "hooks.off", "kind": "function", "value": "none", "summary": "Deja de llamar a handler con ese evento.", "signature": "(event: string, handler: function)"}
+    ],
+    "document": [
+      {"name": "on_show", "kind": "function", "value": "none", "summary": "Lo llama la interfaz al enseñar el documento.", "signature": "(document: Element, args: table)"},
+      {"name": "on_hide", "kind": "function", "value": "none", "summary": "Lo llama la interfaz al esconder el documento.", "signature": "(document: Element)"},
+      {"name": "on_setting", "kind": "function", "value": "none", "summary": "Lo llama la interfaz cuando cambia un ajuste, con el documento a la vista.", "signature": "(document: Element, name: string)"},
+      {"name": "on_action", "kind": "function", "value": "boolean", "summary": "Una acción de navegación (confirm, cancel, menu...); true si el documento la atiende.", "signature": "(document: Element, action: string): boolean?"},
+      {"name": "on_tick", "kind": "function", "value": "none", "summary": "Cada frame con el documento a la vista.", "signature": "(document: Element, seconds: number)"},
+      {"name": "on_device", "kind": "function", "value": "none", "summary": "Cambió el dispositivo en uso.", "signature": "(document: Element)"},
+      {"name": "on_language", "kind": "function", "value": "none", "summary": "Cambió el idioma.", "signature": "(document: Element)"}
+    ],
+    "Element": [
+      {"name": "Element:valid", "kind": "function", "value": "boolean", "summary": "Si el elemento existe.", "signature": "(): boolean"},
+      {"name": "Element.id", "kind": "function", "value": "text", "summary": "Su id (campo de solo lectura)."},
+      {"name": "Element:get", "kind": "function", "value": "table", "summary": "El elemento con ese id dentro de este.", "signature": "(id: string): Element"},
+      {"name": "Element:set_text", "kind": "function", "value": "none", "summary": "Pone su texto.", "signature": "(text: string)"},
+      {"name": "Element:set_prompt", "kind": "function", "value": "none", "summary": "Lo convierte en el dibujo del control que hace la acción.", "signature": "(action: string, icon: boolean?)"},
+      {"name": "Element:set_prompt_text", "kind": "function", "value": "none", "summary": "Pone un texto con sus marcas {prompt:acción} dibujadas como controles.", "signature": "(text: string, original: boolean?)"},
+      {"name": "Element:text", "kind": "function", "value": "text", "summary": "Su contenido.", "signature": "(): string"},
+      {"name": "Element:set_class", "kind": "function", "value": "none", "summary": "Pone o quita una clase.", "signature": "(name: string, on: boolean)"},
+      {"name": "Element:has_class", "kind": "function", "value": "boolean", "summary": "Si tiene una clase.", "signature": "(name: string): boolean"},
+      {"name": "Element:attribute", "kind": "function", "value": "text", "summary": "El valor de un atributo; nil sin él.", "signature": "(name: string): string?"},
+      {"name": "Element:set_attribute", "kind": "function", "value": "none", "summary": "Pone un atributo; no uno de evento (on...).", "signature": "(name: string, value: string)"},
+      {"name": "Element:set_property", "kind": "function", "value": "none", "summary": "Pone una propiedad de estilo.", "signature": "(name: string, value: string)"},
+      {"name": "Element:remove_property", "kind": "function", "value": "none", "summary": "Quita una propiedad que puso set_property.", "signature": "(name: string)"},
+      {"name": "Element:rect", "kind": "function", "value": "number", "summary": "Su caja en dp desde la esquina de la ventana: izquierda, arriba, ancho y alto.", "signature": "(): number, number, number, number"},
+      {"name": "Element:focus", "kind": "function", "value": "none", "summary": "Le da el foco.", "signature": "()"},
+      {"name": "Element:has_focus", "kind": "function", "value": "boolean", "summary": "Si tiene el foco.", "signature": "(): boolean"},
+      {"name": "Element:click", "kind": "function", "value": "none", "summary": "Lo pulsa.", "signature": "()"},
+      {"name": "Element:scroll_to_top", "kind": "function", "value": "none", "summary": "Vuelve una lista arriba.", "signature": "()"}
+    ],
+    "Event": [
+      {"name": "Event.type", "kind": "function", "value": "text", "summary": "El tipo del evento (campo de solo lectura)."},
+      {"name": "Event.wheel", "kind": "function", "value": "number", "summary": "Cuánto giró la rueda, positivo hacia abajo (campo de solo lectura)."},
+      {"name": "Event:stop", "kind": "function", "value": "none", "summary": "No deja que el evento siga subiendo.", "signature": "()"}
+    ],
     "hud": [
       {"name": "hud.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambia el estado del campo de abajo."},
       {"name": "hud.shown", "kind": "setting", "value": "boolean", "summary": "Si se ven los paneles de estado del campo."},
@@ -8,10 +64,13 @@
       {"name": "hud.clock.day", "kind": "setting", "value": "number", "summary": "El día del año del reloj del juego."},
       {"name": "hud.clock.hour", "kind": "setting", "value": "number", "summary": "La hora del reloj del juego, de 0 a 23."},
       {"name": "hud.clock.minute", "kind": "setting", "value": "number", "summary": "El minuto del reloj del juego."},
+      {"name": "hud.clock.night", "kind": "setting", "value": "boolean", "summary": "Si es de noche: antes de las 6:00 y desde las 17:00, cuando el reloj del original enseña la luna."},
+      {"name": "hud.clock.phase", "kind": "setting", "value": "text", "summary": "La parte del día: morning, day, late o night (la regla del juego, no la de la interfaz)."},
       {"name": "hud.meter.<n>.label", "kind": "setting", "value": "text", "summary": "La clave de texto de un medidor del compañero (felicidad, disciplina)."},
       {"name": "hud.meter.<n>.value", "kind": "setting", "value": "number", "summary": "El valor de un medidor del compañero."},
       {"name": "hud.meter.<n>.min", "kind": "setting", "value": "number", "summary": "El valor más bajo de un medidor del compañero."},
       {"name": "hud.meter.<n>.max", "kind": "setting", "value": "number", "summary": "El valor más alto de un medidor del compañero."},
+      {"name": "hud.meter.<n>.mood", "kind": "setting", "value": "text", "summary": "low por debajo de la mitad de su rango, donde el original cambia el icono de la barra; si no, high."},
       {"name": "hud.meter.<n>.two_tone", "kind": "setting", "value": "boolean", "summary": "Si el medidor se llena hacia los dos lados desde su centro."},
       {"name": "hud.pool.<n>.label", "kind": "setting", "value": "text", "summary": "La clave de texto de los PV o los PM."},
       {"name": "hud.pool.<n>.value", "kind": "setting", "value": "number", "summary": "Los PV o los PM del compañero ahora."},
@@ -36,6 +95,7 @@
       {"name": "shop_job.better_pay", "kind": "setting", "value": "number", "summary": "La cuenta a partir de la cual la paga es mejor."},
       {"name": "shop_job.customers", "kind": "setting", "value": "number", "summary": "Los clientes atendidos."},
       {"name": "shop_job.customer", "kind": "setting", "value": "number", "summary": "El cliente que se está atendiendo."},
+      {"name": "shop_job.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambia algo del trabajo en la tienda."},
       {"name": "minimap", "kind": "option", "value": "text", "summary": "El minimapa: on u off."},
       {"name": "minimap_size", "kind": "option", "value": "text", "summary": "El tamaño del minimapa."},
       {"name": "digital_time", "kind": "option", "value": "boolean", "summary": "La hora en cifras."},
@@ -93,6 +153,8 @@
       {"name": "evoreq.partner.<id>", "kind": "setting", "value": "text", "summary": "Cómo cumple el compañero los requisitos de una evolución."},
       {"name": "evoreq.req.<id>", "kind": "setting", "value": "text", "summary": "Los requisitos de evolución de una especie, como rangos."},
       {"name": "open_partner_menu", "kind": "command", "value": "text", "summary": "Abre el menú del compañero en una página: items o status."},
+      {"name": "pause_menu.portrait", "kind": "report", "value": "boolean", "summary": "Si el juego dibuja en 3D al jugador sobre su página (una mejora)."},
+      {"name": "pause_menu.medal", "kind": "report", "value": "number", "summary": "La medalla que el juego dibuja en 3D sobre la página de medallas, de 0 a 14; -1 ninguna."},
       {"name": "praise", "kind": "command", "value": "none", "summary": "Felicita al compañero."},
       {"name": "scold", "kind": "command", "value": "none", "summary": "Regaña al compañero."},
       {"name": "sleep", "kind": "command", "value": "none", "summary": "Cierra el menú y manda al compañero a dormir."},
@@ -106,6 +168,13 @@
       {"name": "vsync", "kind": "option", "value": "boolean", "summary": "Sincronización vertical."},
       {"name": "ui_scale", "kind": "option", "value": "number", "summary": "La escala de la interfaz; 1 es la normal."},
       {"name": "ui_skin", "kind": "option", "value": "text", "summary": "El aspecto de la interfaz."},
+      {"name": "ui_addon", "kind": "option", "value": "text", "summary": "La interfaz entera: default (la del juego) o el id de una de ui/addons; se aplica al cerrar el menú."},
+      {"name": "ui_addons", "kind": "setting", "value": "text", "summary": "Las interfaces que se ofrecen, ids separados por espacios, default la primera."},
+      {"name": "ui_addon.name.<id>", "kind": "setting", "value": "text", "summary": "El nombre de una interfaz, de su addon.yaml."},
+      {"name": "ui_addon.safe", "kind": "setting", "value": "boolean", "summary": "Modo seguro (--safe-ui o Mayús al arrancar): solo la interfaz del juego."},
+      {"name": "ui_plugins", "kind": "option", "value": "boolean", "summary": "Los complementos de ui/addons (addons de tipo plugin), todos encendidos o apagados."},
+      {"name": "ui_plugins.count", "kind": "setting", "value": "number", "summary": "Cuántos complementos se ofrecen."},
+      {"name": "ui_addon_reload", "kind": "command", "value": "none", "summary": "Vuelve a leer de sus archivos la interfaz puesta y los complementos."},
       {"name": "text_font", "kind": "option", "value": "text", "summary": "La fuente del texto con aspecto original: modern u original."},
       {"name": "walk_control", "kind": "option", "value": "text", "summary": "Caminar con el teclado o con el ratón: keys o mouse."},
       {"name": "autosave", "kind": "option", "value": "boolean", "summary": "Guardado automático."},
@@ -164,6 +233,53 @@
       {"name": "dev_tools", "kind": "option", "value": "boolean", "summary": "Herramientas de desarrollo."},
       {"name": "entry", "kind": "argument", "value": "text", "summary": "Al volver del menú del compañero: items o partner, la entrada que recibe el foco en la maquetación original."}
     ],
+    "ui_notice": [
+      {"name": "ui_addon.problem", "kind": "setting", "value": "text", "summary": "Por qué no se pudo usar la interfaz elegida; vacío si se pudo."}
+    ],
+    "field_item_notice": [
+      {"name": "field_item_notice.text", "kind": "setting", "value": "text", "summary": "La clave del texto del aviso de un objeto en el suelo o en un cofre."},
+      {"name": "field_item_notice.item", "kind": "setting", "value": "text", "summary": "La clave del nombre del objeto; vacía para un cofre vacío."},
+      {"name": "field_item_notice.answer", "kind": "setting", "value": "text", "summary": "Si el aviso acepta confirmar ahora: sound, quiet (sin sonido) o vacío (todavía no)."},
+      {"name": "field_item_notice.phase", "kind": "setting", "value": "text", "summary": "open mientras se ve; closing cuando el jugador ya contestó y el aviso se cierra."},
+      {"name": "field.player_x", "kind": "setting", "value": "number", "summary": "Dónde está el jugador en la pantalla, de 0 a 1 en horizontal (el cuadro crece desde ahí)."},
+      {"name": "field.player_y", "kind": "setting", "value": "number", "summary": "Dónde está el jugador en la pantalla, de 0 a 1 en vertical."},
+      {"name": "field_item_notice_ok", "kind": "command", "value": "none", "summary": "El jugador confirma el aviso."},
+      {"name": "field_item_notice_closed", "kind": "command", "value": "none", "summary": "El cuadro terminó de cerrarse (tras closing)."}
+    ],
+    "award_notice": [
+      {"name": "award_notice.lines", "kind": "setting", "value": "text", "summary": "La clave del texto del aviso de un premio o de un cambio del compañero."},
+      {"name": "award_notice.color", "kind": "setting", "value": "number", "summary": "El color del nombre, como número."},
+      {"name": "award_notice.name", "kind": "setting", "value": "text", "summary": "El nombre que muestra el aviso."},
+      {"name": "award_notice_ok", "kind": "command", "value": "none", "summary": "El jugador confirma el aviso."}
+    ],
+    "fishing_notice": [
+      {"name": "fishing_notice.text", "kind": "setting", "value": "text", "summary": "La clave del texto de lo pescado."},
+      {"name": "fishing_notice.item", "kind": "setting", "value": "text", "summary": "La clave del nombre de lo pescado."},
+      {"name": "fishing_notice.size", "kind": "setting", "value": "number", "summary": "El tamaño de lo pescado."},
+      {"name": "fishing_notice_ok", "kind": "command", "value": "none", "summary": "El jugador confirma el aviso."}
+    ],
+    "save_indicator": [
+      {"name": "save_indicator.text", "kind": "setting", "value": "text", "summary": "Lo que dice el indicador de guardado (guardando, cargando...)."},
+      {"name": "save_indicator.opacity", "kind": "setting", "value": "number", "summary": "Cuánto se ve el indicador, de 0 a 1."},
+      {"name": "save_indicator.lift", "kind": "setting", "value": "number", "summary": "Cuánto ha subido el indicador al aparecer, de 0 a 1."},
+      {"name": "save_indicator.figure", "kind": "setting", "value": "boolean", "summary": "Si el indicador enseña la figura que gira."}
+    ],
+    "money_box": [
+      {"name": "money_box.money", "kind": "setting", "value": "number", "summary": "El dinero del jugador."},
+      {"name": "money_box.bits_key", "kind": "setting", "value": "text", "summary": "La clave del nombre de la moneda."},
+      {"name": "money_box.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambian los valores de arriba: el cuadro se vuelve a dibujar."}
+    ],
+    "lives_box": [
+      {"name": "lives_box.outline", "kind": "setting", "value": "boolean", "summary": "Si el cuadro de vidas está abriéndose o cerrándose (solo el borde)."},
+      {"name": "lives_box.grow", "kind": "setting", "value": "number", "summary": "Cuánto ha crecido el borde, de 0 a 1."},
+      {"name": "lives_box.anchor_x", "kind": "setting", "value": "number", "summary": "Desde dónde crece, de 0 a 1 en horizontal (el compañero)."},
+      {"name": "lives_box.anchor_y", "kind": "setting", "value": "number", "summary": "Desde dónde crece, de 0 a 1 en vertical."},
+      {"name": "lives_box.lives", "kind": "setting", "value": "number", "summary": "Las vidas que le quedan al compañero."},
+      {"name": "lives_box.slots", "kind": "setting", "value": "number", "summary": "Cuántas vidas caben en el cuadro."},
+      {"name": "lives_box.lost_full", "kind": "setting", "value": "boolean", "summary": "Si la vida que se pierde aún se dibuja llena (parpadea al perderse)."},
+      {"name": "lives_box.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambian los valores de arriba."},
+      {"name": "screen_fade", "kind": "setting", "value": "number", "summary": "Cuánto oscurece el fundido de pantalla, de 0 a 1."}
+    ],
     "partner_menu": [
       {"name": "partner_menu.start_page", "kind": "setting", "value": "text", "summary": "La página con la que se abre el menú: items o status."},
       {"name": "partner_menu.context", "kind": "setting", "value": "text", "summary": "battle para la bolsa del jugador en combate; vacío en el campo."},
@@ -207,6 +323,7 @@
       {"name": "bag.result_item", "kind": "setting", "value": "text", "summary": "El objeto de la última acción de la bolsa."},
       {"name": "field.player_x", "kind": "setting", "value": "number", "summary": "La posición del jugador en la ventana en porcentaje, desde donde crecen las cajas."},
       {"name": "field.player_y", "kind": "setting", "value": "number", "summary": "La posición del jugador en la ventana en porcentaje, desde donde crecen las cajas."},
+      {"name": "partner_menu.portrait", "kind": "report", "value": "boolean", "summary": "Si el juego dibuja en 3D al compañero sobre la página de estado (una mejora)."},
       {"name": "bag_use", "kind": "command", "value": "number", "summary": "Usa el objeto de un hueco."},
       {"name": "bag_drop", "kind": "command", "value": "number", "summary": "Tira el objeto de un hueco."},
       {"name": "bag_move", "kind": "command", "value": "text", "summary": "Intercambia dos huecos: \"desde hasta\"."},
@@ -223,6 +340,79 @@
       {"name": "ui_skin", "kind": "option", "value": "text", "summary": "El aspecto que se ve; al confirmar una fila, el elegido, que se guarda en los ajustes."},
       {"name": "ui_skin_preview", "kind": "command", "value": "text", "summary": "Pone el aspecto de la fila enfocada sin guardarlo."},
       {"name": "skin_picker_done", "kind": "command", "value": "none", "summary": "El aspecto está elegido: la portada sigue con la caja de idiomas."}
+    ],
+    "clock": [
+      {"name": "clock.now", "kind": "query", "value": "table", "summary": "La hora: year, day, hour, minute, night, phase (morning, day, late, night) y running (si el tiempo del juego corre).", "signature": "(): table"},
+      {"name": "clock.changed", "kind": "event", "value": "table", "summary": "Cambió el estado del campo, la hora incluida.", "source": "hud.revision"}
+    ],
+    "field": [
+      {"name": "field.fade", "kind": "query", "value": "number", "summary": "Cuánto oscurece el fundido del cambio de mapa, de 0 a 1.", "signature": "(): number"},
+      {"name": "field.map_title", "kind": "query", "value": "text", "summary": "La clave de texto del nombre del mapa que se enseña al llegar, o nil.", "signature": "(): string?"},
+      {"name": "field.minimap", "kind": "query", "value": "table", "summary": "El minimapa: shown (la opción y el campo lo dejan), covered (una ventana lo tapa) y size.", "signature": "(): table"},
+      {"name": "field.player", "kind": "query", "value": "table", "summary": "Dónde está el jugador en la ventana: x e y en porcentaje.", "signature": "(): table"},
+      {"name": "field.shop_job", "kind": "query", "value": "table", "summary": "La cuenta del trabajo en la tienda mientras dura (tally, goal, better_pay, customer, customers), o nil.", "signature": "(): table?"},
+      {"name": "field.fade", "kind": "event", "value": "table", "summary": "Cambió el fundido.", "source": "screen_fade"},
+      {"name": "field.map_title", "kind": "event", "value": "table", "summary": "Cambió el nombre del mapa que se enseña.", "source": "map_title_key"},
+      {"name": "field.minimap", "kind": "event", "value": "table", "summary": "Cambió si el minimapa puede verse o si algo lo tapa.", "source": "hud.minimap_allowed hud.minimap_covered battle.active"},
+      {"name": "field.shop_job", "kind": "event", "value": "table", "summary": "Cambió el trabajo en la tienda.", "source": "shop_job.revision"}
+    ],
+    "partner": [
+      {"name": "partner.status", "kind": "query", "value": "table", "summary": "Las barras (meters: id, label_key, value, min, max, two_tone, mood), los PV y PM (pools) y lo que le parece el mapa (area: liked, disliked o nil).", "signature": "(): table"},
+      {"name": "partner.needs", "kind": "query", "value": "table", "summary": "Las necesidades en orden: id, label_key, active y urgency (1 la más urgente; 0 si no la tiene).", "signature": "(): table"},
+      {"name": "partner.bubble", "kind": "query", "value": "table", "summary": "Dónde está su cabeza en la ventana: visible, x, y (porcentaje) y evolving (el cuadro de la burbuja de evolución, o nil).", "signature": "(): table"},
+      {"name": "partner.extras", "kind": "query", "value": "table", "summary": "Errores de cuidado, combates y horas vividas; nil si el jugador tiene apagados los extras del estado.", "signature": "(): table?"},
+      {"name": "partner.praise", "kind": "action", "value": "boolean", "summary": "Pide felicitarlo.", "signature": "(): boolean"},
+      {"name": "partner.scold", "kind": "action", "value": "boolean", "summary": "Pide regañarlo.", "signature": "(): boolean"},
+      {"name": "partner.toggle_technique", "kind": "action", "value": "boolean", "summary": "Pide equipar o quitar la técnica de ese hueco de la especie.", "signature": "(slot: integer): boolean, string?"},
+      {"name": "partner.changed", "kind": "event", "value": "table", "summary": "Cambió algo del compañero; name dice qué ajuste.", "source": "hud.revision partner.revision hud.meter.0.label hud.meter.1.label hud.pool.0.label hud.pool.1.label hud.need.0.label hud.need.1.label hud.need.2.label hud.need.3.label hud.need.4.label hud.need.5.label"},
+      {"name": "partner.bubble_moved", "kind": "event", "value": "table", "summary": "Su cabeza se movió en la ventana.", "source": "hud.partner.revision"}
+    ],
+    "bag": [
+      {"name": "bag.count", "kind": "query", "value": "number", "summary": "Los huecos de la bolsa.", "signature": "(): integer"},
+      {"name": "bag.money", "kind": "query", "value": "number", "summary": "El dinero del jugador.", "signature": "(): integer"},
+      {"name": "bag.field", "kind": "query", "value": "any", "summary": "Un dato de un hueco, o su valor por defecto.", "signature": "(index: integer, name: string): any"},
+      {"name": "bag.slot", "kind": "query", "value": "table", "summary": "Un hueco: empty, name, description, description_species, count, dimmed, usable, discardable, item_color, icon, icon_rect, favorite.", "signature": "(index: integer): table"},
+      {"name": "bag.result", "kind": "query", "value": "table", "summary": "La respuesta a la última acción: key (clave del mensaje) e item; nil antes de ninguna.", "signature": "(): table?"},
+      {"name": "bag.use", "kind": "action", "value": "boolean", "summary": "Pide usar el objeto de un hueco.", "signature": "(index: integer): boolean, string?"},
+      {"name": "bag.drop", "kind": "action", "value": "boolean", "summary": "Pide tirar el objeto de un hueco.", "signature": "(index: integer): boolean, string?"},
+      {"name": "bag.move", "kind": "action", "value": "boolean", "summary": "Pide intercambiar dos huecos.", "signature": "(from: integer, to: integer): boolean, string?"},
+      {"name": "bag.sort", "kind": "action", "value": "boolean", "summary": "Pide ordenar la bolsa en un orden.", "signature": "(order: integer): boolean, string?"},
+      {"name": "bag.changed", "kind": "event", "value": "table", "summary": "Cambió la bolsa.", "source": "bag.revision"},
+      {"name": "bag.result", "kind": "event", "value": "table", "summary": "El juego respondió a una acción de la bolsa.", "source": "bag.result"}
+    ],
+    "player": [
+      {"name": "player.profile", "kind": "query", "value": "table", "summary": "El jugador: name, level, bits, seconds, raised, medals, items, cards.", "signature": "(): table"},
+      {"name": "player.medals", "kind": "query", "value": "table", "summary": "Las medallas que publica el juego (no un número fijo): held y name_key.", "signature": "(): table"},
+      {"name": "player.city", "kind": "query", "value": "table", "summary": "La ciudad: recruited, total y prosperity.", "signature": "(): table"}
+    ],
+    "options": [
+      {"name": "options.list", "kind": "query", "value": "table", "summary": "Las opciones del juego en orden: name, kind (toggle, list, range), label_key, help_key, tab, default, original, values, texts, min, max.", "signature": "(): table"},
+      {"name": "options.get", "kind": "query", "value": "any", "summary": "El valor de una opción ahora (o su valor por defecto); nil si no existe.", "signature": "(name: string): any"},
+      {"name": "options.set", "kind": "action", "value": "boolean", "summary": "Pide dar un valor a una opción; comprueba el tipo y los valores que admite.", "signature": "(name: string, value: any): boolean, string?"},
+      {"name": "options.changed", "kind": "event", "value": "table", "summary": "Cambió una opción; name dice cuál y value su valor.", "source": "@options"}
+    ],
+    "battle": [
+      {"name": "battle.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambia la vista del combate de abajo."},
+      {"name": "battle.menu.count", "kind": "setting", "value": "number", "summary": "Cuántas órdenes tiene la tira."},
+      {"name": "battle.menu.<n>.command", "kind": "setting", "value": "number", "summary": "El número de la orden (1 huir... 8 a 10 las técnicas, 11 el golpe final)."},
+      {"name": "battle.menu.<n>.label", "kind": "setting", "value": "text", "summary": "La clave de texto del nombre de la orden o de la técnica."},
+      {"name": "battle.menu.<n>.icon", "kind": "setting", "value": "text", "summary": "El icono de la orden en las hojas del aspecto; vacío para el golpe final."},
+      {"name": "battle.menu.<n>.available", "kind": "setting", "value": "boolean", "summary": "Si la orden se puede dar ahora."},
+      {"name": "battle.menu.<n>.current", "kind": "setting", "value": "boolean", "summary": "Si es la orden que sigue el compañero ahora."},
+      {"name": "battle.menu.<n>.mp_cost", "kind": "setting", "value": "number", "summary": "Los PM que le cuesta la técnica al compañero ahora; 0 en las demás órdenes."},
+      {"name": "battle.fighter.count", "kind": "setting", "value": "number", "summary": "Cuántos luchadores hay: el compañero (0) y los enemigos."},
+      {"name": "battle.fighter.<n>.hp", "kind": "setting", "value": "number", "summary": "Los PV de un luchador."},
+      {"name": "battle.fighter.<n>.max_hp", "kind": "setting", "value": "number", "summary": "Los PV máximos de un luchador."},
+      {"name": "battle.fighter.<n>.mp", "kind": "setting", "value": "number", "summary": "Los PM de un luchador."},
+      {"name": "battle.fighter.<n>.max_mp", "kind": "setting", "value": "number", "summary": "Los PM máximos de un luchador."},
+      {"name": "battle.fast", "kind": "setting", "value": "boolean", "summary": "Si el combate va al doble de velocidad."},
+      {"name": "battle.hp_bars.always", "kind": "setting", "value": "boolean", "summary": "Si las barras de vida de los enemigos se ven todo el combate."},
+      {"name": "battle_command", "kind": "command", "value": "number", "summary": "Da una orden al compañero (su número, battle.menu.<n>.command)."},
+      {"name": "battle_bag_open", "kind": "command", "value": "none", "summary": "Abre la bolsa del jugador."},
+      {"name": "battle_charge", "kind": "command", "value": "none", "summary": "Una pulsación de la carga del golpe final."},
+      {"name": "battle_close", "kind": "command", "value": "none", "summary": "Cierra la caja del final del combate."},
+      {"name": "battle_end_count", "kind": "command", "value": "none", "summary": "Un paso de la cuenta de los bits del final del combate."},
+      {"name": "battle_end_counted", "kind": "command", "value": "none", "summary": "La cuenta de los bits del final del combate ha terminado."}
     ]
   }
 }

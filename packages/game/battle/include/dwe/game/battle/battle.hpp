@@ -201,6 +201,10 @@ public:
   // Whether the HUD shows a fighter's HP bar: always the partner's, an enemy's for a while after
   // damage (battle_main.c: BTL_renderEnemyHPBars).
   [[nodiscard]] bool hpBarShown(FighterId fighter) const;
+  // The MP the partner pays now for the move in its technique `slot` (battle_main.c:
+  // BTL_setupMoveExecution: the brain's discount and the sick or injured surcharge), or none for an
+  // empty slot.
+  [[nodiscard]] std::optional<std::int32_t> partnerMoveCost(std::size_t slot) const;
 
   // Item effects on the partner (item.c): restore HP and MP, cure its status effects, keep new ones
   // off, revive it after it fell (before the countdown ends).

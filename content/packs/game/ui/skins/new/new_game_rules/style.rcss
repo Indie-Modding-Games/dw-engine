@@ -37,3 +37,8 @@
 #rules-start {
 	margin-top: 20dp;
 }
+
+/* Each rule's value (Sí / No) in gold after its label (.rule .v). */
+.rule-value {
+	color: #efc63c;
+}

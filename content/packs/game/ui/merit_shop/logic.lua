@@ -119,6 +119,8 @@ end
 
 local function refresh(document)
   local phase = ui.setting("merit_shop.phase") or "closed"
+  -- The talk only waits for the player to go on here (common/talk_wait.lua).
+  talk_wait.draw(document, phase == "greeting")
   local list = ui.setting("merit_shop.list") or ""
   local frame = document:get("frame")
   frame:set_class("list-cards", list == "cards")

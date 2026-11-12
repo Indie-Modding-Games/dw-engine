@@ -41,6 +41,7 @@ constexpr std::string_view LabelField = "label";
 constexpr std::string_view AvailableField = "available";
 constexpr std::string_view CurrentField = "current";
 constexpr std::string_view IconField = "icon";
+constexpr std::string_view MpCostField = "mp_cost";
 // BTL_COMMAND_ICON_UVS and BTL_SPECIAL_ICON_UVS: seven icons in each row of BTLCOMND.
 constexpr std::int32_t IconsPerRow = 7;
 constexpr std::string_view PartsField = "parts";
@@ -119,6 +120,7 @@ void addCommand(ScreenSettings& settings, std::size_t index, const CommandEntry&
   add(AvailableField, entry.available);
   add(CurrentField, entry.current);
   add(IconField, entry.icon);
+  add(MpCostField, static_cast<double>(entry.mpCost));
 }
 
 std::string countName(std::string_view list) {
@@ -161,6 +163,21 @@ std::string commandIconOf(battle::Command command, const battle::Fighter& partne
   return std::format("special-{}", std::clamp(moves.at(*move).special, 0, IconsPerRow - 1));
 }
 
+namespace {
+
+// A technique's MP cost to the partner now; the other commands cost nothing.
+std::int32_t techniqueCostOf(const battle::Battle& battle, battle::Command command) {
+  const auto number = static_cast<std::int32_t>(command);
+  constexpr auto FirstTechnique = static_cast<std::int32_t>(battle::Command::Technique1);
+  constexpr auto LastTechnique = static_cast<std::int32_t>(battle::Command::Technique3);
+  if (number < FirstTechnique || number > LastTechnique) {
+    return 0;
+  }
+  return battle.partnerMoveCost(static_cast<std::size_t>(number - FirstTechnique)).value_or(0);
+}
+
+} // namespace
+
 BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names) {
   const battle::BattleState& state = battle.state();
   BattleView view;
@@ -173,7 +190,8 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names) {
                          .labelKey = commandLabelOf(command, partner, names),
                          .available = command != battle::Command::Finisher || gaugeFull(partner),
                          .current = command == state.commands.current,
-                         .icon = commandIconOf(command, partner, battle.moves())});
+                         .icon = commandIconOf(command, partner, battle.moves()),
+                         .mpCost = techniqueCostOf(battle, command)});
   }
   const bool partnerCharging = state.finisher.fighter == battle::PartnerId;
   view.finisher = {.progress = partner.finisherProgress,

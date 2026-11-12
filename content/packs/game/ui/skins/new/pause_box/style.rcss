@@ -1,5 +1,6 @@
 /* The pause box in the new look (concept area A, pause_box: 067-068): the half-filled window with its brackets, the
-   hint under it in a thin window of its own (area A .ohint), centred on the box. */
+   hint under it in a thin window of its own (area A .ohint), centred on the box, wide enough for a pad's longest key
+   name. */
 
 body #box {
 	border: 3dp transparent;
@@ -11,8 +12,9 @@ body #box {
 #hint {
 	left: 50%;
 	right: auto;
-	width: 216dp;
-	margin-left: -110dp;
+	width: 240dp;
+	margin-left: -122dp;
+	white-space: nowrap;
 	padding: 4dp 12dp 4dp 4dp;
 	box-sizing: border-box;
 	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;

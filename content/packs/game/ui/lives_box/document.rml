@@ -9,6 +9,7 @@
 	<div id="box">
 		<div id="lives">
 			<img id="label" src="/texture/etchi/life" rect="48 0 64 24"/>
+			<p id="label-text" text-key="hud.lives_box.label"></p>
 			<img id="slot-0" class="slot" src="/texture/etchi/life" rect="0 0 24 24"/>
 			<img id="slot-1" class="slot" src="/texture/etchi/life" rect="0 0 24 24"/>
 			<img id="slot-2" class="slot" src="/texture/etchi/life" rect="0 0 24 24"/>

@@ -440,4 +440,9 @@ core::Result<std::filesystem::path> userDataFolder(std::string_view organization
   return std::filesystem::path{text};
 }
 
+bool shiftHeld() {
+  SDL_PumpEvents();
+  return (SDL_GetModState() & SDL_KMOD_SHIFT) != 0;
+}
+
 } // namespace dwe::platform

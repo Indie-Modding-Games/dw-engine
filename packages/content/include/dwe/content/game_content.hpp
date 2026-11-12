@@ -4,6 +4,7 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/content/user_ui_addons.hpp>
 #include <dwe/core/error.hpp>
 
 #include <filesystem>
@@ -35,9 +36,11 @@ public:
   // (assets::checkPackApi). A mod that cannot (a broken manifest, a missing dependency, another
   // API) is left out and logged, and the rest still mount. Logs the stack, which packs come from
   // the dev assets and which were left out, the mods left out, and the ids that packs override.
+  // With a user data folder, the UI addons the player copied into its ui/addons/ mount as one more
+  // mod (UserUiAddonsFileSystem).
   static core::Result<std::unique_ptr<GameContent>>
   mount(const std::filesystem::path& content, std::span<const std::filesystem::path> mods,
-        const assets::DevAssetSources& devAssets = {});
+        const assets::DevAssetSources& devAssets = {}, const std::filesystem::path& userData = {});
 
   GameContent(const GameContent&) = delete;
   GameContent& operator=(const GameContent&) = delete;
@@ -67,6 +70,7 @@ private:
   // The VFS reads through the opened archives, which read through the disk: they live as long as
   // it.
   assets::DiskFileSystem disk_;
+  std::unique_ptr<UserUiAddonsFileSystem> userUi_;
   assets::OpenedPacks packs_;
   std::unique_ptr<assets::VirtualFileSystem> files_;
   std::vector<SkippedMod> skippedMods_;

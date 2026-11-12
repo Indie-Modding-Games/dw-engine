@@ -7,6 +7,8 @@
 namespace dwe::ui::messages {
 
 // Lua that documents bring (code_trust.cpp, scripting.cpp).
+inline constexpr std::string_view AddonTemplateInEngineDocument =
+    "{} is an addon's template, read by a document of the engine: its code does not run";
 inline constexpr std::string_view CodeOutsideLoad =
     "an event attribute or inline script outside a document's load does not run: only a document of the base and "
     "remaster layers runs its own code";
@@ -68,6 +70,37 @@ inline constexpr std::string_view PaletteNeedsPng =
 inline constexpr std::string_view NoImageMeta =
     "a palette of {} is asked for, but it has no metadata with palettes";
 inline constexpr std::string_view PaletteOutOfRange = "{} has no palette {}: it has {}";
+
+// A UI addon's addon.yaml (ui_addon.cpp).
+inline constexpr std::string_view UiAddonContext = "addon.yaml";
+inline constexpr std::string_view UiAddonWhat = "a UI addon";
+inline constexpr std::string_view UiAddonDocumentsWhat = "documents";
+inline constexpr std::string_view BadUiAddonId =
+    "must be 1 to 64 lowercase letters, digits and underscores";
+inline constexpr std::string_view BadUiAddonText = "must be 1 to {} characters, on one line";
+inline constexpr std::string_view BadUiAddonType = "must be ui or plugin";
+inline constexpr std::string_view UiAddonScreensNotMapping =
+    "must map each screen to its document (screens: <screen>: <document>)";
+inline constexpr std::string_view UiAddonNeedsScreens = "a ui addon must name its screens";
+inline constexpr std::string_view UiAddonNeedsDocuments = "a plugin must name its documents";
+inline constexpr std::string_view UiAddonWrongPart = "a {} addon has no {}";
+inline constexpr std::string_view UiAddonDocumentOutside =
+    "must stay inside the addon's folder: no leading / and no ..";
+inline constexpr std::string_view BadUiApiRange =
+    "ui_api {} must be a version (0.8) or bounds (>=0.8 <0.12)";
+inline constexpr std::string_view EmptyUiApiRange = "ui_api {} holds no version";
+inline constexpr std::string_view UiAddonIdNotFolder =
+    "the addon's id {} must be the name of its folder, {}";
+inline constexpr std::string_view UiAddonWantsOtherApi =
+    "the addon {} works with the UI API {}, and the game has {}";
+inline constexpr std::string_view UiAddonNotUi = "{} is a plugin, not a whole UI";
+inline constexpr std::string_view UiAddonNotPlugin = "{} is a whole UI, not a plugin";
+inline constexpr std::string_view UiAddonFailed = "the UI addon {} cannot load: {}";
+inline constexpr std::string_view UiAddonOn = "ui: the UI addon {} is on";
+inline constexpr std::string_view UiPluginOn = "ui: the plugin {} is on";
+inline constexpr std::string_view UiPluginAlreadyOn = "the plugin {} is already on";
+inline constexpr std::string_view UiAddonUnknownScreen =
+    "the addon {} shows the screen {}, which the game does not have";
 
 // skin.yaml and ui/ui_skin.yaml (skin.cpp).
 inline constexpr std::string_view SkinContext = "skin";

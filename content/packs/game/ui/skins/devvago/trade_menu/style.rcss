@@ -1,0 +1,44 @@
+/* Item trading: terminal-blue panels with a clear cyan frame and yellow focus. */
+
+body #window, body #talk, body #amount {
+	border: 3dp transparent;
+	background-color: #0b1c2df2;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+body #amount { background-color: #102a40f5; }
+
+.label, .row, #talk, #amount {
+	font-family: original-look;
+	color: #d5eaf7;
+}
+
+.row, #talk { font-family: original-look-dialogue; }
+
+body #rule, body #amount .rule {
+	background-color: #338bb4;
+	border-top-color: #071421;
+	border-bottom-color: #071421;
+}
+
+body #cursor {
+	border: 3dp #ffd51e;
+	background-color: #153653b8;
+}
+
+body .row.missing .give { color: #ff7775; }
+body .row .mark { color: #ffd51e; }
+body #speaker { color: #ffe64a; }
+body #speaker.player { color: #d5eaf7; }
+
+body #talk .talk-row.selected .run {
+	background-color: #153653;
+	border-top-color: #ffd51e;
+	color: #ffe64a;
+}
+
+body #amount-inset {
+	border-color: #071421 #4a9fc5 #4a9fc5 #071421;
+	background-color: #0b1c2d;
+}

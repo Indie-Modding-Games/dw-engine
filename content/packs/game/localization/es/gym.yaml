@@ -1,0 +1,8 @@
+# El cuadro de las estadísticas del gimnasio (TRN_renderPostTrainingStatsBox): el nombre entero de cada fila, en el
+# orden del cuadro, para los aspectos que no usan las abreviaturas del original.
+stat.0: "HP"
+stat.1: "MP"
+stat.2: "Ataque"
+stat.3: "Defensa"
+stat.4: "Velocidad"
+stat.5: "Cerebro"

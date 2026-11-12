@@ -1,0 +1,10 @@
+# The smallest whole UI (docs/modding/interfaces.md): it covers one screen, the pause box, and the
+# game's own UI shows the rest. Copy this folder to
+# <user data>/indie-modding-games/dwe/ui/addons/minimal/ and pick it in Opciones -> Interfaz.
+id: minimal
+name: Pausa mínima
+version: 1.0.0
+ui_api: "0.12"
+type: ui
+screens:
+  pause_box: pause_box/document

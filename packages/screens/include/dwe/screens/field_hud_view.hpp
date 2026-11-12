@@ -22,6 +22,10 @@ inline constexpr std::string_view FieldHudHourSetting = "hud.clock.hour";
 inline constexpr std::string_view FieldHudMinuteSetting = "hud.clock.minute";
 inline constexpr std::string_view FieldHudDaySetting = "hud.clock.day";
 inline constexpr std::string_view FieldHudYearSetting = "hud.clock.year";
+// The game's rules on the clock, so no UI decides them: whether it is night (the original's dial
+// shows the moon: clock.c: renderGameClock) and the part of the day (dayPhaseOf).
+inline constexpr std::string_view FieldHudNightSetting = "hud.clock.night";
+inline constexpr std::string_view FieldHudPhaseSetting = "hud.clock.phase";
 inline constexpr std::string_view FieldHudMeterList = "hud.meter";
 inline constexpr std::string_view FieldHudNeedList = "hud.need";
 inline constexpr std::string_view FieldHudPoolList = "hud.pool";
@@ -61,6 +65,20 @@ struct FieldMeterView {
 
   friend bool operator==(const FieldMeterView&, const FieldMeterView&) = default;
 };
+
+// Whether it is night at an hour: the original's dial swaps the sun for the moon before 6:00 and
+// from 17:00 (clock.c: renderGameClock).
+[[nodiscard]] bool isNightHour(std::int32_t hour);
+
+// The part of the day at an hour: "night" as isNightHour, "morning" the two hours after the dawn,
+// "late" the two before the dusk and "day" between them. The parts flank the dial's own boundaries,
+// so they change only where the sun and the moon do or two hours inside them.
+[[nodiscard]] std::string_view dayPhaseOf(std::int32_t hour);
+
+// How a bar of the field reads: "low" below the middle of its range, where the original swaps its
+// icon (the happiness face turns sad, the discipline icon changes: partner_impl.c:
+// renderStatusBars), else "high".
+[[nodiscard]] std::string_view meterMoodOf(const FieldMeterView& meter);
 
 // HP or MP: what is left and the maximum.
 struct FieldPoolView {

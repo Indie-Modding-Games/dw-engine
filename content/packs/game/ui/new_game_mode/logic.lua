@@ -77,7 +77,9 @@ function on_device(document)
 end
 
 function on_action(_document, action)
-  if action == "cancel" then
+  -- The menu key goes back as cancel does: left to the UI it would close the box without telling
+  -- the game, over a title that is already gone.
+  if action == "cancel" or action == "menu" then
     back()
     return true
   end

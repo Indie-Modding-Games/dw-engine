@@ -1,0 +1,186 @@
+/* The save dialog at the title screen in the original look (the scrim's at-title class, dialog.at_title), over the
+   pause menu's (../pause_menu/style.rcss): the original's menu box over the slot list it asks about, as the title's
+   other boxes (../main_menu/style.rcss), its question in a box of the battle question's width (main_menu.c:
+   renderConfirmVSSlot, 230 pixels) and the answers under it, one row each, with no button prompts. */
+
+#scrim.at-title #panel {
+	left: 340dp;
+	top: 240dp;
+	width: 690dp;
+	margin-left: 0;
+	box-sizing: border-box;
+	padding: 12dp 27dp 15dp 27dp;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
+		vertical-gradient(#000060 #000020);
+}
+
+#scrim.at-title #text {
+	line-height: 36dp;
+	margin-bottom: 6dp;
+}
+
+#scrim.at-title #file {
+	display: none;
+}
+
+#scrim.at-title button {
+	line-height: 30dp;
+}
+
+#scrim.at-title #prompts {
+	display: none;
+}
+
+/* Dialogs use the same cyan-framed navy card as the terminal screens. */
+#panel {
+	border: 2dp #72c7ff;
+	background-color: #0b1c2df2;
+	decorator: vertical-gradient(#153653 #0a1929);
+}
+
+#scrim.at-title #panel {
+	border: 2dp #72c7ff;
+	background-color: #0b1c2df2;
+	decorator: vertical-gradient(#153653 #0a1929);
+}
+
+#text, #file {
+	color: #d8f1ff;
+}
+
+#file {
+	color: #a8c7d9;
+}
+
+/* Confirmation and notice card. Keep the file name visible at the title so destructive actions clearly name their
+   target, and give both question and notice layouts the same centred frame. */
+#scrim {
+	background-color: #061321a8;
+}
+
+#panel, #scrim.at-title #panel {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 700dp;
+	margin-left: -350dp;
+	padding: 24dp 30dp 18dp 30dp;
+	box-sizing: border-box;
+	transform: translate(0dp, -50%);
+	border: 2dp #72c7ff;
+	border-radius: 0;
+	background-color: #0b1c2df5;
+	decorator: vertical-gradient(#153653 #0a1929);
+}
+
+#text, #scrim.at-title #text {
+	margin: 0 0 15dp 0;
+	padding: 0 9dp 12dp 9dp;
+	border-bottom: 2dp #397ca4;
+	color: #d8f1ff;
+	font-size: 22dp;
+	line-height: 30dp;
+}
+
+#file, #scrim.at-title #file {
+	margin: 0 0 15dp 0;
+	padding: 9dp 12dp;
+	border-left: 3dp #72c7ff;
+	background-color: #0a2035;
+	color: #a8c7d9;
+	font-size: 16dp;
+	line-height: 24dp;
+}
+
+#scrim.at-title #file {
+	display: block;
+}
+
+#scrim.at-title #file.hidden {
+	display: none;
+}
+
+#panel button, #scrim.at-title #panel button {
+	display: inline-block;
+	width: 48%;
+	height: 48dp;
+	margin: 6dp 1% 0 0;
+	padding: 0 12dp;
+	box-sizing: border-box;
+	border: 1dp #397ca4;
+	border-radius: 0;
+	background-color: #102a40;
+	color: #d8f1ff;
+	font-size: 18dp;
+	line-height: 45dp;
+	text-align: center;
+}
+
+#panel button#yes {
+	border-color: #ffd51e;
+	background-color: #ffd51e;
+	color: #081724;
+	font-weight: bold;
+}
+
+#panel button#ok {
+	width: 100%;
+	margin-right: 0;
+}
+
+#panel button:hover {
+	border-color: #72c7ff;
+	background-color: #153653;
+	color: #ffffff;
+}
+
+#panel button:focus {
+	border: 2dp #ffd51e;
+	background-color: #153653;
+	color: #ffe64a;
+}
+
+#panel button#yes:focus {
+	border-color: #72c7ff;
+	background-color: #153653;
+	color: #ffe64a;
+}
+
+#panel button.hidden {
+	display: none;
+}
+
+/* The question shows only its Yes/No pair; the notice shows only its single Accept action. */
+#scrim.question #panel #ok, #scrim.notice #panel #yes, #scrim.notice #panel #no {
+	display: none;
+}
+
+#panel #prompts, #scrim.at-title #panel #prompts {
+	display: block;
+	margin-top: 15dp;
+	padding-top: 9dp;
+	border-top: 1dp #397ca4;
+	color: #a8c7d9;
+	font-size: 14dp;
+	text-align: right;
+}
+
+#prompts .prompt { margin-left: 15dp; }
+#prompts .key { color: #72c7ff; }
+
+@media (max-width: 740dp) {
+	#panel, #scrim.at-title #panel {
+		width: 92%;
+		margin-left: -46%;
+		padding: 18dp 20dp 15dp 20dp;
+	}
+}
+
+@media (max-height: 560dp) {
+	#panel, #scrim.at-title #panel { top: 12dp; transform: none; }
+	#text { margin-bottom: 9dp; padding-bottom: 6dp; }
+	#file { margin-bottom: 9dp; }
+	#panel button { height: 42dp; line-height: 39dp; }
+	#panel #prompts, #scrim.at-title #panel #prompts { margin-top: 9dp; padding-top: 6dp; }
+}

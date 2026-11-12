@@ -56,6 +56,21 @@ local function number(name)
   return math.floor(setting(name, 0))
 end
 
+-- The bag's slots the document has: the ruleset's, up to the document's slot-0 to slot-29.
+local function slot_count()
+  return math.min(number("bag.slot.count"), max_slots)
+end
+
+-- The bag slot the cursor is on, or nil.
+local function focused_slot(document)
+  for index = 0, slot_count() - 1 do
+    if document:get("slot-" .. index):has_focus() then
+      return index
+    end
+  end
+  return nil
+end
+
 local function text(key, arguments)
   if key == nil or key == "" then
     return ""
@@ -95,6 +110,12 @@ local function original_pages()
   return ui.layout("pages") == "original"
 end
 
+-- skin.yaml layout: partner_menu: pages: "compact" is one page for the partner, its status with
+-- its techniques, no tab row, and Cancel closing the menu back to the pause menu.
+local function compact_menu()
+  return ui.layout("pages") == "compact"
+end
+
 -- The pause menu's entry this menu was opened for, "items" or "partner": the pause menu focuses
 -- it again when Cancel goes back there (close_menu).
 local opened_on = "partner"
@@ -115,7 +136,7 @@ end
 
 -- Whether the page shows its extras (the status_extras option, on unless turned off).
 local function extras_shown()
-  return ui.setting("status_extras") ~= false
+  return options.get("status_extras")
 end
 
 -- A time of day as the clock shows it, 08:30.
@@ -224,7 +245,7 @@ end
 -- The species' favourite food (the favorite_food option, an engine improvement on by default; the
 -- original shows none): a row under the weight with the item's name, «None» for a species without.
 local function draw_favorite_food(document)
-  local shown = ui.setting("favorite_food") ~= false
+  local shown = options.get("favorite_food")
   document:get("scrim"):set_class("favorite-food", shown)
   document:get("status-food-line"):set_class("hidden", not shown)
   local food = setting("partner.favorite_food", "")
@@ -303,10 +324,18 @@ local function draw_status(document)
   document:get("status-life-label"):set_text(words[2] or "")
   -- HP and MP: the numbers, now and at most, and a bar of the maximum (game_menu.c:
   -- renderDigimonStatsView).
+  -- skin.yaml layout: partner_menu: pool: "current" fills the bar with the amount left over the
+  -- maximum instead.
   local pool_now = { number("partner.hp"), number("partner.mp") }
+  local pool_current = ui.layout("pool") == "current"
   for index = 0, pool_bars - 1 do
     draw_bar(document, "pool-" .. index, "partner.pool", index)
     local maximum = number("partner.pool." .. index .. ".value")
+    if pool_current then
+      document
+        :get("pool-" .. index .. "-fill")
+        :set_property("width", percent(pool_now[index + 1], 0, maximum) .. "%")
+    end
     document:get("pool-" .. index):set_text(
       original and tostring(pool_now[index + 1]) or (pool_now[index + 1] .. " / " .. maximum)
     )
@@ -527,6 +556,12 @@ local function assign_technique(document, slot)
 end
 
 function toggle_technique(document, slot)
+  if compact_menu() and editing_tech then
+    document:get("tech-choice-" .. slot):focus()
+    draw_tech_info(document)
+    assign_technique(document, slot)
+    return
+  end
   if not setting("partner.technique.choice." .. slot .. ".available", false) then
     document:get("tech-message"):set_text(t("partner_menu.tech.unavailable"))
     return
@@ -607,10 +642,9 @@ local function draw_description(document)
     -- options box does.
     description = bag_slot.description(picked)
   else
-    for index = 0, number("bag.slot.count") - 1 do
-      if document:get("slot-" .. index):has_focus() then
-        description = bag_slot.description(index)
-      end
+    local index = focused_slot(document)
+    if index ~= nil then
+      description = bag_slot.description(index)
     end
   end
   document:get("bag-description"):set_text(description)
@@ -723,12 +757,20 @@ local function open_box(document, name)
 end
 
 local function show_page(document, name, focus)
+  -- The compact menu shows the techniques on the status page.
+  if compact_menu() and name == "tech" then
+    name = "status"
+  end
+  local compact_partner = compact_menu() and name == "status" and not in_battle()
   close_box(document)
   moving = nil
   row_offset = 0
   current = name
+  -- State class: the compact status page, techniques beside it, is showing (layout pages: compact).
+  document:get("scrim"):set_class("compact-partner", compact_partner)
   for _, page in ipairs(pages) do
-    document:get("page-" .. page):set_class("hidden", page ~= name)
+    local visible = page == name or (compact_partner and page == "tech")
+    document:get("page-" .. page):set_class("hidden", not visible)
     document:get("tab-" .. page):set_class("selected", page == name)
   end
   document:get("scrim"):set_class("tech-editing", false)
@@ -739,7 +781,24 @@ local function show_page(document, name, focus)
   document:get("scrim"):set_class("battle-bag", in_battle())
   document:get("scrim"):set_class("large-bag", number("bag.slot.count") > 10)
   draw(document)
-  document:get(focus or first_entry[name]):focus()
+  local default_focus = first_entry[name]
+  -- The compact menu has no tab row: the status page starts on its Change button.
+  if compact_menu() and default_focus == "tab-status" then
+    default_focus = "tech-change"
+  end
+  document:get(focus or default_focus):focus()
+end
+
+-- The compact menu names its pages Partner and Bag; the others keep the tabs' own words. Written
+-- as the menu shows and on a change of language.
+local function draw_navigation(document)
+  local compact = compact_menu()
+  document
+    :get("tab-status-label")
+    :set_text(t(compact and "partner_menu.nav.partner" or "partner_menu.tab.status"))
+  document
+    :get("tab-items")
+    :set_text(t(compact and "partner_menu.nav.bag" or "partner_menu.tab.items"))
 end
 
 function open_page(document, name)
@@ -883,7 +942,7 @@ end
 function close_menu(document, after)
   local function leave()
     ui.hide(document_name)
-    if original_menu() and not in_battle() then
+    if (original_menu() or compact_menu()) and not in_battle() then
       ui.show("pause_menu", true, { entry = opened_on })
     end
     if after ~= nil then
@@ -898,7 +957,8 @@ function close_menu(document, after)
     original_box.close(document, main_box(), original_box.player_rect(document), leave)
   end
   if current == "items" then
-    original_box.close(document, "bag-description", slot_start(document, picked or 0), close_main)
+    local slot = focused_slot(document) or picked or 0
+    original_box.close(document, "bag-description", slot_start(document, slot), close_main)
   else
     close_main()
   end
@@ -913,7 +973,8 @@ local function back(document)
     local index = moving
     moving = nil
     focus_slot(document, index)
-  elseif original_menu() or in_battle() then
+  elseif original_menu() or compact_menu() or in_battle() then
+    -- The compact menu has no tab row to go back to.
     close_menu(document)
   elseif not document:get("tab-" .. current):has_focus() then
     document:get("tab-" .. current):focus()
@@ -967,10 +1028,11 @@ end
 -- Art fixes (the art_fixes setting): the happiness label's picture from where the word is in the
 -- texture, instead of the original's columns, which cut its last letter and show a stray mark.
 local function draw_art_fixes(document)
-  document:get("status-happiness-name"):set_class("fixed", ui.setting("art_fixes") == true)
+  document:get("status-happiness-name"):set_class("fixed", options.get("art_fixes"))
 end
 
 function on_show(document)
+  draw_navigation(document)
   draw_art_fixes(document)
   panel_enter.start(document)
   status_condition_bob = nil
@@ -997,8 +1059,16 @@ function on_show(document)
   fit_to_window(document)
 end
 
+-- Tells the game whether to draw the partner's 3D portrait over the status page
+-- (partner_menu.portrait).
+local function send_portrait(document)
+  ui.report("partner_menu.portrait", not document:get("page-status"):has_class("hidden"))
+end
+
 function on_hide(document)
   original_box.cancel(document)
+  -- None while the menu is away, so it does not show for a frame on the next opening's page.
+  ui.report("partner_menu.portrait", false)
 end
 
 function on_setting(document, name)
@@ -1031,6 +1101,7 @@ function on_setting(document, name)
 end
 
 function on_tick(document, seconds)
+  send_portrait(document)
   original_box.tick(document, seconds)
   panel_enter.tick(document)
   fit_to_window(document)
@@ -1046,6 +1117,11 @@ function on_tick(document, seconds)
       status_condition_bob = bob
       document:get("conditions"):set_property("top", ((bob - 32) * 3) .. "dp")
     end
+  elseif status_condition_bob ~= nil then
+    -- Off the original's status page (another page, or a skin switched to another layout) the
+    -- conditions go back where the style sheet puts them.
+    status_condition_bob = nil
+    document:get("conditions"):remove_property("top")
   end
   if editing_tech then
     draw_tech_info(document)
@@ -1062,6 +1138,7 @@ end
 
 function on_language(document)
   tech_info_focus = nil
+  draw_navigation(document)
   draw_boxes(document)
   draw_tech_help(document)
   draw(document)
@@ -1177,7 +1254,12 @@ function on_action(document, action)
   -- The modern look's tabs: left and right on a tab open the page of the next one, as the original
   -- look's status and tech pages do, and the focus stays on the tabs. Right from the last page's
   -- tab goes on to Back, and left from Back opens the last page again.
-  if (action == "left" or action == "right") and not original_menu() and not in_battle() then
+  if
+    (action == "left" or action == "right")
+    and not original_menu()
+    and not compact_menu()
+    and not in_battle()
+  then
     local step = action == "left" and -1 or 1
     local at = document:get("close"):has_focus() and #pages + 1 or nil
     for index, page in ipairs(pages) do
@@ -1198,7 +1280,7 @@ function on_action(document, action)
   then
     -- inventory.c: tickInventoryTop: up and down by a row within the bag, left and right within
     -- the row, without going round; the rows scroll with the cursor.
-    for index = 0, number("bag.slot.count") - 1 do
+    for index = 0, slot_count() - 1 do
       if document:get("slot-" .. index):has_focus() then
         local next_index = index
         if action == "up" and index >= 2 then

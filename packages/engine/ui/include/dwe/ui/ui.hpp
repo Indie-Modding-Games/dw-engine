@@ -28,12 +28,22 @@ class UpscaleCache;
 
 namespace dwe::ui {
 
+struct UiAddon;
+
 // A value passed between the menus and the app: nothing, a switch, a number or a text.
 using UiValue = std::variant<std::monostate, bool, double, std::string>;
 
 // What a document is shown with (ui.show's third argument): its on_show handler gets them as a
 // table, so one menu can tell the next where to start without a setting in between.
 using UiArguments = std::map<std::string, UiValue, std::less<>>;
+
+// A setting whose changes the UI tells the documents as an event of the UI API (hooks.on in their
+// scripts): the event's table is {version = 1, name = the setting, value = its new value}. The
+// API's Lua declares them (ui/api/*.lua: event_source).
+struct UiEventSource {
+  std::string setting;
+  std::string event;
+};
 
 // The mouse cursor a skin asks the app to install: an RGBA image (the same layout as assets::Image)
 // and the click point (hotX, hotY) from its top-left corner, in image pixels. The app turns it into
@@ -164,11 +174,53 @@ public:
   // environment.
   core::Result<void> loadDocument(std::string_view name, const assets::AssetId& document);
 
+  // Fires an event of the UI API: every handler the loaded documents registered for it with
+  // hooks.on runs with a copy of the table, `version` included. Returns how many ran.
+  std::size_t fireEvent(std::string_view event, const UiArguments& table);
+
   // Shows a loaded document. A modal one takes the input: the game must not see it while it is
-  // shown. Its on_show handler gets the arguments as a table (empty when there are none).
+  // shown. Its on_show handler gets the arguments as a table (empty when there are none). The name
+  // is a screen's: the document the active UI maps it to (mapScreen) shows, or the one of that
+  // name. Every call below that takes a document's name reads it the same way.
   void show(std::string_view name, bool modal = false, const UiArguments& arguments = {});
   void hide(std::string_view name);
   [[nodiscard]] bool isVisible(std::string_view name) const;
+
+  // Screens: the game asks for a screen (pause_menu, hud...) and the active UI decides how it
+  // shows. The default UI names its documents after the screens; a UI addon maps the screens it
+  // covers to its own documents, and the rest keep the default UI's.
+  void mapScreen(std::string_view screen, std::string_view document);
+  // Every screen back to the default UI's document.
+  void clearScreenMap();
+  // The document that shows a screen now.
+  [[nodiscard]] std::string_view screenDocument(std::string_view screen) const;
+  // The same as show, hide and isVisible, by the screen's name.
+  void requestScreen(std::string_view screen, bool modal = false,
+                     const UiArguments& arguments = {});
+  void closeScreen(std::string_view screen);
+  [[nodiscard]] bool isScreenOpen(std::string_view screen) const;
+
+  // UI addons (docs/modding/interfaces.md). A whole UI: its documents load, named "<id>.<screen>",
+  // and show the screens it covers; the others keep the default UI's. Its code runs sandboxed: it
+  // reads the UI API, and the game takes from it only the commands setAddonCommandFilter lets
+  // through. The screens shown as it switches show again in it. If the addon does not suit (a
+  // plugin, another UI API, a screen the game does not have) or a document cannot load, nothing
+  // changes and the error says why.
+  core::Result<void> useUiAddon(const UiAddon& addon);
+  // Back to the default UI: the addon's documents are unloaded.
+  void useDefaultUi();
+  // The id of the UI addon on, empty for the default UI.
+  [[nodiscard]] std::string_view uiAddon() const;
+  // A plugin (docs/modding/interfaces.md): its documents load, named "<id>.<path>", and show over
+  // whichever UI is on, without the focus, until removeUiPlugins. Its code runs sandboxed as a UI
+  // addon's. If it does not suit (a whole UI, another UI API, already on) or a document cannot
+  // load, nothing changes and the error says why.
+  core::Result<void> addUiPlugin(const UiAddon& plugin);
+  void removeUiPlugins();
+  // The ids of the plugins on, in the order they went on.
+  [[nodiscard]] std::vector<std::string> uiPlugins() const;
+  // Which commands the game takes from an addon's documents (ui.send); none until it is set.
+  void setAddonCommandFilter(std::function<bool(std::string_view)> filter);
 
   // The document the `menu` action opens, modal, when no other modal document is shown.
   void setMenuDocument(std::string_view name);
@@ -196,6 +248,11 @@ public:
 
   // The commands the menus sent since the last call, oldest first.
   [[nodiscard]] std::vector<UiCommand> takeCommands();
+
+  // The latest value the documents reported under a name (ui.report), such as whether a menu page
+  // shows a 3D model; none when no document reported it. Unlike a command it is a state the game
+  // reads when it needs it, not a request it handles once.
+  [[nodiscard]] UiValue reported(std::string_view name) const;
 
   // The cues of the menu actions since the last call, oldest first. Mouse clicks give none.
   [[nodiscard]] std::vector<UiCue> takeCues();

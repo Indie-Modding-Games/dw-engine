@@ -7,6 +7,8 @@
 .label { margin-top: 10dp; }
 .entry { margin: 4dp 0 4dp 18dp; font-size: 26dp; white-space: pre-line; }
 .entry.code { font-size: 44dp; letter-spacing: 8dp; }
+/* The entry split in cells: hidden; a skin that boxes each character shows it instead of #typed. */
+#typed-cells { display: none; }
 .warning { color: #ffb070; }
 .about { margin: 10dp 0 0 0; font-size: 18dp; }
 .row { display: block; }

@@ -20,6 +20,7 @@
 #include <fstream>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -317,7 +318,8 @@ TEST_CASE(
   const localization::Catalog texts = catalogIn(files, "es");
   const WarningCapture warnings;
   auto ui = createUi(files, texts);
-  CHECK(skinIds(*ui) == std::vector<std::string>{"modern", "new", "original", "test_contrast"});
+  CHECK(skinIds(*ui) ==
+        std::vector<std::string>{"devvago", "modern", "new", "original", "test_contrast"});
   CHECK(ui->skins().defaultSkin() == "original");
   CHECK(ui->skin() == "original");
   CHECK(texts.text(ui->skins().find("original")->nameKey) == "Original");
@@ -345,6 +347,60 @@ TEST_CASE(
   CHECK(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
 }
 
+TEST_CASE(
+    "the devvago skin loads every screen cleanly, and its layout options reach the documents") {
+  Content content;
+  addOriginalArt(content);
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "es");
+  const WarningCapture warnings;
+  auto ui = createUi(files, texts);
+  const Skin* devvago = ui->skins().find("devvago");
+  REQUIRE(devvago != nullptr);
+  CHECK(texts.text(devvago->nameKey) == "DevVago");
+  CHECK(devvago->extends == std::optional<std::string>{"modern"});
+  // Its own options, and the modern look's for the rest.
+  const SkinScreenLayout pause = ui->skins().layoutOf(*devvago, "pause_menu");
+  CHECK(pause ==
+        SkinScreenLayout{
+            {"box", "modern"}, {"medals", "profile"}, {"menu", "original"}, {"tabs", "minimal"}});
+  const SkinScreenLayout partner = ui->skins().layoutOf(*devvago, "partner_menu");
+  CHECK(partner ==
+        SkinScreenLayout{
+            {"box", "modern"}, {"menu", "modern"}, {"pages", "compact"}, {"pool", "current"}});
+  CHECK(ui->skins().layoutOf(*devvago, "battle").at("menu") == "modern");
+  CHECK(ui->skins().layoutOf(*devvago, "main_menu").at("menu") == "original");
+  CHECK(ui->skins().layoutOf(*devvago, "main_menu").at("picture") == "modern");
+  // No other skin of the game pack sets the options only devvago uses.
+  constexpr std::array<std::string_view, 3> Others{"modern", "original", "new"};
+  for (const std::string_view other : Others) {
+    const Skin* skin = ui->skins().find(other);
+    REQUIRE(skin != nullptr);
+    CHECK_FALSE(ui->skins().layoutOf(*skin, "pause_menu").contains("tabs"));
+    CHECK_FALSE(ui->skins().layoutOf(*skin, "pause_menu").contains("medals"));
+    CHECK_FALSE(ui->skins().layoutOf(*skin, "partner_menu").contains("pool"));
+    CHECK(ui->skins().layoutOf(*skin, "partner_menu").at("pages") != "compact");
+  }
+
+  loadScreens(*ui);
+  for (const std::string_view screen : PanelScreens) {
+    REQUIRE(ui->loadDocument(screen, idOf(std::format("ui/{}/document", screen))));
+  }
+  REQUIRE(ui->setSkin("devvago"));
+  CHECK(ui->checkSkinDocuments().empty());
+  CHECK(ui->elementHasClass("pause_menu", "", "layout-tabs-minimal"));
+  CHECK(ui->elementHasClass("pause_menu", "", "layout-medals-profile"));
+  CHECK(ui->elementHasClass("partner_menu", "", "layout-pages-compact"));
+  CHECK(ui->elementHasClass("partner_menu", "", "layout-pool-current"));
+  CHECK(ui->elementHasClass("pause_menu", "panel", "skin-original"));
+  for (const std::string& line : warnings.all()) {
+    CHECK_MESSAGE(line.contains("font/main"), line);
+  }
+  REQUIRE(ui->setSkin("original"));
+  CHECK_FALSE(ui->elementHasClass("pause_menu", "", "layout-tabs-minimal"));
+  CHECK_FALSE(ui->elementHasClass("partner_menu", "", "layout-pages-compact"));
+}
+
 namespace {
 
 // The happiness face the original skin draws now: the sprite named in the icon's decorator.
@@ -357,6 +413,7 @@ void showFieldStatus(Ui& ui, double happiness, double area) {
   ui.setSetting("hud.meter.0.value", happiness);
   ui.setSetting("hud.meter.0.min", -100.0);
   ui.setSetting("hud.meter.0.max", 100.0);
+  ui.setSetting("hud.meter.0.mood", std::string{happiness < 0.0 ? "low" : "high"});
   ui.setSetting("hud.partner.area", area);
   const UiValue current = ui.setting("hud.revision");
   const double* count = std::get_if<double>(&current);
@@ -708,7 +765,9 @@ constexpr std::string_view ClassySkin = "id: classy\nname: ui_skin.classy\nexten
                                         "  hud:\n"
                                         "    field-meter-0-bar: [pips, wide]\n"
                                         "    field-pool-1-bar: [pips]\n"
-                                        "    no-such-element: [pips]\n";
+                                        "    no-such-element: [pips]\n"
+                                        "layout:\n"
+                                        "  hud: {bars: pips}\n";
 
 TEST_CASE("a skin's document classes go on when a document loads and come off on a switch") {
   Content content;
@@ -771,7 +830,7 @@ void setHappiness(Ui& ui) {
 }
 
 TEST_CASE(
-    "a skin's classes are on before the HUD first draws and before it redraws on the switch's ui_skin") {
+    "a skin's layout is on before the HUD first draws and before it redraws on the switch's ui_skin") {
   SUBCASE("a document loaded under the skin draws with them when it shows") {
     Content content;
     content.add("ui/skins/classy/skin.yaml", ClassySkin);
@@ -1601,6 +1660,90 @@ TEST_CASE("the original skin's enemy HP bar fill is as wide as the HP left") {
   for (int segment = 0; segment < 3; ++segment) {
     CHECK(ui->elementHasClass("battle", std::format("hb-1-s{}", segment), "hidden"));
   }
+}
+
+TEST_CASE("the original skin's enemy HP bar stays its own with the enemy life bars option on") {
+  Content content;
+  addOriginalArt(content);
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "en");
+  auto ui = createUi(files, texts);
+  REQUIRE(ui->loadDocument("battle", idOf("ui/battle/document")));
+  ui->setSetting("ui_skin", std::string{"original"});
+  ui->show("battle", true);
+  ui->setSetting("battle.hp_bars", std::string{"1 50.0 40.0 20 -26 50 128 255 400 "});
+  ui->setSetting("battle.hp_bars.revision", 1.0);
+  ui->update();
+  // The look of the bar without the option: the original's green outline, its leader line and the
+  // digits' width.
+  const auto look = [&] {
+    return std::vector<std::string>{
+        ui->styleProperty("battle", "hb-1-frame", "border-top-color"),
+        ui->styleProperty("battle", "hb-1-frame", "border-top-left-radius"),
+        ui->styleProperty("battle", "hb-1-line", "display"),
+        ui->styleProperty("battle", "hb-1-fill", "background-color"),
+        ui->styleProperty("battle", "hd-1-0", "width")};
+  };
+  const std::vector<std::string> own = look();
+  REQUIRE_FALSE(ui->elementHasClass("battle", "hp-bars", "always"));
+  CHECK(own[2] != "none");
+
+  // The modern skin's compact bar, which the original extends, must not show through.
+  ui->setSetting("battle.hp_bars.always", true);
+  ui->update();
+  REQUIRE(ui->elementHasClass("battle", "hp-bars", "always"));
+  CHECK(look() == own);
+}
+
+TEST_CASE("the slot list starts over when the main menu opens it, and keeps its row behind a "
+          "question") {
+  Content content;
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "en");
+  auto ui = createUi(files, texts);
+  REQUIRE(ui->loadDocument("save_slots", idOf("ui/save_slots/document")));
+  ui->setSetting("ui_skin", std::string{"modern"});
+  ui->setSetting("save.slots.mode", std::string{"continue"});
+  constexpr int Saves = 10;
+  ui->setSetting("save.slots", static_cast<double>(Saves));
+  for (int entry = 0; entry < Saves; ++entry) {
+    ui->setSetting(std::format("save.slot.{}.kind", entry), std::string{"slot"});
+    ui->setSetting(std::format("save.slot.{}.number", entry), static_cast<double>(entry + 1));
+  }
+  input::InputState input{input::defaultActionMap()};
+  // Confirms the focused row: the entry the list sends with choose_slot.
+  const auto choose = [&] {
+    press(*ui, input, input::keys::Return);
+    double entry = -1.0;
+    for (const UiCommand& command : ui->takeCommands()) {
+      if (command.name == "choose_slot") {
+        entry = std::get<double>(command.value);
+      }
+    }
+    return entry;
+  };
+  const auto open = [&](bool fresh) {
+    ui->show("save_slots", true, fresh ? UiArguments{{"fresh", true}} : UiArguments{});
+    frame(*ui, input);
+  };
+
+  // The main menu opens it (TitleScreen::showList): the first row of the first page.
+  open(true);
+  REQUIRE(ui->focusedElementId("save_slots") == "slot-1");
+  // The second page's second row: entry 7.
+  press(*ui, input, input::keys::Right);
+  press(*ui, input, input::keys::Down);
+  CHECK(choose() == 7.0);
+  // Its question answered no, the game shows the list again on the row it came from.
+  ui->hide("save_slots");
+  open(false);
+  CHECK(ui->focusedElementId("save_slots") == "slot-2");
+  CHECK(choose() == 7.0);
+  // The game started; back at the title the main menu opens the list afresh.
+  ui->hide("save_slots");
+  open(true);
+  CHECK(ui->focusedElementId("save_slots") == "slot-1");
+  CHECK(choose() == 0.0);
 }
 
 } // namespace dwe::ui

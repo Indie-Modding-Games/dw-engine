@@ -19,6 +19,7 @@ tampoco debe repartir datos, imágenes ni textos del original; trae solo lo suyo
 | [API de Lua](api-lua.md) | El script de entrada, el entorno de un mod, los eventos del juego y las funciones publicadas |
 | [Modos de juego](modos.md) | Añadir un modo con su `mode.yaml` |
 | [Aspectos](aspectos.md) | Cambiar el estilo de la interfaz con un aspecto propio |
+| [Interfaces](interfaces.md) | Instalar o hacer una interfaz de la comunidad que cambia las pantallas del juego |
 | [API de la interfaz](ui-api.md) | Lo que cada pantalla lee del juego y le manda: ajustes, comandos y opciones |
 | [API de historia](historia.md) | Los scripts de eventos, sus parches por sección y la capacidad de disparadores y variables |
 | [Editar un mapa](mapas.md) y [añadir uno](mapas-nuevos.md) | El mapper |

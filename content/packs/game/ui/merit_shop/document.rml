@@ -3,6 +3,7 @@
 	<title>Merit shop</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/talk_wait.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -22,6 +23,7 @@
 			<div class="talk-row" id="talk-0"><span class="run" id="talk-run-0"></span></div>
 			<div class="talk-row" id="talk-1"><span class="run" id="talk-run-1"></span></div>
 			<div class="talk-row" id="talk-2"><span class="run" id="talk-run-2"></span></div>
+			<div id="talk-wait" class="prompt-icon hidden"></div>
 		</div>
 	</div>
 </body>

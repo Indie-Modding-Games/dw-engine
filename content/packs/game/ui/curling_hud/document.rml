@@ -14,6 +14,12 @@
 		<img id="player-box" src="/map/frzl17/texture4/000?palette=7" rect="24 56 48 32"/>
 		<img id="player-face" src="/map/frzl17/texture4/000?palette=9" rect="112 24 32 32"/>
 	</div>
+	<!-- Each team's score as text and the start sign's words, for the looks that draw their own plates. -->
+	<div id="score-plates">
+		<p id="score-0-plate" class="score-plate"></p>
+		<p id="score-1-plate" class="score-plate"></p>
+	</div>
+	<p id="ready-text" class="hidden" text-key="curling.ready"></p>
 	<img id="ready" class="hidden" src="/map/frzl17/texture4/000?palette=11" rect="104 62 151 10"/>
 	<div id="gauge" class="hidden">
 		<img id="gauge-frame" src="/map/frzl17/texture4/000?palette=7" rect="0 24 48 16"/>

@@ -106,6 +106,7 @@ end
 -- class box-closed (hidden) until it opens again.
 function original_box.close(document, box_id, to, done)
   if not original_box.enabled() then
+    document:get(box_id):set_class("box-closed", true)
     if done then
       done()
     end

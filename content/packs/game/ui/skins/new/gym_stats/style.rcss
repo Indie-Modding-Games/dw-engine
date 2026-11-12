@@ -1,6 +1,7 @@
 /* The gym's stats box in the new look (concept area C, gym_stats: 262-265): the pause menu's panel (panel/style), the
    labels in gold in the small font, the values right-aligned, the bars as sunk tracks filled light blue (gold when
-   the stat rose), a light-blue line before the gains in blue, and the notes in a window with brackets under it. */
+   the stat rose), a light-blue line before the gains in blue, and the notes in a window with brackets under it. The
+   rows carry each stat's whole name (262: «Ataque», «Velocidad») instead of the original's short label. */
 
 body #divider {
 	top: 24dp;
@@ -15,6 +16,13 @@ body .row {
 }
 
 body .label {
+	display: none;
+}
+
+body .name {
+	display: block;
+	position: absolute;
+	z-index: 1;
 	left: 24dp;
 	top: 2dp;
 	font-family: "Pixel Small";
@@ -23,15 +31,16 @@ body .label {
 }
 
 body .value {
-	left: 132dp;
+	left: 150dp;
 	width: 78dp;
 	color: #f2f0e1;
 }
 
+/* The bar starts after the longest name; its track keeps the logic's 150dp scale, shrunk to the narrower frame. */
 body .bar {
-	left: 216dp;
+	left: 234dp;
 	top: 12dp;
-	width: 138dp;
+	width: 124dp;
 	height: 12dp;
 	padding: 0;
 	border: 2dp #557ea8;
@@ -40,10 +49,12 @@ body .bar {
 
 body .track,
 body .bar.raised .track {
-	width: 134dp;
+	width: 150dp;
 	height: 8dp;
 	overflow: hidden;
 	background-color: transparent;
+	transform-origin: left top;
+	transform: scaleX(0.8);
 }
 
 body .fill {

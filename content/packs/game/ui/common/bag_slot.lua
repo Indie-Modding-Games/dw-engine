@@ -1,8 +1,7 @@
 -- One slot of the bag, as the original's item list draws it (inventory.c: renderInventoryTop): the
 -- item's 16 x 16 icon 3 pixels in from the row's edge and 1 down (utils2.c: renderItemSprite,
--- setItemTexture), its name in its item colour's ink and its count. The game publishes the bag as
--- the settings bag.slot.count and bag.slot.<index>.* (packages/screens: bag_view.hpp, itemIconOf),
--- for the field's bag and the battle's alike.
+-- setItemTexture), its name in its item colour's ink and its count. The bag comes from the UI API
+-- (bag.count, bag.field: ui/api/bag.lua), for the field's bag and the battle's alike.
 --
 -- A document that lists the bag links this script and gives each slot an element `<id>` holding an
 -- `<img id="<id>-icon">` and the spans `<id>-name` and `<id>-count` (the icon is optional).
@@ -14,7 +13,7 @@
 bag_slot = {}
 
 function bag_slot.setting(index, field, fallback)
-  local value = ui.setting("bag.slot." .. index .. "." .. field)
+  local value = bag.field(index, field)
   if value == nil then
     return fallback
   end
@@ -22,7 +21,7 @@ function bag_slot.setting(index, field, fallback)
 end
 
 function bag_slot.count()
-  return math.floor(ui.setting("bag.slot.count") or 0)
+  return bag.count()
 end
 
 function bag_slot.filled(index)
@@ -79,7 +78,7 @@ function bag_slot.draw(document, id, index, empty_text)
   slot:set_class("item-shared", filled and color == 2)
   slot:set_class(
     "favorite",
-    filled and ui.setting("favorite_food") ~= false and bag_slot.setting(index, "favorite", false)
+    filled and options.get("favorite_food") ~= false and bag_slot.setting(index, "favorite", false)
   )
   local icon = document:get(id .. "-icon")
   if icon ~= nil then

@@ -87,5 +87,8 @@ body { pointer-events: none; }
 }
 
 #recruit-perfect { color: #f0c040; }
+
+/* The scores and the start sign as text: hidden; a look that draws its own plates shows them instead of the pictures. */
+#score-plates, #ready-text { display: none; }
 #recruit.ahead #recruit-standing { color: #6fdc6f; }
 .hidden { display: none; }

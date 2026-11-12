@@ -2,6 +2,8 @@
 bracket.round: "Ronda {round}"
 bracket.final: "Final"
 bracket.champion: "Campeón"
+# El nombre de la copa por su grado, en la tarjeta de la presentación (para las apariencias que lo escriben).
+bracket.cup: "Copa {grade}"
 # Un combate de copa: los datos de la presentación (STD_renderIntroStats) y la caja del daño al agotarse el tiempo
 # (STD_renderTimeoutWindow).
 match.hp: "PV"

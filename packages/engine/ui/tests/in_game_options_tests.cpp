@@ -683,6 +683,45 @@ TEST_CASE("the options page shows and hides the minimap with either look") {
   }
 }
 
+TEST_CASE("the options page offers the UI addons only when there is one to pick") {
+  Screen screen{"pause_menu", "es"};
+  screen.ui->setSetting("ui_addons", std::string{"default minimal"});
+  screen.ui->setSetting("ui_addon", std::string{"default"});
+  screen.ui->setSetting("ui_addon.name.minimal", std::string{"Pausa mínima"});
+  openOnOptions(screen);
+  showTab(screen, "interface");
+  CHECK(screen.ui->elementText(Menu, "ui-addon-label") == "Interfaz");
+  CHECK(screen.ui->elementText(Menu, "ui-addon-value") == "La del juego");
+  std::ignore = screen.ui->takeCommands();
+  adjust(screen, "ui-addon", 1);
+  CHECK(sent(screen.ui->takeCommands(), "ui_addon", UiValue{std::string{"minimal"}}));
+  screen.ui->setSetting("ui_addon", std::string{"minimal"});
+  CHECK(screen.ui->elementText(Menu, "ui-addon-value") == "Pausa mínima");
+  adjust(screen, "ui-addon", 1);
+  CHECK(sent(screen.ui->takeCommands(), "ui_addon", UiValue{std::string{"default"}}));
+  // Safe mode: the game's own only, and the row says why.
+  screen.ui->setSetting("ui_addon.safe", true);
+  screen.ui->setSetting("ui_addons", std::string{"default"});
+  showTab(screen, "game");
+  showTab(screen, "interface");
+  CHECK(screen.ui->elementText(Menu, "ui-addon-value") == "La del juego (modo seguro)");
+  adjust(screen, "ui-addon", 1);
+  CHECK_FALSE(sentAny(screen.ui->takeCommands(), "ui_addon"));
+}
+
+TEST_CASE("the options page turns the plugins on and off when the packs offer one") {
+  Screen screen{"pause_menu", "es"};
+  screen.ui->setSetting("ui_plugins.count", 1.0);
+  screen.ui->setSetting("ui_plugins", true);
+  openOnOptions(screen);
+  showTab(screen, "interface");
+  CHECK(screen.ui->elementText(Menu, "ui-plugins-label") == "Complementos");
+  CHECK(screen.ui->elementText(Menu, "ui-plugins-value") == "Sí");
+  std::ignore = screen.ui->takeCommands();
+  adjust(screen, "ui-plugins", 1);
+  CHECK(sent(screen.ui->takeCommands(), "ui_plugins", UiValue{false}));
+}
+
 TEST_CASE("the options page turns the enemies on the minimap on and off, next to the minimap") {
   Screen screen{"pause_menu", "es"};
   openOnOptions(screen);

@@ -2,6 +2,7 @@
 #include <dwe/assets/dev_asset_sources.hpp>
 #include <dwe/content/dev_assets.hpp>
 #include <dwe/content/game_content.hpp>
+#include <dwe/content/user_ui_addons.hpp>
 #include <dwe/test_support/temp_folder.hpp>
 #include <dwe/test_support/user_assets.hpp>
 
@@ -360,4 +361,33 @@ TEST_CASE(
         pack.manifest.id == "base" || pack.manifest.id == "game" || pack.manifest.id == "extra";
     CHECK(pack.origin == (engine ? dwe::assets::PackOrigin::Engine : dwe::assets::PackOrigin::Mod));
   }
+}
+
+TEST_CASE("the player's UI addons folder mounts as a pack of its own, with its addons only") {
+  TempFolder folder;
+  writeContent(folder);
+  folder.write("user/ui/addons/clock/addon.yaml", "id: clock\n");
+  folder.write("user/ui/addons/clock/clock/document.rml", "<rml/>");
+  // The rest of the user data folder (saves, settings) stays out.
+  folder.write("user/settings.yaml", "language: es\n");
+  folder.write("user/ui/other.txt", "not an addon");
+  auto content = GameContent::mount(folder.path() / "content", {}, {}, folder.path() / "user");
+  REQUIRE_MESSAGE(content.has_value(), content.error().message);
+  CHECK(packOf(**content, "ui/addons/clock/addon") ==
+        std::optional<std::string>{dwe::content::UserUiAddonsPack});
+  CHECK(packOf(**content, "ui/addons/clock/clock/document") ==
+        std::optional<std::string>{dwe::content::UserUiAddonsPack});
+  CHECK_FALSE(packOf(**content, "settings").has_value());
+  CHECK_FALSE(packOf(**content, "ui/other").has_value());
+  CHECK(packOf(**content, "ui/menu") == std::optional<std::string>{"game"});
+}
+
+TEST_CASE("without a UI addons folder no pack of the player's mounts") {
+  TempFolder folder;
+  writeContent(folder);
+  folder.write("user/settings.yaml", "language: es\n");
+  auto content = GameContent::mount(folder.path() / "content", {}, {}, folder.path() / "user");
+  REQUIRE_MESSAGE(content.has_value(), content.error().message);
+  CHECK_FALSE(packOf(**content, "settings").has_value());
+  CHECK(packOf(**content, "ui/menu") == std::optional<std::string>{"game"});
 }

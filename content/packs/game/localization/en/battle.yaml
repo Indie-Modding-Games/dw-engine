@@ -39,6 +39,8 @@ number_icon.defense: "DEF"
 number_icon.speed: "SPD"
 # {seconds} is the time left to get back up.
 revive_countdown: "Get up! {seconds}"
+# After a technique's name on the strip: the MP it costs the partner ({mp}, a number).
+mp_cost: "{mp} MP"
 finisher: "Finisher"
 # The finisher gauge's word and the "press" mark once it is full, which the original look draws over the gauge
 # (one more letter of the word for each step the gauge fills; in English it shows the original's pictures).

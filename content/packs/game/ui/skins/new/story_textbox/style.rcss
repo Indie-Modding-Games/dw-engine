@@ -102,6 +102,11 @@ body .prompt-icon.glyph {
 	opacity: 1;
 }
 
+/* No control for confirm: no cap (the original's rule, which the one above outranks). */
+body .prompt-icon.glyph.glyph-none {
+	display: none;
+}
+
 body .prompt-icon .glyph-label {
 	display: inline;
 }
@@ -110,6 +115,7 @@ body .prompt-icon .glyph-frame {
 	display: none;
 }
 
-body .prompt-icon.family-shapes .glyph-art {
+body .prompt-icon.family-shapes .glyph-art,
+body .prompt-icon.family-positions .glyph-art {
 	display: inline-block;
 }

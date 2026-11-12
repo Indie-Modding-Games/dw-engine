@@ -6,6 +6,7 @@
 #include <dwe/ui/navigation.hpp>
 #include <dwe/ui/prompts.hpp>
 #include <dwe/ui/ui.hpp>
+#include <dwe/ui/ui_addon.hpp>
 
 #include <RmlUi/Core/ComputedValues.h>
 #include <RmlUi/Core/Context.h>
@@ -57,6 +58,8 @@ constexpr float MaxDpRatio = 8.0F;
 
 // The commands the menus may queue between two takeCommands(): more is a script gone wrong.
 constexpr std::size_t MaxPendingCommands = 256;
+// The names the menus may report (ui.report): more is a script gone wrong.
+constexpr std::size_t MaxReportedNames = 64;
 
 // The units the markers are written in: thousandths of a percent of the minimap and tenths of a
 // degree.
@@ -279,6 +282,8 @@ struct Ui::Impl {
   std::vector<std::string> warming;
 
   std::map<std::string, Document, std::less<>> documents;
+  // The events each setting fires (the API's event_source declarations).
+  std::map<std::string, std::vector<std::string>, std::less<>> eventSources;
   std::vector<std::string> modalStack;
   std::string menuDocument;
   bool menuShut = false;
@@ -296,6 +301,22 @@ struct Ui::Impl {
   std::array<bool, 3> rmlButtonsDown{};
 
   std::vector<UiCommand> commands;
+  // The latest value of each name the documents report (ui.report), for the game to read.
+  std::map<std::string, UiValue, std::less<>> reports;
+  // The document each screen shows when the active UI is not the default one (mapScreen).
+  std::map<std::string, std::string, std::less<>> screenDocuments;
+  // The UI addon on (useUiAddon), empty for the default UI, and the folder its code runs from.
+  std::string addonId;
+  std::string addonFolder;
+  // The plugins on (addUiPlugin): each one's id, folder and the names of its documents.
+  struct Plugin {
+    std::string id;
+    std::string folder;
+    std::vector<std::string> documents;
+  };
+  std::vector<Plugin> plugins;
+  // Which commands the game takes from an addon's documents (setAddonCommandFilter).
+  std::function<bool(std::string_view)> addonCommands;
   std::vector<UiCue> cues;
   std::map<std::string, UiValue, std::less<>> settings;
   const input::InputState* input = nullptr;
@@ -349,6 +370,16 @@ struct Ui::Impl {
                 return false;
               }
               commands.push_back(std::move(command));
+              return true;
+            },
+        .addonCommand =
+            [this](std::string_view name) { return addonCommands && addonCommands(name); },
+        .report =
+            [this](UiCommand command) {
+              if (!reports.contains(command.name) && reports.size() >= MaxReportedNames) {
+                return false;
+              }
+              reports.insert_or_assign(std::move(command.name), std::move(command.value));
               return true;
             },
         .setting = [this](std::string_view name) -> UiValue {
@@ -512,6 +543,18 @@ struct Ui::Impl {
     ownTexts = std::move(*loaded);
     texts = &*ownTexts;
     return {};
+  }
+
+  // The document that shows a screen: the one the active UI maps it to (mapScreen), otherwise the
+  // document of that name, as the default UI names its documents after its screens.
+  [[nodiscard]] std::string_view documentOf(std::string_view name) const {
+    auto found = screenDocuments.find(name);
+    return found == screenDocuments.end() ? name : std::string_view{found->second};
+  }
+
+  Document* findScreen(std::string_view name) { return find(documentOf(name)); }
+  [[nodiscard]] const Document* findScreen(std::string_view name) const {
+    return find(documentOf(name));
   }
 
   Document* find(std::string_view name) {
@@ -744,7 +787,8 @@ struct Ui::Impl {
     return {};
   }
 
-  void show(std::string_view name, bool modal, const UiArguments& arguments) {
+  void show(std::string_view screen, bool modal, const UiArguments& arguments) {
+    const std::string_view name = documentOf(screen);
     Document* document = find(name);
     if (document == nullptr) {
       core::logWarning("ui: no document named {}", name);
@@ -762,7 +806,8 @@ struct Ui::Impl {
     document->element->callHandler("on_show", arguments);
   }
 
-  void hide(std::string_view name) {
+  void hide(std::string_view screen) {
+    const std::string_view name = documentOf(screen);
     Document* document = find(name);
     // Always drop the name from the modal stack, even if the document was
     // already hidden (e.g. closed by another path), so capturesInput() does
@@ -775,8 +820,8 @@ struct Ui::Impl {
     document->element->callHandler("on_hide");
   }
 
-  [[nodiscard]] bool isVisible(std::string_view name) const {
-    const Document* document = find(name);
+  [[nodiscard]] bool isVisible(std::string_view screen) const {
+    const Document* document = findScreen(screen);
     return document != nullptr && document->element->IsVisible();
   }
 
@@ -918,7 +963,7 @@ struct Ui::Impl {
   void step(NavCommand command) {
     Document* modal = topModal();
     if (modal == nullptr) {
-      if (command == NavCommand::Menu && !menuShut && find(menuDocument) != nullptr) {
+      if (command == NavCommand::Menu && !menuShut && findScreen(menuDocument) != nullptr) {
         show(menuDocument, true, {});
         capturedThisTick = true;
       }
@@ -977,10 +1022,25 @@ struct Ui::Impl {
     if (found != settings.end() && found->second == value) {
       return;
     }
-    settings.insert_or_assign(std::string{name}, std::move(value));
+    settings.insert_or_assign(std::string{name}, value);
     forEachVisible([name](Document& document) {
       document.element->callHandler("on_setting", std::string{name});
     });
+    if (auto sourced = eventSources.find(name); sourced != eventSources.end()) {
+      const UiArguments table{{"name", std::string{name}}, {"value", value}};
+      for (const std::string& event : sourced->second) {
+        fireEvent(event, table);
+      }
+    }
+  }
+
+  std::size_t fireEvent(std::string_view event, UiArguments table) {
+    table.insert_or_assign("version", 1.0);
+    std::size_t ran = 0;
+    for (auto& [name, document] : documents) {
+      ran += document.element->fireHook(event, table);
+    }
+    return ran;
   }
 
   void resize(int width, int height) {
@@ -1301,6 +1361,191 @@ struct Ui::Impl {
 
   // Puts a document loaded hidden in the place of the one with its name: shown, and in the same
   // place of the modal stack, if the old one was, and told so through on_show.
+  // A screen shown now, and how.
+  struct ShownScreen {
+    std::string screen;
+    bool modal = false;
+    std::size_t stackPlace = 0;
+  };
+
+  // Which of these screens show now, the modal ones in the order they were opened.
+  [[nodiscard]] std::vector<ShownScreen>
+  shownScreens(const std::vector<std::string>& screens) const {
+    std::vector<ShownScreen> shown;
+    for (const std::string& screen : screens) {
+      if (!isVisible(screen)) {
+        continue;
+      }
+      const auto place = std::ranges::find(modalStack, documentOf(screen));
+      shown.push_back(
+          ShownScreen{.screen = screen,
+                      .modal = place != modalStack.end(),
+                      .stackPlace = static_cast<std::size_t>(place - modalStack.begin())});
+    }
+    std::ranges::stable_sort(shown, {}, &ShownScreen::stackPlace);
+    return shown;
+  }
+
+  // Makes these documents, loaded detached and named "<addon>.<screen>", show their screens in
+  // place of the ones the current UI shows them with; the screens they leave go back to the default
+  // UI's. The screens shown before show again, the same way, in the new documents.
+  void switchUi(std::string id, std::string folder,
+                std::map<std::string, Document, std::less<>> fresh) {
+    std::vector<std::string> screens;
+    for (const auto& [screen, document] : screenDocuments) {
+      screens.push_back(screen);
+    }
+    for (const auto& [screen, document] : fresh) {
+      if (!screenDocuments.contains(screen)) {
+        screens.push_back(screen);
+      }
+    }
+    const std::vector<ShownScreen> shown = shownScreens(screens);
+    for (const ShownScreen& screen : shown) {
+      hide(screen.screen);
+    }
+    for (const auto& [screen, name] : screenDocuments) {
+      if (Document* old = find(name)) {
+        context->UnloadDocument(old->element);
+        documents.erase(name);
+      }
+    }
+    screenDocuments.clear();
+    for (auto& [screen, document] : fresh) {
+      std::string name = std::string{document.element->name()};
+      documents.insert_or_assign(name, std::move(document));
+      screenDocuments.insert_or_assign(screen, std::move(name));
+    }
+    addonId = std::move(id);
+    addonFolder = std::move(folder);
+    allowAddonCode();
+    markersStale = true;
+    for (const ShownScreen& screen : shown) {
+      show(screen.screen, screen.modal, {});
+    }
+  }
+
+  // The code that runs sandboxed: the UI addon's and the plugins'.
+  void allowAddonCode() {
+    trust.forgetAddons();
+    if (!addonFolder.empty()) {
+      trust.allowAddon(addonFolder);
+    }
+    for (const Plugin& plugin : plugins) {
+      trust.allowAddon(plugin.folder);
+    }
+  }
+
+  // A plugin's document's name: "<id>.<its path in the folder, dots for slashes>", such as
+  // "clock.document" or "clock.corner.document".
+  static std::string pluginDocumentName(const UiAddon& addon, const assets::AssetId& document) {
+    std::string path = document.str().substr(addon.folder.size() + 1);
+    std::ranges::replace(path, '/', '.');
+    return std::format("{}.{}", addon.id, path);
+  }
+
+  core::Result<void> addUiPlugin(const UiAddon& addon) {
+    if (addon.type != UiAddonType::Plugin) {
+      return core::fail(core::formatMessage(messages::UiAddonNotPlugin, addon.id));
+    }
+    if (!addon.uiApi.contains(CurrentUiApiVersion)) {
+      return core::fail(core::formatMessage(messages::UiAddonWantsOtherApi, addon.id,
+                                            uiApiRangeText(addon.uiApi),
+                                            uiApiVersionText(CurrentUiApiVersion)));
+    }
+    if (std::ranges::contains(plugins, addon.id, &Plugin::id)) {
+      return core::fail(core::formatMessage(messages::UiPluginAlreadyOn, addon.id));
+    }
+    const std::string folder = addon.folder + "/";
+    trust.allowAddon(folder);
+    std::vector<std::pair<std::string, Document>> fresh;
+    std::string errors;
+    for (const assets::AssetId& asset : addon.documents) {
+      std::string name = pluginDocumentName(addon, asset);
+      auto loaded = loadDetached(name, asset);
+      if (!loaded) {
+        errors += (errors.empty() ? "" : "; ") + loaded.error().message;
+        continue;
+      }
+      fresh.emplace_back(std::move(name), std::move(*loaded));
+    }
+    if (!errors.empty()) {
+      for (const auto& [name, document] : fresh) {
+        context->UnloadDocument(document.element);
+      }
+      allowAddonCode();
+      return core::fail(core::formatMessage(messages::UiAddonFailed, addon.id, errors));
+    }
+    Plugin plugin{.id = addon.id, .folder = folder, .documents = {}};
+    for (auto& [name, document] : fresh) {
+      documents.insert_or_assign(name, std::move(document));
+      plugin.documents.push_back(std::move(name));
+    }
+    plugins.push_back(std::move(plugin));
+    markersStale = true;
+    // Over whichever UI is on, without the focus: the screens keep the keyboard and the pad.
+    for (const std::string& name : plugins.back().documents) {
+      Document& document = *find(name);
+      document.element->Show(Rml::ModalFlag::None, Rml::FocusFlag::None);
+      document.element->callHandler("on_show", UiArguments{});
+    }
+    core::logInfo("{}", core::formatMessage(messages::UiPluginOn, addon.id));
+    return {};
+  }
+
+  void removeUiPlugins() {
+    for (const Plugin& plugin : plugins) {
+      for (const std::string& name : plugin.documents) {
+        hide(name);
+        if (Document* document = find(name)) {
+          context->UnloadDocument(document->element);
+          documents.erase(name);
+        }
+      }
+    }
+    plugins.clear();
+    allowAddonCode();
+    markersStale = true;
+  }
+
+  core::Result<void> useUiAddon(const UiAddon& addon) {
+    if (addon.type != UiAddonType::Ui) {
+      return core::fail(core::formatMessage(messages::UiAddonNotUi, addon.id));
+    }
+    if (!addon.uiApi.contains(CurrentUiApiVersion)) {
+      return core::fail(core::formatMessage(messages::UiAddonWantsOtherApi, addon.id,
+                                            uiApiRangeText(addon.uiApi),
+                                            uiApiVersionText(CurrentUiApiVersion)));
+    }
+    for (const auto& [screen, document] : addon.screens) {
+      if (!documents.contains(screen)) {
+        return core::fail(core::formatMessage(messages::UiAddonUnknownScreen, addon.id, screen));
+      }
+    }
+    const std::string folder = addon.folder + "/";
+    trust.allowAddon(folder);
+    std::map<std::string, Document, std::less<>> fresh;
+    std::string errors;
+    for (const auto& [screen, asset] : addon.screens) {
+      auto loaded = loadDetached(std::format("{}.{}", addon.id, screen), asset);
+      if (!loaded) {
+        errors += (errors.empty() ? "" : "; ") + loaded.error().message;
+        continue;
+      }
+      fresh.emplace(screen, std::move(*loaded));
+    }
+    if (!errors.empty()) {
+      for (const auto& [screen, document] : fresh) {
+        context->UnloadDocument(document.element);
+      }
+      allowAddonCode();
+      return core::fail(core::formatMessage(messages::UiAddonFailed, addon.id, errors));
+    }
+    switchUi(addon.id, folder, std::move(fresh));
+    core::logInfo("{}", core::formatMessage(messages::UiAddonOn, addon.id));
+    return {};
+  }
+
   void swapIn(const std::string& name, Document fresh) {
     Document& old = *find(name);
     const bool visible = old.element->IsVisible();
@@ -1355,6 +1600,10 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
     return std::unexpected{fonts.error()};
   }
   impl->scripting->install();
+  impl->scripting->loadApi(*desc.files);
+  for (const UiEventSource& source : impl->scripting->eventSources()) {
+    impl->eventSources[source.setting].push_back(source.event);
+  }
   if (auto texts = impl->loadTexts(); !texts) {
     return std::unexpected{texts.error()};
   }
@@ -1397,6 +1646,69 @@ void Ui::hide(std::string_view name) {
 
 bool Ui::isVisible(std::string_view name) const {
   return impl_->isVisible(name);
+}
+
+void Ui::mapScreen(std::string_view screen, std::string_view document) {
+  if (document.empty() || document == screen) {
+    impl_->screenDocuments.erase(std::string{screen});
+  } else {
+    impl_->screenDocuments.insert_or_assign(std::string{screen}, std::string{document});
+  }
+}
+
+void Ui::clearScreenMap() {
+  impl_->screenDocuments.clear();
+}
+
+std::string_view Ui::screenDocument(std::string_view screen) const {
+  return impl_->documentOf(screen);
+}
+
+void Ui::requestScreen(std::string_view screen, bool modal, const UiArguments& arguments) {
+  impl_->show(screen, modal, arguments);
+}
+
+void Ui::closeScreen(std::string_view screen) {
+  impl_->hide(screen);
+}
+
+bool Ui::isScreenOpen(std::string_view screen) const {
+  return impl_->isVisible(screen);
+}
+
+core::Result<void> Ui::useUiAddon(const UiAddon& addon) {
+  return impl_->useUiAddon(addon);
+}
+
+void Ui::useDefaultUi() {
+  if (impl_->addonId.empty()) {
+    return;
+  }
+  impl_->switchUi({}, {}, {});
+}
+
+std::string_view Ui::uiAddon() const {
+  return impl_->addonId;
+}
+
+core::Result<void> Ui::addUiPlugin(const UiAddon& plugin) {
+  return impl_->addUiPlugin(plugin);
+}
+
+void Ui::removeUiPlugins() {
+  impl_->removeUiPlugins();
+}
+
+std::vector<std::string> Ui::uiPlugins() const {
+  std::vector<std::string> ids;
+  for (const Impl::Plugin& plugin : impl_->plugins) {
+    ids.push_back(plugin.id);
+  }
+  return ids;
+}
+
+void Ui::setAddonCommandFilter(std::function<bool(std::string_view)> filter) {
+  impl_->addonCommands = std::move(filter);
 }
 
 void Ui::setTextFont(TextFont font) {
@@ -1467,8 +1779,17 @@ std::vector<UiCommand> Ui::takeCommands() {
   return std::exchange(impl_->commands, {});
 }
 
+UiValue Ui::reported(std::string_view name) const {
+  auto found = impl_->reports.find(name);
+  return found == impl_->reports.end() ? UiValue{} : found->second;
+}
+
 std::vector<UiCue> Ui::takeCues() {
   return std::exchange(impl_->cues, {});
+}
+
+std::size_t Ui::fireEvent(std::string_view event, const UiArguments& table) {
+  return impl_->fireEvent(event, table);
 }
 
 void Ui::setSetting(std::string_view name, UiValue value) {
@@ -1533,7 +1854,7 @@ void Ui::reloadChanged() {
 
 core::Result<void> Ui::callScript(std::string_view document, std::string_view function,
                                   std::span<const std::string> arguments) {
-  Impl::Document* found = impl_->find(document);
+  Impl::Document* found = impl_->findScreen(document);
   if (found == nullptr) {
     return core::fail(std::format("no document named {}", document));
   }
@@ -1550,7 +1871,7 @@ core::Result<void> Ui::callScript(std::string_view document, std::string_view fu
 }
 
 std::string Ui::focusedElementId(std::string_view document) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* focus = impl_->context->GetFocusElement();
   if (found == nullptr || focus == nullptr || focus->GetOwnerDocument() != found->element) {
     return {};
@@ -1560,7 +1881,7 @@ std::string Ui::focusedElementId(std::string_view document) const {
 
 std::string Ui::styleProperty(std::string_view document, std::string_view elementId,
                               std::string_view property) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   if (found == nullptr) {
     return {};
   }
@@ -1572,7 +1893,7 @@ std::string Ui::styleProperty(std::string_view document, std::string_view elemen
 }
 
 std::string Ui::elementText(std::string_view document, std::string_view elementId) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* element =
       found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
   return element != nullptr ? element->GetInnerRML() : std::string{};
@@ -1580,7 +1901,7 @@ std::string Ui::elementText(std::string_view document, std::string_view elementI
 
 bool Ui::elementHasClass(std::string_view document, std::string_view elementId,
                          std::string_view className) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* element = nullptr;
   if (found != nullptr) {
     element =
@@ -1595,7 +1916,7 @@ namespace dwe::ui {
 
 std::optional<Ui::Point> Ui::elementCenter(std::string_view document,
                                            std::string_view elementId) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* element =
       found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
   if (element == nullptr) {
@@ -1607,7 +1928,7 @@ std::optional<Ui::Point> Ui::elementCenter(std::string_view document,
 }
 
 bool Ui::elementShown(std::string_view document, std::string_view elementId) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   const Rml::Element* element =
       found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
   return element != nullptr && element->IsVisible(true);
@@ -1631,7 +1952,7 @@ std::vector<Ui::TextOverflow> Ui::overflowingTexts() const {
 
 std::optional<Ui::Rect> Ui::elementRect(std::string_view document,
                                         std::string_view elementId) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* element =
       found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
   if (element == nullptr) {
@@ -1645,7 +1966,7 @@ std::optional<Ui::Rect> Ui::elementRect(std::string_view document,
 
 std::optional<Ui::Rect> Ui::elementDrawnRect(std::string_view document,
                                              std::string_view elementId) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* element =
       found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
   if (element == nullptr) {
@@ -1674,7 +1995,7 @@ std::vector<Ui::Rect> Ui::drawnRects(std::string_view exceptDocument) const {
 }
 
 std::vector<Ui::Rect> Ui::drawnRectsIn(std::string_view document) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   if (found == nullptr) {
     return {};
   }
@@ -1684,7 +2005,7 @@ std::vector<Ui::Rect> Ui::drawnRectsIn(std::string_view document) const {
 
 std::vector<Ui::Rect> Ui::drawnRectsOf(std::string_view document,
                                        std::string_view elementId) const {
-  const Impl::Document* found = impl_->find(document);
+  const Impl::Document* found = impl_->findScreen(document);
   Rml::Element* element =
       found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
   if (element == nullptr) {
@@ -1696,7 +2017,7 @@ std::vector<Ui::Rect> Ui::drawnRectsOf(std::string_view document,
 
 std::vector<Ui::Rect> Ui::drawnRectsAround(std::string_view document,
                                            std::string_view elementId) const {
-  const Impl::Document* holder = impl_->find(document);
+  const Impl::Document* holder = impl_->findScreen(document);
   Rml::Element* element =
       holder != nullptr ? holder->element->GetElementById(std::string{elementId}) : nullptr;
   std::vector<Rect> found;

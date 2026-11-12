@@ -299,6 +299,8 @@ bool readFlag(Options& options, std::string_view argument) {
     options.checkSystem = true;
   } else if (argument == TuningOption) {
     options.tuning = true;
+  } else if (argument == SafeUiOption) {
+    options.safeUi = true;
   } else if (argument == ExploreOption) {
     options.explore = true;
   } else if (argument == ChibiOption) {

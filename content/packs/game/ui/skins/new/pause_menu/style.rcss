@@ -106,6 +106,20 @@
 	color: #efc63c;
 }
 
+/* In English the original paints its word pictures over the labels (.use-menu-art); the new look writes the words. */
+#panel.on-main.use-menu-art .menu-label {
+	width: 111dp;
+	height: 15dp;
+	margin: 0;
+	line-height: 15dp;
+	color: #d6d6d6;
+	decorator: none;
+}
+
+#panel.on-main.use-menu-art .field-entry:focus .menu-label {
+	color: #efc63c;
+}
+
 /* The cursor: the gold four corners round the icon (87 x 78) instead of the original's three sprites. */
 #panel.on-main .cursor-part {
 	display: none;
@@ -238,9 +252,10 @@
 	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
 }
 
-/* The list clips its rows: pad it so the ▶ left of each row stays inside. */
+/* The list clips its rows: pad it so the ▶ left of each row stays inside. Eleven rows, so the help under it holds
+   four lines (the longest helps); with an even count the focus scrolls the rows half a row off. */
 #option-list {
-	max-height: 377dp;
+	max-height: 319dp;
 	margin-right: 0;
 	margin-left: -26dp;
 	padding-left: 26dp;
@@ -324,7 +339,7 @@
 #option-list scrollbarvertical sliderbar { margin: 2dp; background-color: #69c2ff; }
 
 #option-info {
-	height: 90dp;
+	height: 119dp;
 	margin: 5dp 30dp 0 -16dp;
 	padding: 8dp 12dp 0 12dp;
 	border-top: 3dp #7cb6e2;
@@ -377,6 +392,11 @@
 
 #options-hints .key + .key {
 	margin-left: 4dp;
+}
+
+/* The word a space after its keys (opt-juego: «Q E  Pestaña»). */
+#options-hints .hint > span:last-child {
+	margin-left: 8dp;
 }
 
 #reset-confirm {
@@ -508,15 +528,6 @@
 	background-color: #7cb6e2;
 }
 
-/* The player's picture: the concept's portrait instead of the model. */
-#player-portrait {
-	visibility: hidden;
-}
-
-#player-portrait-clip {
-	decorator: image(/ui/skins/new/assets/icon_sources/icon_player.png scale-down center 30%);
-}
-
 /* The page prompts as key caps. */
 .page-prompts {
 	font-family: "Pixel Small";
@@ -526,6 +537,23 @@
 
 .page-prompt {
 	margin-right: 24dp;
+}
+
+/* The chart's row: the original draws it tighter to clear its rookie column; the new look's caps need the gaps. */
+#chart-prompts {
+	letter-spacing: 0;
+}
+
+#chart-prompts .page-prompt {
+	margin-right: 24dp;
+}
+
+#chart-prompts .page-prompt:last-child {
+	margin-right: 0;
+}
+
+#chart-prompts .prompt-key {
+	margin-right: 10dp;
 }
 
 .page-prompts .prompt-key,

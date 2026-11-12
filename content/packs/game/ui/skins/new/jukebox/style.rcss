@@ -34,8 +34,14 @@ body #window {
 	color: #f2f0e1;
 }
 
+/* The number column (.jb .n): two digits, a leading zero under ten. */
 .number {
+	display: none;
 	color: #93a6bc;
+}
+
+.number.padded {
+	display: block;
 }
 
 /* Long titles stop before the playing arrow: the row does not clip its placed children. */
@@ -75,28 +81,13 @@ body #talk {
 	color: #f2f0e1;
 }
 
+/* A long song name wraps onto the next line instead of running past the box. */
 #talk .talk-row {
-	height: 36dp;
+	height: auto;
+	min-height: 36dp;
+	white-space: pre-wrap;
 }
 
-body #speaker,
-body #speaker.player {
+body #speaker {
 	color: #efc63c;
 }
-
-#talk .talk-row .run {
-	padding: 0;
-}
-
-#talk .talk-row.selected {
-	margin-left: -26dp;
-	padding: 0 12dp;
-	border-left: 26dp transparent;
-	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
-}
-
-#talk .talk-row.selected .run {
-	border-width: 0;
-	background-color: transparent;
-}
-

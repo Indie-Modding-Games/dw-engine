@@ -141,6 +141,8 @@ end
 
 local function refresh(document)
   local phase = ui.setting("card_shop.phase") or "closed"
+  -- The talk only waits for the player to go on here (common/talk_wait.lua).
+  talk_wait.draw(document, phase == "talk")
   local frame = document:get("frame")
   for _, name in ipairs({ "talk", "list", "confirm", "amount", "packs", "summary" }) do
     frame:set_class("phase-" .. name, phase == name)

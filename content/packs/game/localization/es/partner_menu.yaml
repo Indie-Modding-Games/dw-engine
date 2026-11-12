@@ -3,6 +3,9 @@
 tab.status: "Estado"
 tab.items: "Objetos"
 tab.care: "Cuidados"
+# Los nombres de las páginas del menú compacto (skin.yaml layout: partner_menu: pages: compact).
+nav.partner: "Compañero"
+nav.bag: "Bolsa"
 # La especie del compañero, bajo su nombre propio (game_menu.c: drawDigimonStatsStrings).
 species: "Especie"
 age: "Edad"
@@ -112,9 +115,6 @@ tech.category.5: "Metal"
 tech.category.6: "Mugre"
 
 tech.change: "Cambiar técnicas"
-tech.assign: "Asignar técnica"
-tech.unassign: "Quitar técnica"
-tech.done: "Listo"
 tech.unavailable: "Solo técnicas aprendidas"
 tech.full: "Las tres ranuras están llenas"
 tech.need_attack: "Equipa una técnica que cause daño"

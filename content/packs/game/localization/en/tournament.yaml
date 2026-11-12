@@ -2,6 +2,8 @@
 bracket.round: "Round {round}"
 bracket.final: "Final"
 bracket.champion: "Champion"
+# The cup's name by its grade, on the intro's card (for the skins that write it).
+bracket.cup: "Cup {grade}"
 # A cup match: the intro's stats box (STD_renderIntroStats) and the damage box after the time ran out
 # (STD_renderTimeoutWindow).
 match.hp: "HP"

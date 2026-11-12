@@ -18,7 +18,7 @@ inline constexpr std::string_view FullscreenSetting = "fullscreen";
 inline constexpr std::string_view VsyncSetting = "vsync";
 inline constexpr std::string_view UiScaleSetting = "ui_scale";
 inline constexpr std::string_view MinimapSizeSetting = "minimap_size";
-// The minimap's sizes (hud/logic.lua); medium when not chosen.
+// The minimap's sizes (hud/presenter.lua); medium when not chosen.
 inline constexpr std::string_view MinimapSizeSmall = "small";
 inline constexpr std::string_view MinimapSizeMedium = "medium";
 inline constexpr std::string_view MinimapSizeLarge = "large";

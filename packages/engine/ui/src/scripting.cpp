@@ -1,6 +1,7 @@
 #include "scripting.hpp"
 
 #include <dwe/core/log.hpp>
+#include <dwe/script/engine_code.hpp>
 
 #include <RmlUi/Core/Box.h>
 #include <RmlUi/Core/Context.h>
@@ -39,6 +40,17 @@ namespace {
   luaL_where(state, 1);
   lua_pushstring(state, message);
   lua_concat(state, 2);
+  lua_error(state);
+  std::unreachable();
+}
+
+// The same for a command an addon may not send, naming it.
+[[noreturn]] void raiseRefusedCommand(lua_State* state, std::string_view name) {
+  luaL_where(state, 1);
+  lua_pushstring(state, "an addon may not send ");
+  lua_pushlstring(state, name.data(), name.size());
+  lua_pushstring(state, ": the game takes only its declared commands from addons");
+  lua_concat(state, 4);
   lua_error(state);
   std::unreachable();
 }
@@ -377,7 +389,48 @@ private:
 
 ScriptedDocument::ScriptedDocument(const Rml::String& tag, Scripting& scripting)
     : Rml::ElementDocument{tag}, scripting_{&scripting}, environment_{scripting.newEnvironment()},
-      ownCode_{scripting.trust().loadVerdict()} {}
+      ownCode_{scripting.trust().loadVerdict()} {
+  scripting_->bindHooks(environment_, *this);
+  if (scripting.trust().sandboxed()) {
+    scripting_->sandbox(environment_);
+  }
+}
+
+bool ScriptedDocument::addHook(std::string_view event, sol::reference handler) {
+  const bool known = std::ranges::any_of(
+      hooks_, [&](const Hook& hook) { return hook.event == event && hook.handler == handler; });
+  if (known) {
+    return true;
+  }
+  if (hooks_.size() >= MaxDocumentHooks) {
+    return false;
+  }
+  hooks_.push_back({.event = std::string{event}, .handler = std::move(handler)});
+  return true;
+}
+
+void ScriptedDocument::removeHook(std::string_view event, const sol::reference& handler) {
+  std::erase_if(hooks_,
+                [&](const Hook& hook) { return hook.event == event && hook.handler == handler; });
+}
+
+std::size_t ScriptedDocument::fireHook(std::string_view event, const UiArguments& table) {
+  if (!ownCode_) {
+    return 0;
+  }
+  // A handler may register or remove handlers: the ones registered when the event fired run.
+  std::vector<sol::reference> handlers;
+  for (const Hook& hook : hooks_) {
+    if (hook.event == event) {
+      handlers.push_back(hook.handler);
+    }
+  }
+  for (const sol::reference& handler : handlers) {
+    const LuaCallee callee{.function = &handler, .environment = &environment_, .name = event};
+    scripting_->run(callee, name_, event, table, LuaElement{GetObserverPtr()});
+  }
+  return handlers.size();
+}
 
 void ScriptedDocument::setName(std::string_view name) {
   name_ = name;
@@ -775,6 +828,15 @@ void Scripting::registerApi() {
       raise(lua, "too many commands: the game takes them once per frame");
     }
   };
+  api["report"] = [this](std::string_view name, sol::stack_object value, sol::this_state lua) {
+    checkName(lua, name);
+    if (value.get_type() == sol::type::string) {
+      checkText(lua, value.as<std::string_view>());
+    }
+    if (!host_.report(UiCommand{.name = std::string{name}, .value = toUiValue(value)})) {
+      raise(lua, "too many reported names");
+    }
+  };
   api["setting"] = [this](std::string_view name, sol::this_state lua) {
     checkName(lua, name);
     return result(lua, [&] { return host_.setting(name); });
@@ -831,6 +893,86 @@ void Scripting::registerApi() {
     checkName(lua, name);
     return host_.isVisible(name);
   };
+}
+
+void Scripting::bindHooks(sol::environment& environment, ScriptedDocument& document) {
+  sol::state_view lua{environment.lua_state()};
+  sol::table hooks = lua.create_table();
+  const Rml::ObserverPtr<Rml::Element> owner = document.GetObserverPtr();
+  // hooks.on(event, handler): handler(event_table, document) runs each time the UI API fires the
+  // event (docs/modding/ui-api.md). The table holds `version`, the version of the event's table,
+  // and the event's fields.
+  hooks["on"] = [owner](std::string_view event, sol::stack_object handler, sol::this_state lua) {
+    checkName(lua, event);
+    if (handler.get_type() != sol::type::function) {
+      raise(lua, "hooks.on takes an event name and a function");
+    }
+    auto* scripted = dynamic_cast<ScriptedDocument*>(owner.get());
+    if (scripted == nullptr) {
+      return;
+    }
+    if (!scripted->addHook(event, sol::reference{lua, handler.stack_index()})) {
+      raise(lua, "too many hooks: a document may register 64 handlers");
+    }
+  };
+  hooks["off"] = [owner](std::string_view event, sol::stack_object handler, sol::this_state lua) {
+    checkName(lua, event);
+    auto* scripted = dynamic_cast<ScriptedDocument*>(owner.get());
+    if (scripted != nullptr && handler.get_type() == sol::type::function) {
+      scripted->removeHook(event, sol::reference{lua, handler.stack_index()});
+    }
+  };
+  environment[std::string{HooksTable}] = hooks;
+}
+
+void Scripting::sandbox(sol::environment& environment) {
+  const script::ScriptCall scope{*vm_};
+  sol::optional<sol::table> api = environment[std::string{UiTable}];
+  if (!api) {
+    return;
+  }
+  (*api)["send"] = [this](std::string_view name, sol::stack_object value, sol::this_state lua) {
+    checkName(lua, name);
+    if (!host_.addonCommand || !host_.addonCommand(name)) {
+      raiseRefusedCommand(lua, name);
+    }
+    if (value.get_type() == sol::type::string) {
+      checkText(lua, value.as<std::string_view>());
+    }
+    if (!host_.send(UiCommand{.name = std::string{name}, .value = toUiValue(value)})) {
+      raise(lua, "too many commands: the game takes them once per frame");
+    }
+  };
+}
+
+void Scripting::loadApi(const assets::VirtualFileSystem& files) {
+  std::vector<assets::AssetId> scripts;
+  for (const assets::AssetId& id : files.ids()) {
+    if (id.str().starts_with(ApiFolder)) {
+      scripts.push_back(id);
+    }
+  }
+  std::ranges::sort(scripts, {}, &assets::AssetId::str);
+  {
+    const script::ScriptCall scope{*vm_};
+    scope.lua()["event_source"] = [this](std::string_view setting, std::string_view event,
+                                         sol::this_state lua) {
+      checkName(lua, setting);
+      checkName(lua, event);
+      eventSources_.push_back({.setting = std::string{setting}, .event = std::string{event}});
+    };
+  }
+  for (const assets::AssetId& id : scripts) {
+    if (auto trusted = script::checkEngineScript(files, id); !trusted) {
+      core::logError("ui api {}: {}", id.str(), trusted.error().message);
+      continue;
+    }
+    if (auto ran = vm_->runAsset(files, id); !ran) {
+      core::logError("ui api {}: {}", id.str(), ran.error().message);
+    }
+  }
+  const script::ScriptCall scope{*vm_};
+  scope.lua()["event_source"] = sol::lua_nil;
 }
 
 void Scripting::bindLayout(sol::environment& environment, const std::string& screen) {

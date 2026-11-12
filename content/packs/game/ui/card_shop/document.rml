@@ -3,6 +3,7 @@
 	<title>Card shop</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/talk_wait.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -18,6 +19,7 @@
 			<div class="talk-row" id="talk-0"></div>
 			<div class="talk-row" id="talk-1"></div>
 			<div class="talk-row" id="talk-2"></div>
+			<div id="talk-wait" class="prompt-icon hidden"></div>
 		</div>
 		<div id="confirm" class="original-box original-look">
 			<div id="question"></div>

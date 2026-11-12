@@ -14,11 +14,11 @@
 		<div id="picture-fade-right" class="picture-fade"></div>
 		<div id="panel">
 			<h1 id="title" text-key="new_game_rules.title"></h1>
-			<button id="rules-all" onclick="toggle(document, 'all')"></button>
+			<button id="rules-all" onclick="toggle(document, 'all')"><span id="rules-all-label"></span><span id="rules-all-value" class="rule-value"></span><span id="rules-all-after"></span></button>
 			<p id="about-all" class="about"></p>
-			<button id="rules-hidden" onclick="toggle(document, 'hidden')"></button>
+			<button id="rules-hidden" onclick="toggle(document, 'hidden')"><span id="rules-hidden-label"></span><span id="rules-hidden-value" class="rule-value"></span><span id="rules-hidden-after"></span></button>
 			<p id="about-hidden" class="about"></p>
-			<button id="rules-mega" onclick="toggle(document, 'mega')"></button>
+			<button id="rules-mega" onclick="toggle(document, 'mega')"><span id="rules-mega-label"></span><span id="rules-mega-value" class="rule-value"></span><span id="rules-mega-after"></span></button>
 			<p id="about-mega" class="about"></p>
 			<button id="rules-start" onclick="start()" text-key="new_game_rules.start"></button>
 			<button id="back" class="back" onclick="back()" text-key="common.back"></button>

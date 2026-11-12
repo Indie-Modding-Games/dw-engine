@@ -50,6 +50,8 @@
 #include <vector>
 
 #include "device_names.hpp"
+#include "medal_sheet.hpp"
+#include "menu_portraits.hpp"
 #include "minimap_setting.hpp"
 #include "partner_portrait.hpp"
 #include "player_chart.hpp"
@@ -959,13 +961,11 @@ int runUiDemo(const UiDemoOptions& options) {
 
     const std::array<render::Drawer*, 1> uiDrawers{uiRenderer->get()};
     std::vector<render::TextureScene> portraitScenes;
-    if ((*ui)->isVisible("partner_menu") &&
-        !(*ui)->elementHasClass("partner_menu", "page-status", "hidden"))
+    // The portraits the menus ask for (menu_portraits.hpp).
+    const MenuPortraits menuPortraits = MenuPortraits::read(**ui, MedalCount);
+    if ((*ui)->isVisible("partner_menu") && menuPortraits.partner)
       portraitScenes.push_back((*portrait)->scene());
-    if ((*ui)->isVisible("pause_menu") &&
-        (*ui)->elementHasClass("pause_menu", "panel", "on-player") &&
-        !(*ui)->elementHasClass("pause_menu", "panel", "player-tools-open") &&
-        !(*ui)->elementHasClass("pause_menu", "panel", "player-chart"))
+    if ((*ui)->isVisible("pause_menu") && menuPortraits.player)
       portraitScenes.push_back((*playerPortrait)->scene());
     const bool drawn = (*renderer)->renderFrame({
         .clearColor = {0.10F, 0.12F, 0.16F, 1.0F},

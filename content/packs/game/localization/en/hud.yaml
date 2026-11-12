@@ -21,3 +21,5 @@ shop_job.joins: "Joins the city!"
 # The round minimap (an engine improvement): the north mark on its ring and the day under it, next to the time (clock.time).
 minimap.north: "N"
 minimap.day: "Day {day}"
+# The lives box's word (on losing one), for skins that write it instead of the original's picture.
+lives_box.label: "Lives"

@@ -73,10 +73,11 @@ local function extras()
   return ui.setting("shop_extras") == true
 end
 
-local function row_label(row)
+-- A row's text; `price` stands in for the row's price when given (draw_row splits on it).
+local function row_label(row, price)
   local prefix = "shop.row." .. row .. "."
   local name = t(ui.setting(prefix .. "name") or "")
-  local price = number(prefix .. "price")
+  price = price or number(prefix .. "price")
   if ui.setting("shop.mode") == "sell" then
     return t("shop.sale_row", { name = name, price = price, count = number(prefix .. "count") })
   end
@@ -121,13 +122,28 @@ local function draw_descriptions(document)
   document:get("list-description"):set_text(text)
 end
 
+-- A row as one text (row-N-text) and again split into the name part and the price part from the
+-- price on (row-N-name, row-N-price), for skins that set the price in its own column.
+local PriceMarker = "\1"
+local function draw_row(document, slot, row)
+  document:get("row-" .. slot .. "-text"):set_text(row_label(row))
+  local marked = row_label(row, PriceMarker)
+  local at = string.find(marked, PriceMarker, 1, true)
+  local name = at and string.sub(marked, 1, at - 1):gsub("%s+$", "") or marked
+  local price = at
+      and (tostring(number("shop.row." .. row .. ".price")) .. string.sub(marked, at + 1))
+    or ""
+  document:get("row-" .. slot .. "-name"):set_text(name)
+  document:get("row-" .. slot .. "-price"):set_text(price)
+end
+
 local function refresh_list(document)
   for slot = 1, PageSize do
     local row = row_of(slot)
     local entry = document:get("row-" .. slot)
     entry:set_class("hidden", row == nil)
     if row ~= nil then
-      entry:set_text(row_label(row))
+      draw_row(document, slot, row)
       entry:set_class("disabled", not ui.setting("shop.row." .. row .. ".enabled"))
       -- The partner's favourite food (the favorite_food option, an engine improvement).
       local favorite = ui.setting("shop.row." .. row .. ".favorite") == true
@@ -185,8 +201,15 @@ local function draw_bits(document)
   document:get("bits-box"):set_class("hidden", not ui.setting("shop.bits_shown"))
 end
 
+-- The phases the panel names in a phase-<name> class, for skins that lay each one out apart.
+local Phases = { "talk", "choice", "list", "description", "amount" }
+
 local function refresh(document)
   local current = phase()
+  local panel = document:get("panel")
+  for _, name in ipairs(Phases) do
+    panel:set_class("phase-" .. name, current == name)
+  end
   draw_bits(document)
   document:get("line"):set_text(line_text())
   document:get("line"):set_class("hidden", current == "choice")
@@ -258,8 +281,13 @@ function on_show(document)
   refresh_prompts(document)
 end
 
-function on_setting(document, _name)
-  refresh(document)
+-- The game publishes a change as a batch of shop.* settings and then bumps shop.revision; drawing
+-- on each one would read a phase before its rows (and focus a row about to hide). Other names are
+-- the options the shop reads (shop_extras, favorite_food).
+function on_setting(document, name)
+  if name == "shop.revision" or string.sub(name, 1, 5) ~= "shop." then
+    refresh(document)
+  end
 end
 
 function on_language(document)

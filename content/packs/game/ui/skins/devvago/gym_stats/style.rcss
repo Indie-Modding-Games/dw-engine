@@ -1,0 +1,35 @@
+/* The gym's stats box in the original look (trn_hud.c: TRN_renderPostTrainingStatsBox; capture
+   orig_stats_box_wait, 2026-10-30): the stat names in yellow (#FFFF52, the text area drawn with CLUT 4), the values in
+   the white digits (#CECECE) and the gains in cyan (#31D6D6, renderNumber 5) after the up arrow of BI_IN
+   (u 96, v 180, CLUT row 491: the battle box's arrow). The frame is the pause menu's box; the brains course's box
+   under it is the same box. */
+
+body .label {
+	color: #ffff52;
+}
+
+body .value {
+	color: #cecece;
+}
+
+body .gain {
+	color: #31d6d6;
+}
+
+body .arrow {
+	color: transparent;
+	decorator: image(battle-up-arrow);
+}
+
+/* trn_reward.c: the orders in colour 7, "New orders!" in colour 1. */
+body .note {
+	color: #d0d0d0;
+}
+
+body .note.order {
+	color: #f8f800;
+}
+
+body .label { color: #8edcff; }
+body .value, body .note { color: #d5eaf7; }
+body .gain, body .note.order { color: #ffe64a; }

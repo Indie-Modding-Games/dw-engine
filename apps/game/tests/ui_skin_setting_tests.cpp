@@ -184,6 +184,8 @@ TEST_CASE(
   saveUserSettings(file, UserSettings{.language = std::nullopt,
                                       .textFont = std::nullopt,
                                       .uiSkin = "modern",
+                                      .uiAddon = std::nullopt,
+                                      .uiPlugins = std::nullopt,
                                       .minimap = std::nullopt});
   {
     Content content{DiscArt::Extracted};
@@ -194,6 +196,8 @@ TEST_CASE(
   saveUserSettings(file, UserSettings{.language = "es",
                                       .textFont = std::nullopt,
                                       .uiSkin = std::nullopt,
+                                      .uiAddon = std::nullopt,
+                                      .uiPlugins = std::nullopt,
                                       .minimap = std::nullopt});
   {
     Content content{DiscArt::Extracted};
@@ -236,6 +240,8 @@ TEST_CASE("a saved legacy skin, which the new skin replaced, starts as the origi
   saveUserSettings(file, UserSettings{.language = "es",
                                       .textFont = std::nullopt,
                                       .uiSkin = "legacy",
+                                      .uiAddon = std::nullopt,
+                                      .uiPlugins = std::nullopt,
                                       .minimap = std::nullopt});
   const UserSettings saved = loadUserSettings(file);
   CHECK(startUiSkin(std::nullopt, saved.uiSkin) == std::optional<std::string>{"original"});

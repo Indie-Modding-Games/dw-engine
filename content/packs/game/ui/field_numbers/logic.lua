@@ -82,6 +82,12 @@ function on_show(document)
   draw(document)
 end
 
+-- The icons' words are in the player's language: write them again.
+function on_language(document)
+  applied = {}
+  draw(document)
+end
+
 function on_setting(document, name)
   if name == "field.numbers.revision" then
     draw(document)

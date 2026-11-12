@@ -424,6 +424,11 @@
 	color: #d0d0d0;
 }
 
+/* The original names the command alone, without a technique's MP cost. */
+#command-cost {
+	display: none;
+}
+
 #fight.opening #command-cursor {
 	display: none;
 }
@@ -556,6 +561,25 @@
 #hd-1-1, #hd-2-1, #hd-3-1 { left: 21dp; }
 #hd-1-2, #hd-2-2, #hd-3-2 { left: 42dp; }
 #hd-1-3, #hd-2-3, #hd-3-3 { left: 63dp; }
+
+/* Enemy life bars (the enemy_hp_bars option) keep this bar: the modern look's compact bar (#hp-bars.always) would win
+   over the rules above by its selectors, so the ones it changes are set again here. */
+#hp-bars.always .hb-frame {
+	border: 3dp #0ab40a;
+	border-radius: 0;
+}
+
+#hp-bars.always .hb-line {
+	display: block;
+}
+
+#hp-bars.always .hb-fill {
+	background-color: transparent;
+}
+
+#hp-bars.always .hb-value .dd {
+	width: 24dp;
+}
 
 /* ------------------------------------------------------------------------------------------------------------------
    The finisher's charge and the revive countdown: one of the original's boxes and the ink colour. */

@@ -1,0 +1,14 @@
+<rml>
+<head>
+	<title>Clock</title>
+	<link type="text/rcss" href="../../common/base.rcss"/>
+	<link type="text/rcss" href="style.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="clock" class="hidden">
+		<span id="time"></span>
+		<span id="day"></span>
+	</div>
+</body>
+</rml>

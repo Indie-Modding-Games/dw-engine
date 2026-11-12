@@ -1,48 +1,78 @@
-/* destination_choice in the new look (concept area B, mockups 192-193): the shared panel (panel/style) with room
-   on the left for the ▶, the places in the small font with the ▶ and the gold outline on the focused one,
-   «Quedarse aquí» muted. */
+/* destination_choice in the new look (concept area B, mockups 192-193): the shared panel (panel/style) centred at
+   580dp, the places in the small font with a plain olive outline on the focused one (no ▶, the text keeps its
+   colour), «Quedarse aquí» muted. */
 
 #panel {
-	padding: 12dp 24dp 10dp 44dp;
+	width: 526dp;
+	margin-left: -290dp;
+	padding: 12dp 24dp 10dp 24dp;
 }
 
+/* dc-list: the title stands alone, no line under it, level with the places. */
 #title {
-	margin-left: -20dp;
+	margin: 0 0 3dp -6dp;
+	padding: 0;
+	border-bottom-width: 0;
 }
 
 .place,
 .page-turn,
 #stay {
-	margin-left: -26dp;
-	padding: 0 12dp;
-	border-width: 0;
-	border-left-width: 26dp;
+	margin: 0 -12dp;
+	padding: 0 9dp;
+	border: 3dp transparent;
 	background-color: transparent;
+	decorator: none;
 	font-family: "Pixel Small";
 	font-size: 26dp;
-	line-height: 33dp;
+	line-height: 27dp;
 	color: #f2f0e1;
 }
 
 #stay {
+	margin-top: 6dp;
 	color: #93a6bc;
 }
 
 .place:focus,
 .page-turn:focus,
 #stay:focus {
+	border-color: #a0a000;
 	background-color: transparent;
-	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
-	color: #efc63c;
+	decorator: none;
 }
 
-#page {
-	font-family: "Pixel Small";
-	font-size: 26dp;
+.place:focus,
+.page-turn:focus {
+	color: #f2f0e1;
+}
+
+#stay:focus {
 	color: #93a6bc;
 }
 
+/* The page count centred between the places and the page turns (dc-paged). */
+#page {
+	margin: 6dp 0 3dp 0;
+	text-align: center;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #f2f0e1;
+}
+
+/* The prompts from the left edge on one line (dc-list pprompts). */
 #prompts {
-	margin: 10dp -14dp 0 -34dp;
-	padding: 8dp 12dp 0 20dp;
+	margin: 10dp -12dp 0 -12dp;
+	padding: 6dp 0 0 0;
+	text-align: left;
+	white-space: nowrap;
+}
+
+#prompts .prompt:first-child {
+	margin-left: -4dp;
+}
+
+/* The story mark after the place (dc-list: «· historia») in gold. */
+.story-mark {
+	color: #efc63c;
 }

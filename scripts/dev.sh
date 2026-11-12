@@ -369,11 +369,11 @@ sources() {
   git_paths ls-files --cached --others --exclude-standard -- '*.cpp' '*.hpp'
 }
 
-# The engine's own Lua: the game's scripts and the packs' (the extracted story is dwx's output, not
-# a source).
+# The engine's own Lua: the game's scripts, the packs' and the example addons' (the extracted story
+# is dwx's output, not a source).
 lua_sources() {
   git_paths ls-files --cached --others --exclude-standard -- \
-    ':(glob)apps/**/*.lua' ':(glob)content/packs/**/*.lua'
+    ':(glob)apps/**/*.lua' ':(glob)content/packs/**/*.lua' ':(glob)examples/**/*.lua'
 }
 
 shell_sources() {

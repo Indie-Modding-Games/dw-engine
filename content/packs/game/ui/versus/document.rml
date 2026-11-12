@@ -556,6 +556,7 @@
 			<div id="view-join_entry" class="view">
 				<p text-key="versus.join.prompt"></p>
 				<p id="typed" class="entry"></p>
+				<p id="typed-cells" class="entry"><span id="typed-0" class="cell"></span><span id="typed-1" class="cell"></span><span id="typed-2" class="cell"></span><span id="typed-3" class="cell"></span></p>
 				<p id="bad-entry" class="warning" text-key="versus.join.bad"></p>
 				<p class="about" text-key="versus.join.hint"></p>
 			</div>

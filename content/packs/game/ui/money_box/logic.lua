@@ -17,6 +17,10 @@ function on_show(document)
   refresh(document)
 end
 
+function on_language(document)
+  refresh(document)
+end
+
 function on_setting(document, name)
   if name == "money_box.revision" then
     refresh(document)

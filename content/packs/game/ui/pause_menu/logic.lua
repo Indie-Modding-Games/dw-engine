@@ -41,6 +41,15 @@ local return_entry = nil
 local function original_menu()
   return ui.layout("menu") == "original"
 end
+-- The player page's tabs in the original layout (skin.yaml layout: pause_menu: tabs): "minimal"
+-- offers the profile, the chart and the city only, walked with the tab keys too; anything else all.
+local function player_tabs()
+  if ui.layout("tabs") == "minimal" then
+    return { "player", "chart", "city" }
+  end
+  -- tickPlayerMenu: the four pages are always there, in this order; dwe adds the City tab.
+  return { "player", "chart", "medals", "card", "city" }
+end
 local chart_selecting = false
 local chart_detail = false
 local chart_transition = nil
@@ -112,7 +121,7 @@ local function cycle(list, index, step)
 end
 
 -- What each option entry does when confirmed or moved left and right.
-local options = {
+local option_actions = {
   ["minimap-mode"] = function(step)
     local index = index_of(minimap_modes, ui.setting("minimap")) or 1
     ui.send("minimap", minimap_modes[cycle(minimap_modes, index, step)])
@@ -182,6 +191,67 @@ local display_entries = {
     end,
     change = function(step)
       skin_choice.change(step)
+    end,
+  },
+  -- The whole UI (docs/modding/interfaces.md): the game's own or a UI addon the packs or the
+  -- player's addons folder offer (ui_addons). The pick goes on as the menu closes; in safe mode
+  -- only the game's own is offered. The row shows only when there is a choice, or in safe mode.
+  {
+    id = "ui-addon",
+    tab = "interface",
+    label = "pause_menu.ui_addon",
+    help = "pause_menu.help.ui_addon",
+    kind = "list",
+    tag = false,
+    shown = function()
+      local offered = ui.setting("ui_addons") or ""
+      return ui.setting("ui_addon.safe") == true or string.find(offered, " ") ~= nil
+    end,
+    value = function()
+      return ui.setting("ui_addon")
+    end,
+    text = function()
+      local id = ui.setting("ui_addon") or "default"
+      if ui.setting("ui_addon.safe") == true then
+        return t("pause_menu.ui_addon.safe")
+      end
+      if id == "default" then
+        return t("pause_menu.ui_addon.default")
+      end
+      return ui.setting("ui_addon.name." .. id) or id
+    end,
+    change = function(step)
+      local offered = {}
+      for id in string.gmatch(ui.setting("ui_addons") or "", "%S+") do
+        offered[#offered + 1] = id
+      end
+      if #offered < 2 or ui.setting("ui_addon.safe") == true then
+        return
+      end
+      local index = index_of(offered, ui.setting("ui_addon")) or 1
+      ui.send("ui_addon", offered[cycle(offered, index, step)])
+    end,
+  },
+  -- The plugins (docs/modding/interfaces.md): documents over whichever UI is on, all on or all
+  -- off. The row shows only when the packs offer one, and not in safe mode.
+  {
+    id = "ui-plugins",
+    tab = "interface",
+    label = "pause_menu.ui_plugins",
+    help = "pause_menu.help.ui_plugins",
+    kind = "toggle",
+    tag = false,
+    shown = function()
+      return ui.setting("ui_addon.safe") ~= true and (ui.setting("ui_plugins.count") or 0) > 0
+    end,
+    value = function()
+      return ui.setting("ui_plugins") == true
+    end,
+    text = function()
+      return on_off(ui.setting("ui_plugins"))
+    end,
+    change = function(_step)
+      ui.send("ui_plugins", not ui.setting("ui_plugins"))
     end,
   },
   -- The scale stops at its smallest and largest steps, whichever way it moves.
@@ -327,7 +397,7 @@ local MEGA_ORDER = { houo = 1, hkab = 2, mtet = 3, muge = 4 }
 local STAGE_KEYS = { "fresh", "in_training", "rookie", "champion", "ultimate" }
 
 local function canonical_stages()
-  return ui.setting("canonical_stages") == true
+  return options.get("canonical_stages") == true
 end
 
 -- The stage label of a chart cell: the original's level names, or the canonical ones.
@@ -667,7 +737,7 @@ local GROUP_KEYS = { care = true, weight = true, stats = true, bonus = true, gat
 local STAT_KEYS = { hp = true, mp = true, off = true, def = true, spd = true, brn = true }
 
 local function requirements_on()
-  return ui.setting("evolution_requirements") ~= false and ui.setting("evoreq.ready") == true
+  return options.get("evolution_requirements") and ui.setting("evoreq.ready") == true
 end
 
 local function numbers(text)
@@ -1146,10 +1216,18 @@ end
 local function refresh_medals(document)
   local held = number_list("player.medals.held")
   local shown = (held[medal_index] or 0) ~= 0
+  -- skin.yaml layout: pause_menu: medals: "profile" shows the shelf in an inset box of the
+  -- profile, five cells wide by three high, instead of the original's page of medals.
+  local inset = ui.layout("medals") == "profile"
   for i = 0, 14 do
     local cell = document:get("medal-" .. i)
-    cell:set_property("left", ((25 + (i % 5) * 38) * 3) .. "dp")
-    cell:set_property("top", ((27 + math.floor(i / 5) * 24) * 3) .. "dp")
+    if inset then
+      cell:set_property("left", (34 + (i % 5) * 72) .. "dp")
+      cell:set_property("top", (42 + math.floor(i / 5) * 72) .. "dp")
+    else
+      cell:set_property("left", ((25 + (i % 5) * 38) * 3) .. "dp")
+      cell:set_property("top", ((27 + math.floor(i / 5) * 24) * 3) .. "dp")
+    end
     cell:set_class("held", (held[i] or 0) ~= 0)
     cell:set_class("showing", shown and i == medal_index)
   end
@@ -1227,8 +1305,13 @@ end
 local function close_card(document)
   card_open = false
   local to = card_from(document)
-  original_box.close(document, "card-detail", to)
-  original_box.close(document, "card-count-box", to)
+  -- Without the box animation (layout box other than original) close() only calls back: shut the
+  -- boxes there too, or they stay up after Cancel.
+  for _, id in ipairs({ "card-detail", "card-count-box" }) do
+    original_box.close(document, id, to, function()
+      document:get(id):set_class("box-closed", true)
+    end)
+  end
 end
 
 -- Picks a card of the list (tickPlayerMenu, PLAYER_MENU_STATE 3): left and right stop at the row's
@@ -1302,10 +1385,11 @@ end
 
 local function refresh_city(document)
   local chart_count = math.floor(tonumber(ui.setting("player.chart.count")) or 0)
+  local city = player.city()
   local signature = table.concat({
-    ui.setting("player.city.species") or "",
-    ui.setting("player.city.recruited") or "",
-    tostring(ui.setting("player.city.prosperity") or 0),
+    city.species,
+    city.recruited,
+    tostring(city.prosperity),
     tostring(chart_count),
   }, ";")
   if signature == city_signature then
@@ -1359,9 +1443,7 @@ local function refresh_city(document)
       end
     end
   end
-  document
-    :get("city-prosperity")
-    :set_text(tostring(math.floor(tonumber(ui.setting("player.city.prosperity")) or 0)))
+  document:get("city-prosperity"):set_text(tostring(player.city().prosperity))
   document:get("city-residents"):set_text(string.format("%d/%d", joined, #city_cells))
   if city_index >= #city_cells then
     city_index = 0
@@ -1404,6 +1486,20 @@ local function city_move(document, action)
   end
 end
 
+-- The minimal tabs (skin.yaml layout: pause_menu: tabs) name the City tab Prosperity and put the
+-- tab keys' signs beside the strip. Written on every refresh, so a change of skin or language
+-- puts the right word back.
+local function draw_player_tab_labels(document)
+  local minimal = ui.layout("tabs") == "minimal"
+  document
+    :get("player-tab-city-label")
+    :set_text(t(minimal and "pause_menu.player_tab_prosperity" or "pause_menu.player_tab_city"))
+  if minimal then
+    document:get("player-tab-previous-key"):set_prompt("tab_previous")
+    document:get("player-tab-next-key"):set_prompt("tab_next")
+  end
+end
+
 function show_player_tab(document, tab)
   chart_detail = false
   chart_transition = nil
@@ -1435,6 +1531,14 @@ function show_player_tab(document, tab)
   -- The chart opens on page 1.
   chart_go_page(document, 1, chart_index_on(1), true)
   document:get("player-tab-" .. tab):focus()
+end
+
+-- The minimal tabs' keys (Q/E, a pad's shoulders) and the signs beside the strip: the next or the
+-- previous tab, without going round.
+function player_step_tab(document, step)
+  local tabs = player_tabs()
+  local at = index_of(tabs, player_tab) or 1
+  show_player_tab(document, tabs[math.max(1, math.min(#tabs, at + step))])
 end
 
 function chart_pick(document, index)
@@ -1613,7 +1717,8 @@ local function tab_entries(tab)
   local list = {}
   for _, entries in ipairs({ display_entries, game_options }) do
     for _, entry in ipairs(entries) do
-      if tab_of(entry) == tab and #list < option_slots then
+      local shown = entry.shown == nil or entry.shown()
+      if tab_of(entry) == tab and #list < option_slots and shown then
         list[#list + 1] = entry
       end
     end
@@ -1737,7 +1842,9 @@ local function bind_tab(document)
     document:get(id):set_property("nav-up", "#options-back")
     document:get(id):set_property("nav-down", "#" .. first)
   end
-  document:get("option-list"):set_class("tab-" .. option_tab, true)
+  for _, tab in ipairs(option_tabs) do
+    document:get("option-list"):set_class("tab-" .. tab, tab == option_tab)
+  end
   -- A list that scrolls (a large UI scale) starts each tab, and each opening, at its first row,
   -- which takes the focus: the rows it was scrolled to belonged to another tab.
   document:get("option-list"):scroll_to_top()
@@ -1907,11 +2014,13 @@ end
 
 local function refresh(document)
   refresh_medals(document)
+  draw_player_tab_labels(document)
   refresh_cards(document)
   refresh_chart(document)
   refresh_city(document)
-  draw_date_digits(document, "field-year-", 3, ui.setting("hud.clock.year"))
-  draw_date_digits(document, "field-day-", 2, ui.setting("hud.clock.day"))
+  local now = clock.now()
+  draw_date_digits(document, "field-year-", 3, now.year)
+  draw_date_digits(document, "field-day-", 2, now.day)
   draw_season(document)
   local original = original_menu()
   document:get("panel"):set_class("use-menu-art", (ui.setting("language") or "en") == "en")
@@ -1931,11 +2040,12 @@ end
 
 -- The PLAYER page's own fields: its name, level, rank, bits, counts, items and play time.
 refresh_player = function(document)
-  local name = ui.setting("player.name") or ""
+  local profile = player.profile()
+  local name = profile.name
   document:get("player-name"):set_text(name)
   -- A name longer than the original's six letters (the engine's long names) widens its box.
   document:get("panel"):set_class("long-player-name", ((utf8 and utf8.len(name)) or #name) > 6)
-  local level = ui.setting("player.level")
+  local level = profile.level
   document
     :get("player-level")
     :set_text(type(level) == "number" and string.format("%d", level) or "")
@@ -1948,20 +2058,20 @@ refresh_player = function(document)
     end
   end
   document:get("player-rank"):set_text(rank)
-  local bits = ui.setting("player.bits")
+  local bits = profile.bits
   document:get("player-bits"):set_text(type(bits) == "number" and string.format("%d", bits) or "")
   for _, field in ipairs({ "raised", "medals" }) do
-    local value = ui.setting("player." .. field)
+    local value = profile[field]
     document
       :get("player-" .. field)
       :set_text(type(value) == "number" and string.format("%d", value) or "")
   end
   -- renderPlayerInfoView: the item boxes show the rods and the two other items the player has.
-  local items = number_list("player.items.held")
+  local items = profile.items
   for slot = 0, 3 do
     document:get("player-item-" .. slot):set_class("hidden", (items[slot] or 0) == 0)
   end
-  local seconds = ui.setting("player.seconds")
+  local seconds = profile.seconds
   document:get("player-time"):set_text(
     type(seconds) == "number"
         and string.format(
@@ -1985,6 +2095,14 @@ local function refresh_prompts(document)
   refresh_option_hints(document)
 end
 
+-- Closes the chart's detail and its opening box at once, without the box's closing steps.
+local function drop_chart_detail(document)
+  chart_detail = false
+  chart_transition = nil
+  document:get("chart-detail-transition"):set_class("hidden", true)
+  document:get("panel"):set_class("chart-detail-open", false)
+end
+
 local function show_page(document, name, focus, tools)
   if name == "options" and current ~= "options" then
     open_options(document)
@@ -1995,9 +2113,14 @@ local function show_page(document, name, focus, tools)
   if name == "player" and current == "main" then
     player_tab = "player"
     chart_selecting = false
+    cards_selecting = false
+    card_open = false
+    document:get("card-detail"):set_class("box-closed", true)
+    document:get("card-count-box"):set_class("box-closed", true)
     document:get("player-tab-player"):set_class("selected", true)
     document:get("player-tab-chart"):set_class("selected", false)
     document:get("player-tab-medals"):set_class("selected", false)
+    document:get("player-tab-card"):set_class("selected", false)
     document:get("player-tab-city"):set_class("selected", false)
     chart_cursor(document)
     city_selecting = false
@@ -2006,6 +2129,7 @@ local function show_page(document, name, focus, tools)
   current = name
   document:get("panel"):set_class("player-chart", name == "player" and player_tab == "chart")
   document:get("panel"):set_class("player-medals", name == "player" and player_tab == "medals")
+  document:get("panel"):set_class("player-cards", name == "player" and player_tab == "card")
   document:get("panel"):set_class("player-city", name == "player" and player_tab == "city")
   player_tools_open = tools == true
   document:get("panel"):set_class("player-tools-open", player_tools_open)
@@ -2149,8 +2273,8 @@ end
 -- An entry of the minimap page, or a row of the options page by its option's id, confirmed (step 1)
 -- or moved left and right.
 function adjust(_document, id, step)
-  if options[id] ~= nil then
-    options[id](tonumber(step) or 1)
+  if option_actions[id] ~= nil then
+    option_actions[id](tonumber(step) or 1)
     return
   end
   local entry = entry_by_id(id)
@@ -2178,6 +2302,10 @@ function on_show(document, args)
   at_title = ui.setting("pause_menu.at_title") == true
   options_direct = at_title or ui.setting("pause_menu.start_page") == "options"
   document:get("panel"):set_class("at-title", at_title)
+  -- The reset's question does not outlive the menu: it opens again without it.
+  if reset_open then
+    close_reset(document)
+  end
   if options_direct then
     -- From the title to a game or back the page's actions change: lay it out again, as it opens.
     if at_title ~= was_at_title then
@@ -2200,11 +2328,36 @@ function on_show(document, args)
   refresh_prompts(document)
 end
 
+-- Tells the game what to draw in 3D over the player page (pause_menu.portrait and
+-- pause_menu.medal): the player while the page shows it, the medal held up on the medals page.
+local function send_portraits(document)
+  local panel = document:get("panel")
+  local tools = panel:has_class("player-tools-open")
+  ui.report(
+    "pause_menu.portrait",
+    panel:has_class("on-player") and not tools and not panel:has_class("player-chart")
+  )
+  local medal = -1
+  if panel:has_class("player-medals") and not tools then
+    for i = 0, 14 do
+      if document:get("medal-" .. i):has_class("showing") then
+        medal = i
+        break
+      end
+    end
+  end
+  ui.report("pause_menu.medal", medal)
+end
+
 function on_hide(document)
   original_box.cancel(document)
+  -- None while the menu is away, so they do not show for a frame on the next opening's page.
+  ui.report("pause_menu.portrait", false)
+  ui.report("pause_menu.medal", -1)
 end
 
 function on_tick(document, seconds)
+  send_portraits(document)
   original_box.tick(document, seconds)
   panel_enter.tick(document)
   chart_slide_tick(document, seconds)
@@ -2263,8 +2416,9 @@ function on_setting(document, name)
     return
   elseif name:sub(1, 4) == "hud." then
     if name == "hud.clock.year" or name == "hud.clock.day" then
-      draw_date_digits(document, "field-year-", 3, ui.setting("hud.clock.year"))
-      draw_date_digits(document, "field-day-", 2, ui.setting("hud.clock.day"))
+      local now = clock.now()
+      draw_date_digits(document, "field-year-", 3, now.year)
+      draw_date_digits(document, "field-day-", 2, now.day)
     end
   elseif name:sub(1, 7) == "evoreq." then
     -- The game sets evoreq.version last, once the rest of a change is in.
@@ -2280,6 +2434,7 @@ function on_setting(document, name)
     -- closing its box (which would leave it minimized on the player page).
     if ui.setting(name) == "options" then
       options_direct = true
+      drop_chart_detail(document)
       show_page(document, "options")
     end
   elseif name == "evolution_requirements" then
@@ -2304,6 +2459,7 @@ end
 
 function on_device(document)
   refresh_prompts(document)
+  draw_player_tab_labels(document)
 end
 
 -- The language changed: the elements with a text-key are already in the new one; the rest are
@@ -2345,6 +2501,12 @@ function on_action(document, action)
     end
   end
   if current == "player" and not player_tools_open and original_menu() then
+    -- The minimal tabs: the tab keys walk them from anywhere on the page, so the arrows stay free
+    -- for the page's own content.
+    if (action == "tab_next" or action == "tab_previous") and ui.layout("tabs") == "minimal" then
+      player_step_tab(document, action == "tab_next" and 1 or -1)
+      return true
+    end
     if player_tab == "city" and city_selecting then
       if action == "cancel" then
         city_selecting = false
@@ -2413,9 +2575,9 @@ function on_action(document, action)
       end
     else
       if action == "right" or action == "left" then
-        -- tickPlayerMenu: the four pages are always there, in this order; dwe adds the City tab.
-        local tabs = { "player", "chart", "medals", "card", "city" }
-        local current_index = index_of(tabs, player_tab)
+        local tabs = player_tabs()
+        -- A page the tabs do not offer (after a change of skin) steps from the first one.
+        local current_index = index_of(tabs, player_tab) or 1
         local delta = action == "left" and -1 or 1
         show_player_tab(document, tabs[math.max(1, math.min(#tabs, current_index + delta))])
         return true
@@ -2509,7 +2671,7 @@ function on_action(document, action)
     end
   end
   if action == "left" or action == "right" then
-    for id, change in pairs(options) do
+    for id, change in pairs(option_actions) do
       local entry = document:get(id)
       if entry ~= nil and entry:has_focus() then
         change(action == "left" and -1 or 1)

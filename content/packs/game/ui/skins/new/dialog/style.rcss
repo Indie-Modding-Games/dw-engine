@@ -23,6 +23,15 @@
 	padding: 0 0 6dp 12dp;
 }
 
+/* The save file the question is about, under it, at the title too (the original's sheet hides it there). */
+#scrim.at-title #file {
+	display: block;
+}
+
+#scrim.at-title #file.hidden {
+	display: none;
+}
+
 #file {
 	font-family: "Pixel Small";
 	font-size: 26dp;

@@ -152,6 +152,10 @@ local function refresh(document)
   for _, box in ipairs(Boxes[view] or {}) do
     shown[box] = true
   end
+  -- A skin may keep the heading over the save question too (layout heading: always).
+  if view == "save_question" and ui.layout("heading") == "always" then
+    shown.heading = true
+  end
   for _, box in ipairs(AllBoxes) do
     document:get(box):set_class("hidden", not shown[box])
   end
@@ -217,8 +221,12 @@ function on_show(document)
   refresh_prompts(document)
 end
 
-function on_setting(document, _name)
-  refresh(document)
+-- The game publishes a view's settings in one batch and counts up save_machine.revision last: a
+-- view opened halfway would pick its cursor from the last view's question.
+function on_setting(document, name)
+  if name == "save_machine.revision" then
+    refresh(document)
+  end
 end
 
 function on_language(document)

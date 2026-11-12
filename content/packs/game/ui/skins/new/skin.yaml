@@ -20,9 +20,9 @@ screens:
   battle:
     styles: [battle/style]
   bird_transport:
-    styles: [bird_transport/style]
+    styles: [bird_transport/style, talk_wait/style]
   card_shop:
-    styles: [card_shop/style]
+    styles: [card_shop/style, talk_wait/style]
   curling_hud:
     styles: [story_textbox/style, curling_hud/style]
   destination_choice:
@@ -52,15 +52,15 @@ screens:
   hud:
     styles: [hud/style]
   item_keeper:
-    styles: [item_keeper/style]
+    styles: [item_keeper/style, talk_wait/style]
   jukebox:
-    styles: [jukebox/style]
+    styles: [jukebox/style, talk_wait/style]
   lives_box:
     styles: [story_textbox/style, lives_box/style]
   main_menu:
     styles: [title/style, main_menu/style]
   merit_shop:
-    styles: [merit_shop/style]
+    styles: [merit_shop/style, talk_wait/style]
   money_box:
     styles: [money_box/style]
   naming_box:
@@ -96,17 +96,18 @@ screens:
   tournament_schedule:
     styles: [tournament_schedule/style]
   trade_menu:
-    styles: [trade_menu/style]
+    styles: [trade_menu/style, talk_wait/style]
   versus:
     styles: [panel/style, versus/style]
   world_map:
     styles: [world_map/style]
 # The original's layouts (extends original), but the concept draws the title, the slot list and the rules over its
-# own 4:3 picture: no widescreen title picture.
+# own 4:3 picture: no widescreen title picture; and the save machine keeps its heading over the save question.
 layout:
   main_menu: {picture: modern}
   save_slots: {picture: modern}
   new_game_rules: {picture: modern}
+  save_machine: {heading: always}
 sprite_sheets:
   # Frames, cursor, key caps, tabs, bar fills and hearts of the design system, 2 pixels per dp (made from the
   # concept's theme.css values; see the skin's page in docs/architecture/ui.md).
@@ -157,6 +158,44 @@ sprite_sheets:
       nb-pip-bl: [320, 320, 12, 24]
       nb-heart: [360, 320, 28, 24]
       nb-heart-empty: [400, 320, 28, 24]
+  # The bars' segmented fills (theme.css .bar > i: 10 dp segments, 8 of the colour and 2 of its darker step, the top
+  # 2 dp lit), one strip of 20 segments per row at 2 pixels per dp. A sprite cannot repeat, so each strip is as long
+  # as the longest bar and a fill shows as much of it as its width (scale-none).
+  - name: nb-bar-fills
+    image: ui/skins/new/assets/bar_fills
+    dp_per_pixel: 0.5
+    sprites:
+      nb-strip-hp: [0, 0, 400, 20]
+      nb-strip-mp: [0, 20, 400, 20]
+      nb-strip-rd: [0, 40, 400, 20]
+  # The gym reels' seven symbols (258-261: flat shapes in the concept's colours), 42 dp each at 2 pixels per dp.
+  - name: nb-reel-symbols
+    image: ui/skins/new/assets/reel_symbols
+    dp_per_pixel: 0.5
+    sprites:
+      nb-reel-1: [0, 0, 84, 84]
+      nb-reel-2: [84, 0, 84, 84]
+      nb-reel-3: [168, 0, 84, 84]
+      nb-reel-4: [252, 0, 84, 84]
+      nb-reel-5: [336, 0, 84, 84]
+      nb-reel-6: [420, 0, 84, 84]
+      nb-reel-7: [504, 0, 84, 84]
+  - name: nb-bracket
+    image: ui/skins/new/assets/bracket_board
+    dp_per_pixel: 3
+    sprites:
+      nb-bracket-board: [0, 0, 256, 135]
+  - name: nb-cup-card
+    image: ui/skins/new/assets/bracket_card
+    dp_per_pixel: 3
+    sprites:
+      nb-cup-card: [0, 0, 255, 128]
+  - name: nb-clock-sides
+    image: ui/skins/new/assets/clock_sides
+    dp_per_pixel: 3
+    sprites:
+      nb-clock-1p: [0, 0, 8, 18]
+      nb-clock-2p: [8, 0, 8, 18]
   # The concept's icons for the field menu, owner-approved (assets/icon_sources holds the single pictures).
   - name: new-field-icons
     image: ui/skins/new/assets/menu_icons

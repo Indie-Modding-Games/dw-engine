@@ -2,6 +2,7 @@
 
 #include <array>
 #include <string_view>
+#include <vector>
 
 namespace dwe::app {
 namespace {
@@ -14,25 +15,68 @@ constexpr UiContractKind Setting = UiContractKind::Setting;
 constexpr UiContractKind Command = UiContractKind::Command;
 constexpr UiContractKind Option = UiContractKind::Option;
 constexpr UiContractKind Argument = UiContractKind::Argument;
+constexpr UiContractKind Query = UiContractKind::Query;
+constexpr UiContractKind Action = UiContractKind::Action;
+constexpr UiContractKind Event = UiContractKind::Event;
+constexpr UiContractKind Report = UiContractKind::Report;
 constexpr UiValueKind None = UiValueKind::None;
 constexpr UiValueKind Boolean = UiValueKind::Boolean;
 constexpr UiValueKind Number = UiValueKind::Number;
 constexpr UiValueKind Text = UiValueKind::Text;
 constexpr UiValueKind Any = UiValueKind::Any;
+constexpr UiValueKind Table = UiValueKind::Table;
 
 constexpr std::string_view Hud = "hud";
 constexpr std::string_view PauseMenu = "pause_menu";
 constexpr std::string_view PartnerMenu = "partner_menu";
 constexpr std::string_view SkinPicker = "skin_picker";
+constexpr std::string_view UiNotice = "ui_notice";
+constexpr std::string_view FieldItemNotice = "field_item_notice";
+constexpr std::string_view AwardNotice = "award_notice";
+constexpr std::string_view FishingNotice = "fishing_notice";
+constexpr std::string_view SaveIndicator = "save_indicator";
+constexpr std::string_view MoneyBox = "money_box";
+constexpr std::string_view LivesBox = "lives_box";
+// The UI API's namespaces (content/packs/game/ui/api/<namespace>.lua).
+constexpr std::string_view Clock = "clock";
+constexpr std::string_view Field = "field";
+constexpr std::string_view Partner = "partner";
+constexpr std::string_view Bag = "bag";
+constexpr std::string_view Player = "player";
+constexpr std::string_view Options = "options";
+constexpr std::string_view Battle = "battle";
 
 constexpr UiContractEntry entry(std::string_view screen, UiContractKind kind, std::string_view name,
                                 UiValueKind value, std::string_view summary) {
   return {.screen = screen, .kind = kind, .name = name, .value = value, .summary = summary};
 }
 
-// The documents' use as of the UI API's first version: hud/logic.lua, pause_menu/logic.lua and
+// A query or an action of a namespace, with its Lua signature.
+constexpr UiContractEntry api(std::string_view space, UiContractKind kind, std::string_view name,
+                              UiValueKind value, std::string_view signature,
+                              std::string_view summary) {
+  return {.screen = space,
+          .kind = kind,
+          .name = name,
+          .value = value,
+          .summary = summary,
+          .signature = signature};
+}
+
+// An event of a namespace and the settings it fires on.
+constexpr UiContractEntry event(std::string_view space, std::string_view name,
+                                std::string_view source, std::string_view summary) {
+  return {.screen = space,
+          .kind = Event,
+          .name = name,
+          .value = Table,
+          .summary = summary,
+          .source = source};
+}
+
+// The documents' use as of the UI API's first version: hud/presenter.lua, pause_menu/logic.lua and
 // partner_menu/logic.lua with the common scripts they link (game_options.lua, bag_slot.lua...),
-// and skin_picker/logic.lua.
+// skin_picker/logic.lua and, of battle/logic.lua, the command strip, the bars and the commands.
 // The summaries are the reference page's text, so they are in Spanish, as the docs.
 constexpr auto Contract = std::to_array<UiContractEntry>({
     // The field's HUD (apps/game: field_hud.cpp; packages/screens: field_hud_view.hpp).
@@ -43,6 +87,12 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(Hud, Setting, "hud.clock.day", Number, "El día del año del reloj del juego."),
     entry(Hud, Setting, "hud.clock.hour", Number, "La hora del reloj del juego, de 0 a 23."),
     entry(Hud, Setting, "hud.clock.minute", Number, "El minuto del reloj del juego."),
+    entry(
+        Hud, Setting, "hud.clock.night", Boolean,
+        "Si es de noche: antes de las 6:00 y desde las 17:00, cuando el reloj del original enseña la luna."),
+    entry(
+        Hud, Setting, "hud.clock.phase", Text,
+        "La parte del día: morning, day, late o night (la regla del juego, no la de la interfaz)."),
     entry(Hud, Setting, "hud.meter.<n>.label", Text,
           "La clave de texto de un medidor del compañero (felicidad, disciplina)."),
     entry(Hud, Setting, "hud.meter.<n>.value", Number, "El valor de un medidor del compañero."),
@@ -50,6 +100,9 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
           "El valor más bajo de un medidor del compañero."),
     entry(Hud, Setting, "hud.meter.<n>.max", Number,
           "El valor más alto de un medidor del compañero."),
+    entry(
+        Hud, Setting, "hud.meter.<n>.mood", Text,
+        "low por debajo de la mitad de su rango, donde el original cambia el icono de la barra; si no, high."),
     entry(Hud, Setting, "hud.meter.<n>.two_tone", Boolean,
           "Si el medidor se llena hacia los dos lados desde su centro."),
     entry(Hud, Setting, "hud.pool.<n>.label", Text, "La clave de texto de los PV o los PM."),
@@ -88,6 +141,8 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
           "La cuenta a partir de la cual la paga es mejor."),
     entry(Hud, Setting, "shop_job.customers", Number, "Los clientes atendidos."),
     entry(Hud, Setting, "shop_job.customer", Number, "El cliente que se está atendiendo."),
+    entry(Hud, Setting, "shop_job.revision", Number,
+          "Sube cada vez que cambia algo del trabajo en la tienda."),
     entry(Hud, Option, "minimap", Text, "El minimapa: on u off."),
     entry(Hud, Option, "minimap_size", Text, "El tamaño del minimapa."),
     entry(Hud, Option, "digital_time", Boolean, "La hora en cifras."),
@@ -189,6 +244,11 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
           "Los requisitos de evolución de una especie, como rangos."),
     entry(PauseMenu, Command, "open_partner_menu", Text,
           "Abre el menú del compañero en una página: items o status."),
+    entry(PauseMenu, Report, "pause_menu.portrait", Boolean,
+          "Si el juego dibuja en 3D al jugador sobre su página (una mejora)."),
+    entry(
+        PauseMenu, Report, "pause_menu.medal", Number,
+        "La medalla que el juego dibuja en 3D sobre la página de medallas, de 0 a 14; -1 ninguna."),
     entry(PauseMenu, Command, "praise", None, "Felicita al compañero."),
     entry(PauseMenu, Command, "scold", None, "Regaña al compañero."),
     entry(PauseMenu, Command, "sleep", None, "Cierra el menú y manda al compañero a dormir."),
@@ -204,6 +264,77 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(PauseMenu, Option, "vsync", Boolean, "Sincronización vertical."),
     entry(PauseMenu, Option, "ui_scale", Number, "La escala de la interfaz; 1 es la normal."),
     entry(PauseMenu, Option, "ui_skin", Text, "El aspecto de la interfaz."),
+    entry(PauseMenu, Option, "ui_addon", Text,
+          "La interfaz entera: default (la del juego) o el id de una de ui/addons; se aplica al "
+          "cerrar el menú."),
+    entry(PauseMenu, Setting, "ui_addons", Text,
+          "Las interfaces que se ofrecen, ids separados por espacios, default la primera."),
+    entry(PauseMenu, Setting, "ui_addon.name.<id>", Text,
+          "El nombre de una interfaz, de su addon.yaml."),
+    entry(PauseMenu, Setting, "ui_addon.safe", Boolean,
+          "Modo seguro (--safe-ui o Mayús al arrancar): solo la interfaz del juego."),
+    entry(PauseMenu, Option, "ui_plugins", Boolean,
+          "Los complementos de ui/addons (addons de tipo plugin), todos encendidos o apagados."),
+    entry(PauseMenu, Setting, "ui_plugins.count", Number, "Cuántos complementos se ofrecen."),
+    entry(PauseMenu, Command, "ui_addon_reload", None,
+          "Vuelve a leer de sus archivos la interfaz puesta y los complementos."),
+    entry(UiNotice, Setting, "ui_addon.problem", Text,
+          "Por qué no se pudo usar la interfaz elegida; vacío si se pudo."),
+
+    // The notices (docs/modding/interfaces.md): small boxes the game shows over the field.
+    entry(FieldItemNotice, Setting, "field_item_notice.text", Text,
+          "La clave del texto del aviso de un objeto en el suelo o en un cofre."),
+    entry(FieldItemNotice, Setting, "field_item_notice.item", Text,
+          "La clave del nombre del objeto; vacía para un cofre vacío."),
+    entry(FieldItemNotice, Setting, "field_item_notice.answer", Text,
+          "Si el aviso acepta confirmar ahora: sound, quiet (sin sonido) o vacío (todavía no)."),
+    entry(FieldItemNotice, Setting, "field_item_notice.phase", Text,
+          "open mientras se ve; closing cuando el jugador ya contestó y el aviso se cierra."),
+    entry(
+        FieldItemNotice, Setting, "field.player_x", Number,
+        "Dónde está el jugador en la pantalla, de 0 a 1 en horizontal (el cuadro crece desde ahí)."),
+    entry(FieldItemNotice, Setting, "field.player_y", Number,
+          "Dónde está el jugador en la pantalla, de 0 a 1 en vertical."),
+    entry(FieldItemNotice, Command, "field_item_notice_ok", None, "El jugador confirma el aviso."),
+    entry(FieldItemNotice, Command, "field_item_notice_closed", None,
+          "El cuadro terminó de cerrarse (tras closing)."),
+    entry(AwardNotice, Setting, "award_notice.lines", Text,
+          "La clave del texto del aviso de un premio o de un cambio del compañero."),
+    entry(AwardNotice, Setting, "award_notice.color", Number, "El color del nombre, como número."),
+    entry(AwardNotice, Setting, "award_notice.name", Text, "El nombre que muestra el aviso."),
+    entry(AwardNotice, Command, "award_notice_ok", None, "El jugador confirma el aviso."),
+    entry(FishingNotice, Setting, "fishing_notice.text", Text, "La clave del texto de lo pescado."),
+    entry(FishingNotice, Setting, "fishing_notice.item", Text,
+          "La clave del nombre de lo pescado."),
+    entry(FishingNotice, Setting, "fishing_notice.size", Number, "El tamaño de lo pescado."),
+    entry(FishingNotice, Command, "fishing_notice_ok", None, "El jugador confirma el aviso."),
+    entry(SaveIndicator, Setting, "save_indicator.text", Text,
+          "Lo que dice el indicador de guardado (guardando, cargando...)."),
+    entry(SaveIndicator, Setting, "save_indicator.opacity", Number,
+          "Cuánto se ve el indicador, de 0 a 1."),
+    entry(SaveIndicator, Setting, "save_indicator.lift", Number,
+          "Cuánto ha subido el indicador al aparecer, de 0 a 1."),
+    entry(SaveIndicator, Setting, "save_indicator.figure", Boolean,
+          "Si el indicador enseña la figura que gira."),
+    entry(MoneyBox, Setting, "money_box.money", Number, "El dinero del jugador."),
+    entry(MoneyBox, Setting, "money_box.bits_key", Text, "La clave del nombre de la moneda."),
+    entry(MoneyBox, Setting, "money_box.revision", Number,
+          "Sube cada vez que cambian los valores de arriba: el cuadro se vuelve a dibujar."),
+    entry(LivesBox, Setting, "lives_box.outline", Boolean,
+          "Si el cuadro de vidas está abriéndose o cerrándose (solo el borde)."),
+    entry(LivesBox, Setting, "lives_box.grow", Number, "Cuánto ha crecido el borde, de 0 a 1."),
+    entry(LivesBox, Setting, "lives_box.anchor_x", Number,
+          "Desde dónde crece, de 0 a 1 en horizontal (el compañero)."),
+    entry(LivesBox, Setting, "lives_box.anchor_y", Number,
+          "Desde dónde crece, de 0 a 1 en vertical."),
+    entry(LivesBox, Setting, "lives_box.lives", Number, "Las vidas que le quedan al compañero."),
+    entry(LivesBox, Setting, "lives_box.slots", Number, "Cuántas vidas caben en el cuadro."),
+    entry(LivesBox, Setting, "lives_box.lost_full", Boolean,
+          "Si la vida que se pierde aún se dibuja llena (parpadea al perderse)."),
+    entry(LivesBox, Setting, "lives_box.revision", Number,
+          "Sube cada vez que cambian los valores de arriba."),
+    entry(LivesBox, Setting, "screen_fade", Number,
+          "Cuánto oscurece el fundido de pantalla, de 0 a 1."),
     entry(PauseMenu, Option, "text_font", Text,
           "La fuente del texto con aspecto original: modern u original."),
     entry(PauseMenu, Option, "walk_control", Text,
@@ -345,6 +476,8 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
           "La posición del jugador en la ventana en porcentaje, desde donde crecen las cajas."),
     entry(PartnerMenu, Setting, "field.player_y", Number,
           "La posición del jugador en la ventana en porcentaje, desde donde crecen las cajas."),
+    entry(PartnerMenu, Report, "partner_menu.portrait", Boolean,
+          "Si el juego dibuja en 3D al compañero sobre la página de estado (una mejora)."),
     entry(PartnerMenu, Command, "bag_use", Number, "Usa el objeto de un hueco."),
     entry(PartnerMenu, Command, "bag_drop", Number, "Tira el objeto de un hueco."),
     entry(PartnerMenu, Command, "bag_move", Text, "Intercambia dos huecos: \"desde hasta\"."),
@@ -368,12 +501,126 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
           "Pone el aspecto de la fila enfocada sin guardarlo."),
     entry(SkinPicker, Command, "skin_picker_done", None,
           "El aspecto está elegido: la portada sigue con la caja de idiomas."),
+
+    // The UI API (ui/api/<namespace>.lua): what any UI reads and asks through, the default one
+    // included. The queries return fresh tables; the actions check their arguments and queue a
+    // command; the events reach the handlers of hooks.on with {version, name, value}.
+    api(Clock, Query, "clock.now", Table, "(): table",
+        "La hora: year, day, hour, minute, night, phase (morning, day, late, night) y running (si el tiempo del juego corre)."),
+    event(Clock, "clock.changed", "hud.revision", "Cambió el estado del campo, la hora incluida."),
+    api(Field, Query, "field.fade", Number, "(): number",
+        "Cuánto oscurece el fundido del cambio de mapa, de 0 a 1."),
+    api(Field, Query, "field.map_title", Text, "(): string?",
+        "La clave de texto del nombre del mapa que se enseña al llegar, o nil."),
+    api(Field, Query, "field.minimap", Table, "(): table",
+        "El minimapa: shown (la opción y el campo lo dejan), covered (una ventana lo tapa) y size."),
+    api(Field, Query, "field.player", Table, "(): table",
+        "Dónde está el jugador en la ventana: x e y en porcentaje."),
+    api(Field, Query, "field.shop_job", Table, "(): table?",
+        "La cuenta del trabajo en la tienda mientras dura (tally, goal, better_pay, customer, customers), o nil."),
+    event(Field, "field.fade", "screen_fade", "Cambió el fundido."),
+    event(Field, "field.map_title", "map_title_key", "Cambió el nombre del mapa que se enseña."),
+    event(Field, "field.minimap", "hud.minimap_allowed hud.minimap_covered battle.active",
+          "Cambió si el minimapa puede verse o si algo lo tapa."),
+    event(Field, "field.shop_job", "shop_job.revision", "Cambió el trabajo en la tienda."),
+    api(Partner, Query, "partner.status", Table, "(): table",
+        "Las barras (meters: id, label_key, value, min, max, two_tone, mood), los PV y PM (pools) y lo que le parece el mapa (area: liked, disliked o nil)."),
+    api(Partner, Query, "partner.needs", Table, "(): table",
+        "Las necesidades en orden: id, label_key, active y urgency (1 la más urgente; 0 si no la tiene)."),
+    api(Partner, Query, "partner.bubble", Table, "(): table",
+        "Dónde está su cabeza en la ventana: visible, x, y (porcentaje) y evolving (el cuadro de la burbuja de evolución, o nil)."),
+    api(Partner, Query, "partner.extras", Table, "(): table?",
+        "Errores de cuidado, combates y horas vividas; nil si el jugador tiene apagados los extras del estado."),
+    api(Partner, Action, "partner.praise", Boolean, "(): boolean", "Pide felicitarlo."),
+    api(Partner, Action, "partner.scold", Boolean, "(): boolean", "Pide regañarlo."),
+    api(Partner, Action, "partner.toggle_technique", Boolean, "(slot: integer): boolean, string?",
+        "Pide equipar o quitar la técnica de ese hueco de la especie."),
+    event(Partner, "partner.changed",
+          "hud.revision partner.revision hud.meter.0.label hud.meter.1.label hud.pool.0.label "
+          "hud.pool.1.label hud.need.0.label hud.need.1.label hud.need.2.label hud.need.3.label "
+          "hud.need.4.label hud.need.5.label",
+          "Cambió algo del compañero; name dice qué ajuste."),
+    event(Partner, "partner.bubble_moved", "hud.partner.revision",
+          "Su cabeza se movió en la ventana."),
+    api(Bag, Query, "bag.count", Number, "(): integer", "Los huecos de la bolsa."),
+    api(Bag, Query, "bag.money", Number, "(): integer", "El dinero del jugador."),
+    api(Bag, Query, "bag.field", Any, "(index: integer, name: string): any",
+        "Un dato de un hueco, o su valor por defecto."),
+    api(Bag, Query, "bag.slot", Table, "(index: integer): table",
+        "Un hueco: empty, name, description, description_species, count, dimmed, usable, discardable, item_color, icon, icon_rect, favorite."),
+    api(Bag, Query, "bag.result", Table, "(): table?",
+        "La respuesta a la última acción: key (clave del mensaje) e item; nil antes de ninguna."),
+    api(Bag, Action, "bag.use", Boolean, "(index: integer): boolean, string?",
+        "Pide usar el objeto de un hueco."),
+    api(Bag, Action, "bag.drop", Boolean, "(index: integer): boolean, string?",
+        "Pide tirar el objeto de un hueco."),
+    api(Bag, Action, "bag.move", Boolean, "(from: integer, to: integer): boolean, string?",
+        "Pide intercambiar dos huecos."),
+    api(Bag, Action, "bag.sort", Boolean, "(order: integer): boolean, string?",
+        "Pide ordenar la bolsa en un orden."),
+    event(Bag, "bag.changed", "bag.revision", "Cambió la bolsa."),
+    event(Bag, "bag.result", "bag.result", "El juego respondió a una acción de la bolsa."),
+    api(Player, Query, "player.profile", Table, "(): table",
+        "El jugador: name, level, bits, seconds, raised, medals, items, cards."),
+    api(Player, Query, "player.medals", Table, "(): table",
+        "Las medallas que publica el juego (no un número fijo): held y name_key."),
+    api(Player, Query, "player.city", Table, "(): table",
+        "La ciudad: recruited, total y prosperity."),
+    api(Options, Query, "options.list", Table, "(): table",
+        "Las opciones del juego en orden: name, kind (toggle, list, range), label_key, help_key, tab, default, original, values, texts, min, max."),
+    api(Options, Query, "options.get", Any, "(name: string): any",
+        "El valor de una opción ahora (o su valor por defecto); nil si no existe."),
+    api(Options, Action, "options.set", Boolean, "(name: string, value: any): boolean, string?",
+        "Pide dar un valor a una opción; comprueba el tipo y los valores que admite."),
+    event(Options, "options.changed", "@options",
+          "Cambió una opción; name dice cuál y value su valor."),
+    // The battle screen (apps/game: battle_screen.cpp; packages/screens: battle_view.hpp): the
+    // command strip, the partner's bars and what the scripts send back.
+    entry(Battle, Setting, "battle.revision", Number,
+          "Sube cada vez que cambia la vista del combate de abajo."),
+    entry(Battle, Setting, "battle.menu.count", Number, "Cuántas órdenes tiene la tira."),
+    entry(Battle, Setting, "battle.menu.<n>.command", Number,
+          "El número de la orden (1 huir... 8 a 10 las técnicas, 11 el golpe final)."),
+    entry(Battle, Setting, "battle.menu.<n>.label", Text,
+          "La clave de texto del nombre de la orden o de la técnica."),
+    entry(Battle, Setting, "battle.menu.<n>.icon", Text,
+          "El icono de la orden en las hojas del aspecto; vacío para el golpe final."),
+    entry(Battle, Setting, "battle.menu.<n>.available", Boolean, "Si la orden se puede dar ahora."),
+    entry(Battle, Setting, "battle.menu.<n>.current", Boolean,
+          "Si es la orden que sigue el compañero ahora."),
+    entry(Battle, Setting, "battle.menu.<n>.mp_cost", Number,
+          "Los PM que le cuesta la técnica al compañero ahora; 0 en las demás órdenes."),
+    entry(Battle, Setting, "battle.fighter.count", Number,
+          "Cuántos luchadores hay: el compañero (0) y los enemigos."),
+    entry(Battle, Setting, "battle.fighter.<n>.hp", Number, "Los PV de un luchador."),
+    entry(Battle, Setting, "battle.fighter.<n>.max_hp", Number, "Los PV máximos de un luchador."),
+    entry(Battle, Setting, "battle.fighter.<n>.mp", Number, "Los PM de un luchador."),
+    entry(Battle, Setting, "battle.fighter.<n>.max_mp", Number, "Los PM máximos de un luchador."),
+    entry(Battle, Setting, "battle.fast", Boolean, "Si el combate va al doble de velocidad."),
+    entry(Battle, Setting, "battle.hp_bars.always", Boolean,
+          "Si las barras de vida de los enemigos se ven todo el combate."),
+    entry(Battle, Command, "battle_command", Number,
+          "Da una orden al compañero (su número, battle.menu.<n>.command)."),
+    entry(Battle, Command, "battle_bag_open", None, "Abre la bolsa del jugador."),
+    entry(Battle, Command, "battle_charge", None, "Una pulsación de la carga del golpe final."),
+    entry(Battle, Command, "battle_close", None, "Cierra la caja del final del combate."),
+    entry(Battle, Command, "battle_end_count", None,
+          "Un paso de la cuenta de los bits del final del combate."),
+    entry(Battle, Command, "battle_end_counted", None,
+          "La cuenta de los bits del final del combate ha terminado."),
 });
 
 } // namespace
 
 std::span<const ui::UiContractEntry> gameUiContract() {
-  return Contract;
+  // The engine's own Lua API first, then the game's screens and namespaces.
+  static const std::vector<UiContractEntry> whole = [] {
+    std::vector<UiContractEntry> entries{ui::nativeUiContract().begin(),
+                                         ui::nativeUiContract().end()};
+    entries.insert(entries.end(), Contract.begin(), Contract.end());
+    return entries;
+  }();
+  return whole;
 }
 
 } // namespace dwe::app

@@ -1,0 +1,8 @@
+# The gym's stats box (TRN_renderPostTrainingStatsBox): each row's whole name, in the box's order, for the looks that
+# do not use the original's short labels.
+stat.0: "HP"
+stat.1: "MP"
+stat.2: "Offense"
+stat.3: "Defense"
+stat.4: "Speed"
+stat.5: "Brains"

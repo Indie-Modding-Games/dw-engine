@@ -5,3 +5,5 @@
 #back { nav-down: #mode-1; }
 #title { margin-bottom: 6dp; }
 .about { margin: 6dp 0 12dp 18dp; }
+/* The title's logo (#picture): only a skin that draws it shows it. */
+#picture { display: none; pointer-events: none; }

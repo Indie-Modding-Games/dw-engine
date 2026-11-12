@@ -76,11 +76,28 @@
 	decorator: none;
 }
 
-/* The hovered command's name (.cname): gold, with an ink drop. */
+/* The hovered command's name (.cname): gold, with an ink drop; dimmed while it cannot be given (.cname.off); a
+   technique's MP cost after it in the small font (.cname .mp). */
 #command-name {
 	font-size: 30dp;
 	color: #efc63c;
 	font-effect: shadow(3dp 3dp #050c1a);
+}
+
+#command-name.short {
+	color: #a89a70;
+}
+
+#command-cost {
+	display: inline;
+	margin-left: 18dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #93a6bc;
+}
+
+#command-cost.hidden {
+	display: none;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
@@ -98,7 +115,7 @@
 	border: 2dp #7cb6e2;
 	background-color: #050c1a;
 	font-family: "Pixel Small";
-	font-size: 26dp;
+	font-size: 13dp;
 	line-height: 24dp;
 	text-align: center;
 	white-space: nowrap;
@@ -121,22 +138,37 @@
 	decorator: vertical-gradient(#0b1220 #0b1220) content-box;
 }
 
-.partner .fill {
-	height: 8dp;
-}
-
+/* The fills in segments (.bar > i): a strip of 10 dp segments (8 of the colour, 2 of its darker step, the top 2 lit)
+   as long as the bar, of which a fill shows its width (skin.yaml, nb-bar-fills). */
+.partner .fill,
 .partner .mp .fill {
 	height: 10dp;
+	border-width: 0;
 }
 
 .partner .hp .fill {
-	border-top: 2dp #9bffa6;
-	background-color: #5fd36a;
+	background-color: transparent;
+	decorator: image(nb-strip-hp scale-none left top);
 }
 
 .partner .mp .fill {
-	border-top: 2dp #9fd2ff;
-	background-color: #4aa6ff;
+	background-color: transparent;
+	decorator: image(nb-strip-mp scale-none left top);
+}
+
+/* Under a fifth of its HP (.ic.warn, .n.warn, the red bar): the cap in red, the fill and the value red. */
+.partner .bar-row.low .bar-label {
+	border-color: #e2483d;
+	background-color: #6a1410;
+	color: #ffd0c8;
+}
+
+.partner .bar-row.low .hp .fill {
+	decorator: image(nb-strip-rd scale-none left top);
+}
+
+.partner .bar-row.low .bar-value {
+	color: #e2483d;
 }
 
 .partner .bar-value {
@@ -187,6 +219,23 @@
 	color: #f2f0e1;
 }
 
+/* In English the original paints FINISH!! and PUSH instead of the words (.use-menu-art); the new look writes them. */
+.use-menu-art #finisher-word {
+	display: block;
+}
+
+.use-menu-art #finisher-0.filled, .use-menu-art #finisher-1.filled, .use-menu-art #finisher-2.filled,
+.use-menu-art #finisher-3.filled, .use-menu-art #finisher-4.filled, .use-menu-art #finisher-5.filled,
+.use-menu-art #finisher-6.filled, .use-menu-art #finisher-7.filled {
+	decorator: none;
+}
+
+.use-menu-art #finisher-push {
+	width: auto;
+	color: #f2f0e1;
+	decorator: none;
+}
+
 #prompt-finisher {
 	float: right;
 	min-width: 18dp;
@@ -197,23 +246,56 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The enemies' bars (.ehp): green rim and line, a plain green fill 3dp in. The value stays in the original's
-   digits (the document has no text for it). */
-.hb-frame {
-	border-color: #5fd36a;
+   The enemies' bars (.ehp): green rim and line, a plain green fill 3dp inside the rim, the HP over the bar's right
+   end in the small font (.ehp-n: green with an ink drop) instead of the original's digit sprites. The same with the
+   enemy_hp_bars option on: these rules also beat the modern look's compact bar (#hp-bars.always) that the original
+   inherits. */
+.hb-value,
+#hp-bars.always .hb-value {
+	width: 66dp;
+	height: 28dp;
+	margin-top: -8dp;
 }
 
-.hb-line {
+.hb-value .dd,
+#hp-bars.always .hb-value .dd {
+	width: 14dp;
+	height: 28dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 28dp;
+	text-align: right;
+	color: #5fd36a;
+	font-effect: shadow(2dp 2dp #050c1a);
+	decorator: none;
+}
+
+#hd-1-0, #hd-2-0, #hd-3-0, #hp-bars.always #hd-1-0, #hp-bars.always #hd-2-0, #hp-bars.always #hd-3-0 { left: 10dp; }
+#hd-1-1, #hd-2-1, #hd-3-1, #hp-bars.always #hd-1-1, #hp-bars.always #hd-2-1, #hp-bars.always #hd-3-1 { left: 24dp; }
+#hd-1-2, #hd-2-2, #hd-3-2, #hp-bars.always #hd-1-2, #hp-bars.always #hd-2-2, #hp-bars.always #hd-3-2 { left: 38dp; }
+#hd-1-3, #hd-2-3, #hd-3-3, #hp-bars.always #hd-1-3, #hp-bars.always #hd-2-3, #hp-bars.always #hd-3-3 { left: 52dp; }
+
+/* ba-dmg: the rim round a navy well, the fill 3dp inside the rim (the frame comes first, under the fill). */
+.hb-frame,
+#hp-bars.always .hb-frame {
+	border: 3dp #5fd36a;
+	border-radius: 0;
+	background-color: #0b1322;
+}
+
+.hb-line,
+#hp-bars.always .hb-line {
+	display: block;
 	background-color: #5fd36a;
 }
 
-.hb-fill {
-	height: 15dp;
-	margin: -3dp 0 0 -3dp;
+.hb-fill,
+#hp-bars.always .hb-fill {
 	background-color: #5fd36a;
 }
 
-.hb-segment {
+.hb-segment,
+#hp-bars.always .hb-segment {
 	display: none;
 }
 
@@ -250,11 +332,32 @@
 	color: #b2b2b2;
 }
 
-/* The cup clock's panel (.clock): a thin box; the sides and the digits stay the original's. */
+/* The cup clock (.clock, 337): a thin box, the blue 1P and red 2P tabs and the seconds in the body font at 4 times its
+   cell, gold. */
 #match-clock {
 	box-sizing: border-box;
 	border: 3dp #b6e4f7;
 	background-color: #0a101ceb;
+	decorator: none;
+}
+
+#match-clock #mc-side-1 {
+	decorator: image(nb-clock-1p);
+}
+
+#match-clock #mc-side-2 {
+	decorator: image(nb-clock-2p);
+}
+
+#match-clock .mc-digit {
+	top: 12dp;
+	height: 60dp;
+	font-family: "Pixel Body";
+	font-size: 60dp;
+	line-height: 60dp;
+	text-align: center;
+	color: #efc63c;
+	font-effect: shadow(3dp 3dp #7a4a10);
 	decorator: none;
 }
 

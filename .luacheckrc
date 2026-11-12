@@ -15,8 +15,32 @@ files["content/packs/*/ui/**/*.lua"] = {
   ignore = { "131" },
   read_globals = {
     "ui", "t", "document_name", "skin_choice", "original_box", "bag_slot", "game_options",
-    "panel_enter", "fit_text", "screen_fit", "title_picture", "hud_digits",
+    "panel_enter", "fit_text", "screen_fit", "title_picture", "hud_digits", "hud", "hooks",
+    "clock", "field", "partner", "bag", "player", "options",
   },
+}
+
+-- The example addons (examples/ui-addons/, docs/modding/interfaces.md): documents like the packs',
+-- with the UI API only, none of the game's helper scripts.
+files["examples/ui-addons/**/*.lua"] = {
+  allow_defined_top = true,
+  ignore = { "131" },
+  read_globals = {
+    "ui", "t", "document_name", "hooks", "clock", "field", "partner", "bag", "player", "options",
+  },
+}
+
+-- The UI API's adapters (ui/api/*.lua), which the engine runs once in the globals every document
+-- copies, before any document; while they load, event_source(setting, event) says which settings
+-- fire which event (docs/modding/ui-api.md).
+files["content/packs/*/ui/api/*.lua"] = {
+  read_globals = { "event_source" },
+  globals = { "clock", "field", "partner", "bag", "player", "options" },
+}
+
+-- The HUD's presenter, which its view reads (ui/hud/presenter.lua, ui/hud/view.lua).
+files["content/packs/*/ui/hud/presenter.lua"] = {
+  globals = { "hud" },
 }
 
 -- The skin entry the main menu and the pause menu share, loaded into both documents.

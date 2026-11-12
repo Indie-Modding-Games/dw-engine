@@ -1,12 +1,72 @@
-/* The tournament bracket in the new look (concept area C, tournament_bracket: 297-302). The board, the slots and the
-   cup's card are the original's pictures; the look adds the dark navy scrim over the field and the gold frame on the
-   cup's card. */
+/* The tournament bracket in the new look (concept area C, tournament_bracket: 297-302): the board's tree in blue
+   lines inside a window with gold brackets, each fighter in a box, the shots as gold dots, and the intro's card as a
+   navy panel with a gold rim, the arena's emblem and the cup's name. The fighters, their moves and the hit flash are
+   the game's. */
 
 #shade {
 	background-color: #03081280;
 }
 
+/* The original's board picture gives way to the look's own, on a box round the board's place (#board: 96, 69,
+   768 x 405), so the fighters stand at the tree's ends. */
+#board {
+	visibility: hidden;
+}
+
+#board-art {
+	display: block;
+	position: absolute;
+	left: 69dp;
+	top: 42dp;
+	width: 768dp;
+	height: 405dp;
+	padding: 24dp 24dp 48dp 24dp;
+	border: 3dp transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		image(nb-bracket-board) content-box, ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+.slot {
+	margin: -6dp 0 0 -6dp;
+	border: 3dp #7cb6e2;
+	padding: 3dp;
+	background-color: #0b1322;
+}
+
+/* The shots as dots: 12dp inside the 24dp cell, centred. */
+.shot {
+	width: 12dp;
+	height: 12dp;
+	margin: 3dp 0 0 3dp;
+	image-color: #00000000;
+	border: 3dp #fff3c4;
+	border-radius: 9dp;
+	background-color: #efc63c;
+}
+
+/* The grade's card gives way to the cup's name on the look's card (#card: 96, 168, 765 x 384). */
 #card {
-	margin: -5dp 0 0 -5dp;
-	border: 5dp #efc63c;
+	visibility: hidden;
+}
+
+#cup {
+	display: block;
+	position: absolute;
+	left: 96dp;
+	top: 168dp;
+	width: 765dp;
+	height: 384dp;
+	padding-top: 222dp;
+	box-sizing: border-box;
+	font-family: "Pixel Body";
+	font-size: 45dp;
+	line-height: 54dp;
+	letter-spacing: 3dp;
+	text-align: center;
+	color: #efc63c;
+	decorator: image(nb-cup-card);
+}
+
+#cup.hidden {
+	display: none;
 }

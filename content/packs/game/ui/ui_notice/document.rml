@@ -1,0 +1,14 @@
+<rml>
+<head>
+	<title>UI notice</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="box">
+		<p id="title"></p>
+		<p id="reason"></p>
+	</div>
+</body>
+</rml>

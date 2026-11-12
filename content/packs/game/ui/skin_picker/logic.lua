@@ -85,6 +85,7 @@ function on_device(document)
 end
 
 function on_action(_document, action)
-  -- No cancel: the box stays until a skin is confirmed.
-  return action == "cancel"
+  -- No cancel: the box stays until a skin is confirmed. The menu key too, or the UI would close the
+  -- box without skin_picker_done and leave the title empty.
+  return action == "cancel" or action == "menu"
 end

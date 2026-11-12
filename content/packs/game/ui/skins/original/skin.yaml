@@ -143,6 +143,8 @@ layout:
   new_game_rules: {menu: original, picture: original}
   egg_box: {box: original}
   field_item_notice: {box: original}
+  # Las barras del estado del campo se llenan a cuadritos (la clase pips de abajo es solo su estilo).
+  hud: {bars: pips}
 # Las barras del estado del campo se llenan a cuadritos, 25 por barra (partner_impl.c: renderStatusBars).
 document_classes:
   # Solo estilo: title-original y slots-original los leen las hojas de la portada y de la lista de ranuras (la

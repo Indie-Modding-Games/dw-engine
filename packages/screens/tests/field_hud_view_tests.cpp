@@ -83,6 +83,10 @@ TEST_CASE("the field HUD's settings name each value and each label once") {
   CHECK(*find(settings, "hud.meter.0.value") == dwe::ui::UiValue{-30.0});
   CHECK(*find(settings, "hud.meter.0.min") == dwe::ui::UiValue{-100.0});
   CHECK(*find(settings, "hud.meter.1.max") == dwe::ui::UiValue{100.0});
+  CHECK(*find(settings, "hud.clock.night") == dwe::ui::UiValue{true});
+  CHECK(*find(settings, "hud.clock.phase") == dwe::ui::UiValue{std::string{"night"}});
+  CHECK(*find(settings, "hud.meter.0.mood") == dwe::ui::UiValue{std::string{"low"}});
+  CHECK(*find(settings, "hud.meter.1.mood") == dwe::ui::UiValue{std::string{"high"}});
   CHECK(*find(settings, "hud.need.0.active") == dwe::ui::UiValue{true});
   CHECK(*find(settings, "hud.need.1.active") == dwe::ui::UiValue{false});
   CHECK(*find(settings, "hud.need.3.active") == dwe::ui::UiValue{true});
@@ -211,4 +215,25 @@ TEST_CASE(
               "hud.partner.evolving") == dwe::ui::UiValue{0.0});
   // Off the screen, nothing.
   CHECK(dwe::screens::fieldPartnerViewOf(std::nullopt, false, 12) == FieldPartnerView{});
+}
+
+TEST_CASE("the field HUD tells the night, the part of the day and a bar's low half itself") {
+  // The dial's moon before 6:00 and from 17:00 (clock.c: renderGameClock).
+  CHECK(dwe::screens::isNightHour(5));
+  CHECK_FALSE(dwe::screens::isNightHour(6));
+  CHECK_FALSE(dwe::screens::isNightHour(16));
+  CHECK(dwe::screens::isNightHour(17));
+  CHECK(dwe::screens::dayPhaseOf(0) == "night");
+  CHECK(dwe::screens::dayPhaseOf(6) == "morning");
+  CHECK(dwe::screens::dayPhaseOf(7) == "morning");
+  CHECK(dwe::screens::dayPhaseOf(8) == "day");
+  CHECK(dwe::screens::dayPhaseOf(14) == "day");
+  CHECK(dwe::screens::dayPhaseOf(15) == "late");
+  CHECK(dwe::screens::dayPhaseOf(16) == "late");
+  CHECK(dwe::screens::dayPhaseOf(17) == "night");
+  // Below the middle of the range, as the original swaps the bar's icon.
+  CHECK(dwe::screens::meterMoodOf({.value = -1, .min = -100, .max = 100}) == "low");
+  CHECK(dwe::screens::meterMoodOf({.value = 0, .min = -100, .max = 100}) == "high");
+  CHECK(dwe::screens::meterMoodOf({.value = 49, .min = 0, .max = 100}) == "low");
+  CHECK(dwe::screens::meterMoodOf({.value = 50, .min = 0, .max = 100}) == "high");
 }

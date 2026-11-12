@@ -60,6 +60,50 @@ ui->refreshTexts();                                            // tras catalog.s
 
 Se destruyen al revés: `Ui` (suelta sus texturas en el renderer), `UiRenderer`, `Renderer`.
 
+### Pantallas e interfaz por defecto
+
+El juego pide **pantallas** (`hud`, `pause_menu`, `partner_menu`...) y la interfaz activa decide qué documento las
+enseña. La interfaz por defecto se describe en `content/packs/game/ui/addon.yaml` (esquema
+`content/schemas/ui_addon.schema.json`): nombra el documento de cada pantalla, y el juego lo carga con el nombre de la
+pantalla (`ui::readUiAddon` + `loadDocument`). Un test comprueba que cada `ui/<carpeta>/document.rml` del paquete está
+ahí, salvo `ui/dev_assets`, que carga `DevAssetsBanner`.
+
+`Ui::requestScreen`, `closeScreen` e `isScreenOpen` piden una pantalla por su nombre. `Ui::mapScreen(pantalla,
+documento)` hace que esa pantalla la enseñe otro documento cargado (el de un addon de interfaz); las que no se mapean
+siguen con el documento de su nombre, y `clearScreenMap` vuelve a la interfaz por defecto. `show`, `hide`,
+`isVisible`, las llamadas que leen o cambian elementos de un documento, la tecla del menú y el `ui.show` de los
+scripts leen el nombre igual: primero como pantalla, luego como documento. Así las ~180 llamadas del juego que ya usan
+el nombre de la pantalla no cambian.
+
+### Addons de interfaz
+
+Un addon de interfaz es una carpeta `ui/addons/<id>/` con su `addon.yaml` (`docs/modding/interfaces.md`). Vienen de
+dos sitios: de cualquier paquete montado y de la carpeta de datos del usuario,
+`<datos de usuario>/indie-modding-games/dwe/ui/addons/`, que `content::UserUiAddonsFileSystem` monta como un paquete
+sintético de capa `user` (`user_ui_addons`) que solo sirve esa carpeta. `ui::findUiAddons` los busca en el VFS y
+descarta los que no se leen o cuyo `id` no es el nombre de su carpeta.
+
+`Ui::useUiAddon` comprueba que es de tipo `ui`, que su rango `ui_api` contiene la versión actual y que solo cubre
+pantallas que el juego tiene; carga sus documentos como `<id>.<pantalla>` y mapea las pantallas. Si algo falla no
+cambia nada y devuelve el porqué. Las pantallas visibles al cambiar se vuelven a enseñar en el documento nuevo.
+`useDefaultUi` descarga los documentos del addon.
+
+Un **complemento** (`type: plugin`) no cubre pantallas: `Ui::addUiPlugin` carga sus documentos como
+`<id>.<ruta con puntos>` y los enseña, no modales y sin quitar el foco, sobre la interfaz que esté puesta, también al
+cambiarla. `removeUiPlugins` los quita todos. El juego los enciende o apaga todos juntos (`ui_plugins`).
+
+El código del addon corre aislado: `CodeTrust::allowAddon` deja correr los documentos, plantillas y scripts de su
+carpeta, y su entorno Lua tiene un `ui.send` que solo deja pasar los comandos y opciones que declara el contrato
+(`Ui::setAddonCommandFilter`, `app::addonMaySend`); cualquier otro lanza un error de Lua. Una plantilla de un addon
+dentro de un documento del motor se rechaza.
+
+En el juego, `UiAddonChanger` (`apps/game/src/ui_addon_setting.hpp`) publica `ui_addon`, `ui_addons`,
+`ui_addon.name.<id>`, `ui_addon.safe`, `ui_addon.problem`, `ui_plugins` y `ui_plugins.count`; las filas «Interfaz» y
+«Complementos» de Opciones → Interfaz mandan `ui_addon` y `ui_plugins`, que se guardan en los ajustes del usuario y
+se aplican al cerrar el menú. La consola y las rutas usan `ui_addon("id")`. Si el addon no puede ponerse,
+vuelve la interfaz del juego y `ui/ui_notice` lo avisa unos segundos. **Modo seguro:** `--safe-ui` o Mayús pulsada al
+arrancar dejan la interfaz del juego y no montan la carpeta de addons del usuario.
+
 ## Dibujo
 
 RmlUi dibuja en dos tiempos. `Ui::update()` hace el layout y llama a `Render()` de RmlUi fuera del frame: la
@@ -195,7 +239,7 @@ un mod puede colocarlos y darles estilo como quiera, pero con estos ids y estos 
 | `minimap-enemies` | `hud::MinimapEnemies` | La capa de los enemigos, dentro del disco y antes de los marcadores del compañero y del jugador (que quedan encima): la UI le crea un hijo `<img class="marker enemy" id="minimap-enemy-N">` por enemigo (`hud::MinimapEnemyPrefix`, imagen `generated:minimap_enemy`: disco blanco con borde oscuro que el aspecto tiñe con `image-color`), con `left`, `top` como el compañero, y `display: none` en los que sobran o quedan fuera de la vista |
 | `minimap-items` | `hud::MinimapItems` | La capa de los objetos del suelo, dentro del disco y antes de la de los enemigos (que queda encima): como la de los enemigos, un hijo `<img class="marker item" id="minimap-item-N">` por objeto (`hud::MinimapItemPrefix`, imagen `generated:minimap_item`: un rombo blanco con borde oscuro que el aspecto tiñe con `image-color`), con `left`, `top` y `display: none` en los que sobran o quedan fuera de la vista |
 
-El script del HUD (`ui/hud/logic.lua`) escribe además el día y la hora en `#minimap-day` y `#minimap-time`, y la
+El script del HUD (`ui/hud/view.lua`) escribe además el día y la hora en `#minimap-day` y `#minimap-time`, y la
 marca del norte es el texto `hud.minimap.north` de `#minimap-north`.
 
 **El minimapa es una diferencia opcional: el original no tiene minimapa.** El ajuste `minimap` vale `on` (al
@@ -318,7 +362,7 @@ aspecto lo dibuje a su manera:
 | Elemento o clase | Qué hace el script | Para qué |
 |---|---|---|
 | clase `shown` en `#field-status` | La pone con `hud.shown` y la quita sin él | Cada aspecto decide cómo se va el panel: el moderno lo quita (`display: none`); el original puede deslizarlo, como `clock.c` (50 píxeles por frame) |
-| clase `pips` en una barra (`#field-meter-<i>-bar`, `#field-pool-<i>-bar`) | Si el aspecto se la pone (en su `skin.yaml`, ver abajo), el relleno va en 25 pasos del 4 %, redondeando hacia abajo, con la misma regla de dos tonos | Los 25 cuadritos de `partner_impl.c: renderStatusBars` (4 puntos por cuadrito en la felicidad, 2 en la disciplina) |
+| maquetación `bars: pips` del HUD (`skin.yaml`, `layout: hud:`) | Con ella el relleno va en 25 pasos del 4 %, redondeando hacia abajo, con la misma regla de dos tonos; la clase `pips` de las barras (`#field-meter-<i>-bar`, `#field-pool-<i>-bar`) es solo su estilo | Los 25 cuadritos de `partner_impl.c: renderStatusBars` (4 puntos por cuadrito en la felicidad, 2 en la disciplina) |
 | clase `area-liked` o `area-disliked` en `#field-status` | Pone `area-liked` con `hud.partner.area` a 1, `area-disliked` con 2, y ninguna con 0 | La cara de la felicidad que alterna con otra en una zona que le gusta o le disgusta al compañero (ver arriba); el moderno no la usa |
 | clase `low` en `#field-meter-<i>` | La pone si el valor está por debajo de la mitad de su rango (`(min + max) / 2`) y la quita si no | El icono de la barra: la cara de la felicidad se pone triste por debajo de 0 y el de la disciplina cambia por debajo de 50 (`partner_impl.c: renderStatusBars`); el moderno no la usa |
 | `#field-partner-bubble` | `left` y `top` desde `hud.partner.x` y `hud.partner.y` (redibuja con `hud.partner.revision`); la clase `shown` solo con `hud.partner.visible` y alguna necesidad; y una sola clase de necesidad, `hunger`, `sleep`, `toilet`, `tired`, `injured` o `sick`; una clase de necesidad en cada `#field-partner-bubble-icon-<i>` que la enseña (0 a 4, la más urgente primero por `hud.need.<i>.urgency`; con una sola, el 0); con varias necesidades y `need_bubble_stack`, `stack-2` a `stack-5` en vez de la clase de necesidad de la burbuja, y un `margin-left` que la mete en la ventana si se saldría por un lado; y `frame-<n>` (1 a 60), el frame del original en que va la burbuja; con `hud.partner.evolving`, la clase `evolving` en la burbuja y en `#field-partner-bubble-icon-0`, ninguna necesidad ni `stack-<n>`, y `frame-<n>` con el cuadro que da la partida | La burbuja del original sobre el compañero (`bubble.c`). Cuelga del centro de su borde de abajo (`ui/hud/structure.rcss`), así que el aspecto solo le da tamaño y dibujo; el moderno no la enseña porque ya tiene el panel de necesidades |
@@ -402,15 +446,13 @@ window at every UI scale», «the original's need bubble stays over the partner'
 
 Las constantes (25 cuadritos, 6° por minuto, 15° por hora, las 6 y las 17) están con nombre al principio del
 script, con su referencia a `clock.c` o `partner_impl.c`. Al cambiar de aspecto (el ajuste `ui_skin`) el script vuelve a
-dibujar el estado y la burbuja sin esperar a otra revisión, porque el aspecto nuevo puede poner o quitar clases que
-lee (`pips`). El aspecto moderno esconde la esfera
-(`#field-clock-dial`) y no pone `pips`.
+dibujar el estado y la burbuja sin esperar a otra revisión, porque el aspecto nuevo puede cambiar su maquetación
+(`bars: pips`). El aspecto moderno esconde la esfera (`#field-clock-dial`) y no llena a cuadritos.
 
 **Cómo pone un aspecto una clase.** Las hojas RCSS no pueden poner clases, así que un aspecto pone `pips`, y cualquier
 otra clase en los elementos del documento compartido, con el campo `document_classes` de su `skin.yaml`: por documento e
 id de elemento, las clases que el juego le pone al cargar el documento y cambia al cambiar de aspecto. El mecanismo
-llega con el aspecto original; hasta entonces ningún aspecto pone `pips` y las barras se llenan de forma continua. El
-script solo lee la clase (`has_class`), así que no cambia cuando llega.
+llega con el aspecto original. El script no lee esas clases: lo que cambia su cálculo lo pregunta con `ui.layout`.
 
 **El aspecto moderno** (abajo a la izquierda, `ui/skins/modern/hud/style.rcss`) dibuja todo el contrato. Lo que
 cambia frente al original es solo de presentación y es opcional, porque es del aspecto: con el aspecto original se
@@ -449,7 +491,7 @@ La pantalla de combate (`ui/battle`) envía `battle_command` (el número del com
 `battle_charge` (cada pulsación que carga el golpe final), `battle_close` (cierra la caja del final),
 `battle_end_count` y `battle_end_counted` (la cuenta de esa caja: cada punto o bit contado, y los bits ya sumados; el juego
 toca sus sonidos),
-`battle_bag_open` y `battle_bag_close` (la bolsa del domador, que abre la acción `cancel`; el juego muestra entonces
+`battle_bag_open` y `battle_bag_close` (la bolsa del domador, que abre la acción `menu`; el juego muestra entonces
 `ui/partner_menu` en su página de objetos con `partner_menu.context = battle`, y su `bag_use` lanza el objeto) y
 `battle_throw` (el número de la ranura cuyo objeto se lanza al compañero, para la consola y las pruebas). El menú de
 pausa abre el del compañero con `open_partner_menu`, y este (`ui/partner_menu`) envía `bag_use`, `bag_drop` (el
@@ -619,12 +661,19 @@ layout:                             # opcional: opciones de maquetación que lee
   |---|---|---|
   | `menu` | `pause_menu`, `partner_menu`, `battle`, `main_menu`, `save_slots`, `new_game_rules` | `modern`; `original`, la disposición del original (la cuadrícula de iconos y la página del jugador del menú de pausa, las páginas de estado y técnicas del compañero, la tira de combate que entra deslizándose, la portada y las ranuras del original) |
   | `box` | `pause_menu`, `partner_menu`, `egg_box`, `field_item_notice` | `modern`; `original`, las cajas que crecen desde un contorno gris (`common/original_box.lua`) |
-  | `pages` | `partner_menu` | `modern`; `original`, las páginas de estado, técnicas y bolsa como las pantallas completas del original (las clases de página de `#scrim`) |
+  | `pages` | `partner_menu` | `modern`; `original`, las páginas de estado, técnicas y bolsa como las pantallas completas del original (las clases de página de `#scrim`); `compact`, una sola página del compañero con su estado y sus técnicas, sin fila de pestañas, la bolsa como «Bolsa» y Cancelar volviendo al menú de pausa (las clases `new-partner` y `compact-partner` de `#scrim`) |
+  | `pool` | `partner_menu` | `maximum` (sin la opción, igual), la barra de PV y PM del máximo frente al tope, como el original; `current`, la barra de lo que queda frente al máximo |
+  | `tabs` | `pause_menu` | `all` (sin la opción, igual), las pestañas del jugador del original más la ciudad; `minimal`, solo Jugador, Árbol y Prosperidad (la ciudad), que Q y E (los gatillos del mando) recorren desde cualquier sitio de la página, con sus teclas a los lados y una pestaña «Volver» |
+  | `medals` | `pause_menu` | `page` (sin la opción, igual), las medallas en su página; `profile`, en una caja del perfil, sin su pestaña |
   | `picture` | `main_menu`, `save_slots`, `new_game_rules` | `modern`; `original`, con «imágenes panorámicas» las cajas y el logo van a sus sitios del original sobre la imagen ensanchada (`common/title_picture.lua`) |
+  | `bars` | `hud` | `continuous` (por defecto); `pips`, las barras del estado del campo se llenan en los 25 cuadritos del original |
+  | `heading` | `save_machine` | `original` (o sin poner), el título de la máquina solo sobre el registro y las ranuras, como el original; `always`, también sobre la pregunta de guardar |
 
-  El moderno declara las suyas, y el original (y el new, que lo extiende) las del original. Las clases de `document_classes` quedan
-  para el estilo (`skin-original`, `title-original`, `slots-original`, `pips`): ningún script decide la disposición
-  por ellas, salvo `pips`, que el HUD lee para llenar las barras a cuadritos como las dibuja la hoja.
+  El moderno declara las suyas, y el original (y el new, que lo extiende) las del original. `pages: compact`, `pool`,
+  `tabs` y `medals` solo las pone el aspecto DevVago; sin ellas cada pantalla hace lo de siempre (`tabs`, `medals` y
+  `pool` solo cambian algo con la disposición del original del menú de pausa o en el menú del compañero). Las clases
+  de `document_classes` quedan para el estilo (`skin-original`, `title-original`, `slots-original`, `pips`): ningún
+  script las lee (un test lo comprueba). El HUD llena las barras a cuadritos con la maquetación `hud: {bars: pips}`.
 - **El aspecto de reserva (`fallback`).** `ui/ui_skin.yaml` puede nombrar, además de `default`, un `fallback`: el
   aspecto con el que arranca el juego si el de `default` no se ofrece. El original necesita imágenes que extrae
   `dwx extract` del disco del usuario; sin ellas se queda fuera del catálogo y el juego arranca con el moderno. Un
@@ -777,7 +826,7 @@ la portada y el logotipo, también tras la lista de partidas, las reglas, el mod
   borde izquierdo transparente de 26dp donde se pinta el ▶, así el texto no se mueve); en rejillas y pestañas, el
   cursor de cuatro esquinas.
 - Letra: dos fuentes de píxel, «Pixel Body» a 30dp para todo el texto y «Pixel Small» a 26dp para teclas, avisos,
-  descripciones y etiquetas pequeñas (`ui/fonts/pixel_body.ttf`, `pixel_small.ttf`; solo Latin-1).
+  descripciones y etiquetas pequeñas (`ui/fonts/pixel_body.ttf`, `pixel_small.ttf`; Latin-1 más «…»).
 - Colores: tinta `#050c1a`, azul marino `#181f2c`, azul claro `#b6e4f7`, azul `#7cb6e2`, oro `#efc63c`, crema
   `#f2f0e1` (texto), apagado `#93a6bc`, atenuado `#5f6f82`, verde `#5fd36a`, rojo `#e2483d`.
 - Avisos de botones: como teclas (`nb-key`), también el de la caja de historia mientras espera, en lugar del icono
@@ -790,6 +839,45 @@ el juego arranca con el aspecto de reserva. RmlUi no tiene sombras, contornos ni
 que lo que la maqueta dibuja con ellos va en los ninepatch. De la disposición del original solo cambia la imagen de la
 portada, de la lista de partidas y de las reglas (`layout: {picture: modern}`): la maqueta pone su propio fondo 4:3 y
 no la imagen ancha. Lo que aún difiere de la maqueta depende de cambios en los documentos o en su lógica.
+
+### El aspecto DevVago (id `devvago`)
+
+El diseño es de **DevVago**, que lo trajo en #308 como el aspecto `new`; cuando `new` pasó a ser el «Pixel art» de la
+maqueta (#310), su diseño se quedó como un aspecto propio con su nombre («DevVago» en los menús, `ui_skin.devvago`), en
+Opciones → Interfaz y en la caja del primer arranque.
+
+- `ui/skins/devvago` extiende el moderno (`extends: modern`): cada pantalla pone su hoja encima de la del moderno, como
+  en su versión, que llevaba una copia del moderno en `new/_base`. De esa copia solo queda lo que él añadió (los colores
+  de las listas del original, `original_lists/style.rcss`). Pone `skin-original` en el `#panel` de las pantallas que
+  comparten el panel del menú de pausa, así que las reglas `#panel:not(.skin-original)` del moderno no lo tocan.
+- Imágenes propias: la portada sin marca (`assets/hero_title.png`, la de #309), su fondo, sus iconos del menú del campo
+  (`assets/menu_icons.png`, hoja `new-field-icons`), los de la parte del día junto a la hora del minimapa
+  (`assets/icon_sources/`) y su cursor. Las hojas de sprites del original van copiadas en su `skin.yaml`, con los
+  nombres sin marca, así que, como el original, necesita lo que `dwx extract` saca del disco del jugador.
+- Disposición (`layout`): la portada, la lista de ranuras, las reglas de la partida nueva y el menú de pausa como las
+  del original (`menu: original`;
+  las cajas se abren de golpe y la portada no se ensancha); el menú del compañero moderno, pero compacto
+  (`pages: compact`) y con las barras de PV y PM de lo que queda (`pool: current`); la página del jugador con las
+  pestañas mínimas (`tabs: minimal`) y las medallas en el perfil (`medals: profile`, que coloca las celdas en la caja
+  del perfil desde `pause_menu/logic.lua: refresh_medals`). El combate y lo demás, como el moderno.
+- Lo que no volvió: la pestaña «Evoluciones» del menú del compañero, que llevaba al árbol del menú de pausa y volvía.
+  Necesitaba un comando y un ajuste propios del juego (`open_evolutions`, `pause_menu.evolutions`), que la API de la
+  interfaz quitó en su 0.2.0. Por eso el árbol tiene su pestaña «Árbol» en la tira mínima, entre Jugador y
+  Prosperidad; la de Cartas no se ofrece, como en su versión.
+- Arreglos sobre su versión: la tira mínima recorre sus pestañas sin el `nil + 1` de cuando la página abierta no
+  estaba en ella (`index_of(...) or 1`); el mensaje de las técnicas no se borra al mover el foco; las barras de PV y PM
+  de los demás aspectos siguen siendo las del máximo; y los nombres de la ciudad («Prosperidad») y de las páginas del
+  compañero se escriben en cada refresco, así que un cambio de aspecto en vivo deja el nombre correcto. Sus clases de
+  documento de entonces (`player-minimal-tabs`, `player-medals-on-profile`, `partner-compact`, `new-partner`) son
+  ahora las opciones de `layout` de arriba y las clases `layout-*` del `<body>`; ninguna regla de su hoja depende de
+  una clase que el código ya no pone. Las cajas de una carta (`card-detail`, `card-count-box`) se cierran también
+  sin la animación del original (`menu: original` con `box: modern`), y se quitaron las reglas de ids que ya no
+  existen (`#balance` del gimnasio, la tecla de la pestaña Evoluciones, `.on-options` de la portada).
+- Arreglos de su diseño: el menú de la portada usa letra de 22dp, porque «Continuar partida» se salía de la caja, y
+  «Nueva partida» solo se rellena de amarillo bajo el cursor (antes había dos filas marcadas); la comida favorita es
+  una fila más del perfil del compañero, no el texto grande encima del retrato y de los parámetros; en el editor de
+  técnicas, las técnicas equipadas van bajo la cuadrícula y no detrás; y en una ventana ancha la tienda se aparta a la
+  derecha de la caja del dinero, que tapaba.
 
 ## Aspecto original
 
@@ -915,7 +1003,7 @@ las posiciones dentro de un elemento van en %.
 | El menú de pausa es más ancho (184 píxeles) y lista opciones con texto | Tiene más entradas que el del original, con valores en el idioma del jugador |
 | El menú del compañero tiene cuatro pestañas; las barras de HP y MP de su ficha miden 82 píxeles en vez de 104 | El menú tiene más páginas; los valores «800 / 800» necesitan sitio |
 | El golpe final se elige en el recuadro de «PUSH», que es su entrada de la lista; en la tira no tiene icono, como el original | El original lo lanza con un botón propio; aquí es una orden más para el teclado, el mando y el ratón |
-| Con el aspecto moderno, la bolsa del combate tiene una entrada «Objetos» tras el último icono de la tira (añadido del PC); con el del original no sale, como en el juego, y la bolsa se abre con cancelar (Ctrl, East o clic derecho), como el botón propio del original | El original solo dibuja los iconos de las órdenes; la entrada del aspecto moderno sirve al ratón |
+| Con el aspecto moderno, la bolsa del combate tiene una entrada «Objetos» tras el último icono de la tira (añadido del PC); con el del original no sale, como en el juego, y la bolsa se abre con la acción menú (Tab o North) | El original solo dibuja los iconos de las órdenes; la entrada del aspecto moderno sirve al ratón |
 | La marca de enfado no se inclina hacia su enemigo, no cambia de tamaño con la distancia y su cara no es semitransparente | El contrato publica dónde está la marca, no la cámara del combate |
 | No salen las marcas de huida de los demás Digimon de la pantalla ni el domador vuelve andando a su sitio antes del rótulo; el rótulo espera 60 frames en su lugar | El campo está quieto durante el combate; esos movimientos llegarán con la escena del combate |
 | Las dos últimas marcas de «FINISH!!» salen en cuanto el indicador se llena, no 3 y 5 frames después | El contrato publica si el indicador está lleno, no cuánto lleva lleno |

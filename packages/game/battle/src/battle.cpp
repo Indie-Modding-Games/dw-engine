@@ -11,6 +11,7 @@
 
 #include "aftermath.hpp"
 #include "battle_context.hpp"
+#include "usability.hpp"
 
 namespace dwe::game::battle {
 
@@ -403,6 +404,16 @@ void Battle::pressFinisherCharge() {
 
 void Battle::setClips(FighterId fighter, FighterClips clips) {
   state_.fighters.at(fighter).clips = std::make_shared<const FighterClips>(std::move(clips));
+}
+
+std::optional<std::int32_t> Battle::partnerMoveCost(std::size_t slot) const {
+  const std::optional<MoveRef>& ref = state_.partner().moves.at(slot);
+  if (!ref) {
+    return std::nullopt;
+  }
+  const bool unwell = setup_.condition.sick || setup_.condition.injured;
+  return partnerMpCost(*rules_, moves_->at(*ref).mpCost, state_.partner().stats.brain, unwell,
+                       MpCostUse::Payment);
 }
 
 bool Battle::bagAvailable() const {

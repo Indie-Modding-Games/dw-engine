@@ -81,6 +81,8 @@ struct CommandEntry {
   // command's number, "special-<n>" by a technique's special effect, or empty for the finisher,
   // which has none.
   std::string icon;
+  // The MP a technique costs the partner now (Battle::partnerMoveCost); 0 for the other commands.
+  std::int32_t mpCost = 0;
 
   friend bool operator==(const CommandEntry&, const CommandEntry&) = default;
 };

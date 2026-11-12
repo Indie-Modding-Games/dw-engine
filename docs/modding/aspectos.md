@@ -54,8 +54,10 @@ layout:
 
 `menu` es la disposición de la pantalla y `box`, si sus cajas se abren de golpe (`modern`) o crecen desde un contorno
 gris como en el original (`original`). Otras son más finas, para que un aspecto que extiende el original se quede con
-parte: `pages` (las páginas del compañero como pantallas completas) y `picture` (la portada ensanchada con las cajas
-en sus sitios del original). La lista completa de pantallas y opciones está en
+parte: `pages` (las páginas del compañero como pantallas completas, o `compact`, una sola página con el estado y las
+técnicas), `picture` (la portada ensanchada con las cajas en sus sitios del original) y `heading` (el título de la
+máquina de guardar también sobre su pregunta). Y algunas solo las usa por ahora el aspecto DevVago: `tabs: minimal` y
+`medals: profile` en el menú de pausa, `pool: current` en el del compañero. La lista completa de pantallas y opciones está en
 [UI, aspectos](../architecture/ui.md#aspectos); el documento recibe además la clase `layout-<opción>-<valor>` en su
 `<body>`, para escribir reglas que solo valgan con una disposición.
 
