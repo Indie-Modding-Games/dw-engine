@@ -68,7 +68,9 @@ private:
   void showMenu(bool boot);
   // The options page over the title (TitleOptionsCommand).
   void showOptions();
-  void showList(SlotListMode mode);
+  // fresh: opened from the main menu, so the list starts over at its first page and row instead of
+  // the row a question or the rules came back to.
+  void showList(SlotListMode mode, bool fresh = false);
   void showDialog(const SaveDialog& dialog);
   // Back from a dialog that started nothing: to the list, or to the main menu without one.
   void back();

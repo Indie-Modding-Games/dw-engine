@@ -183,6 +183,10 @@ partner choca con un NPC (`main.c: initializeLoadedMap: 3821-3857`) no se hace e
 Los autoguardados antiguos que queden van debajo de las manuales («Autoguardado antiguo N»), solo al continuar y al
 borrar (al empezar no se eligen).
 
+La lista recuerda su página y la fila elegida mientras una pregunta sobre ella está abierta, y empieza de nuevo cuando
+la abre el menú de la portada: el juego la enseña entonces con el argumento `fresh` (`on_show(document, args)`), también
+al volver a la portada después de jugar.
+
 **Cabecera nueva** (pregunta 1, CONTRACT): `format_version: 3` añade a la cabecera
 
 ```yaml

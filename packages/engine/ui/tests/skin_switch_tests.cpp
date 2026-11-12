@@ -1662,4 +1662,88 @@ TEST_CASE("the original skin's enemy HP bar fill is as wide as the HP left") {
   }
 }
 
+TEST_CASE("the original skin's enemy HP bar stays its own with the enemy life bars option on") {
+  Content content;
+  addOriginalArt(content);
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "en");
+  auto ui = createUi(files, texts);
+  REQUIRE(ui->loadDocument("battle", idOf("ui/battle/document")));
+  ui->setSetting("ui_skin", std::string{"original"});
+  ui->show("battle", true);
+  ui->setSetting("battle.hp_bars", std::string{"1 50.0 40.0 20 -26 50 128 255 400 "});
+  ui->setSetting("battle.hp_bars.revision", 1.0);
+  ui->update();
+  // The look of the bar without the option: the original's green outline, its leader line and the
+  // digits' width.
+  const auto look = [&] {
+    return std::vector<std::string>{
+        ui->styleProperty("battle", "hb-1-frame", "border-top-color"),
+        ui->styleProperty("battle", "hb-1-frame", "border-top-left-radius"),
+        ui->styleProperty("battle", "hb-1-line", "display"),
+        ui->styleProperty("battle", "hb-1-fill", "background-color"),
+        ui->styleProperty("battle", "hd-1-0", "width")};
+  };
+  const std::vector<std::string> own = look();
+  REQUIRE_FALSE(ui->elementHasClass("battle", "hp-bars", "always"));
+  CHECK(own[2] != "none");
+
+  // The modern skin's compact bar, which the original extends, must not show through.
+  ui->setSetting("battle.hp_bars.always", true);
+  ui->update();
+  REQUIRE(ui->elementHasClass("battle", "hp-bars", "always"));
+  CHECK(look() == own);
+}
+
+TEST_CASE("the slot list starts over when the main menu opens it, and keeps its row behind a "
+          "question") {
+  Content content;
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "en");
+  auto ui = createUi(files, texts);
+  REQUIRE(ui->loadDocument("save_slots", idOf("ui/save_slots/document")));
+  ui->setSetting("ui_skin", std::string{"modern"});
+  ui->setSetting("save.slots.mode", std::string{"continue"});
+  constexpr int Saves = 10;
+  ui->setSetting("save.slots", static_cast<double>(Saves));
+  for (int entry = 0; entry < Saves; ++entry) {
+    ui->setSetting(std::format("save.slot.{}.kind", entry), std::string{"slot"});
+    ui->setSetting(std::format("save.slot.{}.number", entry), static_cast<double>(entry + 1));
+  }
+  input::InputState input{input::defaultActionMap()};
+  // Confirms the focused row: the entry the list sends with choose_slot.
+  const auto choose = [&] {
+    press(*ui, input, input::keys::Return);
+    double entry = -1.0;
+    for (const UiCommand& command : ui->takeCommands()) {
+      if (command.name == "choose_slot") {
+        entry = std::get<double>(command.value);
+      }
+    }
+    return entry;
+  };
+  const auto open = [&](bool fresh) {
+    ui->show("save_slots", true, fresh ? UiArguments{{"fresh", true}} : UiArguments{});
+    frame(*ui, input);
+  };
+
+  // The main menu opens it (TitleScreen::showList): the first row of the first page.
+  open(true);
+  REQUIRE(ui->focusedElementId("save_slots") == "slot-1");
+  // The second page's second row: entry 7.
+  press(*ui, input, input::keys::Right);
+  press(*ui, input, input::keys::Down);
+  CHECK(choose() == 7.0);
+  // Its question answered no, the game shows the list again on the row it came from.
+  ui->hide("save_slots");
+  open(false);
+  CHECK(ui->focusedElementId("save_slots") == "slot-2");
+  CHECK(choose() == 7.0);
+  // The game started; back at the title the main menu opens the list afresh.
+  ui->hide("save_slots");
+  open(true);
+  CHECK(ui->focusedElementId("save_slots") == "slot-1");
+  CHECK(choose() == 0.0);
+}
+
 } // namespace dwe::ui

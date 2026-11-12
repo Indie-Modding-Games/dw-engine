@@ -5,7 +5,8 @@
 -- save.slots.newest, the entry saved last, where continuing starts) and shows this document; it
 -- sends choose_slot with the entry, from 0, play_without_saving or slots_back. Pages of six
 -- entries, turned with left and right or the page buttons. The page and the row chosen stay while a
--- dialog about it is open, and start over when the list is opened from the main menu.
+-- dialog about it is open, and start over when the list is opened from the main menu (on_show's
+-- args.fresh).
 --
 -- The original's layout (ui.layout("menu") == "original") lists every slot instead, one row
 -- each, as the original lists its memory card slots (main_menu.c: renderSelectCardSlot): "CONTINUE
@@ -361,11 +362,16 @@ function play_without_saving()
   ui.send("play_without_saving", true)
 end
 
-function back()
+-- The list starts over: the first page, no row chosen.
+local function start_over()
   page = 1
   chosen = nil
   top = 0
   chosen_item = nil
+end
+
+function back()
+  start_over()
   ui.send("slots_back", true)
 end
 
@@ -391,7 +397,12 @@ function on_tick(document, _seconds)
   fit_text.tick()
 end
 
-function on_show(document)
+-- args.fresh: the main menu opened the list (a new game, continue or erase), so it starts over,
+-- also after a game started from it and the player came back to the title.
+function on_show(document, args)
+  if args ~= nil and args.fresh then
+    start_over()
+  end
   title_picture.apply(document, PictureBoxes)
   refresh(document)
   refresh_prompts(document)

@@ -281,8 +281,13 @@ function on_show(document)
   refresh_prompts(document)
 end
 
-function on_setting(document, _name)
-  refresh(document)
+-- The game publishes a change as a batch of shop.* settings and then bumps shop.revision; drawing
+-- on each one would read a phase before its rows (and focus a row about to hide). Other names are
+-- the options the shop reads (shop_extras, favorite_food).
+function on_setting(document, name)
+  if name == "shop.revision" or string.sub(name, 1, 5) ~= "shop." then
+    refresh(document)
+  end
 end
 
 function on_language(document)

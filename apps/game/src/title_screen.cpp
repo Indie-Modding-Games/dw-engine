@@ -141,14 +141,14 @@ bool TitleScreen::handle(const ui::UiCommand& command) {
     show();
   } else if (name == "play") {
     if (flow_.keepsSaves()) {
-      showList(SlotListMode::NewGame);
+      showList(SlotListMode::NewGame, true);
     } else {
       startOrAskRules(PlayStart{});
     }
   } else if (name == "continue") {
-    showList(SlotListMode::Continue);
+    showList(SlotListMode::Continue, true);
   } else if (name == "erase") {
-    showList(SlotListMode::Erase);
+    showList(SlotListMode::Erase, true);
   } else if (name == "slots_back") {
     ui_->hide(SaveSlotsDocument);
     show();
@@ -228,11 +228,11 @@ void TitleScreen::showOptions() {
   ui_->setSetting(MenuAtTitleSetting, false);
 }
 
-void TitleScreen::showList(SlotListMode mode) {
+void TitleScreen::showList(SlotListMode mode, bool fresh) {
   ui_->hide(MainMenuDocument);
   listShown_ = true;
   screens::publish(*ui_, flow_.open(mode), "save.slots.revision");
-  ui_->show(SaveSlotsDocument, true);
+  ui_->show(SaveSlotsDocument, true, fresh ? ui::UiArguments{{"fresh", true}} : ui::UiArguments{});
 }
 
 void TitleScreen::showDialog(const SaveDialog& dialog) {
