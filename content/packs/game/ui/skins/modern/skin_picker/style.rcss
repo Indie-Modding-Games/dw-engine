@@ -1,0 +1,23 @@
+/* The first run's skin picker in the modern look, over the pause menu's panel (../pause_menu/style.rcss): a row grows
+   to the skin's name and its hint, the hint in the caption size and the secondary text colour. */
+
+#panel:not(.skin-original) {
+	width: 520dp;
+}
+
+#panel:not(.skin-original) button.skin {
+	height: auto;
+	padding: 7dp 12dp 8dp 9dp;
+	line-height: 24dp;
+}
+
+#panel:not(.skin-original) .skin-hint {
+	font-size: 14dp;
+	line-height: 20dp;
+	color: #9aa8ba;
+	opacity: 1;
+}
+
+#panel:not(.skin-original) button.skin:focus .skin-hint {
+	color: #e9eef5;
+}

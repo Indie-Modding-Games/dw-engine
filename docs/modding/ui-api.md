@@ -35,6 +35,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.4.0 | Llega la pantalla `skin_picker`, la caja del primer arranque que pregunta el aspecto: `ui_skin`, `ui_skin_preview` y `skin_picker_done` |
 | 0.3.0 | Llegan los argumentos de `ui.show` y `on_show(document, args)`. Se va `pause_menu.start_entry`: el menú del compañero le pasa `entry` al menú de pausa al volver |
 | 0.2.0 | Llega `ui.layout`. Se van `pause_menu.evolutions` y `open_evolutions`, la pestaña de evoluciones del menú del compañero que ya no usa ningún aspecto, y la opción `ui_skin` del menú del compañero, que ahora pregunta por su maquetación |
 | 0.1.0 | La lista de lo que usan hoy el HUD, el menú de pausa y el menú del compañero |
@@ -42,12 +43,13 @@ puede moverse entre versiones del juego.
 La lista sale de `apps/game/src/ui_contract.cpp`. Un test la compara con esta página, con
 `content/schemas/ui_api/ui_api.json` (la misma lista para herramientas y editores) y con lo que leen y mandan los
 scripts de cada pantalla; `DWE_WRITE_API_DOC=1` al correr los tests del juego reescribe las dos. De momento cubre el
-HUD, el menú de pausa y el menú del compañero; el resto de pantallas llega después.
+HUD, el menú de pausa, el menú del compañero y la caja del aspecto del primer arranque; el resto de pantallas llega
+después.
 
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.3.0**.
+Versión de la API de la interfaz: **0.4.0**.
 
 ### `hud`
 
@@ -275,5 +277,13 @@ Versión de la API de la interfaz: **0.3.0**.
 | `status_extras` | opción | sí/no | Los extras de la página de estado. |
 | `favorite_food` | opción | sí/no | La comida favorita del compañero. |
 | `art_fixes` | opción | sí/no | Arreglos de arte. |
+
+### `skin_picker`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `ui_skin` | opción | texto | El aspecto que se ve; al confirmar una fila, el elegido, que se guarda en los ajustes. |
+| `ui_skin_preview` | comando | texto | Pone el aspecto de la fila enfocada sin guardarlo. |
+| `skin_picker_done` | comando | — | El aspecto está elegido: la portada sigue con la caja de idiomas. |
 
 <!-- /ui-api:generated -->

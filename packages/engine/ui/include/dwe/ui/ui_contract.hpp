@@ -15,7 +15,7 @@ struct UiApiVersion {
   std::uint32_t minor = 0;
   std::uint32_t patch = 0;
 };
-inline constexpr UiApiVersion CurrentUiApiVersion{.major = 0, .minor = 3, .patch = 0};
+inline constexpr UiApiVersion CurrentUiApiVersion{.major = 0, .minor = 4, .patch = 0};
 
 // What an entry of the contract is to a screen's documents.
 enum class UiContractKind : std::uint8_t {

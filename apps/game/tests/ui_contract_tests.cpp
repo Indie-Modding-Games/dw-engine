@@ -34,6 +34,7 @@ constexpr auto Screens = std::to_array<ScreenScripts>({
     {.screen = "partner_menu",
      .files = {"common/original_box.lua", "common/panel_enter.lua", "common/bag_slot.lua",
                "common/screen_fit.lua", "partner_menu/logic.lua", "partner_menu/document.rml"}},
+    {.screen = "skin_picker", .files = {"skin_picker/logic.lua", "skin_picker/document.rml"}},
 });
 
 std::string readText(const std::filesystem::path& path) {

@@ -199,6 +199,9 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, r
   } else if (command.name == ui::UiSkinSetting &&
              std::holds_alternative<std::string>(command.value)) {
     skin.change(std::get<std::string>(command.value));
+  } else if (command.name == UiSkinPreviewCommand &&
+             std::holds_alternative<std::string>(command.value)) {
+    static_cast<void>(skin.preview(std::get<std::string>(command.value)));
   } else if (command.name == VsyncSetting && std::holds_alternative<bool>(command.value)) {
     // The swapchain is rebuilt with the new present mode before the next frame.
     settings.vsync = std::get<bool>(command.value);
@@ -913,6 +916,11 @@ int runGame(const Options& requested) {
   VersusScreen versus{files, options, !autotest, **ui, renderer->get(), &sound};
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
+  // The player's first run asks the UI skin before the language box (an addition); an autotest only
+  // when its route asks, and a run with no settings to keep it in (the control channel's) never.
+  title.setAsksSkin(autotest ? autotest->asksSkinFirst()
+                             : settingsFile && asksUiSkin(options.uiSkin, userSettings.uiSkin,
+                                                          (*ui)->skins().skins().size()));
   // What waits for the movie that plays: the title, or a game to start (main.c: main).
   std::optional<PlayStart> startAfterMovie;
   // The new game that waits for the opening's questions.

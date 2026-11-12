@@ -1,0 +1,13 @@
+/* The first run's skin picker in the original look, over the rules' box (../new_game_rules/style.rcss): wider, so each
+   hint stays on one line under its skin's name; an addition, the original has no such choice. */
+
+#panel {
+	left: 50%;
+	top: 120dp;
+	width: 900dp;
+	margin-left: -450dp;
+}
+
+#panel button.skin {
+	padding-bottom: 6dp;
+}

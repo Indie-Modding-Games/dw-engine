@@ -44,6 +44,9 @@ screens:
   # El modo de la partida nueva (solo con más de un modo), con la caja de las reglas.
   new_game_mode:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/new_game_rules/style]
+  # La caja del primer arranque que pregunta el aspecto (un añadido), con la caja de las reglas.
+  skin_picker:
+    styles: [ui/skins/original/pause_menu/style, ui/skins/original/new_game_rules/style, ui/skins/original/skin_picker/style]
   sleep_menu:
     styles: [ui/skins/original/pause_menu/style]
   # El menú de desarrollo (F2), también.
@@ -161,6 +164,8 @@ document_classes:
   new_game_rules:
     panel: [skin-original]
   new_game_mode:
+    panel: [skin-original]
+  skin_picker:
     panel: [skin-original]
   versus:
     panel: [skin-original]

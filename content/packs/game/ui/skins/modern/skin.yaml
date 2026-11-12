@@ -33,6 +33,9 @@ screens:
   # El modo de la partida nueva (solo con más de un modo), también.
   new_game_mode:
     styles: [ui/skins/modern/pause_menu/style]
+  # La caja del primer arranque que pregunta el aspecto, también.
+  skin_picker:
+    styles: [ui/skins/modern/pause_menu/style, ui/skins/modern/skin_picker/style]
   # El versus en línea, también.
   versus:
     styles: [ui/skins/modern/pause_menu/style]

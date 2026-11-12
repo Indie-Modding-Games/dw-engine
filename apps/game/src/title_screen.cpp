@@ -90,7 +90,10 @@ void TitleScreen::show() {
 }
 
 void TitleScreen::showBoot() {
-  showMenu(true);
+  landing_ = false;
+  if (!skinPicker_.show(*ui_)) {
+    showMenu(true);
+  }
 }
 
 void TitleScreen::showMenu(bool boot) {
@@ -109,6 +112,7 @@ void TitleScreen::hide() {
     optionsShown_ = false;
     ui_->hide(MenuDocument);
   }
+  skinPicker_.hide(*ui_);
   ui_->hide(MainMenuDocument);
   ui_->hide(SaveSlotsDocument);
   ui_->hide(DialogDocument);
@@ -124,7 +128,10 @@ bool TitleScreen::handle(const ui::UiCommand& command) {
     // Sent each time the screen is entered or left: not a choice of the player's to log.
     return true;
   }
-  if (name == TitleOptionsCommand) {
+  if (skinPicker_.handle(command, *ui_)) {
+    // The skin is the player's now: on to the language box and the "Press Start" screen.
+    showMenu(true);
+  } else if (name == TitleOptionsCommand) {
     showOptions();
   } else if (name == TitleOptionsBackCommand) {
     // Back from the options to the main menu, on its Options entry.

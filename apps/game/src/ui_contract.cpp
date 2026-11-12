@@ -23,6 +23,7 @@ constexpr UiValueKind Any = UiValueKind::Any;
 constexpr std::string_view Hud = "hud";
 constexpr std::string_view PauseMenu = "pause_menu";
 constexpr std::string_view PartnerMenu = "partner_menu";
+constexpr std::string_view SkinPicker = "skin_picker";
 
 constexpr UiContractEntry entry(std::string_view screen, UiContractKind kind, std::string_view name,
                                 UiValueKind value, std::string_view summary) {
@@ -30,7 +31,8 @@ constexpr UiContractEntry entry(std::string_view screen, UiContractKind kind, st
 }
 
 // The documents' use as of the UI API's first version: hud/logic.lua, pause_menu/logic.lua and
-// partner_menu/logic.lua with the common scripts they link (game_options.lua, bag_slot.lua...).
+// partner_menu/logic.lua with the common scripts they link (game_options.lua, bag_slot.lua...),
+// and skin_picker/logic.lua.
 // The summaries are the reference page's text, so they are in Spanish, as the docs.
 constexpr auto Contract = std::to_array<UiContractEntry>({
     // The field's HUD (apps/game: field_hud.cpp; packages/screens: field_hud_view.hpp).
@@ -358,6 +360,14 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(PartnerMenu, Option, "status_extras", Boolean, "Los extras de la página de estado."),
     entry(PartnerMenu, Option, "favorite_food", Boolean, "La comida favorita del compañero."),
     entry(PartnerMenu, Option, "art_fixes", Boolean, "Arreglos de arte."),
+
+    // The first run's skin picker (apps/game: title_screen.cpp, ui_skin_setting.cpp).
+    entry(SkinPicker, Option, "ui_skin", Text,
+          "El aspecto que se ve; al confirmar una fila, el elegido, que se guarda en los ajustes."),
+    entry(SkinPicker, Command, "ui_skin_preview", Text,
+          "Pone el aspecto de la fila enfocada sin guardarlo."),
+    entry(SkinPicker, Command, "skin_picker_done", None,
+          "El aspecto está elegido: la portada sigue con la caja de idiomas."),
 });
 
 } // namespace

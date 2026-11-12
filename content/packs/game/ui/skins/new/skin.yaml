@@ -83,6 +83,8 @@ screens:
     styles: [title/style, panel/style, save_slots/style]
   shop_menu:
     styles: [panel/style, shop_menu/style]
+  skin_picker:
+    styles: [title/style, panel/style, skin_picker/style]
   sleep_menu:
     styles: [panel/style, sleep_menu/style]
   story_textbox:

@@ -1,5 +1,5 @@
 {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "screens": {
     "hud": [
       {"name": "hud.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambia el estado del campo de abajo."},
@@ -218,6 +218,11 @@
       {"name": "status_extras", "kind": "option", "value": "boolean", "summary": "Los extras de la página de estado."},
       {"name": "favorite_food", "kind": "option", "value": "boolean", "summary": "La comida favorita del compañero."},
       {"name": "art_fixes", "kind": "option", "value": "boolean", "summary": "Arreglos de arte."}
+    ],
+    "skin_picker": [
+      {"name": "ui_skin", "kind": "option", "value": "text", "summary": "El aspecto que se ve; al confirmar una fila, el elegido, que se guarda en los ajustes."},
+      {"name": "ui_skin_preview", "kind": "command", "value": "text", "summary": "Pone el aspecto de la fila enfocada sin guardarlo."},
+      {"name": "skin_picker_done", "kind": "command", "value": "none", "summary": "El aspecto está elegido: la portada sigue con la caja de idiomas."}
     ]
   }
 }

@@ -13,6 +13,7 @@
 #include "new_game_mode.hpp"
 #include "options.hpp"
 #include "save_flow.hpp"
+#include "ui_skin_setting.hpp"
 
 namespace dwe::app {
 
@@ -34,7 +35,7 @@ public:
   void show();
   // Shows the title screen from its start: the original look's "Press Start" screen first, then
   // the main menu (main.c: main, runLandingScreen then runMainMenu); a look without that screen
-  // shows the main menu.
+  // shows the main menu. While the skin is to be asked (setAsksSkin), the skin picker comes first.
   void showBoot();
   // Hides every document of the title screen, for a movie.
   void hide();
@@ -50,6 +51,11 @@ public:
   // one) and its rules (ui/new_game_rules): always for the player; a test route only when it says
   // so (new_game_rules), the others start the original's story with the command line's ruleset.
   void setAsksRules(bool asks) { asksRules_ = asks; }
+
+  // Whether the title starts by asking the UI skin (ui/skin_picker, an addition): on the player's
+  // first run (asksUiSkin), before the language box; a test route only when it says so
+  // (skin_first). Asked once: the confirmed skin is the player's from then on.
+  void setAsksSkin(bool asks) { skinPicker_ = SkinPickerStep{asks}; }
 
   // The game a command chose to start, once.
   [[nodiscard]] std::optional<PlayStart> takeStart();
@@ -81,6 +87,7 @@ private:
   std::optional<PlayStart> pending_;
   NewGameModes modes_;
   bool asksRules_ = true;
+  SkinPickerStep skinPicker_{false};
   // Whether the packs have the ruleset with the Mega step, which the rules offer.
   bool megaOffered_ = false;
   // Whether the packs have the rulesets of every species as a partner, which the rules offer on.
