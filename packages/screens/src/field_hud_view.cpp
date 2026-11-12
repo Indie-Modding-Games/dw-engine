@@ -56,6 +56,13 @@ constexpr std::string_view MinField = "min";
 constexpr std::string_view MaxField = "max";
 constexpr std::string_view ActiveField = "active";
 constexpr std::string_view UrgencyField = "urgency";
+constexpr std::string_view MoodField = "mood";
+
+// The dial's night (clock.c: renderGameClock) and the parts of the day flanking its boundaries.
+constexpr std::int32_t NightEndsHour = 6;
+constexpr std::int32_t NightStartsHour = 17;
+constexpr std::int32_t MorningEndsHour = 8;
+constexpr std::int32_t LateStartsHour = 15;
 
 FieldMeterView meterOf(const session::CareMeter& meter) {
   return {.value = meter.value, .min = meter.min, .max = meter.max};
@@ -145,6 +152,31 @@ ScreenSettings settingsOf(const FieldPartnerView& view) {
   };
 }
 
+bool isNightHour(std::int32_t hour) {
+  return hour < NightEndsHour || hour >= NightStartsHour;
+}
+
+std::string_view dayPhaseOf(std::int32_t hour) {
+  if (isNightHour(hour)) {
+    return "night";
+  }
+  if (hour < MorningEndsHour) {
+    return "morning";
+  }
+  if (hour >= LateStartsHour) {
+    return "late";
+  }
+  return "day";
+}
+
+std::string_view meterMoodOf(const FieldMeterView& meter) {
+  // value < (min + max) / 2, in whole numbers.
+  return 2 * static_cast<std::int64_t>(meter.value) <
+                 static_cast<std::int64_t>(meter.min) + static_cast<std::int64_t>(meter.max)
+             ? "low"
+             : "high";
+}
+
 ScreenSettings fieldHudLabelSettings() {
   ScreenSettings settings;
   for (std::size_t index = 0; index < MeterLabels.size(); ++index) {
@@ -171,6 +203,9 @@ ScreenSettings settingsOf(const FieldHudView& view) {
       {.name = std::string{FieldHudMinuteSetting}, .value = number(view.clock.minute)},
       {.name = std::string{FieldHudDaySetting}, .value = number(view.clock.day)},
       {.name = std::string{FieldHudYearSetting}, .value = number(view.clock.year)},
+      {.name = std::string{FieldHudNightSetting}, .value = isNightHour(view.clock.hour)},
+      {.name = std::string{FieldHudPhaseSetting},
+       .value = std::string{dayPhaseOf(view.clock.hour)}},
       {.name = std::string{FieldHudPartnerAreaSetting},
        .value = number(static_cast<std::int32_t>(view.area))},
   };
@@ -182,6 +217,8 @@ ScreenSettings settingsOf(const FieldHudView& view) {
         {.name = listEntryName(MeterList, index, MinField), .value = number(meter.min)});
     settings.push_back(
         {.name = listEntryName(MeterList, index, MaxField), .value = number(meter.max)});
+    settings.push_back({.name = listEntryName(MeterList, index, MoodField),
+                        .value = std::string{meterMoodOf(meter)}});
   }
   for (std::size_t index = 0; index < view.needs.size(); ++index) {
     settings.push_back(

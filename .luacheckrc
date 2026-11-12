@@ -15,8 +15,13 @@ files["content/packs/*/ui/**/*.lua"] = {
   ignore = { "131" },
   read_globals = {
     "ui", "t", "document_name", "skin_choice", "original_box", "bag_slot", "game_options",
-    "panel_enter", "fit_text", "screen_fit", "title_picture", "hud_digits",
+    "panel_enter", "fit_text", "screen_fit", "title_picture", "hud_digits", "hud",
   },
+}
+
+-- The HUD's presenter, which its view reads (ui/hud/presenter.lua, ui/hud/view.lua).
+files["content/packs/*/ui/hud/presenter.lua"] = {
+  globals = { "hud" },
 }
 
 -- The skin entry the main menu and the pause menu share, loaded into both documents.

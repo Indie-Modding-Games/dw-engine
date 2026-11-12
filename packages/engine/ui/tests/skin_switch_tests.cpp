@@ -357,6 +357,7 @@ void showFieldStatus(Ui& ui, double happiness, double area) {
   ui.setSetting("hud.meter.0.value", happiness);
   ui.setSetting("hud.meter.0.min", -100.0);
   ui.setSetting("hud.meter.0.max", 100.0);
+  ui.setSetting("hud.meter.0.mood", std::string{happiness < 0.0 ? "low" : "high"});
   ui.setSetting("hud.partner.area", area);
   const UiValue current = ui.setting("hud.revision");
   const double* count = std::get_if<double>(&current);

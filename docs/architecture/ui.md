@@ -195,7 +195,7 @@ un mod puede colocarlos y darles estilo como quiera, pero con estos ids y estos 
 | `minimap-enemies` | `hud::MinimapEnemies` | La capa de los enemigos, dentro del disco y antes de los marcadores del compañero y del jugador (que quedan encima): la UI le crea un hijo `<img class="marker enemy" id="minimap-enemy-N">` por enemigo (`hud::MinimapEnemyPrefix`, imagen `generated:minimap_enemy`: disco blanco con borde oscuro que el aspecto tiñe con `image-color`), con `left`, `top` como el compañero, y `display: none` en los que sobran o quedan fuera de la vista |
 | `minimap-items` | `hud::MinimapItems` | La capa de los objetos del suelo, dentro del disco y antes de la de los enemigos (que queda encima): como la de los enemigos, un hijo `<img class="marker item" id="minimap-item-N">` por objeto (`hud::MinimapItemPrefix`, imagen `generated:minimap_item`: un rombo blanco con borde oscuro que el aspecto tiñe con `image-color`), con `left`, `top` y `display: none` en los que sobran o quedan fuera de la vista |
 
-El script del HUD (`ui/hud/logic.lua`) escribe además el día y la hora en `#minimap-day` y `#minimap-time`, y la
+El script del HUD (`ui/hud/view.lua`) escribe además el día y la hora en `#minimap-day` y `#minimap-time`, y la
 marca del norte es el texto `hud.minimap.north` de `#minimap-north`.
 
 **El minimapa es una diferencia opcional: el original no tiene minimapa.** El ajuste `minimap` vale `on` (al

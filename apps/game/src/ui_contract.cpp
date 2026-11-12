@@ -30,7 +30,7 @@ constexpr UiContractEntry entry(std::string_view screen, UiContractKind kind, st
   return {.screen = screen, .kind = kind, .name = name, .value = value, .summary = summary};
 }
 
-// The documents' use as of the UI API's first version: hud/logic.lua, pause_menu/logic.lua and
+// The documents' use as of the UI API's first version: hud/presenter.lua, pause_menu/logic.lua and
 // partner_menu/logic.lua with the common scripts they link (game_options.lua, bag_slot.lua...),
 // and skin_picker/logic.lua.
 // The summaries are the reference page's text, so they are in Spanish, as the docs.
@@ -43,6 +43,12 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(Hud, Setting, "hud.clock.day", Number, "El día del año del reloj del juego."),
     entry(Hud, Setting, "hud.clock.hour", Number, "La hora del reloj del juego, de 0 a 23."),
     entry(Hud, Setting, "hud.clock.minute", Number, "El minuto del reloj del juego."),
+    entry(
+        Hud, Setting, "hud.clock.night", Boolean,
+        "Si es de noche: antes de las 6:00 y desde las 17:00, cuando el reloj del original enseña la luna."),
+    entry(
+        Hud, Setting, "hud.clock.phase", Text,
+        "La parte del día: morning, day, late o night (la regla del juego, no la de la interfaz)."),
     entry(Hud, Setting, "hud.meter.<n>.label", Text,
           "La clave de texto de un medidor del compañero (felicidad, disciplina)."),
     entry(Hud, Setting, "hud.meter.<n>.value", Number, "El valor de un medidor del compañero."),
@@ -50,6 +56,9 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
           "El valor más bajo de un medidor del compañero."),
     entry(Hud, Setting, "hud.meter.<n>.max", Number,
           "El valor más alto de un medidor del compañero."),
+    entry(
+        Hud, Setting, "hud.meter.<n>.mood", Text,
+        "low por debajo de la mitad de su rango, donde el original cambia el icono de la barra; si no, high."),
     entry(Hud, Setting, "hud.meter.<n>.two_tone", Boolean,
           "Si el medidor se llena hacia los dos lados desde su centro."),
     entry(Hud, Setting, "hud.pool.<n>.label", Text, "La clave de texto de los PV o los PM."),

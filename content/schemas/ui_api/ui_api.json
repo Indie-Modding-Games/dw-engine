@@ -1,5 +1,5 @@
 {
-  "version": "0.4.0",
+  "version": "0.5.0",
   "screens": {
     "hud": [
       {"name": "hud.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambia el estado del campo de abajo."},
@@ -8,10 +8,13 @@
       {"name": "hud.clock.day", "kind": "setting", "value": "number", "summary": "El día del año del reloj del juego."},
       {"name": "hud.clock.hour", "kind": "setting", "value": "number", "summary": "La hora del reloj del juego, de 0 a 23."},
       {"name": "hud.clock.minute", "kind": "setting", "value": "number", "summary": "El minuto del reloj del juego."},
+      {"name": "hud.clock.night", "kind": "setting", "value": "boolean", "summary": "Si es de noche: antes de las 6:00 y desde las 17:00, cuando el reloj del original enseña la luna."},
+      {"name": "hud.clock.phase", "kind": "setting", "value": "text", "summary": "La parte del día: morning, day, late o night (la regla del juego, no la de la interfaz)."},
       {"name": "hud.meter.<n>.label", "kind": "setting", "value": "text", "summary": "La clave de texto de un medidor del compañero (felicidad, disciplina)."},
       {"name": "hud.meter.<n>.value", "kind": "setting", "value": "number", "summary": "El valor de un medidor del compañero."},
       {"name": "hud.meter.<n>.min", "kind": "setting", "value": "number", "summary": "El valor más bajo de un medidor del compañero."},
       {"name": "hud.meter.<n>.max", "kind": "setting", "value": "number", "summary": "El valor más alto de un medidor del compañero."},
+      {"name": "hud.meter.<n>.mood", "kind": "setting", "value": "text", "summary": "low por debajo de la mitad de su rango, donde el original cambia el icono de la barra; si no, high."},
       {"name": "hud.meter.<n>.two_tone", "kind": "setting", "value": "boolean", "summary": "Si el medidor se llena hacia los dos lados desde su centro."},
       {"name": "hud.pool.<n>.label", "kind": "setting", "value": "text", "summary": "La clave de texto de los PV o los PM."},
       {"name": "hud.pool.<n>.value", "kind": "setting", "value": "number", "summary": "Los PV o los PM del compañero ahora."},

@@ -27,7 +27,7 @@ struct ScreenScripts {
 };
 
 constexpr auto Screens = std::to_array<ScreenScripts>({
-    {.screen = "hud", .files = {"hud/logic.lua", "hud/document.rml"}},
+    {.screen = "hud", .files = {"hud/presenter.lua", "hud/view.lua", "hud/document.rml"}},
     {.screen = "pause_menu",
      .files = {"common/ui_skin_choice.lua", "common/original_box.lua", "common/panel_enter.lua",
                "common/game_options.lua", "pause_menu/logic.lua", "pause_menu/document.rml"}},

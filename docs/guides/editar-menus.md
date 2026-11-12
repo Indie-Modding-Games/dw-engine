@@ -23,7 +23,8 @@ content/packs/game/ui/
   sleep_menu/                el menú de dormir (dormir, o guardar y dormir)
   save_slots/, dialog/       la lista de ranuras de la portada y el diálogo de guardar
   hud/document.rml           el HUD con el minimapa
-  hud/logic.lua
+  hud/presenter.lua          qué enseña el HUD (de los datos del juego)
+  hud/view.lua               cómo lo dibuja
   ui_sounds.yaml             qué sonido toca cada aviso de los menús (mover, confirmar, cancelar): un banco de
                              sound/ y un sonido de él (ver docs/architecture/audio.md)
 ```

@@ -3,7 +3,8 @@
 	<title>HUD</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
-	<script src="logic.lua"></script>
+	<script src="presenter.lua"></script>
+	<script src="view.lua"></script>
 </head>
 <body>
 	<button id="menu-button" onclick="ui.send('open_menu')"><span class="key" id="prompt-menu"></span><span text-key="hud.menu"></span></button>

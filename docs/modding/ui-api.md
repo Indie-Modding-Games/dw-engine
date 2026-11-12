@@ -35,6 +35,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.5.0 | El HUD lee del juego sus reglas: `hud.clock.night`, `hud.clock.phase` y `hud.meter.<n>.mood`. Su script se parte en `presenter.lua` (qué enseña) y `view.lua` (cómo lo dibuja) |
 | 0.4.0 | Llega la pantalla `skin_picker`, la caja del primer arranque que pregunta el aspecto: `ui_skin`, `ui_skin_preview` y `skin_picker_done` |
 | 0.3.0 | Llegan los argumentos de `ui.show` y `on_show(document, args)`. Se va `pause_menu.start_entry`: el menú del compañero le pasa `entry` al menú de pausa al volver |
 | 0.2.0 | Llega `ui.layout`. Se van `pause_menu.evolutions` y `open_evolutions`, la pestaña de evoluciones del menú del compañero que ya no usa ningún aspecto, y la opción `ui_skin` del menú del compañero, que ahora pregunta por su maquetación |
@@ -49,7 +50,7 @@ después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.4.0**.
+Versión de la API de la interfaz: **0.5.0**.
 
 ### `hud`
 
@@ -61,10 +62,13 @@ Versión de la API de la interfaz: **0.4.0**.
 | `hud.clock.day` | ajuste | número | El día del año del reloj del juego. |
 | `hud.clock.hour` | ajuste | número | La hora del reloj del juego, de 0 a 23. |
 | `hud.clock.minute` | ajuste | número | El minuto del reloj del juego. |
+| `hud.clock.night` | ajuste | sí/no | Si es de noche: antes de las 6:00 y desde las 17:00, cuando el reloj del original enseña la luna. |
+| `hud.clock.phase` | ajuste | texto | La parte del día: morning, day, late o night (la regla del juego, no la de la interfaz). |
 | `hud.meter.<n>.label` | ajuste | texto | La clave de texto de un medidor del compañero (felicidad, disciplina). |
 | `hud.meter.<n>.value` | ajuste | número | El valor de un medidor del compañero. |
 | `hud.meter.<n>.min` | ajuste | número | El valor más bajo de un medidor del compañero. |
 | `hud.meter.<n>.max` | ajuste | número | El valor más alto de un medidor del compañero. |
+| `hud.meter.<n>.mood` | ajuste | texto | low por debajo de la mitad de su rango, donde el original cambia el icono de la barra; si no, high. |
 | `hud.meter.<n>.two_tone` | ajuste | sí/no | Si el medidor se llena hacia los dos lados desde su centro. |
 | `hud.pool.<n>.label` | ajuste | texto | La clave de texto de los PV o los PM. |
 | `hud.pool.<n>.value` | ajuste | número | Los PV o los PM del compañero ahora. |

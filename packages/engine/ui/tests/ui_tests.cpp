@@ -1336,13 +1336,15 @@ TEST_CASE("the HUD's menu button asks the game to open the menu and names the ke
 
 namespace {
 
-// One field bar of the hud.* contract (docs/architecture/ui.md#estado-del-campo).
+// One field bar of the hud.* contract (docs/architecture/ui.md#estado-del-campo), with its mood as
+// the game publishes it (packages/screens: meterMoodOf): low below the middle of its range.
 void setFieldMeter(Ui& ui, int index, double value, double minimum, double maximum) {
   const std::string base = "hud.meter." + std::to_string(index) + ".";
   ui.setSetting(base + "value", value);
   ui.setSetting(base + "min", minimum);
   ui.setSetting(base + "max", maximum);
   ui.setSetting(base + "two_tone", true);
+  ui.setSetting(base + "mood", std::string{value < (minimum + maximum) / 2 ? "low" : "high"});
 }
 
 void bumpFieldRevision(Ui& ui) {
@@ -1458,19 +1460,23 @@ TEST_CASE("a field bar with pips fills in whole pips of the original's 25, round
   CHECK(ui->styleProperty("hud", "field-meter-0-high", "width") == "0%");
 }
 
-TEST_CASE("the field clock is at night before 6:00 and from 17:00") {
+TEST_CASE("the field clock shows the night and the part of the day the game publishes") {
   Content content;
   auto ui = createUi(content.mount());
   REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
   ui->show("hud");
-  // clock.c: renderGameClock draws the moon with HOUR < 6 or HOUR >= 17.
-  for (const auto& [hour, night] :
-       {std::pair{0.0, true}, std::pair{5.0, true}, std::pair{6.0, false}, std::pair{16.0, false},
-        std::pair{17.0, true}, std::pair{23.0, true}}) {
+  // The game decides them (packages/screens: isNightHour, dayPhaseOf); the HUD only draws them.
+  for (const auto& [hour, phase] :
+       {std::pair{0.0, "night"}, std::pair{6.0, "morning"}, std::pair{9.0, "day"},
+        std::pair{15.0, "late"}, std::pair{17.0, "night"}}) {
     CAPTURE(hour);
+    const bool night = std::string_view{phase} == "night";
     ui->setSetting("hud.clock.hour", hour);
+    ui->setSetting("hud.clock.night", night);
+    ui->setSetting("hud.clock.phase", std::string{phase});
     bumpFieldRevision(*ui);
     CHECK(ui->elementHasClass("hud", "field-clock", "night") == night);
+    CHECK(ui->elementHasClass("hud", "minimap-phase", std::string{"phase-"} + phase));
   }
 }
 
