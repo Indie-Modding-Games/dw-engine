@@ -29,6 +29,8 @@ local StripSlots = 11
 local FinisherMarks = 8
 local BannerPieces = 200
 local ScoreRows = 5
+-- The room code's characters, one cell each (net/signal.hpp: RoomCodeLength).
+local CodeCells = 4
 
 local function setting(name)
   return ui.setting(name)
@@ -163,7 +165,14 @@ local function draw_hosting(document)
 end
 
 local function draw_join(document)
-  document:get("typed"):set_text(text("versus.typed") .. "_")
+  local typed = text("versus.typed")
+  document:get("typed"):set_text(typed .. "_")
+  -- The same entry one character per cell, the next cell to fill marked, for skins that box it.
+  for cell = 0, CodeCells - 1 do
+    local element = document:get("typed-" .. cell)
+    element:set_text(typed:sub(cell + 1, cell + 1))
+    element:set_class("next", cell == #typed)
+  end
   show(document, "bad-entry", setting("versus.bad_entry") == true)
 end
 

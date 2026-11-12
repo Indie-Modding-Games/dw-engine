@@ -113,14 +113,36 @@
 	font-effect: shadow(4dp 4dp #050c1a);
 }
 
+/* One sunk box per character of the code; the next one to fill has a gold underline. */
 #typed {
+	display: none;
+}
+
+#panel p#typed-cells {
+	display: block;
+	margin: 6dp 0 4dp 18dp;
+	letter-spacing: 0dp;
+}
+
+#typed-cells .cell {
 	display: inline-block;
-	min-width: 180dp;
-	padding: 6dp 12dp;
+	width: 34dp;
+	height: 44dp;
+	margin-right: 6dp;
 	border: 2dp #4c6a8c;
 	border-top-color: #050a14;
 	border-left-color: #050a14;
 	background-color: #0b1322;
+	font-size: 26dp;
+	line-height: 44dp;
+	text-align: center;
+	text-transform: uppercase;
+	vertical-align: top;
+}
+
+#typed-cells .cell.next {
+	border-bottom: 4dp #efc63c;
+	height: 42dp;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
