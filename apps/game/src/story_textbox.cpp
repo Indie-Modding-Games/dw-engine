@@ -18,6 +18,7 @@
 #include <utility>
 
 #include "field_scene.hpp"
+#include "story_commands.hpp"
 
 namespace dwe::app {
 
@@ -82,6 +83,30 @@ const assets::MapNpc* characterOf(const FieldScene& scene, std::int64_t script) 
   return nullptr;
 }
 
+std::string_view speakerKindName(SpeakerKind kind) {
+  switch (kind) {
+  case SpeakerKind::Player:
+    return "player";
+  case SpeakerKind::Partner:
+    return "partner";
+  case SpeakerKind::Character:
+    return "character";
+  case SpeakerKind::Special:
+    return "special";
+  case SpeakerKind::None:
+    break;
+  }
+  return "none";
+}
+
+std::string joinedRuns(const TextRow& row) {
+  std::string text;
+  for (const TextRun& run : row) {
+    text += run.text;
+  }
+  return text;
+}
+
 } // namespace
 
 StoryTextbox::StoryTextbox(ui::Ui& ui, session::StoryAdapter& story,
@@ -110,10 +135,37 @@ void StoryTextbox::press(const input::InputState& input) {
     keys.clicked =
         pointer.clicked.transform([](std::size_t row) { return static_cast<std::int64_t>(row); });
   }
-  story_->dialogue().press(keys, input.isDown("confirm"));
+  confirmHeld_ = input.isDown("confirm");
+  story_->dialogue().press(keys, confirmHeld_);
+}
+
+bool StoryTextbox::handle(const ui::UiCommand& command) {
+  if (!isStoryCommand(command.name)) {
+    return false;
+  }
+  game::story::Dialogue& dialogue = story_->dialogue();
+  const StoryInput input = shown_ ? storyInputOf(dialogue.input()) : StoryInput::None;
+  const auto keys = storyKeysOf(command, input, dialogue.optionCount());
+  if (!keys) {
+    core::logDebug("[dialogue] {} refused: the box waits for {}", command.name,
+                   input == StoryInput::None ? "nothing" : storyInputName(input));
+    return true;
+  }
+  dialogue.press(*keys, confirmHeld_);
+  return true;
 }
 
 void StoryTextbox::update(const FieldScene& scene, const assets::DigimonTable* species) {
+  publishView(scene, species);
+  // Every frame, not with the view: a sized box's page stops waiting with no change to its view.
+  const game::story::Dialogue& dialogue = story_->dialogue();
+  ui_->setSetting(
+      StoryInputSetting,
+      std::string{storyInputName(shown_ ? storyInputOf(dialogue.input()) : StoryInput::None)});
+  ui_->setSetting(StoryPageSetting, static_cast<double>(dialogue.pagesShown()));
+}
+
+void StoryTextbox::publishView(const FieldScene& scene, const assets::DigimonTable* species) {
   const DialogueView& view = story_->dialogue().view();
   if (published_ == view.revision) {
     return;
@@ -139,6 +191,10 @@ void StoryTextbox::update(const FieldScene& scene, const assets::DigimonTable* s
       .cursorColumns = view.cursor ? std::optional<std::size_t>{longestRow(rows, named ? 1U : 0U)}
                                    : std::nullopt,
       .top = false,
+      .speaker = named && !rows.empty() ? joinedRuns(rows.front()) : std::string{},
+      .speakerKind = speakerKindName(view.speaker.kind),
+      .options = static_cast<std::size_t>(story_->dialogue().optionCount()),
+      .firstOption = named ? 1U : 0U,
   };
   screens::publish(*ui_, textboxSettings(look, rows), TextboxRevisionSetting);
   if (staleRevision_ && *staleRevision_ != view.revision) {

@@ -38,7 +38,7 @@ screens:
     styles: [ui/skins/modern/pause_menu/style, ui/skins/modern/skin_picker/style]
   # El versus en línea, también.
   versus:
-    styles: [ui/skins/modern/pause_menu/style]
+    styles: [ui/skins/modern/pause_menu/style, ui/skins/modern/versus/style]
   sleep_menu:
     styles: [ui/skins/modern/pause_menu/style]
   # El menú de desarrollo (F2), también.

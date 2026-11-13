@@ -1,0 +1,16 @@
+<rml>
+<head>
+	<title>Battle HP</title>
+	<link type="text/rcss" href="../../common/base.rcss"/>
+	<link type="text/rcss" href="style.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="panel" class="hidden">
+		<div id="row-1" class="row partner"><span class="name" id="name-1"></span><span class="bar"><span class="fill" id="fill-1"></span></span><span class="hp" id="hp-1"></span></div>
+		<div id="row-2" class="row"><span class="name" id="name-2"></span><span class="bar"><span class="fill" id="fill-2"></span></span><span class="hp" id="hp-2"></span></div>
+		<div id="row-3" class="row"><span class="name" id="name-3"></span><span class="bar"><span class="fill" id="fill-3"></span></span><span class="hp" id="hp-3"></span></div>
+		<div id="row-4" class="row"><span class="name" id="name-4"></span><span class="bar"><span class="fill" id="fill-4"></span></span><span class="hp" id="hp-4"></span></div>
+	</div>
+</body>
+</rml>

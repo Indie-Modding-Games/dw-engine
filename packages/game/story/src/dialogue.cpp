@@ -279,6 +279,24 @@ void Dialogue::startPage(std::string text, std::int64_t speaker, Waiting waiting
   publish();
 }
 
+DialogueInput Dialogue::input() const {
+  if (!boxOpen() || !pageOnShow_) {
+    return DialogueInput::None;
+  }
+  switch (waiting_) {
+  case Waiting::None:
+    return DialogueInput::None;
+  case Waiting::Selection:
+    return DialogueInput::Selection;
+  case Waiting::Page:
+    break;
+  }
+  // tickBox: the sized box reads the player whatever the mode; the speech box only in its confirm
+  // mode.
+  return box_->kind == BoxKind::Sized || mode_ == TextboxMode::Confirm ? DialogueInput::Page
+                                                                       : DialogueInput::None;
+}
+
 bool Dialogue::boxOpen() const {
   return box_.has_value() && box_->openingFrame >= rules_.openFrames;
 }
@@ -290,6 +308,7 @@ void Dialogue::tickBox(const DialogueKeys& keys) {
   // script_textbox.c: flipIdleTextboxPage turns to the new page; that frame reads no input.
   if (!pageOnShow_) {
     pageOnShow_ = true;
+    ++pagesShown_;
     shownText_ = pendingText_;
     shownSpeaker_ = pendingSpeaker_;
     core::logDebug("{}", msg::formatMessage(msg::PortPageShown, shownText_));

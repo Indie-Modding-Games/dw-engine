@@ -39,10 +39,12 @@ using UiArguments = std::map<std::string, UiValue, std::less<>>;
 
 // A setting whose changes the UI tells the documents as an event of the UI API (hooks.on in their
 // scripts): the event's table is {version = 1, name = the setting, value = its new value}. The
-// API's Lua declares them (ui/api/*.lua: event_source).
+// API's Lua declares them (ui/api/*.lua: event_source). With a value, only a change to that value
+// fires it: battle.active turning true starts a battle, turning false ends it.
 struct UiEventSource {
   std::string setting;
   std::string event;
+  std::optional<UiValue> when{};
 };
 
 // The mouse cursor a skin asks the app to install: an RGBA image (the same layout as assets::Image)
@@ -357,10 +359,9 @@ public:
   [[nodiscard]] bool elementHasClass(std::string_view document, std::string_view elementId,
                                      std::string_view className) const;
 
-  // The centre of an element of a document in pixels, as laid out by the last update(), for tests
-  // and scripted runs that click on it; nullopt if there is no such element. It leaves out RCSS
-  // transforms, which also move where the pointer hits an element: menus that tests click should
-  // not move their buttons with transforms.
+  // The centre of an element of a document in pixels, as drawn after the last update() (its RCSS
+  // transforms and those of what holds it included, as they also move where the pointer hits it),
+  // for tests and scripted runs that click on it; nullopt if there is no such element.
   struct Point {
     float x;
     float y;

@@ -12,6 +12,10 @@ test lento.
 sistema que se borra con todo lo que tiene al final del test. El juego y las herramientas no leen estas variables: en desarrollo usan `--dev-assets`
 ([assets de desarrollo](../../architecture/assets-de-desarrollo.md)).
 
+`<dwe/test_support/zip_writer.hpp>` escribe archivos `.zip` en los tests (`zipArchive`, `writeZip`, `zipFilesOf` para
+una carpeta entera), con cabeceras que se pueden falsear (método, tamaño declarado, cifrado, atributos de enlace) para
+probar los rechazos del lector de `content`.
+
 `<dwe/test_support/script_warp_fixtures.hpp>` es el `field/script_warps` de un script sintético con una recursión: los
 tests de `formats` comprueban que la extracción lo da y los de `field`, que el campo toma ese warp y lo registra una
 vez.

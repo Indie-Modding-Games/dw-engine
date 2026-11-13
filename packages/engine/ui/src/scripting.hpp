@@ -212,14 +212,16 @@ public:
   // Gives a document's environment its own `hooks` table, whose handlers go to that document.
   void bindHooks(sol::environment& environment, ScriptedDocument& document);
   // An addon's document (CodeTrust::sandboxed): its ui.send takes only the commands the game
-  // allows addons (ScriptHost::addonCommand) and raises on any other.
+  // allows addons (ScriptHost::addonCommand) and raises on any other. Its copies of the UI API's
+  // namespaces call the API's functions as an addon: whatever those send goes through the same
+  // filter, though they send with the global ui.send.
   void sandbox(sol::environment& environment);
 
   // Runs the UI API's Lua (ApiFolder) with the globals, in the order of the files' names. A file
   // from outside the engine's layers does not run; an error is logged and the next file runs.
-  // While they run, and only then, the global event_source(setting, event) declares that a change
-  // of the setting fires the event (UiEventSource): the API's events over the settings the game
-  // publishes.
+  // While they run, and only then, the global event_source(setting, event[, value]) declares that
+  // a change of the setting (to that value, when one is given) fires the event (UiEventSource): the
+  // API's events over the settings the game publishes.
   void loadApi(const assets::VirtualFileSystem& files);
 
   // The event sources the API's Lua declared.
@@ -276,9 +278,20 @@ private:
 
   void registerApi();
 
+  // The names of the global tables now.
+  std::vector<std::string> globalTables();
+
+  // A sandboxed copy of an API function (upvalue 1 the function, 2 this): runs it as an addon.
+  static int callApiAsAddon(lua_State* state);
+
   script::ScriptVm* vm_;
   ScriptHost host_;
   std::vector<UiEventSource> eventSources_;
+  // The global tables the UI API's Lua made: its namespaces.
+  std::vector<std::string> apiNamespaces_;
+  // How many API functions an addon called are running: the global ui.send then filters as an
+  // addon's.
+  int addonApiCalls_ = 0;
   CodeTrust* trust_;
   DocumentInstancer documentInstancer_{*this};
   ListenerInstancer listenerInstancer_{*this};

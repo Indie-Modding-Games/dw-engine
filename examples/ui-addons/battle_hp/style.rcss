@@ -1,0 +1,57 @@
+/* The fighters' HP at the bottom centre, which no skin's battle HUD uses: the command strips, the
+   finisher and the partner's bars sit at the top or in the corners. It takes no input, so the
+   battle's command strip keeps the pointer. */
+body {
+	pointer-events: none;
+	z-index: 90;
+}
+
+#panel {
+	position: absolute;
+	bottom: 12dp;
+	left: 50%;
+	width: 300dp;
+	margin-left: -150dp;
+	padding: 6dp 10dp;
+	border-radius: 6dp;
+	background-color: #10141ccc;
+	color: #f2f4f7;
+	font-size: 16dp;
+}
+
+.row {
+	display: block;
+	height: 22dp;
+}
+
+/* A row with no fighter: .row's display would win over the shared .hidden. */
+.row.hidden {
+	display: none;
+}
+
+.name {
+	display: inline-block;
+	width: 110dp;
+}
+
+.bar {
+	display: inline-block;
+	width: 100dp;
+	height: 8dp;
+	margin: 0 8dp;
+	background-color: #2a3240;
+}
+
+.fill {
+	display: block;
+	height: 8dp;
+	background-color: #e05a4f;
+}
+
+.partner .fill {
+	background-color: #5ac87a;
+}
+
+.row.fainted {
+	color: #8a93a0;
+}

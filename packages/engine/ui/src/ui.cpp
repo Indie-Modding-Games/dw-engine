@@ -283,7 +283,7 @@ struct Ui::Impl {
 
   std::map<std::string, Document, std::less<>> documents;
   // The events each setting fires (the API's event_source declarations).
-  std::map<std::string, std::vector<std::string>, std::less<>> eventSources;
+  std::map<std::string, std::vector<UiEventSource>, std::less<>> eventSources;
   std::vector<std::string> modalStack;
   std::string menuDocument;
   bool menuShut = false;
@@ -1028,8 +1028,10 @@ struct Ui::Impl {
     });
     if (auto sourced = eventSources.find(name); sourced != eventSources.end()) {
       const UiArguments table{{"name", std::string{name}}, {"value", value}};
-      for (const std::string& event : sourced->second) {
-        fireEvent(event, table);
+      for (const UiEventSource& source : sourced->second) {
+        if (!source.when || *source.when == value) {
+          fireEvent(source.event, table);
+        }
       }
     }
   }
@@ -1602,7 +1604,7 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
   impl->scripting->install();
   impl->scripting->loadApi(*desc.files);
   for (const UiEventSource& source : impl->scripting->eventSources()) {
-    impl->eventSources[source.setting].push_back(source.event);
+    impl->eventSources[source.setting].push_back(source);
   }
   if (auto texts = impl->loadTexts(); !texts) {
     return std::unexpected{texts.error()};
@@ -1924,7 +1926,27 @@ std::optional<Ui::Point> Ui::elementCenter(std::string_view document,
   }
   const Rml::Vector2f offset = element->GetAbsoluteOffset(Rml::BoxArea::Border);
   const Rml::Vector2f size = element->GetBox().GetSize(Rml::BoxArea::Border);
-  return Point{.x = offset.x + (size.x / 2.0F), .y = offset.y + (size.y / 2.0F)};
+  const Rml::Vector2f laidOut = offset + (size / 2.0F);
+  // Where the centre is drawn: RCSS transforms of the element and what holds it move it, and the
+  // pointer hits it there. Element::Project takes a window point back to the laid out plane; near
+  // the centre that is an affine map, so one step of its inverse finds the drawn centre.
+  constexpr float Step = 16.0F;
+  Rml::Vector2f here = laidOut;
+  Rml::Vector2f right = laidOut + Rml::Vector2f{Step, 0.0F};
+  Rml::Vector2f down = laidOut + Rml::Vector2f{0.0F, Step};
+  if (!element->Project(here) || !element->Project(right) || !element->Project(down)) {
+    return Point{.x = laidOut.x, .y = laidOut.y};
+  }
+  const Rml::Vector2f column0 = (right - here) / Step;
+  const Rml::Vector2f column1 = (down - here) / Step;
+  const float determinant = (column0.x * column1.y) - (column1.x * column0.y);
+  if (std::abs(determinant) < 1e-6F) {
+    return Point{.x = laidOut.x, .y = laidOut.y};
+  }
+  const Rml::Vector2f miss = laidOut - here;
+  const Rml::Vector2f shift{((column1.y * miss.x) - (column1.x * miss.y)) / determinant,
+                            ((column0.x * miss.y) - (column0.y * miss.x)) / determinant};
+  return Point{.x = laidOut.x + shift.x, .y = laidOut.y + shift.y};
 }
 
 bool Ui::elementShown(std::string_view document, std::string_view elementId) const {

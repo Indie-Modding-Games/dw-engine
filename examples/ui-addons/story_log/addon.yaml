@@ -1,0 +1,10 @@
+# An example plugin (docs/modding/interfaces.md): the last lines said in the story, at the right,
+# while a textbox is open, over whichever UI is on. Copy this folder to
+# <user data>/indie-modding-games/dwe/ui/addons/story_log/ to try it.
+id: story_log
+name: Lo último dicho
+version: 1.0.0
+ui_api: "0.15"
+type: plugin
+documents:
+  - document

@@ -1,0 +1,11 @@
+/* versus in the modern look: the pause menu's panel (../pause_menu/style.rcss), whose entries are rows 40dp high. The
+   host's setup puts each stepper's label and value on its one row, as the options page does, so the two rows do not
+   run into each other. */
+.stepper-label {
+	display: inline-block;
+	width: 150dp;
+}
+
+.stepper-value {
+	min-width: 160dp;
+}

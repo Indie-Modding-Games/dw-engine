@@ -56,6 +56,28 @@ constexpr auto Screens = std::to_array<ScreenScripts>({
     {.screen = "lives_box", .files = {"lives_box/logic.lua", "lives_box/document.rml"}},
     {.screen = "ui_notice", .files = {"ui_notice/logic.lua", "ui_notice/document.rml"}},
     {.screen = "battle", .files = {"battle/logic.lua", "battle/document.rml"}},
+    {.screen = "tournament_match",
+     .files = {"tournament_match/logic.lua", "tournament_match/document.rml"}},
+    {.screen = "versus",
+     .files = {"common/hud_digits.lua", "versus/logic.lua", "versus/document.rml"}},
+    // The story's boxes.
+    {.screen = "story_textbox",
+     .files = {"common/fit_text.lua", "common/screen_fit.lua", "story_textbox/logic.lua",
+               "story_textbox/document.rml"}},
+    {.screen = "dialog", .files = {"dialog/logic.lua", "dialog/document.rml"}},
+    {.screen = "naming_box", .files = {"naming_box/logic.lua", "naming_box/document.rml"}},
+});
+
+// The screens that read the game and ask it only through the UI API's namespaces: no ui.setting
+// or ui.send of their own.
+constexpr auto ApiOnlyScripts = std::to_array<std::string_view>({
+    "battle/logic.lua",
+    "tournament_match/logic.lua",
+    "versus/logic.lua",
+    "story_textbox/logic.lua",
+    "dialog/logic.lua",
+    "dialog/document.rml",
+    "naming_box/logic.lua",
 });
 
 std::string readText(const std::filesystem::path& path) {
@@ -220,6 +242,19 @@ TEST_CASE("every setting a screen's scripts read and every name they send is in 
   }
 }
 
+TEST_CASE("the battle's, the versus' and the story's screens read and ask the game only through "
+          "the UI API") {
+  const std::regex raw{R"(ui\.(setting|send|report)\s*\()"};
+  const std::filesystem::path ui = std::filesystem::path{DWE_GAME_PACK} / "ui";
+  for (const std::string_view file : ApiOnlyScripts) {
+    const std::string text = readText(ui / file);
+    CHECK_MESSAGE(!std::regex_search(text, raw),
+                  std::format("{} reads a setting or sends a command of its own: it uses the UI "
+                              "API's namespaces only",
+                              file));
+  }
+}
+
 TEST_CASE("every argument a screen's scripts show another screen with is in the contract") {
   // ui.show("pause_menu", true, { entry = opened_on }): the names of a literal table, for the
   // screens the contract covers.
@@ -291,7 +326,10 @@ TEST_CASE("every function of the UI API's adapters is in the contract, and the o
 TEST_CASE("every event of the UI API comes from the settings the contract names") {
   // event_source("bag.revision", "bag.changed"); a setting named by a variable (the options' loop)
   // stands for the contract's source "@options".
-  const std::regex literal{R"(event_source\(\s*["']([^"']+)["']\s*,\s*["']([^"']+)["']\s*\))"};
+  // A third argument (event_source("battle.active", "battle.started", true)) fires only on that
+  // value; the event still comes from the setting.
+  const std::regex literal{
+      R"(event_source\(\s*["']([^"']+)["']\s*,\s*["']([^"']+)["']\s*(,[^)]*)?\))"};
   const std::regex looped{
       R"(event_source\(\s*[A-Za-z_][A-Za-z0-9_.]*\s*,\s*["']([^"']+)["']\s*\))"};
   std::map<std::string, std::set<std::string>> fired;

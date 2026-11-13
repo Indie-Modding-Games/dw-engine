@@ -1,15 +1,18 @@
 #include "ui_addon_setting.hpp"
 
+#include <dwe/core/error.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 
 #include <algorithm>
+#include <cstdint>
 #include <ranges>
 #include <set>
 #include <utility>
 #include <variant>
 
 #include "messages.hpp"
+#include "story_commands.hpp"
 #include "ui_contract.hpp"
 
 namespace dwe::app {
@@ -21,7 +24,58 @@ std::string startUiAddon(bool safe, const std::optional<std::string>& saved) {
   return *saved;
 }
 
-bool addonMaySend(std::string_view command) {
+namespace {
+
+// The battle's commands (battle_screen.hpp) and the window each one works in.
+enum class BattleWindow : std::uint8_t { None, Fight, Bag, End };
+
+BattleWindow battleWindowOf(std::string_view command) {
+  if (command == "battle_command" || command == "battle_charge" || command == "battle_bag_open") {
+    return BattleWindow::Fight;
+  }
+  if (command == "battle_bag_close") {
+    return BattleWindow::Bag;
+  }
+  if (command == "battle_close" || command == "battle_end_count" ||
+      command == "battle_end_counted") {
+    return BattleWindow::End;
+  }
+  return BattleWindow::None;
+}
+
+} // namespace
+
+BattleWindows battleWindowsOf(const ui::Ui& ui) {
+  if (ui.setting("battle.active") != ui::UiValue{true}) {
+    return {};
+  }
+  const ui::UiValue phase = ui.setting("battle.phase");
+  const bool fight = phase == ui::UiValue{std::string{"fight"}};
+  return {.fight = fight,
+          .bag = fight && ui.setting("battle.bag.open") == ui::UiValue{true},
+          .end = phase == ui::UiValue{std::string{"end"}}};
+}
+
+bool addonMaySend(std::string_view command, BattleWindows battle) {
+  switch (battleWindowOf(command)) {
+  case BattleWindow::Fight:
+    if (!battle.fight) {
+      return false;
+    }
+    break;
+  case BattleWindow::Bag:
+    if (!battle.bag) {
+      return false;
+    }
+    break;
+  case BattleWindow::End:
+    if (!battle.end) {
+      return false;
+    }
+    break;
+  case BattleWindow::None:
+    break;
+  }
   static const std::set<std::string, std::less<>> declared = [] {
     std::set<std::string, std::less<>> names;
     for (const ui::UiContractEntry& entry : gameUiContract()) {
@@ -34,6 +88,18 @@ bool addonMaySend(std::string_view command) {
   return declared.contains(command);
 }
 
+std::vector<ui::FoundUiAddon>
+withLeftOutArchives(std::vector<ui::FoundUiAddon> found,
+                    std::span<const content::LeftOutUiAddonArchive> archives) {
+  for (const content::LeftOutUiAddonArchive& archive : archives) {
+    if (!archive.shadowed) {
+      found.push_back(
+          ui::FoundUiAddon{.folder = archive.folder, .addon = core::fail(archive.reason)});
+    }
+  }
+  return found;
+}
+
 UiAddonChanger::UiAddonChanger(ui::Ui& ui, UserSettings& settings,
                                std::optional<std::filesystem::path> settingsFile,
                                std::vector<ui::FoundUiAddon> found, bool safe)
@@ -42,6 +108,9 @@ UiAddonChanger::UiAddonChanger(ui::Ui& ui, UserSettings& settings,
   for (ui::FoundUiAddon& addon : found) {
     if (!addon.addon) {
       core::logWarning(messages::UnreadableUiAddon, addon.folder, addon.addon.error().message);
+      const std::size_t slash = addon.folder.rfind('/');
+      unreadable_.insert_or_assign(addon.folder.substr(slash == std::string::npos ? 0 : slash + 1),
+                                   addon.addon.error().message);
       continue;
     }
     if (addon.addon->type == ui::UiAddonType::Plugin) {
@@ -51,7 +120,12 @@ UiAddonChanger::UiAddonChanger(ui::Ui& ui, UserSettings& settings,
     offered_.push_back(addon.addon->id);
     addons_.push_back(std::move(*addon.addon));
   }
-  ui_->setAddonCommandFilter(addonMaySend);
+  // The battle's commands only in their windows; the story's, the naming box's and the dialog's
+  // only while their box waits for them.
+  ui_->setAddonCommandFilter([ui = ui_](std::string_view command) {
+    return addonMaySend(command, battleWindowsOf(*ui)) &&
+           storyCommandInWindow(command, storyWindowsOf(*ui));
+  });
 }
 
 const ui::UiAddon* UiAddonChanger::find(std::string_view id) const {
@@ -134,7 +208,9 @@ void UiAddonChanger::useUi(const std::string& id) {
   if (id == ui::DefaultUiId) {
     ui_->useDefaultUi();
   } else if (const ui::UiAddon* addon = find(id); addon == nullptr) {
-    problem = core::formatMessage(messages::MissingUiAddon, id);
+    const auto unreadable = unreadable_.find(id);
+    problem = unreadable != unreadable_.end() ? unreadable->second
+                                              : core::formatMessage(messages::MissingUiAddon, id);
   } else {
     // Put on again from its files: a reload reads what changed.
     ui_->useDefaultUi();

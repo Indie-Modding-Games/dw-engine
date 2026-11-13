@@ -36,7 +36,11 @@ public:
 
   // Once per engine tick while the field runs and no menu takes the keys.
   void press(const input::InputState& input);
-  // Once per frame: publishes the view when it changed.
+  // The UI API's story commands (story_commands.hpp): the presses they give reach the dialogue
+  // only while the box on show waits for them, as the player's would. True for a story command,
+  // taken or not.
+  bool handle(const ui::UiCommand& command);
+  // Once per frame: publishes the view when it changed, and what the box waits for.
   void update(const FieldScene& scene, const assets::DigimonTable* species);
   // A screen that says the owner's lines in its own box (the jukebox and the trade menu, whose
   // showMapHeadTextbox writes over the story's box) covers the story's box while it is up, and
@@ -45,6 +49,7 @@ public:
   void cover(bool covered);
 
 private:
+  void publishView(const FieldScene& scene, const assets::DigimonTable* species);
   [[nodiscard]] std::vector<TextRow> rowsOf(const game::story::DialogueView& view,
                                             const FieldScene& scene,
                                             const assets::DigimonTable* species) const;
@@ -65,6 +70,9 @@ private:
   std::optional<std::uint32_t> published_;
   bool shown_ = false;
   bool covered_ = false;
+  // Whether the player holds confirm, as the last press() read it: a story command presses with
+  // it, so a confirm held as the box opened still counts only once let go.
+  bool confirmHeld_ = false;
   // The view's revision when the cover went: the box stays hidden while the view keeps it.
   std::optional<std::uint32_t> staleRevision_;
 };

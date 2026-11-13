@@ -1,0 +1,31 @@
+/* The log's box, at the right of the window between the minimap and the partner's meters: the story's own box
+   (at the top or at the bottom, in the middle) and every skin's HUD leave that strip free. It takes no input, so
+   the game and the menus under it keep the pointer. */
+body {
+	pointer-events: none;
+	z-index: 90;
+}
+
+#log {
+	position: absolute;
+	top: 44%;
+	right: 1.5%;
+	width: 15.5%;
+	max-height: 38%;
+	overflow: hidden;
+	padding: 6dp 10dp;
+	border-radius: 6dp;
+	background-color: #10141cb3;
+	color: #e6e9ee;
+	font-size: 14dp;
+}
+
+.line {
+	display: block;
+	margin: 4dp 0dp;
+}
+
+.speaker {
+	color: #ffd479;
+	margin-right: 8dp;
+}

@@ -1,0 +1,16 @@
+<rml>
+<head>
+	<title>Story log</title>
+	<link type="text/rcss" href="../../common/base.rcss"/>
+	<link type="text/rcss" href="style.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="log" class="hidden">
+		<p class="line" id="line-1"><span class="speaker" id="speaker-1"></span><span class="text" id="text-1"></span></p>
+		<p class="line" id="line-2"><span class="speaker" id="speaker-2"></span><span class="text" id="text-2"></span></p>
+		<p class="line" id="line-3"><span class="speaker" id="speaker-3"></span><span class="text" id="text-3"></span></p>
+		<p class="line" id="line-4"><span class="speaker" id="speaker-4"></span><span class="text" id="text-4"></span></p>
+	</div>
+</body>
+</rml>

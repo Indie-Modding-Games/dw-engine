@@ -26,6 +26,8 @@ namespace dwe::app {
 namespace {
 
 // The lines of the scene's table (newGameStateMachine: resolveMapHeadEntry(0x4D6, i)).
+// The selections' two choices (tickSelectionDialogue).
+constexpr std::size_t InterviewChoices = 2;
 constexpr std::size_t Greeting = 0x10;
 constexpr std::size_t AskDigivice = 0x11;
 constexpr std::size_t YesNo = 0x12;
@@ -191,7 +193,47 @@ void NewGameInterview::play(const game::story::DialogueSound& sound) {
   }
 }
 
+StoryInput NewGameInterview::storyInput() const {
+  if (!turned_ || endTick_ || ticks_ < inputFrom_) {
+    return StoryInput::None;
+  }
+  switch (waiting_) {
+  case Waiting::Line:
+    return StoryInput::Page;
+  case Waiting::Selection:
+    return StoryInput::Choice;
+  case Waiting::Nothing:
+  case Waiting::Naming:
+    break;
+  }
+  return StoryInput::None;
+}
+
+bool NewGameInterview::handle(const ui::UiCommand& command) {
+  if (naming_.handle(command)) {
+    return true;
+  }
+  if (!isStoryCommand(command.name)) {
+    return false;
+  }
+  const StoryInput input = storyInput();
+  const auto keys = storyKeysOf(command, input, static_cast<std::int64_t>(InterviewChoices));
+  if (!keys) {
+    core::logDebug("[port:story] {} refused: the box waits for {}", command.name,
+                   input == StoryInput::None ? "nothing" : storyInputName(input));
+    return true;
+  }
+  asked_.confirm = asked_.confirm || keys->confirm;
+  asked_.cancel = asked_.cancel || keys->cancel;
+  if (keys->clicked) {
+    asked_.clicked = keys->clicked;
+  }
+  return true;
+}
+
 void NewGameInterview::take(const input::InputState& input) {
+  // The UI's commands count in this tick only, as a press does.
+  const game::story::DialogueKeys asked = std::exchange(asked_, {});
   // script_textbox.c: flipIdleTextboxPage: no press counts while the page is still being drawn,
   // one row a frame.
   if (ticks_ < inputFrom_) {
@@ -202,7 +244,7 @@ void NewGameInterview::take(const input::InputState& input) {
     return;
   case Waiting::Line:
     // script_textbox.c: tickConfirmDialogue: confirm closes the page (playSound(0, 3)).
-    if (input.wasPressed("confirm")) {
+    if (input.wasPressed("confirm") || asked.confirm) {
       play(rules_.sounds.confirm);
       waiting_ = Waiting::Nothing;
       state_ = next_;
@@ -211,7 +253,6 @@ void NewGameInterview::take(const input::InputState& input) {
   case Waiting::Selection: {
     // script_textbox.c: the selection's cursor moves over the box's rows; confirm picks the row and
     // the state machine goes on to the next state plus the row (nextState + choice).
-    constexpr std::size_t Choices = 2;
     // tickSelectionDialogue: the cursor wraps and moves with playSound(0, 2); confirm plays 3; the
     // scene keeps trigger 49 set, so cancel is refused (playSound(0, 0xB)).
     // The engine's pointer (the original has none): the choices are the box's rows after the
@@ -219,23 +260,26 @@ void NewGameInterview::take(const input::InputState& input) {
     // A click off them picks nothing.
     const OptionPointer pointer = optionPointer(*ui_, input, 1);
     const auto onChoice = [](std::optional<std::size_t> row) {
-      return row && *row < Choices ? row : std::nullopt;
+      return row && *row < InterviewChoices ? row : std::nullopt;
     };
-    const auto clicked = onChoice(pointer.clicked);
+    auto clicked = onChoice(pointer.clicked);
+    if (!clicked && asked.clicked) {
+      clicked = static_cast<std::size_t>(*asked.clicked);
+    }
     if (clicked) {
       cursor_ = *clicked;
     }
     if (input.wasPressed("move_up")) {
-      cursor_ = (cursor_ + Choices - 1) % Choices;
+      cursor_ = (cursor_ + InterviewChoices - 1) % InterviewChoices;
       play(rules_.sounds.cursor);
       showText(true);
     } else if (input.wasPressed("move_down")) {
-      cursor_ = (cursor_ + 1) % Choices;
+      cursor_ = (cursor_ + 1) % InterviewChoices;
       play(rules_.sounds.cursor);
       showText(true);
-    } else if (input.wasPressed("cancel")) {
+    } else if (input.wasPressed("cancel") || asked.cancel) {
       play(rules_.sounds.refused);
-    } else if (input.wasPressedByKeyOrPad("confirm") || clicked) {
+    } else if (input.wasPressedByKeyOrPad("confirm") || clicked || asked.confirm) {
       play(rules_.sounds.confirm);
       waiting_ = Waiting::Nothing;
       state_ = static_cast<std::uint8_t>(next_ + cursor_);
@@ -374,6 +418,7 @@ void NewGameInterview::step() {
 // script_menu.c: showNewGameDialogue: the scene's line in the box (showMapHeadTextbox), then the
 // state `next` once the player closes it.
 void NewGameInterview::say(std::size_t line, std::uint8_t next) {
+  ++pages_;
   shownLine_ = line;
   next_ = next;
   waiting_ = Waiting::Line;
@@ -383,6 +428,7 @@ void NewGameInterview::say(std::size_t line, std::uint8_t next) {
 // script_menu.c: showNewGameSelection: the scene's two choices (showMapheadSelection, cursor on the
 // first), then the state `next` plus the row picked.
 void NewGameInterview::ask(std::size_t line, std::uint8_t next) {
+  ++pages_;
   shownLine_ = line;
   next_ = next;
   cursor_ = 0;
@@ -417,7 +463,12 @@ void NewGameInterview::showText(bool open) {
                                           : std::nullopt,
                          .cursorColumns = std::nullopt,
                          // setupNewGameDialogueBox: the box at (-130, -78), 262 x 59.
-                         .top = true};
+                         .top = true,
+                         .speaker = {},
+                         .speakerKind = "none",
+                         // The choices are the rows after the name's.
+                         .options = waiting_ == Waiting::Selection ? InterviewChoices : 0,
+                         .firstOption = 1};
   screens::publish(*ui_, textboxSettings(look, rows), TextboxRevisionSetting);
   ui_->show(StoryTextboxDocument);
 }
@@ -440,6 +491,8 @@ std::string NewGameInterview::tamerName() const {
 }
 
 void NewGameInterview::update(double frameSeconds, rhi::Extent extent) {
+  ui_->setSetting(StoryInputSetting, std::string{storyInputName(storyInput())});
+  ui_->setSetting(StoryPageSetting, static_cast<double>(pages_));
   // The host walks by its clip's root motion, turned the way it faces.
   const glm::vec3 step = hostPlayer_->advance(static_cast<float>(frameSeconds));
   hostPosition_ += glm::vec3{glm::rotate(glm::mat4{1.0F}, hostYaw_, glm::vec3{0.0F, 1.0F, 0.0F}) *

@@ -252,6 +252,17 @@ bool VersusScreen::open() {
   return true;
 }
 
+void VersusScreen::shutDown() {
+  // The flows first: they call the views and the arena.
+  flow_.reset();
+  loopback_.reset();
+  rivalDesc_.reset();
+  rivalView_.reset();
+  arena_.reset();
+  arenaBuilt_ = false;
+  active_ = false;
+}
+
 void VersusScreen::close() {
   active_ = false;
   closed_ = true;

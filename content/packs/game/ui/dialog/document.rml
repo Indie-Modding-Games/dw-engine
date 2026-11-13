@@ -10,9 +10,9 @@
 		<div id="panel">
 			<p id="text"></p>
 			<p id="file"></p>
-			<button id="yes" onclick="answer(true)" text-key="common.yes"></button>
-			<button id="no" onclick="answer(false)" text-key="common.no"></button>
-			<button id="ok" onclick="answer(false)" text-key="common.accept"></button>
+			<button id="yes" onclick="answer('yes')" text-key="common.yes"></button>
+			<button id="no" onclick="answer('no')" text-key="common.no"></button>
+			<button id="ok" onclick="answer('ok')" text-key="common.accept"></button>
 
 			<div id="prompts">
 				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>

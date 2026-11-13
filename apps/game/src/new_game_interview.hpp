@@ -28,6 +28,7 @@
 
 #include "naming_box.hpp"
 #include "new_game_scene_rules.hpp"
+#include "story_commands.hpp"
 
 namespace dwe::app {
 
@@ -54,6 +55,9 @@ public:
   // What the keyboard typed, for the naming box while it is open (takesText).
   [[nodiscard]] bool takesText() const { return naming_.isOpen(); }
   void type(std::string_view text, bool enter) { naming_.type(text, enter); }
+  // The UI API's story and naming commands (story_commands.hpp): the next tick takes them with the
+  // player's buttons, only while the box waits for them. True for a command of theirs.
+  bool handle(const ui::UiCommand& command);
   // Once per frame: the host's animation and the camera.
   void update(double frameSeconds, rhi::Extent extent);
   [[nodiscard]] std::span<render::Drawer* const> drawers() const { return drawers_; }
@@ -68,6 +72,9 @@ public:
 private:
   // What waits for the player: a line to confirm, a selection, the naming box.
   enum class Waiting : std::uint8_t { Nothing, Line, Selection, Naming };
+
+  // What the box waits for now (story_textbox.input).
+  [[nodiscard]] StoryInput storyInput() const;
 
   NewGameInterview(ui::Ui& ui, NewGameSceneRules rules, std::vector<std::string> lines,
                    std::unique_ptr<render::ModelRenderer> models,
@@ -108,6 +115,10 @@ private:
   Waiting waiting_ = Waiting::Nothing;
   std::optional<std::size_t> shownLine_;
   std::size_t cursor_ = 0;
+  // The presses the UI's story commands gave since the last tick.
+  game::story::DialogueKeys asked_;
+  // The lines shown so far (story_textbox.page).
+  std::uint32_t pages_ = 0;
   NameTarget target_ = NameTarget::Tamer;
   std::optional<std::size_t> answer_;
   std::string tamerName_;

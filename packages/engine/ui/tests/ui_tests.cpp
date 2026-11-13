@@ -2698,6 +2698,25 @@ end
   CHECK(commands[0].value == UiValue{std::string{"6"}});
 }
 
+TEST_CASE("an event declared with a value fires only when its setting changes to that value") {
+  Content content;
+  content.add("ui/api/zz_probe.lua", "event_source('probe.on', 'probe.started', true)\n"
+                                     "event_source('probe.on', 'probe.ended', false)");
+  content.add("ui/hooked/document.rml", R"rml(<rml><head><script>
+hooks.on("probe.started", function() ui.send("started") end)
+hooks.on("probe.ended", function() ui.send("ended") end)
+</script></head><body/></rml>)rml");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("hooked", idOf("ui/hooked/document")));
+  ui->setSetting("probe.on", true);
+  CHECK(commandNames(*ui) == std::vector<std::string>{"started"});
+  ui->setSetting("probe.on", false);
+  CHECK(commandNames(*ui) == std::vector<std::string>{"ended"});
+  // Another value fires neither.
+  ui->setSetting("probe.on", std::string{"maybe"});
+  CHECK(ui->takeCommands().empty());
+}
+
 TEST_CASE("the game fires a UI API event straight to the documents' hooks") {
   Content content;
   content.add("ui/hooked/document.rml",
@@ -2909,6 +2928,50 @@ TEST_CASE("a plugin shows over whichever UI is on, without the focus, until it i
   // And it goes on again.
   REQUIRE(ui->addUiPlugin(clock));
   CHECK(ui->isVisible("clock.corner.document"));
+}
+
+TEST_CASE("an addon's call of a UI API function sends only what the game takes from addons") {
+  Content content;
+  // An API function that sends whatever it is given, as no real one does: the filter still holds.
+  content.add("ui/api/zz_probe.lua",
+              "probe = { ask = function(name) ui.send(name) return true end }");
+  content.add("ui/menu/document.rml",
+              "<rml><head><script>function ask() probe.ask('quit_game') end</script></head>"
+              "<body id='body'>default</body></rml>");
+  content.addToMod("ui/addons/big/addon.yaml", "id: big\nname: Big\nversion: 1.0.0\n"
+                                               "ui_api: \"0.9\"\ntype: ui\n"
+                                               "screens:\n  menu: menu/document\n");
+  content.addToMod("ui/addons/big/menu/document.rml",
+                   "<rml><head><script>function on_show(document) "
+                   "local sent, why = pcall(probe.ask, 'quit_game') "
+                   "probe.ask('allowed') "
+                   "ui.send('opened', sent and 'sent' or tostring(why)) end"
+                   "</script></head><body id='body'>big</body></rml>");
+  const VirtualFileSystem& files = content.mount();
+  auto ui = createUi(files);
+  REQUIRE(ui->loadDocument("menu", idOf("ui/menu/document")));
+  const auto found = findUiAddons(files);
+  REQUIRE(found.size() == 1);
+  REQUIRE(found[0].addon);
+  ui->setAddonCommandFilter(
+      [](std::string_view name) { return name == "opened" || name == "allowed"; });
+  REQUIRE(ui->useUiAddon(*found[0].addon));
+  ui->requestScreen("menu");
+  // The API function ran as the addon: the command the filter lets through went, the other one
+  // raised in the addon's code and never reached the game.
+  const auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 2);
+  CHECK(commands[0].name == "allowed");
+  CHECK(commands[1].name == "opened");
+  const auto* why = std::get_if<std::string>(&commands[1].value);
+  REQUIRE(why != nullptr);
+  CHECK(why->find("an addon may not send quit_game") != std::string::npos);
+  // The game's own UI calls the same function as before, unfiltered.
+  ui->useDefaultUi();
+  ui->closeScreen("menu");
+  (void)ui->takeCommands();
+  REQUIRE(ui->callScript("menu", "ask"));
+  CHECK(commandNames(*ui) == std::vector<std::string>{"quit_game"});
 }
 
 TEST_CASE("the packs' UI addons are found by folder, and one whose id is not its folder is not "

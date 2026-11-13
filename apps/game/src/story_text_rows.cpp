@@ -164,6 +164,11 @@ screens::ScreenSettings textboxSettings(const TextboxLook& look, const std::vect
        .value = look.cursorColumns ? static_cast<double>(*look.cursorColumns) : -1.0},
       {.name = std::format("{}.row_count", Prefix), .value = static_cast<double>(rows.size())},
       {.name = std::format("{}.top", Prefix), .value = look.top},
+      {.name = std::format("{}.speaker", Prefix), .value = look.speaker},
+      {.name = std::format("{}.speaker_kind", Prefix), .value = std::string{look.speakerKind}},
+      {.name = std::format("{}.options", Prefix), .value = static_cast<double>(look.options)},
+      {.name = std::format("{}.first_option", Prefix),
+       .value = static_cast<double>(look.firstOption)},
   };
   for (std::size_t row = 0; row < rows.size(); ++row) {
     settings.push_back({.name = screens::listEntryName(RowList, row, "runs"),

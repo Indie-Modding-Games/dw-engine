@@ -1195,6 +1195,11 @@ bool PlaySession::handlePlayOption(const ui::UiCommand& command) {
 }
 
 bool PlaySession::handle(const ui::UiCommand& command) {
+  // The UI API's story and naming commands (story_commands.hpp).
+  if ((storyTextbox_ && storyTextbox_->handle(command)) ||
+      (namingBox_ != nullptr && namingBox_->handle(command))) {
+    return true;
+  }
   if (devMenu_.handle(command) || eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
       itemKeeperScreen_.handle(command) || discardScreen_.handle(command) ||
       jukeboxScreen_.handle(command) || scheduleScreen_.handle(command) ||

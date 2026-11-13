@@ -773,8 +773,10 @@ int runGame(const Options& requested) {
   }
   loadPlayerChart(**ui, files);
   loadPlayerMedalsAndCards(**ui, files);
-  UiAddonChanger uiAddons{**ui, userSettings, settingsFile, ui::findUiAddons(files),
-                          options.safeUi};
+  UiAddonChanger uiAddons{
+      **ui, userSettings, settingsFile,
+      withLeftOutArchives(ui::findUiAddons(files), (*content)->leftOutUiAddonArchives()),
+      options.safeUi};
   uiAddons.start();
   LanguageChanger languageChanger{*texts, **ui, userSettings, settingsFile};
   MenuSounds menuSounds{sound, files};
@@ -1726,6 +1728,10 @@ int runGame(const Options& requested) {
         }
         continue;
       }
+      // The opening's questions and naming take the UI API's story commands.
+      if (interview && interview->handle(command)) {
+        continue;
+      }
       if (flow.playing() != nullptr && flow.playing()->handle(command)) {
         continue;
       }
@@ -2130,6 +2136,8 @@ int runGame(const Options& requested) {
   // the renderer like the session's.
   interview.reset();
   startAfterInterview.reset();
+  // The versus arena's models too (a local declared after the renderer).
+  versus.shutDown();
   flow.toTitle();
   scripts->reset();
   ui->reset();

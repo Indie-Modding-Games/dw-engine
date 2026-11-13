@@ -16,7 +16,8 @@ files["content/packs/*/ui/**/*.lua"] = {
   read_globals = {
     "ui", "t", "document_name", "skin_choice", "original_box", "bag_slot", "game_options",
     "panel_enter", "fit_text", "screen_fit", "title_picture", "hud_digits", "hud", "hooks",
-    "clock", "field", "partner", "bag", "player", "options",
+    "clock", "field", "partner", "bag", "player", "options", "battle", "versus", "story", "dialog",
+    "naming",
   },
 }
 
@@ -27,6 +28,7 @@ files["examples/ui-addons/**/*.lua"] = {
   ignore = { "131" },
   read_globals = {
     "ui", "t", "document_name", "hooks", "clock", "field", "partner", "bag", "player", "options",
+    "battle", "versus", "story", "dialog", "naming",
   },
 }
 
@@ -35,7 +37,10 @@ files["examples/ui-addons/**/*.lua"] = {
 -- fire which event (docs/modding/ui-api.md).
 files["content/packs/*/ui/api/*.lua"] = {
   read_globals = { "event_source" },
-  globals = { "clock", "field", "partner", "bag", "player", "options" },
+  globals = {
+    "clock", "field", "partner", "bag", "player", "options", "battle", "versus", "story", "dialog",
+    "naming",
+  },
 }
 
 -- The HUD's presenter, which its view reads (ui/hud/presenter.lua, ui/hud/view.lua).

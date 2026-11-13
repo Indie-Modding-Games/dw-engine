@@ -36,8 +36,8 @@ public:
   // (assets::checkPackApi). A mod that cannot (a broken manifest, a missing dependency, another
   // API) is left out and logged, and the rest still mount. Logs the stack, which packs come from
   // the dev assets and which were left out, the mods left out, and the ids that packs override.
-  // With a user data folder, the UI addons the player copied into its ui/addons/ mount as one more
-  // mod (UserUiAddonsFileSystem).
+  // With a user data folder, the UI addons the player copied into its ui/addons/, as folders or
+  // .zip archives, mount as one more mod (UserUiAddonsFileSystem).
   static core::Result<std::unique_ptr<GameContent>>
   mount(const std::filesystem::path& content, std::span<const std::filesystem::path> mods,
         const assets::DevAssetSources& devAssets = {}, const std::filesystem::path& userData = {});
@@ -59,6 +59,12 @@ public:
 
   // The mods that mount left out, in the order they were found.
   [[nodiscard]] std::span<const SkippedMod> skippedMods() const { return skippedMods_; }
+  // The .zip archives of the player's UI addons folder that give no addon, sorted by name; none
+  // without a user data folder. mount logs the ones another addon of their id shadows; the rest are
+  // for the game to say, as the addons that do not read.
+  [[nodiscard]] std::span<const LeftOutUiAddonArchive> leftOutUiAddonArchives() const {
+    return userUi_ ? userUi_->leftOutArchives() : std::span<const LeftOutUiAddonArchive>{};
+  }
 
 private:
   GameContent() = default;

@@ -66,6 +66,11 @@ public:
   // What the keyboard typed since the last tick (UTF-8), and whether Return was pressed; the next
   // press() takes it.
   void type(std::string_view text, bool enter);
+  // The UI API's naming commands (story_commands.hpp: naming_write, naming_erase, naming_accept),
+  // which the next press() takes before the buttons: the letters are written as typed ones (a
+  // letter the grid lacks is refused), then the erases, then OK. False for another command or with
+  // the box closed.
+  bool handle(const ui::UiCommand& command);
   // One engine tick of the player's buttons; true once OK took the name.
   bool press(const input::InputState& input);
   // The name typed, as one text.
@@ -85,6 +90,7 @@ private:
   [[nodiscard]] bool knows(std::string_view letter) const;
   [[nodiscard]] std::size_t sideRows() const { return rules_.rows.size() / 2; }
   bool takeTyping();
+  bool takeAsked();
   bool pressButtons(const input::InputState& input);
   // The cell or button under a window point, as the document was last laid out.
   [[nodiscard]] std::optional<Spot> spotAt(glm::vec2 point) const;
@@ -119,6 +125,13 @@ private:
   // Whether the keyboard typed since the cursor last moved: Return then takes the name.
   bool typing_ = false;
   bool open_ = false;
+  // What the UI's naming commands asked since the last tick.
+  struct Asked {
+    std::string text;
+    std::size_t erases = 0;
+    bool accept = false;
+  };
+  std::optional<Asked> asked_;
 };
 
 } // namespace dwe::app

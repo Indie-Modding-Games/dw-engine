@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.13.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.15.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -213,6 +213,93 @@ local Event = {}
 --- No deja que el evento siga subiendo.
 function Event:stop() end
 
+story = {}
+
+--- Lo que la caja espera del jugador: page (su confirmación), choice (una opción) o "" (nada).
+---@return string
+function story.input() end
+
+--- La caja: open, kind, size (columns, rows), top, opening, origin, prompt, input, page, speaker (name, kind), rows (cada una con runs: text, color), cursor_row y cursor_columns.
+---@return table
+function story.textbox() end
+
+--- La elección que se ve: options (text y row de cada una) y cursor (desde 0); nil sin elección.
+---@return table?
+function story.choice() end
+
+--- Pide confirmar: la página sigue o la elección toma la opción del cursor.
+---@return boolean
+---@return string?
+function story.advance() end
+
+--- Pide elegir una opción de la elección, desde 0.
+---@param option integer
+---@return boolean
+---@return string?
+function story.choose(option) end
+
+--- Pide cancelar, como el botón de cancelar.
+---@return boolean
+---@return string?
+function story.cancel() end
+
+dialog = {}
+
+--- El diálogo: text_key, file, question, start_on_yes, at_title y options.
+---@return table
+function dialog.state() end
+
+--- Sus opciones en orden (id, label_key, yes): sí y no en una pregunta, aceptar en un aviso.
+---@return table
+function dialog.options() end
+
+--- Si el diálogo se ve, esperando su respuesta.
+---@return boolean
+function dialog.is_open() end
+
+--- Responde con una de sus opciones, desde 0.
+---@param option integer
+---@return boolean
+---@return string?
+function dialog.answer(option) end
+
+--- Cancela: no a una pregunta, aceptar a un aviso.
+---@return boolean
+---@return string?
+function dialog.cancel() end
+
+naming = {}
+
+--- Si la caja de nombre se ve, esperando un nombre.
+---@return boolean
+function naming.is_open() end
+
+--- La caja: title_key, length, letters, name, grid (rows, columns) y cursor (row, column, button).
+---@return table
+function naming.state() end
+
+--- La letra de una celda de la rejilla, desde 0; " " si está vacía.
+---@param row integer
+---@param column integer
+---@return string
+function naming.cell(row, column) end
+
+--- Pide escribir letras de la rejilla al final del nombre.
+---@param letters string
+---@return boolean
+---@return string?
+function naming.write(letters) end
+
+--- Pide quitar la última letra.
+---@return boolean
+---@return string?
+function naming.erase() end
+
+--- Pide aceptar el nombre; el juego no toma uno vacío.
+---@return boolean
+---@return string?
+function naming.accept() end
+
 clock = {}
 
 --- La hora: year, day, hour, minute, night, phase (morning, day, late, night) y running (si el tiempo del juego corre).
@@ -355,7 +442,160 @@ function options.get(name) end
 ---@return string?
 function options.set(name, value) end
 
+battle = {}
+
+--- El combate: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds y match_seconds (o nil) y cup (un combate de copa).
+---@return table
+function battle.state() end
+
+--- Los luchadores, el compañero primero: name_key, status_key, hp, max_hp, mp, max_mp, fainted y hp_bar.
+---@return table
+function battle.fighters() end
+
+--- La tira de órdenes, el golpe final primero: command, label_key, icon, available, current y mp_cost.
+---@return table
+function battle.commands() end
+
+--- El golpe final: progress, goal, ready, charging (el aura) y charge (en porcentaje).
+---@return table
+function battle.finisher() end
+
+--- Dónde están la tira y las barras del compañero al entrar y salir: top, bottom, blink, hp_x y mp_x (o nil).
+---@return table
+function battle.strip() end
+
+--- La apertura: step, anger (3 marcas), flee (8), anger_scale, flash y pieces (las piezas del cartel, con key).
+---@return table
+function battle.intro() end
+
+--- Los números sobre los luchadores: x, y (porcentaje), dx, dy, value, kind (damage, gain, poison) e icon.
+---@return table
+function battle.numbers() end
+
+--- Las barras de vida de los enemigos: always y bars (enemy, x, y, left, top, fill, red, green, hp).
+---@return table
+function battle.hp_bars() end
+
+--- Las marcas de 1P y COM: fighter (0 el compañero, 1 el rival), x e y (porcentaje).
+---@return table
+function battle.markers() end
+
+--- La cuenta sobre el compañero caído (x, y, digit, digit_scale, badge_scale, turn, palette), o nil.
+---@return table?
+function battle.death_countdown() end
+
+--- El grito del jugador (text_key, x, y, node_x, node_y, line, hop, scale), o nil.
+---@return table?
+function battle.shout() end
+
+--- La caja del final: outcome_key, lines (parts, name_key, subject_key, amount), stats (value, max, gain), bits, money, count_delay_frames y wait_frames.
+---@return table
+function battle.result() end
+
+--- Lo que un combate de copa enseña encima: shown, name, name_y, stats, counted, stat, time_up, time_up_label, box, partner, rival, damage_label, dealt, taken y wipe.
+---@return table
+function battle.match() end
+
+--- Pide que el compañero siga una orden de la tira (su command); solo en la fase fight.
+---@param command integer
+---@return boolean
+---@return string?
+function battle.command(command) end
+
+--- Una pulsación de la carga del golpe final; solo en la fase fight.
+---@return boolean
+---@return string?
+function battle.charge() end
+
+--- Pide abrir la bolsa sobre el combate (la pantalla partner_menu); solo en la fase fight.
+---@return boolean
+---@return string?
+function battle.open_bag() end
+
+--- Pide cerrar la bolsa y volver al combate.
+---@return boolean
+---@return string?
+function battle.close_bag() end
+
+--- La caja del final ha terminado: el combate se cierra; solo en la fase end.
+---@return boolean
+---@return string?
+function battle.close() end
+
+--- Un punto o un bit contado en la caja del final (su sonido); solo en la fase end.
+---@return boolean
+---@return string?
+function battle.end_count() end
+
+--- Todos los bits dentro (el sonido que acaba la cuenta); solo en la fase end.
+---@return boolean
+---@return string?
+function battle.end_counted() end
+
+versus = {}
+
+--- La vista, el cursor, los combates de la serie y, en un combate: round, clock, side (el lado del jugador), wins, stalled, leave_asked, blink y arena (lo que enseña el escenario, o nil sin él).
+---@return table
+function versus.state() end
+
+--- La preparación del anfitrión: series y series_count, arena, arena_row y arenas.
+---@return table
+function versus.setup() end
+
+--- La conexión: stage (creating, waiting, connecting) y code (el código de la sala).
+---@return table
+function versus.connection() end
+
+--- El código escrito (typed) y si el último no valía (bad).
+---@return table
+function versus.entry() end
+
+--- Las partidas: player, nickname, partners y usable.
+---@return table
+function versus.saves() end
+
+--- Los compañeros (name, species_key, stats, picked) y los elegidos (picks, sus nombres).
+---@return table
+function versus.lineup() end
+
+--- Los dos lados, el anfitrión primero: hp, max_hp, mp, max_mp, segments, finisher_ready, hover, icons (la tira) y command_key (la orden señalada).
+---@return table
+function versus.fighters() end
+
+--- Lo que ha pasado, lo último al final: key, who, what_key y amount.
+---@return table
+function versus.log() end
+
+--- Los combates jugados (rounds: won, lost, draw) y el ganador de la serie (winner).
+---@return table
+function versus.results() end
+
+--- La pantalla de marcador: round, offset, flash, black, results y sides (wins, losses, faces).
+---@return table
+function versus.score() end
+
+--- Por qué paró: key (clave de texto) y detail.
+---@return table
+function versus.error() end
+
+--- Un paso en la vista: up, down, left, right, confirm, cancel, menu, tab_previous, tab_next o finisher (el golpe final, con su medidor lleno).
+---@param step string
+---@return boolean
+---@return string?
+function versus.step(step) end
+
+--- Va a una fila de la vista (o a una orden de la tira del jugador) y la confirma.
+---@param row integer
+---@return boolean
+---@return string?
+function versus.pick(row) end
+
 ---@alias UiEventName string
+---| "story.changed" Cambió la caja: se abrió, creció, otra página, el cursor.
+---| "story.text" Sale una página nueva.
+---| "story.input" La caja empezó o dejó de esperar al jugador.
+---| "dialog.changed" El juego puso el texto de un diálogo.
+---| "naming.changed" Cambió el nombre, el cursor o la rejilla.
 ---| "clock.changed" Cambió el estado del campo, la hora incluida.
 ---| "field.fade" Cambió el fundido.
 ---| "field.map_title" Cambió el nombre del mapa que se enseña.
@@ -366,3 +606,15 @@ function options.set(name, value) end
 ---| "bag.changed" Cambió la bolsa.
 ---| "bag.result" El juego respondió a una acción de la bolsa.
 ---| "options.changed" Cambió una opción; name dice cuál y value su valor.
+---| "battle.started" Empieza un combate (battle.active pasa a verdadero).
+---| "battle.ended" Se acaba un combate, tras cerrar la caja del final (battle.active pasa a falso).
+---| "battle.phase" Cambió la fase; value dice cuál.
+---| "battle.changed" Cambiaron los luchadores, la tira, el golpe final, la bolsa o las cuentas.
+---| "battle.speed" El combate pasó a ir rápido o a velocidad normal.
+---| "battle.strip_moved" La tira o las barras del compañero se movieron, o el icono bajo el cursor parpadeó.
+---| "battle.intro" Cambió la apertura.
+---| "battle.numbers" Cambiaron los números sobre los luchadores.
+---| "battle.overlays" Cambiaron las barras de vida de los enemigos, las marcas de 1P y COM o la cuenta del compañero caído.
+---| "battle.shout" Cambió el grito del jugador.
+---| "battle.match" Cambió lo que un combate de copa enseña encima.
+---| "versus.changed" Cambió el versus.

@@ -1,0 +1,10 @@
+# An example plugin (docs/modding/interfaces.md): every fighter's HP at the bottom centre while a
+# battle runs, over whichever UI is on. Copy this folder to
+# <user data>/indie-modding-games/dwe/ui/addons/battle_hp/ to try it.
+id: battle_hp
+name: PV en combate
+version: 1.0.0
+ui_api: "0.14"
+type: plugin
+documents:
+  - document

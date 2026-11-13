@@ -261,6 +261,11 @@ core::Result<std::unique_ptr<GameContent>> GameContent::mount(
   OpenedMods modPacks = openMods(mounted->disk_, mods);
   if (!userData.empty()) {
     mounted->userUi_ = std::make_unique<UserUiAddonsFileSystem>(userData);
+    for (const LeftOutUiAddonArchive& archive : mounted->userUi_->leftOutArchives()) {
+      if (archive.shadowed) {
+        core::logWarning(messages::ZipShadowed, archive.reason);
+      }
+    }
     if (mounted->userUi_->hasAddons()) {
       modPacks.candidates.push_back(
           ModCandidate{.path = userData,

@@ -1,3 +1,5 @@
+find_package(lodepng CONFIG REQUIRED)
+
 # How the apps mount the packs: the content folder, its packs/ folder, the team's packs and the mods, as one virtual
 # file system. The game and dwe-sim mount them the same way.
 dwe_add_module(content
@@ -8,7 +10,11 @@ dwe_add_module(content
         src/disc_install.cpp
         src/game_content.cpp
         src/user_ui_addons.cpp
-    DEPS core assets platform)
+        src/zip_archive.cpp
+    DEPS core assets platform
+    # The player's UI addons may come as .zip archives: lodepng inflates their files.
+    PRIVATE_LIBS lodepng
+    TEST_LIBS lodepng)
 
 # The team's packs (game rules, menus, HUD, fonts) are read from the source tree when the content folder has no game
 # pack of its own and no package's packs/ folder is next to the executable's, so editing them reloads them live.
