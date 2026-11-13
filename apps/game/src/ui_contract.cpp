@@ -500,7 +500,8 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(SkinPicker, Command, "ui_skin_preview", Text,
           "Pone el aspecto de la fila enfocada sin guardarlo."),
     entry(SkinPicker, Command, "skin_picker_done", None,
-          "El aspecto está elegido: la portada sigue con la caja de idiomas."),
+          "El aspecto está elegido: la portada sigue con «Press Start» (la caja de idiomas ya "
+          "salió antes)."),
 
     // The UI API (ui/api/<namespace>.lua): what any UI reads and asks through, the default one
     // included. The queries return fresh tables; the actions check their arguments and queue a

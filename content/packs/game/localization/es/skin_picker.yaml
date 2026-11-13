@@ -1,4 +1,4 @@
-# La caja que pregunta el aspecto de la UI en el primer arranque (ui/skin_picker), antes de la de idiomas: el idioma
-# aún no está elegido, así que el título va en los dos. La pista de cada aspecto es la clave de su nombre con .hint
+# La caja que pregunta el aspecto de la UI en el primer arranque (ui/skin_picker), justo después de la de idiomas: su
+# título y sus pistas van en el idioma recién elegido. La pista de cada aspecto es la clave de su nombre con .hint
 # (ui_skin.yaml).
-title: "Interfaz / Interface"
+title: "Interfaz"

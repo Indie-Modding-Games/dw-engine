@@ -1,7 +1,9 @@
-# The first run's skin picker (ui/skin_picker), then the language box: the cursor starts on the packs' default
-# (original), each move puts its skin on at once, and confirming New goes on to the language box in that skin. The
-# packs' skins in their order (devvago, modern, new, original: the game pack's with the disc's images). A manual
-# preview, out of the gate's route-*.yaml glob: run it without --ui-skin, so the picker starts on the default.
+# The first run's language box, then the skin picker (ui/skin_picker) in the language just chosen, then the "Press
+# Start" screen: the language box starts on the current language (--lang), confirming it fades out to the picker, whose
+# cursor starts on the packs' default (original); each move puts its skin on at once, and confirming New goes on to
+# "Press Start" in that skin, without the language box again. The packs' skins in their order (devvago, modern, new,
+# original: the game pack's with the disc's images). A manual preview, out of the gate's route-*.yaml glob: run it
+# without --ui-skin, so the picker starts on the default.
 name: skin-picker
 device: keyboard
 main_menu: true
@@ -11,7 +13,10 @@ skin_first: true
 timeout: 120
 steps:
   - resize: [1280, 720]
-  - wait: {shown: skin_picker, seconds: 1}
+  - wait: {shown: main_menu, seconds: 1.5}
+  - screenshot: language
+  - tap: {key: return}
+  - wait: {shown: skin_picker, hidden: main_menu, seconds: 1}
   - expect_setting: {ui_skin: original}
   - screenshot: original
   - tap: {key: up}
@@ -22,9 +27,15 @@ steps:
   - wait: {seconds: 1}
   - expect_setting: {ui_skin: modern}
   - screenshot: modern
+  - tap: {key: up}
+  - wait: {seconds: 1}
+  - expect_setting: {ui_skin: devvago}
+  - screenshot: devvago
+  - tap: {key: down}
+  - wait: {seconds: 1}
   - tap: {key: down}
   - wait: {seconds: 1}
   - expect_setting: {ui_skin: new}
   - tap: {key: return}
   - wait: {shown: main_menu, hidden: skin_picker, seconds: 1.5}
-  - screenshot: language
+  - screenshot: press-start
