@@ -86,7 +86,7 @@ puede moverse entre versiones del juego.
 La lista sale de `apps/game/src/ui_contract.cpp`. Un test la compara con esta página, con
 `content/schemas/ui_api/ui_api.json` (la misma lista para herramientas y editores) y con lo que leen y mandan los
 scripts de cada pantalla; `DWE_WRITE_API_DOC=1` al correr los tests del juego reescribe las dos. De momento cubre el
-HUD, el menú de pausa, el menú del compañero, la caja del aspecto del primer arranque, los avisos, el combate (con lo
+HUD, el menú de pausa, el menú del compañero, la caja del aspecto de cada arranque, los avisos, el combate (con lo
 que enseña un combate de copa), el versus en línea y las cajas de la historia (el cuadro de texto, el diálogo de
 guardar y la caja del nombre); el resto de pantallas llega después.
 

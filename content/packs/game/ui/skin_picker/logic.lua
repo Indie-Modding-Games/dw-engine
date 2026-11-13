@@ -1,11 +1,12 @@
--- The UI skin of the player's first run (docs/architecture/ui.md, the title's «Aspecto» row): right
--- after the language box, before the "Press Start" screen, the title screen shows this box once,
--- while no skin was chosen. One row per skin the packs offer (ui.skins(), the options page's list
--- and order), its name and a one-line hint (the name's key plus ".hint", none when the texts lack
--- it) in the language just chosen. Moving the cursor puts the skin on at once (ui_skin_preview, not
--- saved); confirming sends ui_skin, which saves it like the options page's row, and
--- skin_picker_done, and the title goes on to "Press Start". There is no cancel: the language is
--- already chosen, and the options page changes both later.
+-- The UI skin, asked on each boot of the game (docs/architecture/ui.md, the title's «Aspecto» row):
+-- right after the language box, before the "Press Start" screen, the title screen shows this box
+-- once a run, the cursor on the skin shown (the saved one, else the packs' default). One row per
+-- skin the packs offer (ui.skins(), the options page's list and order), its name and a one-line
+-- hint (the name's key plus ".hint", none when the texts lack it) in the language just chosen.
+-- Moving the cursor puts the skin on at once (ui_skin_preview, not saved); confirming sends
+-- ui_skin, which saves it like the options page's row, and skin_picker_done, and the title goes on
+-- to "Press Start". There is no cancel: the language is already chosen, and the options page
+-- changes both later.
 -- A test route reaches it only when it asks (skin_first: true).
 
 local Rows = 6

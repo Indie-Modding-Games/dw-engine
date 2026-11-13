@@ -22,10 +22,11 @@
 --     before the "Press Start" screen each time the title starts there (title.language_first), as a
 --     remaster's: an addition. One confirm picks the language and goes on, with a fade, to the
 --     "Press Start" screen. The options page changes the language too.
---   - On the player's first run (title.skin_first), the skin picker (ui/skin_picker, an addition)
+--   - On each boot of the game (title.skin_first), the skin picker (ui/skin_picker, an addition)
 --     comes between the language box and the "Press Start" screen, or first without the box: this
 --     menu asks the game for it over black (title_skin_picker) and shows again at "Press Start"
---     once a skin is confirmed (title.after_skin_picker), without asking the language again.
+--     once a skin is confirmed (title.after_skin_picker), without asking the language again. The
+--     title shown again later in the same run does not ask it.
 --   - "battle": the original's battle mode question (renderConfirmVSSlot), on no. Yes opens the
 --     online versus (the game's versus document, an addition: the original's battle mode is two
 --     players on one console); no comes back to the menu.
@@ -288,7 +289,7 @@ local function enter(document, name)
   end
 end
 
--- The first run's skin picker, over black: the game hides this menu and shows the picker, then
+-- The boot's skin picker, over black: the game hides this menu and shows the picker, then
 -- shows this menu again at "Press Start" (TitleScreen).
 local function ask_skin(document)
   set_fade(document, 1.0)
@@ -460,7 +461,7 @@ function on_tick(document, seconds)
   -- dark, with nothing left to step.
   if leaving and darkness >= 1.0 then
     if pending_view == "boot" and ui.setting("title.skin_first") == true then
-      -- Out of the language box on the first run: the skin picker before "Press Start".
+      -- Out of the language box on a boot: the skin picker before "Press Start".
       ask_skin(document)
     else
       fade_into(document, pending_view or "menu")

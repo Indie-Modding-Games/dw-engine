@@ -1,4 +1,4 @@
-# The first run's language box, then the skin picker (ui/skin_picker) in the language just chosen, then the "Press
+# A boot's language box, then the skin picker (ui/skin_picker) in the language just chosen, then the "Press
 # Start" screen: the language box starts on the current language (--lang), confirming it fades out to the picker, whose
 # cursor starts on the packs' default (original); each move puts its skin on at once, and confirming New goes on to
 # "Press Start" in that skin, without the language box again. The packs' skins in their order (devvago, modern, new,

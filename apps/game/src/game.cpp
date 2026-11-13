@@ -933,11 +933,12 @@ int runGame(const Options& requested) {
   VersusScreen versus{files, options, !autotest, **ui, renderer->get(), &sound};
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
-  // The player's first run asks the UI skin after the language box (an addition); an autotest only
-  // when its route asks, and a run with no settings to keep it in (the control channel's) never.
+  // Each boot asks the UI skin after the language box (an addition), the cursor on the saved one;
+  // an autotest only when its route asks, and a run with no settings to keep it in (the control
+  // channel's) never.
   title.setAsksSkin(autotest ? autotest->asksSkinFirst()
-                             : settingsFile && asksUiSkin(options.uiSkin, userSettings.uiSkin,
-                                                          (*ui)->skins().skins().size()));
+                             : settingsFile &&
+                                   asksUiSkin(options.uiSkin, (*ui)->skins().skins().size()));
   // What waits for the movie that plays: the title, or a game to start (main.c: main).
   std::optional<PlayStart> startAfterMovie;
   // The new game that waits for the opening's questions.

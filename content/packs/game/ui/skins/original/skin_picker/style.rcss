@@ -1,4 +1,4 @@
-/* The first run's skin picker in the original look, over the rules' box (../new_game_rules/style.rcss): wider, so each
+/* The boot's skin picker in the original look, over the rules' box (../new_game_rules/style.rcss): wider, so each
    hint stays on one line under its skin's name; an addition, the original has no such choice. */
 
 #panel {
