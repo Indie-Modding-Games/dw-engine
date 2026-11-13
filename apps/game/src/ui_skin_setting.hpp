@@ -18,12 +18,12 @@ namespace dwe::app {
 std::optional<std::string> startUiSkin(const std::optional<std::string>& commandLine,
                                        const std::optional<std::string>& saved);
 
-// The command the first run's skin picker (ui/skin_picker) sends as its cursor moves: the skin is
-// shown, not saved, until the player confirms one with the ui_skin command.
+// The command the boot's skin picker (ui/skin_picker) sends as its cursor moves: the skin is shown,
+// not saved, until the player confirms one with the ui_skin command.
 inline constexpr std::string_view UiSkinPreviewCommand = "ui_skin_preview";
 
-// The first run's box that asks the UI skin, and the command it sends once one is confirmed (its
-// ui_skin command, sent first, saved it).
+// The boot's box that asks the UI skin, and the command it sends once one is confirmed (its ui_skin
+// command, sent first, saved it).
 inline constexpr std::string_view SkinPickerDocument = "skin_picker";
 inline constexpr std::string_view SkinPickerDoneCommand = "skin_picker_done";
 // The command the main menu sends for the picker when the title starts at "Press Start" and the
@@ -31,11 +31,10 @@ inline constexpr std::string_view SkinPickerDoneCommand = "skin_picker_done";
 // one.
 inline constexpr std::string_view SkinPickerAskCommand = "title_skin_picker";
 
-// Whether the title asks the player's skin (ui/skin_picker, after the language box, before the
-// "Press Start" screen): when neither --ui-skin nor a saved choice names one and the packs offer
-// more than one.
-[[nodiscard]] bool asksUiSkin(const std::optional<std::string>& commandLine,
-                              const std::optional<std::string>& saved, std::size_t offered);
+// Whether the title asks the player's skin on this boot (ui/skin_picker, after the language box,
+// before the "Press Start" screen): when --ui-skin does not name one and the packs offer more than
+// one. A saved choice still asks, the cursor on it.
+[[nodiscard]] bool asksUiSkin(const std::optional<std::string>& commandLine, std::size_t offered);
 
 // Changes the player's skin while the game runs: the UI, the published setting and the saved
 // setting.
@@ -58,9 +57,9 @@ private:
   std::optional<std::filesystem::path> settingsFile_;
 };
 
-// A step of the title on the player's first run (an addition): the skin picker, right after the
+// A step of the title on each boot of the game (an addition): the skin picker, right after the
 // language box (or, without one, before the "Press Start" screen), until a skin is confirmed; asked
-// once.
+// once a run, so the title shown again later in it goes straight on.
 class SkinPickerStep {
 public:
   explicit SkinPickerStep(bool asks) : asks_{asks} {}

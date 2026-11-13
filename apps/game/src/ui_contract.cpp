@@ -500,7 +500,7 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(PartnerMenu, Option, "favorite_food", Boolean, "La comida favorita del compañero."),
     entry(PartnerMenu, Option, "art_fixes", Boolean, "Arreglos de arte."),
 
-    // The first run's skin picker (apps/game: title_screen.cpp, ui_skin_setting.cpp).
+    // The boot's skin picker (apps/game: title_screen.cpp, ui_skin_setting.cpp).
     entry(SkinPicker, Option, "ui_skin", Text,
           "El aspecto que se ve; al confirmar una fila, el elegido, que se guarda en los ajustes."),
     entry(SkinPicker, Command, "ui_skin_preview", Text,

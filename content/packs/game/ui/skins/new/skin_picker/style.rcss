@@ -1,4 +1,4 @@
-/* The first run's skin picker in the new look, as the mode of a new game (../new_game_mode/style.rcss): the box with
+/* The boot's skin picker in the new look, as the mode of a new game (../new_game_mode/style.rcss): the box with
    its brackets over the title's backdrop, the gold title over a line, the skins as a ▶ list, each with its hint muted
    under its name. */
 

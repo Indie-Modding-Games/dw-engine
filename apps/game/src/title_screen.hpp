@@ -52,9 +52,9 @@ public:
   // so (new_game_rules), the others start the original's story with the command line's ruleset.
   void setAsksRules(bool asks) { asksRules_ = asks; }
 
-  // Whether the title asks the UI skin (ui/skin_picker, an addition) on the player's first run
-  // (asksUiSkin): after the language box, before the "Press Start" screen; a test route only when
-  // it says so (skin_first). Asked once: the confirmed skin is the player's from then on.
+  // Whether the title asks the UI skin (ui/skin_picker, an addition) on this boot (asksUiSkin):
+  // after the language box, before the "Press Start" screen; a test route only when it says so
+  // (skin_first). Asked once a run: the title shown again later goes straight on.
   void setAsksSkin(bool asks) { skinPicker_ = SkinPickerStep{asks}; }
 
   // The game a command chose to start, once.

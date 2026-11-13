@@ -159,7 +159,7 @@ Estas pantallas tienen en la [API de la interfaz](ui-api.md) todo lo que leen y 
 | `hud` | El HUD del campo: reloj, medidores, necesidades, minimapa |
 | `pause_menu` | El menú de pausa y las opciones |
 | `partner_menu` | La ficha del compañero y la bolsa |
-| `skin_picker` | La pregunta del aspecto en el primer arranque |
+| `skin_picker` | La pregunta del aspecto en cada arranque, tras la caja de idiomas |
 | `pause_box` | El recuadro de pausa |
 | `field_item_notice` | El aviso de un objeto en el suelo o en un cofre |
 | `award_notice` | El aviso de un premio |

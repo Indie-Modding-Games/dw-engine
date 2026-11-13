@@ -1,4 +1,4 @@
-/* How the first run's skin picker behaves whatever the skin: the list wraps around and each row puts its hint under
+/* How the boot's skin picker behaves whatever the skin: the list wraps around and each row puts its hint under
    its name. The look is the pause menu's (the skins' pause_menu style), in the skin the cursor is on. */
 
 #skin-1 { nav-up: #skin-6; }

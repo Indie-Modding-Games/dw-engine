@@ -22,9 +22,8 @@ std::optional<std::string> startUiSkin(const std::optional<std::string>& command
   return saved;
 }
 
-bool asksUiSkin(const std::optional<std::string>& commandLine,
-                const std::optional<std::string>& saved, std::size_t offered) {
-  return !commandLine && !saved && offered > 1;
+bool asksUiSkin(const std::optional<std::string>& commandLine, std::size_t offered) {
+  return !commandLine && offered > 1;
 }
 
 bool SkinPickerStep::show(ui::Ui& ui) const {

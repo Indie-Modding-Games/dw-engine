@@ -1,4 +1,4 @@
-/* The first run's skin picker in the modern look, over the pause menu's panel (../pause_menu/style.rcss): a row grows
+/* The boot's skin picker in the modern look, over the pause menu's panel (../pause_menu/style.rcss): a row grows
    to the skin's name and its hint, the hint in the caption size and the secondary text colour. */
 
 #panel:not(.skin-original) {
