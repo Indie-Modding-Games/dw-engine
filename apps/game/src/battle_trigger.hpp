@@ -59,4 +59,11 @@ core::Result<MapBattle> mapBattleRequest(const game::field::Field& field,
                                          const assets::DigimonTable& species,
                                          const std::vector<std::size_t>& npcs);
 
+// btl.c: handleBattleStart: FLEE_DISABLED[0] is the story's trigger 1, a fixed fight: the battle
+// offers no Run (battle_tick.c: handleCommands skips it on the strip) and its enemies spend no MP.
+// A story battle is fixed whenever trigger 1 is on, predefined enemies or not. Only the battle's
+// rules change: the music keeps the request's own facts (btl.c: loadBattleData keys it on
+// IS_PREDEFINED_BATTLE, not on trigger 1).
+void applyFixedFight(session::BattleRequest& request, bool fixedFight);
+
 } // namespace dwe::app

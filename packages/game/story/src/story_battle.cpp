@@ -59,19 +59,7 @@ core::Result<ScriptedBattle> StoryBattles::enemies() {
     return std::unexpected{predefined.error()};
   }
   if (*predefined == 0) {
-    // btl.c: handleBattleStart: without a predefined battle the enemy is the NPC the player talked
-    // to; the other NPCs on screen may join it by the flee table's roll, which the battle screen
-    // makes (it knows who is on screen).
-    battle.joinable = true;
-    if (const auto talked = battle_->talkedTo()) {
-      const auto entity =
-          battle_->talkedEntity().or_else([&] { return battle_->entityOf(*talked); });
-      if (entity) {
-        core::logDebug("{}",
-                       messages::formatMessage(messages::PortBattleTalkedTo, *talked, *entity));
-        battle.enemies.push_back(*entity);
-      }
-    }
+    fightTalkedTo(battle);
     return battle;
   }
   // script_interp.c: scriptInstruction64to7E turns each script id into its entity in place, and
@@ -95,7 +83,35 @@ core::Result<ScriptedBattle> StoryBattles::enemies() {
       battle.enemies.push_back(entity);
     }
   }
+  if (battle.enemies.empty()) {
+    // A recovery of dwe's own: every script that asks for a predefined battle names enemies on its
+    // map just before start_battle, and puts the variable back to 0 after it. One whose enemies are
+    // all missing was left behind by a fight whose section never ended (a flight from a fixed
+    // fight, which dwe allowed before, or the jump of a defeat), and would leave the battle with
+    // no enemy: the touching NPC's section would run again forever. The battle this section asks
+    // for is the one with the NPC talked to.
+    core::logWarning("{}", messages::formatMessage(messages::PortBattleStalePredefined,
+                                                   rules_.predefinedVariable));
+    if (auto cleared = state_->setVariable(rules_.predefinedVariable, 0); !cleared) {
+      return std::unexpected{cleared.error()};
+    }
+    fightTalkedTo(battle);
+  }
   return battle;
+}
+
+void StoryBattles::fightTalkedTo(ScriptedBattle& battle) const {
+  // btl.c: handleBattleStart: without a predefined battle the enemy is the NPC the player talked
+  // to; the other NPCs on screen may join it by the flee table's roll, which the battle screen
+  // makes (it knows who is on screen).
+  battle.joinable = true;
+  if (const auto talked = battle_->talkedTo()) {
+    const auto entity = battle_->talkedEntity().or_else([&] { return battle_->entityOf(*talked); });
+    if (entity) {
+      core::logDebug("{}", messages::formatMessage(messages::PortBattleTalkedTo, *talked, *entity));
+      battle.enemies.push_back(*entity);
+    }
+  }
 }
 
 bool StoryBattles::fixedFight() const {

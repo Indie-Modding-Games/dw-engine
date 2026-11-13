@@ -122,4 +122,8 @@ core::Result<MapBattle> mapBattleRequest(const game::field::Field& field,
   return battle;
 }
 
+void applyFixedFight(session::BattleRequest& request, bool fixedFight) {
+  request.scripted = request.scripted || fixedFight;
+}
+
 } // namespace dwe::app

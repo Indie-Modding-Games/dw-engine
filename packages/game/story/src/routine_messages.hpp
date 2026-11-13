@@ -24,6 +24,10 @@ inline constexpr std::string_view PortBattleEnemy =
 inline constexpr std::string_view PortBattleTalkedTo =
     "[port:battle] handleBattleStart (btl.c:262): no predefined battle, the NPC talked to "
     "(script id {}) is entity {}";
+inline constexpr std::string_view PortBattleStalePredefined =
+    "[port:battle] start_battle: variable {} asks for a predefined battle but none of its enemies "
+    "is on the map: a setup a fled or lost fight left behind; it goes back to 0 and the NPC talked "
+    "to is the enemy";
 inline constexpr std::string_view PortBattleOutcome =
     "[port:battle] start_battle (script_interp.c:1918): outcome {} into var {}";
 inline constexpr std::string_view PortBattleDefeat =
