@@ -931,7 +931,7 @@ int runGame(const Options& requested) {
   VersusScreen versus{files, options, !autotest, **ui, renderer->get(), &sound};
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
-  // The player's first run asks the UI skin before the language box (an addition); an autotest only
+  // The player's first run asks the UI skin after the language box (an addition); an autotest only
   // when its route asks, and a run with no settings to keep it in (the control channel's) never.
   title.setAsksSkin(autotest ? autotest->asksSkinFirst()
                              : settingsFile && asksUiSkin(options.uiSkin, userSettings.uiSkin,

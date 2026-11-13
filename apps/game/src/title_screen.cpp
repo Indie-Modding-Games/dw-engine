@@ -91,17 +91,20 @@ void TitleScreen::show() {
 
 void TitleScreen::showBoot() {
   landing_ = false;
-  if (!skinPicker_.show(*ui_)) {
-    showMenu(true);
-  }
+  showMenu(true);
 }
 
-void TitleScreen::showMenu(bool boot) {
+void TitleScreen::showMenu(bool boot, bool afterSkinPicker) {
   listShown_ = false;
   landing_ = false;
   screens::ScreenSettings settings = flow_.titleSettings();
   // Read by the main menu as it shows (title.boot): whether it starts at the "Press Start" screen.
   settings.push_back({.name = "title.boot", .value = boot});
+  // Whether it asks for the skin picker there first (title.skin_first), after its language box;
+  // and whether the picker just closed, so it goes straight to "Press Start"
+  // (title.after_skin_picker).
+  settings.push_back({.name = "title.skin_first", .value = boot && skinPicker_.asks()});
+  settings.push_back({.name = "title.after_skin_picker", .value = boot && afterSkinPicker});
   screens::publish(*ui_, settings, "save.revision");
   ui_->show(MainMenuDocument, true);
 }
@@ -128,9 +131,17 @@ bool TitleScreen::handle(const ui::UiCommand& command) {
     // Sent each time the screen is entered or left: not a choice of the player's to log.
     return true;
   }
-  if (skinPicker_.handle(command, *ui_)) {
-    // The skin is the player's now: on to the language box and the "Press Start" screen.
-    showMenu(true);
+  if (name == SkinPickerAskCommand) {
+    // The main menu's language box closed (or there was none): the picker over black, the menu
+    // hidden meanwhile, as each skin it previews may lay the menu out again.
+    if (skinPicker_.show(*ui_)) {
+      ui_->hide(MainMenuDocument);
+    } else {
+      showMenu(true, true);
+    }
+  } else if (skinPicker_.handle(command, *ui_)) {
+    // The skin is the player's now: on to the "Press Start" screen.
+    showMenu(true, true);
   } else if (name == TitleOptionsCommand) {
     showOptions();
   } else if (name == TitleOptionsBackCommand) {

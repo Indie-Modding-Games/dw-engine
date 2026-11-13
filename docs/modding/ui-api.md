@@ -476,7 +476,7 @@ Versión de la API de la interfaz: **0.13.0**.
 |---|---|---|---|
 | `ui_skin` | opción | texto | El aspecto que se ve; al confirmar una fila, el elegido, que se guarda en los ajustes. |
 | `ui_skin_preview` | comando | texto | Pone el aspecto de la fila enfocada sin guardarlo. |
-| `skin_picker_done` | comando | — | El aspecto está elegido: la portada sigue con la caja de idiomas. |
+| `skin_picker_done` | comando | — | El aspecto está elegido: la portada sigue con «Press Start» (la caja de idiomas ya salió antes). |
 
 ### `clock`
 

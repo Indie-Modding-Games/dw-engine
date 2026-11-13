@@ -1,6 +1,8 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/image.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/input/action_map.hpp>
+#include <dwe/input/input_state.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/test_support/temp_folder.hpp>
 #include <dwe/ui/skin.hpp>
@@ -18,6 +20,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include "common.hpp"
@@ -264,7 +267,76 @@ TEST_CASE("the title asks the skin only when no command line or saved choice nam
   CHECK_FALSE(asksUiSkin(std::nullopt, std::nullopt, 1));
 }
 
-TEST_CASE("a first run shows the skin picker, then the language box; the saved skin skips it") {
+// TitleScreen's part of the first run's title, over the main menu and the skin picker: the menu at
+// "Press Start" (showMenu), which asks for the picker (SkinPickerAskCommand) after its language
+// box, and back at "Press Start" once a skin is confirmed.
+struct FirstRunTitle {
+  FirstRunTitle(Content& content, UiSkinChanger& changer, bool asks)
+      : content{content}, changer{changer}, picker{asks} {}
+
+  Content& content;
+  UiSkinChanger& changer;
+  SkinPickerStep picker;
+  input::InputState input{input::defaultActionMap()};
+  std::vector<std::string> sent;
+
+  void showMenu(bool afterSkinPicker) const {
+    content.ui->setSetting("title.boot", true);
+    content.ui->setSetting("title.skin_first", picker.asks());
+    content.ui->setSetting("title.after_skin_picker", afterSkinPicker);
+    content.ui->show(MainMenuDocument, true);
+  }
+
+  // The commands sent since the last frames, as the game takes them between frames; the language
+  // and the skin's are applied as the game applies them.
+  void apply() {
+    for (const ui::UiCommand& command : content.ui->takeCommands()) {
+      sent.push_back(command.name);
+      if (command.name == SkinPickerAskCommand) {
+        if (picker.show(*content.ui)) {
+          content.ui->hide(MainMenuDocument);
+        } else {
+          showMenu(true);
+        }
+      } else if (command.name == "language") {
+        const auto& language = std::get<std::string>(command.value);
+        REQUIRE(content.texts->setLanguage(language));
+        content.ui->setSetting("language", language);
+        content.ui->refreshTexts();
+      } else if (command.name == UiSkinPreviewCommand) {
+        CHECK(changer.preview(std::get<std::string>(command.value)));
+      } else if (command.name == ui::UiSkinSetting) {
+        changer.change(std::get<std::string>(command.value));
+      } else if (picker.handle(command, *content.ui)) {
+        showMenu(true);
+      }
+    }
+  }
+
+  // A second of frames at 60 a second, enough for the menu's fades (40 frames).
+  void second() {
+    for (int frame = 0; frame < 60; ++frame) {
+      content.ui->tick(input, 1.0 / 60.0);
+      input.endTick();
+      content.ui->update();
+      apply();
+    }
+  }
+
+  [[nodiscard]] bool sentCommand(std::string_view name) const {
+    return std::ranges::find(sent, name) != sent.end();
+  }
+};
+
+// The row of a language in the language box, as "pick_language" takes it.
+std::string languageRow(const Content& content, std::string_view language) {
+  const auto languages = content.texts->languages();
+  const auto found = std::ranges::find(languages, language);
+  REQUIRE(found != languages.end());
+  return std::to_string(std::distance(languages.begin(), found) + 1);
+}
+
+TEST_CASE("a first run asks the language, then the skin in that language, then Press Start") {
   const test_support::TempFolder folder;
   const std::filesystem::path file = folder.path() / "settings.yaml";
   {
@@ -275,58 +347,67 @@ TEST_CASE("a first run shows the skin picker, then the language box; the saved s
     content.load(MainMenuDocument);
     content.load(SkinPickerDocument);
     content.ui->setSetting("title.language_first", true);
-    // As TitleScreen::showBoot and showMenu: the picker while it asks, else the main menu at
-    // "Press Start", whose language box comes first.
-    SkinPickerStep picker{
+    FirstRunTitle title{
+        content, changer,
         asksUiSkin(std::nullopt, settings.uiSkin, content.ui->skins().skins().size())};
-    const auto showBoot = [&] {
-      if (!picker.show(*content.ui)) {
-        content.ui->setSetting("title.boot", true);
-        content.ui->show(MainMenuDocument, true);
-      }
-    };
-    showBoot();
-    content.ui->update();
+    title.showMenu(false);
+    title.second();
+    // The language box first, with no picker yet.
+    CHECK(content.ui->isVisible(MainMenuDocument));
+    CHECK(content.ui->elementShown(MainMenuDocument, "language-box"));
+    CHECK_FALSE(content.ui->isVisible(SkinPickerDocument));
+    CHECK_FALSE(title.sentCommand(SkinPickerAskCommand));
+
+    // Choosing Spanish fades out to the picker, titled and hinted in Spanish.
+    REQUIRE(content.ui->callScript(MainMenuDocument, "pick_language",
+                                   std::vector<std::string>{"", languageRow(content, "es")}));
+    title.second();
+    CHECK(title.sentCommand(SkinPickerAskCommand));
     CHECK(content.ui->isVisible(SkinPickerDocument));
     CHECK_FALSE(content.ui->isVisible(MainMenuDocument));
+    CHECK(content.ui->elementText(SkinPickerDocument, "title") == "Interfaz");
     // The cursor starts on the skin shown, the packs' default.
     CHECK(content.ui->focusedElementId(SkinPickerDocument) == "skin-" + content.rowOf("original"));
 
     // Moving the cursor puts a skin on at once, without saving it.
     REQUIRE(content.ui->callScript(SkinPickerDocument, "skin_focus",
                                    std::vector<std::string>{content.rowOf("modern")}));
-    for (const ui::UiCommand& command : content.ui->takeCommands()) {
-      REQUIRE(command.name == UiSkinPreviewCommand);
-      CHECK(changer.preview(std::get<std::string>(command.value)));
-    }
+    title.apply();
     content.ui->update();
     CHECK(content.ui->skin() == "modern");
     CHECK(content.published() == ui::UiValue{std::string{"modern"}});
     CHECK(content.ui->isVisible(SkinPickerDocument));
     CHECK_FALSE(loadUserSettings(file).uiSkin.has_value());
 
-    // Confirming one saves it, and the title goes on to the language box. Cancel does nothing.
+    // Cancel does nothing; confirming one saves it, and the title goes on to "Press Start" without
+    // asking the language again.
     REQUIRE(content.ui->callScript(SkinPickerDocument, "on_action",
                                    std::vector<std::string>{"", "cancel"}));
     CHECK(content.ui->takeCommands().empty());
     CHECK(content.ui->isVisible(SkinPickerDocument));
     REQUIRE(content.ui->callScript(SkinPickerDocument, "choose",
                                    std::vector<std::string>{content.rowOf("original")}));
-    const std::vector<ui::UiCommand> commands = content.ui->takeCommands();
-    REQUIRE(commands.size() == 2);
-    CHECK(commands[0].name == ui::UiSkinSetting);
-    changer.change(std::get<std::string>(commands[0].value));
-    REQUIRE(picker.handle(commands[1], *content.ui));
-    showBoot();
-    content.ui->update();
+    title.second();
     CHECK_FALSE(content.ui->isVisible(SkinPickerDocument));
     CHECK(content.ui->isVisible(MainMenuDocument));
-    CHECK(content.ui->elementShown(MainMenuDocument, "language-box"));
+    CHECK_FALSE(content.ui->elementShown(MainMenuDocument, "language-box"));
+    CHECK(content.ui->elementShown(MainMenuDocument, "press-start"));
+    CHECK(content.ui->skin() == "original");
     CHECK(loadUserSettings(file).uiSkin == std::optional<std::string>{"original"});
 
-    // Asked once: back at the title later, the language box comes first again.
-    CHECK_FALSE(picker.show(*content.ui));
+    // Asked once: back at the title later, the language box comes first again, with no picker.
+    CHECK_FALSE(title.picker.asks());
+    content.ui->hide(MainMenuDocument);
+    title.sent.clear();
+    title.showMenu(false);
+    title.second();
+    CHECK(content.ui->elementShown(MainMenuDocument, "language-box"));
+    REQUIRE(content.ui->callScript(MainMenuDocument, "pick_language",
+                                   std::vector<std::string>{"", languageRow(content, "en")}));
+    title.second();
+    CHECK_FALSE(title.sentCommand(SkinPickerAskCommand));
     CHECK_FALSE(content.ui->isVisible(SkinPickerDocument));
+    CHECK(content.ui->elementShown(MainMenuDocument, "press-start"));
   }
   {
     // The next start has the saved skin: no picker.
@@ -334,6 +415,29 @@ TEST_CASE("a first run shows the skin picker, then the language box; the saved s
     const UserSettings saved = loadUserSettings(file);
     CHECK_FALSE(asksUiSkin(std::nullopt, saved.uiSkin, next.ui->skins().skins().size()));
   }
+}
+
+TEST_CASE("without the language box, the first run's skin picker comes before Press Start") {
+  const test_support::TempFolder folder;
+  const std::filesystem::path file = folder.path() / "settings.yaml";
+  Content content{DiscArt::Extracted};
+  UserSettings settings = loadUserSettings(file);
+  applyStartUiSkin(*content.ui, startUiSkin(std::nullopt, settings.uiSkin));
+  UiSkinChanger changer{*content.ui, settings, file};
+  content.load(MainMenuDocument);
+  content.load(SkinPickerDocument);
+  content.ui->setSetting("title.language_first", false);
+  FirstRunTitle title{content, changer, true};
+  title.showMenu(false);
+  title.second();
+  CHECK(content.ui->isVisible(SkinPickerDocument));
+  CHECK_FALSE(content.ui->isVisible(MainMenuDocument));
+  CHECK(content.ui->elementText(SkinPickerDocument, "title") == "Interface");
+  REQUIRE(content.ui->callScript(SkinPickerDocument, "choose",
+                                 std::vector<std::string>{content.rowOf("original")}));
+  title.second();
+  CHECK_FALSE(content.ui->isVisible(SkinPickerDocument));
+  CHECK(content.ui->elementShown(MainMenuDocument, "press-start"));
 }
 
 } // namespace dwe::app

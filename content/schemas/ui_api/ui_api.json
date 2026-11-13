@@ -339,7 +339,7 @@
     "skin_picker": [
       {"name": "ui_skin", "kind": "option", "value": "text", "summary": "El aspecto que se ve; al confirmar una fila, el elegido, que se guarda en los ajustes."},
       {"name": "ui_skin_preview", "kind": "command", "value": "text", "summary": "Pone el aspecto de la fila enfocada sin guardarlo."},
-      {"name": "skin_picker_done", "kind": "command", "value": "none", "summary": "El aspecto está elegido: la portada sigue con la caja de idiomas."}
+      {"name": "skin_picker_done", "kind": "command", "value": "none", "summary": "El aspecto está elegido: la portada sigue con «Press Start» (la caja de idiomas ya salió antes)."}
     ],
     "clock": [
       {"name": "clock.now", "kind": "query", "value": "table", "summary": "La hora: year, day, hour, minute, night, phase (morning, day, late, night) y running (si el tiempo del juego corre).", "signature": "(): table"},

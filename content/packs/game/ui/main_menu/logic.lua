@@ -22,6 +22,10 @@
 --     before the "Press Start" screen each time the title starts there (title.language_first), as a
 --     remaster's: an addition. One confirm picks the language and goes on, with a fade, to the
 --     "Press Start" screen. The options page changes the language too.
+--   - On the player's first run (title.skin_first), the skin picker (ui/skin_picker, an addition)
+--     comes between the language box and the "Press Start" screen, or first without the box: this
+--     menu asks the game for it over black (title_skin_picker) and shows again at "Press Start"
+--     once a skin is confirmed (title.after_skin_picker), without asking the language again.
 --   - "battle": the original's battle mode question (renderConfirmVSSlot), on no. Yes opens the
 --     online versus (the game's versus document, an addition: the original's battle mode is two
 --     players on one console); no comes back to the menu.
@@ -284,6 +288,17 @@ local function enter(document, name)
   end
 end
 
+-- The first run's skin picker, over black: the game hides this menu and shows the picker, then
+-- shows this menu again at "Press Start" (TitleScreen).
+local function ask_skin(document)
+  set_fade(document, 1.0)
+  fade_target = 1.0
+  leaving = false
+  pending_view = nil
+  set_landing(false)
+  ui.send("title_skin_picker")
+end
+
 -- The menu after a fade from black, as runMainMenu starts.
 local function fade_into(document, name)
   set_fade(document, 1.0)
@@ -350,7 +365,7 @@ end
 -- A row of the language box: the language at once, then out to black and into the "Press Start"
 -- screen; a second confirm in the fade does nothing.
 function pick_language(document, row)
-  local code = ui.languages()[row]
+  local code = ui.languages()[tonumber(row)]
   if code ~= nil and not leaving then
     ui.send("language", code)
     close_language(document)
@@ -376,10 +391,16 @@ function on_show(document)
     -- A new start of the title: the menu starts on its first entry.
     remembered.menu = nil
   end
-  if original() and boot then
+  -- The language box before "Press Start", unless the skin picker after it just closed.
+  local language_first = ui.setting("title.language_first") == true
+    and ui.setting("title.after_skin_picker") ~= true
+  if boot and ui.setting("title.skin_first") == true and not (original() and language_first) then
+    -- No language box to ask first: the skin picker at once.
+    ask_skin(document)
+  elseif original() and boot then
     set_fade(document, 1.0)
     fade_target = 0.0
-    if ui.setting("title.language_first") == true then
+    if language_first then
       enter(document, "language")
     else
       set_view(document, "boot", "press-start")
@@ -438,7 +459,12 @@ function on_tick(document, seconds)
   -- Out of the fade's step: a confirm on the first tick of a fade from black finds it already
   -- dark, with nothing left to step.
   if leaving and darkness >= 1.0 then
-    fade_into(document, pending_view or "menu")
+    if pending_view == "boot" and ui.setting("title.skin_first") == true then
+      -- Out of the language box on the first run: the skin picker before "Press Start".
+      ask_skin(document)
+    else
+      fade_into(document, pending_view or "menu")
+    end
   end
   if view == "boot" then
     local text = document:get("press-start-text")

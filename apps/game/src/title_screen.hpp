@@ -52,9 +52,9 @@ public:
   // so (new_game_rules), the others start the original's story with the command line's ruleset.
   void setAsksRules(bool asks) { asksRules_ = asks; }
 
-  // Whether the title starts by asking the UI skin (ui/skin_picker, an addition): on the player's
-  // first run (asksUiSkin), before the language box; a test route only when it says so
-  // (skin_first). Asked once: the confirmed skin is the player's from then on.
+  // Whether the title asks the UI skin (ui/skin_picker, an addition) on the player's first run
+  // (asksUiSkin): after the language box, before the "Press Start" screen; a test route only when
+  // it says so (skin_first). Asked once: the confirmed skin is the player's from then on.
   void setAsksSkin(bool asks) { skinPicker_ = SkinPickerStep{asks}; }
 
   // The game a command chose to start, once.
@@ -65,7 +65,9 @@ public:
   void startFailed(const PlayStart& start, bool saveFailed);
 
 private:
-  void showMenu(bool boot);
+  // afterSkinPicker: the skin picker just closed, so the "Press Start" screen comes without the
+  // language box, which came before the picker.
+  void showMenu(bool boot, bool afterSkinPicker = false);
   // The options page over the title (TitleOptionsCommand).
   void showOptions();
   // fresh: opened from the main menu, so the list starts over at its first page and row instead of

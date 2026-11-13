@@ -165,7 +165,8 @@ struct AutotestRoute {
   bool bootScreen = false;
   // Whether that screen comes after the language box, as the game shows it (language_first).
   bool languageFirst = false;
-  // Whether the skin picker comes before all that, as on the player's first run (skin_first).
+  // Whether the skin picker comes before that screen, after the language box when there is one, as
+  // on the player's first run (skin_first).
   bool skinFirst = false;
   // Whether a new game from the main menu shows its rules screen (ui/new_game_rules) for the route
   // to answer (new_game_rules); otherwise it starts with the command line's ruleset.
@@ -264,7 +265,7 @@ public:
   [[nodiscard]] bool startsAtBootScreen() const { return route_.bootScreen; }
   // Whether the language box comes before that screen (AutotestRoute::languageFirst).
   [[nodiscard]] bool asksLanguageFirst() const { return route_.languageFirst; }
-  // Whether the skin picker comes first (AutotestRoute::skinFirst).
+  // Whether the skin picker comes before that screen (AutotestRoute::skinFirst).
   [[nodiscard]] bool asksSkinFirst() const { return route_.skinFirst; }
   // Whether a new game shows its rules screen (AutotestRoute::newGameRules).
   [[nodiscard]] bool asksNewGameRules() const { return route_.newGameRules; }

@@ -26,9 +26,14 @@ inline constexpr std::string_view UiSkinPreviewCommand = "ui_skin_preview";
 // ui_skin command, sent first, saved it).
 inline constexpr std::string_view SkinPickerDocument = "skin_picker";
 inline constexpr std::string_view SkinPickerDoneCommand = "skin_picker_done";
+// The command the main menu sends for the picker when the title starts at "Press Start" and the
+// skin is still to be asked (title.skin_first): once the language box closes, or at once without
+// one.
+inline constexpr std::string_view SkinPickerAskCommand = "title_skin_picker";
 
-// Whether the title asks the player's skin first (ui/skin_picker, before the language box): when
-// neither --ui-skin nor a saved choice names one and the packs offer more than one.
+// Whether the title asks the player's skin (ui/skin_picker, after the language box, before the
+// "Press Start" screen): when neither --ui-skin nor a saved choice names one and the packs offer
+// more than one.
 [[nodiscard]] bool asksUiSkin(const std::optional<std::string>& commandLine,
                               const std::optional<std::string>& saved, std::size_t offered);
 
@@ -53,12 +58,15 @@ private:
   std::optional<std::filesystem::path> settingsFile_;
 };
 
-// The title's first step on the player's first run (an addition): the skin picker, before the
-// language box, until a skin is confirmed; asked once.
+// A step of the title on the player's first run (an addition): the skin picker, right after the
+// language box (or, without one, before the "Press Start" screen), until a skin is confirmed; asked
+// once.
 class SkinPickerStep {
 public:
   explicit SkinPickerStep(bool asks) : asks_{asks} {}
 
+  // Whether the skin is still to be asked, which the main menu reads as title.skin_first.
+  [[nodiscard]] bool asks() const { return asks_; }
   // Shows the picker while the skin is still to be asked; false when it is not, and the title goes
   // on.
   bool show(ui::Ui& ui) const;
