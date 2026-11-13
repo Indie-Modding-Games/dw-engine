@@ -33,6 +33,7 @@
 
 #include "bag_slots.hpp"
 #include "battle_scene_view.hpp"
+#include "battle_trigger.hpp"
 #include "field_scene.hpp"
 #include "messages.hpp"
 #include "partner_menu.hpp"
@@ -145,6 +146,8 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   const session::BattleMusicFacts music = musicFactsOf(request);
   matchMusic_ = request.matchMusic;
   matchEndSong_.reset();
+  // After the music's facts: trigger 1 changes the battle's rules, not its song.
+  applyFixedFight(request, fixedFight);
   auto battle = desc_.battle->start(*desc_.session, std::move(request));
   if (!battle) {
     return std::unexpected{battle.error()};

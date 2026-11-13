@@ -73,3 +73,33 @@ TEST_CASE("each enemy of NPCs that share a script id fights from where its own N
   CHECK(battle->request.enemies[0].position.x != battle->request.enemies[1].position.x);
   CHECK(battle->request.enemies[1].position.z != battle->request.enemies[2].position.z);
 }
+
+TEST_CASE("a story battle under trigger 1 cannot be fled, whatever started it") {
+  // btl.c: handleBattleStart: FLEE_DISABLED[0] = isTriggerSet(1); battle_tick.c: handleCommands
+  // skips Run then. Fleeing such a fight skipped the rest of its section, which clears trigger 1
+  // and the predefined battle's variable 250, so the next story battle found stale enemies.
+  dwe::scene::World world;
+  Field field{world, dwe::game::field::testing::originalRules()};
+  MapDocument map = dwe::game::field::testing::roomMap("room");
+  const std::vector<std::size_t> slots{addFighter(map, 300, 0)};
+  field.enterMapAt(map, {.position = {0.0F, 0.0F, 0.0F}, .yaw = 0.0F});
+  REQUIRE(field.npcs().spawn(
+      {.slot = slots[0], .species = 1, .autotalk = false, .model = "npc", .radius = 100.0F}));
+  auto battle = dwe::app::mapBattleRequest(field, map, foeTable(), slots);
+  REQUIRE(battle.has_value());
+  CHECK_FALSE(battle->request.scripted);
+
+  dwe::session::BattleRequest free = battle->request;
+  dwe::app::applyFixedFight(free, false);
+  CHECK_FALSE(free.scripted);
+
+  dwe::session::BattleRequest fixed = battle->request;
+  dwe::app::applyFixedFight(fixed, true);
+  CHECK(fixed.scripted);
+
+  // A request that is already a story battle (the console's battle("story:...")) stays one.
+  dwe::session::BattleRequest story = battle->request;
+  story.scripted = true;
+  dwe::app::applyFixedFight(story, false);
+  CHECK(story.scripted);
+}

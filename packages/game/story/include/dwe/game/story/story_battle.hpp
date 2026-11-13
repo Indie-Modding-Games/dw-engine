@@ -111,6 +111,7 @@ private:
   class BattleTask;
 
   core::Result<ScriptedBattle> enemies();
+  void fightTalkedTo(ScriptedBattle& battle) const;
   TaskStep afterBattle(BattleOutcome outcome);
   TaskStep afterFlight();
   [[nodiscard]] bool fixedFight() const;

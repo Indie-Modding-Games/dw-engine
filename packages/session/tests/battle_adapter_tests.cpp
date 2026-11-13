@@ -483,6 +483,25 @@ TEST_CASE(
   CHECK(session->partner().state().evolution.battles == 1);
 }
 
+TEST_CASE("a story battle the session starts as scripted offers no Run and refuses a flee") {
+  // btl.c: handleBattleStart: FLEE_DISABLED[0] (trigger 1); battle_tick.c: handleCommands skips Run
+  // on the strip, so the fight ends only by winning or losing.
+  using dwe::game::battle::Command;
+  const TestPacks packs;
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters);
+  auto free = adapters.battle->start(*session, duelWithFoe());
+  REQUIRE_MESSAGE(free.has_value(), errorOf(free));
+  CHECK(std::ranges::find(free->menu(), Command::Flee) != free->menu().end());
+
+  BattleRequest request = duelWithFoe();
+  request.scripted = true;
+  auto fixed = adapters.battle->start(*session, std::move(request));
+  REQUIRE_MESSAGE(fixed.has_value(), errorOf(fixed));
+  CHECK(std::ranges::find(fixed->menu(), Command::Flee) == fixed->menu().end());
+  CHECK_FALSE(fixed->command(Command::Flee).has_value());
+}
+
 TEST_CASE(
     "an item thrown in battle is consumed at once and lands with the throw; field items stay in the bag") {
   using dwe::game::inventory::UseOutcome;
