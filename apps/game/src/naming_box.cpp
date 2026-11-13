@@ -7,6 +7,7 @@
 #include <format>
 #include <utility>
 
+#include "story_commands.hpp"
 #include "story_text_rows.hpp"
 
 namespace dwe::app {
@@ -76,6 +77,7 @@ void NamingBox::open(NameTarget target, std::string_view name) {
   typed_.clear();
   enter_ = false;
   typing_ = false;
+  asked_.reset();
   open_ = true;
   core::logDebug("[port:story] setupNameSelectorBox (script_menu.c:2702): the {} name, {} letters",
                  target == NameTarget::Tamer ? "tamer's" : "partner's", letters_.size());
@@ -130,9 +132,31 @@ bool NamingBox::knows(std::string_view letter) const {
   return false;
 }
 
+bool NamingBox::handle(const ui::UiCommand& command) {
+  if (!open_) {
+    return false;
+  }
+  const std::optional<NamingAsk> ask = namingAskOf(command);
+  if (!ask) {
+    if (command.name == NamingWriteCommand) {
+      core::logWarning("naming box: {} takes a text", command.name);
+      return true;
+    }
+    return false;
+  }
+  Asked& asked = asked_ ? *asked_ : asked_.emplace();
+  asked.text += ask->text;
+  asked.erases += ask->erase ? 1U : 0U;
+  asked.accept = asked.accept || ask->accept;
+  return true;
+}
+
 bool NamingBox::press(const input::InputState& input) {
   if (!open_) {
     return false;
+  }
+  if (asked_) {
+    return takeAsked();
   }
   // The keyboard's text comes first: its keys are also the movement and confirm actions.
   if (!typed_.empty() || (enter_ && typing_)) {
@@ -159,6 +183,24 @@ bool NamingBox::takeTyping() {
     write(letter);
   }
   return enter && typing_ && accept();
+}
+
+bool NamingBox::takeAsked() {
+  const Asked asked = *std::exchange(asked_, std::nullopt);
+  for (const std::string& letter : lettersOf(asked.text)) {
+    if (!knows(letter)) {
+      play(sounds_.refused);
+      continue;
+    }
+    write(letter);
+  }
+  for (std::size_t erase = 0; erase < asked.erases; ++erase) {
+    deleteLast();
+  }
+  const bool taken = asked.accept && accept();
+  held_.clear();
+  publish();
+  return taken;
 }
 
 bool NamingBox::pressButtons(const input::InputState& input) {

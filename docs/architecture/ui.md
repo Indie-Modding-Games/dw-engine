@@ -80,8 +80,11 @@ el nombre de la pantalla no cambian.
 Un addon de interfaz es una carpeta `ui/addons/<id>/` con su `addon.yaml` (`docs/modding/interfaces.md`). Vienen de
 dos sitios: de cualquier paquete montado y de la carpeta de datos del usuario,
 `<datos de usuario>/indie-modding-games/dwe/ui/addons/`, que `content::UserUiAddonsFileSystem` monta como un paquete
-sintético de capa `user` (`user_ui_addons`) que solo sirve esa carpeta. `ui::findUiAddons` los busca en el VFS y
-descarta los que no se leen o cuyo `id` no es el nombre de su carpeta.
+sintético de capa `user` (`user_ui_addons`) que solo sirve esa carpeta. Un `.zip` de esa carpeta se lee en su sitio
+(`content::ZipArchive`, deflate con lodepng y los límites del lanzador): sus archivos salen como
+`ui/addons/<id>/...`, con el `id` de su `addon.yaml`, y uno inseguro o con el `id` de una carpeta queda fuera
+(`GameContent::leftOutUiAddonArchives`). `ui::findUiAddons` los busca en el VFS y descarta los que no se leen o cuyo
+`id` no es el nombre de su carpeta.
 
 `Ui::useUiAddon` comprueba que es de tipo `ui`, que su rango `ui_api` contiene la versión actual y que solo cubre
 pantallas que el juego tiene; carga sus documentos como `<id>.<pantalla>` y mapea las pantallas. Si algo falla no
@@ -94,8 +97,10 @@ cambiarla. `removeUiPlugins` los quita todos. El juego los enciende o apaga todo
 
 El código del addon corre aislado: `CodeTrust::allowAddon` deja correr los documentos, plantillas y scripts de su
 carpeta, y su entorno Lua tiene un `ui.send` que solo deja pasar los comandos y opciones que declara el contrato
-(`Ui::setAddonCommandFilter`, `app::addonMaySend`); cualquier otro lanza un error de Lua. Una plantilla de un addon
-dentro de un documento del motor se rechaza.
+(`Ui::setAddonCommandFilter`, `app::addonMaySend`); cualquier otro lanza un error de Lua. Sus copias de los espacios
+de la API (`battle`, `bag`...) llaman a las funciones de la API como el addon (`Scripting::callApiAsAddon`): lo que
+estas mandan con el `ui.send` global pasa por el mismo filtro. Una plantilla de un addon dentro de un documento del
+motor se rechaza.
 
 En el juego, `UiAddonChanger` (`apps/game/src/ui_addon_setting.hpp`) publica `ui_addon`, `ui_addons`,
 `ui_addon.name.<id>`, `ui_addon.safe`, `ui_addon.problem`, `ui_plugins` y `ui_plugins.count`; las filas «Interfaz» y

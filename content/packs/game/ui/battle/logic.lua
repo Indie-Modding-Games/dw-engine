@@ -1,7 +1,7 @@
--- The battle screen. The game publishes the battle's view as settings (packages/screens:
--- battle_view.hpp) and bumps battle.revision once per change; this script only draws them and sends
--- the player's choices back with ui.send. No rule of the battle lives here: which commands exist,
--- which are available and what they do is the game's.
+-- The battle screen. It reads the battle through the UI API's battle namespace (ui/api/battle.lua,
+-- docs/modding/ui-api.md) and redraws on its events; the player's choices go back as its actions.
+-- No rule of the battle lives here: which commands exist, which are available and what they do is
+-- the game's.
 
 local max_fighters = 4
 local max_commands = 11
@@ -43,6 +43,10 @@ local bits_label_key = "main.battle_ui_bits_labels.0000"
 
 local phase = "fight"
 local bag_open = false
+-- The fighters and the strip as the last draw read them (battle.fighters(), battle.commands()): the
+-- game bumps the battle's revision on any change of them, and each frame's cursor reads them here.
+local fighters = {}
+local commands = {}
 local intro_step = "done"
 local icon_classes = {}
 local frame_classes = {}
@@ -53,25 +57,14 @@ local piece_size = {}
 local piece_texture = {}
 local piece_trail = {}
 
-local function setting(name, fallback)
-  local value = ui.setting(name)
-  if value == nil then
-    return fallback
-  end
-  return value
-end
-
-local function number(name)
-  return math.floor(setting(name, 0))
-end
-
-local function entry(list, index, field)
-  return list .. "." .. index .. "." .. field
-end
-
 -- The strip's commands, no more than the document has (command-0..10).
 local function command_count()
-  return math.min(number("battle.menu.count"), max_commands)
+  return math.min(#commands, max_commands)
+end
+
+-- A command of the strip by its place from 0, or nil past its end.
+local function command(index)
+  return commands[index + 1]
 end
 
 -- Elements looked up once: a lookup walks the whole document, and the opening moves over a hundred
@@ -127,22 +120,16 @@ end
 
 local function draw_fighter(document, index)
   local panel = lookup(document, "fighter-" .. index)
-  local count = number("battle.fighter.count")
-  panel:set_class("hidden", index >= count)
-  if index >= count then
+  local fighter = fighters[index + 1]
+  panel:set_class("hidden", fighter == nil)
+  if fighter == nil then
     return
   end
   local prefix = "fighter-" .. index
-  local hp, max_hp =
-    number(entry("battle.fighter", index, "hp")), number(entry("battle.fighter", index, "max_hp"))
-  local mp, max_mp =
-    number(entry("battle.fighter", index, "mp")), number(entry("battle.fighter", index, "max_mp"))
-  document
-    :get(prefix .. "-name")
-    :set_text(text(setting(entry("battle.fighter", index, "name"), "")))
-  document
-    :get(prefix .. "-status")
-    :set_text(text(setting(entry("battle.fighter", index, "status"), "")))
+  local hp, max_hp = fighter.hp, fighter.max_hp
+  local mp, max_mp = fighter.mp, fighter.max_mp
+  document:get(prefix .. "-name"):set_text(text(fighter.name_key))
+  document:get(prefix .. "-status"):set_text(text(fighter.status_key))
   lookup(document, prefix .. "-hp-label"):set_text(t(stat_label_keys[0]))
   lookup(document, prefix .. "-hp"):set_text(tostring(hp))
   lookup(document, prefix .. "-hp-fill"):set_property("width", percent(hp, max_hp) .. "%")
@@ -159,15 +146,14 @@ local function draw_fighter(document, index)
   else
     -- An enemy's HP bar only shows for a while after it takes damage, and it has no MP bar
     -- (battle_main.c: BTL_renderEnemyHPBars).
-    document
-      :get(prefix .. "-hp-row")
-      :set_class("hidden", not setting(entry("battle.fighter", index, "hp_bar"), false))
+    document:get(prefix .. "-hp-row"):set_class("hidden", not fighter.hp_bar)
   end
-  panel:set_class("fainted", setting(entry("battle.fighter", index, "fainted"), false))
+  panel:set_class("fainted", fighter.fainted)
 end
 
 local function command_available(index)
-  return setting(entry("battle.menu", index, "available"), false)
+  local found = command(index)
+  return found ~= nil and found.available
 end
 
 -- Swaps an element's class from one set to another: icons, places and frame kinds.
@@ -210,10 +196,11 @@ local function draw_commands(document)
     button:set_class("hidden", index >= count)
     frame:set_class("hidden", index >= count)
     if index < count then
-      button:set_text(text(setting(entry("battle.menu", index, "label"), "")))
-      button:set_class("unavailable", not command_available(index))
-      button:set_class("current", setting(entry("battle.menu", index, "current"), false))
-      local icon = setting(entry("battle.menu", index, "icon"), "")
+      local entry = command(index)
+      button:set_text(text(entry.label_key))
+      button:set_class("unavailable", not entry.available)
+      button:set_class("current", entry.current)
+      local icon = entry.icon
       button:set_class("no-icon", icon == "")
       swap_class(button, icon_classes, id, icon ~= "" and ("icon-" .. icon) or nil)
       local place, up = command_place(index, count)
@@ -232,11 +219,11 @@ end
 local function draw_cursor(document)
   local cursor = lookup(document, "command-cursor")
   local count = command_count()
-  local blink_on = setting("battle.menu.blink", false)
+  local blink_on = battle.strip().blink
   local hovered = nil
   for index = 0, count - 1 do
     local button = lookup(document, "command-" .. index)
-    local focused = button:has_focus() and setting(entry("battle.menu", index, "icon"), "") ~= ""
+    local focused = button:has_focus() and command(index).icon ~= ""
     button:set_class("blink", focused and blink_on)
     if focused then
       hovered = index
@@ -259,10 +246,11 @@ local function draw_command_name(document)
   local name, cost, short = "", 0, false
   for index = 0, command_count() - 1 do
     if lookup(document, "command-" .. index):has_focus() then
-      name = text(setting(entry("battle.menu", index, "label"), ""))
-      cost = number(entry("battle.menu", index, "mp_cost"))
-      short = not command_available(index)
-        or (cost > 0 and number(entry("battle.fighter", 0, "mp")) < cost)
+      local entry = command(index)
+      name = text(entry.label_key)
+      cost = entry.mp_cost
+      local partner = fighters[1]
+      short = not entry.available or (cost > 0 and (partner ~= nil and partner.mp or 0) < cost)
     end
   end
   lookup(document, "command-label"):set_text(name)
@@ -286,7 +274,7 @@ local function focus_command(document)
     end
   end
   for index = 0, count - 1 do
-    if setting(entry("battle.menu", index, "current"), false) then
+    if command(index).current then
       lookup(document, "command-" .. index):focus()
       return
     end
@@ -297,9 +285,10 @@ local function focus_command(document)
 end
 
 local function draw_finisher(document)
-  local progress, goal = number("battle.finisher.progress"), number("battle.finisher.goal")
+  local finisher = battle.finisher()
+  local progress, goal = finisher.progress, finisher.goal
   local filled = goal > 0 and math.floor(progress * finisher_segments / goal) or 0
-  local ready = setting("battle.finisher.ready", false)
+  local ready = finisher.ready
   -- The gauge's word has two marks more than its steps; they show once it is full.
   if ready then
     filled = finisher_marks
@@ -315,17 +304,14 @@ local function draw_finisher(document)
   local stop = utf8.offset(word, shown + 1) or (#word + 1)
   lookup(document, "finisher-word"):set_text(string.sub(word, 1, stop - 1))
   lookup(document, "finisher"):set_class("ready", ready)
-  local charging = setting("battle.finisher.charging", false)
-  lookup(document, "charge"):set_class("hidden", not charging)
-  document
-    :get("charge-fill")
-    :set_property("width", math.min(100, number("battle.finisher.charge")) .. "%")
+  lookup(document, "charge"):set_class("hidden", not finisher.charging)
+  document:get("charge-fill"):set_property("width", math.min(100, finisher.charge) .. "%")
 end
 
-local function draw_revive(document)
-  local seconds = number("battle.revive_seconds")
-  lookup(document, "revive"):set_class("hidden", seconds < 0)
-  if seconds >= 0 then
+local function draw_revive(document, state)
+  local seconds = state.revive_seconds
+  lookup(document, "revive"):set_class("hidden", seconds == nil)
+  if seconds ~= nil then
     lookup(document, "revive"):set_text(t("battle.revive_countdown", { seconds = seconds }))
   end
 end
@@ -333,10 +319,10 @@ end
 -- A tournament match's clock (std_main.c: STD_renderCounterDigits): two digits, the tens hidden
 -- under 10 (convertValueToDigits drops the leading zero), each a sprite class d-<digit> and the
 -- digit as text for the skins that draw text.
-local function draw_match_clock(document)
-  local seconds = number("battle.match_seconds")
-  lookup(document, "match-clock"):set_class("hidden", seconds < 0)
-  if seconds < 0 then
+local function draw_match_clock(document, state)
+  local seconds = state.match_seconds
+  lookup(document, "match-clock"):set_class("hidden", seconds == nil)
+  if seconds == nil then
     return
   end
   local shown = math.min(99, math.floor(seconds))
@@ -359,8 +345,8 @@ end
 -- The player's bag opens with its own button while the battle goes on (battle_tick.c:
 -- tamerTickBattle): the game shows the field's bag (ui/partner_menu, its items page) over the
 -- fight, and the command row waits under it (handleCommands returns while it is open).
-local function draw_bag(document)
-  lookup(document, "open-bag"):set_class("unavailable", not setting("battle.bag.available", false))
+local function draw_bag(document, state)
+  lookup(document, "open-bag"):set_class("unavailable", not state.bag.available)
 end
 
 -- The end boxes (battle_ui.c: handleBattleEndBox). The stats box counts each raise up a point a
@@ -398,17 +384,17 @@ local end_yellow = 7
 
 -- A line's text: its parts (battle_view.hpp: EndLine) joined, the keys looked up with the line's
 -- values and the marks, a part that starts with a brace taken as marks itself.
-local function line_text(index)
+local function line_text(line)
   local arguments = {
-    name = text(setting(entry("battle.end", index, "name"), "")),
-    subject = text(setting(entry("battle.end", index, "subject"), "")),
-    amount = tostring(number(entry("battle.end", index, "amount"))),
+    name = text(line.name_key),
+    subject = text(line.subject_key),
+    amount = tostring(line.amount),
   }
   for mark, value in pairs(end_marks) do
     arguments[mark] = value
   end
   local joined = {}
-  for part in string.gmatch(setting(entry("battle.end", index, "parts"), ""), "[^|]+") do
+  for _, part in ipairs(line.parts) do
     if string.sub(part, 1, 1) == "{" then
       table.insert(joined, (string.gsub(part, "{([^}]*)}", function(mark)
         return arguments[mark] or ""
@@ -480,10 +466,10 @@ local function rows_of_line(line, rows)
 end
 
 -- Every row of the end box's lines.
-local function end_rows()
+local function end_rows(result)
   local rows = {}
-  for index = 0, math.min(number("battle.end.count"), max_end_lines) - 1 do
-    rows_of_line(line_text(index), rows)
+  for index = 1, math.min(#result.lines, max_end_lines) do
+    rows_of_line(line_text(result.lines[index]), rows)
   end
   return rows
 end
@@ -507,26 +493,29 @@ local function type_glyph()
   ending.shown = ending.shown + 1
 end
 
-local function start_end()
+local function start_end(state)
+  local result = battle.result()
   local stats, gains, maxima = {}, {}, {}
   for index = 0, stat_count - 1 do
-    stats[index] = number(entry("battle.end.stat", index, "value"))
-    gains[index] = number(entry("battle.end.gain", index, "value"))
-    maxima[index] = number(entry("battle.end.stat", index, "max"))
+    local stat = result.stats[index + 1]
+    stats[index] = stat.value
+    gains[index] = stat.gain
+    maxima[index] = stat.max
   end
-  local bits = number("battle.end.bits")
+  local bits = result.bits
   ending = {
-    frame_seconds = setting("battle.frame_seconds", 0.05),
+    result = result,
+    frame_seconds = state.frame_seconds,
     seconds = 0,
-    delay = number("battle.end.count_delay_frames"),
-    wait_frames = number("battle.end.wait_frames"),
+    delay = result.count_delay_frames,
+    wait_frames = result.wait_frames,
     stats = stats,
     gains = gains,
     maxima = maxima,
     bits = bits,
-    balance = number("battle.end.money") - bits,
+    balance = result.money - bits,
     balance_open = false,
-    rows = end_rows(),
+    rows = end_rows(result),
     -- The row being typed, the first row on show, the rows begun since it (BATTLE_END_ROWS_SHOWN),
     -- the characters typed of the row, whether a press set the typing on.
     row = 1,
@@ -534,7 +523,7 @@ local function start_end()
     shown = 0,
     typed = 0,
     typing = false,
-    wait = number("battle.end.wait_frames"),
+    wait = result.wait_frames,
     closed = false,
   }
   local raised = false
@@ -573,14 +562,14 @@ local function step_end()
     if stat ~= nil then
       ending.stats[stat] = ending.stats[stat] + 1
       ending.gains[stat] = ending.gains[stat] - 1
-      ui.send("battle_end_count")
+      battle.end_count()
     elseif ending.bits > 0 then
       ending.balance_open = true
       ending.bits = ending.bits - 1
       ending.balance = ending.balance + 1
-      ui.send("battle_end_count")
+      battle.end_count()
       if ending.bits == 0 then
-        ui.send("battle_end_counted")
+        battle.end_counted()
       end
     else
       ending.balance_open = true
@@ -623,7 +612,7 @@ function press_end()
     ending.balance_open = true
     ending.balance = ending.balance + ending.bits
     ending.bits = 0
-    ui.send("battle_end_counted")
+    battle.end_counted()
   end
   if ending.wait > 0 then
     ending.wait = 0
@@ -664,7 +653,7 @@ local function draw_end_rows(document)
 end
 
 local function draw_end(document)
-  lookup(document, "end-title"):set_text(text(setting("battle.end.outcome", "")))
+  lookup(document, "end-title"):set_text(text(ending.result.outcome_key))
   for index = 0, stat_count - 1 do
     local gain = ending.gains[index]
     lookup(document, "gain-" .. index .. "-label"):set_text(t(stat_label_keys[index]))
@@ -674,7 +663,7 @@ local function draw_end(document)
       :set_property("width", percent(ending.stats[index], ending.maxima[index]) .. "%")
     document
       :get("stat-" .. index .. "-bar")
-      :set_class("raised", number(entry("battle.end.gain", index, "value")) > 0)
+      :set_class("raised", ending.result.stats[index + 1].gain > 0)
     lookup(document, "gain-" .. index .. "-arrow"):set_class("hidden", gain <= 0)
     lookup(document, "gain-" .. index):set_text(gain > 0 and tostring(gain) or "")
   end
@@ -718,51 +707,48 @@ end
 local function draw_marks(document, list, prefix, count, scale)
   for index = 0, count - 1 do
     local mark = lookup(document, prefix .. index)
-    local shown = intro_step == "anger" and setting(entry(list, index, "shown"), false)
+    local found = list[index + 1]
+    local shown = intro_step == "anger" and found ~= nil and found.shown
     mark:set_class("hidden", not shown)
     if shown then
-      mark:set_property("left", setting(entry(list, index, "x"), 0) .. "%")
-      mark:set_property("top", setting(entry(list, index, "y"), 0) .. "%")
+      mark:set_property("left", found.x .. "%")
+      mark:set_property("top", found.y .. "%")
       mark:set_property("transform", string.format("scale(%.2f)", scale))
     end
   end
 end
 
-local function draw_anger(document)
-  local scale = number("battle.intro.anger.scale") / 100
-  draw_marks(document, "battle.intro.anger", "anger-", max_anger, scale)
-  draw_marks(document, "battle.intro.flee", "flee-", max_flee, scale)
+local function draw_anger(document, intro)
+  local scale = intro.anger_scale / 100
+  draw_marks(document, intro.anger, "anger-", max_anger, scale)
+  draw_marks(document, intro.flee, "flee-", max_flee, scale)
 end
 
--- The numbers over the fighters (packages/screens: damage_numbers.hpp) come as seven values each:
--- the anchor in percent of the window, the first digit's offset from it in the original's pixels,
--- the value, the colour and the icon. Each digit is 8 pixels square, 7 apart (utils2.c:
--- drawEntityText); the icon, when there is one, is 8 pixels square right before the first digit
--- (entity_text.c: renderEntityText, utils2.c: drawEntityTextIcon).
-local number_values = 7
+-- The numbers over the fighters (packages/screens: damage_numbers.hpp; battle.numbers()): the
+-- anchor in percent of the window, the first digit's offset from it in the original's pixels, the
+-- value, its kind and its icon. Each digit is 8 pixels square, 7 apart (utils2.c: drawEntityText);
+-- the icon, when there is one, is 8 pixels square right before the first digit (entity_text.c:
+-- renderEntityText, utils2.c: drawEntityTextIcon).
 local number_icons = { "hp", "mp", "offense", "defense", "speed" }
 local function draw_damage(document)
-  local values = {}
-  for value in string.gmatch(setting("battle.damage.numbers", ""), "%S+") do
-    values[#values + 1] = tonumber(value)
-  end
-  local count = math.min(max_numbers, math.floor(#values / number_values))
+  local list = battle.numbers()
+  local count = math.min(max_numbers, #list)
   for index = 0, max_numbers - 1 do
     local id = "dn-" .. index
     set_class(document, id, "hidden", index >= count)
     if index < count then
-      local base = index * number_values
-      set_property(document, id, "left", values[base + 1] .. "%")
-      set_property(document, id, "top", values[base + 2] .. "%")
+      local shown = list[index + 1]
+      set_property(document, id, "left", shown.x .. "%")
+      set_property(document, id, "top", shown.y .. "%")
       set_property(
         document,
         id,
         "transform",
-        "translate(" .. (values[base + 3] * 3) .. "dp, " .. (values[base + 4] * 3) .. "dp)"
+        "translate(" .. (shown.dx * 3) .. "dp, " .. (shown.dy * 3) .. "dp)"
       )
-      set_class(document, id, "poison", values[base + 6] == 12)
-      set_class(document, id, "gain", values[base + 6] == 11)
-      local icon = number_icons[math.floor(values[base + 7])]
+      set_class(document, id, "poison", shown.kind == "poison")
+      set_class(document, id, "gain", shown.kind == "gain")
+      local icon = shown.icon
       local icon_id = "di-" .. index
       set_class(document, icon_id, "hidden", icon == nil)
       for _, name in ipairs(number_icons) do
@@ -772,7 +758,7 @@ local function draw_damage(document)
         applied[icon_id .. " text"] = icon
         lookup(document, icon_id):set_text(text("battle.number_icon." .. icon))
       end
-      local digits = tostring(math.floor(values[base + 5]))
+      local digits = tostring(shown.value)
       for place = 0, number_digits - 1 do
         local digit_id = "dd-" .. index .. "-" .. place
         local digit = string.sub(digits, place + 1, place + 1)
@@ -789,8 +775,8 @@ local function draw_damage(document)
   end
 end
 
--- The enemies' HP bars beside them (packages/screens: enemy_hp_bars.hpp) come as nine values each:
--- the enemy (1 to 3), the anchor in percent of the window, the bar's top-left corner from it in the
+-- The enemies' HP bars beside them (packages/screens: enemy_hp_bars.hpp; battle.hp_bars()): the
+-- enemy (1 to 3), the anchor in percent of the window, the bar's top-left corner from it in the
 -- original's pixels, the fill's width in pixels, its red and green tint (128 as it is, 255 twice as
 -- bright) and the HP (battle_main.c: BTL_renderEnemyHPBars).
 local max_enemies = 3
@@ -888,39 +874,30 @@ local function draw_hp_value(document, enemy, hp)
 end
 
 local function draw_hp_bars(document)
+  local shown = battle.hp_bars()
   -- Enemy life bars (a dwe improvement): the modern look draws them too while the option is on.
-  set_class(document, "hp-bars", "always", ui.setting("battle.hp_bars.always") == true)
-  local values = {}
-  for value in string.gmatch(setting("battle.hp_bars", ""), "%S+") do
-    values[#values + 1] = tonumber(value)
-  end
+  set_class(document, "hp-bars", "always", shown.always)
   local bars = {}
-  for base = 0, #values - 9, 9 do
-    bars[math.floor(values[base + 1])] = base
+  for _, bar in ipairs(shown.bars) do
+    bars[bar.enemy] = bar
   end
   for enemy = 1, max_enemies do
-    local base = bars[enemy]
+    local bar = bars[enemy]
     local id = "hb-" .. enemy
-    set_class(document, id, "hidden", base == nil)
-    if base ~= nil then
-      local x, y = values[base + 4], values[base + 5]
-      set_property(document, id, "left", values[base + 2] .. "%")
-      set_property(document, id, "top", values[base + 3] .. "%")
+    set_class(document, id, "hidden", bar == nil)
+    if bar ~= nil then
+      local x, y = bar.left, bar.top
+      set_property(document, id, "left", bar.x .. "%")
+      set_property(document, id, "top", bar.y .. "%")
       set_property(document, id .. "-frame", "left", pixels(x))
       set_property(document, id .. "-frame", "top", pixels(y))
       set_property(document, id .. "-fill", "left", pixels(x + 2))
       set_property(document, id .. "-fill", "top", pixels(y + 2))
-      set_property(document, id .. "-fill", "width", pixels(values[base + 6]))
-      draw_fill(
-        document,
-        enemy,
-        math.max(0, math.min(fill_pixels, values[base + 6])),
-        values[base + 7],
-        values[base + 8]
-      )
+      set_property(document, id .. "-fill", "width", pixels(bar.fill))
+      draw_fill(document, enemy, math.max(0, math.min(fill_pixels, bar.fill)), bar.red, bar.green)
       set_property(document, id .. "-value", "left", pixels(x + 33))
       set_property(document, id .. "-value", "top", pixels(y - 9))
-      draw_hp_value(document, enemy, values[base + 9])
+      draw_hp_value(document, enemy, bar.hp)
       -- The line from the outline's bottom-left corner to the node, both ends drawn.
       local dx, dy = -x, -(y + 6)
       set_property(document, id .. "-line", "left", pixels(x))
@@ -937,30 +914,36 @@ local function draw_hp_bars(document)
 end
 
 -- The countdown over the fallen partner (packages/screens: death_countdown.hpp; command_menu.c:
--- BTL_tickDeathCountdown, BTL_renderDeathCountdown): seven values, the anchor in percent of the
--- window, the digit, the digit's and the badge's scale, their turn in degrees and the badge's
--- palette. The digit is drawn over the badge, both centred on the anchor.
+-- BTL_tickDeathCountdown, BTL_renderDeathCountdown; battle.death_countdown()): the anchor in
+-- percent of the window, the digit, the digit's and the badge's scale, their turn in degrees and
+-- the badge's palette. The digit is drawn over the badge, both centred on the anchor.
 local function draw_death_countdown(document)
-  local values = {}
-  for value in string.gmatch(setting("battle.death_countdown", ""), "%S+") do
-    values[#values + 1] = tonumber(value)
-  end
-  local shown = #values == 7
-  set_class(document, "death-countdown", "hidden", not shown)
-  if not shown then
+  local countdown = battle.death_countdown()
+  set_class(document, "death-countdown", "hidden", countdown == nil)
+  if countdown == nil then
     return
   end
-  set_property(document, "death-countdown", "left", values[1] .. "%")
-  set_property(document, "death-countdown", "top", values[2] .. "%")
+  set_property(document, "death-countdown", "left", countdown.x .. "%")
+  set_property(document, "death-countdown", "top", countdown.y .. "%")
   for digit = 1, 5 do
-    set_class(document, "dc-digit", "digit-" .. digit, values[3] == digit)
+    set_class(document, "dc-digit", "digit-" .. digit, countdown.digit == digit)
   end
   for palette = 0, 2 do
-    set_class(document, "dc-badge", "palette-" .. palette, values[7] == palette)
+    set_class(document, "dc-badge", "palette-" .. palette, countdown.palette == palette)
   end
-  local turn = string.format("rotate(%.1fdeg) ", values[6])
-  set_property(document, "dc-digit", "transform", turn .. string.format("scale(%.3f)", values[4]))
-  set_property(document, "dc-badge", "transform", turn .. string.format("scale(%.3f)", values[5]))
+  local turn = string.format("rotate(%.1fdeg) ", countdown.turn)
+  set_property(
+    document,
+    "dc-digit",
+    "transform",
+    turn .. string.format("scale(%.3f)", countdown.digit_scale)
+  )
+  set_property(
+    document,
+    "dc-badge",
+    "transform",
+    turn .. string.format("scale(%.3f)", countdown.badge_scale)
+  )
 end
 
 -- The player's shout (command_shout.c: BTL_drawCommandShout, BTL_renderCommandShout): the game
@@ -970,19 +953,19 @@ end
 local shout_glyph = 12
 local shout_edge = 140
 local function draw_shout(document)
-  local shown = setting("battle.shout.shown", false)
-  set_class(document, "shout", "hidden", not shown)
-  if not shown then
+  local shout = battle.shout()
+  set_class(document, "shout", "hidden", shout == nil)
+  if shout == nil then
     return
   end
-  local line = text(setting("battle.shout.text", ""))
+  local line = text(shout.text_key)
   if applied["shout text"] ~= line then
     applied["shout text"] = line
     lookup(document, "shout-text"):set_text(line)
     lookup(document, "shout-shadow"):set_text(line)
   end
   local half = math.floor(((utf8.len(line) or #line) * shout_glyph) / 2)
-  local node_x, node_y = number("battle.shout.node_x"), number("battle.shout.node_y")
+  local node_x, node_y = shout.node_x, shout.node_y
   local x = node_x
   if x - half < -shout_edge then
     x = half - shout_edge
@@ -990,9 +973,9 @@ local function draw_shout(document)
   if x + half > shout_edge then
     x = shout_edge - half
   end
-  local y = number("battle.shout.y") + number("battle.shout.hop")
-  set_property(document, "shout", "left", setting("battle.shout.anchor_x", 50) .. "%")
-  set_property(document, "shout", "top", setting("battle.shout.anchor_y", 50) .. "%")
+  local y = shout.line + shout.hop
+  set_property(document, "shout", "left", shout.x .. "%")
+  set_property(document, "shout", "top", shout.y .. "%")
   set_property(
     document,
     "shout",
@@ -1001,15 +984,13 @@ local function draw_shout(document)
       "translate(%ddp, %ddp) scale(%.2f)",
       (x - node_x) * 3,
       (y - node_y) * 3,
-      setting("battle.shout.scale", 1)
+      shout.scale
     )
   )
 end
 
--- The banner's pieces come as seven numbers each, in the original's pixels (3dp each): x, y,
--- width, height, texture, trail and 1 for a trail on the left, each piece's group ending with a
--- space.
-local piece_pattern = "((%S+) (%S+) (%S+) (%S+) (%S+) (%S+) (%S+) )"
+-- The banner's pieces (battle.intro().pieces) are in the original's pixels, 3dp each: x, y, width,
+-- height, texture, trail and 1 for a trail on the left.
 
 local function hide_piece(document, index)
   if shown_pieces[index] == false then
@@ -1064,27 +1045,25 @@ end
 
 -- Only the pieces whose numbers changed since the last draw are touched: once gathered, the banner
 -- stands still until it bursts.
-local function draw_banner(document)
+local function draw_banner(document, intro)
   local index = 0
-  for group, x, y, width, height, texture, trail, left in
-    string.gmatch(setting("battle.intro.pieces", ""), piece_pattern)
-  do
+  for _, piece in ipairs(intro.pieces) do
     if index >= banner_pieces then
       break
     end
-    if shown_pieces[index] ~= group then
+    if shown_pieces[index] ~= piece.key then
       draw_piece(
         document,
         index,
-        tonumber(x),
-        tonumber(y),
-        tonumber(width),
-        tonumber(height),
-        tonumber(texture),
-        tonumber(trail),
-        tonumber(left)
+        piece.x,
+        piece.y,
+        piece.width,
+        piece.height,
+        piece.texture,
+        piece.trail,
+        piece.left
       )
-      shown_pieces[index] = group
+      shown_pieces[index] = piece.key
     end
     index = index + 1
   end
@@ -1093,7 +1072,7 @@ local function draw_banner(document)
   end
   local banner = lookup(document, "banner")
   for flash = 0, 2 do
-    banner:set_class("flash-" .. flash, number("battle.intro.flash") == flash)
+    banner:set_class("flash-" .. flash, intro.flash == flash)
   end
 end
 
@@ -1116,8 +1095,9 @@ local function draw_motion(document)
   end
   -- Before the banner and once it has gone back up the strip waits above the screen, at its first
   -- step.
-  local top = number("battle.menu.top")
-  local bottom = number("battle.menu.bottom")
+  local strip = battle.strip()
+  local top = strip.top
+  local bottom = strip.bottom
   -- A cup match's strip (STD_renderCommandMenu) stands still at the foot, its name above it.
   local match = top == match_strip_top and bottom == match_strip_bottom
   set_class(document, "commands", "match", match)
@@ -1141,7 +1121,7 @@ local function draw_motion(document)
   for index = 0, max_commands - 1 do
     set_property(document, "command-frame-" .. index, "transform", frame_transform)
     -- The finisher has no icon on the strip: its entry is the gauge's "PUSH" box, which stays.
-    local has_icon = setting(entry("battle.menu", index, "icon"), "") ~= ""
+    local has_icon = command(index) ~= nil and command(index).icon ~= ""
     set_property(document, "command-" .. index, "transform", has_icon and icon_transform or "none")
   end
 end
@@ -1158,8 +1138,9 @@ local function draw_bars(document)
     end
     return
   end
-  local hp = math.floor(setting("battle.bars.hp_x", bars_x))
-  local mp = math.floor(setting("battle.bars.mp_x", bars_x))
+  local strip = battle.strip()
+  local hp = math.floor(strip.hp_x or bars_x)
+  local mp = math.floor(strip.mp_x or bars_x)
   local settled = hp == bars_x and mp == bars_x
   if settled and not bars_moved then
     return
@@ -1176,22 +1157,24 @@ local function draw_bars(document)
 end
 
 local function draw_intro(document)
-  intro_step = phase == "intro" and setting("battle.intro.step", "done") or "done"
+  local intro = phase == "intro" and battle.intro() or nil
+  intro_step = intro ~= nil and intro.step or "done"
   lookup(document, "intro"):set_class("hidden", phase ~= "intro")
   -- The HUD is already there under the banner, without the cursor or the hovered command's name.
   lookup(document, "fight"):set_class("opening", phase == "intro")
-  if phase ~= "intro" then
+  if intro == nil then
     return
   end
-  draw_anger(document)
-  draw_banner(document)
+  draw_anger(document, intro)
+  draw_banner(document, intro)
   -- Veiled, not hidden: the commands keep their boxes, so the focus and the keyboard and gamepad
   -- navigation work on them from the first frame of the fight.
   lookup(document, "fight"):set_class("veiled", intro_step == "anger")
 end
 
 local function draw(document)
-  phase = setting("battle.phase", "fight")
+  local state = battle.state()
+  phase = state.phase
   -- In the original look the strip and the partner's bars stay through the victory and the end box,
   -- the strip without its cursor or name, and then go (battle_main.c:777); the rest of the fight's
   -- screen goes.
@@ -1211,17 +1194,19 @@ local function draw(document)
   end
   if phase == "end" then
     if ending == nil then
-      start_end()
+      start_end(state)
     end
     draw_end(document)
     return
   end
   ending = nil
+  fighters = battle.fighters()
+  commands = battle.commands()
   for index = 0, max_fighters - 1 do
     draw_fighter(document, index)
   end
-  bag_open = setting("battle.bag.open", false)
-  draw_bag(document)
+  bag_open = state.bag.open
+  draw_bag(document, state)
   draw_commands(document)
   -- Under the open bag the row keeps its cursor and the hovered command's name: the bag's
   -- document holds the focus meanwhile.
@@ -1231,50 +1216,44 @@ local function draw(document)
     draw_cursor(document)
   end
   draw_finisher(document)
-  draw_revive(document)
-  draw_match_clock(document)
+  draw_revive(document, state)
+  draw_match_clock(document, state)
 end
 
 function choose(index)
   if command_available(index) then
-    ui.send("battle_command", number(entry("battle.menu", index, "command")))
+    battle.command(command(index).command)
   end
 end
 
 function open_bag()
-  if setting("battle.bag.available", false) then
-    ui.send("battle_bag_open")
-  end
+  battle.open_bag()
 end
 
 function charge()
-  ui.send("battle_charge")
+  battle.charge()
 end
 
 function close_end()
-  ui.send("battle_close")
+  battle.close()
 end
 
 -- The marks over the fighters of a cup match between two of the same species (packages/screens:
--- enemy_hp_bars.hpp, std_main.c: STD_renderPlayerMarker) come as three values each: the fighter (0
--- the partner, 1 the rival) and the anchor in percent of the window; the mark's corner is 32 pixels
+-- enemy_hp_bars.hpp, std_main.c: STD_renderPlayerMarker; battle.markers()): the fighter (0 the
+-- partner, 1 the rival) and the anchor in percent of the window; the mark's corner is 32 pixels
 -- over it. The modern look writes «1P» and «COM» in it; the original look draws the bubbles.
 local function draw_player_marks(document)
-  local values = {}
-  for value in string.gmatch(setting("battle.markers", ""), "%S+") do
-    values[#values + 1] = tonumber(value)
-  end
   local marks = {}
-  for base = 0, #values - 3, 3 do
-    marks[math.floor(values[base + 1])] = base
+  for _, mark in ipairs(battle.markers()) do
+    marks[mark.fighter] = mark
   end
   for fighter = 0, 1 do
-    local base = marks[fighter]
+    local mark = marks[fighter]
     local id = "pm-" .. fighter
-    set_class(document, id, "hidden", base == nil)
-    if base ~= nil then
-      set_property(document, id, "left", values[base + 2] .. "%")
-      set_property(document, id, "top", values[base + 3] .. "%")
+    set_class(document, id, "hidden", mark == nil)
+    if mark ~= nil then
+      set_property(document, id, "left", mark.x .. "%")
+      set_property(document, id, "top", mark.y .. "%")
       local label = text(fighter == 0 and "battle.mark.partner" or "battle.mark.rival")
       if applied[id .. " text"] ~= label then
         applied[id .. " text"] = label
@@ -1287,7 +1266,7 @@ end
 -- Quick battles (apps/game battle_speed.hpp, a dwe improvement): a small x2 plate while the fight
 -- runs at twice the speed.
 local function draw_speed(document)
-  set_class(document, "speed-plate", "hidden", ui.setting("battle.fast") ~= true)
+  set_class(document, "speed-plate", "hidden", not battle.state().fast)
 end
 
 function on_show(document)
@@ -1303,29 +1282,35 @@ function on_show(document)
   draw_prompts(document)
 end
 
-function on_setting(document, name)
-  if name == "battle.revision" or name == "battle.phase" or name == "bag.revision" then
-    draw(document)
-  elseif name == "battle.menu.motion" then
-    draw_motion(document)
-    draw_bars(document)
-    if phase == "fight" and not bag_open then
-      draw_cursor(document)
+-- The battle's events (hooks.on): each redraws only what it changed, while the screen shows
+-- (on_show draws everything again).
+local function on(event, handler)
+  hooks.on(event, function(_, document)
+    if ui.is_visible(document_name) then
+      handler(document)
     end
-  elseif name == "battle.intro.revision" then
-    draw_intro(document)
-  elseif name == "battle.damage.revision" then
-    draw_damage(document)
-  elseif name == "battle.hp_bars.revision" or name == "battle.hp_bars.always" then
-    draw_hp_bars(document)
-    draw_player_marks(document)
-    draw_death_countdown(document)
-  elseif name == "battle.shout.revision" then
-    draw_shout(document)
-  elseif name == "battle.fast" then
-    draw_speed(document)
-  end
+  end)
 end
+
+on("battle.changed", draw)
+on("battle.phase", draw)
+on("bag.changed", draw)
+on("battle.strip_moved", function(document)
+  draw_motion(document)
+  draw_bars(document)
+  if phase == "fight" and not bag_open then
+    draw_cursor(document)
+  end
+end)
+on("battle.intro", draw_intro)
+on("battle.numbers", draw_damage)
+on("battle.overlays", function(document)
+  draw_hp_bars(document)
+  draw_player_marks(document)
+  draw_death_countdown(document)
+end)
+on("battle.shout", draw_shout)
+on("battle.speed", draw_speed)
 
 function on_tick(document, seconds)
   if phase == "end" and ending ~= nil then
@@ -1363,7 +1348,7 @@ function on_action(_document, action)
     end
     return true
   end
-  if action == "confirm" and setting("battle.finisher.charging", false) then
+  if action == "confirm" and battle.finisher().charging then
     charge()
     return true
   end

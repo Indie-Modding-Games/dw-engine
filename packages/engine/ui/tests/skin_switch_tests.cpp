@@ -1746,4 +1746,158 @@ TEST_CASE("the slot list starts over when the main menu opens it, and keeps its 
   CHECK(choose() == 0.0);
 }
 
+namespace {
+
+// A probe that calls the UI API's story and naming actions as an addon would.
+constexpr std::string_view StoryProbeDocument = "<rml><head><script src='logic.lua'/></head>"
+                                                "<body><p id='label'>probe</p></body></rml>";
+constexpr std::string_view StoryProbeLogic =
+    "function advance() story.advance() end\n"
+    "function choose(option) story.choose(tonumber(option)) end\n"
+    "function cancel() story.cancel() end\n"
+    "function write(letters) naming.write(letters) end\n"
+    "function erase() naming.erase() end\n"
+    "function accept() naming.accept() end\n";
+
+// The commands the UI sent since the last call, as "name=value".
+std::vector<std::string> sent(Ui& ui) {
+  std::vector<std::string> names;
+  for (const UiCommand& command : ui.takeCommands()) {
+    std::string value;
+    if (const bool* flag = std::get_if<bool>(&command.value)) {
+      value = *flag ? "true" : "false";
+    } else if (const double* number = std::get_if<double>(&command.value)) {
+      value = std::format("{}", *number);
+    } else if (const std::string* text = std::get_if<std::string>(&command.value)) {
+      value = *text;
+    }
+    names.push_back(std::format("{}={}", command.name, value));
+  }
+  return names;
+}
+
+// A page of the story's textbox, with its speaker, as the game publishes it.
+void publishStoryPage(Ui& ui, std::string_view input, double options) {
+  ui.setSetting("story_textbox.open", true);
+  ui.setSetting("story_textbox.kind", std::string{"speech"});
+  ui.setSetting("story_textbox.opening", 1.0);
+  ui.setSetting("story_textbox.row_count", 3.0);
+  ui.setSetting("story_textbox.row.0.runs", 1.0);
+  ui.setSetting("story_textbox.row.0.run.0.text", std::string{"Host"});
+  ui.setSetting("story_textbox.row.0.run.0.color", 2.0);
+  ui.setSetting("story_textbox.row.1.runs", 1.0);
+  ui.setSetting("story_textbox.row.1.run.0.text", std::string{"Yes"});
+  ui.setSetting("story_textbox.row.1.run.0.color", 1.0);
+  ui.setSetting("story_textbox.row.2.runs", 1.0);
+  ui.setSetting("story_textbox.row.2.run.0.text", std::string{"No"});
+  ui.setSetting("story_textbox.row.2.run.0.color", 1.0);
+  ui.setSetting("story_textbox.speaker", std::string{"Host"});
+  ui.setSetting("story_textbox.speaker_kind", std::string{"character"});
+  ui.setSetting("story_textbox.prompt", input == "page");
+  ui.setSetting("story_textbox.options", options);
+  ui.setSetting("story_textbox.first_option", 1.0);
+  ui.setSetting("story_textbox.cursor_row", options > 0 ? 1.0 : -1.0);
+  ui.setSetting("story_textbox.cursor_columns", options > 0 ? 3.0 : -1.0);
+  ui.setSetting("story_textbox.input", std::string{input});
+  ui.setSetting("story_textbox.revision",
+                ui.setting("story_textbox.revision") == UiValue{1.0} ? UiValue{2.0} : UiValue{1.0});
+}
+
+} // namespace
+
+TEST_CASE("under every skin the story's boxes advance, answer and take a name through the UI API") {
+  Content content;
+  addOriginalArt(content);
+  content.add("ui/story_probe/document.rml", StoryProbeDocument);
+  content.add("ui/story_probe/logic.lua", StoryProbeLogic);
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "es");
+  auto ui = createUi(files, texts);
+  input::InputState input{input::defaultActionMap()};
+  for (const std::string_view screen : {"story_textbox", "dialog", "naming_box"}) {
+    REQUIRE(ui->loadDocument(screen, idOf(std::format("ui/{}/document", screen))));
+  }
+  REQUIRE(ui->loadDocument("story_probe", idOf("ui/story_probe/document")));
+  const auto call = [&](std::string_view function, std::vector<std::string> arguments = {}) {
+    REQUIRE(ui->callScript("story_probe", function, arguments));
+  };
+  for (const std::string_view skin : {"original", "modern", "new", "devvago"}) {
+    CAPTURE(skin);
+    REQUIRE(ui->setSkin(skin));
+    static_cast<void>(ui->takeCommands());
+
+    // A page that waits for confirm: advance and cancel go, a choice does not.
+    publishStoryPage(*ui, "page", 0.0);
+    ui->show("story_textbox");
+    ui->update();
+    CHECK(ui->isVisible("story_textbox"));
+    CHECK(ui->elementText("story_textbox", "row-0-run-0") == "Host");
+    CHECK_FALSE(ui->elementHasClass("story_textbox", "prompt", "hidden"));
+    call("advance");
+    call("choose", {"0"});
+    call("cancel");
+    CHECK(sent(*ui) == std::vector<std::string>{"story_advance=", "story_cancel="});
+    // A selection of two options: choose takes one of them, not a third.
+    publishStoryPage(*ui, "choice", 2.0);
+    ui->update();
+    CHECK(ui->elementHasClass("story_textbox", "row-1", "selected"));
+    call("choose", {"1"});
+    call("choose", {"2"});
+    call("advance");
+    CHECK(sent(*ui) == std::vector<std::string>{"story_choose=1", "story_advance="});
+    // A page that goes on by itself, or no box: nothing goes.
+    publishStoryPage(*ui, "", 0.0);
+    call("advance");
+    call("cancel");
+    CHECK(sent(*ui).empty());
+    ui->hide("story_textbox");
+
+    // The save dialog: cancel and the buttons answer through dialog.answer and dialog.cancel.
+    ui->setSetting("dialog.text", std::string{"save.overwrite_confirm"});
+    ui->setSetting("dialog.question", true);
+    ui->setSetting("dialog.revision",
+                   ui->setting("dialog.revision") == UiValue{1.0} ? UiValue{2.0} : UiValue{1.0});
+    ui->show("dialog", true);
+    ui->update();
+    CHECK(ui->focusedElementId("dialog") == "no");
+    press(*ui, input, input::keys::Backspace);
+    CHECK(sent(*ui) == std::vector<std::string>{"dialog_answer=false"});
+    REQUIRE(ui->callScript("dialog", "answer", std::vector<std::string>{"yes"}));
+    CHECK(sent(*ui) == std::vector<std::string>{"dialog_answer=true"});
+    // The mouse answers too, at the title screen and in the game.
+    for (const bool atTitle : {false, true}) {
+      CAPTURE(atTitle);
+      ui->setSetting("dialog.at_title", atTitle);
+      ui->update();
+      CHECK(clickElement(*ui, "dialog", "yes"));
+      CHECK(sent(*ui) == std::vector<std::string>{"dialog_answer=true"});
+      CHECK(clickElement(*ui, "dialog", "no"));
+      CHECK(sent(*ui) == std::vector<std::string>{"dialog_answer=false"});
+    }
+    ui->hide("dialog");
+    REQUIRE(ui->callScript("dialog", "answer", std::vector<std::string>{"yes"}));
+    CHECK(sent(*ui).empty());
+
+    // The naming box: letters, an erase and OK, only while it is open.
+    ui->setSetting("naming_box.length", 6.0);
+    ui->setSetting("naming_box.rows", 2.0);
+    ui->setSetting("naming_box.columns", 2.0);
+    ui->setSetting("naming_box.cell.0.0", std::string{"A"});
+    ui->setSetting("naming_box.revision", ui->setting("naming_box.revision") == UiValue{1.0}
+                                              ? UiValue{2.0}
+                                              : UiValue{1.0});
+    ui->show("naming_box");
+    ui->update();
+    CHECK(ui->elementText("naming_box", "cell-0-0") == "A");
+    call("write", {"AB"});
+    call("erase");
+    call("accept");
+    CHECK(sent(*ui) ==
+          std::vector<std::string>{"naming_write=AB", "naming_erase=", "naming_accept="});
+    ui->hide("naming_box");
+    call("accept");
+    CHECK(sent(*ui).empty());
+  }
+}
+
 } // namespace dwe::ui

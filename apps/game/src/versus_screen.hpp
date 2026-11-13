@@ -73,6 +73,9 @@ public:
   // The smooth_motion setting (game::field::Field::setSmoothMotion) for the arena's drawing, now
   // and for an arena built later.
   void setSmoothMotion(bool on);
+  // Drops the battles and the arena's models now, for a teardown that ends the renderer before
+  // this screen (an autotest's); the screen shows nothing more.
+  void shutDown();
 
 private:
   void close();

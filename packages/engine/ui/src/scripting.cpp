@@ -821,6 +821,10 @@ void Scripting::registerApi() {
   sol::table api = state.create_named_table(std::string{UiTable});
   api["send"] = [this](std::string_view name, sol::stack_object value, sol::this_state lua) {
     checkName(lua, name);
+    // An API function an addon called (callApiAsAddon) sends as the addon.
+    if (addonApiCalls_ > 0 && (!host_.addonCommand || !host_.addonCommand(name))) {
+      raiseRefusedCommand(lua, name);
+    }
     if (value.get_type() == sol::type::string) {
       checkText(lua, value.as<std::string_view>());
     }
@@ -943,6 +947,46 @@ void Scripting::sandbox(sol::environment& environment) {
       raise(lua, "too many commands: the game takes them once per frame");
     }
   };
+  // The environment's namespaces are its own copies (buildEnvironment): their functions become
+  // calls as the addon.
+  lua_State* state = scope.lua().lua_state();
+  for (const std::string& space : apiNamespaces_) {
+    sol::optional<sol::table> copy = environment[space];
+    if (!copy) {
+      continue;
+    }
+    copy->push();
+    const int table = lua_gettop(state);
+    std::vector<std::string> functions;
+    lua_pushnil(state);
+    while (lua_next(state, table) != 0) {
+      if (lua_type(state, -2) == LUA_TSTRING && lua_type(state, -1) == LUA_TFUNCTION) {
+        functions.emplace_back(lua_tostring(state, -2));
+      }
+      lua_pop(state, 1);
+    }
+    for (const std::string& function : functions) {
+      lua_getfield(state, table, function.c_str());
+      lua_pushlightuserdata(state, this);
+      lua_pushcclosure(state, &Scripting::callApiAsAddon, 2);
+      lua_setfield(state, table, function.c_str());
+    }
+    lua_pop(state, 1);
+  }
+}
+
+int Scripting::callApiAsAddon(lua_State* state) {
+  auto* self = static_cast<Scripting*>(lua_touserdata(state, lua_upvalueindex(2)));
+  const int arguments = lua_gettop(state);
+  lua_pushvalue(state, lua_upvalueindex(1));
+  lua_insert(state, 1);
+  ++self->addonApiCalls_;
+  const int status = lua_pcall(state, arguments, LUA_MULTRET, 0);
+  --self->addonApiCalls_;
+  if (status != LUA_OK) {
+    return lua_error(state);
+  }
+  return lua_gettop(state);
 }
 
 void Scripting::loadApi(const assets::VirtualFileSystem& files) {
@@ -956,12 +1000,17 @@ void Scripting::loadApi(const assets::VirtualFileSystem& files) {
   {
     const script::ScriptCall scope{*vm_};
     scope.lua()["event_source"] = [this](std::string_view setting, std::string_view event,
-                                         sol::this_state lua) {
+                                         sol::stack_object when, sol::this_state lua) {
       checkName(lua, setting);
       checkName(lua, event);
-      eventSources_.push_back({.setting = std::string{setting}, .event = std::string{event}});
+      UiEventSource source{.setting = std::string{setting}, .event = std::string{event}};
+      if (when.valid() && when.get_type() != sol::type::lua_nil) {
+        source.when = toUiValue(when);
+      }
+      eventSources_.push_back(std::move(source));
     };
   }
+  const std::vector<std::string> before = globalTables();
   for (const assets::AssetId& id : scripts) {
     if (auto trusted = script::checkEngineScript(files, id); !trusted) {
       core::logError("ui api {}: {}", id.str(), trusted.error().message);
@@ -971,8 +1020,29 @@ void Scripting::loadApi(const assets::VirtualFileSystem& files) {
       core::logError("ui api {}: {}", id.str(), ran.error().message);
     }
   }
+  for (std::string& name : globalTables()) {
+    if (!std::ranges::contains(before, name) && !std::ranges::contains(apiNamespaces_, name)) {
+      apiNamespaces_.push_back(std::move(name));
+    }
+  }
   const script::ScriptCall scope{*vm_};
   scope.lua()["event_source"] = sol::lua_nil;
+}
+
+std::vector<std::string> Scripting::globalTables() {
+  const script::ScriptCall scope{*vm_};
+  lua_State* state = scope.lua().lua_state();
+  std::vector<std::string> names;
+  lua_pushglobaltable(state);
+  lua_pushnil(state);
+  while (lua_next(state, -2) != 0) {
+    if (lua_type(state, -2) == LUA_TSTRING && lua_type(state, -1) == LUA_TTABLE) {
+      names.emplace_back(lua_tostring(state, -2));
+    }
+    lua_pop(state, 1);
+  }
+  lua_pop(state, 1);
+  return names;
 }
 
 void Scripting::bindLayout(sol::environment& environment, const std::string& screen) {

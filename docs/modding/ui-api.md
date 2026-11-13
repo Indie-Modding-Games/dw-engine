@@ -37,7 +37,8 @@ En un nombre, `<n>` es un número desde 0 y `<id>` un identificador (minúsculas
 ## Espacios de la API: consultas, acciones y eventos
 
 Además de los ajustes sueltos, la interfaz tiene espacios con nombre (`clock`, `field`, `partner`, `bag`, `player`,
-`options`) que cualquier documento usa igual, sea de la interfaz de serie o de otra:
+`options`, `battle`, `versus`, `story`, `dialog`, `naming`) que cualquier documento usa igual, sea de la interfaz de
+serie o de otra:
 
 - Una **consulta** lee el juego y devuelve una tabla nueva: `partner.status()`, `bag.slot(3)`, `clock.now()`.
   Cambiar esa tabla no cambia nada del juego.
@@ -45,7 +46,8 @@ Además de los ajustes sueltos, la interfaz tiene espacios con nombre (`clock`, 
   devuelve `true`, o `false` y por qué; el juego vuelve a comprobarlo y responde con un evento.
 - Un **evento** llega a las funciones que el documento registra con `hooks.on("bag.changed", función)`. La función
   recibe una tabla con `version` (la de la tabla del evento), `name` (el ajuste que cambió) y `value`, y el documento.
-  `hooks.off` la quita; un documento registra como mucho 64.
+  `hooks.off` la quita; un documento registra como mucho 64. Los eventos llegan también a los documentos ocultos: una
+  pantalla que solo dibuja mientras se ve lo comprueba con `ui.is_visible(document_name)`.
 
 Los espacios viven en `ui/api/<espacio>.lua` del paquete del juego y se cargan una vez, antes que cualquier documento.
 Lo que ocultan las «Mejoras» apagadas también lo ocultan aquí: `partner.extras()` da `nil` si el jugador tiene
@@ -65,6 +67,8 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.15.0 | Llegan los espacios `story` (el cuadro de texto de la historia: `story.textbox()`, `story.choice()`, `story.input()`; las acciones `story.advance`, `story.choose` y `story.cancel`; los eventos `story.changed`, `story.text` y `story.input`), `dialog` (el diálogo de guardar: `dialog.state()`, `dialog.options()`, `dialog.answer`, `dialog.cancel`, el evento `dialog.changed`) y `naming` (la caja del nombre: `naming.state()`, `naming.cell`, `naming.write`, `naming.erase`, `naming.accept`, el evento `naming.changed`). Nuevos ajustes `story_textbox.speaker`, `speaker_kind`, `options`, `first_option`, `input` y `page`, y los comandos `story_advance`, `story_choose`, `story_cancel`, `naming_write`, `naming_erase` y `naming_accept`. Las pantallas `story_textbox`, `dialog` y `naming_box` solo leen por ellos. Un addon solo los manda mientras su cuadro espera al jugador |
+| 0.14.0 | Llega el espacio `battle`: el estado del combate, los luchadores, la tira de órdenes, el golpe final, la apertura, los números, las barras de los enemigos, el grito, la caja del final y lo que enseña un combate de copa (`battle.match()`), con sus acciones (`battle.command`, `battle.charge`, `battle.open_bag`, `battle.close_bag`, `battle.close`, `battle.end_count`, `battle.end_counted`) y eventos (`battle.started`, `battle.ended`, `battle.phase`, `battle.changed`...). Las pantallas `battle` y `tournament_match` solo leen por él. Llega el espacio `versus`: cada vista del versus en línea (`versus.state()`, `versus.setup()`, `versus.lineup()`, `versus.fighters()`, `versus.score()`...), sus pasos (`versus.step`, `versus.pick`) y su evento (`versus.changed`); la pantalla `versus` solo lee por él y por `battle.intro()`. Un addon solo manda las órdenes del combate en su momento: las del combate en la fase `fight`, cerrar la bolsa con la bolsa abierta y las de la caja del final en la fase `end` |
 | 0.13.0 | Llega la pantalla `battle` con la tira de órdenes (`battle.menu.<n>.*`, con `mp_cost`, los PM que cuesta cada técnica), las barras de los luchadores y lo que el combate manda de vuelta |
 | 0.12.0 | Los avisos entran en el contrato: `pause_box`, `field_item_notice`, `award_notice`, `fishing_notice`, `save_indicator`, `money_box`, `lives_box` y `ui_notice`, con sus ajustes y comandos |
 | 0.11.0 | Complementos (addons de tipo `plugin`, [interfaces](interfaces.md)): documentos sobre cualquier interfaz. Opción `ui_plugins` y ajuste `ui_plugins.count` |
@@ -82,13 +86,14 @@ puede moverse entre versiones del juego.
 La lista sale de `apps/game/src/ui_contract.cpp`. Un test la compara con esta página, con
 `content/schemas/ui_api/ui_api.json` (la misma lista para herramientas y editores) y con lo que leen y mandan los
 scripts de cada pantalla; `DWE_WRITE_API_DOC=1` al correr los tests del juego reescribe las dos. De momento cubre el
-HUD, el menú de pausa, el menú del compañero, la caja del aspecto del primer arranque y la tira y las barras del
-combate; el resto de pantallas llega después.
+HUD, el menú de pausa, el menú del compañero, la caja del aspecto del primer arranque, los avisos, el combate (con lo
+que enseña un combate de copa), el versus en línea y las cajas de la historia (el cuadro de texto, el diálogo de
+guardar y la caja del nombre); el resto de pantallas llega después.
 
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.13.0**.
+Versión de la API de la interfaz: **0.15.0**.
 
 ### `ui`
 
@@ -478,6 +483,88 @@ Versión de la API de la interfaz: **0.13.0**.
 | `ui_skin_preview` | comando | texto | Pone el aspecto de la fila enfocada sin guardarlo. |
 | `skin_picker_done` | comando | — | El aspecto está elegido: la portada sigue con «Press Start» (la caja de idiomas ya salió antes). |
 
+### `story`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `story_textbox.revision` | ajuste | número | Sube cada vez que cambia la caja de texto de abajo. |
+| `story_textbox.open` | ajuste | sí/no | Si hay una caja de texto abierta. |
+| `story_textbox.kind` | ajuste | texto | speech (la caja del que habla) o sized (una caja de su propio tamaño). |
+| `story_textbox.columns` | ajuste | número | Las columnas de texto de la caja de su propio tamaño. |
+| `story_textbox.rows` | ajuste | número | Las filas de texto de la caja de su propio tamaño. |
+| `story_textbox.opening` | ajuste | número | Cuánto se ha abierto la caja, de 0 a 1; el texto se ve en 1. |
+| `story_textbox.origin_x` | ajuste | número | Desde dónde crece la caja, en fracción del ancho de la ventana; -1 si aparece sin crecer. |
+| `story_textbox.origin_y` | ajuste | número | Desde dónde crece la caja, en fracción del alto de la ventana; -1 si aparece sin crecer. |
+| `story_textbox.prompt` | ajuste | sí/no | Si la página espera la confirmación y enseña su aviso. |
+| `story_textbox.cursor_row` | ajuste | número | La fila en la que está el cursor de una elección, desde 0; -1 sin elección. |
+| `story_textbox.cursor_columns` | ajuste | número | Los caracteres que abarca la barra de una elección; -1 sin elección. |
+| `story_textbox.row_count` | ajuste | número | Cuántas filas tiene la página. |
+| `story_textbox.top` | ajuste | sí/no | Si la caja va arriba de la ventana en vez de abajo. |
+| `story_textbox.row.<n>.runs` | ajuste | número | Cuántos trozos de un color tiene una fila. |
+| `story_textbox.row.<n>.run.<n>.text` | ajuste | texto | El texto de un trozo, ya en el idioma del jugador. |
+| `story_textbox.row.<n>.run.<n>.color` | ajuste | número | El color de la fuente de un trozo, de 0 a 10. |
+| `story_textbox.speaker` | ajuste | texto | El nombre del que habla (también en la primera fila); vacío si no habla nadie. |
+| `story_textbox.speaker_kind` | ajuste | texto | Quién habla: none, player, partner, character o special. |
+| `story_textbox.options` | ajuste | número | Cuántas opciones tiene la elección que se ve; 0 sin elección. |
+| `story_textbox.first_option` | ajuste | número | La fila de la primera opción de la elección. |
+| `story_textbox.input` | ajuste | texto | Lo que la caja espera del jugador: page, choice o vacío. |
+| `story_textbox.page` | ajuste | número | Cuenta las páginas que han salido: cambia con cada página nueva. |
+| `story_advance` | comando | — | Confirma, como el botón de confirmar, mientras la caja espera al jugador. |
+| `story_choose` | comando | número | Elige una opción de la elección que se ve, desde 0, como un clic en ella. |
+| `story_cancel` | comando | — | Cancela, como el botón de cancelar, mientras la caja espera al jugador. |
+| `story.input(): string` | consulta | texto | Lo que la caja espera del jugador: page (su confirmación), choice (una opción) o "" (nada). |
+| `story.textbox(): table` | consulta | tabla | La caja: open, kind, size (columns, rows), top, opening, origin, prompt, input, page, speaker (name, kind), rows (cada una con runs: text, color), cursor_row y cursor_columns. |
+| `story.choice(): table?` | consulta | tabla | La elección que se ve: options (text y row de cada una) y cursor (desde 0); nil sin elección. |
+| `story.advance(): boolean, string?` | acción | sí/no | Pide confirmar: la página sigue o la elección toma la opción del cursor. |
+| `story.choose(option: integer): boolean, string?` | acción | sí/no | Pide elegir una opción de la elección, desde 0. |
+| `story.cancel(): boolean, string?` | acción | sí/no | Pide cancelar, como el botón de cancelar. |
+| `story.changed` | evento | tabla | Cambió la caja: se abrió, creció, otra página, el cursor. Sale de `story_textbox.revision`. |
+| `story.text` | evento | tabla | Sale una página nueva. Sale de `story_textbox.page`. |
+| `story.input` | evento | tabla | La caja empezó o dejó de esperar al jugador. Sale de `story_textbox.input`. |
+
+### `dialog`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `dialog.revision` | ajuste | número | Sube cada vez que cambia el diálogo de abajo. |
+| `dialog.text` | ajuste | texto | La clave de texto de lo que dice el diálogo. |
+| `dialog.file` | ajuste | texto | El archivo de guardado del que habla, o vacío. |
+| `dialog.question` | ajuste | sí/no | Si es una pregunta (sí o no); si no, un aviso (aceptar). |
+| `dialog.start_on_yes` | ajuste | sí/no | Si la pregunta empieza en sí, como la de la partida nueva del original. |
+| `dialog.at_title` | ajuste | sí/no | Si lo enseña la portada. |
+| `dialog_answer` | comando | sí/no | La respuesta del diálogo: verdadero solo para sí. |
+| `dialog.state(): table` | consulta | tabla | El diálogo: text_key, file, question, start_on_yes, at_title y options. |
+| `dialog.options(): table` | consulta | tabla | Sus opciones en orden (id, label_key, yes): sí y no en una pregunta, aceptar en un aviso. |
+| `dialog.is_open(): boolean` | consulta | sí/no | Si el diálogo se ve, esperando su respuesta. |
+| `dialog.answer(option: integer): boolean, string?` | acción | sí/no | Responde con una de sus opciones, desde 0. |
+| `dialog.cancel(): boolean, string?` | acción | sí/no | Cancela: no a una pregunta, aceptar a un aviso. |
+| `dialog.changed` | evento | tabla | El juego puso el texto de un diálogo. Sale de `dialog.revision`. |
+
+### `naming`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `naming_box.revision` | ajuste | número | Sube cada vez que cambia la caja de nombre de abajo. |
+| `naming_box.title` | ajuste | texto | La clave de texto de a quién se le pone el nombre. |
+| `naming_box.length` | ajuste | número | Las letras que puede tener el nombre. |
+| `naming_box.name.<n>` | ajuste | texto | Una letra del nombre escrito; vacía si no hay. |
+| `naming_box.rows` | ajuste | número | Las filas de la rejilla de letras. |
+| `naming_box.columns` | ajuste | número | Las columnas de la rejilla de letras. |
+| `naming_box.cell.<n>.<n>` | ajuste | texto | La letra de una celda de la rejilla; un espacio si está vacía. |
+| `naming_box.cursor_row` | ajuste | número | La fila del cursor en la rejilla; -1 en un botón. |
+| `naming_box.cursor_column` | ajuste | número | La columna del cursor en la rejilla; -1 en un botón. |
+| `naming_box.cursor_button` | ajuste | número | El botón del cursor: 0 Atrás, 1 Aceptar; -1 en la rejilla. |
+| `naming_write` | comando | texto | Escribe las letras de la rejilla que lleva, como el teclado. |
+| `naming_erase` | comando | — | Quita la última letra, como cancelar. |
+| `naming_accept` | comando | — | Aceptar: el juego toma el nombre si no está vacío. |
+| `naming.is_open(): boolean` | consulta | sí/no | Si la caja de nombre se ve, esperando un nombre. |
+| `naming.state(): table` | consulta | tabla | La caja: title_key, length, letters, name, grid (rows, columns) y cursor (row, column, button). |
+| `naming.cell(row: integer, column: integer): string` | consulta | texto | La letra de una celda de la rejilla, desde 0; " " si está vacía. |
+| `naming.write(letters: string): boolean, string?` | acción | sí/no | Pide escribir letras de la rejilla al final del nombre. |
+| `naming.erase(): boolean, string?` | acción | sí/no | Pide quitar la última letra. |
+| `naming.accept(): boolean, string?` | acción | sí/no | Pide aceptar el nombre; el juego no toma uno vacío. |
+| `naming.changed` | evento | tabla | Cambió el nombre, el cursor o la rejilla. Sale de `naming_box.revision`. |
+
 ### `clock`
 
 | Nombre | Tipo | Valor | Qué es |
@@ -550,7 +637,10 @@ Versión de la API de la interfaz: **0.13.0**.
 
 | Nombre | Tipo | Valor | Qué es |
 |---|---|---|---|
-| `battle.revision` | ajuste | número | Sube cada vez que cambia la vista del combate de abajo. |
+| `battle.revision` | ajuste | número | Sube cada vez que cambian los luchadores, la tira de órdenes, el golpe final o la bolsa. |
+| `battle.phase` | ajuste | texto | La fase: intro (la apertura), fight, victory (las poses), end (la caja del final) o closing (la tira sube). |
+| `battle.frame_seconds` | ajuste | número | Lo que dura un cuadro del combate, para el ritmo de la caja del final. |
+| `battle.fast` | ajuste | sí/no | Si el combate va al doble de velocidad. |
 | `battle.menu.count` | ajuste | número | Cuántas órdenes tiene la tira. |
 | `battle.menu.<n>.command` | ajuste | número | El número de la orden (1 huir... 8 a 10 las técnicas, 11 el golpe final). |
 | `battle.menu.<n>.label` | ajuste | texto | La clave de texto del nombre de la orden o de la técnica. |
@@ -558,18 +648,214 @@ Versión de la API de la interfaz: **0.13.0**.
 | `battle.menu.<n>.available` | ajuste | sí/no | Si la orden se puede dar ahora. |
 | `battle.menu.<n>.current` | ajuste | sí/no | Si es la orden que sigue el compañero ahora. |
 | `battle.menu.<n>.mp_cost` | ajuste | número | Los PM que le cuesta la técnica al compañero ahora; 0 en las demás órdenes. |
+| `battle.menu.motion` | ajuste | número | Sube cada vez que la tira o las barras del compañero se mueven, o el icono bajo el cursor parpadea. |
+| `battle.menu.top` | ajuste | número | El borde de arriba de la tira, en líneas desde el centro de la pantalla. |
+| `battle.menu.bottom` | ajuste | número | El borde de abajo de la tira. |
+| `battle.menu.blink` | ajuste | sí/no | Si el icono bajo el cursor enseña su segundo cuadro. |
+| `battle.bars.hp_x` | ajuste | número | El borde izquierdo de la barra de PV del compañero mientras entra o sale. |
+| `battle.bars.mp_x` | ajuste | número | El borde izquierdo de la barra de PM del compañero mientras entra o sale. |
 | `battle.fighter.count` | ajuste | número | Cuántos luchadores hay: el compañero (0) y los enemigos. |
+| `battle.fighter.<n>.name` | ajuste | texto | La clave de texto de su nombre. |
+| `battle.fighter.<n>.status` | ajuste | texto | La clave de texto de su estado alterado, o vacío. |
 | `battle.fighter.<n>.hp` | ajuste | número | Los PV de un luchador. |
 | `battle.fighter.<n>.max_hp` | ajuste | número | Los PV máximos de un luchador. |
 | `battle.fighter.<n>.mp` | ajuste | número | Los PM de un luchador. |
 | `battle.fighter.<n>.max_mp` | ajuste | número | Los PM máximos de un luchador. |
-| `battle.fast` | ajuste | sí/no | Si el combate va al doble de velocidad. |
+| `battle.fighter.<n>.fainted` | ajuste | sí/no | Si ha caído. |
+| `battle.fighter.<n>.hp_bar` | ajuste | sí/no | Si su barra de PV se ve ahora (la de un enemigo, un rato tras recibir daño). |
+| `battle.finisher.progress` | ajuste | número | Lo que lleva cargado el indicador del golpe final. |
+| `battle.finisher.goal` | ajuste | número | Lo que tiene que cargar para estar lleno. |
+| `battle.finisher.ready` | ajuste | sí/no | Si el golpe final está listo. |
+| `battle.finisher.charging` | ajuste | sí/no | Si dura el aura en la que cada pulsación carga el golpe final. |
+| `battle.finisher.charge` | ajuste | número | La carga del aura, en porcentaje. |
+| `battle.revive_seconds` | ajuste | número | La cuenta para revivir al compañero caído; -1 sin cuenta. |
+| `battle.match_seconds` | ajuste | número | El reloj de un combate de copa; -1 en los demás combates. |
+| `battle.bag.available` | ajuste | sí/no | Si la bolsa se puede abrir. |
+| `battle.bag.open` | ajuste | sí/no | Si la bolsa está abierta sobre el combate. |
+| `battle.item_in_flight` | ajuste | sí/no | Si un objeto lanzado va de camino al compañero. |
+| `battle.end.outcome` | ajuste | texto | La clave de texto del resultado en la caja del final. |
+| `battle.end.count` | ajuste | número | Cuántas líneas tiene la caja del final. |
+| `battle.end.<n>.parts` | ajuste | texto | Las piezas de una línea, separadas por |: claves de texto o marcas entre llaves. |
+| `battle.end.<n>.name` | ajuste | texto | La clave de texto del nombre de la línea ({name}). |
+| `battle.end.<n>.subject` | ajuste | texto | La clave de texto de a quién se refiere ({subject}). |
+| `battle.end.<n>.amount` | ajuste | número | El número de la línea ({amount}). |
+| `battle.end.stat.<n>.value` | ajuste | número | Un atributo antes de la subida (PV, PM, ataque, defensa, velocidad, cerebro). |
+| `battle.end.stat.<n>.max` | ajuste | número | El tope de ese atributo. |
+| `battle.end.gain.<n>.value` | ajuste | número | Lo que sube ese atributo. |
+| `battle.end.bits` | ajuste | número | Los bits ganados. |
+| `battle.end.money` | ajuste | número | El dinero con los bits ya dentro. |
+| `battle.end.count_delay_frames` | ajuste | número | Los cuadros antes de que los atributos empiecen a subir. |
+| `battle.end.wait_frames` | ajuste | número | Los cuadros que espera cada línea de la caja del final. |
+| `battle.intro.revision` | ajuste | número | Sube cada vez que cambia la apertura del combate. |
+| `battle.intro.step` | ajuste | texto | El paso de la apertura: anger, banner, burst o done. |
+| `battle.intro.anger.<n>.shown` | ajuste | sí/no | Si se ve la marca de enfado sobre un enemigo. |
+| `battle.intro.anger.<n>.x` | ajuste | número | Dónde está esa marca, en porcentaje del ancho. |
+| `battle.intro.anger.<n>.y` | ajuste | número | Dónde está esa marca, en porcentaje del alto. |
+| `battle.intro.anger.scale` | ajuste | número | El tamaño de las marcas, en porcentaje. |
+| `battle.intro.flee.<n>.shown` | ajuste | sí/no | Si se ve la marca sobre un personaje que huye. |
+| `battle.intro.flee.<n>.x` | ajuste | número | Dónde está, en porcentaje del ancho. |
+| `battle.intro.flee.<n>.y` | ajuste | número | Dónde está, en porcentaje del alto. |
+| `battle.intro.flash` | ajuste | número | El destello del cartel, de 0 a 2. |
+| `battle.intro.pieces` | ajuste | texto | Las piezas del cartel: siete números cada una (x, y, ancho, alto, textura, estela, izquierda). |
+| `battle.damage.revision` | ajuste | número | Sube cada vez que cambian los números sobre los luchadores. |
+| `battle.damage.numbers` | ajuste | texto | Los números sobre los luchadores: siete valores cada uno (x, y, dx, dy, valor, color, icono). |
+| `battle.hp_bars.revision` | ajuste | número | Sube cada vez que cambian las barras de vida de los enemigos, las marcas o la cuenta del compañero caído. |
 | `battle.hp_bars.always` | ajuste | sí/no | Si las barras de vida de los enemigos se ven todo el combate. |
-| `battle_command` | comando | número | Da una orden al compañero (su número, battle.menu.<n>.command). |
-| `battle_bag_open` | comando | — | Abre la bolsa del jugador. |
-| `battle_charge` | comando | — | Una pulsación de la carga del golpe final. |
-| `battle_close` | comando | — | Cierra la caja del final del combate. |
-| `battle_end_count` | comando | — | Un paso de la cuenta de los bits del final del combate. |
-| `battle_end_counted` | comando | — | La cuenta de los bits del final del combate ha terminado. |
+| `battle.hp_bars` | ajuste | texto | Las barras de vida de los enemigos: nueve valores cada una. |
+| `battle.markers` | ajuste | texto | Las marcas de 1P y COM de un combate de copa entre dos de la misma especie: tres valores cada una. |
+| `battle.death_countdown` | ajuste | texto | La cuenta sobre el compañero caído: siete valores, o vacío. |
+| `battle.shout.revision` | ajuste | número | Sube cada vez que cambia el grito del jugador. |
+| `battle.shout.shown` | ajuste | sí/no | Si se ve el grito del jugador. |
+| `battle.shout.text` | ajuste | texto | La clave de texto del grito. |
+| `battle.shout.anchor_x` | ajuste | número | Dónde se ancla el grito, en porcentaje del ancho. |
+| `battle.shout.anchor_y` | ajuste | número | Dónde se ancla el grito, en porcentaje del alto. |
+| `battle.shout.node_x` | ajuste | número | El punto del compañero desde el centro de la pantalla. |
+| `battle.shout.node_y` | ajuste | número | El punto del compañero desde el centro de la pantalla. |
+| `battle.shout.y` | ajuste | número | La línea del grito. |
+| `battle.shout.hop` | ajuste | número | El salto del grito. |
+| `battle.shout.scale` | ajuste | número | El tamaño del grito. |
+| `battle_command` | comando | número | Da una orden al compañero (su número, battle.menu.<n>.command). Un addon, solo en la fase fight. |
+| `battle_bag_open` | comando | — | Abre la bolsa del jugador. Un addon, solo en la fase fight. |
+| `battle_bag_close` | comando | — | Cierra la bolsa del jugador y vuelve al combate. Un addon, solo con la bolsa abierta. |
+| `battle_charge` | comando | — | Una pulsación de la carga del golpe final. Un addon, solo en la fase fight. |
+| `battle_close` | comando | — | Cierra la caja del final del combate. Un addon, solo en la fase end. |
+| `battle_end_count` | comando | — | Un paso de la cuenta de los bits del final del combate. Un addon, solo en la fase end. |
+| `battle_end_counted` | comando | — | La cuenta de los bits del final del combate ha terminado. Un addon, solo en la fase end. |
+| `battle.state(): table` | consulta | tabla | El combate: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds y match_seconds (o nil) y cup (un combate de copa). |
+| `battle.fighters(): table` | consulta | tabla | Los luchadores, el compañero primero: name_key, status_key, hp, max_hp, mp, max_mp, fainted y hp_bar. |
+| `battle.commands(): table` | consulta | tabla | La tira de órdenes, el golpe final primero: command, label_key, icon, available, current y mp_cost. |
+| `battle.finisher(): table` | consulta | tabla | El golpe final: progress, goal, ready, charging (el aura) y charge (en porcentaje). |
+| `battle.strip(): table` | consulta | tabla | Dónde están la tira y las barras del compañero al entrar y salir: top, bottom, blink, hp_x y mp_x (o nil). |
+| `battle.intro(): table` | consulta | tabla | La apertura: step, anger (3 marcas), flee (8), anger_scale, flash y pieces (las piezas del cartel, con key). |
+| `battle.numbers(): table` | consulta | tabla | Los números sobre los luchadores: x, y (porcentaje), dx, dy, value, kind (damage, gain, poison) e icon. |
+| `battle.hp_bars(): table` | consulta | tabla | Las barras de vida de los enemigos: always y bars (enemy, x, y, left, top, fill, red, green, hp). |
+| `battle.markers(): table` | consulta | tabla | Las marcas de 1P y COM: fighter (0 el compañero, 1 el rival), x e y (porcentaje). |
+| `battle.death_countdown(): table?` | consulta | tabla | La cuenta sobre el compañero caído (x, y, digit, digit_scale, badge_scale, turn, palette), o nil. |
+| `battle.shout(): table?` | consulta | tabla | El grito del jugador (text_key, x, y, node_x, node_y, line, hop, scale), o nil. |
+| `battle.result(): table` | consulta | tabla | La caja del final: outcome_key, lines (parts, name_key, subject_key, amount), stats (value, max, gain), bits, money, count_delay_frames y wait_frames. |
+| `battle.match(): table` | consulta | tabla | Lo que un combate de copa enseña encima: shown, name, name_y, stats, counted, stat, time_up, time_up_label, box, partner, rival, damage_label, dealt, taken y wipe. |
+| `battle.command(command: integer): boolean, string?` | acción | sí/no | Pide que el compañero siga una orden de la tira (su command); solo en la fase fight. |
+| `battle.charge(): boolean, string?` | acción | sí/no | Una pulsación de la carga del golpe final; solo en la fase fight. |
+| `battle.open_bag(): boolean, string?` | acción | sí/no | Pide abrir la bolsa sobre el combate (la pantalla partner_menu); solo en la fase fight. |
+| `battle.close_bag(): boolean, string?` | acción | sí/no | Pide cerrar la bolsa y volver al combate. |
+| `battle.close(): boolean, string?` | acción | sí/no | La caja del final ha terminado: el combate se cierra; solo en la fase end. |
+| `battle.end_count(): boolean, string?` | acción | sí/no | Un punto o un bit contado en la caja del final (su sonido); solo en la fase end. |
+| `battle.end_counted(): boolean, string?` | acción | sí/no | Todos los bits dentro (el sonido que acaba la cuenta); solo en la fase end. |
+| `battle.started` | evento | tabla | Empieza un combate (battle.active pasa a verdadero). Sale de `battle.active`. |
+| `battle.ended` | evento | tabla | Se acaba un combate, tras cerrar la caja del final (battle.active pasa a falso). Sale de `battle.active`. |
+| `battle.phase` | evento | tabla | Cambió la fase; value dice cuál. Sale de `battle.phase`. |
+| `battle.changed` | evento | tabla | Cambiaron los luchadores, la tira, el golpe final, la bolsa o las cuentas. Sale de `battle.revision`. |
+| `battle.speed` | evento | tabla | El combate pasó a ir rápido o a velocidad normal. Sale de `battle.fast`. |
+| `battle.strip_moved` | evento | tabla | La tira o las barras del compañero se movieron, o el icono bajo el cursor parpadeó. Sale de `battle.menu.motion`. |
+| `battle.intro` | evento | tabla | Cambió la apertura. Sale de `battle.intro.revision`. |
+| `battle.numbers` | evento | tabla | Cambiaron los números sobre los luchadores. Sale de `battle.damage.revision`. |
+| `battle.overlays` | evento | tabla | Cambiaron las barras de vida de los enemigos, las marcas de 1P y COM o la cuenta del compañero caído. Sale de `battle.hp_bars.revision battle.hp_bars.always`. |
+| `battle.shout` | evento | tabla | Cambió el grito del jugador. Sale de `battle.shout.revision`. |
+| `battle.match` | evento | tabla | Cambió lo que un combate de copa enseña encima. Sale de `tournament_match.revision`. |
+
+### `tournament_match`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `tournament_match.revision` | ajuste | número | Sube cada vez que cambia lo de abajo. |
+| `tournament_match.shown` | ajuste | sí/no | Si se ve. |
+| `tournament_match.name` | ajuste | texto | El nombre del luchador de la presentación, lo que ha entrado de él (ya en el idioma). |
+| `tournament_match.name_y` | ajuste | número | La fila del nombre. |
+| `tournament_match.stats` | ajuste | sí/no | Si se ve la caja de atributos. |
+| `tournament_match.counted` | ajuste | sí/no | Si se ven sus números. |
+| `tournament_match.stat.<n>.label` | ajuste | texto | El nombre de un atributo. |
+| `tournament_match.stat.<n>.value` | ajuste | número | El valor de un atributo. |
+| `tournament_match.stat.<n>.width` | ajuste | número | El ancho de su barra. |
+| `tournament_match.time_up` | ajuste | sí/no | Si se ve el aviso de fin de tiempo. |
+| `tournament_match.time_up_label` | ajuste | texto | El texto de ese aviso. |
+| `tournament_match.box` | ajuste | sí/no | Si se ve la caja del daño. |
+| `tournament_match.partner` | ajuste | texto | El nombre del compañero. |
+| `tournament_match.rival` | ajuste | texto | El nombre del rival. |
+| `tournament_match.damage_label` | ajuste | texto | El título de la caja del daño. |
+| `tournament_match.dealt` | ajuste | número | El daño hecho. |
+| `tournament_match.taken` | ajuste | número | El daño recibido. |
+| `tournament_match.wipe.<n>` | ajuste | número | La altura de una de las 32 columnas de la cortina, de 0 a 240. |
+
+### `versus`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `versus.revision` | ajuste | número | Sube cada vez que cambia el versus. |
+| `versus.view` | ajuste | texto | La vista: menu, host_setup, hosting, join_entry, joining, save_pick, lineup, waiting_lineup, match, intermission, result o error. |
+| `versus.cursor` | ajuste | número | La fila con el foco, o en un combate la orden señalada. |
+| `versus.battles` | ajuste | número | Cuántos combates tiene la serie. |
+| `versus.choice` | ajuste | número | La fila de la duración de serie elegida. |
+| `versus.choices` | ajuste | número | Cuántas duraciones de serie hay. |
+| `versus.arena` | ajuste | número | El número del escenario elegido (su texto es versus.arena.<n>). |
+| `versus.arena_choice` | ajuste | número | La fila del escenario elegido. |
+| `versus.arenas` | ajuste | número | Cuántos escenarios hay. |
+| `versus.code` | ajuste | texto | El código de la sala; vacío hasta que hay uno. |
+| `versus.stage` | ajuste | texto | Cómo va la conexión: creating, waiting o connecting. |
+| `versus.typed` | ajuste | texto | El código escrito hasta ahora. |
+| `versus.bad_entry` | ajuste | sí/no | Si el último código no valía. |
+| `versus.saves` | ajuste | número | Cuántas partidas hay para elegir. |
+| `versus.save.<n>.player` | ajuste | texto | El nombre del jugador de la partida. |
+| `versus.save.<n>.nickname` | ajuste | texto | El nombre del compañero. |
+| `versus.save.<n>.partners` | ajuste | número | Cuántos compañeros tiene. |
+| `versus.save.<n>.usable` | ajuste | sí/no | Si tiene compañeros para toda la serie. |
+| `versus.partners` | ajuste | número | Cuántos compañeros hay para elegir. |
+| `versus.partner.<n>.name` | ajuste | texto | El nombre del compañero. |
+| `versus.partner.<n>.species` | ajuste | texto | La clave de texto de su especie. |
+| `versus.partner.<n>.stats` | ajuste | texto | Sus atributos en un texto. |
+| `versus.partner.<n>.picked` | ajuste | sí/no | Si ya está elegido. |
+| `versus.picks` | ajuste | número | Cuántos compañeros van elegidos. |
+| `versus.pick.<n>.name` | ajuste | texto | El nombre de un elegido, en orden. |
+| `versus.local` | ajuste | número | El lado del jugador: 0 el del anfitrión, 1 el del invitado. |
+| `versus.round` | ajuste | número | El combate que se ve, desde 1. |
+| `versus.wins.<n>` | ajuste | número | Las victorias de cada lado (0 y 1). |
+| `versus.clock` | ajuste | número | Los segundos del reloj del combate. |
+| `versus.stalled` | ajuste | sí/no | Si el rival lleva un rato sin mandar nada. |
+| `versus.leave_asked` | ajuste | sí/no | Si otra cancelación deja el versus. |
+| `versus.blink` | ajuste | sí/no | Si el icono señalado enseña su segundo cuadro. |
+| `versus.f.<n>.hp` | ajuste | número | Los PV de un lado (0 y 1). |
+| `versus.f.<n>.max_hp` | ajuste | número | Sus PV máximos. |
+| `versus.f.<n>.mp` | ajuste | número | Sus PM. |
+| `versus.f.<n>.max_mp` | ajuste | número | Sus PM máximos. |
+| `versus.f.<n>.segments` | ajuste | número | Las letras encendidas del golpe final, de 0 a 6. |
+| `versus.f.<n>.finisher_ready` | ajuste | sí/no | Si el golpe final está listo. |
+| `versus.f.<n>.menu` | ajuste | número | Cuántas órdenes tiene su tira. |
+| `versus.f.<n>.hover` | ajuste | número | La orden señalada en su tira (la del rival, su orden de ahora). |
+| `versus.f.<n>.menu.<n>.icon` | ajuste | texto | El icono de una orden de la tira; vacío para el golpe final. |
+| `versus.f.<n>.command_name` | ajuste | texto | La clave de texto de la orden señalada, o vacío. |
+| `versus.log` | ajuste | número | Cuántas líneas tiene lo que ha pasado. |
+| `versus.log.<n>.key` | ajuste | texto | La clave de texto de la línea. |
+| `versus.log.<n>.who` | ajuste | texto | Quién. |
+| `versus.log.<n>.what` | ajuste | texto | La clave de texto del movimiento, o vacío. |
+| `versus.log.<n>.amount` | ajuste | número | Cuánto. |
+| `versus.results` | ajuste | número | Cuántos combates se han jugado. |
+| `versus.result.<n>.outcome` | ajuste | texto | Cómo le fue al jugador: won, lost o draw. |
+| `versus.winner` | ajuste | texto | Quién ganó la serie al acabar: you, rival o draw. |
+| `versus.error_key` | ajuste | texto | La clave de texto de por qué paró. |
+| `versus.error_detail` | ajuste | texto | El error en sus propias palabras. |
+| `versus.show` | ajuste | texto | Lo que enseña el escenario: banner, fight, ending, score o nada; no está sin escenario. |
+| `versus.score.round` | ajuste | número | La fila de la pantalla de marcador que se mueve. |
+| `versus.score.offset` | ajuste | número | Cuánto se ha movido, en píxeles del original. |
+| `versus.score.flash` | ajuste | sí/no | Si se ve el destello de la fila. |
+| `versus.score.black` | ajuste | número | La opacidad del fundido a negro, de 0 a 1. |
+| `versus.score.results` | ajuste | número | Cuántos combates tienen resultado. |
+| `versus.score.result.<n>` | ajuste | texto | Quién ganó un combate: host, guest o draw. |
+| `versus.score.wins.<n>` | ajuste | número | Las victorias de cada lado. |
+| `versus.score.losses.<n>` | ajuste | número | Las derrotas de cada lado. |
+| `versus.score.face.<n>.<n>` | ajuste | número | La cara del luchador de un lado en un combate (por el número de su especie). |
+| `versus_action` | comando | texto | Un paso en la vista: up, down, left, right, confirm, cancel, menu, tab_previous, tab_next, finisher, o pick:<fila> para ir a una fila y confirmarla. |
+| `versus.state(): table` | consulta | tabla | La vista, el cursor, los combates de la serie y, en un combate: round, clock, side (el lado del jugador), wins, stalled, leave_asked, blink y arena (lo que enseña el escenario, o nil sin él). |
+| `versus.setup(): table` | consulta | tabla | La preparación del anfitrión: series y series_count, arena, arena_row y arenas. |
+| `versus.connection(): table` | consulta | tabla | La conexión: stage (creating, waiting, connecting) y code (el código de la sala). |
+| `versus.entry(): table` | consulta | tabla | El código escrito (typed) y si el último no valía (bad). |
+| `versus.saves(): table` | consulta | tabla | Las partidas: player, nickname, partners y usable. |
+| `versus.lineup(): table` | consulta | tabla | Los compañeros (name, species_key, stats, picked) y los elegidos (picks, sus nombres). |
+| `versus.fighters(): table` | consulta | tabla | Los dos lados, el anfitrión primero: hp, max_hp, mp, max_mp, segments, finisher_ready, hover, icons (la tira) y command_key (la orden señalada). |
+| `versus.log(): table` | consulta | tabla | Lo que ha pasado, lo último al final: key, who, what_key y amount. |
+| `versus.results(): table` | consulta | tabla | Los combates jugados (rounds: won, lost, draw) y el ganador de la serie (winner). |
+| `versus.score(): table` | consulta | tabla | La pantalla de marcador: round, offset, flash, black, results y sides (wins, losses, faces). |
+| `versus.error(): table` | consulta | tabla | Por qué paró: key (clave de texto) y detail. |
+| `versus.step(step: string): boolean, string?` | acción | sí/no | Un paso en la vista: up, down, left, right, confirm, cancel, menu, tab_previous, tab_next o finisher (el golpe final, con su medidor lleno). |
+| `versus.pick(row: integer): boolean, string?` | acción | sí/no | Va a una fila de la vista (o a una orden de la tira del jugador) y la confirma. |
+| `versus.changed` | evento | tabla | Cambió el versus. Sale de `versus.revision`. |
 
 <!-- /ui-api:generated -->

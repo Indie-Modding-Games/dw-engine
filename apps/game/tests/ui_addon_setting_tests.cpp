@@ -1,6 +1,7 @@
 // The player's UI addon (ui_addon_setting.hpp, docs/modding/interfaces.md): the start pick, safe
 // mode, the commands an addon may send and the game's own UI back, with a notice, when the pick
 // cannot go on.
+#include <dwe/content/user_ui_addons.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/ui/ui.hpp>
 #include <dwe/ui/ui_addon.hpp>
@@ -76,6 +77,48 @@ TEST_CASE("an addon may send only the commands and options of the UI contract") 
   CHECK_FALSE(addonMaySend("not_a_command"));
 }
 
+TEST_CASE("an addon may send a battle's commands only in the window the battle takes them") {
+  // Out of a battle none goes through.
+  for (const std::string_view command :
+       {"battle_command", "battle_charge", "battle_bag_open", "battle_bag_close", "battle_close",
+        "battle_end_count", "battle_end_counted"}) {
+    CAPTURE(command);
+    CHECK_FALSE(addonMaySend(command));
+  }
+  const BattleWindows fight{.fight = true};
+  CHECK(addonMaySend("battle_command", fight));
+  CHECK(addonMaySend("battle_charge", fight));
+  CHECK(addonMaySend("battle_bag_open", fight));
+  CHECK_FALSE(addonMaySend("battle_bag_close", fight));
+  CHECK_FALSE(addonMaySend("battle_close", fight));
+  const BattleWindows bag{.fight = true, .bag = true};
+  CHECK(addonMaySend("battle_bag_close", bag));
+  const BattleWindows end{.end = true};
+  CHECK(addonMaySend("battle_close", end));
+  CHECK(addonMaySend("battle_end_count", end));
+  CHECK(addonMaySend("battle_end_counted", end));
+  CHECK_FALSE(addonMaySend("battle_command", end));
+  // The other commands do not depend on a battle.
+  CHECK(addonMaySend("ui_skin", end));
+
+  // The windows come from what the battle publishes.
+  test::MenuUi menu;
+  CHECK_FALSE(battleWindowsOf(*menu.ui).fight);
+  menu.ui->setSetting("battle.active", true);
+  menu.ui->setSetting("battle.phase", std::string{"intro"});
+  CHECK_FALSE(battleWindowsOf(*menu.ui).fight);
+  menu.ui->setSetting("battle.phase", std::string{"fight"});
+  CHECK(battleWindowsOf(*menu.ui).fight);
+  CHECK_FALSE(battleWindowsOf(*menu.ui).bag);
+  menu.ui->setSetting("battle.bag.open", true);
+  CHECK(battleWindowsOf(*menu.ui).bag);
+  menu.ui->setSetting("battle.phase", std::string{"end"});
+  CHECK(battleWindowsOf(*menu.ui).end);
+  CHECK_FALSE(battleWindowsOf(*menu.ui).bag);
+  menu.ui->setSetting("battle.active", false);
+  CHECK_FALSE(battleWindowsOf(*menu.ui).end);
+}
+
 TEST_CASE("a UI addon that cannot go on gives the game's own UI back, with a notice") {
   test::MenuUi menu;
   loadNotice(*menu.ui);
@@ -104,6 +147,32 @@ TEST_CASE("a UI addon that cannot go on gives the game's own UI back, with a not
   changer.update(0.0);
   CHECK(menu.ui->setting(UiAddonProblemSetting) == ui::UiValue{std::string{}});
   CHECK_FALSE(changer.handle(ui::UiCommand{.name = "ui_skin", .value = std::string{"modern"}}));
+}
+
+TEST_CASE("a saved UI addon whose .zip gives none brings the game's own UI back, saying why") {
+  test::MenuUi menu;
+  loadNotice(*menu.ui);
+  UserSettings settings;
+  settings.uiAddon = "clock";
+  const std::vector<content::LeftOutUiAddonArchive> archives{
+      content::LeftOutUiAddonArchive{.folder = "ui/addons/clock",
+                                     .reason = "ui/addons/clock.zip: evil.lua is encrypted",
+                                     .shadowed = false},
+      // A folder of its id is used instead: no addon that does not read.
+      content::LeftOutUiAddonArchive{.folder = "ui/addons/bad",
+                                     .reason = "ui/addons/bad.zip: the folder has its id",
+                                     .shadowed = true},
+  };
+  const std::vector<ui::FoundUiAddon> found = withLeftOutArchives(brokenAddons(), archives);
+  REQUIRE(found.size() == 3);
+  CHECK(found[2].folder == "ui/addons/clock");
+  UiAddonChanger changer{*menu.ui, settings, std::nullopt, found, false};
+  CHECK(changer.offered().size() == 2);
+  changer.start();
+  CHECK(menu.ui->uiAddon().empty());
+  CHECK(menu.ui->setting(UiAddonProblemSetting) ==
+        ui::UiValue{std::string{"ui/addons/clock.zip: evil.lua is encrypted"}});
+  CHECK(menu.ui->isVisible(UiNoticeDocument));
 }
 
 TEST_CASE("safe mode keeps the game's own UI, whatever was saved or picked") {

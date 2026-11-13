@@ -129,6 +129,11 @@ struct DialogueKeys {
   std::optional<std::int64_t> clicked = std::nullopt;
 };
 
+// What the textboxes take from the player now: a page's confirm (a sized box's confirm or cancel),
+// a selection's option, or nothing (no box, a box still opening, a page not turned yet, a page that
+// goes on by itself).
+enum class DialogueInput : std::uint8_t { None, Page, Selection };
+
 // What a textbox does outside the story: hold the player still while someone speaks.
 class DialogueScenePort {
 public:
@@ -176,6 +181,14 @@ public:
   void press(DialogueKeys pressed, bool confirmHeld);
 
   [[nodiscard]] const DialogueView& view() const { return view_; }
+  // What the boxes take from the player now; the keys of press() count only then.
+  [[nodiscard]] DialogueInput input() const;
+  // The options of the selection on show; 0 without one.
+  [[nodiscard]] std::int64_t optionCount() const {
+    return input() == DialogueInput::Selection ? optionCount_ : 0;
+  }
+  // How many pages the boxes have turned to so far: one more for each page shown.
+  [[nodiscard]] std::uint32_t pagesShown() const { return pagesShown_; }
 
   // The «cancel closes the choice» improvement (docs/modulos/game/story.md): in the original a
   // cancel in a choice without an end marker runs the code after it, the first option's. Off by
@@ -248,6 +261,7 @@ private:
 
   DialogueKeys latched_;
   bool confirmHeld_ = false;
+  std::uint32_t pagesShown_ = 0;
   DialogueView view_;
 };
 

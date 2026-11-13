@@ -1,43 +1,48 @@
--- The save dialog, at the title screen and in the game: a question (yes or no) or a notice
--- (accept) about the save slots. The game publishes dialog.text (a text key), dialog.file (the save
--- file it is about, or ""), dialog.question, dialog.start_on_yes and dialog.at_title (shown by the
--- title screen, which a skin can style apart: the scrim's at-title class), and shows this document;
--- it sends dialog_answer, true only for yes. Cancel answers no.
-
-local function question()
-  return ui.setting("dialog.question") == true
-end
+-- The save dialog, at the title screen and in the game, drawn from the UI API's dialog namespace
+-- (docs/modding/ui-api.md): dialog.state() is a question (yes or no) or a notice (accept) about the
+-- save slots, with the save file it is about and whether the title screen shows it (which a skin
+-- can style apart: the scrim's at-title class); dialog.answer(option) answers it. Cancel answers
+-- no.
 
 local function refresh(document)
-  document:get("text"):set_text(t(ui.setting("dialog.text") or ""))
-  local file = ui.setting("dialog.file") or ""
-  document:get("file"):set_text(file)
-  document:get("file"):set_class("hidden", file == "")
-  document:get("yes"):set_class("hidden", not question())
-  document:get("no"):set_class("hidden", not question())
-  document:get("ok"):set_class("hidden", question())
+  local state = dialog.state()
+  document:get("text"):set_text(t(state.text_key))
+  document:get("file"):set_text(state.file)
+  document:get("file"):set_class("hidden", state.file == "")
+  document:get("yes"):set_class("hidden", not state.question)
+  document:get("no"):set_class("hidden", not state.question)
+  document:get("ok"):set_class("hidden", state.question)
   local scrim = document:get("scrim")
-  scrim:set_class("at-title", ui.setting("dialog.at_title") == true)
-  scrim:set_class("question", question())
-  scrim:set_class("notice", not question())
+  scrim:set_class("at-title", state.at_title)
+  scrim:set_class("question", state.question)
+  scrim:set_class("notice", not state.question)
 end
 
-function answer(yes)
-  ui.send("dialog_answer", yes)
+-- The buttons' answers: the option of dialog.options() with that id.
+function answer(id)
+  for index, option in ipairs(dialog.options()) do
+    if option.id == id then
+      dialog.answer(index - 1)
+      return
+    end
+  end
 end
 
 function on_show(document)
   refresh(document)
   document:get("prompt-confirm"):set_prompt("confirm")
   -- A question starts on no, so that confirming in a hurry does not overwrite a save, unless the
-  -- game says it starts on yes (dialog.start_on_yes: the new game's question, as the original).
-  local first = ui.setting("dialog.start_on_yes") == true and "yes" or "no"
-  document:get(question() and first or "ok"):focus()
+  -- game says it starts on yes (the new game's question, as the original).
+  local state = dialog.state()
+  local first = state.start_on_yes and "yes" or "no"
+  document:get(state.question and first or "ok"):focus()
 end
 
-function on_setting(document, _name)
-  refresh(document)
-end
+hooks.on("dialog.changed", function(_, document)
+  if ui.is_visible(document_name) then
+    refresh(document)
+  end
+end)
 
 function on_language(document)
   refresh(document)
@@ -49,7 +54,7 @@ end
 
 function on_action(_document, action)
   if action == "cancel" or action == "menu" then
-    answer(false)
+    dialog.cancel()
     return true
   end
   return false

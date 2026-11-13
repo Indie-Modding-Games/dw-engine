@@ -38,3 +38,12 @@ Si el fichero nombra una imagen del disco (`disc_image`), `dev_disc.hpp` se la p
 proceso y sin shell, y añade la carpeta que le devuelve, de la caché de desarrollo de la carpeta de datos del usuario,
 después de las carpetas extraídas del fichero. `openDevAssets` (en `dev_assets.hpp`) junta los dos pasos para el juego
 y `dwe-sim`, que comparten carpeta de datos (`user_data.hpp`).
+
+Con una carpeta de datos del usuario, `user_ui_addons.hpp` monta su `ui/addons/` como un mod más
+(`UserUiAddonsFileSystem`, paquete `user_ui_addons`): las interfaces que el jugador copia como carpeta o como `.zip`
+([interfaces](../../modding/interfaces.md)). `zip_archive.hpp` (`ZipArchive`) lee un `.zip` en su sitio, sin
+descomprimirlo en disco: comprueba todo su directorio al abrirlo (rutas, enlaces, cifrado, entradas, tamaños y
+proporción de compresión, `ZipLimits`, los mismos límites que el lanzador) y expande cada archivo solo cuando se pide,
+con `lodepng_inflate` acotado a su tamaño declarado y su CRC-32 comprobado. Los zip que no dan interfaz salen en
+`GameContent::leftOutUiAddonArchives()`; los que tapa una carpeta u otro zip del mismo id van al log al montar, y el
+juego trata los demás como interfaces que no se leen.

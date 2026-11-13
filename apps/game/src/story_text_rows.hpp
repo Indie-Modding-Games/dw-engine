@@ -76,6 +76,13 @@ struct TextboxLook {
   // The speech box at the top of the screen instead of the bottom (script_menu.c:
   // setupNewGameDialogueBox).
   bool top = false;
+  // Who speaks: the name on the first row ("" for none) and its kind (none, player, partner,
+  // character, special), for a UI that shows the name its own way.
+  std::string speaker;
+  std::string_view speakerKind = "none";
+  // A selection's options: how many, and the row the first one is on.
+  std::size_t options = 0;
+  std::size_t firstOption = 0;
 };
 
 // The characters of the longest of `rows`, from `first` on: a character is a code point.
