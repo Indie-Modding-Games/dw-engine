@@ -6,6 +6,7 @@
 #include <charconv>
 #include <cstdlib>
 #include <format>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <optional>
@@ -145,11 +146,21 @@ std::string_view nodeTypeName(const YamlNode& node) {
   return scalarTypeName(scalarType(node));
 }
 
-// Compares two values as JSON does: numbers by value, other scalars by type and text, the rest by
-// structure.
+// Compares two values as JSON does: numbers by value, other scalars by type and text, sequences
+// item by item and mappings key by key in any order.
 bool sameValue(const YamlNode& lhs, const YamlNode& rhs) {
+  if (lhs.isSequence() && rhs.isSequence()) {
+    return std::ranges::equal(lhs.items(), rhs.items(), sameValue);
+  }
+  if (lhs.isMapping() && rhs.isMapping()) {
+    return lhs.entries().size() == rhs.entries().size() &&
+           std::ranges::all_of(lhs.entries(), [&rhs](const YamlEntry& entry) {
+             const YamlNode* other = rhs.find(entry.key);
+             return other != nullptr && sameValue(entry.value, *other);
+           });
+  }
   if (!lhs.isScalar() || !rhs.isScalar()) {
-    return lhs == rhs;
+    return false;
   }
   const ScalarType lhsType = scalarType(lhs);
   const ScalarType rhsType = scalarType(rhs);
@@ -242,15 +253,21 @@ struct SchemaNode {
   std::optional<double> exclusiveMinimum;
   std::optional<double> exclusiveMaximum;
   std::optional<std::size_t> minProperties;
+  std::optional<std::size_t> maxProperties;
   std::optional<std::size_t> propertyNames;
   std::optional<std::size_t> minItems;
   std::optional<std::size_t> maxItems;
+  bool uniqueItems = false;
   std::optional<std::size_t> minLength;
   std::optional<std::size_t> maxLength;
   std::optional<std::size_t> pattern;
   std::optional<std::vector<YamlNode>> allowed;
   std::optional<YamlNode> constant;
   std::optional<std::size_t> ref;
+  // The schemas the value itself must match: at least one, exactly one, or not this one.
+  std::vector<std::size_t> anyOf;
+  std::vector<std::size_t> oneOf;
+  std::optional<std::size_t> negated;
   std::vector<std::pair<std::string, std::string>> annotations;
 };
 
@@ -259,8 +276,8 @@ struct CompiledSchema {
   std::vector<SchemaPattern> patterns;
 };
 
-constexpr std::array<std::string_view, 5> IgnoredKeywords = {"title", "description", "default",
-                                                             "$schema", "$id"};
+constexpr std::array<std::string_view, 6> IgnoredKeywords = {"title",      "description", "default",
+                                                             "deprecated", "$schema",     "$id"};
 constexpr std::string_view DefsPrefix = "#/$defs/";
 
 // Turns the schema's tree into SchemaNodes. Node 0 is the root; $defs get their numbers before any
@@ -513,12 +530,41 @@ private:
       }
       return {};
     }
-    if (key == "minProperties") {
+    if (key == "minProperties" || key == "maxProperties") {
       auto count = readCount(value, path);
       if (!count) {
         return std::unexpected{count.error()};
       }
-      node.minProperties = *count;
+      (key == "minProperties" ? node.minProperties : node.maxProperties) = *count;
+      return {};
+    }
+    if (key == "uniqueItems") {
+      if (!value.isScalar() || scalarType(value) != ScalarType::Boolean) {
+        return fail(std::format("{}: must be true or false", path));
+      }
+      node.uniqueItems = isTrueText(value.text());
+      return {};
+    }
+    if (key == "anyOf" || key == "oneOf") {
+      if (!value.isSequence() || value.items().empty()) {
+        return fail(std::format("{}: must be a list of schemas", path));
+      }
+      std::vector<std::size_t>& schemas = key == "anyOf" ? node.anyOf : node.oneOf;
+      for (std::size_t i = 0; i < value.items().size(); ++i) {
+        auto child = compileNew(value.items()[i], std::format("{}/{}", path, i));
+        if (!child) {
+          return std::unexpected{child.error()};
+        }
+        schemas.push_back(*child);
+      }
+      return {};
+    }
+    if (key == "not") {
+      auto child = compileNew(value, path);
+      if (!child) {
+        return std::unexpected{child.error()};
+      }
+      node.negated = *child;
       return {};
     }
     if (key == "propertyNames") {
@@ -569,15 +615,47 @@ private:
     return fail(std::format("{}: the keyword '{}' is not supported", schemaPath, key));
   }
 
-  // A $ref that leads back to itself without going into the document would never end.
+  // The schemas a node applies to the same value: its $ref, anyOf, oneOf and not.
+  [[nodiscard]] std::vector<std::size_t> inPlace(const SchemaNode& node) const {
+    std::vector<std::size_t> applied{node.anyOf};
+    applied.insert(applied.end(), node.oneOf.begin(), node.oneOf.end());
+    for (const std::optional<std::size_t> one : {node.ref, node.negated}) {
+      if (one) {
+        applied.push_back(*one);
+      }
+    }
+    return applied;
+  }
+
+  // A $ref that leads back to itself without going into the document, even through anyOf, oneOf
+  // or not, would never end.
   [[nodiscard]] Result<void> checkReferenceCycles() const {
+    enum class Visit : std::uint8_t { New, Open, Done };
+    std::vector<Visit> visits(nodes_.size(), Visit::New);
+    // Depth first without recursion: a node and the next of its in-place schemas to follow.
+    std::vector<std::pair<std::size_t, std::size_t>> path;
     for (std::size_t start = 0; start < nodes_.size(); ++start) {
-      std::optional<std::size_t> at = nodes_[start].ref;
-      for (std::size_t steps = 0; at; ++steps) {
-        if (*at == start || steps > nodes_.size()) {
+      if (visits[start] != Visit::New) {
+        continue;
+      }
+      visits[start] = Visit::Open;
+      path.emplace_back(start, 0);
+      while (!path.empty()) {
+        auto& [at, next] = path.back();
+        const std::vector<std::size_t> applied = inPlace(nodes_[at]);
+        if (next == applied.size()) {
+          visits[at] = Visit::Done;
+          path.pop_back();
+          continue;
+        }
+        const std::size_t to = applied[next++];
+        if (visits[to] == Visit::Open) {
           return fail("the schema has a cycle of $ref");
         }
-        at = nodes_[*at].ref;
+        if (visits[to] == Visit::New) {
+          visits[to] = Visit::Open;
+          path.emplace_back(to, 0);
+        }
       }
     }
     return {};
@@ -644,6 +722,7 @@ public:
     if (schema.constant && !sameValue(value, *schema.constant)) {
       problem(value, path, "is not the required value");
     }
+    checkApplicators(value, schema, path);
     if (value.isScalar()) {
       checkScalar(value, schema, path);
     } else if (value.isMapping()) {
@@ -654,6 +733,54 @@ public:
   }
 
 private:
+  // The value against a schema on its own: what it finds is not yet the document's.
+  [[nodiscard]] SchemaReport checkAlone(const YamlNode& value, std::size_t index,
+                                        const std::string& path) const {
+    SchemaChecker alone{*schema_};
+    alone.check(value, index, path);
+    return alone.takeReport();
+  }
+
+  // anyOf, oneOf and not. The annotations of the schemas the value matches are the document's, as
+  // in draft 2020-12; a schema it does not match, or the one of not, gives none.
+  void checkApplicators(const YamlNode& value, const SchemaNode& schema, const std::string& path) {
+    const auto matching = [&](std::span<const std::size_t> schemas) {
+      std::vector<SchemaReport> matched;
+      for (const std::size_t index : schemas) {
+        if (SchemaReport alone = checkAlone(value, index, path); alone.problems.empty()) {
+          matched.push_back(std::move(alone));
+        }
+      }
+      return matched;
+    };
+    const auto keep = [&](std::span<SchemaReport> matched) {
+      for (SchemaReport& alone : matched) {
+        std::ranges::move(alone.annotations, std::back_inserter(report_.annotations));
+      }
+    };
+    if (!schema.anyOf.empty()) {
+      std::vector<SchemaReport> matched = matching(schema.anyOf);
+      if (matched.empty()) {
+        problem(value, path,
+                std::format("matches none of the {} schemas of anyOf", schema.anyOf.size()));
+      }
+      keep(matched);
+    }
+    if (!schema.oneOf.empty()) {
+      std::vector<SchemaReport> matched = matching(schema.oneOf);
+      if (matched.size() != 1) {
+        problem(value, path,
+                std::format("matches {} of the {} schemas of oneOf instead of exactly one",
+                            matched.size(), schema.oneOf.size()));
+      } else {
+        keep(matched);
+      }
+    }
+    if (schema.negated && checkAlone(value, *schema.negated, path).problems.empty()) {
+      problem(value, path, "matches the schema of not");
+    }
+  }
+
   // A value checked against a $ref and against keywords next to it can break the same rule twice,
   // such as a type both give; it is reported once.
   void problem(const YamlNode& value, const std::string& path, std::string message) {
@@ -726,6 +853,11 @@ private:
           value, path,
           std::format("has {} keys, fewer than {}", value.entries().size(), *schema.minProperties));
     }
+    if (schema.maxProperties && value.entries().size() > *schema.maxProperties) {
+      problem(
+          value, path,
+          std::format("has {} keys, more than {}", value.entries().size(), *schema.maxProperties));
+    }
     for (const YamlEntry& entry : value.entries()) {
       const std::string childPath = std::format("{}.{}", path, entry.key);
       if (schema.propertyNames) {
@@ -788,9 +920,26 @@ private:
     if (schema.maxItems && count > *schema.maxItems) {
       problem(value, path, std::format("has {} items, more than {}", count, *schema.maxItems));
     }
+    if (schema.uniqueItems) {
+      checkUnique(value, path);
+    }
     if (schema.items) {
       for (std::size_t i = 0; i < count; ++i) {
         check(value.items()[i], *schema.items, std::format("{}[{}]", path, i));
+      }
+    }
+  }
+
+  // uniqueItems: the first item that equals an earlier one.
+  void checkUnique(const YamlNode& value, const std::string& path) {
+    const std::span<const YamlNode> items = value.items();
+    for (std::size_t i = 1; i < items.size(); ++i) {
+      for (std::size_t j = 0; j < i; ++j) {
+        if (sameValue(items[i], items[j])) {
+          problem(items[i], std::format("{}[{}]", path, i),
+                  std::format("is the same as item {}, and the items must be unique", j));
+          return;
+        }
       }
     }
   }

@@ -32,7 +32,7 @@ private:
 
   struct Instruction {
     Op op = Op::Match;
-    std::bitset<128> set; // the ASCII bytes a Byte instruction takes
+    std::bitset<256> set; // the bytes a Byte instruction takes
     std::size_t x = 0;
     std::size_t y = 0;
   };
