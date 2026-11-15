@@ -670,6 +670,10 @@ DISPLAY=:23 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json \
     scripts/story-chain.sh --content <carpeta> --out <salida> [--from 03] [--to 05]
 ```
 
+Con la GPU (`nvidia_icd.json` en vez de `lvp_icd.json`) cada tramo va más deprisa, pero el driver deja unos KiB sin
+liberar al salir y el `LeakSanitizer` de la build `ci` cierra el juego con error aunque la ruta pase: añade
+`ASAN_OPTIONS=detect_leaks=0`.
+
 Atajos que la cadena declara (lo que una partida real ganaría jugando más): los salvajes del camino se ganan al
 empezar (`encounters: win`); los jefes que el compañero no gana a tiempo terminan ganados tras un rato
 (`win_after`); la comida, las medicinas y los chips están en la bolsa en vez de comprarse; el tiempo pasa deprisa

@@ -13,8 +13,10 @@ name: full-07
 device: keyboard
 timeout: 1200
 steps:
-  - resize: [1280, 720]
+  # The map first, then the window: on the sanitizer build the first frame after loading a save can take more than
+  # the 10 s a resize gets (the status portrait and the models upscale their textures as the game starts).
   - wait: {map: twna02, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
   # Shortcut, first part: three recruits of the free route (Leomon 248, Elecmon 218, Shellmon 235) bring the city to
   # the 15 points the elder's Greymon scene asks for; a save counts them.
   - script: story_set("trigger 248 on")

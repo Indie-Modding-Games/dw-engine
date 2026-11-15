@@ -7,8 +7,10 @@ name: full-08
 device: keyboard
 timeout: 1200
 steps:
-  - resize: [1280, 720]
+  # The map first, then the window: on the sanitizer build the first frame after loading a save can take more than
+  # the 10 s a resize gets (the status portrait and the models upscale their textures as the game starts).
   - wait: {map: twna08, seconds: 2, timeout: 120}
+  - resize: [1280, 720]
   # Airdramon's fight (chunk 7) can leave the partner on its last hit points: a full recovery from the bag first, as
   # a player would before the climb. A partner with little discipline often refuses: a refusal is scolded away (the
   # next item is taken), as in the game.
