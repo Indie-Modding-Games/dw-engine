@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <format>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -256,4 +257,24 @@ TEST_CASE("a story section saved at version 1 still loads") {
   REQUIRE_MESSAGE(read.has_value(), errorOf(read));
   CHECK(isSet(*loaded.story, PlayedTrigger));
   CHECK(loaded.story->state().variable(20).value() == 9);
+}
+
+TEST_CASE("a confirm cell pressed between frames is asked for at the next frame") {
+  // tamer.c: checkMapInteraction reads the press once a frame; the field reads it on any tick.
+  dwe::session::FrameCells cells;
+  const std::vector<std::int32_t> step{51};
+  const std::vector<std::int32_t> pressed{81};
+  CHECK(cells.take(pressed, 81, false).empty());
+  CHECK(cells.take({}, std::nullopt, false).empty());
+  CHECK(cells.take({}, std::nullopt, true) == std::vector<std::int32_t>{81});
+  // Asked once: the next frame has it no more.
+  CHECK(cells.take({}, std::nullopt, true).empty());
+  // A step cell asks on the frame's own tick only, and a press on the frame tick is not doubled.
+  CHECK(cells.take(step, std::nullopt, false).empty());
+  CHECK(cells.take({}, std::nullopt, true).empty());
+  CHECK(cells.take(pressed, 81, true) == std::vector<std::int32_t>{81});
+  // A new map forgets a press its frame did not reach.
+  CHECK(cells.take(pressed, 81, false).empty());
+  cells.clear();
+  CHECK(cells.take({}, std::nullopt, true).empty());
 }

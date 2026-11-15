@@ -57,6 +57,24 @@ inline constexpr std::int32_t ChartedMedalCount = 15;
 inline constexpr std::int32_t FirstPlayerItemTrigger = 45;
 inline constexpr std::int32_t PlayerItemCount = 4;
 
+// The cell sections the story asks for at a frame of the original (tamer.c: checkMapInteraction,
+// once a frame). The field ticks several times a frame and reads a confirm press on whichever tick
+// it lands: a confirm cell asks only on that tick, so it is kept for the next frame, as the
+// original reads the press at its next frame. A step cell asks every tick the player stands on
+// it, so only the frame's own tick counts.
+class FrameCells {
+public:
+  // The sections to ask for after a field tick: none between frames; at a frame, the tick's own
+  // and a confirm cell pressed since the last frame.
+  [[nodiscard]] std::vector<std::int32_t> take(std::span<const std::int32_t> sections,
+                                               std::optional<std::int32_t> confirmed, bool frame);
+  // Forgets a pressed confirm cell (a new map).
+  void clear() { confirmed_.reset(); }
+
+private:
+  std::optional<std::int32_t> confirmed_;
+};
+
 // The ruleset section of the story (rules/<id>/story.yaml).
 inline constexpr std::string_view StorySection = "story";
 
@@ -161,8 +179,11 @@ public:
   void mapEntered(std::int32_t map, std::optional<std::int32_t> arrivalSection = std::nullopt);
   // Asks for the sections of the map's script that the player's cell asked for in the last field
   // tick (game::field::Field::cellSections), at the next frame; a running script drops them. Only
-  // the tick before a frame of the original asks, as the original checks the cell once a frame.
-  void runCellSections(std::span<const std::int32_t> sections);
+  // the tick before a frame of the original asks, as the original checks the cell once a frame;
+  // a confirm cell pressed between frames (game::field::Field::confirmSection) waits for it
+  // (FrameCells).
+  void runCellSections(std::span<const std::int32_t> sections,
+                       std::optional<std::int32_t> confirmed = std::nullopt);
   // Whether the story set up the script of the map with this number (StoryRunner::scriptsMap).
   [[nodiscard]] bool scriptsMap(std::int32_t map) const;
 
@@ -298,6 +319,7 @@ private:
   bool seedNewGame_ = true;
   // The cell sections asked on the last frame: a step cell asks every frame, logged once.
   std::vector<std::int32_t> askedCells_;
+  FrameCells frameCells_;
 };
 
 } // namespace dwe::session

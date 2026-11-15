@@ -49,6 +49,7 @@ void StoryAdapter::setFieldHoldTarget(StoryHoldTarget target) {
 
 void StoryAdapter::mapEntered(std::int32_t map, std::optional<std::int32_t> arrivalSection) {
   enteredMap_ = map;
+  frameCells_.clear();
   if (!runner_) {
     return;
   }
@@ -77,7 +78,24 @@ void StoryAdapter::playUnplayedChange() {
   runMapHead(*enteredMap_);
 }
 
-void StoryAdapter::runCellSections(std::span<const std::int32_t> sections) {
+std::vector<std::int32_t> FrameCells::take(std::span<const std::int32_t> sections,
+                                           std::optional<std::int32_t> confirmed, bool frame) {
+  if (confirmed) {
+    confirmed_ = confirmed;
+  }
+  if (!frame) {
+    return {};
+  }
+  std::vector<std::int32_t> asked{sections.begin(), sections.end()};
+  if (confirmed_ && !std::ranges::contains(asked, *confirmed_)) {
+    asked.push_back(*confirmed_);
+  }
+  confirmed_.reset();
+  return asked;
+}
+
+void StoryAdapter::runCellSections(std::span<const std::int32_t> sections,
+                                   std::optional<std::int32_t> confirmed) {
   if (!runner_) {
     return;
   }
@@ -85,12 +103,15 @@ void StoryAdapter::runCellSections(std::span<const std::int32_t> sections) {
   // section it asked for in that same frame: a section that ends at once has ended before the next
   // frame's menu check (IS_SCRIPT_PAUSED is 1 again), so Triangle opens the menu on the cell. The
   // field ticks several times a frame here; asking only on the tick the frame runs keeps the
-  // request from waiting between frames, where it shut the menu (and the talk) on the cell.
-  if (!runner_->frameRunsNextTick()) {
+  // request from waiting between frames, where it shut the menu (and the talk) on the cell. A
+  // confirm press read between frames waits for the frame (FrameCells), or it would be lost.
+  const bool frame = runner_->frameRunsNextTick();
+  const std::vector<std::int32_t> frameSections = frameCells_.take(sections, confirmed, frame);
+  if (!frame) {
     return;
   }
   std::vector<std::int32_t> asked;
-  for (const std::int32_t section : sections) {
+  for (const std::int32_t section : frameSections) {
     if (!std::in_range<std::uint16_t>(section)) {
       core::logError("[port:story] checkMapInteraction (tamer.c:660): cell {} is no section",
                      section);

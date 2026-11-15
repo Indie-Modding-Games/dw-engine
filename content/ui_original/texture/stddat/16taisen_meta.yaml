@@ -1,0 +1,24 @@
+source: "STDDAT/16TAISEN.TIM"
+offset: 0
+mode: indexed4
+width: 256
+height: 256
+image_rect:
+  x: 896
+  y: 0
+  width: 64
+  height: 256
+clut_rect:
+  x: 288
+  y: 480
+  width: 16
+  height: 5
+png: indexed
+png_palette: 0
+palettes:
+- "0000 179d 054b 1659 0300 015b 0014 4b3c 6c13 000a 7fff 3def 5d0d 4805 0444 0000"
+- "0000 179d 054b 1659 0300 0180 0014 4b3c 6c13 000a 7fff 3def 6124 30c0 0444 0000"
+- "0000 179d 04eb 0098 3700 1980 0014 6a3e 6019 2c0e 7fff 7fb7 6e2d 3904 0444 0000"
+- "0000 179d 054b 2675 3700 1980 0014 0219 0000 000a 7fff 3def 1ce7 1084 0444 0000"
+- "0000 00cb 0087 0130 02d7 0231 0014 2e96 0000 0000 7fff 0000 0000 1084 0444 0000"
+scale: 4

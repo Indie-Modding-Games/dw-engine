@@ -2324,7 +2324,12 @@ TEST_CASE("with the generous talk range a confirm reads the sign's cell in front
     run(field, 0.5F);
     field.setInput({.confirm = true});
     field.tick(Tick);
-    return std::ranges::contains(field.cellSections(), 80);
+    const bool asked = std::ranges::contains(field.cellSections(), 80);
+    // The confirm cell is named apart, only on the press's tick: the story keeps it for its frame.
+    CHECK(field.confirmSection() == (asked ? std::optional<std::int32_t>{80} : std::nullopt));
+    field.tick(Tick);
+    CHECK_FALSE(field.confirmSection().has_value());
+    return asked;
   };
   CHECK_FALSE(reads(false));
   CHECK(reads(true));
