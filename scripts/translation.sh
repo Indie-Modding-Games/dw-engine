@@ -32,7 +32,8 @@ story_box_rows=4
 # its surrounding spaces, a name of kept_name_block (the speaker lines of the curling hints).
 kept_english_blocks=(main.digimon_names)
 # The ids of kept_english_blocks that are a title in English words, not a name: they are translated.
-translated_name_ids=(main.digimon_names.0118)
+# Slot 0 is the player's placeholder until the opening names the player (getSpeakerName, 0xFD).
+translated_name_ids=(main.digimon_names.0000 main.digimon_names.0118)
 kept_original_blocks=(
   main.tournament_grades
   main.script_menu_hiragana_ka_row main.script_menu_lowercase_rows main.singles

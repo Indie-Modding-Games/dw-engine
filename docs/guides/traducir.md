@@ -39,7 +39,8 @@ queda así a propósito» de «falta traducir»:
 
 - `kept_english`: los nombres de los Digimon (`main.digimon_names`), que se quedan en inglés. Los nombres de las
   técnicas (`main.move_names`) sí se traducen (decisión del responsable de diseño, 2026-10-21). Los títulos en
-  palabras inglesas de ese bloque, que no son nombres, sí se traducen: `Market Manager` (`translated_name_ids`).
+  palabras inglesas de ese bloque, que no son nombres, sí se traducen (`translated_name_ids`): `Market Manager` y
+  `main character`, el nombre que sale en lugar del jugador mientras no tiene uno (una partida sin nombre).
 - `kept_original`: lo que no son palabras inglesas y se queda tal cual: las cadenas en blanco, las que, sin los
   espacios de los lados, son el nombre de un Digimon (la línea de quien habla en el curling), las letras sueltas, los
   restos en japonés que el US no muestra, las siglas `HP`, `MP` y `Bits` y el nombre propio `Overdell`.
