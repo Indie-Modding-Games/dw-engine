@@ -180,6 +180,10 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
   scene->models_ = std::move(*models);
   scene->mapRenderer_->setUpscaleCache(desc.upscaleCache);
   scene->models_->setUpscaleCache(desc.upscaleCache);
+  // Characters load mid-tick too (the NPCs a map or a script brings in, an evolution): their
+  // textures are upscaled in the background, smooth until then, like the map's background, so no
+  // tick waits for them (#325).
+  scene->models_->setUpscaleInBackground(true);
   auto prims = ScenePrimDrawer::create(renderer);
   if (!prims) {
     return std::unexpected{prims.error()};
@@ -1246,6 +1250,7 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
     animate(*partnerActor_, animationSeconds);
     playClipSounds(*partnerActor_);
   }
+  models_->pollTextures();
   models_->clear();
   if (stage_.showsPlayer()) {
     submit(*playerActor_, alpha,
