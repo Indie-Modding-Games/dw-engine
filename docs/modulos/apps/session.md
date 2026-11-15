@@ -271,6 +271,9 @@ una vez (los tests le dan las suyas). Registra las comprobaciones de las dos sec
   selectOptionMenu`), que lo gasta al lanzarlo (`main.c: startThrowingItem`), y su efecto se convierte en el
   `ThrownItem` del combate, que siempre llega (`main.c: tickThrownItem`). Falla si no hay bolsa o si el combate no la
   deja abrir (`Battle::bagAvailable`).
+- **Leer de nuevo** (`readRules` tras un ajuste, una opción del jugador que cambia las reglas u otro ruleset): escribe
+  en las reglas y el catálogo que ya dio en vez de crear otros, así que `effectRules()`, `rules()` y `catalog()` siguen
+  apuntando a los mismos objetos con los valores nuevos, y un combate en marcha y el campo no leen memoria liberada.
 
 La sección `partner_moves` ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_partner_moves.schema.json)) es de la partida.
 
@@ -482,6 +485,7 @@ al revés), al espacio del mundo.
 | Cancelar en las opciones contesta la última salvo con el disparador 49 (entonces suena (0, 0xB)) | `shop/script_menu.c: openMeritShop` (estado 3), `tickSelectionDialogue` | `MeritShop::choiceCancellable` | `the merit exchange's rules carry…` | Igual |
 | Rutina 15: la caja del dinero mientras sigue la sección; rutina 22: la medalla de los torneos | `script_common.c: createShopBitsBox`, `tournament.c: scriptCheckTournamentMedal` | `story_routines/routine_money_box.cpp`, `routine_tournament_medal.cpp` | `script_common.c tickShopBitsBox: ...` (`apps/game/tests/money_box_tests.cpp`) | Portadas; la 22 sin test propio |
 | Una casilla de paso del guion pide su sección una vez por fotograma del original, en el tick en que ese fotograma corre: una sección que acaba al momento ya acabó cuando llega el siguiente, así que el menú (Triangle, Tab en el PC) se abre sobre la casilla en cada pulsación. Medido en el original (estado `01_field_outside_jijimon_house`, jugador en la salida 0 de twna01, celda 66, sección 0x42 de su guion, que acaba al momento): el menú se abre en 2 de 2 pulsaciones con `SCRIPT_SECTION` en 0x42 | `tamer.c: tamerTickWalkingState` (Triangle con `IS_SCRIPT_PAUSED` 1 antes de `checkMapInteraction`), `script_interp.c: callScriptSection` | `StoryAdapter::runCellSections` (solo con `StoryRunner::frameRunsNextTick`) | `a step cell asked on the tick before each frame leaves the runner idle between frames`; ruta `menu-stress` | Igual. Antes la casilla pedía la sección en cada tick y la petición esperaba al fotograma siguiente: el guion contaba como en marcha casi siempre y el menú no se abría (6 de 6 intentos fallidos en un segundo cada uno), ni la charla con confirmar |
+| Las reglas de combate se leen de nuevo (un ajuste, la dificultad o un cambio de las opciones del jugador, otro ruleset) sin dejar colgados a quienes ya las tienen: la burbuja de humor del campo (`FieldStoryProps`, los puntos de efecto de `effectRules()`) y un combate en marcha (`Battle`: reglas y catálogo de técnicas). Antes `readRules` creaba unas reglas y un catálogo nuevos y liberaba los viejos, así que con la dificultad fácil o una opción de reglas activa la burbuja de humor de un cliente de la tienda tras elegir una respuesta leía memoria liberada (cierre con 0xC0000005 en Windows) | El original no relee sus reglas; `effect_common.c: getOriginalType` desde `renderMonochromonMoodBubble` | `BattleAdapter::readRules` escribe en las reglas y el catálogo que ya dio | `the rules read again stay where the field and a running battle point at them` | Igual (motor) |
 
 ## Tests
 
