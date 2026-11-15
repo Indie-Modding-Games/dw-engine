@@ -317,6 +317,16 @@ jobs:
         if: success() && steps.vcpkg-cache.outputs.cache-hit != 'true'
         run: scripts/ci/prune_vcpkg_cache.sh "$RUNNER_TEMP/vcpkg-cache" build
 
+      # One copy per computer: a copy for older dependencies next to the new one would overfill the
+      # repository's cache space and evict another computer's.
+      - name: Delete the older vcpkg binary caches
+        if: success() && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: ./.github/actions/trim-caches
+        with:
+          prefix: vcpkg-release-${{ matrix.platform }}-${{ runner.os == 'macOS' && 'llvm22-' || '' }}
+          keep: vcpkg-release-${{ matrix.platform }}-${{ runner.os == 'macOS' && 'llvm22-' || '' }}${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+
       - name: Save the vcpkg binary cache
         if: always() && steps.vcpkg-cache.outcome == 'success' && steps.vcpkg-cache.outputs.cache-hit != 'true'
         continue-on-error: true
@@ -379,8 +389,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: scripts/ci/image.sh launcher --push
 
-      # cargo's downloads and the compiled dependencies, by Cargo.lock and the image: the launcher's
-      # own crate is compiled again, its dependencies only when Cargo.lock changes.
+      # cargo's downloads and cargo-xwin's Windows files, by Cargo.lock and the image. Not the
+      # compiled dependencies (build/launcher, ~600 MB per system): the launcher is built only when it
+      # changed, and keeping them evicted the game's vcpkg caches from the repository's 10 GB.
       - name: Restore the launcher's build cache
         id: launcher-cache
         uses: actions/cache/restore@v4
@@ -391,7 +402,6 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-            build/launcher
           key: launcher-${{ matrix.system }}-${{ hashFiles('apps/launcher/src-tauri/Cargo.lock', '.devcontainer/launcher.Dockerfile') }}
           restore-keys: launcher-${{ matrix.system }}-
 
@@ -508,7 +518,6 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-            build/launcher
           key: launcher-${{ matrix.system }}-${{ hashFiles('apps/launcher/src-tauri/Cargo.lock', '.devcontainer/launcher.Dockerfile') }}
 
   # Not part of the release: the objects of ci.yml's presets (ci for Linux, windows-cross for
@@ -524,6 +533,10 @@ jobs:
           # keeps them in a cache of their own; windows-cross's are the release's.
           - { preset: ci, cache: ccache-ci-linux, vcpkg: vcpkg-ci-linux-x86_64 }
           - { preset: windows-cross, cache: ccache-ci-windows, vcpkg: vcpkg-release-windows-x86_64 }
+          # Only the Linux package's dependencies, no build: the game job saves them only in full
+          # builds, so once the cache space evicted them every pull request's package job built
+          # them again from their sources until the next one. Here they come back on the next merge.
+          - { preset: linux-clang-package, vcpkg: vcpkg-release-linux-x86_64, deps-only: true }
     runs-on: ubuntu-24.04
     env:
       PRESET: ${{ matrix.preset }}
@@ -564,14 +577,21 @@ jobs:
           restore-keys: ${{ matrix.vcpkg }}-
 
       - name: Restore the compiler cache
+        if: ${{ !matrix.deps-only }}
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/ccache
           key: ${{ matrix.cache }}-${{ github.run_id }}
           restore-keys: ${{ matrix.cache }}-
 
+      # The configure installs the dependencies (vcpkg's manifest), as scripts/package_linux.sh's.
+      - name: Dependencies
+        if: matrix.deps-only && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        run: scripts/dev.sh configure
+
       # The same configure as ci.yml's job of this preset.
       - name: Build
+        if: ${{ !matrix.deps-only }}
         run: |
           scripts/dev.sh shell -c 'ccache --zero-stats'
           if [ "$PRESET" = ci ]; then
@@ -583,12 +603,22 @@ jobs:
           scripts/dev.sh build
 
       - name: Delete the packages this build no longer uses from the vcpkg binary cache
-        if: success() && matrix.preset == 'ci' && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        if: success() && matrix.preset != 'windows-cross' && steps.vcpkg-cache.outputs.cache-hit != 'true'
         run: scripts/ci/prune_vcpkg_cache.sh "$RUNNER_TEMP/vcpkg-cache" build
+
+      # One copy per key prefix: a copy for older dependencies next to the new one would overfill the
+      # repository's cache space and evict another computer's.
+      - name: Delete the older vcpkg binary caches
+        if: success() && matrix.preset != 'windows-cross' && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: ./.github/actions/trim-caches
+        with:
+          prefix: ${{ matrix.vcpkg }}-
+          keep: ${{ matrix.vcpkg }}-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
 
       # Saved even when the build failed after its dependencies, as in the game job.
       - name: Save the vcpkg binary cache
-        if: always() && matrix.preset == 'ci' && steps.vcpkg-cache.outcome == 'success' && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        if: always() && matrix.preset != 'windows-cross' && steps.vcpkg-cache.outcome == 'success' && steps.vcpkg-cache.outputs.cache-hit != 'true'
         continue-on-error: true
         uses: actions/cache/save@v4
         with:
@@ -597,14 +627,14 @@ jobs:
 
       # ccache applies a lower size limit only when it next cleans up, so the cache is trimmed to it here.
       - name: Trim the compiler cache to its size limit
-        if: always()
+        if: always() && !matrix.deps-only
         continue-on-error: true
         run: scripts/dev.sh shell -c 'ccache --show-stats; ccache --cleanup'
 
       # The older copies go first: saving the new one next to them overfills the repository's
       # cache space for a moment, and the space is freed by evicting the vcpkg caches.
       - name: Delete the older compiler caches
-        if: always()
+        if: always() && !matrix.deps-only
         continue-on-error: true
         uses: ./.github/actions/trim-caches
         with:
@@ -613,7 +643,7 @@ jobs:
 
       - name: Save the compiler cache
         id: ccache-save
-        if: always()
+        if: always() && !matrix.deps-only
         continue-on-error: true
         uses: actions/cache/save@v4
         with:
