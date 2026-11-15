@@ -181,6 +181,7 @@ sources:
   "main.card_chart_labels.0002": "0380888ee8facc3b348108250267fc99ab7014de"
   "main.card_chart_labels.0003": "597f3bd486a74b4f88852429736fe4a9ae3d6d5d"
   "main.card_chart_labels.0004": "d5a2311f9a778626e5a698ba2bf7b63a48c70081"
+  "main.digimon_names.0000": "f2875917bcaac779806d1cab2afe2a7a06095ba7"
   "main.digimon_names.0118": "19e83dd1ce3af2542224ea60282523c2dbee9029"
   "main.game_menu_level_titles.0000": "62d398303f2ddc90094d7900397cc36439e46948"
   "main.game_menu_level_titles.0001": "16ca44702a9bce35349783e2780b3564876b28c6"
@@ -5480,7 +5481,6 @@ sources:
   "vs.command_names.0005": "1c59d3d634d7c1fc59947d34dda9ed08eec6b684"
   "vs.command_names.0006": "64fbd995d3b6b156ee26ae3c03e6516434c34c12"
 kept_english:
-  - "main.digimon_names.0000"
   - "main.digimon_names.0001"
   - "main.digimon_names.0002"
   - "main.digimon_names.0003"
