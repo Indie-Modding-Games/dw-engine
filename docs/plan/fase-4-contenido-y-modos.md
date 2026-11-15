@@ -223,9 +223,12 @@ Lo que bloquea el cierre, cada uno con su tarjeta propuesta:
 
 1. **No hay versión estable.** Solo hay versiones de prueba (la última, `v0.1.0-beta.1051`, del 2026-11-09). Tarjeta:
    «Promover la primera estable cuando acabe la ronda de testers».
-2. **Las rutas del campo con el disco no llegan a la casa del anciano.** Los tests «the route with stick directions» y
-   «the route with click-to-move» (`packages/game/field/tests/route_tests.cpp`) se quedan en `twna01` sin llegar al
-   disparador 112. Tarjeta: «Arreglar las rutas de prueba del campo de File City a la casa del anciano».
+2. **Arreglado (2026-11-15): las rutas del campo con el disco llegan a la casa del anciano.** Los tests «the route with
+   stick directions» y «the route with click-to-move» (`packages/game/field/tests/route_tests.cpp`) se quedaban en
+   `twna01` sin llegar al disparador 112. El fallo era del test, no del juego: el clic se daba durante el fundido de
+   entrada, que retiene al jugador como el original (`tamer.c: tamerTickChangeMap`) y lo descarta, y el stick daba
+   vueltas alrededor de un punto del camino más cerca que un paso de carrera (50 unidades por fotograma). Ahora cada
+   tramo espera a que el jugador quede libre y el alcance de los puntos es un paso.
 3. **Arreglado (2026-11-15): `dwx validate` encontraba problemas en el paquete `game`.** Claves que los esquemas no
    conocían, documentos de `rules/original/` y de `models/` sin regla de esquema y esquemas con palabras clave que el
    validador no admitía. Los esquemas describen ya esas claves, el manifiesto del paquete tiene reglas para todos sus

@@ -40,8 +40,6 @@ namespace {
 constexpr float Tick = 1.0F / 60.0F;
 // Each leg must end well within this.
 constexpr int MaxTicksPerLeg = 60 * 60;
-// The stick aims at the next waypoint once this close to the current one: less than a tick's run.
-constexpr float WaypointReach = 15.0F;
 
 template <typename T>
 std::string errorOf(const dwe::core::Result<T>& result) {
@@ -87,6 +85,21 @@ std::optional<MapChange> walkToTrigger(Field& field, std::uint8_t value, Drive d
     FAIL("no path to trigger ", int{value}, " in ", field.mapId());
     return std::nullopt;
   }
+  // The fade in after entering a map holds the player until its last frame, and a click made while
+  // held is dropped: the leg starts once he moves freely, as a player's would.
+  field.setInput({});
+  for (int tick = 0; !field.playerFree(); ++tick) {
+    if (tick == MaxTicksPerLeg) {
+      FAIL("the player is never let go in ", field.mapId());
+      return std::nullopt;
+    }
+    field.tick(Tick);
+  }
+  // The player moves a frame's run at a time (anim.c: applyRootMomentum, once per frame), farther
+  // than the path's waypoints are apart: the stick aims at the next one once a step reaches the
+  // current, or it would step over it and back for ever.
+  const auto& rules = field.rules();
+  const float waypointReach = rules.player.runSpeed * rules.transition.frameSeconds;
   if (drive == Drive::Click) {
     field.setInput({.run = true, .moveTarget = path.back()});
     field.setInput({.run = true});
@@ -98,7 +111,7 @@ std::optional<MapChange> walkToTrigger(Field& field, std::uint8_t value, Drive d
       // As a gamepad would: point the stick, relative to the camera, at the next waypoint of the
       // path.
       const glm::vec3 position = field.player().position;
-      while (path.size() > 1 && glm::distance(position, path.front()) <= WaypointReach) {
+      while (path.size() > 1 && glm::distance(position, path.front()) <= waypointReach) {
         path.erase(path.begin());
       }
       const glm::vec3 aim = path.front() - position;

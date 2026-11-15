@@ -317,6 +317,9 @@ guion) y
 `rules_tests.cpp` (lectura de los YAML, también los del paquete `game`, y la curva del fundido),
 `trigger_bands_tests.cpp` (los tramos del paquete `game` son los del original, valor a valor, y los errores) usan mapas de prueba. `route_tests.cpp` recorre la ruta de la fase 2 en el contenido extraído si
 `DWE_CONTENT` apunta a él: File City (`twna01`) → casa del anciano (`room08`) → File City, con el stick y con clics.
+Cada tramo empieza cuando el fundido de entrada suelta al jugador (un clic mientras lo retiene se descarta), y el stick
+apunta al siguiente punto del camino en cuanto un paso llega al actual: el jugador avanza la carrera de un fotograma
+(50 unidades) de una vez.
 Cada pieza tiene además los suyos: `partner_follow_tests.cpp`, `player_trail_tests.cpp`, `field_items_tests.cpp`,
 `script_warps_tests.cpp`, `boss_arrival_tests.cpp`, `white_fade_tests.cpp` y `reachability_tests.cpp` (lento: que una
 partida nueva llega a sus mapas y vuelve).
