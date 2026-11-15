@@ -714,7 +714,7 @@ Versión de la API de la interfaz: **0.15.0**.
 | `battle.shout.y` | ajuste | número | La línea del grito. |
 | `battle.shout.hop` | ajuste | número | El salto del grito. |
 | `battle.shout.scale` | ajuste | número | El tamaño del grito. |
-| `battle_command` | comando | número | Da una orden al compañero (su número, battle.menu.<n>.command). Un addon, solo en la fase fight. |
+| `battle_command` | comando | número | Da una orden al compañero (su número, battle.menu.&lt;n&gt;.command). Un addon, solo en la fase fight. |
 | `battle_bag_open` | comando | — | Abre la bolsa del jugador. Un addon, solo en la fase fight. |
 | `battle_bag_close` | comando | — | Cierra la bolsa del jugador y vuelve al combate. Un addon, solo con la bolsa abierta. |
 | `battle_charge` | comando | — | Una pulsación de la carga del golpe final. Un addon, solo en la fase fight. |
@@ -786,7 +786,7 @@ Versión de la API de la interfaz: **0.15.0**.
 | `versus.battles` | ajuste | número | Cuántos combates tiene la serie. |
 | `versus.choice` | ajuste | número | La fila de la duración de serie elegida. |
 | `versus.choices` | ajuste | número | Cuántas duraciones de serie hay. |
-| `versus.arena` | ajuste | número | El número del escenario elegido (su texto es versus.arena.<n>). |
+| `versus.arena` | ajuste | número | El número del escenario elegido (su texto es versus.arena.&lt;n&gt;). |
 | `versus.arena_choice` | ajuste | número | La fila del escenario elegido. |
 | `versus.arenas` | ajuste | número | Cuántos escenarios hay. |
 | `versus.code` | ajuste | texto | El código de la sala; vacío hasta que hay uno. |
@@ -842,7 +842,7 @@ Versión de la API de la interfaz: **0.15.0**.
 | `versus.score.wins.<n>` | ajuste | número | Las victorias de cada lado. |
 | `versus.score.losses.<n>` | ajuste | número | Las derrotas de cada lado. |
 | `versus.score.face.<n>.<n>` | ajuste | número | La cara del luchador de un lado en un combate (por el número de su especie). |
-| `versus_action` | comando | texto | Un paso en la vista: up, down, left, right, confirm, cancel, menu, tab_previous, tab_next, finisher, o pick:<fila> para ir a una fila y confirmarla. |
+| `versus_action` | comando | texto | Un paso en la vista: up, down, left, right, confirm, cancel, menu, tab_previous, tab_next, finisher, o pick:&lt;fila&gt; para ir a una fila y confirmarla. |
 | `versus.state(): table` | consulta | tabla | La vista, el cursor, los combates de la serie y, en un combate: round, clock, side (el lado del jugador), wins, stalled, leave_asked, blink y arena (lo que enseña el escenario, o nil sin él). |
 | `versus.setup(): table` | consulta | tabla | La preparación del anfitrión: series y series_count, arena, arena_row y arenas. |
 | `versus.connection(): table` | consulta | tabla | La conexión: stage (creating, waiting, connecting) y code (el código de la sala). |

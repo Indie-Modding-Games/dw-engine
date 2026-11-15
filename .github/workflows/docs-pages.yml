@@ -1,10 +1,13 @@
 name: Docs site (GitHub Pages)
 
 # Publishes the documentation site (docs/) to GitHub Pages every time main changes it. The site is served under
-# /<repository>/, at https://indie-modding-games.github.io/dw-engine/. A broken page only stops the deploy: CI does
-# not build the site (scripts/dev.sh docs builds it on a computer).
+# /<repository>/, at https://indie-modding-games.github.io/dw-engine/. A pull request that changes the docs builds the
+# site too, without deploying it, so a page the site cannot build shows up before it reaches main.
 on:
   push:
+    branches: [main]
+    paths: ['docs/**', '.devcontainer/docs-site/**', '.github/workflows/docs-pages.yml']
+  pull_request:
     branches: [main]
     paths: ['docs/**', '.devcontainer/docs-site/**', '.github/workflows/docs-pages.yml']
   workflow_dispatch:
@@ -13,8 +16,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: docs-pages
-  cancel-in-progress: false
+  group: docs-pages-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -38,11 +41,13 @@ jobs:
           DWE_DOCS_BASE: /${{ github.event.repository.name }}/
         run: node_modules/.bin/vitepress build docs
 
-      - uses: actions/upload-pages-artifact@v3
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
         with:
           path: build/docs-site
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-24.04
     permissions:
