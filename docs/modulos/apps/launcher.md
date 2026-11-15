@@ -502,6 +502,12 @@ la promoción corre en las compilaciones completas y cada lunes:
 | Objetos de las comprobaciones de los pull requests (`ccache-ci-linux`, `ccache-ci-windows`) | una por ejecución; las guarda el trabajo `pr-caches` | que `linux` y `windows` compilen solo lo que cambió el pull request |
 | Descargas de cargo y archivos de Windows de cargo-xwin del lanzador, por sistema | `Cargo.lock` y el Dockerfile del lanzador | las descargas. Las dependencias compiladas (`build/launcher`, ~600 MB por sistema) no se guardan: el lanzador solo se compila cuando cambió, y ocupaban el sitio de las cachés de vcpkg del juego |
 
+Cuando falta la caché de vcpkg (el límite de 10 GB la desaloja), el trabajo vuelve a bajar las fuentes de las
+dependencias de sus servidores. vcpkg las baja con `scripts/ci/fetch_source.sh` (`X_VCPKG_ASSET_SOURCES`, puesto por
+`scripts/dev.sh` y por las instalaciones de vcpkg de macOS): reintenta ante cualquier error y, para kernel.org, prueba
+también sus otros servidores, porque `mirrors.edge.kernel.org` se cortó dos veces en noviembre de 2026 y el paquete de
+Linux falló por eso. Si todo falla, vcpkg prueba aún las direcciones del port.
+
 *Publicar* firma con el `tauri` de npm (versión fijada, desde la caché de npm) en vez de construir la imagen del
 lanzador (2–3 min menos). Las imágenes de
 Docker (la de desarrollo y la del lanzador) se guardan en el registro de contenedores de GitHub

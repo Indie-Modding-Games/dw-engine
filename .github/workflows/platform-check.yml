@@ -114,6 +114,8 @@ jobs:
           echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
           echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
           echo "VCPKG_DOWNLOADS=$RUNNER_TEMP/vcpkg-cache/downloads" >> "$GITHUB_ENV"
+          # Each download retried and, for kernel.org, from its other hosts (scripts/ci/fetch_source.sh).
+          echo "X_VCPKG_ASSET_SOURCES=x-script,$GITHUB_WORKSPACE/scripts/ci/fetch_source.sh {url} {sha512} {dst}" >> "$GITHUB_ENV"
 
       - name: Restore the vcpkg binary cache
         id: vcpkg-cache

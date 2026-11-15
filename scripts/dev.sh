@@ -209,6 +209,7 @@ in_container() {
     --user "$(id -u):$(id -g)" \
     -e HOME=/tmp/home \
     -e VCPKG_DOWNLOADS=/cache/vcpkg/downloads \
+    -e X_VCPKG_ASSET_SOURCES="x-script,$root/scripts/ci/fetch_source.sh {url} {sha512} {dst}" \
     -e CTEST_PARALLEL_LEVEL="$jobs" \
     -e CCACHE_DIR=/cache/ccache \
     -e CCACHE_MAXSIZE="${DWE_CCACHE_SIZE:-$default_ccache_size}" \
