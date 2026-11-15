@@ -151,6 +151,11 @@
           "type": "boolean"
         }
       }
+    },
+    "pack_price": {
+      "description": "The price of a pack that the card shop's script charges; the bulk purchase charges it for each pack after the first. Leave it out (0) to turn the bulk purchase off.",
+      "type": "integer",
+      "minimum": 0
     }
   }
 }

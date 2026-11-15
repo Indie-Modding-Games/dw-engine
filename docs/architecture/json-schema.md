@@ -15,28 +15,42 @@ así un esquema no comprueba menos de lo que dice.
 | `patternProperties` | El esquema de las claves que encajan en cada expresión regular (ver abajo) |
 | `required` | Las claves que tienen que estar |
 | `additionalProperties` | `false` (no se admiten otras claves), `true` o un esquema para las claves que ni `properties` ni `patternProperties` describen |
-| `minProperties` | Cuántas claves tiene un mapping, como mínimo |
+| `minProperties`, `maxProperties` | Cuántas claves tiene un mapping, como mínimo y como máximo |
 | `propertyNames` | El esquema que cumple cada clave de un mapping, como texto |
 | `items` | El esquema de cada elemento de una lista (la forma de tupla, una lista de esquemas, no está) |
 | `minItems`, `maxItems` | Cuántos elementos tiene una lista |
+| `uniqueItems` | Con `true`, ningún elemento de la lista es igual a otro (comparados como JSON, igual que `enum`) |
 | `minLength`, `maxLength` | Cuántos caracteres tiene un texto (puntos de código UTF-8, no bytes) |
 | `minimum`, `maximum` | Límites de un número, incluidos |
 | `exclusiveMinimum`, `exclusiveMaximum` | Límites de un número, excluidos (la forma de 2020-12: un número) |
 | `pattern` | Una expresión regular que el texto tiene que contener (ver abajo) |
-| `enum`, `const` | Los valores permitidos, comparados como JSON: los números por valor, `"1"` no es `1` |
+| `enum`, `const` | Los valores permitidos, comparados como JSON: los números por valor, `"1"` no es `1`, los mappings sin mirar el orden de sus claves |
+| `anyOf`, `oneOf` | Una lista de esquemas que se aplican al mismo valor: tiene que cumplir al menos uno (`anyOf`) o exactamente uno (`oneOf`) |
+| `not` | Un esquema que el valor no puede cumplir |
 | `$ref` | `#` (la raíz) o `#/$defs/<nombre>`; se aplica junto a las demás palabras clave del mismo esquema |
 | `$defs` | Definiciones reutilizables, solo en la raíz |
-| `title`, `description`, `default`, `$schema`, `$id` | Anotaciones para las personas y los editores; no comprueban nada |
+| `title`, `description`, `default`, `deprecated`, `$schema`, `$id` | Anotaciones para las personas y los editores; no comprueban nada |
 
 Como en 2020-12, una clave cumple su esquema de `properties` y, además, el de cada entrada de `patternProperties` cuya
 expresión encaje en ella (puede ser más de una). `additionalProperties` solo se aplica a las claves que ninguna de las
 dos describe. Así, `{"patternProperties": {"^[0-9]+$": {"type": "integer"}}, "additionalProperties": false}` admite
 `12: 3` y rechaza `x: 3`.
 
-Un ciclo de `$ref` que no baja por el documento (`a` → `b` → `a`) es un error al compilar.
+`anyOf`, `oneOf` y `not` comprueban el valor aparte con cada uno de sus esquemas y solo miran si los cumple: los
+problemas de dentro no salen en el informe, sale uno solo para el valor (`matches none of the 2 schemas of anyOf`,
+`matches 2 of the 9 schemas of oneOf instead of exactly one`, `matches the schema of not`). Sirven para claves que se
+excluyen entre sí, como `value` o `percent` en `ruleset_difficulty`:
+
+```json
+"oneOf": [{ "required": ["value"] }, { "required": ["percent"] }]
+```
+
+Un ciclo de `$ref` que no baja por el documento (`a` → `b` → `a`, también a través de `anyOf`, `oneOf` o `not`) es un
+error al compilar.
 
 Quien compila el esquema puede añadir **palabras clave de anotación** propias. Su valor tiene que ser un texto, y la
-comprobación devuelve, junto a los problemas, cada texto del documento al que se aplican.
+comprobación devuelve, junto a los problemas, cada texto del documento al que se aplican. Dentro de `anyOf` y `oneOf`
+solo cuentan las anotaciones de los esquemas que el valor cumple; las de `not`, nunca.
 
 ## Referencias a assets
 
@@ -81,14 +95,16 @@ expresión en cualquier parte del texto (o de la clave), como manda JSON Schema;
 con `^` y `$`. Se admite:
 
 - caracteres ASCII imprimibles, y la puntuación escapada con `\` (`\.`, `\-`, `\\`);
+- `.`: un carácter cualquiera salvo un fin de línea (`\n`, `\r`, U+2028 y U+2029, como en ECMA-262 sin la bandera `s`);
+  un carácter no ASCII cuenta como uno, ocupe los bytes UTF-8 que ocupe;
 - clases con rangos: `[a-z0-9_]` (no negadas: `[^…]` no está);
 - grupos `( )` con alternativas `|`;
 - cuantificadores `?`, `*`, `+`, `{n}`, `{n,}` y `{n,m}` (n y m hasta 1000), solo voraces;
 - anclas `^` y `$`.
 
-Lo demás es un error al compilar: `.`, `\d` y las demás clases con letra, `(?…)`, cuantificadores perezosos,
-referencias hacia atrás y caracteres que no sean ASCII. Un texto con caracteres no ASCII se compara byte a byte, así
-que nunca encaja en una clase ASCII.
+Lo demás es un error al compilar: `\d` y las demás clases con letra, `(?…)`, cuantificadores perezosos,
+referencias hacia atrás y caracteres que no sean ASCII. Un carácter no ASCII del texto solo encaja en `.`: nunca en una
+clase ASCII ni en un literal.
 
 La expresión se compila a una máquina virtual de Pike: todas las coincidencias posibles avanzan a la vez, así que el
 tiempo crece en línea con el texto, sin retroceso exponencial ni recursión, aunque el patrón sea hostil (los de

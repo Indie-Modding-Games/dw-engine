@@ -158,10 +158,11 @@ void printUsage() {
       "      Checks a pack, or every pack of a folder, before the engine loads them: each YAML");
   std::println(
       stderr,
-      "      document against its JSON Schema (default: the schemas folder next to the packs),");
+      "      document against its JSON Schema (default: the schemas folder next to the packs, or a");
   std::println(
       stderr,
-      "      the assets they name, the models against their contracts and that every asset opens.");
+      "      folder up when there is none), the assets they name, the models against their");
+  std::println(stderr, "      contracts and that every asset opens.");
   std::println(
       stderr,
       "      --with mounts the game's own packs at another folder too (checked with the rest, as the");

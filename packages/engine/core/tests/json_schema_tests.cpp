@@ -150,8 +150,8 @@ TEST_CASE("patternProperties match in linear time and refuse what the patterns r
         std::vector<std::string>{std::format("$.{}: expected integer, found string", key)});
   CHECK(compileError(R"({"patternProperties": ["^a"]})") ==
         "#/patternProperties: must be a mapping");
-  CHECK(compileError(R"({"patternProperties": {"a.c": {}}})")
-            .starts_with("#/patternProperties/a.c: "));
+  CHECK(compileError(R"({"patternProperties": {"[^a]": {}}})")
+            .starts_with("#/patternProperties/[^a]: "));
   CHECK(compileError(R"({"patternProperties": {"^a": {"format": "uri"}}})") ==
         "#/patternProperties/^a: the keyword 'format' is not supported");
 }
@@ -217,6 +217,66 @@ TEST_CASE("a schema checks exclusive limits, the number of keys and the keys' na
   CHECK(report.problems[0].line == 2);
 }
 
+TEST_CASE("a schema checks the most keys and that items are unique") {
+  const JsonSchema schema = compiled(R"({
+        "properties": {
+            "screens": {"type": "object", "maxProperties": 2},
+            "rulesets": {"type": "array", "uniqueItems": true}
+        }
+    })");
+  CHECK(problems(schema, "screens: {a: 1, b: 2}\nrulesets: [a, b, [a], {x: 1, y: 2}]\n").empty());
+  CHECK(problems(schema, "screens: {a: 1, b: 2, c: 3}\n") ==
+        std::vector<std::string>{"$.screens: has 3 keys, more than 2"});
+  CHECK(problems(schema, "rulesets: [a, b, a]\n") ==
+        std::vector<std::string>{
+            "$.rulesets[2]: is the same as item 0, and the items must be unique"});
+  // Values compare as JSON: numbers by value, mappings in any order.
+  CHECK(problems(schema, "rulesets: [1, 1.0]\n") ==
+        std::vector<std::string>{
+            "$.rulesets[1]: is the same as item 0, and the items must be unique"});
+  CHECK(problems(schema, "rulesets: [{x: 1, y: 2}, {y: 2, x: 1}]\n").size() == 1);
+  CHECK(problems(schema, "rulesets: [[1, 2], [2, 1], \"1\", 1]\n").empty());
+}
+
+TEST_CASE("a schema checks anyOf, oneOf and not on the value itself") {
+  const JsonSchema schema = compiled(R"({
+        "properties": {
+            "prize": {"anyOf": [{"required": ["item"]}, {"required": ["money"]}]},
+            "change": {"oneOf": [{"required": ["value"]}, {"required": ["percent"]}]},
+            "step": {"not": {"const": 0}}
+        }
+    })");
+  CHECK(problems(schema, "prize: {item: 3, money: 10}\nchange: {percent: 50}\nstep: 1\n").empty());
+  CHECK(problems(schema, "prize: {amount: 2}\n") ==
+        std::vector<std::string>{"$.prize: matches none of the 2 schemas of anyOf"});
+  CHECK(problems(schema, "change: {value: 1, percent: 50}\n") ==
+        std::vector<std::string>{
+            "$.change: matches 2 of the 2 schemas of oneOf instead of exactly one"});
+  CHECK(problems(schema, "change: {}\n") ==
+        std::vector<std::string>{
+            "$.change: matches 0 of the 2 schemas of oneOf instead of exactly one"});
+  CHECK(problems(schema, "step: 0\n") ==
+        std::vector<std::string>{"$.step: matches the schema of not"});
+}
+
+TEST_CASE("the annotations of anyOf and oneOf come from the schemas the value matches") {
+  constexpr std::array<std::string_view, 1> Keywords = {"assetReference"};
+  const JsonSchema schema = compiled(R"({
+        "anyOf": [
+            {"type": "string", "pattern": "^a", "assetReference": "a/{}"},
+            {"type": "string", "pattern": "^b", "assetReference": "b/{}"}
+        ],
+        "not": {"type": "string", "assetReference": "never/{}"}
+    })",
+                                     Keywords);
+  const SchemaReport report =
+      schema.check(YamlNode::scalar("apple", YamlNode::ScalarStyle::Quoted));
+  REQUIRE(report.problems.size() == 1);
+  CHECK(report.problems[0].message == "matches the schema of not");
+  REQUIRE(report.annotations.size() == 1);
+  CHECK(report.annotations[0].annotation == "a/{}");
+}
+
 TEST_CASE("a schema follows references to its definitions and to itself") {
   const JsonSchema schema = compiled(R"({
         "$defs": {
@@ -264,7 +324,9 @@ TEST_CASE("annotation keywords report the strings they apply to") {
 }
 
 TEST_CASE("keywords outside the subset are refused when compiling") {
-  CHECK(compileError(R"({"oneOf": []})") == "#: the keyword 'oneOf' is not supported");
+  CHECK(compileError(R"({"allOf": []})") == "#: the keyword 'allOf' is not supported");
+  CHECK(compileError(R"({"oneOf": []})") == "#/oneOf: must be a list of schemas");
+  CHECK(compileError(R"({"uniqueItems": 1})") == "#/uniqueItems: must be true or false");
   CHECK(compileError(R"({"properties": {"a": {"format": "uri"}}})") ==
         "#/properties/a: the keyword 'format' is not supported");
   CHECK(compileError(R"({"items": [{"type": "integer"}]})") ==
@@ -273,6 +335,9 @@ TEST_CASE("keywords outside the subset are refused when compiling") {
   CHECK(compileError(R"({"$ref": "other.json#/x"})").contains("only references to '#'"));
   CHECK(compileError(R"({"$ref": "#/$defs/missing"})").contains("no definition"));
   CHECK(compileError(R"({"$defs": {"a": {"$ref": "#/$defs/b"}, "b": {"$ref": "#/$defs/a"}}})") ==
+        "the schema has a cycle of $ref");
+  // A cycle through anyOf, oneOf or not never goes into the document either.
+  CHECK(compileError(R"({"anyOf": [{"type": "string"}, {"not": {"$ref": "#"}}]})") ==
         "the schema has a cycle of $ref");
   CHECK(compileError(R"({"properties": {"a": {"$defs": {}}}})")
             .contains("only supported at the root"));
@@ -295,6 +360,31 @@ TEST_CASE("patterns match anywhere unless anchored") {
   CHECK_FALSE(matches("^[a-z]$", "\xc3\xa9"));
 }
 
+TEST_CASE("a dot in a pattern is any one character but a line terminator") {
+  const auto between = [](std::string_view middle) { return "a" + std::string{middle} + "c"; };
+  CHECK(matches("^a.c$", "abc"));
+  CHECK(matches("^a.c$", "a c"));
+  CHECK_FALSE(matches("^a.c$", "ac"));
+  CHECK_FALSE(matches("^a.c$", "abbc"));
+  // One character of UTF-8 text, whatever its length in bytes.
+  CHECK(matches("^a.c$", between("\xc3\xa9")));
+  CHECK(matches("^a.c$", between("\xe2\x82\xac")));
+  CHECK(matches("^a.c$", between("\xf0\x9f\x8e\xb2")));
+  CHECK(matches("^.$", "\xc3\xa9"));
+  CHECK(matches("^.$", "\xc3\xa9"));
+  CHECK_FALSE(matches("^.$", "\xc3\xa9\xc3\xa9"));
+  // Line terminators: \n, \r, U+2028 and U+2029.
+  CHECK_FALSE(matches("^a.c$", "a\nc"));
+  CHECK_FALSE(matches("^a.c$", "a\rc"));
+  CHECK_FALSE(matches("^a.c$", between("\xe2\x80\xa8")));
+  CHECK_FALSE(matches("^a.c$", between("\xe2\x80\xa9")));
+  CHECK(matches("^a.c$", between("\xe2\x80\xa7")));
+  CHECK(matches("^(|wss?://.+)$", ""));
+  CHECK(matches("^(|wss?://.+)$", "wss://example.org"));
+  CHECK_FALSE(matches("^(|wss?://.+)$", "wss://"));
+  CHECK_FALSE(matches("^(|wss?://.+)$", "https://example.org"));
+}
+
 TEST_CASE("patterns run in linear time, even those that backtrack forever elsewhere") {
   const std::string text(5000, 'a');
   CHECK_FALSE(matches("^(a*)*b$", text));
@@ -305,7 +395,6 @@ TEST_CASE("pattern features outside the subset are refused") {
   const auto patternError = [](std::string_view pattern) {
     return compileError(std::string{R"({"pattern": ")"} + std::string{pattern} + "\"}");
   };
-  CHECK(patternError("a.c").contains("'.' is not supported"));
   CHECK(patternError("\\\\d+").contains("only punctuation can be escaped"));
   CHECK(patternError("[^a]").contains("negated classes"));
   CHECK(patternError("(?:a)").contains("'(?' groups"));

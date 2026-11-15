@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Chibi profile",
+  "description": "The models/chibi_profile.yaml document of the game pack: the original models' proportions per body shape, the reference of the chibi style. A test writes it from the extracted content (packages/engine/animation/src/chibi.cpp: parseChibiProfile applies the same rules).",
+  "type": "object",
+  "required": ["shapes"],
+  "additionalProperties": false,
+  "properties": {
+    "shapes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "biped": { "$ref": "#/$defs/shape" },
+        "quadruped": { "$ref": "#/$defs/shape" },
+        "winged": { "$ref": "#/$defs/shape" },
+        "serpent": { "$ref": "#/$defs/shape" }
+      }
+    }
+  },
+  "$defs": {
+    "shape": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "models": { "description": "How many distinct models have the shape.", "type": "integer", "minimum": 0 },
+        "head": { "$ref": "#/$defs/range" }, "head_size": { "$ref": "#/$defs/range" },
+        "head_width": { "$ref": "#/$defs/range" }, "torso": { "$ref": "#/$defs/range" },
+        "arm": { "$ref": "#/$defs/range" }, "leg": { "$ref": "#/$defs/range" },
+        "neck": { "$ref": "#/$defs/range" }, "tail": { "$ref": "#/$defs/range" },
+        "wing": { "$ref": "#/$defs/range" }, "hand": { "$ref": "#/$defs/range" },
+        "foot": { "$ref": "#/$defs/range" }
+      }
+    },
+    "range": {
+      "description": "The ratio's range among the original models: 0 < low <= median <= high.",
+      "type": "object",
+      "required": ["low", "median", "high"],
+      "additionalProperties": false,
+      "properties": {
+        "low": { "type": "number", "exclusiveMinimum": 0 },
+        "median": { "type": "number", "exclusiveMinimum": 0 },
+        "high": { "type": "number", "exclusiveMinimum": 0 },
+        "samples": { "description": "How many models have the ratio.", "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

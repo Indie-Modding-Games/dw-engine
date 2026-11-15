@@ -77,7 +77,9 @@ validatePacks(const assets::FileSystem& fileSystem, const std::filesystem::path&
               assets::PackOrigin origin = assets::PackOrigin::Mod);
 
 // Where the schemas of the packs at a folder are by default: a schemas folder next to the pack, or
-// inside the folder of packs ("content/base" and "content" both give "content/schemas").
+// inside the folder of packs ("content/base" and "content" both give "content/schemas"). A pack
+// with no schemas next to it takes the ones a folder up, as the engine's own packs do
+// ("content/packs/game" gives "content/schemas").
 std::filesystem::path defaultSchemaFolder(const assets::FileSystem& fileSystem,
                                           const std::filesystem::path& folder);
 

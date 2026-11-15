@@ -129,6 +129,14 @@
           },
           "points": {
             "type": "integer"
+          },
+          "objects": {
+            "description": "The map's objects that light the ring while a stone passes or scores in it (KAR_updateRingMarkers); hidden the rest of the time.",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         }
       }

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <charconv>
 #include <format>
+#include <initializer_list>
 #include <limits>
 #include <optional>
 #include <system_error>
@@ -19,7 +20,9 @@ constexpr std::size_t MaxPatternLength = 1024;
 constexpr std::size_t MaxRepeat = 1000;
 constexpr std::size_t MaxProgramSize = 20000;
 constexpr std::size_t MaxGroupDepth = 32;
-constexpr std::size_t AsciiSize = 128;
+// A Byte instruction takes a set of bytes: ASCII ones from the pattern's characters and classes,
+// and the bytes of UTF-8 sequences from '.'.
+constexpr std::size_t ByteValues = 256;
 
 } // namespace
 
@@ -28,7 +31,7 @@ struct PatternNode {
   enum class Kind : std::uint8_t { Set, Start, End, Sequence, Alternation, Repeat };
 
   Kind kind = Kind::Sequence;
-  std::bitset<AsciiSize> set;
+  std::bitset<ByteValues> set;
   std::vector<PatternNode> children;
   std::size_t min = 0;
   std::size_t max = 0;
@@ -142,6 +145,8 @@ private:
     }
     case '[':
       return parseClass();
+    case '.':
+      return anyCharacter();
     case '\\': {
       auto escaped = parseEscape();
       if (!escaped) {
@@ -161,6 +166,46 @@ private:
       return failHere("only printable ASCII characters are supported");
     }
     return single(c);
+  }
+
+  // The bytes from first to last.
+  static PatternNode byteRange(unsigned first, unsigned last) {
+    PatternNode node = nodeOf(PatternNode::Kind::Set);
+    for (unsigned byte = first; byte <= last; ++byte) {
+      node.set.set(byte);
+    }
+    return node;
+  }
+
+  static PatternNode byteSequence(std::initializer_list<PatternNode> bytes) {
+    PatternNode sequence = nodeOf(PatternNode::Kind::Sequence);
+    sequence.children.assign(bytes);
+    return sequence;
+  }
+
+  // '.': one character of UTF-8 text but a line terminator, as ECMAScript's dot without the s flag:
+  // an ASCII byte but \n and \r, or a sequence of two to four bytes but U+2028 and U+2029 (E2 80 A8
+  // and E2 80 A9). The text is valid UTF-8, so the sequences need not refuse overlong forms.
+  static PatternNode anyCharacter() {
+    PatternNode ascii = byteRange(0x00, 0x7F);
+    ascii.set.reset('\n');
+    ascii.set.reset('\r');
+    PatternNode noSeparator = byteRange(0x80, 0xBF);
+    noSeparator.set.reset(0xA8);
+    noSeparator.set.reset(0xA9);
+    const PatternNode tail = byteRange(0x80, 0xBF);
+    PatternNode threeBytes = byteRange(0xE0, 0xEF);
+    threeBytes.set.reset(0xE2);
+    PatternNode any = nodeOf(PatternNode::Kind::Alternation);
+    any.children = {
+        std::move(ascii),
+        byteSequence({byteRange(0xC2, 0xDF), tail}),
+        byteSequence({std::move(threeBytes), tail, tail}),
+        byteSequence({byteRange(0xE2, 0xE2), byteRange(0x81, 0xBF), tail}),
+        byteSequence({byteRange(0xE2, 0xE2), byteRange(0x80, 0x80), std::move(noSeparator)}),
+        byteSequence({byteRange(0xF0, 0xF4), tail, tail, tail}),
+    };
+    return any;
   }
 
   static PatternNode single(char c) {
@@ -397,7 +442,7 @@ bool SchemaPattern::search(std::string_view text) const {
     const auto byte = static_cast<unsigned char>(text[position]);
     next.clear();
     for (const std::size_t pc : current) {
-      if (byte < AsciiSize && program_[pc].set.test(byte) && add(next, pc + 1, position + 1)) {
+      if (program_[pc].set.test(byte) && add(next, pc + 1, position + 1)) {
         return true;
       }
     }

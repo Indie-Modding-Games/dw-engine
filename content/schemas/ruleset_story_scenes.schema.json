@@ -296,6 +296,19 @@
         }
       }
     },
+    "shop_job": {
+      "description": "The job at the canyon's shop, for its progress bar (an engine improvement, option shop_job_bar): where it runs, the variable that counts the customers and from which count the pay rises and the helper joins the city.",
+      "type": "object",
+      "required": ["map", "customers_variable", "customers", "better_pay_from", "joins_from"],
+      "additionalProperties": false,
+      "properties": {
+        "map": { "description": "The map of the job.", "type": "string", "minLength": 1 },
+        "customers_variable": { "description": "The story variable that counts the customers.", "type": "integer", "minimum": 0 },
+        "customers": { "description": "How many customers the job has.", "type": "integer", "minimum": 1 },
+        "better_pay_from": { "description": "The count from which the job pays more; less than joins_from.", "type": "integer", "minimum": 0 },
+        "joins_from": { "description": "The count from which the helper joins the city.", "type": "integer", "minimum": 0 }
+      }
+    },
     "previous_screen": {
       "description": "map.c: changeMap's previous-screen cases.",
       "type": "array",

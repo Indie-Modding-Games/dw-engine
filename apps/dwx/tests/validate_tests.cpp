@@ -1,5 +1,7 @@
+#include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/lua_api.hpp>
+#include <dwe/assets/pack_manifest.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/text_table.hpp>
 #include <dwe/core/json_schema.hpp>
@@ -809,6 +811,14 @@ TEST_CASE("the schemas are next to the packs by default") {
   CHECK(defaultSchemaFolder(files, "content/base") == "content/schemas");
   CHECK(defaultSchemaFolder(files, "content/base/") == "content/schemas");
   CHECK(defaultSchemaFolder(files, "content") == "content/schemas");
+  // The engine's own packs, a folder deeper, take the schemas a folder up when none is next to
+  // them.
+  files.addFile("content/packs/game/pack.yaml",
+                "id: game\nversion: 1.0.0\nlayer: base\nname: Game\n");
+  CHECK(defaultSchemaFolder(files, "content/packs/game") == "content/packs/schemas");
+  addSchemas(files);
+  CHECK(defaultSchemaFolder(files, "content/packs/game") == "content/schemas");
+  CHECK(defaultSchemaFolder(files, "content/base") == "content/schemas");
 }
 
 TEST_CASE(
@@ -828,6 +838,109 @@ TEST_CASE(
     const auto schema = dwe::core::JsonSchema::compile(*text, keywords);
     CHECK_MESSAGE(schema.has_value(), std::format("{}: {}", name, errorOf(schema)));
   }
+}
+
+// The game pack's documents against the schemas that the rules of its manifest and of the base pack
+// name, with no disc: every one follows its schema and refuses a misspelt key, so no schema lets a
+// typo through. A table of texts takes any key: dwx validate checks a translation's keys against
+// English instead.
+TEST_CASE("every document of the game pack follows its schema, which refuses a misspelt key") {
+  const std::filesystem::path pack{DWE_GAME_PACK};
+  const auto manifest = dwe::assets::parsePackManifest(readText((pack / "pack.yaml").string()));
+  REQUIRE_MESSAGE(manifest.has_value(), errorOf(manifest));
+  std::vector<std::pair<std::string, std::string>> rules; // a schema and a pattern of its ids
+  for (const auto& rule : manifest->schemas) {
+    for (const std::string& pattern : rule.ids) {
+      rules.emplace_back(rule.schema, pattern);
+    }
+  }
+  for (const auto& rule : names::documentSchemas()) {
+    for (const std::string_view pattern : rule.ids) {
+      rules.emplace_back(rule.schema, pattern);
+    }
+  }
+  const std::array<std::string_view, 2> textTables{"localization", "text"};
+  const std::array<std::string_view, 2> keywords{AssetReferenceKeyword, EntryReferenceKeyword};
+  std::size_t checked = 0;
+  std::size_t misspeltChecked = 0;
+  for (const auto& entry : std::filesystem::recursive_directory_iterator{pack}) {
+    const std::string relative = entry.path().lexically_relative(pack).generic_string();
+    if (entry.path().extension() != ".yaml" || relative == "pack.yaml") {
+      continue;
+    }
+    const auto id = dwe::assets::assetIdOfFile(relative);
+    REQUIRE_MESSAGE(id.has_value(), relative);
+    std::set<std::string> schemas;
+    for (const auto& [schema, pattern] : rules) {
+      if (dwe::assets::matchesIdPattern(pattern, *id)) {
+        schemas.insert(schema);
+      }
+    }
+    CHECK_MESSAGE(schemas.size() == 1, relative, " matches ", schemas.size(), " schemas");
+    if (schemas.size() != 1) {
+      continue;
+    }
+    const std::string& name = *schemas.begin();
+    const auto schemaText =
+        dwe::core::parseYaml(readText(std::format("{}/{}.schema.json", DWE_SCHEMA_DIR, name)));
+    REQUIRE_MESSAGE(schemaText.has_value(), name);
+    const auto schema = dwe::core::JsonSchema::compile(*schemaText, keywords);
+    REQUIRE_MESSAGE(schema.has_value(), name, ": ", errorOf(schema));
+    const std::string text = readText(entry.path().string());
+    const auto document = dwe::core::parseYaml(text);
+    REQUIRE_MESSAGE(document.has_value(), relative);
+    std::string found;
+    for (const auto& problem : schema->check(*document).problems) {
+      found +=
+          std::format("\n{}:{}: {}: {}", relative, problem.line, problem.path, problem.message);
+    }
+    CHECK_MESSAGE(found.empty(), found);
+    ++checked;
+    if (std::ranges::contains(textTables, name)) {
+      continue;
+    }
+    // The first key misspelt, added at the end of the document.
+    REQUIRE_MESSAGE(document->isMapping(), relative);
+    REQUIRE_MESSAGE(!document->entries().empty(), relative);
+    const std::string misspelt = document->entries().front().key + "s";
+    const auto typo = dwe::core::parseYaml(std::format("{}\n{}: 1\n", text, misspelt));
+    REQUIRE_MESSAGE(typo.has_value(), relative);
+    const auto refused = schema->check(*typo).problems;
+    CHECK_MESSAGE(std::ranges::any_of(refused,
+                                      [&](const dwe::core::SchemaProblem& problem) {
+                                        return problem.message.contains(
+                                            std::format("the key '{}' is not allowed", misspelt));
+                                      }),
+                  relative, ": the schema ", name, " takes the misspelt key '", misspelt, "'");
+    ++misspeltChecked;
+  }
+  CHECK(checked > 100);
+  CHECK(misspeltChecked > 50);
+  MESSAGE(checked, " documents of the game pack checked, ", misspeltChecked,
+          " with a misspelt key");
+}
+
+TEST_CASE("a misspelt key deep in a document of the game pack is refused where it is") {
+  const auto schemaText =
+      dwe::core::parseYaml(readText(std::format("{}/ruleset_curling.schema.json", DWE_SCHEMA_DIR)));
+  REQUIRE(schemaText.has_value());
+  const std::array<std::string_view, 2> keywords{AssetReferenceKeyword, EntryReferenceKeyword};
+  const auto schema = dwe::core::JsonSchema::compile(*schemaText, keywords);
+  REQUIRE_MESSAGE(schema.has_value(), errorOf(schema));
+  std::string text = readText(std::format("{}/rules/original/curling.yaml", DWE_GAME_PACK));
+  const auto read = dwe::core::parseYaml(text);
+  REQUIRE(read.has_value());
+  CHECK(schema->check(*read).problems.empty());
+  // The lit objects of the first ring, misspelt.
+  const std::size_t at = text.find("objects: [");
+  REQUIRE(at != std::string::npos);
+  text.replace(at, std::string_view{"objects"}.size(), "objcets");
+  const auto typo = dwe::core::parseYaml(text);
+  REQUIRE(typo.has_value());
+  const auto problems = schema->check(*typo).problems;
+  REQUIRE(problems.size() == 1);
+  CHECK(problems[0].path == "$.rings[0]");
+  CHECK(problems[0].message == "the key 'objcets' is not allowed");
 }
 
 TEST_CASE(

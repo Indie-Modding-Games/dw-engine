@@ -12,7 +12,12 @@ schemas:
     - map/*/patch
     - map/*/*/patch
   character_model:
-    - models/*
+    - models/tamer
+    - models/partner
+  chibi_overrides:
+    - models/chibi
+  chibi_profile:
+    - models/chibi_profile
   field_rules:
     - field/rules
   field_warps:
@@ -117,6 +122,22 @@ schemas:
     - rules/*/medals
   ruleset_difficulty:
     - rules/*/difficulty
+  ruleset_calendar:
+    - rules/*/calendar
+  ruleset_cards:
+    - rules/*/cards
+  ruleset_dialogue:
+    - rules/*/dialogue
+  ruleset_field_items:
+    - rules/*/field_items
+  ruleset_fishing:
+    - rules/*/fishing
+  ruleset_story:
+    - rules/*/story
+  ruleset_story_scenes:
+    - rules/*/story_scenes
+  ruleset_story_values:
+    - rules/*/story_values
   sign_overlay:
     - signs/*
   mode:

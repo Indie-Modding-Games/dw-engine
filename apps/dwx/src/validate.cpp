@@ -704,8 +704,17 @@ std::filesystem::path defaultSchemaFolder(const assets::FileSystem& fileSystem,
     return normal / "schemas";
   }
   // A pack named by a path without a parent, such as ".", has its parent at "..".
-  return normal.has_parent_path() ? normal.parent_path() / "schemas"
-                                  : (normal / ".." / "schemas").lexically_normal();
+  const std::filesystem::path parent =
+      normal.has_parent_path() ? normal.parent_path() : (normal / "..").lexically_normal();
+  // The engine's own packs are one folder deeper, in content/packs/<id> next to content/schemas.
+  const std::filesystem::path grandparent = (parent / "..").lexically_normal();
+  for (const std::filesystem::path& candidate : {parent / "schemas", grandparent / "schemas"}) {
+    if (fileSystem.fileSize(candidate / std::format("{}.schema.json", ManifestSchema))
+            .has_value()) {
+      return candidate;
+    }
+  }
+  return parent / "schemas";
 }
 
 int validate(const std::filesystem::path& folder,
