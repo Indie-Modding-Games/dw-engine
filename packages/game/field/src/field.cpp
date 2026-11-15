@@ -472,8 +472,14 @@ bool Field::touchNpcs() {
   const glm::vec2 ahead =
       ground(transform.position) + (facing * (speed * rules_.transition.frameSeconds));
   const std::size_t before = npcs_.contacts().size();
-  npcs_.touchFromPlayer({.centre = ahead, .half = rules_.player.radius}, facing,
-                        motion == Motion::Idle, input_.confirm, generousTalk_);
+  const GroundSquare player{.centre = ahead, .half = rules_.player.radius};
+  npcs_.touchFromPlayer(player, facing, motion == Motion::Idle, input_.confirm);
+  // The generous talk range only reaches what the original's would not: a confirm cell under or
+  // ahead of the player goes before an NPC only the wider range finds (koda02's big NPC stands
+  // next to the cells that run its talk, and its own section is empty).
+  if (npcs_.contacts().size() == before && generousTalk_ && input_.confirm && confirmCell() == 0) {
+    npcs_.touchFromPlayer(player, facing, motion == Motion::Idle, input_.confirm, true);
+  }
   return npcs_.contacts().size() > before;
 }
 
@@ -1226,15 +1232,8 @@ void Field::checkConfirm() {
   if (!std::exchange(input_.confirm, false) || leaving_) {
     return;
   }
-  const auto& transform = world_->registry().get<Transform>(player_);
-  std::int32_t value = collision_.trigger(assets::originalCellAt(transform.position)).value_or(0);
-  if (generousTalk_ && warpViaOf(value, rules_.triggers) != WarpVia::Confirm) {
-    // The generous talk range: the sign's cell in front of the player.
-    const glm::vec3 ahead =
-        transform.position + (assets::forwardOfYaw(transform.yaw) * GenerousSignAhead);
-    value = collision_.trigger(assets::originalCellAt(ahead)).value_or(0);
-  }
-  if (warpViaOf(value, rules_.triggers) != WarpVia::Confirm) {
+  const std::int32_t value = confirmCell();
+  if (value == 0) {
     return;
   }
   if (staticWarps()) {
@@ -1247,6 +1246,18 @@ void Field::checkConfirm() {
     }
   }
   cellSections_.push_back(value);
+}
+
+std::int32_t Field::confirmCell() const {
+  const auto& transform = world_->registry().get<Transform>(player_);
+  std::int32_t value = collision_.trigger(assets::originalCellAt(transform.position)).value_or(0);
+  if (generousTalk_ && warpViaOf(value, rules_.triggers) != WarpVia::Confirm) {
+    // The generous talk range: the sign's cell in front of the player.
+    const glm::vec3 ahead =
+        transform.position + (assets::forwardOfYaw(transform.yaw) * GenerousSignAhead);
+    value = collision_.trigger(assets::originalCellAt(ahead)).value_or(0);
+  }
+  return warpViaOf(value, rules_.triggers) == WarpVia::Confirm ? value : 0;
 }
 
 void Field::holdForCare(bool held, CareClock clock) {

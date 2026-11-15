@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/effect_script.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/game/battle/effect_runner.hpp>
 #include <dwe/game/battle/events.hpp>
@@ -19,8 +20,10 @@
 
 namespace dwe::session {
 
-// The techniques' effect scripts in a battle (battle_effect.c): each move's effect/<move>/ loads
-// the first time a fighter uses it, starts when its attack starts (battle_main.c:
+// The techniques' effect scripts in a battle (battle_effect.c): each fighter's move loads its own
+// copy of effect/<move>/ the first time that fighter uses it (btl.c: loadBattleData loads one per
+// move of each fighter, effectSlot[j]), so one fighter's effect never restarts or takes the hits of
+// another's running the same move. It starts when its attack starts (battle_main.c:
 // BTL_setupMoveExecution, BTL_startEFE) from the attacker at its target and runs one step per
 // battle frame (BTL_tickEFEEngine, then BTL_renderEFEEngine for what it draws). Its sounds go to
 // slot 8 of the sound port; what it draws, placed on the fighters the bodies give, to draws(). An
@@ -80,7 +83,7 @@ private:
     std::optional<std::size_t> section;
   };
 
-  std::optional<std::size_t> slotOf(const std::string& move);
+  std::optional<std::size_t> slotOf(game::battle::FighterId fighter, const std::string& move);
   void startAttack(game::battle::FighterId fighter, std::optional<game::battle::FighterId> target,
                    const std::string& move);
   void removeEffect(game::battle::FighterId fighter);
@@ -89,7 +92,9 @@ private:
   game::story::SoundPort* sound_;
   Sounds sounds_{*this};
   game::battle::EffectRunner runner_{sounds_};
-  std::map<std::string, std::size_t, std::less<>> slots_;
+  // Each move's script as read from the packs, and the slot of each fighter's copy of it.
+  std::map<std::string, assets::EffectScript, std::less<>> scripts_;
+  std::map<std::pair<game::battle::FighterId, std::string>, std::size_t, std::less<>> slots_;
   std::map<std::size_t, std::string> moves_;
   std::set<std::string, std::less<>> missing_;
   std::map<game::battle::FighterId, Running> running_;

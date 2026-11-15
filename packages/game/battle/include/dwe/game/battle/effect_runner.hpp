@@ -485,9 +485,13 @@ private:
     std::int32_t sizeEnd = 0;
   };
 
+  // battle_effect.c: BTL_callEFESubroutine pushes the entity cursor with the return point and
+  // BTL_returnFromEFESubroutine restores it, so a spawn inside the call (which rewinds the
+  // cursor) does not restart the caller's select_next_target loop.
   struct CallFrame {
     std::size_t returnTo = 0; // an instruction index
     std::size_t subEffect = 0;
+    std::size_t targetCursor = 0;
   };
 
   // A held sound (battle_effect.c: EFE_SOUND_DATA): its voice and the sub-effect that owns it.

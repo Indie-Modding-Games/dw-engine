@@ -10,6 +10,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace dwe::session {
 
@@ -101,20 +102,26 @@ void BattleEffects::end() {
   runner_.stopAll();
 }
 
-std::optional<std::size_t> BattleEffects::slotOf(const std::string& move) {
-  if (const auto found = slots_.find(move); found != slots_.end()) {
+std::optional<std::size_t> BattleEffects::slotOf(game::battle::FighterId fighter,
+                                                 const std::string& move) {
+  const std::pair<game::battle::FighterId, std::string> key{fighter, move};
+  if (const auto found = slots_.find(key); found != slots_.end()) {
     return found->second;
   }
   if (missing_.contains(move)) {
     return std::nullopt;
   }
-  std::optional<assets::EffectScript> read = readMoveEffect(*files_, move);
-  if (!read) {
-    missing_.insert(move);
-    return std::nullopt;
+  auto script = scripts_.find(move);
+  if (script == scripts_.end()) {
+    std::optional<assets::EffectScript> read = readMoveEffect(*files_, move);
+    if (!read) {
+      missing_.insert(move);
+      return std::nullopt;
+    }
+    script = scripts_.emplace(move, std::move(*read)).first;
   }
-  const std::size_t slot = runner_.load(std::move(*read));
-  slots_.emplace(move, slot);
+  const std::size_t slot = runner_.load(script->second);
+  slots_.emplace(key, slot);
   moves_.emplace(slot, move);
   return slot;
 }
@@ -123,7 +130,7 @@ void BattleEffects::startAttack(game::battle::FighterId fighter,
                                 std::optional<game::battle::FighterId> target,
                                 const std::string& move) {
   removeEffect(fighter);
-  const std::optional<std::size_t> slot = slotOf(move);
+  const std::optional<std::size_t> slot = slotOf(fighter, move);
   if (!slot) {
     return;
   }

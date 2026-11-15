@@ -2330,6 +2330,52 @@ TEST_CASE("with the generous talk range a confirm reads the sign's cell in front
   CHECK(reads(true));
 }
 
+TEST_CASE(
+    "the generous talk range leaves a large NPC's confirm cell to the player standing on it") {
+  // koda02: a radius-400 NPC at original x 1439 (its square from 1039) beside the confirm cells
+  // (82) that run its talk; its own talk section is empty. Measured in the original, facing it:
+  // from x 850 (850 + 100 + 50 short of 1039) the cell's section runs; from x 900 the NPC's does
+  // and the cell's is dropped (tamer.c: checkMapInteraction). The wider range must not change
+  // either, and still reaches the NPC from a spot with no confirm cell.
+  constexpr float East = Pi / 2.0F;
+  struct Outcome {
+    bool talk = false;
+    bool cell = false;
+  };
+  const auto confirm = [](float x, bool generous, bool cells) {
+    MapDocument map = roomMap("room");
+    if (cells) {
+      fill(map, {.column = 57, .row = 45}, {.column = 59, .row = 55}, 82);
+    }
+    const std::size_t slot = addNpc(map, 1439.0F, 0.0F, 7);
+    dwe::scene::World world;
+    Field field{world, originalRules()};
+    field.setGenerousTalk(generous);
+    field.enterMapAt(map, at(x, 0.0F, East));
+    REQUIRE(field.npcs().spawn(
+        {.slot = slot, .species = 1, .autotalk = false, .model = "npc", .radius = 400.0F}));
+    field.setInput({});
+    run(field, 0.5F);
+    field.setInput({.confirm = true});
+    field.tick(Tick);
+    return Outcome{
+        .talk = std::ranges::any_of(field.npcContacts(),
+                                    [](const auto& contact) { return contact.scriptId == 7; }),
+        .cell = std::ranges::contains(field.cellSections(), 82)};
+  };
+  for (const bool generous : {false, true}) {
+    CAPTURE(generous);
+    const Outcome onCell = confirm(850.0F, generous, true);
+    CHECK(onCell.cell);
+    CHECK_FALSE(onCell.talk);
+    const Outcome inReach = confirm(900.0F, generous, true);
+    CHECK(inReach.talk);
+    CHECK_FALSE(inReach.cell);
+  }
+  CHECK_FALSE(confirm(850.0F, false, false).talk);
+  CHECK(confirm(850.0F, true, false).talk);
+}
+
 TEST_CASE("an extra toilet's booth is solid and its front takes the toilet trigger only while on") {
   // An engine improvement: the free cells under each extra toilet's booth on the current map are
   // solid and those in front of it hold the toilet trigger (tamer.c: checkMapInteraction, value

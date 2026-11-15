@@ -216,7 +216,9 @@ public:
   // confirm reaches NPCs GenerousTalkAround further on every side of the player's square and
   // GenerousTalkAhead (instead of the rules' talkReach) the way it faces, standing or walking; and
   // on a cell that is not a confirm cell it reads the cell GenerousSignAhead ahead (a sign in front
-  // of the player).
+  // of the player). It only reaches what the original's reach misses: an NPC the original reach
+  // finds and the confirm cell under the player go first, then the cell ahead, then the NPCs the
+  // wider range finds (so a large NPC next to the cell of its talk does not take the confirm).
   void setGenerousTalk(bool on) { generousTalk_ = on; }
   [[nodiscard]] bool generousTalk() const { return generousTalk_; }
 
@@ -599,6 +601,9 @@ private:
   glm::vec2 followPath(glm::vec3& position, float distance);
   void checkTriggers();
   void checkConfirm();
+  // The confirm cell a confirm reads (checkConfirm): the one under the player, or with the
+  // generous talk range the one GenerousSignAhead ahead; 0 when neither is a confirm cell.
+  [[nodiscard]] std::int32_t confirmCell() const;
   // tamer.c: checkMapInteraction's NPC part; whether an NPC's section was asked for.
   bool touchNpcs();
   void tickNpcs(float seconds, bool playerFree);

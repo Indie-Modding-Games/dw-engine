@@ -215,6 +215,30 @@ TEST_CASE("a fighter's new clip, or the same one started over, is drawn from its
   CHECK(tween.timeAt(1.0F) == doctest::Approx(Tick));
 }
 
+TEST_CASE("a clip played over a held fighter without the tween is drawn by the player") {
+  // battle_main.c: BTL_handleVictorySequence: the partner's victory pose (startAnimation 0x2a) is a
+  // scene's clip over the fighter it still is; the tween would stand on the battle clip's pose.
+  const dwe::assets::ModelData model = twoClipModel();
+  dwe::animation::AnimationPlayer player{model};
+  ClipTween tween;
+  CHECK_FALSE(tween.follows(player));
+  REQUIRE(player.play(0U));
+  for (int tick = 0; tick < 10; ++tick) {
+    static_cast<void>(player.advance(static_cast<float>(Tick)));
+    tween.follow(player, true, Tick);
+  }
+  tween.pose(model, 1.0F);
+  CHECK(tween.follows(player));
+  REQUIRE(player.play(1U));
+  static_cast<void>(player.advance(static_cast<float>(Tick)));
+  CHECK_FALSE(tween.follows(player));
+  // Followed again, the tween draws the new clip.
+  tween.follow(player, true, Tick);
+  tween.pose(model, 1.0F);
+  CHECK(tween.follows(player));
+  CHECK(jointZ(tween.nodes()) == doctest::Approx(jointZ(player.pose())));
+}
+
 TEST_CASE("the status visuals' counts are drawn between frames only when they took one step") {
   CHECK(betweenFrames(4, 5, 0.25F) == doctest::Approx(4.25F));
   CHECK(betweenFrames(4, 5, 1.0F) == doctest::Approx(5.0F));
