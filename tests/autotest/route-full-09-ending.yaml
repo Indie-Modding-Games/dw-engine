@@ -7,8 +7,10 @@ device: keyboard
 timeout: 1200
 movies: true
 steps:
-  - resize: [1280, 720]
+  # The map first, then the window: on the sanitizer build the first frame after loading a save can take more than
+  # the 10 s a resize gets (the status portrait and the models upscale their textures as the game starts).
   - wait: {map: mgen99, seconds: 3, timeout: 120}
+  - resize: [1280, 720]
   - screenshot: summit
   - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
   - wait: {confirm: true, shown: battle, timeout: 600}

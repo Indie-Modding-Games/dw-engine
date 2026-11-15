@@ -10,8 +10,10 @@ name: full-06
 device: keyboard
 timeout: 1200
 steps:
-  - resize: [1280, 720]
+  # The map first, then the window: on the sanitizer build the first frame after loading a save can take more than
+  # the 10 s a resize gets (the status portrait and the models upscale their textures as the game starts).
   - wait: {map: tunn09, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
   # Off the cells of Drimogemon's scene first: while the player stands on a step cell its section runs again every
   # frame and the death waits for the story to be idle (BACKLOG).
   - walk_to: {point: [-700, 300], radius: 100, timeout: 60}
@@ -40,6 +42,9 @@ steps:
               - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
               - wait: {seconds: 0.1}
               - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+              # The sickness notice (award_notice) holds the field and the clock until confirmed; the medicine given by
+              # script does not close it.
+              - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
   - wait: {confirm: true, map: room08, timeout: 300}
   - screenshot: death
   # The elder's words, the egg and the rebirth, then his question about the name: its cursor starts on the first
@@ -70,6 +75,7 @@ steps:
         - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
         - wait: {seconds: 0.1}
         - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
   - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
   - screenshot: grown
   - walk_to: {trigger: 51, timeout: 120}
@@ -99,6 +105,7 @@ steps:
         - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
         - wait: {seconds: 0.1}
         - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
         - script: train("trn defense")
         - wait: {seconds: 0.2}
         - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
@@ -114,6 +121,7 @@ steps:
         - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
         - wait: {seconds: 0.1}
         - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
         - script: train("trn speed")
         - wait: {seconds: 0.2}
         - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
@@ -129,6 +137,7 @@ steps:
         - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
         - wait: {seconds: 0.1}
         - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
         - script: train("trn hp")
         - wait: {seconds: 0.2}
         - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
@@ -144,6 +153,7 @@ steps:
         - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
         - wait: {seconds: 0.1}
         - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
         - repeat:
             times: 20
             steps:
@@ -166,6 +176,9 @@ steps:
                     - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
                     - wait: {seconds: 0.1}
                     - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+                    - when:
+                        shown: award_notice
+                        steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]
   # Then the hours go by with the care until the Rookie's evolution, three or four days after it became one.
   - repeat:
       times: 18
@@ -186,6 +199,7 @@ steps:
         - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
         - wait: {seconds: 0.1}
         - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
   - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
   - screenshot: champion
   - walk_to: {trigger: 51, timeout: 240}

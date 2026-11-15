@@ -10,8 +10,10 @@ name: full-03
 device: keyboard
 timeout: 1200
 steps:
-  - resize: [1280, 720]
+  # The map first, then the window: on the sanitizer build the first frame after loading a save can take more than
+  # the 10 s a resize gets (the status portrait and the models upscale their textures as the game starts).
   - wait: {map: trai00, partner_within: 600, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
   - walk_to: {trigger: 110, encounters: win, timeout: 180}
   - wait: {map: mayo00, seconds: 2, timeout: 30}
   - walk_to: {trigger: 52, encounters: win, timeout: 240}
@@ -25,9 +27,10 @@ steps:
   - walk_to: {trigger: 111, encounters: win, timeout: 240}
   - wait: {map: mayo05, partner_within: 600, seconds: 2, timeout: 30}
   # The afternoon: the clock runs fast (an hour a second) until 16:00, then normal again; the map is entered anew so
-  # its entry section sees the hour.
+  # its entry section sees the hour. The game clock follows the game ticks, which fall behind on the sanitizer build
+  # (about a quarter of an hour a second), and chunk 2 can end early in the morning: the wait allows for most of a day.
   - script: clock_speed("60")
-  - wait: {setting: {hud.clock.hour: "16"}, timeout: 40}
+  - wait: {setting: {hud.clock.hour: "16"}, timeout: 120}
   - script: clock_speed("1")
   - walk_to: {trigger: 110, encounters: win, timeout: 240}
   - wait: {map: mayo04b, seconds: 2, timeout: 30}

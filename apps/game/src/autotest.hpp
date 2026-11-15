@@ -357,7 +357,8 @@ private:
   void axis(platform::GamepadAxis moved, float value);
   // Presses and releases an action's control on a device: menu, confirm, cancel, up, down.
   void tapAction(AutotestDevice device, std::string_view action);
-  // win_after: ends a fight that has lasted the step's seconds with battle_win("").
+  // win_after: ends a fight that has lasted the step's seconds with battle_win(""), once its intro
+  // is over.
   void winLongFight(const AutotestHost& host, const AutotestStep& step, double now);
   void clickAt(glm::vec2 window, platform::MouseButton pressed = platform::MouseButton::Left);
   // Holds the left button down at a window point for a number of logic ticks: the player walks

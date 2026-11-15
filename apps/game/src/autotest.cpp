@@ -1673,8 +1673,10 @@ void Autotest::winLongFight(const AutotestHost& host, const AutotestStep& step, 
   if (progress.battleSince < 0.0) {
     progress.battleSince = now;
   }
+  // battle_win only takes once the fight runs: during the intro it finds no fight and does nothing,
+  // so a short wait ends the fight as its intro ends.
   if (progress.battleWon || now - progress.battleSince < *step.winAfter ||
-      host.scripts == nullptr) {
+      host.scripts == nullptr || settingText(host, "battle.phase") != "fight") {
     return;
   }
   progress.battleWon = true;

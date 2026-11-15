@@ -1,0 +1,26 @@
+source: "STDDAT/STDTIM.BIN"
+entry: 2
+offset: 66624
+mode: indexed4
+width: 256
+height: 120
+image_rect:
+  x: 832
+  y: 0
+  width: 64
+  height: 120
+clut_rect:
+  x: 16
+  y: 480
+  width: 16
+  height: 6
+png: indexed
+png_palette: 0
+palettes:
+- "0000 4631 0842 6b5a 2529 035f 04ae 099e 2adb 2278 1e15 15b3 1150 08ed 04ab 0444"
+- "7fff 18c6 4631 39cf 35ae 0422 254c 296c 212a 2d8d 0c85 296b 2d8c 2129 14c6 0000"
+- "7fff 19d4 1591 1170 2ade 1e16 227a 1e38 114d 337f 77ff 6bff 5bff 4bff 3bff 0000"
+- "0000 2529 1ce7 1d09 14c7 2d6b 2108 0c85 0443 2108 18e7 18e8 294a 2529 212a 14e7"
+- "396a 4ded 45cc 5e2f 3dab 5e50 49ee 520e 6271 41ac 45cd 4ded 5a2f 398a 41ab 49cc"
+- "2108 4210 294a 4a52 318c 2529 4210 5ef7 2d6b 318c 4a52 2529 56b5 6b5a 35ad 2d6b"
+scale: 4

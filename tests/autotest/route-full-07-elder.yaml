@@ -13,8 +13,10 @@ name: full-07
 device: keyboard
 timeout: 1200
 steps:
-  - resize: [1280, 720]
+  # The map first, then the window: on the sanitizer build the first frame after loading a save can take more than
+  # the 10 s a resize gets (the status portrait and the models upscale their textures as the game starts).
   - wait: {map: twna02, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
   # Shortcut, first part: three recruits of the free route (Leomon 248, Elecmon 218, Shellmon 235) bring the city to
   # the 15 points the elder's Greymon scene asks for; a save counts them.
   - script: story_set("trigger 248 on")
@@ -38,9 +40,10 @@ steps:
   - walk_to: {trigger: 57, stop_on_scene: true, timeout: 90}
   - wait: {confirm: true, shown: battle, timeout: 300}
   - screenshot: greymon
-  # Greymon outlasts the chain's Champion (a Numemon lost it within 40 s): after a few seconds on screen the fight
-  # ends won (win_after).
-  - wait: {confirm: true, win_after: 8, setting: {story.trigger.205: "true"}, timeout: 600}
+  # Greymon outlasts the chain's Champion (a Numemon lost it within 40 s): the fight ends won as its intro ends
+  # (win_after). Later, its fire special may already be on its way, and its hit, which lands after the enemy falls,
+  # can still faint the partner (783 HP) and turn the fight into a loss.
+  - wait: {confirm: true, win_after: 1, setting: {story.trigger.205: "true"}, timeout: 600}
   - wait: {confirm: true, hidden: story_textbox, partner_within: 600, seconds: 3, timeout: 120}
   - screenshot: greymon-joined
   # Shortcut, second part: the other recruits route-etapa8-jijimon.yaml writes; a save counts them (77 points).

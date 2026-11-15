@@ -236,6 +236,9 @@ public:
   // drops them while a script runs. A cell whose map change field/script_warps takes
   // (setStoryCells) asks for none.
   [[nodiscard]] std::span<const std::int32_t> cellSections() const { return cellSections_; }
+  // The confirm cell among them, when confirm was pressed on one in the last tick: it asks only on
+  // that tick, which the story keeps for its next frame (session::FrameCells).
+  [[nodiscard]] std::optional<std::int32_t> confirmSection() const { return confirmSection_; }
 
   // Whether a map change is fading out, waiting to be taken or waiting for its map.
   [[nodiscard]] bool mapChangePending() const {
@@ -806,6 +809,7 @@ private:
   // else.
   bool exitClosedNow_ = false;
   std::vector<std::int32_t> cellSections_;
+  std::optional<std::int32_t> confirmSection_;
 
   assets::CollisionCell lastPlayerCell_;
   PlayerTrail playerTrail_;

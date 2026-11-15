@@ -1,0 +1,21 @@
+source: "STDDAT/TAISEN2.TIM"
+offset: 0
+mode: indexed4
+width: 128
+height: 144
+image_rect:
+  x: 320
+  y: 0
+  width: 32
+  height: 144
+clut_rect:
+  x: 64
+  y: 488
+  width: 16
+  height: 2
+png: indexed
+png_palette: 0
+palettes:
+- "ffff 8842 98c6 a94a bdef c210 d6b5 a116 92d6 fda9 d8e7 0000 0000 0000 0000 0000"
+- "0000 8308 81a4 8394 0000 8016 802f 8176 81b7 8218 8279 82da 833b 0000 8c65 0000"
+scale: 4

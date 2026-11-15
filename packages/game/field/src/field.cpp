@@ -365,6 +365,7 @@ void Field::dropMoveTarget() {
 void Field::tick(float seconds) {
   triggerSteps_.clear();
   cellSections_.clear();
+  confirmSection_.reset();
   npcs_.clearContacts();
   gameTimeRan_ = false;
   entt::registry& registry = world_->registry();
@@ -1246,6 +1247,7 @@ void Field::checkConfirm() {
     }
   }
   cellSections_.push_back(value);
+  confirmSection_ = value;
 }
 
 std::int32_t Field::confirmCell() const {

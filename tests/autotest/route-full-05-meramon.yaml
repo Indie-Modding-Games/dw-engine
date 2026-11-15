@@ -8,8 +8,10 @@ name: full-05
 device: keyboard
 timeout: 1200
 steps:
-  - resize: [1280, 720]
+  # The map first, then the window: on the sanitizer build the first frame after loading a save can take more than
+  # the 10 s a resize gets (the status portrait and the models upscale their textures as the game starts).
   - wait: {map: tunn05, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
   - walk_to: {trigger: 111, encounters: win, timeout: 240}
   - wait: {map: tunn06, partner_within: 600, seconds: 2, timeout: 30}
   - screenshot: tunn06-boulder
@@ -29,8 +31,9 @@ steps:
   - walk_to: {trigger: 111, encounters: win, timeout: 240}
   - wait: {map: tunn08, seconds: 2, timeout: 30}
   # The cells of section 0x33 across the cave start the scene and the fight; a Champion fresh from its evolution
-  # does not win it in time: after a while on screen the fight ends won (win_after).
-  - walk_to: {point: [-150, 1850], radius: 80, stop_on_scene: true}
+  # does not win it in time: after a while on screen the fight ends won (win_after). The walk goes to those cells
+  # (trigger 51): a point near them could end the walk within its radius without stepping on one.
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
   - wait: {confirm: true, shown: battle, seconds: 1, timeout: 120}
   - screenshot: tunn08-battle
   - wait: {confirm: true, win_after: 40, setting: {story.trigger.209: "true"}, timeout: 400}
@@ -73,6 +76,9 @@ steps:
               - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
               - wait: {seconds: 0.1}
               - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+              # The sickness notice (award_notice) holds the field and the clock until confirmed; the medicine given by
+              # script does not close it.
+              - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
         - when:
             setting: {story.var.30: "1"}
             steps:
@@ -92,6 +98,7 @@ steps:
               - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
               - wait: {seconds: 0.1}
               - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+              - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
         - when:
             setting: {story.var.30: "2"}
             steps:
@@ -111,7 +118,9 @@ steps:
               - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
               - wait: {seconds: 0.1}
               - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+              - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
   - wait: {seconds: 30}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
   - walk_to: {point: [-800, 1150], radius: 80, stop_on_scene: true, timeout: 120}
   - wait: {confirm: true, setting: {story.trigger.238: "true"}, timeout: 180}
   - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}

@@ -51,7 +51,13 @@ void StoryFieldLink::afterFieldTick() {
                   closed->exit);
     noticeLock();
   }
-  story_->runCellSections(openCellSections());
+  // A confirm cell the story lock keeps closed is not kept for the next frame either.
+  const std::vector<std::int32_t> open = openCellSections();
+  std::optional<std::int32_t> confirmed = scene_->field().confirmSection();
+  if (confirmed && !std::ranges::contains(open, *confirmed)) {
+    confirmed.reset();
+  }
+  story_->runCellSections(open, confirmed);
 }
 
 std::vector<std::int32_t> StoryFieldLink::openCellSections() {
