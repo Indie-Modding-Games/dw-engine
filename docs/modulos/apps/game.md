@@ -558,6 +558,23 @@ Además el HUD redibujaba el minimapa con cada ajuste que no conocía: los cient
 abrirse costaban 5 a 7 ms; ahora solo lo hace con los que lee (`minimap`, `minimap_size`, `battle.active`). La ruta
 de medida y las trazas quedan fuera del repositorio (`_work/tmp/w38-ui/`).
 
+## Primer fotograma de una partida cargada
+
+Cargar una partida paraba los primeros fotogramas (#325): el retrato del estado y los personajes que el mapa trae
+en el primer tick (`FieldScene::followNpcs`) doblaban sus texturas en el momento, mientras el fondo se doblaba en su
+hilo. Ahora los dos usan `ModelRenderer::setUpscaleInBackground`: texturas suavizadas al momento y las dobladas en
+cuanto están, como el fondo. Medido con una ruta que carga la partida del primer tramo de la cadena (`--load`,
+puente) y abre la ficha, en la RTX 2060:
+
+| Primer fotograma tras `--load` | Antes | Ahora |
+|---|---|---|
+| Carga del retrato, build normal (3 pasadas) | 60 a 70 ms | 8 a 12 ms |
+| Fotograma más lento al empezar, build normal (3 pasadas) | 408 a 440 ms (ticks 342 a 374 ms) | 108 a 117 ms (ticks 40 a 47 ms) |
+| Carga del retrato, build `ci` (ASan) | 2372 ms | 426 ms |
+| Fotograma más lento al empezar, build `ci` (ASan) | 13871 ms (ticks 12612 ms) | 4989 ms (ticks 2281 ms) |
+
+Las texturas dobladas llegan unos 40 a 150 ms después en el build normal (6 a 8 s con ASan); la ficha se ve igual.
+
 ## Escena final
 
 `EndingScene` juega la última escena (`call_partner_routine 6`, que pide la rutina 53; en el original, el tick final del

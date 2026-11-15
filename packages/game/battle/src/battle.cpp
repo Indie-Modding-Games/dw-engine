@@ -361,9 +361,9 @@ core::Result<void> Battle::command(Command command, FighterId side) {
 }
 
 void Battle::defeatEnemies() {
-  for (std::size_t enemy = 1; enemy < state_.fighters.size(); ++enemy) {
-    Fighter& fighter = state_.fighters.at(enemy);
-    fighter.pendingDamage = std::max(fighter.pendingDamage, fighter.hp);
+  BattleContext context = contextOf(pending());
+  for (FighterId enemy = 1; enemy < state_.fighters.size(); ++enemy) {
+    strikeDown(context, enemy);
   }
 }
 

@@ -20,6 +20,9 @@ core::Result<std::unique_ptr<PartnerPortrait>> PartnerPortrait::create(render::R
   auto models = render::ModelRenderer::create(renderer);
   if (!models)
     return std::unexpected{models.error()};
+  // It loads while the game runs (a save's first frame, an evolution): its textures are upscaled in
+  // the background, smooth until then, so the frame never waits for them (#325).
+  (*models)->setUpscaleInBackground(true);
   // Drawn at the window's size, not the original's: the page shows it up to the window's height.
   auto texture = renderer.createScreenSceneTexture({.width = ScreenWidth, .height = ScreenHeight});
   if (!texture)
@@ -107,6 +110,7 @@ void PartnerPortrait::clear() {
 }
 
 render::TextureScene PartnerPortrait::scene(double seconds) {
+  models_->pollTextures();
   models_->clear();
   if (pose_) {
     // The clip's root motion is left out: the model stays at its place on the page.

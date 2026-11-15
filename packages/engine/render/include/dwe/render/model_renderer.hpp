@@ -7,6 +7,7 @@
 #include <dwe/render/drawer.hpp>
 #include <dwe/render/renderer.hpp>
 #include <dwe/render/slot_map.hpp>
+#include <dwe/render/texture_upscale_job.hpp>
 #include <dwe/render/upscale_cache.hpp>
 #include <dwe/rhi/buffer.hpp>
 #include <dwe/rhi/pipeline.hpp>
@@ -126,6 +127,15 @@ public:
   [[nodiscard]] TextureFilter textureFilter() const { return filter_; }
   // Where upscaled textures are kept between runs (nothing: upscaled at every load).
   void setUpscaleCache(std::shared_ptr<const UpscaleCache> cache) { cache_ = std::move(cache); }
+  // For models loaded while the game runs (the status portrait, the field): with Upscaled, a
+  // model's textures go up smooth at once and are doubled on a thread of their own (a
+  // TextureUpscaleJob), taken by pollTextures() once ready, so the upscale never holds a frame.
+  // Off by default: add() uploads them upscaled, which is fine under a load's fade. Set it before
+  // the first model.
+  void setUpscaleInBackground(bool on) { upscaleInBackground_ = on; }
+  // Uploads the textures the background upscales finished (setUpscaleInBackground): the frames
+  // after draw with them. Call it between frames, before submitting.
+  void pollTextures();
 
   // How many joint matrices an instance of the model takes (0 for a handle that is not live).
   [[nodiscard]] std::size_t jointCount(ModelHandle model) const;
@@ -164,6 +174,11 @@ private:
     // Its image's index in GpuModel::images.
     std::optional<std::size_t> image;
   };
+  // A region of an image updated while its upscale ran (updateImage): uploaded again over it.
+  struct StaleRegion {
+    std::size_t image = 0;
+    rhi::Rect region;
+  };
   struct GpuModel {
     // The vertices, then the indices from indexOffset.
     rhi::Buffer geometry;
@@ -177,6 +192,9 @@ private:
     std::uint32_t textureScale = 1;
     std::vector<glm::mat4> restJoints;
     bool hasTranslucent = false;
+    // Its textures being upscaled in the background (setUpscaleInBackground).
+    std::unique_ptr<TextureUpscaleJob> upscale;
+    std::vector<StaleRegion> staleRegions;
   };
   struct Submitted {
     ModelHandle model;
@@ -225,10 +243,20 @@ private:
 
   explicit ModelRenderer(Renderer& renderer)
       : renderer_(&renderer), opaque_(*this), translucent_(*this) {}
-  // Uploads the model's textures for the current filter, replacing those it has.
+  // Uploads the model's textures for the current filter, replacing those it has; in the background
+  // (setUpscaleInBackground) smooth ones first.
   core::Result<void> uploadTextures(GpuModel& model);
-  // An image's pixels as the current filter uploads them.
-  [[nodiscard]] std::vector<std::byte> filtered(const assets::Image& image) const;
+  // Replaces the model's textures with these pixels, one per image, at `scale` texels per texel.
+  core::Result<void> replaceTextures(GpuModel& model,
+                                     std::span<const std::vector<std::byte>> pixels,
+                                     std::uint32_t scale);
+  // Uploads RGBA8 pixels to a region of one of the model's textures through the current filter.
+  core::Result<void> uploadRegion(GpuModel& model, std::size_t image, const rhi::Rect& region,
+                                  std::span<const std::byte> pixels);
+  // Starts upscaling the model's images in the background, dropping an upscale under way.
+  void startUpscale(GpuModel& model);
+  // Drops the model's background upscale: it finishes in abandoned_, never blocking a frame.
+  void abandonUpscale(GpuModel& model);
   void prepare(PrepareContext& context);
   void drawOpaque(DrawContext& context);
   void drawTranslucent(DrawContext& context);
@@ -243,6 +271,9 @@ private:
   SlotMap<GpuModel> models_;
   TextureFilter filter_ = TextureFilter::Upscaled;
   std::shared_ptr<const UpscaleCache> cache_;
+  bool upscaleInBackground_ = false;
+  // Cancelled upscales still finishing the image under way: dropped once finished.
+  std::vector<std::unique_ptr<TextureUpscaleJob>> abandoned_;
   Camera camera_;
   ModelLighting lighting_ = defaultModelLighting();
   // Submitted since the last prepare, with their joints already in world space.

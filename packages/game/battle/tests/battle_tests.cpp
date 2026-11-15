@@ -225,6 +225,62 @@ TEST_CASE(
   CHECK(survives.partnerHp == 1);
 }
 
+namespace {
+
+// The first frame on which the enemy's shot at the partner is on its way; nothing within `limit`.
+std::optional<std::int64_t> enemyShotFlying(Battle& battle, std::int64_t limit) {
+  while (!battle.finished() && battle.state().frame < limit) {
+    battle.step();
+    if (std::ranges::any_of(battle.state().inFlight, [](const AttackInFlight& flying) {
+          return flying.attacker == 1 && flying.defender == PartnerId;
+        })) {
+      return battle.state().frame;
+    }
+  }
+  return std::nullopt;
+}
+
+bool enemyHitPartner(const BattleEvents& events) {
+  return std::ranges::any_of(events, [](const BattleEvent& event) {
+    return event.kind == EventKind::AttackHit && event.fighter == PartnerId && event.other == 1;
+  });
+}
+
+} // namespace
+
+// battle_main.c: BTL_tickAttackHits calls BTL_removeMoveEffect on the fighter a blow reaches, so
+// the enemy felled by a hit loses the shot it had fired; nothing else stops it (the faint at
+// battle_main.c:1651 leaves it be). The battle_win debug command's blow does the same: a shot still
+// on its way when the last enemy falls does not knock the partner out and turn the win into a loss.
+TEST_CASE("the blow that ends the fight stops the shot the enemy still had on its way") {
+  constexpr std::int64_t Limit = 600;
+  std::int32_t checked = 0;
+  for (const std::uint64_t seed : {1U, 2U, 3U, 4U, 5U, 6U, 7U, 8U}) {
+    BattleSetup setup = duel(evenStats(400, 120), evenStats(400, 120), {"punch"}, {"shot"});
+    setup.enemies.front().position = {.x = 0, .z = 650};
+    setup.partner.hp = 1;
+    // Unhindered, the shot lands and the partner falls with it.
+    Battle control = startBattle(setup, seed);
+    const std::optional<std::int64_t> flying = enemyShotFlying(control, Limit);
+    if (!flying || !enemyHitPartner(runToEnd(control))) {
+      continue;
+    }
+    REQUIRE(resultOf(control).outcome == Outcome::Defeat);
+    ++checked;
+    Battle battle = startBattle(setup, seed);
+    REQUIRE(enemyShotFlying(battle, Limit) == flying);
+    battle.defeatEnemies();
+    CHECK(std::ranges::none_of(battle.state().inFlight,
+                               [](const AttackInFlight& shot) { return shot.attacker == 1; }));
+    const BattleEvents rest = runToEnd(battle);
+    CHECK_FALSE(enemyHitPartner(rest));
+    REQUIRE(battle.finished());
+    CHECK(resultOf(battle).outcome == Outcome::Victory);
+    CHECK(resultOf(battle).partnerHp == 1);
+  }
+  CHECK(checked > 0);
+}
+
 TEST_CASE("a lost battle leaves the partner's HP at 0 and its MP as the fight left them") {
   // A lost battle goes on at MAPHEAD section 0x4DE and the death map's section 0x48 (dg 212),
   // which tells a defeat from a sickness by the current HP being 0 and gives HP and MP back itself.
