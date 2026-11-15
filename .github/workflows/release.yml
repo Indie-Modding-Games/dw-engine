@@ -243,6 +243,10 @@ jobs:
           - { platform: darwin-x86_64, runner: macos-15, arch: x64 }
     runs-on: ${{ matrix.runner }}
     steps:
+      # The compiler cache keeps only what this job used (below), so the job notes when it began.
+      - name: Note the start
+        run: echo "DWE_JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+
       # The package names its tree, which one commit is enough to know.
       - uses: actions/checkout@v4
 
@@ -335,14 +339,16 @@ jobs:
           path: ${{ runner.temp }}/vcpkg-cache
           key: vcpkg-release-${{ matrix.platform }}-${{ runner.os == 'macOS' && 'llvm22-' || '' }}${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
 
-      - name: Show the compiler cache statistics
+      # Only what this job compiled or hit is saved (as in pr-caches below), then the statistics.
+      - name: Trim the compiler cache to what this job used
         if: always()
         env:
           DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
           DWE_CCACHE_DIR: ${{ runner.temp }}/ccache
         run: |
-          if [[ "$RUNNER_OS" == macOS ]]; then ccache --show-stats || true
-          else scripts/dev.sh shell -c 'ccache --show-stats' || true; fi
+          keep="--evict-older-than $(($(date +%s) - DWE_JOB_START + 60))s"
+          if [[ "$RUNNER_OS" == macOS ]]; then ccache $keep; ccache --show-stats || true
+          else scripts/dev.sh shell -c "ccache $keep; ccache --show-stats" || true; fi
 
       # The older copies go first: saving the new one next to them overfills the repository's
       # cache space for a moment, and the space is freed by evicting the vcpkg caches.
@@ -550,6 +556,7 @@ jobs:
           echo "DWE_CACHE_DIR=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
           echo "DWE_CCACHE_DIR=$RUNNER_TEMP/ccache" >> "$GITHUB_ENV"
           echo "DWE_XWIN_DIR=$RUNNER_TEMP/xwin" >> "$GITHUB_ENV"
+          echo "DWE_JOB_START=$(date +%s)" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v4
 
@@ -625,11 +632,15 @@ jobs:
           path: ${{ runner.temp }}/vcpkg-cache
           key: ${{ matrix.vcpkg }}-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
 
-      # ccache applies a lower size limit only when it next cleans up, so the cache is trimmed to it here.
-      - name: Trim the compiler cache to its size limit
+      # Only what this job compiled or hit is saved: the objects of older commits that the restored copy
+      # still holds would fill the size limit and push out other caches. ccache marks an entry used on
+      # every hit, so the ones older than the job are the unused ones.
+      - name: Trim the compiler cache to what this job used
         if: always() && !matrix.deps-only
         continue-on-error: true
-        run: scripts/dev.sh shell -c 'ccache --show-stats; ccache --cleanup'
+        run: |
+          keep="--evict-older-than $(($(date +%s) - DWE_JOB_START + 60))s"
+          scripts/dev.sh shell -c "ccache $keep; ccache --cleanup; ccache --show-stats"
 
       # The older copies go first: saving the new one next to them overfills the repository's
       # cache space for a moment, and the space is freed by evicting the vcpkg caches.
