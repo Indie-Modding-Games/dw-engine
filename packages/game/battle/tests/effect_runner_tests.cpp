@@ -262,6 +262,111 @@ data:
   free: true
 )";
 
+// A made-up quake: on its first frame it runs through the targets and calls a routine that spawns
+// a rock (sound 9) at each one, the way Tremar does (select_next_target, call, spawn).
+constexpr std::string_view SpawningLoopEffectYaml = R"(move: "made_up_quake"
+header:
+  sub_effect_count: 6
+)";
+constexpr std::string_view SpawningLoopScriptYaml = R"(start_script:
+- label: "start"
+  at: "0x0100"
+  op: spawn
+  count: 1
+  table: "base+0x0010"
+  stride: 8
+  ordinal: 0
+- at: "0x0110"
+  op: push_address
+  address: "base+0x0200"
+- at: "0x0120"
+  op: push_address
+  address: "base+0x0300"
+- at: "0x0130"
+  op: sub
+  sub: set_sub_effect_scripts
+  args:
+    tick_script: "l_0200"
+    render_script: "l_0300"
+- at: "0x0140"
+  op: return
+- label: "l_0200"
+  at: "0x0200"
+  op: push_address
+  address: "base+0x0000"
+- at: "0x0210"
+  op: sub
+  sub: select_next_target
+  args:
+    index: "&base+0x0000"
+- at: "0x0220"
+  op: load_immediate
+  value: 0
+- at: "0x0230"
+  op: branch_if
+  variable: "base+0x0000"
+  width: 4
+  comparison: less
+  target: "l_0300"
+- at: "0x0240"
+  op: call
+  target: "l_0400"
+- at: "0x0250"
+  op: jump
+  target: "l_0200"
+- label: "l_0300"
+  at: "0x0300"
+  op: return
+- label: "l_0400"
+  at: "0x0400"
+  op: spawn
+  count: 4
+  table: "base+0x0020"
+  stride: 8
+  ordinal: 1
+- at: "0x0410"
+  op: push_address
+  address: "base+0x0300"
+- at: "0x0420"
+  op: push_address
+  address: "base+0x0300"
+- at: "0x0430"
+  op: sub
+  sub: set_sub_effect_scripts
+  args:
+    tick_script: "l_0300"
+    render_script: "l_0300"
+- at: "0x0440"
+  op: push_immediate
+  value: 9
+- at: "0x0450"
+  op: sub
+  sub: play_sound
+  args:
+    sound: 9
+- at: "0x0460"
+  op: return
+init_script:
+- label: "init"
+  at: "0x0470"
+  op: stop
+data:
+- at: "0x0000"
+  kind: variable
+  width: 4
+  value: 0
+- at: "0x0010"
+  kind: instances
+  count: 1
+  stride: 8
+  free: true
+- at: "0x0020"
+  kind: instances
+  count: 4
+  stride: 8
+  free: true
+)";
+
 constexpr std::string_view DrawingEffectYaml = R"(move: "made_up_spark"
 header:
   sub_effect_count: 1
@@ -754,6 +859,26 @@ TEST_CASE("a target loop sounds once on each target it hits, not every frame") {
     runner.tick();
   }
   CHECK(sounds.log == std::vector<Recorded>{{"play", 7}});
+}
+
+TEST_CASE("a spawn in a routine a target loop calls does not restart the loop") {
+  // battle_effect.c: BTL_spawnEFESubEffect rewinds the entity cursor, but BTL_callEFESubroutine
+  // saves it and BTL_returnFromEFESubroutine restores it: one rock for the one target, not one
+  // for every free instance (Tremar threw all its rocks at its target).
+  const auto effect = dwe::core::parseYaml(SpawningLoopEffectYaml);
+  const auto script = dwe::core::parseYaml(SpawningLoopScriptYaml);
+  REQUIRE(effect.has_value());
+  REQUIRE(script.has_value());
+  auto read = dwe::assets::readEffectScript(*effect, *script);
+  REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+  const TwoFighters bodies{"agum"};
+  RecordingSounds sounds;
+  EffectRunner runner{sounds};
+  runner.setBodies(bodies);
+  const std::size_t slot = runner.load(std::move(*read));
+  runner.start(slot, 0, 1);
+  runner.tick();
+  CHECK(sounds.log == std::vector<Recorded>{{"play", 9}});
 }
 
 TEST_CASE("every extracted effect runs and draws on two fighters") {

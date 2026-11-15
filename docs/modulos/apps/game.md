@@ -931,7 +931,7 @@ dibuja esa fracción de tick después del último (ver `docs/guides/control-remo
 |---|---|---|---|---|
 | Luchadores entre fotogramas | Se dibujan en el sitio de cada fotograma (20 por segundo) | `PoseGlide` desliza la posición y el giro durante el fotograma, un fotograma por detrás; saltos de más de 500 unidades de golpe | `battle_glide_tests.cpp` («a fighter glides over the battle's frame…», «a fighter's turn glides the short way…»); capturas | Mejora opcional (`smooth_motion`, encendida por defecto) |
 | Efectos de las técnicas entre fotogramas | Se redibujan en cada fotograma | `blendEffects`: sprites, objetos de modelo y partículas emparejados por técnica, clase y orden | `battle_glide_tests.cpp` («the effects glide between two frames…», «an effect model glides its translation…») | Mejora opcional (`smooth_motion`) |
-| Animaciones de los luchadores entre ticks | El cuerpo cambia de pose en cada fotograma | `ClipTween`: el clip en el tiempo entre los dos últimos ticks, un tick por detrás; un clip nuevo o reiniciado desde su principio | `battle_glide_tests.cpp` («a held fighter's clip is drawn between its last two ticks…», «a fighter's new clip…»); capturas | Mejora opcional (`smooth_motion`) |
+| Animaciones de los luchadores entre ticks | El cuerpo cambia de pose en cada fotograma | `ClipTween`: el clip en el tiempo entre los dos últimos ticks, un tick por detrás; un clip nuevo o reiniciado desde su principio; un clip de escena puesto encima sin `follow` (la pose de victoria) se dibuja con el reproductor (`ClipTween::follows`) | `battle_glide_tests.cpp` («a held fighter's clip is drawn between its last two ticks…», «a fighter's new clip…», «a clip played over a held fighter…»); capturas | Mejora opcional (`smooth_motion`) |
 | Chispas de los golpes y efectos de estado entre fotogramas | Se redibujan en cada fotograma | Los del fotograma anterior emparejados por ranura y dueño (`sparkBehind`, `cloudBehind`, `betweenFrames`) | `battle_glide_tests.cpp` («the status visuals' counts…», «a hit spark and a cloud…») | Mejora opcional (`smooth_motion`) |
 | La lógica del combate con y sin movimiento suave | | Misma secuencia de ticks: el hash por tick del combate y de lo que lee del dibujo es igual encendido y apagado | `battle_glide_tests.cpp` («smooth motion changes only the drawing…») | Igual |
 
@@ -2111,6 +2111,7 @@ Un probador no podía hablar con un personaje estando a su lado. Medido en el or
 | Andando | Sin alcance: cuenta el cuadrado un paso de su animación por delante | Igual (`ahead` en `Field::touchNpcs`) | Igual |
 | Varios NPC | El primero de la tabla que toca | Igual | Igual |
 | Carteles | Las casillas de confirmar (80–109) solo bajo la posición del jugador (`getTileTrigger`) | Igual (`Field::checkConfirm`) | Igual |
+| NPC y casilla a la vez | Primero el NPC: `callScriptSection` pone `IS_SCRIPT_PAUSED` a 0 y la casilla de ese fotograma se pierde, aunque la sección del NPC esté vacía | Igual (`Field::touchNpcs` antes de `checkConfirm`) | Igual |
 
 Así, de lado o de espaldas a un NPC, a menos de un paso pero sin tocarlo, el original tampoco habla: el choque de
 andar para al jugador hasta un paso antes (corriendo, 870 / 20 = 43,5 unidades).
@@ -2123,6 +2124,18 @@ en vez de 50 (`GenerousTalkAhead`, el doble del original); y si la casilla del j
 casilla de 100 unidades por delante (`GenerousSignAhead`, una casilla: el cartel que tiene delante). Pruebas: «a confirm
 talks to an NPC the player's square reaches, 50 further the way it faces» y «with the generous talk range a confirm
 reads the sign's cell in front of the player» (`field_tests.cpp`).
+
+La mejora solo alcanza lo que el original no: primero el NPC al alcance del original, luego la casilla de confirmar bajo
+el jugador, luego la de delante y al final los NPC que solo el alcance amplio toca (`Field::touchNpcs`,
+`Field::confirmCell`). Un probador no podía hablar con el NPC grande de la Región Glacial Antigua (koda02, radio 400 en
+x 1439, z −2237: su cuadrado empieza en x 1039) con la mejora puesta: lo que dice está en las casillas de confirmar 82
+de su lado (filas 73–77, columnas 57–64; sección 0x52) y su propia sección de hablar (7) está vacía. Medido en el
+original mirando hacia él: desde x 850, z −2450 (850 + 100 + 50 = 1000, no llega a 1039) sale el diálogo (sección 0x52);
+desde x 900 la confirmación va al NPC (sección 7) y no sale nada. Antes, con la mejora, el cuadrado ampliado (850 + 245)
+tocaba al NPC desde casi todas esas casillas y se las quitaba. Prueba: «the generous talk range leaves a large NPC's
+confirm cell to the player standing on it». El mismo caso de NPC junto a casillas de confirmar se da en los mostradores
+de tiendas y en otros mapas (67 NPC en 45 mapas tienen una casilla de confirmar al alcance de la mejora); en todos, con
+la mejora, la casilla bajo el jugador gana como en el original.
 
 ## Versus en línea
 

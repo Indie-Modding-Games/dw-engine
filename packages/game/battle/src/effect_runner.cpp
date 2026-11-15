@@ -360,7 +360,7 @@ std::optional<std::size_t> EffectRunner::step(Slot& slot, std::size_t at) {
     stack_.push_back(address(in.variable));
     return next;
   case EffectOpcode::Call:
-    calls_.push_back({.returnTo = next, .subEffect = subEffect_});
+    calls_.push_back({.returnTo = next, .subEffect = subEffect_, .targetCursor = targetCursor_});
     return jump(in.target);
   case EffectOpcode::SubOp:
     subOp(slot, in);
@@ -380,8 +380,8 @@ std::optional<std::size_t> EffectRunner::step(Slot& slot, std::size_t at) {
   return std::nullopt;
 }
 
-// battle_effect.c: BTL_returnFromEFESubroutine: back to the caller and its sub-effect, or the end
-// of the script when nothing called it.
+// battle_effect.c: BTL_returnFromEFESubroutine: back to the caller, its sub-effect and its entity
+// cursor, or the end of the script when nothing called it.
 std::optional<std::size_t> EffectRunner::returnFrom() {
   if (calls_.empty()) {
     return std::nullopt;
@@ -389,6 +389,7 @@ std::optional<std::size_t> EffectRunner::returnFrom() {
   const CallFrame frame = calls_.back();
   calls_.pop_back();
   subEffect_ = frame.subEffect;
+  targetCursor_ = frame.targetCursor;
   const SubEffect& subEffect = slots_[slot_].subEffects[subEffect_];
   current_ = subEffect.instance;
   previous_ = subEffect.parent;

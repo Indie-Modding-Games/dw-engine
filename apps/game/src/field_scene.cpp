@@ -349,6 +349,8 @@ void FieldScene::playPartnerClip(std::optional<std::uint32_t> clipId, bool moves
   partnerClipOnceAt_.reset();
   partnerClip_ = clipId;
   partnerClipStarted_ = false;
+  // A held fighter's tween starts over with the next battle clip, even the same one again.
+  partnerActor_->clipTween = {};
   // The clip's root motion carries the partner as a script's clip does (Field::moveByClip); a
   // scene's clip that does not move it stops the one before.
   const bool wasMoving = std::exchange(partnerClipMoves_, moves && clipId.has_value());
@@ -1413,8 +1415,10 @@ std::optional<glm::mat4> FieldScene::playerNodeTransform(std::uint32_t node) con
 
 std::span<const glm::mat4> FieldScene::drawnJoints(const Actor& actor) const {
   // While update draws a held fighter with smooth motion, its clip between the ticks
-  // (battle_glide.hpp: ClipTween); the battle's logic reads the tick's pose.
-  if (drawAhead_ && actor.fighter && field_->smoothMotion() && actor.clipTween.posed()) {
+  // (battle_glide.hpp: ClipTween); the battle's logic reads the tick's pose. A scene's clip over
+  // the fighter (the victory pose) moves the player alone, so the player draws it.
+  if (drawAhead_ && actor.fighter && field_->smoothMotion() &&
+      actor.clipTween.follows(*actor.player)) {
     return drawsChibi(chibiMode_, actor.originalModel)
                ? chibiJoints_.of(*actor.model, actor.chibi, actor.clipTween.nodes(),
                                  actor.clipTween.joints())

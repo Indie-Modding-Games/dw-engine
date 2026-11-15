@@ -75,6 +75,11 @@ public:
   void pose(const assets::ModelData& model, float alpha);
   // Whether pose() has something to draw.
   [[nodiscard]] bool posed() const { return clip_ != nullptr && !joints_.empty(); }
+  // Whether pose() draws the clip `player` plays: a clip played over the fighter without follow()
+  // (a scene's, as the victory pose) leaves the tween on the battle clip's last pose.
+  [[nodiscard]] bool follows(const animation::AnimationPlayer& player) const {
+    return posed() && player.clip() == clip_;
+  }
   [[nodiscard]] std::span<const assets::NodeTransform> nodes() const { return pose_; }
   [[nodiscard]] std::span<const glm::mat4> joints() const { return joints_; }
 
