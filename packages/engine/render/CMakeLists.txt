@@ -16,6 +16,7 @@ dwe_add_module(render
         src/map_cutouts.cpp
         src/scenery_upscale.cpp
         src/upscale_cache.cpp
+        src/texture_upscale_job.cpp
         src/map_renderer.cpp
         src/scene_light.cpp
         src/scene_grade.cpp

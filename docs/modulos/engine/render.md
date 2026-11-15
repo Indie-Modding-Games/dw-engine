@@ -24,7 +24,10 @@ El render del juego, encima de `rhi`. Ver [render.md](../../architecture/render.
   en la GPU, luz del original y semitransparencias ordenadas, con un drawer para lo opaco y otro para lo
   semitransparente. `SlotMap` guarda sus modelos tras handles con generación. Ver [modelos](../../architecture/models.md).
   `setTextureFilter` elige cómo se muestrean sus texturas (`TextureFilter`: `Nearest`, `Smooth`, `Upscaled`, el
-  ajuste `texture_filter`).
+  ajuste `texture_filter`). Con `setUpscaleInBackground` (el retrato del estado y los personajes del campo) un modelo
+  sube sus texturas suavizadas al momento y las dobla en un hilo propio (`TextureUpscaleJob`,
+  `texture_upscale_job.hpp`); `pollTextures` las cambia por las dobladas cuando están, y una región que
+  `updateImage` cambie mientras tanto se vuelve a subir encima. Sin él, `add` las dobla en el momento.
 - `scenery_upscale.hpp`: el escalador ×2 del motor (`upscaleScenery` para el fondo en todas sus variantes,
   `upscaleRgba` para texturas con alfa) y `upscale_cache.hpp` (`UpscaleCache`, `UpscaleKey`): lo que hace se guarda
   comprimido con zstd en `<datos del usuario>/cache/upscale`. Ver [Nitidez](../../architecture/remaster-pipeline.md#nitidez).

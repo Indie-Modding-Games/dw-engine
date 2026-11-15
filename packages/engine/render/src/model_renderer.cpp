@@ -25,8 +25,6 @@ constexpr std::uint32_t FlagUnlit = 1;
 constexpr std::uint32_t FlagMask = 2;
 // The texture is sampled smooth (TextureFilter::Smooth, Upscaled); without it, nearest.
 constexpr std::uint32_t FlagSmooth = 4;
-// The upscaler's version in the cache keys: change it when its output changes.
-constexpr std::uint32_t TextureUpscaleVersion = 1;
 // Alpha 0 texels are the original's transparent ones: a blended material never draws them either.
 constexpr float TranslucentCutoff = 0.5F;
 constexpr float AverageAlpha = 0.5F;
@@ -239,7 +237,9 @@ core::Result<ModelHandle> ModelRenderer::add(const assets::ModelData& model) {
                .images = model.images,
                .textureScale = 1,
                .restJoints = {},
-               .hasTranslucent = false};
+               .hasTranslucent = false,
+               .upscale = nullptr,
+               .staleRegions = {}};
   if (auto uploaded = uploadTextures(gpu); !uploaded) {
     return std::unexpected{uploaded.error()};
   }
@@ -273,35 +273,49 @@ core::Result<ModelHandle> ModelRenderer::add(const assets::ModelData& model) {
   return models_.insert(std::move(gpu));
 }
 
-std::vector<std::byte> ModelRenderer::filtered(const assets::Image& image) const {
-  if (filter_ == TextureFilter::Nearest) {
-    return image.pixels;
+core::Result<void> ModelRenderer::uploadTextures(GpuModel& model) {
+  abandonUpscale(model);
+  // In the background the textures go up smooth now and doubled once the job is done.
+  const bool later = upscaleInBackground_ && filter_ == TextureFilter::Upscaled;
+  const TextureFilter now = later ? TextureFilter::Smooth : filter_;
+  std::vector<std::vector<std::byte>> pixels;
+  pixels.reserve(model.images.size());
+  for (const assets::Image& image : model.images) {
+    pixels.push_back(
+        now == TextureFilter::Nearest
+            ? image.pixels
+            : modelTexturePixels(image, now == TextureFilter::Upscaled ? 1 : 0, cache_.get()));
   }
-  const std::uint32_t doublings = filter_ == TextureFilter::Upscaled ? 1 : 0;
-  const std::size_t bytes = image.pixels.size() << (2U * doublings);
-  UpscaleKey key;
-  key.add(TextureUpscaleVersion).add(doublings).add(image.width).add(image.height);
-  key.add(std::span<const std::byte>{image.pixels});
-  if (cache_ && doublings > 0) {
-    if (auto kept = cache_->load(key.value(), bytes)) {
-      return std::move(*kept);
-    }
+  if (auto replaced = replaceTextures(model, pixels, now == TextureFilter::Upscaled ? 2 : 1);
+      !replaced) {
+    return replaced;
   }
-  std::vector<std::byte> pixels = upscaleRgba(image.width, image.height, image.pixels, doublings);
-  if (cache_ && doublings > 0 && pixels.size() == bytes) {
-    cache_->store(key.value(), pixels);
+  if (later) {
+    startUpscale(model);
   }
-  return pixels;
+  return {};
 }
 
-core::Result<void> ModelRenderer::uploadTextures(GpuModel& model) {
+void ModelRenderer::startUpscale(GpuModel& model) {
+  abandonUpscale(model);
+  if (model.images.empty()) {
+    return;
+  }
+  model.upscale = std::make_unique<TextureUpscaleJob>(
+      model.images, [cache = cache_](const assets::Image& image) {
+        return modelTexturePixels(image, 1, cache.get());
+      });
+}
+
+core::Result<void> ModelRenderer::replaceTextures(GpuModel& model,
+                                                  std::span<const std::vector<std::byte>> pixels,
+                                                  std::uint32_t scale) {
   std::vector<rhi::TextureId> made;
-  const std::uint32_t scale = filter_ == TextureFilter::Upscaled ? 2 : 1;
-  for (const assets::Image& image : model.images) {
-    const std::vector<std::byte> pixels = filtered(image);
+  for (std::size_t i = 0; i < model.images.size() && i < pixels.size(); ++i) {
+    const assets::Image& image = model.images[i];
     auto texture =
         renderer_->queueTexture({.width = image.width * scale, .height = image.height * scale},
-                                pixels, filter_ != TextureFilter::Nearest);
+                                pixels[i], filter_ != TextureFilter::Nearest);
     if (!texture) {
       for (const rhi::TextureId other : made) {
         renderer_->destroyTexture(other);
@@ -323,6 +337,54 @@ core::Result<void> ModelRenderer::uploadTextures(GpuModel& model) {
   return {};
 }
 
+void ModelRenderer::abandonUpscale(GpuModel& model) {
+  if (!model.upscale) {
+    return;
+  }
+  model.upscale->cancel();
+  abandoned_.push_back(std::move(model.upscale));
+  model.staleRegions.clear();
+}
+
+void ModelRenderer::pollTextures() {
+  std::erase_if(abandoned_,
+                [](const std::unique_ptr<TextureUpscaleJob>& job) { return job->finished(); });
+  models_.forEach([&](ModelHandle /*handle*/, GpuModel& model) {
+    if (!model.upscale || !model.upscale->finished()) {
+      return;
+    }
+    const std::unique_ptr<TextureUpscaleJob> job = std::move(model.upscale);
+    auto pixels = job->take();
+    if (!pixels || pixels->size() != model.images.size()) {
+      return;
+    }
+    if (auto replaced = replaceTextures(model, *pixels, 2); !replaced) {
+      core::logWarning("model renderer: cannot upload the upscaled textures: {}",
+                       replaced.error().message);
+      return;
+    }
+    // The regions updated while it ran, from the pixels the model has now.
+    for (const StaleRegion& stale : std::exchange(model.staleRegions, {})) {
+      const assets::Image& source = model.images[stale.image];
+      std::vector<std::byte> region(std::size_t{stale.region.width} * stale.region.height * 4);
+      for (std::uint32_t row = 0; row < stale.region.height; ++row) {
+        std::memcpy(region.data() + (static_cast<std::size_t>(row) * stale.region.width * 4),
+                    source.pixels.data() +
+                        ((((static_cast<std::size_t>(stale.region.y) + row) * source.width) +
+                          static_cast<std::size_t>(stale.region.x)) *
+                         4),
+                    static_cast<std::size_t>(stale.region.width) * 4);
+      }
+      if (auto updated = uploadRegion(model, stale.image, stale.region, region); !updated) {
+        core::logWarning("model renderer: cannot update an upscaled texture: {}",
+                         updated.error().message);
+      }
+    }
+    core::logDebug("model renderer: {} textures upscaled in the background in {:.0f} ms",
+                   pixels->size(), job->milliseconds());
+  });
+}
+
 void ModelRenderer::setTextureFilter(TextureFilter filter) {
   if (filter == filter_) {
     return;
@@ -337,10 +399,11 @@ void ModelRenderer::setTextureFilter(TextureFilter filter) {
 }
 
 void ModelRenderer::remove(ModelHandle model) {
-  const std::optional<GpuModel> gpu = models_.erase(model);
+  std::optional<GpuModel> gpu = models_.erase(model);
   if (!gpu) {
     return;
   }
+  abandonUpscale(*gpu);
   for (const rhi::TextureId texture : gpu->textures) {
     renderer_->destroyTexture(texture);
   }
@@ -371,18 +434,35 @@ core::Result<void> ModelRenderer::updateImage(ModelHandle model, std::size_t ima
                 pixels.data() + (static_cast<std::size_t>(row) * region.width * 4),
                 static_cast<std::size_t>(region.width) * 4);
   }
+  // An upscale under way doubles the pixels as they were: the region is uploaded again over its
+  // result (a flame strip changes every few frames, so the upscale cannot start again each time).
+  if (gpu->upscale) {
+    const bool known = std::ranges::any_of(gpu->staleRegions, [&](const StaleRegion& stale) {
+      return stale.image == image && stale.region.x == region.x && stale.region.y == region.y &&
+             stale.region.width == region.width && stale.region.height == region.height;
+    });
+    if (!known) {
+      gpu->staleRegions.push_back({.image = image, .region = region});
+    }
+  }
+  return uploadRegion(*gpu, image, region, pixels);
+}
+
+core::Result<void> ModelRenderer::uploadRegion(GpuModel& model, std::size_t image,
+                                               const rhi::Rect& region,
+                                               std::span<const std::byte> pixels) {
   if (filter_ == TextureFilter::Nearest) {
-    return renderer_->queueTextureUpdate(gpu->textures[image], region, pixels);
+    return renderer_->queueTextureUpdate(model.textures[image], region, pixels);
   }
   // The region alone through the filter: its edges see no neighbours, a texel at most.
-  const std::uint32_t doublings = gpu->textureScale > 1 ? 1 : 0;
+  const std::uint32_t doublings = model.textureScale > 1 ? 1 : 0;
   const std::vector<std::byte> shown = upscaleRgba(region.width, region.height, pixels, doublings);
-  const auto scale = static_cast<std::int32_t>(gpu->textureScale);
-  return renderer_->queueTextureUpdate(gpu->textures[image],
+  const auto scale = static_cast<std::int32_t>(model.textureScale);
+  return renderer_->queueTextureUpdate(model.textures[image],
                                        {.x = region.x * scale,
                                         .y = region.y * scale,
-                                        .width = region.width * gpu->textureScale,
-                                        .height = region.height * gpu->textureScale},
+                                        .width = region.width * model.textureScale,
+                                        .height = region.height * model.textureScale},
                                        shown);
 }
 

@@ -2053,10 +2053,14 @@ int runGame(const Options& requested) {
           }
         }
         if (raise) {
+          const double loadStart = platform->nowSeconds();
           if (auto loaded =
                   (*portrait)->load(files, species, *raise, flow.playing()->speciesScale(species));
               !loaded)
             core::logWarning("Status portrait {}: {}", species, loaded.error().message);
+          else
+            core::logInfo("Status portrait {}: loaded in {:.1f} ms", species,
+                          (platform->nowSeconds() - loadStart) * 1000.0);
         } else {
           core::logWarning("Status portrait {}: no raise-table placement", species);
         }
