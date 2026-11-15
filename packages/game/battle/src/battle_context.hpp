@@ -97,6 +97,10 @@ void tickAttackHits(BattleContext& context);
 // guard took it already, which keeps its spark from showing again.
 bool registerBlockedAttack(const BattleContext& context, const AttackInFlight& attack);
 void drainPendingDamage(BattleContext& context);
+// The battle_win debug command's blow: `id` takes damage enough to fall, and what a hit does to the
+// fighter it reaches comes first (BTL_tickAttackHits): its own technique, with whatever of it is
+// still on its way, and its finisher stop. The AttackHit it emits carries no move.
+void strikeDown(BattleContext& context, FighterId id);
 // The attack of a fighter leaves it (its animation's release frame).
 void releaseAttack(BattleContext& context, FighterId id);
 // flattened_shots.cpp: the flattened fighter's shot (battle_effect.c: BTL_addAuraProjectile,

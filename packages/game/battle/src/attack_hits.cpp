@@ -148,6 +148,14 @@ void cancelFinisherOf(BattleContext& context, FighterId id) {
   }
 }
 
+// battle_main.c: BTL_removeMoveEffect, which BTL_tickAttackHits calls on each fighter an attack
+// reaches: the fighter's own technique stops, so what of it is still on its way (a projectile its
+// effect has not yet brought to a fighter) reaches no one.
+void stopOwnTechnique(BattleContext& context, FighterId id) {
+  std::erase_if(context.state->inFlight,
+                [id](const AttackInFlight& flying) { return flying.attacker == id; });
+}
+
 bool counteringAttacker(const BattleContext& context, const Fighter& fighter, FighterId attacker) {
   return fighter.attack && context.moves->at(fighter.attack->move).counter &&
          fighter.target == attacker;
@@ -327,10 +335,7 @@ void handleAttack(BattleContext& context, const AttackInFlight& attack) {
     applyBuff(context, id, attack.move);
     return;
   }
-  // BTL_removeMoveEffect: the fighter's own technique stops, so what of it is still on its way
-  // (a projectile its effect has not yet brought to a fighter) reaches no one.
-  std::erase_if(context.state->inFlight,
-                [id](const AttackInFlight& flying) { return flying.attacker == id; });
+  stopOwnTechnique(context, id);
   const HitChance chance =
       context.strategies->damage->hitChance(context.view(), attack.attacker, id, attack.move);
   if (chance.breaksBlock) {
@@ -448,6 +453,28 @@ void addBystanderFlights(BattleContext& context, FighterId id,
 }
 
 } // namespace
+
+void strikeDown(BattleContext& context, FighterId id) {
+  Fighter& fighter = context.fighter(id);
+  if (fighter.fainted) {
+    return;
+  }
+  // BTL_tickAttackHits, for the fighter an attack reaches: its technique and its finisher stop.
+  stopOwnTechnique(context, id);
+  fighter.knockedBack = false;
+  fighter.attack.reset();
+  fighter.planned = false;
+  cancelFinisherOf(context, id);
+  const std::int32_t damage = std::max(fighter.hp - fighter.pendingDamage, 0);
+  fighter.pendingDamage = std::max(fighter.pendingDamage, fighter.hp);
+  context.emit({.kind = EventKind::AttackHit,
+                .fighter = id,
+                .other = PartnerId,
+                .move = std::nullopt,
+                .amount = damage,
+                .status = StatusEffect::None,
+                .command = Command::None});
+}
 
 bool registerBlockedAttack(const BattleContext& context, const AttackInFlight& attack) {
   const BlockedAttack taken{.caster = attack.move == context.moves->flattenedShot()
