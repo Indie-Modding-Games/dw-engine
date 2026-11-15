@@ -76,5 +76,6 @@ Además: `conventions/` (normas del equipo: [código](conventions/code.md), [com
 - Los diagramas van en [Mermaid](https://mermaid.js.org/), como texto: el sitio y GitHub los dibujan y se revisan en
   los PR.
 - Un ADR aceptado no se reescribe: se sustituye con otro nuevo.
-- `scripts/dev.sh docs` construye el sitio y falla con un enlace roto; `scripts/dev.sh check-full` lo pasa (la CI de
-  los pull requests no). `scripts/dev.sh docs-dev` lo sirve en local mientras escribes.
+- `scripts/dev.sh docs` construye el sitio y falla con un enlace roto; `scripts/dev.sh check-full` lo pasa, y un pull
+  request que cambia `docs/` lo construye también (sin publicarlo). `scripts/dev.sh docs-dev` lo sirve en local mientras
+  escribes.

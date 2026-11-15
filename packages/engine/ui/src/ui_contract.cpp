@@ -146,6 +146,27 @@ std::string jsonString(std::string_view text) {
   return quoted + '"';
 }
 
+// A summary as Markdown text: < and > outside its code spans as entities, so a placeholder such as
+// battle.menu.<n>.command reads as text and not as an HTML tag (the docs site's Vue compiler stops
+// on one it cannot close).
+std::string markdownText(std::string_view text) {
+  std::string escaped;
+  bool inCode = false;
+  for (const char c : text) {
+    if (c == '`') {
+      inCode = !inCode;
+    }
+    if (!inCode && c == '<') {
+      escaped += "&lt;";
+    } else if (!inCode && c == '>') {
+      escaped += "&gt;";
+    } else {
+      escaped += c;
+    }
+  }
+  return escaped;
+}
+
 std::string versionText() {
   return uiApiVersionText(CurrentUiApiVersion);
 }
@@ -394,7 +415,7 @@ std::string contractMarkdown(std::span<const UiContractEntry> contract) {
       if (entry.screen != screen) {
         continue;
       }
-      std::string summary{entry.summary};
+      std::string summary = markdownText(entry.summary);
       if (!entry.source.empty()) {
         summary += std::format(" Sale de `{}`.", entry.source);
       }

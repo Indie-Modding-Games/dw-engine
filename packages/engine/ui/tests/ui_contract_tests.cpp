@@ -58,6 +58,15 @@ TEST_CASE("the reference lists each screen's entries under the API's version") {
   CHECK(markdown.contains("| `open_menu` | comando | — | Opens the menu. |"));
   CHECK(markdown.find("### `hud`") < markdown.find("### `pause_menu`"));
 
+  // A placeholder outside a code span is text, not an HTML tag the docs site would choke on.
+  constexpr std::array Placeholders{
+      UiContractEntry{.screen = "hud",
+                      .kind = UiContractKind::Command,
+                      .name = "pick",
+                      .summary = "Goes to pick:<row>; `a<b>` stays code."},
+  };
+  CHECK(contractMarkdown(Placeholders).contains("Goes to pick:&lt;row&gt;; `a<b>` stays code."));
+
   const std::string json = contractJson(Contract);
   CHECK(json.contains(std::format(R"("version": "{}")", version)));
   CHECK(json.contains(R"("summary": "A meter's \"value\".")"));
