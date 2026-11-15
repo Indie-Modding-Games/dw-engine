@@ -44,6 +44,7 @@
         "frame_seconds": { "description": "One frame of the original: the fade steps once per frame.", "type": "number", "exclusiveMinimum": 0 },
         "fade_out_frames": { "description": "The fade out's frame on which the new map loads (fade.c: fadeToBlack).", "type": "integer", "minimum": 1 },
         "fade_in_frames": { "description": "The fade in's frame on which the player moves again (fade.c: fadeFromBlack).", "type": "integer", "minimum": 1 },
+        "start_fade_in_frames": { "description": "The fade in of the first map of a game, with the player free from its first frame (main.c: main). Leave it out to use fade_in_frames.", "type": "integer", "minimum": 1 },
         "shade_step": { "description": "How much the subtracted grey rises or falls per frame (fade.c: renderFadeOut, renderFadeIn).", "type": "integer", "minimum": 1 },
         "shade_max": { "description": "The highest subtracted grey (fade.c: renderFadeOut).", "type": "integer", "minimum": 1, "maximum": 255 },
         "shade_full": { "description": "The grey from which the screen is black: the fade's white texel times grey / 128.", "type": "integer", "minimum": 1, "maximum": 255 },

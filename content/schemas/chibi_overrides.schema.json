@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Chibi overrides",
+  "description": "The models/chibi.yaml document of the game pack: per species, the corrections to the chibi style's detection (packages/engine/animation/src/chibi.cpp: parseChibiOverrides applies the same rules).",
+  "type": "object",
+  "required": ["species"],
+  "additionalProperties": false,
+  "properties": {
+    "species": {
+      "description": "The overrides by the folder of the species' model (<folder>/model).",
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z0-9_]+$" },
+      "additionalProperties": { "$ref": "#/$defs/override" }
+    }
+  },
+  "$defs": {
+    "bone": { "description": "A joint index, the original's object order.", "type": "integer", "minimum": 0, "maximum": 255 },
+    "factor": { "description": "A fixed factor instead of the one the fit to the profile finds.", "type": "number", "minimum": 0.25, "maximum": 4 },
+    "override": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "off": { "description": "Keeps the species' original look, out of the profile.", "type": "boolean" },
+        "shape": { "description": "The body shape; unknown leaves the model as it is.", "enum": ["biped", "quadruped", "winged", "serpent", "unknown"] },
+        "head": { "$ref": "#/$defs/bone" },
+        "parts": {
+          "description": "The part that hangs from each bone.",
+          "type": "object",
+          "propertyNames": { "pattern": "^(0|[1-9][0-9]{0,2})$" },
+          "additionalProperties": { "enum": ["head", "neck", "arm", "leg", "tail", "wing", "other"] }
+        },
+        "scale": {
+          "description": "Fixed factors by proportion; they count only when the model is not chibi already.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "head": { "$ref": "#/$defs/factor" }, "torso": { "$ref": "#/$defs/factor" },
+            "neck": { "$ref": "#/$defs/factor" }, "arm": { "$ref": "#/$defs/factor" },
+            "leg": { "$ref": "#/$defs/factor" }, "hand": { "$ref": "#/$defs/factor" },
+            "foot": { "$ref": "#/$defs/factor" }, "tail": { "$ref": "#/$defs/factor" },
+            "wing": { "$ref": "#/$defs/factor" }, "girth": { "$ref": "#/$defs/factor" }
+          }
+        }
+      }
+    }
+  }
+}

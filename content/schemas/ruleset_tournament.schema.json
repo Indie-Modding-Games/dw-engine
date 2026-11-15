@@ -222,7 +222,8 @@
         "grade_a_won_trigger",
         "local_list_section",
         "lines",
-        "sounds"
+        "sounds",
+        "notice"
       ],
       "additionalProperties": false,
       "properties": {
@@ -321,6 +322,45 @@
               "minimum": 0
             }
           }
+        },
+        "notice": {
+          "description": "The registration's notice (tournament.c: updateTournamentRegistration), every frame with the partner registered, no script running and the player free.",
+          "type": "object",
+          "required": [
+            "from_minute",
+            "second_minute",
+            "late_minute",
+            "section",
+            "missed_section"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "from_minute": {
+              "description": "The minute of the day from which the notice runs.",
+              "type": "integer",
+              "minimum": 0
+            },
+            "second_minute": {
+              "description": "Before it, the notice runs once with the first trigger; after it, once more with the second.",
+              "type": "integer",
+              "minimum": 0
+            },
+            "late_minute": {
+              "description": "From it, or on another day, the cup is missed.",
+              "type": "integer",
+              "minimum": 0
+            },
+            "section": {
+              "description": "The script section of the notice.",
+              "type": "integer",
+              "minimum": 0
+            },
+            "missed_section": {
+              "description": "The script section of a missed cup; it clears the registration.",
+              "type": "integer",
+              "minimum": 0
+            }
+          }
         }
       }
     },
@@ -362,6 +402,11 @@
               },
               "walk_in": {
                 "type": "integer"
+              },
+              "music_font": {
+                "description": "The arena's song font (STD_initializeTournament: STD_MUSIC); without it the matches keep the battle's songs.",
+                "type": "integer",
+                "minimum": 0
               }
             }
           }
@@ -423,6 +468,45 @@
             },
             "drop": {
               "type": "integer"
+            }
+          }
+        },
+        "music": {
+          "description": "The songs of the arenas' fonts a match plays (playMusic(STD_MUSIC, song)).",
+          "type": "object",
+          "required": [
+            "partner_intro",
+            "rival_intro",
+            "fight",
+            "won",
+            "lost"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "partner_intro": {
+              "description": "The partner's entrance (STD_runIntro).",
+              "type": "integer",
+              "minimum": 0
+            },
+            "rival_intro": {
+              "description": "The rival's entrance (STD_runIntro).",
+              "type": "integer",
+              "minimum": 0
+            },
+            "fight": {
+              "description": "The fight (STD_combatMain).",
+              "type": "integer",
+              "minimum": 0
+            },
+            "won": {
+              "description": "A match won (STD_deinitializeCombat).",
+              "type": "integer",
+              "minimum": 0
+            },
+            "lost": {
+              "description": "A match lost (STD_deinitializeCombat).",
+              "type": "integer",
+              "minimum": 0
             }
           }
         }

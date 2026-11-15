@@ -82,7 +82,9 @@ DWE_CONTENT=<contenido extraído> DWE_CHIBI_PROFILE_OUT=<paquete del juego>/mode
 ```
 
 Sin `DWE_CHIBI_PROFILE_OUT` la misma prueba compara el perfil guardado con el que sale del disco del usuario. Las
-especies con `off: true` en `models/chibi.yaml` no entran en el perfil.
+especies con `off: true` en `models/chibi.yaml` no entran en el perfil. `dwx validate` comprueba los dos documentos con
+[`chibi_profile.schema.json`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/chibi_profile.schema.json)
+y [`chibi_overrides.schema.json`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/chibi_overrides.schema.json).
 
 `buildChibiRig(modelo, perfil)` es un detector: si todas las proporciones medidas caen dentro del rango de su forma
 (con una tolerancia de 0,1 % por el redondeo del archivo), el modelo ya es chibi (`ChibiRig::alreadyChibi`) y se

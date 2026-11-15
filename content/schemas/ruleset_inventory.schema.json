@@ -223,7 +223,8 @@
         "battle_disk",
         "chip",
         "food",
-        "evolution"
+        "evolution",
+        "healing_particles"
       ],
       "additionalProperties": false,
       "properties": {
@@ -554,6 +555,48 @@
                     "pattern": "^[a-z0-9_]+$"
                   }
                 }
+              }
+            }
+          }
+        },
+        "healing_particles": {
+          "description": "The items that raise the healing particles over the partner after what they heal (item.c: addHealingParticleEffect).",
+          "type": "object",
+          "required": [
+            "plain",
+            "ring",
+            "sickness_cured"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "plain": {
+              "description": "Healing items whose particles have no ring.",
+              "type": "array",
+              "items": {
+                "description": "The item's id in data/items.",
+                "type": "string",
+                "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+                "entryReference": "data/items"
+              }
+            },
+            "ring": {
+              "description": "Healing items whose particles have the ring.",
+              "type": "array",
+              "items": {
+                "description": "The item's id in data/items.",
+                "type": "string",
+                "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+                "entryReference": "data/items"
+              }
+            },
+            "sickness_cured": {
+              "description": "Items whose particles show only when they cure the sickness.",
+              "type": "array",
+              "items": {
+                "description": "The item's id in data/items.",
+                "type": "string",
+                "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+                "entryReference": "data/items"
               }
             }
           }

@@ -19,12 +19,13 @@
     "sea_serpent": {
       "description": "The sea serpent's bites and how often its hour is checked.",
       "type": "object",
-      "required": ["bite_chance", "bite_every", "check_every"],
+      "required": ["bite_chance", "bite_every", "check_every", "scene_section"],
       "additionalProperties": false,
       "properties": {
         "bite_chance": { "type": "integer", "minimum": 0 },
         "bite_every": { "type": "integer", "minimum": 1 },
-        "check_every": { "type": "integer", "minimum": 1 }
+        "check_every": { "type": "integer", "minimum": 1 },
+        "scene_section": { "description": "The section of the map header script that plays the lake guardian's scene once the serpent is landed.", "type": "integer", "minimum": 0 }
       }
     },
     "bites": {

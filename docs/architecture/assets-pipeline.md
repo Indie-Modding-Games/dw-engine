@@ -143,7 +143,8 @@ dwx validate [--schemas <carpeta>] [--with <carpeta>]... [--engine] <paquete | c
 Comprueba un paquete, o todos los de una carpeta (`content/base` o `content`; carpetas y archivos `.pak`), tal como los va a usar el motor y antes
 de que los use. Monta la pila con el VFS, igual que el juego, así que un mod se comprueba junto con la base que
 sobrescribe. Los esquemas se leen de `--schemas` o, si no se da, de la carpeta `schemas` junto a los paquetes
-(`content/schemas` en los dos ejemplos). `--with` monta además los paquetes de otra carpeta (un paquete o una carpeta
+(`content/schemas` en los dos ejemplos); un paquete que no la tiene al lado toma la de una carpeta más arriba, como los
+del propio juego (`content/packs/game` lee `content/schemas`). `--with` monta además los paquetes de otra carpeta (un paquete o una carpeta
 de paquetes), para comprobar un paquete que depende de otro que está en otro sitio; esos paquetes también se
 comprueban. Los paquetes de la carpeta se comprueban como mods, como los carga el juego desde una carpeta de mods:
 solo pueden declarar las capas `mods` o `user` y no tienen los derechos de la base (ids sin espacio de nombres e
