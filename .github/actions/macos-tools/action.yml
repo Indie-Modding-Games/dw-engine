@@ -45,6 +45,8 @@ runs:
         echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
         echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
         echo "VCPKG_DOWNLOADS=$RUNNER_TEMP/vcpkg-cache/downloads" >> "$GITHUB_ENV"
+        # Each download retried and, for kernel.org, from its other hosts (scripts/ci/fetch_source.sh).
+        echo "X_VCPKG_ASSET_SOURCES=x-script,$GITHUB_WORKSPACE/scripts/ci/fetch_source.sh {url} {sha512} {dst}" >> "$GITHUB_ENV"
 
     # The Intel package on Apple silicon: Rosetta runs its dwx (the packs' cooking) and the
     # package's start check. The Intel libraries change only with the LLVM version and their script.
