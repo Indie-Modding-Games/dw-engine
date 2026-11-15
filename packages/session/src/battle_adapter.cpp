@@ -339,8 +339,19 @@ core::Result<void> BattleAdapter::readRules(const ruleset::Ruleset& rules) {
     return std::unexpected{moveRules.error()};
   }
   section_ = **section;
-  rules_ = std::make_unique<game::battle::BattleRules>(std::move(*battleRules));
-  catalog_ = std::make_unique<game::battle::MoveCatalog>(std::move(*catalog));
+  // A re-read (a tuned value, an option that changes the rules, another ruleset) writes into the
+  // rules and the catalog already handed out, so a running battle and the field's holders of
+  // effectRules() go on reading valid ones: replacing them freed what those still pointed at.
+  if (rules_) {
+    *rules_ = std::move(*battleRules);
+  } else {
+    rules_ = std::make_unique<game::battle::BattleRules>(std::move(*battleRules));
+  }
+  if (catalog_) {
+    *catalog_ = std::move(*catalog);
+  } else {
+    catalog_ = std::make_unique<game::battle::MoveCatalog>(std::move(*catalog));
+  }
   moveRules_ = *moveRules;
   return {};
 }

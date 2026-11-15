@@ -129,8 +129,9 @@ public:
   BattleAdapter& operator=(BattleAdapter&&) = delete;
 
   [[nodiscard]] ruleset::SectionChecks sectionChecks() const override;
-  // Reads the battle and partner_moves sections and builds the move catalog. A battle in progress
-  // keeps pointing at the rules it started with, so the rules must not change during one.
+  // Reads the battle and partner_moves sections and builds the move catalog. A read again writes
+  // into the rules and the catalog already handed out, so a battle in progress and the field go on
+  // pointing at valid ones and read the new values.
   core::Result<void> readRules(const ruleset::Ruleset& rules) override;
   core::Result<void> addSaveSections(game::save::SaveSections& sections) override;
   // The first partner's moves (partner_impl.c: initializePartner).
@@ -203,7 +204,7 @@ public:
   std::vector<std::string> unlearnMoveNumber(const GameSession& session, std::int32_t number);
   [[nodiscard]] const game::battle::BattleRules& rules() const;
   // The species each variant borrows its effect points from (effect_common.c: getOriginalType),
-  // once the rules are read; null before.
+  // once the rules are read; null before. It stays valid when the rules are read again.
   [[nodiscard]] const game::battle::EffectRules* effectRules() const {
     return rules_ ? &rules_->effects : nullptr;
   }

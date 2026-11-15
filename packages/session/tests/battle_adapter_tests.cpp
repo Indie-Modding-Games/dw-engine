@@ -904,3 +904,23 @@ TEST_CASE(
   CHECK(music.endTrack(dwe::game::battle::Outcome::Defeat, false) == 4);
   CHECK_FALSE(music.endTrack(dwe::game::battle::Outcome::Defeat, true).has_value());
 }
+
+TEST_CASE("the rules read again stay where the field and a running battle point at them") {
+  // A tuned value or an option that changes the rules makes the session read them again; the
+  // field's mood bubble and a running battle keep pointers to the rules, the effect points and
+  // the move catalog, which must go on reading the new values instead of freed ones.
+  const TestPacks packs;
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters);
+  const dwe::game::battle::BattleRules* rules = &adapters.battle->rules();
+  const dwe::game::battle::EffectRules* effects = adapters.battle->effectRules();
+  const dwe::game::battle::MoveCatalog* catalog = &adapters.battle->catalog();
+  REQUIRE(effects != nullptr);
+  REQUIRE(session->rules().setValue("battle", "damage.partner_dealt_percent", "150").has_value());
+  session->tick(0.0);
+  CHECK(&adapters.battle->rules() == rules);
+  CHECK(adapters.battle->effectRules() == effects);
+  CHECK(&adapters.battle->catalog() == catalog);
+  CHECK(rules->damage.partnerDealtPercent == 150);
+  CHECK(catalog->find("punch").has_value());
+}
