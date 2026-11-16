@@ -55,7 +55,7 @@ DWE_DISC="/ruta/al/disco.bin" scripts/dev.sh test -R dwx   # incluye la prueba c
    tapan las de la base, y su `_meta.yaml` gana `scale: 4`; el aspecto mide sus sprites en píxeles del original y
    los ve más nítidos, del mismo tamaño en pantalla. Una imagen que el disco no trae se salta. Es un escalado de
    pixel art determinista, por reglas, sin modelos ni red: no inventa detalle
-   ([tubería del remaster](../architecture/remaster-pipeline.md#lo-que-ya-hay-dwx-upscale)). Para volver a hacerlo a
+   ([alta definición](../architecture/high-definition.md#dwx-upscale-y-recetas)). Para volver a hacerlo a
    mano con otra receta está `dwx upscale` ([página de dwx](../modules/apps/dwx.md#dwx-upscale-y-las-recetas-incluidas)).
 
    **Para el jugador:** el juego se ve como el original por defecto (Decidido por el usuario (2026-10-21)), y ese

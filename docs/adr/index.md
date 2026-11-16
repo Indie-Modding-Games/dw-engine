@@ -39,7 +39,7 @@ superseded.
 | [0003](0003-vulkan-and-sdl3.md) | Vulkan 1.3 for rendering and SDL3 for the platform | Accepted |
 | [0004](0004-lua-and-sol2.md) | Lua 5.5 + sol2, sandboxed | Accepted |
 | [0005](0005-asset-pipeline.md) | Assets in three states and layers, without binary fidelity | Accepted |
-| [0006](0006-three-repositories.md) | Three repositories: code, design and art | Proposed |
+| [0006](0006-three-repositories.md) | Three repositories: code, design and art | Accepted |
 | [0007](0007-no-exceptions.md) | No exceptions, with `std::expected` | Accepted |
 | [0008](0008-headers-before-modules.md) | Headers now, C++ modules later | Accepted |
 | [0009](0009-rmlui.md) | RmlUi for the game UI | Accepted |
@@ -56,5 +56,6 @@ superseded.
 | [0020](0020-map-camera-and-depth-layers.md) | Off-center map camera and depth layers as planes | Accepted |
 | [0021](0021-cpu-animation-and-gpu-skinning.md) | Animation sampled on the CPU, skinning on the GPU, in an `animation` module | Accepted |
 | [0022](0022-first-ruleset-faithful-to-the-original.md) | The first ruleset reproduces the original; the new design arrives as rulesets | Accepted |
-| [0023](0023-remaster-pipeline.md) | Remaster by recipes, with interchangeable providers, content cache and local by default | Accepted |
+| [0023](0023-remaster-pipeline.md) | Remaster by recipes, with interchangeable providers, content cache and local by default | Superseded by 0025 |
 | [0024](0024-co-op-with-authoritative-host.md) | Online co-op with an authoritative host and players driven by controllers | Proposed |
+| [0025](0025-high-definition-in-the-engine.md) | High definition in the engine, with only deterministic steps offline | Accepted |

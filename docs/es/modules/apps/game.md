@@ -1499,7 +1499,7 @@ sus capas de profundidad con un filtro propio que sigue los bordes, a la resoluc
 cada píxel del original. El ajuste `hd_scenery` (fila «Escenarios en alta definición», «HD scenery» en inglés, de las
 opciones, en partida o desde el título; guardado en los ajustes del
 usuario) se aplica al momento; apagado, se ven los píxeles del original exactos. El porqué y cómo funciona están en
-[Alta definición en el motor](../../architecture/remaster-pipeline.md#alta-definición-en-el-motor).
+[Alta definición en el motor](../../architecture/high-definition.md#alta-definición-en-el-motor).
 
 - **Dónde**: `hd_scenery_setting.hpp` (`startHdScenery`, `HdSceneryChanger`) lee y guarda el ajuste; `PlaySession` lo
   pasa a la escena al empezar y `Game` al cambiarlo (`FieldScene::setHdScenery` → `render::MapRenderer::setHdScenery`).
@@ -1509,7 +1509,7 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
 - **Opciones**: es una entrada de `ui/common/game_options.lua` en la pestaña «Gráficos» (`tab = "graphics"`) de las
   [opciones en partida](#opciones-en-partida).
 - **Nitidez**: tres ajustes más, también en lo mejor por defecto, deciden cuánta definición tiene la imagen
-  (`graphics_options.hpp`; el porqué en [Nitidez](../../architecture/remaster-pipeline.md#nitidez)):
+  (`graphics_options.hpp`; el porqué en [Nitidez](../../architecture/high-definition.md#nitidez)):
   `scenery_quality` (`upscaled`, el fondo ampliado una vez por mapa con el escalador del motor y guardado en la caché
   de `<datos del usuario>/cache/upscale`; `smooth`, el filtro de siempre), `antialiasing` (`true`: la escena con 4
   muestras por píxel, contornos de los modelos sin dientes) y `texture_filter` (`upscaled`, las texturas de los

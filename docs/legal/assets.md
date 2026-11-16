@@ -79,22 +79,15 @@ What must be clear:
 
 ## Enhanced output (remaster)
 
-The rules of the [remaster pipeline](../architecture/remaster-pipeline.md#legal)
-([ADR 0023](../adr/0023-remaster-pipeline.md)):
+The rules of [high definition](../architecture/high-definition.md#legal)
+([ADR 0025](../adr/0025-high-definition-in-the-engine.md)):
 
-- **What is enhanced is derived.** A scaled background or a texture repainted from the disc is still the original.
-  **Only the recipes** are distributed; never the outputs, the caches or the generated `remaster` packs.
-- **By default, only what is built in:** with no configuration only the built-in upscaler works, with no network and
-  bit for bit the same on all platforms. A local model with pinned weights (same weights hash, same seed, same
-  parameters) is your own option and is reproducible; on another platform or GPU the result may vary a little.
-- **The cloud is your own business.** A remote service is not reproducible and forces you to upload art extracted
-  from your disc, something its terms may not allow you. It only works if you set it up with your own key and declare
-  in your configuration that you have read its terms, and **each run** that uploads anything needs your explicit
-  confirmation (`--confirm-upload`), even if the service is free. The project does not recommend it.
-- **Weight licenses:** each recipe declares that of its weights; an unknown one is rejected unless you accept it.
-- **Nobody accepts terms for you:** neither the tools nor the agents accept terms, store keys, or confirm spending or
-  uploads on your behalf.
-- **Keys** live in the environment or in the system credential store, never in git or in a recipe.
+- **What is enlarged is derived.** A scaled background, a doubled texture, the `ui_original` pack or the upscale cache
+  made from the disc are still the original. They stay on your machine. **Only the code and the recipes** are
+  distributed; never the outputs, the caches or the generated `remaster` packs.
+- **Only what is built in:** the engine's scaler and the `index_scale` step of `dwx upscale` have no network, no models
+  and no third-party weights, and give the same bytes on every machine.
+- **No services:** the project has no tool that uploads art extracted from your disc to a service.
 - **Music:** "HD music remade from the original is a derived work: only recipes or deltas are distributed. The
   original game's music is never distributed. New music composed by the team, or licensed, declares author, license
   and origin in provenance.yaml. Decided by the coordinator (2026-10-21)."

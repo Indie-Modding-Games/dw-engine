@@ -10,7 +10,7 @@
 
 namespace dwe::render {
 
-// The CPU half of HD scenery's best quality (docs/architecture/remaster-pipeline.md, «Sharpness»):
+// The CPU half of HD scenery's best quality (docs/architecture/high-definition.md, «Sharpness»):
 // the field's prerendered background, and the models' textures, doubled
 // in size by an edge-directed interpolation written for this engine. Each new pixel is a cubic
 // interpolation along the direction in which the image changes least (the two diagonals first,

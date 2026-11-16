@@ -1,8 +1,9 @@
 # 0006. Three repositories: code, design and art
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-18
 - **Note (2026-11-06):** the code repository is called `dw-engine`.
+- **Note (2026-11-16):** accepted because the three repositories exist: `dw-engine`, `Digimon-World-Project-Folder` and `Digimon-World-Project-Folder-Assets`.
 
 ## Context
 

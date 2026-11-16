@@ -55,7 +55,7 @@ DWE_DISC="/path/to/disc.bin" scripts/dev.sh test -R dwx   # includes the test wi
    they cover those of the base, and their `_meta.yaml` gains `scale: 4`; the look measures its sprites in original pixels and
    sees them sharper, at the same size on screen. An image that the disc does not carry is skipped. It is a deterministic,
    rule-based pixel art upscale, with no models or network: it does not invent detail
-   ([remaster pipeline](../architecture/remaster-pipeline.md#what-already-exists-dwx-upscale)). To do it again by
+   ([high definition](../architecture/high-definition.md#dwx-upscale-and-recipes)). To do it again by
    hand with another recipe there is `dwx upscale` ([dwx page](../modules/apps/dwx.md#dwx-upscale-and-the-bundled-recipes)).
 
    **For the player:** the game looks like the original by default (Decided by the user (2026-10-21)), and that

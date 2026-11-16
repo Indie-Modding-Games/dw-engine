@@ -241,7 +241,7 @@ of the models with `texture_filter` at `smooth` or `upscaled`) have their whole 
 ## Sharpness: edge smoothing and model textures
 
 Two optional improvements, on by default, that only change the image's definition (the reasons and the measurements
-are in [Sharpness](remaster-pipeline.md#sharpness)):
+are in [Sharpness](high-definition.md#sharpness)):
 
 - **Edge smoothing** (`antialiasing`): `Renderer::setMultisampling` draws the scene pass into a color and a depth of 4
   samples per pixel (`MsaaSamples`; Vulkan requires accepting 4 on color and depth, so no other path is needed) and
@@ -255,7 +255,7 @@ are in [Sharpness](remaster-pipeline.md#sharpness)):
   `Smooth` filters with mipmaps and anisotropy (`FlagSmooth` in `skinned_model.slang`), and first fills the color of
   the transparent texels with that of their drawn neighbors so that the filtering does not bring in a dark edge;
   `Upscaled`, the default, filters the textures doubled when the model is uploaded by the engine's scaler
-  (`upscaleRgba`, [Sharpness](remaster-pipeline.md#sharpness)), with the alpha interpolated: alpha cutouts give smooth
+  (`upscaleRgba`, [Sharpness](high-definition.md#sharpness)), with the alpha interpolated: alpha cutouts give smooth
   outlines. The textures that are rewritten in game (`updateImage`, the faces) are doubled the same way. Changing the
   filter re-uploads each model's textures.
 

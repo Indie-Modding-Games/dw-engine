@@ -20,7 +20,8 @@ Términos del proyecto y su nombre en el código. Si un término no está aquí,
 | Paquete | Una capa de contenido con su manifiesto (`pack.yaml`) | `dwe::assets::PackManifest` |
 | Partner | El Digimon que cría el jugador | `dwe::game::partner` |
 | Pilar de diseño | Frase del GDD que dice qué de la esencia del juego no se toca | — |
-| Remaster | La capa de contenido HD del equipo | — |
+| Alta definición | Cómo el motor afina los fondos del campo y las texturas de los modelos al ejecutar ([alta definición](architecture/high-definition.md)) | `dwe::render` |
+| Remaster | La capa de contenido por encima de la base: imágenes ampliadas por `dwx upscale` y el arte o la música en HD que traiga un paquete | — |
 | Ruleset | Conjunto de reglas y valores del juego, como datos ([ADR 0010](adr/0010-own-rules-with-rulesets.md)) | `content/packs/game/rules/<id>/` |
 | Tamer | El personaje que controla el jugador | — |
 | VFS | Sistema de ficheros virtual que apila los paquetes | `dwe::assets` |

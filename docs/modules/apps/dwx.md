@@ -89,8 +89,8 @@ dwx upscale <recipe.recipe.yaml> <pack folder | content folder> -o <folder>
 
 Enlarges indexed images from the packs with the built-in `index_scale` step and writes them, with their `_meta.yaml` and
 `scale: k`, to a `remaster` layer pack with the recipe's id. The images keep their asset id, so the
-pack covers the base without touching anything else. It reads a deterministic subset of the remaster recipes
-([remaster pipeline](../../architecture/remaster-pipeline.md#what-already-exists-dwx-upscale)): `recipe: 1`, `id`,
+pack covers the base without touching anything else. It reads a small recipe format
+([high definition](../../architecture/high-definition.md#dwx-upscale-and-recipes)): `recipe: 1`, `id`,
 `asset_type` (`ui` or `icon`), `select.include` with asset ids, `scale` and a single `builtin: index_scale` step with
 `params.mode` (`edge` or `nearest`). No providers, models or network: the same bytes on any machine.
 
