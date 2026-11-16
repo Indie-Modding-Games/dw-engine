@@ -1,10 +1,10 @@
--- The improved shop job's counter (game/shop_job; docs/reference/trabajo-tienda.md): the game
--- publishes the customer at the counter (shop_haggle.*, _shopjob/ui-contract.md) and shows this
--- document once per turn. A row's button sends shop_haggle_offer with its level (0 the dearest, 8
--- the cheapest); Chat sends shop_haggle_talk and Dismiss shop_haggle_dismiss. The game hides the
--- document as soon as a turn is played; the story plays its lines and opens it again for the next
--- turn. The menu button opens the rules panel (shop_job_rules); cancel does nothing, as a customer
--- must be answered.
+-- The improved shop job's counter (game/shop_job; docs/reference/shop-job.md): the game
+-- publishes the customer at the counter (shop_haggle.*, docs/reference/shop-job.md, Interface) and
+-- shows this document once per turn. A row's button sends shop_haggle_offer with its level (0 the
+-- dearest, 8 the cheapest); Chat sends shop_haggle_talk and Dismiss shop_haggle_dismiss. The game
+-- hides the document as soon as a turn is played; the story plays its lines and opens it again for
+-- the next turn. The menu button opens the rules panel (shop_job_rules); cancel does nothing, as a
+-- customer must be answered.
 --
 -- Classes for the skins: each row takes "offered" (refused before), "regular" (the regular price),
 -- "likely" (a chance of 50 % or more), "sure" (100 %), "never" (0 %), "chance-<0..10>" (the chance

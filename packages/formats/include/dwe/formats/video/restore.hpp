@@ -3,7 +3,7 @@
 #include <dwe/formats/video/mdec.hpp>
 
 // Offline clean-up of decoded movie frames (an engine improvement; docs/formats/video.md,
-// «Restauración»): the blocking and ringing that coarse quantisation leaves, taken out with the
+// «Restoration»): the blocking and ringing that coarse quantisation leaves, taken out with the
 // post filters of MPEG-4 (ISO/IEC 14496-2, annex F.3), whose strength follows the frame's
 // quantisation scale. The MDEC's scale has the meaning of MPEG's quantiser (an AC step of
 // scale * weight / 8), so the annex's thresholds apply as written, in sixteenths of a level.

@@ -41,7 +41,7 @@ struct MenuSoundTable {
 
 [[nodiscard]] MenuSoundTable parseMenuSounds(std::string_view yaml);
 
-// Plays the menus' sounds (docs/architecture/audio.md#64-el-tramo-2-en-detalle). It reads
+// Plays the menus' sounds (docs/architecture/audio.md#64-effects-in-detail). It reads
 // ui/ui_sounds.yaml and loads its banks when made, and logs every problem then, once: a cue that
 // cannot play stays silent and the game goes on.
 class MenuSounds {

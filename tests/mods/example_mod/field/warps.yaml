@@ -1,6 +1,6 @@
-# COPIA de content/packs/game/field/warps.yaml con otro `start`, solo para los tests: sustituye entero ese documento,
-# así que el campo empieza en el mapa nuevo, del que la salida 0 lleva a File City. Si cambia el del paquete del juego,
-# hay que copiar el cambio aquí.
+# A COPY of content/packs/game/field/warps.yaml with another `start`, only for the tests: it replaces that document
+# whole, so the field starts on the new map, whose exit 0 leads to File City. If the game pack's one changes, the
+# change has to be copied here.
 start:
   map: "example_mod:meadow"
   exit: 0

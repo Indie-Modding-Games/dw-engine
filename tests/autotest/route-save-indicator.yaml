@@ -1,10 +1,10 @@
-# The save indicator (an engine improvement, docs/modulos/apps/game.md, «Aviso de guardado»): a small figure walking
+# The save indicator (an engine improvement, docs/modules/apps/game.md, «Save notice»): a small figure walking
 # next to "Saving" in the bottom right corner for each save the game writes, clear of every window. From a new game
 # with the keyboard: the save command, the map change's autosave and the save machine at 1280x720, the save command
 # with the pause menu open, then the save command at 1920x1080 and 1024x768. Each capture checks that the indicator
 # lies over nothing another document draws (expect_clear) and that every text fits (text_fit). Last, the pause menu's
 # option turns it off and a save shows nothing. Needs --saves with an empty folder; it runs once per language, like
-# route-language.yaml. How to run it: docs/guides/prueba-vertical.md.
+# route-language.yaml. How to run it: docs/guides/vertical-slice.md.
 name: save-indicator
 device: keyboard
 timeout: 600

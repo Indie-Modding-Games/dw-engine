@@ -42,7 +42,7 @@ pub fn group_maps(
         }
         let title = match group_by {
             GroupBy::LoadingName => match table.display_name(entry) {
-                "" => text::UNNAMED_GROUP.to_owned(),
+                "" => text::unnamed_group().to_owned(),
                 name => name.to_owned(),
             },
             GroupBy::Prefix => prefix_of(&entry.id).to_owned(),
@@ -121,7 +121,7 @@ mod tests {
         assert_eq!(
             titles(&group_maps(&table, has_data, GroupBy::LoadingName, "")),
             vec![
-                (text::UNNAMED_GROUP, vec!["cave02"]),
+                (text::unnamed_group(), vec!["cave02"]),
                 ("Deep Cave", vec!["cave01", "my_mod:meadow"]),
                 ("Town", vec!["town01", "town02"]),
             ]

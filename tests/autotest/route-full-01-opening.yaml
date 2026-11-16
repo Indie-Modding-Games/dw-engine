@@ -1,7 +1,7 @@
 # The full story chain, chunk 1: from the title screen ("Press Start", the main menu, a new game in slot 1) through
 # the opening (the waking scene and the elder's talk), File City, the gym and the Native Forest's first fight and
 # recruit, up to the broken bridge and the fight its Aruraumon starts. It ends saving in slot_01, where chunk 2
-# starts. The chain and its runner: docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+# starts. The chain and its runner: docs/guides/vertical-slice.md (scripts/story-chain.sh).
 name: full-01
 device: keyboard
 timeout: 1200
@@ -28,7 +28,7 @@ steps:
   - wait: {confirm: true, map: room08, seconds: 1, timeout: 300}
   - wait: {confirm: true, map: twna01, partner_within: 400, hidden: story_textbox, seconds: 2, timeout: 400}
   - screenshot: twna01-free
-  # File City to the gym and on to the forest (route-etapa1.yaml's steps).
+  # File City to the gym and on to the forest (route-stage1.yaml's steps).
   - walk_to: {trigger: 111}
   - wait: {map: trai00, partner_within: 400, seconds: 0.5}
   - walk_to: {trigger: 110}
@@ -48,7 +48,7 @@ steps:
   - walk_to: {trigger: 51}
   - wait: {map: mayo08b, partner_within: 400, seconds: 0.5}
   - screenshot: mayo08b-bridge
-  # The bridge's Aruraumon (route-etapa1.yaml: it only sees a player within 500 of its home on each axis).
+  # The bridge's Aruraumon (route-stage1.yaml: it only sees a player within 500 of its home on each axis).
   - walk_to: {point: [-930, 2310], radius: 50, walk: true, timeout: 20}
   - wait: {confirm: true, shown: battle, seconds: 1, timeout: 60}
   - screenshot: mayo08b-battle

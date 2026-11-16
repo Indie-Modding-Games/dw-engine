@@ -217,7 +217,7 @@ fn talk_badge(
 /// The conditions on a map change's way, for its tooltip.
 fn jump_tooltip(names: Option<&Names<'_>>, jump: &Jump) -> String {
     let when = if jump.guards.is_empty() {
-        text::JUMP_ALWAYS.to_owned()
+        text::jump_always().to_owned()
     } else {
         let guards: Vec<String> = jump
             .guards
@@ -229,12 +229,12 @@ fn jump_tooltip(names: Option<&Names<'_>>, jump: &Jump) -> String {
                 )
             })
             .collect();
-        format!("{}: {}", text::JUMP_WHEN, guards.join(" y "))
+        format!("{}: {}", text::jump_when(), guards.join(" y "))
     };
     format!(
         "{when}\n{}\n{}",
         dwe_story::events::guards_text(&jump.guards),
-        text::JUMP_HINT
+        text::jump_hint()
     )
 }
 
@@ -425,16 +425,16 @@ pub fn panel(app: &mut MapperApp, ui: &mut egui::Ui) {
     let count = app.mapper.events().len();
     let mut open = None;
     let mut test = None;
-    egui::CollapsingHeader::new(format!("{} ({count})", text::EVENTS))
+    egui::CollapsingHeader::new(format!("{} ({count})", text::events()))
         .id_salt("events")
         .default_open(true)
         .show(ui, |ui| {
             ui.add(
                 egui::TextEdit::singleline(&mut app.events_filter)
-                    .hint_text(text::EVENTS_FILTER_HINT),
+                    .hint_text(text::events_filter_hint()),
             );
             if count == 0 {
-                ui.weak(text::EVENTS_NONE);
+                ui.weak(text::events_none());
                 return;
             }
             let connected = app.live.is_connected();
@@ -458,18 +458,18 @@ pub fn panel(app: &mut MapperApp, ui: &mut egui::Ui) {
                         );
                         if !event.exists {
                             line.push_str(" · ");
-                            line.push_str(text::SECTION_MISSING);
+                            line.push_str(text::section_missing());
                         }
                         let mut label = egui::RichText::new(line);
                         if !event.exists {
                             label = label.color(colors::MISSING);
                         }
-                        let mut hint = text::EVENT_OPEN_HINT.to_owned();
+                        let mut hint = text::event_open_hint().to_owned();
                         if let Some(patch) = &event.patched_by {
-                            hint = format!("{} {patch}\n{hint}", text::EVENT_PATCHED);
+                            hint = format!("{} {patch}\n{hint}", text::event_patched());
                         }
                         if !event.exists {
-                            hint = format!("{}\n{hint}", text::EVENT_MISSING);
+                            hint = format!("{}\n{hint}", text::event_missing());
                         }
                         if ui
                             .selectable_label(chosen, label)
@@ -487,9 +487,9 @@ pub fn panel(app: &mut MapperApp, ui: &mut egui::Ui) {
                                 .on_hover_text(jumps.join("\n"));
                         }
                         if ui
-                            .add_enabled(connected, egui::Button::new(text::TEST_EVENT).small())
-                            .on_hover_text(text::TEST_EVENT_HINT)
-                            .on_disabled_hover_text(text::TEST_EVENT_OFFLINE)
+                            .add_enabled(connected, egui::Button::new(text::test_event()).small())
+                            .on_hover_text(text::test_event_hint())
+                            .on_disabled_hover_text(text::test_event_offline())
                             .clicked()
                         {
                             test = Some(index);
@@ -526,10 +526,10 @@ mod tests {
     fn the_filter_reads_kind_script_and_section() {
         let step = event(EventKind::Step, 0x33);
         assert!(matches_filter("", &step));
-        assert!(matches_filter("pisar", &step));
+        assert!(matches_filter("step", &step));
         assert!(matches_filter("0x33", &step));
         assert!(matches_filter("51", &step));
-        assert!(!matches_filter("botón", &step));
+        assert!(!matches_filter("button", &step));
         assert_eq!(section_tag(&step), "0x33");
     }
 }

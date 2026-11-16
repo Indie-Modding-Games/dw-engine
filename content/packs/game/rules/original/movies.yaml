@@ -1,14 +1,14 @@
-# Las películas (apps/game: MovieScreen, docs/architecture/peliculas.md): cuál suena en cada momento y si Start la
-# salta. El original: main.c: main (qué película y cuándo) y mov.c: MOV_playMovie (el salto: todas menos la 3, EDR).
+# The movies (apps/game: MovieScreen, docs/architecture/movies.md): which one plays at each moment and whether Start
+# skips it. The original: main.c: main (which movie and when) and mov.c: MOV_playMovie (the skip: all but the 3rd, EDR).
 movies:
-  # Al arrancar y cada vez que la portada pasa landing_idle_frames sin entrada.
+  # On boot and every time the title screen goes landing_idle_frames without input.
   boot: { file: op1, skippable: true }
-  # Partida nueva, antes del mapa inicial (MAIN_STATE 0).
+  # New game, before the starting map (MAIN_STATE 0).
   new_game: { file: op2, skippable: true }
-  # Continuar una partida guardada tras el final (MAIN_STATE 2, main_menu.c: gameClearSave).
+  # Continuing a saved game after the ending (MAIN_STATE 2, main_menu.c: gameClearSave).
   cleared_load: { file: ed2, skippable: true }
-  # Tras el final (MAIN_STATE 3); luego vuelve a la portada.
+  # After the ending (MAIN_STATE 3); then it goes back to the title screen.
   ending: { file: edr, skippable: false }
-# Fotogramas (a 60 por segundo) sin entrada en la portada antes de volver a la película de arranque
+# Frames (at 60 per second) without input on the title screen before going back to the boot movie
 # (main.c: runLandingScreen, 0x258).
 landing_idle_frames: 600

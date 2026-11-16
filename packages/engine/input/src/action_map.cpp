@@ -33,7 +33,7 @@ ActionMap defaultActionMap() {
   ActionMap map;
 
   // The first key of an action is the one its button prompts show: the space bar confirms. `F` is a
-  // second confirm, the interact key next to `WASD` (docs/architecture/controles.md): it stays
+  // second confirm, the interact key next to `WASD` (docs/architecture/controls.md): it stays
   // after Space so the prompts keep naming the space bar.
   map.bind("confirm", KeyBinding{keys::Space});
   map.bind("confirm", KeyBinding{keys::Return});
@@ -60,7 +60,7 @@ ActionMap defaultActionMap() {
   map.bind("pause", KeyBinding{keys::P});
   map.bind("pause", GamepadButtonBinding{GamepadButton::Start});
 
-  // The game's options while playing (docs/modulos/apps/game.md, «Opciones en partida»): the game
+  // The game's options while playing (docs/modules/apps/game.md, «In-game options»): the game
   // menu opens straight on its options page, also from Start's pause. The original's Select had no
   // use on the field; on the keyboard `Escape` (the classic PC pause key) and `F10` take it: once
   // opens the options page, once more closes it back to the field.
@@ -95,7 +95,7 @@ ActionMap defaultActionMap() {
 
   // Held while moving: walk instead of running. Running is the default, as in the original, where
   // R1 walked. Only the shoulder (and Shift on the keyboard): the west button belongs to `extra`
-  // alone, so holding it no longer walks (docs/architecture/controles.md).
+  // alone, so holding it no longer walks (docs/architecture/controls.md).
   map.bind("walk", KeyBinding{keys::LeftShift});
   map.bind("walk", KeyBinding{keys::RightShift});
   map.bind("walk", GamepadButtonBinding{GamepadButton::RightShoulder});
@@ -105,7 +105,7 @@ ActionMap defaultActionMap() {
   // `cancel` here. On the keyboard they live on `E` and `Q` for one-hand play: in the naming box
   // `takeTyping` runs before the actions (naming_box.cpp), so typing `e` or `q` writes a letter and
   // does not fire the shortcut; the pad keeps the shortcuts because its buttons don't type
-  // (docs/architecture/controles.md, «Teclado moderno»).
+  // (docs/architecture/controls.md, «Modern keyboard (one or two hands)»).
   map.bind("alt", KeyBinding{keys::E});
   map.bind("alt", GamepadButtonBinding{GamepadButton::North});
 
@@ -139,11 +139,11 @@ ActionMap defaultActionMap() {
   // developer tools option is on.
   map.bind("dev_menu", KeyBinding{keys::F2});
 
-  // Writes a bug report of the game being played (docs/guides/prueba-vertical.md).
+  // Writes a bug report of the game being played (docs/guides/vertical-slice.md).
   map.bind("report_bug", KeyBinding{keys::F12});
 
   // The field map's debug overlay: collision, exits and NPC slots over the field
-  // (docs/guides/control-remoto.md).
+  // (docs/guides/remote-control.md).
   map.bind("debug_map_overlay", KeyBinding{keys::F3});
 
   // Development views (dwe-game --map): fade to a time of day, show the next map.

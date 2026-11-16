@@ -1,4 +1,4 @@
--- The game mode of a new game (docs/modulos/game/modes.md): the packs' modes, the original's story
+-- The game mode of a new game (docs/modules/game/modes.md): the packs' modes, the original's story
 -- and those mods add. The title screen shows this document before the new game's rules only when
 -- the packs have more than one mode; it publishes new_game_mode.count and new_game_mode.<n>.id,
 -- name and description (localization keys) from 0, at most six, and this document sends

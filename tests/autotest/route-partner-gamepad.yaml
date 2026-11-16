@@ -1,6 +1,6 @@
 # The partner's menu with a gamepad (a virtual one of the platform): from the pause menu, the status page, the item
 # bag (an item's options, using it, moving it to another slot, the sort orders, the drop's question answered no) and
-# the care page (praise). How to run it: docs/guides/prueba-vertical.md.
+# the care page (praise). How to run it: docs/guides/vertical-slice.md.
 name: partner-gamepad
 device: gamepad
 gamepad: xbox

@@ -1,17 +1,17 @@
 # partner
 
-El cuidado del partner: hambre, sueño, baño, enfermedad y heridas, felicidad y disciplina, y su vida.
+Partner care: hunger, sleep, toilet, sickness and injuries, happiness and discipline, and its life.
 
-- Carpeta: `packages/game/partner`; objetivos de CMake: `dwe::partner` (capa `game`).
-- Depende de: `assets`, `core`, `ruleset`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/game/partner](https://indie-modding-games.github.io/dw-engine/modulos/game/partner).
+- Folder: `packages/game/partner`; CMake targets: `dwe::partner` (`game` layer).
+- Depends on: `assets`, `core`, `ruleset`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/game/partner](https://indie-modding-games.github.io/dw-engine/modules/game/partner).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter partner
-scripts/dev.sh test --filter partner       # sus tests (etiqueta de ctest partner)
-scripts/dev.sh test --filter ...partner    # y los de todo lo que depende de él
+scripts/dev.sh test --filter partner       # its tests (ctest label partner)
+scripts/dev.sh test --filter ...partner    # and those of everything that depends on it
 ```

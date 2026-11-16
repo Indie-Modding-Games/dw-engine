@@ -1,6 +1,6 @@
-# Dónde empieza el campo (docs/reference/campo.md). Los warps que hacen los scripts de eventos los extrae dwx a
-# field/script_warps del paquete base (docs/architecture/warps-de-script.md).
+# Where the field starts (docs/reference/field.md). The warps done by event scripts are extracted by dwx into
+# field/script_warps of the base pack (docs/architecture/script-warps.md).
 start:
-  # File City, entrando desde la entrada de la ciudad (salida 1, la que usa trai00).
+  # File City, coming in from the city entrance (exit 1, the one trai00 uses).
   map: twna01
   exit: 1

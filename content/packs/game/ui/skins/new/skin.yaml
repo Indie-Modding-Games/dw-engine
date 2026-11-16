@@ -6,7 +6,7 @@
 # fallback skin (ui/ui_skin.yaml: fallback).
 #
 # Each screen's sheet only changes the look (and a position where the design moves a box); the values come from the
-# concept's design system (docs/architecture/ui.md, «El aspecto Pixel art»).
+# concept's design system (docs/architecture/ui.md, «The Pixel art skin (id `new`)»).
 id: new
 name: ui_skin.new
 extends: original
@@ -81,8 +81,8 @@ screens:
     styles: [title/style, panel/style, save_machine/style]
   save_slots:
     styles: [title/style, panel/style, save_slots/style]
-  # El mostrador y las reglas del trabajo en la tienda: la ventana con escuadras, corazones de paciencia y la línea dorada
-  # con el ▶ en la fila con el foco.
+  # The shop job's counter and rules: the window with corner brackets, patience hearts and the golden line
+  # with the ▶ on the focused row.
   shop_haggle:
     styles: [shop_haggle/style]
   shop_job_rules:

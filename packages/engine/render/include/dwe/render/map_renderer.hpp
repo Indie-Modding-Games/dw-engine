@@ -91,7 +91,7 @@ inline constexpr double TimeOfDayFadeSeconds = 25.0 / MapDepthLayers::FramesPerS
 // the new palette at the end.
 double timeOfDayFadeShown(double progress);
 
-// Draws a field map (docs/formats/mapas.md, ADR 0020): the prerendered background of the current
+// Draws a field map (docs/formats/maps.md, ADR 0020): the prerendered background of the current
 // time of day, then the ground billboards (the characters' shadows), then, after the models drawn
 // with camera(), the depth-layer sprites with depth so they cover the models behind them, and
 // black bars where the background does not reach. Put backgroundDrawer() first in the scene pass,

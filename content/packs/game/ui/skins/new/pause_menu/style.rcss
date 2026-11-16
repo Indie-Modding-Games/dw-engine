@@ -394,7 +394,7 @@
 	margin-left: 4dp;
 }
 
-/* The word a space after its keys (opt-juego: «Q E  Pestaña»). */
+/* The word a space after its keys (opt-juego: «Q E  Tab»). */
 #options-hints .hint > span:last-child {
 	margin-left: 8dp;
 }

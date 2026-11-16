@@ -41,7 +41,7 @@ core::Result<MovieInfo> readMovieInfo(const assets::VirtualFileSystem& files,
 // Plays one movie of the packs (movie/<name>/: the video, the sound and movie.yaml): it reads the
 // video as the clock moves and gives the picture of the moment as RGBA. The video is the Y4M dwx
 // extract writes or the AV1 (IVF) dwx cook makes of it, the sound the WAV or its Ogg Opus; the
-// same asset ids give either (docs/architecture/peliculas.md). It knows nothing of the
+// same asset ids give either (docs/architecture/movies.md). It knows nothing of the
 // screen or the sound device; its caller draws the picture and plays the sound, and drives the
 // clock with the sound's position (mov.c: MOV_playMovie shows each frame as the stream brings it,
 // so the sound leads and the pictures follow).

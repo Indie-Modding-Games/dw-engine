@@ -16,7 +16,7 @@ inline constexpr std::string_view ModEntryScript = "scripts/main";
 // The mods' scripts on the game's script VM (the story's): once the VM exists, it binds the
 // session's game events (GameHooks) there and runs every pack's entry script in that pack's
 // sandboxed environment, bottom of the stack first, so the handlers it registers with hooks.on hear
-// the game from the first event on (docs/modding/api-lua.md). A script that fails is logged with
+// the game from the first event on (docs/modding/lua-api.md). A script that fails is logged with
 // its pack and the others still run.
 class ModScripts final : public SessionSystem {
 public:

@@ -20,15 +20,15 @@ pub fn door_fields(app: &MapperApp, ui: &mut egui::Ui, slot: usize, actions: &mu
         return;
     };
     let mut edited: MapDoor = door.clone();
-    ui.strong(format!("{} {slot}", text::DOOR));
+    ui.strong(format!("{} {slot}", text::door()));
     let mut changed = false;
     egui::Grid::new("door_fields")
         .num_columns(2)
         .show(ui, |ui| {
-            ui.label(text::DOOR_MODEL);
+            ui.label(text::door_model());
             ui.horizontal(|ui| {
                 let mut none = edited.model_id.is_none();
-                if ui.checkbox(&mut none, text::DOOR_NO_MODEL).changed() {
+                if ui.checkbox(&mut none, text::door_no_model()).changed() {
                     edited.model_id = if none { None } else { Some(0) };
                     changed = true;
                 }
@@ -37,10 +37,10 @@ pub fn door_fields(app: &MapperApp, ui: &mut egui::Ui, slot: usize, actions: &mu
                 }
             });
             ui.end_row();
-            ui.label(text::POSITION);
+            ui.label(text::position());
             changed |= vector(ui, &mut edited.position, actions);
             ui.end_row();
-            ui.label(text::ROTATION);
+            ui.label(text::rotation());
             let response = ui.add(egui::DragValue::new(&mut edited.rotation).range(0..=4095));
             grouped(&response, actions);
             changed |= response.changed();
@@ -57,14 +57,14 @@ pub fn toilet_fields(app: &MapperApp, ui: &mut egui::Ui, actions: &mut Vec<Actio
         return;
     };
     let mut edited: MapToilet = toilet.clone();
-    ui.strong(text::TOILET).on_hover_text(text::TOILET_HINT);
+    ui.strong(text::toilet()).on_hover_text(text::toilet_hint());
     let mut changed = false;
     egui::Grid::new("toilet_fields")
         .num_columns(2)
         .show(ui, |ui| {
             for (label, x, z) in [
-                (text::TOILET_FIRST, &mut edited.x1, &mut edited.z1),
-                (text::TOILET_SECOND, &mut edited.x2, &mut edited.z2),
+                (text::toilet_first(), &mut edited.x1, &mut edited.z1),
+                (text::toilet_second(), &mut edited.x2, &mut edited.z2),
             ] {
                 ui.label(label);
                 ui.horizontal(|ui| {
@@ -88,8 +88,8 @@ pub fn add_buttons(app: &MapperApp, ui: &mut egui::Ui, actions: &mut Vec<Action>
     let places = app.mapper.places();
     ui.add_space(4.0);
     ui.horizontal_wrapped(|ui| {
-        ui.weak(text::ADD_THINGS);
-        if ui.button(text::ADD_NPC).clicked() {
+        ui.weak(text::add_things());
+        if ui.button(text::add_npc()).clicked() {
             actions.push(Action::AddNpc(None));
         }
         let free = places
@@ -97,8 +97,8 @@ pub fn add_buttons(app: &MapperApp, ui: &mut egui::Ui, actions: &mut Vec<Action>
             .iter()
             .position(|door| door.model_id.is_none());
         if ui
-            .add_enabled(free.is_some(), egui::Button::new(text::ADD_DOOR))
-            .on_disabled_hover_text(text::NO_FREE_DOOR)
+            .add_enabled(free.is_some(), egui::Button::new(text::add_door()))
+            .on_disabled_hover_text(text::no_free_door())
             .clicked()
             && let Some(slot) = free
         {
@@ -111,11 +111,11 @@ pub fn add_buttons(app: &MapperApp, ui: &mut egui::Ui, actions: &mut Vec<Action>
             actions.push(Action::Select(Some(Selection::Door(slot))));
         }
         if places.toilet.is_some() {
-            if ui.button(text::REMOVE_TOILET).clicked() {
+            if ui.button(text::remove_toilet()).clicked() {
                 actions.push(Action::SetToilet(None));
                 actions.push(Action::Select(None));
             }
-        } else if ui.button(text::ADD_TOILET).clicked() {
+        } else if ui.button(text::add_toilet()).clicked() {
             let at = view_centre(app);
             actions.push(Action::SetToilet(Some(MapToilet {
                 index: 0,

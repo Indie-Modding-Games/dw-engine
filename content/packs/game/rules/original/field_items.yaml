@@ -1,28 +1,28 @@
-# Los objetos en el suelo, los cofres y los sonidos del campo (el baño, dormir, felicitar y regañar) (packages/session: FieldItemsAdapter; packages/game/field: field_items.hpp).
-# item.c: spawnItem y spawnDroppedItems: 11 objetos en el suelo a la vez (DROPPED_ITEMS).
+# Items on the ground, chests and field sounds (toilet, sleeping, praising and scolding) (packages/session: FieldItemsAdapter; packages/game/field: field_items.hpp).
+# item.c: spawnItem and spawnDroppedItems: 11 items on the ground at once (DROPPED_ITEMS).
 ground_slots: 11
-# map_object.c: spawnChest: 8 cofres (NUM_CHESTS).
+# map_object.c: spawnChest: 8 chests (NUM_CHESTS).
 chest_slots: 8
-# tamer.c: checkItemPickup y checkChestCollision: a una casilla o menos en cada eje.
+# tamer.c: checkItemPickup and checkChestCollision: one cell or less on each axis.
 reach_cells: 1
-# tamer.c: tamerTickPickupItem: playSound(0, 7) al recoger un objeto.
+# tamer.c: tamerTickPickupItem: playSound(0, 7) when picking up an item.
 pickup_sound: {slot: 0, sound: 7}
-# tamer.c: tamerTickPickupItem: startAnimation(ENTITY_TABLE[0], 0xc) al ofrecer un objeto del suelo; el jugador se agacha
-# y se queda en el último cuadro hasta responder el aviso.
+# tamer.c: tamerTickPickupItem: startAnimation(ENTITY_TABLE[0], 0xc) when offering a ground item; the player crouches
+# and stays on the last frame until the prompt is answered.
 pickup_player_clip: 12
-# La sección 0x4e2 del mapa (la casilla del baño, tamer.c: checkMapInteraction): play_sound(0, 10).
+# Map section 0x4e2 (the toilet tile, tamer.c: checkMapInteraction): play_sound(0, 10).
 toilet_sound: {slot: 0, sound: 10}
-# partner.c: partnerTickSleep: playSound(0, 15) cuando el compañero llega junto al jugador para dormir.
+# partner.c: partnerTickSleep: playSound(0, 15) when the partner reaches the player to sleep.
 sleep_sound: {slot: 0, sound: 15}
-# partner.c: partnerTickPraiseScold: playSound(0, 14) al felicitar; tamer.c: tamerTickPraiseScold: playSound(0, 13) al
-# regañar.
+# partner.c: partnerTickPraiseScold: playSound(0, 14) when praising; tamer.c: tamerTickPraiseScold: playSound(0, 13) when
+# scolding.
 praise_sound: {slot: 0, sound: 14}
 scold_sound: {slot: 0, sound: 13}
-# Dar un objeto de la bolsa en el campo (game_menu.c: startFeedingItem; partner.c: partnerTickFeedItem). El compañero se
-# acerca o se aleja hasta la distancia de tomarlo (checkEatDistance: distancia * 200 / 10 + 160, con la distancia de
-# ITEM_TAKE_DISTANCE por especie), el jugador se lo tiende con playSound(0, 12) y la animación 5, y pasado su cuadro 7 el
-# compañero lo come (animación 8; el jugador baja la mano en el cuadro 15) o lo rechaza (animación 13; el jugador hace la
-# animación 4).
+# Giving an item from the bag in the field (game_menu.c: startFeedingItem; partner.c: partnerTickFeedItem). The partner
+# moves closer or farther until the distance to take it (checkEatDistance: distance * 200 / 10 + 160, with the distance from
+# ITEM_TAKE_DISTANCE per species), the player holds it out with playSound(0, 12) and animation 5, and after its frame 7 the
+# partner eats it (animation 8; the player lowers the hand on frame 15) or refuses it (animation 13; the player plays
+# animation 4).
 feed:
   sound: {slot: 0, sound: 12}
   range_base: 160
@@ -33,18 +33,18 @@ feed:
       kuwa: 15, hkab: 15, mgsd: 15}
   offer_frame: 7
   hand_down_frame: 15
-  # Con hambre, tras su comida favorita o una comida que le sacia, el compañero hace la animación 11 de alegría
+  # When hungry, after its favorite food or a meal that fills it, the partner plays cheer animation 11
   # (partner_impl.c: partnerHandleFoodFeed).
   clips: {player_offer: 5, player_refused: 4, partner_idle: 0, partner_eat: 8, partner_refuse: 13, partner_cheer: 11}
-# El compañero va al baño (partner.c: tickPartnerToilet): la cámara va al baño y vuelve al jugador en 20 cuadros
-# (createCameraMovement), y en el baño el compañero hace la animación 10. Corre a los dos puntos del baño del mapa
-# (TOILET_DATA, en el paquete base) y vuelve andando al primero.
+# The partner goes to the toilet (partner.c: tickPartnerToilet): the camera goes to the toilet and back to the player in 20 frames
+# (createCameraMovement), and at the toilet the partner plays animation 10. It runs to the map's two toilet points
+# (TOILET_DATA, in the base pack) and walks back to the first.
 toilet_walk: {camera_frames: 20, partner_clip: 10}
-# Felicitar y regañar (partner.c: partnerTickPraiseScold; tamer.c: tamerTickPraiseScold). Con el compañero junto al
-# jugador, al felicitar el jugador hace la animación 38 (la 39 con un compañero de nivel 4, campeón, o más, salvo
-# Mamemon, MetalMamemon y Digitamamon) y el compañero la 11; al regañar el jugador hace la 7 y el compañero la 12 (la 25
-# si es un regaño justo después de un rechazo o de una caca en el suelo). Al acabar la del jugador cuenta el elogio o el
-# regaño (handlePraiseScold), y la escena termina al acabar la del compañero.
+# Praising and scolding (partner.c: partnerTickPraiseScold; tamer.c: tamerTickPraiseScold). With the partner next to the
+# player, when praising the player plays animation 38 (39 with a partner of level 4, Champion, or higher, except
+# Mamemon, MetalMamemon and Digitamamon) and the partner plays 11; when scolding the player plays 7 and the partner 12 (25
+# if it is a scolding right after a refusal or a poop on the ground). When the player's one ends, the praise or
+# scolding counts (handlePraiseScold), and the scene ends when the partner's one ends.
 praise_scold:
   praise: {player_clip: 38, tall_player_clip: 39, partner_clip: 11}
   scold: {player_clip: 7, partner_clip: 12, boosted_partner_clip: 25}

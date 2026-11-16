@@ -1,5 +1,5 @@
 // HD scenery's upscaler and its cache (render::upscaleScenery, render::upscaleRgba,
-// render::UpscaleCache; docs/architecture/remaster-pipeline.md, «Nitidez»): synthetic pictures
+// render::UpscaleCache; docs/architecture/remaster-pipeline.md, «Sharpness»): synthetic pictures
 // with a known right answer.
 
 #include <dwe/assets/indexed_image.hpp>

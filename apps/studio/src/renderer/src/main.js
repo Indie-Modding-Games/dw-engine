@@ -5,6 +5,7 @@ import cssWorker from '../../../node_modules/monaco-editor/esm/vs/language/css/c
 import htmlWorker from '../../../node_modules/monaco-editor/esm/vs/language/html/html.worker.js?worker'
 import tsWorker from '../../../node_modules/monaco-editor/esm/vs/language/typescript/ts.worker.js?worker'
 import './style.css'
+import { translate } from '../../shared/i18n.js'
 
 self.MonacoEnvironment = {
   getWorker(_workerId, label) {
@@ -17,6 +18,8 @@ self.MonacoEnvironment = {
 }
 
 const api = window.dweStudio
+const t = (text, values) => translate(api.language, text, values)
+document.documentElement.lang = api.language
 const state = { tabs: [], activePath: null, activeGame: null, dirty: new Set(), running: new Set(), managedRunning: new Set(), output: [], changed: [], files: [], workspaceMode: 'compare', discPath: null, captureSources: [], captureStreams: new Map(), observing: false, observingBusy: false, observerTimer: null, observerErrorTimer: null, observerLogCursor: 0 }
 const app = document.querySelector('#app')
 const icon = (name) => ({
@@ -42,37 +45,37 @@ const icon = (name) => ({
 const svg = (name, extra = '') => `<svg ${extra} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon(name)}</svg>`
 
 app.innerHTML = `
-  <div class="titlebar"><div class="brand-mark">D</div><div class="title-project">DWE Studio <span class="title-sep">/</span> <span id="project-name">engine</span></div><button class="command-pill" id="quick-open" aria-label="Buscar archivos">${svg('search')} <span>Buscar archivos, símbolos y comandos</span><kbd>⌘ P</kbd></button><div class="title-actions"><button class="icon-button" title="Abrir otro proyecto" id="choose-root">${svg('folder')}</button><button class="icon-button" title="Ajustes">${svg('settings')}</button></div><div class="window-controls" id="window-controls"><button title="Minimizar" id="window-min">−</button><button title="Maximizar" id="window-max">□</button><button title="Cerrar" id="window-close">×</button></div></div>
+  <div class="titlebar"><div class="brand-mark">D</div><div class="title-project">DWE Studio <span class="title-sep">/</span> <span id="project-name">engine</span></div><button class="command-pill" id="quick-open" aria-label="${t('Search files')}">${svg('search')} <span>${t('Search files, symbols and commands')}</span><kbd>⌘ P</kbd></button><div class="title-actions"><button class="icon-button" title="${t('Open another project')}" id="choose-root">${svg('folder')}</button><button class="icon-button" title="${t('Settings')}">${svg('settings')}</button></div><div class="window-controls" id="window-controls"><button title="${t('Minimize')}" id="window-min">−</button><button title="${t('Maximize')}" id="window-max">□</button><button title="${t('Close')}" id="window-close">×</button></div></div>
   <div class="workspace">
-    <nav class="activitybar" aria-label="Vistas"><button class="activity active" title="Explorador">${svg('files')}</button><button class="activity" title="Buscar">${svg('search')}</button><button class="activity" title="Control de código fuente">${svg('git')}<i class="activity-badge">3</i></button><button class="activity" title="Depuración">${svg('bug')}</button><button class="activity" title="Extensiones">${svg('blocks')}</button><div class="activity-spacer"></div><button class="activity" title="Cuenta">${svg('chat')}</button><button class="activity" title="Configuración">${svg('settings')}</button></nav>
-    <aside class="sidebar"><div class="side-heading"><span>EXPLORADOR</span><button class="tiny-icon" id="refresh-tree" title="Actualizar">${svg('refresh')}</button></div><div class="side-workspace">${svg('chevron')} <span id="tree-root">ENGINE</span> <span class="tree-actions">···</span></div><div id="file-tree" class="file-tree"></div><div class="reference-heading" id="decomp-heading">${svg('chevron')} <span>DW_DECOMP</span><small>SOLO LECTURA</small></div><div id="decomp-tree" class="decomp-tree"></div><div class="sidebar-lower"><div class="side-heading"><span>AGENTES</span><button class="tiny-icon" title="Nueva sesión">+</button></div><div class="agent-row"><span class="agent-orb codex-orb">C</span><div><strong>Codex</strong><small>Este workspace</small></div><span class="connection-dot on"></span></div><div class="agent-row"><span class="agent-orb claude-orb">✳</span><div><strong>Claude Code</strong><small id="claude-status">Comprobando CLI…</small></div><span id="claude-dot" class="connection-dot"></span></div><div class="agent-note">Los cambios de ambos agentes aparecen aquí al guardar archivos.</div></div></aside>
-    <main class="main-area"><div class="editor-tabs" id="tabs"><div class="empty-tabs">DWE Studio</div><div class="tab-tools"><button class="icon-button" title="Dividir editor">▣</button><button class="icon-button" title="Más acciones">···</button></div></div><div class="breadcrumb" id="breadcrumb"><span>Selecciona un archivo</span></div><div class="editor-host" id="editor"><div class="welcome"><div class="welcome-symbol">D</div><h1>Tu juego, en contexto</h1><p>Edita el motor y los scripts desde el mismo espacio donde compilas y ejecutas.</p><div class="welcome-actions"><button id="open-main" class="welcome-link">Abrir <code>apps/game/src/main.cpp</code></button><button id="open-script" class="welcome-link">Abrir <code>apps/game/scripts/main.lua</code></button></div><div class="welcome-shortcuts"><span>⌘ S <small>guardar</small></span><span>⌘ B <small>compilar</small></span><span>F5 <small>ejecutar juego</small></span></div></div></div><div class="right-rail"><div class="rail-heading">SESIÓN DE JUEGO <button class="tiny-icon">···</button></div><div class="run-card"><div class="run-card-top"><div class="run-icon">${svg('window')}</div><div><strong>DWE Game</strong><small id="game-state">Listo para ejecutar</small></div><span id="game-dot" class="connection-dot"></span></div><div class="run-preview"><div class="preview-grid"></div><div class="preview-center"><span class="preview-orbit"></span><div class="preview-mark">DWE</div><span class="preview-label">VENTANA NATIVA DEL JUEGO</span></div></div><div class="run-controls"><button class="run-button" id="run-game">${svg('play')} Ejecutar</button><button class="stop-button" id="stop-game" title="Detener" disabled>${svg('stop')}</button></div><div class="run-meta"><span><i class="mini-dot green"></i> Watch de scripts</span><span>Lua · live</span></div></div><div class="rail-heading agents-heading">ASISTENTES</div><div class="assistant-card"><div class="assistant-head"><span class="agent-orb codex-orb">C</span><div><strong>Codex</strong><small>Compartiendo archivos</small></div><button class="tiny-icon">↗</button></div><p>Abre tu conversación en Codex. Al guardar cambios, este editor se sincroniza con el archivo.</p></div><div class="assistant-card muted-card"><div class="assistant-head"><span class="agent-orb claude-orb">✳</span><div><strong>Claude Code</strong><small id="claude-panel">CLI no detectada</small></div><button class="tiny-icon" id="claude-open" title="Abrir Claude Code en terminal">↗</button></div><p>Instala Claude Code para abrir sesiones de terminal aquí. El chat de Claude aún no se incrusta en esta versión.</p></div><div class="change-heading">CAMBIOS RECIENTES <span id="change-count">0</span></div><div id="change-list" class="change-list"><div class="no-changes">Esperando cambios en el árbol…</div></div></div><section class="bottom-panel" id="bottom-panel"><div class="panel-tabs"><button class="panel-tab active" data-panel="terminal">${svg('terminal')} TERMINAL</button><button class="panel-tab" data-panel="output">SALIDA</button><button class="panel-tab" data-panel="problems">PROBLEMAS <span class="problem-count">0</span></button><div class="panel-tab-spacer"></div><button class="tiny-icon" id="build-project" title="Compilar">${svg('play')}</button><button class="tiny-icon" id="stop-build" title="Detener compilación" disabled>${svg('stop')}</button><button class="tiny-icon" id="clear-output" title="Limpiar">⌫</button></div><div class="panel-content"><div class="terminal-output" id="terminal-output"><div class="terminal-welcome">DWE Studio terminal <span>·</span> <code>apps/studio</code></div><div class="terminal-hint">Compila con <code>scripts/dev.sh build</code> o escribe un comando abajo.</div></div><form id="terminal-form" class="terminal-input-row"><span class="terminal-prompt">❯</span><input id="terminal-input" autocomplete="off" spellcheck="false" placeholder="Escribe un comando…"/><button type="submit" aria-label="Ejecutar comando">${svg('play')}</button></form></div></section></main>
+    <nav class="activitybar" aria-label="${t('Views')}"><button class="activity active" title="${t('Explorer')}">${svg('files')}</button><button class="activity" title="${t('Search')}">${svg('search')}</button><button class="activity" title="${t('Source control')}">${svg('git')}<i class="activity-badge">3</i></button><button class="activity" title="${t('Debug')}">${svg('bug')}</button><button class="activity" title="${t('Extensions')}">${svg('blocks')}</button><div class="activity-spacer"></div><button class="activity" title="${t('Account')}">${svg('chat')}</button><button class="activity" title="${t('Configuration')}">${svg('settings')}</button></nav>
+    <aside class="sidebar"><div class="side-heading"><span>${t('EXPLORER')}</span><button class="tiny-icon" id="refresh-tree" title="${t('Refresh')}">${svg('refresh')}</button></div><div class="side-workspace">${svg('chevron')} <span id="tree-root">ENGINE</span> <span class="tree-actions">···</span></div><div id="file-tree" class="file-tree"></div><div class="reference-heading" id="decomp-heading">${svg('chevron')} <span>DW_DECOMP</span><small>${t('READ ONLY')}</small></div><div id="decomp-tree" class="decomp-tree"></div><div class="sidebar-lower"><div class="side-heading"><span>${t('AGENTS')}</span><button class="tiny-icon" title="${t('New session')}">+</button></div><div class="agent-row"><span class="agent-orb codex-orb">C</span><div><strong>Codex</strong><small>${t('This workspace')}</small></div><span class="connection-dot on"></span></div><div class="agent-row"><span class="agent-orb claude-orb">✳</span><div><strong>Claude Code</strong><small id="claude-status">${t('Checking CLI…')}</small></div><span id="claude-dot" class="connection-dot"></span></div><div class="agent-note">${t('Changes from both agents show up here when files are saved.')}</div></div></aside>
+    <main class="main-area"><div class="editor-tabs" id="tabs"><div class="empty-tabs">DWE Studio</div><div class="tab-tools"><button class="icon-button" title="${t('Split editor')}">▣</button><button class="icon-button" title="${t('More actions')}">···</button></div></div><div class="breadcrumb" id="breadcrumb"><span>${t('Select a file')}</span></div><div class="editor-host" id="editor"><div class="welcome"><div class="welcome-symbol">D</div><h1>${t('Your game, in context')}</h1><p>${t('Edit the engine and the scripts from the same place where you build and run.')}</p><div class="welcome-actions"><button id="open-main" class="welcome-link">${t('Open {file}', { file: '<code>apps/game/src/main.cpp</code>' })}</button><button id="open-script" class="welcome-link">${t('Open {file}', { file: '<code>apps/game/scripts/main.lua</code>' })}</button></div><div class="welcome-shortcuts"><span>⌘ S <small>${t('save')}</small></span><span>⌘ B <small>${t('build')}</small></span><span>F5 <small>${t('run game')}</small></span></div></div></div><div class="right-rail"><div class="rail-heading">${t('GAME SESSION')} <button class="tiny-icon">···</button></div><div class="run-card"><div class="run-card-top"><div class="run-icon">${svg('window')}</div><div><strong>DWE Game</strong><small id="game-state">${t('Ready to run')}</small></div><span id="game-dot" class="connection-dot"></span></div><div class="run-preview"><div class="preview-grid"></div><div class="preview-center"><span class="preview-orbit"></span><div class="preview-mark">DWE</div><span class="preview-label">${t('NATIVE GAME WINDOW')}</span></div></div><div class="run-controls"><button class="run-button" id="run-game">${svg('play')} ${t('Run')}</button><button class="stop-button" id="stop-game" title="${t('Stop')}" disabled>${svg('stop')}</button></div><div class="run-meta"><span><i class="mini-dot green"></i> ${t('Script watch')}</span><span>Lua · live</span></div></div><div class="rail-heading agents-heading">${t('ASSISTANTS')}</div><div class="assistant-card"><div class="assistant-head"><span class="agent-orb codex-orb">C</span><div><strong>Codex</strong><small>${t('Sharing files')}</small></div><button class="tiny-icon">↗</button></div><p>${t('Open your conversation in Codex. When you save changes, this editor stays in sync with the file.')}</p></div><div class="assistant-card muted-card"><div class="assistant-head"><span class="agent-orb claude-orb">✳</span><div><strong>Claude Code</strong><small id="claude-panel">${t('CLI not detected')}</small></div><button class="tiny-icon" id="claude-open" title="${t('Open Claude Code in a terminal')}">↗</button></div><p>${t('Install Claude Code to open terminal sessions here. The chat of Claude is not embedded in this version yet.')}</p></div><div class="change-heading">${t('RECENT CHANGES')} <span id="change-count">0</span></div><div id="change-list" class="change-list"><div class="no-changes">${t('Waiting for changes in the tree…')}</div></div></div><section class="bottom-panel" id="bottom-panel"><div class="panel-tabs"><button class="panel-tab active" data-panel="terminal">${svg('terminal')} TERMINAL</button><button class="panel-tab" data-panel="output">${t('OUTPUT')}</button><button class="panel-tab" data-panel="problems">${t('PROBLEMS')} <span class="problem-count">0</span></button><div class="panel-tab-spacer"></div><button class="tiny-icon" id="build-project" title="${t('Build')}">${svg('play')}</button><button class="tiny-icon" id="stop-build" title="${t('Stop build')}" disabled>${svg('stop')}</button><button class="tiny-icon" id="clear-output" title="${t('Clear')}">⌫</button></div><div class="panel-content"><div class="terminal-output" id="terminal-output"><div class="terminal-welcome">DWE Studio terminal <span>·</span> <code>apps/studio</code></div><div class="terminal-hint">${t('Build with {command} or type a command below.', { command: '<code>scripts/dev.sh build</code>' })}</div></div><form id="terminal-form" class="terminal-input-row"><span class="terminal-prompt">❯</span><input id="terminal-input" autocomplete="off" spellcheck="false" placeholder="${t('Type a command…')}"/><button type="submit" aria-label="${t('Run command')}">${svg('play')}</button></form></div></section></main>
   </div>
-  <footer class="statusbar"><div class="status-left"><span class="status-branch">${svg('git')} codex/dwe-studio-live-workbench</span><span id="status-sync">●  Sincronizado</span><span id="status-file-change"></span></div><div class="status-right"><span id="cursor-status">Ln 1, Col 1</span><span id="language-status">DWE Studio</span><span>UTF-8</span><span>Spaces: 2</span><span class="status-ready"><i></i> DWE · local</span></div></footer>
+  <footer class="statusbar"><div class="status-left"><span class="status-branch">${svg('git')} codex/dwe-studio-live-workbench</span><span id="status-sync">●  ${t('Synced')}</span><span id="status-file-change"></span></div><div class="status-right"><span id="cursor-status">Ln 1, Col 1</span><span id="language-status">DWE Studio</span><span>UTF-8</span><span>Spaces: 2</span><span class="status-ready"><i></i> DWE · local</span></div></footer>
   <div class="toast-stack" id="toasts"></div>
 `
 
-document.querySelector('#tabs').insertAdjacentHTML('afterbegin', `<div class="surface-tabs"><button id="editor-mode">${svg('files')} Código</button><button id="compare-mode" class="active">${svg('window')} Comparar</button></div>`)
+document.querySelector('#tabs').insertAdjacentHTML('afterbegin', `<div class="surface-tabs"><button id="editor-mode">${svg('files')} ${t('Code')}</button><button id="compare-mode" class="active">${svg('window')} ${t('Compare')}</button></div>`)
 document.querySelector('.right-rail').insertAdjacentHTML('beforebegin', `
   <section class="comparison-view" id="comparison-view">
-    <div class="compare-toolbar"><div><h1>Comparar ejecución</h1><p>DuckStation muestra el binario de PS1; DWE ejecuta el engine del proyecto.</p></div><div class="compare-tools"><button class="observe-button" id="observe-games">${svg('bug')} Iniciar loop IA</button><button class="refresh-capture" id="refresh-captures">${svg('refresh')} Buscar ventanas</button></div></div>
+    <div class="compare-toolbar"><div><h1>${t('Compare runs')}</h1><p>${t('DuckStation shows the PS1 binary; DWE runs the engine of the project.')}</p></div><div class="compare-tools"><button class="observe-button" id="observe-games">${svg('bug')} ${t('Start AI loop')}</button><button class="refresh-capture" id="refresh-captures">${svg('refresh')} ${t('Find windows')}</button></div></div>
     <div class="compare-grid">
       <article class="capture-card duck-card">
-        <header class="capture-header"><div class="capture-brand duck-brand">PS1</div><div class="capture-title"><strong>DuckStation</strong><small>Binario original · PlayStation</small></div><span class="process-indicator" id="duckstation-indicator"></span><div class="capture-actions"><button id="choose-duck-disc">Disco…</button><button id="launch-duckstation" class="capture-launch">${svg('play')} Iniciar</button><button id="stop-duckstation" class="capture-stop" title="Detener" disabled>${svg('stop')}</button></div></header>
-        <div class="capture-screen" id="duckstation-screen" tabindex="0" role="button" aria-label="Dar controles a DuckStation"><video id="duckstation-video" autoplay muted playsinline></video><div class="capture-placeholder" id="duckstation-placeholder"><div class="placeholder-cross">+</div><strong>DuckStation</strong><span>Inicia el emulador y captura su ventana aquí.</span></div><div class="capture-live-label" id="duckstation-live-label">SIN CAPTURA</div></div>
-        <footer class="capture-footer"><select id="duckstation-source" aria-label="Ventana de DuckStation"><option value="">Buscar una ventana…</option></select><button id="duckstation-capture">Capturar</button><button id="duckstation-stop-capture" disabled>${svg('stop')}</button></footer>
+        <header class="capture-header"><div class="capture-brand duck-brand">PS1</div><div class="capture-title"><strong>DuckStation</strong><small>${t('Original binary · PlayStation')}</small></div><span class="process-indicator" id="duckstation-indicator"></span><div class="capture-actions"><button id="choose-duck-disc">${t('Disc…')}</button><button id="launch-duckstation" class="capture-launch">${svg('play')} ${t('Start')}</button><button id="stop-duckstation" class="capture-stop" title="${t('Stop')}" disabled>${svg('stop')}</button></div></header>
+        <div class="capture-screen" id="duckstation-screen" tabindex="0" role="button" aria-label="${t('Give controls to DuckStation')}"><video id="duckstation-video" autoplay muted playsinline></video><div class="capture-placeholder" id="duckstation-placeholder"><div class="placeholder-cross">+</div><strong>DuckStation</strong><span>${t('Start the emulator and capture its window here.')}</span></div><div class="capture-live-label" id="duckstation-live-label">${t('NO CAPTURE')}</div></div>
+        <footer class="capture-footer"><select id="duckstation-source" aria-label="${t('DuckStation window')}"><option value="">${t('Find a window…')}</option></select><button id="duckstation-capture">${t('Capture')}</button><button id="duckstation-stop-capture" disabled>${svg('stop')}</button></footer>
       </article>
       <article class="capture-card engine-card">
-        <header class="capture-header"><div class="capture-brand engine-brand">DWE</div><div class="capture-title"><strong>DWE Engine</strong><small>DW1 · ejecución del proyecto</small></div><span class="process-indicator" id="engine-indicator"></span><div class="capture-actions"><button id="launch-engine" class="capture-launch">${svg('play')} Ejecutar</button><button id="stop-engine" class="capture-stop" title="Detener" disabled>${svg('stop')}</button></div></header>
-        <div class="capture-screen" id="engine-screen" tabindex="0" role="button" aria-label="Dar controles al motor DWE"><video id="engine-video" autoplay muted playsinline></video><div class="capture-placeholder" id="engine-placeholder"><div class="placeholder-cross">+</div><strong>DWE Engine</strong><span>Ejecuta el juego y captura su ventana aquí.</span></div><div class="capture-live-label" id="engine-live-label">SIN CAPTURA</div></div>
-        <footer class="capture-footer"><select id="engine-source" aria-label="Ventana de DWE Engine"><option value="">Buscar una ventana…</option></select><button id="engine-capture">Capturar</button><button id="engine-stop-capture" disabled>${svg('stop')}</button></footer>
+        <header class="capture-header"><div class="capture-brand engine-brand">DWE</div><div class="capture-title"><strong>DWE Engine</strong><small>${t('DW1 · project run')}</small></div><span class="process-indicator" id="engine-indicator"></span><div class="capture-actions"><button id="launch-engine" class="capture-launch">${svg('play')} ${t('Run')}</button><button id="stop-engine" class="capture-stop" title="${t('Stop')}" disabled>${svg('stop')}</button></div></header>
+        <div class="capture-screen" id="engine-screen" tabindex="0" role="button" aria-label="${t('Give controls to the DWE engine')}"><video id="engine-video" autoplay muted playsinline></video><div class="capture-placeholder" id="engine-placeholder"><div class="placeholder-cross">+</div><strong>DWE Engine</strong><span>${t('Run the game and capture its window here.')}</span></div><div class="capture-live-label" id="engine-live-label">${t('NO CAPTURE')}</div></div>
+        <footer class="capture-footer"><select id="engine-source" aria-label="${t('DWE Engine window')}"><option value="">${t('Find a window…')}</option></select><button id="engine-capture">${t('Capture')}</button><button id="engine-stop-capture" disabled>${svg('stop')}</button></footer>
       </article>
     </div>
-    <section class="observer-panel" id="observer-panel"><div class="observer-heading"><span class="agent-orb codex-orb">C</span><strong>Loop de juego y corrección</strong><span class="observer-state" id="observer-state">Detenido</span><button id="observe-now" disabled>Enviar muestra ahora</button><button id="observe-motion" disabled>Capturar movimiento (2 s)</button></div><div class="observer-response" id="observer-response">Compara secuencias de DuckStation y DWE, guarda capturas/logs para este chat y acepta secuencias de controles de Codex.</div></section>
-    <div class="compare-note" id="compare-note"><span class="mini-dot green"></span><span>Haz clic en una pantalla para enviarle el foco; el mando y el teclado controlan ese juego.</span><span id="capture-warning"></span><span id="disc-label">Sin disco seleccionado</span></div>
+    <section class="observer-panel" id="observer-panel"><div class="observer-heading"><span class="agent-orb codex-orb">C</span><strong>${t('Game and correction loop')}</strong><span class="observer-state" id="observer-state">${t('Stopped')}</span><button id="observe-now" disabled>${t('Send sample now')}</button><button id="observe-motion" disabled>${t('Capture motion (2 s)')}</button></div><div class="observer-response" id="observer-response">${t('Compares DuckStation and DWE sequences, saves captures and logs for this chat, and accepts control sequences from Codex.')}</div></section>
+    <div class="compare-note" id="compare-note"><span class="mini-dot green"></span><span>${t('Click a screen to give it focus; the controller and the keyboard drive that game.')}</span><span id="capture-warning"></span><span id="disc-label">${t('No disc selected')}</span></div>
   </section>
 `)
-document.querySelector('.run-preview').innerHTML = `<div class="editor-preview-empty">${svg('window')}<span>Las dos ventanas se muestran en Comparar</span><button id="right-compare">Abrir comparación</button></div>`
+document.querySelector('.run-preview').innerHTML = `<div class="editor-preview-empty">${svg('window')}<span>${t('Both windows are shown in Compare')}</span><button id="right-compare">${t('Open comparison')}</button></div>`
 document.querySelector('.main-area').classList.add('compare-mode')
 
 const editorHost = document.querySelector('#editor')
@@ -135,7 +138,7 @@ async function refreshDecompTree() {
     tree.innerHTML = ''
     renderTree(files, tree, 0, 'decomp')
   } catch {
-    tree.innerHTML = '<div class="decomp-unavailable">Configura <code>DWE_DECOMP</code> para ver la referencia.</div>'
+    tree.innerHTML = `<div class="decomp-unavailable">${t('Set {variable} to see the reference.', { variable: '<code>DWE_DECOMP</code>' })}</div>`
   }
 }
 function findTab(file) { return state.tabs.find((tab) => tab.path === file) }
@@ -189,7 +192,7 @@ function activateTab(file) {
   renderTabs(); refreshTree()
 }
 function closeTab(file) {
-  if (state.dirty.has(file) && !confirm(`Hay cambios sin guardar en ${pathName(file)}. ¿Cerrar de todos modos?`)) return
+  if (state.dirty.has(file) && !confirm(t('{name} has unsaved changes. Close anyway?', { name: pathName(file) }))) return
   const tab = findTab(file)
   tab?.model.dispose()
   state.tabs = state.tabs.filter((item) => item.path !== file)
@@ -204,14 +207,14 @@ function closeTab(file) {
 async function saveActive() {
   const tab = findTab(state.activePath)
   if (!tab) return
-  if (tab.readOnly) { toast('El decomp está montado como referencia de solo lectura.'); return }
+  if (tab.readOnly) { toast(t('The decomp is mounted as a read-only reference.')); return }
   try {
     await api.write(tab.path, tab.model.getValue())
     tab.content = tab.model.getValue()
     state.dirty.delete(tab.path)
-    document.querySelector('#status-sync').textContent = '●  Guardado'
-    setTimeout(() => { document.querySelector('#status-sync').textContent = '●  Sincronizado' }, 1500)
-    renderTabs(); refreshTree(); toast(`${pathName(tab.path)} guardado`, 'success')
+    document.querySelector('#status-sync').textContent = '●  ' + t('Saved')
+    setTimeout(() => { document.querySelector('#status-sync').textContent = '●  ' + t('Synced') }, 1500)
+    renderTabs(); refreshTree(); toast(t('{name} saved', { name: pathName(tab.path) }), 'success')
   } catch (error) { toast(error.message, 'error') }
 }
 function appendOutput(kind, text, stream = 'stdout') {
@@ -231,7 +234,7 @@ function observerStatus(status, message = '') {
   const label = document.querySelector('#observer-state')
   const panel = document.querySelector('#observer-panel')
   const live = state.observing && status !== 'error'
-  label.textContent = message || ({ connecting: 'Capturando…', capturing: 'Guardando muestra para Codex…', ready: live ? 'Loop activo · esperando revisión de Codex' : 'Listo', analyzing: 'Codex está revisando…', stopped: 'Loop detenido', error: 'Error de captura' }[status] || status)
+  label.textContent = message || ({ connecting: t('Capturing…'), capturing: t('Saving sample for Codex…'), ready: live ? t('Loop active · waiting for Codex review') : t('Ready'), analyzing: t('Codex is reviewing…'), stopped: t('Loop stopped'), error: t('Capture error') }[status] || status)
   panel.classList.toggle('observer-active', live)
   panel.classList.toggle('observer-error', status === 'error')
 }
@@ -349,9 +352,9 @@ async function collectObservation({ actionId = null, motion = false } = {}) {
   const response = document.querySelector('#observer-response')
   try {
     const frames = await captureBurst({ motion })
-    if (!frames.duckstation.length && !frames.engine.length) throw new Error('Las ventanas seleccionadas no entregan fotogramas de vídeo.')
-    if ((actionId || motion) && (!frames.duckstation.length || !frames.engine.length)) throw new Error('Faltan fotogramas de uno de los dos juegos.')
-    response.textContent = `${response.textContent}\n\n── Muestra ${new Date().toLocaleTimeString()} ──\n`.slice(-4000)
+    if (!frames.duckstation.length && !frames.engine.length) throw new Error(t('The selected windows deliver no video frames.'))
+    if ((actionId || motion) && (!frames.duckstation.length || !frames.engine.length)) throw new Error(t('Frames are missing from one of the two games.'))
+    response.textContent = `${response.textContent}\n\n── ${t('Sample')} ${new Date().toLocaleTimeString()} ──\n`.slice(-4000)
     response.scrollTop = response.scrollHeight
     observerStatus('capturing')
     const recent = state.output.slice(Math.max(0, state.observerLogCursor), state.output.length)
@@ -391,7 +394,7 @@ async function collectObservation({ actionId = null, motion = false } = {}) {
 }
 function beginGameObservation({ automatic = false } = {}) {
   if (!state.captureStreams.has('duckstation') || !state.captureStreams.has('engine')) {
-    toast('Captura DuckStation y DWE Engine antes de iniciar el loop comparativo.', 'info')
+    toast(t('Capture DuckStation and DWE Engine before starting the comparison loop.'), 'info')
     return
   }
   state.observing = true
@@ -401,13 +404,13 @@ function beginGameObservation({ automatic = false } = {}) {
   state.observerLogCursor = 0
   clearInterval(state.observerAutoTimer)
   state.observerAutoTimer = null
-  button.innerHTML = `${svg('stop')} Detener loop`
+  button.innerHTML = `${svg('stop')} ${t('Stop loop')}`
   button.classList.add('active')
   nowButton.disabled = false
   document.querySelector('#observe-motion').disabled = false
   void api.setObserverActive(true)
   reportObserverRuntime('observing')
-  observerStatus('connecting', automatic ? 'Autoloop iniciado · capturando los dos juegos' : '')
+  observerStatus('connecting', automatic ? t('Auto loop started · capturing both games') : '')
   void observeGames()
   clearInterval(state.observerTimer)
   state.observerTimer = setInterval(() => void observeGames(), 20_000)
@@ -419,7 +422,7 @@ function stopGameObservation() {
   state.observerTimer = null
   clearInterval(state.observerAutoTimer)
   state.observerAutoTimer = null
-  document.querySelector('#observe-games').innerHTML = `${svg('bug')} Iniciar loop IA`
+  document.querySelector('#observe-games').innerHTML = `${svg('bug')} ${t('Start AI loop')}`
   document.querySelector('#observe-games').classList.remove('active')
   document.querySelector('#observe-now').disabled = true
   document.querySelector('#observe-motion').disabled = true
@@ -463,7 +466,7 @@ function setRunning(kind, running, managed = running) {
   if (running) state.running.add(kind); else state.running.delete(kind)
   if (running && managed) state.managedRunning.add(kind); else state.managedRunning.delete(kind)
   if (kind === 'game') {
-    document.querySelector('#game-state').textContent = running ? 'Ejecutándose · ventana nativa' : 'Listo para ejecutar'
+    document.querySelector('#game-state').textContent = running ? t('Running · native window') : t('Ready to run')
     document.querySelector('#game-dot').classList.toggle('on', running)
     document.querySelector('#run-game').disabled = running
     document.querySelector('#stop-game').disabled = !running || !state.managedRunning.has(kind)
@@ -479,7 +482,7 @@ function setRunning(kind, running, managed = running) {
   if (kind === 'build') {
     document.querySelector('#build-project').disabled = running
     document.querySelector('#stop-build').disabled = !running
-    if (running) appendOutput('build', 'Compilando con scripts/dev.sh build…\n', 'stdout')
+    if (running) appendOutput('build', `${t('Building with scripts/dev.sh build…')}\n`, 'stdout')
   }
 }
 function setWorkspaceMode(mode) {
@@ -509,8 +512,8 @@ function renderCaptureSources() {
     const select = document.querySelector(`#${group.id}`)
     const previous = select.value
     const placeholder = group.id === 'engine-source' && !group.candidates.length
-      ? 'Ejecuta DWE para detectar su ventana…'
-      : 'Elige la ventana del juego…'
+      ? t('Run DWE to detect its window…')
+      : t('Pick the game window…')
     select.innerHTML = `<option value="">${placeholder}</option>` + group.candidates
       .map((source) => `<option value="${escapeHtml(source.id)}">${escapeHtml(source.name)}</option>`).join('')
     select.value = group.candidates.some((source) => source.id === previous) ? previous : group.preferred?.id || ''
@@ -523,9 +526,9 @@ function renderCaptureSources() {
   const warning = document.querySelector('#capture-warning')
   note.classList.toggle('capture-limitation', state.captureSources.length < 2)
   warning.textContent = state.captureSources.length === 0
-    ? 'Capturar abre el selector del sistema; Buscar ventanas llena la lista cuando está disponible.'
+    ? t('Capture opens the system picker; Find windows fills the list when available.')
     : state.captureSources.length === 1
-      ? 'Solo hay una ventana de captura disponible; PipeWire en Linux puede limitar capturas simultáneas.'
+      ? t('Only one capture window is available; PipeWire on Linux may limit simultaneous captures.')
       : ''
 }
 async function refreshCaptureSources() {
@@ -540,10 +543,10 @@ async function refreshCaptureSources() {
     setRunning('duckstation', hasDuckStation || duckstationManaged, duckstationManaged)
     setRunning('game', hasEngine || engineManaged, engineManaged)
     reportObserverRuntime(hasDuckStation && hasEngine ? 'windows-detected' : 'waiting-for-windows',
-      hasDuckStation && hasEngine ? null : `Ventanas reconocidas: DuckStation=${hasDuckStation}, DWE=${hasEngine}; fuentes visibles=${state.captureSources.length}.`)
+      hasDuckStation && hasEngine ? null : `Recognized windows: DuckStation=${hasDuckStation}, DWE=${hasEngine}; visible sources=${state.captureSources.length}.`)
   } catch (error) {
     document.querySelector('#compare-note').classList.add('capture-limitation')
-    document.querySelector('#capture-warning').textContent = `No se pudieron enumerar las ventanas: ${error.message}`
+    document.querySelector('#capture-warning').textContent = t('Could not list the windows: {message}', { message: error.message })
     reportObserverRuntime('source-enumeration-error', error.message)
   }
 }
@@ -561,7 +564,7 @@ async function waitForCaptureSource(kind, attempts = 40) {
 async function startWindowCapture(kind, { automatic = false } = {}) {
   const select = document.querySelector(`#${kind}-source`)
   const sourceId = select.value
-  if (!sourceId) { toast('Selecciona primero la ventana que quieres mostrar.'); return }
+  if (!sourceId) { toast(t('First select the window you want to show.')); return }
   try {
     stopWindowCapture(kind)
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -575,15 +578,15 @@ async function startWindowCapture(kind, { automatic = false } = {}) {
     await api.setCaptureSource(kind, sourceId)
     document.querySelector(`#${kind}-placeholder`).hidden = true
     document.querySelector(`#${kind}-live-label`).textContent = sourceId && state.captureSources.length > 1
-      ? select.selectedOptions[0]?.textContent || 'CAPTURA EN VIVO'
-      : stream.getVideoTracks()[0]?.label || 'CAPTURA EN VIVO'
+      ? select.selectedOptions[0]?.textContent || t('LIVE CAPTURE')
+      : stream.getVideoTracks()[0]?.label || t('LIVE CAPTURE')
     document.querySelector(`#${kind}-live-label`).classList.add('on')
     document.querySelector(`#${kind}-stop-capture`).disabled = false
     stream.getVideoTracks()[0]?.addEventListener('ended', () => stopWindowCapture(kind), { once: true })
     reportObserverRuntime('capturing')
     return true
   } catch (error) {
-    if (!automatic) toast(`No se pudo capturar esa ventana: ${error.message}`, 'error')
+    if (!automatic) toast(t('Could not capture that window: {message}', { message: error.message }), 'error')
     reportObserverRuntime('capture-error', error.message)
     return false
   }
@@ -591,7 +594,7 @@ async function startWindowCapture(kind, { automatic = false } = {}) {
 async function focusGame(kind) {
   const sourceId = document.querySelector(`#${kind}-source`).value
   if (!sourceId) {
-    toast('Primero busca y selecciona la ventana del juego.', 'info')
+    toast(t('First find and select the game window.'), 'info')
     return
   }
   try {
@@ -600,7 +603,7 @@ async function focusGame(kind) {
     document.querySelector('.duck-card').classList.toggle('game-focus', kind === 'duckstation')
     document.querySelector('.engine-card').classList.toggle('game-focus', kind === 'engine')
   } catch (error) {
-    toast(`No se pudo dar el foco a la ventana: ${error.message}`, 'error')
+    toast(t('Could not focus the window: {message}', { message: error.message }), 'error')
   }
 }
 function stopWindowCapture(kind) {
@@ -612,7 +615,7 @@ function stopWindowCapture(kind) {
   const placeholder = document.querySelector(`#${kind}-placeholder`)
   if (placeholder) placeholder.hidden = false
   const label = document.querySelector(`#${kind}-live-label`)
-  if (label) { label.textContent = 'SIN CAPTURA'; label.classList.remove('on') }
+  if (label) { label.textContent = t('NO CAPTURE'); label.classList.remove('on') }
   const stopButton = document.querySelector(`#${kind}-stop-capture`)
   if (stopButton) stopButton.disabled = true
   void api.setCaptureSource(kind, '')
@@ -624,14 +627,14 @@ function changedFile(event) {
   state.changed.unshift(event)
   state.changed = state.changed.slice(0, 8)
   document.querySelector('#change-count').textContent = String(state.changed.length)
-  document.querySelector('#change-list').innerHTML = state.changed.map((item) => `<div class="change-item"><span class="change-kind ${item.event}">${item.event === 'change' ? 'M' : item.event === 'add' ? 'A' : 'D'}</span><span class="change-path">${escapeHtml(item.path)}</span><time>ahora</time></div>`).join('')
+  document.querySelector('#change-list').innerHTML = state.changed.map((item) => `<div class="change-item"><span class="change-kind ${item.event}">${item.event === 'change' ? 'M' : item.event === 'add' ? 'A' : 'D'}</span><span class="change-path">${escapeHtml(item.path)}</span><time>${t('now')}</time></div>`).join('')
   document.querySelector('#status-file-change').textContent = `↻ ${event.path}`
   const tab = findTab(event.path)
   if (tab && !state.dirty.has(tab.path)) {
     api.read(tab.path).then(({ content }) => {
       tab.content = content; tab.model.setValue(content)
     }).catch(() => {})
-  } else if (tab && state.dirty.has(tab.path)) toast(`${pathName(tab.path)} cambió en disco; tus cambios locales se conservaron.`, 'info')
+  } else if (tab && state.dirty.has(tab.path)) toast(t('{name} changed on disk; your local changes were kept.', { name: pathName(tab.path) }), 'info')
   refreshTree()
 }
 function flatten(files, result = []) {
@@ -642,7 +645,7 @@ function openQuickFile() {
   const existing = document.querySelector('.quick-open')
   if (existing) { existing.remove(); return }
   const modal = document.createElement('div'); modal.className = 'quick-open'
-  modal.innerHTML = `<input placeholder="Buscar archivo por nombre…" autofocus><div class="quick-results"></div>`
+  modal.innerHTML = `<input placeholder="${t('Find a file by name…')}" autofocus><div class="quick-results"></div>`
   document.body.append(modal)
   const input = modal.querySelector('input'); input.focus()
   const draw = () => {
@@ -677,7 +680,7 @@ document.querySelector('#choose-root').addEventListener('click', async () => {
   editorHost.classList.remove('has-model')
   document.querySelector('#project-name').textContent = project.name
   document.querySelector('#tree-root').textContent = project.name.toUpperCase()
-  document.querySelector('#change-list').innerHTML = '<div class="no-changes">Esperando cambios en el árbol…</div>'
+  document.querySelector('#change-list').innerHTML = `<div class="no-changes">${t('Waiting for changes in the tree…')}</div>`
   document.querySelector('#change-count').textContent = '0'
   renderTabs(); refreshTree()
 })
@@ -702,7 +705,7 @@ document.querySelector('#choose-duck-disc').addEventListener('click', async () =
 document.querySelector('#launch-duckstation').addEventListener('click', async () => {
   try {
     await api.launchDuckstation(state.discPath)
-    toast(state.discPath ? `DuckStation abrió ${pathName(state.discPath)}.` : 'DuckStation iniciado; selecciona una ventana para capturar.')
+    toast(state.discPath ? t('DuckStation opened {name}.', { name: pathName(state.discPath) }) : t('DuckStation started; select a window to capture.'))
     void waitForCaptureSource('duckstation')
   } catch (error) { toast(error.message, 'error') }
 })
@@ -740,7 +743,7 @@ document.querySelectorAll('.panel-tab').forEach((button) => button.addEventListe
   document.querySelectorAll('.panel-tab').forEach((item) => item.classList.toggle('active', item === button))
   if (button.dataset.panel === 'output') document.querySelector('#terminal-output').classList.add('show-output')
   else document.querySelector('#terminal-output').classList.remove('show-output')
-  if (button.dataset.panel === 'problems') toast('Los diagnósticos del compilador aparecerán aquí en una siguiente etapa.')
+  if (button.dataset.panel === 'problems') toast(t('Compiler diagnostics will appear here in a later stage.'))
 }))
 document.querySelector('#claude-open').addEventListener('click', () => { document.querySelector('#terminal-input').value = 'claude'; document.querySelector('#terminal-input').focus() })
 document.addEventListener('keydown', (event) => {
@@ -759,12 +762,12 @@ api.onObserverStatus(({ status, message }) => {
   } else observerStatus(status, message)
 })
 api.onObserverSample(({ id }) => {
-  document.querySelector('#observer-state').textContent = `Muestra ${id} enviada a la cola`
+  document.querySelector('#observer-state').textContent = t('Sample {id} sent to the queue', { id })
 })
 api.onObserverAction(({ id, actions }) => {
-  const label = actions.map((action) => `${action.game}: ${action.type === 'text' ? `texto “${action.text}”` : action.button}`).join(' · ')
+  const label = actions.map((action) => `${action.game}: ${action.type === 'text' ? t('text “{text}”', { text: action.text }) : action.button}`).join(' · ')
   const response = document.querySelector('#observer-response')
-  response.textContent = `${response.textContent}\nControles enviados por Codex: ${label}\n`.slice(-4000)
+  response.textContent = `${response.textContent}\n${t('Controls sent by Codex: {label}', { label })}\n`.slice(-4000)
   response.scrollTop = response.scrollHeight
   if (state.observing) void observeGames({ actionId: id })
 })
@@ -772,9 +775,9 @@ api.onProcessState(({ kind, running, managed, code }) => {
   if (kind !== 'terminal') setRunning(kind, running, managed ?? running)
   if (running && (kind === 'game' || kind === 'duckstation')) void waitForCaptureSource(kind === 'game' ? 'engine' : 'duckstation')
   if (!running) {
-    if (kind === 'build') appendOutput('build', `\nCompilación finalizada con código ${code ?? 'desconocido'}.\n`, code === 0 ? 'stdout' : 'stderr')
-    if (kind === 'game') appendOutput('game', `\nDWE Engine se cerró (código ${code ?? 'desconocido'}).\n`)
-    if (kind === 'duckstation') appendOutput('duckstation', `\nDuckStation se cerró (código ${code ?? 'desconocido'}).\n`)
+    if (kind === 'build') appendOutput('build', `\n${t('Build finished with code {code}.', { code: code ?? t('unknown') })}\n`, code === 0 ? 'stdout' : 'stderr')
+    if (kind === 'game') appendOutput('game', `\n${t('DWE Engine closed (code {code}).', { code: code ?? t('unknown') })}\n`)
+    if (kind === 'duckstation') appendOutput('duckstation', `\n${t('DuckStation closed (code {code}).', { code: code ?? t('unknown') })}\n`)
   }
 })
 api.onFileChange(changedFile)
@@ -792,13 +795,13 @@ refreshTree()
 void initializeGameObservation()
 if (info.decompAvailable) refreshDecompTree()
 else {
-  document.querySelector('#decomp-heading small').textContent = 'NO ENCONTRADO'
-  document.querySelector('#decomp-heading').title = 'Define DWE_DECOMP para apuntar al decomp local.'
+  document.querySelector('#decomp-heading small').textContent = t('NOT FOUND')
+  document.querySelector('#decomp-heading').title = t('Set DWE_DECOMP to point to the local decomp.')
 }
 if (info.platform === 'darwin') document.querySelector('#window-controls').hidden = true
 api.agents().then(({ codexCli, claudeCode }) => {
   if (!codexCli) document.querySelector('.agent-row .codex-orb').closest('.agent-row').querySelector('.connection-dot').classList.remove('on')
-  document.querySelector('#claude-status').textContent = claudeCode ? 'CLI detectada' : 'CLI no instalada'
-  document.querySelector('#claude-panel').textContent = claudeCode ? 'Disponible en terminal' : 'CLI no detectada'
+  document.querySelector('#claude-status').textContent = claudeCode ? t('CLI detected') : t('CLI not installed')
+  document.querySelector('#claude-panel').textContent = claudeCode ? t('Available in a terminal') : t('CLI not detected')
   document.querySelector('#claude-dot').classList.toggle('on', claudeCode)
 })

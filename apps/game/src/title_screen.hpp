@@ -23,7 +23,7 @@ inline constexpr std::string_view NewGameRulesDocument = "new_game_rules";
 inline constexpr std::string_view NewGameModeDocument = "new_game_mode";
 
 // The title screen with no game: the main menu, the slot lists and their dialogs, shown and hidden
-// by the game as SaveFlow decides (docs/architecture/guardar-y-cargar.md, 3.4 and 3.5), and the
+// by the game as SaveFlow decides (docs/architecture/save-and-load.md, 3.4 and 3.5), and the
 // pause menu's options page over it (title_options.hpp).
 class TitleScreen {
 public:

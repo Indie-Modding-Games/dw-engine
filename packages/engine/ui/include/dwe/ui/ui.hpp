@@ -110,7 +110,7 @@ inline constexpr std::string_view MinimapItemPrefix = "minimap-item-";
 inline constexpr std::string_view TextKeyAttribute = "text-key";
 // The class every document's <body> has while the player's language is the one of the original's
 // word pictures (its menu labels: ITEM, MENU, COUNT...), set with the text keys: a skin shows a
-// picture under it and the text key's words without it (docs/architecture/localizacion.md).
+// picture under it and the text key's words without it (docs/architecture/localization.md).
 inline constexpr std::string_view MenuArtClass = "use-menu-art";
 inline constexpr std::string_view MenuArtLanguage = "en";
 // A document whose <body> has this attribute plays its own sounds (its game sends them, as the
@@ -202,7 +202,7 @@ public:
   void closeScreen(std::string_view screen);
   [[nodiscard]] bool isScreenOpen(std::string_view screen) const;
 
-  // UI addons (docs/modding/interfaces.md). A whole UI: its documents load, named "<id>.<screen>",
+  // UI addons (docs/modding/ui-addons.md). A whole UI: its documents load, named "<id>.<screen>",
   // and show the screens it covers; the others keep the default UI's. Its code runs sandboxed: it
   // reads the UI API, and the game takes from it only the commands setAddonCommandFilter lets
   // through. The screens shown as it switches show again in it. If the addon does not suit (a
@@ -213,7 +213,7 @@ public:
   void useDefaultUi();
   // The id of the UI addon on, empty for the default UI.
   [[nodiscard]] std::string_view uiAddon() const;
-  // A plugin (docs/modding/interfaces.md): its documents load, named "<id>.<path>", and show over
+  // A plugin (docs/modding/ui-addons.md): its documents load, named "<id>.<path>", and show over
   // whichever UI is on, without the focus, until removeUiPlugins. Its code runs sandboxed as a UI
   // addon's. If it does not suit (a whole UI, another UI API, already on) or a document cannot
   // load, nothing changes and the error says why.

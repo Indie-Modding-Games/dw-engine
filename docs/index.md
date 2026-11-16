@@ -3,79 +3,81 @@ layout: home
 
 hero:
   name: dwe
-  text: Documentación técnica
-  tagline: Motor nativo en C++26 que reimplementa un clásico RPG de crianza y sirve de base para mods.
+  text: Technical documentation
+  tagline: A native C++26 engine that reimplements a classic raising RPG and serves as a base for mods.
   actions:
     - theme: brand
-      text: Preparar el entorno
+      text: Set up the environment
       link: /getting-started/setup
     - theme: alt
-      text: Visión general
+      text: Overview
       link: /architecture/overview
     - theme: alt
-      text: Cómo contribuir
-      link: /contribuir
+      text: How to contribute
+      link: /contributing
 
 features:
-  - title: Arquitectura
-    details: Capas, reglas de dependencias, paquetes y sistema de ficheros virtual, render, rulesets y partidas.
+  - title: Architecture
+    details: Layers, dependency rules, packs and the virtual file system, rendering, rulesets and saves.
     link: /architecture/overview
-  - title: Módulos
-    details: Qué hace cada módulo del motor, del juego y de las aplicaciones, y cómo se usa su API.
-    link: /modulos/
-  - title: Formatos del original
-    details: Cómo lee dwx el disco del usuario y en qué formatos abiertos deja cada cosa.
+  - title: Modules
+    details: What each module of the engine, the game and the apps does, and how to use its API.
+    link: /modules/
+  - title: Original formats
+    details: How dwx reads the user's disc and which open formats it leaves each thing in.
     link: /formats/
-  - title: Guías
-    details: Tareas concretas, de las rutas de autotest y la comprobación del entrenamiento a la traducción.
-    link: /guides/prueba-vertical
-  - title: Versiones y beta
-    details: Una versión de prueba por cada fusión que cambia código, la estable promovida a mano y el lanzador con sus dos canales.
-    link: /modulos/apps/launcher#publicar-una-versión
+  - title: Guides
+    details: Concrete tasks, from the self-test routes and the training check to translation.
+    link: /guides/vertical-slice
+  - title: Releases and beta
+    details: A test version for every merge that changes code, the stable one promoted by hand, and the launcher with its two channels.
+    link: /modules/apps/launcher#publishing-a-release
 ---
 
-Esta documentación es la fuente de verdad técnica del proyecto. Se trata como código: se revisa en los PR y se
-actualiza en el mismo PR que cambia el código (ver [Cómo contribuir](contribuir.md)).
+This documentation is the technical source of truth for the project. It is treated like code: it is reviewed in PRs and
+updated in the same PR that changes the code (see [How to contribute](contributing.md)).
 
-El diseño del juego (GDD, historia, personajes) vive en el repositorio de diseño del equipo. Aquí solo va lo técnico.
+The game design (GDD, story, characters) lives in the team's design repository. Only technical material goes here.
 
-Para empezar: [Ejecutar el juego](getting-started/jugar.md) · [Extensiones y archivos](formats/extensiones.md).
+To get started: [Run the game](getting-started/play.md) · [Extensions and files](formats/extensions.md).
 
-## Por dónde empezar según tu rol
+## Where to start by role
 
-| Rol | Lee primero |
+| Role | Read first |
 |---|---|
-| Todo el equipo | [Visión general](architecture/overview.md) · [Política legal de assets](legal/assets.md) · [Reglas o tablas del original](legal/auditoria-rulesets.md) · [Plan](roadmap.md) · [Especificaciones por fase](plan/index.md) · [Glosario](glossary.md) |
-| Programación | [Preparar el entorno](getting-started/setup.md) · [Estructura del repositorio](architecture/repository-layout.md) · [Reglas de dependencias](architecture/dependency-rules.md) · [Módulos](modulos/index.md) · [Formatos del original y `dwx`](architecture/formats.md) · [Paquetes y sistema de ficheros virtual](architecture/vfs.md) · [Tubería del remaster](architecture/remaster-pipeline.md) · [Espacio del mundo](architecture/world-space.md) · [Compatibilidad con las herramientas del equipo](architecture/herramientas-externas.md) · [JSON Schema](architecture/json-schema.md) · [Convenciones de código](conventions/code.md) · [Render](architecture/render.md) · [Modelos y animación](architecture/models.md) · [Rulesets](architecture/rulesets.md) · [Partidas guardadas](architecture/save.md) · [Controles](architecture/controles.md) |
-| Arte y audio | [Tubería de assets](architecture/assets-pipeline.md) · [Audio en el motor](architecture/audio.md) · [Tubería del remaster](architecture/remaster-pipeline.md) · [Herramientas del equipo](architecture/herramientas-externas.md) · [Paquetes](architecture/vfs.md) · [Política legal de assets](legal/assets.md) |
-| Diseño y guion | [Ciclo de diseño](conventions/design-cycle.md) · [Fichas de referencia](reference/index.md) ([cuidado](reference/care.md), [evolución](reference/evolution.md), [batalla](reference/battle.md)) · [Visión general](architecture/overview.md) · [Tubería de assets](architecture/assets-pipeline.md) |
-| Probar la beta y publicar | [Lanzador](modulos/apps/launcher.md) ([canales](modulos/apps/launcher.md#canal-de-actualizaciones), [publicar una versión](modulos/apps/launcher.md#publicar-una-versión)) · [Pasarela de la beta](modulos/services/beta-gateway.md) · [Beta para Linux](guides/beta-linux.md) · [Beta para Windows y macOS](guides/beta-windows-macos.md) · [Imágenes personalizadas](guides/imagenes-personalizadas.md) |
-| Quien quiera proponer un cambio grande | [Cómo funcionan los ADR](adr/index.md) |
+| The whole team | [Overview](architecture/overview.md) · [Legal policy for assets](legal/assets.md) · [Original rules or tables](legal/ruleset-audit.md) · [Plan](roadmap.md) · [Glossary](glossary.md) |
+| Programming | [Set up the environment](getting-started/setup.md) · [Repository structure](architecture/repository-layout.md) · [Dependency rules](architecture/dependency-rules.md) · [Modules](modules/index.md) · [Original formats and `dwx`](architecture/formats.md) · [Packs and the virtual file system](architecture/vfs.md) · [Remaster pipeline](architecture/remaster-pipeline.md) · [World space](architecture/world-space.md) · [Compatibility with the team's tools](architecture/external-tools.md) · [JSON Schema](architecture/json-schema.md) · [Code conventions](conventions/code.md) · [Render](architecture/render.md) · [Models and animation](architecture/models.md) · [Rulesets](architecture/rulesets.md) · [Saved games](architecture/save.md) · [Controls](architecture/controls.md) |
+| Art and audio | [Asset pipeline](architecture/assets-pipeline.md) · [Audio in the engine](architecture/audio.md) · [Remaster pipeline](architecture/remaster-pipeline.md) · [Team tools](architecture/external-tools.md) · [Packs](architecture/vfs.md) · [Legal policy for assets](legal/assets.md) |
+| Design and script | [Design cycle](conventions/design-cycle.md) · [Reference sheets](reference/index.md) ([care](reference/care.md), [evolution](reference/evolution.md), [battle](reference/battle.md)) · [Overview](architecture/overview.md) · [Asset pipeline](architecture/assets-pipeline.md) |
+| Testing the beta and publishing | [Launcher](modules/apps/launcher.md) ([channels](modules/apps/launcher.md#update-channel), [publishing a version](modules/apps/launcher.md#publishing-a-release)) · [Beta gateway](modules/services/beta-gateway.md) · [Beta for Linux](guides/beta-linux.md) · [Beta for Windows and macOS](guides/beta-windows-macos.md) · [Custom images](guides/custom-images.md) |
+| Anyone who wants to propose a big change | [How ADRs work](adr/index.md) |
 
-## Cómo está organizada
+## How it is organized
 
-Seguimos el marco [Diátaxis](https://diataxis.fr/), que separa los documentos según lo que necesita quien los lee:
+We follow the [Diátaxis](https://diataxis.fr/) framework, which separates documents by what their reader needs:
 
-| Tipo | Para qué | Carpeta |
+| Type | Purpose | Folder |
 |---|---|---|
-| Tutorial | Aprender desde cero | [`getting-started/`](getting-started/setup.md) |
-| Guía práctica | Hacer una tarea concreta | `guides/`: el [visor de assets](guides/visor-de-assets.md), la [prueba vertical](guides/prueba-vertical.md), [pasar el gate](guides/gate.md), las [simulaciones](guides/simulaciones.md), la [traza de estado](guides/traza-de-estado.md) para comparar con el original, la [comprobación del entrenamiento](guides/comprobar-entrenamiento.md), el [control remoto](guides/control-remoto.md) del juego en marcha, la [beta para Linux](guides/beta-linux.md), la [beta para Windows y macOS](guides/beta-windows-macos.md), los [complementos del lanzador](guides/launcher-addons.md), las [imágenes personalizadas](guides/imagenes-personalizadas.md), [cómo funcionan las evoluciones](guides/evoluciones.md) y [traducir los textos del original](guides/traducir.md), con su [glosario](guides/glosario-es.md) |
-| Referencia | Consultar un detalle exacto | [`reference/`](reference/index.md) (el original y la [cobertura del port](reference/port-coverage.md)), [`packages/formats/`](formats/index.md) (los formatos del disco), [`modulos/`](modulos/index.md) (la API de cada módulo), `modding/` |
-| Explicación | Entender por qué es así | [`architecture/`](architecture/overview.md), [`adr/`](adr/index.md) |
+| Tutorial | Learn from scratch | [`getting-started/`](getting-started/setup.md) |
+| How-to guide | Do a concrete task | `guides/`: the [asset viewer](guides/asset-viewer.md), the [vertical slice](guides/vertical-slice.md), [passing the gate](guides/gate.md), the [simulations](guides/simulations.md), the [state trace](guides/state-trace.md) for comparing with the original, the [training check](guides/check-training.md), the [remote control](guides/remote-control.md) of the running game, the [beta for Linux](guides/beta-linux.md), the [beta for Windows and macOS](guides/beta-windows-macos.md), the [launcher add-ons](guides/launcher-addons.md), the [custom images](guides/custom-images.md), [how evolutions work](guides/evolutions.md) and [translating the original's texts](guides/translate.md), with its [glossary](guides/spanish-glossary.md) |
+| Reference | Look up an exact detail | [`reference/`](reference/index.md) (the original and the [port coverage](reference/port-coverage.md)), [`packages/formats/`](formats/index.md) (the disc formats), [`modules/`](modules/index.md) (each module's API), `modding/` |
+| Explanation | Understand why it is the way it is | [`architecture/`](architecture/overview.md), [`adr/`](adr/index.md) |
 
-Además: `conventions/` (normas del equipo: [código](conventions/code.md), [commits](conventions/commits.md),
-[ciclo de diseño](conventions/design-cycle.md)), `legal/` (qué se puede publicar: [assets](legal/assets.md)),
-[`roadmap.md`](roadmap.md) y [`glossary.md`](glossary.md).
+Also: `conventions/` (team rules: [code](conventions/code.md), [commits](conventions/commits.md),
+[design cycle](conventions/design-cycle.md)), `legal/` (what can be published: [assets](legal/assets.md)),
+[`roadmap.md`](roadmap.md) and [`glossary.md`](glossary.md).
 
-## Normas
+## Rules
 
-- Toda la documentación vive en `docs/` y forma este sitio (VitePress). No hay README por módulo: cada módulo tiene su
-  página en [`modulos/`](modulos/index.md). Solo las herramientas que no son parte del motor (`apps/studio`,
-  `apps/beta-gateway`, `apps/versus-signal`, `apps/mapper`) guardan junto al código un README con los pasos para usarlas o desplegarlas.
-- Markdown, una idea por sección y frases cortas, en español.
-- Los diagramas van en [Mermaid](https://mermaid.js.org/), como texto: el sitio y GitHub los dibujan y se revisan en
-  los PR.
-- Un ADR aceptado no se reescribe: se sustituye con otro nuevo.
-- `scripts/dev.sh docs` construye el sitio y falla con un enlace roto; `scripts/dev.sh check-full` lo pasa, y un pull
-  request que cambia `docs/` lo construye también (sin publicarlo). `scripts/dev.sh docs-dev` lo sirve en local mientras
-  escribes.
+- All documentation lives in `docs/` and makes up this site (VitePress). Each module has its page in
+  [`modules/`](modules/index.md); the README next to its code is short and links to it. The tools that are not part of
+  the engine (`apps/studio`, `apps/beta-gateway`, `apps/versus-signal`, `apps/mapper`) keep a longer README with the
+  steps to use or deploy them.
+- Markdown, one idea per section and short sentences, in English. `docs/es/` has the Spanish translation, with the same
+  file names and headings.
+- Diagrams are written in [Mermaid](https://mermaid.js.org/), as text: the site and GitHub render them and they are reviewed
+  in PRs.
+- An accepted ADR is not rewritten: it is replaced with a new one.
+- `scripts/dev.sh docs` builds the site and fails on a broken link; `scripts/dev.sh check-full` runs it, and a pull
+  request that changes `docs/` builds it too (without publishing it). `scripts/dev.sh docs-dev` serves it locally while
+  you write.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The training check's content level (docs/guides/comprobar-entrenamiento.md): every route in
+# The training check's content level (docs/guides/check-training.md): every route in
 # tests/autotest/training plays one whole session of a gym course on the real content, headless,
 # and checks the partner's farthest point from its spot, the ground it covered, the session's frames
 # and the stat gains against the original's bounds (the route's expect_range steps). Prints one

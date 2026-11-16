@@ -114,7 +114,7 @@ local descriptors = {
     original = false,
   },
   -- Rare items: the field's random item spots may lay a rare evolution item (off by default; the
-  -- ruleset's rare_items section says which, docs/modulos/game/evolution.md).
+  -- ruleset's rare_items section says which, docs/modules/game/evolution.md).
   {
     name = "rare_items",
     label = "pause_menu.rare_items",

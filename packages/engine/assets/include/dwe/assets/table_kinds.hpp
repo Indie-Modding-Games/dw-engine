@@ -10,7 +10,7 @@
 
 // Which assets of the packs are content tables that compose entry by entry, and of which kind, so
 // that every reader of the packs (the game's loaders, checkContent and dwx validate) composes the
-// same ids (docs/architecture/vfs.md#tablas-por-entradas).
+// same ids (docs/architecture/vfs.md#tables-by-entries).
 namespace dwe::assets {
 
 class VirtualFileSystem;

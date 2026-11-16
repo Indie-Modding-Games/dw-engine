@@ -1,236 +1,233 @@
-# Ficha de referencia: evolución
+# Reference sheet: evolution
 
-Cómo cambiaba de forma el partner en el juego original, según el decomp. Es el paso 1 del
-[ciclo de diseño](../conventions/design-cycle.md): describe el original, no lo que hará el mod.
+How the partner changed form in the original game, according to the decomp. It is step 1 of the
+[design cycle](../conventions/design-cycle.md): it describes the original, not what the mod will do.
 
-Para jugadores, la misma información en lenguaje llano y con consejos de crianza está en la guía
-[cómo funcionan las evoluciones](../guides/evoluciones.md).
+For players, the same information in plain language and with raising tips is in the guide
+[how evolutions work](../guides/evolutions.md).
 
-Marcas: **(comprobado)** quiere decir que se leyó en el código del decomp; **(suposición)** quiere decir que es una
-interpretación nuestra que falta confirmar. Los identificadores de Digimon son índices de la tabla de parámetros
-(`DIGIMON_DATA`); el nombre entre paréntesis sale del orden de esa tabla en `src/main/main.c`.
+Marks: **(verified)** means it was read in the decomp's code; **(assumption)** means it is our own interpretation
+that still needs to be confirmed. Digimon identifiers are indexes into the parameter table (`DIGIMON_DATA`); the name
+in parentheses comes from the order of that table in `src/main/main.c`.
 
-## Qué hace
+## What it does
 
-El partner nace como bebé y pasa por cinco niveles. Cada cierto número de horas de juego el juego mira qué formas
-siguientes tiene disponibles, puntúa cada una según cómo se ha criado al partner (stats, peso, errores de cuidado y un
-requisito extra) y, si alguna aprueba, evoluciona a la mejor. Además hay evoluciones especiales que dependen de
-eventos (dormir en un sitio, regañar en un estado concreto, la suciedad acumulada) y objetos que fuerzan una
-evolución. Al evolucionar, los stats se mezclan con los valores de referencia de la forma nueva.
+The partner is born as a Fresh Digimon and goes through five levels. Every so many game hours the game looks at which
+next forms it has available, scores each one according to how the partner has been raised (stats, weight, care
+mistakes and an extra requirement) and, if any passes, evolves into the best one. There are also special evolutions
+that depend on events (sleeping in a certain place, scolding in a specific state, accumulated dirt) and items that
+force an evolution. On evolving, the stats are blended with the new form's reference values.
 
-## Reglas
+## Rules
 
-### Niveles y contador de evolución
+### Levels and evolution counter
 
-- Hay cinco niveles: 1 bebé, 2 entrenamiento, 3 novato, 4 campeón, 5 definitivo. El número sale del campo `level`
-  de la tabla de parámetros **(comprobado)**; los nombres de los niveles son los habituales en la comunidad
-  **(suposición)**.
-- El contador de evolución (`evoTimer`) cuenta horas de juego desde el último cambio de nivel. Sube una unidad por
-  cada hora del reloj (`clock.c`), y también al dormir (suma las horas de sueño), al saltar horas y en cada
-  entrenamiento del gimnasio (`trn_reward.c`, `trn2_hud.c`) **(comprobado)**.
-- El contador vuelve a 0 solo si la evolución cambia de nivel; una evolución dentro del mismo nivel lo conserva
-  (`EVL_applyEvolution`) **(comprobado)**.
+- There are five levels: 1 Fresh, 2 In-Training, 3 Rookie, 4 Champion, 5 Ultimate. The number comes from the `level`
+  field of the parameter table **(verified)**; the level names are the usual ones in the community **(assumption)**.
+- The evolution counter (`evoTimer`) counts game hours since the last level change. It goes up one unit for each clock
+  hour (`clock.c`), and also when sleeping (it adds the hours of sleep), when skipping hours and in each gym training
+  (`trn_reward.c`, `trn2_hud.c`) **(verified)**.
+- The counter goes back to 0 only if the evolution changes level; an evolution within the same level keeps it
+  (`EVL_applyEvolution`) **(verified)**.
 
-### Cuándo se comprueba
+### When it is checked
 
-`tickConditions` (en `partner_impl.c`) mira la evolución mientras el juego corre, el partner está en estado normal,
-el tamer está libre y no hay una transición de mapa en marcha **(comprobado)**. Que la comprobación sea continua y no
-una vez por hora es lo que se lee en el código; la habilita `DAYTIME_TRANSITION_FRAME` con 25 o más **(comprobado)**,
-y que eso signifique "sin fundido de paleta del cambio de hora" es **(suposición)**. La barra de virus se mira
-después y no espera a que el tamer esté libre **(comprobado)**.
+`tickConditions` (in `partner_impl.c`) looks at evolution while the game runs, the partner is in a normal state, the
+tamer is free and no map transition is in progress **(verified)**. That the check is continuous and not once per hour
+is what is read in the code; it is enabled by `DAYTIME_TRANSITION_FRAME` with 25 or more **(verified)**, and that this
+means "without the palette fade of the time-of-day change" is an **(assumption)**. The virus bar is looked at
+afterwards and does not wait for the tamer to be free **(verified)**.
 
-| Nivel actual | Umbral del contador | Función que elige el destino |
+| Current level | Counter threshold | Function that chooses the destination |
 |---|---|---|
-| 1 bebé | 6 horas | `getFreshEvolutionTarget` |
-| 2 entrenamiento | 24 horas | `getInTrainingEvolutionTarget` |
-| 3 novato | 72 horas | `getRookieEvolutionTarget` |
-| 4 campeón | 144 horas | `getChampionEvolutionTarget` |
-| 5 definitivo | — (no evoluciona de forma natural) | — |
+| 1 Fresh | 6 hours | `getFreshEvolutionTarget` |
+| 2 In-Training | 24 hours | `getInTrainingEvolutionTarget` |
+| 3 Rookie | 72 hours | `getRookieEvolutionTarget` |
+| 4 Champion | 144 hours | `getChampionEvolutionTarget` |
+| 5 Ultimate | — (does not evolve naturally) | — |
 
-Todo **(comprobado)**. Si la función no encuentra destino, no pasa nada y se vuelve a intentar en la siguiente
-comprobación.
+All **(verified)**. If the function finds no destination, nothing happens and it tries again at the next check.
 
-### Bebé → entrenamiento
+### Fresh → In-Training
 
-El destino es fijo: cada uno de los cuatro bebés tiene una única forma siguiente, escrita en el propio código, sin
-mirar la crianza (`getFreshEvolutionTarget`) **(comprobado)**. La función pone además el contador a 0 cada vez
-que se la llama, aunque la forma no sea uno de los cuatro bebés **(comprobado)**; ver rarezas.
+The destination is fixed: each of the four Fresh Digimon has a single next form, written in the code itself, without
+looking at raising (`getFreshEvolutionTarget`) **(verified)**. The function also sets the counter to 0 every time it
+is called, even if the form is not one of the four Fresh Digimon **(verified)**; see oddities.
 
-### Puntuación de un candidato
+### Scoring a candidate
 
-Cada forma tiene hasta seis destinos posibles (tabla `EVOLUTION_PATHS`). Para cada destino,
-`calculateRequirementScore` suma puntos **(comprobado)**:
+Each form has up to six possible destinations (`EVOLUTION_PATHS` table). For each destination,
+`calculateRequirementScore` adds points **(verified)**:
 
-1. **Errores de cuidado:** 1 punto si los errores son *al menos* el valor del requisito. Si el destino lleva la marca
-   "máximo" (bit `0x10` de `flags`), el punto es para *como mucho* ese valor.
-2. **Peso:** 1 punto si el peso está dentro de ±5 del peso pedido.
+1. **Care mistakes:** 1 point if the mistakes are *at least* the requirement's value. If the destination carries the
+   "maximum" mark (bit `0x10` of `flags`), the point is for *at most* that value.
+2. **Weight:** 1 point if the weight is within ±5 of the requested weight.
 3. **Stats:**
-   - Si el destino es de nivel novato, 1 punto si el stat más alto del partner es uno de los que el destino marca
-     como favorecidos. Para comparar, HP y MP se dividen entre 10. En caso de empate gana el último stat en el orden
-     HP, MP, ataque, defensa, velocidad, inteligencia.
-   - En los demás niveles, 1 punto si *todos* los stats llegan al mínimo pedido (HP y MP, también divididos entre 10).
-4. **Bonus:** 1 punto si se cumple *cualquiera* de estos: venir de una forma concreta, disciplina mínima, felicidad
-   mínima, batallas (mínimo, o máximo si `flags` tiene el bit `0x01`), o un número mínimo de técnicas aprendidas.
-   Las técnicas aprendidas se cuentan como bits activos en una máscara de 64 (`getNumMasteredMoves`).
+   - If the destination is Rookie level, 1 point if the partner's highest stat is one of those the destination marks
+     as favored. For the comparison, HP and MP are divided by 10. On a tie the last stat in the order HP, MP,
+     offense, defense, speed, Brains wins.
+   - At the other levels, 1 point if *all* the stats reach the requested minimum (HP and MP, also divided by 10).
+4. **Bonus:** 1 point if *any* of these is met: coming from a specific form, minimum discipline, minimum happiness,
+   battles (minimum, or maximum if `flags` has bit `0x01`), or a minimum number of learned techniques. Learned
+   techniques are counted as active bits in a 64-bit mask (`getNumMasteredMoves`).
 
-Un destino aprueba con **3 puntos o más** de los 4 posibles **(comprobado)**. Un requisito sin valor (−1) se trata
-como cumplido en los stats y se ignora en el bonus **(comprobado)**.
+A destination passes with **3 points or more** out of the 4 possible **(verified)**. A requirement with no value (−1)
+is treated as met in the stats and ignored in the bonus **(verified)**.
 
-**Preferencia por lo nuevo:** cuando ya hay un mejor candidato provisional, si el destino evaluado ya se crió alguna
-vez y el provisional no, el destino queda a 0 puntos; en el caso contrario recibe 1 punto extra. El registro de
-"ya criado" se guarda al evolucionar o renacer (`setDigimonRaised`) **(comprobado)**.
+**Preference for the new:** when there is already a provisional best candidate, if the evaluated destination has
+already been raised at some point and the provisional one has not, the destination is set to 0 points; in the opposite
+case it receives 1 extra point. The "already raised" record is saved on evolving or being reborn
+(`setDigimonRaised`) **(verified)**.
 
-### Cómo se elige entre varios candidatos
+### How one is chosen among several candidates
 
-- **Entrenamiento → novato:** gana el candidato con más puntos; en empate, el primero de la lista
-  (`getInTrainingEvolutionTarget`) **(comprobado)**.
-- **Novato → campeón y campeón → definitivo:** entre los que aprueban, gana el que tiene la media más alta de los
-  stats que su requisito pide (HP y MP divididos entre 10) (`getRookieEvolutionTarget`,
-  `getChampionEvolutionTarget`) **(comprobado)**. Ver la rareza del acumulador más abajo.
-- **Forma de descarte:** si un novato no tiene ningún candidato y su contador llega a **96 horas**, evoluciona a
-  la especie 11 (`species_ar`) **(comprobado)**. Los campeones sin candidato se quedan como están **(comprobado)**.
+- **In-Training → Rookie:** the candidate with the most points wins; on a tie, the first in the list
+  (`getInTrainingEvolutionTarget`) **(verified)**.
+- **Rookie → Champion and Champion → Ultimate:** among those that pass, the one with the highest average of the stats
+  its requirement asks for wins (HP and MP divided by 10) (`getRookieEvolutionTarget`,
+  `getChampionEvolutionTarget`) **(verified)**. See the accumulator oddity below.
+- **Fallback form:** if a Rookie has no candidate and its counter reaches **96 hours**, it evolves into species 11
+  (`species_ar`) **(verified)**. Champions without a candidate stay as they are **(verified)**.
 
-### Evoluciones especiales
+### Special evolutions
 
-Todas en `handleSpecialEvolutions`, salvo la de la suciedad. Solo se aplican si el tamer está libre
-**(comprobado)**.
+All in `handleSpecialEvolutions`, except the dirt one. They only apply if the tamer is free **(verified)**.
 
-- **Al despertar** (modo 2, desde `partnerTickSleep`):
-  - Con un 30 % de probabilidad se prueban tres casos fijos de campeón a otra forma, que piden disciplina 100 y
-    además, según el caso, felicidad 100 y cansancio 0, 50 batallas o más, o defensa de 500 o más **(comprobado)**.
-  - Con un 50 % de probabilidad, una forma de entrenamiento que despierta en la pantalla 1 evoluciona al Digimon 32
-    (`species_bg`) **(comprobado)**. Que la pantalla 1 sea la de la cama de ese personaje es **(suposición)**.
-- **Tras elogiar o regañar** (modo 3, desde `partnerTickPraiseScold`), y también cuando un campeón llega justo a las
-  360 horas (`tickConditions`, sin aviso de regaño, así que el caso de `species_be` no aplica); en ese caso el resultado
-  sustituye al de la elección normal de esa misma comprobación, ver rarezas **(comprobado)**:
-  - Dos campeones concretos con el contador exactamente en 200 horas: 30 % de evolucionar a otra forma concreta
-    **(comprobado)**.
-  - Cualquier campeón con 240 horas o más: 50 % de evolucionar a la especie 28 (`species_bm`) **(comprobado)**.
-  - Si se regaña a un novato que tenía disciplina 0 y felicidad −100, se activa un aviso y evoluciona al Digimon 53
-    (`species_be`) (`handlePraiseScold`) **(comprobado)**.
-- **Suciedad:** cada caca hecha en el suelo (`createPoopPile`) suma 1 a la barra de virus, salvo si ya es
-  la especie 39 (`species_p`). Con la barra en **16**, el partner evoluciona a `species_p`; antes se guardan sus stats y su forma
-  anterior, y la barra vuelve a 0 (`tickConditions`) **(comprobado)**. Un evento de script puede devolverlo a la
-  forma guardada (`callDigimonRoutine`, rutina 2) **(comprobado)**; qué evento del juego lo hace es
-  **(suposición)**. La rutina 10 hace evolucionar al partner a la forma que el script deja en `PSTAT_254`
-  **(comprobado)**.
+- **On waking** (mode 2, from `partnerTickSleep`):
+  - With a 30% chance, three fixed cases of Champion to another form are tested, which require discipline 100 and,
+    depending on the case, also happiness 100 and tiredness 0, 50 or more battles, or defense of 500 or more
+    **(verified)**.
+  - With a 50% chance, an In-Training form that wakes up on screen 1 evolves into Digimon 32 (`species_bg`)
+    **(verified)**. That screen 1 is that character's bed is an **(assumption)**.
+- **After praising or scolding** (mode 3, from `partnerTickPraiseScold`), and also when a Champion reaches exactly 360
+  hours (`tickConditions`, without a scolding notice, so the `species_be` case does not apply); in that case the
+  result replaces that of the normal choice in that same check, see oddities **(verified)**:
+  - Two specific Champions with the counter at exactly 200 hours: 30% chance of evolving into another specific form
+    **(verified)**.
+  - Any Champion with 240 hours or more: 50% chance of evolving into species 28 (`species_bm`) **(verified)**.
+  - If a Rookie that had discipline 0 and happiness −100 is scolded, a notice is activated and it evolves into
+    Digimon 53 (`species_be`) (`handlePraiseScold`) **(verified)**.
+- **Dirt:** each poop made on the floor (`createPoopPile`) adds 1 to the virus bar, unless it is already species 39
+  (`species_p`). With the bar at **16**, the partner evolves into `species_p`; its stats and its previous form are
+  saved first, and the bar goes back to 0 (`tickConditions`) **(verified)**. A script event can return it to the saved
+  form (`callDigimonRoutine`, routine 2) **(verified)**; which game event does it is an **(assumption)**. Routine 10
+  makes the partner evolve into the form that the script leaves in `PSTAT_254` **(verified)**.
 
-### Objetos de evolución
+### Evolution items
 
-`handleEvoItems` (en `item.c`) **(comprobado)**:
+`handleEvoItems` (in `item.c`) **(verified)**:
 
-- Los objetos de un rango fijo usan la tabla `EVOLUTION_ITEM_TARGET` (objeto → destino). Solo funcionan si el
-  destino es exactamente un nivel por encima del partner.
-- Tres objetos especiales llevan a tres formas fijas sin comprobar el nivel.
-- Usar un objeto de evolución marca `HAS_USED_EVOITEM`. Con esa marca, la evolución **no aplica ganancias de stats ni
-  el bonus de vida**. Ver rarezas.
-- Antes, el partner puede rechazar el objeto (`partnerWillRefuseItem` en `partner_impl.c`): acepta un objeto de
-  evolución cuyo destino está 1 o 3 niveles por encima o 2 por debajo, una regla distinta de la de `handleEvoItems`
-  **(comprobado)**; qué casos de juego cubre es **(suposición)**. Esa regla es del sistema de objetos, no de la
-  evolución.
+- Items in a fixed range use the `EVOLUTION_ITEM_TARGET` table (item → destination). They only work if the
+  destination is exactly one level above the partner.
+- Three special items lead to three fixed forms without checking the level.
+- Using an evolution item sets `HAS_USED_EVOITEM`. With that mark, the evolution **does not apply stat gains or the
+  life bonus**. See oddities.
+- Before that, the partner can refuse the item (`partnerWillRefuseItem` in `partner_impl.c`): it accepts an evolution
+  item whose destination is 1 or 3 levels above or 2 below, a different rule from that of `handleEvoItems`
+  **(verified)**; which in-game cases it covers is an **(assumption)**. That rule belongs to the item system, not to
+  evolution.
 
-### Ganancias de stats al evolucionar
+### Stat gains when evolving
 
-`EVL_applyEvolution` usa la fila del destino en `EVOLUTION_STATS_GAINS` **(comprobado)**:
+`EVL_applyEvolution` uses the destination's row in `EVOLUTION_STATS_GAINS` **(verified)**:
 
-- **Caso normal:** para cada stat, si el partner ya tiene al menos el valor de referencia, suma una décima parte de
-  ese valor; si no, el stat pasa a ser la media entre el actual y el de referencia.
-- **Casos de escala:** si el destino es bebé o de entrenamiento, si es uno de cuatro Digimon concretos (6, 11, 39 y
-  53) o si el partner actual es `species_p`, los stats se multiplican por un factor en décimas que se lee del campo de
-  inteligencia de la fila (`EVL_scaleBaseStats`). Si el partner era `species_p`, en cambio, cada stat se reconstruye a
-  partir de los stats guardados al convertirse: guardado + (actual − guardado / 2) / 2 **(comprobado)**. Por qué
-  el Digimon 6 está en esa lista no está claro **(suposición: un caso de diseño o un error)**.
-- **Topes:** HP y MP a 9999; ataque, defensa, velocidad e inteligencia a 999 (`EVL_clampBaseStats`)
-  **(comprobado)**.
-  - En `dwe`, los topes son los del partner (`care.limits` de `care.yaml`): la evolución da el cambio de cada stat
-    sin topar y el partner lo suma con `addStatGains`, que además deja **cada ganancia en 999 como mucho**
-    (desviación aprobada, 2026-10-20: en el original solo la primera ganancia de cada sesión de entrenamiento tiene
-    ese tope, y la evolución solo para en los topes de arriba).
-  - Al salir de `species_p`, los stats reconstruidos desde la copia se restauran sin pasar por `addStatGains`, así que
-    no tienen el tope de 999 por ganancia, pero sí el tope de cada stat (9999 HP y MP, 999 el resto), como hace el
-    original con `EVL_clampBaseStats` (decidido por el responsable de diseño, 2026-10-20). Con una copia y unos stats
-    altos la reconstrucción da más del tope (9999 y 9999 dan 12499) y se queda en 9999.
-  - La copia de `species_p` es del partner: sus stats en `virusBackup` del estado del partner (`sukaBackup*`) y la forma
-    en la variable de script `PSTAT_SUKAMON_BACKUP_DIGIMON` (`PSTAT_5`), como en el original.
-- **Además, siempre:** el peso pasa al peso por defecto de la forma nueva (`RAISE_DATA`), y los errores de cuidado y
-  las batallas vuelven a 0 **(comprobado)**.
-- **Definitivo:** al llegar a nivel 5 sin objeto, la vida restante sube **96 horas** **(comprobado)**.
-- **Nivel del tamer:** al llegar a campeón hay un 20 % de subir un nivel de tamer, y al llegar a definitivo un 100 %,
-  pero solo si la marca `IS_SCRIPT_PAUSED` está activa **(comprobado)**. Qué representa esa marca en este momento es
-  **(suposición)**.
+- **Normal case:** for each stat, if the partner already has at least the reference value, it adds a tenth of that
+  value; if not, the stat becomes the average between the current one and the reference.
+- **Scaling cases:** if the destination is Fresh or In-Training, if it is one of four specific Digimon (6, 11, 39 and
+  53) or if the current partner is `species_p`, the stats are multiplied by a factor in tenths that is read from the
+  row's Brains field (`EVL_scaleBaseStats`). If the partner was `species_p`, instead, each stat is rebuilt from the
+  stats saved when it converted: saved + (current − saved / 2) / 2 **(verified)**. Why Digimon 6 is in that list is
+  not clear **(assumption: a design case or a bug)**.
+- **Caps:** HP and MP to 9999; offense, defense, speed and Brains to 999 (`EVL_clampBaseStats`) **(verified)**.
+  - In `dwe`, the caps are the partner's (`care.limits` of `care.yaml`): evolution gives each stat's change without
+    capping and the partner adds it with `addStatGains`, which also leaves **each gain at 999 at most** (approved
+    deviation, 2026-10-20: in the original only the first gain of each training session has that cap, and evolution
+    only stops at the caps above).
+  - On leaving `species_p`, the stats rebuilt from the copy are restored without going through `addStatGains`, so they
+    do not have the 999 per-gain cap, but they do have each stat's cap (9999 HP and MP, 999 the rest), as the original
+    does with `EVL_clampBaseStats` (decided by the design owner, 2026-10-20). With a copy and high stats the
+    reconstruction gives more than the cap (9999 and 9999 give 12499) and it stays at 9999.
+  - The `species_p` copy belongs to the partner: its stats in `virusBackup` of the partner state (`sukaBackup*`) and
+    the form in the script variable `PSTAT_SUKAMON_BACKUP_DIGIMON` (`PSTAT_5`), as in the original.
+- **Also, always:** weight goes to the new form's default weight (`RAISE_DATA`), and care mistakes and battles go
+  back to 0 **(verified)**.
+- **Ultimate:** on reaching level 5 without an item, the remaining life goes up **96 hours** **(verified)**.
+- **Tamer level:** on reaching Champion there is a 20% chance of going up a tamer level, and on reaching Ultimate
+  100%, but only if the `IS_SCRIPT_PAUSED` mark is active **(verified)**. What that mark represents at this moment is
+  an **(assumption)**.
 
-### Técnicas al evolucionar
+### Techniques when evolving
 
-`EVL_applyEvolution` **(comprobado)**:
+`EVL_applyEvolution` **(verified)**:
 
-- La forma nueva aprende la técnica más débil (menor potencia distinta de 0) de su lista que cae en el bloque de su
-  primera especialidad. Cada especialidad ocupa un bloque de 9 técnicas en la tabla de técnicas. Las formas de
-  entrenamiento no tienen ninguna técnica en su bloque (su única técnica está fuera de todos): el código pasa la marca
-  de fin de lista a `learnMove` y no aprenden nada **(comprobado)**.
-- Las ranuras de técnicas equipadas se reinician: la primera queda con esa técnica (o con el ataque básico si la
-  forma es bebé o de entrenamiento) y la cuarta con la última técnica de la lista que esté en un rango alto de
-  índices. Que ese rango sea el de las técnicas exclusivas o de remate es **(suposición)**.
+- The new form learns the weakest technique (lowest nonzero power) in its list that falls in the block of its first
+  specialty. Each specialty takes up a block of 9 techniques in the technique table. In-Training forms have no
+  technique in their block (their only technique is outside all of them): the code passes the end-of-list mark to
+  `learnMove` and they learn nothing **(verified)**.
+- The equipped technique slots are reset: the first is left with that technique (or with the basic attack if the form
+  is Fresh or In-Training) and the fourth with the last technique in the list that is in a high range of indexes.
+  That this range is that of the exclusive or finisher techniques is an **(assumption)**.
 
-### Renacer
+### Rebirth
 
-Al morir, `reincarnatePartner` guarda los stats del partner muerto (para la herencia), elige el bebé según el huevo
-escogido (`REINCARNATE_BABY_TYPE`), pone las vidas a 3 y marca el bebé como criado **(comprobado)**. El huevo sale
-al azar entre los cuatro (`rand() % 4` en `dooa.c`), y el bebé queda con el ataque básico en la primera ranura y las
-demás vacías **(comprobado)**. La herencia de
-stats y el resto del ciclo de vida están en la [ficha de cuidado](care.md).
+On dying, `reincarnatePartner` saves the dead partner's stats (for inheritance), chooses the Fresh Digimon according
+to the egg chosen (`REINCARNATE_BABY_TYPE`), sets the lives to 3 and marks the Fresh Digimon as raised
+**(verified)**. The egg comes out at random among the four (`rand() % 4` in `dooa.c`), and the Fresh Digimon is left
+with the basic attack in the first slot and the others empty **(verified)**. The stat inheritance and the rest of
+the life cycle are in the [care sheet](care.md).
 
-## Datos
+## Data
 
-Tablas del ejecutable principal. `dwx` las extraerá a YAML desde el disco del usuario; aquí solo se describe su forma.
+Tables in the main executable. `dwx` extracts them to YAML from the user's disc; here only their shape is
+described.
 
-| Tabla | Entrada | Entradas | Campos |
+| Table | Entry | Entries | Fields |
 |---|---|---|---|
-| `EVOLUTION_REQS` | 28 bytes | 63 | Forma de origen para el bonus; mínimos de HP, MP, ataque, defensa, velocidad e inteligencia (en novato, 1 marca un stat favorecido); errores de cuidado; peso; disciplina; felicidad; batallas; técnicas; `flags` (bit 0: batallas como máximo; bit 4: errores como máximo); relleno. −1 significa "sin requisito". Indexada por la forma destino. |
-| `EVOLUTION_PATHS` | 11 bytes | 62 | Hasta 5 formas de origen y hasta 6 de destino (−1 vacío). Indexada por forma − 1. También la usa la carta de evolución del menú. La fila de un definitivo (forma 59) tiene un −2 y un 0 en los destinos; como los definitivos no evolucionan, la elección nunca la lee **(comprobado)**. |
-| `EVOLUTION_STATS_GAINS` | 14 bytes | 66 | Valores de referencia de HP, MP, ataque, defensa, velocidad e inteligencia, y la forma real que se carga. Indexada por la forma destino. |
-| `EVOLUTION_ITEM_TARGET` | 1 byte | 44 | Forma destino de cada objeto de evolución, indexada por objeto − primer objeto de evolución. `dwx` la extrae en `evolves_to` de `data/item_effects`; la lista opcional `item_targets` de `data/evolution` la sustituye objeto a objeto, o la suple si el ruleset no nombra `item_effects`. |
-| `DIGIMON_DATA` | 52 bytes | 180 | Parámetros de cada Digimon: nombre (no en la versión europea), huesos, radio, altura, tipo, nivel, tres especialidades, objeto que suelta y su probabilidad, 16 técnicas posibles. |
-| `RAISE_DATA` | — | — | Datos de crianza por Digimon; aquí solo se usa el peso por defecto. Ver la [ficha de cuidado](care.md). |
-| `REINCARNATE_BABY_TYPE` | 2 bytes | 4 | El bebé que sale de cada huevo al renacer. |
+| `EVOLUTION_REQS` | 28 bytes | 63 | Source form for the bonus; minimums of HP, MP, offense, defense, speed and Brains (for Rookie, 1 marks a favored stat); care mistakes; weight; discipline; happiness; battles; techniques; `flags` (bit 0: battles as a maximum; bit 4: mistakes as a maximum); padding. −1 means "no requirement". Indexed by the destination form. |
+| `EVOLUTION_PATHS` | 11 bytes | 62 | Up to 5 source forms and up to 6 destination forms (−1 empty). Indexed by form − 1. Also used by the menu's evolution card. The row of an Ultimate (form 59) has a −2 and a 0 in the destinations; since Ultimates do not evolve, the choice never reads it **(verified)**. |
+| `EVOLUTION_STATS_GAINS` | 14 bytes | 66 | Reference values of HP, MP, offense, defense, speed and Brains, and the real form that is loaded. Indexed by the destination form. |
+| `EVOLUTION_ITEM_TARGET` | 1 byte | 44 | Destination form of each evolution item, indexed by item − first evolution item. `dwx` extracts it into `evolves_to` of `data/item_effects`; the optional list `item_targets` of `data/evolution` replaces it item by item, or supplies it if the ruleset does not name `item_effects`. |
+| `DIGIMON_DATA` | 52 bytes | 180 | Parameters of each Digimon: name (not in the European version), bones, radius, height, type, level, three specialties, item it drops and its chance, 16 possible techniques. |
+| `RAISE_DATA` | — | — | Raising data per Digimon; here only the default weight is used. See the [care sheet](care.md). |
+| `REINCARNATE_BABY_TYPE` | 2 bytes | 4 | The Fresh Digimon that comes out of each egg on rebirth. |
 
-Tamaños de entrada calculados a partir de los `struct` de `include/dw/evl.h` y `params.h` y de los tamaños de
-`config/us/symbols.txt` **(comprobado)**.
+Entry sizes computed from the `struct`s in `include/dw/evl.h` and `params.h` and from the sizes in
+`config/us/symbols.txt` **(verified)**.
 
-## Rarezas
+## Oddities
 
-- **El objeto de evolución "contagia" la partida.** `HAS_USED_EVOITEM` solo se pone a 0 al arrancar el juego
-  (`initializeStatusObjects`, llamada desde `main`). Tras usar un objeto de evolución, todas las evoluciones
-  naturales siguientes de esa sesión se quedan sin ganancias de stats ni bonus de vida **(comprobado)**. Si cargar
-  una partida lo arregla no está claro: la marca no parece formar parte de la partida guardada **(suposición)**.
-- **Acumulador sin reiniciar.** Al elegir entre candidatos de novato o campeón, la suma y la cuenta de stats solo se
-  reinician cuando un candidato pasa a ser el mejor. Si un candidato aprueba pero no mejora, su suma se arrastra a la
-  media del siguiente **(comprobado)**. Si un destino no pidiera ningún stat, la media dividiría entre 0
-  **(suposición: no sabemos si la tabla tiene algún caso así)**.
-- **Bebé sin destino.** `getFreshEvolutionTarget` devuelve un valor sin inicializar si la forma no es uno de los
-  cuatro bebés; el propio decomp lo señala **(comprobado)**. Aun así pone el contador a 0, así que un bebé sin
-  destino vuelve a empezar su cuenta **(comprobado)**. En `dwe` se mantiene (`unlisted_baby_restarts_timer: true`): decidido
-  por el responsable de diseño (2026-10-20): fiel al original.
-- **Las 360 horas pisan la elección normal.** Cuando un campeón llega justo a 360 horas, `tickConditions` llama a
-  las especiales del modo 3 después de la elección normal y guarda su resultado encima: si ninguna especial sale,
-  tampoco evoluciona aunque la elección normal hubiera encontrado destino **(comprobado)**. En `dwe` se mantiene
-  (`timer_special_overrides_normal: true`): decidido por el responsable de diseño (2026-10-20): fiel al original.
-- **Empate de stats en novato.** Gana el último stat empatado, no el primero **(comprobado)**.
-- **Regaño reforzado.** En `handlePraiseScold`, el regaño justo después de un rechazo de comida o de una caca
-  en el suelo no inicializa el cambio de felicidad **(comprobado)**; el valor que acaba sumando es
-  **(suposición)**.
+- **The evolution item "infects" the game.** `HAS_USED_EVOITEM` is only set to 0 when the game starts
+  (`initializeStatusObjects`, called from `main`). After using an evolution item, all the following natural
+  evolutions of that session are left without stat gains or life bonus **(verified)**. Whether loading a game fixes it
+  is not clear: the mark does not seem to be part of the saved game **(assumption)**.
+- **Accumulator not reset.** When choosing among Rookie or Champion candidates, the sum and the stat count are only
+  reset when a candidate becomes the best. If a candidate passes but does not improve, its sum carries over into the
+  next one's average **(verified)**. If a destination did not ask for any stat, the average would divide by 0
+  **(assumption: we do not know if the table has any such case)**.
+- **Fresh Digimon without a destination.** `getFreshEvolutionTarget` returns an uninitialized value if the form is
+  not one of the four Fresh Digimon; the decomp itself points it out **(verified)**. It still sets the counter to 0,
+  so a Fresh Digimon without a destination restarts its count **(verified)**. In `dwe` it is kept
+  (`unlisted_baby_restarts_timer: true`): decided by the design owner (2026-10-20): faithful to the original.
+- **The 360 hours override the normal choice.** When a Champion reaches exactly 360 hours, `tickConditions` calls the
+  mode 3 specials after the normal choice and stores their result on top: if no special comes out, it does not evolve
+  either even if the normal choice had found a destination **(verified)**. In `dwe` it is kept
+  (`timer_special_overrides_normal: true`): decided by the design owner (2026-10-20): faithful to the original.
+- **Stat tie at Rookie.** The last tied stat wins, not the first **(verified)**.
+- **Reinforced scolding.** In `handlePraiseScold`, scolding right after a food refusal or a poop on the floor does not
+  initialize the happiness change **(verified)**; the value it ends up adding is an **(assumption)**.
 
-## Dónde está en el decomp
+## Where it is in the decomp
 
-| Qué | Dónde |
+| What | Where |
 |---|---|
-| Comprobación periódica, umbrales, barra de virus | `src/main/partner_impl.c`: `tickConditions` |
-| Elección de destino y puntuación | `src/main/evolution.c`: `getFreshEvolutionTarget`, `getInTrainingEvolutionTarget`, `getRookieEvolutionTarget`, `getChampionEvolutionTarget`, `calculateRequirementScore`, `getNumMasteredMoves` |
-| Evoluciones especiales | `src/main/evolution.c`: `handleSpecialEvolutions`; llamadas desde `src/main/partner.c`: `partnerTickSleep`, `partnerTickPraiseScold` |
-| Aviso de `species_be` | `src/main/partner_impl.c`: `handlePraiseScold` |
-| Caca y barra de virus | `src/main/partner_impl.c`: `createPoopPile` |
-| Vuelta de `species_p`, evolución por script | `src/main/partner.c`, la llamada a las rutinas de la especie (rutinas 2 y 10) |
-| Objetos de evolución | `src/main/item.c`: `handleEvoItems`; rechazo en `src/main/partner_impl.c`: `partnerWillRefuseItem` |
-| Aplicar la evolución (stats, técnicas, vida) | `src/evl/evl.c`: `EVL_applyEvolution`, `EVL_scaleBaseStats`, `EVL_clampBaseStats` |
-| Contador por horas | `src/main/clock.c`; `src/main/partner_impl.c`: `skipHours`, `handleSleeping` |
-| Renacer | `src/main/evolution.c`: `reincarnatePartner`; `src/dooa/dooa.c` |
-| Estructuras | `include/dw/evl.h`, `include/dw/params.h` |
+| Periodic check, thresholds, virus bar | `src/main/partner_impl.c`: `tickConditions` |
+| Destination choice and scoring | `src/main/evolution.c`: `getFreshEvolutionTarget`, `getInTrainingEvolutionTarget`, `getRookieEvolutionTarget`, `getChampionEvolutionTarget`, `calculateRequirementScore`, `getNumMasteredMoves` |
+| Special evolutions | `src/main/evolution.c`: `handleSpecialEvolutions`; called from `src/main/partner.c`: `partnerTickSleep`, `partnerTickPraiseScold` |
+| `species_be` notice | `src/main/partner_impl.c`: `handlePraiseScold` |
+| Poop and virus bar | `src/main/partner_impl.c`: `createPoopPile` |
+| `species_p` return, evolution by script | `src/main/partner.c`, the call to the species routines (routines 2 and 10) |
+| Evolution items | `src/main/item.c`: `handleEvoItems`; refusal in `src/main/partner_impl.c`: `partnerWillRefuseItem` |
+| Applying the evolution (stats, techniques, life) | `src/evl/evl.c`: `EVL_applyEvolution`, `EVL_scaleBaseStats`, `EVL_clampBaseStats` |
+| Counter by hours | `src/main/clock.c`; `src/main/partner_impl.c`: `skipHours`, `handleSleeping` |
+| Rebirth | `src/main/evolution.c`: `reincarnatePartner`; `src/dooa/dooa.c` |
+| Structures | `include/dw/evl.h`, `include/dw/params.h` |

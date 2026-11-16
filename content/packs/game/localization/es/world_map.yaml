@@ -1,5 +1,5 @@
-# El mapa de la isla que abre la tecla M (una mejora de dwe): su título, dónde está el jugador, los sitios a los que
-# lleva su mapa, la leyenda y la tecla de cerrar.
+# The island map that the M key opens (a dwe improvement): its title, where the player is, the places their
+# map leads to, the legend and the close key.
 title: "Mapa de la isla"
 here: "Estás en:"
 exits: "Desde aquí puedes ir a"

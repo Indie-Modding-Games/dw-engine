@@ -1,4 +1,4 @@
-# Un aspecto de prueba: el moderno con otros colores en todas las pantallas, para ver un cambio en vivo.
+# A test skin: the modern one with other colors on every screen, to see a change live.
 id: test_contrast
 name: test_contrast.skin_name
 extends: modern

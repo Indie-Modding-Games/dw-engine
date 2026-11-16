@@ -1,18 +1,17 @@
 # content
 
-Cómo montan los paquetes las aplicaciones: la carpeta de contenido, los paquetes del equipo y la instalación desde el
-disco del jugador.
+How the apps assemble packages: the content folder, the team's packages and the install from the player's disc.
 
-- Carpeta: `packages/content`; objetivos de CMake: `dwe::content` (capa `apps`).
-- Depende de: `assets`, `core`, `platform`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/apps/content](https://indie-modding-games.github.io/dw-engine/modulos/apps/content).
+- Folder: `packages/content`; CMake targets: `dwe::content` (`apps` layer).
+- Depends on: `assets`, `core`, `platform`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/apps/content](https://indie-modding-games.github.io/dw-engine/modules/apps/content).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter content
-scripts/dev.sh test --filter content       # sus tests (etiqueta de ctest content)
-scripts/dev.sh test --filter ...content    # y los de todo lo que depende de él
+scripts/dev.sh test --filter content       # its tests (ctest label content)
+scripts/dev.sh test --filter ...content    # and those of everything that depends on it
 ```

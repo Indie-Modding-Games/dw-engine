@@ -1,4 +1,4 @@
-// The default bindings the engine adds to the original's pad (docs/modulos/engine/input.md).
+// The default bindings the engine adds to the original's pad (docs/modules/engine/input.md).
 
 #include <dwe/input/input_state.hpp>
 #include <dwe/input/keys.hpp>
@@ -9,7 +9,7 @@ using namespace dwe::input;
 using namespace dwe::platform;
 
 TEST_CASE("Escape and F10 open the game's options; cancel lives on the Ctrl pair") {
-  // `settings` takes the keyboard's `Escape` and `F10` (docs/architecture/controles.md): the quick
+  // `settings` takes the keyboard's `Escape` and `F10` (docs/architecture/controls.md): the quick
   // options page, the PC's classic pause key.
   InputState input{defaultActionMap()};
   input.handle(KeyChanged{.key = keys::Escape, .down = true, .repeat = false});

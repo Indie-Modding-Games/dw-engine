@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Partner clips",
-  "description": "animations/partner_clips.yaml of the game pack: the recipes that give the species models with only their scenes' few clips every clip the partner plays in the field and in battle (docs/modulos/engine/animation.md, «Clips de compañero»). Nothing of the disc is here: the clips are made when the partner's model loads, from the user's extracted models. A species' clips are retargeted from a donor (its clips moved through a bone map) or made from the model's own idle with a motion and timed by the donor's clip of the same id.",
+  "description": "animations/partner_clips.yaml of the game pack: the recipes that give the species models with only their scenes' few clips every clip the partner plays in the field and in battle (docs/modules/engine/animation.md, «Partner clips»). Nothing of the disc is here: the clips are made when the partner's model loads, from the user's extracted models. A species' clips are retargeted from a donor (its clips moved through a bone map) or made from the model's own idle with a motion and timed by the donor's clip of the same id.",
   "type": "object",
   "required": [
     "clips",

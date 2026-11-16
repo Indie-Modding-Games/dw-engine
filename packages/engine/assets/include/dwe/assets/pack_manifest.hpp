@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/localized_text.hpp>
 #include <dwe/core/error.hpp>
 
 #include <compare>
@@ -98,8 +99,9 @@ struct PackManifest {
   Layer layer = Layer::Mods;
   // Orders the packs of one layer: the higher one wins.
   std::int32_t priority = 0;
-  std::string name;
-  std::string description;
+  // For people, in one language or several (LocalizedText).
+  LocalizedText name;
+  LocalizedText description;
   std::vector<PackDependency> dependencies;
   std::vector<SchemaRule> schemas;
   // The Lua API the pack's scripts need, when it declares one.

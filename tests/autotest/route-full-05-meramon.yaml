@@ -1,9 +1,9 @@
 # The full story chain, chunk 5: on chunk 4's save (tunn05, the pile cleared) the player goes on to the boulder of
-# tunn06, which the partner, a Champion by now, pushes for the miner (trigger 120, route-etapa2.yaml), and on to
+# tunn06, which the partner, a Champion by now, pushes for the miner (trigger 120, route-stage2.yaml), and on to
 # tunn08, where the fire monster's fight ends with Meramon joining (209). Past Meramon the cave's side cells lead to
-# tunn07_2 and the digging Drimogemon of tunn09 (route-etapa2-drimogemon.yaml: the first talk, trigger 353; three
+# tunn07_2 and the digging Drimogemon of tunn09 (route-stage2-drimogemon.yaml: the first talk, trigger 353; three
 # days with the partner's care; the thanks and the recruit, 238). It ends saving in slot_01 on tunn09. The chain:
-# docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+# docs/guides/vertical-slice.md (scripts/story-chain.sh).
 name: full-05
 device: keyboard
 timeout: 1200
@@ -17,7 +17,7 @@ steps:
   - screenshot: tunn06-boulder
   # The boulder blocks the way north until the partner, a Champion by now, pushes it.
   # The miner walks his waypoints just south of the boulder: he is put on his home point and the player runs up
-  # into him and talks (route-etapa2.yaml).
+  # into him and talks (route-stage2.yaml).
   - walk_to: {point: [-897, 150], radius: 40}
   - script: place("npc:5 -897 305 0")
   - press: {key: up}

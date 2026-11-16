@@ -1,10 +1,10 @@
-# El cuadro de la copa, para las apariencias que dicen la ronda (la original no la muestra). {round} es 1 o 2.
+# The cup bracket, for the looks that show the round (the original does not). {round} is 1 or 2.
 bracket.round: "Ronda {round}"
 bracket.final: "Final"
 bracket.champion: "Campeón"
-# El nombre de la copa por su grado, en la tarjeta de la presentación (para las apariencias que lo escriben).
+# The cup's name by its grade, on the intro card (for the looks that write it).
 bracket.cup: "Copa {grade}"
-# Un combate de copa: los datos de la presentación (STD_renderIntroStats) y la caja del daño al agotarse el tiempo
+# A cup match: the intro data (STD_renderIntroStats) and the damage box when time runs out
 # (STD_renderTimeoutWindow).
 match.hp: "PV"
 match.mp: "PM"

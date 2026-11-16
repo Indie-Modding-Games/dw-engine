@@ -1341,7 +1341,7 @@ TEST_CASE("the HUD's menu button asks the game to open the menu and names the ke
 
 namespace {
 
-// One field bar of the hud.* contract (docs/architecture/ui.md#estado-del-campo), with its mood as
+// One field bar of the hud.* contract (docs/architecture/ui.md#field-status), with its mood as
 // the game publishes it (packages/screens: meterMoodOf): low below the middle of its range.
 void setFieldMeter(Ui& ui, int index, double value, double minimum, double maximum) {
   const std::string base = "hud.meter." + std::to_string(index) + ".";
@@ -1434,7 +1434,7 @@ TEST_CASE(
 
 TEST_CASE("a field bar laid out in pips fills in whole pips of the original's 25, rounding down") {
   // A skin that lays the bars out as the original does (skin.yaml layout: hud: bars: pips;
-  // docs/architecture/ui.md#estado-del-campo).
+  // docs/architecture/ui.md#field-status).
   Content content;
   content.add("ui/skins/stepped/skin.yaml", "id: stepped\nname: ui_skin.stepped\nextends: modern\n"
                                             "layout:\n  hud: {bars: pips}\n");

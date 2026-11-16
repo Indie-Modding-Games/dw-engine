@@ -1,561 +1,559 @@
-# Ficha de referencia: scripts de eventos
+# Reference sheet: event scripts
 
-Cómo ejecutaba el juego original sus scripts de eventos (`MAPHEAD.SCN` y `DG.SCN`), según el decomp: el modelo de
-ejecución, el estado que leen y escriben, por dónde entran, qué hace cada una de las 78 órdenes que usa el disco
-americano, cómo se evalúa un `IF`, el protocolo del combate y las rutinas del motor (`call_routine`). Es la referencia de
-comportamiento de R4.1: `dwx` convierte estos scripts a Lua legible y el motor solo ejecuta Lua. El formato binario y el
-listado YAML están en [Scripts de eventos](../formats/scripts.md); aquí solo se describe qué **hace** cada cosa.
+How the original game ran its event scripts (`MAPHEAD.SCN` and `DG.SCN`), according to the decomp: the execution
+model, the state they read and write, where they enter from, what each of the 78 commands used by the American disc
+does, how an `IF` is evaluated, the combat protocol and the engine routines (`call_routine`). It is the behavior
+reference for the story port: `dwx` converts these scripts to readable Lua and the engine only runs Lua. The binary format and
+the YAML listing are in [Event scripts](../formats/scripts.md); here only what each thing **does** is described.
 
-Los nombres de orden son los del listado (`show_textbox`, `jump_to`...). "Variable" es una `pstat` (un byte de
-`ScriptState.pstats`) y "disparador" un bit de `ScriptState.triggers`. Las cuentas de uso son del disco americano.
+Command names are those of the listing (`show_textbox`, `jump_to`...). "Variable" is a `pstat` (a byte of
+`ScriptState.pstats`) and "trigger" a bit of `ScriptState.triggers`. Usage counts are from the American disc.
 
-## Qué hace
+## What it does
 
-Los scripts mueven la historia: diálogos, menús de tiendas, combates con NPC, escenas con cámara y movimiento, cambios
-de mapa, premios y castigos. Cada mapa tiene un script en `DG.SCN` y una sección en `MAPHEAD.SCN` que lo carga. Un
-script es una lista de **secciones**, puntos de entrada que elige el motor: al entrar al mapa, al hablar con un NPC, al
-pisar o pulsar sobre una casilla, al morir el partner... Una sección corre hasta su `end_section`; mientras, el resto del
-juego se congela (si la sección lo pide) y el jugador solo responde a cajas de texto y menús.
+Scripts move the story: dialogs, shop menus, combats with NPCs, scenes with camera and movement, map changes, rewards
+and punishments. Each map has a script in `DG.SCN` and a section in `MAPHEAD.SCN` that loads it. A script is a list of
+**sections**, entry points that the engine chooses: on entering the map, on talking to an NPC, on stepping on or
+pressing a cell, when the partner dies... A section runs until its `end_section`; meanwhile, the rest of the game
+freezes (if the section asks for it) and the player only responds to text boxes and menus.
 
-## Reglas
+## Rules
 
-### Modelo de ejecución
+### Execution model
 
-- **Un solo script a la vez** (comprobado, `script_interp.c: callScriptSection`). Hay un único intérprete: un puntero
-  de instrucción, una orden "en espera" y una pila de llamadas. `callScriptSection` no comprueba si ya corre otro:
-  sobrescribe al que hubiera. Por eso cada llamador del motor mira antes que el intérprete esté libre; una petición con
-  otro script en marcha **se pierde**, no se encola (comprobado, `tamer.c: checkMapInteraction`, `partner_impl.c`,
-  `tournament.c`, `item.c`). La única excepción es el final de la pesca, que llama sin mirar (comprobado,
-  `fish.c: tamerTickFishing`).
-- **Arranque:** `callScriptSection(script, sección, esEvento)` solo prepara: carga el fichero, apunta a la sección,
-  pone el modo de cierre de texto a 0, el dueño del diálogo al domador, libera los 22 huecos de movimiento, guarda la
-  variable 0 (la velocidad del reloj) para restaurarla al final y apunta como rival por defecto la entidad con la que se
-  habló. **No** vacía la pila de llamadas (comprobado). La primera orden corre en el siguiente fotograma, salvo con
-  `runMapHeadScript`, que hace un primer paso en el acto (comprobado, `runMapHeadScript`).
-- **Un fotograma** (`tickScript`, comprobado): si no hay script, nada. Si lo hay, avanza las cajas de texto y los 22
-  huecos de movimiento, el cambio de mapa si hay uno en curso, y comprueba la orden en espera. Si sigue esperando, no
-  ejecuta nada más. Si no, ejecuta órdenes **seguidas en el mismo fotograma** hasta que una cede el fotograma.
-- **Ceder el fotograma.** Cada orden acaba de tres maneras (comprobado, `tickScript` y sus `scriptInstruction*`):
-  sigue con la siguiente en el mismo fotograma; cede el fotograma (y, si deja una orden en espera, el script se queda
-  ahí hasta que la espera acabe); o empieza un cambio de mapa. No hay corrutina: el estado entero vive en globales.
-  - **Bloquean** (esperan algo): `show_textbox` (hasta que se pasa la página), `set_selection` (hasta elegir o
-    cancelar), `wait_for_entity` (hasta que acaban los movimientos), `delay` (N fotogramas), `start_battle` (todo el
-    combate; tras ganar, el regreso de la cámara) y las rutinas de `call_routine` con menú o escena (comprobado).
-  - **Ceden un solo fotograma** sin esperar nada: `fadeout_hud`, `move_boulder`, las rutinas 16, 19, 20, 21 y 55,
-    y los opcodes `FC` y `FD` (comprobado).
-  - **No ceden:** todas las demás, incluidas las de movimiento y cámara, que solo encargan el movimiento (comprobado).
-- **Congelar el juego** no ocurre al empezar, sino en la primera orden que llama a `scriptPauseGame`: casi todas las
-  de entidades, cámara, warps y daño, `set_textbox_size`, y `set_dialog_owner` cuando cambia el dueño (comprobado).
-  La primera vez por script congela al domador y al partner, suelta la cámara del jugador, pone la variable 0 a 3
-  (reloj parado), para el tiempo del juego y limpia el área de texto. Si la sección es una charla con un NPC y el
-  disparador 44 está quitado, el NPC y el domador se giran para mirarse. Cada llamada quita el disparador 44
-  (comprobado, `scriptPauseGame`). Una sección que nunca congela (una casilla que solo pone disparadores) corre con el
-  jugador moviéndose.
-- **Fin.** `end_section` y `end_script` hacen lo mismo: desapilan marcos hasta vaciar la pila (abajo) y, con la pila
-  vacía, el script acaba (comprobado, `returnFromScriptFile`). Al acabar se cierran las cajas de texto, la variable 0
-  vuelve a su valor guardado y, si se congeló, todo se descongela: control del domador y el partner, cámara y reloj
-  (comprobado, `tickScript`). Una caja con animación de cierre mantiene el intérprete ocupado hasta que se cierra, así
-  que no puede empezar otro script aunque el jugador ya se mueva (comprobado, `closeAllTextboxes`).
-- **Un opcode desconocido** (fuera de `10`–`3F`, `46`–`58`, `5A`–`5F`, `64`–`7E`, `FB`–`FF`) aborta el script sin
-  vaciar la pila (comprobado). En el disco no hay ninguno alcanzable.
+- **Only one script at a time** (verified, `script_interp.c: callScriptSection`). There is a single interpreter: one
+  instruction pointer, one "pending" command and one call stack. `callScriptSection` does not check whether another is
+  already running: it overwrites whichever there was. That is why each engine caller checks first that the interpreter
+  is free; a request with another script running **is lost**, it is not queued (verified, `tamer.c:
+  checkMapInteraction`, `partner_impl.c`, `tournament.c`, `item.c`). The only exception is the end of fishing, which
+  calls without checking (verified, `fish.c: tamerTickFishing`).
+- **Start:** `callScriptSection(script, section, isEvent)` only prepares: it loads the file, points to the section,
+  sets the text-closing mode to 0, the dialog owner to the tamer, frees the 22 movement slots, saves variable 0 (the
+  clock speed) to restore it at the end and sets the entity that was talked to as the default rival. It does **not**
+  empty the call stack (verified). The first command runs on the next frame, except with `runMapHeadScript`, which
+  does a first step on the spot (verified, `runMapHeadScript`).
+- **One frame** (`tickScript`, verified): if there is no script, nothing. If there is, it advances the text boxes and
+  the 22 movement slots, the map change if one is in progress, and checks the pending command. If it is still waiting,
+  it executes nothing else. If not, it executes commands **one after another in the same frame** until one yields the
+  frame.
+- **Yielding the frame.** Each command ends in one of three ways (verified, `tickScript` and its
+  `scriptInstruction*`): it continues with the next one in the same frame; it yields the frame (and, if it leaves a
+  pending command, the script stays there until the wait ends); or it starts a map change. There is no coroutine: the
+  whole state lives in globals.
+  - **They block** (wait for something): `show_textbox` (until the page is turned), `set_selection` (until choosing
+    or canceling), `wait_for_entity` (until the movements end), `delay` (N frames), `start_battle` (the whole combat;
+    after winning, the camera's return) and the `call_routine` routines with a menu or scene (verified).
+  - **They yield a single frame** without waiting for anything: `fadeout_hud`, `move_boulder`, routines 16, 19, 20, 21
+    and 55, and opcodes `FC` and `FD` (verified).
+  - **They do not yield:** all the others, including the movement and camera ones, which only order the movement
+    (verified).
+- **Freezing the game** does not happen at the start, but at the first command that calls `scriptPauseGame`: almost
+  all the entity, camera, warp and damage ones, `set_textbox_size`, and `set_dialog_owner` when the owner changes
+  (verified). The first time per script it freezes the tamer and the partner, releases the player's camera, sets
+  variable 0 to 3 (clock stopped), stops game time and clears the text area. If the section is a talk with an NPC and
+  trigger 44 is off, the NPC and the tamer turn to look at each other. Each call clears trigger 44 (verified,
+  `scriptPauseGame`). A section that never freezes (a cell that only sets triggers) runs with the player moving.
+- **End.** `end_section` and `end_script` do the same: they pop frames until the stack is empty (below) and, with the
+  stack empty, the script ends (verified, `returnFromScriptFile`). On ending, the text boxes are closed, variable 0 goes
+  back to its saved value and, if it froze, everything unfreezes: tamer and partner control, camera and clock
+  (verified, `tickScript`). A box with a closing animation keeps the interpreter busy until it closes, so another
+  script cannot start even if the player is already moving (verified, `closeAllTextboxes`).
+- **An unknown opcode** (outside `10`–`3F`, `46`–`58`, `5A`–`5F`, `64`–`7E`, `FB`–`FF`) aborts the script without
+  emptying the stack (verified). There is none reachable on the disc.
 
-### La pila de llamadas
+### The call stack
 
-Ocho marcos, sin comprobar desbordamiento (un noveno escribe fuera; comprobado, `pushScriptStack`). Cada marco guarda
-un puntero, un script, un tipo y un argumento. La pila **no se vacía** entre scripts: los marcos que queden se
-desapilan en el siguiente fin (comprobado).
+Eight frames, without overflow checking (a ninth writes outside; verified, `pushScriptStack`). Each frame stores a
+pointer, a script, a type and an argument. The stack **is not emptied** between scripts: the frames left over are
+popped at the next end (verified).
 
-| Tipo | Lo apila | Al desapilarlo en un fin |
+| Type | Who pushes it | When popped at an end |
 |---|---|---|
-| 1 | `jump_and_link`, `jump_to_file_and_link` (la vuelta) | se descarta y sigue desapilando |
-| 3 | `set_script` | lee el fondo del mapa (`readMapTFS`, `setupMap`) y corre la sección `0xFE` del script de mapa actual; si no la tiene, sigue desapilando |
-| 4 | `warp_to`, `teleport`, `section_on_exit`, la huida de un combate | cede un fotograma y corre su sección del script de mapa actual; con `0xFF`, el final de `MAPHEAD` (acaba) |
+| 1 | `jump_and_link`, `jump_to_file_and_link` (the return) | it is discarded and it keeps popping |
+| 3 | `set_script` | it reads the map background (`readMapTFS`, `setupMap`) and runs section `0xFE` of the current map script; if it does not have it, it keeps popping |
+| 4 | `warp_to`, `teleport`, `section_on_exit`, fleeing a combat | it yields a frame and runs its section of the current map script; with `0xFF`, the end of `MAPHEAD` (it ends) |
 
-- `jump_return` desapila el marco de arriba **sea del tipo que sea** y vuelve a su puntero (comprobado). Con la pila
-  vacía o sobre un marco 3 o 4 salta a basura (comprobado; en el disco no pasa en el flujo que se alcanza).
-- Por eso un `end_section` dentro de una subrutina de `jump_and_link` acaba **todo** el script, no la subrutina
-  (comprobado). En el disco, 136 `jump_and_link` y solo 14 `jump_return`: la mayoría de subrutinas acaban el script.
-- El marco de vuelta guarda el script de mapa cargado, no el que corre: un `jump_and_link` hecho desde código de
-  `MAPHEAD` vuelve al puntero correcto pero con el fichero de mapa como base (comprobado; no ocurre en el disco).
-- `jump_to_file` no apila nada: cambia de fichero y sección (comprobado).
+- `jump_return` pops the top frame **whatever its type** and returns to its pointer (verified). With the stack empty or
+  on a type 3 or 4 frame it jumps to garbage (verified; on the disc it does not happen in the flow that is reached).
+- That is why an `end_section` inside a `jump_and_link` subroutine ends the **whole** script, not the subroutine
+  (verified). On the disc, 136 `jump_and_link` and only 14 `jump_return`: most subroutines end the script.
+- The return frame stores the loaded map script, not the one that is running: a `jump_and_link` made from `MAPHEAD`
+  code returns to the right pointer but with the map file as the base (verified; it does not occur on the disc).
+- `jump_to_file` pushes nothing: it changes file and section (verified).
 
-### Movimientos con guion
+### Scripted movements
 
-- 22 huecos, que se avanzan cada fotograma dentro de `tickScript` y se vacían al empezar cada script (comprobado,
-  `tickScriptedMovements`). Hueco 0 el domador, 1 el partner, 2–9 los NPC, 10 la cámara, 11 las puertas y objetos 3D,
-  12–21 los objetos del mapa (`move_object_to`).
-- Las órdenes de mover, girar, caminar y cámara **no esperan**: escriben el hueco y siguen. Una orden nueva sobre un
-  hueco ocupado lo sobrescribe, sin cola (comprobado). Para esperar está `wait_for_entity`.
-- `wait_for_entity` espera según su operando (comprobado, `scriptInstruction46to58`, `tickScript`):
+- 22 slots, which advance every frame inside `tickScript` and are emptied at the start of each script (verified,
+  `tickScriptedMovements`). Slot 0 the tamer, 1 the partner, 2–9 the NPCs, 10 the camera, 11 the doors and 3D objects,
+  12–21 the map objects (`move_object_to`).
+- The move, turn, walk and camera commands **do not wait**: they write the slot and continue. A new command on a busy
+  slot overwrites it, with no queue (verified). For waiting there is `wait_for_entity`.
+- `wait_for_entity` waits according to its operand (verified, `scriptInstruction46to58`, `tickScript`):
 
-  | Operando | Espera a |
+  | Operand | Waits for |
   |---|---|
-  | `0xFF` | todos los huecos libres y la marca de sincronía puesta |
-  | `tamer`, `partner`, id de NPC | el hueco de esa entidad; un NPC que no está cuenta como `0xFF` |
-  | `0xC8` | la cámara (hueco 10) |
-  | `0xCA`–`0xD4` | los huecos 11–21 |
-  | `0xC9` | la marca de sincronía (la ponen las rutinas de `call_digimon_routine` al acabar) |
-  | `0xD5` | quita la marca de sincronía y espera a que vuelva |
-  | `0xD6` | que acabe una carga asíncrona (rutinas 35, 39) |
+  | `0xFF` | all the slots free and the sync mark set |
+  | `tamer`, `partner`, NPC id | that entity's slot; an NPC that is not there counts as `0xFF` |
+  | `0xC8` | the camera (slot 10) |
+  | `0xCA`–`0xD4` | slots 11–21 |
+  | `0xC9` | the sync mark (set by the `call_digimon_routine` routines when they end) |
+  | `0xD5` | clears the sync mark and waits for it to come back |
+  | `0xD6` | an asynchronous load to end (routines 35, 39) |
 
-### Estado
+### State
 
-Lo que guarda `ScriptState` y lo que el motor reserva (comprobado, `script.h`, `readPStat`, `getTriggerOffset`).
+What `ScriptState` stores and what the engine reserves (verified, `script.h`, `readPStat`, `getTriggerOffset`).
 
-- **Disparadores:** 800 bits. No se comprueban los límites: un número ≥ 800 escribe en las variables (comprobado).
-  Los que el motor lee o escribe:
+- **Triggers:** 800 bits. The limits are not checked: a number ≥ 800 writes into the variables (verified). The ones the
+  engine reads or writes:
 
-  | Disparador | Significado |
+  | Trigger | Meaning |
   |---|---|
-  | 0 | el último `give_item` falló (se pone al fallar, se quita al acertar) |
-  | 1 | combate sin huida; los NPC cercanos siempre se unen; al ganar no se espera a la cámara |
-  | 2 | combate sin domador |
-  | 3 | modo tienda: la rutina 8 abre el reciclaje, la 14 vende cartas; también lo usa la rutina 0 |
-  | 4 | con el 3 quitado, la rutina 14 compra cartas sueltas en vez de un sobre |
-  | 5–13, 14 | intercambios de `species_bn` (rutina 2); el 14 cuando están los nueve |
-  | 15–36 | copa de torneo ganada (15 + id de copa) |
-  | 37, 38, 39, 40 | inscrito en torneo; aviso pendiente antes y después de las 20:00; nivel demasiado alto |
-  | 41 | no cargar la librería de tiendas en la próxima carga de mapa (lo pone la sección de muerte) |
-  | 44 | no girar al NPC y al domador al congelar; cada congelación lo quita |
-  | 45, 46 | cañas de pescar |
-  | 47, 48 | iconos de la ficha del jugador |
-  | 49 | las selecciones no se pueden cancelar (nombres de la partida nueva) |
-  | 50 | juego terminado una vez (gramola, medallas) |
-  | 200 + Digimon | Digimon reclutado en la ciudad; cuenta para la prosperidad |
-  | 350 | Toy Town; el 148 y el 341 son la niebla |
-  | 364–382 | medallas |
-  | 384 + objeto | objeto a la venta en las tiendas |
-  | 512 + Digimon | Digimon criado alguna vez |
-  | 640 | umbral de energía alcanzado |
+  | 0 | the last `give_item` failed (set on failing, cleared on succeeding) |
+  | 1 | combat without fleeing; nearby NPCs always join; after winning the camera is not waited for |
+  | 2 | combat without a tamer |
+  | 3 | shop mode: routine 8 opens recycling, 14 sells cards; routine 0 also uses it |
+  | 4 | with 3 cleared, routine 14 buys single cards instead of a pack |
+  | 5–13, 14 | `species_bn` exchanges (routine 2); 14 when all nine are there |
+  | 15–36 | tournament cup won (15 + cup id) |
+  | 37, 38, 39, 40 | registered in a tournament; pending notice before and after 20:00; level too high |
+  | 41 | do not load the shop library on the next map load (set by the death section) |
+  | 44 | do not turn the NPC and the tamer when freezing; each freeze clears it |
+  | 45, 46 | fishing rods |
+  | 47, 48 | icons of the player's sheet |
+  | 49 | selections cannot be canceled (new game names) |
+  | 50 | game finished once (jukebox, medals) |
+  | 200 + Digimon | Digimon recruited in the city; counts for prosperity |
+  | 350 | Toy Town; 148 and 341 are the fog |
+  | 364–382 | medals |
+  | 384 + item | item for sale in the shops |
+  | 512 + Digimon | Digimon raised at some point |
+  | 640 | energy threshold reached |
 
-- **Variables:** 256 bytes sin signo. Las reserva el motor:
+- **Variables:** 256 unsigned bytes. The engine reserves these:
 
-  | Variable | Significado |
+  | Variable | Meaning |
   |---|---|
-  | 0 | velocidad del reloj; 3 = parado. Se fuerza a 3 al congelar y se restaura al acabar; la rutina 25 cambia el valor que se restaurará; al guardar se pone 0 |
-  | 1 | prosperidad, recalculada de los disparadores 200 + Digimon |
-  | 2, 3, 4 | torneo: día (bit 7 = sin aviso), copa (`0xFF` ninguna), tipo del partner inscrito |
-  | 5 | la especie que era el partner antes de volverse `species_p` |
-  | 6 | nombre del mapa en el próximo warp con guion: 0 según el tipo de sección, 1 siempre, 2 nunca; se vuelve a 0 |
-  | 28–31 | contadores de días: +1 cada día salvo si valen `0xFF` |
-  | 121, 122 | curling: resultado y dificultad |
-  | 200 | pilas de objetos perdidas en la última derrota |
-  | 243, 244 | byte alto y bajo del acumulador de tienda (rutinas 30, 31, 56); al olvidar técnicas, la técnica olvidada y las que faltan |
-  | 245 | modo de música: 0 día/noche, 1 siempre de día, 2–10 una variante fija |
-  | 246 | parámetro de entrenamiento (suposición: sin confirmar su uso) |
-  | 247, 248 | burbuja de humor de `species_ai` y argumentos de la rutina 21; destino del transporte de `species_e` |
-  | 249 | borrador de menús: carta sacada, pista de la gramola, tipo de menú |
-  | 250–253 | combate con guion (abajo) |
-  | 254 | argumento general de las rutinas: tienda (el NPC que la atiende), tipo de entrenamiento, cofre, objeto a quitar, opciones de nombre, especie de la evolución, elección de huevo de la partida nueva (0 `species_a`, otro `species_an`) |
-  | 255 | resultado: del combate (−1, 0, 1), del torneo (rondas ganadas), 0 al morir por enfermedad o vejez |
+  | 0 | clock speed; 3 = stopped. It is forced to 3 on freezing and restored on ending; routine 25 changes the value that will be restored; on saving it is set to 0 |
+  | 1 | prosperity, recomputed from triggers 200 + Digimon |
+  | 2, 3, 4 | tournament: day (bit 7 = no notice), cup (`0xFF` none), type of the registered partner |
+  | 5 | the species the partner was before becoming `species_p` |
+  | 6 | map name on the next scripted warp: 0 according to the section type, 1 always, 2 never; it goes back to 0 |
+  | 28–31 | day counters: +1 each day unless they are `0xFF` |
+  | 121, 122 | curling: result and difficulty |
+  | 200 | item stacks lost in the last defeat |
+  | 243, 244 | high and low byte of the shop accumulator (routines 30, 31, 56); when forgetting techniques, the forgotten technique and the ones missing |
+  | 245 | music mode: 0 day/night, 1 always day, 2–10 a fixed variant |
+  | 246 | training parameter (assumption: its use is unconfirmed) |
+  | 247, 248 | `species_ai` mood bubble and arguments of routine 21; `species_e` transport destination |
+  | 249 | menu scratchpad: card drawn, jukebox track, menu type |
+  | 250–253 | scripted combat (below) |
+  | 254 | general argument of the routines: shop (the NPC that runs it), training type, chest, item to remove, name options, evolution species, new game egg choice (0 `species_a`, other `species_an`) |
+  | 255 | result: of the combat (−1, 0, 1), of the tournament (rounds won), 0 on dying of sickness or old age |
 
-- **Cartas:** 66 cuentas de 4 bits; `give_card` no pasa de 9 y `take_card` no baja de 0 (comprobado).
-- **Dinero:** `add_money` no pasa de 999 999; `reduce_money` no baja de 0 (comprobado).
-- **Méritos:** `set_merit` y `add_merit` no pasan de 9999 (comprobado). `reduce_merit` escribe `MERIT = -valor` y
-  lo detiene en 0: deja los méritos en 0 sea cual sea la cantidad (`script_interp.c:1173`). Ningún guion del disco la
-  usa; el motor resta la cantidad y se detiene en 0, como dice su nombre, para los guiones de mods.
-- **Contadores:** combates empezados y huidas, +1 por `start_battle` y por huida, con tope 9999; los de torneos los
-  lleva la rutina 6 (comprobado).
-- **Fecha:** año, día, hora y minuto; un año son 30 días (comprobado).
-- **Qué se guarda en la partida** (comprobado, `main_menu.c: writeSavegame`): solo los primeros 0x17C bytes de
-  `ScriptState`: el inventario diario y de reciclaje, las cartas, los 800 disparadores y las variables **0–34**. Las
-  variables 35–255 y la pila **no se guardan**: son de usar y tirar. Al cargar, el mapa guardado corre su cadena de
-  `MAPHEAD` como al entrar.
+- **Cards:** 66 4-bit counts; `give_card` does not go past 9 and `take_card` does not go below 0 (verified).
+- **Money:** `add_money` does not go past 999,999; `reduce_money` does not go below 0 (verified).
+- **Merits:** `set_merit` and `add_merit` do not go past 9999 (verified). `reduce_merit` writes `MERIT = -value` and
+  stops it at 0: it leaves merits at 0 whatever the amount (`script_interp.c:1173`). No script on the disc uses it;
+  the engine subtracts the amount and stops at 0, as its name says, for mod scripts.
+- **Counters:** battles started and flees, +1 per `start_battle` and per flee, capped at 9999; the tournament ones are
+  kept by routine 6 (verified).
+- **Date:** year, day, hour and minute; a year is 30 days (verified).
+- **What is saved in the game** (verified, `main_menu.c: writeSavegame`): only the first 0x17C bytes of
+  `ScriptState`: the daily and recycling inventory, the cards, the 800 triggers and variables **0–34**. Variables
+  35–255 and the stack **are not saved**: they are disposable. On loading, the saved map runs its `MAPHEAD` chain as
+  on entering.
 
-### Puntos de entrada
+### Entry points
 
-| Cuándo | Script y sección | Tipo de sección |
+| When | Script and section | Section type |
 |---|---|---|
-| Al entrar en un mapa (cualquier cambio de mapa, carga de partida) | `MAPHEAD`, sección = id del mapa | evento |
-| Partida nueva | `MAPHEAD` `0xCC` (carga el script 164 y el mapa 204) | evento |
-| Hablar con un NPC | script del mapa, sección = id de script del NPC | evento |
-| Casilla 51–79 | script del mapa, sección = valor de la casilla, **al pisarla** | casilla |
-| Casilla 80–109 | igual, **al pulsar confirmar** sobre ella | casilla |
-| Casilla 120 con el partner con ganas de ir al baño | `MAPHEAD` `0x4E2` | casilla |
-| Muerte o vida perdida | `MAPHEAD` `0x4DE` | casilla |
-| Usar el objeto 22 | `MAPHEAD` `0x4DD` | casilla |
-| Aviso de torneo / torneo perdido | `MAPHEAD` `0x4D9` / `0x4DA` | evento |
-| Fin de la pesca de `species_n` | `MAPHEAD` `0x4E4` (salta al script 7, sección `0x52`) | casilla |
-| Transporte de `species_e` | `MAPHEAD` `0x4E3`, cambiando el puntero del script en curso | — |
+| On entering a map (any map change, game load) | `MAPHEAD`, section = map id | event |
+| New game | `MAPHEAD` `0xCC` (loads script 164 and map 204) | event |
+| Talking to an NPC | map script, section = the NPC's script id | event |
+| Cell 51–79 | map script, section = the cell's value, **on stepping on it** | cell |
+| Cell 80–109 | same, **on pressing confirm** on it | cell |
+| Cell 120 with the partner needing to go to the bathroom | `MAPHEAD` `0x4E2` | cell |
+| Death or lost life | `MAPHEAD` `0x4DE` | cell |
+| Using item 22 | `MAPHEAD` `0x4DD` | cell |
+| Tournament notice / tournament lost | `MAPHEAD` `0x4D9` / `0x4DA` | event |
+| End of `species_n` fishing | `MAPHEAD` `0x4E4` (jumps to script 7, section `0x52`) | cell |
+| `species_e` transport | `MAPHEAD` `0x4E3`, changing the running script's pointer | — |
 
-- **La cadena de carga de mapa** (comprobado, `map.c: changeMap`, `MAPHEAD.SCN`): `runMapHeadScript(mapa)` corre la
-  sección del mapa en `MAPHEAD`. Esta hace `set_script` (script y mapa), que carga el mapa en el acto y apila un marco
-  3; luego sigue con lo suyo (en los datos: modo de música, `set_bgm`, `if`). Al acabar, el marco 3 prepara el fondo y
-  corre la sección `0xFE` del script del mapa hasta su primera espera. Todo ocurre en la misma llamada, bajo el fundido
-  a negro; si `0xFE` espera (texto, `delay`), sigue durante el fundido de entrada.
-- **Warp andando** (casillas 110–119): sin script; fundido de 20 fotogramas, la cadena de carga y fundido de entrada
-  (comprobado, `tamer.c: tamerTickChangeMap`).
-- **Hablar** (comprobado, `checkMapInteraction`): el domador choca con un NPC y, o el NPC tiene `autotalk` 1, o se acaba
-  de pulsar confirmar; y no corre otro script. También cuando un NPC con `autotalk` choca con el domador quieto.
-- **Casillas** (comprobado): solo con el domador en su estado normal y sobre la casilla que pisa. Las de pisar
-  **vuelven a dispararse cada fotograma** mientras el domador sigue encima y no corre otro script: la sección debe
-  quitarse de en medio (mover al domador, poner un disparador) o se repite.
-- **Muerte** (`0x4DE`, comprobado): por derrota en combate (abajo), por enfermedad (lleva 12 o más de enfermedad; vida
-  −1 y variable 255 = 0, `partner_impl.c`) o por vejez (`tickDeathCondition`; variable 255 = 0). La sección empieza
-  quitando el disparador 1 y poniendo el 41.
-- **Torneo** (comprobado, `updateTournamentRegistration`, cada fotograma con el intérprete libre): inscrito, con el
-  partner del tipo inscrito y desde las 12:00: si el día no es el inscrito o pasan de las 23:01, `0x4DA` y se borra la
-  inscripción; si no, `0x4D9` una vez antes de las 20:00 y otra después.
-- Las secciones `0x4D3`–`0x4D5`, `0x4DB`, `0x4DC`, `0x4E5` de `MAPHEAD` no tienen llamador en el motor
-  (suposición: son textos que leen las rutinas, o se llega con `jump_to_file`).
+- **The map load chain** (verified, `map.c: changeMap`, `MAPHEAD.SCN`): `runMapHeadScript(map)` runs the map's section
+  in `MAPHEAD`. That does `set_script` (script and map), which loads the map on the spot and pushes a type 3 frame;
+  then it continues with its own (in the data: music mode, `set_bgm`, `if`). On ending, the type 3 frame prepares the
+  background and runs section `0xFE` of the map script up to its first wait. Everything happens in the same call,
+  under the fade to black; if `0xFE` waits (text, `delay`), it continues during the fade-in.
+- **Walking warp** (cells 110–119): no script; a 20-frame fade, the load chain and fade-in (verified, `tamer.c:
+  tamerTickChangeMap`).
+- **Talking** (verified, `checkMapInteraction`): the tamer collides with an NPC and, either the NPC has `autotalk` 1,
+  or confirm has just been pressed; and no other script is running. Also when an NPC with `autotalk` collides with
+  the stationary tamer.
+- **Cells** (verified): only with the tamer in its normal state and on the cell it is stepping on. The step-on ones
+  **fire again every frame** while the tamer stays on top and no other script runs: the section must get out of the
+  way (move the tamer, set a trigger) or it repeats.
+- **Death** (`0x4DE`, verified): by defeat in combat (below), by sickness (it has had 12 or more of sickness; life −1
+  and variable 255 = 0, `partner_impl.c`) or by old age (`tickDeathCondition`; variable 255 = 0). The section starts
+  by clearing trigger 1 and setting 41.
+- **Tournament** (verified, `updateTournamentRegistration`, every frame with the interpreter free): registered, with
+  the partner of the registered type and from 12:00: if the day is not the registered one or it is past 23:01,
+  `0x4DA` and the registration is deleted; if not, `0x4D9` once before 20:00 and once after.
+- Sections `0x4D3`–`0x4D5`, `0x4DB`, `0x4DC`, `0x4E5` of `MAPHEAD` have no caller in the engine (assumption: they are
+  texts that the routines read, or they are reached with `jump_to_file`).
 
 ### `IF`
 
-Una lista de entradas que se evalúan **todas**, de izquierda a derecha, sin cortocircuito (comprobado,
-`scriptIfInstruction`). El resultado empieza en 0 (falso).
+A list of entries that are **all** evaluated, from left to right, without short-circuiting (verified,
+`scriptIfInstruction`). The result starts at 0 (false).
 
-- **Combinación** (byte de código): bit 7 → `resultado = resultado AND valor`; si no, bit 6 → `OR`; si no,
-  `resultado = valor`. Se mira el bit 7 primero (comprobado).
-- **Prueba** (`código & 0x38`), comprobado en `scriptIfInstruction` y `script_value.c`:
+- **Combination** (code byte): bit 7 → `result = result AND value`; otherwise, bit 6 → `OR`; otherwise,
+  `result = value`. Bit 7 is looked at first (verified).
+- **Test** (`code & 0x38`), verified in `scriptIfInstruction` and `script_value.c`:
 
-  | Prueba | Operandos | Verdadero si |
+  | Test | Operands | True if |
   |---|---|---|
-  | `00` disparador | disparador | bits bajos 0: está puesto; otro valor: está quitado |
-  | `08` variable | variable, valor | `variable OP valor`, OP = bits bajos |
-  | `10` saltar si cierto | destino | salta si el resultado es 1; no combina |
-  | `18` saltar si falso | destino | salta si el resultado es 0; no combina |
-  | `20`+0 estadística | stat, OP, valor u16 | `stat OP valor` sin signo (16 bits); la felicidad (9) con signo |
-  | `20`+1 cartas | carta, OP, valor | cuántas tiene `OP valor` |
-  | `20`+2 técnica | técnica, negar | 0: el partner la sabe; otro: no la sabe |
-  | `20`+3 condición | máscara, negar | 0: tiene algún bit de la máscara; otro: ninguno |
-  | `20`+4 objetos | objeto, OP, valor | cuántos tiene (la primera pila) `OP valor` |
-  | `20`+5 dinero | OP, valor s32 | `dinero OP valor`, sin signo |
+  | `00` trigger | trigger | low bits 0: it is set; other value: it is cleared |
+  | `08` variable | variable, value | `variable OP value`, OP = low bits |
+  | `10` jump if true | target | jumps if the result is 1; does not combine |
+  | `18` jump if false | target | jumps if the result is 0; does not combine |
+  | `20`+0 stat | stat, OP, u16 value | `stat OP value` unsigned (16 bits); happiness (9) signed |
+  | `20`+1 cards | card, OP, value | how many it has `OP value` |
+  | `20`+2 technique | technique, negate | 0: the partner knows it; other: it does not know it |
+  | `20`+3 condition | mask, negate | 0: it has some bit of the mask; other: none |
+  | `20`+4 items | item, OP, value | how many it has (the first stack) `OP value` |
+  | `20`+5 money | OP, s32 value | `money OP value`, unsigned |
 
-- **Comparaciones** (OP): 0 `==`, 1 `!=`, 2 `>=`, 3 `<=`, 4 `>`, 5 `<`. Siempre **valor del juego OP constante del
-  script** (comprobado, `scriptCompareValue`). 6 y 7 dan basura.
-- Un salto a mitad de lista deja el resto sin evaluar; si no salta, la evaluación sigue con las entradas siguientes.
-  La lista acaba con un byte `19`; después sigue la instrucción siguiente.
-- `28`, `30`, `38` y las extendidas 6 y 7 no leen operandos ni dan valor: dejan el del paso anterior (basura en la
-  primera). El disco no las usa (comprobado: el desensamblador las marca `unknown` y hay 0).
-- Un `IF` sin entradas de salto no hace nada. El formato admite varias entradas de salto en la misma lista (varios
-  destinos), y el análisis de control las trata como una cadena de ramas; el disco no tiene ninguna: cada `IF` acaba
-  en una sola entrada de salto (comprobado, test lento).
+- **Comparisons** (OP): 0 `==`, 1 `!=`, 2 `>=`, 3 `<=`, 4 `>`, 5 `<`. Always **game value OP script constant**
+  (verified, `scriptCompareValue`). 6 and 7 give garbage.
+- A jump in the middle of a list leaves the rest unevaluated; if it does not jump, the evaluation continues with the
+  following entries. The list ends with a `19` byte; after that comes the next instruction.
+- `28`, `30`, `38` and the extended 6 and 7 do not read operands or give a value: they leave the one from the previous
+  step (garbage in the first). The disc does not use them (verified: the disassembler marks them `unknown` and there
+  are 0).
+- An `IF` without jump entries does nothing. The format allows several jump entries in the same list (several targets),
+  and the control analysis treats them as a chain of branches; the disc has none: each `IF` ends in a single jump
+  entry (verified, slow test).
 
-### `SWITCH` y `SET_SELECTION`
+### `SWITCH` and `SET_SELECTION`
 
-- **`switch`**: salta al caso que dice la variable; un valor ≥ número de casos va al **último** (comprobado,
-  `scriptInstruction10to27`). Con 0 casos leería basura (el disco no lo hace). Solo 6 usos en el disco.
-- **`set_selection`**: muestra las opciones en la caja del dueño del diálogo y espera (comprobado,
-  `scriptShowSelection`, `tickSelectionDialogue`). Arriba y abajo dan la vuelta; el cursor empieza en la primera.
-  - **Confirmar** salta al destino de la opción. La elección **no se guarda** en ninguna variable: solo la registra el
-    salto (comprobado).
-  - **Cancelar** cierra la página y sigue **justo después** del bloque de la selección (la marca `12 00` si la hay,
-    que no hace nada). Con el disparador 49 puesto no se puede cancelar (zumbido). En los menús del motor, cancelar
-    elige la última opción (comprobado, `tickScriptDialogueBox`).
-  - En el disco, tras casi cada selección hay un `jump_to` que lleva la cancelación a una de las opciones.
+- **`switch`**: jumps to the case the variable says; a value ≥ number of cases goes to the **last** one (verified,
+  `scriptInstruction10to27`). With 0 cases it would read garbage (the disc does not do that). Only 6 uses on the disc.
+- **`set_selection`**: shows the options in the dialog owner's box and waits (verified, `scriptShowSelection`,
+  `tickSelectionDialogue`). Up and down wrap around; the cursor starts on the first one.
+  - **Confirm** jumps to the option's target. The choice **is not stored** in any variable: only the jump records it
+    (verified).
+  - **Cancel** closes the page and continues **right after** the selection block (the `12 00` mark if there is one,
+    which does nothing). With trigger 49 set it cannot be canceled (buzz). In the engine's menus, canceling chooses
+    the last option (verified, `tickScriptDialogueBox`).
+  - On the disc, after almost every selection there is a `jump_to` that takes the cancellation to one of the options.
 
-### Texto
+### Text
 
-- `set_dialog_owner` o `set_textbox_size` **crean** la caja; `show_textbox` escribe una página y espera (comprobado).
-- La página siguiente se compone mientras se muestra la actual: si la siguiente orden es otro `show_textbox`, la página
-  no final se suelta en cuanto se ve y el script corre hasta el siguiente `show_textbox`, que compone y espera. La caja
-  **se queda abierta** tras la última página hasta `fadeout_hud`, otro dueño o el fin del script (comprobado,
-  `script_textbox.c: showTextbox`, `tickConfirmDialogue`).
-- Cómo se pasa la página lo dice `set_textbox_mode` (0 por sección): 0 esperar a confirmar (soltando antes el botón),
-  1 en cuanto se ha escrito, 2 cuando acaba una cuenta de fotogramas que no se rearma por página. Otro valor deja la caja
-  sin cerrar (bloqueo) (comprobado).
-- La primera fila es el nombre del que habla, en un color: el domador, el partner (su nombre), el tipo de Digimon del
-  NPC, o un nombre especial (`0xC8`–`0xCD`); `0xFF` sin nombre. Tras `set_textbox_size` no hay nombre (comprobado).
-- Los códigos de control del texto solo insertan nombres, números, colores y tabuladores; **ninguno espera**
-  (comprobado). Las referencias a variables (número, Digimon, técnica, objeto, música, torneo) se resuelven al componer
-  la página.
+- `set_dialog_owner` or `set_textbox_size` **create** the box; `show_textbox` writes a page and waits (verified).
+- The next page is composed while the current one is shown: if the next command is another `show_textbox`, the
+  non-final page is released as soon as it is seen and the script runs to the next `show_textbox`, which composes and
+  waits. The box **stays open** after the last page until `fadeout_hud`, another owner or the end of the script
+  (verified, `script_textbox.c: showTextbox`, `tickConfirmDialogue`).
+- How the page is turned is said by `set_textbox_mode` (0 per section): 0 wait for confirm (releasing the button
+  first), 1 as soon as it has been written, 2 when a frame count ends that is not rearmed per page. Another value
+  leaves the box unclosed (lock) (verified).
+- The first row is the speaker's name, in a color: the tamer, the partner (its name), the NPC's Digimon type, or a
+  special name (`0xC8`–`0xCD`); `0xFF` without a name. After `set_textbox_size` there is no name (verified).
+- The text control codes only insert names, numbers, colors and tabs; **none waits** (verified). References to
+  variables (number, Digimon, technique, item, music, tournament) are resolved when composing the page.
 
-### Combate (`start_battle`)
+### Combat (`start_battle`)
 
-- **Rival** (comprobado, `scriptInstruction64to7E`, `btl.c: handleBattleStart`): si la variable 250 vale 1, combate
-  predefinido: las variables 251–253 tienen hasta tres ids de script de enemigos (`0xFF` vacío), que el intérprete
-  reescribe en su sitio con índices de entidad; los demás NPC visibles huyen. Si no, el rival es el NPC con el que se
-  habló al empezar la sección, y hasta dos NPC cercanos pueden unirse (tabla de huida por tipos, línea de visión,
-  objetos que cambian la tirada; el disparador 1 los obliga). El operando de la orden se lee y se ignora.
-- Para la música, suma un combate empezado y corre **todo el combate dentro de la orden**; pasan siempre 20 minutos
-  de juego (comprobado, `tamer.c: startBattle`).
-- **Resultado** en la variable 255, con signo:
-  - **−1, derrota:** felicidad −30, disciplina −20; se pierde el 30 % (redondeo abajo) de las pilas ocupadas, al azar,
-    que pasan al reciclaje, y la cuenta queda en la variable 200; vida −1 y, si llega a 0, la vida restante a 0. El
-    puntero salta a `MAPHEAD 0x4DE` **sin apilar**: el resto del script se pierde y sus marcos se desapilan al acabar
-    `0x4DE` (comprobado, `handleItemLoss`).
-  - **0, huida:** felicidad −10, disciplina −6, cansancio +2; suma una huida; warp con guion a la pantalla y salida
-    anteriores, sin nombre, con un marco 4 vacío. El resto del script no corre (comprobado).
-  - **1, victoria:** vuelve la música del mapa, felicidad +2. Con el disparador 1, sigue en el acto tras la orden;
-    sin él, la cámara vuelve al domador y la orden espera a que llegue (comprobado).
-- Con la vida restante a 0, la muerte por vejez dispara `0x4DE` después. La rutina 47 olvida técnicas
-  (abajo); que `0x4DE` la llame solo con 0 vidas es suposición.
+- **Rival** (verified, `scriptInstruction64to7E`, `btl.c: handleBattleStart`): if variable 250 is 1, predefined
+  combat: variables 251–253 hold up to three enemy script ids (`0xFF` empty), which the interpreter rewrites in place
+  with entity indexes; the other visible NPCs flee. If not, the rival is the NPC that was talked to when the section
+  started, and up to two nearby NPCs can join (flee table by types, line of sight, items that change the roll; trigger
+  1 forces them). The command's operand is read and ignored.
+- For the music, it adds one battle started and runs **the whole combat inside the command**; 20 game minutes always
+  pass (verified, `tamer.c: startBattle`).
+- **Result** in variable 255, signed:
+  - **−1, defeat:** happiness −30, discipline −20; 30% (rounded down) of the occupied stacks are lost, at random,
+    going to recycling, and the count is left in variable 200; life −1 and, if it reaches 0, the remaining life to 0.
+    The pointer jumps to `MAPHEAD 0x4DE` **without pushing**: the rest of the script is lost and its frames are
+    popped when `0x4DE` ends (verified, `handleItemLoss`).
+  - **0, flee:** happiness −10, discipline −6, tiredness +2; it adds a flee; scripted warp to the previous screen and
+    exit, without a name, with an empty type 4 frame. The rest of the script does not run (verified).
+  - **1, victory:** the map music returns, happiness +2. With trigger 1, it continues on the spot after the command;
+    without it, the camera returns to the tamer and the command waits for it to arrive (verified).
+- With the remaining life at 0, death by old age fires `0x4DE` afterward. Routine 47 forgets techniques (below); that
+  `0x4DE` calls it only with 0 lives is an assumption.
 
-### Las órdenes
+### The commands
 
-Las 78 que usa el disco, por grupos. "Espera" dice si cede el fotograma; "congela" si llama a `scriptPauseGame`.
-Todo comprobado en `script_interp.c` y los ficheros que se citan, salvo lo marcado.
+The 78 that the disc uses, by groups. "Waits" says whether it yields the frame; "freezes" whether it calls
+`scriptPauseGame`. Everything verified in `script_interp.c` and the files cited, except what is marked.
 
-#### Flujo
+#### Flow
 
-| Orden | Usos | Qué hace |
+| Command | Uses | What it does |
 |---|---|---|
-| `jump_to` | 3252 | salta a un destino del mismo fichero |
-| `if` | 2985 | ver [`IF`](#if) |
-| `end_section`, `end_script` | 2811, 222 | fin: desapila hasta vaciar la pila (ver [la pila](#la-pila-de-llamadas)) |
-| `set_selection` | 330 | espera; ver [`SET_SELECTION`](#switch-y-set_selection) |
-| `jump_and_link` | 136 | apila la vuelta (tipo 1) y salta |
-| `jump_to_file` | 135 | salta a una sección de otro script, sin apilar; si la sección no existe, corre basura |
-| `jump_return` | 14 | vuelve al marco de arriba |
-| `switch` | 6 | ver [`SWITCH`](#switch-y-set_selection) |
-| `set_script` | 255 | fija el script y la pantalla actuales, para la música, carga el mapa en el acto y apila un marco 3; sigue en el mismo fotograma |
-| `section_on_exit` | 4 | apila un marco 4 con una sección del script de mapa, que correrá al acabar el actual; además restaura ya la variable 0 |
-| `data` | 240 | tabla que leen los torneos; si se ejecutara no haría nada y sus bytes correrían como órdenes (no ocurre: siempre va tras un fin o un salto) |
+| `jump_to` | 3252 | jumps to a target in the same file |
+| `if` | 2985 | see [`IF`](#if) |
+| `end_section`, `end_script` | 2811, 222 | end: pops until the stack is empty (see [the stack](#the-call-stack)) |
+| `set_selection` | 330 | waits; see [`SET_SELECTION`](#switch-and-set_selection) |
+| `jump_and_link` | 136 | pushes the return (type 1) and jumps |
+| `jump_to_file` | 135 | jumps to a section of another script, without pushing; if the section does not exist, it runs garbage |
+| `jump_return` | 14 | returns to the top frame |
+| `switch` | 6 | see [`SWITCH`](#switch-and-set_selection) |
+| `set_script` | 255 | sets the current script and screen, for the music, loads the map on the spot and pushes a type 3 frame; it continues in the same frame |
+| `section_on_exit` | 4 | pushes a type 4 frame with a section of the map script, which will run when the current one ends; it also restores variable 0 right away |
+| `data` | 240 | table that the tournaments read; if it were executed it would do nothing and its bytes would run as commands (it does not happen: it always comes after an end or a jump) |
 
-`jump_to_file_and_link` existe pero el disco no la usa.
+`jump_to_file_and_link` exists but the disc does not use it.
 
-#### Texto y diálogo
+#### Text and dialog
 
-| Orden | Usos | Qué hace |
+| Command | Uses | What it does |
 |---|---|---|
-| `show_textbox` | 4327 | escribe una página y **espera** (ver [Texto](#texto)) |
-| `set_dialog_owner` | 3607 | si cambia el dueño (o la caja está cerrada): **congela** (y al NPC dueño) y crea la caja 0, que sale de la posición del dueño o del punto de `set_textbox_origin`; mismo dueño con la caja abierta: nada |
-| `set_textbox_size` | 22 | **congela** y crea una caja centrada de N columnas y filas, sin nombre; confirmar pasa página y cierra tras la última; cancelar compone todas las páginas que quedan y cierra |
-| `set_textbox_mode` | 33 | modo de paso de página (0, 1, 2) y fotogramas del modo 2 |
-| `set_textbox_origin` | 19 | punto del mundo del que saldrá la próxima caja con dueño; se usa una vez |
-| `fadeout_hud` | 560 | cierra la caja de interfaz N (0 = diálogo) y **cede un fotograma**; no espera a la animación |
+| `show_textbox` | 4327 | writes a page and **waits** (see [Text](#text)) |
+| `set_dialog_owner` | 3607 | if the owner changes (or the box is closed): **freezes** (and the owner NPC) and creates box 0, which comes out of the owner's position or of the point from `set_textbox_origin`; same owner with the box open: nothing |
+| `set_textbox_size` | 22 | **freezes** and creates a centered box of N columns and rows, without a name; confirm turns the page and closes after the last; cancel composes all the remaining pages and closes |
+| `set_textbox_mode` | 33 | page-turning mode (0, 1, 2) and frames of mode 2 |
+| `set_textbox_origin` | 19 | world point from which the next box with an owner will come out; used once |
+| `fadeout_hud` | 560 | closes interface box N (0 = dialog) and **yields a frame**; it does not wait for the animation |
 
-#### Disparadores, variables y fecha
+#### Triggers, variables and date
 
-| Orden | Usos | Qué hace |
+| Command | Uses | What it does |
 |---|---|---|
-| `set_trigger`, `unset_trigger` | 1146, 227 | pone o quita un bit, sin límites |
-| `set_pstat` | 1801 | escribe el valor |
-| `add_to_pstat` | 272 | suma con tope 255 (sin dar la vuelta) |
-| `copy_pstat` | 2 | copia una variable en otra |
-| `store_random` | 466 | un número al azar de 0 a `max`, ambos incluidos |
-| `store_digimon_type` | 39 | el Digimon del partner |
-| `store_digimon_value` | 3 | el byte de tipo (suposición: vacuna/datos/virus) del Digimon cuyo id hay en una variable |
-| `store_date` | 110 | año, día, hora y minuto en cuatro variables seguidas |
-| `advance_to_date_at` | 17 | pone el reloj en la fecha de cuatro variables; si es posterior, antes simula las horas saltadas en el partner (hambre, vida, enfermedad...); si es anterior, solo la pone; si cambia el día, corre el cambio de día |
-| `add_minutes_to_date_at` | 17 | suma minutos a la fecha de cuatro variables (no al reloj); por encima de 255 años queda en un valor raro (25 años, 14 días, 23:59) |
+| `set_trigger`, `unset_trigger` | 1146, 227 | sets or clears a bit, without limits |
+| `set_pstat` | 1801 | writes the value |
+| `add_to_pstat` | 272 | adds with a cap of 255 (without wrapping) |
+| `copy_pstat` | 2 | copies one variable into another |
+| `store_random` | 466 | a random number from 0 to `max`, both included |
+| `store_digimon_type` | 39 | the partner's Digimon |
+| `store_digimon_value` | 3 | the type byte (assumption: vaccine/data/virus) of the Digimon whose id is in a variable |
+| `store_date` | 110 | year, day, hour and minute into four consecutive variables |
+| `advance_to_date_at` | 17 | sets the clock to the date in four variables; if it is later, it first simulates the skipped hours on the partner (hunger, life, sickness...); if it is earlier, it only sets it; if the day changes, it runs the day change |
+| `add_minutes_to_date_at` | 17 | adds minutes to the date in four variables (not to the clock); above 255 years it ends at an odd value (25 years, 14 days, 23:59) |
 
-No las usa el disco: `reduce_pstat` (resta con suelo 0), `store_map_id`, `compare_date` (compara una fecha de
-variables con una literal y deja el resultado en un disparador), `set_merit`, `add_merit`, `reduce_merit` y la `39`
-(que **resta** minutos).
+Not used by the disc: `reduce_pstat` (subtracts with floor 0), `store_map_id`, `compare_date` (compares a date from
+variables with a literal one and leaves the result in a trigger), `set_merit`, `add_merit`, `reduce_merit` and `39`
+(which **subtracts** minutes).
 
-#### Objetos, dinero, técnicas, cartas y estadísticas
+#### Items, money, techniques, cards and stats
 
-| Orden | Usos | Qué hace |
+| Command | Uses | What it does |
 |---|---|---|
-| `give_item` | 255 | da objetos; pone el disparador 0 si falla (pila a 99, bolsa llena) y lo quita si no. Ver [inventario](inventory.md) |
-| `remove_item` | 63 | quita de **cada** pila del objeto; el 255 no hace nada |
-| `set_inventory_size` | 11 | fija los huecos usables, sin tope ni limpiar los de fuera |
-| `add_money`, `reduce_money` | 54, 57 | tope 999 999, suelo 0 |
-| `learn_move` | 118 | el partner aprende la técnica; dos pares de técnicas se aprenden juntas |
-| `give_card`, `take_card` | 67, 5 | +1 con tope 9, −1 con suelo 0 |
-| `set_stat`, `add_stat`, `reduce_stat` | 71, 292, 54 | ver abajo |
-| `remove_condition` | 8 | quita bits de la condición del partner (sueño, cansancio, hambre, baño, infelicidad, herida, enfermedad); no toca sus temporizadores |
-| `deal_damage` | 32 | **congela**; quita al partner el porcentaje de su HP máximo que dice una variable (el operando es la variable, no el número), sin bajar de 1 HP; muestra el número |
+| `give_item` | 255 | gives items; sets trigger 0 if it fails (stack at 99, bag full) and clears it if not. See [inventory](inventory.md) |
+| `remove_item` | 63 | removes from **each** stack of the item; 255 does nothing |
+| `set_inventory_size` | 11 | sets the usable slots, without a cap or clearing the ones outside |
+| `add_money`, `reduce_money` | 54, 57 | cap 999,999, floor 0 |
+| `learn_move` | 118 | the partner learns the technique; two pairs of techniques are learned together |
+| `give_card`, `take_card` | 67, 5 | +1 with cap 9, −1 with floor 0 |
+| `set_stat`, `add_stat`, `reduce_stat` | 71, 292, 54 | see below |
+| `remove_condition` | 8 | clears bits of the partner's condition (sleep, tiredness, hunger, bathroom, unhappiness, injury, sickness); it does not touch its timers |
+| `deal_damage` | 32 | **freezes**; takes from the partner the percentage of its max HP that a variable says (the operand is the variable, not the number), without going below 1 HP; shows the number |
 
-Estadísticas de `set_stat`, `add_stat` y `reduce_stat` (y de la prueba de `IF`), comprobado en
+Stats of `set_stat`, `add_stat` and `reduce_stat` (and of the `IF` test), verified in
 `script_value.c: getStatsPointer`:
 
-| Id | Estadística | Tope |
+| Id | Stat | Cap |
 |---|---|---|
-| 0–3 | ataque, defensa, velocidad, inteligencia | 999 |
-| 4, 5 | HP y MP máximos | 9999 |
-| 6, 7 | HP y MP actuales | el máximo actual |
-| 8, 9 | cansancio, felicidad (con signo) | 100 |
-| 10–13 | disciplina, energía, virus, vida restante | 999 |
-| 14 | méritos | 9999 |
-| 15, 16 | combates empezados, huidas | 9999 |
-| 17–19 | torneos ganados, victorias en torneo, torneos perdidos | 999 |
-| 20 | peso | 99 |
-| 21 | nivel del domador | 10 |
-| 22 | vidas del partner | lee fuera de la tabla (sin tope fiable) |
+| 0–3 | offense, defense, speed, Brains | 999 |
+| 4, 5 | max HP and MP | 9999 |
+| 6, 7 | current HP and MP | the current max |
+| 8, 9 | tiredness, happiness (signed) | 100 |
+| 10–13 | discipline, energy, virus, remaining life | 999 |
+| 14 | merits | 9999 |
+| 15, 16 | battles started, flees | 9999 |
+| 17–19 | tournaments won, tournament victories, tournaments lost | 999 |
+| 20 | weight | 99 |
+| 21 | tamer level | 10 |
+| 22 | partner lives | reads outside the table (no reliable cap) |
 
-- `set_stat` pone `min(valor, tope)`; `add_stat` suma en 16 bits con signo y aplica el tope; ninguno tiene suelo.
-  `reduce_stat` no aplica tope y tiene suelo 0 (−100 la felicidad). Después de cualquiera de los tres, la energía se
-  recorta al tope de la especie y se quita el hambre si la energía llega al umbral (comprobado,
-  `scriptUpdateEnergyBoundaries`). Cambiar el HP máximo no toca el actual.
+- `set_stat` sets `min(value, cap)`; `add_stat` adds in signed 16 bits and applies the cap; neither has a floor.
+  `reduce_stat` applies no cap and has floor 0 (−100 for happiness). After any of the three, energy is trimmed to the
+  species' cap and hunger is removed if energy reaches the threshold (verified, `scriptUpdateEnergyBoundaries`).
+  Changing max HP does not touch the current one.
 
-#### Digimon y entidades
+#### Digimon and entities
 
-Las entidades son `tamer`, `partner` o el id de script de un NPC; un NPC que no está hace que la orden no haga nada
-(comprobado, `scriptIdToEntityId`), salvo donde se dice.
+The entities are `tamer`, `partner` or an NPC's script id; an NPC that is not there makes the command do nothing
+(verified, `scriptIdToEntityId`), except where stated.
 
-| Orden | Usos | Espera | Qué hace |
+| Command | Uses | Waits | What it does |
 |---|---|---|---|
-| `load_digimon` | 502 | no | carga el modelo en el primero de 8 huecos; con los 8 llenos no hace nada |
-| `set_digimon` | 756 | no, congela | aparece el NPC del hueco 0–7 del mapa si el Digimon coincide con el de la tabla del mapa (si no, nada), con su posición, giro y animación, y fija su `autotalk` |
-| `unload_entity` | 119 | no, congela | quita la entidad; a los NPC además los libera. Un NPC que no está: comportamiento indefinido |
-| `unload_digimon` | 10 | no | descarga un modelo si está entre los cargados |
-| `set_autotalk` | 8 | no | cambia el `autotalk` de un NPC |
-| `call_digimon_routine` | 55 | no, congela | pone al domador o al partner en una escena (abajo); al acabar pone la marca de sincronía; se espera con `wait_for_entity 0xC9` |
-| `play_animation` | 850 | no | arranca una animación (estado de animación con guion); no espera a que acabe |
-| `entity_set_rotation` | 336 | no, congela | gira la entidad en el siguiente fotograma (hueco de movimiento) |
-| `entity_look_at_entity` | 607 | no, congela | gira la entidad hacia otra, como mucho 0x200 por fotograma |
-| `entity_walk_to` | 547 | no, congela | camina a un punto con su animación de andar hasta pisar su casilla; luego vuelve a la animación 0 |
-| `entity_walk_to_entity` | 38 | no, congela | igual hacia otra entidad; acaba también al chocar |
-| `entity_walk_to_with_camera`, `entity_walk_to_entity_with_camera` | 57, 1 | no, congela | igual, con la cámara siguiendo al que anda |
-| `entity_move_to` | 57 | no, congela | desliza a un punto en N fotogramas, sin animación |
-| `entity_move_to_axis`, `entity_move_to_axis_with_camera` | 15, 27 | no, congela | desliza una coordenada (X, altura o Z) en N fotogramas |
-| `move_camera_to`, `move_camera_to_entity` | 62, 158 | no, congela | lleva la cámara a un punto o a una entidad |
-| `wait_for_entity` | 806 | **sí** | ver [Movimientos](#movimientos-con-guion) |
-| `warp_to` | 723 | cambio de mapa, congela | ver abajo |
-| `teleport` | 1 | cambio de mapa, congela | como `warp_to` con pantalla y salida de dos variables y sin sección de llegada |
+| `load_digimon` | 502 | no | loads the model into the first of 8 slots; with all 8 full it does nothing |
+| `set_digimon` | 756 | no, freezes | the NPC from slot 0–7 of the map appears if the Digimon matches the one in the map's table (if not, nothing), with its position, turn and animation, and sets its `autotalk` |
+| `unload_entity` | 119 | no, freezes | removes the entity; for NPCs it also frees them. An NPC that is not there: undefined behavior |
+| `unload_digimon` | 10 | no | unloads a model if it is among the loaded ones |
+| `set_autotalk` | 8 | no | changes an NPC's `autotalk` |
+| `call_digimon_routine` | 55 | no, freezes | puts the tamer or the partner into a scene (below); when it ends it sets the sync mark; it is waited for with `wait_for_entity 0xC9` |
+| `play_animation` | 850 | no | starts an animation (scripted animation state); it does not wait for it to end |
+| `entity_set_rotation` | 336 | no, freezes | turns the entity on the next frame (movement slot) |
+| `entity_look_at_entity` | 607 | no, freezes | turns the entity toward another, at most 0x200 per frame |
+| `entity_walk_to` | 547 | no, freezes | walks to a point with its walk animation until stepping on its cell; then goes back to animation 0 |
+| `entity_walk_to_entity` | 38 | no, freezes | the same toward another entity; it also ends on colliding |
+| `entity_walk_to_with_camera`, `entity_walk_to_entity_with_camera` | 57, 1 | no, freezes | the same, with the camera following the one walking |
+| `entity_move_to` | 57 | no, freezes | slides to a point in N frames, without animation |
+| `entity_move_to_axis`, `entity_move_to_axis_with_camera` | 15, 27 | no, freezes | slides one coordinate (X, height or Z) in N frames |
+| `move_camera_to`, `move_camera_to_entity` | 62, 158 | no, freezes | takes the camera to a point or to an entity |
+| `wait_for_entity` | 806 | **yes** | see [Movements](#scripted-movements) |
+| `warp_to` | 723 | map change, freezes | see below |
+| `teleport` | 1 | map change, freezes | like `warp_to` with screen and exit from two variables and without an arrival section |
 
-- **`warp_to` (pantalla, salida, sección)** apila un marco 4 con la sección y empieza el cambio de mapa: cierra las
-  cajas, restaura la variable 0, fundido de 20 fotogramas (el nombre según la variable 6), la cadena de carga del mapa
-  nuevo (que **sustituye** el puntero del script) y fundido de entrada. **Las órdenes que siguen al warp nunca corren**.
-  Tras la cadena, el marco 4 corre la sección de llegada del script del mapa nuevo (`0xFF`: ninguna) y luego se
-  desapilan los marcos que quedaran (comprobado, `scriptInstruction46to58`, `map.c: scriptTickChangeMap`).
-- Las órdenes de deslizar usan el operando de velocidad como **número de pasos**: 0 divide entre cero. Y guardan su
-  avance en variables globales compartidas: solo puede correr un deslizamiento a la vez (comprobado,
-  `tamer.c: tickEntityMoveTo`).
+- **`warp_to` (screen, exit, section)** pushes a type 4 frame with the section and starts the map change: it closes
+  the boxes, restores variable 0, a 20-frame fade (the name according to variable 6), the new map's load chain (which
+  **replaces** the script pointer) and fade-in. **The commands that follow the warp never run**. After the chain, the
+  type 4 frame runs the arrival section of the new map's script (`0xFF`: none) and then the frames that were left are
+  popped (verified, `scriptInstruction46to58`, `map.c: scriptTickChangeMap`).
+- The slide commands use the speed operand as the **number of steps**: 0 divides by zero. And they store their progress
+  in shared global variables: only one slide can run at a time (verified, `tamer.c: tickEntityMoveTo`).
 
-`call_digimon_routine` (comprobado, `partner.c: callDigimonRoutine`, `tamer.c`): 0 el partner va al baño del mapa;
-1 curling; 2 deshace el `species_p` (vuelve a la especie de la variable 5); 3 muerte; 4 secuencia de renacer (la vida vuelve
-a 360); 5 la apertura; 6 el final; 7 vida perdida por enfermedad; 8 aparece `species_t`; 9 vida perdida en combate;
-10 evoluciona al Digimon de la variable 254. Otro id no hace nada (y no quita la marca de sincronía).
+`call_digimon_routine` (verified, `partner.c: callDigimonRoutine`, `tamer.c`): 0 the partner goes to the map's
+bathroom; 1 curling; 2 undoes `species_p` (goes back to the species in variable 5); 3 death; 4 rebirth sequence (life
+goes back to 360); 5 the opening; 6 the ending; 7 life lost to sickness; 8 `species_t` appears; 9 life lost in combat;
+10 evolves into the Digimon in variable 254. Another id does nothing (and does not clear the sync mark).
 
-#### Mapa, objetos y efectos
+#### Map, objects and effects
 
-| Orden | Usos | Qué hace |
+| Command | Uses | What it does |
 |---|---|---|
-| `set_obj_visibility` | 1669 | fija la marca de un objeto del mapa (`overworld.c: setMapObjectsFlag`); 1 lo oculta, como lee el dibujo de capas (`MapObjectInstance::HiddenFlag`) |
-| `move_object_to` | 293 | lleva un objeto 2D del mapa a un punto de pantalla en N pasos (huecos 12–21, varios a la vez) |
-| `rotate_3d_object` | 103 | anima una puerta, ascensor o corredera del mapa según su modelo (hueco 11, uno a la vez) |
-| `spawn_item` | 241 | deja un objeto en el suelo (11 huecos; lleno: nada) |
-| `spawn_chest` | 71 | pone un cofre (8 huecos) con su objeto; su disparador dice si ya se cogió (sale abierto y vacío) y se pone al cogerlo |
-| `spawn_boulder`, `move_boulder`, `despawn_boulder` | 1, 13, 1 | la roca de un mapa concreto (posición fija); `move_boulder` cambia su altura y Z, la hace rodar y **cede un fotograma** (los scripts lo repiten para animarla) |
-| `set_rect_impassable` | 16 | marca un rectángulo de casillas como no pisable hasta recargar el mapa |
-| `spawn_sprite_at_entity` | 18 | centra objetos 2D del mapa en un nodo del modelo de una entidad |
-| `call_routine` | 674 | ver [Rutinas](#rutinas-call_routine) |
-| `start_battle` | 499 | ver [Combate](#combate-start_battle) |
-| `delay` | 1817 | **espera** N fotogramas (0: uno) |
+| `set_obj_visibility` | 1669 | sets a map object's mark (`overworld.c: setMapObjectsFlag`); 1 hides it, as the layer drawing reads it (`MapObjectInstance::HiddenFlag`) |
+| `move_object_to` | 293 | takes a 2D map object to a screen point in N steps (slots 12–21, several at once) |
+| `rotate_3d_object` | 103 | animates a door, elevator or sliding door of the map according to its model (slot 11, one at a time) |
+| `spawn_item` | 241 | leaves an item on the ground (11 slots; full: nothing) |
+| `spawn_chest` | 71 | places a chest (8 slots) with its item; its trigger says whether it has already been taken (it comes out open and empty) and is set when taking it |
+| `spawn_boulder`, `move_boulder`, `despawn_boulder` | 1, 13, 1 | the boulder of one specific map (fixed position); `move_boulder` changes its height and Z, makes it roll and **yields a frame** (scripts repeat it to animate it) |
+| `set_rect_impassable` | 16 | marks a rectangle of cells as not walkable until the map reloads |
+| `spawn_sprite_at_entity` | 18 | centers 2D map objects on a node of an entity's model |
+| `call_routine` | 674 | see [Routines](#routines-call_routine) |
+| `start_battle` | 499 | see [Combat](#combat-start_battle) |
+| `delay` | 1817 | **waits** N frames (0: one) |
 
-#### Sonido
+#### Sound
 
-| Orden | Usos | Qué hace |
+| Command | Uses | What it does |
 |---|---|---|
-| `play_sound` | 496 | toca un sonido de un banco |
-| `set_bgm` | 266 | pone una pista (la reinicia aunque sea la misma); la variable 245 elige la variante de día o noche o una fija; `0xFF` para |
+| `play_sound` | 496 | plays a sound from a bank |
+| `set_bgm` | 266 | sets a track (restarts it even if it is the same); variable 245 chooses the day or night variant or a fixed one; `0xFF` stops |
 
-### Rutinas (`call_routine`)
+### Routines (`call_routine`)
 
-Una orden con el número de rutina; el argumento suele ir en la variable 254. Todas las del 0 al 56 tienen caso; la 3,
-4, 5 y 17 no hacen nada y las de 57 en adelante tampoco (comprobado, `scriptInstruction64to7E` y `tickScript`). Las
-que "esperan" corren una máquina de estados propia cada fotograma hasta acabar. La columna **4a** propone cuáles hacen
-falta para correr los eventos de la historia y las tiendas en la fase 4a (propuesta, la decide el manager).
-Desde entonces la historia se juega entera y las rutinas que usa están en `packages/session/src/story_routines/`; qué
-queda de cada una lo dice la [cobertura del port](port-coverage.md) (nota de 2026-11-06).
+A command with the routine number; the argument usually goes in variable 254. All from 0 to 56 have a case; 3, 4, 5
+and 17 do nothing and those from 57 on do not either (verified, `scriptInstruction64to7E` and `tickScript`). The ones
+that "wait" run a state machine of their own every frame until they end. The routines the story uses are in
+`packages/session/src/story_routines/`; what is left of each is said by the [port coverage](port-coverage.md).
 
-| Id | Usos | Qué hace | Espera | Decomp | 4a |
-|---|---|---|---|---|---|
-| 0 | 76 | elegir un objeto que se pueda tirar; el elegido en la 254 (`0xFF` al cancelar, y solo se puede cancelar con el disparador 3) | sí | `script_common.c: openDiscardItem` | sí |
-| 1 | 2 | tienda de méritos (cartas por méritos, objetos con méritos) | sí | `shop/script_menu.c: openMeritShop` | más tarde |
-| 2 | 4 | el trueque de objetos (tres ofertas, conjunto en la 249) | sí | `script_menu.c`, la tienda del trueque | más tarde |
-| 6 | 3 | correr el torneo inscrito (copa en la 3; rondas ganadas en la 255) | sí | `tournament.c: scriptStartTournament`, `utils2.c: startTournament` | más tarde |
-| 7 | 32 | entrenamiento del gimnasio (tipo en la 254); necesita la 39 antes | sí | `script_interp.c` + overlays de entrenamiento | sí |
-| 8 | 13 | tienda de objetos; con el disparador 3, reciclaje | sí | `script_common.c: openShop`, `script_menu.c: openRecycleShop` | sí |
-| 9 | 2 | gramola | sí | `script_menu.c: openJukebox` | más tarde |
-| 10 | 2 | transporte de `species_e`: destino en 247/248, cobra y salta a `MAPHEAD 0x4E3` | sí | `script_menu.c: tickBirdraTransport` | más tarde |
-| 11 | 2 | guardarropa de objetos | sí | `script_menu.c: tickItemKeeper` | más tarde |
-| 12, 13 | 12, 69 | quitar uno / la pila entera del objeto de la 254 | no | `item.c: removeItem` | sí |
-| 14 | 6 | cartas: vender (disparador 3), comprar sueltas (disparador 4) o abrir un sobre | sí | `script_menu.c: openSellCardMenu`, `openBuyCardMenu`, `rollCardPack` | más tarde |
-| 15, 16 | 2, 2 | mostrar / cerrar la caja del dinero (la 16 cede un fotograma) | no | `script_common.c: createShopBitsBox` | sí |
-| 18 | 2 | mostrador de inscripción de torneos (copa, día, tipo; disparadores 37–40) | sí | `dget.c: initTournamentSchedule` | más tarde |
-| 19, 20, 26, 27 | 10, 11, 3, 1 | carro y montón de tierra (modelo, encoger) | 19, 20: un fotograma | `map_object.c` | más tarde |
-| 21 | 107 | reiniciar la animación de objetos 2D del mapa (247, 248) | un fotograma | `overworld.c: resetMapObjectAnimation` | sí |
-| 22 | 5 | comprobar y dar medallas de torneo | si da una | `tournament.c: scriptCheckTournamentMedal` | más tarde |
-| 23, 24 | — | abrir / cerrar la bandeja del cofre de la 254 | sí, unos 8 fotogramas | `map_object.c` | no: el disco no la usa |
-| 25 | 7 | el valor al que vuelve la variable 0 al acabar = la 254 | no | `script_interp.c` | sí |
-| 28 | 140 | burbuja de humor de `species_ai` (247, 248) | no | `script_common.c: createMonochromonMoodBubble` | más tarde |
-| 29 | 1 | elegir huevo al renacer | sí | `doo2.c: DOO2_openEggBox` | sí |
-| 30, 31, 56 | 2, 97, 4 | acumulador de tienda: a 0, sumar 243/244, guardarlo en 243/244 | no | `script_interp.c` | sí |
-| 32 | 4 | introducción y nombres de la partida nueva (elección de huevo en la 254) | sí | `script_menu.c: newGameStateMachine` | sí |
-| 33 | 1 | inscribir a la fuerza en la copa especial | no | `script_interp.c` | más tarde |
-| 34, 37, 38 | 1, 1, 1 | efectos de un mapa: temblor de `species_b`, quitar niebla (espera), `species_bo` | 37: sí | `map.c`, `overworld.c` | más tarde |
-| 35, 39 | 3, 16 | carga asíncrona de la librería de tiendas / de entrenamiento (se espera con `wait_for_entity 0xD6`) | no | `script_common.c: loadShopLibrary`, `map.c: loadTrainingLibrary` | sí |
-| 36 | — | recargar el fondo del mapa | no | `map.c: readMapTFS` | no: el disco no la usa |
-| 40, 51 | 1, 1 | jefe final: precargar y efecto de aparición | no | `eab.c`, `script_interp.c` | más tarde |
-| 41–44 | 1, 3, 1, 3 | cajas de Toy Town | no | `map_object.c` | más tarde |
-| 45, 46 | 3, 2 | fundido a blanco y desde blanco en N fotogramas (254) | no | `fade.c` | sí |
-| 47 | 2 | olvidar técnicas por perder todas las vidas (un texto por técnica) | sí | `script_common.c: lostAllLives` | sí |
-| 48 | 2 | máquina de guardar | sí | `main_menu.c: openSaveMachine` | sí |
-| 49, 50 | 1, 2 | pedestal de `species_ap` (aparecer; temblar, espera) | 50: sí | `map_object.c` | más tarde |
-| 52, 53 | 1, 1 | precargar y correr el final; luego créditos y título | 53: sí | `tamer.c: tamerTickEnding` | más tarde |
-| 54 | 1 | guardar la partida terminada | sí | `main_menu.c: gameClearSave` | más tarde |
-| 55 | 5 | una sola vuelta de animación para la entidad de la 254 | un fotograma | `overworld.c: setLoopCountToOne` | sí |
+| Id | Uses | What it does | Waits | Decomp |
+|---|---|---|---|---|
+| 0 | 76 | choose an item that can be dropped; the chosen one in 254 (`0xFF` on cancel, and it can only be canceled with trigger 3) | yes | `script_common.c: openDiscardItem` |
+| 1 | 2 | merit shop (cards for merits, items for merits) | yes | `shop/script_menu.c: openMeritShop` |
+| 2 | 4 | the item swap (three offers, set in 249) | yes | `script_menu.c`, the swap shop |
+| 6 | 3 | run the registered tournament (cup in 3; rounds won in 255) | yes | `tournament.c: scriptStartTournament`, `utils2.c: startTournament` |
+| 7 | 32 | gym training (type in 254); needs 39 before | yes | `script_interp.c` + training overlays |
+| 8 | 13 | item shop; with trigger 3, recycling | yes | `script_common.c: openShop`, `script_menu.c: openRecycleShop` |
+| 9 | 2 | jukebox | yes | `script_menu.c: openJukebox` |
+| 10 | 2 | `species_e` transport: destination in 247/248, charges and jumps to `MAPHEAD 0x4E3` | yes | `script_menu.c: tickBirdraTransport` |
+| 11 | 2 | item keeper | yes | `script_menu.c: tickItemKeeper` |
+| 12, 13 | 12, 69 | remove one / the whole stack of the item in 254 | no | `item.c: removeItem` |
+| 14 | 6 | cards: sell (trigger 3), buy single ones (trigger 4) or open a pack | yes | `script_menu.c: openSellCardMenu`, `openBuyCardMenu`, `rollCardPack` |
+| 15, 16 | 2, 2 | show / close the money box (16 yields a frame) | no | `script_common.c: createShopBitsBox` |
+| 18 | 2 | tournament registration counter (cup, day, type; triggers 37–40) | yes | `dget.c: initTournamentSchedule` |
+| 19, 20, 26, 27 | 10, 11, 3, 1 | cart and dirt pile (model, shrink) | 19, 20: one frame | `map_object.c` |
+| 21 | 107 | restart the animation of 2D map objects (247, 248) | one frame | `overworld.c: resetMapObjectAnimation` |
+| 22 | 5 | check and give tournament medals | if it gives one | `tournament.c: scriptCheckTournamentMedal` |
+| 23, 24 | — | open / close the tray of the chest in 254 | yes, about 8 frames | `map_object.c` |
+| 25 | 7 | the value variable 0 goes back to at the end = 254 | no | `script_interp.c` |
+| 28 | 140 | `species_ai` mood bubble (247, 248) | no | `script_common.c: createMonochromonMoodBubble` |
+| 29 | 1 | choose egg on rebirth | yes | `doo2.c: DOO2_openEggBox` |
+| 30, 31, 56 | 2, 97, 4 | shop accumulator: to 0, add 243/244, store it in 243/244 | no | `script_interp.c` |
+| 32 | 4 | introduction and names of the new game (egg choice in 254) | yes | `script_menu.c: newGameStateMachine` |
+| 33 | 1 | force registration in the special cup | no | `script_interp.c` |
+| 34, 37, 38 | 1, 1, 1 | effects of a map: `species_b` shake, remove fog (waits), `species_bo` | 37: yes | `map.c`, `overworld.c` |
+| 35, 39 | 3, 16 | asynchronous load of the shop / training library (waited for with `wait_for_entity 0xD6`) | no | `script_common.c: loadShopLibrary`, `map.c: loadTrainingLibrary` |
+| 36 | — | reload the map background | no | `map.c: readMapTFS` |
+| 40, 51 | 1, 1 | final boss: preload and appearance effect | no | `eab.c`, `script_interp.c` |
+| 41–44 | 1, 3, 1, 3 | Toy Town boxes | no | `map_object.c` |
+| 45, 46 | 3, 2 | fade to white and from white in N frames (254) | no | `fade.c` |
+| 47 | 2 | forget techniques on losing all the lives (one text per technique) | yes | `script_common.c: lostAllLives` |
+| 48 | 2 | save machine | yes | `main_menu.c: openSaveMachine` |
+| 49, 50 | 1, 2 | `species_ap` pedestal (appear; shake, waits) | 50: yes | `map_object.c` |
+| 52, 53 | 1, 1 | preload and run the ending; then credits and title | 53: yes | `tamer.c: tamerTickEnding` |
+| 54 | 1 | save the finished game | yes | `main_menu.c: gameClearSave` |
+| 55 | 5 | a single animation loop for the entity in 254 | one frame | `overworld.c: setLoopCountToOne` |
 
-## Datos
+## Data
 
-- **`MAPHEAD.SCN`** (script 0, residente) y **`DG.SCN`** (221 scripts con código): ver
-  [el formato](../formats/scripts.md). `dwx` escribe un listado YAML por script; el formato del YAML es contrato con el
-  editor externo de mapas.
-- **Secciones de `MAPHEAD`** con tablas de texto que leen las rutinas (comprobado, `resolveMapHeadEntry`): `0x4C4`–`0x4CE`
-  frases de los tenderos por tipo de Digimon, `0x4D3` sobres de cartas, `0x4D4` méritos, `0x4D5` guardarropa, `0x4D6`
-  tiendas, `0x4D8` textos varios (torneos, técnicas olvidadas), `0x4DB` medallas.
-- **Bloques `DATA`**: tablas de los torneos (rivales por copa, disparadores que habilitan) dentro de las secciones de
-  las arenas; las leen `dget.c` y `utils2.c`, nunca el intérprete.
+- **`MAPHEAD.SCN`** (script 0, resident) and **`DG.SCN`** (221 scripts with code): see [the format](../formats/scripts.md).
+  `dwx` writes a YAML listing per script; the YAML's format is a contract with the external map editor.
+- **`MAPHEAD` sections** with text tables that the routines read (verified, `resolveMapHeadEntry`): `0x4C4`–`0x4CE`
+  shopkeepers' phrases by Digimon type, `0x4D3` card packs, `0x4D4` merits, `0x4D5` item keeper, `0x4D6` shops,
+  `0x4D8` miscellaneous texts (tournaments, forgotten techniques), `0x4DB` medals.
+- **`DATA` blocks**: tournament tables (rivals per cup, triggers that enable them) inside the arenas' sections; they
+  are read by `dget.c` and `utils2.c`, never by the interpreter.
 
-## Forma del control de flujo
+## Shape of the control flow
 
-Para R4.1 el Lua convertido no tiene saltos (decisión del usuario, 2026-10-21): `formats/script` construye el grafo de
-control de cada rutina y lo estructura en `if`/`else`, bucles con `break`, elecciones y llamadas a colas compartidas
-(`control_flow.hpp`, `structuring.hpp`). Lo que no se deja anidar (un bucle con dos entradas, una salida de dos bucles
-a la vez, demasiadas copias) se vuelve una máquina de estados: un bucle que despacha según una variable de estado.
-Cuentas sobre el disco americano (test lento `the user's disc, extracted: every event script routine structures and runs like its graph`):
+The converted Lua has no jumps (user's decision, 2026-10-21): `formats/script` builds the control graph of
+each routine and structures it into `if`/`else`, loops with `break`, choices and calls to shared tails
+(`control_flow.hpp`, `structuring.hpp`). What cannot be nested (a loop with two entries, an exit from two loops at
+once, too many copies) becomes a state machine: a loop that dispatches according to a state variable. Counts on the
+American disc (slow test `the user's disc, extracted: every event script routine structures and runs like its graph`):
 
-<!-- Las cifras las da el test lento; se actualizan al cambiar el análisis. -->
-- **222 scripts** (`MAPHEAD` y 221 de `DG.SCN`), **1553 secciones**, 7 subrutinas de `jump_and_link` y 353 colas
-  compartidas: código al que saltan varias rutinas (un final común, un bucle en el que entran varias secciones), que se
-  convierte una vez y se llama como última orden.
-- **1550 de 1553 secciones (99,8 %) quedan anidadas sin máquina de estados.** Las 3 que no: 2 con un bucle de dos
-  entradas (menús largos de diálogo que vuelven a mitad de una conversación) y 1 menú por páginas que salta de cada
-  página a cualquiera de las anteriores (salidas de varios bucles a la vez). Todas convierten igual: la máquina de estados es el
-  último recurso y vale para cualquier grafo, así que el 100 % de las secciones se convierte sin saltos.
-- 3569 `if`, 104 bucles, 127 `break`, 372 elecciones (`SWITCH`/`SET_SELECTION`) y 1247 llamadas a colas. Anidamiento
-  máximo 9 contando cada `elseif` al nivel de su primer `if`.
-- **Copias**: 48 rutinas llevan algún trozo copiado (colas cortas, de menos de 3 órdenes, que se repiten en vez de
-  llamarse). En total se emiten 31174 órdenes para 28282 distintas (1,10 veces).
-- **Ningún `IF` del disco tiene más de un salto**; 0 `jump_to_file_and_link`, 135 `jump_to_file`, 255 `set_script`;
-  ninguna referencia a una sección que no exista; 122 secciones comparten código con otra.
-- `warp_to` y `teleport` acaban el flujo como `end_section` (nada de lo que les sigue corre): el código muerto tras
-  ellos ya no cuenta, y un bucle de dos entradas que solo lo era por ese código pasa a anidarse.
-- Cada rutina corre las mismas órdenes que su grafo para varias secuencias de resultados de condiciones (comprobación
-  de paridad del test).
+<!-- The figures are given by the slow test; they are updated when the analysis changes. -->
+- **222 scripts** (`MAPHEAD` and 221 from `DG.SCN`), **1553 sections**, 7 `jump_and_link` subroutines and 353 shared
+  tails: code that several routines jump to (a common ending, a loop that several sections enter), which is converted
+  once and called as the last command.
+- **1550 of 1553 sections (99.8%) end up nested without a state machine.** The 3 that do not: 2 with a two-entry loop
+  (long dialog menus that come back in the middle of a conversation) and 1 paged menu that jumps from each page to any
+  of the previous ones (exits from several loops at once). All convert the same: the state machine is the last resort
+  and works for any graph, so 100% of the sections convert without jumps.
+- 3569 `if`, 104 loops, 127 `break`, 372 choices (`SWITCH`/`SET_SELECTION`) and 1247 calls to tails. Maximum nesting 9
+  counting each `elseif` at the level of its first `if`.
+- **Copies**: 48 routines carry some copied piece (short tails, of fewer than 3 commands, that are repeated instead of
+  called). In total 31174 commands are emitted for 28282 distinct ones (1.10 times).
+- **No `IF` on the disc has more than one jump**; 0 `jump_to_file_and_link`, 135 `jump_to_file`, 255 `set_script`; no
+  reference to a section that does not exist; 122 sections share code with another.
+- `warp_to` and `teleport` end the flow like `end_section` (nothing that follows them runs): the dead code after them
+  no longer counts, and a two-entry loop that was only one because of that code becomes nested.
+- Each routine runs the same commands as its graph for several sequences of condition results (the test's parity
+  check).
 
-## Rarezas
+## Oddities
 
-- **`reduce_merit` pone los méritos a 0** sea cual sea el valor (los fija a −valor y luego recorta a 0) (comprobado).
-  El disco no la usa; el motor la corrige (resta y se detiene en 0).
-- **La orden `39` resta minutos** aunque parece la gemela de `add_minutes_to_date_at` (comprobado).
-- **`add_stat` suma con signo de 16 bits**: un valor ≥ 0x8000 resta. `set_stat` y `add_stat` no tienen suelo
-  (comprobado).
-- **`give_item` suma en un byte**: 98 + 200 da la vuelta antes de topar en 99 (comprobado).
-- **Las casillas de pisar se repiten** cada fotograma mientras el domador sigue encima (comprobado).
-- **Las peticiones de script con otro en marcha se pierden** (comprobado).
-- **La pila no se vacía entre scripts** ni comprueba desbordamiento; un `end_section` dentro de una subrutina acaba el
-  script entero; `jump_return` con la pila vacía salta a basura (comprobado).
-- **Tras `warp_to`, `teleport` o una huida no corre nada más** del script (comprobado).
-- **`entity_move_to_with_camera` no se mueve a su punto**: guarda el tipo de "mover hacia entidad con cámara" y sigue un
-  destino viejo; `entity_move_to_entity` y su variante con cámara comprueban la llegada contra (0, 0) (comprobado). El
-  disco no usa ninguna de las tres rotas.
-- **Solo un deslizamiento a la vez** (`entity_move_to*`): comparten variables globales (comprobado).
-- **`wait_for_entity` con un NPC que no está espera a todo** (comprobado).
-- **`set_textbox_mode` con un modo que no es 0, 1 o 2** deja la caja sin cerrar (comprobado).
-- **La rutina 7 con el tipo 5 en un gimnasio de los nuevos** no prepara nada y espera para siempre; **la rutina 22** da
-  como mucho una medalla por llamada (comprobado). **Ganar la copa especial** pone el disparador 37, que es el de
-  "inscrito" (comprobado).
-- **Disparadores ≥ 800** escriben en las variables (comprobado); el disco no los usa.
-- **Un `IF` con prueba sin manejador** deja el resultado anterior; el disco no las usa (comprobado).
+- **`reduce_merit` sets merits to 0** whatever the value (it sets them to −value and then clips to 0) (verified). The
+  disc does not use it; the engine fixes it (subtracts and stops at 0).
+- **Command `39` subtracts minutes** although it seems the twin of `add_minutes_to_date_at` (verified).
+- **`add_stat` adds with a 16-bit sign**: a value ≥ 0x8000 subtracts. `set_stat` and `add_stat` have no floor
+  (verified).
+- **`give_item` adds in one byte**: 98 + 200 wraps around before capping at 99 (verified).
+- **Step-on cells repeat** every frame while the tamer stays on top (verified).
+- **Script requests with another running are lost** (verified).
+- **The stack is not emptied between scripts** and does not check overflow; an `end_section` inside a subroutine ends
+  the whole script; `jump_return` with the stack empty jumps to garbage (verified).
+- **After `warp_to`, `teleport` or a flee nothing else runs** of the script (verified).
+- **`entity_move_to_with_camera` does not move to its point**: it stores the type of "move toward entity with camera"
+  and follows an old target; `entity_move_to_entity` and its camera variant check arrival against (0, 0) (verified).
+  The disc uses none of the three broken ones.
+- **Only one slide at a time** (`entity_move_to*`): they share global variables (verified).
+- **`wait_for_entity` with an NPC that is not there waits for everything** (verified).
+- **`set_textbox_mode` with a mode that is not 0, 1 or 2** leaves the box unclosed (verified).
+- **Routine 7 with type 5 in one of the new gyms** prepares nothing and waits forever; **routine 22** gives at most one
+  medal per call (verified). **Winning the special cup** sets trigger 37, which is the "registered" one (verified).
+- **Triggers ≥ 800** write into the variables (verified); the disc does not use them.
+- **An `IF` with a test without a handler** leaves the previous result; the disc does not use them (verified).
 
-## Dónde está en el decomp
+## Where it is in the decomp
 
-- `include/dw/script.h`: opcodes, operandos, `ScriptState`, tipos de movimiento.
-- `include/dw/trigger.h`, `include/dw/pstat.h`: nombres de disparadores y variables.
+- `include/dw/script.h`: opcodes, operands, `ScriptState`, movement types.
+- `include/dw/trigger.h`, `include/dw/pstat.h`: names of triggers and variables.
 - `src/main/script_interp.c`: `callScriptSection`, `runMapHeadScript`, `tickScript`, `scriptInstruction10to27`,
   `28to3F`, `46to58`, `5Ato5F`, `64to7E`, `FBtoFF`, `scriptIfInstruction`, `scriptPauseGame`, `returnFromScriptFile`,
   `pushScriptStack`, `tickScriptedMovement`, `getTriggerOffset`.
 - `src/main/script_textbox.c`: `showTextbox`, `scriptShowSelection`, `tickSelectionDialogue`, `tickScriptDialogueBox`,
   `tickConfirmDialogue`, `tickTextboxHandling`.
-- `src/main/script_value.c`: comparaciones de `IF`, `getStatsPointer`, `scriptIdToEntityId`.
-- `src/main/script_common.c`: `resolveMapHeadEntry`, `handleItemLoss`, `lostAllLives`, `setDialogueOwner`, tiendas.
-- `src/shop/script_menu.c`: tiendas, méritos, gramola, guardarropa, `species_e`, `newGameStateMachine`.
-- `src/main/tamer.c`: `checkMapInteraction` (hablar y casillas), `startBattle`, movimientos.
-- `src/main/map.c`: `changeMap`, `scriptTickChangeMap`; `src/main/main.c`: partida nueva y carga.
-- `src/main/partner_impl.c`: muerte por enfermedad y por vejez; `src/main/btl.c`: `handleBattleStart`.
-- `src/main/tournament.c`, `src/dget/`, `utils2.c`: torneos.
+- `src/main/script_value.c`: `IF` comparisons, `getStatsPointer`, `scriptIdToEntityId`.
+- `src/main/script_common.c`: `resolveMapHeadEntry`, `handleItemLoss`, `lostAllLives`, `setDialogueOwner`, shops.
+- `src/shop/script_menu.c`: shops, merits, jukebox, item keeper, `species_e`, `newGameStateMachine`.
+- `src/main/tamer.c`: `checkMapInteraction` (talking and cells), `startBattle`, movements.
+- `src/main/map.c`: `changeMap`, `scriptTickChangeMap`; `src/main/main.c`: new game and load.
+- `src/main/partner_impl.c`: death by sickness and by old age; `src/main/btl.c`: `handleBattleStart`.
+- `src/main/tournament.c`, `src/dget/`, `utils2.c`: tournaments.

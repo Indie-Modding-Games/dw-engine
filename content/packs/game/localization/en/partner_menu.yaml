@@ -67,7 +67,7 @@ care.training_hint: "Training is done at the training spots in the field."
 care_result.praised: "You praised your partner."
 care_result.scolded: "You scolded your partner."
 
-# Secciones de la ficha DIGIMON.
+# Sections of the DIGIMON profile.
 section.profile: "Profile"
 section.condition: "Condition"
 section.parameter: "Parameter"
@@ -78,7 +78,7 @@ profile.type: "Type"
 profile.active: "Active"
 tech.data: "TECH. DATA"
 
-# Técnicas equipadas y golpe final.
+# Equipped moves and finisher.
 tab.tech: "Tech"
 tech.set: "Techset"
 tech.final: "Final"

@@ -19,7 +19,7 @@ namespace dwe::app {
 
 inline constexpr std::string_view NamingBoxDocument = "naming_box";
 
-// The longest name with the "Long names" option (an engine improvement, docs/modulos/apps/game.md):
+// The longest name with the "Long names" option (an engine improvement, docs/modules/apps/game.md):
 // twelve letters, as many as the original's name box holds at its 12-pixel spacing (149 pixels
 // wide); without the option the ruleset's length, six letters in the original.
 inline constexpr std::size_t LongNameLength = 12;

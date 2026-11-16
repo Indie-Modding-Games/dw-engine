@@ -112,7 +112,7 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
             painter.text(
                 corners.center(),
                 egui::Align2::CENTER_CENTER,
-                text::NO_BACKGROUND,
+                text::no_background(),
                 egui::FontId::proportional(14.0),
                 Color32::GRAY,
             );
@@ -139,7 +139,7 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
         painter.line_segment([first, second], Stroke::new(2.0, colors::TOILET_LINE));
         painter.circle_filled(first, 4.0, colors::TOILET_LINE);
         painter.circle_stroke(second, 6.0, Stroke::new(2.0, colors::TOILET_LINE));
-        label(&painter, second, text::LAYER_TOILET, colors::TOILET_LINE);
+        label(&painter, second, text::layer_toilet(), colors::TOILET_LINE);
     }
     if layers.shows(Layer::Doors) {
         for door in &overlay.doors {
@@ -282,13 +282,13 @@ fn context_menu(app: &MapperApp, response: &egui::Response) -> Option<Action> {
     app.mapper.map.as_ref()?;
     let mut action = None;
     response.context_menu(|ui| {
-        if ui.button(text::ADD_NPC_HERE).clicked() {
+        if ui.button(text::add_npc_here()).clicked() {
             action = Some(Action::AddNpc(Some(point.canvas)));
             ui.close();
         }
         if let Some((script, section)) = point.event
             && ui
-                .button(format!("{} {section:#04x}", text::OPEN_SECTION))
+                .button(format!("{} {section:#04x}", text::open_section()))
                 .clicked()
         {
             action = Some(Action::OpenSection { script, section });
@@ -320,7 +320,7 @@ fn live_items(app: &MapperApp, ui: &mut egui::Ui, point: ContextPoint) {
         .player
         .map_or(0, |player| mapper_core::live::rotation_of_yaw(player.yaw));
     ui.separator();
-    if ui.button(text::LIVE_PLACE_HERE).clicked() {
+    if ui.button(text::live_place_here()).clicked() {
         let at = mapper_core::live::place_player(point.world, rotation);
         app.live.place(at, false);
         ui.close();
@@ -329,8 +329,8 @@ fn live_items(app: &MapperApp, ui: &mut egui::Ui, point: ContextPoint) {
         // The centre of the cell clicked, which has the exit's trigger.
         let cell = world::cell_center(world::cell_at(point.world));
         if ui
-            .button(format!("{} {exit}", text::LIVE_TEST_EXIT))
-            .on_hover_text(text::LIVE_TEST_EXIT_HINT)
+            .button(format!("{} {exit}", text::live_test_exit()))
+            .on_hover_text(text::live_test_exit_hint())
             .clicked()
         {
             app.live
@@ -339,7 +339,7 @@ fn live_items(app: &MapperApp, ui: &mut egui::Ui, point: ContextPoint) {
         }
         if let Some(at) = app.mapper.place_at_arrival(exit)
             && ui
-                .button(format!("{} {exit}", text::LIVE_TO_ARRIVAL))
+                .button(format!("{} {exit}", text::live_to_arrival()))
                 .clicked()
         {
             app.live.place(at, false);
@@ -386,14 +386,14 @@ fn draw_live(
         labels.place(painter, from, name, color);
     };
     for npc in &view.npcs {
-        let name = format!("{} {}", text::LIVE_NPC, npc.id.unwrap_or(-1));
+        let name = format!("{} {}", text::live_npc(), npc.id.unwrap_or(-1));
         actor(npc, colors::LIVE_NPC, &name);
     }
     if let Some(partner) = &view.partner {
-        actor(partner, colors::LIVE_PARTNER, text::LIVE_PARTNER);
+        actor(partner, colors::LIVE_PARTNER, text::live_partner());
     }
     if let Some(player) = &view.player {
-        actor(player, colors::LIVE_PLAYER, text::LIVE_PLAYER);
+        actor(player, colors::LIVE_PLAYER, text::live_player());
     }
 }
 
@@ -509,8 +509,8 @@ pub fn exit_label(exit: i32, target: &ExitTarget) -> String {
     match target {
         ExitTarget::Map { id, exit: to } => format!("{exit} → {id}:{to}"),
         ExitTarget::Fallback { id, exit: to } => format!("{exit} → {id}:{to} (?)"),
-        ExitTarget::Conflict => format!("{exit} → {}", text::CONFLICT),
-        ExitTarget::Nowhere => format!("{exit} → {}", text::NOWHERE),
+        ExitTarget::Conflict => format!("{exit} → {}", text::conflict()),
+        ExitTarget::Nowhere => format!("{exit} → {}", text::nowhere()),
     }
 }
 

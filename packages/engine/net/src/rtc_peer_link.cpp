@@ -12,7 +12,7 @@
 #include <vector>
 
 // libdatachannel's C API: it reports errors as return codes and never throws, as the project's
-// code is built without exceptions (docs/adr/0007-sin-excepciones.md). Its threads call the
+// code is built without exceptions (docs/adr/0007-no-exceptions.md). Its threads call the
 // callbacks with the user pointer of each id; they only fill a mailbox, which poll() empties on
 // the caller's thread.
 

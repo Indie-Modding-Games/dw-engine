@@ -1,190 +1,190 @@
 # Audio
 
-Cómo lee `formats/audio` los ficheros de sonido del original (`SOUND/VHB/*.VHB`) y cómo los escribe en formatos
-abiertos: SoundFont 2 por banco, WAV por muestra de efecto y MIDI por secuencia. Los nombres de campo son los de la
-librería de sonido que usa el decomp (`VabHdr`, `ProgAtr`, `VagAtr`); los campos reservados se llaman `reservedN`.
+How `formats/audio` reads the original's sound files (`SOUND/VHB/*.VHB`) and how it writes them in open formats:
+SoundFont 2 per bank, WAV per effect sample and MIDI per sequence. The field names are those of the sound library the
+decomp uses (`VabHdr`, `ProgAtr`, `VagAtr`); reserved fields are called `reservedN`.
 
-## Ficheros
+## Files
 
-El original carga siete ficheros en nueve ranuras de VAB (`sound.c`, `VHB_HEADER_ADDR`). La tabla está en
+The original loads seven files into nine VAB slots (`sound.c`, `VHB_HEADER_ADDR`). The table is in
 `formats/audio/vhb.hpp` (`soundFiles`):
 
-| Fichero | Disposición | Ranuras | Lo carga |
+| File | Layout | Slots | Loaded by |
 |---|---|---|---|
-| `SS.VHB` | un banco | 0 | `sound.c: initializeMusic`; sonidos del sistema y de los menús |
-| `SL.VHB` | un banco | 1 | `sound.c: initializeMusic`; ninguna llamada literal lo toca |
-| `SB.VHB` | un banco | 8 | `sound.c: VSLoadSounds`: sustituye los sonidos del mapa en el modo VS y las arenas |
-| `FAALL.VHB` | 33 entradas de 0x27 sectores | 2 | `sound.c: loadMusicFont`: la fuente `n` es la entrada `n − 1` |
-| `VLALL.VHB` | 16 entradas de 15 sectores | 3 | `sound.c: loadPartnerSounds`, por `DIGIMON_VLALL_SOUND_ID[tipo]` |
-| `VBALL.VHB` | 71 entradas de 7 sectores | 4–7 | `sound.c: loadDigimonSounds`, por `DIGIMON_VBALL_SOUND_ID[tipo]` |
-| `ESALL.VHB` | 22 trozos de `MAP_SOUND_PARA` | 8 | `sound.c: loadMapSounds`, por el id de sonido del mapa |
+| `SS.VHB` | one bank | 0 | `sound.c: initializeMusic`; system and menu sounds |
+| `SL.VHB` | one bank | 1 | `sound.c: initializeMusic`; no literal call touches it |
+| `SB.VHB` | one bank | 8 | `sound.c: VSLoadSounds`: replaces the map sounds in VS mode and the arenas |
+| `FAALL.VHB` | 33 entries of 0x27 sectors | 2 | `sound.c: loadMusicFont`: font `n` is entry `n − 1` |
+| `VLALL.VHB` | 16 entries of 15 sectors | 3 | `sound.c: loadPartnerSounds`, by `DIGIMON_VLALL_SOUND_ID[type]` |
+| `VBALL.VHB` | 71 entries of 7 sectors | 4–7 | `sound.c: loadDigimonSounds`, by `DIGIMON_VBALL_SOUND_ID[type]` |
+| `ESALL.VHB` | 22 chunks of `MAP_SOUND_PARA` | 8 | `sound.c: loadMapSounds`, by the map's sound id |
 
-- Las entradas de paso fijo se leen con `readVHBFileSectors(fichero, entrada × sectores, sectores)`.
-- `MAP_SOUND_PARA[id]` es `{u16 sectorId; u16 sectorCount}` en unidades de 1 KB: `loadMapSounds` divide los dos entre
-  2 para tener sectores. El id es `MapEntry.flags & 0x1F` (`map.c: getMapSoundId`). Además del de cada mapa, hay
-  cargas con id fijo: 0x10 (`std/std_setup.c: STD_tournamentMain`), 0x12 (`main/evl.c: getEvoSequenceState`), 0x13
-  (`main/partner.c: partnerTickDying`, `dooa/dooa.c: DOOA_tickDissolve`), 0x14 y 0x15
-  (`main/script_interp.c: scriptInstruction64to7E`, operaciones 0x34 y 0x33).
-- `loadPartnerSounds` usa la entrada 15 para cualquier tipo fuera de 1–65.
+- Fixed-stride entries are read with `readVHBFileSectors(file, entry × sectors, sectors)`.
+- `MAP_SOUND_PARA[id]` is `{u16 sectorId; u16 sectorCount}` in units of 1 KB: `loadMapSounds` divides both by
+  2 to get sectors. The id is `MapEntry.flags & 0x1F` (`map.c: getMapSoundId`). Besides each map's own, there are
+  loads with a fixed id: 0x10 (`std/std_setup.c: STD_tournamentMain`), 0x12 (`main/evl.c: getEvoSequenceState`), 0x13
+  (`main/partner.c: partnerTickDying`, `dooa/dooa.c: DOOA_tickDissolve`), 0x14 and 0x15
+  (`main/script_interp.c: scriptInstruction64to7E`, operations 0x34 and 0x33).
+- `loadPartnerSounds` uses entry 15 for any type outside 1–65.
 
-### Tablas del ejecutable
+### Executable tables
 
-`formats/exe` las lee con las demás ([Tablas](tablas.md)); el extractor las usa para decir quién usa cada banco.
+`formats/exe` reads them with the others ([Tables](tables.md)); the extractor uses them to say who uses each bank.
 
-| Tabla | Entradas (US) | Contenido |
+| Table | Entries (US) | Content |
 |---|---|---|
-| `DIGIMON_VLALL_SOUND_ID` | 66 `u8` | entrada de `VLALL` por tipo de compañero |
-| `DIGIMON_VBALL_SOUND_ID` | 180 `u8` | entrada de `VBALL` por tipo |
-| `MAP_SOUND_PARA` | 22 × 4 | `MapSoundPara {u16 sectorId; u16 sectorCount}` por id de sonido de mapa |
-| `MAIN_D_801303B8` | 64 × 2 `u8` | fuente y pista de cada entrada de la lista de música de la tienda (`shop/script_menu.c`) |
+| `DIGIMON_VLALL_SOUND_ID` | 66 `u8` | `VLALL` entry per partner type |
+| `DIGIMON_VBALL_SOUND_ID` | 180 `u8` | `VBALL` entry per type |
+| `MAP_SOUND_PARA` | 22 × 4 | `MapSoundPara {u16 sectorId; u16 sectorCount}` per map sound id |
+| `MAIN_D_801303B8` | 64 × 2 `u8` | font and track of each entry of the shop's music list (`shop/script_menu.c`) |
 
 ## VHB
 
-Un VHB es una cabecera de `u32`, el VH (atributos de VAB) y el VB (muestras ADPCM) seguidos:
+A VHB is a `u32` header, the VH (VAB attributes) and the VB (ADPCM samples), one after another:
 
-| Cabecera | Campos | Dónde |
+| Header | Fields | Where |
 |---|---|---|
-| Banco de sonidos | `{u32 vh = 12; u32 vb; u32 vbEnd}` | `sound.c: readVHBFile` |
-| Fuente de música (`FAALL`) | `{u32 vh = 16; u32 vb; u32 seq; u32 seqEnd}` | `sound.c: loadMusicFont` |
+| Sound bank | `{u32 vh = 12; u32 vb; u32 vbEnd}` | `sound.c: readVHBFile` |
+| Music font (`FAALL`) | `{u32 vh = 16; u32 vb; u32 seq; u32 seqEnd}` | `sound.c: loadMusicFont` |
 
-`readVhb` comprueba que `vb − vh` es el tamaño del VH que dan sus contadores, que el VB cabe en el fichero, que el
-tercer `u32` de un banco es el final del VB y que el banco de SEQ de una fuente empieza tras el VB y cabe.
+`readVhb` checks that `vb − vh` is the size of the VH given by its counters, that the VB fits in the file, that the
+third `u32` of a bank is the end of the VB and that a font's SEQ bank starts after the VB and fits.
 
 ## VH
 
-| Parte | Tamaño | Contenido |
+| Part | Size | Content |
 |---|---|---|
-| `VabHdr` | 0x20 | `"pBAV"`, versión 7, id, `fsize`, `ps` (programas), `ts` (tonos), `vs` (muestras), volumen y pan maestros, `attr1`, `attr2` |
-| `ProgAtr[128]` | 128 × 16 | por ranura: número de tonos, volumen, prioridad, modo, pan, atributos |
-| `VagAtr[ps][16]` | `ps` × 512 | un bloque de 16 tonos por programa con tonos |
-| tamaños | 256 × `u16` | tamaño de cada muestra entre 8; la 0 no se usa |
+| `VabHdr` | 0x20 | `"pBAV"`, version 7, id, `fsize`, `ps` (programs), `ts` (tones), `vs` (samples), master volume and pan, `attr1`, `attr2` |
+| `ProgAtr[128]` | 128 × 16 | per slot: number of tones, volume, priority, mode, pan, attributes |
+| `VagAtr[ps][16]` | `ps` × 512 | a block of 16 tones per program that has tones |
+| sizes | 256 × `u16` | size of each sample divided by 8; entry 0 is not used |
 
-- El bloque `k` de tonos es del `k`-ésimo programa **no vacío**: en dos fuentes de `FAALL` los programas no son
-  consecutivos, y `tone.prog` de cada tono confirma a qué programa pertenece.
-- Un tono tiene `min`/`max` (rango de teclas), `center` y `shift` (tecla raíz y ajuste fino en 1/128 de semitono),
-  `vol`, `pan`, `mode` (bit 2: reverb), `pbmin`/`pbmax` (rango de pitch bend), vibrato, portamento, `adsr1`, `adsr2`
-  y `vag` (la muestra).
-- Las muestras van seguidas en el VB, en el orden de la tabla de tamaños; las de tamaño 0 no ocupan sitio.
-- `readVab` exige: firma, `vs` < 256, tamaño del VH dentro del buffer, `fsize` ≥ VH, tantos programas no vacíos como
-  `ps`, como mucho 16 tonos por programa, `tone.prog` igual a su programa y `vag` en 1..`vs` con tamaño no nulo.
-- Algunas entradas de `VBALL` tienen una muestra más allá de `vs` en la tabla de tamaños; `locateVags` la incluye si
-  cabe en el VB y la marca (`beyondCount`).
+- Tone block `k` belongs to the `k`-th **non-empty** program: in two `FAALL` fonts the programs are not
+  consecutive, and each tone's `tone.prog` confirms which program it belongs to.
+- A tone has `min`/`max` (key range), `center` and `shift` (root key and fine tuning in 1/128 of a semitone),
+  `vol`, `pan`, `mode` (bit 2: reverb), `pbmin`/`pbmax` (pitch bend range), vibrato, portamento, `adsr1`, `adsr2`
+  and `vag` (the sample).
+- Samples follow one another in the VB, in the order of the size table; those of size 0 take no space.
+- `readVab` requires: signature, `vs` < 256, VH size inside the buffer, `fsize` ≥ VH, as many non-empty programs as
+  `ps`, at most 16 tones per program, `tone.prog` equal to its program and `vag` in 1..`vs` with a non-zero size.
+- Some `VBALL` entries have one sample beyond `vs` in the size table; `locateVags` includes it if it fits in the
+  VB and marks it (`beyondCount`).
 
 ## ADPCM
 
-Cada muestra es una lista de bloques de 16 bytes con 28 muestras: byte 0 = `filtro << 4 | shift`, byte 1 = flags, y
-14 bytes de nibbles (el bajo primero). Cada muestra decodificada es:
+Each sample is a list of 16-byte blocks with 28 samples: byte 0 = `filter << 4 | shift`, byte 1 = flags, and
+14 bytes of nibbles (low one first). Each decoded sample is:
 
 ```text
 s = (int16(nibble << 12) >> shift) + ((s1 · f0 + s2 · f1 + 32) >> 6)
 ```
 
-con `(f0, f1)` = (0, 0), (60, 0), (115, −52), (98, −55), (122, −60), limitada a 16 bits. Un `shift` mayor que 12
-se comporta como 9 y un filtro mayor que 4 como el 4, como en el hardware; `decodeAdpcm` los cuenta como reservados.
+with `(f0, f1)` = (0, 0), (60, 0), (115, −52), (98, −55), (122, −60), clamped to 16 bits. A `shift` greater than 12
+behaves like 9 and a filter greater than 4 like 4, as on the hardware; `decodeAdpcm` counts them as reserved.
 
-| Flag | Valor | Efecto |
+| Flag | Value | Effect |
 |---|---|---|
-| fin | 1 | último bloque |
-| repetir | 2 | con fin: vuelve al inicio del bucle |
-| inicio de bucle | 4 | el bucle empieza en este bloque |
+| end | 1 | last block |
+| repeat | 2 | with end: jumps back to the loop start |
+| loop start | 4 | the loop starts at this block |
 
-- Una muestra sin bucle acaba en un bloque con flags 1 seguido del bloque de cierre que dejan las herramientas de la
-  librería de sonido: `00 07` y 14 bytes `77` (un bucle sobre sí mismo). El canal se libera antes de llegar a él, así
-  que no forma parte de la muestra.
-- Una con bucle va de un bloque 4 o 6 a uno 3. Sin bloque 4, el bucle empieza en el primer bloque
+- A sample without a loop ends in a block with flags 1 followed by the closing block that the sound library's tools
+  leave: `00 07` and 14 bytes of `77` (a loop onto itself). The channel is released before reaching it, so it is not
+  part of the sample.
+- One with a loop goes from a block 4 or 6 to a block 3. Without a block 4, the loop starts at the first block
   (`loopStartImplied`).
-- La decodificación para tras el primer bloque con fin; lo que quede detrás se informa.
+- Decoding stops after the first block with an end flag; whatever is left behind it is reported.
 
 ## SEQ
 
-El banco de SEQ de una fuente es una tabla de `u32` (cuántos = `offsets[0] / 4`) con el offset de cada SEQ desde el
-inicio del banco (`sound.c: playMusic`). Una SEQ es:
+A font's SEQ bank is a table of `u32` (how many = `offsets[0] / 4`) with the offset of each SEQ from the start of
+the bank (`sound.c: playMusic`). A SEQ is:
 
-| Parte | Formato |
+| Part | Format |
 |---|---|
-| cabecera (15 bytes, big-endian) | `"pQES"`, versión `u32`, resolución `u16` (ticks por negra), tempo `u24` (µs por negra), ritmo `u8 u8` |
-| eventos | delta en VLQ (hasta 4 bytes) y un evento MIDI de canal, con running status |
-| tempo | `FF 51 tt tt tt`: **sin** byte de longitud |
-| fin | `FF 2F 00` |
+| header (15 bytes, big-endian) | `"pQES"`, version `u32`, resolution `u16` (ticks per quarter note), tempo `u24` (µs per quarter note), time signature `u8 u8` |
+| events | delta as a VLQ (up to 4 bytes) and a MIDI channel event, with running status |
+| tempo | `FF 51 tt tt tt`: **without** a length byte |
+| end | `FF 2F 00` |
 
-- Un meta borra el running status.
-- Cada SEQ del banco empieza alineada a 4 bytes; el relleno tras `FF 2F 00` son bytes `CD` (el valor con que un heap
-  de depuración llena la memoria sin inicializar) o ceros.
-- El bucle va en NRPN: `CC99 = 20` seguido de `CC6 = n` marca el inicio de un bucle de `n` vueltas,
-  y `CC99 = 30` el final. `readSeq` los convierte en eventos `LoopStart` (con la cuenta) y `LoopEnd`.
-- Cualquier otro meta, un sysex o un delta que desborde 32 bits es un error.
-- `sound.c: seqPlay` toca una vez las pistas de la fuente 0x1D salvo la 1 y las de las fuentes 0x1E–0x20 salvo la 2;
-  las demás, en bucle infinito. Pone el volumen a 0x50.
+- A meta event clears the running status.
+- Each SEQ in the bank starts aligned to 4 bytes; the padding after `FF 2F 00` is `CD` bytes (the value a debug heap
+  fills uninitialized memory with) or zeros.
+- The loop is in NRPN: `CC99 = 20` followed by `CC6 = n` marks the start of a loop of `n` repeats,
+  and `CC99 = 30` the end. `readSeq` turns them into `LoopStart` (with the count) and `LoopEnd` events.
+- Any other meta event, a sysex or a delta that overflows 32 bits is an error.
+- `sound.c: seqPlay` plays the tracks of font 0x1D once except track 1 and those of fonts 0x1E–0x20 except track 2;
+  the others, in an infinite loop. It sets the volume to 0x50.
 
-## Escritores
+## Writers
 
-Los escritores no usan dependencias nuevas y dan los mismos bytes con la misma entrada.
+The writers use no new dependencies and give the same bytes for the same input.
 
 ### WAV
 
-PCM de 16 bits mono. Una muestra con bucle lleva un chunk `smpl` con un bucle hacia delante (el final es inclusivo:
-`loop.end − 1`) y la tecla de unidad.
+16-bit mono PCM. A sample with a loop carries a `smpl` chunk with a forward loop (the end is inclusive:
+`loop.end − 1`) and the unity note.
 
 ### SoundFont
 
-Un preset por programa (banco 0, preset = número de programa) con un instrumento de una zona por tono:
+One preset per program (bank 0, preset = program number) with an instrument of one zone per tone:
 
-| SF2 | Sale de |
+| SF2 | Comes from |
 |---|---|
 | `keyRange` | `min`–`max` |
 | `overridingRootKey` | `center` |
-| `fineTune` | `−round(shift · 100 / 128)`: libsnd calcula el tono como `(nota · 128) − (center · 128 + shift)` |
-| `initialAttenuation` | `−200 · log10(vol/127 · mvol programa/127 · mvol banco/127)`, de 0 a 1440 cB |
-| `pan` | `(pan tono − 64) + (pan programa − 64)`, limitado a ±64 y pasado a ±500 |
-| `reverbEffectsSend` | 1000 (100 %) si el bit 2 de `mode` está puesto |
-| `sampleModes` | 1 si la muestra tiene bucle |
-| envolvente de volumen | ver abajo |
+| `fineTune` | `−round(shift · 100 / 128)`: libsnd computes the pitch as `(note · 128) − (center · 128 + shift)` |
+| `initialAttenuation` | `−200 · log10(vol/127 · program mvol/127 · bank mvol/127)`, from 0 to 1440 cB |
+| `pan` | `(tone pan − 64) + (program pan − 64)`, limited to ±64 and mapped to ±500 |
+| `reverbEffectsSend` | 1000 (100 %) if bit 2 of `mode` is set |
+| `sampleModes` | 1 if the sample has a loop |
+| volume envelope | see below |
 
-Las muestras van a 44 100 Hz (la frecuencia del chip con tono 0x1000) con 8 puntos de guarda para el bucle y 46
-ceros detrás, como pide el formato.
+Samples are written at 44 100 Hz (the chip's rate at pitch 0x1000) with 8 guard points for the loop and 46
+zeros after, as the format requires.
 
-**Envolvente (aproximación).** El SPU sube y baja el nivel por pasos con una velocidad que depende del nivel; SF2
-solo tiene tiempos y un nivel de sostenimiento. `approximateEnvelope` simula el SPU a 44 100 Hz con `adsr1`/`adsr2`:
+**Envelope (approximation).** The SPU raises and lowers the level in steps at a rate that depends on the level; SF2
+only has times and a sustain level. `approximateEnvelope` simulates the SPU at 44 100 Hz with `adsr1`/`adsr2`:
 
-- ataque: el tiempo de 0 a 0x7FFF;
-- caída y liberación exponenciales: el tiempo que tardan en bajar 60 dB, escalado a los 100 dB de SF2; la
-  liberación lineal, el tiempo hasta 0;
-- sostenimiento: `200 · log10(0x7FFF / SL)` cB con `SL = (n + 1) · 0x800`;
-- un sostenimiento con pendiente (velocidad distinta de 0x7F) que baja pasa a ser la caída, con sostenimiento
-  1000 cB; uno que sube se ignora. Los dos se cuentan en el YAML (`sloped_sustain_tones`);
-- los tiempos se limitan a [−12000, 8000] timecents.
+- attack: the time from 0 to 0x7FFF;
+- exponential decay and release: the time they take to drop 60 dB, scaled to SF2's 100 dB; linear
+  release, the time down to 0;
+- sustain: `200 · log10(0x7FFF / SL)` cB with `SL = (n + 1) · 0x800`;
+- a sloped sustain (rate other than 0x7F) that goes down becomes the decay, with a sustain of
+  1000 cB; one that goes up is ignored. Both are counted in the YAML (`sloped_sustain_tones`);
+- times are limited to [−12000, 8000] timecents.
 
-El vibrato, el portamento, las prioridades y un pitch bend hacia abajo distinto del de subida no van al SF2; el YAML
-del banco los guarda y dice cuáles tienen valores (`not_in_soundfont`).
+Vibrato, portamento, priorities and a downward pitch bend different from the upward one do not go into the SF2; the
+bank's YAML stores them and says which have values (`not_in_soundfont`).
 
 ### MIDI
 
-SMF de formato 0 con la resolución de la SEQ como división y su tempo en el tick 0. Los ticks y los tempos son
-exactos. Tras cada cambio de programa se escribe el rango de pitch bend (RPN 0) con el `pbmax` del primer tono del
-programa, y después el RPN nulo. Las notas con velocidad 0 se dejan como están. El bucle va como marcadores
-`loopStart` y `loopEnd` (meta 06) en sus ticks; la cuenta de vueltas va al YAML. No se escribe compás: no se sabe
-qué significa el campo de ritmo, así que se deja en el YAML tal como viene.
+SMF format 0 with the SEQ's resolution as the division and its tempo at tick 0. Ticks and tempos are
+exact. After each program change the pitch bend range (RPN 0) is written with the `pbmax` of the program's first
+tone, followed by the null RPN. Notes with velocity 0 are left as they are. The loop goes as `loopStart` and
+`loopEnd` markers (meta 06) at their ticks; the repeat count goes to the YAML. No time signature is written: it is
+not known what the rhythm field means, so it is left in the YAML as it comes.
 
-## Extracción
+## Extraction
 
-El extractor `sound_bank` (`apps/dwx/src/audio_extractors.cpp`) toma los siete ficheros. Por cada banco:
+The `sound_bank` extractor (`apps/dwx/src/audio_extractors.cpp`) takes the seven files. For each bank:
 
-| Banco | Salida |
+| Bank | Output |
 |---|---|
-| `SS`, `SL`, `SB` | `sound/<banco>/bank.sf2`, `sample_<n>.wav` y `bank_meta.yaml` |
-| entrada de `VBALL`, `VLALL` o `ESALL` | lo mismo en `sound/<banco>/<entrada con 3 cifras>/` |
-| fuente de `FAALL` | `music/<fuente con 3 cifras>/font.sf2`, `track_<n>.mid` y `font_meta.yaml` |
+| `SS`, `SL`, `SB` | `sound/<bank>/bank.sf2`, `sample_<n>.wav` and `bank_meta.yaml` |
+| `VBALL`, `VLALL` or `ESALL` entry | the same in `sound/<bank>/<entry with 3 digits>/` |
+| `FAALL` font | `music/<font with 3 digits>/font.sf2`, `track_<n>.mid` and `font_meta.yaml` |
 
-- Cada WAV va a la frecuencia a la que suena su muestra en la tecla más alta del primer tono que la usa:
-  `44100 · 2^(((max · 128) − (center · 128 + shift)) / 1536)`. Con `playSound`, los bancos de efectos tocan la nota
-  60 + `v % 16` del programa `v / 16` (ranuras 0, 1 y 8) o la nota `v` del programa 0 (ranuras 3–7), y
-  `startSound` toca todos los tonos cuyo `max` es esa nota: el YAML lista estos valores en `sounds`.
-- El YAML guarda todos los campos del VH, los tonos de cada programa (`adsr` en hexadecimal), las muestras (puntos,
-  bucle, frecuencia) y quién usa el banco según las tablas del ejecutable: tipos de Digimon (`VBALL`, `VLALL`), mapas
-  y cargas fijas (`ESALL`), y para cada pista de música las entradas de la lista de música de la tienda
-  (`MAIN_D_801303B8`, del mismo índice que `BGM_TRACK_NAMES`) y los enemigos de `ENEMY_MUSIC_MAPPING`.
-- Es un desconocido (el fichero queda parcial): un banco que no se lee, bytes no nulos tras los datos de una entrada
-  o tras las muestras del VB, una muestra sin bloque de fin o con valores reservados, bytes tras el bloque de fin que
-  no sean el bloque de cierre, una SEQ que no se lee o con algo tras su fin que no sea el relleno de alineación, y
-  un cambio a un programa vacío.
-- Sin las tablas del ejecutable los bancos salen igual pero sin usuarios (una nota), y `ESALL` no se puede partir.
+- Each WAV is written at the rate at which its sample sounds on the highest key of the first tone that uses it:
+  `44100 · 2^(((max · 128) − (center · 128 + shift)) / 1536)`. With `playSound`, the effect banks play note
+  60 + `v % 16` of program `v / 16` (slots 0, 1 and 8) or note `v` of program 0 (slots 3–7), and
+  `startSound` plays all tones whose `max` is that note: the YAML lists these values in `sounds`.
+- The YAML stores all the VH fields, the tones of each program (`adsr` in hexadecimal), the samples (points,
+  loop, rate) and who uses the bank according to the executable tables: Digimon types (`VBALL`, `VLALL`), maps
+  and fixed loads (`ESALL`), and, for each music track, the entries of the shop's music list
+  (`MAIN_D_801303B8`, with the same index as `BGM_TRACK_NAMES`) and the enemies of `ENEMY_MUSIC_MAPPING`.
+- It is an unknown (the file is left partial): a bank that cannot be read, non-zero bytes after an entry's data
+  or after the VB's samples, a sample without an end block or with reserved values, bytes after the end block that
+  are not the closing block, a SEQ that cannot be read or with something after its end that is not alignment
+  padding, and a change to an empty program.
+- Without the executable tables the banks come out the same but without users (a note), and `ESALL` cannot be split.

@@ -1,17 +1,17 @@
 # evolution
 
-La evolución del partner: cuándo cambia de forma, a cuál y qué se lleva a la nueva.
+The partner's evolution: when it changes form, into which, and what it takes along to the new one.
 
-- Carpeta: `packages/game/evolution`; objetivos de CMake: `dwe::evolution` (capa `game`).
-- Depende de: `assets`, `core`, `ruleset`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/game/evolution](https://indie-modding-games.github.io/dw-engine/modulos/game/evolution).
+- Folder: `packages/game/evolution`; CMake targets: `dwe::evolution` (`game` layer).
+- Depends on: `assets`, `core`, `ruleset`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/game/evolution](https://indie-modding-games.github.io/dw-engine/modules/game/evolution).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter evolution
-scripts/dev.sh test --filter evolution       # sus tests (etiqueta de ctest evolution)
-scripts/dev.sh test --filter ...evolution    # y los de todo lo que depende de él
+scripts/dev.sh test --filter evolution       # its tests (ctest label evolution)
+scripts/dev.sh test --filter ...evolution    # and those of everything that depends on it
 ```

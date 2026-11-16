@@ -1,5 +1,5 @@
 -- Free exploration's chooser: the places the scripts of the cell the player stepped on lead to,
--- whatever the story (docs/architecture/warps-de-script.md). The game publishes them as settings
+-- whatever the story (docs/architecture/script-warps.md). The game publishes them as settings
 -- (exploration_places, the count; exploration_story, the place the story takes now, from 0, or -1;
 -- exploration_place_name.<n> and exploration_place_map.<n>, from 0) and shows this document; it
 -- sends choose_destination with the place, from 0, or stay_here. Pages of eight places, turned with

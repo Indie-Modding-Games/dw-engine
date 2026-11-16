@@ -1,5 +1,5 @@
-//! Where the editor may save: the packs of the stack it can write (docs/modulos/apps/mapper.md,
-//! "Guardar"), a new mod pack it creates, and the settings it remembers between runs.
+//! Where the editor may save: the packs of the stack it can write (docs/modules/apps/mapper.md,
+//! "Save"), a new mod pack it creates, and the settings it remembers between runs.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -81,17 +81,24 @@ pub fn is_pack_id(id: &str) -> bool {
 /// layer, priority 0, declaring the schemas of what the editor writes. Returns its folder.
 pub fn create_mod_pack(folder: &Path, id: &str) -> Result<PathBuf, String> {
     if !is_pack_id(id) {
-        return Err(format!("{}: {id}", crate::text::BAD_PACK_ID));
+        return Err(format!("{}: {id}", crate::text::bad_pack_id()));
     }
     let root = folder.join(id);
     if root.exists() {
-        return Err(format!("{}: {}", crate::text::PACK_EXISTS, root.display()));
+        return Err(format!(
+            "{}: {}",
+            crate::text::pack_exists(),
+            root.display()
+        ));
     }
+    let description: String = crate::text::NEW_PACK_DESCRIPTION
+        .iter()
+        .map(|(language, text)| format!("  {language}: \"{text}\"\n"))
+        .collect();
     let manifest = format!(
         "id: {id}\nversion: 0.1.0\nlayer: mods\npriority: 0\nname: \"{id}\"\n\
-         description: \"{}\"\nschemas:\n  map:\n  - \"map/*/data\"\n  - \"map/*/*/data\"\n  \
-         map_patch:\n  - \"map/*/patch\"\n  - \"map/*/*/patch\"\n",
-        crate::text::NEW_PACK_DESCRIPTION
+         description:\n{description}schemas:\n  map:\n  - \"map/*/data\"\n  - \"map/*/*/data\"\n  \
+         map_patch:\n  - \"map/*/patch\"\n  - \"map/*/*/patch\"\n"
     );
     std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
     std::fs::write(root.join("pack.yaml"), manifest).map_err(|error| error.to_string())?;
@@ -156,6 +163,12 @@ mod tests {
         assert_eq!(manifest.id, "my_maps");
         assert_eq!(manifest.layer, Layer::Mods);
         assert!(manifest.schemas.contains_key("map_patch"));
+        let description = manifest.description.unwrap();
+        assert_eq!(description.english(), "Map changes made with dwe-mapper");
+        assert_eq!(
+            description.in_language("es"),
+            "Cambios de mapas hechos con dwe-mapper"
+        );
         assert!(create_mod_pack(folder.path(), "my_maps").is_err());
     }
 

@@ -1,5 +1,5 @@
 # Stage 5 of the story with the keyboard, Angemon joins: from icsa02 on a seeded game (run with --start icsa02 and
-# --story-stage stage_5), the first floor of the Ice Sanctuary maze, with the triggers route-etapa5-angemon.yaml plays
+# --story-stage stage_5), the first floor of the Ice Sanctuary maze, with the triggers route-stage5-angemon.yaml plays
 # written (324 before the statue, 323 the pedestal aside). The way back up to icsa01 (cells of section 0x33 of
 # script 94) warps to icsa01's exit 1; once the light of icsa06 shone (322) the warp runs section 5 of script 93 on
 # arrival: "Oh? About that statue...", the statue wakes as Angemon, walks off and joins the city (trigger 220).

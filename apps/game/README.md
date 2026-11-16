@@ -1,17 +1,17 @@
 # game
 
-`dwe-game`, el juego: abre la ventana, monta los paquetes, empieza la partida y dibuja el campo, el combate y los menús.
+`dwe-game`, the game: it opens the window, mounts the packages, starts the game and draws the field, combat and the menus.
 
-- Carpeta: `apps/game`; objetivos de CMake: el programa `game` (capa `apps`).
-- Depende de: `animation`, `assets`, `audio`, `battle`, `content`, `core`, `curling`, `debug`, `evolution`, `field`,
+- Folder: `apps/game`; CMake targets: the `game` program (`apps` layer).
+- Depends on: `animation`, `assets`, `audio`, `battle`, `content`, `core`, `curling`, `debug`, `evolution`, `field`,
   `fishing`, `gym`, `input`, `inventory`, `localization`, `partner`, `platform`, `render`, `rhi`, `ruleset`, `save`,
   `scene`, `screens`, `script`, `session`, `signs`, `story`, `tournament`, `ui`, `video`, `weather`.
-- Estructura: `CMakeLists.txt` (el programa y sus dependencias), `src/` y `tests/`.
-- Documentación: [modulos/apps/game](https://indie-modding-games.github.io/dw-engine/modulos/apps/game).
+- Layout: `CMakeLists.txt` (the program and its dependencies), `src/` and `tests/`.
+- Documentation: [modules/apps/game](https://indie-modding-games.github.io/dw-engine/modules/apps/game).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter game
-scripts/dev.sh test --filter game       # sus tests (etiqueta de ctest game)
+scripts/dev.sh test --filter game       # its tests (ctest label game)
 ```

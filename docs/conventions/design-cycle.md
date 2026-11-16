@@ -1,22 +1,22 @@
-# Ciclo de diseño de un sistema
+# Design cycle of a system
 
-El juego se reinventa ([ADR 0010](../adr/0010-reglas-propias-con-rulesets.md)), así que la especificación de cada
-sistema es su documento de diseño en el GDD, no el comportamiento del original. Cada sistema (cuidado, evolución,
-batalla, economía, un modo de juego…) sigue este ciclo.
+The game is reinvented ([ADR 0010](../adr/0010-own-rules-with-rulesets.md)), so each system's specification is its
+design document in the GDD, not the original's behavior. Every system (care, evolution, battle, economy, a game
+mode…) follows this cycle.
 
-| Paso | Qué | Dónde | Quién |
+| Step | What | Where | Who |
 |---|---|---|---|
-| 1. Ficha de referencia | Cómo funcionaba el original, sacado del decomp | [`docs/reference/`](../reference/index.md) | Programación |
-| 2. Diseño | Cómo funcionará ahora, justificado contra los pilares de diseño | GDD (repositorio de diseño) | Diseño |
-| 3. Aprobación | La persona responsable de diseño lo aprueba | PR en el repositorio de diseño | Responsable de diseño |
-| 4. Implementación | El sistema en C++; sus reglas y valores, en el ruleset (YAML o Lua), nunca fijos en el código | `packages/game/` + `content/packs/` | Programación |
-| 5. Tests | Que el sistema hace lo que dice el GDD, y simulaciones de balance | `tests/` | Programación |
-| 6. Ajuste y pruebas de juego | Valores cambiados en vivo desde el panel de depuración y sesiones de juego | Editor y equipo | Todos |
-| 7. Iterar | Lo aprendido vuelve al paso 2 | — | Diseño |
+| 1. Reference sheet | How the original worked, taken from the decomp | [`docs/reference/`](../reference/index.md) | Programming |
+| 2. Design | How it will work now, justified against the design pillars | GDD (design repository) | Design |
+| 3. Approval | The person in charge of design approves it | PR in the design repository | Design lead |
+| 4. Implementation | The system in C++; its rules and values, in the ruleset (YAML or Lua), never fixed in the code | `packages/game/` + `content/packs/` | Programming |
+| 5. Tests | That the system does what the GDD says, and balance simulations | `tests/` | Programming |
+| 6. Tuning and playtests | Values changed live from the debug panel and play sessions | Editor and team | Everyone |
+| 7. Iterate | What was learned goes back to step 2 | — | Design |
 
-## Reglas
+## Rules
 
-- **No se programa un sistema sin diseño aprobado.** Un prototipo para explorar sí, pero no se hace merge. Para el
-  ruleset `original`, el diseño aprobado es la ficha de referencia ([ADR 0022](../adr/0022-primer-ruleset-fiel-al-original.md)).
-- **Los números no viven en C++.** Si un valor puede ajustarse, está en el ruleset.
-- **Cada desviación del original es una decisión.** El documento de diseño dice qué se conserva, qué cambia y por qué.
+- **A system is not programmed without an approved design.** A prototype to explore is fine, but it is not merged. For
+  the `original` ruleset, the approved design is the reference sheet ([ADR 0022](../adr/0022-first-ruleset-faithful-to-the-original.md)).
+- **Numbers do not live in C++.** If a value can be tuned, it is in the ruleset.
+- **Every deviation from the original is a decision.** The design document says what is kept, what changes and why.

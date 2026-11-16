@@ -245,7 +245,7 @@ bool leavesCombatArea(const BattleContext& context, Point from, Point to, std::i
   // those projections; without a fallback the fighter walks out of the fight, of the screen and
   // of the map unheld (the off-map fighters of #163). Keep it where a battle without any ground
   // is kept: inside the ruleset's arena radius of where the fighters started (an engine
-  // improvement, docs/modulos/game/battle.md).
+  // improvement, docs/modules/game/battle.md).
   return area.unprojected && leavesArena(context, from, to);
 }
 

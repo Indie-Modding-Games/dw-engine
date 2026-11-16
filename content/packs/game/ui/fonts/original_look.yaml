@@ -1,22 +1,22 @@
-# El texto con «aspecto original» (el nombre del mapa al cambiar de mapa, y más adelante otros): la familia
-# original-look, que usa la clase .original-look de ui/common/base.rcss. Dibuja con la fuente que elige el ajuste
-# text_font del jugador (docs/architecture/ui.md).
+# The text with the "original look" (the map's name when changing maps, and others later): the original-look
+# family, used by the .original-look class of ui/common/base.rcss. It draws with the font that the player's
+# text_font setting picks (docs/architecture/ui.md).
 family: original-look
-# La misma fuente en las ventanas de texto del guion y sus listas (script_textbox.c: drawString2, la clase
-# .original-dialogue de ui/common/base.rcss): ahí un espacio avanza lo que avanzó el glifo anterior, como en el original.
+# The same font in the script's text windows and their lists (script_textbox.c: drawString2, the
+# .original-dialogue class of ui/common/base.rcss): there a space advances as much as the previous glyph did, as in the original.
 dialogue_family: original-look-dialogue
-# La de mapa de bits hasta que el jugador elija: el aspecto original escribe todas sus ventanas con la fuente del
-# juego (revisión de menús QA-M08, 2026-10-30; antes, la moderna por decisión del 2026-10-20). El aspecto moderno no
-# usa esta familia.
+# The bitmap one until the player picks: the original look writes all its windows with the game's
+# font (menu review QA-M08, 2026-10-30; before, the modern one by decision of 2026-10-20). The modern look does not
+# use this family.
 default: original
 modern: Noto Sans
 original:
-  # La fuente de mapa de bits del original, tal como la extrae dwx al paquete base (docs/formats/textos.md).
+  # The original's bitmap font, as dwx extracts it into the base pack (docs/formats/texts.md).
   atlas: font/main
   meta: font/main_meta
-  # La fila bajo los pies de las mayúsculas, desde arriba de la celda: la línea base.
+  # The row under the capitals' feet, from the top of the cell: the baseline.
   baseline: 10
-  # Las letras con tilde y los signos que el original no tiene (á, Ñ, ü, ¿, ¡, «, »...) se componen con sus propios
-  # glifos al cargarla (docs/architecture/ui.md). Lo que sigue faltando (paréntesis, otros alfabetos...) se dibuja con
-  # la moderna, en la misma línea base y a este tamaño, en fracción del alto de línea de la de mapa de bits.
+  # The letters with accents and the signs the original does not have (á, Ñ, ü, ¿, ¡, «, »...) are composed with their own
+  # glyphs when it loads (docs/architecture/ui.md). What is still missing (parentheses, other alphabets...) is drawn with
+  # the modern one, on the same baseline and at this size, as a fraction of the bitmap font's line height.
   fallback_size: 1.0

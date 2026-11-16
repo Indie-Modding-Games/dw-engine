@@ -1,4 +1,4 @@
-//! What can run a story section on a map (docs/architecture/interprete-historia.md §Secciones y
+//! What can run a story section on a map (docs/architecture/story-interpreter.md §Secciones y
 //! disparadores): entering it (`MAPHEAD`, script 0, section = the map's original index, whose
 //! `set_script` names the map's script, then that script's `0xFE`), stepping on a cell of the step
 //! band or pressing confirm on one of the confirm band (the map's script, section = the cell's

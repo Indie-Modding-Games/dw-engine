@@ -24,7 +24,7 @@ inline constexpr std::string_view SaveMachineCommand = "save_machine";
 
 inline constexpr std::string_view SaveMachineDocument = "save_machine";
 
-// The save machine of the field (docs/architecture/guardar-y-cargar.md, 3.7), opened by script
+// The save machine of the field (docs/architecture/save-and-load.md, 3.7), opened by script
 // routine 48 (script_interp.c, main_menu.c: openSaveMachine and tickSaveMachine): the partner's
 // registration for versus battles and the save, in the boxes of the save_machine document. Its
 // menus are SaveMachineFlow's; this object shows them and takes the document's answers. The field

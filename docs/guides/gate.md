@@ -1,320 +1,306 @@
-# Pasar el gate de una rama
+# Passing a branch's gate
 
-> **Opcional desde el flujo de pull requests.** Lo que hace falta para fusionar en `main` son las comprobaciones de la
-> CI de cada pull request ([Cómo contribuir](../contribuir.md#flujo-de-trabajo)). El gate sigue siendo la forma de
-> pasar en local, con el contenido de tu disco, lo que la CI no puede: las rutas de autotest
-> ([rutas](../modulos/tests/autotest.md)), el cocinado y clang-tidy. Las reglas del final son las del flujo anterior,
-> cuando se subía directamente a `main`.
+> **Optional since the pull request flow.** What is needed to merge into `main` is the CI checks on each pull request
+> ([How to contribute](../contributing.md#workflow)). The gate is still the way to pass locally, with the
+> content of your disc, what the CI cannot: the autotest routes ([routes](../modules/tests/autotest.md)), cooking and
+> clang-tidy.
 
-`scripts/gate.sh` corre el gate sobre el commit en el que está tu worktree (el árbol tiene que estar limpio). Lo
-corre en uno de dos niveles, bajo el lock del gate de toda la máquina:
+`scripts/gate.sh` runs the gate on the commit your worktree is on (the tree has to be clean). It runs it at one of two
+levels, under the machine-wide gate lock:
 
-| Nivel | Cuándo | Qué corre |
+| Level | When | What it runs |
 |---|---|---|
-| `short` (por defecto) | Antes de abrir un pull request que toque el juego | `dev.sh check-short`, el build cruzado de Windows y las rutas de humo, más las rutas propias del paquete |
-| `daily` | Una vez al día sobre `main`, o por tren | `dev.sh check-gate` en modo completo (los pasos de `check-full`), el build cruzado de Windows y todas las rutas: hoy 126 ficheros `route-*.yaml` en `en` y `es` (la pareja de guardar y cargar cuenta como dos) sobre el contenido extraído y 4 ejecuciones sobre el `.pak` cocinado |
+| `short` (default) | Before opening a pull request that touches the game | `dev.sh check-short`, the Windows cross build and the smoke routes, plus the package's own routes |
+| `daily` | Before a big merge, or by hand on `main` | `dev.sh check-gate` in full mode (the `check-full` steps), the Windows cross build and all the routes: every `route-*.yaml` file in `en` and `es` (the save-and-load pair counts as two) on the extracted content and 4 runs on the cooked `.pak` |
 
-Solo funciona en un Linux con Docker, Xvfb y lavapipe. En Windows no hay gate: los pasos a mano siguen en la
-[guía de la prueba vertical](prueba-vertical.md).
+It only works on a Linux with Docker, Xvfb and lavapipe. On Windows there is no gate: the manual steps are still in
+the [vertical slice guide](vertical-slice.md).
 
 ```sh
-# Gate corto de un paquete que añade route-mi-ruta y toca un extractor
-DWE_CONTENT=<contenido extraído> DWE_DISC=<imagen del disco> DWE_IMAGE=dwe-dev-speed DWE_JOBS=6 \
-    scripts/gate.sh --routes-extra route-mi-ruta --disc-tests "the user's disc, extracted: mapas"
+# Short gate of a package that adds route-my-route and touches an extractor
+DWE_CONTENT=<extracted content> DWE_DISC=<disc image> DWE_IMAGE=dwe-dev-speed DWE_JOBS=6 \
+    scripts/gate.sh --routes-extra route-my-route --disc-tests "the user's disc, extracted: mapas"
 
-# Ejecución diaria sobre main
-DWE_CONTENT=<contenido extraído> DWE_DISC=<imagen del disco> DWE_IMAGE=dwe-dev-speed scripts/gate.sh --tier daily
+# Daily run on main
+DWE_CONTENT=<extracted content> DWE_DISC=<disc image> DWE_IMAGE=dwe-dev-speed scripts/gate.sh --tier daily
 ```
 
-Al acabar escribe `summary.txt` en su carpeta de logs y sale con 0 solo si todo pasó. Las opciones son estas:
+When it finishes it writes `summary.txt` in its logs folder and exits with 0 only if everything passed. The options
+are these:
 
-| Opción | Qué hace |
+| Option | What it does |
 |---|---|
-| `--tier short\|daily` | El nivel |
-| `--tidy full\|incremental` | `short`: el alcance de clang-tidy (por defecto `incremental`). `daily` siempre lo pasa entero |
-| `--cook full\|incremental` | `daily`: cocinar desde cero (por defecto) o reutilizar la caché |
-| `--routes-extra a,b` | `short`: rutas de `tests/autotest` (sin `.yaml`) que también se corren, en `en` y `es` |
-| `--disc-tests <regex>` | `short`: los tests del disco que se corren con el disco, una expresión de ctest; si no coincide con ninguno, falla. Necesita `DWE_DISC`. Los demás tests del disco se saltan |
-| `--routes parallel\|sequential` | Las rutas en varias pantallas a la vez (por defecto `parallel`) o una detrás de otra en una sola. Usa `sequential` para un bisect o si la máquina va muy cargada |
-| `--displays N` | Cuántas pantallas usa el modo paralelo, de 1 a 4 (por defecto 4) |
-| `--lp-threads N` | Fija `LP_NUM_THREADS` (los hilos de lavapipe) en cada ejecución |
-| `--steps check,windows,routes` | Solo algunos pasos. Cada paso que se salta deja `gate: <paso>=skipped reason=--steps ...`, y el resultado es `PASS (partial: ... skipped)`: eso no es un gate |
-| `--repeat N` | Repite la lista de rutas N veces, para medir fallos intermitentes |
-| `--lock <carpeta>` | El lock. Por defecto `_work/logs/p4-locks/full.d` si existe `_work/logs` junto al checkout principal |
-| `--logs <carpeta>` | Dónde van los logs. Por defecto `_work/logs/daily-<fecha>` (`daily`) o `_work/logs/<rama>/gate-<hora>` (`short`) |
+| `--tier short\|daily` | The level |
+| `--tidy full\|incremental` | `short`: the scope of clang-tidy (default `incremental`). `daily` always runs it whole |
+| `--cook full\|incremental` | `daily`: cook from scratch (default) or reuse the cache |
+| `--routes-extra a,b` | `short`: `tests/autotest` routes (without `.yaml`) that are also run, in `en` and `es` |
+| `--disc-tests <regex>` | `short`: the disc tests that are run with the disc, a ctest expression; if it matches none, it fails. Needs `DWE_DISC`. The other disc tests are skipped |
+| `--routes parallel\|sequential` | The routes on several displays at once (default `parallel`) or one after another on a single one. Use `sequential` for a bisect or if the machine is very loaded |
+| `--displays N` | How many displays the parallel mode uses, from 1 to 4 (default 4) |
+| `--lp-threads N` | Sets `LP_NUM_THREADS` (lavapipe's threads) in each run |
+| `--steps check,windows,routes` | Only some steps. Each step that is skipped leaves `gate: <step>=skipped reason=--steps ...`, and the result is `PASS (partial: ... skipped)`: that is not a gate |
+| `--repeat N` | Repeats the route list N times, to measure intermittent failures |
+| `--lock <folder>` | The lock. By default `_work/logs/p4-locks/full.d` if `_work/logs` exists next to the main checkout |
+| `--logs <folder>` | Where the logs go. By default `_work/logs/daily-<date>` (`daily`) or `_work/logs/<branch>/gate-<time>` (`short`) |
 
-## Los pasos
+## The steps
 
-**El lock.** Antes de nada, el gate espera al lock con un `mkdir` atómico y escribe en `owner` la rama, el tip, la
-hora y su PID. También espera mientras haya junto a él otra carpeta de lock `full-*` (por ejemplo `full-otro.d`); un
-fichero que se llame así, como un log, no cuenta. Mientras crea la carpeta y escribe `owner`, retiene las señales, así
-que una interrupción en ese momento no deja un lock sin dueño. Al salir lo suelta, también si falla o lo interrumpes,
-y solo si `owner` sigue siendo suyo o no llegó a escribirse.
+**The lock.** Before anything else, the gate waits for the lock with an atomic `mkdir` and writes in `owner` the
+branch, the tip, the time and its PID. It also waits while there is another `full-*` lock folder next to it (for
+example `full-other.d`); a file with that name, like a log, does not count. While it creates the folder and writes
+`owner`, it holds signals back, so an interruption at that moment does not leave a lock without an owner. On exit it
+releases it, also if it fails or you interrupt it, and only if `owner` is still its own or was never written.
 
-**El espacio libre.** Antes del lock, el gate pide espacio libre en el disco del worktree según los pasos que vas a
-correr, y se para si no lo hay:
+**Free space.** Before the lock, the gate asks for free space on the worktree's disk according to the steps you are
+going to run, and stops if there is none:
 
-| Paso | GB | Por qué (medido el 2026-10-22) |
+| Step | GB | Why (measured on 2026-10-22) |
 |---|---|---|
-| check | 12 | `build/ci` desde cero ocupa 7,3 GB, el cocinado 2,0 GB y su entrada en la caché otros 2,0 GB |
-| windows | 2 | El corto reutiliza `build/windows-cross` (4,4 GB) y el diario lo borra antes de compilar otra vez: crece poco |
-| routes | 1 | Los logs y capturas de las 42 ejecuciones del diario del 2026-10-22, antes de la pareja de guardar y cargar, ocupaban unos 80 MB |
+| check | 12 | `build/ci` from scratch takes 7.3 GB, cooking 2.0 GB and its cache entry another 2.0 GB |
+| windows | 2 | The short one reuses `build/windows-cross` (4.4 GB) and the daily one deletes it before building again: it grows little |
+| routes | 1 | The logs and captures of the daily's 42 runs on 2026-10-22, before the save-and-load pair, took about 80 MB |
 
-Un gate completo pide 15 GB; solo las rutas (`--steps routes`), 1 GB.
+A complete gate asks for 15 GB; only the routes (`--steps routes`), 1 GB.
 
-**Las interrupciones.** Los pasos en Docker corren en segundo plano y el gate los espera con `wait`. Así, un
-`SIGTERM` o un `Ctrl+C` en mitad de un check de una hora para el gate al momento: bash no atiende una señal hasta que
-acaba el comando en primer plano, pero sí durante un `wait`.
+**Interruptions.** The steps in Docker run in the background and the gate waits for them with `wait`. This way, a
+`SIGTERM` or a `Ctrl+C` in the middle of an hour-long check stops the gate at once: bash does not handle a signal
+until the foreground command ends, but it does during a `wait`.
 
-**La comprobación previa.** Con el lock ya tomado, y antes de cualquier paso pesado, el gate comprueba que está todo
-lo que necesitan los pasos que vas a correr:
+**The preflight check.** With the lock already taken, and before any heavy step, the gate checks that everything the
+steps you are going to run need is there:
 
-- Para el check y Windows, que corren en Docker, apunta en el resumen la imagen y su ID
-  (`gate: image=<nombre> id=<sha256>`). La imagen es `DWE_IMAGE` o, si no la das, la de por defecto de `dev.sh`
-  (`dev.sh image-name`); el gate no fija ninguna. Después mira dentro de ella, sin descargar nada (`--pull=never`),
-  que están sus herramientas:
-  - el check: `cmake`, `ninja`, `ctest`, `ccache`, `clang++`, `clang-format`, `clang-tidy`, `python3`, `stylua`,
-    `shfmt`, `luacheck`, `shellcheck`, `node` y `vitepress`;
-  - Windows: `cmake`, `ninja`, `clang-cl`, `lld-link`, `llvm-lib`, `llvm-rc` y `llvm-mt`.
-- Las rutas corren el juego en el host, así que comprueba en el host `Xvfb`, `timeout` y el driver de lavapipe
-  (`/usr/share/vulkan/icd.d/lvp_icd.json`). Si te saltas el check, también que el juego ya esté compilado
+- For the check and Windows, which run in Docker, it notes in the summary the image and its ID
+  (`gate: image=<name> id=<sha256>`). The image is `DWE_IMAGE` or, if you do not give one, `dev.sh`'s default
+  (`dev.sh image-name`); the gate sets none. Then it looks inside it, without downloading anything (`--pull=never`),
+  for its tools:
+  - the check: `cmake`, `ninja`, `ctest`, `ccache`, `clang++`, `clang-format`, `clang-tidy`, `python3`, `stylua`,
+    `shfmt`, `luacheck`, `shellcheck`, `node` and `vitepress`;
+  - Windows: `cmake`, `ninja`, `clang-cl`, `lld-link`, `llvm-lib`, `llvm-rc` and `llvm-mt`.
+- The routes run the game on the host, so it checks on the host for `Xvfb`, `timeout` and the lavapipe driver
+  (`/usr/share/vulkan/icd.d/lvp_icd.json`). If you skip the check, also that the game is already built
   (`build/ci/apps/game/dwe-game`).
 
-Si falta algo, se para en segundos con `gate: preflight=fail reason=...`, que dice qué falta y dónde, en vez de fallar
-a mitad del gate. Pasa, por ejemplo, con una imagen anterior a la compilación cruzada de Windows: usa la que diga tu
-equipo (`DWE_IMAGE=...`).
+If something is missing, it stops in seconds with `gate: preflight=fail reason=...`, which says what is missing and
+where, instead of failing halfway through the gate. It happens, for example, with an image older than the Windows
+cross build: use the one your team says (`DWE_IMAGE=...`).
 
-**El check.**
+**The check.**
 
-- `check-short` pasa el formato, el lint (luacheck y shellcheck), construye el sitio de documentación (falla con
-  un enlace roto) y pasa `no-goto`, configura y compila el preset `ci` sin warnings, y corre todos los tests,
-  sin dejar fuera ninguna etiqueta. Esa pasada corre sin `DWE_DISC` ni `DWE_CONTENT`, así que los tests del disco y
-  del contenido extraído se saltan al momento. A la vez corre clang-tidy (ver abajo). Después, si das `--disc-tests`,
-  corre esos tests, ya con el disco y el contenido. No cocina: el log lo dice con `gate: cook=none reason=...`.
-- `check-gate` hace los mismos pasos que `check-full`, pero decide el alcance de clang-tidy y si reutiliza el
-  cocinado. Con los dos en `full` es igual que `check-full`, y además deja constancia de las pasadas completas para
-  los gates siguientes. La CI no usa ninguno de los dos: en un pull request pasa el formato y el lint de lo cambiado,
-  compila y corre los tests (`.github/workflows/ci.yml`).
+- `check-short` passes the format, the lint (luacheck and shellcheck), builds the documentation site (it fails with a
+  broken link) and passes `no-goto`, configures and builds the `ci` preset without warnings, and runs all the tests,
+  without leaving out any label. That pass runs without `DWE_DISC` or `DWE_CONTENT`, so the disc and extracted-content
+  tests are skipped at once. At the same time it runs clang-tidy (see below). Then, if you give `--disc-tests`, it
+  runs those tests, now with the disc and the content. It does not cook: the log says so with
+  `gate: cook=none reason=...`.
+- `check-gate` does the same steps as `check-full`, but it decides the scope of clang-tidy and whether to reuse the
+  cooking. With both on `full` it is the same as `check-full`, and it also records the complete passes for the
+  following gates. The CI uses neither: on a pull request it passes the format and the lint of what changed, builds
+  and runs the tests (`.github/workflows/ci.yml`).
 
-Los logs de cada paso quedan en `check-logs/`. Con `--disc-tests`, `summary.txt` añade una línea por cada test del
-disco que corrió: su nombre, el filtro exacto (`--test-case=...`), las aserciones que contó doctest y el resultado
-(`disc-test <nombre> | filter=... | assertions: N | N passed | 0 failed | result=Passed`). Un test con
-`assertions: NONE` no comprobó nada: revísalo.
+Each step's logs are left in `check-logs/`. With `--disc-tests`, `summary.txt` adds one line for each disc test that
+ran: its name, the exact filter (`--test-case=...`), the assertions doctest counted and the result
+(`disc-test <name> | filter=... | assertions: N | N passed | 0 failed | result=Passed`). A test with
+`assertions: NONE` checked nothing: look into it.
 
-**Windows.** `windows-cross` configura y compila con 0 warnings, en todos los niveles. El nivel `daily` compila en
-una carpeta nueva. El corto reutiliza `build/windows-cross` del worktree, porque una carpeta nueva cuesta de 30 a 40
-minutos.
+**Windows.** `windows-cross` configures and builds with 0 warnings, at all levels. The `daily` level builds in a new
+folder. The short one reuses the worktree's `build/windows-cross`, because a new folder costs 30 to 40 minutes.
 
-Que un build incremental no imprima warnings no basta para fiarse de él:
+That an incremental build prints no warnings is not enough to trust it:
 
-- no vuelve a compilar los fuentes que no han cambiado, así que no repite sus warnings;
-- `/WX` convierte en error un warning del código del proyecto, pero no uno del código de terceros ni uno del
-  enlazador.
+- it does not recompile the sources that have not changed, so it does not repeat their warnings;
+- `/WX` turns a warning in the project's code into an error, but not one in third-party code or one from the linker.
 
-Por eso, tras un build con 0 warnings, el gate deja una marca en la carpeta con el tip, la imagen y el hash de su
-`.ninja_log`. Según esa marca, el gate siguiente compila de una de tres formas:
+That is why, after a build with 0 warnings, the gate leaves a mark in the folder with the tip, the image and the hash
+of its `.ninja_log`. According to that mark, the next gate builds in one of three ways:
 
-| Modo | Cuándo | Qué hace |
+| Mode | When | What it does |
 |---|---|---|
-| `incremental` | La marca existe, la imagen es la misma y nadie ha compilado en la carpeta desde entonces (mismo `.ninja_log`) | Build incremental |
-| `rebuild` | No hay marca, o se compiló en la carpeta fuera del gate | Limpia lo compilado del proyecto (`--target clean`) y lo vuelve a compilar todo. Es corto gracias a la caché del compilador, que además repite los warnings de cada fuente |
-| `fresh` | No hay carpeta, ha cambiado la imagen, o es el nivel `daily` | Borra `build/windows-cross` (solo esa, dentro del worktree; se niega si `build/` es un enlace simbólico) y compila desde cero |
+| `incremental` | The mark exists, the image is the same and nobody has built in the folder since (same `.ninja_log`) | Incremental build |
+| `rebuild` | There is no mark, or the folder was built outside the gate | Cleans what was built of the project (`--target clean`) and builds it all again. It is short thanks to the compiler cache, which also repeats each source's warnings |
+| `fresh` | There is no folder, the image changed, or it is the `daily` level | Deletes `build/windows-cross` (only that one, inside the worktree; it refuses if `build/` is a symbolic link) and builds from scratch |
 
-El log lo dice con `gate: windows-cross=<modo> reason=...`. Un build que falla, o que deja algún warning, no deja
-marca.
+The log says it with `gate: windows-cross=<mode> reason=...`. A build that fails, or that leaves any warning, leaves
+no mark.
 
-**Las rutas.**
+**The routes.**
 
-- `short` corre las rutas de humo de `smoke_routes`, al principio de `scripts/gate/route_jobs.sh` (ahora `route-loop-keyboard`,
-  `route-keyboard` y `route-save-load`), en `en`. Entre las tres cubren el arranque, el menú principal,
-  una partida nueva, el primer mapa, el campo, el menú y guardar y cargar una partida. Después corre las de
-  `--routes-extra` en `en` y `es`.
-- `daily` corre todas las de `tests/autotest/route-*.yaml` (no hay una cuenta fija: una ruta nueva entra sola), con
-  las opciones que necesita cada una:
-  - `route-dev-assets` con `--dev-assets`;
-  - `route-mod-map` con el mod de ejemplo;
-  - `route-skins` con `tests/mods/ui_skin`;
-  - `route-save-load` con `--saves <carpeta de la ejecución>/saves`, y en el mismo trabajo, solo si pasa,
-    `route-save-load-check` con la misma carpeta y `--load slot_01` (ver abajo);
-  - las de `saves_routes` (`route-sleep-save` y `route-skin-original`), con `--saves <carpeta de la ejecución>/saves` vacía, porque
-    empiezan una partida nueva en una ranura y guardan en ella;
-  - las 4 del `.pak` cocinado, en las que además comprueba que se cargó la fuente de mapa de bits.
+- `short` runs the smoke routes of `smoke_routes`, at the top of `scripts/gate/route_jobs.sh` (now
+  `route-loop-keyboard`, `route-keyboard` and `route-save-load`), in `en`. Between the three they cover startup, the
+  main menu, a new game, the first map, the field, the menu and saving and loading a game. Then it runs those from
+  `--routes-extra` in `en` and `es`.
+- `daily` runs all the `tests/autotest/route-*.yaml` ones (there is no fixed count: a new route enters on its own),
+  with the options each one needs:
+  - `route-dev-assets` with `--dev-assets`;
+  - `route-mod-map` with the example mod;
+  - `route-skins` with `tests/mods/ui_skin`;
+  - `route-save-load` with `--saves <run folder>/saves`, and in the same job, only if it passes,
+    `route-save-load-check` with the same folder and `--load slot_01` (see below);
+  - those in `saves_routes` (`route-sleep-save`, `route-skin-original` and `route-game-modes`), with an empty
+    `--saves <run folder>/saves`, because they start a new game in a slot and save into it;
+  - the 4 on the cooked `.pak`, in which it also checks that the bitmap map font was loaded.
 
-**Rutas que siguen a otra.** Algunas rutas comprueban lo que dejó otra y nunca corren solas: están en
-`follow_up_routes`, al principio de `scripts/gate/route_jobs.sh`. Ahora es una: `route-save-load` guarda con el comando de
-depuración `save("slot_01")` en una carpeta de partidas nueva dentro de la suya (`<idioma>/route-save-load/saves`), y
-`route-save-load-check` arranca con `--load slot_01` desde esa carpeta y comprueba el mapa, el sitio del jugador, el
-compañero, el reloj y la bolsa. Las dos van en un mismo trabajo, una detrás de otra en la misma pantalla, así que
-siguen juntas cuando las rutas corren en paralelo. Cada una tiene su línea en el resumen; si la primera no pasa, la
-segunda sale como `NOT RUN` y cuenta como fallo. `--routes-extra route-save-load` corre la pareja; la segunda sola
-no se puede pedir. Al escribir la lista de trabajos, el gate vacía esa carpeta de partidas, para que un hueco que dejó
-otra ejecución no pueda pasar la comprobación; solo borra una carpeta `saves` dentro de sus propios logs, nunca otra
-(ni `_work/saves-play`). La cabecera de las rutas en el resumen dice `jobs=` (trabajos) y `runs=` (ejecuciones: una
-más por cada pareja). `scripts/gate/tests/test_follow_up.sh` lo comprueba con ejecuciones simuladas.
+**Routes that follow another.** Some routes check what another one left and never run alone: they are in
+`follow_up_routes`, at the top of `scripts/gate/route_jobs.sh`. Right now there is one: `route-save-load` saves with the
+debug command `save("slot_01")` into a new saves folder inside its own (`<language>/route-save-load/saves`), and
+`route-save-load-check` starts with `--load slot_01` from that folder and checks the map, the player's position, the
+partner, the clock and the bag. Both go in a single job, one after the other on the same display, so they stay
+together when the routes run in parallel. Each has its line in the summary; if the first does not pass, the second
+comes out as `NOT RUN` and counts as a failure. `--routes-extra route-save-load` runs the pair; the second alone
+cannot be requested. When writing the job list, the gate empties that saves folder, so that a slot left by another
+run cannot pass the check; it only deletes a `saves` folder inside its own logs, never another one (nor
+`_work/saves-play`). The routes header in the summary says `jobs=` (jobs) and `runs=` (runs: one more for each pair).
+`scripts/gate/tests/test_follow_up.sh` checks it with simulated runs.
 
-Antes de las rutas escribe `dev-assets.yaml` (en forma de lista) en la raíz del repositorio y después lo borra. Si ya
-hay uno, no lo pisa y se para: muévelo tú.
+Before the routes it writes `dev-assets.yaml` (in list form) at the repository root and deletes it afterwards. If
+there is already one, it does not overwrite it and stops: move it yourself.
 
-## Rutas en paralelo
+## Parallel routes
 
-Las rutas corren en paralelo por defecto, en todos los niveles. El gate:
+The routes run in parallel by default, at all levels. The gate:
 
-1. Busca pantallas libres entre `:72` y `:79`. Una pantalla está libre si no existe ni `/tmp/.X<n>-lock` ni
-   `/tmp/.X11-unix/X<n>`.
-2. Arranca en cada una su propio Xvfb. Xvfb toma el lock de la pantalla por sí mismo, así que si otro la coge en ese
-   momento, solo falla ese arranque y el gate pasa a la siguiente. Una pantalla cuenta cuando el Xvfb sigue vivo y su
-   socket existe.
-3. Nunca usa `:71` (la del emulador de referencia) ni `:61` a `:66`. Si hay menos pantallas libres de las pedidas,
-   corre con las que hay y lo dice.
-4. Cada pantalla tiene un trabajador (`worker` en `scripts/gate/route_jobs.sh`) que toma el siguiente trabajo que
-   nadie ha tomado (un `mkdir` atómico por trabajo). Una pareja de rutas que siguen a otra (ver arriba) es una sola
-   línea de la lista, un solo trabajo: sus dos ejecuciones corren una detrás de otra en la misma pantalla, nunca
-   repartidas. `test_follow_up.sh` lo comprueba con tres trabajadores a la vez. El orden es el de más largo a más
-   corto, según los tiempos del gate anterior (el de una pareja cuenta sus dos ejecuciones), para que los largos no
-   queden al final.
-5. Cada ejecución escribe su línea de resumen en un fichero propio. Al acabar se juntan en el orden fijo de la lista,
-   así que `summary.txt` tiene las mismas líneas, en el mismo orden, que en secuencial. Puedes compararlos con
+1. Looks for free displays between `:72` and `:79`. A display is free if neither `/tmp/.X<n>-lock` nor
+   `/tmp/.X11-unix/X<n>` exists.
+2. Starts its own Xvfb on each. Xvfb takes the display's lock by itself, so if another takes it at that moment, only
+   that start fails and the gate moves on to the next. A display counts when the Xvfb is still alive and its socket
+   exists.
+3. It never uses `:71` (the reference emulator's) or `:61` to `:66`. If there are fewer free displays than requested,
+   it runs with the ones there are and says so.
+4. Each display has a worker (`worker` in `scripts/gate/route_jobs.sh`) that takes the next job nobody has taken (an
+   atomic `mkdir` per job). A pair of routes that follow another (see above) is a single line in the list, a single
+   job: its two runs go one after the other on the same display, never split. `test_follow_up.sh` checks it with three
+   workers at once. The order is from longest to shortest, according to the previous gate's times (a pair's counts its
+   two runs), so that the long ones do not end up last.
+5. Each run writes its summary line to a file of its own. When done they are joined in the list's fixed order, so
+   `summary.txt` has the same lines, in the same order, as in sequential. You can compare them with
    `diff <(grep ' rc=' a/summary.txt) <(grep ' rc=' b/summary.txt)`.
-6. No reintenta nada: una ruta que falla es un fallo.
+6. It retries nothing: a route that fails is a failure.
 
-El gate solo para lo que arrancó, y nunca por nombre:
+The gate only stops what it started, and never by name:
 
-- cada Xvfb y cada ejecución quedan apuntados por su PID en `pids/`;
-- cada ejecución es un `timeout` que encabeza su propio grupo de procesos, con el juego dentro, y se para ese grupo;
-- cada paso en Docker es un `sg docker` que encabeza su propia sesión (`setsid`), y se para su grupo;
-- antes de parar nada, comprueba con `ps` que el proceso sigue siendo el que arrancó;
-- el orden es primero los trabajadores, luego las ejecuciones, luego los pasos en Docker y por último los Xvfb;
-- los contenedores de Docker se llaman `dwe-gate-<nivel>-<rama>-<PID del gate>-<paso>-...`; si el gate se interrumpe
-  con uno en marcha, para solo los que empiezan por su propio prefijo, que lleva su PID.
+- each Xvfb and each run is noted by its PID in `pids/`;
+- each run is a `timeout` that heads its own process group, with the game inside, and that group is stopped;
+- each step in Docker is an `sg docker` that heads its own session (`setsid`), and its group is stopped;
+- before stopping anything, it checks with `ps` that the process is still the one it started;
+- the order is first the workers, then the runs, then the steps in Docker and last the Xvfbs;
+- the Docker containers are named `dwe-gate-<level>-<branch>-<gate PID>-<step>-...`; if the gate is interrupted with
+  one running, it stops only those that start with its own prefix, which carries its PID.
 
-`dev.sh` pone nombre a todos sus contenedores: `DWE_CONTAINER_NAME` (o `dwe-<carpeta del worktree>`), el comando, el
-PID de la shell que lo arranca y un contador. Así cualquiera que vea un contenedor sabe de quién es y qué hace.
+`dev.sh` names all its containers: `DWE_CONTAINER_NAME` (or `dwe-<worktree folder>`), the command, the PID of the
+shell that starts it and a counter. This way anyone who sees a container knows whose it is and what it does.
 
-El modo paralelo es el de por defecto desde que dos pares de ejecuciones, secuencial y paralela sobre un mismo tip,
-dieron resúmenes idénticos, sin fallos intermitentes, uno con `--lp-threads` y otro sin él (2026-10-22, 42 ejecuciones
-cada una, antes de la pareja de guardar y cargar): de 1096 s a 380 s y de 1123 s a 373 s, unas 3 veces más rápido en
-4 pantallas. `--lp-threads` no cambió nada medible, así que queda sin fijar.
+Parallel mode is the default since two pairs of runs, sequential and parallel on the same tip, gave identical
+summaries, with no intermittent failures, one with `--lp-threads` and one without it (2026-10-22, 42 runs each, before
+the save-and-load pair): from 1096 s to 380 s and from 1123 s to 373 s, about 3 times faster on 4 displays.
+`--lp-threads` changed nothing measurable, so it is left unset.
 
-## clang-tidy incremental
+## Incremental clang-tidy
 
-Con `--tidy incremental` (`DWE_GATE_TIDY=incremental` en `dev.sh`), clang-tidy revisa solo lo que ha cambiado desde
-la última pasada completa que se dio por buena.
+With `--tidy incremental` (`DWE_GATE_TIDY=incremental` in `dev.sh`), clang-tidy reviews only what has changed since
+the last complete pass that was accepted.
 
-**La referencia.** Es la última pasada completa que cumple todo esto:
+**The reference.** It is the last complete pass that meets all of this:
 
-- pasó hace menos de 24 horas;
-- usó la misma imagen de Docker y la misma versión de clang-tidy;
-- su commit está en `main` y por debajo del tip.
+- it passed less than 24 hours ago;
+- it used the same Docker image and the same clang-tidy version;
+- its commit is in `main` and below the tip.
 
-Si no hay ninguna, se pasa entero.
+If there is none, it is run whole.
 
-**Qué se revisa.** Primero se listan los ficheros que difieren entre ese commit y el árbol de trabajo. Con esa lista
-se pasa entero si ha cambiado alguno de estos:
+**What is reviewed.** First the files that differ between that commit and the working tree are listed. With that
+list it is run whole if any of these has changed:
 
-- una cabecera de una carpeta `include/` pública;
-- un `.clang-tidy`;
-- el build o el toolchain: `.devcontainer/`, `tooling/cmake/`, `tooling/triplets/`, el `CMakeLists.txt` raíz, `CMakePresets.json`,
-  `vcpkg.json` o `scripts/dev.sh` (que es quien corre clang-tidy);
-- una plantilla `*.in` de `configure_file` (como `apps/dwx/src/bundled_recipes.hpp.in`). La cabecera que genera vive
-  en la carpeta de build, y el grafo de includes no ve quién la incluye.
+- a header in a public `include/` folder;
+- a `.clang-tidy`;
+- the build or the toolchain: `.devcontainer/`, `tooling/cmake/`, `tooling/triplets/`, the root `CMakeLists.txt`,
+  `CMakePresets.json`, `vcpkg.json` or `scripts/dev.sh` (which is what runs clang-tidy);
+- a `*.in` `configure_file` template (like `apps/dwx/src/bundled_recipes.hpp.in`). The header it generates lives in
+  the build folder, and the include graph does not see who includes it.
 
-Si no, se revisan:
+If not, these are reviewed:
 
-- los `.cpp` cambiados que están en `compile_commands.json`;
-- todos los `.cpp` que incluyen una cabecera cambiada, directamente o a través de otras cabeceras;
-- todos los `.cpp` de un módulo cuyo `CMakeLists.txt` ha cambiado.
+- the changed `.cpp` files that are in `compile_commands.json`;
+- all the `.cpp` files that include a changed header, directly or through other headers;
+- all the `.cpp` files of a module whose `CMakeLists.txt` has changed.
 
-**El grafo de includes.** Sale de las líneas `#include` de los fuentes del repositorio. Cada include se resuelve
-contra la carpeta del fichero que lo incluye y contra todas las carpetas `-I`, `-isystem` e `-iquote` del repositorio
-que aparecen en `compile_commands.json`. El grafo prefiere pasarse a quedarse corto:
+**The include graph.** It comes from the `#include` lines of the repository's sources. Each include is resolved
+against the folder of the file that includes it and against all the repository's `-I`, `-isystem` and `-iquote`
+folders that appear in `compile_commands.json`. The graph prefers overreaching to falling short:
 
-- un include dentro de un `#ifdef` cuenta;
-- si un nombre coincide con varios ficheros, cuentan todos.
+- an include inside an `#ifdef` counts;
+- if a name matches several files, all of them count.
 
-**El log.** `tidy-plan.log` y el principio de `tidy.log` dicen:
+**The log.** `tidy-plan.log` and the beginning of `tidy.log` say:
 
-- el alcance y el motivo, con `gate: tidy=full reason=...` o `gate: tidy=incremental reason=...`;
-- cada `.cpp` revisado y por qué (`tidy: check <fichero> (changed)`, o `(includes changed <cabecera> via ...)`);
-- cada fichero cambiado que no se revisa y por qué (`tidy: not checked`);
-- cada `.cpp` que se salta por no haber cambiado (`tidy: skip`).
+- the scope and the reason, with `gate: tidy=full reason=...` or `gate: tidy=incremental reason=...`;
+- each `.cpp` reviewed and why (`tidy: check <file> (changed)`, or `(includes changed <header> via ...)`);
+- each changed file that is not reviewed and why (`tidy: not checked`);
+- each `.cpp` that is skipped for not having changed (`tidy: skip`).
 
-**Los marcadores.** Una pasada completa que pasa con el árbol limpio deja un marcador: el commit, la fecha, la
-imagen y la versión. Los gates siguientes parten de él. La ejecución diaria sobre `main` es la que deja los
-marcadores que sirven a los gates cortos. Si un día no corre, los gates cortos pasan clang-tidy entero.
+**The markers.** A complete pass that passes with a clean tree leaves a marker: the commit, the date, the image and
+the version. The following gates start from it. The daily run on `main` is the one that leaves the markers that serve
+the short gates. If one day it does not run, the short gates run clang-tidy whole.
 
-## Reutilizar el cocinado
+## Reusing the cooking
 
-Con `--cook incremental` (`DWE_GATE_COOK=incremental`), `check-gate` reutiliza un cocinado anterior en vez de cocinar.
+With `--cook incremental` (`DWE_GATE_COOK=incremental`), `check-gate` reuses a previous cooking instead of cooking.
 
-**La clave.** Es un sha256 de todo lo que entra en el cocinado, y el log la desglosa parte por parte
+**The key.** It is a sha256 of everything that goes into the cooking, and the log breaks it down part by part
 (`gate: cook-key part ...`):
 
-- el contenido extraído del paquete `base`: la ruta y el sha256 de cada fichero;
-- el árbol de git de cada módulo con el que se compila `dwx`, lo que incluye el extractor y los cocineros. Los
-  módulos salen de `ninja -t inputs apps/dwx/dwx` y de las cabeceras que `ninja -t deps` lista para sus objetos; así
-  entra también un módulo que solo tiene cabeceras;
-- el `CMakeLists.txt` de cada carpeta por encima de esos módulos (por ejemplo `packages/engine/CMakeLists.txt`);
-- el árbol de git de `.devcontainer/`, `tooling/cmake/`, `tooling/triplets/`, `content/enhance/` (las recetas que `dwx` lleva
-  dentro), el `CMakeLists.txt` raíz, `CMakePresets.json`, `vcpkg.json` y `scripts/dev.sh`;
-- la imagen de Docker y el preset.
+- the extracted content of the `base` pack: the path and the sha256 of each file;
+- the git tree of each module `dwx` is built with, which includes the extractor and the cookers. The modules come from
+  `ninja -t inputs apps/dwx/dwx` and from the headers `ninja -t deps` lists for its objects; this way a module that
+  only has headers also goes in;
+- the `CMakeLists.txt` of each folder above those modules (for example `packages/engine/CMakeLists.txt`);
+- the git tree of `.devcontainer/`, `tooling/cmake/`, `tooling/triplets/`, `content/enhance/` (the recipes `dwx`
+  carries inside), the root `CMakeLists.txt`, `CMakePresets.json`, `vcpkg.json` and `scripts/dev.sh`;
+- the Docker image and the preset.
 
-La clave no usa el hash del binario de `dwx`: lleva dentro la ruta del worktree y nunca coincidiría entre worktrees.
+The key does not use the hash of the `dwx` binary: it carries the worktree's path inside and would never match
+between worktrees.
 
-**Cuándo se reutiliza.** Solo si todo esto se cumple:
+**When it is reused.** Only if all of this holds:
 
-- hay un cocinado guardado con esa clave;
-- es de hace menos de 24 horas;
-- su commit está en `main` por debajo del tip;
-- el árbol está limpio;
-- nada de lo que entra en el cocinado ha cambiado desde ese commit;
-- la copia restaurada en `build/gate-cooked` tiene el sha256 del `.pak` y de la carpeta cocinada que se apuntaron al
-  guardarlo.
+- there is a saved cooking with that key;
+- it is less than 24 hours old;
+- its commit is in `main` below the tip;
+- the tree is clean;
+- nothing that goes into the cooking has changed since that commit;
+- the copy restored in `build/gate-cooked` has the sha256 of the `.pak` and of the cooked folder that were noted when
+  saving it.
 
-Aunque se reutilice, los dos `dwx validate` se corren otra vez, porque el paquete `game` cambia con cada rama.
+Even when it is reused, the two `dwx validate` runs are run again, because the `game` pack changes with every branch.
 
-**Cuándo no.** Cualquier otro caso es un fallo de caché: se cocina desde cero, como en `check-full`, sin bucles de
-error. El log dice `gate: cook=hit` o `gate: cook=miss`, con la clave y el motivo.
+**When not.** Any other case is a cache miss: it cooks from scratch, as in `check-full`, with no error loops. The log
+says `gate: cook=hit` or `gate: cook=miss`, with the key and the reason.
 
-**Cómo se guarda.** Un cocinado se guarda solo después de pasar las dos validaciones. Se copia primero a una carpeta
-provisional, que se renombra cuando está completa. Se guardan como mucho dos cocinados (unos 2 GB cada uno).
+**How it is saved.** A cooking is saved only after passing both validations. It is first copied to a temporary
+folder, which is renamed when it is complete. At most two cookings are kept (about 2 GB each).
 
-## Dónde se guarda el estado
+## Where the state is kept
 
-Los marcadores de clang-tidy, la caché de cocinados y los tiempos de cada ruta están en `dwe-gate/`, dentro de la
-carpeta de git común del repositorio (`git rev-parse --git-common-dir`). Todos los worktrees la comparten y nunca se
-sube. `DWE_GATE_STATE_DIR` la cambia.
+The clang-tidy markers, the cooking cache and each route's times are in `dwe-gate/`, inside the repository's common
+git folder (`git rev-parse --git-common-dir`). All the worktrees share it and it is never uploaded.
+`DWE_GATE_STATE_DIR` changes it.
 
-## Reglas del gate (flujo anterior, 2026-10-22)
+## What the log says
 
-1. `check-gate` incremental (clang-tidy incremental y cocinado reutilizado) es el gate de subida solo desde que este
-   gate está en `main`. Hasta entonces, clang-tidy y cocinado completos.
-2. `check-full` corre sobre `main` al menos una vez al día (la ejecución `daily`). También corre cuando cambia algo de
-   esto:
-   - una cabecera pública;
-   - `.clang-tidy`;
-   - el toolchain;
-   - lo que entra en el cocinado;
-   - el extractor.
+Each gate's log says, with fixed prefixes:
 
-   Si falla, no se sube nada más hasta arreglarlo. El gate lo hace cumplir por sí mismo: con esos cambios, o con la
-   última pasada completa de hace más de 24 horas, pasa clang-tidy entero y cocina desde cero.
-3. El log de cada gate dice, con prefijos fijos:
-   - el nivel: `gate: tier=`;
-   - el alcance de clang-tidy y su motivo: `gate: tidy=`;
-   - la clave del cocinado con todas sus partes, y si fue acierto o fallo: `gate: cook=` y `gate: cook-key`.
-4. En todos los niveles son obligatorios el build de Windows con 0 warnings y las rutas.
-5. Las rutas en paralelo solo pasan a ser las de por defecto con la prueba de paridad: los resúmenes secuencial y
-   paralelo idénticos sobre un mismo tip. Se cumplió el 2026-10-22 y son las de por defecto.
+- the level: `gate: tier=`;
+- the clang-tidy scope and its reason: `gate: tidy=`;
+- the cooking key with all its parts, and whether it was a hit or a miss: `gate: cook=` and `gate: cook-key`.
 
 ## Windows
 
-Todo esto corre en el host Linux o en el contenedor. En Windows no hay `gate.sh`, y los tests de
-`scripts/gate/tests` no se registran (`if(NOT WIN32)` en el `CMakeLists.txt` raíz), así que la CI de Windows no
-cambia.
+All this runs on the Linux host or in the container. On Windows there is no `gate.sh`, and the tests in
+`scripts/gate/tests` are not registered (`if(NOT WIN32)` in the root `CMakeLists.txt`), so the Windows CI does not
+change.
 
-Lo que sí afecta a varias plataformas:
+What does affect several platforms:
 
-- **Las rutas de git** se leen con `-z` y se tratan como POSIX.
-- **El build cruzado de Windows** sigue siendo un paso obligatorio de los dos niveles.
-- **Los fuentes que solo compila Windows.** Un `.cpp` que no está en el `compile_commands.json` del preset `ci` se
-  lista como no revisado, no se da por bueno. clang-tidy no lo revisaba en Linux antes de este gate, y tampoco ahora.
+- **The git paths** are read with `-z` and treated as POSIX.
+- **The Windows cross build** is still a mandatory step of both levels.
+- **The sources that only Windows builds.** A `.cpp` that is not in the `ci` preset's `compile_commands.json` is
+  listed as not reviewed, not accepted. clang-tidy did not review it on Linux before this gate, and neither does it
+  now.

@@ -1,4 +1,4 @@
--- The notice that the game's own UI came back (docs/modding/interfaces.md): the UI addon the
+-- The notice that the game's own UI came back (docs/modding/ui-addons.md): the UI addon the
 -- player picked could not go on (ui.setting("ui_addon.problem") says why). The game shows it and
 -- hides it after a few seconds; it takes no input.
 

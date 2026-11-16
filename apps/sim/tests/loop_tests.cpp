@@ -1,4 +1,4 @@
-// The closing criterion of phase 3 (docs/plan/fase-3-nucleo-jugable.md): the loop of raising,
+// The closing criterion of phase 3: the loop of raising,
 // training, battling and evolving plays on the `original` ruleset, end to end, through the game's
 // session and systems, with a fast clock. It needs the user's extracted disc (DWE_CONTENT): the
 // species, the evolution charts and the map's fighters are the original's.

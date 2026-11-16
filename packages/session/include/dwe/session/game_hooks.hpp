@@ -9,7 +9,7 @@
 #include <span>
 #include <string_view>
 
-// The game events that mods' scripts handle with hooks.on (docs/modding/api-lua.md, «Eventos del
+// The game events that mods' scripts handle with hooks.on (docs/modding/lua-api.md, «Eventos del
 // juego»). Each handler gets one table, versioned as script::HookTable says.
 namespace dwe::session {
 
@@ -43,7 +43,7 @@ struct GameEventField {
   std::string_view type;
 };
 
-// A game event as the documentation lists it (docs/modding/api-lua.md is generated from these).
+// A game event as the documentation lists it (docs/modding/lua-api.md is generated from these).
 struct GameEventInfo {
   std::string_view name;
   std::span<const GameEventField> fields;

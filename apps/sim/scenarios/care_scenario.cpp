@@ -1,8 +1,8 @@
 // The care scenario: raises a partner for --days days at --speed with a simple scripted carer, and
 // reports how the raisings went: lifespan, care mistakes, sicknesses, deaths, final stats and
-// weight (docs/guides/simulaciones.md). Once every game minute the carer feeds a hungry partner,
+// weight (docs/guides/simulations.md). Once every game minute the carer feeds a hungry partner,
 // takes it to the toilet, puts it to bed when it is sleepy or trains it at its hour of the day;
-// --param changes each habit. There is no evolution system yet: the partner keeps its species until
+// --param changes each habit. The scenario runs no evolution: the partner keeps its species until
 // it dies, and is then reborn as a baby.
 
 #include <dwe/game/partner/partner.hpp>

@@ -1,86 +1,86 @@
-# Clima del campo (mejora del motor: el original no tiene clima; docs/modulos/game/weather.md).
-# El tiempo de cada zona sale de la semilla de clima de la partida, la zona y la hora del juego: no tira los números
-# aleatorios del juego y nunca cambia una regla (stats, encuentros, tiempos ni colisiones).
+# Field weather (engine improvement: the original has no weather; docs/modules/game/weather.md).
+# The weather of each zone comes from the save's weather seed, the zone and the game time: it does not roll the game's
+# random numbers and never changes a rule (stats, encounters, timings or collisions).
 #
-# Cada `period_hours` horas de juego la zona tira si sigue con el clima de antes (`keep_chance`) o saca uno nuevo
-# por sus pesos. Un cambio se funde en `fade_seconds` segundos reales. Todos los mapas de una zona comparten clima.
-# Pesos: clear (despejado, soleado de día), cloudy (nublado), light_rain, heavy_rain, light_snow, heavy_snow, fog
-# (niebla), storm (tormenta: lluvia fuerte con viento, relámpagos y truenos) y wind (viento: hojas o polvo, según
-# `wind` de la zona); un clima que falta no sale nunca. Todos son solo aspecto.
+# Every `period_hours` game hours the zone rolls whether it keeps its previous weather (`keep_chance`) or draws a new one
+# by its weights. A change fades in over `fade_seconds` real seconds. All maps of a zone share the weather.
+# Weights: clear (clear, sunny by day), cloudy, light_rain, heavy_rain, light_snow, heavy_snow, fog,
+# storm (heavy rain with wind, lightning and thunder) and wind (leaves or dust, depending on the zone's
+# `wind`); a weather that is missing never comes up. All of them are looks only.
 period_hours: 3
 keep_chance: 0.45
 fade_seconds: 8
-# Momentos del día: multiplican los pesos del clima como las estaciones y se apilan con ellas (los dos factores se
-# multiplican). `from` es la hora del día (0 a 23) en que empieza cada uno; dura hasta el siguiente. El reloj solo
-# tiene día (desde las 6), tarde (16) y noche (20): el amanecer es un momento propio de estas reglas. Cuenta el
-# momento en que empieza el periodo que tira el clima, como con las estaciones. Nunca cambian una regla.
+# Parts of the day: they multiply the weather weights like the seasons and stack with them (the two factors are
+# multiplied). `from` is the hour of the day (0 to 23) at which each one starts; it lasts until the next. The clock only
+# has day (from 6), dusk (16) and night (20): dawn is a moment of these rules alone. The part counted is the one
+# in which the period that rolls the weather starts, as with the seasons. They never change a rule.
 day_parts:
-  # Amanecer: nubes bajas y niebla; casi sin tormentas.
+  # Dawn: low clouds and fog; almost no storms.
   dawn: { from: 5, odds: { clear: 0.8, cloudy: 1.3, fog: 3, storm: 0.4, wind: 0.7 } }
-  # Día: más sol y viento, la niebla se levanta.
+  # Day: more sun and wind, the fog lifts.
   day: { from: 8, odds: { clear: 1.2, fog: 0.4, storm: 1.2, wind: 1.3 } }
-  # Tarde: chubascos y tormentas.
+  # Dusk: showers and storms.
   dusk: { from: 16, odds: { heavy_rain: 1.4, cloudy: 1.1, storm: 1.8, wind: 1.2 } }
-  # Noche: más despejada, algo de niebla.
+  # Night: clearer, some fog.
   night: { from: 20, odds: { clear: 1.1, heavy_rain: 0.8, fog: 1.5, storm: 0.8, wind: 0.8 } }
-# Frentes: un clima que una zona saca de nuevo (no el que sigue) puede viajar a las zonas vecinas (`neighbours` de cada
-# zona). Llega a una zona más cada `delay_hours` horas de juego, hasta `reach` zonas de distancia, y se queda allí
-# `period_hours` horas. Solo viajan los climas de `kinds` y solo llegan a una zona que puede tenerlos (con peso a esa
-# hora: un frente de nieve no entra en la jungla). Si llegan dos, gana el último en llegar. Sale de la semilla de
-# clima como todo lo demás: cargar una partida o cruzar de zona no lo cambia.
+# Fronts: a weather that a zone draws anew (not the one it keeps) can travel to the neighboring zones (the `neighbours` of
+# each zone). It reaches one more zone every `delay_hours` game hours, up to `reach` zones away, and stays there
+# `period_hours` hours. Only the weathers in `kinds` travel and they only reach a zone that can have them (with weight at
+# that hour: a snow front does not enter the jungle). If two arrive, the last to arrive wins. It comes from the weather
+# seed like everything else: loading a save or crossing a zone does not change it.
 fronts:
-  # Probabilidad de que un clima nuevo viaje.
+  # Chance that a new weather travels.
   chance: 0.2
   delay_hours: 2
   reach: 2
-  # La niebla es local: no viaja.
+  # Fog is local: it does not travel.
   kinds: [cloudy, light_rain, heavy_rain, light_snow, heavy_snow, storm, wind]
-# Estaciones (opción «Estaciones», también mejora del motor): primavera, verano, otoño e invierno se turnan cada
-# `days` días de juego desde el año 0, día 0, empezando por la primavera. Con la opción apagada no hay estación y todo
-# es como sin este bloque. Nunca cambian una regla: solo el aspecto del escenario, partículas y las probabilidades
-# del clima.
-# 3 días: un partner nuevo vive unos 15 días (rules/original/life.yaml, 360 horas), así que ve las cuatro (12 días)
-# y la primavera otra vez; un día de juego son unos 24 minutos reales, así que una estación dura más de una hora.
-# - odds: multiplica el peso de cada clima de la zona (1 lo deja igual).
-# - rain_to_snow: parte de la lluvia que cae como nieve en las zonas con `snow_from_rain` (por defecto sí).
-# - grade: color del escenario (fondo y capas del mapa, nunca los personajes): los verdes giran hacia `foliage_hue`
-#   (grados) en `foliage` (0 a 1), luego `saturation`, `gain` (rojo, verde, azul) y `lift` (más pálido).
-# - petals / leaves: pétalos o hojas que caen, de 0 a 1 (ligeros).
-# Una zona con `season_strength` menor que 1 solo se mueve esa parte hacia la estación (clima propio: nieve, desierto).
+# Seasons (the "Seasons" option, also an engine improvement): spring, summer, autumn and winter take turns every
+# `days` game days from year 0, day 0, starting with spring. With the option off there is no season and everything
+# is as without this block. They never change a rule: only the look of the scenery, particles and the weather
+# odds.
+# 3 days: a new partner lives about 15 days (rules/original/life.yaml, 360 hours), so it sees all four (12 days)
+# and spring again; a game day is about 24 real minutes, so a season lasts more than an hour.
+# - odds: multiplies the weight of each weather of the zone (1 leaves it unchanged).
+# - rain_to_snow: part of the rain that falls as snow in zones with `snow_from_rain` (yes by default).
+# - grade: scenery color (map background and layers, never the characters): the greens turn toward `foliage_hue`
+#   (degrees) by `foliage` (0 to 1), then `saturation`, `gain` (red, green, blue) and `lift` (paler).
+# - petals / leaves: falling petals or leaves, from 0 to 1 (light).
+# A zone with `season_strength` below 1 only moves that part toward the season (its own weather: snow, desert).
 seasons:
   days: 3
-  # Verdes frescos, pétalos, lluvia.
+  # Fresh greens, petals, rain.
   spring:
     odds: { clear: 1, cloudy: 1, light_rain: 1.5, heavy_rain: 1.2, light_snow: 0.4, heavy_snow: 0.3,
             fog: 1.2, storm: 1.1, wind: 1.3 }
     grade: { foliage_hue: 105, foliage: 0.25, saturation: 1.18, gain: [1.0, 1.05, 0.97], lift: 0.015 }
     petals: 1
-  # Luminoso y cálido, más sol.
+  # Bright and warm, more sun.
   summer:
     odds: { clear: 1.8, cloudy: 0.8, light_rain: 0.6, heavy_rain: 0.7, light_snow: 0.3, heavy_snow: 0.2,
             fog: 0.5, storm: 1.6, wind: 0.9 }
     grade: { saturation: 1.15, gain: [1.1, 1.05, 0.9], lift: 0.02 }
-  # Follaje naranja y marrón, hojas que caen, lluvia y nubes.
+  # Orange and brown foliage, falling leaves, rain and clouds.
   autumn:
     odds: { clear: 0.9, cloudy: 1.3, light_rain: 1.5, heavy_rain: 1.3, light_snow: 0.8, heavy_snow: 0.6,
             fog: 1.5, storm: 0.9, wind: 1.4 }
     grade: { foliage_hue: 25, foliage: 0.42, saturation: 1.05, gain: [1.06, 0.97, 0.86] }
     leaves: 1
-  # Frío y pálido: la lluvia cae como nieve.
+  # Cold and pale: rain falls as snow.
   winter:
     odds: { clear: 0.9, cloudy: 1.3, light_rain: 1, heavy_rain: 0.8, light_snow: 1.6, heavy_snow: 1.6,
             fog: 1.2, storm: 0.3, wind: 1.3 }
     rain_to_snow: 0.75
     grade: { saturation: 0.6, gain: [0.94, 0.99, 1.08], lift: 0.07 }
-# Sin clima: además de estos, los mapas con hora fija (interiores, cuevas, edificios) nunca lo tienen.
+# No weather: besides these, maps with a fixed time (interiors, caves, buildings) never have it.
 no_weather:
-  # Túneles, salas, casas y tiendas de la ciudad, el vestíbulo del torneo y el monte Infinito.
+  # Tunnels, rooms, houses and shops of the city, the tournament lobby and Mt. Infinity.
   - tunn*
   - room*
   - tend*
   - topn*
   - mgen*
-  # Mansiones, sótanos, laboratorio, santuario de hielo, cuevas y fortaleza.
+  # Mansions, basements, laboratory, Ice Sanctuary, caves and fortress.
   - yaka*
   - chka*
   - saib*
@@ -88,103 +88,103 @@ no_weather:
   - leom*
   - ogre*
   - gcan11
-# Zonas. `neighbours`: las zonas de al lado, a las que viajan sus frentes (basta con listar un lado: cuentan en los
-# dos). Salen de las salidas entre mapas de zonas distintas (a pie o por los pasos de la historia); los teletransportes
-# de la ciudad no cuentan.
+# Zones. `neighbours`: the zones next door, to which their fronts travel (listing one side is enough: they count both
+# ways). They come from the exits between maps of different zones (on foot or by the story passages); the city
+# teleports do not count.
 areas:
-  # Bosque Nativo, punta Coela, lago Ojo de Dragón y el puente: bosque, lluvia corriente.
+  # Native Forest, Coela point, the Dragon Eye lake and the bridge: forest, ordinary rain.
   - id: native_forest
     maps: [mayo*]
     weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1, fog: 1, storm: 1, wind: 1 }
     neighbours: [file_city, mt_panorama, tropical_jungle, beetle_land]
-  # Jungla tropical, manglar y bosque Amida: la zona más lluviosa.
+  # Tropical Jungle, mangrove and Amida forest: the rainiest zone.
   - id: tropical_jungle
     maps: [trop*]
     weights: { clear: 3, cloudy: 2, light_rain: 3, heavy_rain: 2, fog: 1, storm: 2, wind: 1 }
     neighbours: [native_forest, great_canyon, overdell, ancient_regions]
-    # Trópico: las estaciones apenas lo mueven y nunca nieva.
+    # Tropics: the seasons barely move it and it never snows.
     season_strength: 0.5
     snow_from_rain: false
-  # Monte Panorama: montaña, nubes a menudo.
+  # Mt. Panorama: mountain, clouds often.
   - id: mt_panorama
     maps: [miha*]
     weights: { clear: 4, cloudy: 4, light_rain: 2, heavy_rain: 1, fog: 2, storm: 1, wind: 2 }
     neighbours: [native_forest, gear_savanna]
-  # Overdell: tierra gris, casi siempre nublado.
+  # Overdell: gray land, almost always cloudy.
   - id: overdell
     maps: [dgha*]
     weights: { clear: 1, cloudy: 5, light_rain: 3, heavy_rain: 1, fog: 2, storm: 1, wind: 1 }
     neighbours: [tropical_jungle, great_canyon]
-  # Gran Cañón: seco.
+  # Great Canyon: dry.
   - id: great_canyon
     maps: [gcan*]
     weights: { clear: 7, cloudy: 3, light_rain: 1, storm: 1, wind: 3 }
-    # Viento con polvo: zona seca.
+    # Wind with dust: dry zone.
     wind: dust
     neighbours: [tropical_jungle, overdell, freezeland]
-    # Desierto: sigue seco y sin nieve en cualquier estación.
+    # Desert: stays dry and snowless in any season.
     season_strength: 0.4
     snow_from_rain: false
-  # Sabana de engranajes: sol, alguna tormenta.
+  # Gear Savanna: sun, an occasional storm.
   - id: gear_savanna
     maps: [gias*]
     weights: { clear: 6, cloudy: 3, light_rain: 1, heavy_rain: 1, storm: 1, wind: 2 }
-    # Viento con polvo: zona seca.
+    # Wind with dust: dry zone.
     wind: dust
     neighbours: [mt_panorama, factorial_town, geko_swamp]
     season_strength: 0.7
     snow_from_rain: false
-  # Región glaciar antigua: nieve, nunca lluvia.
+  # Ancient Glacial Region: snow, never rain.
   - id: ancient_glacial
     maps: [koda01, koda02, koda03]
     weights: { clear: 2, cloudy: 3, light_snow: 4, heavy_snow: 2, fog: 1, wind: 2 }
     neighbours: [ancient_regions]
-    # Siempre nieve: la estación solo la empuja un poco.
+    # Always snow: the season only pushes it a little.
     season_strength: 0.4
-  # Regiones dino y veloz antiguas.
+  # Ancient Dino and Speedy Regions.
   - id: ancient_regions
     maps: [koda*]
     weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1, fog: 1, storm: 1, wind: 1 }
     neighbours: [tropical_jungle, ancient_glacial]
-  # Freezeland: nieve, nunca lluvia.
+  # Freezeland: snow, never rain.
   - id: freezeland
     maps: [frzl*]
     weights: { clear: 2, cloudy: 2, light_snow: 4, heavy_snow: 3, fog: 1, wind: 2 }
     neighbours: [great_canyon, misty_trees]
     season_strength: 0.4
-  # Tierra de los escarabajos: bosque.
+  # Beetle Land: forest.
   - id: beetle_land
     maps: [betl*]
     weights: { clear: 4, cloudy: 3, light_rain: 2, heavy_rain: 1, fog: 1, storm: 1, wind: 1 }
     neighbours: [native_forest, factorial_town]
-  # Árboles Brumosos: nublado, lluvia y niebla a menudo (más espesa sobre la del original).
+  # Misty Trees: cloudy, rain and fog often (thicker than in the original).
   - id: misty_trees
     maps: [mist*]
     weights: { clear: 1, cloudy: 4, light_rain: 3, heavy_rain: 1, fog: 3, storm: 1 }
     neighbours: [geko_swamp, freezeland, toy_town]
-  # Pantano Geko: lluvia corriente, niebla y tormentas.
+  # Geko Swamp: ordinary rain, fog and storms.
   - id: geko_swamp
     maps: [stic*]
     weights: { clear: 2, cloudy: 3, light_rain: 3, heavy_rain: 2, fog: 3, storm: 2 }
     neighbours: [gear_savanna, misty_trees, volume_villa]
-  # Villa Volumen.
+  # Volume Villa.
   - id: volume_villa
     maps: [gkyo*]
     weights: { clear: 4, cloudy: 3, light_rain: 2, fog: 1, wind: 1 }
     neighbours: [geko_swamp]
-  # Ciudad de los Juguetes.
+  # Toy Town.
   - id: toy_town
     maps: [omoc*]
     weights: { clear: 5, cloudy: 3, light_rain: 1, wind: 1 }
     neighbours: [misty_trees]
-  # Ciudad Factorial y la montaña de basura: humo, nublado y neblina a menudo.
+  # Factorial Town and Trash Mountain: smoke, cloudy and haze often.
   - id: factorial_town
     maps: [fact*, gomi*]
     weights: { clear: 3, cloudy: 4, light_rain: 2, fog: 2, wind: 1 }
-    # Viento con polvo: zona seca.
+    # Wind with dust: dry zone.
     wind: dust
     neighbours: [gear_savanna, beetle_land]
-  # Ciudad File y el gimnasio verde.
+  # File City and the Green Gym.
   - id: file_city
     maps: [twna*, twnb*, trai*]
     weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1, fog: 1, storm: 1, wind: 1 }

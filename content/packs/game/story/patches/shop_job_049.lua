@@ -1,4 +1,4 @@
--- The improved shop job (game/shop_job; docs/reference/trabajo-tienda.md). Section 0x51 (the
+-- The improved shop job (game/shop_job; docs/reference/shop-job.md). Section 0x51 (the
 -- counter) asks the engine for the mode (routine 256, answer in variable 110): the original mode
 -- plays the script's own section, and nothing else of the job is patched. The improved mode plays
 -- the original's talk and then the job's own section (ImprovedSection, 0x300, here and in scripts

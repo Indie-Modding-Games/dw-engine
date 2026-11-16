@@ -125,7 +125,7 @@ struct PartnerStatusView {
   std::vector<std::string> conditionKeys;
   std::array<TechniqueChoiceView, 56> techniqueChoices{};
   bool canFinishTechniqueEdit = false;
-  // Tres técnicas y el final: datos del catálogo que también utiliza el combate.
+  // Three techniques and the finisher: catalog data that combat also uses.
   std::array<std::optional<TechniqueView>, game::battle::EquippedSlots> techniques{};
 };
 

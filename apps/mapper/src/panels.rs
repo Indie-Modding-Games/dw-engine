@@ -14,8 +14,8 @@ use crate::dialogs::NewPack;
 pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
     egui::Panel::top("top").show(ui, |ui| {
         ui.horizontal_wrapped(|ui| {
-            ui.menu_button(text::MENU_FILE, |ui| {
-                if ui.button(text::OPEN_CONTENT).clicked() {
+            ui.menu_button(text::menu_file(), |ui| {
+                if ui.button(text::open_content()).clicked() {
                     ui.close();
                     if let Some(folder) = rfd::FileDialog::new().pick_folder() {
                         let team_packs = crate::options::find_team_packs(&folder);
@@ -34,7 +34,7 @@ pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
                 }
                 let has_content = app.mapper.content.is_some();
                 if ui
-                    .add_enabled(has_content, egui::Button::new(text::RELOAD_CONTENT))
+                    .add_enabled(has_content, egui::Button::new(text::reload_content()))
                     .clicked()
                 {
                     ui.close();
@@ -43,20 +43,20 @@ pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
                 ui.separator();
                 target_menu(app, ui);
                 let has_map = app.mapper.map.is_some();
-                let save = egui::Button::new(text::SAVE_PATCH).shortcut_text("Ctrl+S");
+                let save = egui::Button::new(text::save_patch()).shortcut_text("Ctrl+S");
                 if ui.add_enabled(has_map, save).clicked() {
                     ui.close();
                     app.apply(Action::Save(SaveMode::Patch));
                 }
                 if ui
-                    .add_enabled(has_map, egui::Button::new(text::SAVE_WHOLE))
+                    .add_enabled(has_map, egui::Button::new(text::save_whole()))
                     .clicked()
                 {
                     ui.close();
                     app.apply(Action::Save(SaveMode::WholeData));
                 }
                 if ui
-                    .add_enabled(has_map, egui::Button::new(text::REVERT))
+                    .add_enabled(has_map, egui::Button::new(text::revert()))
                     .clicked()
                 {
                     ui.close();
@@ -67,31 +67,31 @@ pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
                     }
                 }
                 ui.separator();
-                if ui.button(text::SETTINGS).clicked() {
+                if ui.button(text::settings()).clicked() {
                     ui.close();
                     app.open_settings();
                 }
                 ui.separator();
-                let quit = egui::Button::new(text::QUIT).shortcut_text("Ctrl+Q");
+                let quit = egui::Button::new(text::quit()).shortcut_text("Ctrl+Q");
                 if ui.add(quit).clicked() {
                     ui.close();
                     app.apply(Action::Quit);
                 }
             });
-            ui.menu_button(text::MENU_EDIT, |ui| {
+            ui.menu_button(text::menu_edit(), |ui| {
                 let (undo, redo) = app.mapper.map.as_ref().map_or((false, false), |map| {
                     (map.history.can_undo(), map.history.can_redo())
                 });
-                let button = egui::Button::new(text::UNDO).shortcut_text("Ctrl+Z");
+                let button = egui::Button::new(text::undo()).shortcut_text("Ctrl+Z");
                 if ui.add_enabled(undo, button).clicked() {
                     app.apply(Action::Undo);
                 }
-                let button = egui::Button::new(text::REDO).shortcut_text("Ctrl+Y");
+                let button = egui::Button::new(text::redo()).shortcut_text("Ctrl+Y");
                 if ui.add_enabled(redo, button).clicked() {
                     app.apply(Action::Redo);
                 }
                 ui.separator();
-                if ui.button(text::SHORTCUTS).clicked() {
+                if ui.button(text::shortcuts()).clicked() {
                     ui.close();
                     app.show_shortcuts = true;
                 }
@@ -100,15 +100,15 @@ pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
             ui.separator();
             let world = app.world_ui.shown;
             if ui
-                .selectable_label(!world, text::VIEW_MAP)
-                .on_hover_text(text::VIEW_HINT)
+                .selectable_label(!world, text::view_map())
+                .on_hover_text(text::view_hint())
                 .clicked()
             {
                 app.world_ui.shown = false;
             }
             if ui
-                .selectable_label(world, text::VIEW_WORLD)
-                .on_hover_text(text::VIEW_HINT)
+                .selectable_label(world, text::view_world())
+                .on_hover_text(text::view_hint())
                 .clicked()
             {
                 app.world_ui.shown = true;
@@ -116,16 +116,17 @@ pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
             ui.separator();
             let back = !app.mapper.history.is_empty();
             if ui
-                .add_enabled(back, egui::Button::new(text::BACK))
+                .add_enabled(back, egui::Button::new(text::back()))
                 .clicked()
             {
                 app.apply(Action::Back);
             }
-            if ui.button(text::FIT_VIEW).clicked() {
+            if ui.button(text::fit_view()).clicked() {
                 app.apply(Action::FitView);
             }
             ui.separator();
-            ui.label(text::LAYERS).on_hover_text(text::LAYER_KEYS_HINT);
+            ui.label(text::layers())
+                .on_hover_text(text::layer_keys_hint());
             for layer in Layer::ALL {
                 let mut shown = app.mapper.layers.shows(layer);
                 if ui.checkbox(&mut shown, layer.label()).changed() {
@@ -133,7 +134,7 @@ pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
                 }
             }
             ui.separator();
-            ui.label(text::TIME_OF_DAY);
+            ui.label(text::time_of_day());
             let variants: Vec<String> = app
                 .mapper
                 .map
@@ -155,11 +156,11 @@ pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
 
 /// The pack saves go to: the writable packs of the stack, and a new mod pack.
 fn target_menu(app: &mut MapperApp, ui: &mut egui::Ui) {
-    ui.menu_button(text::TARGET, |ui| {
+    ui.menu_button(text::target(), |ui| {
         let current = app.mapper.current_target().map(|target| target.root);
         let targets = app.mapper.targets();
         if targets.is_empty() {
-            ui.weak(text::NO_TARGETS);
+            ui.weak(text::no_targets());
         }
         for target in targets {
             let chosen = current.as_ref() == Some(&target.root);
@@ -177,7 +178,7 @@ fn target_menu(app: &mut MapperApp, ui: &mut egui::Ui) {
         if ui
             .add_enabled(
                 app.mapper.content.is_some(),
-                egui::Button::new(text::NEW_PACK),
+                egui::Button::new(text::new_pack()),
             )
             .clicked()
         {
@@ -189,8 +190,8 @@ fn target_menu(app: &mut MapperApp, ui: &mut egui::Ui) {
 
 fn target_kind(kind: TargetKind) -> &'static str {
     match kind {
-        TargetKind::Mod => text::TARGET_MOD,
-        TargetKind::Team => text::TARGET_TEAM,
+        TargetKind::Mod => text::target_mod(),
+        TargetKind::Team => text::target_team(),
     }
 }
 
@@ -201,7 +202,7 @@ pub fn status_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
                 if map.is_dirty() {
                     ui.colored_label(
                         egui::Color32::YELLOW,
-                        format!("* {} ({})", map.document.id, text::DIRTY),
+                        format!("* {} ({})", map.document.id, text::dirty()),
                     );
                 } else {
                     ui.label(&map.document.id);
@@ -212,7 +213,7 @@ pub fn status_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
                 || "—".to_owned(),
                 |target| format!("{} ({})", target.id, target_kind(target.kind)),
             );
-            ui.label(format!("{}: {target}", text::TARGET));
+            ui.label(format!("{}: {target}", text::target()));
             ui.separator();
             if app.live.is_linked() {
                 let summary = app.live.summary();
@@ -260,10 +261,10 @@ pub fn browser(app: &mut MapperApp, ui: &mut egui::Ui) {
         .resizable(true)
         .default_size(230.0)
         .show(ui, |ui| {
-            ui.heading(text::MAPS);
+            ui.heading(text::maps());
             let mut filter = app.mapper.filter.clone();
             let response =
-                ui.add(egui::TextEdit::singleline(&mut filter).hint_text(text::FILTER_HINT));
+                ui.add(egui::TextEdit::singleline(&mut filter).hint_text(text::filter_hint()));
             if std::mem::take(&mut app.focus_filter) {
                 response.request_focus();
             }
@@ -271,10 +272,10 @@ pub fn browser(app: &mut MapperApp, ui: &mut egui::Ui) {
                 app.apply(Action::SetFilter(filter));
             }
             ui.horizontal(|ui| {
-                ui.label(text::GROUP_BY);
+                ui.label(text::group_by());
                 for (group_by, label) in [
-                    (GroupBy::LoadingName, text::GROUP_BY_NAME),
-                    (GroupBy::Prefix, text::GROUP_BY_PREFIX),
+                    (GroupBy::LoadingName, text::group_by_name()),
+                    (GroupBy::Prefix, text::group_by_prefix()),
                 ] {
                     if ui
                         .selectable_label(app.mapper.group_by == group_by, label)
@@ -350,7 +351,7 @@ fn map_details(app: &mut MapperApp, ui: &mut egui::Ui) {
             ui.label(crate::app::status_text(mapper));
             return;
         };
-        ui.heading(format!("{} {}", text::MAP_INFO, map.document.id));
+        ui.heading(format!("{} {}", text::map_info(), map.document.id));
         if let (Some(content), Some(entry)) = (&mapper.content, &map.entry) {
             let name = content.table.display_name(entry);
             ui.label(format!("#{} · {name}", entry.index));
@@ -360,23 +361,23 @@ fn map_details(app: &mut MapperApp, ui: &mut egui::Ui) {
         if !map.document.patches.is_empty() {
             ui.label(format!(
                 "{}: {}",
-                text::PATCHED_BY,
+                text::patched_by(),
                 map.document.patches.join(", ")
             ));
         }
 
         ui.add_space(6.0);
-        ui.strong(text::EXITS);
+        ui.strong(text::exits());
         egui::Grid::new("exits").striped(true).show(ui, |ui| {
             for exit in map.overlay.exits.iter().filter(|exit| exit.is_used()) {
                 ui.monospace(exit.exit.to_string());
                 let label = ui.monospace(crate::canvas::exit_label(exit.exit, &exit.target));
                 if let Some(patch) = map.document.exit_patch(exit.exit) {
-                    label.on_hover_text(format!("{} {}", text::EXIT_PATCHED_BY, patch.pack));
+                    label.on_hover_text(format!("{} {}", text::exit_patched_by(), patch.pack));
                 }
                 if exit.cell_count == 0 {
-                    ui.weak(text::NO_TRIGGER_CELLS);
-                } else if exit.target.destination().is_some() && ui.button(text::GO).clicked() {
+                    ui.weak(text::no_trigger_cells());
+                } else if exit.target.destination().is_some() && ui.button(text::go()).clicked() {
                     action = Some(Action::FollowExit(exit.exit));
                 } else {
                     ui.label("");
@@ -386,7 +387,7 @@ fn map_details(app: &mut MapperApp, ui: &mut egui::Ui) {
         });
 
         ui.add_space(6.0);
-        ui.strong(text::NPCS);
+        ui.strong(text::npcs());
         egui::Grid::new("npcs").striped(true).show(ui, |ui| {
             for (npc, record) in map.overlay.npcs.iter().zip(&map.document.npcs) {
                 ui.monospace(format!("N{}", npc.slot));
@@ -408,29 +409,29 @@ fn map_details(app: &mut MapperApp, ui: &mut egui::Ui) {
 }
 
 fn hover_details(app: &mut MapperApp, ui: &mut egui::Ui) {
-    ui.strong(text::HOVER);
+    ui.strong(text::hover());
     last_event(app, ui);
     let Some(hover) = app.mapper.hover else {
         ui.weak("—");
         return;
     };
     let kind = match hover.kind {
-        CellKind::Free => text::KIND_FREE.to_owned(),
-        CellKind::Blocked => text::KIND_BLOCKED.to_owned(),
+        CellKind::Free => text::kind_free().to_owned(),
+        CellKind::Blocked => text::kind_blocked().to_owned(),
         CellKind::Trigger(_) => hover.band.map(text::band_name).unwrap_or_default(),
     };
     egui::Grid::new("hover").show(ui, |ui| {
-        ui.label(text::CELL);
+        ui.label(text::cell());
         ui.monospace(format!("{}, {}", hover.cell.column, hover.cell.row));
         ui.end_row();
-        ui.label(text::VALUE);
+        ui.label(text::value());
         ui.monospace(format!("{} ({kind})", hover.value));
         ui.end_row();
-        ui.label(text::WORLD);
+        ui.label(text::world());
         ui.monospace(format!("{:.0}, {:.0}", hover.world.x, hover.world.z));
         ui.end_row();
         let original = hover.original();
-        ui.label(text::ORIGINAL);
+        ui.label(text::original());
         ui.monospace(format!("{:.0}, {:.0}", original.x, original.z));
         ui.end_row();
     });
@@ -454,12 +455,12 @@ fn last_event(app: &mut MapperApp, ui: &mut egui::Ui) {
     ui.horizontal_wrapped(|ui| {
         ui.label(format!(
             "{}: {} · {}",
-            text::HOVER_EVENT,
+            text::hover_event(),
             text::event_kind(kind),
             text::section_name(script, section)
         ))
-        .on_hover_text(text::LAST_EVENT_HINT);
-        open = ui.button(text::OPEN_SECTION).clicked();
+        .on_hover_text(text::last_event_hint());
+        open = ui.button(text::open_section()).clicked();
     });
     if open {
         app.apply(Action::OpenSection { script, section });
@@ -467,62 +468,62 @@ fn last_event(app: &mut MapperApp, ui: &mut egui::Ui) {
 }
 
 fn live_details(app: &mut MapperApp, ui: &mut egui::Ui) {
-    ui.strong(text::LIVE);
+    ui.strong(text::live());
     let live = &mut app.live;
-    ui.add(egui::TextEdit::singleline(&mut live.endpoint).hint_text(text::LIVE_ENDPOINT_HINT));
+    ui.add(egui::TextEdit::singleline(&mut live.endpoint).hint_text(text::live_endpoint_hint()));
     let mut open = None;
     ui.horizontal(|ui| {
         if live.is_linked() {
-            if ui.button(text::LIVE_DISCONNECT).clicked() {
+            if ui.button(text::live_disconnect()).clicked() {
                 live.disconnect();
             }
-            if ui.button(text::LIVE_FOLLOW).clicked() {
+            if ui.button(text::live_follow()).clicked() {
                 open = live
                     .view
                     .as_ref()
                     .and_then(|view| view.map().map(str::to_owned));
             }
-        } else if ui.button(text::LIVE_CONNECT).clicked() {
+        } else if ui.button(text::live_connect()).clicked() {
             live.connect();
         }
     });
-    ui.checkbox(&mut live.follow, text::LIVE_FOLLOW_MODE)
-        .on_hover_text(text::LIVE_FOLLOW_HINT);
-    ui.checkbox(&mut live.preview, text::LIVE_PREVIEW)
-        .on_hover_text(text::LIVE_PREVIEW_HINT);
+    ui.checkbox(&mut live.follow, text::live_follow_mode())
+        .on_hover_text(text::live_follow_hint());
+    ui.checkbox(&mut live.preview, text::live_preview())
+        .on_hover_text(text::live_preview_hint());
     let mut reload_on_save = app.mapper.reload_on_save();
     let reload_toggled = ui
-        .checkbox(&mut reload_on_save, text::RELOAD_ON_SAVE)
+        .checkbox(&mut reload_on_save, text::reload_on_save())
         .changed();
     if live.is_connected() {
         let paused = live.view.as_ref().is_some_and(|view| view.paused);
         ui.horizontal(|ui| {
             if paused {
-                if ui.button(text::LIVE_RESUME).clicked() {
+                if ui.button(text::live_resume()).clicked() {
                     live.send(Command::Resume);
                 }
-            } else if ui.button(text::LIVE_PAUSE).clicked() {
+            } else if ui.button(text::live_pause()).clicked() {
                 live.send(Command::Pause);
             }
             if ui
-                .add_enabled(paused, egui::Button::new(text::LIVE_STEP))
-                .on_hover_text(text::LIVE_STEP_HINT)
+                .add_enabled(paused, egui::Button::new(text::live_step()))
+                .on_hover_text(text::live_step_hint())
                 .clicked()
             {
                 live.send(Command::Advance(1));
             }
             if ui
-                .add_enabled(paused, egui::Button::new(text::LIVE_STEP_SECOND))
+                .add_enabled(paused, egui::Button::new(text::live_step_second()))
                 .clicked()
             {
                 live.send(Command::Advance(60));
             }
         });
-        if ui.button(text::LIVE_RELOAD).clicked() {
+        if ui.button(text::live_reload()).clicked() {
             live.reload();
         }
         let mut overlay = live.overlay;
-        if ui.checkbox(&mut overlay, text::LIVE_OVERLAY).changed() {
+        if ui.checkbox(&mut overlay, text::live_overlay()).changed() {
             live.set_overlay(overlay);
         }
     }
@@ -543,16 +544,16 @@ fn live_details(app: &mut MapperApp, ui: &mut egui::Ui) {
 fn story_panel(app: &mut MapperApp, ui: &mut egui::Ui) {
     let names = &app.mapper.story_names;
     let live = &mut app.live;
-    egui::CollapsingHeader::new(text::STORY)
+    egui::CollapsingHeader::new(text::story())
         .id_salt("story")
         .show(ui, |ui| {
             ui.horizontal(|ui| {
                 let mut follow = live.story_follow;
-                if ui.checkbox(&mut follow, text::STORY_FOLLOW).changed() {
+                if ui.checkbox(&mut follow, text::story_follow()).changed() {
                     live.set_story_follow(follow);
                 }
                 if ui
-                    .add_enabled(live.is_connected(), egui::Button::new(text::LIVE_STORY))
+                    .add_enabled(live.is_connected(), egui::Button::new(text::live_story()))
                     .clicked()
                 {
                     live.send(Command::ReadStory);
@@ -560,7 +561,7 @@ fn story_panel(app: &mut MapperApp, ui: &mut egui::Ui) {
             });
             ui.add(
                 egui::TextEdit::singleline(&mut live.story_filter)
-                    .hint_text(text::STORY_FILTER_HINT),
+                    .hint_text(text::story_filter_hint()),
             );
             if let Some(story) = &live.story {
                 story_details(names, story, &live.story_filter, ui);
@@ -573,17 +574,17 @@ fn story_panel(app: &mut MapperApp, ui: &mut egui::Ui) {
 
 fn story_writes(live: &mut crate::live::LivePanel, ui: &mut egui::Ui) {
     ui.add_space(4.0);
-    ui.weak(text::STORY_SET_HINT);
+    ui.weak(text::story_set_hint());
     ui.horizontal(|ui| {
-        ui.label(text::STORY_TRIGGER);
+        ui.label(text::story_trigger());
         ui.add(egui::DragValue::new(&mut live.story_trigger).range(0..=u16::MAX));
-        if ui.button(text::STORY_SET_ON).clicked() {
+        if ui.button(text::story_set_on()).clicked() {
             live.write_story(StoryWrite::Trigger {
                 number: live.story_trigger,
                 on: true,
             });
         }
-        if ui.button(text::STORY_SET_OFF).clicked() {
+        if ui.button(text::story_set_off()).clicked() {
             live.write_story(StoryWrite::Trigger {
                 number: live.story_trigger,
                 on: false,
@@ -591,11 +592,11 @@ fn story_writes(live: &mut crate::live::LivePanel, ui: &mut egui::Ui) {
         }
     });
     ui.horizontal(|ui| {
-        ui.label(text::STORY_VARIABLE);
+        ui.label(text::story_variable());
         ui.add(egui::DragValue::new(&mut live.story_variable).range(0..=u16::MAX));
         ui.label("=");
         ui.add(egui::DragValue::new(&mut live.story_value));
-        if ui.button(text::STORY_SET_VALUE).clicked() {
+        if ui.button(text::story_set_value()).clicked() {
             live.write_story(StoryWrite::Variable {
                 number: live.story_variable,
                 value: live.story_value,
@@ -615,16 +616,16 @@ fn story_match(filter: &str, number: u32, name: Option<&str>) -> bool {
 fn story_details(names: &dwe_map::StoryNames, story: &StoryState, filter: &str, ui: &mut egui::Ui) {
     ui.add_space(6.0);
     let map = story.map.as_deref().unwrap_or("—");
-    ui.strong(format!("{} · {map} · tick {}", text::STORY, story.tick));
+    ui.strong(format!("{} · {map} · tick {}", text::story(), story.tick));
     if let Some(stage) = &story.stage {
-        ui.label(format!("{}: {stage}", text::STORY_STAGE));
+        ui.label(format!("{}: {stage}", text::story_stage()));
     }
     let script = story
         .map_script
         .map_or_else(|| "—".to_owned(), |script| script.to_string());
-    ui.label(format!("{}: {script}", text::STORY_SCRIPT));
+    ui.label(format!("{}: {script}", text::story_script()));
     let sections = if story.sections.is_empty() {
-        text::STORY_NONE.to_owned()
+        text::story_none().to_owned()
     } else {
         story
             .sections
@@ -633,13 +634,13 @@ fn story_details(names: &dwe_map::StoryNames, story: &StoryState, filter: &str, 
             .collect::<Vec<_>>()
             .join(", ")
     };
-    let sections = format!("{}: {sections}", text::STORY_SECTIONS);
+    let sections = format!("{}: {sections}", text::story_sections());
     if story.busy {
         ui.colored_label(egui::Color32::YELLOW, sections);
     } else {
         ui.label(sections);
     }
-    ui.label(text::STORY_TRIGGERS);
+    ui.label(text::story_triggers());
     egui::Grid::new("story_triggers")
         .striped(true)
         .show(ui, |ui| {
@@ -651,7 +652,7 @@ fn story_details(names: &dwe_map::StoryNames, story: &StoryState, filter: &str, 
                 }
             }
         });
-    ui.label(text::STORY_VARIABLES);
+    ui.label(text::story_variables());
     egui::Grid::new("story_variables")
         .striped(true)
         .show(ui, |ui| {
@@ -669,14 +670,14 @@ fn story_details(names: &dwe_map::StoryNames, story: &StoryState, filter: &str, 
 /// The game's warnings and errors, newest last.
 fn log_panel(app: &mut MapperApp, ui: &mut egui::Ui) {
     let live = &mut app.live;
-    egui::CollapsingHeader::new(format!("{} ({})", text::LIVE_LOG, live.log.len()))
+    egui::CollapsingHeader::new(format!("{} ({})", text::live_log(), live.log.len()))
         .id_salt("game_log")
         .show(ui, |ui| {
             if live.log.is_empty() {
-                ui.weak(text::LIVE_LOG_EMPTY);
+                ui.weak(text::live_log_empty());
                 return;
             }
-            if ui.small_button(text::CLEAR).clicked() {
+            if ui.small_button(text::clear()).clicked() {
                 live.log.clear();
                 return;
             }

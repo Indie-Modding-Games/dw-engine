@@ -1,4 +1,4 @@
-//! The story of the map shown (docs/modulos/apps/mapper.md, "Eventos"): its events, the section
+//! The story of the map shown (docs/modules/apps/mapper.md, "Events"): its events, the section
 //! open in the section editor and the edits of its code, its dialogue lines, its doors and toilet
 //! and its NPC slots, kept as drafts beside the map until a save writes them as a story patch of
 //! the target pack ([`dwe_story::save`]).
@@ -121,7 +121,7 @@ pub enum StoryEdit {
     Revert,
 }
 
-/// What "Probar evento" does in a connected game.
+/// What "Test event" does in a connected game.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct TestPlan {
     pub map: String,
@@ -251,7 +251,7 @@ impl Mapper {
             .get(&open.script)
             .is_some_and(|draft| draft.file.section(open.section).is_some())
         {
-            return Some(format!("{} ({})", self.story_pack(), text::NOT_SAVED));
+            return Some(format!("{} ({})", self.story_pack(), text::not_saved()));
         }
         self.shown_script(open.script)?.patched_by(open.section)
     }
@@ -422,12 +422,12 @@ impl Mapper {
         let Some(map) = &self.map else { return };
         if map.document.npcs.len() >= MOST_NPCS {
             self.messages
-                .push(Message::Error(text::TOO_MANY_NPCS.to_owned()));
+                .push(Message::Error(text::too_many_npcs().to_owned()));
             return;
         }
         let Some(mut npc) = self.npc_template() else {
             self.messages
-                .push(Message::Error(text::NO_NPC_TEMPLATE.to_owned()));
+                .push(Message::Error(text::no_npc_template().to_owned()));
             return;
         };
         if let Some(point) = at.and_then(|at| self.ground_under(at, npc.position)) {
@@ -516,7 +516,7 @@ impl Mapper {
     fn edit_entry_section(&mut self, change: impl FnOnce(&mut Block)) {
         let Some(section) = self.entry_section() else {
             self.messages
-                .push(Message::Error(text::NO_ENTRY_SECTION.to_owned()));
+                .push(Message::Error(text::no_entry_section().to_owned()));
             return;
         };
         let Some(mut code) = self.entry_section_code() else {
@@ -556,7 +556,7 @@ impl Mapper {
         conditions_to(file, block, &spawns)
     }
 
-    /// What "Probar evento" does for an event of the map shown.
+    /// What "Test event" does for an event of the map shown.
     pub fn test_plan(&self, event: &Event) -> TestPlan {
         let mut plan = TestPlan {
             map: self
@@ -638,7 +638,7 @@ fn apply_change(
         Some(name) => file.routine_mut(name).map(|routine| &mut routine.body),
         None => file.section_body_mut(open.section),
     }
-    .ok_or_else(|| text::NO_CODE.to_owned())?;
+    .ok_or_else(|| text::no_code().to_owned())?;
     let selected = match change {
         StoryEdit::Insert { at, stmt } => edit::insert(block, at, stmt.clone()).then(|| at.clone()),
         StoryEdit::Replace { at, stmt } => {
@@ -725,7 +725,7 @@ fn place_by_npc(npc: &Npc) -> String {
     crate::live::place_player(player, world::rotation_facing(at - player))
 }
 
-/// How far in front of an NPC "Probar evento" puts the player, in world units.
+/// How far in front of an NPC "Test event" puts the player, in world units.
 const NPC_TALK_DISTANCE: f32 = 150.0;
 
 /// Whether a map's document and drafts change the NPC list (the map then saves whole: patches

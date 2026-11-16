@@ -161,7 +161,7 @@ impl LiveClient {
     }
 
     /// Shows the map with a patch over it, in memory only (the channel's `preview_map`): `patch`
-    /// is the text of a map patch (docs/formats/mapas.md, "Parches"), `pack` the pack the edit is
+    /// is the text of a map patch (docs/formats/maps.md, "Parches"), `pack` the pack the edit is
     /// for, whose rights it takes.
     pub fn preview_map(
         &mut self,

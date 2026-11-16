@@ -1,8 +1,8 @@
-# Abrir un cofre con el teclado (tamer.c: tamerTickTakeChest): junto al cofre del lago, confirmar gira al jugador hacia
-# el cofre de pie (animación 0), el compañero se queda quieto (partnerSetState(0xb)) y el cajón sale; luego sale el
-# aviso. La primera confirmación mete el objeto en la bolsa y el aviso sigue; la segunda lo cierra y devuelve al
-# compañero a seguir al jugador. Una tercera confirmación abre el cofre ya vacío. Se corre con: dwe-game --content
-# <carpeta> --start mayo10 --new-game --autotest tests/autotest/route-field-chest.yaml --shots <carpeta>
+# Opening a chest with the keyboard (tamer.c: tamerTickTakeChest): beside the lake's chest, confirm turns the player
+# toward the chest, standing (animation 0), the partner stays still (partnerSetState(0xb)) and the drawer comes out;
+# then the notice appears. The first confirm puts the item in the bag and the notice goes on; the second closes it
+# and sends the partner back to follow the player. A third confirm opens the chest, now empty. Run it with: dwe-game
+# --content <folder> --start mayo10 --new-game --autotest tests/autotest/route-field-chest.yaml --shots <folder>
 name: field-chest
 device: keyboard
 timeout: 60

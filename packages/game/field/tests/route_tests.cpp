@@ -26,7 +26,7 @@
 
 // The vertical slice's route on the real extracted content: File City (twna01) to Jijimon's house
 // (room08) and back, driven headlessly with scripted intents, both as stick directions (keyboard,
-// gamepad) and as click-to-move targets. docs/reference/campo.md says how the maps were identified.
+// gamepad) and as click-to-move targets. docs/reference/field.md says how the maps were identified.
 
 using dwe::assets::CollisionCell;
 using dwe::assets::MapDocument;

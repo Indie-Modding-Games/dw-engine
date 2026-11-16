@@ -1,7 +1,7 @@
--- The shop job's rules panel (game/shop_job; docs/reference/trabajo-tienda.md): the game publishes
--- the pay tiers and the bonus item (shop_job_rules.*, _shopjob/ui-contract.md) and shows this
--- document from the HUD bar's "?", the counter's rules button and by itself at each job's first
--- customer. Confirm, cancel or menu close it (shop_job_rules_close).
+-- The shop job's rules panel (game/shop_job; docs/reference/shop-job.md): the game publishes
+-- the pay tiers and the bonus item (shop_job_rules.*, docs/reference/shop-job.md, Interface) and
+-- shows this document from the HUD bar's "?", the counter's rules button and by itself at each
+-- job's first customer. Confirm, cancel or menu close it (shop_job_rules_close).
 --
 -- Classes for the skins: #panel takes "improved" with the improved job and "original" with the
 -- original's (which shows #rules-original and hides the haggle's rules); #rules-pay-bonus takes

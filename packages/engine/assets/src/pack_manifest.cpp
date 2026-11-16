@@ -1,5 +1,6 @@
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/pack_manifest.hpp>
+#include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/core/yaml.hpp>
 
@@ -60,6 +61,13 @@ core::Result<std::string> readText(const YamlNode& node, std::string_view key) {
     return failAt(node, std::format("'{}' must be a single value", key));
   }
   return node.text();
+}
+
+// A name or description: one text, or one per language (LocalizedText).
+core::Result<LocalizedText> readPeopleText(const YamlNode& node, std::string_view key) {
+  YamlReader reader;
+  LocalizedText text = readLocalizedText(reader, node);
+  return reader.finish(std::move(text), std::format("'{}'", key));
 }
 
 core::Result<Version> readVersion(const YamlNode& node, std::string_view key) {
@@ -344,13 +352,13 @@ core::Result<PackManifest> parsePackManifest(std::string_view text) {
       }
       manifest.priority = *priority;
     } else if (entry.key == "name") {
-      auto name = readText(value, entry.key);
+      auto name = readPeopleText(value, entry.key);
       if (!name) {
         return std::unexpected{name.error()};
       }
       manifest.name = std::move(*name);
     } else if (entry.key == "description") {
-      auto description = readText(value, entry.key);
+      auto description = readPeopleText(value, entry.key);
       if (!description) {
         return std::unexpected{description.error()};
       }

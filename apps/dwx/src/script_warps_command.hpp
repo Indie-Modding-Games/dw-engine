@@ -17,8 +17,8 @@ namespace dwe::dwx {
 // another.
 inline constexpr std::string_view DefaultTransportRules = "original";
 
-// field/script_warps as the story Lua of the packs gives it (docs/architecture/warps-de-script.md,
-// «Desde el Lua»).
+// field/script_warps as the story Lua of the packs gives it (docs/architecture/script-warps.md,
+// «From the Lua»).
 struct DerivedScriptWarps {
   std::string yaml; // the document, as dwx extract writes it
   std::size_t modules = 0;

@@ -17,7 +17,7 @@ inline constexpr std::int64_t UpscaleRecipeVersion = 1;
 
 // A recipe for dwx upscale: which images of a pack to grow and by how much, with the built-in
 // index_scale step only. It is the deterministic subset of the remaster recipe
-// (docs/architecture/remaster-pipeline.md, «Recetas»): no providers, no models, no prompts, so it
+// (docs/architecture/remaster-pipeline.md, «Recipes»): no providers, no models, no prompts, so it
 // runs offline and gives the same bytes on every machine.
 struct UpscaleRecipe {
   // The id of the recipe, which is also the id of the pack it writes.

@@ -1,6 +1,6 @@
 //! A map's doors and toilet, which live in the map table (`data/maps`), not in the map's data:
 //! the door set and the toilet the map's entry names. Saving them writes the target pack's
-//! `data/maps` as the composition reads it (docs/formats/mapas.md): the `doors` and `toilets`
+//! `data/maps` as the composition reads it (docs/formats/maps.md): the `doors` and `toilets`
 //! sections whole, as a pack that has them replaces them, and the map's entry when it has to name
 //! another set (one shared with other maps gets a copy of its own).
 

@@ -497,7 +497,7 @@ namespace dwe::game::evolution {
 
 namespace {
 
-// Every species as a partner (docs/modulos/game/evoluciones-extra.md) on the user's disc.
+// Every species as a partner (docs/modules/game/extra-evolutions.md) on the user's disc.
 constexpr std::string_view AllSpeciesRuleset = "todas";
 constexpr std::int32_t WitnessTries = 20000;
 constexpr std::int32_t WakeUpTries = 64;
@@ -659,7 +659,7 @@ TEST_CASE("the user's disc, extracted: every species as a partner keeps the orig
     }
     // Whenever the original picks a form, the option picks the same one, but where the original
     // falls back to the rookie's own fallback form because no target passes: a fallback target
-    // takes that place (docs/modulos/game/evoluciones-extra.md, «Prioridad del original»).
+    // takes that place (docs/modules/game/extra-evolutions.md, «Original's priority»).
     const auto fallbackForm = original.tables().find(original.rules().fallback.rookieTarget);
     for (std::int32_t raising = 0; raising < Raisings; ++raising) {
       const EvolutionInputs inputs = randomInputs(species, random);

@@ -1,6 +1,6 @@
-# El domador (packages/session: TamerRules, docs/modulos/apps/session.md).
-# tamer.c: addTamerLevel: el nivel sube o baja con su tirada y queda entre 0 y 10.
+# The Tamer (packages/session: TamerRules, docs/modules/apps/session.md).
+# tamer.c: addTamerLevel: the level goes up or down with its roll and stays between 0 and 10.
 level_min: 0
 level_max: 10
-# evl.c: EVL_applyEvolution: addTamerLevel(20 o 100, 1); la evolución da la probabilidad, esto los niveles.
+# evl.c: EVL_applyEvolution: addTamerLevel(20 or 100, 1); the evolution gives the probability, this the levels.
 evolution_level_gain: 1

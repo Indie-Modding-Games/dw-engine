@@ -7,7 +7,7 @@
 #include <span>
 #include <string>
 
-// The player page's City tab (a dwe addition, docs/modulos/apps/screens.md): who already lives in
+// The player page's City tab (a dwe addition, docs/modules/apps/screens.md): who already lives in
 // the city and who is still missing, with the points each adds to the prosperity. The residents and
 // their points come from the city's rules (main.c: recalculatePPandArena), never from a list of
 // its own.

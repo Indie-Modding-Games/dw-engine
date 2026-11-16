@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/asset_id.hpp>
+#include <dwe/assets/localized_text.hpp>
 #include <dwe/assets/table_kinds.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/assets/yaml_reader.hpp>
@@ -55,9 +56,10 @@ using SectionChecks = std::map<std::string, SectionCheck, std::less<>>;
 // What the manifest says about the ruleset.
 struct RulesetInfo {
   std::string id;
-  std::string name;
+  // For players and designers, in one language or several (assets::LocalizedText).
+  assets::LocalizedText name;
   std::string version;
-  std::string description;
+  assets::LocalizedText description;
   // The id and then each ruleset it extends, nearest first: {"hard", "original"}.
   std::vector<std::string> chain;
 };

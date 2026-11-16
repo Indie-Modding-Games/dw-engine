@@ -1,5 +1,5 @@
-# El guardián de objetos que abre la historia (shop/script_menu.c: tickItemKeeper). Sus frases son textos de la
-# historia (MAPHEAD); aquí van los títulos de las ventanas y la ayuda, con las teclas del dispositivo en uso.
+# The Item Keeper the story opens (shop/script_menu.c: tickItemKeeper). Its lines are story texts
+# (MAPHEAD); here go the window titles and the help, with the keys of the device in use.
 kept_title: "Guardado"
 bag_title: "En mano"
 help.use: "Usa"

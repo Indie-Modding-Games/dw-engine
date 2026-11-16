@@ -1,4 +1,4 @@
-# The default UI (docs/modding/interfaces.md): the document that shows each of the game's screens.
+# The default UI (docs/modding/ui-addons.md): the document that shows each of the game's screens.
 # A UI addon names its own for the screens it covers; the rest keep these. The skins (ui/skins/)
 # restyle these documents.
 id: default

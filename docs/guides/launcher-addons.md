@@ -1,21 +1,21 @@
-# Complementos del lanzador
+# Launcher add-ons
 
-El [lanzador](../modulos/apps/launcher.md) admite **complementos** de la comunidad: páginas HTML pequeñas que añaden
-cosas a su interfaz (un icono en la barra lateral, una página en la pantalla principal, tarjetas en el panel de novedades y una sección de
-ajustes). Esta guía explica cómo se hace uno, qué puede hacer (la API v1) y cómo se protege al jugador.
+The [launcher](../modules/apps/launcher.md) supports community **add-ons**: small HTML pages that add things to its
+interface (an icon in the sidebar, a page on the home screen, cards in the news panel and a settings section). This
+guide explains how to make one, what it can do (API v1) and how the player is protected.
 
-El ejemplo completo está en `apps/launcher/addons/example-notes/` («Notas»: una página donde el jugador apunta lo
-que quiere, con su icono en la barra, una tarjeta de novedades y una sección de ajustes). Para empezar, cópialo.
+The complete example is in `apps/launcher/addons/example-notes/` ("Notes": a page where the player jots down what
+they want, with its icon in the bar, a news card and a settings section). To get started, copy it.
 
-## Qué es un complemento
+## What an add-on is
 
-Una carpeta (o un `.zip` de ella) con:
+A folder (or a `.zip` of it) with:
 
 ```text
-mi-complemento/
-├── addon.json      el manifiesto
-├── index.html      la página (la que nombra "entry")
-├── dwe-addons.js   el cliente del puente (cópialo de apps/launcher/addons/sdk/)
+my-addon/
+├── addon.json      the manifest
+├── index.html      the page (the one "entry" names)
+├── dwe-addons.js   the bridge client (copy it from apps/launcher/addons/sdk/)
 ├── main.js, style.css, icon.svg…
 ```
 
@@ -23,55 +23,55 @@ mi-complemento/
 
 ```json
 {
-  "id": "org.ejemplo.notas",
-  "name": "Notas",
+  "id": "org.example.notes",
+  "name": "Notes",
   "version": "1.0.0",
-  "author": "Tu nombre",
-  "description": "Qué hace, en una o dos frases.",
+  "author": "Your name",
+  "description": "What it does, in one or two sentences.",
   "api": 1,
   "entry": "index.html",
   "slots": ["sidebar", "tabs", "news", "settings"],
-  "permissions": { "storage": true, "notify": true, "hosts": ["api.ejemplo.org"] }
+  "permissions": { "storage": true, "notify": true, "hosts": ["api.example.org"] }
 }
 ```
 
-| Campo | Qué es |
+| Field | What it is |
 |---|---|
-| `id` | Identificador único al estilo de un dominio al revés: dos o más partes separadas por puntos, con minúsculas, cifras y guiones (`org.ejemplo.notas`), de 3 a 64 caracteres. Es también el nombre de su carpeta. |
-| `name` | Nombre visible, hasta 40 caracteres. |
-| `version` | Versión semántica (`1.0.0`, `1.2.0-beta.1`). |
-| `author` | Autor, hasta 60 caracteres. |
-| `description` | Opcional, hasta 300 caracteres. Se enseña al instalarlo. |
-| `api` | La versión de la API para la que está hecho. Hoy solo existe la `1`; el lanzador rechaza cualquier otra. |
-| `entry` | La página HTML, dentro de la carpeta. |
-| `slots` | Dónde aparece: `sidebar` (barra lateral), `tabs` (una página en el centro de la pantalla principal), `news` (novedades), `settings` (ajustes). Al menos una; `sidebar` necesita `tabs` (el icono abre la página). |
-| `permissions` | Opcional. `storage` (guardar sus datos), `notify` (avisos breves) y `hosts` (los servidores a los que puede conectarse, hasta 8: solo el nombre y, si hace falta, el puerto, como `api.ejemplo.org` o `127.0.0.1:8779`; sin `https://`, rutas ni comodines). Un permiso desconocido invalida el manifiesto. |
+| `id` | A unique identifier in the style of a reversed domain: two or more parts separated by dots, with lowercase letters, digits and hyphens (`org.example.notes`), 3 to 64 characters. It is also the name of its folder. |
+| `name` | Visible name, up to 40 characters. A single text: the manifest has no per-language `name` or `description`; the labels of its slots do (see `label` below). |
+| `version` | Semantic version (`1.0.0`, `1.2.0-beta.1`). |
+| `author` | Author, up to 60 characters. |
+| `description` | Optional, up to 300 characters. It is shown when installing it. |
+| `api` | The API version it is made for. Today only `1` exists; the launcher rejects any other. |
+| `entry` | The HTML page, inside the folder. |
+| `slots` | Where it appears: `sidebar` (sidebar), `tabs` (a page in the center of the home screen), `news` (news), `settings` (settings). At least one; `sidebar` needs `tabs` (the icon opens the page). |
+| `permissions` | Optional. `storage` (keep its data), `notify` (short notices) and `hosts` (the servers it can connect to, up to 8: only the name and, if needed, the port, like `api.example.org` or `127.0.0.1:8779`; no `https://`, paths or wildcards). An unknown permission invalidates the manifest. |
 
-## Cómo se ejecuta
+## How it runs
 
-- El lanzador guarda cada complemento en `<datos>/addons/<id>/` y sus datos en `<datos>/addon-storage/<id>.json`
-  (fuera de su carpeta, así que una actualización los conserva).
-- Sirve sus archivos con un esquema propio, `dweaddon://localhost/<id>/…` (en Windows,
-  `http://dweaddon.localhost/<id>/…`), que solo entrega archivos de la carpeta de **ese** complemento, solo si está
-  activo, solo de tipos conocidos (HTML, JS, CSS, JSON, SVG, PNG, JPEG, WebP, GIF, fuentes, texto) y nunca siguiendo
-  un enlace que salga de la carpeta.
-- Cada respuesta lleva una política de seguridad (CSP) estricta: scripts, estilos, imágenes y fuentes solo de su
-  carpeta, `connect-src 'none'` (ni `fetch` ni WebSocket: la red va por `net.fetch`), sin marcos, sin formularios,
-  sin `eval`. Los scripts en línea tampoco: pon el código en archivos `.js`. Los estilos en línea sí se permiten.
-- La página se carga en un `<iframe sandbox="allow-scripts">`: corre en un origen opaco, sin acceso a la página del
-  lanzador, a su IPC, a cookies ni a `localStorage`, sin ventanas emergentes ni navegación de la ventana principal.
-- Carga `dwe-addons.js` con una etiqueta `<script>` clásica (no `type="module"`: los módulos no cargan en un origen
-  opaco).
-- Los complementos activos se cargan al abrir el lanzador. La misma página se abre en tres **vistas**, que el
-  cliente indica en `DweAddons.view`:
-  - `background`: siempre cargada e invisible. Aquí se registran las piezas de la interfaz.
-  - `tab`: el contenido de su página (si registró una).
-  - `settings`: su sección en Ajustes → Complementos (si registró una).
+- The launcher keeps each add-on in `<data>/addons/<id>/` and its data in `<data>/addon-storage/<id>.json` (outside
+  its folder, so an update keeps them).
+- It serves its files with a scheme of its own, `dweaddon://localhost/<id>/…` (on Windows,
+  `http://dweaddon.localhost/<id>/…`), which only delivers files from the folder of **that** add-on, only if it is
+  active, only of known types (HTML, JS, CSS, JSON, SVG, PNG, JPEG, WebP, GIF, fonts, text) and never following a link
+  that leaves the folder.
+- Each response carries a strict security policy (CSP): scripts, styles, images and fonts only from its folder,
+  `connect-src 'none'` (neither `fetch` nor WebSocket: the network goes through `net.fetch`), no frames, no forms, no
+  `eval`. No inline scripts either: put the code in `.js` files. Inline styles are allowed.
+- The page is loaded in an `<iframe sandbox="allow-scripts">`: it runs in an opaque origin, with no access to the
+  launcher's page, its IPC, cookies or `localStorage`, no pop-up windows and no navigation of the main window.
+- It loads `dwe-addons.js` with a classic `<script>` tag (not `type="module"`: modules do not load in an opaque
+  origin).
+- Active add-ons are loaded when the launcher opens. The same page is opened in three **views**, which the client
+  indicates in `DweAddons.view`:
+  - `background`: always loaded and invisible. The interface pieces are registered here.
+  - `tab`: the content of its page (if it registered one).
+  - `settings`: its section in Settings → Add-ons (if it registered one).
 
-## La API v1
+## The v1 API
 
-Todo pasa por el cliente `dwe-addons.js`, que define `window.DweAddons`. Cada llamada devuelve una promesa; si el
-lanzador la rechaza, la promesa falla con un `Error` cuyo `code` dice por qué (`addon-denied`, `addon-host`,
+Everything goes through the `dwe-addons.js` client, which defines `window.DweAddons`. Each call returns a promise; if
+the launcher rejects it, the promise fails with an `Error` whose `code` says why (`addon-denied`, `addon-host`,
 `addon-storage-full`, `network`, `timeout`…).
 
 ```js
@@ -83,91 +83,89 @@ if (dwe.view === "background") {
 }
 ```
 
-| Llamada | Qué hace | Requiere |
+| Call | What it does | Requires |
 |---|---|---|
-| `connect()` | Saluda al lanzador (reintenta unos segundos). Devuelve `{ api, view, id }`. | — |
-| `context()` | Datos de solo lectura: `api`, el complemento (`id`, `version`, sus permisos), `launcher_version`, `game_version`, `game_installed`, `content_installed`, `language` (`es`/`en`) y `platform`. **Nunca** rutas, la clave de la beta, el servidor de versiones ni el disco. | — |
-| `ui.sidebar({ label, icon })` | Un icono en la barra lateral que abre su página. `icon` es un `.svg`, `.png` o `.webp` de su carpeta (se muestra como imagen, nunca como HTML). | slot `sidebar` |
-| `ui.tab({ label, page? })` | Su página en el centro de la pantalla principal (`page`, por defecto `entry`) en la vista `tab`. Se abre desde su icono o desde la píldora «Complementos». | slot `tabs` |
-| `ui.settings({ label, page? })` | Una sección en Ajustes → Complementos con su página en la vista `settings`. | slot `settings` |
-| `ui.news(items)` | Hasta 3 tarjetas de novedades: `{ title, body, date? }`, solo texto (el lanzador las pinta y les pone «Complemento «nombre»»). Cada llamada reemplaza las anteriores. | slot `news` |
-| `ui.resize(height)`, `ui.autoResize()` | Cambia la altura de su marco (80 a 1600 px); `autoResize` la ajusta al contenido. Solo en las vistas `tab` y `settings`. | — |
-| `storage.get(key)`, `.set(key, value)`, `.remove(key)`, `.keys()` | Su almacén clave-valor: valores JSON, claves de hasta 128 caracteres, **256 KB** en total. | `storage` |
-| `notify(text, kind?)` | Un aviso breve (hasta 200 caracteres, como mucho uno cada 3 s) con su nombre. `kind`: `info` o `success`. | `notify` |
-| `net.fetch(url, { method?, headers?, body? })` | Una petición `GET` o `POST` hecha por el lanzador. Devuelve `{ status, content_type, body }` (texto, hasta 1 MB). | `hosts` |
-| `on(event, listener)` | Eventos: `game.status` (`{ running, busy, ready, gameVersion, language }`, cada vez que cambia) y `language` (`{ language }`). | — |
+| `connect()` | Greets the launcher (retries for a few seconds). Returns `{ api, view, id }`. | — |
+| `context()` | Read-only data: `api`, the add-on (`id`, `version`, its permissions), `launcher_version`, `game_version`, `game_installed`, `content_installed`, `language` (`es`/`en`) and `platform`. **Never** paths, the beta key, the versions server or the disc. | — |
+| `ui.sidebar({ label, icon })` | An icon in the sidebar that opens its page. `icon` is an `.svg`, `.png` or `.webp` from its folder (shown as an image, never as HTML). | slot `sidebar` |
+| `ui.tab({ label, page? })` | Its page in the center of the home screen (`page`, by default `entry`) in the `tab` view. It is opened from its icon or from the "Add-ons" pill. | slot `tabs` |
+| `ui.settings({ label, page? })` | A section in Settings → Add-ons with its page in the `settings` view. | slot `settings` |
+| `ui.news(items)` | Up to 3 news cards: `{ title, body, date? }`, text only (the launcher paints them and adds "Add-on “name”"). Each call replaces the previous ones. | slot `news` |
+| `ui.resize(height)`, `ui.autoResize()` | Changes the height of its frame (80 to 1600 px); `autoResize` fits it to the content. Only in the `tab` and `settings` views. | — |
+| `storage.get(key)`, `.set(key, value)`, `.remove(key)`, `.keys()` | Its key-value store: JSON values, keys up to 128 characters, **256 KB** in total. | `storage` |
+| `notify(text, kind?)` | A short notice (up to 200 characters, at most one every 3 s) with its name. `kind`: `info` or `success`. | `notify` |
+| `net.fetch(url, { method?, headers?, body? })` | A `GET` or `POST` request made by the launcher. Returns `{ status, content_type, body }` (text, up to 1 MB). | `hosts` |
+| `on(event, listener)` | Events: `game.status` (`{ running, busy, ready, gameVersion, language }`, every time it changes) and `language` (`{ language }`). | — |
 
-Las etiquetas (`label`) pueden ser un texto o `{ es, en }`; el lanzador elige el idioma del jugador.
+Labels (`label`) can be a text or `{ es, en }`; the launcher picks the player's language.
 
 ### net.fetch
 
-- Solo a los `hosts` declarados y aceptados, comparando nombre y puerto exactos (`api.ejemplo.org` no incluye
-  `www.ejemplo.org`).
-- Solo `https`; `http` únicamente a este mismo ordenador (`127.0.0.1`, `localhost`), para pruebas.
-- Cada redirección se comprueba con la misma lista (y como mucho 3).
-- La petición la hace un cliente aparte del lanzador: **nunca** lleva la clave de la beta ni cookies. Las únicas
-  cabeceras que se pueden poner son `Accept`, `Content-Type` y `Accept-Language`; cualquier otra (como
-  `Authorization`) hace fallar la llamada.
-- Cuerpo de hasta 64 KB, respuesta de hasta 1 MB, 20 s como máximo.
+- Only to the declared and accepted `hosts`, comparing exact name and port (`api.example.org` does not include
+  `www.example.org`).
+- Only `https`; `http` only to this same computer (`127.0.0.1`, `localhost`), for testing.
+- Each redirect is checked against the same list (and at most 3).
+- The request is made by a separate client of the launcher: it **never** carries the beta key or cookies. The only
+  headers that can be set are `Accept`, `Content-Type` and `Accept-Language`; any other (like `Authorization`) makes
+  the call fail.
+- Body up to 64 KB, response up to 1 MB, 20 s at most.
 
-### Lo que un complemento nunca puede hacer
+### What an add-on can never do
 
-No hay llamada para: la clave de la beta o el llavero, leer el disco o extraer, buscar o instalar actualizaciones,
-volver a una versión anterior, arrancar el juego u otro programa, abrir carpetas, ni leer o escribir archivos fuera
-de su almacén. El puente responde `addon-denied` a cualquier llamada que no esté en la tabla, y el backend vuelve a
-comprobar cada una (que el complemento esté activo, sus permisos y sus servidores).
+There is no call for: the beta key or the keychain, reading the disc or extracting, looking for or installing
+updates, going back to a previous version, starting the game or another program, opening folders, or reading or
+writing files outside its store. The bridge answers `addon-denied` to any call that is not in the table, and the
+backend checks each one again (that the add-on is active, its permissions and its servers).
 
-## Permisos y el jugador
+## Permissions and the player
 
-- **Al instalar**, el lanzador enseña el nombre, la versión, el autor, la descripción, dónde aparece y qué podrá
-  hacer. Si el jugador cancela, no se instala nada.
-- **Al actualizar**, enseña lo mismo y marca como «Nuevo» lo que no pedía antes. Si cancela, se queda la versión
-  anterior.
-- Si alguien edita a mano el `addon.json` de un complemento instalado para pedir más, el lanzador no lo carga
-  («Permisos por aceptar») hasta que el jugador lo vuelva a activar y acepte.
-- Cada complemento se puede apagar o quitar en Ajustes → Complementos. Quitar uno borra su carpeta y su almacén.
+- **When installing**, the launcher shows the name, the version, the author, the description, where it appears and
+  what it will be able to do. If the player cancels, nothing is installed.
+- **When updating**, it shows the same and marks as "New" what it did not ask for before. If they cancel, the previous
+  version stays.
+- If someone edits by hand the `addon.json` of an installed add-on to ask for more, the launcher does not load it
+  ("Permissions to accept") until the player turns it on again and accepts.
+- Each add-on can be turned off or removed in Settings → Add-ons. Removing one deletes its folder and its store.
 
-## Modo seguro
+## Safe mode
 
-En modo seguro el lanzador no carga ni sirve ningún complemento. Se activa:
+In safe mode the launcher does not load or serve any add-on. It is turned on:
 
-- abriendo el lanzador con `--safe-mode` (`dwe-launcher --safe-mode`);
-- desde Ajustes → Avanzado → Modo seguro (para esta sesión);
-- con el botón «Usar el modo seguro» que aparece si el lanzador no se cerró bien la última vez con complementos
-  activos.
+- by opening the launcher with `--safe-mode` (`dwe-launcher --safe-mode`);
+- from Settings → Advanced → Safe mode (for this session);
+- with the "Use safe mode" button that appears if the launcher did not close properly last time with active add-ons.
 
-## Instalar y probar
+## Installing and testing
 
-1. En el lanzador, Ajustes → Complementos.
-2. Arrastra la carpeta, el `.zip` o el `addon.json`, o usa «Elegir un .zip…» / «Elegir una carpeta…».
-3. Revisa los permisos y pulsa «Instalar».
+1. In the launcher, Settings → Add-ons.
+2. Drag the folder, the `.zip` or the `addon.json`, or use "Pick a .zip…" / "Pick a folder…".
+3. Review the permissions and press "Install".
 
-Al crear uno, instala la carpeta directamente; para probar un cambio, vuelve a instalarla (es una actualización:
-conserva sus datos). El lanzador escribe en su registro (Ajustes → Avanzado → Registros) por qué rechaza un
-complemento.
+When creating one, install the folder directly; to test a change, install it again (it is an update: it keeps its
+data). The launcher writes in its log (Settings → Advanced → Logs) why it rejects an add-on.
 
-El lanzador rechaza, con un mensaje en el idioma del jugador:
+The launcher rejects, with a message in the player's language:
 
-- un `addon.json` que falta, no es JSON o tiene un campo mal (dice qué campo y por qué);
-- una versión de la API que no conoce;
-- un `.zip` con rutas que salen de la carpeta (`../`), rutas absolutas o enlaces;
-- un paquete de más de 20 MB comprimido, 40 MB descomprimido o 1000 archivos;
-- una carpeta con enlaces simbólicos.
+- an `addon.json` that is missing, is not JSON or has a wrong field (it says which field and why);
+- an API version it does not know;
+- a `.zip` with paths that leave the folder (`../`), absolute paths or links;
+- a package over 20 MB compressed, 40 MB uncompressed or 1000 files;
+- a folder with symbolic links.
 
-## Pruebas
+## Tests
 
-- `scripts/launcher.sh test` ejecuta, entre otros, los tests del manifiesto, la seguridad de los `.zip`, los
-  permisos, la lista de servidores de `net.fetch`, el límite del almacén y `tests/addons_bridge.rs`, que prueba que
-  un complemento no puede nombrar ningún comando del lanzador, que `net.fetch` nunca lleva la clave ni cookies (ni
-  siquiera hacia el mismo servidor de versiones que sí lo recibe), que no sigue redirecciones a otros servidores y
-  que su contexto no contiene rutas ni secretos.
-- `apps/launcher/addons/test-fetch/` es un complemento solo para pruebas: su tarjeta de novedades lee las versiones
-  del servidor falso con `net.fetch` y su página «Aislamiento» intenta todo lo que un complemento **no** debe
-  poder hacer (ver la página del lanzador, usar su IPC, llamar a sus comandos, saltarse `net.fetch`, leer cookies o
-  `localStorage`, abrir ventanas, cargar archivos de otro complemento, navegar la ventana principal) y enseña una
-  línea «PASA» por cada intento bloqueado. Necesita el servidor falso en el puerto que declara:
+- `scripts/launcher.sh test` runs, among others, the tests for the manifest, the security of `.zip` files, the
+  permissions, `net.fetch`'s server list, the store limit and `tests/addons_bridge.rs`, which tests that an add-on
+  cannot name any launcher command, that `net.fetch` never carries the key or cookies (not even toward the same
+  versions server that does receive it), that it does not follow redirects to other servers and that its context
+  contains no paths or secrets.
+- `apps/launcher/addons/test-fetch/` is an add-on for tests only: its news card reads the versions from the fake
+  server with `net.fetch` and its "Isolation" page tries everything an add-on must **not** be able to do (see the
+  launcher's page, use its IPC, call its commands, bypass `net.fetch`, read cookies or `localStorage`, open windows,
+  load files from another add-on, navigate the main window) and shows a "PASS" line for each blocked attempt ("PASA" in Spanish). It needs
+  the fake server on the port it declares:
 
   ```bash
-  apps/launcher/tools/fake_release_server.py <carpeta de versiones> --port 8779
+  apps/launcher/tools/fake_release_server.py <versions folder> --port 8779
   DWE_LAUNCHER_API=http://127.0.0.1:8779 build/launcher/release/dwe-launcher
   ```

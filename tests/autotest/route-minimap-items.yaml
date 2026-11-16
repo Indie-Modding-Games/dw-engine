@@ -1,8 +1,8 @@
-# The items on the minimap (an engine improvement, docs/modulos/apps/game.md, «Objetos en el minimapa»): a green diamond
+# The items on the minimap (an engine improvement, docs/modules/apps/game.md, «Items on the minimap»): a green diamond
 # for each item lying on the map's ground. On File City's field two meats are dropped where the player stands, one
 # after the other, and the player steps away; the notice of the second is answered (it is picked up), so one meat stays
 # on the ground with its diamond west of the player's arrow. Then the option off in the pause menu: the diamond goes.
-# Run it with both skins (--ui-skin original, modern); how to run it: docs/guides/prueba-vertical.md.
+# Run it with both skins (--ui-skin original, modern); how to run it: docs/guides/vertical-slice.md.
 name: minimap-items
 device: keyboard
 timeout: 180

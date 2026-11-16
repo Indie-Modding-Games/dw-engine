@@ -1,4 +1,4 @@
-//! The keyboard shortcuts (the list the help shows is `text::SHORTCUT_LIST`). They wait while a
+//! The keyboard shortcuts (the list the help shows is `text::shortcut_list()`). They wait while a
 //! text field has the keyboard, except undo and redo while nothing was typed in it since it took
 //! the keyboard: the field has nothing of its own to undo then, so they undo the map's edits.
 

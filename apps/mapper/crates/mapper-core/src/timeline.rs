@@ -1,4 +1,4 @@
-//! The open section as a timeline over the map (docs/modulos/apps/mapper.md#secuencias): the
+//! The open section as a timeline over the map (docs/modules/apps/mapper.md#sequences): the
 //! model is [`dwe_story::sequence`]; this module places it on the map shown (where the player, the
 //! partner and the NPCs stand when it starts), finds its markers on the canvas and turns the
 //! timeline's gestures into section edits, which go through [`crate::StoryEdit`] like the section
@@ -83,13 +83,13 @@ impl NewCue {
 
     pub fn label(self) -> &'static str {
         match self {
-            Self::Walk => text::CUE_WALK,
-            Self::Turn => text::CUE_TURN,
-            Self::Delay => text::CUE_DELAY,
-            Self::CameraTo => text::CUE_CAMERA,
-            Self::CameraToEntity => text::CUE_CAMERA_ENTITY,
-            Self::Animation => text::CUE_ANIMATION,
-            Self::Text => text::CUE_TEXT,
+            Self::Walk => text::cue_walk(),
+            Self::Turn => text::cue_turn(),
+            Self::Delay => text::cue_delay(),
+            Self::CameraTo => text::cue_camera(),
+            Self::CameraToEntity => text::cue_camera_entity(),
+            Self::Animation => text::cue_animation(),
+            Self::Text => text::cue_text(),
         }
     }
 }
@@ -303,7 +303,7 @@ impl Mapper {
         };
         if ends(path.index) || ends(other) {
             self.messages
-                .push(Message::Error(text::CUE_KEEPS_END.to_owned()));
+                .push(Message::Error(text::cue_keeps_end().to_owned()));
             return;
         }
         self.edit_story(StoryEdit::Move {
@@ -413,7 +413,7 @@ impl Mapper {
             stmt,
         });
         if let Some(key) = new_line {
-            self.set_text(&key, text::CUE_NEW_LINE);
+            self.set_text(&key, text::cue_new_line());
         }
         if let Some(map) = &mut self.map {
             map.history.end_group();
@@ -455,22 +455,22 @@ impl Mapper {
     /// The code "play from here" sends to start the open section at a statement of its own code,
     /// and where each of its lines comes from.
     pub fn play_from_here(&self, at: &StmtPath) -> Result<SentSection, String> {
-        let open = self.section.as_ref().ok_or(text::NO_SECTION_OPEN)?;
+        let open = self.section.as_ref().ok_or(text::no_section_open())?;
         if open.routine.is_some() {
-            return Err(text::PLAY_FROM_ROUTINE.to_owned());
+            return Err(text::play_from_routine().to_owned());
         }
-        let code = self.open_code().ok_or(text::NO_SECTION_OPEN)?;
-        let file = self.open_file().ok_or(text::NO_SECTION_OPEN)?;
+        let code = self.open_code().ok_or(text::no_section_open())?;
+        let file = self.open_file().ok_or(text::no_section_open())?;
         let routines = routines_of(file);
         let sequence = Sequence::derive(code, &routines, &self.stage(), Some(at));
         let (body, origins) = sequence::play_from(code, at, &sequence);
-        let mut patch = StoryFile::new_patch(open.script, text::PLAY_HEADER);
+        let mut patch = StoryFile::new_patch(open.script, text::play_header());
         patch
             .take_section(file, open.section)
             .map_err(|error| error.to_string())?;
         *patch
             .section_body_mut(open.section)
-            .ok_or(text::NO_SECTION_OPEN)? = body;
+            .ok_or(text::no_section_open())? = body;
         patch.drop_unreached_routines();
         patch.has_routines = !patch.routines.is_empty();
         let written = patch.write();

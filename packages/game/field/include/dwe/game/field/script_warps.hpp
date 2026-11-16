@@ -19,7 +19,7 @@ struct NewGameStory;
 } // namespace dwe::assets
 
 // The map changes the event scripts of each map make (`field/script_warps`, which dwx extracts;
-// content/schemas/script_warps.schema.json, docs/architecture/warps-de-script.md), each with the
+// content/schemas/script_warps.schema.json, docs/architecture/script-warps.md), each with the
 // decisions its path takes. The field takes the ones it can decide: those whose decisions are all
 // about triggers.
 namespace dwe::game::field {
@@ -87,7 +87,7 @@ struct GuardChoice {
 };
 
 // A call of a routine the extraction's walk was already in: it did not follow the recursion, so
-// what it decides is not known (docs/architecture/warps-de-script.md).
+// what it decides is not known (docs/architecture/script-warps.md).
 struct GuardRecursion {
   std::string site; // "script 63, offset 0x0120": the routine called again
 
@@ -234,7 +234,7 @@ CellWarp warpOnCell(std::span<const ScriptWarp> warps, std::string_view map, War
 // Whether a map has data the field can enter; an empty one lets every map through.
 using MapFilter = std::function<bool(std::string_view map)>;
 
-// Free exploration (an option, off by default; docs/architecture/warps-de-script.md): the places
+// Free exploration (an option, off by default; docs/architecture/script-warps.md): the places
 // the scripts' map changes on a map's cell go to, whatever their guards decide: of that map, way
 // and section, the warps with a target that `hasMap` lets through, the first of each place (map and
 // exit) in the warps' order.

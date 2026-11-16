@@ -1,5 +1,5 @@
-// The options that change the game's rules (rule_options.hpp; docs/modulos/apps/game.md,
-// «Dificultad» and «Rarezas como opciones»): the game pack's own difficulty levels and quirks,
+// The options that change the game's rules (rule_options.hpp; docs/modules/apps/game.md,
+// «Difficulty» and «Quirks as options»): the game pack's own difficulty levels and quirks,
 // applied to and taken back from a running game's ruleset.
 
 #include <dwe/core/yaml.hpp>

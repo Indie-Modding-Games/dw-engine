@@ -1,17 +1,17 @@
 # screens
 
-Los modelos de vista de las pantallas del juego: qué enseñan el combate, el HUD del campo, la bolsa y los menús.
+The view models of the game's screens: what combat, the field HUD, the bag and the menus show.
 
-- Carpeta: `packages/screens`; objetivos de CMake: `dwe::screens` (capa `apps`).
-- Depende de: `assets`, `battle`, `core`, `inventory`, `localization`, `partner`, `ruleset`, `session`, `ui`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/apps/screens](https://indie-modding-games.github.io/dw-engine/modulos/apps/screens).
+- Folder: `packages/screens`; CMake targets: `dwe::screens` (`apps` layer).
+- Depends on: `assets`, `battle`, `core`, `inventory`, `localization`, `partner`, `ruleset`, `session`, `ui`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/apps/screens](https://indie-modding-games.github.io/dw-engine/modules/apps/screens).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter screens
-scripts/dev.sh test --filter screens       # sus tests (etiqueta de ctest screens)
-scripts/dev.sh test --filter ...screens    # y los de todo lo que depende de él
+scripts/dev.sh test --filter screens       # its tests (ctest label screens)
+scripts/dev.sh test --filter ...screens    # and those of everything that depends on it
 ```

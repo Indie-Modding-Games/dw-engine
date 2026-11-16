@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: movies",
-  "description": "rules/<id>/movies.yaml: the movie each moment of the game plays, whether Start skips it, and how long the title waits before the boot movie again (apps/game: MovieRules, docs/architecture/peliculas.md).",
+  "description": "rules/<id>/movies.yaml: the movie each moment of the game plays, whether Start skips it, and how long the title waits before the boot movie again (apps/game: MovieRules, docs/architecture/movies.md).",
   "type": "object",
   "required": ["movies", "landing_idle_frames"],
   "additionalProperties": false,

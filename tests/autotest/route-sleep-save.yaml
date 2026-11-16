@@ -1,4 +1,4 @@
-# The sleep and its save (docs/architecture/guardar-y-cargar.md, 3.6): a new game in slot_01, the clock run on until
+# The sleep and its save (docs/architecture/save-and-load.md, 3.6): a new game in slot_01, the clock run on until
 # the partner is sleepy, Sleep in the pause menu and then Save and sleep in the sleep menu. The slot holds this very
 # playthrough, so the save is written without a question. The gate runs it with an empty saves folder of its own
 # (scripts/gate/route_jobs.sh, saves_routes).

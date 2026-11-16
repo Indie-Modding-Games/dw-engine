@@ -47,11 +47,11 @@ cp "$stubs/docker" "$stubs/sg"
 chmod +x "$stubs/docker" "$stubs/sg"
 export PATH="$stubs:$PATH" DWE_HOOK_RUNNER=""
 
-# commit <message> [git commit options...]: a signed-off commit of what is staged.
+# commit <message> [git commit options...]: a commit of what is staged.
 commit() {
   local message="$1"
   shift
-  git_in commit -q -s -m "$message" "$@" >"$scratch/commit.log" 2>&1
+  git_in commit -q -m "$message" "$@" >"$scratch/commit.log" 2>&1
 }
 log_says() { grep -q -- "$1" "$scratch/commit.log"; }
 fails() { ! "$@"; }
@@ -79,7 +79,7 @@ check "  that names the file, the line and the word" log_says "engine/walk.cpp:1
 printf '// The player.\n' >"$repo/engine/old.cpp"
 printf '// The PS1 frame.\n' >>"$repo/engine/old.cpp"
 git_in add engine/old.cpp
-git_in commit -q --no-verify -s -m "An old file"
+git_in commit -q --no-verify -m "An old file"
 printf '// The player, walking.\n// The PS1 frame.\n' >"$repo/engine/old.cpp"
 git_in add engine/old.cpp
 check "a banned word in a line the commit leaves as is does not warn" commit "Change a line"
@@ -106,7 +106,7 @@ done
 stage docs/more.txt 'More'
 check "the project's identity passes" commit "Add more notes"
 stage docs/other.txt 'Other'
-git -C "$repo" -c user.name=test -c user.email=test@example.invalid commit -q -s -m "Add other" \
+git -C "$repo" -c user.name=test -c user.email=test@example.invalid commit -q -m "Add other" \
   >"$scratch/commit.log" 2>&1
 check "another identity stops the commit" test "$?" -ne 0
 check "  and names both" log_says "the author is test <test@example.invalid>; commits are authored"
@@ -114,11 +114,8 @@ unstage_all
 
 # The commit message.
 stage docs/a.txt 'A'
-check "a signed-off message passes" commit "Add a"
+check "a plain message passes" commit "Add a"
 stage docs/b.txt 'B'
-git_in commit -q -m "Add b" >"$scratch/commit.log" 2>&1
-check "a message without Signed-off-by stops the commit" test "$?" -ne 0
-check "  and says so" log_says "there is no Signed-off-by line"
 for message in $'Add b\n\nCo-Authored-By: Someone <someone@example.invalid>' \
   $'Add b\n\nGenerated with a tool' "Add b with Claude" "Add b, AI-generated"; do
   check "the message \"${message//$'\n'/ }\" stops the commit" fails commit "$message"
@@ -131,10 +128,10 @@ git_in checkout -q -b psx-notes
 stage docs/c.txt 'C'
 check "comment lines of the message, here the branch name, are not checked" \
   env GIT_EDITOR=true git -C "$repo" -c user.name="$identity_name" \
-  -c user.email="$identity_email" commit -q -s -e -m "Add c" 2>"$scratch/commit.log"
+  -c user.email="$identity_email" commit -q -e -m "Add c" 2>"$scratch/commit.log"
 git_in checkout -q -
 git_in merge -q --no-ff -m "Merge the notes" psx-notes >"$scratch/commit.log" 2>&1
-check "a merge commit needs no Signed-off-by" test "$?" -eq 0
+check "a merge commit passes" test "$?" -eq 0
 
 # DWE_SKIP_HOOK=1 skips every rule.
 stage docs/skipped.txt 'The Sony notes'

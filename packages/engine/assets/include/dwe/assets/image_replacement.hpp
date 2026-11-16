@@ -8,7 +8,7 @@
 #include <optional>
 #include <string_view>
 
-// The player's own images (docs/guides/imagenes-personalizadas.md): a pack of Layer::User whose
+// The player's own images (docs/guides/custom-images.md): a pack of Layer::User whose
 // PNGs replace how the game's images are drawn, at their size or a whole number of times larger.
 // Geometry never changes: every position, rectangle and size stays in the original image's pixels,
 // and a replacement only adds detail.

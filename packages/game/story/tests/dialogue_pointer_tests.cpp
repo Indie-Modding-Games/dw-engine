@@ -1,6 +1,6 @@
 // The textbox selection and the engine's pointer (the original has none): a click on an option
 // picks it, and the pointer moving onto an option takes the cursor there without a sound
-// (docs/modulos/game/story.md, "El puntero en los diálogos").
+// (docs/modules/game/story.md, "The pointer in dialogues").
 
 #include <dwe/core/error.hpp>
 #include <dwe/game/story/dialogue.hpp>

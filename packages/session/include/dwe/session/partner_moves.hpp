@@ -37,11 +37,11 @@ struct PartnerMoves {
   friend bool operator==(const PartnerMoves&, const PartnerMoves&) = default;
 };
 
-// Las variantes de animación comparten aprendizaje y selección con su técnica base.
+// Animation variants share learning and selection with their base technique.
 [[nodiscard]] bool knowsTechnique(const PartnerMoves& moves,
                                   const game::battle::MoveCatalog& catalog, std::string_view id);
 
-// Operaciones del editor: alternar una técnica compatible/aprendida, sin tocar el final.
+// Editor operations: toggle a compatible/learned technique, leaving the finisher alone.
 enum class TechniqueToggle { Equipped, Removed, Unavailable, Full };
 TechniqueToggle toggleTechnique(PartnerMoves& moves, const assets::DigimonRow& species,
                                 const game::battle::MoveCatalog& catalog, MoveSlot slot);

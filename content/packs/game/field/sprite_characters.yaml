@@ -1,6 +1,6 @@
 # The characters some maps draw as prerendered sprites of their depth layers, drawn as their species'
-# models with the option «3D characters» on (an engine improvement: docs/modulos/apps/game.md,
-# «Personajes en 3D»; content/schemas/field_sprite_characters.schema.json). sprites: the map's object
+# models with the option «3D characters» on (an engine improvement: docs/modules/apps/game.md,
+# «3D characters»; content/schemas/field_sprite_characters.schema.json). sprites: the map's object
 # instances that draw it, left out while the model stands in; the first one's hidden flag, which the
 # scripts set, decides whether the model shows. shadow: its shadow's instance, kept under the model,
 # whose middle is where the model stands. feet: the background pixel under its feet when it has no

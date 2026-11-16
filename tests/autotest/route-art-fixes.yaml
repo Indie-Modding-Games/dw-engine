@@ -1,4 +1,4 @@
-# The art fixes (an engine improvement, docs/modulos/apps/game.md, «Arreglos gráficos»): the partner's status page in
+# The art fixes (an engine improvement, docs/modules/apps/game.md, «Art fixes»): the partner's status page in
 # the original look draws the happiness label from the texture's right columns with the option on, and as the original
 # does (cut) with it off, the default. From a new game with the keyboard; run it with --ui-skin original.
 name: art-fixes

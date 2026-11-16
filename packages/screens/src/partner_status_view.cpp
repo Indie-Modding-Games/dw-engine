@@ -165,7 +165,7 @@ void setFavoriteFood(PartnerStatusView& view, std::optional<std::string_view> it
 void setTechniqueChoices(PartnerStatusView& view, const assets::DigimonRow& species,
                          const session::PartnerMoves& moves,
                          const game::battle::MoveCatalog& catalog, const NameKeys& names) {
-  // Orden visual de categorías del original; las variantes comparten celda con su técnica base.
+  // The original's visual order of categories; the variants share a cell with their base technique.
   constexpr std::array<int, 7> Groups{0, 5, 1, 4, 2, 3, 6};
   view.techniqueChoices = {};
   for (std::size_t cell = 0; cell < view.techniqueChoices.size(); ++cell) {

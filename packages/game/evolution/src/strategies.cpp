@@ -162,7 +162,7 @@ std::optional<Species> babyTarget(const EvolutionQuery& query) {
 
 // The targets of a path in one tier: the original's (and every pack's but all_species'), or the
 // fallback ones, which are looked at only when none of the first tier passes
-// (docs/modulos/game/evoluciones-extra.md). Without fallback targets the second tier is empty.
+// (docs/modules/game/extra-evolutions.md). Without fallback targets the second tier is empty.
 enum class Tier : std::uint8_t { Original, Fallback };
 
 bool inTier(const EvolutionQuery& query, Species target, Tier tier) {

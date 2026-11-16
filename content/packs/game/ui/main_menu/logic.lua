@@ -1,5 +1,5 @@
 -- The title screen's menu, with no game behind it. Its Options entry opens the pause menu's options
--- page over the title (docs/modulos/apps/game.md, «Opciones en partida»): the same tabs, rows and
+-- page over the title (docs/modules/apps/game.md, «In-game options»): the same tabs, rows and
 -- help as during a game, which TitleScreen shows on title_options and closes with
 -- title_options_back; this menu keeps the title's picture behind it and hides its own box
 -- meanwhile ("options" view). The language box sends the language command and shows what the game

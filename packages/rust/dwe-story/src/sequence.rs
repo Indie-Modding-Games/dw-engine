@@ -1,8 +1,8 @@
-//! A section as a timeline (docs/modulos/apps/mapper.md#secuencias): what each command of the
+//! A section as a timeline (docs/modules/apps/mapper.md#sequences): what each command of the
 //! section does over time, on a track per character, one for the camera, the texts, the sound,
 //! the waits and the rest of the story, so a scene can be seen and edited as it plays.
 //!
-//! The model runs the section like the interpreter (docs/architecture/interprete-historia.md
+//! The model runs the section like the interpreter (docs/architecture/story-interpreter.md
 //! §Corrutinas, fotogramas y esperas), in frames of the original (20 a second): commands run one
 //! after the other in the same frame until one waits. Moves (walks, slides, turns, the camera's
 //! pans) do not wait: they fill the move slot of their character, or the camera's, and the section

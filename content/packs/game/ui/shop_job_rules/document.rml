@@ -6,7 +6,7 @@
 	<link type="text/rcss" href="structure.rcss"/>
 	<script src="logic.lua"></script>
 </head>
-<!-- The shop job's rules (_shopjob/ui-contract.md): the pay tiers, how the haggle works and each customer's character.
+<!-- The shop job's rules (docs/reference/shop-job.md, Interface): the pay tiers, how the haggle works and each customer's character.
      It opens from the HUD bar's "?", the counter's rules button and by itself at each job's first customer. -->
 <body>
 	<div id="scrim">

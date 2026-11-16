@@ -29,7 +29,7 @@ struct LeftOutUiAddonArchive {
 };
 
 // The UI addons the player installs by copying a folder, or a .zip of one, into
-// <user data>/ui/addons/ (docs/modding/interfaces.md), seen as a pack: its root is the user data
+// <user data>/ui/addons/ (docs/modding/ui-addons.md), seen as a pack: its root is the user data
 // folder, its only files are the ones under ui/addons/, and its pack.yaml is made here (a user
 // layer pack on top of the game's packs, on the Lua API the engine has), so the player writes no
 // manifest but each addon's own addon.yaml. Nothing else of the user data folder (saves,

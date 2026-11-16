@@ -1,17 +1,17 @@
 # weather
 
-El clima del campo: qué tiempo hace en cada mapa y cuándo cambia.
+The field's weather: what the weather is on each map and when it changes.
 
-- Carpeta: `packages/game/weather`; objetivos de CMake: `dwe::weather` (capa `game`).
-- Depende de: `assets`, `core`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/game/weather](https://indie-modding-games.github.io/dw-engine/modulos/game/weather).
+- Folder: `packages/game/weather`; CMake targets: `dwe::weather` (`game` layer).
+- Depends on: `assets`, `core`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/game/weather](https://indie-modding-games.github.io/dw-engine/modules/game/weather).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter weather
-scripts/dev.sh test --filter weather       # sus tests (etiqueta de ctest weather)
-scripts/dev.sh test --filter ...weather    # y los de todo lo que depende de él
+scripts/dev.sh test --filter weather       # its tests (ctest label weather)
+scripts/dev.sh test --filter ...weather    # and those of everything that depends on it
 ```

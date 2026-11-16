@@ -1,4 +1,4 @@
-# The developer menu (docs/modulos/apps/game.md, «Herramientas de desarrollo»): F2 opens it over the field while the
+# The developer menu (docs/modules/apps/game.md, «Developer tools»): F2 opens it over the field while the
 # developer tools are on (a development build's default). Money and stats pages run their console lines; the items
 # list gives the first item; cancel goes back a page and closes the menu from the first. Then the option off: F2 and
 # the console keys do nothing. From a new game with the keyboard.

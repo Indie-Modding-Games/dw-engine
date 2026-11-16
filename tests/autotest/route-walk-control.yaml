@@ -1,4 +1,4 @@
-# What walks the player (docs/modulos/apps/game.md, «Caminar con teclado o ratón»): the keyboard and the pad by
+# What walks the player (docs/modules/apps/game.md, «Walking with keyboard or mouse»): the keyboard and the pad by
 # default, the mouse once the option says so, never both. With the keys a click on the ground does not walk; the option
 # changes in the pause menu; with the mouse the keys do not walk and a click does.
 name: walk-control

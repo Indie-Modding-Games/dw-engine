@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes the manifests a release carries for the launcher (docs/modulos/apps/launcher.md).
+"""Writes the manifests a release carries for the launcher (docs/modules/apps/launcher.md).
 
     release_manifest.py game --package <file> --signature <file.sig> --version <v> --commit <c>
                              --extractor-version <n> [--platform linux-x86_64] [--merge <manifest>]

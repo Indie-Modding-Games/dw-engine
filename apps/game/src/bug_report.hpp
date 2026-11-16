@@ -13,7 +13,7 @@
 
 namespace dwe::app {
 
-// A bug report (F12, the report_bug action; docs/guides/prueba-vertical.md): what the game was
+// A bug report (F12, the report_bug action; docs/guides/vertical-slice.md): what the game was
 // doing when the player pressed it, written to state.yaml next to a save, a screenshot, the log's
 // tail and an autotest route that loads the save. This is the report's data and its files' text;
 // PlaySession gathers it and BugReporter writes the folder.

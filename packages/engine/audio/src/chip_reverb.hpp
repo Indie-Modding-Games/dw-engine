@@ -13,7 +13,7 @@ namespace dwe::audio {
 // initializeMusic): the studio preset of medium size, at depth 0x7000 on both sides. The chip runs
 // a stereo Schroeder reverberator at 22 050 Hz over a ring buffer of 16-bit samples, from the
 // voices that have their reverb bit set; this one follows the public description of the chip's
-// registers and formula (docs/architecture/audio.md, "Reverberación"), in float, with the same
+// registers and formula (docs/architecture/audio.md, "Reverb"), in float, with the same
 // saturation to 16 bits when it writes its buffer. Only the resampling between the mixer's 48 kHz
 // and the chip's 22 050 Hz is an approximation (a low-pass and linear steps instead of the chip's
 // 39-tap filter). It never allocates, locks or logs.

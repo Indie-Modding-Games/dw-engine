@@ -13,7 +13,7 @@
 namespace dwe::screens {
 
 // The original's text the screens show, by source and block of its text tables
-// (docs/formats/textos.md): the slot of a name is the row's index in its data table.
+// (docs/formats/texts.md): the slot of a name is the row's index in its data table.
 inline constexpr std::string_view MainText = "main";
 inline constexpr std::string_view BattleText = "btl";
 inline constexpr std::string_view SpeciesNamesBlock = "digimon_names";

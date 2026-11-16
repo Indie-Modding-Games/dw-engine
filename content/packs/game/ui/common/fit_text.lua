@@ -1,4 +1,4 @@
--- A text squeezed into its room (the engine's long names: docs/modulos/apps/game.md, «Nombres
+-- A text squeezed into its room (the engine's long names: docs/modules/apps/game.md, «Nombres
 -- largos»). A player's name of up to twelve letters can make a text wider than the room the
 -- original left for a six-letter one; such a text is drawn narrower, from its left edge, instead of
 -- running past its box. A text that fits is left as it is, so the original's texts never change.

@@ -1,11 +1,11 @@
-# Paquetes y sistema de ficheros virtual
+# Packages and virtual file system
 
-Cómo encuentra el motor cada asset entre los paquetes montados. Es la parte de "capas de contenido" de la
-[tubería de assets](assets-pipeline.md), y el código está en `packages/engine/assets`.
+How the engine finds each asset among the mounted packages. This is the "content layers" part of the
+[asset pipeline](assets-pipeline.md), and the code is in `packages/engine/assets`.
 
-## Un paquete
+## A package
 
-Un paquete es una carpeta con un `pack.yaml` en la raíz y los ficheros de sus assets debajo:
+A package is a folder with a `pack.yaml` at the root and the files of its assets underneath:
 
 ```text
 hd_backgrounds/
@@ -15,39 +15,40 @@ hd_backgrounds/
       └─ background.ktx2      → map/file_city_01/background
 ```
 
-### El manifiesto
+### The manifest
 
 ```yaml
 id: hd_backgrounds
 version: 1.2.0
 layer: remaster
 priority: 0
-name: Fondos en HD
-description: Fondos de mapa escalados.
+name: HD backgrounds
+description: Scaled map backgrounds.
 dependencies:
   - id: base
     min_version: 1.0.0
 ```
 
-| Campo | Obligatorio | Qué es |
+| Field | Required | What it is |
 |---|---|---|
-| `id` | Sí | De 1 a 64 caracteres `a-z`, `0-9` y `_`. No puede haber dos paquetes montados con el mismo |
-| `version` | Sí | Versión semántica `MAJOR.MINOR.PATCH`, sin sufijos (`-beta`, `+build`) |
-| `layer` | Sí | `base`, `remaster`, `mods` o `user`. Un mod (de una carpeta de mods o de `--mods`) solo puede declarar `mods` o `user`; si no, se deja fuera |
-| `priority` | No (0) | Número entero. Ordena los paquetes de una misma capa: gana el más alto |
-| `name`, `description` | No | Texto para las personas |
-| `dependencies` | No | Lista de `id` y `min_version` |
-| `schemas` | No | Qué esquema sigue cada documento YAML del paquete (ver abajo) |
-| `api` | En `mods` y `user` | Versión de la API de Lua que piden sus scripts: `1.x` (cualquier 1.y) o `1.4` (la 1.4 o posterior) ([script](../modulos/engine/script.md)). Obligatoria en las capas `mods` y `user`: un mod con ficheros de Lua sin ella se deja fuera, y uno solo de datos se monta con un aviso (los escritos antes de exigirla); los paquetes del motor pueden omitirla |
+| `id` | Yes | 1 to 64 characters of `a-z`, `0-9` and `_`. There cannot be two mounted packages with the same one |
+| `version` | Yes | Semantic version `MAJOR.MINOR.PATCH`, without suffixes (`-beta`, `+build`) |
+| `layer` | Yes | `base`, `remaster`, `mods` or `user`. A mod (from a mods folder or from `--mods`) can only declare `mods` or `user`; otherwise it is left out |
+| `priority` | No (0) | An integer. It orders the packages of the same layer: the highest wins |
+| `name`, `description` | No | Text for people: one text for every language, or a mapping of language codes (`en`, `es`, `pt_br`) to texts that has `en`, which a missing language falls back to |
+| `dependencies` | No | A list of `id` and `min_version` |
+| `schemas` | No | Which schema each YAML document in the package follows (see below) |
+| `api` | In `mods` and `user` | The Lua API version that its scripts ask for: `1.x` (any 1.y) or `1.4` (1.4 or later) ([script](../modules/engine/script.md)). Mandatory in the `mods` and `user` layers: a mod with Lua files without it is left out, and a data-only one is mounted with a warning (those written before it was required); the engine's own packages may omit it |
 
-Una clave desconocida es un error, para que una errata no pase desapercibida. El formato también está como JSON
-Schema en [`content/schemas/pack.schema.json`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/pack.schema.json), para editores y herramientas.
+An unknown key is an error, so that a typo does not go unnoticed. The format is also available as a JSON Schema in
+[`content/schemas/pack.schema.json`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/pack.schema.json),
+for editors and tools.
 
-### Esquemas de los documentos
+### Document schemas
 
-`schemas` dice qué JSON Schema de `content/schemas/` sigue cada documento YAML. Cada clave es el nombre de un esquema
-(`map` es `content/schemas/map.schema.json`) y su valor, la lista de **patrones de ID** de los documentos que lo
-siguen. En un patrón, `*` es cualquier texto dentro de un segmento y `**`, cualquier texto aunque cruce `/`:
+`schemas` says which JSON Schema from `content/schemas/` each YAML document follows. Each key is the name of a schema
+(`map` is `content/schemas/map.schema.json`) and its value is the list of **ID patterns** of the documents that
+follow it. In a pattern, `*` is any text within a segment and `**` is any text even if it crosses `/`:
 
 ```yaml
 schemas:
@@ -56,196 +57,196 @@ schemas:
   image: ["map/*/texture*/*_meta", "texture/**_meta"]
 ```
 
-Las reglas de todos los paquetes montados valen para todos: un mod que sobrescribe `data/digimon` no necesita
-repetirla, y su documento se comprueba con el mismo esquema que el de la base. Se declara el esquema en el manifiesto
-y no se adivina por la ruta, para que un tipo de documento nuevo nunca pase sin comprobar:
-[`dwx validate`](assets-pipeline.md#dwx-validate) da error si un documento no encaja en ninguna regla o encaja en
-reglas de dos esquemas distintos. `dwx extract` escribe en el `pack.yaml` de la base una regla para cada tipo de
-documento que genera (`names::documentSchemas` en `apps/dwx/src/asset_names.cpp`).
+The rules of all mounted packages apply to all: a mod that overrides `data/digimon` does not need to repeat them, and
+its document is checked with the same schema as the base's. The schema is declared in the manifest and not guessed
+from the path, so that a new document type never goes unchecked: [`dwx validate`](assets-pipeline.md#dwx-validate)
+gives an error if a document fits no rule or fits rules of two different schemas. `dwx extract` writes into the base's
+`pack.yaml` a rule for each document type it generates (`names::documentSchemas` in `apps/dwx/src/asset_names.cpp`).
 
-## IDs de asset
+## Asset IDs
 
-- Son segmentos de `a-z`, `0-9` y `_` separados por `/`, de 200 caracteres como mucho: `map/file_city_01/background`.
-- Sin segmentos vacíos, sin mayúsculas y sin puntos, así que un ID nunca sale de la carpeta del paquete ni depende de
-  si el disco distingue mayúsculas.
-- **El ID de un fichero es su ruta dentro del paquete sin la extensión.** `map/file_city_01/background.png` es
-  `map/file_city_01/background`. El nombre del fichero lleva exactamente un punto y una extensión en minúsculas
-  (`model.lod1.gltf` no vale).
-- Dos ficheros de un mismo paquete con el mismo ID (`model.gltf` y `model.glb`) son un error.
-- Se ignoran `pack.yaml` y los ficheros y carpetas que empiezan por punto (`.git`, `.gitkeep`). Cualquier otro
-  fichero que no dé un ID válido es un error.
-- En disco, los enlaces simbólicos son un error: un paquete no puede leer fuera de su carpeta.
+- They are segments of `a-z`, `0-9` and `_` separated by `/`, at most 200 characters: `map/file_city_01/background`.
+- No empty segments, no capitals and no dots, so an ID never leaves the package's folder nor depends on whether the
+  disk distinguishes case.
+- **A file's ID is its path inside the package without the extension.** `map/file_city_01/background.png` is
+  `map/file_city_01/background`. The file name carries exactly one dot and a lowercase extension (`model.lod1.gltf` is
+  not valid).
+- Two files of the same package with the same ID (`model.gltf` and `model.glb`) are an error.
+- `pack.yaml` and the files and folders that start with a dot (`.git`, `.gitkeep`) are ignored. Any other file that
+  does not give a valid ID is an error.
+- On disk, symbolic links are an error: a package cannot read outside its folder.
 
-## La pila
+## The stack
 
-Al montar un conjunto de paquetes, el motor los apila de abajo arriba:
+When mounting a set of packages, the engine stacks them from bottom to top:
 
-0. Los paquetes que **rellenan huecos** (`PackLocation::fillsGaps`, los de los assets de desarrollo) van debajo de
-   todos los demás; entre ellos valen las reglas siguientes.
-1. Por **capa**: base (1), remaster (2), mods (3), usuario (4).
-2. Dentro de una capa, por **prioridad**, de menor a mayor.
-3. Si empatan en capa y prioridad, cada paquete va encima de los paquetes de ese empate de los que depende, y si no,
-   por **id** en orden alfabético.
+0. The packages that **fill gaps** (`PackLocation::fillsGaps`, those of the development assets) go below all the
+   others; among them the following rules apply.
+1. By **layer**: base (1), remaster (2), mods (3), user (4).
+2. Within a layer, by **priority**, from lowest to highest.
+3. If they tie on layer and priority, each package goes on top of the packages in that tie that it depends on, and if
+   not, by **id** in alphabetical order.
 
-El orden en que se pasan las carpetas no importa: los mismos paquetes dan siempre la misma pila.
+The order in which the folders are passed does not matter: the same packages always give the same stack.
 
-**Sobrescribir y añadir:** si varios paquetes tienen el mismo ID, gana el que está más arriba en la pila, aunque las
-extensiones sean distintas (un `background.ktx2` del remaster sustituye al `background.png` de la base). Un ID que
-solo tiene un paquete simplemente se añade.
+**Overriding and adding:** if several packages have the same ID, the one higher in the stack wins, even if the
+extensions are different (a remaster's `background.ktx2` replaces the base's `background.png`). An ID that only one
+package has is simply added.
 
-**Parches de mapa:** `map/<id>/patch` es la excepción a «gana el de arriba». El `map/<id>/data` de un mapa sigue la
-regla (gana uno entero), pero sobre él se aplican, de abajo arriba, los parches del paquete de ese `data` y de todos
-los de encima (`sources(id)` da cada uno en el orden de la pila); los de debajo se dejan fuera. Cada parche cambia
-campos sueltos de una salida, un NPC, un objeto, una luz o la cámara, y la colisión entera o por rectángulos, sin
-copiar el mapa ([parches](../formats/mapas.md#parches)).
+**Map patches:** `map/<id>/patch` is the exception to "the top one wins". A map's `map/<id>/data` follows the rule
+(one whole file wins), but over it the patches are applied, from the bottom up, of the package with that `data` and of
+all those above it (`sources(id)` gives each one in stack order); those below are left out. Each patch changes
+individual fields of an exit, an NPC, an object, a light or the camera, and the collision, whole or by rectangles,
+without copying the map ([patches](../formats/maps.md#patches)).
 
-## Tablas por entradas
+## Tables by entries
 
-Las tablas de contenido no se sustituyen enteras: se **componen entrada a entrada**, para que un mod añada un Digimon
-o un mapa sin copiar la tabla (`readComposedTable`, `packages/engine/assets/include/dwe/assets/table_composition.hpp`). Hay seis
-clases de tabla: Digimon, raise, mapas, objetos, técnicas y evolución (`composedTableKinds`,
-`packages/engine/assets/include/dwe/assets/table_kinds.hpp`). De cada clase se componen su tabla de siempre (`data/digimon`,
-`data/raise`, `data/maps`, `data/items`, `data/moves` y `data/evolution`) y cualquier otra que un ruleset nombre con
-el rol de la clase en sus `tables` (`raise: data/hard_raise`). El juego y `dwx validate` componen las mismas
-(`composedTablesOf`). El resto de assets sigue la regla de la pila: gana el de más arriba.
+Content tables are not replaced whole: they are **composed entry by entry**, so that a mod adds a Digimon or a map
+without copying the table (`readComposedTable`,
+`packages/engine/assets/include/dwe/assets/table_composition.hpp`). There are six table kinds: Digimon, raise, maps,
+items, techniques and evolution (`composedTableKinds`, `packages/engine/assets/include/dwe/assets/table_kinds.hpp`).
+For each kind, its usual table (`data/digimon`, `data/raise`, `data/maps`, `data/items`, `data/moves` and
+`data/evolution`) is composed, along with any other that a ruleset names with the kind's role in its `tables`
+(`raise: data/hard_raise`). The game and `dwx validate` compose the same ones (`composedTablesOf`). The rest of the
+assets follow the stack rule: the highest one wins.
 
-### IDs de contenido
+### Content IDs
 
-Cada entrada se nombra por su id de contenido (`ContentId`, `packages/engine/assets/include/dwe/assets/content_id.hpp`):
+Each entry is named by its content id (`ContentId`, `packages/engine/assets/include/dwe/assets/content_id.hpp`):
 
-- **Originales:** su nombre estable de siempre, sin espacio de nombres (`species_a`, `twna01`). Es el que ya escribe
-  `dwx extract` y leen las herramientas, así que no cambia.
-- **Lo que añade un paquete:** `<id del paquete>:<nombre>`, como `example_mod:meadow`. Cada parte es `[a-z0-9_]`; el
-  nombre tiene 64 caracteres como mucho.
-- **Sus assets** van en una carpeta por parte: el mapa `example_mod:meadow` está en `map/example_mod/meadow/` y el
-  modelo del Digimon `example_mod:pebblemon` en `digimon/example_mod/pebblemon/model`. Así los
-  [IDs de asset](#ids-de-asset) siguen siendo `[a-z0-9_/]`.
-- **El número (`index`) es interno:** el del original, que usan sus datos (los warps, los guardados), o el que pone el
-  motor a una entrada nueva. Un paquete se refiere a las entradas por su id.
+- **Originals:** their usual stable name, without a namespace (`species_a`, `twna01`). It is the one that
+  `dwx extract` already writes and the tools read, so it does not change.
+- **What a package adds:** `<package id>:<name>`, like `example_mod:meadow`. Each part is `[a-z0-9_]`; the name is at
+  most 64 characters.
+- **Its assets** go in one folder per part: the map `example_mod:meadow` is in `map/example_mod/meadow/` and the model
+  of the Digimon `example_mod:pebblemon` in `digimon/example_mod/pebblemon/model`. This way the
+  [asset IDs](#asset-ids) are still `[a-z0-9_/]`.
+- **The number (`index`) is internal:** the original's, which its data uses (the warps, the saves), or the one that
+  the engine assigns to a new entry. A package refers to entries by their id.
 
-### Cómo se componen
+### How they are composed
 
-Los ficheros de la tabla se leen de abajo arriba en la pila. Cada tabla dice qué secciones son **listas de entradas**
-y con qué clave se nombra cada entrada (`id`, o `digimon` en `data/raise`):
+The table's files are read from the bottom of the stack up. Each table says which sections are **lists of entries**
+and which key names each entry (`id`, or `digimon` in `data/raise`):
 
-1. Una entrada con un id que ya está **sustituye** a esa entrada en su sitio y se queda con su `index`. Si da un
-   `index` distinto, es un error, y fuera de la base tampoco puede dar `index` a una entrada que añadió otro paquete:
-   ese número lo pone el motor y depende de los mods montados. «La base» son los paquetes del motor
-   (`PackOrigin::Engine`) de la capa base: un paquete que solo declara `layer: base` no tiene sus derechos.
-2. Una entrada nueva se **añade al final**, en el orden de la pila y, dentro de un paquete, en el de su fichero, con
-   el siguiente `index` libre (el mayor más uno). Solo la base da el `index` de sus entradas, y dos entradas de la
-   base no pueden tener el mismo; fuera de la base se deja fuera.
-3. Fuera de la capa base, una entrada nueva se llama `<id del paquete>:<nombre>`: un nombre sin espacio de nombres o
-   con el de otro paquete es un error.
-4. Las secciones que van por el id de otra tabla (las filas de `data/raise` y las de `data/evolution`, por Digimon u
-   objeto) aceptan filas de cualquier id y **no numeran** las nuevas: el `index` de una fila de la base es el sitio de
-   la entrada a la que pertenece en el original, se conserva cuando un paquete la sustituye y una fila nueva no tiene.
-5. Una lista de entradas solo se puede dar como lista: `maps: null` o `maps: 1` es un error, no una forma de vaciarla.
-6. Cualquier otra sección (las puertas y los baños de `data/maps`, por ejemplo) se **sustituye entera** por la del
-   paquete de más arriba que la tiene, como las secciones de un ruleset con `extends`. Una sección nueva se añade.
-7. La composición se hace siempre, aunque solo un paquete tenga la tabla: así se comprueban sus ids y se numeran sus
-   entradas. Si no cambia nada, se lee el fichero tal cual, para que los errores de los lectores digan sus líneas.
+1. An entry with an id that already exists **replaces** that entry in place and keeps its `index`. If it gives a
+   different `index`, it is an error, and outside the base it cannot give an `index` to an entry that another package
+   added either: that number is set by the engine and depends on the mounted mods. "The base" means the engine's
+   packages (`PackOrigin::Engine`) in the base layer: a package that only declares `layer: base` does not have its
+   rights.
+2. A new entry is **added at the end**, in stack order and, within a package, in its file's order, with the next free
+   `index` (the largest plus one). Only the base gives its entries' `index`, and two base entries cannot have the same
+   one; outside the base it is left out.
+3. Outside the base layer, a new entry is called `<package id>:<name>`: a name without a namespace or with another
+   package's is an error.
+4. The sections that go by another table's id (the rows of `data/raise` and those of `data/evolution`, by Digimon or
+   item) accept rows of any id and **do not number** the new ones: the `index` of a base row is the place of the entry
+   it belongs to in the original, it is kept when a package replaces it and a new row has none.
+5. A list of entries can only be given as a list: `maps: null` or `maps: 1` is an error, not a way to empty it.
+6. Any other section (the doors and restrooms of `data/maps`, for example) is **replaced whole** by that of the
+   highest package that has it, like the sections of a ruleset with `extends`. A new section is added.
+7. Composition is always done, even if only one package has the table: this way its ids are checked and its entries
+   numbered. If nothing changes, the file is read as is, so that the readers' errors give their lines.
 
-El resultado es el mismo YAML que leería el juego de un solo fichero, así que los lectores estrictos de cada tabla no
-cambian. **Un paquete que trae la tabla entera** (una copia de la de la base, editada) da la misma tabla que antes:
-cada entrada sustituye a la suya con el mismo `index`. Un mod **no puede quitar** entradas: una entrada que falta en
-su fichero sigue estando.
+The result is the same YAML that the game would read from a single file, so each table's strict readers do not change.
+**A package that brings the whole table** (a copy of the base's, edited) gives the same table as before: each entry
+replaces its own with the same `index`. A mod **cannot remove** entries: an entry that is missing from its file is
+still there.
 
-### Un Digimon nuevo trae su contrato
+### A new Digimon brings its contract
 
-Un Digimon que añade un paquete (un id con espacio de nombres) tiene que traer el contrato de su modelo,
-`digimon/<paquete>/<nombre>/contract.yaml` ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/model_contract.schema.json)): es contra lo
-que se comprueba su modelo, porque no hay un original con el que compararlo. Sin él, el juego no carga la tabla
-(`loadDigimonTable`) y `dwx validate` da un problema (`requireNewSpeciesContracts`).
+A Digimon that a package adds (an id with a namespace) has to bring its model's contract,
+`digimon/<package>/<name>/contract.yaml`
+([schema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/model_contract.schema.json)): it
+is what its model is checked against, because there is no original to compare it with. Without it, the game does not
+load the table (`loadDigimonTable`) and `dwx validate` gives a problem (`requireNewSpeciesContracts`).
 
-### Los guardados, los rulesets y el `index`
+### Saves, rulesets and the `index`
 
-El `index` de una entrada nueva depende de qué mods hay montados y en qué orden, así que nada que sale de la sesión lo
-usa: los guardados (la especie del compañero, el mapa, las técnicas aprendidas, las especies criadas y, desde la
-versión 2 de su sección, los objetos de la bolsa), los rulesets, los scripts, las claves de texto y los registros
-nombran cada entrada por su id. Dentro de la sesión, el motor usa asas de la composición
-([IDs en la sesión](../modulos/engine/assets.md#ids-en-la-sesión)). Los rangos de números de un ruleset solo cubren
-las entradas del original ([rangos e ids](rulesets.md#rangos-e-ids)), y un warp llega a un mapa de un paquete por su
-id ([destino de una salida](../formats/mapas.md#destino-de-una-salida)).
+A new entry's `index` depends on which mods are mounted and in what order, so nothing that leaves the session uses it:
+the saves (the partner's species, the map, the learned techniques, the raised species and, since version 2 of its
+section, the bag's items), the rulesets, the scripts, the text keys and the logs name each entry by its id. Inside the
+session, the engine uses composition handles ([IDs in the session](../modules/engine/assets.md#ids-in-the-session)). A
+ruleset's number ranges only cover the original's entries ([ranges and ids](rulesets.md#ranges-and-ids)), and a warp
+reaches a package's map by its id ([an exit's destination](../formats/maps.md#destination-of-an-exit)).
 
-Quitar un mod no deja la partida sin cargar: un montón de la bolsa cuyo objeto ya no está en ninguna tabla se tira,
-con un aviso en el registro que nombra su id y la cantidad ([inventario](../modulos/game/inventory.md)).
+Removing a mod does not leave the game unloadable: a stack in the bag whose item is no longer in any table is
+dropped, with a warning in the log that names its id and the amount ([inventory](../modules/game/inventory.md)).
 
-### Nombres de lo añadido
+### Names of what is added
 
-Lo que se ve de una entrada nueva sale de la tabla de textos del paquete, `text/<idioma>/<id del paquete>.yaml`, con
-la clave `<bloque>.<nombre>`: `digimon_names.pebblemon`, `map_names.meadow` (`addedEntryTextKey`,
-`packages/engine/localization/include/dwe/localization/catalog.hpp`). Los originales siguen con sus claves numeradas.
+What is seen of a new entry comes from the package's text table, `text/<language>/<package id>.yaml`, with the key
+`<block>.<name>`: `digimon_names.pebblemon`, `map_names.meadow` (`addedEntryTextKey`,
+`packages/engine/localization/include/dwe/localization/catalog.hpp`). The originals keep their numbered keys.
 
-Un ejemplo completo está en [`tests/mods/example_mod`](../modulos/tests/mods.md).
+A full example is in [`tests/mods/example_mod`](../modules/tests/mods.md).
 
-## Dependencias
+## Dependencies
 
-Cada dependencia tiene que:
+Each dependency has to:
 
-- estar montada;
-- tener al menos la versión `min_version`;
-- estar en la misma capa o en una más baja (la base no puede necesitar un mod);
-- no formar un ciclo.
+- be mounted;
+- have at least version `min_version`;
+- be in the same layer or a lower one (the base cannot need a mod);
+- not form a cycle.
 
-Las dependencias no cambian la capa ni la prioridad: si un mod depende de otro con más prioridad, el otro sigue
-encima.
+Dependencies do not change the layer or the priority: if a mod depends on another with higher priority, the other one
+stays on top.
 
-## Qué se puede preguntar
+## What can be asked
 
-| Función | Qué devuelve |
+| Function | What it returns |
 |---|---|
-| `resolve(id)` | El paquete que gana y la ruta de su fichero, o nada |
-| `read(id)` | Los bytes del fichero que gana |
-| `ids()` | Todos los IDs, ordenados |
-| `sources(id)` | Todos los paquetes que tienen ese ID, de abajo arriba |
-| `overriddenIds()` | Los IDs que tiene más de un paquete, para depurar qué sobrescribe a qué |
+| `resolve(id)` | The winning package and the path of its file, or nothing |
+| `read(id)` | The bytes of the winning file |
+| `ids()` | All the IDs, sorted |
+| `sources(id)` | All the packages that have that ID, from bottom to top |
+| `overriddenIds()` | The IDs that more than one package has, to debug what overrides what |
 
-Un paquete también puede ser un [archivo `.pak`](../formats/pak.md), que se abre con `PakFileSystem`. Cada paquete
-se monta con su propio sistema de ficheros (`PackLocation`: el sistema de ficheros y la raíz del paquete en él), así
-que una pila puede mezclar carpetas y archivos: `mount(sistemaDeFicheros, carpetas)` es el caso de todos en el mismo.
-`listPackFiles` lista los ficheros de un paquete con su ID y comprueba las mismas reglas que el montaje.
+A package can also be a [`.pak` archive](../formats/pak.md), which is opened with `PakFileSystem`. Each package is
+mounted with its own file system (`PackLocation`: the file system and the package's root in it), so a stack can mix
+folders and archives: `mount(fileSystem, folders)` is the case of all of them in the same one. `listPackFiles` lists
+a package's files with their ID and checks the same rules as mounting.
 
-Para saber qué montar, `findPacks(carpeta)` devuelve la propia carpeta si tiene `pack.yaml` (y nada más). Si no,
-devuelve cada subcarpeta inmediata que lo tenga y cada fichero `.pak` inmediato, ordenados por ruta. Así se puede
-montar `content/base`, todo `content/` o un `content/` que mezcle carpetas y archivos. Las reglas de precedencia:
+To know what to mount, `findPacks(folder)` returns the folder itself if it has `pack.yaml` (and nothing else). If
+not, it returns each immediate subfolder that has it and each immediate `.pak` file, sorted by path. This way you can
+mount `content/base`, all of `content/` or a `content/` that mixes folders and archives. The precedence rules:
 
-- Una carpeta gana al `.pak` con su nombre: con `base/` y `base.pak` se monta `base/`, y `base.pak` sale en
-  `hidden`. La carpeta es lo que se edita y el archivo se construye a partir de ella (`dwx pack`), así que la carpeta
-  es la versión más reciente.
-- Solo cuenta el nombre del fichero, no el `id` de su `pack.yaml`: dos paquetes con nombres distintos y el mismo `id`
-  se devuelven los dos y el montaje falla con «mounted twice», que dice las dos rutas.
-- Un `.pak` dentro de una subcarpeta no cuenta (igual que un `pack.yaml` dos niveles más abajo), y un `.pak` dentro
-  de una carpeta que ya es un paquete es un asset de ese paquete.
-- El orden de la pila no lo decide `findPacks`: lo deciden la capa y la prioridad de cada manifiesto al montar.
+- A folder beats the `.pak` with its name: with `base/` and `base.pak`, `base/` is mounted, and `base.pak` shows up in
+  `hidden`. The folder is what gets edited and the archive is built from it (`dwx pack`), so the folder is the most
+  recent version.
+- Only the file's name counts, not the `id` of its `pack.yaml`: two packages with different names and the same `id`
+  are both returned and mounting fails with "mounted twice", which says both paths.
+- A `.pak` inside a subfolder does not count (the same as a `pack.yaml` two levels down), and a `.pak` inside a
+  folder that is already a package is an asset of that package.
+- `findPacks` does not decide the stack's order: the layer and priority of each manifest decide it when mounting.
 
-`openPacks(disco, encontrados)` abre cada archivo con `PakFileSystem` y devuelve las `PackLocation` para `mount`
-junto con los archivos abiertos, que deben vivir tanto como el sistema de ficheros virtual. El visor de assets del
-overlay de depuración lo usa así y dice en su estado qué archivos quedaron ocultos.
+`openPacks(disk, found)` opens each archive with `PakFileSystem` and returns the `PackLocation`s for `mount` together
+with the open archives, which must live as long as the virtual file system. The debug overlay's asset viewer uses it
+that way and says in its status which archives were left hidden.
 
-## Assets de desarrollo
+## Development assets
 
-Con `--dev-assets` (solo en desarrollo, nunca por defecto) `GameContent` monta también los paquetes de las carpetas
-extraídas que nombra el fichero de configuración de desarrollo, solo para rellenar lo que falta. Un paquete normal gana
-al paquete de desarrollo con su id, y una carpeta anterior a una posterior; los que quedan fuera se registran en el
-log. Los que entran rellenan huecos (`PackLocation::fillsGaps`): van debajo de todos los paquetes normales, digan lo
-que digan su capa y su prioridad, y el log los marca. Una imagen del disco en ese fichero llega como una carpeta
-extraída más, la última: `dwx` la extrae a una caché de desarrollo. Detalle en
-[assets de desarrollo](assets-de-desarrollo.md).
+With `--dev-assets` (development only, never by default) `GameContent` also mounts the packages from the extracted
+folders that the development configuration file names, only to fill in what is missing. A normal package beats the
+development package with its id, and an earlier folder beats a later one; those left out are logged. Those that come
+in fill gaps (`PackLocation::fillsGaps`): they go below all the normal packages, whatever their layer and priority
+say, and the log marks them. A disc image in that file arrives as one more extracted folder, the last one: `dwx`
+extracts it to a development cache. Details in [development assets](development-assets.md).
 
-## Errores
+## Errors
 
-Montar falla, con un mensaje que dice el paquete o el fichero, si:
+Mounting fails, with a message that says the package or the file, if:
 
-- falta `pack.yaml` o tiene un error (con línea y columna);
-- hay dos paquetes con el mismo `id`;
-- falta una dependencia, su versión es menor que `min_version`, está en una capa más alta o hay un ciclo;
-- un fichero no da un ID válido, dos ficheros de un paquete dan el mismo ID o hay un enlace simbólico.
+- `pack.yaml` is missing or has an error (with line and column);
+- there are two packages with the same `id`;
+- a dependency is missing, its version is lower than `min_version`, it is in a higher layer or there is a cycle;
+- a file does not give a valid ID, two files of a package give the same ID or there is a symbolic link.
 
-`read` falla si ningún paquete tiene el ID o si el fichero no se puede leer.
+`read` fails if no package has the ID or if the file cannot be read.
 
 ## YAML
 
-Los manifiestos y el resto del formato fuente se leen con `core::parseYaml` ([ADR 0016](../adr/0016-yaml-con-libyaml.md)).
-Solo se acepta un documento por fichero, sin anclas, alias ni etiquetas, con claves escalares y sin repetir. Hay un
-límite de 16 MiB y de 64 niveles de anidamiento.
+The manifests and the rest of the source format are read with `core::parseYaml`
+([ADR 0016](../adr/0016-yaml-with-libyaml.md)). Only one document per file is accepted, without anchors, aliases or
+tags, with scalar keys and without repeats. There is a limit of 16 MiB and 64 levels of nesting.

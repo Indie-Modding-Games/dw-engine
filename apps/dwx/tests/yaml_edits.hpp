@@ -14,7 +14,7 @@
 
 // The edits the map editor makes to a document of the engine: it reads the YAML into a tree,
 // changes one value, and writes the tree back with emitYaml
-// (docs/architecture/herramientas-externas.md).
+// (docs/architecture/external-tools.md).
 namespace dwe::dwx::testing {
 
 // The steps from the root to a node: a key of a mapping or the index of a sequence's item.

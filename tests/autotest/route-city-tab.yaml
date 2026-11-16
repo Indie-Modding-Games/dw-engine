@@ -1,10 +1,10 @@
-# The player page's City tab (a dwe addition, docs/modulos/apps/screens.md, «Pestaña Ciudad»): who already lives in the
+# The player page's City tab (a dwe addition, docs/modules/apps/screens.md, «City tab (a dwe improvement)»): who already lives in the
 # city and who is missing. From a new game with seven species recruited and their 13 prosperity points (story_set),
 # the keyboard opens the pause menu's player page, steps right to the City tab and Enter starts the cursor on the first
 # rookie (in colour); right moves it onto a missing one (a grey silhouette) and down and right onto a recruited champion.
 # The same at 1920x1080 and 1024x768. Every capture checks that the texts fit (text_fit). It runs once per language
 # and once per skin (--ui-skin modern: the player page's City entry); the original look's five tabs
-# must fit their whole words (text_fit). How to run it: docs/guides/prueba-vertical.md.
+# must fit their whole words (text_fit). How to run it: docs/guides/vertical-slice.md.
 name: city-tab
 device: keyboard
 timeout: 300

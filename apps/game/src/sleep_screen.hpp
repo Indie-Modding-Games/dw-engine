@@ -17,7 +17,7 @@ namespace dwe::app {
 
 inline constexpr std::string_view SleepMenuDocument = "sleep_menu";
 
-// The pause menu's Sleep (docs/architecture/guardar-y-cargar.md, 3.6), as partner.c's
+// The pause menu's Sleep (docs/architecture/save-and-load.md, 3.6), as partner.c's
 // partnerTickSleep: the partner walks up to the player, the player plays its clip, the partner
 // yawns and lies down (SleepSteps), the screen fades to black, the partner sleeps until morning,
 // the sleep menu offers to save to the playthrough's slot, and the screen fades back in on the

@@ -32,7 +32,7 @@ struct Options {
   // priority.
   std::vector<std::filesystem::path> mods;
   // Set by --dev-assets: also use the local assets of the dev assets config, with a banner on
-  // screen (docs/architecture/assets-de-desarrollo.md). Never on by default.
+  // screen (docs/architecture/development-assets.md). Never on by default.
   bool devAssets = false;
   // The ruleset the game plays with (--ruleset <id>): rules/<id>/ in the packs.
   std::string ruleset{dwe::ruleset::OriginalRuleset};
@@ -67,7 +67,7 @@ struct Options {
   // Start with the debug overlay's tuning panel open (--tuning), for manual tests and screenshots.
   bool tuning = false;
   // Start with free exploration on (--explore) for this run, whatever the saved setting
-  // (docs/architecture/warps-de-script.md). Never on by default.
+  // (docs/architecture/script-warps.md). Never on by default.
   bool explore = false;
   // Development: every character, the original game's too, goes through the chibi style's
   // detector (--chibi) for this run, whatever the saved setting (chibi_style.hpp); in the model

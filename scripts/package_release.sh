@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the game's release files for the launcher: a computer's package (no game data), renamed
-# for the release, its minisign signature and game-manifest.json (docs/modulos/apps/launcher.md).
+# for the release, its minisign signature and game-manifest.json (docs/modules/apps/launcher.md).
 # It publishes nothing: uploading the files to a release is a separate, manual step (or
 # .github/workflows/release.yml, started by hand).
 #
@@ -71,7 +71,7 @@ done
 
 # Its length, not its text: set -x would print the text.
 if [[ ! -v TAURI_SIGNING_PRIVATE_KEY ]] || ((${#TAURI_SIGNING_PRIVATE_KEY} == 0)); then
-  echo "package_release: TAURI_SIGNING_PRIVATE_KEY is not set (docs/modulos/apps/launcher.md)" >&2
+  echo "package_release: TAURI_SIGNING_PRIVATE_KEY is not set (docs/modules/apps/launcher.md)" >&2
   exit 1
 fi
 

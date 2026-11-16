@@ -22,8 +22,8 @@ private:
   rhi::GraphicsPipeline pipeline_;
 };
 
-// Draws a movie's picture (an engine improvement on its scaling; docs/architecture/peliculas.md,
-// «Escalado»). With the texture filter «upscaled» the picture goes through an edge-adaptive
+// Draws a movie's picture (an engine improvement on its scaling; docs/architecture/movies.md,
+// «Scaling»). With the texture filter «upscaled» the picture goes through an edge-adaptive
 // upscale to the window's pixels (movie_upscale.slang) and a sharpen pass after it (post());
 // otherwise it is stretched with linear filtering, the look movies always had. It takes quads as a
 // QuadBatch does.

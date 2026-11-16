@@ -1,6 +1,6 @@
 // A new script section starts with boxes that close on confirm (script_interp.c: callScriptSection
 // sets TEXTBOX_CLOSE_MODE 0; its initializeTextbox, script_textbox.c:412, clears AUTOCLOSE_FRAMES),
-// whatever mode the last section left (docs/modulos/game/story.md).
+// whatever mode the last section left (docs/modules/game/story.md).
 
 #include <dwe/core/error.hpp>
 #include <dwe/game/story/dialogue.hpp>

@@ -1,40 +1,40 @@
-# El versus en línea (ui/versus): dos jugadores, cada uno en su máquina con los compañeros registrados de su partida.
+# Online versus (ui/versus): two players, each on their own machine with the registered partners of their save.
 title: "Versus en línea"
 menu.host: "Crear partida"
 menu.join: "Unirse a una partida"
 menu.about: "Cada jugador usa su propia máquina y los compañeros que registró en la máquina de guardado de su partida. Los dos necesitan la misma versión del juego y el mismo contenido."
-# El anfitrión elige cuántos combates tiene la serie (se juegan todos; gana quien gane más).
+# The host chooses how many battles the series has (all are played; whoever wins more wins).
 host_setup.question: "Prepara la serie:"
 host_setup.series: "Combates"
 host_setup.battle: "{count} combate"
 host_setup.battles: "{count} combates"
-# El escenario de todos los combates (vs_select.c: VS__tickSelectMap): los tres coliseos del original.
+# The stage of all the battles (vs_select.c: VS__tickSelectMap): the three coliseums of the original.
 host_setup.arena: "Escenario"
 arena.0: "Coliseo"
 arena.1: "Coliseo Beatwood"
 arena.2: "Coliseo Extra"
 host_setup.hint: "Arriba y abajo eligen la fila; izquierda y derecha cambian el valor; aceptar abre la partida."
-# El anfitrión espera al invitado con el código de su sala.
+# The host waits for the guest with the code of their room.
 hosting.code: "Código de la sala:"
 hosting.creating: "Creando la sala…"
 hosting.waiting: "Dale este código al otro jugador. Esperando a que se una…"
 hosting.connecting: "El otro jugador ha llegado. Abriendo la conexión directa…"
 hosting.network: "La partida va directa entre los dos equipos; el servidor solo os presenta."
-# El invitado escribe el código de la sala del anfitrión.
+# The guest types the host's room code.
 join.prompt: "Escribe el código de la sala del anfitrión:"
 join.bad: "Un código tiene cuatro letras o cifras (sin 0, 1, O ni I)."
 join.hint: "Aceptar o Intro conecta; Volver borra la última letra."
 joining: "Conectando con el anfitrión…"
-# La partida de la que se traen los compañeros.
+# The save the partners are brought from.
 save_pick.title: "Elige la partida con tus compañeros registrados:"
 save_pick.row: "{player} · {partner} ({count} registrados)"
 save_pick.none: "No hay partidas guardadas."
-# Los compañeros de cada combate, en orden.
+# The partners of each battle, in order.
 lineup.title: "Compañero para el combate {number} de {battles}:"
 lineup.row: "{name} ({species}) {stats}"
 lineup.picked: "Elegidos: {names}"
 waiting_lineup: "Esperando a que el otro jugador elija…"
-# Un combate.
+# A battle.
 score: "1P {host} - {guest} 2P"
 match.top: "Combate {round}/{battles}   {clock}   {score}"
 match.you: "Tú: {name} ({species})"
@@ -42,7 +42,7 @@ match.rival: "Rival: {name} ({species})"
 match.numbers: "PV {hp}/{max_hp}  PM {mp}/{max_mp}  {command}"
 match.stalled: "Esperando al otro jugador…"
 match.leave: "Pulsa Volver otra vez para abandonar la serie."
-# Las órdenes por su nombre en el versus (vs_main.c: VS_COMMAND_NAMES), sobre la tira de iconos.
+# The commands by name in versus (vs_main.c: VS_COMMAND_NAMES), over the icon strip.
 command.1: "Huir"
 command.2: "Atacar"
 command.3: "Auto"
@@ -50,7 +50,7 @@ command.4: "Con calma"
 command.5: "A distancia"
 command.6: "A la defensiva"
 command.7: "Cambiar"
-# El marcador entre combates (vs_scene.c: VS_renderVersusIntro).
+# The scoreboard between battles (vs_scene.c: VS_renderVersusIntro).
 score_title: "MODO VS"
 score_win: "Gana"
 score_lose: "Pierde"
@@ -59,7 +59,7 @@ log.hit: "{who} recibe {amount} de daño"
 log.finisher: "¡{who} lanza {move}!"
 log.disobey: "{who} no obedece"
 log.faint: "{who} cae"
-# Entre combates y al final.
+# Between battles and at the end.
 intermission.won: "Has ganado el combate {round}."
 intermission.lost: "Has perdido el combate {round}."
 intermission.draw: "Combate {round}: pierden los dos."
@@ -69,7 +69,7 @@ outcome.draw: "Los dos pierden"
 result.you: "¡Has ganado la serie!"
 result.rival: "El rival ha ganado la serie."
 result.draw: "Empate."
-# Por qué terminó la serie antes de tiempo.
+# Why the series ended early.
 error.unknown: "La serie ha terminado."
 error.no_answer: "El anfitrión no responde."
 error.no_server: "No hay ningún servidor de versus configurado en este juego (versus/network.yaml o --versus-server)."

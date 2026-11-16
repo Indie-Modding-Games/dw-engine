@@ -26,7 +26,7 @@ inline constexpr std::string_view FormatName = "dwe-save";
 // The longest section name.
 inline constexpr std::size_t MaxNameLength = 64;
 
-// What the slot list shows of a playthrough (docs/architecture/guardar-y-cargar.md). The game fills
+// What the slot list shows of a playthrough (docs/architecture/save-and-load.md). The game fills
 // it each time it saves; packages/game/save only keeps it. A text the game does not have yet is
 // empty, and so is every text of a save written before format 3.
 struct SaveSummary {

@@ -1,4 +1,4 @@
-//! Saving an edited map into one pack of the stack (docs/modulos/apps/mapper.md, "Guardar"):
+//! Saving an edited map into one pack of the stack (docs/modules/apps/mapper.md, "Guardar"):
 //! what to write so that the game, loading the map with every pack's patches as
 //! [`crate::load_map`] does, sees the edit.
 //!

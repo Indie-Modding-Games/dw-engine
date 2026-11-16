@@ -42,7 +42,7 @@ struct OriginalLook {
   TextFont defaultFont = TextFont::Modern;
   // The family the modern choice draws with; it also draws what the bitmap font lacks.
   std::string modernFamily;
-  // The bitmap font's atlas and meta, by asset id (docs/formats/textos.md).
+  // The bitmap font's atlas and meta, by asset id (docs/formats/texts.md).
   std::string atlas;
   std::string meta;
   // The row under the capitals, from the top of a cell: where the line's baseline sits.

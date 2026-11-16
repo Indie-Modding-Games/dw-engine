@@ -47,7 +47,7 @@ namespace dwe::ui {
 // "nintendo", "steam", "generic".
 [[nodiscard]] std::string_view gamepadFamilyName(platform::GamepadFamily family);
 
-// --- Glyphs: a prompt drawn as the control itself (docs/architecture/ui.md, «Glifos de botones»).
+// --- Glyphs: a prompt drawn as the control itself (docs/architecture/ui.md, «Button glyphs»).
 
 // What a prompt's glyph draws: a key cap, a mouse button, one of the four face buttons, another
 // gamepad button (Start, a shoulder, the d-pad), or a stick or trigger. None when nothing on the

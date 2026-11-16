@@ -1,5 +1,5 @@
-//! The session's side of the world graph and of the maps a pack adds (docs/modulos/apps/mapper.md,
-//! "Mundo" and "Nuevo mapa"): building the graph when it is looked at, the places the user gave
+//! The session's side of the world graph and of the maps a pack adds (docs/modules/apps/mapper.md,
+//! "World" and "New map"): building the graph when it is looked at, the places the user gave
 //! maps, connecting exits from the graph, and creating, renaming and deleting a pack's own maps.
 
 use std::collections::BTreeMap;
@@ -149,7 +149,9 @@ impl Mapper {
         if let Some(open) = self.map.as_ref().filter(|open| open.document.id == map) {
             let warp = self
                 .retargeted(&open.document, exit, to, to_exit)
-                .ok_or_else(|| format!("{map}:{exit} → {to}:{to_exit}: {}", text::NO_SUCH_EXIT))?;
+                .ok_or_else(|| {
+                    format!("{map}:{exit} → {to}:{to_exit}: {}", text::no_such_exit())
+                })?;
             let mut edited = open.document.clone();
             edited.set_warp(warp);
             new_map::place_door(&mut edited, &self.bands, exit)
@@ -182,16 +184,16 @@ impl Mapper {
             return Ok(false);
         }
         let Some(content) = &self.content else {
-            return Err(text::NO_CONTENT.to_owned());
+            return Err(text::no_content().to_owned());
         };
         let pack = self
             .target_pack()
-            .ok_or_else(|| text::NO_TARGET.to_owned())?;
+            .ok_or_else(|| text::no_target().to_owned())?;
         let loaded = dwe_map::load_map(content.vfs(), map).map_err(|error| error.to_string())?;
         let mut edited = loaded.clone();
         let warp = self
             .retargeted(&loaded, exit, to, to_exit)
-            .ok_or_else(|| format!("{map}:{exit} → {to}:{to_exit}: {}", text::NO_SUCH_EXIT))?;
+            .ok_or_else(|| format!("{map}:{exit} → {to}:{to_exit}: {}", text::no_such_exit()))?;
         edited.set_warp(warp);
         new_map::place_door(&mut edited, &self.bands, exit).map_err(|error| error.to_string())?;
         let plan = plan_save(
@@ -251,7 +253,7 @@ impl Mapper {
         self.world.invalidate();
         self.messages.push(Message::Info(format!(
             "{} {}:{} → {}:{}",
-            text::CONNECTED,
+            text::connected(),
             connect.from,
             connect.exit,
             connect.to,
@@ -270,27 +272,31 @@ impl Mapper {
     pub(crate) fn create_map(&mut self, new: &NewMap) -> bool {
         let (Some(content), Some(pack)) = (&self.content, self.target_pack()) else {
             self.messages
-                .push(Message::Error(text::NO_TARGET.to_owned()));
+                .push(Message::Error(text::no_target().to_owned()));
             return false;
         };
         let plan =
             match new_map::plan_new_map(content.vfs(), &content.table, &self.bands, pack, new) {
                 Ok(plan) => plan,
                 Err(error) => {
-                    self.messages
-                        .push(Message::Error(format!("{}: {error}", text::NEW_MAP_FAILED)));
+                    self.messages.push(Message::Error(format!(
+                        "{}: {error}",
+                        text::new_map_failed()
+                    )));
                     return false;
                 }
             };
         if let Err(error) = new_map::apply_ops(&plan.ops) {
-            self.messages
-                .push(Message::Error(format!("{}: {error}", text::NEW_MAP_FAILED)));
+            self.messages.push(Message::Error(format!(
+                "{}: {error}",
+                text::new_map_failed()
+            )));
             return false;
         }
         self.after_files_written();
         self.messages.push(Message::Info(format!(
             "{}: {}",
-            text::NEW_MAP_CREATED,
+            text::new_map_created(),
             plan.id
         )));
         if let Some(connection) = &new.connect {
@@ -334,7 +340,7 @@ impl Mapper {
     pub(crate) fn delete_map(&mut self, id: &str) -> bool {
         if !self.own_maps().iter().any(|own| own == id) {
             self.messages
-                .push(Message::Error(format!("{}: {id}", text::NOT_OWN_MAP)));
+                .push(Message::Error(format!("{}: {id}", text::not_own_map())));
             return false;
         }
         self.refresh_world();
@@ -348,7 +354,7 @@ impl Mapper {
         if !references.is_empty() {
             self.messages.push(Message::Error(format!(
                 "{}: {}",
-                text::MAP_IS_REFERENCED,
+                text::map_is_referenced(),
                 references.join(", ")
             )));
             return false;
@@ -373,7 +379,7 @@ impl Mapper {
         }
         self.after_files_written();
         self.messages
-            .push(Message::Info(format!("{}: {id}", text::MAP_DELETED)));
+            .push(Message::Info(format!("{}: {id}", text::map_deleted())));
         true
     }
 
@@ -381,14 +387,14 @@ impl Mapper {
     pub(crate) fn rename_map(&mut self, id: &str, name: &str) -> bool {
         if !self.own_maps().iter().any(|own| own == id) {
             self.messages
-                .push(Message::Error(format!("{}: {id}", text::NOT_OWN_MAP)));
+                .push(Message::Error(format!("{}: {id}", text::not_own_map())));
             return false;
         }
         let outside = self.outside_references(id);
         if !outside.is_empty() {
             self.messages.push(Message::Error(format!(
                 "{}: {}",
-                text::MAP_IS_REFERENCED,
+                text::map_is_referenced(),
                 outside.join(", ")
             )));
             return false;
@@ -415,7 +421,7 @@ impl Mapper {
         self.after_files_written();
         self.messages.push(Message::Info(format!(
             "{}: {id} → {}",
-            text::MAP_RENAMED,
+            text::map_renamed(),
             plan.id
         )));
         if shown {

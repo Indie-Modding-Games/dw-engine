@@ -15,8 +15,8 @@
 
 namespace dwe::app {
 
-// The options of the options page that change the game's rules (docs/modulos/apps/game.md,
-// «Dificultad» and «Rarezas como opciones»), engine improvements off by default: each one changes
+// The options of the options page that change the game's rules (docs/modules/apps/game.md,
+// «Difficulty» and «Quirks as options»), engine improvements off by default: each one changes
 // values of the running game's ruleset, as the tuning panel does, so the systems read them as any
 // other rule.
 

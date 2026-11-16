@@ -3,7 +3,7 @@
 # pause menu and its options, the partner's menu, the battle screen) in it, and on to the modern skin from the pause
 # menu's options. It needs content extracted with the original look's sprites (dwx 2 or later) and the synthetic test
 # skin's mod pack: --mods tests/mods/ui_skin. It runs once per language, with --lang en and --lang es. How to run it:
-# docs/guides/prueba-vertical.md.
+# docs/guides/vertical-slice.md.
 name: skins
 device: keyboard
 main_menu: true

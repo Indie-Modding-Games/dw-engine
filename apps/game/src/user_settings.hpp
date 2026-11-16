@@ -21,7 +21,7 @@ struct UserSettings {
   // chosen yet.
   std::optional<std::string> uiSkin;
   // The UI addon on (ui_addon: the id of a whole UI under ui/addons, default for the game's own);
-  // the game's own when not chosen yet (docs/modding/interfaces.md).
+  // the game's own when not chosen yet (docs/modding/ui-addons.md).
   std::optional<std::string> uiAddon;
   // Whether the UI plugins are on (ui_plugins: true, false); on when not chosen yet.
   std::optional<bool> uiPlugins;

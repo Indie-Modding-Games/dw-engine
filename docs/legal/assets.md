@@ -1,116 +1,116 @@
-# Política legal de assets
+# Legal asset policy
 
-> Esto no es asesoría legal. Es la política del proyecto para minimizar el riesgo. Las leyes cambian según el país.
-> Si la situación del proyecto cambia (entra dinero, crece mucho la difusión), hay que consultar a un abogado de
-> propiedad intelectual.
+> This is not legal advice. It is the project's policy to minimize risk. Laws change by country. If the project's
+> situation changes (money comes in, its reach grows a lot), an intellectual property lawyer must be consulted.
 
-## Qué es este proyecto
+## What this project is
 
-Un proyecto de fans, **sin ánimo de lucro**, hecho por gusto, para volver a jugar el juego con reinterpretaciones
-propias. No compite con los titulares de la licencia ni pretende sustituir sus productos. Si un titular de derechos
-pide retirar algo, **se retira**.
+A **non-profit** fan project, made for enjoyment, to play the game again with our own reinterpretations. It does not
+compete with the license holders nor aim to replace their products. If a rights holder asks for something to be
+removed, **it is removed**.
 
-## Qué protege la ley
+## What the law protects
 
-- **Copyright:** el código del juego, el arte, los modelos, la música, los textos y el diseño de los personajes.
-- **Marcas:** el nombre de la franquicia y sus logos.
+- **Copyright:** the game's code, art, models, music, texts and character design.
+- **Trademarks:** the franchise name and its logos.
 
-## El modelo: "trae tus propios datos"
+## The model: "bring your own data"
 
-Es el mismo modelo que usan proyectos como OpenMW, OpenRCT2, ScummVM o Ship of Harkinian. El proyecto publica un motor
-que **no contiene nada del original**, y cada usuario aporta su propia copia del juego. La extracción ocurre en su
-máquina.
+It is the same model used by projects such as OpenMW, OpenRCT2, ScummVM or Ship of Harkinian. The project publishes
+an engine that **contains nothing from the original**, and each user brings their own copy of the game. The
+extraction happens on their machine.
 
-## Qué se puede distribuir
+## What can be distributed
 
-| Categoría | Ejemplos | ¿Se distribuye? |
+| Category | Examples | Distributed? |
 |---|---|---|
-| **Motor** | `packages/engine/`, `packages/game/`, herramientas | ✅ Con la licencia del proyecto |
-| **Base** | Modelos, fondos, música, textos y tablas de stats del disco | ❌ Nunca. Se genera en la máquina del usuario |
-| **Original del equipo** | Personajes nuevos, música nueva, mapas pintados desde cero | ✅ Con licencia propia |
-| **Derivado** | Fondos escalados, retexturas, traducciones del texto original, modelos nuevos de Digimon existentes | ⚠️ Solo como **recetas o deltas** que se aplican sobre la base del usuario |
+| **Engine** | `packages/engine/`, `packages/game/`, tools | ✅ Under the project's license |
+| **Base** | Models, backgrounds, music, texts and stat tables from the disc | ❌ Never. Generated on the user's machine |
+| **Team original** | New characters, new music, maps painted from scratch | ✅ Under its own license |
+| **Derived** | Scaled backgrounds, retextures, translations of the original text, new models of existing Digimon | ⚠️ Only as **recipes or deltas** applied on top of the user's base |
 
-Lo que hay que tener claro:
+What must be clear:
 
-- **Un modelo nuevo de un Digimon existente sigue siendo fan art:** el diseño del personaje pertenece a sus titulares.
-  Lo mismo vale para el mod en su conjunto. Se tolera, pero no es del todo legal. El objetivo es reducir el riesgo,
-  no eliminarlo.
-- **El motor no es un "clean room".** Se escribe con el decomp como referencia. Por eso no se copia nada del decomp al
-  repositorio: ni código ni **tablas de datos** (stats, evoluciones, textos). Todo eso sale del disco del usuario.
-- **Reglas sí, tablas no.** Los parámetros de reglas y mecánicas (topes, umbrales, divisores, temporizadores,
-  probabilidades) pueden estar en git, en los rulesets y con su cita al decomp; las tablas por entidad (por Digimon,
-  objeto, técnica o mapa) salen del disco del usuario (ejecutable y overlays) con `dwx`. «Decidido por el coordinador
-  (2026-10-21)». Detalle y clasificación de cada valor: [auditoría de los rulesets](auditoria-rulesets.md).
-- **Los ids que vienen del nombre de un objeto o una técnica** (`bandage`, `giga_hand`) **y los códigos internos de
-  archivo de los mapas** (`twna01`, `ROOM08`) se pueden usar en rulesets, tests, fixtures y sustitutos; el nombre de la
-  franquicia y sus logos no (nunca se pudieron), ni las tablas de datos (stats, efectos, textos), y los datos que
-  acompañan a un id versionado son inventados, nunca copiados del disco ni del decomp (decisión del usuario,
-  2026-10-21). Un id real nunca va en su número del original: donde un test necesita una entrada en ese número, usa un
-  id inventado. Las categorías y los comportamientos (categoría de orden, color del objeto, tipo de manejador, banderas
-  de uso en combate, si se puede tirar) pueden coincidir con el original.
-- **Los nombres de especies y de personajes nunca son ids en git.** El paquete base que dwx genera en la máquina del
-  usuario lleva los nombres reales y nunca va a git. En git, un id de especie solo aparece donde un ruleset o el
-  paquete del juego nombra una entrada del paquete base, y en los fixtures y sustitutos que cargan esos rulesets, que
-  necesitan ese id (con datos inventados y nunca en su número del original). Todo otro test, fixture o ejemplo de la
-  documentación usa ids neutros (`species_a`, `species_b`…), y ningún fixture lleva el nombre de una especie o un
-  personaje en un nombre visible o un texto.
-- **Los Digimon de otros juegos** solo pueden llegar a través de un importador que lea el disco de ese juego, con la
-  misma regla.
+- **A new model of an existing Digimon is still fan art:** the character's design belongs to its holders. The same
+  goes for the mod as a whole. It is tolerated, but it is not entirely legal. The goal is to reduce the risk, not to
+  eliminate it.
+- **The engine is not a "clean room".** It is written with the decomp as a reference. For that reason nothing from the
+  decomp is copied into the repository: neither code nor **data tables** (stats, evolutions, texts). All of that
+  comes from the user's disc.
+- **Rules yes, tables no.** The parameters of rules and mechanics (caps, thresholds, divisors, timers, probabilities)
+  may be in git, in the rulesets and with their citation to the decomp; the per-entity tables (per Digimon, item,
+  technique or map) come from the user's disc (executable and overlays) with `dwx`. "Decided by the coordinator
+  (2026-10-21)". Detail and classification of each value: [ruleset audit](ruleset-audit.md).
+- **Ids that come from the name of an item or a technique** (`bandage`, `giga_hand`) **and the maps' internal file
+  codes** (`twna01`, `ROOM08`) may be used in rulesets, tests, fixtures and stand-ins; the franchise name and its
+  logos may not (they never could), nor may the data tables (stats, effects, texts), and the data that accompanies a
+  versioned id is invented, never copied from the disc or the decomp (user decision, 2026-10-21). A real id never goes
+  at its original number: where a test needs an entry at that number, it uses an invented id. The categories and
+  behaviors (sort category, item color, handler type, battle use flags, whether it can be thrown away) may match the
+  original.
+- **Species and character names are never ids in git.** The base pack that dwx generates on the user's machine
+  carries the real names and never goes to git. In git, a species id only appears where a ruleset or the game pack
+  names an entry of the base pack, and in the fixtures and stand-ins that those rulesets load, which need that id
+  (with invented data and never at its original number). Every other test, fixture or documentation example uses
+  neutral ids (`species_a`, `species_b`…), and no fixture carries the name of a species or a character in a visible
+  name or a text.
+- **Digimon from other games** can only arrive through an importer that reads that game's disc, with the same rule.
 
-## Reglas
+## Rules
 
-1. **Sin dinero.** Ni venta, ni anuncios, ni donaciones ligadas al mod.
-2. **Sin marcas.** El nombre del proyecto, el ejecutable y el logo no usan el nombre de la franquicia ni sus logos.
-   El README lleva un aviso de no afiliación.
-3. **Sin tiendas.** No se publica en Steam ni en tiendas de aplicaciones.
-4. **Nada original en git.** Ningún fichero extraído del disco, ningún binario compilado con código original, ningún
-   volcado de memoria ni capturas de pantalla con arte original dentro de los repositorios.
-5. **Repositorios separados.** Si llega una petición de retirada contra el contenido, el motor sobrevive.
+1. **No money.** No sales, no ads, no donations tied to the mod.
+2. **No trademarks.** The project name, the executable and the logo do not use the franchise name or its logos. The
+   README carries a non-affiliation notice.
+3. **No stores.** It is not published on Steam or in app stores.
+4. **Nothing original in git.** No file extracted from the disc, no binary compiled with original code, no memory
+   dump and no screenshots with original art inside the repositories.
+5. **Separate repositories.** If a takedown request arrives against the content, the engine survives.
 
-## Mecanismos
+## Mechanisms
 
-| Mecanismo | Qué hace |
+| Mechanism | What it does |
 |---|---|
-| **DCO** (`git commit -s`) | El autor certifica que tiene derecho a aportar ese código o ese asset |
-| **`provenance.yaml`** | Previsto: cada asset del equipo declarará su autor, su licencia y su origen (original o derivado). Aún no hay ninguno: el paquete del juego solo lleva YAML, Lua, la interfaz, dos banderas, las fuentes Noto Sans, con su licencia (`noto_sans_license.txt`), y dos fuentes de píxel de dominio público para el aspecto new (`pixel_fonts_license.txt`) |
-| **Hooks de git** (`scripts/dev.sh setup-hooks`) | `pre-commit` y `commit-msg` rechazan las rutas del original (imágenes de disco, ficheros del juego, savestates, trazas), otra identidad de autor y las palabras prohibidas en el mensaje (en los ficheros solo avisan) (`scripts/hooks/policy.sh`) |
-| **Paquetes sin datos del disco** | Antes de publicar, `scripts/package/no_disc_data.sh` (y su versión de macOS) comprueba que ningún paquete lleva el paquete base ni ficheros del original. Cada paquete lleva `LICENSE`, `THIRD_PARTY_NOTICES.txt` y las licencias de terceros |
-| **Chequeo de hashes en la CI** | Previsto: rechazar cualquier fichero cuyo hash coincida con uno extraído del disco. Hoy la CI no lo hace |
-| **`.gitignore`** | `content/base/` y las cachés de cocinado nunca se versionan |
-| **Recetas y deltas** | Lo derivado se distribuye como instrucciones o diferencias que se aplican sobre la base local |
+| **`provenance.yaml`** | Planned: each team asset will declare its author, its license and its origin (original or derived). There is none yet: the game pack only carries YAML, Lua, the interface, two flags, the Noto Sans fonts, with their license (`noto_sans_license.txt`), and two public domain pixel fonts for the new look (`pixel_fonts_license.txt`) |
+| **Git hooks** (`scripts/dev.sh setup-hooks`) | `pre-commit` and `commit-msg` reject the original's paths (disc images, game files, savestates, traces), another author identity and the words forbidden in the message (in files they only warn) (`scripts/hooks/policy.sh`) |
+| **Packages without disc data** | Before publishing, `scripts/package/no_disc_data.sh` (and its macOS version) checks that no package carries the base pack or original files. Each package carries `LICENSE`, `THIRD_PARTY_NOTICES.txt` and the third-party licenses |
+| **Hash check in CI** | Planned: reject any file whose hash matches one extracted from the disc. Today the CI does not do it |
+| **`.gitignore`** | `content/base/` and the cook caches are never versioned |
+| **Recipes and deltas** | What is derived is distributed as instructions or differences applied on top of the local base |
 
-## Salida mejorada (remaster)
+## Enhanced output (remaster)
 
-Las reglas de la [tubería del remaster](../architecture/remaster-pipeline.md#legal)
-([ADR 0023](../adr/0023-tuberia-del-remaster.md)):
+The rules of the [remaster pipeline](../architecture/remaster-pipeline.md#legal)
+([ADR 0023](../adr/0023-remaster-pipeline.md)):
 
-- **Lo mejorado es derivado.** Un fondo escalado o una textura repintada a partir del disco siguen siendo el
-  original. Se distribuyen **solo las recetas**; nunca las salidas, las cachés ni los paquetes `remaster` generados.
-- **Por defecto, solo lo integrado:** sin configuración solo funciona el escalador integrado, sin red y bit a bit
-  igual en todas las plataformas. Un modelo local con pesos fijados (mismo hash de los pesos, misma semilla, mismos
-  parámetros) es una opción tuya y es reproducible; en otra plataforma o GPU el resultado puede variar un poco.
-- **La nube es cosa tuya.** Un servicio remoto no es reproducible y obliga a subir arte extraído de tu disco, algo que
-  sus términos pueden no permitirte. Solo funciona si tú lo configuras con tu propia clave y declaras en tu
-  configuración que has leído sus términos, y **cada ejecución** que suba algo necesita tu confirmación explícita
-  (`--confirm-upload`), aunque el servicio sea gratis. El proyecto no lo recomienda.
-- **Licencias de los pesos:** cada receta declara la de sus pesos; una desconocida se rechaza salvo que tú la aceptes.
-- **Nadie acepta términos por ti:** ni las herramientas ni los agentes aceptan términos, guardan claves ni confirman
-  gastos ni subidas en tu nombre.
-- **Las claves** viven en el entorno o en el almacén de credenciales del sistema, nunca en git ni en una receta.
-- **Música:** «La música HD rehecha a partir de la original es obra derivada: solo se distribuyen recetas o deltas. La música del juego original nunca se distribuye. La música nueva compuesta por el equipo, o con licencia, declara autor, licencia y origen en provenance.yaml. Decidido por el coordinador (2026-10-21).»
+- **What is enhanced is derived.** A scaled background or a texture repainted from the disc is still the original.
+  **Only the recipes** are distributed; never the outputs, the caches or the generated `remaster` packs.
+- **By default, only what is built in:** with no configuration only the built-in upscaler works, with no network and
+  bit for bit the same on all platforms. A local model with pinned weights (same weights hash, same seed, same
+  parameters) is your own option and is reproducible; on another platform or GPU the result may vary a little.
+- **The cloud is your own business.** A remote service is not reproducible and forces you to upload art extracted
+  from your disc, something its terms may not allow you. It only works if you set it up with your own key and declare
+  in your configuration that you have read its terms, and **each run** that uploads anything needs your explicit
+  confirmation (`--confirm-upload`), even if the service is free. The project does not recommend it.
+- **Weight licenses:** each recipe declares that of its weights; an unknown one is rejected unless you accept it.
+- **Nobody accepts terms for you:** neither the tools nor the agents accept terms, store keys, or confirm spending or
+  uploads on your behalf.
+- **Keys** live in the environment or in the system credential store, never in git or in a recipe.
+- **Music:** "HD music remade from the original is a derived work: only recipes or deltas are distributed. The
+  original game's music is never distributed. New music composed by the team, or licensed, declares author, license
+  and origin in provenance.yaml. Decided by the coordinator (2026-10-21)."
 
-## Licencias
+## Licenses
 
-- **Código:** MIT (ver [`LICENSE`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/LICENSE)). Las dependencias conservan sus propias licencias.
-- **Assets originales del equipo:** CC BY-SA 4.0.
+- **Code:** MIT (see [`LICENSE`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/LICENSE)). Dependencies keep their own licenses.
+- **Team original assets:** CC BY-SA 4.0.
 
-Ver [ADR 0011](../adr/0011-politica-legal-de-assets.md).
+See [ADR 0011](../adr/0011-asset-legal-policy.md).
 
-## Pendiente en los repositorios actuales
+## Pending in the current repositories
 
-- `Digimon-World-Project-Folder-Assets`: sacar `dist/windows/dw1.exe` (código del juego compilado) y
-  `port/android/design/vram_menu.bin` (volcado de VRAM con gráficos originales). La copia del decomp contiene datos
-  del juego: puede quedarse en un repositorio privado, pero nunca pasar a uno público.
-- Los `Dialog.*` y `Game.*` generados desde los discos (ver `port/HANDOFF.md`) son textos originales y no deben
-  entrar en git. El `localization/` público solo tiene textos propios (`Port.*` y los mensajes de guardado
-  reescritos), así que está bien.
+- `Digimon-World-Project-Folder-Assets`: remove `dist/windows/dw1.exe` (compiled game code) and
+  `port/android/design/vram_menu.bin` (VRAM dump with original graphics). The decomp copy contains game data: it may
+  stay in a private repository, but never move to a public one.
+- The `Dialog.*` and `Game.*` generated from the discs (see `port/HANDOFF.md`) are original texts and must not go
+  into git. The public `localization/` only has our own texts (`Port.*` and the rewritten save messages), so it is
+  fine.

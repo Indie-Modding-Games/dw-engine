@@ -2,7 +2,7 @@
 """Writes the synthetic binary files of tests/mods/example_mod: a background and a one-bone model.
 
 Usage: python3 tests/mods/make_example_mod.py tests/mods/example_mod
-Everything is made up here; nothing comes from the game (docs/modulos/tests/mods.md).
+Everything is made up here; nothing comes from the game (docs/modules/tests/mods.md).
 """
 import json
 import struct

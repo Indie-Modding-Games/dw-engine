@@ -1,4 +1,4 @@
-// The synthetic example mod of tests/mods/example_mod (docs/modulos/tests/mods.md) over a stand-in
+// The synthetic example mod of tests/mods/example_mod (docs/modules/tests/mods.md) over a stand-in
 // base pack: it adds a Digimon and a map by id, and the engine uses them with no code of their own.
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/assets/file_system.hpp>

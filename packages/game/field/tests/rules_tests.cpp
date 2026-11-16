@@ -169,7 +169,7 @@ TEST_CASE("field warps read the start, and the old scripted warps are refused") 
   REQUIRE_MESSAGE(warps.has_value(), errorOf(warps));
   CHECK(warps->startMap == "twna01");
   CHECK(warps->startExit == 1);
-  // The scripts' warps moved to field/script_warps (docs/architecture/warps-de-script.md).
+  // The scripts' warps moved to field/script_warps (docs/architecture/script-warps.md).
   CHECK_FALSE(dwe::game::field::parseFieldWarps("start:\n  map: a\n  exit: 0\nscripted_warps: []\n")
                   .has_value());
 }

@@ -1,4 +1,4 @@
-//! The 100 x 100 collision grid of a map (docs/formats/mapas.md, "Colisión"), read from and
+//! The 100 x 100 collision grid of a map (docs/formats/maps.md, "Collision"), read from and
 //! written to the document's `collision` section exactly as `dwx` writes it
 //! (packages/formats/src/map/map_yaml.cpp: collisionToYaml).
 

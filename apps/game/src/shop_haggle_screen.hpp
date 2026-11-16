@@ -50,9 +50,9 @@ struct ShopHaggleView {
   std::size_t customers = 0;
 };
 
-// The haggle screen's settings (ui/shop_haggle, _shopjob/ui-contract.md): the customer, the item,
-// the nine price rows with their profit, chance and likely reaction, the offers so far and the
-// tally against the pay tiers.
+// The haggle screen's settings (ui/shop_haggle, docs/reference/shop-job.md, Interface): the
+// customer, the item, the nine price rows with their profit, chance and likely reaction, the offers
+// so far and the tally against the pay tiers.
 [[nodiscard]] screens::ScreenSettings shopHaggleSettings(const ShopHaggleView& view);
 
 struct ShopHaggleScreenDesc {

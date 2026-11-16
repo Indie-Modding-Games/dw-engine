@@ -1,5 +1,5 @@
 // The battle shows no line of its own while a thrown item flies: the original has none, so the
-// engine's "Here it comes!" is gone from both skins (docs/modulos/apps/screens.md).
+// engine's "Here it comes!" is gone from both skins (docs/modules/apps/screens.md).
 
 #include <doctest/doctest.h>
 

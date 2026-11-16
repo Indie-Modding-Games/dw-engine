@@ -2,7 +2,7 @@
 # can fight, started with the debug trigger (battle("") in the console, apps/game/src/battle_trigger.hpp), an order
 # from the command row, running away and the end box. The new game's partner has three entries: its finisher
 # (command-0, unavailable until the gauge is full), Run (command-1) and Your Call (command-2). How to run it:
-# docs/guides/prueba-vertical.md.
+# docs/guides/vertical-slice.md.
 name: battle-gamepad
 device: gamepad
 gamepad: xbox

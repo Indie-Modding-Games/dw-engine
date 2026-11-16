@@ -55,7 +55,7 @@ TEST_CASE("the reference lists each screen's entries under the API's version") {
   const std::string markdown = contractMarkdown(Contract);
   CHECK(markdown.contains(std::format("**{}**", version)));
   CHECK(markdown.contains("### `hud`"));
-  CHECK(markdown.contains("| `open_menu` | comando | — | Opens the menu. |"));
+  CHECK(markdown.contains("| `open_menu` | command | — | Opens the menu. |"));
   CHECK(markdown.find("### `hud`") < markdown.find("### `pause_menu`"));
 
   // A placeholder outside a code span is text, not an HTML tag the docs site would choke on.

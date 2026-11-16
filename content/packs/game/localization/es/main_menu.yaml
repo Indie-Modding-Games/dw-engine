@@ -1,21 +1,21 @@
-# El menú que se muestra al arrancar el juego.
+# The menu shown when the game starts.
 title: "Menú principal"
 new_game: "Nueva partida"
 continue: "Continuar"
 language: "Idioma"
-# La fuente del texto con el aspecto del original (el nombre del mapa): la de mapa de bits del original o una moderna.
+# The font of the text with the original's look (the map name): the original's bitmap one or a modern one.
 text_font: "Texto con aspecto original"
 text_font.modern: "No"
 text_font.original: "Sí"
-# Abre el versus en línea contra otro jugador en su propia máquina.
+# Opens online versus against another player on their own machine.
 versus: "Versus en línea"
-# Abre la página de opciones de la partida sobre la portada.
+# Opens the save options page over the title screen.
 options: "Opciones"
 quit: "Salir del juego"
-# La portada con el aspecto original (ui/main_menu): la línea de la pantalla de antes del menú, las entradas del menú,
-# la pregunta del modo batalla y la caja de idiomas, en mayúsculas como el original.
-# La línea de la pantalla de «Press Start» del aspecto original: lo que sigue con el dispositivo en uso, la tecla
-# como la nombran los avisos de botones ({key}), o un clic con el ratón. En mayúsculas en pantalla.
+# The title screen with the original look (ui/main_menu): the line of the screen before the menu, the menu entries,
+# the battle mode question and the language box, in uppercase like the original.
+# The line of the "Press Start" screen of the original look: what follows with the device in use, the key
+# as the button prompts name it ({key}), or a mouse click. Uppercase on screen.
 press_key: "Pulsa {key}"
 press_click: "Haz clic"
 original.new_game: "NUEVA PARTIDA"

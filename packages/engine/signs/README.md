@@ -1,17 +1,17 @@
 # signs
 
-Los carteles pintados en las imágenes de los mapas, escritos otra vez en el idioma del jugador.
+The signs painted into the map images, written again in the player's language.
 
-- Carpeta: `packages/engine/signs`; objetivos de CMake: `dwe::signs` (capa `systems`).
-- Depende de: `assets`, `core`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/engine/signs](https://indie-modding-games.github.io/dw-engine/modulos/engine/signs).
+- Folder: `packages/engine/signs`; CMake targets: `dwe::signs` (`systems` layer).
+- Depends on: `assets`, `core`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/engine/signs](https://indie-modding-games.github.io/dw-engine/modules/engine/signs).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter signs
-scripts/dev.sh test --filter signs       # sus tests (etiqueta de ctest signs)
-scripts/dev.sh test --filter ...signs    # y los de todo lo que depende de él
+scripts/dev.sh test --filter signs       # its tests (ctest label signs)
+scripts/dev.sh test --filter ...signs    # and those of everything that depends on it
 ```

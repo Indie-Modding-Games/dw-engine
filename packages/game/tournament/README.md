@@ -1,17 +1,17 @@
 # tournament
 
-Los torneos de la arena: los rivales de cada copa, el cuadro y los premios.
+The arena tournaments: each cup's rivals, the bracket and the prizes.
 
-- Carpeta: `packages/game/tournament`; objetivos de CMake: `dwe::tournament` (capa `game`).
-- Depende de: `assets`, `core`, `ruleset`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/game/tournament](https://indie-modding-games.github.io/dw-engine/modulos/game/tournament).
+- Folder: `packages/game/tournament`; CMake targets: `dwe::tournament` (`game` layer).
+- Depends on: `assets`, `core`, `ruleset`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/game/tournament](https://indie-modding-games.github.io/dw-engine/modules/game/tournament).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter tournament
-scripts/dev.sh test --filter tournament       # sus tests (etiqueta de ctest tournament)
-scripts/dev.sh test --filter ...tournament    # y los de todo lo que depende de él
+scripts/dev.sh test --filter tournament       # its tests (ctest label tournament)
+scripts/dev.sh test --filter ...tournament    # and those of everything that depends on it
 ```

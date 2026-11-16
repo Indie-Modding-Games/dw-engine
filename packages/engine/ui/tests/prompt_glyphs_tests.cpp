@@ -1,4 +1,4 @@
-// The button glyphs in the game pack's documents (docs/architecture/ui.md, «Glifos de botones»):
+// The button glyphs in the game pack's documents (docs/architecture/ui.md, «Button glyphs»):
 // the story box's texts and its waiting button follow the device in use.
 
 #include <doctest/doctest.h>
@@ -81,7 +81,7 @@ TEST_CASE("the menus' prompts and hints name the device's control as glyphs") {
   Screen screen{"pause_box"};
   screen.ui->show("pause_box");
   screen.frames();
-  // On the keyboard `settings` is the `Escape` key (docs/architecture/controles.md): the hint names
+  // On the keyboard `settings` is the `Escape` key (docs/architecture/controls.md): the hint names
   // its key.
   CHECK(screen.ui->elementText("pause_box", "hint").contains(">Esc<"));
   touchPad(screen, platform::GamepadFamily::Generic);

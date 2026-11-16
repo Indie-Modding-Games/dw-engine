@@ -488,8 +488,8 @@ button:focus .original-look, button.original-look:focus {
 #scrim.item-screen #options button { color: #b2b2b2; }
 #scrim.item-screen #options button.unavailable { color: #717171; }
 
-/* Status: tres regiones con separadores de doble tono. Las posiciones parten de
-   renderDigimonStatsView/STATS_VIEW_LINES; no alteran la pantalla ITEM. */
+/* Status: three regions with two-tone separators. The positions start from
+   renderDigimonStatsView/STATS_VIEW_LINES; they do not change the ITEM screen. */
 .status-decoration { position: absolute; display: block; pointer-events: none; }
 #profile-heading, #condition-heading, #parameter-heading {
     width: 159dp; height: 33dp; font-size: 0;
@@ -523,7 +523,7 @@ button:focus .original-look, button.original-look:focus {
 #status-lives { left: 48dp; top: 297dp; }
 
 #profile-heading, #condition-heading, #parameter-heading { color: transparent; }
-/* Valores por encima de las barras: los pools reservan dos columnas de cuatro cifras. */
+/* Values above the bars: the pools reserve two columns of four digits. */
 #status-parameters .bar-row { display: block; position: relative; }
 /* renderDigimonStatsView (game_menu.c:2402): HP, MP, Off and Def in the font at full size and colour 3 (#FFF773 measured),
    13 pixels right of their icons; SPEED and BRAINS are small-caps pictures of SYSTEM_W (212, 70) and (212, 82), 36 x 12,
@@ -548,7 +548,7 @@ button:focus .original-look, button.original-look:focus {
 #status-parameters .pool-max { display: block; left: 342dp; width: 126dp; }
 #status-condition .label { font-size: 18dp; }
 
-/* DIGIMON posee solo Status/Tech; ITEM y las acciones de cuidado son entradas independientes. */
+/* DIGIMON has only Status/Tech; ITEM and the care actions are independent entries. */
 #scrim.digimon-screen #tab-items, #scrim.digimon-screen #tab-care,
 #scrim.digimon-screen #close { display: none; }
 #tab-tech { width: 180dp; }
@@ -655,8 +655,8 @@ button:focus .original-look, button.original-look:focus {
 
 .tech-choice { box-sizing: border-box; }
 
-/* Editor original: casillas de 12x12, separación de 18x15 y cursor de 18x16.
-   Todas las medidas nativas se expresan a escala 3; no se usan nombres como botones. */
+/* Original editor: 12x12 boxes, 18x15 spacing and an 18x16 cursor.
+   All native measures are expressed at scale 3; names are not used as buttons. */
 #tech-picker { left: 315dp; top: 240dp; width: 432dp; height: 318dp; }
 .tech-choice, .tech-choice:focus {
     position: absolute; display: block; width: 54dp; height: 48dp;
@@ -810,7 +810,7 @@ button:focus .original-look, button.original-look:focus {
 #tech-help-cursor { position: absolute; display: block; left: 78dp; top: 504dp; width: 54dp; height: 48dp;
     decorator: image(tech-grid-cursor scale-none left top); }
 
-/* Pestañas trapezoidales de renderMenuTab; la imagen se aporta con el disco del usuario. */
+/* Trapezoid tabs of renderMenuTab; the image comes with the user's disc. */
 #scrim.digimon-screen #tabs { position: relative; }
 #scrim.digimon-screen .tab, #scrim.digimon-screen .tab:focus {
     position: absolute; top: 0; height: 45dp; margin: 0; padding: 0;
@@ -880,8 +880,8 @@ button:focus .original-look, button.original-look:focus {
 
 .info-value.info-range, .info-value.info-effect { font-size: 33dp; }
 
-/* Profile: insets nativos de STATS_VIEW_INSETS y rótulos de STATS_VIEW_ELEMENTS.
-   Los offsets descuentan el borde de 1px de la página. */
+/* Profile: native insets of STATS_VIEW_INSETS and labels of STATS_VIEW_ELEMENTS.
+   The offsets discount the page's 1px border. */
 #status-head { left: 117dp; top: 60dp; }
 #status-name { width: 294dp; height: 42dp; box-sizing: border-box; padding: 0; line-height: 36dp; }
 /* A name past the 12 letters the box holds (Machinedramon) gets a wider one, short of the profile headings. */
@@ -907,7 +907,7 @@ button:focus .original-look, button.original-look:focus {
 
 #status-species-line #status-species { width: 732dp; }
 
-/* Datos de especie y actividad dentro de Profile; condiciones en su fila nativa inferior. */
+/* Species and activity data inside Profile; conditions in their native bottom row. */
 .profile-meta { position: absolute; display: block; }
 #status-special-heading, #status-type-heading, #status-active-heading { top: 78dp; width: 75dp; height: 24dp; }
 #status-special-heading { left: 474dp; decorator: image(status-special-heading); }
@@ -948,7 +948,7 @@ button:focus .original-look, button.original-look:focus {
 
 .profile-meta { z-index: 1; }
 
-/* Condition: vidas y medidores, con sus posiciones y dimensiones nativas. */
+/* Condition: lives and gauges, with their native positions and sizes. */
 #status-lives { display: none; }
 .status-native-life { display: block; position: absolute; }
 #status-life-label { left: 33dp; top: 366dp; width: 144dp; font-size: 33dp; color: #fff371; }
@@ -982,7 +982,7 @@ button:focus .original-look, button.original-look:focus {
 #partner-portrait { position: absolute; left: -33dp; top: -285dp; width: 960dp; height: 720dp; }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   Improvements over the original's stats view (docs/modulos/apps/screens.md, "Ficha del compañero").
+   Improvements over the original's stats view (docs/modules/apps/screens.md, "Partner sheet").
 
    The model has its own area, right of the Condition heading and above the Life row, drawn at half the original's
    size so that no heart, bar or need icon covers it (the original draws them over it). The need icons go under the
@@ -1090,7 +1090,7 @@ button:focus .original-look, button.original-look:focus {
 .tech-columns { text-transform: none; }
 
 /* The page's extras, which the original keeps hidden (the status_extras option, on by default;
-   docs/modulos/apps/screens.md). The care mistakes go at the end of the age and weight row, a number in an inset like
+   docs/modules/apps/screens.md). The care mistakes go at the end of the age and weight row, a number in an inset like
    theirs after a label in the cyan of the field labels; the tiredness is a fourth condition bar with the tired need's
    icon and the blue strip, with no number like the others. Life and the bars move up and closer (rows 36dp apart,
    the model's area 6dp shorter) so the four bars fit the page. The modern skin's places for the profile are undone. */
@@ -1132,7 +1132,7 @@ button:focus .original-look, button.original-look:focus {
 #tiredness-label { decorator: image(status-condition-tired scale-none left top); }
 #status-condition #tiredness-fill { background-color: transparent; decorator: image(status-meter-blue scale-none left top); }
 
-/* More extras (docs/modulos/apps/screens.md, «Extras de la ficha»). The battles sit between the weight and the
+/* More extras (docs/modules/apps/screens.md, «Sheet extras»). The battles sit between the weight and the
    mistakes, in an inset like theirs. The Active field writes the hours it is awake today, hour to hour, in place of
    the pattern's word; the modern skin's line for them is not drawn. The care bars are narrower, with their numbers
    after them in white. The hours of life left and the evolution counter (with the hours its level checks from) go in

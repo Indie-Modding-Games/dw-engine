@@ -18,7 +18,7 @@
 
 namespace dwe::app {
 
-// The island map (a dwe improvement, docs/modulos/apps/game.md «Mapa de la isla»): the original has
+// The island map (a dwe improvement, docs/modules/apps/game.md «Island map»): the original has
 // no map of the island. M (or the pad's left shoulder) opens it over the field, which waits.
 inline constexpr std::string_view WorldMapDocument = "world_map";
 inline constexpr std::string_view WorldMapLayoutAsset = "ui/world_map/layout";

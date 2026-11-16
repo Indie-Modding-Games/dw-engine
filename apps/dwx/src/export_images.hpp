@@ -20,7 +20,7 @@ struct ExportSummary {
   std::size_t maps = 0;
 };
 
-// Writes the images a player can replace (docs/guides/imagenes-personalizadas.md), read from the
+// Writes the images a player can replace (docs/guides/custom-images.md), read from the
 // packs in `folders`, into `out` with the names a custom image pack uses: every map background as
 // map/<map>/background_<variant>.png, and every image of texture/ once per palette as
 // texture/.../<image>_palette<N>.png in full colour (palette 0 for an image without palettes).

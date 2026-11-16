@@ -15,7 +15,7 @@
 #include <string_view>
 #include <vector>
 
-// The tables of player-facing text in the packs (docs/architecture/localizacion.md): one per
+// The tables of player-facing text in the packs (docs/architecture/localization.md): one per
 // language and per area of the engine (localization/<language>/<area>) or per source of the
 // original's text (text/<language>/<source>).
 namespace dwe::assets {
@@ -58,7 +58,7 @@ inline constexpr int GameTextSlotDigits = 4;
 
 // The key of a string of the original's text inside its table: "<block>.<slot>", the slot
 // zero-padded
-// ("map_names.0003"). The full key adds the source in front (docs/formats/textos.md).
+// ("map_names.0003"). The full key adds the source in front (docs/formats/texts.md).
 std::string gameTextEntryKey(std::string_view block, std::size_t slot);
 
 // Reads a table: a flat mapping of keys to texts whose placeholders are all closed. A table of the
@@ -72,7 +72,7 @@ core::Result<TextTable> parseTextTable(const TextTableName& name, std::string_vi
 core::Result<TextTable> readTextTable(const VirtualFileSystem& fileSystem, const AssetId& id,
                                       const TextTableName& name);
 
-// A placeholder that picks a word by a count (docs/architecture/localizacion.md#plurales):
+// A placeholder that picks a word by a count (docs/architecture/localization.md#plurals):
 // {days:day|days} is "day" when the argument days is 1 and "days" otherwise.
 struct PluralPlaceholder {
   // The argument that holds the count.
@@ -120,7 +120,7 @@ std::vector<ContentProblem> checkTranslations(const VirtualFileSystem& fileSyste
 // the pack's folder.
 inline constexpr std::string_view SourcesLockFile = ".sources.lock";
 
-// What a translation of the original's text was made from (docs/formats/textos.md).
+// What a translation of the original's text was made from (docs/formats/texts.md).
 struct SourcesLock {
   // Full key of a translated string -> the SHA-1 (40 lowercase hex digits) of its English text when
   // it was translated, the text as the table has it, with its tags, in UTF-8.

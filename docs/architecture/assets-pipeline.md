@@ -1,132 +1,133 @@
-# Tubería de assets
+# Asset pipeline
 
-Cómo pasa el contenido del disco original a algo que el equipo puede editar y que el motor carga. La decisión está en
-el [ADR 0005](../adr/0005-tuberia-de-assets.md) y las reglas de qué se puede publicar en la
-[política legal](../legal/assets.md).
+How content goes from the original disc to something the team can edit and the engine loads. The decision is in
+[ADR 0005](../adr/0005-asset-pipeline.md) and the rules for what can be published are in the
+[legal policy](../legal/assets.md).
 
-## Tres estados
+## Three states
 
 ```mermaid
 flowchart LR
-    original[(Original<br/>disco del usuario)] -->|dwx extract| source[Fuente<br/>glTF, PNG, YAML, Lua…]
-    team[Equipo y modders] -->|editan| source
-    source -->|dwx cook| cooked[Cocinado<br/>KTX2, mallas, Opus, .pak]
-    cooked -->|carga| game[El juego]
-    source -.->|desarrollo: carga directa<br/>con recarga en caliente| game
+    original[(Original<br/>user's disc)] -->|dwx extract| source[Source<br/>glTF, PNG, YAML, Lua…]
+    team[Team and modders] -->|edit| source
+    source -->|dwx cook| cooked[Cooked<br/>KTX2, meshes, Opus, .pak]
+    cooked -->|loads| game[The game]
+    source -.->|development: direct load<br/>with hot reload| game
 ```
 
-| Estado | Qué es | Dónde vive |
+| State | What it is | Where it lives |
 |---|---|---|
-| **Original** | El disco de cada usuario. Solo se lee | En su máquina |
-| **Fuente** | Formatos abiertos que se abren con Blender, Krita o un editor de texto. Es lo que se edita | La base, en la máquina de cada usuario; lo del equipo, en los repositorios |
-| **Cocinado** | Optimizado para la GPU y para cargar rápido | Caché local y releases del equipo |
+| **Original** | Each user's disc. Read only | On their machine |
+| **Source** | Open formats that open with Blender, Krita or a text editor. This is what gets edited | The base, on each user's machine; the team's content, in the repositories |
+| **Cooked** | Optimized for the GPU and for fast loading | Local cache and the team's releases |
 
-La extracción **solo va en un sentido**. No reconstruimos el disco ni buscamos que el resultado sea igual byte a byte.
-El criterio de calidad es que cada fichero del disco se extraiga y el motor cargue el resultado, con un informe de
-cobertura que lista lo que falte.
+Extraction **only goes one way**. We do not rebuild the disc and we do not aim for a byte-for-byte identical result.
+The quality criterion is that every file on the disc is extracted and the engine loads the result, with a coverage
+report that lists whatever is missing.
 
-## Qué pasa con cada tipo
+## What happens with each type
 
-| Tipo | Original | Fuente | Cocinado |
+| Type | Original | Source | Cooked |
 |---|---|---|---|
-| Modelos y animaciones | TMD/MMD | glTF 2.0 binario (`.glb`, con malla, esqueleto y animaciones) | El mismo `.glb`, validado por el cocinador actual |
-| Texturas | TIM con paletas de 4/8 bits | PNG, con la paleta guardada como metadato | KTX2 UASTC con zstd, transcodificado a BC7 al cargar; PNG si la paleta se elige al jugar |
-| Fondos de mapa | Imagen prerenderizada de día, atardecer y noche | PNG por capa + máscara de profundidad | KTX2 |
-| Datos de mapa | Colisión, warps, NPCs, cámara | YAML | YAML conservado por el cocinador actual |
-| Tablas del juego | Datos del ejecutable: stats, evoluciones, técnicas, objetos | YAML; siembran el primer ruleset | YAML conservado por el cocinador actual |
-| Textos | Por región, en su codificación | UTF-8, un fichero por idioma | Igual |
-| Eventos e historia | Bytecode de scripts | Lua (y el listado YAML) | Igual: texto Lua, sin bytecode (el sandbox solo carga texto) |
-| Música | VAB + SEQ | SF2 + MIDI | Igual, u Opus si es un remaster |
-| Efectos de sonido | VAB | WAV | Opus |
-| Vídeos | STR (MDEC + XA) | Y4M + WAV + YAML (lo que escribe la extracción hoy) | **Pendiente** de decisión del usuario (propuesta: AV1/WebM; opciones en [Formatos](formats.md#vídeo)); no implementado |
-| Fuentes tipográficas | Bitmap | PNG + métricas, o TTF para idiomas nuevos | Atlas de glifos |
+| Models and animations | TMD/MMD | glTF 2.0 binary (`.glb`, with mesh, skeleton and animations) | The same `.glb`, validated by the current cooker |
+| Textures | TIM with 4/8-bit palettes | PNG, with the palette stored as metadata | KTX2 UASTC with zstd, transcoded to BC7 on load; PNG if the palette is chosen at play time |
+| Map backgrounds | Prerendered image for day, dusk and night | PNG per layer + depth mask | KTX2 |
+| Map data | Collision, warps, NPCs, camera | YAML | YAML kept by the current cooker |
+| Game tables | Executable data: stats, evolutions, techniques, items | YAML; they seed the first ruleset | YAML kept by the current cooker |
+| Texts | Per region, in their encoding | UTF-8, one file per language | The same |
+| Events and story | Script bytecode | Lua (and the YAML listing) | The same: Lua text, no bytecode (the sandbox only loads text) |
+| Music | VAB + SEQ | SF2 + MIDI | The same, or Opus if it is a remaster |
+| Sound effects | VAB | WAV | Opus |
+| Videos | STR (MDEC + XA) | Y4M + WAV + YAML (what extraction writes) | AV1 (IVF) + Opus ([Movies](movies.md#cooked-format-and-later-work)) |
+| Typefaces | Bitmap | PNG + metrics, or TTF for new languages | Glyph atlas |
 
-## Capas de contenido
+## Content layers
 
-El motor monta un sistema de ficheros virtual con capas apiladas. Cada capa es un **paquete** con su manifiesto
-(id, versión, dependencias y prioridad). Si dos capas definen el mismo asset, gana la de arriba. Los detalles
-(manifiesto, IDs, orden de la pila y errores) están en [Paquetes y sistema de ficheros virtual](vfs.md).
+The engine mounts a virtual file system with stacked layers. Each layer is a **package** with its manifest (id,
+version, dependencies and priority). If two layers define the same asset, the top one wins. The details (manifest,
+IDs, stack order and errors) are in [Packages and virtual file system](vfs.md).
 
-| Prioridad | Capa | Quién la hace |
+| Priority | Layer | Who makes it |
 |---|---|---|
-| 4 (gana) | Usuario | El propio jugador: sus ajustes y sus imágenes propias (un paquete que escribe el lanzador) |
-| 3 | Mods | El equipo o la comunidad: historia, Digimon y modos nuevos |
-| 2 | Remaster | El equipo: texturas, fondos y música en HD |
-| 1 | Base | El extractor, a partir del disco del usuario |
+| 4 (wins) | User | The player: their settings and their own images (a package written by the launcher) |
+| 3 | Mods | The team or the community: new story, Digimon and modes |
+| 2 | Remaster | The team: HD textures, backgrounds and music |
+| 1 | Base | The extractor, from the user's disc |
 
-- **IDs estables por nombre:** `map/file_city_01/data`, `map/file_city_01/background`. Nunca índices numéricos. Un
-  paquete **sobrescribe** un ID que ya existe o **añade** uno nuevo, y por eso no hay límite de Digimon ni de mapas.
-- **Clásico/HD por categoría:** en los ajustes se elige, por ejemplo, fondos HD con música original. Si falta el
-  asset HD, se usa el de la base.
+- **Stable IDs by name:** `map/file_city_01/data`, `map/file_city_01/background`. Never numeric indexes. A package
+  **overrides** an ID that already exists or **adds** a new one, which is why there is no limit on Digimon or maps.
+- **Classic/HD per category:** the settings let you choose, for example, HD backgrounds with the original music. If
+  the HD asset is missing, the base one is used.
 
-## Cómo se mejora cada cosa
+## How each thing is improved
 
-- **Texturas:** se escalan o se repintan a más resolución con las mismas UV.
-- **Modelos:** se pueden sustituir por otros con más detalle si cumplen el **contrato del Digimon**: un esqueleto
-  compatible y la lista completa de animaciones que el juego necesita (reposo, andar, atacar, comer, dormir…), o sus
-  propias animaciones si las trae. `dwx validate` lo comprueba.
-- **Fondos:** se escala el original, se amplían los bordes para panorámico o se recrea la escena en 3D y se renderiza
-  con la cámara exportada. La máscara de profundidad tiene que coincidir con la colisión.
-- **Música:** un tema remasterizado sobrescribe el original por ID.
+- **Textures:** they are scaled up or repainted at a higher resolution with the same UVs.
+- **Models:** they can be replaced by more detailed ones if they meet the **Digimon contract**: a compatible skeleton
+  and the full list of animations the game needs (idle, walk, attack, eat, sleep…), or their own animations if they
+  bring them. `dwx validate` checks it.
+- **Backgrounds:** the original is scaled up, the edges are extended for widescreen, or the scene is recreated in 3D
+  and rendered with the exported camera. The depth mask has to match the collision.
+- **Music:** a remastered track overrides the original by ID.
 
-Cómo se generan en tu máquina las imágenes mejoradas de la capa `remaster` (recetas, proveedores, caché, coste y
-revisión) está en la [tubería del remaster](remaster-pipeline.md); de ella solo existe el escalado de índices de
-`dwx upscale`, el resto todavía es un diseño. Las imágenes propias que pone el jugador desde el lanzador parten de las
-que escribe `dwx export-images` ([imágenes personalizadas](../guides/imagenes-personalizadas.md)).
+How the improved images of the `remaster` layer are generated on your machine (recipes, providers, cache, cost and
+review) is in the [remaster pipeline](remaster-pipeline.md); of that, only the index upscaling of `dwx upscale`
+exists, the rest is still a design. The player's own images, set from the launcher, start from the ones that
+`dwx export-images` writes ([custom images](../guides/custom-images.md)).
 
-## Herramienta `dwx`
+## The `dwx` tool
 
-| Comando | Qué hace |
+| Command | What it does |
 |---|---|
-| `dwx extract <disco>` | Reconoce la versión del disco por su ejecutable y genera la base en formato fuente |
-| `dwx validate <paquete>` | Esquemas, referencias rotas y contratos (por ejemplo, las animaciones de cada Digimon), como mod; `--engine` para los del juego. Ver [abajo](#dwx-validate) |
-| `dwx cook <paquete> -o <carpeta>` | Fuente → cocinado, en otra carpeta |
-| `dwx pack <paquete> -o <fichero.pak>` | Genera un paquete distribuible en un solo fichero, con su manifiesto |
-| `dwx export-images <contenido> -o <carpeta>` | Escribe las imágenes que un jugador puede cambiar, con los nombres que usa un paquete de imágenes propias |
-| `dwx evolution-guide <contenido> <salida.md>` | Escribe los requisitos de evolución de cada especie como tablas Markdown |
-| `dwx upscale <receta> <paquete> -o <carpeta>` | Amplía las imágenes indexadas que elige una receta ([remaster](remaster-pipeline.md#lo-que-ya-hay-dwx-upscale)) |
+| `dwx extract <disc>` | Recognizes the disc version from its executable and generates the base in source format |
+| `dwx validate <package>` | Schemas, broken references and contracts (for example, each Digimon's animations), as a mod; `--engine` for the game's own. See [below](#dwx-validate) |
+| `dwx cook <package> -o <folder>` | Source → cooked, into another folder |
+| `dwx pack <package> -o <file.pak>` | Generates a distributable package in a single file, with its manifest |
+| `dwx export-images <content> -o <folder>` | Writes the images a player can change, with the names a custom-images package uses |
+| `dwx evolution-guide <content> <output.md>` | Writes each species' evolution requirements as Markdown tables |
+| `dwx upscale <recipe> <package> -o <folder>` | Enlarges the indexed images that a recipe selects ([remaster](remaster-pipeline.md#what-already-exists-dwx-upscale)) |
 
-Al instalar el disco, el launcher ejecuta `dwx extract` sobre la imagen del usuario y guarda la base en su carpeta de
-datos; el juego la monta tal cual, sin cocinar.
+When installing the disc, the launcher runs `dwx extract` on the user's image and stores the base in its data
+folder; the game mounts it as is, without cooking.
 
-## Cocinar
+## Cooking
 
-`dwx cook` lee un paquete en formato fuente y escribe otro con el mismo `pack.yaml` y los mismos IDs, pero cada
-fichero pasado por el **cocinero de su extensión**. Lo decide el [ADR 0017](../adr/0017-cocinado-y-archivos-pak.md).
+`dwx cook` reads a package in source format and writes another one with the same `pack.yaml` and the same IDs, but
+with each file passed through the **cooker for its extension**. [ADR 0017](../adr/0017-cooking-and-pak-files.md)
+decides this.
 
-| Fuente | Cocinado | Cocinero |
+| Source | Cooked | Cooker |
 |---|---|---|
-| PNG | KTX2 con Basis Universal UASTC y supercompresión zstd, con todos los mipmaps, sRGB o lineal ([KTX2](../formats/ktx2.md)) | `texture` |
-| PNG que el juego lee de su PNG (`assets::PngOnlyImages`: fondos y páginas de textura de los mapas, las dos imágenes del título del aspecto original, atlas de la fuente) | El mismo PNG: su lector necesita los índices o los píxeles exactos | `texture` lo deja pasar |
-| PNG indexado cuyo YAML lateral lista más de una paleta, o TIM de mapa con CLUT | El mismo PNG: la paleta se elige al jugar | `texture` lo deja pasar |
-| GLB | El mismo GLB, con la cabecera comprobada | `glb` |
-| WAV | Ogg Opus a 48 kHz, con el bucle y la nota en comentarios ([Opus](../formats/opus.md)) | `audio` |
-| Vídeo de película (`movie/<nombre>/video.y4m`) | AV1 en un IVF, con libaom ([vídeo](../formats/video.md)) | `video` |
-| Cualquier otro (YAML, MIDI, SF2…) | Copiado tal cual | — |
+| PNG | KTX2 with Basis Universal UASTC and zstd supercompression, with all mipmaps, sRGB or linear ([KTX2](../formats/ktx2.md)) | `texture` |
+| PNG that the game reads from its PNG (`assets::PngOnlyImages`: map backgrounds and texture pages, the two title images of the original look, font atlases) | The same PNG: its reader needs the indexes or the exact pixels | `texture` lets it pass |
+| Indexed PNG whose sidecar YAML lists more than one palette, or map TIM with CLUT | The same PNG: the palette is chosen at play time | `texture` lets it pass |
+| GLB | The same GLB, with the header checked | `glb` |
+| WAV | Ogg Opus at 48 kHz, with the loop and the note in comments ([Opus](../formats/opus.md)) | `audio` |
+| Movie video (`movie/<name>/video.y4m`) | AV1 in an IVF, with libaom ([video](../formats/video.md)) | `video` |
+| Anything else (YAML, MIDI, SF2…) | Copied as is | — |
 
-- Un tipo nuevo es una entrada más en el registro (`apps/dwx/src/cook.cpp`) y la función que cocina. Antes de
-  cocinar, el plan del cocinero lee el fichero y su **YAML lateral** (el asset `<id>_meta.yaml`, si existe) y decide
-  las opciones: dejarlo pasar tal cual o el espacio de color (`color_space: srgb | linear`). Las reglas de las texturas
-  están en [KTX2](../formats/ktx2.md).
-- **Caché:** la carpeta de salida guarda en `.dwx-cook` (oculto, así no es un asset), por cada fichero, el SHA-1 de
-  su fuente, el cocinero con su versión y sus opciones, y el SHA-1 de lo que escribió. Si el YAML lateral cambia la
-  decisión, el fichero se cocina otra vez aunque no haya cambiado. Al volver a cocinar en la misma carpeta, lo que
-  no cambió se deja como está, lo que cambió (o se tocó a mano) se cocina otra vez y lo que ya no tiene fuente se
-  borra. Dos assets con los mismos bytes se cocinan una sola vez.
-- **Determinista:** el mismo paquete da los mismos bytes, con caché o sin ella.
-- Se niega a escribir en una carpeta con ficheros que no escribió `dwx cook`, y en una que esté dentro del paquete o
-  lo contenga.
-- Las dependencias de los cocineros (libktx con Basis Universal, zstd, libopus y libopusenc) y el alcance del
-  determinismo están en el ADR 0017.
+- A new type is one more entry in the registry (`apps/dwx/src/cook.cpp`) and the function that cooks it. Before
+  cooking, the cooker's plan reads the file and its **sidecar YAML** (the `<id>_meta.yaml` asset, if it exists) and
+  decides the options: let it pass as is, or the color space (`color_space: srgb | linear`). The texture rules are in
+  [KTX2](../formats/ktx2.md).
+- **Cache:** the output folder keeps in `.dwx-cook` (hidden, so it is not an asset), for each file, the SHA-1 of its
+  source, the cooker with its version and options, and the SHA-1 of what it wrote. If the sidecar YAML changes the
+  decision, the file is cooked again even if it has not changed. When cooking again in the same folder, what did not
+  change is left as is, what changed (or was edited by hand) is cooked again, and what no longer has a source is
+  deleted. Two assets with the same bytes are cooked only once.
+- **Deterministic:** the same package gives the same bytes, with or without the cache.
+- It refuses to write to a folder with files that `dwx cook` did not write, and to one that is inside the package or
+  contains it.
+- The cookers' dependencies (libktx with Basis Universal, zstd, libopus and libopusenc) and the scope of the
+  determinism are in ADR 0017.
 
-## Empaquetar
+## Packing
 
-`dwx pack` guarda un paquete (fuente o cocinado) en un [archivo `.pak`](../formats/pak.md): el `pack.yaml` y todos
-sus ficheros, ordenados por ID, con el SHA-1 de cada uno, cada fichero comprimido con zstd si así ocupa menos. Al terminar abre el archivo y lee cada
-entrada para comprobar que coincide con la carpeta.
+`dwx pack` stores a package (source or cooked) in a [`.pak` archive](../formats/pak.md): the `pack.yaml` and all its
+files, sorted by ID, with the SHA-1 of each one, each file compressed with zstd if that makes it smaller. When it
+finishes it opens the archive and reads every entry to check that it matches the folder.
 
-El motor monta un `.pak` igual que una carpeta (`PakFileSystem`), así que en una misma pila puede haber paquetes de
-las dos clases: por ejemplo, la base en `.pak` y un mod en su carpeta mientras se edita.
+The engine mounts a `.pak` the same as a folder (`PakFileSystem`), so one stack can hold both kinds of packages: for
+example, the base as a `.pak` and a mod in its folder while it is being edited.
 
 ```text
 dwx extract disco.cue --out content/base
@@ -140,74 +141,78 @@ dwx pack content/cooked -o base.pak
 dwx validate [--schemas <carpeta>] [--with <carpeta>]... [--engine] <paquete | carpeta de paquetes>
 ```
 
-Comprueba un paquete, o todos los de una carpeta (`content/base` o `content`; carpetas y archivos `.pak`), tal como los va a usar el motor y antes
-de que los use. Monta la pila con el VFS, igual que el juego, así que un mod se comprueba junto con la base que
-sobrescribe. Los esquemas se leen de `--schemas` o, si no se da, de la carpeta `schemas` junto a los paquetes
-(`content/schemas` en los dos ejemplos); un paquete que no la tiene al lado toma la de una carpeta más arriba, como los
-del propio juego (`content/packs/game` lee `content/schemas`). `--with` monta además los paquetes de otra carpeta (un paquete o una carpeta
-de paquetes), para comprobar un paquete que depende de otro que está en otro sitio; esos paquetes también se
-comprueban. Los paquetes de la carpeta se comprueban como mods, como los carga el juego desde una carpeta de mods:
-solo pueden declarar las capas `mods` o `user` y no tienen los derechos de la base (ids sin espacio de nombres e
-`index` de las tablas). Con `--engine` se comprueban como paquetes del propio juego, y los de `--with` lo son siempre.
-Así se comprueba el paquete `game` del repositorio sobre una extracción de `base`:
-`dwx validate --engine --schemas content/schemas --with <contenido>/base content/packs/game`, y un mod:
-`dwx validate --with <contenido>/base <mod>`. El código está en `apps/dwx/src/validate.cpp`.
+Checks a package, or all those in a folder (`content/base` or `content`; folders and `.pak` archives), the way the
+engine is going to use them and before it uses them. It mounts the stack with the VFS, the same as the game, so a mod
+is checked together with the base it overrides. The schemas are read from `--schemas` or, if it is not given, from
+the `schemas` folder next to the packages (`content/schemas` in both examples); a package that does not have it
+alongside takes the one from a folder further up, like the game's own (`content/packs/game` reads `content/schemas`).
+`--with` also mounts the packages of another folder (a package or a folder of packages), to check a package that
+depends on another one located elsewhere; those packages are also checked. The packages in the folder are checked as
+mods, the way the game loads them from a mods folder: they can only declare the `mods` or `user` layers and do not
+have the base's rights (ids without a namespace and the tables' `index`). With `--engine` they are checked as the
+game's own packages, and those from `--with` always are. This is how the repository's `game` package is checked on a
+`base` extraction:
+`dwx validate --engine --schemas content/schemas --with <contenido>/base content/packs/game`, and a mod:
+`dwx validate --with <contenido>/base <mod>`. The code is in `apps/dwx/src/validate.cpp`.
 
-Qué comprueba:
+What it checks:
 
-1. **Manifiestos:** cada `pack.yaml` sigue `pack.schema.json`.
-2. **Esquemas:** cada documento YAML sigue el esquema que le asignan las reglas `schemas` de los manifiestos montados
-   ([VFS](vfs.md#esquemas-de-los-documentos)). Es un error que un documento no encaje en ninguna regla, que encaje en
-   reglas de dos esquemas o que el esquema no exista o use algo fuera del
-   [subconjunto de JSON Schema](json-schema.md) que entiende el motor.
-3. **Referencias:** cada texto que el esquema marca con `assetReference` tiene que llevar a un asset de la pila
-   ([cómo se escribe](json-schema.md#referencias-a-assets)). Hoy lo marcan el SoundFont, las muestras y las pistas de
-   los bancos de sonido y de música, el destino de cada warp y el Digimon de cada NPC de un mapa, la textura y el
-   modelo de cada efecto, el modelo de cada contrato y las salidas del informe de cobertura. Si la referencia nombra
-   un fichero, su tipo tiene que coincidir, o ser el tipo del que `dwx cook` hizo el fichero: un paquete cocinado
-   conserva los documentos tal como se extrajeron, así que siguen nombrando `sample_001.wav` o `background.png`
-   aunque el fichero sea `.opus` o `.ktx2`.
-4. **Metadatos:** cada `<nombre>_meta` describe un asset `<nombre>` que tiene que existir.
-5. **Modelos glTF:** las imágenes y los buffers que un modelo lee de fuera de su fichero tienen que estar junto a él.
-6. **Contratos:** cada `digimon/<id>/model` necesita su `digimon/<id>/contract`, y el modelo que nombra un contrato
-   tiene que tener una piel con un hueso por cada entrada de `joint_parents`, con esos padres y en ese orden, y una
-   animación con cada nombre de `animations` (puede tener más). El extractor escribe el contrato con el esqueleto del
-   tipo en el ejecutable y las animaciones del MMD original ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/model_contract.schema.json)),
-   así que un modelo HD que lo cumple se puede animar como el original. Las animaciones del MMD que el extractor no
-   pudo convertir van en `unconverted_animations`, que no se comprueba.
-7. **Lectura:** cada asset se abre con los lectores del motor (`assets::checkContent`), lo mismo que
-   `dwe-game --check-content`: PNG, KTX2 (transcodificada a BC7), glTF, YAML, Ogg Opus (`.opus` y `.ogg`, decodificado
-   entero), y las cabeceras de WAV, SF2, MIDI e Y4M. Así un paquete cocinado se comprueba igual que uno extraído. Los
-   assets que el juego lee con un lector propio pasan también por ese lector: las imágenes que el juego lee de su PNG
-   (`assets::PngOnlyImages`) tienen que ser un PNG que su lector lea, indexado para los mapas y de píxeles exactos para
-   la fuente, así que un paquete cocinado que convirtió un fondo de mapa a KTX2 no pasa; cada `.glb` por `parseModel`
-   (piel, pesos, articulaciones y `extras` de los clips), cada `map/<id>/data` por `parseMapDocument` y `data/maps` por
-   `parseMapTable`, que no admiten claves de más ni de menos. Un fallo se informa con el ID del asset y el motivo.
+1. **Manifests:** each `pack.yaml` follows `pack.schema.json`.
+2. **Schemas:** each YAML document follows the schema that the `schemas` rules of the mounted manifests assign to it
+   ([VFS](vfs.md#document-schemas)). It is an error if a document fits no rule, fits rules of two schemas,
+   or the schema does not exist or uses something outside the [JSON Schema subset](json-schema.md) the engine
+   understands.
+3. **References:** each text that the schema marks with `assetReference` has to lead to an asset in the stack
+   ([how it is written](json-schema.md#asset-references)). Today they are marked by the SoundFont, the samples and
+   the tracks of the sound and music banks, the destination of each warp and the Digimon of each NPC of a map, the
+   texture and the model of each effect, the model of each contract, and the outputs of the coverage report. If the
+   reference names a file, its type has to match, or be the type that `dwx cook` made the file into: a cooked
+   package keeps the documents as they were extracted, so they still name `sample_001.wav` or `background.png` even
+   if the file is `.opus` or `.ktx2`.
+4. **Metadata:** each `<name>_meta` describes an asset `<name>` that has to exist.
+5. **glTF models:** the images and buffers that a model reads from outside its file have to be next to it.
+6. **Contracts:** each `digimon/<id>/model` needs its `digimon/<id>/contract`, and the model that a contract names
+   has to have a skin with one bone for each entry of `joint_parents`, with those parents and in that order, and an
+   animation with each name in `animations` (it may have more). The extractor writes the contract with the skeleton
+   of the type in the executable and the animations of the original MMD ([schema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/model_contract.schema.json)),
+   so an HD model that meets it can be animated like the original. The MMD animations that the extractor could not
+   convert go in `unconverted_animations`, which is not checked.
+7. **Reading:** each asset is opened with the engine's readers (`assets::checkContent`), the same as
+   `dwe-game --check-content`: PNG, KTX2 (transcoded to BC7), glTF, YAML, Ogg Opus (`.opus` and `.ogg`, fully
+   decoded), and the headers of WAV, SF2, MIDI and Y4M. So a cooked package is checked the same as an extracted one.
+   The assets that the game reads with its own reader also go through that reader: the images that the game reads
+   from its PNG (`assets::PngOnlyImages`) have to be a PNG its reader can read, indexed for the maps and with exact
+   pixels for the font, so a cooked package that converted a map background to KTX2 does not pass; each `.glb` goes
+   through `parseModel` (skin, weights, joints and the clips' `extras`), each `map/<id>/data` through
+   `parseMapDocument` and `data/maps` through `parseMapTable`, which allow neither extra nor missing keys. A failure
+   is reported with the asset ID and the reason.
 
-Límite conocido: los operandos de los scripts (`script/…` y el `script.yaml` de cada efecto) se guardan tal como
-están en el disco, y el esquema solo comprueba su forma (un número, una variable, una dirección o una etiqueta), no lo
-que significan para cada instrucción. Un id de juego que un script lleve como número (un mapa, un objeto, un Digimon)
-no se sigue como referencia.
+Known limit: the operands of the scripts (`script/…` and each effect's `script.yaml`) are stored as they are on the
+disc, and the schema only checks their form (a number, a variable, an address or a label), not what they mean for
+each instruction. A game id that a script carries as a number (a map, an item, a Digimon) is not followed as a
+reference.
 
-El informe tiene una línea por problema, `fichero:línea:columna: mensaje` (sin línea ni columna si no se refiere a un
-sitio del YAML), ordenadas por fichero, sitio y mensaje, y un resumen. La misma pila da siempre el mismo informe. Sale
-con 0 si no hay problemas, 1 si los hay y 2 si no se puede comprobar (no hay paquetes o no se pueden montar).
+The report has one line per problem, `file:line:column: message` (without line or column if it does not refer to a
+place in the YAML), sorted by file, place and message, and a summary. The same stack always gives the same report. It
+exits with 0 if there are no problems, 1 if there are, and 2 if it cannot be checked (there are no packages or they
+cannot be mounted).
 
-Con el disco US, recién extraído: 1 paquete, 4813 assets, 2078 documentos, 9271 referencias, 178 contratos y ningún
-problema. El test del disco (`DWE_DISC`, en `apps/dwx/tests/real_disc_tests.cpp`) extrae, valida y abre el paquete
-base con el mismo resultado; sin disco se salta. En el build `ci`, `dwx validate` sobre ese paquete tarda alrededor de
-un minuto: abrir los assets (`checkContent`, que los reparte entre hilos, como mucho 16) son unos 13 s y el resto es
-comprobar los documentos contra sus esquemas, en un hilo.
+With the US disc, freshly extracted: 1 package, 4813 assets, 2078 documents, 9271 references, 178 contracts and no
+problems. The disc test (`DWE_DISC`, in `apps/dwx/tests/real_disc_tests.cpp`) extracts, validates and opens the base
+package with the same result; without a disc it is skipped. In the `ci` build, `dwx validate` on that package takes
+about a minute: opening the assets (`checkContent`, which spreads them across threads, at most 16) takes about 13 s
+and the rest is checking the documents against their schemas, on one thread.
 
-Sin disco, en CI, los tests de los extractores que montan un disco sintético (imágenes, mapas, tablas, sonido,
-scripts y películas) escriben el paquete base de lo extraído y lo pasan por `validatePacks` con los esquemas de `content/schemas`
-(`apps/dwx/tests/written_pack.hpp`): así se comprueba siempre que el motor carga lo que escribe `dwx extract`.
+Without a disc, in CI, the extractor tests that mount a synthetic disc (images, maps, tables, sound, scripts and
+movies) write the base package of what was extracted and pass it through `validatePacks` with the schemas in
+`content/schemas` (`apps/dwx/tests/written_pack.hpp`): this always checks that the engine loads what `dwx extract`
+writes.
 
-## Dónde vive cada cosa
+## Where each thing lives
 
-| Qué | Dónde |
+| What | Where |
 |---|---|
-| Base extraída (`content/base/`) y cocinada (`content/cooked/`) | Solo en la máquina de cada usuario; están en `.gitignore` |
-| Datos y Lua creados por el equipo | `content/packs/` en este repositorio |
-| Arte fuente del equipo (`.blend`, `.kra`, glTF, audio) | Repositorio de assets con Git LFS |
-| Fixtures para tests y CI | Los `tests/` de cada módulo (discos sintéticos en el código, `tests/fixtures/`) y `tests/mods/`, hechos por el equipo |
+| Extracted base (`content/base/`) and cooked (`content/cooked/`) | Only on each user's machine; they are in `.gitignore` |
+| Data and Lua created by the team | `content/packs/` in this repository |
+| The team's source art (`.blend`, `.kra`, glTF, audio) | Assets repository with Git LFS |
+| Fixtures for tests and CI | Each module's `tests/` (synthetic discs in the code, `tests/fixtures/`) and `tests/mods/`, made by the team |

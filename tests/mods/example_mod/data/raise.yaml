@@ -1,4 +1,4 @@
-# Los cuidados del Digimon nuevo, que lo hacen compañero. Valores inventados para los tests.
+# The new Digimon's care data, which makes it a partner. Made-up values for the tests.
 raise:
 - digimon: "example_mod:pebblemon"
   hunger_times:

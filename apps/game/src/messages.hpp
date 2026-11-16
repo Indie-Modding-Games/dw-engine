@@ -56,7 +56,7 @@ inline constexpr std::string_view UnknownSavedTextFont =
     "game: the saved text font '{}' is unknown; using the default";
 // The player's UI skin (ui_skin_setting.cpp): the id and why it cannot be put on.
 inline constexpr std::string_view UnusableUiSkin = "game: cannot use the UI skin '{}': {}";
-// The player's UI addon (ui_addon_setting.cpp, docs/modding/interfaces.md).
+// The player's UI addon (ui_addon_setting.cpp, docs/modding/ui-addons.md).
 inline constexpr std::string_view UnreadableUiAddon = "game: the UI addon in {} is not offered: {}";
 inline constexpr std::string_view UnknownUiAddon = "game: no UI addon '{}' to pick";
 inline constexpr std::string_view MissingUiAddon = "the packs have no UI addon {}";

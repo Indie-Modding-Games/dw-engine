@@ -1,7 +1,7 @@
 title.main: "Pausa"
 title.minimap: "Minimapa"
 title.options: "Opciones"
-# Bajo el recuadro de pausa: la tecla que abre las opciones desde la pausa ({key}, Esc en el teclado; Select/Back en el mando).
+# Under the pause box: the key that opens the options from the pause ({key}, Esc on the keyboard; Select/Back on the pad).
 settings_hint: "{key} Opciones"
 date: "Año {year}   Día {day}"
 continue: "Continuar"
@@ -33,14 +33,14 @@ quick_save: "Guardar"
 to_title: "Volver a la portada"
 quit: "Salir del juego"
 minimap_mode: "Mostrar minimapa"
-# El minimapa redondo (una mejora del motor): se ve o no, con los dos aspectos.
+# The round minimap (an engine improvement): shown or not, with both looks.
 minimap_mode.on: "Sí"
 minimap_mode.off: "No"
-# Enemigos en el minimapa (una mejora del motor): un punto rojo por cada personaje del mapa que puede empezar una
-# batalla (encendido por defecto; apagado, el minimapa solo con el jugador y el compañero).
+# Enemies on the minimap (an engine improvement): a red dot for each character on the map that can start a
+# battle (on by default; off, the minimap shows only the player and the partner).
 minimap_enemies: "Enemigos en el minimapa"
-# Objetos en el minimapa (una mejora del motor): un rombo verde por cada objeto tirado en el suelo del mapa (encendido
-# por defecto; apagado, el minimapa sin ellos).
+# Items on the minimap (an engine improvement): a green diamond for each item lying on the map's ground (on
+# by default; off, the minimap without them).
 minimap_items: "Objetos en el minimapa"
 minimap_size: "Tamaño"
 minimap_size.small: "Pequeño"
@@ -50,71 +50,71 @@ display_mode: "Pantalla"
 display_mode.fullscreen: "Completa"
 display_mode.window: "Ventana"
 ui_scale: "Escala de la interfaz"
-# {percent} es la escala en porcentaje, un número entero.
+# {percent} is the scale as a percentage, a whole number.
 ui_scale.value: "{percent} %"
 vsync: "Sincronización vertical"
 ui_skin: "Aspecto de la interfaz"
-# La interfaz entera: la del juego o una de ui/addons (docs/modding/interfaces.md).
+# The whole interface: the game's own or one from ui/addons (docs/modding/ui-addons.md).
 ui_addon: "Interfaz"
 ui_addon.default: "La del juego"
 ui_addon.safe: "La del juego (modo seguro)"
 ui_plugins: "Complementos"
-# Exploración libre: los scripts abren todos sus caminos, diga lo que diga la historia (apagada por defecto).
+# Free exploration: scripts open all their paths, whatever the story says (off by default).
 free_exploration: "Exploración libre"
-# Movimiento suave: los personajes y la cámara se deslizan entre los fotogramas del original (encendido por defecto).
+# Smooth motion: characters and the camera glide between the original's frames (on by default).
 smooth_motion: "Movimiento suave"
-# Aviso de guardado: una figura pequeña y «Guardando» en una esquina mientras el juego guarda (encendido por defecto).
+# Save notice: a small figure and «Guardando» in a corner while the game saves (on by default).
 save_notice: "Aviso de guardado"
-# Autoguardado: el juego guarda solo en la ranura de la propia aventura (encendido por defecto; apagado, solo
-# escriben los guardados del jugador).
+# Autosave: the game saves by itself in the adventure's own slot (on by default; off, only
+# the player's saves write).
 autosave: "Autoguardado"
-# Volumen de la música y de los efectos (una mejora del motor; el original no tiene opciones de sonido): un paso de 0
-# (silencio) a 10 (el nivel del original, por defecto). La música incluye el sonido de las películas.
+# Music and effects volume (an engine improvement; the original has no sound options): a step from 0
+# (silence) to 10 (the original's level, the default). Music includes the movies' sound.
 music_volume: "Volumen de música"
 effects_volume: "Volumen de efectos"
-# Hora en dígitos: la hora del juego como HH:MM en una caja pequeña bajo el reloj del campo (encendido por defecto).
+# Digital time: the game time as HH:MM in a small box under the field clock (on by default).
 digital_time: "Hora en dígitos"
-# Cambios en lote: el trueque de objetos y los sobres de la tienda preguntan cuántos de una vez (encendido por defecto).
+# Bulk trades: item trading and the shop's packs ask how many at once (on by default).
 bulk_trades: "Cambios en lote"
-# Requisitos de evolución: el árbol de la tabla dice qué pide cada destino y cómo va el compañero (encendido por defecto).
+# Evolution requirements: the table's tree says what each target asks for and how the partner is doing (on by default).
 evolution_requirements: "Requisitos de evolución"
 translated_signs: "Carteles traducidos"
-# Extras de la ficha: la barra de cansancio y los errores de cuidado del compañero en su ficha, que el original esconde
-# (encendido por defecto).
+# Status extras: the tiredness bar and the partner's care mistakes on its status page, which the original hides
+# (on by default).
 status_extras: "Extras de la ficha"
-# Etapas canónicas: el árbol nombra las etapas como la serie y dibuja una caja Mega (apagada por defecto).
+# Canonical stages: the tree names the stages as the series does and draws a Mega box (off by default).
 canonical_stages: "Etapas canónicas"
 rare_items: "Objetos raros"
 walk_control: "Caminar con"
 walk_control.keys: "Teclado/mando"
 walk_control.mouse: "Ratón"
-# Nombres largos: la caja de nombres admite hasta doce letras en vez de seis (encendido por defecto).
+# Long names: the name box accepts up to twelve letters instead of six (on by default).
 long_names: "Nombres largos"
-# Barra de reclutamiento: mientras un trabajo o una partida decide si alguien se une a la ciudad (la tienda del cañón,
-# el juego de las piedras), una barra enseña cuánto falta (encendida por defecto).
+# Recruitment bar: while a job or a game decides whether someone joins the city (the cannon shop,
+# the stone game), a bar shows how much is left (on by default).
 shop_job_bar: "Barra de reclutamiento"
-# Espacio tras los nombres: un nombre que inserta un texto lleva un espacio cuando el texto lo pega a la palabra
-# siguiente (encendido por defecto).
+# Space after names: a name that inserts a text gets a space when the text would stick it to the next
+# word (on by default).
 name_spacing: "Espacio tras los nombres"
-# Extras de la tienda: la descripción del objeto bajo la lista, cuántos tienes de cada uno y el dinero que deja el trato
-# (apagado por defecto: la tienda del original solo enseña la descripción con Pausa).
+# Shop extras: the item description under the list, how many you have of each and the money the deal leaves
+# (off by default: the original's shop only shows the description with Pause).
 shop_extras: "Extras de la tienda"
 favorite_food: "Mostrar la comida favorita"
-# Arreglos gráficos: el aspecto original dibuja bien lo que el original lee de una parte equivocada de sus texturas (la
-# etiqueta de felicidad de la ficha). Apagado por defecto, como el original.
+# Graphics fixes: the original look draws correctly what the original reads from a wrong part of its textures (the
+# status page's happiness label). Off by default, like the original.
 art_fixes: "Arreglos gráficos"
-# Herramientas de desarrollo: la consola (F1), el menú de desarrollo (F2) y la capa del mapa (F3).
+# Dev tools: the console (F1), the dev menu (F2) and the map layer (F3).
 dev_tools: "Herramientas de desarrollo"
-# Música continua: un mapa cuya canción ya suena la deja seguir en vez de empezarla otra vez
-# (encendida por defecto).
+# Continuous music: a map whose song is already playing lets it go on instead of starting it again
+# (on by default).
 continuous_music: "Música continua"
-# Reverberación: la del chip de sonido en los tonos que la piden, como el original (encendida por defecto).
+# Reverb: the sound chip's, on the tones that ask for it, like the original (on by default).
 reverb: "Reverberación"
-# Varias necesidades: la burbuja sobre el compañero enseña hasta tres de sus necesidades a la vez, la más urgente
-# primero (encendida por defecto; apagada, la del original: una cada vez, turnándose las dos más urgentes).
+# Several needs: the bubble over the partner shows up to three of its needs at once, the most urgent
+# first (on by default; off, the original's: one at a time, alternating the two most urgent).
 need_bubble_stack: "Varias necesidades"
-# Estilo chibi: los modelos del juego original ya son chibi; un modelo de fuera (de un mod o importado) que no lo
-# sea se dibuja con las proporciones del original, solo el dibujo: no o los externos (por defecto).
+# Chibi style: the original game's models are already chibi; an outside model (from a mod or imported) that is not
+# is drawn with the original's proportions, the drawing only: no, or the external ones (the default).
 chibi_style: "Estilo chibi"
 chibi_style.off: "No"
 chibi_style.external: "Externos"
@@ -122,11 +122,11 @@ chibi_style.external: "Externos"
 year_label: "Año"
 day_label: "Día"
 player_tab_chart: "Árbol"
-# Las cinco pestañas de la ficha comparten el ancho del recuadro; «Medallas» no cabe junto a las otras cuatro.
+# The five tabs of the status page share the box width; «Medallas» does not fit next to the other four.
 player_tab_medals: "Med."
 player_tab_card: "Cartas"
 player_tab_city: "Ciudad"
-# La pestaña de la ciudad con las pestañas mínimas (skin.yaml layout: pause_menu: tabs: minimal).
+# The city tab with the minimal tabs (skin.yaml layout: pause_menu: tabs: minimal).
 player_tab_prosperity: "Prosperidad"
 player_raised: "Criados"
 player_items: "Objetos"
@@ -140,8 +140,8 @@ chart_level.2: "Entrenamiento"
 chart_level.3: "Novato"
 chart_level.4: "Campeón"
 chart_level.5: "Ultra"
-# Las etapas con las etapas canónicas encendidas (chart_stage.<etapa>; huevo y ultra aún no tienen especies). Glosario:
-# docs/guides/glosario-es.md.
+# The stages with canonical stages on (chart_stage.<stage>; egg and ultra have no species yet). Glossary:
+# docs/guides/spanish-glossary.md.
 chart_stage.egg: "Digihuevo"
 chart_stage.fresh: "Bebé I"
 chart_stage.in_training: "Bebé II"
@@ -151,8 +151,8 @@ chart_stage.ultimate: "Perfecto"
 chart_stage.mega: "Supremo"
 chart_stage.ultra: "Súper Supremo"
 
-# Requisitos de evolución en el árbol de la tabla (una mejora del motor): las líneas del panel. Los rangos y valores son
-# números que escribe el juego; {name} es el nombre de una forma.
+# Evolution requirements in the table's tree (an engine improvement): the panel's lines. The ranges and values are
+# numbers the game writes; {name} is the name of a form.
 evoreq.care: "Errores"
 evoreq.weight: "Peso"
 evoreq.stats: "Atributos"
@@ -170,15 +170,15 @@ evoreq.happy: "Felicidad"
 evoreq.battles: "Batallas"
 evoreq.techs: "Técnicas"
 evoreq.special: "Evolución especial"
-# Una condición de un ruleset (el contenido oculto): un residente de la ciudad, la hora, una copa ganada.
+# A ruleset condition (the hidden content): a city resident, the time, a cup won.
 evoreq.gate: "Condición especial"
 evoreq.always: "Siempre"
 evoreq.time: "Revisión"
 evoreq.hours: "{hours} h"
-# El contador de evolución del compañero frente a las horas desde las que revisa su nivel.
+# The partner's evolution counter against the hours from which it checks its level.
 evoreq.hours_of: "{hours}/{total} h"
 evoreq.fallback: "Si no hay otra"
-# Cuántos de los cuatro grupos se cumplen.
+# How many of the four groups are met.
 evoreq.ready: "{met} de {total} listos"
 evoreq.next: "La elige al revisar"
 evoreq.next_other: "Al revisar: {name}"
@@ -187,10 +187,10 @@ evoreq.unknown: "???"
 medals_chart: "Medallero"
 card_list: "Lista de cartas"
 
-# La pestaña Ciudad (una mejora de dwe): quién vive ya en la ciudad y quién falta, con sus puntos de prosperidad.
+# The City tab (a dwe improvement): who already lives in the city and who is missing, with their prosperity points.
 city_prosperity: "Prosperidad"
 city_residents: "Residentes"
-# Las mejoras gráficas del campo (opciones del motor; docs/architecture/render.md).
+# The field's graphics improvements (engine options; docs/architecture/render.md).
 shadows: "Sombras"
 shadows.sun: "Del sol"
 shadows.round: "Redondas"
@@ -206,17 +206,17 @@ texture_filter.nearest: "Píxeles"
 enhanced_lighting: "Luz mejorada"
 vivid_colors: "Colores vivos"
 
-# La página de opciones por pestañas (docs/modulos/apps/game.md, «Opciones en partida»). Las pestañas comparten la fila
-# de arriba del recuadro: nombres cortos.
+# The options page by tabs (docs/modules/apps/game.md, «Opciones en partida»). The tabs share the top row
+# of the box: short names.
 tab.game: "Juego"
 tab.graphics: "Gráficos"
 tab.sound: "Sonido"
 tab.interface: "Interfaz"
-# La etiqueta junto a la descripción de la fila enfocada: si con su valor actual el juego hace más que el original o se
-# comporta como él.
+# The label next to the focused row's description: whether with its current value the game does more than the original or
+# behaves like it.
 tag.improvement: "Mejora"
 tag.original: "Como el original"
-# Las teclas al pie de las opciones: Q/E cambian de pestaña, ←/→ cambian el valor.
+# The keys at the foot of the options: Q/E switch tab, ←/→ change the value.
 hint.tabs: "Pestaña"
 hint.change: "Cambiar"
 options_reset: "Restablecer valores"
@@ -250,15 +250,15 @@ fair_evolution_average: "Media de evolución justa"
 fair_move_forgetting: "Olvidar técnicas justo"
 fair_card_stock: "Tienda de cartas sin repetidas"
 choose_egg_after_lives_lost: "Elegir el huevo al perder las vidas"
-# Hablar desde más lejos: hablar y leer carteles llega un poco más lejos (apagado por defecto).
+# Talk from farther: talking and reading signs reach a little farther (off by default).
 generous_talk: "Hablar desde más lejos"
-# Baños extra: unas pocas casetas de baño más donde el compañero puede ir (apagado por defecto).
+# Extra toilets: a few more toilet stalls where the partner can go (off by default).
 extra_toilets: "Baños extra"
-# {tab} es el nombre de la pestaña.
+# {tab} is the tab name.
 reset_question: "¿Restablecer los valores de «{tab}»?"
 reset_note: "Pantalla, aspecto, idioma y letra no cambian."
 reset_confirm: "Restablecer"
-# Las descripciones de las filas: una o dos líneas bajo la lista.
+# The row descriptions: one or two lines under the list.
 help.free_exploration: "Los caminos de los mapas se abren todos, diga lo que diga la historia."
 help.walk_control: "Camina con el teclado y el mando o con el ratón (nunca los dos a la vez)."
 help.autosave: "El juego guarda solo en la ranura de tu aventura cuando las reglas lo piden."
@@ -327,5 +327,5 @@ help.options_back: "Vuelve al menú."
 help.quick_save: "Guarda la partida ahora en su ranura, sin cerrar nada más."
 help.to_title: "Vuelve a la portada. Pregunta antes si quieres guardar."
 help.quit: "Cierra el juego. Pregunta antes si quieres guardar."
-# Las mismas opciones sobre la portada, sin partida que guardar.
+# The same options on the title screen, with no game to save.
 help.quit_title: "Cierra el juego."

@@ -1339,7 +1339,7 @@ void publishSmallChart(Ui& ui, std::size_t count) {
   ui.setSetting("player.chart.count", static_cast<double>(count));
 }
 
-// The chart's pages and Mega box (docs/modulos/apps/game.md, «Etapas canónicas»): the original's
+// The chart's pages and Mega box (docs/modules/apps/game.md, «Canonical stages»): the original's
 // one page while every box's cells fit its grid; the Mega box (the canonical stages or the Mega
 // step's Megas) as a sixth box on the same page; and the cells past a box's grid on a next page
 // with the same boxes, reached with Down past a column's last cell, Down on the tab, the wheel or

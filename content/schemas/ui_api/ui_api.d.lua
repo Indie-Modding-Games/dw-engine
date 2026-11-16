@@ -4,357 +4,357 @@
 
 ui = {}
 
---- El valor de un ajuste que el juego publica; nil si no lo publica.
+--- The value of a setting the game publishes; nil if it does not publish it.
 ---@param name string
 ---@return any
 function ui.setting(name) end
 
---- Manda un comando al juego, que lo atiende una vez.
+--- Sends a command to the game, which handles it once.
 ---@param name string
 ---@param value any?
 function ui.send(name, value) end
 
---- Cuenta un estado al juego, que lee el último valor cuando lo necesita.
+--- Tells the game a state; the game reads the last value when it needs it.
 ---@param name string
 ---@param value any?
 function ui.report(name, value) end
 
---- Enseña una pantalla; modal toma la navegación. args llega a su on_show.
+--- Shows a screen; modal takes the navigation. args reaches its on_show.
 ---@param screen string
 ---@param modal boolean?
 ---@param args table?
 function ui.show(screen, modal, args) end
 
---- Esconde una pantalla.
+--- Hides a screen.
 ---@param screen string
 function ui.hide(screen) end
 
---- Si una pantalla se ve.
+--- Whether a screen is visible.
 ---@param screen string
 ---@return boolean
 function ui.is_visible(screen) end
 
---- El valor que el aspecto da a una opción de disposición en esta pantalla; nil sin él.
+--- The value the skin gives a layout option on this screen; nil without one.
 ---@param option string
 ---@return string?
 function ui.layout(option) end
 
---- El nombre del control que hace una acción en el dispositivo en uso.
+--- The name of the control that performs an action on the device in use.
 ---@param action string
 ---@return string
 function ui.prompt(action) end
 
---- El dispositivo en uso: keyboard_mouse o gamepad.
+--- The device in use: keyboard_mouse or gamepad.
 ---@return string
 function ui.device() end
 
---- La familia del mando en uso.
+--- The family of the gamepad in use.
 ---@return string
 function ui.gamepad_family() end
 
---- Los idiomas que el jugador puede elegir.
+--- The languages the player can choose.
 ---@return string[]
 function ui.languages() end
 
---- Los aspectos que el jugador puede elegir.
+--- The skins the player can choose.
 ---@return string[]
 function ui.skins() end
 
---- La clave de texto del nombre de un aspecto; vacía si no existe.
+--- The text key of a skin's name; empty if it does not exist.
 ---@param id string
 ---@return string
 function ui.skin_name_key(id) end
 
---- Suena box_open, box_close o confirm; false con otro nombre.
+--- Plays box_open, box_close or confirm; false for any other name.
 ---@param name string
 ---@return boolean
 function ui.cue(name) end
 
---- El texto de una clave en el idioma del jugador, con sus huecos rellenos.
+--- The text of a key in the player's language, with its placeholders filled in.
 ---@param key string
 ---@param args table?
 ---@return string
 function t(key, args) end
 
---- El nombre con el que la interfaz cargó el documento.
+--- The name the interface loaded the document with.
 ---@type string
 document_name = nil
 
 hooks = {}
 
---- Llama a handler cada vez que llega el evento; hasta 64 por documento.
+--- Calls handler each time the event arrives; up to 64 per document.
 ---@param event string
 ---@param handler fun(event: table, document: Element)
 function hooks.on(event, handler) end
 
---- Deja de llamar a handler con ese evento.
+--- Stops calling handler for that event.
 ---@param event string
 ---@param handler function
 function hooks.off(event, handler) end
 
---- Lo llama la interfaz al enseñar el documento.
+--- Called by the interface when the document is shown.
 ---@param document Element
 ---@param args table
 function on_show(document, args) end
 
---- Lo llama la interfaz al esconder el documento.
+--- Called by the interface when the document is hidden.
 ---@param document Element
 function on_hide(document) end
 
---- Lo llama la interfaz cuando cambia un ajuste, con el documento a la vista.
+--- Called by the interface when a setting changes, with the document visible.
 ---@param document Element
 ---@param name string
 function on_setting(document, name) end
 
---- Una acción de navegación (confirm, cancel, menu...); true si el documento la atiende.
+--- A navigation action (confirm, cancel, menu...); true if the document handles it.
 ---@param document Element
 ---@param action string
 ---@return boolean?
 function on_action(document, action) end
 
---- Cada frame con el documento a la vista.
+--- Every frame while the document is visible.
 ---@param document Element
 ---@param seconds number
 function on_tick(document, seconds) end
 
---- Cambió el dispositivo en uso.
+--- The device in use changed.
 ---@param document Element
 function on_device(document) end
 
---- Cambió el idioma.
+--- The language changed.
 ---@param document Element
 function on_language(document) end
 
 ---@class Element
----@field id string Su id (campo de solo lectura).
+---@field id string Its id (a read-only field).
 local Element = {}
 
---- Si el elemento existe.
+--- Whether the element exists.
 ---@return boolean
 function Element:valid() end
 
---- El elemento con ese id dentro de este.
+--- The element with that id inside this one.
 ---@param id string
 ---@return Element
 function Element:get(id) end
 
---- Pone su texto.
+--- Sets its text.
 ---@param text string
 function Element:set_text(text) end
 
---- Lo convierte en el dibujo del control que hace la acción.
+--- Turns it into the picture of the control that performs the action.
 ---@param action string
 ---@param icon boolean?
 function Element:set_prompt(action, icon) end
 
---- Pone un texto con sus marcas {prompt:acción} dibujadas como controles.
+--- Sets a text with its {prompt:action} marks drawn as controls.
 ---@param text string
 ---@param original boolean?
 function Element:set_prompt_text(text, original) end
 
---- Su contenido.
+--- Its content.
 ---@return string
 function Element:text() end
 
---- Pone o quita una clase.
+--- Adds or removes a class.
 ---@param name string
 ---@param on boolean
 function Element:set_class(name, on) end
 
---- Si tiene una clase.
+--- Whether it has a class.
 ---@param name string
 ---@return boolean
 function Element:has_class(name) end
 
---- El valor de un atributo; nil sin él.
+--- The value of an attribute; nil without one.
 ---@param name string
 ---@return string?
 function Element:attribute(name) end
 
---- Pone un atributo; no uno de evento (on...).
+--- Sets an attribute; not an event one (on...).
 ---@param name string
 ---@param value string
 function Element:set_attribute(name, value) end
 
---- Pone una propiedad de estilo.
+--- Sets a style property.
 ---@param name string
 ---@param value string
 function Element:set_property(name, value) end
 
---- Quita una propiedad que puso set_property.
+--- Removes a property that set_property set.
 ---@param name string
 function Element:remove_property(name) end
 
---- Su caja en dp desde la esquina de la ventana: izquierda, arriba, ancho y alto.
+--- Its box in dp from the window's corner: left, top, width and height.
 ---@return number
 ---@return number
 ---@return number
 ---@return number
 function Element:rect() end
 
---- Le da el foco.
+--- Gives it the focus.
 function Element:focus() end
 
---- Si tiene el foco.
+--- Whether it has the focus.
 ---@return boolean
 function Element:has_focus() end
 
---- Lo pulsa.
+--- Presses it.
 function Element:click() end
 
---- Vuelve una lista arriba.
+--- Scrolls a list back to the top.
 function Element:scroll_to_top() end
 
 ---@class Event
----@field type string El tipo del evento (campo de solo lectura).
----@field wheel number Cuánto giró la rueda, positivo hacia abajo (campo de solo lectura).
+---@field type string The event's type (a read-only field).
+---@field wheel number How far the wheel turned, positive downward (a read-only field).
 local Event = {}
 
---- No deja que el evento siga subiendo.
+--- Stops the event from bubbling up.
 function Event:stop() end
 
 story = {}
 
---- Lo que la caja espera del jugador: page (su confirmación), choice (una opción) o "" (nada).
+--- What the box waits for from the player: page (its confirmation), choice (an option) or "" (nothing).
 ---@return string
 function story.input() end
 
---- La caja: open, kind, size (columns, rows), top, opening, origin, prompt, input, page, speaker (name, kind), rows (cada una con runs: text, color), cursor_row y cursor_columns.
+--- The box: open, kind, size (columns, rows), top, opening, origin, prompt, input, page, speaker (name, kind), rows (each with runs: text, color), cursor_row and cursor_columns.
 ---@return table
 function story.textbox() end
 
---- La elección que se ve: options (text y row de cada una) y cursor (desde 0); nil sin elección.
+--- The visible choice: options (text and row of each) and cursor (from 0); nil without a choice.
 ---@return table?
 function story.choice() end
 
---- Pide confirmar: la página sigue o la elección toma la opción del cursor.
+--- Asks to confirm: the page goes on or the choice takes the cursor's option.
 ---@return boolean
 ---@return string?
 function story.advance() end
 
---- Pide elegir una opción de la elección, desde 0.
+--- Asks to pick an option of the choice, from 0.
 ---@param option integer
 ---@return boolean
 ---@return string?
 function story.choose(option) end
 
---- Pide cancelar, como el botón de cancelar.
+--- Asks to cancel, like the cancel button.
 ---@return boolean
 ---@return string?
 function story.cancel() end
 
 dialog = {}
 
---- El diálogo: text_key, file, question, start_on_yes, at_title y options.
+--- The dialog: text_key, file, question, start_on_yes, at_title and options.
 ---@return table
 function dialog.state() end
 
---- Sus opciones en orden (id, label_key, yes): sí y no en una pregunta, aceptar en un aviso.
+--- Its options in order (id, label_key, yes): yes and no in a question, accept in a notice.
 ---@return table
 function dialog.options() end
 
---- Si el diálogo se ve, esperando su respuesta.
+--- Whether the dialog is shown, waiting for its answer.
 ---@return boolean
 function dialog.is_open() end
 
---- Responde con una de sus opciones, desde 0.
+--- Answers with one of its options, from 0.
 ---@param option integer
 ---@return boolean
 ---@return string?
 function dialog.answer(option) end
 
---- Cancela: no a una pregunta, aceptar a un aviso.
+--- Cancels: no to a question, accept to a notice.
 ---@return boolean
 ---@return string?
 function dialog.cancel() end
 
 naming = {}
 
---- Si la caja de nombre se ve, esperando un nombre.
+--- Whether the naming box is shown, waiting for a name.
 ---@return boolean
 function naming.is_open() end
 
---- La caja: title_key, length, letters, name, grid (rows, columns) y cursor (row, column, button).
+--- The box: title_key, length, letters, name, grid (rows, columns) and cursor (row, column, button).
 ---@return table
 function naming.state() end
 
---- La letra de una celda de la rejilla, desde 0; " " si está vacía.
+--- The letter of a grid cell, from 0; " " if it is empty.
 ---@param row integer
 ---@param column integer
 ---@return string
 function naming.cell(row, column) end
 
---- Pide escribir letras de la rejilla al final del nombre.
+--- Asks to type grid letters at the end of the name.
 ---@param letters string
 ---@return boolean
 ---@return string?
 function naming.write(letters) end
 
---- Pide quitar la última letra.
+--- Asks to remove the last letter.
 ---@return boolean
 ---@return string?
 function naming.erase() end
 
---- Pide aceptar el nombre; el juego no toma uno vacío.
+--- Asks to accept the name; the game does not take an empty one.
 ---@return boolean
 ---@return string?
 function naming.accept() end
 
 clock = {}
 
---- La hora: year, day, hour, minute, night, phase (morning, day, late, night) y running (si el tiempo del juego corre).
+--- The time: year, day, hour, minute, night, phase (morning, day, late, night) and running (whether the game's time runs).
 ---@return table
 function clock.now() end
 
 field = {}
 
---- Cuánto oscurece el fundido del cambio de mapa, de 0 a 1.
+--- How dark the map change's fade is, from 0 to 1.
 ---@return number
 function field.fade() end
 
---- La clave de texto del nombre del mapa que se enseña al llegar, o nil.
+--- The text key of the map name shown on arrival, or nil.
 ---@return string?
 function field.map_title() end
 
---- El minimapa: shown (la opción y el campo lo dejan), covered (una ventana lo tapa) y size.
+--- The minimap: shown (the option and the field allow it), covered (a window covers it) and size.
 ---@return table
 function field.minimap() end
 
---- Dónde está el jugador en la ventana: x e y en porcentaje.
+--- Where the player is in the window: x and y as a percentage.
 ---@return table
 function field.player() end
 
---- La cuenta del trabajo en la tienda mientras dura (tally, goal, better_pay, customer, customers, top, bonus, bonus_icon, bonus_icon_rect, tier, improved), o nil.
+--- The shop job's tally while it lasts (tally, goal, better_pay, customer, customers, top, bonus, bonus_icon, bonus_icon_rect, tier, improved), or nil.
 ---@return table?
 function field.shop_job() end
 
 partner = {}
 
---- Las barras (meters: id, label_key, value, min, max, two_tone, mood), los PV y PM (pools) y lo que le parece el mapa (area: liked, disliked o nil).
+--- The bars (meters: id, label_key, value, min, max, two_tone, mood), the HP and MP (pools) and what it thinks of the map (area: liked, disliked or nil).
 ---@return table
 function partner.status() end
 
---- Las necesidades en orden: id, label_key, active y urgency (1 la más urgente; 0 si no la tiene).
+--- The needs in order: id, label_key, active and urgency (1 the most urgent; 0 if it does not have it).
 ---@return table
 function partner.needs() end
 
---- Dónde está su cabeza en la ventana: visible, x, y (porcentaje) y evolving (el cuadro de la burbuja de evolución, o nil).
+--- Where its head is in the window: visible, x, y (percentage) and evolving (the evolution bubble's box, or nil).
 ---@return table
 function partner.bubble() end
 
---- Errores de cuidado, combates y horas vividas; nil si el jugador tiene apagados los extras del estado.
+--- Care mistakes, battles and hours lived; nil if the player has the status extras off.
 ---@return table?
 function partner.extras() end
 
---- Pide felicitarlo.
+--- Asks to praise it.
 ---@return boolean
 function partner.praise() end
 
---- Pide regañarlo.
+--- Asks to scold it.
 ---@return boolean
 function partner.scold() end
 
---- Pide equipar o quitar la técnica de ese hueco de la especie.
+--- Asks to equip or remove the move of that slot of the species.
 ---@param slot integer
 ---@return boolean
 ---@return string?
@@ -362,49 +362,49 @@ function partner.toggle_technique(slot) end
 
 bag = {}
 
---- Los huecos de la bolsa.
+--- The bag's slots.
 ---@return integer
 function bag.count() end
 
---- El dinero del jugador.
+--- The player's money.
 ---@return integer
 function bag.money() end
 
---- Un dato de un hueco, o su valor por defecto.
+--- A piece of data of a slot, or its default value.
 ---@param index integer
 ---@param name string
 ---@return any
 function bag.field(index, name) end
 
---- Un hueco: empty, name, description, description_species, count, dimmed, usable, discardable, item_color, icon, icon_rect, favorite.
+--- A slot: empty, name, description, description_species, count, dimmed, usable, discardable, item_color, icon, icon_rect, favorite.
 ---@param index integer
 ---@return table
 function bag.slot(index) end
 
---- La respuesta a la última acción: key (clave del mensaje) e item; nil antes de ninguna.
+--- The answer to the last action: key (the message's key) and item; nil before any.
 ---@return table?
 function bag.result() end
 
---- Pide usar el objeto de un hueco.
+--- Asks to use the item of a slot.
 ---@param index integer
 ---@return boolean
 ---@return string?
 function bag.use(index) end
 
---- Pide tirar el objeto de un hueco.
+--- Asks to drop the item of a slot.
 ---@param index integer
 ---@return boolean
 ---@return string?
 function bag.drop(index) end
 
---- Pide intercambiar dos huecos.
+--- Asks to swap two slots.
 ---@param from integer
 ---@param to integer
 ---@return boolean
 ---@return string?
 function bag.move(from, to) end
 
---- Pide ordenar la bolsa en un orden.
+--- Asks to sort the bag in an order.
 ---@param order integer
 ---@return boolean
 ---@return string?
@@ -412,30 +412,30 @@ function bag.sort(order) end
 
 player = {}
 
---- El jugador: name, level, bits, seconds, raised, medals, items, cards.
+--- The player: name, level, bits, seconds, raised, medals, items, cards.
 ---@return table
 function player.profile() end
 
---- Las medallas que publica el juego (no un número fijo): held y name_key.
+--- The medals the game publishes (not a fixed number): held and name_key.
 ---@return table
 function player.medals() end
 
---- La ciudad: recruited, total y prosperity.
+--- The city: recruited, total and prosperity.
 ---@return table
 function player.city() end
 
 options = {}
 
---- Las opciones del juego en orden: name, kind (toggle, list, range), label_key, help_key, tab, default, original, values, texts, min, max.
+--- The game's options in order: name, kind (toggle, list, range), label_key, help_key, tab, default, original, values, texts, min, max.
 ---@return table
 function options.list() end
 
---- El valor de una opción ahora (o su valor por defecto); nil si no existe.
+--- An option's value now (or its default value); nil if it does not exist.
 ---@param name string
 ---@return any
 function options.get(name) end
 
---- Pide dar un valor a una opción; comprueba el tipo y los valores que admite.
+--- Asks to give an option a value; checks the type and the values it accepts.
 ---@param name string
 ---@param value any
 ---@return boolean
@@ -444,177 +444,177 @@ function options.set(name, value) end
 
 battle = {}
 
---- El combate: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds y match_seconds (o nil) y cup (un combate de copa).
+--- The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil) and cup (a cup battle).
 ---@return table
 function battle.state() end
 
---- Los luchadores, el compañero primero: name_key, status_key, hp, max_hp, mp, max_mp, fainted y hp_bar.
+--- The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted and hp_bar.
 ---@return table
 function battle.fighters() end
 
---- La tira de órdenes, el golpe final primero: command, label_key, icon, available, current y mp_cost.
+--- The command strip, the finisher first: command, label_key, icon, available, current and mp_cost.
 ---@return table
 function battle.commands() end
 
---- El golpe final: progress, goal, ready, charging (el aura) y charge (en porcentaje).
+--- The finisher: progress, goal, ready, charging (the aura) and charge (as a percentage).
 ---@return table
 function battle.finisher() end
 
---- Dónde están la tira y las barras del compañero al entrar y salir: top, bottom, blink, hp_x y mp_x (o nil).
+--- Where the strip and the partner's bars are when entering and leaving: top, bottom, blink, hp_x and mp_x (or nil).
 ---@return table
 function battle.strip() end
 
---- La apertura: step, anger (3 marcas), flee (8), anger_scale, flash y pieces (las piezas del cartel, con key).
+--- The opening: step, anger (3 marks), flee (8), anger_scale, flash and pieces (the banner's pieces, with key).
 ---@return table
 function battle.intro() end
 
---- Los números sobre los luchadores: x, y (porcentaje), dx, dy, value, kind (damage, gain, poison) e icon.
+--- The numbers over the fighters: x, y (percentage), dx, dy, value, kind (damage, gain, poison) and icon.
 ---@return table
 function battle.numbers() end
 
---- Las barras de vida de los enemigos: always y bars (enemy, x, y, left, top, fill, red, green, hp).
+--- The enemies' health bars: always and bars (enemy, x, y, left, top, fill, red, green, hp).
 ---@return table
 function battle.hp_bars() end
 
---- Las marcas de 1P y COM: fighter (0 el compañero, 1 el rival), x e y (porcentaje).
+--- The 1P and COM markers: fighter (0 the partner, 1 the rival), x and y (percentage).
 ---@return table
 function battle.markers() end
 
---- La cuenta sobre el compañero caído (x, y, digit, digit_scale, badge_scale, turn, palette), o nil.
+--- The countdown over the fainted partner (x, y, digit, digit_scale, badge_scale, turn, palette), or nil.
 ---@return table?
 function battle.death_countdown() end
 
---- El grito del jugador (text_key, x, y, node_x, node_y, line, hop, scale), o nil.
+--- The player's shout (text_key, x, y, node_x, node_y, line, hop, scale), or nil.
 ---@return table?
 function battle.shout() end
 
---- La caja del final: outcome_key, lines (parts, name_key, subject_key, amount), stats (value, max, gain), bits, money, count_delay_frames y wait_frames.
+--- The end box: outcome_key, lines (parts, name_key, subject_key, amount), stats (value, max, gain), bits, money, count_delay_frames and wait_frames.
 ---@return table
 function battle.result() end
 
---- Lo que un combate de copa enseña encima: shown, name, name_y, stats, counted, stat, time_up, time_up_label, box, partner, rival, damage_label, dealt, taken y wipe.
+--- What a cup battle shows on top: shown, name, name_y, stats, counted, stat, time_up, time_up_label, box, partner, rival, damage_label, dealt, taken and wipe.
 ---@return table
 function battle.match() end
 
---- Pide que el compañero siga una orden de la tira (su command); solo en la fase fight.
+--- Asks the partner to follow a command of the strip (its command); only in the fight phase.
 ---@param command integer
 ---@return boolean
 ---@return string?
 function battle.command(command) end
 
---- Una pulsación de la carga del golpe final; solo en la fase fight.
+--- A press of the finisher's charge; only in the fight phase.
 ---@return boolean
 ---@return string?
 function battle.charge() end
 
---- Pide abrir la bolsa sobre el combate (la pantalla partner_menu); solo en la fase fight.
+--- Asks to open the bag over the battle (the partner_menu screen); only in the fight phase.
 ---@return boolean
 ---@return string?
 function battle.open_bag() end
 
---- Pide cerrar la bolsa y volver al combate.
+--- Asks to close the bag and return to the battle.
 ---@return boolean
 ---@return string?
 function battle.close_bag() end
 
---- La caja del final ha terminado: el combate se cierra; solo en la fase end.
+--- The end box has finished: the battle closes; only in the end phase.
 ---@return boolean
 ---@return string?
 function battle.close() end
 
---- Un punto o un bit contado en la caja del final (su sonido); solo en la fase end.
+--- A point or a bit counted in the end box (its sound); only in the end phase.
 ---@return boolean
 ---@return string?
 function battle.end_count() end
 
---- Todos los bits dentro (el sonido que acaba la cuenta); solo en la fase end.
+--- All the bits in (the sound that ends the count); only in the end phase.
 ---@return boolean
 ---@return string?
 function battle.end_counted() end
 
 versus = {}
 
---- La vista, el cursor, los combates de la serie y, en un combate: round, clock, side (el lado del jugador), wins, stalled, leave_asked, blink y arena (lo que enseña el escenario, o nil sin él).
+--- The view, the cursor, the series' battles and, in a battle: round, clock, side (the player's side), wins, stalled, leave_asked, blink and arena (what the arena shows, or nil without one).
 ---@return table
 function versus.state() end
 
---- La preparación del anfitrión: series y series_count, arena, arena_row y arenas.
+--- The host's setup: series and series_count, arena, arena_row and arenas.
 ---@return table
 function versus.setup() end
 
---- La conexión: stage (creating, waiting, connecting) y code (el código de la sala).
+--- The connection: stage (creating, waiting, connecting) and code (the room code).
 ---@return table
 function versus.connection() end
 
---- El código escrito (typed) y si el último no valía (bad).
+--- The code typed (typed) and whether the last one was not valid (bad).
 ---@return table
 function versus.entry() end
 
---- Las partidas: player, nickname, partners y usable.
+--- The saves: player, nickname, partners and usable.
 ---@return table
 function versus.saves() end
 
---- Los compañeros (name, species_key, stats, picked) y los elegidos (picks, sus nombres).
+--- The partners (name, species_key, stats, picked) and the chosen ones (picks, their names).
 ---@return table
 function versus.lineup() end
 
---- Los dos lados, el anfitrión primero: hp, max_hp, mp, max_mp, segments, finisher_ready, hover, icons (la tira) y command_key (la orden señalada).
+--- The two sides, the host first: hp, max_hp, mp, max_mp, segments, finisher_ready, hover, icons (the strip) and command_key (the command pointed at).
 ---@return table
 function versus.fighters() end
 
---- Lo que ha pasado, lo último al final: key, who, what_key y amount.
+--- What has happened, the latest last: key, who, what_key and amount.
 ---@return table
 function versus.log() end
 
---- Los combates jugados (rounds: won, lost, draw) y el ganador de la serie (winner).
+--- The battles played (rounds: won, lost, draw) and the series' winner (winner).
 ---@return table
 function versus.results() end
 
---- La pantalla de marcador: round, offset, flash, black, results y sides (wins, losses, faces).
+--- The score screen: round, offset, flash, black, results and sides (wins, losses, faces).
 ---@return table
 function versus.score() end
 
---- Por qué paró: key (clave de texto) y detail.
+--- Why it stopped: key (text key) and detail.
 ---@return table
 function versus.error() end
 
---- Un paso en la vista: up, down, left, right, confirm, cancel, menu, tab_previous, tab_next o finisher (el golpe final, con su medidor lleno).
+--- A step in the view: up, down, left, right, confirm, cancel, menu, tab_previous, tab_next or finisher (the finisher, with its meter full).
 ---@param step string
 ---@return boolean
 ---@return string?
 function versus.step(step) end
 
---- Va a una fila de la vista (o a una orden de la tira del jugador) y la confirma.
+--- Goes to a row of the view (or to a command of the player's strip) and confirms it.
 ---@param row integer
 ---@return boolean
 ---@return string?
 function versus.pick(row) end
 
 ---@alias UiEventName string
----| "story.changed" Cambió la caja: se abrió, creció, otra página, el cursor.
----| "story.text" Sale una página nueva.
----| "story.input" La caja empezó o dejó de esperar al jugador.
----| "dialog.changed" El juego puso el texto de un diálogo.
----| "naming.changed" Cambió el nombre, el cursor o la rejilla.
----| "clock.changed" Cambió el estado del campo, la hora incluida.
----| "field.fade" Cambió el fundido.
----| "field.map_title" Cambió el nombre del mapa que se enseña.
----| "field.minimap" Cambió si el minimapa puede verse o si algo lo tapa.
----| "field.shop_job" Cambió el trabajo en la tienda.
----| "partner.changed" Cambió algo del compañero; name dice qué ajuste.
----| "partner.bubble_moved" Su cabeza se movió en la ventana.
----| "bag.changed" Cambió la bolsa.
----| "bag.result" El juego respondió a una acción de la bolsa.
----| "options.changed" Cambió una opción; name dice cuál y value su valor.
----| "battle.started" Empieza un combate (battle.active pasa a verdadero).
----| "battle.ended" Se acaba un combate, tras cerrar la caja del final (battle.active pasa a falso).
----| "battle.phase" Cambió la fase; value dice cuál.
----| "battle.changed" Cambiaron los luchadores, la tira, el golpe final, la bolsa o las cuentas.
----| "battle.speed" El combate pasó a ir rápido o a velocidad normal.
----| "battle.strip_moved" La tira o las barras del compañero se movieron, o el icono bajo el cursor parpadeó.
----| "battle.intro" Cambió la apertura.
----| "battle.numbers" Cambiaron los números sobre los luchadores.
----| "battle.overlays" Cambiaron las barras de vida de los enemigos, las marcas de 1P y COM o la cuenta del compañero caído.
----| "battle.shout" Cambió el grito del jugador.
----| "battle.match" Cambió lo que un combate de copa enseña encima.
----| "versus.changed" Cambió el versus.
+---| "story.changed" The box changed: it opened, grew, another page, the cursor.
+---| "story.text" A new page appears.
+---| "story.input" The box started or stopped waiting for the player.
+---| "dialog.changed" The game set the text of a dialog.
+---| "naming.changed" The name, the cursor or the grid changed.
+---| "clock.changed" The field state changed, the time included.
+---| "field.fade" The fade changed.
+---| "field.map_title" The map name shown changed.
+---| "field.minimap" Whether the minimap can be seen, or whether something covers it, changed.
+---| "field.shop_job" The shop job changed.
+---| "partner.changed" Something about the partner changed; name says which setting.
+---| "partner.bubble_moved" Its head moved in the window.
+---| "bag.changed" The bag changed.
+---| "bag.result" The game answered a bag action.
+---| "options.changed" An option changed; name says which and value its value.
+---| "battle.started" A battle starts (battle.active becomes true).
+---| "battle.ended" A battle ends, after the end box closes (battle.active becomes false).
+---| "battle.phase" The phase changed; value says which.
+---| "battle.changed" The fighters, the strip, the finisher, the bag or the counts changed.
+---| "battle.speed" The battle switched to fast or to normal speed.
+---| "battle.strip_moved" The strip or the partner's bars moved, or the icon under the cursor blinked.
+---| "battle.intro" The opening changed.
+---| "battle.numbers" The numbers over the fighters changed.
+---| "battle.overlays" The enemies' health bars, the 1P and COM markers or the fainted partner's countdown changed.
+---| "battle.shout" The player's shout changed.
+---| "battle.match" What a cup battle shows on top changed.
+---| "versus.changed" The versus changed.

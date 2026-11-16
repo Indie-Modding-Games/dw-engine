@@ -18,7 +18,7 @@
 
 namespace dwe::app {
 
-// The game's debug control channel (`dwe-game --control <socket>`, docs/guides/control-remoto.md):
+// The game's debug control channel (`dwe-game --control <socket>`, docs/guides/remote-control.md):
 // a tool outside the game (an MCP server, a test) sends a JSON request per line and gets a JSON
 // reply per line. It reads the state as the state trace writes it, presses keys tick by tick,
 // pauses the logic and advances it a number of ticks, places characters, starts battles, loads a

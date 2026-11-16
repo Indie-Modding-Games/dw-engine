@@ -133,7 +133,7 @@ constexpr std::int32_t AimJitter = 100;
 // KAR_D_8005B418: the stone types each shot plan tries, in order.
 constexpr std::array<std::array<std::int32_t, 4>, 2> ShotPlans{{{1, 0, 2, 3}, {3, 2, 0, 1}}};
 // KAR_findClearShotAngle: the first opponent looks along its line 30 units at a time, the second
-// 10; a stone closer than 151 blocks it. Suposición: a line that never gets past the target stops
+// 10; a stone closer than 151 blocks it. Assumption: a line that never gets past the target stops
 // after this many steps (the original would loop for ever; its targets are always past it).
 constexpr std::int32_t FirstLookStep = 30;
 constexpr std::int32_t SecondLookStep = 10;

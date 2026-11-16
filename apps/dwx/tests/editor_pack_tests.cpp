@@ -27,7 +27,7 @@
 #include "yaml_edits.hpp"
 
 // R4.7: a mods pack with exactly the kinds of file that the map editor and the animation studio
-// write (docs/architecture/herramientas-externas.md), all synthetic, passes dwx validate on top of
+// write (docs/architecture/external-tools.md), all synthetic, passes dwx validate on top of
 // a base pack and wins over it by id.
 
 using namespace dwe::dwx::testing;
@@ -50,7 +50,7 @@ dwe::assets::PackManifest basePackManifest() {
           .version = BasePackVersion,
           .layer = dwe::assets::Layer::Base,
           .priority = 0,
-          .name = "Base",
+          .name = dwe::assets::LocalizedText::of("Base"),
           .description = {},
           .dependencies = {},
           .schemas = {{.schema = "maps", .ids = {std::string{MapTable}}},

@@ -1,70 +1,70 @@
-# Servidor MCP del editor de mapas
+# Map editor MCP server
 
-`dwe-mapper mcp` es el editor de mapas sin ventana, como **servidor MCP para herramientas externas**: cualquier
-programa que hable MCP (un asistente, un script, un test) puede leer los mapas, el mundo y la historia, editarlos y
-guardarlos en un paquete de mod, con las mismas reglas que la ventana. La lista de herramientas está en
-[mapper → Servidor MCP](../modulos/apps/mapper.md#servidor-mcp).
+`dwe-mapper mcp` is the map editor without a window, as an **MCP server for external tools**: any program that speaks
+MCP (an assistant, a script, a test) can read the maps, the world and the story, edit them and save them in a mod
+pack, with the same rules as the window. The list of tools is in
+[mapper → MCP server](../modules/apps/mapper.md#mcp-server).
 
-## Arrancarlo
+## Starting it
 
 ```sh
 scripts/mapper.sh build    # build/mapper/release/dwe-mapper
-build/mapper/release/dwe-mapper mcp --content <carpeta de contenido> --mods <carpeta de mods> --target <carpeta de mods>/mi_mod
+build/mapper/release/dwe-mapper mcp --content <content folder> --mods <mods folder> --target <mods folder>/my_mod
 ```
 
-| Opción | Qué hace |
+| Option | What it does |
 |---|---|
-| `--content <dir>` | La carpeta de contenido, como en el juego (obligatoria) |
-| `--team-packs <dir>` | Los packs del equipo; dentro del repositorio se encuentran solos |
-| `--mods <dir>` | Una carpeta de mods o un paquete suelto (se repite) |
-| `--target <paquete>` | Dónde se guarda: el id o la carpeta de un paquete en el que se puede escribir, o una carpeta que todavía no existe dentro de una carpeta de mods, que se crea como paquete de mod. Sin destino, las herramientas que escriben responden un error |
-| `--live <endpoint>` | Conecta ya con un `dwe-game` en marcha (`tcp:<puerto>` o `unix:<socket>`); también se puede con `live_connect` |
+| `--content <dir>` | The content folder, as in the game (required) |
+| `--team-packs <dir>` | The team's packs; inside the repository they are found on their own |
+| `--mods <dir>` | A mods folder or a single pack (can be repeated) |
+| `--target <pack>` | Where it saves: the id or folder of a pack that can be written to, or a folder that does not exist yet inside a mods folder, which is created as a mod pack. With no target, the tools that write return an error |
+| `--live <endpoint>` | Connects right away to a running `dwe-game` (`tcp:<port>` or `unix:<socket>`); it can also be done with `live_connect` |
 
-El servidor lee mensajes JSON-RPC 2.0 por la entrada estándar, uno por línea, y responde por la salida estándar. Lo que
-no es protocolo va a la salida de errores.
+The server reads JSON-RPC 2.0 messages from standard input, one per line, and answers on standard output. Anything
+that is not protocol goes to the error output.
 
-## Configurar un cliente
+## Configuring a client
 
-Casi todos los clientes MCP aceptan un bloque como este (el nombre de la clave y del fichero cambian de un cliente a
-otro; las rutas tienen que ser absolutas):
+Almost all MCP clients accept a block like this (the name of the key and of the file change from one client to
+another; the paths must be absolute):
 
 ```json
 {
   "mcpServers": {
     "dwe-mapper": {
-      "command": "/ruta/al/repo/build/mapper/release/dwe-mapper",
+      "command": "/path/to/repo/build/mapper/release/dwe-mapper",
       "args": [
         "mcp",
-        "--content", "/ruta/al/contenido",
-        "--mods", "/ruta/a/los/mods",
-        "--target", "/ruta/a/los/mods/mi_mod"
+        "--content", "/path/to/content",
+        "--mods", "/path/to/mods",
+        "--target", "/path/to/mods/my_mod"
       ]
     }
   }
 }
 ```
 
-## Cómo se trabaja
+## How to work with it
 
-- **Leer:** `list_maps`, `map_info`, `world_graph`, `path`, `section`, `find` y `validate` no cambian nada.
-- **Editar:** `set_exit`, `set_collision_rect`, `add_npc`, `move_npc`, `edit_section` y `set_text` abren el mapa que
-  nombran y hacen el cambio como un paso de deshacer. Quedan **sin guardar** hasta `save` (o se tiran con `discard`).
-  Se trabaja sobre un mapa cada vez: si otro mapa tiene cambios sin guardar, la herramienta lo dice y no hace nada.
-- **Probar antes:** todas las ediciones y `new_map` aceptan `"dry_run": true`. Responden el parche (o los ficheros) que
-  darían y no dejan nada hecho.
-- **Guardar:** `save` escribe el parche del mapa abierto en el paquete destino (o el mapa entero con `"whole": true`; un
-  mapa que el propio paquete añadió se guarda siempre entero). `new_map` y la vuelta de `set_exit` con `back` escriben
-  en ese momento, como en la ventana.
-- **En vivo:** con el juego arrancado con `--control tcp:<puerto>`, `live_connect` lo enlaza; `live_reload` le hace
-  volver a leer los paquetes y el mapa tras guardar, `probar_evento` prepara y lanza un evento y `play_from` corre una
-  sección desde una orden.
+- **Read:** `list_maps`, `map_info`, `world_graph`, `path`, `section`, `find` and `validate` change nothing.
+- **Edit:** `set_exit`, `set_collision_rect`, `add_npc`, `move_npc`, `edit_section` and `set_text` open the map they
+  name and make the change as one undo step. They stay **unsaved** until `save` (or are thrown away with `discard`).
+  You work on one map at a time: if another map has unsaved changes, the tool says so and does nothing.
+- **Try first:** all the edits and `new_map` accept `"dry_run": true`. They answer with the patch (or the files) they
+  would produce and leave nothing done.
+- **Save:** `save` writes the open map's patch into the target pack (or the whole map with `"whole": true`; a map that
+  the pack itself added is always saved whole). `new_map` and the return trip of `set_exit` with `back` write at that
+  moment, as in the window.
+- **Live:** with the game started with `--control tcp:<port>`, `live_connect` links it; `live_reload` makes it read
+  the packs and the map again after saving, `probar_evento` prepares and launches an event and `play_from` runs a
+  section from an order.
 
-Cada respuesta de herramienta trae el resultado como texto y como `structuredContent`. Un fallo vuelve con
-`isError: true` y la explicación del editor; los mensajes informativos del editor van en `messages`.
+Each tool response carries the result as text and as `structuredContent`. A failure comes back with
+`isError: true` and the editor's explanation; the editor's informational messages go in `messages`.
 
-## Ejemplo de sesión
+## Example session
 
-Las líneas que manda el cliente (las respuestas, una por línea, se omiten):
+The lines the client sends (the responses, one per line, are omitted):
 
 ```json
 {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"script","version":"1"}}}
@@ -75,5 +75,5 @@ Las líneas que manda el cliente (las respuestas, una por línea, se omiten):
 {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"save","arguments":{}}}
 ```
 
-La respuesta de la 3 trae `"kept": false` y el parche (`collision: cells: …`); la de la 5, `"saved_in": "mi_mod"`. El
-test `apps/mapper/crates/mapper-mcp/tests/stdio.rs` hace esta misma sesión.
+The response to 3 carries `"kept": false` and the patch (`collision: cells: …`); the one to 5, `"saved_in": "my_mod"`. The
+test `apps/mapper/crates/mapper-mcp/tests/stdio.rs` runs this same session.

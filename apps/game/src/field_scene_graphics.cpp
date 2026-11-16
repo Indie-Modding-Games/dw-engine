@@ -15,7 +15,7 @@
 
 #include "field_scene.hpp"
 
-// The field's enhanced graphics (docs/architecture/render.md, «Paso de luz y color»): the
+// The field's enhanced graphics (docs/architecture/render.md, «Light and color pass»): the
 // characters' shadows, the time of day's light and the vivid colours. None of it reads or changes
 // a rule of the game, the collision or the random numbers.
 namespace dwe::app {

@@ -1,7 +1,7 @@
-# The full story chain, chunk 9: on chunk 8's save (mgen99) the summit and the ending, as route-etapa8-final.yaml
+# The full story chain, chunk 9: on chunk 8's save (mgen99) the summit and the ending, as route-stage8-final.yaml
 # does: the summit's tile, the last fight (ended won after a while on screen, win_after), the ending map (tend02), the
 # question to save the cleared game (Enter on "Yes"), the credits movie and the title. The route plays the movies.
-# The chain: docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+# The chain: docs/guides/vertical-slice.md (scripts/story-chain.sh).
 name: full-09
 device: keyboard
 timeout: 1200

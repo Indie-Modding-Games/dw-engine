@@ -1,7 +1,7 @@
-# Objetos que añade el motor, detrás de los del original (docs/modulos/game/evolution.md, «Objetos raros de
-# evolución»): solo los da la mejora opcional `rare_items`. Toman el icono de un objeto del original por su ID
-# (`icon`) y su descripción nombra la especie de `description_species` en tiempo de ejecución, así que ni la
-# imagen ni el nombre de la especie están aquí. El motor les da su número (`index`).
+# Items the engine adds, after the original's (docs/modules/game/evolution.md, rare evolution items section):
+# only the optional `rare_items` improvement gives them. They take the icon of an original item by its ID
+# (`icon`) and their description names the species of `description_species` at run time, so neither the
+# image nor the species name is here. The engine gives them their number (`index`).
 items:
 - id: "game:steel_heart"
   name: "Steel Heart"

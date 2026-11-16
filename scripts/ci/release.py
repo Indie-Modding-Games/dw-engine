@@ -9,7 +9,7 @@
                             higher when the launcher changed since that release
   notes                     the release notes in Spanish, from GitHub's generated notes
 
-docs/modulos/apps/launcher.md explains the versions and the channels.
+docs/modules/apps/launcher.md explains the versions and the channels.
 """
 
 from __future__ import annotations

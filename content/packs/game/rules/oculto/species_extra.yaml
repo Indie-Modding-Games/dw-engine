@@ -1,11 +1,11 @@
-# Parches por especie sobre las tablas del disco (docs/architecture/rulesets.md, «Parches por especie»). Son números
-# de diseño nuestros, no datos del juego: requisitos con el formato de EVOLUTION_REQS (stats mínimos, errores de
-# cuidado, peso ± margen y un punto extra; aprueba con 3 de 4), una puerta que el original no tiene (si no se cumple,
-# el destino ni puntúa) y la celda del árbol (píxeles del árbol; icono prestado de otra especie con otra paleta).
-# Cada destino nuevo toma la primera ranura libre de `to` tras el último destino del origen, así que en un empate
-# gana el destino del original.
+# Per-species patches over the disc tables (docs/architecture/rulesets.md, "Per-species patches"). These are our own
+# design numbers, not game data: requirements in the EVOLUTION_REQS format (minimum stats, care
+# mistakes, weight ± margin and one extra point; passes with 3 of 4), a gate the original does not have (if it is not met,
+# the target does not even score) and the tree cell (tree pixels; icon borrowed from another species with another palette).
+# Each new target takes the first free `to` slot after the origin's last target, so in a tie
+# the original's target wins.
 species:
-  # Panjyamon (Campeón): el discípulo del rey bestia. Puerta: Leomon vive en la ciudad (disparador 200 + 48).
+  # Panjyamon (Champion): the disciple of the beast king. Gate: Leomon lives in the city (trigger 200 + 48).
   panj:
     requirement:
       from: penm
@@ -18,11 +18,11 @@ species:
       techs: 30
     gate: { triggers: [248] }
     evolves_from: [elec, penm]
-    # Los destinos de Leomon.
+    # Leomon's targets.
     evolves_to: [andr, mame]
     chart: { x: 189, y: 176, icon: leom, palette: 2 }
-  # Gigadramon (Ultra). Puerta: la Copa Metálica (copa 16 de data/tournaments) ganada alguna vez; los torneos la
-  # apuntan con el disparador 15 + copa (TournamentAdapter::cupWon).
+  # Gigadramon (Ultimate). Gate: the Metalic Cup (cup 16 of data/tournaments) won at some point; the tournaments
+  # record it with trigger 15 + cup (TournamentAdapter::cupWon).
   ggdr:
     requirement:
       hp: 400
@@ -38,7 +38,7 @@ species:
     gate: { cup: 16 }
     evolves_from: [tyra, devi, aird, sead]
     chart: { x: 274, y: 176, icon: mgdr, palette: 1 }
-  # MetalEtemon (Ultra; Mega con el paso Ultra → Mega). Puerta: Etemon vencido, que se une a la ciudad (200 + 42).
+  # MetalEtemon (Ultimate; Mega with the Ultimate → Mega step). Gate: Etemon defeated, who joins the city (200 + 42).
   mtet:
     requirement:
       from: scum
@@ -51,12 +51,12 @@ species:
       battles: 100
     gate: { triggers: [242] }
     evolves_from: [scum, nume]
-    # Fuera de la rejilla de Ultra: el árbol la pone en un hueco libre de la caja, o en la página siguiente.
+    # Outside the Ultimate grid: the tree puts it in a free slot of the box, or on the next page.
     chart: { x: 298, y: 81, icon: etem, palette: 2 }
-  # Myotismon (Ultra), que el disco solo trae como jefe: filas diseñadas (ganancias, crianza copiada de Devimon con la
-  # carne de comida favorita), el remate de Devimon (death_claw) en su primera ranura vacía y los puntos de lanzamiento
-  # de Devimon. Puerta: Myotismon rescatado en el laboratorio de la Mansión de Grey Lord (disparador 129) y solo de
-  # noche (20 a 6).
+  # Myotismon (Ultimate), which the disc only has as a boss: designed rows (gains, raising copied from Devimon with the
+  # favorite food meat), Devimon's finisher (death_claw) in its first empty slot and Devimon's launch points.
+  # Gate: Myotismon rescued in the lab of Grey Lord's Mansion (trigger 129) and only at
+  # night (20 to 6).
   vand:
     requirement:
       mp: 500
@@ -72,19 +72,19 @@ species:
     raise: { copy: devi, favorite_food: meat }
     moves: [death_claw]
     effect_type: devi
-    # Su modelo de enemigo no tiene los clips de cuidado ni de gimnasio: cada uno juega otro suyo (id que falta: id
-    # que juega). Andar mal anda; contento celebra; descontento, rechazar y el enfurruñado de siempre se enfurruñan;
-    # comer es su técnica 0; dormir, el baño y los estados se quedan quietos de mal humor; acostarse cae; tras el baño
-    # o el regaño encaja un golpe; cansado es el cansancio del combate; los gimnasios usan la guardia y el bloqueo; su
-    # remate (técnica 5) juega su técnica 0.
+    # Its enemy model does not have the care or gym clips: each one plays another of its own (missing id: id
+    # it plays). Walking badly walks; happy celebrates; unhappy, refuse and the usual sulk all sulk;
+    # eating is its technique 0; sleeping, the potty and the status effects stay still in a bad mood; lying down falls; after the potty
+    # or the scolding it takes a hit; tired is the battle tiredness; the gyms use the guard and the block; its
+    # finisher (technique 5) plays its technique 0.
     clips: { 3: 2, 5: 42, 7: 19, 8: 46, 9: 1, 10: 1, 11: 43, 12: 41, 13: 19, 14: 1, 15: 1, 16: 1, 17: 1, 18: 34,
              21: 33, 22: 33, 23: 36, 24: 36, 25: 36, 27: 37, 51: 46 }
     chart: { x: 298, y: 100, icon: devi, palette: 2 }
 
-# Premios de más por copa ganada, que los torneos suman a los de tournament.yaml (mismo formato: copa y objeto por su
-# número en data/tournaments y data/items), así que este ruleset no copia la sección de torneos del original. El
-# objeto que el disco tiene para cada forma nueva: Noble Mane en la Copa Animal (20, grado Z), Giga Hand en la Copa
-# Metálica (16, grado M) y Metalbanana en la Copa Basura (17, grado T).
+# Extra prizes per cup won, which the tournaments add to those of tournament.yaml (same format: cup and item by its
+# number in data/tournaments and data/items), so this ruleset does not copy the tournaments section of the original. The
+# item the disc has for each new form: Noble Mane in the Animal Cup (20, grade Z), Giga Hand in the Metalic
+# Cup (16, grade M) and Metalbanana in the Filth Cup (17, grade T).
 extra_prizes:
   - { cup: 20, item: 126 }
   - { cup: 16, item: 125 }

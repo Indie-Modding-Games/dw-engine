@@ -1,4 +1,4 @@
-# Cómo contribuir
+# How to contribute
 
-Todo está en [docs/contribuir.md](../docs/contribuir.md): la política de assets (obligatoria), el flujo de ramas y
-pull requests a `main`, las comprobaciones obligatorias y cómo salen las versiones.
+Everything is in [docs/contributing.md](../docs/contributing.md): the asset policy (mandatory), the branch flow and
+pull requests to `main`, the required checks and how releases go out.

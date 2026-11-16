@@ -1,110 +1,110 @@
-# TIM, TIM apilados y packs de paso fijo
+# TIM, stacked TIMs and fixed-stride packs
 
-Referencia de las imágenes del original tal como las lee `formats/image` (`dwe::formats::image`). El plan general
-está en [formatos del original](../architecture/formats.md). Las citas son al decomp (`dw_decomp`, `src/`); aquí no
-hay datos del disco.
+Reference for the original's images as `formats/image` (`dwe::formats::image`) reads them. The overall plan
+is in [original formats](../architecture/formats.md). Citations are to the decomp (`dw_decomp`, `src/`); there is
+no disc data here.
 
-Todos los enteros son little-endian. Los lectores reciben un `std::span<const std::byte>`, comprueban cada offset y
-devuelven un error si el fichero está mal formado; nunca leen fuera del buffer.
+All integers are little-endian. The readers receive a `std::span<const std::byte>`, check every offset and
+return an error if the file is malformed; they never read outside the buffer.
 
 ## TIM
 
-El formato de imagen estándar de PsyQ: lo que el original pasa a `GsGetTimInfo` y sube a la VRAM con `LoadImage`.
+The standard PsyQ image format: what the original passes to `GsGetTimInfo` and uploads to VRAM with `LoadImage`.
 
-| Offset | Tipo | Campo |
+| Offset | Type | Field |
 |---|---|---|
-| 0 | `u32` | Magia `0x10` |
-| 4 | `u32` | Flags: bits 0-2 modo de píxel (0 = 4 bits, 1 = 8 bits, 2 = 16 bits, 3 = 24 bits), bit 3 hay CLUT |
-| 8 | bloque | CLUT, solo si el bit 3 está activo |
-| … | bloque | Imagen |
+| 0 | `u32` | Magic `0x10` |
+| 4 | `u32` | Flags: bits 0-2 pixel mode (0 = 4 bits, 1 = 8 bits, 2 = 16 bits, 3 = 24 bits), bit 3 has a CLUT |
+| 8 | block | CLUT, only if bit 3 is set |
+| … | block | Image |
 
-Cada bloque es `{u32 longitud; u16 x, y, ancho, alto; datos}`. La longitud incluye los 12 bytes de la cabecera. `x` y
-el ancho cuentan unidades de 16 bits de la VRAM, no píxeles: una unidad son 4 píxeles a 4 bits, 2 a 8 bits, 1 a 16
-bits y 2/3 a 24 bits (lo que sobra de cada fila es relleno). Los datos ocupan `ancho × 2 × alto` bytes.
+Each block is `{u32 length; u16 x, y, width, height; data}`. The length includes the 12 header bytes. `x` and
+the width count 16-bit VRAM units, not pixels: one unit is 4 pixels at 4 bits, 2 at 8 bits, 1 at 16
+bits and 2/3 at 24 bits (what is left over in each row is padding). The data takes `width × 2 × height` bytes.
 
-- **CLUT:** `ancho × alto` colores de 16 bits. Un TIM puede tener varias paletas: una por fila o, si la fila es más
-  ancha que la paleta (16 colores a 4 bits, 256 a 8 bits), varias seguidas en la misma fila. `timPaletteCount` las
-  cuenta y se numeran de izquierda a derecha y de arriba abajo; `decodeTim(tim, n)` usa la paleta `n`. Si la fila es
-  más corta que la paleta completa, la paleta es la fila entera, y un índice que se sale de ella es un error.
-- **Píxeles:** a 4 bits el primer píxel de cada byte está en el nibble bajo. A 24 bits cada píxel son tres bytes
+- **CLUT:** `width × height` 16-bit colors. A TIM can have several palettes: one per row or, if the row is wider
+  than the palette (16 colors at 4 bits, 256 at 8 bits), several one after another in the same row. `timPaletteCount`
+  counts them and they are numbered left to right and top to bottom; `decodeTim(tim, n)` uses palette `n`. If the
+  row is shorter than the full palette, the palette is the whole row, and an index that falls outside it is an error.
+- **Pixels:** at 4 bits the first pixel of each byte is in the low nibble. At 24 bits each pixel is three bytes
   R, G, B.
-- **Lo que se rechaza:** magia distinta de `0x10`, modo 4 (mixto) o mayor, bloques vacíos o más grandes que la VRAM
-  (1024 × 512 unidades), una longitud menor que lo que piden ancho × alto, y cualquier bloque que pase del final.
-  Lo que haya después del último bloque se ignora; `Tim::byteSize` dice cuántos bytes ocupó según sus longitudes.
-- **El bloque de imagen se busca con la longitud del bloque CLUT**, como hace `GsGetTimInfo`.
-- **Un TIM de 4 u 8 bits sin CLUT** es válido (su paleta está en otro sitio de la VRAM): se leen sus índices, pero no
-  se puede pasar a RGBA.
+- **What is rejected:** a magic other than `0x10`, mode 4 (mixed) or higher, empty blocks or blocks larger than VRAM
+  (1024 × 512 units), a length smaller than what width × height require, and any block that goes past the end.
+  Whatever comes after the last block is ignored; `Tim::byteSize` says how many bytes it took according to its lengths.
+- **The image block is found using the CLUT block's length**, as `GsGetTimInfo` does.
+- **A 4- or 8-bit TIM without a CLUT** is valid (its palette is elsewhere in VRAM): its indices are read, but it
+  cannot be converted to RGBA.
 
-### Colores y transparencia
+### Colors and transparency
 
-Un color de la consola (`Color15`) tiene 5 bits por canal (rojo en los bits 0-4, verde en 5-9, azul en 10-14) y el
-bit STP (15). Al pasar a RGBA8 cada canal se amplía repitiendo sus bits altos (`v << 3 | v >> 2`, así 31 da 255).
+A console color (`Color15`) has 5 bits per channel (red in bits 0-4, green in 5-9, blue in 10-14) and the STP bit
+(15). When converting to RGBA8 each channel is widened by repeating its high bits (`v << 3 | v >> 2`, so 31 gives
+255).
 
-La regla de alfa (`toRgba8`):
+The alpha rule (`toRgba8`):
 
-- `0x0000` es el único color transparente (alfa 0): la consola no dibuja esos texels.
-- Todo lo demás es opaco (alfa 255), también `0x8000`, que es negro opaco.
-- El bit STP solo importa cuando la primitiva se dibuja semitransparente, y eso lo decide quien dibuja, no la imagen.
-  Por eso no cambia el alfa, pero no se pierde: `Tim` guarda la CLUT y los píxeles en bruto.
-- A 24 bits no hay transparencia.
+- `0x0000` is the only transparent color (alpha 0): the console does not draw those texels.
+- Everything else is opaque (alpha 255), including `0x8000`, which is opaque black.
+- The STP bit only matters when the primitive is drawn semi-transparent, and that is decided by whoever draws, not
+  by the image. That is why it does not change alpha, but it is not lost: `Tim` stores the raw CLUT and pixels.
+- At 24 bits there is no transparency.
 
-## TIM apilados
+## Stacked TIMs
 
-`ETCDAT\ETCTIM.BIN` y `STDDAT\STDTIM.BIN` son TIM seguidos sin índice. `readStackedTims` los recorre como
+`ETCDAT\ETCTIM.BIN` and `STDDAT\STDTIM.BIN` are TIMs one after another with no index. `readStackedTims` walks them like
 `utils2.c: loadStackedTIMFile`:
 
-- La lista termina en la primera palabra que no es `0x10` (`StackedTims::end`), o al final del fichero.
-- Cada TIM avanza lo que dan su ancho × alto, no sus longitudes: `4 + ((ancho × alto / 2) + 4) × 4` por la magia, los
-  flags y la imagen, más `((ancho × alto / 2) + 3) × 4` por la CLUT si la hay, con las medidas en unidades de 16
-  bits. La división redondea hacia abajo, como en el original.
-- Si eso no coincide con lo que dicen las longitudes de los bloques, se usa el tamaño del original y el resultado
-  trae un aviso en `warnings` (el lector no escribe en el log).
-- Cada TIM se lee con el lector normal desde su offset hasta el final del fichero, así que sus datos salen igual que
-  los sube el original. Si un TIM está mal formado o el paso se sale del fichero, es un error.
+- The list ends at the first word that is not `0x10` (`StackedTims::end`), or at the end of the file.
+- Each TIM advances by what its width × height give, not its lengths: `4 + ((width × height / 2) + 4) × 4` for the
+  magic, flags and image, plus `((width × height / 2) + 3) × 4` for the CLUT if there is one, with the sizes in
+  16-bit units. The division rounds down, as in the original.
+- If that does not match what the block lengths say, the original's size is used and the result carries a warning in
+  `warnings` (the reader does not write to the log).
+- Each TIM is read with the normal reader from its offset to the end of the file, so its data comes out the same way
+  the original uploads it. If a TIM is malformed or the stride goes past the file, it is an error.
 
-## Ficheros con varios TIM
+## Files with several TIMs
 
-Un `.TIM` suelto puede tener más de un TIM: `STDDAT\T_TOGI.TIM` tiene cuatro, las texturas de una arena que el
-original sube de una vez con un número fijo de TIM (`std_setup.c: STD_loadArenaTIMToVRAM`). `readTimSequence` lee
-estos ficheros, y también los de un solo TIM: cada TIM empieza donde acaban las longitudes de bloque del anterior, y
-la lista termina en la primera palabra que no es `0x10`. A diferencia de los TIM apilados no se usa la cuenta de
-ancho × alto, porque los TIM sueltos se leen con sus longitudes y uno de ancho × alto impar acabaría 2 bytes antes.
+A loose `.TIM` can have more than one TIM: `STDDAT\T_TOGI.TIM` has four, the textures of an arena that the
+original uploads at once with a fixed number of TIMs (`std_setup.c: STD_loadArenaTIMToVRAM`). `readTimSequence` reads
+these files, and also single-TIM ones: each TIM starts where the previous one's block lengths end, and
+the list ends at the first word that is not `0x10`. Unlike stacked TIMs, the width × height count is not used,
+because loose TIMs are read with their lengths and one with an odd width × height would end 2 bytes earlier.
 
-## Packs de paso fijo
+## Fixed-stride packs
 
-Algunos ficheros son entradas concatenadas a un paso fijo de sectores (2048 bytes), sin cabecera. El paso y el número
-de entradas están en el código del original, así que `knownPacks()` los declara. `splitPack` parte cualquier pack por
-su paso y `splitKnownPack` comprueba además el número de entradas.
+Some files are entries concatenated at a fixed stride of sectors (2048 bytes), with no header. The stride and the
+number of entries are in the original's code, so `knownPacks()` declares them. `splitPack` splits any pack by
+its stride and `splitKnownPack` also checks the number of entries.
 
-| Fichero | Paso | Entradas | Índice | Código |
+| File | Stride | Entries | Index | Code |
 |---|---|---|---|---|
-| `CHDAT\ALLTIM.TIM` | 9 sectores (`0x4800`) | 180 | tipo de Digimon | `model.c: loadDigimonTexture, loadMMDAsync, uploadModelTexture` |
-| `CARD\CARD.ALL` | 14 sectores (`0x7000`) | 66 | id de carta | `game_menu.c: loadCardImage`, `file.c: loadStackedTIMEntry` |
+| `CHDAT\ALLTIM.TIM` | 9 sectors (`0x4800`) | 180 | Digimon type | `model.c: loadDigimonTexture, loadMMDAsync, uploadModelTexture` |
+| `CARD\CARD.ALL` | 14 sectors (`0x7000`) | 66 | card id | `game_menu.c: loadCardImage`, `file.c: loadStackedTIMEntry` |
 
-- **Qué hay en cada entrada:** en los dos packs, un TIM al principio de la entrada y relleno hasta el paso. El
-  original lee los sectores de la entrada (`readFileSectors(fichero, buffer, índice × paso, paso)`) y pasa al
-  `GsGetTimInfo` la palabra que sigue a la magia, sin comprobarla.
-- **ALLTIM:** el original no usa la posición de VRAM del TIM: `uploadModelTexture` la sustituye por la página de
-  textura y la CLUT del modelo que lo usa. Las 180 entradas son los tipos de Digimon (`loadMMDAsync` rechaza
+- **What is in each entry:** in both packs, a TIM at the start of the entry and padding up to the stride. The
+  original reads the entry's sectors (`readFileSectors(file, buffer, index × stride, stride)`) and passes to
+  `GsGetTimInfo` the word that follows the magic, without checking it.
+- **ALLTIM:** the original does not use the TIM's VRAM position: `uploadModelTexture` replaces it with the texture
+  page and the CLUT of the model that uses it. The 180 entries are the Digimon types (`loadMMDAsync` rejects
   `digimonType >= 0xB4`).
-- **CARD.ALL:** el TIM se sube a su propia posición. Las 66 entradas son las cartas (`CARD_DATA` ocupa `0x108`
-  bytes de entradas de 4).
-- **Tamaños:** en la tabla de ficheros de todas las versiones (`src/main/file_table_*.c`) ALLTIM.TIM ocupa
-  `0x32A000` bytes (180 × `0x4800`) y CARD.ALL `0x1CE000` (66 × `0x7000`).
+- **CARD.ALL:** the TIM is uploaded at its own position. The 66 entries are the cards (`CARD_DATA` takes `0x108`
+  bytes of 4-byte entries).
+- **Sizes:** in the file table of all versions (`src/main/file_table_*.c`) ALLTIM.TIM takes
+  `0x32A000` bytes (180 × `0x4800`) and CARD.ALL `0x1CE000` (66 × `0x7000`).
 
 ## PNG
 
-`encodePngRgba` y `encodePngIndexed` escriben los PNG del extractor con [lodepng](https://github.com/lvandeve/lodepng)
-(paquete de vcpkg, enlazado en privado). La salida es determinista: los mismos píxeles dan los mismos bytes con la
-misma versión de la librería, porque no se escribe fecha ni texto y la conversión automática de tipo de color está
-apagada.
+`encodePngRgba` and `encodePngIndexed` write the extractor's PNGs with [lodepng](https://github.com/lvandeve/lodepng)
+(vcpkg package, linked privately). The output is deterministic: the same pixels give the same bytes with the same
+library version, because no date or text is written and automatic color type conversion is turned off.
 
-- **RGBA:** PNG de 8 bits por canal.
-- **Indexado:** PNG con paleta de 8 bits; la paleta va en `PLTE` y, si algún color no es opaco, su alfa en `tRNS`.
-  Los TIM de 4 bits también se escriben a 8 bits por píxel.
+- **RGBA:** 8-bit-per-channel PNG.
+- **Indexed:** PNG with an 8-bit palette; the palette goes in `PLTE` and, if any color is not opaque, its alpha in
+  `tRNS`. 4-bit TIMs are also written at 8 bits per pixel.
 
-**Qué usa el extractor por defecto:** los TIM de 4 y 8 bits con CLUT se escriben como PNG indexado con la paleta 0,
-porque así no se pierde nada: los índices y la paleta siguen en el fichero, el RGBA se puede sacar de ellos (al revés
-no, porque una paleta suele repetir colores) y cualquier editor de imágenes lo abre. Las demás paletas de un TIM con
-varias van en su YAML de metadatos, con el bit STP de cada color. Los TIM de 16 y 24 bits van en RGBA
+**What the extractor uses by default:** 4- and 8-bit TIMs with a CLUT are written as an indexed PNG with palette 0,
+because nothing is lost this way: the indices and the palette stay in the file, the RGBA can be derived from them (not
+the other way round, since a palette often repeats colors) and any image editor opens it. The other palettes of a TIM
+with several go in its metadata YAML, with the STP bit of each color. 16- and 24-bit TIMs go as RGBA
 ([`dwx extract`](extract.md)).

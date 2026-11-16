@@ -39,16 +39,16 @@ impl Layer {
 
     pub fn label(self) -> &'static str {
         match self {
-            Layer::Walls => text::LAYER_WALLS,
-            Layer::Triggers => text::LAYER_TRIGGERS,
-            Layer::Exits => text::LAYER_EXITS,
-            Layer::Npcs => text::LAYER_NPCS,
-            Layer::Waypoints => text::LAYER_WAYPOINTS,
-            Layer::Doors => text::LAYER_DOORS,
-            Layer::Toilet => text::LAYER_TOILET,
-            Layer::Grid => text::LAYER_GRID,
-            Layer::Live => text::LAYER_LIVE,
-            Layer::Events => text::LAYER_EVENTS,
+            Layer::Walls => text::layer_walls(),
+            Layer::Triggers => text::layer_triggers(),
+            Layer::Exits => text::layer_exits(),
+            Layer::Npcs => text::layer_npcs(),
+            Layer::Waypoints => text::layer_waypoints(),
+            Layer::Doors => text::layer_doors(),
+            Layer::Toilet => text::layer_toilet(),
+            Layer::Grid => text::layer_grid(),
+            Layer::Live => text::layer_live(),
+            Layer::Events => text::layer_events(),
         }
     }
 

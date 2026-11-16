@@ -1,358 +1,352 @@
-# Ficha de referencia: batalla
+# Reference sheet: battle
 
-Cómo funcionaban los combates del juego original, según el decomp. Es el paso 1 del
-[ciclo de diseño](../conventions/design-cycle.md): describe el original, no lo que hará el mod.
+How combat worked in the original game, according to the decomp. It is step 1 of the
+[design cycle](../conventions/design-cycle.md): it describes the original, not what the mod will do.
 
-Marcas: **(comprobado)** quiere decir que se leyó en el código del decomp; **(suposición)** quiere decir que es una
-interpretación nuestra que falta confirmar. Los tiempos se dan en fotogramas de batalla: el bucle de batalla
-avanza una vez por fotograma.
+Marks: **(verified)** means it was read in the decomp's code; **(assumption)** means it is our own interpretation
+that still needs to be confirmed. Times are given in battle frames: the battle loop advances once per frame.
 
-## Qué hace
+## What it does
 
-El combate es en tiempo real. El partner pelea solo, con su propia IA, y el jugador le da órdenes generales
-("ataca", "guarda distancia", "defiende") o le pide técnicas concretas. Cuántas órdenes entiende depende de su
-inteligencia, y que obedezca depende de su disciplina. Cada técnica gasta MP y "velocidad" acumulada; el daño
-depende del ataque, la defensa y la afinidad entre especialidades. Hay estados alterados y un ataque de remate que
-se carga con el tiempo. Al terminar, el partner gana stats, dinero, objetos y quizá técnicas nuevas, pero se cansa y
-puede lesionarse.
+Combat is in real time. The partner fights on its own, with its own AI, and the player gives it general orders
+("Attack", "Distance", "Defensive") or asks it for specific techniques. How many orders it understands depends on its
+Brains, and whether it obeys depends on its discipline. Each technique spends MP and accumulated "speed"; damage
+depends on offense, defense and the affinity between specialties. There are status effects and a finishing attack
+that charges up over time. When it ends, the partner gains stats, money, items and maybe new techniques, but it gets
+tired and can be injured.
 
-## Reglas
+## Rules
 
-### Bucle y resultado
+### Loop and result
 
-- `BTL_battleMain` prepara el combate y en cada fotograma ejecuta la IA del partner, la de los enemigos y los
-  estados de cada luchador, hasta que el combate termina. Devuelve 1 si se gana, 0 si se huye y −1 si cae el partner
-  **(comprobado)**.
-- Hay como mucho 3 enemigos **(comprobado)**.
-- **El daño se aplica poco a poco.** Cada golpe se suma a una reserva de daño pendiente (tope 9999) que se va
-  restando a la vida a un ritmo que depende de su tamaño (`damageTick`). Un luchador cuenta como derrotado cuando su
-  vida menos el daño pendiente llega a 0 (`BTL_isFighterDefeated`) **(comprobado)**.
-- El MP del partner también se descuenta con una reserva; el de los enemigos, al momento **(comprobado)**.
+- `BTL_battleMain` sets up the battle and, every frame, runs the partner's AI, the enemies' AI and each fighter's
+  status effects, until the battle ends. It returns 1 if won, 0 if fled and −1 if the partner falls **(verified)**.
+- There are at most 3 enemies **(verified)**.
+- **Damage is applied gradually.** Each hit is added to a pool of pending damage (cap 9999) that is subtracted from
+  life at a rate that depends on its size (`damageTick`). A fighter counts as defeated when its life minus the
+  pending damage reaches 0 (`BTL_isFighterDefeated`) **(verified)**.
+- The partner's MP is also deducted through a pool; the enemies' is deducted immediately **(verified)**.
 
-### Stats y su papel
+### Stats and their role
 
-| Stat | En batalla |
+| Stat | In battle |
 |---|---|
-| HP / MP | Reservas de vida y de energía para técnicas. Con un 20 % de HP o menos el luchador usa la animación de herido. |
-| Ataque / defensa | Entran en la fórmula de daño. La defensa también puntúa a qué enemigo atacar. |
-| Velocidad | Llena la reserva de velocidad, sube la esquiva, acorta el remate y da probabilidad de contraataque. |
-| Inteligencia | Número de órdenes disponibles, desobediencia, puntería al elegir objetivo, uso de técnicas de apoyo y de área, y descuento de MP. |
+| HP / MP | Pools of life and of energy for techniques. At 20% HP or less the fighter uses the hurt animation. |
+| Offense / defense | They go into the damage formula. Defense also scores which enemy to attack. |
+| Speed | Fills the speed pool, raises dodging, shortens the finisher and gives counterattack chance. |
+| Brains | Number of orders available, disobedience, aim when choosing a target, use of support and area techniques, and MP discount. |
 
-Todo **(comprobado)** en `BTL_initializeCombat`, `BTL_calculateDamage`, `BTL_calculateHitChance` y la IA.
+All **(verified)** in `BTL_initializeCombat`, `BTL_calculateDamage`, `BTL_calculateHitChance` and the AI.
 
-- **Partner enfermo o lesionado:** al empezar el combate pierde un 20 % de ataque, defensa, velocidad e
-  inteligencia, y sus técnicas cuestan un 50 % más de MP (`BTL_initializeCombat`, `BTL_isMoveUsable`)
-  **(comprobado)**.
-- Los cambios temporales se deshacen al final a partir de una copia de los stats iniciales
-  (`resetStatsAfterCombat`, `BTL_deinitializeCombat`) **(comprobado)**.
+- **Sick or injured partner:** at the start of combat it loses 20% of offense, defense, speed and Brains, and its
+  techniques cost 50% more MP (`BTL_initializeCombat`, `BTL_isMoveUsable`) **(verified)**.
+- Temporary changes are undone at the end from a copy of the initial stats (`resetStatsAfterCombat`,
+  `BTL_deinitializeCombat`) **(verified)**.
 
-### Órdenes del jugador
+### Player orders
 
-Las órdenes son: huir, atacar, a su aire (la de por defecto), moderado, distancia, defensa, cambiar de objetivo,
-usar una de las tres técnicas equipadas y remate (`command_shout.c`) **(comprobado)**.
+The orders are: Run, Attack, Your Call (the default), Moderate, Distance, Defensive, Change target, use one of the
+three equipped techniques and finisher (`command_shout.c`) **(verified)**.
 
-El menú crece con la inteligencia (`BTL_initializeCombat`) **(comprobado)**:
+The menu grows with Brains (`BTL_initializeCombat`) **(verified)**:
 
-| Inteligencia | Órdenes visibles |
+| Brains | Visible orders |
 |---|---|
-| < 100 | Huir, a su aire |
-| 100–199 | + atacar |
-| 200–299 | + moderado |
-| 300–399 | + distancia y cambiar |
-| 400–499 | + defensa |
-| ≥ 500 | Huir, cambiar, defensa, distancia, una por cada técnica equipada (de la tercera ranura a la primera), a su aire. **Atacar y moderado desaparecen.** |
+| < 100 | Run, Your Call |
+| 100–199 | + Attack |
+| 200–299 | + Moderate |
+| 300–399 | + Distance and Change |
+| 400–499 | + Defensive |
+| ≥ 500 | Run, Change, Defensive, Distance, one for each equipped technique (from the third slot to the first), Your Call. **Attack and Moderate disappear.** |
 
-En combates de guion la orden de huir no aparece en el menú (`BTL_initializeCombat`) **(comprobado)**.
+In scripted battles the Run order does not appear in the menu (`BTL_initializeCombat`) **(verified)**.
 
-Qué hace cada una (`BTL_tickPartnerAI`, `BTL_handlePartnerMoveCommand`) **(comprobado)**:
+What each one does (`BTL_tickPartnerAI`, `BTL_handlePartnerMoveCommand`) **(verified)**:
 
-- **Atacar:** modo de carga agresivo y elige la técnica más potente (en empate, la de mejor afinidad; luego al azar).
-- **Moderado:** modo de carga prudente y elige la técnica más barata en MP.
-- **A su aire:** vuelve al modo de carga propio del partner y deja que la IA elija (ver más abajo).
-- **Distancia:** se aleja hasta quedar fuera del alcance de la técnica más larga del objetivo, con margen. No ataca.
-- **Defensa:** se queda quieto mirando al objetivo y confía en el bloqueo.
-- **Cambiar:** con dos enemigos alterna el objetivo; con tres, rota.
-- **Técnica concreta:** la pone en cola si se puede usar (MP suficiente y demás condiciones de `BTL_isMoveUsable`).
+- **Attack:** aggressive charge mode and picks the most powerful technique (on a tie, the one with the best affinity;
+  then at random).
+- **Moderate:** cautious charge mode and picks the cheapest technique in MP.
+- **Your Call:** goes back to the partner's own charge mode and lets the AI choose (see below).
+- **Distance:** it moves away until it is out of range of the target's longest technique, with a margin. It does not
+  attack.
+- **Defensive:** it stays still facing the target and relies on blocking.
+- **Change:** with two enemies it alternates the target; with three, it rotates.
+- **Specific technique:** it queues it if it can be used (enough MP and the other conditions of `BTL_isMoveUsable`).
 
-**Retraso de órdenes desactivado:** `handleCommands` calcula un retraso según la disciplina y acto seguido lo pone
-a 0, así que las órdenes son inmediatas **(comprobado)**.
+**Order delay disabled:** `handleCommands` computes a delay based on discipline and immediately sets it to 0, so
+orders are immediate **(verified)**.
 
-### Obediencia
+### Obedience
 
-- **Desobediencia:** con inteligencia menor que 301, cada (inteligencia / 2 + 1) × 20 fotogramas el partner tiene un
-  (70 − disciplina) % de quedarse parado 100 fotogramas. Recibir un golpe lo saca de ese estado
-  (`BTL_tickPartnerAI`, `BTL_tickFighterAction`) **(comprobado)**. En los enemigos la probabilidad es
-  (300 − inteligencia) / 4 % **(comprobado)**.
-- **Cambio de objetivo al recibir un golpe:** el partner se vuelve hacia quien le golpeó con una probabilidad que
-  depende del modo de carga (70, 40, 30 o 0 %) menos la disciplina; siempre lo hace si su objetivo ya cayó
-  (`BTL_retargetAfterHit`) **(comprobado)**.
+- **Disobedience:** with Brains below 301, every (Brains / 2 + 1) × 20 frames the partner has a (70 − discipline)%
+  chance of standing still for 100 frames. Receiving a hit takes it out of that state (`BTL_tickPartnerAI`,
+  `BTL_tickFighterAction`) **(verified)**. For enemies the chance is (300 − Brains) / 4% **(verified)**.
+- **Changing target when hit:** the partner turns toward whoever hit it with a chance that depends on the charge mode
+  (70, 40, 30 or 0%) minus discipline; it always does so if its target has already fallen (`BTL_retargetAfterHit`)
+  **(verified)**.
 
-### IA del partner
+### Partner AI
 
-**Elección de objetivo** (`BTL_selectFighterTarget`, `BTL_calculateTargetScore`) **(comprobado)**:
+**Target choice** (`BTL_selectFighterTarget`, `BTL_calculateTargetScore`) **(verified)**:
 
-- Inteligencia ≥ 300: prefiere un enemigo con estado alterado. Si no hay, el de menor puntuación, y solo cambia si
-  el actual puntúa al menos 40 más.
-- Inteligencia ≥ 150: el de menor puntuación.
-- Menos: el más cercano.
-- Puntuación = % de HP restante + (afinidad invertida × defensa relativa) / 10. Un enemigo débil y vulnerable puntúa
-  bajo... en teoría: `BTL_calculateTargetScore` usa la vida y la defensa **del propio luchador**, no las del
-  candidato, así que solo la afinidad distingue a los enemigos (ver rarezas) **(comprobado)**.
-- `BTL_getWeakestEnemy` devuelve la puntuación del último enemigo que miró, no la del elegido, y con ella se decide si
-  cambia de objetivo (ver rarezas) **(comprobado)**.
+- Brains ≥ 300: it prefers an enemy with a status effect. If there is none, the one with the lowest score, and it
+  only switches if the current one scores at least 40 more.
+- Brains ≥ 150: the one with the lowest score.
+- Less: the closest.
+- Score = % of HP remaining + (inverted affinity × relative defense) / 10. A weak and vulnerable enemy scores low...
+  in theory: `BTL_calculateTargetScore` uses the life and defense **of the fighter itself**, not the candidate's, so
+  only affinity tells the enemies apart (see oddities) **(verified)**.
+- `BTL_getWeakestEnemy` returns the score of the last enemy it looked at, not that of the chosen one, and that is what
+  decides whether to switch target (see oddities) **(verified)**.
 
-**Elección de técnica "a su aire"** (`BTL_selectPartnerMove`) **(comprobado)**. Sorteo ponderado entre las tres
-técnicas equipadas (la cuarta ranura es el remate):
+**"Your Call" technique choice** (`BTL_selectPartnerMove`) **(verified)**. Weighted draw among the three equipped
+techniques (the fourth slot is the finisher):
 
-- Peso base según el modo de carga: agresivo, por orden de potencia (50, 20, 5); normal, 20 cada una; prudente, por
-  orden de coste de MP (50, 20, 10).
-- Bonus de afinidad contra el objetivo: de +10 (muy eficaz) a +1 (muy poco eficaz).
-- Técnicas de apoyo: + un contador de prioridad que nace de la inteligencia (inteligencia / 10 + 5) y baja con el
-  tiempo.
-- Técnicas de área, con inteligencia ≥ 200 y al menos dos enemigos vivos: + 10 o 15 por enemigo según el modo.
-- En modo prudente con menos del 31 % de HP pesa el alcance de la técnica.
-- Una ranura vacía pesa 5; si sale, el partner carga 80 fotogramas en lugar de atacar.
+- Base weight by charge mode: aggressive, by order of power (50, 20, 5); normal, 20 each; cautious, by order of MP
+  cost (50, 20, 10).
+- Affinity bonus against the target: from +10 (very effective) to +1 (very ineffective).
+- Support techniques: + a priority counter that starts from Brains (Brains / 10 + 5) and drops over time.
+- Area techniques, with Brains ≥ 200 and at least two enemies alive: + 10 or 15 per enemy depending on the mode.
+- In cautious mode with less than 31% HP, the technique's range weighs in.
+- An empty slot weighs 5; if it comes up, the partner charges for 80 frames instead of attacking.
 
-**IA enemiga** (`BTL_selectEnemyMove`, `BTL_tickEnemyAI`) **(comprobado)**: cada enemigo tiene una prioridad por
-técnica en sus datos de mapa, con extras para técnicas de área y de apoyo, y lanza su remate en cuanto tiene la
-barra llena. Su modo de carga es aleatorio, o prudente si está fuera de pantalla.
+**Enemy AI** (`BTL_selectEnemyMove`, `BTL_tickEnemyAI`) **(verified)**: each enemy has a priority per technique in its
+map data, with extras for area and support techniques, and it launches its finisher as soon as its bar is full. Its
+charge mode is random, or cautious if it is off screen.
 
-### Técnicas
+### Techniques
 
-- **Coste de MP:** el valor guardado × 3 (`BTL_isMoveUsable`, `BTL_setupMoveExecution`) **(comprobado)**.
-  - Descuento del partner por inteligencia: 700–799 −5 %, 800–899 −10 %, 900–998 −15 %, 999 −20 %.
-  - Partner enfermo o lesionado: × 1,5.
-  - Los remates no gastan MP.
-- **La potencia también es un coste de velocidad:** usar una técnica resta su potencia a la reserva de velocidad,
-  que no baja de −155 **(comprobado)**.
-- **Alcance:** 1 cuerpo a cuerpo, 2 a distancia, 4 apoyo sobre uno mismo (`range`) **(comprobado)**; el 3 se usa
-  como técnica de área **(suposición, por cómo lo trata la IA)**.
-- **Especialidades:** cada técnica tiene una especialidad (0–6) y cada Digimon hasta tres. La afinidad entre ellas
-  viene de una tabla de 7 × 7 cuyos valores 20, 15, 10, 5 y 2 significan ×2, ×1,5, ×1, ×0,5 y ×0,2
-  (`TYPE_FACTORS`) **(comprobado)**.
-- **Bloques de índices:** las técnicas por debajo de 0x3A se pueden aprender; 0x2D es el contraataque; de 0x3A a
-  0x70 son remates; 0x79 es el proyectil que se usa aplastado **(comprobado)**.
-- **Técnicas de apoyo:** cinco técnicas concretas suben ataque, defensa o velocidad entre un 5 y un 30 % durante el
-  combate, con tope 999 (`BTL_applyBuffMove`) **(comprobado)**.
+- **MP cost:** the stored value × 3 (`BTL_isMoveUsable`, `BTL_setupMoveExecution`) **(verified)**.
+  - Partner discount by Brains: 700–799 −5%, 800–899 −10%, 900–998 −15%, 999 −20%.
+  - Sick or injured partner: × 1.5.
+  - Finishers do not spend MP.
+- **Power is also a speed cost:** using a technique subtracts its power from the speed pool, which does not go below
+  −155 **(verified)**.
+- **Range:** 1 melee, 2 ranged, 4 support on itself (`range`) **(verified)**; 3 is used as an area technique
+  **(assumption, from how the AI treats it)**.
+- **Specialties:** each technique has a specialty (0–6) and each Digimon up to three. The affinity between them comes
+  from a 7 × 7 table whose values 20, 15, 10, 5 and 2 mean ×2, ×1.5, ×1, ×0.5 and ×0.2 (`TYPE_FACTORS`)
+  **(verified)**.
+- **Index blocks:** techniques below 0x3A can be learned; 0x2D is the counterattack; 0x3A to 0x70 are finishers; 0x79
+  is the projectile used when flattened **(verified)**.
+- **Support techniques:** five specific techniques raise offense, defense or speed between 5 and 30% during the
+  battle, capped at 999 (`BTL_applyBuffMove`) **(verified)**.
 
-### Velocidad y ritmo
+### Speed and pacing
 
-- La reserva de velocidad empieza en 100 y gana velocidad / 100 + 1 cada 2 fotogramas, con tope 100
-  (`BTL_increaseSpeedBuffer`) **(comprobado)**.
-- Modos de carga: agresivo, actúa en cuanto la reserva es positiva; normal, espera a tener la potencia de la técnica
-  (o 100); prudente, espera a 100 mientras retrocede (`BTL_applyChargeRequirement`, `BTL_tickChargeState`)
-  **(comprobado)**.
-- Pausas: 40 fotogramas tras cada ataque y 80 si no puede pagar ninguna técnica **(comprobado)**.
-- Las técnicas a distancia buscan su distancia de alcance; si en 80 fotogramas no la consiguen, disparan igual
-  (`BTL_tickRangedAttack`) **(comprobado)**.
-- Cada paso se prueba antes de darlo (`entityCheckCollision`, que `BTL_tickFighterAction` llama cada fotograma): no
-  sale del área de combate (un rectángulo de 280 x 200 píxeles alrededor del centro de la pantalla, probado con dos
-  esquinas de la caja del luchador, una en el suelo y otra 200 unidades arriba), no entra en una casilla del mapa con el
-  bit 0x80 y no choca con el borde de otro luchador vivo; si algo lo impide, el luchador no avanza ese fotograma
-  **(comprobado)**.
-- Al chocar, quien camina hacia un punto conserva su orientación y gira como mucho 0x50 hacia la primera salida libre
-  (`collisionGrace`); quien se saldría del área busca un abanico libre de tres octavos de vuelta
-  (`BTL_findUnblockedRotation`); quien retrocede da la espalda al rival y, tras un choque, gira de 20 en 20
-  (`BTL_backAwayFromTarget`). El ataque cuerpo a cuerpo se acerca sin esa prueba (`BTL_tickMeleeAttack`)
-  **(comprobado)**.
+- The speed pool starts at 100 and gains speed / 100 + 1 every 2 frames, capped at 100 (`BTL_increaseSpeedBuffer`)
+  **(verified)**.
+- Charge modes: aggressive, acts as soon as the pool is positive; normal, waits until it has the technique's power
+  (or 100); cautious, waits for 100 while backing away (`BTL_applyChargeRequirement`, `BTL_tickChargeState`)
+  **(verified)**.
+- Pauses: 40 frames after each attack and 80 if it cannot afford any technique **(verified)**.
+- Ranged techniques look for their range distance; if they do not reach it in 80 frames, they fire anyway
+  (`BTL_tickRangedAttack`) **(verified)**.
+- Each step is tested before taking it (`entityCheckCollision`, which `BTL_tickFighterAction` calls every frame): it
+  does not leave the combat area (a rectangle of 280 x 200 pixels around the center of the screen, tested with two
+  corners of the fighter's box, one on the ground and another 200 units up), does not enter a map cell with bit 0x80
+  and does not collide with the edge of another living fighter; if something prevents it, the fighter does not advance
+  that frame **(verified)**.
+- On a collision, whoever is walking toward a point keeps its orientation and turns at most 0x50 toward the first free
+  exit (`collisionGrace`); whoever would leave the area looks for a free fan of three eighths of a turn
+  (`BTL_findUnblockedRotation`); whoever backs away turns its back to the rival and, after a collision, turns in steps
+  of 20 (`BTL_backAwayFromTarget`). The melee attack approaches without that test (`BTL_tickMeleeAttack`)
+  **(verified)**.
 
-### Daño
+### Damage
 
-`BTL_calculateDamage` **(comprobado)**. Sea **A** la suma de las tres afinidades de la técnica contra las
-especialidades del defensor (10 si la ranura está vacía), así que A / 30 es el multiplicador medio.
+`BTL_calculateDamage` **(verified)**. Let **A** be the sum of the technique's three affinities against the defender's
+specialties (10 if the slot is empty), so A / 30 is the average multiplier.
 
-- **Técnica normal:**
-  - dif = ataque − defensa, limitado a ±500.
-  - daño = A × (potencia + dif × potencia / 500) / 30 × azar(90..110) / 100.
-  - El contraataque usa solo el 30 % de la defensa.
-- **Remate:**
-  - daño = (ataque + potencia) × A / 30, sin defensa.
-  - Partner: × carga / 40 si la carga pasa de 40 (hasta × 2).
-  - Enemigo: × azar(100..200) / 100.
-  - Después, × azar(90..110) / 100.
-- El resultado queda entre 1 y 9999.
+- **Normal technique:**
+  - diff = offense − defense, limited to ±500.
+  - damage = A × (power + diff × power / 500) / 30 × random(90..110) / 100.
+  - The counterattack uses only 30% of the defense.
+- **Finisher:**
+  - damage = (offense + power) × A / 30, without defense.
+  - Partner: × charge / 40 if the charge goes past 40 (up to × 2).
+  - Enemy: × random(100..200) / 100.
+  - Then, × random(90..110) / 100.
+- The result stays between 1 and 9999.
 
-### Acierto, bloqueo y contraataque
+### Hit chance, block and counterattack
 
-`BTL_calculateHitChance` **(comprobado)**:
+`BTL_calculateHitChance` **(verified)**:
 
-- **Acierta siempre** si el defensor es bebé o de entrenamiento; si está aturdido, aplastado o desobedeciendo; si el
-  partner está enfermo (vale para los dos bandos); si la reserva de velocidad del defensor es 0 o menos; si el
-  defensor está en mitad de una técnica; o si es un remate (que además rompe el bloqueo).
-- **Falla siempre** si el defensor ya está bloqueando.
-- **Si no:**
-  - x = precisión / 2 × (velocidad del defensor − velocidad del atacante / 10) / 999.
-  - x × 1,2 si el defensor está quieto.
-  - acierto = precisión − x, entre 0 y 100 %.
+- **Always hits** if the defender is a Fresh or In-Training Digimon; if it is stunned, flattened or disobeying; if the
+  partner is sick (applies to both sides); if the defender's speed pool is 0 or less; if the defender is in the middle
+  of a technique; or if it is a finisher (which also breaks the block).
+- **Always misses** if the defender is already blocking.
+- **Otherwise:**
+  - x = accuracy / 2 × (defender's speed − attacker's speed / 10) / 999.
+  - x × 1.2 if the defender is standing still.
+  - hit chance = accuracy − x, between 0 and 100%.
 
-Al fallar (`BTL_tickAttackHits`) **(comprobado)**:
+On a miss (`BTL_tickAttackHits`) **(verified)**:
 
-- Contra un ataque cuerpo a cuerpo, el defensor puede contraatacar si tiene la técnica de contraataque y al menos
-  165 de MP, con probabilidad velocidad / nivel %.
-- Si no, bloquea: 3 fotogramas de invulnerabilidad, y un ataque cuerpo a cuerpo bloqueado aún hace entre el 10 y el
-  30 % del daño.
+- Against a melee attack, the defender can counterattack if it has the counterattack technique and at least 165 MP,
+  with chance speed / level %.
+- Otherwise, it blocks: 3 frames of invulnerability, and a blocked melee attack still does between 10 and 30% of the
+  damage.
 
-Al acertar, el defensor recibe los fotogramas de invulnerabilidad de la técnica y la tirada de estado
-**(comprobado)**.
+On a hit, the defender receives the technique's invulnerability frames and the status roll **(verified)**.
 
-### Estados alterados
+### Status effects
 
-Se aplican al acertar, con la probabilidad de estado de la técnica, salvo que el defensor esté protegido
-(`BTL_applyMoveStatus`). Avanzan en `BTL_tickStatusEffects`. Todo **(comprobado)**:
+They are applied on a hit, with the technique's status chance, unless the defender is protected
+(`BTL_applyMoveStatus`). They advance in `BTL_tickStatusEffects`. All **(verified)**:
 
-| Estado | Efecto | Duración |
+| Status | Effect | Duration |
 |---|---|---|
-| Veneno | Cada 100 fotogramas quita entre el 1 y el 3 % de la vida máxima | Hasta que se cura o acaba el combate |
-| Confusión | 70 % de atacar al aire en cada elección; si no, a un luchador al azar. Gira sin control | 200–300 fotogramas |
-| Aturdimiento | No puede actuar | 200–240 fotogramas |
-| Aplastado | Tras 65 fotogramas de animación, solo puede lanzar un proyectil cada 40 fotogramas y todo le acierta | 224–304 fotogramas |
+| Poison | Every 100 frames it removes between 1 and 3% of max life | Until cured or the battle ends |
+| Confusion | 70% chance to attack the air on each choice; otherwise, a random fighter. It turns uncontrollably | 200–300 frames |
+| Stun | It cannot act | 200–240 frames |
+| Flat | After 65 frames of animation, it can only throw a projectile every 40 frames and everything hits it | 224–304 frames |
 
-- Solo se muestra un icono a la vez: aturdimiento antes que confusión y confusión antes que veneno.
-- Algunos objetos curan los estados en combate (`BTL_healStatusEffect`).
-- Que la confusión pueda hacer que los enemigos se golpeen entre ellos es **(suposición)**.
-- La confusión de cualquier luchador, aunque se le acabe el tiempo, solo se quita en un fotograma en que el partner
-  no está atacando (ver rarezas) **(comprobado)**.
+- Only one icon is shown at a time: stun before confusion and confusion before poison.
+- Some items cure statuses in combat (`BTL_healStatusEffect`).
+- That confusion can make enemies hit each other is an **(assumption)**.
+- The confusion of any fighter, even if its time runs out, is only removed on a frame when the partner is not
+  attacking (see oddities) **(verified)**.
 
-### Remate y su barra
+### Finisher and its bar
 
-**(comprobado)**:
+**(verified)**:
 
-- Meta de la barra = 3000 − velocidad (`BTL_initializeCombat`).
-- Progreso: +1 por fotograma; + meta × 2 / 50 por cada ataque completado; + meta × 3 / 50 por cada bloqueo; quien
-  ve bloqueado su ataque gana + meta × 4 / 50 (`BTL_addFinisherProgress`, `BTL_tickFighterStates`,
-  `BTL_tickAttackHits`).
-- Solo se llena si la cuarta ranura tiene un remate.
-- Con la barra llena, un botón lanza la orden de remate (`handleCommands`). El resto de la IA se detiene y empieza
-  un aura de 80 fotogramas. Durante ese tiempo, cada pulsación de otros botones suma 2 a la carga, hasta 80; la carga
-  multiplica el daño (`BTL_startQueuedMove`, `BTL_tickFinisherChargeup`). Qué botones exactos son es
-  **(suposición)**.
-- Al lanzarlo, el progreso vuelve a 0.
+- Bar goal = 3000 − speed (`BTL_initializeCombat`).
+- Progress: +1 per frame; + goal × 2 / 50 for each completed attack; + goal × 3 / 50 for each block; whoever sees its
+  attack blocked gains + goal × 4 / 50 (`BTL_addFinisherProgress`, `BTL_tickFighterStates`, `BTL_tickAttackHits`).
+- It only fills if the fourth slot has a finisher.
+- With the bar full, a button launches the finisher order (`handleCommands`). The rest of the AI stops and an aura of
+  80 frames begins. During that time, each press of other buttons adds 2 to the charge, up to 80; the charge
+  multiplies the damage (`BTL_startQueuedMove`, `BTL_tickFinisherChargeup`). Which exact buttons they are is an
+  **(assumption)**.
+- When it is launched, progress goes back to 0.
 
-### Fin del combate y consecuencias
+### End of combat and consequences
 
-- **Victoria:** todos los enemigos han terminado su animación de muerte y el partner sigue vivo
-  (`BTL_isBattleFinished`) **(comprobado)**.
-- **Huida:** desactivada en combates de guion. El tamer retrocede y el combate acaba si el partner sigue vivo.
-  Felicidad −10, disciplina −6, cansancio +2, más el cansancio de después del combate. Cuenta en un contador de
-  huidas (`startBattle`) **(comprobado)**.
-- **Derrota:** si el partner llega a 0 HP, hay una cuenta atrás durante la cual un objeto de revivir aún puede
-  salvarlo. Al revivir se reinician todos los luchadores, no solo el partner: sin enfriamiento, sin técnica planeada,
-  sin persecución, carga ni enfriamiento, y se cancela el remate (`BTL_isBattleFinished`) **(comprobado)**. La cuenta
-  atrás se para mientras vuela un objeto que lanza el tamer (`BTL_isBattleFinished`) **(comprobado)**. Felicidad −30, disciplina −20 (`startBattle`). Después se pierden el
-  30 % de los huecos ocupados de la bolsa, redondeando hacia abajo y cada uno con su pila entera (`handleItemLoss`, ver
-  la [ficha de inventario](inventory.md)), y una vida; con 0 vidas, la vida restante pasa a 0 y el partner muere
-  **(comprobado)**. Ver la [ficha de cuidado](care.md).
-- **Objetos en combate:** el tamer abre la bolsa con su propio botón, no desde el menú de órdenes
-  (`battle_tick.c: tamerTickBattle` → `inventory.c: addInventoryUI`); no se abre huyendo, en los combates sin tamer
-  ni con otro objeto en el aire. Mientras está abierta, el menú de órdenes espera (`handleCommands` vuelve) pero el
-  combate sigue (`BTL_battleMain`). Solo se lanzan los objetos de `item_color` 1 o 2 (`inventory.c:
-  selectOptionMenu`). El objeto se gasta al lanzarlo (`main.c: startThrowingItem`), sale de la mano en el fotograma
-  7 de la animación del tamer, vuela 24 fotogramas hacia el partner y siempre llega; el partner no lo rechaza, va uno
-  cada vez y la bolsa se cierra (`main.c: tickThrownItem`) **(comprobado)**. Con 0 HP solo hacen algo los de revivir
-  (`item.c: handleRestore`). Los discos suben ataque, defensa o velocidad (+20 o +50), sin pasar del 130 % de su valor
-  al empezar el combate; el omnidisco no tiene ese límite (`main.c: handleBuffDisks`) **(comprobado)**. Que un
-  fotograma de la animación del tamer dure un fotograma de combate es **(suposición)**.
-- **Barras de HP:** el HUD del partner enseña sus barras de HP y MP con el valor actual (`battle_hud.c`). De los
-  enemigos solo se ve una barra de HP con su valor, junto a él, al recibir daño, y se oculta 21 fotogramas después de
-  acabar el retroceso; no hay nombre ni MP (`battle_main.c: BTL_renderEnemyHPBars`) **(comprobado)**.
-- **Reloj:** el tiempo de juego y el cuidado se paran durante todo el combate (`tamer.c: startBattle` llama a
-  `stopGameTime`; `clock.c: tickGameClock` no avanza fuera del campo), y al acabar se suman 20 minutos
-  (`advanceBattleTime`) **(comprobado)**.
-- **HP y MP tras perder:** ningún código de combate los toca; el partner pasa al mapa de la derrota
-  (`murd.c: MURD_tick`, mapa 205 o 218) y el guion de ese mapa (script 212, sección 0x48) suma 9999 al HP y al MP
-  actuales, que `script_value.c: enforceStatsLimits` deja en el máximo: vuelve con todo **(comprobado en el guion
-  desensamblado)**.
-- **Victoria, cuidado:** felicidad +2, batallas +1 (cuenta para la [evolución](evolution.md)) **(comprobado)**.
-- **Cansancio y hambre tras ganar o huir** (`handlePostBattleTiredness`): cansancio +5, más un extra si el MP
-  acabó por debajo del 80 % (ver rarezas), y la comida baja 15 **(comprobado)**.
-- **Tiempo:** cada combate adelanta 20 minutos el reloj del juego (`advanceBattleTime`) **(comprobado)**.
-- **Lesión:** si alguien recibió un golpe en el combate (no solo el partner: `handleBattleEndBox` mira
-  `HAS_TAKEN_DAMAGE`, que marca cualquier golpe) y el partner no estaba lesionado, probabilidad = cansancio − % de HP
-  restante (`handleBattleInjury`) **(comprobado)**.
+- **Victory:** all the enemies have finished their death animation and the partner is still alive
+  (`BTL_isBattleFinished`) **(verified)**.
+- **Fleeing:** disabled in scripted battles. The tamer backs away and the battle ends if the partner is still alive.
+  Happiness −10, discipline −6, tiredness +2, plus the post-battle tiredness. It counts in a flee counter
+  (`startBattle`) **(verified)**.
+- **Defeat:** if the partner reaches 0 HP, there is a countdown during which a revive item can still save it. On
+  reviving, all the fighters are reset, not just the partner: no cooldown, no planned technique, no chase, charge or
+  cooldown, and the finisher is canceled (`BTL_isBattleFinished`) **(verified)**. The countdown stops while an item
+  thrown by the tamer is flying (`BTL_isBattleFinished`) **(verified)**. Happiness −30, discipline −20
+  (`startBattle`). Afterwards, 30% of the occupied bag slots are lost, rounding down and each with its whole stack
+  (`handleItemLoss`, see the [inventory sheet](inventory.md)), and one life; with 0 lives, the remaining life goes to
+  0 and the partner dies **(verified)**. See the [care sheet](care.md).
+- **Items in combat:** the tamer opens the bag with its own button, not from the orders menu (`battle_tick.c:
+  tamerTickBattle` → `inventory.c: addInventoryUI`); it does not open while fleeing, in battles without a tamer or
+  with another item in the air. While it is open, the orders menu waits (`handleCommands` returns) but the battle
+  continues (`BTL_battleMain`). Only items with `item_color` 1 or 2 are thrown (`inventory.c: selectOptionMenu`). The
+  item is spent when thrown (`main.c: startThrowingItem`), leaves the hand on frame 7 of the tamer's animation, flies
+  24 frames toward the partner and always arrives; the partner does not refuse it, one goes at a time and the bag
+  closes (`main.c: tickThrownItem`) **(verified)**. At 0 HP only the revive ones do anything (`item.c:
+  handleRestore`). Disks raise offense, defense or speed (+20 or +50), without going past 130% of its value at the
+  start of combat; the Omni Disk has no such limit (`main.c: handleBuffDisks`) **(verified)**. That a frame of the
+  tamer's animation lasts one combat frame is an **(assumption)**.
+- **HP bars:** the partner's HUD shows its HP and MP bars with the current value (`battle_hud.c`). For enemies only an
+  HP bar with its value is seen, next to it, when taking damage, and it hides 21 frames after the knockback ends; there
+  is no name or MP (`battle_main.c: BTL_renderEnemyHPBars`) **(verified)**.
+- **Clock:** game time and care stop during the whole battle (`tamer.c: startBattle` calls `stopGameTime`; `clock.c:
+  tickGameClock` does not advance outside the field), and at the end 20 minutes are added (`advanceBattleTime`)
+  **(verified)**.
+- **HP and MP after losing:** no combat code touches them; the partner goes to the defeat map (`murd.c: MURD_tick`, map
+  205 or 218) and that map's script (script 212, section 0x48) adds 9999 to the current HP and MP, which
+  `script_value.c: enforceStatsLimits` leaves at the maximum: it comes back with everything **(verified in the
+  disassembled script)**.
+- **Victory, care:** happiness +2, battles +1 (counts toward [evolution](evolution.md)) **(verified)**.
+- **Tiredness and hunger after winning or fleeing** (`handlePostBattleTiredness`): tiredness +5, plus an extra if MP
+  ended below 80% (see oddities), and food drops 15 **(verified)**.
+- **Time:** each battle advances the game clock 20 minutes (`advanceBattleTime`) **(verified)**.
+- **Injury:** if anyone took a hit in the battle (not only the partner: `handleBattleEndBox` looks at
+  `HAS_TAKEN_DAMAGE`, which marks any hit) and the partner was not injured, chance = tiredness − % of HP remaining
+  (`handleBattleInjury`) **(verified)**.
 
-### Recompensas
+### Rewards
 
-`battleStatsGainsAndDrops`, `handleBattleEndBox` **(comprobado)**:
+`battleStatsGainsAndDrops`, `handleBattleEndBox` **(verified)**:
 
-- **Dinero:** la suma del dinero de cada enemigo, con tope de 999 999 en el monedero.
-- **Objetos:** cada enemigo suelta su objeto con su probabilidad (salvo en una pantalla concreta).
-- **Stats:** para cada stat se toma el valor más alto entre los enemigos (E) y el del partner (P), con un factor F
-  que crece con el número de enemigos (10, 12 o 16):
-  - Si E ≥ P: ganancia = redondeo hacia arriba de E × F / (P × 10).
-  - Si E < P: probabilidad E × F × 100 / (P × 10) % de ganar 1.
-  - Si un stat no ganó nada, hay otra tirada de +1 según cómo fue el combate: HP, % de vida perdida; MP y ataque,
-    10 × ataques hechos; defensa, 10 × golpes recibidos de al menos el 20 % de la vida; velocidad, 10 × bloqueos +
-    la mitad del % de vida perdida; inteligencia, 5 × ataques + 5 × golpes fuertes.
-  - Las ganancias se suman tal cual. Topes: HP y MP 9999, el resto 999.
+- **Money:** the sum of each enemy's money, capped at 999,999 in the wallet.
+- **Items:** each enemy drops its item with its chance (except on one specific screen).
+- **Stats:** for each stat, the highest value among the enemies (E) and the partner's (P) is taken, with a factor F
+  that grows with the number of enemies (10, 12 or 16):
+  - If E ≥ P: gain = E × F / (P × 10) rounded up.
+  - If E < P: chance E × F × 100 / (P × 10)% of gaining 1.
+  - If a stat gained nothing, there is another +1 roll depending on how the battle went: HP, % of life lost; MP and
+    offense, 10 × attacks made; defense, 10 × hits received of at least 20% of life; speed, 10 × blocks + half the %
+    of life lost; Brains, 5 × attacks + 5 × strong hits.
+  - Gains are added as is. Caps: HP and MP 9999, the rest 999.
 
-### Aprender técnicas en batalla
+### Learning techniques in battle
 
-`battleMoveLearning`, `BTL_setupMoveExecution` **(comprobado)**:
+`battleMoveLearning`, `BTL_setupMoveExecution` **(verified)**:
 
-- Durante el combate se apuntan hasta 12 técnicas aprendibles distintas que usan los enemigos.
-- Tras ganar, cada una entra en sorteo si el partner no la sabe, si es de una de sus especialidades y si está en su
-  lista de 16 técnicas posibles.
-- Cada candidata tira su probabilidad en `MOVE_LEARN_CHANCES` (por técnica y por ranura de especialidad). De las
-  que aciertan se aprende una al azar.
-- No se pide inteligencia. Dos parejas de técnicas se aprenden juntas (`learnMove`).
+- During combat, up to 12 different learnable techniques used by the enemies are noted.
+- After winning, each one enters a draw if the partner does not know it, if it is one of its specialties and if it is
+  in its list of 16 possible techniques.
+- Each candidate rolls its chance in `MOVE_LEARN_CHANCES` (per technique and per specialty slot). Of those that
+  succeed, one is learned at random.
+- No Brains is required. Two pairs of techniques are learned together (`learnMove`).
 
-### Enemigos que se unen
+### Enemies that join
 
-Al empezar un combate, otros enemigos visibles se unen con una probabilidad que depende del tipo del partner y del
-enemigo (`FLEE_CHANCES`, 70 % si el partner no tiene tipo). Dos objetos suben o bajan esa probabilidad
-(`handleBattleStart`) **(comprobado)**.
+At the start of a battle, other visible enemies join with a chance that depends on the partner's type and the enemy's
+(`FLEE_CHANCES`, 70% if the partner has no type). Two items raise or lower that chance (`handleBattleStart`)
+**(verified)**.
 
-## Datos
+## Data
 
-Tablas del ejecutable principal. `dwx` las extraerá a YAML desde el disco del usuario; aquí solo se describe su forma.
+Tables in the main executable. `dwx` extracts them to YAML from the user's disc; here only their shape is
+described.
 
-| Tabla | Entrada | Entradas | Campos |
+| Table | Entry | Entries | Fields |
 |---|---|---|---|
-| `MOVE_DATA` | 16 bytes | 122 | Distancia de alcance (al cuadrado), potencia, coste de MP (÷ 3), fotogramas de invulnerabilidad que causa, alcance (1–4), especialidad, estado que causa (1 veneno, 2 confusión, 3 aturdimiento, 4 aplastado), precisión, probabilidad de estado, banderas (bit 0: necesita objetivo; bit 1: bloqueo compartido de 110 fotogramas) y dos campos sin identificar. |
-| `MOVE_NAMES` | — | — | Nombres de las técnicas. |
-| `MOVE_LEARN_CHANCES` | 3 bytes | 58 | Probabilidad (%) de aprender cada técnica aprendible según la ranura de especialidad del partner. |
-| `TYPE_FACTORS` | 7 bytes | 7 | Afinidad de cada especialidad atacante contra cada especialidad defensora, en décimas. |
-| `FLEE_CHANCES` | — | 3 × 3 | Probabilidad de que un enemigo se una al combate según los tipos. |
-| `STAT_GAIN_ENEMY_FACTORS` | — | 3 | Factor de ganancia de stats según el número de enemigos. |
-| `DIGIMON_DATA` | 52 bytes | 180 | Ver la [ficha de evolución](evolution.md). En batalla se usan el tipo, el nivel, las especialidades, el objeto que suelta y su probabilidad y la lista de técnicas. |
+| `MOVE_DATA` | 16 bytes | 122 | Range distance (squared), power, MP cost (÷ 3), invulnerability frames it causes, range (1–4), specialty, status it causes (1 poison, 2 confusion, 3 stun, 4 flat), accuracy, status chance, flags (bit 0: needs a target; bit 1: shared block of 110 frames) and two unidentified fields. |
+| `MOVE_NAMES` | — | — | Names of the techniques. |
+| `MOVE_LEARN_CHANCES` | 3 bytes | 58 | Chance (%) of learning each learnable technique according to the partner's specialty slot. |
+| `TYPE_FACTORS` | 7 bytes | 7 | Affinity of each attacking specialty against each defending specialty, in tenths. |
+| `FLEE_CHANCES` | — | 3 × 3 | Chance that an enemy joins the battle according to the types. |
+| `STAT_GAIN_ENEMY_FACTORS` | — | 3 | Stat gain factor according to the number of enemies. |
+| `DIGIMON_DATA` | 52 bytes | 180 | See the [evolution sheet](evolution.md). In battle the type, level, specialties, the item it drops and its chance, and the list of techniques are used. |
 
-Los stats de combate de cada enemigo no están en una tabla global: vienen en los datos de cada mapa (vida, MP,
-ataque, defensa, velocidad, inteligencia, dinero, modo de carga, cuatro técnicas con su prioridad y datos de huida),
-leídos en `loadMapDigimon` (`overworld.c`) **(comprobado)**. Las estructuras están en `include/dw/move.h`,
-`combat.h`, `entity.h` y `params.h`.
+The combat stats of each enemy are not in a global table: they come in each map's data (life, MP, offense, defense,
+speed, Brains, money, charge mode, four techniques with their priority and flee data), read in `loadMapDigimon`
+(`overworld.c`) **(verified)**. The structures are in `include/dw/move.h`, `combat.h`, `entity.h` and `params.h`.
 
-## Rarezas
+## Oddities
 
-Todas **(comprobado)** salvo donde se indica:
+All **(verified)** except where indicated:
 
-- **Cansancio por MP roto.** En `handlePostBattleTiredness` el extra por MP gastado divide antes de multiplicar, así
-  que casi siempre suma 0. El propio decomp lo anota.
-- **Órdenes sin retraso.** El retraso por disciplina se calcula y se descarta.
-- **Enfermedad = acierto seguro.** Con el partner enfermo, todos los ataques del combate aciertan, también los suyos.
-- **Atacar y moderado desaparecen** con inteligencia 500 o más, cuando parecería que el menú solo crece.
-- **Contraataque con MP.** Aunque el contraataque no gasta MP, exige tener al menos 165.
-- **Errores de bucle** en `BTL_initializeCombat` (índice cambiado) y `BTL_setupMoveExecution` (una condición que
-  siempre se cumple). En la rama de poca vida de `BTL_selectPartnerMove` el bucle interno reutiliza el índice externo
-  **(suposición: parece un error)**.
-- En combates de guion sin huida los enemigos no gastan MP.
-- **Puntuación de objetivo con stats propios.** `BTL_calculateTargetScore` usa la vida y la defensa del que elige.
-- **El más débil informa mal.** `BTL_getWeakestEnemy` devuelve la puntuación del último enemigo mirado.
-- **La confusión espera al partner.** Ninguna confusión se quita mientras el partner ataca.
-- **Lesión por cualquier golpe.** La tirada de lesión tras ganar se hace si cualquier luchador recibió un golpe.
-- **Sin límite de tiempo.** Dos luchadores sin MP para ninguna técnica esperan para siempre; el original no tiene
-  tiempo máximo de combate.
-- El torneo (`src/std/`) y el modo versus (`src/vs/`) tienen copias casi iguales de esta lógica; no se han comparado
-  en detalle **(suposición: pueden diferir)**.
+- **Broken MP tiredness.** In `handlePostBattleTiredness` the extra for MP spent divides before multiplying, so it
+  almost always adds 0. The decomp itself notes it.
+- **Orders without delay.** The discipline delay is computed and discarded.
+- **Sickness = guaranteed hit.** With the partner sick, all the attacks in the battle hit, its own too.
+- **Attack and Moderate disappear** with Brains 500 or more, when it would seem the menu only grows.
+- **Counterattack with MP.** Although the counterattack does not spend MP, it requires having at least 165.
+- **Loop errors** in `BTL_initializeCombat` (swapped index) and `BTL_setupMoveExecution` (a condition that is always
+  met). In the low-life branch of `BTL_selectPartnerMove` the inner loop reuses the outer index **(assumption: it
+  looks like a bug)**.
+- In scripted battles without fleeing, enemies do not spend MP.
+- **Target score with own stats.** `BTL_calculateTargetScore` uses the life and defense of the one choosing.
+- **The weakest reports wrongly.** `BTL_getWeakestEnemy` returns the score of the last enemy looked at.
+- **Confusion waits for the partner.** No confusion is removed while the partner attacks.
+- **Injury from any hit.** The injury roll after winning is made if any fighter took a hit.
+- **No time limit.** Two fighters without MP for any technique wait forever; the original has no maximum combat time.
+- The tournament (`src/std/`) and versus mode (`src/vs/`) have nearly identical copies of this logic; they have not
+  been compared in detail **(assumption: they may differ)**.
 
-## Dónde está en el decomp
+## Where it is in the decomp
 
-| Qué | Dónde |
+| What | Where |
 |---|---|
-| Bucle, IA, daño, acierto, estados, remate | `src/btl/battle_main.c`: `BTL_battleMain`, `BTL_tickPartnerAI`, `BTL_tickEnemyAI`, `BTL_selectPartnerMove`, `BTL_selectEnemyMove`, `BTL_selectFighterTarget`, `BTL_calculateDamage`, `BTL_calculateHitChance`, `BTL_tickAttackHits`, `BTL_applyMoveStatus`, `BTL_tickStatusEffects`, `BTL_addFinisherProgress`, `BTL_applyBuffMove` |
-| Preparación, menú por inteligencia, fin | `src/btl/battle_setup.c`: `BTL_initializeCombat`, `BTL_isBattleFinished` |
-| Órdenes y carga del remate | `src/btl/command_shout.c`, `src/btl/command_menu.c`: `BTL_tickFinisherChargeup`; `src/main/battle_tick.c`: `handleCommands` |
-| Recompensas, ganancias, lesión, aprendizaje | `src/main/battle_ui.c`: `battleStatsGainsAndDrops`, `handleBattleEndBox`, `handleBattleInjury`, `battleMoveLearning`, `resetStatsAfterCombat` |
-| Consecuencias de cuidado | `src/main/tamer.c`: `startBattle`, `advanceBattleTime`; `src/main/partner_impl.c`: `handlePostBattleTiredness` |
-| Inicio y enemigos que se unen | `src/main/btl.c`: `handleBattleStart` |
-| Daño gradual | `src/main/utils.c`: `damageTick` |
-| Enemigos por mapa | `src/main/overworld.c`: `loadMapDigimon` |
+| Loop, AI, damage, hit chance, statuses, finisher | `src/btl/battle_main.c`: `BTL_battleMain`, `BTL_tickPartnerAI`, `BTL_tickEnemyAI`, `BTL_selectPartnerMove`, `BTL_selectEnemyMove`, `BTL_selectFighterTarget`, `BTL_calculateDamage`, `BTL_calculateHitChance`, `BTL_tickAttackHits`, `BTL_applyMoveStatus`, `BTL_tickStatusEffects`, `BTL_addFinisherProgress`, `BTL_applyBuffMove` |
+| Setup, menu by Brains, end | `src/btl/battle_setup.c`: `BTL_initializeCombat`, `BTL_isBattleFinished` |
+| Orders and finisher charge | `src/btl/command_shout.c`, `src/btl/command_menu.c`: `BTL_tickFinisherChargeup`; `src/main/battle_tick.c`: `handleCommands` |
+| Rewards, gains, injury, learning | `src/main/battle_ui.c`: `battleStatsGainsAndDrops`, `handleBattleEndBox`, `handleBattleInjury`, `battleMoveLearning`, `resetStatsAfterCombat` |
+| Care consequences | `src/main/tamer.c`: `startBattle`, `advanceBattleTime`; `src/main/partner_impl.c`: `handlePostBattleTiredness` |
+| Start and enemies that join | `src/main/btl.c`: `handleBattleStart` |
+| Gradual damage | `src/main/utils.c`: `damageTick` |
+| Enemies per map | `src/main/overworld.c`: `loadMapDigimon` |

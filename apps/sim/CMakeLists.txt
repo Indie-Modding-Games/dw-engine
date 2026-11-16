@@ -1,5 +1,5 @@
 # dwe-sim (R3.5): plays scenarios of the game's systems many times without graphics, with seeds, and reports the
-# distributions of what they measure (docs/guides/simulaciones.md).
+# distributions of what they measure (docs/guides/simulations.md).
 
 # Any game module may bring a scenario, so the simulations may use them all.
 get_property(game_modules GLOBAL PROPERTY DWE_GAME_MODULES)

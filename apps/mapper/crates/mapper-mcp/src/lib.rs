@@ -26,6 +26,7 @@ Serves the map editor to external tools over stdio (MCP, one JSON-RPC message pe
   --target <pack>      where saves go: the id or folder of a writable pack, or a new folder in a
                        mods folder, which becomes a new mod pack
   --live <endpoint>    connects to a running dwe-game: unix:<socket> or tcp:<port>
+  --lang <en|es>       the language of the texts it returns (default en)
   -h, --help           this help";
 
 /// What the command line gives the server.
@@ -36,6 +37,7 @@ pub struct ServerOptions {
     pub mods: Vec<PathBuf>,
     pub target: Option<String>,
     pub live: Option<String>,
+    pub lang: Option<mapper_core::text::Language>,
     pub help: bool,
 }
 
@@ -59,6 +61,13 @@ impl ServerOptions {
                 "--mods" => options.mods.push(value()?.into()),
                 "--target" => options.target = Some(value()?),
                 "--live" => options.live = Some(value()?),
+                "--lang" => {
+                    let text = value()?;
+                    options.lang = Some(
+                        mapper_core::text::Language::parse(&text)
+                            .ok_or_else(|| format!("--lang takes en or es, not '{text}'"))?,
+                    );
+                }
                 other => return Err(format!("unknown option '{other}'")),
             }
         }
@@ -282,6 +291,7 @@ pub fn run(
         println!("{USAGE}");
         return std::process::ExitCode::SUCCESS;
     }
+    mapper_core::text::set_language(options.lang.unwrap_or_default());
     if options.team_packs.is_none()
         && let Some(content) = &options.content
     {

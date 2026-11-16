@@ -18,7 +18,7 @@ namespace dwe::assets {
 class VirtualFileSystem;
 
 // The table of every field map, `data/maps` (content/schemas/maps.schema.json,
-// docs/formats/mapas.md): the executable's MAP_ENTRIES and the tables it points into. Numbers are
+// docs/formats/maps.md): the executable's MAP_ENTRIES and the tables it points into. Numbers are
 // kept as the extractor wrote them.
 
 // A map of the table (MapEntry).

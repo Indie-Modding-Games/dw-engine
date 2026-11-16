@@ -6,8 +6,8 @@
 #include <optional>
 
 // What the story orders read and change outside the runner
-// (docs/architecture/interprete-historia.md, "Dónde vive"). The session implements them; the tests
-// use fakes.
+// (docs/architecture/story-interpreter.md, "Where it lives"). The session implements them; the
+// tests use fakes.
 namespace dwe::game::story {
 
 // The story's triggers and variables. The original has 800 triggers and 256 variables (script.h:

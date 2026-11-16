@@ -1,6 +1,6 @@
 # The save smoke, second run: it starts with --load slot_01 from the saves folder route-save-load wrote, and checks
 # that the game is where and as that run saved it: the map and the player's place, the partner, the clock and the bag.
-# It never runs alone (scripts/gate.sh, follow_up_routes). How to run it: docs/guides/prueba-vertical.md.
+# It never runs alone (scripts/gate.sh, follow_up_routes). How to run it: docs/guides/vertical-slice.md.
 name: save-load-check
 device: keyboard
 timeout: 120

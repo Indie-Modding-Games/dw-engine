@@ -13,7 +13,7 @@
 #include <string_view>
 #include <vector>
 
-// The player-facing texts in the player's language (docs/architecture/localizacion.md).
+// The player-facing texts in the player's language (docs/architecture/localization.md).
 namespace dwe::localization {
 
 // The language a missing text falls back to.
@@ -112,7 +112,7 @@ void useCatalog(const Catalog* catalog);
 [[nodiscard]] std::string tr(std::string_view key, std::span<const TextArgument> arguments = {});
 
 // The key of a string of the original's text: "<source>.<block>.<slot>", the slot zero-padded
-// (docs/formats/textos.md).
+// (docs/formats/texts.md).
 [[nodiscard]] std::string gameTextKey(std::string_view source, std::string_view block,
                                       std::size_t slot);
 

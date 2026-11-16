@@ -14,7 +14,7 @@
 
 // The disc image of the dev assets, read through dwx: only dwx reads disc images (dependency rule
 // 2), so the apps ask it for the disc's extracted content in a dev cache of the user's data folder
-// and mount that like any extracted content folder (docs/architecture/assets-de-desarrollo.md).
+// and mount that like any extracted content folder (docs/architecture/development-assets.md).
 namespace dwe::content {
 
 // The folder of the user's data that holds the dev cache of extracted discs.

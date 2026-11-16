@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds and tests the desktop launcher (apps/launcher, docs/modulos/apps/launcher.md) in its own
+# Builds and tests the desktop launcher (apps/launcher, docs/modules/apps/launcher.md) in its own
 # image, so the host needs nothing but Docker. The launcher it builds runs on the host.
 #
 # Usage: scripts/launcher.sh <command> [args...]

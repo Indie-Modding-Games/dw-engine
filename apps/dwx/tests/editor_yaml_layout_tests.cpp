@@ -9,7 +9,7 @@
 #include "yaml_edits.hpp"
 
 // The map editor compares what it writes with the engine's documents byte for byte, so the layout
-// of emitYaml is contract (docs/architecture/herramientas-externas.md). This test pins it for every
+// of emitYaml is contract (docs/architecture/external-tools.md). This test pins it for every
 // kind of value those documents hold. If it fails, the change breaks the editor: it is a contract
 // change, not a test to update.
 

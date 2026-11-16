@@ -11,7 +11,7 @@
 
 namespace dwe::app {
 
-// Free exploration (docs/architecture/warps-de-script.md): a UI setting and the pause menu's
+// Free exploration (docs/architecture/script-warps.md): a UI setting and the pause menu's
 // command with the same name (true or false), off by default.
 inline constexpr std::string_view FreeExplorationSetting = "free_exploration";
 // The chooser's document and its commands: a place of the choice, from 0, or staying on the cell.

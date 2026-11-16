@@ -1,4 +1,4 @@
-// The movies' upscaler (apps/game MovieDrawer, an engine improvement; docs/architecture/peliculas.md, «Escalado»), with
+// The movies' upscaler (apps/game MovieDrawer, an engine improvement; docs/architecture/movies.md, «Escalado»), with
 // the texture filter «upscaled»: the first of two passes (the sharpen, movie_sharpen.slang, follows), written for the
 // movies' small picture.
 //

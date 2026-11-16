@@ -1,17 +1,17 @@
 # scene
 
-Las entidades del mundo y sus componentes (ECS).
+The world's entities and their components (ECS).
 
-- Carpeta: `packages/engine/scene`; objetivos de CMake: `dwe::scene` (capa `systems`).
-- Depende de: `core`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/engine/scene](https://indie-modding-games.github.io/dw-engine/modulos/engine/scene).
+- Folder: `packages/engine/scene`; CMake targets: `dwe::scene` (`systems` layer).
+- Depends on: `core`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/engine/scene](https://indie-modding-games.github.io/dw-engine/modules/engine/scene).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter scene
-scripts/dev.sh test --filter scene       # sus tests (etiqueta de ctest scene)
-scripts/dev.sh test --filter ...scene    # y los de todo lo que depende de él
+scripts/dev.sh test --filter scene       # its tests (ctest label scene)
+scripts/dev.sh test --filter ...scene    # and those of everything that depends on it
 ```

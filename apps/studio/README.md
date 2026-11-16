@@ -1,64 +1,68 @@
 # DWE Studio
 
-DWE Studio es un banco de trabajo de escritorio separado del juego. Reúne un editor de código, el árbol del motor, una terminal de comandos y controles para compilar y ejecutar `dwe-game`.
+DWE Studio is a desktop workbench separate from the game. It brings together a code editor, the engine tree, a command terminal and controls to build and run `dwe-game`.
 
-## Ejecutar en desarrollo
+## Running in development
 
-Requiere Node.js y npm. Desde esta carpeta:
+It needs Node.js and npm. From this folder:
 
 ```sh
 npm install
 npm run dev
 ```
 
-Para crear el bundle de la app:
+To create the app bundle:
 
 ```sh
 npm run build
 npm start
 ```
 
-Por defecto abre la raíz del repositorio que contiene `apps/studio`. Se puede seleccionar otra raíz DWE con el botón de carpeta; debe tener `scripts/dev.sh`.
+By default it opens the repository root that contains `apps/studio`. You can select another DWE root with the folder button; it must have `scripts/dev.sh`.
 
-## Flujo de trabajo
+## Language
 
-- El editor abre y guarda archivos del repositorio. `Ctrl/Cmd+P` busca archivos y `Ctrl/Cmd+S` guarda.
-- El explorador observa los cambios en disco. Los cambios guardados desde otra herramienta, como Codex o Claude Code, aparecen en «Cambios recientes» y actualizan las pestañas que no tienen cambios locales.
-- El botón de compilar ejecuta `scripts/dev.sh build`; «Ejecutar» compila `dwe-game` y `dwx`, actualiza la caché con `disc_image` y crea una raíz de contenido de ejecución con esa base y los paquetes del proyecto. No modifica `content/base`. Después inicia el juego con `--tuning --dev-assets` y abre el overlay de depuración: FPS, entradas, consola Lua y panel de estado. `F1` lo oculta o vuelve a abrir. La salida de compilación y del juego aparece en el panel inferior. La ruta del disco se configura en `dev-assets.yaml` dentro del proyecto o en la carpeta de datos del usuario.
-- La consola mantiene una sesión `bash` desde la raíz seleccionada; puedes cambiar de directorio y los comandos conservan su estado.
-- El explorador `DW_DECOMP` abre el árbol local decompilado como referencia de solo lectura. Busca `DWE_DECOMP` o, por defecto, `~/code/dw_decomp`. DWE Studio no copia ni modifica ese repositorio.
-- La pestaña «Comparar» muestra dos ventanas lado a lado: DuckStation con el disco del usuario y DWE Engine con la ejecución del proyecto. Studio actualiza las ventanas al abrirse y mientras inicia el juego; reconoce títulos como `dwe`, `dwe-game`, `dw1` y `digimon world`. «Buscar ventanas» fuerza una actualización de la lista. En Linux/X11, haz clic en una pantalla para darle el foco a ese juego; el teclado y el mando se dirigen a la ventana elegida mientras la captura sigue visible en Studio.
-- Si detecta ambas ventanas al arrancar y el loop no se detuvo antes, DWE Studio las vuelve a seleccionar por su título, inicia las capturas y reanuda el loop automáticamente. Cada 20 segundos guarda en `.dwe-studio/observer/` tres fotogramas secuenciales por juego (medio segundo entre fotogramas) y los logs recientes; `runtime.json` registra ventanas, capturas y errores para que Codex diagnostique fallos aunque todavía no haya muestras. El chat Codex de este proyecto revisa esos archivos con su monitor recurrente y puede escribir secuencias breves de botones en `control/pending.json`, que Studio envía a las ventanas seleccionadas con X11. «Enviar muestra ahora» fuerza una captura; «Detener loop» apaga el envío y elimina cualquier secuencia pendiente. `control/result.json` registra los botones ejecutados.
-- Al cerrar o recargar DWE Studio, las partidas que Studio lanzó permanecen abiertas. Sus PID, argumentos y disco elegido se guardan en los datos de usuario; al abrir de nuevo, Studio verifica esos procesos, vuelve a adjuntar sus logs y detecta sus ventanas para reanudar la captura. Los botones de detener solo terminan procesos que Studio lanzó. Si un juego se inició fuera de Studio, se adjunta a su ventana sin lanzar una copia adicional.
+The interface and its messages are in English or Spanish. `DWE_STUDIO_LANG=es` or `en` chooses; without it Studio follows the system's language (English if it is neither). The texts are in `src/shared/i18n.js`: the source texts are English and the Spanish ones are listed there by them.
 
-Los scripts Lua del juego se leen desde el árbol fuente y se pueden recargar al editarse. Los cambios en C++ necesitan una compilación nueva; la vista del juego en esta primera entrega es un indicador de la ventana nativa, todavía no una captura de vídeo incrustada.
+## Workflow
 
-## Comparar el original y el remake
+- The editor opens and saves files of the repository. `Ctrl/Cmd+P` searches for files and `Ctrl/Cmd+S` saves.
+- The explorer watches for changes on disk. Changes saved from another tool, such as Codex or Claude Code, appear in "Recent changes" and update the tabs that have no local changes.
+- The build button runs `scripts/dev.sh build`; "Run" builds `dwe-game` and `dwx`, updates the cache with `disc_image` and creates a run content root with that base and the project's packages. It does not modify `content/base`. Then it starts the game with `--tuning --dev-assets` and opens the debug overlay: FPS, inputs, Lua console and a status panel. `F1` hides it or opens it again. The output of the build and of the game appears in the bottom panel. The disc path is set in `dev-assets.yaml` inside the project or in the user's data folder.
+- The console keeps a `bash` session from the selected root; you can change directory and the commands keep their state.
+- The `DW_DECOMP` explorer opens the local decompiled tree as a read-only reference. It looks for `DWE_DECOMP` or, by default, `~/code/dw_decomp`. DWE Studio does not copy or modify that repository.
+- The "Compare" tab shows two windows side by side: DuckStation with the user's disc and DWE Engine with the project's run. Studio refreshes the windows when it opens and while it starts the game; it recognizes titles such as `dwe`, `dwe-game`, `dw1` and `digimon world`. "Find windows" forces a refresh of the list. On Linux/X11, click a screen to give focus to that game; the keyboard and the controller go to the chosen window while the capture stays visible in Studio.
+- If it detects both windows at startup and the loop was not stopped before, DWE Studio selects them again by their title, starts the captures and resumes the loop automatically. Every 20 seconds it saves in `.dwe-studio/observer/` three sequential frames per game (half a second between frames) and the recent logs; `runtime.json` records windows, captures and errors so that Codex can diagnose failures even if there are no samples yet. The Codex chat of this project reviews those files with its recurring monitor and can write short button sequences into `control/pending.json`, which Studio sends to the selected windows with X11. "Send sample now" forces a capture; "Stop loop" turns off the sending and removes any pending sequence. `control/result.json` records the buttons that were executed.
+- When DWE Studio is closed or reloaded, the games that Studio launched stay open. Their PIDs, arguments and chosen disc are saved in the user data; when it opens again, Studio checks those processes, reattaches their logs and detects their windows to resume the capture. The stop buttons only end processes that Studio launched. If a game was started outside Studio, it attaches to its window without launching an extra copy.
 
-DuckStation es la referencia del juego original de PS1; DWE es el remake. Cada muestra conserva los fotogramas de ambas ventanas y una imagen conjunta `comparison.jpg`, con PS1 a la izquierda y DWE a la derecha, manteniendo las proporciones de cada captura.
+The game's Lua scripts are read from the source tree and can be reloaded when edited. C++ changes need a new build; the game view in this first delivery is a native-window indicator, not yet an embedded video capture.
 
-Después de una secuencia en `control/pending.json`, Studio captura automáticamente tres fotogramas de cada juego y enlaza la muestra con el identificador del control. Espera `control/result.json → observation.status: "captured"` y abre `observation.sampleId` antes de decidir la siguiente entrada. Mientras esa captura está pendiente, la cola no ejecuta otra secuencia. Si falla o tarda más de 15 segundos, el loop se detiene y registra el motivo; revisa las ventanas antes de reactivarlo. Las capturas periódicas cada 20 segundos continúan como seguimiento.
+## Comparing the original and the remake
 
-Para revisar animaciones, usa **Capturar movimiento (2 s)**. Intenta obtener 40 imágenes por juego a intervalos de 50 ms, con un ancho máximo de 640 píxeles. `sample.json → frameTimes` guarda los tiempos reales: la carga del escritorio puede alterar la cadencia. Los archivos `motion-duckstation.jpg` y `motion-engine.jpg` resumen doce posiciones de la secuencia con su tiempo; los 40 fotogramas completos quedan disponibles para inspección detallada. La muestra de movimiento admite hasta 16 MB; las muestras normales, hasta 8 MB.
+DuckStation is the reference for the original PS1 game; DWE is the remake. Each sample keeps the frames of both windows and a joint image `comparison.jpg`, with PS1 on the left and DWE on the right, keeping the proportions of each capture.
 
-Antes de atribuir una diferencia al remake, comprueba el mismo diálogo, menú o fase de combate en ambas ventanas. Para un movimiento irregular, sigue la posición y orientación del personaje a lo largo de la secuencia y compara la duración de sus ciclos. La imagen conjunta y los resúmenes temporales son evidencia para la revisión; el observador todavía no clasifica por sí solo los fallos ni modifica el código del juego.
+After a sequence in `control/pending.json`, Studio automatically captures three frames of each game and links the sample to the control's identifier. Wait for `control/result.json → observation.status: "captured"` and open `observation.sampleId` before deciding the next input. While that capture is pending, the queue does not run another sequence. If it fails or takes longer than 15 seconds, the loop stops and records the reason; check the windows before turning it on again. The periodic captures every 20 seconds continue as follow-up.
 
-## Límites de esta entrega
+To review animations, use **Capturar movimiento (2 s)** (capture motion). It tries to get 40 images per game at 50 ms intervals, with a maximum width of 640 pixels. `sample.json → frameTimes` stores the real times: the desktop load can alter the cadence. The files `motion-duckstation.jpg` and `motion-engine.jpg` summarize twelve positions of the sequence with their time; the full 40 frames stay available for detailed inspection. The motion sample allows up to 16 MB; the normal samples, up to 8 MB.
 
-La app no incorpora los chats de Codex o Claude. Los agentes pueden modificar el mismo árbol de archivos y DWE Studio refleja los cambios guardados; Claude Code solo aparece como disponible si su CLI está instalada. La consola mantiene el shell y muestra su salida, aunque todavía no ofrece una terminal PTY para programas interactivos de pantalla completa.
+Before blaming a difference on the remake, check the same dialogue, menu or battle phase in both windows. For an irregular movement, follow the character's position and facing along the sequence and compare the duration of its cycles. The joint image and the time summaries are evidence for the review; the observer does not yet classify failures by itself or modify the game's code.
 
-La ejecución de DWE activa los eventos SDL del mando cuando la ventana está en segundo plano, por lo que puedes jugar desde DuckStation con un mando físico y ambos procesos reciben sus entradas. DuckStation debe tener habilitada la entrada SDL y «Disable Background Input» apagado. El teclado solo controla la ventana enfocada. Las capturas son de video: DWE Studio aún no transmite el juego a un agente de IA automáticamente ni aplica cambios de código a partir de cada frame.
+## Limits of this delivery
 
-Algunos escritorios Linux con PipeWire solo entregan una ventana en el listado de Electron; en ese caso no es posible capturar los dos procesos simultáneamente desde DWE Studio y depende del compositor.
+The app does not include the Codex or Claude chats. Agents can modify the same file tree and DWE Studio reflects the saved changes; Claude Code only appears as available if its CLI is installed. The console keeps the shell and shows its output, though it does not yet offer a PTY terminal for interactive full-screen programs.
 
-La depuración por línea y la inspección del estado del juego requieren un protocolo de depuración del runtime de DWE. La estructura de paneles y flujo de ejecución toma ideas de VS Code y Godot; no incluye ni copia sus aplicaciones completas.
+The DWE run turns on the controller's SDL events when the window is in the background, so you can play from DuckStation with a physical controller and both processes receive their inputs. DuckStation must have SDL input enabled and «Disable Background Input» off. The keyboard only controls the focused window. The captures are video: DWE Studio does not yet stream the game to an AI agent automatically nor apply code changes from each frame.
 
-La ventana usa aislamiento de contexto, preload acotado y sandbox del renderer. Monaco Editor se distribuye bajo MIT; las dependencias se fijan en `package-lock.json`.
+Some Linux desktops with PipeWire only deliver one window in Electron's listing; in that case it is not possible to capture both processes at the same time from DWE Studio and it depends on the compositor.
 
-## Revisión por componentes e historial
+Line debugging and inspection of the game's state require a debugging protocol in the DWE runtime. The structure of panels and run flow takes ideas from VS Code and Godot; it does not include or copy their full applications.
 
-El flujo actual revisa una pieza por vez (primero el menú), usando la decompilación como referencia de comportamiento de solo lectura y DuckStation como evidencia visible. La automatización de recorridos completos se retiró; las acciones y las capturas se solicitan para la pieza activa.
+The window uses context isolation, a narrow preload and the renderer sandbox. Monaco Editor is distributed under MIT; the dependencies are pinned in `package-lock.json`.
 
-Antes de analizar o recapturar, consulta `odd/tasks/comparacion-por-componentes.md` y `.dwe-studio/observer/processed.json`. Recaptura solo por un cambio de implementación, una duda concreta o una validación pendiente. No repitas secuencias ya explicadas.
+## Review by component and history
 
-El manifiesto conserva 30 muestras recientes. Al salir de esa ventana, las muestras registradas en `processed.json → processed` y las vinculadas a una acción se trasladan a `.dwe-studio/observer/history/<id>/`, conservando imágenes, tiempos, logs y metadatos. Las demás capturas periódicas se eliminan. Estos archivos son locales e ignorados por Git; no incorporar imágenes ni datos del disco original al repositorio. Un registro de revisiones inválido detiene la limpieza sin borrar evidencia. Los archivos eliminados por versiones anteriores no se recuperan automáticamente.
+The current flow reviews one piece at a time (the menu first), using the decompilation as a read-only behavior reference and DuckStation as visible evidence. The automation of full walkthroughs was retired; the actions and captures are requested for the active piece.
+
+Before analyzing or recapturing, check `odd/tasks/comparacion-por-componentes.md` and `.dwe-studio/observer/processed.json`. Recapture only for an implementation change, a specific doubt or a pending validation. Do not repeat sequences that are already explained.
+
+The manifest keeps 30 recent samples. When a sample leaves that window, the samples recorded in `processed.json → processed` and those linked to an action are moved to `.dwe-studio/observer/history/<id>/`, keeping images, times, logs and metadata. The other periodic captures are deleted. These files are local and ignored by Git; do not add images or data of the original disc to the repository. An invalid review record stops the cleanup without deleting evidence. Files deleted by earlier versions are not recovered automatically.

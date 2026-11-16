@@ -1902,7 +1902,7 @@ bool Autotest::resizeStep(const AutotestHost& host, const AutotestStep& step, do
   }
   // A window larger than the desktop's usable area is up to the window manager, which may refuse
   // it: the step is skipped there, and the route runs it on a larger screen
-  // (docs/guides/prueba-vertical.md).
+  // (docs/guides/vertical-slice.md).
   const auto usable = host.window->usableDisplaySize();
   if (usable && (step.width > usable->width || step.height > usable->height)) {
     std::string note = std::format(

@@ -1,6 +1,6 @@
 # Preview of the `new` skin on the title's main menu: the game boots with `--ui-skin new`, the
 # route waits for the main menu to be shown, resizes the window, asserts the setting, and takes
-# one capture. The `new` skin extends `original` (docs/architecture/ui.md, «El aspecto new»), so
+# one capture. The `new` skin extends `original` (docs/architecture/ui.md, «The Pixel art skin (id `new`)»), so
 # it needs content extracted with the original look's sprites (dwx 2 or later) — the same
 # sprites the `original` skin draws. Without extracted content the catalog drops `new` (the
 # sprite sheets it inherits reference `texture/etcdat/*` and friends that don't resolve), the
@@ -9,13 +9,13 @@
 # How to run it (needs a build of the game binary and the extracted base pack):
 #
 #   scripts/dev.sh run \
-#       --content <carpeta con el paquete base extraido> \
+#       --content <folder with the extracted base pack> \
 #       --ui-skin new \
 #       --autotest tests/autotest/preview/route-preview-new.yaml \
 #       --shots build/shots
 #
 # The PNG lands at build/shots/main-menu-new.png. Run once per language, with --lang en and
-# --lang es (see docs/guides/prueba-vertical.md). Add more screens by cloning steps from
+# --lang es (see docs/guides/vertical-slice.md). Add more screens by cloning steps from
 # tests/autotest/route-skin-original.yaml.
 name: preview-new-skin
 device: keyboard

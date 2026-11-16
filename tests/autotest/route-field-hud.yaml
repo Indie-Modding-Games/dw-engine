@@ -1,7 +1,7 @@
-# The field HUD's status (docs/architecture/ui.md#estado-del-campo): the new game's clock and day, the clock running,
+# The field HUD's status (docs/architecture/ui.md#field-status): the new game's clock and day, the clock running,
 # the happiness and discipline ranges of the ruleset, how the partner feels about the map, a need showing as it comes,
 # the panel leaving while the pause menu stops the field and coming back after, and captures at several window sizes
-# and UI scales. Run it in both languages, each with its own capture folder (docs/guides/prueba-vertical.md).
+# and UI scales. Run it in both languages, each with its own capture folder (docs/guides/vertical-slice.md).
 name: field-hud
 device: keyboard
 timeout: 300
