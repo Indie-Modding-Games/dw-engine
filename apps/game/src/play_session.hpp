@@ -478,6 +478,8 @@ private:
   ShopHaggleScreen shopHaggleScreen_;
   // The rules panel's tiers and bonus icon for the HUD bar, read once (they come from the rules).
   std::optional<ShopJobRulesView> shopJobBonus_;
+  // The improved job's perfect score while its bar shows (publishShopJob).
+  std::optional<std::int64_t> shopJobTop_;
   GymScreen gymScreen_;
   ShopScreen shopScreen_;
   DevMenuScreen devMenu_;

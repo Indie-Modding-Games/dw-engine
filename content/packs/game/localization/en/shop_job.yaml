@@ -1,11 +1,13 @@
 # The canyon shop's job, improved (game/shop_job; docs/reference/trabajo-tienda.md).
 # The lines the story patches (story/patches/shop_job_*.lua) add to the original's: the player chats with the customer
-# who listens, sends it away, and the end's bonus (given, or the bag full).
+# who listens, sends it away, and the end's bonus (given, left with the item keeper when the
+# bag is full, or with no room anywhere).
 story.talk: "Lovely day, isn't it?\nCome from far away?"
 story.listens: "Heh heh... I sure did."
 story.dismiss: "Sorry, I can't help\nyou today."
 story.bonus: "Monochromon gives you a\n{color:6}Steel Heart{color:1}!"
 story.bonus_bag_full: "Monochromon wanted to give you a\n{color:6}Steel Heart{color:1}, but\nyour bag is full."
+story.bonus_kept: "Your bag is full: Monochromon\nleaves your {color:6}Steel Heart{color:1}\nwith the item keeper."
 # Each species' character (shop_job.yaml: character), as the counter and the rules panel show it.
 character.spendthrift: "Spendthrift: almost always pays a lot"
 character.haggler: "Haggler: hates big markups"

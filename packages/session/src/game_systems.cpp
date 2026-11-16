@@ -260,8 +260,8 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   auto weather = std::make_unique<WeatherSeed>();
   game.weather = weather.get();
   game.systems.push_back(std::move(weather));
-  auto shopJob = std::make_unique<ShopJobAdapter>(
-      ShopJobAdapterDesc{.story = game.story, .inventory = game.inventory});
+  auto shopJob = std::make_unique<ShopJobAdapter>(ShopJobAdapterDesc{
+      .story = game.story, .inventory = game.inventory, .keeper = game.itemKeeper});
   game.shopJob = shopJob.get();
   game.scenes->attachShopJob(game.shopJob);
   game.systems.push_back(std::move(shopJob));

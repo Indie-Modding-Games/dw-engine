@@ -83,6 +83,18 @@ void ShopJobRulesPanel::close() {
   }
 }
 
+void ShopJobRulesPanel::press(bool helpPressed, bool settingsPressed, bool canOpen) {
+  if (shown_) {
+    if (helpPressed || settingsPressed) {
+      close();
+    }
+    return;
+  }
+  if (helpPressed && canOpen) {
+    show();
+  }
+}
+
 bool ShopJobRulesPanel::handle(const ui::UiCommand& command) {
   if (command.name == ShopJobRulesCommand) {
     show();

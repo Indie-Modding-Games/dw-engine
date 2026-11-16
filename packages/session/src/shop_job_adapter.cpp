@@ -2,6 +2,7 @@
 #include <dwe/core/log.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/item_keeper.hpp>
 #include <dwe/session/messages.hpp>
 #include <dwe/session/shop_job_adapter.hpp>
 #include <dwe/session/story_adapter.hpp>
@@ -225,9 +226,15 @@ core::Result<ShopJobAdapter::Bonus> ShopJobAdapter::payBonus() {
   if (!item) {
     return core::fail(core::formatMessage(messages::ShopJobNoBonusItem, rules_->bonusItem));
   }
-  const bool given = desc_.inventory->inventory().add(*item, BonusCount).taken();
-  core::logInfo("{}", core::formatMessage(messages::ShopJobBonus, rules_->bonusItem, given));
-  return Bonus{.earned = true, .given = given};
+  BonusPlace place = BonusPlace::Nowhere;
+  if (desc_.inventory->inventory().add(*item, BonusCount).taken()) {
+    place = BonusPlace::Bag;
+  } else if (desc_.keeper != nullptr && desc_.keeper->keep(*item, BonusCount)) {
+    place = BonusPlace::Keeper;
+  }
+  core::logInfo("{}", core::formatMessage(messages::ShopJobBonus, rules_->bonusItem,
+                                          static_cast<int>(place)));
+  return Bonus{.earned = true, .place = place};
 }
 
 } // namespace dwe::session

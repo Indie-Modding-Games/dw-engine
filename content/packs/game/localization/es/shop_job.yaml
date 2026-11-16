@@ -1,11 +1,13 @@
 # El trabajo en la tienda del cañón, mejorado (game/shop_job; docs/reference/trabajo-tienda.md).
 # Las líneas que los parches de la historia (story/patches/shop_job_*.lua) añaden a las del original: el jugador charla
-# con el cliente y este escucha, lo despide, y el premio del final (dado, o la bolsa llena).
+# con el cliente y este escucha, lo despide, y el premio del final (dado, guardado por el guardián de
+# objetos si la bolsa está llena, o sin sitio en ninguno).
 story.talk: "¡Qué buen día hace!\n¿Viene de muy lejos?"
 story.listens: "Je, je... Pues sí."
 story.dismiss: "Lo siento, hoy no\npuedo atenderle."
 story.bonus: "¡Monochromon te da un\n{color:6}Corazón de acero{color:1}!"
 story.bonus_bag_full: "Monochromon quería darte un\n{color:6}Corazón de acero{color:1}, pero\nno te cabe en la bolsa."
+story.bonus_kept: "No te cabe en la bolsa: Monochromon\ndeja tu {color:6}Corazón de acero{color:1}\nal guardián de objetos."
 # El carácter de cada especie (shop_job.yaml: character), como lo enseñan el mostrador y el panel de reglas.
 character.spendthrift: "Derrochador: paga caro casi siempre"
 character.haggler: "Regateador: odia los recargos grandes"

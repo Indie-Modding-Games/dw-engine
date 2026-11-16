@@ -26,7 +26,8 @@ constexpr game::story::RoutineNumber BonusRoutine = 260;
 // The bonus routine's answers.
 constexpr std::int64_t NoBonus = 0;
 constexpr std::int64_t BonusGiven = 1;
-constexpr std::int64_t BonusBagFull = 2;
+constexpr std::int64_t BonusKept = 2;
+constexpr std::int64_t BonusNowhere = 3;
 
 using Handler = core::Result<game::story::RoutineStart> (*)(StoryScenesContext&);
 
@@ -114,7 +115,15 @@ core::Result<game::story::RoutineStart> bonus(StoryScenesContext& scenes) {
   if (!paid->earned) {
     return answer(scenes, NoBonus);
   }
-  return answer(scenes, paid->given ? BonusGiven : BonusBagFull);
+  switch (paid->place) {
+  case ShopJobAdapter::BonusPlace::Bag:
+    return answer(scenes, BonusGiven);
+  case ShopJobAdapter::BonusPlace::Keeper:
+    return answer(scenes, BonusKept);
+  case ShopJobAdapter::BonusPlace::Nowhere:
+    break;
+  }
+  return answer(scenes, BonusNowhere);
 }
 
 } // namespace

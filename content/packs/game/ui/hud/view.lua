@@ -32,6 +32,7 @@ end
 
 local function refresh_prompts(document)
   document:get("prompt-menu"):set_prompt("menu")
+  document:get("prompt-shop-job-rules"):set_prompt("help")
 end
 
 local panels = { "minimap", "menu-button", "field-status" }

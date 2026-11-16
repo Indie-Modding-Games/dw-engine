@@ -57,6 +57,7 @@ que muestran los avisos.
 | `alt` | **E** | — | **Norte (△)** | Botón ○ del original. Baja la cámara durante la pesca, comprar 10 en la tienda de cartas, cursor a «Atrás» en la caja de nombres (mando). Comparte norte con `menu`. |
 | `extra` | **Q** | — | Oeste (□) | Botón □ del original. Dispara el remate en batalla; borra todo en la caja de nombres (mando); avanza fases en tiendas. |
 | `tab_previous` / `tab_next` | **Q** / **E** | — | LeftShoulder (L1) / RightShoulder (R1) | Pestaña anterior / siguiente de una página con pestañas (las [opciones en partida](../modulos/apps/game.md#opciones-en-partida)); llegan como `NavCommand::TabPrevious`/`TabNext` y una página sin pestañas no las usa. Comparten tecla con `extra`/`alt` y botón con `world_map`/`walk`, que con el menú abierto no actúan. |
+| `help` | H | — | Gatillo izq. | Reglas del minijuego en pantalla (el trabajo en la tienda: abre y cierra su panel mientras se ve su barra). Mejora de dwe; F1 es de la consola. |
 | `debug_console` | ` o F1 | — | — | Consola de desarrollo. |
 | `report_bug` | F12 | — | — | Reporte de bug de la partida. |
 | `debug_time_day/dusk/night` | 1 / 2 / 3 | — | — | Vistas de desarrollo (`dwe-game --map`). |

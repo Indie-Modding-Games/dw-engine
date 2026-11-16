@@ -58,15 +58,17 @@ siguen siendo los del original.
 | menos de 1792 | 500 bits |
 | desde 1792 | 1500 bits |
 | desde 3072 | 2000 bits y Monochromon se une (disparador 247), como el original |
-| desde 3584 | lo anterior y el premio, un Corazón de acero (`game:steel_heart`); con la bolsa llena se avisa y no se da |
+| desde 3584 | lo anterior y el premio, un Corazón de acero (`game:steel_heart`); con la bolsa llena va al guardián de objetos (el trabajo no se repite, así que no se pierde) |
 
 ## Interfaz
 
 - **Barra del HUD** (opción `shop_job_bar`): de 0 a la puntuación perfecta de la fila (en el modo original, de 0 a
   la meta) con tres marcas y su etiqueta: mejor paga, se une (la principal) y premio, con el icono del objeto. El
-  relleno lleva una clase por paga alcanzada. El botón **?** abre el panel de reglas.
+  relleno lleva una clase por paga alcanzada. El botón **?** abre el panel de reglas; con teclado o mando, la acción
+  `help` (H o el gatillo izquierdo) mientras se ve la barra, con su tecla dibujada junto al **?**.
 - **Panel de reglas** (`shop_job_rules`): se abre solo en el primer cliente de cada trabajo, con el **?** de la barra
-  y con el botón de menú (Tab o el de menú del mando) en el mostrador. Confirmar o cancelar lo cierra.
+  con `help` (H o el gatillo izquierdo) y con el botón de menú (Tab o el de menú del mando) en el mostrador.
+  Confirmar, cancelar, `help`, Esc o el Back del mando lo cierran.
 - **Mostrador** (`shop_haggle`): especie, carácter, humor, cara, paciencia, el objeto con su precio normal, los 9
   precios, Charlar, Despedir, las ofertas a este cliente y la cuenta. Ratón o teclado/mando (flechas, confirmar).
 
@@ -80,5 +82,5 @@ y `dwx script-warps` sigue cada uno por su lado. Las rutinas propias del motor (
 `session/src/story_routines/routine_shop_job.cpp`) contestan en la variable 110: 256 el modo (1 mejorado, 0 original),
 257 el guion del siguiente cliente de la fila, 258 el objeto del cliente que llega, 259 un turno en el mostrador (abre
 la pantalla y espera: 0 vendido, 1 rechazo, 2 charla, 3 se va, 4 despedido; el nivel en la 117 y la cara en la 248)
-y 260 el premio al final (0 nada, 1 dado, 2 bolsa llena). La venta suma a la cuenta desde el motor; el parche enseña
+y 260 el premio al final (0 nada, 1 en la bolsa, 2 con el guardián de objetos, 3 sin sitio en ninguno). La venta suma a la cuenta desde el motor; el parche enseña
 la frase de beneficio del original para ese nivel. Cambiar la opción a mitad de un trabajo vale para el siguiente.

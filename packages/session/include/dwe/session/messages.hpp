@@ -222,7 +222,8 @@ inline constexpr std::string_view ShopJobLine =
     "[shop_job] job {}: a line with a perfect score of {}";
 inline constexpr std::string_view ShopJobTurnLog =
     "[shop_job] customer {}: turn {} at level {}, profit {}, tally {}";
-inline constexpr std::string_view ShopJobBonus = "[shop_job] bonus {}: given {}";
+inline constexpr std::string_view ShopJobBonus =
+    "[shop_job] bonus {}: place {} (0 bag, 1 item keeper, 2 nowhere)";
 inline constexpr std::string_view ShopJobNoBonusItem =
     "the shop job's bonus item {} is not in the items";
 

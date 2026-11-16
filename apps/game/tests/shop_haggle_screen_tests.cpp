@@ -4,6 +4,7 @@
 #include <string>
 #include <string_view>
 
+#include "pause_menu_ui.hpp"
 #include "shop_haggle_screen.hpp"
 #include "shop_job_rules_panel.hpp"
 
@@ -124,4 +125,28 @@ TEST_CASE("the rules panel's settings carry the tiers and the bonus item") {
   CHECK(number(settings, "shop_job_rules.bonus") == 3584.0);
   CHECK(text(settings, "shop_job_rules.bonus_item") == "game.item.steel_heart");
   CHECK(std::get<bool>(*find(settings, "shop_job_rules.improved")));
+}
+
+TEST_CASE("help opens the rules panel while the job runs; help, Escape or Back close it") {
+  dwe::app::test::MenuUi menu;
+  const auto document = dwe::assets::AssetId::parse("ui/shop_job_rules/document");
+  REQUIRE(document.has_value());
+  REQUIRE(menu.ui->loadDocument(dwe::app::ShopJobRulesDocument, *document).has_value());
+  dwe::app::ShopJobRulesPanel panel{{.ui = menu.ui.get()}};
+  bool closed = false;
+  panel.setClosed([&closed] { closed = true; });
+
+  panel.press(true, false, false);
+  CHECK_FALSE(panel.shown());
+  panel.press(true, false, true);
+  CHECK(panel.shown());
+  CHECK(menu.ui->isVisible(dwe::app::ShopJobRulesDocument));
+  panel.press(false, true, true);
+  CHECK_FALSE(panel.shown());
+  CHECK_FALSE(menu.ui->isVisible(dwe::app::ShopJobRulesDocument));
+  CHECK(closed);
+
+  panel.show();
+  panel.press(true, false, true);
+  CHECK_FALSE(panel.shown());
 }

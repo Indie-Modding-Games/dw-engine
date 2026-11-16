@@ -2,6 +2,7 @@
 #include <dwe/game/save/save_file.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/item_keeper.hpp>
 #include <dwe/session/shop_job_adapter.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_scenes.hpp>
@@ -28,6 +29,8 @@ namespace shop_job = dwe::game::shop_job;
 using dwe::session::GameSession;
 using dwe::session::InventoryAdapter;
 using dwe::session::InventoryAdapterDesc;
+using dwe::session::ItemKeeper;
+using dwe::session::ItemKeeperDesc;
 using dwe::session::SessionSystem;
 using dwe::session::ShopJobAction;
 using dwe::session::ShopJobAdapter;
@@ -64,6 +67,7 @@ struct Job {
   std::unique_ptr<GameSession> session;
   StoryAdapter* story = nullptr;
   InventoryAdapter* inventory = nullptr;
+  ItemKeeper* keeper = nullptr;
   ShopJobAdapter* job = nullptr;
 };
 
@@ -74,12 +78,18 @@ Job play(const TestPacks& packs, std::uint64_t seed) {
                                                               .effects = items::fixtureEffects(),
                                                               .evolution = nullptr});
   auto story = std::make_unique<StoryAdapter>(StoryAdapterDesc{.files = &packs.files()});
-  auto job = std::make_unique<ShopJobAdapter>(
-      ShopJobAdapterDesc{.story = story.get(), .inventory = inventory.get()});
-  Job played{
-      .session = nullptr, .story = story.get(), .inventory = inventory.get(), .job = job.get()};
+  auto keeper = std::make_unique<ItemKeeper>(
+      ItemKeeperDesc{.files = &packs.files(), .inventory = inventory.get()});
+  auto job = std::make_unique<ShopJobAdapter>(ShopJobAdapterDesc{
+      .story = story.get(), .inventory = inventory.get(), .keeper = keeper.get()});
+  Job played{.session = nullptr,
+             .story = story.get(),
+             .inventory = inventory.get(),
+             .keeper = keeper.get(),
+             .job = job.get()};
   std::vector<std::unique_ptr<SessionSystem>> systems;
   systems.push_back(std::move(inventory));
+  systems.push_back(std::move(keeper));
   systems.push_back(std::move(story));
   systems.push_back(std::move(job));
   played.session = newGameWith(packs, std::move(systems), nullptr, seed);
@@ -219,4 +229,30 @@ TEST_CASE("routine 260 gives the bonus item from a tally of 3584") {
   REQUIRE(scenes->routines.call(260));
   CHECK(variable(job, Result) == 1);
   CHECK(job.inventory->inventory().countOf(*item) == 1);
+}
+
+TEST_CASE("with a full bag the bonus item goes to the item keeper") {
+  const TestPacks packs;
+  Job job = play(packs, 3);
+  auto scenes = scenesFor(job);
+  const auto item = job.inventory->items().handleOf(BonusItem);
+  REQUIRE(item.has_value());
+  dwe::game::inventory::Inventory& bag = job.inventory->inventory();
+  for (const dwe::assets::ItemEntry& entry : job.inventory->items().entries()) {
+    if (entry.id != BonusItem && bag.hasRoomFor(*item)) {
+      bag.add(*job.inventory->items().handleOf(entry.id), bag.rules().bag.maxStack);
+    }
+  }
+  REQUIRE_FALSE(bag.hasRoomFor(*item));
+  job.story->setShopTally(3584);
+  REQUIRE(scenes->routines.call(260));
+  CHECK(variable(job, Result) == 2);
+  CHECK(bag.countOf(*item) == 0);
+  CHECK(job.keeper->keptCount(*item) == 1);
+
+  // A keeper already holding its most of the item: the bonus has nowhere to go.
+  REQUIRE(job.keeper->keep(*item, job.keeper->rules().maxCount - 1));
+  REQUIRE(scenes->routines.call(260));
+  CHECK(variable(job, Result) == 3);
+  CHECK(job.keeper->keptCount(*item) == job.keeper->rules().maxCount);
 }

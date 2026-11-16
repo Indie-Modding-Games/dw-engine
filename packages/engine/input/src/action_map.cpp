@@ -127,6 +127,11 @@ ActionMap defaultActionMap() {
   map.bind("battle_speed",
            GamepadAxisBinding{.axis = GamepadAxis::RightTrigger, .direction = 1.0F});
 
+  // The rules of the minigame on screen (a dwe improvement; apps/game shop_job_rules_panel.hpp):
+  // H, and the pad's left trigger, which the field leaves without a use. F1 is the console's.
+  map.bind("help", KeyBinding{keys::H});
+  map.bind("help", GamepadAxisBinding{.axis = GamepadAxis::LeftTrigger, .direction = 1.0F});
+
   map.bind("debug_console", KeyBinding{keys::Grave});
   map.bind("debug_console", KeyBinding{keys::F1});
 

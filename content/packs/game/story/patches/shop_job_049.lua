@@ -4,9 +4,9 @@
 -- the original's talk and then the job's own section (ImprovedSection, 0x300, here and in scripts
 -- 199 to 202): the next customer from the job's line (routine 257) in place of the random draw, and
 -- the job's end closing the line and giving the bonus item (routine 260) over the original's pay.
--- Routine 56 has the tally's high byte in 243 and routine 260 answers in 110: 1 the bonus was
--- given, 2 the bag had no room. Keeping the two modes apart from the counter on lets dwx
--- script-warps follow each on its own.
+-- Routine 56 has the tally's high byte in 243 and routine 260 answers in 110: 1 the bonus went to
+-- the bag, 2 to the item keeper (the bag had no room), 3 nowhere (neither had room). Keeping the
+-- two modes apart from the counter on lets dwx script-warps follow each on its own.
 local story <const> = story
 local ENDED <const> = story.ENDED
 local PLAYER <const> = story.PLAYER
@@ -238,6 +238,10 @@ function routines.finish()
     end
     if story.var(110) == 2 then
       story.set_dialog_owner(255)
+      story.show_textbox("shop_job.story.bonus_kept")
+    end
+    if story.var(110) == 3 then
+      story.set_dialog_owner(255)
       story.show_textbox("shop_job.story.bonus_bag_full")
     end
     story.store_date(105)
@@ -256,6 +260,10 @@ function routines.finish()
         story.show_textbox("shop_job.story.bonus")
       end
       if story.var(110) == 2 then
+        story.set_dialog_owner(255)
+        story.show_textbox("shop_job.story.bonus_kept")
+      end
+      if story.var(110) == 3 then
         story.set_dialog_owner(255)
         story.show_textbox("shop_job.story.bonus_bag_full")
       end
@@ -294,6 +302,10 @@ function routines.finish()
         story.show_textbox("shop_job.story.bonus")
       end
       if story.var(110) == 2 then
+        story.set_dialog_owner(255)
+        story.show_textbox("shop_job.story.bonus_kept")
+      end
+      if story.var(110) == 3 then
         story.set_dialog_owner(255)
         story.show_textbox("shop_job.story.bonus_bag_full")
       end

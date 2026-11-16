@@ -22,6 +22,10 @@ inline constexpr std::string_view ShopJobRulesDocument = "shop_job_rules";
 inline constexpr std::string_view ShopJobRulesRevisionSetting = "shop_job_rules.revision";
 // The command that opens the panel: the HUD bar's "?" and the haggle screen's menu button.
 inline constexpr std::string_view ShopJobRulesCommand = "shop_job_rules";
+// The action that opens and closes the panel while the job runs (the "?" key cap).
+inline constexpr std::string_view HelpAction = "help";
+// What closes the open panel besides confirm and cancel: Escape and the pad's Back.
+inline constexpr std::string_view SettingsAction = "settings";
 
 // What the rules panel tells: the pay tiers, the bonus item (text key and icon, empty when the
 // job gives none), the line's length and whether the improved job runs.
@@ -59,6 +63,10 @@ public:
   void show();
   void close();
   bool handle(const ui::UiCommand& command);
+  // The keys the document does not get: help opens the panel while `jobRuns` (the HUD bar shows)
+  // and nothing else holds the screen but `counterOpen` (the haggle screen); help, Escape and the
+  // pad's Back (settings) close it. `canOpen` false: the panel only closes.
+  void press(bool helpPressed, bool settingsPressed, bool canOpen);
   [[nodiscard]] bool shown() const { return shown_; }
 
 private:

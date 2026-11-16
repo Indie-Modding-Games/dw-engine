@@ -246,6 +246,18 @@ bool ItemKeeper::move(KeeperSide from, const KeeperRow& row, KeeperAmount amount
   return moved;
 }
 
+bool ItemKeeper::keep(assets::ItemHandle item, std::int32_t count) {
+  if (!rules_ || count <= 0) {
+    return false;
+  }
+  const std::int32_t kept = keptCount(item);
+  if (kept > rules_->maxCount - count) {
+    return false;
+  }
+  setKept(item, kept + count);
+  return true;
+}
+
 // From the keeper to the bag: the bag's stack of the item stops at its most.
 bool ItemKeeper::take(const KeeperRow& row, KeeperAmount amount) {
   game::inventory::Inventory& bag = desc_.inventory->inventory();

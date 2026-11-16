@@ -882,6 +882,11 @@ void PlaySession::pressWorldMap(const input::InputState& input, bool canOpen) {
 }
 
 void PlaySession::pressItemKeeper(const input::InputState& input) {
+  // The shop job's rules (shop_job_rules_panel.hpp): help while the job's bar shows, over the field
+  // or the counter, never over another menu.
+  const bool jobRuns = publishedShopJob_.has_value() && publishedShopJob_->shown;
+  shopJobRules_.press(input.wasPressed(HelpAction), input.wasPressed(SettingsAction),
+                      jobRuns && (shopHaggleScreen_.open() || !context_.ui->hasModal()));
   itemKeeperScreen_.press(input);
   discardScreen_.press(input);
   shopScreen_.press(input);
@@ -1913,10 +1918,18 @@ void PlaySession::publishShopJob() {
       frame.tally = story->shopTally();
     }
   }
-  if (const session::ShopJobAdapter* job = game_.systems.shopJob;
-      job != nullptr && job->improved() && job->lineup() != nullptr) {
+  // The line's perfect score, kept through the job's ending (the bonus closes the line) until the
+  // bar hides.
+  const session::ShopJobAdapter* job = game_.systems.shopJob;
+  const bool improved = job != nullptr && job->improved();
+  if (improved && job->lineup() != nullptr) {
+    shopJobTop_ = job->lineup()->perfectScore;
+  } else if (!improved || (publishedShopJob_ && !publishedShopJob_->shown)) {
+    shopJobTop_.reset();
+  }
+  if (shopJobTop_) {
     frame.improved = true;
-    frame.perfectScore = job->lineup()->perfectScore;
+    frame.perfectScore = *shopJobTop_;
     if (!shopJobBonus_) {
       shopJobBonus_ = shopJobRules_.view();
     }

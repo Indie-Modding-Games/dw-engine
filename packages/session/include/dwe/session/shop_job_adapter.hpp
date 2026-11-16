@@ -12,6 +12,7 @@
 namespace dwe::session {
 
 class InventoryAdapter;
+class ItemKeeper;
 class StoryAdapter;
 
 struct ShopJobAdapterDesc {
@@ -19,6 +20,9 @@ struct ShopJobAdapterDesc {
   // the adapter.
   StoryAdapter* story = nullptr;
   InventoryAdapter* inventory = nullptr;
+  // Where the bonus item goes when the bag has no room for it (the job does not come back); it
+  // must outlive the adapter. Without it the bonus is only reported.
+  ItemKeeper* keeper = nullptr;
 };
 
 // What the player did at the counter (the haggle screen).
@@ -83,11 +87,13 @@ public:
   // Writes the turn for the story: its result, the offer's level and face, and a sale's profit
   // into the shops' tally.
   core::Result<void> finishTurn();
-  // The job's end: gives the bonus item when the tally reaches it. `earned` without `given`: the
-  // bag had no room for it.
+  // Where the job's end put the bonus item: in the bag, with the item keeper when the bag had no
+  // room, or nowhere when neither had room.
+  enum class BonusPlace : std::uint8_t { Bag, Keeper, Nowhere };
+  // The job's end: gives the bonus item when the tally reaches it.
   struct Bonus {
     bool earned = false;
-    bool given = false;
+    BonusPlace place = BonusPlace::Nowhere;
   };
   core::Result<Bonus> payBonus();
 
