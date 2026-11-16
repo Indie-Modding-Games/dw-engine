@@ -89,6 +89,11 @@ screens:
   # El intercambio por méritos: las cajas, los rótulos de las listas y la carta de cada rareza.
   merit_shop:
     styles: [original_lists/style, merit_shop/style]
+  # El mostrador y las reglas del trabajo en la tienda: el panel de terminal de la tienda, las filas como celdas.
+  shop_haggle:
+    styles: [shop_haggle/style]
+  shop_job_rules:
+    styles: [shop_haggle/style, shop_job_rules/style]
   # La máquina de guardado: las cajas del original donde el original las dibuja (main_menu.c: renderMenuBox).
   save_machine:
     styles: [pause_menu/style, save_machine/style]

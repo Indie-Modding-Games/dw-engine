@@ -789,12 +789,14 @@ body {
 /* ------------------------------------------------------------------------------------------------------------------
    The shop job's bar (an engine improvement, the option shop_job_bar; the original has none): one of the original's
    boxes at the top centre, in the original-look font at twice its cells, with a bar in the field bars' colours, pink
-   up to the better pay's mark, blue past it and white once the shopkeeper joins. This sheet goes over the modern
-   skin's, so it sets again every property that one gives the bar. */
+   up to the better pay's mark, blue past it, white once the shopkeeper joins and the headings' yellow at the bonus.
+   The join's mark (the main one) is white and taller, its label above the bar in yellow next to the bonus item's
+   icon; the other labels go under the bar. The rules button shows the help key and a "?". This sheet goes over the
+   modern skin's, so it sets again every property that one gives the bar. */
 
 #shop-job {
-	width: 600dp;
-	margin-left: -306dp;
+	width: 680dp;
+	margin-left: -352dp;
 	padding: 6dp 9dp;
 	border: 3dp transparent;
 	border-radius: 0;
@@ -809,11 +811,43 @@ body {
 
 #shop-job-title {
 	font-weight: normal;
+	color: #fff371;
+}
+
+#shop-job-customers {
+	color: #d0d0d0;
+}
+
+/* The rules' button: the help key's cap (theme.rcss .key) and a "?", outlined as the selector under the pointer. */
+#shop-job-rules {
+	width: auto;
+	height: auto;
+	padding: 0 3dp;
+	margin: 0 0 0 15dp;
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: transparent;
+	font-size: 22dp;
+	font-weight: normal;
+	line-height: 24dp;
+	color: #d0d0d0;
+}
+
+#shop-job-rules .key {
+	margin: 0 6dp 0 0;
+	font-size: 22dp;
+	line-height: 18dp;
+}
+
+#shop-job-rules:hover, #shop-job-rules:focus {
+	border-color: #a0a000;
+	background-color: transparent;
+	color: #d0d0d0;
 }
 
 #shop-job-bar {
 	height: 12dp;
-	margin: 6dp 0;
+	margin: 33dp 0 0 0;
 	border-radius: 0;
 	background-color: #303030;
 }
@@ -824,20 +858,60 @@ body {
 	background-color: #e05890;
 }
 
-#shop-job.better #shop-job-fill { border-top-color: #90c8f0; background-color: #0080d0; }
-#shop-job.joins #shop-job-fill { border-top-color: #ffffff; background-color: #d0d0d0; }
+#shop-job-fill.tier-better { border-top-color: #90c8f0; background-color: #0080d0; }
+#shop-job-fill.tier-joins { border-top-color: #ffffff; background-color: #d0d0d0; }
+#shop-job-fill.tier-bonus { border-top-color: #fffbc0; background-color: #fff371; }
 
 .shop-job-mark {
+	top: -3dp;
+	bottom: -3dp;
 	width: 3dp;
 	margin-left: -1dp;
 	background-color: #fff371;
 }
 
+.shop-job-mark.main {
+	top: -6dp;
+	bottom: -6dp;
+	width: 6dp;
+	margin-left: -3dp;
+	background-color: #ffffff;
+}
+
+#shop-job-mark-bonus {
+	background-color: #fff371;
+}
+
+.shop-job-mark-label {
+	font-size: 22dp;
+	line-height: 24dp;
+	color: #b2b2b2;
+}
+
+#shop-job-mark-join .shop-job-mark-label {
+	font-weight: normal;
+	color: #fff371;
+}
+
+#shop-job-mark-bonus .shop-job-mark-label {
+	color: #fff371;
+}
+
 #shop-job-foot {
 	height: 24dp;
+	margin-top: 33dp;
 	font-size: 22dp;
 }
 
+#shop-job-tally {
+	font-weight: normal;
+	color: #d0d0d0;
+}
+
 #shop-job-next {
+	color: #fff371;
+}
+
+#shop-job.joins #shop-job-next, #shop-job.bonus #shop-job-next {
 	color: #fff371;
 }

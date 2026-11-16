@@ -1,0 +1,123 @@
+/* The shop job's rules in the original look (structure: ../../../shop_job_rules/structure.rcss), over the counter's box
+   (../shop_haggle/style.rcss): the title in the headings' yellow at 33dp, the text at 22dp, the pay tiers as dark rows
+   with the HUD bar's fill colour at their left (pink, blue, white, as the bar; the bonus in yellow), the faces as a
+   legend on a dark inset, one rule per line with the box's dark cyan at its left. This sheet goes over the modern
+   skin's, so it sets again every property that one gives the panel. */
+
+#panel.rules-panel {
+	padding-top: 9dp;
+	padding-bottom: 9dp;
+	font-size: 22dp;
+	line-height: 23dp;
+}
+
+#rules-head {
+	margin-bottom: 9dp;
+	padding-bottom: 6dp;
+}
+
+.rules-tier {
+	padding-top: 4dp;
+	padding-bottom: 4dp;
+}
+
+.rules-character, #rules-prices, #rules-faces-text, #rules-talk, #rules-dismiss {
+	padding-top: 2dp;
+	padding-bottom: 2dp;
+}
+
+#rules-foot {
+	padding-top: 6dp;
+}
+
+#rules-head {
+	border-bottom: 3dp #4a9fc5;
+}
+
+#rules-title {
+	font-size: 33dp;
+	line-height: 33dp;
+	font-weight: normal;
+	color: #fff371;
+}
+
+#rules-goal, #rules-original {
+	font-size: 22dp;
+	color: #b2b2b2;
+}
+
+.rules-tier {
+	border-left-width: 6dp;
+	border-radius: 0;
+	background-color: #1c262c;
+	color: #d0d0d0;
+}
+
+#rules-pay-lowest { border-left-color: #e05890; }
+#rules-pay-better { border-left-color: #0080d0; }
+#rules-pay-bonus { border-left-color: #fff371; }
+
+.rules-tier.main {
+	font-weight: normal;
+	color: #fff371;
+	border-left-color: #d0d0d0;
+	background-color: #000000;
+}
+
+#rules-characters-title {
+	font-size: 22dp;
+	font-weight: normal;
+	color: #fff371;
+}
+
+.rules-character, #rules-prices, #rules-faces-text, #rules-talk, #rules-dismiss {
+	border-left: 3dp #4a9fc5;
+	font-size: 22dp;
+	color: #d0d0d0;
+}
+
+#rules-faces {
+	border-radius: 0;
+	background-color: #1c262c;
+}
+
+.rules-face {
+	font-size: 22dp;
+	font-weight: normal;
+}
+
+.rules-face.face-delighted span, .rules-face.face-pleased span { color: #60d060; }
+.rules-face.face-doubtful span { color: #f8f800; }
+.rules-face.face-annoyed span { color: #f09028; }
+.rules-face.face-furious span { color: #e03028; }
+
+#rules-foot {
+	border-top: 3dp #4a9fc5;
+}
+
+#rules-close {
+	padding: 0 15dp;
+	margin: 0;
+	border: 3dp #4a9fc5;
+	border-radius: 0;
+	background-color: #1c262c;
+	font-size: 22dp;
+	line-height: 30dp;
+	color: #d0d0d0;
+}
+
+#rules-close .key {
+	font-size: 22dp;
+	line-height: 24dp;
+}
+
+#rules-close:hover {
+	background-color: #1c262c;
+	color: #d0d0d0;
+}
+
+#rules-close:focus {
+	border-color: #a0a000;
+	background-color: #1c262c;
+	color: #d0d0d0;
+}

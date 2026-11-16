@@ -82,6 +82,12 @@ screens:
     styles: [ui/skins/modern/original_lists/style]
   jukebox:
     styles: [ui/skins/modern/original_lists/style]
+  # El mostrador y las reglas del trabajo en la tienda (la versión mejorada): el panel del aspecto, la tabla de precios
+  # con su medidor de probabilidad; las reglas comparten la hoja del mostrador para el panel.
+  shop_haggle:
+    styles: [ui/skins/modern/shop_haggle/style]
+  shop_job_rules:
+    styles: [ui/skins/modern/shop_haggle/style, ui/skins/modern/shop_job_rules/style]
 # Cómo se maquetan las pantallas que comparten documento y script con el aspecto original: los scripts leen estas
 # opciones con ui.layout (docs/architecture/ui.md#aspectos). menu: la disposición de la pantalla; box: cómo se abren
 # sus cajas (las del original crecen desde un contorno gris).

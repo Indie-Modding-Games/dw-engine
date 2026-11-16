@@ -215,8 +215,14 @@
 }
 
 /* The shop job's bar (.bjob): a thin box at the top centre, the small font, the bar on a dark track with a blue rim,
-   pink, blue past the better pay, light grey once the shopkeeper joins, the marks in light gold. */
+   pink, blue past the better pay, light grey once the shopkeeper joins and gold at the bonus; the marks in light gold,
+   the join's (the main one) taller and cream, its label above the bar in light gold next to the bonus item's icon, the
+   others under it; the "?" as the look's key cap. This sheet goes over the original skin's, so it sets again every
+   property that one gives the bar. */
 #shop-job {
+	width: 680dp;
+	margin-left: -349dp;
+	padding: 6dp 9dp;
 	border-width: 0;
 	background-color: transparent;
 	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;
@@ -226,9 +232,44 @@
 	color: #d0d0d0;
 }
 
+#shop-job-title {
+	color: #efc63c;
+}
+
+#shop-job-customers {
+	color: #f2f0e1;
+}
+
+/* The rules' button: the help key's cap (the theme's nb-key) and a "?", in light gold under the pointer. */
+#shop-job-rules {
+	width: auto;
+	height: auto;
+	padding: 0;
+	margin: 0 0 0 14dp;
+	border: 0;
+	border-radius: 0;
+	background-color: transparent;
+	decorator: none;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #f2f0e1;
+}
+
+#shop-job-rules .key {
+	margin: 0 6dp 0 0;
+}
+
+#shop-job-rules:hover, #shop-job-rules:focus {
+	border-color: transparent;
+	background-color: transparent;
+	decorator: none;
+	color: #ffe58a;
+}
+
 #shop-job-bar {
 	height: 14dp;
-	margin: 6dp 0;
+	margin: 34dp 0 0 0;
 	border: 2dp #4c6a8c;
 	background-color: #1a2230;
 }
@@ -238,6 +279,10 @@
 	background-color: #e05890;
 }
 
+#shop-job-fill.tier-better { border-top-color: #90c8f0; background-color: #0080d0; }
+#shop-job-fill.tier-joins { border-top-color: #ffffff; background-color: #d0d0d0; }
+#shop-job-fill.tier-bonus { border-top-color: #ffe58a; background-color: #efc63c; }
+
 .shop-job-mark {
 	top: -4dp;
 	bottom: -4dp;
@@ -246,11 +291,59 @@
 	background-color: #ffe58a;
 }
 
+.shop-job-mark.main {
+	top: -8dp;
+	bottom: -8dp;
+	width: 6dp;
+	margin-left: -3dp;
+	background-color: #f2f0e1;
+}
+
+#shop-job-mark-bonus {
+	background-color: #efc63c;
+}
+
+.shop-job-mark-label {
+	font-size: 26dp;
+	line-height: 26dp;
+	color: #93a6bc;
+}
+
+#shop-job-mark-join .shop-job-mark-label {
+	margin-bottom: 6dp;
+	color: #ffe58a;
+}
+
+#shop-job-mark-bonus .shop-job-mark-label {
+	margin-top: 6dp;
+	color: #efc63c;
+}
+
+#shop-job-mark-pay .shop-job-mark-label {
+	margin-top: 6dp;
+}
+
+#shop-job-mark-bonus-icon {
+	left: -13dp;
+	width: 26dp;
+	height: 26dp;
+	margin-bottom: 6dp;
+}
+
 #shop-job-foot {
 	height: 26dp;
+	margin-top: 36dp;
 	font-size: 26dp;
+}
+
+#shop-job-tally {
+	color: #f2f0e1;
 }
 
 #shop-job-next {
 	color: #ffe58a;
+}
+
+#shop-job.joins #shop-job-next, #shop-job.bonus #shop-job-next {
+	color: #5fd36a;
 }

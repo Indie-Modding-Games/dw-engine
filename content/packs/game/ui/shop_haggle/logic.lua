@@ -7,10 +7,10 @@
 -- must be answered.
 --
 -- Classes for the skins: each row takes "offered" (refused before), "regular" (the regular price),
--- "likely" (a chance of 50 % or more), "sure" (100 %), "never" (0 %) and "face-<reaction>" (the
--- likely reaction); #haggle-mood takes "mood-<name>", #haggle-reaction "face-<reaction>", each pip
--- "on" while the customer has that patience left, #haggle-talk "disabled" when it cannot chat, and
--- #panel "talked" once it did.
+-- "likely" (a chance of 50 % or more), "sure" (100 %), "never" (0 %), "chance-<0..10>" (the chance
+-- in tenths, for the row's meter) and "face-<reaction>" (the likely reaction); #haggle-mood takes
+-- "mood-<name>", #haggle-reaction "face-<reaction>", each pip "on" while the customer has that
+-- patience left, #haggle-talk "disabled" when it cannot chat, and #panel "talked" once it did.
 
 local Rows = 9
 local Pips = 6
@@ -119,6 +119,12 @@ local function draw_rows(document)
     button:set_class("likely", chance >= 50)
     button:set_class("sure", chance >= 100)
     button:set_class("never", chance <= 0)
+    -- The chance in tenths (chance-0 none .. chance-10 sure, at least chance-1 above 0 %): the
+    -- skins size the row's meter and colour its chance by it.
+    local tenths = chance <= 0 and 0 or math.max(1, math.min(10, math.floor((chance + 5) / 10)))
+    for band = 0, 10 do
+      button:set_class("chance-" .. band, band == tenths)
+    end
     set_classes(button, "face-", Reactions, reaction)
   end
 end
