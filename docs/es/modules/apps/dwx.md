@@ -90,8 +90,8 @@ dwx upscale <receta.recipe.yaml> <carpeta de un paquete | carpeta de contenido> 
 
 Agranda imágenes indexadas de los paquetes con el paso integrado `index_scale` y las escribe, con su `_meta.yaml` y
 `scale: k`, en un paquete de capa `remaster` con el id de la receta. Las imágenes conservan su asset id, así que el
-paquete tapa a la base sin tocar nada más. Lee un subconjunto determinista de las recetas del remaster
-([tubería del remaster](../../architecture/remaster-pipeline.md#lo-que-ya-hay-dwx-upscale)): `recipe: 1`, `id`,
+paquete tapa a la base sin tocar nada más. Lee un formato pequeño de receta
+([alta definición](../../architecture/high-definition.md#dwx-upscale-y-recetas)): `recipe: 1`, `id`,
 `asset_type` (`ui` o `icon`), `select.include` con ids de asset, `scale` y un único paso `builtin: index_scale` con
 `params.mode` (`edge` o `nearest`). Sin proveedores, modelos ni red: los mismos bytes en cualquier máquina.
 

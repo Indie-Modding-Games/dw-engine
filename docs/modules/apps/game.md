@@ -1495,7 +1495,7 @@ its depth layers with its own edge-following filter, at the window's resolution,
 each pixel of the original. The `hd_scenery` setting (row "HD scenery" of the
 options, in game or from the title; saved in the user's
 settings) applies at once; off, the original's exact pixels are seen. The why and how it works are in
-[High definition in the engine](../../architecture/remaster-pipeline.md#high-definition-in-the-engine).
+[High definition in the engine](../../architecture/high-definition.md#high-definition-in-the-engine).
 
 - **Where**: `hd_scenery_setting.hpp` (`startHdScenery`, `HdSceneryChanger`) reads and saves the setting; `PlaySession` passes
   it to the scene at the start and `Game` on changing it (`FieldScene::setHdScenery` → `render::MapRenderer::setHdScenery`).
@@ -1505,7 +1505,7 @@ settings) applies at once; off, the original's exact pixels are seen. The why an
 - **Options**: it is an entry of `ui/common/game_options.lua` in the "Graphics" tab (`tab = "graphics"`) of the
   [in-game options](#in-game-options).
 - **Sharpness**: three more settings, also at their best by default, decide how much definition the image has
-  (`graphics_options.hpp`; the why in [Sharpness](../../architecture/remaster-pipeline.md#sharpness)):
+  (`graphics_options.hpp`; the why in [Sharpness](../../architecture/high-definition.md#sharpness)):
   `scenery_quality` (`upscaled`, the background enlarged once per map with the engine's upscaler and kept in the cache
   of `<user data>/cache/upscale`; `smooth`, the usual filter), `antialiasing` (`true`: the scene with 4
   samples per pixel, model outlines without jaggies) and `texture_filter` (`upscaled`, the models' textures

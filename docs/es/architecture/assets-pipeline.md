@@ -51,13 +51,12 @@ El motor monta un sistema de ficheros virtual con capas apiladas. Cada capa es u
 |---|---|---|
 | 4 (gana) | Usuario | El propio jugador: sus ajustes y sus imágenes propias (un paquete que escribe el lanzador) |
 | 3 | Mods | El equipo o la comunidad: historia, Digimon y modos nuevos |
-| 2 | Remaster | El equipo: texturas, fondos y música en HD |
+| 2 | Remaster | Imágenes ampliadas a partir de la base (`dwx upscale`) y el arte o la música en HD propios del equipo |
 | 1 | Base | El extractor, a partir del disco del usuario |
 
 - **IDs estables por nombre:** `map/file_city_01/data`, `map/file_city_01/background`. Nunca índices numéricos. Un
   paquete **sobrescribe** un ID que ya existe o **añade** uno nuevo, y por eso no hay límite de Digimon ni de mapas.
-- **Clásico/HD por categoría:** en los ajustes se elige, por ejemplo, fondos HD con música original. Si falta el
-  asset HD, se usa el de la base.
+- **Retroceso:** un asset que una capa superior no trae sale de la capa de debajo, hasta la base.
 
 ## Cómo se mejora cada cosa
 
@@ -69,9 +68,9 @@ El motor monta un sistema de ficheros virtual con capas apiladas. Cada capa es u
   con la cámara exportada. La máscara de profundidad tiene que coincidir con la colisión.
 - **Música:** un tema remasterizado sobrescribe el original por ID.
 
-Cómo se generan en tu máquina las imágenes mejoradas de la capa `remaster` (recetas, proveedores, caché, coste y
-revisión) está en la [tubería del remaster](remaster-pipeline.md); de ella solo existe el escalado de índices de
-`dwx upscale`, el resto todavía es un diseño. Las imágenes propias que pone el jugador desde el lanzador parten de las
+El motor afina por sí mismo los fondos del campo y las texturas de los modelos, al ejecutar, y `dwx upscale` amplía
+fuera de línea algunas imágenes indexadas con reglas fijas, sin modelos ni red: ver
+[alta definición](high-definition.md). Las imágenes propias que pone el jugador desde el lanzador parten de las
 que escribe `dwx export-images` ([imágenes personalizadas](../guides/custom-images.md)).
 
 ## Herramienta `dwx`
@@ -84,7 +83,7 @@ que escribe `dwx export-images` ([imágenes personalizadas](../guides/custom-ima
 | `dwx pack <paquete> -o <fichero.pak>` | Genera un paquete distribuible en un solo fichero, con su manifiesto |
 | `dwx export-images <contenido> -o <carpeta>` | Escribe las imágenes que un jugador puede cambiar, con los nombres que usa un paquete de imágenes propias |
 | `dwx evolution-guide <contenido> <salida.md>` | Escribe los requisitos de evolución de cada especie como tablas Markdown |
-| `dwx upscale <receta> <paquete> -o <carpeta>` | Amplía las imágenes indexadas que elige una receta ([remaster](remaster-pipeline.md#lo-que-ya-hay-dwx-upscale)) |
+| `dwx upscale <receta> <paquete> -o <carpeta>` | Amplía las imágenes indexadas que elige una receta ([alta definición](high-definition.md#dwx-upscale-y-recetas)) |
 
 Al instalar el disco, el launcher ejecuta `dwx extract` sobre la imagen del usuario y guarda la base en su carpeta de
 datos; el juego la monta tal cual, sin cocinar.

@@ -29,7 +29,7 @@ inline constexpr std::string_view EnhancedLightingSetting = "enhanced_lighting";
 // Vivid colours (true or false): vibrance, a gentle contrast and a soft bloom.
 inline constexpr std::string_view VividColorsSetting = "vivid_colors";
 //
-// Sharpness (docs/architecture/remaster-pipeline.md, «Sharpness»): three more, also on their best
+// Sharpness (docs/architecture/high-definition.md, «Sharpness»): three more, also on their best
 // by default, that only change how sharp the picture is. HD scenery's quality (smooth or upscaled):
 // with «HD scenery» on, the background filtered at the window's resolution, or doubled once per map
 // by the engine's upscaler and resampled (render::MapRenderer::SceneryQuality).

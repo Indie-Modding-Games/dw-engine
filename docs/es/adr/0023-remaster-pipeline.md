@@ -1,8 +1,9 @@
 # 0023. Remaster por recetas, con proveedores intercambiables, caché por contenido y local por defecto
 
-- **Estado:** Aceptada
+- **Estado:** Sustituida por [0025](0025-high-definition-in-the-engine.md)
 - **Fecha:** 2026-10-21
 - **Nota (2026-11-06):** aceptada porque el código ya la sigue: `dwx upscale <receta.yaml>` aplica las recetas.
+- **Nota (2026-11-16):** no se construyó nada más allá de `dwx upscale`; la alta definición se hace en el motor al ejecutar.
 
 ## Contexto
 
@@ -14,7 +15,7 @@ Condiciones: la salida mejorada es derivada del original y no se puede distribui
 ([política legal](../legal/assets.md)); hay cientos de fondos y miles de texturas, así que repetir llamadas cuesta
 tiempo y dinero; los fondos son índices con una paleta que el juego elige al jugar y sus capas de profundidad tienen
 que seguir casando; `remaster` es una capa del motor, y el código de sus paquetes corre como el motor. El diseño
-completo está en [Tubería del remaster](../architecture/remaster-pipeline.md).
+completo está en [Tubería del remaster](../architecture/high-definition.md).
 
 ## Decisión
 

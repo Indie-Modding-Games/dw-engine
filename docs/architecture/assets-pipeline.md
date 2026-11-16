@@ -51,13 +51,12 @@ IDs, stack order and errors) are in [Packages and virtual file system](vfs.md).
 |---|---|---|
 | 4 (wins) | User | The player: their settings and their own images (a package written by the launcher) |
 | 3 | Mods | The team or the community: new story, Digimon and modes |
-| 2 | Remaster | The team: HD textures, backgrounds and music |
+| 2 | Remaster | Images enlarged from the base (`dwx upscale`) and the team's own HD art or music |
 | 1 | Base | The extractor, from the user's disc |
 
 - **Stable IDs by name:** `map/file_city_01/data`, `map/file_city_01/background`. Never numeric indexes. A package
   **overrides** an ID that already exists or **adds** a new one, which is why there is no limit on Digimon or maps.
-- **Classic/HD per category:** the settings let you choose, for example, HD backgrounds with the original music. If
-  the HD asset is missing, the base one is used.
+- **Fallback:** an asset that a higher layer does not bring comes from the layer below, down to the base.
 
 ## How each thing is improved
 
@@ -69,9 +68,9 @@ IDs, stack order and errors) are in [Packages and virtual file system](vfs.md).
   and rendered with the exported camera. The depth mask has to match the collision.
 - **Music:** a remastered track overrides the original by ID.
 
-How the improved images of the `remaster` layer are generated on your machine (recipes, providers, cache, cost and
-review) is in the [remaster pipeline](remaster-pipeline.md); of that, only the index upscaling of `dwx upscale`
-exists, the rest is still a design. The player's own images, set from the launcher, start from the ones that
+The engine sharpens the field's backgrounds and the models' textures by itself, at run time, and `dwx upscale`
+enlarges some indexed images offline with fixed rules, with no models or network: see
+[high definition](high-definition.md). The player's own images, set from the launcher, start from the ones that
 `dwx export-images` writes ([custom images](../guides/custom-images.md)).
 
 ## The `dwx` tool
@@ -84,7 +83,7 @@ exists, the rest is still a design. The player's own images, set from the launch
 | `dwx pack <package> -o <file.pak>` | Generates a distributable package in a single file, with its manifest |
 | `dwx export-images <content> -o <folder>` | Writes the images a player can change, with the names a custom-images package uses |
 | `dwx evolution-guide <content> <output.md>` | Writes each species' evolution requirements as Markdown tables |
-| `dwx upscale <recipe> <package> -o <folder>` | Enlarges the indexed images that a recipe selects ([remaster](remaster-pipeline.md#what-already-exists-dwx-upscale)) |
+| `dwx upscale <recipe> <package> -o <folder>` | Enlarges the indexed images that a recipe selects ([high definition](high-definition.md#dwx-upscale-and-recipes)) |
 
 When installing the disc, the launcher runs `dwx extract` on the user's image and stores the base in its data
 folder; the game mounts it as is, without cooking.

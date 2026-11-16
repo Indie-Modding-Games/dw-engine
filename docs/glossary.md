@@ -20,7 +20,8 @@ Project terms and their names in the code. If a term is not here, it is added in
 | Pack | A content layer with its manifest (`pack.yaml`) | `dwe::assets::PackManifest` |
 | Partner | The Digimon the player raises | `dwe::game::partner` |
 | Design pillar | A GDD sentence that says what part of the game's essence is not touched | — |
-| Remaster | The team's HD content layer | — |
+| High definition | How the engine sharpens the field's backgrounds and the models' textures at run time ([high definition](architecture/high-definition.md)) | `dwe::render` |
+| Remaster | The content layer above the base: images enlarged by `dwx upscale`, and any HD art or music a pack brings | — |
 | Ruleset | A set of game rules and values, as data ([ADR 0010](adr/0010-own-rules-with-rulesets.md)) | `content/packs/game/rules/<id>/` |
 | Tamer | The character the player controls | — |
 | VFS | Virtual file system that stacks the packs | `dwe::assets` |

@@ -30,7 +30,7 @@ The game's render, on top of `rhi`. See [render.md](../../architecture/render.md
   `updateImage` changes in the meantime is uploaded again on top. Without it, `add` doubles them on the spot.
 - `scenery_upscale.hpp`: the engine's ×2 scaler (`upscaleScenery` for the background in all its variants,
   `upscaleRgba` for textures with alpha) and `upscale_cache.hpp` (`UpscaleCache`, `UpscaleKey`): what it makes is kept
-  compressed with zstd in `<user data>/cache/upscale`. See [Sharpness](../../architecture/remaster-pipeline.md#sharpness).
+  compressed with zstd in `<user data>/cache/upscale`. See [Sharpness](../../architecture/high-definition.md#sharpness).
 - `QuadBatch`: textured rectangles in pixels in a single draw (sprites, minimap, debug images).
 - `ScreenFade`: subtracts a gray from the whole screen over what was drawn before (`Subtractive` blend), like the map-change
   fade of the original (`fade.c: renderFade`); `setWhiteness` adds the same gray (`Additive` blend,
@@ -94,11 +94,11 @@ policy for any resolution, in [ADR 0020](../../adr/0020-map-camera-and-depth-lay
   each frame filters only the strip that the scrolling uncovers, and the whole thing when the colors, the window size
   or the map change. The background (`SamplingScreen`) and the cutouts (`SamplingCutoutScreen`) read it with a single read
   per pixel; without the pass they filter on the fly, with the same result. Off, each quad uses `SamplingSharp` and the
-  image is exactly the original's. See [High definition in the engine](../../architecture/remaster-pipeline.md#high-definition-in-the-engine).
+  image is exactly the original's. See [High definition in the engine](../../architecture/high-definition.md#high-definition-in-the-engine).
   `setSceneryQuality` (`SceneryQuality::Upscaled` by default, the `scenery_quality` setting): the background pass
   resamples the background doubled by `upscaleScenery` (`SamplingUpscaledPrefilter`), made in a thread when the map loads
   and kept in the cache (`setUpscaleCache`); until it is uploaded, and if it cannot be made, the usual
-  filter is used. See [Sharpness](../../architecture/remaster-pipeline.md#sharpness).
+  filter is used. See [Sharpness](../../architecture/high-definition.md#sharpness).
 - `MapCutouts` (`<dwe/render/map_cutouts.hpp>`, CPU only): says, per sprite and position, whether a layer sprite is
   an exact cutout of the background (`clut` −1, whole pixel, each texel drawn equal to the background index underneath). The
   cutouts are drawn in `SamplingCutout` (or `SamplingCutoutScreen`): their mask and class are the sprite's, the

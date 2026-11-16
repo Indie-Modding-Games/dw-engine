@@ -30,7 +30,7 @@ El render del juego, encima de `rhi`. Ver [render.md](../../architecture/render.
   `updateImage` cambie mientras tanto se vuelve a subir encima. Sin él, `add` las dobla en el momento.
 - `scenery_upscale.hpp`: el escalador ×2 del motor (`upscaleScenery` para el fondo en todas sus variantes,
   `upscaleRgba` para texturas con alfa) y `upscale_cache.hpp` (`UpscaleCache`, `UpscaleKey`): lo que hace se guarda
-  comprimido con zstd en `<datos del usuario>/cache/upscale`. Ver [Nitidez](../../architecture/remaster-pipeline.md#nitidez).
+  comprimido con zstd en `<datos del usuario>/cache/upscale`. Ver [Nitidez](../../architecture/high-definition.md#nitidez).
 - `QuadBatch`: rectángulos texturizados en píxeles en un solo draw (sprites, minimapa, imágenes de depuración).
 - `ScreenFade`: resta un gris de toda la pantalla sobre lo dibujado antes (mezcla `Subtractive`), como el fundido
   del cambio de mapa del original (`fade.c: renderFade`); `setWhiteness` suma el mismo gris (mezcla `Additive`,
@@ -94,11 +94,11 @@ política para cualquier resolución, en el [ADR 0020](../../adr/0020-map-camera
   cada frame filtra solo la franja que el desplazamiento descubre, y entera cuando cambian los colores, el tamaño de
   la ventana o el mapa. El fondo (`SamplingScreen`) y los recortes (`SamplingCutoutScreen`) la leen con una lectura
   por píxel; sin el pase filtran al vuelo, con el mismo resultado. Apagado, cada cuadro usa `SamplingSharp` y la
-  imagen es la del original exacta. Ver [Alta definición en el motor](../../architecture/remaster-pipeline.md#alta-definición-en-el-motor).
+  imagen es la del original exacta. Ver [Alta definición en el motor](../../architecture/high-definition.md#alta-definición-en-el-motor).
   `setSceneryQuality` (`SceneryQuality::Upscaled` por defecto, el ajuste `scenery_quality`): el pase del fondo
   remuestrea el fondo doblado por `upscaleScenery` (`SamplingUpscaledPrefilter`), hecho en un hilo al cargar el mapa
   y guardado en la caché (`setUpscaleCache`); hasta que está subido, y si no se puede hacer, se usa el filtro de
-  siempre. Ver [Nitidez](../../architecture/remaster-pipeline.md#nitidez).
+  siempre. Ver [Nitidez](../../architecture/high-definition.md#nitidez).
 - `MapCutouts` (`<dwe/render/map_cutouts.hpp>`, solo CPU): dice, por sprite y posición, si un sprite de las capas es
   un recorte exacto del fondo (`clut` −1, píxel entero, cada texel dibujado igual al índice del fondo debajo). Los
   recortes se dibujan en `SamplingCutout` (o `SamplingCutoutScreen`): su máscara y su clase son las del sprite, el

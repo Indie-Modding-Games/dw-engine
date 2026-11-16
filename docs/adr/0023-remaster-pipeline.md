@@ -1,8 +1,9 @@
 # 0023. Remaster by recipes, with interchangeable providers, content cache and local by default
 
-- **Status:** Accepted
+- **Status:** Superseded by [0025](0025-high-definition-in-the-engine.md)
 - **Date:** 2026-10-21
 - **Note (2026-11-06):** accepted because the code already follows it: `dwx upscale <recipe.yaml>` applies the recipes.
+- **Note (2026-11-16):** nothing beyond `dwx upscale` was built; high definition is done in the engine at run time.
 
 ## Context
 
@@ -14,7 +15,7 @@ Conditions: the enhanced output is derived from the original and cannot be distr
 ([legal policy](../legal/assets.md)); there are hundreds of backgrounds and thousands of textures, so repeating calls
 costs time and money; the backgrounds are indexes with a palette that the game chooses at play time and their depth
 layers have to keep matching; `remaster` is an engine layer, and the code of its packs runs like the engine. The full
-design is in [Remaster pipeline](../architecture/remaster-pipeline.md).
+design is in [Remaster pipeline](../architecture/high-definition.md).
 
 ## Decision
 

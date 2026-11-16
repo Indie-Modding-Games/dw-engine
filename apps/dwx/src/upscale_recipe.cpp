@@ -18,7 +18,7 @@ namespace {
 constexpr std::string_view RecipeContext = "upscale recipe";
 // The one built-in step this subset runs.
 constexpr std::string_view IndexScaleStep = "index_scale";
-// The asset types of the remaster recipe this subset accepts: images drawn by the UI.
+// The asset types a recipe may name: images drawn by the UI.
 constexpr std::array<std::string_view, 2> UpscaleAssetTypes{"ui", "icon"};
 constexpr std::size_t MaxRecipeIdLength = 64;
 

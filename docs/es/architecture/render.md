@@ -220,7 +220,7 @@ solo nivel.
 ## Nitidez: suavizado de bordes y texturas de modelos
 
 Dos mejoras opcionales, encendidas por defecto, que solo cambian la definición de la imagen (las razones y las
-medidas están en [Nitidez](remaster-pipeline.md#nitidez)):
+medidas están en [Nitidez](high-definition.md#nitidez)):
 
 - **Suavizado de bordes** (`antialiasing`): `Renderer::setMultisampling` dibuja el pase de escena en un color y una
   profundidad de 4 muestras por píxel (`MsaaSamples`; Vulkan obliga a aceptar 4 en color y profundidad, así que no
@@ -235,7 +235,7 @@ medidas están en [Nitidez](remaster-pipeline.md#nitidez)):
   `Smooth` filtra con mipmaps y anisotropía (`FlagSmooth` en `skinned_model.slang`), y antes rellena el color de los
   texels transparentes con el de sus vecinos dibujados para que el filtrado no meta un borde oscuro; `Upscaled`, el
   valor por defecto, filtra las texturas dobladas al subir el modelo por el escalador del motor (`upscaleRgba`,
-  [Nitidez](remaster-pipeline.md#nitidez)), con el alfa interpolado: los recortes por alfa dan contornos suaves. Las
+  [Nitidez](high-definition.md#nitidez)), con el alfa interpolado: los recortes por alfa dan contornos suaves. Las
   texturas que se reescriben en juego (`updateImage`, las caras) se doblan igual. Cambiar el filtro vuelve a subir
   las texturas de cada modelo.
 
