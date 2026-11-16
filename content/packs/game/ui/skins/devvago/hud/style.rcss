@@ -807,9 +807,9 @@ body #shop-job-rules:focus { border-color: #ffd51e; background-color: #153653; c
    modern skin's, so it sets again every property that one gives the bar. */
 
 #shop-job {
-	width: 680dp;
+	width: 668dp;
 	margin-left: -352dp;
-	padding: 6dp 9dp;
+	padding: 6dp 15dp;
 	border: 3dp transparent;
 	border-radius: 0;
 	background-color: #000000c0;

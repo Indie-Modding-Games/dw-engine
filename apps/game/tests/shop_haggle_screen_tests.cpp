@@ -67,20 +67,25 @@ std::string text(const dwe::screens::ScreenSettings& settings, std::string_view 
 TEST_CASE("the haggle screen's settings carry the customer, the nine rows and the offers") {
   const shop_job::ShopJobRules rules = meatRules();
   shop_job::Haggle haggle{rules, {.species = 0, .item = 0, .mood = 0, .budget = 3}};
-  const dwe::app::ShopHaggleView view{.rules = &rules,
-                                      .haggle = &haggle,
-                                      .names = {.species = "main.digimon_names.80",
-                                                .item = "main.item_names.3",
-                                                .itemIcon = "/texture/item",
-                                                .itemIconRect = "0 0 16 16"},
-                                      .tiers = {.betterPay = 1792, .joins = 3072, .bonus = 3584},
-                                      .tally = 400,
-                                      .perfectScore = 4150,
-                                      .customer = 3,
-                                      .customers = 20};
+  const dwe::app::ShopHaggleView view{
+      .rules = &rules,
+      .haggle = &haggle,
+      .names = {.species = "main.digimon_names.80",
+                .speciesIcon = "/texture/stddat/stdtim/001?palette=1",
+                .speciesIconRect = "224 32 16 16",
+                .item = "main.item_names.3",
+                .itemIcon = "/texture/item",
+                .itemIconRect = "0 0 16 16"},
+      .tiers = {.betterPay = 1792, .joins = 3072, .bonus = 3584},
+      .tally = 400,
+      .perfectScore = 4150,
+      .customer = 3,
+      .customers = 20};
   auto settings = dwe::app::shopHaggleSettings(view);
   CHECK(std::get<bool>(*find(settings, "shop_haggle.shown")));
   CHECK(text(settings, "shop_haggle.species") == "main.digimon_names.80");
+  CHECK(text(settings, "shop_haggle.species_icon") == "/texture/stddat/stdtim/001?palette=1");
+  CHECK(text(settings, "shop_haggle.species_icon_rect") == "224 32 16 16");
   CHECK(text(settings, "shop_haggle.character") == "shop_job.character.spendthrift");
   CHECK(text(settings, "shop_haggle.mood") == "shop_job.mood.normal");
   CHECK(number(settings, "shop_haggle.patience") == 4.0);

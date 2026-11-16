@@ -220,9 +220,9 @@
    others under it; the "?" as the look's key cap. This sheet goes over the original skin's, so it sets again every
    property that one gives the bar. */
 #shop-job {
-	width: 680dp;
+	width: 674dp;
 	margin-left: -349dp;
-	padding: 6dp 9dp;
+	padding: 10dp 12dp 6dp 12dp;
 	border-width: 0;
 	background-color: transparent;
 	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;
@@ -256,8 +256,11 @@
 	color: #f2f0e1;
 }
 
+/* The cap's own size (the original skin's sheet under this one sets a smaller line for its font). */
 #shop-job-rules .key {
 	margin: 0 6dp 0 0;
+	font-size: 26dp;
+	line-height: 30dp;
 }
 
 #shop-job-rules:hover, #shop-job-rules:focus {

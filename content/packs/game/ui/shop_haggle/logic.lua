@@ -53,6 +53,13 @@ local function draw_customer(document)
   local mood = document:get("haggle-mood")
   mood:set_text(t("shop_job.haggle.mood", { mood = t(setting("mood", "")) }))
   set_classes(mood, "mood-", Moods, setting("mood_name", ""))
+  local icon = document:get("haggle-species-icon")
+  local icon_source = setting("species_icon", "")
+  icon:set_class("hidden", icon_source == "")
+  if icon_source ~= "" then
+    icon:set_attribute("src", icon_source)
+    icon:set_attribute("rect", setting("species_icon_rect", ""))
+  end
   local face = whole("face")
   local reaction = setting("reaction", "")
   local face_image = document:get("haggle-face")

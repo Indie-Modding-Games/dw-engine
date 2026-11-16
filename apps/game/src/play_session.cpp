@@ -490,7 +490,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                          .items = game_.systems.inventory != nullptr
                                       ? &game_.systems.inventory->items()
                                       : nullptr,
-                         .rules = &shopJobRules_}),
+                         .rules = &shopJobRules_,
+                         .tournament = game_.systems.tournament}),
       gymScreen_({.session = game_.session.get(),
                   .story = game_.systems.story,
                   .inventory = game_.systems.inventory,

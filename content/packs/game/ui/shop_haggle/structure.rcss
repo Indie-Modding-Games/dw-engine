@@ -118,23 +118,22 @@ body {
 	border-radius: 6dp;
 }
 
-#haggle-face {
+/* The customer's species (its tournament board sprite, 16 pixels) fills the frame; the face of the
+   last offer sits on its corner as a badge. */
+#haggle-species-icon {
+	position: absolute;
+	left: 4dp;
+	top: 4dp;
 	width: 64dp;
 	height: 64dp;
-	margin: 4dp;
 }
 
-/* Before the first offer the frame shows a question mark instead of a face. */
-#haggle-portrait-idle {
-	display: none;
-	font-size: 40dp;
-	line-height: 72dp;
-	text-align: center;
-	color: #4a5468;
-}
-
-#haggle-face.hidden + #haggle-portrait-idle {
-	display: block;
+#haggle-face {
+	position: absolute;
+	right: -8dp;
+	bottom: -8dp;
+	width: 32dp;
+	height: 32dp;
 }
 
 #haggle-who {
@@ -437,6 +436,6 @@ img.row-face {
 	color: #707888;
 }
 
-.hidden, .haggle-offer.hidden, #haggle-face.hidden, #haggle-item-icon.hidden {
+.hidden, .haggle-offer.hidden, #haggle-face.hidden, #haggle-species-icon.hidden, #haggle-item-icon.hidden {
 	display: none;
 }

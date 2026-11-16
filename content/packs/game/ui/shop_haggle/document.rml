@@ -18,7 +18,7 @@
 			<div id="haggle-body">
 				<div id="haggle-side">
 					<div id="haggle-customer">
-						<div id="haggle-portrait"><img id="haggle-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/><span id="haggle-portrait-idle">?</span></div>
+						<div id="haggle-portrait"><img id="haggle-species-icon" class="hidden"/><img id="haggle-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/></div>
 						<div id="haggle-who">
 							<span id="haggle-species"></span>
 							<span id="haggle-character"></span>

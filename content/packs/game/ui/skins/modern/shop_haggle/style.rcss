@@ -226,4 +226,3 @@
 .haggle-row.offered .row-chance { color: #5d6a7c; }
 .haggle-row.offered .row-meter-fill { background-color: #3a4758; }
 
-#haggle-portrait-idle { color: #3a4758; }

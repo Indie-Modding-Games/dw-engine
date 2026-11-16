@@ -15,6 +15,7 @@
 namespace dwe::session {
 class ShopJobAdapter;
 class StoryAdapter;
+class TournamentAdapter;
 } // namespace dwe::session
 
 namespace dwe::app {
@@ -24,10 +25,13 @@ class ShopJobRulesPanel;
 inline constexpr std::string_view ShopHaggleDocument = "shop_haggle";
 inline constexpr std::string_view ShopHaggleRevisionSetting = "shop_haggle.revision";
 
-// What the haggle screen names: the customer's species and the item (text keys) and the item's
+// What the haggle screen names: the customer's species and the item (text keys), the species'
+// sprite (the tournament board's, which every species up to the board's pages has) and the item's
 // icon.
 struct ShopHaggleNames {
   std::string species{};
+  std::string speciesIcon{};
+  std::string speciesIconRect{};
   std::string item{};
   std::string itemIcon{};
   std::string itemIconRect{};
@@ -59,6 +63,8 @@ struct ShopHaggleScreenDesc {
   const assets::DigimonTable* species = nullptr;
   const assets::ItemTable* items = nullptr;
   ShopJobRulesPanel* rules = nullptr;
+  // The species' sprites (its bracket layout and pages); null leaves the portrait empty.
+  const session::TournamentAdapter* tournament = nullptr;
 };
 
 // The improved shop job's counter (engine routine 259, StoryScreen::ShopHaggle): one turn per
@@ -81,6 +87,7 @@ public:
 
 private:
   [[nodiscard]] ShopHaggleView view() const;
+  void speciesSprite(std::int32_t number, ShopHaggleNames& names) const;
   void publish() const;
 
   ShopHaggleScreenDesc desc_;

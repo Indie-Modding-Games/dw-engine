@@ -5,6 +5,7 @@
 #include <dwe/screens/name_keys.hpp>
 #include <dwe/session/shop_job_adapter.hpp>
 #include <dwe/session/story_adapter.hpp>
+#include <dwe/session/tournament_adapter.hpp>
 
 #include <algorithm>
 #include <format>
@@ -74,6 +75,8 @@ screens::ScreenSettings shopHaggleSettings(const ShopHaggleView& view) {
   put("talked", haggle.talked());
   put("can_talk", haggle.canTalk());
   put("item", view.names.item);
+  put("species_icon", view.names.speciesIcon);
+  put("species_icon_rect", view.names.speciesIconRect);
   put("item_icon", view.names.itemIcon);
   put("item_icon_rect", view.names.itemIconRect);
   put("regular_level", static_cast<double>(rules.regularLevel));
@@ -193,6 +196,24 @@ void ShopHaggleScreen::refocus() {
   }
 }
 
+// The species' sprite as the tournament board draws it (bracketSpriteCell, its first face).
+void ShopHaggleScreen::speciesSprite(std::int32_t number, ShopHaggleNames& names) const {
+  if (desc_.tournament == nullptr) {
+    return;
+  }
+  const game::tournament::BracketLayout* layout = desc_.tournament->bracketLayout();
+  const game::tournament::BracketRules* rules = desc_.tournament->bracketRules();
+  if (layout == nullptr || rules == nullptr || rules->pages.empty()) {
+    return;
+  }
+  const game::tournament::BracketCell cell =
+      game::tournament::bracketSpriteCell(*layout, number, 0);
+  const std::size_t page =
+      std::min(static_cast<std::size_t>(std::max(cell.page, 0)), rules->pages.size() - 1);
+  names.speciesIcon = std::format("/{}?palette={}", rules->pages.at(page), cell.palette);
+  names.speciesIconRect = std::format("{} {} {} {}", cell.u, cell.v, cell.width, cell.height);
+}
+
 ShopHaggleView ShopHaggleScreen::view() const {
   ShopHaggleView view{.tiers = tiers_};
   if (desc_.story != nullptr) {
@@ -220,6 +241,7 @@ ShopHaggleView ShopHaggleScreen::view() const {
       view.names.species = names.species(row->id);
     }
   }
+  speciesSprite(number, view.names);
   if (desc_.items != nullptr) {
     if (const auto item = desc_.items->handleOf(view.rules->items.at(customer.item).id)) {
       view.names.item = names.item(*item);

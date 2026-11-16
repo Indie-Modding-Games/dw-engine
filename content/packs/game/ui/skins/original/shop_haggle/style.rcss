@@ -108,11 +108,6 @@
 	background-color: #000000;
 }
 
-#haggle-portrait-idle {
-	font-size: 33dp;
-	line-height: 66dp;
-	color: #4a9fc5;
-}
 
 #haggle-species {
 	font-size: 22dp;

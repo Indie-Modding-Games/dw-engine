@@ -136,11 +136,6 @@
 	background-color: #050c1a;
 }
 
-#haggle-portrait-idle {
-	font-size: 30dp;
-	line-height: 66dp;
-	color: #4a79a8;
-}
 
 #haggle-who, #haggle-patience {
 	margin-left: 86dp;

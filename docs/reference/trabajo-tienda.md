@@ -69,7 +69,7 @@ siguen siendo los del original.
 - **Panel de reglas** (`shop_job_rules`): se abre solo en el primer cliente de cada trabajo, con el **?** de la barra
   con `help` (H o el gatillo izquierdo) y con el botón de menú (Tab o el de menú del mando) en el mostrador.
   Confirmar, cancelar, `help`, Esc o el Back del mando lo cierran.
-- **Mostrador** (`shop_haggle`): especie, carácter, humor, cara, paciencia, el objeto con su precio normal, los 9
+- **Mostrador** (`shop_haggle`): especie (con su sprite del tablero de torneos, `shop_haggle.species_icon`), carácter, humor, cara, paciencia, el objeto con su precio normal, los 9
   precios, Charlar, Despedir, las ofertas a este cliente y la cuenta. Ratón o teclado/mando (flechas, confirmar).
 
 ## Cómo se engancha a la historia
