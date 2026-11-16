@@ -98,3 +98,8 @@ files["apps/game/scripts/main.lua"] = {
   read_globals = { "input" },
   globals = { "tick", "marker" },
 }
+
+-- Story patches: the story loader gives each patch the `story` API (docs/reference/trabajo-tienda.md).
+files["content/packs/*/story/patches/*.lua"] = {
+  read_globals = { "story" },
+}

@@ -216,4 +216,14 @@ inline constexpr std::string_view MusicSongFailed = "music: {} track {} does not
 inline constexpr std::string_view MusicTableFailed =
     "music: {} does not load ({}); the music modes and battles play no fixed songs";
 
+// The canyon shop's improved job (shop_job_adapter.hpp).
+inline constexpr std::string_view NoShopJob = "there are no shop job rules or no story";
+inline constexpr std::string_view ShopJobLine =
+    "[shop_job] job {}: a line with a perfect score of {}";
+inline constexpr std::string_view ShopJobTurnLog =
+    "[shop_job] customer {}: turn {} at level {}, profit {}, tally {}";
+inline constexpr std::string_view ShopJobBonus = "[shop_job] bonus {}: given {}";
+inline constexpr std::string_view ShopJobNoBonusItem =
+    "the shop job's bonus item {} is not in the items";
+
 } // namespace dwe::session::messages

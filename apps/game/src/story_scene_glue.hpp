@@ -20,6 +20,7 @@
 #include "merit_shop_screen.hpp"
 #include "money_box_screen.hpp"
 #include "save_machine.hpp"
+#include "shop_haggle_screen.hpp"
 #include "story_gym.hpp"
 #include "story_item_keeper.hpp"
 #include "story_naming.hpp"
@@ -65,6 +66,7 @@ public:
   // The player's last scene (call_partner_routine 6, which routine 53 starts).
   void attachEnding(EndingScene* ending) { ending_ = ending; }
   void attachEggBox(EggBoxScreen* eggBox) { eggBox_ = eggBox; }
+  void attachShopHaggle(ShopHaggleScreen* haggle) { shopHaggle_ = haggle; }
   // The item menu the story's DiscardItem screen opens (call_routine 0).
   void attachDiscard(DiscardScreen* discard) { discard_ = discard; }
   // The jukebox the story's Jukebox screen opens (call_routine 9).
@@ -120,6 +122,7 @@ private:
   StoryTournament tournament_;
   DeathScene* death_ = nullptr;
   EggBoxScreen* eggBox_ = nullptr;
+  ShopHaggleScreen* shopHaggle_ = nullptr;
   DiscardScreen* discard_ = nullptr;
   JukeboxScreen* jukebox_ = nullptr;
   TournamentScheduleScreen* schedule_ = nullptr;

@@ -43,6 +43,8 @@ screens:
   gym_slots: gym_slots/document
   naming_box: naming_box/document
   egg_box: egg_box/document
+  shop_haggle: shop_haggle/document
+  shop_job_rules: shop_job_rules/document
   lives_box: lives_box/document
   fishing_bait: fishing_bait/document
   fishing_notice: fishing_notice/document

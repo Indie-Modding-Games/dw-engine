@@ -46,9 +46,15 @@
 	position: relative;
 }
 
+/* The marks' labels hang under the bar: the foot leaves them a band. */
+#shop-job-foot {
+	margin-top: 16dp;
+}
+
+/* Room on the head's right for the rules' "?" button. */
 #shop-job-customers {
 	position: absolute;
-	right: 0;
+	right: 36dp;
 	top: 0;
 }
 
@@ -72,6 +78,51 @@
 
 #shop-job-mark-join {
 	right: 0;
+}
+
+/* The bonus item's mark (the improved job): only when the bar reaches it (the class shown), with the item's icon and
+   its label. Every mark carries its label (.shop-job-mark-label); the join's is the main one (.main). */
+#shop-job-mark-bonus {
+	display: none;
+}
+
+#shop-job-mark-bonus.shown {
+	display: block;
+}
+
+.shop-job-mark-label {
+	position: absolute;
+	top: 100%;
+	left: 4dp;
+	margin-top: 1dp;
+	font-size: 13dp;
+	line-height: 14dp;
+	white-space: nowrap;
+}
+
+/* The join's label goes before its mark: in the original job that mark ends the bar. */
+#shop-job-mark-join .shop-job-mark-label {
+	left: auto;
+	right: 4dp;
+}
+
+/* The bonus item's icon, in the labels' band just before its mark. */
+#shop-job-mark-bonus-icon {
+	position: absolute;
+	top: 100%;
+	right: 2dp;
+	margin-top: 0;
+	width: 15dp;
+	height: 15dp;
+}
+
+/* The rules' "?" button, at the head's end; a click opens the shop_job_rules panel. */
+#shop-job-rules {
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 22dp;
+	text-align: center;
 }
 
 #shop-job-next {

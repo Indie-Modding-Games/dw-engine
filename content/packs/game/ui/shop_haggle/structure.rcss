@@ -1,0 +1,264 @@
+/* How the shop job's counter behaves whatever the skin (_shopjob/ui-contract.md): a panel over a dimmed screen with the
+   customer, the item, the nine price rows as buttons (a click or confirm offers that price), Chat, Dismiss, the offers
+   so far and the tally. This sheet also gives it a plain neutral look, so it reads well before a skin styles it
+   (skins/<id>/shop_haggle/style.rcss restyles it). */
+
+body {
+	font-size: 16dp;
+	color: #e8e8e8;
+}
+
+#scrim {
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #00000080;
+}
+
+#panel {
+	position: absolute;
+	left: 50%;
+	top: 2%;
+	max-height: 96%;
+	width: 600dp;
+	margin-left: -300dp;
+	padding: 10dp 16dp;
+	overflow-y: auto;
+	/* The panel's own sizes: a skin's theme sizes the body for its menus. */
+	font-size: 16dp;
+	line-height: 20dp;
+	background-color: #1c2230f0;
+	border: 2dp #8a94a8;
+	border-radius: 8dp;
+}
+
+#haggle-head, #haggle-customer, #haggle-item, #haggle-actions, #haggle-summary {
+	display: block;
+	position: relative;
+	margin-bottom: 4dp;
+}
+
+#haggle-title {
+	font-size: 18dp;
+	font-weight: bold;
+}
+
+#haggle-rules {
+	position: absolute;
+	right: 0;
+	top: 0;
+	padding: 2dp 8dp;
+}
+
+#haggle-customer {
+	height: 60dp;
+}
+
+#haggle-face {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 56dp;
+	height: 56dp;
+}
+
+#haggle-who {
+	position: absolute;
+	left: 68dp;
+	top: 0;
+	right: 150dp;
+}
+
+#haggle-who span {
+	display: block;
+	font-size: 14dp;
+}
+
+#haggle-species {
+	font-weight: bold;
+	font-size: 17dp;
+}
+
+#haggle-character {
+	font-size: 15dp;
+	color: #b8c0d0;
+}
+
+#haggle-patience {
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 140dp;
+	text-align: right;
+}
+
+#haggle-patience-label {
+	display: block;
+	font-size: 15dp;
+}
+
+.pip {
+	display: inline-block;
+	width: 14dp;
+	height: 14dp;
+	margin-left: 4dp;
+	border: 2dp #8a94a8;
+	border-radius: 7dp;
+}
+
+.pip.on {
+	background-color: #f0c040;
+}
+
+.pip.hidden {
+	display: none;
+}
+
+#haggle-item-icon {
+	display: inline-block;
+	width: 24dp;
+	height: 24dp;
+	vertical-align: middle;
+	margin-right: 8dp;
+}
+
+#haggle-regular {
+	margin-left: 16dp;
+	font-size: 14dp;
+	color: #b8c0d0;
+}
+
+#haggle-rows {
+	display: block;
+	margin-bottom: 8dp;
+}
+
+#haggle-columns, .haggle-row {
+	display: block;
+	position: relative;
+	height: 26dp;
+	line-height: 26dp;
+}
+
+#haggle-columns {
+	height: 20dp;
+	line-height: 20dp;
+	font-size: 13dp;
+	color: #b8c0d0;
+}
+
+.haggle-row {
+	font-size: 16dp;
+	border-radius: 4dp;
+}
+
+.haggle-row:hover, .haggle-row:focus {
+	background-color: #3a4766;
+}
+
+.haggle-row.regular {
+	border: 1dp #8a94a8;
+}
+
+/* A price refused before: the customer will not take it now. */
+.haggle-row.offered {
+	color: #707888;
+}
+
+.row-price, .row-adds, .row-chance, .row-face {
+	position: absolute;
+	top: 0;
+}
+
+.row-price {
+	left: 12dp;
+}
+
+.row-adds {
+	left: 170dp;
+}
+
+.row-chance {
+	left: 320dp;
+}
+
+.row-face {
+	left: 470dp;
+}
+
+img.row-face {
+	top: 3dp;
+	width: 20dp;
+	height: 20dp;
+}
+
+.haggle-row.likely .row-chance {
+	color: #8ee08e;
+}
+
+.haggle-row.never .row-chance {
+	color: #e07070;
+}
+
+#haggle-actions button, #haggle-rules {
+	font-size: 16dp;
+	line-height: 24dp;
+}
+
+#haggle-rules .key, #rules-close .key {
+	font-size: 13dp;
+	line-height: 18dp;
+}
+
+#haggle-actions button {
+	display: inline-block;
+	padding: 4dp 16dp;
+	margin-right: 12dp;
+	border: 1dp #8a94a8;
+	border-radius: 4dp;
+}
+
+#haggle-actions button:hover, #haggle-actions button:focus, #haggle-rules:hover, #haggle-rules:focus {
+	background-color: #3a4766;
+}
+
+#haggle-talk.disabled {
+	color: #707888;
+}
+
+#haggle-history {
+	display: block;
+	margin-bottom: 4dp;
+	font-size: 14dp;
+}
+
+#haggle-history-title {
+	display: block;
+	color: #b8c0d0;
+}
+
+.haggle-offer {
+	display: inline-block;
+	margin-right: 12dp;
+}
+
+.offer-face {
+	display: inline-block;
+	width: 20dp;
+	height: 20dp;
+	vertical-align: middle;
+	margin-right: 4dp;
+}
+
+#haggle-next {
+	position: absolute;
+	right: 0;
+	top: 0;
+	color: #f0c040;
+}
+
+.hidden, .haggle-offer.hidden, #haggle-face.hidden, #haggle-item-icon.hidden {
+	display: none;
+}

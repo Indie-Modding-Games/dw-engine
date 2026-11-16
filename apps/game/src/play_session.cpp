@@ -18,6 +18,7 @@
 #include <dwe/session/map_head_lines.hpp>
 #include <dwe/session/map_visits.hpp>
 #include <dwe/session/session_music.hpp>
+#include <dwe/session/shop_job_adapter.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_game_orders.hpp>
 #include <dwe/session/story_scenes.hpp>
@@ -477,6 +478,19 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                     .species = species_ ? &*species_ : nullptr,
                     .frameSeconds = scene_->field().rules().transition.frameSeconds}),
       eggBoxScreen_(*game_.session, *context.ui),
+      shopJobRules_({.ui = context.ui,
+                     .job = game_.systems.shopJob,
+                     .scenes = game_.systems.scenes,
+                     .items = game_.systems.inventory != nullptr ? &game_.systems.inventory->items()
+                                                                 : nullptr}),
+      shopHaggleScreen_({.ui = context.ui,
+                         .job = game_.systems.shopJob,
+                         .story = game_.systems.story,
+                         .species = species_ ? &*species_ : nullptr,
+                         .items = game_.systems.inventory != nullptr
+                                      ? &game_.systems.inventory->items()
+                                      : nullptr,
+                         .rules = &shopJobRules_}),
       gymScreen_({.session = game_.session.get(),
                   .story = game_.systems.story,
                   .inventory = game_.systems.inventory,
@@ -552,6 +566,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachDeath(&deathScene_);
   storyScenes_.attachEnding(&endingScene_);
   storyScenes_.attachEggBox(&eggBoxScreen_);
+  storyScenes_.attachShopHaggle(&shopHaggleScreen_);
+  shopJobRules_.setClosed([this] { shopHaggleScreen_.refocus(); });
   storyScenes_.attachDiscard(&discardScreen_);
   storyScenes_.attachJukebox(&jukeboxScreen_);
   storyScenes_.attachTournamentSchedule(&scheduleScreen_);
@@ -746,6 +762,8 @@ PlaySession::~PlaySession() {
                                           FishingHudDocument,
                                           CurlingHudDocument,
                                           EggBoxDocument,
+                                          ShopHaggleDocument,
+                                          ShopJobRulesDocument,
                                           NamingBoxDocument,
                                           LivesBoxDocument,
                                           BirdTransportDocument,
@@ -1166,6 +1184,13 @@ void PlaySession::applyPlayOptions() {
   }
   const RuleChoices rules = ruleChoicesOf(settings);
   context_.ui->setSetting(DifficultySetting, rules.difficulty);
+  const bool shopJobImproved =
+      settings.shopJobMode.value_or(std::string{ShopJobImproved}) != ShopJobOriginal;
+  context_.ui->setSetting(ShopJobModeSetting,
+                          std::string{shopJobImproved ? ShopJobImproved : ShopJobOriginal});
+  if (game_.systems.shopJob != nullptr) {
+    game_.systems.shopJob->setImproved(shopJobImproved);
+  }
   battleScreen_.setQuickStart(settings.quickBattleStart.value_or(false));
   skipEvolution_ = settings.skipEvolution.value_or(false);
   scene_->field().setGenerousTalk(settings.generousTalk.value_or(false));
@@ -1200,7 +1225,8 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       (namingBox_ != nullptr && namingBox_->handle(command))) {
     return true;
   }
-  if (devMenu_.handle(command) || eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
+  if (devMenu_.handle(command) || eggBoxScreen_.handle(command) || shopJobRules_.handle(command) ||
+      shopHaggleScreen_.handle(command) || shopScreen_.handle(command) ||
       itemKeeperScreen_.handle(command) || discardScreen_.handle(command) ||
       jukeboxScreen_.handle(command) || scheduleScreen_.handle(command) ||
       tradeScreen_.handle(command) || birdScreen_.handle(command) ||
@@ -1886,6 +1912,17 @@ void PlaySession::publishShopJob() {
           story->state().variable(static_cast<std::int32_t>(job->customersVariable)).value_or(0);
       frame.tally = story->shopTally();
     }
+  }
+  if (const session::ShopJobAdapter* job = game_.systems.shopJob;
+      job != nullptr && job->improved() && job->lineup() != nullptr) {
+    frame.improved = true;
+    frame.perfectScore = job->lineup()->perfectScore;
+    if (!shopJobBonus_) {
+      shopJobBonus_ = shopJobRules_.view();
+    }
+    frame.bonus = shopJobBonus_->tiers.bonus;
+    frame.bonusIcon = shopJobBonus_->bonusIcon;
+    frame.bonusIconRect = shopJobBonus_->bonusIconRect;
   }
   const ShopJobBarView view = shopJobBar_.update(frame);
   if (publishedShopJob_ == view) {

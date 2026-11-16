@@ -234,12 +234,27 @@ function hud.tick_bubble(seconds)
 end
 
 -- The shop job's bar (shop_job_bar, an engine improvement, on unless turned off): while the canyon
--- shop's job runs (field.shop_job), the bar runs from nothing to the tally the shopkeeper joins
--- from (goal), with a mark where the better pay starts.
+-- shop's job runs (field.shop_job), the bar runs from nothing to its top (the line's perfect score
+-- in the improved job, the tally the shopkeeper joins from in the original's), with marks where the
+-- better pay starts, where the shopkeeper joins (goal) and, in the improved job, where the bonus
+-- item comes (bonus, 0 for none); tier is the pay tier reached.
 function hud.shop_job()
   local job = field.shop_job()
   if job == nil then
-    return { shown = false, tally = 0, goal = 0, better_pay = 0, customer = 0, customers = 0 }
+    return {
+      shown = false,
+      tally = 0,
+      goal = 0,
+      better_pay = 0,
+      customer = 0,
+      customers = 0,
+      top = 0,
+      bonus = 0,
+      bonus_icon = "",
+      bonus_icon_rect = "",
+      tier = "lowest",
+      improved = false,
+    }
   end
   job.shown = true
   return job

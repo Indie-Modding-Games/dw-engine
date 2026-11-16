@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.15.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.16.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -324,7 +324,7 @@ function field.minimap() end
 ---@return table
 function field.player() end
 
---- La cuenta del trabajo en la tienda mientras dura (tally, goal, better_pay, customer, customers), o nil.
+--- La cuenta del trabajo en la tienda mientras dura (tally, goal, better_pay, customer, customers, top, bonus, bonus_icon, bonus_icon_rect, tier, improved), o nil.
 ---@return table?
 function field.shop_job() end
 

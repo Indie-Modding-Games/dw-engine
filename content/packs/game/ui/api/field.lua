@@ -55,8 +55,11 @@ function field.player()
 end
 
 -- The shop job's tally while the canyon shop's job runs (shop_job_bar, an improvement), or nil:
--- the tally, the tally the shopkeeper joins from (goal), the one the better pay starts at, and the
--- customers served of all.
+-- the tally, the tally the shopkeeper joins from (goal), the one the better pay starts at, the
+-- customers served of all, the bar's top (the line's perfect score in the improved job, the goal in
+-- the original's), the bonus item's tally (0 for none) and icon (bonus_icon, bonus_icon_rect), the
+-- pay tier reached (tier: "lowest", "better", "joins" or "bonus") and whether the improved job
+-- runs.
 function field.shop_job()
   if ui.setting("shop_job.shown") ~= true then
     return nil
@@ -67,6 +70,12 @@ function field.shop_job()
     better_pay = whole("shop_job.better_pay"),
     customer = whole("shop_job.customer"),
     customers = whole("shop_job.customers"),
+    top = whole("shop_job.top"),
+    bonus = whole("shop_job.bonus"),
+    bonus_icon = ui.setting("shop_job.bonus_icon") or "",
+    bonus_icon_rect = ui.setting("shop_job.bonus_icon_rect") or "",
+    tier = ui.setting("shop_job.tier") or "lowest",
+    improved = ui.setting("shop_job.improved") == true,
   }
 end
 

@@ -1,0 +1,75 @@
+<rml>
+<head>
+	<title>Shop haggle</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<!-- The improved shop job's counter (_shopjob/ui-contract.md): one customer, one turn per opening. The faces are the
+     mood bubble's (map gcan11, texture4/000: five 32-pixel faces, delighted to furious). -->
+<body>
+	<div id="scrim">
+		<div id="panel">
+			<div id="haggle-head">
+				<span id="haggle-title"></span>
+				<button id="haggle-rules" onclick="ui.send('shop_job_rules')"><span class="key" id="prompt-rules"></span><span text-key="shop_job.haggle.rules"></span></button>
+			</div>
+			<div id="haggle-customer">
+				<img id="haggle-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/>
+				<div id="haggle-who">
+					<span id="haggle-species"></span>
+					<span id="haggle-character"></span>
+					<span id="haggle-mood"></span>
+					<span id="haggle-reaction"></span>
+				</div>
+				<div id="haggle-patience">
+					<span id="haggle-patience-label" text-key="shop_job.haggle.patience"></span>
+					<span class="pip" id="pip-1"></span>
+					<span class="pip" id="pip-2"></span>
+					<span class="pip" id="pip-3"></span>
+					<span class="pip" id="pip-4"></span>
+					<span class="pip" id="pip-5"></span>
+					<span class="pip" id="pip-6"></span>
+				</div>
+			</div>
+			<div id="haggle-item">
+				<img id="haggle-item-icon"/>
+				<span id="haggle-wants"></span>
+				<span id="haggle-regular"></span>
+			</div>
+			<div id="haggle-rows">
+				<div id="haggle-columns"><span class="row-price" text-key="shop_job.haggle.price"></span><span class="row-adds" text-key="shop_job.haggle.adds"></span><span class="row-chance" text-key="shop_job.haggle.chance"></span><span class="row-face" text-key="shop_job.haggle.face"></span></div>
+				<button id="row-1" class="haggle-row" onclick="offer(document, 0)"><span class="row-price" id="row-1-price"></span><span class="row-adds" id="row-1-adds"></span><span class="row-chance" id="row-1-chance"></span><img class="row-face" id="row-1-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/></button>
+				<button id="row-2" class="haggle-row" onclick="offer(document, 1)"><span class="row-price" id="row-2-price"></span><span class="row-adds" id="row-2-adds"></span><span class="row-chance" id="row-2-chance"></span><img class="row-face" id="row-2-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/></button>
+				<button id="row-3" class="haggle-row" onclick="offer(document, 2)"><span class="row-price" id="row-3-price"></span><span class="row-adds" id="row-3-adds"></span><span class="row-chance" id="row-3-chance"></span><img class="row-face" id="row-3-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/></button>
+				<button id="row-4" class="haggle-row" onclick="offer(document, 3)"><span class="row-price" id="row-4-price"></span><span class="row-adds" id="row-4-adds"></span><span class="row-chance" id="row-4-chance"></span><img class="row-face" id="row-4-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/></button>
+				<button id="row-5" class="haggle-row" onclick="offer(document, 4)"><span class="row-price" id="row-5-price"></span><span class="row-adds" id="row-5-adds"></span><span class="row-chance" id="row-5-chance"></span><img class="row-face" id="row-5-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/></button>
+				<button id="row-6" class="haggle-row" onclick="offer(document, 5)"><span class="row-price" id="row-6-price"></span><span class="row-adds" id="row-6-adds"></span><span class="row-chance" id="row-6-chance"></span><img class="row-face" id="row-6-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/></button>
+				<button id="row-7" class="haggle-row" onclick="offer(document, 6)"><span class="row-price" id="row-7-price"></span><span class="row-adds" id="row-7-adds"></span><span class="row-chance" id="row-7-chance"></span><img class="row-face" id="row-7-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/></button>
+				<button id="row-8" class="haggle-row" onclick="offer(document, 7)"><span class="row-price" id="row-8-price"></span><span class="row-adds" id="row-8-adds"></span><span class="row-chance" id="row-8-chance"></span><img class="row-face" id="row-8-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/></button>
+				<button id="row-9" class="haggle-row" onclick="offer(document, 8)"><span class="row-price" id="row-9-price"></span><span class="row-adds" id="row-9-adds"></span><span class="row-chance" id="row-9-chance"></span><img class="row-face" id="row-9-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/></button>
+			</div>
+			<div id="haggle-actions">
+				<button id="haggle-talk" onclick="talk(document)"><span id="haggle-talk-text"></span></button>
+				<button id="haggle-dismiss" onclick="dismiss(document)"><span text-key="shop_job.haggle.dismiss"></span></button>
+			</div>
+			<div id="haggle-history">
+				<span id="haggle-history-title" text-key="shop_job.haggle.history"></span>
+				<span id="haggle-no-offers" text-key="shop_job.haggle.no_offers"></span>
+				<div id="offer-1" class="haggle-offer hidden"><img class="offer-face" id="offer-1-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/><span class="offer-text" id="offer-1-text"></span></div>
+				<div id="offer-2" class="haggle-offer hidden"><img class="offer-face" id="offer-2-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/><span class="offer-text" id="offer-2-text"></span></div>
+				<div id="offer-3" class="haggle-offer hidden"><img class="offer-face" id="offer-3-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/><span class="offer-text" id="offer-3-text"></span></div>
+				<div id="offer-4" class="haggle-offer hidden"><img class="offer-face" id="offer-4-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/><span class="offer-text" id="offer-4-text"></span></div>
+				<div id="offer-5" class="haggle-offer hidden"><img class="offer-face" id="offer-5-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/><span class="offer-text" id="offer-5-text"></span></div>
+				<div id="offer-6" class="haggle-offer hidden"><img class="offer-face" id="offer-6-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/><span class="offer-text" id="offer-6-text"></span></div>
+				<div id="offer-7" class="haggle-offer hidden"><img class="offer-face" id="offer-7-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/><span class="offer-text" id="offer-7-text"></span></div>
+				<div id="offer-8" class="haggle-offer hidden"><img class="offer-face" id="offer-8-face" src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/><span class="offer-text" id="offer-8-text"></span></div>
+			</div>
+			<div id="haggle-summary">
+				<span id="haggle-tally"></span>
+				<span id="haggle-next"></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

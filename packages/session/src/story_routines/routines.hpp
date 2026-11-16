@@ -80,5 +80,7 @@ core::Result<void> registerWhiteFadeRoutines(StoryScenesContext& scenes);
 core::Result<void> registerMoodBubbleRoutine(StoryScenesContext& scenes);
 core::Result<void> registerBirdTransportRoutine(StoryScenesContext& scenes);
 core::Result<void> registerBossBuildupRoutine(StoryScenesContext& scenes);
+// The improved shop job's engine routines 256 to 260 (routine_shop_job.cpp).
+core::Result<void> registerShopJobRoutines(StoryScenesContext& scenes);
 
 } // namespace dwe::session

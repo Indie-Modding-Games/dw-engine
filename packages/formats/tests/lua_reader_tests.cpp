@@ -534,6 +534,28 @@ return { script = 1, sections = { [51] = routines.step } }
 )");
 }
 
+TEST_CASE("an engine routine past the game's numbers writes no trigger the walk would forget") {
+  // Routine 256 (an engine's own, as the shop job's) is not the game's routine 0, which may write
+  // triggers: the test of trigger 5 after it stays decided.
+  const std::string yaml = handWarps(R"lua(local story <const> = story
+local routines = {}
+
+function routines.step()
+  story.set_trigger(5)
+  story.call_routine(256)
+  if story.trigger(5) then
+    return story.warp_to(7, 2, 255)
+  end
+  return story.warp_to(8, 1, 255)
+end
+
+return { script = 1, sections = { [51] = routines.step } }
+)lua");
+  CHECK(yaml.contains("map: room_7"));
+  CHECK_FALSE(yaml.contains("map: room_8"));
+  CHECK_FALSE(yaml.contains("forget"));
+}
+
 TEST_CASE("a hand-written choice, loop and state machine read as the emitter writes them") {
   const std::string yaml = handWarps(R"lua(local story <const> = story
 local ENDED <const> = story.ENDED

@@ -1,0 +1,86 @@
+/* How the shop job's rules panel behaves whatever the skin (_shopjob/ui-contract.md): the counter's panel (its sheet,
+   shop_haggle/structure.rcss, gives the scrim, the panel and the neutral look) with the pay tiers, the faces, the haggle's
+   rules and each customer's character. skins/<id>/shop_job_rules/style.rcss restyles it. */
+
+#panel.rules-panel {
+	width: 660dp;
+	margin-left: -330dp;
+	font-size: 15dp;
+	line-height: 19dp;
+}
+
+#rules-title {
+	display: block;
+	font-size: 22dp;
+	font-weight: bold;
+	margin-bottom: 8dp;
+}
+
+#rules-original, #rules-goal, #rules-pay, #rules-haggle, #rules-characters {
+	display: block;
+	margin-bottom: 8dp;
+}
+
+.rules-tier {
+	display: block;
+}
+
+/* The tier the shopkeeper joins at: the job's main goal. */
+.rules-tier.main {
+	font-weight: bold;
+	color: #f0c040;
+}
+
+#rules-bonus-icon {
+	display: inline-block;
+	width: 24dp;
+	height: 24dp;
+	vertical-align: middle;
+	margin-right: 6dp;
+}
+
+#rules-faces {
+	display: block;
+	margin: 4dp 0;
+}
+
+.rules-face {
+	display: inline-block;
+	margin-right: 14dp;
+	font-size: 14dp;
+}
+
+.rules-face img {
+	width: 28dp;
+	height: 28dp;
+	vertical-align: middle;
+	margin-right: 4dp;
+}
+
+#rules-characters-title {
+	display: block;
+	color: #b8c0d0;
+}
+
+.rules-character {
+	display: block;
+	font-size: 15dp;
+}
+
+#rules-close {
+	display: inline-block;
+	font-size: 16dp;
+	line-height: 24dp;
+	padding: 4dp 16dp;
+	border: 1dp #8a94a8;
+	border-radius: 4dp;
+}
+
+#rules-close:hover, #rules-close:focus {
+	background-color: #3a4766;
+}
+
+#rules-pay-bonus.hidden, #rules-bonus-icon.hidden, #rules-original.hidden, #rules-haggle.hidden,
+#rules-characters.hidden {
+	display: none;
+}

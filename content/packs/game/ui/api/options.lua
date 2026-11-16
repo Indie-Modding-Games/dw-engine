@@ -179,6 +179,18 @@ local descriptors = {
     help = "pause_menu.help.difficulty",
     original = "normal",
   },
+  -- The canyon shop's job: improved (the default) plays a fair line of customers and a haggle
+  -- screen with the odds in sight; original plays the original's price menus.
+  {
+    name = "shop_job_mode",
+    label = "pause_menu.shop_job_mode",
+    values = { "improved", "original" },
+    texts = "pause_menu.shop_job_mode",
+    default = "improved",
+    tab = "game",
+    help = "pause_menu.help.shop_job_mode",
+    original = "original",
+  },
   -- Skip evolutions: confirm or cancel ends an evolution's scene at once, with the same result
   -- (off by default: the original's scene plays to the end).
   {

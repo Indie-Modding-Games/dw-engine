@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: shop_job",
+  "description": "rules/<id>/shop_job.yaml: the canyon shop's job, improved (packages/game/shop_job): the line of customers, the haggle and the bonus over the original's pay.",
+  "type": "object",
+  "required": [
+    "story",
+    "species",
+    "items",
+    "moods",
+    "reactions",
+    "regular_level",
+    "talk",
+    "perfect_score",
+    "bonus"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "story": {
+      "description": "The story variables a counter turn writes: its result, the offer's level (1 to 9) and the reaction's face.",
+      "type": "object",
+      "required": [
+        "result_variable",
+        "level_variable",
+        "face_variable"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "result_variable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "level_variable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "face_variable": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "species": {
+      "description": "The customers' species: their script, species number, how many come, patience, character and the original's accept percent at each level.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "script",
+          "species",
+          "count",
+          "patience",
+          "character",
+          "acceptance"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "script": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "species": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "patience": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "character": {
+            "type": "string",
+            "minLength": 1
+          },
+          "acceptance": {
+            "description": "Accept percent at each level, from the dearest; never going down.",
+            "type": "array",
+            "minItems": 9,
+            "maxItems": 9,
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        }
+      }
+    },
+    "items": {
+      "description": "The items asked for: their id, how many and the price at each level.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "count",
+          "prices"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "prices": {
+            "description": "The price at each level, from the dearest.",
+            "type": "array",
+            "minItems": 9,
+            "maxItems": 9,
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "moods": {
+      "description": "The arrival moods: name, weight of the draw and levels the budget moves up.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "weight",
+          "shift"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "shift": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "reactions": {
+      "description": "delighted, pleased, doubtful, annoyed and furious, in this order: the bubble's face, the highest gap over the budget each takes (the last takes the rest) and the patience it costs.",
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "face",
+          "patience"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "enum": [
+              "delighted",
+              "pleased",
+              "doubtful",
+              "annoyed",
+              "furious"
+            ]
+          },
+          "face": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "gap_up_to": {
+            "type": "integer"
+          },
+          "patience": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "regular_level": {
+      "description": "The regular price's level (the original's Keep).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 8
+    },
+    "talk": {
+      "description": "Talking once: levels the budget moves up, its patience cost and the patience it needs.",
+      "type": "object",
+      "required": [
+        "shift",
+        "cost",
+        "needs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "shift": {
+          "type": "integer"
+        },
+        "cost": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "needs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "perfect_score": {
+      "description": "The window the line's perfect score must fall in and how many lines are drawn for it.",
+      "type": "object",
+      "required": [
+        "least",
+        "most",
+        "tries"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "least": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "most": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tries": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "bonus": {
+      "description": "The tally from which the job's end also gives the item.",
+      "type": "object",
+      "required": [
+        "from",
+        "item"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "item": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

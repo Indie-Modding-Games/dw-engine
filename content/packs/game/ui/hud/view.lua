@@ -274,8 +274,12 @@ local function draw_field(document)
   pick_bubble(document)
 end
 
--- The shop job's bar: #shop-job takes the class "shown", and "better" or "joins" once the tally
--- reaches a mark; under it, the next mark to reach.
+-- The shop job's bar: #shop-job takes the class "shown", "improved" with the improved job, and
+-- "better", "joins" or "bonus" once the tally reaches a mark; the fill takes "tier-<tier>". Each
+-- mark sits at its share of the bar's top; the bonus mark shows only when the bar has one. Under
+-- the bar, the next mark to reach.
+local shop_job_tiers = { "lowest", "better", "joins", "bonus" }
+
 local function draw_shop_job(document)
   local job = hud.shop_job()
   local panel = document:get("shop-job")
@@ -283,17 +287,44 @@ local function draw_shop_job(document)
   if not job.shown then
     return
   end
-  document
-    :get("shop-job-fill")
-    :set_property("width", string.format("%.2f%%", percent(job.tally, 0, job.goal)))
-  local mark = string.format("%.2f%%", percent(job.better_pay, 0, job.goal))
-  document:get("shop-job-mark-pay"):set_property("left", mark)
-  panel:set_class("better", job.tally >= job.better_pay and job.tally < job.goal)
-  panel:set_class("joins", job.tally >= job.goal)
+  local top = job.top > 0 and job.top or job.goal
+  local function at(tally)
+    return string.format("%.2f%%", percent(tally, 0, top))
+  end
+  local fill = document:get("shop-job-fill")
+  fill:set_property("width", at(job.tally))
+  for _, tier in ipairs(shop_job_tiers) do
+    fill:set_class("tier-" .. tier, job.tier == tier)
+  end
+  document:get("shop-job-mark-pay"):set_property("left", at(job.better_pay))
+  local join = document:get("shop-job-mark-join")
+  local bonus = document:get("shop-job-mark-bonus")
+  local has_bonus = job.bonus > 0
+  bonus:set_class("shown", has_bonus)
+  -- The join mark ends the original job's bar; the improved job's runs past it.
+  join:set_property("left", at(job.goal))
+  join:set_property("right", "auto")
+  if job.improved then
+    if has_bonus then
+      bonus:set_property("left", at(job.bonus))
+      local icon = document:get("shop-job-mark-bonus-icon")
+      icon:set_attribute("src", job.bonus_icon)
+      icon:set_attribute("rect", job.bonus_icon_rect)
+      icon:set_class("hidden", job.bonus_icon == "")
+    end
+  end
+  panel:set_class("improved", job.improved)
+  panel:set_class("better", job.tier == "better")
+  panel:set_class("joins", job.tier == "joins")
+  panel:set_class("bonus", job.tier == "bonus")
   local next_mark
-  if job.tally >= job.goal then
+  if job.tier == "bonus" then
+    next_mark = t("hud.shop_job.bonus_reached")
+  elseif job.tier == "joins" and has_bonus then
+    next_mark = t("hud.shop_job.bonus_from", { tally = job.bonus })
+  elseif job.tier == "joins" then
     next_mark = t("hud.shop_job.joins")
-  elseif job.tally >= job.better_pay then
+  elseif job.tier == "better" then
     next_mark = t("hud.shop_job.join_from", { tally = job.goal })
   else
     next_mark = t("hud.shop_job.better_pay", { tally = job.better_pay })
@@ -305,7 +336,7 @@ local function draw_shop_job(document)
   }))
   document
     :get("shop-job-tally")
-    :set_text(t("hud.shop_job.tally", { tally = job.tally, goal = job.goal }))
+    :set_text(t("hud.shop_job.tally", { tally = job.tally, goal = top }))
 end
 
 function on_show(document)
