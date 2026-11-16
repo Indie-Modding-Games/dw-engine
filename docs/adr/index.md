@@ -57,3 +57,4 @@ sustituido.
 | [0021](0021-animacion-en-cpu-y-skinning-en-gpu.md) | Animación muestreada en la CPU, skinning en la GPU, en un módulo `animation` | Aceptada |
 | [0022](0022-primer-ruleset-fiel-al-original.md) | El primer ruleset reproduce el original; el diseño nuevo llega como rulesets | Aceptada |
 | [0023](0023-tuberia-del-remaster.md) | Remaster por recetas, con proveedores intercambiables, caché por contenido y local por defecto | Aceptada |
+| [0024](0024-cooperativo-con-host-autoritativo.md) | Cooperativo en línea con un host autoritativo y jugadores movidos por controladores | Propuesta |
