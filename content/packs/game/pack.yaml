@@ -110,6 +110,8 @@ schemas:
     - rules/*/tournament
   ruleset_curling:
     - rules/*/curling
+  ruleset_shop_job:
+    - rules/*/shop_job
   ruleset_movies:
     - rules/*/movies
   ruleset_story_lock:

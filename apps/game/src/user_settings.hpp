@@ -152,6 +152,9 @@ struct UserSettings {
   // The difficulty (difficulty: normal, easy; rule_options.hpp): a level of the ruleset's
   // difficulty section; normal, the original's, when not chosen yet.
   std::optional<std::string> difficulty = std::nullopt;
+  // The shop job (shop_job_mode: improved, original; play_session.hpp): improved when not chosen
+  // yet.
+  std::optional<std::string> shopJobMode = std::nullopt;
   // Skip the evolution (skip_evolution: true, false; EvolutionScene::skip): confirm or cancel ends
   // the evolution's scene at once; off when not chosen yet.
   std::optional<bool> skipEvolution = std::nullopt;

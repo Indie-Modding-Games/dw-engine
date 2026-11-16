@@ -320,6 +320,10 @@ void StoryScenes::attachTournament(TournamentAdapter* tournament) {
   context_->tournament = tournament;
 }
 
+void StoryScenes::attachShopJob(ShopJobAdapter* shopJob) {
+  context_->shopJob = shopJob;
+}
+
 ruleset::SectionChecks StoryScenes::sectionChecks() const {
   return {
       {std::string{StoryScenesSection}, [](const ruleset::Section& section) -> core::Result<void> {

@@ -19,6 +19,8 @@ timeout: 1500
 steps:
   - resize: [1280, 720]
   - wait: {map: gcan11, seconds: 2, timeout: 60}
+  # The original job, as the disc plays it (the improved one is the default: docs/reference/trabajo-tienda.md).
+  - script: shop_job_mode("original")
   - script: story_set("money 1000")
   - script: story_set("var 1 0")
   - expect_setting: {story.trigger.247: "false"}

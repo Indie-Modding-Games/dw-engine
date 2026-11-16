@@ -1,0 +1,65 @@
+# El trabajo en la tienda de Monochromon del cañón, versión mejorada (una mejora del motor, opción shop_job.mode:
+# improved por defecto; original juega los guiones 49 y 199 a 202 tal cual). Modelo: packages/game/shop_job
+# (shop_job.hpp); reglas para el jugador: docs/reference/trabajo-tienda.md. Lo que el guion lee (mapa, variables, pagas
+# del original) sigue en story_scenes.yaml (shop_job).
+#
+# Al empezar el trabajo se hace la fila de clientes con la semilla de la partida: una especie y un objeto de cada bolsa
+# por cliente, un humor al llegar y un presupuesto oculto (el nivel más caro al que compra), que sale de la tabla de
+# aceptación del original de su especie: P(presupuesto en el nivel k o más caro) = aceptación de k.
+
+# Lo que se dice al guion (los parches story/patches/shop_job_*.lua): el resultado de cada turno del mostrador
+# (0 vende, 1 rechaza, 2 charla, 3 se va sin paciencia, 4 despedido; también el modo y el guion del siguiente
+# cliente), el nivel de la oferta (1 a 9, como la pstat 117 del original) y la cara de la reacción (la pstat 248 que lee
+# la rutina 28).
+story: {result_variable: 110, level_variable: 117, face_variable: 248}
+
+# Las especies (199-202: el guion, la especie y cuántos clientes de ella hay), su paciencia, su carácter (la clave
+# shop_job.character.<carácter>) y la aceptación del original por nivel, del +50 % al -30 % (199-202: las tiradas
+# store_random(110, 99) <= X de cada nivel).
+species:
+  - {script: 199, species: 80, count: 7, patience: 4, character: spendthrift,
+     acceptance: [45, 55, 65, 75, 85, 95, 97, 99, 100]}
+  - {script: 200, species: 68, count: 6, patience: 4, character: haggler,
+     acceptance: [1, 10, 30, 50, 70, 90, 92, 94, 96]}
+  - {script: 201, species: 99, count: 4, patience: 3, character: miser,
+     acceptance: [1, 1, 1, 20, 50, 80, 85, 90, 95]}
+  - {script: 202, species: 93, count: 3, patience: 3, character: fickle,
+     acceptance: [45, 50, 55, 60, 65, 70, 75, 80, 85]}
+
+# Los objetos que piden (cuántos clientes piden cada uno; los parches nombran sus frases en este orden) y su precio
+# en cada nivel (los de los menús del original); una venta suma a la cuenta el precio menos el del -30 %, como el
+# original.
+items:
+  - {id: medicine, count: 4, prices: [1500, 1400, 1300, 1200, 1100, 1000, 900, 800, 700]}
+  - {id: port_potty, count: 10, prices: [450, 420, 390, 360, 330, 300, 270, 240, 210]}
+  - {id: meat, count: 6, prices: [75, 70, 65, 60, 55, 50, 45, 40, 35]}
+
+# El precio normal (el «Mantener precio» del original, pstat 117 = 6).
+regular_level: 5
+
+# El humor al llegar (la clave shop_job.mood.<nombre>): su peso y cuántos niveles sube el presupuesto.
+moods:
+  - {name: cheerful, weight: 1, shift: 1}
+  - {name: normal, weight: 2, shift: 0}
+  - {name: serious, weight: 1, shift: -1}
+
+# La respuesta a una oferta, por cuántos niveles pasa del presupuesto (gap_up_to: el hueco más alto que la lleva;
+# negativo, por debajo); la última se lleva el resto, y la de quien no compra nada. Las dos primeras compran. face es
+# la cara del globo de humor (rutina 28: 0 encantado ... 4 furioso); patience, lo que cuesta.
+reactions:
+  - {name: delighted, gap_up_to: -2, face: 0, patience: 0}
+  - {name: pleased, gap_up_to: 0, face: 1, patience: 0}
+  - {name: doubtful, gap_up_to: 1, face: 2, patience: 1}
+  - {name: annoyed, gap_up_to: 2, face: 3, patience: 1}
+  - {name: furious, face: 4, patience: 2}
+
+# Charlar, una vez por cliente: sube el humor (el presupuesto) shift niveles, cuesta cost de paciencia y necesita
+# needs.
+talk: {shift: 1, cost: 1, needs: 2}
+
+# La fila se vuelve a sacar hasta que la puntuación perfecta (vender a cada cliente a su presupuesto tras charlar)
+# quede entre least y most, como mucho tries veces.
+perfect_score: {least: 4000, most: 4300, tries: 10000}
+
+# El premio extra al acabar: con la cuenta desde from, además de la paga del original, este objeto.
+bonus: {from: 3584, item: "game:steel_heart"}

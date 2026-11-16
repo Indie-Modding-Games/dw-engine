@@ -28,8 +28,12 @@
 }
 
 /* The shop job's bar (the option shop_job_bar): centred at the top of the screen, between the clock and the minimap,
-   only while the game shows it (the class shown). The script sizes the fill and puts the better pay's mark and its
-   label at their share of the bar (left in percent); the join's mark is the bar's end. */
+   only while the game shows it (the class shown). The head holds the title, the customers served and the rules' "?"
+   button in a row; then the bar with its marks; then the foot with the tally and the next mark. The script sizes the
+   fill and puts each mark at its share of the bar (left in percent). Each mark's label is centred on it: the main one,
+   the join (.main), above the bar, with the bonus item's icon; the better pay's and the bonus's under it. A skin
+   leaves room for both bands with the bar's top margin and the foot's top margin. In the original job the join's mark
+   ends the bar, so its label ends there. */
 #shop-job {
 	display: none;
 	position: absolute;
@@ -41,15 +45,32 @@
 	display: block;
 }
 
-#shop-job-head, #shop-job-foot {
-	display: block;
-	position: relative;
+#shop-job-head {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
+#shop-job-title {
+	flex: 1 1 auto;
+	white-space: nowrap;
 }
 
 #shop-job-customers {
-	position: absolute;
-	right: 0;
-	top: 0;
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+
+/* The rules' "?" button, at the head's end, apart from the customers; a click opens the shop_job_rules panel. */
+#shop-job-rules {
+	flex: 0 0 auto;
+	margin-left: 14dp;
+	text-align: center;
+}
+
+#shop-job-foot {
+	display: block;
+	position: relative;
 }
 
 #shop-job-bar {
@@ -72,6 +93,52 @@
 
 #shop-job-mark-join {
 	right: 0;
+}
+
+/* The bonus item's mark (the improved job): only when the bar reaches it (the class shown). */
+#shop-job-mark-bonus {
+	display: none;
+}
+
+#shop-job-mark-bonus.shown {
+	display: block;
+}
+
+.shop-job-mark-label {
+	position: absolute;
+	top: 100%;
+	left: -120dp;
+	width: 240dp;
+	margin-top: 4dp;
+	text-align: center;
+	white-space: nowrap;
+}
+
+#shop-job-mark-join .shop-job-mark-label {
+	top: auto;
+	bottom: 100%;
+	margin-top: 0;
+	margin-bottom: 2dp;
+}
+
+#shop-job:not(.improved) #shop-job-mark-join .shop-job-mark-label {
+	left: auto;
+	right: 0;
+	text-align: right;
+}
+
+/* The bonus item's icon, above the bar on its mark (the join's label sits above the bar too, further left). */
+#shop-job-mark-bonus-icon {
+	position: absolute;
+	bottom: 100%;
+	left: -11dp;
+	width: 22dp;
+	height: 22dp;
+	margin-bottom: 4dp;
+}
+
+#shop-job-mark-bonus-icon.hidden {
+	display: none;
 }
 
 #shop-job-next {

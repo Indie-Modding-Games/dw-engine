@@ -81,6 +81,12 @@ screens:
     styles: [title/style, panel/style, save_machine/style]
   save_slots:
     styles: [title/style, panel/style, save_slots/style]
+  # El mostrador y las reglas del trabajo en la tienda: la ventana con escuadras, corazones de paciencia y la línea dorada
+  # con el ▶ en la fila con el foco.
+  shop_haggle:
+    styles: [shop_haggle/style]
+  shop_job_rules:
+    styles: [shop_haggle/style, shop_job_rules/style]
   shop_menu:
     styles: [panel/style, shop_menu/style]
   skin_picker:

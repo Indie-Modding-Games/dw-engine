@@ -1509,7 +1509,12 @@ TEST_CASE("the field clock tells the game time in digits as HH:MM while the opti
 
 namespace {
 
+// The original job's bar (no bonus), its tier as the game names it (apps/game: shop_job_bar.cpp).
 void publishShopJob(Ui& ui, bool shown, double tally, double customer) {
+  ui.setSetting("shop_job.tier", std::string{tally >= 3072.0   ? "joins"
+                                             : tally >= 1792.0 ? "better"
+                                                               : "lowest"});
+  ui.setSetting("shop_job.top", 3072.0);
   ui.setSetting("shop_job.shown", shown);
   ui.setSetting("shop_job.tally", tally);
   ui.setSetting("shop_job.goal", 3072.0);
@@ -1553,9 +1558,38 @@ TEST_CASE("the shop job's bar shows the tally against the join and the customers
     CHECK(ui->elementHasClass("hud", "shop-job", "joins"));
     CHECK(ui->styleProperty("hud", "shop-job-fill", "width") == "100%");
     CHECK(ui->elementText("hud", "shop-job-next") == "Joins the city!");
+    CHECK(ui->elementHasClass("hud", "shop-job-fill", "tier-joins"));
+    CHECK_FALSE(ui->elementHasClass("hud", "shop-job-mark-bonus", "shown"));
     publishShopJob(*ui, false, 3200.0, 20.0);
     CHECK_FALSE(ui->elementHasClass("hud", "shop-job", "shown"));
   }
+}
+
+TEST_CASE("the improved shop job's bar runs to the perfect score with the bonus mark") {
+  Content content;
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+  ui->setSetting("ui_skin", std::string{"original"});
+  ui->show("hud");
+  ui->update();
+  ui->setSetting("shop_job.improved", true);
+  ui->setSetting("shop_job.bonus", 3584.0);
+  ui->setSetting("shop_job.bonus_icon", std::string{});
+  // publishShopJob's top is the goal: the improved job's is the line's perfect score.
+  ui->setSetting("shop_job.top", 4096.0);
+  publishShopJob(*ui, true, 3600.0, 18.0);
+  ui->setSetting("shop_job.top", 4096.0);
+  ui->setSetting("shop_job.tier", std::string{"bonus"});
+  ui->setSetting("shop_job.revision", 1000.0);
+  ui->update();
+  CHECK(ui->elementHasClass("hud", "shop-job", "improved"));
+  CHECK(ui->elementHasClass("hud", "shop-job", "bonus"));
+  CHECK(ui->elementHasClass("hud", "shop-job-fill", "tier-bonus"));
+  CHECK(ui->elementHasClass("hud", "shop-job-mark-bonus", "shown"));
+  CHECK(ui->styleProperty("hud", "shop-job-mark-join", "left") == "75%");
+  CHECK(ui->styleProperty("hud", "shop-job-mark-bonus", "left") == "87.5%");
+  CHECK(ui->elementText("hud", "shop-job-tally") == "3600 / 4096 bits");
+  CHECK(ui->elementText("hud", "shop-job-next") == "Bonus earned!");
 }
 
 namespace {

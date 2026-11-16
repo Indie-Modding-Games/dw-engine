@@ -817,6 +817,8 @@ int runGame(const Options& requested) {
   (*ui)->setSetting(GymSessionsSetting, static_cast<double>(gymSessions()));
   (*ui)->setSetting(DifficultySetting,
                     userSettings.difficulty.value_or(std::string{DifficultyNormal}));
+  (*ui)->setSetting(ShopJobModeSetting,
+                    userSettings.shopJobMode.value_or(std::string{ShopJobImproved}));
   (*ui)->setSetting(AutosaveSetting, userSettings.autosave.value_or(true));
   // The options only a game applies, for the title's options page (title_options.hpp).
   publishGameToggles(**ui, userSettings);
@@ -888,6 +890,12 @@ int runGame(const Options& requested) {
   std::optional<std::string> consoleUiAddon;
   (*scripts)->bindCommand(
       UiAddonSetting, [&consoleUiAddon](std::string_view id) { consoleUiAddon = std::string{id}; });
+  // The console's and the routes' shop_job_mode("improved"|"original"), the options row's setting,
+  // applied between frames in the same way.
+  std::optional<std::string> consoleShopJobMode;
+  (*scripts)->bindCommand(ShopJobModeSetting, [&consoleShopJobMode](std::string_view mode) {
+    consoleShopJobMode = std::string{mode};
+  });
   // The console's ui_skin("<id>"), the menus' skin setting, applied between frames in the same way.
   std::optional<std::string> consoleUiSkin;
   (*scripts)->bindCommand(ui::UiSkinSetting, [&consoleUiSkin](std::string_view id) {
@@ -1322,6 +1330,21 @@ int runGame(const Options& requested) {
         },
         options.controlPaused);
   }
+  // The shop job's mode (play_session.hpp), from the options row or the console: improved or
+  // original; anything else changes nothing.
+  const auto changeShopJobMode = [&](std::string_view mode) {
+    if (mode == ShopJobImproved || mode == ShopJobOriginal) {
+      userSettings.shopJobMode = std::string{mode};
+      if (settingsFile) {
+        saveUserSettings(*settingsFile, userSettings);
+      }
+      if (PlaySession* play = flow.playing()) {
+        play->applyPlayOptions();
+      }
+    }
+    (*ui)->setSetting(ShopJobModeSetting,
+                      userSettings.shopJobMode.value_or(std::string{ShopJobImproved}));
+  };
   // A route run with the control channel ends without closing the game: the channel goes on.
   bool routeOver = false;
   // Whether the pad's Select opened the pause menu on its options page: a settings press closes it
@@ -1802,6 +1825,12 @@ int runGame(const Options& requested) {
                           userSettings.difficulty.value_or(std::string{DifficultyNormal}));
         continue;
       }
+      if (command.name == ShopJobModeSetting) {
+        if (const std::string* mode = std::get_if<std::string>(&command.value)) {
+          changeShopJobMode(*mode);
+        }
+        continue;
+      }
       if (command.name == WalkControlSetting) {
         PlaySession* play = flow.playing();
         walkControl.change(command.value, play != nullptr ? &play->scene().field() : nullptr);
@@ -1943,6 +1972,9 @@ int runGame(const Options& requested) {
     }
     for (const ui::UiCommand& command : std::exchange(consoleGraphics, {})) {
       graphics.handle(command, **ui);
+    }
+    if (consoleShopJobMode) {
+      changeShopJobMode(*std::exchange(consoleShopJobMode, std::nullopt));
     }
     if (consoleBattleSpeed) {
       battleSpeed.change(ui::UiValue{*std::exchange(consoleBattleSpeed, std::nullopt)});

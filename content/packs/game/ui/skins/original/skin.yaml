@@ -91,6 +91,12 @@ screens:
   # El intercambio por méritos: las cajas, los rótulos de las listas y la carta de cada rareza.
   merit_shop:
     styles: [ui/skins/original/merit_shop/style]
+  # El mostrador y las reglas del trabajo en la tienda (una mejora del motor; el original no los tiene): una caja del
+  # original, opaca, con su letra, su amarillo para los títulos y el contorno de su selector en la fila con el foco.
+  shop_haggle:
+    styles: [ui/skins/original/shop_haggle/style]
+  shop_job_rules:
+    styles: [ui/skins/original/shop_haggle/style, ui/skins/original/shop_job_rules/style]
   # La máquina de guardado: las cajas del original donde el original las dibuja (main_menu.c: renderMenuBox).
   save_machine:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/save_machine/style]

@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.16.0 | El trabajo en la tienda mejorado: la barra gana `shop_job.top`, `shop_job.bonus`, `shop_job.bonus_icon`, `shop_job.bonus_icon_rect`, `shop_job.tier` y `shop_job.improved` (también en `field.shop_job()`), y el comando `shop_job_rules` (el botón ? que abre el panel de reglas). Llega la opción `shop_job_mode`. Las pantallas nuevas `shop_haggle` y `shop_job_rules` se describen en la [referencia del trabajo](../reference/trabajo-tienda.md#interfaz) |
 | 0.15.0 | Llegan los espacios `story` (el cuadro de texto de la historia: `story.textbox()`, `story.choice()`, `story.input()`; las acciones `story.advance`, `story.choose` y `story.cancel`; los eventos `story.changed`, `story.text` y `story.input`), `dialog` (el diálogo de guardar: `dialog.state()`, `dialog.options()`, `dialog.answer`, `dialog.cancel`, el evento `dialog.changed`) y `naming` (la caja del nombre: `naming.state()`, `naming.cell`, `naming.write`, `naming.erase`, `naming.accept`, el evento `naming.changed`). Nuevos ajustes `story_textbox.speaker`, `speaker_kind`, `options`, `first_option`, `input` y `page`, y los comandos `story_advance`, `story_choose`, `story_cancel`, `naming_write`, `naming_erase` y `naming_accept`. Las pantallas `story_textbox`, `dialog` y `naming_box` solo leen por ellos. Un addon solo los manda mientras su cuadro espera al jugador |
 | 0.14.0 | Llega el espacio `battle`: el estado del combate, los luchadores, la tira de órdenes, el golpe final, la apertura, los números, las barras de los enemigos, el grito, la caja del final y lo que enseña un combate de copa (`battle.match()`), con sus acciones (`battle.command`, `battle.charge`, `battle.open_bag`, `battle.close_bag`, `battle.close`, `battle.end_count`, `battle.end_counted`) y eventos (`battle.started`, `battle.ended`, `battle.phase`, `battle.changed`...). Las pantallas `battle` y `tournament_match` solo leen por él. Llega el espacio `versus`: cada vista del versus en línea (`versus.state()`, `versus.setup()`, `versus.lineup()`, `versus.fighters()`, `versus.score()`...), sus pasos (`versus.step`, `versus.pick`) y su evento (`versus.changed`); la pantalla `versus` solo lee por él y por `battle.intro()`. Un addon solo manda las órdenes del combate en su momento: las del combate en la fase `fight`, cerrar la bolsa con la bolsa abierta y las de la caja del final en la fase `end` |
 | 0.13.0 | Llega la pantalla `battle` con la tira de órdenes (`battle.menu.<n>.*`, con `mp_cost`, los PM que cuesta cada técnica), las barras de los luchadores y lo que el combate manda de vuelta |
@@ -93,7 +94,7 @@ guardar y la caja del nombre); el resto de pantallas llega después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.15.0**.
+Versión de la API de la interfaz: **0.16.0**.
 
 ### `ui`
 
@@ -207,12 +208,19 @@ Versión de la API de la interfaz: **0.15.0**.
 | `shop_job.better_pay` | ajuste | número | La cuenta a partir de la cual la paga es mejor. |
 | `shop_job.customers` | ajuste | número | Los clientes atendidos. |
 | `shop_job.customer` | ajuste | número | El cliente que se está atendiendo. |
+| `shop_job.top` | ajuste | número | El final de la barra: la puntuación perfecta de la fila en el trabajo mejorado, la de unirse en el original. |
+| `shop_job.bonus` | ajuste | número | La cuenta a partir de la cual el trabajo mejorado da el premio; 0 si la barra no lo alcanza. |
+| `shop_job.bonus_icon` | ajuste | texto | La imagen del icono del premio; vacía si no hay. |
+| `shop_job.bonus_icon_rect` | ajuste | texto | La parte de esa imagen. |
+| `shop_job.tier` | ajuste | texto | La paga alcanzada: lowest, better, joins o bonus. |
+| `shop_job.improved` | ajuste | sí/no | Si se juega el trabajo mejorado. |
 | `shop_job.revision` | ajuste | número | Sube cada vez que cambia algo del trabajo en la tienda. |
 | `minimap` | opción | texto | El minimapa: on u off. |
 | `minimap_size` | opción | texto | El tamaño del minimapa. |
 | `digital_time` | opción | sí/no | La hora en cifras. |
 | `need_bubble_stack` | opción | sí/no | Todas las necesidades activas sobre el compañero, no solo la primera. |
 | `open_menu` | comando | — | Abre el menú de pausa (el botón de menú del HUD). |
+| `shop_job_rules` | comando | — | Abre el panel de reglas del trabajo en la tienda (el botón ? de su barra). |
 
 ### `pause_menu`
 
@@ -309,6 +317,7 @@ Versión de la API de la interfaz: **0.15.0**.
 | `gym_sessions` | opción | número | Sesiones de gimnasio seguidas. |
 | `quick_battle_start` | opción | sí/no | Inicio rápido de combate. |
 | `difficulty` | opción | texto | Dificultad: normal o easy. |
+| `shop_job_mode` | opción | texto | Trabajo en la tienda del cañón: improved (mejorado) u original. |
 | `skip_evolution` | opción | sí/no | Saltar la escena de evolución. |
 | `choice_cancel_closes` | opción | sí/no | Cancelar cierra una elección. |
 | `fair_sickness_chance` | opción | sí/no | Probabilidad justa de enfermar. |
@@ -580,7 +589,7 @@ Versión de la API de la interfaz: **0.15.0**.
 | `field.map_title(): string?` | consulta | texto | La clave de texto del nombre del mapa que se enseña al llegar, o nil. |
 | `field.minimap(): table` | consulta | tabla | El minimapa: shown (la opción y el campo lo dejan), covered (una ventana lo tapa) y size. |
 | `field.player(): table` | consulta | tabla | Dónde está el jugador en la ventana: x e y en porcentaje. |
-| `field.shop_job(): table?` | consulta | tabla | La cuenta del trabajo en la tienda mientras dura (tally, goal, better_pay, customer, customers), o nil. |
+| `field.shop_job(): table?` | consulta | tabla | La cuenta del trabajo en la tienda mientras dura (tally, goal, better_pay, customer, customers, top, bonus, bonus_icon, bonus_icon_rect, tier, improved), o nil. |
 | `field.fade` | evento | tabla | Cambió el fundido. Sale de `screen_fade`. |
 | `field.map_title` | evento | tabla | Cambió el nombre del mapa que se enseña. Sale de `map_title_key`. |
 | `field.minimap` | evento | tabla | Cambió si el minimapa puede verse o si algo lo tapa. Sale de `hud.minimap_allowed hud.minimap_covered battle.active`. |

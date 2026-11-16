@@ -1,0 +1,55 @@
+<rml>
+<head>
+	<title>Shop job rules</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="../shop_haggle/structure.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<!-- The shop job's rules (_shopjob/ui-contract.md): the pay tiers, how the haggle works and each customer's character.
+     It opens from the HUD bar's "?", the counter's rules button and by itself at each job's first customer. -->
+<body>
+	<div id="scrim">
+		<div id="panel" class="rules-panel">
+			<div id="rules-head">
+				<h1 id="rules-title" text-key="shop_job.rules.title"></h1>
+				<p id="rules-original" text-key="shop_job.rules.original"></p>
+				<p id="rules-goal"></p>
+			</div>
+			<div id="rules-columns">
+				<div id="rules-side">
+					<div id="rules-pay">
+						<p class="rules-tier" id="rules-pay-lowest"></p>
+						<p class="rules-tier" id="rules-pay-better"></p>
+						<p class="rules-tier main" id="rules-pay-joins"></p>
+						<p class="rules-tier" id="rules-pay-bonus"><img id="rules-bonus-icon"/><span id="rules-pay-bonus-text"></span></p>
+					</div>
+					<div id="rules-characters">
+						<span id="rules-characters-title" text-key="shop_job.rules.characters"></span>
+						<span class="rules-character" id="rules-character-spendthrift" text-key="shop_job.character.spendthrift"></span>
+						<span class="rules-character" id="rules-character-haggler" text-key="shop_job.character.haggler"></span>
+						<span class="rules-character" id="rules-character-miser" text-key="shop_job.character.miser"></span>
+						<span class="rules-character" id="rules-character-fickle" text-key="shop_job.character.fickle"></span>
+					</div>
+				</div>
+				<div id="rules-haggle">
+					<p id="rules-prices" text-key="shop_job.rules.prices"></p>
+					<div id="rules-faces">
+						<div class="rules-face face-delighted"><img src="/map/gcan11/texture4/000?palette=0" rect="0 0 32 32"/><span text-key="shop_job.reaction.delighted"></span></div>
+						<div class="rules-face face-pleased"><img src="/map/gcan11/texture4/000?palette=0" rect="32 0 32 32"/><span text-key="shop_job.reaction.pleased"></span></div>
+						<div class="rules-face face-doubtful"><img src="/map/gcan11/texture4/000?palette=0" rect="64 0 32 32"/><span text-key="shop_job.reaction.doubtful"></span></div>
+						<div class="rules-face face-annoyed"><img src="/map/gcan11/texture4/000?palette=0" rect="96 0 32 32"/><span text-key="shop_job.reaction.annoyed"></span></div>
+						<div class="rules-face face-furious"><img src="/map/gcan11/texture4/000?palette=0" rect="128 0 32 32"/><span text-key="shop_job.reaction.furious"></span></div>
+					</div>
+					<p id="rules-faces-text" text-key="shop_job.rules.faces"></p>
+					<p id="rules-talk"></p>
+					<p id="rules-dismiss" text-key="shop_job.rules.dismiss"></p>
+				</div>
+			</div>
+			<div id="rules-foot">
+				<button id="rules-close" onclick="ui.send('shop_job_rules_close')"><span class="key" id="prompt-close"></span><span text-key="shop_job.rules.close"></span></button>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

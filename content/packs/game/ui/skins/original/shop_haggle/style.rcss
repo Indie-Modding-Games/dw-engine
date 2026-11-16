@@ -1,0 +1,245 @@
+/* The shop job's counter in the original look (an engine improvement: the original has no such screen; structure:
+   ../../../shop_haggle/structure.rcss; the rules panel shares this sheet for its panel). Drawn as the original draws its
+   menus: one of its boxes (theme.rcss .original-box), opaque as its "is it OK?" box (#293942) so the table reads over
+   the shop, the original-look text at twice its 11-pixel cell (22dp, 33dp for the title), the headings in its yellow
+   (#fff371), the focused row in its selector's outline (#a0a000, theme.rcss button:focus) and no pointer highlight,
+   the insets in its dark cyan line (#4a9fc5). Sizes are whole original pixels (3dp). This sheet goes over the modern
+   skin's, so it sets again every property that one gives the counter. */
+
+#scrim {
+	background-color: #00000080;
+}
+
+#panel {
+	font-family: original-look;
+	font-weight: normal;
+	font-size: 22dp;
+	line-height: 26dp;
+	color: #d0d0d0;
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: #293942f0;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+#haggle-head {
+	border-bottom: 3dp #4a9fc5;
+}
+
+#haggle-title {
+	font-size: 33dp;
+	font-weight: normal;
+	color: #fff371;
+}
+
+#haggle-summary {
+	font-size: 22dp;
+	color: #b2b2b2;
+}
+
+#haggle-tally {
+	font-weight: normal;
+	color: #d0d0d0;
+}
+
+#haggle-next {
+	font-weight: normal;
+	color: #fff371;
+}
+
+#haggle-rules, #haggle-actions button {
+	padding: 0 9dp;
+	margin: 0;
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: transparent;
+	font-size: 22dp;
+	line-height: 30dp;
+	color: #d0d0d0;
+}
+
+#haggle-actions button {
+	margin-right: 18dp;
+	padding: 0 15dp;
+	border-color: #4a9fc5;
+	background-color: #1c262c;
+}
+
+#haggle-rules .key {
+	font-size: 22dp;
+	line-height: 24dp;
+}
+
+/* The original has no pointer highlight. */
+#haggle-rules:hover, #haggle-actions button:hover {
+	background-color: transparent;
+	color: #d0d0d0;
+}
+
+#haggle-actions button:hover {
+	background-color: #1c262c;
+}
+
+#haggle-rules:focus, #haggle-actions button:focus {
+	border-color: #a0a000;
+	background-color: transparent;
+	color: #d0d0d0;
+}
+
+#haggle-actions button:focus {
+	background-color: #1c262c;
+}
+
+#haggle-talk.disabled, #haggle-talk.disabled:hover {
+	color: #707070;
+}
+
+/* The customer's card and the item: dark insets edged in the box's dark cyan. */
+#haggle-customer, #haggle-item {
+	border: 3dp #4a9fc5;
+	border-radius: 0;
+	background-color: #1c262c;
+}
+
+#haggle-portrait {
+	border: 3dp #90d9fa;
+	border-radius: 0;
+	background-color: #000000;
+}
+
+
+#haggle-species {
+	font-size: 22dp;
+	line-height: 26dp;
+	font-weight: normal;
+	color: #fff371;
+}
+
+#haggle-character, #haggle-regular, #haggle-patience-label, #haggle-history-title, #haggle-history {
+	font-size: 22dp;
+	line-height: 24dp;
+	color: #b2b2b2;
+}
+
+#haggle-history-title {
+	color: #fff371;
+}
+
+#haggle-mood, #haggle-reaction {
+	font-size: 22dp;
+	line-height: 24dp;
+	font-weight: normal;
+}
+
+#haggle-mood {
+	border-radius: 0;
+	background-color: #000000;
+	color: #d0d0d0;
+}
+
+#haggle-mood.mood-cheerful { color: #60d060; }
+#haggle-mood.mood-serious { color: #f09028; }
+
+#haggle-reaction.face-delighted, #haggle-reaction.face-pleased, #haggle-reaction.face-doubtful,
+#haggle-reaction.face-annoyed, #haggle-reaction.face-furious {
+	border-radius: 0;
+	background-color: #000000;
+}
+
+#haggle-reaction.face-delighted, #haggle-reaction.face-pleased { color: #60d060; }
+#haggle-reaction.face-doubtful { color: #f8f800; }
+#haggle-reaction.face-annoyed { color: #f09028; }
+#haggle-reaction.face-furious { color: #e03028; }
+
+/* Patience: square pips, one original pixel of light cyan round each, filled in the headings' yellow. */
+.pip {
+	width: 12dp;
+	height: 12dp;
+	border: 3dp #90d9fa;
+	border-radius: 0;
+	background-color: #000000;
+	decorator: none;
+}
+
+.pip.on {
+	border-color: #90d9fa;
+	background-color: #fff371;
+}
+
+#haggle-wants {
+	color: #d0d0d0;
+}
+
+#haggle-no-offers {
+	color: #707070;
+}
+
+.haggle-offer .offer-text { color: #d0d0d0; }
+.haggle-offer.face-doubtful .offer-text { color: #f8f800; }
+.haggle-offer.face-annoyed .offer-text { color: #f09028; }
+.haggle-offer.face-furious .offer-text { color: #e03028; }
+
+/* The table: headings in yellow over a dark cyan line, the rows in the original's ink. */
+#haggle-columns {
+	height: 27dp;
+	line-height: 24dp;
+	font-size: 22dp;
+	color: #fff371;
+	border-bottom: 3dp #4a9fc5;
+}
+
+.haggle-row {
+	height: 30dp;
+	line-height: 30dp;
+	padding: 0;
+	margin: 0;
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: transparent;
+	font-size: 22dp;
+	color: #d0d0d0;
+	decorator: none;
+}
+
+.haggle-row:hover {
+	background-color: transparent;
+	color: #d0d0d0;
+}
+
+.haggle-row:focus {
+	border-color: #a0a000;
+	background-color: #a0a00026;
+	color: #ffffff;
+}
+
+.haggle-row .row-price { font-weight: normal; }
+.haggle-row.regular .row-price { color: #fff371; }
+
+.row-meter {
+	top: 9dp;
+	height: 9dp;
+	border-radius: 0;
+	background-color: #000000;
+}
+
+.row-meter-fill {
+	border-radius: 0;
+}
+
+.chance-1 .row-meter-fill, .chance-2 .row-meter-fill { background-color: #e03028; }
+.chance-3 .row-meter-fill, .chance-4 .row-meter-fill { background-color: #f09028; }
+.chance-5 .row-meter-fill, .chance-6 .row-meter-fill, .chance-7 .row-meter-fill { background-color: #d8d820; }
+.chance-8 .row-meter-fill, .chance-9 .row-meter-fill { background-color: #48c048; }
+.chance-10 .row-meter-fill { background-color: #60e060; }
+
+.haggle-row .row-chance { font-weight: normal; }
+.haggle-row.chance-0 .row-chance, .haggle-row.chance-1 .row-chance, .haggle-row.chance-2 .row-chance { color: #e03028; }
+.haggle-row.chance-3 .row-chance, .haggle-row.chance-4 .row-chance { color: #f09028; }
+.haggle-row.chance-5 .row-chance, .haggle-row.chance-6 .row-chance, .haggle-row.chance-7 .row-chance { color: #f8f800; }
+.haggle-row.chance-8 .row-chance, .haggle-row.chance-9 .row-chance, .haggle-row.chance-10 .row-chance { color: #60d060; }
+
+/* A price refused before: greyed out. */
+.haggle-row.offered, .haggle-row.offered .row-price, .haggle-row.offered .row-adds,
+.haggle-row.offered .row-chance { color: #707070; }
+.haggle-row.offered .row-meter-fill { background-color: #404040; }

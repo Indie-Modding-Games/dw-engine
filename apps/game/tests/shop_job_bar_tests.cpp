@@ -1,5 +1,8 @@
 #include <doctest/doctest.h>
 
+#include <string>
+#include <utility>
+
 #include "shop_job_bar.hpp"
 
 using dwe::app::ShopJobBar;
@@ -92,4 +95,42 @@ TEST_CASE("the shop job's settings carry the bar's values") {
   CHECK(std::get<double>(value("shop_job.better_pay")) == 1792.0);
   CHECK(std::get<double>(value("shop_job.customer")) == 9.0);
   CHECK(std::get<double>(value("shop_job.customers")) == 20.0);
+  CHECK(std::get<double>(value("shop_job.top")) == 0.0);
+  CHECK(std::get<std::string>(value("shop_job.tier")).empty());
+}
+
+TEST_CASE(
+    "the improved job's bar runs to the line's perfect score with the bonus mark and a tier") {
+  ShopJobBar bar{canyonShop()};
+  CHECK_FALSE(bar.update(frame("gcan11", 0, 0)).shown);
+  ShopJobFrame improved = frame("gcan11", 1, 0);
+  improved.improved = true;
+  improved.perfectScore = 4150;
+  improved.bonus = 3584;
+  improved.bonusIcon = "/texture/item";
+  const ShopJobBarView first = bar.update(improved);
+  CHECK(first.improved);
+  CHECK(first.top == 4150);
+  CHECK(first.bonus == 3584);
+  CHECK(first.bonusIcon == "/texture/item");
+  CHECK(first.tier == "lowest");
+  for (const auto& [tally, tier] : {std::pair{1791, "lowest"}, std::pair{1792, "better"},
+                                    std::pair{3072, "joins"}, std::pair{3584, "bonus"}}) {
+    improved.tally = tally;
+    CHECK(bar.update(improved).tier == tier);
+  }
+  // A bonus past the line's perfect score has no mark.
+  improved.perfectScore = 3500;
+  CHECK(bar.update(improved).bonus == 0);
+}
+
+TEST_CASE("the original job's bar keeps its goal as the end and stops its tiers at joining") {
+  ShopJobBar bar{canyonShop()};
+  CHECK_FALSE(bar.update(frame("gcan11", 0, 0)).shown);
+  const ShopJobBarView view = bar.update(frame("gcan11", 1, 3700));
+  CHECK_FALSE(view.improved);
+  CHECK(view.top == 3072);
+  CHECK(view.bonus == 0);
+  CHECK(view.tier == "joins");
+  CHECK(bar.update(frame("gcan11", 2, 1000)).tier == "lowest");
 }

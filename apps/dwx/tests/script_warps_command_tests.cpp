@@ -192,18 +192,32 @@ TEST_CASE("dwx script-warps does not use a line map that the Lua no longer match
   CHECK(hasNote(derived, "story/001: its line map is not used"));
 }
 
-// Runs only when DWE_CONTENT names a content folder that dwx extracted (scripts/dev.sh mounts it),
-// with the game pack's transport destinations: the story Lua gives the base pack's
-// field/script_warps byte for byte.
+// Runs only when DWE_CONTENT names a content folder that dwx extracted (scripts/dev.sh mounts it).
+// With the game pack's transport destinations alone, the story Lua gives the base pack's
+// field/script_warps byte for byte. The game pack's own story patches (the improved shop job)
+// change the scripts they patch, so with the whole game pack the walk only has to follow them.
 TEST_CASE("the user's disc, extracted: the story Lua gives field/script_warps as extracted") {
   const std::optional<std::filesystem::path> content = dwe::test_support::userContent();
   if (!content) {
     MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
     return;
   }
-  const std::vector<std::filesystem::path> folders{*content, DWE_GAME_PACK};
-  CHECK(scriptWarpsCommand(folders, std::nullopt, dwe::dwx::DefaultTransportRules) ==
+  const TempFolder rulesOnly;
+  rulesOnly.write("pack.yaml", "id: transport_rules\nversion: 1.0.0\nlayer: base\npriority: 1\n");
+  const std::filesystem::path transport =
+      std::filesystem::path{DWE_GAME_PACK} / "rules/original/bird_transport.yaml";
+  std::ifstream source{transport, std::ios::binary};
+  REQUIRE(source);
+  rulesOnly.write("rules/original/bird_transport.yaml",
+                  std::string{std::istreambuf_iterator<char>{source}, {}});
+  const std::vector<std::filesystem::path> asExtracted{*content, rulesOnly.path()};
+  CHECK(scriptWarpsCommand(asExtracted, std::nullopt, dwe::dwx::DefaultTransportRules) ==
         dwe::dwx::ExitOk);
+
+  const std::vector<std::filesystem::path> withGamePack{*content, DWE_GAME_PACK};
+  const auto patched = deriveScriptWarps(withGamePack, dwe::dwx::DefaultTransportRules);
+  REQUIRE(patched.has_value());
+  CHECK(hasNote(*patched, "story/049: patched by game:story/patches/shop_job_049.lua"));
 }
 
 TEST_CASE("dwx script-warps applies the packs' story patches, the highest winning a section") {

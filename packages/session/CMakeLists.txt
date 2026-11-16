@@ -18,6 +18,7 @@ dwe_add_module(session
         src/versus_match.cpp
         src/versus_series.cpp
         src/curling_adapter.cpp
+        src/shop_job_adapter.cpp
         src/poop_adapter.cpp
         src/cards_adapter.cpp
         src/game_clear.cpp
@@ -100,6 +101,7 @@ dwe_add_module(session
         src/story_routines/routine_shop.cpp
         src/story_routines/routine_shop_overlay.cpp
         src/story_routines/routine_shop_tally.cpp
+        src/story_routines/routine_shop_job.cpp
         src/story_routines/routine_smoke_effect.cpp
         src/story_routines/routine_start_ending.cpp
         src/story_routines/routine_tournament.cpp
@@ -109,7 +111,7 @@ dwe_add_module(session
         src/story_routines/routine_trade_shop.cpp
         src/story_routines/routine_variable_at_start.cpp
         src/story_routines/screen_routines.cpp
-    DEPS core assets audio scene ruleset field partner save evolution inventory battle story gym script fishing tournament curling weather modes versus net
+    DEPS core assets audio scene ruleset field partner save evolution inventory battle story gym script fishing tournament curling shop_job weather modes versus net
     # The story tests check the API against the Lua emitter and run its listings' reference.
     TEST_LIBS dwe::formats ${LUA_LIBRARIES})
 

@@ -1,0 +1,201 @@
+/* How the shop job's rules panel behaves whatever the skin (_shopjob/ui-contract.md): the counter's panel (its sheet,
+   shop_haggle/structure.rcss, gives the scrim, the panel and the neutral look), centred on the screen, in sections: the
+   head (title and goal), then two columns, the pay tiers as a table with each customer's character under them on the
+   left and the haggle's rules with the five faces on the right, and the close button at the foot. In the original job
+   only the head and the pay show, in a narrower panel. skins/<id>/shop_job_rules/style.rcss restyles it. */
+
+#panel.rules-panel {
+	top: 50%;
+	width: 1160dp;
+	margin-left: -600dp;
+	padding: 14dp 20dp 14dp 20dp;
+	transform: translateY(-50%);
+	font-size: 15dp;
+	line-height: 20dp;
+}
+
+#panel.rules-panel.original {
+	width: 700dp;
+	margin-left: -370dp;
+}
+
+/* ---- Head ---- */
+
+#rules-head {
+	display: block;
+	margin-bottom: 12dp;
+	padding-bottom: 8dp;
+	border-bottom: 1dp #4a5468;
+}
+
+#rules-title {
+	display: block;
+	font-size: 22dp;
+	line-height: 28dp;
+	font-weight: bold;
+	margin-bottom: 4dp;
+}
+
+#rules-original, #rules-goal {
+	display: block;
+	color: #b8c0d0;
+}
+
+#rules-original {
+	margin-bottom: 4dp;
+}
+
+/* ---- Columns: pay and characters on the left, the haggle on the right ---- */
+
+#rules-columns {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+}
+
+#rules-side {
+	display: block;
+	flex: 0 0 440dp;
+	width: 440dp;
+	margin-right: 24dp;
+}
+
+#panel.original #rules-side {
+	flex: 1 1 auto;
+	width: auto;
+	margin-right: 0;
+}
+
+#rules-haggle {
+	display: block;
+	flex: 1 1 auto;
+}
+
+/* The pay tiers: one row each, a colour bar on its left as the HUD bar's fill at that tier. */
+#rules-pay, #rules-characters {
+	display: block;
+	margin-bottom: 14dp;
+}
+
+.rules-tier {
+	display: block;
+	position: relative;
+	min-height: 22dp;
+	padding: 5dp 10dp 5dp 14dp;
+	margin-bottom: 4dp;
+	border-left: 4dp #8a94a8;
+	background-color: #ffffff0d;
+}
+
+#rules-pay-lowest { border-left-color: #e05890; }
+#rules-pay-better { border-left-color: #4aa6ff; }
+#rules-pay-bonus { border-left-color: #f0c040; }
+
+/* The tier the shopkeeper joins at: the job's main goal. */
+.rules-tier.main {
+	font-weight: bold;
+	color: #f0c040;
+	border-left-color: #70d070;
+	background-color: #f0c04014;
+}
+
+#rules-bonus-icon {
+	display: inline-block;
+	width: 28dp;
+	height: 28dp;
+	vertical-align: middle;
+	margin-right: 8dp;
+}
+
+#rules-characters-title {
+	display: block;
+	margin-bottom: 4dp;
+	color: #b8c0d0;
+}
+
+.rules-character {
+	display: block;
+	padding: 3dp 10dp 3dp 14dp;
+	margin-bottom: 2dp;
+	border-left: 2dp #4a5468;
+}
+
+/* The haggle's rules: the five faces as a legend, then one rule per paragraph. */
+#rules-prices, #rules-faces-text, #rules-talk, #rules-dismiss {
+	display: block;
+	padding: 4dp 10dp 4dp 14dp;
+	margin-bottom: 6dp;
+	border-left: 2dp #4a5468;
+}
+
+#rules-faces {
+	display: block;
+	margin: 8dp 0 10dp 0;
+	padding: 6dp 0;
+	text-align: center;
+	white-space: nowrap;
+	background-color: #ffffff0d;
+}
+
+.rules-face {
+	display: inline-block;
+	margin: 0 4dp;
+	text-align: center;
+	font-size: 14dp;
+	white-space: nowrap;
+}
+
+.rules-face img {
+	display: inline-block;
+	width: 40dp;
+	height: 40dp;
+	margin-bottom: 2dp;
+}
+
+.rules-face span {
+	display: block;
+}
+
+.rules-face.face-delighted span, .rules-face.face-pleased span { color: #8ee08e; }
+.rules-face.face-doubtful span { color: #f0d060; }
+.rules-face.face-annoyed span { color: #f0a060; }
+.rules-face.face-furious span { color: #f07070; }
+
+/* ---- Foot ---- */
+
+#rules-foot {
+	display: block;
+	margin-top: 4dp;
+	padding-top: 10dp;
+	border-top: 1dp #4a5468;
+	text-align: right;
+}
+
+#rules-close {
+	display: inline-block;
+	font-size: 16dp;
+	line-height: 24dp;
+	padding: 4dp 16dp;
+	border: 1dp #8a94a8;
+	border-radius: 4dp;
+	white-space: nowrap;
+}
+
+#rules-close .key {
+	font-size: 13dp;
+	line-height: 18dp;
+}
+
+#rules-close:hover {
+	background-color: #ffffff14;
+}
+
+#rules-close:focus {
+	background-color: #3a4766;
+	border-color: #f0c040;
+}
+
+#rules-pay-bonus.hidden, #rules-bonus-icon.hidden, #rules-original.hidden, #rules-haggle.hidden,
+#rules-characters.hidden {
+	display: none;
+}

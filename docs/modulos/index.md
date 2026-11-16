@@ -43,6 +43,7 @@ capas y lo que puede usar cada una están en las [reglas de dependencias](../arc
 | [gym](game/gym.md) | El gimnasio del pueblo: la coreografía de los cursos y la cuenta de las ganancias |
 | [tournament](game/tournament.md) | Los torneos de la arena: rivales, cuadro, rivales generados y victorias |
 | [curling](game/curling.md) | El juego de las piedras sobre el hielo: deslizamiento, choques, puntos y el rival |
+| [shop_job](game/shop_job.md) | El trabajo en la tienda del cañón mejorado (opción): la fila de clientes, el regateo y las pagas |
 | [versus](game/versus.md) | El versus en línea: identidad, serie, alineaciones y resultados entre dos máquinas en lockstep |
 | [story](game/story.md) | El estado de la historia y el runtime de los scripts de eventos |
 | [save](game/save.md) | Partidas guardadas versionadas, ranuras y autoguardado |

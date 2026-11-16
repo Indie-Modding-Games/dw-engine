@@ -1,5 +1,5 @@
 {
-  "version": "0.15.0",
+  "version": "0.16.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "El valor de un ajuste que el juego publica; nil si no lo publica.", "signature": "(name: string): any"},
@@ -95,12 +95,19 @@
       {"name": "shop_job.better_pay", "kind": "setting", "value": "number", "summary": "La cuenta a partir de la cual la paga es mejor."},
       {"name": "shop_job.customers", "kind": "setting", "value": "number", "summary": "Los clientes atendidos."},
       {"name": "shop_job.customer", "kind": "setting", "value": "number", "summary": "El cliente que se está atendiendo."},
+      {"name": "shop_job.top", "kind": "setting", "value": "number", "summary": "El final de la barra: la puntuación perfecta de la fila en el trabajo mejorado, la de unirse en el original."},
+      {"name": "shop_job.bonus", "kind": "setting", "value": "number", "summary": "La cuenta a partir de la cual el trabajo mejorado da el premio; 0 si la barra no lo alcanza."},
+      {"name": "shop_job.bonus_icon", "kind": "setting", "value": "text", "summary": "La imagen del icono del premio; vacía si no hay."},
+      {"name": "shop_job.bonus_icon_rect", "kind": "setting", "value": "text", "summary": "La parte de esa imagen."},
+      {"name": "shop_job.tier", "kind": "setting", "value": "text", "summary": "La paga alcanzada: lowest, better, joins o bonus."},
+      {"name": "shop_job.improved", "kind": "setting", "value": "boolean", "summary": "Si se juega el trabajo mejorado."},
       {"name": "shop_job.revision", "kind": "setting", "value": "number", "summary": "Sube cada vez que cambia algo del trabajo en la tienda."},
       {"name": "minimap", "kind": "option", "value": "text", "summary": "El minimapa: on u off."},
       {"name": "minimap_size", "kind": "option", "value": "text", "summary": "El tamaño del minimapa."},
       {"name": "digital_time", "kind": "option", "value": "boolean", "summary": "La hora en cifras."},
       {"name": "need_bubble_stack", "kind": "option", "value": "boolean", "summary": "Todas las necesidades activas sobre el compañero, no solo la primera."},
-      {"name": "open_menu", "kind": "command", "value": "none", "summary": "Abre el menú de pausa (el botón de menú del HUD)."}
+      {"name": "open_menu", "kind": "command", "value": "none", "summary": "Abre el menú de pausa (el botón de menú del HUD)."},
+      {"name": "shop_job_rules", "kind": "command", "value": "none", "summary": "Abre el panel de reglas del trabajo en la tienda (el botón ? de su barra)."}
     ],
     "pause_menu": [
       {"name": "pause_menu.at_title", "kind": "setting", "value": "boolean", "summary": "El menú se abre sobre la portada: solo las opciones."},
@@ -194,6 +201,7 @@
       {"name": "gym_sessions", "kind": "option", "value": "number", "summary": "Sesiones de gimnasio seguidas."},
       {"name": "quick_battle_start", "kind": "option", "value": "boolean", "summary": "Inicio rápido de combate."},
       {"name": "difficulty", "kind": "option", "value": "text", "summary": "Dificultad: normal o easy."},
+      {"name": "shop_job_mode", "kind": "option", "value": "text", "summary": "Trabajo en la tienda del cañón: improved (mejorado) u original."},
       {"name": "skip_evolution", "kind": "option", "value": "boolean", "summary": "Saltar la escena de evolución."},
       {"name": "choice_cancel_closes", "kind": "option", "value": "boolean", "summary": "Cancelar cierra una elección."},
       {"name": "fair_sickness_chance", "kind": "option", "value": "boolean", "summary": "Probabilidad justa de enfermar."},
@@ -423,7 +431,7 @@
       {"name": "field.map_title", "kind": "query", "value": "text", "summary": "La clave de texto del nombre del mapa que se enseña al llegar, o nil.", "signature": "(): string?"},
       {"name": "field.minimap", "kind": "query", "value": "table", "summary": "El minimapa: shown (la opción y el campo lo dejan), covered (una ventana lo tapa) y size.", "signature": "(): table"},
       {"name": "field.player", "kind": "query", "value": "table", "summary": "Dónde está el jugador en la ventana: x e y en porcentaje.", "signature": "(): table"},
-      {"name": "field.shop_job", "kind": "query", "value": "table", "summary": "La cuenta del trabajo en la tienda mientras dura (tally, goal, better_pay, customer, customers), o nil.", "signature": "(): table?"},
+      {"name": "field.shop_job", "kind": "query", "value": "table", "summary": "La cuenta del trabajo en la tienda mientras dura (tally, goal, better_pay, customer, customers, top, bonus, bonus_icon, bonus_icon_rect, tier, improved), o nil.", "signature": "(): table?"},
       {"name": "field.fade", "kind": "event", "value": "table", "summary": "Cambió el fundido.", "source": "screen_fade"},
       {"name": "field.map_title", "kind": "event", "value": "table", "summary": "Cambió el nombre del mapa que se enseña.", "source": "map_title_key"},
       {"name": "field.minimap", "kind": "event", "value": "table", "summary": "Cambió si el minimapa puede verse o si algo lo tapa.", "source": "hud.minimap_allowed hud.minimap_covered battle.active"},

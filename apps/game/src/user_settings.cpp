@@ -76,6 +76,7 @@ constexpr std::string_view DevToolsKey = "dev_tools";
 constexpr std::string_view GymSessionsKey = "gym_sessions";
 constexpr std::string_view QuickBattleStartKey = "quick_battle_start";
 constexpr std::string_view DifficultyKey = "difficulty";
+constexpr std::string_view ShopJobModeKey = "shop_job_mode";
 constexpr std::string_view SkipEvolutionKey = "skip_evolution";
 constexpr std::string_view ChoiceCancelClosesKey = "choice_cancel_closes";
 constexpr std::string_view FairSicknessChanceKey = "fair_sickness_chance";
@@ -256,6 +257,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* difficulty = tree->find(DifficultyKey)) {
       settings.difficulty = reader.text(*difficulty);
+    }
+    if (const core::YamlNode* shopJob = tree->find(ShopJobModeKey)) {
+      settings.shopJobMode = reader.text(*shopJob);
     }
     if (const core::YamlNode* extras = tree->find(ShopExtrasKey)) {
       settings.shopExtras = reader.boolean(*extras);
@@ -466,6 +470,9 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   }
   if (settings.difficulty) {
     root.set(std::string{DifficultyKey}, core::YamlNode::scalar(*settings.difficulty));
+  }
+  if (settings.shopJobMode) {
+    root.set(std::string{ShopJobModeKey}, core::YamlNode::scalar(*settings.shopJobMode));
   }
   const auto flag = [&root](std::string_view key, const std::optional<bool>& value) {
     if (value) {
