@@ -1,39 +1,39 @@
 # Modding
 
-Un mod es un **paquete**: una carpeta con un `pack.yaml` y sus ficheros, que el juego monta encima de los suyos. Con
-un paquete se puede sustituir cualquier asset (un menú, una textura, un texto), añadir entradas a las tablas (una
-especie, un mapa, un objeto), cambiar las reglas con un ruleset, añadir un modo de juego o un aspecto de la interfaz y
-reaccionar a lo que pasa en la partida con scripts de Lua. Nada de esto toca el motor: el juego arranca aunque un mod
-esté roto, y lo deja fuera con el motivo en el log.
+A mod is a **pack**: a folder with a `pack.yaml` and its files, which the game mounts on top of its own. With a pack
+you can replace any asset (a menu, a texture, a text), add entries to the tables (a species, a map, an item), change
+the rules with a ruleset, add a game mode or an interface skin and react to what happens in the game with Lua
+scripts. None of this touches the engine: the game starts even if a mod is broken, and leaves it out with the reason
+in the log.
 
-El juego no trae nada del disco original: cada jugador extrae el suyo ([jugar](../getting-started/jugar.md)). Un mod
-tampoco debe repartir datos, imágenes ni textos del original; trae solo lo suyo
-([política de assets](../adr/0011-politica-legal-de-assets.md)).
+The game ships nothing from the original disc: each player extracts their own ([play](../getting-started/play.md)).
+A mod must not hand out data, images or texts from the original either; it brings only its own
+([asset policy](../adr/0011-asset-legal-policy.md)).
 
-## Páginas
+## Pages
 
-| Página | Qué cuenta |
+| Page | What it covers |
 |---|---|
-| [Tu primer mod](primer-mod.md) | Paso a paso: un paquete con un script que reacciona a la partida |
-| [Paquetes e ids](paquetes.md) | El `pack.yaml`, las capas, los ids de asset y de contenido, sustituir y añadir |
-| [API de Lua](api-lua.md) | El script de entrada, el entorno de un mod, los eventos del juego y las funciones publicadas |
-| [Modos de juego](modos.md) | Añadir un modo con su `mode.yaml` |
-| [Aspectos](aspectos.md) | Cambiar el estilo de la interfaz con un aspecto propio |
-| [Interfaces](interfaces.md) | Instalar o hacer una interfaz de la comunidad que cambia las pantallas del juego |
-| [API de la interfaz](ui-api.md) | Lo que cada pantalla lee del juego y le manda: ajustes, comandos y opciones |
-| [API de historia](historia.md) | Los scripts de eventos, sus parches por sección y la capacidad de disparadores y variables |
-| [Editar un mapa](mapas.md) y [añadir uno](mapas-nuevos.md) | El mapper |
+| [Your first mod](first-mod.md) | Step by step: a pack with a script that reacts to the game |
+| [Packs and ids](packs.md) | The `pack.yaml`, the layers, the asset and content ids, replacing and adding |
+| [Lua API](lua-api.md) | The entry script, a mod's environment, the game events and the published functions |
+| [Game modes](modes.md) | Add a mode with its `mode.yaml` |
+| [Skins](skins.md) | Change the interface style with your own skin |
+| [Interfaces](ui-addons.md) | Install or make a community interface that changes the game's screens |
+| [Interface API](ui-api.md) | What each screen reads from the game and sends to it: settings, commands and options |
+| [Story API](story.md) | The event scripts, their patches per section and the capacity of triggers and variables |
+| [Edit a map](maps.md) and [add one](new-maps.md) | The mapper |
 
-## Lo que hay que saber antes
+## What to know first
 
-- **Versión de la API.** Un mod declara en su `pack.yaml` la versión de la API de Lua para la que está escrito
-  (`api: "1.x"` o `api: "1.4"`). Es obligatoria en las capas `mods` y `user`: un mod con scripts que no la
-  declara se deja fuera (uno solo de datos todavía se monta, con un aviso).
-- **Ids.** Todo se nombra por id, nunca por número: los assets por su ruta (`ui/hud/document`) y lo que añade un
-  paquete por `<id del paquete>:<nombre>` ([paquetes e ids](paquetes.md)).
-- **Partidas.** Una partida guarda su ruleset y su modo. Si se carga sin el mod que añadió algo (disparadores,
-  variables, especies), lo que ya no cabe se descarta con un aviso en el log y la partida sigue.
-- **Presupuestos.** Cada llamada a Lua tiene un presupuesto de instrucciones y de tiempo; un script desbocado se para
-  sin colgar el juego ([script](../modulos/engine/script.md#presupuestos-de-un-script-para-quien-hace-mods)).
-- **Comprobar.** `dwx validate` comprueba un paquete (esquemas de sus YAML, API, capa) sin arrancar el juego
+- **API version.** A mod declares in its `pack.yaml` the Lua API version it is written for (`api: "1.x"` or
+  `api: "1.4"`). It is required in the `mods` and `user` layers: a mod with scripts that does not declare it is left
+  out (a data-only one is still mounted, with a warning).
+- **Ids.** Everything is named by id, never by number: assets by their path (`ui/hud/document`) and what a pack adds
+  by `<pack id>:<name>` ([packs and ids](packs.md)).
+- **Saved games.** A saved game stores its ruleset and its mode. If it is loaded without the mod that added something
+  (triggers, variables, species), what no longer fits is discarded with a warning in the log and the game goes on.
+- **Budgets.** Each Lua call has an instruction and time budget; a runaway script is stopped without hanging the game
+  ([script](../modules/engine/script.md#a-scripts-budgets-for-mod-authors)).
+- **Checking.** `dwx validate` checks a pack (its YAML schemas, API, layer) without starting the game
   ([dwx validate](../architecture/assets-pipeline.md#dwx-validate)).

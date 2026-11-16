@@ -52,6 +52,7 @@ inline constexpr std::string_view ExportCannotReplace = "cannot write the export
 // dwx evolution-guide: the requirements table of the user's content (evolution_guide.hpp).
 inline constexpr std::string_view GuideOutputTaken = "{} already exists; pick another file";
 inline constexpr std::string_view GuideCannotWrite = "cannot write {}";
+inline constexpr std::string_view GuideLanguage = "the guide has no '{}' version; use en or es";
 
 // dwx upscale: the built-in index_scale step and the recipe it runs (upscale_recipe.hpp).
 inline constexpr std::string_view IndexScaleUnsupported =

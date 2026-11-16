@@ -194,7 +194,7 @@
 #minimap-phase.phase-late { decorator: image(/ui/skins/new/assets/icon_sources/icon_late.png contain); }
 #minimap-phase.phase-night { decorator: image(/ui/skins/new/assets/icon_sources/icon_night.png contain); }
 
-/* The menu button (.menu-btn: a thin box 40 from the left, 24 from the bottom, the Tab key cap and «Menú»). */
+/* The menu button (.menu-btn: a thin box 40 from the left, 24 from the bottom, the Tab key cap and "Menu"). */
 #menu-button,
 #menu-button:hover,
 #menu-button:focus {

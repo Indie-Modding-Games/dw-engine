@@ -1,7 +1,7 @@
 # The field draws the partner's species: a script evolution (the console's and the scripts' debug evolve(), as a map
 # script makes the partner evolve, apps/game/src/partner_events.hpp) turns the new game's partner into another form,
 # and the partner in the field is drawn with that form's model from then on. How to run it:
-# docs/guides/prueba-vertical.md.
+# docs/guides/vertical-slice.md.
 name: evolve
 device: keyboard
 timeout: 120

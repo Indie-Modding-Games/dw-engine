@@ -4,7 +4,7 @@
 
 namespace dwe::app {
 
-// The developer tools (docs/modulos/apps/game.md, «Herramientas de desarrollo»): the debug console
+// The developer tools (docs/modules/apps/game.md, «Developer tools»): the debug console
 // (F1 or the key left of 1), the developer menu (F2) and the map overlay (F3), behind one option of
 // the Interface tab. While it is off their keys do nothing. A package (DWE_PACKAGE) starts with it
 // off and a development build with it on, until the player chooses.

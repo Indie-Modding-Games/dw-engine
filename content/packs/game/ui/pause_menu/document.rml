@@ -547,11 +547,11 @@
 				<button id="minimap-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 
-			<!-- The options (docs/modulos/apps/game.md, «Opciones en partida»): the tabs, the rows of the tab shown, what the
+			<!-- The options (docs/modules/apps/game.md, «In-game options»): the tabs, the rows of the tab shown, what the
 			     focused row does, and the keys. The rows are one pool the tab shown fills in order (logic.lua: show_tab), each
 			     given the id of its option while the tab is shown; the rest stay hidden. -->
 			<div id="page-options" class="page hidden">
-				<!-- The game's own actions lead the page (docs/architecture/guardar-y-cargar.md, 3.8): up from the first row
+				<!-- The game's own actions lead the page (docs/architecture/save-and-load.md, 3.8): up from the first row
 				     reaches them, left and right step through them; the settings by tabs follow. -->
 				<div id="options-quick">
 					<button id="options-save" class="quick-action" onclick="ui.send('quick_save')" onfocus="action_focus(document, 'save')" text-key="pause_menu.quick_save"></button>

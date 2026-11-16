@@ -15,7 +15,7 @@
 namespace dwe::assets {
 
 // A technique's effect scripts as dwx extracts them in effect/<technique>/effect.yaml and
-// script.yaml (docs/formats/efectos.md): what the battle runs while the technique plays
+// script.yaml (docs/formats/effects.md): what the battle runs while the technique plays
 // (battle_effect.c: BTL_runEFEScript). Instructions keep the original's offsets and opcodes, so the
 // interpreter can follow the scripts as the original does.
 

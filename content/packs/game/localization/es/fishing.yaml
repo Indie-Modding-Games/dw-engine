@@ -1,6 +1,6 @@
-# La pesca (fish.c: FISH_showTextBox). {item} es el nombre de un objeto; {length}, lo que mide un pez.
+# Fishing (fish.c: FISH_showTextBox). {item} is an item's name; {length}, the length of a fish.
 bait.title: "Pon en el anzuelo"
-# {count} llega alineado a la derecha en dos huecos (" 3", "12"), como lo dibuja el original tras su x.
+# {count} arrives right-aligned in two slots (" 3", "12"), as the original draws it after its x.
 bait.entry: "{item} x{count}"
 bait.none: "Guardar la caña"
 bait_taken: "¡Se ha llevado el cebo!"

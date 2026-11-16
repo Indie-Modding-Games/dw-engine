@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Keeps the team's translation of the original's text in step with the user's extracted English
-# (docs/guides/traducir.md). It reads the extracted text/en and the translation pack, prints what is
-# missing, stale or broken, and writes the pack's .sources.lock. It never writes the English
+# (docs/guides/translate.md). It reads the extracted text/en and the translation pack, prints what
+# is missing, stale or broken, and writes the pack's .sources.lock. It never writes the English
 # anywhere: what it prints is for the translator's terminal only.
 set -euo pipefail
 
@@ -25,7 +25,7 @@ slot_digits=4
 story_line_width=30
 story_box_rows=4
 
-# What is never written to the translation (docs/guides/traducir.md); the lock lists these ids so
+# What is never written to the translation (docs/guides/translate.md); the lock lists these ids so
 # coverage tells them from what is not translated yet. kept_english: the names that stay in English,
 # whole blocks (source.block). kept_original: what is not English words and stays as extracted:
 # whole blocks, single ids (source.block.slot), every blank string and every string that is, but for
@@ -91,7 +91,7 @@ english_dir() {
 }
 
 # Prints "id<TAB>quoted text" for every string of a flat text table ("block.slot": "text",
-# docs/formats/textos.md), in file order; the text stays as YAML wrote it between the quotes.
+# docs/formats/texts.md), in file order; the text stays as YAML wrote it between the quotes.
 read_text_file() {
   local source="$1" file="$2" story=0
   if [[ "$source" == "$story_prefix"* ]]; then story=1; fi

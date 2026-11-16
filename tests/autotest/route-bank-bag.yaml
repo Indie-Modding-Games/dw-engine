@@ -1,4 +1,4 @@
-# The item keeper again, but with the inventory open first (docs/modulos/apps/screens.md "Guardian de objetos"):
+# The item keeper again, but with the inventory open first (docs/modules/apps/screens.md "Guardian de objetos"):
 # from a seeded new game started in the bank the player checks the meat in the bag (the pause menu's ITEM entry,
 # route-partner-keyboard's path), closes the menu, and only then walks to the keeper Agumon's counter. As in route-
 # bank: the first confirm on the trigger-81 cells is the welcome (it sets trigger 51); the second one writes the

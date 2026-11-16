@@ -1,57 +1,55 @@
-# Sonido Ogg Opus de `dwx cook`
+# Ogg Opus sound from `dwx cook`
 
-`dwx cook` convierte cada WAV de un paquete en un fichero [Ogg Opus](https://www.rfc-editor.org/rfc/rfc7845) con el
-mismo id (`sound/sb/sample_001.wav` → `sound/sb/sample_001.opus`). Lo escribe `apps/dwx/src/audio_cooker.cpp` con
-libopusenc y lo lee `packages/engine/assets` (`dwe::assets::decodeOpus`) con libopus. La decisión está en el
-[ADR 0017](../adr/0017-cocinado-y-archivos-pak.md).
+`dwx cook` converts each WAV in a package into an [Ogg Opus](https://www.rfc-editor.org/rfc/rfc7845) file with the
+same id (`sound/sb/sample_001.wav` → `sound/sb/sample_001.opus`). It is written by `apps/dwx/src/audio_cooker.cpp`
+with libopusenc and read by `packages/engine/assets` (`dwe::assets::decodeOpus`) with libopus. The decision is in
+[ADR 0017](../adr/0017-cooking-and-pak-files.md).
 
-## Qué escribe
+## What it writes
 
-- Un flujo lógico Ogg con un solo flujo Opus, de uno o dos canales (familia de mapeo 0), como el WAV.
-- Opus siempre trabaja a 48 kHz: libopusenc remuestrea el WAV (en la extracción US van de 2756 Hz a 44100 Hz) y
-  guarda la frecuencia original en el campo `input_sample_rate` de `OpusHead`, solo como información.
-- Ajustes fijos, para que el mismo WAV dé los mismos bytes: 64 kbps por canal, tasa variable (VBR), complejidad 10,
-  sin relleno en los comentarios y el número de serie Ogg `0x64776531` (`dwe1`; libopusenc pondría uno al azar).
-  El texto del proveedor dice las versiones de libopus y libopusenc, fijadas por el baseline de vcpkg.
-- Los comentarios (`OpusTags`), en fotogramas del sonido decodificado a 48 kHz:
+- One logical Ogg stream with a single Opus stream, of one or two channels (mapping family 0), like the WAV.
+- Opus always works at 48 kHz: libopusenc resamples the WAV (in the US extraction they go from 2756 Hz to 44100 Hz)
+  and stores the original rate in the `input_sample_rate` field of `OpusHead`, for information only.
+- Fixed settings, so the same WAV gives the same bytes: 64 kbps per channel, variable bitrate (VBR), complexity 10,
+  no padding in the comments and the Ogg serial number `0x64776531` (`dwe1`; libopusenc would pick a random one).
+  The vendor string says the libopus and libopusenc versions, pinned by the vcpkg baseline.
+- The comments (`OpusTags`), in frames of the sound decoded at 48 kHz:
 
-| Comentario | Qué es |
+| Comment | What it is |
 |---|---|
-| `LOOPSTART` | Primer fotograma del bucle |
-| `LOOPLENGTH` | Fotogramas del bucle |
-| `DWE_UNITY_NOTE` | La nota MIDI que toca el sonido a su altura original (del chunk `smpl`), para el sampler |
+| `LOOPSTART` | First frame of the loop |
+| `LOOPLENGTH` | Frames in the loop |
+| `DWE_UNITY_NOTE` | The MIDI note the sound plays at its original pitch (from the `smpl` chunk), for the sampler |
 
-`LOOPSTART` y `LOOPLENGTH` son los nombres que usan muchos motores para los bucles en Ogg. El bucle del WAV (`smpl`,
-fin incluido) se pasa a 48 kHz redondeando cada extremo al fotograma más cercano y sin salir del sonido, que
-decodificado tiene `ceil(fotogramas × 48000 / frecuencia)` fotogramas. Un WAV sin bucle no lleva esos dos
-comentarios.
+`LOOPSTART` and `LOOPLENGTH` are the names many engines use for loops in Ogg. The WAV loop (`smpl`, end included) is
+converted to 48 kHz by rounding each end to the nearest frame and without leaving the sound, which once decoded has
+`ceil(frames × 48000 / rate)` frames. A WAV without a loop does not carry those two comments.
 
-## Qué comprueba el lector
+## What the reader checks
 
-`decodeOpus` lee las páginas Ogg con un lector propio (`packages/engine/assets/src/ogg.cpp`, sin libogg ni opusfile) y rechaza
-el fichero, con un mensaje que dice qué falla, si:
+`decodeOpus` reads the Ogg pages with its own reader (`packages/engine/assets/src/ogg.cpp`, without libogg or
+opusfile) and rejects the file, with a message that says what fails, if:
 
-- una página no empieza por `OggS` versión 0, no cuadra con su CRC, no es la siguiente del flujo (número de serie y
-  de secuencia) o está cortada; la primera no abre el flujo o la última no lo cierra; hay algo detrás del final; o un
-  paquete partido no sigue en la página siguiente;
-- el primer paquete no es un `OpusHead` de versión 0.x con uno o dos canales y familia 0, o el segundo no es un
-  `OpusTags` bien formado;
-- la posición final (granule) es menor que el pre-skip, o el sonido pasa de una hora (`MaxSoundFrames`), para que un
-  fichero falsificado no pida memoria sin límite;
-- un paquete no decodifica, o los paquetes dan menos fotogramas de los que dice la última página, o demasiados más;
-- `LOOPSTART`, `LOOPLENGTH` o `DWE_UNITY_NOTE` no son números, falta uno de los dos del bucle o el bucle se sale del
-  sonido.
+- a page does not start with `OggS` version 0, does not match its CRC, is not the next one in the stream (serial and
+  sequence number) or is cut off; the first one does not open the stream or the last one does not close it; there is
+  something after the end; or a split packet does not continue on the next page;
+- the first packet is not an `OpusHead` of version 0.x with one or two channels and family 0, or the second is not a
+  well-formed `OpusTags`;
+- the final position (granule) is less than the pre-skip, or the sound is longer than an hour (`MaxSoundFrames`), so
+  that a forged file cannot ask for unlimited memory;
+- a packet does not decode, or the packets give fewer frames than the last page says, or too many more;
+- `LOOPSTART`, `LOOPLENGTH` or `DWE_UNITY_NOTE` are not numbers, one of the two loop comments is missing or the loop
+  falls outside the sound.
 
-Devuelve PCM de 16 bits a 48 kHz, intercalado por canal, sin el pre-skip del codificador ni el relleno del último
-paquete, con el bucle, la nota y la frecuencia original.
+It returns 16-bit PCM at 48 kHz, interleaved by channel, without the encoder's pre-skip or the padding of the last
+packet, with the loop, the note and the original rate.
 
-## Lo que queda
+## What remains
 
-- Opus es con pérdida y trabaja en paquetes de 20 ms: un bucle muy corto de un instrumento puede sonar con un
-  pequeño salto en el punto de vuelta. Los mismos sonidos están sin pérdida dentro del `bank.sf2` de cada banco, que
-  se copia tal cual.
-- 62 de los 642 WAV de la extracción US salen más grandes en Opus (159 KB en total): son sonidos a muy baja
-  frecuencia (2756 a 5513 Hz) que en PCM ocupan menos de 64 kbps. Un bitrate que dependa de la frecuencia original
-  lo evitaría.
-- libopus elige en tiempo de ejecución rutinas SIMD según la CPU. El mismo binario en la misma máquina da siempre los
-  mismos bytes; en CPUs distintas el codificador en coma flotante podría no dar exactamente los mismos.
+- Opus is lossy and works in 20 ms packets: a very short instrument loop may sound with a small jump at the return
+  point. The same sounds are lossless inside the `bank.sf2` of each bank, which is copied as is.
+- 62 of the 642 WAVs of the US extraction come out larger in Opus (159 KB in total): they are sounds at a very low
+  rate (2756 to 5513 Hz) that in PCM take less than 64 kbps. A bitrate that depends on the original rate would avoid
+  this.
+- libopus picks SIMD routines at run time depending on the CPU. The same binary on the same machine always gives the
+  same bytes; on different CPUs the floating-point encoder might not give exactly the same ones.

@@ -36,7 +36,7 @@ struct PlayStart {
   friend bool operator==(const PlayStart&, const PlayStart&) = default;
 };
 
-// The app's states (docs/architecture/guardar-y-cargar.md, 3.2): the title screen, with no game,
+// The app's states (docs/architecture/save-and-load.md, 3.2): the title screen, with no game,
 // and a game being played. A game is built whole and torn down whole, so a second game never sees
 // what the first left behind (queued scripts, a battle, the clock). Play::saveTo(slot) saves a
 // game that started.

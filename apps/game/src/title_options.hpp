@@ -11,7 +11,7 @@
 
 namespace dwe::app {
 
-// The title screen's options (docs/modulos/apps/game.md, «Opciones en partida»): the main menu's
+// The title screen's options (docs/modules/apps/game.md, «In-game options»): the main menu's
 // Options entry opens the pause menu's options page over the title, with its tabs, rows and help.
 // TitleScreen opens it with these; the page sends the second when it closes there.
 inline constexpr std::string_view TitleOptionsCommand = "title_options";
@@ -19,8 +19,8 @@ inline constexpr std::string_view TitleOptionsBackCommand = "title_options_back"
 // Read by the pause menu as it shows (with pause_menu.start_page): it opens over the title, so its
 // game actions (save, back to the title) stay hidden and quit closes the game at once.
 inline constexpr std::string_view MenuAtTitleSetting = "pause_menu.at_title";
-// The widescreen pictures (an improvement, on by default; docs/modulos/apps/game.md, «Imágenes a
-// pantalla ancha»): the title's 4:3 pictures fill the window, cut and mirrored past their sides
+// The widescreen pictures (an improvement, on by default; docs/modules/apps/game.md, "Widescreen
+// pictures"): the title's 4:3 pictures fill the window, cut and mirrored past their sides
 // (ui/common/title_picture.lua), and the movies fill the window with their shape kept
 // (MovieScreen::setFillWindow). Off keeps the original's framing: 4:3 on black.
 inline constexpr std::string_view WidescreenPicturesSetting = "widescreen_pictures";

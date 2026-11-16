@@ -12,7 +12,7 @@
 #include <vector>
 
 // A class of entries of a table that a ruleset names, such as the meals among the items or the
-// finishers among the moves (docs/architecture/rulesets.md#rangos-e-ids). Ranges and thresholds
+// finishers among the moves (docs/architecture/rulesets.md#ranges-and-ids). Ranges and thresholds
 // count the original's numbers, so they cover only the entries whose number the base pack gave
 // (originalIndex): never one a pack added, whatever number the engine gave it. A pack's new entry
 // joins a class by its id.

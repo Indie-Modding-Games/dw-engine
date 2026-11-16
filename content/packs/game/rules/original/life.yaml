@@ -1,40 +1,40 @@
-# Vida, muerte y renacer del partner (docs/reference/care.md, "Vida y edad" y "Muerte y renacer"). Lo lee
-# packages/game/partner. Las horas son horas de juego. Salvo que se diga otra cosa, todo está en src/main/partner_impl.c.
-# initializePartner, initializeReincarnatedPartner: la vida empieza en 360 horas (15 días).
+# Partner life, death and rebirth (docs/reference/care.md, "Life and age" and "Death and rebirth"). Read by
+# packages/game/partner. Hours are game hours. Unless stated otherwise, everything is in src/main/partner_impl.c.
+# initializePartner, initializeReincarnatedPartner: life starts at 360 hours (15 days).
 lifetime_hours: 360
-# initializePartner, evolution.c: reincarnatePartner: el partner empieza con 3 vidas.
+# initializePartner, evolution.c: reincarnatePartner: the partner starts with 3 lives.
 lives: 3
-# tickConditions: cada 4 horas (CURRENT_FRAME % 4800) con felicidad menor que 80, la vida baja
-# (felicidad - 80) / -50 + 1 horas, con división entera.
+# tickConditions: every 4 hours (CURRENT_FRAME % 4800) with happiness below 80, life drops
+# (happiness - 80) / -50 + 1 hours, with integer division.
 unhappy_lifetime:
   every_hours: 4
   happiness_below: 80
   happiness_divisor: 50
   extra_hours: 1
 rebirth:
-  # dooa/dooa.c: el huevo se elige con rand() % 4 entre REINCARNATE_BABY_TYPE: original = uno al azar con la misma
-  # probabilidad.
+  # dooa/dooa.c: the egg is chosen with rand() % 4 among REINCARNATE_BABY_TYPE: original = a random one with the same
+  # probability.
   baby_choice: original
-  # dooa/dooa.c: REINCARNATE_BABY_TYPE, los cuatro bebés; partner_impl.c: initializeReincarnatedPartner, los stats
-  # fijos de cada uno (setReincarnateStats). Constantes del código, no una tabla del disco.
+  # dooa/dooa.c: REINCARNATE_BABY_TYPE, the four babies; partner_impl.c: initializeReincarnatedPartner, the fixed
+  # stats of each one (setReincarnateStats). Code constants, not a disc table.
   babies:
     - { digimon: "bota", hp: 90, mp: 110, offense: 10, defense: 11, speed: 9, brain: 10 }
     - { digimon: "puni", hp: 120, mp: 100, offense: 16, defense: 8, speed: 8, brain: 6 }
     - { digimon: "poyo", hp: 100, mp: 140, offense: 12, defense: 6, speed: 6, brain: 8 }
     - { digimon: "yura", hp: 100, mp: 120, offense: 8, defense: 8, speed: 8, brain: 8 }
-  # setReincarnateStats: tras una muerte natural hereda un % de cada stat del partner muerto igual al nivel del
-  # tamer; si no, nada.
+  # setReincarnateStats: after a natural death it inherits a % of each stat of the dead partner equal to the Tamer
+  # level; otherwise, nothing.
   inherit_percent_per_tamer_level: 1
-  # dooa/dooa.c: DOOA_getSequenceState: sin vidas el huevo sale al azar (rand() % 4) aunque la caja diga otro; la
-  # sección 0x49 del script 212 ni la abre. En false (opción choose_egg_after_lives_lost) la caja se abre también y
-  # cuenta el huevo elegido.
+  # dooa/dooa.c: DOOA_getSequenceState: with no lives the egg is picked at random (rand() % 4) even if the box says otherwise; the
+  # section 0x49 of script 212 is not even opened. With false (option choose_egg_after_lives_lost) the box is opened too and
+  # the chosen egg counts.
   random_egg_without_lives: true
-# Las escenas de una vida perdida, de la muerte y del renacer, en fotogramas del original (20 por segundo). Sin esta
-# sección el partner cambia al momento.
+# The scenes of a lost life, of death and of rebirth, in original frames (20 per second). Without this
+# section the partner changes instantly.
 scenes:
-  # murd/murd.c: MURD_tickScene: el iris se cierra sobre el partner (0x23), que queda solo sobre negro con la caja de
-  # vidas hasta 0x5f; con vidas, el fundido a negro sube hasta 160 (0x87), se sostiene en 255 mientras carga el mapa
-  # donde despierta el tamer, el mapa vuelve en 0x91 y el fundido baja desde 160 hasta 0xb9.
+  # murd/murd.c: MURD_tickScene: the iris closes on the partner (0x23), which is left alone on black with the lives
+  # box until 0x5f; with lives, the fade to black rises to 160 (0x87), holds at 255 while the map loads
+  # where the Tamer wakes up, the map returns at 0x91 and the fade drops from 160 to 0xb9.
   lost_life:
     iris_frames: 35
     alone_until: 95
@@ -43,8 +43,8 @@ scenes:
     fade_in_end: 185
     shade_max: 160
     shade_hold: 255
-  # dooa/dooa.c: DOOA_tick y murd.c: MURD_tick: el mapa 0xcd (salida 1) si el trigger 0xdc o el 0xd6 está puesto o
-  # la variable 1 llega a 50; si no, el 0xda.
+  # dooa/dooa.c: DOOA_tick and murd.c: MURD_tick: map 0xcd (exit 1) if trigger 0xdc or 0xd6 is set or
+  # variable 1 reaches 50; otherwise, 0xda.
   wake_map:
     story_map: 205
     early_map: 218
@@ -52,28 +52,28 @@ scenes:
     story_triggers: [220, 214]
     story_variable: 1
     story_variable_at_least: 50
-    # dooa/dooa.c: DOOA_tickDissolve: en el mapa de la historia (0xCD) la cámara de la muerte parte de 0xBC y no de
-    # 0xA0: 28 píxeles a la derecha del centro de la pantalla.
+    # dooa/dooa.c: DOOA_tickDissolve: on the story map (0xCD) the death camera starts at 0xBC and not at
+    # 0xA0: 28 pixels to the right of the screen center.
     story_map_start_x: 28
-  # dooa/dooa.c: DOOA_tickDissolve (la muerte) y DOOA_tickRebirth (el renacer), con el banco de sonidos 0x13 en la
-  # ranura 8 (partnerTickDying: loadMapSounds2(19)). Los sonidos son de ese banco.
+  # dooa/dooa.c: DOOA_tickDissolve (death) and DOOA_tickRebirth (rebirth), with sound bank 0x13 in
+  # slot 8 (partnerTickDying: loadMapSounds2(19)). The sounds are from that bank.
   death:
     sound_bank: 19
-    # 0x23: carga el mapa donde despierta el tamer; sin vidas la escena empieza aquí, con el partner ya oculto.
+    # 0x23: loads the map where the Tamer wakes up; with no lives the scene starts here, with the partner already hidden.
     map_frame: 35
-    # 0x56: el partner queda solo y empieza la animación burst.
+    # 0x56: the partner is left alone and the burst animation starts.
     stand_frame: 86
     burst: { frame: 105, sound: 0 }
-    # 0xbf: el partner se encoge; 0xd1: desaparece (animación vanish); 0x135: sube la luz; 0x1b7: fin.
+    # 0xbf: the partner shrinks; 0xd1: disappears (vanish animation); 0x135: the light rises; 0x1b7: end.
     sink: { frame: 191, sound: 1 }
     vanish: { frame: 209, sound: 2 }
     rise: { frame: 309, sound: 3 }
-    # 0x185: el primer personaje del mapa de despertar (ENTITY_TABLE[2], el anciano en su casa) vuelve a verse sobre
-    # negro y sigue durante el renacer.
+    # 0x185: the first character of the wake-up map (ENTITY_TABLE[2], the old man at his house) becomes visible again over
+    # black and continues during the rebirth.
     host_frame: 389
     end_frame: 439
-    # DOOA_tickRebirth: el huevo brilla (10) y se abre (132); en 152 el bebé nuevo (reincarnatePartner) y el mapa
-    # vuelve desde negro hasta 202, cuando se ve el bebé con la animación reborn; en 262 la animación finish.
+    # DOOA_tickRebirth: the egg glows (10) and opens (132); at 152 the new baby (reincarnatePartner) and the map
+    # returns from black until 202, when the baby is seen with the reborn animation; at 262 the finish animation.
     glow: { frame: 10, sound: 5 }
     hatch: { frame: 132, sound: 6 }
     swap_frame: 152

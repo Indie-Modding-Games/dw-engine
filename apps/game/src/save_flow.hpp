@@ -38,7 +38,7 @@ struct SaveDialog {
   friend bool operator==(const SaveDialog&, const SaveDialog&) = default;
 };
 
-// What the title screen does with the save slots (docs/architecture/guardar-y-cargar.md, 3.4, 3.5
+// What the title screen does with the save slots (docs/architecture/save-and-load.md, 3.4, 3.5
 // and 4): the lists, the questions, and the game each answer starts. It knows no UI: the game
 // publishes its settings and shows the documents.
 class SaveFlow {

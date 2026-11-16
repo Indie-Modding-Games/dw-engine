@@ -11,7 +11,7 @@
 
 #include "fixture.hpp"
 
-// Every species as a partner (docs/modulos/game/evoluciones-extra.md): the all_species targets are
+// Every species as a partner (docs/modules/game/extra-evolutions.md): the all_species targets are
 // fallback ones, picked only when none of the original's passes.
 namespace dwe::game::evolution {
 

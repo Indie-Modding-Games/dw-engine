@@ -10,7 +10,7 @@
 #include <string_view>
 #include <vector>
 
-// Where the warps of a map lead (docs/formats/mapas.md#destino-de-una-salida). A warp names its
+// Where the warps of a map lead (docs/formats/maps.md#destination-of-an-exit). A warp names its
 // target twice: by the original's raw map index (`target_map`) and by the id of data/maps
 // (`target_map_id`). The base pack writes both and they agree; a pack's map may name a target by id
 // alone, and an editor that only knows the original's numbers may leave the id out. So a known id

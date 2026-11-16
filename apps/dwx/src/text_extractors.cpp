@@ -62,7 +62,7 @@ std::string sourceName(std::string_view file) {
 }
 
 // Reads the strings of the blocks of one source into a flat table {"<block>.<slot>": string}
-// (docs/formats/textos.md). An empty slot has no key. A block that does not read is an unknown and
+// (docs/formats/texts.md). An empty slot has no key. A block that does not read is an unknown and
 // is left out.
 YamlNode readSource(std::string_view source, const StringManifest& manifest,
                     const MemoryImage& image, const MemoryImage& executable, Extraction& extraction,

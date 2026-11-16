@@ -5,7 +5,7 @@ name: Promote
 # release, with the same files, signatures and manifests that the «Pruebas» channel tested,
 # stops being a prerelease and becomes the repository's latest release, with notes of the changes
 # since the previous stable one. A fix goes the same way: a pull request to main, its prerelease,
-# then this. docs/modulos/apps/launcher.md explains the channels.
+# then this. docs/modules/apps/launcher.md explains the channels.
 on:
   workflow_dispatch:
     inputs:

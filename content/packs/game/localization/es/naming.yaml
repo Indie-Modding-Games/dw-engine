@@ -1,4 +1,4 @@
-# La caja de nombres (script_menu.c: setupNameSelectorBox): de quién es el nombre y sus botones.
+# The name box (script_menu.c: setupNameSelectorBox): whose name it is and its buttons.
 tamer: "Tu nombre"
 partner: "El nombre de tu Digimon"
 title: "Nombre"

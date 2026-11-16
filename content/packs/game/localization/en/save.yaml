@@ -12,7 +12,7 @@ autosave_reason.key_item: "Key item"
 autosave_reason.dangerous_area: "Before a dangerous area"
 autosave_reason.story_progress: "Story progress"
 autosave_reason.partner_reborn: "Partner reborn"
-# The title screen's slot lists and dialogs (docs/architecture/guardar-y-cargar.md). {number} counts slots from 1.
+# The title screen's slot lists and dialogs (docs/architecture/save-and-load.md). {number} counts slots from 1.
 slots.title_new: "Choose a slot for your new adventure"
 slots.title_continue: "Choose an adventure to continue"
 slots.slot: "Slot {number}"
@@ -34,24 +34,24 @@ start_failed: "The game could not start."
 damaged_use_backup: "This save is damaged. Load the previous copy?"
 damaged_no_backup: "This save is damaged and has no copy."
 too_new: "This save is from a newer version of the game."
-# A save in the game whose slot changed outside the game (docs/architecture/guardar-y-cargar.md, 4).
+# A save in the game whose slot changed outside the game (docs/architecture/save-and-load.md, 4).
 home_damaged: "This adventure's save is damaged. Save over it?"
 home_other: "This slot holds another adventure. Save over it?"
 home_newer: "This slot holds a save from a newer version of the game. It cannot be saved over."
-# The sleep menu, once the partner slept (docs/architecture/guardar-y-cargar.md, 3.6).
+# The sleep menu, once the partner slept (docs/architecture/save-and-load.md, 3.6).
 sleep: "Go to sleep"
 sleep_and_save: "Save and go to sleep"
-# The save machine (docs/architecture/guardar-y-cargar.md, 3.7).
+# The save machine (docs/architecture/save-and-load.md, 3.7).
 # The first line of the notice for a partner below Rookie (main_menu.c: drawMainMenuStrings, view 19): its name, its
 # species and the start of the original's next line; the rest are the original's text.
 machine_in_training: "{name} {species} is in"
 # An empty slot of the battle registration's list (main_menu.c: the registry's rows).
 machine_empty_slot: "."
-# Back to the title screen from the pause menu (docs/architecture/guardar-y-cargar.md, 3.8).
+# Back to the title screen from the pause menu (docs/architecture/save-and-load.md, 3.8).
 to_title_confirm: "Anything not saved will be lost. Return to the title screen?"
 # Quitting the game from the pause menu (3.8): "Yes" writes the save and closes the game; "No" keeps playing.
 quit_confirm: "Save the game before quitting?"
-# Erasing a save from the title screen (docs/architecture/guardar-y-cargar.md). The dialog shows the save's file
+# Erasing a save from the title screen (docs/architecture/save-and-load.md). The dialog shows the save's file
 # name below.
 confirm_erase: "Erase this adventure?"
 erase_failed: "The save could not be erased."

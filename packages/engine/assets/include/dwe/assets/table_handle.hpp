@@ -3,7 +3,7 @@
 #include <cstdint>
 
 // The handle of an entry of a composed table: what the running game holds instead of the entry's id
-// (docs/modulos/engine/assets.md#ids-en-la-sesión). It is the entry's place in one composition of
+// (docs/modules/engine/assets.md#ids-in-the-session). It is the entry's place in one composition of
 // the packs' tables, so it only means something to that table: only the table makes one, and it
 // refuses one of another composition. A handle never leaves the session: saves, rulesets, data
 // files, scripts, text keys and logs name the entry by its id.

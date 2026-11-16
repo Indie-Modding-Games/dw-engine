@@ -50,23 +50,23 @@ std::vector<std::string_view> screensOf(std::span<const UiContractEntry> contrac
 std::string_view kindWord(UiContractKind kind) {
   switch (kind) {
   case UiContractKind::Setting:
-    return "ajuste";
+    return "setting";
   case UiContractKind::Command:
-    return "comando";
+    return "command";
   case UiContractKind::Option:
-    return "opción";
+    return "option";
   case UiContractKind::Argument:
-    return "argumento";
+    return "argument";
   case UiContractKind::Query:
-    return "consulta";
+    return "query";
   case UiContractKind::Action:
-    return "acción";
+    return "action";
   case UiContractKind::Event:
-    return "evento";
+    return "event";
   case UiContractKind::Report:
-    return "estado";
+    return "report";
   case UiContractKind::Function:
-    return "función";
+    return "function";
   }
   return "";
 }
@@ -100,15 +100,15 @@ std::string_view valueWord(UiValueKind value) {
   case UiValueKind::None:
     return "—";
   case UiValueKind::Boolean:
-    return "sí/no";
+    return "yes/no";
   case UiValueKind::Number:
-    return "número";
+    return "number";
   case UiValueKind::Text:
-    return "texto";
+    return "text";
   case UiValueKind::Any:
-    return "número o texto";
+    return "number or text";
   case UiValueKind::Table:
-    return "tabla";
+    return "table";
   }
   return "";
 }
@@ -192,85 +192,84 @@ constexpr UiValueKind TableValue = UiValueKind::Table;
 
 constexpr std::array NativeContract{
     native("ui", "ui.setting", AnyValue, "(name: string): any",
-           "El valor de un ajuste que el juego publica; nil si no lo publica."),
+           "The value of a setting the game publishes; nil if it does not publish it."),
     native("ui", "ui.send", NoValue, "(name: string, value: any?)",
-           "Manda un comando al juego, que lo atiende una vez."),
+           "Sends a command to the game, which handles it once."),
     native("ui", "ui.report", NoValue, "(name: string, value: any?)",
-           "Cuenta un estado al juego, que lee el último valor cuando lo necesita."),
+           "Tells the game a state; the game reads the last value when it needs it."),
     native("ui", "ui.show", NoValue, "(screen: string, modal: boolean?, args: table?)",
-           "Enseña una pantalla; modal toma la navegación. args llega a su on_show."),
-    native("ui", "ui.hide", NoValue, "(screen: string)", "Esconde una pantalla."),
+           "Shows a screen; modal takes the navigation. args reaches its on_show."),
+    native("ui", "ui.hide", NoValue, "(screen: string)", "Hides a screen."),
     native("ui", "ui.is_visible", BooleanValue, "(screen: string): boolean",
-           "Si una pantalla se ve."),
+           "Whether a screen is visible."),
     native("ui", "ui.layout", TextValue, "(option: string): string?",
-           "El valor que el aspecto da a una opción de disposición en esta pantalla; nil sin él."),
+           "The value the skin gives a layout option on this screen; nil without one."),
     native("ui", "ui.prompt", TextValue, "(action: string): string",
-           "El nombre del control que hace una acción en el dispositivo en uso."),
+           "The name of the control that performs an action on the device in use."),
     native("ui", "ui.device", TextValue, "(): string",
-           "El dispositivo en uso: keyboard_mouse o gamepad."),
-    native("ui", "ui.gamepad_family", TextValue, "(): string", "La familia del mando en uso."),
+           "The device in use: keyboard_mouse or gamepad."),
+    native("ui", "ui.gamepad_family", TextValue, "(): string", "The family of the gamepad in use."),
     native("ui", "ui.languages", TableValue, "(): string[]",
-           "Los idiomas que el jugador puede elegir."),
-    native("ui", "ui.skins", TableValue, "(): string[]",
-           "Los aspectos que el jugador puede elegir."),
+           "The languages the player can choose."),
+    native("ui", "ui.skins", TableValue, "(): string[]", "The skins the player can choose."),
     native("ui", "ui.skin_name_key", TextValue, "(id: string): string",
-           "La clave de texto del nombre de un aspecto; vacía si no existe."),
+           "The text key of a skin's name; empty if it does not exist."),
     native("ui", "ui.cue", BooleanValue, "(name: string): boolean",
-           "Suena box_open, box_close o confirm; false con otro nombre."),
+           "Plays box_open, box_close or confirm; false for any other name."),
     native("ui", "t", TextValue, "(key: string, args: table?): string",
-           "El texto de una clave en el idioma del jugador, con sus huecos rellenos."),
+           "The text of a key in the player's language, with its placeholders filled in."),
     native("ui", "document_name", TextValue, "",
-           "El nombre con el que la interfaz cargó el documento."),
+           "The name the interface loaded the document with."),
     native("hooks", "hooks.on", NoValue,
            "(event: string, handler: fun(event: table, document: Element))",
-           "Llama a handler cada vez que llega el evento; hasta 64 por documento."),
+           "Calls handler each time the event arrives; up to 64 per document."),
     native("hooks", "hooks.off", NoValue, "(event: string, handler: function)",
-           "Deja de llamar a handler con ese evento."),
+           "Stops calling handler for that event."),
     native("document", "on_show", NoValue, "(document: Element, args: table)",
-           "Lo llama la interfaz al enseñar el documento."),
+           "Called by the interface when the document is shown."),
     native("document", "on_hide", NoValue, "(document: Element)",
-           "Lo llama la interfaz al esconder el documento."),
+           "Called by the interface when the document is hidden."),
     native("document", "on_setting", NoValue, "(document: Element, name: string)",
-           "Lo llama la interfaz cuando cambia un ajuste, con el documento a la vista."),
+           "Called by the interface when a setting changes, with the document visible."),
     native("document", "on_action", BooleanValue, "(document: Element, action: string): boolean?",
-           "Una acción de navegación (confirm, cancel, menu...); true si el documento la atiende."),
+           "A navigation action (confirm, cancel, menu...); true if the document handles it."),
     native("document", "on_tick", NoValue, "(document: Element, seconds: number)",
-           "Cada frame con el documento a la vista."),
-    native("document", "on_device", NoValue, "(document: Element)",
-           "Cambió el dispositivo en uso."),
-    native("document", "on_language", NoValue, "(document: Element)", "Cambió el idioma."),
-    native("Element", "Element:valid", BooleanValue, "(): boolean", "Si el elemento existe."),
-    native("Element", "Element.id", TextValue, "", "Su id (campo de solo lectura)."),
+           "Every frame while the document is visible."),
+    native("document", "on_device", NoValue, "(document: Element)", "The device in use changed."),
+    native("document", "on_language", NoValue, "(document: Element)", "The language changed."),
+    native("Element", "Element:valid", BooleanValue, "(): boolean", "Whether the element exists."),
+    native("Element", "Element.id", TextValue, "", "Its id (a read-only field)."),
     native("Element", "Element:get", TableValue, "(id: string): Element",
-           "El elemento con ese id dentro de este."),
-    native("Element", "Element:set_text", NoValue, "(text: string)", "Pone su texto."),
+           "The element with that id inside this one."),
+    native("Element", "Element:set_text", NoValue, "(text: string)", "Sets its text."),
     native("Element", "Element:set_prompt", NoValue, "(action: string, icon: boolean?)",
-           "Lo convierte en el dibujo del control que hace la acción."),
+           "Turns it into the picture of the control that performs the action."),
     native("Element", "Element:set_prompt_text", NoValue, "(text: string, original: boolean?)",
-           "Pone un texto con sus marcas {prompt:acción} dibujadas como controles."),
-    native("Element", "Element:text", TextValue, "(): string", "Su contenido."),
+           "Sets a text with its {prompt:action} marks drawn as controls."),
+    native("Element", "Element:text", TextValue, "(): string", "Its content."),
     native("Element", "Element:set_class", NoValue, "(name: string, on: boolean)",
-           "Pone o quita una clase."),
+           "Adds or removes a class."),
     native("Element", "Element:has_class", BooleanValue, "(name: string): boolean",
-           "Si tiene una clase."),
+           "Whether it has a class."),
     native("Element", "Element:attribute", TextValue, "(name: string): string?",
-           "El valor de un atributo; nil sin él."),
+           "The value of an attribute; nil without one."),
     native("Element", "Element:set_attribute", NoValue, "(name: string, value: string)",
-           "Pone un atributo; no uno de evento (on...)."),
+           "Sets an attribute; not an event one (on...)."),
     native("Element", "Element:set_property", NoValue, "(name: string, value: string)",
-           "Pone una propiedad de estilo."),
+           "Sets a style property."),
     native("Element", "Element:remove_property", NoValue, "(name: string)",
-           "Quita una propiedad que puso set_property."),
+           "Removes a property that set_property set."),
     native("Element", "Element:rect", NumberValue, "(): number, number, number, number",
-           "Su caja en dp desde la esquina de la ventana: izquierda, arriba, ancho y alto."),
-    native("Element", "Element:focus", NoValue, "()", "Le da el foco."),
-    native("Element", "Element:has_focus", BooleanValue, "(): boolean", "Si tiene el foco."),
-    native("Element", "Element:click", NoValue, "()", "Lo pulsa."),
-    native("Element", "Element:scroll_to_top", NoValue, "()", "Vuelve una lista arriba."),
-    native("Event", "Event.type", TextValue, "", "El tipo del evento (campo de solo lectura)."),
+           "Its box in dp from the window's corner: left, top, width and height."),
+    native("Element", "Element:focus", NoValue, "()", "Gives it the focus."),
+    native("Element", "Element:has_focus", BooleanValue, "(): boolean",
+           "Whether it has the focus."),
+    native("Element", "Element:click", NoValue, "()", "Presses it."),
+    native("Element", "Element:scroll_to_top", NoValue, "()", "Scrolls a list back to the top."),
+    native("Event", "Event.type", TextValue, "", "The event's type (a read-only field)."),
     native("Event", "Event.wheel", NumberValue, "",
-           "Cuánto giró la rueda, positivo hacia abajo (campo de solo lectura)."),
-    native("Event", "Event:stop", NoValue, "()", "No deja que el evento siga subiendo."),
+           "How far the wheel turned, positive downward (a read-only field)."),
+    native("Event", "Event:stop", NoValue, "()", "Stops the event from bubbling up."),
 };
 
 std::string_view trimmed(std::string_view text) {
@@ -407,9 +406,9 @@ const UiContractEntry* findContractEntry(std::span<const UiContractEntry> contra
 }
 
 std::string contractMarkdown(std::span<const UiContractEntry> contract) {
-  std::string text = std::format("\nVersión de la API de la interfaz: **{}**.\n", versionText());
+  std::string text = std::format("\nUI API version: **{}**.\n", versionText());
   for (const std::string_view screen : screensOf(contract)) {
-    text += std::format("\n### `{}`\n\n| Nombre | Tipo | Valor | Qué es |\n|---|---|---|---|\n",
+    text += std::format("\n### `{}`\n\n| Name | Kind | Value | What it is |\n|---|---|---|---|\n",
                         screen);
     for (const UiContractEntry& entry : contract) {
       if (entry.screen != screen) {
@@ -417,7 +416,7 @@ std::string contractMarkdown(std::span<const UiContractEntry> contract) {
       }
       std::string summary = markdownText(entry.summary);
       if (!entry.source.empty()) {
-        summary += std::format(" Sale de `{}`.", entry.source);
+        summary += std::format(" Comes from `{}`.", entry.source);
       }
       text += std::format("| `{}{}` | {} | {} | {} |\n", entry.name, entry.signature,
                           kindWord(entry.kind), valueWord(entry.value), summary);

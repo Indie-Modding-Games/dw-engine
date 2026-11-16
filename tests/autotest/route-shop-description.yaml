@@ -1,5 +1,5 @@
-# The shop's item description and the shop extras (docs/modulos/apps/game.md, «Descripción en las tiendas» and
-# «Extras de la tienda»). In the buy list, pause (P) opens the description of the item under the cursor in a one-line
+# The shop's item description and the shop extras (docs/modules/apps/game.md, «Description in shops» and
+# «Shop extras»). In the buy list, pause (P) opens the description of the item under the cursor in a one-line
 # box, as the original does (tickItemMenu, createItemMenuDescriptionBox), and confirm closes it back to the list. Then
 # shop extras on: the focused item's description under the list, the bag's count on each row and, in the amount box,
 # the count and the money the purchase leaves; one item bought shows the count grow. The shop is gias06b's (its

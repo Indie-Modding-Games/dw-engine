@@ -1,17 +1,17 @@
 # battle
 
-Las reglas del combate como una simulación determinista y sin pantalla.
+The rules of combat as a deterministic simulation with no screen.
 
-- Carpeta: `packages/game/battle`; objetivos de CMake: `dwe::battle` (capa `game`).
-- Depende de: `assets`, `core`, `ruleset`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/game/battle](https://indie-modding-games.github.io/dw-engine/modulos/game/battle).
+- Folder: `packages/game/battle`; CMake targets: `dwe::battle` (`game` layer).
+- Depends on: `assets`, `core`, `ruleset`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/game/battle](https://indie-modding-games.github.io/dw-engine/modules/game/battle).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter battle
-scripts/dev.sh test --filter battle       # sus tests (etiqueta de ctest battle)
-scripts/dev.sh test --filter ...battle    # y los de todo lo que depende de él
+scripts/dev.sh test --filter battle       # its tests (ctest label battle)
+scripts/dev.sh test --filter ...battle    # and those of everything that depends on it
 ```

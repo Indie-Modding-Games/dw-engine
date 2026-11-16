@@ -1,17 +1,17 @@
 # versus
 
-El protocolo del versus en línea: identidad, serie, alineaciones, resultados y abandonos entre dos máquinas.
+The online versus protocol: identity, series, line-ups, results and walkouts between two machines.
 
-- Carpeta: `packages/game/versus`; objetivos de CMake: `dwe::versus` (capa `game`).
-- Depende de: `core`, `net`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/game/versus](https://indie-modding-games.github.io/dw-engine/modulos/game/versus).
+- Folder: `packages/game/versus`; CMake targets: `dwe::versus` (`game` layer).
+- Depends on: `core`, `net`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/game/versus](https://indie-modding-games.github.io/dw-engine/modules/game/versus).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter versus
-scripts/dev.sh test --filter versus       # sus tests (etiqueta de ctest versus)
-scripts/dev.sh test --filter ...versus    # y los de todo lo que depende de él
+scripts/dev.sh test --filter versus       # its tests (ctest label versus)
+scripts/dev.sh test --filter ...versus    # and those of everything that depends on it
 ```

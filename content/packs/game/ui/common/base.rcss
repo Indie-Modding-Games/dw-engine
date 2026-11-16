@@ -1,6 +1,6 @@
 /* What every document needs whatever the skin: RmlUi has no default style sheet, so the layout of every element the
    documents use is declared here, with the entries the keyboard and the gamepad move to and the class that hides
-   what the scripts hide. The look is the skin's (ui/skins/<id>/, docs/architecture/ui.md#aspectos). */
+   what the scripts hide. The look is the skin's (ui/skins/<id>/, docs/architecture/ui.md#skins). */
 
 body, div, h1, h2, p, button, img {
 	display: block;
@@ -70,7 +70,7 @@ button {
 	transform: scale(0);
 }
 
-/* Button glyphs (dwe/ui/prompts.hpp; docs/architecture/ui.md, «Glifos de botones»): element:set_prompt(action) puts
+/* Button glyphs (dwe/ui/prompts.hpp; docs/architecture/ui.md, «Button glyphs»): element:set_prompt(action) puts
    on a prompt's element the classes of the control the device in use has for that action (glyph-key, glyph-face with
    family-letters, family-shapes or family-positions, face-south..., shape-cross...) and its parts: the label
    (.glyph-label), the original font's character of a shape (.glyph-char, the classic skin draws it) and the drawn

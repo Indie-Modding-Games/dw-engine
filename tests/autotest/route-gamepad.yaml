@@ -1,5 +1,5 @@
 # The vertical slice's route with a gamepad (a virtual one of the platform): File City to the elder's house and
-# back, the menu and the minimap, and the window at each size. How to run it: docs/guides/prueba-vertical.md.
+# back, the menu and the minimap, and the window at each size. How to run it: docs/guides/vertical-slice.md.
 name: gamepad
 device: gamepad
 gamepad: xbox

@@ -1,4 +1,4 @@
-# The hidden content (docs/modulos/game/evolution.md, «Contenido oculto»): a new game from the main menu with the keyboard,
+# The hidden content (docs/modules/game/evolution.md, «Hidden content»): a new game from the main menu with the keyboard,
 # its rules screen (the original's rules first, then the hidden content on), and the four forms the disc has but only
 # gives by item or as a boss, each reached by the natural check: Panjyamon from Penguinmon (Leomon in the city,
 # trigger 248),
@@ -9,7 +9,7 @@
 # on its status page, and the chart at the end (original look) with its new cells: Panjyamon and Gigadramon on page 1,
 # MetalEtemon and Myotismon, past the Ultimate box's grid, on page 2 (Down past the Fresh box's last cell, MetalEtemon's
 # detail, Up back). Run it with --saves <empty folder>,
-# once per language (--lang en, --lang es); how to run it: docs/guides/prueba-vertical.md.
+# once per language (--lang en, --lang es); how to run it: docs/guides/vertical-slice.md.
 # After each evolution the route waits for its scene to end (evolution.active), so partner_set writes the next values
 # on the field, however slow the machine, and confirms the rank notice an evolution may bring.
 name: hidden-content
@@ -27,7 +27,7 @@ steps:
   - wait: {shown: dialog, seconds: 0.5, timeout: 30}
   - menu_select: yes
   - wait: {shown: new_game_rules, seconds: 0.5, timeout: 30}
-  # Every species as a partner starts on (docs/modulos/game/evoluciones-extra.md): off, so the chart is this route's.
+  # Every species as a partner starts on (docs/modules/game/extra-evolutions.md): off, so the chart is this route's.
   - menu_select: rules-all
   - wait: {seconds: 0.3}
   - expect_text_fits: all

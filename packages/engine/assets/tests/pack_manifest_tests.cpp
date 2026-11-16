@@ -10,6 +10,7 @@
 using dwe::assets::ApiRequirement;
 using dwe::assets::formatApiRequirement;
 using dwe::assets::formatVersion;
+using dwe::assets::isLanguageCode;
 using dwe::assets::Layer;
 using dwe::assets::PackManifest;
 using dwe::assets::parseApiRequirement;
@@ -55,11 +56,46 @@ TEST_CASE("a full manifest is read") {
   CHECK(manifest->version == Version{.major = 1, .minor = 2, .patch = 0});
   CHECK(manifest->layer == Layer::Remaster);
   CHECK(manifest->priority == -3);
-  CHECK(manifest->name == "HD backgrounds");
-  CHECK(manifest->description == "Upscaled map backgrounds.");
+  CHECK(manifest->name.english() == "HD backgrounds");
+  CHECK(manifest->name.in("es") == "HD backgrounds");
+  CHECK(manifest->description.english() == "Upscaled map backgrounds.");
   REQUIRE(manifest->dependencies.size() == 2);
   CHECK(manifest->dependencies[1].id == "shared_palettes");
   CHECK(manifest->dependencies[1].minVersion == Version{.major = 0, .minor = 3, .patch = 1});
+}
+
+TEST_CASE("a name and a description may come in several languages, English among them") {
+  const auto manifest =
+      parsePackManifest("id: game\n"
+                        "version: 0.1.0\n"
+                        "layer: base\n"
+                        "name:\n"
+                        "  en: \"Game data\"\n"
+                        "  es: \"Datos del juego\"\n"
+                        "description: { en: The data of the team, es: Los datos del equipo }\n");
+  REQUIRE_MESSAGE(manifest.has_value(), manifest.error().message);
+  CHECK(manifest->name.in("es") == "Datos del juego");
+  CHECK(manifest->name.in("en") == "Game data");
+  // A language the text does not have falls back to English.
+  CHECK(manifest->name.in("fr") == "Game data");
+  CHECK(manifest->description.in("es") == "Los datos del equipo");
+  CHECK(manifest->description.english() == "The data of the team");
+  CHECK(errorOf("id: a\nversion: 1.0.0\nlayer: base\nname:\n  es: Datos\n") ==
+        "'name': line 5, column 3: a text in several languages needs 'en', the one the others "
+        "fall back to");
+  CHECK(errorOf("id: a\nversion: 1.0.0\nlayer: base\nname:\n  en: Data\n  Spanish: Datos\n") ==
+        "'name': line 6, column 12: 'Spanish' is not a language code, such as en or es");
+  CHECK(errorOf("id: a\nversion: 1.0.0\nlayer: base\nname:\n  en: [Data]\n")
+            .ends_with("expected a single value"));
+}
+
+TEST_CASE("language codes are a language and an optional region") {
+  for (const char* code : {"en", "es", "ast", "pt_br", "zh_hans", "es_419"}) {
+    CHECK_MESSAGE(isLanguageCode(code), code);
+  }
+  for (const char* code : {"", "e", "english", "EN", "en_", "en_b", "en-us", "pt_br_x", "1a"}) {
+    CHECK_FALSE_MESSAGE(isLanguageCode(code), code);
+  }
 }
 
 TEST_CASE("an API requirement is a major version and .x, or a major and a minimum minor version") {

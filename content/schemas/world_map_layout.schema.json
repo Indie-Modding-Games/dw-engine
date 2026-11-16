@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Island map layout",
-  "description": "ui/world_map/layout.yaml of the game pack: the areas of the island map the M key opens and the roads between them (docs/modulos/apps/game.md). Each area lists the map names (main.map_names slots) whose maps lie in it.",
+  "description": "ui/world_map/layout.yaml of the game pack: the areas of the island map the M key opens and the roads between them (docs/modules/apps/game.md). Each area lists the map names (main.map_names slots) whose maps lie in it.",
   "type": "object",
   "required": ["canvas", "regions"],
   "additionalProperties": false,

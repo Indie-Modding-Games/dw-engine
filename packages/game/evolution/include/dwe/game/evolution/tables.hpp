@@ -161,7 +161,7 @@ public:
   // Whether a species is a Mega of the Mega step: it counts as Ultimate for every other rule.
   [[nodiscard]] bool isMega(Species species) const { return megas_.contains(species); }
   // Whether a target is a fallback one (all_species): the natural check picks it only when none of
-  // the original's targets passes (docs/modulos/game/evoluciones-extra.md).
+  // the original's targets passes (docs/modules/game/extra-evolutions.md).
   [[nodiscard]] bool yields(Species target) const { return yielding_.contains(target); }
 
 private:

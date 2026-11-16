@@ -581,7 +581,7 @@ int runGame(const Options& requested) {
     core::logError("{}", renderer.error().message);
     return EXIT_FAILURE;
   }
-  // Safe mode (docs/modding/interfaces.md): --safe-ui, or Shift held as the game starts, keeps the
+  // Safe mode (docs/modding/ui-addons.md): --safe-ui, or Shift held as the game starts, keeps the
   // game's own UI and leaves the player's addons folder out.
   options.safeUi = options.safeUi || platform::shiftHeld();
   auto content = mountGameContent(options, !options.safeUi);
@@ -709,7 +709,7 @@ int runGame(const Options& requested) {
     core::logError("{}", fade.error().message);
     return EXIT_FAILURE;
   }
-  // The original's movies (docs/architecture/peliculas.md). None in an autotest, whose routes start
+  // The original's movies (docs/architecture/movies.md). None in an autotest, whose routes start
   // where they say, unless its route asks for them (movies: true).
   std::optional<MovieRules> movieRules;
   std::unique_ptr<MovieScreen> movies;
@@ -761,8 +761,8 @@ int runGame(const Options& requested) {
     return EXIT_FAILURE;
   }
   settings.uiScale = (*ui)->scale();
-  // La caja de nombres del prólogo oculta sus documentos en su destructor: debe destruirse
-  // antes que la UI (los locales van en orden inverso).
+  // The prologue's naming box hides its documents in its destructor: it must be destroyed
+  // before the UI (locals go in reverse order).
   std::unique_ptr<NewGameInterview> interview;
   // The skin goes on before the documents load, so they are styled once.
   applyStartUiSkin(**ui, startUiSkin(options.uiSkin, userSettings.uiSkin));
@@ -937,7 +937,7 @@ int runGame(const Options& requested) {
                                start);
   }};
   TitleScreen title{files, options, !autotest, **ui};
-  // «Versus en línea» from the title's menu (versus_screen.hpp): no game behind it.
+  // "Online versus" from the title's menu (versus_screen.hpp): no game behind it.
   VersusScreen versus{files, options, !autotest, **ui, renderer->get(), &sound};
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
@@ -1559,7 +1559,7 @@ int runGame(const Options& requested) {
       const bool fadeProtected = !menuHeld && flow.playing()->fadeProtected();
       (*ui)->setMenuShut(menuShut);
       // Select/Back on a pad: the game menu's options page, straight away
-      // (docs/modulos/apps/game.md, «Opciones en partida»). From Start's pause it ends the pause
+      // (docs/modules/apps/game.md, «In-game options»). From Start's pause it ends the pause
       // first; with the menu open it switches it to the options page (or closes it when Select
       // opened it there); over another menu or where the menu is held it does nothing.
       const bool settingsAsked =

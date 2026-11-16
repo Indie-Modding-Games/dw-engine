@@ -1,7 +1,7 @@
-# Entrenamiento en el gimnasio (docs/reference/care.md, "Entrenamiento"). Lo lee packages/game/partner. La ganancia de cada
-# stat es base × multiplicador; el multiplicador se cuenta en décimas como en el original (10 = × 1).
-# src/trn/trn_reward.c: TRN_calculateTrainingMultiplier y src/trn2/trn2_hud.c: TRN2_calculateTrainingMultiplier:
-# aptitud de la especie (training_type de RAISE_DATA) para cada stat, en décimas: tipos 0, 1, 2 y 3, y el resto.
+# Training at the gym (docs/reference/care.md, "Training"). Read by packages/game/partner. Each stat's gain
+# is base x multiplier; the multiplier is counted in tenths as in the original (10 = x 1).
+# src/trn/trn_reward.c: TRN_calculateTrainingMultiplier and src/trn2/trn2_hud.c: TRN2_calculateTrainingMultiplier:
+# the species' aptitude (training_type of RAISE_DATA) for each stat, in tenths: types 0, 1, 2 and 3, and the rest.
 aptitude_tenths:
   hp: [10, 10, 9, 11, 8]
   mp: [10, 9, 11, 10, 8]
@@ -9,37 +9,37 @@ aptitude_tenths:
   defense: [10, 10, 9, 11, 8]
   speed: [10, 11, 10, 9, 8]
   brain: [10, 9, 11, 10, 8]
-# Las mismas funciones: por nivel 1 a 5, en décimas (bebé y entrenamiento × 0,9 ... definitivo × 1,2).
+# The same functions: by level 1 to 5, in tenths (Fresh and In-Training x 0.9 ... Ultimate x 1.2).
 level_tenths: [9, 9, 10, 11, 12]
-# TRN_calculateTrainingMultiplier: gimnasio mejorado (isTriggerSet(0xdb) para HP, defensa y velocidad; 0xfb para
-# ataque, MP e inteligencia): × 6 / 5.
+# TRN_calculateTrainingMultiplier: improved gym (isTriggerSet(0xdb) for HP, defense and speed; 0xfb for
+# attack, MP and intelligence): x 6 / 5.
 upgrade_bonus: { multiplier: 6, divisor: 5 }
 upgrade_flags: { hp: 219, mp: 251, offense: 251, defense: 219, speed: 219, brain: 251 }
-# TRN_calculateTrainingMultiplier: 10 o más sesiones de ese stat de bebé o de entrenamiento: × 6 / 5. Los TRN_setup*
-# cuentan la sesión si el nivel es menor que 3.
+# TRN_calculateTrainingMultiplier: 10 or more sessions of that stat as Fresh or In-Training: x 6 / 5. The TRN_setup*
+# count the session if the level is below 3.
 practice_bonus: { multiplier: 6, divisor: 5 }
 practice_sessions: 10
 practice_level_below: 3
-# TRN_calculateTrainingMultiplier: el manual de entrenamiento (getItemCount(0x21)): × 11 / 10.
+# TRN_calculateTrainingMultiplier: the training manual (getItemCount(0x21)): x 11 / 10.
 manual_bonus: { multiplier: 11, divisor: 10 }
-# TRN_award*TrainingGains: con el bonus de una comida, base × (multiplicador × valor) / 100; sin él, base ×
-# multiplicador / 10; luego × la ruleta en décimas / 10. Con cansancio 100 cada ganancia es 1. El tope de cada
-# ganancia es el de todas: care.limits.stat_gain_max.
+# TRN_award*TrainingGains: with a meal's bonus, base x (multiplier x value) / 100; without it, base x
+# multiplier / 10; then x the roulette in tenths / 10. With tiredness 100 each gain is 1. The cap of each
+# gain is the same for all: care.limits.stat_gain_max.
 tired_out_tiredness: 100
 tired_out_gain: 1
-# trn_slots.c: sin la ruleta, el resultado es 10 (× 1).
+# trn_slots.c: without the roulette, the result is 10 (x 1).
 slot_default_tenths: 10
-# Mejora de dwe (no está en el original): las ganancias de cada sesión en tanto por ciento de las de la fórmula, antes
-# del cansancio total. 100 es el original; la dificultad fácil lo cambia (difficulty.yaml).
+# dwe improvement (not in the original): each session's gains as a percentage of the formula's, before
+# total tiredness. 100 is the original; easy difficulty changes it (difficulty.yaml).
 gain_percent: 100
-# TRN_advanceTrainingTime: con cansancio 70 o más tras la sesión, felicidad -3 y disciplina -3.
+# TRN_advanceTrainingTime: with tiredness 70 or more after the session, happiness -3 and discipline -3.
 overwork_tiredness: 70
 overwork_happiness: -3
 overwork_discipline: -3
 gain_formula: original
-# Los dos módulos de entrenamiento del original. Cada sesión adelanta una hora con sus propias cuentas:
-# TRN_advanceTrainingTime baja la ventana de hambre 120 pasos (60 minutos) y la comida 60 minutos; la de TRN2 baja la
-# ventana 12 pasos (6 minutos) y la comida 61 minutos. Los dos bajan el baño 6 pasos y las ganas 1200 fotogramas.
+# The two training modules of the original. Each session advances an hour with its own numbers:
+# TRN_advanceTrainingTime lowers the hunger window 120 steps (60 minutes) and the food 60 minutes; TRN2's lowers the
+# window 12 steps (6 minutes) and the food 61 minutes. Both lower the toilet 6 steps and the urge 1200 frames.
 places:
   - id: trn
     hunger_window_minutes: 60
@@ -47,9 +47,9 @@ places:
     poop_steps: 6
     urge_frames: 1200
     counts_practice: true
-    # trn_reward.c: TRN_award*TrainingGains: lo que da cada sesión (la base, el stat y el bonus de comida que la
-    # multiplica) y lo que cuesta (cansancio, energía, felicidad). trn_off.c y trn_speed.c usan la variante 6 en el
-    # segundo punto de entrenamiento, sin los bonus de mejora ni de práctica.
+    # trn_reward.c: TRN_award*TrainingGains: what each session gives (the base, the stat and the meal bonus that
+    # multiplies it) and what it costs (tiredness, energy, happiness). trn_off.c and trn_speed.c use variant 6 at the
+    # second training spot, without the improvement or practice bonuses.
     courses:
       - { id: hp, aptitude: hp, practice_bonuses: true, tiredness: 10, energy: 1, happiness: 1,
           gains: [{ stat: hp, base: 80, boosted_by: hp }, { stat: offense, base: 2, boosted_by: offense }] }
@@ -73,8 +73,8 @@ places:
     poop_steps: 6
     urge_frames: 1200
     counts_practice: false
-    # trn2_reward.c: TRN2_award*TrainingGains. Rareza: en hp_b la defensa la multiplica el bonus de HP y en defense_b
-    # la velocidad, el de defensa.
+    # trn2_reward.c: TRN2_award*TrainingGains. Quirk: in hp_b defense is multiplied by the HP bonus and in defense_b
+    # speed, by the defense one.
     courses:
       - { id: hp_a, aptitude: hp, practice_bonuses: false, tiredness: 10, energy: 2, happiness: 1,
           gains: [{ stat: hp, base: 120, boosted_by: hp }] }
@@ -91,6 +91,6 @@ places:
       - { id: defense_b, aptitude: defense, practice_bonuses: false, tiredness: 9, energy: 2, happiness: 2,
           gains: [{ stat: defense, base: 12, boosted_by: defense }, { stat: speed, base: 2, boosted_by: defense }] }
 quirks:
-  # trn_brain.c / trn_reward.c: TRN_awardBrainsTrainingGains pide el multiplicador del MP (modo 1): la aptitud, la
-  # mejora del gimnasio y las sesiones de práctica son las del MP.
+  # trn_brain.c / trn_reward.c: TRN_awardBrainsTrainingGains asks for the MP multiplier (mode 1): the aptitude, the
+  # gym improvement and the practice sessions are the MP's.
   brain_training_uses_mp_aptitude: true

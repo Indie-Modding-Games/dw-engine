@@ -32,7 +32,7 @@
 
 namespace dwe::app {
 
-// A scripted run of the game (`dwe-game --autotest <route.yaml>`, docs/guides/prueba-vertical.md):
+// A scripted run of the game (`dwe-game --autotest <route.yaml>`, docs/guides/vertical-slice.md):
 // the steps of a route drive the real game through the same events a player makes. Keys and mouse
 // events are added to the platform's events, and gamepads are virtual ones of the platform, so the
 // input mapping, the UI and the field all run as they do for a player.
@@ -196,7 +196,7 @@ struct AutotestRoute {
   std::vector<AutotestStep> steps;
 };
 
-// Reads a route (the format is in docs/guides/prueba-vertical.md). Errors name the line and column.
+// Reads a route (the format is in docs/guides/vertical-slice.md). Errors name the line and column.
 core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml);
 
 // What the driver reads and drives each frame. Everything but the scene outlives the driver.

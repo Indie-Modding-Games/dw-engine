@@ -54,7 +54,7 @@ ui_scale: "Interface scale"
 ui_scale.value: "{percent}%"
 vsync: "Vertical sync"
 ui_skin: "Interface style"
-# The whole interface: the game's own or one under ui/addons (docs/modding/interfaces.md).
+# The whole interface: the game's own or one under ui/addons (docs/modding/ui-addons.md).
 ui_addon: "Interface"
 ui_addon.default: "The game's own"
 ui_addon.safe: "The game's own (safe mode)"
@@ -203,7 +203,7 @@ texture_filter.nearest: "Pixels"
 enhanced_lighting: "Enhanced lighting"
 vivid_colors: "Vivid colours"
 
-# The tabbed options page (docs/modulos/apps/game.md, «Opciones en partida»). The tabs share the box's top row: short
+# The tabbed options page (docs/modules/apps/game.md, «In-game options»). The tabs share the box's top row: short
 # names.
 tab.game: "Game"
 tab.graphics: "Graphics"

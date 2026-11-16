@@ -1,4 +1,4 @@
-// The movies' sharpen pass (apps/game MovieDrawer, an engine improvement; docs/architecture/peliculas.md, «Escalado»),
+// The movies' sharpen pass (apps/game MovieDrawer, an engine improvement; docs/architecture/movies.md, «Escalado»),
 // after movie_upscale.slang: a contrast-adaptive five-tap sharpen of the upscaled frame, over the window, whose
 // strength is limited per pixel so that no channel leaves 0..1, and eased off where the neighbourhood is noise rather
 // than detail. Values are the 0-1 sRGB-encoded ones the scene holds.

@@ -13,7 +13,7 @@
 #include <variant>
 #include <vector>
 
-// The one interpreter of the story (docs/architecture/interprete-historia.md, "El runtime"): it
+// The one interpreter of the story (docs/architecture/story-interpreter.md, "El runtime"): it
 // runs one script at a time, a frame of the original every few engine ticks, and resumes the
 // running section once a frame unless it waits, as script_interp.c: tickScript does.
 namespace dwe::game::story {

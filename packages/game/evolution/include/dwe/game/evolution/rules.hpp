@@ -229,7 +229,7 @@ core::Result<EvolutionRules> readEvolutionRules(const ruleset::Section& section)
 core::Result<void> checkEvolutionSection(const ruleset::Section& section);
 
 // The evolution rules of a ruleset: its evolution section, with the wake-up specials of its
-// all_species section, if any, after the section's own (docs/modulos/game/evoluciones-extra.md).
+// all_species section, if any, after the section's own (docs/modules/game/extra-evolutions.md).
 core::Result<EvolutionRules> readEvolutionRules(const ruleset::Ruleset& ruleset);
 
 // The check of the all_species section for RulesetStore: its species patches and its wake-up

@@ -1,11 +1,11 @@
 # The full story chain, chunk 3: on chunk 2's save (the gym, trai00) the player walks to the river of mayo05 and
 # waits there for the afternoon (hours 15..19), when Coelamon comes up and gives the ride across to the
-# jungle (script 6, section 0x33; trop01). Betamon in trop04 (204, route-etapa2-jungla.yaml); trop00, where the
+# jungle (script 6, section 0x33; trop01). Betamon in trop04 (204, route-stage2-jungle.yaml); trop00, where the
 # bridge's side is seen ("Oh, a bridge!", trigger 185); back by mayo08a and mayo02 to mayo05, where Coelamon lies down
-# as the bridge (249, route-etapa2-coelamon.yaml); and over it again to the ladder lottery of trop06 and Centarumon
-# (236, route-etapa2-centarumon.yaml). The wild ones on the way end won as they start (encounters: win): the chain's
+# as the bridge (249, route-stage2-coelamon.yaml); and over it again to the ladder lottery of trop06 and Centarumon
+# (236, route-stage2-centarumon.yaml). The wild ones on the way end won as they start (encounters: win): the chain's
 # partner may still be a Rookie. Centarumon's scene ends in the forest past the lottery (koda00), where it saves in
-# slot_01. The chain: docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+# slot_01. The chain: docs/guides/vertical-slice.md (scripts/story-chain.sh).
 name: full-03
 device: keyboard
 timeout: 1200
@@ -83,7 +83,7 @@ steps:
   - walk_to: {trigger: 112, encounters: win, timeout: 240}
   - wait: {map: trop05, partner_within: 600, seconds: 1, timeout: 30}
   - walk_to: {trigger: 110, encounters: win, timeout: 300}
-  # The ladder lottery (route-etapa2-centarumon.yaml): the entry cell's alert and the right end at random.
+  # The ladder lottery (route-stage2-centarumon.yaml): the entry cell's alert and the right end at random.
   - wait: {map: trop06, seconds: 2, timeout: 30}
   - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
   - walk_to: {point: [0, 3600], radius: 100, timeout: 60}

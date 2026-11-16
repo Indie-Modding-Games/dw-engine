@@ -1,24 +1,24 @@
-# La escena de la partida nueva antes del primer mapa (apps/game: NewGameInterview): Jijimon pregunta en un fondo negro,
-# las respuestas eligen el partner y el jugador escribe su nombre y el del partner (main.c: newGameScene,
-# shop/script_menu.c: newGameStateMachine). Sin esta sección la partida nueva empieza sin preguntas.
-# La tabla de frases de MAPHEAD con las líneas de la escena (resolveMapHeadEntry(0x4D6, i), entradas 0x10 a 0x20).
+# The new-game scene before the first map (apps/game: NewGameInterview): Jijimon asks questions on a black background,
+# the answers choose the partner and the player types their name and the partner's (main.c: newGameScene,
+# shop/script_menu.c: newGameStateMachine). Without this section a new game starts with no questions.
+# The MAPHEAD phrase table with the scene's lines (resolveMapHeadEntry(0x4D6, i), entries 0x10 to 0x20).
 lines: 1238
-# El partner que elige cada respuesta, por su número (main.c: main: readPStat(0xFE) 0 → 3, si no → 0x11).
+# The partner each answer chooses, by its number (main.c: main: readPStat(0xFE) 0 -> 3, otherwise -> 0x11).
 partners: [agum, gabu]
-# Fundido al empezar y al terminar, en fotogramas de la escena (fadeFromBlack(0x14), fadeToBlack(0x28)).
+# Fade at the start and at the end, in scene frames (fadeFromBlack(0x14), fadeToBlack(0x28)).
 fade_in_frames: 20
 fade_out_frames: 40
-# Ticks del motor por fotograma de la escena: su bucle espera VSync(3) (main.c: newGameScene).
+# Engine ticks per scene frame: its loop waits VSync(3) (main.c: newGameScene).
 frame_ticks: 3
-# La cámara mira al origen desde delante, a 0x1068 (new_game.c: loadNewGameScene: GsSetRefView2, vpz -0x1068), con la
-# distancia de proyección del original (GsSetProjection(0x3E8)) sobre su pantalla de 240 líneas, y el centro de la
-# proyección en esta línea (DRAWING_OFFSET_Y = 0xB9).
+# The camera looks at the origin from the front, at 0x1068 (new_game.c: loadNewGameScene: GsSetRefView2, vpz -0x1068), with the
+# original's projection distance (GsSetProjection(0x3E8)) over its 240-line screen, and the projection
+# center on this line (DRAWING_OFFSET_Y = 0xB9).
 camera_distance: 4200
 camera_projection: 1000
 camera_centre_line: 185
-# Jijimon (modelo 0x75) en (0x320, 0x96, 0) en los ejes del original, con la animación 2 (entra andando desde la
-# derecha); en el fotograma 0x23 gira hacia el jugador (0x400 → 0x71, en 4096 avos de vuelta) y pasa a la 0
-# (tickNewGameJijimon); entonces empiezan las preguntas.
+# Jijimon (model 0x75) at (0x320, 0x96, 0) in the original's axes, with animation 2 (he walks in from the
+# right); on frame 0x23 he turns toward the player (0x400 -> 0x71, in 4096ths of a turn) and switches to 0
+# (tickNewGameJijimon); then the questions begin.
 host:
   species: jiji
   position: [800, 150, 0]
@@ -27,22 +27,22 @@ host:
   turned_clip: 0
   yaw: 1024
   turned_yaw: 113
-# Los sonidos de la escena y de la caja de nombres (sound.c: playSound, banco 0): el cursor, una confirmación (una
-# página, una elección, una letra, borrar) y una pulsación rechazada (cancelar una elección con el disparador 49
-# puesto, un nombre vacío, un espacio como primera letra). La escena no pone música (main.c: newGameScene).
+# The sounds of the scene and of the name box (sound.c: playSound, bank 0): the cursor, a confirmation (a
+# page, a choice, a letter, delete) and a rejected press (canceling a choice with trigger 49
+# set, an empty name, a space as the first letter). The scene plays no music (main.c: newGameScene).
 sounds:
   cursor: {slot: 0, sound: 2}
   confirm: {slot: 0, sound: 3}
   refused: {slot: 0, sound: 11}
-# La caja de nombres (setupNameSelectorBox, tickNamingBox): 6 letras como mucho, 5 columnas; la primera mitad de las
-# filas es el lado izquierdo de la rejilla y la segunda el derecho (NAMING_CHAR_PAGES de la versión americana). Un
-# espacio es una celda vacía.
+# The name box (setupNameSelectorBox, tickNamingBox): 6 letters at most, 5 columns; the first half of the
+# rows is the left side of the grid and the second the right (NAMING_CHAR_PAGES of the American version). A
+# space is an empty cell.
 naming:
   length: 6
   columns: 5
-  # Rareza de la versión americana (namingDeleteLast): con el nombre lleno, borrar quita dos letras.
+  # American version quirk (namingDeleteLast): with a full name, delete removes two letters.
   full_delete_takes_two: true
-  # Una tecla de dirección mantenida repite a los 6 fotogramas y luego cada 2 (script_common.c, setInputRepeatMask).
+  # A held direction key repeats at 6 frames and then every 2 (script_common.c, setInputRepeatMask).
   repeat_delay_frames: 6
   repeat_frames: 2
   rows:

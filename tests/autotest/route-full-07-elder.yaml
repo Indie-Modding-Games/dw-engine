@@ -4,11 +4,11 @@
 # Leomon's cave asks for 45 points), so this chunk writes recruit triggers (200 + species) in two parts. First three
 # (Leomon, Elecmon, Shellmon) for the 15 points of the elder's first scene: in his house (room08) he sets trigger 87
 # and out of it Greymon comes to fight (script 162 section 0x39) and joins (205). Then the rest route-
-# etapa8-jijimon.yaml writes (77 points with Greymon's): in the grown house (room10) the elder tells of Mt. Infinity
+# stage8-jijimon.yaml writes (77 points with Greymon's): in the grown house (room10) the elder tells of Mt. Infinity
 # (354), and out of it Airdramon swoops down, the fight, the elder's scene in room11 and back to the city (twna08).
 # Mt. Infinity's wild ones are the game's strongest: the partner gets the merit shop's chips, as a player who saved
 # merit would have bought them, and the fights end won after a few seconds on screen (win_after). It ends saving
-# in slot_01 on twna08. The chain: docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+# in slot_01 on twna08. The chain: docs/guides/vertical-slice.md (scripts/story-chain.sh).
 name: full-07
 device: keyboard
 timeout: 1200
@@ -46,7 +46,7 @@ steps:
   - wait: {confirm: true, win_after: 1, setting: {story.trigger.205: "true"}, timeout: 600}
   - wait: {confirm: true, hidden: story_textbox, partner_within: 600, seconds: 3, timeout: 120}
   - screenshot: greymon-joined
-  # Shortcut, second part: the other recruits route-etapa8-jijimon.yaml writes; a save counts them (77 points).
+  # Shortcut, second part: the other recruits route-stage8-jijimon.yaml writes; a save counts them (77 points).
   - script: 'for n = 203, 258 do if not ({[206]=1, [207]=1, [212]=1, [214]=1, [220]=1, [221]=1, [225]=1, [246]=1, [254]=1, [256]=1})[n] then story_set("trigger " .. n .. " on") end end'
   - script: save("slot_01")
   - expect_setting: {story.var.1: "77"}
@@ -104,7 +104,7 @@ steps:
   # With 50 points the elder's house is the grown one (cells 52, room10).
   - walk_to: {trigger: 52, timeout: 120}
   - wait: {map: room10, seconds: 2, timeout: 60}
-  # The elder (original x -25, z 417, route-etapa7-montana.yaml): a click walks up to him, Enter talks.
+  # The elder (original x -25, z 417, route-stage7-mountain.yaml): a click walks up to him, Enter talks.
   - walk_to: {point: [-25, -100], radius: 100, timeout: 120}
   - click: [-25, -417]
   - wait: {seconds: 3}

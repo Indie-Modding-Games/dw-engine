@@ -1,49 +1,49 @@
-# 0009. RmlUi para la UI del juego
+# 0009. RmlUi for the game UI
 
-- **Estado:** Aceptada
-- **Fecha:** 2026-10-18 (aceptada el 2026-10-19, con los detalles de la fase 2)
+- **Status:** Accepted
+- **Date:** 2026-10-18 (accepted on 2026-10-19, with the phase 2 details)
 
-## Contexto
+## Context
 
-Queremos mejorar los menús, añadir un HUD y minimapas, y que diseño y los mods puedan cambiar la UI sin recompilar.
-La UI tiene que verse bien a cualquier resolución y manejarse entera con ratón, con teclado y con mando
-([ADR 0013](0013-juego-nativo-de-pc.md), [ADR 0014](0014-mandos-y-entrada.md)).
+We want to improve the menus, add a HUD and minimaps, and let design and mods change the UI without recompiling.
+The UI must look good at any resolution and be fully usable with mouse, keyboard and gamepad
+([ADR 0013](0013-native-pc-game.md), [ADR 0014](0014-gamepads-and-input.md)).
 
-## Decisión
+## Decision
 
-La UI del juego se hace con **RmlUi**: documentos tipo HTML (RML), estilos tipo CSS (RCSS) y lógica en Lua. Se dibuja
-con nuestro módulo `render`. Dear ImGui queda solo para las herramientas de depuración y el editor.
+The game UI is built with **RmlUi**: HTML-like documents (RML), CSS-like styles (RCSS) and logic in Lua. It is drawn
+with our `render` module. Dear ImGui is left only for the debug tools and the editor.
 
-Detalles, fijados en la fase 2:
+Details, fixed in phase 2:
 
-| Tema | Decisión |
+| Topic | Decision |
 |---|---|
-| Versión | RmlUi 6.3, del puerto `rmlui` de vcpkg, sin sus funciones por defecto y con `freetype`. Sin `lua`, `svg` ni `lottie` |
-| Módulo | `packages/engine/ui` (capa de servicios). RmlUi es privado del módulo: su API pública no expone tipos de RmlUi |
-| Ficheros | Los documentos, estilos, scripts, fuentes e imágenes se leen **por asset id** a través del VFS: `ui/pause_menu/logic.lua` es el asset `ui/pause_menu/logic`. Por eso cada documento va en su carpeta (`document.rml`, `logic.lua`; su estilo, en la del aspecto): dos ficheros con el mismo nombre y distinta extensión darían el mismo id |
-| Render | Una `RenderInterface` sobre la API pública de `render` (sin Vulkan en `ui`). `Ui::update()` llama a `Render()` de RmlUi fuera del frame: guarda la geometría en la CPU, crea las texturas en la tabla bindless y graba las llamadas; el `UiRenderer` (un `render::Drawer` del pase de UI, con su shader Slang) las reproduce desde buffers de GPU que se crean una vez al compilar la geometría, con recorte (*scissor*) y transformaciones. Todo en alfa premultiplicado, como espera RmlUi: las imágenes de fichero se premultiplican al cargarlas. Sin máscaras de recorte por ahora |
-| Resolución | El contexto mide la ventana en píxeles físicos. Un *dp* es un píxel a 720 líneas: la proporción es `min(alto/720, ancho/960)` por la escala de UI que elige el jugador, así que la UI es igual de legible a 800×600 que a 4K |
-| Fuente | Noto Sans (normal y negrita), con licencia SIL OFL 1.1, en `content/packs/game/ui/fonts/` con su licencia al lado. Se cargan todas las fuentes `.ttf`/`.otf` de `ui/fonts/`, así que un paquete puede añadir otras |
-| Entrada | La navegación sale de las **acciones** (`move_*`, `confirm`, `cancel`, `menu`), no de teclas: el teclado, la cruceta y el stick navegan igual y se pueden reasignar. Las direcciones usan las propiedades `nav` de RmlUi; `confirm` hace clic en el elemento con el foco. El ratón va directo a RmlUi (movimiento, botones, rueda), y mientras hay un menú abierto el foco sigue al puntero. Los avisos de botones salen del mapa de acciones y del último dispositivo usado |
-| Captura | Mientras se muestra un documento modal (el menú) la UI se queda con la entrada: el juego no ve sus acciones ni los clics. Sin menú, el HUD no captura nada (`pointer-events: none`) |
-| Lua | El plugin de Lua de RmlUi no sirve: está hecho para Lua 5.1–5.4 y su API no es la nuestra. La UI usa **su propio `ScriptVm`** (el mismo sandbox de `script`, sin `io`, `os` ni carga de código, con límites de memoria e instrucciones) y su propia API: la tabla `ui` (`send`, `setting`, `prompt`, `device`, `show`, `hide`…), los tipos `Element` y `Event`, y los manejadores `on_show`, `on_action`, `on_setting`, `on_device`, `on_tick`. Cada documento tiene su propio entorno de Lua, donde corren sus `<script>` y los atributos de evento (`onclick="..."`) |
-| Mando de la app | Los menús no cambian nada por sí mismos: envían **comandos** (`ui.send("fullscreen", true)`) que la app aplica, y la app publica el estado con `setSetting`, que es lo que muestran. Así la UI no depende del juego |
-| Recarga en caliente | En desarrollo, la UI vuelve a leer cada medio segundo los ficheros de los documentos abiertos y recarga los que cambian: el documento nuevo sustituye al viejo solo si carga bien, y conserva si estaba visible y su sitio entre los modales |
+| Version | RmlUi 6.3, from the vcpkg `rmlui` port, without its default features and with `freetype`. No `lua`, `svg` or `lottie` |
+| Module | `packages/engine/ui` (services layer). RmlUi is private to the module: its public API does not expose RmlUi types |
+| Files | Documents, styles, scripts, fonts and images are read **by asset id** through the VFS: `ui/pause_menu/logic.lua` is the asset `ui/pause_menu/logic`. That is why each document goes in its own folder (`document.rml`, `logic.lua`; its style, in the skin's folder): two files with the same name and a different extension would give the same id |
+| Rendering | A `RenderInterface` on top of the public `render` API (no Vulkan in `ui`). `Ui::update()` calls RmlUi's `Render()` outside the frame: it keeps the geometry on the CPU, creates the textures in the bindless table and records the calls; the `UiRenderer` (a `render::Drawer` of the UI pass, with its Slang shader) replays them from GPU buffers that are created once when the geometry is compiled, with clipping (*scissor*) and transforms. Everything in premultiplied alpha, as RmlUi expects: file images are premultiplied when loaded. No clip masks for now |
+| Resolution | The context measures the window in physical pixels. A *dp* is one pixel at 720 lines: the ratio is `min(height/720, width/960)` times the UI scale the player chooses, so the UI is equally readable at 800×600 and at 4K |
+| Font | Noto Sans (regular and bold), licensed under SIL OFL 1.1, in `content/packs/game/ui/fonts/` with its license next to it. All the `.ttf`/`.otf` fonts in `ui/fonts/` are loaded, so a pack can add others |
+| Input | Navigation comes from **actions** (`move_*`, `confirm`, `cancel`, `menu`), not from keys: keyboard, d-pad and stick navigate the same way and can be remapped. Directions use RmlUi's `nav` properties; `confirm` clicks the focused element. The mouse goes straight to RmlUi (movement, buttons, wheel), and while a menu is open the focus follows the pointer. Button prompts come from the action map and the last device used |
+| Capture | While a modal document (the menu) is shown, the UI keeps the input: the game sees neither its actions nor the clicks. Without a menu, the HUD captures nothing (`pointer-events: none`) |
+| Lua | RmlUi's Lua plugin does not work for us: it is made for Lua 5.1–5.4 and its API is not ours. The UI uses **its own `ScriptVm`** (the same sandbox as `script`, without `io`, `os` or code loading, with memory and instruction limits) and its own API: the `ui` table (`send`, `setting`, `prompt`, `device`, `show`, `hide`…), the `Element` and `Event` types, and the handlers `on_show`, `on_action`, `on_setting`, `on_device`, `on_tick`. Each document has its own Lua environment, where its `<script>` tags and event attributes (`onclick="..."`) run |
+| App control | Menus change nothing by themselves: they send **commands** (`ui.send("fullscreen", true)`) that the app applies, and the app publishes the state with `setSetting`, which is what they show. That way the UI does not depend on the game |
+| Hot reload | In development, the UI rereads the files of the open documents every half second and reloads the ones that change: the new document replaces the old one only if it loads correctly, and keeps whether it was visible and its place among the modals |
 
-## Consecuencias
+## Consequences
 
-- Los menús se editan como texto, con recarga en caliente (guía: [Editar menús](../guides/editar-menus.md)).
-- Hay que mantener el backend de render de RmlUi sobre `render`.
-- La API de Lua de la UI es parte del contrato con los mods, como la de `script`.
-- RmlUi trae FreeType y sus dependencias (zlib, libpng, bzip2, brotli) al ejecutable.
-- RmlUi comparte instancias de contenedores de libc++ con el motor; en los builds con AddressSanitizer unas copias
-  anotan los contenedores y otras no. Los ejecutables que usan `ui` enlazan el dispositivo de `rhi`, que ya apaga
-  `detect_container_overflow` por lo mismo con vk-bootstrap, así que RmlUi se compila igual en todos los builds y
-  un build de depuración sin sanitizers enlaza.
+- Menus are edited as text, with hot reload (guide: [Edit menus](../guides/edit-menus.md)).
+- The RmlUi render backend on top of `render` has to be maintained.
+- The UI's Lua API is part of the contract with mods, like the one in `script`.
+- RmlUi brings FreeType and its dependencies (zlib, libpng, bzip2, brotli) into the executable.
+- RmlUi shares libc++ container instances with the engine; in builds with AddressSanitizer some copies annotate the
+  containers and others do not. The executables that use `ui` link the `rhi` device, which already turns off
+  `detect_container_overflow` for the same reason with vk-bootstrap, so RmlUi is built the same way in all builds and
+  a debug build without sanitizers links.
 
-## Alternativas descartadas
+## Alternatives rejected
 
-- **Una UI propia:** control total, pero mucho trabajo antes de tener el primer menú.
-- **Dear ImGui para el juego:** está pensada para herramientas, no para menús con estilo propio.
-- **El plugin de Lua de RmlUi:** no soporta Lua 5.5 y expondría su propia API, sin nuestro sandbox.
-- **Compartir el `ScriptVm` del juego:** un menú roto o un mod de UI podría pisar el estado del juego.
+- **A UI of our own:** full control, but a lot of work before having the first menu.
+- **Dear ImGui for the game:** it is meant for tools, not for menus with their own style.
+- **RmlUi's Lua plugin:** it does not support Lua 5.5 and would expose its own API, without our sandbox.
+- **Sharing the game's `ScriptVm`:** a broken menu or a UI mod could overwrite the game state.

@@ -1,5 +1,5 @@
-# Los rótulos de columna sobre las listas de las tiendas y guardianes del original (guardaobjetos, tirar objetos,
-# tienda de cartas, tienda de méritos, transporte del pájaro, gramola).
+# The column labels over the lists of the original's shops and keepers (item keeper, drop items,
+# card shop, merit shop, bird transport, jukebox).
 menu: "OBJETO"
 count: "CANT."
 price: "PRECIO"
@@ -7,6 +7,6 @@ point: "PUNTOS"
 place: "LUGAR"
 number: "N.º"
 title: "TÍTULO"
-# Los rótulos fijos del trueque: lo que pide quien cambia y lo que tendrás a cambio.
+# The fixed labels of the trade: what the one trading asks for and what you will get in exchange.
 want: "Quiero"
 have: "Tienes"

@@ -1,5 +1,5 @@
-# Una fila nueva: se añade a la tabla de la base por su ID, con el espacio de nombres del paquete. El motor le da su
-# número (`index`).
+# A new row: it is added to the base table by its ID, with the package's namespace. The engine gives it its
+# number (`index`).
 digimon:
 - id: "example_mod:pebblemon"
   name: "Pebblemon"

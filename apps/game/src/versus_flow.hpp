@@ -90,7 +90,7 @@ struct VersusFlowDesc {
   std::function<std::optional<session::VersusPlacement>(std::int32_t arena)> placement;
 };
 
-// The screens of an online versus series (docs/modulos/apps/game.md, «Versus en línea»), without
+// The screens of an online versus series (docs/modules/apps/game.md, «Online versus»), without
 // the UI: a menu to host or join, the host's series length and its room code, the guest's code
 // entry, the pick of a save and of its registered partners, the battles with this side's commands,
 // the result of each and the series' end, and what went wrong when it ends early.

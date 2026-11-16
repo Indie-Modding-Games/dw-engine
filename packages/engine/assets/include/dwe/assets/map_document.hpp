@@ -17,7 +17,7 @@ namespace dwe::assets {
 class VirtualFileSystem;
 
 // The data of a field map, `map/<id>/data` (content/schemas/map.schema.json,
-// docs/formats/mapas.md). Every number is kept as the extractor wrote it, in the original's axes
+// docs/formats/maps.md). Every number is kept as the extractor wrote it, in the original's axes
 // and units; the world-space helpers below convert them, in one place
 // (docs/architecture/world-space.md).
 

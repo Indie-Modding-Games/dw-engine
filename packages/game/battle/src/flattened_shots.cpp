@@ -26,7 +26,7 @@ Point along(Facing facing, std::int32_t length) {
 // aabb.c: findAABBHitEntity, hasAABBOverlap: the first fighter but the shooter whose box touches
 // the shot's, edges included. A fighter's box is half its radius across each way and its height
 // tall from the ground; the shot's is the ruleset's half sizes around it. The original also goes
-// through the fallen (suposición: the engine leaves them out, as the effects' hit checks do).
+// through the fallen (an assumption: the engine leaves them out, as the effects' hit checks do).
 std::optional<FighterId> touchedBy(const BattleContext& context, const FlattenedShot& shot) {
   const PacingRules& pacing = context.rules->pacing;
   const BattleState& state = *context.state;

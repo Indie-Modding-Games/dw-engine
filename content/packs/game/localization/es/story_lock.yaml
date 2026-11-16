@@ -1,3 +1,3 @@
-# El mensaje del candado de historia (rules/<id>/story_lock.yaml: closed_message): el jugador probó un
-# camino que la etapa que se juega mantiene cerrado.
+# The story lock's message (rules/<id>/story_lock.yaml: closed_message): the player tried a
+# path that the stage being played keeps closed.
 closed_exit: "Este camino aún no está abierto: en esta versión la historia no llega más allá."

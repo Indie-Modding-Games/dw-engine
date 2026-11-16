@@ -18,7 +18,7 @@ namespace dwe::ui {
 inline constexpr std::string_view UiSkinSetting = "ui_skin";
 
 // Where the packs keep their skins: ui/skins/<id>/skin.yaml, one folder per skin
-// (docs/architecture/ui.md#aspectos).
+// (docs/architecture/ui.md#skins).
 inline constexpr std::string_view SkinsFolder = "ui/skins/";
 inline constexpr std::string_view SkinDocumentName = "skin";
 
@@ -81,7 +81,7 @@ using SkinElementClasses = std::map<std::string, std::vector<std::string>, std::
 // A skin's layout options for one screen (skin.yaml `layout:`): option → value, such as
 // `menu: original`. The documents read them with ui.layout(option) instead of asking which skin is
 // on, and the RCSS sees each one as the class layout-<option>-<value> on the document's body
-// (docs/architecture/ui.md#aspectos).
+// (docs/architecture/ui.md#skins).
 using SkinScreenLayout = std::map<std::string, std::string, std::less<>>;
 
 // The prefix of the body classes that mirror a document's layout options.
@@ -89,7 +89,7 @@ inline constexpr std::string_view LayoutClassPrefix = "layout-";
 
 // A skin: the look of every screen of the UI, as ui/skins/<id>/skin.yaml describes it. A skin only
 // changes the look: the documents keep their element ids, their scripts and what they send and read
-// (docs/architecture/ui.md#aspectos).
+// (docs/architecture/ui.md#skins).
 struct Skin {
   std::string id;
   // The text key of the name the menus show (ui_skin.<id>).

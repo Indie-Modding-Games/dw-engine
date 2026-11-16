@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-// The arena's tournaments (docs/modulos/game/tournament.md): the rivals a cup draws, the bracket
+// The arena's tournaments (docs/modules/game/tournament.md): the rivals a cup draws, the bracket
 // of eight with the matches the player does not play rolled by level, the rivals' stats and
 // moves, and how many wins take the cup (main/utils2.c: startTournament, std/std_setup.c:
 // STD_tournamentMain and STD_initializeOpponent, std/std_main.c: STD_setupParticipants). Species

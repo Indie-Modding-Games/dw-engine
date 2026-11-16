@@ -5,7 +5,7 @@
 	<link type="text/rcss" href="structure.rcss"/>
 	<script src="logic.lua"></script>
 </head>
-<!-- The improved shop job's counter (_shopjob/ui-contract.md): one customer, one turn per opening. The faces are the
+<!-- The improved shop job's counter (docs/reference/shop-job.md, Interface): one customer, one turn per opening. The faces are the
      mood bubble's (map gcan11, texture4/000: five 32-pixel faces, delighted to furious). -->
 <body>
 	<div id="scrim">

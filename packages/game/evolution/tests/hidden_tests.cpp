@@ -9,7 +9,7 @@
 
 #include "fixture.hpp"
 
-// The species patches' rules (docs/modulos/game/evolution.md, «Contenido oculto»): gates before a
+// The species patches' rules (docs/modules/game/evolution.md, «Hidden content»): gates before a
 // target scores, and the optional Ultimate to Mega step.
 namespace dwe::game::evolution {
 

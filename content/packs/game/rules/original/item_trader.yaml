@@ -1,11 +1,11 @@
-# El trueque de objetos que abre la historia (script_interp.c: CALL_ROUTINE 2 -> shop/script_menu.c:
-# openMojyamonShop; packages/session: ItemTrader): el jugador da un objeto de la bolsa por el del comerciante.
+# The item trade that opens the story (script_interp.c: CALL_ROUTINE 2 -> shop/script_menu.c:
+# openMojyamonShop; packages/session: ItemTrader): the player gives an item from the bag for the merchant's.
 
-# showMapHeadTextbox(..., 0x4d6): las frases del comerciante son esta sección de MAPHEAD.
+# showMapHeadTextbox(..., 0x4d6): the merchant's phrases are this MAPHEAD section.
 lines_section: 1238
-# El número de cada frase dentro de la sección (resolveMapHeadEntry): el saludo (estado 0), «¿qué me das?»
-# (estado 3), la despedida sin trueque (estado 6), «¿de verdad me das ...?» (tickMojyaTradeMenu), el sí o no
-# (estado 4), las gracias y la bolsa llena (estado 5).
+# The number of each phrase within the section (resolveMapHeadEntry): the greeting (state 0), "what do you give me?"
+# (state 3), the goodbye with no trade (state 6), "do you really give me ...?" (tickMojyaTradeMenu), the yes or no
+# (state 4), the thanks and the full bag (state 5).
 lines:
   greeting: 8
   ask: 9
@@ -14,19 +14,19 @@ lines:
   choices: 12
   thanks: 13
   bag_full: 14
-# El script pone en la variable 249 la tabla de trueques; el comerciante escribe ahí 255 al abrir y luego el
-# objeto que ofrece el jugador.
+# The script puts the trade table in variable 249; the merchant writes 255 there on opening and then the
+# item the player offers.
 table_variable: 249
 no_item: 255
-# setMojyaItemTradedTrigger: el trueque i (contado por todas las tablas) pone el trigger 5 + i; con los nueve
-# puestos pone también el 14.
+# setMojyaItemTradedTrigger: trade i (counted across all the tables) sets trigger 5 + i; with all nine
+# set it also sets 14.
 first_traded_trigger: 5
 all_traded_trigger: 14
-# tickSelectionDialogue: con el trigger 0x31 puesto, cancelar no contesta el sí o no.
+# tickSelectionDialogue: with trigger 0x31 set, canceling does not answer the yes or no.
 choice_lock_trigger: 49
-# tickMojyaTradeMenu: playSound(0, 0xb) si el jugador no tiene el objeto.
+# tickMojyaTradeMenu: playSound(0, 0xb) if the player does not have the item.
 refuse_sound: {slot: 0, sound: 11}
-# MOJYAMON_ITEMS_GIVE y MOJYAMON_ITEMS_GET: tres tablas de tres trueques, lo que toma y lo que da.
+# MOJYAMON_ITEMS_GIVE and MOJYAMON_ITEMS_GET: three tables of three trades, what it takes and what it gives.
 tables:
   - - {give: digimushrm, get: med_recovery}
     - {give: supercarrot, get: omnipotent}

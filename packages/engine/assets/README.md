@@ -1,18 +1,18 @@
 # assets
 
-El contenido por paquetes: los ids estables de los assets, el `pack.yaml` de cada paquete y el sistema de ficheros
-virtual que los monta por capas.
+Content by package: the stable asset ids, each package's `pack.yaml` and the virtual file system that mounts them in
+layers.
 
-- Carpeta: `packages/engine/assets`; objetivos de CMake: `dwe::assets` (capa `systems`).
-- Depende de: `core`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/engine/assets](https://indie-modding-games.github.io/dw-engine/modulos/engine/assets).
+- Folder: `packages/engine/assets`; CMake targets: `dwe::assets` (`systems` layer).
+- Depends on: `core`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/engine/assets](https://indie-modding-games.github.io/dw-engine/modules/engine/assets).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter assets
-scripts/dev.sh test --filter assets       # sus tests (etiqueta de ctest assets)
-scripts/dev.sh test --filter ...assets    # y los de todo lo que depende de él
+scripts/dev.sh test --filter assets       # its tests (ctest label assets)
+scripts/dev.sh test --filter ...assets    # and those of everything that depends on it
 ```

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The game packages a pull request's CI builds and release.yml promotes (docs/modulos/apps/launcher.md).
+"""The game packages a pull request's CI builds and release.yml promotes (docs/modules/apps/launcher.md).
 
   source                    the name a package built from HEAD carries (VERSION, bug reports):
                             tree-<12 hex digits of HEAD's tree>

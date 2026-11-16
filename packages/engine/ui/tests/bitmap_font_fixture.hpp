@@ -8,7 +8,7 @@
 
 namespace dwe::ui::fixture {
 
-// A small bitmap font laid out like the one dwx extracts (docs/formats/textos.md): cells of 6 x 11
+// A small bitmap font laid out like the one dwx extracts (docs/formats/texts.md): cells of 6 x 11
 // in one row, a full-width character with its ASCII equivalent per glyph, and one glyph with no
 // ASCII equivalent.
 inline constexpr int CellWidth = 6;

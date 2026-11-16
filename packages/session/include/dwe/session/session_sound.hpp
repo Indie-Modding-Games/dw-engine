@@ -21,7 +21,7 @@
 namespace dwe::session {
 
 // The original's sound slots on the game's audio
-// (docs/architecture/audio.md#64-el-tramo-2-en-detalle): slot 0 plays sound/ss, slot 1 sound/sl,
+// (docs/architecture/audio.md#64-effects-in-detail): slot 0 plays sound/ss, slot 1 sound/sl,
 // slots 3 and 4 the partner's banks (sound/vlall and sound/vball of its species), slots 5 to 7 the
 // banks of the last battle's enemies (sound/vball of their species) and slot 8 the bank of the map,
 // sound/esall/<sound_id of data/maps>. Which vlall or vball entry a species uses comes from the

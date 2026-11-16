@@ -7,13 +7,13 @@
   "additionalProperties": false,
   "properties": {
     "id": { "description": "The ruleset's id: the name of its folder under rules/.", "$ref": "#/$defs/name" },
-    "name": { "description": "The name shown to players and designers.", "type": "string", "minLength": 1 },
+    "name": { "description": "The name shown to players and designers: one text, or one per language with English among them.", "$ref": "#/$defs/localizedText" },
     "version": {
       "description": "A semantic version, MAJOR.MINOR.PATCH.",
       "type": "string",
       "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
     },
-    "description": { "type": "string" },
+    "description": { "description": "One text, or one per language with English among them.", "$ref": "#/$defs/localizedText" },
     "extends": {
       "description": "Another ruleset whose sections, tables and scripts this one starts from; its own replace them, section by section and table by table.",
       "$ref": "#/$defs/name",
@@ -43,6 +43,18 @@
     }
   },
   "$defs": {
+    "localizedText": {
+      "description": "A text for people: a single text for every language, or a mapping of language codes (en, es, pt_br) to texts that has English (en), the language the others fall back to.",
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "required": ["en"],
+          "propertyNames": { "pattern": "^[a-z]{2,3}(_[a-z0-9]{2,8})?$" },
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        }
+      ]
+    },
     "name": {
       "description": "Lowercase letters, digits and underscores.",
       "type": "string",

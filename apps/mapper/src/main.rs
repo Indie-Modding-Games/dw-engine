@@ -1,4 +1,4 @@
-//! dwe-mapper: the map editor of dwe (docs/modulos/apps/mapper.md). It shows the field maps of a
+//! dwe-mapper: the map editor of dwe (docs/modules/apps/mapper.md). It shows the field maps of a
 //! content folder (background, collision, exits, characters, doors and toilet), edits their
 //! collision, exits, NPCs, doors, toilet and story sections, and saves the changes as patches
 //! into a mod pack.
@@ -40,15 +40,20 @@ fn main() -> std::process::ExitCode {
         println!("{}", options::USAGE);
         return std::process::ExitCode::SUCCESS;
     }
+    mapper_core::text::set_language(
+        options
+            .lang
+            .unwrap_or_else(mapper_core::text::Language::from_system),
+    );
     let native = eframe::NativeOptions {
         renderer: eframe::Renderer::Wgpu,
         viewport: egui::ViewportBuilder::default()
-            .with_title(mapper_core::text::APP_TITLE)
+            .with_title(mapper_core::text::app_title())
             .with_inner_size(options.size),
         ..Default::default()
     };
     let result = eframe::run_native(
-        mapper_core::text::APP_TITLE,
+        mapper_core::text::app_title(),
         native,
         Box::new(|creation| Ok(Box::new(app::MapperApp::new(creation, options)))),
     );

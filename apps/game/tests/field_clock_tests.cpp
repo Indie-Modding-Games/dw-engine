@@ -1,5 +1,5 @@
 // The field behind the game menu: the player and the partner rest on their idle clips while the
-// map's characters stand still (tamer.c:520, overworld.c:1909 setPartnerIdling; docs/modulos/apps/
+// map's characters stand still (tamer.c:520, overworld.c:1909 setPartnerIdling; docs/modules/apps/
 // game.md).
 
 #include <doctest/doctest.h>

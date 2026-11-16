@@ -1,20 +1,20 @@
-# Nombres para las herramientas (mapper, control remoto, logs) de los disparadores y variables de la
-# historia a los que el motor da un significado. La historia corre con los números: un nombre es solo
-# una etiqueta, un id en snake_case. Lo que no está aquí se muestra por su número.
-# docs/architecture/interprete-historia.md#q3-nombres-de-disparadores-y-variables
+# Names for the tools (mapper, remote control, logs) of the story triggers and variables
+# to which the engine gives a meaning. The story runs on numbers: a name is just
+# a label, an id in snake_case. Whatever is not here is shown by its number.
+# docs/architecture/story-interpreter.md#q3-names-of-triggers-and-variables
 triggers:
-  # Las cuatro casillas de objetos de la página del jugador (la caña sencilla, la mejor y dos más).
+  # The four item slots of the player's page (the basic rod, the best one and two more).
   45: player_item_0
   46: player_item_1
   47: player_item_2
   48: player_item_3
-  # La niebla de los mapas con niebla se va.
+  # The mist of the maps with mist goes away.
   148: mist_gone
-  # La niebla de las alcantarillas se va.
+  # The sewer mist goes away.
   341: sewer_mist_gone
-  # La canción que cambia el fondo de un mapa ya se oyó.
+  # The song that changes a map's background has already been heard.
   350: song_heard
-  # Las medallas: 0x16c + número.
+  # The medals: 0x16c + number.
   364: medal_00
   365: medal_01
   366: medal_02
@@ -34,14 +34,14 @@ triggers:
   380: medal_16
   381: medal_17
 variables:
-  # La inscripción a una copa: el día, la copa y el inscrito.
+  # Cup registration: the day, the cup and the entrant.
   2: cup_entry_day
   3: cup_id
   4: cup_entrant
-  # La música del campo: 0 son las canciones de día y de noche.
+  # The field music: 0 is the day and night songs.
   245: music_mode
-  # Los dos datos que pasan las órdenes de rutina (el objeto o personaje y su animación o ánimo).
+  # The two values the routine commands pass (the object or character and its animation or mood).
   247: routine_arg_a
   248: routine_arg_b
-  # La especie que nombra la línea del sobre de cartas.
+  # The species named by the card pack's line.
   249: card_pack_species

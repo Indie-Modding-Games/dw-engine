@@ -13,8 +13,8 @@
 namespace dwe::audio {
 
 // The music on the audio thread: a sequencer that walks a song's events by audio frames and the
-// SoundFont synthesizer that sounds them (docs/architecture/audio.md, "Música (tramo 3)"). It never
-// allocates, locks or logs.
+// SoundFont synthesizer that sounds them (docs/architecture/audio.md, "Music (stretch 3)"). It
+// never allocates, locks or logs.
 class MusicPlayer {
 public:
   // A hard cut to a new song, from its start, with every channel reset.

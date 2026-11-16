@@ -1,5 +1,5 @@
 -- The pause box (utils2.c: handlePause): the box itself is the document's. Under it the engine
--- names the key that opens the game's options from the pause (docs/modulos/apps/game.md, «Opciones
+-- names the key that opens the game's options from the pause (docs/modules/apps/game.md, «Opciones
 -- en partida»), on the device in use: the keyboard's Escape, the pad's Select.
 
 local function refresh_hint(document)

@@ -1,7 +1,7 @@
--- The rules of a new game (docs/modulos/game/evolution.md, «Contenido oculto»): the original's, or
+-- The rules of a new game (docs/modules/game/evolution.md, «Hidden content»): the original's, or
 -- the original's with its hidden content (Panjyamon, Gigadramon, MetalEtemon and Myotismon by
 -- evolution), and with it the Ultimate to Mega step. Both start off. Every species as a partner
--- (docs/modulos/game/evoluciones-extra.md) starts on and goes with any of them. The title screen
+-- (docs/modules/game/extra-evolutions.md) starts on and goes with any of them. The title screen
 -- shows this document before the new game starts; it sends new_game_rules with the ruleset id the
 -- choice names (original, oculto, oculto_mega, or todas, todas_oculto, todas_oculto_mega), or
 -- new_game_rules_back. The save records the ruleset.

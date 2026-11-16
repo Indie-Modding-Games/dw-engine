@@ -14,7 +14,7 @@
 #include <string_view>
 #include <vector>
 
-// The images of a field map as the extraction leaves them (docs/formats/mapas.md): the background
+// The images of a field map as the extraction leaves them (docs/formats/maps.md): the background
 // as palette indices with one palette per time of day, and the texture pages of its sprites with
 // the CLUT rows that come with them.
 //
@@ -88,7 +88,7 @@ PaletteColor colorFromOriginal(std::uint16_t value);
 // The colours of a palette that came through a PNG, which keeps no STP bits, as colorFromOriginal
 // would give them where that is still known: an opaque black can only have been 0x8000, whose STP
 // bit is set, so it gets SemiTransparentAlpha. The other colours keep alpha 255 (their STP bit is
-// lost; docs/formats/mapas.md).
+// lost; docs/formats/maps.md).
 std::vector<PaletteColor> paletteFromPng(std::vector<PaletteColor> palette);
 
 // How a sprite mixes with what is behind it: the four semi-transparency modes, or opaque

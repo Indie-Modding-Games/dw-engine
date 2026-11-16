@@ -1,8 +1,8 @@
-# Free exploration (docs/architecture/warps-de-script.md) with the keyboard, from a new game: the pause menu turns it
+# Free exploration (docs/architecture/script-warps.md) with the keyboard, from a new game: the pause menu turns it
 # on, and the scripts' map changes go past the story's gates to two zones a new game does not reach yet (mayo02_2 and
 # mayo08b), through the chooser of the places a cell leads to, with a way back. The chooser starts on the
 # place the story takes, turns its pages and lets the player stay on the cell. Every place it takes is logged as a gate
-# opened. It runs once per language, like route-language.yaml. How to run it: docs/guides/prueba-vertical.md.
+# opened. It runs once per language, like route-language.yaml. How to run it: docs/guides/vertical-slice.md.
 name: free-exploration
 device: keyboard
 timeout: 900
@@ -36,7 +36,7 @@ steps:
   - walk_to: {trigger: 110}
   - wait: {map: mayo00, seconds: 2}
   # A new game's forest still holds its first fight: the wild Agumon walks up and talks, the fight, then the recruit
-  # (as in route-etapa1.yaml). Free exploration opens the gates, not the story's events.
+  # (as in route-stage1.yaml). Free exploration opens the gates, not the story's events.
   - repeat: {times: 20, steps: [{tap: {key: return}}, {wait: {seconds: 1.0}}]}
   - wait: {shown: battle, seconds: 1, timeout: 60}
   - wait: {setting: {battle.phase: end}, timeout: 300}

@@ -1,8 +1,8 @@
-# Textos de las vistas de desarrollo.
+# Texts of the development views.
 test_map: "Mapa de prueba"
-# El aviso que se ve mientras --dev-assets está activo.
+# The notice shown while --dev-assets is active.
 assets_active: "Assets de desarrollo en uso (--dev-assets)"
-# El aviso de que se guardó un reporte de bug (F12).
+# The notice that a bug report was saved (F12).
 report_saved: "Reporte guardado"
 
 technique: "Técnica demo"

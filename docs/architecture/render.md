@@ -1,89 +1,107 @@
 # Render
 
-Cómo dibuja el motor: la base de GPU en `rhi` (Vulkan 1.3, [ADR 0003](../adr/0003-vulkan-y-sdl3.md)), el flujo de
-frame en `render`, y cómo enchufan sus dibujos el mapa, los modelos y la UI.
+How the engine draws: the GPU base in `rhi` (Vulkan 1.3, [ADR 0003](../adr/0003-vulkan-and-sdl3.md)), the frame flow
+in `render`, and how the map, the models and the UI plug in their drawing.
 
-## Capas
+## Layers
 
-| Módulo | Capa | Qué tiene |
+| Module | Layer | What it has |
 |---|---|---|
-| `rhi` | base | `Device` (swapchain, frames en vuelo, `destroyLater`), VMA, `Buffer`, `Image`, `BindlessTable`, `GraphicsPipeline`, `UploadRing`, `CommandList` |
-| `render` | sistemas | `Renderer` (flujo de frame, texturas, target de profundidad), `Drawer`, `Camera`, `QuadBatch`, `ScreenFade`, `ModelRenderer` |
-| `apps/game` | apps | Junta todo: el campo, el combate y las pantallas; la escena de prueba (`TestScene`) queda como vista de desarrollo |
+| `rhi` | base | `Device` (swapchain, frames in flight, `destroyLater`), VMA, `Buffer`, `Image`, `BindlessTable`, `GraphicsPipeline`, `UploadRing`, `CommandList` |
+| `render` | systems | `Renderer` (frame flow, textures, depth target), `Drawer`, `Camera`, `QuadBatch`, `ScreenFade`, `ModelRenderer`, `MapRenderer` (field maps), `SceneGrade` |
+| `apps/game` | apps | Puts it all together: the field, battle and the screens; the test scene (`TestScene`) stays as a development view |
 
-Las llamadas a Vulkan solo están en `rhi`. `render`, `ui` y los demás usan sus tipos (`rhi::CommandList`,
-`rhi::Buffer`...), nunca funciones `vk*`. La excepción es `debug`, que inicia Dear ImGui con los handles nativos.
+Vulkan calls are only in `rhi`. `render`, `ui` and the others use its types (`rhi::CommandList`, `rhi::Buffer`...),
+never `vk*` functions. The exception is `debug`, which initializes Dear ImGui with the native handles.
 
-## Modelos dentro de la UI
+## Models inside the UI
 
-`Renderer::createSceneTexture(extent)` crea un color muestreable compatible con los pipelines de escena y una profundidad independiente. `createScreenSceneTexture(shape)` hace lo mismo para una escena que muestra una pantalla entera del original (320×240, las figuras 3D de los menús: el jugador, el compañero, la medalla): cada frame la dibuja al tamaño de la ventana (`screenTargetExtent` de `<dwe/render/screen_target.hpp>`: el alto de la ventana y el ancho por la forma), y cuando la ventana cambia la rehace con el mismo identificador (la UI lo guarda), esperando a la GPU y apuntando la entrada de la tabla bindless a la imagen nueva (`BindlessTable::replace`). Así la figura queda nítida a cualquier tamaño; antes se dibujaba a 320×240 y la página la ampliaba, pixelada. `FrameDesc::textureScenes` recibe el identificador y sus drawers: se preparan antes de aplicar las subidas y se dibujan antes de los pases de la ventana. RHI sincroniza la transición de lectura de textura a attachment y de vuelta; cada uso limpia color transparente y profundidad.
+`Renderer::createSceneTexture(extent)` creates a sampleable color compatible with the scene pipelines and an
+independent depth. `createScreenSceneTexture(shape)` does the same for a scene that shows a whole original screen
+(320×240, the 3D figures of the menus: the player, the partner, the medal): each frame it draws it at the window's
+size (`screenTargetExtent` of `<dwe/render/screen_target.hpp>`: the window's height and the width from the shape), and
+when the window changes it rebuilds it with the same identifier (the UI keeps it), waiting for the GPU and pointing
+the bindless table entry at the new image (`BindlessTable::replace`). This way the figure stays sharp at any size;
+before, it was drawn at 320×240 and the page enlarged it, pixelated. `FrameDesc::textureScenes` receives the
+identifier and its drawers: they are prepared before the uploads are applied and drawn before the window's passes.
+RHI synchronizes the transition from texture read to attachment and back; each use clears transparent color and
+depth.
 
-`UiRenderer::bindTexture("runtime/nombre", id)` permite usar `<img src="/runtime/nombre"/>` sin copiar píxeles a CPU. Registra el préstamo antes de cargar el documento: RmlUi conoce las dimensiones y dibuja la imagen entre sus demás elementos, aplicando su recorte. El dueño conserva la textura hasta destruir la UI; liberarla desde RmlUi no destruye el recurso. No se reemplazan bindings, porque los documentos conservan las imágenes en caché. Una imagen `runtime/` sin binding (el retrato no se pudo crear, o un test sin renderer) se carga como un píxel transparente: no se ve y RmlUi no avisa de que no pudo cargarla. El contenido debe respetar el alpha premultiplicado de la UI; las partes opacas de un modelo ya tienen alpha uno.
+`UiRenderer::bindTexture("runtime/name", id)` allows using `<img src="/runtime/name"/>` without copying pixels to the
+CPU. It registers the loan before loading the document: RmlUi knows the dimensions and draws the image among its other
+elements, applying its clipping. The owner keeps the texture until the UI is destroyed; releasing it from RmlUi does
+not destroy the resource. Bindings are not replaced, because the documents keep the images in cache. A `runtime/`
+image without a binding (the portrait could not be created, or a test without a renderer) loads as a transparent
+pixel: it is not seen and RmlUi does not warn that it could not load it. The content must respect the UI's
+premultiplied alpha; the opaque parts of a model already have alpha one.
 
-La ficha de compañero usa este mecanismo con un modelo independiente del actor de campo, su colocación de crianza y una pose fija. Abrir la ficha no cambia posición, rotación ni animación del actor del mundo. El target solo se dibuja mientras Status está visible. Se libera con `destroyTexture`, después de cerrar la UI y antes de destruir Renderer.
+The partner card uses this mechanism with a model independent of the field actor, its raising placement and a fixed
+pose. Opening the card does not change the world actor's position, rotation or animation. The target is only drawn
+while Status is visible. It is released with `destroyTexture`, after closing the UI and before destroying the
+Renderer.
 
-## Flujo de un frame
+## Frame flow
 
-`Renderer::renderFrame(FrameDesc)` hace, en orden:
+`Renderer::renderFrame(FrameDesc)` does, in order:
 
-1. `Device::beginFrame()`: espera al frame anterior del mismo slot y adquiere la imagen del swapchain. Si no hay
-   (ventana minimizada, swapchain recién reconstruido) devuelve `false` y no dibuja nada.
-2. Reinicia el trozo del anillo de subidas de ese slot.
-3. Llama a `Drawer::prepare` de cada drawer de `FrameDesc::scene` y `FrameDesc::ui`, fuera de los pases.
-4. Graba las subidas de texturas en cola (`queueTexture`, `queueTextureUpdate`) que quepan en el anillo, con sus
-   barreras, en el command buffer del frame.
-5. Rehace el target de profundidad si la ventana cambió de tamaño.
-6. **Pase de escena** (`Pass::Scene`): color del swapchain (limpiado con `clearColor`) + profundidad (limpiada a 1).
-   Llama a cada `Drawer` de `FrameDesc::scene`.
-7. Si el frame trae `FrameDesc::post`, la escena del paso 6 se dibujó en una textura del tamaño de la ventana (el
-   renderer la rehace al cambiar el tamaño) y el **pase de post** (`Pass::Post`) la dibuja en el swapchain con ese
-   drawer, que la lee con `DrawContext::sceneColor()`. Sin `post` la escena va directa al swapchain, como siempre.
-   Barrera de color entre pases.
-8. **Pase de UI** (`Pass::Ui`): el mismo color, cargado, sin profundidad. Llama a cada `Drawer` de `FrameDesc::ui`
-   (el fundido del cambio de mapa, RmlUi) y después a `FrameDesc::overlay` con el `rhi::Frame` crudo (el overlay de
-   ImGui). El overlay es siempre lo último que se graba: puede cambiar cualquier estado (pipeline, set de
-   descriptores) sin restaurarlo.
-9. Cierra el anillo de subidas y `Device::endFrame()` presenta.
+1. `Device::beginFrame()`: waits for the previous frame of the same slot and acquires the swapchain image. If there
+   is none (minimized window, freshly rebuilt swapchain) it returns `false` and draws nothing.
+2. Resets that slot's chunk of the upload ring.
+3. Calls `Drawer::prepare` on each drawer of `FrameDesc::scene` and `FrameDesc::ui`, outside the passes.
+4. Records the queued texture uploads (`queueTexture`, `queueTextureUpdate`) that fit in the ring, with their
+   barriers, in the frame's command buffer.
+5. Rebuilds the depth target if the window changed size.
+6. **Scene pass** (`Pass::Scene`): swapchain color (cleared with `clearColor`) + depth (cleared to 1). It calls each
+   `Drawer` of `FrameDesc::scene`.
+7. If the frame carries `FrameDesc::post`, the scene of step 6 was drawn into a window-sized texture (the renderer
+   rebuilds it when the size changes) and the **post pass** (`Pass::Post`) draws it onto the swapchain with that
+   drawer, which reads it with `DrawContext::sceneColor()`. Without `post` the scene goes straight to the swapchain,
+   as always. Color barrier between passes.
+8. **UI pass** (`Pass::Ui`): the same color, loaded, without depth. It calls each `Drawer` of `FrameDesc::ui` (the
+   map-change fade, RmlUi) and then `FrameDesc::overlay` with the raw `rhi::Frame` (the ImGui overlay). The overlay
+   is always the last thing recorded: it can change any state (pipeline, descriptor set) without restoring it.
+9. It closes the upload ring and `Device::endFrame()` presents.
 
-Antes de cada `Drawer` el viewport y el scissor son el target entero. Un drawer puede cambiarlos; `setScissor` recorta
-el rectángulo al target, así que valen los recortes fuera de pantalla que da RmlUi. Al enlazar un pipeline con depth
-bias dinámico el bias vuelve a 0: se fija con `setDepthBias` después de `bindPipeline`.
+Before each `Drawer` the viewport and scissor are the whole target. A drawer can change them; `setScissor` clips the
+rectangle to the target, so the off-screen clips that RmlUi gives are fine. When binding a pipeline with dynamic depth
+bias the bias goes back to 0: it is set with `setDepthBias` after `bindPipeline`.
 
-## Recursos y propiedad
+## Resources and ownership
 
-- **Valores con dueño** (`rhi::Buffer`, `rhi::Image`, `rhi::GraphicsPipeline`, `rhi::UploadRing`): se mueven, no se
-  copian. Al destruirse mandan sus objetos de Vulkan a `Device::destroyLater`, que los destruye cuando terminan los
-  frames que podían usarlos. Se pueden soltar en cualquier momento, pero nunca deben sobrevivir al `Device`.
-- **Texturas**: las posee el `Renderer`. `createTexture` devuelve un `TextureId`, un valor con el índice en la tabla
-  bindless (lo que recibe el shader) y una generación; `destroyTexture` la suelta y su índice se reutiliza cuando
-  acaban los frames en vuelo. Un id destruido deja de valer aunque su índice vuelva a usarse: destruirlo otra vez o
-  actualizarlo no hace nada (avisa en el log). Quien crea una textura la destruye. `whiteTexture()` es una textura
-  blanca 1×1 para dibujar sin textura.
-- **Drawers**: los posee quien los crea (el código del mapa, de los modelos, de la UI); el `Renderer` solo los toma
-  prestados durante `renderFrame`.
-- **Orden de destrucción**: drawers y texturas → `Renderer` → `Device`.
+- **Owned values** (`rhi::Buffer`, `rhi::Image`, `rhi::GraphicsPipeline`, `rhi::UploadRing`): they are moved, not
+  copied. When destroyed they send their Vulkan objects to `Device::destroyLater`, which destroys them when the
+  frames that could use them finish. They can be released at any time, but must never outlive the `Device`.
+- **Textures**: owned by the `Renderer`. `createTexture` returns a `TextureId`, a value with the index in the bindless
+  table (what the shader receives) and a generation; `destroyTexture` releases it and its index is reused when the
+  frames in flight finish. A destroyed id stops being valid even if its index is reused: destroying it again or
+  updating it does nothing (it warns in the log). Whoever creates a texture destroys it. `whiteTexture()` is a 1×1
+  white texture for drawing without a texture.
+- **Drawers**: owned by whoever creates them (the map, model or UI code); the `Renderer` only borrows them during
+  `renderFrame`.
+- **Destruction order**: drawers and textures → `Renderer` → `Device`.
 
 ## Shaders
 
-En Slang, compilados a SPIR-V en el build y embebidos en el ejecutable ([ADR 0018](../adr/0018-shaders-slang-con-vcpkg.md)).
+In Slang, compiled to SPIR-V in the build and embedded in the executable
+([ADR 0018](../adr/0018-slang-shaders-with-vcpkg.md)).
 
-1. Escribe `<módulo>/shaders/<nombre>.slang` con un `[shader("vertex")] vertexMain` y un
-   `[shader("fragment")] fragmentMain` (los nombres por defecto de `GraphicsPipelineDesc`).
-2. En el `CMakeLists.txt` del módulo: `dwe_add_shaders(dwe_<módulo> FILES shaders/<nombre>.slang)`.
-3. En C++: `#include <dwe/shaders/<nombre>.hpp>` y usa `dwe::shaders::<Nombre>` (el nombre en PascalCase:
-   `skinned_model.slang` → `SkinnedModel`) como `GraphicsPipelineDesc::spirv`.
+1. Write `<module>/shaders/<name>.slang` with a `[shader("vertex")] vertexMain` and a
+   `[shader("fragment")] fragmentMain` (the default names in `GraphicsPipelineDesc`).
+2. In the module's `CMakeLists.txt`: `dwe_add_shaders(dwe_<module> FILES shaders/<name>.slang)`.
+3. In C++: `#include <dwe/shaders/<name>.hpp>` and use `dwe::shaders::<Name>` (the name in PascalCase:
+   `skinned_model.slang` → `SkinnedModel`) as `GraphicsPipelineDesc::spirv`.
 
-Convenciones de los shaders:
+Shader conventions:
 
-- `import dwe.bindless;` da `gTextures[]`, `gSamplers[4]` y `sampleTexture(textura, sampler, uv)`. Los samplers son
-  `SamplerNearestClamp`, `SamplerNearestRepeat`, `SamplerLinearClamp` y `SamplerLinearRepeat`, en el orden de
+- `import dwe.bindless;` gives `gTextures[]`, `gSamplers[4]` and `sampleTexture(texture, sampler, uv)`. The samplers
+  are `SamplerNearestClamp`, `SamplerNearestRepeat`, `SamplerLinearClamp` and `SamplerLinearRepeat`, in the order of
   `rhi::SamplerKind`.
-- Push constants: un struct con `[[vk::push_constant]]`, como mucho 128 bytes (`rhi::PushConstantBytes`), con
-  layout std430. Su espejo en C++ debe tener los mismos offsets.
-- Entradas de vértice con `[[vk::location(n)]]`, que casan con `rhi::VertexAttribute::location`.
-- Matrices: `float4x4` en column-major, igual que GLM; `mul(m, v)` es `m * v` de GLM.
-- Datos por frame grandes (matrices de huesos): un puntero en las push constants (`float4x4* joints;`) a una
-  asignación del anillo (`UploadAllocation::address`).
+- Push constants: a struct with `[[vk::push_constant]]`, at most 128 bytes (`rhi::PushConstantBytes`), with std430
+  layout. Its C++ mirror must have the same offsets.
+- Vertex inputs with `[[vk::location(n)]]`, which match `rhi::VertexAttribute::location`.
+- Matrices: `float4x4` in column-major, the same as GLM; `mul(m, v)` is GLM's `m * v`.
+- Large per-frame data (bone matrices): a pointer in the push constants (`float4x4* joints;`) to an allocation in the
+  ring (`UploadAllocation::address`).
 
 ## Pipelines
 
@@ -98,58 +116,58 @@ auto pipeline = renderer.createPipeline(
     render::Pass::Scene);
 ```
 
-`createPipeline` rellena los formatos de color y profundidad del pase. Un pipeline solo sirve para su pase (el de UI
-no tiene profundidad). Viewport y scissor son dinámicos; el depth bias también si `DepthState::bias` está activo.
-Modos de mezcla: `Opaque`, `Alpha`, `PremultipliedAlpha` (RmlUi), `Additive` y `Subtractive`. Los cuatro modos de
-semitransparencia del original salen de ellos: B/2+F/2 = `Alpha` con alfa 0,5; B+F = `Additive` con alfa 1;
-B−F = `Subtractive` con alfa 1; B+F/4 = `Additive` con alfa 0,25. `rhi::validate(desc)` comprueba la descripción sin
-GPU.
+`createPipeline` fills in the pass's color and depth formats. A pipeline is only good for its pass (the UI one has no
+depth). Viewport and scissor are dynamic; the depth bias too if `DepthState::bias` is on. Blend modes: `Opaque`,
+`Alpha`, `PremultipliedAlpha` (RmlUi), `Additive` and `Subtractive`. The original's four semitransparency modes come
+from them: B/2+F/2 = `Alpha` with alpha 0.5; B+F = `Additive` with alpha 1; B−F = `Subtractive` with alpha 1;
+B+F/4 = `Additive` with alpha 0.25. `rhi::validate(desc)` checks the description without a GPU.
 
-`FrontFace` sigue la definición de Vulkan. Como `render::perspective` invierte la Y del clip space, el resultado es
-el de OpenGL: las caras antihorarias vistas de frente (las de glTF) son `FrontFace::CounterClockwise`.
+`FrontFace` follows Vulkan's definition. Since `render::perspective` flips the clip space's Y, the result is that of
+OpenGL: counterclockwise faces seen from the front (glTF's) are `FrontFace::CounterClockwise`.
 
-## Paso de luz y color
+## Light and color pass
 
-Mejoras opcionales del campo, ninguna con equivalente en el original ni con efecto en reglas, colisión o números
-aleatorios (opciones y textos: [game.md](../modulos/apps/game.md#sombras-luz-y-colores-vivos)).
+Optional field improvements, none with an equivalent in the original or with any effect on rules, collision or random
+numbers (options and texts: [game.md](../modules/apps/game.md#shadows-light-and-vivid-colors)).
 
-- **Sombras.** La redonda es la del original (`drop_shadow.c: renderDropShadow`): un billboard plano de 2 × radio de
-  la especie bajo los pies, SPOT256 (uv 0x40, 0x80, 63 × 63) restado con 0x30/128. `MapRenderer::groundDrawer()` las
-  dibuja justo después del fondo y antes de los modelos, como el original en su entrada 0xFFD de la tabla de orden:
-  si fueran billboards de las capas (después de los modelos), la profundidad oscurecería las piernas. La del sol es
-  otra mancha más larga (`sunShadow`) que sale de los pies en la dirección contraria al sol: `sunAt` mueve el sol de
-  +x al empezar el día a −x al empezar la noche, más alto a mitad (sombra de 1,3 radios) y bajo en los extremos
-  (hasta 3,7), con fuerza 0 de noche y en mapas sin hora y ×0,65 con la paleta del atardecer. Los billboards planos
-  giran ahora alrededor del eje vertical (`MapBillboard::turn`), sin cambiar los que tienen giro 0.
-- **Tinte por hora.** `daylightAt` interpola nueve claves fijadas a las horas del horario (`TimeOfDaySchedule`): dorado
-  al amanecer (1,06; 0,99; 0,89), neutro a mediodía, naranja al atardecer (1,07; 0,94; 0,87), azul de noche (0,91;
-  0,96; 1,10). Es pequeño a propósito: las paletas del fondo ya cambian con la hora (map.slang) y el tinte solo
-  inclina hacia donde ya va la pintura. Los mapas sin hora (hora fija o una sola paleta: cuevas, casas) quedan
-  neutros y con las lámparas encendidas.
-- **Luces del mapa.** `field/lights` del paquete del juego: por mapa, luces en píxeles del fondo (así siguen a la
-  lámpara pintada con cualquier tamaño de ventana y desplazamiento de la cámara) con radio, color, intensidad y tipo:
-  `fire` (siempre, más fuerte de noche, parpadea con tres senos), `lamp` (del atardecer al amanecer; siempre en mapas
-  sin hora) o `glow` (siempre, pulso lento). El parpadeo es una onda del tiempo real, nunca del generador del juego.
-  `windowLights` las pasa a píxeles de la ventana con la cámara del mapa, quita las de fuera y deja las 16 más
-  fuertes. Con una cámara de escena propia no se dibujan (el fondo no se mueve con ella).
-- **Paso de color** (`SceneGrade`, `shaders/scene_grade.slang`): un triángulo que cubre la ventana lee la escena
-  texel a texel, la multiplica por el tinte, suma las luces (aclaran sobre todo multiplicando, para que una pared
-  oscura siga siéndolo, y añaden un brillo propio pequeño), aplica vibrance (los colores apagados ganan más
-  saturación que los vivos), un contraste suave hacia una curva en S que deja el negro y el blanco, y un brillo con
-  cuatro texels cercanos por encima de 0,72. Con «Colores vivos»: vibrance 0,3, contraste 0,12, brillo 0,22. El
-  fundido de pantalla y la UI van en el pase de UI, después: nunca se tocan.
+- **Shadows.** The round one is the original's (`drop_shadow.c: renderDropShadow`): a flat billboard of 2 × the
+  species' radius under the feet, SPOT256 (uv 0x40, 0x80, 63 × 63) subtracted with 0x30/128.
+  `MapRenderer::groundDrawer()` draws them right after the background and before the models, as the original does in
+  its 0xFFD entry of the ordering table: if they were layer billboards (after the models), the depth would darken the
+  legs. The sun's is another, longer blotch (`sunShadow`) that leaves the feet in the direction opposite the sun:
+  `sunAt` moves the sun from +x at the start of the day to −x at the start of the night, higher at midday (shadow of
+  1.3 radii) and low at the extremes (up to 3.7), with strength 0 at night and on maps without a time and ×0.65 with
+  the dusk palette. Flat billboards now rotate around the vertical axis (`MapBillboard::turn`), without changing the
+  ones with turn 0.
+- **Time-of-day tint.** `daylightAt` interpolates nine keys pinned to the schedule's hours (`TimeOfDaySchedule`): gold
+  at dawn (1.06; 0.99; 0.89), neutral at midday, orange at dusk (1.07; 0.94; 0.87), blue at night (0.91; 0.96; 1.10).
+  It is small on purpose: the background palettes already change with the time (map.slang) and the tint only leans
+  toward where the paint already goes. Maps without a time (fixed time or a single palette: caves, houses) stay
+  neutral and with the lamps on.
+- **Map lights.** `field/lights` of the game package: per map, lights in background pixels (so they follow the painted
+  lamp at any window size and camera offset) with radius, color, intensity and type: `fire` (always, stronger at
+  night, flickers with three sines), `lamp` (from dusk to dawn; always on maps without a time) or `glow` (always, slow
+  pulse). The flicker is a real-time wave, never from the game's generator. `windowLights` converts them to window
+  pixels with the map's camera, removes the off-screen ones and keeps the 16 strongest. With a scene camera of its own
+  they are not drawn (the background does not move with it).
+- **Color pass** (`SceneGrade`, `shaders/scene_grade.slang`): a triangle covering the window reads the scene texel by
+  texel, multiplies it by the tint, adds the lights (they mostly brighten by multiplying, so a dark wall stays dark,
+  and add a small glow of their own), applies vibrance (muted colors gain more saturation than vivid ones), a soft
+  contrast toward an S curve that keeps the black and the white, and a glow with four nearby texels above 0.72. With
+  "Vivid colours": vibrance 0.3, contrast 0.12, glow 0.22. The screen fade and the UI go in the UI pass, afterward:
+  they are never touched.
 
-Coste en llvmpipe a 1280 × 720 (medido con otros agentes cargando la máquina, carga ~20 en 12 núcleos, en pares
-lanzados a la vez para igualar la carga): con las tres opciones apagadas el frame cuesta lo mismo que antes del
-cambio; con todo encendido, en torno a un 25 % más de tiempo de frame (p. ej. 67 → 85 ms y 77 → 96 ms en twna01 de
-noche). La primera versión, con muestreo lineal y ocho muestras de brillo, costaba el doble.
+Cost on llvmpipe at 1280 × 720 (measured with other agents loading the machine, load ~20 on 12 cores, in pairs
+launched at the same time to equalize the load): with the three options off the frame costs the same as before the
+change; with everything on, around 25 % more frame time (e.g. 67 → 85 ms and 77 → 96 ms in twna01 at night). The
+first version, with linear sampling and eight glow samples, cost double.
 
-## Dibujar: `Drawer`
+## Drawing: `Drawer`
 
 ```cpp
 class MapDrawer final : public render::Drawer {
     void draw(render::DrawContext& context) override {
-        auto joints = context.upload().upload(std::span<const glm::mat4>{matrices});  // válido este frame
+        auto joints = context.upload().upload(std::span<const glm::mat4>{matrices});  // valid this frame
         context.commands().bindPipeline(pipeline_);
         context.commands().bindVertexBuffer(vertices_);
         context.commands().bindIndexBuffer(indices_, rhi::IndexType::Uint16);
@@ -159,132 +177,128 @@ class MapDrawer final : public render::Drawer {
 };
 ```
 
-`Drawer::prepare(PrepareContext&)` es opcional y corre antes de los pases: ahí se crean o actualizan texturas con
-`queueTexture`/`queueTextureUpdate` para dibujarlas en ese mismo frame. Una librería de UI que crea texturas y
-geometría mientras "renderiza" (RmlUi) lo hace en `prepare` y repite los draws guardados en `draw`.
+`Drawer::prepare(PrepareContext&)` is optional and runs before the passes: this is where textures are created or
+updated with `queueTexture`/`queueTextureUpdate` to be drawn in that same frame. A UI library that creates textures
+and geometry while "rendering" (RmlUi) does it in `prepare` and replays the stored draws in `draw`.
 
-`DrawContext` trae la `CommandList` (`commands()`), el `UploadRing` (`upload()`), el pase (`pass()`) y el tamaño del target en píxeles (`extent()`). Los drawers se pasan
-al frame en `FrameDesc::scene` o `FrameDesc::ui`, en el orden en que deben dibujarse. Al rellenar `FrameDesc` hay que nombrar todos sus campos (un
-span vacío si un pase no dibuja nada): el build avisa de los que faltan.
+`DrawContext` brings the `CommandList` (`commands()`), the `UploadRing` (`upload()`), the pass (`pass()`) and the
+target's size in pixels (`extent()`). The drawers are passed to the frame in `FrameDesc::scene` or `FrameDesc::ui`, in
+the order in which they must be drawn. When filling in `FrameDesc` all its fields have to be named (an empty span if a
+pass draws nothing): the build warns about the missing ones.
 
-## Mallas, texturas y datos por frame
+## Meshes, textures and per-frame data
 
-Hay dos momentos: **la carga**, donde se puede esperar a la GPU, y **el juego en marcha**, donde nada debe esperar.
+There are two moments: **loading**, where it is fine to wait for the GPU, and **the game running**, where nothing
+should wait.
 
-| Qué | En la carga (espera a la GPU) | Con el juego en marcha (sin esperar) |
+| What | When loading (waits for the GPU) | With the game running (no waiting) |
 |---|---|---|
-| Malla estática | `rhi::Buffer::createWithData(device, BufferUsage::Vertex, bytes)` (memoria de GPU) | `rhi::Buffer::createMapped(device, usage, bytes)` (memoria host, dibujable al momento) |
-| Textura nueva | `renderer.createTexture(extent, rgba)` | `renderer.queueTexture(extent, rgba)` |
-| Cambiar una región | `renderer.updateTexture(id, rect, rgba)` | `renderer.queueTextureUpdate(id, rect, rgba)` |
-| Datos de cada frame | — | `context.upload().upload(span)` o `allocate(bytes)` en `prepare`/`draw` |
+| Static mesh | `rhi::Buffer::createWithData(device, BufferUsage::Vertex, bytes)` (GPU memory) | `rhi::Buffer::createMapped(device, usage, bytes)` (host memory, drawable immediately) |
+| New texture | `renderer.createTexture(extent, rgba)` | `renderer.queueTexture(extent, rgba)` |
+| Change a region | `renderer.updateTexture(id, rect, rgba)` | `renderer.queueTextureUpdate(id, rect, rgba)` |
+| Per-frame data | — | `context.upload().upload(span)` or `allocate(bytes)` in `prepare`/`draw` |
 
-- Texturas: RGBA de 8 bits, filas desde arriba; sin píxeles = transparente.
-- Las de cola devuelven el id al momento y guardan una copia de los píxeles. Se graban al empezar el siguiente frame,
-  antes de sus pases: llamadas entre frames o en `prepare` se ven en ese frame; llamadas en `draw`, en el siguiente
-  (una textura creada en `draw` no se dibuja hasta entonces). Se aplican en orden; si una no cabe en el anillo de ese
-  frame espera al siguiente con las que vienen detrás. Una sola subida no puede pasar de
+- Textures: 8-bit RGBA, rows from the top; no pixels = transparent.
+- The queued ones return the id immediately and keep a copy of the pixels. They are recorded at the start of the next
+  frame, before its passes: calls between frames or in `prepare` are seen in that frame; calls in `draw`, in the next
+  one (a texture created in `draw` is not drawn until then). They are applied in order; if one does not fit in that
+  frame's ring it waits for the next one along with those that come after it. A single upload cannot exceed
   `RendererDesc::uploadBytesPerFrame`.
-- El anillo (16 MiB por frame por defecto, alineado a 16) solo existe durante un frame: el `Renderer` lo da a los
-  drawers en `prepare` y `draw`; asignar fuera del frame aborta. Si se llena, devuelve vacío y lo registra en el log.
+- The ring (16 MiB per frame by default, aligned to 16) only exists during a frame: the `Renderer` gives it to the
+  drawers in `prepare` and `draw`; allocating outside the frame aborts. If it fills up, it returns empty and logs it.
 
-## Mallas con skinning
+## Skinned meshes
 
-Convención para el track de modelos: **un vertex buffer entrelazado** (binding 0, `VertexLayout::stride`) con
-`position` `Float3`, `normal` `Float3`, `uv` `Float2`, `joints` `Uint8x4` o `Uint16x4` y `weights` `Unorm8x4`,
-`Unorm16x4` o `Float4`, más un index buffer. Los modelos añaden `color` `Float4` (location 3, el color de vértice) y
-guardan vértices e índices en un solo buffer, con los índices detrás de los vértices. El skinning se hace en el vertex shader con las matrices de huesos del
-frame en el anillo, leídas por puntero (`float4x4* joints` en push constants). No usamos varios bindings ni vertex
-pulling: un binding basta mientras la animación es por CPU y deja que `rhi::validate` compruebe el layout.
+Convention for the model track: **one interleaved vertex buffer** (binding 0, `VertexLayout::stride`) with `position`
+`Float3`, `normal` `Float3`, `uv` `Float2`, `joints` `Uint8x4` or `Uint16x4` and `weights` `Unorm8x4`, `Unorm16x4` or
+`Float4`, plus an index buffer. The models add `color` `Float4` (location 3, the vertex color) and keep vertices and
+indices in a single buffer, with the indices after the vertices. Skinning is done in the vertex shader with the frame's
+bone matrices in the ring, read through a pointer (`float4x4* joints` in push constants). We use neither several
+bindings nor vertex pulling: one binding is enough while the animation is on the CPU and it lets `rhi::validate` check
+the layout.
 
-## Cámara y espacios
+## Camera and spaces
 
 - `render::Camera`: `view`, `projection`, `viewport`; `viewProjection()`.
-- `render::perspective(fovY, aspect, near, far)`: proyección derecha con profundidad 0..1 y la Y invertida para el
-  clip space de Vulkan. El mundo es el de [world-space.md](world-space.md) (+Y arriba).
-- `render::pixelProjection(extent)`: píxeles con origen arriba a la izquierda → clip space, para 2D.
-- `render::QuadBatch`: rectángulos texturizados en píxeles, en un único draw, en cualquiera de los dos pases.
-- `render::ScreenFade`: resta un gris de todo el target (mezcla `Subtractive`, fondo − gris) sobre lo dibujado
-  antes, como el rectángulo del fundido del original (`fade.c: renderFade`); no mezcla hacia negro. El juego lo pone
-  el primero de `FrameDesc::ui`: resta de la escena y la UI queda encima (el nombre del mapa delante del fundido).
-- `render::MapCamera` y `render::MapRenderer`: la cámara fija de un mapa de campo, con proyección descentrada sobre
-  su fondo, y el dibujo del fondo y sus capas de profundidad
-  ([ADR 0020](../adr/0020-camara-de-mapa-y-capas-de-profundidad.md), [página del módulo](../modulos/engine/render.md)).
+- `render::perspective(fovY, aspect, near, far)`: right-handed projection with depth 0..1 and Y flipped for Vulkan's
+  clip space. The world is that of [world-space.md](world-space.md) (+Y up).
+- `render::pixelProjection(extent)`: pixels with origin at the top left → clip space, for 2D.
+- `render::QuadBatch`: textured rectangles in pixels, in a single draw, in either of the two passes.
+- `render::ScreenFade`: subtracts a gray from the whole target (`Subtractive` blend, background − gray) over what was
+  drawn before, like the original's fade rectangle (`fade.c: renderFade`); it does not blend toward black. The game
+  puts it first in `FrameDesc::ui`: it subtracts from the scene and the UI stays on top (the map name in front of the
+  fade).
+- `render::MapCamera` and `render::MapRenderer`: a field map's fixed camera, with an off-center projection over its
+  background, and the drawing of the background and its depth layers
+  ([ADR 0020](../adr/0020-map-camera-and-depth-layers.md), [module page](../modules/engine/render.md)).
 
 ## Samplers
 
-`rhi::SamplerKind`: `NearestClamp`, `NearestRepeat` (píxeles nítidos, mip más cercano) y `LinearClamp`,
-`LinearRepeat` (filtrado bilineal, mezcla de mips y anisotropía 16× o el máximo de la GPU). Las texturas creadas con
-`mipmapped` (las de los modelos con `texture_filter` en `smooth` o `upscaled`) tienen su cadena entera; las demás, un
-solo nivel.
+`rhi::SamplerKind`: `NearestClamp`, `NearestRepeat` (sharp pixels, nearest mip) and `LinearClamp`, `LinearRepeat`
+(bilinear filtering, mip blending and 16× anisotropy or the GPU's maximum). Textures created with `mipmapped` (those
+of the models with `texture_filter` at `smooth` or `upscaled`) have their whole chain; the others, a single level.
 
-## Nitidez: suavizado de bordes y texturas de modelos
+## Sharpness: edge smoothing and model textures
 
-Dos mejoras opcionales, encendidas por defecto, que solo cambian la definición de la imagen (las razones y las
-medidas están en [Nitidez](remaster-pipeline.md#nitidez)):
+Two optional improvements, on by default, that only change the image's definition (the reasons and the measurements
+are in [Sharpness](remaster-pipeline.md#sharpness)):
 
-- **Suavizado de bordes** (`antialiasing`): `Renderer::setMultisampling` dibuja el pase de escena en un color y una
-  profundidad de 4 muestras por píxel (`MsaaSamples`; Vulkan obliga a aceptar 4 en color y profundidad, así que no
-  hace falta otro camino) y los promedia al final del pase en la ventana o en la textura del paso de luz. Cada
-  pipeline de `Pass::Scene` se crea con su variante multimuestreada. Las escenas propias (`textureScenes`: los
-  retratos y figuras de los menús) se suavizan igual, con su color y profundidad de 4 muestras resueltos en su
-  textura; el pase del fondo HD (`keep`, dibuja encima de lo que tenía) sigue con una muestra. El fragment shader
-  corre una vez por píxel: solo se suavizan los bordes de los triángulos (los contornos de los modelos y de los
-  cuadros), y lo que un shader descarta (los texels transparentes, la máscara de las capas) sigue siendo el píxel
-  del original.
-- **Texturas de modelos** (`texture_filter`): `ModelRenderer::setTextureFilter`. `Nearest` es el texel del original;
-  `Smooth` filtra con mipmaps y anisotropía (`FlagSmooth` en `skinned_model.slang`), y antes rellena el color de los
-  texels transparentes con el de sus vecinos dibujados para que el filtrado no meta un borde oscuro; `Upscaled`, el
-  valor por defecto, filtra las texturas dobladas al subir el modelo por el escalador del motor (`upscaleRgba`,
-  [Nitidez](remaster-pipeline.md#nitidez)), con el alfa interpolado: los recortes por alfa dan contornos suaves. Las
-  texturas que se reescriben en juego (`updateImage`, las caras) se doblan igual. Cambiar el filtro vuelve a subir
-  las texturas de cada modelo.
+- **Edge smoothing** (`antialiasing`): `Renderer::setMultisampling` draws the scene pass into a color and a depth of 4
+  samples per pixel (`MsaaSamples`; Vulkan requires accepting 4 on color and depth, so no other path is needed) and
+  averages them at the end of the pass into the window or into the light pass's texture. Each `Pass::Scene` pipeline is
+  created with its multisampled variant. The own scenes (`textureScenes`: the menus' portraits and figures) are
+  smoothed the same way, with their 4-sample color and depth resolved into their texture; the HD background pass
+  (`keep`, draws over what it had) stays at one sample. The fragment shader runs once per pixel: only the triangles'
+  edges are smoothed (the outlines of the models and of the quads), and what a shader discards (the transparent
+  texels, the layers' mask) is still the original's pixel.
+- **Model textures** (`texture_filter`): `ModelRenderer::setTextureFilter`. `Nearest` is the original's texel;
+  `Smooth` filters with mipmaps and anisotropy (`FlagSmooth` in `skinned_model.slang`), and first fills the color of
+  the transparent texels with that of their drawn neighbors so that the filtering does not bring in a dark edge;
+  `Upscaled`, the default, filters the textures doubled when the model is uploaded by the engine's scaler
+  (`upscaleRgba`, [Sharpness](remaster-pipeline.md#sharpness)), with the alpha interpolated: alpha cutouts give smooth
+  outlines. The textures that are rewritten in game (`updateImage`, the faces) are doubled the same way. Changing the
+  filter re-uploads each model's textures.
 
-## Modelos
+## Models
 
-`render::ModelRenderer` sube cada `assets::ModelData` una vez y dibuja las instancias que se le envían cada frame
-con sus matrices de huesos (de `animation`) en el anillo. Da dos drawers para `FrameDesc::scene`: `opaque()` (lo
-opaco y lo recortado por alfa) y `translucent()` (lo semitransparente, sin escribir profundidad). El orden de la
-escena del juego es **fondo → modelos opacos → capas del mapa → modelos semitransparentes**: las capas del mapa
-tapan a los modelos opacos por profundidad, y lo semitransparente se mezcla sobre todo lo opaco. `opaque()` va
-siempre antes: su `prepare` toma las instancias y sube las matrices, y `translucent()` dibuja de eso; solo,
-`translucent()` no dibuja nada. Lo semitransparente se ordena **por instancia** (la profundidad en espacio de vista
-de su origen), no por triángulo. Cómo pinta luz, transparencias y caras está en
-[modelos](models.md#dibujar-modelrenderer).
+`render::ModelRenderer` uploads each `assets::ModelData` once and draws the instances sent to it each frame with their
+bone matrices (from `animation`) in the ring. It provides two drawers for `FrameDesc::scene`: `opaque()` (what is
+opaque and what is alpha-cut) and `translucent()` (what is semitransparent, without writing depth). The game scene's
+order is **background → opaque models → map layers → semitransparent models**: the map layers cover the opaque models
+by depth, and what is semitransparent blends over everything opaque. `opaque()` always goes first: its `prepare` takes
+the instances and uploads the matrices, and `translucent()` draws from that; on its own, `translucent()` draws
+nothing. What is semitransparent is sorted **per instance** (the view-space depth of its origin), not per triangle.
+How it paints light, transparency and faces is in [models](models.md#drawing-modelrenderer).
 
-## Requisitos de la GPU
+## GPU requirements
 
-Vulkan 1.3 con dynamic rendering y synchronization2; de 1.2, descriptor indexing (array en runtime, partially bound,
-update-after-bind y update-unused-while-pending de imágenes, índices no uniformes), buffer device address y layouts
-de profundidad separados; filtrado anisótropo ([ADR 0019](../adr/0019-descriptores-bindless.md)). Swapchain
-`B8G8R8A8_UNORM` o `R8G8B8A8_UNORM`, con la mezcla en espacio gamma. Profundidad: `D32_SFLOAT`, o `X8_D24` o `D16` si
-no hay.
+Vulkan 1.3 with dynamic rendering and synchronization2; from 1.2, descriptor indexing (runtime array, partially bound,
+update-after-bind and update-unused-while-pending of images, non-uniform indexing), buffer device address and separate
+depth layouts; anisotropic filtering ([ADR 0019](../adr/0019-bindless-descriptors.md)). Swapchain `B8G8R8A8_UNORM` or
+`R8G8B8A8_UNORM`, with blending in gamma space. Depth: `D32_SFLOAT`, or `X8_D24` or `D16` if there is none.
 
-Para probar la vida de las texturas, `dwe-game --texture-churn` crea y destruye una textura en cada frame (el cuadrito
-bajo la barra naranja); con la capa de validación no debe salir ningún mensaje `vulkan:`.
+To test the life of the textures, `dwe-game --texture-churn` creates and destroys a texture on each frame (the little
+square under the orange bar); with the validation layer, no `vulkan:` message should appear.
 
-## vk-bootstrap usa el cargador enlazado
+## vk-bootstrap uses the linked loader
 
-Cada `vkb::InstanceBuilder` (y `vkb::SystemInfo::get_system_info`) recibe el `vkGetInstanceProcAddr` del cargador de
-Vulkan que enlazan los programas (`vulkanEntry`, `packages/engine/rhi/src/renderer_requirements.hpp`). Sin él,
-vk-bootstrap abre un cargador por su nombre suelto (`dlopen("libvulkan.dylib")`). En macOS, dyld busca ese nombre solo
-en sus carpetas de reserva, nunca dentro del paquete de aplicación, así que tomaba otra librería de Vulkan del sistema
-(o ninguna). El cargador enlazado rechazaba luego la instancia que esa librería creaba: la primera prueba del paquete
-Intel en CI se cerró con `vkEnumeratePhysicalDevices: Invalid instance`. En Linux y Windows el nombre suelto ya daba
-el cargador enlazado; ahora es el mismo camino en los tres sistemas.
+Each `vkb::InstanceBuilder` (and `vkb::SystemInfo::get_system_info`) receives the `vkGetInstanceProcAddr` of the
+Vulkan loader that the programs link (`vulkanEntry`, `packages/engine/rhi/src/renderer_requirements.hpp`). Without it,
+vk-bootstrap opens a loader by its bare name (`dlopen("libvulkan.dylib")`). On macOS, dyld looks for that name only in
+its fallback folders, never inside the application bundle, so it picked up another Vulkan library from the system (or
+none). The linked loader then rejected the instance that library created: the first test of the Intel package in CI
+ended with `vkEnumeratePhysicalDevices: Invalid instance`. On Linux and Windows the bare name already gave the linked
+loader; now it is the same path on all three systems.
 
-## AddressSanitizer y vk-bootstrap
+## AddressSanitizer and vk-bootstrap
 
-vk-bootstrap es una librería C++ de vcpkg compilada sin AddressSanitizer. Al enlazarla, sus copias de plantillas de
-libc++ (el crecimiento de `std::vector<std::string>`, por ejemplo) pueden ganar a las copias instrumentadas del
-proyecto, o al revés; mezclar las dos deja desfasadas las anotaciones de los contenedores y ASan informa de
-desbordamientos de contenedor que no existen (pasó en `assets::DiskFileSystem::listFiles`). Cambiar el orden de
-enlazado solo mueve el problema al código de vk-bootstrap, e instrumentarla exigiría otro triplet de vcpkg.
+vk-bootstrap is a vcpkg C++ library built without AddressSanitizer. When linking it, its copies of libc++ templates
+(the growth of `std::vector<std::string>`, for example) can win over the project's instrumented copies, or the other
+way around; mixing the two leaves the containers' annotations out of sync and ASan reports container overflows that
+do not exist (it happened in `assets::DiskFileSystem::listFiles`). Changing the link order only moves the problem to
+vk-bootstrap's code, and instrumenting it would require another vcpkg triplet.
 
-Por eso `rhi/src/device.cpp` define `__asan_default_options` con `detect_container_overflow=0` en las builds con
-ASan: solo lo llevan los ejecutables que enlazan `Device` (y con él vk-bootstrap), es decir el juego y los tests de
-`render`. El resto de suites mantiene la detección. `ASAN_OPTIONS` lo puede volver a activar.
-`render/tests/link_test.cpp` reproduce el caso con el orden de enlazado malo.
-
-## Pendiente
-
-- Pruebas de render con capturas de referencia (`tests/golden/`): la imagen Docker no tiene GPU.
+That is why `rhi/src/device.cpp` defines `__asan_default_options` with `detect_container_overflow=0` in ASan builds:
+only the executables that link `Device` (and with it vk-bootstrap) carry it, that is, the game and the `render` tests.
+The other suites keep the detection. `ASAN_OPTIONS` can turn it back on. `render/tests/link_test.cpp` reproduces the
+case with the bad link order.

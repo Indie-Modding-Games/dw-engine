@@ -2,7 +2,7 @@
 # starts), a few items in the bag, a walk into the elder's house, the clock moved on to one in the afternoon and
 # stopped, and a save to slot_01 with the debug save command. The gate runs it with --saves in the run's own folder,
 # then route-save-load-check, which loads the slot from that folder and checks what this run left (scripts/gate.sh,
-# follow_up_routes). How to run it: docs/guides/prueba-vertical.md.
+# follow_up_routes). How to run it: docs/guides/vertical-slice.md.
 name: save-load
 device: keyboard
 timeout: 300

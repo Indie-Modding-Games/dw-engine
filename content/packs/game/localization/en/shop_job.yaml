@@ -1,4 +1,4 @@
-# The canyon shop's job, improved (game/shop_job; docs/reference/trabajo-tienda.md).
+# The canyon shop's job, improved (game/shop_job; docs/reference/shop-job.md).
 # The lines the story patches (story/patches/shop_job_*.lua) add to the original's: the player chats with the customer
 # who listens, sends it away, and the end's bonus (given, left with the item keeper when the
 # bag is full, or with no room anywhere).

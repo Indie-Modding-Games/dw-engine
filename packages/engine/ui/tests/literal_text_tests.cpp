@@ -1,7 +1,7 @@
 // The game pack's menus write every word the player reads through a text key, so the words come
 // out in the player's language and change with it: a document gives an element its words with
 // text-key="..." and a script with t(key). These tests catch words written straight into a
-// document or a script (docs/architecture/localizacion.md).
+// document or a script (docs/architecture/localization.md).
 
 #include <doctest/doctest.h>
 

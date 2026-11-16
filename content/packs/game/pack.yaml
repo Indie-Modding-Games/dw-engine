@@ -2,8 +2,12 @@ id: game
 version: 0.1.0
 layer: base
 priority: 1
-name: "Datos del juego"
-description: "Datos y UI del motor hechos por el equipo: reglas del campo, rulesets, menús, minimapa y guardado. Usa los IDs del paquete base."
+name:
+  en: "Game data"
+  es: "Datos del juego"
+description:
+  en: "The engine's data and UI made by the team: field rules, rulesets, menus, minimap and saving. Uses the base pack's IDs."
+  es: "Datos y UI del motor hechos por el equipo: reglas del campo, rulesets, menús, minimapa y guardado. Usa los IDs del paquete base."
 dependencies:
   - id: base
     min_version: 0.1.0

@@ -11,7 +11,7 @@
 
 namespace dwe::app {
 
-// The music's and the effects' volumes (an engine addition; docs/modulos/apps/game.md, «Volumen»):
+// The music's and the effects' volumes (an engine addition; docs/modules/apps/game.md, «Volume»):
 // the original has no sound option and plays everything at the sound library's full level
 // (sound.c: initializeMusic, SsSetMVol(127, 127)). Each is a UI setting and the command, with the
 // same name, that the options page sends: a step from 0 (silent) to VolumeSteps (the full level,
@@ -20,7 +20,7 @@ namespace dwe::app {
 inline constexpr std::string_view MusicVolumeSetting = "music_volume";
 inline constexpr std::string_view EffectsVolumeSetting = "effects_volume";
 inline constexpr int VolumeSteps = 10;
-// The sound chip's reverb (docs/architecture/audio.md, "Reverberación"): on by default, as the
+// The sound chip's reverb (docs/architecture/audio.md, "Reverb"): on by default, as the
 // original turns it on at boot (sound.c: initializeMusic); off plays every voice dry. A UI setting
 // and its command, saved with the user's settings and applied to the audio at once.
 inline constexpr std::string_view ReverbSetting = "reverb";

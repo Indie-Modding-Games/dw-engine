@@ -1,4 +1,4 @@
-# The favourite food (an engine improvement, docs/modulos/apps/game.md, «Comida favorita»): the partner's status page
+# The favourite food (an engine improvement, docs/modules/apps/game.md, «Favorite food»): the partner's status page
 # names the species' favourite food and the bag marks it, following the partner through an evolution; with the option
 # off both are gone, as in the original. From a new game with the keyboard; run it with each --ui-skin.
 name: favorite-food

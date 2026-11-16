@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """A local stand-in for the GitHub releases API, to try the launcher's updates by hand
-(docs/modulos/apps/launcher.md). Each subfolder of <releases> is a release: its files are the
+(docs/modules/apps/launcher.md). Each subfolder of <releases> is a release: its files are the
 release's files and notes.md (if there) its notes; the newest folder (by name) comes first. A
 folder named like a test version (a "-" in the name, v0.4.0-beta.1) is a prerelease, any other
 (v0.4.0) a normal release. The folder is read again on every request, so a release can be added

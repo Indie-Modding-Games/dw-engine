@@ -3,7 +3,7 @@
 //! <data>/content with an install.yaml record, exactly as the game's own first-run screen does
 //! (packages/content/src/disc_install.cpp), so the game mounts the result with no further question.
 //! An install from before base.pak keeps a loose base folder: convert() cooks it into base.pak
-//! without reading the disc again (docs/adr/0017-cocinado-y-archivos-pak.md).
+//! without reading the disc again (docs/adr/0017-cooking-and-pak-files.md).
 
 use std::fs;
 use std::io::{BufRead, BufReader};

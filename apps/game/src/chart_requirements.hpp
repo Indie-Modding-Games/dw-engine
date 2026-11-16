@@ -68,8 +68,8 @@ inline constexpr int UndiscoveredForm = -2;
 [[nodiscard]] std::vector<const game::evolution::RequirementReport*>
 shownTargets(const game::evolution::EvolutionOutlook& outlook, const DiscoveredForms& discovered);
 
-// Publishes the evolution requirements for the pause menu's chart (docs/modulos/apps/game.md,
-// «Requisitos de evolución»): every target's requirement once (evoreq.req.<species>) and, while the
+// Publishes the evolution requirements for the pause menu's chart (docs/modules/apps/game.md,
+// «Evolution requirements»): every target's requirement once (evoreq.req.<species>) and, while the
 // menu is open, how the partner stands toward the targets of its chart (evoreq.partner,
 // evoreq.partner.<species>), leaving out the forms not discovered yet. Every verdict comes from the
 // evolution rules' own scoring.

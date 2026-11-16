@@ -37,7 +37,7 @@ namespace {
 namespace script = formats::script;
 
 constexpr std::string_view StoryPrefix = "story/";
-// The story patches (session::StoryPatchFolder, docs/modding/historia.md).
+// The story patches (session::StoryPatchFolder, docs/modding/story.md).
 constexpr std::string_view PatchFolder = "story/patches/";
 constexpr std::string_view LinesSuffix = "_lines";
 constexpr std::string_view ScriptWarpsId = "field/script_warps";

@@ -14,8 +14,8 @@
 namespace dwe::render {
 
 // Which depth-layer sprites are cut-outs of the background where they are drawn, for HD scenery
-// (map.slang, SamplingCutout; docs/architecture/remaster-pipeline.md, «Alta definición en el
-// motor»). Most depth-layer sprites are pieces of the background copied out so that they can be
+// (map.slang, SamplingCutout; docs/architecture/remaster-pipeline.md, "High definition in the
+// engine"). Most depth-layer sprites are pieces of the background copied out so that they can be
 // drawn in front of the characters: with HD scenery such a sprite takes its colours from the
 // smoothed background under it, so it matches the background pixel for pixel, and only says which
 // pixels it draws. A sprite is a cut-out where it follows the background's palettes (clut -1) and

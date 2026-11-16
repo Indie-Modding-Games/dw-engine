@@ -437,7 +437,7 @@ std::optional<ResumeValue> StoryRunner::returnFromTop() {
   if (sections_.empty()) {
     // A jump_return with an empty stack reads outside the original's script stack (script_interp.c:
     // scriptInstruction10to27), so it is an error rather than a rule
-    // (docs/architecture/interprete-historia.md, Q11).
+    // (docs/architecture/story-interpreter.md, Q11).
     return fail(
         messages::formatMessage(messages::ReturnWithNothing, top.ref.script, top.ref.section));
   }

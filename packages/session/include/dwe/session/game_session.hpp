@@ -151,7 +151,7 @@ namespace sections {
 struct SessionSerializers;
 } // namespace sections
 
-// One game session (docs/modulos/apps/session.md): the ruleset store, the game clock, the partner,
+// One game session (docs/modules/apps/session.md): the ruleset store, the game clock, the partner,
 // the save and the systems that plug in, glued together, as the game and dwe-sim play it. Each tick
 // it advances the clock (only while the field runs game time, at the clock's fast-forward speed),
 // runs the partner's care and the systems, routes their events (autosaves, the tamer's level,
@@ -186,7 +186,7 @@ public:
   // the sleep's own save writes during its care scene; every other save asks savesWait() first.
   core::Result<void> save(game::save::SlotId slot);
 
-  // Whether a save must wait (a dwe safety rule, docs/modulos/apps/session.md): the field holds
+  // Whether a save must wait (a dwe safety rule, docs/modules/apps/session.md): the field holds
   // the player for a care scene (a pile, the toilet, a praise or scold, feeding, the sleep), whose
   // state no save keeps, so a save written now would load with the scene gone and the partner's
   // care running at once; or the living partner has 0 HP, as a lost battle leaves it until the
@@ -198,7 +198,7 @@ public:
   // so no save waits forever.
   [[nodiscard]] bool savesWait() const;
 
-  // The manual slot the playthrough saves and autosaves to (docs/architecture/guardar-y-cargar.md):
+  // The manual slot the playthrough saves and autosaves to (docs/architecture/save-and-load.md):
   // the one it was loaded from or last saved to; loaded from an old autosave, the one the autosave
   // names; for a new game, nothing until it is saved or autosaved (the first empty slot). Each
   // save's summary keeps it.

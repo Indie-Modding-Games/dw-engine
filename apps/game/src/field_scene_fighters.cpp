@@ -246,7 +246,7 @@ void FieldScene::releaseFighters() {
   // wall it crossed thin, behind a counter, past the map's edge. NPCs never move on their own, so
   // there the player cannot reach them again (the off-map fighters of #163): put the NPC back at
   // its record's spot, where the map loaded it (an engine improvement,
-  // docs/modulos/game/battle.md).
+  // docs/modules/game/battle.md).
   const auto standOnFreeGround = [this](std::size_t slot, scene::Entity entity) {
     const assets::MapNpc* record = field_->npcs().record(slot);
     if (record == nullptr || !record->digimon || !speciesRadius_) {

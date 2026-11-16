@@ -1,4 +1,4 @@
-# Un mapa nuevo: su entrada se añade a la tabla de la base por su ID y sus datos están en map/example_mod/meadow/.
+# A new map: its entry is added to the base table by its ID and its data is in map/example_mod/meadow/.
 maps:
 - id: "example_mod:meadow"
   filename: "MEADOW"

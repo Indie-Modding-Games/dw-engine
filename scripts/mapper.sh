@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds and tests the map editor (apps/mapper, docs/modulos/apps/mapper.md) and its crates
+# Builds and tests the map editor (apps/mapper, docs/modules/apps/mapper.md) and its crates
 # (packages/rust) in the launcher's image, so the host needs nothing but Docker. The tests need no
 # GPU and no screen; the program it builds runs on the host.
 #

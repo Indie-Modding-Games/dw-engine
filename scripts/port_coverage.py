@@ -57,7 +57,8 @@ SELF_FILES = {"docs/reference/port-coverage.md", "docs/reference/port-coverage.t
 
 PORTED, PARTIAL, MISSING, NOT_NEEDED = "portado", "parcial", "falta", "no-aplica"
 STATUSES = (PORTED, PARTIAL, MISSING, NOT_NEEDED)
-STATUS_LABEL = {PORTED: "portado", PARTIAL: "parcial", MISSING: "falta", NOT_NEEDED: "no aplica"}
+# The state values (the English page shows the labels) stay as they are: they are the values in the config.
+STATUS_LABEL = {PORTED: "ported", PARTIAL: "partial", MISSING: "missing", NOT_NEEDED: "not applicable"}
 
 # A table of the disc reader that names an operation after the original's function that runs it
 # (packages/formats/src/effect/efe_subops.cpp): the engine runs the operation by that name, so a quoted name in the code
@@ -65,10 +66,10 @@ STATUS_LABEL = {PORTED: "portado", PARTIAL: "parcial", MISSING: "falta", NOT_NEE
 OP_HANDLER = re.compile(r'\.name\s*=\s*"([a-z0-9_]+)",\s*\.handler\s*=\s*"([A-Za-z_][A-Za-z0-9_]*)"')
 QUOTED = re.compile(r'"([a-z0-9_]+)"')
 IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
-# A citation that says the thing is not there yet. Case matters for TODO: the Spanish "todo" is common in comments.
+# A citation that says the thing is not there yet. Case matters for TODO.
 NEGATIVE = re.compile(
     r"not (?:yet )?(?:ported|drawn|implemented|handled|done|played|shown)|not \w+ yet|unported|\bstub|\bTODO\b|"
-    r"FIXME|\bskip(?:s|ped)?\b|left out|\bignor(?:es|ed)\b|no se dibuja|se saltan|sin portar|esbozo|\bHueco\b",
+    r"FIXME|\bskip(?:s|ped)?\b|left out|\bignor(?:es|ed)\b|\bGap\b",
 )
 
 
@@ -163,7 +164,7 @@ def classify_auto(fn: Function) -> None:
         fn.auto = "doc"
     elif fn.tool_refs:
         fn.auto = "tool"
-        fn.note = "solo lo cita la extracción del disco"
+        fn.note = "only the disc extraction names it"
     fn.status = MISSING if fn.auto in ("doc", "tool") else fn.auto
 
 
@@ -220,7 +221,7 @@ def apply_config(functions: list[Function], config: dict) -> list[str]:
             twin = by_name.get(twins["target"] + re.sub(r"^[A-Z0-9]+_+", "", fn.name))
             if twin and fn.status not in (PORTED, PARTIAL):
                 fn.status = NOT_NEEDED
-                fn.note = f"copia de `{twin.name}`, que cuenta por las dos"
+                fn.note = f"copy of `{twin.name}`, which counts for both"
 
     for name, entry in config.get("functions", {}).items():
         if name not in known:
@@ -255,12 +256,12 @@ def render(functions: list[Function], config: dict) -> str:
         by_system[fn.system].append(fn)
     out = []
     totals = collections.Counter()
-    out.append("## Resumen por sistema\n")
+    out.append("## Summary by system\n")
     out.append(
-        "Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la consola quedan fuera. "
-        "Cobertura = portado + medio parcial, sobre las funciones a portar.\n"
+        "Only the functions to port count (ported + partial + missing); those tied to the console are left out. "
+        "Coverage = ported + half of partial, over the functions to port.\n"
     )
-    out.append("| Sistema | Ficheros del decomp | A portar | Portado | Parcial | Falta | Cobertura |")
+    out.append("| System | Decomp files | To port | Ported | Partial | Missing | Coverage |")
     out.append("|---|---|---:|---:|---:|---:|---:|")
     for system in systems:
         fns = by_system.get(system["id"], [])
@@ -270,7 +271,7 @@ def render(functions: list[Function], config: dict) -> str:
         files = sorted({fn.path.removeprefix("src/") for fn in fns})
         dirs = sorted({f.split("/")[0] for f in files})
         shown = ", ".join(f"`{f}`" for f in files) if len(files) <= 4 else ", ".join(f"`{d}/`" for d in dirs) + (
-            f" ({len(files)} ficheros)"
+            f" ({len(files)} files)"
         )
         out.append(
             f"| [{system['name']}](#{anchor(system['name'])}) | {shown} | {needed} | {count[PORTED]} | "
@@ -278,7 +279,7 @@ def render(functions: list[Function], config: dict) -> str:
         )
     needed = totals[PORTED] + totals[PARTIAL] + totals[MISSING]
     out.append(
-        f"| **Total** | {needed} funciones a portar | {needed} | {totals[PORTED]} | {totals[PARTIAL]} | "
+        f"| **Total** | {needed} functions to port | {needed} | {totals[PORTED]} | {totals[PARTIAL]} | "
         f"{totals[MISSING]} | {percent(totals[PORTED] + totals[PARTIAL] / 2, needed)} |"
     )
     out.append("")
@@ -289,14 +290,14 @@ def render(functions: list[Function], config: dict) -> str:
         if system.get("about"):
             out.append(system["about"] + "\n")
         files = sorted({fn.path.removeprefix("src/") for fn in fns})
-        out.append("Ficheros del decomp: " + ", ".join(f"`{f}`" for f in files) + ".\n")
-        out.append(f"Portado {count[PORTED]}, parcial {count[PARTIAL]}, falta {count[MISSING]}.\n")
+        out.append("Decomp files: " + ", ".join(f"`{f}`" for f in files) + ".\n")
+        out.append(f"Ported {count[PORTED]}, partial {count[PARTIAL]}, missing {count[MISSING]}.\n")
         gaps = [fn for fn in fns if fn.status in (PARTIAL, MISSING)]
         if gaps:
-            out.append("| Función | Decomp | Estado | Qué hace | Motor / nota |")
+            out.append("| Function | Decomp | Status | What it does | Engine / note |")
             out.append("|---|---|---|---|---|")
             for fn in gaps:
-                mark = " (citada en docs)" if fn.auto == "doc" else ""
+                mark = " (cited in docs)" if fn.auto == "doc" else ""
                 where = f"`{fn.where}`" if fn.where else ""
                 note = " · ".join(x for x in (where, fn.note) if x)
                 out.append(
@@ -304,12 +305,11 @@ def render(functions: list[Function], config: dict) -> str:
                     f"{note or '—'} |"
                 )
             out.append("")
-    out.append("## Fuera de las cuentas\n")
+    out.append("## Outside the counts\n")
     out.append(
-        f"{totals[NOT_NEEDED]} funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, "
-        "sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no "
-        "cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado "
-        "`no-aplica`).\n"
+        f"{totals[NOT_NEEDED]} decomp functions are tied to the console (drawing, memory, disc reading, hardware "
+        "sound, internal tables, debugging, copies of the battle code in other overlays) and do not count in any "
+        "figure. `python3 scripts/port_coverage.py --list` gives them with their reason (state `no-aplica`).\n"
     )
     return "\n".join(out).rstrip() + "\n"
 

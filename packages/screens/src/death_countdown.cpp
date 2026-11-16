@@ -85,7 +85,7 @@ std::optional<std::int32_t> deathCountdownTimerOf(const game::battle::Battle& ba
   if (state.matchClock || !state.partner().fainted || state.deathFrames < shownAt) {
     return std::nullopt;
   }
-  // Suposición: the countdown ticks on the frame it is added, so that frame is its first.
+  // Assumption: the countdown ticks on the frame it is added, so that frame is its first.
   const std::int32_t timer = state.deathFrames - shownAt + 1;
   if (timer > DeathCountdownLastFrame) {
     return std::nullopt;

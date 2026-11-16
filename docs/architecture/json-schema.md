@@ -1,122 +1,123 @@
-# JSON Schema: el subconjunto que comprueba el motor
+# JSON Schema: the subset the engine checks
 
-Los esquemas de `content/schemas/` describen cada tipo de documento YAML (tablas, mapas, metadatos…). Los comprueba
-`core::JsonSchema` (`packages/engine/core`), sin dependencias nuevas: los esquemas son JSON y el JSON es YAML, así que se leen
-con `core::parseYaml`. No es una implementación completa de JSON Schema 2020-12, sino **el subconjunto que usan
-nuestros esquemas**. Una palabra clave que no está en la lista es un error al compilar el esquema, nunca se ignora:
-así un esquema no comprueba menos de lo que dice.
+The schemas in `content/schemas/` describe each type of YAML document (tables, maps, metadata…). They are checked by
+`core::JsonSchema` (`packages/engine/core`), with no new dependencies: the schemas are JSON and JSON is YAML, so they
+are read with `core::parseYaml`. It is not a full implementation of JSON Schema 2020-12, but **the subset our schemas
+use**. A keyword that is not in the list is an error when compiling the schema, it is never ignored: this way a schema
+never checks less than it says.
 
-## Palabras clave
+## Keywords
 
-| Palabra clave | Qué comprueba |
+| Keyword | What it checks |
 |---|---|
-| `type` | Un tipo o una lista de tipos: `object`, `array`, `string`, `integer`, `number`, `boolean`, `null` |
-| `properties` | El esquema de cada clave de un mapping |
-| `patternProperties` | El esquema de las claves que encajan en cada expresión regular (ver abajo) |
-| `required` | Las claves que tienen que estar |
-| `additionalProperties` | `false` (no se admiten otras claves), `true` o un esquema para las claves que ni `properties` ni `patternProperties` describen |
-| `minProperties`, `maxProperties` | Cuántas claves tiene un mapping, como mínimo y como máximo |
-| `propertyNames` | El esquema que cumple cada clave de un mapping, como texto |
-| `items` | El esquema de cada elemento de una lista (la forma de tupla, una lista de esquemas, no está) |
-| `minItems`, `maxItems` | Cuántos elementos tiene una lista |
-| `uniqueItems` | Con `true`, ningún elemento de la lista es igual a otro (comparados como JSON, igual que `enum`) |
-| `minLength`, `maxLength` | Cuántos caracteres tiene un texto (puntos de código UTF-8, no bytes) |
-| `minimum`, `maximum` | Límites de un número, incluidos |
-| `exclusiveMinimum`, `exclusiveMaximum` | Límites de un número, excluidos (la forma de 2020-12: un número) |
-| `pattern` | Una expresión regular que el texto tiene que contener (ver abajo) |
-| `enum`, `const` | Los valores permitidos, comparados como JSON: los números por valor, `"1"` no es `1`, los mappings sin mirar el orden de sus claves |
-| `anyOf`, `oneOf` | Una lista de esquemas que se aplican al mismo valor: tiene que cumplir al menos uno (`anyOf`) o exactamente uno (`oneOf`) |
-| `not` | Un esquema que el valor no puede cumplir |
-| `$ref` | `#` (la raíz) o `#/$defs/<nombre>`; se aplica junto a las demás palabras clave del mismo esquema |
-| `$defs` | Definiciones reutilizables, solo en la raíz |
-| `title`, `description`, `default`, `deprecated`, `$schema`, `$id` | Anotaciones para las personas y los editores; no comprueban nada |
+| `type` | A type or a list of types: `object`, `array`, `string`, `integer`, `number`, `boolean`, `null` |
+| `properties` | The schema of each key of a mapping |
+| `patternProperties` | The schema of the keys that match each regular expression (see below) |
+| `required` | The keys that must be present |
+| `additionalProperties` | `false` (no other keys are allowed), `true` or a schema for the keys that neither `properties` nor `patternProperties` describe |
+| `minProperties`, `maxProperties` | How many keys a mapping has, at least and at most |
+| `propertyNames` | The schema that each key of a mapping meets, as text |
+| `items` | The schema of each element of a list (the tuple form, a list of schemas, is not supported) |
+| `minItems`, `maxItems` | How many elements a list has |
+| `uniqueItems` | With `true`, no element of the list equals another (compared as JSON, the same as `enum`) |
+| `minLength`, `maxLength` | How many characters a text has (UTF-8 code points, not bytes) |
+| `minimum`, `maximum` | Limits of a number, inclusive |
+| `exclusiveMinimum`, `exclusiveMaximum` | Limits of a number, exclusive (the 2020-12 form: a number) |
+| `pattern` | A regular expression that the text has to contain (see below) |
+| `enum`, `const` | The allowed values, compared as JSON: numbers by value, `"1"` is not `1`, mappings without looking at the order of their keys |
+| `anyOf`, `oneOf` | A list of schemas applied to the same value: it has to meet at least one (`anyOf`) or exactly one (`oneOf`) |
+| `not` | A schema that the value cannot meet |
+| `$ref` | `#` (the root) or `#/$defs/<name>`; it is applied together with the other keywords of the same schema |
+| `$defs` | Reusable definitions, only at the root |
+| `title`, `description`, `default`, `deprecated`, `$schema`, `$id` | Annotations for people and editors; they check nothing |
 
-Como en 2020-12, una clave cumple su esquema de `properties` y, además, el de cada entrada de `patternProperties` cuya
-expresión encaje en ella (puede ser más de una). `additionalProperties` solo se aplica a las claves que ninguna de las
-dos describe. Así, `{"patternProperties": {"^[0-9]+$": {"type": "integer"}}, "additionalProperties": false}` admite
-`12: 3` y rechaza `x: 3`.
+As in 2020-12, a key meets its `properties` schema and, in addition, that of each `patternProperties` entry whose
+expression matches it (it can be more than one). `additionalProperties` only applies to the keys that neither of the
+two describes. So `{"patternProperties": {"^[0-9]+$": {"type": "integer"}}, "additionalProperties": false}` allows
+`12: 3` and rejects `x: 3`.
 
-`anyOf`, `oneOf` y `not` comprueban el valor aparte con cada uno de sus esquemas y solo miran si los cumple: los
-problemas de dentro no salen en el informe, sale uno solo para el valor (`matches none of the 2 schemas of anyOf`,
-`matches 2 of the 9 schemas of oneOf instead of exactly one`, `matches the schema of not`). Sirven para claves que se
-excluyen entre sí, como `value` o `percent` en `ruleset_difficulty`:
+`anyOf`, `oneOf` and `not` check the value separately with each of their schemas and only look at whether it meets
+them: the problems inside do not appear in the report, a single one appears for the value
+(`matches none of the 2 schemas of anyOf`, `matches 2 of the 9 schemas of oneOf instead of exactly one`,
+`matches the schema of not`). They are useful for keys that exclude each other, like `value` or `percent` in
+`ruleset_difficulty`:
 
 ```json
 "oneOf": [{ "required": ["value"] }, { "required": ["percent"] }]
 ```
 
-Un ciclo de `$ref` que no baja por el documento (`a` → `b` → `a`, también a través de `anyOf`, `oneOf` o `not`) es un
-error al compilar.
+A `$ref` cycle that does not descend through the document (`a` → `b` → `a`, also through `anyOf`, `oneOf` or `not`) is
+an error when compiling.
 
-Quien compila el esquema puede añadir **palabras clave de anotación** propias. Su valor tiene que ser un texto, y la
-comprobación devuelve, junto a los problemas, cada texto del documento al que se aplican. Dentro de `anyOf` y `oneOf`
-solo cuentan las anotaciones de los esquemas que el valor cumple; las de `not`, nunca.
+Whoever compiles the schema can add their own **annotation keywords**. Their value has to be a text, and the check
+returns, along with the problems, each text of the document to which they apply. Inside `anyOf` and `oneOf` only the
+annotations of the schemas that the value meets count; those of `not`, never.
 
-## Referencias a assets
+## Asset references
 
-`dwx validate` registra una palabra clave de anotación, `assetReference`, que convierte un texto del documento en una
-referencia a un asset de la pila. Su valor es una plantilla donde `{}` es el texto:
+`dwx validate` registers an annotation keyword, `assetReference`, that turns a text in the document into a reference
+to an asset in the stack. Its value is a template where `{}` is the text:
 
-| Plantilla | Texto | Lleva a |
+| Template | Text | Leads to |
 |---|---|---|
-| `"./{}"` | `"bank.sf2"` en `sound/ss/bank_meta` | el fichero `sound/ss/bank.sf2`: id `sound/ss/bank`, y tiene que ser `.sf2` |
-| `"{}"` | `"map/yaka02/data.yaml"` | el fichero `map/yaka02/data.yaml`, desde la raíz del paquete |
-| `"digimon/{}/model"` | `"species_a"` | el asset `digimon/species_a/model`, sea cual sea su extensión |
+| `"./{}"` | `"bank.sf2"` in `sound/ss/bank_meta` | the file `sound/ss/bank.sf2`: id `sound/ss/bank`, and it has to be `.sf2` |
+| `"{}"` | `"map/yaka02/data.yaml"` | the file `map/yaka02/data.yaml`, from the package root |
+| `"digimon/{}/model"` | `"species_a"` | the asset `digimon/species_a/model`, whatever its extension |
 
-Si el último segmento del resultado tiene extensión es un fichero, relativo a la carpeta del documento si la plantilla
-empieza por `./` y a la raíz del paquete si no; si no la tiene, es un id. La referencia tiene que resolverse en la pila
-montada, así que un mod puede apuntar a assets de la base. Solo se miran los textos: un `null` no es una referencia.
+If the last segment of the result has an extension it is a file, relative to the document's folder if the template
+starts with `./` and to the package root if not; if it has none, it is an id. The reference has to resolve in the
+mounted stack, so a mod can point to assets in the base. Only texts are looked at: a `null` is not a reference.
 
 ```json
 "target_map_id": { "type": ["string", "null"], "assetReference": "map/{}/data" }
 ```
 
-## Tipos de un escalar YAML
+## Types of a YAML scalar
 
-YAML no distingue en el texto un número de una cadena como JSON, así que cada escalar se resuelve con el esquema
-*core* de YAML 1.2:
+YAML does not distinguish a number from a string in the text the way JSON does, so each scalar is resolved with the
+YAML 1.2 *core* schema:
 
-| Escalar | Tipo |
+| Scalar | Type |
 |---|---|
-| Entre comillas (`"12"`, `'species_a'`) | `string`, siempre |
-| Vacío, `~`, `null` | `null` |
+| Quoted (`"12"`, `'species_a'`) | `string`, always |
+| Empty, `~`, `null` | `null` |
 | `true`, `false` | `boolean` |
-| `12`, `-3`, `0x00fe`, `0o17` | `integer` (y también `number`) |
+| `12`, `-3`, `0x00fe`, `0o17` | `integer` (and also `number`) |
 | `1.5`, `-2e3`, `.inf`, `.nan` | `number` |
-| Cualquier otro (`species_a`, `1.0.0`) | `string` |
+| Any other (`species_a`, `1.0.0`) | `string` |
 
-Por eso un id que parece un número (`"001"`) tiene que ir entre comillas cuando el esquema pide `string`. Los límites
-`minimum` y `maximum` se comparan como números de coma flotante de 64 bits, que son exactos hasta 2^53.
+That is why an id that looks like a number (`"001"`) has to be quoted when the schema asks for `string`. The
+`minimum` and `maximum` limits are compared as 64-bit floating-point numbers, which are exact up to 2^53.
 
-## Expresiones regulares
+## Regular expressions
 
-`pattern` y las claves de `patternProperties` usan el mismo subconjunto de las expresiones de ECMA-262. Buscan la
-expresión en cualquier parte del texto (o de la clave), como manda JSON Schema; para el texto entero hay que anclarla
-con `^` y `$`. Se admite:
+`pattern` and the keys of `patternProperties` use the same subset of ECMA-262 expressions. They search for the
+expression anywhere in the text (or the key), as JSON Schema requires; to match the whole text it has to be anchored
+with `^` and `$`. Supported:
 
-- caracteres ASCII imprimibles, y la puntuación escapada con `\` (`\.`, `\-`, `\\`);
-- `.`: un carácter cualquiera salvo un fin de línea (`\n`, `\r`, U+2028 y U+2029, como en ECMA-262 sin la bandera `s`);
-  un carácter no ASCII cuenta como uno, ocupe los bytes UTF-8 que ocupe;
-- clases con rangos: `[a-z0-9_]` (no negadas: `[^…]` no está);
-- grupos `( )` con alternativas `|`;
-- cuantificadores `?`, `*`, `+`, `{n}`, `{n,}` y `{n,m}` (n y m hasta 1000), solo voraces;
-- anclas `^` y `$`.
+- printable ASCII characters, and punctuation escaped with `\` (`\.`, `\-`, `\\`);
+- `.`: any character except a line terminator (`\n`, `\r`, U+2028 and U+2029, as in ECMA-262 without the `s` flag);
+  a non-ASCII character counts as one, however many UTF-8 bytes it takes;
+- classes with ranges: `[a-z0-9_]` (not negated: `[^…]` is not supported);
+- groups `( )` with alternatives `|`;
+- quantifiers `?`, `*`, `+`, `{n}`, `{n,}` and `{n,m}` (n and m up to 1000), greedy only;
+- anchors `^` and `$`.
 
-Lo demás es un error al compilar: `\d` y las demás clases con letra, `(?…)`, cuantificadores perezosos,
-referencias hacia atrás y caracteres que no sean ASCII. Un carácter no ASCII del texto solo encaja en `.`: nunca en una
-clase ASCII ni en un literal.
+Anything else is an error when compiling: `\d` and the other classes with a letter, `(?…)`, lazy quantifiers,
+backreferences and non-ASCII characters. A non-ASCII character in the text only matches `.`: never an ASCII class or a
+literal.
 
-La expresión se compila a una máquina virtual de Pike: todas las coincidencias posibles avanzan a la vez, así que el
-tiempo crece en línea con el texto, sin retroceso exponencial ni recursión, aunque el patrón sea hostil (los de
-`patternProperties` también: pueden venir de un pack de terceros). El patrón
-tiene un límite de 1024 caracteres y su programa, de 20 000 instrucciones.
+The expression is compiled to a Pike virtual machine: all the possible matches advance at once, so the time grows
+linearly with the text, with no exponential backtracking or recursion, even if the pattern is hostile (those in
+`patternProperties` too: they can come from a third-party pack). The pattern has a limit of 1024 characters and its
+program of 20,000 instructions.
 
-## Mensajes
+## Messages
 
-Cada problema dice dónde está, con la ruta dentro del documento (`$` es la raíz, luego `.clave` e `[índice]`) y la
-línea y columna del texto:
+Each problem says where it is, with the path inside the document (`$` is the root, then `.key` and `[index]`) and the
+line and column of the text:
 
 ```text
-$.digimon[3].level: expected integer, found string     (línea 12, columna 9)
-$.digimon[0]: the key 'moves' is missing               (línea 3, columna 1)
+$.digimon[3].level: expected integer, found string     (line 12, column 9)
+$.digimon[0]: the key 'moves' is missing               (line 3, column 1)
 ```

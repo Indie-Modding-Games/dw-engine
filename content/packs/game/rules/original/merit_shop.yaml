@@ -1,12 +1,12 @@
-# El intercambio por méritos que abre la historia (script_interp.c: CALL_ROUTINE 1 -> shop/script_menu.c: openMeritShop;
-# packages/session: MeritShop): el jugador da cartas por puntos de mérito y se lleva los objetos con precio en méritos
-# (merit_value de data/cards y de data/items).
+# The merit trade the story opens (script_interp.c: CALL_ROUTINE 1 -> shop/script_menu.c: openMeritShop;
+# packages/session: MeritShop): the player gives cards for merit points and takes items priced in merits
+# (merit_value of data/cards and data/items).
 
-# showMapHeadTextbox(..., 0x4d4): las frases del tendero y las elecciones del jugador son esta sección de MAPHEAD.
+# showMapHeadTextbox(..., 0x4d4): the shopkeeper's lines and the player's choices are this MAPHEAD section.
 lines_section: 1236
-# El saludo (estado 0), las tres elecciones del jugador (estado 3), el sí o no de una carta (estado 7) y el de un objeto
-# (estado 0xb), la frase sobre la lista de cartas (estado 4) y la de objetos (estado 5). Lo que vale una carta es la
-# frase card_worth más su rareza (createMeritCardTradeDialogue: spriteId + 7).
+# The greeting (state 0), the player's three choices (state 3), the yes or no for a card (state 7) and for an item
+# (state 0xb), the line over the card list (state 4) and the one for items (state 5). What a card is worth is the
+# card_worth line plus its rarity (createMeritCardTradeDialogue: spriteId + 7).
 lines:
   greeting: 0
   choices: 1
@@ -15,17 +15,17 @@ lines:
   card_prompt: 5
   item_prompt: 6
   card_worth: 7
-# createShopBitsBox(0) -> tickShopBitsBox: la caja de puntos es la frase 7 («Points {merit}») de la sección de un tendero;
-# getShopkeeperLine da la 0x4c4 a un tendero que las tiendas no listan.
+# createShopBitsBox(0) -> tickShopBitsBox: the points box is line 7 ("Points {merit}") of a shopkeeper's section;
+# getShopkeeperLine gives 0x4c4 to a shopkeeper that the shops do not list.
 points_section: 1220
 points_line: 7
-# Estado 8: los méritos no pasan de 9999.
+# State 8: merits do not go past 9999.
 most_merit: 9999
-# tickSelectionDialogue: con el trigger 0x31 puesto, cancelar no contesta la elección.
+# tickSelectionDialogue: with trigger 0x31 set, cancel does not answer the choice.
 choice_lock_trigger: 49
-# createMeritCardTradeDialogue y readSelectedItemMerit: una fila vacía o un objeto que no se puede llevar suena
+# createMeritCardTradeDialogue and readSelectedItemMerit: an empty row or an item that cannot be taken plays
 # playSound(0, 0xB).
 fail_sound: {slot: 0, sound: 11}
-# playShopSoundOnlyInSavannah: un intercambio toca playSound(0, 0x17) solo en la pantalla 131 (gias06b), como la tienda
-# de cartas.
+# playShopSoundOnlyInSavannah: a trade plays playSound(0, 0x17) only on screen 131 (gias06b), like the card
+# shop.
 trade_sound: {map: gias06b, slot: 0, sound: 23}

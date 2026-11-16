@@ -1,7 +1,7 @@
-//! Maps a pack adds (docs/modding/mapas-nuevos.md): what to write so that the game finds a new
+//! Maps a pack adds (docs/modding/new-maps.md): what to write so that the game finds a new
 //! map, and the same to rename or delete one the pack added.
 //!
-//! A pack's map is `<pack>:<name>`. The game needs three things (docs/formats/mapas.md, "En el
+//! A pack's map is `<pack>:<name>`. The game needs three things (docs/formats/maps.md, "En el
 //! motor"): its data, `map/<pack>/<name>/data`; its entry in the pack's `data/maps`, which the
 //! engine numbers after the original's maps; and a background, in its own folder or in the folder
 //! of the map its data names in `assets_from`. Its name is the text `<pack>.map_names.<name>` of

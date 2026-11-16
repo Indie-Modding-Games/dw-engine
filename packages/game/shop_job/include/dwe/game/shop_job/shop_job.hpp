@@ -13,7 +13,7 @@
 #include <vector>
 
 // The canyon shop's job, improved (an engine improvement, the option shop_job.mode; the original's
-// job is the story's scripts 49 and 199 to 202, docs/reference/trabajo-tienda.md): a fixed line of
+// job is the story's scripts 49 and 199 to 202, docs/reference/shop-job.md): a fixed line of
 // customers made at the job's start, each with a hidden budget drawn from the original's acceptance
 // table of its species; the player offers one of nine exact prices, and the customer's reaction
 // tells how far the offer was from the budget. It draws nothing and knows no story: the session

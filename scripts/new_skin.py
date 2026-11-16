@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fork and manage DWE UI skins (docs/architecture/ui.md#aspectos).
+"""Fork and manage DWE UI skins (docs/architecture/ui.md#skins).
 
 A DWE *skin* (aspecto) is one folder `content/packs/game/ui/skins/<id>/` with a `skin.yaml`
 and per-screen `.rcss` style sheets. The documents (ui/<pantalla>/) never change with a skin:
@@ -311,7 +311,7 @@ def _stub_missing_screens(new_dir: Path, new_id: str, text: str, screens: list[s
         write(
             stub,
             f"/* Style for {s} in the {new_id} skin. Forked from an existing skin by scripts/new_skin.py;"
-            f"\n   add your rules here (docs/architecture/ui.md#aspectos). */\n\n",
+            f"\n   add your rules here (docs/architecture/ui.md#skins). */\n\n",
         )
     # Append the block after `screens:` if any, or create it before the first top-level key.
     m = re.search(r"^screens:\s*$", text, re.M)

@@ -3,8 +3,12 @@ version: 0.1.0
 layer: mods
 api: "1.4"
 priority: 0
-name: "Aspecto de prueba"
-description: "Un aspecto sintético y mínimo para los tests y la ruta de aspectos: extiende el moderno y cambia colores en todas las pantallas. Prueba que un mod añade un aspecto sin tocar el motor."
+name:
+  en: "Test skin"
+  es: "Aspecto de prueba"
+description:
+  en: "A minimal synthetic skin for the tests and the skins route: it extends the modern one and changes colors on every screen. It proves that a mod adds a skin without touching the engine."
+  es: "Un aspecto sintético y mínimo para los tests y la ruta de aspectos: extiende el moderno y cambia colores en todas las pantallas. Prueba que un mod añade un aspecto sin tocar el motor."
 dependencies:
   - id: game
     min_version: 0.1.0

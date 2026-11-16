@@ -1,6 +1,6 @@
 //! The fixed camera of a field map and its projection on the prerendered background, exactly as
-//! `packages/engine/render/src/map_camera.cpp` computes them (docs/formats/mapas.md, "Cómo se
-//! dibuja"): a background pixel is `H · view / depth + background centre`, with the eye and the
+//! `packages/engine/render/src/map_camera.cpp` computes them (docs/formats/maps.md, "How it is
+//! drawn"): a background pixel is `H · view / depth + background centre`, with the eye and the
 //! reference doubled from the document. The tests compare it with numbers the C++ printed.
 
 use glam::{IVec2, IVec3, Mat3, Mat4, Vec2, Vec3};

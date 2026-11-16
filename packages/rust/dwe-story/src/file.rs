@@ -1,5 +1,5 @@
 //! A story file: a module (`story/<n>.lua`, as `dwx` writes it) or a story patch
-//! (`story/patches/<name>.lua`, docs/modding/historia.md#parches-por-sección). Both are a few locals,
+//! (`story/patches/<name>.lua`, docs/modding/story.md#patches-per-section). Both are a few locals,
 //! an optional `routines` table with its functions and a returned
 //! `{ script = <n>, sections = { [<id>] = ... } }`; a module's sections name its routines, a patch's
 //! are functions that get the original section.

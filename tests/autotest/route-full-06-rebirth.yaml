@@ -4,7 +4,7 @@
 # elder's scene in his house, room08), confirms through the death and the egg's rebirth (keeping the name), raises the
 # new baby for two days with the same care to a Rookie, then trains it at the gym (trai00) as chunk 2 does and lets
 # the days go by with the care until it evolves: the elder sends only a Champion or more up Mt. Infinity (script 210
-# section 0x33). It ends back in the city (twna02), saving in slot_01. The chain: docs/guides/prueba-vertical.md
+# section 0x33). It ends back in the city (twna02), saving in slot_01. The chain: docs/guides/vertical-slice.md
 # (scripts/story-chain.sh).
 name: full-06
 device: keyboard

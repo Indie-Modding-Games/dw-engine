@@ -1,4 +1,4 @@
-# El primer arranque del juego: pide la imagen del disco propio del jugador y la lee una vez
+# The game's first start: asks for the image of the player's own disc and reads it once
 # (apps/game/src/first_run_screen.cpp).
 title: "Bienvenido"
 intro: "Para jugar necesitas tu propia copia del juego original: una imagen del disco de la versión norteamericana (un archivo .cue con su .bin, o un .iso). El juego la lee una vez y guarda lo que necesita en este equipo; no se descarga nada."
@@ -33,8 +33,8 @@ region.jp_rev1: "japonesa (revisión 1)"
 region.other: "de otra región"
 error.extract_failed: "La lectura del disco falló: {detail}"
 error.no_tool: "No se puede leer el disco: {detail}"
-# El paso del idioma, la primera vez que arranca el juego (antes de elegir ninguno): un botón por idioma, con su nombre
-# en ese idioma (language.yaml: name).
+# The language step, the first time the game starts (before choosing any): one button per language, with its name
+# in that language (language.yaml: name).
 language_title: "Elige tu idioma"
 language_intro: "El juego y esta pantalla se verán en el idioma que elijas. Puedes cambiarlo luego en las opciones."
 language_keys: "Flechas: moverse   Intro: elegir   Esc: salir"

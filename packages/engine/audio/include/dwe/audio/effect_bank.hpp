@@ -22,7 +22,7 @@ struct EffectSample {
 };
 
 // A bank of sound effects with its samples loaded: plays an effect the way the original's sound
-// chip did, one voice per tone (docs/architecture/audio.md#64-el-tramo-2-en-detalle).
+// chip did, one voice per tone (docs/architecture/audio.md#64-effects-in-detail).
 class EffectBank {
 public:
   // `samples` holds each of the bank's samples, in the order of bank.samples.

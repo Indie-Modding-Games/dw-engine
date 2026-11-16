@@ -1,11 +1,11 @@
-# El menú para elegir un objeto de la bolsa que abre la historia (script_interp.c: CALL_ROUTINE 0 -> script_common.c:
-# openDiscardItem; packages/session: DiscardMenu): para tirar uno con la bolsa llena o para entregar uno.
+# The menu for choosing an item from the bag that opens the story (script_interp.c: CALL_ROUTINE 0 -> script_common.c:
+# openDiscardItem; packages/session: DiscardMenu): to throw one away with a full bag or to hand one over.
 
-# createSingleCardShopMenu: la caja «¿Está bien?» es la frase 0 de la sección 0x4d8 de MAPHEAD.
+# createSingleCardShopMenu: the «Is that OK?» box is line 0 of section 0x4d8 of MAPHEAD.
 confirm_section: 1240
 confirm_line: 0
-# Con el trigger 3 puesto el jugador puede salir sin elegir; si la bolsa no tiene nada que elegir, queda puesto.
+# With trigger 3 set the player can leave without choosing; if the bag has nothing to choose, it stays set.
 cancel_trigger: 3
-# El objeto elegido va a la variable 254 (writePStat(0xfe)); 255 es ninguno.
+# The chosen item goes to variable 254 (writePStat(0xfe)); 255 is none.
 chosen_variable: 254
 no_item: 255

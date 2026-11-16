@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: story",
-  "description": "rules/<id>/story.yaml: the story's rules (packages/session: StorySectionRules, docs/architecture/interprete-historia.md).",
+  "description": "rules/<id>/story.yaml: the story's rules (packages/session: StorySectionRules, docs/architecture/story-interpreter.md).",
   "type": "object",
   "required": [
     "ticks_per_frame",
@@ -71,7 +71,7 @@
       "maximum": 255
     },
     "capacity": {
-      "description": "What the ruleset adds to the original's 800 triggers and 256 variables, for mods (docs/modding/historia.md). Left out, nothing.",
+      "description": "What the ruleset adds to the original's 800 triggers and 256 variables, for mods (docs/modding/story.md). Left out, nothing.",
       "type": "object",
       "required": [
         "extra_triggers",

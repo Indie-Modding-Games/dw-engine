@@ -87,7 +87,7 @@ is_follow_up() {
 }
 
 # route_job <route> <lang> <suffix>: a route on the extracted content, with the flags it needs
-# (docs/guides/prueba-vertical.md, "Las ejecuciones del gate").
+# (docs/guides/vertical-slice.md, "Las ejecuciones del gate").
 route_job() {
   local route="$1" lang="$2" suffix="$3"
   local flags=(--content "$DWE_CONTENT")

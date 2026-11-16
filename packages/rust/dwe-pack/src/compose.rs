@@ -68,7 +68,7 @@ pub struct ComposedTable {
 }
 
 /// Composes the files of a table from the bottom of the stack up
-/// (docs/architecture/vfs.md#cómo-se-componen). An entry whose id is already there replaces that
+/// (docs/architecture/vfs.md#how-they-are-composed). An entry whose id is already there replaces that
 /// entry in its place and keeps its index; a new one goes at the end with the next free index.
 pub fn compose_table(
     contributions: &[Contribution],

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Field sprite characters",
-  "description": "field/sprite_characters.yaml of the game pack: the characters some maps draw as sprites of their depth layers, drawn as their species' models with the 3D characters option (an engine improvement, docs/modulos/apps/game.md). Pixels are the map background's.",
+  "description": "field/sprite_characters.yaml of the game pack: the characters some maps draw as sprites of their depth layers, drawn as their species' models with the 3D characters option (an engine improvement, docs/modules/apps/game.md). Pixels are the map background's.",
   "type": "object",
   "required": [
     "characters"

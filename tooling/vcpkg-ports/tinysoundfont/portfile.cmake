@@ -10,7 +10,7 @@ vcpkg_from_github(
 )
 
 # The synthesizer reads but drops each zone's reverb send; the engine sends the voices that have it
-# to the sound chip's reverb (docs/architecture/audio.md, "Reverberación"), so the header keeps the
+# to the sound chip's reverb (docs/architecture/audio.md, "Reverb"), so the header keeps the
 # generator in its region. It is stored as read, never applied by the synthesizer itself.
 vcpkg_replace_string("${SOURCE_PATH}/tsf.h"
     "int freqVibLFO, vibLfoToPitch;"

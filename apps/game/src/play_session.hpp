@@ -205,7 +205,7 @@ struct SessionCommands {
   void drop(Autotest* autotest);
 };
 
-// What lives as long as one game (docs/architecture/guardar-y-cargar.md, 3.1): the session, the
+// What lives as long as one game (docs/architecture/save-and-load.md, 3.1): the session, the
 // field, the battle, the partner's menu and the HUD. It is built whole from a new game or a save
 // and torn down whole.
 class PlaySession {
@@ -349,7 +349,7 @@ public:
   }
 
   // Whether the player chose to go back to the title screen, once (docs/architecture/
-  // guardar-y-cargar.md, 3.8).
+  // save-and-load.md, 3.8).
   [[nodiscard]] bool takeToTitle() { return std::exchange(toTitle_, false); }
 
   // Whether the player chose to save and quit the game from the pause menu, once: the app closes
@@ -428,7 +428,7 @@ private:
   // warp("<map> [exit]"): a map change to that map's exit, as a script's.
   void warpTo(std::string_view where);
   void showLockNotice(const std::string& textKey);
-  // The pause menu's quick save (docs/architecture/guardar-y-cargar.md, 3.8): writes the game to
+  // The pause menu's quick save (docs/architecture/save-and-load.md, 3.8): writes the game to
   // its home slot, or the first empty manual slot for a playthrough that never saved; a notice
   // when there is no room or the write fails. The save indicator follows the write itself.
   // Whether the game was written.

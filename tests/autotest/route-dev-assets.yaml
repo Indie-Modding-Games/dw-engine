@@ -1,4 +1,4 @@
-# The dev assets banner (docs/architecture/assets-de-desarrollo.md): with --dev-assets it shows over the main menu and
+# The dev assets banner (docs/architecture/development-assets.md): with --dev-assets it shows over the main menu and
 # over the field. Unlike the other routes it needs the flag and a dev-assets.yaml in the current folder:
 #   scripts/dev.sh run --dev-assets --autotest tests/autotest/route-dev-assets.yaml --lang <en|es> ...
 name: dev_assets

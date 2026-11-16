@@ -15,7 +15,7 @@ pub struct FoundPacks {
 }
 
 /// The folder itself when it has a `pack.yaml`; otherwise each immediate subfolder that has one
-/// and each immediate `.pak` file (docs/architecture/vfs.md, "Qué se puede preguntar").
+/// and each immediate `.pak` file (docs/architecture/vfs.md, "What can be asked").
 pub fn find_packs(folder: &Path) -> Result<FoundPacks> {
     if folder.join("pack.yaml").is_file() {
         return Ok(FoundPacks {

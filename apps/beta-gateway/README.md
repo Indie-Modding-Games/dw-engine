@@ -1,76 +1,75 @@
-# Pasarela de la beta cerrada
+# Closed beta gateway
 
-Un Worker de Cloudflare (`worker.js`, un solo archivo de JavaScript sin dependencias) entre el lanzador y las
-versiones del repositorio. El repositorio es público desde el 2026-11-05, pero el lanzador sigue hablando solo con la
-pasarela: es el servidor de versiones que lleva compilado. Quien prueba la beta solo necesita el lanzador: la
-**clave de la beta**, una sola clave compartida que genera el responsable, va **dentro del lanzador** desde que se
-publica, y el probador nunca la escribe. Con ella el lanzador ve las versiones, descarga el juego y recibe
-actualizaciones del juego y del propio lanzador; sin ella, nada.
+A Cloudflare Worker (`worker.js`, a single JavaScript file with no dependencies) between the launcher and the
+repository's releases. The repository has been public since 2026-11-05, but the launcher still talks only to the
+gateway: it is the release server compiled into it. Whoever tests the beta only needs the launcher: the **beta key**,
+a single shared key that the maintainer generates, is **inside the launcher** from the moment it is published, and the
+tester never types it. With it the launcher sees the releases, downloads the game and gets updates of the game and of
+the launcher itself; without it, nothing.
 
-**Es una barrera ligera, no un secreto.** El repositorio y sus versiones son públicos, y la clave va en el programa
-que se reparte: quien tenga el lanzador puede sacarla. Solo evita que la pasarela conteste a cualquiera.
+**It is a light barrier, not a secret.** The repository and its releases are public, and the key is in the program
+that is handed out: whoever has the launcher can extract it. It only stops the gateway from answering anyone.
 
 ```
-lanzador ──(Authorization: Bearer <clave de la beta>)──► pasarela ──(token de solo lectura)──► API de GitHub
-    ▲                                                        │
-    └──── 302 a un enlace firmado y de corta vida ◄──────────┘   (los paquetes no pasan por el Worker)
+launcher ──(Authorization: Bearer <beta key>)──► gateway ──(read-only token)──► GitHub API
+    ▲                                                │
+    └──── 302 to a signed, short-lived link ◄────────┘   (the packages do not go through the Worker)
 ```
 
-## Qué hace
+## What it does
 
-Contesta, para un único repositorio, las peticiones de la API de GitHub que usan el lanzador y su actualizador:
+For a single repository, it answers the GitHub API requests that the launcher and its updater use:
 
-| Petición | Respuesta |
+| Request | Response |
 |---|---|
-| `GET /repos/<repo>/releases` | Las versiones (sin borradores), solo con los campos que lee el lanzador. |
-| `GET /repos/<repo>/releases/latest`, `/releases/tags/<tag>` | Una versión, igual. |
-| `GET /repos/<repo>/releases/assets/<id>` con `Accept: application/octet-stream` | Un archivo: los JSON pequeños (`game-manifest.json`, `latest.json`) los sirve la pasarela; cualquier otro es un **302** al enlace firmado de GitHub. |
-| `GET /repos/<repo>/releases/download/<tag>/<nombre>` | Lo mismo, por versión y nombre. |
+| `GET /repos/<repo>/releases` | The releases (no drafts), with only the fields the launcher reads. |
+| `GET /repos/<repo>/releases/latest`, `/releases/tags/<tag>` | One release, likewise. |
+| `GET /repos/<repo>/releases/assets/<id>` with `Accept: application/octet-stream` | A file: the gateway serves the small JSONs (`game-manifest.json`, `latest.json`); any other is a **302** to GitHub's signed link. |
+| `GET /repos/<repo>/releases/download/<tag>/<nombre>` | The same, by release and name. |
 
-- **La clave:** se compara en tiempo constante con el secreto `BETA_KEY` y, si está puesto, con
-  `BETA_KEY_PREVIOUS` (la clave anterior, mientras dura un cambio de clave); siempre con las dos, así que el tiempo
-  no dice cuál coincide. Sin clave o con otra: `401` con un mensaje JSON, que el lanzador convierte en «El servidor
+- **The key:** it is compared in constant time with the `BETA_KEY` secret and, if it is set, with
+  `BETA_KEY_PREVIOUS` (the previous key, while a key change lasts); always with both, so the timing does not say which
+  one matches. With no key or another one: `401` with a JSON message, which the launcher turns into «El servidor
   de la beta ya no acepta este lanzador. Actualiza el lanzador o vuelve a instalarlo desde la última versión
-  publicada.».
-- **Las URL:** todas las URL de archivos (`url`, `browser_download_url` y las que van dentro de `latest.json`) se
-  reescriben para que apunten a la propia pasarela. El lanzador rechaza un archivo que esté en otro servidor, y su
-  actualizador también, así que la clave nunca sale hacia otro sitio.
-- **Las descargas grandes:** la pasarela pide el archivo a GitHub sin seguir la redirección y devuelve ese `302`.
-  El enlace firmado no lleva ningún token; al seguirlo, el cliente HTTP del lanzador quita la cabecera
-  `Authorization` porque cambia de servidor (probado en `apps/launcher/src-tauri/tests/fake_release.rs`).
-- **El token de GitHub** solo vive en el secreto `GITHUB_TOKEN`: nunca aparece en una respuesta, ni en el cuerpo ni
-  en las cabeceras (probado en `worker.test.js`).
-- **Caché:** las listas y las descripciones de archivos se guardan 60 s (en memoria y, con un dominio propio, en la
-  caché de Cloudflare), muy por debajo del límite de 5000 peticiones por hora del token.
-- Si GitHub rechaza el token de la pasarela (caducado, revocado, límite), el lanzador recibe `503` («no se pudo
-  conectar»), no «clave incorrecta»: el problema es de la pasarela, no del probador. El registro del Worker lo dice.
+  publicada.» (the launcher's Spanish text: the beta server no longer accepts this launcher; update it or reinstall it
+  from the latest release).
+- **The URLs:** all the file URLs (`url`, `browser_download_url` and those inside `latest.json`) are rewritten to
+  point at the gateway itself. The launcher rejects a file that is on another server, and so does its updater, so the
+  key never goes anywhere else.
+- **Large downloads:** the gateway asks GitHub for the file without following the redirect and returns that `302`.
+  The signed link carries no token; when following it, the launcher's HTTP client drops the `Authorization` header
+  because the server changes (tested in `apps/launcher/src-tauri/tests/fake_release.rs`).
+- **The GitHub token** lives only in the `GITHUB_TOKEN` secret: it never appears in a response, neither in the body
+  nor in the headers (tested in `worker.test.js`).
+- **Cache:** the lists and the file descriptions are kept for 60 s (in memory and, with a custom domain, in the
+  Cloudflare cache), far below the token's limit of 5000 requests per hour.
+- If GitHub rejects the gateway's token (expired, revoked, limit), the launcher gets `503` («no se pudo conectar»,
+  "could not connect"), not "wrong key": the problem is the gateway's, not the tester's. The Worker's log says so.
 
-## Ajustes del Worker
+## Worker settings
 
-| Nombre | Tipo | Valor |
+| Name | Type | Value |
 |---|---|---|
-| `BETA_KEY` | Secreto | La clave de la beta (al menos 24 caracteres; con menos, la pasarela lo rechaza todo). El mismo valor que el secreto `DWE_BETA_KEY` del repositorio. |
-| `BETA_KEY_PREVIOUS` | Secreto, opcional | La clave anterior, solo durante un cambio de clave (abajo). Si está puesta, también 24 caracteres o más. |
-| `GITHUB_TOKEN` | Secreto | El token de GitHub de solo lectura (ver abajo). |
-| `GITHUB_REPO` | Variable de texto | `Indie-Modding-Games/dw-engine` |
+| `BETA_KEY` | Secret | The beta key (at least 24 characters; with fewer, the gateway rejects everything). The same value as the repository's `DWE_BETA_KEY` secret. |
+| `BETA_KEY_PREVIOUS` | Secret, optional | The previous key, only during a key change (below). If it is set, also 24 characters or more. |
+| `GITHUB_TOKEN` | Secret | The read-only GitHub token (see below). |
+| `GITHUB_REPO` | Text variable | `Indie-Modding-Games/dw-engine` |
 
-`GITHUB_API` solo existe para las pruebas locales; en Cloudflare no se pone.
+`GITHUB_API` exists only for local tests; it is not set on Cloudflare.
 
-## Desplegarlo (panel de Cloudflare)
+## Deploying it (Cloudflare dashboard)
 
-1. **Workers y Pages → Crear → Crear Worker** (*Workers & Pages → Create → Create Worker*, la plantilla «Hello
-   World»). Nombre: `dwe-beta-gateway`. Desplegar (*Deploy*).
-2. **Editar código** (*Edit code*): borrar el contenido de `worker.js` en el editor, pegar el de `apps/beta-gateway/worker.js`
-   entero y pulsar **Desplegar**.
-3. **Configuración → Variables y secretos → Añadir** (*Settings → Variables and Secrets → Add*), y después
-   **Desplegar**:
-   - `BETA_KEY`, tipo **Secreto**, la clave generada (abajo).
-   - `GITHUB_TOKEN`, tipo **Secreto**, el token de GitHub (abajo).
-   - `GITHUB_REPO`, tipo **Texto**, `Indie-Modding-Games/dw-engine`.
-4. La dirección queda en **Configuración → Dominios y rutas** (*Domains & Routes*): `https://dwe-beta-gateway.<subdominio>.workers.dev`.
-   Esa es la URL que se compila en el lanzador (abajo). Un dominio propio es opcional (activa la caché de Cloudflare
-   además de la de memoria).
-5. Comprobarlo sin dejar la clave en el historial de la terminal:
+1. **Workers & Pages → Create → Create Worker** (the "Hello World" template). Name: `dwe-beta-gateway`. **Deploy**.
+2. **Edit code**: delete the contents of `worker.js` in the editor, paste all of `apps/beta-gateway/worker.js` and
+   press **Deploy**.
+3. **Settings → Variables and Secrets → Add**, and then **Deploy**:
+   - `BETA_KEY`, type **Secret**, the generated key (below).
+   - `GITHUB_TOKEN`, type **Secret**, the GitHub token (below).
+   - `GITHUB_REPO`, type **Text**, `Indie-Modding-Games/dw-engine`.
+4. The address ends up in **Settings → Domains & Routes**: `https://dwe-beta-gateway.<subdominio>.workers.dev`.
+   That is the URL that is compiled into the launcher (below). A custom domain is optional (it turns on the
+   Cloudflare cache in addition to the in-memory one).
+5. Check it without leaving the key in the terminal history:
 
    ```bash
    read -rs CLAVE
@@ -78,92 +77,91 @@ Contesta, para un único repositorio, las peticiones de la API de GitHub que usa
    curl -s -H "Authorization: Bearer $CLAVE" https://dwe-beta-gateway.<subdominio>.workers.dev/repos/Indie-Modding-Games/dw-engine/releases | head -c 300
    ```
 
-   La primera da `401`; la segunda, la lista de versiones con URL de la pasarela. Una versión **borrador** no
-   aparece hasta que se publica (el token de solo lectura no ve borradores).
+   The first gives `401`; the second, the list of releases with gateway URLs. A **draft** release does not show up
+   until it is published (the read-only token does not see drafts).
 
-El plan gratuito de Workers (100 000 peticiones al día) sobra para la beta: el lanzador hace unas pocas peticiones
-cada vez que busca actualizaciones.
+The free Workers plan (100,000 requests a day) is more than enough for the beta: the launcher makes a few requests
+each time it looks for updates.
 
-## La clave de la beta
+## The beta key
 
-Generarla en el ordenador del responsable, nunca en un archivo del repositorio:
+Generate it on the maintainer's computer, never in a file of the repository:
 
 ```bash
 openssl rand -base64 32
 ```
 
-Se pega en **dos** sitios, con el mismo valor:
+It is pasted in **two** places, with the same value:
 
-- el secreto `BETA_KEY` del Worker (arriba);
-- el secreto del repositorio `DWE_BETA_KEY` (GitHub → **Settings → Secrets and variables → Actions → Secrets → New
-  repository secret**). `.github/workflows/release.yml` lo compila dentro del lanzador y se niega a publicar si falta
-  o tiene menos de 24 caracteres. Nunca se escribe en el registro de la ejecución.
+- the Worker's `BETA_KEY` secret (above);
+- the repository secret `DWE_BETA_KEY` (GitHub → **Settings → Secrets and variables → Actions → Secrets → New
+  repository secret**). `.github/workflows/release.yml` compiles it into the launcher and refuses to publish if it is
+  missing or shorter than 24 characters. It is never written to the run's log.
 
-A los probadores no se les envía nada: el lanzador ya la lleva. Los lanzadores antiguos que la guardaban en el
-llavero del sistema la borran de ahí la primera vez que se actualizan.
+Nothing is sent to the testers: the launcher already carries it. Old launchers that kept it in the system keyring
+delete it from there the first time they update.
 
-**Cambiarla** (si se quiere cortar el acceso a quien tenga un lanzador viejo). Como la clave va dentro del lanzador,
-un cambio necesita una versión nueva del lanzador, y la clave anterior sigue valiendo mientras los lanzadores se
-actualizan solos:
+**Changing it** (if you want to cut off access for whoever has an old launcher). Since the key is inside the launcher,
+a change needs a new launcher release, and the previous key stays valid while the launchers update themselves:
 
-1. Generar una nueva con `openssl rand -base64 32`.
-2. En el Worker: copiar la clave actual de `BETA_KEY` a `BETA_KEY_PREVIOUS`, pegar la nueva en `BETA_KEY` y
-   **Desplegar**. Las dos sirven.
-3. En el repositorio: pegar la nueva en `DWE_BETA_KEY` y publicar una versión (una fusión en `main`, o
-   *Actions → Release → Run workflow*). Los lanzadores se actualizan con la clave anterior y ya traen la nueva.
-4. Cuando los probadores ya tengan el lanzador nuevo (unos días), borrar `BETA_KEY_PREVIOUS` y **Desplegar**. Un
-   lanzador que no se actualizó dirá «El servidor de la beta ya no acepta este lanzador…» y habrá que reinstalarlo
-   desde la última versión publicada.
+1. Generate a new one with `openssl rand -base64 32`.
+2. In the Worker: copy the current `BETA_KEY` to `BETA_KEY_PREVIOUS`, paste the new one into `BETA_KEY` and
+   **Deploy**. Both work.
+3. In the repository: paste the new one into `DWE_BETA_KEY` and publish a release (a merge into `main`, or
+   *Actions → Release → Run workflow*). The launchers update with the previous key and then bring the new one.
+4. When the testers already have the new launcher (a few days), delete `BETA_KEY_PREVIOUS` and **Deploy**. A launcher
+   that did not update will say «El servidor de la beta ya no acepta este lanzador…» and will have to be reinstalled
+   from the latest release.
 
-Si la clave se filtra de verdad, el paso 2 puede saltarse (sin `BETA_KEY_PREVIOUS`): la vieja deja de servir al
-momento y todos los probadores tienen que reinstalar el lanzador.
+If the key really leaks, step 2 can be skipped (without `BETA_KEY_PREVIOUS`): the old one stops working at once and
+all the testers have to reinstall the launcher.
 
-## El token de GitHub
+## The GitHub token
 
-Un *fine-grained personal access token* que solo puede leer el contenido de `dw-engine`. Con el repositorio público
-la pasarela podría leer las versiones sin él, pero el token sube el límite de peticiones a la API (5000 por hora en
-lugar de 60 por IP, que comparten todos los Workers de la misma salida de Cloudflare):
+A *fine-grained personal access token* that can only read the contents of `dw-engine`. With the repository public,
+the gateway could read the releases without it, but the token raises the API request limit (5000 per hour instead of
+60 per IP, which all the Workers behind the same Cloudflare egress share):
 
 1. GitHub → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**.
-2. **Resource owner:** `Indie-Modding-Games` (si la organización pide aprobación de tokens, un propietario la da).
-3. **Expiration:** la que permita la organización (por ejemplo 90 días); antes de que caduque se crea otro y se
-   cambia el secreto `GITHUB_TOKEN` igual que la clave.
+2. **Resource owner:** `Indie-Modding-Games` (if the organization asks for token approval, an owner gives it).
+3. **Expiration:** whatever the organization allows (for example 90 days); before it expires, create another and
+   change the `GITHUB_TOKEN` secret the same way as the key.
 4. **Repository access:** *Only select repositories* → `dw-engine`.
-5. **Permissions → Repository permissions → Contents: Read-only**. GitHub añade *Metadata: Read-only* solo. Ningún
-   otro permiso.
-6. Generar, copiar y pegarlo directamente en el secreto `GITHUB_TOKEN` del Worker. No se guarda en ningún otro sitio.
+5. **Permissions → Repository permissions → Contents: Read-only**. GitHub adds *Metadata: Read-only* by itself. No
+   other permission.
+6. Generate it, copy it and paste it straight into the Worker's `GITHUB_TOKEN` secret. It is not kept anywhere else.
 
-## La URL en el lanzador
+## The URL in the launcher
 
-El lanzador usa como servidor de versiones la URL con la que se compiló:
+The launcher uses as its release server the URL it was compiled with:
 
-- `DWE_LAUNCHER_GATEWAY=https://dwe-beta-gateway.<subdominio>.workers.dev scripts/launcher.sh build` (o `bundle`).
-- En `.github/workflows/release.yml`, la variable del repositorio `DWE_BETA_GATEWAY` (Settings → Secrets and
-  variables → Actions → Variables); el flujo se niega a compilar sin ella.
-- Sin esa variable, la compilación apunta a `https://beta-gateway.invalid`, que no existe: una compilación de
-  desarrollo nunca habla con un servidor de verdad.
-- `DWE_LAUNCHER_API=<url>` lo cambia para una ejecución (pruebas). El servidor no se guarda en `settings.json`.
+- `DWE_LAUNCHER_GATEWAY=https://dwe-beta-gateway.<subdominio>.workers.dev scripts/launcher.sh build` (or `bundle`).
+- In `.github/workflows/release.yml`, the repository variable `DWE_BETA_GATEWAY` (Settings → Secrets and
+  variables → Actions → Variables); the workflow refuses to build without it.
+- Without that variable, the build points at `https://beta-gateway.invalid`, which does not exist: a development build
+  never talks to a real server.
+- `DWE_LAUNCHER_API=<url>` changes it for one run (tests). The server is not saved in `settings.json`.
 
-La clave se compila igual: `DWE_LAUNCHER_BETA_KEY=<clave> scripts/launcher.sh build`, y en `release.yml` desde el
-secreto `DWE_BETA_KEY`. `DWE_LAUNCHER_BETA_KEY=<clave>` al ejecutar el lanzador la cambia para esa ejecución
-(pruebas). Una compilación a mano sin clave envía la que un lanzador antiguo guardó en el llavero, si la hay.
+The key is compiled in the same way: `DWE_LAUNCHER_BETA_KEY=<clave> scripts/launcher.sh build`, and in `release.yml`
+from the `DWE_BETA_KEY` secret. `DWE_LAUNCHER_BETA_KEY=<clave>` when running the launcher changes it for that run
+(tests). A hand-made build without a key sends the one an old launcher saved in the keyring, if there is one.
 
-## Probar en local
+## Testing locally
 
-Sin instalar nada (node viene en el host o en la imagen `dwe-launcher-dev`):
+Without installing anything (node comes with the host or with the `dwe-launcher-dev` image):
 
 ```bash
-node --test apps/beta-gateway/          # el Worker con fetch simulado
-scripts/launcher.sh test                    # incluye la prueba de punta a punta (abajo)
+node --test apps/beta-gateway/          # the Worker with a mocked fetch
+scripts/launcher.sh test                    # includes the end-to-end test (below)
 ```
 
-La prueba `through_the_beta_gateway` de `apps/launcher/src-tauri/tests/fake_release.rs` arranca
-`apps/launcher/tools/fake_release_server.py` como GitHub (que redirige cada archivo a otro servidor y rechaza ahí
-cualquier petición con `Authorization`, como el almacenamiento de GitHub), la pasarela con `dev/serve.js` delante, y
-el cliente del lanzador contra la pasarela: sin clave o con otra, con la clave anterior (`BETA_KEY_PREVIOUS`), la
-lista de versiones, la instalación del juego y `latest.json` con su lanzador.
+The `through_the_beta_gateway` test in `apps/launcher/src-tauri/tests/fake_release.rs` starts
+`apps/launcher/tools/fake_release_server.py` as GitHub (which redirects each file to another server and rejects any
+request with `Authorization` there, like GitHub's storage), the gateway with `dev/serve.js` in front, and the
+launcher's client against the gateway: with no key or another one, with the previous key (`BETA_KEY_PREVIOUS`), the
+list of releases, the game install and `latest.json` with its launcher.
 
-A mano:
+By hand:
 
 ```bash
 python3 apps/launcher/tools/fake_release_server.py <carpeta> --port 8765 --token token-falso --repo Indie-Modding-Games/dw-engine &
@@ -173,6 +171,6 @@ DWE_LAUNCHER_API=http://127.0.0.1:8787 DWE_LAUNCHER_BETA_KEY=clave-de-prueba-de-
   build/launcher/release/dwe-launcher
 ```
 
-## Pendiente
+## Pending
 
-- Frenar por IP los intentos con clave incorrecta (una regla de *rate limiting* de Cloudflare sirve si hace falta).
+- Slow down by IP the attempts with a wrong key (a Cloudflare *rate limiting* rule works if needed).

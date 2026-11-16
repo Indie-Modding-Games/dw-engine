@@ -33,7 +33,7 @@ std::optional<std::array<std::int32_t, 3>> touchOf(const EffectLanding& landing)
 // Whom an attack released by `id` reaches when the battle cannot follow its effect. The original's
 // attack objects collide with the bodies on the ground; the engine sends them to their targets: a
 // melee swing to its target if it is still within reach, a shot to its target, an area move to
-// every opponent of the caster (suposición) and a support move to the caster itself.
+// every opponent of the caster (an assumption) and a support move to the caster itself.
 std::vector<FighterId> reachedBy(const BattleContext& context, FighterId id, const BattleMove& move,
                                  std::optional<FighterId> target) {
   const BattleState& state = *context.state;
@@ -207,7 +207,7 @@ Point hitPointOf(const BattleContext& context, const AttackInFlight& attack) {
 }
 
 // Where the spark of an attack bursts (the attack object's position): where its effect touched,
-// else the defender's body toward the attacker at half its height (suposición).
+// else the defender's body toward the attacker at half its height (an assumption).
 HitParticles::Vec3 sparkPointOf(const BattleContext& context, const AttackInFlight& attack) {
   if (attack.touch) {
     return *attack.touch;
@@ -572,7 +572,7 @@ void tickAttacksInFlight(BattleContext& context) {
     }
     Fighter& defender = context.fighter(attack.defender);
     // A fighter in its hit reaction cannot be hit again (isHit): what reaches it then is lost
-    // (suposición).
+    // (an assumption).
     if (attack.aim && (defender.fainted || defender.struck)) {
       // BTL_applyRadiusAttackHit skips a fighter already in its hit reaction: a bystander's touch
       // is no attack on it.

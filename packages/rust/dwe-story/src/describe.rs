@@ -1,10 +1,12 @@
-//! Story code in words, for the editor's list: one Spanish line a statement, with the names of
+//! Story code in words, for the editor's list: one line a statement, in the current language
+//! ([`crate::language`]), with the names of
 //! `story/names`, the dialogue lines of the text tables and the map ids of `data/maps`.
 
 use dwe_map::{MapTable, StoryNames};
 
 use crate::ast::{BinOp, Expr, Stmt, StmtKind};
 use crate::commands::{self, OperandKind};
+use crate::language::{pick, say};
 use crate::texts::StoryTexts;
 use crate::write::{expr_text, is_link};
 
@@ -45,7 +47,10 @@ impl Names<'_> {
         i32::try_from(index)
             .ok()
             .and_then(|index| self.maps.find_by_original_index(index))
-            .map_or_else(|| format!("mapa {index}"), |entry| entry.id.clone())
+            .map_or_else(
+                || say!(format!("map {index}"), format!("mapa {index}")),
+                |entry| entry.id.clone(),
+            )
     }
 
     /// A text key with the start of its line.
@@ -59,7 +64,7 @@ impl Names<'_> {
                 } else {
                     ""
                 };
-                format!("«{short}{more}»")
+                say!(format!("“{short}{more}”"), format!("«{short}{more}»"))
             }
             None => key.to_owned(),
         }
@@ -67,8 +72,8 @@ impl Names<'_> {
 
     pub fn entity(&self, expr: &Expr) -> String {
         match expr.unparen() {
-            Expr::Name(name) if name == "PLAYER" => "jugador".to_owned(),
-            Expr::Name(name) if name == "PARTNER" => "compañero".to_owned(),
+            Expr::Name(name) if name == "PLAYER" => pick("player", "jugador").to_owned(),
+            Expr::Name(name) if name == "PARTNER" => pick("partner", "compañero").to_owned(),
             Expr::Number(number) => format!("NPC {number}"),
             other => expr_text(other),
         }
@@ -79,13 +84,20 @@ impl Names<'_> {
         let number = expr.as_number();
         match (kind, number, expr.unparen()) {
             (OperandKind::Entity, ..) => self.entity(expr),
-            (OperandKind::Trigger, Some(n), _) => format!("disparador {}", self.trigger(n)),
+            (OperandKind::Trigger, Some(n), _) => {
+                say!(
+                    format!("trigger {}", self.trigger(n)),
+                    format!("disparador {}", self.trigger(n))
+                )
+            }
             (OperandKind::Var, Some(n), _) => format!("variable {}", self.var(n)),
             (OperandKind::Map, Some(n), _) => self.map(n),
-            (OperandKind::Exit, Some(n), _) => format!("salida {n}"),
-            (OperandKind::Section, Some(255), _) => "sin sección".to_owned(),
-            (OperandKind::Section, Some(n), _) => format!("sección {n:#04x}"),
-            (OperandKind::Item, Some(n), _) => format!("objeto {n}"),
+            (OperandKind::Exit, Some(n), _) => say!(format!("exit {n}"), format!("salida {n}")),
+            (OperandKind::Section, Some(255), _) => pick("no section", "sin sección").to_owned(),
+            (OperandKind::Section, Some(n), _) => {
+                say!(format!("section {n:#04x}"), format!("sección {n:#04x}"))
+            }
+            (OperandKind::Item, Some(n), _) => say!(format!("item {n}"), format!("objeto {n}")),
             (OperandKind::Text, _, Expr::Str(key)) => self.text(key),
             _ => expr_text(expr),
         }
@@ -95,11 +107,11 @@ impl Names<'_> {
     pub fn call(&self, call: &Expr) -> String {
         let Some((name, arguments)) = call.story_call_name() else {
             if let Some(routine) = call.routine_call_name() {
-                return format!("Rutina {routine}");
+                return say!(format!("Routine {routine}"), format!("Rutina {routine}"));
             }
             if matches!(call, Expr::Call(callee, _) if matches!(callee.as_ref(), Expr::Name(n) if n == "original"))
             {
-                return "Sección original".to_owned();
+                return pick("Original section", "Sección original").to_owned();
             }
             return expr_text(call);
         };
@@ -113,7 +125,7 @@ impl Names<'_> {
                 None => expr_text(argument),
             }
         });
-        format!("{}: {}", command.label, join(operands))
+        format!("{}: {}", command.label(), join(operands))
     }
 
     /// A condition in words.
@@ -121,22 +133,37 @@ impl Names<'_> {
         match expr {
             Expr::Paren(inner) => format!("({})", self.condition(inner)),
             Expr::Not(inner) => match inner.story_call_name() {
-                Some(("trigger", [n])) => format!(
-                    "disparador {} apagado",
-                    n.as_number()
-                        .map_or_else(|| expr_text(n), |n| self.trigger(n))
+                Some(("trigger", [n])) => {
+                    let trigger = n
+                        .as_number()
+                        .map_or_else(|| expr_text(n), |n| self.trigger(n));
+                    say!(
+                        format!("trigger {trigger} off"),
+                        format!("disparador {trigger} apagado")
+                    )
+                }
+                _ => say!(
+                    format!("not {}", self.condition(inner)),
+                    format!("no {}", self.condition(inner))
                 ),
-                _ => format!("no {}", self.condition(inner)),
             },
             Expr::Binary(op @ (BinOp::And | BinOp::Or), left, right) => format!(
                 "{} {} {}",
                 self.condition(left),
-                if *op == BinOp::And { "y" } else { "o" },
+                match (*op == BinOp::And, crate::language::language()) {
+                    (true, crate::language::Language::English) => "and",
+                    (false, crate::language::Language::English) => "or",
+                    (true, crate::language::Language::Spanish) => "y",
+                    (false, crate::language::Language::Spanish) => "o",
+                },
                 self.condition(right)
             ),
             Expr::Binary(op, left, right) if op.is_comparison() => {
                 if let Some(routine) = left.routine_call_name() {
-                    return format!("la rutina {routine} acaba el script");
+                    return say!(
+                        format!("the routine {routine} ends the script"),
+                        format!("la rutina {routine} acaba el script")
+                    );
                 }
                 format!(
                     "{} {} {}",
@@ -154,21 +181,27 @@ impl Names<'_> {
         if let Some((name, arguments)) = expr.story_call_name() {
             let argument = arguments.first().and_then(Expr::as_number);
             return match (name, argument) {
-                ("trigger", Some(n)) => format!("disparador {} encendido", self.trigger(n)),
+                ("trigger", Some(n)) => say!(
+                    format!("trigger {} on", self.trigger(n)),
+                    format!("disparador {} encendido", self.trigger(n))
+                ),
                 ("var", Some(n)) => format!("variable {}", self.var(n)),
-                ("money", _) => "dinero".to_owned(),
+                ("money", _) => pick("money", "dinero").to_owned(),
                 (name, Some(n)) => match commands::read(name) {
-                    Some(read) => format!("{} {n}", read.label),
+                    Some(read) => format!("{} {n}", read.label()),
                     None => expr_text(expr),
                 },
                 _ => expr_text(expr),
             };
         }
         match expr {
-            Expr::Name(name) if name == "choice" => "opción elegida".to_owned(),
-            Expr::Name(name) if name == "value" => "valor".to_owned(),
+            Expr::Name(name) if name == "choice" => {
+                pick("chosen option", "opción elegida").to_owned()
+            }
+            Expr::Name(name) if name == "value" => pick("value", "valor").to_owned(),
             Expr::Name(name) if name.starts_with("state") => {
-                format!("estado {}", &name["state".len()..])
+                let number = &name["state".len()..];
+                say!(format!("state {number}"), format!("estado {number}"))
             }
             other => expr_text(other),
         }
@@ -177,38 +210,62 @@ impl Names<'_> {
     /// A statement in one line (the blocks inside go on lines of their own).
     pub fn stmt(&self, stmt: &Stmt) -> String {
         if let Some(routine) = is_link(&stmt.kind) {
-            return format!("Llamar a la rutina {routine} (si acaba el script, acaba aquí)");
+            return say!(
+                format!("Call the routine {routine} (if the script ends, it ends here)"),
+                format!("Llamar a la rutina {routine} (si acaba el script, acaba aquí)")
+            );
         }
         match &stmt.kind {
             StmtKind::Call(call) => self.call(call),
-            StmtKind::If { arms, .. } => format!("Si {}", self.condition(&arms[0].0)),
+            StmtKind::If { arms, .. } => {
+                say!(
+                    format!("If {}", self.condition(&arms[0].0)),
+                    format!("Si {}", self.condition(&arms[0].0))
+                )
+            }
             StmtKind::While { condition, .. } => match condition {
-                Expr::Bool(true) => "Repetir".to_owned(),
-                other => format!("Mientras {}", self.condition(other)),
+                Expr::Bool(true) => pick("Repeat", "Repetir").to_owned(),
+                other => say!(
+                    format!("While {}", self.condition(other)),
+                    format!("Mientras {}", self.condition(other))
+                ),
             },
-            StmtKind::Do(_) => "Bloque".to_owned(),
-            StmtKind::Break => "Salir del bucle".to_owned(),
+            StmtKind::Do(_) => pick("Block", "Bloque").to_owned(),
+            StmtKind::Break => pick("Leave the loop", "Salir del bucle").to_owned(),
             StmtKind::Return(values) => match values.as_slice() {
-                [] => "Volver a quien llamó".to_owned(),
-                [Expr::Name(name)] if name == "ENDED" => "Fin del script".to_owned(),
+                [] => pick("Return to the caller", "Volver a quien llamó").to_owned(),
+                [Expr::Name(name)] if name == "ENDED" => {
+                    pick("End of the script", "Fin del script").to_owned()
+                }
                 [call @ Expr::Call(..)] => {
                     if let Some(routine) = call.routine_call_name() {
-                        format!("Seguir en la rutina {routine}")
+                        say!(
+                            format!("Continue in the routine {routine}"),
+                            format!("Seguir en la rutina {routine}")
+                        )
                     } else {
-                        format!("{} y fin", self.call(call))
+                        say!(
+                            format!("{} and end", self.call(call)),
+                            format!("{} y fin", self.call(call))
+                        )
                     }
                 }
-                values => format!("Devolver {}", join(values.iter().map(expr_text))),
+                values => say!(
+                    format!("Return {}", join(values.iter().map(expr_text))),
+                    format!("Devolver {}", join(values.iter().map(expr_text)))
+                ),
             },
             StmtKind::Local { name, value, .. } => match value.story_call_name() {
-                Some(("set_selection", [key, count])) => format!(
-                    "Elegir entre {} opciones: {}",
-                    expr_text(count),
-                    match key {
+                Some(("set_selection", [key, count])) => {
+                    let key = match key {
                         Expr::Str(key) => self.text(key),
                         other => expr_text(other),
-                    }
-                ),
+                    };
+                    say!(
+                        format!("Choose between {} options: {key}", expr_text(count)),
+                        format!("Elegir entre {} opciones: {key}", expr_text(count))
+                    )
+                }
                 _ => format!(
                     "{} = {}",
                     self.read(&Expr::name(name)),
@@ -218,7 +275,9 @@ impl Names<'_> {
             StmtKind::Assign { name, value } => {
                 format!("{} = {}", self.read(&Expr::name(name)), expr_text(value))
             }
-            StmtKind::Function { name, .. } => format!("Rutina {name}"),
+            StmtKind::Function { name, .. } => {
+                say!(format!("Routine {name}"), format!("Rutina {name}"))
+            }
             StmtKind::Comment(text) => format!("-- {text}"),
         }
     }
@@ -258,8 +317,8 @@ mod tests {
         (story, texts, MapTable::default())
     }
 
-    #[test]
-    fn says_statements_in_spanish() {
+    fn said(language: crate::Language) -> Vec<String> {
+        crate::set_language(language);
         let (story, texts, maps) = names();
         let names = Names {
             story: &story,
@@ -270,7 +329,20 @@ mod tests {
             "story.show_textbox(\"story_001.text.0010\")\nstory.set_trigger(12)\nif not story.trigger(12) and story.var(3) >= 2 then return ENDED end\nstory.set_dialog_owner(PLAYER)\nreturn story.warp_to(5, 2, 255)\n",
         )
         .unwrap();
-        let lines: Vec<String> = block.iter().map(|stmt| names.stmt(stmt)).collect();
+        block.iter().map(|stmt| names.stmt(stmt)).collect()
+    }
+
+    /// One test, because the language is global.
+    #[test]
+    fn says_statements_in_the_chosen_language() {
+        let lines = said(crate::Language::English);
+        assert_eq!(lines[0], "Show text: “Hello there”");
+        assert_eq!(lines[1], "Turn on trigger: trigger 12 door_open");
+        assert_eq!(lines[2], "If trigger 12 door_open off and variable 3 ≥ 2");
+        assert_eq!(lines[3], "Who speaks: player");
+        assert_eq!(lines[4], "Go to map: map 5, exit 2, no section and end");
+
+        let lines = said(crate::Language::Spanish);
         assert_eq!(lines[0], "Mostrar texto: «Hello there»");
         assert_eq!(lines[1], "Activar disparador: disparador 12 door_open");
         assert_eq!(
@@ -279,5 +351,6 @@ mod tests {
         );
         assert_eq!(lines[3], "Quién habla: jugador");
         assert_eq!(lines[4], "Ir al mapa: mapa 5, salida 2, sin sección y fin");
+        crate::set_language(crate::Language::English);
     }
 }

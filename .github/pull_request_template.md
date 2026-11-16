@@ -1,21 +1,20 @@
-## Qué cambia
+## What changes
 
-<!-- Un pull request es un lote y, al fusionarse, una versión de prueba: lista las funciones y los arreglos que
-     trae, uno por línea. El título será el mensaje del commit en main: escríbelo en inglés, en imperativo,
-     como un commit. -->
+<!-- A pull request is a batch and, once merged, a test release: list the features and fixes it
+     brings, one per line. The title will be the commit message on main: write it in English, in the imperative,
+     like a commit. -->
 
 -
 
-## Cómo se ha probado
+## How it was tested
 
-<!-- Pruebas nuevas o cambiadas, y lo que se comprobó a mano. -->
+<!-- New or changed tests, and what was checked by hand. -->
 
-## Antes de pedir revisión
+## Before asking for review
 
-- [ ] Los commits llevan `Signed-off-by` (`git commit -s`).
-- [ ] No añade ningún archivo del juego original; los assets del equipo tienen su entrada en `provenance.yaml`.
-- [ ] Trae pruebas del comportamiento que cambia.
-- [ ] Actualiza `docs/` si cambia la arquitectura, una API, un formato o una regla.
-- [ ] Si cambia el lanzador, sube su versión en `tauri.conf.json`, `Cargo.toml` y `Cargo.lock`.
+- [ ] It adds no file of the original game; the team's assets have their entry in `provenance.yaml`.
+- [ ] It brings tests for the behavior it changes.
+- [ ] It updates `docs/` if the architecture, an API, a format or a rule changes.
+- [ ] If the launcher changes, bump its version in `tauri.conf.json`, `Cargo.toml` and `Cargo.lock`.
 
-Guía completa: [docs/contribuir.md](https://github.com/Indie-Modding-Games/dw-engine/blob/main/docs/contribuir.md).
+Full guide: [docs/contributing.md](https://github.com/Indie-Modding-Games/dw-engine/blob/main/docs/contributing.md).

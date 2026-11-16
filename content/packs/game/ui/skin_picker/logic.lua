@@ -1,4 +1,4 @@
--- The UI skin, asked on each boot of the game (docs/architecture/ui.md, the title's «Aspecto» row):
+-- The UI skin, asked on each boot of the game (docs/architecture/ui.md, the title's «Skins» row):
 -- right after the language box, before the "Press Start" screen, the title screen shows this box
 -- once a run, the cursor on the skin shown (the saved one, else the packs' default). One row per
 -- skin the packs offer (ui.skins(), the options page's list and order), its name and a one-line

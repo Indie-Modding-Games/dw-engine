@@ -1,4 +1,4 @@
-/* How the shop job's counter behaves whatever the skin (_shopjob/ui-contract.md): a wide panel at the top of the screen,
+/* How the shop job's counter behaves whatever the skin (docs/reference/shop-job.md, Interface): a wide panel at the top of the screen,
    over a dimmed screen and above the dialogue box (the customer's line stays readable under it). The head holds the
    customer's number, the tally and the rules button; under it, two columns: the customer's card on the left (face,
    who, mood, patience, the item and the offers so far) and the price table on the right (the nine price rows as

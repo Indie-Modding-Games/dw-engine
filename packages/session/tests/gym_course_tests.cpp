@@ -27,7 +27,7 @@
 #include "fixture.hpp"
 #include "session_fixture.hpp"
 
-// The training check's unit level (docs/guides/comprobar-entrenamiento.md): every course of the
+// The training check's unit level (docs/guides/check-training.md): every course of the
 // game pack's gym.yaml runs a whole session on a real field, whose characters' clips all carry them
 // a made-up step a frame, through the field's own root motion (Field::moveByClip) and the gym's
 // ports on it (session::GymFieldPorts). The partner must go no farther than the original lets it:

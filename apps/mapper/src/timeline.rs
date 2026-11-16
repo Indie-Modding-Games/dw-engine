@@ -1,11 +1,11 @@
-//! The open section as a timeline (docs/modulos/apps/mapper.md#secuencias): a panel under the map
+//! The open section as a timeline (docs/modules/apps/mapper.md#sequences): a panel under the map
 //! with a row per character, the camera, the text, the sound, the waits and the rest, a block per
 //! command from its start for its length, and a playhead; over the map, the walks with their
 //! steps, the turns, the camera's points and everyone where the playhead has them. The model is
 //! `dwe_story::sequence`, placed on the map by `mapper_core::timeline`; every change goes to the
 //! model as an Action (one undo step each).
 //!
-//! With a game connected it plays the section ("Reproducir", or "Reproducir desde aquí" with the
+//! With a game connected it plays the section ("Play", or "Play from here" with the
 //! code `Mapper::play_from_here` writes), steps it, follows the command the game runs and shows how
 //! far the game's characters are from where the model has them.
 
@@ -44,7 +44,7 @@ pub struct TimelineUi {
     zoom: f32,
     /// The block whose right edge is dragged, and the frames it shows meanwhile.
     edge: Option<(StmtPath, u32)>,
-    /// The section played in the game, and the code sent for it ("desde aquí").
+    /// The section played in the game, and the code sent for it ("from here").
     played: Option<(u16, u16)>,
     sent: Option<SentSection>,
     /// The playhead goes where the game is.
@@ -88,11 +88,11 @@ fn track_color(track: Track) -> Color32 {
 /// What a block's tooltip says.
 fn cue_hint(cue: &Cue) -> String {
     let hold = match cue.hold {
-        Hold::Runs => text::HOLD_RUNS,
-        Hold::Frames => text::HOLD_FRAMES,
-        Hold::Player => text::HOLD_PLAYER,
-        Hold::Movement => text::HOLD_MOVEMENT,
-        Hold::Ends => text::HOLD_ENDS,
+        Hold::Runs => text::hold_runs(),
+        Hold::Frames => text::hold_frames(),
+        Hold::Player => text::hold_player(),
+        Hold::Movement => text::hold_movement(),
+        Hold::Ends => text::hold_ends(),
     };
     let mut lines = vec![
         cue.command.clone(),
@@ -100,16 +100,16 @@ fn cue_hint(cue: &Cue) -> String {
         hold.to_owned(),
     ];
     if cue.estimated {
-        lines.push(text::CUE_ESTIMATED.to_owned());
+        lines.push(text::cue_estimated().to_owned());
     }
     if cue.cut {
-        lines.push(text::CUE_CUT.to_owned());
+        lines.push(text::cue_cut().to_owned());
     }
     if let Some(routine) = &cue.routine {
-        lines.push(format!("{} {routine}", text::CUE_FROM_ROUTINE));
+        lines.push(format!("{} {routine}", text::cue_from_routine()));
     }
     if cue.routine.is_none() && frames_operand(&cue.command).is_some() {
-        lines.push(text::CUE_EDGE_HINT.to_owned());
+        lines.push(text::cue_edge_hint().to_owned());
     }
     lines.join("\n")
 }
@@ -167,7 +167,7 @@ fn header(
         .as_ref()
         .and_then(|open| open.selected.clone());
     ui.horizontal_wrapped(|ui| {
-        ui.strong(text::TIMELINE);
+        ui.strong(text::timeline());
         let playhead = app.mapper.timeline.playhead;
         ui.monospace(format!(
             "{:.0} / {}",
@@ -175,7 +175,7 @@ fn header(
             text::frames(sequence.length)
         ));
         ui.separator();
-        ui.label(text::TIMELINE_ZOOM);
+        ui.label(text::timeline_zoom());
         ui.add(
             egui::Slider::new(&mut state.zoom, 1.0..=40.0)
                 .logarithmic(true)
@@ -183,17 +183,17 @@ fn header(
         );
         ui.separator();
         if ui
-            .add_enabled(connected, egui::Button::new(text::PLAY))
-            .on_hover_text(text::PLAY_HINT)
-            .on_disabled_hover_text(text::PLAY_OFFLINE)
+            .add_enabled(connected, egui::Button::new(text::play()))
+            .on_hover_text(text::play_hint())
+            .on_disabled_hover_text(text::play_offline())
             .clicked()
         {
             *play = Some(false);
         }
         if ui
-            .add_enabled(connected, egui::Button::new(text::PLAY_FROM_HERE))
-            .on_hover_text(text::PLAY_FROM_HERE_HINT)
-            .on_disabled_hover_text(text::PLAY_OFFLINE)
+            .add_enabled(connected, egui::Button::new(text::play_from_here()))
+            .on_hover_text(text::play_from_here_hint())
+            .on_disabled_hover_text(text::play_offline())
             .clicked()
         {
             *play = Some(true);
@@ -201,20 +201,23 @@ fn header(
         let live = &app.live;
         if paused {
             if ui
-                .add_enabled(connected, egui::Button::new(text::LIVE_RESUME))
+                .add_enabled(connected, egui::Button::new(text::live_resume()))
                 .clicked()
             {
                 live.send(Command::Resume);
             }
         } else if ui
-            .add_enabled(connected, egui::Button::new(text::LIVE_PAUSE))
+            .add_enabled(connected, egui::Button::new(text::live_pause()))
             .clicked()
         {
             live.send(Command::Pause);
         }
         if ui
-            .add_enabled(connected && paused, egui::Button::new(text::TIMELINE_FRAME))
-            .on_hover_text(text::TIMELINE_FRAME_HINT)
+            .add_enabled(
+                connected && paused,
+                egui::Button::new(text::timeline_frame()),
+            )
+            .on_hover_text(text::timeline_frame_hint())
             .clicked()
         {
             live.send(Command::Advance(TICKS_PER_FRAME));
@@ -223,7 +226,7 @@ fn header(
         if ui
             .add_enabled(
                 connected && paused,
-                egui::Button::new(text::LIVE_STEP_SECOND),
+                egui::Button::new(text::live_step_second()),
             )
             .clicked()
         {
@@ -232,23 +235,23 @@ fn header(
         }
         ui.add_enabled(
             connected,
-            egui::Checkbox::new(&mut state.follow, text::TIMELINE_FOLLOW),
+            egui::Checkbox::new(&mut state.follow, text::timeline_follow()),
         )
-        .on_hover_text(text::TIMELINE_FOLLOW_HINT);
+        .on_hover_text(text::timeline_follow_hint());
         if connected && state.played.is_some() {
             match &state.game_at {
-                Some(at) => ui.weak(format!("{} {}", text::TIMELINE_GAME_AT, path_text(at))),
-                None => ui.weak(text::TIMELINE_GAME_IDLE),
+                Some(at) => ui.weak(format!("{} {}", text::timeline_game_at(), path_text(at))),
+                None => ui.weak(text::timeline_game_idle()),
             };
         }
     });
     ui.horizontal_wrapped(|ui| {
         if let Some(path) = &selected {
             ui.monospace(path_text(path));
-            for (label, later) in [(text::CUE_EARLIER, false), (text::CUE_LATER, true)] {
+            for (label, later) in [(text::cue_earlier(), false), (text::cue_later(), true)] {
                 if ui
                     .button(label)
-                    .on_hover_text(text::CUE_MOVE_HINT)
+                    .on_hover_text(text::cue_move_hint())
                     .clicked()
                 {
                     actions.push(Action::MoveCue {
@@ -259,8 +262,8 @@ fn header(
             }
             ui.separator();
         }
-        ui.label(text::TIMELINE_ADD)
-            .on_hover_text(text::TIMELINE_ADD_HINT);
+        ui.label(text::timeline_add())
+            .on_hover_text(text::timeline_add_hint());
         for kind in NewCue::ALL {
             if ui.small_button(kind.label()).clicked() {
                 actions.push(Action::AddCue { kind, at: None });
@@ -273,8 +276,8 @@ fn header(
                 .iter()
                 .map(|(track, units, ..)| text::drift(&text::track_name(*track), *units))
                 .collect();
-            ui.label(format!("{}: {}", text::DRIFT, words.join(" · ")))
-                .on_hover_text(text::DRIFT_HINT);
+            ui.label(format!("{}: {}", text::drift_label(), words.join(" · ")))
+                .on_hover_text(text::drift_hint());
         }
     });
 }
@@ -464,7 +467,7 @@ fn lanes(app: &mut MapperApp, ui: &mut egui::Ui, sequence: &Sequence, actions: &
             );
         }
         let label = match cue.hold {
-            Hold::Player => format!("{} · {}", short(&cue.command), text::HOLD_PLAYER),
+            Hold::Player => format!("{} · {}", short(&cue.command), text::hold_player()),
             _ => short(&cue.command).to_owned(),
         };
         let galley = painter.layout_no_wrap(label, FontId::proportional(11.0), Color32::WHITE);
@@ -594,7 +597,7 @@ fn start_play(app: &mut MapperApp, sequence: &Sequence, from_here: bool) {
         let Some(at) = at else {
             app.mapper
                 .messages
-                .push(Message::Error(text::PLAY_NEEDS_CUE.to_owned()));
+                .push(Message::Error(text::play_needs_cue().to_owned()));
             return;
         };
         match app.mapper.play_from_here(&at) {

@@ -1,5 +1,5 @@
 // HD scenery's cut-outs (render::MapCutouts): which depth-layer sprites take their colours from the
-// background under them (docs/architecture/remaster-pipeline.md, «Alta definición en el motor»).
+// background under them (docs/architecture/remaster-pipeline.md, «High definition in the engine»).
 
 #include <dwe/assets/map_images.hpp>
 #include <dwe/render/map_cutouts.hpp>

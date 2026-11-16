@@ -1,4 +1,4 @@
-// The modern look's type scale (docs/architecture/ui.md, «Escala tipográfica»): its own texts take
+// The modern look's type scale (docs/architecture/ui.md, «Type scale»): its own texts take
 // five sizes, the original's font whole multiples of its cell, and nothing is put in capitals by a
 // style.
 

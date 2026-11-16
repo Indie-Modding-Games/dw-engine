@@ -1,0 +1,599 @@
+# mapper
+
+El editor de mapas de `dwe` (`apps/mapper`, programa `dwe-mapper`). Abre la carpeta de contenido como el juego, lista
+los mapas y dibuja sobre el fondo del mapa sus colisiones, salidas, personajes, puertas y baño, con los
+[parches](../../formats/maps.md#parches) de los paquetes ya aplicados. **Edita** la colisión, las salidas, los NPC, las puertas, el baño y los
+eventos de la historia del mapa, y **guarda** lo cambiado como parches en un paquete de mod ([Editar](#editar),
+[Eventos](#eventos), [Guardar](#guardar)). Enseña el mundo entero como un grafo de mapas con sus comprobaciones
+([Mundo](#mundo)), **añade mapas nuevos** a un paquete ([Nuevo mapa](#nuevo-mapa)) y sirve todo eso sin ventana a
+herramientas externas ([Servidor MCP](#servidor-mcp)). Está hecho en Rust
+con [egui](https://github.com/emilk/egui) (wgpu), aparte de CMake, y no forma parte de los paquetes que se publican.
+
+## Qué enseña
+
+- **Lista de mapas** (izquierda): los mapas de `data/maps.yaml` que tienen datos, agrupados por el nombre de zona de
+  la tabla o por el prefijo del id, con un filtro por id o nombre. El grupo del mapa abierto se despliega solo.
+- **Lienzo** (centro): el fondo del mapa (día, atardecer, noche o las paletas que tenga) y las capas encima,
+  proyectadas con la misma cámara que el juego ([cómo se dibuja un mapa](../../formats/maps.md)). Arrastrar
+  desplaza (botón derecho o central), la rueda acerca y aleja hacia el cursor y doble clic con «Seleccionar» encaja el
+  mapa en la ventana. El botón izquierdo hace lo de la herramienta elegida ([Editar](#editar)).
+- **Capas** (barra de arriba), cada una se enciende y apaga:
+  - **Paredes:** las celdas bloqueadas (bit `0x80`).
+  - **Disparadores:** las celdas de disparo coloreadas por banda: paso, confirmación, salida y baño. Las bandas son
+    las de `field/triggers` del contenido (el fichero que gana en la pila, como en el juego); sin él, las del
+    original (51–79, 80–109, 110–119 y 120). Un `field/triggers` que el juego rechazaría (bandas que se solapan, fuera
+    de 1–127, más de diez salidas, claves de más o de menos) sale como error en la barra de estado y se usan las del
+    original.
+  - **Salidas:** cada salida con su índice y su destino (`mapa:salida`) junto a sus celdas, y la flecha de llegada
+    (dónde aparece el jugador al entrar por ella y hacia dónde mira). Un destino que no existe o que contradice el
+    índice del original se marca.
+  - **NPC:** la posición y la orientación de cada hueco de personaje, con su tipo y su script.
+  - **Puntos de ruta:** los puntos a los que camina o corre cada personaje, en orden; la ruta vuelve al primero. Las
+    esperas no se dibujan.
+  - **Puertas** y **Baño:** las puertas de `data/maps.yaml` y los puntos del baño del mapa.
+  - **Rejilla:** la rejilla de colisión de 100×100 celdas.
+  - **Eventos:** dónde empieza cada evento del mapa: cada celda de disparo con su sección (paso o botón), los NPC
+    con la sección que corre al hablarles y, en una esquina, los eventos al entrar y al cargar el mapa. Las etiquetas
+    que se tapan se apilan ([Eventos](#eventos)).
+- **Detalles** (derecha): el mapa (índice, nombre, tamaño del fondo y «parcheado por: …» con los paquetes cuyos parches
+  se aplicaron, de abajo arriba), sus salidas con «Ir» (al pasar el ratón por una salida parcheada se ve de qué
+  paquete es el parche), sus personajes y lo que hay bajo el cursor: la celda, su valor y su banda, y las coordenadas
+  del mundo y del original.
+- **Ctrl+clic en una salida** abre su mapa de destino centrado en la llegada; «Atrás» vuelve al mapa anterior.
+- **Parches:** el mapa se lee como `loadMapDocument`: se aplican los `map/<id>/patch` del paquete cuyo `data` gana y de
+  todos los de encima, de abajo arriba, con las mismas reglas y los mismos errores que el motor (`dwe_map::patch`
+  copia `map_patch.cpp`). Un parche que no se puede aplicar deja el mapa sin abrir y el error nombra el fichero.
+- **En vivo:** se conecta al control remoto de un `dwe-game` en marcha ([control remoto](../../guides/remote-control.md))
+  y lo sigue mientras se edita ([En vivo](#en-vivo)).
+
+## En vivo
+
+El panel «En vivo» (derecha) se conecta con `--live` o escribiendo `tcp:<puerto>` o `unix:<socket>` y pulsando
+«Conectar». La conexión vive en su propio hilo (`mapper_live::LiveLink`): si el juego se cierra o se reinicia, el
+editor lo dice en la barra de estado y vuelve a conectar solo cada segundo. El juego admite varios clientes a la vez
+([varios clientes](../../guides/remote-control.md#varios-clientes)), así que el editor puede convivir con el servidor
+MCP u otra herramienta.
+
+- **Estado:** la barra de estado dice el modo del juego (título, campo, batalla…), su mapa, el tick, si está en pausa
+  o ocupado con un script de historia, si enseña una vista previa y el tiempo de ida y vuelta de la última pregunta.
+  En amarillo mientras no hay conexión.
+- **Seguir al juego** (encendido por defecto): cuando el juego entra en otro mapa, el editor lo abre. Si el mapa
+  abierto tiene cambios sin guardar, pregunta antes como al abrir un mapa a mano; si se elige quedarse, no vuelve a
+  preguntar hasta que el juego cambie otra vez de mapa. «Ir al mapa del juego» lo abre a mano.
+- **Capa «Juego»:** sobre el mapa que juega el juego, el jugador, su compañero y los NPC con una flecha hacia donde
+  miran, y el rectángulo del fondo que enseña la ventana del juego. El editor pregunta `live` cada 150 ms; el registro
+  del juego (`log_tail`) solo se pide cuando `live` dice que tiene algo nuevo.
+- **Vista previa en vivo** (apagada por defecto): el juego enseña el cambio sin guardar del mapa abierto. El editor
+  manda la diferencia entre el mapa que dan los paquetes y el editado (el mismo parche que guardaría) con
+  `preview_map`, como mucho cada 300 ms y nunca a mitad de un trazo. Si solo cambia la colisión, el juego la cambia
+  en el sitio; si no, vuelve a entrar en el mapa con el jugador donde estaba. La vista previa vive solo en la memoria
+  del juego: no se escribe en disco ni en las partidas. Se quita al apagar la casilla, al deshacer todos los cambios,
+  al guardar (entonces «Recargar al guardar» trae lo guardado), al desconectar y al cerrar el editor. El juego la
+  rechaza en batalla, con un cambio de mapa pendiente o mientras corre un script de historia; el editor espera a que
+  el juego vuelva al campo libre.
+- **Llevar al jugador:** con el botón derecho sobre el lienzo, «Llevar al jugador aquí» lo pone en ese punto (`place`).
+  Sobre una salida, el mismo menú y el inspector de la salida ofrecen «Probar esta salida» (pone al jugador en una
+  celda de la salida, la pulsada o la primera, y deja correr el juego, que la toma como al pisarla) y «Llevar al
+  jugador a la llegada» (lo pone donde deja la salida, mirando hacia donde mira).
+- **Pausa, Paso y +1 s:** paran el juego, avanzan un tick o un segundo.
+- **Recargar al guardar** (encendido por defecto): cada guardado pide `reload_map`. «Recargar el mapa en el juego» lo
+  pide a mano y «Capa de depuración del juego» enciende su
+  [capa de depuración del mapa](../../guides/remote-control.md#capa-de-depuración-del-mapa).
+- **Historia:** el estado de la historia del juego (`story_state`): la etapa, el script del mapa, las secciones en
+  curso, los disparadores activos y las variables distintas de 0, con las etiquetas de `story/names` cuando las tienen
+  (`12 door_open`). «Actualizar sola» la vuelve a leer cada segundo y el filtro busca por número o nombre. Para probar
+  eventos se puede activar o quitar un disparador y poner una variable (`story_set`); el juego lo rechaza mientras
+  corre un script.
+- **Registro del juego:** los avisos y errores del juego (los últimos 300). Lo que el juego rechaza (un parche que no
+  se puede aplicar, con el fichero y la línea que da el cargador) sale además en «Problemas».
+
+## Editar
+
+Cada cambio es una acción que se puede deshacer (Ctrl+Z) y rehacer (Ctrl+Y o Ctrl+Mayús+Z); un trazo de pincel, un
+arrastre o un campo arrastrado en el inspector es **un solo paso**. La barra de estado marca el mapa con cambios sin
+guardar (`* twna01 (sin guardar)`) y dice a qué paquete se guarda.
+
+**Herramientas** (barra bajo el menú):
+
+| Herramienta | Tecla | Qué hace |
+|---|---|---|
+| Seleccionar | V | Elige y arrastra la llegada de una salida, un NPC o un punto de su ruta; con Mayús, arrastrar los orienta hacia el cursor; un clic en las celdas de una salida la elige. Si no hay nada debajo, arrastrar desplaza la vista |
+| Pincel | B | Pinta el valor elegido en un cuadrado de 1, 3 o 5 celdas (`[` y `]`); el trazo une las celdas con líneas |
+| Rectángulo | R | Pinta el rectángulo arrastrado (se ve antes de soltar) |
+| Relleno | F | Pinta las celdas unidas a la del clic que tienen su mismo valor |
+| Cuentagotas | I | Toma el valor de la celda (o Alt+clic con cualquier herramienta de pintar) |
+
+El **valor** que se pinta se elige por grupos de las bandas de `field/triggers` (pared, libre, al pisar, al
+confirmar, cada salida y baño) o como número crudo; X alterna pared y libre.
+
+**Inspector** (derecha, arriba), según lo elegido:
+
+- **Salida:** el mapa de destino (lista de ids con filtro; elegir uno pone también el índice del original si el mapa lo
+  tiene, o -1), la salida de destino (-1 a 9), la llegada (x, y, z) y la orientación (0–4095). «Pintar sus celdas»
+  pone el pincel con el disparador de la salida y «Borrar celdas» con el valor libre; «Abrir el destino» va al mapa.
+- **NPC:** `type_id`, `follow_mode`, `tracking_range`, `script_id`, la posición y la orientación, y en «Campos» los
+  demás campos numéricos del registro. Los de texto no se enseñan y se guardan como estaban.
+- **Ruta:** cada parte con su tipo (esperar, andar, correr), su punto (o, en una espera, sus fotogramas) y «Subir»,
+  «Bajar» y «Quitar»; «Añadir punto» (o W bajo el cursor) añade un tramo andando. `ai_sections` y `waypoints` se
+  mantienen juntos: 8 partes como mucho, el resto con -1.
+- **Puerta:** el modelo (o «sin modelo»), la posición y el giro; también se arrastra y se gira en el lienzo.
+  «Añadir puerta» da modelo al primer hueco libre de los seis del conjunto.
+- **Baño:** sus dos puntos (el compañero corre al primero y después al segundo); cada punto se arrastra en el lienzo.
+  «Añadir baño» y «Quitar baño».
+- **Cámara, luces y objetos:** se enseñan, de solo lectura.
+
+**Añadir y quitar NPC.** «Añadir NPC» (o «Añadir un NPC aquí» con el botón derecho en el lienzo) copia el NPC elegido,
+o el último del mapa, o el primero que haya en el contenido, en un hueco nuevo al final, y lo hace aparecer: añade
+`story.load_species_model(t)` y `story.spawn_npc(t, hueco, 1)` a la sección de entrada del mapa (script 0, sección =
+índice del mapa), justo después de su `story.set_script` y antes de cualquier `if`, para que aparezca siempre en el borrador de la historia ([Eventos](#eventos)). Todo es un solo paso
+de deshacer. Un mapa tiene como mucho 8 NPC. «Quitar el último NPC» quita solo el último hueco y sus `spawn_npc`: la
+historia nombra los NPC por su número, así que quitar uno de en medio cambiaría a quién habla cada sección. Un parche
+de mapa nombra los NPC por posición y no puede añadirlos ni quitarlos, así que con NPC añadidos o quitados el mapa se
+guarda entero y el editor lo dice. Las salidas no se añaden ni se quitan: el mapa tiene siempre sus 10 registros y
+una salida nueva es uno sin celdas que se edita y se pinta.
+
+Las puertas y el baño no están en el mapa sino en `data/maps` ([puertas y baño](../../formats/maps.md#parches)); al
+guardar se escribe el `data/maps` del destino ([Guardar](#guardar)).
+
+### Atajos
+
+| Teclas | Qué hace |
+|---|---|
+| Ctrl+S | Guardar (parche) |
+| Ctrl+Q | Salir |
+| M | Cambiar entre el mapa y el mundo |
+| + / − | Acercar / alejar |
+| Inicio | Encuadrar el mapa |
+| N | Siguiente hora del día (fondo) |
+| Ctrl+G | Ir adonde lleva la salida seleccionada |
+| Ctrl+D | Añadir un NPC bajo el cursor |
+| Mayús+arrastrar en el mundo | De un mapa a otro: conectar sus salidas |
+| Ctrl+Z / Ctrl+Y / Ctrl+Mayús+Z | Deshacer / rehacer |
+| Ctrl+F | Buscar un mapa en la lista |
+| RePág / AvPág | Mapa anterior / siguiente de la lista |
+| 1 … 9, 0 | Mostrar u ocultar una capa: paredes, disparadores, salidas, NPC, puntos de ruta, puertas, baño, rejilla, juego y eventos |
+| Alt+0 … Alt+9 | Elegir la salida de ese número y centrarla |
+| C | Centrar la vista en la selección |
+| V, B, R, F, I | Seleccionar, Pincel, Rectángulo, Relleno, Cuentagotas |
+| `[` / `]` | Pincel más pequeño / más grande |
+| X | Valor: pared / libre |
+| Q / E | Girar la selección 45° a un lado o al otro |
+| Supr | Quitar el punto de ruta elegido |
+| W | Añadir un punto de ruta al NPC elegido bajo el cursor |
+| Esc | Deseleccionar |
+| Ctrl+clic | Ir adonde lleva la salida |
+| Mayús+arrastrar | Orientar la selección hacia el cursor |
+| Clic en un evento | Con la capa Eventos y Seleccionar: abre su sección |
+
+«Editar → Atajos de teclado» enseña la misma lista (`SHORTCUT_LIST` en `text.rs`). Mientras un campo de texto tiene
+el foco, las teclas son del campo: Ctrl+Z deshace lo escrito en él y no en el mapa.
+
+## Eventos
+
+Un evento es una sección de un script de historia que el mapa pone en marcha: al entrar (la sección de entrada del
+script 0), al cargar, al pisar o pulsar el botón en una celda de disparo y al hablar con un NPC. El editor lee los
+`story/<n>.lua` y les aplica los [parches por sección](../../modding/story.md#parches-por-sección) como el juego,
+así que enseña la sección que de verdad corre y quién la da.
+
+- **Panel «Eventos»** (izquierda, bajo los mapas): cada evento del mapa con su tipo, su sección, «parcheado por …»
+  cuando la da un parche y los saltos de mapa que hace (`→ mapa salida`, con la condición si la tiene; un clic abre
+  el destino). Se filtra por tipo o por número. Un clic abre la sección y centra la vista en el evento. Una celda que
+  apunta a una sección que el script no tiene se marca: no pasa nada al pisarla, y editarla la crea.
+- **Del lienzo a la sección:** con la capa Eventos, un clic en una celda de disparo o en un NPC abre su sección. En
+  el inspector, la celda bajo el cursor dice qué sección corre (`Pisar → sección 0x51 (script 12)`) con «Abrir
+  sección»; al pintar un disparador, «Sección…» dice qué secciones existen para ese valor.
+- **Editor de sección** (ventana «Sección»): arriba, el script, la sección y su origen (módulo o parche).
+  - **Estructura:** las líneas de la sección como frases en el idioma de la interfaz (diálogos con su texto, cambios de disparadores
+    y variables con sus nombres de `story/names`, movimientos, saltos de mapa…), con los `if` y sus ramas. Al elegir
+    una línea se editan sus campos (operandos); en un diálogo, la línea de texto: cambiarla cambia la clave en todos
+    los sitios que la usan, y «Línea nueva» da a ese comando una clave propia con el texto de ahora. Una condición
+    simple (disparador encendido o apagado, variable igual a un valor) se cambia con campos; otra, como texto Lua.
+    «Borrar», «Subir» y «Bajar» mueven las líneas y «Abrir rutina» entra en una rutina del script (con «Volver a la
+    sección»).
+  - **Paleta:** los comandos de la API `story` por grupos, con filtro; uno nuevo va después de la línea elegida (o
+    dentro del bloque elegido). «Si…» añade un bloque y los que cambian de mapa o de script acaban la sección.
+  - **Lua:** el código de la sección (o de la rutina) como texto; «Aplicar» lo cambia si compila y dice la línea del
+    error si no.
+  - «Revertir sección» quita la sección del borrador: vuelve a correr como la dan los paquetes.
+
+  Cada cambio es un paso de deshacer, junto con los del mapa. Lo editado vive en un **borrador** por script del
+  paquete destino y se ve enseguida en el panel y en el lienzo; sin destino elegido se ve igual, pero para guardarlo
+  hay que elegir uno.
+- **Probar evento** («Probar» en el panel o en el editor, con un juego conectado en [En vivo](#en-vivo)): el editor
+  lee las condiciones que la sección comprueba al empezar (los `if` que solo acaban, siguiendo `return
+  routines.x()`) y enseña qué escribirá en la historia del juego para que pase (disparadores y variables) y las que
+  no sabe poner (hay que cumplirlas a mano). Con una línea elegida en el editor, añade las condiciones de los `if`
+  por los que se llega a ella, y en un evento de hablar, las que la sección de entrada del mapa necesita para hacer
+  aparecer a ese NPC (su `spawn_npc`). Al probar manda `story_set` con esos valores, pone al jugador en la celda del
+  disparador o delante del NPC y pide `reload_map`, que vuelve a leer los parches y los textos guardados y entra en
+  el mapa donde está el jugador (la sección de entrada vuelve a correr y hace aparecer a los NPC). En un evento de
+  botón o de hablar, cuando esa sección acaba, pulsa confirmar. Al final compara el estado de la historia de antes y
+  de después y lo enseña («Lo que cambió la prueba»). Mientras el juego corre un script de historia no deja escribir
+  en ella: el editor lo dice y no prueba. El juego corre lo **guardado**: con cambios sin guardar, el diálogo lo
+  avisa.
+
+## Secuencias
+
+Una escena es una sección de historia vista en el tiempo: quién anda adónde, cuándo se mueve la cámara, qué texto
+sale y qué espera a qué. «Línea de tiempo» en la cabecera del editor de sección (o `--timeline` con `--section`)
+abre un panel bajo el mapa con la sección como pistas.
+
+### El modelo
+
+`dwe-story::sequence` corre la sección como el [intérprete](../../architecture/story-interpreter.md), en cuadros del
+original (20 por segundo; el juego da 3 ticks a cada uno): las órdenes corren una tras otra en el mismo cuadro hasta
+que una espera.
+
+| Pista | Qué lleva |
+|---|---|
+| Jugador, Compañero, NPC n | Los movimientos de ese personaje (andar, deslizarse, girar) y sus animaciones |
+| Cámara | Los movimientos de cámara |
+| Texto | Diálogos y elecciones |
+| Audio | Sonidos y música |
+| Esperas | `delay`, `wait_for_entity` y las demás órdenes que paran la sección |
+| Estado | Disparadores, variables, modelos y el resto de órdenes sin duración |
+
+Cada orden dice cómo sigue la sección (la barra al pasar el ratón):
+
+- **No bloquea:** andar, deslizarse, girar, las animaciones y la cámara llenan el hueco de movimiento de su personaje
+  (o de la cámara) y la orden siguiente empieza a la vez. Un movimiento nuevo sobre un hueco ocupado sustituye al de
+  antes: el bloque viejo se corta con un borde rojo. `entity_move_to` y la cámara duran su operando de cuadros.
+- **Bloquea unos cuadros:** `delay` (y `fadeout_hud`, uno).
+- **Espera al jugador:** un diálogo, una elección, una batalla o una rutina del motor (barra blanca).
+- **Espera a que acabe el movimiento:** `wait_for_entity`, hasta que se vacía el hueco que nombra.
+- **Termina la sección:** un cambio de mapa.
+
+Lo que dura un paso andando sale de la distancia y la velocidad del personaje (unidades del mundo por cuadro, de los
+clips de `field/rules.yaml`): el jugador anda a 20 y corre a 50, el compañero a 22,6 y 43,5. Lo que el editor no
+puede saber lo **estima** y lo marca con rayas: un NPC va como el jugador, un diálogo dura 40 cuadros (lo que tarde
+el jugador en pasarlo), una animación 20 y una batalla o una rutina del motor 20. Un `if` sigue la rama de la orden
+elegida (o la más larga, pasando por los `if` que solo acaban la sección), un bucle corre una vez y una rutina del
+fichero corre dentro, con sus órdenes bajo la línea que la llama.
+
+### El panel
+
+- **Regla y cursor:** arrastrar en la regla o en una pista mueve el cursor; el mapa enseña a cada personaje y la
+  cámara donde el modelo los tiene en ese cuadro.
+- **Bloques:** un clic elige la orden (y su línea en el editor de sección); arrastrar el borde derecho cambia los
+  cuadros de un `delay` o de un movimiento con duración. «Antes» y «Después» cambian la orden de sitio con su vecina
+  del mismo bloque; el `return` final no se mueve.
+- **En el mapa:** cada movimiento se dibuja con su camino, una flecha y su número de orden, los giros con una flecha
+  discontinua y la cámara con su campo de visión. El rombo del final de la orden elegida se arrastra para cambiar el
+  destino. Clic derecho en el mapa: «Andar aquí», «Girar hacia aquí» y «Cámara aquí» en ese punto.
+- **Añadir en el cursor:** andar, girar, esperar, cámara aquí o al personaje, animación y texto (con una línea nueva
+  «…» para escribirla en el editor) detrás de la orden que corre en el cursor, para el personaje de la orden elegida.
+
+Cada cambio es una acción con su paso de deshacer y acaba en el mismo borrador de la sección: se guarda como
+[parche de historia](../../modding/story.md#parches-por-sección) con Ctrl+S.
+
+### Reproducir en el juego
+
+Con un juego conectado ([En vivo](#en-vivo)):
+
+- **Reproducir** prepara el juego como [Probar evento](#eventos) (escribe la historia que la sección necesita, pone al
+  jugador y recarga el mapa) y después arranca la sección con `story_run`. Corre lo guardado.
+- **Reproducir desde aquí** arranca en la orden elegida. El editor escribe un parche de un solo uso: primero coloca a
+  cada personaje y la cámara donde el modelo los tiene al empezar esa orden (movimientos de un cuadro y giros),
+  después las órdenes anteriores que solo cambian el estado (disparadores, variables, modelos, NPC; sin sus esperas
+  ni movimientos) y luego la orden elegida con todo lo que la sigue. Lo manda con `story_run` y `code`: el juego lo
+  corre una vez y no se guarda en ningún sitio, así que incluye lo que aún no está guardado.
+- **Pausa / Seguir**, **+1 cuadro** (3 ticks) y **+1 s** paran y avanzan el juego.
+- **Seguir al juego:** el editor lee `story_state` cuatro veces por segundo; la sección da las líneas por las que va
+  (`lines`) y el editor las convierte en la orden del parche mandado o de la sección. Esa orden se marca en naranja,
+  el cursor la sigue y la cabecera dice «El juego va por #n».
+- **Desvío juego-modelo:** lo lejos que está cada personaje en el juego de donde lo pone el modelo en el cursor (100 =
+  una celda); en el mapa, una línea discontinua une los dos. Sirve para ver dónde el modelo estima mal.
+
+Los saltos de mapa que caen en el mismo sitio se agrupan en una etiqueta («destino ×n» o «primero (+n más)») con la
+lista entera al pasar el ratón.
+
+## Guardar
+
+**Destino** («Archivo → Destino»): el paquete donde se escribe. Puede ser un paquete de mod montado (las carpetas de
+`--mods`), uno nuevo («Nuevo paquete de mod…»: una carpeta con su `pack.yaml` en la capa `mods`, que se monta al
+crearlo) o, solo en un checkout del repositorio, el paquete `game` del equipo (`content/packs/game`). Nunca el paquete
+base ni uno extraído o generado. El editor recuerda el último destino en `dwe-mapper/settings.yaml` de la carpeta de
+configuración del usuario (`$XDG_CONFIG_HOME`, `%APPDATA%` o `~/.config`).
+
+**Guardar (parche)**, Ctrl+S, escribe `map/<id>/patch.yaml` en el destino con **solo las diferencias** respecto al
+suelo que tiene debajo (el `data` que gana más los parches de los paquetes de debajo del destino):
+
+- las salidas por su `exit` y los NPC por su `index`, con solo los campos cambiados (cada campo se reemplaza entero:
+  una ruta cambiada lleva `ai_sections` y `waypoints` enteros);
+- la cámara, las luces (por `index`) y los objetos si cambiaron;
+- la colisión como rectángulos de celdas (`cells`) cuando caben en **64 rectángulos** o menos
+  (`dwe_map::diff::MOST_RECTANGLES`), y si no la rejilla entera (`grid`). Los rectángulos se buscan a lo ancho y luego
+  a lo alto por filas enteras; 64 rectángulos son unas 380 líneas, más o menos lo que ocupa la rejilla entera.
+
+Los **eventos editados** se guardan en el mismo Ctrl+S como un parche de historia del destino,
+`story/patches/<paquete>_<script>.lua` (con `<script>` en tres cifras), con solo las secciones cambiadas y las rutinas
+que necesitan copiadas como rutinas privadas ([parches por sección](../../modding/story.md#parches-por-sección)).
+Si el paquete ya tenía un parche de ese script, se edita ese (y se mezcla con él si cambió en disco desde que se
+abrió el borrador); un parche que se queda sin secciones se borra. Las líneas de texto nuevas o cambiadas van al
+`text/<idioma>` del destino. Un parche de historia de un paquete de encima que da la misma sección es un aviso: el
+juego verá el suyo. Si lo guardado cambia saltos de mapa (`story.warp_to`), hay que volver a sacar
+`field/script_warps` ([warps de script](../../architecture/script-warps.md)): con el programa `dwx` puesto en
+«Archivo → Ajustes…», el editor ejecuta `dwx script-warps <contenido> --with <mods> -o <destino>/field/script_warps.yaml`
+él mismo; sin él, dice el comando en la barra de estado.
+
+Las **puertas y el baño** cambiados se guardan en el `data/maps.yaml` del destino: las secciones `doors` o `toilets`
+enteras (como se componen) y, si el conjunto del mapa lo comparten otros mapas o no tenía, uno nuevo al final con la
+entrada del mapa apuntando a él. Los demás mapas no cambian.
+
+Si el destino ya tenía un parche de mapa, el nuevo se calcula otra vez contra el suelo con lo de antes y lo nuevo juntos, así
+que el fichero sigue siendo el mínimo. Un parche que queda vacío se borra. **Guardar mapa completo** escribe en cambio
+`map/<id>/data.yaml` entero en el destino (y quita su parche), con el formato de `dwx`.
+
+Antes de escribir se carga el resultado con toda la pila y se comprueba; lo que falla sale en el panel «Problemas al
+guardar» y no se escribe nada:
+
+- el destino está debajo del paquete cuyo `data` gana (su parche no se aplicaría);
+- una salida tocada lleva a un mapa que no existe, a una salida fuera de 0–9, a nada teniendo celdas (warp muerto) o
+  con un id y un índice que nombran mapas distintos;
+- la ruta de un NPC tocado no cabe (8 partes);
+- lo escrito no carga.
+
+Un parche de un paquete de **encima** del destino que cambia lo mismo es solo un aviso: el juego verá el suyo.
+
+Los ficheros se escriben de forma atómica (un temporal y un cambio de nombre). Después el contenido se vuelve a montar
+(lo mismo que «Archivo → Recargar contenido»), el mapa queda limpio y el historial de deshacer empieza de nuevo.
+«Archivo → Revertir» descarta los cambios sin guardar del mapa y de sus eventos. Cambiar de mapa, volver a abrir el contenido o
+salir con cambios sin guardar pregunta antes: Guardar, Descartar o Cancelar.
+
+Cómo se guarda un mapa paso a paso: [Editar un mapa con el mapper](../../modding/maps.md).
+
+La interfaz viene en inglés y en español, y todos sus textos viven en `crates/mapper-core/src/text.rs`, cada uno con los dos
+idiomas. El idioma es `--lang en|es`, si no el del sistema (`LC_ALL`, `LC_MESSAGES`, `LANG`), si no inglés. El servidor MCP
+responde en inglés salvo que se le dé `--lang`.
+
+## Mundo
+
+«Mundo» (barra de arriba, tecla M o `--world`) cambia el lienzo por el **grafo del mundo**: cada mapa con datos es un
+nodo con su id y su nombre, del color de su zona (el nombre de zona de `data/maps`), y cada camino entre dos mapas es
+una flecha:
+
+- **Salidas:** una línea con la salida y la de llegada (`mapa:salida → mapa:salida`). Si los dos mapas se llevan el
+  uno al otro, las dos salidas se dibujan como una sola línea con punta en los dos extremos.
+- **Warps de script:** una línea discontinua por cada `warp_to` de una sección de historia que corre en el mapa
+  (`script:sección`), con sus condiciones (`si …`) en la etiqueta y en la ayuda flotante. Salen de los mismos eventos
+  que la capa Eventos ([Eventos](#eventos)).
+- Una salida con destino pero sin celdas de disparo no se dibuja: el original deja así las salidas sin usar.
+
+El grafo se lee con los parches de la pila aplicados y con los cambios sin guardar del mapa abierto, así que una
+salida editada se ve en el mundo antes de guardar. El rótulo de arriba cuenta mapas, salidas y warps de script.
+
+**Colocación.** Las zonas se reparten en una cuadrícula en el orden en que se llega a ellas desde el mapa inicial
+(`field/warps`, `start`), los mapas de cada zona en círculo y después unos pasos de fuerzas fijas (los mapas se
+apartan, los caminos tiran y cada mapa vuelve hacia su zona). No hay nada al azar: el mismo contenido da siempre el
+mismo dibujo. Arrastrar un mapa lo deja donde se suelta y el sitio se guarda en los ajustes, por carpeta de contenido
+(`world_layouts`); «Reordenar» olvida los sitios guardados.
+
+**Vista.** Rueda para acercar y alejar, arrastrar el fondo para desplazar, «Encajar» para verlo todo. El buscador
+encuentra un mapa por id o nombre e Intro lo centra; «Salidas» y «Warps de script» enseñan u ocultan cada tipo de
+camino y «Zonas» oculta zonas enteras. `--world --map <id>` abre el mundo centrado en ese mapa.
+
+**Comprobaciones.** El panel de la derecha lista lo que está mal, y cada mapa lleva un punto del color de lo peor que
+tiene, con su cuenta:
+
+| Gravedad | Qué |
+|---|---|
+| Error | Un camino lleva a un mapa que no existe o a una salida que el mapa de destino no tiene |
+| Aviso | Se llega dentro de una pared (la llegada cae en una celda bloqueada); el mapa no se alcanza desde el mapa inicial por ningún camino; un id que no es ningún mapa junto a un índice del original que sí lleva a uno |
+| Nota | Una salida solo de ida: el mapa de destino no tiene ningún camino de vuelta (apagadas por defecto: el original tiene muchas a propósito) |
+
+Clic en una comprobación centra su mapa. Un mapa cuyo `data` no se puede leer no entra en el grafo; `validate` del
+[servidor MCP](#servidor-mcp) los lista con su error.
+
+**Gestos.** Doble clic en un mapa lo abre en la vista de mapa. Clic en un camino abre su origen: una salida queda
+seleccionada en su mapa y un warp de script abre su sección en el editor de eventos. **Mayús+arrastrar** (o arrastrar
+con el botón derecho) de un mapa a otro abre «Conectar mapas»: se eligen la salida de origen, la de llegada y si se
+conecta también la vuelta. La salida del mapa abierto queda como un cambio sin guardar más (se deshace con Ctrl+Z); la
+de cualquier otro mapa se escribe en ese momento como parche en el paquete destino, igual que al guardar. Una salida
+que no tenía celdas recibe una puerta: dos celdas de suelo libre que la cámara enseña, abajo y hacia el centro del
+fondo, y la llegada tres celdas hacia dentro.
+
+**En vivo.** Con el editor conectado al juego, el mapa en el que está el jugador lleva un anillo y los mapas que ha
+recorrido en la sesión se resaltan con el camino entre ellos.
+
+## Nuevo mapa
+
+«Mapas → Nuevo mapa…» añade un mapa al **paquete destino** (nunca a la base; sin destino no se puede):
+
+| Campo | Qué es |
+|---|---|
+| Id | El nombre del mapa dentro del paquete (`a-z`, `0-9` y `_`); su id completo es `<paquete>:<id>` |
+| Nombre | El texto que el juego enseña al entrar; se escribe en `text/es/<paquete>.yaml` y, hasta que alguien lo traduzca, igual en `text/en` |
+| Zona | El nombre de zona de `data/maps` con el que se agrupa (y el que usa el juego mientras no hay otro) |
+| Plantilla | **Copia de un mapa**: su cámara, su colisión, sus NPC y su entrada de `data/maps`. Las imágenes no se copian: el nuevo mapa las toma de la carpeta del original con `assets_from`, salvo que se marque copiarlas. Sus salidas se vacían salvo que se marque conservarlas. **En blanco**: un suelo libre del tamaño pedido (fichas de 128 px, hasta 35) bajo una cámara cenital, con un fondo PNG del usuario (se copia en el paquete; tiene que medir fichas enteras y tener pocos colores, que el juego lee PNG indexados) o con cuadros grises generados |
+| Conectar con | Una salida de otro mapa y la salida del nuevo mapa por la que se vuelve. Se conectan las dos: la del nuevo mapa en sus datos, la del otro como parche en el paquete destino. Si alguna no tenía celdas recibe una puerta ([Mundo](#mundo)) |
+
+El editor escribe `map/<paquete>/<id>/data.yaml` (y el fondo si lo hay), la entrada sin índice en `data/maps.yaml`
+del paquete y el nombre, vuelve a leer el contenido y abre el mapa nuevo. El formato está en
+[Mapas que añade un paquete](../../formats/maps.md#mapas-que-añade-un-paquete) y el paso a paso en
+[Añadir un mapa nuevo](../../modding/new-maps.md).
+
+Un mapa que el paquete destino añadió se guarda siempre entero en su propio `data.yaml`, nunca como parche al lado.
+«Renombrar mapa…» y «Borrar mapa…» solo valen para esos mapas. Renombrar mueve la carpeta, la entrada y el nombre y
+cambia las salidas que llevaban a él en los mapas que el paquete añadió o parchea; se niega si lleva a él un camino
+que el paquete no puede cambiar (la salida de otro mapa o un warp de script). Borrar se niega mientras cualquier camino
+lleve al mapa: primero hay que cambiarlos. Borrar no se deshace.
+
+## Servidor MCP
+
+`dwe-mapper mcp` arranca el editor sin ventana como **servidor MCP para herramientas externas**: habla JSON-RPC 2.0 por
+la entrada y la salida estándar, un mensaje por línea, y ofrece el mismo modelo que la ventana (`mapper-core`, sin
+egui). Cómo conectarlo y ejemplos: [guía del servidor MCP del editor de mapas](../../guides/mapper-mcp.md).
+
+```sh
+dwe-mapper mcp --content <carpeta> [--team-packs <dir>] [--mods <dir>] [--target <paquete>] [--live tcp:<puerto>] [--lang en|es]
+```
+
+`--target` es el id o la carpeta de un paquete en el que se puede escribir, o una carpeta nueva dentro de una carpeta
+de mods, que se crea como paquete de mod. El binario `dwe-mapper-mcp` hace lo mismo sin el `mcp` delante.
+
+| Herramienta | Qué hace |
+|---|---|
+| `list_maps` | Los mapas con datos: id, zona, si los añadió un paquete y su nombre |
+| `map_info` | Un mapa: zona, fichas, de dónde toma las imágenes, salidas con destino, celdas y llegada, NPC, eventos y un resumen de la colisión |
+| `world_graph` | El mundo: cuentas, zonas y comprobaciones; con `map`, sus caminos de entrada y salida; con `edges`, la lista de caminos |
+| `path` | El camino más corto entre dos mapas por salidas y warps de script |
+| `section` | Una sección de historia: una frase por orden (como el editor de eventos), su Lua y un resumen de su línea de tiempo |
+| `find` | Busca en el código y las frases de la historia y en los ids de mapa |
+| `validate` | Las comprobaciones del mundo, los mapas que no se leen y si el mapa abierto tiene cambios |
+| `set_exit` | Lleva una salida a otra (o a ninguna parte); con `back`, también la vuelta |
+| `set_collision_rect` | Pone un rectángulo de celdas a un valor |
+| `add_npc`, `move_npc` | Añade un NPC (copia del último) o mueve uno |
+| `edit_section` | Cambia el código de una sección |
+| `set_text` | Cambia una frase por su clave |
+| `new_map` | Crea un mapa en el paquete destino, como «Nuevo mapa» |
+| `save`, `discard` | Guarda los cambios del mapa abierto en el paquete destino (parche, o entero con `whole`) o los descarta |
+| `live_connect`, `live_status`, `live_reload` | Conecta con el juego, pregunta su estado o le hace volver a leer el mapa |
+| `probar_evento` | Prueba un evento en el juego, como «Probar» |
+| `play_from` | Corre una sección desde una orden de primer nivel, como «Reproducir desde aquí» |
+
+Cada herramienta declara sus argumentos con un esquema JSON. Las ediciones abren su mapa, pasan por las mismas
+acciones que la ventana (con su deshacer) y quedan sin guardar hasta `save`; con `dry_run: true` responden el parche
+que darían y se deshacen. Se trabaja sobre un mapa cada vez: abrir otro con cambios sin guardar es un error que pide
+guardar o descartar. Un error de una herramienta vuelve como resultado con `isError` y el texto del editor; un
+mensaje mal formado o una herramienta que no existe, como error de JSON-RPC.
+
+## Paridad con el editor anterior
+
+El editor de Qt (`_work/ref-dw-map-editor`, solo de referencia; no se copia su código) trabajaba sobre los ficheros
+del disco. Lo que tenía y dónde está aquí:
+
+| Función del editor de Qt | Aquí |
+|---|---|
+| Árbol de mapas por zona, buscador | Lista de mapas con grupos y filtro |
+| Pintar colisión (pincel, rectángulo, relleno, cuentagotas) | Igual ([Editar](#editar)) |
+| Propiedades de salidas, NPC, puertas y baño | Panel de detalles y selección |
+| «Ubicaciones»: qué salidas llevan a este mapa | En el grafo del mundo (caminos de entrada del mapa) y en `world_graph` del servidor MCP |
+| Editor de diálogos y de scripts | Editor de eventos con frases, condiciones y línea de tiempo |
+| Atajos: salir (Ctrl+Q), acercar y alejar (+/−), encajar (Inicio), hora del día (N), ir a la salida (Ctrl+G), añadir NPC (Ctrl+D) | Añadidos, con las mismas teclas |
+| Captura sin ventana (`--shot`) | Igual |
+| Servidor MCP (stdio y HTTP) | Solo stdio: es lo que usan los clientes locales; HTTP abriría un puerto sin necesidad |
+| Exportar e importar formatos abiertos (glTF, PNG por capa) | No: el contenido ya es YAML y PNG en los paquetes, legible por cualquier herramienta |
+| Exportar un paquete | No: el editor escribe directamente en el paquete destino |
+| Piezas y contenidos del `.MAP` (sprites, imágenes TIM) | No: son datos del disco que `dwx` ya convierte; el editor trabaja sobre el YAML |
+| Editor de atajos de teclado | No: la lista es fija y se enseña en «Editar → Atajos de teclado» |
+| Autocomprobación integrada | No: la cubren los tests de `cargo test` |
+| Panel de asistente integrado | No: el servidor MCP deja usar cualquier herramienta externa |
+
+Lo que el editor de Qt no tenía: el grafo del mundo, crear mapas nuevos, la conexión en vivo con el juego, la
+prueba de eventos y la línea de tiempo.
+
+## Cómo está hecho
+
+| Crate | Carpeta | Qué hace |
+|---|---|---|
+| `dwe-pack` | `packages/rust/dwe-pack` | Los packs como el motor ([sistema de archivos virtual](../../architecture/vfs.md)): `pack.yaml`, la pila por capa, prioridad y dependencias, los ids de asset, las tablas compuestas (`data/maps`) y el montaje del contenido del juego con los packs del equipo y los mods |
+| `dwe-map` | `packages/rust/dwe-map` | El documento de un mapa leído del YAML con sus parches y escrito de vuelta (`emit`, `diff`, `save`), la colisión con su leyenda o en hexadecimal, las bandas de disparo de `field/triggers`, los nombres de `story/names`, las coordenadas ([espacio del mundo](../../architecture/world-space.md)), la cámara con su proyección al fondo y las puertas y el baño de `data/maps` (`places`) |
+| `dwe-story` | `packages/rust/dwe-story` | Los scripts de historia en Lua: un lector y escritor del subconjunto que usan los módulos y los parches (`parse`, `write`), los scripts con sus parches aplicados como el juego (`script`), los eventos de un mapa (`events`), las frases y los nombres de los comandos en inglés o en español (`describe`, `commands`), la edición por líneas y condiciones (`edit`), las condiciones de una sección para probarla (`needs`), la sección como línea de tiempo y el parche de «Reproducir desde aquí» (`sequence`) y el guardado como parche (`save`) |
+| `mapper-core` | `apps/mapper/crates/mapper-core` | El modelo del editor sin ventana: el contenido abierto, el mapa, la vista, las capas, la lista de mapas, lo que se dibuja (`MapOverlay`), las herramientas (`tools`), el historial de deshacer (`edit`) y los destinos de guardado (`targets`). Todo cambio entra por el enum `Action` |
+| `mapper-live` | `apps/mapper/crates/mapper-live` | El cliente del control remoto (líneas JSON por socket Unix o TCP local) y `LiveLink`, el hilo que pregunta al juego, vuelve a conectar y le manda las órdenes del editor sin parar la ventana |
+| `mapper-mcp` | `apps/mapper/crates/mapper-mcp` | El servidor MCP sin ventana: las herramientas, sus esquemas y el bucle de JSON-RPC por stdio sobre `mapper-core` |
+| `dwe-mapper` | `apps/mapper` | La ventana: paneles, lienzo, grafo del mundo y línea de órdenes |
+
+`dwe-pack` y `dwe-map` copian las reglas del motor en C++ y no dependen de nada gráfico; las podrá usar cualquier
+herramienta en Rust. Sus tests comprueban esas reglas con packs sintéticos de ids neutros (`area_a`, `pack_a`):
+
+- **Cámara:** `dwe-map/tests/camera.rs` compara la proyección, el desplazamiento y `pick_ground` con los valores que
+  da el `MapCamera` del motor sobre las mismas entradas (`tests/data/camera_vectors.txt` → `.expected`).
+  `scripts/mapper.sh camera-vectors` los vuelve a generar compilando `tests/cpp/camera_vectors.cpp` con el motor.
+- **Colisión:** leer y volver a escribir la sección da el mismo texto que `dwx` (leyenda y hexadecimal).
+- **Parches:** `dwe-map/src/patch.rs` repite los casos de `packages/engine/assets/tests/map_patch_tests.cpp` sobre el
+  mismo mapa de prueba (una salida campo a campo, el orden de la pila, rectángulos tras una rejilla entera, objetos,
+  los errores que nombran el fichero, el suelo de la pila que deja fuera los parches de debajo del `data`).
+- **Bandas y nombres:** los mismos casos que `trigger_bands_tests.cpp` y `story_names_tests.cpp` (lo que se rechaza y
+  con qué mensaje).
+- **Escritura:** un documento sin tocar se escribe igual que lo escribió `dwx` (el emisor imita a libyaml: bloques con
+  sangría 2, las listas de una clave sin sangrar, los textos entre comillas dobles); las claves que el modelo no
+  conoce se conservan en su sitio. Diferenciar y luego aplicar el parche da el mapa editado, y sin cambios no hay
+  parche.
+- **Contra el motor:** `dwe-map/tests/written.rs` edita `base.yaml` de `packages/engine/assets/tests/data/written_maps` y guarda para cada caso el
+  parche que escribe el editor y el mapa entero que espera (`cells`: rectángulos, salidas y campos de NPC; `grid`: la
+  rejilla entera). `packages/engine/assets/tests/map_written_tests.cpp` aplica ese parche a la misma base con
+  `patchMapDocument` y compara campo a campo con `expected.yaml` leído por el motor: los dos lados leen, parchean y
+  escriben igual. `DWE_MAPPER_BLESS=1 cargo test --test written` los vuelve a generar tras un cambio a propósito.
+- **Editor sin ventana:** `mapper-core/tests/session.rs` pinta, rellena, arrastra y gira NPC y salidas, edita rutas,
+  deshace y rehace, pregunta por los cambios sin guardar y guarda en un paquete de mod nuevo; también el parche de la
+  vista previa y dónde ponen al jugador las pruebas de salida. `mapper-core/src/live.rs` prueba el seguimiento del
+  mapa y cuándo se manda o se quita la vista previa.
+- **Historia:** `dwe-story` lee y vuelve a escribir cada forma del Lua generado, aplica parches como `StoryLuaHost`,
+  y guarda: un parche nuevo, uno que cambió en disco, uno de encima que gana, uno que se queda vacío. El parche que
+  escribe se comprueba contra el motor: `packages/session/tests/data/written_story` lleva un módulo y el parche que
+  saca el editor (con una rutina privada) y `packages/session/tests/story_patch_tests.cpp` lo carga con el lector del
+  juego y corre la sección. `mapper-core/tests/story.rs` edita una línea y una condición, deshace, guarda el parche y
+  el texto, añade y quita NPC, guarda puertas y baño y prepara una prueba de evento. Con `DWE_MAPPER_CONTENT`,
+  `dwe-story/tests/real_content.rs` lee y vuelve a escribir todos los módulos, saca cada sección a un parche y lista
+  los eventos de todos los mapas, y además saca la línea de tiempo de cada sección y el parche de «Reproducir desde
+  aquí» de cada orden de primer nivel, que tiene que volver a leerse.
+- **Secuencias:** `dwe-story/tests/sequence.rs` comprueba las duraciones, las esperas, el corte de un movimiento por
+  el siguiente, las rutinas, las posiciones en el cursor, las líneas del juego y el parche de «Reproducir desde
+  aquí». `mapper-core/tests/timeline.rs` cambia cuadros, arrastra un destino, mueve y añade órdenes con deshacer y
+  rehacer, guarda el parche y prepara una reproducción desde una orden.
+- **Mundo y mapas nuevos:** `mapper-core/tests/world.rs` monta un contenido sintético con salidas de ida y vuelta,
+  un warp de script con condición, salidas rotas, una llegada en una pared y una zona a la que no se llega, y
+  comprueba los caminos, cada comprobación, que la colocación es la misma cada vez y respeta los mapas movidos, que
+  los cambios sin guardar se ven en el grafo, y crear un mapa conectado en un mod, renombrarlo y borrarlo (solo los
+  del propio paquete y sin caminos que lleven a él). `dwe-map/src/new_map.rs` prueba los ficheros que se escriben
+  para cada plantilla, la puerta y la llegada de una salida conectada y los fondos PNG. Con `DWE_MAPPER_CONTENT`, el
+  grafo del juego entero clasifica cada salida.
+- **Servidor MCP:** `mapper-mcp/tests/stdio.rs` arranca el binario y le habla por stdio como un cliente: el saludo, la
+  lista de herramientas, lecturas, una edición con `dry_run` que no cambia nada, la misma edición guardada en un mod
+  nuevo y leída de vuelta por otro servidor, los errores, y un mapa nuevo planeado, creado y conectado.
+- **En vivo:** `mapper-live` habla con un juego falso (un servidor en un hilo que responde como
+  `remote_control.cpp`): las respuestas, los rechazos, el quinto cliente rechazado, que el enlace vuelve a conectar
+  cuando el juego vuelve, que solo pide el registro cuando cambia y que al cerrarse quita la vista previa.
+- **Contenido real** (opcional): con `DWE_MAPPER_CONTENT=<carpeta de contenido>`, `tests/real_content.rs` lee todos los
+  mapas, comprueba la colisión de ida y vuelta y que cada mapa sin parches se escribe igual byte a byte. Con `DWE_CAMERA_VECTORS=<ruta sin extensión>` compara además otros
+  vectores de cámara (`.txt` y `.expected`) generados en local.
+
+El documento guarda entero lo que lee (`MapDocument::source`), también las regiones, las imágenes, el color de ambiente
+y los campos de los NPC que no tienen tipo en Rust, y los escribe de vuelta en su orden. Las luces y los objetos se leen con las claves del motor
+para que un parche que los rompe se rechace como en el juego. Dos diferencias con el lector del motor, que es más
+estricto: los errores de un valor no dicen la línea del parche (el árbol YAML de Rust no la guarda) y en los
+personajes solo se comprueban los campos que el editor usa. Los `.pak` no se leen: solo carpetas. El editor lista los
+ficheros al abrir el contenido y otra vez tras cada guardado o con «Archivo → Recargar contenido».
+
+## Usarlo
+
+```sh
+scripts/mapper.sh build                    # build/mapper/release/dwe-mapper
+scripts/mapper.sh run --content <carpeta>  # compila y lo abre en el equipo
+```
+
+Sin `--content` se abre vacío y la carpeta se elige en «Archivo → Abrir carpeta de contenido». Dentro del repositorio encuentra
+solo `content/packs` (los packs del equipo). Opciones (`dwe-mapper --help`):
+
+| Opción | Qué hace |
+|---|---|
+| `--content <dir>` | La carpeta de contenido: el pack base y los packs de al lado |
+| `--team-packs <dir>` | Los packs del equipo, si no se encuentran solos |
+| `--mods <dir>` | Una carpeta de mods o un pack suelto (se repite); sus parches de mapa se aplican |
+| `--map <id>` y `--exit <n>` | El mapa que se abre primero, centrado en la llegada por esa salida |
+| `--section <script>:<sección>` | Con `--map`: abre esa sección en el editor (decimal o `0x…`) |
+| `--timeline` | Con `--section`: enseña su línea de tiempo |
+| `--variant <nombre>` | El fondo: `day`, `dusk`, `night`… |
+| `--layers <lista>` | Las capas encendidas: `walls,triggers,exits,npcs,waypoints,doors,toilet,grid,live,events` |
+| `--group-by name\|prefix` y `--filter <texto>` | La lista de mapas |
+| `--live unix:<socket>\|tcp:<puerto>` | Conecta con un `dwe-game` en marcha |
+| `--size <ancho>x<alto>` | El tamaño de la ventana |
+| `--lang en\|es` | El idioma de la interfaz; sin él, el del sistema, si no inglés |
+| `--world` | Abre el grafo del mundo; con `--map`, centrado en ese mapa |
+| `--shot <archivo.png>` | Guarda una imagen de la ventana y sale (para la documentación o un X virtual) |
+
+`dwe-mapper mcp …` no abre ventana: es el [servidor MCP](#servidor-mcp) (`dwe-mapper mcp --help`).
+
+## Compilar y probar
+
+Todo en Docker con la imagen del lanzador (`dwe-launcher-dev`, que ya trae Rust, clippy y rustfmt); no hace falta GPU.
+
+```sh
+scripts/dev.sh test --filter mapper   # o scripts/mapper.sh test
+```
+
+`scripts/mapper.sh test` pasa `cargo fmt --check`, `cargo test --locked` y `cargo clippy -D warnings` en todo el
+workspace (`apps/mapper/Cargo.toml` es su raíz e incluye los crates de `packages/rust`). En CI corre el trabajo
+`mapper` cuando cambia `apps/mapper/`, `packages/rust/` o `scripts/mapper.sh`; no es obligatorio y un cambio solo ahí
+no compila el C++.

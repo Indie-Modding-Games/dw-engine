@@ -195,8 +195,8 @@ void logRuleset(const ruleset::Ruleset& rules) {
     sections += core::formatMessage(messages::RulesetSection, name, section.owner);
   }
   const ruleset::RulesetInfo& info = rules.info();
-  core::logInfo("{}", core::formatMessage(messages::RulesetActive, info.id, info.version, info.name,
-                                          sections));
+  core::logInfo("{}", core::formatMessage(messages::RulesetActive, info.id, info.version,
+                                          info.name.english(), sections));
 }
 
 // The species table of the battle screen and the partner's menu; nothing, with a warning, when the
@@ -1558,7 +1558,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   ruleOptions_.keep(session.rules());
   const assets::DigimonTable* species = species_ ? &*species_ : nullptr;
   // What the script warps' guards read (bag, money, stats, conditions) may change only on these
-  // events; the field decides its cells again once after them (docs/reference/campo.md), not
+  // events; the field decides its cells again once after them (docs/reference/field.md), not
   // every frame.
   bool guardFactsChanged = std::exchange(guardFactsChanged_, false);
   if (commands.gift || commands.use) {

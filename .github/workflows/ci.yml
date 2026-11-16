@@ -1,6 +1,6 @@
 name: CI
 
-# The checks of a pull request to main (docs/contribuir.md). main's ruleset requires the jobs
+# The checks of a pull request to main (docs/contributing.md). main's ruleset requires the jobs
 # linux, windows and launcher-version. Only a pull request's newest commit is checked: a newer push
 # cancels the run of the older one. Nothing runs on main itself: a squash-merged pull request
 # already passed these checks (release.yml builds main and keeps the compiler caches these jobs

@@ -1,4 +1,4 @@
-//! The player's own images (docs/guides/imagenes-personalizadas.md): the launcher exports the
+//! The player's own images (docs/guides/custom-images.md): the launcher exports the
 //! images the game read from the player's disc (dwx export-images, into <data>/custom-images/
 //! originals), and keeps the ones the player loads in one pack of the user layer
 //! (<data>/custom-images/pack), which the game mounts with --mods while it is on. Each file the
@@ -26,12 +26,14 @@ const STATE_FILE: &str = "state.json";
 const STAMP_FILE: &str = "originals.stamp";
 const MANIFEST_FILE: &str = "pack.yaml";
 const MANIFEST: &str = include_str!("pack.yaml");
-/// What dwx export-images writes beside the images, and the names an export gives it and its guide.
+/// What dwx export-images writes beside the images (an export copies it) and the name of the guide.
 const MAPS_FILE: &str = "maps.tsv";
-const EXPORTED_MAPS_FILE: &str = "mapas.tsv";
-const README_FILE: &str = "LEEME.txt";
-const README: &str = include_str!("LEEME.txt");
-const EXPORT_FOLDER: &str = "dwe-imagenes";
+const README_FILE: &str = "README.txt";
+/// The guide written with an export, by the launcher's language (English for any other).
+fn readme(language: &str) -> &'static str {
+    if language == "es" { include_str!("readme_es.txt") } else { include_str!("readme_en.txt") }
+}
+const EXPORT_FOLDER: &str = "dwe-images";
 const PNG_EXTENSION: &str = ".png";
 /// The two kinds of image and how their names are made: map/<map>/background_<variant>.png and
 /// texture/<folders>/<image>_palette<N>.png.
@@ -409,8 +411,8 @@ impl CustomImages {
         Ok(())
     }
 
-    /// Copies the originals into a new folder inside `destination`, with a guide.
-    pub fn export(&self, catalogue: &Catalogue, destination: &Path) -> Result<PathBuf> {
+    /// Copies the originals into a new folder inside `destination`, with a guide in `language`.
+    pub fn export(&self, catalogue: &Catalogue, destination: &Path, language: &str) -> Result<PathBuf> {
         let folder = (1..)
             .map(|n| if n == 1 { destination.join(EXPORT_FOLDER) } else { destination.join(format!("{EXPORT_FOLDER}-{n}")) })
             .find(|folder| !folder.exists())
@@ -422,8 +424,8 @@ impl CustomImages {
             }
             fs::copy(self.originals().join(target), to)?;
         }
-        fs::copy(self.originals().join(MAPS_FILE), folder.join(EXPORTED_MAPS_FILE))?;
-        fs::write(folder.join(README_FILE), README)?;
+        fs::copy(self.originals().join(MAPS_FILE), folder.join(MAPS_FILE))?;
+        fs::write(folder.join(README_FILE), readme(language))?;
         Ok(folder)
     }
 

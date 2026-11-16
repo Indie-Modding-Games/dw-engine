@@ -224,7 +224,7 @@ fn edits_a_section_with_undo_and_saves_it_as_a_patch() {
         key: "story_001.text.0001".into(),
         text: "Line one, edited".into(),
     });
-    assert_eq!(mapper.open_origin(), Some("mine (sin guardar)".into()));
+    assert_eq!(mapper.open_origin(), Some("mine (unsaved)".into()));
     assert!(code(&mapper).contains("story.trigger(13)"));
     assert!(code(&mapper).contains("story.show_textbox(\"story_001.text.0003\")"));
     assert_eq!(mapper.text_of("story_001.text.0003"), Some("A new line"));
@@ -485,5 +485,5 @@ fn edits_show_before_a_target_is_chosen() {
     });
     mapper.apply(Action::EditStory(StoryEdit::Remove(StmtPath::top(0))));
     assert!(!code(&mapper).contains("story.trigger(12)"));
-    assert_eq!(mapper.open_origin(), Some("mapper (sin guardar)".into()));
+    assert_eq!(mapper.open_origin(), Some("mapper (unsaved)".into()));
 }

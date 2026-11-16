@@ -1,18 +1,18 @@
 # platform
 
-La ventana, los eventos y los mandos: traduce los eventos del sistema a tipos propios, así que el resto del motor no ve
-la biblioteca de plataforma.
+The window, the events and the controllers: it turns the system's events into its own types, so the rest of the engine
+does not see the platform library.
 
-- Carpeta: `packages/engine/platform`; objetivos de CMake: `dwe::platform` (capa `base`).
-- Depende de: `core`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/engine/platform](https://indie-modding-games.github.io/dw-engine/modulos/engine/platform).
+- Folder: `packages/engine/platform`; CMake targets: `dwe::platform` (`base` layer).
+- Depends on: `core`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/engine/platform](https://indie-modding-games.github.io/dw-engine/modules/engine/platform).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter platform
-scripts/dev.sh test --filter platform       # sus tests (etiqueta de ctest platform)
-scripts/dev.sh test --filter ...platform    # y los de todo lo que depende de él
+scripts/dev.sh test --filter platform       # its tests (ctest label platform)
+scripts/dev.sh test --filter ...platform    # and those of everything that depends on it
 ```

@@ -1,9 +1,10 @@
-# Recoger un objeto del suelo con el teclado (tamer.c: tamerTickPickupItem): drop_item deja la carne a los pies del
-# jugador, el aviso sale y el jugador se agacha (field_items.pickup_player_clip, la animación 12 del original) y se queda
-# en su último cuadro hasta confirmar; mientras tanto el compañero, puesto lejos, sigue viniendo hacia el jugador y el
-# reloj sigue andando. En el aspecto original la caja crece desde el jugador y vuelve a él al confirmar. Al confirmar el
-# objeto entra en la bolsa y el jugador vuelve a estar de pie. Las capturas muestran el gesto y al compañero. Se corre
-# con: dwe-game --content <carpeta> --autotest tests/autotest/route-field-pickup-pose.yaml --shots <carpeta>
+# Picking up an item from the ground with the keyboard (tamer.c: tamerTickPickupItem): drop_item leaves the meat at the
+# player's feet, the notice appears and the player crouches (field_items.pickup_player_clip, the original's animation
+# 12) and stays on its last frame until confirm; meanwhile the partner, placed far away, keeps coming toward the
+# player and the clock keeps running. In the original look the box grows from the player and returns to it on
+# confirm. On confirm the item goes into the bag and the player stands up again. The captures show the gesture and the
+# partner. Run it with: dwe-game --content <folder> --autotest tests/autotest/route-field-pickup-pose.yaml
+# --shots <folder>
 name: field-pickup-pose
 device: keyboard
 timeout: 60

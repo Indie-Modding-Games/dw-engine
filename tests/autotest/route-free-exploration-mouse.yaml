@@ -1,6 +1,6 @@
-# Free exploration's switch and chooser with the mouse (docs/architecture/warps-de-script.md): the pause menu turns it
+# Free exploration's switch and chooser with the mouse (docs/architecture/script-warps.md): the pause menu turns it
 # on, the elder's house's door offers File City's 13 phases, starting on the story's, and a click on the second page
-# takes one the story keeps closed. It runs once per language, like route-language.yaml. How to run it: docs/guides/prueba-vertical.md.
+# takes one the story keeps closed. It runs once per language, like route-language.yaml. How to run it: docs/guides/vertical-slice.md.
 name: free-exploration-mouse
 device: mouse
 timeout: 300

@@ -5,7 +5,7 @@
 #include <span>
 #include <string_view>
 
-// The names the story API gives the listing's ops and operands (docs/modding/historia.md#nombres).
+// The names the story API gives the listing's ops and operands (docs/modding/story.md#names).
 // The listing keeps the names its YAML contract has; the Lua that dwx writes uses these, which
 // never name a franchise, console or company.
 namespace dwe::formats::script {

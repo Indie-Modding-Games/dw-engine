@@ -2,7 +2,7 @@
 # Cooks every pack folder in a package's packs/ (the team's packs: the game pack and the
 # translations) with dwx cook and dwx pack into a .pak archive beside it, then removes the folder: a
 # package ships the team's packs only as archives, and a package build loads only those
-# (content::teamPacksFolder, docs/adr/0017-cocinado-y-archivos-pak.md). The packs hold nothing read
+# (content::teamPacksFolder, docs/adr/0017-cooking-and-pak-files.md). The packs hold nothing read
 # from a disc, so any dwx of this commit cooks them the same, on any system.
 #
 # Usage: scripts/package/cook_team_packs.sh <packs folder> <dwx>

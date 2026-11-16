@@ -184,7 +184,7 @@ body #description {
 	color: #f2f0e1;
 }
 
-/* The amount box (sh-amount): name in gold, the price, «- n / max +» with «Máx» at the right, the total, then
+/* The amount box (sh-amount): name in gold, the price, «- n / max +» with «Max» at the right, the total, then
    «Aceptar» and «Volver» under a light-blue line. */
 #amount {
 	position: relative;

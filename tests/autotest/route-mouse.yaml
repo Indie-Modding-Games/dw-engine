@@ -1,6 +1,6 @@
 # The vertical slice's route with the mouse (click-to-move on the ground, the HUD's menu button, clicks on the
 # menu): File City to the elder's house and back, the menu and the minimap, the tabs of the player's page (original
-# look) and of the partner's page, clicked, and the window at each size. How to run it: docs/guides/prueba-vertical.md.
+# look) and of the partner's page, clicked, and the window at each size. How to run it: docs/guides/vertical-slice.md.
 name: mouse
 device: mouse
 timeout: 600

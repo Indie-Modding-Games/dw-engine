@@ -4,7 +4,7 @@ body {
 	pointer-events: none;
 }
 
-/* The round minimap (an engine improvement, docs/modulos/engine/ui.md): at the top right, clear of the time and the
+/* The round minimap (an engine improvement, docs/modules/engine/ui.md): at the top right, clear of the time and the
    partner's panel at the bottom left and of the menu's hint at the top left. The map's name on a banner above it, a
    disc of the map round the player, north-up, with a glowing ring (decorator minimap-disc: ring style, disc fill,
    ring colour, glow colour, ring width, glow width) and the north mark on the ring, and the day and time under it.
@@ -176,7 +176,7 @@ body {
 	display: block;
 }
 
-/* The field status (the hud.* settings, docs/architecture/ui.md#estado-del-campo): the game time and the partner's
+/* The field status (the hud.* settings, docs/architecture/ui.md#field-status): the game time and the partner's
    state, at the bottom left, in from the edges as far as the other panels. Next to the original's field, which shows
    only a dial clock and the happiness and discipline bars, this skin adds the day, the bars' numbers, the needs and
    HP and MP, and fills the bars continuously (no "pips" class); the whole panel is this skin's look. */

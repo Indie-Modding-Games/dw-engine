@@ -10,7 +10,7 @@
 #include <string_view>
 #include <vector>
 
-// Partial overrides of a map's data (docs/formats/mapas.md#parches,
+// Partial overrides of a map's data (docs/formats/maps.md#patches,
 // content/schemas/map_patch.schema.json). A pack ships `map/<id>/patch` next to the map's
 // `map/<id>/data` to change one exit, one NPC slot, an object's sprite or instance, a light or the
 // camera field by field, and the collision whole or by rectangles of cells, without copying the

@@ -1,10 +1,10 @@
-# Todas las especies como compañero (opción de partida nueva, encendida por defecto): las especies con
-# modelo y clips de combate que el original nunca deja criar salen evolucionando en una partida normal. El
-# original va primero: un destino de aquí solo se elige cuando ninguno de los del original pasa. Diseño:
-# docs/modulos/game/evoluciones-extra.md. Formato de los parches: docs/architecture/rulesets.md.
+# All species as a partner (new-game option, on by default): the species with a
+# model and combat clips that the original never lets you raise come out by evolving in a normal game. The
+# original goes first: a destination from here is only chosen when none of the original's applies. Design:
+# docs/modules/game/extra-evolutions.md. Patch format: docs/architecture/rulesets.md.
 
-# Los novatos de la línea de fuego, hielo, ogros y oscuridad: un entrenamiento que despierta en su mapa
-# (como el especial del original en mayo02), tras los del original.
+# The Rookies of the fire, ice, ogre and darkness lines: an In-Training that wakes up on its map
+# (like the original's special one in mayo02), after the original's.
 wake_up:
   - target: flar
     roll_below: 50
@@ -71,8 +71,8 @@ wake_up:
     from: [koro, tuno, toko, tane]
     require:
       map: { equals: saib01 }
-  # Los modelos de personaje que entran como compañero (partner_clips.yaml les da sus clips): un bebé
-  # de fuego que despierta en el túnel, y la rueda dentada, novato de la ciudad de las fábricas.
+  # The character models that join as a partner (partner_clips.yaml gives them their clips): a fire
+  # Fresh that wakes up in the tunnel, and the gear, a Rookie from the factory city.
   - target: puti
     roll_below: 50
     from: [bota, puni, poyo, yura]
@@ -85,7 +85,7 @@ wake_up:
       map: { equals: fact01 }
 
 species:
-  # Novatos.
+  # Rookies.
   flar:
     evolves_to: [mera, bird, varm, blmr]
     stats_gains: {copy: agum}
@@ -233,9 +233,9 @@ species:
     raise: {copy: piyo, favorite_food: red_berry}
     moves: [super_slap]
     chart: {x: 104, y: 0, icon: piyo, palette: 2}
-  # Modelos de personaje (docs/modulos/game/evoluciones-extra.md, «Modelos de personaje»): level les
-  # da su etapa, que la tabla deja en 0, y moves: {copy} la fila de técnicas de la especie de la que
-  # salen sus clips, así cada técnica toca el clip de su ranura.
+  # Character models (docs/modules/game/extra-evolutions.md, "Character models"): level gives them
+  # their stage, which the table leaves at 0, and moves: {copy} the moves row of the species whose
+  # clips they use, so each move plays the clip of its slot.
   puti:
     level: 2
     evolves_to: [agum, piyo]
@@ -252,7 +252,7 @@ species:
     moves: {copy: elec}
     effect_type: elec
     chart: {x: 104, y: 0, icon: elec, palette: 2}
-  # Campeones.
+  # Champions.
   hyog:
     requirement: {offense: 80, defense: 70, care: 6, weight: 55, battles: 15}
     evolves_from: [icem, sngb, sham]
@@ -448,7 +448,7 @@ species:
     moves: {copy: ogre}
     effect_type: ogre
     chart: {x: 141, y: 0, icon: ogre, palette: 2}
-  # Ultras.
+  # Ultimates.
   waru:
     requirement: {hp: 300, offense: 300, defense: 250, care: 10, weight: 75, battles: 50}
     evolves_from: [hyog, fuga, grur, soul, nume, ogre]

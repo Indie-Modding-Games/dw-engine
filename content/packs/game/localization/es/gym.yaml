@@ -1,5 +1,5 @@
-# El cuadro de las estadísticas del gimnasio (TRN_renderPostTrainingStatsBox): el nombre entero de cada fila, en el
-# orden del cuadro, para los aspectos que no usan las abreviaturas del original.
+# The gym stats box (TRN_renderPostTrainingStatsBox): the full name of each row, in the
+# box's order, for the skins that do not use the original's abbreviations.
 stat.0: "HP"
 stat.1: "MP"
 stat.2: "Ataque"

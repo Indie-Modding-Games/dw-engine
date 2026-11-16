@@ -12,7 +12,7 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
     egui::Panel::top("tools").show(ui, |ui| {
         ui.horizontal_wrapped(|ui| {
             let mut actions = Vec::new();
-            ui.label(text::TOOLS);
+            ui.label(text::tools());
             for tool in Tool::ALL {
                 if ui
                     .selectable_label(app.mapper.tool == tool, text::tool_name(tool))
@@ -23,7 +23,7 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
             }
             if app.mapper.tool == Tool::Brush {
                 ui.separator();
-                ui.label(text::BRUSH_SIZE);
+                ui.label(text::brush_size());
                 for size in BRUSH_SIZES {
                     let label = format!("{size}×{size}");
                     if ui
@@ -48,7 +48,7 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
 fn value_picker(app: &MapperApp, ui: &mut egui::Ui, actions: &mut Vec<Action>) {
     let mapper = &app.mapper;
     let current = mapper.paint_value;
-    ui.label(text::PAINT_VALUE);
+    ui.label(text::paint_value());
     ui.menu_button(value_label(app, current), |ui| {
         for group in tools::value_groups(&mapper.bands) {
             let mut pick = |ui: &mut egui::Ui, label: String, value: u8| {
@@ -58,33 +58,37 @@ fn value_picker(app: &MapperApp, ui: &mut egui::Ui, actions: &mut Vec<Action>) {
                 }
             };
             match group {
-                ValueGroup::Wall => pick(ui, text::VALUE_WALL.to_owned(), tools::WALL),
-                ValueGroup::Free => pick(ui, text::VALUE_FREE.to_owned(), tools::FLOOR),
+                ValueGroup::Wall => pick(ui, text::value_wall().to_owned(), tools::WALL),
+                ValueGroup::Free => pick(ui, text::value_free().to_owned(), tools::FLOOR),
                 ValueGroup::Step(values) => {
-                    ui.menu_button(text::VALUE_STEP, |ui| {
+                    ui.menu_button(text::value_step(), |ui| {
                         for value in values {
                             pick(ui, value.to_string(), value);
                         }
                     });
                 }
                 ValueGroup::Confirm(values) => {
-                    ui.menu_button(text::VALUE_CONFIRM, |ui| {
+                    ui.menu_button(text::value_confirm(), |ui| {
                         for value in values {
                             pick(ui, value.to_string(), value);
                         }
                     });
                 }
                 ValueGroup::Exit { exit, value } => {
-                    pick(ui, format!("{} {exit} ({value})", text::VALUE_EXIT), value);
+                    pick(
+                        ui,
+                        format!("{} {exit} ({value})", text::value_exit()),
+                        value,
+                    );
                 }
                 ValueGroup::Toilet(value) => {
-                    pick(ui, format!("{} ({value})", text::VALUE_TOILET), value);
+                    pick(ui, format!("{} ({value})", text::value_toilet()), value);
                 }
             }
         }
     });
     let mut raw = i32::from(current);
-    ui.label(text::VALUE_RAW);
+    ui.label(text::value_raw());
     if ui
         .add(egui::DragValue::new(&mut raw).range(0..=255))
         .changed()
@@ -97,11 +101,11 @@ fn value_picker(app: &MapperApp, ui: &mut egui::Ui, actions: &mut Vec<Action>) {
 pub fn value_label(app: &MapperApp, value: u8) -> String {
     let bands = &app.mapper.bands;
     if value == tools::FLOOR {
-        return format!("{value} {}", text::VALUE_FREE);
+        return format!("{value} {}", text::value_free());
     }
     match dwe_map::collision::kind_of(value) {
-        dwe_map::CellKind::Blocked => format!("{value} {}", text::VALUE_WALL),
-        dwe_map::CellKind::Free => format!("{value} {}", text::VALUE_FREE),
+        dwe_map::CellKind::Blocked => format!("{value} {}", text::value_wall()),
+        dwe_map::CellKind::Free => format!("{value} {}", text::value_free()),
         dwe_map::CellKind::Trigger(_) => format!("{value} {}", text::band_name(bands.band(value))),
     }
 }
@@ -125,9 +129,9 @@ fn trigger_section(app: &MapperApp, ui: &mut egui::Ui, actions: &mut Vec<Action>
     ui.label(text::trigger_section(confirm, section, script));
     if script.is_some() {
         if exists {
-            ui.colored_label(egui::Color32::LIGHT_GREEN, text::SECTION_EXISTS);
+            ui.colored_label(egui::Color32::LIGHT_GREEN, text::section_exists());
         } else {
-            ui.colored_label(crate::events::colors::MISSING, text::SECTION_MISSING);
+            ui.colored_label(crate::events::colors::MISSING, text::section_missing());
         }
     }
     let Some(loaded) = loaded else { return };
@@ -137,7 +141,7 @@ fn trigger_section(app: &MapperApp, ui: &mut egui::Ui, actions: &mut Vec<Action>
         .filter(|id| u8::try_from(*id).is_ok_and(|id| band.contains(&id)))
         .collect();
     egui::ComboBox::from_id_salt("trigger_section")
-        .selected_text(text::PICK_SECTION)
+        .selected_text(text::pick_section())
         .show_ui(ui, |ui| {
             for id in sections {
                 if ui
@@ -150,7 +154,7 @@ fn trigger_section(app: &MapperApp, ui: &mut egui::Ui, actions: &mut Vec<Action>
             }
         });
     if let Some(script) = script
-        && ui.button(text::OPEN_SECTION).clicked()
+        && ui.button(text::open_section()).clicked()
     {
         actions.push(Action::OpenSection { script, section });
     }

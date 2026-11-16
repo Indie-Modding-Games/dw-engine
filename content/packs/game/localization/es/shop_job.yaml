@@ -1,30 +1,30 @@
-# El trabajo en la tienda del cañón, mejorado (game/shop_job; docs/reference/trabajo-tienda.md).
-# Las líneas que los parches de la historia (story/patches/shop_job_*.lua) añaden a las del original: el jugador charla
-# con el cliente y este escucha, lo despide, y el premio del final (dado, guardado por el guardián de
-# objetos si la bolsa está llena, o sin sitio en ninguno).
+# The canyon shop's job, improved (game/shop_job; docs/reference/shop-job.md).
+# The lines the story patches (story/patches/shop_job_*.lua) add to the original's: the player chats with the customer
+# who listens, sends it away, and the end's bonus (given, left with the item keeper when the
+# bag is full, or with no room anywhere).
 story.talk: "¡Qué buen día hace!\n¿Viene de muy lejos?"
 story.listens: "Je, je... Pues sí."
 story.dismiss: "Lo siento, hoy no\npuedo atenderle."
 story.bonus: "¡Monochromon te da un\n{color:6}Corazón de acero{color:1}!"
 story.bonus_bag_full: "Monochromon quería darte un\n{color:6}Corazón de acero{color:1}, pero\nno te cabe en la bolsa."
 story.bonus_kept: "No te cabe en la bolsa: Monochromon\ndeja tu {color:6}Corazón de acero{color:1}\nal guardián de objetos."
-# El carácter de cada especie (shop_job.yaml: character), como lo enseñan el mostrador y el panel de reglas.
+# Each species' character (shop_job.yaml: character), as the counter and the rules panel show it.
 character.spendthrift: "Derrochador: paga caro casi siempre"
 character.haggler: "Regateador: odia los recargos grandes"
 character.miser: "Tacaño: casi nunca pasa de +20 %"
 character.fickle: "Caprichoso: le da igual el precio, se cansa rápido"
-# El humor al llegar (shop_job.yaml: moods).
+# The arrival mood (shop_job.yaml: moods).
 mood.cheerful: "Alegre"
 mood.normal: "Normal"
 mood.serious: "Serio"
-# Las caras con que responde a una oferta (shop_job.yaml: reactions).
+# The faces a customer answers an offer with (shop_job.yaml: reactions).
 reaction.delighted: "Encantado"
 reaction.pleased: "Contento"
 reaction.doubtful: "Dudoso"
 reaction.annoyed: "Molesto"
 reaction.furious: "Furioso"
-# El mostrador (ui/shop_haggle): el cliente ({number} de {total}), su humor y paciencia, el objeto con su precio
-# normal, las columnas de la lista, los botones, las ofertas de este cliente y la cuenta frente a la meta.
+# The counter (ui/shop_haggle): the customer ({number} of {total}), its mood and patience, the item with its regular
+# price, the list's columns, the buttons, this customer's offers and the tally against the goal.
 haggle.title: "Cliente {number} de {total}"
 haggle.mood: "Humor: {mood}"
 haggle.patience: "Paciencia"
@@ -47,7 +47,7 @@ haggle.offer: "{price} bits: {reaction}"
 haggle.tally: "Cuenta {tally} / {goal}"
 haggle.next_joins: "Se une desde {tally}"
 haggle.next_bonus: "Premio desde {tally}"
-# El panel de reglas (ui/shop_job_rules).
+# The rules panel (ui/shop_job_rules).
 rules.title: "Trabajo en la tienda"
 rules.goal: "Atiende a {customers} clientes. Lo que ganas con cada venta va a la cuenta."
 rules.pay_lowest: "Menos de {tally}: 500 bits"

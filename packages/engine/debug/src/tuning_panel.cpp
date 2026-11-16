@@ -144,8 +144,10 @@ void TuningPanel::drawRulesetChooser() {
       info.chain.size() > 1 ? std::vformat(ExtendsFormat, std::make_format_args(info.chain[1]))
                             : std::string{ExtendsNothingText};
   const std::uint64_t revision = model_.revision();
+  // The panel is in English, so is the name.
+  const std::string_view name = info.name.english();
   textLine(std::vformat(RulesetLineFormat,
-                        std::make_format_args(info.name, info.version, extends, revision)));
+                        std::make_format_args(name, info.version, extends, revision)));
 }
 
 void TuningPanel::drawOutcome() {

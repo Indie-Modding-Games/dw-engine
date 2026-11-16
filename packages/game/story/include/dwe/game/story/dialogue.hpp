@@ -190,7 +190,7 @@ public:
   // How many pages the boxes have turned to so far: one more for each page shown.
   [[nodiscard]] std::uint32_t pagesShown() const { return pagesShown_; }
 
-  // The «cancel closes the choice» improvement (docs/modulos/game/story.md): in the original a
+  // The «cancel closes the choice» improvement (docs/modules/game/story.md): in the original a
   // cancel in a choice without an end marker runs the code after it, the first option's. Off by
   // default; the extracted scripts ask for it before that code (story.cancel_closes_choice).
   void setCancelClosesChoice(bool on) { cancelClosesChoice_ = on; }

@@ -1,7 +1,7 @@
 # The pad's Select (Back) opens the game's options even when the menu (North) is already open: it
 # switches that menu to its options page instead of closing it, and the next Select closes it. After
 # closing the menu, Select opens the options page too, so the shortcut is never left stuck. `settings`
-# has no keyboard key (docs/architecture/controles.md), so this runs on a gamepad. Run with:
+# has no keyboard key (docs/architecture/controls.md), so this runs on a gamepad. Run with:
 # dwe-game --content <folder> --autotest tests/autotest/route-settings-after-tab.yaml
 name: settings-after-tab
 device: gamepad

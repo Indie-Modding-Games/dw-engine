@@ -1,7 +1,7 @@
-# The pause menu's options by tabs (docs/modulos/apps/game.md#opciones-en-partida): each tab shown with Q/E and with a
+# The pause menu's options by tabs (docs/modules/apps/game.md#in-game-options): each tab shown with Q/E and with a
 # click, a focused row with its description and tag, a list and a volume changed both ways with the arrows, and the
 # reset question, all at 1280x720 with every text fitting. Run it once per skin (--ui-skin original and modern), each
-# with its own capture folder (docs/guides/prueba-vertical.md).
+# with its own capture folder (docs/guides/vertical-slice.md).
 name: options-tabs
 device: keyboard
 timeout: 300

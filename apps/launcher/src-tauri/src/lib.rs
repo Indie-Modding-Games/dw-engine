@@ -1,4 +1,4 @@
-//! dwe's desktop launcher (docs/modulos/apps/launcher.md): reads the player's disc with dwx,
+//! dwe's desktop launcher (docs/modules/apps/launcher.md): reads the player's disc with dwx,
 //! keeps the game up to date from the repository's releases and starts it. Everything that
 //! touches the disc, the network or other programs is a command here; the page only
 //! shows state and asks for these commands.

@@ -1,18 +1,18 @@
 # core
 
-Lo que usan todos los módulos: `Result` y errores sin excepciones, el log, las plantillas de mensajes, la matemática y
-los tipos básicos.
+What every module uses: `Result` and errors without exceptions, the log, the message templates, math and the basic
+types.
 
-- Carpeta: `packages/engine/core`; objetivos de CMake: `dwe::core` (capa `core`).
-- Depende de: ningún otro paquete.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/engine/core](https://indie-modding-games.github.io/dw-engine/modulos/engine/core).
+- Folder: `packages/engine/core`; CMake targets: `dwe::core` (`core` layer).
+- Depends on: no other package.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/engine/core](https://indie-modding-games.github.io/dw-engine/modules/engine/core).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter core
-scripts/dev.sh test --filter core       # sus tests (etiqueta de ctest core)
-scripts/dev.sh test --filter ...core    # y los de todo lo que depende de él
+scripts/dev.sh test --filter core       # its tests (ctest label core)
+scripts/dev.sh test --filter ...core    # and those of everything that depends on it
 ```

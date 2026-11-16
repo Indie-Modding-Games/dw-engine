@@ -1,4 +1,4 @@
--- The game's own options as rows of the options page (docs/modulos/apps/game.md, «Opciones en
+-- The game's own options as rows of the options page (docs/modules/apps/game.md, «Opciones en
 -- partida»): the UI API's options (options.list(), ui/api/options.lua) in their order, each with
 -- the element id of its row while its tab is shown (also what routes select with menu_select). The
 -- page fills a free row of each option's tab, so no document needs a row of its own.

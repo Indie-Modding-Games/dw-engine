@@ -23,7 +23,7 @@ inline constexpr std::string_view BugReportDocument = "bug_report";
 
 // Writes bug reports (the report_bug action, F12) into <reports>/<YYYYMMDD-HHMMSS>-<map>/: the
 // save, state.yaml, the log's tail, route.yaml and the screenshot of the next frame; then shows a
-// short toast and logs the folder (docs/guides/prueba-vertical.md, "Reportar un bug").
+// short toast and logs the folder (docs/guides/vertical-slice.md, "Reportar un bug").
 class BugReporter {
 public:
   // `log` keeps the log's last lines (core::keepLogTail).

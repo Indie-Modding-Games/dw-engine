@@ -14,7 +14,7 @@
 
 // R4.7: the map editor (dw1fe) opens the engine's documents, edits them and writes them back with
 // the rules of emitYaml, with no conversion of its own
-// (docs/architecture/herramientas-externas.md). These tests make the edits it makes on synthetic
+// (docs/architecture/external-tools.md). These tests make the edits it makes on synthetic
 // documents of each kind it writes.
 
 using namespace dwe::dwx::testing;

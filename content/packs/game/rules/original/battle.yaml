@@ -1,9 +1,9 @@
-# Batalla (docs/reference/battle.md). Los tiempos van en fotogramas de batalla (20 por segundo, el frames_per_second de
-# clock.yaml: el reloj del juego se para durante el combate); las distancias, en unidades del mundo, y las que el
-# original compara al cuadrado llevan _squared en el nombre. Los porcentajes van de 0 a 100. Las tablas por técnica y
-# por Digimon (MOVE_DATA, DIGIMON_DATA, MOVE_LEARN_CHANCES) son las del paquete base (tables: en ruleset.yaml).
+# Battle (docs/reference/battle.md). Times are in battle frames (20 per second, the frames_per_second of
+# clock.yaml: the game clock stops during combat); distances are in world units, and the ones the
+# original compares squared carry _squared in the name. Percentages go from 0 to 100. The per-move and
+# per-Digimon tables (MOVE_DATA, DIGIMON_DATA, MOVE_LEARN_CHANCES) are the base pack's (tables: in ruleset.yaml).
 
-# Las reglas que son lógica, por nombre (docs/architecture/rulesets.md, "Estrategias").
+# The rules that are logic, by name (docs/architecture/rulesets.md, "Strategies").
 strategies:
   # battle_main.c: BTL_selectPartnerMove, BTL_selectFighterTarget, BTL_selectMoveByPower, BTL_selectMoveByMpCost.
   partner_ai: original
@@ -11,30 +11,30 @@ strategies:
   enemy_ai: original
   # battle_main.c: BTL_calculateDamage, BTL_calculateHitChance.
   damage: original
-  # battle_main.c: BTL_tickPartnerAI, BTL_tickEnemyAI (desobediencia), BTL_retargetAfterHit; battle_tick.c:
-  # handleCommands (retraso de órdenes).
+  # battle_main.c: BTL_tickPartnerAI, BTL_tickEnemyAI (disobedience), BTL_retargetAfterHit; battle_tick.c:
+  # handleCommands (command delay).
   obedience: original
 
-# battle_main.c: el daño y el MP pendientes, y los topes de los stats.
+# battle_main.c: pending damage and MP, and the stat caps.
 limits:
-  # btl.c: handleBattleStart: como mucho 3 enemigos.
+  # btl.c: handleBattleStart: at most 3 enemies.
   max_enemies: 3
-  # battle_main.c: BTL_tickAttackHits: la reserva de daño pendiente no pasa de 9999.
+  # battle_main.c: BTL_tickAttackHits: the pending damage pool never goes above 9999.
   pending_damage_cap: 9999
-  # battle_main.c: BTL_buffStats: addWithLimit(stat, value, 999); BTL_calculateTargetScore mide la defensa sobre 999.
+  # battle_main.c: BTL_buffStats: addWithLimit(stat, value, 999); BTL_calculateTargetScore measures defense out of 999.
   stat_cap: 999
 
-# utils.c: damageTick: cada fotograma, la reserva de daño baja por escalones, del más alto al más bajo, y lo que baja se
-# resta a la vida.
+# utils.c: damageTick: every frame, the pending damage pool drops in steps, from the highest to the lowest, and what it
+# drops is subtracted from life.
 damage_tick:
   - { above: 999, amount: 900 }
   - { above: 99, amount: 80 }
   - { above: 9, amount: 6 }
   - { above: 0, amount: 1 }
 
-# Afinidad de especialidades. Especialidades: 0 fuego, 1 combate, 2 aire, 3 naturaleza, 4 hielo, 5 máquina, 6 basura.
+# Specialty affinity. Specialties: 0 fire, 1 battle, 2 air, 3 nature, 4 ice, 5 machine, 6 filth.
 affinity:
-  # TYPE_FACTORS (US 0x80125F70): fila = especialidad de la técnica, columna = especialidad del defensor, en décimas.
+  # TYPE_FACTORS (US 0x80125F70): row = the move's specialty, column = the defender's specialty, in tenths.
   factors:
     - [10, 15, 5, 20, 20, 15, 20]
     - [10, 10, 2, 15, 10, 10, 5]
@@ -43,119 +43,119 @@ affinity:
     - [20, 15, 5, 15, 10, 15, 20]
     - [10, 10, 5, 10, 10, 10, 5]
     - [5, 15, 5, 2, 10, 20, 2]
-  # battle_main.c: BTL_calculateDamage: una ranura de especialidad vacía cuenta 10 (×1).
+  # battle_main.c: BTL_calculateDamage: an empty specialty slot counts as 10 (x1).
   empty_slot: 10
-  # battle_main.c: BTL_calculateElementBonus: lo que suma cada afinidad al peso de una técnica al elegirla.
+  # battle_main.c: BTL_calculateElementBonus: what each affinity adds to a move's weight when choosing it.
   move_weight_bonus: { 20: 10, 15: 7, 10: 5, 5: 3, 2: 1 }
-  # battle_main.c: BTL_calculateTargetScore: la afinidad invertida que puntúa un objetivo (bajo = preferido).
+  # battle_main.c: BTL_calculateTargetScore: the inverted affinity that scores a target (low = preferred).
   target_score: { 20: 2, 15: 5, 10: 10, 5: 15, 2: 20 }
 
-# Técnicas: los bloques de índices de MOVE_DATA y las técnicas con reglas propias.
+# Moves: the MOVE_DATA index blocks and the moves with their own rules.
 moves:
-  # battle_main.c: BTL_isMoveUsable, BTL_setupMoveExecution: el coste guardado se multiplica por 3.
+  # battle_main.c: BTL_isMoveUsable, BTL_setupMoveExecution: the stored cost is multiplied by 3.
   mp_cost_multiplier: 3
-  # battle_main.c: las técnicas 0x3A a 0x70 son remates; las de debajo de 0x3A se pueden aprender.
+  # battle_main.c: moves 0x3A to 0x70 are finishers; the ones below 0x3A can be learned.
   finisher_first_index: 58
   finisher_last_index: 112
   learnable_below_index: 58
-  # battle_main.c: la técnica 0x2D es el contraataque.
+  # battle_main.c: move 0x2D is the counterattack.
   counter: counter
-  # battle_main.c: BTL_tickFlatState: el aplastado solo dispara la técnica 0x79.
+  # battle_main.c: BTL_tickFlatState: a flattened fighter only fires move 0x79.
   flattened_shot: move_121
-  # battle_main.c: BTL_setupMoveExecution: usar una técnica resta su potencia a la reserva de velocidad, que no baja de
-  # −155.
+  # battle_main.c: BTL_setupMoveExecution: using a move subtracts its power from the speed pool, which never goes below
+  # -155.
   speed_reserve_floor: -155
-  # battle_main.c: BTL_startQueuedMove: una técnica con el bit 1 de banderas bloquea 110 fotogramas a todas las demás
-  # que lo tienen.
+  # battle_main.c: BTL_startQueuedMove: a move with flag bit 1 blocks all the others that have it for
+  # 110 frames.
   shared_cooldown_frames: 110
-  # battle_main.c: BTL_applyBuffMove: las técnicas de apoyo suben stats un porcentaje durante el combate.
+  # battle_main.c: BTL_applyBuffMove: support moves raise stats by a percentage during the fight.
   buffs:
     - { move: muscle_charge, offense: 30, defense: 0, speed: 0 }
     - { move: war_cry, offense: 10, defense: 5, speed: 10 }
     - { move: mass_morph, offense: 0, defense: 20, speed: 10 }
     - { move: aqua_magic, offense: 7, defense: 8, speed: 7 }
     - { move: full_potential, offense: 25, defense: 15, speed: 15 }
-  # battle_setup.c: BTL_initializeCombat: usos de técnicas de apoyo por combate: inteligencia / 100 + 1 por debajo de
-  # 400, 4 por debajo de 600 y 5 desde ahí.
+  # battle_setup.c: BTL_initializeCombat: support move uses per fight: intelligence / 100 + 1 below
+  # 400, 4 below 600 and 5 from there.
   buff_uses:
     per_brain: 100
     base: 1
     tiers:
       - { brain: 400, uses: 4 }
       - { brain: 600, uses: 5 }
-  # utils2.c: learnMove: estas parejas se aprenden juntas.
+  # utils2.c: learnMove: these pairs are learned together.
   learned_together:
     - [dynamite_kick, dynamite_kick_48]
     - [horizontal_kick, horizontal_kick_57]
 
-# La reserva de velocidad (battle_main.c: BTL_increaseSpeedBuffer).
+# The speed pool (battle_main.c: BTL_increaseSpeedBuffer).
 speed_reserve:
-  # battle_setup.c: BTL_initializeCombat: empieza llena.
+  # battle_setup.c: BTL_initializeCombat: starts full.
   start: 100
   cap: 100
-  # Cada 2 fotogramas gana velocidad / 100 + 1.
+  # Every 2 frames it gains speed / 100 + 1.
   gain_every_frames: 2
   gain_per_speed: 100
   gain_base: 1
 
-# Los modos de carga y las pausas (battle_main.c: BTL_applyChargeRequirement, BTL_tickChargeState,
+# Charge modes and pauses (battle_main.c: BTL_applyChargeRequirement, BTL_tickChargeState,
 # BTL_tickFighterAction).
 pacing:
-  # battle_main.c: BTL_tickFighterAction: pausa tras cada ataque.
+  # battle_main.c: BTL_tickFighterAction: pause after each attack.
   after_attack_frames: 40
-  # battle_main.c: BTL_setFighterCooldown: pausa cuando no puede pagar ninguna técnica, o le toca la ranura vacía.
+  # battle_main.c: BTL_setFighterCooldown: pause when it cannot afford any move, or the empty slot comes up.
   no_move_frames: 80
-  # battle_main.c: BTL_tickRangedAttack: si en 80 fotogramas no llega a su distancia, dispara igual.
+  # battle_main.c: BTL_tickRangedAttack: if it does not reach its distance in 80 frames, it fires anyway.
   ranged_patience_frames: 80
-  # battle_main.c: BTL_tickRangedAttack: la distancia de una técnica a distancia vale con ±30 %.
+  # battle_main.c: BTL_tickRangedAttack: a ranged move's distance is accepted within ±30 %.
   ranged_band_percent: 30
-  # battle_main.c: BTL_tickRangedAttack: el aplastado dispara solo en los fotogramas múltiplos de 40.
+  # battle_main.c: BTL_tickRangedAttack: a flattened fighter only fires on frames that are multiples of 40.
   flattened_shot_every_frames: 40
-  # battle_main.c: BTL_tickFighterAction: el disparo del aplastado sale a los 2 fotogramas y su animación dura 30.
+  # battle_main.c: BTL_tickFighterAction: the flattened fighter's shot goes out at 2 frames and its animation lasts 30.
   flattened_shot_frames: 30
   flattened_shot_release_frame: 2
-  # battle_effect.c: BTL_addAuraProjectile, BTL_tickAuraProjectile: el disparo sale delante del pecho y avanza 35 por
-  # fotograma hacia donde miraba; dura 58 fotogramas y su caja mide 45 a cada lado y 200 hacia arriba y abajo.
+  # battle_effect.c: BTL_addAuraProjectile, BTL_tickAuraProjectile: the shot leaves in front of the chest and moves 35 per
+  # frame where it was facing; it lasts 58 frames and its box is 45 to each side and 200 up and down.
   flattened_shot_speed: 35
   flattened_shot_life_frames: 58
   flattened_shot_half_width: 45
   flattened_shot_half_height: 200
 
-# Distancias que guarda cada uno (battle_main.c: BTL_maintainTargetDistance, BTL_getContactRangeSquared,
+# Distances each one keeps (battle_main.c: BTL_maintainTargetDistance, BTL_getContactRangeSquared,
 # BTL_handlePartnerMoveCommand).
 spacing:
-  # battle_main.c: BTL_getContactRangeSquared: los radios de los dos más 200.
+  # battle_main.c: BTL_getContactRangeSquared: the radii of the two plus 200.
   contact_margin: 200
-  # battle_main.c: BTL_maintainTargetDistance: quieto, se acerca si está más lejos que el contacto + 480 000.
+  # battle_main.c: BTL_maintainTargetDistance: standing still, it moves closer if it is farther than contact + 480 000.
   standing: { near_squared: 0, far_squared: 480000 }
-  # Andando, se aleja más cerca que el contacto + 160 000 y se acerca más lejos que el contacto + 320 000.
+  # Walking, it backs off when closer than contact + 160 000 and moves closer when farther than contact + 320 000.
   walking: { near_squared: 160000, far_squared: 320000 }
-  # battle_main.c: BTL_handlePartnerMoveCommand: con la orden de distancia, fuera del alcance más largo del objetivo
-  # más 640 000, y 160 000 más mientras anda.
+  # battle_main.c: BTL_handlePartnerMoveCommand: with the distance command, outside the target's longest reach
+  # plus 640 000, and 160 000 more while walking.
   keep_away_margin_squared: 640000
   keep_away_walking_squared: 160000
 
-# Obediencia (battle_main.c: BTL_tickPartnerAI, BTL_tickEnemyAI, BTL_retargetAfterHit; battle_tick.c: handleCommands).
+# Obedience (battle_main.c: BTL_tickPartnerAI, BTL_tickEnemyAI, BTL_retargetAfterHit; battle_tick.c: handleCommands).
 obedience:
-  # Solo desobedece con inteligencia menor que 301.
+  # It only disobeys with intelligence below 301.
   brain_below: 301
-  # Tira cada (inteligencia / 2 + 1) × 20 fotogramas.
+  # It rolls every (intelligence / 2 + 1) x 20 frames.
   roll_brain_divisor: 2
   roll_period_frames: 20
-  # Partner: (70 − disciplina) %.
+  # Partner: (70 - discipline) %.
   partner_chance_base: 70
-  # Enemigo: (300 − inteligencia) / 4 %.
+  # Enemy: (300 - intelligence) / 4 %.
   enemy_chance_brain: 300
   enemy_chance_divisor: 4
-  # Se queda parado 100 fotogramas.
+  # It stands still for 100 frames.
   idle_frames: 100
-  # battle_main.c: TARGET_ATTACKER_CHANCE: probabilidad (menos la disciplina) de que el partner se vuelva hacia quien le
-  # golpeó, por modo de carga (agresivo, normal, prudente, ninguno).
+  # battle_main.c: TARGET_ATTACKER_CHANCE: chance (minus discipline) that the partner turns toward whoever hit it,
+  # by charge mode (aggressive, normal, cautious, none).
   retarget_chances: [70, 40, 30, 0]
-  # battle_main.c: BTL_selectFighterTarget: un enemigo sigue a quien le golpeó con un 71 % (si no, va a por el partner).
+  # battle_main.c: BTL_selectFighterTarget: an enemy follows whoever hit it with 71 % (otherwise it goes for the partner).
   enemy_follow_attacker_percent: 71
-  # battle_tick.c: handleCommands: retraso de una orden: con disciplina menor que 70, 160 − disciplina / 10
-  # fotogramas; si no, (10 − disciplina / 10) × 10.
+  # battle_tick.c: handleCommands: command delay: with discipline below 70, 160 - discipline / 10
+  # frames; otherwise, (10 - discipline / 10) x 10.
   command_delay:
     low_discipline_below: 70
     low_base: 160
@@ -164,9 +164,9 @@ obedience:
     high_divisor: 10
     high_scale: 10
 
-# Órdenes del jugador (battle_setup.c: BTL_initializeCombat, BRAIN_TO_COMMAND_MAP). El menú de cada tramo de
-# inteligencia, en su orden. `techniques` son las órdenes de las técnicas equipadas (de la tercera a la primera), solo
-# las que tienen técnica.
+# Player commands (battle_setup.c: BTL_initializeCombat, BRAIN_TO_COMMAND_MAP). The menu of each intelligence
+# tier, in order. `techniques` are the commands of the equipped moves (from the third to the first), only
+# the ones that have a move.
 commands:
   menus:
     - { brain: 0, commands: [finisher, flee, your_call] }
@@ -175,10 +175,10 @@ commands:
     - { brain: 300, commands: [finisher, flee, change, distance, moderate, attack, your_call] }
     - { brain: 400, commands: [finisher, flee, change, defend, distance, moderate, attack, your_call] }
     - { brain: 500, commands: [finisher, flee, change, defend, distance, techniques, your_call] }
-  # Menús de un combate versus por inteligencia (vs_combat.c: VS__combatInit, VS__COMMANDS):
-  # sin huir ni cambiar de objetivo. Medido: inteligencia 300 da [finisher, distance, moderate,
-  # attack, your_call]; 600 sin tercera técnica da [finisher, defend, distance, técnica 2,
-  # técnica 1, your_call].
+  # Menus of a versus fight by intelligence (vs_combat.c: VS__combatInit, VS__COMMANDS):
+  # no run and no target switch. Measured: intelligence 300 gives [finisher, distance, moderate,
+  # attack, your_call]; 600 without a third move gives [finisher, defend, distance, move 2,
+  # move 1, your_call].
   versus_menus:
     - { brain: 0, commands: [finisher, your_call] }
     - { brain: 100, commands: [finisher, attack, your_call] }
@@ -187,199 +187,199 @@ commands:
     - { brain: 400, commands: [finisher, defend, distance, moderate, attack, your_call] }
     - { brain: 500, commands: [finisher, defend, distance, techniques, your_call] }
 
-# IA del partner (battle_main.c: BTL_selectPartnerMove, BTL_selectFighterTarget).
+# Partner AI (battle_main.c: BTL_selectPartnerMove, BTL_selectFighterTarget).
 partner_ai:
-  # Inteligencia desde la que prefiere enemigos con estado alterado y compara puntuaciones.
+  # Intelligence from which it prefers enemies with a status ailment and compares scores.
   status_target_brain: 300
-  # Solo cambia a un objetivo que puntúe al menos 40 menos que el actual.
+  # It only switches to a target that scores at least 40 less than the current one.
   switch_margin: 40
-  # Inteligencia desde la que elige el objetivo por puntuación; por debajo, el más cercano.
+  # Intelligence from which it picks the target by score; below it, the nearest.
   scored_target_brain: 150
-  # Pesos por puesto: BTL_YOUR_CALL_POWER_PRIO, BTL_YOUR_CALL_MP_PRIO, BTL_YOUR_CALL_WIDE_PRIO.
+  # Weights per slot: BTL_YOUR_CALL_POWER_PRIO, BTL_YOUR_CALL_MP_PRIO, BTL_YOUR_CALL_WIDE_PRIO.
   power_weights: [50, 20, 5, 0]
   mp_weights: [50, 20, 10, 0]
   reach_weights: [10, 5, 0, 0]
-  # En modo normal, cada técnica utilizable pesa 20; una ranura vacía pesa 5.
+  # In normal mode, each usable move weighs 20; an empty slot weighs 5.
   even_weight: 20
   empty_slot_weight: 5
-  # Técnicas de área: con inteligencia 200 o más y al menos 2 enemigos vivos, + 10 o 15 por enemigo según el modo.
+  # Area moves: with intelligence 200 or more and at least 2 living enemies, + 10 or 15 per enemy depending on the mode.
   area_brain: 200
   area_min_enemies: 2
   area_weight_per_enemy: [10, 15, 15]
-  # En modo prudente, con menos del 31 % de vida, pesa el alcance de la técnica.
+  # In cautious mode, with less than 31 % life, the move's reach weighs in.
   low_hp_percent: 31
-  # battle_setup.c: BTL_initializeCombat: el contador de prioridad de las técnicas de apoyo nace en
-  # inteligencia / 10 + 5 y baja 1 cada 20 fotogramas (BTL_tickEnemyAI).
+  # battle_setup.c: BTL_initializeCombat: the priority counter of support moves starts at
+  # intelligence / 10 + 5 and drops 1 every 20 frames (BTL_tickEnemyAI).
   buff_priority_brain_divisor: 10
   buff_priority_base: 5
   buff_priority_decay_frames: 20
-  # battle_main.c: BTL_selectConfusedMove: confundido, un 70 % de las veces ataca al aire.
+  # battle_main.c: BTL_selectConfusedMove: when confused, 70 % of the time it attacks the air.
   confused_air_percent: 70
-  # battle_main.c: BTL_tickConfusedState: atacando al aire, cada fotograma tiene un 5 % de soltar el golpe.
+  # battle_main.c: BTL_tickConfusedState: while attacking the air, each frame has a 5 % chance of letting the blow go.
   confused_swing_percent: 5
-  # battle_main.c: BTL_confusedRotate: cada fotograma, con 8 o 9 de un 10, gira hasta 45 grados.
+  # battle_main.c: BTL_confusedRotate: every frame, with 8 or 9 out of 10, it turns up to 45 degrees.
   confused_turn_roll: 10
   confused_turn_from: 8
 
-# IA enemiga (battle_main.c: BTL_selectEnemyMove).
+# Enemy AI (battle_main.c: BTL_selectEnemyMove).
 enemy_ai:
-  # Una técnica de área suma 20 si queda otro enemigo vivo.
+  # An area move adds 20 if another enemy is still alive.
   area_weight: 20
-  # En un combate de copa (std_main.c: STD_tickEnemyAI) el rival es prudente (modo 2) con 1 de 10 en cada decisión;
-  # si no, ofensivo o normal (0 o 1).
+  # In a cup fight (std_main.c: STD_tickEnemyAI) the rival is cautious (mode 2) with 1 in 10 on each decision;
+  # otherwise, offensive or normal (0 or 1).
   match_cautious_roll: 10
 
-# Acierto, bloqueo y contraataque (battle_main.c: BTL_calculateHitChance, BTL_tickAttackHits).
+# Hit, block and counterattack (battle_main.c: BTL_calculateHitChance, BTL_tickAttackHits).
 hit:
-  # Acierta siempre contra un bebé o uno de entrenamiento (nivel menor que 3).
+  # Always hits against a Fresh or In-Training Digimon (level below 3).
   always_hit_below_level: 3
-  # x = precisión / 2 × (velocidad del defensor − velocidad del atacante / 10) / 999.
+  # x = accuracy / 2 x (defender speed - attacker speed / 10) / 999.
   accuracy_divisor: 2
   attacker_speed_divisor: 10
   speed_scale: 999
-  # × 6 / 5 si el defensor está quieto.
+  # x 6 / 5 if the defender is standing still.
   standing_evasion_percent: 120
-  # Bloquear da 3 fotogramas sin poder recibir otro golpe.
+  # Blocking gives 3 frames without being able to take another hit.
   block_frames: 3
-  # Un ataque cuerpo a cuerpo bloqueado aún hace entre el 10 y el 30 % del daño.
+  # A blocked melee attack still does 10 to 30 % of the damage.
   blocked_melee_min_percent: 10
   blocked_melee_max_percent: 30
-  # Contraataca con probabilidad velocidad / nivel % si tiene al menos 165 de MP.
+  # Counterattacks with probability speed / level % if it has at least 165 MP.
   counter_min_mp: 165
-  # Un golpe de al menos el 20 % de la vida máxima del partner cuenta como golpe fuerte (para las ganancias).
+  # A hit of at least 20 % of the partner's max life counts as a strong hit (for the gains).
   big_hit_percent: 20
 
-# Daño (battle_main.c: BTL_calculateDamage).
+# Damage (battle_main.c: BTL_calculateDamage).
 damage:
-  # La suma de las tres afinidades se divide entre 30.
+  # The sum of the three affinities is divided by 30.
   affinity_divisor: 30
-  # dif = ataque − defensa, entre −500 y 500; daño = potencia + dif × potencia / 500.
+  # diff = attack - defense, between -500 and 500; damage = power + diff x power / 500.
   difference_cap: 500
   power_scale: 500
-  # × azar(90..110) / 100.
+  # x random(90..110) / 100.
   variance_min: 90
   variance_max: 110
-  # El contraataque usa el 30 % de la defensa.
+  # The counterattack uses 30 % of the defense.
   counter_defense_percent: 30
-  # Remate del partner: × carga / 40 si la carga pasa de 40.
+  # Partner finisher: x charge / 40 if the charge is over 40.
   finisher_charge_divisor: 40
-  # Remate enemigo: × azar(100..200) / 100.
+  # Enemy finisher: x random(100..200) / 100.
   enemy_finisher_min: 100
   enemy_finisher_max: 200
   min: 1
   max: 9999
-  # Mejora de dwe (no está en el original): el daño de los golpes del partner y el de los que recibe, en tanto por
-  # ciento del de la fórmula, antes del mínimo y el máximo. 100 es el original; la dificultad fácil los cambia
+  # dwe improvement (not in the original): the damage of the partner's hits and of the hits it takes, as a percentage
+  # of the formula's, before the minimum and the maximum. 100 is the original; easy difficulty changes them
   # (difficulty.yaml).
   partner_dealt_percent: 100
   partner_taken_percent: 100
 
-# Estados alterados (battle_main.c: BTL_applyMoveStatus, BTL_tickStatusEffects).
+# Status ailments (battle_main.c: BTL_applyMoveStatus, BTL_tickStatusEffects).
 status:
-  # Veneno: cada 100 fotogramas quita entre el 1 y el 3 % de la vida máxima.
+  # Poison: every 100 frames it removes 1 to 3 % of max life.
   poison_every_frames: 100
   poison_min_percent: 1
   poison_max_percent: 3
-  # Confusión: 200 a 300 fotogramas.
+  # Confusion: 200 to 300 frames.
   confusion_min_frames: 200
   confusion_max_frames: 300
-  # Aturdimiento: 200 a 240 fotogramas.
+  # Stun: 200 to 240 frames.
   stun_min_frames: 200
   stun_max_frames: 240
-  # Aplastado: 65 fotogramas de animación al entrar y al salir; dura 224 a 304.
+  # Flat: 65 animation frames on entering and on leaving; lasts 224 to 304.
   flatten_transition_frames: 65
   flatten_min_frames: 224
   flatten_max_frames: 304
 
-# El remate y su barra (battle_setup.c: BTL_initializeCombat; battle_main.c: BTL_addFinisherProgress,
+# The finisher and its bar (battle_setup.c: BTL_initializeCombat; battle_main.c: BTL_addFinisherProgress,
 # BTL_tickAttackHits, BTL_startQueuedMove; command_menu.c: BTL_tickFinisherChargeup).
 finisher:
-  # Meta = 3000 − velocidad.
+  # Goal = 3000 - speed.
   goal_base: 3000
-  # +1 por fotograma; + meta × 2 / 50 por ataque completado; + meta × 3 / 50 por bloqueo; quien ve bloqueado su ataque,
-  # + meta × 4 / 50.
+  # +1 per frame; + goal x 2 / 50 per completed attack; + goal x 3 / 50 per block; whoever sees their attack blocked,
+  # + goal x 4 / 50.
   per_frame: 1
   per_attack: 2
   per_block: 3
   per_blocked_attack: 4
   progress_divisor: 50
-  # El aura dura 80 fotogramas; cada pulsación suma 2 a la carga, hasta 80.
+  # The aura lasts 80 frames; each press adds 2 to the charge, up to 80.
   aura_frames: 80
   charge_per_press: 2
   charge_cap: 80
 
-# Partner enfermo o lesionado (battle_setup.c: BTL_initializeCombat; battle_main.c: BTL_isMoveUsable,
+# Sick or injured partner (battle_setup.c: BTL_initializeCombat; battle_main.c: BTL_isMoveUsable,
 # BTL_setupMoveExecution).
 condition:
-  # Pierde un 20 % de ataque, defensa, velocidad e inteligencia.
+  # It loses 20 % of attack, defense, speed and intelligence.
   stat_penalty_percent: 20
-  # Sus técnicas cuestan un 50 % más de MP.
+  # Its moves cost 50 % more MP.
   mp_cost_extra_percent: 50
-  # Descuento de MP por inteligencia, de la más alta a la más baja.
+  # MP discount by intelligence, from the highest to the lowest.
   mp_discounts:
     - { brain: 999, percent: 20 }
     - { brain: 900, percent: 15 }
     - { brain: 800, percent: 10 }
     - { brain: 700, percent: 5 }
 
-# Huida y derrota (battle_tick.c: handleCommands; battle_setup.c: BTL_isBattleFinished).
+# Fleeing and defeat (battle_tick.c: handleCommands; battle_setup.c: BTL_isBattleFinished).
 ending:
-  # Tras la orden de huir, el combate acaba a los 41 fotogramas y los golpes dejan de contar a los 19.
+  # After the run command, the fight ends at 41 frames and hits stop counting at 19.
   flee_frames: 41
   flee_ignores_hits_from: 19
-  # Tras caer, el partner aún puede revivir con un objeto durante 171 fotogramas; la cuenta se ve a los 20.
+  # After falling, the partner can still revive with an item for 171 frames; the count shows at 20.
   revive_frames: 171
   revive_countdown_shown_at: 20
-  # Al huir, la pantalla funde a negro en 20 fotogramas desde el fotograma 20 (fadeToBlack(0x14)), y
-  # el jugador corre hacia la salida por la que entró: 3000 unidades tras su punto de aparición (handleFleeing).
+  # When fleeing, the screen fades to black in 20 frames from frame 20 (fadeToBlack(0x14)), and
+  # the player runs toward the exit they came in by: 3000 units behind their spawn point (handleFleeing).
   flee_fade_from: 20
   flee_fade_frames: 20
   flee_way_out: 3000
 
-# El objeto que lanza el tamer (main.c: startThrowingItem, tickThrownItem): sale de la mano en el fotograma 7 de la
-# animación de lanzar (que el objeto ve un fotograma adelantada) y vuela 24 pasos; el último lo deja en el partner
-# (time >= 0x18), siempre: medido, 29 fotogramas tras lanzarlo. Mientras vuela, la cuenta atrás de la derrota se para
+# The item the tamer throws (main.c: startThrowingItem, tickThrownItem): it leaves the hand on frame 7 of the
+# throw animation (which the item sees one frame ahead) and flies 24 steps; the last one leaves it on the partner
+# (time >= 0x18), always: measured, 29 frames after throwing it. While it flies, the defeat countdown stops
 # (battle_setup.c: BTL_isBattleFinished).
 item_throw:
   release_frame: 7
   flight_frames: 24
 
-# La barra de HP de un enemigo (battle_main.c: BTL_renderEnemyHPBars): sale al recibir daño y se oculta cuando pasan
-# 21 fotogramas (0x15) sin reacción al golpe ni daño pendiente.
+# An enemy's HP bar (battle_main.c: BTL_renderEnemyHPBars): it shows when taking damage and hides after
+# 21 frames (0x15) with no hit reaction and no pending damage.
 hud:
   enemy_hp_bar_frames: 21
-  # battle_ui.c: createPostBattleStatsBox: la caja final espera 100 fotogramas antes de contar los parámetros, un punto
-  # por fotograma (POST_BATTLE_STATS_TIMER).
+  # battle_ui.c: createPostBattleStatsBox: the final box waits 100 frames before counting the parameters, one point
+  # per frame (POST_BATTLE_STATS_TIMER).
   end_count_delay_frames: 100
-  # battle_hud.c: BTL_drawBattleEndText: cada línea de la caja final espera 60 fotogramas o un botón
+  # battle_hud.c: BTL_drawBattleEndText: each line of the final box waits 60 frames or a button
   # (BATTLE_END_WAIT_FRAMES).
   end_wait_frames: 60
 
-# Consecuencias para el cuidado (tamer.c: startBattle, advanceBattleTime; partner_impl.c: handlePostBattleTiredness;
-# battle_ui.c: handleBattleInjury). Esta sección es la dueña de estos números: el partner los recibe de la batalla
-# (Partner::applyBattle). Los objetos que se pierden al perder son de la sección inventory (defeat.lost_percent).
+# Consequences for care (tamer.c: startBattle, advanceBattleTime; partner_impl.c: handlePostBattleTiredness;
+# battle_ui.c: handleBattleInjury). This section owns these numbers: the partner receives them from the battle
+# (Partner::applyBattle). The items lost on defeat belong to the inventory section (defeat.lost_percent).
 consequences:
   victory: { happiness: 2, discipline: 0, tiredness: 0, battles: 1 }
   flee: { happiness: -10, discipline: -6, tiredness: 2, battles: 0 }
   defeat: { happiness: -30, discipline: -20, tiredness: 0, battles: 0 }
-  # Tras ganar o huir: cansancio +5 y comida −15; más cansancio si el MP acabó por debajo del 80 %.
+  # After winning or fleeing: tiredness +5 and food -15; more tiredness if MP ended below 80 %.
   after_battle_tiredness: 5
   after_battle_food: -15
   mp_tiredness_below_percent: 80
   mp_tiredness_scale: 10
-  # Tras perder: se pierde una vida (script_interp.c: SCRIPT_OP_START_BATTLE).
+  # After losing: a life is lost (script_interp.c: SCRIPT_OP_START_BATTLE).
   defeat_lives: 1
-  # Cada combate adelanta el reloj 20 minutos.
+  # Each fight advances the clock 20 minutes.
   elapsed_minutes: 20
 
-# Recompensas (battle_ui.c: battleStatsGainsAndDrops, handleBattleEndBox, battleMoveLearning).
+# Rewards (battle_ui.c: battleStatsGainsAndDrops, handleBattleEndBox, battleMoveLearning).
 rewards:
-  # STAT_GAIN_ENEMY_FACTORS: el factor según el número de enemigos (1, 2 o 3).
+  # STAT_GAIN_ENEMY_FACTORS: the factor by number of enemies (1, 2 or 3).
   enemy_factors: [10, 12, 16]
-  # La ganancia se divide entre el stat del partner × 10.
+  # The gain is divided by the partner's stat x 10.
   partner_scale: 10
-  # Tirada de +1 de un stat que no ganó nada: HP, % de vida perdida; MP y ataque, 10 × ataques; defensa, 10 × golpes
-  # fuertes; velocidad, 10 × bloqueos + la mitad del % de vida perdida; inteligencia, 5 × ataques + 5 × golpes fuertes.
+  # Roll for +1 on a stat that gained nothing: HP, % of life lost; MP and attack, 10 x attacks; defense, 10 x strong
+  # hits; speed, 10 x blocks + half the % of life lost; intelligence, 5 x attacks + 5 x strong hits.
   fallback:
     hp_lost_percent: 100
     attacks: 10
@@ -388,33 +388,33 @@ rewards:
     speed_hp_lost_percent: 50
     brain_attacks: 5
     brain_big_hits: 5
-  # battle_ui.c: battleStatsGainsAndDrops: en la pantalla 0x8F no se sueltan objetos.
+  # battle_ui.c: battleStatsGainsAndDrops: on screen 0x8F no items are dropped.
   no_drop_maps: [ogre11]
-  # battle_main.c: BTL_setupMoveExecution: se apuntan hasta 12 técnicas enemigas.
+  # battle_main.c: BTL_setupMoveExecution: up to 12 enemy moves are recorded.
   tracked_moves: 12
 
-# Enemigos que se unen al combate al empezar (btl.c: handleBattleStart).
+# Enemies that join the fight at the start (btl.c: handleBattleStart).
 joining:
-  # FLEE_CHANCES (US 0x8012BB14): fila = tipo del partner, columna = tipo del enemigo (dato, vacuna, virus).
+  # FLEE_CHANCES (US 0x8012BB14): row = partner type, column = enemy type (data, vaccine, virus).
   chances:
     - [60, 70, 100]
     - [80, 60, 100]
     - [90, 100, 30]
-  # Un partner sin tipo: 70 %.
+  # A partner with no type: 70 %.
   untyped_chance: 70
-  # Llevar Enemy bell resta 50 a la tirada (se unen más); si no, Enemy repel suma 20 (se unen menos).
+  # Wearing Enemy bell subtracts 50 from the roll (more join); otherwise, Enemy repel adds 20 (fewer join).
   bell_item: enemy_bell
   bell_roll: -50
   repel_item: enemy_repel
   repel_roll: 20
-  # isScreenConcave (CONCAVE_SCREENS, US 0x8012BB20): en estos mapas no se une quien tenga una pared en la línea recta
-  # (map.c: isLinearPathBlocked) desde el jugador o desde el partner.
+  # isScreenConcave (CONCAVE_SCREENS, US 0x8012BB20): on these maps nobody joins who has a wall in the straight line
+  # (map.c: isLinearPathBlocked) from the player or from the partner.
   concave_maps: [mgen01, mgen02, mgen03, mgen04, mgen05, mgen11, mgen12, mgen13, mgen06, mgen07, mgen08, mgen09, mgen10,
                  fact09, frzl13, mayo03, trop02, icsa05]
 
-# battle_effect.c: BTL_checkTechCompatibility busca el tipo original del atacante (effect_common.c: getOriginalType,
-# su tabla de tipos originales) en la lista de huesos de cada efecto: las variantes de enemigo y las de la historia usan las
-# entradas de su especie base. Las que no salen aquí son su propio tipo.
+# battle_effect.c: BTL_checkTechCompatibility looks up the attacker's original type (effect_common.c: getOriginalType,
+# its original-types table) in each effect's bone list: enemy variants and story variants use the
+# entries of their base species. The ones not listed here are their own type.
 effects:
   original_types:
     panj: leom
@@ -505,32 +505,32 @@ effects:
     cegr: grey
     cemg: mtgr
 
-# Tiempos que en el original marcan las animaciones de cada modelo y la colisión del mapa, no una tabla. En el juego,
-# con los modelos, la duración del ataque, del golpe, del bloqueo y del desmayo y el paso al andar salen de las
-# animaciones (su movimiento de raíz) y el vuelo de cada técnica de su script de efecto; estos valores, medios y
-# aproximados, quedan para la simulación y las pruebas, sin modelos. La interfaz puede sustituirlos.
+# Times that in the original come from each model's animations and the map collision, not from a table. In the game,
+# with the models, the duration of the attack, the hit, the block and the faint and the step when walking come from the
+# animations (their root motion) and each move's flight from its effect script; these values, averages and
+# approximate, are left for the simulation and the tests, without models. The UI may replace them.
 timing:
   attack_frames: 30
   hit_frame: 12
   hit_reaction_frames: 20
   block_animation_frames: 15
   faint_frames: 40
-  # Velocidad de andar en batalla y de los proyectiles, en unidades por fotograma.
+  # Walking speed in battle and of projectiles, in units per frame.
   walk_speed: 22
   projectile_speed: 60
-  # Sin cámara ni mapa (la simulación, las pruebas), el combate se queda dentro de este radio alrededor de donde
-  # empezó; en el mapa manda el área de combate.
+  # Without camera or map (the simulation, the tests), the fight stays inside this radius around where it
+  # started; on the map the combat area rules.
   arena_radius: 2400
-  # map.c: entityCheckCollision: ningún paso sale del área de combate, un rectángulo de 280 x 200 píxeles alrededor
-  # del centro de la pantalla original; prueba la esquina de abajo a la izquierda del luchador en el suelo y la de la
-  # derecha a esta altura.
+  # map.c: entityCheckCollision: no step leaves the combat area, a rectangle of 280 x 200 pixels around
+  # the center of the original screen; it tests the fighter's lower-left corner on the ground and the
+  # right one at this height.
   combat_area_width: 280
   combat_area_height: 200
   combat_area_corner_height: 200
-  # battle_setup.c: BTL_handleBattleIntro: mientras se forma el rótulo, el domador corre (animación 3, 50 unidades por
-  # fotograma; su radio, DIGIMON_DATA[0].radius, es la caja de la prueba del área) por su camino de vuelta y luego
-  # hacia la celda por la que entró al mapa, hasta llegar a ella o hasta que su paso salga del área de combate: de
-  # 310 x 230 píxeles por el camino y de 300 x 220 en el último tramo.
+  # battle_setup.c: BTL_handleBattleIntro: while the banner forms, the tamer runs (animation 3, 50 units per
+  # frame; his radius, DIGIMON_DATA[0].radius, is the box of the area test) along his way back and then
+  # toward the cell he entered the map by, until reaching it or until his step leaves the combat area: of
+  # 310 x 230 pixels along the way and 300 x 220 on the last stretch.
   retreat_step: 50
   retreat_radius: 100
   retreat_trail_area_width: 310
@@ -538,46 +538,46 @@ timing:
   retreat_entry_area_width: 300
   retreat_entry_area_height: 220
 
-# Combates versus entre los partners registrados de dos jugadores (vs_main.c, vs_combat.c).
+# Versus fights between two players' registered partners (vs_main.c, vs_combat.c).
 versus:
-  # Los combates de una serie (VS__BATTLE_COUNTS); una serie de n pide n registrados a cada lado.
+  # The fights of a series (VS__BATTLE_COUNTS); a series of n asks for n registered on each side.
   series: [1, 3, 5]
-  # El reloj de cada combate en segundos (VS__combatInit: VS_addFighterCounter(99)).
+  # Each fight's clock in seconds (VS__combatInit: VS_addFighterCounter(99)).
   time_limit_seconds: 99
-  # Las arenas que se eligen antes de la serie (vs_select.c: VS__tickSelectMap, VS_BATTLE_SETUP.stage), por su número
-  # en tournament.yaml (arena.arenas): T_TOGI, B_TOGI y E_TOGI (vs_scene.c: VS_ARENA_MODELS).
+  # The arenas picked before the series (vs_select.c: VS__tickSelectMap, VS_BATTLE_SETUP.stage), by their number
+  # in tournament.yaml (arena.arenas): T_TOGI, B_TOGI and E_TOGI (vs_scene.c: VS_ARENA_MODELS).
   arenas: [0, 1, 2]
 
-# Rarezas del original (docs/reference/battle.md, "Rarezas"). true reproduce el original; otro ruleset las apaga.
+# Quirks of the original (docs/reference/battle.md, "Quirks"). true reproduces the original; another ruleset turns them off.
 quirks:
-  # partner_impl.c: handlePostBattleTiredness divide el MP gastado entre el máximo antes de multiplicar por 10, así que
-  # casi siempre suma 0.
+  # partner_impl.c: handlePostBattleTiredness divides the spent MP by the max before multiplying by 10, so it
+  # almost always adds 0.
   broken_mp_tiredness: true
-  # battle_tick.c: handleCommands calcula el retraso de la orden por disciplina y acto seguido lo pone a 0.
+  # battle_tick.c: handleCommands computes the command delay by discipline and then immediately sets it to 0.
   command_delay_discarded: true
-  # battle_main.c: BTL_calculateHitChance: con el partner enfermo acierta todo el mundo, también contra los enemigos.
+  # battle_main.c: BTL_calculateHitChance: with the partner sick everybody hits, including against the enemies.
   sickness_always_hits: true
-  # battle_setup.c: BTL_initializeCombat: con inteligencia 500 o más, atacar y moderado desaparecen del menú.
+  # battle_setup.c: BTL_initializeCombat: with intelligence 500 or more, attack and moderate disappear from the menu.
   smart_menu_drops_attack_and_moderate: true
-  # battle_main.c: BTL_tickAttackHits: el contraataque no gasta MP pero exige tener 165.
+  # battle_main.c: BTL_tickAttackHits: the counterattack spends no MP but requires having 165.
   counter_needs_mp: true
-  # battle_main.c: BTL_selectPartnerMove: en la rama de poca vida el bucle interno reutiliza el índice externo y
-  # mira la ranura y no la técnica ordenada.
+  # battle_main.c: BTL_selectPartnerMove: in the low-life branch the inner loop reuses the outer index and
+  # looks at the slot and not the sorted move.
   low_hp_weights_loop_bug: true
-  # battle_main.c: BTL_calculateTargetScore: puntúa con la vida y la defensa propias, no las del objetivo.
+  # battle_main.c: BTL_calculateTargetScore: it scores with its own life and defense, not the target's.
   target_score_uses_own_stats: true
-  # battle_main.c: BTL_getWeakestEnemy devuelve la puntuación del último enemigo que miró, no la del más débil, y con
-  # ella decide si cambia de objetivo.
+  # battle_main.c: BTL_getWeakestEnemy returns the score of the last enemy it looked at, not the weakest one's, and with
+  # it decides whether to switch targets.
   weakest_reports_last_score: true
-  # battle_main.c: BTL_tickStatusEffects: la confusión de cualquiera solo se quita cuando el partner no está atacando.
+  # battle_main.c: BTL_tickStatusEffects: anyone's confusion is only removed when the partner is not attacking.
   confusion_waits_for_partner_attack: true
-  # battle_main.c: BTL_setupMoveExecution: en combates de guion los enemigos no gastan MP.
+  # battle_main.c: BTL_setupMoveExecution: in scripted fights enemies spend no MP.
   scripted_enemies_free_mp: true
-  # battle_ui.c: handleBattleEndBox: la tirada de lesión tras ganar se hace si alguien recibió un golpe en el combate
-  # (HAS_TAKEN_DAMAGE), no solo el partner.
+  # battle_ui.c: handleBattleEndBox: the injury roll after winning is made if anyone took a hit in the fight
+  # (HAS_TAKEN_DAMAGE), not just the partner.
   injury_counts_any_hit: true
-  # btl.c: handleBattleStart: en combates de guion la tirada vale 0, así que se une todo enemigo visible.
+  # btl.c: handleBattleStart: in scripted fights the roll is 0, so every visible enemy joins.
   scripted_battle_everyone_joins: true
-  # battle_main.c: BTL_isMoveUsable descuenta por inteligencia antes de sumar la enfermedad, y BTL_setupMoveExecution al
-  # revés, así que el coste comprobado y el pagado pueden diferir en uno.
+  # battle_main.c: BTL_isMoveUsable discounts by intelligence before adding the sickness, and BTL_setupMoveExecution the
+  # other way around, so the checked cost and the paid one can differ by one.
   mp_check_and_payment_round_differently: true

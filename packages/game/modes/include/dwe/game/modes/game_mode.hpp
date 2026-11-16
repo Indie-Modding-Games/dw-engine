@@ -7,8 +7,8 @@
 #include <string_view>
 #include <vector>
 
-// A game mode (docs/modding/modos.md): a way to play the engine's content, declared by a pack in
-// modes/<id>/mode.yaml. The engine ships one, «Historia original».
+// A game mode (docs/modding/modes.md): a way to play the engine's content, declared by a pack in
+// modes/<id>/mode.yaml. The engine ships one, «Original story».
 namespace dwe::game::modes {
 
 // The mode a game plays when nothing chose another: the original's story.

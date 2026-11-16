@@ -30,7 +30,7 @@
 #include "yaml_edits.hpp"
 
 // Synthetic documents of each kind that the org's tools read from the base pack and write into a
-// mods pack (docs/architecture/herramientas-externas.md), made the way dwx extract makes them.
+// mods pack (docs/architecture/external-tools.md), made the way dwx extract makes them.
 namespace dwe::dwx::testing {
 
 // A map as dwx extract writes map/<id>/data.yaml: a synthetic .MAP converted with mapToYaml.
@@ -138,7 +138,7 @@ inline assets::PackManifest toolPackManifest() {
           .version = {.major = 1, .minor = 0, .patch = 0},
           .layer = assets::Layer::Mods,
           .priority = 0,
-          .name = std::string{ToolPackName},
+          .name = assets::LocalizedText::of(std::string{ToolPackName}),
           .description = {},
           .dependencies = {{.id = std::string{BasePackId}, .minVersion = BasePackVersion}},
           .schemas = {},
@@ -151,7 +151,8 @@ inline std::string manifestText(const assets::PackManifest& manifest) {
   root.set("id", core::YamlNode::scalar(manifest.id));
   root.set("version", core::YamlNode::scalar(assets::formatVersion(manifest.version)));
   root.set("layer", core::YamlNode::scalar(std::string{assets::layerName(manifest.layer)}));
-  root.set("name", core::YamlNode::scalar(manifest.name, core::YamlNode::ScalarStyle::Quoted));
+  root.set("name", core::YamlNode::scalar(std::string{manifest.name.english()},
+                                          core::YamlNode::ScalarStyle::Quoted));
   core::YamlNode dependencies = core::YamlNode::sequence();
   for (const assets::PackDependency& dependency : manifest.dependencies) {
     core::YamlNode entry = core::YamlNode::mapping();

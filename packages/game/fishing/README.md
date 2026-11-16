@@ -1,17 +1,17 @@
 # fishing
 
-La pesca: la caña, el corcho, el sedal y los peces del agua de un mapa.
+Fishing: the rod, the float, the line and the fish in a map's water.
 
-- Carpeta: `packages/game/fishing`; objetivos de CMake: `dwe::fishing` (capa `game`).
-- Depende de: `assets`, `core`, `ruleset`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/game/fishing](https://indie-modding-games.github.io/dw-engine/modulos/game/fishing).
+- Folder: `packages/game/fishing`; CMake targets: `dwe::fishing` (`game` layer).
+- Depends on: `assets`, `core`, `ruleset`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/game/fishing](https://indie-modding-games.github.io/dw-engine/modules/game/fishing).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter fishing
-scripts/dev.sh test --filter fishing       # sus tests (etiqueta de ctest fishing)
-scripts/dev.sh test --filter ...fishing    # y los de todo lo que depende de él
+scripts/dev.sh test --filter fishing       # its tests (ctest label fishing)
+scripts/dev.sh test --filter ...fishing    # and those of everything that depends on it
 ```

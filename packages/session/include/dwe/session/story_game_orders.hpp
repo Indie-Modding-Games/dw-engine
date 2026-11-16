@@ -90,7 +90,7 @@ struct StoryGameOrdersDesc {
 struct StoryGameContext;
 
 // The story orders that change the game besides the story's own state (docs/reference/scripts.md,
-// "Objetos, dinero, técnicas, cartas y estadísticas" and "Disparadores, variables y fecha"): the
+// "Items, money, techniques, cards and stats" and "Triggers, variables and date"): the
 // bag and the money, the partner's stats, conditions and moves, the date, and the map's objects
 // and collision. It publishes them in the story's script VM the first time it ticks after the
 // story built it, and points them at the session it ticks with. It ticks before the story, so the

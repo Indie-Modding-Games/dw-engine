@@ -1,4 +1,4 @@
--- The improved shop job's customer (game/shop_job; docs/reference/trabajo-tienda.md): the
+-- The improved shop job's customer (game/shop_job; docs/reference/shop-job.md): the
 -- original's walk in, lines and walk out, with the engine's haggle screen (routine 259) in place of
 -- the price menus, in the job's own section (0x300, which script 49 starts). Engine routines: 258
 -- arrival (its item), 259 counter turn; each answers in variable 110. The original mode plays the

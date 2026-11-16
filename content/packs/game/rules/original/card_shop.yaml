@@ -1,37 +1,37 @@
-# La tienda de cartas que abre la historia (script_interp.c: CALL_ROUTINE 14 -> shop/script_menu.c: rollCardPack,
-# openBuyCardMenu, openSellCardMenu; packages/session: CardShop). Los precios son los de data/cards (CARD_PRICES por rareza).
+# The card shop the story opens (script_interp.c: CALL_ROUTINE 14 -> shop/script_menu.c: rollCardPack,
+# openBuyCardMenu, openSellCardMenu; packages/session: CardShop). The prices are those of data/cards (CARD_PRICES by rarity).
 
-# dailyPStatTrigger (script_common.c:1398): cada día nuevo llena 6 huecos con randomLimit(0x40) + 1, otra vez si sale
-# la carta 4. Su comprobación de repetidas compara el hueco consigo mismo y nunca repite: una carta puede salir dos veces
-# (rareza stock_repeats, abajo).
+# dailyPStatTrigger (script_common.c:1398): each new day fills 6 slots with randomLimit(0x40) + 1, again if
+# card 4 comes up. Its duplicate check compares the slot with itself and never repeats: a card can come up twice
+# (quirk stock_repeats, below).
 stock:
   size: 6
   first: 1
   last: 64
   skipped: [4]
-# createItemMenuAmountBox: la tienda paga CARD_PRICES >> 1 por copia.
+# createItemMenuAmountBox: the shop pays CARD_PRICES >> 1 per copy.
 sell_divisor: 2
-# showMapHeadTextbox(..., 0x4d3): las frases del tendero y del sobre son esta sección de MAPHEAD.
+# showMapHeadTextbox(..., 0x4d3): the shopkeeper's and pack's lines are this MAPHEAD section.
 lines_section: 1235
-# openBuyCardMenu: la frase sobre la lista (0) y la de que no queda ninguna (1); openSellCardMenu: la pregunta (8).
+# openBuyCardMenu: the line over the list (0) and the one for when none are left (1); openSellCardMenu: the question (8).
 lines:
   today: 0
   sold_out: 1
   sell_prompt: 8
-# createSingleCardShopMenu: la caja «¿Está bien?» es la frase 0 de la sección 0x4d8.
+# createSingleCardShopMenu: the "Is that OK?" box is line 0 of section 0x4d8.
 confirm_section: 1240
 confirm_line: 0
-# createSingleCardShopMenu: un hueco vacío o una carta que no se puede comprar suena playSound(0, 0xB).
+# createSingleCardShopMenu: an empty slot or a card that cannot be bought plays playSound(0, 0xB).
 fail_sound: {slot: 0, sound: 11}
-# playShopSoundOnlyInSavannah: una compra o una venta toca playSound(0, 0x17) solo en la pantalla 131 (MAIN_D_801345C0),
-# la propia tienda de cartas; medido en el original el 2026-10-30.
+# playShopSoundOnlyInSavannah: a purchase or a sale plays playSound(0, 0x17) only on screen 131 (MAIN_D_801345C0),
+# the card shop itself; measured in the original on 2026-10-30.
 trade_sound: {map: gias06b, slot: 0, sound: 23}
-# El precio de un sobre que cobra el script de la tienda (script 126: «money >= 500» y reduce_money(500) antes de la
-# rutina 14). Solo lo usa la compra en lote del motor (opción bulk_trades): cada sobre de más cobra este precio y saca
-# sus cartas como una compra suelta. Sin la clave no hay compra en lote.
+# The price of a pack that the shop script charges (script 126: "money >= 500" and reduce_money(500) before
+# routine 14). Only used by the engine's bulk purchase (option bulk_trades): each extra pack charges this price and draws
+# its cards like a single purchase. Without the key there is no bulk purchase.
 pack_price: 500
-# Rarezas del original (true reproduce el original; otro ruleset las apaga).
+# Quirks of the original (true reproduces the original; another ruleset turns them off).
 quirks:
-  # dailyPStatTrigger compara el hueco consigo mismo (st->smth[i] en vez de [j]), así que una carta puede llenar dos
-  # huecos el mismo día; medido en el código del original el 2026-11-07. false vuelve a sortear la repetida.
+  # dailyPStatTrigger compares the slot with itself (st->smth[i] instead of [j]), so a card can fill two
+  # slots on the same day; measured in the original's code on 2026-11-07. false rolls the duplicate again.
   stock_repeats: true

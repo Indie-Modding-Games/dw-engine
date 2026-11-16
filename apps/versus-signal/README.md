@@ -1,61 +1,61 @@
-# Servidor de señalización del versus
+# Versus signaling server
 
-Un Worker de Cloudflare con un Durable Object por sala que presenta a los dos jugadores del versus en línea
-(`docs/modulos/game/versus.md`). Solo hace de intermediario mientras los dos juegos se conectan: el anfitrión crea una
-sala y recibe un código de cuatro caracteres, el invitado lo escribe, y el servidor reenvía entre los dos la oferta, la
-respuesta y los candidatos de WebRTC hasta que abren su conexión directa. Después cierra la sala; la partida no pasa por
-el servidor. TypeScript sin dependencias.
+A Cloudflare Worker with one Durable Object per room that introduces the two players of the online versus
+(`docs/modules/game/versus.md`). It is only a go-between while the two games connect: the host creates a room and gets
+a four-character code, the guest types it in, and the server relays the WebRTC offer, answer and candidates between
+the two until they open their direct connection. Then it closes the room; the match does not go through the server.
+TypeScript with no dependencies.
 
 ```
-anfitrión ──WebSocket /v1/host──►  sala K7Q2  ◄──WebSocket /v1/join/K7Q2── invitado
-    ▲                              (reenvía)                                   ▲
-    └──────────────── conexión directa WebRTC (canales de datos) ──────────────┘
+host ──WebSocket /v1/host──►  room K7Q2  ◄──WebSocket /v1/join/K7Q2── guest
+ ▲                            (relays)                                  ▲
+ └────────────── direct WebRTC connection (data channels) ───────────────┘
 ```
 
-## Protocolo
+## Protocol
 
-Mensajes de texto JSON por el WebSocket. La versión va en la ruta (`/v1/`).
+JSON text messages over the WebSocket. The version is in the path (`/v1/`).
 
-| Quién | Mensaje | Qué significa |
+| Who | Message | What it means |
 |---|---|---|
-| servidor → anfitrión | `{"type":"room","code":"K7Q2"}` | La sala está creada; el anfitrión enseña el código. |
-| servidor → invitado | `{"type":"joined"}` | Ha entrado en la sala. |
-| servidor → anfitrión | `{"type":"peer"}` | Ha llegado el invitado: el anfitrión empieza la oferta. |
-| cualquiera → servidor | `{"type":"signal","data":{…}}` | Se reenvía tal cual al otro (`data` es la descripción `{"description","type"}` o un candidato `{"candidate","mid"}`). |
-| cualquiera → servidor | `{"type":"done"}` | Ya está conectado. Cuando lo dicen los dos, el servidor cierra la sala; si solo lo dice uno, la cierra a los 10 s. |
-| servidor → cualquiera | `{"type":"error","reason":…}` | Y cierra: `no-room` (no hay sala con ese código), `full` (ya hay dos), `left` (el otro se fue antes de conectar), `expired` (pasaron 5 minutos). |
+| server → host | `{"type":"room","code":"K7Q2"}` | The room is created; the host shows the code. |
+| server → guest | `{"type":"joined"}` | It has entered the room. |
+| server → host | `{"type":"peer"}` | The guest has arrived: the host starts the offer. |
+| either → server | `{"type":"signal","data":{…}}` | It is relayed as is to the other (`data` is the description `{"description","type"}` or a candidate `{"candidate","mid"}`). |
+| either → server | `{"type":"done"}` | It is already connected. When both say it, the server closes the room; if only one says it, it closes the room after 10 s. |
+| server → either | `{"type":"error","reason":…}` | And it closes: `no-room` (there is no room with that code), `full` (there are already two), `left` (the other left before connecting), `expired` (5 minutes passed). |
 
-- Los códigos usan `23456789ABCDEFGHJKLMNPQRSTUVWXYZ` (sin 0, 1, O ni I) y se leen sin mayúsculas, espacios ni guiones.
-  Si el código que sale ya está en uso, el Worker prueba otro.
-- Una sala vive como mucho 5 minutos (alarma del Durable Object); al cerrarse borra su estado y el código queda libre.
-- Un mensaje de más de 64 KiB, binario o que no sea JSON se ignora.
+- The codes use `23456789ABCDEFGHJKLMNPQRSTUVWXYZ` (no 0, 1, O or I) and are read ignoring case, spaces and hyphens.
+  If the code that comes out is already in use, the Worker tries another.
+- A room lives at most 5 minutes (a Durable Object alarm); when it closes it wipes its state and the code is free.
+- A message of more than 64 KiB, a binary one or one that is not JSON is ignored.
 
-El cliente del juego está en `packages/engine/net/signal.hpp` (protocolo) y `rtc_peer_link.hpp` (WebRTC con
+The game's client is in `packages/engine/net/signal.hpp` (protocol) and `rtc_peer_link.hpp` (WebRTC with
 libdatachannel).
 
-## Pruebas
+## Tests
 
 ```sh
-cd apps/versus-signal && node --test     # Node 22.18 o posterior: ejecuta el TypeScript sin compilarlo
+cd apps/versus-signal && node --test     # Node 22.18 or later: runs the TypeScript without compiling it
 ```
 
-`test/room.test.ts` prueba las salas con sockets y estado falsos; `test/worker.test.ts`, las rutas del Worker. El
-juego tiene su propio servidor falso en memoria (`packages/engine/net/tests/fake_signal_server.hpp`) con las mismas
-reglas, con el que dos pares reales de libdatachannel se conectan en una prueba sin red.
+`test/room.test.ts` tests the rooms with fake sockets and state; `test/worker.test.ts`, the Worker's routes. The game
+has its own fake in-memory server (`packages/engine/net/tests/fake_signal_server.hpp`) with the same rules, with which
+two real libdatachannel peers connect in a test with no network.
 
-## Desplegarlo
+## Deploying it
 
-Está desplegado en `wss://dwe-versus-signal.regamelabs.workers.dev`. `wrangler.toml` no lleva cuenta, ruta ni secretos;
-se despliega con la cuenta de quien lo hace:
+It is deployed at `wss://dwe-versus-signal.regamelabs.workers.dev`. `wrangler.toml` holds no account, route or secrets;
+it is deployed with the account of whoever does it:
 
 ```sh
 cd apps/versus-signal
 npx wrangler dev            # local: ws://localhost:8787
-npx wrangler deploy         # con la cuenta y la ruta que toque
+npx wrangler deploy         # with the account and route that apply
 ```
 
-y pone la dirección (`wss://…`) en `content/packs/game/versus/network.yaml` (`signal_server`), o la da al juego con
-`--versus-server wss://…` para probarla. Sin dirección el juego dice que no hay servidor configurado.
+and put the address (`wss://…`) in `content/packs/game/versus/network.yaml` (`signal_server`), or give it to the game
+with `--versus-server wss://…` to try it. With no address the game says no server is set up.
 
-Más adelante: servidores TURN para las redes en las que no hay ruta directa. El servidor daría credenciales de corta
-vida junto con `room`/`joined`, y el juego las añadiría a `ice_servers`.
+Later: TURN servers for networks with no direct route. The server would give short-lived credentials along with
+`room`/`joined`, and the game would add them to `ice_servers`.

@@ -4,7 +4,7 @@
 # licences (licenses/lavapipe/). It draws on the processor, so it is slow, but the game starts on a
 # computer whose GPU has no Vulkan 1.3 driver (a virtual machine, an old GPU, a missing driver). The
 # launcher and the package's dwe script turn it on only when `dwe-game --check-system` finds no GPU
-# that can run the game (docs/modulos/apps/launcher.md).
+# that can run the game (docs/modules/apps/launcher.md).
 #
 # Usage, in the development image (scripts/package_linux.sh runs it there):
 #   scripts/package/software_vulkan_linux.sh <package folder>

@@ -1,12 +1,12 @@
-# Los nombres de los aspectos de la UI del paquete del juego en los menús (ui/skins/<id>/skin.yaml nombra su clave).
-# Un aspecto de un mod guarda su nombre en un archivo de textos propio: uno llamado ui_skin.yaml reemplazaría este
-# entero.
+# The names of the game pack's UI skins in the menus (ui/skins/<id>/skin.yaml names its key).
+# A mod's skin keeps its name in a text file of its own: one called ui_skin.yaml would replace this one
+# entirely.
 modern: "Moderno"
 original: "Original"
 new: "Pixel art"
 devvago: "DevVago"
-# Una línea por aspecto bajo su nombre en la caja de cada arranque (ui/skin_picker); un mod la añade con la clave de
-# su nombre más .hint.
+# One line per skin under its name in the box at each boot (ui/skin_picker); a mod adds it with its name's key
+# plus .hint.
 modern.hint: "Paneles limpios y letra moderna."
 original.hint: "Los menús del juego original, nítidos."
 new.hint: "Ventanas azules y letra de píxeles."

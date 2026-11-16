@@ -78,7 +78,7 @@ button.dimmed:focus {
 	letter-spacing: 4dp;
 }
 
-/* The battle mode question (006): the heading box without brackets, the message with them, Sí / No as a list. */
+/* The battle mode question (006): the heading box without brackets, the message with them, Yes / No as a list. */
 #battle-heading,
 #battle-answers {
 	decorator: ninepatch(nb-box-outer, nb-box-inner, 1) border-box;

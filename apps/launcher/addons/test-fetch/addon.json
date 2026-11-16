@@ -1,9 +1,9 @@
 {
   "id": "org.indie-modding-games.test-fetch",
-  "name": "Prueba de red y aislamiento",
+  "name": "Network and isolation test",
   "version": "1.0.0",
   "author": "Indie Modding Games",
-  "description": "Solo para pruebas: lee las versiones del servidor de pruebas local (net.fetch) y comprueba que el complemento no alcanza nada del lanzador.",
+  "description": "For tests only: reads the versions of the local test server (net.fetch) and checks that the add-on reaches nothing of the launcher.",
   "api": 1,
   "entry": "index.html",
   "slots": ["tabs", "news"],

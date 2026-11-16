@@ -1,11 +1,11 @@
-# El modo «Historia original» (docs/modding/modos.md): la historia del juego original con sus reglas. Es el único modo
-# que trae el motor; un mod añade el suyo en modes/<id>/mode.yaml.
+# The "Original story" mode (docs/modding/modes.md): the original game's story with its rules. It is the only mode
+# the engine ships; a mod adds its own in modes/<id>/mode.yaml.
 id: original
 name: modes.original_name
 description: modes.original_description
-# La partida nueva empieza con las reglas del original; la pantalla de reglas deja elegir el contenido oculto
-# (docs/modulos/game/evolution.md, «Contenido oculto») y todas las especies como compañero, encendida en ella
-# (docs/modulos/game/evoluciones-extra.md).
+# The new game starts with the original's rules; the rules screen lets you choose the hidden content
+# (docs/modules/game/evolution.md, "Hidden content") and all species as partner, turned on in it
+# (docs/modules/game/extra-evolutions.md).
 ruleset: original
 rulesets: [original, oculto, oculto_mega, todas, todas_oculto, todas_oculto_mega]
 order: 0

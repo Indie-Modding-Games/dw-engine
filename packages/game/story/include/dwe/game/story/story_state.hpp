@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <vector>
 
-// The state of the story (docs/architecture/interprete-historia.md, "StoryState"): the event
+// The state of the story (docs/architecture/story-interpreter.md, "StoryState"): the event
 // scripts' triggers and variables, as the original keeps them in its script state (script.h:
 // ScriptState), plus the room a ruleset adds for mods.
 namespace dwe::game::story {

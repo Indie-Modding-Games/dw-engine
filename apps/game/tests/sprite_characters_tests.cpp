@@ -1,4 +1,4 @@
-// 3D characters (docs/modulos/apps/game.md, «Personajes en 3D»): the table of the characters the
+// 3D characters (docs/modules/apps/game.md, «3D characters»): the table of the characters the
 // maps draw as sprites, where their models stand, and which sprites the models replace.
 
 #include <dwe/assets/map_document.hpp>

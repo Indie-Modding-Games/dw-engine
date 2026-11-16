@@ -6,7 +6,7 @@
 # starts with the modern skin and the first step fails. It needs an empty saves folder of its own (--saves): Play opens
 # the slot list there, and the route starts the game without saving, which writes nothing there: no save and no autosave
 # after the battle or the new day (saves.files stays 0). It runs once per language. How to run it:
-# docs/guides/prueba-vertical.md.
+# docs/guides/vertical-slice.md.
 name: skin-original
 device: keyboard
 main_menu: true

@@ -258,7 +258,7 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn,
   // tamer.c: tamerTickWalkingState adds the d-pad's direction to the camera's heading rounded to an
   // eighth of a turn (getMapRotation), so "up" goes the same way on every map with a camera turned
   // a little. The original rounds negative headings toward zero; this rounds to the nearest
-  // (docs/reference/campo.md).
+  // (docs/reference/field.md).
   const float heading =
       glm::length(ground(view)) > 0.0F ? std::atan2(view.z, view.x) : -Turn / 4.0F;
   const auto eighth = static_cast<std::size_t>((std::lround(heading / CameraHeadingStep) + 8) % 8);

@@ -6,6 +6,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
 import chokidar from 'chokidar'
+import { pickLanguage, translate } from '../shared/i18n.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 let projectRoot = path.resolve(process.env.DWE_STUDIO_ROOT || path.join(here, '../../../../'))
@@ -26,6 +27,9 @@ let managedLogBusy = false
 let managedPersistChain = Promise.resolve()
 let observerActive = false
 let pendingActionObservation = null
+// The language of the messages and dialogs: DWE_STUDIO_LANG (es or en), else the system's (English by default).
+const language = () => pickLanguage(process.env.DWE_STUDIO_LANG, app.getLocale())
+const t = (text, values) => translate(language(), text, values)
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
 
 const managedSessionPath = () => path.join(app.getPath('userData'), 'managed-games.json')
@@ -117,7 +121,7 @@ function isIgnored(relativePath) {
 function resolveProjectPath(relativePath) {
   const candidate = path.resolve(projectRoot, relativePath || '.')
   const relative = path.relative(projectRoot, candidate)
-  if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('La ruta sale del proyecto.')
+  if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error(t('The path leaves the project.'))
   return candidate
 }
 
@@ -126,7 +130,7 @@ async function resolveProjectFile(relativePath) {
   const realRoot = await fs.realpath(projectRoot)
   const realCandidate = await fs.realpath(candidate)
   const relative = path.relative(realRoot, realCandidate)
-  if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('La ruta sale del proyecto.')
+  if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error(t('The path leaves the project.'))
   return realCandidate
 }
 
@@ -135,7 +139,7 @@ async function resolveReadOnlyReference(relativePath) {
   const realRoot = await fs.realpath(decompRoot)
   const realCandidate = await fs.realpath(candidate)
   const relative = path.relative(realRoot, realCandidate)
-  if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('La ruta sale de la referencia decomp.')
+  if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error(t('The path leaves the decomp reference.'))
   return realCandidate
 }
 
@@ -143,7 +147,7 @@ async function listTreeAt(root, directory = '', depth = 0, ignored = ignoredName
   if (depth > 5) return []
   const absolute = path.resolve(root, directory || '.')
   const relativeToRoot = path.relative(root, absolute)
-  if (relativeToRoot.startsWith('..') || path.isAbsolute(relativeToRoot)) throw new Error('La ruta sale de la raíz seleccionada.')
+  if (relativeToRoot.startsWith('..') || path.isAbsolute(relativeToRoot)) throw new Error(t('The path leaves the selected root.'))
   const entries = await fs.readdir(absolute, { withFileTypes: true })
   const output = []
   for (const entry of entries.sort((a, b) => a.isDirectory() === b.isDirectory() ? a.name.localeCompare(b.name) : a.isDirectory() ? -1 : 1)) {
@@ -165,7 +169,7 @@ function emit(channel, payload) {
 
 function startProcess(kind, command, args, options = {}) {
   const existing = processes.get(kind) || managedSessions.get(kind)
-  if (existing) throw new Error(`${kind} ya está en ejecución.`)
+  if (existing) throw new Error(t('{kind} is already running.', { kind }))
   const managed = kind === 'game' || kind === 'duckstation'
   let stdoutFd
   let stderrFd
@@ -200,7 +204,7 @@ function startProcess(kind, command, args, options = {}) {
       offsets: { stdout: 0, stderr: 0 }
     }
     managedSessions.set(kind, record)
-    void persistManagedSessions().catch((error) => emit('process:output', { kind, stream: 'stderr', text: `No se pudo guardar la sesión: ${error.message}\n` }))
+    void persistManagedSessions().catch((error) => emit('process:output', { kind, stream: 'stderr', text: `${t('Could not save the session: {message}', { message: error.message })}\n` }))
   }
   emit('process:state', { kind, running: true, managed: managed, pid: child.pid })
   const forward = (stream) => (chunk) => emit('process:output', { kind, stream, text: chunk.toString() })
@@ -245,7 +249,7 @@ async function pollAIInputQueue() {
   if (!observerActive || inputQueueBusy || process.platform !== 'linux') return
   if (pendingActionObservation) {
     if (Date.now() - Date.parse(pendingActionObservation.executedAt) > 15_000) {
-      await failActionObservation(pendingActionObservation.id, 'No llegó la captura posterior al control en 15 segundos. Reinicia el loop después de revisar ambas capturas.')
+      await failActionObservation(pendingActionObservation.id, t('The capture after the control did not arrive within 15 seconds. Restart the loop after checking both captures.'))
     }
     return
   }
@@ -255,44 +259,44 @@ async function pollAIInputQueue() {
   try { await fs.rename(pendingPath, claimPath) }
   catch (error) {
     if (error.code === 'ENOENT') return
-    emit('observer:status', { status: 'error', message: `No se pudo tomar la secuencia de controles: ${error.message}` })
+    emit('observer:status', { status: 'error', message: t('Could not take the control sequence: {message}', { message: error.message }) })
     return
   }
   let command
   try { command = JSON.parse(await fs.readFile(claimPath, 'utf8')) }
   catch (error) {
     await fs.unlink(claimPath).catch(() => {})
-    emit('observer:status', { status: 'error', message: 'Se descartó una secuencia de controles ilegible.' })
+    emit('observer:status', { status: 'error', message: t('An unreadable control sequence was discarded.') })
     return
   }
   inputQueueBusy = true
   const executed = []
   try {
     if (!command || typeof command.id !== 'string' || command.id.length > 100 || command.id === lastAICommand) return
-    if (!Array.isArray(command.actions) || command.actions.length === 0 || command.actions.length > 12) throw new Error('El comando debe contener entre 1 y 12 acciones.')
+    if (!Array.isArray(command.actions) || command.actions.length === 0 || command.actions.length > 12) throw new Error(t('The command must contain between 1 and 12 actions.'))
     let budgetMs = 0
     for (const action of command.actions) {
       if (!observerActive) break
       const isText = action.type === 'text' || typeof action.text === 'string'
       if (!['duckstation', 'engine', 'both'].includes(action.target) ||
           (isText ? action.target !== 'engine' : !['up', 'down', 'left', 'right', 'confirm', 'cancel', 'start'].includes(action.button))) {
-        throw new Error('El comando contiene un objetivo o botón no permitido.')
+        throw new Error(t('The command contains a target or button that is not allowed.'))
       }
       if (isText && (typeof action.text !== 'string' || !/^[A-Za-z0-9 ]{1,6}$/.test(action.text))) {
-        throw new Error('El texto solo puede contener hasta 6 letras, números o espacios y solo se envía a DWE.')
+        throw new Error(t('The text may only contain up to 6 letters, numbers or spaces and is only sent to DWE.'))
       }
       const holdMs = Number(action.holdMs ?? 100)
       const delayAfterMs = Number(action.delayAfterMs ?? 100)
       if ((!isText && (!Number.isInteger(holdMs) || holdMs < 40 || holdMs > 1200)) || !Number.isInteger(delayAfterMs) || delayAfterMs < 0 || delayAfterMs > 2000) {
-        throw new Error('Las duraciones de entrada exceden los límites permitidos.')
+        throw new Error(t('The input durations exceed the allowed limits.'))
       }
       const targets = action.target === 'both' ? ['duckstation', 'engine'] : [action.target]
       budgetMs += ((isText ? action.text.length * 100 : holdMs) + delayAfterMs) * targets.length
-      if (budgetMs > 20_000) throw new Error('La secuencia de controles no puede superar 20 segundos.')
+      if (budgetMs > 20_000) throw new Error(t('The control sequence cannot exceed 20 seconds.'))
       for (const game of targets) {
         const sourceId = selectedCaptureSources.get(game)
         const match = sourceId && /^window:((?:0x)?[0-9a-f]+):\d+$/i.exec(sourceId)
-        if (!match) throw new Error(`Selecciona la ventana de ${game} antes de enviar controles.`)
+        if (!match) throw new Error(t('Select the {game} window before sending controls.', { game }))
         const helper = path.join(app.getAppPath(), 'out', 'native', 'x11-input')
         if (isText) {
           execFileSync(helper, [match[1], 'type', action.text], { timeout: 3000, stdio: 'pipe' })
@@ -318,7 +322,7 @@ async function pollAIInputQueue() {
       pendingActionObservation = null
       await writeControlResult(result)
     }
-    emit('observer:status', { status: 'error', message: `No se pudo ejecutar el control del juego: ${error.message}` })
+    emit('observer:status', { status: 'error', message: t('Could not run the game control: {message}', { message: error.message }) })
   } finally {
     await fs.unlink(claimPath).catch(() => {})
     inputQueueBusy = false
@@ -326,6 +330,7 @@ async function pollAIInputQueue() {
 }
 
 function registerIpc() {
+  ipcMain.on('app:language', (event) => { event.returnValue = language() })
   ipcMain.handle('project:info', async () => ({
     root: projectRoot,
     name: path.basename(projectRoot),
@@ -344,17 +349,17 @@ function registerIpc() {
   ipcMain.handle('project:read', async (_event, relativePath) => {
     const absolute = await resolveProjectFile(relativePath)
     const stat = await fs.stat(absolute)
-    if (!stat.isFile() || stat.size > 2_000_000) throw new Error('El archivo no existe o supera el límite de 2 MB.')
+    if (!stat.isFile() || stat.size > 2_000_000) throw new Error(t('The file does not exist or exceeds the 2 MB limit.'))
     return { path: relativePath, content: await fs.readFile(absolute, 'utf8'), modifiedAt: stat.mtimeMs }
   })
   ipcMain.handle('reference:read', async (_event, relativePath) => {
     const absolute = await resolveReadOnlyReference(relativePath)
     const stat = await fs.stat(absolute)
-    if (!stat.isFile() || stat.size > 2_000_000) throw new Error('El archivo de referencia no existe o supera el límite de 2 MB.')
+    if (!stat.isFile() || stat.size > 2_000_000) throw new Error(t('The reference file does not exist or exceeds the 2 MB limit.'))
     return { path: relativePath, content: await fs.readFile(absolute, 'utf8'), modifiedAt: stat.mtimeMs }
   })
   ipcMain.handle('project:write', async (_event, relativePath, content) => {
-    if (typeof content !== 'string' || content.length > 2_000_000) throw new Error('El contenido supera el límite de 2 MB.')
+    if (typeof content !== 'string' || content.length > 2_000_000) throw new Error(t('The content exceeds the 2 MB limit.'))
     const absolute = await resolveProjectFile(relativePath)
     await fs.writeFile(absolute, content, 'utf8')
     return { path: relativePath, savedAt: Date.now() }
@@ -364,7 +369,7 @@ function registerIpc() {
     if (result.canceled) return null
     const chosenRoot = result.filePaths[0]
     try { await fs.access(path.join(chosenRoot, 'scripts/dev.sh')) }
-    catch { throw new Error('Selecciona la raíz de un proyecto DWE con scripts/dev.sh.') }
+    catch { throw new Error(t('Select the root of a DWE project with scripts/dev.sh.')) }
     projectRoot = chosenRoot
     await watcher?.close()
     startWatcher()
@@ -372,7 +377,7 @@ function registerIpc() {
   })
   ipcMain.handle('process:build', () => startProcess('build', 'bash', ['scripts/dev.sh', 'build']))
   ipcMain.handle('process:game', async () => {
-    if (managedSessions.has('game')) throw new Error('DWE Engine ya está abierto; vuelve a seleccionar su ventana para adjuntarla.')
+    if (managedSessions.has('game')) throw new Error(t('DWE Engine is already open; select its window again to attach it.'))
     if (await findExistingGameWindow('game')) {
       emit('process:state', { kind: 'game', running: true, managed: false, attached: true })
       return { kind: 'game', attached: true }
@@ -381,31 +386,31 @@ function registerIpc() {
   })
   ipcMain.handle('duckstation:choose-disc', async () => {
     const result = await dialog.showOpenDialog(windowRef, {
-      title: 'Seleccionar imagen de disco para DuckStation',
+      title: t('Select a disc image for DuckStation'),
       properties: ['openFile'],
-      filters: [{ name: 'Imágenes de PlayStation', extensions: ['cue', 'bin', 'chd', 'iso', 'img', 'pbp', 'm3u'] }, { name: 'Todos los archivos', extensions: ['*'] }]
+      filters: [{ name: t('PlayStation images'), extensions: ['cue', 'bin', 'chd', 'iso', 'img', 'pbp', 'm3u'] }, { name: t('All files'), extensions: ['*'] }]
     })
     return result.canceled ? null : result.filePaths[0]
   })
   ipcMain.handle('duckstation:launch', async (_event, discPath) => {
-    if (managedSessions.has('duckstation')) throw new Error('DuckStation ya está abierto; vuelve a seleccionar su ventana para adjuntarla.')
+    if (managedSessions.has('duckstation')) throw new Error(t('DuckStation is already open; select its window again to attach it.'))
     if (await findExistingGameWindow('duckstation')) {
       emit('process:state', { kind: 'duckstation', running: true, managed: false, attached: true })
       return { kind: 'duckstation', attached: true }
     }
     let executable
     try { executable = execFileSync('which', ['duckstation'], { encoding: 'utf8' }).trim() }
-    catch { throw new Error('No se encontró DuckStation en el PATH.') }
+    catch { throw new Error(t('DuckStation was not found in the PATH.')) }
     const args = []
     if (discPath) {
       const stat = await fs.stat(discPath)
-      if (!stat.isFile()) throw new Error('La imagen seleccionada no es un archivo.')
+      if (!stat.isFile()) throw new Error(t('The selected image is not a file.'))
       args.push(discPath)
     }
     return startProcess('duckstation', executable, args, { cwd: path.dirname(discPath || executable) })
   })
   ipcMain.handle('capture:sources', async (event) => {
-    if (event.sender !== windowRef.webContents) throw new Error('Captura solicitada desde una ventana no autorizada.')
+    if (event.sender !== windowRef.webContents) throw new Error(t('Capture requested from an unauthorized window.'))
     const sources = await desktopCapturer.getSources({
       types: ['window'],
       thumbnailSize: { width: 240, height: 135 },
@@ -416,10 +421,10 @@ function registerIpc() {
       .map((source) => ({ id: source.id, name: source.name, thumbnail: source.thumbnail.toDataURL() }))
   })
   ipcMain.handle('window:focus-game', (_event, sourceId) => {
-    if (process.platform !== 'linux') throw new Error('El foco interactivo aún requiere X11 en Linux.')
-    if (typeof sourceId !== 'string') throw new Error('Selecciona una ventana de juego.')
+    if (process.platform !== 'linux') throw new Error(t('Interactive focus still requires X11 on Linux.'))
+    if (typeof sourceId !== 'string') throw new Error(t('Select a game window.'))
     const match = /^window:((?:0x)?[0-9a-f]+):\d+$/i.exec(sourceId)
-    if (!match) throw new Error('Esta fuente no expone un identificador de ventana X11.')
+    if (!match) throw new Error(t('This source does not expose an X11 window identifier.'))
     const helper = path.join(app.getAppPath(), 'out', 'native', 'x11-focus')
     try {
       execFileSync(helper, [match[1]], { timeout: 1000, stdio: 'pipe' })
@@ -429,27 +434,27 @@ function registerIpc() {
     }
   })
   ipcMain.handle('capture:select', (event, kind, sourceId) => {
-    if (event.sender !== windowRef.webContents) throw new Error('Selección de captura solicitada desde una ventana no autorizada.')
-    if (!['duckstation', 'engine'].includes(kind)) throw new Error('Tipo de ventana no válido.')
+    if (event.sender !== windowRef.webContents) throw new Error(t('Capture selection requested from an unauthorized window.'))
+    if (!['duckstation', 'engine'].includes(kind)) throw new Error(t('Invalid window type.'))
     if (typeof sourceId !== 'string' || !sourceId) { selectedCaptureSources.delete(kind); return true }
-    if (!/^window:((?:0x)?[0-9a-f]+):\d+$/i.test(sourceId)) throw new Error('La ventana seleccionada no tiene un ID X11 válido.')
+    if (!/^window:((?:0x)?[0-9a-f]+):\d+$/i.test(sourceId)) throw new Error(t('The selected window does not have a valid X11 ID.'))
     selectedCaptureSources.set(kind, sourceId)
     return true
   })
   ipcMain.handle('observer:active', async (event, active) => {
-    if (event.sender !== windowRef.webContents) throw new Error('Control del loop solicitado desde una ventana no autorizada.')
+    if (event.sender !== windowRef.webContents) throw new Error(t('Loop control requested from an unauthorized window.'))
     observerActive = active === true
-    if (!observerActive && pendingActionObservation) await failActionObservation(pendingActionObservation.id, 'El loop se detuvo antes de guardar la captura posterior al control.')
+    if (!observerActive && pendingActionObservation) await failActionObservation(pendingActionObservation.id, t('The loop stopped before the capture after the control was saved.'))
     if (!observerActive) await fs.unlink(path.join(projectRoot, '.dwe-studio', 'observer', 'control', 'pending.json')).catch(() => {})
     return observerActive
   })
   ipcMain.handle('observer:action-capture-failed', async (event, id, message) => {
-    if (event.sender !== windowRef.webContents) throw new Error('Error de captura solicitado desde una ventana no autorizada.')
-    await failActionObservation(id, typeof message === 'string' ? message.slice(0, 1000) : 'Falló la captura posterior al control.')
+    if (event.sender !== windowRef.webContents) throw new Error(t('Capture error requested from an unauthorized window.'))
+    await failActionObservation(id, typeof message === 'string' ? message.slice(0, 1000) : t('The capture after the control failed.'))
   })
   ipcMain.handle('observer:runtime', async (event, state) => {
-    if (event.sender !== windowRef.webContents) throw new Error('Estado del observador solicitado desde una ventana no autorizada.')
-    if (!state || typeof state !== 'object') throw new Error('El estado del observador no es válido.')
+    if (event.sender !== windowRef.webContents) throw new Error(t('Observer state requested from an unauthorized window.'))
+    if (!state || typeof state !== 'object') throw new Error(t('The observer state is not valid.'))
     const mailbox = path.join(projectRoot, '.dwe-studio', 'observer')
     await fs.mkdir(mailbox, { recursive: true })
     const runtimePath = path.join(mailbox, 'runtime.json')
@@ -477,8 +482,8 @@ function registerIpc() {
     return runtime
   })
   ipcMain.handle('process:terminal', (_event, command) => {
-    if (typeof command !== 'string' || !command.trim()) throw new Error('Escribe un comando.')
-    if (command.length > 16_000) throw new Error('El comando supera el límite de 16 KB.')
+    if (typeof command !== 'string' || !command.trim()) throw new Error(t('Type a command.'))
+    if (command.length > 16_000) throw new Error(t('The command exceeds the 16 KB limit.'))
     let child = processes.get('terminal')
     if (!child) {
       startProcess('terminal', 'bash', ['--noprofile', '--norc'], { stdin: true })
@@ -488,36 +493,36 @@ function registerIpc() {
     return { kind: 'terminal', pid: child.pid }
   })
   ipcMain.handle('observer:observe', async (event, payload) => {
-    if (event.sender !== windowRef.webContents) throw new Error('Observación solicitada desde una ventana no autorizada.')
-    if (!payload || typeof payload !== 'object') throw new Error('Faltan capturas para analizar.')
+    if (event.sender !== windowRef.webContents) throw new Error(t('Observation requested from an unauthorized window.'))
+    if (!payload || typeof payload !== 'object') throw new Error(t('There are no captures to analyze.'))
     const action = payload.actionId == null ? null : pendingActionObservation
-    if (payload.actionId != null && (!action || payload.actionId !== action.id)) throw new Error('La captura no corresponde al control pendiente.')
+    if (payload.actionId != null && (!action || payload.actionId !== action.id)) throw new Error(t('The capture does not match the pending control.'))
     const motion = payload.motion === true
-    if (action && motion) throw new Error('La captura posterior al control y la de movimiento son muestras separadas.')
+    if (action && motion) throw new Error(t('The capture after a control and the motion capture are separate samples.'))
     const frameLimit = motion ? 40 : 3
     const byteLimit = motion ? 16_000_000 : 8_000_000
     const images = {}
     let totalImageBytes = 0
     for (const kind of ['duckstation', 'engine']) {
       const frames = Array.isArray(payload[kind]) ? payload[kind] : payload[kind] ? [payload[kind]] : []
-      if (frames.length > frameLimit) throw new Error(`La muestra de ${kind} excede los ${frameLimit} fotogramas permitidos.`)
+      if (frames.length > frameLimit) throw new Error(t('The {kind} sample exceeds the {limit} allowed frames.', { kind, limit: frameLimit }))
       images[kind] = []
       for (const dataUrl of frames) {
         if (typeof dataUrl !== 'string' || dataUrl.length > 1_500_000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(dataUrl)) {
-          throw new Error(`La captura de ${kind} no es un JPEG válido o supera el límite.`)
+          throw new Error(t('The {kind} capture is not a valid JPEG or exceeds the limit.', { kind }))
         }
         const image = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64')
         totalImageBytes += image.length
-        if (totalImageBytes > byteLimit) throw new Error('La muestra de capturas supera el límite total de tamaño.')
+        if (totalImageBytes > byteLimit) throw new Error(t('The capture sample exceeds the total size limit.'))
         images[kind].push(image)
       }
     }
-    if (motion && (images.duckstation.length !== frameLimit || images.engine.length !== frameLimit)) throw new Error('La captura de movimiento necesita 40 fotogramas de ambos juegos.')
-    if (action && (images.duckstation.length !== 3 || images.engine.length !== 3)) throw new Error('El control necesita tres fotogramas nuevos de ambos juegos antes de continuar.')
-    if (!images.duckstation.length && !images.engine.length) throw new Error('Captura al menos una de las dos ventanas antes de observar.')
+    if (motion && (images.duckstation.length !== frameLimit || images.engine.length !== frameLimit)) throw new Error(t('The motion capture needs 40 frames from both games.'))
+    if (action && (images.duckstation.length !== 3 || images.engine.length !== 3)) throw new Error(t('The control needs three new frames from both games before continuing.'))
+    if (!images.duckstation.length && !images.engine.length) throw new Error(t('Capture at least one of the two windows before observing.'))
     let comparison = null
     if (payload.comparison != null) {
-      if (typeof payload.comparison !== 'string' || payload.comparison.length > 3_000_000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(payload.comparison)) throw new Error('La comparación no es un JPEG válido o supera el límite.')
+      if (typeof payload.comparison !== 'string' || payload.comparison.length > 3_000_000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(payload.comparison)) throw new Error(t('The comparison is not a valid JPEG or exceeds the limit.'))
       comparison = Buffer.from(payload.comparison.slice(payload.comparison.indexOf(',') + 1), 'base64')
       totalImageBytes += comparison.length
     }
@@ -525,12 +530,12 @@ function registerIpc() {
     if (motion) {
       for (const kind of ['duckstation', 'engine']) {
         const value = payload.motionSheets?.[kind]
-        if (typeof value !== 'string' || value.length > 3_000_000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(value)) throw new Error(`La secuencia visual de ${kind} no es un JPEG válido o supera el límite.`)
+        if (typeof value !== 'string' || value.length > 3_000_000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(value)) throw new Error(t('The {kind} visual sequence is not a valid JPEG or exceeds the limit.', { kind }))
         motionSheets[kind] = Buffer.from(value.slice(value.indexOf(',') + 1), 'base64')
         totalImageBytes += motionSheets[kind].length
       }
     }
-    if (totalImageBytes > byteLimit) throw new Error('La muestra de capturas supera el límite total de tamaño.')
+    if (totalImageBytes > byteLimit) throw new Error(t('The capture sample exceeds the total size limit.'))
     const logs = typeof payload.logs === 'string' ? payload.logs.slice(-20_000) : ''
     const mailbox = path.join(projectRoot, '.dwe-studio', 'observer')
     const samplesPath = path.join(mailbox, 'samples')
@@ -602,7 +607,7 @@ function registerIpc() {
     let reviewed = { processed: [] }
     try { reviewed = JSON.parse(await fs.readFile(path.join(mailbox, 'processed.json'), 'utf8')) }
     catch (error) { if (error.code !== 'ENOENT') throw error }
-    if (!Array.isArray(reviewed.processed)) throw new Error('processed.json debe contener una lista processed; se conserva la evidencia sin limpiar.')
+    if (!Array.isArray(reviewed.processed)) throw new Error(t('processed.json must contain a processed list; the evidence is kept uncleaned.'))
     const reviewedIds = new Set(reviewed.processed.map((entry) => entry.id))
     for (const old of previousSamples) {
       if (retained.some((entry) => entry.id === old.id)) continue

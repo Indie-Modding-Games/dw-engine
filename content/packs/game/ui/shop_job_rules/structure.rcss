@@ -1,4 +1,4 @@
-/* How the shop job's rules panel behaves whatever the skin (_shopjob/ui-contract.md): the counter's panel (its sheet,
+/* How the shop job's rules panel behaves whatever the skin (docs/reference/shop-job.md, Interface): the counter's panel (its sheet,
    shop_haggle/structure.rcss, gives the scrim, the panel and the neutral look), centred on the screen, in sections: the
    head (title and goal), then two columns, the pay tiers as a table with each customer's character under them on the
    left and the haggle's rules with the five faces on the right, and the close button at the foot. In the original job

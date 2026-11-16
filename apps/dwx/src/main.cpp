@@ -99,12 +99,15 @@ void printUsage() {
   std::println(
       stderr,
       "      names in the language given (default en). --with reads the packs of another folder too.");
-  std::println(stderr, "  dwx evolution-guide <content folder> <new-output.md>");
+  std::println(stderr,
+               "  dwx evolution-guide <content folder> <new-output.md> [--language <en|es>]");
   std::println(
       stderr,
       "      Writes every species' evolution requirements as Markdown tables, from the evolution and");
-  std::println(stderr,
-               "      species tables of the content. An existing output file is never replaced.");
+  std::println(
+      stderr,
+      "      species tables of the content, in English (default) or Spanish. An existing output");
+  std::println(stderr, "      file is never replaced.");
   std::println(
       stderr,
       "  dwx script-warps <content folder> [--with <folder>]... [--rules <id>] [-o <file>]");
@@ -180,6 +183,28 @@ void printUsage() {
       stderr,
       "Exit codes: 0 known and consistent (or written), 1 unknown or inconsistent, 2 error, 3 another "
       "region's release (identify).");
+}
+
+// dwx evolution-guide <content folder> <new-output.md> [--language <code>].
+int runEvolutionGuide(std::span<char*> options) {
+  std::vector<std::filesystem::path> paths;
+  std::string language{DefaultLanguage};
+  for (std::size_t i = 0; i < options.size(); ++i) {
+    const std::string_view option{options[i]};
+    if (option == "--language" && i + 1 < options.size()) {
+      language = options[++i];
+    } else if (!option.starts_with('-') && paths.size() < 2) {
+      paths.emplace_back(option);
+    } else {
+      printUsage();
+      return ExitFailed;
+    }
+  }
+  if (paths.size() != 2) {
+    printUsage();
+    return ExitFailed;
+  }
+  return evolutionGuideCommand(paths[0], paths[1], language);
 }
 
 // dwx export-images <content folder> [--with <folder>]... [--language <code>] -o <folder>.
@@ -314,8 +339,8 @@ int main(int argc, char** argv) {
       return command == "cook" ? cook(folder, out, progress) : pack(folder, out, progress);
     }
   }
-  if (command == "evolution-guide" && arguments.size() == 4) {
-    return evolutionGuideCommand(arguments[2], arguments[3]);
+  if (command == "evolution-guide") {
+    return runEvolutionGuide(arguments.subspan(2));
   }
   if (command == "export-images") {
     return runExportImages(arguments.subspan(2));

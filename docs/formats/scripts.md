@@ -1,110 +1,110 @@
-# Scripts de eventos
+# Event scripts
 
-Cómo lee `formats/script` los scripts de eventos (`SCN/MAPHEAD.SCN` y `SCN/DG.SCN`) y cómo los escribe `dwx extract`.
-El desensamblador sigue el juego de opcodes de `include/dw/script.h` y las lecturas de operandos de
-`script_interp.c: tickScript` y sus `scriptInstruction*`. Lo que el intérprete no ejecutaría (un opcode sin caso,
-una prueba de `IF` sin manejador, operandos que se salen) es un `unknown`, nunca una suposición.
+How `formats/script` reads the event scripts (`SCN/MAPHEAD.SCN` and `SCN/DG.SCN`) and how `dwx extract` writes them.
+The disassembler follows the opcode set of `include/dw/script.h` and the operand reads of
+`script_interp.c: tickScript` and its `scriptInstruction*`. What the interpreter would not execute (an opcode with no case,
+an `IF` test with no handler, operands that go out of bounds) is an `unknown`, never a guess.
 
-## Ficheros
+## Files
 
-- **`MAPHEAD.SCN`** es el script 0: `initializeScripts` lo lee entero y lo deja residente.
-- **`DG.SCN`** guarda los demás. `initializeScripts` lee sus primeros 0x2000 bytes como tabla de offsets `u32` por id
-  de script, y `getScript(id)` lee `[tabla[id], tabla[id + 1])`. `readScriptTable` recorre la tabla hasta la entrada
-  que vale el tamaño del fichero y falla si un offset retrocede o se sale. Los bytes de la tabla tras esa entrada son
-  restos que nadie lee (la lectura de 0x2000 bytes pisa además el principio de los primeros scripts).
-- Cada script ocupa sectores enteros: tras su código viene **relleno de sector**, restos que a menudo parecen código y
-  que nadie lee. El final real lo da el barrido (abajo), nunca el tamaño del hueco. `dwx` lo cuenta en una nota.
-- El script 0 de `DG.SCN` es una copia byte a byte de `MAPHEAD.SCN` (más relleno) que nunca se carga: `getScript(0)`
-  devuelve el residente. `dwx` lo comprueba y lo extrae solo desde `MAPHEAD.SCN`; si no fuera una copia, los dos
-  serían `story/000`, así que la extracción de `DG.SCN` se detiene con un mensaje en lugar de elegir uno.
-  Solo se comparan los bytes de `MAPHEAD.SCN` con el principio de la ranura: el resto es relleno de sector y no se mira.
+- **`MAPHEAD.SCN`** is script 0: `initializeScripts` reads it whole and leaves it resident.
+- **`DG.SCN`** stores the rest. `initializeScripts` reads its first 0x2000 bytes as a table of `u32` offsets by script
+  id, and `getScript(id)` reads `[table[id], table[id + 1])`. `readScriptTable` walks the table up to the entry
+  that equals the file size and fails if an offset goes backward or out of bounds. The table bytes after that entry are
+  leftovers that nobody reads (the 0x2000-byte read also overwrites the start of the first scripts).
+- Each script takes whole sectors: after its code comes **sector padding**, leftovers that often look like code and
+  that nobody reads. The real end is given by the sweep (below), never by the size of the gap. `dwx` counts it in a note.
+- Script 0 of `DG.SCN` is a byte-for-byte copy of `MAPHEAD.SCN` (plus padding) that is never loaded: `getScript(0)`
+  returns the resident one. `dwx` checks this and extracts it only from `MAPHEAD.SCN`; if it were not a copy, both
+  would be `story/000`, so the extraction of `DG.SCN` stops with a message instead of choosing one.
+  Only the bytes of `MAPHEAD.SCN` are compared with the start of the slot: the rest is sector padding and is not looked at.
 
-## Cabecera
+## Header
 
 ```
-+0  u16 codeStart                     = 2 + 4 * secciones + 2: el offset de la primera instrucción
-+2  {u16 id, u16 offset}[secciones]   offsets desde el principio del script
++0  u16 codeStart                     = 2 + 4 * sections + 2: the offset of the first instruction
++2  {u16 id, u16 offset}[sections]   offsets from the start of the script
     u16 0xFFFF
 ```
 
-`readScriptHeader` comprueba que `codeStart` es el final de la lista y que cada sección empieza dentro del código.
-Una sección es un punto de entrada que elige el motor (`getScriptSection`, `callScriptSection`): en `MAPHEAD`, el id
-de mapa (y unas secciones especiales que llama el código del motor); en los demás, `0xFE` al entrar en el mapa, el id
-de script de un NPC al hablarle y los disparadores de casilla.
+`readScriptHeader` checks that `codeStart` is the end of the list and that each section starts inside the code.
+A section is an entry point that the engine chooses (`getScriptSection`, `callScriptSection`): in `MAPHEAD`, the map
+id (and some special sections that the engine's code calls); in the others, `0xFE` when entering the map, the script
+id of an NPC when talking to it and the tile triggers.
 
-## Instrucciones
+## Instructions
 
-Un byte de opcode y sus operandos, en little-endian. Los operandos de 16 y 32 bits se leen alineados, así que las
-codificaciones llevan bytes de relleno que el intérprete salta; las instrucciones de un byte (`FC`–`FF`) van seguidas
-de un `00`. Toda instrucción empieza en offset par, salvo los bloques `DATA` (abajo). Los saltos son offsets `u16`
-absolutos desde el principio del script.
+An opcode byte and its operands, in little-endian. 16- and 32-bit operands are read aligned, so the
+encodings carry padding bytes that the interpreter skips; one-byte instructions (`FC`–`FF`) are followed
+by a `00`. Every instruction starts at an even offset, except the `DATA` blocks (below). Jumps are absolute `u16`
+offsets from the start of the script.
 
-Tipos de operando (`ArgumentKind`):
+Operand types (`ArgumentKind`):
 
-| Tipo | Bytes | Qué es |
+| Type | Bytes | What it is |
 |---|---|---|
-| `Pad` | 1 | relleno; si no es 0 se guarda en `pads` |
-| `U8`, `U16`, `S16`, `S32` | 1, 2, 2, 4 | números; `S32` se lee en dos mitades (`pollNextInt`) |
-| `Pstat` | 1 | índice de una variable de script (`ScriptState.pstats`) |
-| `Trigger` | 2 | número de un bit de disparador (`ScriptState.triggers`) |
-| `Entity` | 1 | id de script de un NPC; `0xFD` es el domador y `0xFC` el compañero (`scriptIdToEntityId`) |
-| `Label` | 2 | destino de un salto |
+| `Pad` | 1 | padding; if it is not 0 it is stored in `pads` |
+| `U8`, `U16`, `S16`, `S32` | 1, 2, 2, 4 | numbers; `S32` is read in two halves (`pollNextInt`) |
+| `Pstat` | 1 | index of a script variable (`ScriptState.pstats`) |
+| `Trigger` | 2 | number of a trigger bit (`ScriptState.triggers`) |
+| `Entity` | 1 | script id of an NPC; `0xFD` is the tamer and `0xFC` the partner (`scriptIdToEntityId`) |
+| `Label` | 2 | target of a jump |
 
-Los nombres de opcode son los `SCRIPT_OP_*` del decomp en minúsculas (`show_textbox`, `jump_to`...); los que no tienen
-nombre allí son `unused_XX`. Grupos (`tickScript` despacha `10`–`3F`, `46`–`58`, `5A`–`5F`, `64`–`7E` y `FB`–`FF`):
+The opcode names are the decomp's `SCRIPT_OP_*` in lowercase (`show_textbox`, `jump_to`...); those without a name
+there are `unused_XX`. Groups (`tickScript` dispatches `10`–`3F`, `46`–`58`, `5A`–`5F`, `64`–`7E` and `FB`–`FF`):
 
-| Opcodes | Qué hacen |
+| Opcodes | What they do |
 |---|---|
-| `10`–`1A` | flujo: selección, saltos (`13` con retorno, `16` sin él, `14`/`17` a otro script), `15` retorno, `18` `SWITCH`, `19` `IF`, `1A` texto |
-| `1B`–`27` | diálogo, disparadores, variables, fecha, tamaño de la caja de texto |
-| `28`–`3F` | objetos, dinero, técnicas, cartas, méritos, estadísticas, fecha |
-| `46`–`58` | Digimon y entidades: cargar, mover, girar, cámara, animaciones, warps |
-| `5A`–`5F` | sonido y música |
-| `64`–`7E` | rutinas del motor, combate, esperas, daño, `6B` `DATA`, objetos y sprites del mapa |
-| `FB` | `SET_SCRIPT`: carga otro script y mapa y apila un marco de tipo 3 |
-| `FC`, `FD` | sin caso en `tickScript`: esperan un fotograma |
-| `FE`, `FF` | `END_SECTION` y `END_SCRIPT`: los dos llaman a `returnFromScriptFile` y deshacen la pila entera |
+| `10`–`1A` | flow: selection, jumps (`13` with return, `16` without it, `14`/`17` to another script), `15` return, `18` `SWITCH`, `19` `IF`, `1A` text |
+| `1B`–`27` | dialogue, triggers, variables, date, text box size |
+| `28`–`3F` | items, money, techniques, cards, merits, stats, date |
+| `46`–`58` | Digimon and entities: load, move, turn, camera, animations, warps |
+| `5A`–`5F` | sound and music |
+| `64`–`7E` | engine routines, combat, waits, damage, `6B` `DATA`, map objects and sprites |
+| `FB` | `SET_SCRIPT`: loads another script and map and pushes a type 3 frame |
+| `FC`, `FD` | no case in `tickScript`: they wait one frame |
+| `FE`, `FF` | `END_SECTION` and `END_SCRIPT`: both call `returnFromScriptFile` and unwind the whole stack |
 
-Las de longitud variable:
+The variable-length ones:
 
-- **`IF` (`19`)**: tras `19 00`, entradas `código, relleno, datos` que se evalúan de izquierda a derecha, hasta una
-  entrada cuyo código es exactamente `19` (`script_interp.c: scriptIfInstruction`, `script_value.c`). Bit 7 del código:
-  `resultado = resultado AND c`; si no, bit 6: `OR`; si no, `resultado = c`. `código & 0x38` elige la prueba:
-  `00` disparador (bits bajos 0 = puesto, otro = quitado), `08` variable contra valor (bits bajos = comparación),
-  `10` / `18` saltar si cierto / falso, `20` extendida por los bits bajos: estadística, carta, técnica, condición,
-  número de objetos y dinero. Las comparaciones son `eq`, `ne`, `ge`, `le`, `gt`, `lt` (0–5); 6 y 7 no tienen caso.
-  `28`, `30`, `38` y las extendidas 6 y 7 no tienen manejador: son `unknown`.
-- **`SWITCH` (`18`)**: variable, `u16` número de casos y un `u16` destino por caso.
-- **`SET_SELECTION` (`10`)**: `u8` número de opciones y un destino por opción, la palabra `1A 00` (que
-  `scriptShowSelection` cuenta como una entrada más) y el texto de la pregunta. Si sigue `12 00`, es la marca que
-  salta la cancelación (`tickScriptDialogueBox`) y forma parte de la instrucción.
-- **`SHOW_TEXTBOX` (`1A`)**: relleno y texto (ver [Textos](textos.md)).
-- **`DATA` (`6B`)**: relleno y bytes hasta un `0xFF`. Nunca se ejecuta: lo leen los torneos por tablas de saltos
-  (`tournament.c: getCupDataJumpTableEntry`, `dget.c: isTournamentEnabled`, `tournamentCheckEligible`), que paran en
-  el primer byte `≥ 0xFE`; una lista que empieza por `0xFE` vale por todos los disparadores (`FE FF`). Como se leen
-  byte a byte, los bloques van seguidos sin alinear.
+- **`IF` (`19`)**: after `19 00`, entries `code, padding, data` that are evaluated from left to right, up to an
+  entry whose code is exactly `19` (`script_interp.c: scriptIfInstruction`, `script_value.c`). Bit 7 of the code:
+  `result = result AND c`; otherwise, bit 6: `OR`; otherwise `result = c`. `code & 0x38` chooses the test:
+  `00` trigger (low bits 0 = set, other = cleared), `08` variable against value (low bits = comparison),
+  `10` / `18` jump if true / false, `20` extended by the low bits: stat, card, technique, condition,
+  number of items and money. The comparisons are `eq`, `ne`, `ge`, `le`, `gt`, `lt` (0–5); 6 and 7 have no case.
+  `28`, `30`, `38` and the extended 6 and 7 have no handler: they are `unknown`.
+- **`SWITCH` (`18`)**: variable, `u16` number of cases and a `u16` target per case.
+- **`SET_SELECTION` (`10`)**: `u8` number of options and a target per option, the word `1A 00` (which
+  `scriptShowSelection` counts as one more entry) and the question text. If `12 00` follows, it is the mark that
+  skips the cancellation (`tickScriptDialogueBox`) and is part of the instruction.
+- **`SHOW_TEXTBOX` (`1A`)**: padding and text (see [Texts](texts.md)).
+- **`DATA` (`6B`)**: padding and bytes up to a `0xFF`. It is never executed: tournaments read it through jump tables
+  (`tournament.c: getCupDataJumpTableEntry`, `dget.c: isTournamentEnabled`, `tournamentCheckEligible`), which stop at
+  the first byte `≥ 0xFE`; a list that starts with `0xFE` stands for all triggers (`FE FF`). Since they are read
+  byte by byte, the blocks follow one another unaligned.
 
-## Barrido
+## Sweep
 
-`disassembleScript` decodifica de forma lineal desde `codeStart`:
+`disassembleScript` decodes linearly from `codeStart`:
 
-1. Decodifica la instrucción; si no puede, anota un `unknown` y para.
-2. Tras una instrucción que acaba en offset impar, un `00` es relleno. Otra cosa que no sea un `DATA` es una
-   desincronización: `unknown` y para.
-3. Para en el primer `END_SCRIPT` que queda más allá de toda sección y todo destino visto. Los scripts de las arenas
-   guardan bloques `DATA` después de su primer `END_SCRIPT`, a los que llegan sus tablas de saltos; el barrido sigue
-   por ellos.
+1. It decodes the instruction; if it cannot, it notes an `unknown` and stops.
+2. After an instruction that ends at an odd offset, a `00` is padding. Anything else that is not a `DATA` is a
+   desynchronization: `unknown` and stop.
+3. It stops at the first `END_SCRIPT` that lies beyond every section and every target seen. The arena scripts
+   keep `DATA` blocks after their first `END_SCRIPT`, which their jump tables reach; the sweep continues
+   through them.
 
-Después comprueba que cada sección y cada destino caen en el inicio de una instrucción (si no, `unknown`) y cuenta las
-instrucciones a las que no llega ningún flujo desde una sección. Esas se quedan en el listado: la mayoría son un
-salto tras un `END_SECTION` que el compilador dejó, y las tablas de saltos de `MAPHEAD` parecerían muertas.
+Then it checks that each section and each target fall on the start of an instruction (if not, `unknown`) and counts the
+instructions that no flow reaches from a section. Those stay in the listing: most are a
+jump after an `END_SECTION` that the compiler left, and `MAPHEAD`'s jump tables would look dead.
 
-En el disco US todos los bytes de código decodifican, con 0 `unknown`, y el texto de cada instrucción vuelve a sus
-mismos bytes.
+On the US disc all code bytes decode, with 0 `unknown`, and the text of each instruction goes back to its
+same bytes.
 
-## Listado
+## Listing
 
-`dwx extract` escribe un YAML por script: `script/maphead.yaml` y `script/dg/<id>.yaml` (`script/dg/007.yaml`).
+`dwx extract` writes one YAML per script: `script/maphead.yaml` and `script/dg/<id>.yaml` (`script/dg/007.yaml`).
 
 ```yaml
 code_start: 0x000c
@@ -137,128 +137,128 @@ instructions:
   op: end_script
 ```
 
-- `at` es el offset; `label` (`l_<offset>`) solo si algo salta ahí; luego `op` y los operandos por nombre.
-- Los destinos son nombres de etiqueta. Entidades `0xFD` y `0xFC` salen como `tamer` y `partner`.
-- `conditions` (las entradas de `IF`, con `combine: and|or`, `clear: true` para un disparador quitado y `code` solo si
-  el byte no es el que darían los campos), `cases` (`SWITCH`), `options` (`SET_SELECTION`), `text`,
-  `cancel_marker: true` (la marca `12 00`), `data` (los bytes de `DATA` en hex) y `pads` (rellenos que no son 0).
-- `unknowns` solo si los hay.
+- `at` is the offset; `label` (`l_<offset>`) only if something jumps there; then `op` and the operands by name.
+- Targets are label names. Entities `0xFD` and `0xFC` come out as `tamer` and `partner`.
+- `conditions` (the `IF` entries, with `combine: and|or`, `clear: true` for a cleared trigger and `code` only if
+  the byte is not the one the fields would give), `cases` (`SWITCH`), `options` (`SET_SELECTION`), `text`,
+  `cancel_marker: true` (the `12 00` mark), `data` (the `DATA` bytes in hex) and `pads` (padding that is not 0).
+- `unknowns` only if there are any.
 
-El id estable de un texto de script es el script y el offset de su instrucción (`dg/007@0x0040`); las claves de los
-textos de la historia lo usan (`story_<n>.text.<offset>`, ver [Lua](#lua)). El listado no es Lua: lo traduce
-`lua_emitter.hpp`.
+The stable id of a script text is the script and the offset of its instruction (`dg/007@0x0040`); the keys of the
+story texts use it (`story_<n>.text.<offset>`, see [Lua](#lua)). The listing is not Lua: `lua_emitter.hpp` translates
+it.
 
-## Control de flujo
+## Control flow
 
-El paso a Lua (fase 4) parte del listado, no de los bytes, y no puede emitir saltos: el Lua convertido es código
-anidado que se lee y se modifica. `formats/script` lo prepara en tres pasos:
+The step to Lua starts from the listing, not from the bytes, and cannot emit jumps: the converted Lua is
+nested code that can be read and modified. `formats/script` prepares it in three steps:
 
-1. **`ScriptListing`** es la representación de los scripts que usa todo lo demás: secciones, offsets, el papel de
-   cada orden (salto, llamada, retorno, `IF`, `SWITCH`, `SET_SELECTION`, cambio de mapa, fin), sus destinos, sus
-   operandos y condiciones con nombre y el texto de `show_textbox` y `set_selection` (tal como lo escribe el listado;
-   las opciones de una selección, una por línea). Sale del YAML (`readScriptListing`, el de un mod) o del
-   desensamblado (`listingOf`, el de `dwx`) con la misma tabla de órdenes; un test de disco comprueba que dan lo mismo
-   en todos los scripts, pasando por el texto del YAML. Solo los bytes de `DATA` y los de relleno se quedan en el
-   YAML. `warp_to` y `teleport` acaban el flujo (`FlowRole::MapChange`): nada de lo que sigue corre. El formato del
-   YAML no cambia.
-2. **`buildScriptFlow`** parte el código en bloques básicos. Un `IF` es una cadena de bifurcaciones, una por cada
-   entrada `goto_if_*`, en su orden. Un `SWITCH` elige entre sus casos; un `SET_SELECTION`, entre sus opciones y, al
-   cancelar, sigue detrás del bloque. Las rutinas son las secciones y los destinos de `jump_and_link`.
-3. **`structureScript`** convierte cada rutina en sentencias: `if`/`else` cuyas ramas se juntan en el
-   post-dominador, bucles naturales con `break` a su salida, elecciones y llamadas finales a otra rutina. El código al
-   que saltan varias rutinas, o varios caminos de una, se vuelve una **cola compartida** (una rutina más) si tiene al
-   menos 3 órdenes; si es más corto se copia. Lo que no se deja anidar (un bucle con dos entradas, una salida de dos
-   bucles a la vez, demasiadas copias) se vuelve una **máquina de estados**: un bucle que despacha cada bloque según
-   una variable. Así toda rutina se convierte, sin saltos.
+1. **`ScriptListing`** is the representation of scripts that everything else uses: sections, offsets, the role of
+   each command (jump, call, return, `IF`, `SWITCH`, `SET_SELECTION`, map change, end), their targets, their
+   named operands and conditions and the text of `show_textbox` and `set_selection` (as the listing writes it;
+   the options of a selection, one per line). It comes from the YAML (`readScriptListing`, a mod's) or from the
+   disassembly (`listingOf`, `dwx`'s) with the same command table; a disc test checks that they give the same
+   in all scripts, going through the YAML text. Only the `DATA` bytes and the padding stay in the
+   YAML. `warp_to` and `teleport` end the flow (`FlowRole::MapChange`): nothing that follows runs. The YAML format
+   does not change.
+2. **`buildScriptFlow`** splits the code into basic blocks. An `IF` is a chain of branches, one for each
+   `goto_if_*` entry, in its order. A `SWITCH` chooses among its cases; a `SET_SELECTION`, among its options and, on
+   cancel, continues after the block. Routines are the sections and the targets of `jump_and_link`.
+3. **`structureScript`** turns each routine into statements: `if`/`else` whose branches join at the
+   post-dominator, natural loops with `break` to their exit, choices and tail calls to another routine. Code
+   that several routines jump to, or several paths of one, becomes a **shared tail** (one more routine) if it has at
+   least 3 commands; if it is shorter it is copied. What cannot be nested (a loop with two entries, an exit from two
+   loops at once, too many copies) becomes a **state machine**: a loop that dispatches each block according to
+   a variable. This way every routine is converted, without jumps.
 
-Encima del árbol, **`walkSection`** (`guarded_walk.hpp`) recorre una sección y da cada orden que se le pide con
-lo que hace falta para llegar a ella: las decisiones de sus `IF`, `SWITCH` y `SET_SELECTION`, los disparadores que
-pone por el camino y los que conoce al llegar. Un `IF` cuyas pruebas son de disparadores que el camino conoce toma su
-rama sin dejar condición. Una llamada a una rutina que ya se está recorriendo no se sigue: deja un término
-`RecursionTerm` (la rutina llamada) que dice que lo que decide no se sabe, y el camino sigue después con lo que
-conocía olvidado. Una orden que corre código del juego que puede escribir disparadores (`give_item`, `compare_date` y
-las rutinas de `call_routine` y `call_digimon_routine` que lo hacen, según `routine_writes.hpp`) deja un término
-`ForgetTerm` y el camino sigue sin saber esos disparadores. Lo usan los [warps de script](../architecture/warps-de-script.md) (`script_warps.hpp`) y los cambios de mapa de
-una sección (`map_changes.hpp`).
+On top of the tree, **`walkSection`** (`guarded_walk.hpp`) walks a section and gives each requested command along with
+what is needed to reach it: the decisions of its `IF`, `SWITCH` and `SET_SELECTION`, the triggers it
+sets on the way and those it knows on arrival. An `IF` whose tests are on triggers that the path knows takes its
+branch without leaving a condition. A call to a routine that is already being walked is not followed: it leaves a
+`RecursionTerm` term (the called routine) that says what it decides is not known, and the path continues afterward with what it
+knew forgotten. A command that runs game code that can write triggers (`give_item`, `compare_date` and
+the routines of `call_routine` and `call_digimon_routine` that do so, according to `routine_writes.hpp`) leaves a
+`ForgetTerm` term and the path continues without knowing those triggers. They are used by the [script warps](../architecture/script-warps.md) (`script_warps.hpp`) and the map changes of
+a section (`map_changes.hpp`).
 
-Lua no tiene `continue`: una rama que vuelve a la cabeza del bucle se lleva el resto del cuerpo a la otra rama. Las
-cifras sobre el disco están en la [ficha de scripts](../reference/scripts.md#forma-del-control-de-flujo).
+Lua has no `continue`: a branch that returns to the loop head takes the rest of the body into the other branch. The
+figures over the disc are in the [scripts sheet](../reference/scripts.md#shape-of-the-control-flow).
 
 ## Lua
 
-`lua_emitter.hpp` (`formats/script`) escribe cada script estructurado como un módulo Lua, y `dwx extract` lo deja junto al
-listado (que no cambia: sigue siendo el formato que edita `dw1fe`):
+`lua_emitter.hpp` (`formats/script`) writes each structured script as a Lua module, and `dwx extract` leaves it next to the
+listing (which does not change: it is still the format that `dw1fe` edits):
 
-| Fichero | Qué es |
+| File | What it is |
 |---|---|
-| `story/<n>.lua` | El módulo: devuelve `{ script = <n>, sections = { [0x0051] = <función>, ... } }` |
-| `story/<n>_lines.yaml` | Por cada línea que ejecuta una orden, su offset en el listado ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/story_lines.schema.json)) |
-| `text/en/story_<n>.yaml` | Los textos de `show_textbox` y `set_selection`, con la clave `story_<n>.text.<offset>` |
+| `story/<n>.lua` | The module: returns `{ script = <n>, sections = { [0x0051] = <function>, ... } }` |
+| `story/<n>_lines.yaml` | For each line that runs a command, its offset in the listing ([schema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/story_lines.schema.json)) |
+| `text/en/story_<n>.yaml` | The texts of `show_textbox` and `set_selection`, with the key `story_<n>.text.<offset>` |
 
-`<n>` es el id del script con tres cifras, el mismo número que usan los NPC de los mapas (`script_id`): `000` es
-`MAPHEAD.SCN`, que el juego carga como script 0, y `001`–`221` los de `DG.SCN` (`script/maphead.yaml` y
-`script/dg/<n>.yaml` en el listado). Los nombres de las funciones y de las claves están en
-[la API de historia](../modding/historia.md).
+`<n>` is the script id with three digits, the same number the maps' NPCs use (`script_id`): `000` is
+`MAPHEAD.SCN`, which the game loads as script 0, and `001`–`221` are those of `DG.SCN` (`script/maphead.yaml` and
+`script/dg/<n>.yaml` in the listing). The names of the functions and keys are in
+[the story API](../modding/story.md).
 
-La forma del módulo:
+The shape of the module:
 
-- Cada rutina (sección, subrutina, cola compartida) es una función de la tabla `routines`, nombrada por el offset de
-  su entrada (`routines.at_04c0`); las que empiezan en la misma orden son una sola.
-- Si la tabla de secciones repite un id, `sections` lleva solo la primera, que es la que encuentra `getScriptSection`;
-  las demás quedan como comentario. En el disco pasa en algunos scripts (el 4 y el 52, por ejemplo).
-- Cada orden es una llamada `story.<nombre>(operandos)` con los operandos del listado en su orden, sin relleno ni
-  etiquetas, y un comentario con sus nombres si son dos o más. `<nombre>` es el de la orden, salvo las que la API
-  renombra ([tabla](../modding/historia.md#nombres)). Una entidad es `PLAYER`, `PARTNER` o el id del NPC.
-- Una rutina devuelve `ENDED` si el script acabó (`end_section` y `end_script` lo acaban desde cualquier
-  profundidad) y nada en un `jump_return`. Un `jump_and_link` es `if routines.at_X() == ENDED then return ENDED end`;
-  un salto a código compartido, la llamada final `return routines.at_X()`; `jump_to_file`, `warp_to` y `teleport`,
-  `return story.<nombre>(...)`.
-- Un `IF` es el pliegue de sus entradas de izquierda a derecha con paréntesis explícitos
-  (`(story.trigger(3) and story.var(5) >= 2) or story.money() < 4294967295`). Cada constante va en el dominio en que
-  el original compara: sin signo de 32 bits, salvo la felicidad (stat 9), con signo de 16. Una entrada sin `and` ni
-  `or` sustituye el resultado anterior (`script_interp.c: scriptIfInstruction`, `result = cond`): el listado de
-  `story/128` en 0x0094 dice `trigger 8`, `trigger 9`, `and trigger 10` y el original solo mira 9 y 10, igual que el
-  Lua. El `if` lleva entonces un comentario con lo descartado
-  (`-- the original drops story.trigger(8): a test with no and/or replaces the result`). Pasa en `story/128` (0x0094,
-  0x0100, 0x0276, 0x05a4) y `story/129` (0x0086, 0x0216); parecen erratas del original (querían los tres
-  disparadores) y se quedan como en él.
-- Un `SWITCH` es una cadena `if`/`elseif` sobre `story.var(n)` en la que un valor de más va al último caso; un
-  `SET_SELECTION`, `local choice <const> = story.set_selection(clave, n)` con la cancelación (`choice == n`) en el
-  último `else`. Si la elección no tiene su marca de fin (`cancel_marker` en el listado; 23 de las 330 del juego), el
-  cancel del original sigue en el código que va detrás, el de la primera opción, y ese `else` empieza con
-  `if story.cancel_closes_choice() then return ENDED end` (`CancelGuard`): la opción «Cancelar cierra elecciones»
-  ([game](../modulos/apps/game.md#cancelar-cierra-elecciones)) acaba ahí el guion, y sin ella todo sigue como en el
-  original. El lector de Lua quita esa línea y deja la elección sin marca; una elección sin ella se lee con marca (los
-  módulos de antes de la versión 4 se juegan igual). Los bucles son `while true do` con `break`; una máquina de estados, un `while true do` que despacha
-  sobre una variable `stateN`.
-- Nunca hay saltos. La salida es la misma byte a byte para el mismo listado, venga del YAML o del desensamblado.
+- Each routine (section, subroutine, shared tail) is a function of the `routines` table, named by the offset of
+  its entry (`routines.at_04c0`); those that start at the same command are one.
+- If the section table repeats an id, `sections` carries only the first, which is the one `getScriptSection` finds;
+  the others are left as a comment. On the disc this happens in some scripts (4 and 52, for example).
+- Each command is a call `story.<name>(operands)` with the listing's operands in their order, without padding or
+  labels, and a comment with their names if there are two or more. `<name>` is the command's, except for those the API
+  renames ([table](../modding/story.md#names)). An entity is `PLAYER`, `PARTNER` or the NPC id.
+- A routine returns `ENDED` if the script ended (`end_section` and `end_script` end it from any
+  depth) and nothing on a `jump_return`. A `jump_and_link` is `if routines.at_X() == ENDED then return ENDED end`;
+  a jump to shared code, the tail call `return routines.at_X()`; `jump_to_file`, `warp_to` and `teleport`,
+  `return story.<name>(...)`.
+- An `IF` is the fold of its entries from left to right with explicit parentheses
+  (`(story.trigger(3) and story.var(5) >= 2) or story.money() < 4294967295`). Each constant goes in the domain in which
+  the original compares: unsigned 32-bit, except happiness (stat 9), which is signed 16-bit. An entry without `and` or
+  `or` replaces the previous result (`script_interp.c: scriptIfInstruction`, `result = cond`): the listing of
+  `story/128` at 0x0094 says `trigger 8`, `trigger 9`, `and trigger 10` and the original only looks at 9 and 10, just like the
+  Lua. The `if` then carries a comment with what was discarded
+  (`-- the original drops story.trigger(8): a test with no and/or replaces the result`). It happens in `story/128` (0x0094,
+  0x0100, 0x0276, 0x05a4) and `story/129` (0x0086, 0x0216); they look like typos in the original (they wanted all three
+  triggers) and are kept as in it.
+- A `SWITCH` is an `if`/`elseif` chain over `story.var(n)` in which an extra value goes to the last case; a
+  `SET_SELECTION`, `local choice <const> = story.set_selection(key, n)` with the cancellation (`choice == n`) in the
+  last `else`. If the choice does not have its end mark (`cancel_marker` in the listing; 23 of the game's 330), the
+  original's cancel continues into the code that follows, that of the first option, and that `else` starts with
+  `if story.cancel_closes_choice() then return ENDED end` (`CancelGuard`): the "Cancel closes choices" option
+  ([game](../modules/apps/game.md#cancel-closes-choices)) ends the script there, and without it everything goes on as in the
+  original. The Lua reader removes that line and leaves the choice without a mark; a choice without it is read with a mark (modules from
+  before version 4 play the same). Loops are `while true do` with `break`; a state machine, a `while true do` that dispatches
+  over a variable `stateN`.
+- There are never jumps. The output is the same byte for byte for the same listing, whether it comes from the YAML or from the disassembly.
 
-`dwx convert-script <listado> -o <carpeta>` convierte un listado suelto (el YAML que edita un mod) con el mismo
-código, y `dwx validate` compila todo el Lua de los paquetes. Los tests corren cada sección en Lua, con una API
-`story` falsa, contra un intérprete de referencia del listado, y comparan las llamadas y cómo acaba
-(`packages/formats/tests/lua_emitter_tests.cpp`, y sobre el disco `lua_emitter_disc_tests.cpp`). Los mismos tests comprueban
-que ningún nombre generado tiene una palabra prohibida (`ForbiddenNameWords`).
+`dwx convert-script <listing> -o <folder>` converts a loose listing (the YAML a mod edits) with the same
+code, and `dwx validate` compiles all the packages' Lua. The tests run each section in Lua, with a fake `story`
+API, against a reference interpreter of the listing, and compare the calls and how it ends
+(`packages/formats/tests/lua_emitter_tests.cpp`, and over the disc `lua_emitter_disc_tests.cpp`). The same tests check
+that no generated name has a forbidden word (`ForbiddenNameWords`).
 
-La prueba con listados aleatorios tiene dos tamaños. La de cada commit (`FastParity`: 120 listados, 4 mundos, unos
-5 s) corta antes los bucles: uno que llama menos de una vez cada ~25 pasos del listado se corta antes de 200 llamadas,
-y dos ejecuciones cortadas solo se comparan en las llamadas que hicieron las dos, así que no ve una diferencia
-posterior al corte más corto. La completa (`FullParity`: 300 listados, 8 mundos, límites con los que todo bucle con
-llamadas llega a 200 y las ejecuciones cortadas deben coincidir llamada a llamada) corre con `DWE_FULL_PARITY=1` y
-tarda minutos; la de paridad sobre el disco usa siempre esos límites.
+The test with random listings has two sizes. The per-commit one (`FastParity`: 120 listings, 4 worlds, about
+5 s) cuts loops earlier: one that calls less than once every ~25 steps of the listing is cut before 200 calls,
+and two cut executions are only compared on the calls that both made, so it does not see a difference
+after the shorter cut. The full one (`FullParity`: 300 listings, 8 worlds, limits with which every loop with
+calls reaches 200 and cut executions must match call by call) runs with `DWE_FULL_PARITY=1` and
+takes minutes; the parity test over the disc always uses those limits.
 
-## Estadísticas de la partida nueva
+## New game stats
 
-Ningún código C pone los stats con los que empieza el partner: los pone el script 193 de `DG.SCN` tras la
-introducción. Guarda el tipo del partner en una variable (`store_digimon_type`), pregunta con un `if` si es un tipo
-concreto y, en cada rama, una serie de `set_stat` pone los ocho valores (ataque, defensa, velocidad, inteligencia, HP y
-MP máximos, HP y MP actuales); la primera rama acaba con un `jump_to` que salta la otra. `findNewGameStats`
-(`formats/script/new_game_stats.hpp`) busca ese bloque en el listado y `dwx` lo escribe en `data/new_game_stats`
-([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/new_game_stats.schema.json)): `script`, `at` (el offset del `if`), `partners` (el
-Digimon por el que pregunta, por su id, y sus stats) y `others` (los de cualquier otro partner). Si el script no tiene el
-bloque, se anota y no se escribe el documento. La sesión lo lee al empezar una partida (`packages/session`).
+No C code sets the stats the partner starts with: script 193 of `DG.SCN` sets them after the
+introduction. It stores the partner's type in a variable (`store_digimon_type`), asks with an `if` whether it is a specific type
+and, in each branch, a series of `set_stat` sets the eight values (attack, defense, speed, brains, max HP and
+MP, current HP and MP); the first branch ends with a `jump_to` that skips the other. `findNewGameStats`
+(`formats/script/new_game_stats.hpp`) finds that block in the listing and `dwx` writes it to `data/new_game_stats`
+([schema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/new_game_stats.schema.json)): `script`, `at` (the offset of the `if`), `partners` (the
+Digimon it asks about, by its id, and its stats) and `others` (those of any other partner). If the script does not have the
+block, it is noted and the document is not written. The session reads it when starting a game (`packages/session`).
 
-## Cobertura
+## Coverage
 
-Un fichero queda `extracted` si todos sus scripts decodifican hasta el final del código sin `unknown`; el relleno de
-sector, los restos de la tabla y la copia del script 0 son notas. Si no, queda `partial` con cada `unknown` precedido
-de su script.
+A file is left `extracted` if all its scripts decode to the end of the code without `unknown`; sector
+padding, table leftovers and the copy of script 0 are notes. Otherwise it is left `partial` with each `unknown` preceded
+by its script.

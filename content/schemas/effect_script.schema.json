@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Battle effect script",
-  "description": "effect/<move>/script.yaml: the scripts and the data area of one battle effect slot, written by dwx extract (packages/formats/src/effect/efe_yaml.cpp). Offsets count from the slot's base. Operands are the values the scripts push as they are stored: numbers, variables (base+0x0040, instance+0x0008), addresses (&base+0x0040) or labels; what each one means is in docs/formats/efectos.md and is not checked here.",
+  "description": "effect/<move>/script.yaml: the scripts and the data area of one battle effect slot, written by dwx extract (packages/formats/src/effect/efe_yaml.cpp). Offsets count from the slot's base. Operands are the values the scripts push as they are stored: numbers, variables (base+0x0040, instance+0x0008), addresses (&base+0x0040) or labels; what each one means is in docs/formats/effects.md and is not checked here.",
   "type": "object",
   "required": ["start_script", "init_script", "data"],
   "additionalProperties": false,
@@ -61,7 +61,7 @@
       }
     },
     "item": {
-      "description": "One element of the data area. Which keys it has depends on kind (docs/formats/efectos.md).",
+      "description": "One element of the data area. Which keys it has depends on kind (docs/formats/effects.md).",
       "type": "object",
       "required": ["at", "kind"],
       "additionalProperties": false,
@@ -77,7 +77,7 @@
         "values": { "$ref": "#/$defs/values" },
         "bytes": { "$ref": "#/$defs/bytes" },
         "tail": { "description": "Bytes after the last whole entry of a table.", "$ref": "#/$defs/bytes" },
-        "reason": { "description": "unused: why nothing reaches these bytes (docs/formats/efectos.md).", "type": "string", "minLength": 1 },
+        "reason": { "description": "unused: why nothing reaches these bytes (docs/formats/effects.md).", "type": "string", "minLength": 1 },
         "row_starts": { "description": "clut_row with a computed colour index: how many colours the row can start at; colors lists every colour those rows span.", "type": "integer", "minimum": 1 },
         "colors": { "type": "array", "items": { "type": ["array", "string"], "items": { "$ref": "#/$defs/value" }, "pattern": "^0x[0-9a-f]{4}$" } },
         "tiles": { "type": "array", "items": { "type": "array", "items": { "type": "integer", "minimum": 0 } } },

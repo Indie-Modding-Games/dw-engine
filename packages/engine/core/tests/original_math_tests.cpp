@@ -1,5 +1,5 @@
 // The original's table trigonometry (math.c): _sin and _cos read a quarter turn of sines rounded
-// down, measured in the original (SIN_LOOKUP_TABLE, all 129 entries; docs/modulos/engine/core.md).
+// down, measured in the original (SIN_LOOKUP_TABLE, all 129 entries; docs/modules/engine/core.md).
 
 #include <dwe/core/original_math.hpp>
 

@@ -36,11 +36,12 @@ struct BattleMusicFacts {
   std::optional<MusicSong> song;
 };
 
-// The original's background music on the game's audio (docs/architecture/audio.md, "Música
-// (tramo 3)"): the story's set_bgm and stop_bgm pick a font, the music mode and the hour its song,
-// and music/<font>/ holds the SoundFont, the songs and font_meta.yaml. data/music.yaml gives the
-// fixed songs of the music modes and the battle's songs. A font is loaded when its song first plays
-// and kept until another one plays. A font or a data/music.yaml that does not load warns once.
+// The original's background music on the game's audio (docs/architecture/audio.md, "Music
+// (stretch 3)"): the story's set_bgm and stop_bgm pick a font, the music mode and the hour its
+// song, and music/<font>/ holds the SoundFont, the songs and font_meta.yaml. data/music.yaml gives
+// the fixed songs of the music modes and the battle's songs. A font is loaded when its song first
+// plays and kept until another one plays. A font or a data/music.yaml that does not load warns
+// once.
 class SessionMusic final : public game::story::MusicPort, public JukeboxMusic {
 public:
   // The audio and the file system must outlive the session.

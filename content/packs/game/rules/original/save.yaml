@@ -1,32 +1,32 @@
-# El guardado (packages/game/save, docs/architecture/save.md). El original solo guardaba cuando el jugador lo pedía: al dormir
-# (partner.c: partnerTickSleep), en la máquina de guardado (main_menu.c: openSaveMachine) y al acabar el juego
-# (main_menu.c: gameClearSave). Todo el autoguardado es nuevo: cada motivo a false es el original.
+# Saving (packages/game/save, docs/architecture/save.md). The original only saved when the player asked: when sleeping
+# (partner.c: partnerTickSleep), at the save machine (main_menu.c: openSaveMachine) and when the game is cleared
+# (main_menu.c: gameClearSave). All the autosaving is new: each reason set to false is the original.
 autosave:
-  # Desviación aprobada (2026-10-20): autoguardado en cada cambio de mapa, para no perder progreso.
+  # Approved deviation (2026-10-20): autosave on every map change, so no progress is lost.
   on_map_change: true
-  # Desviación aprobada (2026-10-20): autoguardado al terminar cada batalla, ganada o perdida.
+  # Approved deviation (2026-10-20): autosave at the end of every battle, won or lost.
   on_battle_end: true
-  # Desviación aprobada (2026-10-20): autoguardado cuando el partner se duerme.
+  # Approved deviation (2026-10-20): autosave when the partner falls asleep.
   on_partner_sleep: true
-  # Desviación aprobada (2026-10-20): autoguardado en cada día nuevo del reloj del juego.
+  # Approved deviation (2026-10-20): autosave on every new day of the game clock.
   on_new_day: true
-  # Desviación aprobada (2026-10-20): autoguardado tras cada evolución.
+  # Approved deviation (2026-10-20): autosave after every evolution.
   on_evolution: true
-  # Desviación aprobada (2026-10-20): autoguardado tras el resultado de un torneo o de la arena.
+  # Approved deviation (2026-10-20): autosave after the result of a tournament or the arena.
   on_tournament_result: true
-  # Desviación aprobada (2026-10-20): autoguardado cuando un recluta se une a la ciudad.
+  # Approved deviation (2026-10-20): autosave when a recruit joins the city.
   on_recruit_join: true
-  # Desviación aprobada (2026-10-20): autoguardado al comprar o usar un objeto clave.
+  # Approved deviation (2026-10-20): autosave when buying or using a key item.
   on_key_item: true
-  # Desviación aprobada (2026-10-20): autoguardado antes de entrar en una zona peligrosa conocida (los datos de qué
-  # mapas lo son llegan con el campo).
+  # Approved deviation (2026-10-20): autosave before entering a known dangerous zone (the data on which
+  # maps are dangerous arrives with the field).
   on_dangerous_area: true
-  # Desviación aprobada (2026-10-20): autoguardado cuando avanza la historia (un disparador de historia).
+  # Approved deviation (2026-10-20): autosave when the story advances (a story trigger).
   on_story_progress: true
-  # Desviación aprobada (2026-10-20): autoguardado cuando el partner renace de su huevo tras morir.
+  # Approved deviation (2026-10-20): autosave when the partner is reborn from its egg after dying.
   on_partner_reborn: true
-  # Desviación aprobada (2026-10-20): las peticiones a menos de estos segundos reales de la primera dan un solo
-  # autoguardado (dormir y el día nuevo, varios motivos en el mismo fotograma). Segundos reales y no del reloj del
-  # juego: al dormir el reloj salta horas de golpe, y en los menús y las batallas se para. Mínimo 1: las ranuras de
-  # autoguardado se turnan por su hora en segundos enteros.
+  # Approved deviation (2026-10-20): requests within this many real seconds of the first give a single
+  # autosave (sleeping and the new day, several reasons in the same frame). Real seconds and not game
+  # clock: when sleeping the clock jumps hours at once, and in menus and battles it stops. Minimum 1: the autosave
+  # slots take turns by their time in whole seconds.
   coalesce_seconds: 2

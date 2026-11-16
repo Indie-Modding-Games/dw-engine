@@ -7,7 +7,7 @@
 
 #include "partner_fixture.hpp"
 
-// docs/reference/care.md, "Sueño": one test per rule.
+// docs/reference/care.md, "Sleep": one test per rule.
 namespace dwe::game::partner {
 
 namespace {

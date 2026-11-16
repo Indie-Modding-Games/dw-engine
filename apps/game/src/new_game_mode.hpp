@@ -15,7 +15,7 @@ namespace dwe::app {
 // The most modes the mode list (ui/new_game_mode) shows; the catalog's first ones, in its order.
 inline constexpr std::size_t ShownModes = 6;
 
-// The game modes a new game chooses from (docs/modulos/game/modes.md): the title screen asks only
+// The game modes a new game chooses from (docs/modules/game/modes.md): the title screen asks only
 // when the packs have more than one, so the shipped game, with only the original's story, never
 // shows the list.
 class NewGameModes {

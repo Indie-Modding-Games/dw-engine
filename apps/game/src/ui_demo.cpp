@@ -461,7 +461,8 @@ struct DemoBag {
   }
 };
 
-// Estado aislado del editor; usa las mismas operaciones que BattleAdapter, sin sesión ni saves.
+// The editor's isolated state; it uses the same operations as BattleAdapter, without a session or
+// saves.
 struct DemoTechniques {
   assets::DigimonRow species;
   game::battle::MoveCatalog catalog;
@@ -736,7 +737,7 @@ int runUiDemo(const UiDemoOptions& options) {
   (*ui)->setSetting("hud.clock.year", 1.0);
   (*ui)->setSetting("hud.clock.day", 1.0);
   (*ui)->setSetting("pause_menu.fishing", options.fishing ? 2.0 : 0.0);
-  // Valores ficticios para revisar Status sin cargar ni modificar una partida.
+  // Made-up values to review Status without loading or changing a game.
   screens::PartnerStatusView status;
   status.nameKey = "partner_menu.species";
   status.nickname = "CODEX";

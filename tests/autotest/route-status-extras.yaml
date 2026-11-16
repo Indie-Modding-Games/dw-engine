@@ -1,10 +1,10 @@
-# The status page's extras (an engine improvement, docs/modulos/apps/screens.md, «Extras de la ficha»): the partner's
+# The status page's extras (an engine improvement, docs/modules/apps/screens.md, «Sheet extras»): the partner's
 # tiredness bar, the care bars' numbers, its care mistakes and battles, its waking hours, its lifetime and its
 # evolution counter, which the original keeps hidden. From a new game with the keyboard: two training
 # sessions (tiredness) and the clock fast until a meal goes missed (a care mistake), then the partner's status page
 # at 1280x720 and 1920x1080 with the option on, again with the widest values (HP and MP 9999 / 9999), and again with
 # it turned off in the pause menu, as the page was before. Every capture checks that each text fits (text_fit). Run it once per language and per skin
-# (--ui-skin original, modern); how to run it: docs/guides/prueba-vertical.md.
+# (--ui-skin original, modern); how to run it: docs/guides/vertical-slice.md.
 name: status-extras
 device: keyboard
 timeout: 400

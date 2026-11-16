@@ -26,14 +26,14 @@ scripts/dev.sh run --content /path/to/extracted-content
 ```
 
 [Setup](https://indie-modding-games.github.io/dw-engine/getting-started/setup) and
-[running the game](https://indie-modding-games.github.io/dw-engine/getting-started/jugar) explain the environment and
+[running the game](https://indie-modding-games.github.io/dw-engine/getting-started/play) explain the environment and
 how to extract your disc.
 
 ## Documentation
 
 The documentation (in Spanish) is at <https://indie-modding-games.github.io/dw-engine/>: architecture, modules,
 formats, guides and the [roadmap](https://indie-modding-games.github.io/dw-engine/roadmap). To contribute, read
-[how to contribute](https://indie-modding-games.github.io/dw-engine/contribuir).
+[how to contribute](https://indie-modding-games.github.io/dw-engine/contributing).
 
 ## License
 

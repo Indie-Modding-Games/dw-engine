@@ -762,7 +762,7 @@ check_full_tip() {
   step tidy --forbid 'warning:|error:' env DWE_NICE=10 "$self" tidy --warnings-as-errors='*' \
     || status=1
   wait "$test_pid" || status=1
-  # The routes on a cooked pack run on its output (docs/guides/prueba-vertical.md), cooked from
+  # The routes on a cooked pack run on its output (docs/guides/vertical-slice.md), cooked from
   # scratch so nothing of an earlier cook can hide a regression.
   if [[ -n "${DWE_CONTENT:-}" ]] && builds_for_linux "$preset"; then
     rm -rf "$gate_cooked_dir"

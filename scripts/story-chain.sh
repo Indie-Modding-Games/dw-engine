@@ -3,7 +3,7 @@
 # starting from the save the one before it wrote in slot_01 (the first one starts at the title
 # screen with a new game). It stops at the first chunk that fails and prints one PASS/FAIL line per
 # chunk. A failed chunk is played once more before it counts as failed (the routes are timed and
-# flake on a loaded machine). docs/guides/prueba-vertical.md, "La cadena completa".
+# flake on a loaded machine). docs/guides/vertical-slice.md, "La cadena completa".
 #
 # usage: scripts/story-chain.sh --content <dir> --out <dir> [--from NN] [--to NN] [-- <more game
 # options>]

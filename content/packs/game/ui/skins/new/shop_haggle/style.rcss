@@ -1,5 +1,5 @@
 /* The shop job's counter in the Pixel art look (structure: ../../../shop_haggle/structure.rcss; the rules panel shares
-   this sheet for its panel; docs/architecture/ui.md, «El aspecto Pixel art»). The window with its gold brackets
+   this sheet for its panel; docs/architecture/ui.md, «The Pixel art skin (id `new`)»). The window with its gold brackets
    (nb-box), the gold title over a blue line, the customer and the item in thin boxes (nb-thin), patience as hearts,
    the table in Pixel Body with light blue headings in Pixel Small, the focused row in the gold line with the gold ▶
    outside it (as every list of the look), the pointer leaving the rows as they are, and the chance as a meter from red

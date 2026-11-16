@@ -498,7 +498,7 @@ core::Result<MapImages> loadMapImages(const VirtualFileSystem& vfs, const MapDoc
       return core::fail(
           std::format("{}: its pixels differ from the first background's", background.id.str()));
     } else {
-      // The variants are the same tiles with another palette (docs/formats/mapas.md:
+      // The variants are the same tiles with another palette (docs/formats/maps.md:
       // composeBackgrounds).
       images.backgroundPalettes.push_back(paletteFromPng(std::move(image->palette)));
     }

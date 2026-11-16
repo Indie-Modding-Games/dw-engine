@@ -1,4 +1,4 @@
-// The music's and the effects' volumes (docs/modulos/apps/game.md, «Volumen»): the options page's
+// The music's and the effects' volumes (docs/modules/apps/game.md, «Volume»): the options page's
 // rows reach the audio's Music and Effects controls and the user's settings.
 
 #include <dwe/audio/audio.hpp>

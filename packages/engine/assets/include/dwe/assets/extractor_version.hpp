@@ -6,7 +6,7 @@ namespace dwe::assets {
 // entries with it, and the game reads the player's disc again when its installed content was
 // written by another version (content::installIsOutdated). Bump it whenever the base pack written
 // from the same disc changes: dwx's fingerprint test fails until it is bumped
-// (docs/modulos/apps/dwx.md).
+// (docs/modules/apps/dwx.md).
 inline constexpr int ExtractorVersion = 15;
 
 } // namespace dwe::assets

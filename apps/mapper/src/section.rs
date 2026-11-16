@@ -87,7 +87,7 @@ pub fn show(app: &mut MapperApp, ctx: &egui::Context) {
     let mut window_open = true;
     let title = format!(
         "{} · {}",
-        text::SECTION_EDITOR,
+        text::section_editor(),
         text::section_name(open.script, open.section)
     );
     let connected = app.live.is_connected();
@@ -120,8 +120,8 @@ pub fn show(app: &mut MapperApp, ctx: &egui::Context) {
         header(&context, ui, connected, &mut actions, &mut test);
         ui.horizontal(|ui| {
             for (tab, label) in [
-                (Tab::Structure, text::TAB_STRUCTURE),
-                (Tab::Lua, text::TAB_LUA),
+                (Tab::Structure, text::tab_structure()),
+                (Tab::Lua, text::tab_lua()),
             ] {
                 if ui.selectable_label(state.tab == tab, label).clicked() {
                     state.tab = tab;
@@ -173,7 +173,7 @@ fn header(
         .map(|event| text::event_kind(event.kind))
         .collect();
     if mapper.current_target().is_none() {
-        ui.colored_label(egui::Color32::YELLOW, text::SECTION_NO_TARGET);
+        ui.colored_label(egui::Color32::YELLOW, text::section_no_target());
     }
     ui.horizontal_wrapped(|ui| {
         ui.strong(text::origin(origin.as_deref()));
@@ -183,31 +183,31 @@ fn header(
     });
     ui.horizontal_wrapped(|ui| {
         if let Some(routine) = &context.open.routine {
-            ui.monospace(format!("{} {routine}", text::ROUTINE));
-            if ui.button(text::BACK_TO_SECTION).clicked() {
+            ui.monospace(format!("{} {routine}", text::routine()));
+            if ui.button(text::back_to_section()).clicked() {
                 actions.push(Action::OpenRoutine(None));
             }
         }
         if origin.is_some()
             && ui
-                .button(text::REVERT_SECTION)
-                .on_hover_text(text::REVERT_SECTION_HINT)
+                .button(text::revert_section())
+                .on_hover_text(text::revert_section_hint())
                 .clicked()
         {
             actions.push(Action::EditStory(StoryEdit::Revert));
         }
         let shown = mapper.timeline.shown;
         if ui
-            .selectable_label(shown, text::TIMELINE)
-            .on_hover_text(text::TIMELINE_HINT)
+            .selectable_label(shown, text::timeline())
+            .on_hover_text(text::timeline_hint())
             .clicked()
         {
             actions.push(Action::ShowTimeline(!shown));
         }
         if let Some(event) = events.first()
             && ui
-                .add_enabled(connected, egui::Button::new(text::TEST_TITLE))
-                .on_disabled_hover_text(text::TEST_EVENT_OFFLINE)
+                .add_enabled(connected, egui::Button::new(text::test_title()))
+                .on_disabled_hover_text(text::test_event_offline())
                 .clicked()
         {
             *test = Some((*event).clone());
@@ -235,7 +235,7 @@ fn stmt_line(context: &Context<'_>, stmt: &Stmt) -> String {
     if let StmtKind::Call(call) = &stmt.kind
         && let Some(("show_textbox", [Expr::Str(key)])) = call.story_call_name()
     {
-        let label = commands::command("show_textbox").map_or("show_textbox", |c| c.label);
+        let label = commands::command("show_textbox").map_or("show_textbox", |c| c.label());
         return format!("{label}: {}", quoted(context.mapper.text_of(key), key));
     }
     context.names.stmt(stmt)
@@ -290,7 +290,7 @@ fn collect(
         out.push(Row {
             path: path_of(0),
             depth,
-            text: text::EMPTY_BLOCK.to_owned(),
+            text: text::empty_block().to_owned(),
             kind: RowKind::Empty,
         });
         return;
@@ -316,7 +316,7 @@ fn collect(
                             depth,
                             text: format!(
                                 "{} {}",
-                                text::ARM_ELSEIF,
+                                text::arm_elseif(),
                                 context.names.condition(condition)
                             ),
                             kind: RowKind::Arm,
@@ -328,7 +328,7 @@ fn collect(
                     out.push(Row {
                         path: path.clone(),
                         depth,
-                        text: text::ARM_ELSE.to_owned(),
+                        text: text::arm_else().to_owned(),
                         kind: RowKind::Arm,
                     });
                     collect(context, body, Some((&path, arms.len())), depth + 1, out);
@@ -373,14 +373,14 @@ fn structure(
     let empty = Block::new();
     let code = context.mapper.open_code();
     if code.is_none() {
-        ui.colored_label(crate::events::colors::MISSING, text::NO_SECTION_CODE);
+        ui.colored_label(crate::events::colors::MISSING, text::no_section_code());
     }
     let block = code.unwrap_or(&empty);
     let selected = context.open.selected.as_ref();
     let stmt = selected.and_then(|path| edit::stmt_at(block, path));
     ui.horizontal_wrapped(|ui| {
         let has = stmt.is_some();
-        for (label, later) in [(text::UP, false), (text::DOWN, true)] {
+        for (label, later) in [(text::up(), false), (text::down(), true)] {
             if ui.add_enabled(has, egui::Button::new(label)).clicked()
                 && let Some(at) = selected
             {
@@ -391,7 +391,7 @@ fn structure(
             }
         }
         if ui
-            .add_enabled(has, egui::Button::new(text::DELETE_STMT))
+            .add_enabled(has, egui::Button::new(text::delete_stmt()))
             .clicked()
             && let Some(at) = selected
         {
@@ -399,7 +399,7 @@ fn structure(
         }
         if let Some(routine) = stmt.and_then(routine_of)
             && ui
-                .button(format!("{} {routine}", text::OPEN_ROUTINE))
+                .button(format!("{} {routine}", text::open_routine()))
                 .clicked()
         {
             actions.push(Action::OpenRoutine(Some(routine.to_owned())));
@@ -432,7 +432,7 @@ fn structure(
     match (selected, stmt) {
         (Some(path), Some(stmt)) => fields(context, state, ui, path, stmt, actions),
         _ => {
-            ui.weak(text::SELECT_A_LINE);
+            ui.weak(text::select_a_line());
         }
     }
     ui.separator();
@@ -479,7 +479,7 @@ fn condition_field(
     let response = ui.add(
         egui::TextEdit::singleline(&mut typed)
             .code_editor()
-            .hint_text(text::EXPR_HINT)
+            .hint_text(text::expr_hint())
             .desired_width(f32::INFINITY),
     );
     if response.changed() {
@@ -534,10 +534,10 @@ fn quick_condition(
         None => 0,
     };
     let kind_label = |choice: Option<SimpleCondition>| match choice {
-        Some(SimpleCondition::Trigger { on: true, .. }) => text::QUICK_TRIGGER_ON,
-        Some(SimpleCondition::Trigger { on: false, .. }) => text::QUICK_TRIGGER_OFF,
-        Some(SimpleCondition::Var { .. }) => text::QUICK_VAR,
-        None => text::QUICK_OTHER,
+        Some(SimpleCondition::Trigger { on: true, .. }) => text::quick_trigger_on(),
+        Some(SimpleCondition::Trigger { on: false, .. }) => text::quick_trigger_off(),
+        Some(SimpleCondition::Var { .. }) => text::quick_var(),
+        None => text::quick_other(),
     };
     ui.horizontal_wrapped(|ui| {
         egui::ComboBox::from_id_salt(("quick_kind", arm))
@@ -611,17 +611,17 @@ fn operands(
 ) {
     let mut edited = stmt.clone();
     let Some((name, arguments)) = edit::call_of_mut(&mut edited) else {
-        ui.weak(text::NOTHING_TO_EDIT);
+        ui.weak(text::nothing_to_edit());
         return;
     };
     let command = commands::command(name);
     let title = command.map_or_else(
         || name.to_owned(),
-        |command| format!("{} ({})", command.label, command.name),
+        |command| format!("{} ({})", command.label(), command.name),
     );
-    ui.strong(format!("{} · {title}", text::OPERANDS));
+    ui.strong(format!("{} · {title}", text::operands()));
     if arguments.is_empty() {
-        ui.weak(text::NOTHING_TO_EDIT);
+        ui.weak(text::nothing_to_edit());
         return;
     }
     let mut changed = false;
@@ -688,13 +688,13 @@ impl OperandField<'_, '_> {
     fn entity(&mut self, ui: &mut egui::Ui, expr: &mut Expr) -> bool {
         let mut changed = false;
         let choices = [
-            (text::ENTITY_PLAYER.to_owned(), Expr::name("PLAYER")),
-            (text::ENTITY_PARTNER.to_owned(), Expr::name("PARTNER")),
+            (text::entity_player().to_owned(), Expr::name("PLAYER")),
+            (text::entity_partner().to_owned(), Expr::name("PARTNER")),
         ]
         .into_iter()
         .chain(
             (0..mapper_core::story::MOST_NPCS as i64)
-                .map(|slot| (format!("{} {slot}", text::ENTITY_NPC), Expr::Number(slot))),
+                .map(|slot| (format!("{} {slot}", text::entity_npc()), Expr::Number(slot))),
         );
         egui::ComboBox::from_id_salt(("entity", self.index))
             .selected_text(self.context.names.entity(expr))
@@ -746,7 +746,7 @@ impl OperandField<'_, '_> {
                         ui.weak(names.var(value));
                     }
                     OperandKind::Section if value == dwe_story::events::NO_SECTION => {
-                        ui.weak(text::SECTION_NONE);
+                        ui.weak(text::section_none());
                     }
                     _ => {}
                 }
@@ -768,7 +768,7 @@ impl OperandField<'_, '_> {
             .show_ui(ui, |ui| {
                 ui.add(
                     egui::TextEdit::singleline(&mut self.state.map_filter)
-                        .hint_text(text::FILTER_HINT),
+                        .hint_text(text::filter_hint()),
                 );
                 let filter = self.state.map_filter.trim().to_lowercase();
                 let maps = table
@@ -803,7 +803,7 @@ impl OperandField<'_, '_> {
             let response = ui.add(
                 egui::TextEdit::singleline(&mut typed)
                     .code_editor()
-                    .hint_text(text::TEXT_KEY)
+                    .hint_text(text::text_key())
                     .desired_width(f32::INFINITY),
             );
             if response.changed() {
@@ -821,14 +821,14 @@ impl OperandField<'_, '_> {
                 Some((known, line)) if *known == key => line.clone(),
                 _ => current.clone(),
             };
-            ui.label(text::TEXT_LINE);
+            ui.label(text::text_line());
             let response = ui
                 .add(
                     egui::TextEdit::multiline(&mut line)
                         .desired_rows(3)
                         .desired_width(f32::INFINITY),
                 )
-                .on_hover_text(text::TEXT_LINE_HINT);
+                .on_hover_text(text::text_line_hint());
             if response.changed() {
                 self.state.line = Some((key.clone(), line.clone()));
             }
@@ -842,8 +842,8 @@ impl OperandField<'_, '_> {
                 self.state.line = None;
             }
             if ui
-                .button(text::NEW_LINE)
-                .on_hover_text(text::NEW_LINE_HINT)
+                .button(text::new_line())
+                .on_hover_text(text::new_line_hint())
                 .clicked()
             {
                 let fresh = mapper.free_text_key(self.context.open.script);
@@ -866,7 +866,7 @@ impl OperandField<'_, '_> {
             let response = ui.add(
                 egui::TextEdit::singleline(&mut typed)
                     .code_editor()
-                    .hint_text(text::EXPR_HINT),
+                    .hint_text(text::expr_hint()),
             );
             if response.changed() {
                 self.state.typing = Some((self.path.clone(), field, typed.clone()));
@@ -898,7 +898,7 @@ fn palette(
     stmt: Option<&Stmt>,
     actions: &mut Vec<Action>,
 ) {
-    egui::CollapsingHeader::new(text::PALETTE)
+    egui::CollapsingHeader::new(text::palette())
         .id_salt("palette")
         .default_open(true)
         .show(ui, |ui| {
@@ -906,15 +906,15 @@ fn palette(
             ui.horizontal_wrapped(|ui| {
                 ui.add(
                     egui::TextEdit::singleline(&mut state.palette_filter)
-                        .hint_text(text::PALETTE_FILTER_HINT)
+                        .hint_text(text::palette_filter_hint())
                         .desired_width(160.0),
                 );
                 ui.add_enabled(
                     has_block,
-                    egui::Checkbox::new(&mut state.inside, text::INSERT_INSIDE),
+                    egui::Checkbox::new(&mut state.inside, text::insert_inside()),
                 );
             });
-            ui.weak(text::INSERT_HINT);
+            ui.weak(text::insert_hint());
             let at = insertion_point(block, selected, state.inside && has_block);
             let mut insert = |stmt: Stmt| {
                 actions.push(Action::EditStory(StoryEdit::Insert {
@@ -928,8 +928,8 @@ fn palette(
                 .max_height(180.0)
                 .show(ui, |ui| {
                     for (title, flow) in [
-                        (text::PALETTE_PLAIN, Flow::Plain),
-                        (text::PALETTE_ENDS, Flow::Ends),
+                        (text::palette_plain(), Flow::Plain),
+                        (text::palette_ends(), Flow::Ends),
                     ] {
                         ui.label(egui::RichText::new(title).strong());
                         ui.horizontal_wrapped(|ui| {
@@ -937,12 +937,12 @@ fn palette(
                                 command.palette
                                     && command.flow == flow
                                     && (filter.is_empty()
-                                        || command.label.to_lowercase().contains(&filter)
+                                        || command.label().to_lowercase().contains(&filter)
                                         || command.name.contains(&filter))
                             });
                             for command in commands {
                                 if ui
-                                    .button(command.label)
+                                    .button(command.label())
                                     .on_hover_text(command.name)
                                     .clicked()
                                 {
@@ -951,13 +951,13 @@ fn palette(
                             }
                         });
                     }
-                    ui.label(egui::RichText::new(text::PALETTE_BLOCKS).strong());
+                    ui.label(egui::RichText::new(text::palette_blocks()).strong());
                     ui.horizontal_wrapped(|ui| {
-                        if ui.button(text::NEW_IF).clicked() {
+                        if ui.button(text::new_if()).clicked() {
                             let condition = Expr::story_call("trigger", vec![Expr::Number(0)]);
                             insert(edit::new_if(condition));
                         }
-                        if ui.button(text::NEW_END).clicked() {
+                        if ui.button(text::new_end()).clicked() {
                             insert(edit::end_script());
                         }
                     });
@@ -980,14 +980,14 @@ fn lua(context: &Context<'_>, state: &mut SectionUi, ui: &mut egui::Ui, actions:
     ui.horizontal_wrapped(|ui| {
         let ready = parsed.is_ok() && state.lua != state.lua_base;
         if ui
-            .add_enabled(ready, egui::Button::new(text::APPLY))
-            .on_hover_text(text::LUA_APPLY_HINT)
+            .add_enabled(ready, egui::Button::new(text::apply()))
+            .on_hover_text(text::lua_apply_hint())
             .clicked()
         {
             actions.push(Action::EditStory(StoryEdit::SetCode(state.lua.clone())));
         }
         match &parsed {
-            Ok(_) => ui.colored_label(egui::Color32::LIGHT_GREEN, text::LUA_OK),
+            Ok(_) => ui.colored_label(egui::Color32::LIGHT_GREEN, text::lua_ok()),
             Err(error) => ui.colored_label(egui::Color32::LIGHT_RED, text::lua_error(error)),
         };
     });

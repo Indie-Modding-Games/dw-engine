@@ -2,8 +2,12 @@ id: example_mod
 version: 1.0.0
 layer: mods
 api: "1.4"
-name: "Mod de ejemplo"
-description: "Paquete sintético de los tests (docs/modulos/tests/mods.md): añade un Digimon y un mapa por ID y sustituye el punto de partida del campo, sin datos del juego."
+name:
+  en: "Example mod"
+  es: "Mod de ejemplo"
+description:
+  en: "Synthetic pack of the tests (docs/modules/tests/mods.md): adds a Digimon and a map by ID and replaces the field's starting point, without game data."
+  es: "Paquete sintético de los tests (docs/modules/tests/mods.md): añade un Digimon y un mapa por ID y sustituye el punto de partida del campo, sin datos del juego."
 dependencies:
   - id: base
     min_version: 0.1.0

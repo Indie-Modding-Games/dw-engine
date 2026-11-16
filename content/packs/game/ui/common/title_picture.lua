@@ -1,5 +1,5 @@
--- The «widescreen pictures» option (the widescreen_pictures setting; docs/modulos/apps/game.md,
--- «Imágenes a pantalla ancha»): in the original look, the title's pictures fill the window instead
+-- The «widescreen pictures» option (the widescreen_pictures setting; docs/modules/apps/game.md,
+-- «Widescreen pictures»): in the original look, the title's pictures fill the window instead
 -- of a 4:3 frame on black. A picture is scaled as one until it covers the window's width, and the
 -- rows it then has too many are cut: TITLE2's from the top (only grid there, its logo is at the
 -- bottom), TITLE256's from the bottom (black under its logo). It is never scaled past showing

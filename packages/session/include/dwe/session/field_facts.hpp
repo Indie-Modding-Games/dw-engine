@@ -8,7 +8,7 @@ class GameSession;
 class InventoryAdapter;
 class StoryAdapter;
 
-// What the field's script warps read of the game (docs/architecture/warps-de-script.md), live: the
+// What the field's script warps read of the game (docs/architecture/script-warps.md), live: the
 // story's triggers, the bag's item counts and the money (none without an inventory), and the
 // partner's stats and conditions while a game is played. The session and the adapters must outlive
 // the field.

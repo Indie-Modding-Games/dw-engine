@@ -1,105 +1,105 @@
-# Reglas del campo: movimiento del jugador y seguimiento del partner (docs/reference/campo.md).
-# Distancias en unidades del mundo (100 = una celda de colisión), velocidades por segundo, giros en radianes por
-# segundo. Los valores por defecto son los del original, medidos en el decomp a 20 imágenes por segundo.
+# Field rules: player movement and partner following (docs/reference/field.md).
+# Distances in world units (100 = one collision cell), speeds per second, turns in radians per
+# second. The defaults are those of the original, measured in the decomp at 20 frames per second.
 player:
   model: digimon/boys/model
   # DIGIMON_DATA[0].radius.
   radius: 100
-  # Raíz de las animaciones 2 (andar, con el botón) y 3 (correr, sin él): 20 y 50 unidades por imagen
+  # Root of animations 2 (walk, with the button) and 3 (run, without it): 20 and 50 units per frame
   # (tamer.c: tamerTickWalkingState, anim.c: applyRootMomentum).
   walk_speed: 400
   run_speed: 1000
-  # tamer.c: setTamerDirection: gira de golpe.
+  # tamer.c: setTamerDirection: turns instantly.
   turn_speed: 0
 partner:
   model: digimon/agum/model
   radius: 120
-  # Media de la raíz de las animaciones 2 (andar) y 4 (correr) del partner inicial: 22,6 y 43,5 por imagen.
+  # Average of the root of animations 2 (walk) and 4 (run) of the starting partner: 22.6 and 43.5 per frame.
   walk_speed: 452
   run_speed: 870
-  # map.c: partnerTickCollision le hace mirar de golpe a su destino (entityLookAtTile, entityLookAtLocation).
+  # map.c: partnerTickCollision makes it face its destination instantly (entityLookAtTile, entityLookAtLocation).
   turn_speed: 0
-  # En radios del partner (partner.c: getPartnerTamerCloseness): más lejos que 3,5 corre, entre 2,5 y 3,5 anda y
-  # más cerca se para.
+  # In partner radii (partner.c: getPartnerTamerCloseness): farther than 3.5 it runs, between 2.5 and 3.5 it walks and
+  # closer it stops.
   run_distance: 3.5
   walk_distance: 2.5
   # tamer.c: loadMapEntities.
   spawn_distance: 200
-  # map.c: el rastro del partner tiene 30 celdas.
+  # map.c: the partner's trail has 30 cells.
   trail_length: 30
-  # map.c: isFiveTileWidePathBlocked mira cinco líneas de celdas, dos a cada lado.
+  # map.c: isFiveTileWidePathBlocked looks at five lines of cells, two on each side.
   sight_half_width: 200
-  # Propios del motor: el original no tiene este rescate.
+  # Engine-specific: the original has no such rescue.
   stuck_seconds: 1.0
   teleport_distance: 2000
-  # partner.c: updateConditionAnimation: sin estado, contento desde 0x1F de felicidad y descontento por debajo de
-  # -0x1E; tras pararse espera de 1 a 5 vueltas de su animación de quieto (randomLimit(5) + 1) antes del gesto.
+  # partner.c: updateConditionAnimation: with no status, happy from 0x1F happiness and unhappy below
+  # -0x1E; after stopping it waits 1 to 5 loops of its idle animation (randomLimit(5) + 1) before the gesture.
   happy_gesture_from: 31
   unhappy_gesture_below: -30
   gesture_idle_plays: 5
 input:
   dead_zone: 0.25
   arrive_distance: 25
-# El cambio de mapa (tamer.c: tamerTickChangeMap): fundido de salida (fade.c: fadeToBlack(20)) mientras el jugador sigue
-# andando sin colisión; cuando FADE_OUT_CURRENT llega a 20 se carga el mapa nuevo (changeMap) y empieza el de vuelta
-# (fadeFromBlack(20)); el jugador se mueve otra vez cuando FADE_IN_CURRENT llega a 20, y ese fotograma aún se funde.
+# The map change (tamer.c: tamerTickChangeMap): fade out (fade.c: fadeToBlack(20)) while the player keeps
+# walking without collision; when FADE_OUT_CURRENT reaches 20 the new map is loaded (changeMap) and the fade in starts
+# (fadeFromBlack(20)); the player moves again when FADE_IN_CURRENT reaches 20, and that frame still fades.
 transition:
-  # Un fotograma del original (20 por segundo): el fundido cambia una vez por fotograma.
+  # One frame of the original (20 per second): the fade changes once per frame.
   frame_seconds: 0.05
   fade_out_frames: 20
   fade_in_frames: 20
-  # Al empezar la partida, el primer mapa se funde en 40 fotogramas (main.c: main: fadeFromBlack(0x28)) con el
-  # jugador libre desde el primero: las casillas del mapa ya corren mientras se funde. En la partida nueva la casilla
-  # de llegada salta a topn01 en el primer fotograma, y el fundido de salida sigue desde ese tono casi negro, así que
-  # twna01 no llega a verse.
+  # When the game starts, the first map fades in over 40 frames (main.c: main: fadeFromBlack(0x28)) with the
+  # player free from the first one: the map's tiles already run while it fades. In a new game the arrival tile
+  # jumps to topn01 on the first frame, and the fade out continues from that almost black shade, so
+  # twna01 is never seen.
   start_fade_in_frames: 40
-  # fade.c: renderFade pone delante un rectángulo que resta un gris (modo semitransparente 2, B - F). Su tono sube
-  # 160 / (20 + 1) = 7 por fotograma hasta 160 (renderFadeOut) y baja de 160 de 7 en 7 al volver (renderFadeIn).
-  # fadeToBlack no lo pone a 0: el de salida empieza en el 20 que deja el de vuelta anterior (160 - 20 × 7).
+  # fade.c: renderFade draws in front a rectangle that subtracts a gray (semi-transparent mode 2, B - F). Its shade goes up
+  # 160 / (20 + 1) = 7 per frame up to 160 (renderFadeOut) and goes down from 160 in steps of 7 on the way back (renderFadeIn).
+  # fadeToBlack does not set it to 0: the fade out starts at the 20 left by the previous fade in (160 - 20 × 7).
   shade_step: 7
   shade_max: 160
-  # La textura del rectángulo es blanca (ETCTIM, entrada 4, paleta 6: 0xFFFF) y la consola la multiplica por
-  # tono / 128: desde 128 resta el blanco entero y la pantalla queda negra.
+  # The rectangle's texture is white (ETCTIM, entry 4, palette 6: 0xFFFF) and the console multiplies it by
+  # shade / 128: from 128 on it subtracts the whole white and the screen goes black.
   shade_full: 128
-  # tamer.c: tamerTickChangeMap muestra el nombre del mapa nuevo cuando FADE_OUT_CURRENT es 10
-  # (map.c: addMapNameObject) y lo quita al cargarlo.
+  # tamer.c: tamerTickChangeMap shows the new map's name when FADE_OUT_CURRENT is 10
+  # (map.c: addMapNameObject) and removes it on loading.
   name_frame: 10
-# Las horas del día (map.c: updateTimeOfDay): el día empieza a las 6, el atardecer a las 16 y la noche a las 20, y
-# la paleta del fondo sólo cambia justo a esas horas (map.c: renderMap). Al atardecer las tres luces del mapa
-# conservan 7/10 del verde y del azul; de noche, 5/10 de cada canal (rojo, verde, azul).
+# The hours of the day (map.c: updateTimeOfDay): day starts at 6, dusk at 16 and night at 20, and
+# the background palette only changes right at those hours (map.c: renderMap). At dusk the map's three lights
+# keep 7/10 of green and blue; at night, 5/10 of each channel (red, green, blue).
 time_of_day:
   day_start: 6
   dusk_start: 16
   night_start: 20
   dusk_light: [1.0, 0.7, 0.7]
   night_light: [0.5, 0.5, 0.5]
-# Los NPC del mapa (overworld.c: NPCEntityTickOverworld; map.c: entityCheckCollision, collisionGrace), a 20
-# imágenes por segundo.
+# The map's NPCs (overworld.c: NPCEntityTickOverworld; map.c: entityCheckCollision, collisionGrace), at 20
+# frames per second.
 npc:
-  # El original los mueve con la raíz de sus animaciones 2 (andar) y 4 (correr), la de cada especie
-  # (anim.c: applyRootMomentum). Aquí, la del partner inicial: diferencia pendiente hasta tener la raíz por especie.
+  # The original moves them with the root of their animations 2 (walk) and 4 (run), that of each species
+  # (anim.c: applyRootMomentum). Here, the starting partner's: a pending difference until we have the per-species root.
   walk_speed: 452
   run_speed: 870
-  # overworld.c: NPCEntityTickWaypointWalk gira 0x71 de 4096 por imagen hacia su punto: 113 × 2π / 4096 × 20.
+  # overworld.c: NPCEntityTickWaypointWalk turns 0x71 of 4096 per frame toward its point: 113 × 2π / 4096 × 20.
   turn_speed: 3.4669
-  # map.c: collisionGrace gira al NPC bloqueado como mucho 0x50 por imagen hacia un lado libre (80 × 2π / 4096 × 20)
-  # y 32 por imagen si no hay ninguno libre (32 × 2π / 4096 × 20).
+  # map.c: collisionGrace turns the blocked NPC at most 0x50 per frame toward a free side (80 × 2π / 4096 × 20)
+  # and 32 per frame if none is free (32 × 2π / 4096 × 20).
   grace_turn_speed: 2.4544
   stuck_turn_speed: 0.9817
-  # map.c: entityCheckEntityCollision alarga 50 la caja del jugador hacia donde mira si pulsa confirmar parado.
+  # map.c: entityCheckEntityCollision extends the player's box by 50 toward where it faces if confirm is pressed while standing still.
   talk_reach: 50
-  # Cómo ven los NPC al jugador y van tras él (overworld.c:1247-1303, el switch sobre followMode de
-  # NPCEntityTickOverworld). Sin este bloque, los NPC no ven al jugador.
+  # How NPCs see the player and go after them (overworld.c:1247-1303, the switch on followMode of
+  # NPCEntityTickOverworld). Without this block, NPCs do not see the player.
   tracking:
-    # NPCEntityIsInTrackingRadius: radio = trackingRange × 6 / 10. El original suma dx y dz con signo en vez de sus
-    # cuadrados (se mantiene).
+    # NPCEntityIsInTrackingRadius: radius = trackingRange × 6 / 10. The original adds dx and dz with sign instead of their
+    # squares (kept).
     radius_tenths: 6
-    # NPCEntityTickTrackingTamer3 espera 40 imágenes donde vio al jugador; ...TrackingTamer4, 80 al volver a casa.
+    # NPCEntityTickTrackingTamer3 waits 40 frames where it saw the player; ...TrackingTamer4, 80 when going back home.
     chase_wait_frames: 40
     follow_wait_frames: 80
-    # look: se para y mira al jugador mientras sigue en el rectángulo (NPCEntityTickLookingAtTamer).
-    # chase: corre adonde lo vio, espera y vuelve andando (NPCEntityTickTrackingTamer y ...3).
-    # follow: lo sigue andando (animación 2) o corriendo (4) mientras está en el radio, y vuelve (...2 y ...4).
+    # look: stops and looks at the player while they are still in the rectangle (NPCEntityTickLookingAtTamer).
+    # chase: runs to where it saw them, waits and walks back (NPCEntityTickTrackingTamer and ...3).
+    # follow: follows them walking (animation 2) or running (4) while they are in the radius, and comes back (...2 and ...4).
     modes:
       - { follow_modes: [2, 11], spot: rect, reaction: look }
       - { follow_modes: [3, 4, 5, 12, 13, 14], spot: rect, reaction: chase }
@@ -107,7 +107,7 @@ npc:
       - { follow_modes: [7, 16], spot: radius, reaction: follow, gait: run }
       - { follow_modes: [8, 9, 17, 18], spot: rect, reaction: follow, gait: walk }
 
-# Los movimientos con guion (script_interp.c: tickScriptedMovement). entity_look_at_entity gira 0x200 de 4096 por
-# fotograma (overworld.c: rotateEntity): un octavo de vuelta, 2π / 8 / 0,05 radianes por segundo.
+# Scripted movements (script_interp.c: tickScriptedMovement). entity_look_at_entity turns 0x200 of 4096 per
+# frame (overworld.c: rotateEntity): an eighth of a turn, 2π / 8 / 0.05 radians per second.
 script_motion:
   look_turn_speed: 15.707963

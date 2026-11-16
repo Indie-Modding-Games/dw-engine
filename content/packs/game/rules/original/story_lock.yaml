@@ -1,38 +1,38 @@
-# El candado de historia (packages/session: StoryLock, docs/modulos/apps/session.md): qué parte del juego
-# está abierta mientras el port llega etapa a etapa. No es una regla del original: cuando todo el
-# juego esté portado, la última etapa abre todos los mapas ("*").
+# The story lock (packages/session: StoryLock, docs/modules/apps/session.md): which part of the game
+# is open while the port arrives stage by stage. It is not a rule of the original: once the whole
+# game is ported, the last stage opens all maps ("*").
 #
-# - Las etapas van en orden de entrega y son acumulativas: la etapa N abre los mapas de las etapas 1
-#   a N. Sus `exits` y `sections` son su frontera: solo valen mientras esa etapa es la activa.
-# - `active_stage` es la última etapa entregada. La opción de arranque `--story-stage <id>` juega
-#   otra sin tocar este fichero, y `--story-stage all` lo abre todo (desarrollo y pruebas). El log
-#   dice al arrancar qué etapa se juega ([port:story-lock]).
-# - Se cierran los cambios de mapa nuevos hacia un mapa cerrado: una salida que pisa el jugador, el
-#   cambio de mapa de un script y una sección de casilla cerrada no ocurren, y el juego muestra
-#   `closed_message`. Una partida guardada más allá de la etapa no se rompe: el jugador se queda
-#   donde está y puede salir por cualquier salida hacia un mapa abierto.
-# - Un mapa se nombra por su id o por un prefijo acabado en '*' (twnb*); "*" son todos.
-# - `exits` (opcional): mapas cuyas salidas solo llevan a estos mapas abiertos.
-# - `sections` (opcional): mapas cuyas casillas solo lanzan estas secciones del script del mapa.
+# - Stages are in delivery order and cumulative: stage N opens the maps of stages 1 to N. Their
+#   `exits` and `sections` are their frontier: they only apply while that stage is the active one.
+# - `active_stage` is the last delivered stage. The start option `--story-stage <id>` plays another
+#   one without touching this file, and `--story-stage all` opens everything (development and
+#   tests). The log says which stage is played at startup ([port:story-lock]).
+# - New map changes toward a closed map are blocked: an exit the player steps on, a script map
+#   change and a closed tile section do not happen, and the game shows `closed_message`. A save
+#   past the stage does not break: the player stays where they are and can leave by any exit toward
+#   an open map.
+# - A map is named by its id or by a prefix ending in '*' (twnb*); "*" is all of them.
+# - `exits` (optional): maps whose exits only lead to these open maps.
+# - `sections` (optional): maps whose tiles only launch these sections of the map script.
 #
-# Mapas y salidas verificados en el decomp y en los scripts extraídos (E1-01:
+# Maps and exits verified in the decomp and in the extracted scripts (E1-01:
 # _work/logs/plan/hitos-disparadores.md).
 active_stage: stage_9
 closed_message: story_lock.closed_exit
 stages:
-  # Etapa 1: la apertura, File City con sus casas y el Green Gym, y el Native Forest hasta el
-  # puente roto de Coelamon. Quedan cerradas solas, por no estar en la lista, las salidas a la
-  # etapa 2 y siguientes: mayo01_2 y mayo02_2 a mayo11 (Drill Tunnel), mayo02_2 a miha00,
-  # mayo08a a trop00, el lomo de Coelamon (mayo05 a trop01), mayo06 a betl01, las casas
-  # room10/11/12/14/19/20, mgen01, ogre10/fact01, los viajes de Birdramon (script 209) y el
-  # teletransporte de depuración de twna01 (sección 5).
+  # Stage 1: the opening, File City with its houses and the Green Gym, and the Native Forest up to
+  # Coelamon's broken bridge. The exits to stage 2 and later are closed on their own, by not being
+  # in the list: mayo01_2 and mayo02_2 to mayo11 (Drill Tunnel), mayo02_2 to miha00, mayo08a to
+  # trop00, Coelamon's back (mayo05 to trop01), mayo06 to betl01, the houses room10/11/12/14/19/20,
+  # mgen01, ogre10/fact01, Birdramon's trips (script 209) and the debug teleport of twna01
+  # (section 5).
   - id: stage_1
     maps:
-      # La apertura y File City (twna01 vacía, twna02-13 según la prosperidad; twnb, sus calles).
+      # The opening and File City (twna01 empty, twna02-13 by prosperity; twnb, its streets).
       - topn01
       - twna*
       - twnb*
-      # Las casas de File City de la etapa (room08 es la casa de Jijimon) y el Green Gym.
+      # The File City houses of the stage (room08 is Jijimon's house) and the Green Gym.
       - room02
       - room04
       - room05a
@@ -42,8 +42,8 @@ stages:
       - room08
       - room13
       - trai00
-      # Native Forest (mayo00 es el paso de Agumon; mayo02_2 y mayo08a son variantes que abren
-      # flags de etapas posteriores, y sus salidas fuera quedan cerradas).
+      # Native Forest (mayo00 is Agumon's pass; mayo02_2 and mayo08a are variants that open
+      # flags of later stages, and their exits to the outside stay closed).
       - mayo00
       - mayo01
       - mayo01_2
@@ -57,15 +57,15 @@ stages:
       - mayo08a
       - mayo08b
       - mayo10
-  # Etapa 2: la jungla (Tropical Jungle, trop00-06) con Coelamon, Betamon, Centarumon y Vegiemon,
-  # y el Drill Tunnel (mayo11 y tunn01-10 con sus variantes) con Drimogemon y Meramon. Ogremon se
-  # une en tunn02 (disparador 234) solo con el 150, que pone ogre11 en la etapa 5: aquí su escena
-  # no sale y el túnel se cruza igual.
-  # Abre el lomo de Coelamon (mayo05 a trop01), mayo08a a trop00, las entradas del túnel desde
-  # mayo01_2 y mayo02_2 y room14 (la casa que abre Drimogemon, disparador 238). Quedan cerradas
-  # solas, por no estar en la lista, las salidas a la etapa 3 y siguientes: trop02 a dgha01,
-  # trop03 a gcan01, trop06 a koda00, tunn03 y tunn03_2 a leom02 y mayo02_2 a miha00, y los
-  # cambios de mapa de script de mayo11 y tunn08 a miha04b.
+  # Stage 2: the jungle (Tropical Jungle, trop00-06) with Coelamon, Betamon, Centarumon and Vegiemon,
+  # and the Drill Tunnel (mayo11 and tunn01-10 with their variants) with Drimogemon and Meramon.
+  # Ogremon joins in tunn02 (trigger 234) only with 150, which sets ogre11 in stage 5: here its
+  # scene does not play and the tunnel is crossed all the same.
+  # Opens Coelamon's back (mayo05 to trop01), mayo08a to trop00, the tunnel entrances from
+  # mayo01_2 and mayo02_2 and room14 (the house that opens Drimogemon, trigger 238). The exits to
+  # stage 3 and later are closed on their own, by not being in the list: trop02 to dgha01,
+  # trop03 to gcan01, trop06 to koda00, tunn03 and tunn03_2 to leom02 and mayo02_2 to miha00, and
+  # the script map changes of mayo11 and tunn08 to miha04b.
   - id: stage_2
     maps:
       - mayo11
@@ -78,27 +78,27 @@ stages:
       - trop06
       - tunn*
       - room14
-  # Etapas 3 a 9: los mapas de cada tramo, verificados en los scripts extraídos y en las salidas de
-  # los mapas. Todas están liberadas (`active_stage` es stage_9); `--story-stage` sirve para jugar
-  # solo hasta una anterior. Las salidas entre tramos no siguen la historia en línea (gias08 a stic01,
-  # gcan01 a dgha01 o frzl08 a mist07 dan a la etapa 7, gias02 a fact05 a la 6): un mapa
-  # de una etapa posterior queda cerrado hasta que su etapa se juega.
-  # Etapa 3: Mt. Panorama (miha), Gear Savanna (gias, con la tienda secreta de cartas gias06b), la
-  # cueva de Leomon (leom) y Trash Mountain (gomi). Entra por mayo02_2 a miha00 y por tunn03 y
-  # tunn03_2 a leom02. Su frontera: la salida de gias08 a stic01 (etapa 7) queda cerrada sola; la
-  # puerta de hierro de gias02 a fact05 (etapa 6) solo se abre con el disparador 328, y el
-  # vestíbulo de la Arena (room13) solo lleva a room20 y room19 con los disparadores 257 y 50, que
-  # la etapa no pone. Rutas: route-etapa3-*.yaml (docs/guides/prueba-vertical.md).
+  # Stages 3 to 9: the maps of each stretch, verified in the extracted scripts and in the map
+  # exits. All of them are released (`active_stage` is stage_9); `--story-stage` is for playing
+  # only up to an earlier one. The exits between stretches do not follow the story in a line
+  # (gias08 to stic01, gcan01 to dgha01 or frzl08 to mist07 lead to stage 7, gias02 to fact05 to
+  # stage 6): a map of a later stage stays closed until its stage is played.
+  # Stage 3: Mt. Panorama (miha), Gear Savanna (gias, with the secret card shop gias06b), Leomon's
+  # cave (leom) and Trash Mountain (gomi). Entered through mayo02_2 to miha00 and through tunn03 and
+  # tunn03_2 to leom02. Its frontier: the exit from gias08 to stic01 (stage 7) is closed on its
+  # own; the iron door from gias02 to fact05 (stage 6) only opens with trigger 328, and the Arena
+  # lobby (room13) only leads to room20 and room19 with triggers 257 and 50, which the stage does
+  # not set. Routes: route-stage3-*.yaml (docs/guides/vertical-slice.md).
   - id: stage_3
     maps:
       - miha*
       - gias*
       - leom*
       - gomi*
-  # Etapa 4: Great Canyon (gcan) con el puente invisible y el ascensor, Ogre Fortress (ogre00-04) y
-  # la casa de Birdramon (room12, que abre los viajes en el aire). Entra por trop03 a gcan01.
-  # Quedan cerradas solas las salidas a la etapa 5 y siguientes: gcan03, gcan04 y gcan04_2 a frzl01,
-  # gcan01 a dgha01 y, en el transporte en pájaro, koda00, frzl06, mist05 y betl01 (en rojo, sin cobrar).
+  # Stage 4: Great Canyon (gcan) with the invisible bridge and the elevator, Ogre Fortress (ogre00-04) and
+  # Birdramon's house (room12, which opens the air trips). Entered through trop03 to gcan01.
+  # The exits to stage 5 and later are closed on their own: gcan03, gcan04 and gcan04_2 to frzl01,
+  # gcan01 to dgha01 and, in the bird transport, koda00, frzl06, mist05 and betl01 (red, no charge).
   - id: stage_4
     maps:
       - gcan*
@@ -108,13 +108,13 @@ stages:
       - ogre03
       - ogre04
       - room12
-  # Etapa 5: Freezeland (frzl, con el curling de frzl17), Ice Sanctuary (icsa), la cueva de Whamon
-  # (ogre10 y ogre11) y la casa de Penguinmon (room20). Entra por gcan03, gcan04 y gcan04_2 a frzl01.
-  # Camino de la historia: la playa de frzl16, donde Whamon (con el 175 de la Ogre Fortress) lleva a
-  # ogre10; el combate de ogre11 pone el 150 (Ogremon se une luego en tunn02, 234) y Whamon se une
-  # (224), que abre el viaje del muelle de File City a fact01 (etapa 6). Quedan cerradas solas las
-  # salidas a etapas posteriores: frzl08 a mist07, el muelle (casilla 55 de twna02-13) a fact01 y
-  # frzl05 a mgen11 (solo en el post-juego, variable 16).
+  # Stage 5: Freezeland (frzl, with the curling of frzl17), Ice Sanctuary (icsa), Whamon's cave
+  # (ogre10 and ogre11) and Penguinmon's house (room20). Entered through gcan03, gcan04 and gcan04_2 to frzl01.
+  # Story path: the beach of frzl16, where Whamon (with the 175 of the Ogre Fortress) takes you to
+  # ogre10; the ogre11 battle sets 150 (Ogremon joins later in tunn02, 234) and Whamon joins
+  # (224), which opens the trip from the File City dock to fact01 (stage 6). The exits to later
+  # stages are closed on their own: frzl08 to mist07, the dock (tile 55 of twna02-13) to fact01 and
+  # frzl05 to mgen11 (only in the post-game, variable 16).
   - id: stage_5
     maps:
       - frzl*
@@ -122,18 +122,18 @@ stages:
       - ogre10
       - ogre11
       - room20
-      # La casa de Jijimon cuando la ciudad ha crecido: la casilla 52 de twna02-13 lleva a room10 en
-      # vez de a room08 con Angemon (disparador 220, Ice Sanctuary), Monzaemon (214) o prosperidad 50.
+      # Jijimon's house when the city has grown: tile 52 of twna02-13 leads to room10 instead of
+      # room08 with Angemon (trigger 220, Ice Sanctuary), Monzaemon (214) or prosperity 50.
       - room10
-  # Etapa 6: Factorial Town (fact) y sus secuencias (map_239-246 y map_250-252). Entra con Whamon
-  # (casilla 55 de twna02-13 a fact01).
+  # Stage 6: Factorial Town (fact) and its sequences (map_239-246 and map_250-252). Entered with Whamon
+  # (tile 55 of twna02-13 to fact01).
   - id: stage_6
     maps:
       - fact*
       - map_*
-  # Etapa 7: los módulos opcionales en orden libre: Grey Lord's Mansion (dgha), Ancient Dino Region
-  # (yaka, chka01), Overdell (saib), Misty Trees y Geko Swamp (mist, stic, gkyo), Toy Town (omoc),
-  # Beetle Land (betl) y el bosque de koda.
+  # Stage 7: the optional modules in free order: Grey Lord's Mansion (dgha), Ancient Dino Region
+  # (yaka, chka01), Overdell (saib), Misty Trees and Geko Swamp (mist, stic, gkyo), Toy Town (omoc),
+  # Beetle Land (betl) and the koda forest.
   - id: stage_7
     maps:
       - dgha*
@@ -146,10 +146,10 @@ stages:
       - stic*
       - gkyo*
       - omoc*
-  # Etapa 8: Mt. Infinity (mgen01-10, mgen98, mgen99), room11 (la casilla 57 de twna02-13 con el
-  # disparador 354), room19 y el final (tend01, tend02). Entra por la casilla 56 de twna02-13 a mgen01.
-  # Rutas route-etapa8-*.yaml: Jijimon y Airdramon, la subida, el final hasta la portada y la
-  # frontera (frzl05 a mgen11 queda cerrada).
+  # Stage 8: Mt. Infinity (mgen01-10, mgen98, mgen99), room11 (tile 57 of twna02-13 with
+  # trigger 354), room19 and the ending (tend01, tend02). Entered through tile 56 of twna02-13 to mgen01.
+  # Routes route-stage8-*.yaml: Jijimon and Airdramon, the climb, the ending up to the title screen and the
+  # frontier (frzl05 to mgen11 stays closed).
   - id: stage_8
     maps:
       - mgen01
@@ -167,9 +167,9 @@ stages:
       - room11
       - room19
       - tend*
-  # Etapa 9: el post-juego, la Back Dimension (mgen11-16). Con ella están abiertos todos los mapas.
-  # Rutas route-etapa9-*.yaml sobre la partida terminada: el huevo y Digitamamon, y mgen11-13 desde
-  # frzl05. mgen14-16 no tienen entrada conocida en los scripts.
+  # Stage 9: the post-game, the Back Dimension (mgen11-16). With it all maps are open.
+  # Routes route-stage9-*.yaml on the finished save: the egg and Digitamamon, and mgen11-13 from
+  # frzl05. mgen14-16 have no known entrance in the scripts.
   - id: stage_9
     maps:
       - mgen11

@@ -1,4 +1,4 @@
-# The evolution requirements on the chart (docs/modulos/apps/game.md, «Requisitos de evolución»): the partner's own
+# The evolution requirements on the chart (docs/modules/apps/game.md, «Evolution requirements»): the partner's own
 # chart opened with the keyboard, the cursor over its targets (Up and Down), the original view (Left) and back, with
 # every text in its box and the panel over nothing else. On a new game no target is discovered yet: each one is "???"
 # with no requirement. Then Greymon and Tyrannomon are marked raised (story triggers 0x200 + their number), so the

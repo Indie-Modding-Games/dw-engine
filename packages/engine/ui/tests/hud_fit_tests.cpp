@@ -1,5 +1,5 @@
 // The game pack's HUD in both looks: what it writes stays inside the boxes drawn round it
-// (Ui::overflowingTexts, docs/modulos/engine/ui.md).
+// (Ui::overflowingTexts, docs/modules/engine/ui.md).
 
 #include <dwe/ui/minimap.hpp>
 #include <dwe/ui/ui.hpp>
