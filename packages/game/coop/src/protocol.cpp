@@ -9,7 +9,7 @@ namespace dwe::game::coop {
 
 namespace {
 
-constexpr std::uint8_t LastKind = ProfileChunkKind;
+constexpr std::uint8_t LastKind = ReadyKind;
 
 void put(net::WireWriter& out, const Identity& identity) {
   out.put(identity.protocol).put(std::string_view{identity.gameVersion});
@@ -110,6 +110,8 @@ net::Bytes encode(const Message& message) {
           out.put(WelcomeKind);
           put(out, body.identity);
           out.put(body.accepted).put(body.assignedPlayer).put(body.reason).put(body.sessionId);
+        } else if constexpr (std::is_same_v<T, Ready>) {
+          out.put(ReadyKind).put(body.ready);
         } else if constexpr (std::is_same_v<T, JoinState>) {
           out.put(JoinStateKind).put(body.formatVersion).put(std::string_view{body.mapId});
           out.put(body.worldTick).put(body.saveTransferId).put(body.saveChunkCount);
@@ -179,6 +181,14 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     }
     welcome.reason = static_cast<RejectReason>(reason);
     message = welcome;
+    break;
+  }
+  case ReadyKind: {
+    bool ready = false;
+    if (!getFlag(in, ready)) {
+      return core::fail("invalid cooperative ready state");
+    }
+    message = Ready{.ready = ready};
     break;
   }
   case JoinStateKind: {

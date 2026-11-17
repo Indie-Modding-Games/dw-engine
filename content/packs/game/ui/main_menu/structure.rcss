@@ -5,9 +5,81 @@
 #quit { nav-down: #play; }
 /* Continue with no save to continue, greyed in any skin and skipped, as the original greys it with no memory card. */
 #continue.unavailable { opacity: 0.45; focus: none; tab-index: none; }
-#coop-info { margin-top: 8dp; }
-#coop-info h2 { margin: 0 0 12dp 0; }
-#coop-info p { max-width: 520dp; margin: 0 0 16dp 0; white-space: normal; }
+#coop-info {
+	position: relative;
+	width: 100%;
+	margin-top: 8dp;
+}
+#coop-info h2 { margin: 0 0 8dp 0; }
+#coop-info h3 { margin: 0 0 10dp 0; font-size: 22dp; }
+#coop-info p { margin: 0 0 10dp 0; white-space: normal; }
+.coop-room-heading { margin: 0 0 18dp 0; }
+.coop-room-heading p { font-size: 20dp; }
+.coop-room-grid {
+	display: block;
+	position: relative;
+	width: 100%;
+	height: 260dp;
+}
+.coop-room-card {
+	position: absolute;
+	top: 0;
+	box-sizing: border-box;
+	min-height: 240dp;
+	padding: 16dp;
+	border: 2dp #6a9fce;
+	background-color: #10283be8;
+}
+.coop-room-details { left: 0; width: 25%; }
+.coop-room-mode { left: 27%; width: 42%; }
+.coop-room-players { right: 0; width: 29%; }
+#coop-info p.coop-room-note { margin-top: 20dp; font-size: 16dp; color: #b7c8da; }
+.coop-player-row {
+	display: block;
+	position: relative;
+	min-height: 60dp;
+	margin: 4dp 0;
+	padding: 8dp;
+	border: 1dp #52728f;
+	background-color: #071a2c;
+}
+.coop-player-row div { margin-left: 42dp; }
+.coop-player-row p { margin: 0; }
+.coop-player-icon {
+	position: absolute;
+	left: 8dp;
+	top: 7dp;
+	width: 32dp;
+	height: 32dp;
+	border-radius: 16dp;
+	text-align: center;
+	line-height: 32dp;
+	background-color: #22558c;
+}
+.coop-player-state { font-size: 16dp; color: #85d69b; }
+.coop-ready-mark { position: absolute; right: 8dp; top: 12dp; color: #72e894; }
+.coop-room-actions { margin-top: 16dp; text-align: center; }
+.coop-room-actions button { display: inline-block; margin: 4dp 8dp; }
+.coop-room-actions .unavailable { opacity: 0.45; focus: none; tab-index: none; }
+#coop-room-code-entry { margin: 0 auto 12dp auto; font-size: 28dp; letter-spacing: 6dp; }
+#panel.coop-room {
+	position: absolute;
+	left: 3%;
+	top: 4%;
+	width: 94%;
+	min-width: 0;
+	height: 92%;
+	margin: 0;
+	padding: 22dp;
+	box-sizing: border-box;
+	border: 2dp #5c91bd;
+	border-radius: 10dp;
+	background-color: #081522f2;
+}
+#panel.coop-room #title { display: none; }
+#panel.coop-room #coop-info { margin-top: 0; }
+#panel.coop-room #coop-room-code { color: #ffda46; font-size: 28dp; letter-spacing: 5dp; }
+#panel.coop-room .coop-room-details p { padding-bottom: 8dp; border-bottom: 1dp #44617c; }
 /* The original's layout of the entries (skin.yaml layout: main_menu: menu: original, the body's class
    layout-menu-original): logic.lua moves the cursor and stops it at the ends, as the original's, so the wrapping moves
    above stay out; the line of the screen before the menu blinks by its class; the fade over everything never takes

@@ -42,6 +42,7 @@ bool directionAllowed(Side receiver, const Message& message) {
   if (receiver == Side::Host) {
     if (std::holds_alternative<Commands>(message) || std::holds_alternative<ViewState>(message))
       return true;
+    if (std::holds_alternative<Ready>(message)) return true;
     if (const auto* chunk = std::get_if<ProfileChunk>(&message))
       return chunk->kind == ProfilePayloadKind::GuestSave;
     return false;

@@ -1,20 +1,6 @@
 # Multijugador cooperativo en línea (documento de diseño)
 
-Estado: **prototipo jugable de entrada remota, réplica cliente pendiente** (2026-11-16). C0a está iniciado: `PlayerCommands`, `LocalController`,
-`ScriptedController` y `PlayerRegistry` ya están en `apps/game`; campo, pesca y pulsaciones de diálogo/historia se
-adaptan a comandos, y el registro admite el host más un controlador de invitado. El flujo WebRTC ya se mantiene al salir del lobby y, al cargar una partida, las órdenes del invitado llegan al controlador de campo del host; el host crea y dibuja el segundo cuerpo y emite snapshots a 20 Hz. C0b ya permite dos cuerpos en un
-`Field`, con movimiento y rutas por clic independientes, temporización propia y colisión mutua. Esta prueba inicial requiere cargar manualmente la misma partida en ambos equipos; el cliente interpola y dibuja solo el avatar del host como actor de presentación, y cada instancia conserva su cámara local. Los triggers,
-acciones del invitado, cámara seleccionable por jugador, compañero invitado y réplica cliente siguen pendientes. La
-entrada de un controlador invitado ya puede pasar por `PlaySession` al segundo `FieldPlayer`; el puente probado en
-loopback ya se instancia desde el flujo de juego. C1a incluye DTOs cuantizados, validación, `CoopLink` (handshake,
-roles, timeouts), transferencia segmentada del guardado completo y un `Snapshot` que respeta el tamaño de datagrama.
-El puente app→protocolo y la captura del jugador host, su compañero y el jugador invitado ya están implementados;
-replicar NPCs, historia y progreso, y reconciliar el movimiento local del cliente con snapshots sigue pendiente. Se confirmó que solo el
-anfitrión inicia cambios de mapa; el invitado que llega a un warp espera allí. La partida completa del invitado se
-transfiere para extraer únicamente los datos de identidad, modelo y estado de su compañero; historia, mapa y progreso
-compartido siguen siendo del host. La decisión de arquitectura está en
-[ADR 0024](../adr/0024-cooperativo-con-host-autoritativo.md). Para retomar el trabajo, empieza por §10.
-
+Estado: **sala y arranque cooperativo implementados; sincronización del mundo parcial** (2026-11-16). El anfitrión inicia con un guardado propio; el invitado envía su guardado para importar solo su compañero. El cliente carga el mundo del host en memoria y no escribe sobre el guardado local. El host simula el campo y recibe comandos del invitado; el cliente presenta el avatar del host. NPCs, historia, interacciones y reconciliación del movimiento todavía no están replicados íntegramente. Consulta la [prueba manual de la sala](#prueba-manual-de-la-sala) antes de probar.
 ## 0. Propósito y alcance
 
 La portada ofrece **Cooperativo** en ambos diseños del menú. Desde ahí se puede crear una sala o unirse con el código;
@@ -40,17 +26,14 @@ caminar, hablar con NPCs, avanzar la historia y pelear.
 - más de dos jugadores (el diseño no lo cierra, pero no se prueba);
 - servidores dedicados y partidas persistentes.
 
-### Prueba manual del prototipo actual
+### Prueba manual de la sala
 
-1. Abre el juego en ambos equipos con la misma versión y contenido.
-2. En el equipo anfitrión, entra a **Cooperativo → Crear sala** y comparte el código.
-3. En el invitado, entra a **Cooperativo → Unirse a sala**, escribe el código y espera «Conectados».
-4. En ambos equipos, vuelve atrás y carga manualmente una copia del mismo guardado, en el mismo mapa.
-5. Mueve a ambos jugadores. El anfitrión debe ver al invitado en su campo y el invitado debe ver moverse al anfitrión.
+1. Abre dos instancias con la misma versión y contenido. El anfitrión crea sala y comparte el código.
+2. El invitado se une, pulsa **Listo** y elige su guardado. Solo se usa para importar la identidad, modelo y estado actual de su compañero.
+3. El anfitrión pulsa **Iniciar** y elige su guardado. Ese guardado aporta el mundo y el progreso compartido.
+4. El invitado debe cargar el mapa del anfitrión con su compañero y sin sobrescribir su guardado local. Ambos verifican movimiento y cámara local.
 
-Esta prueba valida entrada remota, movimiento del invitado simulado por el anfitrión y presentación interpolada del
-avatar del host en el cliente. No valida convergencia completa ni cambios de mapa.
-
+El protocolo de sala y transferencia sí permite hacer esta prueba de arranque. La sincronización en vivo todavía es parcial: el host recibe comandos de campo del invitado y simula un segundo jugador; el cliente recibe/presenta el avatar del host. NPCs, historia, interacciones y progreso no se replican íntegramente, y el movimiento local del invitado aún no se reconcilia con snapshots. Los cambios de mapa los inicia solo el anfitrión.
 ## 1. Idea en una frase
 
 Los dos jugadores usan **los mismos datos de jugador** y los mismos sistemas de juego. Cada instancia combina una

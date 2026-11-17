@@ -28,6 +28,20 @@ std::string_view linkFailureName(game::coop::LinkFailure failure) {
   }
   return "unknown";
 }
+
+std::string_view peerFailureName(net::PeerFailure failure) {
+  switch (failure) {
+  case net::PeerFailure::None: return {};
+  case net::PeerFailure::NoServer: return "no_server";
+  case net::PeerFailure::ServerUnreachable: return "server_unreachable";
+  case net::PeerFailure::WrongCode: return "wrong_code";
+  case net::PeerFailure::RoomFull: return "room_full";
+  case net::PeerFailure::TimedOut: return "signal_timeout";
+  case net::PeerFailure::NoRoute: return "no_direct_route";
+  case net::PeerFailure::Closed: return "connection_closed";
+  }
+  return "unknown";
+}
 } // namespace
 
 void CoopConnection::open() {
@@ -62,6 +76,11 @@ bool CoopConnection::host() {
   if (!peer_) {
     view_ = View::Error;
     error_ = "transport_unavailable";
+    return false;
+  }
+  if (peer_->state() == net::PeerState::Failed) {
+    view_ = View::Error;
+    error_ = std::string{peerFailureName(peer_->failure())};
     return false;
   }
   link_ = std::make_unique<game::coop::CoopLink>(
@@ -100,6 +119,11 @@ bool CoopConnection::join(std::string_view code) {
     error_ = "transport_unavailable";
     return false;
   }
+  if (peer_->state() == net::PeerState::Failed) {
+    view_ = View::Error;
+    error_ = std::string{peerFailureName(peer_->failure())};
+    return false;
+  }
   link_ = std::make_unique<game::coop::CoopLink>(
       game::coop::CoopLink::guest(*peer_, desc_.identity, "Guest"));
   view_ = View::Joining;
@@ -125,7 +149,8 @@ void CoopConnection::tick(net::Millis now) {
   } else if (link_->phase() == game::coop::LinkPhase::Rejected ||
              link_->phase() == game::coop::LinkPhase::Failed ||
              link_->phase() == game::coop::LinkPhase::Left) {
-    error_ = std::string{linkFailureName(link_->failure())};
+    error_ = peer_ != nullptr ? std::string{peerFailureName(peer_->failure())} : std::string{};
+    if (error_.empty()) error_ = std::string{linkFailureName(link_->failure())};
     if (error_.empty() && link_->phase() == game::coop::LinkPhase::Rejected) {
       error_ = "rejected";
     }

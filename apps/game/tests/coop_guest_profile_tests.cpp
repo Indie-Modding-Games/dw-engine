@@ -51,6 +51,37 @@ TEST_CASE("cooperative guest profile migrates partner but ignores guest world pr
   CHECK(profile->state.stats.currentHp == 987);
 }
 
+TEST_CASE("cooperative guest session keeps the host world and imports only the guest partner") {
+  game::save::SaveFile host;
+  host.header.summary.tamer = "Host";
+  host.header.summary.species = "host_species";
+  host.header.summary.nickname = "Host pal";
+  host.header.summary.map = "host_map";
+  host.sections.emplace("partner", game::save::SavedSection{
+                                        .state = game::partner::toYaml(game::partner::PartnerState{})});
+  host.sections.emplace("story", game::save::SavedSection{
+                                     .version = 4,
+                                     .state = core::YamlNode::scalar("host_story")});
+  const auto hostText = game::save::writeSaveFile(host);
+  REQUIRE(hostText);
+
+  const auto merged = app::hostWorldWithGuestPartner(*hostText, guestSave());
+  REQUIRE(merged);
+  const auto loaded = game::save::parseSaveFile(*merged);
+  REQUIRE(loaded);
+  CHECK(loaded->header.summary.map == "host_map");
+  CHECK(loaded->header.summary.tamer == "Host");
+  CHECK(loaded->header.summary.species == "guest_species");
+  CHECK(loaded->header.summary.nickname == "Guest pal");
+  REQUIRE(loaded->sections.contains("story"));
+  CHECK(loaded->sections.at("story").state == core::YamlNode::scalar("host_story"));
+  REQUIRE(loaded->sections.contains("partner"));
+  const auto partner = game::partner::fromYaml(loaded->sections.at("partner").state);
+  REQUIRE(partner);
+  CHECK(partner->species == "guest_species");
+  CHECK(partner->stats.currentHp == 987);
+}
+
 TEST_CASE("cooperative guest profile rejects missing partner and oversized transfer") {
   CHECK_FALSE(app::extractCoopGuestPartnerProfile(""));
   CHECK_FALSE(app::extractCoopGuestPartnerProfile(std::string(128U * 1024U + 1U, 'x')));

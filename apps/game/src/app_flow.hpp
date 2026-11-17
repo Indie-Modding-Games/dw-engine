@@ -2,6 +2,7 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/game/save/slots.hpp>
+#include <dwe/game/save/save_file.hpp>
 #include <dwe/session/game_session.hpp>
 
 #include <functional>
@@ -32,6 +33,9 @@ struct PlayStart {
   // The game mode a new game plays, as the new game's mode list chose it (packages/game/modes);
   // nothing: the original's story. A loaded game plays the mode its save records.
   std::optional<std::string> modeId = std::nullopt;
+  // A cooperative guest starts from the host's shared world in memory; this text is never written
+  // into the guest's local save slots.
+  std::optional<std::string> networkSaveText = std::nullopt;
 
   friend bool operator==(const PlayStart&, const PlayStart&) = default;
 };

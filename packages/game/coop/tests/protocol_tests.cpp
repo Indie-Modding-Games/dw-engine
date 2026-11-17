@@ -43,6 +43,8 @@ TEST_CASE("cooperative control and state messages round trip") {
                     .assignedPlayer = GuestPlayerId,
                     .reason = RejectReason::RoomFull,
                     .sessionId = 42});
+  roundTrip(Ready{.ready = false});
+  roundTrip(Ready{.ready = true});
   roundTrip(JoinState{.formatVersion = 1,
                       .mapId = "city/field",
                       .worldTick = 321,
@@ -242,7 +244,15 @@ TEST_CASE("cooperative link validates identity and exchanges commands") {
   const auto received = host.receive();
   REQUIRE(received);
   CHECK(std::get<Commands>(*received) == command);
+  REQUIRE(guest.send(Message{Ready{.ready = true}}));
+  network.advance(net::Millis{1});
+  host.poll(network.now());
+  guest.poll(network.now());
+  const auto ready = host.receive();
+  REQUIRE(ready);
+  CHECK(std::get<Ready>(*ready).ready);
   CHECK_FALSE(host.send(Message{command}));
+  CHECK_FALSE(host.send(Message{Ready{.ready = true}}));
   CHECK_FALSE(guest.send(Message{Snapshot{.mapId = "city/field", .entities = {}}}));
   CHECK(host.send(Message{Snapshot{.mapId = "city/field", .entities = {}}}));
   Snapshot oversizedSnapshot{.mapId = std::string(255, 'm'), .entities = {}};

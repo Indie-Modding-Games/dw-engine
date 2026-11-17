@@ -27,13 +27,44 @@
 			<button id="options" onclick="open_options(document)"></button>
 			<button id="quit" onclick="ui.send('quit')" text-key="main_menu.quit"></button>
 			<div id="coop-info" class="hidden">
-				<h2 text-key="main_menu.coop.title"></h2>
-				<p id="coop-status"></p>
-				<p text-key="main_menu.coop.test_instructions"></p>
-				<p id="coop-room-code" class="hidden"></p>
-				<button id="coop-host" onclick="ui.send('coop_host')" text-key="main_menu.coop.host"></button>
-				<button id="coop-join" onclick="ui.send('coop_join')" text-key="main_menu.coop.join"></button>
-				<button id="coop-back" onclick="close_coop(document)" text-key="common.back"></button>
+				<div class="coop-room-heading">
+					<h2 id="coop-room-title" text-key="main_menu.coop.title"></h2>
+					<p id="coop-status"></p>
+				</div>
+				<div class="coop-room-grid">
+					<div class="coop-room-card coop-room-details">
+						<h3 text-key="main_menu.coop.room_details"></h3>
+						<p><span text-key="main_menu.coop.code"></span> <span id="coop-room-code">----</span></p>
+						<p><span text-key="main_menu.coop.state"></span> <span id="coop-room-state"></span></p>
+						<p><span text-key="main_menu.coop.mode"></span> <span text-key="main_menu.coop.campaign"></span></p>
+					</div>
+					<div class="coop-room-card coop-room-mode">
+						<h3 text-key="main_menu.coop.campaign"></h3>
+						<p text-key="main_menu.coop.campaign_details"></p>
+						<p class="coop-room-note" text-key="main_menu.coop.authority"></p>
+					</div>
+					<div class="coop-room-card coop-room-players">
+						<h3 id="coop-player-count"></h3>
+						<div class="coop-player-row">
+							<span class="coop-player-icon">1</span>
+							<div><p text-key="main_menu.coop.host_player"></p><p id="coop-host-state" class="coop-player-state"></p></div>
+							<span id="coop-host-ready" class="coop-ready-mark"></span>
+						</div>
+						<div class="coop-player-row">
+							<span class="coop-player-icon">2</span>
+							<div><p text-key="main_menu.coop.guest_player"></p><p id="coop-guest-state" class="coop-player-state"></p></div>
+							<span id="coop-guest-ready" class="coop-ready-mark"></span>
+						</div>
+					</div>
+				</div>
+				<div class="coop-room-actions">
+					<p id="coop-room-code-entry" class="hidden"></p>
+					<button id="coop-host" onclick="ui.send('coop_host')" text-key="main_menu.coop.host"></button>
+					<button id="coop-join" onclick="ui.send('coop_join')" text-key="main_menu.coop.join"></button>
+					<button id="coop-ready" class="hidden" onclick="ui.send('coop_ready')" text-key="main_menu.coop.ready"></button>
+					<button id="coop-start" class="hidden" onclick="ui.send('coop_start')" text-key="main_menu.coop.start"></button>
+					<button id="coop-back" onclick="close_coop(document)" text-key="common.back"></button>
+				</div>
 			</div>
 
 			<div id="prompts">

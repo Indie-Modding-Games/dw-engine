@@ -16,7 +16,7 @@ namespace dwe::game::coop {
 using PlayerId = std::uint8_t;
 inline constexpr PlayerId HostPlayerId = 0;
 inline constexpr PlayerId GuestPlayerId = 1;
-inline constexpr std::uint32_t ProtocolVersion = 1;
+inline constexpr std::uint32_t ProtocolVersion = 2;
 
 // A worst-case 255-byte map id plus 48 entities fits in one 1200-byte unreliable datagram,
 // including ChannelPeerLink's one-byte lane tag. JoinState travels reliably and can carry more.
@@ -60,6 +60,13 @@ struct Welcome {
   std::uint64_t sessionId = 0;
 
   friend bool operator==(const Welcome&, const Welcome&) = default;
+};
+
+// The guest's lobby readiness; it never grants authority to select or start the shared world.
+struct Ready {
+  bool ready = false;
+
+  friend bool operator==(const Ready&, const Ready&) = default;
 };
 
 // Input values use signed 15-bit stick coordinates. A click target is in integral world units.
@@ -154,7 +161,8 @@ struct Leave {
 };
 
 using Message =
-    std::variant<Hello, Welcome, JoinState, Commands, Snapshot, ViewState, Leave, ProfileChunk>;
+    std::variant<Hello, Welcome, Ready, JoinState, Commands, Snapshot, ViewState, Leave,
+                 ProfileChunk>;
 
 inline constexpr std::uint8_t HelloKind = 0x60;
 inline constexpr std::uint8_t WelcomeKind = 0x61;
@@ -164,6 +172,7 @@ inline constexpr std::uint8_t SnapshotKind = 0x66;
 inline constexpr std::uint8_t LeaveKind = 0x6A;
 inline constexpr std::uint8_t ViewStateKind = 0x6C;
 inline constexpr std::uint8_t ProfileChunkKind = 0x6D;
+inline constexpr std::uint8_t ReadyKind = 0x6E;
 
 [[nodiscard]] net::Bytes encode(const Message& message);
 // Returns empty for a message owned by another protocol. Messages in this range are validated and

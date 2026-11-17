@@ -10,6 +10,8 @@
 #include <dwe/core/message.hpp>
 #include <dwe/debug/debug_ui.hpp>
 #include <dwe/game/partner/field_animation.hpp>
+#include <dwe/game/save/save_file.hpp>
+#include <dwe/game/save/settings.hpp>
 #include <dwe/game/save/slots.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/input_state.hpp>
@@ -109,6 +111,17 @@
 
 namespace dwe::app {
 namespace {
+
+core::Result<game::save::SaveFile> readSaveSlot(const assets::VirtualFileSystem& files,
+                                               const Options& options,
+                                               game::save::SlotId slot, bool backup) {
+  auto storage = saveStorageFor(options, true);
+  if (!storage) return core::fail("save storage is not available");
+  auto settings = game::save::loadSaveSettings(files);
+  if (!settings) return std::unexpected{settings.error()};
+  game::save::SaveSlots slots{*storage, *settings};
+  return backup ? slots.loadBackup(slot) : slots.load(slot);
+}
 
 // Smaller changes of the map change's fade are not worth telling the UI.
 constexpr double FadeEpsilon = 1e-4;
@@ -1628,6 +1641,20 @@ int runGame(const Options& requested) {
         }
       }
       coop.tick(platform->nowSeconds());
+      if (flow.playing() == nullptr) {
+        if (auto networkSave = coop.takeRemoteStartText()) {
+          title.hide();
+          PlayStart start{.load = std::nullopt,
+                          .backup = false,
+                          .saveTo = std::nullopt,
+                          .choice = std::nullopt,
+                          .withoutSaving = false,
+                          .rulesetId = std::nullopt,
+                          .modeId = std::nullopt,
+                          .networkSaveText = std::move(*networkSave)};
+          startPlaying(start);
+        }
+      }
       if (flow.playing() != nullptr || !title.landing()) {
         titleIdleTicks = 0;
       } else if (movies && replayBootMovie && ++titleIdleTicks >= movieRules->landingIdleFrames) {
@@ -1768,6 +1795,17 @@ int runGame(const Options& requested) {
     }
 
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
+      // The title menu's cooperative room actions belong to CoopScreen. Dispatch them before
+      // generic UI add-ons and option handlers so they cannot be consumed or reported as unknown.
+      if ((command.name == CoopOpenCommand || command.name == "coop_host" ||
+           command.name == "coop_join" || command.name == "coop_close" ||
+           command.name == "coop_ready" || command.name == "coop_start") &&
+          coop.handle(command)) {
+        if (coop.takeGuestProfileRequest() || coop.takeStartRequested()) {
+          static_cast<void>(title.handle(ui::UiCommand{.name = "continue", .value = {}}));
+        }
+        continue;
+      }
       if (uiAddons.handle(command)) {
         continue;
       }
@@ -1915,11 +1953,39 @@ int runGame(const Options& requested) {
       if (flow.playing() == nullptr && versus.handle(command)) {
         continue;
       }
-      if (coop.handle(command)) {
-        continue;
-      }
       if (flow.playing() == nullptr && title.handle(command)) {
         if (const auto start = title.takeStart()) {
+          if (coop.selectingGuestProfile() || coop.selectingHostStart()) {
+            if (!start->load) {
+              coop.reportError("Choose a saved game in this room first.");
+              title.show();
+              continue;
+            }
+            auto save = readSaveSlot(files, options, *start->load, start->backup);
+            if (!save) {
+              coop.reportError(save.error().message);
+              title.show();
+              continue;
+            }
+            auto saveText = game::save::writeSaveFile(*save);
+            if (!saveText) {
+              coop.reportError(saveText.error().message);
+              title.show();
+              continue;
+            }
+            if (coop.selectingGuestProfile()) {
+              if (auto provided = coop.provideGuestSave(*saveText); !provided) {
+                coop.reportError(provided.error().message);
+                title.show();
+              }
+              continue;
+            }
+            if (auto sent = coop.sendHostStart(*saveText); !sent) {
+              coop.reportError(sent.error().message);
+              title.show();
+              continue;
+            }
+          }
           if (start->load) {
             // Give the shared save indicator time to render and animate before the synchronous
             // save read starts blocking this loop.
