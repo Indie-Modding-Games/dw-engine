@@ -5,6 +5,9 @@
 #quit { nav-down: #play; }
 /* Continue with no save to continue, greyed in any skin and skipped, as the original greys it with no memory card. */
 #continue.unavailable { opacity: 0.45; focus: none; tab-index: none; }
+#coop-info { margin-top: 8dp; }
+#coop-info h2 { margin: 0 0 12dp 0; }
+#coop-info p { max-width: 520dp; margin: 0 0 16dp 0; white-space: normal; }
 /* The original's layout of the entries (skin.yaml layout: main_menu: menu: original, the body's class
    layout-menu-original): logic.lua moves the cursor and stops it at the ends, as the original's, so the wrapping moves
    above stay out; the line of the screen before the menu blinks by its class; the fade over everything never takes

@@ -7,7 +7,7 @@
 --
 -- Two layouts of the same entries, as the skin lays them out (ui.layout("menu")):
 -- - The modern one: play (a new game), continue (greyed and skipped unless the game publishes
---   save.can_continue), online versus, options, quit.
+--   save.can_continue), online versus, cooperative access, options, quit.
 -- - The original's (menu: original), the original's title screen (main.c: main):
 --   - "boot": the "Press Start" screen (runLandingScreen), when the game says so (title.boot).
 --     It fades in from black, its line blinks, and Start fades it out (40 frames each).
@@ -71,8 +71,9 @@ local leaving = false
 local pending_view = nil
 
 local entries = {
-  menu = { "play", "continue", "erase", "versus", "battle", "options", "quit" },
+  menu = { "play", "continue", "erase", "versus", "multiplayer", "battle", "options", "quit" },
   battle = { "battle-yes", "battle-no" },
+  coop = { "coop-host", "coop-join", "coop-back" },
   language = {
     "language-1",
     "language-2",
@@ -142,6 +143,7 @@ local function refresh(document)
   local own = orig and "main_menu.original." or "main_menu."
   document:get("play"):set_text(t(own .. "new_game"))
   document:get("continue"):set_text(t(own .. "continue"))
+  document:get("multiplayer"):set_text(t(own .. "coop"))
   -- Modern: greyed and skipped (structure.rcss). Original: greyed, but the cursor stops on it.
   document:get("continue"):set_class("unavailable", not saved and not orig)
   document:get("continue"):set_class("dimmed", not saved and orig)
@@ -202,19 +204,20 @@ end
 local function lay_out(document)
   local orig = original()
   was_original = orig
-  local shown = (orig or view == "options") and view or "menu"
+  local shown = (orig or view == "options" or view == "coop") and view or "menu"
   local function show(id, visible)
     document:get(id):set_class("hidden", not visible)
   end
   show("press-start", shown == "boot")
-  show("panel", shown == "menu")
-  for _, id in ipairs({ "erase", "battle" }) do
-    show(id, orig)
+  show("panel", shown == "menu" or shown == "coop")
+  for _, id in ipairs({ "play", "continue", "multiplayer", "options" }) do
+    show(id, shown == "menu")
   end
-  -- Quit is the options page's in the original layout, whose menu has the original's entries and
-  -- options.
-  show("quit", not orig)
-  show("versus", not orig)
+  show("versus", shown == "menu" and not orig)
+  show("erase", shown == "menu" and orig)
+  show("battle", shown == "menu" and orig)
+  show("quit", shown == "menu" and not orig)
+  show("coop-info", shown == "coop")
   show("language-box", shown == "language")
   if shown == "language" then
     -- The box in the middle of the screen: its heading and START (180dp with its padding) and a
@@ -286,6 +289,8 @@ local function enter(document, name)
   elseif name == "language" then
     local current = index_of(ui.languages(), ui.setting("language")) or 1
     set_view(document, "language", "language-" .. current)
+  elseif name == "coop" then
+    set_view(document, "coop", "coop-host")
   end
 end
 
@@ -355,6 +360,52 @@ function open_versus()
   ui.send("versus")
 end
 
+function open_coop(document)
+  remembered.menu = "multiplayer"
+  set_view(document, "coop", "coop-host")
+  ui.send("coop_open")
+end
+
+function close_coop(document)
+  ui.send("coop_close")
+  close_view(document)
+end
+
+local function refresh_coop(document)
+  local view = ui.setting("coop.view") or "menu"
+  local status = {
+    menu = "main_menu.coop.status",
+    join_entry = "main_menu.coop.enter_code",
+    hosting = "main_menu.coop.waiting",
+    joining = "main_menu.coop.connecting",
+    connected = "main_menu.coop.connected",
+    error = "main_menu.coop.error",
+    closed = "main_menu.coop.status",
+  }
+  local key = status[view] or status.error
+  local text = t(key)
+  local error = ui.setting("coop.error")
+  if view == "error" and error ~= nil and error ~= "" then
+    text = text .. " " .. error
+  end
+  document:get("coop-status"):set_text(text)
+  local code
+  if view == "join_entry" or view == "joining" then
+    code = ui.setting("coop.typed")
+    document:get("coop-room-code"):set_text(t("main_menu.coop.code") .. " " .. (code or "____"))
+    document:get("coop-room-code"):set_class("hidden", false)
+  elseif view == "hosting" or view == "connected" then
+    code = ui.setting("coop.code")
+    document:get("coop-room-code"):set_text(t("main_menu.coop.room") .. " " .. (code or ""))
+    document:get("coop-room-code"):set_class("hidden", code == nil or code == "")
+  else
+    document:get("coop-room-code"):set_class("hidden", true)
+  end
+  local choosing = view == "menu" or view == "error"
+  document:get("coop-host"):set_class("hidden", not choosing)
+  document:get("coop-join"):set_class("hidden", not choosing)
+end
+
 function erase_game()
   remembered.menu = "erase"
   if ui.setting("save.can_continue") == true then
@@ -417,11 +468,13 @@ end
 function on_setting(document, _name)
   title_picture.apply(document, PictureBoxes)
   refresh(document)
+  refresh_coop(document)
 end
 
 function on_language(document)
   refresh(document)
   refresh_prompts(document)
+  refresh_coop(document)
 end
 
 function on_device(document)
@@ -516,6 +569,9 @@ function on_action(document, action)
     enter(document, "menu")
     return true
   end
+  if view == "coop" and (action == "up" or action == "down") then
+    return step_entries(document, entries.coop, action == "up" and -1 or 1)
+  end
   if original() then
     if view == "boot" then
       -- Start, confirm or a click goes on (runLandingScreen takes Start; confirm and the pointer
@@ -530,6 +586,8 @@ function on_action(document, action)
     if action == "cancel" or action == "menu" then
       if view == "language" then
         close_language(document)
+      elseif view == "coop" then
+        close_coop(document)
       elseif view ~= "menu" then
         close_view(document)
       end

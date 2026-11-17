@@ -269,6 +269,10 @@ public:
   // One logic tick of the field with this intent. The owner of the game clock advances it next, by
   // the time the field played (Field::gameTimeRan), and then calls finishTick.
   void tick(const game::field::FieldInput& input, float seconds);
+  // A host-authoritative online tick: the host intent drives story/world interactions; the remote
+  // intent only moves the guest's FieldPlayer through the same Field simulation.
+  void tick(const game::field::FieldInput& input, const game::field::FieldInput& guestInput,
+            float seconds);
   // Ends the tick: follows the clock's time of day, and loads the map of a warp the player stepped
   // on, keeping the partner.
   void finishTick();
@@ -706,6 +710,12 @@ public:
   }
   // The field the story's scripted moves drive (game::field::Field::holdForScript).
   [[nodiscard]] game::field::Field& field() { return *field_; }
+  // Adds and renders the connected guest as a second field-controlled player. The host uses this
+  // only after a peer has completed the coop handshake.
+  core::Result<void> addCoopGuest();
+  // Presents the host player from an interpolated network snapshot on the guest instance. It is
+  // render-only and does not enter local collision, triggers or world simulation.
+  core::Result<void> presentCoopHost(std::optional<game::field::CharacterState> state);
   // The map's sprite objects, which scripts and the gym's courses move (overworld.c:
   // tickMoveObjectTo, moveMapObjectsWithLimit).
   [[nodiscard]] render::MapDepthLayers& mapLayers() { return mapRenderer_->layers(); }
@@ -1186,6 +1196,9 @@ private:
   double flameSeconds_ = 0.0;
   std::unique_ptr<Actor> playerActor_;
   std::unique_ptr<Actor> partnerActor_;
+  std::vector<std::unique_ptr<Actor>> coopGuestActors_;
+  std::unique_ptr<Actor> coopHostProxyActor_;
+  bool coopHostProxyShown_ = false;
   // The field rules' partner mover, for a partner loaded again with another species' model.
   game::field::MoverRules partnerMover_;
   std::function<float(std::string_view)> speciesRadius_;

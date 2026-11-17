@@ -102,8 +102,8 @@
 }
 
 /* The menu box (renderInitialMenu): at (72, 50), 176 pixels wide, rows from x 82 and y 55, 12 pixels apart, and the
-   cursor 152 pixels wide from x 78. The original's four rows are five here (options), so the box is 70 pixels tall
-   instead of 58. A label wider than the original's (Spanish) widens the box to the right. */
+   cursor 152 pixels wide from x 78. The original's four rows gain options and cooperative access, so the box grows
+   to fit the added entries. A label wider than the original's (Spanish) widens the box to the right. */
 #panel {
 	position: absolute;
 	left: 376dp;

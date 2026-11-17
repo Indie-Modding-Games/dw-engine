@@ -747,6 +747,11 @@ FieldNpcs::Blocker FieldNpcs::probe(const Npc& npc, glm::vec2 step,
   if (leadingEdgeInside(self, step, surroundings.partner)) {
     return Blocker::Partner;
   }
+  if (std::ranges::any_of(surroundings.otherPlayers, [&](const GroundSquare& player) {
+        return leadingEdgeInside(self, step, player);
+      })) {
+    return Blocker::Player;
+  }
   const bool npcInTheWay = std::ranges::any_of(npcs_, [&](const Npc& other) {
     return &other != &npc && collides(other) && leadingEdgeInside(self, step, squareOf(other));
   });

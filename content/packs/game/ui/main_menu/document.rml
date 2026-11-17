@@ -21,10 +21,20 @@
 			<button id="erase" class="hidden" onclick="erase_game()" text-key="main_menu.original.erase"></button>
 			<!-- The online versus (versus_screen.hpp), in the modern layout; the original one reaches it through battle mode. -->
 			<button id="versus" onclick="open_versus()" text-key="main_menu.versus"></button>
+			<button id="multiplayer" onclick="open_coop(document)" text-key="main_menu.coop"></button>
 			<button id="battle" class="hidden" onclick="open_view(document, 'battle')" text-key="main_menu.original.battle_mode"></button>
 			<!-- The pause menu's options page over the title (logic.lua: open_options). -->
 			<button id="options" onclick="open_options(document)"></button>
 			<button id="quit" onclick="ui.send('quit')" text-key="main_menu.quit"></button>
+			<div id="coop-info" class="hidden">
+				<h2 text-key="main_menu.coop.title"></h2>
+				<p id="coop-status"></p>
+				<p text-key="main_menu.coop.test_instructions"></p>
+				<p id="coop-room-code" class="hidden"></p>
+				<button id="coop-host" onclick="ui.send('coop_host')" text-key="main_menu.coop.host"></button>
+				<button id="coop-join" onclick="ui.send('coop_join')" text-key="main_menu.coop.join"></button>
+				<button id="coop-back" onclick="close_coop(document)" text-key="common.back"></button>
+			</div>
 
 			<div id="prompts">
 				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>

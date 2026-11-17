@@ -1,8 +1,8 @@
 # field
 
-La lógica del campo (`dwe::game::field`, capa `game`): el jugador se mueve por un mapa con intenciones, choca con la
-rejilla de colisión del original, pisa disparadores y warps, y el partner le sigue. Lo que hacía el original y en qué
-se separa el motor está en la [ficha del campo](../../reference/campo.md).
+La lógica del campo (`dwe::game::field`, capa `game`): los jugadores se mueven por un mapa compartido con intenciones,
+chocan con la rejilla de colisión del original, pisan disparadores y warps, y sus partners les siguen. Lo que hacía el
+original y en qué se separa el motor está en la [ficha del campo](../../reference/campo.md).
 
 No dibuja, no lee dispositivos de entrada ni ficheros: la app le da la entrada y los `MapDocument` (de
 [`assets`](../engine/assets.md#mapas)) y lee el estado. Jugador y partner son entidades del `scene::World`
@@ -25,6 +25,24 @@ if (auto change = field.takeMapChange()) {
     field.enterMap(*dwe::assets::loadMapDocument(vfs, change->map), change->exit);
 }
 ```
+
+La app puede añadir el slot invitado al campo ya cargado y darle una entrada separada:
+
+```cpp
+if (auto added = field.addPlayer(dwe::game::field::GuestPlayerId, guestSpawn); !added) {
+    return;
+}
+if (!field.setInput(dwe::game::field::GuestPlayerId,
+                    {.stick = guestStick, .run = guestRun})) {
+    return;
+}
+field.tick(1.0F / 60.0F); // avanza una sola simulación compartida
+auto guest = field.player(dwe::game::field::GuestPlayerId);
+```
+
+La primera extracción implementa movimiento por stick y ruta de clic, temporización de clips y colisión mutua entre los
+dos cuerpos. Los triggers e interacciones del invitado, la cámara propia y el seguimiento de su compañero se integran
+en las siguientes partes de C0b/C0c; hasta entonces esos sistemas siguen leyendo al jugador host.
 
 - **Entrada** (`FieldInput`): `stick` es una dirección relativa a la cámara del mapa (x a la derecha de la pantalla,
   y hacia el fondo), de longitud 0 a 1; `run` corre; `moveTarget` es el clic para ir, que sigue un camino A* por la

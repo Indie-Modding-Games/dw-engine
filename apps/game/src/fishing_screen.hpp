@@ -8,6 +8,8 @@
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include "player_commands.hpp"
+
 #include <cstdint>
 #include <deque>
 #include <optional>
@@ -22,18 +24,6 @@ class FieldScene;
 inline constexpr std::string_view FishingBaitDocument = "fishing_bait";
 inline constexpr std::string_view FishingNoticeDocument = "fishing_notice";
 inline constexpr std::string_view FishingHudDocument = "fishing_hud";
-
-// The buttons the fishing reads on a logic tick, besides what the field reads.
-struct FishingButtons {
-  bool confirmDown = false;
-  bool cancelPressed = false;
-  // The camera button (Home; gamepad North): with it held the arrows move the view.
-  bool cameraDown = false;
-  bool left = false;
-  bool right = false;
-  bool up = false;
-  bool down = false;
-};
 
 // The pause menu's Fish (game_menu.c: initializeFishing; main/fish.c, the FISH overlay): the player
 // takes out the rod, picks a bait, casts, waits for a bite, strikes and reels the fish in, with the
