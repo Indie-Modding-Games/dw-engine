@@ -844,7 +844,7 @@ not the wide image. What still differs from the mockup depends on changes in the
 
 The design is by **DevVago**, who brought it in #308 as the `new` skin; when `new` became the mockup's "Pixel art"
 (#310), his design stayed as a skin of its own with his name ("DevVago" in the menus, `ui_skin.devvago`), in
-Options → Interface and in the skin box at each startup.
+Options → Interface and in the skin box of the first startups.
 
 - `ui/skins/devvago` extends the modern one (`extends: modern`): each screen puts its sheet on top of the modern one's, as
   in his version, which carried a copy of the modern one in `new/_base`. Of that copy only what he added remains (the colors
@@ -1027,8 +1027,8 @@ keeps its usual menu.
 | Lists | "CONTINUE/DELETE SLOT n" and any old autosaves that remain, one row per slot, in the box at (60, 50) ([save-and-load.md](save-and-load.md#35-continue)) | `main_menu.c: renderSelectCardSlot` |
 | Battle mode | Title box, message box and Yes/No box with "No" focused; "No" returns to the menu and "Yes" opens the online versus (an addition: the original's battle mode is two players on one console) | `main_menu.c: renderConfirmVSSlot` |
 | Options | The same tabbed options page as in game (Game, Graphics, Sound, Interface; Q/E, ←/→, description of each row), over the title image and without the menu's box; its bar only has "Quit game". Back returns to the menu with the cursor on OPTIONS ([From the title](../modules/apps/game.md#from-the-title)) | Added |
-| Language | Tall box in the center, with the small "LANGUAGE - IDIOMA" heading at the top left, one row per pack language with its flag and its name in its language and in uppercase (`language.native.<code>`), and "START" / "COMENZAR" at the bottom center. It appears before each "Press Start" screen, with the cursor on the current language (the settings' one or `--lang`): a confirm chooses and goes on, with a fade, to "Press Start" (when starting the game, first to the skin box, below). In OPTIONS the language is one more row of the Interface tab. Choosing changes all texts on the spot and is saved in the settings | Capture 12 (a remaster) |
-| Skin | At each game startup, right after the language and before "Press Start": a box with the title "Interface" ("Interfaz" in Spanish), in the language just chosen, and one row per skin that the packs offer (the list and order of OPTIONS → Interface), its name and a one-line hint (`<name key>.hint` in `ui_skin.yaml`) in that language. When the language is chosen, the fade to black leads to this box instead of to "Press Start" (the menu sends `title_skin_picker` and the game hides it meanwhile); without a language box (a skin with the modern menu or a route without `language_first`) it appears as soon as the title screen starts. Moving the cursor sets the skin on the spot without saving it (`ui_skin_preview`); confirming saves it like the OPTIONS row (`ui_skin`) and goes on to "Press Start" without asking the language again (`skin_picker_done`). No cancel. It appears once per run, with the cursor on the saved skin (or the packs' if there is none), when `--ui-skin` does not name a skin and there is more than one; going back to the title screen later in the same run does not ask again; never in a run without a settings file (the control channel's); an autotest only if its route says `skin_first: true` (`ui/skin_picker`, `TitleScreen::setAsksSkin`, `asksUiSkin`) | Added |
+| Language | Tall box in the center, with the small "LANGUAGE - IDIOMA" heading at the top left, one row per pack language with its flag and its name in its language and in uppercase (`language.native.<code>`), and "START" / "COMENZAR" at the bottom center. It appears before the "Press Start" screen until the player has chosen a language (none saved and no `--lang`; `asksLanguage`), with the cursor on the current one (the system's): a confirm chooses and goes on, with a fade, to "Press Start" (when starting the game, first to the skin box, below). In OPTIONS the language is one more row of the Interface tab. Choosing changes all texts on the spot and is saved in the settings, so later startups and returns to the title go straight to "Press Start" | Capture 12 (a remaster) |
+| Skin | At the game's startups until a skin is chosen, right after the language and before "Press Start": a box with the title "Interface" ("Interfaz" in Spanish), in the language just chosen, and one row per skin that the packs offer (the list and order of OPTIONS → Interface), its name and a one-line hint (`<name key>.hint` in `ui_skin.yaml`) in that language. When the language is chosen, the fade to black leads to this box instead of to "Press Start" (the menu sends `title_skin_picker` and the game hides it meanwhile); without a language box (a skin with the modern menu or a route without `language_first`) it appears as soon as the title screen starts. Moving the cursor sets the skin on the spot without saving it (`ui_skin_preview`); confirming saves it like the OPTIONS row (`ui_skin`) and goes on to "Press Start" without asking the language again (`skin_picker_done`). No cancel. It appears once per run, with the cursor on the packs' skin, while none is saved, `--ui-skin` does not name one and there is more than one; once chosen, later startups skip it and OPTIONS → Interface changes it; going back to the title screen later in the same run does not ask again; never in a run without a settings file (the control channel's); an autotest only if its route says `skin_first: true` (`ui/skin_picker`, `TitleScreen::setAsksSkin`, `asksUiSkin`) | Added |
 
 **Flags.** Each language names its own with `language.flag.<code>`, the asset id of an image, the same in the
 texts of all languages (like `language.native.<code>`); without a key, the row goes without a flag. The `en` and `es` ones
@@ -1037,8 +1037,8 @@ by `scripts/art/make_flags.py` (Python standard library only). A new language br
 
 The sounds are the original's: move 2, confirm 3, cancel 4 (`ui_sounds.yaml`, `main_menu.c: tickMenuInput`).
 The game publishes `title.boot` (the title screen starts at "Press Start": at startup, after the movie and when returning from a
-game) and `title.language_first` (the language box goes first; an autotest only sees it if its route says
-`language_first: true`). At startup the game also publishes `title.skin_first` (after the language box the menu
+game) and `title.language_first` (the language box goes first, until a language is chosen; an autotest only sees it if its
+route says `language_first: true`). At startup the game also publishes `title.skin_first` (after the language box the menu
 asks for the skin box with `title_skin_picker`; only the first time in each run) and, when returning from it, `title.after_skin_picker` (straight to "Press
 Start", without asking the language again). The title screen's questions
 carry `dialog.at_title`, and the original-look skin draws them with its box over the list.
@@ -1046,7 +1046,7 @@ carry `dialog.at_title`, and the original-look skin draws them with its box over
 **Documented improvements** (optional, on purpose): with saved games the cursor starts on CONTINUE GAME
 (`FocusContinueWhenSaved` in `logic.lua`; the original starts on NEW GAME); Escape and cancel go back one level
 (the original's menu has no "back"); Start is also accepted during the fade-in; the language box
-before "Press Start", at each startup and each return to the title screen (our addition, like the remaster of
+before "Press Start", until the player has chosen a language (our addition, like the remaster of
 capture 9; the original does not have it); the summary box of the focused game and moving eight rows at a time with
 left and right; the mouse focuses on hover and confirms with a click, and the gamepad does the same as the keyboard.
 

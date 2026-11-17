@@ -821,7 +821,7 @@ timeout: 600              # seconds for the whole route
 main_menu: false          # true: starts at the main menu instead of in the field
 boot_screen: false        # true (with main_menu): the cover starts at "Press Start"
 language_first: false     # true (with boot_screen): first, the language box, as when starting the game
-skin_first: false         # true (with boot_screen): after the language box (or without it, at the start), the look box, as on every game start
+skin_first: false         # true (with boot_screen): after the language box (or without it, at the start), the look box, as on the first game starts
 new_game_rules: false     # true (with main_menu): the new game goes through the rules screen (otherwise it starts with the original's)
 new_game: seeded          # original: the new game runs the opening (seeded by default, the free field)
 new_game_scene: false     # true (with main_menu): the new game goes through the old man's questions and names

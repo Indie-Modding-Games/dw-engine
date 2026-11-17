@@ -100,7 +100,8 @@ they are English constants in each module's `messages.hpp`.
    `SDL_GetPrefPath`), if the packages still have it.
 3. The system language (`SDL_GetPreferredLocales`), if the packages have it. If not, English.
 
-The player chooses it in the language box that appears on startup with the original look, and changes it in the
+The player chooses it once, on the first start's screen or in the language box that the original look shows until
+one is chosen, and changes it later in the
 "Language" row of the Interface tab of the options, from the main menu or from the pause menu (next to
 "Original-look text", [original look](ui.md#original-look), which is saved in the same settings). It is used with
 mouse, keyboard and gamepad. Left and right, or confirm, move to the next language. That choice changes the whole

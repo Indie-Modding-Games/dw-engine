@@ -17,6 +17,8 @@ namespace dwe::app {
 // The UI setting with the player's language and the command that changes it.
 inline constexpr std::string_view LanguageSetting = "language";
 inline constexpr std::string_view LanguageCommand = "language";
+// The title's setting that shows the language box before the "Press Start" screen (an addition).
+inline constexpr std::string_view LanguageFirstSetting = "title.language_first";
 
 // The language the game starts in: --lang when given (an error if the packs do not have it), else
 // the saved setting when the packs still have it, else the system's (localization::pickLanguage).
@@ -25,8 +27,13 @@ core::Result<std::string> startLanguage(std::span<const std::string> available,
                                         const std::optional<std::string>& saved,
                                         std::string_view system);
 
+// Whether the title asks the language on this boot: only until the player has chosen one (here or
+// on the first start's screen) and --lang does not name one. The options page changes it later.
+[[nodiscard]] bool asksLanguage(const std::optional<std::string>& commandLine,
+                                const std::optional<std::string>& saved);
+
 // Changes the player's language while the game runs: the catalog, every text the UI shows, and the
-// saved setting.
+// saved setting. Once chosen, the title no longer asks it (LanguageFirstSetting).
 class LanguageChanger {
 public:
   // settingsFile is where the choice is saved; nothing for runs that must not touch the user's
