@@ -87,7 +87,7 @@ between game versions.
 The list comes from `apps/game/src/ui_contract.cpp`. A test compares it with this page, with
 `content/schemas/ui_api/ui_api.json` (the same list for tools and editors) and with what each screen's scripts read and
 send; `DWE_WRITE_API_DOC=1` when running the game's tests rewrites both. For now it covers the HUD, the pause menu, the
-partner menu, the box for the skin on each startup, the notices, the battle (with what a cup battle shows), online
+partner menu, the startup's skin box, the notices, the battle (with what a cup battle shows), online
 versus and the story boxes (the text box, the save dialog and the name box); the rest of the screens comes later.
 
 ## Reference

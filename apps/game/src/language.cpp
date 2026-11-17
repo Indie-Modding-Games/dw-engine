@@ -48,6 +48,11 @@ core::Result<std::string> startLanguage(std::span<const std::string> available,
   return picked;
 }
 
+bool asksLanguage(const std::optional<std::string>& commandLine,
+                  const std::optional<std::string>& saved) {
+  return !commandLine && !saved;
+}
+
 LanguageChanger::LanguageChanger(localization::Catalog& texts, ui::Ui& ui, UserSettings& settings,
                                  std::optional<std::filesystem::path> settingsFile)
     : texts_{&texts}, ui_{&ui}, settings_{&settings}, settingsFile_{std::move(settingsFile)} {}
@@ -60,6 +65,7 @@ void LanguageChanger::change(std::string_view language) {
   core::logInfo(messages::LanguageChanged, language);
   ui_->setSetting(LanguageSetting, std::string{language});
   ui_->refreshTexts();
+  ui_->setSetting(LanguageFirstSetting, false);
   settings_->language = std::string{language};
   if (settingsFile_) {
     saveUserSettings(*settingsFile_, *settings_);

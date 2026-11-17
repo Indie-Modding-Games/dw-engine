@@ -782,9 +782,12 @@ int runGame(const Options& requested) {
   MenuSounds menuSounds{sound, files};
   PauseBox pauseBox;
   (*ui)->setSetting(LanguageSetting, texts->language());
-  // The original look's title screen asks for the language before each "Press Start" screen
-  // (title.language_first; an addition, as a remaster's); an autotest only when its route asks.
-  (*ui)->setSetting("title.language_first", autotest == nullptr || autotest->asksLanguageFirst());
+  // The original look's title screen asks for the language before the "Press Start" screen
+  // (title.language_first; an addition, as a remaster's) until the player has chosen one; an
+  // autotest only when its route asks.
+  (*ui)->setSetting(LanguageFirstSetting,
+                    autotest ? autotest->asksLanguageFirst()
+                             : asksLanguage(options.language, userSettings.language));
   MinimapChanger minimapChanger{userSettings, settingsFile};
   GraphicsChanger graphics{userSettings, settingsFile, startGraphics};
   // The title's pictures, smoothed with the texture filter «upscaled», keep what the upscaler made
@@ -941,12 +944,12 @@ int runGame(const Options& requested) {
   VersusScreen versus{files, options, !autotest, **ui, renderer->get(), &sound};
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
-  // Each boot asks the UI skin after the language box (an addition), the cursor on the saved one;
+  // A boot asks the UI skin after the language box (an addition) until the player has chosen one;
   // an autotest only when its route asks, and a run with no settings to keep it in (the control
   // channel's) never.
   title.setAsksSkin(autotest ? autotest->asksSkinFirst()
-                             : settingsFile &&
-                                   asksUiSkin(options.uiSkin, (*ui)->skins().skins().size()));
+                             : settingsFile && asksUiSkin(options.uiSkin, userSettings.uiSkin,
+                                                          (*ui)->skins().skins().size()));
   // What waits for the movie that plays: the title, or a game to start (main.c: main).
   std::optional<PlayStart> startAfterMovie;
   // The new game that waits for the opening's questions.

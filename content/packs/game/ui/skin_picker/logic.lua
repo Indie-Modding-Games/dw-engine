@@ -1,6 +1,6 @@
--- The UI skin, asked on each boot of the game (docs/architecture/ui.md, the title's «Skins» row):
--- right after the language box, before the "Press Start" screen, the title screen shows this box
--- once a run, the cursor on the skin shown (the saved one, else the packs' default). One row per
+-- The UI skin, asked on the boots before the player has chosen one (docs/architecture/ui.md, the
+-- title's «Skins» row): right after the language box, before the "Press Start" screen, the title
+-- screen shows this box once a run, the cursor on the skin shown (the packs' default). One row per
 -- skin the packs offer (ui.skins(), the options page's list and order), its name and a one-line
 -- hint (the name's key plus ".hint", none when the texts lack it) in the language just chosen.
 -- Moving the cursor puts the skin on at once (ui_skin_preview, not saved); confirming sends

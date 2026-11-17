@@ -157,7 +157,7 @@ everything they read and send in the [interface API](ui-api.md):
 | `hud` | The field HUD: clock, gauges, needs, minimap |
 | `pause_menu` | The pause menu and the options |
 | `partner_menu` | The partner's sheet and the bag |
-| `skin_picker` | The skin question at each startup, after the language box |
+| `skin_picker` | The skin question at startup until one is chosen, after the language box |
 | `pause_box` | The pause box |
 | `field_item_notice` | The notice of an item on the ground or in a chest |
 | `award_notice` | The notice of a prize |
