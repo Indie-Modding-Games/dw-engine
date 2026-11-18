@@ -75,7 +75,8 @@ dw-engine/
 │                           la del lanzador y la de Wine
 ├─ .github/
 │  ├─ workflows/            ci.yml (comprobaciones de los pull requests), release.yml (versión de prueba en cada
-│  │                        fusión), promote.yml (versión estable), platform-check.yml, docs-pages.yml
+│  │                        fusión), promote.yml (versión estable), signal.yml (despliegue del signal
+│  │                        server), platform-check.yml, docs-pages.yml
 │  ├─ actions/              pasos compartidos de los flujos
 │  ├─ CONTRIBUTING.md       enlace a docs/contributing.md
 │  └─ pull_request_template.md

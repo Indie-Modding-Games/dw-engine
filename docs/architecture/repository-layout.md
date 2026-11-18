@@ -75,7 +75,8 @@ dw-engine/
 │                           the launcher's and the Wine one
 ├─ .github/
 │  ├─ workflows/            ci.yml (pull request checks), release.yml (test version on every
-│  │                        merge), promote.yml (stable version), platform-check.yml, docs-pages.yml
+│  │                        merge), promote.yml (stable version), signal.yml (signal server deploy),
+│  │                        platform-check.yml, docs-pages.yml
 │  ├─ actions/              steps shared by the workflows
 │  ├─ CONTRIBUTING.md       link to docs/contributing.md
 │  └─ pull_request_template.md

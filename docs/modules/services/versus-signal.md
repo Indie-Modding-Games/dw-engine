@@ -30,7 +30,9 @@ The Durable Object uses the WebSocket hibernation API: a room that is waiting co
 ## Status
 
 Deployed on Cloudflare (Workers with Durable Objects) at `wss://dwe-versus-signal.regamelabs.workers.dev`, the address that `content/packs/game/versus/network.yaml` carries (`signal_server`). `wrangler.toml` carries no account, route or
-secrets: it is deployed with `npx wrangler deploy` and the account of whoever deploys. Later it will be able to hand out short-lived TURN
+secrets: the Signal server workflow (`.github/workflows/signal.yml`) deploys it when a change to it lands on main, or by
+hand from Actions. To work on it, run `npx wrangler dev` in `apps/versus-signal` and start the game with
+`--versus-server ws://localhost:8787`; versus and co-op both take that address. Later it will be able to hand out short-lived TURN
 credentials for networks with no direct route.
 
 ## Tests
