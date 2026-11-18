@@ -5,6 +5,8 @@
 
 #include <map>
 #include <numbers>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -30,6 +32,9 @@ public:
   std::map<std::int64_t, Actor> actors;
   // What wouldTouchCharacter answers for everyone.
   bool touching = false;
+  // The camera's pans asked for (focus, seconds), and whether one is still under way.
+  std::vector<std::pair<glm::vec3, float>> pans;
+  bool panning = false;
 
   void step() {
     for (auto& [id, actor] : actors) {
@@ -64,8 +69,8 @@ public:
   [[nodiscard]] bool wouldTouchCharacter(std::int64_t /*character*/) const override {
     return touching;
   }
-  void panCamera(glm::vec3 /*focus*/, float /*seconds*/) override {}
-  [[nodiscard]] bool cameraPanning() const override { return false; }
+  void panCamera(glm::vec3 focus, float seconds) override { pans.emplace_back(focus, seconds); }
+  [[nodiscard]] bool cameraPanning() const override { return panning; }
   void shiftCamera(glm::vec3 /*by*/) override {}
   void resetOrigin(std::int64_t /*character*/) override {}
   [[nodiscard]] bool turnMapObject(std::int64_t /*object*/, std::int64_t /*direction*/) override {
@@ -319,4 +324,26 @@ TEST_CASE("a move to a point still ends on its own count when nothing holds it b
   }
   REQUIRE(done());
   CHECK(frame <= 23);
+}
+
+TEST_CASE("the camera's pan to the player starts where the player stands and holds its slot") {
+  // start_battle after a victory (script_interp.c:1949): SCRIPT_MOVEMENT[10] pans to entity 0xFD
+  // in 10 frames; checkCameraMovement starts it on the first frame and frees the slot on the frame
+  // after the pan is over.
+  Floor floor;
+  floor.actors[PlayerScriptId] = {.slot = 0, .position = {126.0F, 0.0F, -949.0F}};
+  ScriptMotion motion{floor, MotionRules{.frameSeconds = FrameSeconds}};
+  motion.cameraToCharacter(PlayerScriptId, 10);
+  CHECK(motion.cameraMoving());
+  motion.scriptFrame();
+  floor.panning = true;
+  REQUIRE(floor.pans.size() == 1);
+  CHECK(floor.pans[0].first == glm::vec3{126.0F, 0.0F, -949.0F});
+  CHECK(floor.pans[0].second == doctest::Approx(10.0F * FrameSeconds));
+  motion.scriptFrame();
+  CHECK(motion.cameraMoving());
+  floor.panning = false;
+  motion.scriptFrame();
+  CHECK_FALSE(motion.cameraMoving());
+  CHECK(floor.pans.size() == 1);
 }

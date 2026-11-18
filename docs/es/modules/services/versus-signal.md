@@ -18,6 +18,7 @@ anfitrión ──WebSocket /v1/host──►  sala K7Q2  ◄──WebSocket /v1/
 
 - El anfitrión abre `/v1/host` y recibe `room` con un código de cuatro caracteres (`23456789ABCDEFGHJKLMNPQRSTUVWXYZ`,
   sin 0, 1, O ni I). Si el código que sale está en uso, el Worker prueba otro.
+  La sala es privada: solo `/v1/host?public=1` la pone en la lista pública (`GET /v1/rooms`).
 - El invitado abre `/v1/join/<código>` (sin mayúsculas, espacios ni guiones) y recibe `joined`; el anfitrión recibe
   `peer` y empieza la oferta.
 - `signal` se reenvía tal cual al otro. Cuando los dos mandan `done` (ya están conectados) la sala se cierra; si solo
@@ -30,7 +31,9 @@ El Durable Object usa la API de hibernación de WebSockets: una sala esperando n
 ## Estado
 
 Desplegado en Cloudflare (Workers con Durable Objects) en `wss://dwe-versus-signal.regamelabs.workers.dev`, la dirección que trae `content/packs/game/versus/network.yaml` (`signal_server`). `wrangler.toml` no lleva cuenta, ruta ni
-secretos: se despliega con `npx wrangler deploy` y la cuenta de quien despliega. Más adelante podrá dar credenciales TURN
+secretos: el workflow Signal server (`.github/workflows/signal.yml`) lo despliega cuando un cambio suyo entra en main, o
+a mano desde Actions. Para trabajar en él, `npx wrangler dev` en `apps/versus-signal` y el juego con
+`--versus-server ws://localhost:8787`; versus y co-op usan esa dirección. Más adelante podrá dar credenciales TURN
 de corta vida para las redes sin ruta directa.
 
 ## Tests

@@ -711,17 +711,11 @@ public:
   // The field the story's scripted moves drive (game::field::Field::holdForScript).
   [[nodiscard]] game::field::Field& field() { return *field_; }
   // Adds and renders the connected guest as a second field-controlled player. The host uses this
-  // after a peer has completed the coop handshake; the joining client also adds it for prediction.
+  // only after a peer has completed the coop handshake.
   core::Result<void> addCoopGuest();
-  // Adds the guest's Digimon as a second companion actor on both peers.
-  core::Result<void> addCoopGuestPartner(std::string_view species);
-  // On the joining client, the second field player is locally predicted and the host player is a
-  // remote presentation proxy.
-  void setCoopGuestLocalView(bool enabled) { coopGuestLocalView_ = enabled; }
   // Presents the host player from an interpolated network snapshot on the guest instance. It is
   // render-only and does not enter local collision, triggers or world simulation.
   core::Result<void> presentCoopHost(std::optional<game::field::CharacterState> state);
-  core::Result<void> presentCoopHostPartner(std::optional<game::field::CharacterState> state);
   // The map's sprite objects, which scripts and the gym's courses move (overworld.c:
   // tickMoveObjectTo, moveMapObjectsWithLimit).
   [[nodiscard]] render::MapDepthLayers& mapLayers() { return mapRenderer_->layers(); }
@@ -802,19 +796,10 @@ private:
     // technique effects name that species' joints, and they go on these of its own.
     std::map<std::int32_t, std::int32_t> effectJoints{};
   };
-  // A second tamer instance reuses the already uploaded player model while keeping its own pose.
-  struct CoopPlayerVisual {
-    scene::Entity entity{};
-    std::unique_ptr<animation::AnimationPlayer> player;
-    std::optional<scene::Motion> motion;
-    std::optional<std::uint32_t> motionClip;
-  };
 
   // Behind the game menu: the actor's idle clip from its start, played on by `seconds`
   // (setPartnerIdling; FieldClock::MenuRest).
   void restOnIdle(Actor& actor, double seconds);
-  void animateCoopPlayer(CoopPlayerVisual& actor, double seconds);
-  void submitCoopPlayer(const CoopPlayerVisual& actor, float alpha);
   // anim.c: animateEntityTexture: steps the original's frame count by `seconds` and puts the
   // frame's flame strip on every flame species shown (flame_texture.hpp).
   void advanceFlames(double seconds);
@@ -977,9 +962,8 @@ private:
   bool animateFollowingPartner(Actor& actor, double seconds, bool followed);
   // What the partner's conditions and happiness say to the field's follow.
   [[nodiscard]] game::field::PartnerMood partnerMood() const;
-  struct PartnerLook;
   game::partner::FieldAnimation partnerAnimation(const Actor& actor, scene::Motion motion,
-                                                 double seconds, PartnerLook& look);
+                                                 double seconds);
   // How an actor is drawn besides its pose: its size, its tint, its palette lifted toward white and
   // the bones left out (a bit each).
   struct Look {
@@ -1212,15 +1196,9 @@ private:
   double flameSeconds_ = 0.0;
   std::unique_ptr<Actor> playerActor_;
   std::unique_ptr<Actor> partnerActor_;
-  std::vector<CoopPlayerVisual> coopGuestActors_;
-  std::optional<scene::Entity> coopGuestEntity_;
-  std::unique_ptr<Actor> coopGuestPartnerActor_;
-  std::string coopGuestPartnerSpecies_;
-  float coopGuestPartnerScale_ = 1.0F;
-  bool coopGuestLocalView_ = false;
-  std::optional<game::field::CharacterState> coopHostPresentation_;
-  std::optional<game::field::CharacterState> coopHostPartnerPresentation_;
-  PartnerLook coopGuestPartnerLook_;
+  std::vector<std::unique_ptr<Actor>> coopGuestActors_;
+  std::unique_ptr<Actor> coopHostProxyActor_;
+  bool coopHostProxyShown_ = false;
   // The field rules' partner mover, for a partner loaded again with another species' model.
   game::field::MoverRules partnerMover_;
   std::function<float(std::string_view)> speciesRadius_;

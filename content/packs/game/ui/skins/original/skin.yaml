@@ -216,7 +216,8 @@ sprite_sheets:
       menu-player-active: [20, 20, 20, 20]
       menu-cursor-corner: [0, 59, 4, 4]
       menu-cursor-bar: [4, 59, 4, 4]
-      menu-cursor-side: [8, 59, 4, 4]
+      # The side's two solid rows (row 59 is empty): stretched between the corners (pause_menu/style.rcss).
+      menu-cursor-side: [8, 61, 4, 2]
   # The date's digits (game_menu.c: renderDateDigits): FI_INFO with CLUT 0x7f10 (row 508, palette 12). The
   # 8x12 cells without their first column, which carries pixels of the neighboring digit and is not seen in the original.
   - name: ow-field-menu-digits

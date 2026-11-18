@@ -46,7 +46,8 @@ two real libdatachannel peers connect in a test with no network.
 ## Deploying it
 
 It is deployed at `wss://dwe-versus-signal.regamelabs.workers.dev`. `wrangler.toml` holds no account, route or secrets;
-it is deployed with the account of whoever does it:
+the Signal server workflow (`.github/workflows/signal.yml`) deploys it when a change to it lands on main, or by hand
+from Actions. By hand, with your own account:
 
 ```sh
 cd apps/versus-signal

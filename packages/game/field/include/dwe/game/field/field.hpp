@@ -219,14 +219,6 @@ public:
   [[nodiscard]] bool waitingAtWarp(PlayerId id) const;
   [[nodiscard]] std::size_t playerCount() const { return otherPlayers_.size() + 1; }
 
-  // Puts a remote guest body where the host's authoritative simulation says it is. Only meaningful
-  // on a joining client's predicted field: the client advances its own guest from the commands it
-  // sent, and when the host's snapshot disagrees (a teleport, a lost command, a step the host
-  // refused) this corrects the transform so both see the same world. It does not touch motion or
-  // animation: the next tick's input drives those, and the glide/drawnPose paths keep the drawing
-  // smooth over the correction. The host player and the partner never reconcile from a snapshot.
-  void reconcilePlayer(PlayerId id, const CharacterState& authoritative);
-
   // Advances the logic by `seconds` (the app's fixed tick). On a warp the player walks on for the
   // fade out, without collision and without input; then nothing moves until the app enters the new
   // map and the fade in ends. The player and the partner walk on frames of the original
@@ -390,13 +382,7 @@ public:
   // entry; a trigger under the player fires only once stepped onto again.
   void setCollision(const assets::MapCollision& collision);
 
-  // Whether the world is holding its players this tick: a script, a care scene, an item notice, a
-  // destination choice or a map change's fade-out/wait. While held, the field freezes guest motion
-  // and consumes guest confirm; the host tells the client this so it stops predicting forward.
-  [[nodiscard]] bool held() const;
-
   // Extra toilets (extra_toilets.hpp, an engine improvement, off by default): the list of every
-
   // map's, and whether they are on. While on, the free cells under the current map's booths are
   // solid and those in front of them take the toilet trigger (set on each map entry); turned off,
   // they are free again.
@@ -569,6 +555,13 @@ public:
   // partner to make room on foot first (makeRoomForPlayer). An NPC put on the map or let go asks
   // for the same check by itself.
   void releaseHandoff(std::string_view why);
+  // A loaded game (an engine rule: dwe saves anywhere, the original only where no enemy stands):
+  // until the player first moves (or the map changes), the release rule also takes him out of an
+  // NPC's square he stands in (a wild enemy the map's entry script spawns where he was saved), to
+  // the nearest free spot, at once rather than after the partner made room, so a load never starts
+  // a battle by itself.
+  void yieldPlayerToNpcsOnLoad() { playerYieldsToNpcs_ = true; }
+  [[nodiscard]] bool playerYieldsToNpcs() const { return playerYieldsToNpcs_; }
   // A battle's frames (battle_main.c: BTL_tickPartnerWaypointTrail): the fighting partner's cells
   // out of the player's sight go on its trail, which the release after the battle keeps.
   void startBattleTrail(glm::vec3 partner);
@@ -635,7 +628,7 @@ private:
   void resetOtherPlayerMotion(bool clearInput);
   void placeOtherPlayersNearHost();
   [[nodiscard]] bool playerTouchesOtherPlayer(scene::Entity entity, glm::vec3 from,
-                                             glm::vec2 step) const;
+                                              glm::vec2 step) const;
   void planPath(std::optional<glm::vec3>& moveTarget, std::vector<glm::vec3>& path,
                 glm::vec3 position, glm::vec3 target, bool allowTargetWarp = false);
   glm::vec2 followPath(std::optional<glm::vec3>& moveTarget, std::vector<glm::vec3>& path,
@@ -884,6 +877,8 @@ private:
   std::int32_t partnerTeleports_ = 0;
   // Set when a script lets the player go, until the partner has made room (makeRoomForPlayer).
   bool partnerMakesRoom_ = false;
+  // yieldPlayerToNpcsOnLoad, until the player first moves or the map changes.
+  bool playerYieldsToNpcs_ = false;
 
   struct CameraPan {
     glm::vec3 from{};

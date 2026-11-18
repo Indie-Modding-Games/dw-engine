@@ -30,16 +30,12 @@ struct PresentedCoopWorld {
 class CoopSnapshotInterpolation {
 public:
   [[nodiscard]] bool push(game::coop::Snapshot snapshot);
-  [[nodiscard]] bool push(game::coop::Snapshot snapshot, net::Millis receivedAt);
   [[nodiscard]] std::optional<PresentedCoopWorld> sample(float alpha) const;
-  [[nodiscard]] std::optional<PresentedCoopWorld> sample(net::Millis now) const;
   void reset();
 
 private:
   std::optional<game::coop::Snapshot> previous_;
   std::optional<game::coop::Snapshot> latest_;
-  std::optional<net::Millis> previousAt_;
-  std::optional<net::Millis> latestAt_;
 };
 
 } // namespace dwe::app

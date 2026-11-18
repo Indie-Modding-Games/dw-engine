@@ -4,8 +4,7 @@
 
 namespace dwe::app {
 
-core::Result<game::coop::Commands> toCoopCommand(const PlayerCommands& commands,
-                                                  std::uint32_t sequence) {
+core::Result<game::coop::Commands> toCoopCommand(const PlayerCommands& commands) {
   const glm::vec2 stick = commands.field.stick;
   if (!std::isfinite(stick.x) || !std::isfinite(stick.y) || std::abs(stick.x) > 1.0F ||
       std::abs(stick.y) > 1.0F) {
@@ -29,7 +28,7 @@ core::Result<game::coop::Commands> toCoopCommand(const PlayerCommands& commands,
     field.moveTarget = std::pair{static_cast<std::int32_t>(std::lround(target.x)),
                                  static_cast<std::int32_t>(std::lround(target.z))};
   }
-  return game::coop::Commands{.sequence = sequence, .field = field};
+  return game::coop::Commands{.sequence = commands.sequence, .field = field};
 }
 
 PlayerCommands fromCoopCommand(const game::coop::Commands& commands) {
@@ -50,7 +49,7 @@ PlayerCommands fromCoopCommand(const game::coop::Commands& commands) {
 
 PlayerCommands NetworkFieldController::next(std::uint64_t /*tick*/) {
   return fromCoopCommand(game::coop::Commands{.sequence = buffer_.sequence().value_or(0),
-                                               .field = buffer_.current(now_)});
+                                              .field = buffer_.current(now_)});
 }
 
 } // namespace dwe::app

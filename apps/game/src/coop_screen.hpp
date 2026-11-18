@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/game/coop/profile_transfer.hpp>
 #include <dwe/ui/ui.hpp>
 
 #include <memory>
@@ -10,8 +11,6 @@
 
 #include "coop_connection.hpp"
 #include "options.hpp"
-
-#include <dwe/game/coop/profile_transfer.hpp>
 
 namespace dwe::app {
 
@@ -26,19 +25,17 @@ public:
   [[nodiscard]] bool takesText() const { return active_ && connection_.takesText(); }
   void type(std::string_view text, bool enter);
   void tick(double nowSeconds);
-  // Advances link state without consuming application messages. Use while CoopGameplayBridge owns
-  // the link's receive queue during gameplay.
-  void syncConnection(double nowSeconds);
   [[nodiscard]] bool active() const { return active_; }
   [[nodiscard]] game::coop::CoopLink* link() { return connection_.link(); }
   [[nodiscard]] bool connected() const { return connection_.connected(); }
   [[nodiscard]] bool isHost() const { return isHost_; }
   [[nodiscard]] bool guestReady() const { return remoteReady_; }
   [[nodiscard]] bool takeStartRequested() { return std::exchange(startRequested_, false); }
-  [[nodiscard]] bool takeGuestProfileRequest() { return std::exchange(guestProfileRequest_, false); }
+  [[nodiscard]] bool takeGuestProfileRequest() {
+    return std::exchange(guestProfileRequest_, false);
+  }
   [[nodiscard]] bool selectingGuestProfile() const { return selectingGuestProfile_; }
   [[nodiscard]] bool selectingHostStart() const { return selectingHostStart_; }
-  [[nodiscard]] std::optional<std::string> guestPartnerSpecies() const;
   [[nodiscard]] std::optional<std::string> takeRemoteStartText();
   [[nodiscard]] core::Result<void> provideGuestSave(std::string_view saveText);
   [[nodiscard]] core::Result<void> sendHostStart(std::string_view saveText);
@@ -49,8 +46,7 @@ private:
   void receiveMessages();
   void completeRemoteStart();
   [[nodiscard]] core::Result<void> sendProfile(game::coop::ProfilePayloadKind kind,
-                                               std::uint32_t transferId,
-                                               std::string_view saveText);
+                                               std::uint32_t transferId, std::string_view saveText);
 
   ui::Ui* ui_;
   CoopConnection connection_;

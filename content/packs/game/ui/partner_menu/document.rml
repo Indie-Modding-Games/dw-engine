@@ -6,6 +6,7 @@
 	<script src="../common/panel_enter.lua"></script>
 	<script src="../common/bag_slot.lua"></script>
 	<script src="../common/screen_fit.lua"></script>
+	<script src="../common/fit_text.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -31,7 +32,7 @@
                 <div id="status-specials" class="profile-meta"><span id="status-special-0" class="status-special"></span><span id="status-special-1" class="status-special"></span><span id="status-special-2" class="status-special"></span></div>
                 <span id="status-type" class="profile-meta"></span><span id="status-active" class="profile-meta original-look"></span>
 				<div id="status-head">
-					<span class="original-look" id="status-name"></span>
+					<span class="original-look" id="status-name"><span id="status-name-text" style="white-space: nowrap;"></span></span>
 					<span class="original-look head-value" id="status-lives"></span>
 				</div>
                 <span id="status-life-label" class="status-native-life original-look"></span><div id="status-life-hearts" class="status-native-life"><span class="life-heart" id="life-heart-0"><span class="life-outline"></span><span class="life-fill" id="life-fill-0"></span></span><span class="life-heart" id="life-heart-1"><span class="life-outline"></span><span class="life-fill" id="life-fill-1"></span></span><span class="life-heart" id="life-heart-2"><span class="life-outline"></span><span class="life-fill" id="life-fill-2"></span></span></div>
@@ -153,7 +154,7 @@
 <span class="tech-column column-5"></span>
 <span class="tech-column column-6"></span>
 <span class="tech-column column-7"></span>
-</div><div id="tech-info" class="hidden"><span id="tech-info-heading" text-key="partner_menu.tech.data"></span><span id="tech-info-tl" class="info-corner"></span><span id="tech-info-tr" class="info-corner"></span><span id="tech-info-bl" class="info-corner"></span><span id="tech-info-br" class="info-corner"></span><span id="tech-info-notch" class="info-corner"></span><div id="tech-info-stats"><div id="tech-info-name" class="original-look"></div><span class="info-label info-power" text-key="partner_menu.tech.power"></span><span class="info-colon info-power"></span><span class="info-value original-look info-power" id="tech-info-power"></span><span class="info-label info-mp" text-key="partner_menu.tech.mp"></span><span class="info-colon info-mp"></span><span class="info-value original-look info-mp" id="tech-info-mp"></span><span class="info-label info-range" text-key="partner_menu.tech.range"></span><span class="info-colon info-range"></span><span class="info-value original-look info-range" id="tech-info-range"></span><span class="info-label info-effect" text-key="partner_menu.tech.effect"></span><span class="info-colon info-effect"></span><span class="info-value original-look info-effect" id="tech-info-effect"></span></div></div><div id="tech-message"></div>
+</div><div id="tech-info" class="hidden"><span id="tech-info-heading" text-key="partner_menu.tech.data"></span><span id="tech-info-tl" class="info-corner"></span><span id="tech-info-tr" class="info-corner"></span><span id="tech-info-bl" class="info-corner"></span><span id="tech-info-br" class="info-corner"></span><span id="tech-info-notch" class="info-corner"></span><div id="tech-info-stats"><div id="tech-info-name" class="original-look"><span id="tech-info-name-text"></span></div><span class="info-label info-power" text-key="partner_menu.tech.power"></span><span class="info-colon info-power" id="tech-info-colon-power"></span><span class="info-value original-look info-power" id="tech-info-power"></span><span class="info-label info-mp" text-key="partner_menu.tech.mp"></span><span class="info-colon info-mp" id="tech-info-colon-mp"></span><span class="info-value original-look info-mp" id="tech-info-mp"></span><span class="info-label info-range" text-key="partner_menu.tech.range"></span><span class="info-colon info-range" id="tech-info-colon-range"></span><span class="info-value original-look info-range" id="tech-info-range"></span><span class="info-label info-effect" text-key="partner_menu.tech.effect"></span><span class="info-colon info-effect" id="tech-info-colon-effect"></span><span class="info-value original-look info-effect" id="tech-info-effect"></span></div></div><div id="tech-message"></div>
             </div>
 
 			<div id="page-items" class="page hidden">

@@ -169,6 +169,9 @@ core::Result<EvolutionTables> EvolutionTables::build(const assets::DigimonTable&
     }
     tables.speciesById_.insert_or_assign(entry.id, entry.index);
     tables.species_.insert_or_assign(entry.index, std::move(data));
+    if (entry.boneCount > 0) {
+      tables.modelled_.insert(entry.index);
+    }
   }
   // A row belongs to the Digimon it names, so a pack's new Digimon finds its rows whatever index it
   // got; a row whose Digimon is a raw number outside the table keeps its place by index, as the
@@ -397,6 +400,9 @@ const StatReference* EvolutionTables::statReference(Species target) const {
 }
 
 const StatReference* EvolutionTables::cheatReference(Species target) const {
+  if (!modelled_.contains(target)) {
+    return nullptr;
+  }
   if (const StatReference* own = statReference(target);
       own != nullptr && species(own->loads) != nullptr) {
     return own;

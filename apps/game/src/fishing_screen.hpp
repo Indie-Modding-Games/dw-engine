@@ -17,6 +17,8 @@
 #include <string_view>
 #include <vector>
 
+#include "player_commands.hpp"
+
 namespace dwe::app {
 
 class FieldScene;

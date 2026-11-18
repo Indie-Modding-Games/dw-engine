@@ -1,0 +1,40 @@
+name: Signal server
+
+# Deploys apps/versus-signal (the online versus and co-op signaling server) to Cloudflare when a
+# change to it lands on main, or by hand (Actions > Signal server > Run workflow). Its tests run
+# first; the CI workflow already runs them on pull requests. The Cloudflare token and account come
+# from the repository's CLOUDFLARE_API_TOKEN secret and CLOUDFLARE_ACCOUNT_ID variable.
+on:
+  push:
+    branches: [main]
+    paths: ['apps/versus-signal/**', '.github/workflows/signal.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: signal-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/versus-signal
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Tests
+        run: node --test
+
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.150.0 deploy

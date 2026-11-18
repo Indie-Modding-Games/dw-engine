@@ -33,8 +33,8 @@ struct StoryBattleRules {
   std::uint16_t defeatSection = 0;
   // The counters of battles started and fled stop here.
   std::int64_t counterMax = 0;
-  // While this trigger is set the fight cannot be fled and the partner does not walk back after a
-  // victory.
+  // While this trigger is set the fight cannot be fled and the camera does not pan back onto the
+  // player after a victory.
   std::int64_t fixedFightTrigger = 0;
   // A fled battle's map change shows no name: the runner's show-name variable is set to never.
   std::int64_t showNameVariable = 0;
@@ -75,10 +75,12 @@ public:
   virtual void startBattle(const ScriptedBattle& battle) = 0;
   // The outcome once the battle and its aftermath are over; nothing while it runs.
   virtual std::optional<BattleOutcome> battleOutcome() = 0;
-  // After a victory the partner walks back to the player and the script waits for it
-  // (script_interp.c: SCRIPT_MOVEMENT[10] type 7, WAIT_FOR_ENTITY 10).
-  virtual void startPartnerReturn() = 0;
-  [[nodiscard]] virtual bool partnerReturned() const = 0;
+  // After a victory the camera pans back onto the player in 10 frames and the script waits for it
+  // (script_interp.c:1949: SCRIPT_MOVEMENT[10], the camera's slot, type 7 to entity 0xFD at speed
+  // 10, WAIT_FOR_ENTITY 10; map.c: tickCameraMoveToEntity): the player ran back in the battle's
+  // opening, and the field follows on centred on it.
+  virtual void startCameraReturn() = 0;
+  [[nodiscard]] virtual bool cameraReturned() const = 0;
   // A fixed fight won: every character on the map stays where it is (script_interp.c:1944,
   // setMovementEnabled(-1, 1)).
   virtual void holdAfterFixedFight() = 0;
@@ -100,8 +102,8 @@ public:
 
   // start_battle: counts it, names the predefined enemies, starts it and gives the task the
   // section waits on. Its outcome goes into the outcome variable; then a victory goes on (after the
-  // partner walks back), a defeat moves the script to the map-head's defeat section and a flight
-  // goes back to the previous screen.
+  // camera pans back onto the player), a defeat moves the script to the map-head's defeat section
+  // and a flight goes back to the previous screen.
   core::Result<std::shared_ptr<StoryTask>> startBattle();
 
   [[nodiscard]] const BattleCounters& counters() const { return counters_; }

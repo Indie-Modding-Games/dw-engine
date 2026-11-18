@@ -5,15 +5,14 @@
 namespace dwe::game::coop {
 
 core::Result<void> ProfileAssembler::begin(std::uint32_t transferId, std::uint16_t chunkCount,
-                                          ProfilePayloadKind kind) {
+                                           ProfilePayloadKind kind) {
   if (transferId == 0) {
     return core::fail("cooperative profile transfer id is zero");
   }
   if (chunkCount == 0 || chunkCount > MaxProfileChunks) {
     return core::fail(std::format("cooperative profile transfer has {} chunks", chunkCount));
   }
-  if (static_cast<std::uint8_t>(kind) >
-      static_cast<std::uint8_t>(ProfilePayloadKind::HostSave)) {
+  if (static_cast<std::uint8_t>(kind) > static_cast<std::uint8_t>(ProfilePayloadKind::HostSave)) {
     return core::fail("cooperative profile transfer has an unknown payload kind");
   }
   reset();
@@ -28,8 +27,7 @@ core::Result<std::optional<net::Bytes>> ProfileAssembler::push(const ProfileChun
     return core::fail("cooperative profile chunk belongs to another transfer");
   }
   if (chunk.kind != kind_ || chunk.count != chunks_.size() || chunk.index >= chunks_.size() ||
-      chunk.bytes.empty() ||
-      chunk.bytes.size() > MaxProfileChunkBytes) {
+      chunk.bytes.empty() || chunk.bytes.size() > MaxProfileChunkBytes) {
     return core::fail("invalid cooperative profile chunk bounds");
   }
   if (complete_) {

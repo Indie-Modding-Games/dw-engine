@@ -16,6 +16,7 @@
 #include <string_view>
 #include <vector>
 
+#include "player_commands.hpp"
 #include "story_text_rows.hpp"
 #include "player_commands.hpp"
 

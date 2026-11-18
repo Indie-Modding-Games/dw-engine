@@ -1,13 +1,13 @@
 #pragma once
 
-#include "player_commands.hpp"
-
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
+
+#include "player_commands.hpp"
 
 namespace dwe::app {
 

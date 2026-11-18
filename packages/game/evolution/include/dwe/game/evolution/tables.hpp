@@ -129,7 +129,8 @@ public:
   // The reference stats the developer's evolve loads for a target: its own row when it loads a
   // known species, else those borrowed from its stand-in (assets::standInRow) for any species with
   // a model, an enemy's or a character's too, which loads the target itself. nullptr for a species
-  // without a model.
+  // without a model (no bones), even with a row of its own: the disc's cut forms (WereGarurumon)
+  // have rows but nothing to draw.
   [[nodiscard]] const StatReference* cheatReference(Species target) const;
 
   // Every species the developer's evolve can make the partner (cheatReference), ascending.
@@ -180,6 +181,8 @@ private:
   std::optional<ruleset::MegaStep> megaStep_;
   std::set<Species> megas_;
   std::set<Species> yielding_;
+  // The species with a model to draw (bones in the species table).
+  std::set<Species> modelled_;
 };
 
 } // namespace dwe::game::evolution

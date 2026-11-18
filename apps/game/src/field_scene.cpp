@@ -162,91 +162,65 @@ FieldScene::FieldScene(const assets::VirtualFileSystem& files) : files_(&files) 
 FieldScene::~FieldScene() = default;
 
 core::Result<void> FieldScene::addCoopGuest() {
-  auto entity = field_->playerEntity(game::field::GuestPlayerId);
-  if (!entity) {
-    const glm::vec3 origin = field_->player().position;
-    constexpr std::array<glm::vec2, 8> Directions{{
-        {1.0F, 0.0F}, {-1.0F, 0.0F}, {0.0F, 1.0F}, {0.0F, -1.0F},
-        {0.7071F, 0.7071F}, {-0.7071F, 0.7071F}, {0.7071F, -0.7071F}, {-0.7071F, -0.7071F}}};
-    core::Result<void> added = core::fail("no free spawn point for cooperative guest");
-    const float spacing = (field_->rules().player.radius * 2.0F) + 25.0F;
-    for (std::int32_t ring = 1; ring <= 24; ++ring) {
-      const float distance = spacing * static_cast<float>(ring);
-      for (const glm::vec2 direction : Directions) {
-        const assets::SpawnPoint spawn{.position = origin + glm::vec3{direction.x * distance, 0.0F,
-                                                                       direction.y * distance},
-                                       .yaw = field_->player().yaw};
-        added = field_->addPlayer(game::field::GuestPlayerId, spawn);
-        if (added) break;
-      }
-      if (added) break;
+  if (field_->player(game::field::GuestPlayerId))
+    return {};
+  const glm::vec3 origin = field_->player().position;
+  constexpr std::array<glm::vec2, 8> Directions{{{1.0F, 0.0F},
+                                                 {-1.0F, 0.0F},
+                                                 {0.0F, 1.0F},
+                                                 {0.0F, -1.0F},
+                                                 {0.7071F, 0.7071F},
+                                                 {-0.7071F, 0.7071F},
+                                                 {0.7071F, -0.7071F},
+                                                 {-0.7071F, -0.7071F}}};
+  core::Result<void> added = core::fail("no free spawn point for cooperative guest");
+  for (const float distance : {256.0F, 512.0F, 768.0F, 1024.0F}) {
+    for (const glm::vec2 direction : Directions) {
+      const assets::SpawnPoint spawn{
+          .position = origin + glm::vec3{direction.x * distance, 0.0F, direction.y * distance},
+          .yaw = field_->player().yaw};
+      added = field_->addPlayer(game::field::GuestPlayerId, spawn);
+      if (added)
+        break;
     }
-    if (!added) return added;
-    entity = field_->playerEntity(game::field::GuestPlayerId);
+    if (added)
+      break;
   }
-  if (!entity) return core::fail("cooperative guest has no field entity");
-  if (std::ranges::none_of(coopGuestActors_, [&](const CoopPlayerVisual& actor) {
-        return actor.entity == *entity;
-      })) {
-    coopGuestActors_.push_back({.entity = *entity,
-                                .player = std::make_unique<animation::AnimationPlayer>(
-                                    *playerActor_->model),
-                                .motion = std::nullopt,
-                                .motionClip = std::nullopt});
-  }
-  coopGuestEntity_ = *entity;
-  const auto state = field_->player(game::field::GuestPlayerId);
-  if (state) {
-    core::logInfo("coop: guest visual is ready at ({:.0f}, {:.0f}, {:.0f}) using the loaded tamer "
-                  "model",
-                  state->position.x, state->position.y, state->position.z);
-  }
-  return {};
-}
-
-core::Result<void> FieldScene::addCoopGuestPartner(std::string_view species) {
-  if (species.empty()) return core::fail("cooperative guest partner has no species");
-  if (coopGuestPartnerActor_ && coopGuestPartnerSpecies_ == species) return {};
-  if (coopGuestPartnerActor_) {
-    models_->remove(coopGuestPartnerActor_->handle);
-    world_.destroy(coopGuestPartnerActor_->entity);
-    coopGuestPartnerActor_.reset();
-  }
-  auto model = assets::AssetId::parse(speciesModelOf(species));
-  if (!model) return std::unexpected{model.error()};
-  const scene::Entity entity = world_.create();
-  world_.registry().emplace<scene::Transform>(entity);
-  world_.registry().emplace<scene::AnimationIntent>(entity);
-  world_.registry().emplace<scene::ModelRef>(entity, model->str());
-  const ClipStandIns standIns = speciesClips_ ? speciesClips_(species) : ClipStandIns{};
-  auto actor = loadActor(PartnerCharacter, entity, partnerMover_, *model,
-                         MissingClips::StandIn, standIns, species);
-  if (!actor) {
-    world_.destroy(entity);
+  if (!added)
+    return added;
+  const auto entity = field_->playerEntity(game::field::GuestPlayerId);
+  if (!entity)
+    return core::fail("cooperative guest has no field entity");
+  auto actor = loadActor(PlayerCharacter, *entity, field_->rules().player);
+  if (!actor)
     return std::unexpected{actor.error()};
+  coopGuestActors_.push_back(std::move(*actor));
+  return {};
+}
+
+core::Result<void> FieldScene::presentCoopHost(std::optional<game::field::CharacterState> state) {
+  coopHostProxyShown_ = false;
+  if (!state)
+    return {};
+  if (!coopHostProxyActor_) {
+    const scene::Entity entity = world_.create();
+    world_.registry().emplace<scene::Transform>(entity);
+    world_.registry().emplace<scene::AnimationIntent>(entity);
+    world_.registry().emplace<scene::ModelRef>(entity, field_->rules().player.model);
+    auto actor = loadActor(PlayerCharacter, entity, field_->rules().player);
+    if (!actor) {
+      world_.destroy(entity);
+      return std::unexpected{actor.error()};
+    }
+    coopHostProxyActor_ = std::move(*actor);
   }
-  coopGuestPartnerActor_ = std::move(*actor);
-  coopGuestPartnerSpecies_ = std::string{species};
-  coopGuestPartnerScale_ = speciesScale_ ? speciesScale_(species) : 1.0F;
-  coopGuestPartnerLook_ = {};
-  return {};
-}
-
-core::Result<void> FieldScene::presentCoopHost(
-    std::optional<game::field::CharacterState> state) {
-  coopHostPresentation_ = std::move(state);
-  if (coopHostPresentation_)
-    world_.registry().get<scene::AnimationIntent>(playerActor_->entity).motion =
-        coopHostPresentation_->motion;
-  return {};
-}
-
-core::Result<void> FieldScene::presentCoopHostPartner(
-    std::optional<game::field::CharacterState> state) {
-  coopHostPartnerPresentation_ = std::move(state);
-  if (coopHostPartnerPresentation_)
-    world_.registry().get<scene::AnimationIntent>(partnerActor_->entity).motion =
-        coopHostPartnerPresentation_->motion;
+  auto& transform = world_.registry().get<scene::Transform>(coopHostProxyActor_->entity);
+  transform.position = state->position;
+  transform.yaw = state->yaw;
+  transform.previousPosition = state->position;
+  transform.previousYaw = state->yaw;
+  world_.registry().get<scene::AnimationIntent>(coopHostProxyActor_->entity).motion = state->motion;
+  coopHostProxyShown_ = true;
   return {};
 }
 
@@ -966,12 +940,8 @@ void FieldScene::applyLighting() {
 }
 
 void FieldScene::animate(Actor& actor, double seconds) {
-  PartnerLook* partnerLook = nullptr;
-  if (&actor == partnerActor_.get()) partnerLook = &partnerLook_;
-  else if (&actor == coopGuestPartnerActor_.get()) partnerLook = &coopGuestPartnerLook_;
-  const bool partner = partnerLook != nullptr;
-  const bool followed = &actor == partnerActor_.get() &&
-                        std::exchange(partnerFollowDrawn_, false);
+  const bool partner = &actor == partnerActor_.get();
+  const bool followed = partner && std::exchange(partnerFollowDrawn_, false);
   if (animateFighter(actor)) {
     return;
   }
@@ -983,14 +953,12 @@ void FieldScene::animate(Actor& actor, double seconds) {
   if (animateScripted(actor, seconds)) {
     return;
   }
-  if (&actor == partnerActor_.get() && !coopGuestLocalView_ &&
-      animateFollowingPartner(actor, seconds, followed)) {
+  if (partner && animateFollowingPartner(actor, seconds, followed)) {
     return;
   }
   const auto& intent = world_.registry().get<scene::AnimationIntent>(actor.entity);
   const std::string_view animation =
-      partner ? game::partner::nameOf(partnerAnimation(actor, intent.motion, seconds,
-                                                       *partnerLook))
+      partner ? game::partner::nameOf(partnerAnimation(actor, intent.motion, seconds))
               : scene::motionName(intent.motion);
   std::optional<std::uint32_t> clipId = actor.character.clipOf(animation);
   if (!clipId) {
@@ -1031,7 +999,7 @@ void FieldScene::restOnIdle(Actor& actor, double seconds) {
     animate(actor, 0.0);
     return;
   }
-  const bool partner = &actor == partnerActor_.get() || &actor == coopGuestPartnerActor_.get();
+  const bool partner = &actor == partnerActor_.get();
   const std::string_view idle = partner ? game::partner::nameOf(game::partner::FieldAnimation::Idle)
                                         : scene::motionName(scene::Motion::Idle);
   const std::optional<std::uint32_t> clipId = actor.character.clipOf(idle);
@@ -1048,48 +1016,6 @@ void FieldScene::restOnIdle(Actor& actor, double seconds) {
   }
   actor.player->setSpeed(1.0F);
   static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
-}
-
-void FieldScene::animateCoopPlayer(CoopPlayerVisual& actor, double seconds) {
-  if (!actor.player || !world_.alive(actor.entity)) return;
-  const auto& intent = world_.registry().get<scene::AnimationIntent>(actor.entity);
-  const std::optional<std::uint32_t> clipId =
-      playerActor_->character.clipOf(scene::motionName(intent.motion));
-  if (!clipId) return;
-  if (actor.motion != intent.motion || actor.motionClip != clipId) {
-    actor.motion = intent.motion;
-    actor.motionClip = clipId;
-    static_cast<void>(actor.player->play(*clipId, ClipFadeSeconds));
-  }
-  float speed = intent.speedScale;
-  if (const assets::AnimationClip* clip = actor.player->clip();
-      clip != nullptr && intent.motion != scene::Motion::Idle) {
-    const float groundSpeed =
-        intent.motion == scene::Motion::Run ? playerActor_->runSpeed : playerActor_->walkSpeed;
-    const float clipSpeed = animation::repeatGroundSpeed(*playerActor_->model, *clip);
-    if (clipSpeed > 0.0F) speed *= groundSpeed / clipSpeed;
-  }
-  actor.player->setSpeed(speed);
-  static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
-}
-
-void FieldScene::submitCoopPlayer(const CoopPlayerVisual& actor, float alpha) {
-  if (!actor.player || !world_.alive(actor.entity)) return;
-  const scene::Pose pose = drawnPose(actor.entity, alpha);
-  const glm::mat4 world =
-      glm::scale(glm::rotate(glm::translate(glm::mat4{1.0F}, pose.position), pose.yaw,
-                             glm::vec3{0.0F, 1.0F, 0.0F}),
-                 glm::vec3{stage_.playerScale});
-  const std::span<const glm::mat4> joints =
-      drawsChibi(chibiMode_, playerActor_->originalModel)
-          ? chibiJoints_.of(*playerActor_->model, playerActor_->chibi, *actor.player)
-          : actor.player->jointMatrices();
-  static_cast<void>(models_->submit({.model = playerActor_->handle,
-                                    .world = world,
-                                    .joints = joints,
-                                    .tint = sceneryTint() *
-                                            glm::vec4{glm::vec3{stage_.playerFade}, 1.0F},
-                                    .additive = stage_.playerAdditive}));
 }
 
 void FieldScene::playClipSounds(const Actor& actor) {
@@ -1209,8 +1135,9 @@ void FieldScene::setPartnerMood(const game::partner::Conditions& conditions,
 }
 
 game::partner::FieldAnimation FieldScene::partnerAnimation(const Actor& actor, scene::Motion motion,
-                                                           double seconds, PartnerLook& look) {
+                                                           double seconds) {
   using game::partner::FieldAnimation;
+  PartnerLook& look = partnerLook_;
   const game::field::PartnerRules& rules = field_->rules().partner;
   const auto standAgain = [&] {
     // partner.c:907: setPartnerIdle, and a new wait of 1 to gesture_idle_plays idle plays.
@@ -1374,18 +1301,6 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   const bool menuRest = clock == FieldClock::MenuRest;
   const double animationSeconds = paused ? 0.0 : frameSeconds;
   advanceFlames(animationSeconds);
-  if (coopGuestPartnerActor_ && coopGuestEntity_) {
-    const scene::Pose guest = drawnPose(*coopGuestEntity_, alpha);
-    const glm::vec3 forward = assets::forwardOfYaw(guest.yaw);
-    const glm::vec3 right = assets::forwardOfYaw(guest.yaw + 1.57079632679F);
-    const glm::vec3 position = guest.position - forward * 180.0F + right * 85.0F;
-    auto& transform = world_.registry().get<scene::Transform>(coopGuestPartnerActor_->entity);
-    scene::place(transform, position, guest.yaw);
-    if (const auto guestState = field_->player(game::field::GuestPlayerId)) {
-      world_.registry().get<scene::AnimationIntent>(coopGuestPartnerActor_->entity).motion =
-          guestState->motion;
-    }
-  }
   fighterSeconds_ = std::exchange(fighterSecondsDue_, 0.0);
   if (menuRest && !playerSceneClip_) {
     restOnIdle(*playerActor_, frameSeconds);
@@ -1406,18 +1321,26 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
     animate(*partnerActor_, animationSeconds);
     playClipSounds(*partnerActor_);
   }
-  for (CoopPlayerVisual& actor : coopGuestActors_) animateCoopPlayer(actor, animationSeconds);
-  if (coopGuestPartnerActor_) animate(*coopGuestPartnerActor_, animationSeconds);
+  for (const std::unique_ptr<Actor>& actor : coopGuestActors_) {
+    animate(*actor, animationSeconds);
+    playClipSounds(*actor);
+  }
+  if (coopHostProxyShown_ && coopHostProxyActor_)
+    animate(*coopHostProxyActor_, animationSeconds);
   models_->pollTextures();
   models_->clear();
-  if (stage_.showsPlayer() && (!coopGuestLocalView_ || coopHostPresentation_)) {
+  if (stage_.showsPlayer()) {
     submit(*playerActor_, alpha,
            {.scale = stage_.playerScale,
             .tint = sceneryTint() * glm::vec4{glm::vec3{stage_.playerFade}, 1.0F},
             .additive = stage_.playerAdditive});
   }
-  if (stage_.showsPlayer()) {
-    for (const CoopPlayerVisual& actor : coopGuestActors_) submitCoopPlayer(actor, alpha);
+  for (const std::unique_ptr<Actor>& actor : coopGuestActors_) {
+    if (stage_.showsPlayer())
+      submit(*actor, alpha, {});
+  }
+  if (coopHostProxyShown_ && coopHostProxyActor_ && stage_.showsPlayer()) {
+    submit(*coopHostProxyActor_, alpha, {});
   }
   if (stage_.showsNpcs()) {
     drawNpcs(animationSeconds, alpha);
@@ -1438,12 +1361,7 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   submitEffectModels();
   submitStatusModels();
   submitBattleVisualModels();
-  if (coopGuestPartnerActor_ && stage_.showsPartner())
-    submit(*coopGuestPartnerActor_, alpha,
-           {.scale = stage_.partnerScale * coopGuestPartnerScale_,
-            .lift = stage_.partnerLift,
-            .hiddenBones = stage_.partnerHiddenBones});
-  if (stage_.showsPartner() && (!coopGuestLocalView_ || coopHostPartnerPresentation_)) {
+  if (stage_.showsPartner()) {
     submit(*partnerActor_, alpha,
            {.scale = stage_.partnerScale * partnerSpeciesScale_,
             .lift = stage_.partnerLift,
@@ -1470,10 +1388,7 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
     prims.insert(prims.end(), storyScreenPrims_.begin(), storyScreenPrims_.end());
   }
   primDrawer_->set(std::move(prims), mapRenderer_->camera().scale());
-  const scene::Entity cameraPlayer = coopGuestLocalView_ && coopGuestEntity_
-                                         ? *coopGuestEntity_
-                                         : playerActor_->entity;
-  const scene::Pose player = drawnPose(cameraPlayer, alpha);
+  const scene::Pose player = field_->drawnPose(playerActor_->entity, alpha);
   // tamer.c: checkMapInteraction calls unsetCameraFollowPlayer when a warp fires, and map.c:
   // tickCameraFollowPlayer only follows while the tamer's state is 0: the camera stays put while
   // the player walks out, and in a battle (holdCamera).

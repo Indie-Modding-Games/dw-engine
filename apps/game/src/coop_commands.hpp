@@ -1,16 +1,15 @@
 #pragma once
 
-#include "player_commands.hpp"
-
 #include <dwe/game/coop/link.hpp>
 #include <dwe/game/coop/protocol.hpp>
+
+#include "player_commands.hpp"
 
 namespace dwe::app {
 
 // The network protocol deliberately carries only the field controls in this milestone. Story,
 // fishing and UI controls remain local until their authoritative action messages are implemented.
-[[nodiscard]] core::Result<game::coop::Commands> toCoopCommand(const PlayerCommands& commands,
-                                                              std::uint32_t sequence = 0);
+[[nodiscard]] core::Result<game::coop::Commands> toCoopCommand(const PlayerCommands& commands);
 [[nodiscard]] PlayerCommands fromCoopCommand(const game::coop::Commands& commands);
 
 // Adapts already-validated network field commands to the app's controller slot. CoopLink owns
@@ -21,9 +20,7 @@ public:
     return buffer_.push(command, receivedAt);
   }
   void setNow(net::Millis now) { now_ = now; }
-  [[nodiscard]] std::optional<std::uint32_t> latestSequence() const {
-    return buffer_.sequence();
-  }
+  [[nodiscard]] std::optional<std::uint32_t> latestSequence() const { return buffer_.sequence(); }
   [[nodiscard]] PlayerCommands next(std::uint64_t /*tick*/) override;
 
 private:

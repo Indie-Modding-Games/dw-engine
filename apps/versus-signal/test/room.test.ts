@@ -129,3 +129,27 @@ test("a peer that leaves before both are connected tells the other, and the room
   assert.deepEqual(alone.last(), { type: "error", reason: "expired" });
   assert.equal(state.storage.size, 0);
 });
+
+test("only a room its host asked to list goes in the directory, never a private one", async () => {
+  const published: [string, unknown][] = [];
+  const state = new FakeState();
+  (state as RoomState).publish = async (code, listing) => {
+    published.push([code, listing === null ? null : { ...(listing as object) }]);
+  };
+  const quiet = new Room(state, () => 1000);
+  assert.equal(await quiet.host(new FakeSocket(), "K7Q2"), true);
+  await quiet.join(new FakeSocket());
+  await quiet.close();
+  assert.deepEqual(published, []);
+
+  const listedState = new FakeState();
+  (listedState as RoomState).publish = async (code, listing) => {
+    published.push([code, listing === null ? null : { ...(listing as object) }]);
+  };
+  const listed = new Room(listedState, () => 1000);
+  assert.equal(await listed.host(new FakeSocket(), "M4XP", true), true);
+  await listed.join(new FakeSocket());
+  await listed.close();
+  assert.deepEqual(published.map(([code, listing]) => [code, listing === null ? null : (listing as { players: number }).players]),
+    [["M4XP", 1], ["M4XP", 2], ["M4XP", null]]);
+});

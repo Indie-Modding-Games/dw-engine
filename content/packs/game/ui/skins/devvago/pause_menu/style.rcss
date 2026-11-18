@@ -124,7 +124,7 @@
 /* The game's own actions (Save, back to title, quit) lead the page: one line at the box's top, at its right. */
 #options-quick { display: flex; flex-direction: row; justify-content: flex-end; margin-bottom: 3dp; }
 #options-quick button { display: inline-block; margin: 0 0 0 24dp; padding: 0 6dp; font-size: 22dp; }
-#option-list { max-height: 400dp; overflow-y: auto; }
+#option-list { max-height: 352dp; overflow-y: auto; }
 #option-list scrollbarvertical { width: 6dp; margin-left: 6dp; }
 #option-list scrollbarvertical slidertrack { background-color: #2d3840; }
 #option-list scrollbarvertical sliderbar { min-height: 24dp; background-color: #90d9fa; }
@@ -133,13 +133,13 @@
    description and the actions under it stay in the window. */
 @media (max-height: 700dp) {
 	#panel.on-options { top: 60dp; }
-	#option-list { max-height: 300dp; }
+	#option-list { max-height: 252dp; }
 }
 @media (max-height: 600dp) {
-	#option-list { max-height: 240dp; }
+	#option-list { max-height: 192dp; }
 }
 @media (max-height: 520dp) {
-	#option-list { max-height: 150dp; }
+	#option-list { max-height: 102dp; }
 }
 #page-options button.option { display: flex; align-items: center; height: 30dp; line-height: 30dp; }
 #page-options .option .label { flex: 1 1 auto; overflow: hidden; }
@@ -154,7 +154,10 @@
 #page-options .option .bar { width: 150dp; height: 18dp; margin: 0 9dp; border: 3dp #4a9fc5; background-color: #00000080; }
 #page-options .option .bar .fill { display: block; height: 18dp; background-color: #90d9fa; }
 #page-options .option.kind-range .value { width: 66dp; min-width: 66dp; text-align: right; padding-right: 6dp; }
-#option-info { display: flex; align-items: flex-start; height: 60dp; margin-top: 6dp; padding: 6dp 9dp 0 9dp; border-top: 3dp #90d9fa; font-size: 22dp; line-height: 27dp; color: #b2b2b2; }
+/* The description panel takes as many lines as the focused row's description wraps to (four at most in either language
+   with the original font), three at least so most rows do not move the actions under it; the list above is 48dp
+   shorter than it was with two fixed lines, so a four-line description still leaves the page inside the window. */
+#option-info { display: flex; align-items: flex-start; height: auto; min-height: 81dp; margin-top: 6dp; padding: 6dp 9dp 0 9dp; border-top: 3dp #90d9fa; font-size: 22dp; line-height: 27dp; color: #b2b2b2; }
 #option-tag { flex: 0 0 auto; margin-right: 12dp; padding: 0 6dp; border: 3dp #4a5a64; line-height: 21dp; color: #b2b2b2; white-space: nowrap; }
 #option-help { flex: 1 1 0; }
 #option-tag.improvement { border-color: #90d9fa; color: #fff371; }

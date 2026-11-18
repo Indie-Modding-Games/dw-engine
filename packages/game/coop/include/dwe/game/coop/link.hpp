@@ -11,8 +11,16 @@ namespace dwe::game::coop {
 enum class Side : std::uint8_t { Host, Guest };
 enum class LinkPhase : std::uint8_t { Connecting, Ready, Rejected, Failed, Left };
 enum class LinkFailure : std::uint8_t {
-  None, NoAnswer, Silence, ProtocolMismatch, VersionMismatch, ContentMismatch, RoomFull, Busy,
-  Damaged, Disconnected
+  None,
+  NoAnswer,
+  Silence,
+  ProtocolMismatch,
+  VersionMismatch,
+  ContentMismatch,
+  RoomFull,
+  Busy,
+  Damaged,
+  Disconnected
 };
 
 struct LinkTimeouts {

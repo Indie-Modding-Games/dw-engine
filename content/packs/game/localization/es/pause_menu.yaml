@@ -254,6 +254,7 @@ choose_egg_after_lives_lost: "Elegir el huevo al perder las vidas"
 generous_talk: "Hablar desde más lejos"
 # Extra toilets: a few more toilet stalls where the partner can go (off by default).
 extra_toilets: "Baños extra"
+angemon_event_zone: "Angemon en la planta baja"
 # {tab} is the tab name.
 reset_question: "¿Restablecer los valores de «{tab}»?"
 reset_note: "Pantalla, aspecto, idioma y letra no cambian."
@@ -283,6 +284,7 @@ help.fair_card_stock: "La tienda de cartas no ofrece la misma carta dos veces el
 help.choose_egg_after_lives_lost: "Cuando tu compañero pierde todas sus vidas, eliges tú el huevo nuevo, como tras una muerte natural. En el original sale al azar."
 help.generous_talk: "Habla con los personajes y lee los carteles desde un poco más lejos, mires hacia donde mires. El original pide estar más cerca."
 help.extra_toilets: "Añade unas pocas casetas de baño más, como la que está junto al cartel del gimnasio. Ponte delante de una cuando tu compañero necesite ir. El original solo tiene sus propios baños."
+help.angemon_event_zone: "Tras liberar la luz de Angemon, su evento empieza en la planta baja del Santuario de Hielo vuelvas como vuelvas. El original solo lo empieza desde la escalera de la trampilla."
 help.status_extras: "La ficha enseña cansancio, errores, combates, horario, vida y contador de evolución."
 help.display_mode: "Juega en una ventana o a pantalla completa."
 help.vsync: "Sincroniza los fotogramas con la pantalla para que la imagen no se corte."

@@ -831,6 +831,10 @@ button:focus .original-look, button.original-look:focus {
 #tech-info-stats { left: 21dp; top: 339dp; width: 261dp; height: 207dp; }
 #tech-info.info-right #tech-info-name { left: 492dp; }
 #tech-info.info-right #tech-info-stats { left: 630dp; }
+/* The document nests the name in the stats box (for the compact layouts), so its place is told from the stats box's
+   padding edge: the same 21,276 and 492,276 of the panel as above, rather than out of sight under the stats box. */
+#tech-info #tech-info-stats #tech-info-name { left: -3dp; top: -66dp; white-space: nowrap; }
+#tech-info.info-right #tech-info-stats #tech-info-name { left: -141dp; }
 .info-label, .info-value { position: absolute; display: block; }
 .info-label { left: 9dp; width: 72dp; height: 21dp; font-size: 0; color: transparent; }
 .info-value { left: 129dp; width: 123dp; font-size: 21dp; }

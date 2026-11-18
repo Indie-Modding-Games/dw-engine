@@ -334,6 +334,23 @@ TEST_CASE(
   }
 }
 
+TEST_CASE("the developer's evolve refuses a form with no model and keeps the partner as it was") {
+  // A tester evolved a Tyrannomon into WereGarurumon (a cut form: a row, no bones, no model): the
+  // status said WereGarurumon while the field kept drawing Tyrannomon. The menu no longer lists it
+  // and evolve("<id>") refuses it.
+  const TestPacks packs;
+  TableFixture fixture;
+  fixture.form("mtet").boneCount = 0;
+  EvolutionAdapter* adapter = nullptr;
+  auto session = sessionWithEvolution(packs, fixture, adapter);
+  const std::string before = session->partner().state().species;
+  CHECK_FALSE(std::ranges::contains(adapter->cheatTargets(), "mtet"));
+  const auto evolved = adapter->evolveByCheat(*session, "mtet");
+  REQUIRE_MESSAGE(evolved.has_value(), errorOf(evolved));
+  CHECK_FALSE(*evolved);
+  CHECK(session->partner().state().species == before);
+}
+
 namespace {
 
 // How many evolutions (Evolved) the partner reported since the last call, routed as after any
