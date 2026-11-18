@@ -65,12 +65,14 @@ export default {
     if (request.headers.get("Upgrade") !== "websocket") {
       return new Response("The versus signaling server speaks WebSocket only.\n", { status: 426 });
     }
-    const route = routeOf(new URL(request.url).pathname);
+    const route = routeOf(url.pathname);
     if (route.kind === "host") {
+      // Rooms are private unless the host asks for a listed one (`/v1/host?public=1`).
+      const listed = url.searchParams.get("public") === "1" ? "1" : "0";
       for (let attempt = 0; attempt < HOST_ATTEMPTS; attempt++) {
         const code = newCode();
         const room = env.ROOMS.get(env.ROOMS.idFromName(code));
-        const response = await room.fetch(new Request(`https://room/host?code=${code}`, request));
+        const response = await room.fetch(new Request(`https://room/host?code=${code}&public=${listed}`, request));
         if (response.status !== 409) return response;
       }
       return new Response("No free room code.\n", { status: 503 });
@@ -123,7 +125,8 @@ export class RoomObject {
     const url = new URL(request.url);
     const pair = new WebSocketPair();
     if (url.pathname === "/host") {
-      const opened = await this.#room.host(pair[1], url.searchParams.get("code") ?? "");
+      const listed = url.searchParams.get("public") === "1";
+      const opened = await this.#room.host(pair[1], url.searchParams.get("code") ?? "", listed);
       if (!opened) return new Response(null, { status: 409 });
     } else {
       // A refused guest is never accepted by the object: its socket only hears why.

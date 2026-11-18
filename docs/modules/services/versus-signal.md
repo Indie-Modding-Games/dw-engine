@@ -18,6 +18,7 @@ host ──WebSocket /v1/host──►  room K7Q2  ◄──WebSocket /v1/join/K
 
 - The host opens `/v1/host` and receives `room` with a four-character code (`23456789ABCDEFGHJKLMNPQRSTUVWXYZ`,
   with no 0, 1, O or I). If the code that comes out is in use, the Worker tries another.
+  The room is private: only `/v1/host?public=1` puts it in the public list (`GET /v1/rooms`).
 - The guest opens `/v1/join/<code>` (without lowercase, spaces or hyphens) and receives `joined`; the host receives
   `peer` and starts the offer.
 - `signal` is forwarded as is to the other side. When both send `done` (they are already connected) the room closes;
