@@ -163,6 +163,12 @@ void CoopScreen::tick(double nowSeconds) {
   if (active_) publish();
 }
 
+void CoopScreen::syncConnection(double nowSeconds) {
+  if (connection_.link() == nullptr || connection_.view() == CoopConnection::View::Closed) return;
+  constexpr double MillisPerSecond = 1000.0;
+  connection_.tick(net::Millis{static_cast<std::int64_t>(nowSeconds * MillisPerSecond)});
+}
+
 void CoopScreen::receiveMessages() {
   if (connection_.link() == nullptr) return;
   while (auto message = connection_.link()->receive()) {
@@ -205,21 +211,25 @@ void CoopScreen::completeRemoteStart() {
       *hostTransferId_ != remoteJoinState_->saveTransferId) {
     return;
   }
-  auto combined = hostWorldWithGuestPartner(*hostSaveText_, *guestSaveText_);
-  if (!combined) {
-    localError_ = combined.error().message;
-    return;
-  }
-  const auto parsed = game::save::parseSaveFile(*combined);
+  const auto parsed = game::save::parseSaveFile(*hostSaveText_);
   if (!parsed || parsed->header.summary.map != remoteJoinState_->mapId) {
     localError_ = parsed ? "host save map does not match the room start" : parsed.error().message;
     return;
   }
-  remoteStartText_ = std::move(*combined);
+  // Keep the host's partner in the shared save. The guest partner is added as a separate
+  // cooperative actor on each peer, so neither player's companion replaces the other's.
+  remoteStartText_ = *hostSaveText_;
 }
 
 std::optional<std::string> CoopScreen::takeRemoteStartText() {
   return std::exchange(remoteStartText_, std::nullopt);
+}
+
+std::optional<std::string> CoopScreen::guestPartnerSpecies() const {
+  if (!guestSaveText_) return std::nullopt;
+  const auto profile = extractCoopGuestPartnerProfile(*guestSaveText_);
+  if (!profile) return std::nullopt;
+  return profile->species;
 }
 
 core::Result<void> CoopScreen::sendProfile(game::coop::ProfilePayloadKind kind,
@@ -267,7 +277,6 @@ core::Result<void> CoopScreen::provideGuestSave(std::string_view saveText) {
   selectingGuestProfile_ = false;
   guestProfileRequest_ = false;
   localError_.clear();
-  ui_->show("main_menu", true);
   publish();
   return {};
 }

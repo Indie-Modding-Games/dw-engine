@@ -399,6 +399,9 @@ local function refresh_coop(document)
   }
   local key = status[view] or status.error
   local text = t(key)
+  if view == "connected" and role == "guest" and localReady then
+    text = t("main_menu.coop.waiting_host")
+  end
   document:get("coop-room-title"):set_text(t(
     role == "host" and "main_menu.coop.host_title" or "main_menu.coop.guest_title"))
   local error = ui.setting("coop.error")
@@ -507,6 +510,15 @@ function on_show(document)
   refresh_prompts(document)
   was_original = original()
   local boot = ui.setting("title.boot") == true
+  local resumeCoop = ui.setting("title.resume_coop") == true
+  if resumeCoop then
+    set_fade(document, 0.0)
+    fade_target = 0.0
+    local role = ui.setting("coop.role") or "guest"
+    local focus = role == "host" and "coop-start" or "coop-ready"
+    set_view(document, "coop", focus)
+    return
+  end
   if boot then
     -- A new start of the title: the menu starts on its first entry.
     remembered.menu = nil

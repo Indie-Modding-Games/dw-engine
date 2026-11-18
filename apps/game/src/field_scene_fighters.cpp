@@ -103,6 +103,13 @@ scene::Pose FieldScene::heldPlace(const Actor& actor) const {
 }
 
 scene::Pose FieldScene::drawnPose(scene::Entity entity, float alpha) const {
+  if (coopGuestLocalView_ && entity == playerActor_->entity && coopHostPresentation_) {
+    return {.position = coopHostPresentation_->position, .yaw = coopHostPresentation_->yaw};
+  }
+  if (coopGuestLocalView_ && entity == partnerActor_->entity && coopHostPartnerPresentation_) {
+    return {.position = coopHostPartnerPresentation_->position,
+            .yaw = coopHostPartnerPresentation_->yaw};
+  }
   if (drawAhead_ && field_->smoothMotion()) {
     const auto held = [entity](const Actor& actor) {
       return actor.entity == entity && actor.fighter && actor.fighterGlide.started();

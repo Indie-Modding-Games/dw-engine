@@ -11,7 +11,8 @@ void CoopGameplayBridge::poll(net::Millis now) {
     if (const auto* commands = std::get_if<game::coop::Commands>(&*message)) {
       (void)remoteController_->receive(*commands, now);
     } else if (const auto* snapshot = std::get_if<game::coop::Snapshot>(&*message)) {
-      (void)snapshots_.push(*snapshot);
+      (void)snapshots_.push(*snapshot, now);
+      latestSnapshot_ = *snapshot;
     } else if (const auto* chunk = std::get_if<game::coop::ProfileChunk>(&*message)) {
       if (!profileTransferId_ || *profileTransferId_ != chunk->transferId) {
         if (auto begun = profileAssembler_.begin(chunk->transferId, chunk->count, chunk->kind);
@@ -39,13 +40,20 @@ void CoopGameplayBridge::poll(net::Millis now) {
 }
 
 core::Result<void> CoopGameplayBridge::sendLocalField(const PlayerCommands& commands) {
-  auto networkCommand = toCoopCommand(commands);
-  if (!networkCommand) return std::unexpected{networkCommand.error()};
+  auto networkCommand = toCoopCommand(commands, ++outgoingCommandSequence_);
+  if (!networkCommand) {
+    --outgoingCommandSequence_;
+    return std::unexpected{networkCommand.error()};
+  }
   return link_->send(game::coop::Message{std::move(*networkCommand)});
 }
 
 core::Result<void> CoopGameplayBridge::sendHostSnapshot(const game::coop::Snapshot& snapshot) {
   return link_->send(game::coop::Message{snapshot});
+}
+
+core::Result<void> CoopGameplayBridge::sendEvent(const game::coop::Event& event) {
+  return link_->send(game::coop::Message{event});
 }
 
 core::Result<void> CoopGameplayBridge::sendProfile(game::coop::ProfilePayloadKind kind,
@@ -86,6 +94,10 @@ std::optional<CoopGameplayBridge::ReceivedProfile> CoopGameplayBridge::receivePr
 
 std::optional<PresentedCoopWorld> CoopGameplayBridge::presentedWorld(float alpha) const {
   return snapshots_.sample(alpha);
+}
+
+std::optional<PresentedCoopWorld> CoopGameplayBridge::presentedWorld(net::Millis now) const {
+  return snapshots_.sample(now);
 }
 
 } // namespace dwe::app

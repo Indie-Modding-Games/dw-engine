@@ -42,13 +42,23 @@ TEST_CASE("coop gameplay bridge routes guest movement into the host controller")
   network.advance(dwe::net::Millis{1});
   host.poll(network.now());
   const PlayerCommands received = remoteController.next(0);
-  CHECK(received.sequence == 23);
+  // The bridge owns the outgoing sequence: this is the fix that lets the host keep accepting
+  // continuous guest commands (its RemoteCommandBuffer rejects equal or older sequences). The
+  // caller's `sequence` is ignored and the bridge stamps its own monotonic value, starting at 1.
+  CHECK(received.sequence == 1);
   CHECK(received.field.stick.x == doctest::Approx(0.25F).epsilon(0.0001));
   CHECK(received.field.stick.y == -1.0F);
   CHECK(received.field.run);
   REQUIRE(received.field.moveTarget);
   CHECK(received.field.moveTarget->x == 120.0F);
   CHECK(received.field.moveTarget->z == -45.0F);
+
+  // A second command the host has not seen increments the bridge sequence, so the host accepts it
+  // instead of treating it as a stale repeat.
+  REQUIRE(guest.sendLocalField(local));
+  network.advance(dwe::net::Millis{1});
+  host.poll(network.now());
+  CHECK(remoteController.next(0).sequence == 2);
 
   const Snapshot snapshot{.mapId = "field/main",
                           .worldTick = 90,

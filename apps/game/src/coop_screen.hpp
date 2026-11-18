@@ -26,6 +26,9 @@ public:
   [[nodiscard]] bool takesText() const { return active_ && connection_.takesText(); }
   void type(std::string_view text, bool enter);
   void tick(double nowSeconds);
+  // Advances link state without consuming application messages. Use while CoopGameplayBridge owns
+  // the link's receive queue during gameplay.
+  void syncConnection(double nowSeconds);
   [[nodiscard]] bool active() const { return active_; }
   [[nodiscard]] game::coop::CoopLink* link() { return connection_.link(); }
   [[nodiscard]] bool connected() const { return connection_.connected(); }
@@ -35,6 +38,7 @@ public:
   [[nodiscard]] bool takeGuestProfileRequest() { return std::exchange(guestProfileRequest_, false); }
   [[nodiscard]] bool selectingGuestProfile() const { return selectingGuestProfile_; }
   [[nodiscard]] bool selectingHostStart() const { return selectingHostStart_; }
+  [[nodiscard]] std::optional<std::string> guestPartnerSpecies() const;
   [[nodiscard]] std::optional<std::string> takeRemoteStartText();
   [[nodiscard]] core::Result<void> provideGuestSave(std::string_view saveText);
   [[nodiscard]] core::Result<void> sendHostStart(std::string_view saveText);

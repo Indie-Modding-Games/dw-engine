@@ -476,6 +476,35 @@ bool Field::waitingAtWarp(PlayerId id) const {
   return player != otherPlayers_.end() && player->fieldPlayer.waitingAtWarp;
 }
 
+bool Field::held() const {
+  return leaving_ || pendingChange_ || waitingForMap_ || choice_ || scriptHeld_ || careHeld_ ||
+         itemHold_ != ItemHold::None;
+}
+
+void Field::reconcilePlayer(PlayerId id, const CharacterState& authoritative) {
+  if (id == HostPlayerId) {
+    return;
+  }
+  const auto player = std::ranges::find(otherPlayers_, id, [](const PlayerRuntime& runtime) {
+    return runtime.fieldPlayer.id;
+  });
+  if (player == otherPlayers_.end()) {
+    return;
+  }
+  if (!std::isfinite(authoritative.position.x) || !std::isfinite(authoritative.position.y) ||
+      !std::isfinite(authoritative.position.z) || !std::isfinite(authoritative.yaw)) {
+    return;
+  }
+  Transform& transform = world_->registry().get<Transform>(player->fieldPlayer.entity);
+  transform.position = authoritative.position;
+  transform.yaw = authoritative.yaw;
+  // Drop the stale click-to-move target and path: they point from the pre-reconcile place and would
+  // pull the guest back out of sync as soon as the next tick advances them.
+  player->fieldPlayer.moveTarget.reset();
+  player->fieldPlayer.path.clear();
+  player->fieldPlayer.pathStallSeconds = 0.0F;
+}
+
 void Field::dropMoveTarget() {
   if (moveTarget_ || !path_.empty()) {
     core::logDebug("[field] the click-to-move target is dropped");

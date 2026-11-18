@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace dwe::app {
 
@@ -33,14 +34,23 @@ PresentedCoopEntity present(const game::coop::EntityState& state) {
 } // namespace
 
 bool CoopSnapshotInterpolation::push(game::coop::Snapshot snapshot) {
+  const net::Millis receivedAt = latestAt_.value_or(net::Millis{0}) + net::Millis{50};
+  return push(std::move(snapshot), receivedAt);
+}
+
+bool CoopSnapshotInterpolation::push(game::coop::Snapshot snapshot, net::Millis receivedAt) {
   if (!latest_ || snapshot.mapId != latest_->mapId) {
     previous_.reset();
+    previousAt_.reset();
     latest_ = std::move(snapshot);
+    latestAt_ = receivedAt;
     return true;
   }
   if (!isNewer(snapshot.worldTick, latest_->worldTick)) return false;
   previous_ = std::move(latest_);
+  previousAt_ = latestAt_;
   latest_ = std::move(snapshot);
+  latestAt_ = receivedAt;
   return true;
 }
 
@@ -71,9 +81,25 @@ std::optional<PresentedCoopWorld> CoopSnapshotInterpolation::sample(float alpha)
   return world;
 }
 
+std::optional<PresentedCoopWorld> CoopSnapshotInterpolation::sample(net::Millis now) const {
+  if (!latest_) return std::nullopt;
+  // Host snapshots are sent at 20 Hz, so one snapshot interval gives us a complete
+  // interpolation window without adding unnecessary input latency.
+  constexpr net::Millis RenderDelay{50};
+  if (!previous_ || !previousAt_ || !latestAt_ || *latestAt_ <= *previousAt_)
+    return sample(1.0F);
+  const net::Millis target = now - RenderDelay;
+  const float t = std::clamp(static_cast<float>((target - *previousAt_).count()) /
+                                 static_cast<float>((*latestAt_ - *previousAt_).count()),
+                             0.0F, 1.0F);
+  return sample(t);
+}
+
 void CoopSnapshotInterpolation::reset() {
   previous_.reset();
   latest_.reset();
+  previousAt_.reset();
+  latestAt_.reset();
 }
 
 } // namespace dwe::app

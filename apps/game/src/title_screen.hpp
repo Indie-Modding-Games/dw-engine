@@ -37,6 +37,8 @@ public:
   // the main menu (main.c: main, runLandingScreen then runMainMenu); a look without that screen
   // shows the main menu. While the skin is to be asked (setAsksSkin), the skin picker comes first.
   void showBoot();
+  // Returns from a co-op profile/save selection to the existing room view without resetting it.
+  void returnToCoop();
   // Hides every document of the title screen, for a movie.
   void hide();
 

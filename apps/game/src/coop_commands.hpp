@@ -9,7 +9,8 @@ namespace dwe::app {
 
 // The network protocol deliberately carries only the field controls in this milestone. Story,
 // fishing and UI controls remain local until their authoritative action messages are implemented.
-[[nodiscard]] core::Result<game::coop::Commands> toCoopCommand(const PlayerCommands& commands);
+[[nodiscard]] core::Result<game::coop::Commands> toCoopCommand(const PlayerCommands& commands,
+                                                              std::uint32_t sequence = 0);
 [[nodiscard]] PlayerCommands fromCoopCommand(const game::coop::Commands& commands);
 
 // Adapts already-validated network field commands to the app's controller slot. CoopLink owns

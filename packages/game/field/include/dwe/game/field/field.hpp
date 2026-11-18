@@ -219,6 +219,14 @@ public:
   [[nodiscard]] bool waitingAtWarp(PlayerId id) const;
   [[nodiscard]] std::size_t playerCount() const { return otherPlayers_.size() + 1; }
 
+  // Puts a remote guest body where the host's authoritative simulation says it is. Only meaningful
+  // on a joining client's predicted field: the client advances its own guest from the commands it
+  // sent, and when the host's snapshot disagrees (a teleport, a lost command, a step the host
+  // refused) this corrects the transform so both see the same world. It does not touch motion or
+  // animation: the next tick's input drives those, and the glide/drawnPose paths keep the drawing
+  // smooth over the correction. The host player and the partner never reconcile from a snapshot.
+  void reconcilePlayer(PlayerId id, const CharacterState& authoritative);
+
   // Advances the logic by `seconds` (the app's fixed tick). On a warp the player walks on for the
   // fade out, without collision and without input; then nothing moves until the app enters the new
   // map and the fade in ends. The player and the partner walk on frames of the original
@@ -382,7 +390,13 @@ public:
   // entry; a trigger under the player fires only once stepped onto again.
   void setCollision(const assets::MapCollision& collision);
 
+  // Whether the world is holding its players this tick: a script, a care scene, an item notice, a
+  // destination choice or a map change's fade-out/wait. While held, the field freezes guest motion
+  // and consumes guest confirm; the host tells the client this so it stops predicting forward.
+  [[nodiscard]] bool held() const;
+
   // Extra toilets (extra_toilets.hpp, an engine improvement, off by default): the list of every
+
   // map's, and whether they are on. While on, the free cells under the current map's booths are
   // solid and those in front of them take the toilet trigger (set on each map entry); turned off,
   // they are free again.

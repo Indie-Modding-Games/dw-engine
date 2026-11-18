@@ -13,6 +13,7 @@
 #include <string_view>
 #include <vector>
 
+#include "coop_world_sync.hpp"
 #include "field_scene.hpp"
 
 // The field's enhanced graphics (docs/architecture/render.md, «Light and color pass»): the
@@ -108,11 +109,25 @@ void FieldScene::drawShadows(float alpha) {
   };
   // model.c draws one under every character it draws: the player (PLAYER_SHADOW_ENABLED,
   // set but in the ending), the partner and the NPCs, each the size of its species.
-  if (stage_.playerFade > 0.0F) {
+  // On the joining client the host's two bodies are the presented pair: the shadow follows the SAME
+  // gate as the model (presentsHostBodies), so when the host crossed to a map the guest cannot
+  // follow yet, neither the model nor its shadow is drawn, instead of a lone shadow at the old spot.
+  const bool hostPlayerShown = presentsHostBodies(coopGuestLocalView_, coopHostPresentation_.has_value());
+  const bool hostPartnerShown =
+      presentsHostBodies(coopGuestLocalView_, coopHostPartnerPresentation_.has_value());
+  if (hostPlayerShown && stage_.playerFade > 0.0F) {
     cast(field_->playerEntity(), field_->rules().player.radius);
   }
-  if (!stage_.partnerHidden) {
+  if (hostPartnerShown && !stage_.partnerHidden) {
     cast(field_->partnerEntity(), field_->rules().partner.mover.radius);
+  }
+  for (const CoopPlayerVisual& actor : coopGuestActors_) {
+    cast(actor.entity, field_->rules().player.radius);
+  }
+  if (coopGuestPartnerActor_) {
+    const float radius = speciesRadius_ ? speciesRadius_(coopGuestPartnerSpecies_)
+                                        : field_->rules().partner.mover.radius;
+    cast(coopGuestPartnerActor_->entity, radius);
   }
   std::map<scene::Entity, float> npcRadii;
   for (const game::field::NpcBody& body : field_->npcs().bodies()) {

@@ -51,6 +51,9 @@
 #include <string>
 #include <system_error>
 #include <utility>
+#include <deque>
+#include <algorithm>
+
 #include <variant>
 #include <vector>
 
@@ -64,6 +67,7 @@
 #include "coop_gameplay_bridge.hpp"
 #include "coop_snapshot.hpp"
 #include "coop_screen.hpp"
+#include "coop_world_sync.hpp"
 #include "content_mount.hpp"
 #include "control_log.hpp"
 #include "control_socket.hpp"
@@ -967,6 +971,10 @@ int runGame(const Options& requested) {
   NetworkFieldController* coopHostController = nullptr;
   PlaySession* coopAttachedSession = nullptr;
   std::uint32_t coopWorldTick = 0;
+  // Dedupe key for the presentation diagnostic: it logs only when the relationship between the
+  // host's map and the client's field map changes (presented ↔ withheld), so a scripted `warp_to`
+  // that strands the guest is visible in the run log without flooding it every frame.
+  std::string coopPresentationState;
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
   // A boot asks the UI skin after the language box (an addition) until the player has chosen one;
@@ -1666,7 +1674,11 @@ int runGame(const Options& requested) {
           title.show();
         }
       }
-      coop.tick(platform->nowSeconds());
+      if (coopBridge != nullptr) {
+        coop.syncConnection(platform->nowSeconds());
+      } else {
+        coop.tick(platform->nowSeconds());
+      }
       if (flow.playing() == nullptr) {
         if (auto networkSave = coop.takeRemoteStartText()) {
           title.hide();
@@ -1692,7 +1704,18 @@ int runGame(const Options& requested) {
         titleAfterMovie = replayBootMovie;
       }
       PlaySession* play = flow.playing();
+      const bool coopGuestClient = play != nullptr && coop.connected() && !coop.isHost();
       if (play != nullptr && coop.connected() && coopBridge == nullptr && coop.link() != nullptr) {
+        const auto addGuestPartner = [&] {
+          const auto species = coop.guestPartnerSpecies();
+          if (!species) {
+            core::logWarning("coop: no guest partner species was available for this session");
+            return;
+          }
+          if (auto added = play->scene().addCoopGuestPartner(*species); !added) {
+            core::logWarning("coop: could not show the guest partner: {}", added.error().message);
+          }
+        };
         if (coop.isHost()) {
           auto controller = std::make_unique<NetworkFieldController>();
           coopHostController = controller.get();
@@ -1705,20 +1728,50 @@ int runGame(const Options& requested) {
           } else {
             coopBridge = std::make_unique<CoopGameplayBridge>(*coop.link(), *coopHostController);
             coopAttachedSession = play;
+            addGuestPartner();
             core::logInfo("coop: guest commands now drive player 2 in the host field");
           }
         } else {
+          if (auto added = play->scene().addCoopGuest(); !added) {
+            core::logError("coop: could not add the predicted guest player: {}",
+                           added.error().message);
+          }
+          play->scene().setCoopGuestLocalView(true);
+          coopAttachedSession = play;
+          addGuestPartner();
           coopClientController = std::make_unique<NetworkFieldController>();
           coopBridge = std::make_unique<CoopGameplayBridge>(*coop.link(), *coopClientController);
           core::logInfo("coop: local field commands are connected to the host");
         }
       }
-      if (play != nullptr && coop.connected() && coop.isHost() && coopBridge != nullptr &&
+      if (play != nullptr && coop.connected() && coopBridge != nullptr &&
           coopAttachedSession != play) {
-        if (auto added = play->scene().addCoopGuest(); !added) {
-          core::logError("coop: could not add guest to the new field: {}", added.error().message);
+        if (coop.isHost()) {
+          if (auto added = play->scene().addCoopGuest(); !added) {
+            core::logError("coop: could not add guest to the new field: {}", added.error().message);
+          } else {
+            coopAttachedSession = play;
+            if (const auto species = coop.guestPartnerSpecies(); species) {
+              if (auto partner = play->scene().addCoopGuestPartner(*species); !partner) {
+                core::logWarning("coop: could not show the guest partner: {}",
+                                 partner.error().message);
+              }
+            }
+          }
         } else {
-          coopAttachedSession = play;
+          if (auto added = play->scene().addCoopGuest(); !added) {
+            core::logError("coop: could not add the predicted guest player to the new field: {}",
+                           added.error().message);
+          } else {
+            play->scene().setCoopGuestLocalView(true);
+            coopAttachedSession = play;
+            if (const auto species = coop.guestPartnerSpecies(); species) {
+              if (auto partner = play->scene().addCoopGuestPartner(*species); !partner) {
+                core::logWarning("coop: could not show the guest partner: {}",
+                                 partner.error().message);
+              }
+            }
+          }
         }
       }
       if (coopBridge != nullptr) {
@@ -1761,7 +1814,12 @@ int runGame(const Options& requested) {
         }
         clickWalksAway = walk.moveTarget && !MouseSteering::pressesInPlace(
                                                   *walk.moveTarget,
-                                                  play->scene().field().player().position);
+                                                  coopGuestClient
+                                                      ? play->scene().field()
+                                                            .player(game::field::GuestPlayerId)
+                                                            .value_or(play->scene().field().player())
+                                                            .position
+                                                      : play->scene().field().player().position);
         players.localController().sample(input, walk, move, clickWalksAway);
         commands = players.next(HostPlayerId, ticksRun).value_or(PlayerCommands{});
         play->pressStory(commands, input);
@@ -1790,7 +1848,13 @@ int runGame(const Options& requested) {
             core::logWarning("coop: could not send field input: {}", sent.error().message);
           }
         }
-        play->tick(commands, guestCommands);
+        if (coopGuestClient) {
+          // The joining client predicts its own second player locally. The host receives the same
+          // command and remains the authority; its snapshots reconcile the presentation.
+          play->tick(PlayerCommands{}, commands);
+        } else {
+          play->tick(commands, guestCommands);
+        }
         if (coopBridge != nullptr && coop.connected() && coop.isHost() && ticksRun % 3 == 0) {
           auto snapshot = makeCoopSnapshot(play->scene().field(), play->scene().field().mapId(),
                                            ++coopWorldTick,
@@ -2010,6 +2074,8 @@ int runGame(const Options& requested) {
               if (auto provided = coop.provideGuestSave(*saveText); !provided) {
                 coop.reportError(provided.error().message);
                 title.show();
+              } else {
+                title.returnToCoop();
               }
               continue;
             }
@@ -2077,26 +2143,32 @@ int runGame(const Options& requested) {
     }
     if (PlaySession* play = flow.playing()) {
       if (coopBridge != nullptr && coop.connected() && !coop.isHost()) {
-        std::optional<game::field::CharacterState> hostState;
-        if (const auto presented = coopBridge->presentedWorld(drawAlpha);
-            presented && presented->mapId == play->scene().field().mapId()) {
-          const auto hostPlayer = std::ranges::find_if(presented->entities, [](const auto& entity) {
-            return entity.owner == game::coop::HostPlayerId &&
-                   entity.role == game::coop::EntityRole::Player;
-          });
-          if (hostPlayer != presented->entities.end()) {
-            const scene::Motion motion = hostPlayer->motion == game::coop::Motion::Run
-                                             ? scene::Motion::Run
-                                         : hostPlayer->motion == game::coop::Motion::Walk
-                                             ? scene::Motion::Walk
-                                             : scene::Motion::Idle;
-            hostState = game::field::CharacterState{.position = hostPlayer->position,
-                                                     .yaw = hostPlayer->yaw,
-                                                     .motion = motion};
+        const net::Millis presentationTime{
+            static_cast<std::int64_t>(platform->nowSeconds() * 1000.0)};
+        // The bodies the host's authoritative sample describes. A map-id difference yields an
+        // empty set: the client then withholds the host model, which is the "shadow without
+        // character" state the headless `coop_world_sync_tests` lock against.
+        CoopPresentedRoles roles;
+        if (const auto presented = coopBridge->presentedWorld(presentationTime)) {
+          const bool withheld = presented->mapId != play->scene().field().mapId();
+          // Record why the host model is or is not shown, but only on a change of state, so a
+          // scripted map change that strands the guest is obvious in the log ("withheld: host is on
+          // a map the guest cannot follow") instead of only looking like a floating shadow.
+          const std::string state = withheld ? "withheld" : "presented";
+          const std::string key = state + ':' + presented->mapId + "->" +
+                                  play->scene().field().mapId();
+          if (key != coopPresentationState) {
+            coopPresentationState = key;
+            core::logInfo("coop: host presentation {} (host map '{}', client map '{}')",
+                          state, presented->mapId, play->scene().field().mapId());
           }
+          roles = presentedRoles(*presented, play->scene().field().mapId());
         }
-        if (auto shown = play->scene().presentCoopHost(hostState); !shown) {
+        if (auto shown = play->scene().presentCoopHost(roles.hostPlayer); !shown) {
           core::logWarning("coop: could not present host player: {}", shown.error().message);
+        }
+        if (auto shown = play->scene().presentCoopHostPartner(roles.hostPartner); !shown) {
+          core::logWarning("coop: could not present host partner: {}", shown.error().message);
         }
       }
       play->update(sessionCommands, autotest.get(), frameStats, gameSeconds, drawAlpha);
