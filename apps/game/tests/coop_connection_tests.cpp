@@ -1,8 +1,8 @@
-#include "coop_connection.hpp"
-
 #include <dwe/net/loopback.hpp>
 
 #include <doctest/doctest.h>
+
+#include "coop_connection.hpp"
 
 using namespace dwe::app;
 
@@ -69,12 +69,10 @@ TEST_CASE("cooperative connection host and guest complete the room handshake") {
 }
 
 TEST_CASE("cooperative connection validates the entered room code") {
-  CoopConnection connection{{.identity = identity(),
-                             .configurationError = {},
-                             .host = {},
-                             .join = [](std::string_view) {
-                               return std::unique_ptr<dwe::net::PeerLink>{};
-                             }}};
+  CoopConnection connection{
+      {.identity = identity(), .configurationError = {}, .host = {}, .join = [](std::string_view) {
+         return std::unique_ptr<dwe::net::PeerLink>{};
+       }}};
   connection.open();
   connection.beginJoin();
   connection.type("abc", true);

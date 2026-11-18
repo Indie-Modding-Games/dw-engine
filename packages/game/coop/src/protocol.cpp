@@ -55,9 +55,8 @@ bool validCoordinate(std::int32_t value, std::int32_t limit) {
 bool validField(const FieldCommand& field) {
   constexpr std::int16_t MaxStick = 32767;
   return field.stickX >= -MaxStick && field.stickY >= -MaxStick &&
-         (!field.moveTarget ||
-          (validCoordinate(field.moveTarget->first, MaxWorldCoordinate) &&
-           validCoordinate(field.moveTarget->second, MaxWorldCoordinate)));
+         (!field.moveTarget || (validCoordinate(field.moveTarget->first, MaxWorldCoordinate) &&
+                                validCoordinate(field.moveTarget->second, MaxWorldCoordinate)));
 }
 
 bool validEntity(const EntityState& entity) {
@@ -81,8 +80,7 @@ bool getFlag(net::WireReader& in, bool& value) {
 bool getField(net::WireReader& in, FieldCommand& field) {
   field.stickX = in.get<std::int16_t>();
   field.stickY = in.get<std::int16_t>();
-  if (!getFlag(in, field.run) || !getFlag(in, field.cancelTarget) ||
-      !getFlag(in, field.confirm)) {
+  if (!getFlag(in, field.run) || !getFlag(in, field.cancelTarget) || !getFlag(in, field.confirm)) {
     return false;
   }
   bool hasTarget = false;
@@ -173,7 +171,8 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     welcome.assignedPlayer = in.get<PlayerId>();
     const std::uint8_t reason = in.get<std::uint8_t>();
     welcome.sessionId = in.get<std::uint64_t>();
-    if (!validIdentity(welcome.identity) || reason > static_cast<std::uint8_t>(RejectReason::Busy) ||
+    if (!validIdentity(welcome.identity) ||
+        reason > static_cast<std::uint8_t>(RejectReason::Busy) ||
         welcome.assignedPlayer != GuestPlayerId ||
         (welcome.accepted && reason != static_cast<std::uint8_t>(RejectReason::None)) ||
         (!welcome.accepted && reason == static_cast<std::uint8_t>(RejectReason::None))) {
@@ -266,8 +265,7 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
         !validCoordinate(view.top, MaxViewCoordinate) ||
         !validCoordinate(view.right, MaxViewCoordinate) ||
         !validCoordinate(view.bottom, MaxViewCoordinate) ||
-        view.right - view.left > MaxViewCoordinate ||
-        view.bottom - view.top > MaxViewCoordinate) {
+        view.right - view.left > MaxViewCoordinate || view.bottom - view.top > MaxViewCoordinate) {
       return core::fail("invalid cooperative view state");
     }
     message = std::move(view);
@@ -285,8 +283,7 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
         chunk.index >= chunk.count ||
         static_cast<std::uint8_t>(chunk.kind) >
             static_cast<std::uint8_t>(ProfilePayloadKind::HostSave) ||
-        chunk.bytes.empty() ||
-        chunk.bytes.size() > MaxProfileChunkBytes) {
+        chunk.bytes.empty() || chunk.bytes.size() > MaxProfileChunkBytes) {
       return core::fail("invalid cooperative profile chunk");
     }
     message = std::move(chunk);

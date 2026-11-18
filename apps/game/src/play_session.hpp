@@ -133,6 +133,10 @@ inline constexpr std::string_view GenerousTalkSetting = "generous_talk";
 // Extra toilets (an engine improvement, off unless turned on; game::field::ExtraToilet): the toilet
 // booths field/extra_toilets of the game pack lists stand on their maps.
 inline constexpr std::string_view ExtraToiletsSetting = "extra_toilets";
+// Angemon's event zone (an engine improvement, on unless turned off;
+// session::StoryImprovement::AngemonZone): once Angemon's light is freed, his event also starts on
+// the Ice Sanctuary ground floor's corridor, whatever way the player came in.
+inline constexpr std::string_view AngemonEventZoneSetting = "angemon_event_zone";
 // The canyon shop's job (game::shop_job; session::ShopJobAdapter): improved, the default, plays the
 // line of customers and the haggle screen; original plays the original's price menus.
 inline constexpr std::string_view ShopJobModeSetting = "shop_job_mode";

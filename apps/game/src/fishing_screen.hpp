@@ -8,14 +8,14 @@
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/ui/ui.hpp>
 
-#include "player_commands.hpp"
-
 #include <cstdint>
 #include <deque>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include "player_commands.hpp"
 
 namespace dwe::app {
 

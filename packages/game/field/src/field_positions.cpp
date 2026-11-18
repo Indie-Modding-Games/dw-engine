@@ -254,13 +254,14 @@ std::int32_t Field::separateActors(std::string_view why) {
     }
     auto& transform = registry.get<Transform>(body.entity);
     const bool walled = inWall(transform.position);
-    // The player gives way to nobody; the partner to everybody.
+    // The player gives way to nobody, but to an NPC right after a load (yieldPlayerToNpcsOnLoad);
+    // the partner to everybody.
     std::optional<std::size_t> under;
-    if (body.who == PartnerWho) {
-      for (std::size_t other = 0; other < all.size() && !under; ++other) {
-        if (other != index && overlaps(squareOf(body), squareOf(all[other]))) {
-          under = other;
-        }
+    const bool yields = body.who == PartnerWho || (body.who == PlayerWho && playerYieldsToNpcs_);
+    for (std::size_t other = 0; yields && other < all.size() && !under; ++other) {
+      const bool counts = body.who == PartnerWho || all[other].who >= FirstNpcWho;
+      if (other != index && counts && overlaps(squareOf(body), squareOf(all[other]))) {
+        under = other;
       }
     }
     if (!walled && !under) {

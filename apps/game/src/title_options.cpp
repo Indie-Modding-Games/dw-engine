@@ -57,6 +57,9 @@ constexpr std::array Toggles{
                .fallback = false},
     GameToggle{.setting = "generous_talk", .saved = &UserSettings::generousTalk, .fallback = false},
     GameToggle{.setting = "extra_toilets", .saved = &UserSettings::extraToilets, .fallback = false},
+    GameToggle{.setting = "angemon_event_zone",
+               .saved = &UserSettings::angemonEventZone,
+               .fallback = true},
     // Graphics tab.
     GameToggle{.setting = "smooth_motion", .saved = &UserSettings::smoothMotion, .fallback = true},
     GameToggle{

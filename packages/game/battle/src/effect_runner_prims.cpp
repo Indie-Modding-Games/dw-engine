@@ -54,6 +54,11 @@ constexpr std::int32_t ClutColorFields = 4;
 constexpr std::int32_t ClutFieldShift = 5;
 // Both screen layers sort at entry 0x1e of the ordering table, in front of the world.
 constexpr std::int32_t ScreenLayerOrder = 0x1E;
+// Each frame the original puts a DR_OFFSET back to the screen's centre (DR_OFFSETS: 160, 120) at
+// entry 0x20 of the ordering table (battle_main.c, utils.c: AddPrim(org + 0x20, &DR_OFFSETS)), so
+// what sorts at that entry or nearer is placed from the screen's centre, and only what sorts
+// behind it from the projection's centre (the drawing offset, GsSetOrign).
+constexpr std::int32_t ScreenOffsetOrder = 0x20;
 
 // BTL_renderParallaxSprites: a sprite's place is depth * (its point + the offset) >> 7, wrapped
 // as the original wraps it (x % 400, then + 360 below 0, then 0xc8 left; y % 320, + 280, 0xa0
@@ -177,6 +182,13 @@ std::int32_t extraTiles(std::int32_t half, std::int32_t originalHalf) {
 // A GsSPRITE's 16-bit fields.
 std::int32_t int16(std::int32_t value) {
   return static_cast<std::int16_t>(value);
+}
+
+// Where a screen primitive at an entry of the ordering table is placed from, in pixels from the
+// screen's centre: the screen's centre itself at entry 0x20 or nearer, the projection's centre
+// behind it.
+EffectScreenPoint originOf(const EffectView& view, std::int32_t order) {
+  return order <= ScreenOffsetOrder ? EffectScreenPoint{} : view.centre;
 }
 
 // A modulo that stays in [0, divisor).
@@ -330,17 +342,18 @@ void EffectRunner::scrollingBackground(Slot& slot, const std::vector<std::int32_
     ty += TileRows - 1;
   }
   const std::int32_t grey = args[4] & ByteMask;
-  // The tiles are placed from the projection's centre (the drawing offset), as the original's
-  // are, even when that leaves part of the screen bare. A wider screen than the original's shows
-  // more of the same tiles (none extra at 320 x 240).
+  // At entry 0x1e the tiles are placed from the screen's centre, whatever the drawing offset: they
+  // cover the whole 320 x 240 screen with a tile to spare for the scroll. A wider screen than the
+  // original's shows more of the same tiles (none extra at 320 x 240).
+  const EffectScreenPoint origin = originOf(view_, ScreenLayerOrder);
   const std::int32_t extraColumns = extraTiles(view_.screen.x / 2, OriginalScreen.x / 2);
   const std::int32_t extraRows = extraTiles(view_.screen.y / 2, OriginalScreen.y / 2);
   const std::size_t index = static_cast<std::size_t>(&slot - slots_.data());
   for (std::int32_t row = -extraRows; row < TileRows + extraRows; ++row) {
-    const std::int32_t y = (sy & TileMask) - TilesUp + (row * TileSize) + view_.centre.y;
+    const std::int32_t y = (sy & TileMask) - TilesUp + (row * TileSize) + origin.y;
     const std::int32_t tileRow = wrapped(ty + row, TileRows) * TileColumns;
     for (std::int32_t column = -extraColumns; column < TileColumns + extraColumns; ++column) {
-      const std::int32_t x = (sx & TileMask) - TilesLeft + (column * TileSize) + view_.centre.x;
+      const std::int32_t x = (sx & TileMask) - TilesLeft + (column * TileSize) + origin.x;
       const std::int32_t tile =
           read(slot, tiles + tileRow + wrapped(tx + column, TileColumns), EffectWidth::Int8);
       EffectScreenQuad quad;
@@ -399,19 +412,22 @@ void EffectRunner::ribbon(Slot& slot, const std::vector<std::int32_t>& args) {
 
 // battle_effect.c: BTL_renderScreenSprite: x, y, u, v, width, height, pivot x and y, turn, entry,
 // scale x and y (4096 is 1), palette row. The sprite's pivot texel lands on (x, y) from the
-// projection's centre, the sprite scaled and turned clockwise round it; a negative palette row
-// (its negation is the row) places it from the screen's centre instead, whatever the drawing
-// offset.
+// projection's centre (from the screen's centre at entry 0x20 or nearer), the sprite scaled and
+// turned clockwise round it; a negative palette row (its negation is the row) moves it back by the
+// drawing offset, which behind entry 0x20 places it from the screen's centre.
 void EffectRunner::screenSprite(Slot& slot, const std::vector<std::int32_t>& args) {
   const std::int32_t order = args[9];
   if (order < 0 || order >= OrderingTableEntries) {
     return;
   }
   const std::int32_t row = args[12];
-  EffectScreenPoint at{.x = int16(args[0]), .y = int16(args[1])};
-  if (row >= 0) {
-    at.x += view_.centre.x;
-    at.y += view_.centre.y;
+  // From the origin of its entry; a negative palette row moves it back by the drawing offset
+  // (0xa0 - ox, 0x78 - oy), which puts it on the screen's centre when it sorts behind entry 0x20.
+  const EffectScreenPoint origin = originOf(view_, order);
+  EffectScreenPoint at{.x = int16(args[0]) + origin.x, .y = int16(args[1]) + origin.y};
+  if (row < 0) {
+    at.x -= view_.centre.x;
+    at.y -= view_.centre.y;
   }
   const std::int32_t width = args[4] & UnsignedShortMask;
   const std::int32_t height = args[5] & UnsignedShortMask;
@@ -521,9 +537,9 @@ void EffectRunner::particleFlash(Slot& slot, const std::vector<std::int32_t>& ar
 
 // battle_effect.c: BTL_renderScreenFade (brightness) and BTL_renderScreenOverlay (entry, colour,
 // mode): a veil over the screen. The fade is placed from the screen's corner, whatever the drawing
-// offset, and subtracts its grey; the overlay is placed from the projection's centre, as the
-// original's is, in its colour, mixed by its mode. Both cover the original's 320 x 240 and, on a
-// wider screen, as much more of it.
+// offset, and subtracts its grey; the overlay is placed from its entry's origin (the screen's
+// centre at entry 0x20 or nearer, as Aurora Freeze's 10), in its colour, mixed by its mode. Both
+// cover the original's 320 x 240 and, on a wider screen, as much more of it.
 void EffectRunner::screenVeil(Slot& slot, const std::vector<std::int32_t>& args, bool fade) {
   const EffectScreenPoint extra{.x = std::max(0, view_.screen.x - OriginalScreen.x) / 2,
                                 .y = std::max(0, view_.screen.y - OriginalScreen.y) / 2};
@@ -544,8 +560,9 @@ void EffectRunner::screenVeil(Slot& slot, const std::vector<std::int32_t>& args,
                      ? static_cast<EffectBlend>(mode & OverlayRateMask)
                      : EffectBlend::Opaque;
     quad.order = args[0];
-    corner.x += view_.centre.x;
-    corner.y += view_.centre.y;
+    const EffectScreenPoint origin = originOf(view_, quad.order);
+    corner.x += origin.x;
+    corner.y += origin.y;
   }
   quad.corners = rectangle(corner.x, corner.y, OriginalScreen.x + (2 * extra.x),
                            OriginalScreen.y + (2 * extra.y));
@@ -729,6 +746,8 @@ void EffectRunner::wireframeBox(Slot& slot, const std::vector<std::int32_t>& arg
 // show larger; opaque, with the texture's second palette row.
 void EffectRunner::parallaxSprites(Slot& slot, const std::vector<std::int32_t>& args) {
   const std::size_t index = static_cast<std::size_t>(&slot - slots_.data());
+  // At entry 0x1e, placed from the screen's centre, as the scrolling background is.
+  const EffectScreenPoint origin = originOf(view_, ScreenLayerOrder);
   for (std::int32_t at = args[0];; at += ParallaxSpriteBytes) {
     const std::int32_t size = read(slot, at, EffectWidth::Int16);
     if (size < 0 || at + ParallaxSpriteBytes > static_cast<std::int32_t>(slot.data.size())) {
@@ -751,8 +770,7 @@ void EffectRunner::parallaxSprites(Slot& slot, const std::vector<std::int32_t>& 
     }
     const auto side = static_cast<std::int16_t>((size * depth) >> ParallaxSizeShift);
     EffectScreenQuad quad;
-    quad.corners =
-        rectangle(x - ParallaxLeft + view_.centre.x, y - ParallaxUp + view_.centre.y, side, side);
+    quad.corners = rectangle(x - ParallaxLeft + origin.x, y - ParallaxUp + origin.y, side, side);
     quad.u = u;
     quad.texelWidth = TileTexels;
     quad.texelHeight = TileTexels;

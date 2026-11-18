@@ -1,6 +1,6 @@
-#include "player_registry.hpp"
-
 #include <doctest/doctest.h>
+
+#include "player_registry.hpp"
 
 using namespace dwe::app;
 
@@ -36,20 +36,19 @@ TEST_CASE("the guest slot accepts one connected command source") {
   CHECK(command->sequence == 0);
   CHECK(command->field.stick == glm::vec2{0.0F, 1.0F});
 
-  CHECK_FALSE(players.addGuest("duplicate", std::make_unique<ScriptedController>(
-                                                std::vector<PlayerCommands>{})));
-  CHECK_FALSE(players.addGuest("", std::make_unique<ScriptedController>(
-                                      std::vector<PlayerCommands>{})));
-  CHECK_FALSE(players.addGuest("local", std::make_unique<ScriptedController>(
-                                            std::vector<PlayerCommands>{}),
+  CHECK_FALSE(players.addGuest(
+      "duplicate", std::make_unique<ScriptedController>(std::vector<PlayerCommands>{})));
+  CHECK_FALSE(
+      players.addGuest("", std::make_unique<ScriptedController>(std::vector<PlayerCommands>{})));
+  CHECK_FALSE(players.addGuest("local",
+                               std::make_unique<ScriptedController>(std::vector<PlayerCommands>{}),
                                PlayerLink::Local));
   CHECK(players.size() == 2);
 }
 
 TEST_CASE("joining and dropped guest slots do not advance their controller") {
   PlayerRegistry players;
-  CHECK(players.addGuest("B", std::make_unique<ScriptedController>(
-                                   std::vector<PlayerCommands>(1)),
+  CHECK(players.addGuest("B", std::make_unique<ScriptedController>(std::vector<PlayerCommands>(1)),
                          PlayerLink::Joining));
   CHECK_FALSE(players.next(GuestPlayerId, 0).has_value());
 

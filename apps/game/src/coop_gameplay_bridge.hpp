@@ -1,12 +1,12 @@
 #pragma once
 
-#include "coop_commands.hpp"
-#include "coop_snapshot_interpolation.hpp"
-
 #include <dwe/game/coop/profile_transfer.hpp>
 
 #include <deque>
 #include <span>
+
+#include "coop_commands.hpp"
+#include "coop_snapshot_interpolation.hpp"
 
 namespace dwe::app {
 

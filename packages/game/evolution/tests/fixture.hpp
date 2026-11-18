@@ -130,6 +130,9 @@ inline constexpr std::array<FixtureForm, 33> FixtureForms{{
 
 inline constexpr std::int32_t FixtureMoveCount = 122;
 inline constexpr std::int32_t FixtureDefaultWeight = 20;
+// Every fixture form has a model: bones to draw (only a form with bones is one the developer's
+// evolve can make).
+inline constexpr std::int32_t FixtureBoneCount = 17;
 
 // Made-up tables for the rules: every form of FixtureForms at its position, with no requirement, an
 // empty path and reference stats of 1000 HP and MP and 100 of the rest. Tests change the asset
@@ -151,6 +154,7 @@ public:
       entry.index = index;
       entry.name = std::format("Form {}", index);
       entry.level = form.level;
+      entry.boneCount = FixtureBoneCount;
       entry.special = {0, std::nullopt, std::nullopt};
       entry.moves.at(0) = "move_2";
       entry.moves.at(1) = "move_1";

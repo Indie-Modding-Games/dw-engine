@@ -37,7 +37,7 @@ struct Tab {
   std::string_view id;
   std::span<const std::string_view> rows;
 };
-constexpr std::array<std::string_view, 27> GameRows{"walk-control",
+constexpr std::array<std::string_view, 28> GameRows{"walk-control",
                                                     "autosave",
                                                     "world-map",
                                                     "minimap-items",
@@ -62,6 +62,7 @@ constexpr std::array<std::string_view, 27> GameRows{"walk-control",
                                                     "choose-egg-after-lives-lost",
                                                     "generous-talk",
                                                     "extra-toilets",
+                                                    "angemon-event-zone",
                                                     "name-spacing",
                                                     "free-exploration"};
 constexpr std::array<std::string_view, 15> GraphicsRows{"display-mode",
@@ -355,6 +356,39 @@ TEST_CASE("the description panel says what the focused row does, tagged improvem
   showTab(screen, "graphics");
   CHECK(screen.ui->elementHasClass(Menu, "option-tag", "hidden"));
   CHECK_FALSE(screen.ui->elementText(Menu, "option-help").empty());
+}
+
+TEST_CASE("every row's description stays inside its panel, in every skin and both languages") {
+  // The tester's report: in the original look a third line of some descriptions ran into the
+  // separator and the Reset/Back row under the panel.
+  for (const std::string_view language : {"es", "en"}) {
+    for (const std::string_view skin : {"original", "modern", "new", "devvago"}) {
+      CAPTURE(language);
+      CAPTURE(skin);
+      Screen screen{"pause_menu", language};
+      screen.skin(skin);
+      openOnOptions(screen);
+      for (const Tab& tab : Tabs) {
+        showTab(screen, tab.id);
+        for (const std::string_view row : tab.rows) {
+          CAPTURE(row);
+          focusRow(screen, row);
+          screen.frames(2);
+          const auto info = screen.ui->elementRect(Menu, "option-info");
+          const auto help = screen.ui->elementRect(Menu, "option-help");
+          const auto foot = screen.ui->elementRect(Menu, "option-foot");
+          REQUIRE(info.has_value());
+          REQUIRE(help.has_value());
+          REQUIRE(foot.has_value());
+          const Ui::Rect panel = info.value_or(Ui::Rect{});
+          const Ui::Rect text = help.value_or(Ui::Rect{});
+          CAPTURE(screen.ui->elementText(Menu, "option-help"));
+          CHECK(text.bottom <= panel.bottom + 0.5F);
+          CHECK(panel.bottom <= foot.value_or(Ui::Rect{}).top + 0.5F);
+        }
+      }
+    }
+  }
 }
 
 TEST_CASE("left and right change a row both ways; a number stops at its ends") {

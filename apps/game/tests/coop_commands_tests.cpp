@@ -1,8 +1,8 @@
-#include "coop_commands.hpp"
-
 #include <doctest/doctest.h>
 
 #include <limits>
+
+#include "coop_commands.hpp"
 
 using namespace dwe::app;
 
@@ -53,8 +53,7 @@ TEST_CASE("application refuses invalid network field values") {
 TEST_CASE("network field controller uses only fresh commands") {
   NetworkFieldController controller;
   const dwe::game::coop::Commands received{
-      .sequence = 7,
-      .field = {.stickX = 32767, .run = true, .moveTarget = std::nullopt}};
+      .sequence = 7, .field = {.stickX = 32767, .run = true, .moveTarget = std::nullopt}};
   CHECK(controller.receive(received, dwe::net::Millis{100}));
   CHECK_FALSE(controller.receive(received, dwe::net::Millis{110}));
 

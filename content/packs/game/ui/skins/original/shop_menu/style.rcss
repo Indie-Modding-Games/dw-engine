@@ -8,3 +8,9 @@ body #bits-box, body #description {
 	font-family: original-look;
 	color: #d0d0d0;
 }
+
+/* The shop's window opens under the money box (24,66 246 x 99 in the 960dp frame, money_box/structure.rcss), not over
+   it: the pause menu's panel it borrows starts at 120dp, where the centred window ran over the box's right side. */
+#panel {
+	top: 180dp;
+}

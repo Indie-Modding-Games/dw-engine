@@ -281,6 +281,17 @@ local descriptors = {
     help = "pause_menu.help.extra_toilets",
     original = false,
   },
+  -- Angemon's event zone: once Angemon's light is freed, his event also starts on the Ice
+  -- Sanctuary ground floor's corridor, whatever way the player came in (on by default; off, as
+  -- the original, only the stairs up from the trapdoor passage start it).
+  {
+    name = "angemon_event_zone",
+    label = "pause_menu.angemon_event_zone",
+    default = true,
+    tab = "game",
+    help = "pause_menu.help.angemon_event_zone",
+    original = false,
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).

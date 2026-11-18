@@ -15,6 +15,7 @@
 #include <deque>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -52,6 +53,8 @@ struct StoryScenesContext {
   TournamentAdapter* tournament = nullptr;
   // StoryScenes::attachShopJob.
   ShopJobAdapter* shopJob = nullptr;
+  // The story improvements turned off (StoryScenes::setImprovement); the others are on.
+  std::set<StoryImprovement> improvementsOff;
   // Whether the ruleset has the section, and whether the orders are published in the story's VM.
   bool enabled = false;
   bool published = false;

@@ -16,8 +16,8 @@
 #include <string_view>
 #include <vector>
 
-#include "story_text_rows.hpp"
 #include "player_commands.hpp"
+#include "story_text_rows.hpp"
 
 namespace dwe::app {
 

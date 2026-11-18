@@ -9,6 +9,7 @@
 #include <map>
 #include <optional>
 #include <utility>
+#include <variant>
 #include <vector>
 
 using namespace dwe::game::story;
@@ -70,12 +71,19 @@ public:
   }
   [[nodiscard]] std::optional<std::int64_t> talkedTo() const override { return touchedBy_; }
   void startBattle(const ScriptedBattle& battle) override { started = battle; }
-  std::optional<BattleOutcome> battleOutcome() override { return std::nullopt; }
-  void startPartnerReturn() override {}
-  [[nodiscard]] bool partnerReturned() const override { return true; }
+  std::optional<BattleOutcome> battleOutcome() override { return std::exchange(outcome, {}); }
+  void startCameraReturn() override {
+    ++cameraReturns;
+    cameraMoving = true;
+  }
+  [[nodiscard]] bool cameraReturned() const override { return !cameraMoving; }
   void holdAfterFixedFight() override {}
 
   std::optional<ScriptedBattle> started;
+  // The outcome the next poll reads, and the camera's pans back onto the player.
+  std::optional<BattleOutcome> outcome;
+  int cameraReturns = 0;
+  bool cameraMoving = false;
 
 private:
   std::map<std::int64_t, std::int64_t> entities_;
@@ -141,4 +149,39 @@ TEST_CASE(
   CHECK(battle.started->enemies == std::vector<std::int64_t>{4});
   CHECK(battle.started->joinable);
   CHECK(state.variable(Predefined).value_or(-1) == 0);
+}
+
+TEST_CASE("a victory goes on once the camera has panned back onto the player") {
+  // script_interp.c:1949: after a won battle the camera's slot pans to the player (0xFD) in 10
+  // frames and the section waits on it; the player ran back in the battle's opening and would stay
+  // off the centre of the screen.
+  FakeState state;
+  FakeBattle battle = bridge();
+  ScreenHistory screens;
+  StoryBattles battles{state, battle, screens, Rules};
+  const auto task = battles.startBattle();
+  REQUIRE(task.has_value());
+  CHECK(std::holds_alternative<TaskRunning>((*task)->tick()));
+  CHECK(battle.cameraReturns == 0);
+  battle.outcome = BattleOutcome::Victory;
+  CHECK(std::holds_alternative<TaskRunning>((*task)->tick()));
+  CHECK(battle.cameraReturns == 1);
+  CHECK(std::holds_alternative<TaskRunning>((*task)->tick()));
+  battle.cameraMoving = false;
+  CHECK(std::holds_alternative<TaskDone>((*task)->tick()));
+  CHECK(battle.cameraReturns == 1);
+}
+
+TEST_CASE("a fixed fight won leaves the camera where it is") {
+  // script_interp.c:1944: with trigger 1 set the section goes on at once, with no pan.
+  FakeState state;
+  FakeBattle battle = bridge();
+  ScreenHistory screens;
+  StoryBattles battles{state, battle, screens, Rules};
+  const auto task = battles.startBattle();
+  REQUIRE(task.has_value());
+  REQUIRE(state.setTrigger(FixedFight, true));
+  battle.outcome = BattleOutcome::Victory;
+  CHECK(std::holds_alternative<TaskDone>((*task)->tick()));
+  CHECK(battle.cameraReturns == 0);
 }

@@ -214,6 +214,30 @@ Pruebas: «an extra toilet's booth is solid and its front takes the toilet trigg
 on 2 x 2 cells and its trigger strip is in front» y «the game pack's field data is valid», que además carga cada
 modelo (`rules_tests.cpp`).
 
+### Zona del evento de Angemon
+
+Una mejora opcional, activa por defecto, pedida por un tester. En el original, el evento de Angemon en la planta baja
+del Santuario de Hielo (icsa01, script 93, sección 0x05: «¿Oh? Sobre esa estatua…», Angemon se une a la ciudad) solo
+se juega como sección de llegada de la escalera que sube desde el pasadizo de la trampilla: la sección 0x33 del script
+94 hace `warp_to(97, 1, 5)` cuando el trigger 322 (la luz de Angemon, tomada en el último piso) está activo. Volver
+por el teletransporte a la planta 0 (script 97, sección 0x36, `warp_to(97, 2, 255)`) o por la puerta desde frzl05 no
+corre ninguna sección, y la franja del pasillo (celdas de valor 52, filas 47-48, x −800..800, z 100..300; sección
+0x34) solo juega el hallazgo del compañero (323/324). Así que el jugador tiene que bajar por la trampilla y volver a
+subir. Medido en el original (2026-11-17, `w97_icsa05_after_win` con 322, 323 y 324 activos): el teletransporte de
+icsa05 deja al jugador en (0, 0) de icsa01 con el compañero en (0, 200), y cruzar la franja no inicia nada (el
+trigger 220 sigue limpio). dwe hace lo mismo con la opción desactivada.
+
+El ajuste `angemon_event_zone` (fila «Angemon en la planta baja», «Angemon on the ground floor» en inglés, pestaña
+Juego, guardado en los ajustes del usuario) llega a `session::StoryScenes::setImprovement(StoryImprovement::AngemonZone)`.
+El parche de historia `story/patches/angemon_zone_093.lua` del pack del juego envuelve la sección 0x34: pregunta a la
+rutina 261 del motor (el número de la mejora en la variable 254, la respuesta ahí: 1 activa, 0 no) y, activa, con 322
+activo y 220 limpio, salta a la sección 0x05; si no, corre la sección del original. El evento es el del original, desde
+donde el jugador cruce la franja. Tests: «routine 261 tells a story patch whether a story improvement is on» y «the
+Angemon zone patch plays the event on the corridor band once the light is freed» (`story_improvement_tests.cpp`).
+Comprobado en vivo (dwe, `icsa01,2` con 322, 323 y 324 puestos): el teletransporte deja en (0, 0) con el partner en
+(0, 200), como el original; con la opción activa, entrar en la franja reproduce el evento hasta el final (trigger 220
+puesto); desactivada desde la pestaña Juego, la franja corre la sección del original y no empieza nada.
+
 ## Felicitar y regañar
 
 «Felicitar» y «Regañar» del menú del campo (Tab) juegan la escena del original (`partner.c: partnerTickPraiseScold`,
@@ -1321,7 +1345,10 @@ guardar (con el `quick_save` del menú de pausa). Las listas (objetos, especies,
 (`EvolutionAdapter::cheatTargets`, `EvolutionTables::cheatTargets`), en el orden de la tabla: las formas de compañero,
 las especiales (virus, de objeto o evento, las Mega que añada un conjunto de reglas) y también los enemigos, los jefes y
 los personajes, aunque ninguna evolución del juego los alcance. Con los datos del original son 178 (todas salvo las dos
-sin modelo). El menú y `evolve` usan `evolveByCheat`, que solo se alcanza desde las herramientas de desarrollo; las
+sin modelo). Una especie sin modelo queda fuera aunque tenga fila de evolución propia, y `evolve` la rechaza:
+WereGarurumon, una forma recortada del disco, conserva su fila pero no tiene huesos, ni modelo, y su lista de ataques es
+de relleno (16 veces Torre de fuego: ni final ni nada que aprender); evolucionar a ella dejaba el estado diciendo
+WereGarurumon mientras el campo seguía dibujando la forma anterior. El menú y `evolve` usan `evolveByCheat`, que solo se alcanza desde las herramientas de desarrollo; las
 evoluciones de la partida no cambian. Lo que le falta a una especie sin fila se toma de un sustituto
 (`assets::standInRow`): la primera especie con fila del mismo nombre (la copia de enemigo de una forma de compañero),
 luego del mismo nivel y tipo, luego del mismo nivel y si no la de un Novato. Así salen:

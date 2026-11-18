@@ -1,8 +1,8 @@
-#include "coop_gameplay_bridge.hpp"
-
 #include <dwe/net/loopback.hpp>
 
 #include <doctest/doctest.h>
+
+#include "coop_gameplay_bridge.hpp"
 
 using namespace dwe::app;
 
@@ -50,13 +50,12 @@ TEST_CASE("coop gameplay bridge routes guest movement into the host controller")
   CHECK(received.field.moveTarget->x == 120.0F);
   CHECK(received.field.moveTarget->z == -45.0F);
 
-  const Snapshot snapshot{.mapId = "field/main",
-                          .worldTick = 90,
-                          .acknowledgedCommand = 23,
-                          .entities = {{.networkId = 1, .owner = HostPlayerId,
-                                        .role = EntityRole::Player, .x = 10},
-                                       {.networkId = 3, .owner = GuestPlayerId,
-                                        .role = EntityRole::Player, .x = 120}}};
+  const Snapshot snapshot{
+      .mapId = "field/main",
+      .worldTick = 90,
+      .acknowledgedCommand = 23,
+      .entities = {{.networkId = 1, .owner = HostPlayerId, .role = EntityRole::Player, .x = 10},
+                   {.networkId = 3, .owner = GuestPlayerId, .role = EntityRole::Player, .x = 120}}};
   CHECK_FALSE(guest.sendHostSnapshot(snapshot));
   REQUIRE(host.sendHostSnapshot(snapshot));
   network.advance(dwe::net::Millis{1});
@@ -86,7 +85,8 @@ TEST_CASE("coop gameplay bridge transfers a full guest save in reliable bounded 
   REQUIRE(hostLink.phase() == LinkPhase::Ready);
 
   dwe::net::Bytes save(2501);
-  for (std::size_t i = 0; i < save.size(); ++i) save[i] = static_cast<std::uint8_t>(i % 251);
+  for (std::size_t i = 0; i < save.size(); ++i)
+    save[i] = static_cast<std::uint8_t>(i % 251);
   REQUIRE(guest.sendProfile(ProfilePayloadKind::GuestSave, 42, save));
   for (int i = 0; i < 20; ++i) {
     network.advance(dwe::net::Millis{1});

@@ -16,6 +16,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -100,10 +101,12 @@ std::optional<FieldPlace> SessionState::currentPlace() const {
   if (field != nullptr && !field->mapId().empty()) {
     const game::field::CharacterState player = field->player();
     const game::field::CharacterState follower = field->partner();
+    const std::span<const std::size_t> gone = field->npcs().goneUntilReload();
     return FieldPlace{.map = field->mapId(),
                       .spawn = {.position = player.position, .yaw = player.yaw},
                       .partner =
-                          assets::SpawnPoint{.position = follower.position, .yaw = follower.yaw}};
+                          assets::SpawnPoint{.position = follower.position, .yaw = follower.yaw},
+                      .goneNpcs = {gone.begin(), gone.end()}};
   }
   return savedPlace;
 }
@@ -112,6 +115,7 @@ std::optional<FieldPlace> SessionState::continuePlace() const {
   std::optional<FieldPlace> place = currentPlace();
   if (place && clearedMap) {
     place->map = *clearedMap;
+    place->goneNpcs.clear();
   }
   return place;
 }

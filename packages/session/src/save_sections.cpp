@@ -39,6 +39,7 @@ constexpr std::string_view YawKey = "yaw";
 constexpr std::string_view ClearedKey = "cleared";
 constexpr std::string_view PartnerPositionKey = "partner_position";
 constexpr std::string_view PartnerYawKey = "partner_yaw";
+constexpr std::string_view GoneNpcsKey = "gone_npcs";
 constexpr std::string_view PartnerKey = "partner";
 constexpr std::string_view SystemsKey = "session";
 constexpr std::size_t PositionAxes = 3;
@@ -210,6 +211,15 @@ core::Result<YamlNode> FieldSave::write() const {
       node.set(std::string{PartnerPositionKey}, positionOf(place->partner->position));
       node.set(std::string{PartnerYawKey}, scalarOf(place->partner->yaw));
     }
+    // The NPCs a battle took off this visit: a load keeps them off (dwe saves anywhere; the
+    // original's save points have no battles, so its loads always find the map whole).
+    if (!place->goneNpcs.empty()) {
+      YamlNode gone = YamlNode::sequence();
+      for (const std::size_t slot : place->goneNpcs) {
+        gone.append(scalarOf(slot));
+      }
+      node.set(std::string{GoneNpcsKey}, std::move(gone));
+    }
   }
   // main_menu.c: writeSavegame keeps MAIN_STATE; only a finished game's (2) is written.
   if (state_->cleared) {
@@ -237,7 +247,7 @@ core::Result<void> FieldSave::read(const YamlNode& state) {
   }
   // The partner's place came after the player's: a save without it puts the partner next to him.
   if (!reader.expectKeys(state, messages::FieldStateText, {MapKey, PositionKey, YawKey},
-                         {ClearedKey, PartnerPositionKey, PartnerYawKey})) {
+                         {ClearedKey, PartnerPositionKey, PartnerYawKey, GoneNpcsKey})) {
     return std::unexpected{reader.error(messages::FieldStateText)};
   }
   FieldPlace place;
@@ -249,6 +259,12 @@ core::Result<void> FieldSave::read(const YamlNode& state) {
     place.partner = assets::SpawnPoint{
         .position = positionIn(reader, reader.field(state, PartnerPositionKey), PartnerPositionKey),
         .yaw = reader.number(reader.field(state, PartnerYawKey))};
+  }
+  // A save from before the gone NPCs were kept has none: the map loads whole, as before.
+  if (const YamlNode* gone = state.find(GoneNpcsKey); gone != nullptr) {
+    for (const YamlNode& slot : reader.sequence(*gone, GoneNpcsKey)) {
+      place.goneNpcs.push_back(reader.integer<std::size_t>(slot));
+    }
   }
   auto done = reader.finish(std::move(place), messages::FieldStateText);
   if (!done) {

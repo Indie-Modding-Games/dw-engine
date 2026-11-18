@@ -76,6 +76,10 @@
   `DWE_CONTENT`) does match and passes. A case is skipped by **returning** (`return`), not with `doctest::skip()`: with
   that decorator it matches no filter and its entry would fail. A `ctest` that finds no test also fails
   (`noTestsAction` in `CMakePresets.json`).
+- Without exceptions a failed `REQUIRE` **does not stop** the case: it is logged and the case runs on. Code after it
+  that relies on it (dereferencing an empty `std::optional`, indexing past a vector's end) hits a libc++ hardening
+  check, which traps: the case dies with SIGILL and ctest reports `ILLEGAL` instead of the failed check. Where a
+  `REQUIRE` guards later code, follow it with `if (!value) { return; }`.
 - **Integration:** the autotest routes in `tests/autotest/`, which play the game with simulated input
   ([vertical slice](../guides/vertical-slice.md)), and the example packs in `tests/mods/`.
 - **Simulation:** in `apps/sim` (`dwe-sim`), for ruleset balance (for example, a thousand raisings)

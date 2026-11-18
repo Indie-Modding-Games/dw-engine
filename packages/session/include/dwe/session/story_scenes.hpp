@@ -37,6 +37,19 @@ enum class NewGameChain : std::uint8_t {
   Seeded,
 };
 
+// The story improvements (engine improvements, each a game option) a story patch asks routine
+// StoryImprovementRoutine about. The number is what the patch writes to the operand variable.
+enum class StoryImprovement : std::uint8_t {
+  // Angemon's event also starts on the Ice Sanctuary ground floor's corridor band, whatever way
+  // the player came in (story/patches/angemon_zone_093.lua; option angemon_event_zone, on by
+  // default).
+  AngemonZone = 1,
+};
+
+// The engine's routine a story patch calls with an improvement's number in the operand variable
+// (254): it answers there 1 when the improvement is on, 0 when it is off or unknown.
+inline constexpr std::int64_t StoryImprovementRoutine = 261;
+
 // A sound of the story's scenes: the bank slot and the sound in it.
 struct StorySceneSound {
   std::int64_t slot = 0;
@@ -225,6 +238,8 @@ public:
   // The improved shop job the engine's shop routines play (shop_job_adapter.hpp); it must outlive
   // the scenes.
   void attachShopJob(ShopJobAdapter* shopJob);
+  // Turns a story improvement on or off (the game options); every one is on until told.
+  void setImprovement(StoryImprovement improvement, bool on);
   // Reads the section and tells the story how a new game starts.
   core::Result<void> readRules(const ruleset::Ruleset& rules) override;
   // The previous screen a fled battle goes back to, saved as the original saves it.

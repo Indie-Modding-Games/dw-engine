@@ -111,15 +111,13 @@ TEST_CASE("host and guest bodies use independent movement commands in one field"
   CHECK(field.player(dwe::game::field::HostPlayerId)->position == glm::vec3{0.0F, 0.0F, 0.0F});
   CHECK(field.player(dwe::game::field::GuestPlayerId)->position == glm::vec3{500.0F, 0.0F, 0.0F});
   CHECK(field.playerEntity(dwe::game::field::GuestPlayerId).has_value());
-  CHECK(world.registry().get<dwe::scene::PlayerTag>(
-            *field.playerEntity(dwe::game::field::GuestPlayerId))
+  CHECK(world.registry()
+            .get<dwe::scene::PlayerTag>(*field.playerEntity(dwe::game::field::GuestPlayerId))
             .player == dwe::game::field::GuestPlayerId);
   CHECK_FALSE(field.setInput(2, {.stick = {1.0F, 0.0F}, .run = true}));
 
-  CHECK(field.setInput(dwe::game::field::HostPlayerId,
-                       {.stick = {0.0F, 1.0F}, .run = true}));
-  CHECK(field.setInput(dwe::game::field::GuestPlayerId,
-                       {.stick = {1.0F, 0.0F}, .run = true}));
+  CHECK(field.setInput(dwe::game::field::HostPlayerId, {.stick = {0.0F, 1.0F}, .run = true}));
+  CHECK(field.setInput(dwe::game::field::GuestPlayerId, {.stick = {1.0F, 0.0F}, .run = true}));
   run(field, 1.0F);
 
   const auto host = field.player(dwe::game::field::HostPlayerId);
@@ -166,19 +164,17 @@ TEST_CASE("the guest waits on its warp until the host enters the next map") {
   REQUIRE(field.addPlayer(dwe::game::field::GuestPlayerId, at(100.0F, -700.0F)));
   const glm::vec3 target{100.0F, 0.0F, -900.0F};
   CHECK(dwe::assets::collisionCellAt(target) == CollisionCell{.column = 51, .row = 41});
-  REQUIRE(field.setInput(dwe::game::field::GuestPlayerId,
-                         {.run = true, .moveTarget = target}));
+  REQUIRE(field.setInput(dwe::game::field::GuestPlayerId, {.run = true, .moveTarget = target}));
   run(field, 5.0F);
 
   CHECK(field.waitingAtWarp(dwe::game::field::GuestPlayerId));
   CHECK_FALSE(field.mapChangePending());
   const auto guest = field.player(dwe::game::field::GuestPlayerId);
   REQUIRE(guest.has_value());
-  CHECK(field.warpsOn(field.collision().trigger(
-                          dwe::assets::originalCellAt(guest->position)).value_or(0)));
+  CHECK(field.warpsOn(
+      field.collision().trigger(dwe::assets::originalCellAt(guest->position)).value_or(0)));
   const glm::vec3 waitingPosition = guest->position;
-  CHECK(field.setInput(dwe::game::field::GuestPlayerId,
-                       {.stick = {1.0F, 0.0F}, .run = true}));
+  CHECK(field.setInput(dwe::game::field::GuestPlayerId, {.stick = {1.0F, 0.0F}, .run = true}));
   run(field, 1.0F);
   CHECK(field.player(dwe::game::field::GuestPlayerId)->position == waitingPosition);
 
@@ -193,10 +189,8 @@ TEST_CASE("two player bodies stop at each other's collision boundary") {
   field.enterMapAt(roomMap("room"), at(-200.0F, 0.0F));
   REQUIRE(field.addPlayer(dwe::game::field::GuestPlayerId, at(200.0F, 0.0F, Pi)));
 
-  CHECK(field.setInput(dwe::game::field::HostPlayerId,
-                       {.stick = {1.0F, 0.0F}, .run = true}));
-  CHECK(field.setInput(dwe::game::field::GuestPlayerId,
-                       {.stick = {-1.0F, 0.0F}, .run = true}));
+  CHECK(field.setInput(dwe::game::field::HostPlayerId, {.stick = {1.0F, 0.0F}, .run = true}));
+  CHECK(field.setInput(dwe::game::field::GuestPlayerId, {.stick = {-1.0F, 0.0F}, .run = true}));
   run(field, 1.0F);
 
   const auto host = field.player(dwe::game::field::HostPlayerId);
@@ -212,8 +206,7 @@ TEST_CASE("the guest body also respects the host partner's collision boundary") 
   field.enterMapAt(roomMap("room"), at(-500.0F, 0.0F), at(0.0F, 0.0F));
   REQUIRE(field.addPlayer(dwe::game::field::GuestPlayerId, at(500.0F, 0.0F, Pi)));
 
-  CHECK(field.setInput(dwe::game::field::GuestPlayerId,
-                       {.stick = {-1.0F, 0.0F}, .run = true}));
+  CHECK(field.setInput(dwe::game::field::GuestPlayerId, {.stick = {-1.0F, 0.0F}, .run = true}));
   for (int tick = 0; tick < 60; ++tick) {
     field.tick(Tick);
     const auto guest = field.player(dwe::game::field::GuestPlayerId);
@@ -2365,6 +2358,83 @@ TEST_CASE("an NPC put on the player stays where it was put; the player walks off
   run(field, 1.0F);
   CHECK(groundDistance(field.player().position, *field.npcs().positionOf(7)) > 300.0F);
   CHECK(*field.npcs().positionOf(7) == glm::vec3{30.0F, 0.0F, 0.0F});
+}
+
+TEST_CASE("after a load the player steps off an enemy the map spawns on him, until he plays") {
+  // dwe saves anywhere (the original only at save points, where no enemy stands): a wild enemy
+  // the loaded map spawns where the player was saved must not start a battle by itself.
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  const std::size_t loadSpawn = addNpc(map, 30.0F, 0.0F, 7);
+  const std::size_t laterSpawn = addNpc(map, 830.0F, 800.0F, 8);
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  field.yieldPlayerToNpcsOnLoad();
+  REQUIRE(spawnNpc(field, loadSpawn));
+  field.tick(Tick);
+  const glm::vec3 enemy = *field.npcs().positionOf(7);
+  CHECK(enemy == glm::vec3{30.0F, 0.0F, 0.0F});
+  CHECK_FALSE(Field::overlaps(squareAt(field.player().position, field.rules().player.radius),
+                              squareAt(enemy, 100.0F)));
+  CHECK(groundDistance(field.player().position, enemy) < 600.0F);
+  // Standing still he keeps the rule (the map's script may spawn its NPCs a few ticks later); the
+  // first step ends it.
+  run(field, 0.5F);
+  CHECK(field.playerYieldsToNpcs());
+  field.setInput({.stick = {-1.0F, 0.0F}});
+  field.tick(Tick);
+  field.setInput({});
+  CHECK_FALSE(field.playerYieldsToNpcs());
+
+  // Once he plays, the original's rule again: an NPC put on him leaves him where he stands.
+  placeAt(world, field.playerEntity(), 800.0F, 800.0F);
+  placeAt(world, field.partnerEntity(), 300.0F, 800.0F);
+  const glm::vec3 stands = field.player().position;
+  REQUIRE(spawnNpc(field, laterSpawn));
+  field.tick(Tick);
+  CHECK(field.player().position == stands);
+}
+
+TEST_CASE("the player's load rule ends with a map change") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  field.yieldPlayerToNpcsOnLoad();
+  run(field, 0.2F);
+  CHECK(field.playerYieldsToNpcs());
+  field.enterMapAt(roomMap("next"), at(0.0F, 0.0F, 0.0F));
+  CHECK_FALSE(field.playerYieldsToNpcs());
+}
+
+TEST_CASE("an NPC a battle took off stays off through a save until the map loads again") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  const std::size_t beaten = addNpc(map, 600.0F, 0.0F, 5);
+  const std::size_t other = addNpc(map, -600.0F, 0.0F, 6);
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  REQUIRE(spawnNpc(field, beaten));
+  REQUIRE(spawnNpc(field, other));
+  // btl.c: the battle's end takes the beaten enemy off until the map loads again.
+  CHECK(field.npcs().takeOffUntilReload(beaten));
+  CHECK_FALSE(field.npcs().takeOffUntilReload(beaten));
+  CHECK(std::ranges::equal(field.npcs().goneUntilReload(), std::vector<std::size_t>{beaten}));
+  CHECK_FALSE(field.npcs().positionAt(beaten).has_value());
+
+  // The save's list on a fresh load of the same map: the map's script spawns it in vain.
+  dwe::scene::World loadedWorld;
+  Field loaded{loadedWorld, originalRules()};
+  loaded.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  const std::vector<std::size_t> saved{beaten, 99};
+  loaded.npcs().keepOffUntilReload(saved);
+  CHECK_FALSE(spawnNpc(loaded, beaten));
+  REQUIRE(spawnNpc(loaded, other));
+  CHECK(std::ranges::equal(loaded.npcs().goneUntilReload(), std::vector<std::size_t>{beaten}));
+
+  // Leaving and coming back loads the map whole, as the original's MAPHEAD.
+  loaded.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  CHECK(loaded.npcs().goneUntilReload().empty());
+  REQUIRE(spawnNpc(loaded, beaten));
 }
 
 TEST_CASE("an NPC off screen is out of the collision, as Etemon up in his tree") {

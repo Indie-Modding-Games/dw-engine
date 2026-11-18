@@ -555,6 +555,13 @@ public:
   // partner to make room on foot first (makeRoomForPlayer). An NPC put on the map or let go asks
   // for the same check by itself.
   void releaseHandoff(std::string_view why);
+  // A loaded game (an engine rule: dwe saves anywhere, the original only where no enemy stands):
+  // until the player first moves (or the map changes), the release rule also takes him out of an
+  // NPC's square he stands in (a wild enemy the map's entry script spawns where he was saved), to
+  // the nearest free spot, at once rather than after the partner made room, so a load never starts
+  // a battle by itself.
+  void yieldPlayerToNpcsOnLoad() { playerYieldsToNpcs_ = true; }
+  [[nodiscard]] bool playerYieldsToNpcs() const { return playerYieldsToNpcs_; }
   // A battle's frames (battle_main.c: BTL_tickPartnerWaypointTrail): the fighting partner's cells
   // out of the player's sight go on its trail, which the release after the battle keeps.
   void startBattleTrail(glm::vec3 partner);
@@ -621,7 +628,7 @@ private:
   void resetOtherPlayerMotion(bool clearInput);
   void placeOtherPlayersNearHost();
   [[nodiscard]] bool playerTouchesOtherPlayer(scene::Entity entity, glm::vec3 from,
-                                             glm::vec2 step) const;
+                                              glm::vec2 step) const;
   void planPath(std::optional<glm::vec3>& moveTarget, std::vector<glm::vec3>& path,
                 glm::vec3 position, glm::vec3 target, bool allowTargetWarp = false);
   glm::vec2 followPath(std::optional<glm::vec3>& moveTarget, std::vector<glm::vec3>& path,
@@ -870,6 +877,8 @@ private:
   std::int32_t partnerTeleports_ = 0;
   // Set when a script lets the player go, until the partner has made room (makeRoomForPlayer).
   bool partnerMakesRoom_ = false;
+  // yieldPlayerToNpcsOnLoad, until the player first moves or the map changes.
+  bool playerYieldsToNpcs_ = false;
 
   struct CameraPan {
     glm::vec3 from{};

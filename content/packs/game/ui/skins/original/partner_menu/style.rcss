@@ -636,7 +636,9 @@ button:focus .original-look, button.original-look:focus {
    "Tech" at (-135, 32), "help" at (-129, 46), the arrow at (-116, 60) and, at (-116, 76), the key that opens the
    help page (the extra action), the device's key where the original draws its pad button. */
 #techs-heading, #tech-help { display: none; }
-#scrim.tech-editing #techs-heading { display: block; top: 219dp; }
+/* The heading's foot five pixels above the first row's names, as on the original's screen: lower, its taller
+   Spanish letters ran into the data window's tab. */
+#scrim.tech-editing #techs-heading { display: block; top: 208dp; }
 #scrim.tech-editing #tech-help { display: block; }
 #tech-help { position: absolute; left: 21dp; top: 342dp; width: 189dp; height: 204dp; box-sizing: border-box;
 	border: 3dp #020202; font-size: 36dp; color: #d6d6d6;
@@ -839,17 +841,27 @@ button:focus .original-look, button.original-look:focus {
 #tech-info.hidden { display: none; }
 #tech-info { position: absolute; left: 0; top: 0; width: 894dp; height: 570dp; pointer-events: none; }
 #tech-info-name, #tech-info-stats { position: absolute; background-color: #323280; border: 3dp transparent; box-sizing: border-box; decorator: original-box(3dp) border-box; }
-#tech-info-name { left: 21dp; top: 276dp; width: 384dp; height: 57dp; padding: 9dp 12dp; font-size: 33dp; }
-#tech-info-stats { left: 21dp; top: 339dp; width: 261dp; height: 207dp; }
-#tech-info.info-right #tech-info-name { left: 492dp; }
-#tech-info.info-right #tech-info-stats { left: 630dp; }
+/* The two boxes are told by their rims: the light line of each (original-box draws it one unit in from the top and
+   bottom, two from the sides) lies on the original's, measured on its screen (173..303 x 122..145 for the name in
+   the right-hand panel, 219..303 x 145..221 for the data; 16..146 and 16..100 on the left). The data box hangs from
+   the name box's bottom rim, which both draw on the same line, and shares its right side on the right. */
+#tech-info-name { left: 9dp; top: 267dp; width: 405dp; height: 78dp; padding: 18dp 24dp 0dp 24dp; font-size: 33dp; white-space: nowrap; }
+#tech-info-stats { left: 9dp; top: 336dp; width: 267dp; height: 237dp; }
+#tech-info.info-right #tech-info-name { left: 480dp; }
+#tech-info.info-right #tech-info-stats { left: 618dp; }
+/* The document nests the name in the data box (for the compact layouts), so its place is told from the data box's
+   padding edge: the same 9,267 and 480,267 of the panel as above. Without this the name box fell under the data
+   box, out of sight, and the window's corners framed nothing. */
+#tech-info #tech-info-stats #tech-info-name { left: -3dp; top: -72dp; }
+#tech-info.info-right #tech-info-stats #tech-info-name { left: -141dp; }
 .info-label, .info-value { position: absolute; display: block; }
-.info-label { left: 9dp; width: 72dp; height: 21dp; font-size: 0; color: transparent; }
-.info-value { left: 129dp; width: 123dp; font-size: 21dp; }
-.info-power { top: 9dp; }
-.info-mp { top: 60dp; }
-.info-range { top: 111dp; }
-.info-effect { top: 162dp; }
+.info-label { left: 15dp; width: 72dp; height: 21dp; font-size: 0; color: transparent; }
+.info-value { left: 141dp; width: 123dp; font-size: 21dp; }
+/* The rows of the data box, told from its inside: the labels at 223 x 151, 169, 187 and 206 on the original's screen. */
+.info-power { top: 18dp; }
+.info-mp { top: 72dp; }
+.info-range { top: 126dp; }
+.info-effect { top: 183dp; }
 .info-label.info-power { decorator: image(tech-power-label); }
 .info-label.info-mp { width: 33dp; decorator: image(tech-mp-label); }
 .info-label.info-range { width: 57dp; decorator: image(tech-range-label); }
@@ -858,13 +870,15 @@ button:focus .original-look, button.original-look:focus {
 #tech-info { display: block; }
 
 /* Detalles de renderDigimonMovesSelected: encabezado, separadores y cinco esquinas. */
-#tech-info-heading { position: absolute; left: 30dp; top: 261dp; width: 111dp; height: 21dp; decorator: image(tech-info-heading); }
-#tech-info.info-right #tech-info-heading { left: 501dp; }
-.info-colon { position: absolute; left: 90dp; width: 30dp; height: 30dp; decorator: image(tech-info-colon); }
-.info-colon.info-power { top: 9dp; }
-.info-colon.info-mp { top: 60dp; }
-.info-colon.info-range { top: 111dp; }
-.info-colon.info-effect { top: 162dp; }
+/* The tab sits over the name box's top rim, four pixels in from its left side (177..213 x 118..124 on the original's
+   screen, 20..56 on the left), drawn after the boxes: the document puts it before them, under the name box. */
+#tech-info-heading { position: absolute; z-index: 1; left: 27dp; top: 258dp; width: 111dp; height: 21dp; decorator: image(tech-info-heading); }
+#tech-info.info-right #tech-info-heading { left: 498dp; }
+.info-colon { position: absolute; left: 108dp; width: 30dp; height: 30dp; decorator: image(tech-info-colon); }
+.info-colon.info-power { top: 12dp; }
+.info-colon.info-mp { top: 66dp; }
+.info-colon.info-range { top: 120dp; }
+.info-colon.info-effect { top: 177dp; }
 .info-value.info-power, .info-value.info-mp { font-size: 33dp; white-space: nowrap; }
 .info-corner { position: absolute; width: 12dp; height: 12dp; }
 #tech-info-tl { left: 15dp; top: 270dp; decorator: image(tech-info-tl); }
@@ -879,6 +893,15 @@ button:focus .original-look, button.original-look:focus {
 #tech-info.info-right #tech-info-notch { left: 486dp; decorator: image(tech-info-bl); }
 
 .info-value.info-range, .info-value.info-effect { font-size: 33dp; }
+/* Each value stands level with its arrow, in a line as tall as the arrow, and a gap past it: the numbers end 35 pixels
+   past the arrow's left side, the range and effect start 13 pixels past it (the original's 252, 271..284 and 263). */
+.info-value { height: 30dp; line-height: 30dp; }
+.info-value.info-power, .info-value.info-mp { left: 147dp; width: 66dp; text-align: right; }
+.info-value.info-range, .info-value.info-effect { left: 147dp; width: 114dp; }
+.info-value.info-power { top: 12dp; }
+.info-value.info-mp { top: 66dp; }
+.info-value.info-range { top: 120dp; }
+.info-value.info-effect { top: 177dp; }
 
 /* Profile: native insets of STATS_VIEW_INSETS and labels of STATS_VIEW_ELEMENTS.
    The offsets discount the page's 1px border. */
@@ -1079,10 +1102,12 @@ button:focus .original-look, button.original-look:focus {
 #scrim.status-text .tech-columns .tech-mp { left: 636dp; width: 60dp; }
 #scrim.status-text .tech-columns .tech-range { left: 708dp; width: 78dp; }
 #scrim.status-text .tech-columns .tech-effect { left: 789dp; width: 99dp; }
-#scrim.status-text #tech-info-heading { top: 258dp; width: 111dp; height: 18dp; line-height: 18dp; text-align: center; background-color: #2d3840; }
+#scrim.status-text #tech-info-heading { top: 258dp; width: 111dp; height: 21dp; line-height: 21dp; text-align: center; background-color: #000000; }
 #scrim.status-text .info-label { width: 120dp; }
 #scrim.status-text .info-colon { left: 135dp; }
 #scrim.status-text .info-value { left: 165dp; width: 93dp; }
+#scrim.status-text .info-value.info-power, #scrim.status-text .info-value.info-mp { left: 174dp; width: 66dp; }
+#scrim.status-text .info-value.info-range, #scrim.status-text .info-value.info-effect { left: 174dp; width: 87dp; }
 /* The grid's rows by name, on each side of the grid. */
 #scrim.status-text .tech-category { decorator: none; height: 36dp; font-size: 22dp; line-height: 36dp; color: #d6d6d6; white-space: nowrap; }
 #scrim.status-text .tech-category.category-left { left: -108dp; width: 102dp; text-align: right; }

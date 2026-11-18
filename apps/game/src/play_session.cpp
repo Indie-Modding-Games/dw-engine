@@ -392,6 +392,14 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
   if (!scene) {
     return std::unexpected{scene.error()};
   }
+  // The NPCs a battle took off before the save stay off, as if the game had never left the map.
+  if (savedPlace && !savedPlace->goneNpcs.empty() && (*scene)->field().mapId() == savedPlace->map) {
+    (*scene)->field().npcs().keepOffUntilReload(savedPlace->goneNpcs);
+  }
+  // dwe saves anywhere: a wild enemy the map spawns where the player was saved moves him aside.
+  if (savedPlace) {
+    (*scene)->field().yieldPlayerToNpcsOnLoad();
+  }
   const bool cleared = start.load.has_value() && session.gameCleared();
   auto play = std::make_unique<PlaySession>(Key{}, context, std::move(*game), std::move(*scene));
   if (cleared) {
@@ -795,8 +803,7 @@ void PlaySession::pressStory(const PlayerCommands& commands,
                              const input::InputState& pointerInput) {
   const StoryButtons& story = commands.story;
   // Skip the evolution (an engine improvement): confirm or cancel ends its scene.
-  if (skipEvolution_ && evolutionScene_.active() &&
-      (story.confirmPressed || story.cancelPressed)) {
+  if (skipEvolution_ && evolutionScene_.active() && (story.confirmPressed || story.cancelPressed)) {
     evolutionScene_.skip();
     return;
   }
@@ -948,8 +955,7 @@ void PlaySession::tickWater() {
   fishingScreen_.tickWater(*scene_, TickSeconds);
 }
 
-void PlaySession::tickSystems(const game::field::FieldInput& intent,
-                              const FishingButtons& fishing,
+void PlaySession::tickSystems(const game::field::FieldInput& intent, const FishingButtons& fishing,
                               const game::field::FieldInput& guestIntent) {
   const ui::Ui& ui = *context_.ui;
   // Every tick starts with the characters where they stand: the screens below that run instead of
@@ -1154,10 +1160,11 @@ void PlaySession::setBulkTrades(bool enabled) {
 
 namespace {
 
-// The play options' on/off settings (applyPlayOptions), all off unless chosen.
+// The play options' on/off settings (applyPlayOptions), at `fallback` unless chosen.
 struct PlayOption {
   std::string_view setting;
   std::optional<bool> UserSettings::* saved;
+  bool fallback = false;
 };
 constexpr std::array PlayOptions{
     PlayOption{.setting = QuickBattleStartSetting, .saved = &UserSettings::quickBattleStart},
@@ -1171,7 +1178,10 @@ constexpr std::array PlayOptions{
     PlayOption{.setting = ChooseEggAfterLivesLostSetting,
                .saved = &UserSettings::chooseEggAfterLivesLost},
     PlayOption{.setting = GenerousTalkSetting, .saved = &UserSettings::generousTalk},
-    PlayOption{.setting = ExtraToiletsSetting, .saved = &UserSettings::extraToilets}};
+    PlayOption{.setting = ExtraToiletsSetting, .saved = &UserSettings::extraToilets},
+    PlayOption{.setting = AngemonEventZoneSetting,
+               .saved = &UserSettings::angemonEventZone,
+               .fallback = true}};
 
 RuleChoices ruleChoicesOf(const UserSettings& settings) {
   const std::string difficulty = settings.difficulty.value_or(std::string{DifficultyNormal});
@@ -1188,7 +1198,7 @@ RuleChoices ruleChoicesOf(const UserSettings& settings) {
 void PlaySession::applyPlayOptions() {
   const UserSettings& settings = *context_.userSettings;
   for (const PlayOption& option : PlayOptions) {
-    context_.ui->setSetting(option.setting, (settings.*option.saved).value_or(false));
+    context_.ui->setSetting(option.setting, (settings.*option.saved).value_or(option.fallback));
   }
   const RuleChoices rules = ruleChoicesOf(settings);
   context_.ui->setSetting(DifficultySetting, rules.difficulty);
@@ -1198,6 +1208,10 @@ void PlaySession::applyPlayOptions() {
                           std::string{shopJobImproved ? ShopJobImproved : ShopJobOriginal});
   if (game_.systems.shopJob != nullptr) {
     game_.systems.shopJob->setImproved(shopJobImproved);
+  }
+  if (game_.systems.scenes != nullptr) {
+    game_.systems.scenes->setImprovement(session::StoryImprovement::AngemonZone,
+                                         settings.angemonEventZone.value_or(true));
   }
   battleScreen_.setQuickStart(settings.quickBattleStart.value_or(false));
   skipEvolution_ = settings.skipEvolution.value_or(false);

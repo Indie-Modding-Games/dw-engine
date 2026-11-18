@@ -4,6 +4,7 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -199,17 +200,33 @@ TEST_CASE("a scrolling background repeats its tiles out to a wider screen's edge
   CHECK(quads[2].corners[0] == EffectScreenPoint{.x = -187, .y = -125});
 }
 
-TEST_CASE("a scrolling background is placed from the projection's centre") {
+TEST_CASE("a scrolling background covers the whole screen wherever the projection's centre is") {
   NoSounds sounds;
   EffectRunner runner{sounds};
   dwe::game::battle::EffectView view;
-  view.centre = {.x = 40, .y = -10};
+  // The forest battle's drawing offset (125, 384): the projection's centre 264 below the screen's.
+  view.centre = {.x = -35, .y = 264};
   runner.setView(view);
   const std::vector<EffectScreenQuad> quads =
       firstFrame(runner, renderingScript(ScrollingRender, TilesData));
-  // The original's 11 x 9 tiles, 40 right and 10 up of where they are round the screen's centre.
+  // At entry 0x1e, nearer than the DR_OFFSET at 0x20 that puts the origin back on the screen's
+  // centre: the original's 11 x 9 tiles round the screen's centre, as without a drawing offset.
   REQUIRE(quads.size() == 11 * 9);
-  CHECK(quads.front().corners[0] == EffectScreenPoint{.x = -147, .y = -135});
+  CHECK(quads.front().corners[0] == EffectScreenPoint{.x = -187, .y = -125});
+  std::int32_t left = 0;
+  std::int32_t top = 0;
+  std::int32_t right = 0;
+  std::int32_t bottom = 0;
+  for (const EffectScreenQuad& quad : quads) {
+    left = std::min(left, quad.corners[0].x);
+    top = std::min(top, quad.corners[0].y);
+    right = std::max(right, quad.corners[3].x);
+    bottom = std::max(bottom, quad.corners[3].y);
+  }
+  CHECK(left <= -160);
+  CHECK(top <= -120);
+  CHECK(right >= 160);
+  CHECK(bottom >= 120);
 }
 
 TEST_CASE("parallax sprites move by their depth times the offset and wrap as the original's do") {
@@ -240,6 +257,10 @@ TEST_CASE("parallax sprites move by their depth times the offset and wrap as the
 )";
   NoSounds sounds;
   EffectRunner runner{sounds};
+  // Placed from the screen's centre (entry 0x1e) whatever the drawing offset.
+  dwe::game::battle::EffectView view;
+  view.centre = {.x = -35, .y = 264};
+  runner.setView(view);
   const std::vector<EffectScreenQuad> quads = firstFrame(runner, renderingScript(Render, Data));
   REQUIRE(quads.size() == 2);
   // 243 * 210 >> 7 = 398, 0xc8 left: 198; 243 * -100 >> 7 = -190, + 280, 0xa0 up: -70; side
@@ -473,6 +494,7 @@ TEST_CASE("a screen sprite is scaled and turned round its pivot, from the projec
     std::string out = screenSprite(at, 20, 30, 0, 100, 8192, 0);
     out += screenSprite(at, 20, 30, 90, 3000, 4096, -5);
     out += screenSprite(at, 20, 30, 0, 4096, 4096, 0);
+    out += screenSprite(at, 20, 30, 0, 0x10, 4096, 0);
     return out;
   });
   NoSounds sounds;
@@ -482,7 +504,7 @@ TEST_CASE("a screen sprite is scaled and turned round its pivot, from the projec
   runner.setView(view);
   const std::vector<EffectScreenQuad> quads = firstFrame(runner, renderingScript(render, ""));
   // The third sorts past the ordering table's last entry: it is not drawn.
-  REQUIRE(quads.size() == 2);
+  REQUIRE(quads.size() == 3);
   // Twice as wide round the pivot, from the projection's centre (10, -4).
   CHECK(quads[0].corners[0] == EffectScreenPoint{.x = 14, .y = -5});
   CHECK(quads[0].corners[3] == EffectScreenPoint{.x = 46, .y = 27});
@@ -498,6 +520,9 @@ TEST_CASE("a screen sprite is scaled and turned round its pivot, from the projec
   CHECK(quads[1].corners[3] == EffectScreenPoint{.x = 19, .y = 38});
   CHECK(quads[1].clutRow == 5);
   CHECK(quads[1].order == 3000);
+  // The last sorts at entry 0x10, nearer than the DR_OFFSET at 0x20: from the screen's centre.
+  CHECK(quads[2].corners[0] == EffectScreenPoint{.x = 12, .y = -1});
+  CHECK(quads[2].corners[3] == EffectScreenPoint{.x = 28, .y = 31});
 }
 
 TEST_CASE("a point projects to the screen as the original's perspective does") {
@@ -530,8 +555,8 @@ TEST_CASE("a point projects to the screen as the original's perspective does") {
   CHECK(quads[0].order == 62);
 }
 
-TEST_CASE("a screen fade darkens the whole screen behind everything; an overlay veils it from "
-          "the projection's centre") {
+TEST_CASE("a screen fade darkens the whole screen behind everything; an overlay at a near entry "
+          "veils it from the screen's centre") {
   const std::string render = renderOf([](std::int32_t& at) {
     std::string out = instruction(at, "  op: push_immediate\n  value: 64");
     out += instruction(at, "  op: sub\n  sub: render_screen_fade\n  args:\n    brightness: 0");
@@ -562,9 +587,10 @@ TEST_CASE("a screen fade darkens the whole screen behind everything; an overlay 
   CHECK(quads[0].color == dwe::game::battle::EffectVector{.x = 127, .y = 127, .z = 127});
   CHECK(quads[0].blend == EffectBlend::Subtract);
   CHECK(quads[0].order == 0xFFE);
-  // The overlay: from the projection's centre, its colour, mode 6 (semi-transparent, rate 2) at
-  // entry 10.
-  CHECK(quads[1].corners[0] == EffectScreenPoint{.x = -208, .y = -123});
+  // The overlay at entry 10, nearer than the DR_OFFSET at 0x20: from the screen's centre, the whole
+  // wider screen, its colour, mode 6 (semi-transparent, rate 2).
+  CHECK(quads[1].corners[0] == EffectScreenPoint{.x = -213, .y = -120});
+  CHECK(quads[1].corners[3] == EffectScreenPoint{.x = 213, .y = 120});
   CHECK(quads[1].color == dwe::game::battle::EffectVector{.x = 10, .y = 20, .z = 30});
   CHECK(quads[1].blend == EffectBlend::Subtract);
   CHECK(quads[1].order == 10);

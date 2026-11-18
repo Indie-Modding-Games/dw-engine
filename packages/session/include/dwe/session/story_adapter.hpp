@@ -158,6 +158,9 @@ public:
   // The NPC orders, for the other orders that hold an NPC (a textbox's speaker: holdOwner); null
   // before the rules are read.
   [[nodiscard]] game::story::NpcOrders* npcOrders() { return npcOrders_.get(); }
+  // The story's scripted moves, for the moves its other orders start (start_battle's pan back onto
+  // the player); null before the rules are read.
+  [[nodiscard]] game::story::ScriptMotion* motion() { return motion_ ? &*motion_ : nullptr; }
 
   // Where the story's map changes play (story_flow.hpp); an empty target drops them, and the story
   // goes on as if the player stayed.

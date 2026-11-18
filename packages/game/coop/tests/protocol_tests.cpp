@@ -1,6 +1,6 @@
-#include <dwe/game/coop/protocol.hpp>
-#include <dwe/game/coop/profile_transfer.hpp>
 #include <dwe/game/coop/link.hpp>
+#include <dwe/game/coop/profile_transfer.hpp>
+#include <dwe/game/coop/protocol.hpp>
 #include <dwe/net/loopback.hpp>
 #include <dwe/net/wire.hpp>
 
@@ -21,7 +21,8 @@ Identity identity(std::uint32_t version = ProtocolVersion) {
   return {.protocol = version, .gameVersion = "1.2.3", .contentHash = "content-hash"};
 }
 
-template <typename T> void roundTrip(const T& value) {
+template <typename T>
+void roundTrip(const T& value) {
   const auto bytes = encode(Message{value});
   const auto decoded = decode(bytes);
   REQUIRE(decoded);
@@ -106,8 +107,8 @@ TEST_CASE("cooperative decoder ignores foreign message kinds and rejects damaged
   CHECK(decode(std::vector<std::uint8_t>{0x10, 0x01})->has_value() == false);
   CHECK_FALSE(decode(std::vector<std::uint8_t>{0x70, 0x01})->has_value());
 
-  const auto bytes = encode(Message{Commands{
-      .sequence = 5, .field = {.run = true, .moveTarget = std::nullopt}}});
+  const auto bytes =
+      encode(Message{Commands{.sequence = 5, .field = {.run = true, .moveTarget = std::nullopt}}});
   std::vector<std::uint8_t> truncated = bytes;
   truncated.pop_back();
   CHECK_FALSE(decode(truncated));
@@ -122,16 +123,14 @@ TEST_CASE("cooperative decoder ignores foreign message kinds and rejects damaged
 }
 
 TEST_CASE("cooperative decoder checks identity, snapshots, and view bounds") {
-  auto mismatch = encode(Message{Hello{.identity = {.protocol = 99,
-                                                    .gameVersion = "1.2.3",
-                                                    .contentHash = "content-hash"},
-                                  .playerName = "Guest"}});
+  auto mismatch = encode(Message{
+      Hello{.identity = {.protocol = 99, .gameVersion = "1.2.3", .contentHash = "content-hash"},
+            .playerName = "Guest"}});
   const auto hello = decode(mismatch);
   REQUIRE(hello);
   CHECK(std::get<Hello>(**hello).identity.protocol == 99);
 
-  Snapshot duplicate{.mapId = "city/field",
-                     .entities = {{.networkId = 7}, {.networkId = 7}}};
+  Snapshot duplicate{.mapId = "city/field", .entities = {{.networkId = 7}, {.networkId = 7}}};
   CHECK_FALSE(decode(encode(Message{duplicate})));
 
   Snapshot tooMany{.mapId = "city/field", .entities = {}};
@@ -139,11 +138,11 @@ TEST_CASE("cooperative decoder checks identity, snapshots, and view bounds") {
   CHECK_FALSE(decode(encode(Message{tooMany})));
 
   const auto badView = encode(Message{ViewState{.player = GuestPlayerId,
-                                                 .mapId = "city/field",
-                                                 .left = 100,
-                                                 .top = 0,
-                                                 .right = 100,
-                                                 .bottom = 100}});
+                                                .mapId = "city/field",
+                                                .left = 100,
+                                                .top = 0,
+                                                .right = 100,
+                                                .bottom = 100}});
   CHECK_FALSE(decode(badView));
 
   ProfileChunk badChunk{.transferId = 1, .index = 1, .count = 1, .bytes = {0x01}};
@@ -178,10 +177,9 @@ TEST_CASE("guest full-save profile chunks assemble out of order and accept exact
   CHECK_FALSE(retry->has_value());
   CHECK(assembler.receivedBytes() == 1);
 
-  REQUIRE(assembler.push(
-      ProfileChunk{.transferId = 44, .index = 0, .count = 3, .bytes = {1, 2}}));
-  const auto complete = assembler.push(
-      ProfileChunk{.transferId = 44, .index = 2, .count = 3, .bytes = {4, 5}});
+  REQUIRE(assembler.push(ProfileChunk{.transferId = 44, .index = 0, .count = 3, .bytes = {1, 2}}));
+  const auto complete =
+      assembler.push(ProfileChunk{.transferId = 44, .index = 2, .count = 3, .bytes = {4, 5}});
   REQUIRE(complete);
   REQUIRE(complete->has_value());
   CHECK(**complete == dwe::net::Bytes{1, 2, 3, 4, 5});
@@ -203,18 +201,18 @@ TEST_CASE("guest full-save profile rejects conflicts, invalid lengths, and wrong
 
   CHECK_FALSE(assembler.push(ProfileChunk{.transferId = 8, .index = 0, .count = 2, .bytes = {1}}));
   CHECK_FALSE(assembler.push(ProfileChunk{.transferId = 7,
-                                         .index = 0,
-                                         .count = 2,
-                                         .kind = ProfilePayloadKind::HostSave,
-                                         .bytes = {1}}));
+                                          .index = 0,
+                                          .count = 2,
+                                          .kind = ProfilePayloadKind::HostSave,
+                                          .bytes = {1}}));
   REQUIRE(assembler.push(ProfileChunk{.transferId = 7, .index = 0, .count = 2, .bytes = {1}}));
   CHECK_FALSE(assembler.push(ProfileChunk{.transferId = 7, .index = 0, .count = 2, .bytes = {2}}));
   CHECK_FALSE(assembler.push(ProfileChunk{.transferId = 7, .index = 2, .count = 2, .bytes = {3}}));
-  CHECK_FALSE(assembler.push(ProfileChunk{.transferId = 7,
-                                         .index = 1,
-                                         .count = 2,
-                                         .bytes = std::vector<std::uint8_t>(
-                                             MaxProfileChunkBytes + 1, 0)}));
+  CHECK_FALSE(assembler.push(
+      ProfileChunk{.transferId = 7,
+                   .index = 1,
+                   .count = 2,
+                   .bytes = std::vector<std::uint8_t>(MaxProfileChunkBytes + 1, 0)}));
 
   ProfileChunk oversized{.transferId = 9,
                          .index = 0,
@@ -237,19 +235,27 @@ TEST_CASE("cooperative link validates identity and exchanges commands") {
   CHECK(host.remotePlayer() == GuestPlayerId);
   CHECK(guest.remotePlayer() == HostPlayerId);
 
-  const Commands command{.sequence = 1, .field = {.stickX = 120, .run = true, .moveTarget = std::nullopt}};
+  const Commands command{.sequence = 1,
+                         .field = {.stickX = 120, .run = true, .moveTarget = std::nullopt}};
   REQUIRE(guest.send(Message{command}));
   network.advance(net::Millis{1});
   host.poll(network.now());
   const auto received = host.receive();
   REQUIRE(received);
+  if (!received) {
+    return;
+  }
   CHECK(std::get<Commands>(*received) == command);
+  // A reliable message leaves on its sender's poll (net::ChannelPeerLink), not on send.
   REQUIRE(guest.send(Message{Ready{.ready = true}}));
+  guest.poll(network.now());
   network.advance(net::Millis{1});
   host.poll(network.now());
-  guest.poll(network.now());
   const auto ready = host.receive();
   REQUIRE(ready);
+  if (!ready) {
+    return;
+  }
   CHECK(std::get<Ready>(*ready).ready);
   CHECK_FALSE(host.send(Message{command}));
   CHECK_FALSE(host.send(Message{Ready{.ready = true}}));
@@ -312,11 +318,12 @@ TEST_CASE("cooperative handshake and silence timeouts end the link") {
 
 TEST_CASE("remote command buffer rejects old sequences and expires to neutral") {
   RemoteCommandBuffer buffer;
-  CHECK(buffer.push(Commands{.sequence = 0xFFFFFFFFu,
-                            .field = {.stickY = 50, .moveTarget = std::nullopt}}, net::Millis{100}));
+  CHECK(buffer.push(
+      Commands{.sequence = 0xFFFFFFFFu, .field = {.stickY = 50, .moveTarget = std::nullopt}},
+      net::Millis{100}));
   CHECK_FALSE(buffer.push(Commands{.sequence = 0xFFFFFFFEu, .field = {}}, net::Millis{110}));
-  CHECK(buffer.push(Commands{.sequence = 0u,
-                            .field = {.stickX = -100, .moveTarget = std::nullopt}}, net::Millis{120}));
+  CHECK(buffer.push(Commands{.sequence = 0u, .field = {.stickX = -100, .moveTarget = std::nullopt}},
+                    net::Millis{120}));
   CHECK(buffer.current(net::Millis{300}).stickX == -100);
   CHECK(buffer.current(net::Millis{371}) == FieldCommand{});
 }

@@ -34,6 +34,9 @@ namespace {
 // script_value.c: scriptIdToEntityId: the player and the partner have fixed script ids.
 constexpr std::int64_t PlayerScriptId = 0xFD;
 constexpr std::int64_t PartnerScriptId = 0xFC;
+// start_battle's pan back onto the player after a victory: SCRIPT_MOVEMENT[10].speed = 0xa, the
+// frames tickCameraMovement takes (script_interp.c:1952).
+constexpr std::int64_t CameraReturnFrames = 10;
 constexpr std::int64_t PlayerEntity = 0;
 constexpr std::int64_t PartnerEntity = 1;
 
@@ -133,12 +136,21 @@ public:
     return std::exchange(scenes_->battleOutcome, std::nullopt);
   }
 
-  // The walk back is the scripted movement's (S4): until it moves the partner, it is over at once.
-  void startPartnerReturn() override {
-    core::logDebug("[port:battle] start_battle won (script_interp.c:1950): the partner's walk back "
-                   "is not moved yet, over at once");
+  // The camera's slot of the scripted moves pans back onto the player; without the moves (no
+  // stage) it is over at once.
+  void startCameraReturn() override {
+    game::story::ScriptMotion* motion = scenes_->desc.story->motion();
+    core::logDebug("[port:battle] start_battle won (script_interp.c:1949): the camera pans back "
+                   "onto the player in {} frames, moves={}",
+                   CameraReturnFrames, motion != nullptr);
+    if (motion != nullptr) {
+      motion->cameraToCharacter(PlayerScriptId, CameraReturnFrames);
+    }
   }
-  [[nodiscard]] bool partnerReturned() const override { return true; }
+  [[nodiscard]] bool cameraReturned() const override {
+    const game::story::ScriptMotion* motion = scenes_->desc.story->motion();
+    return motion == nullptr || !motion->cameraMoving();
+  }
 
   void holdAfterFixedFight() override {
     game::story::NpcOrders* orders = scenes_->desc.story->npcOrders();
@@ -322,6 +334,14 @@ void StoryScenes::attachTournament(TournamentAdapter* tournament) {
 
 void StoryScenes::attachShopJob(ShopJobAdapter* shopJob) {
   context_->shopJob = shopJob;
+}
+
+void StoryScenes::setImprovement(StoryImprovement improvement, bool on) {
+  if (on) {
+    context_->improvementsOff.erase(improvement);
+  } else {
+    context_->improvementsOff.insert(improvement);
+  }
 }
 
 ruleset::SectionChecks StoryScenes::sectionChecks() const {

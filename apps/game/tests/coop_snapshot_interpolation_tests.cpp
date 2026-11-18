@@ -1,6 +1,6 @@
-#include "coop_snapshot_interpolation.hpp"
-
 #include <doctest/doctest.h>
+
+#include "coop_snapshot_interpolation.hpp"
 
 using namespace dwe::app;
 using dwe::game::coop::EntityState;
@@ -31,14 +31,14 @@ TEST_CASE("client presentation interpolates authoritative entities and shortest 
 
 TEST_CASE("client presentation rejects old snapshots and resets history on map changes") {
   CoopSnapshotInterpolation buffer;
-  REQUIRE(buffer.push(Snapshot{.mapId = "field/a", .worldTick = 20,
-                               .entities = {{.networkId = 1, .x = 4}}}));
-  REQUIRE(buffer.push(Snapshot{.mapId = "field/a", .worldTick = 21,
-                               .entities = {{.networkId = 1, .x = 8}}}));
-  CHECK_FALSE(buffer.push(Snapshot{.mapId = "field/a", .worldTick = 19,
-                                   .entities = {{.networkId = 1, .x = 100}}}));
-  REQUIRE(buffer.push(Snapshot{.mapId = "field/b", .worldTick = 1,
-                               .entities = {{.networkId = 1, .x = 50}}}));
+  REQUIRE(buffer.push(
+      Snapshot{.mapId = "field/a", .worldTick = 20, .entities = {{.networkId = 1, .x = 4}}}));
+  REQUIRE(buffer.push(
+      Snapshot{.mapId = "field/a", .worldTick = 21, .entities = {{.networkId = 1, .x = 8}}}));
+  CHECK_FALSE(buffer.push(
+      Snapshot{.mapId = "field/a", .worldTick = 19, .entities = {{.networkId = 1, .x = 100}}}));
+  REQUIRE(buffer.push(
+      Snapshot{.mapId = "field/b", .worldTick = 1, .entities = {{.networkId = 1, .x = 50}}}));
   const auto afterMapChange = buffer.sample(0.0F);
   REQUIRE(afterMapChange);
   CHECK(afterMapChange->mapId == "field/b");

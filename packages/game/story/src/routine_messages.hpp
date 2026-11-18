@@ -37,7 +37,7 @@ inline constexpr std::string_view PortBattleFled =
     "[port:battle] start_battle fled (script_interp.c:1928): battles fled {}, back to map {} exit "
     "{}";
 inline constexpr std::string_view PortBattleWon =
-    "[port:battle] start_battle won (script_interp.c:1944): trigger {} set={}, partner walks "
+    "[port:battle] start_battle won (script_interp.c:1944): trigger {} set={}, camera pans "
     "back={}";
 
 // The previous screen.

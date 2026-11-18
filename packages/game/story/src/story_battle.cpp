@@ -8,14 +8,14 @@
 
 namespace dwe::game::story {
 
-// Waits for the battle's outcome, then for the partner's walk back after a victory.
+// Waits for the battle's outcome, then for the camera's pan back onto the player after a victory.
 class StoryBattles::BattleTask final : public StoryTask {
 public:
   explicit BattleTask(StoryBattles& battles) : battles_{&battles} {}
 
   TaskStep tick() override {
-    if (walkingBack_) {
-      if (!battles_->battle_->partnerReturned()) {
+    if (cameraReturning_) {
+      if (!battles_->battle_->cameraReturned()) {
         return TaskRunning{};
       }
       return TaskDone{};
@@ -26,14 +26,14 @@ public:
     }
     TaskStep next = battles_->afterBattle(*outcome);
     if (*outcome == BattleOutcome::Victory && std::holds_alternative<TaskRunning>(next)) {
-      walkingBack_ = true;
+      cameraReturning_ = true;
     }
     return next;
   }
 
 private:
   StoryBattles* battles_;
-  bool walkingBack_ = false;
+  bool cameraReturning_ = false;
 };
 
 StoryBattles::StoryBattles(StoryStatePort& state, StoryBattlePort& battle, ScreenHistory& screens,
@@ -145,7 +145,7 @@ TaskStep StoryBattles::afterBattle(BattleOutcome outcome) {
     battle_->holdAfterFixedFight();
     return TaskDone{};
   }
-  battle_->startPartnerReturn();
+  battle_->startCameraReturn();
   return TaskRunning{};
 }
 

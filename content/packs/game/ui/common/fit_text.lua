@@ -7,12 +7,15 @@
 -- writes the text, and fit_text.tick() from its on_tick: the sizes are those of a laid out
 -- document, so the squeeze is measured over the next few ticks. `element` is what is squeezed,
 -- `parts` the elements whose drawn text is measured (the element itself when nil) and `room` the
--- width in dp the text may take (the element's own width when nil).
+-- width in dp the text may take (the element's own width when nil, or a function that returns it
+-- when the room is that of a box round the text, known only once laid out).
 
 fit_text = {}
 
--- How many ticks a written text is measured again, while the document lays it out.
-local measure_ticks = 3
+-- How many ticks a written text is measured again, while the document lays it out. The layout
+-- comes with a drawn frame, and a slow machine can run several logic ticks between two of them, so
+-- half a second of ticks rather than the three a frame a tick would need.
+local measure_ticks = 30
 local pending = {}
 
 local function text_width(element, parts)
@@ -33,7 +36,9 @@ local function squeeze(entry)
     return
   end
   local room = entry.room
-  if room == nil then
+  if type(room) == "function" then
+    room = room()
+  elseif room == nil then
     local _, _, width = element:rect()
     room = width
   end

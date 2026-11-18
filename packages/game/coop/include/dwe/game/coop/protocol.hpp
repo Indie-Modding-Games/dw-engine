@@ -160,9 +160,8 @@ struct Leave {
   friend bool operator==(const Leave&, const Leave&) = default;
 };
 
-using Message =
-    std::variant<Hello, Welcome, Ready, JoinState, Commands, Snapshot, ViewState, Leave,
-                 ProfileChunk>;
+using Message = std::variant<Hello, Welcome, Ready, JoinState, Commands, Snapshot, ViewState, Leave,
+                             ProfileChunk>;
 
 inline constexpr std::uint8_t HelloKind = 0x60;
 inline constexpr std::uint8_t WelcomeKind = 0x61;

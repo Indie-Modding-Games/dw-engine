@@ -67,6 +67,19 @@ TEST_CASE(
   CHECK_FALSE(anyRequirementWeighs(tables, 44));
 }
 
+TEST_CASE("the developer's evolve skips a form with a row of its own but no model") {
+  // The disc's cut forms (WereGarurumon) keep their evolution rows but have no bones and no model:
+  // evolving into one would leave the field drawing the old form.
+  TableFixture fixture;
+  fixture.form("mtet").boneCount = 0;
+  const EvolutionTables tables = fixture.build();
+  const auto cut = TableFixture::index("mtet");
+  REQUIRE(tables.statReference(cut) != nullptr);
+  CHECK(tables.cheatReference(cut) == nullptr);
+  CHECK_FALSE(std::ranges::contains(tables.cheatTargets(), cut));
+  CHECK(tables.cheatTargets().size() == FixtureForms.size() - 1);
+}
+
 TEST_CASE("the developer's evolve reaches every form with a model, borrowing the stats it lacks") {
   TableFixture fixture;
   fixture.gains("agum").hp = 1234;
