@@ -11,10 +11,10 @@ This document is the summary with the status of the day. The designs that are ag
 | 1 | Asset pipeline | M | Closed (2026-10-20): the US disc is extracted whole (0 pending, 0 partial) and the engine loads the result, extracted and cooked; the cooked format of the videos moves to phase 5 |
 | 2 | Vertical slice | M | Closed (2026-10-20) |
 | 3 | Playable core | L | Closed (2026-10-21) |
-| 4 | The whole original game | XL | In progress: the whole story is playable, from the title to the credits, and the closed beta arrives through the launcher; the first stable release is missing ([what blocks it](#phase-4--the-whole-original-game)) |
+| 4 | The whole original game | XL | Closed (2026-11-17): the whole story plays from the title to the credits and `v0.1.0-beta.1082` is the first stable release |
 | 5 | Mods, modes and improvements | Ongoing | Started: online versus and in the Arena, the game modes and the mod hooks are already in `main` |
 
-## Where we are (2026-11-16)
+## Where we are (2026-11-17)
 
 - **Phase 4 is only the original game.** Since 2026-10-22, phase 4 is the whole original (vanilla) game, playable.
   What is not from the original moves to phase 5: game modes, the versus mode, the complete mod API, the rewritten
@@ -28,12 +28,11 @@ This document is the summary with the status of the day. The designs that are ag
 - **Phase 5 started.** Online versus and in the Arena, the game modes and the mod hooks are already in `main`.
 - **Closed beta through the launcher.** Every merge into `main` that changes code publishes a test version
   (`<version>-beta.<commits on main>`, "Testing" channel of the launcher, with the beta key going through the
-  [gateway](modules/services/beta-gateway.md)). No stable release has been promoted yet. Packages for Linux,
+  [gateway](modules/services/beta-gateway.md)). The first stable release, `v0.1.0-beta.1082`, was promoted on 2026-11-17 ("Stable" channel). Packages for Linux,
   Windows and macOS ([launcher](modules/apps/launcher.md), [beta for Linux](guides/beta-linux.md),
   [beta for Windows and macOS](guides/beta-windows-macos.md)). The first round of testers started on 2026-11-06.
-- **Next:** fix what the testers find (F12 reports), close the remaining gaps
-  ([gaps the player will notice](reference/port-coverage.md#gaps-the-player-will-notice)), promote the first
-  stable version and close phase 4. After that, phase 5.
+- **Next:** phase 5. Fixes to the original game keep going out as test versions and are promoted to stable
+  when they are ready ([gaps the player will notice](reference/port-coverage.md#gaps-the-player-will-notice)).
 
 ## Phase 0 — Base
 
@@ -74,13 +73,9 @@ route ([vertical slice](guides/vertical-slice.md)).
 
 **Done when:** the original game is played whole, from the title to the credits, and a stable version is published.
 
-**Status (2026-11-16): in progress.** All nine stages are open, the chain `route-full-01` to `route-full-09` plays
-the whole story and the beta has test versions. What blocks closing the phase:
-
-1. There is no stable version yet, only test versions. Card: "Promote the first stable one when the testers' round
-   ends".
-2. The story chain has not run on today's `main`: it was green on 2026-11-04 and more changes have come in since.
-   Card: "Run `route-full-01` to `route-full-09` on the commit that gets promoted to stable".
+**Closed (2026-11-17).** All nine stages are open and the chain `route-full-01` to `route-full-09` played the whole
+story on `main` at `fd4f2901` with no retries (61 minutes). That commit's test version, `v0.1.0-beta.1082`, was
+promoted to the first stable release.
 
 At first phase 4 was "Content and modes". Of its phase 4a,
 the conversion of scripts to Lua, the mod packs by ID, the versioned Lua API, the interface
