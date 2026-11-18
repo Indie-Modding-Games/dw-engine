@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/game/coop/profile_transfer.hpp>
 #include <dwe/ui/ui.hpp>
 
 #include <memory>
@@ -10,8 +11,6 @@
 
 #include "coop_connection.hpp"
 #include "options.hpp"
-
-#include <dwe/game/coop/profile_transfer.hpp>
 
 namespace dwe::app {
 
@@ -32,7 +31,9 @@ public:
   [[nodiscard]] bool isHost() const { return isHost_; }
   [[nodiscard]] bool guestReady() const { return remoteReady_; }
   [[nodiscard]] bool takeStartRequested() { return std::exchange(startRequested_, false); }
-  [[nodiscard]] bool takeGuestProfileRequest() { return std::exchange(guestProfileRequest_, false); }
+  [[nodiscard]] bool takeGuestProfileRequest() {
+    return std::exchange(guestProfileRequest_, false);
+  }
   [[nodiscard]] bool selectingGuestProfile() const { return selectingGuestProfile_; }
   [[nodiscard]] bool selectingHostStart() const { return selectingHostStart_; }
   [[nodiscard]] std::optional<std::string> takeRemoteStartText();
@@ -45,8 +46,7 @@ private:
   void receiveMessages();
   void completeRemoteStart();
   [[nodiscard]] core::Result<void> sendProfile(game::coop::ProfilePayloadKind kind,
-                                               std::uint32_t transferId,
-                                               std::string_view saveText);
+                                               std::uint32_t transferId, std::string_view saveText);
 
   ui::Ui* ui_;
   CoopConnection connection_;

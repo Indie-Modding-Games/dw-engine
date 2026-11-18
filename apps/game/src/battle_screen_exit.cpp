@@ -47,8 +47,9 @@ std::optional<glm::vec3> positionOf(const FieldScene& scene, std::int32_t npc) {
   return npc >= 0 ? scene.field().npcs().positionAt(static_cast<std::size_t>(npc)) : std::nullopt;
 }
 
+// Every NPC a battle takes off stays off until the map loads again (isOnMap 0).
 bool unload(FieldScene& scene, std::int32_t npc) {
-  return npc >= 0 && scene.npcs().unloadAt(static_cast<std::size_t>(npc));
+  return npc >= 0 && scene.npcs().takeOffUntilReload(static_cast<std::size_t>(npc));
 }
 
 } // namespace

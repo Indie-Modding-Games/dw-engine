@@ -184,6 +184,10 @@ struct UserSettings {
   // Extra toilets (extra_toilets: true, false; game::field::ExtraToilet): the toilet booths the
   // game pack lists stand on their maps; off when not chosen yet.
   std::optional<bool> extraToilets = std::nullopt;
+  // Angemon's event zone (angemon_event_zone: true, false; session::StoryImprovement::AngemonZone):
+  // once Angemon's light is freed, his event also starts on the Ice Sanctuary ground floor's
+  // corridor, whatever way the player came in; on when not chosen yet.
+  std::optional<bool> angemonEventZone = std::nullopt;
   // Shop extras (shop_extras: true, false; the shop document reads it): the focused item's
   // description under a shop's list, the bag's count of each item and the money a trade leaves; off
   // when not chosen yet.

@@ -9,12 +9,12 @@ namespace dwe::app {
 // Where the field's camera points, in background pixels (the pixel the visible window centres on
 // before the clamp to the background). map.c: tickCameraFollowPlayer moves cameraX/cameraY by the
 // player's projected movement of the frame, from wherever the camera was: nothing centres it on
-// the player again. A battle (btl.c: startBattle calls unsetCameraFollowPlayer) leaves the camera
-// where it was while the player runs back, and the camera then follows by differences with the
-// player off the centre; a script's camera (script_interp.c: scriptPauseGame, tickCameraMovement)
-// points where the script says, and the field follows on from there. The focus is not clamped:
-// map.c: updateDrawingOffsets lets the player move on screen at an edge and the camera moves again
-// once the player is back where it was on screen.
+// the player again by itself. A battle (btl.c: startBattle calls unsetCameraFollowPlayer) leaves
+// the camera where it was while the player runs back, and only a victory's pan, a script's camera
+// (script_interp.c:1949), brings it back onto the player; a script's camera (script_interp.c:
+// scriptPauseGame, tickCameraMovement) points where the script says, and the field follows on from
+// there. The focus is not clamped: map.c: updateDrawingOffsets lets the player move on screen at an
+// edge and the camera moves again once the player is back where it was on screen.
 class FieldCameraFollow {
 public:
   // The focus for this frame. `player` is the player's background pixel; `following` is false

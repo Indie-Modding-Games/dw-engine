@@ -104,6 +104,9 @@ struct FieldPlace {
   std::string map;
   assets::SpawnPoint spawn;
   std::optional<assets::SpawnPoint> partner;
+  // The map's NPC slots a battle took off this visit (game::field::FieldNpcs::goneUntilReload):
+  // a load keeps them off, as if the game had never left the map. Empty in a save from before.
+  std::vector<std::size_t> goneNpcs;
 };
 
 // An autosave the session wrote, and why: its reasons in the order they were first asked. The slot

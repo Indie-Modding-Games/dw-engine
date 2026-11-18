@@ -49,7 +49,7 @@ PlayerCommands fromCoopCommand(const game::coop::Commands& commands) {
 
 PlayerCommands NetworkFieldController::next(std::uint64_t /*tick*/) {
   return fromCoopCommand(game::coop::Commands{.sequence = buffer_.sequence().value_or(0),
-                                               .field = buffer_.current(now_)});
+                                              .field = buffer_.current(now_)});
 }
 
 } // namespace dwe::app

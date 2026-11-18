@@ -1,9 +1,9 @@
-#include "player_commands.hpp"
-
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/keys.hpp>
 
 #include <doctest/doctest.h>
+
+#include "player_commands.hpp"
 
 using namespace dwe::app;
 
@@ -31,15 +31,12 @@ TEST_CASE("the local controller emits numbered gameplay commands") {
   CHECK_FALSE(commands.story.cancelPressed);
 
   dwe::input::InputState storyInput{dwe::input::defaultActionMap()};
-  storyInput.handle(dwe::platform::KeyChanged{.key = dwe::input::keys::Return,
-                                               .down = true,
-                                               .repeat = false});
-  storyInput.handle(dwe::platform::KeyChanged{.key = dwe::input::keys::Up,
-                                               .down = true,
-                                               .repeat = false});
-  storyInput.handle(dwe::platform::KeyChanged{.key = dwe::input::keys::Tab,
-                                               .down = true,
-                                               .repeat = false});
+  storyInput.handle(
+      dwe::platform::KeyChanged{.key = dwe::input::keys::Return, .down = true, .repeat = false});
+  storyInput.handle(
+      dwe::platform::KeyChanged{.key = dwe::input::keys::Up, .down = true, .repeat = false});
+  storyInput.handle(
+      dwe::platform::KeyChanged{.key = dwe::input::keys::Tab, .down = true, .repeat = false});
   controller.sample(storyInput, {}, {}, false);
   const PlayerCommands storyCommands = controller.next(1);
   CHECK(storyCommands.story.confirmPressed);

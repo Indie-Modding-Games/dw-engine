@@ -613,6 +613,12 @@ TEST_CASE("a game saved on the field loads with the player's and the partner's p
   dwe::core::YamlNode field = playerOnly;
   field.set("partner_position", axes("-196", "0", "1029"));
   field.set("partner_yaw", dwe::core::YamlNode::scalar("-0.25"));
+  // The map's NPCs a battle took off before the save (slots), kept off when the game loads there.
+  dwe::core::YamlNode gone = dwe::core::YamlNode::sequence();
+  for (const char* slot : {"2", "5"}) {
+    gone.append(dwe::core::YamlNode::scalar(slot));
+  }
+  field.set("gone_npcs", gone);
   placed.sections.at("field").state = field;
   REQUIRE(session->loadFile(throughText(placed)));
 
@@ -629,6 +635,7 @@ TEST_CASE("a game saved on the field loads with the player's and the partner's p
   CHECK(place->partner->position.x == doctest::Approx(-196.0F));
   CHECK(place->partner->position.z == doctest::Approx(1029.0F));
   CHECK(place->partner->yaw == doctest::Approx(-0.25F));
+  CHECK(place->goneNpcs == std::vector<std::size_t>{2, 5});
 
   // A save from before the partner's place was kept loads without one: the field puts the partner
   // next to the player.
@@ -636,7 +643,10 @@ TEST_CASE("a game saved on the field loads with the player's and the partner's p
   REQUIRE(loaded->loadFile(throughText(placed)));
   REQUIRE(loaded->savedPlace().has_value());
   CHECK_FALSE(loaded->savedPlace()->partner.has_value());
-  CHECK(loaded->saveFile().value().sections.at("field").state.find("partner_position") == nullptr);
+  CHECK(loaded->savedPlace()->goneNpcs.empty());
+  const SaveFile resaved = loaded->saveFile().value();
+  CHECK(resaved.sections.at("field").state.find("partner_position") == nullptr);
+  CHECK(resaved.sections.at("field").state.find("gone_npcs") == nullptr);
 }
 
 TEST_CASE("a new day autosaves only when the ruleset says so") {

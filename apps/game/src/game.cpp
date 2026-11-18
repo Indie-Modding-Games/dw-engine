@@ -61,12 +61,12 @@
 #include "bug_reporter.hpp"
 #include "chibi_style.hpp"
 #include "common.hpp"
-#include "coop_gameplay_bridge.hpp"
-#include "coop_snapshot.hpp"
-#include "coop_screen.hpp"
 #include "content_mount.hpp"
 #include "control_log.hpp"
 #include "control_socket.hpp"
+#include "coop_gameplay_bridge.hpp"
+#include "coop_screen.hpp"
+#include "coop_snapshot.hpp"
 #include "dev_assets_banner.hpp"
 #include "dev_tools.hpp"
 #include "display_settings.hpp"
@@ -88,11 +88,11 @@
 #include "new_game_interview.hpp"
 #include "new_game_scene_rules.hpp"
 #include "partner_portrait.hpp"
-#include "player_commands.hpp"
-#include "player_registry.hpp"
 #include "pause_box.hpp"
 #include "play_session.hpp"
 #include "player_chart.hpp"
+#include "player_commands.hpp"
+#include "player_registry.hpp"
 #include "remote_control.hpp"
 #include "save_figure.hpp"
 #include "save_indicator.hpp"
@@ -113,12 +113,14 @@ namespace dwe::app {
 namespace {
 
 core::Result<game::save::SaveFile> readSaveSlot(const assets::VirtualFileSystem& files,
-                                               const Options& options,
-                                               game::save::SlotId slot, bool backup) {
+                                                const Options& options, game::save::SlotId slot,
+                                                bool backup) {
   auto storage = saveStorageFor(options, true);
-  if (!storage) return core::fail("save storage is not available");
+  if (!storage)
+    return core::fail("save storage is not available");
   auto settings = game::save::loadSaveSettings(files);
-  if (!settings) return std::unexpected{settings.error()};
+  if (!settings)
+    return std::unexpected{settings.error()};
   game::save::SaveSlots slots{*storage, *settings};
   return backup ? slots.loadBackup(slot) : slots.load(slot);
 }
@@ -1759,9 +1761,9 @@ int runGame(const Options& requested) {
         if (autotest && !walk.moveTarget) {
           walk.moveTarget = autotest->takeWalkOrder();
         }
-        clickWalksAway = walk.moveTarget && !MouseSteering::pressesInPlace(
-                                                  *walk.moveTarget,
-                                                  play->scene().field().player().position);
+        clickWalksAway = walk.moveTarget &&
+                         !MouseSteering::pressesInPlace(*walk.moveTarget,
+                                                        play->scene().field().player().position);
         players.localController().sample(input, walk, move, clickWalksAway);
         commands = players.next(HostPlayerId, ticksRun).value_or(PlayerCommands{});
         play->pressStory(commands, input);
@@ -1792,17 +1794,16 @@ int runGame(const Options& requested) {
         }
         play->tick(commands, guestCommands);
         if (coopBridge != nullptr && coop.connected() && coop.isHost() && ticksRun % 3 == 0) {
-          auto snapshot = makeCoopSnapshot(play->scene().field(), play->scene().field().mapId(),
-                                           ++coopWorldTick,
-                                           coopHostController != nullptr
-                                               ? coopHostController->latestSequence().value_or(0)
-                                               : 0);
+          auto snapshot = makeCoopSnapshot(
+              play->scene().field(), play->scene().field().mapId(), ++coopWorldTick,
+              coopHostController != nullptr ? coopHostController->latestSequence().value_or(0) : 0);
           if (snapshot) {
             if (auto sent = coopBridge->sendHostSnapshot(*snapshot); !sent) {
               core::logWarning("coop: could not send world snapshot: {}", sent.error().message);
             }
           } else {
-            core::logWarning("coop: could not capture world snapshot: {}", snapshot.error().message);
+            core::logWarning("coop: could not capture world snapshot: {}",
+                             snapshot.error().message);
           }
         }
         if (trace) {
@@ -1825,8 +1826,8 @@ int runGame(const Options& requested) {
       // generic UI add-ons and option handlers so they cannot be consumed or reported as unknown.
       if ((command.name == CoopOpenCommand || command.name == "coop_host" ||
            command.name == "coop_join" || command.name == "coop_connect" ||
-           command.name == "coop_close" ||
-           command.name == "coop_ready" || command.name == "coop_start") &&
+           command.name == "coop_close" || command.name == "coop_ready" ||
+           command.name == "coop_start") &&
           coop.handle(command)) {
         if (coop.takeGuestProfileRequest() || coop.takeStartRequested()) {
           static_cast<void>(title.handle(ui::UiCommand{.name = "continue", .value = {}}));
@@ -2085,14 +2086,12 @@ int runGame(const Options& requested) {
                    entity.role == game::coop::EntityRole::Player;
           });
           if (hostPlayer != presented->entities.end()) {
-            const scene::Motion motion = hostPlayer->motion == game::coop::Motion::Run
-                                             ? scene::Motion::Run
-                                         : hostPlayer->motion == game::coop::Motion::Walk
-                                             ? scene::Motion::Walk
-                                             : scene::Motion::Idle;
-            hostState = game::field::CharacterState{.position = hostPlayer->position,
-                                                     .yaw = hostPlayer->yaw,
-                                                     .motion = motion};
+            const scene::Motion motion =
+                hostPlayer->motion == game::coop::Motion::Run    ? scene::Motion::Run
+                : hostPlayer->motion == game::coop::Motion::Walk ? scene::Motion::Walk
+                                                                 : scene::Motion::Idle;
+            hostState = game::field::CharacterState{
+                .position = hostPlayer->position, .yaw = hostPlayer->yaw, .motion = motion};
           }
         }
         if (auto shown = play->scene().presentCoopHost(hostState); !shown) {

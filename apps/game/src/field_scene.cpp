@@ -162,35 +162,46 @@ FieldScene::FieldScene(const assets::VirtualFileSystem& files) : files_(&files) 
 FieldScene::~FieldScene() = default;
 
 core::Result<void> FieldScene::addCoopGuest() {
-  if (field_->player(game::field::GuestPlayerId)) return {};
+  if (field_->player(game::field::GuestPlayerId))
+    return {};
   const glm::vec3 origin = field_->player().position;
-  constexpr std::array<glm::vec2, 8> Directions{{
-      {1.0F, 0.0F}, {-1.0F, 0.0F}, {0.0F, 1.0F}, {0.0F, -1.0F},
-      {0.7071F, 0.7071F}, {-0.7071F, 0.7071F}, {0.7071F, -0.7071F}, {-0.7071F, -0.7071F}}};
+  constexpr std::array<glm::vec2, 8> Directions{{{1.0F, 0.0F},
+                                                 {-1.0F, 0.0F},
+                                                 {0.0F, 1.0F},
+                                                 {0.0F, -1.0F},
+                                                 {0.7071F, 0.7071F},
+                                                 {-0.7071F, 0.7071F},
+                                                 {0.7071F, -0.7071F},
+                                                 {-0.7071F, -0.7071F}}};
   core::Result<void> added = core::fail("no free spawn point for cooperative guest");
   for (const float distance : {256.0F, 512.0F, 768.0F, 1024.0F}) {
     for (const glm::vec2 direction : Directions) {
-      const assets::SpawnPoint spawn{.position = origin + glm::vec3{direction.x * distance, 0.0F,
-                                                                     direction.y * distance},
-                                     .yaw = field_->player().yaw};
+      const assets::SpawnPoint spawn{
+          .position = origin + glm::vec3{direction.x * distance, 0.0F, direction.y * distance},
+          .yaw = field_->player().yaw};
       added = field_->addPlayer(game::field::GuestPlayerId, spawn);
-      if (added) break;
+      if (added)
+        break;
     }
-    if (added) break;
+    if (added)
+      break;
   }
-  if (!added) return added;
+  if (!added)
+    return added;
   const auto entity = field_->playerEntity(game::field::GuestPlayerId);
-  if (!entity) return core::fail("cooperative guest has no field entity");
+  if (!entity)
+    return core::fail("cooperative guest has no field entity");
   auto actor = loadActor(PlayerCharacter, *entity, field_->rules().player);
-  if (!actor) return std::unexpected{actor.error()};
+  if (!actor)
+    return std::unexpected{actor.error()};
   coopGuestActors_.push_back(std::move(*actor));
   return {};
 }
 
-core::Result<void> FieldScene::presentCoopHost(
-    std::optional<game::field::CharacterState> state) {
+core::Result<void> FieldScene::presentCoopHost(std::optional<game::field::CharacterState> state) {
   coopHostProxyShown_ = false;
-  if (!state) return {};
+  if (!state)
+    return {};
   if (!coopHostProxyActor_) {
     const scene::Entity entity = world_.create();
     world_.registry().emplace<scene::Transform>(entity);
@@ -1314,7 +1325,8 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
     animate(*actor, animationSeconds);
     playClipSounds(*actor);
   }
-  if (coopHostProxyShown_ && coopHostProxyActor_) animate(*coopHostProxyActor_, animationSeconds);
+  if (coopHostProxyShown_ && coopHostProxyActor_)
+    animate(*coopHostProxyActor_, animationSeconds);
   models_->pollTextures();
   models_->clear();
   if (stage_.showsPlayer()) {
@@ -1324,7 +1336,8 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
             .additive = stage_.playerAdditive});
   }
   for (const std::unique_ptr<Actor>& actor : coopGuestActors_) {
-    if (stage_.showsPlayer()) submit(*actor, alpha, {});
+    if (stage_.showsPlayer())
+      submit(*actor, alpha, {});
   }
   if (coopHostProxyShown_ && coopHostProxyActor_ && stage_.showsPlayer()) {
     submit(*coopHostProxyActor_, alpha, {});

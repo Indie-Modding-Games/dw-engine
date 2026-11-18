@@ -35,8 +35,10 @@ core::Result<void> begin(session::GameSession& session, const PlayStart& start,
                          std::uint64_t seed) {
   if (start.networkSaveText) {
     auto file = game::save::parseSaveFile(*start.networkSaveText);
-    if (!file) return std::unexpected{file.error()};
-    if (auto loaded = session.loadFile(*file); !loaded) return loaded;
+    if (!file)
+      return std::unexpected{file.error()};
+    if (auto loaded = session.loadFile(*file); !loaded)
+      return loaded;
     core::logInfo("coop: loaded the host's shared save in memory");
     return {};
   }
@@ -135,8 +137,8 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
     eraseAutosavesWithoutSlot(files, options, keepsSaves);
   }
   GameStart start{.storage = (play.withoutSaving || play.networkSaveText)
-                                  ? nullptr
-                                  : saveStorageFor(options, keepsSaves),
+                                 ? nullptr
+                                 : saveStorageFor(options, keepsSaves),
                   .session = nullptr,
                   .systems = session::createGameSystems(files)};
   start.systems.story->setStoryStage(options.storyStage);

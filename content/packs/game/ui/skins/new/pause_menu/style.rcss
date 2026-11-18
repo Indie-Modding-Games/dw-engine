@@ -338,8 +338,10 @@
 #option-list scrollbarvertical slidertrack { background-color: #0b1424; border: 2dp #4a79a8; }
 #option-list scrollbarvertical sliderbar { margin: 2dp; background-color: #69c2ff; }
 
+/* As tall as the focused row's description wraps to, four lines at least. */
 #option-info {
-	height: 119dp;
+	height: auto;
+	min-height: 119dp;
 	margin: 5dp 30dp 0 -16dp;
 	padding: 8dp 12dp 0 12dp;
 	border-top: 3dp #7cb6e2;

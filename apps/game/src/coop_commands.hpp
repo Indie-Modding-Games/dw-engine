@@ -1,9 +1,9 @@
 #pragma once
 
-#include "player_commands.hpp"
-
 #include <dwe/game/coop/link.hpp>
 #include <dwe/game/coop/protocol.hpp>
+
+#include "player_commands.hpp"
 
 namespace dwe::app {
 
@@ -20,9 +20,7 @@ public:
     return buffer_.push(command, receivedAt);
   }
   void setNow(net::Millis now) { now_ = now; }
-  [[nodiscard]] std::optional<std::uint32_t> latestSequence() const {
-    return buffer_.sequence();
-  }
+  [[nodiscard]] std::optional<std::uint32_t> latestSequence() const { return buffer_.sequence(); }
   [[nodiscard]] PlayerCommands next(std::uint64_t /*tick*/) override;
 
 private:

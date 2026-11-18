@@ -211,6 +211,7 @@
       {"name": "choose_egg_after_lives_lost", "kind": "option", "value": "boolean", "summary": "Choose the egg when the lives are lost."},
       {"name": "generous_talk", "kind": "option", "value": "boolean", "summary": "Generous talk."},
       {"name": "extra_toilets", "kind": "option", "value": "boolean", "summary": "Extra toilets."},
+      {"name": "angemon_event_zone", "kind": "option", "value": "boolean", "summary": "Angemon's event zone."},
       {"name": "smooth_motion", "kind": "option", "value": "boolean", "summary": "Smooth motion."},
       {"name": "hd_scenery", "kind": "option", "value": "boolean", "summary": "HD scenery."},
       {"name": "scenery_quality", "kind": "option", "value": "text", "summary": "Scenery quality: upscaled or smooth."},

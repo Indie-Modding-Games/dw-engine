@@ -98,4 +98,34 @@ TEST_CASE("the original look's player page widens the name's box for a name past
   CHECK_FALSE(screen.ui->elementHasClass("pause_menu", "panel", "long-player-name"));
 }
 
+TEST_CASE("the partner's sheet squeezes a name of wide letters into its box, in every skin") {
+  // The tester's report: «ZERAPIONINO», eleven capitals, ran out of the original look's box and
+  // over «Special».
+  for (const std::string_view skin : {"original", "modern", "new", "devvago"}) {
+    for (const std::string_view name : {std::string_view{"ZERAPIONINO"}, LongName}) {
+      CAPTURE(skin);
+      CAPTURE(name);
+      Screen screen{"partner_menu", "es"};
+      screen.skin(skin);
+      screen.ui->setSetting("partner.nickname", std::string{name});
+      screen.ui->show("partner_menu", true);
+      screen.frames(20);
+      CHECK(screen.ui->elementText("partner_menu", "status-name-text") == name);
+      const auto box = screen.ui->elementDrawnRect("partner_menu", "status-name");
+      const auto text = screen.ui->elementDrawnRect("partner_menu", "status-name-text");
+      REQUIRE(box.has_value());
+      REQUIRE(text.has_value());
+      CHECK(text->right <= box->right + 0.5F);
+    }
+  }
+  // A short name keeps its letters as they are.
+  Screen screen{"partner_menu", "es"};
+  screen.skin("original");
+  screen.ui->setSetting("partner.nickname", std::string{"Agu"});
+  screen.ui->show("partner_menu", true);
+  screen.frames(20);
+  CHECK(screen.ui->styleProperty("partner_menu", "status-name-text", "transform").find("scale") ==
+        std::string::npos);
+}
+
 } // namespace dwe::ui

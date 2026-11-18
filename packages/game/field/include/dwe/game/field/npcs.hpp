@@ -139,6 +139,17 @@ public:
   [[nodiscard]] std::optional<glm::vec3> positionAt(std::size_t slot) const;
   // Takes the slot's NPC off the map; false when it is not on it.
   bool unloadAt(std::size_t slot);
+  // A battle takes the slot's NPC off the map until the map loads again (btl.c:
+  // handleBattleStart:277, battle_setup.c:316, battle_main.c:783-808: isOnMap 0): unloadAt, and
+  // the slot is remembered (goneUntilReload) until a script puts it back or the map changes.
+  bool takeOffUntilReload(std::size_t slot);
+  // The slots a battle took off this visit of the map, ascending (the save keeps them).
+  [[nodiscard]] std::span<const std::size_t> goneUntilReload() const { return gone_; }
+  // A load of a game saved on this map (an engine rule: the original saves only where no battle
+  // took anyone off): the slots the save kept stay off for the rest of the visit, as if the game
+  // had never left it. Those on the map go now and nothing spawns them again until the map
+  // changes, the map-head section's spawns included.
+  void keepOffUntilReload(std::span<const std::size_t> slots);
   // restartPath by slot.
   bool restartPathAt(std::size_t slot);
   // The slot of the NPC on an entity, or nothing.
@@ -276,6 +287,9 @@ private:
   float frameSeconds_;
   std::vector<assets::MapNpc> records_;
   std::vector<Npc> npcs_;
+  // takeOffUntilReload's slots, and keepOffUntilReload's, which nothing spawns again.
+  std::vector<std::size_t> gone_;
+  std::vector<std::size_t> keptOff_;
   std::vector<NpcContact> contacts_;
   bool arrivals_ = false;
 };

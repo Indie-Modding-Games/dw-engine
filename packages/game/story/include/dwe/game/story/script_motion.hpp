@@ -136,6 +136,8 @@ public:
   void playAnimation(std::int64_t character, std::int64_t animation);
   // wait_for_entity: what the section waits on, by the original's wait id.
   [[nodiscard]] std::function<bool()> waitFor(std::int64_t what);
+  // Whether the camera's slot still has a move (a wait on it, script_interp.c: WAIT_FOR_ENTITY 10).
+  [[nodiscard]] bool cameraMoving() const { return slots_.contains(CameraSlot); }
 
   // The partner's sync for the scripts (partner.c: getScriptSyncBit): the partner's routines
   // clear and raise it. Until its owner connects, a sync a wait cleared counts as raised.

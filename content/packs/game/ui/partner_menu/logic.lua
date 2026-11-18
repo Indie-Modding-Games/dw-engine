@@ -261,10 +261,19 @@ local function draw_status(document)
   local nickname = setting("partner.nickname", "")
   local shown = nickname ~= "" and nickname or species
   local name_box = document:get("status-name")
-  name_box:set_text(shown)
+  local name_text = document:get("status-name-text")
+  name_text:set_text(shown)
   -- The box holds 12 letters; a longer name (Machinedramon) widens it.
   local long = ((utf8 and utf8.len(shown)) or #shown) > 12
   name_box:set_class("long", long)
+  -- Twelve wide letters (a nickname in capitals) still run past the box in the original's font:
+  -- the name is squeezed into the box's inside, the room its border and padding leave on each side
+  -- of the text (common/fit_text.lua).
+  fit_text.fit(name_text, nil, function()
+    local box_left, _, box_width = name_box:rect()
+    local text_left = name_text:rect()
+    return box_width - 2 * (text_left - box_left)
+  end)
   document:get("scrim"):set_class("long-name", long)
   document:get("status-species"):set_text(species)
   document
@@ -450,7 +459,16 @@ local function draw_tech_info(document)
       local base = "partner.technique.choice." .. index .. "."
       local known = setting(base .. "known", false)
       document:get("tech-info"):set_class("info-right", index % 8 <= 2)
-      document:get("tech-info-name"):set_text(known and text(setting(base .. "name", "")) or "")
+      local name_box = document:get("tech-info-name")
+      local name_text = document:get("tech-info-name-text")
+      name_text:set_text(known and text(setting(base .. "name", "")) or "")
+      -- A long name (a translation's, most of all) is squeezed into the box's inside rather than
+      -- run past it, as on the sheet's name box (draw_status).
+      fit_text.fit(name_text, nil, function()
+        local box_left, _, box_width = name_box:rect()
+        local text_left = name_text:rect()
+        return box_width - 2 * (text_left - box_left)
+      end)
       for _, field in ipairs({ "power", "mp", "range", "effect" }) do
         local value = number(base .. field)
         local label = ""
@@ -1103,6 +1121,7 @@ end
 
 function on_tick(document, seconds)
   send_portrait(document)
+  fit_text.tick()
   original_box.tick(document, seconds)
   panel_enter.tick(document)
   fit_to_window(document)

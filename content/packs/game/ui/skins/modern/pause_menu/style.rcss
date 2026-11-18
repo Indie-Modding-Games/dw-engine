@@ -367,11 +367,12 @@
 	min-width: 28dp;
 }
 
-/* What the focused row does: its tag at the left, then two lines at most. */
+/* What the focused row does: its tag at the left, then its description, two lines tall and taller for a longer one. */
 #panel:not(.skin-original) #option-info {
 	display: flex;
 	align-items: flex-start;
-	height: 56dp;
+	height: auto;
+	min-height: 56dp;
 	margin-top: 10dp;
 	padding: 8dp 12dp;
 	border-radius: 8dp;

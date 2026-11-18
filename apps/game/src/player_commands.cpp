@@ -16,8 +16,8 @@ void LocalController::sample(const input::InputState& input, const WalkOrder& wa
   commands.field.run = !input.isDown("walk");
   commands.field.moveTarget = walk.moveTarget;
   commands.field.cancelTarget = input.wasPressed("cancel");
-  commands.field.confirm = clickWalksAway ? input.wasPressedByKeyOrPad("confirm")
-                                          : input.wasPressed("confirm");
+  commands.field.confirm =
+      clickWalksAway ? input.wasPressedByKeyOrPad("confirm") : input.wasPressed("confirm");
   commands.fishing = {.confirmDown = input.isDown("confirm"),
                       .cancelPressed = commands.field.cancelTarget,
                       .cameraDown = input.isDown("alt"),
@@ -26,13 +26,13 @@ void LocalController::sample(const input::InputState& input, const WalkOrder& wa
                       .up = directionalInput.y < 0.0F,
                       .down = directionalInput.y > 0.0F};
   commands.story = {.confirmPressed = input.wasPressed("confirm"),
-                     .confirmPressedByKeyOrPad = input.wasPressedByKeyOrPad("confirm"),
-                     .confirmDown = input.isDown("confirm"),
-                     .cancelPressed = input.wasPressed("cancel"),
-                     .menuPressed = input.wasPressed("menu"),
-                     .menuDown = input.isDown("menu"),
-                     .upPressed = input.wasPressed("move_up"),
-                     .downPressed = input.wasPressed("move_down")};
+                    .confirmPressedByKeyOrPad = input.wasPressedByKeyOrPad("confirm"),
+                    .confirmDown = input.isDown("confirm"),
+                    .cancelPressed = input.wasPressed("cancel"),
+                    .menuPressed = input.wasPressed("menu"),
+                    .menuDown = input.isDown("menu"),
+                    .upPressed = input.wasPressed("move_up"),
+                    .downPressed = input.wasPressed("move_down")};
   pending_ = commands;
 }
 

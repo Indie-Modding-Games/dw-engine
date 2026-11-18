@@ -214,6 +214,29 @@ Tests: "an extra toilet's booth is solid and its front takes the toilet trigger 
 on 2 x 2 cells and its trigger strip is in front" and "the game pack's field data is valid", which also loads each
 model (`rules_tests.cpp`).
 
+### Angemon's event zone
+
+An optional improvement, on by default, asked for by a tester. In the original, Angemon's event on the Ice Sanctuary's
+ground floor (icsa01, script 93, section 0x05: "Oh? About that statue...", Angemon joins the city) only plays as the
+arrival section of the stairs up from the trapdoor passage: script 94's section 0x33 does `warp_to(97, 1, 5)` once
+trigger 322 (Angemon's light, taken on the top floor) is set. Coming back by the floor-0 teleport (script 97, section
+0x36, `warp_to(97, 2, 255)`) or through the front door from frzl05 runs no section, and the corridor band (cells of
+value 52, rows 47-48, x -800..800, z 100..300; section 0x34) only plays the partner's discovery (323/324). So the
+player has to go down the trapdoor and up again. Measured in the original (2026-11-17, `w97_icsa05_after_win` with
+322, 323 and 324 set): the icsa05 teleport lands at (0, 0) on icsa01 with the partner at (0, 200), and walking through
+the band starts nothing (trigger 220 stays clear). dwe matches that with the option off.
+
+The `angemon_event_zone` setting (row "Angemon on the ground floor", "Angemon en la planta baja" in Spanish, Game tab,
+saved in the user's settings) reaches `session::StoryScenes::setImprovement(StoryImprovement::AngemonZone)`. The story
+patch `story/patches/angemon_zone_093.lua` of the game pack wraps section 0x34: it asks the engine's routine 261 (the
+improvement's number in variable 254, the answer there: 1 on, 0 off) and, on, with 322 set and 220 clear, jumps to
+section 0x05; otherwise it runs the original's section. The event itself is the original's, from wherever the player
+crosses the band. Tests: "routine 261 tells a story patch whether a story improvement is on" and "the Angemon zone
+patch plays the event on the corridor band once the light is freed" (`story_improvement_tests.cpp`). Checked live
+(dwe, `icsa01,2` with 322, 323 and 324 set): the teleport lands at (0, 0) with the partner at (0, 200) as in the
+original; with the option on, walking into the band plays the event to its end (trigger 220 set); with it off from the
+Game tab, the band runs the original's section and nothing starts.
+
 ## Praise and scold
 
 "Praise" and "Scold" in the field menu (Tab) play the original's scene (`partner.c: partnerTickPraiseScold`,
@@ -1318,7 +1341,10 @@ saving (with the pause menu's `quick_save`). The lists (items, species, maps) co
 (`EvolutionAdapter::cheatTargets`, `EvolutionTables::cheatTargets`), in the table's order: the partner forms,
 the special ones (virus, by item or event, the Megas a ruleset adds) and also the enemies, the bosses and
 the characters, even if no evolution in the game reaches them. With the original's data there are 178 (all but the two
-with no model). The menu and `evolve` use `evolveByCheat`, which is only reached from the development tools; the
+with no model). A species with no model is left out even with an evolution row of its own, and `evolve` refuses
+it: WereGarurumon, a form cut from the disc, keeps its row but has no bones, no model and a placeholder move list (16
+times Fire Tower: no finisher and nothing it learns); evolving into it left the status saying WereGarurumon while the field
+kept drawing the previous form. The menu and `evolve` use `evolveByCheat`, which is only reached from the development tools; the
 game's evolutions do not change. What a species with no row lacks is taken from a stand-in
 (`assets::standInRow`): the first species with a row of the same name (the enemy copy of a partner form),
 then of the same level and type, then of the same level and if not that of a Rookie. This is how these come out:

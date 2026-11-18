@@ -326,6 +326,7 @@ UI API version: **0.16.0**.
 | `choose_egg_after_lives_lost` | option | yes/no | Choose the egg when the lives are lost. |
 | `generous_talk` | option | yes/no | Generous talk. |
 | `extra_toilets` | option | yes/no | Extra toilets. |
+| `angemon_event_zone` | option | yes/no | Angemon's event zone. |
 | `smooth_motion` | option | yes/no | Smooth motion. |
 | `hd_scenery` | option | yes/no | HD scenery. |
 | `scenery_quality` | option | text | Scenery quality: upscaled or smooth. |

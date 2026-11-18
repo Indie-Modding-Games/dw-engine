@@ -130,6 +130,8 @@ void FieldNpcs::enterMap(std::span<const assets::MapNpc> records) {
   }
   records_.assign(records.begin(), records.end());
   contacts_.clear();
+  gone_.clear();
+  keptOff_.clear();
 }
 
 const assets::MapNpc* FieldNpcs::record(std::size_t slot) const {
@@ -142,6 +144,11 @@ bool FieldNpcs::spawn(const NpcSpawn& spawn) {
     core::logError("[port:npc] scriptSetDigimon (overworld.c:1093): slot {} past the map's {} NPC "
                    "records",
                    spawn.slot, records_.size());
+    return false;
+  }
+  if (std::ranges::contains(keptOff_, spawn.slot)) {
+    core::logDebug("[npc] slot {} stays off the map: the loaded save had a battle take it off",
+                   spawn.slot);
     return false;
   }
   if (record->typeId != spawn.species) {
@@ -179,6 +186,7 @@ bool FieldNpcs::spawn(const NpcSpawn& spawn) {
                  record->position.z, spawn.autotalk, spawn.model, spawn.radius);
   const auto place = std::ranges::upper_bound(npcs_, spawn.slot, {}, &Npc::slot);
   npcs_.insert(place, npc);
+  std::erase(gone_, spawn.slot);
   arrivals_ = true;
   return true;
 }
@@ -250,6 +258,33 @@ bool FieldNpcs::unloadAt(std::size_t slot) {
                  slot, found->scriptId);
   remove(static_cast<std::size_t>(found - npcs_.begin()));
   return true;
+}
+
+bool FieldNpcs::takeOffUntilReload(std::size_t slot) {
+  if (!unloadAt(slot)) {
+    return false;
+  }
+  if (!std::ranges::contains(gone_, slot)) {
+    gone_.insert(std::ranges::upper_bound(gone_, slot), slot);
+  }
+  return true;
+}
+
+void FieldNpcs::keepOffUntilReload(std::span<const std::size_t> slots) {
+  for (const std::size_t slot : slots) {
+    if (slot >= records_.size()) {
+      core::logWarning("[npc] the save keeps slot {} off the map, which has {} NPC records", slot,
+                       records_.size());
+      continue;
+    }
+    unloadAt(slot);
+    if (!std::ranges::contains(gone_, slot)) {
+      gone_.insert(std::ranges::upper_bound(gone_, slot), slot);
+    }
+    if (!std::ranges::contains(keptOff_, slot)) {
+      keptOff_.push_back(slot);
+    }
+  }
 }
 
 bool FieldNpcs::restartPathAt(std::size_t slot) {

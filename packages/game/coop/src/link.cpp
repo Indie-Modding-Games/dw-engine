@@ -9,12 +9,18 @@ constexpr net::Millis CommandTimeout{250};
 
 LinkFailure failureFor(RejectReason reason) {
   switch (reason) {
-  case RejectReason::None: return LinkFailure::None;
-  case RejectReason::ProtocolMismatch: return LinkFailure::ProtocolMismatch;
-  case RejectReason::VersionMismatch: return LinkFailure::VersionMismatch;
-  case RejectReason::ContentMismatch: return LinkFailure::ContentMismatch;
-  case RejectReason::RoomFull: return LinkFailure::RoomFull;
-  case RejectReason::Busy: return LinkFailure::Busy;
+  case RejectReason::None:
+    return LinkFailure::None;
+  case RejectReason::ProtocolMismatch:
+    return LinkFailure::ProtocolMismatch;
+  case RejectReason::VersionMismatch:
+    return LinkFailure::VersionMismatch;
+  case RejectReason::ContentMismatch:
+    return LinkFailure::ContentMismatch;
+  case RejectReason::RoomFull:
+    return LinkFailure::RoomFull;
+  case RejectReason::Busy:
+    return LinkFailure::Busy;
   }
   return LinkFailure::Damaged;
 }
@@ -25,24 +31,30 @@ std::uint64_t nextSessionId() {
 }
 
 RejectReason identityMismatch(const Identity& expected, const Identity& actual) {
-  if (expected.protocol != actual.protocol) return RejectReason::ProtocolMismatch;
-  if (expected.gameVersion != actual.gameVersion) return RejectReason::VersionMismatch;
-  if (expected.contentHash != actual.contentHash) return RejectReason::ContentMismatch;
+  if (expected.protocol != actual.protocol)
+    return RejectReason::ProtocolMismatch;
+  if (expected.gameVersion != actual.gameVersion)
+    return RejectReason::VersionMismatch;
+  if (expected.contentHash != actual.contentHash)
+    return RejectReason::ContentMismatch;
   return RejectReason::None;
 }
 
 net::Lane laneFor(const Message& message) {
   if (std::holds_alternative<Commands>(message) || std::holds_alternative<Snapshot>(message) ||
-      std::holds_alternative<ViewState>(message)) return net::Lane::Unreliable;
+      std::holds_alternative<ViewState>(message))
+    return net::Lane::Unreliable;
   return net::Lane::Reliable;
 }
 
 bool directionAllowed(Side receiver, const Message& message) {
-  if (std::holds_alternative<Leave>(message)) return true;
+  if (std::holds_alternative<Leave>(message))
+    return true;
   if (receiver == Side::Host) {
     if (std::holds_alternative<Commands>(message) || std::holds_alternative<ViewState>(message))
       return true;
-    if (std::holds_alternative<Ready>(message)) return true;
+    if (std::holds_alternative<Ready>(message))
+      return true;
     if (const auto* chunk = std::get_if<ProfileChunk>(&message))
       return chunk->kind == ProfilePayloadKind::GuestSave;
     return false;
@@ -66,7 +78,7 @@ CoopLink CoopLink::guest(net::PeerLink& link, Identity identity, std::string pla
                          LinkTimeouts timeouts) {
   CoopLink result{link, Side::Guest, std::move(identity), timeouts};
   link.send(net::Lane::Reliable, encode(Message{Hello{.identity = result.identity_,
-                                                     .playerName = std::move(playerName)}}));
+                                                      .playerName = std::move(playerName)}}));
   return result;
 }
 
@@ -87,16 +99,19 @@ void CoopLink::poll(net::Millis now) {
     fail(LinkFailure::Disconnected);
     return;
   }
-  if (link_->state() == net::PeerState::Open && !opened_) opened_ = now;
+  if (link_->state() == net::PeerState::Open && !opened_)
+    opened_ = now;
   if (!opened_ || phase_ == LinkPhase::Rejected || phase_ == LinkPhase::Failed ||
-      phase_ == LinkPhase::Left) return;
+      phase_ == LinkPhase::Left)
+    return;
   if (phase_ == LinkPhase::Connecting && now - *opened_ >= timeouts_.answer) {
     fail(LinkFailure::NoAnswer);
     return;
   }
   if (phase_ == LinkPhase::Ready) {
     const auto heard = link_->lastHeard();
-    if (heard && now - *heard >= timeouts_.silence) fail(LinkFailure::Silence);
+    if (heard && now - *heard >= timeouts_.silence)
+      fail(LinkFailure::Silence);
   }
 }
 
@@ -110,8 +125,10 @@ void CoopLink::handle(const Message& message) {
     const bool accepted = reason == RejectReason::None;
     const std::uint64_t sessionId = accepted ? nextSessionId() : 0;
     link_->send(net::Lane::Reliable, encode(Message{Welcome{.identity = identity_,
-        .accepted = accepted, .assignedPlayer = GuestPlayerId, .reason = reason,
-        .sessionId = sessionId}}));
+                                                            .accepted = accepted,
+                                                            .assignedPlayer = GuestPlayerId,
+                                                            .reason = reason,
+                                                            .sessionId = sessionId}}));
     if (accepted) {
       remotePlayer_ = GuestPlayerId;
       phase_ = LinkPhase::Ready;
@@ -145,19 +162,23 @@ void CoopLink::handle(const Message& message) {
     phase_ = LinkPhase::Left;
     return;
   }
-  if (phase_ == LinkPhase::Ready && directionAllowed(side_, message)) incoming_.push_back(message);
-  else fail(LinkFailure::Damaged, true);
+  if (phase_ == LinkPhase::Ready && directionAllowed(side_, message))
+    incoming_.push_back(message);
+  else
+    fail(LinkFailure::Damaged, true);
 }
 
 std::optional<Message> CoopLink::receive() {
-  if (incoming_.empty()) return std::nullopt;
+  if (incoming_.empty())
+    return std::nullopt;
   Message message = std::move(incoming_.front());
   incoming_.pop_front();
   return message;
 }
 
 core::Result<void> CoopLink::send(const Message& message) {
-  if (phase_ != LinkPhase::Ready) return core::fail("cooperative link is not ready");
+  if (phase_ != LinkPhase::Ready)
+    return core::fail("cooperative link is not ready");
   if (!directionAllowed(side_ == Side::Host ? Side::Guest : Side::Host, message))
     return core::fail("cooperative message is invalid for this side");
   const net::Lane lane = laneFor(message);
@@ -191,7 +212,8 @@ void CoopLink::fail(LinkFailure failure, bool sendLeave) {
 bool RemoteCommandBuffer::push(const Commands& command, net::Millis receivedAt) {
   if (sequence_) {
     const std::uint32_t delta = command.sequence - *sequence_;
-    if (delta == 0 || delta >= 0x80000000u) return false;
+    if (delta == 0 || delta >= 0x80000000u)
+      return false;
   }
   sequence_ = command.sequence;
   command_ = command.field;
@@ -200,7 +222,8 @@ bool RemoteCommandBuffer::push(const Commands& command, net::Millis receivedAt) 
 }
 
 FieldCommand RemoteCommandBuffer::current(net::Millis now) const {
-  if (!sequence_ || now - receivedAt_ > CommandTimeout) return {};
+  if (!sequence_ || now - receivedAt_ > CommandTimeout)
+    return {};
   return command_;
 }
 

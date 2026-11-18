@@ -12,7 +12,7 @@ namespace dwe::game::coop {
 class ProfileAssembler {
 public:
   [[nodiscard]] core::Result<void> begin(std::uint32_t transferId, std::uint16_t chunkCount,
-                                        ProfilePayloadKind kind);
+                                         ProfilePayloadKind kind);
   [[nodiscard]] core::Result<std::optional<net::Bytes>> push(const ProfileChunk& chunk);
   void reset();
 

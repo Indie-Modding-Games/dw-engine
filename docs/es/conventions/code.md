@@ -78,6 +78,10 @@
   (sin `DWE_DISC` o `DWE_CONTENT`) sí encaja y pasa. Un caso se salta **volviendo** (`return`), no con
   `doctest::skip()`: con ese decorador no encaja en ningún filtro y su entrada fallaría. Un `ctest` que no encuentra ningún test también falla
   (`noTestsAction` en `CMakePresets.json`).
+- Sin excepciones, un `REQUIRE` que falla **no para** el caso: queda anotado y el caso sigue. El código de después que
+  depende de él (leer un `std::optional` vacío, indexar más allá del final de un vector) choca con una comprobación de
+  endurecimiento de libc++, que corta en seco: el caso muere con SIGILL y ctest muestra `ILLEGAL` en vez de la
+  comprobación fallida. Donde un `REQUIRE` protege el código siguiente, ponle detrás `if (!valor) { return; }`.
 - **De integración:** las rutas de autotest de `tests/autotest/`, que juegan el juego con entrada simulada
   ([prueba vertical](../guides/vertical-slice.md)), y los paquetes de ejemplo de `tests/mods/`.
 - **De simulación:** en `apps/sim` (`dwe-sim`), para el balance de los rulesets (por ejemplo, mil crianzas)

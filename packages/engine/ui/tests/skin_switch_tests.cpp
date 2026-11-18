@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <filesystem>
 #include <format>
@@ -655,7 +656,9 @@ TEST_CASE("a live switch restyles every document in place and keeps its state") 
   ui->show("hud");
   ui->show("main_menu", true);
   frame(*ui, input);
-  // Continue is greyed without a save: down goes to the online versus, then to Options.
+  // Continue is greyed without a save: down goes to the online versus, the co-op room, then to
+  // Options.
+  press(*ui, input, input::keys::Down);
   press(*ui, input, input::keys::Down);
   press(*ui, input, input::keys::Down);
   REQUIRE(ui->focusedElementId("main_menu") == "options");
@@ -1214,6 +1217,8 @@ TEST_CASE(
   ui->setSetting("partner.technique.choice.0.known", true);
   ui->setSetting("partner.technique.choice.0.equipped", true);
   ui->setSetting("partner.technique.choice.0.slot", 0.0);
+  ui->setSetting("partner.technique.choice.0.name", std::string{"Spit Fire of a Very Long Name"});
+  ui->setSetting("partner.technique.choice.0.power", 66.0);
   ui->setSetting("partner.technique.can_finish", true);
   input::InputState input{input::defaultActionMap()};
   ui->show("partner_menu", true);
@@ -1240,6 +1245,42 @@ TEST_CASE(
   settle();
   REQUIRE(ui->elementHasClass("partner_menu", "scrim", "tech-editing"));
   static_cast<void>(ui->takeCues());
+
+  // The focused technique's window (renderDigimonMovesSelected), on the right for the grid's first
+  // column: its name in a box whose bottom rim the stats box hangs from, the right sides on one
+  // line, as the original draws them (capture orig-3-picker-learned-right). A name too long for the
+  // box is squeezed into it on one line.
+  CHECK(ui->elementHasClass("partner_menu", "tech-info", "info-right"));
+  CHECK(ui->elementText("partner_menu", "tech-info-name-text") == "Spit Fire of a Very Long Name");
+  const auto name = ui->elementRect("partner_menu", "tech-info-name");
+  const auto stats = ui->elementRect("partner_menu", "tech-info-stats");
+  REQUIRE(name.has_value());
+  REQUIRE(stats.has_value());
+  CHECK(name->bottom == doctest::Approx(stats->top + 9.0F).epsilon(0.01));
+  CHECK(name->right == doctest::Approx(stats->right).epsilon(0.01));
+  CHECK(name->bottom - name->top == doctest::Approx(78.0F));
+  // The Tech Data tab lies over the name box's top rim, four pixels in from its left side.
+  const auto tab = ui->elementRect("partner_menu", "tech-info-heading");
+  REQUIRE(tab.has_value());
+  CHECK(tab->left == doctest::Approx(name->left + 18.0F).epsilon(0.01));
+  CHECK(tab->top == doctest::Approx(name->top - 9.0F).epsilon(0.01));
+  CHECK(tab->bottom == doctest::Approx(name->top + 12.0F).epsilon(0.01));
+  // Each value stands level with its arrow and starts past it, as the original draws them.
+  for (const char* row : {"power", "mp", "range", "effect"}) {
+    CAPTURE(row);
+    const auto arrow = ui->elementRect("partner_menu", std::string{"tech-info-colon-"} + row);
+    const auto value = ui->elementRect("partner_menu", std::string{"tech-info-"} + row);
+    REQUIRE(arrow.has_value());
+    REQUIRE(value.has_value());
+    CHECK(std::abs((value->top + value->bottom) - (arrow->top + arrow->bottom)) / 2.0F <= 2.0F);
+    CHECK(value->left > arrow->right);
+  }
+  CHECK(ui->styleProperty("partner_menu", "tech-info-name-text", "transform").find("scale") !=
+        std::string::npos);
+  const auto drawn = ui->elementDrawnRect("partner_menu", "tech-info-name-text");
+  REQUIRE(drawn.has_value());
+  CHECK(drawn->right <= name->right);
+  CHECK(drawn->bottom - drawn->top < 50.0F);
 
   // The game counts the extra action's presses in a setting; one opens the help page, with a sound.
   ui->setSetting("partner_menu.extra_presses", 1.0);

@@ -176,4 +176,27 @@ TEST_CASE("the partner's status page stays inside the window at every UI scale")
   }
 }
 
+TEST_CASE("the shop's window opens clear of the money box in every skin") {
+  // The tester's report: in the original look «Anything else?» covered the money box's right side.
+  for (const std::string_view skin : {"original", "modern", "new", "devvago"}) {
+    CAPTURE(skin);
+    Screen screen{"shop_menu", "es"};
+    screen.skin(skin);
+    screen.ui->setSetting("shop.money", 1400.0);
+    screen.ui->setSetting("shop.bits_shown", true);
+    screen.ui->setSetting("shop.phase", std::string{"talk"});
+    screen.ui->setSetting("shop.revision", 1.0);
+    screen.ui->show("shop_menu");
+    screen.frames();
+    REQUIRE_FALSE(screen.ui->elementHasClass("shop_menu", "bits-box", "hidden"));
+    const auto bits = screen.ui->elementDrawnRect("shop_menu", "bits-box");
+    const auto panel = screen.ui->elementDrawnRect("shop_menu", "panel");
+    REQUIRE(bits.has_value());
+    REQUIRE(panel.has_value());
+    const bool apart = panel->left >= bits->right || panel->top >= bits->bottom ||
+                       panel->right <= bits->left || panel->bottom <= bits->top;
+    CHECK(apart);
+  }
+}
+
 } // namespace dwe::ui
