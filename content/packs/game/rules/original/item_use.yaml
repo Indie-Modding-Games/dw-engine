@@ -1,33 +1,33 @@
-# El partner y los objetos que le da el domador (packages/session: InventoryAdapter, ItemUseRules, docs/modulos/apps/session.md).
-# Cada objeto se nombra por su id de data/items. Los rangos y umbrales cuentan los números del original y solo cubren
-# los objetos del juego original; los objetos que añade un mod entran por id (docs/architecture/rulesets.md#rangos-e-ids).
+# The partner and the items the tamer gives it (packages/session: InventoryAdapter, ItemUseRules, docs/modules/apps/session.md).
+# Each item is named by its id in data/items. The ranges and thresholds count the original's numbers and only cover
+# the original game's items; the items a mod adds go by id (docs/architecture/rulesets.md#ranges-and-ids).
 
 # partner_impl.c: partnerWillRefuseItem.
 refusal:
-  # Nunca los acepta (0x21 a 0x25; 0x73 a 0x7c salvo 0x79 y 0x7a).
+  # Never accepts them (0x21 to 0x25; 0x73 to 0x7c except 0x79 and 0x7a).
   never_taken:
     - { from: 33, to: 37 }
     - { from: 115, to: 120 }
     - { from: 123, to: 124 }
-  # Los de número menor pasan la tirada de disciplina: randomLimit(100) < 110 - (disciplina + randomLimit(10) + 10).
+  # Those with a lower number pass the discipline roll: randomLimit(100) < 110 - (discipline + randomLimit(10) + 10).
   discipline_checked_below: 38
-  # Objetos de evolución que solo acepta en un nivel (0x7d y 0x7f campeón, 0x7e novato).
+  # Evolution items it only accepts at one level (0x7d and 0x7f Champion, 0x7e Rookie).
   fixed_level_evolutions:
     - { item: giga_hand, level: 4 }
     - { item: noble_mane, level: 3 }
     - { item: metalbanana, level: 4 }
-  # Los demás objetos de evolución los rechaza si el nivel de su destino menos el del partner es uno de estos.
+  # It refuses the other evolution items if the level of their target minus the partner's is one of these.
   refused_level_differences: [0, 2, -1]
 
-# partner_impl.c: partnerHandleFoodFeed: solo estos objetos responden al hambre (0x26 a 0x46, 0x79 y 0x7a).
+# partner_impl.c: partnerHandleFoodFeed: only these items answer hunger (0x26 to 0x46, 0x79 and 0x7a).
 meals:
   - { from: 38, to: 70 }
   - { from: 121, to: 122 }
 
-# script_common.c: isPartnerBaby: las tiendas hacen el descuento de bebé a las 8 formas de BABY_IDS, que son todas las
-# de nivel 1 (bebé) y 2 (en entrenamiento).
+# script_common.c: isPartnerBaby: the shops give the baby discount to the 8 forms of BABY_IDS, which are all
+# those of level 1 (Baby) and 2 (In-Training).
 shop_discount_levels: [1, 2]
 
-# trn_reward.c: TRN_award*TrainingGains: el bit de cada stat en trainBoostFlag, que pone la comida
+# trn_reward.c: TRN_award*TrainingGains: the bit of each stat in trainBoostFlag, which food sets
 # (item.c: setTrainingBoost).
 training_boost_bits: { hp: 16, mp: 32, offense: 1, defense: 2, speed: 4, brain: 8 }

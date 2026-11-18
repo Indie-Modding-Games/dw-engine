@@ -110,6 +110,9 @@ public:
   // keeperMoveOne, keeperMoveTen and keeperMoveStack: moves the row's item from `from` to the
   // other side; false when the row cannot move or the amount does not fit (nothing changes).
   bool move(KeeperSide from, const KeeperRow& row, KeeperAmount amount);
+  // Leaves `count` of the item with the keeper from outside the bag (a reward the bag has no room
+  // for); false when there is no keeper or it cannot hold that many more (nothing changes).
+  bool keep(assets::ItemHandle item, std::int32_t count);
 
   // The text key of a keeper's line (resolveMapHeadEntry); empty when MAPHEAD's listing does not
   // have it.

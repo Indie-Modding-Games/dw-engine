@@ -10,7 +10,7 @@
 
 namespace dwe::dwx {
 
-// The AV1 settings of the video cooker (docs/architecture/peliculas.md). Fixed, and one encoder
+// The AV1 settings of the video cooker (docs/architecture/movies.md). Fixed, and one encoder
 // thread, so the same Y4M always cooks to the same bytes; the cook runs its files in parallel.
 // The constant quality level is where the re-encode adds no visible loss to the restored 10-bit
 // source (a mean PSNR near 47 dB on the movies, the worst frame near 42 dB); the speed preset is

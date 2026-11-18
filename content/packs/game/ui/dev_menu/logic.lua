@@ -1,4 +1,4 @@
--- The developer menu (docs/modulos/apps/game.md, «Herramientas de desarrollo»): F2 opens it over a
+-- The developer menu (docs/modules/apps/game.md, «Developer tools»): F2 opens it over a
 -- game while the developer tools option is on. Each entry runs console lines with
 -- ui.send("dev_menu_run", line) (the game runs only the commands this menu offers), opens a page,
 -- or sends the game menu's quick_save. The game publishes the lists it picks from:

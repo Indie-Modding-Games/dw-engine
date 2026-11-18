@@ -130,7 +130,7 @@ core::Result<std::vector<PlayRequest>> EffectBank::requests(std::uint32_t value)
       return core::fail(core::formatMessage(messages::BankBrokenSound, value));
     }
     // As the original's note-to-pitch routine does (libsnd.s: note2pitch2;
-    // docs/architecture/audio.md#64-el-tramo-2-en-detalle).
+    // docs/architecture/audio.md#64-effects-in-detail).
     const int steps =
         ((sound->note - tone->root) * StepsPerSemitone) + (tone->fineTune >> FineTuneToSteps);
     const double unclamped = ChipRate * std::exp2(steps / StepsPerOctave);

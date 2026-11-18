@@ -1,17 +1,17 @@
 # script
 
-La máquina virtual de Lua y la única puerta de los mods al motor.
+The Lua virtual machine and the only door from mods into the engine.
 
-- Carpeta: `packages/engine/script`; objetivos de CMake: `dwe::script` (capa `services`).
-- Depende de: `assets`, `core`, `input`, `localization`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/engine/script](https://indie-modding-games.github.io/dw-engine/modulos/engine/script).
+- Folder: `packages/engine/script`; CMake targets: `dwe::script` (`services` layer).
+- Depends on: `assets`, `core`, `input`, `localization`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/engine/script](https://indie-modding-games.github.io/dw-engine/modules/engine/script).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter script
-scripts/dev.sh test --filter script       # sus tests (etiqueta de ctest script)
-scripts/dev.sh test --filter ...script    # y los de todo lo que depende de él
+scripts/dev.sh test --filter script       # its tests (ctest label script)
+scripts/dev.sh test --filter ...script    # and those of everything that depends on it
 ```

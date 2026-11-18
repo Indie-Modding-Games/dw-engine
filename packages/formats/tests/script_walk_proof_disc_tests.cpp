@@ -36,7 +36,7 @@
 // "165,166-221"), so that the proof runs in chunks; DWE_WALK_PROOF_LONG to give each script the
 // long budget. A script whose full walk does not finish within the budget is proven by the
 // fallback: the walks that summarize later (FallbackRoutineWalks) give what the summarized walk
-// gives. docs/architecture/warps-de-script.md has the results. The last test, that the walk the
+// gives. docs/architecture/script-warps.md has the results. The last test, that the walk the
 // extraction makes ends within a budget on every script, is part of the gate.
 
 namespace disc = dwe::formats::disc;
@@ -120,7 +120,7 @@ constexpr std::array<std::size_t, 2> FallbackRoutineWalks = {256, 1024};
 // How long the walk that the extraction makes may take for one script, all its sections, in the
 // slowest build (the sanitized one). It takes a few seconds; the budget is what stops a walk that
 // blows up, as one did when a recursion left a routine's summary unused
-// (docs/architecture/warps-de-script.md).
+// (docs/architecture/script-warps.md).
 constexpr std::chrono::minutes ExtractionBudget{2};
 // The most guard terms one map change of the disc may have. The walk gives 16 (script 174,
 // 2026-10-22); twice that leaves room for a walk that keeps a few more decisions, and still stops

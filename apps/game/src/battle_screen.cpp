@@ -323,7 +323,7 @@ void BattleScreen::showStatusVisuals() const {
 // The world's objects tick once a battle frame (BTL_battleTickFrame: tickObjects), the field's
 // effects among them; a thrown item's healing particles (item.c: addHealingParticleEffect) rise
 // over the partner from where it stands. They roll their own: with the original's rolls the battle
-// does not spend theirs (suposición, as the item particles' velocities).
+// does not spend theirs (a guess, as the item particles' velocities).
 void BattleScreen::stepFieldEffects(const game::battle::BattleEvents& frame) const {
   if (desc_.scene == nullptr) {
     return;

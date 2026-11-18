@@ -62,6 +62,9 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   if (eggBox_ != nullptr) {
     eggBox_->update(scenes);
   }
+  if (shopHaggle_ != nullptr) {
+    shopHaggle_->update(scenes);
+  }
   naming_.update(scenes);
   if (discard_ != nullptr) {
     discard_->update(scenes);
@@ -92,6 +95,7 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
     if (shop_.take(*screen, scene) || itemKeeper_.take(*screen, scene) || gym_.take(*screen) ||
         naming_.take(*screen) || tournament_.take(*screen, scenes, scene) ||
         (eggBox_ != nullptr && eggBox_->take(*screen, scenes)) ||
+        (shopHaggle_ != nullptr && shopHaggle_->take(*screen, scenes)) ||
         (discard_ != nullptr && discard_->take(*screen)) ||
         (jukebox_ != nullptr && jukebox_->take(*screen, scene)) ||
         (schedule_ != nullptr && schedule_->take(*screen, scene)) ||

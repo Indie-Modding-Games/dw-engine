@@ -1,15 +1,15 @@
 # sim
 
-`dwe-sim`: juega escenarios de los sistemas del juego muchas veces, sin gráficos y con semillas, y escribe un informe.
+`dwe-sim`: plays scenarios of the game's systems many times, with no graphics and with seeds, and writes a report.
 
-- Carpeta: `apps/sim`; objetivos de CMake: `dwe::sim`, el programa `sim_cli` (capa `apps`).
-- Depende de: `${game_modules}`, `assets`, `content`, `core`, `ruleset`, `session`.
-- Estructura: `CMakeLists.txt` (el programa y sus dependencias), `src/` y `tests/`.
-- Documentación: [modulos/apps/sim](https://indie-modding-games.github.io/dw-engine/modulos/apps/sim).
+- Folder: `apps/sim`; CMake targets: `dwe::sim`, the `sim_cli` program (`apps` layer).
+- Depends on: `${game_modules}`, `assets`, `content`, `core`, `ruleset`, `session`.
+- Layout: `CMakeLists.txt` (the program and its dependencies), `src/` and `tests/`.
+- Documentation: [modules/apps/sim](https://indie-modding-games.github.io/dw-engine/modules/apps/sim).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter sim
-scripts/dev.sh test --filter sim       # sus tests (etiqueta de ctest sim)
+scripts/dev.sh test --filter sim       # its tests (ctest label sim)
 ```

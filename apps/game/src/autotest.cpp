@@ -36,6 +36,8 @@
 #include "messages.hpp"
 #include "options.hpp"
 #include "screenshot.hpp"
+#include "shop_haggle_screen.hpp"
+#include "shop_job_rules_panel.hpp"
 #include "story_text_rows.hpp"
 #include "tournament_bracket_screen.hpp"
 
@@ -1148,8 +1150,12 @@ bool Autotest::waitStep(const AutotestHost& host, const AutotestStep& step, doub
     // confirm takes the entry under the cursor.
     const std::string cursor = settingText(host, "story_textbox.cursor_row");
     const bool selecting = cursor != "-1" && cursor != "-";
-    const bool textbox =
-        !battle && (!selecting || step.answer) && host.ui->isVisible(StoryTextboxDocument);
+    // The shop job's counter and rules open over the customer's last line: what they take is the
+    // route's to press (a confirm there would sell at the row under the cursor).
+    const bool counter =
+        host.ui->isVisible(ShopHaggleDocument) || host.ui->isVisible(ShopJobRulesDocument);
+    const bool textbox = !battle && !counter && (!selecting || step.answer) &&
+                         host.ui->isVisible(StoryTextboxDocument);
     if ((endBox || textbox) && now - progress_->lastAnswer > AnswerSeconds) {
       progress_->lastAnswer = now;
       const AutotestDevice device = deviceOf(step);
@@ -1896,7 +1902,7 @@ bool Autotest::resizeStep(const AutotestHost& host, const AutotestStep& step, do
   }
   // A window larger than the desktop's usable area is up to the window manager, which may refuse
   // it: the step is skipped there, and the route runs it on a larger screen
-  // (docs/guides/prueba-vertical.md).
+  // (docs/guides/vertical-slice.md).
   const auto usable = host.window->usableDisplaySize();
   if (usable && (step.width > usable->width || step.height > usable->height)) {
     std::string note = std::format(

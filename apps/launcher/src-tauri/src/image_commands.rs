@@ -170,11 +170,12 @@ pub fn images_remove_all(state: State<'_, AppState>) -> Result<()> {
     images(&state).remove_all()
 }
 
-/// Copies the originals, with a guide, into a new folder inside the one the player picked.
+/// Copies the originals, with a guide in the launcher's language, into a new folder inside the one the player picked.
 #[tauri::command]
 pub async fn images_export(state: State<'_, AppState>, folder: String) -> Result<String> {
     let (images, catalogue) = catalogue(&state)?;
-    let written = blocking(move || images.export(&catalogue, Path::new(&folder))).await?;
+    let language = state.settings.lock().unwrap().language.clone();
+    let written = blocking(move || images.export(&catalogue, Path::new(&folder), &language)).await?;
     log_line!("the game's images were exported to {}", written.display());
     Ok(written.display().to_string())
 }

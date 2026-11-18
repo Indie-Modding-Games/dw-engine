@@ -76,7 +76,7 @@ class FullTriggerTests(unittest.TestCase):
 
     def test_private_sources_headers_and_other_files_do_not(self):
         changed = ["engine/core/src/log.cpp", "engine/core/src/detail.hpp", "engine/core/CMakeLists.txt",
-                   "docs/guides/prueba-vertical.md"]
+                   "docs/guides/vertical-slice.md"]
         self.assertIsNone(tidy_scope.full_tidy_trigger(changed))
 
 
@@ -158,10 +158,10 @@ class PlanTests(unittest.TestCase):
                          ["engine/core/src/clock.cpp", "engine/core/src/log.cpp", "engine/core/tests/log_tests.cpp"])
 
     def test_sources_outside_the_compile_commands_and_other_files_are_skipped_with_a_reason(self):
-        plan = self.plan(["apps/game/src/windows_only.cpp", "docs/guides/prueba-vertical.md"])
+        plan = self.plan(["apps/game/src/windows_only.cpp", "docs/guides/vertical-slice.md"])
         self.assertEqual(plan.checked, {})
         self.assertEqual(plan.skipped["apps/game/src/windows_only.cpp"], tidy_scope.SKIP_NOT_COMPILED)
-        self.assertEqual(plan.skipped["docs/guides/prueba-vertical.md"], tidy_scope.SKIP_NOT_CPP)
+        self.assertEqual(plan.skipped["docs/guides/vertical-slice.md"], tidy_scope.SKIP_NOT_CPP)
 
     def test_unchanged_sources_are_listed_as_skipped(self):
         plan = self.plan(["engine/core/src/clock.cpp"])

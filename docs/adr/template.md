@@ -1,20 +1,20 @@
-# NNNN. Título en forma de decisión
+# NNNN. Title as a decision
 
-- **Estado:** Propuesta
-- **Fecha:** AAAA-MM-DD
+- **Status:** Proposed
+- **Date:** YYYY-MM-DD
 
-## Contexto
+## Context
 
-Qué problema hay y qué condiciona la decisión.
+What the problem is and what constrains the decision.
 
-## Decisión
+## Decision
 
-Qué se decide, en una o dos frases claras.
+What is decided, in one or two clear sentences.
 
-## Consecuencias
+## Consequences
 
-Qué se gana, qué se pierde y qué hay que hacer a partir de ahora.
+What is gained, what is lost and what has to be done from now on.
 
-## Alternativas descartadas
+## Alternatives rejected
 
-- **Alternativa:** por qué no.
+- **Alternative:** why not.

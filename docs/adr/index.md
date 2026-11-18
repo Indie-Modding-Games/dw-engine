@@ -1,60 +1,61 @@
-# Registros de decisiones de arquitectura (ADR)
+# Architecture decision records (ADR)
 
-Un ADR deja escrita una decisión importante: qué problema había, qué se decidió, qué consecuencias tiene y qué
-alternativas se descartaron. Sirve para que quien llegue después entienda **por qué** el proyecto es como es, sin
-tener que preguntar.
+An ADR records an important decision in writing: what the problem was, what was decided, what consequences it has and
+which alternatives were rejected. It lets whoever comes later understand **why** the project is the way it is, without
+having to ask.
 
-Usamos una versión simplificada del formato [MADR](https://adr.github.io/madr/).
+We use a simplified version of the [MADR](https://adr.github.io/madr/) format.
 
-## Cuándo hace falta un ADR
+## When an ADR is needed
 
-- Elegir o cambiar una tecnología (lenguaje, librería, formato).
-- Cambiar la arquitectura o las [reglas de dependencias](../architecture/dependency-rules.md).
-- Cualquier excepción a una regla del proyecto.
+- Choosing or changing a technology (language, library, format).
+- Changing the architecture or the [dependency rules](../architecture/dependency-rules.md).
+- Any exception to a project rule.
 
-## Cómo se propone uno
+## How to propose one
 
-1. Copia [`docs/adr/template.md`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/docs/adr/template.md) como `NNNN-titulo-corto.md`, con el siguiente número libre.
-2. Rellénalo con estado **Propuesta** y ábrelo en un PR.
-3. Se discute en el PR. Cuando hay acuerdo, el estado pasa a **Aceptada** y se hace el merge.
+1. Copy [`docs/adr/template.md`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/docs/adr/template.md) as `NNNN-short-title.md`, with the next free number.
+2. Fill it in with status **Proposed** and open it in a PR.
+3. It is discussed in the PR. When there is agreement, the status changes to **Accepted** and it is merged.
 
-## Estados
+## Statuses
 
-| Estado | Significado |
+| Status | Meaning |
 |---|---|
-| Propuesta | En discusión |
-| Aceptada | En vigor |
-| Rechazada | Se discutió y se descartó; se conserva para no repetir la discusión |
-| Sustituida por NNNN | Ya no está en vigor; el ADR NNNN la reemplaza |
+| Proposed | Under discussion |
+| Accepted | In force |
+| Rejected | It was discussed and ruled out; it is kept so the discussion is not repeated |
+| Superseded by NNNN | No longer in force; ADR NNNN replaces it |
 
-Un ADR aceptado **no se reescribe**. Si la decisión cambia, se escribe uno nuevo y el antiguo se marca como
-sustituido.
+An accepted ADR **is not rewritten**. If the decision changes, a new one is written and the old one is marked as
+superseded.
 
-## Índice
+## Index
 
-| # | Decisión | Estado |
+| # | Decision | Status |
 |---|---|---|
-| [0001](0001-reimplementacion-nativa.md) | Reimplementación nativa sin limitaciones de PS1 | Aceptada |
-| [0002](0002-cpp26.md) | C++26 con GCC y Clang | Aceptada |
-| [0003](0003-vulkan-y-sdl3.md) | Vulkan 1.3 para render y SDL3 para plataforma | Aceptada |
-| [0004](0004-lua-y-sol2.md) | Lua 5.5 + sol2, en sandbox | Aceptada |
-| [0005](0005-tuberia-de-assets.md) | Assets en tres estados y capas, sin fidelidad binaria | Aceptada |
-| [0006](0006-tres-repositorios.md) | Tres repositorios: código, diseño y arte | Propuesta |
-| [0007](0007-sin-excepciones.md) | Sin excepciones, con `std::expected` | Aceptada |
-| [0008](0008-headers-antes-que-modulos.md) | Headers ahora, módulos de C++ más adelante | Aceptada |
-| [0009](0009-rmlui.md) | RmlUi para la UI del juego | Aceptada |
-| [0010](0010-reglas-propias-con-rulesets.md) | Reglas propias, organizadas en rulesets | Aceptada |
-| [0011](0011-politica-legal-de-assets.md) | "Trae tus propios datos" y política legal de assets | Aceptada |
-| [0012](0012-ecs-con-entt.md) | Entidades con EnTT | Aceptada |
-| [0013](0013-juego-nativo-de-pc.md) | Un juego nativo de PC | Aceptada |
-| [0014](0014-mandos-y-entrada.md) | Mandos y entrada por acciones | Aceptada |
-| [0015](0015-desarrollo-en-contenedor.md) | Compilar dentro de un contenedor Docker | Aceptada |
-| [0016](0016-yaml-con-libyaml.md) | YAML con libyaml, envuelto en `core` | Aceptada |
-| [0017](0017-cocinado-y-archivos-pak.md) | Cocinado a KTX2 UASTC y Opus, y archivos `.pak` propios con zstd | Aceptada |
-| [0018](0018-shaders-slang-con-vcpkg.md) | Shaders en Slang compilados en el build con `slangc` de vcpkg | Aceptada |
-| [0019](0019-descriptores-bindless.md) | Un único set de descriptores bindless y datos por frame por dirección de buffer | Aceptada |
-| [0020](0020-camara-de-mapa-y-capas-de-profundidad.md) | Cámara de mapa descentrada y capas de profundidad como planos | Aceptada |
-| [0021](0021-animacion-en-cpu-y-skinning-en-gpu.md) | Animación muestreada en la CPU, skinning en la GPU, en un módulo `animation` | Aceptada |
-| [0022](0022-primer-ruleset-fiel-al-original.md) | El primer ruleset reproduce el original; el diseño nuevo llega como rulesets | Aceptada |
-| [0023](0023-tuberia-del-remaster.md) | Remaster por recetas, con proveedores intercambiables, caché por contenido y local por defecto | Aceptada |
-| [0024](0024-cooperativo-con-host-autoritativo.md) | Cooperativo en línea con un host autoritativo y jugadores movidos por controladores | Propuesta |
+| [0001](0001-native-reimplementation.md) | Native reimplementation without PS1 limitations | Accepted |
+| [0002](0002-cpp26.md) | C++26 with GCC and Clang | Accepted |
+| [0003](0003-vulkan-and-sdl3.md) | Vulkan 1.3 for rendering and SDL3 for the platform | Accepted |
+| [0004](0004-lua-and-sol2.md) | Lua 5.5 + sol2, sandboxed | Accepted |
+| [0005](0005-asset-pipeline.md) | Assets in three states and layers, without binary fidelity | Accepted |
+| [0006](0006-three-repositories.md) | Three repositories: code, design and art | Accepted |
+| [0007](0007-no-exceptions.md) | No exceptions, with `std::expected` | Accepted |
+| [0008](0008-headers-before-modules.md) | Headers now, C++ modules later | Accepted |
+| [0009](0009-rmlui.md) | RmlUi for the game UI | Accepted |
+| [0010](0010-own-rules-with-rulesets.md) | Own rules, organized in rulesets | Accepted |
+| [0011](0011-asset-legal-policy.md) | "Bring your own data" and the legal policy for assets | Accepted |
+| [0012](0012-ecs-with-entt.md) | Entities with EnTT | Accepted |
+| [0013](0013-native-pc-game.md) | A native PC game | Accepted |
+| [0014](0014-gamepads-and-input.md) | Gamepads and action-based input | Accepted |
+| [0015](0015-container-development.md) | Build inside a Docker container | Accepted |
+| [0016](0016-yaml-with-libyaml.md) | YAML with libyaml, wrapped in `core` | Accepted |
+| [0017](0017-cooking-and-pak-files.md) | Cooking to KTX2 UASTC and Opus, and our own `.pak` archives with zstd | Accepted |
+| [0018](0018-slang-shaders-with-vcpkg.md) | Slang shaders compiled in the build with vcpkg's `slangc` | Accepted |
+| [0019](0019-bindless-descriptors.md) | A single bindless descriptor set and per-frame data by buffer address | Accepted |
+| [0020](0020-map-camera-and-depth-layers.md) | Off-center map camera and depth layers as planes | Accepted |
+| [0021](0021-cpu-animation-and-gpu-skinning.md) | Animation sampled on the CPU, skinning on the GPU, in an `animation` module | Accepted |
+| [0022](0022-first-ruleset-faithful-to-the-original.md) | The first ruleset reproduces the original; the new design arrives as rulesets | Accepted |
+| [0023](0023-remaster-pipeline.md) | Remaster by recipes, with interchangeable providers, content cache and local by default | Superseded by 0025 |
+| [0024](0024-co-op-with-authoritative-host.md) | Online co-op with an authoritative host and players driven by controllers | Proposed |
+| [0025](0025-high-definition-in-the-engine.md) | High definition in the engine, with only deterministic steps offline | Accepted |

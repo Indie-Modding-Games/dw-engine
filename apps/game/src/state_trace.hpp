@@ -14,7 +14,7 @@
 namespace dwe::app {
 
 // A line per logic tick of what the game simulates (--trace <file>,
-// docs/guides/traza-de-estado.md): where the player, the partner and the NPCs stand and the
+// docs/guides/state-trace.md): where the player, the partner and the NPCs stand and the
 // battle's fighters, so a run can be compared with the same inputs played on the original.
 // Positions and facings are written in the original's axes and units (x, -y, -z of the world; 4096
 // a turn), the ones its memory holds.

@@ -120,31 +120,58 @@ TEST_CASE("dwx evolution-guide writes each species' targets with the four scored
   const std::string text = evolutionGuide(s.evolution, s.species);
 
   // Levels in order, whatever the order of the charts; the ultimate has no section.
-  const auto baby = text.find("## Nivel 1: bebé");
-  const auto training = text.find("## Nivel 2: entrenamiento");
-  const auto rookie = text.find("## Nivel 3: novato");
+  const auto baby = text.find("## Level 1: Fresh");
+  const auto training = text.find("## Level 2: In-Training");
+  const auto rookie = text.find("## Level 3: Rookie");
   REQUIRE(baby != std::string::npos);
   REQUIRE(training != std::string::npos);
   REQUIRE(rookie != std::string::npos);
   CHECK(baby < training);
   CHECK(training < rookie);
   CHECK(text.find("### species_g") == std::string::npos);
-  CHECK(text.find("Nivel 5") == std::string::npos);
+  CHECK(text.find("Level 5") == std::string::npos);
+  CHECK(text.find("| Target | Care mistakes | Weight | Stats | Bonus (one of) |") !=
+        std::string::npos);
 
   // A baby's target is fixed; a name from the table replaces the id.
   CHECK(text.find("### species_a\n") != std::string::npos);
-  CHECK(text.find("| Form B | Siempre | | | |") != std::string::npos);
-  // A rookie target: care mistakes as a maximum, weight ± 5, the favoured stats, the moves extra.
+  CHECK(text.find("| Form B | Always | | | |") != std::string::npos);
+  // A rookie target: care mistakes as a maximum, weight ± 5, the favoured stats, the moves bonus.
   CHECK(text.find("### Form B\n") != std::string::npos);
-  CHECK(text.find("| species_c | 0-3 | 10-20 | El mayor: Atq o Def | Técnicas 10+ |") !=
+  CHECK(text.find("| species_c | 0-3 | 10-20 | Top stat: Off or Def | Techs 10+ |") !=
         std::string::npos);
   // No weight below 0.
   CHECK(text.find("| species_d | 0+ | 0-8 | — | — |") != std::string::npos);
-  // A champion target: each minimum above 0 (HP in its units), every extra, battles as a maximum.
+  // A champion target: each minimum above 0 (HP in its units), every bonus, battles as a maximum.
+  CHECK(text.find("| species_e | 5+ | 15-25 | HP 1000+, Off 100+ | From species_c; "
+                  "Discipline 90+; Battles 0-15 |") != std::string::npos);
+  // No care mistakes and no weight: a special evolution, as the game's chart says.
+  CHECK(text.find("| species_f | Special evolution | | | |") != std::string::npos);
+}
+
+TEST_CASE("dwx evolution-guide writes the same guide in Spanish") {
+  const Synthetic s = synthetic();
+  const std::string text = evolutionGuide(s.evolution, s.species, "es");
+
+  CHECK(text.starts_with("# Requisitos de evolución\n"));
+  CHECK(text.find("## Nivel 1: bebé") != std::string::npos);
+  CHECK(text.find("## Nivel 3: novato") != std::string::npos);
+  CHECK(text.find("| Destino | Errores de cuidado | Peso | Stats | Extra (uno de) |") !=
+        std::string::npos);
+  CHECK(text.find("| Form B | Siempre | | | |") != std::string::npos);
+  CHECK(text.find("| species_c | 0-3 | 10-20 | El mayor: Atq o Def | Técnicas 10+ |") !=
+        std::string::npos);
   CHECK(text.find("| species_e | 5+ | 15-25 | HP 1000+, Atq 100+ | Venir de species_c; "
                   "Disciplina 90+; Batallas 0-15 |") != std::string::npos);
-  // No care mistakes and no weight: a special evolution, as the game's chart says.
   CHECK(text.find("| species_f | Evolución especial | | | |") != std::string::npos);
+}
+
+TEST_CASE("dwx evolution-guide refuses a language it has no words for") {
+  const TempFolder folder;
+  const auto written =
+      writeEvolutionGuide(folder.path() / "content", folder.path() / "guide.md", "fr");
+  CHECK_FALSE(written.has_value());
+  CHECK_FALSE(std::filesystem::exists(folder.path() / "guide.md"));
 }
 
 TEST_CASE("dwx evolution-guide never replaces a file") {

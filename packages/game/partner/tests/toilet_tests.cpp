@@ -9,7 +9,7 @@
 
 #include "partner_fixture.hpp"
 
-// docs/reference/care.md, "Baño": one test per rule.
+// docs/reference/care.md, "Bathroom and poop": one test per rule.
 namespace dwe::game::partner {
 
 namespace {

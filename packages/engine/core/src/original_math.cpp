@@ -122,7 +122,7 @@ std::int32_t atan4096(std::int32_t dy, std::int32_t dx) {
 
 std::int32_t rsin(std::int32_t angle) {
   // libgte's table holds sin(x) * 4096 rounded; computing it gives the same values within a unit
-  // (suposición: the table's own rounding is not checked entry by entry).
+  // (an assumption: the table's own rounding is not checked entry by entry).
   return static_cast<std::int32_t>(std::lround(
       std::sin(static_cast<double>(angle & AngleMask) / Turn * 2.0 * std::numbers::pi) * One));
 }

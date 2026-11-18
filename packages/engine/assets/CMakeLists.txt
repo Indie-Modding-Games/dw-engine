@@ -13,6 +13,7 @@ dwe_add_module(assets
         src/table_handle.cpp
         src/entry_class.cpp
         src/pack_manifest.cpp
+        src/localized_text.cpp
         src/lua_api.cpp
         src/file_system.cpp
         src/virtual_file_system.cpp

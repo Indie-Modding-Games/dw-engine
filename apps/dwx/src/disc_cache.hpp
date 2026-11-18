@@ -10,7 +10,7 @@
 #include <string_view>
 #include <vector>
 
-// The dev cache of extracted discs (docs/architecture/assets-de-desarrollo.md): one content folder
+// The dev cache of extracted discs (docs/architecture/development-assets.md): one content folder
 // per disc and extractor version, which the game mounts with --dev-assets so it can read a disc
 // image without a manual extraction.
 namespace dwe::dwx {

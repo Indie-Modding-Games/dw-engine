@@ -1,17 +1,17 @@
 # formats
 
-Los lectores de los formatos del disco original. Solo lo usa `dwx`: el runtime nunca depende de este paquete.
+The readers for the original disc's formats. Only `dwx` uses it: the runtime never depends on this package.
 
-- Carpeta: `packages/formats`; objetivos de CMake: `dwe::formats` (capa `base`).
-- Depende de: `core`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/formats](https://indie-modding-games.github.io/dw-engine/modulos/formats).
+- Folder: `packages/formats`; CMake targets: `dwe::formats` (`base` layer).
+- Depends on: `core`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/formats](https://indie-modding-games.github.io/dw-engine/modules/formats).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter formats
-scripts/dev.sh test --filter formats       # sus tests (etiqueta de ctest formats)
-scripts/dev.sh test --filter ...formats    # y los de todo lo que depende de él
+scripts/dev.sh test --filter formats       # its tests (ctest label formats)
+scripts/dev.sh test --filter ...formats    # and those of everything that depends on it
 ```

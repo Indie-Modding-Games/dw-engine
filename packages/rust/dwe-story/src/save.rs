@@ -141,11 +141,19 @@ pub fn plan_story_save(
             if let Some(crate::script::SectionOrigin::Patch(index)) = loaded.origin(section.id) {
                 let (source, _) = &loaded.patches[index];
                 if source.pack != target.id() && is_above(vfs, &source.pack, target.id()) {
-                    plan.problems.push(StoryProblem::Warning(format!(
-                        "script {script} sección {:#06x}: el parche {} está encima y gana",
-                        section.id,
-                        source.name()
-                    )));
+                    plan.problems
+                        .push(StoryProblem::Warning(crate::language::say!(
+                            format!(
+                                "script {script} section {:#06x}: the patch {} is above and wins",
+                                section.id,
+                                source.name()
+                            ),
+                            format!(
+                                "script {script} sección {:#06x}: el parche {} está encima y gana",
+                                section.id,
+                                source.name()
+                            )
+                        )));
                 }
             }
         }

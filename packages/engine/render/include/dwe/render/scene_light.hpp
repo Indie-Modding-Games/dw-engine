@@ -12,7 +12,7 @@
 #include <string_view>
 #include <vector>
 
-// The field's enhanced light (docs/architecture/render.md, «Paso de luz y color»): engine
+// The field's enhanced light (docs/architecture/render.md, «Light and color pass»): engine
 // improvements with no counterpart in the original, which only fades its palettes and its three
 // model lights by time of day (map.c: updateTimeOfDay). Nothing here changes a rule of the game.
 namespace dwe::render {

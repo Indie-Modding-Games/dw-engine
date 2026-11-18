@@ -1,4 +1,4 @@
-# Las palabras de los carteles pintados en los mapas (signs/<mapa>.yaml); \n parte la línea.
+# The words of the signs painted on the maps (signs/<map>.yaml); \n splits the line.
 betl02_neon: "ARENA"
 betl02_reception: "RECEPCIÓN"
 frzl01_notice_title: "AVISO"

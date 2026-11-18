@@ -1,14 +1,14 @@
 # launcher
 
-El lanzador de escritorio de `dwe`: lee el disco del jugador, mantiene el juego al día con las versiones publicadas y
-lo abre. Es una app de escritorio en Rust (`src-tauri/`) con la interfaz web en `ui/`, aparte de CMake.
+The `dwe` desktop launcher: it reads the player's disc, keeps the game up to date with the published releases and opens
+it. It is a desktop app in Rust (`src-tauri/`) with the web interface in `ui/`, apart from CMake.
 
-- Carpeta: `apps/launcher`; `addons/` son los complementos de ejemplo y `tools/` el servidor de versiones falso de
-  sus tests.
-- Depende de: ningún paquete de CMake. Sus tests de punta a punta usan `apps/beta-gateway`.
-- Documentación: [modulos/apps/launcher](https://indie-modding-games.github.io/dw-engine/modulos/apps/launcher).
+- Folder: `apps/launcher`; `addons/` holds the example add-ons and `tools/` the fake release server for its
+  tests.
+- Depends on: no CMake package. Its end-to-end tests use `apps/beta-gateway`.
+- Documentation: [modules/apps/launcher](https://indie-modding-games.github.io/dw-engine/modules/apps/launcher).
 
-Compilar y probar solo el lanzador (en su propia imagen, `scripts/launcher.sh`):
+Build and test only the launcher (in its own image, `scripts/launcher.sh`):
 
 ```sh
 scripts/dev.sh build --filter launcher

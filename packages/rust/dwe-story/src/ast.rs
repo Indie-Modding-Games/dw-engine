@@ -1,4 +1,4 @@
-//! The Lua the story uses, as a tree: the emitter's subset (docs/architecture/interprete-historia.md
+//! The Lua the story uses, as a tree: the emitter's subset (docs/architecture/story-interpreter.md
 //! §La forma del Lua) read generically, so a hand-written section in the same forms reads too. The
 //! comments stay with their statements and are written back.
 

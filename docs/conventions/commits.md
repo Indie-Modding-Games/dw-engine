@@ -1,21 +1,20 @@
-# Commits y pull requests
+# Commits and pull requests
 
 ## Commits
 
-- **Un pull request, un commit en `main`.** La fusión *squash* junta los commits de la rama, así que dentro de ella
-  se hacen tantos como haga falta. El stash se comparte entre worktrees, así que no se usa para guardar el progreso.
-- **Antes de abrir el pull request pasa `scripts/dev.sh check-commit`**; `check-full` es opcional y mira más que la
-  CI.
-- El mensaje es una frase en **inglés**, en imperativo, que dice qué cambia: `Add the virtual file system`,
-  `Load map collision from packs`.
-- Cada commit lleva `Signed-off-by` (`git commit -s`) según el DCO (ver [Cómo contribuir](../contribuir.md)).
-- Sin nombres de la franquicia, de consolas ni de empresas en los mensajes de commit ni en los títulos de los PR. Se
-  usan términos genéricos.
+- **One pull request, one commit on `main`.** The *squash* merge joins the branch's commits, so as many as needed are
+  made inside it. The stash is shared between worktrees, so it is not used to save progress.
+- **Before opening the pull request, run `scripts/dev.sh check-commit`**; `check-full` is optional and looks at more
+  than the CI.
+- The message follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) in **English**: `type(scope): description`, with the
+  description lowercase and in the imperative: `feat(vfs): add the virtual file system`,
+  `fix(map): load map collision from packs`. Types: feat, fix, docs, refactor, test, chore, ci, build, perf, style.
+- The body, if any, and the PR description are short: a few bullets at most. The PR title is the commit line.
+- No franchise, console or company names in commit messages or in PR titles. Generic terms are used.
 
 ## Pull requests
 
-- Ramas cortas desde `main`. Se hace squash merge, y el commit resultante lleva el título del PR.
-- **La descripción, lo más corta posible:** una o dos frases sobre qué hace y una línea sobre cómo se comprobó.
-- Las comprobaciones de la CI (`linux`, `windows`, `launcher-version`) tienen que pasar; la aprobación de una
-  revisión no es obligatoria.
-- Si el PR cambia la arquitectura, una API, un formato o una regla, trae su cambio en `docs/` y, si hace falta, un ADR.
+- Short branches from `main`. It is squash-merged, and the resulting commit carries the PR title.
+- **The description, as short as possible:** one or two sentences on what it does and one line on how it was checked.
+- The CI checks (`linux`, `windows`, `launcher-version`) must pass; a review approval is not required.
+- If the PR changes the architecture, an API, a format or a rule, it brings its change in `docs/` and, if needed, an ADR.

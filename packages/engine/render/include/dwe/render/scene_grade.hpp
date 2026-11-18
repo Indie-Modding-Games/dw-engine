@@ -48,7 +48,7 @@ struct WindowLight {
 std::vector<WindowLight> windowLights(std::span<const BackgroundLight> lights,
                                       const MapCamera& camera);
 
-// The field's light and colour pass (docs/architecture/render.md, «Paso de luz y color»; an engine
+// The field's light and colour pass (docs/architecture/render.md, «Light and color pass»; an engine
 // improvement): FrameDesc::post, drawing the scene's texture into the window with the time of
 // day's tint, point lights, vibrance, contrast and bloom (shaders/scene_grade.slang). The UI comes
 // after it and is never touched.

@@ -2,8 +2,12 @@ id: practice_mode
 version: 0.1.0
 layer: mods
 api: "1.4"
-name: "Modo de práctica"
-description: "Paquete sintético de los tests (docs/modulos/tests/mods.md): añade un segundo modo de juego con las reglas del original, para la lista de modos de la partida nueva."
+name:
+  en: "Practice mode"
+  es: "Modo de práctica"
+description:
+  en: "Synthetic pack of the tests (docs/modules/tests/mods.md): adds a second game mode with the original's rules, for the new game's mode list."
+  es: "Paquete sintético de los tests (docs/modules/tests/mods.md): añade un segundo modo de juego con las reglas del original, para la lista de modos de la partida nueva."
 dependencies:
   - id: game
     min_version: 0.1.0

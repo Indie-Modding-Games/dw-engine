@@ -1,9 +1,9 @@
 # A loop across five zones of the new game's area with the keyboard, taking both kinds of map change: the maps' warp
 # table (cells 110-119, tamer.c: checkMapInteraction) and the warps of the maps' scripts (step cells 51-79, extracted to
-# field/script_warps.yaml; docs/architecture/warps-de-script.md). Every warp it takes has no condition in the new game's
+# field/script_warps.yaml; docs/architecture/script-warps.md). Every warp it takes has no condition in the new game's
 # state but one: the forest's first fight, which the loop plays, and whose recruit moves the town on to its next map,
 # twna02, so the loop comes back into twna02.
-# How to run it: docs/guides/prueba-vertical.md.
+# How to run it: docs/guides/vertical-slice.md.
 name: scripted-loop
 device: keyboard
 timeout: 600
@@ -33,7 +33,7 @@ steps:
   - wait: {map: mayo00, partner_within: 400, seconds: 0.5}
   - screenshot: mayo00
   # A new game's forest still holds its first fight: the wild Agumon walks up and talks, the fight, then the recruit
-  # (as in route-etapa1.yaml).
+  # (as in route-stage1.yaml).
   - repeat: {times: 20, steps: [{tap: {key: return}}, {wait: {seconds: 1.0}}]}
   - wait: {shown: battle, seconds: 1, timeout: 60}
   - wait: {setting: {battle.phase: end}, timeout: 300}

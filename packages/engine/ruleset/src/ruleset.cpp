@@ -106,7 +106,7 @@ void readInfo(YamlReader& reader, const YamlNode& root, std::string_view id, Rul
   if (reader.ok() && info.id != id) {
     reader.fail(idNode, formatMessage(messages::WrongId, id));
   }
-  info.name = reader.text(reader.field(root, NameKey));
+  info.name = assets::readLocalizedText(reader, reader.field(root, NameKey));
   const YamlNode& version = reader.field(root, VersionKey);
   info.version = reader.text(version);
   if (reader.ok()) {
@@ -115,7 +115,7 @@ void readInfo(YamlReader& reader, const YamlNode& root, std::string_view id, Rul
     }
   }
   if (const YamlNode* description = root.find(DescriptionKey)) {
-    info.description = reader.text(*description);
+    info.description = assets::readLocalizedText(reader, *description);
   }
 }
 

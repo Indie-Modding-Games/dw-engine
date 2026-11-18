@@ -9,7 +9,7 @@
 
 namespace dwe::app {
 
-// Batch training, an engine improvement (docs/modulos/apps/game.md, «Sesiones de gimnasio»): a
+// Batch training, an engine improvement (docs/modules/apps/game.md, «Gym sessions»): a
 // course the story starts at a gym runs this many sessions in a row instead of one. Each session is
 // the original's (its gains, the hour it costs, the tiredness and what the partner does after it),
 // only without asking again; 1 is the original. A UI setting and the pause menu's command with the

@@ -1,8 +1,8 @@
-# The hidden content left off (docs/modulos/game/evolution.md, «Contenido oculto»): a new game from the main menu with
+# The hidden content left off (docs/modules/game/evolution.md, «Hidden content»): a new game from the main menu with
 # the keyboard keeps the original's rules on its rules screen, and nothing changes: the chart has the original's 61
 # cells, and a Penguinmon with Leomon in the city (trigger 248) and the values that make Panjyamon with the hidden
 # content evolves into the original's pick instead, Frigimon. Run it with --saves <empty folder>, once per language
-# (--lang en, --lang es); how to run it: docs/guides/prueba-vertical.md.
+# (--lang en, --lang es); how to run it: docs/guides/vertical-slice.md.
 # After each evolution the route waits for its scene to end (evolution.active), so partner_set writes the next values
 # on the field, however slow the machine, and confirms the rank notice an evolution may bring.
 name: hidden-content-off
@@ -20,7 +20,7 @@ steps:
   - wait: {shown: dialog, seconds: 0.5, timeout: 30}
   - menu_select: yes
   - wait: {shown: new_game_rules, seconds: 0.5, timeout: 30}
-  # Every species as a partner starts on (docs/modulos/game/evoluciones-extra.md): off, so the chart is this route's.
+  # Every species as a partner starts on (docs/modules/game/extra-evolutions.md): off, so the chart is this route's.
   - menu_select: rules-all
   - wait: {seconds: 0.3}
   - screenshot: rules-original

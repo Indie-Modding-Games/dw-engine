@@ -1,4 +1,4 @@
-//! The windows for the maps a pack adds: "Nuevo mapa" (an id, a name, an area, a template and an
+//! The windows for the maps a pack adds: "New map" (an id, a name, an area, a template and an
 //! exit to connect it by), and renaming or deleting one the target pack added.
 
 use std::path::PathBuf;
@@ -118,38 +118,38 @@ fn new_map_window(app: &mut MapperApp, ctx: &egui::Context) {
     let mut open = true;
     let mut create = false;
     let mut cancel = false;
-    egui::Window::new(text::NEW_MAP_TITLE)
+    egui::Window::new(text::new_map_title())
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
         .default_width(460.0)
         .show(ctx, |ui| {
             let Some(target) = &target else {
-                ui.label(text::NEW_MAP_NEEDS_TARGET);
+                ui.label(text::new_map_needs_target());
                 return;
             };
             let Some(content) = &app.mapper.content else {
                 return;
             };
             egui::Grid::new("new_map").num_columns(2).show(ui, |ui| {
-                ui.label(text::NEW_MAP_NAME);
+                ui.label(text::new_map_name());
                 ui.horizontal(|ui| {
                     ui.monospace(format!("{}:", target.id));
                     ui.add(
                         egui::TextEdit::singleline(&mut form.name)
-                            .hint_text(text::NEW_MAP_NAME_HINT)
+                            .hint_text(text::new_map_name_hint())
                             .desired_width(180.0),
                     );
                 });
                 ui.end_row();
-                ui.label(text::NEW_MAP_TITLE_FIELD);
+                ui.label(text::new_map_title_field());
                 ui.add(
                     egui::TextEdit::singleline(&mut form.title)
-                        .hint_text(text::NEW_MAP_TITLE_HINT)
+                        .hint_text(text::new_map_title_hint())
                         .desired_width(240.0),
                 );
                 ui.end_row();
-                ui.label(text::NEW_MAP_AREA);
+                ui.label(text::new_map_area());
                 let names = &content.table.map_names;
                 let shown = names
                     .get(usize::try_from(form.area).unwrap_or(0))
@@ -168,24 +168,24 @@ fn new_map_window(app: &mut MapperApp, ctx: &egui::Context) {
                         }
                     });
                 ui.end_row();
-                ui.label(text::NEW_MAP_TEMPLATE);
+                ui.label(text::new_map_template());
                 ui.horizontal(|ui| {
-                    ui.radio_value(&mut form.copy, true, text::NEW_MAP_COPY);
-                    ui.radio_value(&mut form.copy, false, text::NEW_MAP_BLANK);
+                    ui.radio_value(&mut form.copy, true, text::new_map_copy());
+                    ui.radio_value(&mut form.copy, false, text::new_map_blank());
                 });
                 ui.end_row();
             });
             ui.separator();
             if form.copy {
                 ui.horizontal(|ui| {
-                    ui.label(text::NEW_MAP_COPY);
+                    ui.label(text::new_map_copy());
                     map_combo(app, ui, "new_map_from", &mut form.from);
                 });
-                ui.checkbox(&mut form.copy_images, text::NEW_MAP_COPY_IMAGES);
-                ui.checkbox(&mut form.keep_exits, text::NEW_MAP_KEEP_EXITS);
+                ui.checkbox(&mut form.copy_images, text::new_map_copy_images());
+                ui.checkbox(&mut form.keep_exits, text::new_map_keep_exits());
             } else {
                 ui.horizontal(|ui| {
-                    ui.label(text::NEW_MAP_SIZE);
+                    ui.label(text::new_map_size());
                     let fixed = form.image.is_some();
                     ui.add_enabled(
                         !fixed,
@@ -198,32 +198,32 @@ fn new_map_window(app: &mut MapperApp, ctx: &egui::Context) {
                     );
                 });
                 ui.horizontal(|ui| {
-                    ui.label(text::NEW_MAP_IMAGE);
+                    ui.label(text::new_map_image());
                     let shown = form.image.as_ref().map_or_else(
-                        || text::NEW_MAP_IMAGE_NONE.to_owned(),
+                        || text::new_map_image_none().to_owned(),
                         |file| file.display().to_string(),
                     );
                     ui.weak(shown);
-                    if ui.button(text::NEW_MAP_PICK_IMAGE).clicked()
+                    if ui.button(text::new_map_pick_image()).clicked()
                         && let Some(file) = rfd::FileDialog::new()
                             .add_filter("PNG", &["png"])
                             .pick_file()
                     {
                         form.image = Some(file);
                     }
-                    if form.image.is_some() && ui.button(text::DWX_CLEAR).clicked() {
+                    if form.image.is_some() && ui.button(text::dwx_clear()).clicked() {
                         form.image = None;
                     }
                 });
             }
             ui.separator();
-            ui.checkbox(&mut form.connect, text::NEW_MAP_CONNECT);
+            ui.checkbox(&mut form.connect, text::new_map_connect());
             ui.add_enabled_ui(form.connect, |ui| {
                 ui.horizontal(|ui| {
                     map_combo(app, ui, "new_map_connect", &mut form.connect_map);
-                    ui.label(text::NEW_MAP_CONNECT_EXIT);
+                    ui.label(text::new_map_connect_exit());
                     ui.add(egui::DragValue::new(&mut form.connect_exit).range(0..=9));
-                    ui.label(text::NEW_MAP_OWN_EXIT);
+                    ui.label(text::new_map_own_exit());
                     ui.add(egui::DragValue::new(&mut form.own_exit).range(0..=9));
                 });
             });
@@ -231,9 +231,9 @@ fn new_map_window(app: &mut MapperApp, ctx: &egui::Context) {
             let name = form.name.trim();
             let id = new_map::added_map_id(&target.id, name);
             let problem = if !new_map::is_map_name(name) {
-                Some(text::NEW_MAP_BAD_NAME)
+                Some(text::new_map_bad_name())
             } else if content.table.find(&id).is_some() {
-                Some(text::NEW_MAP_ID_TAKEN)
+                Some(text::new_map_id_taken())
             } else {
                 None
             };
@@ -245,12 +245,12 @@ fn new_map_window(app: &mut MapperApp, ctx: &egui::Context) {
             ui.horizontal(|ui| {
                 let ready = problem.is_none() && !form.title.trim().is_empty();
                 if ui
-                    .add_enabled(ready, egui::Button::new(text::NEW_MAP_CREATE))
+                    .add_enabled(ready, egui::Button::new(text::new_map_create()))
                     .clicked()
                 {
                     create = true;
                 }
-                if ui.button(text::UNSAVED_CANCEL).clicked() {
+                if ui.button(text::unsaved_cancel()).clicked() {
                     cancel = true;
                 }
             });
@@ -272,7 +272,7 @@ fn rename_window(app: &mut MapperApp, ctx: &egui::Context) {
     };
     let mut open = true;
     let mut done = None;
-    egui::Window::new(text::RENAME_MAP_TITLE)
+    egui::Window::new(text::rename_map_title())
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
@@ -281,20 +281,23 @@ fn rename_window(app: &mut MapperApp, ctx: &egui::Context) {
             let pack = id.split_once(':').map_or("", |(pack, _)| pack);
             ui.horizontal(|ui| {
                 ui.monospace(format!("{pack}:"));
-                ui.add(egui::TextEdit::singleline(&mut name).hint_text(text::NEW_MAP_NAME_HINT));
+                ui.add(egui::TextEdit::singleline(&mut name).hint_text(text::new_map_name_hint()));
             });
             let valid = new_map::is_map_name(name.trim());
             if !valid && !name.is_empty() {
-                ui.colored_label(egui::Color32::from_rgb(235, 90, 70), text::NEW_MAP_BAD_NAME);
+                ui.colored_label(
+                    egui::Color32::from_rgb(235, 90, 70),
+                    text::new_map_bad_name(),
+                );
             }
             ui.horizontal(|ui| {
                 if ui
-                    .add_enabled(valid, egui::Button::new(text::RENAME_MAP_TITLE))
+                    .add_enabled(valid, egui::Button::new(text::rename_map_title()))
                     .clicked()
                 {
                     done = Some(true);
                 }
-                if ui.button(text::UNSAVED_CANCEL).clicked() {
+                if ui.button(text::unsaved_cancel()).clicked() {
                     done = Some(false);
                 }
             });
@@ -318,14 +321,14 @@ fn delete_window(app: &mut MapperApp, ctx: &egui::Context) {
     };
     let mut done = None;
     let modal = egui::Modal::new(egui::Id::unique("delete_map")).show(ctx, |ui| {
-        ui.heading(text::DELETE_MAP_TITLE);
+        ui.heading(text::delete_map_title());
         ui.monospace(&id);
-        ui.label(text::DELETE_MAP_QUESTION);
+        ui.label(text::delete_map_question());
         ui.horizontal(|ui| {
-            if ui.button(text::DELETE_MAP_TITLE).clicked() {
+            if ui.button(text::delete_map_title()).clicked() {
                 done = Some(true);
             }
-            if ui.button(text::UNSAVED_CANCEL).clicked() {
+            if ui.button(text::unsaved_cancel()).clicked() {
                 done = Some(false);
             }
         });
@@ -343,10 +346,10 @@ fn delete_window(app: &mut MapperApp, ctx: &egui::Context) {
 
 /// The "Mapas" menu: new map, and rename or delete one the target pack added.
 pub fn menu(app: &mut MapperApp, ui: &mut egui::Ui) {
-    ui.menu_button(text::MENU_MAPS, |ui| {
+    ui.menu_button(text::menu_maps(), |ui| {
         let has_content = app.mapper.content.is_some();
         if ui
-            .add_enabled(has_content, egui::Button::new(text::NEW_MAP))
+            .add_enabled(has_content, egui::Button::new(text::new_map()))
             .clicked()
         {
             ui.close();
@@ -354,10 +357,10 @@ pub fn menu(app: &mut MapperApp, ui: &mut egui::Ui) {
         }
         let own = app.mapper.own_maps();
         if own.is_empty() {
-            ui.weak(text::NO_OWN_MAPS);
+            ui.weak(text::no_own_maps());
         }
         ui.add_enabled_ui(!own.is_empty(), |ui| {
-            ui.menu_button(text::RENAME_MAP, |ui| {
+            ui.menu_button(text::rename_map(), |ui| {
                 for id in &own {
                     if ui.button(id).clicked() {
                         ui.close();
@@ -366,7 +369,7 @@ pub fn menu(app: &mut MapperApp, ui: &mut egui::Ui) {
                     }
                 }
             });
-            ui.menu_button(text::DELETE_MAP, |ui| {
+            ui.menu_button(text::delete_map(), |ui| {
                 for id in &own {
                     if ui.button(id).clicked() {
                         ui.close();

@@ -1,4 +1,4 @@
-# An example plugin (docs/modding/interfaces.md): a clock at the top centre, over whichever UI
+# An example plugin (docs/modding/ui-addons.md): a clock at the top centre, over whichever UI
 # is on. Copy this folder to <user data>/indie-modding-games/dwe/ui/addons/clock/ to try it.
 id: clock
 name: Reloj arriba

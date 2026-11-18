@@ -1,45 +1,46 @@
-# Fichas de referencia
+# Reference sheets
 
-Una ficha resume cómo funcionaba un sistema del juego original según el decomp. **No es una especificación:** el
-juego se reinventa ([ADR 0010](../adr/0010-reglas-propias-con-rulesets.md)). Sirve para que diseño decida a conciencia
-qué conservar, qué cambiar y qué tirar, y para sembrar el primer ruleset con valores del original.
+A sheet summarizes how a system of the original game worked according to the decomp. **It is not a specification:** the
+game is being reinvented ([ADR 0010](../adr/0010-own-rules-with-rulesets.md)). It lets design decide knowingly what to
+keep, what to change and what to throw away, and seed the first ruleset with values from the original.
 
-Cada ficha es el paso 1 del [ciclo de diseño](../conventions/design-cycle.md).
+Each sheet is step 1 of the [design cycle](../conventions/design-cycle.md).
 
-## Formato de una ficha
+## Format of a sheet
 
-Un fichero por sistema (`care.md`, `evolution.md`, `battle.md`…) con estas secciones:
+One file per system (`care.md`, `evolution.md`, `battle.md`…) with these sections:
 
-1. **Qué hace**, en términos de juego.
-2. **Reglas**: las fórmulas, condiciones y tiempos, explicados en lenguaje claro.
-3. **Datos**: qué tablas del disco usa y qué significa cada campo.
-4. **Rarezas**: comportamientos extraños o bugs conocidos.
-5. **Dónde está en el decomp**: los ficheros y funciones, para quien quiera profundizar.
+1. **What it does**, in game terms.
+2. **Rules**: the formulas, conditions and timings, explained in plain language.
+3. **Data**: which disc tables it uses and what each field means.
+4. **Oddities**: strange behaviors or known bugs.
+5. **Where it is in the decomp**: the files and functions, for whoever wants to dig deeper.
 
-## Reglas
+## Rules
 
-- Se describe con palabras propias. No se copian fragmentos de código ni tablas de datos del decomp
-  (ver [política legal](../legal/assets.md)).
-- Cada afirmación dice si está comprobada en el decomp o es una suposición.
-  Las fichas usan dos marcas: **(comprobado)**, leído en el código del decomp, y **(suposición)**, interpretación
-  nuestra pendiente de confirmar.
-- Las constantes que definen una regla (tiempos, umbrales, multiplicadores, topes) sí se escriben. Las tablas por
-  Digimon, por técnica o por objeto no: se describen sus campos y el nombre de la tabla en el ejecutable, y `dwx` las
-  extrae del disco del usuario.
+- It is described in our own words. No code fragments or data tables from the decomp are copied
+  (see [legal policy](../legal/assets.md)).
+- Each claim says whether it is verified in the decomp or is an assumption.
+  The sheets use two marks: **(verified)**, read in the decomp's code, and **(assumption)**, our own interpretation
+  pending confirmation.
+- The constants that define a rule (timings, thresholds, multipliers, caps) are written. The tables per Digimon, per
+  technique or per item are not: their fields and the table's name in the executable are described, and `dwx` extracts
+  them from the user's disc.
 
-## Fichas
+## Sheets
 
-| Ficha | Sistema |
+| Sheet | System |
 |---|---|
-| [Cuidado](care.md) | Hambre, sueño, baño, enfermedad y heridas, felicidad y disciplina, cansancio, vida, muerte y renacer, entrenamiento, comida y objetos |
-| [Evolución](evolution.md) | Niveles, requisitos y puntuación, elección del destino, evoluciones especiales y por objeto, ganancias de stats |
-| [Batalla](battle.md) | Stats, órdenes e IA, técnicas, daño, acierto, estados, remate, fin del combate, recompensas y aprendizaje de técnicas |
-| [Inventario](inventory.md) | Bolsa, dinero, uso de objetos y sus efectos, tiendas, pérdidas al caer en combate |
-| [Pesca](fishing.md) | Caña, cebo, lanzamiento, picada, tensión del sedal, capturas y la serpiente marina |
-| [Campo](campo.md) | Movimiento del jugador, colisión con la rejilla, disparadores y warps, seguimiento del partner y la ruta de la fase 2 |
-| [Scripts](scripts.md) | La máquina de scripts de eventos: modelo de ejecución, estado, puntos de entrada, cada orden del disco, `IF`, combate, rutinas de `call_routine` y la forma del control de flujo |
+| [Care](care.md) | Hunger, sleep, bathroom, sickness and injuries, happiness and discipline, tiredness, lifespan, death and rebirth, training, food and items |
+| [Evolution](evolution.md) | Levels, requirements and scoring, choosing the destination, special and item evolutions, stat gains |
+| [Battle](battle.md) | Stats, orders and AI, techniques, damage, hit chance, status effects, finishing blow, end of combat, rewards and technique learning |
+| [Inventory](inventory.md) | Bag, money, item use and their effects, shops, losses when falling in combat |
+| [Fishing](fishing.md) | Rod, bait, casting, bite, line tension, catches and the sea serpent |
+| [Field](field.md) | Player movement, grid collision, triggers and warps, partner following and the phase 2 route |
+| [Shop job](shop-job.md) | Monochromon's job at the canyon shop: the original and the engine's improved version (customer lineup, haggling, pay and bonus) |
+| [Scripts](scripts.md) | The event script machine: execution model, state, entry points, each disc command, `IF`, combat, `call_routine` routines and the shape of the control flow |
 
-## Cobertura del port
+## Port coverage
 
-[Cobertura del port](port-coverage.md): qué funciones del decomp tiene ya el motor, sistema por sistema, con lo que
-falta y los huecos que antes notará el jugador. La genera `scripts/port_coverage.py`.
+[Port coverage](port-coverage.md): which decomp functions the engine already has, system by system, with what is
+missing and the gaps the player will notice first. It is generated by `scripts/port_coverage.py`.

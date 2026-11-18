@@ -16,7 +16,7 @@
 
 // A story module (story/<n>.lua) read back into the listing and the structure the walks read
 // (guarded_walk.hpp), so the map changes of a script a mod edited in Lua come from its Lua and not
-// from the listing it started from (docs/architecture/warps-de-script.md#desde-el-lua).
+// from the listing it started from (docs/architecture/script-warps.md#from-the-lua).
 //
 // It reads the Lua that the emitter writes (lua_emitter.hpp) and the same forms written by hand:
 // each `story.<name>(...)` call is the op the story API names so, an `if` is an IF whose entries
@@ -57,7 +57,7 @@ struct LuaListing {
 // the line.
 core::Result<LuaListing> readLuaModule(std::string_view code, const LuaLineMap* lines = nullptr);
 
-// A story patch (story/patches/*.lua, docs/modding/historia.md) read for the walks: the sections
+// A story patch (story/patches/*.lua, docs/modding/story.md) read for the walks: the sections
 // it gives, as code the module can take in. Only the shape the reader can follow: at the top,
 // locals that only name story's own (`local story <const> = story`, `local ENDED <const> =
 // story.ENDED`) and, once, `local routines = {}`, after which go the patch's private routines

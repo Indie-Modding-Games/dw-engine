@@ -1,30 +1,30 @@
-# La tienda que abre la historia (script_common.c: openShop). Las frases del tendero son textos de la
-# historia (MAPHEAD); estas son las etiquetas propias de la pantalla.
+# The shop that opens the story (script_common.c: openShop). The shopkeeper's lines are story texts
+# (MAPHEAD); these are the screen's own labels.
 next: "Seguir"
 back: "Volver"
 previous: "Anterior"
 next_page: "Siguiente"
-# {page} de {pages}.
+# {page} of {pages}.
 page: "{page}/{pages}"
 empty: "No hay nada."
-# Por si falta el texto de la historia con las opciones.
+# In case the story text with the options is missing.
 buy: "Comprar"
 sell: "Vender"
 leave: "Salir"
 bits: "Bits {bits}"
-# Una fila de la lista de compra: {name} y su precio, {price}.
+# A row of the buy list: {name} and its price, {price}.
 buy_row: "{name}  {price}"
-# Una fila de la lista de venta: {name}, su precio {price} y cuántos tienes, {count}.
+# A row of the sell list: {name}, its price {price} and how many you have, {count}.
 sale_row: "{name} x{count}  {price}"
 price: "Precio {price}"
-# La cantidad: {value} de un máximo de {max}.
+# The amount: {value} of a maximum of {max}.
 amount: "{value} / {max}"
 total: "Total {total}"
 less: "-"
 more: "+"
 max: "Máx"
-# Extras de la tienda (una mejora opcional): una fila de compra con cuántos tienes ya, {owned}.
+# Shop extras (an optional improvement): a buy row with how many you already have, {owned}.
 buy_row_owned: "{name}  {price}  x{owned}"
-# Extras de la tienda: en la caja de cantidad, cuántos tienes y el dinero que te queda tras el trato.
+# Shop extras: in the amount box, how many you have and the money you have left after the deal.
 owned: "Tienes {owned}"
 money_after: "Te quedarán {bits} bits"

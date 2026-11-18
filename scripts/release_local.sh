@@ -6,7 +6,7 @@
 # bundle, bundle-windows) with the beta gateway and the public key built in, and their updater
 # signatures; and latest.json. Then it checks them all and, with --upload, puts them in a DRAFT
 # prerelease of the repository that someone reviews and publishes by hand
-# (docs/modulos/apps/launcher.md).
+# (docs/modules/apps/launcher.md).
 #
 # Usage: scripts/release_local.sh --tag <vX.Y.Z-...> [options]
 #   --tag <tag>          the release's tag and title, for example v0.1.0-beta.1 (required)

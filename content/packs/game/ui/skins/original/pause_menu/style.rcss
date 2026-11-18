@@ -485,7 +485,7 @@
 
 #panel.on-player #chart-detail-transition { display: block; position: absolute; box-sizing: border-box; border: 3dp #808080; background-color: transparent; pointer-events: none; }
 #panel.on-player #chart-detail-transition.hidden { display: none; }
-/* Evolution requirements (an engine improvement, docs/modulos/apps/game.md): a panel over the tree's left box and a
+/* Evolution requirements (an engine improvement, docs/modules/apps/game.md): a panel over the tree's left box and a
    cursor over the targets; ticks and crosses are two bars each. */
 #panel.on-player #chart-req { left: 51dp; top: 33dp; width: 294dp; height: 399dp; padding: 6dp 6dp; }
 #panel.on-player #chart-req.hidden, .chart-req-row.hidden, .chart-req-mark.hidden, #chart-detail-cursor.hidden { display: none; }
@@ -593,7 +593,7 @@
 #card-count-box { position: absolute; left: 669dp; top: 471dp; width: 162dp; height: 72dp; box-sizing: border-box; z-index: 6; }
 #card-count { position: absolute; left: 42dp; top: 15dp; font-size: 36dp; line-height: 36dp; color: #d6d6d6; }
 
-/* The City tab (a dwe addition, docs/modulos/apps/screens.md): the prosperity and the residents over a rule like the medals
+/* The City tab (a dwe addition, docs/modules/apps/screens.md): the prosperity and the residents over a rule like the medals
    chart's; a cell for each species that can join, in rows of 12 across the box, filled with the colour of its level's
    column in the evolution chart (rookies blue, champions green, ultimates brown); its 16 x 16 icon of SBOY drawn four
    times its size (64dp, sharp at every resolution's whole scale), in colour once it lives in the city and as a light

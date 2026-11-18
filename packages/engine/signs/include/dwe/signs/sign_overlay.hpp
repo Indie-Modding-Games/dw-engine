@@ -11,7 +11,7 @@
 #include <vector>
 
 // A sign overlay: the signs painted in a map's images that the engine writes again in the player's
-// language (docs/modulos/engine/signs.md). The pack file `signs/<map>.yaml` holds the signs of a
+// language (docs/modules/engine/signs.md). The pack file `signs/<map>.yaml` holds the signs of a
 // map for every language; `signs/<language>/<map>.yaml` replaces signs of the same id, adds signs
 // only that language needs and can remove some. A sign names its text by a localization key, so the
 // words live in the text tables with the rest of the translation.

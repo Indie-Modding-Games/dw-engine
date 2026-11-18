@@ -1,0 +1,495 @@
+# Audio
+
+Estado: **implementado**.
+
+Este documento dice cómo suena el juego: el módulo `packages/engine/audio` (salida al dispositivo, mezclador, voces y
+volúmenes), cómo llegan a él los efectos (WAV u Opus) y la música (MIDI + SF2), cómo los piden los scripts y qué ve un
+mod. Las citas al decomp (`dw_decomp`, `src/`, versión `us`) son como `fichero.c: función`, solo para leer el
+comportamiento, nunca para copiar código ni tablas.
+
+## 1. Alcance
+
+El módulo cubre: la salida por SDL3 o la salida nula, el mezclador, las voces, los volúmenes (maestro, de música y de
+efectos) y el límite de voces; los efectos (WAV u Opus) con la envolvente ADSR del chip; la música (secuenciador MIDI y
+sintetizador SF2) con sus transiciones; la reverberación del chip (§7.4); y las filas de volumen de las opciones en
+partida ([game.md, Volumen](../modules/apps/game.md#volumen)). Los sonidos de los menús y las órdenes `play_sound`,
+`set_bgm` y `stop_bgm` de la historia pasan por los puertos que describen §2 y §6.
+
+## 2. Módulos y dependencias
+
+```text
+apps/game ──► packages/engine/audio ──► packages/engine/platform (SDL3), packages/engine/assets, packages/engine/core
+packages/session ──► packages/engine/audio (solo la API pública: pedir sonidos y música)
+packages/game/story ──► (puerto SoundPort, declarado en packages/game/story; lo implementa packages/session)
+```
+
+- **`packages/engine/audio`** es un módulo de la capa de sistemas (`dwe_add_module(audio LAYER systems ...)`), como dice ya la
+  [visión general](overview.md) («mezcla y síntesis»). Depende de `core`, de `platform` (que enlaza SDL3) y
+  de `assets` (el tipo `assets::Sound` y `decodeOpus`). **No conoce `packages/game/` ni `apps/`**: no sabe qué es un
+  mapa, un script ni un Digimon; solo reproduce clips y secuencias en buses.
+- **El dispositivo (SDL3).** El [ADR 0003](../adr/0003-vulkan-and-sdl3.md) ya elige SDL3 para el audio. La salida SDL
+  vive en `packages/engine/audio/src` (como `rhi` usa SDL para la superficie de Vulkan) y es privada: ningún header público de
+  `audio` incluye SDL. `platform::Platform` no cambia: la salida inicia su propio subsistema
+  (`SDL_InitSubSystem(SDL_INIT_AUDIO)`, que SDL cuenta por referencias) y lo cierra al destruirse.
+- **`packages/game/*` no ve `audio`** (regla 3 de las [reglas de dependencias](dependency-rules.md): pide las cosas por la API
+  pública, y la regla 4 obliga a hacerlo por interfaces). `packages/game/story` declara un puerto (`SoundPort`: tocar un
+  sonido, poner o parar la música) como ya declara `StoryStatePort`, y `packages/session` lo implementa sobre
+  `audio::Audio`. Así el runner sigue probándose con un doble y `dwe-sim` corre con la salida nula.
+- **`packages/session`** puede usar `audio` (es un sistema). No crea el dispositivo: recibe un `audio::Audio` ya hecho.
+  `apps/game` lo crea con la salida SDL; `dwe-sim` y los tests, con la salida nula.
+- **La resolución de qué suena** (qué banco ocupa la ranura 8 en este mapa, qué pista corresponde a un combate) es
+  del juego, no de `audio`: vive en `packages/session` (o en el sistema de `packages/game/` que la necesite, por su puerto) y lee
+  los datos del paquete (`data/maps`, `data/music`, los `bank_meta.yaml` y `font_meta.yaml`).
+
+Estructura del módulo:
+
+| Fichero | Responsabilidad |
+|---|---|
+| `include/dwe/audio/audio.hpp` | `Audio`: la fachada del hilo del juego (pedir y parar voces, volúmenes, `update`) |
+| `include/dwe/audio/clip.hpp` | `Clip`: PCM de 16 bits, frecuencia, canales y bucle; `checkClip` |
+| `include/dwe/audio/voice.hpp` | `VoiceId` (hueco + generación) y `PlayRequest` (clip, bus, ganancia, panorama, tono) |
+| `include/dwe/audio/mixing.hpp` | `Bus`, `VolumeControl`, el formato de la mezcla y las guardias (`MaxVoices`, `CommandQueueCapacity`) |
+| `include/dwe/audio/output.hpp` | `MixSource`, la interfaz `Output`, `NullOutput` y `openDeviceOutput` (SDL) |
+| `src/mixer.{hpp,cpp}` | El lado del hilo de audio: aplica las órdenes, rampas de volumen, mezcla y recorte |
+| `src/voice_player.{hpp,cpp}` | Una voz: posición, remuestreo, bucle, panorama y fundido de parada |
+| `src/spsc_queue.hpp`, `src/orders.hpp` | La cola SPSC sin bloqueos y las órdenes y avisos que pasan por ella |
+| `src/sdl_output.cpp`, `src/null_output.cpp` | Las dos salidas |
+| `src/messages.hpp` | Los mensajes de log y de error del módulo |
+
+Efectos: `include/dwe/audio/effect_bank.hpp` (`EffectBank`: un banco de efectos con sus muestras; cada efecto, una
+voz por tono) y `src/envelope.{hpp,cpp}` (la envolvente ADSR del chip). En `assets`, `decodeWav` (`sound.hpp`) y
+`readSoundBank` (`sound_bank.hpp`).
+
+Música: `include/dwe/audio/sound_font.hpp` (`SoundFont`: un SF2 cargado en el sintetizador, que el hilo del juego
+mantiene vivo), `src/music_player.{hpp,cpp}` (el secuenciador y el sintetizador en el hilo de audio) y `src/tsf.cpp`
+(la única unidad que compila TinySoundFont, que entra como port propio en `tooling/vcpkg-ports/tinysoundfont`).
+
+`apps/game/src/game_audio.cpp` abre el dispositivo o, si no hay, la salida nula con un aviso, y el bucle llama a
+`Audio::update` con el tiempo de los ticks que avanzó. La sesión recibe el `audio::Audio` para sus
+ranuras (`session::SessionSound`, el `SoundPort`) y `MenuSounds` toca los sonidos de los menús.
+
+La API pública y su uso, en resumen, están en la [página del módulo](../modules/engine/audio.md).
+
+## 3. Hilos
+
+Hay dos hilos: el del juego (el bucle de `apps/game`, a 60 Hz) y el de audio (la llamada de SDL, que pide muestras
+cuando las necesita, cada pocos milisegundos).
+
+- **Regla de oro: la lógica del juego nunca lee el estado del hilo de audio.** Si una espera depende de un sonido
+  (una orden que espera a que acabe, si el original la tiene), su duración se calcula en el hilo del juego con la
+  duración del clip y el reloj del juego, no preguntando al dispositivo. Así una partida es determinista y guardable
+  igual con sonido, sin él o con la salida nula, y las rutas de autotest no dependen de la tarjeta de sonido.
+- **Del juego al audio:** cada llamada a `Audio` (tocar, parar, cambiar un volumen) escribe una orden en una cola
+  SPSC de capacidad fija, sin bloqueos ni reservas de memoria. Las órdenes de un tick se **publican juntas** al final
+  de `Audio::update()` (un solo `store` con `memory_order_release`), así el hilo de audio aplica todas las de un tick
+  en el mismo bloque y el orden de los sonidos de un tick se conserva.
+- **Del audio al juego:** una segunda cola SPSC devuelve avisos: «voz terminada» (por id). `update()` los lee.
+- **Memoria de los clips.** El hilo de audio nunca reserva ni libera memoria, nunca bloquea y nunca escribe en el log.
+  Los clips son inmutables; `Audio` guarda el `std::shared_ptr<const Clip>` de cada voz viva en el hilo del juego y el
+  hilo de audio solo usa un puntero sin propiedad. La referencia se suelta en `update()` cuando llega el aviso de que
+  la voz terminó, nunca dentro de la llamada de SDL.
+- **Ids de voz.** `Audio::play` devuelve el `VoiceId` al momento (lo reparte el hilo del juego: índice + generación),
+  así se puede parar una voz en el mismo tick en que se pidió.
+- **Cola llena.** La capacidad (`CommandQueueCapacity`, 1024 órdenes por tick) es una guardia generosa, no un límite
+  del original: si se llena, la orden se descarta y `update()` lo registra una vez por tick (aviso, no error).
+- **Volúmenes.** También son órdenes. El hilo de audio los aplica con una rampa lineal de 10 ms para que un cambio
+  brusco no haga clic.
+
+## 4. Salidas
+
+`Output` es la frontera con el dispositivo. El mezclador no sabe cuál hay detrás.
+
+| Salida | Cuándo | Qué hace |
+|---|---|---|
+| SDL3 | `dwe-game` con audio disponible | `SDL_OpenAudioDeviceStream` sobre el dispositivo por defecto, `float` estéreo a 48 kHz. La llamada de SDL pide bytes; la salida mezcla en un búfer reservado de antemano, en trozos de como mucho `MaxRenderFrames`, y los entrega con `SDL_PutAudioStreamData`. SDL convierte al formato del dispositivo y sigue al dispositivo por defecto si cambia |
+| Nula | tests, `dwe-sim`, `--check-content` y cualquier ejecución sin dispositivo | No hay hilo: `Audio::update(seconds)` hace avanzar el mezclador en el hilo del juego tantos fotogramas como tocan (48 000 × segundos, acumulando la fracción) y tira el resultado. Las voces avanzan, acaban y avisan igual que con sonido. Los tests pueden pedir el búfer mezclado para comprobarlo |
+
+- **Sin dispositivo no es un error.** Si SDL no puede abrir el audio (un contenedor sin servidor de sonido, el Xvfb de
+  las rutas, un equipo sin tarjeta), `apps/game` registra un **aviso** con el motivo y sigue con la salida nula. Las
+  rutas de autotest siguen con 0 `[error]`.
+- **Un servidor de sonido colgado no cuelga el juego** (mejora del PC). En algunos escritorios PipeWire acepta la
+  conexión y no contesta nunca: SDL se queda esperando dentro de `SDL_InitSubSystem(SDL_INIT_AUDIO)` y el juego no
+  pasaba del arranque (ni siquiera atendía `SIGTERM`, porque el bucle que lo lee no había empezado). Ahora
+  `openDeviceOutput` abre el dispositivo en un hilo propio y espera como mucho `DeviceOpenTimeout` (3 s). Si no
+  vuelve, registra un aviso, deja ese hilo atrás y el juego sigue con la salida nula, en silencio. Al cerrar, si ese
+  hilo sigue atascado (`deviceOpenStuck`), `dwe-game` termina el proceso con su código sin llamar a `SDL_Quit`, que
+  esperaría al hilo para siempre. Si el dispositivo se abre tarde, se avisa y el juego sigue en silencio hasta el
+  siguiente arranque. Para comprobarlo sin un PipeWire roto basta un socket que acepte y no conteste:
+  `PIPEWIRE_REMOTE=<socket> dwe-game ...` llega igual al campo.
+- **Backends de Linux.** El SDL3 estático de vcpkg trae de serie sin ningún backend de audio de Linux, y el juego no
+  encontraba dispositivo en el escritorio. El port superpuesto `tooling/vcpkg-ports/sdl3` añade la característica
+  `system-audio`, que `vcpkg.json` activa en Linux: compila los backends de ALSA, PulseAudio y PipeWire contra las
+  cabeceras del sistema (`libasound2-dev`, `libpulse-dev`, `libpipewire-0.3-dev`, ya en `.devcontainer/Dockerfile` y en
+  las imágenes de desarrollo) y carga sus bibliotecas al arrancar (`SDL_*_SHARED`). Un equipo con PipeWire o PulseAudio
+  suena sin configurar nada (`SDL_AUDIO_DRIVER` sin definir), y uno sin ellos sigue arrancando, en silencio y con el
+  aviso de arriba.
+- **Pausa del dispositivo.** Al minimizar o perder el foco el juego sigue como hoy (el bucle decide); la salida no se
+  pausa sola. Lo que haga el original al pausar (si la música sigue) se aplica desde el juego.
+
+## 5. Mezclador y voces
+
+- **Formato interno:** `float` estéreo a 48 kHz (la frecuencia del Opus cocinado y la que se pide al dispositivo). La
+  suma se hace en `float` y la salida se recorta a [−1, 1]. El chip del original también satura (16 bits), así que un
+  recorte duro es lo fiel; no se añade compresor.
+- **Buses:** `Music` y `Effects`, más el maestro. La ganancia de una voz es
+  `ganancia de la voz × volumen de su bus × volumen maestro`. Los volúmenes que recibe `audio` son lineales, de 0 a 1
+  (se limitan a ese rango). La curva que va del deslizador de opciones a esa ganancia es la de Q5 (`volumeGain` de
+  `apps/game/src/volume_setting.hpp`: el paso de 0 a 10 al cuadrado).
+- **Panorama:** de −1 (izquierda) a 1 (derecha), por voz. Un clip mono usa potencia constante (Q4: −3 dB por lado
+  en el centro, como TinySoundFont); uno estéreo, balance (los dos lados enteros en el centro).
+- **Remuestreo:** cada voz avanza con paso `frecuencia del clip / 48 000 × tono`, con interpolación lineal. Los
+  efectos cocinados ya vienen a 48 kHz (paso 1); los WAV del camino de desarrollo van de 2 756 a 44 100 Hz.
+- **Bucles:** una voz con bucle vuelve a `loop.start` al llegar a `loop.start + loop.length` hasta que se la para;
+  sin bucle, acaba al final del clip y avisa.
+- **Parar una voz** la baja a 0 en 5 ms antes de soltarla, para que no haga clic. (El original también la baja
+  deprisa con `SsUtAutoVol` antes de soltar la nota, y luego suena la liberación de la envolvente; aquí el fundido
+  hace ese papel, también con la envolvente, §6.4.)
+- **Límite de voces (`MaxVoices` = 256).** El original tiene 24 canales en el chip de sonido: los efectos usan solo
+  14 (del 10 al 23) y la música puede usar cualquiera, así que en escenas cargadas un efecto puede cortar otro o una
+  nota de la música (§7.3). Aquí **no** se reproduce ese límite: es de la máquina, no una regla del juego. 256 es una
+  **guardia no original**, generosa, contra un script o un mod que pidan sonidos sin parar; el disco no se acerca. Al
+  llegar al límite, la voz nueva sustituye a la **más antigua** (el original, sin prioridades, roba por turno, que es
+  lo más parecido) y se registra un aviso, una vez por tick. Está probado.
+- **Guardias del tono y la frecuencia (no originales).** Un clip suena a una frecuencia de 1 a 192 000 Hz
+  (`MaxClipSampleRate`) y una voz con un tono de 1/64 a 64 (`MinPitch`, `MaxPitch`); un panorama tiene que ser un
+  número finito. Fuera de eso `Audio::play` falla con el motivo, así una voz nunca salta más de unos cientos de
+  fotogramas de su clip por fotograma de salida, y la vuelta del bucle se calcula de una vez (`fmod`). Si aun así
+  llega un NaN a la mezcla, la salida lo convierte en silencio. Están probadas.
+- **Ningún fin se pierde.** El mezclador solo toma una orden si cabe el aviso de fin que puede causar (la voz que
+  sustituye); si no cabe, la orden espera a la siguiente pasada. Una voz acabada cuyo aviso no cupo lo reintenta en
+  cada pasada, y su hueco no se reutiliza antes.
+- **Coste.** 256 voces con interpolación lineal son unos pocos millones de operaciones por segundo: muy por debajo de
+  un núcleo. El sintetizador tiene su propio límite de voces (§6.3).
+
+## 6. Assets
+
+`audio` no lee el sistema de ficheros: recibe clips, el SoundFont y la secuencia ya leídos. Quien
+los carga (la sesión, con el VFS) usa lo que ya produce `dwx` ([Audio](../formats/audio.md),
+[Opus](../formats/opus.md)); así se construyen ya los paquetes.
+
+### 6.1 Lo que hay en el paquete base
+
+| Asset | Extraído (`dwx extract`) | Cocinado (`dwx cook`, `.pak`) |
+|---|---|---|
+| Muestras de efectos: `sound/<banco>/sample_<n>` (`ss`, `sl`, `sb`) y `sound/<banco>/<entrada>/sample_<n>` (`esall`, `vball`, `vlall`) | WAV PCM 16 bits mono, a la frecuencia de su tecla, con `smpl` si tiene bucle | Ogg Opus a 48 kHz con `LOOPSTART`, `LOOPLENGTH` y `DWE_UNITY_NOTE`; **mismo id** |
+| Bancos: `bank.sf2` y `bank_meta.yaml` | SF2 sin pérdida + YAML (programas, tonos, envolventes, `sounds`: valor → programa, nota y tonos) | Copiados tal cual |
+| Música: `music/<fuente>/font.sf2`, `track_<nn>.mid`, `font_meta.yaml` | SF2 + SMF de formato 0 con marcadores `loopStart`/`loopEnd` (meta 06) + YAML (`plays: forever` u `once`, la cuenta de vueltas) | Copiados tal cual |
+| `data/music.yaml` | `bgm_tracks` (la lista de la gramola, con la `font` y la `track` de cada canción de `MAIN_D_801303B8`), `enemy_music_mapping` y `field_overrides` (los pares fijos de los modos de la variable 245) y `battle` (la fuente del combate y sus pistas) | Igual |
+| `data/maps` | `sound_id` de cada mapa (el trozo de `ESALL` del mapa) | Igual |
+
+Los ids de asset no llevan extensión, así que la misma referencia (`sound/ss/sample_002`) da el WAV en el camino de
+desarrollo y el Opus en el paquete cocinado. `assets` tiene un lector de WAV PCM (`decodeWav`) que
+devuelve el mismo `assets::Sound` que `decodeOpus`, con su bucle y su nota.
+
+### 6.2 Efectos
+
+Un efecto del original es una **nota** de un programa de un banco: `playSound(ranura, v)` toca la nota 60 + `v % 16`
+del programa `v / 16` (ranuras 0, 1 y 8) o la nota `v` del programa 0 (ranuras 3–7), y suenan todos los tonos cuyo
+`max` es esa nota. `bank_meta.yaml` ya lo resuelve en `sounds` (valor → programa, nota, tonos). En el disco US hay
+661 sonidos; 15 tienen más de un tono y 19 muestras tienen bucle.
+
+Cada tono que suena es una voz de `audio` con su muestra, su volumen (tono × programa × banco), su panorama, su tono
+(1 salvo que la muestra la comparta un tono con otra raíz: la razón sale del YAML) y la envolvente `adsr` del tono,
+con la misma aproximación que documenta [Audio](../formats/audio.md#soundfont). La alternativa (tocar el efecto como
+nota del `bank.sf2` con el sintetizador) es la pregunta Q2.
+
+Qué banco ocupa cada ranura lo decide el juego, como en el original: 0 `ss`, 1 `sl`, 3 el `vlall` del compañero, 4–7
+los `vball` de los Digimon cargados, 8 el `esall` del mapa (`sound_id`) o `sb` en los torneos y el modo VS. La tabla
+tipo → entrada de `VLALL`/`VBALL` sale de `used_by` de cada `bank_meta.yaml` (banco → tipos); ver
+la pregunta Q3.
+
+### 6.3 Música
+
+- **Secuenciador propio** (en `audio`): lee el SMF de formato 0, aplica el tempo, los cambios de programa, el pitch
+  bend con su rango (RPN 0) y los marcadores `loopStart`/`loopEnd`; `plays: once` para al final. Es pequeño, sin
+  dependencias y determinista, y los marcadores de bucle no los entiende ningún reproductor MIDI genérico.
+- **Sintetizador SF2:** una biblioteca con **licencia permisiva**, y solo una. La propuesta es
+  [TinySoundFont](https://github.com/schellingb/TinySoundFont) (`tsf.h`, MIT, un header, sin dependencias): lee
+  cualquier SF2 (también los de un mod o un remaster), mezcla a `float` y deja fijar la frecuencia y el número de
+  voces. No está en el baseline de vcpkg (se comprobó: tampoco hay otro port permisivo; `fluidsynth` es LGPL‑2.1 y
+  queda descartado), así que entra como **port de overlay** del repositorio fijado a un commit y su SHA‑512, con su
+  licencia en `share/`. Cómo entra es la pregunta Q1. No hay que aceptar ninguna licencia ni ningún paso con clic.
+- El sintetizador corre **dentro del hilo de audio** como una fuente más del bus `Music`, con su propio límite de
+  voces (guardia no original de 128). El secuenciador avanza por fotogramas de audio, así que el tempo no depende de los fotogramas del
+  juego (el original tampoco: su secuenciador va a 240 ticks por segundo, aparte de los 20 fotogramas del juego).
+- Cargar un SoundFont (el de una fuente de música ocupa hasta unos cientos de KB) se hace en el hilo del juego; el
+  cambio de fuente pasa al hilo de audio como un puntero, y la fuente vieja se libera en `update()` (§3).
+
+### 6.4 Los efectos en detalle
+
+**`assets`.**
+- `decodeWav(bytes) → Result<Sound>`: PCM de 16 bits, mono o estéreo, con el bucle del bloque `smpl` y la nota raíz
+  (`dwx` escribe así `sample_<n>.wav`). Rechaza con el motivo lo demás (otro formato, cabeceras que no cuadran,
+  más de `MaxSoundFrames`). Es el camino de desarrollo; los paquetes cocinados traen Opus con el mismo id.
+- `SoundBank` y `readSoundBank(yaml) → Result<SoundBank>`: de `bank_meta.yaml` lee `vab.master_volume`, los
+  `programs` (volumen, panorama y sus tonos: `min`/`max`, raíz, `shift`, volumen, panorama, muestra, `adsr`), las
+  `samples` (id de fichero y frecuencia de origen) y `sounds` (valor → programa, nota, tonos). Valida rangos e
+  índices al leer; un `bank_meta.yaml` roto falla al cargar el banco, no al tocar el sonido.
+
+**`audio`.**
+- **Envolvente** (`src/envelope.{hpp,cpp}`): la del chip a partir de los dos registros `adsr` del tono (ataque
+  lineal o exponencial, caída exponencial hasta el nivel de sostén, sostén que sube o baja), contada en ticks de
+  44,1 kHz y avanzada por fotogramas de la mezcla, sin asignar memoria. Es la documentación pública del chip, no el
+  código del juego. Una voz con bucle que el sostén baja hasta 0 acaba sola. No hay fase de liberación: parar una
+  voz sigue siendo el fundido de 5 ms, como la bajada rápida del original (§7.2).
+- `PlayRequest` gana un campo opcional `envelope` (los dos registros); sin él la voz suena sin envolvente.
+- **`EffectBank`** (`include/dwe/audio/effect_bank.hpp`): un `SoundBank` más sus muestras (`EffectSample`: el
+  clip y la frecuencia a la que se codificó, cargados en el hilo del juego). `play(Audio&, sonido) →
+  Result<vector<VoiceId>>` lanza una voz por tono con ganancia = (vol. tono/127)·(vol. programa/127)·(vol.
+  banco/127), panorama = ((pan tono − 64) + (pan programa − 64))/64 recortado a ±1, la envolvente del tono y
+  tono = frecuencia del chip / frecuencia de origen de la muestra (vale igual para WAV y Opus). La frecuencia del
+  chip es 44100·2^(pasos/192), con pasos = (nota − raíz)·16 + (shift >> 3) en dieciseisavos de semitono (`shift`
+  sube el tono), recortada al techo del registro de tono, 0x3FFF/0x1000·44100. Así lo calcula el original:
+  `note2pitch2` de libsnd (`asm/main/psyq/libsnd.s:8717`, US `0x800D0C7C`), al que llama `SsUtKeyOnV` desde
+  `sound.c:621`. La frecuencia de origen es la de la cabecera de la muestra; la de `bank_meta` solo cuenta si la
+  cabecera no la trae, y si no coinciden se avisa una vez al cargar. `play` comprueba todas las voces (y que
+  quepan sus órdenes) antes de lanzar ninguna (`Audio::playAll`): un efecto suena entero o no suena. No hay
+  `stop` propio: cada voz se para con `Audio::stop`.
+
+**Juego.**
+- `packages/game/story` declara `SoundPort` (`playSound(slot, value)`), como `StoryStatePort`; el runner no sabe de bancos.
+- `packages/session` lo implementa: ranura 0 → `sound/ss`, 1 → `sound/sl`, 8 → `sound/esall/<sound_id del mapa>`, o
+  `sound/sb` desde que empieza un combate (`btl.c: loadBattleData` → `sound_async.c: loadSB`, `startBattleBank`). Al
+  acabar, solo una victoria vuelve a cargar el del mapa, también encima del de una escena o rutina
+  (`battle_main.c: BTL_handleVictorySequence` → `loadMapSounds2(getMapSoundId)`; medido: `ACTIVE_MAP_SOUND_ID` vale -1
+  en combate, `11_battle_agumon`, y 0, el banco de mayo00, en el cuadro final tras ganar, `13_battle_end_box`); tras huir o perder el original no
+  recarga nada y `sound/sb` sigue en la ranura 8 hasta que un mapa o una escena cargan otro (`endBattleBank(won)`;
+  los combates de torneo vuelven al banco de la arena, `std_setup.c: loadMapSounds(0x10)`). El mapa en que arranca o se carga la partida también da su banco (`attachField`). Cada banco se carga la primera vez que su ranura lo pide, y el del mapa
+  anterior se suelta al cambiar de mapa; un banco que no carga deja su ranura en silencio con un solo aviso. Las ranuras 3–7 no
+  las piden los scripts del disco (§10, Q3), sino los clips (`anim.c: tickAnimation`, instrucción 0x4000): 3 y 4 son
+  los bancos de la especie del compañero (`sound.c: loadPartnerSounds`: la entrada de `VLALL` de su tipo, o la 15
+  fuera de 1–65, y la de `VBALL`), que siguen a la especie actual (`attachPartner`; el original los recarga al
+  empezar, al evolucionar, `evl.c`, y al renacer, `dooa.c: loadVLALL`), y 5–7 los `VBALL` de los enemigos del último
+  combate (`btl.c: loadBattleData`: el enemigo i en la ranura 4 + i, `useEnemyBanks`), que siguen ahí tras él; la
+  rutina 51 pone en la 5 el del jefe final (`readVBALLSection(5, 0x73)`, `useSpeciesBank` por número de especie). La
+  tabla tipo → entrada sale, como se decidió en Q3, de `used_by.types` de cada `bank_meta.yaml` (y `used_by.fallback`),
+  leída la primera vez que se pide una de esas ranuras.
+- `SoundPort` también tiene `playHeldSound(slot, value)` → asa y `stopHeldSound(asa)` (`sound.c: playSound2` y
+  `thunkStopSoundMask`); `SessionSound` guarda las voces de cada asa. Por defecto el puerto lo toca como `playSound` y no
+  para nada.
+- **Combate:** los golpes y técnicas suenan desde sus scripts de efecto (`battle_effect.c: BTL_playEFESound`):
+  `session::BattleEffects` carga `effect/<técnica>/` la primera vez que se usa, lo arranca con `AttackStarted` y lo
+  avanza un paso por fotograma de combate con `game::battle::EffectRunner` (ver [battle](../modules/game/battle.md));
+  sus `play_sound` van a la ranura 8 y los ids 0x12 y 0x20–0x22 como sonido guardado, que se para al acabar su
+  sub-efecto. En el log: `[port:battle] BTL_startEFE ... move=` y `[port:audio] BTL_playEFESound ... move= sound=`.
+- **Menús:** `ui::Ui` informa de lo que pasó al navegar con el teclado o el mando (`takeCues()`: mover, confirmar,
+  cancelar; los clics del ratón no dan aviso), sin saber de sonido, y como el original: `tickMenuInput`
+  (`main_menu.c:4664`) toca el sonido 2 de la ranura 0 solo si el cursor se mueve (en el borde calla), el 3 al
+  confirmar y el 4 al cancelar, y abrir el menú (`tickMainMenu`, `main_menu.c:3319`) no suena. `MenuSounds`
+  (`apps/game/src/game_audio.cpp`) lee `ui/ui_sounds.yaml` y carga sus bancos al arrancar, y toca el sonido de cada
+  aviso. Un aviso que falta o no vale, o cuyo banco no carga, queda en silencio con un aviso en el log al arrancar
+  (Q12). El zumbido de rechazo del original (sonido 11, `script_textbox.c:260`, `script_common.c:898`: elecciones de
+  diálogo y tienda) llega con esos menús; el combate del original no suena al rechazar una orden, así que el nuestro
+  tampoco.
+- **Historia:** `StoryLuaHost::publishApi` recibe el `SoundPort` y publica `story.play_sound(ranura,
+  sonido)`, la orden 0x5A del listado: como `scriptInstruction5Ato5F` (`script_interp.c:1550`), pasa los dos
+  operandos a las ranuras (`playSound`, `sound.c:641`, que `SessionSound` ya sigue) y sigue sin esperar; un
+  sonido que no suena no rompe el script. Es una función nueva de la API de Lua, así que `LuaApiVersion` subió de 1.2.0 a **1.3.0**, junto con `set_bgm` y `stop_bgm` (§6.5).
+
+### 6.5 La música del mapa en detalle
+
+La música que pone el script del mapa. El combate, el cambio de día y noche con la hora (`updateBGM`, desde
+`tickGameClock`) y los modos 2–10 están en §6.6; la gramola va con la tienda de música.
+
+| Función del original | Dónde vive ahora |
+|---|---|
+| `scriptInstruction5Ato5F` (`script_interp.c:1569`, 0x5D y 0x5E) | `packages/session/src/story_music_api.cpp`: `story.set_bgm(fuente)`, `story.stop_bgm(operando)` |
+| `playBGM` (`script_interp.c:2587`), `resetBGM` (`:2377`), `handleMusicOverride` (`:1584`, modos 0 y 1) | `SessionMusic` (`packages/session`), detrás del puerto `MusicPort` de `packages/game/story` |
+| `playMusic` (`sound.c:753`), `stopBGM` (`:779`), `loadMusicFont` (`:738`), `seqOpen` (`:477`) | `SessionMusic::playMusic`, `stopBgm` y `load` |
+| `seqPlay` (`sound.c:488`) y el secuenciador de la librería de sonido | `audio::Audio::playMusic` → `MusicPlayer` (hilo de audio) con TinySoundFont |
+| El SMF y `font_meta.yaml` | `assets::readSong`, `assets::readMusicFont` (`packages/engine/assets/src/music.cpp`) |
+
+- **Como el original:** `set_bgm` reinicia la canción aunque sea la misma (`playBGM` llama a `stopBGM` antes de
+  `playMusic`); `0xFF` para la música; una pista que la fuente no tiene suena la 0; la fuente se queda cargada entre
+  canciones; volumen de secuencia 0x50 de 0x7F; `plays: once` para al final y deja sonar las colas; el resto vuelve
+  del marcador `loopEnd` (o del final) al `loopStart` (o al principio). Los cortes son secos. Cada cambio de mapa
+  corta la música (`set_script` llama a `resetBGM`) y la cabecera del mapa la vuelve a poner desde el principio; la
+  cabecera que no pone canción deja el mapa en silencio.
+- **Mejora (opción `continuous_music`, encendida por defecto):** al cambiar de mapa, la canción que suena sigue si la
+  cabecera del mapa nuevo pide la misma (fuente y pista); si pide otra o ninguna, cambia en el acto
+  (`SessionMusic::enterMap`, `mapHeadDone`).
+- **Diferencias con el original:** el volumen de canal (CC 7) se aplica lineal, como la librería de sonido, no con la
+  curva cúbica del sintetizador. Modos 2–10 de la variable 245: §6.6.
+- **Hilos:** el SoundFont se carga en el hilo del juego (`audio::SoundFont`, con las voces y los 16 canales ya
+  reservados, para que el hilo de audio no reserve memoria); la orden de música lleva el puntero, y `Audio` guarda la
+  fuente y la canción hasta que el mezclador acepta una orden de música posterior (`musicTaken`).
+- `TinySoundFont` entra como port de overlay (`tooling/vcpkg-ports/tinysoundfont`, commit `853a0a17`, MIT) con
+  `VCPKG_OVERLAY_PORTS` en los presets. `SoundFont::load` le da los bytes con su propio `tsf_stream` y `tsf_load`, no
+  con `tsf_load_memory`: esta convierte funciones de otro tipo al de las del stream, y la comprobación `function` de
+  UBSan lo avisa en cada lectura (preset `ci`).
+- **Quién lo conecta:** `StoryAdapter` publica `publishStoryMusic` en la VM de la historia (en lugar de los
+  marcadores mudos de antes) y, en cada tick, pasa las órdenes a `GameSession::music()` y `sound()`; una sesión muda
+  (puerto nulo) no suena.
+
+### 6.6 Modos, día y noche, combate en detalle
+
+| Función del original | Dónde vive ahora |
+|---|---|
+| `handleMusicOverride` (`script_interp.c:1584`, modos 2–10) | `SessionMusic::overridden` con `field_overrides` de `data/music.yaml` |
+| `updateBGM` (`script_interp.c:2607`), llamada al final de `tickGameClock` (`clock.c:171`) | `SessionMusic::updateBgm`, en cada tick de `GameSession` mientras corre el tiempo del juego |
+| `START_BATTLE` (`script_interp.c:1913`) y `loadBattleData` (`btl.c:346`) | `SessionMusic::startBattle`, desde `BattleScreen::start` (`apps/game`) |
+| `stopBGM` de `BTL_handleVictorySequence` y `BTL_deinitializeCombat` (`battle_main.c:887`, `:814`) | `SessionMusic::endBattle`, al acabar el combate |
+| `playBGM(ACTIVE_BGM_FONT)` tras ganar (`tamer.c:862`) | `SessionMusic::leaveBattle`, al cerrar el cuadro del final |
+
+- **De dónde salen los números (Q7):** `dwx` los lee del código del ejecutable del usuario
+  (`packages/formats/src/exe/music_code.cpp`). Los pares de los modos salen de ejecutar el `switch` de `handleMusicOverride`
+  con `evaluateConstantSwitch`, que ahora sabe leer lo que una función guarda por los punteros que le pasan
+  (`ValueLocation::pointedBy`, la instrucción `sb`) y empezar tras una llamada con el valor en otro registro. Los del
+  combate son inmediatos de instrucciones concretas de `loadBattleData` (`readCodeConstant`). Las direcciones están
+  en el layout de la versión US; en las otras versiones las claves no se escriben.
+- **Contrato** (aditivo): `data/music.yaml` gana `field_overrides` (`mode`, `font`, `track`) y
+  `battle` (`font`, `boss`, `boss_track`, `scripted_track`, `default_track`, `first_enemy_type`, `end_enemy_type`);
+  el esquema `music` las describe (opcionales) y se subió `ExtractorVersion` por ello. Un mod puede cambiar la canción de un
+  modo o la música del combate sustituyendo `data/music.yaml`.
+- **Como el original:** `updateBGM` solo reinicia la canción si cambia la fuente o la variante (al pasar las 6:00 y
+  las 21:00, o si un script cambia la variable 245); durante el combate no actúa. El combate para la música del
+  campo y toca la fuente `battle.font`: `boss_track` si el primer enemigo es `boss`, `scripted_track` en un combate
+  con guion, `enemy_music_mapping[tipo − first_enemy_type]` para los tipos de `first_enemy_type` a
+  `end_enemy_type − 1` y `default_track` para el resto. Al acabar para la música; si se gana, al volver al campo la
+  música del mapa empieza desde el principio; tras huir o perder sigue parada hasta que un script la pone.
+- **Diferencias con el original:** el original mira el tipo del primer enemigo para el jefe y el de la entidad que
+  empezó el combate para el resto; aquí los dos son el primer enemigo de la petición. Un modo fuera de 0–10 deja la
+  variante sin escribir en el original; aquí suena la canción 0. Sin `data/music.yaml` (o sin sus claves nuevas) los
+  modos 2–10 tocan la canción 0 de la fuente pedida y el combate queda en silencio, con un aviso.
+- La fanfarria de victoria es un efecto de la ranura 0: `BattleScreen` toca el 0x15 al ganar y el 0x18 (las poses de
+  victoria) 0x29 fotogramas de combate después (`battle_main.c:889/904`), y la caja del final pide con
+  `battle_end_count` el 0x16 por cada punto y cada bit contados y con `battle_end_counted` el 0x17 cuando los bits ya
+  están sumados, también al saltar la cuenta (`battle_ui.c:438/448/609`). Las poses no se dibujan: la caja abre al
+  ganar, como antes.
+
+## 7. Fidelidad: lo que oye el jugador
+
+Lo que sigue sale del decomp (`main/sound.c`, `main/script_interp.c`, `main/btl.c`, `btl/battle_main.c`,
+`main/clock.c`, `shop/script_menu.c`). El juego corre a 20 fotogramas por segundo; el secuenciador del original, a 240
+ticks por segundo. Lo que es regla del juego queda igual en el ruleset `original`; lo que es de la máquina, no.
+
+### 7.1 Música
+
+| Comportamiento del original | Localizador | Aquí |
+|---|---|---|
+| Una pista es un par (fuente, pista): fuentes 1–0x21; una fuente fuera de rango se ignora; una pista más allá de las de la fuente toca la 0 | `sound.c: playMusic`, `seqOpen` | Igual, con un aviso en el log en vez de silencio |
+| Solo suena una secuencia a la vez | `sound.c: initializeMusic` | Igual (es lo que ve el jugador) |
+| **Todos los cambios son cortes secos**: parar y empezar la nueva desde el principio. No hay fundidos ni fundidos cruzados en ningún sitio | `sound.c: seqStop`, `script_interp.c: playBGM` | Igual. Un fundido sería una mejora opcional, desactivada por defecto (pregunta Q8) |
+| Cambiar de fuente lee el CD y congela el juego un momento | `sound.c: loadMusicFont` | **No** se reproduce (es de la máquina): la fuente se carga sin parar el juego |
+| Volver a pedir la pista que ya suena la reinicia, porque cada camino del juego para la música antes; solo el cambio de día y noche (`updateBGM`) comprueba si la variante cambia | `script_interp.c: playBGM`, `forceUpdateBGM`, `updateBGM` | Igual |
+| La música del campo la pone el script del mapa (`set_bgm` con la fuente: el operando que el listado llama `track` es la fuente, 1–28 en el disco); la variante sale de la variable 245: modo 0 día (6–20 h) o noche, modo 1 siempre la 0, modos 2–10 pares fijos | `script_interp.c: handleMusicOverride` | Igual, en el juego; los pares fijos son datos del ejecutable (pregunta Q7) |
+| Al entrar en un mapa la música se corta y la cabecera del mapa (MAPHEAD) pone su canción desde el principio, aunque sea la misma que sonaba; un mapa cuya cabecera no pone canción (tunn10, tunn07_2/_3, tunn08_2/_3) queda en silencio. No hay fundidos: los cortes son secos | `map.c: changeMap` → `runMapHeadScript`; su `set_script` (`script_interp.c: scriptInstructionFBtoFF`) llama a `resetBGM`, y `playBGM` llama a `stopBGM` (deja `CURRENT_SEQ_TRACK` en -1) antes de `playMusic`, así que la comprobación «misma fuente y pista» de `playMusic` nunca evita el reinicio | Igual: `StoryAdapter::runMapHead` rodea la cabecera con `MusicPort::enterMap` y `mapHeadDone`; `SessionMusic::enterMap` hace el `resetBGM`, así que una cabecera sin canción deja el mapa en silencio (antes seguía la del mapa anterior). Medido en el original (2026-11-03, `14_native_forest_after_battle`): mayo00 → trai00 (fuente 1 los dos) da `resetBGM` desde `scriptInstructionFBtoFF`, `playBGM` → `stopBGM` → `playMusic` → `seqPlay` una vez y ningún `loadMusicFont` (la canción vuelve a empezar con la fuente ya cargada); mayo00 → twnb01 da lo mismo con `loadMusicFont` (fuente 28). Tests: `every map plays its song from the start, as the original`, `a map whose head picks no song is silent` (`session_music_tests.cpp`) |
+| Qué fuente pone cada cabecera: 1 el bosque del principio (mayo00–mayo11, trai00), 28 la ciudad (twna*, twnb*, room10–12), y así el resto (`set_bgm` de MAPHEAD). La fuente 1 es sonido de ambiente, no melodía: su pista 0 (día) tiene 53 notas sueltas en 44278 ticks (unos 46 s en bucle) y la 1 (noche) otras tantas; la gramola la llama «Non-bewildering forest theme» | `shop/script_menu.c: MAIN_D_801303B8` (fuente 1 pistas 0 y 1 = las dos primeras canciones), `sound.c: loadMusicFont` (entrada `fuente − 1` de `FAALL`); medido: en mayo00 `ACTIVE_BGM_FONT` = 1 y `CURRENT_SEQ_FONT` = 1 | Igual: dwx saca `music/001` de la entrada 0 de `FAALL` (los 75 eventos de la pista 0 son esas 53 notas más los controles); renderizada con su SF2 suena (RMS 0,11 frente a 0,20 de la fuente 28). Que «no suene» al andar por el bosque viene del reinicio en cada mapa de un ambiente con pocas notas (fila anterior); la opción `continuous_music` lo evita (fila siguiente) |
+| Música continua: si el mapa nuevo usa la canción que ya suena (misma fuente y misma pista de día o de noche), sigue sin reiniciarse; si usa otra, corta y pone la nueva desde el principio, que luego sigue por todos los mapas que la comparten | El original no lo hace (fila anterior) | Mejora (opción `continuous_music`, menú de pausa y `settings.yaml`, encendida por defecto): `SessionMusic::setContinuousMusic`; en `enterMap` la canción sigue mientras corre la cabecera y su `set_bgm` la deja seguir si es la misma. Un `set_bgm` de un guion fuera del cambio de mapa la reinicia, como el original. Tests: `continuous music lets the song of the maps that share it go on and changes it once`, `continuous music changes the song when the hour picks the night one`, `a script's set_bgm outside a map change plays the song from its start` |
+| Al pasar las 6:00 y las 21:00 la música corta a la otra variante desde el principio | `clock.c: tickGameClock` → `updateBGM` | Igual |
+| Cambiar de mapa no toca la música; la toca el script; `set_script` (0xFB) la para | `map.c: changeMap`, `script_interp.c: scriptInstructionFBtoFF` | Igual |
+| Combate: `start_battle` para la música; el combate toca la fuente 0x21: pista 3 contra el jefe final, 0 en los combates con guion, `enemy_music_mapping` para los tipos 0x43–0x6F y 1 para los demás | `script_interp.c` (`START_BATTLE`), `btl.c: loadBattleData` | Igual (§6.6), con los números de `data/music.yaml` |
+| Victoria: para música y efectos y suena la fanfarria, que es un **efecto** (SS 0x15); al volver al campo la música del mapa empieza **desde el principio** (no se reanuda) | `battle_main.c: BTL_handleVictorySequence`, `tamer.c: startBattle` | Igual |
+| No se pausa ni se reanuda nunca una secuencia | (no hay `SsSeqPause`) | Igual: la música del campo no se reanuda tras un combate |
+| Bucles: los marcadores NRPN de la secuencia (en el MIDI, `loopStart`/`loopEnd`); las pistas de torneo de la fuente 0x1D (salvo la 1) y de las 0x1E–0x20 (salvo la 2) suenan una vez; el resto, sin fin | `sound.c: seqPlay`; la librería de sonido para los marcadores | Igual: `plays` de `font_meta.yaml` y los marcadores |
+| Volumen de la secuencia fijo en 0x50/0x7F (≈ 63 %); el maestro, al máximo | `sound.c: seqPlay`, `initializeMusic` | Igual, como ganancia del bus de música **antes** del volumen del jugador: con los deslizadores al máximo suena como el original |
+| La gramola toca (fuente, pista) al confirmar, sin cambiar la música activa, y al salir vuelve la del mapa desde el principio | `script_menu.c: tickJukeboxMenu`, `openJukebox` | Igual: `session::Jukebox` con `SessionMusic::playSong` y `replayActive`; la fuente y la pista de cada canción, en `bgm_tracks` de `data/music.yaml` |
+| La portada (la pantalla de «Pulsa Start» y el menú principal) no tiene música: la partida acaba con `cleanupGame` y `finalizeMusic`, que paran su canción antes de la película del final y de volver a la portada | `main.c: main`, `runLandingScreen`, `runMainMenu` | Igual: la canción del juego para cuando el juego se desmonta (`SessionMusic` la para al destruirse), así que «Volver a la portada», el final y una carga fallida dejan la portada en silencio; cargar una partida desde la portada pone la canción de su mapa desde el principio. Test: `the game's song stops when the game ends, so the title screen is silent` |
+
+### 7.2 Efectos
+
+| Comportamiento del original | Localizador | Aquí |
+|---|---|---|
+| Un efecto es una nota de un programa del banco de su ranura; suenan todos los tonos del programa cuyo `max` es la nota, cada uno en su voz | `sound.c: playSound`, `startSound` | Igual (§6.2) |
+| Siempre a volumen máximo y centrado: sin volumen ni panorama por llamada y **sin posición 3D** (la distancia no atenúa) | `sound.c: startSound` | Igual: el volumen y el panorama son los del tono y el programa. Sonido posicional sería una mejora opcional (no hecha) |
+| Volver a pedir un efecto que suena **no** lo reinicia: suena otra vez encima | `sound.c: playSound` | Igual |
+| Parar un efecto: bajada rápida del volumen y suelta la nota | `sound.c: stopSoundMask` | Igual (§5) |
+| Algunos efectos de combate y de minijuegos suenan en bucle hasta que su dueño los para | `battle_effect.c: BTL_playEFESound` | La API lo permite (voz con bucle + parar por id); cada sistema lo usa en su paquete. El fallo de `BTL_stopEFESounds` (solo para la primera ranura) no se copia: `EffectRunner::stopAll` las para todas |
+| Las órdenes de script de sonido no esperan: `play_sound` dispara y sigue; `set_bgm(0xFF)` y `stop_bgm` paran la música | `script_interp.c: scriptInstruction5Ato5F` | Igual. Las esperas de carga del banco del mapa (rutinas 0x28, 0x35) acaban en el acto: son del runner de la historia |
+| Los gritos de los Digimon van en las animaciones (instrucción de animación con banco y sonido; solo si la entidad está en pantalla) | `anim.c` | Con su sistema (pregunta Q6) |
+
+### 7.3 Lo que es de la máquina y no se reproduce
+
+- **14 voces para efectos y 24 en total, compartidas con la música**, robando por turno: en el original un efecto
+  puede cortar otro o una nota de la música en escenas muy cargadas. Aquí la música y los efectos no compiten y el
+  límite es la guardia de §5 (pregunta Q9).
+- **La congelación al cargar una fuente** desde el CD.
+- **La interpolación del chip** (gaussiana de 4 puntos): la de aquí es lineal. Con los Opus cocinados a 48 kHz casi no
+  se nota; con los WAV del camino de desarrollo a 2–11 kHz, sí un poco.
+
+### 7.4 Reverberación
+
+El original enciende la reverberación del chip al arrancar y no la cambia: modo `STUDIO_B`, profundidad 0x7000
+(≈ 88 %), en las voces 0–22 (`sound.c: initializeMusic`), y cada tono decide si la usa (bit 2 de `mode`, que el SF2 ya
+lleva como `reverbEffectsSend`). Es parte de cómo suena el juego.
+
+**Implementación.** `ChipReverb` (`packages/engine/audio/src/chip_reverb.*`) sigue la descripción pública de los
+registros y la fórmula del chip (no el decomp): el reverberador estéreo de Schroeder a 22 050 Hz sobre un anillo de
+muestras de 16 bits del tamaño del área de trabajo del preset (0x4840 bytes), con las reflexiones del mismo lado y
+del otro, los cuatro peines, los dos filtros pasa todo y la profundidad 0x7000 de salida, y los 32 registros del
+preset «Studio Medium» (el `STUDIO_B` de la biblioteca). Lo que escribe en el anillo se satura y redondea a 16 bits,
+como el chip, así la cola acaba en silencio o en un ciclo de los últimos bits, nunca en una cola de coma flotante que
+no termina.
+
+- **Envío por voz.** `PlayRequest::reverbSend` (0 a 1): `EffectBank` pone 1 a los tonos con el bit 2 de `mode`
+  (`bank_meta.yaml`, que ahora se lee como `SoundBankTone::mode`). En la música, el port de TinySoundFont del
+  repositorio guarda el generador `reverbEffectsSend` de cada zona (el sintetizador lo leía y lo tiraba) y el
+  `MusicPlayer` mezcla cada voz por separado (`renderSynth`) para mandar al envío las que lo tienen.
+- **Dónde se suma.** El envío se toma después de la ganancia del bus (bajar la música baja también su eco) y la salida
+  de la reverberación se suma a la mezcla antes del recorte, como la del chip.
+- **Lo que es aproximado.** El paso de los 48 kHz del mezclador a los 22 050 Hz del chip y la vuelta: un pasa bajos de
+  dos polos a 10 kHz y pasos lineales, en vez del filtro de 39 coeficientes del chip. La voz 23 del chip queda fuera
+  de la reverberación en el original; aquí las voces no son canales del chip (§7.3) y no se reproduce.
+- **Opción.** «Reverberación» en la pestaña de sonido (`reverb` en `settings.yaml`, `Audio::setReverb`), encendida
+  por defecto porque así suena el original; apagada, todo suena seco y la cola se corta al momento. Cambia la mezcla
+  lo bastante como para que alguien la prefiera sin ella.
+- **Tests:** `reverb_tests.cpp` (silencio, primer eco a los 884 ticks del preset en los dos lados, la cola que se
+  apaga hasta el silencio, borrar, solo las voces con envío dejan cola, encendida al empezar),
+  `effect_bank_tests.cpp` y `sound_bank_tests.cpp` (el bit de `mode`), `volume_setting_tests.cpp` (la fila de
+  opciones aplica y guarda).
+- **Medida contra el original:** no hay forma de grabar el audio de DuckStation desde el MCP, y los registros del chip
+  (1F801DC0h…) no se pueden leer con él (solo la RAM principal); la configuración del original sale de
+  `initializeMusic` en el decomp, y los valores del preset, de la documentación pública.
+
+## 8. Qué ve un mod
+
+| Superficie | Qué ve un mod | Contrato |
+|---|---|---|
+| Assets de sonido y música (`sound/**`, `music/**`, sus `*_meta.yaml`, `data/music.yaml`) | Los escribe `dwx`; esquemas `sound_bank` y `music`. Un mod que sustituye un `sample_<n>`, un `font.sf2` o un `track_<nn>.mid` por id se oye | Ninguno |
+| `field_overrides` y `battle` de `data/music.yaml` | Los escribe `dwx` (§6.6); un mod cambia la canción de un modo o la del combate | Claves nuevas del esquema `music` (aditivo) |
+| Formato cocinado (Opus, SF2 y MIDI copiados) | ADR 0017 | Ninguno |
+| `story.play_sound(ranura, sonido)` | Publicada sobre el `SoundPort` | Aditivo; `LuaApiVersion` 1.3.0 |
+| `story.set_bgm(fuente)`, `story.stop_bgm(operando)` | Publicadas sobre el `MusicPort` (§6.5) | Aditivo; la misma 1.3.0 |
+| Qué sonido toca cada aviso de los menús | Un documento del paquete `game` (`ui/ui_sounds.yaml`: `cursor`, `confirm`, `cancel` → `{bank, sound}`) con su esquema | Aditivo |
+| Volúmenes del jugador | Ajustes del usuario, no del paquete; un mod no los ve | Ninguno |
+| Una API de sonido general para mods (`sound.play("sound/...")` por id) | No se publica; va a la fase 5 | — |
+
+Internos (sin contrato): todo `packages/engine/audio` (sus clases, la cola, las salidas, los límites), el puerto `SoundPort` de
+`packages/game/story` y la resolución de ranuras de la sesión.
+
+## 9. Tests
+
+| Área | Qué se prueba (sin dispositivo, con la salida nula) |
+|---|---|
+| 1 | Mezcla: una voz de un clip conocido sale con su ganancia y su panorama; dos voces se suman; el recorte a ±1. Volúmenes: maestro × bus × voz, el límite a [0, 1], la rampa sin saltos. Voces: acaban y avisan, el bucle vuelve, parar baja a 0. Límite de voces: la voz 257 sustituye a la más antigua, y el aviso. Cola: el orden de un tick, la cola llena. Salida nula: avanza el tiempo del juego (60 ticks = 48 000 fotogramas) |
+| 2 | Lector de WAV (con y sin `smpl`); de `bank + sonido` a voces con fixtures sintéticas; `story.play_sound` con un doble del puerto; y, con `DWE_CONTENT`, que cada sonido de cada `bank_meta.yaml` resuelve a muestras que se leen |
+| 3 | Secuenciador: tempo, bucles, `once`; el sintetizador con un SF2 sintético mínimo; las transiciones de §7 con la salida nula; con `DWE_CONTENT`, que las 74 pistas se leen y suenan sin error |
+| 4 | Ajustes de volumen guardados y leídos; una ruta de autotest (en y es) que cambia los volúmenes desde opciones |
+
+## 10. Decisiones
+
+Decididas el 2026-10-22, la opción recomendada cada vez salvo que se diga otra; las opciones descartadas están en el
+historial de git.
+
+- **Q1, sintetizador SF2:** TinySoundFont (MIT) como port overlay de vcpkg en el repositorio
+  (`tooling/vcpkg-ports/tinysoundfont`), fijado a un commit con su SHA‑512 y su licencia instalada. FluidSynth (LGPL‑2.1)
+  queda fuera por la licencia.
+- **Q2, efectos:** cada tono es una voz con su muestra WAV/Opus, volumen, panorama, tono y envolvente `adsr`, no una nota
+  del `bank.sf2` por el sintetizador.
+- **Q3 y Q13, tabla tipo → entrada de `VLALL`/`VBALL`:** se lee de `used_by.types` y `used_by.fallback` de cada
+  `bank_meta.yaml`, sin cambio de contrato (§6.4).
+- **Q4, ley de panorama:** potencia constante, la misma que usa TinySoundFont.
+- **Q5, curva de volumen:** pasos de 0 a 10 con la ganancia al cuadrado de la fracción (5 → −12 dB, 1 → −40 dB, 0 →
+  silencio); solo música y efectos, el maestro se queda en 1; valor por defecto 10 (el original).
+- **Q6, qué efectos:** las órdenes `play_sound` de los scripts y los sonidos del sistema y de los menús; los gritos de las
+  animaciones y los efectos del combate van con el paquete de cada sistema, con la misma API.
+- **Q7, datos de la música del campo y del combate:** `dwx` los escribe en `data/music.yaml` (`field_overrides`,
+  `battle`), un cambio de contrato aditivo; no como reglas del ruleset `original`.
+- **Q8, fundidos:** cortes bruscos como el original; un fundido como mejora opcional queda para la fase 5.
+- **Q9, las 14 voces de efectos del original:** no se reproducen; una guardia de 256 voces (§5).
+- **Q10, reverberación:** la propia del chip (`STUDIO_B`), como envío por voz (§7.4).
+- **Q11, audio en las rutas de autotest:** un aviso y la salida nula (§4), que es determinista.
+- **Q12, qué sonido toca cada aviso de los menús:** `ui/ui_sounds.yaml` en el paquete `game`, un cambio de contrato
+  aditivo; una entrada que falta o no es válida deja ese aviso en silencio con un aviso en el log. No hay aviso `error`:
+  el combate del original no suena al rechazar una orden.
+- **Q14, `story.play_sound`:** publicada en la API `story` sobre el `SoundPort`, con la subida menor de `LuaApiVersion`.

@@ -68,7 +68,9 @@
 #include "save_indicator.hpp"
 #include "save_machine.hpp"
 #include "session_start.hpp"
+#include "shop_haggle_screen.hpp"
 #include "shop_job_bar.hpp"
+#include "shop_job_rules_panel.hpp"
 #include "shop_screen.hpp"
 #include "sleep_screen.hpp"
 #include "state_trace.hpp"
@@ -131,6 +133,11 @@ inline constexpr std::string_view GenerousTalkSetting = "generous_talk";
 // Extra toilets (an engine improvement, off unless turned on; game::field::ExtraToilet): the toilet
 // booths field/extra_toilets of the game pack lists stand on their maps.
 inline constexpr std::string_view ExtraToiletsSetting = "extra_toilets";
+// The canyon shop's job (game::shop_job; session::ShopJobAdapter): improved, the default, plays the
+// line of customers and the haggle screen; original plays the original's price menus.
+inline constexpr std::string_view ShopJobModeSetting = "shop_job_mode";
+inline constexpr std::string_view ShopJobImproved = "improved";
+inline constexpr std::string_view ShopJobOriginal = "original";
 // The console's and the developer menu's warp("<map> [exit]"): the player goes to that map, at that
 // exit (0 when not given), as a script's map change takes him (FieldScene::startScriptedMapChange),
 // whatever the story. A debug aid.
@@ -199,7 +206,7 @@ struct SessionCommands {
   void drop(Autotest* autotest);
 };
 
-// What lives as long as one game (docs/architecture/guardar-y-cargar.md, 3.1): the session, the
+// What lives as long as one game (docs/architecture/save-and-load.md, 3.1): the session, the
 // field, the battle, the partner's menu and the HUD. It is built whole from a new game or a save
 // and torn down whole.
 class PlaySession {
@@ -343,7 +350,7 @@ public:
   }
 
   // Whether the player chose to go back to the title screen, once (docs/architecture/
-  // guardar-y-cargar.md, 3.8).
+  // save-and-load.md, 3.8).
   [[nodiscard]] bool takeToTitle() { return std::exchange(toTitle_, false); }
 
   // Whether the player chose to save and quit the game from the pause menu, once: the app closes
@@ -423,7 +430,7 @@ private:
   // warp("<map> [exit]"): a map change to that map's exit, as a script's.
   void warpTo(std::string_view where);
   void showLockNotice(const std::string& textKey);
-  // The pause menu's quick save (docs/architecture/guardar-y-cargar.md, 3.8): writes the game to
+  // The pause menu's quick save (docs/architecture/save-and-load.md, 3.8): writes the game to
   // its home slot, or the first empty manual slot for a playthrough that never saved; a notice
   // when there is no room or the write fails. The save indicator follows the write itself.
   // Whether the game was written.
@@ -468,6 +475,13 @@ private:
   DeathScene deathScene_;
   EndingScene endingScene_;
   EggBoxScreen eggBoxScreen_;
+  // The improved shop job's rules panel and counter (game::shop_job).
+  ShopJobRulesPanel shopJobRules_;
+  ShopHaggleScreen shopHaggleScreen_;
+  // The rules panel's tiers and bonus icon for the HUD bar, read once (they come from the rules).
+  std::optional<ShopJobRulesView> shopJobBonus_;
+  // The improved job's perfect score while its bar shows (publishShopJob).
+  std::optional<std::int64_t> shopJobTop_;
   GymScreen gymScreen_;
   ShopScreen shopScreen_;
   DevMenuScreen devMenu_;

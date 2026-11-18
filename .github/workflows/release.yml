@@ -24,7 +24,7 @@ name: Release
 # the commits on main, and the tag is v<version>. A newer merge cancels the run of an older one:
 # only the newest commit gets a release, and a cancelled run leaves at most a draft, which the next
 # run deletes. promote.yml later makes a tested prerelease the stable release, with the same files.
-# docs/modulos/apps/launcher.md explains the versions and the channels.
+# docs/modules/apps/launcher.md explains the versions and the channels.
 #
 # Every Monday (schedule) the full build of the game and the launcher runs without publishing, so
 # the fallback never rots and the caches the package jobs start from stay warm.
@@ -36,7 +36,7 @@ name: Release
 # uploaded as a draft and published once every file and both manifests are there and checked, so a
 # launcher never sees a half-uploaded release. Only the publish job holds the signing key.
 #
-# docs/modulos/apps/launcher.md explains the secrets:
+# docs/modules/apps/launcher.md explains the secrets:
 #   secrets.DWE_SIGNING_KEY            the private key of `tauri signer generate` (its text)
 #   secrets.DWE_SIGNING_KEY_PASSWORD   its password
 #   vars.DWE_SIGNING_PUBKEY            the public key (the .pub file's text), built into the launcher

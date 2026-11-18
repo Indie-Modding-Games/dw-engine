@@ -1,7 +1,7 @@
 menu: "Menú"
-# El estado del campo. {hour} y {minute} son la hora del juego, con dos cifras cada una (00-23 y 00-59).
+# Field status. {hour} and {minute} are the game time, two digits each (00-23 and 00-59).
 clock.time: "{hour}:{minute}"
-# {day} es el día del año (1-30 en el calendario del original) y {year} el año, los dos contados desde 1.
+# {day} is the day of the year (1-30 in the original's calendar) and {year} the year, both counted from 1.
 clock.date: "Día {day}, año {year}"
 need.hunger: "Hambre"
 need.sleep: "Sueño"
@@ -9,17 +9,22 @@ need.toilet: "Baño"
 need.tired: "Cansancio"
 need.injured: "Herida"
 need.sick: "Enfermedad"
-# La barra del trabajo en la tienda (la opción shop_job_bar): su título, los clientes atendidos ({served} de {total}),
-# lo ganado frente a la cuenta con la que el tendero se une ({tally} de {goal} bits) y la próxima marca: la mejor
-# paga desde {tally}, la unión desde {tally} y luego la unión alcanzada.
+# The shop job bar (the shop_job_bar option): its title, the customers served ({served} of {total}),
+# what was earned against the tally at which the shopkeeper joins ({tally} of {goal} bits) and the next mark: the better
+# pay from {tally}, the joining from {tally} and then the joining reached.
 shop_job.title: "Trabajo en la tienda"
 shop_job.customers: "Clientes {served}/{total}"
 shop_job.tally: "{tally} / {goal} bits"
 shop_job.better_pay: "Mejor paga desde {tally}"
 shop_job.join_from: "Se une a la ciudad desde {tally}"
 shop_job.joins: "¡Se une a la ciudad!"
-# El minimapa redondo (una mejora del motor): la marca del norte en su aro y el día bajo él, junto a la hora (clock.time).
+shop_job.mark.pay: "Mejor paga"
+shop_job.mark.join: "Se une"
+shop_job.mark.bonus: "Premio"
+shop_job.bonus_from: "Premio desde {tally}"
+shop_job.bonus_reached: "¡Premio conseguido!"
+# The round minimap (an engine improvement): the north mark on its ring and the day under it, next to the time (clock.time).
 minimap.north: "N"
 minimap.day: "Día {day}"
-# La palabra de la caja de vidas (al perder una), para los aspectos que la escriben en vez del dibujo del original.
+# The word of the lives box (when losing one), for skins that write it instead of the original's drawing.
 lives_box.label: "Vidas"

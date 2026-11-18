@@ -2,7 +2,7 @@
   "name": "dwe-studio",
   "version": "0.1.0",
   "private": true,
-  "description": "Banco de trabajo de escritorio para el motor DWE",
+  "description": "Desktop workbench for the DWE engine",
   "main": "./out/main/index.js",
   "scripts": {
     "predev": "node scripts/build-native-input.mjs",

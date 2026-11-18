@@ -1,7 +1,7 @@
-# Nombres de los controles en los avisos de botones (docs/architecture/ui.md). El motor solo nombra el control
-# (key:enter es key.enter aquí, gamepad:south es gamepad.south); family.<familia>.<botón> es como una familia de mandos
-# llama a sus propios botones (south es el botón de abajo, east el de la derecha). Las letras, las cifras y F1 a F12
-# sin nombre aquí se muestran tal cual ("A", "7", "F5").
+# Names of the controls in the button prompts (docs/architecture/ui.md). The engine only names the control
+# (key:enter is key.enter here, gamepad:south is gamepad.south); family.<family>.<button> is how a controller family
+# calls its own buttons (south is the bottom button, east the right one). Letters, digits and F1 to F12
+# with no name here are shown as they are ("A", "7", "F5").
 key.enter: "Intro"
 key.keypad_enter: "Intro"
 key.escape: "Esc"

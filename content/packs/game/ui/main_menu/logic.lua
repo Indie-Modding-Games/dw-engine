@@ -1,5 +1,5 @@
 -- The title screen's menu, with no game behind it. Its Options entry opens the pause menu's options
--- page over the title (docs/modulos/apps/game.md, «Opciones en partida»): the same tabs, rows and
+-- page over the title (docs/modules/apps/game.md, «In-game options»): the same tabs, rows and
 -- help as during a game, which TitleScreen shows on title_options and closes with
 -- title_options_back; this menu keeps the title's picture behind it and hides its own box
 -- meanwhile ("options" view). The language box sends the language command and shows what the game
@@ -19,14 +19,15 @@
 --     (renderMenuSelector), which the skin draws.
 --     Quit is the options page's (its game actions keep only quit over the title).
 --   - "language": a box with one row per language the packs offer, each named in its own language,
---     before the "Press Start" screen each time the title starts there (title.language_first), as a
---     remaster's: an addition. One confirm picks the language and goes on, with a fade, to the
---     "Press Start" screen. The options page changes the language too.
---   - On each boot of the game (title.skin_first), the skin picker (ui/skin_picker, an addition)
---     comes between the language box and the "Press Start" screen, or first without the box: this
---     menu asks the game for it over black (title_skin_picker) and shows again at "Press Start"
---     once a skin is confirmed (title.after_skin_picker), without asking the language again. The
---     title shown again later in the same run does not ask it.
+--     before the "Press Start" screen while the player has not chosen one yet
+--     (title.language_first), as a remaster's: an addition. One confirm picks the language, which
+--     the game saves, and goes on, with a fade, to the "Press Start" screen. The options page
+--     changes the language later.
+--   - On the boots before a skin is chosen (title.skin_first), the skin picker (ui/skin_picker, an
+--     addition) comes between the language box and the "Press Start" screen, or first without the
+--     box: this menu asks the game for it over black (title_skin_picker) and shows again at "Press
+--     Start" once a skin is confirmed (title.after_skin_picker), without asking the language again.
+--     The title shown again later in the same run does not ask it.
 --   - "battle": the original's battle mode question (renderConfirmVSSlot), on no. Yes opens the
 --     online versus (the game's versus document, an addition: the original's battle mode is two
 --     players on one console); no comes back to the menu.

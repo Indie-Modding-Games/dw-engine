@@ -1,5 +1,5 @@
-// Quick battles: two logic ticks a frame while a fight runs at x2 (docs/modulos/apps/game.md,
-// «Opciones en partida»).
+// Quick battles: two logic ticks a frame while a fight runs at x2 (docs/modules/apps/game.md,
+// «In-game options»).
 
 #include <doctest/doctest.h>
 

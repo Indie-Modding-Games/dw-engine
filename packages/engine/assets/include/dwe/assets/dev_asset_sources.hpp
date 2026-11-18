@@ -10,7 +10,7 @@
 
 namespace dwe::assets {
 
-// The kinds of local assets a developer may opt into (docs/architecture/assets-de-desarrollo.md).
+// The kinds of local assets a developer may opt into (docs/architecture/development-assets.md).
 // They are never the default for players, and every root is only ever read.
 enum class DevSourceKind : std::uint8_t {
   DiscImage,        // the user's disc image (.cue or .bin), which only dwx reads

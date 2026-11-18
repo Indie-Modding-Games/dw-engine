@@ -1,7 +1,7 @@
 /* The pause menu in the modern look: one panel centred over the dimmed game. Many screens share this sheet (the title
    menu, the save slots, the dialogs, the shop, the sleep menu...), so it is the modern look's panel and entry.
 
-   The look (docs/architecture/ui.md, «Aspecto moderno»): a slate panel with a hairline border and rounded corners,
+   The look (docs/architecture/ui.md, «Modern look of the menus»): a slate panel with a hairline border and rounded corners,
    the title in bold over a hairline divider, entries as rows that the focus tints amber with an amber bar at their
    left edge, the button prompts at the panel's foot. Sizes follow the type scale of ../theme.rcss: 30dp titles, 18dp
    entries, 14dp captions. Colours:
@@ -286,7 +286,7 @@
 	color: #f2a93b;
 }
 
-/* A switch: a Sí/No pill, amber while on. */
+/* A switch: a Yes/No pill, amber while on. */
 #panel:not(.skin-original) #page-options .option.kind-toggle .value {
 	min-width: 56dp;
 	height: 24dp;

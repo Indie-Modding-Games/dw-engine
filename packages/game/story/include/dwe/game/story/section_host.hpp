@@ -11,7 +11,7 @@
 
 // How the runner runs a section without knowing Lua: the session implements SectionHost with the
 // script VM, one coroutine per running section, and the tests with fakes
-// (docs/architecture/interprete-historia.md, "Dónde vive").
+// (docs/architecture/story-interpreter.md, "Where it lives").
 namespace dwe::game::story {
 
 // A section of a script: the script id (0 for the map-head script) and the section id.

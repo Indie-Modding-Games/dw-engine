@@ -48,13 +48,13 @@ fn revert(app: &mut MapperApp, ctx: &egui::Context) {
     }
     let mut choice = None;
     let modal = egui::Modal::new(egui::Id::unique("revert")).show(ctx, |ui| {
-        ui.heading(text::REVERT);
-        ui.label(text::REVERT_QUESTION);
+        ui.heading(text::revert());
+        ui.label(text::revert_question());
         ui.horizontal(|ui| {
-            if ui.button(text::REVERT).clicked() {
+            if ui.button(text::revert()).clicked() {
                 choice = Some(true);
             }
-            if ui.button(text::UNSAVED_CANCEL).clicked() {
+            if ui.button(text::unsaved_cancel()).clicked() {
                 choice = Some(false);
             }
         });
@@ -74,37 +74,37 @@ fn revert(app: &mut MapperApp, ctx: &egui::Context) {
 fn settings(app: &mut MapperApp, ctx: &egui::Context) {
     let mut open = app.show_settings;
     let mut action = None;
-    egui::Window::new(text::SETTINGS_TITLE)
+    egui::Window::new(text::settings_title())
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
         .default_width(520.0)
         .show(ctx, |ui| {
-            ui.label(text::DWX_PATH);
+            ui.label(text::dwx_path());
             ui.horizontal(|ui| {
                 let response = ui.add(
                     egui::TextEdit::singleline(&mut app.dwx_text)
-                        .hint_text(text::DWX_PATH_HINT)
+                        .hint_text(text::dwx_path_hint())
                         .desired_width(320.0),
                 );
                 if response.lost_focus() {
                     action = Some(dwx_action(&app.dwx_text));
                 }
-                if ui.button(text::PICK_FOLDER).clicked()
+                if ui.button(text::pick_folder()).clicked()
                     && let Some(file) = rfd::FileDialog::new().pick_file()
                 {
                     app.dwx_text = file.display().to_string();
                     action = Some(dwx_action(&app.dwx_text));
                 }
-                if ui.button(text::DWX_CLEAR).clicked() {
+                if ui.button(text::dwx_clear()).clicked() {
                     app.dwx_text.clear();
                     action = Some(Action::SetDwxPath(None));
                 }
             });
             ui.add_space(4.0);
-            ui.add(egui::Label::new(egui::RichText::new(text::DWX_HELP).weak()).wrap());
+            ui.add(egui::Label::new(egui::RichText::new(text::dwx_help()).weak()).wrap());
             let target = app.mapper.current_target().map_or_else(
-                || PathBuf::from(text::PACK_PLACEHOLDER),
+                || PathBuf::from(text::pack_placeholder()),
                 |target| target.root,
             );
             if let Some(command) = app.mapper.script_warps_command(&target) {
@@ -132,23 +132,23 @@ fn unsaved(app: &mut MapperApp, ctx: &egui::Context) {
     }
     let mut choice = None;
     let modal = egui::Modal::new(egui::Id::unique("unsaved")).show(ctx, |ui| {
-        ui.heading(text::UNSAVED_TITLE);
-        ui.label(text::UNSAVED_QUESTION);
+        ui.heading(text::unsaved_title());
+        ui.label(text::unsaved_question());
         if let Some(target) = app.mapper.current_target() {
-            ui.weak(format!("{}: {}", text::TARGET, target.id));
+            ui.weak(format!("{}: {}", text::target(), target.id));
         }
         ui.horizontal(|ui| {
             let can_save = app.mapper.current_target().is_some();
             if ui
-                .add_enabled(can_save, egui::Button::new(text::UNSAVED_SAVE))
+                .add_enabled(can_save, egui::Button::new(text::unsaved_save()))
                 .clicked()
             {
                 choice = Some(PendingChoice::Save);
             }
-            if ui.button(text::UNSAVED_DISCARD).clicked() {
+            if ui.button(text::unsaved_discard()).clicked() {
                 choice = Some(PendingChoice::Discard);
             }
-            if ui.button(text::UNSAVED_CANCEL).clicked() {
+            if ui.button(text::unsaved_cancel()).clicked() {
                 choice = Some(PendingChoice::Cancel);
             }
         });
@@ -167,30 +167,30 @@ fn new_pack(app: &mut MapperApp, ctx: &egui::Context) {
     };
     let mut open = true;
     let mut create = None;
-    egui::Window::new(text::NEW_PACK)
+    egui::Window::new(text::new_pack())
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
         .show(ctx, |ui| {
             egui::Grid::new("new_pack").num_columns(2).show(ui, |ui| {
-                ui.label(text::NEW_PACK_FOLDER);
+                ui.label(text::new_pack_folder());
                 ui.horizontal(|ui| {
                     ui.text_edit_singleline(&mut form.folder);
-                    if ui.button(text::PICK_FOLDER).clicked()
+                    if ui.button(text::pick_folder()).clicked()
                         && let Some(folder) = rfd::FileDialog::new().pick_folder()
                     {
                         form.folder = folder.display().to_string();
                     }
                 });
                 ui.end_row();
-                ui.label(text::NEW_PACK_ID);
+                ui.label(text::new_pack_id());
                 ui.text_edit_singleline(&mut form.id);
                 ui.end_row();
             });
             let ready =
                 !form.folder.trim().is_empty() && mapper_core::targets::is_pack_id(form.id.trim());
             if ui
-                .add_enabled(ready, egui::Button::new(text::NEW_PACK_CREATE))
+                .add_enabled(ready, egui::Button::new(text::new_pack_create()))
                 .clicked()
             {
                 create = Some((PathBuf::from(form.folder.trim()), form.id.trim().to_owned()));
@@ -214,12 +214,12 @@ fn new_pack(app: &mut MapperApp, ctx: &egui::Context) {
 
 fn shortcuts(app: &mut MapperApp, ctx: &egui::Context) {
     let mut open = app.show_shortcuts;
-    egui::Window::new(text::SHORTCUTS)
+    egui::Window::new(text::shortcuts())
         .open(&mut open)
         .collapsible(false)
         .show(ctx, |ui| {
             egui::Grid::new("shortcuts").striped(true).show(ui, |ui| {
-                for (keys, what) in text::SHORTCUT_LIST {
+                for (keys, what) in text::shortcut_list() {
                     ui.monospace(keys);
                     ui.label(what);
                     ui.end_row();
@@ -239,7 +239,7 @@ pub fn problems(app: &mut MapperApp, ui: &mut egui::Ui) {
     }
     egui::Panel::bottom("problems").show(ui, |ui| {
         if !app.mapper.save_problems.is_empty() {
-            ui.strong(text::SAVE_PROBLEMS);
+            ui.strong(text::save_problems());
             for problem in &app.mapper.save_problems {
                 let line = text::problem(problem);
                 if problem.is_error() {
@@ -250,7 +250,7 @@ pub fn problems(app: &mut MapperApp, ui: &mut egui::Ui) {
             }
         }
         if !app.mapper.story_problems.is_empty() {
-            ui.strong(text::STORY_PROBLEMS);
+            ui.strong(text::story_problems());
             for problem in &app.mapper.story_problems {
                 match problem {
                     StoryProblem::Error(line) => {
@@ -264,8 +264,8 @@ pub fn problems(app: &mut MapperApp, ui: &mut egui::Ui) {
         }
         if !app.live.problems.is_empty() {
             ui.horizontal(|ui| {
-                ui.strong(text::LIVE_PROBLEMS);
-                if ui.small_button(text::CLEAR).clicked() {
+                ui.strong(text::live_problems());
+                if ui.small_button(text::clear()).clicked() {
                     app.live.problems.clear();
                 }
             });

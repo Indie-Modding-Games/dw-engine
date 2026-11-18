@@ -1,0 +1,148 @@
+/* The shop job's rules in the Pixel art look (structure: ../../../shop_job_rules/structure.rcss), over the counter's
+   window (../shop_haggle/style.rcss): the gold title over a blue line, the goal muted, the pay tiers in thin boxes with
+   the HUD bar's fill colour at their left (pink, blue, light grey, as the bar; the bonus in gold), the tier the
+   shopkeeper joins at in light gold, the faces as a legend in a half window, the rules in the small font with a blue
+   line at their left, and the close button as a prompt: key cap and label. This sheet goes over the original skin's,
+   so it sets again every property that one gives the panel. */
+
+#panel.rules-panel {
+	padding-top: 10dp;
+	padding-bottom: 10dp;
+	font-size: 26dp;
+	line-height: 24dp;
+}
+
+/* Tight lines and gaps: this panel is the tallest in the job and must fit in 720dp with its frame. */
+#rules-head {
+	margin-bottom: 8dp;
+	padding-bottom: 4dp;
+}
+
+#rules-pay, #rules-characters {
+	margin-bottom: 8dp;
+}
+
+.rules-character {
+	padding-top: 1dp;
+	padding-bottom: 1dp;
+}
+
+#rules-prices, #rules-faces-text, #rules-talk, #rules-dismiss {
+	padding-top: 2dp;
+	padding-bottom: 2dp;
+	margin-bottom: 4dp;
+}
+
+#rules-foot {
+	padding-top: 6dp;
+}
+
+#rules-head {
+	border-bottom: 3dp #7cb6e2;
+}
+
+#rules-title {
+	font-size: 30dp;
+	line-height: 34dp;
+	font-weight: normal;
+	color: #efc63c;
+}
+
+#rules-goal, #rules-original {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 24dp;
+	color: #93a6bc;
+}
+
+.rules-tier {
+	padding: 3dp 12dp 3dp 16dp;
+	border: 0;
+	border-left: 6dp #4a79a8;
+	border-radius: 0;
+	background-color: #050c1a;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 24dp;
+	color: #f2f0e1;
+}
+
+#rules-pay-lowest { border-left-color: #e05890; }
+#rules-pay-better { border-left-color: #0080d0; }
+#rules-pay-bonus { border-left-color: #efc63c; }
+
+.rules-tier.main {
+	font-weight: normal;
+	color: #ffe58a;
+	border-left-color: #d0d0d0;
+	background-color: #1a2a40;
+}
+
+#rules-characters-title {
+	font-size: 30dp;
+	line-height: 30dp;
+	font-weight: normal;
+	color: #b6e4f7;
+}
+
+.rules-character, #rules-prices, #rules-faces-text, #rules-talk, #rules-dismiss {
+	border-left: 3dp #4a79a8;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 24dp;
+	color: #f2f0e1;
+}
+
+.rules-character {
+	color: #93a6bc;
+}
+
+#rules-faces {
+	border: 0;
+	border-radius: 0;
+	margin: 6dp 0 8dp 0;
+	padding: 8dp 6dp;
+	background-color: transparent;
+	decorator: ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+.rules-face {
+	margin: 0 9dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 24dp;
+	font-weight: normal;
+}
+
+.rules-face.face-delighted span, .rules-face.face-pleased span { color: #5fd36a; }
+.rules-face.face-doubtful span { color: #ffe58a; }
+.rules-face.face-annoyed span { color: #efc63c; }
+.rules-face.face-furious span { color: #e2483d; }
+
+#rules-foot {
+	border-top: 3dp #7cb6e2;
+}
+
+#rules-close {
+	padding: 0;
+	margin: 0;
+	border: 0;
+	border-radius: 0;
+	background-color: transparent;
+	decorator: none;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #93a6bc;
+}
+
+#rules-close .key {
+	font-size: 26dp;
+	line-height: 30dp;
+}
+
+#rules-close:hover, #rules-close:focus {
+	background-color: transparent;
+	decorator: none;
+	color: #f2f0e1;
+}

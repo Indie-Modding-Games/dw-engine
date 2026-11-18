@@ -1,86 +1,84 @@
-# Convenciones de código
+# Code conventions
 
-## Lenguaje
+## Language
 
-- C++26 ([ADR 0002](../adr/0002-cpp26.md)), siguiendo las
+- C++26 ([ADR 0002](../adr/0002-cpp26.md)), following the
   [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines).
-- Solo se usan las características que soportan todos los compiladores de la CI. Esta lista se amplía con un PR cuando
-  un compilador incorpora algo nuevo.
-- Sin excepciones: los errores recuperables se devuelven con `std::expected` ([ADR 0007](../adr/0007-sin-excepciones.md)).
-- Headers con `#pragma once` ([ADR 0008](../adr/0008-headers-antes-que-modulos.md)).
-- Sin `new` ni `delete` a mano: RAII y punteros inteligentes, o los allocators de `core`.
+- Only the features that all the CI compilers support are used. This list is extended with a PR when a compiler adds
+  something new.
+- No exceptions: recoverable errors are returned with `std::expected` ([ADR 0007](../adr/0007-no-exceptions.md)).
+- Headers with `#pragma once` ([ADR 0008](../adr/0008-headers-before-modules.md)).
+- No hand-written `new` or `delete`: RAII and smart pointers, or the `core` allocators.
 
-## Nombres
+## Names
 
-| Qué | Estilo | Ejemplo |
+| What | Style | Example |
 |---|---|---|
-| Ficheros y carpetas | `snake_case` | `evolution_rules.cpp` |
-| Namespaces | Siguen la carpeta | `dwe::game::partner` |
-| Tipos, clases y enums | `PascalCase` | `EvolutionRule` |
-| Funciones | `camelCase`, con verbo | `loadPack`, `tickCare`, `isSleeping` |
-| Variables y miembros | `camelCase` | `hunger`, `currentMap` |
-| Miembros privados | `camelCase` con `_` al final | `tickSeconds_` |
-| Constantes y valores de enum | `PascalCase` | `MaxPartySize`, `Weather::Rain` |
-| Macros (solo si no hay alternativa) | `UPPER_SNAKE` con prefijo | `DWE_ASSERT` |
+| Files and folders | `snake_case` | `evolution_rules.cpp` |
+| Namespaces | Follow the folder | `dwe::game::partner` |
+| Types, classes and enums | `PascalCase` | `EvolutionRule` |
+| Functions | `camelCase`, with a verb | `loadPack`, `tickCare`, `isSleeping` |
+| Variables and members | `camelCase` | `hunger`, `currentMap` |
+| Private members | `camelCase` with a trailing `_` | `tickSeconds_` |
+| Constants and enum values | `PascalCase` | `MaxPartySize`, `Weather::Rain` |
+| Macros (only if there is no alternative) | `UPPER_SNAKE` with a prefix | `DWE_ASSERT` |
 
-- Una palabra por concepto en todo el código: si es `pack`, no es también `bundle`.
-- Sin números ni strings mágicos: se nombran con un enum o una constante, en el header del módulo dueño.
-- El nombre dice la responsabilidad: qué hace la función o qué guarda la variable, sin abreviaturas ni nombres
-  genéricos (`data`, `tmp`, `helper`, `manager`).
-- Los nombres vienen del juego cuando existen (ver el [glosario](../glossary.md)).
+- One word per concept across all the code: if it is `pack`, it is not also `bundle`.
+- No magic numbers or strings: they are named with an enum or a constant, in the header of the owning module.
+- The name states the responsibility: what the function does or what the variable holds, with no abbreviations or
+  generic names (`data`, `tmp`, `helper`, `manager`).
+- Names come from the game when they exist (see the [glossary](../glossary.md)).
 
-## Diseño y legibilidad
+## Design and readability
 
-- Responsabilidad única: cada módulo, clase y función hace una sola cosa. Si su nombre necesita un "y", se separa.
-- El código se lee como prosa: funciones cortas, un nivel de abstracción por función y sin trucos de una línea.
-- Cada constante tiene un único dueño: se declara una vez y el resto la incluye, nunca se copia.
-- Los mensajes de error y de log no van inline en la lógica: viven como constantes con nombre (texto o plantilla de
-  `std::format`) en el `messages.hpp` del módulo. Un mensaje que se usa en varios sitios sale de una sola constante.
-- Los textos que ve el jugador vienen del contenido (packs y localización), nunca del código.
-- **Sin `goto` en ningún sitio:** ni en C++, ni en el Lua que escribimos, ni en el Lua que genera `dwx`. El flujo de
-  control es estructurado y moderno: if/else, bucles, `break`, retornos tempranos, funciones auxiliares y, si hace
-  falta, bucles con estado.
+- Single responsibility: each module, class and function does one thing. If its name needs an "and", it is split.
+- The code reads like prose: short functions, one level of abstraction per function and no one-line tricks.
+- Each constant has a single owner: it is declared once and the rest include it, never copy it.
+- Error and log messages are not inline in the logic: they live as named constants (text or `std::format` template) in
+  the module's `messages.hpp`. A message used in several places comes from a single constant.
+- The texts the player sees come from the content (packs and localization), never from the code.
+- **No `goto` anywhere:** not in C++, not in the Lua we write, not in the Lua that `dwx` generates. Control flow is
+  structured and modern: if/else, loops, `break`, early returns, helper functions and, if needed, loops with state.
 
-## Código que viene del decomp
+## Code that comes from the decomp
 
-- El decomp es la referencia del **comportamiento**, no del código. Nada se copia tal cual: se reescribe con estas
-  convenciones (nombres por responsabilidad, tipos y enums propios, sin offsets ni `unkXX`, funciones cortas).
-- Lo que se conserva es el resultado: las mismas fórmulas, probabilidades y orden de efectos, con la referencia al
-  decomp en un comentario corto donde ayude a verificarlo.
+- The decomp is the reference for **behavior**, not for code. Nothing is copied as is: it is rewritten with these
+  conventions (names by responsibility, own types and enums, no offsets or `unkXX`, short functions).
+- What is kept is the result: the same formulas, probabilities and order of effects, with the reference to the decomp
+  in a short comment where it helps to verify it.
 
-## Comentarios
+## Comments
 
-- El código se documenta solo con buenos nombres; los comentarios son pocos, cortos y precisos.
+- The code is documented only with good names; comments are few, short and precise.
 
-- Cada función pública tiene un comentario corto que dice qué hace.
-- El resto de comentarios explica **por qué**, nunca repite lo que dice el código.
-- Sin código comentado y sin TODO en el código: lo pendiente va en un issue.
-- Cuando se reproduce un comportamiento raro del original a propósito, se dice, con la referencia al decomp.
+- Every public function has a short comment that says what it does.
+- The remaining comments explain **why**, never repeat what the code says.
+- No commented-out code and no TODO in the code: what is pending goes in an issue.
+- When a strange behavior of the original is reproduced on purpose, it is said, with the reference to the decomp.
 
-## Formato y análisis
+## Format and analysis
 
-- `clang-format` obligatorio: la configuración está en `.clang-format` y la CI la comprueba.
-- `clang-tidy` con el perfil del repositorio y warnings como errores en `check-full` y en el gate (la CI de los pull
-  requests no lo pasa).
-- `check-commit` y `check-full` fallan si un fuente C++ o Lua del repositorio contiene `goto` (paso `no-goto`), y
-  `clang-tidy` aplica `cppcoreguidelines-avoid-goto`. Los tests del conversor de scripts comprueban lo mismo en el Lua
-  generado.
-- ASan y UBSan en los builds de depuración.
+- `clang-format` is mandatory: the configuration is in `.clang-format` and the CI checks it.
+- `clang-tidy` with the repository profile and warnings as errors in `check-full` and in the gate (the pull request CI
+  does not run it).
+- `check-commit` and `check-full` fail if a C++ or Lua source in the repository contains `goto` (`no-goto` step), and
+  `clang-tidy` applies `cppcoreguidelines-avoid-goto`. The script converter tests check the same in the generated Lua.
+- ASan and UBSan in the debug builds.
 
 ## Tests
 
-- **Unitarios:** en `tests/` de cada módulo, con doctest. Llevan la etiqueta de ctest de su paquete:
-  `scripts/dev.sh test --filter <paquete>` pasa los de uno y `scripts/dev.sh test --affected` los de lo que cambia
-  ([compilar y probar un paquete](../getting-started/setup.md#compilar-y-probar-un-paquete)).
-- El nombre de un test va en **un solo literal**: ctest registra cada caso lento por su nombre, leído al hacer
-  `configure`. Una entrada cuyo filtro `--test-case` no encaja en ningún caso (un nombre partido en varios literales, un
-  test renombrado desde el último `configure`) falla con un mensaje de `tests/main.cpp`; un caso que se salta solo
-  (sin `DWE_DISC` o `DWE_CONTENT`) sí encaja y pasa. Un caso se salta **volviendo** (`return`), no con
-  `doctest::skip()`: con ese decorador no encaja en ningún filtro y su entrada fallaría. Un `ctest` que no encuentra ningún test también falla
-  (`noTestsAction` en `CMakePresets.json`).
-- **De integración:** las rutas de autotest de `tests/autotest/`, que juegan el juego con entrada simulada
-  ([prueba vertical](../guides/prueba-vertical.md)), y los paquetes de ejemplo de `tests/mods/`.
-- **De simulación:** en `apps/sim` (`dwe-sim`), para el balance de los rulesets (por ejemplo, mil crianzas)
-  ([simulaciones](../guides/simulaciones.md)).
-- **De render:** todavía no hay tests contra capturas de referencia; las rutas guardan capturas para revisarlas.
-- Todo cambio de comportamiento trae su test, y comprueba lo que dice el GDD (ver [ciclo de diseño](design-cycle.md)).
+- **Unit:** in each module's `tests/`, with doctest. They carry the ctest label of their package:
+  `scripts/dev.sh test --filter <package>` runs those of one and `scripts/dev.sh test --affected` those of what
+  changes ([build and test a package](../getting-started/setup.md#build-and-test-one-package)).
+- A test's name goes in **a single literal**: ctest registers each slow case by its name, read at `configure`. An
+  entry whose `--test-case` filter matches no case (a name split into several literals, a test renamed since the last
+  `configure`) fails with a message from `tests/main.cpp`; a case that skips itself (without `DWE_DISC` or
+  `DWE_CONTENT`) does match and passes. A case is skipped by **returning** (`return`), not with `doctest::skip()`: with
+  that decorator it matches no filter and its entry would fail. A `ctest` that finds no test also fails
+  (`noTestsAction` in `CMakePresets.json`).
+- **Integration:** the autotest routes in `tests/autotest/`, which play the game with simulated input
+  ([vertical slice](../guides/vertical-slice.md)), and the example packs in `tests/mods/`.
+- **Simulation:** in `apps/sim` (`dwe-sim`), for ruleset balance (for example, a thousand raisings)
+  ([simulations](../guides/simulations.md)).
+- **Render:** there are no tests against reference screenshots yet; the routes save screenshots for review.
+- Every behavior change brings its test, and checks what the GDD says (see [design cycle](design-cycle.md)).

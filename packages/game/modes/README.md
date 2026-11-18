@@ -1,17 +1,17 @@
 # modes
 
-Los modos de juego: el manifiesto `modes/<id>/mode.yaml` de cada modo y el catálogo de los que traen los paquetes.
+The game modes: each mode's `modes/<id>/mode.yaml` manifest and the catalog of those the packages bring.
 
-- Carpeta: `packages/game/modes`; objetivos de CMake: `dwe::modes` (capa `game`).
-- Depende de: `assets`, `core`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/game/modes](https://indie-modding-games.github.io/dw-engine/modulos/game/modes).
+- Folder: `packages/game/modes`; CMake targets: `dwe::modes` (`game` layer).
+- Depends on: `assets`, `core`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/game/modes](https://indie-modding-games.github.io/dw-engine/modules/game/modes).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter modes
-scripts/dev.sh test --filter modes       # sus tests (etiqueta de ctest modes)
-scripts/dev.sh test --filter ...modes    # y los de todo lo que depende de él
+scripts/dev.sh test --filter modes       # its tests (ctest label modes)
+scripts/dev.sh test --filter ...modes    # and those of everything that depends on it
 ```

@@ -1,14 +1,14 @@
-# Las cacas del compañero en el suelo (packages/game/partner: poop_piles.hpp; packages/session: PoopAdapter). Cuántas caben por mapa y
-# en total son reglas del cuidado (care.yaml: toilet); aquí va cómo se ven en el campo.
+# The partner's poop on the ground (packages/game/partner: poop_piles.hpp; packages/session: PoopAdapter). How many fit per map and
+# in total are care rules (care.yaml: toilet); how they look in the field goes here.
 look:
-  # partner_impl.c: initializePoop carga el modelo ETCNA/UNTI.TMD.
+  # partner_impl.c: initializePoop loads the model ETCNA/UNTI.TMD.
   model: model/etcna/unti
-  # renderPoop: la escala es tamaño × 4096 / 10, así que una caca de tamaño 10 se dibuja a la escala del modelo.
+  # renderPoop: the scale is size × 4096 / 10, so a poop of size 10 is drawn at the model's scale.
   model_size: 10
-# partner.c: tickWildPoop: el compañero corre hacia el jugador (animación 4) hasta estar a la distancia de correr
-# (getPartnerTamerCloseness > 0), se agacha (animación 10), deja la caca (createPoopPile) y hace la animación 12.
+# partner.c: tickWildPoop: the partner runs toward the player (animation 4) until it is within running distance
+# (getPartnerTamerCloseness > 0), squats (animation 10), leaves the poop (createPoopPile) and plays animation 12.
 wild: {squat_clip: 10, after_clip: 12}
-# partner_impl.c: tickPoopDetection: una caca de tamaño menor que 11 se encuentra con el jugador a menos de 200 de su
-# centro en x y en z; las otras, a menos de 300. partner.c: partnerTickEatShit: el compañero va andando a la caca y se la
-# come con la animación 8 (handleEatingPoop).
+# partner_impl.c: tickPoopDetection: a poop of size below 11 is found with the player within 200 of its
+# center in x and z; the others, within 300. partner.c: partnerTickEatShit: the partner walks to the poop and
+# eats it with animation 8 (handleEatingPoop).
 eat: {large_from: 11, small_reach: 200, large_reach: 300, eat_clip: 8}

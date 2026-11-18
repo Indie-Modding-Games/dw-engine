@@ -107,7 +107,7 @@ bool nearWall(const MapCollision& collision, CollisionCell cell) {
 
 // map.c: entityCheckCollision tests a whole predicted step and collisionGrace cancels the blocked
 // parts; this moves X then Z and stops short of the wall, so no tick length lets a step cross a
-// cell (docs/reference/campo.md).
+// cell (docs/reference/field.md).
 GridMove moveOnGrid(const MapCollision& collision, glm::vec3 position, glm::vec2 displacement,
                     float radius) {
   GridMove move{.position = position};

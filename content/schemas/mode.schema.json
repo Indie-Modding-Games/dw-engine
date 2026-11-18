@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Game mode",
-  "description": "modes/<id>/mode.yaml: a game mode, a way to play the packs' content (packages/game/modes: parseGameMode, docs/modding/modos.md).",
+  "description": "modes/<id>/mode.yaml: a game mode, a way to play the packs' content (packages/game/modes: parseGameMode, docs/modding/modes.md).",
   "type": "object",
   "required": [
     "id",

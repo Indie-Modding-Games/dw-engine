@@ -1,4 +1,4 @@
-// The game's options while playing (docs/modulos/apps/game.md, «Opciones en partida»): the pad's
+// The game's options while playing (docs/modules/apps/game.md, «In-game options»): the pad's
 // Select opens the pause menu on its options page. The page has four tabs (Game, Graphics, Sound,
 // Interface); each lists its display rows and the options of ui/common/game_options.lua that name
 // it, without a row of its own in the document. Q and E (the pad's shoulders, a click) switch tabs,
@@ -37,7 +37,7 @@ struct Tab {
   std::string_view id;
   std::span<const std::string_view> rows;
 };
-constexpr std::array<std::string_view, 26> GameRows{"walk-control",
+constexpr std::array<std::string_view, 27> GameRows{"walk-control",
                                                     "autosave",
                                                     "world-map",
                                                     "minimap-items",
@@ -52,6 +52,7 @@ constexpr std::array<std::string_view, 26> GameRows{"walk-control",
                                                     "gym-sessions",
                                                     "quick-battle-start",
                                                     "difficulty",
+                                                    "shop-job-mode",
                                                     "skip-evolution",
                                                     "choice-cancel-closes",
                                                     "fair-sickness-chance",
@@ -267,7 +268,7 @@ TEST_CASE("the options page shows each row's value and sends its setting") {
   CHECK(screen.ui->elementText(Menu, "free-exploration-label") == "Exploración libre");
   CHECK(screen.ui->elementText(Menu, "free-exploration-value") == "No");
   CHECK(screen.ui->elementText(Menu, "long-names-value") == "Sí");
-  // A switch is a Sí/No pill, lit while on.
+  // A switch is a Yes/No pill, lit while on.
   CHECK(screen.ui->elementHasClass(Menu, "free-exploration", "kind-toggle"));
   CHECK_FALSE(screen.ui->elementHasClass(Menu, "free-exploration-value", "on"));
   CHECK(screen.ui->elementHasClass(Menu, "long-names-value", "on"));

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Metadatos del árbol de evolución",
-  "description": "Posiciones y referencias de iconos extraídas del ejecutable local, sin imágenes ni código.",
+  "title": "Evolution tree metadata",
+  "description": "Positions and icon references extracted from the local executable, with no images or code.",
   "type": "object",
   "required": ["image", "entries"],
   "additionalProperties": false,

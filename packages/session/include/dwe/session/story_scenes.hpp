@@ -170,6 +170,7 @@ enum class StoryScreen : std::uint8_t {
   GymLibrary,         // routine 39, loadTrainingLibrary: the next course is not complete yet
   GymCourse,          // routine 7, the gym course pstat 254 picks, waited for to its end
   CardPacks,          // routine 14's pack with the bulk purchase on: how many packs, then the cards
+  ShopHaggle,         // engine routine 259: the improved shop job's counter, one turn (shop_job)
 };
 
 // A screen a routine asks the app for. `waits`: the script waits until the app closes it.
@@ -198,6 +199,7 @@ struct StoryScenesDesc {
 
 struct StoryScenesContext;
 class TournamentAdapter;
+class ShopJobAdapter;
 
 // The story's battles, partner scenes and routines (S6): it publishes start_battle,
 // call_partner_routine and call_routine in the story's script VM and registers the routines, and
@@ -220,6 +222,9 @@ public:
   // The tournaments routine 22 gives the medal of (created after the scenes); without it the
   // routine goes on at once.
   void attachTournament(TournamentAdapter* tournament);
+  // The improved shop job the engine's shop routines play (shop_job_adapter.hpp); it must outlive
+  // the scenes.
+  void attachShopJob(ShopJobAdapter* shopJob);
   // Reads the section and tells the story how a new game starts.
   core::Result<void> readRules(const ruleset::Ruleset& rules) override;
   // The previous screen a fled battle goes back to, saved as the original saves it.

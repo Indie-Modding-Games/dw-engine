@@ -1,18 +1,17 @@
 # debug
 
-Las herramientas de desarrollo: la consola con el log y una línea de comandos de Lua, las estadísticas del frame y el
-visor de assets.
+The development tools: the console with the log and a Lua command line, the frame statistics and the asset viewer.
 
-- Carpeta: `packages/engine/debug`; objetivos de CMake: `dwe::debug` (capa `services`).
-- Depende de: `assets`, `core`, `input`, `platform`, `rhi`, `ruleset`, `script`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/engine/debug](https://indie-modding-games.github.io/dw-engine/modulos/engine/debug).
+- Folder: `packages/engine/debug`; CMake targets: `dwe::debug` (`services` layer).
+- Depends on: `assets`, `core`, `input`, `platform`, `rhi`, `ruleset`, `script`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/engine/debug](https://indie-modding-games.github.io/dw-engine/modules/engine/debug).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter debug
-scripts/dev.sh test --filter debug       # sus tests (etiqueta de ctest debug)
-scripts/dev.sh test --filter ...debug    # y los de todo lo que depende de él
+scripts/dev.sh test --filter debug       # its tests (ctest label debug)
+scripts/dev.sh test --filter ...debug    # and those of everything that depends on it
 ```

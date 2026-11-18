@@ -82,7 +82,7 @@ fn variant_order(variant: &str) -> (u32, String) {
     }
 }
 
-/// Where an exit leads (assets::resolveWarpTargets, docs/formats/mapas.md, "Destino de una
+/// Where an exit leads (assets::resolveWarpTargets, docs/formats/maps.md, "Destino de una
 /// salida").
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WarpTarget<'a> {

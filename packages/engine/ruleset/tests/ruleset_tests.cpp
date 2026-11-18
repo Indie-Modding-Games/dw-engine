@@ -100,9 +100,9 @@ TEST_CASE("a ruleset hands out its sections, tables and description") {
   const auto ruleset = loadRuleset(packs.mount(), "small", careChecks());
   REQUIRE_MESSAGE(ruleset.has_value(), errorOf(ruleset));
   CHECK(ruleset->id() == "small");
-  CHECK(ruleset->info().name == "Small");
+  CHECK(ruleset->info().name.english() == "Small");
   CHECK(ruleset->info().version == "1.2.3");
-  CHECK(ruleset->info().description == "A ruleset for the tests.");
+  CHECK(ruleset->info().description.english() == "A ruleset for the tests.");
   CHECK(ruleset->info().chain == std::vector<std::string>{"small"});
   REQUIRE(ruleset->table("raise") != nullptr);
   CHECK(ruleset->table("raise")->str() == "data/raise");
@@ -122,7 +122,9 @@ TEST_CASE("a ruleset hands out its sections, tables and description") {
 TEST_CASE("a ruleset that extends another replaces only the sections and tables it has") {
   FixturePacks packs;
   packs.files.addFile("rules/rules/hard/ruleset.yaml", R"(id: hard
-name: Hard
+name:
+  en: Hard
+  es: Difícil
 version: 0.1.0
 extends: small
 tables:
@@ -135,7 +137,8 @@ sections: [care]
   const auto ruleset = loadRuleset(packs.mount(), "hard", careChecks());
   REQUIRE_MESSAGE(ruleset.has_value(), errorOf(ruleset));
   CHECK(ruleset->info().chain == std::vector<std::string>{"hard", "small"});
-  CHECK(ruleset->info().name == "Hard");
+  CHECK(ruleset->info().name.english() == "Hard");
+  CHECK(ruleset->info().name.in("es") == "Difícil");
   CHECK(windowOf(*ruleset) == 30);
   CHECK(ruleset->section("care")->owner == "hard");
   // The clock and the digimon table come from the ruleset it extends.
@@ -191,6 +194,8 @@ TEST_CASE("a broken manifest is refused with its file and line") {
             .contains("line 6, column 10: table moves: data/moves is in no pack"));
   CHECK(manifest("id: small\nname: S\nversion: 1.0.0\nsections: [clock, battle]\n")
             .contains("section rules/small/battle is in no pack"));
+  CHECK(manifest("id: small\nname:\n  es: S\nversion: 1.0.0\nsections: []\n")
+            .contains("line 3, column 3: a text in several languages needs 'en'"));
   CHECK(manifest("id: small\nname: S\nversion: 1.0.0\nsections: [clock, clock]\n")
             .contains("listed twice"));
   CHECK(manifest("id: small\nname: S\nversion: 1.0.0\nsections: []\nscripts: [ai.lua]\n")

@@ -1,4 +1,4 @@
--- The title screen's slot list (docs/architecture/guardar-y-cargar.md, 3.4 and 3.5): the empty
+-- The title screen's slot list (docs/architecture/save-and-load.md, 3.4 and 3.5): the empty
 -- slots for a new game, or the saves to continue. The game publishes the slots as settings
 -- (save.slots.mode, "new" or "continue"; save.slots, the count; save.slot.<n>.kind, number, state,
 -- nickname, species, species_key, map, map_key, play_seconds and updated, from 0; and

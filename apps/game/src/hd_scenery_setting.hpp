@@ -10,7 +10,7 @@
 
 namespace dwe::app {
 
-// HD scenery (an engine improvement; docs/modulos/apps/game.md, «Escenarios en alta definición»):
+// HD scenery (an engine improvement; docs/modules/apps/game.md, «HD scenery»):
 // the field's prerendered background and its depth layers drawn smooth at the window's resolution
 // (render::MapRenderer::setHdScenery) instead of the original's pixels. A display setting, saved
 // with the user's settings, and the command with the same name that the options page and the

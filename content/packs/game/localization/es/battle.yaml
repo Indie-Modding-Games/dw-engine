@@ -1,4 +1,4 @@
-# La pantalla de combate (ui/battle) y las claves del propio combate (packages/game/battle: text_keys.hpp).
+# The battle screen (ui/battle) and the keys of the battle itself (packages/game/battle: text_keys.hpp).
 command.none: "Nada"
 command.flee: "Huir"
 command.attack: "Atacar"
@@ -18,36 +18,36 @@ status.poison: "Envenenado"
 status.confusion: "Confundido"
 status.stun: "Aturdido"
 status.flatten: "Aplastado"
-# La caja final escribe las líneas propias del original (btl.battle_effect_messages); estas acaban una o son del motor.
-# Las marcas son las del original: {color:7} amarillo, {color:1} blanco, {br} otra fila, {wait} la fila que acaba la
-# línea y espera. {amount} es el bonus de MP en porcentaje, tras el «reducido un» del original.
+# The final box writes the original's own lines (btl.battle_effect_messages); these finish one or are the engine's.
+# The marks are the original's: {color:7} yellow, {color:1} white, {br} another row, {wait} the row that ends the
+# line and waits. {amount} is the MP bonus as a percentage, after the original's «reducido un».
 result.mp_bonus_percent: " {amount} %{wait}"
-# {amount} son los bits ganados.
+# {amount} is the bits won.
 result.bits: "Has ganado {amount} {amount:bit|bits}."
-# Como en el original, la caja no parte las filas: cada fila ({br}, {wait}) cabe en sus 156 píxeles con la fuente del
-# juego (unos 19 caracteres; el nombre de objeto más ancho ocupa 93).
-# {amount} es cuántas vidas ha perdido el compañero.
+# As in the original, the box does not split rows: each row ({br}, {wait}) fits in its 156 pixels with the game
+# font (about 19 characters; the widest item name takes 93).
+# {amount} is how many lives the partner lost.
 result.lives_lost: "Tu compañero perdió{br}{color:7}{amount}{color:1} {amount:vida|vidas}.{wait}"
-# {name} es el nombre del objeto y {amount} cuántos se han perdido.
+# {name} is the item's name and {amount} how many were lost.
 result.item_lost: "Has perdido{br}{color:7}{name}{color:1} x{amount}.{wait}"
-# {name} es el nombre de quien se une a la ciudad.
+# {name} is the name of whoever joins the city.
 result.recruit_joined: "¡{color:7}{name}{color:1}{br}se mudará a la ciudad!{wait}"
-# La etiqueta corta delante de una cifra de curación o mejora sobre un luchador (aspecto moderno; el original dibuja
-# el icono).
+# The short label in front of a healing or buff figure on a fighter (modern look; the original draws
+# the icon).
 number_icon.hp: "PV"
 number_icon.mp: "PM"
 number_icon.offense: "ATQ"
 number_icon.defense: "DEF"
 number_icon.speed: "VEL"
-# {seconds} es el tiempo que queda para levantarse.
+# {seconds} is the time left to get up.
 revive_countdown: "¡Levántate! {seconds}"
-# Tras el nombre de una técnica en la tira: los PM que le cuesta al compañero ({mp}, un número).
+# After a technique's name in the strip: the MP it costs the partner ({mp}, a number).
 mp_cost: "{mp} MP"
 finisher: "Golpe final"
 finisher_word: "¡REMATE!"
 finisher_push: "PULSA"
-# La palabra del rótulo que abre un combate, en celdas de sus piezas: '#' una pieza, '.' un hueco,
-# 8 filas; una letra acaba en una columna sin piezas y caben 200 piezas como mucho.
+# The word of the banner that opens a battle, in cells of its pieces: '#' a piece, '.' a gap,
+# 8 rows; a letter ends at a column without pieces and 200 pieces fit at most.
 banner_shape: |-
   #####....##...######...##...##....##......##..
   ##..##..####....##....####..##....##.....####.
@@ -61,7 +61,7 @@ charge: "¡Carga el golpe final!"
 charge_hint: "Pulsa una y otra vez"
 prompt.command: "Dar la orden"
 prompt.bag: "Objetos"
-# La bolsa del domador en combate: el botón que la abre.
+# The tamer's bag in battle: the button that opens it.
 bag.open: "Objetos"
 # The marks over the fighters of a cup match between two of the same species (STD_renderPlayerMarker).
 mark.partner: "1P"

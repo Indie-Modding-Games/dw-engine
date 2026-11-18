@@ -1,4 +1,4 @@
-// Free exploration's chooser (docs/architecture/warps-de-script.md): it opens on the page of the
+// Free exploration's chooser (docs/architecture/script-warps.md): it opens on the page of the
 // story's place with the focus on staying, so confirming without looking never changes the map.
 
 #include <dwe/input/keys.hpp>

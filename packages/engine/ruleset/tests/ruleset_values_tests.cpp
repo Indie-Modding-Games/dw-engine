@@ -43,7 +43,7 @@ core::YamlNode parsed(std::string_view text) {
 // non-ASCII comment.
 constexpr std::string_view CitedCare = R"(# Cuidado: cabecera con tildes, ñ.
 hunger:
-  # partner_impl.c: tickHungerMechanics: hora y media.
+  # partner_impl.c: tickHungerMechanics: an hour and a half.
   window_minutes: 90   # comentario al final
   label: "Hambre"
   hours: [2, 3]
@@ -111,7 +111,7 @@ selection: newest
   REQUIRE_MESSAGE(patched.has_value(), errorOf(patched));
   CHECK(*patched == R"(# Cuidado: cabecera con tildes, ñ.
 hunger:
-  # partner_impl.c: tickHungerMechanics: hora y media.
+  # partner_impl.c: tickHungerMechanics: an hour and a half.
   window_minutes: 45   # comentario al final
   label: "Hambre fuerte"
   hours: [2, 4]
@@ -152,7 +152,7 @@ TEST_CASE("a tuned section is saved to its file on disk, and the file loads with
   REQUIRE_MESSAGE(saved.has_value(), errorOf(saved));
   CHECK(*saved == folder.path() / "rules/rules/small/care.yaml");
   const std::string text = readFile(*saved);
-  CHECK(text.contains("# partner_impl.c: tickHungerMechanics: hora y media."));
+  CHECK(text.contains("# partner_impl.c: tickHungerMechanics: an hour and a half."));
   CHECK(text.contains("window_minutes: 60   # comentario al final"));
   REQUIRE(rules.reload().has_value());
   CHECK(findValue(rules.current().section("care")->node, "hunger.window_minutes")->text() == "60");

@@ -1,7 +1,7 @@
 /* The modern skin's look shared by every document: the font, the entries of the menus and the button prompts. Sizes
    are in dp: one dp is one pixel at 720 lines, scaled with the window and the player's UI scale option.
 
-   The look's type scale (docs/architecture/ui.md, «Escala tipográfica»): five sizes, and no other for its own texts.
+   The look's type scale (docs/architecture/ui.md, «Type scale»): five sizes, and no other for its own texts.
      14dp  captions: button prompts and their keys, hints, small labels of the HUD, column headings
      18dp  body: menu entries, messages
      22dp  labels and values: list rows, rows of a page, section headings

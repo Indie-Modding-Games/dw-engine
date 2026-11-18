@@ -19,7 +19,7 @@ inline constexpr std::size_t MaxContentNameLength = 64;
 // The id of an entry of a content table (a Digimon, a map, an item, a move), as other tables, saves
 // and scripts name it. An original keeps the stable name the base pack gives it (`species_a`); an
 // entry a pack adds is namespaced with that pack's id (`mymod:newmon`), so two mods never claim the
-// same name (docs/architecture/vfs.md#tablas-por-entradas). Each part is lowercase letters, digits
+// same name (docs/architecture/vfs.md#tables-by-entries). Each part is lowercase letters, digits
 // and underscores; numbers
 // (`index`) stay internal to the engine.
 class ContentId {

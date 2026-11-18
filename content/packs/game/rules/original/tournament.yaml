@@ -1,45 +1,45 @@
-# Los torneos de la arena (packages/game/tournament: tournament.hpp; packages/session: TournamentAdapter). main/utils2.c:
-# startTournament y std/std_setup.c: STD_tournamentMain y STD_initializeOpponent; std/std_main.c: STD_setupParticipants,
-# STD_addFighterCounter y STD_deinitializeCombat. La base de los rivales por copa y las probabilidades de victoria por
-# nivel son data/stadium, que dwx extrae del disco; las listas de cada copa, la sección 10 del guion de la arena.
+# Arena tournaments (packages/game/tournament: tournament.hpp; packages/session: TournamentAdapter). main/utils2.c:
+# startTournament and std/std_setup.c: STD_tournamentMain and STD_initializeOpponent; std/std_main.c: STD_setupParticipants,
+# STD_addFighterCounter and STD_deinitializeCombat. The base of the rivals per cup and the win chances per
+# level are data/stadium, which dwx extracts from the disc; the list for each cup is section 10 of the arena script.
 
-# Valores del guion: la copa inscrita (pstat 3), las victorias con que termina (pstat 255), la inscripción (disparador
-# 37), copa ganada (disparador 15 + copa) y los residentes de la ciudad (disparador 200 + especie).
+# Script values: the registered cup (pstat 3), the wins it ends with (pstat 255), the registration (trigger
+# 37), cup won (trigger 15 + cup) and the town residents (trigger 200 + species).
 story: {cup_variable: 3, result_variable: 255, registered_trigger: 37, won_trigger_base: 15, recruit_trigger_base: 200}
 
-# startTournament: sin lista de rivales salen de todos los residentes de las especies 0 a 111; la Beetle Cup (22) usa
-# su lista entera aunque no vivan en la ciudad. Hacen falta 3 victorias, y 2 en la copa 5 (Grade R: con 3 cuenta como
-# perdida, rareza del original).
+# startTournament: with no rival list they come from all the residents of species 0 to 111; the Beetle Cup (22) uses
+# its whole list even if they do not live in the town. 3 wins are needed, and 2 in cup 5 (Grade R: with 3 it counts as
+# lost, an original quirk).
 rivals: {species_count: 112, whole_list_cup: 22}
 wins_needed: 3
 cup_wins_needed: [[5, 2]]
 
-# STD_tournamentMain: especies sin luchador en la arena y la que sale en su lugar (64 por 54, 63 por 48, 65 por 42).
+# STD_tournamentMain: species with no fighter in the arena and the one that appears in its place (64 for 54, 63 for 48, 65 for 42).
 stand_ins: [[64, 54], [63, 48], [65, 42]]
 
-# STD_addFighterCounter(99): el reloj del combate en segundos. STD_deinitializeCombat: tras cada combate el compañero
-# recupera un quinto de su HP y MP máximos.
+# STD_addFighterCounter(99): the combat clock in seconds. STD_deinitializeCombat: after each combat the partner
+# recovers a fifth of its max HP and MP.
 time_limit: 99
 recovery_divisor: 5
 
-# STD_initializeOpponent: cada valor es la base de la copa ±30 % (0x1e - randomLimit(0x3d)); HP y MP, 10 veces eso. Se
-# escalan por nivel (novato ×1, campeón ×2, perfecto ×25/10) y se cortan en 999 y 9999.
+# STD_initializeOpponent: each value is the cup base ±30 % (0x1e - randomLimit(0x3d)); HP and MP, 10 times that. They are
+# scaled by level (Rookie ×1, Champion ×2, Ultimate ×25/10) and capped at 999 and 9999.
 stats: {spread: 30, vitality_factor: 10, stat_cap: 999, vitality_cap: 9999}
 levels: [[3, 1, 1], [4, 2, 1], [5, 25, 10]]
-# STD_setupParticipants: STD_WIN_CHANCES[nivel - 3][nivel - 3].
+# STD_setupParticipants: STD_WIN_CHANCES[level - 3][level - 3].
 first_level: 3
 
-# STD_initializeOpponent: de las 15 primeras técnicas de la especie, las que no son remate (0x3a a 0x70) y cuyo coste
-# por 3 paga su MP / 10. STD_tickEnemyAI: preferencias 30, 30, 30 y 0.
+# STD_initializeOpponent: of the first 15 moves of the species, those that are not finishers (0x3a to 0x70) and whose cost
+# times 3 pays its MP / 10. STD_tickEnemyAI: priorities 30, 30, 30 and 0.
 moves: {slots: 15, finishers: [58, 113], mp_cost_factor: 3, mp_divisor: 10, priorities: [30, 30, 30, 0]}
 
-# La inscripción en el mostrador (rutina 18 del guion; dget/dget.c: initTournamentSchedule). Escribe el día inscrito en
-# la variable 2 (hoy, o mañana + 0x80), la especie del compañero en la 4 y pone los disparadores 37, 38 y 39; el 40 si
-# el compañero es demasiado fuerte para la copa (lista de la entrada 2). Las copas de hoy se aceptan hasta el minuto
-# 600 (10:00); el calendario va por días % 30. isTournamentEnabled cuenta los residentes 200 a 311, la copa A ganada
-# (disparador 18) y la lista de la sección 11 del guion del mapa. Lo que se dice son frases de la sección 0x4d8 de
-# MAPHEAD: 1 el título, 2 la pregunta, 3 la pregunta si es demasiado fuerte, 4 «Enter / Don't enter». Una casilla que no
-# se puede elegir suena con playSound(0, 0xb); mover, elegir y cerrar son los sonidos de los menús (2, 3 y 4).
+# The registration at the counter (script routine 18; dget/dget.c: initTournamentSchedule). It writes the registered day to
+# variable 2 (today, or tomorrow + 0x80), the partner's species to 4 and sets triggers 37, 38 and 39; 40 if
+# the partner is too strong for the cup (list of entry 2). Today's cups are accepted until minute
+# 600 (10:00); the calendar goes by days % 30. isTournamentEnabled counts residents 200 to 311, cup A won
+# (trigger 18) and the list in section 11 of the map script. What is said are lines of section 0x4d8 of
+# MAPHEAD: 1 the title, 2 the question, 3 the question if too strong, 4 «Enter / Don't enter». A slot that cannot
+# be chosen plays playSound(0, 0xb); move, choose and close are the menu sounds (2, 3 and 4).
 schedule:
   day_variable: 2
   species_variable: 4
@@ -53,41 +53,41 @@ schedule:
   local_list_section: 11
   lines: {section: 1240, title: 1, ask: 2, ask_overlevel: 3, choice: 4}
   sounds: {slot: 0, refuse: 11}
-  # El aviso de la inscripción (tournament.c: updateTournamentRegistration), cada fotograma con el partner inscrito, sin
-  # script en marcha, el domador libre y el partner en su estado normal. Si el partner ya no es de la especie inscrita,
-  # la inscripción se borra sin decir nada; una inscripción para mañana (tomorrow_flag) espera. Desde from_minute
-  # (12:00): con otro día o desde late_minute (23:01) se pasó la copa, corre missed_section y se borra la inscripción;
-  # si no, corre section una vez antes de second_minute (20:00, con el disparador 38) y otra después (con el 39).
+  # The registration notice (tournament.c: updateTournamentRegistration), every frame with the registered partner, with no
+  # script running, the Tamer free and the partner in its normal state. If the partner is no longer of the registered species,
+  # the registration is cleared without saying anything; a registration for tomorrow (tomorrow_flag) waits. From from_minute
+  # (12:00): with another day or from late_minute (23:01) the cup was missed, missed_section runs and the registration is cleared;
+  # otherwise, section runs once before second_minute (20:00, with trigger 38) and again after it (with 39).
   notice: {from_minute: 720, second_minute: 1200, late_minute: 1381, section: 1241, missed_section: 1242}
 
-# La arena de las copas (std_setup.c: STD_initializeTournament, STD_loadArenaAssets; std_main.c: STD_placePlayer1/2,
-# STD_runIntro, STD_setCameraOrbit). Por número de arena: modelo y rejilla de colisión del pack, dónde empiezan los
-# luchadores (el partner en +start_x, el rival en -start_x) y cuánto camina cada uno hacia el centro en su
-# presentación. Las copas de betl02 (CURRENT_SCREEN 0x6a) usan la arena 1; las demás, la 0; el versus elige entre las
-# tres (battle.yaml: versus.arenas). La cámara del combate mira a los luchadores desde un lado: su distancia por
-# projection / distance_divisor, entre min_distance (1000 con el combate en marcha) y max_distance, a eye_height del
-# suelo y bajando drop hasta el punto medio.
-# La música es la del banco de cada arena (STD_initializeTournament: STD_MUSIC 30 en la arena 0, 32 en la 1) y sus
-# pistas (playMusic(STD_MUSIC, pista)): la entrada del compañero y la del rival (STD_runIntro), el combate
-# (STD_combatMain) y la del combate ganado o perdido (STD_deinitializeCombat, si no hubo empate).
+# The cup arena (std_setup.c: STD_initializeTournament, STD_loadArenaAssets; std_main.c: STD_placePlayer1/2,
+# STD_runIntro, STD_setCameraOrbit). Per arena number: pack model and collision grid, where the
+# fighters start (the partner at +start_x, the rival at -start_x) and how far each walks toward the center in its
+# introduction. The betl02 cups (CURRENT_SCREEN 0x6a) use arena 1; the others, arena 0; versus picks among the
+# three (battle.yaml: versus.arenas). The combat camera looks at the fighters from one side: its distance by
+# projection / distance_divisor, between min_distance (1000 with combat running) and max_distance, at eye_height from the
+# floor and dropping drop down to the midpoint.
+# The music is that of each arena's bank (STD_initializeTournament: STD_MUSIC 30 in arena 0, 32 in 1) and its
+# tracks (playMusic(STD_MUSIC, track)): the partner's entrance and the rival's (STD_runIntro), the combat
+# (STD_combatMain) and the won or lost combat one (STD_deinitializeCombat, if there was no draw).
 arena:
   arenas:
     - {model: "model/stddat/t_togi", collision: "arena/b_togi/collision", start_x: 2500, walk_in: 2000, music_font: 30}
     - {model: "model/stddat/b_togi", collision: "arena/b_togi/collision", start_x: 1800, walk_in: 1300, music_font: 32}
-    # Sólo la del versus (vs_scene.c: VS_ARENA_MODELS[2], VS_ARENA_COLLISIONS[2]; VS_loadVSAssets: VS_MUSIC 31;
-    # vs_intro.c: VS__runIntro y VS__placePlayer1/2 la tratan como la 0).
+    # Only the versus one (vs_scene.c: VS_ARENA_MODELS[2], VS_ARENA_COLLISIONS[2]; VS_loadVSAssets: VS_MUSIC 31;
+    # vs_intro.c: VS__runIntro and VS__placePlayer1/2 treat it as 0).
     - {model: "model/stddat/e_togi", collision: "arena/e_togi/collision", start_x: 2500, walk_in: 2000, music_font: 31}
   music: {partner_intro: 0, rival_intro: 1, fight: 2, won: 3, lost: 4}
   second_arena_map: betl02
   yaws: {partner: 1024, rival: 3072}
   camera: {projection: 500, distance_divisor: 200, min_distance: 1000, max_distance: 4200, eye_height: 1000, drop: 700}
 
-# El cuadro antes de cada combate del compañero (std_setup.c: STD_tournamentMain; std_main.c: STD_addBracketIntro,
-# STD_addBracket, STD_drawBracket, STD_tickBracketHitFlash). Va a 20 cuadros por segundo (VSync(3)). Sus sonidos son
-# los del banco 16 en la ranura 8 (loadMapSounds(0x10)); su música, playMusic(29, pista): 0 la presentación, 1 el
-# cuadro de un combate, 2 la subida del campeón. Tras la subida, fadeToBlack(10) y 11 cuadros. Las imágenes salen de
-# los datos extraídos del jugador: el tablero (stdtim 005), las dos páginas de sprites (000 y 001), las tarjetas de
-# grado (data/stadium: grades) y el destello del golpe, 16 x 16 en (0, 200) de la segunda página con su paleta 0.
+# The bracket before each of the partner's combats (std_setup.c: STD_tournamentMain; std_main.c: STD_addBracketIntro,
+# STD_addBracket, STD_drawBracket, STD_tickBracketHitFlash). It runs at 20 frames per second (VSync(3)). Its sounds are
+# those of bank 16 in slot 8 (loadMapSounds(0x10)); its music, playMusic(29, track): 0 the presentation, 1 the
+# bracket of a combat, 2 the champion's rise. After the rise, fadeToBlack(10) and 11 frames. The images come from
+# the player's extracted data: the board (stdtim 005), the two sprite pages (000 and 001), the grade cards
+# (data/stadium: grades) and the hit flash, 16 x 16 at (0, 200) of the second page with its palette 0.
 bracket:
   frames_per_second: 20
   sound_bank: 16
@@ -100,17 +100,17 @@ bracket:
     cards: texture/stddat/grade
   flash: {page: 1, u: 0, v: 200, size: 16, palette: 0}
 
-# Premios de más por copa ganada, además de los del guion de la arena (guion 214: dinero y objeto del ganador, del
-# segundo y la Giant Meat de participación). El original no tiene ninguno; un ruleset puede añadir
-# {cup: N, item: número del objeto, amount: cuántos} o {cup: N, money: bits}.
+# Extra prizes per cup won, besides those of the arena script (script 214: money and item for the winner, the
+# runner-up and the participation Giant Meat). The original has none; a ruleset can add
+# {cup: N, item: item number, amount: how many} or {cup: N, money: bits}.
 extra_prizes: []
 
-# La medalla de los torneos (rutina 22 del guion; tournament.c: checkTournamentMedalConditions y
-# scriptCheckTournamentMedal). Grupos de copas (primer disparador de copa ganada y cuántas): todas ganadas dan el
-# resultado del grupo (0 a 3); 100 victorias en torneos el 4; las 66 cartas y el juego terminado (disparador 50) el 5.
-# Sólo cuenta la primera condición que se cumple: si su medalla ya está, no hay otra (rareza del original). La
-# medalla de cada resultado es data/tournaments: medal_ids; su texto, la frase `resultado` de la sección 0x4db de
-# MAPHEAD, sin nombre.
+# The tournament medal (script routine 22; tournament.c: checkTournamentMedalConditions and
+# scriptCheckTournamentMedal). Cup groups (first won-cup trigger and how many): all won give the
+# group's result (0 to 3); 100 tournament wins gives 4; the 66 cards and the finished game (trigger 50) gives 5.
+# Only the first condition met counts: if its medal is already owned, there is no other (an original quirk). The
+# medal of each result is data/tournaments: medal_ids; its text, the `result` line of section 0x4db of
+# MAPHEAD, with no name.
 medal:
   cup_groups: [[15, 6], [21, 5], [26, 7], [33, 4]]
   wins: 100

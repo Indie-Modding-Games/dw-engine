@@ -1,0 +1,65 @@
+# The canyon's Monochromon shop job, improved version (an engine improvement, option shop_job.mode:
+# improved by default; original plays scripts 49 and 199 to 202 as they are). Model: packages/game/shop_job
+# (shop_job.hpp); rules for the player: docs/reference/shop-job.md. What the script reads (map, variables, the
+# original's pay) stays in story_scenes.yaml (shop_job).
+#
+# When the job starts the customer line is made with the playthrough's seed: one species and one item from each bag
+# per customer, an arrival mood and a hidden budget (the most expensive level it buys at), drawn from its species'
+# original acceptance table: P(budget at level k or more expensive) = acceptance of k.
+
+# What is told to the script (the story/patches/shop_job_*.lua patches): the result of each counter turn
+# (0 sells, 1 refuses, 2 chats, 3 leaves out of patience, 4 dismissed; also the mode and the next customer's
+# script), the offer's level (1 to 9, like the original's pstat 117) and the reaction's face (the pstat 248 that
+# routine 28 reads).
+story: {result_variable: 110, level_variable: 117, face_variable: 248}
+
+# The species (199-202: the script, the species and how many customers of it there are), their patience, their character (the key
+# shop_job.character.<character>) and the original's acceptance per level, from +50% to -30% (199-202: the rolls
+# store_random(110, 99) <= X of each level).
+species:
+  - {script: 199, species: 80, count: 7, patience: 4, character: spendthrift,
+     acceptance: [45, 55, 65, 75, 85, 95, 97, 99, 100]}
+  - {script: 200, species: 68, count: 6, patience: 4, character: haggler,
+     acceptance: [1, 10, 30, 50, 70, 90, 92, 94, 96]}
+  - {script: 201, species: 99, count: 4, patience: 3, character: miser,
+     acceptance: [1, 1, 1, 20, 50, 80, 85, 90, 95]}
+  - {script: 202, species: 93, count: 3, patience: 3, character: fickle,
+     acceptance: [45, 50, 55, 60, 65, 70, 75, 80, 85]}
+
+# The items they ask for (how many customers ask for each; the patches name their lines in this order) and their price
+# at each level (those of the original's menus); a sale adds to the tally the price minus the -30% one, like the
+# original.
+items:
+  - {id: medicine, count: 4, prices: [1500, 1400, 1300, 1200, 1100, 1000, 900, 800, 700]}
+  - {id: port_potty, count: 10, prices: [450, 420, 390, 360, 330, 300, 270, 240, 210]}
+  - {id: meat, count: 6, prices: [75, 70, 65, 60, 55, 50, 45, 40, 35]}
+
+# The regular price (the original's "Keep price", pstat 117 = 6).
+regular_level: 5
+
+# The arrival mood (the key shop_job.mood.<name>): its weight and how many levels it raises the budget.
+moods:
+  - {name: cheerful, weight: 1, shift: 1}
+  - {name: normal, weight: 2, shift: 0}
+  - {name: serious, weight: 1, shift: -1}
+
+# The answer to an offer, by how many levels it is over the budget (gap_up_to: the highest gap that gets it;
+# negative, below); the last one takes the rest, and the one for who buys nothing. The first two buy. face is
+# the mood bubble's face (routine 28: 0 delighted ... 4 furious); patience, what it costs.
+reactions:
+  - {name: delighted, gap_up_to: -2, face: 0, patience: 0}
+  - {name: pleased, gap_up_to: 0, face: 1, patience: 0}
+  - {name: doubtful, gap_up_to: 1, face: 2, patience: 1}
+  - {name: annoyed, gap_up_to: 2, face: 3, patience: 1}
+  - {name: furious, face: 4, patience: 2}
+
+# Chat, once per customer: raises the mood (the budget) shift levels, costs cost patience and requires
+# needs patience at the start.
+talk: {shift: 1, cost: 1, needs: 2}
+
+# The line is drawn again until the perfect score (selling to each customer at its budget after a chat)
+# falls between least and most, at most tries times.
+perfect_score: {least: 4000, most: 4300, tries: 10000}
+
+# The extra bonus at the end: with the tally from from, besides the original's pay, this item.
+bonus: {from: 3584, item: "game:steel_heart"}

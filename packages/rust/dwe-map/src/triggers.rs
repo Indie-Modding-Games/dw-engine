@@ -1,4 +1,4 @@
-//! What a collision trigger value does in the field (docs/formats/mapas.md, "Colisión";
+//! What a collision trigger value does in the field (docs/formats/maps.md, "Collision";
 //! packages/game/field/src/trigger_bands.cpp): the game pack's `field/triggers` gives the bands,
 //! and without it the original's apply: 51-79 run a script section when stepped on, 80-109 when
 //! confirm is pressed, 110-119 take the map's exit `value - 110`, 120 is the toilet.

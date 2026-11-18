@@ -14,8 +14,8 @@ namespace dwe::assets {
 class VirtualFileSystem;
 } // namespace dwe::assets
 
-// Extra toilets (an engine improvement, off by default; docs/modulos/apps/game.md, «Baños extra»):
-// toilet booths placed on any map from `field/extra_toilets` of the game pack
+// Extra toilets (an engine improvement, off by default; docs/modules/apps/game.md, «Extra
+// toilets»): toilet booths placed on any map from `field/extra_toilets` of the game pack
 // (content/schemas/field_extra_toilets.schema.json), so a mod can add its own. One entry gives
 // all of it: the booth's model drawn there, its cells solid, the cells in front of it the toilet
 // trigger, and the original's toilet routine (tamer.c: checkMapInteraction, partner.c:

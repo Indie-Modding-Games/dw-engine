@@ -44,7 +44,7 @@ inline constexpr int GlyphGrid = 4;
 [[nodiscard]] int glyphAdvance(const BitmapGlyph& glyph, char32_t character, bool dialogue,
                                int& previousAdvance);
 
-// A bitmap font as dwx extracts the original's (docs/formats/textos.md): an atlas of equal cells,
+// A bitmap font as dwx extracts the original's (docs/formats/texts.md): an atlas of equal cells,
 // where ink is any pixel that is not transparent, and its glyphs by Unicode character.
 class BitmapFont {
 public:

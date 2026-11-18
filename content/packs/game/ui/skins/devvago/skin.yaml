@@ -1,14 +1,14 @@
-# El aspecto DevVago: el diseño de interfaz que DevVago trajo en #308, una UI azul noche de pantalla ancha con portada
-# propia (la isla con su halo y la placa «PROJECT FOLDER»), sus iconos del menú del campo, un menú del compañero
-# compacto (estado y técnicas en una sola página) y la página del jugador con pocas pestañas y las medallas en el
-# perfil. Extiende el moderno: cada pantalla añade su hoja encima de la del moderno, como en su versión, y las
-# disposiciones que cambian lo dice `layout` (abajo), no las clases. Reutiliza los sprites que dwx extract saca del
-# disco del usuario: sin ellos se queda fuera y el juego arranca con el de reserva (ui/ui_skin.yaml: fallback).
+# The DevVago look: the interface design that DevVago brought in #308, a night-blue widescreen UI with its own cover
+# (the island with its halo and the "PROJECT FOLDER" plate), its field menu icons, a compact partner menu
+# (status and techniques on a single page) and the player page with few tabs and the medals in the
+# profile. It extends the modern one: each screen adds its sheet over the modern one's, as in their version, and the
+# layouts that change are told by `layout` (below), not by classes. It reuses the sprites that dwx extract pulls from the
+# user's disc: without them it is left out and the game starts with the fallback one (ui/ui_skin.yaml: fallback).
 id: devvago
 name: ui_skin.devvago
 extends: modern
-# Flecha amarilla con borde negro, como la definió el diseñador (hotspot en la punta). La imagen
-# vive en esta misma carpeta (`cursor.png`); se puede regenerar con `scripts/make_cursor.py`.
+# Yellow arrow with a black border, as the designer defined it (hotspot at the tip). The image
+# lives in this same folder (`cursor.png`); it can be regenerated with `scripts/make_cursor.py`.
 cursor: cursor
 cursor_hotspot: [1, 1]
 theme:
@@ -18,127 +18,132 @@ screens:
     styles: [hud/style]
   pause_menu:
     styles: [pause_menu/style]
-  # La caja de pausa de Start (utils2.c: createPauseBox).
+  # The Start pause box (utils2.c: createPauseBox).
   pause_box:
     styles: [pause_box/style]
-  # La portada: la pantalla de "Press Start", el menú del original y sus cajas (main.c: main; main_menu.c).
+  # The cover: the "Press Start" screen, the original's menu and its boxes (main.c: main; main_menu.c).
   main_menu:
     styles: [main_menu/style]
   partner_menu:
     styles: [partner_menu/style]
   battle:
     styles: [battle/style]
-  # Los números sobre el compañero en el campo (entity_text.c: renderEntityText): los dígitos de la batalla.
+  # The numbers over the partner in the field (entity_text.c: renderEntityText): the battle's digits.
   field_numbers:
     styles: [battle/style]
-  # El selector de la exploración libre usa el panel y las entradas del menú de pausa.
+  # The free-exploration picker uses the pause menu's panel and entries.
   destination_choice:
     styles: [pause_menu/style, destination_choice/style]
-  # La lista de ranuras, el diálogo de guardar y el menú de dormir, también.
+  # The slot list, the save dialog and the sleep menu, too.
   save_slots:
     styles: [pause_menu/style, save_slots/style]
   dialog:
     styles: [pause_menu/style, dialog/style]
-  # Las reglas de la partida nueva (contenido oculto, paso Ultra → Mega), también.
+  # The new game's rules (hidden content, Ultra → Mega step), too.
   new_game_rules:
     styles: [pause_menu/style, new_game_rules/style]
-  # El modo de la partida nueva (solo con más de un modo), con la caja de las reglas.
+  # The new game's mode (only with more than one mode), with the rules box.
   new_game_mode:
     styles: [pause_menu/style, new_game_rules/style, new_game_mode/style]
   sleep_menu:
     styles: [pause_menu/style, sleep_menu/style]
-  # El menú de desarrollo (F2), también.
+  # The development menu (F2), too.
   dev_menu:
     styles: [pause_menu/style]
-  # El versus en línea: los paneles del menú de pausa, y el combate y el marcador con los sprites del original.
+  # Online versus: the pause menu's panels, and the fight and the scoreboard with the original's sprites.
   versus:
     styles: [pause_menu/style, versus/style]
   item_keeper:
     styles: [original_lists/style, item_keeper/style]
-  # El menú para elegir un objeto de la bolsa (tirar uno con la bolsa llena): las cajas y los rótulos del guardián.
+  # The menu to pick an item from the bag (discarding one with a full bag): the keeper's boxes and labels.
   discard_menu:
     styles: [original_lists/style, discard_menu/style]
-  # La gramola: las cajas del original y los rótulos de número y título de la lista.
+  # The jukebox: the original's boxes and the number and title labels of the list.
   jukebox:
     styles: [original_lists/style, jukebox/style]
-  # La inscripción a los torneos: las cajas del original y la barra de la elección.
+  # The tournament sign-up: the original's boxes and the choice bar.
   tournament_schedule:
     styles: [tournament_schedule/style]
-  # El cuadro de la copa: sin nombres ni ronda, como el original en inglés.
+  # The cup's bracket: without names or round, like the original in English.
   tournament_bracket:
     styles: [tournament_bracket/style]
-  # Lo que muestra un combate de copa: sin el nombre de la presentación, como el original en inglés, las cifras y
-  # TIME UP con los sprites de ow-std-match y la caja del tiempo agotado con la ventana del original.
+  # What a cup battle shows: without the presentation's name, like the original in English, the figures and
+  # TIME UP with the sprites of ow-std-match and the time-up box with the original's window.
   tournament_match:
     styles: [tournament_match/style]
-  # El trueque de objetos: las cajas del original.
+  # The item trade: the original's boxes.
   trade_menu:
     styles: [trade_menu/style]
-  # El transporte en pájaro: las cajas del original y los rótulos PLACE y POINT.
+  # The bird transport: the original's boxes and the PLACE and POINT labels.
   bird_transport:
     styles: [original_lists/style, bird_transport/style]
-  # El mapa de la isla (tecla M, una mejora de dwe): las cajas, la tinta y la letra del original.
+  # The island map (M key, a dwe improvement): the original's boxes, ink and font.
   world_map:
     styles: [world_map/style]
-  # El cuadro del dinero que el guion abre sobre la charla: la caja del original.
+  # The money box that the script opens over the talk: the original's box.
   money_box:
     styles: [money_box/style]
-  # La tienda de cartas: las cajas y los rótulos del guardián, y la carta de cada rareza.
+  # The card shop: the keeper's boxes and labels, and the card of each rarity.
   card_shop:
     styles: [original_lists/style, card_shop/style]
-  # El intercambio por méritos: las cajas, los rótulos de las listas y la carta de cada rareza.
+  # The merit exchange: the boxes, the lists' labels and the card of each rarity.
   merit_shop:
     styles: [original_lists/style, merit_shop/style]
-  # La máquina de guardado: las cajas del original donde el original las dibuja (main_menu.c: renderMenuBox).
+  # The shop job's counter and rules: the shop's terminal panel, the rows as cells.
+  shop_haggle:
+    styles: [shop_haggle/style]
+  shop_job_rules:
+    styles: [shop_haggle/style, shop_job_rules/style]
+  # The save machine: the original's boxes where the original draws them (main_menu.c: renderMenuBox).
   save_machine:
     styles: [pause_menu/style, save_machine/style]
   gym_stats:
     styles: [pause_menu/style, gym_stats/style]
-  # La tienda, también, con la caja del dinero del original.
+  # The shop, too, with the original's money box.
   shop_menu:
     styles: [pause_menu/style, shop_menu/style]
-  # El aviso de un objeto del suelo o de un cofre: la caja de diálogo de la historia, como el original, con sus filas de
-  # 12 píxeles y el botón de confirmar animado (tamer.c: renderItemPickupTextbox).
+  # The notice of a floor item or a chest: the story's dialogue box, like the original, with its rows of
+  # 12 pixels and the animated confirm button (tamer.c: renderItemPickupTextbox).
   field_item_notice:
     styles: [story_textbox/style, notice_box/style]
-  # El aviso de un premio o de la enfermedad del compañero, igual (tamer.c: renderAwardSomethingTextbox).
+  # The notice of an award or of the partner's illness, the same (tamer.c: renderAwardSomethingTextbox).
   award_notice:
     styles: [story_textbox/style, notice_box/style]
-  # Las cajas de texto de la historia: la caja del original y su barra de selección.
+  # The story's text boxes: the original's box and its selection bar.
   story_textbox:
     styles: [story_textbox/style]
-  # Las páginas de ayuda y la pregunta del juego de las piedras: la caja de diálogo de la historia, como el original;
-  # la barra de reclutamiento (una mejora del motor), en una caja del original.
+  # The help pages and the stones game's question: the story's dialogue box, like the original;
+  # the recruiting bar (an engine improvement), in an original box.
   curling_hud:
     styles: [story_textbox/style, curling_hud/style]
-  # La caja de vidas de una vida perdida: la caja del original, como la de la historia.
+  # The lives box of a lost life: the original's box, like the story's.
   lives_box:
     styles: [story_textbox/style]
-  # La caja de nombres de la partida nueva y de los guiones: el panel del menú de pausa, colocado como el original.
+  # The name box of the new game and of the scripts: the pause menu's panel, placed like the original.
   naming_box:
     styles: [pause_menu/style, naming_box/style]
-  # El menú del cebo y los avisos de la pesca, también.
+  # The bait menu and the fishing notices, too.
   fishing_bait:
     styles: [pause_menu/style]
   fishing_notice:
     styles: [pause_menu/style]
   gym_slots:
     styles: [pause_menu/style, gym_slots/style]
-  # La caja de los huevos tras una muerte, también.
+  # The egg box after a death, too.
   egg_box:
     styles: [egg_box/style]
-  # El aviso de guardado (una mejora del motor): una ventana del original con la figura y el texto.
+  # The save notice (an engine improvement): an original window with the figure and the text.
   save_indicator:
     styles: [save_indicator/style]
-# Las barras del estado del campo se llenan a cuadritos, 25 por barra (partner_impl.c: renderStatusBars).
+# The field status bars fill in little squares, 25 per bar (partner_impl.c: renderStatusBars).
   bug_report:
     styles: [bug_report/style]
   fishing_hud:
     styles: [fishing_hud/style]
 document_classes:
-  # Solo estilo: title-original y slots-original los leen sus hojas de la portada y de la lista de ranuras.
-  # skin-original marca el panel de las pantallas que comparten las hojas del aspecto moderno (pause_menu,
-  # partner_menu): las reglas que ese aspecto no deja que este herede llevan #panel:not(.skin-original).
+  # Style only: title-original and slots-original are read by their cover and slot list sheets.
+  # skin-original marks the panel of the screens that share the modern look's sheets (pause_menu,
+  # partner_menu): the rules that look does not let this one inherit carry #panel:not(.skin-original).
   main_menu:
     panel: [title-original]
   save_slots:
@@ -178,20 +183,20 @@ document_classes:
     field-meter-1-bar: [pips]
     field-pool-0-bar: [pips]
     field-pool-1-bar: [pips]
-# Las disposiciones (docs/architecture/ui.md#aspectos): la portada, sus ranuras, las reglas de la partida nueva y el
-# menú de pausa como las del original, con su página del jugador de tres pestañas (tabs: minimal) y las medallas en el
-# perfil (medals: profile); el menú del compañero moderno, compacto (pages: compact) y con las barras de PV y PM de lo
-# que queda (pool: current). Las cajas se abren sin la animación del original (box: modern). El resto, como el moderno.
+# The layouts (docs/architecture/ui.md#skins): the cover, its slots, the new game's rules and the
+# pause menu like the original's, with its three-tab player page (tabs: minimal) and the medals in the
+# profile (medals: profile); the modern partner menu, compact (pages: compact) and with the HP and MP bars of what
+# is left (pool: current). The boxes open without the original's animation (box: modern). The rest, like the modern one.
 layout:
   pause_menu: {menu: original, tabs: minimal, medals: profile}
   partner_menu: {pages: compact, pool: current}
   main_menu: {menu: original}
   save_slots: {menu: original}
   new_game_rules: {menu: original}
-# Una hoja por imagen y paleta: el original elige la paleta de cada sprite al dibujarlo. Rectángulos en píxeles del
-# original (los de la decompilación); la copia x4 de ui_original los multiplica sola.
+# One sheet per image and palette: the original picks each sprite's palette when drawing it. Rectangles in pixels of the
+# original (the decompilation's); the x4 copy of ui_original multiplies them by itself.
 sprite_sheets:
-  # Los seis iconos del menú del campo, medidos en FI_INFO del disco del usuario.
+  # The six icons of the field menu, measured in FI_INFO of the user's disc.
   - name: ow-field-menu
     image: texture/etcdat/fi_info
     palette: 12
@@ -205,8 +210,8 @@ sprite_sheets:
       menu-cursor-corner: [0, 59, 4, 4]
       menu-cursor-bar: [4, 59, 4, 4]
       menu-cursor-side: [8, 59, 4, 4]
-  # Las cifras de la fecha (game_menu.c: renderDateDigits): FI_INFO con la CLUT 0x7f10 (fila 508, paleta 12). Las
-  # celdas de 8x12 sin su primera columna, que lleva píxeles de la cifra vecina y no se ve en el original.
+  # The date's digits (game_menu.c: renderDateDigits): FI_INFO with CLUT 0x7f10 (row 508, palette 12). The
+  # 8x12 cells without their first column, which carries pixels of the neighboring digit and is not seen in the original.
   - name: ow-field-menu-digits
     image: texture/etcdat/fi_info
     palette: 12
@@ -246,8 +251,8 @@ sprite_sheets:
       menu-label-scold: [108, 26, 20, 7]
       menu-label-sleep: [108, 33, 20, 7]
       menu-label-fish: [80, 40, 16, 7]
-  # Los dibujos de la ruleta del gimnasio (trn_slots.c: TRN_SLOT_SPRITE1): 32 x 32 en u = (dibujo - 1) x 32, v 216 de la
-  # textura del mapa trai00 en (704, 0), con la CLUT (48, 486), la paleta 3.
+  # The gym roulette's drawings (trn_slots.c: TRN_SLOT_SPRITE1): 32 x 32 at u = (drawing - 1) x 32, v 216 of the
+  # trai00 map texture at (704, 0), with CLUT (48, 486), palette 3.
   - name: new-field-icons
     image: ui/skins/devvago/assets/menu_icons
     original_size: [896, 128]
@@ -273,8 +278,8 @@ sprite_sheets:
       slot-symbol-5: [128, 216, 32, 32]
       slot-symbol-6: [160, 216, 32, 32]
       slot-symbol-7: [192, 216, 32, 32]
-  # Los objetos del jugador en la página Jugador, las dos cañas y los otros dos (game_menu.c: renderPlayerInfoView,
-  # disparadores 45 a 48, paleta 7).
+  # The player's items in the Player page, the two rods and the other two (game_menu.c: renderPlayerInfoView,
+  # triggers 45 to 48, palette 7).
   - name: player-items
     image: texture/etcdat/system_w
     palette: 7
@@ -285,7 +290,7 @@ sprite_sheets:
       player-item-1: [192, 32, 16, 16]
       player-item-2: [224, 32, 16, 16]
       player-item-3: [208, 32, 16, 16]
-  # La esquina redondeada de las cajas (ui.c: renderUIBoxBorder, paleta 4).
+  # The boxes' rounded corner (ui.c: renderUIBoxBorder, palette 4).
   - name: ow-box
     image: texture/etcdat/system_w
     palette: 4
@@ -296,8 +301,8 @@ sprite_sheets:
       box-tr: [124, 16, 4, 4]
       box-bl: [120, 20, 4, 4]
       box-br: [124, 20, 4, 4]
-  # El botón de confirmar de una caja que espera al jugador, en tres dibujos de 16 x 12 en u = 0x4C + dibujo x 16, v 0xB7
-  # de la página (320, 0), que es la fila 55 de SYSTEM_W, con la CLUT (96, 500), la paleta 12 (script_textbox.c:
+  # The confirm button of a box that waits for the player, in three 16 x 12 drawings at u = 0x4C + drawing x 16, v 0xB7
+  # of the page (320, 0), which is row 55 of SYSTEM_W, with CLUT (96, 500), palette 12 (script_textbox.c:
   # renderUIBox).
   - name: confirm-icon
     image: texture/etcdat/system_w
@@ -308,7 +313,7 @@ sprite_sheets:
       confirm-icon-0: [76, 55, 16, 12]
       confirm-icon-1: [92, 55, 16, 12]
       confirm-icon-2: [108, 55, 16, 12]
-  # Los rótulos MENU y COUNT de la tabla del guardián de objetos (script_menu.c: createItemKeepWindow, paleta 4).
+  # The MENU and COUNT labels of the item keeper's table (script_menu.c: createItemKeepWindow, palette 4).
   - name: keeper-labels
     image: texture/etcdat/system_w
     palette: 4
@@ -317,13 +322,13 @@ sprite_sheets:
     sprites:
       keeper-menu-label: [0, 34, 20, 7]
       keeper-count-label: [100, 48, 22, 7]
-      # El rótulo PRICE de la tienda de cartas (shop/script_menu.c: renderCardMenu).
+      # The PRICE label of the card shop (shop/script_menu.c: renderCardMenu).
       keeper-price-label: [20, 34, 20, 7]
-      # El rótulo POINT de la lista del intercambio por méritos (script_common.c: renderItemMenu, ITEM_MENU_HEADER_UVS 2).
+      # The POINT label of the merit exchange's list (script_common.c: renderItemMenu, ITEM_MENU_HEADER_UVS 2).
       keeper-point-label: [80, 48, 20, 7]
-      # El rótulo PLACE del transporte en pájaro (shop/script_menu.c: renderBirdraTransportMenu, ITEM_MENU_HEADER_UVS 6).
+      # The PLACE label of the bird transport (shop/script_menu.c: renderBirdraTransportMenu, ITEM_MENU_HEADER_UVS 6).
       keeper-place-label: [56, 48, 20, 7]
-  # La carta de cada rareza en las listas de la tienda de cartas (script_common.c: renderCardSprite, paleta 5).
+  # The card of each rarity in the card shop's lists (script_common.c: renderCardSprite, palette 5).
   - name: card-rarity
     image: texture/etcdat/system_w
     palette: 5
@@ -335,8 +340,8 @@ sprite_sheets:
       card-rarity-2: [24, 64, 12, 12]
       card-rarity-3: [36, 64, 12, 12]
       card-rarity-4: [48, 64, 12, 12]
-  # Los rótulos del número y del título de la lista de la gramola (script_menu.c: renderJukeboxMenu,
-  # ITEM_MENU_HEADER_UVS 4 y 5, paleta 4).
+  # The labels of the number and title of the jukebox list (script_menu.c: renderJukeboxMenu,
+  # ITEM_MENU_HEADER_UVS 4 and 5, palette 4).
   - name: jukebox-labels
     image: texture/etcdat/system_w
     palette: 4
@@ -345,7 +350,7 @@ sprite_sheets:
     sprites:
       jukebox-number-label: [40, 34, 12, 7]
       jukebox-title-label: [52, 34, 20, 7]
-  # El marco de las barras de felicidad y disciplina del campo (partner_impl.c: renderStatusBars, paleta 12).
+  # The frame of the field's happiness and discipline bars (partner_impl.c: renderStatusBars, palette 12).
   - name: ow-field-bar
     image: texture/etcdat/system_w
     palette: 12
@@ -353,8 +358,8 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       field-bar-frame: [0, 108, 75, 8]
-  # La cara de la felicidad, contenta y triste (paleta 15), y la cara con la que alterna en una zona que al compañero
-  # le gusta (11 píxeles a la izquierda) o le disgusta (11 a la derecha): partner_impl.c: renderStatusBars.
+  # The happy and sad happiness face (palette 15), and the face it alternates with in a zone the partner
+  # likes (11 pixels to the left) or dislikes (11 to the right): partner_impl.c: renderStatusBars.
   - name: ow-face
     image: texture/etcdat/system_w
     palette: 15
@@ -367,7 +372,7 @@ sprite_sheets:
       face-happy-disliked: [75, 116, 11, 11]
       face-sad-liked: [86, 116, 11, 11]
       face-sad-disliked: [108, 116, 11, 11]
-  # El icono de la disciplina, por encima y por debajo de 50 (paleta 10).
+  # The discipline icon, above and below 50 (palette 10).
   - name: ow-discipline
     image: texture/etcdat/system_w
     palette: 10
@@ -376,7 +381,7 @@ sprite_sheets:
     sprites:
       discipline-high: [22, 116, 11, 11]
       discipline-low: [33, 116, 11, 11]
-  # Rótulos de sección de Status; la imagen procede únicamente del disco local del usuario.
+  # Status section labels; the image comes only from the user's local disc.
   - name: status-profile-meta
     image: texture/etcdat/system_w
     palette: 9
@@ -488,7 +493,7 @@ sprite_sheets:
       tech-range-label: [76, 41, 19, 7]
       tech-effect-label: [0, 48, 16, 7]
       tech-table-dot: [120, 12, 4, 4]
-  # Editor Tech: etiquetas, cursor y pictogramas de SYSTEM_W del disco local.
+  # Tech editor: labels, cursor and SYSTEM_W pictograms from the local disc.
   - name: tech-grid-labels
     image: texture/etcdat/system_w
     palette: 4
@@ -568,7 +573,7 @@ sprite_sheets:
       tech-confusion: [12, 12, 12, 12]
       tech-stun: [24, 12, 12, 12]
       tech-flatten: [36, 12, 12, 12]
-  # Los iconos de los parámetros en el menú del compañero (la vista de estado, paleta 11).
+  # The parameter icons in the partner menu (the status view, palette 11).
   - name: ow-stat
     image: texture/etcdat/system_w
     palette: 11
@@ -581,8 +586,8 @@ sprite_sheets:
       stat-def: [180, 58, 11, 11]
       stat-speed: [191, 58, 11, 11]
       stat-brains: [202, 58, 10, 11]
-  # El reloj del campo (clock.c: renderGameClock): la esfera (paleta 0), las campanas y el punto de las horas
-  # (paleta 1), el sol y la luna (paleta 2) y la aguja de los minutos (paleta 3).
+  # The field clock (clock.c: renderGameClock): the dial (palette 0), the bells and the hours' dot
+  # (palette 1), the sun and moon (palette 2) and the minutes hand (palette 3).
   - name: ow-clock-dial
     image: texture/etcdat/fi_info
     palette: 0
@@ -618,7 +623,7 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       clock-minute-hand: [120, 0, 8, 16]
-  # Las barras de PV y PM del compañero en combate (BI_IN: el marco con la paleta 12, los iconos con la 11).
+  # The partner's HP and MP bars in battle (BI_IN: the frame with palette 12, the icons with 11).
   - name: ow-battle-bar
     image: texture/etcdat/bi_in
     palette: 12
@@ -636,9 +641,9 @@ sprite_sheets:
       # The end box's up arrow by a rising stat (battle_ui.c: renderPostBattleStatsBox, u 96 and v 180).
       battle-up-arrow: [96, 52, 12, 12]
       battle-mp: [155, 48, 11, 11]
-  # La cuenta atrás sobre el compañero caído (command_menu.c: BTL_initializeDeathCountdown, BTL_tickDeathCountdown):
-  # la estrella de 40 x 40 en u 0x32, v 0x80 de la página (896, 256), fila 0 de BI_IN, con las CLUT y 0x1ed a 0x1ef
-  # (paletas 13 a 15) por turnos, y las cifras de 16 x 16 con la paleta 13 (BTL_DEATH_COUNTDOWN_DIGIT_U/V; el 1 en
+  # The countdown over the fallen partner (command_menu.c: BTL_initializeDeathCountdown, BTL_tickDeathCountdown):
+  # the 40 x 40 star at u 0x32, v 0x80 of the page (896, 256), row 0 of BI_IN, with CLUTs 0x1ed to 0x1ef
+  # (palettes 13 to 15) by turns, and the 16 x 16 digits with palette 13 (BTL_DEATH_COUNTDOWN_DIGIT_U/V; the 1 at
   # u 0x58, v 0x80).
   - name: ow-battle-death-badge-0
     image: texture/etcdat/bi_in
@@ -666,8 +671,8 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       death-badge-2: [50, 0, 40, 40]
-  # La marca de enfado sobre los enemigos al empezar el combate (btl.c: renderFleeBubble, paleta 7): el globo rojo
-  # y la cara dentro.
+  # The anger mark over the enemies at the start of the battle (btl.c: renderFleeBubble, palette 7): the red bubble
+  # and the face inside.
   - name: ow-battle-anger
     image: texture/etcdat/bi_in
     palette: 7
@@ -676,14 +681,14 @@ sprite_sheets:
     sprites:
       anger-bubble: [184, 0, 24, 24]
       anger-mark: [200, 24, 16, 16]
-      # La de quien no lucha y huye (setFleeBubble(id, 1)): el globo y la cara siguientes.
+      # The one of whoever does not fight and flees (setFleeBubble(id, 1)): the next bubble and face.
       flee-bubble: [208, 0, 24, 24]
       flee-mark: [216, 24, 16, 16]
-  # El reloj de un combate del torneo (std_main.c: STD_renderCounterDigits): el panel de TIME.TIM (página 0x2c0 de 8
-  # bits, v 0x78, CLUT (512, 255)) y, de la página (832, 0) de STDTIM con la CLUT (16, 480), las cifras de 12 x 15 en
-  # u = cifra x 12, v 0x30, y las dos piezas laterales de 8 x 18 en u 0x78 y 0x88.
-  # Las marcas de un combate de copa entre dos de la misma especie (std_main.c: STD_renderPlayerMarker): de la página
-  # (768, 0) de STDTIM con la CLUT (0, 481), «1P» en u 0xa0 y «COM» en u 0xd0, v 0xe0, 31 de alto.
+  # A tournament battle's clock (std_main.c: STD_renderCounterDigits): the TIME.TIM panel (8-bit page 0x2c0, v 0x78,
+  # CLUT (512, 255)) and, from the STDTIM page (832, 0) with CLUT (16, 480), the 12 x 15 digits at
+  # u = digit x 12, v 0x30, and the two 8 x 18 side pieces at u 0x78 and 0x88.
+  # The marks of a cup battle between two of the same species (std_main.c: STD_renderPlayerMarker): from the page
+  # (768, 0) of STDTIM with CLUT (0, 481), "1P" at u 0xa0 and "COM" at u 0xd0, v 0xe0, 31 high.
   - name: ow-std-marks
     image: texture/stddat/stdtim/003
     palette: 1
@@ -719,9 +724,9 @@ sprite_sheets:
       std-clock-side-2: [136, 48, 8, 18]
       # The versus clock's 2P piece (vs_hud.c: the STD clock with 1P and 2P at its sides).
       vs-clock-side-2: [128, 48, 8, 18]
-  # Lo que dibuja un combate de copa con la misma página de STDTIM (std_main.c: STD_renderIntroStatNumber,
-  # STD_tickBattleResultScreen): las cifras de 12 x 12 de los datos y del daño en u = cifra x 12, v 32, y TIME UP,
-  # 144 x 24 en (0, 8).
+  # What a cup battle draws with the same STDTIM page (std_main.c: STD_renderIntroStatNumber,
+  # STD_tickBattleResultScreen): the 12 x 12 digits of the data and the damage at u = digit x 12, v 32, and TIME UP,
+  # 144 x 24 at (0, 8).
   - name: ow-std-match
     image: texture/stddat/stdtim/002
     palette: 0
@@ -739,8 +744,8 @@ sprite_sheets:
       std-intro-digit-7: [84, 32, 12, 12]
       std-intro-digit-8: [96, 32, 12, 12]
       std-intro-digit-9: [108, 32, 12, 12]
-  # Las cifras del daño sobre los luchadores (utils2.c: drawEntityText): celdas de 8 x 8 en u = cifra x 8, v = 0xb7 de
-  # la página (896, 256), que es la fila 55 de BI_IN, con la CLUT (256, 484), la paleta 4.
+  # The damage digits over the fighters (utils2.c: drawEntityText): 8 x 8 cells at u = digit x 8, v = 0xb7 of
+  # the page (896, 256), which is row 55 of BI_IN, with CLUT (256, 484), palette 4.
   - name: ow-battle-damage-digits
     image: texture/etcdat/bi_in
     palette: 4
@@ -757,8 +762,8 @@ sprite_sheets:
       damage-digit-7: [56, 55, 8, 8]
       damage-digit-8: [64, 55, 8, 8]
       damage-digit-9: [72, 55, 8, 8]
-  # Los iconos de las cifras de curación y mejora (entity_text.c: ENTITY_TEXT_ICON_U; utils2.c: drawEntityTextIcon):
-  # celdas de 8 x 8 en v = 0xb8 (fila 56 de BI_IN) con la CLUT (256, 486), la paleta 6.
+  # The icons of the healing and boost digits (entity_text.c: ENTITY_TEXT_ICON_U; utils2.c: drawEntityTextIcon):
+  # 8 x 8 cells at v = 0xb8 (row 56 of BI_IN) with CLUT (256, 486), palette 6.
   - name: ow-battle-number-icons
     image: texture/etcdat/bi_in
     palette: 6
@@ -770,8 +775,8 @@ sprite_sheets:
       number-icon-defense: [192, 56, 8, 8]
       number-icon-mp: [200, 56, 8, 8]
       number-icon-speed: [208, 56, 8, 8]
-  # Las piezas del rótulo "BATTLE" (battle_hud.c: BTL_renderBattleStartText): tres texturas de 8 x 8 y la estela, con
-  # la paleta 8; cuando todas llegan, el rótulo parpadea con las paletas 8, 9 y 10.
+  # The pieces of the "BATTLE" label (battle_hud.c: BTL_renderBattleStartText): three 8 x 8 textures and the trail, with
+  # palette 8; when all arrive, the label blinks with palettes 8, 9 and 10.
   - name: ow-battle-banner-0
     image: texture/etcdat/bi_in
     palette: 8
@@ -800,8 +805,8 @@ sprite_sheets:
       banner-2-0: [128, 0, 8, 8]
       banner-2-1: [136, 0, 8, 8]
       banner-2-2: [144, 0, 8, 8]
-  # Las letras de "FINISH!!" del medidor del golpe final (battle_hud.c: BTL_renderFinisherGauge, paleta 12) y el
-  # aviso "PUSH" cuando está lleno (paleta 2).
+  # The letters of "FINISH!!" of the finishing-blow gauge (battle_hud.c: BTL_renderFinisherGauge, palette 12) and the
+  # "PUSH" notice when it is full (palette 2).
   - name: ow-battle-finish
     image: texture/etcdat/bi_in
     palette: 12
@@ -816,9 +821,9 @@ sprite_sheets:
       finish-5: [30, 29, 8, 15]
       finish-6: [38, 29, 5, 15]
       finish-7: [43, 29, 5, 15]
-  # "PUSH" del remate listo (battle_hud.c: BTL_renderFinisherReadyIcon; BI_IN, paleta 2): el original dibuja [128, 8,
-  # 37, 9], el botón cuadrado del mando (9 píxeles y uno de hueco) y la palabra; aquí solo la palabra, y la tecla o el
-  # botón que llama al remate la pone el aviso de la interfaz.
+  # "PUSH" of the ready finisher (battle_hud.c: BTL_renderFinisherReadyIcon; BI_IN, palette 2): the original draws [128, 8,
+  # 37, 9], the pad's square button (9 pixels and one of gap) and the word; here only the word, and the key or
+  # button that calls the finisher is put by the interface's notice.
   - name: ow-battle-push
     image: texture/etcdat/bi_in
     palette: 2
@@ -826,9 +831,9 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       finish-push: [138, 8, 27, 9]
-  # Los iconos de las órdenes en combate (command_menu.c: BTL_renderCommandMenu; BTLCOMND, paleta 0): uno por orden,
-  # de huir a cambiar, y uno por tipo de técnica, cada uno con su segundo fotograma al lado para el parpadeo. Las v son
-  # las de la decompilación menos 192, el borde de la imagen en su página.
+  # The icons of the battle commands (command_menu.c: BTL_renderCommandMenu; BTLCOMND, palette 0): one per command,
+  # from flee to switch, and one per technique type, each with its second frame next to it for the blink. The v are
+  # the decompilation's less 192, the image's edge in its page.
   - name: ow-command-icons
     image: texture/etcdat/btlcomnd
     palette: 0
@@ -1004,7 +1009,7 @@ sprite_sheets:
     sprites:
       vs-face-60: [32, 224, 16, 16]
       vs-face-64: [160, 224, 16, 16]
-  # El cursor de las órdenes y las piezas del marco de la tira (paleta 1).
+  # The commands' cursor and the strip frame's pieces (palette 1).
   - name: ow-command-frame
     image: texture/etcdat/btlcomnd
     palette: 1
@@ -1017,8 +1022,8 @@ sprite_sheets:
       frame-even: [25, 32, 14, 31]
       frame-right-odd: [39, 32, 11, 31]
       frame-right-even: [50, 32, 11, 31]
-  # El bocadillo de las necesidades sobre el compañero (bubble.c: el globo con la paleta 4; hambre, baño y herida con
-  # la 3; sueño con la 2).
+  # The needs bubble over the partner (bubble.c: the bubble with palette 4; hunger, bathroom and injury with
+  # 3; sleep with 2).
   - name: ow-bubble
     image: texture/etcdat/feel_ef
     palette: 4
@@ -1026,24 +1031,24 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       need-bubble: [160, 16, 32, 32]
-      # El mismo globo en piezas para la burbuja con varias necesidades (mejora, need_bubble_stack): su borde
-      # izquierdo (columnas 0 a 12), la columna 12 que se repite para ensancharlo, las dos mitades del centro con
-      # el pico (13 a 15 y 16 a 18), la columna 19 que se repite y el borde derecho (19 a 31). Nada se estira.
+      # The same bubble in pieces for the bubble with several needs (improvement, need_bubble_stack): its left
+      # edge (columns 0 to 12), column 12 repeated to widen it, the two halves of the center with
+      # the tip (13 to 15 and 16 to 18), column 19 repeated and the right edge (19 to 31). Nothing is stretched.
       need-bubble-left: [160, 16, 13, 32]
       need-bubble-fill-left: [172, 16, 1, 32]
       need-bubble-middle-left: [173, 16, 3, 32]
       need-bubble-middle-right: [176, 16, 3, 32]
       need-bubble-fill-right: [179, 16, 1, 32]
       need-bubble-right: [179, 16, 13, 32]
-      # El estallido con el que se va (bubble.c: CONDITION_SPRITES[10], en su cuadro 51).
+      # The burst it leaves with (bubble.c: CONDITION_SPRITES[10], in its frame 51).
       need-bubble-burst: [208, 48, 16, 16]
   - name: ow-need
     image: texture/etcdat/feel_ef
     palette: 3
     original_size: [256, 64]
     dp_per_pixel: 3
-    # Los cuadros de cada animación (bubble.c: renderConditionBubble, CONDITION_HUNGRY_FRAMES y las tablas del
-    # baño y de la herida).
+    # The frames of each animation (bubble.c: renderConditionBubble, CONDITION_HUNGRY_FRAMES and the
+    # bathroom and injury tables).
     sprites:
       need-hunger: [144, 0, 16, 16]
       need-hunger-1: [160, 0, 16, 16]
@@ -1060,13 +1065,13 @@ sprite_sheets:
     palette: 2
     original_size: [256, 64]
     dp_per_pixel: 3
-    # Las tres "Z" del sueño, de la baja a la alta (bubble.c: CONDITION_ICON_SLEEPY).
+    # The three "Z"s of sleep, from low to high (bubble.c: CONDITION_ICON_SLEEPY).
     sprites:
       need-sleep: [128, 48, 8, 8]
       need-sleep-1: [152, 16, 8, 8]
       need-sleep-2: [144, 16, 8, 8]
-  # El cansancio y la enfermedad (bubble.c: CONDITION_SPRITES[6] y [7], u 0xC0 y v 0x80 y 0x90 con la CLUT de la
-  # fila 0x1E1): las cuatro gotas que caen (CONDITION_TIRED_FRAME_U) y los dos cuadros de la enfermedad.
+  # Tiredness and illness (bubble.c: CONDITION_SPRITES[6] and [7], u 0xC0 and v 0x80 and 0x90 with the CLUT of
+  # row 0x1E1): the four falling drops (CONDITION_TIRED_FRAME_U) and the illness's two frames.
   - name: ow-tired
     image: texture/etcdat/feel_ef
     palette: 1
@@ -1079,11 +1084,11 @@ sprite_sheets:
       need-tired-3: [240, 0, 16, 16]
       need-sick: [192, 16, 16, 16]
       need-sick-1: [192, 32, 16, 16]
-  # La portada detrás del menú principal (main_menu.c: renderInitialMenu dibuja sobre TITLE2). Es indexada con su única
-  # CLUT (main.c carga ETCNA\TITLE2.TIM con loadTIMFile, que la sube con la imagen; clut_rect (0, 480)): la paleta 0
-  # de sus metadatos, así se dibuja nítida como el resto del arte del disco. Con el filtro de texturas «reescalado»
-  # (el de los modelos del campo) se dibuja suavizada por el mismo reescalador (upscale: smooth): el logotipo pierde
-  # los dientes de sierra; con los otros filtros, nítida.
+  # The cover behind the main menu (main_menu.c: renderInitialMenu draws over TITLE2). It is indexed with its only
+  # CLUT (main.c loads ETCNA\TITLE2.TIM with loadTIMFile, which uploads it with the image; clut_rect (0, 480)): palette 0
+  # of its metadata, so it is drawn sharp like the rest of the disc's art. With the "rescaled" texture filter
+  # (the field models' one) it is drawn smoothed by the same rescaler (upscale: smooth): the logo loses
+  # the jagged edges; with the other filters, sharp.
   - name: ow-title
     image: texture/etcna/title2
     palette: 0
@@ -1092,8 +1097,8 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       title-screen: [0, 0, 320, 240]
-  # La pantalla de antes del menú (main.c: runLandingScreen dibuja TITLE256 con su única CLUT, (0, 480)). El sprite
-  # se para en la fila 206: debajo está el aviso de copyright del original, que se deja fuera. Suavizada como la portada.
+  # The screen before the menu (main.c: runLandingScreen draws TITLE256 with its only CLUT, (0, 480)). The sprite
+  # stops at row 206: below it is the original's copyright notice, which is left out. Smoothed like the cover.
   - name: ow-boot
     image: texture/etcna/title256
     palette: 0
@@ -1102,11 +1107,11 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       boot-screen: [0, 0, 320, 206]
-  # Las mismas dos imágenes más anchas, para la opción «Imágenes a pantalla ancha» (ui/common/title_picture.lua): cada
-  # lado sigue como un espejo de sus columnas del borde (mirror_sides: [izquierda, derecha], en píxeles de la imagen del
-  # juego; original_size las cuenta), y así una ventana más ancha que la imagen ampliada ve la rejilla seguir en vez de
-  # negro. Los espejos no llegan al logotipo: TITLE2 lo tiene entre las columnas 172 y 293 (a la derecha quedan 26
-  # columnas libres) y TITLE256 su marco entre la 52 y la 263.
+  # The same two images wider, for the «Widescreen pictures» option (ui/common/title_picture.lua): each
+  # side carries on as a mirror of its edge columns (mirror_sides: [left, right], in pixels of the game's image;
+  # original_size counts them), so a window wider than the enlarged image sees the grid carry on instead of
+  # black. The mirrors do not reach the logo: TITLE2 has it between columns 172 and 293 (26 columns
+  # are free to the right) and TITLE256 its frame between 52 and 263.
   - name: ow-title-wide
     image: texture/etcna/title2
     palette: 0

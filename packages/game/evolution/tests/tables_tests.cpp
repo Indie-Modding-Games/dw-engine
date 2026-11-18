@@ -1,5 +1,5 @@
 // Which Digimon each row of the evolution table belongs to once the packs' tables are composed
-// (docs/architecture/vfs.md#tablas-por-entradas): the one it names, else its place in the original.
+// (docs/architecture/vfs.md#tables-by-entries): the one it names, else its place in the original.
 #include <dwe/game/evolution/tables.hpp>
 
 #include <doctest/doctest.h>

@@ -9,7 +9,7 @@
 # line per press; then the field is proof: the partner, released at the wall, must rejoin the player (partner_within
 # — a fighter stranded past the edge never comes back), and the town must still walk. A beaten NPC on screen when a
 # battle the player can run from began leaves the map with it (battle_main.c:783-808, as the original): the route
-# checks he left whole and not stuck somewhere, with field.npc.8 after. How to run it: docs/guides/prueba-vertical.md,
+# checks he left whole and not stuck somewhere, with field.npc.8 after. How to run it: docs/guides/vertical-slice.md,
 # with --new-game --seed 1.
 name: map-edge-hits
 device: keyboard

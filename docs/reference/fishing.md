@@ -1,69 +1,69 @@
-# Pesca
+# Fishing
 
-La pesca del original: en dos mapas de agua el jugador saca la caña desde el menú de pausa, pone un cebo, lanza, espera
-a que pique, tira a tiempo y recoge el pez peleando contra la tensión del sedal. Lo que pesca va a la bolsa.
+Fishing in the original: on two water maps the player takes out the rod from the pause menu, puts on a bait, casts,
+waits for a bite, pulls in time and lands the fish by fighting against the line tension. What is caught goes into the
+bag.
 
-## Qué hace
+## What it does
 
-- El menú de pausa ofrece **Pescar** solo en un mapa con pesca; sale en gris si falta la caña o comida para cebar
-  (`main/fish.c: getFishingAvailability`, 0/1/2) **(comprobado)**. La mejor caña manda: el disparador 46 da la caña
-  buena y el 45 la vieja (`getBestFishingRod`) **(comprobado)**. Cebo es cualquier objeto de la bolsa con categoría de
-  orden 2, la comida (`hasFoodItem`) **(comprobado)**.
-- Mientras se pesca, el reloj del juego se para (`clock.c: tickGameClock` no avanza con `isFishing`) **(comprobado)**.
-- Al sacar la caña se elige el cebo; sin cebo se guarda la caña. Se apunta girando, se carga el lanzamiento con
-  Confirmar y se suelta; la fuerza (los fotogramas cargados más 5, hasta 20) da la velocidad del corcho, entre 100 y
-  200 con la caña vieja o 400 con la buena (`FISH_tickRod`) **(comprobado)**.
-- Los peces nadan en zonas de la pantalla del mapa (polígonos sobre el fondo prerrenderizado) y solo en el agua, que es
-  la parte de la pantalla a un lado de una línea de orilla (`FISH_isFishableWater1` y `2`) **(comprobado)**.
+- The pause menu offers **Fish** only on a map with fishing; it is grayed out if the rod or food for bait is missing
+  (`main/fish.c: getFishingAvailability`, 0/1/2) **(verified)**. The best rod rules: trigger 46 gives the good rod and
+  45 the old one (`getBestFishingRod`) **(verified)**. Bait is any bag item with sort category 2, food
+  (`hasFoodItem`) **(verified)**.
+- While fishing, the game clock stops (`clock.c: tickGameClock` does not advance with `isFishing`) **(verified)**.
+- On taking out the rod, the bait is chosen; with no bait the rod is put away. You aim by turning, charge the cast with
+  Confirm and release; the strength (the frames charged plus 5, up to 20) gives the bobber's speed, between 100 and
+  200 with the old rod or 400 with the good one (`FISH_tickRod`) **(verified)**.
+- Fish swim in zones of the map screen (polygons over the prerendered background) and only in the water, which is the
+  part of the screen on one side of a shoreline (`FISH_isFishableWater1` and `2`) **(verified)**.
 
-## Reglas
+## Rules
 
-- **Población**: hasta 33 peces; cada 20 fotogramas, si hay menos de 32, nace uno de la especie con menos peces
-  respecto a su peso en el mapa (`FISH_tickFishPopulation`) **(comprobado)**. Viven entre 600 y 1200 fotogramas; tras
-  asustarse (un chapoteo cerca) no nace ninguno en 30 **(comprobado)**. El original divide entre el total sin mirar
-  si es 0; el motor lo evita **(comprobado)**.
-- **Picada**: cada 20 fotogramas, un pez a menos de 200 del corcho tira su probabilidad según cebo y especie
-  (`FISH_findFishToBite`); el cebo que le gusta a una especie la atrae desde 600 **(comprobado)**.
-- **Anzuelo**: un pez de menos de 150 mordisquea entre 20 y 40 fotogramas y tira durante 30; uno mayor, entre 40 y 60
-  y 60. Hay que tirar en la primera mitad del tirón (`FISH_tryStrike`); antes es «demasiado pronto», después
-  «demasiado tarde» y se lleva el cebo **(comprobado)**. La fuerza del pez es su tamaño más 150, y hasta 100 más
-  **(comprobado)**.
-- **Tensión**: el límite es 5000 con la caña vieja y 10000 con la buena. Sin Confirmar baja 166 por fotograma; con
-  Confirmar sube de 71 a 125 según el tamaño (de 50 a 300), y de 166 a 500 si el pez corre; si el pez corre sin
-  Confirmar sube de 41 a 83 (`FISH_tickHookedFish`) **(comprobado)**. En −límite el pez se escapa; en +límite
-  aguantado unos fotogramas (de 15 a 5 según el tamaño) se rompe el sedal **(comprobado)**.
-- **Enganches**: con el cebo comido y Confirmar pulsado, desde el fotograma 31 y cada 20, 1 entre 10 engancha algo de
-  una tabla de objetos (`FISH_tickRod`) **(comprobado)**.
-- **Captura**: el pez da su objeto; si la bolsa está llena se suelta. Se guarda el récord de tamaño por especie y el
-  partner suma una pesca (`PARTNER_PARA.fishCaught`; la medalla 9 llega con 100, `tamer.c`) **(comprobado)**. El
-  récord no lo lee nada más (`newRecord` se escribe y no se usa) **(comprobado)**.
-- **Serpiente marina**: en un mapa, a ciertas horas, puede aparecer una serpiente marina que pica con un 20 % cada 8
-  fotogramas; al sacarla la pesca se apaga en el mapa y se lanza la escena de la sección 0x4e4 de MAPHEAD
-  (`triggerSeadramonCutscene`) **(comprobado)**.
+- **Population**: up to 33 fish; every 20 frames, if there are fewer than 32, one is born of the species with the
+  fewest fish relative to its weight on the map (`FISH_tickFishPopulation`) **(verified)**. They live between 600 and
+  1200 frames; after being scared (a splash nearby) none is born for 30 **(verified)**. The original divides by the
+  total without checking whether it is 0; the engine avoids it **(verified)**.
+- **Bite**: every 20 frames, a fish less than 200 from the bobber rolls its chance according to bait and species
+  (`FISH_findFishToBite`); the bait a species likes attracts it from 600 **(verified)**.
+- **Hook**: a fish under 150 nibbles for 20 to 40 frames and pulls for 30; a bigger one, 40 to 60 and 60. You have to
+  pull in the first half of the tug (`FISH_tryStrike`); before that it is "too early", after that "too late" and it
+  takes the bait **(verified)**. The fish's strength is its size plus 150, and up to 100 more **(verified)**.
+- **Tension**: the limit is 5000 with the old rod and 10000 with the good one. Without Confirm it drops 166 per frame;
+  with Confirm it rises from 71 to 125 according to size (from 50 to 300), and from 166 to 500 if the fish runs; if
+  the fish runs without Confirm it rises from 41 to 83 (`FISH_tickHookedFish`) **(verified)**. At −limit the fish
+  escapes; at +limit held for a few frames (from 15 to 5 according to size) the line breaks **(verified)**.
+- **Snags**: with the bait eaten and Confirm pressed, from frame 31 and every 20, 1 in 10 snags something from an item
+  table (`FISH_tickRod`) **(verified)**.
+- **Catch**: the fish gives its item; if the bag is full it is released. The size record per species is saved and the
+  partner adds one catch (`PARTNER_PARA.fishCaught`; medal 9 comes at 100, `tamer.c`) **(verified)**. Nothing else
+  reads the record (`newRecord` is written and not used) **(verified)**.
+- **Sea serpent**: on one map, at certain hours, a sea serpent can appear that bites with 20% every 8 frames; when it
+  is pulled out fishing is turned off on the map and the scene from section 0x4e4 of MAPHEAD is launched
+  (`triggerSeadramonCutscene`) **(verified)**.
 
-## Datos
+## Data
 
-`dwx` extrae las tablas del ejecutable a `data/fishing` (`content/schemas/fishing.schema.json`): las especies
-(`FISH_KIND_INFO`: objeto, tamaño, pausas, cebo que la atrae), las probabilidades por cebo y especie
-(`FISH_BITE_CHANCE`), los enganches (`FISH_BAIT_CHANCES`), las líneas de orilla y los mapas (`FISHING_MAP_DATA`:
-zonas, horas de la serpiente, alcance del lanzamiento, ruta de la serpiente). Las constantes de las reglas están en la
-sección `fishing` del ruleset ([auditoría](../legal/auditoria-rulesets.md)).
+`dwx` extracts the executable's tables to `data/fishing` (`content/schemas/fishing.schema.json`): the species
+(`FISH_KIND_INFO`: item, size, pauses, bait that attracts it), the chances per bait and species (`FISH_BITE_CHANCE`),
+the snags (`FISH_BAIT_CHANCES`), the shoreline lines and the maps (`FISHING_MAP_DATA`: zones, serpent hours, cast
+reach, serpent route). The rules' constants are in the `fishing` section of the ruleset
+([audit](../legal/ruleset-audit.md)).
 
-## Rarezas
+## Oddities
 
-- `FISH_REEL_TARGET` no se escribe nunca: un pez que se recoge nada hacia el origen del mapa **(comprobado)**.
-- Las zonas y el agua están en píxeles de la pantalla del fondo, no en el mundo: con otra cámara cambian de sitio
-  **(comprobado)**.
+- `FISH_REEL_TARGET` is never written: a fish that is reeled in swims toward the map's origin **(verified)**.
+- The zones and the water are in pixels of the background screen, not in the world: with another camera they change
+  place **(verified)**.
 
-## Dónde está en el decomp
+## Where it is in the decomp
 
-- `src/main/fish.c`: disponibilidad, caña, carga del overlay por mapa, el tic del jugador y la serpiente.
-- `src/fish/fish.c`: `FISH_tickRod` (la caña), `FISH_tickHookedFish` (el pez enganchado), `FISH_tickFishPopulation`
-  y `FISH_tickFish` (el agua), `FISH_updateRodPose` y `FISH_getRodTipPos` (la punta de la caña).
+- `src/main/fish.c`: availability, rod, per-map overlay loading, the player's tick and the serpent.
+- `src/fish/fish.c`: `FISH_tickRod` (the rod), `FISH_tickHookedFish` (the hooked fish), `FISH_tickFishPopulation` and
+  `FISH_tickFish` (the water), `FISH_updateRodPose` and `FISH_getRodTipPos` (the rod tip).
 
-## En el motor
+## In the engine
 
-`packages/game/fishing` (reglas, agua y caña), `session::FishingAdapter` (tablas, caña, cebo, capturas, récords y el contador
-del partner) y la pantalla de pesca de `apps/game`, con su cámara. La caña, el corcho, el sedal, los peces, las ondas
-y las marcas de picada se dibujan como el original, y al sacar la serpiente la historia corre su escena (sección
-0x4e4 del `MAPHEAD`).
+`packages/game/fishing` (rules, water and rod), `session::FishingAdapter` (tables, rod, bait, catches, records and the
+partner's counter) and the fishing screen of `apps/game`, with its camera. The rod, bobber, line, fish, ripples and
+bite marks are drawn like the original, and when the serpent is pulled out the story runs its scene (section 0x4e4 of
+`MAPHEAD`).

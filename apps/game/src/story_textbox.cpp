@@ -29,7 +29,7 @@ using game::story::Speaker;
 using game::story::SpeakerKind;
 
 // The placeholders of the script's text that name a table's entry by a story variable
-// (script_textbox.c: showTextbox, codes 7, 8, 9, 0x11, 0x12; docs/formats/textos.md).
+// (script_textbox.c: showTextbox, codes 7, 8, 9, 0x11, 0x12; docs/formats/texts.md).
 struct VariableName {
   std::string_view prefix;
   std::string_view block;

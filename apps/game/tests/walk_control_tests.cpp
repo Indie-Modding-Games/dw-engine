@@ -1,5 +1,5 @@
 // What walks the player: the keyboard and the pad, or the mouse, never both
-// (docs/modulos/apps/game.md, «Caminar con teclado o ratón»).
+// (docs/modules/apps/game.md, «Walking with keyboard or mouse»).
 
 #include <dwe/game/field/field.hpp>
 #include <dwe/scene/world.hpp>

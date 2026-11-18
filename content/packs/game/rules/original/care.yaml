@@ -1,9 +1,9 @@
-# Cuidado del partner (docs/reference/care.md): hambre, sueño, baño, enfermedad, ánimo y cansancio. Los efectos de
-# los combates en el cuidado son de la sección battle (consequences). Lo lee packages/game/partner. Unidades en el nombre de
-# cada clave: _frames son fotogramas del original (20 por minuto de juego, ver clock.yaml), _minutes minutos de juego,
-# _hours horas de juego y _percent tantos por ciento. Salvo que se diga otra cosa, todo está en src/main/partner_impl.c.
+# Partner care (docs/reference/care.md): hunger, sleep, potty, sickness, mood and tiredness. The effects of
+# battles on care are in the battle section (consequences). Read by packages/game/partner. Units are in the name of
+# each key: _frames are original frames (20 per game minute, see clock.yaml), _minutes game minutes,
+# _hours game hours and _percent percent. Unless stated otherwise, everything is in src/main/partner_impl.c.
 limits:
-  # tickConditionBoundaries: la felicidad va de -100 a 100; la disciplina y el cansancio, de 0 a 100; el peso, de 1 a
+  # tickConditionBoundaries: happiness goes from -100 to 100; discipline and tiredness from 0 to 100; weight from 1 to
   # 99.
   happiness_min: -100
   happiness_max: 100
@@ -11,66 +11,66 @@ limits:
   tiredness_max: 100
   weight_min: 1
   weight_max: 99
-  # item.c: handleFood (addWithLimit) y trn_hud.c: TRN_tickPostTrainingStatsBox: HP y MP hasta 9999; ataque, defensa,
-  # velocidad e inteligencia hasta 999.
+  # item.c: handleFood (addWithLimit) and trn_hud.c: TRN_tickPostTrainingStatsBox: HP and MP up to 9999; offense,
+  # defense, speed and brains up to 999.
   hp_mp_max: 9999
   stat_max: 999
-  # Desviación aprobada (2026-10-20): cada ganancia de un stat se queda en 999 como mucho, venga del entrenamiento,
-  # de un objeto, de la evolución o de la herencia al renacer. En el original solo la tiene la primera ganancia de
-  # cada sesión de entrenamiento (trn/trn_reward.c: TRN_award*TrainingGains); los objetos y la evolución solo paran
-  # en los topes de arriba (item.c: handleFood; evl/evl.c: EVL_clampBaseStats), así que un chip de +1000 HP da 999.
+  # Approved deviation (2026-10-20): each stat gain stops at 999 at most, whether it comes from training,
+  # an item, evolution or the inheritance on rebirth. In the original only the first gain of
+  # each training session has it (trn/trn_reward.c: TRN_award*TrainingGains); items and evolution only stop
+  # at the caps above (item.c: handleFood; evl/evl.c: EVL_clampBaseStats), so a +1000 HP chip gives 999.
   stat_gain_max: 999
-  # tickUnhappinessMechanics: un stat que baja nunca queda por debajo de 1.
+  # tickUnhappinessMechanics: a falling stat never goes below 1.
   stat_min: 1
 start:
-  # initializePartner, initializeReincarnatedPartner: disciplina y felicidad empiezan en 50.
+  # initializePartner, initializeReincarnatedPartner: discipline and happiness start at 50.
   discipline: 50
   happiness: 50
 hunger:
-  # setFoodTimer: un bebé (nivel 1) tiene hambre cada 2 horas (HOUR / 2 * 2 + 2).
+  # setFoodTimer: a Baby (level 1) gets hungry every 2 hours (HOUR / 2 * 2 + 2).
   baby_interval_hours: 2
-  # setFoodTimer: uno de entrenamiento (nivel 2) cada 3 horas (HOUR / 3 * 3 + 3).
+  # setFoodTimer: an In-Training (level 2) every 3 hours (HOUR / 3 * 3 + 3).
   in_training_interval_hours: 3
-  # tickHungerMechanics: la ventana empieza con starvationTimer = 180 y baja 1 cada 10 fotogramas: 1800 fotogramas,
-  # hora y media.
+  # tickHungerMechanics: the window starts with starvationTimer = 180 and drops 1 every 10 frames: 1800 frames,
+  # an hour and a half.
   window_minutes: 90
   window_step_frames: 10
-  # tickHungerMechanics: con la energía a 0, el peso baja 1 cada 200 fotogramas.
+  # tickHungerMechanics: with energy at 0, weight drops 1 every 200 frames.
   starving_weight_loss_minutes: 10
-  # tickTirednessMechanics: con cansancio 50 o más, un contador sube cada fotograma; tickHungerMechanics: con él en 50
-  # o más, cada hora la comida llega 3 minutos antes.
+  # tickTirednessMechanics: with tiredness at 50 or more, a counter rises every frame; tickHungerMechanics: with it at 50
+  # or more, every hour the food arrives 3 minutes earlier.
   tired_hunger_tiredness: 50
   tired_hunger_frames: 50
   tired_hunger_minutes: 3
-  # partnerHandleFoodFeed: comer con hambre y llegar al umbral de energía: felicidad +5, disciplina +1.
+  # partnerHandleFoodFeed: eating while hungry and reaching the energy threshold: happiness +5, discipline +1.
   fed_happiness: 5
   fed_discipline: 1
-  # partnerHandleFoodFeed: comer sin hambre: felicidad -3, disciplina -2.
+  # partnerHandleFoodFeed: eating while not hungry: happiness -3, discipline -2.
   overfed_happiness: -3
   overfed_discipline: -2
-  # item.c: handleFood: la comida favorita da energía × 14 / 10 y +2 de felicidad.
+  # item.c: handleFood: the favorite food gives energy × 14 / 10 and +2 happiness.
   favorite_energy_percent: 140
   favorite_happiness: 2
 refusal:
-  # partnerWillRefuseItem: rechaza si randomLimit(100) < 110 - (disciplina + 10 + randomLimit(10)).
+  # partnerWillRefuseItem: refuses if randomLimit(100) < 110 - (discipline + 10 + randomLimit(10)).
   discipline_base: 110
   discipline_bonus_min: 10
   discipline_bonus_range: 10
-  # partnerWillRefuseItem: sin hambre rechaza su comida favorita si randomLimit(10) < 2.
+  # partnerWillRefuseItem: when not hungry it refuses its favorite food if randomLimit(10) < 2.
   favorite_refusal_percent: 20
 sleep:
-  # tickSleepMechanics: cada minuto (CURRENT_FRAME % 20) el contador de sueño suma cansancio × 3 / 10.
+  # tickSleepMechanics: every minute (CURRENT_FRAME % 20) the sleep counter adds tiredness × 3 / 10.
   tiredness_percent_per_minute: 30
-  # tickSleepMechanics: con el contador en 180 o más, cada 200 fotogramas se quitan 10 minutos de vigilia
-  # (timeAwakeToday cuenta en bloques de 10 minutos) y el contador vuelve a 0.
+  # tickSleepMechanics: with the counter at 180 or more, every 200 frames 10 minutes of wakefulness are removed
+  # (timeAwakeToday counts in blocks of 10 minutes) and the counter goes back to 0.
   tiredness_threshold: 180
   awake_cut_minutes: 10
-  # setSleepTimes: un bebé duerme 3 horas después de la hora actual y uno de entrenamiento 7, más randomLimit(1).
+  # setSleepTimes: a Baby sleeps 3 hours after the current hour and an In-Training 7, plus randomLimit(1).
   baby_awake_hours: 3
   in_training_awake_hours: 7
   young_awake_variation_hours: 1
-  # partner_impl.c: SLEEP_PATTERN, los horarios de sueño (una tabla del código, no del disco); RAISE_DATA elige uno
-  # por especie (sleep_cycle). Los bebés y los de entrenamiento solo usan sus horas dormido.
+  # partner_impl.c: SLEEP_PATTERN, the sleep schedules (a table in the code, not on the disc); RAISE_DATA picks one
+  # per species (sleep_cycle). Babies and In-Training only use their asleep hours.
   patterns:
     - { sleepy_hour: 16, sleepy_minute: 0, wake_hour: 1, wake_minute: 0, awake_hours: 15, asleep_hours: 9 }
     - { sleepy_hour: 19, sleepy_minute: 0, wake_hour: 4, wake_minute: 0, awake_hours: 15, asleep_hours: 9 }
@@ -80,164 +80,164 @@ sleep:
     - { sleepy_hour: 10, sleepy_minute: 0, wake_hour: 19, wake_minute: 0, awake_hours: 15, asleep_hours: 9 }
     - { sleepy_hour: 0, sleepy_minute: 0, wake_hour: 0, wake_minute: 0, awake_hours: 4, asleep_hours: 1 }
     - { sleepy_hour: 0, sleepy_minute: 0, wake_hour: 0, wake_minute: 0, awake_hours: 8, asleep_hours: 3 }
-  # tickSleepMechanics: con sueño y sin acostarse, felicidad y disciplina bajan -1/-1 cada 200 fotogramas (bebé),
-  # -1/-1 cada 300 (entrenamiento) y -2/-4 cada 1200 (el resto).
+  # tickSleepMechanics: when sleepy and not in bed, happiness and discipline drop -1/-1 every 200 frames (Baby),
+  # -1/-1 every 300 (In-Training) and -2/-4 every 1200 (the rest).
   baby_sleepy_penalty: { every_frames: 200, happiness: -1, discipline: -1 }
   in_training_sleepy_penalty: { every_frames: 300, happiness: -1, discipline: -1 }
   adult_sleepy_penalty: { every_frames: 1200, happiness: -2, discipline: -4 }
-  # tickSleepMechanics: llegar a la hora de despertar sin dormir: addTamerLevel(1, -1).
+  # tickSleepMechanics: reaching wake-up time without sleeping: addTamerLevel(1, -1).
   missed_sleep_tamer_level_percent: 1
-  # sleepRegen: HP y MP suben fracción × máximo × (70 + randomLimit(10)) / 100; el cansancio baja fracción × cansancio
-  # × (80 + randomLimit(20)) / 100; el peso baja el peso por defecto / 10.
+  # sleepRegen: HP and MP rise fraction × max × (70 + randomLimit(10)) / 100; tiredness drops fraction × tiredness
+  # × (80 + randomLimit(20)) / 100; weight drops default weight / 10.
   regeneration:
     hp_mp_percent: 70
     hp_mp_percent_range: 10
     tiredness_percent: 80
     tiredness_percent_range: 20
     weight_divisor: 10
-    # sleepRegen: la almohada (getItemCount(0x22)) y una zona que le gusta dan × 12 / 10; una que no, × 8 / 10.
+    # sleepRegen: the pillow (getItemCount(0x22)) and a zone it likes give × 12 / 10; one it does not, × 8 / 10.
     pillow_percent: 120
     liked_area_percent: 120
     disliked_area_percent: 80
-  # handleSleeping: dormir enfermo: felicidad -20, disciplina -10, cansancio +10; lesionado: -10, -5, +5.
+  # handleSleeping: sleeping while sick: happiness -20, discipline -10, tiredness +10; injured: -10, -5, +5.
   sick_penalty: { happiness: -20, discipline: -10, tiredness: 10 }
   injured_penalty: { happiness: -10, discipline: -5, tiredness: 5 }
-  # handleSleeping: dormirse con hambre baja el peso 1 (ver la rareza sleeping_hungry_keeps_weight).
+  # handleSleeping: falling asleep hungry drops weight by 1 (see the quirk sleeping_hungry_keeps_weight).
   hungry_weight_loss: 1
-  # partnerTickSleep: fadeToBlack(40), el sueño cuando FADE_OUT_CURRENT pasa de 39; fadeFromBlack(40), y el control
-  # vuelve (con la evolución especial al despertar) cuando FADE_IN_CURRENT pasa de 34. En fotogramas del original.
+  # partnerTickSleep: fadeToBlack(40), sleep when FADE_OUT_CURRENT passes 39; fadeFromBlack(40), and control
+  # returns (with the special evolution on waking) when FADE_IN_CURRENT passes 34. In original frames.
   fade: { out_frames: 40, in_frames: 40, control_frame: 35 }
-  # partnerTickSleep: con el compañero junto al jugador, el jugador hace la animación 8 y el compañero la 0; al acabar la
-  # del jugador el compañero hace la 11 (bosteza) y luego la 9 (se acuesta), y el fundido a negro empieza 5 fotogramas
-  # antes del final de la 9. Al volver el fundido el compañero se despierta de pie (animación 0).
+  # partnerTickSleep: with the partner next to the player, the player does animation 8 and the partner 0; when the
+  # player's ends the partner does 11 (yawns) and then 9 (lies down), and the fade to black starts 5 frames
+  # before the end of 9. When the fade comes back the partner wakes up standing (animation 0).
   scene: { player_clip: 8, partner_idle_clip: 0, partner_yawn_clip: 11, partner_lie_down_clip: 9, fade_lead_frames: 5 }
 toilet:
-  # tickPoopingMechanic: el temporizador del baño (poopLevel) baja 1 cada 200 fotogramas.
+  # tickPoopingMechanic: the potty timer (poopLevel) drops 1 every 200 frames.
   poop_step_minutes: 10
-  # tickPoopingMechanic: con ganas, el margen es (disciplina + 20) × 1200 / 100 fotogramas.
+  # tickPoopingMechanic: when it needs to go, the margin is (discipline + 20) × 1200 / 100 frames.
   urge_discipline_offset: 20
   urge_frames_per_hundred: 1200
-  # handleToilet: felicidad +2, disciplina +2.
+  # handleToilet: happiness +2, discipline +2.
   toilet_happiness: 2
   toilet_discipline: 2
-  # handleWildPoop: un error de cuidado, felicidad -10, disciplina -5; partner.c: tickWildPoop: addTamerLevel(1, -1).
+  # handleWildPoop: a care mistake, happiness -10, discipline -5; partner.c: tickWildPoop: addTamerLevel(1, -1).
   wild_happiness: -10
   wild_discipline: -5
   wild_tamer_level_percent: 1
-  # handlePoopWeightLoss: el peso baja (randomLimit(4) + tamaño de la caca) / 4.
+  # handlePoopWeightLoss: weight drops (randomLimit(4) + poop size) / 4.
   weight_loss_roll: 4
   weight_loss_divisor: 4
-  # createPoopPile: la barra de virus sube 1 por caca fuera del baño, salvo en Sukamon (0x27); tickConditions: con 16
-  # el partner se convierte en Sukamon.
+  # createPoopPile: the virus bar rises 1 per poop outside the toilet, except on Sukamon (0x27); tickConditions: with 16
+  # the partner turns into Sukamon.
   virus_bar_limit: 16
   virus_form: "scum"
-  # tickPoopDetection: Numemon (0xb) y Sukamon (0x27) se comen las cacas cercanas.
+  # tickPoopDetection: Numemon (0xb) and Sukamon (0x27) eat nearby poop.
   poop_eaters: ["nume", "scum"]
-  # handleEatingPoop: según el tamaño, HP + máximo / divisor, MP + máximo / divisor, peso y probabilidad de curarse.
+  # handleEatingPoop: depending on size, HP + max / divisor, MP + max / divisor, weight and chance of being cured.
   eating:
     - { below_size: 11, hp_divisor: 20, mp_divisor: 50, weight: 1, cure_percent: 2 }
     - { below_size: 14, hp_divisor: 10, mp_divisor: 20, weight: 3, cure_percent: 7 }
   eating_largest: { hp_divisor: 2, mp_divisor: 10, weight: 10, cure_percent: 20 }
-  # createPoopPile: hasta 16 cacas por mapa y 100 en total; con el mapa lleno, se reutiliza la siguiente del mapa.
+  # createPoopPile: up to 16 poops per map and 100 in total; with the map full, the next one on the map is reused.
   piles_per_map: 16
   piles_total: 100
 sickness:
-  # tickSicknessMechanics: con 10 o más horas sin dormir, cada hora se tira con (intentos - 10) × 5 + (cansancio - 50).
+  # tickSicknessMechanics: with 10 or more hours without sleep, every hour a roll is made with (tries - 10) × 5 + (tiredness - 50).
   missed_sleep_hours: 10
   tries_offset: 10
   tries_percent: 5
   tiredness_offset: 50
-  # tickSicknessMechanics: más de 12000 fotogramas (10 horas) en una zona que no le gusta.
+  # tickSicknessMechanics: more than 12000 frames (10 hours) in a zone it does not like.
   disliked_area_hours: 10
-  # tickSicknessMechanics: una herida de 12 horas se convierte en enfermedad.
+  # tickSicknessMechanics: a 12-hour injury turns into sickness.
   injury_hours: 12
-  # tickSicknessMechanics: 12 horas de enfermedad sin tratar quitan una vida.
+  # tickSicknessMechanics: 12 hours of untreated sickness take away a life.
   untreated_hours: 12
-  # tickSicknessMechanics: al enfermar por no dormir, felicidad -20.
+  # tickSicknessMechanics: when getting sick from lack of sleep, happiness -20.
   on_sick_happiness: -20
-  # tickSicknessMechanics: cada hora enfermo, felicidad -10, disciplina -5, cansancio +5.
+  # tickSicknessMechanics: every hour sick, happiness -10, discipline -5, tiredness +5.
   hourly_penalty: { happiness: -10, discipline: -5, tiredness: 5 }
 mood:
-  # handlePraiseScold: regañar da disciplina +2 y felicidad -10.
+  # handlePraiseScold: scolding gives discipline +2 and happiness -10.
   scold_discipline: 2
   scold_happiness: -10
-  # handlePraiseScold: regañar justo después de un rechazo o de una caca en el suelo da disciplina +8; el cambio de
-  # felicidad queda sin inicializar en el original y aquí es 0 (suposición, ver la ficha de evolución).
+  # handlePraiseScold: scolding right after a refusal or poop on the floor gives discipline +8; the happiness change
+  # is left uninitialized in the original and here it is 0 (assumption, see the evolution sheet).
   boosted_scold_discipline: 8
   boosted_scold_happiness: 0
-  # handlePraiseScold: elogiar da disciplina -5 y felicidad disciplina / 10 + 2.
+  # handlePraiseScold: praising gives discipline -5 and happiness discipline / 10 + 2.
   praise_discipline: -5
   praise_happiness: 2
   praise_discipline_divisor: 10
-  # tickUnhappinessMechanics: sin otra necesidad y con felicidad negativa, cada 200 fotogramas se enfada si
-  # randomLimit(100) < |felicidad| - disciplina.
+  # tickUnhappinessMechanics: with no other need and negative happiness, every 200 frames it gets angry if
+  # randomLimit(100) < |happiness| - discipline.
   sulk_check_frames: 200
-  # tickUnhappinessMechanics: enfadado, la felicidad sube 1 cada 15 fotogramas y cada 300 los stats pierden un 2 %.
+  # tickUnhappinessMechanics: angry, happiness rises 1 every 15 frames and every 300 the stats lose 2 %.
   sulk_recovery_frames: 15
   sulk_stat_loss_frames: 300
   sulk_stat_loss_percent: 2
-  # tickTirednessMechanics: cada hora en el mapa (areaEffectTimer % 1200), +1 felicidad y -2 cansancio en una zona
-  # que le gusta; -1 y +1 en una que no.
+  # tickTirednessMechanics: every hour on the map (areaEffectTimer % 1200), +1 happiness and -2 tiredness in a zone
+  # it likes; -1 and +1 in one it does not.
   area_effect_frames: 1200
   liked_area: { happiness: 1, tiredness: -2 }
   disliked_area: { happiness: -1, tiredness: 1 }
-  # tickConditions: el contador de la zona vuelve a 0 al pasar de 28800 fotogramas (un día).
+  # tickConditions: the zone counter goes back to 0 after passing 28800 frames (one day).
   area_timer_limit_frames: 28800
 tiredness:
-  # tickTirednessMechanics: con 80 o más está cansado y pierde 2 de felicidad cada 100 fotogramas.
+  # tickTirednessMechanics: with 80 or more it is tired and loses 2 happiness every 100 frames.
   tired_threshold: 80
   tired_happiness: -2
   tired_happiness_frames: 100
-  # tickTirednessMechanics: subTiredness suma 1 de cansancio al llegar a 60. Nada lo sube en el original: es un
-  # contador muerto que se guarda para un ruleset que lo use.
+  # tickTirednessMechanics: subTiredness adds 1 tiredness on reaching 60. Nothing raises it in the original: it is a
+  # dead counter kept for a ruleset that uses it.
   sub_tiredness_threshold: 60
 year:
-  # clock.c: tickGameClock: al cambiar de año, con felicidad 100 addTamerLevel(5, 1); con felicidad negativa
+  # clock.c: tickGameClock: on year change, with happiness 100 addTamerLevel(5, 1); with negative happiness
   # addTamerLevel(10, -1).
   happy_happiness: 100
   happy_tamer_level_percent: 5
   unhappy_tamer_level_percent: 10
-# Las reglas que son lógica y no números (docs/architecture/rulesets.md, "Estrategias").
+# The rules that are logic and not numbers (docs/architecture/rulesets.md, "Strategies").
 strategies:
-  # Qué cuenta como error de cuidado: original = la ventana de hambre cerrada sin llegar al umbral de energía, la
-  # hora de despertar sin haber dormido y la caca en el suelo.
+  # What counts as a care mistake: original = the hunger window closed without reaching the energy threshold, the
+  # wake-up time without having slept and the poop on the floor.
   care_mistakes: original
-  # La tirada de enfermedad por no dormir (tickSicknessMechanics).
+  # The sickness roll for not sleeping (tickSicknessMechanics).
   sickness_roll: original
-  # Si rechaza un objeto o una comida (partnerWillRefuseItem).
+  # Whether it refuses an item or a food (partnerWillRefuseItem).
   item_refusal: original
-# Rarezas del original (docs/reference/care.md, "Rarezas"). true reproduce el original; otro ruleset las apaga.
+# Quirks of the original (docs/reference/care.md, "Quirks"). true reproduces the original; another ruleset turns them off.
 quirks:
-  # handleSleeping quita el hambre (condition &= ~4) antes de mirarla para bajar el peso, así que dormirse con hambre
-  # nunca baja el peso.
+  # handleSleeping removes hunger (condition &= ~4) before checking it to lower weight, so falling asleep hungry
+  # never lowers weight.
   sleeping_hungry_keeps_weight: true
-  # handleSleeping suma al contador de evolución las horas de sueño por defecto (hoursAsleepDefault), aunque durmiera
-  # menos.
+  # handleSleeping adds the default sleep hours (hoursAsleepDefault) to the evolution counter, even if it slept
+  # less.
   sleep_adds_default_hours_to_evolution: true
-  # tickSicknessMechanics guarda la probabilidad en un uint8_t: una negativa da la vuelta y la tirada siempre acierta.
+  # tickSicknessMechanics stores the probability in a uint8_t: a negative one wraps around and the roll always hits.
   sickness_chance_wraps: true
-  # setSleepTimes tira randomLimit(1), que siempre da 0: el horario del bebé no varía.
+  # setSleepTimes rolls randomLimit(1), which always gives 0: the baby's schedule does not vary.
   young_sleep_without_variation: true
-  # tamer.c: advanceBattleTime: un combate que cruza la medianoche no suma edad, y la hora que cruza no suma
-  # evolución.
+  # tamer.c: advanceBattleTime: a battle that crosses midnight adds no age, and the hour it crosses adds no
+  # evolution.
   battle_midnight_skips_age: true
-  # partner_impl.c: handleToilet y handleWildPoop: solo en la versión americana el siguiente aviso tarda el doble
+  # partner_impl.c: handleToilet and handleWildPoop: only in the American version the next warning takes twice as long
   # (poopTimer + poopTimer).
   toilet_doubles_poop_interval: true
-  # item.c: handleFood llama siempre a setTrainingBoost: una comida sin bonus de entrenamiento borra el que hubiera.
+  # item.c: handleFood always calls setTrainingBoost: a food with no training bonus erases the one there was.
   food_clears_training_boost: true
-  # TRN_advanceTrainingTime y skipHours cuentan el error de la ventana de hambre al saltar horas sin cerrarla; al
-  # volver, tickHungerMechanics la cierra y lo cuenta otra vez.
+  # TRN_advanceTrainingTime and skipHours count the hunger window error when skipping hours without closing it; on
+  # return, tickHungerMechanics closes it and counts it again.
   skipped_hunger_window_counts_twice: true
-  # tamer.c: advanceBattleTime y skipHours suman a sicknessTries, no a las horas de enfermedad, cada hora enfermo.
+  # tamer.c: advanceBattleTime and skipHours add to sicknessTries, not to the sickness hours, every hour sick.
   skipped_hours_add_sickness_tries: true
-  # skipHours mira (HOUR + horas % 4) == 0 y no si las horas saltadas cruzan un múltiplo de 4: solo resta vida por
-  # infelicidad a medianoche y con grupos de 4 horas. false: la resta una vez por cada múltiplo de 4 horas cruzado,
-  # como si se jugaran esas horas.
+  # skipHours checks (HOUR + hours % 4) == 0 and not whether the skipped hours cross a multiple of 4: it only subtracts life for
+  # unhappiness at midnight and in groups of 4 hours. false: it subtracts once per multiple of 4 hours crossed,
+  # as if those hours were played.
   skipped_hours_unhappiness_only_at_midnight: true
-  # partner_impl.c: setFoodTimer (versión americana) busca la comida siguiente a partir de la última que fijó
-  # (nextHungerHour, una hora sin día) cuando la hora actual no la ha pasado. handleSleeping la llama al despertar con
-  # la de antes de dormir: si despierta antes de esa hora, se salta esa comida y las anteriores. Un partner que se
-  # duerme a las 16 con la comida de las 18 pendiente y despierta a la 1 no tiene hambre hasta las 22 o las 23.
-  # false: al despertar busca desde la hora de despertar, como la versión japonesa.
+  # partner_impl.c: setFoodTimer (American version) looks for the next food starting from the last one it set
+  # (nextHungerHour, an hour without a day) when the current hour has not passed it. handleSleeping calls it on waking with
+  # the one from before sleeping: if it wakes before that hour, it skips that food and the earlier ones. A partner that
+  # falls asleep at 16 with the 18 food pending and wakes at 1 is not hungry until 22 or 23.
+  # false: on waking it searches from the wake-up hour, like the Japanese version.
   wake_searches_from_last_meal: true

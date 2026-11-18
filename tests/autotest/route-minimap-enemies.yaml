@@ -1,9 +1,9 @@
-# The enemies on the minimap (an engine improvement, docs/modulos/apps/game.md, «Enemigos en el minimapa»): a dot for
+# The enemies on the minimap (an engine improvement, docs/modules/apps/game.md, «Enemies on the minimap»): a dot for
 # each character on the map whose script section can start a battle. On the misty woods' second screen (run with
 # --start mist03 --story-stage all) three wild ones walk their paths: from the arrival two show east of the player;
 # placed between them all three show round it and move with the frames, one leaving the disc's view. Then the option
 # off in the pause menu: the dots go and the minimap shows the player and the partner only. Run it with both skins
-# (--ui-skin original, modern); how to run it: docs/guides/prueba-vertical.md.
+# (--ui-skin original, modern); how to run it: docs/guides/vertical-slice.md.
 name: minimap-enemies
 device: keyboard
 timeout: 180

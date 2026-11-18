@@ -1,7 +1,7 @@
 name: training-icsa03-hp
 # One whole hp session on icsa03, checked against the bounds of dwe's own run (not measured in the original):
 # frames from the partner's arrival to the gains, its farthest point from its spot, the ground it
-# covered and each stat's gain, in original units (docs/guides/comprobar-entrenamiento.md).
+# covered and each stat's gain, in original units (docs/guides/check-training.md).
 device: keyboard
 timeout: 290
 steps:

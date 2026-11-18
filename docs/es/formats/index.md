@@ -1,0 +1,34 @@
+# Formatos
+
+Para identificar qué archivo editar, empieza por [Extensiones y archivos del juego](extensions.md): modelos, mapas, UI, audio y contenido cocinado.
+
+Referencia de los formatos del original tal como los lee `packages/formats/`. Cada página describe lo que está **implementado**:
+la estructura, las comprobaciones que hace el lector y dónde lo lee el original en el decomp (`dw_decomp`). El plan
+general está en [Formatos del original y `dwx`](../architecture/formats.md).
+
+Ninguna página contiene datos del juego: solo estructuras, nombres de fichero y referencias al decomp
+([política legal](../legal/assets.md)).
+
+| Página | Qué cubre | Código |
+|---|---|---|
+| [Disco](disc.md) | Imagen BIN/CUE o ISO, sectores, ISO9660, ejecutable y tabla de ficheros, `dwx extract --list` | `formats/disc`, `formats/exe` |
+| [TIM y packs](tim.md) | TIM, TIM apilados, packs de paso fijo y PNG del extractor | `formats/image` |
+| [Modelos y animaciones](models.md) | TMD, MMD, esqueletos, simulación de animaciones y escritura en glTF | `formats/model` |
+| [Tablas](tables.md) | Tablas de datos del ejecutable por versión, direcciones de los overlays, escape de textos, YAML con ids de texto y esquemas | `formats/exe`, `content/schemas` |
+| [Overlays](overlays.md) | `*_REL.BIN`: cabecera, partes, ficheros incrustados y tablas de pesca, torneo, versus, entrenamiento y batalla | `formats/exe/overlay*`, `content/schemas` |
+| [Mapas](maps.md) | `MAP_ENTRIES` y tablas de mapa, `.MAP`, `.TFS`, composición del fondo por paleta, YAML del mapa y colisión | `formats/map`, `content/schemas/map.schema.json` |
+| [Efectos](effects.md) | `ETCHI/EFEDAT.EFE`: ranuras por técnica, cabecera, scripts y sus 97 subopcodes, área de datos, texturas en VRAM y modelos | `formats/effect` |
+| [Audio](audio.md) | VHB, VAB, ADPCM, SEQ, bancos empaquetados y escritura en SF2, WAV y MIDI | `formats/audio` |
+| [Vídeo](video.md) | STR (`StHEADER` y XA), bitstream MDEC v2/v3, IDCT del MDEC, ADPCM XA, `MOV_MOVIES`, salida Y4M + WAV | `formats/video`, `content/schemas/movie.schema.json` |
+| [`dwx extract`](extract.md) | Paquete base, ids de asset, extractores e informe de cobertura | `apps/dwx` |
+| [Textos y fuente](texts.md) | Juego de caracteres, cadenas de bytes y texto de script a UTF-8 con etiquetas, fuente a atlas PNG y manifiesto de cadenas | `formats/text` |
+| [Scripts de eventos](scripts.md) | `MAPHEAD.SCN`, `DG.SCN`, cabecera, desensamblador, barrido, listado YAML y módulos Lua | `formats/script` |
+| [Árbol de evolución](evolution-tree.md) | Posiciones e iconos de la vista general y geometría del detalle (`dwx ui-chart`, `dwx ui-chart-detail`) | `formats/exe`, `content/schemas/evolution_chart*.schema.json` |
+
+Los formatos propios del motor, los que escribe `dwx` para el estado cocinado:
+
+| Página | Qué cubre | Código |
+|---|---|---|
+| [Archivo `.pak`](pak.md) | Un paquete en un solo fichero: cabecera, tabla de contenidos, SHA-1 por entrada, cómo se monta | `packages/engine/assets` |
+| [Texturas KTX2](ktx2.md) | Las texturas UASTC con zstd que escribe `dwx cook`, qué PNG se convierten, los mipmaps y la transcodificación al cargar | `apps/dwx`, `packages/engine/assets` |
+| [Sonido Ogg Opus](opus.md) | El Ogg Opus que escribe `dwx cook` a partir de cada WAV, sus comentarios de bucle y lo que comprueba el lector | `apps/dwx`, `packages/engine/assets` |

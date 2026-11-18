@@ -21,7 +21,7 @@ files["content/packs/*/ui/**/*.lua"] = {
   },
 }
 
--- The example addons (examples/ui-addons/, docs/modding/interfaces.md): documents like the packs',
+-- The example addons (examples/ui-addons/, docs/modding/ui-addons.md): documents like the packs',
 -- with the UI API only, none of the game's helper scripts.
 files["examples/ui-addons/**/*.lua"] = {
   allow_defined_top = true,
@@ -97,4 +97,9 @@ files["content/packs/*/ui/common/bag_slot.lua"] = {
 files["apps/game/scripts/main.lua"] = {
   read_globals = { "input" },
   globals = { "tick", "marker" },
+}
+
+-- Story patches: the story loader gives each patch the `story` API (docs/reference/shop-job.md).
+files["content/packs/*/story/patches/*.lua"] = {
+  read_globals = { "story" },
 }

@@ -12,7 +12,7 @@
 #include <optional>
 #include <utility>
 
-// Where the characters stand against each other (docs/modulos/game/field.md, "Posiciones"): the
+// Where the characters stand against each other (docs/modules/game/field.md, "Posiciones"): the
 // overlap watch and the release rule, both the engine's.
 namespace dwe::game::field {
 

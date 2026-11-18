@@ -6,7 +6,7 @@
 // (never drawn), 128 (the colour's STP bit is set: mixed when the sprite is semi-transparent) or 255; a
 // semi-transparent sprite is drawn twice, its plain texels opaque and its STP texels with its blend.
 //
-// HD scenery (an engine improvement, docs/architecture/remaster-pipeline.md, «Alta definición en el motor») draws the
+// HD scenery (an engine improvement, docs/architecture/high-definition.md, "High definition in the engine") draws the
 // background and the depth layers through sampleSmooth instead: an edge-adaptive filter at window resolution that
 // reads the colours after the palette fade, so every palette variant and the fade work as before. Which texels are
 // drawn, and their STP class, still come from the nearest texel: the scenery's shapes and what covers what do not move.

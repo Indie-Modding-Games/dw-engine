@@ -1,145 +1,145 @@
-# Ficha de referencia: inventario
+# Reference sheet: inventory
 
-Cómo funcionaban la bolsa, el dinero, el uso de objetos y las tiendas en el juego original, según el decomp. Las
-constantes de esta ficha siembran la sección `inventory` del ruleset `original`
-(`content/packs/game/rules/original/inventory.yaml`); los datos por objeto los extrae `dwx` del disco del usuario.
+How the bag, money, item use and shops worked in the original game, according to the decomp. The constants in this
+sheet seed the `inventory` section of the `original` ruleset (`content/packs/game/rules/original/inventory.yaml`); the
+per-item data is extracted by `dwx` from the user's disc.
 
-## Qué hace
+## What it does
 
-El jugador lleva una bolsa de objetos y un monedero. Los objetos se recogen del suelo, se ganan en combate, se compran
-en tiendas o los da la historia. Desde el menú se usan (casi todos se le dan al partner), se mueven, se ordenan o se
-tiran. En combate se lanzan al partner. Las tiendas venden lo que la historia ha desbloqueado y compran lo que se
-puede tirar.
+The player carries a bag of items and a wallet. Items are picked up from the ground, won in combat, bought in shops or
+given by the story. From the menu they are used (almost all are given to the partner), moved, sorted or dropped. In
+combat they are thrown at the partner. Shops sell what the story has unlocked and buy what can be dropped.
 
-## Reglas
+## Rules
 
-### La bolsa
+### The bag
 
-- **Tamaño:** caben hasta 30 huecos, pero solo se usan los primeros N. La historia fija N con una orden de guion
-  (`set_inventory_size`): la partida nueva la deja en 10 y otros guiones la suben a 20 y a 30 **(comprobado)**.
-- **Apilar** (`giveItem`): un objeto que entra va a la **primera** pila de su tipo. Si esa pila no está llena, suma y
-  lo que pasa de 99 se pierde; si ya tiene 99, no entra **aunque haya huecos libres**. Si no hay pila, ocupa el primer
-  hueco libre; con la bolsa llena no entra **(comprobado)**.
-- **Quitar** (`removeItem`): resta de cada pila de ese tipo; una pila que llega a 0 deja el hueco vacío, sin mover
-  las demás **(comprobado)**.
-- **Contar** (`getItemCount`): la cantidad de la primera pila del tipo **(comprobado)**.
-- **Mover:** intercambia dos huecos **(comprobado)**.
-- **Tirar:** solo en el campo y solo los objetos con `droppable` 1; se tira la pila entera **(comprobado)**.
-- **Objetos clave:** el original no tiene una marca de objeto importante. Los de `droppable` 0 (8 en la versión
-  americana: 115 a 120, 123 y 124) ni se venden (`shopFillSellItemList`) ni se tiran (`selectOptionMenu`); los de
-  `item_color` 255 (123 y 124) además se pintan en otro color (`renderInventoryTop`) **(comprobado)**.
-- **Ordenar** (`sortItems`): hay tres órdenes. Cada uno es un orden de las seis categorías de `sorting_value`; dentro
-  de cada categoría, por número de objeto. Los objetos quedan al principio y los huecos al final **(comprobado)**.
-- **Partida nueva:** 10 huecos y 0 de dinero. El estado de arranque (`initializeInventory`) trae objetos de prueba y
-  50 000; el guion de la partida nueva los quita y resta los 50 000 **(comprobado)**. Con qué objetos se empieza lo
-  decide ese guion (fase 4).
+- **Size:** up to 30 slots fit, but only the first N are used. The story sets N with a script command
+  (`set_inventory_size`): a new game leaves it at 10 and other scripts raise it to 20 and to 30 **(verified)**.
+- **Stacking** (`giveItem`): an incoming item goes to the **first** stack of its type. If that stack is not full, it
+  adds and whatever goes past 99 is lost; if it already has 99, it does not go in **even if there are free slots**. If
+  there is no stack, it takes the first free slot; with the bag full it does not go in **(verified)**.
+- **Removing** (`removeItem`): it subtracts from each stack of that type; a stack that reaches 0 leaves the slot empty,
+  without moving the others **(verified)**.
+- **Counting** (`getItemCount`): the quantity of the first stack of the type **(verified)**.
+- **Moving:** it swaps two slots **(verified)**.
+- **Dropping:** only in the field and only items with `droppable` 1; the whole stack is dropped **(verified)**.
+- **Key items:** the original has no important-item mark. Those with `droppable` 0 (8 in the American version: 115 to
+  120, 123 and 124) are neither sold (`shopFillSellItemList`) nor dropped (`selectOptionMenu`); those with
+  `item_color` 255 (123 and 124) are also painted in another color (`renderInventoryTop`) **(verified)**.
+- **Sorting** (`sortItems`): there are three orders. Each one is an order of the six `sorting_value` categories;
+  within each category, by item number. Items end up at the start and the gaps at the end **(verified)**.
+- **New game:** 10 slots and 0 money. The startup state (`initializeInventory`) brings test items and 50,000; the new
+  game script removes them and subtracts the 50,000 **(verified)**. Which items you start with is decided by that
+  script (phase 4).
 
-### El dinero
+### Money
 
-- No pasa de 999 999 al sumar (premios de combate, guiones y ventas) y no baja de 0 al restar con el guion
-  **(comprobado)**.
+- It does not go past 999,999 when adding (combat prizes, scripts and sales) and does not go below 0 when subtracting
+  with the script **(verified)**.
 
-### Usar un objeto
+### Using an item
 
-- **Dónde:** según `item_color`: 0 solo en el campo, 1 solo en combate, 2 en los dos, 255 nunca **(comprobado)**.
-- **En el campo** (estados 4 a 6 de `partner.c`): el jugador da el objeto al partner, que puede rechazarlo
-  (`partnerWillRefuseItem`, ver la [ficha de cuidado](care.md)). Si lo rechaza no se gasta. Si lo acepta se aplica el
-  efecto, se gasta uno y se cuenta como comida (`partnerHandleFoodFeed`) **(comprobado)**.
-- **En combate** (`startThrowingItem`): se gasta uno al lanzarlo y el efecto llega al caer; no se puede rechazar
-  **(comprobado)**.
-- **Efectos:** `ITEM_FUNCTIONS` da la función de cada objeto. No hay más tabla que esa, `HEALING_VALUES` (lo que curan
-  las curas de HP y MP) y `EVOLUTION_ITEM_TARGET` (a qué evoluciona cada objeto de evolución); el resto de valores son
-  constantes en el código **(comprobado)**:
-  - **Curas de HP y MP:** suben los HP o MP actuales sin pasar del máximo. No hacen nada con el partner a 0 HP.
-  - **Doble cura:** 1500 de HP y de MP, también solo con HP.
-  - **Estados** (`handleStatusItems`, solo con HP): uno cura los estados de combate; otro los cura en combate y además
-    hace la doble cura; otro protege al partner en ese combate; la venda cura la herida siempre y la enfermedad el
-    20 % de las veces (tiradas de 3 y de 10); la medicina cura las dos siempre.
-  - **Revivir** (`handleRestore`): uno devuelve la mitad de los HP máximos y otro todos y cura los estados en combate.
-    En combate quitan la cuenta atrás de la derrota.
-  - **Discos** (`handleBuffDisks`, solo con HP): suben ataque, defensa o velocidad 20 o 50 para el combate, con tope
-    del valor al empezar el combate más un 30 %, como mucho 999. El disco de los tres atributos suma 20 a cada uno.
-  - **Chips** (`handleChips`): suben para siempre ataque, defensa, inteligencia, velocidad (+50), HP o MP máximos
-    (+500) o pares (+100, o +1000 de HP y MP) a cambio de 24 horas de vida; esos tres además tienen un 10 % de bajar un
-    nivel de domador. Topes: 999 para los atributos y 9999 para HP y MP. El piloto automático llama a una sección del
-    guion si está en pausa; el orinal portátil vacía las ganas del partner.
-  - **Comida** (`handleFood`): energía, cansancio, felicidad, disciplina, peso, vida, HP y MP máximos y actuales,
-    atributos, un bonus de entrenamiento y una probabilidad de enfermar. La comida favorita da energía × 1,4 y +2 de
-    felicidad. Toda comida baja 1 el contador del baño.
-  - **Evolución** (`handleEvoItems`): evoluciona al destino de la tabla si el partner está un nivel por debajo; tres
-    objetos llevan a destinos fijos sin mirar el nivel.
+- **Where:** according to `item_color`: 0 only in the field, 1 only in combat, 2 in both, 255 never **(verified)**.
+- **In the field** (states 4 to 6 of `partner.c`): the player gives the item to the partner, which can refuse it
+  (`partnerWillRefuseItem`, see the [care sheet](care.md)). If it refuses, it is not spent. If it accepts, the effect
+  is applied, one is spent and it counts as food (`partnerHandleFoodFeed`) **(verified)**.
+- **In combat** (`startThrowingItem`): one is spent when thrown and the effect arrives when it lands; it cannot be
+  refused **(verified)**.
+- **Effects:** `ITEM_FUNCTIONS` gives each item's function. There is no table besides that, `HEALING_VALUES` (what the
+  HP and MP cures heal) and `EVOLUTION_ITEM_TARGET` (what each evolution item evolves into); the rest of the values
+  are constants in the code **(verified)**:
+  - **HP and MP cures:** they raise current HP or MP without going past the maximum. They do nothing with the partner
+    at 0 HP.
+  - **Double cure:** 1500 of HP and MP, also only with HP.
+  - **Statuses** (`handleStatusItems`, only with HP): one cures combat statuses; another cures them in combat and also
+    does the double cure; another protects the partner in that combat; the Bandage always cures the injury and the
+    sickness 20% of the time (rolls of 3 and 10); the Medicine always cures both.
+  - **Reviving** (`handleRestore`): one returns half of the max HP and another all of it and cures the statuses in
+    combat. In combat they cancel the defeat countdown.
+  - **Disks** (`handleBuffDisks`, only with HP): they raise offense, defense or speed by 20 or 50 for the combat, capped
+    at the value at the start of combat plus 30%, at most 999. The Omni Disk adds 20 to each.
+  - **Chips** (`handleChips`): they permanently raise offense, defense, Brains, speed (+50), max HP or MP (+500) or
+    pairs (+100, or +1000 of HP and MP) in exchange for 24 hours of life; those three also have a 10% chance of
+    lowering a tamer level. Caps: 999 for the attributes and 9999 for HP and MP. The Auto Pilot calls a section of the
+    script if it is paused; the Portable Potty empties the partner's urge.
+  - **Food** (`handleFood`): energy, tiredness, happiness, discipline, weight, life, max and current HP and MP,
+    attributes, a training bonus and a chance of getting sick. The favorite food gives energy × 1.4 and +2 happiness.
+    Every food lowers the bathroom counter by 1.
+  - **Evolution** (`handleEvoItems`): it evolves into the table's destination if the partner is one level below; three
+    items lead to fixed destinations without looking at the level.
 
-### Tiendas
+### Shops
 
-- **Existencias:** no hay tabla. El objeto `i` se vende mientras está activo el disparador `0x180 + i`
-  (`shopFillBuyItemList`) **(comprobado)**.
-- **Se puede comprar** si el precio entero cabe en el dinero y, o hay hueco libre y ninguna pila del objeto está llena,
-  o no hay hueco y hay una pila del objeto sin llenar **(comprobado)**.
-- **Comprar:** el precio es `value`; con un bebé de partner, × 90 / 100. Se compran como mucho 99 de una vez, no más
-  de lo que falta para 99 en la bolsa y no más de lo que alcanza el dinero **al precio entero** (`createItemMenuAmountBox`)
-  **(comprobado)**.
-- **Vender:** solo lo que se puede tirar (`droppable` distinto de 0), a `value / 2`; el dinero no pasa de 999 999
-  **(comprobado)**.
-- **Otras tiendas:** el intercambio por méritos (`merit_value`) y la tienda de reciclaje, que vende lo que se
-  perdió al caer en combate, son menús que abre el guion. En el motor: `session::MeritShop` y `session::ShopCounter`.
+- **Stock:** there is no table. Item `i` is sold while trigger `0x180 + i` is active (`shopFillBuyItemList`)
+  **(verified)**.
+- **It can be bought** if the whole price fits in the money and, either there is a free slot and no stack of the item
+  is full, or there is no slot and there is an unfilled stack of the item **(verified)**.
+- **Buying:** the price is `value`; with a Fresh Digimon as partner, × 90 / 100. At most 99 are bought at once, no more
+  than what is missing to reach 99 in the bag and no more than the money covers **at the full price**
+  (`createItemMenuAmountBox`) **(verified)**.
+- **Selling:** only what can be dropped (`droppable` other than 0), at `value / 2`; money does not go past 999,999
+  **(verified)**.
+- **Other shops:** the merit exchange (`merit_value`) and the recycling shop, which sells what was lost on falling in
+  combat, are menus opened by the script. In the engine: `session::MeritShop` and `session::ShopCounter`.
 
-### Derrota
+### Defeat
 
-- Al perder (`handleItemLoss`) se van `huecos ocupados × 30 / 100` huecos al azar, redondeando hacia abajo, cada uno
-  con su pila entera. Lo perdido que se puede reciclar pasa a la tienda de reciclaje, hasta 99 de cada uno
-  **(comprobado)**.
+- On losing (`handleItemLoss`), `occupied slots × 30 / 100` slots are lost at random, rounding down, each with its
+  whole stack. What is lost that can be recycled goes to the recycling shop, up to 99 of each **(verified)**.
 
-### Objetos del suelo y cofres
+### Ground items and chests
 
-- Los objetos que suelta un enemigo caen al suelo (hasta 11 a la vez; los demás se pierden). Al recogerlos o abrir un
-  cofre se intenta meter uno en la bolsa; si no entra, se queda donde estaba **(comprobado)**.
+- The items an enemy drops fall to the ground (up to 11 at a time; the rest are lost). On picking them up or opening a
+  chest, one is tried to be put in the bag; if it does not fit, it stays where it was **(verified)**.
 
-### Cartas
+### Cards
 
-- El jugador guarda hasta 9 copias de cada carta (`script_interp.c: getCardAmount`, cuatro bits por carta)
-  **(comprobado)**. Un sobre da 3 cartas (`rollCardPack`); cada una tira la rareza con `randomLimit(100)` (0: rareza
-  0; menos de 5: 1; de 20: 2; de 50: 3; si no, 4) y luego una carta de esa rareza al azar (`rollCard`)
-  **(comprobado)**. La línea del texto (MAPHEAD 0x4d3) dice si es nueva (según su rareza) o repetida, y la variable
-  249 lleva su Digimon (`showCardTextbox`) **(comprobado)**.
-- Motor: `packages/game/inventory/cards`, `session::CardsAdapter` (reglas `cards`, sección de guardado `cards`). La tienda de
-  cartas y su venta están en `session::CardShop`, y el canje por méritos en `session::MeritShop`.
-- Los scripts: `story.give_card(n)` suma una copia sin pasar de `max_copies` y `story.take_card(n)` quita una sin
-  bajar de 0 (`script_interp.c:1143`, `:1151`); `story.cards(n)` dice cuántas hay (`scriptCompareCard`). Una carta
-  que la tabla no tiene es un error del script; sin cartas (sin tabla o sin reglas) no cambian nada
-  (`story_orders_cards.cpp`).
+- The player keeps up to 9 copies of each card (`script_interp.c: getCardAmount`, four bits per card) **(verified)**.
+  A pack gives 3 cards (`rollCardPack`); each one rolls rarity with `randomLimit(100)` (0: rarity 0; less than 5: 1;
+  from 20: 2; from 50: 3; otherwise, 4) and then a random card of that rarity (`rollCard`) **(verified)**. The text
+  line (MAPHEAD 0x4d3) says whether it is new (by its rarity) or a duplicate, and variable 249 carries its Digimon
+  (`showCardTextbox`) **(verified)**.
+- Engine: `packages/game/inventory/cards`, `session::CardsAdapter` (`cards` rules, `cards` save section). The card shop
+  and its selling are in `session::CardShop`, and the merit exchange in `session::MeritShop`.
+- The scripts: `story.give_card(n)` adds one copy without going past `max_copies` and `story.take_card(n)` removes one
+  without going below 0 (`script_interp.c:1143`, `:1151`); `story.cards(n)` says how many there are
+  (`scriptCompareCard`). A card that the table does not have is a script error; without cards (no table or no rules)
+  they change nothing (`story_orders_cards.cpp`).
 
-## Datos
+## Data
 
-| Tabla | Tamaño del registro | Entradas (US) | Qué guarda |
+| Table | Record size | Entries (US) | What it stores |
 |---|---|---|---|
-| `ITEM_PARA` | 32 bytes | 128 | Por objeto: nombre, precio (`value`), valor de mérito, categoría de orden (`sorting_value`), dónde se usa (`item_color`), si se puede tirar (`droppable`) y un campo sin identificar. `dwx` lo extrae a `data/items`. |
-| `ITEM_FUNCTIONS` | 4 bytes | 128 | La función de cada objeto. |
-| `HEALING_VALUES` | 2 bytes | 4 | HP o MP que cura cada cura. |
-| `EVOLUTION_ITEM_TARGET` | 1 byte | 44 | Destino de cada objeto de evolución. |
-| `SHOP_MAPS`, `SHOPKEEP_DIGIMON_TYPES` | | 8 y 11 | Mapas con tienda y tenderos (`data/shops`). |
+| `ITEM_PARA` | 32 bytes | 128 | Per item: name, price (`value`), merit value, sort category (`sorting_value`), where it is used (`item_color`), whether it can be dropped (`droppable`) and an unidentified field. `dwx` extracts it to `data/items`. |
+| `ITEM_FUNCTIONS` | 4 bytes | 128 | Each item's function. |
+| `HEALING_VALUES` | 2 bytes | 4 | HP or MP that each cure heals. |
+| `EVOLUTION_ITEM_TARGET` | 1 byte | 44 | Destination of each evolution item. |
+| `SHOP_MAPS`, `SHOPKEEP_DIGIMON_TYPES` | | 8 and 11 | Maps with a shop and shopkeepers (`data/shops`). |
 
-`dwx` escribe en `data/item_effects` la función de cada objeto, lo que cura, a qué evoluciona y los valores de cada caso
-de comida y de chip, que lee del código sin copiarlo ([tablas](../formats/tablas.md#efectos-de-objetos)).
+`dwx` writes to `data/item_effects` each item's function, what it heals, what it evolves into and the values of each
+food and chip case, which it reads from the code without copying it ([tables](../formats/tables.md#item-effects)).
 
-## Rarezas
+## Oddities
 
-- **Lo que no cabe en la pila se pierde** (`giveItem`), y la tienda ya lo cobró. Quirk `stack_overflow_is_lost`.
-- **Una pila llena bloquea el objeto aunque haya huecos libres** (`giveItem` solo mira la primera pila).
-- **El tope de compra de un bebé usa el precio entero** (`createItemMenuAmountBox`, `shopFillBuyItemList`): con el
-  descuento cabría alguno más. Quirk `baby_discount_limited_by_full_price`.
-- **El disco de los tres atributos no mira el tope** (`handleBuffDisks`). Quirk `omni_disk_ignores_limit`.
-- **Objetos sin efecto que se gastan:** las llaves, cañas y similares (función nula) y cinco chips cuyo caso no hace
-  nada se pueden dar al partner y se gastan sin efecto. Quirk `useless_items_consumed`.
-- **La comida no mira la vida a 0** (suma `remainingLifetime` directamente) y los chips sí (`modifyLifetime`).
+- **What does not fit in the stack is lost** (`giveItem`), and the shop already charged for it. Quirk
+  `stack_overflow_is_lost`.
+- **A full stack blocks the item even if there are free slots** (`giveItem` only looks at the first stack).
+- **A Fresh Digimon's purchase cap uses the full price** (`createItemMenuAmountBox`, `shopFillBuyItemList`): with the
+  discount a few more would fit. Quirk `baby_discount_limited_by_full_price`.
+- **The Omni Disk does not look at the cap** (`handleBuffDisks`). Quirk `omni_disk_ignores_limit`.
+- **Items without effect that are spent:** keys, rods and the like (null function) and five chips whose case does
+  nothing can be given to the partner and are spent without effect. Quirk `useless_items_consumed`.
+- **Food does not check life at 0** (it adds `remainingLifetime` directly) and chips do (`modifyLifetime`).
 
-## Dónde está en el decomp
+## Where it is in the decomp
 
-| Tema | Ficheros y funciones |
+| Topic | Files and functions |
 |---|---|
-| Bolsa | `src/main/item.c`: `giveItem`, `removeItem`, `getItemCount`, `setInventorySize`, `initializeInventory`, `pickupItem` |
-| Menú | `src/main/inventory.c`: `selectOptionMenu`, `sortItems`; `src/main/utils.c`: `sortItemsById` |
-| Efectos | `src/main/item.c`: `ITEM_FUNCTIONS`, `handleHPHealingItem`, `handleMPHealingItem`, `handleDoubleFloppy`, `handleStatusItems`, `handleMedicineHealing`, `handleRestore`, `handleChips`, `handlePortaPotty`, `handleFood`, `handleEvoItems`; `src/main/main.c`: `handleBuffDisks`, `startThrowingItem` |
-| Uso en el campo | `src/main/partner.c` (estados 4 a 8 de dar un objeto); `src/main/partner_impl.c`: `partnerWillRefuseItem` |
-| Tiendas | `src/main/script_common.c`: `shopFillBuyItemList`, `shopFillSellItemList`, `createItemMenuAmountBox`, `tickItemMenuAmountBox`, `isPartnerBaby` |
-| Derrota | `src/main/script_common.c`: `handleItemLoss` |
-| Dinero | `src/main/battle_ui.c`; `src/main/script_interp.c` (`ADD_MONEY`, `REDUCE_MONEY`, `set_inventory_size`) |
+| Bag | `src/main/item.c`: `giveItem`, `removeItem`, `getItemCount`, `setInventorySize`, `initializeInventory`, `pickupItem` |
+| Menu | `src/main/inventory.c`: `selectOptionMenu`, `sortItems`; `src/main/utils.c`: `sortItemsById` |
+| Effects | `src/main/item.c`: `ITEM_FUNCTIONS`, `handleHPHealingItem`, `handleMPHealingItem`, `handleDoubleFloppy`, `handleStatusItems`, `handleMedicineHealing`, `handleRestore`, `handleChips`, `handlePortaPotty`, `handleFood`, `handleEvoItems`; `src/main/main.c`: `handleBuffDisks`, `startThrowingItem` |
+| Use in the field | `src/main/partner.c` (states 4 to 8 of giving an item); `src/main/partner_impl.c`: `partnerWillRefuseItem` |
+| Shops | `src/main/script_common.c`: `shopFillBuyItemList`, `shopFillSellItemList`, `createItemMenuAmountBox`, `tickItemMenuAmountBox`, `isPartnerBaby` |
+| Defeat | `src/main/script_common.c`: `handleItemLoss` |
+| Money | `src/main/battle_ui.c`; `src/main/script_interp.c` (`ADD_MONEY`, `REDUCE_MONEY`, `set_inventory_size`) |

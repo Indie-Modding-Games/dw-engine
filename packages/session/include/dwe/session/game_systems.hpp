@@ -51,6 +51,7 @@ class TournamentAdapter;
 class CurlingAdapter;
 class MapVisits;
 class WeatherSeed;
+class ShopJobAdapter;
 
 // The tables the game systems read. Loaded once, they are shared by many sessions (dwe-sim's runs);
 // a table left empty is read by its adapter from the packs.
@@ -73,9 +74,9 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
 // The game's systems as adapters for SessionDesc::systems, in the order they tick (evolution,
 // inventory, battle, the story's game orders, story scenes, story, mod scripts, gym, shop, item
 // keeper, discard menu, jukebox, item trader, calendar, field items, cards, card shop, merit
-// exchange, fishing, poop piles, city, medals, battle registry, map visits, weather seed), and the
-// adapters by type for the commands of the game and its menus. The session owns the adapters once
-// given them: the typed pointers are valid while it lives.
+// exchange, fishing, poop piles, city, medals, battle registry, map visits, weather seed, shop
+// job), and the adapters by type for the commands of the game and its menus. The session owns the
+// adapters once given them: the typed pointers are valid while it lives.
 struct GameSystems {
   std::vector<std::unique_ptr<SessionSystem>> systems;
   EvolutionAdapter* evolution = nullptr;
@@ -121,6 +122,8 @@ struct GameSystems {
   MapVisits* mapVisits = nullptr;
   // The playthrough's weather seed (an engine improvement).
   WeatherSeed* weather = nullptr;
+  // The canyon shop's improved job (an engine improvement, the option shop_job.mode).
+  ShopJobAdapter* shopJob = nullptr;
 };
 
 // The adapters of every game system on the packs, which must outlive them, wired to each other: the

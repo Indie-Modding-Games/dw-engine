@@ -36,9 +36,9 @@ std::string textOf(const core::Result<std::string>& result) {
   return result ? *result : result.error().message;
 }
 
-constexpr std::string_view Clock = R"(# El reloj (clock.c).
+constexpr std::string_view Clock = R"(# The clock (clock.c).
 frames_per_second: 20
-# clock.c: tickGameClock: un minuto cada 20 fotogramas.
+# clock.c: tickGameClock: one minute every 20 frames.
 frames_per_minute: 20
 days_per_year: 30
 year_limit: 100
@@ -46,7 +46,7 @@ start: {year: 0, day: 0, hour: 8, minute: 0}
 )";
 
 constexpr std::string_view Care = R"(hunger:
-  # partner_impl.c: tickHungerMechanics: hora y media.
+  # partner_impl.c: tickHungerMechanics: an hour and a half.
   window_minutes: 90
   label: "Hambre"
 selection: original
@@ -239,7 +239,7 @@ TEST_CASE("saving writes the tuned values into the section's file and keeps its 
   REQUIRE_MESSAGE(model.save("care"), model.error());
   CHECK(model.status().starts_with("section care saved to "));
   CHECK(packs.fileText("rules/small/care.yaml") == R"(hunger:
-  # partner_impl.c: tickHungerMechanics: hora y media.
+  # partner_impl.c: tickHungerMechanics: an hour and a half.
   window_minutes: 60
   label: "Hambre fuerte"
 selection: original
@@ -261,7 +261,7 @@ TEST_CASE("a section of a ruleset that extends another is saved to the file that
   REQUIRE(model.edit("clock", frames, "10"));
   REQUIRE(model.save("clock"));
   CHECK(packs.fileText("rules/small/clock.yaml")
-            .contains("# clock.c: tickGameClock: un minuto cada 20 fotogramas.\n"
+            .contains("# clock.c: tickGameClock: one minute every 20 frames.\n"
                       "frames_per_minute: 10\n"));
 }
 

@@ -388,7 +388,7 @@ struct VersusRules {
   std::vector<std::int32_t> arenas;
 };
 
-// Engine values for what the original's animations and map collision decide (Hueco until measured).
+// Engine values for what the original's animations and map collision decide (Gap until measured).
 struct TimingRules {
   std::int32_t attackFrames = 0;
   std::int32_t hitFrame = 0;

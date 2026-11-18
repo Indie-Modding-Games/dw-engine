@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compares a state trace of the original game with one of dwe (docs/guides/traza-de-estado.md).
+"""Compares a state trace of the original game with one of dwe (docs/guides/state-trace.md).
 
 usage: oracle_compare.py <reference.jsonl> <dwe.jsonl> [--align input|move|battle|fight] [--json <report.json>]
                          [--tolerance <field>=<units>]... [--max-seconds <s>]

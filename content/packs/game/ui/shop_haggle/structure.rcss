@@ -1,0 +1,441 @@
+/* How the shop job's counter behaves whatever the skin (docs/reference/shop-job.md, Interface): a wide panel at the top of the screen,
+   over a dimmed screen and above the dialogue box (the customer's line stays readable under it). The head holds the
+   customer's number, the tally and the rules button; under it, two columns: the customer's card on the left (face,
+   who, mood, patience, the item and the offers so far) and the price table on the right (the nine price rows as
+   buttons: a click or confirm offers that price; then Chat and Dismiss). This sheet also gives it a plain neutral look,
+   so it reads well before a skin styles it (skins/<id>/shop_haggle/style.rcss restyles it). */
+
+body {
+	font-size: 16dp;
+	color: #e8e8e8;
+}
+
+#scrim {
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #00000080;
+}
+
+/* Wide and short: it ends above the dialogue box (its top is about 480dp down at 720 lines). */
+#panel {
+	position: absolute;
+	left: 50%;
+	top: 8dp;
+	width: 1120dp;
+	margin-left: -580dp;
+	padding: 10dp 20dp 12dp 20dp;
+	/* The panel's own sizes: a skin's theme sizes the body for its menus. */
+	font-size: 16dp;
+	line-height: 20dp;
+	background-color: #1c2230f0;
+	border: 2dp #8a94a8;
+	border-radius: 8dp;
+}
+
+/* ---- Head: the customer's number, the tally and the next mark, the rules button ---- */
+
+#haggle-head {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	height: 36dp;
+	margin-bottom: 8dp;
+	padding-bottom: 6dp;
+	border-bottom: 1dp #4a5468;
+}
+
+#haggle-title {
+	flex: 0 0 auto;
+	font-size: 20dp;
+	font-weight: bold;
+	white-space: nowrap;
+}
+
+#haggle-summary {
+	display: block;
+	flex: 1 1 auto;
+	margin: 0 20dp;
+	text-align: right;
+	white-space: nowrap;
+}
+
+#haggle-tally {
+	margin-right: 18dp;
+}
+
+#haggle-next {
+	color: #f0c040;
+}
+
+#haggle-rules {
+	flex: 0 0 auto;
+	padding: 2dp 10dp;
+	white-space: nowrap;
+}
+
+/* ---- Body: the customer's card and the price table side by side ---- */
+
+#haggle-body {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+}
+
+#haggle-side {
+	display: block;
+	flex: 0 0 400dp;
+	width: 400dp;
+	margin-right: 20dp;
+}
+
+#haggle-table {
+	display: block;
+	flex: 1 1 auto;
+}
+
+/* The customer: the last reaction's face in a frame, who it is, its mood and reaction, its patience. */
+#haggle-customer {
+	display: block;
+	position: relative;
+	min-height: 80dp;
+	padding: 8dp;
+	margin-bottom: 8dp;
+	background-color: #ffffff0d;
+	border-radius: 6dp;
+}
+
+#haggle-portrait {
+	position: absolute;
+	left: 8dp;
+	top: 8dp;
+	width: 72dp;
+	height: 72dp;
+	background-color: #0000004d;
+	border: 1dp #4a5468;
+	border-radius: 6dp;
+}
+
+/* The customer's species (its tournament board sprite, 16 pixels) fills the frame; the face of the
+   last offer sits on its corner as a badge. */
+#haggle-species-icon {
+	position: absolute;
+	left: 4dp;
+	top: 4dp;
+	width: 64dp;
+	height: 64dp;
+}
+
+#haggle-face {
+	position: absolute;
+	right: -8dp;
+	bottom: -8dp;
+	width: 32dp;
+	height: 32dp;
+}
+
+#haggle-who {
+	display: block;
+	margin-left: 84dp;
+}
+
+#haggle-species, #haggle-character {
+	display: block;
+}
+
+#haggle-species {
+	font-size: 18dp;
+	font-weight: bold;
+	color: #ffffff;
+}
+
+#haggle-character {
+	font-size: 14dp;
+	color: #b8c0d0;
+}
+
+/* Mood and the last reaction: two tags on one line (the reaction's only once it has one). */
+#haggle-mood, #haggle-reaction {
+	display: inline-block;
+	margin: 4dp 6dp 0 0;
+	font-size: 14dp;
+	white-space: nowrap;
+}
+
+#haggle-mood {
+	padding: 0 8dp;
+	border-radius: 4dp;
+	background-color: #ffffff1a;
+}
+
+#haggle-mood.mood-cheerful { color: #8ee08e; }
+#haggle-mood.mood-serious { color: #f0a060; }
+
+#haggle-reaction.face-delighted, #haggle-reaction.face-pleased, #haggle-reaction.face-doubtful,
+#haggle-reaction.face-annoyed, #haggle-reaction.face-furious {
+	padding: 0 8dp;
+	border-radius: 4dp;
+	background-color: #ffffff1a;
+}
+
+#haggle-reaction.face-delighted, #haggle-reaction.face-pleased { color: #8ee08e; }
+#haggle-reaction.face-doubtful { color: #f0d060; }
+#haggle-reaction.face-annoyed { color: #f0a060; }
+#haggle-reaction.face-furious { color: #f07070; }
+
+#haggle-patience {
+	display: block;
+	margin: 6dp 0 0 84dp;
+	white-space: nowrap;
+}
+
+#haggle-patience-label {
+	display: inline-block;
+	margin-right: 4dp;
+	font-size: 14dp;
+	color: #b8c0d0;
+	vertical-align: middle;
+}
+
+.pip {
+	display: inline-block;
+	width: 14dp;
+	height: 14dp;
+	margin-left: 4dp;
+	vertical-align: middle;
+	border: 2dp #8a94a8;
+	border-radius: 7dp;
+}
+
+.pip.on {
+	background-color: #f0c040;
+	border-color: #f0c040;
+}
+
+.pip.hidden {
+	display: none;
+}
+
+/* The item the customer asks for and its regular price. */
+#haggle-item {
+	display: block;
+	position: relative;
+	min-height: 40dp;
+	padding: 4dp 8dp 4dp 52dp;
+	margin-bottom: 8dp;
+	background-color: #ffffff0d;
+	border-radius: 6dp;
+}
+
+#haggle-item-icon {
+	position: absolute;
+	left: 8dp;
+	top: 6dp;
+	width: 36dp;
+	height: 36dp;
+}
+
+#haggle-wants, #haggle-regular {
+	display: block;
+}
+
+#haggle-regular {
+	font-size: 14dp;
+	color: #b8c0d0;
+}
+
+/* The offers to this customer so far, one per line with its face. */
+#haggle-history {
+	display: block;
+	padding: 4dp 8dp;
+	font-size: 14dp;
+}
+
+#haggle-history-title {
+	display: block;
+	margin-bottom: 2dp;
+	color: #b8c0d0;
+}
+
+#haggle-no-offers {
+	display: block;
+	color: #8a94a8;
+}
+
+.haggle-offer {
+	display: block;
+	height: 24dp;
+	line-height: 24dp;
+}
+
+.offer-face {
+	display: inline-block;
+	width: 22dp;
+	height: 22dp;
+	vertical-align: middle;
+	margin-right: 6dp;
+}
+
+.haggle-offer.face-doubtful .offer-text { color: #f0d060; }
+.haggle-offer.face-annoyed .offer-text { color: #f0a060; }
+.haggle-offer.face-furious .offer-text { color: #f07070; }
+
+/* ---- The price table: a header and nine rows, each with price, +tally, a meter and the % chance, the likely face ---- */
+
+#haggle-rows {
+	display: block;
+}
+
+#haggle-columns, .haggle-row {
+	display: block;
+	position: relative;
+}
+
+#haggle-columns {
+	height: 22dp;
+	line-height: 22dp;
+	margin-bottom: 2dp;
+	font-size: 14dp;
+	color: #b8c0d0;
+	border-bottom: 1dp #4a5468;
+}
+
+.haggle-row {
+	height: 32dp;
+	line-height: 32dp;
+	margin: 1dp 0;
+	padding: 0;
+	font-size: 16dp;
+	border: 1dp transparent;
+	border-radius: 4dp;
+}
+
+/* Only the focused row is the one: the pointer over another row only tints it. */
+.haggle-row:hover {
+	background-color: #ffffff0f;
+}
+
+.haggle-row:focus {
+	background-color: #3a4766;
+	border-color: #f0c040;
+}
+
+/* The regular price: its price in the accent colour. */
+.haggle-row.regular .row-price {
+	color: #f0c040;
+}
+
+/* A price refused before: the customer will not take it now. */
+.haggle-row.offered {
+	color: #707888;
+}
+
+.row-price, .row-adds, .row-chance, .row-face, .row-meter {
+	position: absolute;
+	top: 0;
+	white-space: nowrap;
+}
+
+.row-price { left: 3%; }
+.row-adds { left: 21%; }
+.row-meter { left: 40%; }
+.row-chance { left: 72%; }
+.row-face { left: 88%; }
+
+/* The headings: the chance's heading sits over the meter. */
+#haggle-columns .row-chance { left: 40%; }
+
+.row-meter {
+	top: 12dp;
+	width: 29%;
+	height: 8dp;
+	background-color: #ffffff1a;
+	border-radius: 4dp;
+}
+
+.row-meter-fill {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 0;
+	border-radius: 4dp;
+	background-color: #8ee08e;
+}
+
+.chance-1 .row-meter-fill { width: 10%; }
+.chance-2 .row-meter-fill { width: 20%; }
+.chance-3 .row-meter-fill { width: 30%; }
+.chance-4 .row-meter-fill { width: 40%; }
+.chance-5 .row-meter-fill { width: 50%; }
+.chance-6 .row-meter-fill { width: 60%; }
+.chance-7 .row-meter-fill { width: 70%; }
+.chance-8 .row-meter-fill { width: 80%; }
+.chance-9 .row-meter-fill { width: 90%; }
+.chance-10 .row-meter-fill { width: 100%; }
+
+/* The chance's colour scale: red when it will not buy, orange, yellow, green from even odds, bright when sure. */
+.chance-1 .row-meter-fill, .chance-2 .row-meter-fill { background-color: #e06060; }
+.chance-3 .row-meter-fill, .chance-4 .row-meter-fill { background-color: #e0a050; }
+.chance-5 .row-meter-fill, .chance-6 .row-meter-fill, .chance-7 .row-meter-fill { background-color: #c8d860; }
+.chance-8 .row-meter-fill, .chance-9 .row-meter-fill { background-color: #70d070; }
+.chance-10 .row-meter-fill { background-color: #60f080; }
+
+.haggle-row.chance-0 .row-chance, .haggle-row.chance-1 .row-chance, .haggle-row.chance-2 .row-chance { color: #e07070; }
+.haggle-row.chance-3 .row-chance, .haggle-row.chance-4 .row-chance { color: #e0a050; }
+.haggle-row.chance-5 .row-chance, .haggle-row.chance-6 .row-chance, .haggle-row.chance-7 .row-chance { color: #d8e070; }
+.haggle-row.chance-8 .row-chance, .haggle-row.chance-9 .row-chance, .haggle-row.chance-10 .row-chance { color: #8ee08e; }
+
+.haggle-row.offered .row-chance, .haggle-row.offered .row-price, .haggle-row.offered .row-adds { color: #707888; }
+
+img.row-face {
+	top: 2dp;
+	width: 28dp;
+	height: 28dp;
+}
+
+/* ---- Chat and Dismiss, under the table ---- */
+
+#haggle-actions {
+	display: flex;
+	flex-direction: row;
+	margin-top: 10dp;
+}
+
+#haggle-actions button, #haggle-rules {
+	font-size: 16dp;
+	line-height: 24dp;
+}
+
+#haggle-rules .key {
+	font-size: 13dp;
+	line-height: 18dp;
+}
+
+#haggle-actions button {
+	display: block;
+	padding: 4dp 18dp;
+	margin-right: 12dp;
+	border: 1dp #8a94a8;
+	border-radius: 4dp;
+	white-space: nowrap;
+}
+
+#haggle-actions button:hover, #haggle-rules:hover {
+	background-color: #ffffff14;
+}
+
+#haggle-actions button:focus, #haggle-rules:focus {
+	background-color: #3a4766;
+	border-color: #f0c040;
+}
+
+#haggle-talk.disabled {
+	color: #707888;
+}
+
+.hidden, .haggle-offer.hidden, #haggle-face.hidden, #haggle-species-icon.hidden, #haggle-item-icon.hidden {
+	display: none;
+}

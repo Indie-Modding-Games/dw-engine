@@ -69,7 +69,7 @@ impl Default for LivePanel {
             endpoint: String::new(),
             link: None,
             connected: false,
-            state: text::LIVE_OFF.to_owned(),
+            state: text::live_off().to_owned(),
             view: None,
             round_trip: Duration::ZERO,
             overlay: false,
@@ -99,7 +99,7 @@ impl LivePanel {
         match Endpoint::parse(&self.endpoint) {
             Ok(endpoint) => {
                 self.link = Some(LiveLink::start(endpoint));
-                self.state = text::LIVE_CONNECTING.to_owned();
+                self.state = text::live_connecting().to_owned();
                 if self.story_follow {
                     self.send(Command::FollowStory(true));
                 }
@@ -115,7 +115,7 @@ impl LivePanel {
         self.view = None;
         self.story = None;
         self.sync.reset();
-        self.state = text::LIVE_OFF.to_owned();
+        self.state = text::live_off().to_owned();
     }
 
     /// Whether a link is up or trying to be.
@@ -201,7 +201,7 @@ impl LivePanel {
         match event {
             Event::Connected => {
                 self.connected = true;
-                self.state = text::LIVE_ON.to_owned();
+                self.state = text::live_on().to_owned();
                 self.follower.reset();
                 self.sync.reset();
                 self.send(Command::Status);
@@ -209,7 +209,7 @@ impl LivePanel {
             Event::Lost(reason) => {
                 self.connected = false;
                 self.view = None;
-                self.state = format!("{} · {reason}", text::LIVE_RECONNECTING);
+                self.state = format!("{} · {reason}", text::live_reconnecting());
             }
             Event::Live { view, round_trip } => {
                 self.view = Some(*view);
@@ -250,7 +250,7 @@ impl LivePanel {
             }
             Done::Reloaded(reloaded) => {
                 self.reloads += 1;
-                format!("{}: {}", text::LIVE_RELOADED, reloaded.map)
+                format!("{}: {}", text::live_reloaded(), reloaded.map)
             }
             Done::Previewed { map, applied } => {
                 self.sync.confirm();
@@ -260,8 +260,8 @@ impl LivePanel {
                     view.preview = Some(map);
                 }
                 match applied {
-                    PreviewApplied::Collision => text::LIVE_PREVIEW_COLLISION,
-                    PreviewApplied::Reentered => text::LIVE_PREVIEW_REENTERED,
+                    PreviewApplied::Collision => text::live_preview_collision(),
+                    PreviewApplied::Reentered => text::live_preview_reentered(),
                 }
                 .to_owned()
             }
@@ -272,9 +272,9 @@ impl LivePanel {
                 if !cleared {
                     return;
                 }
-                text::LIVE_PREVIEW_CLEARED.to_owned()
+                text::live_preview_cleared().to_owned()
             }
-            Done::Placed => text::LIVE_PLACED.to_owned(),
+            Done::Placed => text::live_placed().to_owned(),
             Done::StoryRan {
                 script,
                 section,
@@ -334,15 +334,15 @@ impl LivePanel {
         }
         parts.push(format!("tick {}", view.tick));
         if view.paused {
-            parts.push(text::LIVE_PAUSED.to_owned());
+            parts.push(text::live_paused().to_owned());
         }
         if view.busy {
-            parts.push(text::LIVE_BUSY.to_owned());
+            parts.push(text::live_busy().to_owned());
         }
         if view.preview.is_some() {
-            parts.push(text::LIVE_PREVIEW_SHOWN.to_owned());
+            parts.push(text::live_preview_shown().to_owned());
         }
         parts.push(format!("{} ms", self.round_trip.as_millis()));
-        format!("{}: {}", text::LIVE_GAME, parts.join(" · "))
+        format!("{}: {}", text::live_game(), parts.join(" · "))
     }
 }

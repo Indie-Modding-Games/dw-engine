@@ -1,6 +1,6 @@
 // The battle scenario: plays one battle per run between a partner and one to three enemies of the
 // ruleset's Digimon table, with no commands from the tamer, and counts how it ended
-// (docs/guides/simulaciones.md). The mean of each outcome is its rate over the runs. The fighters'
+// (docs/guides/simulations.md). The mean of each outcome is its rate over the runs. The fighters'
 // stats are made up from their level unless the parameters give them.
 
 #include <dwe/assets/digimon_table.hpp>

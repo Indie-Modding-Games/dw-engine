@@ -27,7 +27,7 @@ class StoryAdapter;
 // The ruleset section of the items on the ground and the chests.
 inline constexpr std::string_view FieldItemsSection = "field_items";
 // The ruleset section of the rare items (an engine improvement, off by default: the option
-// rare_items; docs/modulos/game/evolution.md, «Objetos raros de evolución»).
+// rare_items; docs/modules/game/evolution.md, «Rare evolution items»).
 inline constexpr std::string_view RareItemsSection = "rare_items";
 
 // A sound of the original's: the sound `sound` of slot `slot` (sound.c: playSound).

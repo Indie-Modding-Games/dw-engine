@@ -199,14 +199,14 @@ TEST_CASE("every game event is declared once and named as hooks.on wants") {
 
 namespace {
 
-// The part of docs/modding/api-lua.md this test writes: between these markers, the API the game
+// The part of docs/modding/lua-api.md this test writes: between these markers, the API the game
 // gives mods as the code publishes it.
 constexpr std::string_view GeneratedStart = "<!-- api-lua:generated -->";
 constexpr std::string_view GeneratedEnd = "<!-- /api-lua:generated -->";
 
 std::string fieldList(const dwe::session::GameEventInfo& event) {
   if (event.fields.empty()) {
-    return "solo `version`";
+    return "only `version`";
   }
   std::string text;
   for (const dwe::session::GameEventField& field : event.fields) {
@@ -216,21 +216,21 @@ std::string fieldList(const dwe::session::GameEventInfo& event) {
     const bool optional = field.type.ends_with('?');
     const std::string_view type =
         optional ? field.type.substr(0, field.type.size() - 1) : field.type;
-    text += std::format("`{}` ({}{})", field.name, type, optional ? " o nil" : "");
+    text += std::format("`{}` ({}{})", field.name, type, optional ? " or nil" : "");
   }
   return text;
 }
 
 std::string generatedApi(const std::vector<std::string>& story) {
   std::string text =
-      std::format("\nVersión de la API: **{}.{}.{}**. Tabla de cada evento: versión {}.\n\n",
+      std::format("\nAPI version: **{}.{}.{}**. Each event's table: version {}.\n\n",
                   dwe::script::LuaApiVersion.major, dwe::script::LuaApiVersion.minor,
                   dwe::script::LuaApiVersion.patch, dwe::session::GameEventTableVersion);
-  text += "| Evento | Campos de la tabla, además de `version` |\n|---|---|\n";
+  text += "| Event | Table fields, besides `version` |\n|---|---|\n";
   for (const dwe::session::GameEventInfo& event : dwe::session::GameEvents) {
     text += std::format("| `{}` | {} |\n", event.name, fieldList(event));
   }
-  text += std::format("\nFunciones de `story` ({}):\n\n", story.size());
+  text += std::format("\n`story` functions ({}):\n\n", story.size());
   for (const std::string& name : story) {
     text += std::format("- `story.{}`\n", name);
   }
@@ -248,7 +248,7 @@ TEST_CASE("the Lua API page lists every game event and story function the game p
   REQUIRE(vm != nullptr);
   const std::string generated = generatedApi(vm->api().publishedNames("story"));
 
-  const std::filesystem::path page = std::filesystem::path{DWE_DOCS_DIR} / "modding" / "api-lua.md";
+  const std::filesystem::path page = std::filesystem::path{DWE_DOCS_DIR} / "modding" / "lua-api.md";
   std::string text;
   {
     std::ifstream stream{page, std::ios::binary};
@@ -271,6 +271,6 @@ TEST_CASE("the Lua API page lists every game event and story function the game p
     return;
   }
   CHECK_MESSAGE(text.substr(from, end - from) == generated,
-                "docs/modding/api-lua.md is out of date: run the session tests with "
+                "docs/modding/lua-api.md is out of date: run the session tests with "
                 "DWE_WRITE_API_DOC=1");
 }

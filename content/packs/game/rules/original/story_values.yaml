@@ -1,8 +1,8 @@
-# Los números de las órdenes de historia que cambian la partida (packages/session: StoryGameOrders,
+# The numbers of the story orders that change the save (packages/session: StoryGameOrders,
 # docs/reference/scripts.md).
-# El tope de cada estadística tras set_stat y add_stat (script_value.c: STATS_LIMIT_ARRAY); el HP
-# y el MP actuales se quedan en su máximo. El original lee las vidas fuera de su tabla: 255 deja
-# pasar cada valor que escribe el disco.
+# The cap of each stat after set_stat and add_stat (script_value.c: STATS_LIMIT_ARRAY); current HP
+# and MP stay at their maximum. The original reads the lives outside its table: 255 lets
+# through every value the disc writes.
 stat_limits:
   offense: 999
   defense: 999
@@ -25,9 +25,9 @@ stat_limits:
   weight: 99
   tamer_level: 10
   lives: 255
-# reduce_stat no baja la felicidad de aquí (script_interp.c: scriptInstruction28to3F).
+# reduce_stat does not lower happiness below this (script_interp.c: scriptInstruction28to3F).
 happiness_floor: -100
-# add_minutes_to_date_at: una fecha de 255 años o más se queda en 25 años, día 14, 23:59
+# add_minutes_to_date_at: a date of 255 years or more stays at 25 years, day 14, 23:59
 # (script_interp.c: secondsToDate).
 date_year_limit: 255
 date_overflow: [25, 14, 23, 59]

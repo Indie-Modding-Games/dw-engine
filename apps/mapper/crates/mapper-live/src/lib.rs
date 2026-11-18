@@ -1,5 +1,5 @@
 //! The map editor's link to a running dwe-game through its remote control channel
-//! (docs/guides/control-remoto.md): one JSON request per line, one JSON answer per line, over a
+//! (docs/guides/remote-control.md): one JSON request per line, one JSON answer per line, over a
 //! Unix socket or a loopback TCP port (apps/game/src/remote_control.cpp). The game takes several
 //! clients at once, so the editor and other tools (the MCP server, a script) can talk to the same
 //! game.

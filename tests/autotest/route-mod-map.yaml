@@ -1,6 +1,6 @@
 # A mod's map with no code of its own: with the synthetic example mod mounted (--mods tests/mods/example_mod, see
-# docs/modulos/tests/mods.md) the game starts in the map the mod adds by its id, draws its background and leaves it by its
-# exit to File City. How to run it: docs/guides/prueba-vertical.md.
+# docs/modules/tests/mods.md) the game starts in the map the mod adds by its id, draws its background and leaves it by its
+# exit to File City. How to run it: docs/guides/vertical-slice.md.
 name: mod-map
 device: keyboard
 timeout: 120

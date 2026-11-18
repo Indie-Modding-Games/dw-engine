@@ -1,122 +1,122 @@
-# Archivo `.pak`
+# `.pak` file
 
-Un `.pak` guarda un paquete entero (su `pack.yaml` y todos sus ficheros) en un solo fichero, para distribuirlo y
-cargarlo sin miles de ficheros sueltos. Es un formato propio del motor, no del original. Lo escribe `dwx pack` y lo
-lee `packages/engine/assets` (`dwe::assets::PakFileSystem`). La decisión está en el
-[ADR 0017](../adr/0017-cocinado-y-archivos-pak.md).
+A `.pak` stores an entire package (its `pack.yaml` and all its files) in a single file, to distribute and load it
+without thousands of loose files. It is a format of the engine itself, not of the original. It is written by
+`dwx pack` and read by `packages/engine/assets` (`dwe::assets::PakFileSystem`). The decision is in
+[ADR 0017](../adr/0017-cooking-and-pak-files.md).
 
-Todos los enteros son little-endian. Los offsets se cuentan desde el principio del fichero.
+All integers are little-endian. Offsets are counted from the start of the file.
 
-## Estructura
+## Structure
 
 ```text
-cabecera (64 bytes)
-datos de cada fichero, en orden de id, cada uno alineado a 16 bytes
-tabla de contenidos (64 bytes por entrada), alineada a 16 bytes
-nombres
-manifiesto (pack.yaml, tal cual)
+header (64 bytes)
+data of each file, in id order, each aligned to 16 bytes
+table of contents (64 bytes per entry), aligned to 16 bytes
+names
+manifest (pack.yaml, as is)
 ```
 
-El índice (tabla, nombres y manifiesto) va al final para que `dwx pack` escriba el archivo de una pasada, leyendo cada
-fichero una sola vez. Quien lo abre lee la cabecera y después el índice de un tirón; los datos se leen cuando se piden.
+The index (table, names and manifest) goes at the end so that `dwx pack` writes the file in one pass, reading each
+file only once. Whoever opens it reads the header and then the index in one go; the data is read when requested.
 
-### Cabecera
+### Header
 
-| Offset | Tipo | Campo |
+| Offset | Type | Field |
 |---|---|---|
-| 0x00 | `u8[8]` | Magia `89 50 41 4B 0D 0A 1A 0A` (`\x89PAK\r\n\x1A\n`) |
-| 0x08 | `u32` | Versión del formato: 2 (el lector acepta también 1) |
-| 0x0C | `u32` | Flags: 0 (no hay ninguno definido) |
-| 0x10 | `u32` | Número de entradas |
-| 0x14 | `u32` | Alineación de los datos y de la tabla: 16 |
-| 0x18 | `u64` | Offset de la tabla de contenidos |
-| 0x20 | `u64` | Offset de los nombres |
-| 0x28 | `u64` | Tamaño de los nombres |
-| 0x30 | `u64` | Offset del manifiesto |
-| 0x38 | `u64` | Tamaño del manifiesto |
+| 0x00 | `u8[8]` | Magic `89 50 41 4B 0D 0A 1A 0A` (`\x89PAK\r\n\x1A\n`) |
+| 0x08 | `u32` | Format version: 2 (the reader also accepts 1) |
+| 0x0C | `u32` | Flags: 0 (none are defined) |
+| 0x10 | `u32` | Number of entries |
+| 0x14 | `u32` | Alignment of the data and the table: 16 |
+| 0x18 | `u64` | Offset of the table of contents |
+| 0x20 | `u64` | Offset of the names |
+| 0x28 | `u64` | Size of the names |
+| 0x30 | `u64` | Offset of the manifest |
+| 0x38 | `u64` | Size of the manifest |
 
-La magia sigue la idea de PNG: el byte `0x89` y los dos finales de línea hacen que una transferencia en modo texto la
-rompa, y así se detecta.
+The magic follows the idea of PNG: the `0x89` byte and the two line endings make a text-mode transfer break it, and
+so it is detected.
 
-### Entrada de la tabla de contenidos
+### Table of contents entry
 
-| Offset | Tipo | Campo |
+| Offset | Type | Field |
 |---|---|---|
-| 0x00 | `u64` | Offset de los bytes guardados |
-| 0x08 | `u64` | Tamaño guardado |
-| 0x10 | `u64` | Tamaño del fichero sin comprimir |
-| 0x18 | `u32` | Offset del nombre dentro de los nombres |
-| 0x1C | `u32` | Longitud del nombre |
-| 0x20 | `u32` | Flags: bits 0-7 compresión (0 = sin comprimir, 1 = zstd), el resto a 0 |
-| 0x24 | `u8[20]` | SHA-1 del fichero sin comprimir |
-| 0x38 | `u64` | Reservado: 0 |
+| 0x00 | `u64` | Offset of the stored bytes |
+| 0x08 | `u64` | Stored size |
+| 0x10 | `u64` | Size of the file uncompressed |
+| 0x18 | `u32` | Offset of the name within the names |
+| 0x1C | `u32` | Length of the name |
+| 0x20 | `u32` | Flags: bits 0-7 compression (0 = uncompressed, 1 = zstd), the rest 0 |
+| 0x24 | `u8[20]` | SHA-1 of the uncompressed file |
+| 0x38 | `u64` | Reserved: 0 |
 
-- El **nombre** es la ruta del fichero dentro del paquete, con `/` entre carpetas y sin NUL: `map/start/background.png`.
-  El id del asset sale de él como en una carpeta (la ruta sin la extensión, ver [VFS](../architecture/vfs.md)).
-- Las entradas están **ordenadas por id de asset**, que es también el orden de sus rutas porque `.` va antes que
-  cualquier carácter de un id. Así se busca una entrada con una búsqueda binaria.
-- **Compresión** (versión 2): con 1, los bytes guardados son **un único frame de zstd** que se descomprime en
-  exactamente el tamaño del fichero, sin nada detrás; el frame lleva ese tamaño en su cabecera. Con 0, los bytes se
-  guardan tal cual y los dos tamaños son iguales. `dwx pack` comprime cada fichero y lo guarda tal cual cuando
-  comprimido no ocupa menos (los PNG, que ya van comprimidos, suelen quedarse así).
-- Un fichero comprimido no puede pasar de 2 GiB sin comprimir (`PakMaxEntrySize`).
-- El **SHA-1** sirve para comprobar cada fichero al leerlo y como clave de contenido; no es una medida de seguridad.
+- The **name** is the file's path inside the package, with `/` between folders and no NUL: `map/start/background.png`.
+  The asset id comes from it as in a folder (the path without the extension, see [VFS](../architecture/vfs.md)).
+- The entries are **sorted by asset id**, which is also the order of their paths because `.` goes before any
+  character of an id. This way an entry is found with a binary search.
+- **Compression** (version 2): with 1, the stored bytes are **a single zstd frame** that decompresses to
+  exactly the file's size, with nothing after it; the frame carries that size in its header. With 0, the bytes are
+  stored as they are and the two sizes are equal. `dwx pack` compresses each file and stores it as is when the
+  compressed one is not smaller (PNGs, which are already compressed, usually stay that way).
+- A compressed file cannot exceed 2 GiB uncompressed (`PakMaxEntrySize`).
+- The **SHA-1** is used to check each file when it is read and as a content key; it is not a security measure.
 
-## Determinismo
+## Determinism
 
-Los mismos ficheros dan el mismo `.pak`, byte a byte: las entradas van en orden de id, el relleno es de ceros y no se
-guardan fechas, permisos ni nada de la máquina que lo escribe. El manifiesto se copia sin cambios.
+The same files give the same `.pak`, byte for byte: entries go in id order, padding is zeros and no dates,
+permissions or anything about the machine that writes it are stored. The manifest is copied unchanged.
 
-La compresión también es fija: zstd 1.5.7 (la versión fijada por el baseline de vcpkg), nivel 9 (`PakZstdLevel`),
-el tamaño del contenido en la cabecera del frame, sin checksum de zstd (el SHA-1 de la entrada ya lo cubre), sin id de
-diccionario y sin los hilos de zstd. `dwx pack` comprime varios ficheros a la vez, cada uno con su propio contexto,
-y los escribe en orden, así que el resultado no depende del número de hilos. Otra versión de zstd podría comprimir
-distinto; el lector lee igual cualquier frame válido.
+Compression is also fixed: zstd 1.5.7 (the version pinned by the vcpkg baseline), level 9 (`PakZstdLevel`),
+the content size in the frame header, no zstd checksum (the entry's SHA-1 already covers it), no dictionary id and no
+zstd threads. `dwx pack` compresses several files at once, each with its own context,
+and writes them in order, so the result does not depend on the number of threads. Another zstd version could
+compress differently; the reader reads any valid frame the same.
 
-El nivel 9 sale de medir el paquete base de la versión US (4619 ficheros, 351 MB) en release:
+Level 9 comes from measuring the base package of the US version (4619 files, 351 MB) in release:
 
-| Nivel | `.pak` | Tiempo de `dwx pack` (con la relectura) |
+| Level | `.pak` | `dwx pack` time (with the re-read) |
 |---|---|---|
-| 3 | 242,1 MB | 2,5 s |
-| 9 | 240,7 MB | 2,9 s |
-| 19 | 238,8 MB | 19 a 27 s |
+| 3 | 242.1 MB | 2.5 s |
+| 9 | 240.7 MB | 2.9 s |
+| 19 | 238.8 MB | 19 to 27 s |
 
-Del 9 al 19 se gana un 0,8 % a cambio de unas siete veces más tiempo, y `dwx pack` corre en la máquina de cada
-usuario la primera vez que abre el juego.
+From 9 to 19 you gain 0.8% in exchange for about seven times more time, and `dwx pack` runs on each user's machine
+the first time they open the game.
 
-## Versiones
+## Versions
 
-- **1:** todos los ficheros sin comprimir.
-- **2:** cada fichero con zstd o sin comprimir. Un archivo de versión 2 sin ningún fichero comprimido solo se
-  diferencia de uno de versión 1 en el número de versión.
+- **1:** all files uncompressed.
+- **2:** each file with zstd or uncompressed. A version 2 file with no compressed files differs from a version 1 file
+  only in the version number.
 
-El lector acepta las dos: un archivo de versión 1 es un caso particular de la 2 (todo sin comprimir), así que leerlo
-no cuesta nada. Una entrada comprimida en un archivo de versión 1 se rechaza.
+The reader accepts both: a version 1 file is a particular case of 2 (everything uncompressed), so reading it
+costs nothing. A compressed entry in a version 1 file is rejected.
 
-## Qué comprueba el lector
+## What the reader checks
 
-`PakFileSystem::open` rechaza el archivo, con un mensaje que dice qué falla, si:
+`PakFileSystem::open` rejects the file, with a message that says what fails, if:
 
-- es más corto que la cabecera, la magia no coincide o la versión no es 1 ni 2;
-- los flags de la cabecera no son 0 o la alineación no es una potencia de dos de al menos 16;
-- la tabla, los nombres y el manifiesto no van seguidos y sin huecos hasta el final del fichero (así el tamaño del
-  fichero acota todo lo que se reserva);
-- una entrada usa una compresión que su versión no tiene u otros flags, sus tamaños no coinciden sin compresión, su
-  tamaño comprimido pasa de 2 GiB, sus datos no están alineados o salen de la zona de datos, o su nombre sale de los
-  nombres;
-- un nombre no da un id válido, es `pack.yaml`, o las entradas no están en orden estricto de id (lo que también
-  rechaza ids repetidos).
+- it is shorter than the header, the magic does not match or the version is neither 1 nor 2;
+- the header flags are not 0 or the alignment is not a power of two of at least 16;
+- the table, the names and the manifest do not follow one another without gaps up to the end of the file (so the
+  file size bounds everything that is reserved);
+- an entry uses a compression its version does not have or other flags, its sizes do not match without compression,
+  its compressed size exceeds 2 GiB, its data is not aligned or goes outside the data area, or its name goes outside
+  the names;
+- a name does not give a valid id, is `pack.yaml`, or the entries are not in strict id order (which also rejects
+  repeated ids).
 
-Al leer una entrada comprimida se comprueba que sea un solo frame de zstd de su tamaño y se descomprime en un búfer
-que empieza en 1 MiB y dobla a medida que el frame produce bytes, así que un tamaño falsificado no hace reservar la
-memoria que dice: falla al acabarse el frame. zstd limita además su ventana a 128 MiB (su límite por defecto). Después,
-con o sin compresión, se comprueba su SHA-1. Si algo falla, la lectura falla y dice que el archivo está dañado.
+When reading a compressed entry it checks that it is a single zstd frame of its size and decompresses it into a
+buffer that starts at 1 MiB and doubles as the frame produces bytes, so a forged size does not make it reserve the
+memory it claims: it fails when the frame runs out. zstd also limits its window to 128 MiB (its default limit). Then,
+with or without compression, its SHA-1 is checked. If anything fails, the read fails and says the file is damaged.
 
-## Cómo se monta
+## How it is mounted
 
-`PakFileSystem` es un `FileSystem` con una sola carpeta, la ruta del propio archivo: al listarla da `pack.yaml` y cada
-entrada, y `<archivo>/<entrada>` lee esa entrada. Cada paquete que se monta lleva su propio sistema de ficheros
-(`PackLocation`), así que en una misma pila puede haber carpetas y archivos:
+`PakFileSystem` is a `FileSystem` with a single folder, the path of the file itself: listing it gives `pack.yaml` and
+each entry, and `<file>/<entry>` reads that entry. Each package that is mounted carries its own file system
+(`PackLocation`), so a single stack can have folders and files:
 
 ```cpp
 const assets::DiskFileSystem disk;
@@ -126,4 +126,4 @@ const std::array packs{assets::PackLocation{.fileSystem = &disk, .root = "conten
 auto vfs = assets::VirtualFileSystem::mount(packs);
 ```
 
-Las rutas de los assets que vienen de un archivo se ven como `content/base.pak/map/start/background.png`.
+The paths of assets that come from a file look like `content/base.pak/map/start/background.png`.

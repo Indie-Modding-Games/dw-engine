@@ -1,5 +1,5 @@
 // Batch training: a course the story starts runs several sessions in a row
-// (docs/modulos/apps/game.md, «Sesiones de gimnasio»).
+// (docs/modules/apps/game.md, «Gym sessions»).
 
 #include <doctest/doctest.h>
 

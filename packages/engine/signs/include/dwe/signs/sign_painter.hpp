@@ -15,7 +15,7 @@
 // Paints signs into a map's images: the old text cleared, the new one drawn with a font and its
 // effects, and every pixel written back as an index of the image's palette, so the background's
 // times of day still shade it. Only palette indices change: a sign never brings colours of its own
-// into the texture (docs/modulos/engine/signs.md).
+// into the texture (docs/modules/engine/signs.md).
 namespace dwe::signs {
 
 // The pixels a sign changed in one image of the map: applying the patches of a map in order gives

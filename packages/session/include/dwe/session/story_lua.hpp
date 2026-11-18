@@ -48,7 +48,8 @@ namespace dwe::session {
 
 inline constexpr std::string_view StoryNamespace = "story";
 
-// The folder of the story patches (docs/architecture/interprete-historia.md#moddabilidad): each
+// The folder of the story patches
+// (docs/architecture/story-interpreter.md#moddability-how-a-mod-changes-a-section): each
 // story/patches/<name>.lua returns `{ script = N, sections = { [S] = function(original) ... end }
 // }` and its sections replace those of story/NNN without copying the module.
 inline constexpr std::string_view StoryPatchFolder = "story/patches/";
@@ -176,14 +177,14 @@ public:
   // The patch that runs a section, as `pack:asset id`, or nothing when the module's own runs.
   [[nodiscard]] std::optional<std::string> patchOf(game::story::SectionRef section);
 
-  // A map editor's reload (the control channel's reload_map, docs/guides/control-remoto.md): drops
+  // A map editor's reload (the control channel's reload_map, docs/guides/remote-control.md): drops
   // the loaded story modules and patches, so the next section reads them again from the packs
   // (after VirtualFileSystem::rescan, new files too). The story's state is not touched. Fails while
   // a section runs, as its coroutine runs in the loaded modules.
   core::Result<void> reloadScripts();
 
   // A tool's one-shot section (the control channel's story_run with code,
-  // docs/guides/control-remoto.md): `source` is a story patch for the section's script (the shape
+  // docs/guides/remote-control.md): `source` is a story patch for the section's script (the shape
   // of StoryPatchFolder's files) that has the section. The next start of that section runs the
   // source's function instead of the packs' (with theirs as `original`), once; it stays loaded
   // until that section closes. It loads in the environment of `pack`, or of the pack that gives

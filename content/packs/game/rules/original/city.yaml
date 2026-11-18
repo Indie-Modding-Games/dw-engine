@@ -1,23 +1,23 @@
-# La ciudad (packages/session: CityAdapter; packages/game/story: prosperity.hpp).
-# main.c: recalculatePPandArena rehace los puntos de prosperidad (variable 1) a partir de los disparadores de
-# reclutamiento al empezar el bucle del juego (partida nueva o carga) y antes de cada guardado; los scripts los suben
-# al reclutar y leen la variable y los disparadores para hacer crecer la ciudad.
+# The city (packages/session: CityAdapter; packages/game/story: prosperity.hpp).
+# main.c: recalculatePPandArena redoes the prosperity points (variable 1) from the recruitment triggers
+# when the game loop starts (new game or load) and before each save; the scripts raise them
+# on recruiting and read the variable and the triggers to make the city grow.
 prosperity:
   points_variable: 1
-  # Cuenta la especie n (de 3 a 0x3a) si el disparador 200 + n está puesto y su nivel es 3 (novato) o más.
+  # Species n (from 3 to 0x3a) counts if trigger 200 + n is set and its level is 3 (Rookie) or more.
   recruit_trigger: 200
   first_species: 3
   end_species: 59
   min_level: 3
-  # Suma su nivel menos 2; Numemon, Sukamon y Nanimon (11, 39, 53) suman 1.
+  # Adds its level minus 2; Numemon, Sukamon and Nanimon (11, 39, 53) add 1.
   level_offset: 2
   one_point_species: [11, 39, 53]
-  # Sin copa inscrita (variable 3 de 0x17 en adelante) se borran los disparadores de inscripción 0x25 a 0x27.
+  # With no cup entered (variable 3 from 0x17 on) the entry triggers 0x25 to 0x27 are cleared.
   cup_variable: 3
   no_cup_from: 23
   registration_triggers: [37, 38, 39]
-# map.c: getFileCityTopMap: la pantalla de Ciudad Archivo donde sigue una partida guardada tras el final, la primera
-# cuyos disparadores están todos puestos (0xdc y 0xd6 la ciudad grande; 0xdd, 0xe1 y 0xf6 sus otras obras).
+# map.c: getFileCityTopMap: the File City screen where a saved game continues after the ending, the first
+# whose triggers are all set (0xdc and 0xd6 the big city; 0xdd, 0xe1 and 0xf6 its other works).
 cleared_map:
   - { triggers: [220, 214, 221, 225], map: 179 }
   - { triggers: [220, 214, 221, 246], map: 178 }

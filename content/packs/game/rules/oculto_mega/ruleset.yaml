@@ -1,10 +1,14 @@
-# El contenido oculto con el paso Ultra → Mega (opción de partida nueva, apagada por defecto): un Ultra vuelve a
-# evolucionar a un Mega. MetalEtemon pasa a salir de Etemon y Machinedramon de Megadramon y Gigadramon. Diseño:
-# docs/modulos/game/evolution.md, «Contenido oculto». Formato: docs/architecture/rulesets.md.
+# The hidden content with the Ultimate → Mega step (new game option, off by default): an Ultimate evolves
+# again to a Mega. MetalEtemon now comes from Etemon and Machinedramon from Megadramon and Gigadramon. Design:
+# docs/modules/game/evolution.md, "Hidden content". Format: docs/architecture/rulesets.md.
 id: oculto_mega
-name: "Original + contenido oculto + paso Mega"
+name:
+  en: "Original + hidden content + Mega step"
+  es: "Original + contenido oculto + paso Mega"
 version: 0.1.0
-description: "El contenido oculto, con el paso de Ultra a Mega: MetalEtemon desde Etemon y Machinedramon."
+description:
+  en: "The hidden content, with the Ultimate to Mega step: MetalEtemon from Etemon, and Machinedramon."
+  es: "El contenido oculto, con el paso de Ultra a Mega: MetalEtemon desde Etemon y Machinedramon."
 extends: oculto
 sections:
   - mega_step

@@ -1,17 +1,17 @@
 # gym
 
-El gimnasio del pueblo: la coreografía de cada curso de entrenamiento y lo que da.
+The town gym: the choreography of each training course and what it gives.
 
-- Carpeta: `packages/game/gym`; objetivos de CMake: `dwe::gym` (capa `game`).
-- Depende de: `assets`, `core`, `ruleset`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/game/gym](https://indie-modding-games.github.io/dw-engine/modulos/game/gym).
+- Folder: `packages/game/gym`; CMake targets: `dwe::gym` (`game` layer).
+- Depends on: `assets`, `core`, `ruleset`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/game/gym](https://indie-modding-games.github.io/dw-engine/modules/game/gym).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter gym
-scripts/dev.sh test --filter gym       # sus tests (etiqueta de ctest gym)
-scripts/dev.sh test --filter ...gym    # y los de todo lo que depende de él
+scripts/dev.sh test --filter gym       # its tests (ctest label gym)
+scripts/dev.sh test --filter ...gym    # and those of everything that depends on it
 ```

@@ -1,4 +1,4 @@
-// The player's UI addon (ui_addon_setting.hpp, docs/modding/interfaces.md): the start pick, safe
+// The player's UI addon (ui_addon_setting.hpp, docs/modding/ui-addons.md): the start pick, safe
 // mode, the commands an addon may send and the game's own UI back, with a notice, when the pick
 // cannot go on.
 #include <dwe/content/user_ui_addons.hpp>

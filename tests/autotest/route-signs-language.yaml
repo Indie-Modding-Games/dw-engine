@@ -1,6 +1,6 @@
 # The signs follow a language picked in the pause menu at once: gcan09 starts in the run's language (--lang en), the
 # options page moves to the next language and the shop's sign behind the menu is already in it (menu-open), then in
-# the field (after). How to run it: docs/guides/carteles.md.
+# the field (after). How to run it: docs/guides/signs.md.
 name: signs-language
 device: keyboard
 timeout: 120

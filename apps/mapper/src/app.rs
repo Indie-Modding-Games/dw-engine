@@ -51,7 +51,7 @@ pub struct MapperApp {
     pub last_event: Option<(u16, u16, dwe_story::EventKind)>,
     /// What the section editor keeps between frames.
     pub section_ui: crate::section::SectionUi,
-    /// "Probar evento": the question, the test running and what it changed.
+    /// "Test event": the question, the test running and what it changed.
     pub probe: crate::probe::Probe,
     /// Archivo → Revertir asks first when the map has unsaved changes.
     pub confirm_revert: bool,
@@ -64,7 +64,7 @@ pub struct MapperApp {
     pub timeline_ui: crate::timeline::TimelineUi,
     /// Where the canvas was drawn last frame (the section editor stays above the timeline).
     pub canvas_rect: Option<egui::Rect>,
-    /// The Mundo view.
+    /// The World view.
     pub world_ui: crate::world::WorldUi,
     /// The new map, rename and delete windows.
     pub map_forms: crate::new_map::MapForms,
@@ -284,8 +284,8 @@ fn load_image(file: &std::path::Path) -> Result<egui::ColorImage, String> {
 
 pub fn status_text(mapper: &Mapper) -> String {
     match (&mapper.content, &mapper.map) {
-        (None, _) => text::NO_CONTENT.to_owned(),
-        (Some(_), None) => text::NO_MAP.to_owned(),
+        (None, _) => text::no_content().to_owned(),
+        (Some(_), None) => text::no_map().to_owned(),
         (Some(_), Some(map)) => map.document.id.clone(),
     }
 }

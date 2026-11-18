@@ -1,4 +1,4 @@
-# The bulk card packs (an engine improvement, docs/modulos/apps/screens.md, «Cambios en lote»): the card shop of
+# The bulk card packs (an engine improvement, docs/modules/apps/screens.md, «Bulk trades»): the card shop of
 # gias06b with 5000 bits. "Buy a pack of three" and "I'll buy it" pay the first pack as the original's script does;
 # routine 14 then asks "How many packs?" (right +1, up +10 stopping at the most, 10, then left -1) and shows the cards they gave, grouped, the new
 # ones in yellow. Each capture checks that the texts fit (text_fit) and that the shop's boxes lie over nothing

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Versus network",
-  "description": "versus/network.yaml of the game pack: the servers the online versus uses to pair two machines and open a route between them (packages/game/versus/network.hpp, docs/modulos/game/versus.md).",
+  "description": "versus/network.yaml of the game pack: the servers the online versus uses to pair two machines and open a route between them (packages/game/versus/network.hpp, docs/modules/game/versus.md).",
   "type": "object",
   "required": ["signal_server", "ice_servers"],
   "additionalProperties": false,

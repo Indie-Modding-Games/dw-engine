@@ -1,233 +1,232 @@
-# Vídeo: `MOVIE/*.STR`
+# Video: `MOVIE/*.STR`
 
-Las cuatro películas del disco (`MOVIE/OP1.STR`, `OP2.STR`, `ED2.STR`, `EDR.STR`) son ficheros STR: sectores de
-modo 2 que el original lee a velocidad fija, con vídeo MDEC y audio XA intercalados. `formats/video` los separa y
-los decodifica entero (vídeo y audio) sin dependencias nuevas; el extractor `movie` de `dwx` escribe cada película
-como YUV4MPEG2 + WAV + YAML.
+The four movies on the disc (`MOVIE/OP1.STR`, `OP2.STR`, `ED2.STR`, `EDR.STR`) are STR files: mode 2 sectors that
+the original reads at a fixed speed, with MDEC video and XA audio interleaved. `formats/video` separates them and
+decodes them in full (video and audio) without new dependencies; `dwx`'s `movie` extractor writes each movie
+as YUV4MPEG2 + WAV + YAML.
 
-El original las reproduce en el overlay `MOV_REL.BIN` (`mov.c`), que se carga en `0x80010000`
-(`utils2.c: playMovie` → `loadDynamicLibrary`): `MOV_startStream` lee a doble velocidad
-(`CdRead2(CdlModeStream | CdlModeSpeed | CdlModeRT | CdlModeSize1)`), `DecDCTvlc2` pasa el bitstream a códigos MDEC y
-`DecDCTin(..., 3)` saca color de 24 bits en franjas de 16 píxeles (`MOV_onSliceDecoded`).
+The original plays them in the `MOV_REL.BIN` overlay (`mov.c`), which is loaded at `0x80010000`
+(`utils2.c: playMovie` → `loadDynamicLibrary`): `MOV_startStream` reads at double speed
+(`CdRead2(CdlModeStream | CdlModeSpeed | CdlModeRT | CdlModeSize1)`), `DecDCTvlc2` turns the bitstream into MDEC codes and
+`DecDCTin(..., 3)` outputs 24-bit color in 16-pixel strips (`MOV_onSliceDecoded`).
 
-## Sectores
+## Sectors
 
-Un STR hay que leerlo como **sectores en bruto con su subcabecera** (imagen de 2352 bytes). La vista de 2048 bytes
-de una ISO pierde el audio (forma 2, 2324 bytes) y los tipos de sector; con una imagen así el extractor falla con
-un error que lo dice. `disc::SectorData::subheader` guarda `{file, channel, submode, coding}` de cada sector de modo
-2 de una imagen en bruto.
+An STR has to be read as **raw sectors with their subheader** (a 2352-byte image). The 2048-byte view
+of an ISO loses the audio (form 2, 2324 bytes) and the sector types; with such an image the extractor fails with
+an error that says so. `disc::SectorData::subheader` stores `{file, channel, submode, coding}` of each mode 2 sector
+of a raw image.
 
-| Tipo | Subcabecera | Contenido |
+| Type | Subheader | Content |
 |---|---|---|
-| Vídeo | forma 1, `submode` con el bit de datos (`0x08`) o de vídeo (`0x02`); en el disco `0x48` | `StHEADER` de 0x20 bytes y 0x7E0 bytes del bitstream del frame |
-| Audio | forma 2, bit de audio (`0x04`); en el disco `0x64`, el último `0xE4` (fin de fichero) | 18 grupos de sonido XA de 128 bytes y 20 bytes sin usar |
-| Relleno | ningún bit de tipo (solo `0x01`/`0x80` como mucho) y 2048 ceros | nada; 3 a 5 al final de cada fichero |
+| Video | form 1, `submode` with the data bit (`0x08`) or video bit (`0x02`); on the disc `0x48` | `StHEADER` of 0x20 bytes and 0x7E0 bytes of the frame's bitstream |
+| Audio | form 2, audio bit (`0x04`); on the disc `0x64`, the last one `0xE4` (end of file) | 18 XA sound groups of 128 bytes and 20 unused bytes |
+| Padding | no type bit (only `0x01`/`0x80` at most) and 2048 zeros | nothing; 3 to 5 at the end of each file |
 
-Cualquier otro sector es un error del lector y el extractor lo cuenta en `unknowns`. En las cuatro películas el
-patrón es estricto: 7 sectores de vídeo y 1 de audio.
+Any other sector is a reader error and the extractor counts it in `unknowns`. In the four movies the pattern is
+strict: 7 video sectors and 1 audio sector.
 
 `StHEADER` (libpress), little-endian:
 
-| Offset | Campo | Comprobación |
+| Offset | Field | Check |
 |---|---|---|
-| 0x00 | `u16 0x0160`, `u16 0x8001` | marca |
+| 0x00 | `u16 0x0160`, `u16 0x8001` | marker |
 | 0x04 | `u16 sectorInFrame`, `u16 sectorsInFrame` | `sectorInFrame < sectorsInFrame` |
-| 0x08 | `u32 frameNumber` | desde 1, consecutivos |
-| 0x0C | `u32 frameBytes` | cabe en sus sectores |
-| 0x10 | `u16 width`, `u16 height` | iguales en todo el fichero (320 × 176) |
-| 0x14 | `u32 headm`, `u32 headv` | son los 8 primeros bytes del bitstream |
-| 0x1C | `u32` reservado | 0 |
+| 0x08 | `u32 frameNumber` | from 1, consecutive |
+| 0x0C | `u32 frameBytes` | fits in its sectors |
+| 0x10 | `u16 width`, `u16 height` | the same in the whole file (320 × 176) |
+| 0x14 | `u32 headm`, `u32 headv` | they are the first 8 bytes of the bitstream |
+| 0x1C | `u32` reserved | 0 |
 
-`StrFrameAssembler` junta los trozos de cada frame en orden y comprueba que todos sus sectores tienen la misma
-cabecera, que el frame cabe, que el relleno tras `frameBytes` es cero y que `headm`/`headv` repiten el inicio del
-bitstream. Un frame al que le faltan sectores es un error, y un primer sector que interrumpe otro frame empieza el
-siguiente.
+`StrFrameAssembler` joins the pieces of each frame in order and checks that all its sectors have the same
+header, that the frame fits, that the padding after `frameBytes` is zero and that `headm`/`headv` repeat the start of
+the bitstream. A frame that is missing sectors is an error, and a first sector that interrupts another frame starts
+the next one.
 
-**Frecuencia.** A doble velocidad pasan 150 sectores por segundo; el audio lo confirma (un sector estéreo de 2016
-muestras cada 8 sectores son 37 800 muestras por segundo). Un frame empieza cada 5 sectores de media, así que son
-**30 fps**. El extractor calcula 150 / (sectores entre el primer y el último inicio de frame / frames − 1) y, si el
-periodo está a menos de 0,05 sectores de un entero, lo redondea; si no, deja la fracción reducida.
+**Rate.** At double speed 150 sectors go by per second; the audio confirms it (a stereo sector of 2016
+samples every 8 sectors is 37,800 samples per second). A frame starts every 5 sectors on average, so it is
+**30 fps**. The extractor computes 150 / (sectors between the first and the last frame start / frames − 1) and, if the
+period is within 0.05 sectors of an integer, rounds it; otherwise, it leaves the reduced fraction.
 
 ## Bitstream (`DecDCTvlc2`)
 
-Cabecera de 8 bytes: `u16` número de códigos MDEC (la mitad, redondeada hacia arriba a 32), `u16 0x3800`, `u16`
-escala de cuantización (1..63, la misma para todo el frame) y `u16` versión (2 o 3; las películas son de la 3). Los
-bits se leen de palabras de 16 bits little-endian, del más significativo al menos.
+An 8-byte header: `u16` number of MDEC codes (half, rounded up to 32), `u16 0x3800`, `u16`
+quantization scale (1..63, the same for the whole frame) and `u16` version (2 or 3; the movies are version 3). Bits
+are read from 16-bit little-endian words, from most significant to least.
 
-Cada macrobloque de 16 × 16 son seis bloques en el orden Cr, Cb, Y0, Y1, Y2, Y3:
+Each 16 × 16 macroblock is six blocks in the order Cr, Cb, Y0, Y1, Y2, Y3:
 
-- **DC, versión 3:** un código de tamaño (tablas B.12 de luma y B.13 de croma de MPEG-1) y tantos bits de
-  diferencia; un primer bit 0 es negativo. La diferencia cuenta de 4 en 4 y se suma al anterior del mismo tipo (un
-  predictor para Y0..Y3, otro para Cb y otro para Cr), que empiezan en 0 al principio del frame y siguen de un
-  macrobloque al siguiente. El resultado tiene que caber en −512..511.
-- **DC, versión 2:** 10 bits con signo.
-- **AC:** la tabla B.14 de MPEG-1 entera (111 códigos, también los de 16 bits `0000 0000 0001 xxxx`), que es la que
-  construye `DecDCTvlcBuild`, con el bit de signo detrás; `10` es fin de bloque y `000001` escape, con 6 bits de
-  carrera y 10 de nivel con signo.
+- **DC, version 3:** a size code (MPEG-1's luma B.12 and chroma B.13 tables) and that many bits of
+  difference; a first bit of 0 is negative. The difference counts in steps of 4 and is added to the previous one of the same kind (one
+  predictor for Y0..Y3, another for Cb and another for Cr), which start at 0 at the beginning of the frame and carry on
+  from one macroblock to the next. The result has to fit in −512..511.
+- **DC, version 2:** 10 signed bits.
+- **AC:** the whole MPEG-1 B.14 table (111 codes, including the 16-bit ones `0000 0000 0001 xxxx`), which is the one
+  `DecDCTvlcBuild` builds, with the sign bit after; `10` is end of block and `000001` escape, with 6 bits of
+  run and 10 of signed level.
 
-El decodificador da los códigos MDEC: `escala << 10 | DC` para el DC, `carrera << 10 | nivel` para cada AC y `0xFE00`
-como fin de bloque. Es un error un código desconocido, un bloque que pasa de 64 coeficientes, un bitstream que
-acaba a mitad de un macrobloque o un número de códigos que no coincide con la cabecera. En las cuatro películas la
-cabecera coincide en todos los frames.
+The decoder gives the MDEC codes: `scale << 10 | DC` for the DC, `run << 10 | level` for each AC and `0xFE00`
+as end of block. These are errors: an unknown code, a block that goes past 64 coefficients, a bitstream that
+ends in the middle of a macroblock or a number of codes that does not match the header. In the four movies the
+header matches in every frame.
 
 ## MDEC
 
-`decodeMacroblocks` hace lo que el MDEC con esos códigos, modelado como Mednafen (`mdec.c`) y comprobado con las
-tablas que sube libpress (`DecDCTReset`):
+`decodeMacroblocks` does what the MDEC does with those codes, modeled on Mednafen (`mdec.c`) and checked with the
+tables that libpress uploads (`DecDCTReset`):
 
-- **Decuantización.** El DC se multiplica por el primer peso de la matriz (2), sin la escala; cada AC por
-  `(nivel · escala · Q[k]) >> 3`. Los dos se guardan × 16 con un sesgo de 8 hacia cero y saturados a 15 bits. `Q`
-  es la matriz intra por defecto de MPEG-1 con DC 2, en orden natural; el coeficiente k va a su posición por el
-  zigzag estándar.
-- **IDCT.** Matriz `M[x][u] = floor(32768 · c(u) · cos((2x + 1)uπ/16)) >> 3` con `c(0) = 1/√2` y `c(u) = 1` en el
-  resto. Es `floor` y no redondeo: así es la tabla del ejecutable. Está escrita en el código (`IdctTable`, la que
-  lista psx-spx para el comando del MDEC que la carga) en vez de calcularse con `cos`, para no depender de la libm de
-  cada plataforma; una prueba la compara con la fórmula. Primero columnas, luego filas, cada pasada con
-  `(suma + 0x4000) >> 15`; el resultado se queda en 9 bits y se satura a un byte con signo.
-- **Planos.** Las muestras con signo se guardan + 128 como bytes sin signo. Los macrobloques llenan el frame por
-  columnas: de arriba abajo y luego de izquierda a derecha.
+- **Dequantization.** The DC is multiplied by the first weight of the matrix (2), without the scale; each AC by
+  `(level · scale · Q[k]) >> 3`. Both are stored × 16 with a bias of 8 toward zero and saturated to 15 bits. `Q`
+  is MPEG-1's default intra matrix with DC 2, in natural order; coefficient k goes to its position by the
+  standard zigzag.
+- **IDCT.** Matrix `M[x][u] = floor(32768 · c(u) · cos((2x + 1)uπ/16)) >> 3` with `c(0) = 1/√2` and `c(u) = 1` in the
+  rest. It is `floor` and not rounding: that is what the executable's table is. It is written in the code (`IdctTable`, the one
+  psx-spx lists for the MDEC command that loads it) instead of being computed with `cos`, so as not to depend on each
+  platform's libm; a test compares it with the formula. First columns, then rows, each pass with
+  `(sum + 0x4000) >> 15`; the result stays at 9 bits and is saturated to a signed byte.
+- **Planes.** Signed samples are stored + 128 as unsigned bytes. Macroblocks fill the frame by
+  columns: top to bottom and then left to right.
 
-**Por qué esta IDCT.** Es la del hardware: entera, determinista, igual en cualquier plataforma, y es lo que el
-original ve antes de su paso a RGB. `decodeMacroblocks` la conserva para las pruebas y para comparar con el original,
-pero pierde detalle por el camino: la tabla redondea hacia abajo, cada pasada redondea, el resultado se queda en 8 bits
-y un valor fuera de rango da la vuelta en 9 bits antes de saturar. La decuantización también trunca (`>> 3` y el sesgo
-de 8 hacia cero).
+**Why this IDCT.** It is the hardware's: integer, deterministic, the same on any platform, and it is what the
+original sees before its RGB step. `decodeMacroblocks` keeps it for tests and for comparing with the original,
+but it loses detail along the way: the table rounds down, each pass rounds, the result stays at 8 bits
+and an out-of-range value wraps around in 9 bits before saturating. Dequantization also truncates (`>> 3` and the bias
+of 8 toward zero).
 
-**Decodificación precisa** (una mejora del motor; la usa `dwx` al escribir el vídeo). `decodePreciseFrame` lee el mismo
-bitstream con la misma matriz y la misma escala, pero sin perder nada antes de la IDCT:
+**Precise decoding** (an engine improvement; `dwx` uses it when writing the video). `decodePreciseFrame` reads the same
+bitstream with the same matrix and the same scale, but without losing anything before the IDCT:
 
-- **Decuantización exacta.** Los coeficientes se guardan × 8, así que `nivel · escala · Q[k]` (el AC) y
-  `nivel · Q[0] · 8` (el DC) son enteros exactos: sin `>> 3`, sin sesgo y sin saturar a 15 bits.
-- **IDCT exacta en enteros.** Base `round(2^24 · c(u)/2 · cos((2x + 1)uπ/16))` (`PreciseIdctTable`, escrita en el
-  código y comparada con la fórmula en una prueba), sumas en 64 bits, columnas `>> 12` y filas `>> 35`, las dos
-  redondeadas. Es la IDCT ideal a menos de una milésima de nivel y sigue siendo entera: el mismo bitstream da las
-  mismas muestras en cualquier plataforma.
-- **Más bits.** Las muestras se guardan en dieciseisavos de nivel (`PreciseOne = 16`, de 0 a `PreciseMax = 4080`) y
-  se saturan, nunca dan la vuelta. Con la decodificación del hardware, a menos de un nivel en cada muestra.
+- **Exact dequantization.** Coefficients are stored × 8, so `level · scale · Q[k]` (the AC) and
+  `level · Q[0] · 8` (the DC) are exact integers: no `>> 3`, no bias and no saturation to 15 bits.
+- **Exact integer IDCT.** Basis `round(2^24 · c(u)/2 · cos((2x + 1)uπ/16))` (`PreciseIdctTable`, written in the
+  code and compared with the formula in a test), 64-bit sums, columns `>> 12` and rows `>> 35`, both
+  rounded. It is the ideal IDCT to within a thousandth of a level and is still integer: the same bitstream gives the
+  same samples on any platform.
+- **More bits.** Samples are stored in sixteenths of a level (`PreciseOne = 16`, from 0 to `PreciseMax = 4080`) and
+  are saturated, never wrapped around. Compared with the hardware decoding, within one level on each sample.
 
-**Color.** `toRgb` es la conversión del MDEC (Mednafen): `r = y + ((359 · cr + 0x80) >> 8)`,
-`b = y + ((454 · cb + 0x80) >> 8)` y en el verde cada producto pierde bits bajos
-(`(−88 · cb) & ~0x1F` y `(−183 · cr) & ~0x07`) antes de sumar; cada canal en 9 bits saturado y + 128. Se usa para
-comprobar frames como RGB; el vídeo se escribe en YCbCr, sin pasar por ella. Un reproductor que use la matriz
-BT.601 de rango completo da colores a menos de un nivel de diferencia, salvo el verde en algún caso.
+**Color.** `toRgb` is the MDEC conversion (Mednafen): `r = y + ((359 · cr + 0x80) >> 8)`,
+`b = y + ((454 · cb + 0x80) >> 8)` and in green each product loses low bits
+(`(−88 · cb) & ~0x1F` and `(−183 · cr) & ~0x07`) before adding; each channel in 9 bits saturated and + 128. It is used to
+check frames as RGB; the video is written in YCbCr, without going through it. A player that uses the full-range
+BT.601 matrix gives colors within one level of difference, except green in some cases.
 
-## Audio XA (ADPCM)
+## XA audio (ADPCM)
 
-Cada sector de audio tiene 18 grupos de sonido de 128 bytes: 16 de cabecera (los parámetros de las unidades en los
-bytes 4..11, con copias en 0..3 y 12..15) y 112 de muestras. Con 4 bits son 8 unidades de 28 muestras (la muestra n
-de la unidad u en el byte `16 + 4n + u/2`, nibble bajo para u par); con 8 bits, 4 unidades (byte `16 + 4n + u`).
+Each audio sector has 18 sound groups of 128 bytes: 16 of header (the units' parameters in bytes 4..11, with copies
+in 0..3 and 12..15) and 112 of samples. With 4 bits they are 8 units of 28 samples (sample n of
+unit u at byte `16 + 4n + u/2`, low nibble for even u); with 8 bits, 4 units (byte `16 + 4n + u`).
 
-- El parámetro de una unidad: los 4 bits bajos son el desplazamiento (13..15 se toman como 9), los bits 4..5 el
-  filtro.
-- Muestra: `(nibble << 12) >> desplazamiento` (o `byte << 8`) más la predicción
-  `(ant · K0 + ant2 · K1 + 32) >> 6` con `K0/K1` = (0, 0), (60, 0), (115, −52), (98, −55), saturada a 16 bits.
-- En estéreo las unidades alternan izquierda y derecha, y cada canal guarda su historia de un grupo y de un sector al
-  siguiente.
-- `coding`: bit 0 estéreo, bit 2 media frecuencia (18 900 Hz), bit 4 8 bits; el bit 6 (énfasis) y los valores
-  reservados son error.
+- A unit's parameter: the low 4 bits are the shift (13..15 are taken as 9), bits 4..5 the filter.
+- Sample: `(nibble << 12) >> shift` (or `byte << 8`) plus the prediction
+  `(prev · K0 + prev2 · K1 + 32) >> 6` with `K0/K1` = (0, 0), (60, 0), (115, −52), (98, −55), saturated to 16 bits.
+- In stereo the units alternate left and right, and each channel keeps its history from one group and from one sector
+  to the next.
+- `coding`: bit 0 stereo, bit 2 half rate (18,900 Hz), bit 4 8 bits; bit 6 (emphasis) and the reserved values
+  are an error.
 
-El redondeo es el de psx-spx (+32 antes del desplazamiento de la suma). Mednafen desplaza cada término por separado y
-puede dar una unidad de diferencia en alguna muestra; ninguna referencia es el hardware medido, así que se elige la
-documentada. Un parámetro distinto de su copia se cuenta (se usa el de 4..11) y el extractor lo pone en `unknowns`;
-en el disco US no hay ninguno.
+The rounding is psx-spx's (+32 before the sum's shift). Mednafen shifts each term separately and
+may give a difference of one unit in some sample; neither reference is the measured hardware, so the documented one
+is chosen. A parameter different from its copy is counted (the one in 4..11 is used) and the extractor puts it in `unknowns`;
+on the US disc there are none.
 
-Las cuatro películas son estéreo a 37 800 Hz y 4 bits, con un único canal (`file 1`, `channel 1`); el original no
-filtra canales (`mov.c` no usa `CdlSetfilter`).
+The four movies are stereo at 37,800 Hz and 4 bits, with a single channel (`file 1`, `channel 1`); the original does not
+filter channels (`mov.c` does not use `CdlSetfilter`).
 
 ## `MOV_MOVIES`
 
-Tabla de 4 entradas de 0x28 bytes en `MOV_REL.BIN` (`mov.c`): `char path[0x20]` (`"\MOVIE\OP1.STR;1"`), `s32
-startFrame`, `s32 frameCount`. `MOV_readFrame` deja de leer cuando el número de frame llega a `frameCount` o tras 2000
-lecturas vacías, así que la película que se ve puede acabar antes que el fichero. Direcciones: US `0x8001094C`, EU
-`0x80010B64`, JP y JP rev 1 `0x80010B70` (`movieTableAddress`).
+A table of 4 entries of 0x28 bytes in `MOV_REL.BIN` (`mov.c`): `char path[0x20]` (`"\MOVIE\OP1.STR;1"`), `s32
+startFrame`, `s32 frameCount`. `MOV_readFrame` stops reading when the frame number reaches `frameCount` or after 2000
+empty reads, so the movie that is seen can end before the file. Addresses: US `0x8001094C`, EU
+`0x80010B64`, JP and JP rev 1 `0x80010B70` (`movieTableAddress`).
 
-## Restauración
+## Restoration
 
-Una mejora del motor (`packages/formats/src/video/restore.cpp`): `dwx` limpia cada frame decodificado con precisión
-antes de escribirlo. Las películas están muy cuantizadas (escala 2 a 12 según el frame) y se ven los bordes de los
-bloques de 8 × 8 en degradados y cielos, y halos alrededor de los bordes fuertes. La escala del MDEC tiene el sentido
-del cuantizador de MPEG (un paso de AC de `escala · peso / 8`), así que sirven los filtros posteriores de MPEG-4
-(ISO/IEC 14496-2, anexo F.3) tal cual, con la escala del frame como `QP`:
+An engine improvement (`packages/formats/src/video/restore.cpp`): `dwx` cleans each frame decoded with precision
+before writing it. The movies are heavily quantized (scale 2 to 12 depending on the frame) and the edges of the
+8 × 8 blocks show in gradients and skies, along with halos around strong edges. The MDEC scale has the meaning
+of an MPEG quantizer (an AC step of `scale · weight / 8`), so MPEG-4's post-filters
+(ISO/IEC 14496-2, annex F.3) work as they are, with the frame's scale as `QP`:
 
-- **Desbloqueo (`deblock`).** Cada línea de diez muestras que cruza un borde de bloque (cinco a cada lado), primero
-  los bordes verticales y luego los horizontales, en los tres planos. Si la línea es plana (al menos 6 de sus 9
-  diferencias valen 2 niveles o menos) y su rango es menor que `2 · QP`, un paso bajo de 9 tomas
-  `{1, 1, 2, 2, 4, 2, 2, 1, 1} / 16` reparte el escalón. Si no, solo se reduce el escalón del propio borde (su término
-  de tercer orden) hasta el menor de sus vecinos, cuando es menor que `QP`, y nunca más de la mitad del escalón. Un
-  borde real de la imagen, mayor de lo que la cuantización explica, no se toca.
-- **Deringing (`dering`).** Dentro de cada bloque con un rango de al menos 16 niveles, las muestras a un lado del
-  nivel medio del bloque se suavizan con `[1 2 1; 2 4 2; 1 2 1] / 16` solo si sus 9 vecinas están del mismo lado (lejos
-  del borde), y ninguna se mueve más de `QP / 2`.
+- **Deblocking (`deblock`).** Each line of ten samples that crosses a block edge (five on each side), first
+  the vertical edges and then the horizontal ones, in the three planes. If the line is flat (at least 6 of its 9
+  differences are 2 levels or less) and its range is less than `2 · QP`, a 9-tap low-pass
+  `{1, 1, 2, 2, 4, 2, 2, 1, 1} / 16` spreads the step. Otherwise, only the step of the edge itself is reduced (its
+  third-order term) down to the smaller of its neighbors, when it is smaller than `QP`, and never more than half the step. A
+  real edge of the image, larger than what quantization explains, is not touched.
+- **Deringing (`dering`).** Inside each block with a range of at least 16 levels, the samples on one side of the
+  block's mean level are smoothed with `[1 2 1; 2 4 2; 1 2 1] / 16` only if their 9 neighbors are on the same side (away
+  from the edge), and none moves more than `QP / 2`.
 
-Todo en aritmética entera: el mismo frame da siempre las mismas muestras. No hay filtro temporal: los frames ya son
-reales a 30 fps (pocos repetidos) y un filtro entre frames emborronaría el movimiento rápido de las películas.
+All in integer arithmetic: the same frame always gives the same samples. There is no temporal filter: the frames are already
+real at 30 fps (few repeated) and a filter between frames would blur the fast motion of the movies.
 
-## Salida de `dwx`
+## `dwx` output
 
-| Fichero | Contenido |
+| File | Content |
 |---|---|
-| `movie/<nombre>/video.y4m` | YUV4MPEG2 `C420p10` (10 bits, cada muestra en 2 bytes little-endian), `XCOLORRANGE=FULL`, `Ip`, `A1:1`, a la frecuencia real (`F30:1`): cada frame son los planos Y, Cb y Cr de la decodificación precisa, ya restaurados |
-| `movie/<nombre>/audio.wav` | PCM de 16 bits little-endian, los canales y la frecuencia del XA |
-| `movie/<nombre>/movie.yaml` | `source`, `video` (tamaño, frames, primer frame, fps, versión del bitstream, `chroma: 420p10`, `range: full`), `audio` (frecuencia, canales, muestras, bits del XA) o `null`, `sectors` (total, vídeo, audio, relleno) y `playback` (índice, ruta, `start_frame` y `frame_count` de `MOV_MOVIES`) o `null` si no se conoce la versión. Esquema: `content/schemas/movie.schema.json` |
+| `movie/<name>/video.y4m` | YUV4MPEG2 `C420p10` (10 bits, each sample in 2 little-endian bytes), `XCOLORRANGE=FULL`, `Ip`, `A1:1`, at the real rate (`F30:1`): each frame is the Y, Cb and Cr planes of the precise decoding, already restored |
+| `movie/<name>/audio.wav` | 16-bit little-endian PCM, the XA's channels and rate |
+| `movie/<name>/movie.yaml` | `source`, `video` (size, frames, first frame, fps, bitstream version, `chroma: 420p10`, `range: full`), `audio` (rate, channels, samples, XA bits) or `null`, `sectors` (total, video, audio, padding) and `playback` (index, path, `start_frame` and `frame_count` from `MOV_MOVIES`) or `null` if the version is not known. Schema: `content/schemas/movie.schema.json` |
 
-- **Croma.** El MDEC usa la misma muestra de croma para los 4 píxeles de su cuadro de 2 × 2 (vecino más cercano), así
-  que la muestra está en el centro del cuadro, como en `C420jpeg`. Los planos son de rango completo: el luma de 0 a
-  1023 (`nivel · 1023 / 255`, redondeado) y el croma centrado en 512 con el mismo factor, como H.273 escala el rango
-  completo a 10 bits. Los 10 bits guardan los dieciseisavos de nivel de la decodificación precisa que 8 bits
-  redondearían, y evitan bandas en los degradados oscuros.
-- **Escritura por partes.** `OutputFile::stream` (extractor.hpp) es una salida que el paquete base pide por trozos:
-  el extractor guarda solo los bitstreams (unos 35 MB por película) y el vídeo se decodifica frame a frame al
-  escribirlo, así que nunca está entero en memoria (unos 300 MB por película). Los bitstreams y los WAV de las cuatro
-  películas (unos 200 MB) sí se quedan en memoria hasta que se escribe el paquete. Las salidas por partes no entran en
-  la búsqueda de duplicados.
-- **Cobertura.** Un STR está `extracted` cuando cada sector es vídeo de un frame que decodifica, audio del flujo de
-  la película o relleno. Todo lo demás (un sector que no se reconoce, un frame que no decodifica, cuyo tamaño no es de
-  macrobloques de 16 × 16 o al que le faltan sectores, audio de otro canal, un parámetro XA distinto de su copia, `MOV_MOVIES` ilegible) va a `unknowns`; si
-  hay más de 32 problemas, el resto se cuenta en uno.
+- **Chroma.** The MDEC uses the same chroma sample for the 4 pixels of its 2 × 2 square (nearest neighbor), so
+  the sample is at the center of the square, as in `C420jpeg`. The planes are full range: luma from 0 to
+  1023 (`level · 1023 / 255`, rounded) and chroma centered on 512 with the same factor, as H.273 scales the full
+  range to 10 bits. The 10 bits keep the sixteenths of a level of the precise decoding that 8 bits
+  would round off, and avoid banding in dark gradients.
+- **Writing in parts.** `OutputFile::stream` (extractor.hpp) is an output that the base package requests in pieces:
+  the extractor stores only the bitstreams (about 35 MB per movie) and the video is decoded frame by frame when
+  written, so it is never whole in memory (about 300 MB per movie). The bitstreams and WAVs of the four
+  movies (about 200 MB) do stay in memory until the package is written. Outputs in parts do not take part in the
+  duplicate search.
+- **Coverage.** An STR is `extracted` when each sector is video of a frame that decodes, audio of the movie's
+  stream or padding. Everything else (a sector that is not recognized, a frame that does not decode, whose size is not a multiple of
+  16 × 16 macroblocks or that is missing sectors, audio of another channel, an XA parameter different from its copy, an unreadable `MOV_MOVIES`) goes to `unknowns`; if
+  there are more than 32 problems, the rest are counted in one.
 
-Para verlo o recodificarlo: `ffmpeg -i video.y4m -i audio.wav ...` (fuera del proyecto).
+To view or re-encode it: `ffmpeg -i video.y4m -i audio.wav ...` (outside the project).
 
-## Película cocinada (`dwx cook`)
+## Cooked movie (`dwx cook`)
 
-| Fichero | Contenido |
+| File | Content |
 |---|---|
-| `movie/<nombre>/video.ivf` | AV1 de 10 bits 4:2:0 (8 bits si el Y4M es de 8), rango completo, matriz BT.601, en un IVF: cabecera de 32 bytes (`DKIF`, versión 0, tamaño de cabecera 32, `AV01`, ancho y alto `u16`, frecuencia y escala `u32` en 16 y 20, número de frames `u32` en 24) y, por frame, 12 bytes (tamaño `u32`, `pts` `u64`) y sus datos. Un frame del IVF por frame del Y4M, al mismo tamaño y frecuencia |
-| `movie/<nombre>/audio.opus` | El WAV pasado por el cocinero de sonido ([Opus](opus.md)): 48 kHz, los mismos canales |
-| `movie/<nombre>/movie.yaml` | Copiado: describe la película tal como se extrajo (el motor toma la frecuencia del sonido decodificado) |
+| `movie/<name>/video.ivf` | 10-bit 4:2:0 AV1 (8 bits if the Y4M is 8), full range, BT.601 matrix, in an IVF: a 32-byte header (`DKIF`, version 0, header size 32, `AV01`, width and height `u16`, rate and scale `u32` at 16 and 20, number of frames `u32` at 24) and, per frame, 12 bytes (size `u32`, `pts` `u64`) and its data. One IVF frame per Y4M frame, at the same size and rate |
+| `movie/<name>/audio.opus` | The WAV run through the sound cooker ([Opus](opus.md)): 48 kHz, the same channels |
+| `movie/<name>/movie.yaml` | Copied: it describes the movie as it was extracted (the engine takes the rate from the decoded sound) |
 
-El cocinero (`apps/dwx/src/video_cooker.cpp`, cocinero `video` versión 2) codifica con libaom en modo de buena
-calidad con calidad constante (`cq-level` 14) y ajustes fijos y un hilo, así que el mismo Y4M da siempre los mismos
-bytes. Lee Y4M de 8 bits (`C420jpeg`) y de 10 (`C420p10`); otra profundidad se rechaza.
-`assets::readIvfHeader` comprueba la cabecera (`dwx validate`, `dwe-game --check-content`) y `video::Av1Reader` la
-decodifica frame a frame. Los motivos y las medidas están en [películas](../architecture/peliculas.md#fase-5).
+The cooker (`apps/dwx/src/video_cooker.cpp`, `video` cooker version 2) encodes with libaom in good-quality mode with
+constant quality (`cq-level` 14) and fixed settings and one thread, so the same Y4M always gives the same
+bytes. It reads 8-bit (`C420jpeg`) and 10-bit (`C420p10`) Y4M; another depth is rejected.
+`assets::readIvfHeader` checks the header (`dwx validate`, `dwe-game --check-content`) and `video::Av1Reader`
+decodes it frame by frame. The reasons and measurements are in [movies](../architecture/movies.md#cooked-format-and-later-work).
 
-`packages/formats/src/video/mdec.cpp` y `restore.cpp` se compilan optimizados también en los builds de debug (como
-`sha1.cpp`): sin eso, la extracción en `ci` (debug con sanitizers) llevaba casi 9 minutos con la decodificación del
-hardware. Al extraer, cada frame solo pasa por la etapa VLC (`decodeBitstream`, que comprueba su bitstream y su
-tamaño); la decodificación precisa y la restauración corren una sola vez, al escribir el Y4M. Con ellas, la
-extracción entera en `ci` pasa de unos 6 minutos a unos 16 (medido el 2026-11-08 en una máquina compartida); un
-build optimizado de `dwx` tarda mucho menos.
+`packages/formats/src/video/mdec.cpp` and `restore.cpp` are compiled optimized in debug builds too (like
+`sha1.cpp`): without that, the extraction in `ci` (debug with sanitizers) took almost 9 minutes with the hardware
+decoding. When extracting, each frame only goes through the VLC stage (`decodeBitstream`, which checks its bitstream and its
+size); precise decoding and restoration run only once, when writing the Y4M. With them, the whole
+extraction in `ci` goes from about 6 minutes to about 16 (measured on 2026-11-08 on a shared machine); an
+optimized `dwx` build takes much less.
 
-## Pruebas
+## Tests
 
-- `packages/formats/tests/mdec_tests.cpp`, `xa_adpcm_tests.cpp`, `str_tests.cpp` y `movie_tests.cpp`: bitstreams y sectores
-  sintéticos (DC, predictores, versión 2, AC de 15 y 16 bits, escape, fin de bloque, IDCT, IDCT precisa, macrobloques,
-  todos los filtros XA, estéreo, 8 bits, intercalado de 8 sectores, entradas mal formadas, Y4M de 8 y 10 bits, WAV,
-  `MOV_MOVIES` y esquema). `restore_tests.cpp`: el desbloqueo iguala un escalón pequeño y respeta un borde real, su
-  fuerza sigue la escala, el deringing no mueve nada más de media escala y todo es determinista.
-- `apps/dwx/tests/video_extractors_tests.cpp`: una imagen en bruto sintética con un STR.
-- Con `DWE_DISC`: `packages/formats/tests/video_real_disc_tests.cpp` decodifica los primeros frames y el audio de cada
-  película, y `apps/dwx/tests/video_real_disc_tests.cpp` extrae las cuatro (sin `unknowns`) y decodifica entera la
-  más corta sin escribir nada. Decodificar las cuatro lleva minutos en una compilación con sanitizers; la prueba del
-  paquete base entero (`real_disc_tests.cpp`) lo hace al escribirlas.
+- `packages/formats/tests/mdec_tests.cpp`, `xa_adpcm_tests.cpp`, `str_tests.cpp` and `movie_tests.cpp`: synthetic bitstreams and sectors
+  (DC, predictors, version 2, 15- and 16-bit AC, escape, end of block, IDCT, precise IDCT, macroblocks,
+  all XA filters, stereo, 8 bits, 8-sector interleaving, malformed inputs, 8- and 10-bit Y4M, WAV,
+  `MOV_MOVIES` and schema). `restore_tests.cpp`: deblocking evens out a small step and respects a real edge, its
+  strength follows the scale, deringing moves nothing more than half a scale and everything is deterministic.
+- `apps/dwx/tests/video_extractors_tests.cpp`: a synthetic raw image with an STR.
+- With `DWE_DISC`: `packages/formats/tests/video_real_disc_tests.cpp` decodes the first frames and the audio of each
+  movie, and `apps/dwx/tests/video_real_disc_tests.cpp` extracts all four (no `unknowns`) and decodes the
+  shortest one in full without writing anything. Decoding all four takes minutes in a build with sanitizers; the
+  whole base package test (`real_disc_tests.cpp`) does it when writing them.
 
-## Estado con el disco US
+## Status with the US disc
 
-Las cuatro películas quedan `extracted`, sin `unknowns`:
+The four movies come out `extracted`, with no `unknowns`:
 
-| Fichero | Sectores (vídeo / audio / relleno) | Frames | Duración |
+| File | Sectors (video / audio / padding) | Frames | Duration |
 |---|---|---|---|
-| `MOVIE/ED2.STR` | 13 264 (11 603 / 1 658 / 3) | 2652 | 88,4 s |
-| `MOVIE/EDR.STR` | 17 264 (15 103 / 2158 / 3) | 3452 | 115,1 s |
-| `MOVIE/OP1.STR` | 18 600 (16 271 / 2325 / 4) | 3719 | 124,0 s |
-| `MOVIE/OP2.STR` | 16 336 (14 289 / 2042 / 5) | 3266 | 108,9 s |
+| `MOVIE/ED2.STR` | 13,264 (11,603 / 1,658 / 3) | 2652 | 88.4 s |
+| `MOVIE/EDR.STR` | 17,264 (15,103 / 2158 / 3) | 3452 | 115.1 s |
+| `MOVIE/OP1.STR` | 18,600 (16,271 / 2325 / 4) | 3719 | 124.0 s |
+| `MOVIE/OP2.STR` | 16,336 (14,289 / 2042 / 5) | 3266 | 108.9 s |

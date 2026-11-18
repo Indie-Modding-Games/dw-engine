@@ -1,9 +1,9 @@
-# The time in digits (an engine improvement, docs/modulos/apps/game.md, «Hora en dígitos»): the game time as HH:MM in
+# The time in digits (an engine improvement, docs/modules/apps/game.md, «Time in digits»): the game time as HH:MM in
 # a small box under the field HUD's dial clock. From a new game with the keyboard: the morning's 08:00 at 1280x720,
 # 1920x1080 and 1024x768, the evening, the pause menu (the clock and its box slide away), then the option off in the
 # pause menu. Each capture with the box checks that it lies over nothing else of the HUD or another document
 # (expect_clear: hud#field-time) and that every text fits (text_fit). Run it once per language and per skin
-# (--ui-skin original, modern); how to run it: docs/guides/prueba-vertical.md.
+# (--ui-skin original, modern); how to run it: docs/guides/vertical-slice.md.
 name: digital-time
 device: keyboard
 timeout: 300

@@ -174,7 +174,7 @@ enum class CareClock : std::uint8_t { Runs, Stops };
 // for an item on the ground; tamerTickTakeChest, state 14, for a chest).
 enum class ItemHold : std::uint8_t { None, Ground, Chest };
 
-// The field's logic for one map at a time (docs/reference/campo.md): the player moves by intents
+// The field's logic for one map at a time (docs/reference/field.md): the player moves by intents
 // with the original's grid collision, steps on triggers and warps, and the partner follows. Player
 // and partner are entities of the scene world, with the shared components the app draws (Transform,
 // ModelRef, AnimationIntent, PlayerTag, PartnerTag). No rendering, input devices or file access:
@@ -548,7 +548,7 @@ public:
   [[nodiscard]] const FieldRules& rules() const { return rules_; }
 
   // Something that held the characters let them go: a script, a care scene, a battle, a gym
-  // course, a map entry or load (docs/modulos/game/field.md, "Posiciones", the engine's). The
+  // course, a map entry or load (docs/modules/game/field.md, "Posiciones", the engine's). The
   // partner's trail and stuck time and the player's last cell start over, and on the next tick the
   // field runs unheld, separateActors puts a partner standing in someone or in a wall, or a player
   // in a wall, on the nearest free spot; NPCs stay where they are. After a script, it waits for the

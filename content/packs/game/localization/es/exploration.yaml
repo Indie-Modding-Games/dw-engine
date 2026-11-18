@@ -1,11 +1,11 @@
-# El selector de la exploración libre: un lugar al que llevan los scripts de la casilla que pisó el jugador.
+# The free exploration picker: a place the scripts of the tile the player stepped on lead to.
 title: "¿Adónde?"
-# {name} es el nombre del mapa, {map} su id (varios mapas comparten nombre).
+# {name} is the map name, {map} its id (several maps share a name).
 place: "{name} ({map})"
-# El lugar al que lleva la historia ahora, si lo hay.
+# The place the story leads to now, if there is one.
 story: "historia"
 stay: "Quedarse aquí"
 previous: "Anterior"
 next: "Siguiente"
-# {page} de {pages}.
+# {page} of {pages}.
 page: "{page}/{pages}"

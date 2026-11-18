@@ -15,7 +15,7 @@ inline constexpr std::string_view NetworkAssetId = "versus/network";
 // Where the online versus finds the other machine: the signaling server that pairs the two by a
 // room code, and the STUN/TURN servers that help them open a direct route.
 struct NetworkConfig {
-  // wss://... Empty: no server is set up, and «Versus en línea» says so instead of connecting.
+  // wss://... Empty: no server is set up, and "Online versus" says so instead of connecting.
   std::string signalServer;
   // "stun:host:port" or "turn:..." URLs.
   std::vector<std::string> iceServers;

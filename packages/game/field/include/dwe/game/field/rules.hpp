@@ -19,7 +19,7 @@ namespace dwe::game::field {
 // The tunables of the field, read from `field/rules` in the game pack
 // (content/schemas/field_rules.schema.json). Distances are in world units (100 = one collision
 // cell), speeds per second and angles in radians, whatever the tick rate. The defaults are the
-// original's values (docs/reference/campo.md).
+// original's values (docs/reference/field.md).
 
 // How a character moves.
 struct MoverRules {

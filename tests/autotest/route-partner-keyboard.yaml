@@ -2,7 +2,7 @@
 # ITEM entry, the item bag (an item's options, using it, moving it to another slot, the sort orders, the drop's question
 # answered no). The original look's partner entry holds the status and tech pages only and its bag has no tabs, as the
 # original's; praising and scolding are field actions there. Right and left on the status page's tabs switch to the
-# tech page and back, in both looks (--ui-skin modern too). How to run it: docs/guides/prueba-vertical.md.
+# tech page and back, in both looks (--ui-skin modern too). How to run it: docs/guides/vertical-slice.md.
 name: partner-keyboard
 device: keyboard
 timeout: 300

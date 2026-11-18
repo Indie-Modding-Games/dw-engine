@@ -1,6 +1,6 @@
 # The signs route: a map started with --start shows its signs in the run's language (--lang en or es), then the
 # pause menu turns "Translated signs" off and the map shows the original's. One run per map and language, each
-# with its own --shots folder; how to run it and the maps with signs: docs/guides/carteles.md.
+# with its own --shots folder; how to run it and the maps with signs: docs/guides/signs.md.
 name: signs
 device: keyboard
 timeout: 120

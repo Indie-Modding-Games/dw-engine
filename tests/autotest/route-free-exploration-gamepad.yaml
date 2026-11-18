@@ -1,7 +1,7 @@
-# Free exploration's switch and chooser with the gamepad (docs/architecture/warps-de-script.md): the pause menu turns
+# Free exploration's switch and chooser with the gamepad (docs/architecture/script-warps.md): the pause menu turns
 # it on, East stays on File City's cell 51, and in the elder's house, South takes the place the chooser starts on:
 # the story's, back to File City. It runs once per language, like route-language.yaml. How to run it:
-# docs/guides/prueba-vertical.md.
+# docs/guides/vertical-slice.md.
 name: free-exploration-gamepad
 device: gamepad
 timeout: 300

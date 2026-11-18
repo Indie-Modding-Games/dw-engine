@@ -63,7 +63,7 @@ local chart_index = 0
 local chart_cells = {}
 local chart_signature = ""
 local chart_flash = false
--- The chart's pages (docs/modulos/apps/game.md, «Etapas canónicas»): more than one when a box has
+-- The chart's pages (docs/modules/apps/game.md, «Canonical stages»): more than one when a box has
 -- more cells than its grid holds; the page shown, the slide between two and the cell a page turn
 -- left (chart_turn).
 local chart_pages = 1
@@ -193,7 +193,7 @@ local display_entries = {
       skin_choice.change(step)
     end,
   },
-  -- The whole UI (docs/modding/interfaces.md): the game's own or a UI addon the packs or the
+  -- The whole UI (docs/modding/ui-addons.md): the game's own or a UI addon the packs or the
   -- player's addons folder offer (ui_addons). The pick goes on as the menu closes; in safe mode
   -- only the game's own is offered. The row shows only when there is a choice, or in safe mode.
   {
@@ -232,7 +232,7 @@ local display_entries = {
       ui.send("ui_addon", offered[cycle(offered, index, step)])
     end,
   },
-  -- The plugins (docs/modding/interfaces.md): documents over whichever UI is on, all on or all
+  -- The plugins (docs/modding/ui-addons.md): documents over whichever UI is on, all on or all
   -- off. The row shows only when the packs offer one, and not in safe mode.
   {
     id = "ui-plugins",
@@ -372,7 +372,7 @@ local function chart_rows(first, count, step)
   return rows
 end
 
--- The chart's stage boxes (docs/modulos/apps/game.md, «Etapas canónicas»), the columns and rows of
+-- The chart's stage boxes (docs/modules/apps/game.md, «Canonical stages»), the columns and rows of
 -- their cells (the chart's pixels): the original's grid, Fresh and In-Training four cells 38 apart,
 -- Rookie nine 19 apart, Champion four columns and Ultimate two of eight. A page holds a box's grid
 -- at most; the cells past it go on to the next page, in the same box.
@@ -389,7 +389,7 @@ local MEGA_BOX = 6
 -- With the Mega box, a sixth box right of the Ultimate one as tall, the Champion and Ultimate
 -- columns stand 22 pixels apart instead of 24, so the six fit the panel's frame.
 local MEGA_COLUMNS = { [4] = { 140, 162, 184, 206 }, [5] = { 241, 263 } }
--- The canonical stages (an engine improvement, docs/modulos/apps/game.md, «Etapas canónicas»; the
+-- The canonical stages (an engine improvement, docs/modules/apps/game.md, «Canonical stages»; the
 -- option canonical_stages, off by default): the species the series calls Mega leave the Ultimate
 -- box for the Mega box, in this order, as the Mega step's Megas (player.chart.mega). The rules
 -- still count them as Ultimates.
@@ -718,11 +718,11 @@ local function begin_chart_transition(document, closing)
   transition_box(document, closing and 4 or 0)
 end
 
--- Evolution requirements (an engine improvement, docs/modulos/apps/game.md, «Requisitos de
--- evolución»; the option evolution_requirements, on by default): in the chart's tree a cursor goes
--- over the targets and a panel over the left box tells what the target asks. On the partner's own
--- tree it also tells the partner's values and verdicts, the targets it qualifies for glow green and
--- the rest dim. Every verdict comes from the game (evoreq.*); the menu only lays them out.
+-- Evolution requirements (an engine improvement, docs/modules/apps/game.md, «Evolution
+-- requirements»; the option evolution_requirements, on by default): in the chart's tree a cursor
+-- goes over the targets and a panel over the left box tells what the target asks. On the partner's
+-- own tree it also tells the partner's values and verdicts, the targets it qualifies for glow green
+-- and the rest dim. Every verdict comes from the game (evoreq.*); the menu only lays them out.
 local detail_targets = {}
 local detail_from = { cells = {}, lines = {} }
 local detail_focus = nil
@@ -1332,7 +1332,7 @@ local function card_move(document, action)
   cards_cursor(document)
 end
 
--- The City tab (a dwe addition, docs/modulos/apps/screens.md): every species that can join the
+-- The City tab (a dwe addition, docs/modules/apps/screens.md): every species that can join the
 -- city, grouped by level, in colour once it lives there and as a silhouette while it is missing;
 -- the prosperity and how many joined. The game publishes the lists (player.city.*) from the city's
 -- rules; the icons and names are the evolution chart's (player.chart.*). Drawn again only when
@@ -1644,7 +1644,7 @@ end
 
 local refresh_player
 
--- The options page (docs/modulos/apps/game.md, «Opciones en partida»): four tabs, each a list of
+-- The options page (docs/modules/apps/game.md, «In-game options»): four tabs, each a list of
 -- rows (the display rows above, then game_options' entries of the tab, in order), what the focused
 -- row does under the list and «Reset to defaults» at the foot of each tab.
 --
@@ -1659,7 +1659,7 @@ local title_quick_actions = { "options-quit" }
 local function shown_quick_actions()
   return at_title and title_quick_actions or quick_actions
 end
-local option_slots = 27
+local option_slots = 29
 local option_tab = "game"
 -- The rows of the tab shown, in order, and the pool's elements (bound once).
 local shown_entries = {}
@@ -2251,7 +2251,7 @@ function open_partner(page)
   end)
 end
 
--- The game closes the menu and puts the partner to bed (docs/architecture/guardar-y-cargar.md,
+-- The game closes the menu and puts the partner to bed (docs/architecture/save-and-load.md,
 -- 3.6).
 function sleep()
   if can_sleep() then

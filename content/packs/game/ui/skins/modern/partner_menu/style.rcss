@@ -231,7 +231,7 @@ button:focus .original-look, button.original-look:focus {
 	color: #1a1f27;
 }
 
-/* La presentación moderna conserva su estructura compacta. */
+/* The modern presentation keeps its compact structure. */
 .status-decoration { display: none; }
 
 /* HP and MP write "now / most" in their value: the original look's separate slash and maximum are not drawn. */
@@ -304,7 +304,7 @@ button:focus .original-look, button.original-look:focus {
 #status-condition { position: absolute; left: 0; top: 382dp; width: 712dp; margin: 0; }
 
 /* The page's extras, which the original keeps hidden (the status_extras option, on by default;
-   docs/modulos/apps/screens.md): the care mistakes as a line under the weight, the profile's lines a little closer to
+   docs/modules/apps/screens.md): the care mistakes as a line under the weight, the profile's lines a little closer to
    make room, and the tiredness as a fourth care bar, the page a row taller. Off, the page is as above. The original
    skin's style puts them in its own places. */
 #page-status .status-extra { display: none; }
@@ -321,7 +321,7 @@ button:focus .original-look, button.original-look:focus {
 #tiredness-fill { background-color: #b49cff; }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The modern look of the partner's menu (docs/architecture/ui.md, «Aspecto moderno»): the panel, entries and prompts
+   The modern look of the partner's menu (docs/architecture/ui.md, «Modern look of the menus»): the panel, entries and prompts
    of the pause menu (../pause_menu/style.rcss), its type scale and its colours. Everything is written in the modern
    font, also the texts the documents mark .original-look: the «Original-look text» option is for the texts that
    imitate the original (the map's name, the story's box, the battle, the original's shop boxes), not for this look's
@@ -677,7 +677,7 @@ button:focus .original-look, button.original-look:focus {
 
 #panel:not(.skin-original) #status-name { font-weight: bold; }
 
-/* More of the status page's extras (docs/modulos/apps/screens.md, «Extras de la ficha»): the battles share the
+/* More of the status page's extras (docs/modules/apps/screens.md, «Sheet extras»): the battles share the
    mistakes' line, the mistakes on its left half and the battles on its right; the hours it is awake today, the hours
    of life left and the evolution counter are three more lines in the condition card, under its bars, and both cards
    grow a line. */

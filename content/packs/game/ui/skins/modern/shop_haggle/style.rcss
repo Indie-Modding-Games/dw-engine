@@ -1,0 +1,228 @@
+/* The shop job's counter in the modern look (structure: ../../../shop_haggle/structure.rcss; the rules panel shares this
+   sheet for its panel). The pause menu's slate panel and its type scale (../theme.rcss): 22dp title, 18dp rows and
+   body, 14dp captions; the customer and the item on lighter insets; the focused row tinted amber with the amber bar on
+   its left edge, the pointer only lightening a row; the chance as a meter from red to green.
+     #121922f5 panel, #263243 its border, #243042 dividers, #1a2330 insets
+     #e9eef5 text, #c9d3de body, #9aa8ba secondary, #5d6a7c disabled
+     #f2a93b accent (focus, money, the goal), #6fdc6f / #5cc8ff / #e05d5d the good, blue and bad tones */
+
+#scrim {
+	background-color: #06090dc0;
+}
+
+#panel {
+	font-family: "Noto Sans";
+	font-size: 18dp;
+	line-height: 24dp;
+	color: #c9d3de;
+	border: 1dp #263243;
+	border-radius: 12dp;
+	background-color: #121922f5;
+	decorator: none;
+}
+
+#haggle-head {
+	border-bottom: 1dp #243042;
+}
+
+#haggle-title {
+	font-size: 22dp;
+	font-weight: bold;
+	color: #e9eef5;
+}
+
+#haggle-summary {
+	font-size: 14dp;
+	color: #9aa8ba;
+}
+
+#haggle-tally {
+	font-weight: bold;
+	color: #e9eef5;
+}
+
+#haggle-next {
+	font-weight: bold;
+	color: #f2a93b;
+}
+
+#haggle-rules, #haggle-actions button {
+	padding: 4dp 14dp;
+	margin: 0;
+	border: 1dp #2e3a4a;
+	border-radius: 8dp;
+	background-color: #1a2330;
+	font-size: 14dp;
+	line-height: 24dp;
+	color: #c9d3de;
+}
+
+#haggle-actions button {
+	margin-right: 10dp;
+	padding: 6dp 22dp;
+	font-size: 18dp;
+}
+
+#haggle-rules .key {
+	font-size: 14dp;
+	line-height: 18dp;
+}
+
+#haggle-rules:hover, #haggle-actions button:hover {
+	background-color: #243042;
+	color: #e9eef5;
+}
+
+#haggle-rules:focus, #haggle-actions button:focus {
+	border-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
+}
+
+#haggle-talk.disabled, #haggle-talk.disabled:hover {
+	color: #5d6a7c;
+}
+
+/* The customer's card and the item: insets. */
+#haggle-customer, #haggle-item {
+	border-radius: 10dp;
+	background-color: #1a2330;
+}
+
+#haggle-portrait {
+	border: 1dp #2e3a4a;
+	border-radius: 8dp;
+	background-color: #0d121a;
+}
+
+#haggle-species {
+	font-size: 22dp;
+	line-height: 28dp;
+	font-weight: bold;
+	color: #e9eef5;
+}
+
+#haggle-character, #haggle-regular, #haggle-patience-label, #haggle-history-title, #haggle-history {
+	font-size: 14dp;
+	line-height: 20dp;
+	color: #9aa8ba;
+}
+
+#haggle-mood, #haggle-reaction {
+	font-size: 14dp;
+	line-height: 22dp;
+	font-weight: bold;
+}
+
+#haggle-mood {
+	border-radius: 6dp;
+	background-color: #263243;
+	color: #c9d3de;
+}
+
+#haggle-mood.mood-cheerful { color: #6fdc6f; }
+#haggle-mood.mood-serious { color: #f2a93b; }
+
+#haggle-reaction.face-delighted, #haggle-reaction.face-pleased, #haggle-reaction.face-doubtful,
+#haggle-reaction.face-annoyed, #haggle-reaction.face-furious {
+	border-radius: 6dp;
+	background-color: #263243;
+}
+
+#haggle-reaction.face-delighted, #haggle-reaction.face-pleased { color: #6fdc6f; }
+#haggle-reaction.face-doubtful { color: #f2d23b; }
+#haggle-reaction.face-annoyed { color: #f2a93b; }
+#haggle-reaction.face-furious { color: #e05d5d; }
+
+.pip {
+	width: 12dp;
+	height: 12dp;
+	border: 2dp #3a4758;
+	border-radius: 7dp;
+	background-color: transparent;
+	decorator: none;
+}
+
+.pip.on {
+	border-color: #f2a93b;
+	background-color: #f2a93b;
+}
+
+#haggle-wants {
+	color: #e9eef5;
+}
+
+#haggle-no-offers {
+	color: #5d6a7c;
+}
+
+.haggle-offer .offer-text { color: #c9d3de; }
+.haggle-offer.face-doubtful .offer-text { color: #f2d23b; }
+.haggle-offer.face-annoyed .offer-text { color: #f2a93b; }
+.haggle-offer.face-furious .offer-text { color: #e05d5d; }
+
+/* The table. */
+#haggle-columns {
+	height: 24dp;
+	line-height: 24dp;
+	font-size: 14dp;
+	color: #9aa8ba;
+	border-bottom: 1dp #243042;
+}
+
+.haggle-row {
+	height: 32dp;
+	line-height: 32dp;
+	padding: 0;
+	margin: 1dp 0;
+	border: 0;
+	border-left: 3dp transparent;
+	border-radius: 6dp;
+	background-color: transparent;
+	font-size: 18dp;
+	color: #c9d3de;
+	decorator: none;
+}
+
+.haggle-row:hover {
+	background-color: #1a2330;
+	color: #e9eef5;
+}
+
+.haggle-row:focus {
+	border-left-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
+}
+
+.haggle-row .row-price { font-weight: bold; }
+.haggle-row.regular .row-price { color: #f2a93b; }
+
+.row-meter {
+	top: 12dp;
+	height: 8dp;
+	border-radius: 4dp;
+	background-color: #263243;
+}
+
+.row-meter-fill {
+	border-radius: 4dp;
+}
+
+.chance-1 .row-meter-fill, .chance-2 .row-meter-fill { background-color: #e05d5d; }
+.chance-3 .row-meter-fill, .chance-4 .row-meter-fill { background-color: #f2a93b; }
+.chance-5 .row-meter-fill, .chance-6 .row-meter-fill, .chance-7 .row-meter-fill { background-color: #d6d24a; }
+.chance-8 .row-meter-fill, .chance-9 .row-meter-fill { background-color: #6fdc6f; }
+.chance-10 .row-meter-fill { background-color: #8af08a; }
+
+.haggle-row .row-chance { font-weight: bold; }
+.haggle-row.chance-0 .row-chance, .haggle-row.chance-1 .row-chance, .haggle-row.chance-2 .row-chance { color: #e05d5d; }
+.haggle-row.chance-3 .row-chance, .haggle-row.chance-4 .row-chance { color: #f2a93b; }
+.haggle-row.chance-5 .row-chance, .haggle-row.chance-6 .row-chance, .haggle-row.chance-7 .row-chance { color: #d6d24a; }
+.haggle-row.chance-8 .row-chance, .haggle-row.chance-9 .row-chance, .haggle-row.chance-10 .row-chance { color: #6fdc6f; }
+
+/* A price refused before: greyed out. */
+.haggle-row.offered, .haggle-row.offered .row-price, .haggle-row.offered .row-adds,
+.haggle-row.offered .row-chance { color: #5d6a7c; }
+.haggle-row.offered .row-meter-fill { background-color: #3a4758; }
+

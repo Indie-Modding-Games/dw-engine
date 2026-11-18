@@ -1,37 +1,37 @@
-# El gimnasio del pueblo (src/trn: TRN_setup*Training y TRN_tick*Training). Lo leen packages/game/gym y apps/game. Las
-# ganancias de cada sesión son de training.yaml; aquí está la coreografía de cada curso, contada en fotogramas del
-# original (20 por segundo). Los puntos son unidades del mundo; los objetos, píxeles del fondo; los ángulos, 4096 por
-# vuelta. Además del gimnasio (trai00) hay otros puntos de entrenamiento: los de src/trn en gias09 y mist05 y los de
-# src/trn2 (TRN2_setup*Training) en icsa03, betl03, betl04 y gomi02; cada uno es un sitio (sites) con sus cursos.
-# script_interp.c: rutina 7: el curso sale de la variable 0xfe (254): 0 HP, 1 ataque, 2 velocidad, 3 defensa, 4 MP y
-# 5 inteligencia (choice de cada curso).
+# The town gym (src/trn: TRN_setup*Training and TRN_tick*Training). Read by packages/game/gym and apps/game. The
+# gains of each session are in training.yaml; here is the choreography of each course, counted in frames of the
+# original (20 per second). Points are world units; objects, background pixels; angles, 4096 per
+# turn. Besides the gym (trai00) there are other training spots: those of src/trn in gias09 and mist05 and those of
+# src/trn2 (TRN2_setup*Training) in icsa03, betl03, betl04 and gomi02; each is a site (sites) with its courses.
+# script_interp.c: routine 7: the course comes from variable 0xfe (254): 0 HP, 1 attack, 2 speed, 3 defense, 4 MP and
+# 5 brains (choice of each course).
 course_variable: 254
-# TRN_setup*Training: la variable 0xf6 (246) activa la ruleta.
+# TRN_setup*Training: variable 0xf6 (246) enables the slot machine.
 slot_variable: 246
-# TRN_calculateTrainingMultiplier: el manual de entrenamiento (getItemCount(0x21)).
+# TRN_calculateTrainingMultiplier: the training manual (getItemCount(0x21)).
 manual_item: trn_manual
-# playSound(8, ...): el banco del mapa.
+# playSound(8, ...): the map's bank.
 sound_slot: 8
-# TRN_createCloudFXLine: cada nube se desvía randomLimit(100) de su línea.
+# TRN_createCloudFXLine: each cloud strays randomLimit(100) from its line.
 cloud_scatter: 100
-# tamer.c: tamerTickTraining: el jugador (estado 8) pone su clip 10 y mira al compañero en cada fotograma.
+# tamer.c: tamerTickTraining: the player (state 8) sets its clip 10 and looks at the partner every frame.
 watch_animation: 10
-# trn_hud.c: la caja de estadísticas espera 100 fotogramas, luego cuenta un punto por fotograma con playSound(0, 0x16),
-# con tope 9999 para HP y MP y 999 para el resto.
+# trn_hud.c: the stats box waits 100 frames, then counts one point per frame with playSound(0, 0x16),
+# capped at 9999 for HP and MP and 999 for the rest.
 count:
   delay_frames: 100
   sound_slot: 0
   sound: 22
   hp_mp_max: 9999
   stat_max: 999
-# Lo común de cada curso: el aparato (el compañero anda hasta él y la cámara lo sigue a velocidad 10), la sesión de
-# 1200 fotogramas (o hasta cancelar), 20 fotogramas de pausa tras la cuenta, los sonidos al empezar (9) y al acabar (10)
-# y las animaciones de andar y de terminar (0x12). Debajo, la coreografía propia del curso.
-# trn_slots.c: la ruleta, si la variable de slot_variable vale 1. Los rodillos son TRN_D_8008F1AC; la
-# ayuda oculta sale de TRN_D_8008F2CC[rand() % 10] (0 ninguna, 1 empareja, 2 busca el 7). Giran a 0x400 >> 6
-# píxeles por fotograma en celdas de 32; la línea se ve 30 fotogramas (o hasta confirmar). Paga en décimas: triple 7,
-# triple del símbolo del curso, otro triple y nada. Sonidos playSound(8, ...): 6 arranca, 7 al pulsar, 8 al parar,
-# 0xc el 7, 0xb un triple y 0xd nada.
+# What every course has in common: the apparatus (the partner walks to it and the camera follows it at speed 10), the session of
+# 1200 frames (or until canceled), 20 frames of pause after the count, the sounds at the start (9) and at the end (10)
+# and the walk and finish animations (0x12). Below, the course's own choreography.
+# trn_slots.c: the slot machine, if the variable of slot_variable is 1. The reels are TRN_D_8008F1AC; the
+# hidden help comes from TRN_D_8008F2CC[rand() % 10] (0 none, 1 match, 2 look for the 7). They spin at 0x400 >> 6
+# pixels per frame in cells of 32; the line is shown for 30 frames (or until confirmed). It pays in tenths: triple 7,
+# triple of the course's symbol, another triple and nothing. playSound(8, ...) sounds: 6 starts, 7 on press, 8 on stop,
+# 0xc the 7, 0xb a triple and 0xd nothing.
 slots:
   reels:
     - [1, 2, 3, 4, 5, 6, 7, 1, 3, 5, 2, 4, 6]
@@ -41,7 +41,7 @@ slots:
   jackpot_symbol: 7
   spin_speed: 16
   cell_pixels: 32
-  # TRN_renderSlotMachine: un rodillo a punto de parar se dibuja 2 píxeles más abajo.
+  # TRN_renderSlotMachine: a reel about to stop is drawn 2 pixels lower.
   settle_pixels: 2
   result_frames: 30
   payouts:
@@ -56,8 +56,8 @@ slots:
     jackpot: 12
     triple: 11
     miss: 13
-# TRN_TRAINING_ANIM_IDS (y TRN2_TRAINING_ANIM_IDS, igual): el golpe de cada especie en los cursos de ataque
-# (animación y fotogramas hasta el impacto); el resto usa el de default.
+# TRN_TRAINING_ANIM_IDS (and TRN2_TRAINING_ANIM_IDS, the same): each species' strike in the attack courses
+# (animation and frames until the impact); the rest use the default one.
 punches:
   default: { animation: 46, frames: 10 }
   by_species:
@@ -92,10 +92,10 @@ punches:
     houo: { animation: 46, frames: 25 }
     hkab: { animation: 48, frames: 10 }
 
-# TRN_awardBrainsTrainingGains y TRN_tryLearnMove: pasar 100, 200, 300, 400 o 500 de inteligencia da órdenes
-# nuevas; si no, pasar uno de estos umbrales (o llegar a 999) puede enseñar una técnica: la primera aún no
-# aprendida de cada especial del compañero (TRN_D_8008F14C, por número de técnica) que esté en su lista, con el
-# peso de su puesto (TRN_D_8008F184, por especial); gana la de más peso si supera randomLimit(100).
+# TRN_awardBrainsTrainingGains and TRN_tryLearnMove: passing 100, 200, 300, 400 or 500 brains gives new
+# orders; otherwise, passing one of these thresholds (or reaching 999) can teach a move: the first not yet
+# learned of each of the partner's specials (TRN_D_8008F14C, by move number) that is in its list, with the
+# weight of its slot (TRN_D_8008F184, per special); the one with the most weight wins if it exceeds randomLimit(100).
 brain_learning:
   order_thresholds: [100, 200, 300, 400, 500]
   move_thresholds: [150, 250, 350, 450, 550, 650, 750, 800, 850, 900, 950]
@@ -118,17 +118,17 @@ brain_learning:
     - [12, 6, 0]
     - [10, 5, 0]
 sites:
-  # map.c: loadTrainingLibrary y TRN_setup*Training: el gimnasio del pueblo (mapa 0x70). training.yaml: place es el
-  # lugar cuyas ganancias da cada curso; solo aquí las sesiones cuentan para la práctica (upgrade*Counter).
+  # map.c: loadTrainingLibrary and TRN_setup*Training: the town gym (map 0x70). training.yaml: place is the
+  # place whose gains each course gives; only here do the sessions count toward practice (upgrade*Counter).
   - map: trai00
     place: trn
     courses:
-      # trn_hp.c: las pesas.
+      # trn_hp.c: the weights.
       - id: hp
         choice: 0
-        # TRN_startSlotSessionIfEnabled(0): su símbolo en la ruleta es el 1.
+        # TRN_startSlotSessionIfEnabled(0): its symbol on the slot machine is 1.
         slot_symbol: 1
-        # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): el aparato, de donde sale la caja de la ruleta.
+        # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): the apparatus, where the slot machine box comes from.
         machine: { x: 1010, z: -975 }
         spot: { x: 1420, z: -1744 }
         camera_speed: 10
@@ -137,31 +137,31 @@ sites:
         sounds: { start: 9, end: 10 }
         animations: { walk: 4, done: 18 }
         hp:
-          # Mira hacia el aparato (0xa00) y levanta (animación 0x1b) los objetos 0x53 a 0x62 del mapa.
+          # Looks toward the apparatus (0xa00) and lifts (animation 0x1b) the map's objects 0x53 to 0x62.
           facing: 2560
           objects: { first: 83, count: 16 }
           work_animation: 27
-          # Cada 120 fotogramas, en los fotogramas 0 a 1200, un golpe sube las pesas (1, -2); cada fotograma tiemblan ±2
-          # en x; cada 10 suena el golpe (sonido 0).
+          # Every 120 frames, on frames 0 to 1200, a hit raises the weights (1, -2); every frame they shake ±2
+          # in x; every 10 the hit sounds (sound 0).
           beat_frames: 120
           beat_move: { x: 1, y: -2 }
           jitter: 2
           beat_sound_every: 10
           beat_sound: 0
-          # Al volver, las pesas bajan (-1, 2) un fotograma por golpe dado.
+          # On return, the weights go down (-1, 2) one frame per hit given.
           return_move: { x: -1, y: 2 }
-          # TRN_createCloudFXLine: cada `every` fotogramas, `count` nubes desde (x, z) con paso (dx, dz), corridas por los
-          # golpes dados × every.
+          # TRN_createCloudFXLine: every `every` frames, `count` clouds from (x, z) with step (dx, dz), shifted by the
+          # hits given × every.
           clouds:
             - { every: 15, x: 1360, z: -1540, dx: 100, dz: -50, count: 8 }
             - { every: 20, x: 1461, z: -1639, dx: 50, dz: -50, count: 6 }
             - { every: 18, x: 1300, z: -1317, dx: 20, dz: -50, count: 4 }
-      # trn_mp.c: la máquina de meditar.
+      # trn_mp.c: the meditation machine.
       - id: mp
         choice: 4
-        # TRN_startSlotSessionIfEnabled(1): su símbolo en la ruleta es el 2.
+        # TRN_startSlotSessionIfEnabled(1): its symbol on the slot machine is 2.
         slot_symbol: 2
-        # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): el aparato, de donde sale la caja de la ruleta.
+        # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): the apparatus, where the slot machine box comes from.
         machine: { x: 1432, z: 1276 }
         spot: { x: 684, z: 2152 }
         camera_speed: 10
@@ -170,25 +170,25 @@ sites:
         sounds: { start: 9, end: 10 }
         animations: { walk: 4, done: 18 }
         mp:
-          # Pasa antes por este punto y vuelve a él al acabar; se queda allí.
+          # It goes through this point first and returns to it at the end; it stays there.
           waypoint: { x: 656, z: 750 }
           facing: 0
-          # Los objetos 0xa4 a 0xab suben sobre su cabeza (20 píxeles por encima); mientras tanto se ocultan los 0x93 a
-          # 0xa2 y se muestran los 0xa3 a 0xba.
+          # Objects 0xa4 to 0xab rise over its head (20 pixels above); meanwhile 0x93 to
+          # 0xa2 are hidden and 0xa3 to 0xba are shown.
           objects: { first: 164, count: 8 }
           hidden: { first: 147, count: 16 }
           shown: { first: 163, count: 24 }
           head_lift: 20
           work_animation: 0
-          # playSound2(8, 2): suena hasta acabar.
+          # playSound2(8, 2): sounds until done.
           loop_sound: 2
           leave_animation: 2
-      # trn_off.c: el saco de boxeo.
+      # trn_off.c: the punching bag.
       - id: offense
         choice: 1
-        # TRN_startSlotSessionIfEnabled(2): su símbolo en la ruleta es el 3.
+        # TRN_startSlotSessionIfEnabled(2): its symbol on the slot machine is 3.
         slot_symbol: 3
-        # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): el aparato, de donde sale la caja de la ruleta.
+        # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): the apparatus, where the slot machine box comes from.
         machine: { x: -506, z: -1937 }
         spot: { x: -982, z: -2580 }
         camera_speed: 10
@@ -197,17 +197,17 @@ sites:
         sounds: { start: 9, end: 10 }
         animations: { walk: 4, done: 18 }
         offense:
-          # Mira hacia el saco (0x200), los objetos 0x64 a 0x6b.
+          # Looks toward the bag (0x200), objects 0x64 to 0x6b.
           facing: 512
           objects: { first: 100, count: 8 }
-          # createParticleFX en el golpe, con el sonido 5.
+          # createParticleFX on the hit, with sound 5.
           particles:
             - { x: -1100, y: -600, z: -2850 }
             - { x: -1100, y: -500, z: -2850 }
             - { x: -1100, y: -400, z: -2850 }
           hit_sound: 5
-          # El saco se va (-4, 2) los fotogramas 1 a 3 del vaivén, vuelve los 4 a 6 y luego tiembla
-          # ±((100 - fotograma) / 20, (100 - fotograma) / 50) hasta el fotograma 41.
+          # The bag moves away (-4, 2) on frames 1 to 3 of the swing, returns on 4 to 6 and then shakes
+          # ±((100 - frame) / 20, (100 - frame) / 50) until frame 41.
           recoil_frames: 4
           recoil_move: { x: -4, y: 2 }
           rebound_frames: 7
@@ -215,12 +215,12 @@ sites:
           swing_base: 100
           swing_divisor: { x: 20, y: 50 }
           leave_animation: 2
-      # trn_def.c: el tronco que golpea.
+      # trn_def.c: the log that hits.
       - id: defense
         choice: 3
-        # TRN_startSlotSessionIfEnabled(3): su símbolo en la ruleta es el 4.
+        # TRN_startSlotSessionIfEnabled(3): its symbol on the slot machine is 4.
         slot_symbol: 4
-        # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): el aparato, de donde sale la caja de la ruleta.
+        # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): the apparatus, where the slot machine box comes from.
         machine: { x: -789, z: -875 }
         spot: { x: -827, z: -1634 }
         camera_speed: 10
@@ -229,21 +229,21 @@ sites:
         sounds: { start: 9, end: 10 }
         animations: { walk: 4, done: 18 }
         defense:
-          # Mira hacia el tronco (0x400) en guardia (animación 0x25); los objetos 0x47 a 0x53.
+          # Looks toward the log (0x400) on guard (animation 0x25); objects 0x47 to 0x53.
           facing: 1024
           objects: { first: 71, count: 13 }
-          # createParticleFX y playSound2(8, 4) cuando el tronco llega.
+          # createParticleFX and playSound2(8, 4) when the log arrives.
           particles:
             - { x: -900, y: -500, z: -2000 }
             - { x: -950, y: -500, z: -1900 }
             - { x: -950, y: -500, z: -2100 }
           loop_sound: 4
           work_animation: 37
-          # Los golpes que empujan mueven al compañero 100 en x por fotograma, con polvo 100 detrás.
+          # The hits that push move the partner 100 in x per frame, with dust 100 behind.
           push: 100
           dust_behind: 100
-          # Cada vaivén mueve el tronco `dx` por fotograma hasta `limit` desde donde estaba; luego el compañero vuelve a
-          # su sitio y empieza otra ronda, o acaba si pasó la sesión.
+          # Each swing moves the log `dx` per frame up to `limit` from where it was; then the partner returns to
+          # its place and another round starts, or it ends if the session has passed.
           swings:
             - { dx: 50, limit: 100, push: false }
             - { dx: -50, limit: 50, push: true }
@@ -253,12 +253,12 @@ sites:
             - { dx: -10, limit: 70, push: false }
             - { dx: 5, limit: 90, push: false }
             - { dx: -4, limit: 0, push: false }
-      # trn_speed.c: la pista.
+      # trn_speed.c: the track.
       - id: speed
         choice: 2
-        # TRN_startSlotSessionIfEnabled(4): su símbolo en la ruleta es el 5.
+        # TRN_startSlotSessionIfEnabled(4): its symbol on the slot machine is 5.
         slot_symbol: 5
-        # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): el aparato, de donde sale la caja de la ruleta.
+        # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): the apparatus, where the slot machine box comes from.
         machine: { x: 12, z: 445 }
         spot: { x: 45, z: -388 }
         camera_speed: 10
@@ -267,17 +267,17 @@ sites:
         sounds: { start: 9, end: 10 }
         animations: { walk: 4, done: 18 }
         speed:
-          # Corre hacia 0xc00; cada 60 fotogramas, si salió de la pantalla, vuelve a x = -3000.
+          # Runs toward 0xc00; every 60 frames, if it left the screen, it goes back to x = -3000.
           facing: 3072
           run_animation: 4
           lap_frames: 60
           restart: { x: -3000 }
-      # trn_brain.c: la pizarra.
+      # trn_brain.c: the blackboard.
       - id: brain
         choice: 5
-        # TRN_startSlotSessionIfEnabled(5): su símbolo en la ruleta es el 6.
+        # TRN_startSlotSessionIfEnabled(5): its symbol on the slot machine is 6.
         slot_symbol: 6
-        # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): el aparato, de donde sale la caja de la ruleta.
+        # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): the apparatus, where the slot machine box comes from.
         machine: { x: -1779, z: 2084 }
         spot: { x: -1249, z: 1011 }
         camera_speed: 10
@@ -286,8 +286,8 @@ sites:
         sounds: { start: 9, end: 10 }
         animations: { walk: 2, done: 18 }
         brain:
-          # El domador anda (2) a la pizarra, se para (0) y enseña (9, cada 30 fotogramas con el sonido 3); el compañero
-          # espera (0) y aprende (0x16, cada 35). El compañero se queda en su pupitre al acabar.
+          # The Tamer walks (2) to the blackboard, stops (0) and teaches (9, every 30 frames with sound 3); the partner
+          # waits (0) and learns (0x16, every 35). The partner stays at its desk at the end.
           tamer_spot: { x: -1452, z: 1563 }
           tamer_walk: 2
           tamer_stand: 0
@@ -297,18 +297,18 @@ sites:
           teach_every_frames: 30
           teach_sound: 3
           learn_every_frames: 35
-  # trn_off.c y trn_speed.c, instancia 6: la sabana (mapa 0x4e). Sus sesiones no cuentan para la práctica.
+  # trn_off.c and trn_speed.c, instance 6: the savanna (map 0x4e). Its sessions do not count toward practice.
   - map: gias09
     place: trn
     counts_practice: false
     courses:
-      # trn_off.c, estados 7 y 8: el saco no oscila; el golpe esconde los objetos 0x27 a 0x2a y muestra los 0x2b a
-      # 0x48 (y los anima desde el principio: resetMapObjectAnimation(0x2b, 0x2b)); 46 fotogramas después vuelven.
+      # trn_off.c, states 7 and 8: the bag does not swing; the hit hides objects 0x27 to 0x2a and shows 0x2b to
+      # 0x48 (and animates them from the start: resetMapObjectAnimation(0x2b, 0x2b)); 46 frames later they return.
       - id: offense
         choice: 1
         gains: offense_alt
         slot_symbol: 3
-        # TRN_D_8008F20C: la entrada de este mapa con el stat 2.
+        # TRN_D_8008F20C: this map's entry with stat 2.
         machine: { x: -829, z: 4099 }
         spot: { x: -1319, z: 3289 }
         camera_speed: 10
@@ -332,7 +332,7 @@ sites:
             hit_restarted: { first: 43, count: 43 }
             undo_shown: { first: 39, count: 4 }
             undo_hidden: { first: 43, count: 30 }
-      # trn_speed.c: corre hacia 0; cada 60 fotogramas, si salió de la pantalla, vuelve a z = 2000.
+      # trn_speed.c: runs toward 0; every 60 frames, if it left the screen, it goes back to z = 2000.
       - id: speed
         choice: 2
         gains: speed_alt
@@ -349,8 +349,8 @@ sites:
           run_animation: 4
           lap_frames: 60
           restart: { z: 2000 }
-  # trn_brain.c, instancia 9: la niebla (mapa 0x77). Enseña el primer personaje del mapa (NPC_ENTITIES[0]): repite su
-  # animación 0x1e con el sonido 0x12 cada 60 fotogramas; el domador solo mira. No cuenta para la práctica.
+  # trn_brain.c, instance 9: the fog (map 0x77). It teaches the map's first character (NPC_ENTITIES[0]): repeats its
+  # animation 0x1e with sound 0x12 every 60 frames; the Tamer only watches. It does not count toward practice.
   - map: mist05
     place: trn
     counts_practice: false
@@ -373,17 +373,17 @@ sites:
           partner_learn: 22
           learn_every_frames: 35
           teacher: { animation: 30, sound: 18, sound_every_frames: 60, done_animation: 0 }
-  # src/trn2: el hielo (mapa 0x63). TRN2_setupHpTraining y TRN2_setupDefenseTraining, instancia 3.
+  # src/trn2: the ice (map 0x63). TRN2_setupHpTraining and TRN2_setupDefenseTraining, instance 3.
   - map: icsa03
     place: trn2
     courses:
-      # trn2_hp_map99.c: sin sonido al empezar ni al llegar; al llegar muestra los objetos 15 a 31 y los esconde con
-      # las ganancias. Los objetos 0 y 1 suben (-1, -1) por golpe y bajan (1, 1) al volver.
+      # trn2_hp_map99.c: no sound at the start or on arrival; on arrival it shows objects 15 to 31 and hides them with
+      # the gains. Objects 0 and 1 rise (-1, -1) per hit and go down (1, 1) on return.
       - id: hp
         choice: 0
         gains: hp_b
         slot_symbol: 1
-        # TRN2_D_8008DB60: la entrada de este mapa con el stat 0.
+        # TRN2_D_8008DB60: this map's entry with stat 0.
         machine: { x: 0, z: 1000 }
         spot: { x: 0, z: -150 }
         camera_speed: 10
@@ -404,9 +404,9 @@ sites:
           clouds: []
           arrival_sound: false
           shown: { first: 15, count: 17 }
-      # trn2_def_map99.c: el objeto 14 cae 40 píxeles por fotograma hasta la fila 200; al golpear se cambia por el
-      # 33 y 30 fotogramas después vuelve arriba. Solo cuentan los fotogramas de caída. TRN2_D_8008DB60 no tiene
-      # entrada con el stat 3: la ruleta crece desde el centro.
+      # trn2_def_map99.c: object 14 falls 40 pixels per frame down to row 200; on hit it is swapped for
+      # 33 and 30 frames later it goes back up. Only the falling frames count. TRN2_D_8008DB60 has no
+      # entry with stat 3: the slot machine grows from the center.
       - id: defense
         choice: 3
         gains: defense_b
@@ -427,11 +427,11 @@ sites:
             - { x: 1598, z: -959 }
           hit_sound: 16
           recover_frames: 30
-  # src/trn2: el campo de batalla (mapa 0x6b), instancia 1.
+  # src/trn2: the battlefield (map 0x6b), instance 1.
   - map: betl03
     place: trn2
     courses:
-      # trn2_hp_map107.c: los objetos 10 y 11 suben (0, -1) por golpe y bajan (-1, 2) al volver, como el original.
+      # trn2_hp_map107.c: objects 10 and 11 rise (0, -1) per hit and go down (-1, 2) on return, like the original.
       - id: hp
         choice: 0
         gains: hp_a
@@ -454,8 +454,8 @@ sites:
           beat_sound: 0
           return_move: { x: -1, y: 2 }
           clouds: []
-      # trn2_off.c: el golpe muestra los objetos 12 a 14 y esconde el 15 (que no vuelve); 46 fotogramas después
-      # muestra los 0x27 a 0x2a (restos del mapa 0x4e) y esconde los 12 a 14.
+      # trn2_off.c: the hit shows objects 12 to 14 and hides 15 (which does not return); 46 frames later
+      # it shows 0x27 to 0x2a (leftovers of map 0x4e) and hides 12 to 14.
       - id: offense
         choice: 1
         slot_symbol: 3
@@ -482,14 +482,14 @@ sites:
             hit_restarted: { first: 12, count: 12 }
             undo_shown: { first: 39, count: 4 }
             undo_hidden: { first: 12, count: 3 }
-            # trn2_off.c pone animFlag 2 en cada fotograma del golpe: cada golpe se da sin avanzar.
+            # trn2_off.c sets animFlag 2 on every frame of the hit: each hit is given without advancing.
             hold_each_punch: true
-  # src/trn2: el otro campo de batalla (mapa 0x6c), instancia 1.
+  # src/trn2: the other battlefield (map 0x6c), instance 1.
   - map: betl04
     place: trn2
     courses:
-      # trn2_reward.c: TRN2_tickSpeedTraining: la cinta. En el primer punto suena el bucle 0xe y se muestran los objetos
-      # 0x38 a 0x3a; corre sin moverse (animFlag 2) y al acabar se va a (0xf7, 0x3c5), no al domador.
+      # trn2_reward.c: TRN2_tickSpeedTraining: the belt. At the first point loop 0xe sounds and objects
+      # 0x38 to 0x3a are shown; it runs without moving (animFlag 2) and at the end goes to (0xf7, 0x3c5), not to the Tamer.
       - id: speed
         choice: 2
         slot_symbol: 5
@@ -507,9 +507,9 @@ sites:
           loop_sound: 14
           shown: { first: 56, count: 3 }
           leave_spot: { x: 247, z: 965 }
-      # trn2_def_map108.c: en guardia (0x800) mientras se animan los objetos 7 a 55 (los 4 a 6 se esconden); cada 4
-      # fotogramas un golpe (animación 0x25, polvo a la altura del compañero y sonido 4) y 30 después vuelven a
-      # empezar los objetos. Sin sonido al empezar.
+      # trn2_def_map108.c: on guard (0x800) while objects 7 to 55 are animated (4 to 6 are hidden); every 4
+      # frames a hit (animation 0x25, dust at the partner's height and sound 4) and 30 later the objects start
+      # again. No sound at the start.
       - id: defense
         choice: 3
         gains: defense_a
@@ -533,12 +533,12 @@ sites:
           work_animation: 37
           hit_after_frames: 4
           recover_frames: 30
-  # src/trn2: el vertedero (mapa 0xa5), instancia 8.
+  # src/trn2: the dump (map 0xa5), instance 8.
   - map: gomi02
     place: trn2
     courses:
-      # trn2_mp.c: anda (animación 2) por (0x3e5, 0x76) hasta el puesto y medita (0xc); animFrame <= frameCount
-      # siempre se cumple, así que la pose vuelve a empezar cada fotograma. Sin objetos ni bucle de sonido.
+      # trn2_mp.c: walks (animation 2) through (0x3e5, 0x76) to the post and meditates (0xc); animFrame <= frameCount
+      # always holds, so the pose restarts every frame. No objects or sound loop.
       - id: mp
         choice: 4
         slot_symbol: 2

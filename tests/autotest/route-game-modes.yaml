@@ -1,7 +1,7 @@
-# The new game's mode list (docs/modulos/game/modes.md): with a second mode mounted (--mods tests/mods/game_mode, a
+# The new game's mode list (docs/modules/game/modes.md): with a second mode mounted (--mods tests/mods/game_mode, a
 # synthetic mod whose «practice» mode plays the original's rules), a new game from the main menu asks the mode first.
 # The original's story goes on to the rules screen; the practice mode starts right away, with no rules screen. Run it
-# with --saves <empty folder>, once per language (--lang en, --lang es); how to run it: docs/guides/prueba-vertical.md.
+# with --saves <empty folder>, once per language (--lang en, --lang es); how to run it: docs/guides/vertical-slice.md.
 name: game-modes
 device: keyboard
 timeout: 300

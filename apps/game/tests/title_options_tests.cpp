@@ -1,4 +1,4 @@
-// The title screen's options (docs/modulos/apps/game.md, «Opciones en partida»): with no game
+// The title screen's options (docs/modules/apps/game.md, «In-game options»): with no game
 // running, the options page's on/off rows that only a game applies are kept in the user's settings
 // and shown back, so the next game starts with them.
 

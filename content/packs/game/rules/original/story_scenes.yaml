@@ -1,53 +1,53 @@
-# Las batallas, escenas y rutinas de la historia (packages/session: StoryScenes; script_interp.c:
+# The story's battles, scenes and routines (packages/session: StoryScenes; script_interp.c:
 # scriptInstruction64to7E, partner.c: callDigimonRoutine, map.c: changeMap).
 battle:
-  # start_battle deja el resultado en la variable 255: 255 (-1) derrota, 0 huida, 1 victoria.
+  # start_battle leaves the result in variable 255: 255 (-1) defeat, 0 escape, 1 victory.
   outcome_variable: 255
-  # Con la variable 250 puesta, los enemigos son los de las variables 251 a 253 (255: ninguno).
+  # With variable 250 set, the enemies are those of variables 251 to 253 (255: none).
   predefined_variable: 250
   first_enemy_variable: 251
   enemy_count: 3
   no_enemy: 255
-  # Una derrota sigue en la sección 0x4DE del script del mapa (MAPHEAD).
+  # A defeat continues in section 0x4DE of the map script (MAPHEAD).
   defeat_section: 1246
-  # Los contadores de batallas empezadas y huidas se quedan en 9999.
+  # The counters of started battles and escapes stay at 9999.
   counter_max: 9999
-  # Con el trigger 1 puesto la pelea es fija: no se huye y el compañero no vuelve andando.
+  # With trigger 1 set the fight is fixed: no escaping and the partner does not walk back.
   fixed_fight_trigger: 1
-  # Tras huir, el nombre del mapa no se enseña (variable 6 = 2).
+  # After escaping, the map name is not shown (variable 6 = 2).
   show_name_variable: 6
   show_name_never: 2
 partner:
-  # La rutina 2 vuelve a la forma de antes del virus (variable 5); la 10 evoluciona a la de la 254.
+  # Routine 2 goes back to the form from before the virus (variable 5); routine 10 evolves to the one in 254.
   virus_backup_variable: 5
   target_variable: 254
 routines:
-  # La mayoría de rutinas leen su operando de la variable 254.
+  # Most routines read their operand from variable 254.
   operand_variable: 254
-  # La cuenta de la tienda (rutinas 30, 31 y 56) entra y sale por las variables 243 (alto) y 244.
+  # The shop tally (routines 30, 31 and 56) goes in and out through variables 243 (high) and 244.
   tally_high_variable: 243
   tally_low_variable: 244
-  # Las rutinas 12 y 13 quitan 1 o 99 del objeto de la 254, salvo 255 (ninguno).
+  # Routines 12 and 13 remove 1 or 99 of the item in 254, except 255 (none).
   no_item: 255
   remove_one: 1
   remove_all: 99
-  # Con el trigger 3 la tienda es la de reciclaje y la de cartas compra; con el 4 vende cartas.
+  # With trigger 3 the shop is the recycling one and the card shop buys; with 4 it sells cards.
   selling_trigger: 3
   buying_cards_trigger: 4
 recruits:
-  # Un reclutado es el trigger 200 + su número, para 63 especies; el motor guarda al llegar uno.
+  # A recruit is trigger 200 + its number, for 63 species; the engine saves when one arrives.
   first_trigger: 200
   count: 63
 new_game:
-  # original: estado limpio salvo el disparador de criado del partner; el campo empieza en la pantalla `map` por la
-  # salida `exit` (map.c: initializeMap), su sección de cabecera (runMapHeadScript(0xCC)) carga el guion 164 y la celda
-  # de paso de la salida 9 corre la apertura (sección 0x36: disparadores 54, 55 y 75, salto a topn01 y la escena de
-  # despertar en casa de Jijimon, guion 193). seeded: el estado de data/new_game_story y el inicio de field/warps, sin
-  # la apertura.
+  # original: clean state except the partner's raised trigger; the field starts on the `map` screen through the
+  # `exit` exit (map.c: initializeMap), its header section (runMapHeadScript(0xCC)) loads script 164 and the pass
+  # cell of exit 9 runs the opening (section 0x36: triggers 54, 55 and 75, jump to topn01 and the
+  # wake-up scene in Jijimon's house, script 193). seeded: the state of data/new_game_story and the start of field/warps,
+  # without the opening.
   chain: original
   map: 204
   exit: 9
-# Casos de map.c: changeMap: al entrar en `to` desde `from`, la pantalla anterior es otra.
+# Cases of map.c: changeMap: when entering `to` from `from`, the previous screen is another one.
 previous_screen:
   - {from: 207, to: 38, previous: 88, previous_exit: 2}
   - {from: 207, to: 70, previous: 69, previous_exit: 2}
@@ -59,9 +59,9 @@ previous_screen:
   - {from: 6, to: 105, previous: 106}
   - {from: 142, to: 135, previous: 132, previous_exit: 1}
   - {from: 5, to: 12, previous: 13, previous_exit: 1}
-# La muerte (partner_impl.c: tickDeathCondition): una vida perdida o una muerte ponen la variable 255
-# a 0 y siguen en la sección 0x4DE del script del mapa. La caja de los huevos (doo2.c:
-# DOO2_openEggBox, DOO2_tickEggInput) suena al abrirse, al mover el huevo y al elegirlo.
+# Death (partner_impl.c: tickDeathCondition): a lost life or a death set variable 255
+# to 0 and continue in section 0x4DE of the map script. The egg box (doo2.c:
+# DOO2_openEggBox, DOO2_tickEggInput) sounds when opened, when moving the egg and when choosing it.
 death:
   section: 1246
   cleared_variable: 255
@@ -69,25 +69,25 @@ death:
     open: {slot: 8, sound: 4}
     move: {slot: 0, sound: 2}
     choose: {slot: 0, sound: 3}
-# La rutina 47 (script_common.c: lostAllLives): el renacido olvida (10 - nivel de domador) * 2 % de las técnicas que
-# sabe (de las 0x3A primeras), redondeando a partir de 50; cada una al azar (randomLimit) con su caja, la frase 7 de la
-# sección 0x4D8 de MAPHEAD, que nombra la técnica de la variable 243; la 244 cuenta las que faltan.
+# Routine 47 (script_common.c: lostAllLives): the reborn forgets (10 - tamer level) * 2 % of the techniques it
+# knows (of the first 0x3A), rounding up from 50; each one at random (randomLimit) with its box, line 7 of
+# section 0x4D8 of MAPHEAD, which names the technique of variable 243; 244 counts the ones left.
 forget_moves:
   lines_section: 1240
   line: 7
   move_variable: 243
   count_variable: 244
-# El guardado del final (main_menu.c: gameClearSave, rutina 54): el registro 40 (39 desde 0) de los combates de versus
-# recibe una copia del compañero (nombre, estadísticas y disciplina) como Machinedramon con tres de sus técnicas
-# (awardMachinedramonData: animaciones 0x2E, 0x30 y 0x32, sus técnicas 1.ª, 3.ª y 5.ª).
+# The ending save (main_menu.c: gameClearSave, routine 54): record 40 (39 from 0) of the versus battles
+# receives a copy of the partner (name, stats and discipline) as Machinedramon with three of its techniques
+# (awardMachinedramonData: animations 0x2E, 0x30 and 0x32, its 1st, 3rd and 5th techniques).
 ending:
   gift_slot: 39
   gift_species: muge
   gift_techniques: [megaton_punch, thunder_justice, all_range_beam]
-# El trabajo en la tienda del cañón (guion 49, secciones 0x51 y 0x52; los clientes, guiones 199 a 202), para la barra
-# de progreso del trabajo (mejora del motor, opción shop_job_bar): en gcan11 la variable 123 cuenta los 20 clientes; al
-# acabar, la rutina 56 copia el byte alto de la cuenta a la variable 243 y el guion paga por ella: hasta 6, 500 bits;
-# desde 7, 1500; desde 12 (una cuenta de 3072 o más), Monochromon se une a la ciudad (2000 bits y el disparador 247).
+# The job at the canyon shop (script 49, sections 0x51 and 0x52; the customers, scripts 199 to 202), for the job
+# progress bar (engine improvement, option shop_job_bar): in gcan11 variable 123 counts the 20 customers; at
+# the end, routine 56 copies the high byte of the tally to variable 243 and the script pays for it: up to 6, 500 bits;
+# from 7, 1500; from 12 (a tally of 3072 or more), Monochromon joins the city (2000 bits and trigger 247).
 shop_job:
   map: gcan11
   customers_variable: 123

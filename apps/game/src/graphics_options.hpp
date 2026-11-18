@@ -15,7 +15,7 @@
 
 namespace dwe::app {
 
-// The field's enhanced graphics (docs/architecture/render.md, «Paso de luz y color»): three engine
+// The field's enhanced graphics (docs/architecture/render.md, «Light and color pass»): three engine
 // options that change how the field looks and no rule of the game, so all are on by default. Each
 // is a UI setting and the command, with the same name, that the pause menu's and the title's
 // options send; the game applies it at once and saves it (settings.yaml).
@@ -29,11 +29,10 @@ inline constexpr std::string_view EnhancedLightingSetting = "enhanced_lighting";
 // Vivid colours (true or false): vibrance, a gentle contrast and a soft bloom.
 inline constexpr std::string_view VividColorsSetting = "vivid_colors";
 //
-// Sharpness (docs/architecture/remaster-pipeline.md, «Nitidez»): three more, also on their best by
-// default, that only change how sharp the picture is.
-// HD scenery's quality (smooth or upscaled): with «Escenarios en alta definición» on, the
-// background filtered at the window's resolution, or doubled once per map by the engine's
-// upscaler and resampled (render::MapRenderer::SceneryQuality).
+// Sharpness (docs/architecture/high-definition.md, «Sharpness»): three more, also on their best
+// by default, that only change how sharp the picture is. HD scenery's quality (smooth or upscaled):
+// with «HD scenery» on, the background filtered at the window's resolution, or doubled once per map
+// by the engine's upscaler and resampled (render::MapRenderer::SceneryQuality).
 inline constexpr std::string_view SceneryQualitySetting = "scenery_quality";
 // Antialiasing (true or false): the scene drawn with 4x multisampling, smooth model outlines.
 inline constexpr std::string_view AntialiasingSetting = "antialiasing";

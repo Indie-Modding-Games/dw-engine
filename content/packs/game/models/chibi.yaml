@@ -1,19 +1,19 @@
-# Estilo chibi (mejora del motor, prototipo; el original no lo tiene): correcciones por especie para cuando la
-# detección automática (animation::classifyChibi) se equivoca. Los modelos del original ya son chibi: sus
-# proporciones, medidas con estas correcciones, forman el perfil de referencia (models/chibi_profile.yaml). La clave
-# es la carpeta de la especie, la de su modelo en el paquete (<carpeta>/model). Cada especie puede llevar:
-#   off: true            la deja con su aspecto original y fuera del perfil
-#   shape: biped         forma del cuerpo: biped, quadruped, winged, serpent o unknown (unknown: sin cambios)
-#   head: 4              el hueso (índice de articulación, el orden de objetos del original) que es la cabeza
-#   parts: {12: tail}    la parte que cuelga de ese hueso: head, neck, arm, leg, tail, wing u other
-#   scale: {head: 1.4}   factores fijos en vez de los que busca el ajuste al perfil (head, torso, neck, arm, leg,
-#                        hand, foot, tail, wing, girth), de 0.25 a 4; solo cuentan si el modelo no es chibi ya
+# Chibi style (engine improvement, prototype; the original does not have it): per-species fixes for when the
+# automatic detection (animation::classifyChibi) gets it wrong. The original's models are already chibi: their
+# proportions, measured with these fixes, make up the reference profile (models/chibi_profile.yaml). The key
+# is the species folder, that of its model in the pack (<folder>/model). Each species can carry:
+#   off: true            leaves it with its original look and out of the profile
+#   shape: biped         body shape: biped, quadruped, winged, serpent or unknown (unknown: no changes)
+#   head: 4              the bone (joint index, the original's object order) that is the head
+#   parts: {12: tail}    the part that hangs from that bone: head, neck, arm, leg, tail, wing or other
+#   scale: {head: 1.4}   fixed factors instead of the ones the profile fit looks for (head, torso, neck, arm, leg,
+#                        hand, foot, tail, wing, girth), from 0.25 to 4; they only count if the model is not chibi already
 #
-# Una forma que la detección no reconoce (unknown) se queda como está. Las especies de abajo se revisaron a mano
-# con el visor (--model-viewer <carpeta>/model --chibi).
+# A shape the detection does not recognize (unknown) stays as it is. The species below were checked by hand
+# with the viewer (--model-viewer <folder>/model --chibi).
 species:
-  # Ya tienen la cabeza y el cuerpo en una sola pieza redonda, o son bebés: el estilo solo les acortaría los
-  # miembros, así que se quedan como están.
+  # They already have the head and body in a single round piece, or are babies: the style would only shorten their
+  # limbs, so they stay as they are.
   bota: {off: true}
   puni: {off: true}
   poyo: {off: true}
@@ -40,9 +40,9 @@ species:
   soul: {off: true}
   tens: {off: true}
   gard: {off: true}
-  # La cabeza y la boca cuelgan de un cuello sin malla, girado hacia un lado en la pose de reposo.
+  # The head and mouth hang from a neck with no mesh, turned to one side in the rest pose.
   etem: {head: 4}
   eete: {head: 4}
-  # El brazo del bastón no cuelga (el bastón sube por encima de la cabeza): también es un brazo. Su cabeza
-  # es la barba (el pelo va en el tronco), que crece poco.
+  # The staff arm does not hang (the staff goes above the head): it is also an arm. Its head
+  # is the beard (the hair is on the trunk), which grows little.
   jiji: {parts: {7: arm}}

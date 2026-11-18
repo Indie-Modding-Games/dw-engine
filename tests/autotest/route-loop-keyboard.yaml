@@ -1,11 +1,11 @@
-# The closing loop of phase 3 with the keyboard (docs/plan/fase-3-nucleo-jugable.md, "Criterio de cierre"): a new game
+# The closing loop of phase 3 with the keyboard: a new game
 # from the main menu, raising the partner (a meal from the bag, a scold, the toilet and sleep), a training session, a
 # battle with the debug trigger and, with the clock sped up, its evolution. The care, training and clock commands are
 # the debug ones (apps/game/src/care_commands.hpp) until the field's toilets and beds and the training screens exist;
 # each step checks its effect on the partner's live status. The evolved form depends on the run's seed and on how the
 # stretches of fast clock go (most runs end in the rookie's fallback form): the headless test
 # (apps/sim/tests/loop_tests.cpp) checks the form the original's rules give a well raised partner.
-# How to run it: docs/guides/prueba-vertical.md.
+# How to run it: docs/guides/vertical-slice.md.
 name: loop-keyboard
 device: keyboard
 timeout: 600

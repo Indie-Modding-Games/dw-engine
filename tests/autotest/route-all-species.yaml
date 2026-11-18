@@ -1,9 +1,9 @@
-# Every species as a partner, on by default (docs/modulos/game/evoluciones-extra.md): a new game from the main menu
+# Every species as a partner, on by default (docs/modules/game/extra-evolutions.md): a new game from the main menu
 # with the keyboard keeps the rules screen's defaults, the chart has the original's 61 cells and the 60 new ones,
 # and a partner raised along a new line evolves by the natural check: species 44 (in-training) to species 109
 # (rookie: offense the highest, no care mistakes, weight 5), then to species 110 (champion: HP and MP 70, weight 50,
 # at most 5 care mistakes), both targets no form of the original's takes with those values. Run it with
-# --saves <empty folder>, once per language (--lang en, --lang es); how to run it: docs/guides/prueba-vertical.md.
+# --saves <empty folder>, once per language (--lang en, --lang es); how to run it: docs/guides/vertical-slice.md.
 # After each evolution the route waits for its scene to end (evolution.active) and confirms the rank notice an
 # evolution may bring.
 name: all-species

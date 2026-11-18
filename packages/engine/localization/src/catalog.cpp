@@ -29,7 +29,7 @@ constexpr char Close = '}';
 constexpr std::size_t MissingKeysNamed = 5;
 constexpr std::size_t MissingTablesNamed = 5;
 constexpr std::string_view KeyListSeparator = ", ";
-// The source and block of the map names in the original's text (docs/formats/textos.md).
+// The source and block of the map names in the original's text (docs/formats/texts.md).
 constexpr std::string_view MapNamesSource = "main";
 constexpr std::string_view MapNamesBlock = "map_names";
 // Whole numbers below this show without decimals.
@@ -96,7 +96,7 @@ struct UntranslatedTables {
 };
 
 // The full keys a language's translations of the original's text keep from the fallback on
-// purpose: the kept_english and kept_original lists of each pack's lock (docs/formats/textos.md).
+// purpose: the kept_english and kept_original lists of each pack's lock (docs/formats/texts.md).
 // Dot files are not assets, so the lock is read from the pack's own files; a pack without one, or
 // with one that does not parse, keeps nothing (dwx validate reports the bad lock).
 using KeptKeys = std::set<std::string, std::less<>>;
@@ -172,7 +172,7 @@ std::vector<std::string> missingTexts(const LanguageTables& fallback,
   return warnings;
 }
 
-// The tags of the original's text that plain text shows (docs/formats/textos.md): a new line, also
+// The tags of the original's text that plain text shows (docs/formats/texts.md): a new line, also
 // after a wait, and a colour, which plain text has no way to show.
 constexpr std::string_view NewLineTag = "br";
 constexpr std::string_view WaitTag = "wait";

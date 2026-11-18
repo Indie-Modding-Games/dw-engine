@@ -1,17 +1,17 @@
-# La dificultad que el jugador elige en las opciones (Mejora, normal por defecto; docs/modulos/apps/game.md,
-# «Dificultad»). Normal es el original: no cambia nada. Cada otro nivel cambia valores de las demás secciones de este
-# ruleset mientras se juega en él; lo aplica apps/game (RuleOptions) con los mismos cambios que el panel de ajuste.
-# Cada cambio nombra la sección y la ruta del valor (como el panel: "hunger.window_minutes") y da o el valor nuevo
-# (`value`, un texto YAML) o un tanto por ciento del valor que tiene el ruleset (`percent`, solo para un número entero,
-# redondeado hacia abajo). Un mod ajusta la dificultad con su propia sección difficulty.
+# The difficulty the player picks in the options (Improvement, normal by default; docs/modules/apps/game.md,
+# "Difficulty"). Normal is the original: it changes nothing. Each other level changes values of this ruleset's other
+# sections while playing on it; apps/game (RuleOptions) applies it with the same changes as the tuning panel.
+# Each change names the section and the value's path (like the panel: "hunger.window_minutes") and gives either the new value
+# (`value`, a YAML text) or a percentage of the value the ruleset has (`percent`, only for an integer,
+# rounded down). A mod tunes difficulty with its own difficulty section.
 levels:
   easy:
-    # Combate (también en las copas): el partner hace un 50 % más de daño y recibe la mitad, golpes, remates y bloqueos.
+    # Combat (also in cups): the partner deals 50 % more damage and takes half, hits, finishers and blocks.
     - { section: battle, path: damage.partner_dealt_percent, percent: 150 }
     - { section: battle, path: damage.partner_taken_percent, percent: 50 }
-    # Entrenamiento: las ganancias de cada sesión, un 50 % más.
+    # Training: each session's gains, 50 % more.
     - { section: training, path: gain_percent, percent: 150 }
-    # Cuidados: el doble de tiempo para darle de comer antes del error de cuidado, y la mitad de la parte de la
-    # probabilidad de enfermar que crece con las veces que pudo enfermar.
+    # Care: twice the time to feed it before the care mistake, and half of the part of the
+    # illness probability that grows with the number of times it could have fallen ill.
     - { section: care, path: hunger.window_minutes, percent: 200 }
     - { section: care, path: sickness.tries_percent, percent: 50 }

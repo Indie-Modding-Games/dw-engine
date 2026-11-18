@@ -16,7 +16,7 @@
 
 namespace dwe::app {
 
-// The UI addons (docs/modding/interfaces.md): the whole UIs under ui/addons that the player picks
+// The UI addons (docs/modding/ui-addons.md): the whole UIs under ui/addons that the player picks
 // in Opciones -> Interfaz, over the game's own (ui/addon.yaml).
 //
 // The settings the documents read: the UI on (ui_addon, "default" for the game's own), the ones

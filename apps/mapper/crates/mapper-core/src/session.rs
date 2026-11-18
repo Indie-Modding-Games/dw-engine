@@ -170,7 +170,7 @@ pub struct Mapper {
     pub settings_file: Option<PathBuf>,
     /// The open section's timeline.
     pub timeline: crate::timeline::Timeline,
-    /// The Mundo view's graph.
+    /// The World view's graph.
     pub world: crate::world::WorldState,
 }
 
@@ -454,7 +454,7 @@ impl Mapper {
                 for skipped in &content.game.skipped_mods {
                     self.messages.push(Message::Error(format!(
                         "{}: {} ({})",
-                        crate::text::SKIPPED_MOD,
+                        crate::text::skipped_mod(),
                         skipped.path.display(),
                         skipped.reason
                     )));
@@ -462,14 +462,14 @@ impl Mapper {
                 if !content.game.archives.is_empty() {
                     self.messages.push(Message::Info(format!(
                         "{}: {}",
-                        crate::text::ARCHIVES_NOT_READ,
+                        crate::text::archives_not_read(),
                         content.game.archives.len()
                     )));
                 }
                 self.bands = TriggerBands::load(content.vfs()).unwrap_or_else(|error| {
                     self.messages.push(Message::Error(format!(
                         "{error} ({})",
-                        crate::text::DEFAULT_BANDS
+                        crate::text::default_bands()
                     )));
                     TriggerBands::default()
                 });
@@ -1158,7 +1158,7 @@ impl Mapper {
         if self.current_target().is_none() {
             self.messages.push(Message::Error(format!(
                 "{}: {}",
-                crate::text::PACK_NOT_MOUNTED,
+                crate::text::pack_not_mounted(),
                 root.display()
             )));
         }
@@ -1171,7 +1171,7 @@ impl Mapper {
         self.story_problems.clear();
         let Some(target) = self.current_target() else {
             self.messages
-                .push(Message::Error(crate::text::NO_TARGET.to_owned()));
+                .push(Message::Error(crate::text::no_target().to_owned()));
             return false;
         };
         let (Some(content), Some(map)) = (&self.content, &mut self.map) else {
@@ -1189,7 +1189,7 @@ impl Mapper {
         // Patches name NPC slots by place: a list that grew or shrank goes as the whole data.
         let mode = if mode == SaveMode::Patch && npc_count_changed(&map.loaded, &map.document) {
             self.messages
-                .push(Message::Info(crate::text::NPCS_SAVE_WHOLE.to_owned()));
+                .push(Message::Info(crate::text::npcs_save_whole().to_owned()));
             SaveMode::WholeData
         } else if mode == SaveMode::Patch
             && dwe_map::new_map::own_maps(pack).contains(&map.document.id)
@@ -1234,7 +1234,7 @@ impl Mapper {
         };
         if plan.has_errors() || self.story_problems.iter().any(StoryProblem::is_error) {
             self.messages
-                .push(Message::Error(crate::text::SAVE_REFUSED.to_owned()));
+                .push(Message::Error(crate::text::save_refused().to_owned()));
             return false;
         }
         let story_saved = !story.changes.is_empty() || places.is_some();
@@ -1244,7 +1244,7 @@ impl Mapper {
         if let Err(error) = write_changes(&changes) {
             self.messages.push(Message::Error(format!(
                 "{}: {error}",
-                crate::text::SAVE_FAILED
+                crate::text::save_failed()
             )));
             return false;
         }
@@ -1260,14 +1260,14 @@ impl Mapper {
             .map(|change| change.path.display().to_string())
             .collect();
         let written = if files.is_empty() {
-            crate::text::NOTHING_TO_SAVE.to_owned()
+            crate::text::nothing_to_save().to_owned()
         } else {
             files.join(", ")
         };
         self.reload_content(true);
         self.messages.push(Message::Info(format!(
             "{} {}: {written}",
-            crate::text::SAVED_IN,
+            crate::text::saved_in(),
             target.id
         )));
         for problem in &self.story_problems {
@@ -1313,7 +1313,7 @@ impl Mapper {
         if self.settings.dwx.is_none() {
             self.messages.push(Message::Error(format!(
                 "{}: {line}",
-                crate::text::WARPS_BY_HAND
+                crate::text::warps_by_hand()
             )));
             return;
         }
@@ -1324,19 +1324,19 @@ impl Mapper {
             Ok(output) if output.status.success() => {
                 self.messages.push(Message::Info(format!(
                     "{}: {}",
-                    crate::text::WARPS_MADE,
+                    crate::text::warps_made(),
                     command.last().map_or("", String::as_str)
                 )));
                 self.reload_content(true);
             }
             Ok(output) => self.messages.push(Message::Error(format!(
                 "{} ({line}): {}",
-                crate::text::WARPS_FAILED,
+                crate::text::warps_failed(),
                 String::from_utf8_lossy(&output.stderr).trim()
             ))),
             Err(error) => self.messages.push(Message::Error(format!(
                 "{} ({line}): {error}",
-                crate::text::WARPS_FAILED
+                crate::text::warps_failed()
             ))),
         }
     }

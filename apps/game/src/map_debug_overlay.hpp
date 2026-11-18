@@ -14,7 +14,7 @@
 
 namespace dwe::app {
 
-// The field map's debug overlay (docs/guides/control-remoto.md, «Capa de depuración del mapa»):
+// The field map's debug overlay (docs/guides/remote-control.md, «Map debug layer»):
 // over the real field view it draws the collision grid (walls, and the trigger cells coloured by
 // their band), the exits with their index and target, where each exit puts the player, and the
 // map's NPC slots with their waypoints. F3, the console's map_overlay("on"|"off"|"toggle") and

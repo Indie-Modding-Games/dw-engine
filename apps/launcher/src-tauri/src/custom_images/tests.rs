@@ -41,7 +41,7 @@ fn problems(summary: &BulkSummary) -> BTreeMap<String, Problem> {
 #[test]
 fn names_match_from_the_first_map_or_texture_folder_in_any_case() {
     let (_data, _images, catalogue) = prepared();
-    assert_eq!(catalogue.target_of("dwe-imagenes/map/mayo01/background_day.png").as_deref(), Some(DAY));
+    assert_eq!(catalogue.target_of("dwe-images/map/mayo01/background_day.png").as_deref(), Some(DAY));
     assert_eq!(catalogue.target_of("Mis HD\\MAP\\MAYO01\\Background_Night.PNG").as_deref(), Some(NIGHT));
     assert_eq!(catalogue.target_of("texture/etcdat/fi_info_palette12.png").as_deref(), Some(ICONS));
     assert_eq!(catalogue.target_of("map/mayo01/background_noon.png"), None);
@@ -58,7 +58,7 @@ fn a_bulk_load_sorts_what_it_finds_and_applies_only_the_matches() {
     write(&source.join("hd").join(OTHER_DAY), &png_file(768, 640, OTHER_DAY));
     write(&source.join("hd/map/mayo01/background_noon.png"), &png_file(768, 640, "?"));
     write(&source.join("hd/map/betl01/background_day.png"), &png_file(640, 240, "stretched"));
-    write(&source.join("hd/LEEME.txt"), b"guide");
+    write(&source.join("hd/README.txt"), b"guide");
     let mut picked = Picked::open(&source).unwrap();
 
     let summary = images.inspect(&catalogue, &mut picked).unwrap();
@@ -166,13 +166,14 @@ fn the_overview_groups_maps_by_their_ids_letters_and_images_by_folder() {
 #[test]
 fn an_export_is_a_new_folder_with_the_originals_and_a_guide() {
     let (data, images, catalogue) = prepared();
-    let first = images.export(&catalogue, data.path()).unwrap();
-    let second = images.export(&catalogue, data.path()).unwrap();
+    let first = images.export(&catalogue, data.path(), "en").unwrap();
+    let second = images.export(&catalogue, data.path(), "es").unwrap();
     assert_eq!(first, data.path().join(EXPORT_FOLDER));
     assert_eq!(second, data.path().join(format!("{EXPORT_FOLDER}-2")));
     assert_eq!(fs::read(first.join(ICONS)).unwrap(), png_file(256, 64, ICONS));
-    assert!(fs::read_to_string(first.join(README_FILE)).unwrap().contains("map/"));
-    assert!(fs::read_to_string(first.join(EXPORTED_MAPS_FILE)).unwrap().contains("Bosque Nativo"));
+    assert!(fs::read_to_string(first.join(README_FILE)).unwrap().starts_with("Game images to customize"));
+    assert!(fs::read_to_string(second.join(README_FILE)).unwrap().starts_with("Imágenes del juego"));
+    assert!(fs::read_to_string(first.join(MAPS_FILE)).unwrap().contains("Bosque Nativo"));
     let reloaded = images.inspect(&catalogue, &mut Picked::open(&first).unwrap()).unwrap();
     assert_eq!((reloaded.matched.len(), reloaded.unchanged, reloaded.ignored), (0, 5, 2));
 }

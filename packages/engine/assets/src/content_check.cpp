@@ -205,7 +205,7 @@ constexpr std::array<std::pair<std::string_view, Opener>, 6> TableReaders = {{
 // by its id.
 core::Result<void> openAssetAsGameReads(const AssetId& id, std::string_view extension,
                                         std::span<const std::byte> bytes) {
-  // TODO(W10b): pass the image's _meta once a declaration in it can exempt the image, read from the
+  // TODO: pass the image's _meta once a declaration in it can exempt the image, read from the
   // same pack as the image so another pack's metadata cannot exempt it.
   if (const std::optional<PngReading> reading = pngReadingOf(id, nullptr)) {
     return openPngOnlyImage(*reading, extension, bytes);

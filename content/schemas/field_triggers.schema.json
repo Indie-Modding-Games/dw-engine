@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Field triggers",
-  "description": "field/triggers.yaml of the game pack: what the player's cell does by its collision value (packages/game/field trigger_bands.hpp, docs/reference/campo.md). The engine also checks that the bands do not overlap, stay from 1 to 127 and give at most 10 exits.",
+  "description": "field/triggers.yaml of the game pack: what the player's cell does by its collision value (packages/game/field trigger_bands.hpp, docs/reference/field.md). The engine also checks that the bands do not overlap, stay from 1 to 127 and give at most 10 exits.",
   "type": "object",
   "required": ["step", "confirm", "exits", "toilet", "blocked_bit"],
   "additionalProperties": false,

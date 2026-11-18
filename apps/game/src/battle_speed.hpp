@@ -12,7 +12,7 @@
 
 namespace dwe::app {
 
-// Quick battles, an engine improvement (docs/modulos/apps/game.md, «Opciones en partida»): a fight
+// Quick battles, an engine improvement (docs/modules/apps/game.md, «In-game options»): a fight
 // runs two logic ticks a frame, so it plays at twice the speed and ends in half the real time. Each
 // tick is the original's, so what the fight does, what the partner gains and the game time it
 // costs do not change; only the time the player waits does. normal is the original; key starts

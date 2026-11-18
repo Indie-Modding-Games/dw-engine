@@ -3,6 +3,7 @@
 use std::path::{Path, PathBuf};
 
 use dwe_pack::GameFolders;
+use mapper_core::text::Language;
 use mapper_core::{GroupBy, Layer};
 
 pub const USAGE: &str = "\
@@ -25,7 +26,8 @@ Usage: dwe-mapper [options]
   --filter <text>      filters the map list
   --live <endpoint>    connects to a running dwe-game: unix:<socket> or tcp:<port>
   --size <w>x<h>       the window's size (default 1600x900)
-  --world              shows the world graph (the Mundo view) instead of the map; with --map,
+  --lang <en|es>       the editor's language (default: the system's, else English)
+  --world              shows the world graph (the World view) instead of the map; with --map,
                        centred on that map
   --shot <file.png>    saves a picture of the window once it is drawn, then quits
   -h, --help           this help";
@@ -47,8 +49,10 @@ pub struct Options {
     pub filter: Option<String>,
     pub live: Option<String>,
     pub size: [f32; 2],
+    /// The editor's language; the system's when not given.
+    pub lang: Option<Language>,
     pub shot: Option<PathBuf>,
-    /// Shows the Mundo view first.
+    /// Shows the World view first.
     pub world: bool,
     pub help: bool,
 }
@@ -69,6 +73,7 @@ impl Default for Options {
             filter: None,
             live: None,
             size: [1600.0, 900.0],
+            lang: None,
             shot: None,
             world: false,
             help: false,
@@ -142,6 +147,13 @@ impl Options {
                     options.size = parsed
                         .ok_or_else(|| format!("--size {text} is not <w>x<h>, at least 320x240"))?;
                 }
+                "--lang" => {
+                    let text = value()?;
+                    options.lang = Some(
+                        Language::parse(&text)
+                            .ok_or_else(|| format!("--lang takes en or es, not '{text}'"))?,
+                    );
+                }
                 "--shot" => options.shot = Some(value()?.into()),
                 "--timeline" => options.timeline = true,
                 other => return Err(format!("unknown option '{other}'")),
@@ -204,7 +216,7 @@ mod tests {
     fn reads_every_option() {
         let options = parse(
             "--content c --mods m1 --mods m2 --map area_a --exit 2 --section 12:0x33 --timeline --variant night \
-             --layers walls,exits --group-by prefix --filter ar --live tcp:7000 --size 800x600 --shot s.png",
+             --layers walls,exits --group-by prefix --filter ar --live tcp:7000 --size 800x600 --lang es --shot s.png",
         )
         .unwrap();
         assert_eq!(options.content, Some(PathBuf::from("c")));
@@ -217,6 +229,8 @@ mod tests {
         assert_eq!(options.group_by, Some(GroupBy::Prefix));
         assert_eq!(options.size, [800.0, 600.0]);
         assert_eq!(options.shot, Some(PathBuf::from("s.png")));
+        assert_eq!(options.lang, Some(Language::Spanish));
+        assert!(parse("--lang fr").is_err());
         assert!(parse("--layers walls,clouds").is_err());
         assert!(parse("--size 10x10").is_err());
         assert!(parse("--map").is_err());

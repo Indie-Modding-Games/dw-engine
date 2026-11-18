@@ -1,17 +1,17 @@
 # inventory
 
-El inventario: la bolsa del jugador, su dinero, el uso de objetos y el comercio.
+The inventory: the player's bag, their money, item use and trading.
 
-- Carpeta: `packages/game/inventory`; objetivos de CMake: `dwe::inventory` (capa `game`).
-- Depende de: `assets`, `core`, `ruleset`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/game/inventory](https://indie-modding-games.github.io/dw-engine/modulos/game/inventory).
+- Folder: `packages/game/inventory`; CMake targets: `dwe::inventory` (`game` layer).
+- Depends on: `assets`, `core`, `ruleset`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/game/inventory](https://indie-modding-games.github.io/dw-engine/modules/game/inventory).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter inventory
-scripts/dev.sh test --filter inventory       # sus tests (etiqueta de ctest inventory)
-scripts/dev.sh test --filter ...inventory    # y los de todo lo que depende de él
+scripts/dev.sh test --filter inventory       # its tests (ctest label inventory)
+scripts/dev.sh test --filter ...inventory    # and those of everything that depends on it
 ```

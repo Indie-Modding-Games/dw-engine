@@ -1,4 +1,4 @@
-//! The Mundo view: every map as a node, coloured by its area, with the exits (lines) and script
+//! The World view: every map as a node, coloured by its area, with the exits (lines) and script
 //! warps (dashed) between them, the checks as badges and in a side list, and the game's map and
 //! trail when a game is linked. Maps are dragged to new places, double-clicked to open, and
 //! connected by dragging from one to another with Shift (or the right button).
@@ -129,7 +129,7 @@ impl Frame {
 
 pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
     if app.mapper.content.is_none() {
-        ui.centered_and_justified(|ui| ui.label(text::NO_CONTENT));
+        ui.centered_and_justified(|ui| ui.label(text::no_content()));
         return;
     }
     if app.mapper.refresh_world() {
@@ -147,7 +147,7 @@ fn toolbar(app: &mut MapperApp, ui: &mut egui::Ui) {
             let world = &mut app.world_ui;
             let response = ui.add(
                 egui::TextEdit::singleline(&mut world.search)
-                    .hint_text(text::WORLD_SEARCH_HINT)
+                    .hint_text(text::world_search_hint())
                     .desired_width(180.0),
             );
             if response.lost_focus() && ui.input(|input| input.key_pressed(egui::Key::Enter)) {
@@ -166,15 +166,15 @@ fn toolbar(app: &mut MapperApp, ui: &mut egui::Ui) {
                     }
                 }
             }
-            ui.checkbox(&mut world.show_exits, text::WORLD_EXITS);
-            ui.checkbox(&mut world.show_scripts, text::WORLD_SCRIPT_WARPS);
+            ui.checkbox(&mut world.show_exits, text::world_exits());
+            ui.checkbox(&mut world.show_scripts, text::world_script_warps());
             let areas = app.mapper.world.graph.areas();
-            ui.menu_button(text::WORLD_AREAS, |ui| {
+            ui.menu_button(text::world_areas(), |ui| {
                 ui.horizontal(|ui| {
-                    if ui.button(text::WORLD_ALL).clicked() {
+                    if ui.button(text::world_all()).clicked() {
                         world.hidden_areas.clear();
                     }
-                    if ui.button(text::WORLD_NONE).clicked() {
+                    if ui.button(text::world_none()).clicked() {
                         world.hidden_areas = areas.keys().copied().collect();
                     }
                 });
@@ -195,13 +195,13 @@ fn toolbar(app: &mut MapperApp, ui: &mut egui::Ui) {
                         }
                     });
             });
-            if ui.button(text::FIT_VIEW).clicked() {
+            if ui.button(text::fit_view()).clicked() {
                 world.fit = true;
             }
             let mut reset = false;
             if ui
-                .button(text::WORLD_RELAYOUT)
-                .on_hover_text(text::WORLD_RELAYOUT_HINT)
+                .button(text::world_relayout())
+                .on_hover_text(text::world_relayout_hint())
                 .clicked()
             {
                 reset = true;
@@ -238,7 +238,7 @@ fn checks_panel(app: &mut MapperApp, ui: &mut egui::Ui) {
         .show(ui, |ui| {
             let graph = &app.mapper.world.graph;
             let world = &mut app.world_ui;
-            ui.heading(text::WORLD_CHECKS);
+            ui.heading(text::world_checks());
             let count = |severity| {
                 graph
                     .checks
@@ -248,13 +248,17 @@ fn checks_panel(app: &mut MapperApp, ui: &mut egui::Ui) {
             };
             ui.horizontal_wrapped(|ui| {
                 for (shown, severity, label) in [
-                    (&mut world.show_errors, Severity::Error, text::WORLD_ERRORS),
+                    (
+                        &mut world.show_errors,
+                        Severity::Error,
+                        text::world_errors(),
+                    ),
                     (
                         &mut world.show_warnings,
                         Severity::Warning,
-                        text::WORLD_WARNINGS,
+                        text::world_warnings(),
                     ),
-                    (&mut world.show_notes, Severity::Info, text::WORLD_NOTES),
+                    (&mut world.show_notes, Severity::Info, text::world_notes()),
                 ] {
                     let label = egui::RichText::new(format!("{label} ({})", count(severity)))
                         .color(severity_color(severity));
@@ -262,7 +266,7 @@ fn checks_panel(app: &mut MapperApp, ui: &mut egui::Ui) {
                 }
             });
             if graph.checks.is_empty() {
-                ui.weak(text::WORLD_NO_CHECKS);
+                ui.weak(text::world_no_checks());
             }
             ui.separator();
             let mut centre = None;
@@ -280,7 +284,7 @@ fn checks_panel(app: &mut MapperApp, ui: &mut egui::Ui) {
                         egui::RichText::new(check.message()).color(severity_color(check.severity));
                     if ui
                         .add(egui::Label::new(label).sense(egui::Sense::click()).wrap())
-                        .on_hover_text(text::WORLD_CHECK_HINT)
+                        .on_hover_text(text::world_check_hint())
                         .clicked()
                     {
                         centre = Some(check.map.clone());
@@ -392,7 +396,7 @@ fn edge_tooltip(edges: &[&WorldEdge]) -> String {
         .iter()
         .map(|edge| match &edge.kind {
             EdgeKind::Script { guards, .. } if !guards.is_empty() => {
-                format!("{}\n    {} {guards}", edge.label(), text::WORLD_IF)
+                format!("{}\n    {} {guards}", edge.label(), text::world_if())
             }
             _ => edge.label(),
         })
@@ -665,15 +669,18 @@ fn canvas(app: &mut MapperApp, ui: &mut egui::Ui) {
         && let Some(node) = graph.node(id)
         && world.moving.is_none()
     {
-        let mut lines = vec![node.label(), format!("{}: {}", text::WORLD_AREA, node.area)];
+        let mut lines = vec![
+            node.label(),
+            format!("{}: {}", text::world_area(), node.area),
+        ];
         lines.extend(graph.checks_of(id).map(|check| check.message()));
-        lines.push(text::WORLD_NODE_HINT.to_owned());
+        lines.push(text::world_node_hint().to_owned());
         response.clone().on_hover_text(lines.join("\n"));
     } else if let Some((edges, _)) = &hovered_link {
         response.clone().on_hover_text(format!(
             "{}\n{}",
             edge_tooltip(edges),
-            text::WORLD_EDGE_HINT
+            text::world_edge_hint()
         ));
     }
 
@@ -775,7 +782,7 @@ fn exit_label(graph: &mapper_core::WorldGraph, map: &str, exit: i32) -> String {
         .iter()
         .find(|edge| edge.from == map && edge.exit() == Some(exit))
         .map_or_else(
-            || format!("{exit} ({})", text::TARGET_MAP_NONE),
+            || format!("{exit} ({})", text::target_map_none()),
             |edge| format!("{exit} → {}:{}", edge.to, edge.to_exit),
         )
 }
@@ -788,15 +795,15 @@ pub fn connect_window(app: &mut MapperApp, ctx: &egui::Context) {
     let graph = &app.mapper.world.graph;
     let mut open = true;
     let mut done = None;
-    egui::Window::new(text::WORLD_CONNECT_TITLE)
+    egui::Window::new(text::world_connect_title())
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
         .show(ctx, |ui| {
             egui::Grid::new("connect").num_columns(2).show(ui, |ui| {
                 for (label, map, exit) in [
-                    (text::WORLD_CONNECT_FROM, &form.from, &mut form.exit),
-                    (text::WORLD_CONNECT_TO, &form.to, &mut form.to_exit),
+                    (text::world_connect_from(), &form.from, &mut form.exit),
+                    (text::world_connect_to(), &form.to, &mut form.to_exit),
                 ] {
                     ui.label(format!("{label} {map}"));
                     let exits = graph.node(map).map_or(0, |node| node.exits) as i32;
@@ -810,13 +817,13 @@ pub fn connect_window(app: &mut MapperApp, ctx: &egui::Context) {
                     ui.end_row();
                 }
             });
-            ui.checkbox(&mut form.back, text::WORLD_CONNECT_BACK);
-            ui.add(egui::Label::new(egui::RichText::new(text::WORLD_CONNECT_HELP).weak()).wrap());
+            ui.checkbox(&mut form.back, text::world_connect_back());
+            ui.add(egui::Label::new(egui::RichText::new(text::world_connect_help()).weak()).wrap());
             ui.horizontal(|ui| {
-                if ui.button(text::WORLD_CONNECT).clicked() {
+                if ui.button(text::world_connect()).clicked() {
                     done = Some(true);
                 }
-                if ui.button(text::UNSAVED_CANCEL).clicked() {
+                if ui.button(text::unsaved_cancel()).clicked() {
                     done = Some(false);
                 }
             });

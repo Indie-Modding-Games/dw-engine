@@ -7,6 +7,7 @@ const listen = (channel, callback) => {
 }
 
 contextBridge.exposeInMainWorld('dweStudio', {
+  language: ipcRenderer.sendSync('app:language'),
   info: () => ipcRenderer.invoke('project:info'),
   tree: () => ipcRenderer.invoke('project:tree'),
   referenceTree: () => ipcRenderer.invoke('reference:tree'),

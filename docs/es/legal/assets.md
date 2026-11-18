@@ -1,0 +1,108 @@
+# Política legal de assets
+
+> Esto no es asesoría legal. Es la política del proyecto para minimizar el riesgo. Las leyes cambian según el país.
+> Si la situación del proyecto cambia (entra dinero, crece mucho la difusión), hay que consultar a un abogado de
+> propiedad intelectual.
+
+## Qué es este proyecto
+
+Un proyecto de fans, **sin ánimo de lucro**, hecho por gusto, para volver a jugar el juego con reinterpretaciones
+propias. No compite con los titulares de la licencia ni pretende sustituir sus productos. Si un titular de derechos
+pide retirar algo, **se retira**.
+
+## Qué protege la ley
+
+- **Copyright:** el código del juego, el arte, los modelos, la música, los textos y el diseño de los personajes.
+- **Marcas:** el nombre de la franquicia y sus logos.
+
+## El modelo: "trae tus propios datos"
+
+Es el mismo modelo que usan proyectos como OpenMW, OpenRCT2, ScummVM o Ship of Harkinian. El proyecto publica un motor
+que **no contiene nada del original**, y cada usuario aporta su propia copia del juego. La extracción ocurre en su
+máquina.
+
+## Qué se puede distribuir
+
+| Categoría | Ejemplos | ¿Se distribuye? |
+|---|---|---|
+| **Motor** | `packages/engine/`, `packages/game/`, herramientas | ✅ Con la licencia del proyecto |
+| **Base** | Modelos, fondos, música, textos y tablas de stats del disco | ❌ Nunca. Se genera en la máquina del usuario |
+| **Original del equipo** | Personajes nuevos, música nueva, mapas pintados desde cero | ✅ Con licencia propia |
+| **Derivado** | Fondos escalados, retexturas, traducciones del texto original, modelos nuevos de Digimon existentes | ⚠️ Solo como **recetas o deltas** que se aplican sobre la base del usuario |
+
+Lo que hay que tener claro:
+
+- **Un modelo nuevo de un Digimon existente sigue siendo fan art:** el diseño del personaje pertenece a sus titulares.
+  Lo mismo vale para el mod en su conjunto. Se tolera, pero no es del todo legal. El objetivo es reducir el riesgo,
+  no eliminarlo.
+- **El motor no es un "clean room".** Se escribe con el decomp como referencia. Por eso no se copia nada del decomp al
+  repositorio: ni código ni **tablas de datos** (stats, evoluciones, textos). Todo eso sale del disco del usuario.
+- **Reglas sí, tablas no.** Los parámetros de reglas y mecánicas (topes, umbrales, divisores, temporizadores,
+  probabilidades) pueden estar en git, en los rulesets y con su cita al decomp; las tablas por entidad (por Digimon,
+  objeto, técnica o mapa) salen del disco del usuario (ejecutable y overlays) con `dwx`. «Decidido por el coordinador
+  (2026-10-21)». Detalle y clasificación de cada valor: [auditoría de los rulesets](ruleset-audit.md).
+- **Los ids que vienen del nombre de un objeto o una técnica** (`bandage`, `giga_hand`) **y los códigos internos de
+  archivo de los mapas** (`twna01`, `ROOM08`) se pueden usar en rulesets, tests, fixtures y sustitutos; el nombre de la
+  franquicia y sus logos no (nunca se pudieron), ni las tablas de datos (stats, efectos, textos), y los datos que
+  acompañan a un id versionado son inventados, nunca copiados del disco ni del decomp (decisión del usuario,
+  2026-10-21). Un id real nunca va en su número del original: donde un test necesita una entrada en ese número, usa un
+  id inventado. Las categorías y los comportamientos (categoría de orden, color del objeto, tipo de manejador, banderas
+  de uso en combate, si se puede tirar) pueden coincidir con el original.
+- **Los nombres de especies y de personajes nunca son ids en git.** El paquete base que dwx genera en la máquina del
+  usuario lleva los nombres reales y nunca va a git. En git, un id de especie solo aparece donde un ruleset o el
+  paquete del juego nombra una entrada del paquete base, y en los fixtures y sustitutos que cargan esos rulesets, que
+  necesitan ese id (con datos inventados y nunca en su número del original). Todo otro test, fixture o ejemplo de la
+  documentación usa ids neutros (`species_a`, `species_b`…), y ningún fixture lleva el nombre de una especie o un
+  personaje en un nombre visible o un texto.
+- **Los Digimon de otros juegos** solo pueden llegar a través de un importador que lea el disco de ese juego, con la
+  misma regla.
+
+## Reglas
+
+1. **Sin dinero.** Ni venta, ni anuncios, ni donaciones ligadas al mod.
+2. **Sin marcas.** El nombre del proyecto, el ejecutable y el logo no usan el nombre de la franquicia ni sus logos.
+   El README lleva un aviso de no afiliación.
+3. **Sin tiendas.** No se publica en Steam ni en tiendas de aplicaciones.
+4. **Nada original en git.** Ningún fichero extraído del disco, ningún binario compilado con código original, ningún
+   volcado de memoria ni capturas de pantalla con arte original dentro de los repositorios.
+5. **Repositorios separados.** Si llega una petición de retirada contra el contenido, el motor sobrevive.
+
+## Mecanismos
+
+| Mecanismo | Qué hace |
+|---|---|
+| **`provenance.yaml`** | Previsto: cada asset del equipo declarará su autor, su licencia y su origen (original o derivado). Aún no hay ninguno: el paquete del juego solo lleva YAML, Lua, la interfaz, dos banderas, las fuentes Noto Sans, con su licencia (`noto_sans_license.txt`), y dos fuentes de píxel de dominio público para el aspecto new (`pixel_fonts_license.txt`) |
+| **Hooks de git** (`scripts/dev.sh setup-hooks`) | `pre-commit` y `commit-msg` rechazan las rutas del original (imágenes de disco, ficheros del juego, savestates, trazas), otra identidad de autor y las palabras prohibidas en el mensaje (en los ficheros solo avisan) (`scripts/hooks/policy.sh`) |
+| **Paquetes sin datos del disco** | Antes de publicar, `scripts/package/no_disc_data.sh` (y su versión de macOS) comprueba que ningún paquete lleva el paquete base ni ficheros del original. Cada paquete lleva `LICENSE`, `THIRD_PARTY_NOTICES.txt` y las licencias de terceros |
+| **Chequeo de hashes en la CI** | Previsto: rechazar cualquier fichero cuyo hash coincida con uno extraído del disco. Hoy la CI no lo hace |
+| **`.gitignore`** | `content/base/` y las cachés de cocinado nunca se versionan |
+| **Recetas y deltas** | Lo derivado se distribuye como instrucciones o diferencias que se aplican sobre la base local |
+
+## Salida mejorada (remaster)
+
+Las reglas de la [alta definición](../architecture/high-definition.md#legal)
+([ADR 0025](../adr/0025-high-definition-in-the-engine.md)):
+
+- **Lo ampliado es derivado.** Un fondo escalado, una textura duplicada, el paquete `ui_original` o la caché de ampliado
+  hechos a partir del disco siguen siendo el original. Se quedan en tu máquina. Se distribuyen **solo el código y las
+  recetas**; nunca las salidas, las cachés ni los paquetes `remaster` generados.
+- **Solo lo integrado:** el escalador del motor y el paso `index_scale` de `dwx upscale` no tienen red, ni modelos, ni
+  pesos de terceros, y dan los mismos bytes en todas las máquinas.
+- **Sin servicios:** el proyecto no tiene ninguna herramienta que suba arte extraído de tu disco a un servicio.
+- **Música:** «La música HD rehecha a partir de la original es obra derivada: solo se distribuyen recetas o deltas. La música del juego original nunca se distribuye. La música nueva compuesta por el equipo, o con licencia, declara autor, licencia y origen en provenance.yaml. Decidido por el coordinador (2026-10-21).»
+
+## Licencias
+
+- **Código:** MIT (ver [`LICENSE`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/LICENSE)). Las dependencias conservan sus propias licencias.
+- **Assets originales del equipo:** CC BY-SA 4.0.
+
+Ver [ADR 0011](../adr/0011-asset-legal-policy.md).
+
+## Pendiente en los repositorios actuales
+
+- `Digimon-World-Project-Folder-Assets`: sacar `dist/windows/dw1.exe` (código del juego compilado) y
+  `port/android/design/vram_menu.bin` (volcado de VRAM con gráficos originales). La copia del decomp contiene datos
+  del juego: puede quedarse en un repositorio privado, pero nunca pasar a uno público.
+- Los `Dialog.*` y `Game.*` generados desde los discos (ver `port/HANDOFF.md`) son textos originales y no deben
+  entrar en git. El `localization/` público solo tiene textos propios (`Port.*` y los mensajes de guardado
+  reescritos), así que está bien.

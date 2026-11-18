@@ -1,8 +1,8 @@
 # The options page opened with `Escape` leads with the game's own actions (docs/architecture/
-# guardar-y-cargar.md, 3.8): quick save, back to title and quit. `up` from the first settings row
+# save-and-load.md, 3.8): quick save, back to title and quit. `up` from the first settings row
 # reaches them in order - Quit, Back to title, Save -; confirming Save writes the game and closes
 # the menu (one new file in --saves), and both exits first ask, answered away with `cancel`, which
-# on the keyboard is the Ctrl pair (docs/architecture/controles.md).
+# on the keyboard is the Ctrl pair (docs/architecture/controls.md).
 # Run with: dwe-game --content <folder> --saves <empty folder> --shots <folder> --autotest tests/autotest/route-save-actions.yaml
 name: save-actions
 device: keyboard

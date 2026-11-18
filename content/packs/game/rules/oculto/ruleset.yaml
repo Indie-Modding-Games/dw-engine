@@ -1,11 +1,15 @@
-# El original con su contenido oculto (opción de partida nueva, apagada por defecto): Panjyamon, Gigadramon y
-# MetalEtemon, que el disco trae pero solo da por objeto, y Myotismon, que solo trae como jefe, se alcanzan
-# evolucionando. Diseño aprobado:
-# docs/modulos/game/evolution.md, «Contenido oculto». Formato de los parches: docs/architecture/rulesets.md.
+# The original with its hidden content (new game option, off by default): Panjyamon, Gigadramon and
+# MetalEtemon, which the disc has but only gives as an item, and Myotismon, which it only has as a boss, can be reached
+# by evolving. Approved design:
+# docs/modules/game/evolution.md, "Hidden content". Patch format: docs/architecture/rulesets.md.
 id: oculto
-name: "Original + contenido oculto"
+name:
+  en: "Original + hidden content"
+  es: "Original + contenido oculto"
 version: 0.1.0
-description: "Las reglas del original, con Panjyamon, Gigadramon, MetalEtemon y Myotismon alcanzables por evolución."
+description:
+  en: "The original's rules, with Panjyamon, Gigadramon, MetalEtemon and Myotismon reachable by evolution."
+  es: "Las reglas del original, con Panjyamon, Gigadramon, MetalEtemon y Myotismon alcanzables por evolución."
 extends: original
 sections:
   - species_extra

@@ -1,8 +1,8 @@
 # The full story chain, chunk 8: on chunk 7's save (File City, twna08, the way up open) the player climbs Mt.
-# Infinity as route-etapa8-subida.yaml does: the gate (tile 58), mgen01 to mgen10, mgen98 and mgen99, with the forced
+# Infinity as route-stage8-climb.yaml does: the gate (tile 58), mgen01 to mgen10, mgen98 and mgen99, with the forced
 # fights of mgen06 (321) and mgen98 (326) ended won after a while on screen (win_after) and Megadramon's question
 # answered "hurry up". The wild ones on the way end won as they start (encounters: win). It ends saving in slot_01
-# on mgen99. The chain: docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+# on mgen99. The chain: docs/guides/vertical-slice.md (scripts/story-chain.sh).
 name: full-08
 device: keyboard
 timeout: 1200

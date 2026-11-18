@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "UI addon",
-  "description": "addon.yaml of a UI addon (docs/modding/interfaces.md): a whole UI that shows the game's screens its own way, or a plugin that adds documents over the UI that is on. The game pack's ui/addon.yaml describes the default UI.",
+  "description": "addon.yaml of a UI addon (docs/modding/ui-addons.md): a whole UI that shows the game's screens its own way, or a plugin that adds documents over the UI that is on. The game pack's ui/addon.yaml describes the default UI.",
   "type": "object",
   "required": ["id", "name", "version", "ui_api", "type"],
   "additionalProperties": false,

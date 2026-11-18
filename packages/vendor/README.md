@@ -1,11 +1,11 @@
 # vendor
 
-Envoltorios de build para librerías externas. El código de estas librerías no es nuestro ni está aquí: lo instala
-vcpkg (`vcpkg.json`). Esta carpeta solo tiene lo mínimo para compilarlas cuando vcpkg no trae un paquete de CMake.
+Build wrappers for external libraries. The code of these libraries is not ours and is not here: vcpkg (`vcpkg.json`)
+installs it. This folder only holds the minimum to build them when vcpkg does not ship a CMake package.
 
-- `cgltf/`: compila una vez las dos cabeceras de cgltf (lectura y escritura de glTF) en la librería `dwe_cgltf`, que
-  enlazan `assets` y `formats`.
+- `cgltf/`: builds the two cgltf headers (glTF reading and writing) once into the `dwe_cgltf` library, which `assets`
+  and `formats` link.
 
-No son módulos del motor: no tienen capa ni reglas de dependencias, ni un target `pkg_` propio, y
-`scripts/dev.sh packages` no los lista. Un cambio aquí afecta a todos los paquetes (`scripts/dev.sh affected`).
-Detalle en la [estructura del repositorio](https://indie-modding-games.github.io/dw-engine/architecture/repository-layout).
+They are not engine modules: they have no layer or dependency rules, no `pkg_` target of their own, and
+`scripts/dev.sh packages` does not list them. A change here affects all the packages (`scripts/dev.sh affected`).
+Details in the [repository layout](https://indie-modding-games.github.io/dw-engine/architecture/repository-layout).

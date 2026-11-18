@@ -29,7 +29,7 @@
 
 // Which maps a player can get to from the start of a new game, and back, through the warps the
 // field takes: the maps' warp tables and the scripts' map changes on stepping on a cell and on
-// confirming on one (field/script_warps). docs/reference/campo.md, "Alcance de los mapas", has the
+// confirming on one (field/script_warps). docs/reference/field.md, "Alcance de los mapas", has the
 // counts and the exceptions.
 
 using dwe::game::field::testing::mountContent;
@@ -41,7 +41,7 @@ std::string errorOf(const dwe::core::Result<T>& result) {
   return result ? std::string{} : result.error().message;
 }
 
-// Measured on the US disc with dwx's field/script_warps (docs/reference/campo.md, "Alcance de los
+// Measured on the US disc with dwx's field/script_warps (docs/reference/field.md, "Alcance de los
 // mapas"). A new game reaches few maps, all with a way back: the way on from mayo00 waits for
 // trigger 203, which an NPC there sets. The opening's map is not among them: the field starts after
 // the opening, with the triggers it sets.
@@ -49,12 +49,12 @@ constexpr std::array<std::string_view, 5> ExpectedNewGameMaps{"mayo00", "room08"
                                                               "twna01", "twnb01"};
 constexpr std::size_t ExpectedOpenReached = 236;
 constexpr std::size_t ExpectedOpenWithWayBack = 233;
-// What the vanilla policy decides on the disc (docs/architecture/warps-de-script.md): no script
+// What the vanilla policy decides on the disc (docs/architecture/script-warps.md): no script
 // warp goes through a recursion the extraction cut, and on the maps a new game reaches none is
 // taken only by the policy nor hidden by an unstructured path. A change here changes what a new
 // game can reach: report it before changing the number.
 constexpr std::size_t ExpectedWarpsWithRecursion = 0;
-// What runs the script warps of extractor version 5 (docs/architecture/warps-de-script.md): every
+// What runs the script warps of extractor version 5 (docs/architecture/script-warps.md): every
 // section that is not a cell's or an entry's is an NPC's, and the transport routine's 6 calls give
 // one pick per table entry each.
 constexpr std::size_t ExpectedTalkWarps = 100;

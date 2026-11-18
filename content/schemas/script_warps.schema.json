@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Script warps",
-  "description": "field/script_warps.yaml: the map changes (warp_to, teleport) the event scripts of each map make, with what it takes to make them (dwx, formats::script::findScriptWarps; docs/architecture/warps-de-script.md). Mods override the whole document.",
+  "description": "field/script_warps.yaml: the map changes (warp_to, teleport) the event scripts of each map make, with what it takes to make them (dwx, formats::script::findScriptWarps; docs/architecture/script-warps.md). Mods override the whole document.",
   "type": "object",
   "required": [
     "warps"

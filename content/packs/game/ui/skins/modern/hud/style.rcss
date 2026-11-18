@@ -4,7 +4,7 @@ body {
 	pointer-events: none;
 }
 
-/* The round minimap (an engine improvement, docs/modulos/engine/ui.md): at the top right, clear of the time and the
+/* The round minimap (an engine improvement, docs/modules/engine/ui.md): at the top right, clear of the time and the
    partner's panel at the bottom left and of the menu's hint at the top left. The map's name on a banner above it, a
    disc of the map round the player, north-up, with a glowing ring (decorator minimap-disc: ring style, disc fill,
    ring colour, glow colour, ring width, glow width) and the north mark on the ring, and the day and time under it.
@@ -176,7 +176,7 @@ body {
 	display: block;
 }
 
-/* The field status (the hud.* settings, docs/architecture/ui.md#estado-del-campo): the game time and the partner's
+/* The field status (the hud.* settings, docs/architecture/ui.md#field-status): the game time and the partner's
    state, at the bottom left, in from the edges as far as the other panels. Next to the original's field, which shows
    only a dial clock and the happiness and discipline bars, this skin adds the day, the bars' numbers, the needs and
    HP and MP, and fills the bars continuously (no "pips" class); the whole panel is this skin's look. */
@@ -313,26 +313,61 @@ body {
 	display: none;
 }
 
-/* The shop job's bar (an engine improvement, the option shop_job_bar): a panel like the minimap's at the top centre;
-   the fill turns blue past the better pay's mark and green once the shopkeeper joins. */
+/* The shop job's bar (an engine improvement, the option shop_job_bar): a panel like the minimap's at the top centre.
+   The head's title and customers, the "?" as a key cap; the bar's fill amber, blue past the better pay's mark, green
+   once the shopkeeper joins and violet at the bonus; the join's mark (the main one) in amber, taller, with its label
+   above the bar, the others white with their labels under it; the bonus item's icon above its mark. */
 #shop-job {
-	width: 420dp;
-	margin-left: -220dp;
+	width: 460dp;
+	margin-left: -241dp;
 	padding: 8dp 10dp 6dp 10dp;
 	border-radius: 12dp;
-	background-color: #0d121ab8;
+	background-color: #0d121ae0;
 	border: 1dp #2e3a4a;
 	font-size: 14dp;
+	line-height: 20dp;
 	color: #c9d3de;
 }
 
 #shop-job-title {
 	font-weight: bold;
+	color: #e9eef5;
+}
+
+#shop-job-customers {
+	color: #9aa8ba;
+}
+
+/* The rules' button: the help key's cap (the theme's .key) and a "?". */
+#shop-job-rules {
+	width: auto;
+	height: auto;
+	padding: 0 6dp 0 2dp;
+	margin: 0 0 0 14dp;
+	border: 1dp transparent;
+	border-radius: 6dp;
+	background-color: transparent;
+	font-size: 14dp;
+	font-weight: bold;
+	line-height: 20dp;
+	color: #e9eef5;
+}
+
+#shop-job-rules .key {
+	margin: 0 4dp 0 0;
+	font-size: 14dp;
+	line-height: 16dp;
+}
+
+#shop-job-rules:hover, #shop-job-rules:focus {
+	border-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
 }
 
 #shop-job-bar {
 	height: 10dp;
-	margin: 6dp 0 4dp 0;
+	margin: 26dp 0 0 0;
 	border-radius: 5dp;
 	background-color: #2e3a4a;
 }
@@ -342,20 +377,60 @@ body {
 	background-color: #f0a73a;
 }
 
-#shop-job.better #shop-job-fill { background-color: #5cc8ff; }
-#shop-job.joins #shop-job-fill { background-color: #6fdc6f; }
+#shop-job-fill.tier-better { background-color: #5cc8ff; }
+#shop-job-fill.tier-joins { background-color: #6fdc6f; }
+#shop-job-fill.tier-bonus { background-color: #c58cff; }
 
 .shop-job-mark {
+	top: -3dp;
+	bottom: -3dp;
 	width: 2dp;
 	margin-left: -1dp;
 	background-color: #ffffff;
 }
 
+.shop-job-mark.main {
+	top: -5dp;
+	bottom: -5dp;
+	width: 4dp;
+	margin-left: -2dp;
+	background-color: #f2a93b;
+}
+
+#shop-job-mark-bonus {
+	background-color: #c58cff;
+}
+
+.shop-job-mark-label {
+	font-size: 14dp;
+	line-height: 18dp;
+	color: #9aa8ba;
+}
+
+#shop-job-mark-join .shop-job-mark-label {
+	font-weight: bold;
+	color: #f2a93b;
+}
+
+#shop-job-mark-bonus .shop-job-mark-label {
+	color: #c58cff;
+}
+
 #shop-job-foot {
 	height: 20dp;
+	margin-top: 26dp;
 	font-size: 14dp;
+}
+
+#shop-job-tally {
+	font-weight: bold;
+	color: #e9eef5;
 }
 
 #shop-job-next {
 	color: #8d9aab;
+}
+
+#shop-job.joins #shop-job-next, #shop-job.bonus #shop-job-next {
+	color: #6fdc6f;
 }

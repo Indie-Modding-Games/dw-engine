@@ -1,5 +1,5 @@
-# Qué hace usar los objetos de data/items de este paquete: como los objetos de evolución del original de nivel 5
-# (item.c: handleEvoItems), llevan a su forma si está justo un nivel por encima del partner.
+# What using the items of data/items from this pack does: like the original's level 5 evolution items
+# (item.c: handleEvoItems), they lead to their form if it is exactly one level above the partner.
 item_effects:
 - item: "game:steel_heart"
   handler: "evolution"

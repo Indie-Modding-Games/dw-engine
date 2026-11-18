@@ -1,0 +1,100 @@
+/* The shop job's rules in the modern look (structure: ../../../shop_job_rules/structure.rcss), over the counter's panel
+   (../shop_haggle/style.rcss): the title and the goal over a divider, the pay tiers as inset rows with the HUD bar's
+   colour at their left (amber the tier the shopkeeper joins at), the faces as a legend on an inset, one rule per line
+   with a hairline at its left, and the close button at the foot. */
+
+#panel.rules-panel {
+	font-size: 18dp;
+	line-height: 24dp;
+}
+
+#rules-head {
+	border-bottom: 1dp #243042;
+}
+
+#rules-title {
+	font-size: 30dp;
+	line-height: 38dp;
+	font-weight: bold;
+	color: #e9eef5;
+}
+
+#rules-goal, #rules-original {
+	font-size: 18dp;
+	color: #9aa8ba;
+}
+
+.rules-tier {
+	border-radius: 0 8dp 8dp 0;
+	background-color: #1a2330;
+	color: #c9d3de;
+}
+
+#rules-pay-lowest { border-left-color: #f2a93b; }
+#rules-pay-better { border-left-color: #5cc8ff; }
+#rules-pay-bonus { border-left-color: #c58cff; }
+
+.rules-tier.main {
+	font-weight: bold;
+	color: #ffffff;
+	border-left-color: #6fdc6f;
+	background-color: #6fdc6f1f;
+}
+
+#rules-characters-title {
+	font-size: 14dp;
+	font-weight: bold;
+	color: #9aa8ba;
+}
+
+.rules-character, #rules-prices, #rules-faces-text, #rules-talk, #rules-dismiss {
+	border-left: 2dp #263243;
+	font-size: 18dp;
+	color: #c9d3de;
+}
+
+#rules-faces {
+	border-radius: 10dp;
+	background-color: #1a2330;
+}
+
+.rules-face {
+	font-size: 14dp;
+	font-weight: bold;
+}
+
+.rules-face.face-delighted span, .rules-face.face-pleased span { color: #6fdc6f; }
+.rules-face.face-doubtful span { color: #f2d23b; }
+.rules-face.face-annoyed span { color: #f2a93b; }
+.rules-face.face-furious span { color: #e05d5d; }
+
+#rules-foot {
+	border-top: 1dp #243042;
+}
+
+#rules-close {
+	padding: 6dp 22dp;
+	margin: 0;
+	border: 1dp #2e3a4a;
+	border-radius: 8dp;
+	background-color: #1a2330;
+	font-size: 18dp;
+	line-height: 24dp;
+	color: #c9d3de;
+}
+
+#rules-close .key {
+	font-size: 14dp;
+	line-height: 18dp;
+}
+
+#rules-close:hover {
+	background-color: #243042;
+	color: #e9eef5;
+}
+
+#rules-close:focus {
+	border-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
+}

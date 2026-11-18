@@ -1,16 +1,16 @@
-# Los cambios en lote (mejora del motor, opción bulk_trades): el trueque de objetos y los sobres de la
-# tienda de cartas preguntan cuántos de una vez.
+# Bulk changes (engine improvement, bulk_trades option): the item trade and the card shop's packs
+# ask how many at once.
 how_many: "¿Cuántos?"
-# El cuadro del trueque: {count} del objeto {item} que el jugador da y recibe.
+# The trade box: {count} of the item {item} that the player gives and receives.
 give: "Das {count} x {item}"
 get: "Recibes {count} x {item}"
-# Lo más que admite la bolsa, {most}.
+# The most the bag accepts, {most}.
 most: "Hasta {most}"
-# Los sobres de la tienda de cartas: el nombre del cuadro de cantidad, la pregunta del tendero con lo más
-# que cubre el dinero ({most}) y lo que salió: {packs} sobres, {cards} cartas, {new} nuevas.
+# The card shop's packs: the name of the quantity box, the shopkeeper's question with the most
+# the money covers ({most}) and what came out: {packs} packs, {cards} cards, {new} new.
 packs: "Sobres"
 packs_ask: "¿Cuántos sobres?\nPuedes abrir hasta {most}."
 packs_got: "{packs} {packs:sobre|sobres}, {cards} {cards:carta|cartas}.\nLas nuevas, en amarillo: {new}."
-# Los títulos de las columnas del resumen de sobres.
+# The column titles of the pack summary.
 card: "Carta"
 copies: "Copias"

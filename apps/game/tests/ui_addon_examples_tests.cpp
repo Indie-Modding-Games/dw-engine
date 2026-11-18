@@ -1,4 +1,4 @@
-// The example addons (examples/ui-addons/, docs/modding/interfaces.md): each one reads, suits this
+// The example addons (examples/ui-addons/, docs/modding/ui-addons.md): each one reads, suits this
 // UI API, uses only names the UI contract declares and texts the game has, and goes on in the
 // game's UI without a script error, as a player who copies its folder, or a .zip of it, would see
 // it.

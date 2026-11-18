@@ -9,6 +9,7 @@ mod content;
 mod content_id;
 mod error;
 mod find;
+mod localized_text;
 mod manifest;
 mod vfs;
 
@@ -20,5 +21,6 @@ pub use content::{GameContent, GameFolders, SkippedMod};
 pub use content_id::ContentId;
 pub use error::{Error, Result};
 pub use find::{FoundPacks, find_packs};
+pub use localized_text::{LocalizedText, REFERENCE_LANGUAGE, is_language_code};
 pub use manifest::{Dependency, Layer, PackManifest, Version};
 pub use vfs::{MountedPack, PackLocation, PackOrigin, Vfs, has_base_rights};

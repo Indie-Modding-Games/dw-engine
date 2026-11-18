@@ -54,7 +54,7 @@ ui_scale: "Interface scale"
 ui_scale.value: "{percent}%"
 vsync: "Vertical sync"
 ui_skin: "Interface style"
-# The whole interface: the game's own or one under ui/addons (docs/modding/interfaces.md).
+# The whole interface: the game's own or one under ui/addons (docs/modding/ui-addons.md).
 ui_addon: "Interface"
 ui_addon.default: "The game's own"
 ui_addon.safe: "The game's own (safe mode)"
@@ -203,7 +203,7 @@ texture_filter.nearest: "Pixels"
 enhanced_lighting: "Enhanced lighting"
 vivid_colors: "Vivid colours"
 
-# The tabbed options page (docs/modulos/apps/game.md, «Opciones en partida»). The tabs share the box's top row: short
+# The tabbed options page (docs/modules/apps/game.md, «In-game options»). The tabs share the box's top row: short
 # names.
 tab.game: "Game"
 tab.graphics: "Graphics"
@@ -233,6 +233,9 @@ quick_battle_start: "Battles without wait"
 difficulty: "Difficulty"
 difficulty.normal: "Normal"
 difficulty.easy: "Easy"
+shop_job_mode: "Shop job"
+shop_job_mode.improved: "Improved"
+shop_job_mode.original: "Original"
 # Skip evolutions: confirm or cancel ends an evolution's scene at once (off by default).
 skip_evolution: "Skip evolutions"
 # Cancel closes choices: a cancel in a choice only closes it (off by default: the original's cancel).
@@ -266,6 +269,7 @@ help.battle_speed: "Fights run at twice the speed, always or switched with R (ri
 help.enemy_hp_bars: "A life bar over every enemy for the whole fight, cups too. Off: only a while after a hit."
 help.gym_sessions: "A gym course trains this many sessions in a row. Waits while you tend your partner; stops if you cancel, walk away or it gets hurt or sick."
 help.quick_battle_start: "A fight in the field starts as soon as it triggers, without the lead-in. Cups keep theirs."
+help.shop_job_mode: "Improved: a fair line of customers and a haggle screen that shows each price's odds. Original: the original's price menus."
 help.difficulty: "Normal is the original. Easy: your partner hits harder, takes less, trains more, has longer to eat and gets sick less."
 help.skip_evolution: "Confirm or cancel ends an evolution's scene at once. The new form is the same."
 help.choice_cancel_closes: "Cancelling a choice only closes it. In the original some choices run their first answer."

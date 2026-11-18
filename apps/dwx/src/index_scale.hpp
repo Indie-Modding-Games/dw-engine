@@ -9,7 +9,7 @@
 
 namespace dwe::dwx {
 
-// How index_scale grows an image (docs/architecture/remaster-pipeline.md, «index_scale»).
+// How index_scale grows an image (docs/architecture/high-definition.md, «The `index_scale` step»).
 enum class IndexScaleMode : std::uint8_t {
   // The classic pixel-art neighbour rules: each pixel splits into n x n by which neighbours share
   // its index. It

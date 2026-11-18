@@ -29,6 +29,8 @@ constexpr std::string_view TriggerOperand = "trigger";
 // (script_interp.c: scriptInstruction28to3F), and compare_date, whose result is in its trigger
 // (script_value.c: scriptCompareDate).
 constexpr std::string_view RoutineOperand = "routine";
+// The highest routine number the game's call_routine and call_digimon_routine encode (one byte).
+constexpr std::int32_t LastRoutineByte = 0xFF;
 constexpr std::string_view GiveItemOp = "give_item";
 constexpr std::uint16_t GiveItemResultTrigger = 0; // clear when the item was given
 constexpr std::string_view CompareDateOp = "compare_date";
@@ -97,8 +99,11 @@ std::optional<std::vector<std::uint16_t>> triggersWrittenBy(const ListingInstruc
   std::vector<std::uint16_t> written;
   if (instruction.op == CallRoutineOp || instruction.op == CallDigimonRoutineOp) {
     const auto routine = instruction.argument(RoutineOperand);
+    // A number past a byte is no routine of the game but an engine's own (a story patch's, as the
+    // shop job's 256 and on), which writes no trigger.
+    const bool gameRoutine = routine && *routine >= 0 && *routine <= LastRoutineByte;
     const RoutineWrites* writes =
-        routine ? routineWrites(instruction.op, static_cast<std::uint8_t>(*routine)) : nullptr;
+        gameRoutine ? routineWrites(instruction.op, static_cast<std::uint8_t>(*routine)) : nullptr;
     if (writes == nullptr) {
       return std::nullopt;
     }

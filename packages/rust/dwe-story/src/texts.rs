@@ -1,5 +1,5 @@
 //! The story's texts: `text/<language>/story_<nnn>.yaml`, flat mappings of `text.<offset>` to the
-//! line, merged key by key from the bottom of the stack up (docs/architecture/localizacion.md:
+//! line, merged key by key from the bottom of the stack up (docs/architecture/localization.md:
 //! `assets::readTextTable`). A command names a line by its full key, `story_001.text.00aa`.
 
 use std::collections::BTreeMap;

@@ -1,4 +1,4 @@
-// «Notas», the example add-on (docs/guides/launcher-addons.md). One page, three views:
+// "Notes", the example add-on (docs/guides/launcher-addons.md). One page, three views:
 // - background (always loaded, never shown): registers the sidebar icon, the tab, the settings
 //   section and a news card;
 // - tab: the notes, kept in the add-on's own storage;
@@ -65,6 +65,7 @@
 
   function fillTexts() {
     document.documentElement.lang = language;
+    document.title = text("title");
     for (const node of document.querySelectorAll("[data-text]")) node.textContent = text(node.dataset.text);
   }
 

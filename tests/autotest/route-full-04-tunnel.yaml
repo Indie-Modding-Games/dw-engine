@@ -1,9 +1,9 @@
 # The full story chain, chunk 4: on chunk 3's save (koda00, Centarumon recruited) the player walks back through the
 # jungle and the forest to the Drill Tunnel (mayo01_2, mayo11, tunn01), beats the digger of tunn04 (trigger 140), takes
 # the miner's job in tunn05, loads the cart, dumps it in tunn01 and is paid (variables 17 and 18,
-# route-etapa2-dirt.yaml), then lets five days and more go by caring for the partner, as the miners clear the rest on
+# route-stage2-dirt.yaml), then lets five days and more go by caring for the partner, as the miners clear the rest on
 # their own (variable 18 to 10). It ends saving in slot_01 in tunn05, with the way on to tunn06 open. The wild ones on
-# the way end won as they start (encounters: win). The chain: docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+# the way end won as they start (encounters: win). The chain: docs/guides/vertical-slice.md (scripts/story-chain.sh).
 name: full-04
 device: keyboard
 timeout: 1200
@@ -38,7 +38,7 @@ steps:
   - wait: {map: tunn04, partner_within: 600, seconds: 2, timeout: 30}
   - screenshot: tunn04
   # The digger stands at (1061, -797) in the original's axes: the player stands just south of it, facing it, and
-  # confirm talks (route-etapa2-dirt.yaml). The Rookie partner does not beat him in time: after a while on screen
+  # confirm talks (route-stage2-dirt.yaml). The Rookie partner does not beat him in time: after a while on screen
   # the fight ends won (win_after).
   - walk_to: {point: [1061, 600], radius: 150, encounters: win, timeout: 120}
   - script: place("player 1061 -672 0")

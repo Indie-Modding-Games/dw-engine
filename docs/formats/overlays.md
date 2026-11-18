@@ -1,49 +1,49 @@
 # Overlays
 
-Los 16 `*_REL.BIN` de la raíz del disco son código y datos que el ejecutable carga enteros en una dirección fija
-cuando una escena los necesita (`utils2.c: loadDynamicLibrary`, que no mira el fichero). Cómo se reparten por dentro
-sale del build del decomp (`config/<ver>/<overlay>.yaml` y `overlay.ld`); `formats/exe/overlay.hpp` lo guarda por
-versión, sin datos. Las direcciones de carga están en [Tablas](tablas.md).
+The 16 `*_REL.BIN` files at the disc root are code and data that the executable loads whole at a fixed address
+when a scene needs them (`utils2.c: loadDynamicLibrary`, which does not look at the file). How they are laid out
+inside comes from the decomp's build (`config/<ver>/<overlay>.yaml` and `overlay.ld`); `formats/exe/overlay.hpp`
+stores it per version, without data. The load addresses are in [Tables](tables.md).
 
-## Estructura
+## Structure
 
-| Parte | Qué es |
+| Part | What it is |
 |---|---|
-| Ficheros incrustados | Solo BTL, STD y VS: `ETCDAT/EX.TIM`, `ETCDAT/EX.TMD`, `ETCDAT/FEEL_EF.TMD`, `ETCHI/MAHI.TMD` y `ETCDAT/DEFEFF.TMD`, seguidos y sin relleno en `[0, 0x4188)` |
-| Cabecera (0x40 bytes) | `"MWo1"`, un byte de id, la dirección de la propia cabecera (carga + offset), el tamaño del código, el de los datos y un nombre ASCII terminado en NUL; el resto son ceros |
-| Código | Del final de la cabecera al primer `.rodata`/`.data` |
-| Datos | Constantes del código y tablas |
-| Memoria guardada | Las fuentes `*_bss_us`: memoria que el overlay solo usa en ejecución, guardada con lo que tenía cuando se generó el fichero |
-| Palabra final | Un cero (`LONG(0)` en `overlay.ld`, o dentro del último array de la memoria guardada) |
+| Embedded files | BTL, STD and VS only: `ETCDAT/EX.TIM`, `ETCDAT/EX.TMD`, `ETCDAT/FEEL_EF.TMD`, `ETCHI/MAHI.TMD` and `ETCDAT/DEFEFF.TMD`, one after another with no padding in `[0, 0x4188)` |
+| Header (0x40 bytes) | `"MWo1"`, an id byte, the address of the header itself (load + offset), the code size, the data size and a NUL-terminated ASCII name; the rest are zeros |
+| Code | From the end of the header to the first `.rodata`/`.data` |
+| Data | The code's constants and tables |
+| Saved memory | The `*_bss_us` sources: memory the overlay only uses at run time, saved with what it held when the file was generated |
+| Final word | A zero (`LONG(0)` in `overlay.ld`, or inside the last array of the saved memory) |
 
-`readOverlayHeader` comprueba la firma, los ceros y el NUL del nombre. `readOverlayParts` corta el fichero con la
-cabecera y la versión, y anota lo que no cuadra: una dirección que no es carga + offset, tamaños que no acaban 4 bytes
-antes del final, una memoria guardada fuera de los datos o una palabra final que no es cero. Si el layout trae un mapa
-de los datos (solo SHOP), comprueba también que sus rangos cubran los datos de punta a punta y que cada uno tenga lo que
-dice: las tablas de saltos apuntan al código, los punteros a los datos (o son cero) y los textos acaban en cero.
+`readOverlayHeader` checks the signature, the zeros and the name's NUL. `readOverlayParts` cuts the file using the
+header and the version, and notes what does not fit: an address that is not load + offset, sizes that do not end 4
+bytes before the end, a saved memory outside the data or a final word that is not zero. If the layout brings a map
+of the data (SHOP only), it also checks that its ranges cover the data from end to end and that each one holds what it
+should: jump tables point into the code, pointers into the data (or are zero) and texts end in zero.
 
-- El id de la cabecera coincide con el enum `Overlay` del decomp hasta SHOP; desde DGET vale uno menos (DGET tiene el
-  mismo que SHOP).
-- El nombre de la cabecera no siempre tiene las mayúsculas del fichero (`DoO2_REL.BIN`, `DoOA_REL.BIN`,
+- The header id matches the decomp's `Overlay` enum up to SHOP; from DGET on it is one less (DGET has the same one as
+  SHOP).
+- The header name does not always have the same capitalization as the file (`DoO2_REL.BIN`, `DoOA_REL.BIN`,
   `EaB_REL.BIN`).
-- Ni DGET ni SHOP tienen memoria guardada.
-- El `SHOP_REL.BIN` del disco US es el build `jp_rev1` del decomp, byte a byte (el SHA-1 de
-  `config/jp_rev1/shop.yaml`). El ejecutable US enlaza su propia copia de ese código (`shop/script_menu` en
-  `config/us/main.yaml`) y nunca salta al overlay, aunque `script_common.c: checkShopMap` y la op `0x23` del script
-  (`script_interp.c`) todavía cargan el fichero. Sus símbolos están en `config/jp_rev1/symbols_shop.txt`.
-- La memoria guardada de TRN y TRN2 es todo ceros; la de los demás, restos de la memoria del build. La de MOV son los
-  buffers del decodificador de vídeo (`mov_bss_us.c`).
+- Neither DGET nor SHOP has saved memory.
+- The `SHOP_REL.BIN` on the US disc is the decomp's `jp_rev1` build, byte for byte (the SHA-1 of
+  `config/jp_rev1/shop.yaml`). The US executable links its own copy of that code (`shop/script_menu` in
+  `config/us/main.yaml`) and never jumps to the overlay, although `script_common.c: checkShopMap` and the script op
+  `0x23` (`script_interp.c`) still load the file. Its symbols are in `config/jp_rev1/symbols_shop.txt`.
+- The saved memory of TRN and TRN2 is all zeros; that of the others, leftovers of the build's memory. MOV's is the
+  video decoder's buffers (`mov_bss_us.c`).
 
-## Los datos de SHOP
+## SHOP's data
 
-El decomp no compila SHOP para el US, así que su layout lleva un mapa de los datos (`OverlayDataRange`), hecho a mano
-desde el código del overlay: cada par `lui`/`addiu` o `lui`/`lw` que apunta a los datos y cada `jr` a través de una
-tabla. Cubre `[0x7860, 0x7E0C)` entero; los nombres son los de `symbols_shop.txt`.
+The decomp does not build SHOP for the US, so its layout carries a map of the data (`OverlayDataRange`), made by hand
+from the overlay's code: each `lui`/`addiu` or `lui`/`lw` pair that points to the data and each `jr` through a
+table. It covers `[0x7860, 0x7E0C)` entirely; the names are those of `symbols_shop.txt`.
 
-Tablas de saltos, `[0x7860, 0x79F8)`: cada una es la de un `switch`, con el índice acotado por un `sltiu` con su número
-de casos, y todas sus entradas caen dentro de la función.
+Jump tables, `[0x7860, 0x79F8)`: each one is that of a `switch`, with the index bounded by a `sltiu` with its number
+of cases, and all its entries fall inside the function.
 
-| Offset | Función | Casos |
+| Offset | Function | Cases |
 |---|---|---|
 | `0x7860` | `openRecycleShop` | 10 |
 | `0x7888` | `rollCardPack` | 5 |
@@ -57,71 +57,71 @@ de casos, y todas sus entradas caen dentro de la función.
 | `0x7964` | `newGameStateMachine` | 32 |
 | `0x79E4` | `tickNamingBox` | 5 |
 
-Datos, `[0x79F8, 0x7E0C)`:
+Data, `[0x79F8, 0x7E0C)`:
 
-| Rango | Qué es | Lo leen | Copia en el ejecutable |
+| Range | What it is | Read by | Copy in the executable |
 |---|---|---|---|
-| `[0x79F8, 0x7A78)` | Títulos de la gramola: fuente y pista, un byte cada una (`MAIN_D_801303B8`) | `jukeboxFillTitleList`, `tickJukeboxMenu` | `0x801303B8`, igual |
-| `[0x7A78, 0x7A84)` | Los 12 objetos que pide el trueque (`MOJYAMON_ITEMS_GIVE`) | `mojyaTradeFillItemList` | `0x80130438`, igual |
-| `[0x7A84, 0x7A90)` | Los 12 que da a cambio (`MOJYAMON_ITEMS_GET`) | `mojyaTradeFillItemList` | `0x80130444`, igual |
-| `[0x7A90, 0x7AD4)` | Los cuatro textos del cuadro de nombre (`STR_YOUR_NAME` a `STR_BACK_OK`) | `updateNamingPreview`, `fillNamingMenuStrings` | no |
-| `[0x7AD4, 0x7DB0)` | Filas de caracteres del cuadro de nombre (11 bytes y un cero cada una), en seis grupos, cada grupo seguido de su tabla de 9 punteros a filas (`CHAR_PAGE3_LEFT` a `CHAR_PAGE1_RIGHT`) | por `NAMING_CHAR_PAGES` | las filas sí, desde `0x80130450`; un byte de una fila difiere |
-| `[0x7DB0, 0x7DC8)` | Las seis tablas de filas (`NAMING_CHAR_PAGES`) | `tickNamingBox`, `fillNamingMenuStrings` | no |
-| `[0x7DC8, 0x7DEC)` | 18 `s16`: posiciones de los controles del cuadro (`NAMING_CTRL_BOXES`) | `renderNamingBox`, `renderSelectionBox` | no |
-| `[0x7DEC, 0x7E00)` | 10 `u16`: adónde salta el cursor al salirse de cada fila (`NAMING_ROLLOVER_CHARS`) | `namingSelectionLeft`, `namingSelectionRight` | no |
-| `[0x7E00, 0x7E0C)` | 6 `u16`: lo mismo en los controles (`NAMING_ROLLOVER_CTRL`) | `namingSelectionLeft`, `namingSelectionRight` | no |
+| `[0x79F8, 0x7A78)` | Jukebox titles: font and track, one byte each (`MAIN_D_801303B8`) | `jukeboxFillTitleList`, `tickJukeboxMenu` | `0x801303B8`, identical |
+| `[0x7A78, 0x7A84)` | The 12 items the swap asks for (`MOJYAMON_ITEMS_GIVE`) | `mojyaTradeFillItemList` | `0x80130438`, identical |
+| `[0x7A84, 0x7A90)` | The 12 it gives in exchange (`MOJYAMON_ITEMS_GET`) | `mojyaTradeFillItemList` | `0x80130444`, identical |
+| `[0x7A90, 0x7AD4)` | The four texts of the name box (`STR_YOUR_NAME` to `STR_BACK_OK`) | `updateNamingPreview`, `fillNamingMenuStrings` | no |
+| `[0x7AD4, 0x7DB0)` | Character rows of the name box (11 bytes and a zero each), in six groups, each group followed by its table of 9 row pointers (`CHAR_PAGE3_LEFT` to `CHAR_PAGE1_RIGHT`) | via `NAMING_CHAR_PAGES` | the rows yes, from `0x80130450`; one byte of a row differs |
+| `[0x7DB0, 0x7DC8)` | The six row tables (`NAMING_CHAR_PAGES`) | `tickNamingBox`, `fillNamingMenuStrings` | no |
+| `[0x7DC8, 0x7DEC)` | 18 `s16`: positions of the box's controls (`NAMING_CTRL_BOXES`) | `renderNamingBox`, `renderSelectionBox` | no |
+| `[0x7DEC, 0x7E00)` | 10 `u16`: where the cursor jumps when it leaves each row (`NAMING_ROLLOVER_CHARS`) | `namingSelectionLeft`, `namingSelectionRight` | no |
+| `[0x7E00, 0x7E0C)` | 6 `u16`: the same on the controls (`NAMING_ROLLOVER_CTRL`) | `namingSelectionLeft`, `namingSelectionRight` | no |
 
-Nada de esto es un asset: el ejecutable US no corre este código y tiene sus propias copias de las tablas de juego. La
-de la gramola ya sale del ejecutable (`music`); las del trueque, no (ver abajo).
+None of this is an asset: the US executable does not run this code and has its own copies of the game tables. The
+jukebox one already comes out of the executable (`music`); the swap ones do not (see below).
 
-## Tablas
+## Tables
 
-Cuatro overlays tienen tablas de juego; `overlay_tables.hpp` las lee con `MemoryImage::fromOverlay` y
-`overlay_yaml.hpp` las escribe en YAML, con los ids de las tablas del ejecutable para objetos, mapas, técnicas y
-Digimon. Cada documento tiene su esquema en `content/schemas`.
+Four overlays have game tables; `overlay_tables.hpp` reads them with `MemoryImage::fromOverlay` and
+`overlay_yaml.hpp` writes them as YAML, with the ids from the executable's tables for items, maps, techniques and
+Digimon. Each document has its schema in `content/schemas`.
 
-| Overlay | Documento | Tablas |
+| Overlay | Document | Tables |
 |---|---|---|
-| FISH | `fishing` | Probabilidad de cada cebo, probabilidad de picar por profundidad y tipo de pez, tipos de pez, las dos curvas de orilla de la prueba de agua y los dos mapas de pesca (zonas de cada pez, horas y ruta de la serpiente marina, sprite) |
-| STD | `stadium` | Stat base de los rivales por torneo, TIM del grado de cada torneo, probabilidad de victoria por niveles, cámaras, arenas y el cuadro del torneo (`bracket`: filas, salto, caminos de cada hueco, paleta del sprite y disparo de cada especie) |
-| VS | `versus` | Cámaras y arenas |
-| TRN | `training` | Animación y frame del golpe por compañero, técnicas que enseña el entrenamiento y sus pesos, tiras de la tragaperras, asistencias y puntos de entrenamiento por mapa |
+| FISH | `fishing` | Probability of each bait, bite probability by depth and fish type, fish types, the two shore curves of the water test and the two fishing maps (zones of each fish, times and route of the sea serpent, sprite) |
+| STD | `stadium` | Base stats of the rivals per tournament, TIM of each tournament's grade, win probability by levels, cameras, arenas and the tournament bracket (`bracket`: rows, jump, paths of each slot, sprite palette and shot of each species) |
+| VS | `versus` | Cameras and arenas |
+| TRN | `training` | Hit animation and frame per partner, techniques that training teaches and their weights, slot game strips, assists and training points per map |
 
-- Las variables de 8 bytes o menos de esas fuentes van al `.sdata` del ejecutable, no al overlay. Por eso el número de
-  objetos y de TIM de cada arena se lee del ejecutable (`STD_ARENA_COUNTS`, `VS_ARENA_MODEL_COUNTS`,
+- Variables of 8 bytes or less from those sources go to the executable's `.sdata`, not to the overlay. That is why the
+  number of objects and TIMs of each arena is read from the executable (`STD_ARENA_COUNTS`, `VS_ARENA_MODEL_COUNTS`,
   `VS_ARENA_TIM_COUNTS`).
-- Una arena sin ficheros (los tres punteros nulos) no se escribe; una con unos sí y otros no es un error.
-- `FishingMapData` guarda dos punteros a funciones: la prueba de agua se escribe como el índice de la curva que recorre
-  (`FISH_isFishableWater1` interpola por x, `FISH_isFishableWater2` por y); el otro es un stub de código. El número de
-  zonas por mapa (6) lo fija el código.
-- La tabla de picar tiene 200 bytes: 33 filas de 6 tipos desde la profundidad `0x26`; los 2 bytes que sobran se
-  guardan en `unused`.
-- Los puntos de entrenamiento acaban en el mapa `-1` y los de cada mapa en el stat `-1`.
-- TRN2 es otro build del entrenamiento: sus tablas son las de TRN, sin las técnicas. El extractor lo comprueba y lo
-  anota; si difieren, queda parcial.
+- An arena without files (the three pointers null) is not written; one with some and not others is an error.
+- `FishingMapData` stores two function pointers: the water test is written as the index of the curve it follows
+  (`FISH_isFishableWater1` interpolates by x, `FISH_isFishableWater2` by y); the other is a code stub. The number of
+  zones per map (6) is fixed by the code.
+- The bite table is 200 bytes: 33 rows of 6 types starting at depth `0x26`; the 2 leftover bytes are stored in
+  `unused`.
+- Training points end at map `-1` and those of each map at stat `-1`.
+- TRN2 is another build of training: its tables are those of TRN, without the techniques. The extractor checks this
+  and notes it; if they differ, it is left partial.
 
-No se convierten, porque son datos del código y no de juego: tablas de saltos, textos de mensajes, sprites y UV de la
-interfaz, posiciones del texto de combate, constantes de efectos y cámara, los nombres de Digimon de la presentación
-del torneo (`STD_INTRO_DIGIMON_NAMES`) y los recorridos del cuadro (`STD_BRACKET_PATHS`). Tampoco las del `.sdata`
-del ejecutable que no son tablas de juego, ni `REINCARNATE_BABY_TYPE` (DOOA).
+These are not converted, because they are code data and not game data: jump tables, message texts, interface sprites
+and UVs, battle text positions, effect and camera constants, the Digimon names of the tournament introduction
+(`STD_INTRO_DIGIMON_NAMES`) and the bracket's routes (`STD_BRACKET_PATHS`). Nor are those in the executable's `.sdata`
+that are not game tables, nor `REINCARNATE_BABY_TYPE` (DOOA).
 
 ## Extractor
 
-`dwx` (extractor `overlay`) da cuenta de cada parte en las notas del informe, con su rango de bytes:
+`dwx` (the `overlay` extractor) accounts for each part in the report's notes, with its byte range:
 
-- Ficheros incrustados: se comparan con el fichero suelto; si son iguales, una nota (`same bytes as ETCDAT/EX.TIM`)
-  y el asset sale de ese fichero. Si difieren o falta el suelto, es un `unknown`.
-- Cabecera, código (no es un asset), datos, memoria guardada y palabra final: una nota cada una.
-- SHOP: una nota más con lo que hace el ejecutable con el fichero, y una por cada rango de su mapa de datos. Los rangos
-  con copia en el ejecutable se comparan con ella y la nota dice si son iguales o cuántos bytes difieren.
-- Las tablas de FISH, STD, VS, TRN y BTL: `data/fishing`, `data/stadium`, `data/versus`, `data/training` y
-  `data/battle` (el dibujo del disparo del aplastado de cada especie).
-- Son `unknowns`: lo que `readOverlayParts` anota (también los rangos del mapa de datos que no cuadran), un overlay
-  sin layout para la versión, un rango con copia que no se pudo comparar (sin ejecutable) y las tablas que no se
-  pudieron leer.
+- Embedded files: they are compared with the loose file; if they are equal, a note (`same bytes as ETCDAT/EX.TIM`)
+  and the asset comes from that file. If they differ or the loose one is missing, it is an `unknown`.
+- Header, code (not an asset), data, saved memory and final word: one note each.
+- SHOP: one more note with what the executable does with the file, and one for each range of its data map. Ranges
+  with a copy in the executable are compared with it and the note says whether they are equal or how many bytes differ.
+- The tables of FISH, STD, VS, TRN and BTL: `data/fishing`, `data/stadium`, `data/versus`, `data/training` and
+  `data/battle` (the drawing of each species' Flat shot).
+- The following are `unknowns`: what `readOverlayParts` notes (also the data map ranges that do not fit), an overlay
+  without a layout for the version, a range with a copy that could not be compared (no executable) and the tables
+  that could not be read.
 
-## Lo que no se sabe
+## What is not known
 
-- Las tablas del trueque (`MOJYAMON_ITEMS_GIVE` y `MOJYAMON_ITEMS_GET`) no se convierten a YAML desde el ejecutable,
-  que es donde las lee el US.
-- Los campos `unkN` de las tablas de pesca, que se escriben como `unknown_*`.
+- The swap tables (`MOJYAMON_ITEMS_GIVE` and `MOJYAMON_ITEMS_GET`) are not converted to YAML from the executable,
+  which is where the US reads them.
+- The `unkN` fields of the fishing tables, which are written as `unknown_*`.

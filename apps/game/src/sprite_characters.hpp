@@ -20,7 +20,7 @@ class MapDepthLayers;
 
 namespace dwe::app {
 
-// 3D characters (an engine improvement; docs/modulos/apps/game.md, «Personajes en 3D»): a few maps
+// 3D characters (an engine improvement; docs/modules/apps/game.md, «3D characters»): a few maps
 // draw characters as prerendered sprites of their depth layers (overworld.c: renderMapOverlays),
 // the opening and the ending around the elder's house, the farm, the elder's house and the market
 // stall. With the setting on, the field leaves those sprites out and draws the species' model in

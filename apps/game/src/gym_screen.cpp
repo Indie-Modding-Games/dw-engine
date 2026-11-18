@@ -409,7 +409,7 @@ void GymScreen::tick(double seconds, const game::field::FieldInput& intent) {
 }
 
 void GymScreen::publishRecord(const game::gym::CourseRun& run) {
-  // docs/guides/comprobar-entrenamiento.md: a route reads them with expect_range.
+  // docs/guides/check-training.md: a route reads them with expect_range.
   constexpr std::array<std::string_view, 6> StatNames{"hp",      "mp",    "offense",
                                                       "defense", "speed", "brain"};
   const game::gym::SessionRecord& record = run.record();

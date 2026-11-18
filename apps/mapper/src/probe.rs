@@ -1,10 +1,10 @@
-//! "Probar evento": runs an event of the map shown in the connected game. The editor works out
+//! "Test event": runs an event of the map shown in the connected game. The editor works out
 //! the story writes that get past the section's early ends (`Mapper::test_plan`), asks first,
 //! then reads the story, writes, reloads the map, puts the player where the event runs and
 //! presses confirm when it needs it; a moment later it reads the story again and keeps what
 //! changed for the story panel. Nothing waits: each frame looks at what the link said.
 //!
-//! The timeline's "Reproducir" and "Reproducir desde aquí" do the same first steps, then start
+//! The timeline's "Play" and "Play from here" do the same first steps, then start
 //! the section with `story_run` (with the code sent for it, for the second) instead of pressing.
 
 use std::time::{Duration, Instant};
@@ -175,9 +175,9 @@ pub fn ask_play(app: &mut MapperApp, run: StoryRun) {
     app.probe.event = format!(
         "{} · {}",
         if run.code.is_some() {
-            text::PLAY_FROM_HERE
+            text::play_from_here()
         } else {
-            text::PLAY
+            text::play()
         },
         text::section_name(run.script, run.section)
     );
@@ -195,9 +195,9 @@ pub fn show(app: &mut MapperApp, ctx: &egui::Context) {
     let mut run = false;
     let mut cancel = false;
     let title = if app.probe.run.is_some() {
-        text::PLAY_TITLE
+        text::play_title()
     } else {
-        text::TEST_TITLE
+        text::test_title()
     };
     egui::Window::new(title)
         .open(&mut open)
@@ -207,14 +207,14 @@ pub fn show(app: &mut MapperApp, ctx: &egui::Context) {
             ui.strong(&app.probe.event);
             ui.add_space(4.0);
             if app.mapper.is_dirty() {
-                ui.colored_label(egui::Color32::YELLOW, text::TEST_UNSAVED);
+                ui.colored_label(egui::Color32::YELLOW, text::test_unsaved());
             }
-            ui.label(text::TEST_WRITES);
+            ui.label(text::test_writes());
             if plan.to_selected {
-                ui.weak(text::TEST_TO_SELECTED);
+                ui.weak(text::test_to_selected());
             }
             if plan.writes.is_empty() {
-                ui.weak(text::TEST_NO_WRITES);
+                ui.weak(text::test_no_writes());
             }
             for need in &plan.writes {
                 let line = match (*need, &names) {
@@ -231,13 +231,13 @@ pub fn show(app: &mut MapperApp, ctx: &egui::Context) {
                 } else {
                     ui.colored_label(
                         egui::Color32::YELLOW,
-                        format!("• {line} ({})", text::TEST_SKIPPED),
+                        format!("• {line} ({})", text::test_skipped()),
                     );
                 }
             }
             if !plan.others.is_empty() {
                 ui.add_space(4.0);
-                ui.colored_label(egui::Color32::YELLOW, text::TEST_OTHERS);
+                ui.colored_label(egui::Color32::YELLOW, text::test_others());
                 for other in &plan.others {
                     ui.monospace(format!("• {other}"));
                 }
@@ -245,35 +245,35 @@ pub fn show(app: &mut MapperApp, ctx: &egui::Context) {
             ui.add_space(4.0);
             match &plan.place {
                 Some(place) => {
-                    ui.label(text::TEST_PLACE);
+                    ui.label(text::test_place());
                     ui.monospace(place);
                 }
                 None => {
-                    ui.weak(text::TEST_NO_PLACE);
+                    ui.weak(text::test_no_place());
                 }
             }
             if plan.press {
-                ui.label(text::TEST_PRESS);
+                ui.label(text::test_press());
             }
             if app.probe.run.is_some() {
-                ui.label(text::PLAY_STARTS);
+                ui.label(text::play_starts());
             }
             ui.add_space(6.0);
             ui.horizontal(|ui| {
                 let connected = app.live.is_connected();
                 let confirm = if app.probe.run.is_some() {
-                    text::PLAY
+                    text::play()
                 } else {
-                    text::TEST_RUN
+                    text::test_run()
                 };
                 if ui
                     .add_enabled(connected, egui::Button::new(confirm))
-                    .on_disabled_hover_text(text::TEST_EVENT_OFFLINE)
+                    .on_disabled_hover_text(text::test_event_offline())
                     .clicked()
                 {
                     run = true;
                 }
-                if ui.button(text::TEST_CANCEL).clicked() {
+                if ui.button(text::test_cancel()).clicked() {
                     cancel = true;
                 }
             });
@@ -308,7 +308,7 @@ fn start(app: &mut MapperApp) {
     if app.live.view.as_ref().is_some_and(|view| view.busy) {
         app.mapper
             .messages
-            .push(Message::Error(text::TEST_BUSY.to_owned()));
+            .push(Message::Error(text::test_busy().to_owned()));
         return;
     }
     app.live.send(Command::ReadStory);
@@ -319,7 +319,7 @@ fn start(app: &mut MapperApp) {
     };
     app.mapper
         .messages
-        .push(Message::Info(text::TEST_RUNNING.to_owned()));
+        .push(Message::Info(text::test_running().to_owned()));
 }
 
 fn snapshot(app: &MapperApp) -> Snapshot {
@@ -392,7 +392,7 @@ pub fn tick(app: &mut MapperApp) {
             } else if now - since > RELOAD_WAIT {
                 app.mapper
                     .messages
-                    .push(Message::Error(text::TEST_NO_RELOAD.to_owned()));
+                    .push(Message::Error(text::test_no_reload().to_owned()));
                 Stage::Idle
             } else {
                 Stage::Reloading {
@@ -476,17 +476,17 @@ fn write_place_and_reload(app: &MapperApp, plan: &TestPlan) {
 /// The last test's changes, for the story panel.
 pub fn diff_lines(app: &MapperApp, ui: &mut egui::Ui) {
     if app.probe.is_running() {
-        ui.colored_label(egui::Color32::YELLOW, text::TEST_RUNNING);
+        ui.colored_label(egui::Color32::YELLOW, text::test_running());
     }
     let Some(diff) = &app.probe.diff else {
         return;
     };
     let names = &app.mapper.story_names;
     ui.add_space(4.0);
-    ui.strong(text::TEST_DIFF);
+    ui.strong(text::test_diff());
     ui.weak(&diff.event);
     if diff.is_empty() {
-        ui.weak(text::TEST_DIFF_NONE);
+        ui.weak(text::test_diff_none());
     }
     for &(trigger, on) in &diff.triggers {
         let name = text::named(trigger, names.trigger(trigger));

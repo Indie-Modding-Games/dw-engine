@@ -1,19 +1,19 @@
-# Espacio del mundo
+# World space
 
-Las coordenadas que comparten el campo, el render, los modelos y la UI. Las matemáticas son GLM, a través de
-`<dwe/core/math.hpp>`: ningún módulo incluye GLM directamente, para que todos usen la misma configuración (ángulos en
-radianes y profundidad de recorte de 0 a 1, la de Vulkan).
+The coordinates shared by the field, the renderer, the models and the UI. The math is GLM, through
+`<dwe/core/math.hpp>`: no module includes GLM directly, so that all of them use the same configuration (angles in
+radians and clip depth from 0 to 1, Vulkan's).
 
-## Ejes y unidades
+## Axes and units
 
-- **Mano derecha, +Y hacia arriba.** Es el sistema de glTF, el de los modelos extraídos.
-- **Unidades del original, sin escalar.** 100 unidades son una celda de la rejilla de colisión de un mapa.
-- **Del original al mundo:** el original tiene la Y hacia abajo y la Z hacia dentro de la pantalla. Un punto o una
-  dirección `(x, y, z)` del original es `(x, -y, -z)` en el mundo (`core::fromOriginalAxes`). Es un giro de 180° sobre
-  X, así que no cambia la orientación de las caras ni el sentido de los giros.
-- **El suelo** es el plano XZ. La lógica del campo se mueve sobre él; la altura (Y) la ponen los datos del mapa.
-- **Ángulos:** en radianes en el motor. El original usa 4096 por vuelta (`core::OriginalAnglePerTurn`); los datos que
-  vienen del disco se convierten al cargarlos.
+- **Right-handed, +Y up.** This is glTF's system, the one the extracted models use.
+- **The original's units, unscaled.** 100 units are one cell of a map's collision grid.
+- **From the original to the world:** the original has Y pointing down and Z pointing into the screen. A point or a
+  direction `(x, y, z)` of the original is `(x, -y, -z)` in the world (`core::fromOriginalAxes`). It is a 180° turn
+  about X, so it does not change the orientation of faces or the direction of rotations.
+- **The ground** is the XZ plane. The field's logic moves on it; the height (Y) is set by the map data.
+- **Angles:** in radians in the engine. The original uses 4096 per turn (`core::OriginalAnglePerTurn`); data that comes
+  from the disc is converted when it is loaded.
 
-Los ficheros extraídos (`map/<id>/data.yaml` y los demás) guardan los números tal como están en el disco: la
-conversión se hace al cargarlos, en un solo sitio.
+The extracted files (`map/<id>/data.yaml` and the others) store the numbers as they are on the disc: the conversion is
+done when loading them, in a single place.

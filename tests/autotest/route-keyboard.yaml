@@ -1,5 +1,5 @@
 # The vertical slice's route with the keyboard: File City to the elder's house and back, the menu and the minimap,
-# and the window at each size. How to run it: docs/guides/prueba-vertical.md.
+# and the window at each size. How to run it: docs/guides/vertical-slice.md.
 name: keyboard
 device: keyboard
 timeout: 600

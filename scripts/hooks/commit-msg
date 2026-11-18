@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # git's commit-msg hook, which scripts/dev.sh setup-hooks installs: checks the message against the
-# publication policy (scripts/hooks/policy.sh). It needs a Signed-off-by line (a merge commit does
-# not), and names no co-author, no generator and no AI assistant, nor the franchise, a console or a
-# company. Comment lines and the diff under the scissors line are not part of the message.
-# DWE_SKIP_HOOK=1 skips it for one commit; pre-commit already says so.
+# publication policy (scripts/hooks/policy.sh): it names no co-author, no generator and no AI
+# assistant, nor the franchise, a console or a company. Comment lines and the diff under the
+# scissors line are not part of the message. DWE_SKIP_HOOK=1 skips it for one commit; pre-commit
+# already says so.
 set -uo pipefail
 
 stop() {
@@ -29,11 +29,6 @@ main() {
   # shellcheck source=scripts/hooks/policy.sh
   source "$root/scripts/hooks/policy.sh" || stop "scripts/hooks/policy.sh could not be read"
   message="$(message_text "$1")"
-  if ! git rev-parse -q --verify MERGE_HEAD >/dev/null \
-    && ! grep -qE '^Signed-off-by: .+ <.+>$' <<<"$message"; then
-    echo "commit-msg: there is no Signed-off-by line (git commit -s)" >&2
-    failed=1
-  fi
   hits="$(grep -niE "$policy_assistant_text" <<<"$message")"
   if [[ -n "$hits" ]]; then
     printf 'commit-msg: the message names a co-author, a generator or an AI assistant:\n%s\n' \

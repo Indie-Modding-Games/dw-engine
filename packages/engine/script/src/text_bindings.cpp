@@ -11,7 +11,7 @@
 namespace dwe::script {
 namespace {
 
-// The same names the UI's documents have (docs/architecture/localizacion.md).
+// The same names the UI's documents have (docs/architecture/localization.md).
 constexpr std::string_view TextFunction = "t";
 constexpr std::string_view TextsTable = "texts";
 

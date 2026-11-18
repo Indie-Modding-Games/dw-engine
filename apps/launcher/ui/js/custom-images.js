@@ -1,4 +1,4 @@
-// The Images section (docs/guides/imagenes-personalizadas.md): export the images the game read
+// The Images section (docs/guides/custom-images.md): export the images the game read
 // from the player's disc, load a folder or .zip of improved ones (with a summary first), browse
 // every map, grouped by the letters of its id, and every title, menu and icon image, assign or
 // reset one, and turn them all on or off. Everything lands in one pack the game mounts

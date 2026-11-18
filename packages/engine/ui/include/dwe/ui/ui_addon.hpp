@@ -17,7 +17,7 @@ class VirtualFileSystem;
 
 namespace dwe::ui {
 
-// The file that describes a UI addon, in its folder (docs/modding/interfaces.md), as an asset name.
+// The file that describes a UI addon, in its folder (docs/modding/ui-addons.md), as an asset name.
 inline constexpr std::string_view UiAddonManifest = "addon";
 // The folder of the default UI's manifest in the game pack: ui/addon.yaml names the document of
 // every screen.

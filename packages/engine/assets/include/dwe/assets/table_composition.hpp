@@ -11,7 +11,7 @@
 #include <string_view>
 
 // How the packs' files of one content table combine into the table the game reads, entry by entry
-// (docs/architecture/vfs.md#tablas-por-entradas), so a mod adds or replaces one Digimon without
+// (docs/architecture/vfs.md#tables-by-entries), so a mod adds or replaces one Digimon without
 // copying the table.
 namespace dwe::assets {
 

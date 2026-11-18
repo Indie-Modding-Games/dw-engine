@@ -1,4 +1,4 @@
-// The engine's long names (docs/modulos/apps/game.md, «Nombres largos»): the documents that show a
+// The engine's long names (docs/modules/apps/game.md, «Long names»): the documents that show a
 // name of up to twelve letters keep it inside their boxes, and leave the original's texts as they
 // are.
 

@@ -3,7 +3,7 @@
 # speed and HP, caring for it after each as a player would (route-loop-keyboard.yaml's care: its favourite food when
 # hungry, the toilet, sleep when sleepy, a medicine when sick). This is the grinding the real game asks for before the
 # tunnel's digger and the boulder past it, which a fresh Rookie loses or cannot move. The food and the medicine stand
-# for what a player buys in the city. It ends saving in slot_01 at the gym. The chain: docs/guides/prueba-vertical.md
+# for what a player buys in the city. It ends saving in slot_01 at the gym. The chain: docs/guides/vertical-slice.md
 # (scripts/story-chain.sh).
 name: full-02
 device: keyboard

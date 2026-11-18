@@ -319,7 +319,7 @@ public:
   // Moves everything the map draws by `offset` background pixels (render::MapCamera::setShake).
   void setScreenShake(glm::vec2 offset) { mapRenderer_->setShake(offset); }
   // Whether the signs painted in the maps are written in the player's language (the pause menu's
-  // "Translated signs"; docs/modulos/engine/signs.md). The map shown follows at the next tick.
+  // "Translated signs"; docs/modules/engine/signs.md). The map shown follows at the next tick.
   void setTranslatedSigns(bool translated) { translatedSigns_ = translated; }
   // The chibi style (chibi_style.hpp): whether the characters whose model comes from elsewhere
   // and is not chibi are drawn with the original's proportions, the drawing only (and the points
@@ -547,7 +547,7 @@ public:
   // Enters the original's map with this index at this exit, keeping the partner (a scene's map
   // change: map.c: changeToDeathMap).
   core::Result<void> enterOriginalMap(std::int32_t index, std::int32_t exit);
-  // A map editor's reload (the control channel's reload_map, docs/guides/control-remoto.md): the
+  // A map editor's reload (the control channel's reload_map, docs/guides/remote-control.md): the
   // field's rules, the scripts' map changes and the map table read again from the packs, then the
   // current map read again and entered: by `exit` when given, else where the player and the partner
   // stand, without a fade. The story and the session stay as they are; the session sees a map

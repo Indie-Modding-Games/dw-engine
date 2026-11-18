@@ -1,5 +1,5 @@
-# El aspecto moderno, el de por defecto, para todas las pantallas. Un aspecto solo cambia cómo se ve la UI: los
-# documentos (ui/<pantalla>/document.rml) y su lógica son los mismos con cualquiera (docs/architecture/ui.md#aspectos).
+# The modern look, the default one, for every screen. A look only changes how the UI looks: the documents
+# (ui/<screen>/document.rml) and their logic are the same with any of them (docs/architecture/ui.md#skins).
 id: modern
 name: ui_skin.modern
 theme:
@@ -9,67 +9,67 @@ screens:
     styles: [ui/skins/modern/hud/style]
   pause_menu:
     styles: [ui/skins/modern/pause_menu/style]
-  # El menú principal usa los paneles y las opciones del menú de pausa.
+  # The main menu uses the pause menu's panels and options.
   main_menu:
     styles: [ui/skins/modern/pause_menu/style, ui/skins/modern/main_menu/style]
   partner_menu:
     styles: [ui/skins/modern/partner_menu/style]
   battle:
     styles: [ui/skins/modern/battle/style]
-  # Los números sobre el compañero en el campo: los dígitos de la batalla.
+  # The numbers over the partner in the field: the battle's digits.
   field_numbers:
     styles: [ui/skins/modern/battle/style]
-  # El selector de la exploración libre usa el panel y las entradas del menú de pausa.
+  # The free-exploration picker uses the pause menu's panel and entries.
   destination_choice:
     styles: [ui/skins/modern/pause_menu/style]
-  # La lista de ranuras, el diálogo de guardar y el menú de dormir, también.
+  # The slot list, the save dialog and the sleep menu, too.
   save_slots:
     styles: [ui/skins/modern/pause_menu/style, ui/skins/modern/save_slots/style]
   dialog:
     styles: [ui/skins/modern/pause_menu/style]
-  # Las reglas de la partida nueva (contenido oculto, paso Ultra → Mega), también.
+  # The new game's rules (hidden content, Ultra → Mega step), too.
   new_game_rules:
     styles: [ui/skins/modern/pause_menu/style]
-  # El modo de la partida nueva (solo con más de un modo), también.
+  # The new game's mode (only with more than one mode), too.
   new_game_mode:
     styles: [ui/skins/modern/pause_menu/style]
-  # La caja de cada arranque que pregunta el aspecto, también.
+  # The box of each start that asks for the look, too.
   skin_picker:
     styles: [ui/skins/modern/pause_menu/style, ui/skins/modern/skin_picker/style]
-  # El versus en línea, también.
+  # Online versus, too.
   versus:
     styles: [ui/skins/modern/pause_menu/style, ui/skins/modern/versus/style]
   sleep_menu:
     styles: [ui/skins/modern/pause_menu/style]
-  # El menú de desarrollo (F2), también.
+  # The development menu (F2), too.
   dev_menu:
     styles: [ui/skins/modern/pause_menu/style]
-  # La máquina de guardado: las cajas del original donde el original las dibuja (main_menu.c: renderMenuBox).
+  # The save machine: the original's boxes where the original draws them (main_menu.c: renderMenuBox).
   save_machine:
     styles: [ui/skins/modern/pause_menu/style, ui/skins/modern/save_machine/style]
   gym_stats:
     styles: [ui/skins/modern/pause_menu/style]
-  # La tienda, también.
+  # The shop, too.
   shop_menu:
     styles: [ui/skins/modern/pause_menu/style]
-  # La caja de nombres de la partida nueva y de los guiones, también.
+  # The name box of the new game and of the scripts, too.
   naming_box:
     styles: [ui/skins/modern/pause_menu/style]
-  # El menú del cebo y los avisos de la pesca, también.
+  # The bait menu and the fishing notices, too.
   fishing_bait:
     styles: [ui/skins/modern/pause_menu/style]
   fishing_notice:
     styles: [ui/skins/modern/pause_menu/style]
   gym_slots:
     styles: [ui/skins/modern/pause_menu/style]
-  # La caja de los huevos tras una muerte, también.
+  # The egg box after a death, too.
   egg_box:
     styles: [ui/skins/modern/pause_menu/style]
-  # El intercambio de objetos: su ventana a la izquierda, lejos del minimapa.
+  # The item trade: its window on the left, away from the minimap.
   trade_menu:
     styles: [ui/skins/modern/trade_menu/style]
-  # Las listas de las pantallas del original (tienda de cartas, guardaobjetos, tienda de méritos, tirar objetos,
-  # transporte del pájaro, gramola): sus filas con la escala de letra del aspecto moderno, no a 33dp.
+  # The lists of the original's screens (card shop, item keeper, merit shop, discard items,
+  # bird transport, jukebox): their rows with the modern look's text scale, not at 33dp.
   card_shop:
     styles: [ui/skins/modern/original_lists/style]
   item_keeper:
@@ -82,9 +82,15 @@ screens:
     styles: [ui/skins/modern/original_lists/style]
   jukebox:
     styles: [ui/skins/modern/original_lists/style]
-# Cómo se maquetan las pantallas que comparten documento y script con el aspecto original: los scripts leen estas
-# opciones con ui.layout (docs/architecture/ui.md#aspectos). menu: la disposición de la pantalla; box: cómo se abren
-# sus cajas (las del original crecen desde un contorno gris).
+  # The shop job's counter and rules (the improved version): the skin's panel, the price table with its odds
+  # meter; the rules share the counter's sheet for the panel.
+  shop_haggle:
+    styles: [ui/skins/modern/shop_haggle/style]
+  shop_job_rules:
+    styles: [ui/skins/modern/shop_haggle/style, ui/skins/modern/shop_job_rules/style]
+# How the screens that share a document and script with the original look are laid out: the scripts read these
+# options with ui.layout (docs/architecture/ui.md#skins). menu: the screen's layout; box: how
+# its boxes open (the original's grow from a gray outline).
 layout:
   pause_menu: {menu: modern, box: modern}
   partner_menu: {menu: modern, box: modern, pages: modern}

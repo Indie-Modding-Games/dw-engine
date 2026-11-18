@@ -381,7 +381,8 @@ local function draw_status(document)
   document:get("no-condition"):set_class("hidden", count > 0)
 end
 
--- Las abreviaturas se leen de las tablas del disco local, sin duplicar sus textos en el pack.
+-- The abbreviations are read from the local disc's tables, without duplicating their texts in the
+-- pack.
 local function tech_value_label(field, value)
   if value <= 0 then
     return ""

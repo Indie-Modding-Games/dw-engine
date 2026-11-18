@@ -31,7 +31,7 @@ namespace {
 // The game pack's ruleset with the Ultimate to Mega step, which the new game's rules offer when the
 // packs have it.
 constexpr std::string_view MegaRuleset = "oculto_mega";
-// The ruleset of every species as a partner (docs/modulos/game/evoluciones-extra.md), which the new
+// The ruleset of every species as a partner (docs/modules/game/extra-evolutions.md), which the new
 // game's rules offer, on, when the packs have it.
 constexpr std::string_view AllSpeciesRuleset = "todas";
 
@@ -228,7 +228,7 @@ void TitleScreen::startFailed(const PlayStart& start, bool saveFailed) {
 }
 
 void TitleScreen::showOptions() {
-  // The pause menu's options page over the title (docs/modulos/apps/game.md, «Opciones en
+  // The pause menu's options page over the title (docs/modules/apps/game.md, «Opciones en
   // partida»): the main menu stays behind it, its own box hidden, so the title's picture shows;
   // the page reads both settings as it shows.
   optionsShown_ = true;

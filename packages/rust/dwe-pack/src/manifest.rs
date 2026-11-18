@@ -4,7 +4,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use crate::{Error, Result};
+use crate::{Error, LocalizedText, Result};
 
 /// The content layer of a pack, from the bottom of the stack up.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
@@ -80,8 +80,9 @@ pub struct PackManifest {
     pub version: Version,
     pub layer: Layer,
     pub priority: i64,
-    pub name: Option<String>,
-    pub description: Option<String>,
+    /// For people, in one language or several.
+    pub name: Option<LocalizedText>,
+    pub description: Option<LocalizedText>,
     pub dependencies: Vec<Dependency>,
     /// Schema name to the id patterns of the documents that follow it.
     pub schemas: BTreeMap<String, Vec<String>>,
@@ -96,8 +97,8 @@ struct RawManifest {
     layer: Layer,
     #[serde(default)]
     priority: i64,
-    name: Option<String>,
-    description: Option<String>,
+    name: Option<LocalizedText>,
+    description: Option<LocalizedText>,
     #[serde(default)]
     dependencies: Vec<RawDependency>,
     #[serde(default)]
@@ -193,6 +194,20 @@ mod tests {
         assert_eq!(manifest.priority, 3);
         assert_eq!(manifest.dependencies[0].id, "base");
         assert_eq!(manifest.schemas["map"], vec!["map/*/data".to_owned()]);
+        assert_eq!(manifest.name.unwrap().in_language("es"), "HD");
+    }
+
+    #[test]
+    fn reads_a_name_and_description_in_several_languages() {
+        let manifest = parse(
+            "id: game\nversion: 0.1.0\nlayer: base\n\
+             name:\n  en: Game data\n  es: Datos del juego\n\
+             description: { en: The data, es: Los datos }\n",
+        )
+        .unwrap();
+        assert_eq!(manifest.name.unwrap().in_language("es"), "Datos del juego");
+        assert_eq!(manifest.description.unwrap().english(), "The data");
+        assert!(parse("id: a\nversion: 1.0.0\nlayer: base\nname:\n  es: Datos\n").is_err());
     }
 
     #[test]

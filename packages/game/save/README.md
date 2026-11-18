@@ -1,17 +1,17 @@
 # save
 
-Las partidas guardadas: el fichero YAML versionado, las secciones de cada sistema y sus migraciones.
+The saved games: the versioned YAML file, each system's sections and their migrations.
 
-- Carpeta: `packages/game/save`; objetivos de CMake: `dwe::save` (capa `game`).
-- Depende de: `assets`, `core`, `ruleset`.
-- Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
-  `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [modulos/game/save](https://indie-modding-games.github.io/dw-engine/modulos/game/save).
+- Folder: `packages/game/save`; CMake targets: `dwe::save` (`game` layer).
+- Depends on: `assets`, `core`, `ruleset`.
+- Layout: `CMakeLists.txt` (the package and its dependencies, with `dwe_add_module`), `include/` (the public part, as
+  `<dwe/...>`), `src/` and `tests/`.
+- Documentation: [modules/game/save](https://indie-modding-games.github.io/dw-engine/modules/game/save).
 
-Compilar y probar solo este paquete:
+Build and test only this package:
 
 ```sh
 scripts/dev.sh build --filter save
-scripts/dev.sh test --filter save       # sus tests (etiqueta de ctest save)
-scripts/dev.sh test --filter ...save    # y los de todo lo que depende de él
+scripts/dev.sh test --filter save       # its tests (ctest label save)
+scripts/dev.sh test --filter ...save    # and those of everything that depends on it
 ```

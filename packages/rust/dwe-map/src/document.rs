@@ -1,5 +1,5 @@
 //! A field map's document, `map/<id>/data` (content/schemas/map.schema.json,
-//! docs/formats/mapas.md): the parts the map tools show. Numbers stay as the extractor wrote them,
+//! docs/formats/maps.md): the parts the map tools show. Numbers stay as the extractor wrote them,
 //! in the original's axes; [`crate::world`] converts them. Sections the tools do not use yet
 //! (regions, images, the ambient color) are skipped when reading; the lights and the objects are
 //! read with the engine's keys, so that a patch that breaks them is refused as the game refuses

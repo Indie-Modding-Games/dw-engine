@@ -1,10 +1,10 @@
 //! dwe's story scripts for the tools. The story runs as Lua modules (`story/<n>.lua`, written by
 //! `dwx extract`) that packs patch section by section (`story/patches/*.lua`,
-//! docs/modding/historia.md). This crate reads that Lua into a tree ([`ast`], [`parse`]), writes it
+//! docs/modding/story.md). This crate reads that Lua into a tree ([`ast`], [`parse`]), writes it
 //! back ([`write`]), applies the patches of the pack stack like the game's `StoryLuaHost`
 //! ([`script`]), names the commands for people ([`commands`]), reads the dialogue texts ([`texts`]),
 //! lists what can run a section on a map ([`events`]) and lays a section out as a timeline
-//! ([`sequence`]).
+//! ([`sequence`]). The labels and descriptions come out in English or Spanish ([`language`]).
 
 pub mod ast;
 pub mod commands;
@@ -12,6 +12,7 @@ pub mod describe;
 pub mod edit;
 pub mod events;
 pub mod file;
+pub mod language;
 pub mod lex;
 pub mod needs;
 pub mod parse;
@@ -24,6 +25,7 @@ pub mod write;
 pub use ast::{BinOp, Block, Expr, Stmt, StmtKind};
 pub use events::{Event, EventKind, MapEvents};
 pub use file::{Routine, Section, SectionBody, StoryFile};
+pub use language::{Language, language, set_language};
 pub use save::{ScriptDraft, StoryProblem, StorySavePlan};
 pub use script::{LoadedScript, SectionOrigin, StoryFileSource};
 pub use sequence::{Cue, Hold, Sequence, Stage, Track};

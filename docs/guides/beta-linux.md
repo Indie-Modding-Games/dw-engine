@@ -1,103 +1,101 @@
-# Beta para Linux
+# Beta for Linux
 
-El paquete que recibe un jugador: un tarball que se descomprime y se ejecuta, sin Docker ni compilador. Por ahora
-Linux; Windows y macOS tienen su propia [guía](beta-windows-macos.md).
+The package a player receives on Linux: a tarball that is unpacked and run, with no Docker or compiler. Windows and macOS
+have their own [guide](beta-windows-macos.md).
 
-## Construirlo
+## Building it
 
 ```bash
-scripts/package_linux.sh --out <carpeta>
+scripts/package_linux.sh --out <folder>
 ```
 
-Compila el preset `linux-clang-package` en el contenedor (`scripts/dev.sh`) con `DWE_BUILD_COMMIT`, para que los
-reportes F12 del jugador nombren el commit. Ese preset es el de release con `DWE_PACKAGE` y el triplete
-`x64-linux-libcxx-package`: los programas no llevan ninguna carpeta de la máquina que compila (buscan `packs/` junto
-al ejecutable, y los nombres de fuentes del proyecto y de las librerías van relativos con `-ffile-prefix-map`), y el
-script se niega a empaquetar si `strings` encuentra la raíz del repositorio o `/home/` en un programa. Deja en `<carpeta>` el tarball
-`dwe-beta-<versión>-<commit>-linux-x86_64.tar.xz` y, aparte, los símbolos de depuración de los dos programas.
-`--no-build` empaqueta el build tal como está. El script se niega a empaquetar si encuentra un paquete `base`:
-**nunca se distribuye nada leído de un disco**.
+It builds the `linux-clang-package` preset in the container (`scripts/dev.sh`) with `DWE_BUILD_COMMIT`, so that the
+player's F12 reports name the commit. That preset is the release one with `DWE_PACKAGE` and the
+`x64-linux-libcxx-package` triplet: the programs carry no folder of the machine that builds them (they look for
+`packs/` next to the executable, and the source file names of the project and of the libraries are relative with
+`-ffile-prefix-map`), and the script refuses to package if `strings` finds the repository root or `/home/` in a
+program. It leaves in `<folder>` the tarball `dwe-beta-<version>-<commit>-linux-x86_64.tar.xz` and, separately, the
+debug symbols of the two programs. `--no-build` packages the build as it is. The script refuses to package if it
+finds a `base` pack: **nothing read from a disc is ever distributed**.
 
-## Qué lleva
+## What it contains
 
-| Ruta | Qué es |
+| Path | What it is |
 |---|---|
-| `dwe` | El lanzador: ejecuta `bin/dwe-game` desde donde se descomprimió. Antes pregunta `bin/dwe-game --check-system`; si ninguna tarjeta gráfica sirve, avisa y arranca con el controlador por software de `lib/lavapipe`. |
-| `bin/dwe-game`, `bin/dwx` | El juego y la herramienta que lee el disco, instalados con `cmake --install` (sin la ruta de librerías del árbol de build) y sin información de depuración. |
-| `packs/` | Los paquetes del equipo (`content/packs`) cocinados y empaquetados: `game.pak` y `es-translation.pak` (`scripts/package/cook_team_packs.sh`, con el `dwx` del paquete). `content::teamPacksFolder` los busca junto a la carpeta del ejecutable antes que en el árbol de fuentes; el juego empaquetado solo monta los `.pak`. |
-| `lib/libvulkan.so.1` | El cargador de Vulkan (puerto `vulkan-loader` de vcpkg). `bin/dwe-game` lo busca primero en `../lib` (su ruta de librerías es `$ORIGIN/../lib`), así que el jugador no necesita el del sistema; el cargador sí usa los controladores del sistema. |
-| `lib/lavapipe/` | El controlador de Vulkan por software de Mesa (lavapipe) de la imagen de desarrollo, con su manifiesto `lvp_icd.json` y las librerías que pide y que un escritorio puede no tener (LLVM, ICU, libxml2, extensiones de xcb...): unos 183 MB, 37 MB comprimidos. Lo copia `scripts/package/software_vulkan_linux.sh`. Solo se usa cuando ninguna tarjeta sirve (el lanzador y `dwe` apuntan `VK_DRIVER_FILES` y `LD_LIBRARY_PATH` a esta carpeta). |
-| `licenses/` | Las licencias de las librerías (una por puerto de vcpkg), de la fuente Noto Sans, de libc++ y, en `licenses/lavapipe/`, las de cada paquete del controlador por software. |
-| `LICENSE`, `THIRD_PARTY_NOTICES.txt` | La licencia MIT del proyecto y, en un solo archivo, los créditos (FreeType, y dónde está el código de las librerías MPL-2.0), los NOTICE de Apache-2.0 y todos los textos de `licenses/`. Lo escribe `scripts/package/third_party_notices.py`, que falla si un componente nuevo con licencia Apache-2.0 no dice dónde está su NOTICE o que no tiene; `scripts/package_release.sh` no firma un paquete sin estos dos archivos. |
-| `README.md`, `VERSION`, `EXTRACTOR_VERSION` | Lo que lee el jugador (`scripts/package/README.md`), el commit y la `ExtractorVersion` de su `dwx` (el lanzador vuelve a leer el disco cuando cambia). |
+| `dwe` | The launcher: runs `bin/dwe-game` from where it was unpacked. First it asks `bin/dwe-game --check-system`; if no graphics card is usable, it warns and starts with the software driver in `lib/lavapipe`. |
+| `bin/dwe-game`, `bin/dwx` | The game and the tool that reads the disc, installed with `cmake --install` (without the build tree's library path) and without debug information. |
+| `packs/` | The team's packs (`content/packs`) cooked and packaged: `game.pak` and `es-translation.pak` (`scripts/package/cook_team_packs.sh`, with the package's `dwx`). `content::teamPacksFolder` looks for them next to the executable's folder before the source tree; the packaged game only mounts the `.pak` files. |
+| `lib/libvulkan.so.1` | The Vulkan loader (vcpkg's `vulkan-loader` port). `bin/dwe-game` looks for it first in `../lib` (its library path is `$ORIGIN/../lib`), so the player does not need the system's; the loader does use the system's drivers. |
+| `lib/lavapipe/` | Mesa's software Vulkan driver (lavapipe) from the development image, with its `lvp_icd.json` manifest and the libraries it asks for that a desktop may not have (LLVM, ICU, libxml2, xcb extensions...): about 183 MB, 37 MB compressed. `scripts/package/software_vulkan_linux.sh` copies it. It is only used when no card is usable (the launcher and `dwe` point `VK_DRIVER_FILES` and `LD_LIBRARY_PATH` to this folder). |
+| `licenses/` | The licenses of the libraries (one per vcpkg port), of the Noto Sans font, of libc++ and, in `licenses/lavapipe/`, those of each package of the software driver. |
+| `LICENSE`, `THIRD_PARTY_NOTICES.txt` | The project's MIT license and, in a single file, the credits (FreeType, and where the code of the MPL-2.0 libraries is), the Apache-2.0 NOTICEs and all the texts in `licenses/`. `scripts/package/third_party_notices.py` writes it, and fails if a new component with an Apache-2.0 license does not say where its NOTICE is or that it has none; `scripts/package_release.sh` does not sign a package without these two files. |
+| `README.md`, `VERSION`, `EXTRACTOR_VERSION` | What the player reads (`scripts/package/README.md`), the commit and the `ExtractorVersion` of its `dwx` (the launcher reads the disc again when it changes). |
 
-Requisitos del equipo del jugador: glibc 2.38 o más nueva (también la del controlador por software) y, para ir a velocidad
-normal, un controlador con Vulkan 1.3; sin él el juego arranca igual con el controlador por software. No hace falta
-instalar nada más: el cargador de Vulkan va en `lib/`, libc++ va enlazada de forma estática y SDL abre X11 o Wayland y
-el audio del sistema en tiempo de ejecución. `scripts/package_linux.sh` comprueba que toda librería que piden
-`dwe-game` y `dwx` va en `lib/` o es de la biblioteca de C.
+Requirements for the player's machine: glibc 2.38 or newer (also for the software driver) and, to run at normal
+speed, a driver with Vulkan 1.3; without it the game starts anyway with the software driver. Nothing else needs to be
+installed: the Vulkan loader is in `lib/`, libc++ is statically linked and SDL opens X11 or Wayland and the system
+audio at run time. `scripts/package_linux.sh` checks that every library `dwe-game` and `dwx` ask for is in `lib/` or
+is part of the C library.
 
-## Primer arranque
+## First start
 
-Sin `--content`, el juego monta `./content` si tiene paquete base (`base.pak`, o la carpeta `base/` que deja
-`dwx extract` por defecto) y, si no, la
-carpeta `content/` de los datos del usuario (`~/.local/share/indie-modding-games/dwe/`, o bajo `$XDG_DATA_HOME`).
-Cuando esa carpeta no tiene paquete base, antes de montar nada el juego abre la pantalla de primer arranque
-(`apps/game/src/first_run_screen.cpp`), en inglés o español según el idioma guardado o el del sistema:
+Without `--content`, the game mounts `./content` if it has a base pack (`base.pak`, or the `base/` folder that
+`dwx extract` leaves by default) and, if not, the `content/` folder in the user's data
+(`~/.local/share/indie-modding-games/dwe/`, or under `$XDG_DATA_HOME`).
+When that folder has no base pack, before mounting anything the game opens the first-start screen
+(`apps/game/src/first_run_screen.cpp`), in English or Spanish depending on the saved language or the system's:
 
-1. El jugador escribe, pega, busca (diálogo del sistema) o suelta en la ventana su imagen `.cue`, `.bin` o `.iso`.
-2. `content::DiscInstall` comprueba que existan la imagen y los archivos que nombra la hoja CUE, y ejecuta
-   `dwx identify`: `supported us` sigue; `other-version` (otra región) y `unknown` (otro juego) se explican al
-   jugador, igual que una imagen que no se puede leer.
-3. Ejecuta `dwx extract --progress --out <datos>/content.partial/base` y muestra el paso y el porcentaje de las
-   líneas `progress <porcentaje> <paso>`. Con la imagen norteamericana tarda menos de un minuto.
-4. Ejecuta `dwx cook-pak <datos>/content.partial/base -o <datos>/content.partial/base.pak --progress`: cocina el
-   paquete base (texturas a KTX2, sonidos a Opus, películas a AV1) en un solo archivo y comprueba que el motor lo abre
-   entero. Es la parte larga (varios minutos); la barra le da el 80 % y la extracción el 20 % primero.
-5. Borra la carpeta `base/` de `content.partial`, mueve `base.pak` y `ui_original/` a `<datos>/content/` (un `base/`
-   suelto de una instalación anterior se quita después de que `base.pak` esté en su sitio), escribe
-   `<datos>/content/install.yaml` (la `ExtractorVersion` del `dwx` que lo leyó y la ruta absoluta de la imagen) y el
-   juego sigue como siempre, hasta la pantalla de título.
+1. The player types, pastes, browses (system dialog) or drops onto the window their `.cue`, `.bin` or `.iso` image.
+2. `content::DiscInstall` checks that the image and the files the CUE sheet names exist, and runs
+   `dwx identify`: `supported us` continues; `other-version` (another region) and `unknown` (another game) are
+   explained to the player, as is an image that cannot be read.
+3. It runs `dwx extract --progress --out <data>/content.partial/base` and shows the step and the percentage from the
+   `progress <percentage> <step>` lines. With the North American image it takes under a minute.
+4. It runs `dwx cook-pak <data>/content.partial/base -o <data>/content.partial/base.pak --progress`: it cooks the
+   base pack (textures to KTX2, sounds to Opus, movies to AV1) into a single file and checks that the engine opens it
+   whole. This is the long part (several minutes); the bar gives it 80 % and extraction gets the first 20 %.
+5. It deletes the `base/` folder from `content.partial`, moves `base.pak` and `ui_original/` to `<data>/content/` (a
+   loose `base/` from a previous install is removed after `base.pak` is in place), writes
+   `<data>/content/install.yaml` (the `ExtractorVersion` of the `dwx` that read it and the absolute path of the
+   image) and the game continues as usual, up to the title screen.
 
-`--content <carpeta>` acepta las dos formas del paquete base: `base.pak` o una carpeta `base/` (la de un desarrollador,
-de `dwx extract`). Si están las dos, gana la carpeta. El juego sin lanzador no convierte una instalación suelta
-antigua: la sigue jugando así; la convierte el lanzador al abrirse.
+`--content <folder>` accepts both forms of the base pack: `base.pak` or a `base/` folder (a developer's, from
+`dwx extract`). If both are there, the folder wins. The game without a launcher does not convert an old loose
+install: it keeps playing it that way; the launcher converts it when it opens.
 
-Si el contenido instalado tiene paquete base pero su `install.yaml` falta o es de otra `ExtractorVersion` (el juego
-se actualizó y lee el disco de otra forma), la misma pantalla se abre con el título «El juego se actualizó», explica
-que hay que leer el disco otra vez y trae escrita la imagen de la última vez: basta con Intro. Solo se reemplazan los
-paquetes de `content/`; las partidas (`saves/`) y los ajustes (`settings.yaml`) están fuera y no se tocan. Salir
-cierra el juego sin montar el contenido viejo.
+If the installed content has a base pack but its `install.yaml` is missing or is from another `ExtractorVersion` (the
+game was updated and reads the disc differently), the same screen opens with the title "The game was updated",
+explains that the disc has to be read again and has the image from last time filled in: Enter is enough. Only the
+packs in `content/` are replaced; the saved games (`saves/`) and the settings (`settings.yaml`) are outside and are
+not touched. Quitting closes the game without mounting the old content.
 
-Un disco de otra región (EU o JP, que `dwx` reconoce por la huella del ejecutable pero cuyas tablas no conoce) se
-rechaza en `dwx identify` con `other-version <versión>` y la pantalla dice cuál es («la versión europea del
-juego») y que por ahora solo se lee la norteamericana. Antes `identify` daba `supported` a esas versiones porque
-tienen una entrada (sin direcciones) en `executableLayouts`; ahora solo es `supported` la que tiene sus tablas
-localizadas.
+A disc from another region (EU or JP, which `dwx` recognizes by the executable's fingerprint but whose tables it does
+not know) is rejected in `dwx identify` with `other-version <version>` and the screen says which one it is ("the
+European version of the game") and that for now only the North American one is read.
 
-Cerrar la ventana o pulsar Detener mata a `dwx` y borra la carpeta parcial. La pantalla usa Dear ImGui porque la UI
-del juego necesita el contenido que todavía no existe; sus textos están en `localization/<idioma>/first_run` del
-paquete del juego. `dwx` corre como proceso aparte (`platform::ChildProcess`): el juego sigue sin leer discos
-(regla 2 de [dependencias](../architecture/dependency-rules.md)).
+Closing the window or pressing Stop kills `dwx` and deletes the partial folder. The screen uses Dear ImGui because
+the game's UI needs the content that does not exist yet; its texts are in `localization/<language>/first_run` in the
+game pack. `dwx` runs as a separate process (`platform::ChildProcess`): the game still does not read discs (rule 2 of
+[dependencies](../architecture/dependency-rules.md)).
 
-`--content`, `--dev-assets`, `--autotest` y `--control` nunca abren esta pantalla.
+`--content`, `--dev-assets`, `--autotest` and `--control` never open this screen.
 
-## Con el lanzador (beta cerrada)
+## With the launcher (closed beta)
 
-El probador instala el lanzador y lo abre: busca la última versión, descarga el juego y pide el disco como siempre.
-No hay que escribir ninguna clave ni crear ninguna cuenta: la **clave de la beta** va dentro del lanzador
-([cómo](../modulos/apps/launcher.md#la-clave-de-la-beta)).
+The tester installs the launcher and opens it: it looks for the latest version, downloads the game and asks for the
+disc as usual. There is no key to type or account to create: the **beta key** is inside the launcher
+([how](../modules/apps/launcher.md#the-beta-key)).
 
-Si el responsable cambió la clave y el lanzador es muy antiguo, dice «El servidor de la beta ya no acepta este
-lanzador. Actualiza el lanzador o vuelve a instalarlo desde la última versión publicada.»: basta con instalar el
-lanzador de la última versión.
+If the maintainer changed the key and the launcher is very old, it says "The beta server no longer accepts this
+launcher. Update the launcher or reinstall it from the latest release.": installing the latest version of the
+launcher is enough.
 
-## Valores por defecto de la beta
+## Beta defaults
 
-El ruleset `original` con su `active_stage` del bloqueo de historia, el aspecto `original` y la fuente original
-(los que dan los paquetes), y el idioma del sistema cuando es inglés o español. Las partidas, los ajustes y los
-reportes F12 van a los datos del usuario, como en desarrollo.
+The `original` ruleset with its `active_stage` of the story lock, the `original` look and the original font (the ones
+the packs give), and the system language when it is English or Spanish. The saved games, settings and F12 reports go
+to the user's data, as in development.
 
-## Pendiente
+## Pending
 
-- AppImage del juego sin lanzador (el lanzador ya se reparte como AppImage).
+- AppImage of the game without a launcher (the launcher is already distributed as an AppImage).

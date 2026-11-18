@@ -30,7 +30,7 @@ constexpr std::array<std::string_view, 16> ColorTags{
 
 // A cell whose first byte is 0 ends the page's drawing: script_textbox.c drawString2 stops at the
 // byte 0 and drawTextboxStrings draws no more rows, while showTextbox still counts the rows after
-// it (docs/formats/textos.md). The US text has a few, before the leftovers of a longer line. dwx
+// it (docs/formats/texts.md). The US text has a few, before the leftovers of a longer line. dwx
 // writes it {stop} ({stop:raw=XX}); content extracted before ExtractorVersion 11 has {cell:00XX}.
 constexpr std::array<std::string_view, 3> EndingTagPrefixes{"{stop}", "{stop:", "{cell:00"};
 constexpr char TagClose = '}';

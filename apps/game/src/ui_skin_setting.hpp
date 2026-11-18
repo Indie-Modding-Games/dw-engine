@@ -32,9 +32,10 @@ inline constexpr std::string_view SkinPickerDoneCommand = "skin_picker_done";
 inline constexpr std::string_view SkinPickerAskCommand = "title_skin_picker";
 
 // Whether the title asks the player's skin on this boot (ui/skin_picker, after the language box,
-// before the "Press Start" screen): when --ui-skin does not name one and the packs offer more than
-// one. A saved choice still asks, the cursor on it.
-[[nodiscard]] bool asksUiSkin(const std::optional<std::string>& commandLine, std::size_t offered);
+// before the "Press Start" screen): until the player has chosen one, when --ui-skin does not name
+// one and the packs offer more than one. The options page changes it later.
+[[nodiscard]] bool asksUiSkin(const std::optional<std::string>& commandLine,
+                              const std::optional<std::string>& saved, std::size_t offered);
 
 // Changes the player's skin while the game runs: the UI, the published setting and the saved
 // setting.
@@ -57,9 +58,9 @@ private:
   std::optional<std::filesystem::path> settingsFile_;
 };
 
-// A step of the title on each boot of the game (an addition): the skin picker, right after the
-// language box (or, without one, before the "Press Start" screen), until a skin is confirmed; asked
-// once a run, so the title shown again later in it goes straight on.
+// A step of the title on the boots before a skin is chosen (an addition): the skin picker, right
+// after the language box (or, without one, before the "Press Start" screen), until a skin is
+// confirmed; asked once a run, so the title shown again later in it goes straight on.
 class SkinPickerStep {
 public:
   explicit SkinPickerStep(bool asks) : asks_{asks} {}

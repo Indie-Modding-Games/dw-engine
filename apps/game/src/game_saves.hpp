@@ -34,7 +34,7 @@ struct Playthrough {
   std::chrono::sys_seconds started;
 };
 
-// The saves the player asks for in the game (docs/architecture/guardar-y-cargar.md, 3.6 and 4):
+// The saves the player asks for in the game (docs/architecture/save-and-load.md, 3.6 and 4):
 // to the playthrough's slot, once the slot is checked to still hold this playthrough, so a save
 // never writes over what changed outside the game without asking. It knows no UI.
 class GameSaves {

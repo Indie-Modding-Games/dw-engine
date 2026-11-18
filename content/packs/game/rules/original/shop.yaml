@@ -1,14 +1,14 @@
-# La tienda que abre la historia (script_interp.c: CALL_ROUTINE 8 -> script_common.c: openShop; packages/session: ShopCounter).
-# El surtido no está aquí: el objeto i se vende mientras el trigger 0x180 + i está puesto (inventory: shop).
+# The shop the story opens (script_interp.c: CALL_ROUTINE 8 -> script_common.c: openShop; packages/session: ShopCounter).
+# The stock is not here: item i is sold while trigger 0x180 + i is set (inventory: shop).
 
-# getShopkeeperLine (script_common.c:1174): las frases de un tendero son la sección de MAPHEAD 0x4c4 más su lugar en
-# data/shops shopkeepers; una tienda sin dueño (variable 254 = 0xFF) usa la sección 0x4ce.
+# getShopkeeperLine (script_common.c:1174): a shopkeeper's lines are the MAPHEAD section 0x4c4 plus its place in
+# data/shops shopkeepers; a shop with no owner (variable 254 = 0xFF) uses section 0x4ce.
 keeper_lines_section: 1220
 ownerless_lines_section: 1230
-# CALL_ROUTINE 8 abre la tienda de reciclaje (openRecycleShop) mientras este trigger está puesto.
+# CALL_ROUTINE 8 opens the recycle shop (openRecycleShop) while this trigger is set.
 recycle_trigger: 3
-# RECYCLABLE_ITEMS (script_common.c:350): lo que una derrota quita de estos objetos va a la tienda de reciclaje
-# (handleItemLoss), que guarda hasta recycle_max de cada uno.
+# RECYCLABLE_ITEMS (script_common.c:350): what a defeat takes away of these items goes to the recycle shop
+# (handleItemLoss), which keeps up to recycle_max of each.
 recyclable:
   - { from: 11, to: 12 }
   - { from: 23, to: 31 }
@@ -21,9 +21,9 @@ recyclable:
   - { from: 70, to: 76 }
   - { from: 78, to: 124 }
 recycle_max: 99
-# tickItemMenuAmountBox (script_common.c:1457): el botón alternativo mueve la cantidad de diez en diez.
+# tickItemMenuAmountBox (script_common.c:1457): the alternate button moves the amount in steps of ten.
 amount_step: 10
-# openShop: el número de cada frase dentro de la sección del tendero (resolveMapHeadEntry).
+# openShop: the number of each line within the shopkeeper's section (resolveMapHeadEntry).
 lines:
   greeting: 0
   nothing_to_sell: 1
@@ -36,6 +36,6 @@ lines:
   thanks: 10
   anything_else: 11
   discount: 13
-  # openRecycleShop (script_menu.c:584): sus opciones (comprar o salir) y lo que dice cuando ya no le queda nada.
+  # openRecycleShop (script_menu.c:584): its options (buy or leave) and what it says when nothing is left.
   recycle_choices: 3
   sold_out: 12

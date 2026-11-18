@@ -28,7 +28,7 @@ class VirtualFileSystem;
 namespace dwe::ruleset {
 
 // The sections: the species patches, the Ultimate to Mega step, which patches the same way, and
-// every species as a partner (docs/modulos/game/evoluciones-extra.md), whose patches are fallback
+// every species as a partner (docs/modules/game/extra-evolutions.md), whose patches are fallback
 // targets and which adds wake-up specials.
 inline constexpr std::string_view SpeciesExtraSection = "species_extra";
 inline constexpr std::string_view MegaStepSection = "mega_step";

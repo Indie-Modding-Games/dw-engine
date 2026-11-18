@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: all_species",
-  "description": "rules/<id>/all_species.yaml: every species as a partner (docs/modulos/game/evoluciones-extra.md): species patches in the format of species_extra's, as fallback targets the natural check picks only when none of the original's targets passes, for the species no other section patches; and wake-up specials added after the evolution section's (packages/engine/ruleset: species_extra.hpp; packages/game/evolution: rules.hpp).",
+  "description": "rules/<id>/all_species.yaml: every species as a partner (docs/modules/game/extra-evolutions.md): species patches in the format of species_extra's, as fallback targets the natural check picks only when none of the original's targets passes, for the species no other section patches; and wake-up specials added after the evolution section's (packages/engine/ruleset: species_extra.hpp; packages/game/evolution: rules.hpp).",
   "type": "object",
   "required": [],
   "additionalProperties": false,

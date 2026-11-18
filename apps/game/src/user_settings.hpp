@@ -21,7 +21,7 @@ struct UserSettings {
   // chosen yet.
   std::optional<std::string> uiSkin;
   // The UI addon on (ui_addon: the id of a whole UI under ui/addons, default for the game's own);
-  // the game's own when not chosen yet (docs/modding/interfaces.md).
+  // the game's own when not chosen yet (docs/modding/ui-addons.md).
   std::optional<std::string> uiAddon;
   // Whether the UI plugins are on (ui_plugins: true, false); on when not chosen yet.
   std::optional<bool> uiPlugins;
@@ -152,6 +152,9 @@ struct UserSettings {
   // The difficulty (difficulty: normal, easy; rule_options.hpp): a level of the ruleset's
   // difficulty section; normal, the original's, when not chosen yet.
   std::optional<std::string> difficulty = std::nullopt;
+  // The shop job (shop_job_mode: improved, original; play_session.hpp): improved when not chosen
+  // yet.
+  std::optional<std::string> shopJobMode = std::nullopt;
   // Skip the evolution (skip_evolution: true, false; EvolutionScene::skip): confirm or cancel ends
   // the evolution's scene at once; off when not chosen yet.
   std::optional<bool> skipEvolution = std::nullopt;

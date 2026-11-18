@@ -1,43 +1,43 @@
-# El menú del compañero (ui/partner_menu): el estado, la bolsa y los cuidados. Las etiquetas propias del original
-# (HP, MP, las estadísticas, las opciones de objeto, los órdenes, la pregunta de tirar, los bits) salen de sus tablas.
+# The partner menu (ui/partner_menu): status, bag and care. The original's own labels
+# (HP, MP, the stats, the item options, the orders, the drop question, the bits) come from its tables.
 tab.status: "Estado"
 tab.items: "Objetos"
 tab.care: "Cuidados"
-# Los nombres de las páginas del menú compacto (skin.yaml layout: partner_menu: pages: compact).
+# The names of the compact menu pages (skin.yaml layout: partner_menu: pages: compact).
 nav.partner: "Compañero"
 nav.bag: "Bolsa"
-# La especie del compañero, bajo su nombre propio (game_menu.c: drawDigimonStatsStrings).
+# The partner's species, under its own name (game_menu.c: drawDigimonStatsStrings).
 species: "Especie"
 age: "Edad"
-# {days} es la edad del compañero en días; {days:día|días} elige la palabra por la cuenta (1 día, 2 días).
+# {days} is the partner's age in days; {days:día|días} picks the word by the count (1 día, 2 días).
 age.value: "{days} {days:día|días}"
 weight: "Peso"
-# {weight} es el peso del compañero.
+# {weight} is the partner's weight.
 weight.value: "{weight} G"
-# {lives} son las vidas que le quedan al compañero.
+# {lives} are the lives the partner has left.
 lives: "Vidas {lives}"
 happiness: "Felicidad"
 discipline: "Disciplina"
 virus: "Virus"
-# Los extras de la ficha (la opción status_extras), que el original esconde: la barra de cansancio, la cuenta de
-# errores de cuidado y de combates, las horas en que está despierto, las horas de vida que le quedan y el contador de
-# evolución.
+# The sheet's extras (the status_extras option), which the original hides: the tiredness bar, the count of
+# care mistakes and of battles, the hours it is awake, the hours of life it has left and the
+# evolution counter.
 tiredness: "Cansancio"
 care_mistakes: "Errores"
 battles: "Combates"
 awake: "Despierto"
-# {wake} y {sleepy} son las horas a las que se despierta y le entra sueño, como 08:00.
+# {wake} and {sleepy} are the hours at which it wakes up and gets sleepy, like 08:00.
 awake.value: "{wake}-{sleepy}"
-# {value} es un número de 0 a 100 (de -100 a 100 la felicidad) que la ficha escribe como porcentaje: felicidad,
-# disciplina y cansancio.
+# {value} is a number from 0 to 100 (-100 to 100 for happiness) that the sheet writes as a percentage: happiness,
+# discipline and tiredness.
 percent.value: "{value}%"
 lifetime: "Le quedan"
 evolution: "Evolución"
-# {hours} es una cuenta de horas de juego.
+# {hours} is a count of game hours.
 hours.value: "{hours} h"
-# {hours} es el contador de evolución y {check} las horas desde las que su nivel mira la evolución.
+# {hours} is the evolution counter and {check} the hours from which its level looks at evolution.
 evolution.value: "{hours}/{check} h"
-# La comida favorita de su especie (la opción favorite_food), con el nombre del objeto; «Ninguna» si no tiene.
+# The favorite food of its species (the favorite_food option), with the item's name; «Ninguna» if it has none.
 favorite_food: "Comida favorita"
 favorite_food.none: "Ninguna"
 condition.none: "En buena forma"
@@ -49,9 +49,9 @@ condition.sulking: "Enfurruñado"
 condition.injured: "Herido"
 condition.sick: "Enfermo"
 bag.empty: "-"
-# {name} es el objeto que se mueve.
+# {name} is the item being moved.
 bag.move_prompt: "¿Dónde pones {name}?"
-# {name} es el nombre del objeto en todos los resultados de la bolsa.
+# {name} is the item's name in all the bag results.
 bag_result.used: "Has usado {name}."
 bag_result.refused: "Tu compañero no quiere {name}."
 bag_result.not_usable_here: "{name} no se puede usar aquí."
@@ -68,26 +68,26 @@ care.training_hint: "Se entrena en los lugares de entrenamiento del campo."
 care_result.praised: "Has felicitado a tu compañero."
 care_result.scolded: "Has regañado a tu compañero."
 
-# Secciones de la ficha DIGIMON.
+# Sections of the DIGIMON sheet.
 section.profile: "Perfil"
 section.condition: "Condición"
 section.parameter: "Parámetros"
 name: "Nombre"
-# Los rótulos pequeños de las marcas del perfil y de los datos de una técnica, donde el original tiene dibujos.
+# The small labels of the profile marks and of a technique's data, where the original has drawings.
 profile.special: "Especial"
 profile.type: "Tipo"
 profile.active: "Activo"
 tech.data: "Datos"
 
-# Técnicas equipadas y golpe final.
+# Equipped techniques and final blow.
 tab.tech: "Téc."
 tech.set: "Técnicas"
 tech.final: "Final"
 tech.techs: "Técnicas"
 tech.help_first: "Ayuda"
 tech.help_second: "téc."
-# La página de ayuda del cambio de técnicas (game_menu.c: renderDigimonMovesView, MENU_STATE 8): las dos pistas,
-# partidas donde la página dibuja una casilla de técnica y la tecla de confirmar.
+# The help page of the technique change (game_menu.c: renderDigimonMovesView, MENU_STATE 8): the two hints,
+# split where the page draws a technique slot and the confirm key.
 tech.help_select_before: "Elegir: elige"
 tech.help_select_after: "para equiparla"
 tech.help_cancel_before: "Quitar:"
@@ -105,7 +105,7 @@ tech.effect.2: "Confusión"
 tech.effect.3: "Aturdir"
 tech.effect.4: "Aplanar"
 
-# Las filas de la cuadrícula de técnicas, por especialidad (el original las dibuja en inglés).
+# The rows of the technique grid, by specialty (the original draws them in English).
 tech.category.0: "Fuego"
 tech.category.1: "Lucha"
 tech.category.2: "Aire"

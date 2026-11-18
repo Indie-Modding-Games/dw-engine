@@ -1,4 +1,4 @@
-// HD scenery (docs/modulos/apps/game.md, «Escenarios en alta definición»): the setting, and that it
+// HD scenery (docs/modules/apps/game.md, «HD scenery»): the setting, and that it
 // changes only the look of the field, never what the player walks into.
 
 #include <dwe/assets/map_images.hpp>

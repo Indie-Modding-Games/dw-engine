@@ -16,7 +16,7 @@ const MOST_LISTED_MAPS: usize = 200;
 
 pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
     let mut actions = Vec::new();
-    ui.heading(text::INSPECTOR);
+    ui.heading(text::inspector());
     match app.mapper.selection {
         Some(Selection::Exit(exit)) => exit_fields(app, ui, exit, &mut actions),
         Some(Selection::Door(slot)) => crate::places::door_fields(app, ui, slot, &mut actions),
@@ -27,7 +27,7 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
             }
         }
         None => {
-            ui.weak(text::NOTHING_SELECTED);
+            ui.weak(text::nothing_selected());
         }
     }
     crate::places::add_buttons(app, ui, &mut actions);
@@ -71,27 +71,30 @@ fn exit_fields(app: &mut MapperApp, ui: &mut egui::Ui, exit: i32, actions: &mut 
         return;
     };
     let mut edited: Warp = warp.clone();
-    ui.strong(format!("{} {exit}", text::EXIT));
+    ui.strong(format!("{} {exit}", text::exit()));
     let mut changed = false;
     egui::Grid::new("exit_fields")
         .num_columns(2)
         .show(ui, |ui| {
-            ui.label(text::TARGET_MAP);
+            ui.label(text::target_map());
             ui.vertical(|ui| {
                 ui.add(
                     egui::TextEdit::singleline(&mut app.target_filter)
-                        .hint_text(text::FILTER_HINT)
+                        .hint_text(text::filter_hint())
                         .desired_width(150.0),
                 );
                 let shown = edited
                     .target_map_id
                     .clone()
-                    .unwrap_or_else(|| text::TARGET_MAP_NONE.to_owned());
+                    .unwrap_or_else(|| text::target_map_none().to_owned());
                 egui::ComboBox::from_id_salt("target_map")
                     .selected_text(shown)
                     .show_ui(ui, |ui| {
                         if ui
-                            .selectable_label(edited.target_map_id.is_none(), text::TARGET_MAP_NONE)
+                            .selectable_label(
+                                edited.target_map_id.is_none(),
+                                text::target_map_none(),
+                            )
                             .clicked()
                         {
                             edited.target_map_id = None;
@@ -124,18 +127,18 @@ fn exit_fields(app: &mut MapperApp, ui: &mut egui::Ui, exit: i32, actions: &mut 
                     });
             });
             ui.end_row();
-            ui.label(text::TARGET_INDEX);
+            ui.label(text::target_index());
             ui.monospace(edited.target_map.to_string());
             ui.end_row();
-            ui.label(text::TARGET_EXIT);
+            ui.label(text::target_exit());
             let response = ui.add(egui::DragValue::new(&mut edited.target_exit).range(-1..=9));
             grouped(&response, actions);
             changed |= response.changed();
             ui.end_row();
-            ui.label(text::ARRIVAL);
+            ui.label(text::arrival());
             changed |= vector(ui, &mut edited.spawn, actions);
             ui.end_row();
-            ui.label(text::FACING);
+            ui.label(text::facing());
             let response = ui.add(egui::DragValue::new(&mut edited.rotation).range(0..=4095));
             grouped(&response, actions);
             changed |= response.changed();
@@ -149,12 +152,12 @@ fn exit_fields(app: &mut MapperApp, ui: &mut egui::Ui, exit: i32, actions: &mut 
             .ok()
             .and_then(|exit| mapper.bands.exit_trigger(exit));
         if let Some(value) = trigger
-            && ui.button(text::PAINT_EXIT_CELLS).clicked()
+            && ui.button(text::paint_exit_cells()).clicked()
         {
             actions.push(Action::SetPaintValue(value));
             actions.push(Action::SetTool(Tool::Brush));
         }
-        if ui.button(text::ERASE_CELLS).clicked() {
+        if ui.button(text::erase_cells()).clicked() {
             actions.push(Action::SetPaintValue(tools::FLOOR));
             actions.push(Action::SetTool(Tool::Brush));
         }
@@ -164,7 +167,7 @@ fn exit_fields(app: &mut MapperApp, ui: &mut egui::Ui, exit: i32, actions: &mut 
             .iter()
             .any(|mark| mark.exit == exit && mark.target.destination().is_some());
         if ui
-            .add_enabled(leads, egui::Button::new(text::OPEN_TARGET))
+            .add_enabled(leads, egui::Button::new(text::open_target()))
             .clicked()
         {
             actions.push(Action::FollowExit(exit));
@@ -185,8 +188,8 @@ fn live_exit_tests(app: &MapperApp, ui: &mut egui::Ui, exit: i32) {
     ui.horizontal_wrapped(|ui| {
         let cell = app.mapper.exit_cell(exit);
         if ui
-            .add_enabled(cell.is_some(), egui::Button::new(text::LIVE_TEST_EXIT))
-            .on_hover_text(text::LIVE_TEST_EXIT_HINT)
+            .add_enabled(cell.is_some(), egui::Button::new(text::live_test_exit()))
+            .on_hover_text(text::live_test_exit_hint())
             .clicked()
             && let Some(cell) = cell
         {
@@ -195,7 +198,7 @@ fn live_exit_tests(app: &MapperApp, ui: &mut egui::Ui, exit: i32) {
                 .place(mapper_core::live::place_player(at, rotation), true);
         }
         if let Some(at) = app.mapper.place_at_arrival(exit)
-            && ui.button(text::LIVE_TO_ARRIVAL).clicked()
+            && ui.button(text::live_to_arrival()).clicked()
         {
             app.live.place(at, false);
         }
@@ -208,7 +211,7 @@ fn npc_fields(app: &MapperApp, ui: &mut egui::Ui, slot: usize, actions: &mut Vec
         return;
     };
     let mut edited: Npc = npc.clone();
-    ui.strong(format!("{} {slot}", text::NPC));
+    ui.strong(format!("{} {slot}", text::npc()));
     let mut changed = false;
     egui::Grid::new("npc_fields").num_columns(2).show(ui, |ui| {
         for (label, value) in [
@@ -221,16 +224,16 @@ fn npc_fields(app: &MapperApp, ui: &mut egui::Ui, slot: usize, actions: &mut Vec
             changed |= number(ui, value, actions);
             ui.end_row();
         }
-        ui.label(text::POSITION);
+        ui.label(text::position());
         changed |= vector(ui, &mut edited.position, actions);
         ui.end_row();
-        ui.label(text::FACING);
+        ui.label(text::facing());
         let response = ui.add(egui::DragValue::new(&mut edited.rotation.y).range(0..=4095));
         grouped(&response, actions);
         changed |= response.changed();
         ui.end_row();
     });
-    egui::CollapsingHeader::new(text::NPC_FIELDS)
+    egui::CollapsingHeader::new(text::npc_fields())
         .id_salt("npc_other")
         .show(ui, |ui| {
             egui::Grid::new("npc_other").num_columns(2).show(ui, |ui| {
@@ -259,8 +262,8 @@ fn npc_fields(app: &MapperApp, ui: &mut egui::Ui, slot: usize, actions: &mut Vec
     path_fields(app, ui, slot, npc, actions);
     let last = slot + 1 == map.document.npcs.len();
     if ui
-        .add_enabled(last, egui::Button::new(text::REMOVE_NPC))
-        .on_disabled_hover_text(text::REMOVE_NPC_HINT)
+        .add_enabled(last, egui::Button::new(text::remove_npc()))
+        .on_disabled_hover_text(text::remove_npc_hint())
         .clicked()
     {
         actions.push(Action::RemoveNpc);
@@ -276,7 +279,7 @@ fn path_fields(
     actions: &mut Vec<Action>,
 ) {
     ui.add_space(4.0);
-    ui.strong(text::PATH);
+    ui.strong(text::path());
     let length = tools::path_length(npc);
     let selected = match app.mapper.selection {
         Some(Selection::Waypoint { part, .. }) => Some(part),
@@ -293,9 +296,9 @@ fn path_fields(
             }
             let kind = npc.ai_sections[part];
             let kind_name = |kind: i32| match kind {
-                PART_WAIT => text::PART_WAIT,
-                PART_RUN => text::PART_RUN,
-                _ => text::PART_WALK,
+                PART_WAIT => text::part_wait(),
+                PART_RUN => text::part_run(),
+                _ => text::part_walk(),
             };
             egui::ComboBox::from_id_salt(("part_kind", part))
                 .selected_text(kind_name(kind))
@@ -315,7 +318,7 @@ fn path_fields(
             let changed = if kind == PART_WAIT {
                 ui.horizontal(|ui| {
                     let changed = number(ui, &mut point.x, actions);
-                    ui.weak(text::FRAMES);
+                    ui.weak(text::frames_unit());
                     changed
                 })
                 .inner
@@ -331,7 +334,7 @@ fn path_fields(
             }
             ui.horizontal(|ui| {
                 if ui
-                    .add_enabled(part > 0, egui::Button::new(text::UP))
+                    .add_enabled(part > 0, egui::Button::new(text::up()))
                     .clicked()
                 {
                     actions.push(Action::MoveWaypoint {
@@ -341,7 +344,7 @@ fn path_fields(
                     });
                 }
                 if ui
-                    .add_enabled(part + 1 < length, egui::Button::new(text::DOWN))
+                    .add_enabled(part + 1 < length, egui::Button::new(text::down()))
                     .clicked()
                 {
                     actions.push(Action::MoveWaypoint {
@@ -350,7 +353,7 @@ fn path_fields(
                         later: true,
                     });
                 }
-                if ui.button(text::REMOVE_POINT).clicked() {
+                if ui.button(text::remove_point()).clicked() {
                     actions.push(Action::RemoveWaypoint { slot, part });
                 }
             });
@@ -359,7 +362,7 @@ fn path_fields(
     });
     let full = length >= dwe_map::save::NPC_PATH_PARTS;
     if ui
-        .add_enabled(!full, egui::Button::new(text::ADD_POINT))
+        .add_enabled(!full, egui::Button::new(text::add_point()))
         .clicked()
     {
         actions.push(Action::AddWaypoint { slot, at: None });
@@ -372,7 +375,7 @@ fn read_only(app: &MapperApp, ui: &mut egui::Ui) {
     let document = &map.document;
     ui.add_space(6.0);
     let vector = |value: RawVec3| format!("{}, {}, {}", value.x, value.y, value.z);
-    egui::CollapsingHeader::new(format!("{} · {}", text::CAMERA, text::READ_ONLY))
+    egui::CollapsingHeader::new(format!("{} · {}", text::camera(), text::read_only()))
         .id_salt("camera")
         .show(ui, |ui| {
             let camera = &document.camera;
@@ -390,9 +393,9 @@ fn read_only(app: &MapperApp, ui: &mut egui::Ui) {
         });
     egui::CollapsingHeader::new(format!(
         "{} ({}) · {}",
-        text::LIGHTS,
+        text::lights(),
         document.lights.len(),
-        text::READ_ONLY
+        text::read_only()
     ))
     .id_salt("lights")
     .show(ui, |ui| {
@@ -412,8 +415,8 @@ fn read_only(app: &MapperApp, ui: &mut egui::Ui) {
     });
     egui::CollapsingHeader::new(format!(
         "{} ({sprites} / {instances}) · {}",
-        text::OBJECTS,
-        text::READ_ONLY
+        text::objects(),
+        text::read_only()
     ))
     .id_salt("objects")
     .show(ui, |ui| {
@@ -423,7 +426,7 @@ fn read_only(app: &MapperApp, ui: &mut egui::Ui) {
                 ui.monospace(index.to_string());
                 ui.monospace(format!("{}, {}", instance.x, instance.y));
                 ui.monospace(format!("flag {}", instance.flag));
-                ui.monospace(format!("{} {}", instance.frames.len(), text::FRAMES));
+                ui.monospace(format!("{} {}", instance.frames.len(), text::frames_unit()));
                 ui.end_row();
             }
         });

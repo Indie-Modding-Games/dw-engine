@@ -1,4 +1,4 @@
-//! Partial overrides of a map's data (docs/formats/mapas.md, "Parches";
+//! Partial overrides of a map's data (docs/formats/maps.md, "Parches";
 //! content/schemas/map_patch.schema.json), applied exactly as the engine applies them
 //! (packages/engine/assets/src/map_patch.cpp). A pack ships `map/<id>/patch` next to the map's
 //! `map/<id>/data` to change one exit, one NPC slot, an object's sprite or instance, a light or the

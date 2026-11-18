@@ -1,9 +1,9 @@
-# The HUD's minimap stays clear of every window (docs/modulos/apps/game.md, «Minimapa bajo las ventanas»): with the
+# The HUD's minimap stays clear of every window (docs/modules/apps/game.md, «Minimap under the windows»): with the
 # minimap on at its largest size, the pause menu's pages and the partner's page lie over nothing another document
 # draws (expect_clear) at 1280x720, 1920x1080 and 1024x768: where a window reaches the minimap's corner, the minimap
 # hides while it is open (has_class hud#minimap.covered) and shows again once it closes. Every capture checks that the
 # texts fit (text_fit); the partner's page has no capture here (its modern layout is another route's). The round
-# minimap shows by default with either look; it runs with both, and once per language. How to run it: docs/guides/prueba-vertical.md.
+# minimap shows by default with either look; it runs with both, and once per language. How to run it: docs/guides/vertical-slice.md.
 name: minimap-clear
 device: keyboard
 timeout: 300

@@ -156,7 +156,7 @@ TEST_CASE("the user's disc: the base pack the extractor writes mounts, validates
     REQUIRE_MESSAGE(parsed.has_value(), id);
     CHECK_MESSAGE(dwe::formats::test::checkAgainstSchema(*parsed, id.substr(5)).empty(), id);
   }
-  // The original's text is a flat table of "<block>.<slot>" keys (docs/formats/textos.md).
+  // The original's text is a flat table of "<block>.<slot>" keys (docs/formats/texts.md).
   const auto mainText = std::ranges::find(run->outputs, "text/en/main",
                                           [](const OutputFile& output) { return output.id.str(); });
   REQUIRE(mainText != run->outputs.end());

@@ -599,7 +599,7 @@ int runGame(const Options& requested) {
     core::logError("{}", renderer.error().message);
     return EXIT_FAILURE;
   }
-  // Safe mode (docs/modding/interfaces.md): --safe-ui, or Shift held as the game starts, keeps the
+  // Safe mode (docs/modding/ui-addons.md): --safe-ui, or Shift held as the game starts, keeps the
   // game's own UI and leaves the player's addons folder out.
   options.safeUi = options.safeUi || platform::shiftHeld();
   auto content = mountGameContent(options, !options.safeUi);
@@ -727,7 +727,7 @@ int runGame(const Options& requested) {
     core::logError("{}", fade.error().message);
     return EXIT_FAILURE;
   }
-  // The original's movies (docs/architecture/peliculas.md). None in an autotest, whose routes start
+  // The original's movies (docs/architecture/movies.md). None in an autotest, whose routes start
   // where they say, unless its route asks for them (movies: true).
   std::optional<MovieRules> movieRules;
   std::unique_ptr<MovieScreen> movies;
@@ -779,8 +779,8 @@ int runGame(const Options& requested) {
     return EXIT_FAILURE;
   }
   settings.uiScale = (*ui)->scale();
-  // La caja de nombres del prólogo oculta sus documentos en su destructor: debe destruirse
-  // antes que la UI (los locales van en orden inverso).
+  // The prologue's naming box hides its documents in its destructor: it must be destroyed
+  // before the UI (locals go in reverse order).
   std::unique_ptr<NewGameInterview> interview;
   // The skin goes on before the documents load, so they are styled once.
   applyStartUiSkin(**ui, startUiSkin(options.uiSkin, userSettings.uiSkin));
@@ -800,9 +800,12 @@ int runGame(const Options& requested) {
   MenuSounds menuSounds{sound, files};
   PauseBox pauseBox;
   (*ui)->setSetting(LanguageSetting, texts->language());
-  // The original look's title screen asks for the language before each "Press Start" screen
-  // (title.language_first; an addition, as a remaster's); an autotest only when its route asks.
-  (*ui)->setSetting("title.language_first", autotest == nullptr || autotest->asksLanguageFirst());
+  // The original look's title screen asks for the language before the "Press Start" screen
+  // (title.language_first; an addition, as a remaster's) until the player has chosen one; an
+  // autotest only when its route asks.
+  (*ui)->setSetting(LanguageFirstSetting,
+                    autotest ? autotest->asksLanguageFirst()
+                             : asksLanguage(options.language, userSettings.language));
   MinimapChanger minimapChanger{userSettings, settingsFile};
   GraphicsChanger graphics{userSettings, settingsFile, startGraphics};
   // The title's pictures, smoothed with the texture filter «upscaled», keep what the upscaler made
@@ -835,6 +838,8 @@ int runGame(const Options& requested) {
   (*ui)->setSetting(GymSessionsSetting, static_cast<double>(gymSessions()));
   (*ui)->setSetting(DifficultySetting,
                     userSettings.difficulty.value_or(std::string{DifficultyNormal}));
+  (*ui)->setSetting(ShopJobModeSetting,
+                    userSettings.shopJobMode.value_or(std::string{ShopJobImproved}));
   (*ui)->setSetting(AutosaveSetting, userSettings.autosave.value_or(true));
   // The options only a game applies, for the title's options page (title_options.hpp).
   publishGameToggles(**ui, userSettings);
@@ -907,6 +912,12 @@ int runGame(const Options& requested) {
   std::optional<std::string> consoleUiAddon;
   (*scripts)->bindCommand(
       UiAddonSetting, [&consoleUiAddon](std::string_view id) { consoleUiAddon = std::string{id}; });
+  // The console's and the routes' shop_job_mode("improved"|"original"), the options row's setting,
+  // applied between frames in the same way.
+  std::optional<std::string> consoleShopJobMode;
+  (*scripts)->bindCommand(ShopJobModeSetting, [&consoleShopJobMode](std::string_view mode) {
+    consoleShopJobMode = std::string{mode};
+  });
   // The console's ui_skin("<id>"), the menus' skin setting, applied between frames in the same way.
   std::optional<std::string> consoleUiSkin;
   (*scripts)->bindCommand(ui::UiSkinSetting, [&consoleUiSkin](std::string_view id) {
@@ -948,7 +959,7 @@ int runGame(const Options& requested) {
                                start);
   }};
   TitleScreen title{files, options, !autotest, **ui};
-  // «Versus en línea» from the title's menu (versus_screen.hpp): no game behind it.
+  // "Online versus" from the title's menu (versus_screen.hpp): no game behind it.
   VersusScreen versus{files, options, !autotest, **ui, renderer->get(), &sound};
   CoopScreen coop{files, options, **ui};
   std::unique_ptr<CoopGameplayBridge> coopBridge;
@@ -958,12 +969,12 @@ int runGame(const Options& requested) {
   std::uint32_t coopWorldTick = 0;
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
-  // Each boot asks the UI skin after the language box (an addition), the cursor on the saved one;
+  // A boot asks the UI skin after the language box (an addition) until the player has chosen one;
   // an autotest only when its route asks, and a run with no settings to keep it in (the control
   // channel's) never.
   title.setAsksSkin(autotest ? autotest->asksSkinFirst()
-                             : settingsFile &&
-                                   asksUiSkin(options.uiSkin, (*ui)->skins().skins().size()));
+                             : settingsFile && asksUiSkin(options.uiSkin, userSettings.uiSkin,
+                                                          (*ui)->skins().skins().size()));
   // What waits for the movie that plays: the title, or a game to start (main.c: main).
   std::optional<PlayStart> startAfterMovie;
   // The new game that waits for the opening's questions.
@@ -1347,6 +1358,21 @@ int runGame(const Options& requested) {
         },
         options.controlPaused);
   }
+  // The shop job's mode (play_session.hpp), from the options row or the console: improved or
+  // original; anything else changes nothing.
+  const auto changeShopJobMode = [&](std::string_view mode) {
+    if (mode == ShopJobImproved || mode == ShopJobOriginal) {
+      userSettings.shopJobMode = std::string{mode};
+      if (settingsFile) {
+        saveUserSettings(*settingsFile, userSettings);
+      }
+      if (PlaySession* play = flow.playing()) {
+        play->applyPlayOptions();
+      }
+    }
+    (*ui)->setSetting(ShopJobModeSetting,
+                      userSettings.shopJobMode.value_or(std::string{ShopJobImproved}));
+  };
   // A route run with the control channel ends without closing the game: the channel goes on.
   bool routeOver = false;
   // Whether the pad's Select opened the pause menu on its options page: a settings press closes it
@@ -1563,7 +1589,7 @@ int runGame(const Options& requested) {
       const bool fadeProtected = !menuHeld && flow.playing()->fadeProtected();
       (*ui)->setMenuShut(menuShut);
       // Select/Back on a pad: the game menu's options page, straight away
-      // (docs/modulos/apps/game.md, «Opciones en partida»). From Start's pause it ends the pause
+      // (docs/modules/apps/game.md, «In-game options»). From Start's pause it ends the pause
       // first; with the menu open it switches it to the options page (or closes it when Select
       // opened it there); over another menu or where the menu is held it does nothing.
       const bool settingsAsked =
@@ -1903,6 +1929,12 @@ int runGame(const Options& requested) {
                           userSettings.difficulty.value_or(std::string{DifficultyNormal}));
         continue;
       }
+      if (command.name == ShopJobModeSetting) {
+        if (const std::string* mode = std::get_if<std::string>(&command.value)) {
+          changeShopJobMode(*mode);
+        }
+        continue;
+      }
       if (command.name == WalkControlSetting) {
         PlaySession* play = flow.playing();
         walkControl.change(command.value, play != nullptr ? &play->scene().field() : nullptr);
@@ -2098,6 +2130,9 @@ int runGame(const Options& requested) {
     }
     for (const ui::UiCommand& command : std::exchange(consoleGraphics, {})) {
       graphics.handle(command, **ui);
+    }
+    if (consoleShopJobMode) {
+      changeShopJobMode(*std::exchange(consoleShopJobMode, std::nullopt));
     }
     if (consoleBattleSpeed) {
       battleSpeed.change(ui::UiValue{*std::exchange(consoleBattleSpeed, std::nullopt)});

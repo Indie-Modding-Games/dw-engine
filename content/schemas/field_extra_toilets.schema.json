@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Field extra toilets",
-  "description": "field/extra_toilets.yaml of the game pack: toilet booths placed on any map with the extra toilets option (an engine improvement, docs/modulos/apps/game.md). One entry gives the drawn booth, its solid cells, the toilet trigger cells in front and the toilet routine. Positions and rotations are on the original's axes and units, like the map table's toilets.",
+  "description": "field/extra_toilets.yaml of the game pack: toilet booths placed on any map with the extra toilets option (an engine improvement, docs/modules/apps/game.md). One entry gives the drawn booth, its solid cells, the toilet trigger cells in front and the toilet routine. Positions and rotations are on the original's axes and units, like the map table's toilets.",
   "type": "object",
   "required": [
     "model",

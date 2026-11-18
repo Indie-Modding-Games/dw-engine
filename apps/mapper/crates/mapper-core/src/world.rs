@@ -1,4 +1,4 @@
-//! The world as a graph (docs/modulos/apps/mapper.md, "Mundo"): the maps of the stack, the exits
+//! The world as a graph (docs/modules/apps/mapper.md, "World"): the maps of the stack, the exits
 //! and script warps between them, what is wrong with them, and where to draw each map.
 //!
 //! The graph is built from the maps as the game loads them (with their patches) and the story as
@@ -149,23 +149,23 @@ impl WorldCheck {
             Some(EdgeKind::Exit { exit }) => format!("{}:{exit}", self.map),
             Some(EdgeKind::Script {
                 script, section, ..
-            }) => format!("{} ({} {script}:{section})", self.map, text::SCRIPT_WARP),
+            }) => format!("{} ({} {script}:{section})", self.map, text::script_warp()),
             None => self.map.clone(),
         };
         match &self.kind {
             CheckKind::MissingMap { target } => {
-                format!("{via}: {} '{target}'", text::CHECK_MISSING_MAP)
+                format!("{via}: {} '{target}'", text::check_missing_map())
             }
             CheckKind::MissingExit { target, exit } => {
-                format!("{via}: {} {target}:{exit}", text::CHECK_MISSING_EXIT)
+                format!("{via}: {} {target}:{exit}", text::check_missing_exit())
             }
             CheckKind::Fallback { target } => {
-                format!("{via}: {} '{target}'", text::CHECK_FALLBACK)
+                format!("{via}: {} '{target}'", text::check_fallback())
             }
-            CheckKind::OneWay { target } => format!("{via}: {} {target}", text::CHECK_ONE_WAY),
-            CheckKind::Unreachable => format!("{via}: {}", text::CHECK_UNREACHABLE),
+            CheckKind::OneWay { target } => format!("{via}: {} {target}", text::check_one_way()),
+            CheckKind::Unreachable => format!("{via}: {}", text::check_unreachable()),
             CheckKind::ArrivalInWall { exit } => {
-                format!("{}:{exit}: {}", self.map, text::CHECK_ARRIVAL_IN_WALL)
+                format!("{}:{exit}: {}", self.map, text::check_arrival_in_wall())
             }
         }
     }
@@ -252,7 +252,7 @@ impl WorldGraph {
                 area: entry
                     .map(|entry| source.table.display_name(entry).to_owned())
                     .filter(|name| !name.is_empty())
-                    .unwrap_or_else(|| text::UNNAMED_GROUP.to_owned()),
+                    .unwrap_or_else(|| text::unnamed_group().to_owned()),
                 area_index: entry.map_or(-1, |entry| entry.loading_name),
                 title: added_map_title(source.vfs, id),
                 added: id.contains(':'),

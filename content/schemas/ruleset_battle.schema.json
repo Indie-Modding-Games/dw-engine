@@ -1296,7 +1296,7 @@
           "type": "integer"
         }
       },
-      "description": "Engine values for what the original's animations decide (Hueco)."
+      "description": "Engine values for what the original's animations decide (Gap)."
     },
     "versus": {
       "type": "object",

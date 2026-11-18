@@ -1,6 +1,6 @@
 # The language route (R3.9): the main menu, a change of language there and back, then the HUD and the pause menu in the
 # language the run started in. It runs once per language, with --lang en and --lang es, and each run's screenshots go
-# to their own folder. How to run it: docs/guides/prueba-vertical.md.
+# to their own folder. How to run it: docs/guides/vertical-slice.md.
 name: language
 device: keyboard
 main_menu: true

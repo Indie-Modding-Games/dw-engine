@@ -39,7 +39,7 @@ namespace {
 // What the US disc gives. Triggers: every static trigger operand (set_trigger, unset_trigger,
 // spawn_chest, compare_date and the IF tests); none reaches 800, past the 100 bytes of
 // ScriptState.triggers (script.h), so the runtime treats one as out of range
-// (docs/architecture/interprete-historia.md#storystate).
+// (docs/architecture/story-interpreter.md#storystate).
 constexpr std::size_t ExpectedScripts = 222;
 constexpr std::size_t ExpectedTriggerOperands = 3453;
 constexpr std::int32_t ExpectedHighestTrigger = 716;

@@ -1,22 +1,22 @@
-# Clips de compañero para los modelos que no los traen (los de personaje: solo tienen los pocos clips de sus escenas).
-# Se hacen al cargar el modelo del compañero, desde los modelos extraídos del disco del usuario; aquí solo están las
-# recetas. Diseño: docs/modulos/engine/animation.md («Clips de compañero») y docs/modulos/game/evoluciones-extra.md.
-# Esquema: content/schemas/partner_clips.schema.json.
+# Partner clips for the models that do not come with them (the character ones: they only have the few clips of their scenes).
+# They are made when the partner model loads, from the models extracted from the user's disc; only the
+# recipes are here. Design: docs/modules/engine/animation.md (partner clips section) and docs/modules/game/extra-evolutions.md.
+# Schema: content/schemas/partner_clips.schema.json.
 
-# Los clips que piden el campo y el combate del compañero (los ids del original): 0 quieto, 1 quieto cansado, 2 anda,
-# 3 anda cansado, 4 corre, 5 contento, 7 descontento, 8 come, 9 se tumba a dormir, 10 se agacha (caca), 11 vitorea,
-# 12 se asusta (riña), 13 rechaza, 14 herido, 15 hambre, 16 ganas de ir al baño, 17 sueño, 18 cansado, 19 enfurruñado,
-# 21 a 25 y 27 gimnasio, 28 vuelve a nacer; en combate 33 en guardia, 34 en guardia débil, 35 anda débil, 36 anda,
-# 37 bloquea, 40 recibe un golpe, 41 lo recibe por la espalda, 42 pose de victoria, 43 cae, 44 se levanta.
+# The clips the field and the partner's combat ask for (the original's ids): 0 idle, 1 idle tired, 2 walk,
+# 3 walk tired, 4 run, 5 happy, 7 unhappy, 8 eat, 9 lie down to sleep, 10 crouch (poop), 11 cheer,
+# 12 gets scared (scolding), 13 refuse, 14 hurt, 15 hungry, 16 needs the toilet, 17 sleepy, 18 tired, 19 sulking,
+# 21 to 25 and 27 gym, 28 reborn; in combat 33 on guard, 34 on guard weak, 35 walk weak, 36 walk,
+# 37 block, 40 takes a hit, 41 takes it from behind, 42 victory pose, 43 falls, 44 gets up.
 clips: [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 27, 28,
         33, 34, 35, 36, 37, 40, 41, 42, 43, 44]
-# Las técnicas: un clip por ranura de su lista de técnicas desde aquí (battle_main.c: BTL_setupQueuedMove). Se hacen
-# los del donante.
+# The moves: one clip per slot of its move list from here (battle_main.c: BTL_setupQueuedMove). The donor's
+# are made.
 first_technique: 46
 
-# El movimiento hecho de cada clip (recetas procedurales): ángulos en grados, alturas en partes de la altura de la
-# cadera. Cada clip dura, se repite y avanza (movimiento raíz) como el del donante con el mismo id, así que en combate
-# los fotogramas de los golpes y de los efectos caen donde caen con el donante.
+# The motion made for each clip (procedural recipes): angles in degrees, heights in fractions of the hip
+# height. Each clip lasts, repeats and advances (root motion) like the donor's with the same id, so in combat
+# the frames of the hits and effects land where they do with the donor.
 motions:
   0: {kind: breathe, beats: 1, height: 0.02, angle: 2}
   1: {kind: breathe, beats: 1, height: 0.02, angle: 3, lean: 15}
@@ -54,20 +54,20 @@ motions:
   42: {kind: bounce, beats: 2, height: 0.2, angle: 90}
   43: {kind: fall, height: 0.5, angle: 85}
   44: {kind: rise, height: 0.5, angle: 85}
-# Cada técnica: se echa atrás, golpea hacia delante en `strike` (la parte del clip) y vuelve.
+# Each move: it pulls back, strikes forward at `strike` (the part of the clip) and returns.
 technique: {kind: lunge, height: 0.2, angle: 25, strike: 0.45}
 
-# Por especie: el donante (una forma de compañero) y el mapa de huesos (hueso propio: hueso del donante; `same` si
-# el esqueleto es el mismo). Con `retarget` los clips del donante se mueven a este esqueleto; con `procedural` se
-# hacen con los movimientos de arriba sobre los grupos de huesos, y el donante da la duración, los bucles, el avance y
-# la lista de técnicas. Las técnicas usan los puntos de efecto del donante en los huesos que el mapa le une.
-# `keep`: clips propios que se quedan (el quieto y el andar del personaje).
+# Per species: the donor (a partner form) and the bone map (own bone: donor bone; `same` if
+# the skeleton is the same). With `retarget` the donor's clips are moved onto this skeleton; with `procedural` they are
+# made with the motions above on the bone groups, and the donor gives the duration, the loops, the advance and
+# the move list. The moves use the donor's effect points on the bones the map joins to it.
+# `keep`: own clips that stay (the character's idle and walk).
 species:
-  # El mismo esqueleto que su forma de compañero.
+  # The same skeleton as its partner form.
   tirs: {donor: tyra, bones: same, keep: [0, 2]}
   scud: {donor: scum, bones: same, keep: [0]}
   puti: {donor: tuno, bones: same, keep: [0, 2, 4]}
-  # Bípedos con otro esqueleto: tronco, brazos, piernas y cadera al hueso que hace lo mismo en el donante.
+  # Bipeds with another skeleton: trunk, arms, legs and hip to the bone that does the same in the donor.
   anlg:
     donor: andr
     bones: {1: 1, 2: 2, 3: 3, 4: 5, 5: 6, 6: 7, 8: 9, 9: 10, 10: 11, 11: 12, 12: 14, 13: 15, 14: 16, 15: 18,
@@ -81,13 +81,13 @@ species:
     donor: mame
     bones: {1: 1, 2: 10, 3: 7, 4: 8, 5: 9, 6: 3, 7: 4, 8: 5, 9: 11, 10: 12, 11: 13, 12: 14, 13: 16, 14: 17, 15: 18}
     keep: [0, 2]
-  # Cuadrúpedo de cuello largo: patas, cola, base del cuello y cabeza a las del donante; el resto del cuello sigue.
+  # Long-necked quadruped: legs, tail, neck base and head to the donor's; the rest of the neck follows.
   brak:
     donor: mono
     bones: {1: 1, 2: 2, 3: 3, 8: 4, 9: 5, 10: 7, 11: 8, 12: 10, 13: 11, 14: 18, 15: 19, 16: 21, 17: 22, 18: 14,
             19: 15, 20: 16}
     keep: [0, 2]
-  # Sin forma de compañero parecida: movimientos hechos.
+  # No similar partner form: made motions.
   tono:
     donor: etem
     mode: procedural
@@ -102,7 +102,7 @@ species:
     keep: [0]
     groups: {body: 1, head: [2], left_arm: [9, 15], right_arm: [6, 12], left_leg: [20, 24], right_leg: [18, 22]}
     motions:
-      # Un árbol no salta ni se tumba de lado: se mece y se inclina.
+      # A tree does not jump or lie on its side: it sways and tilts.
       5: {kind: bounce, beats: 2, height: 0.04, angle: 30}
       9: {kind: lie, beats: 2, height: 0.1, angle: 25}
       11: {kind: bounce, beats: 1, height: 0.05, angle: 40}
@@ -120,7 +120,7 @@ species:
       left_arm: [3]
       right_arm: [4]
       spin: {joints: [2, 3, 4], axis: z, turns_per_second: 0.5}
-      # Una rueda no se inclina: al golpear y al recibir se desplaza adelante o atrás.
+      # A wheel does not tilt: when striking and when hit it moves forward or back.
       upright: true
   brik:
     donor: ogre

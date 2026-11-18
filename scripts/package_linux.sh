@@ -150,7 +150,7 @@ chmod +x "$stage/dwe"
 cp "$root/scripts/package/README.md" "$stage/README.md"
 printf '%s\n' "$commit" >"$stage/VERSION"
 # The extractor version of this dwx: the launcher reads the player's disc again when it changes
-# (docs/modulos/apps/launcher.md).
+# (docs/modules/apps/launcher.md).
 sed -n 's/^inline constexpr int ExtractorVersion = \([0-9]*\);.*/\1/p' \
   "$root/packages/engine/assets/include/dwe/assets/extractor_version.hpp" \
   >"$stage/EXTRACTOR_VERSION"

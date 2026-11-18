@@ -588,7 +588,7 @@ private:
     }
     // A selection without its end marker: the original's cancel runs on into the code after it,
     // which is the cancel arm. With the «cancel closes the choice» improvement on, the cancel only
-    // closes the choice (docs/modulos/game/story.md).
+    // closes the choice (docs/modules/game/story.md).
     const bool guardsCancel = instruction.role == FlowRole::Selection &&
                               !instruction.cancelMarker && cases > 1 &&
                               cases == instruction.targets.size() + 1;

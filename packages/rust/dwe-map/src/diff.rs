@@ -1,4 +1,4 @@
-//! Writing map patches (docs/formats/mapas.md, "Parches"): the patch that turns one map document
+//! Writing map patches (docs/formats/maps.md, "Parches"): the patch that turns one map document
 //! into another, with only what differs. Each change names its entry as a patch must (an exit by
 //! its `exit`; a light, an NPC, a sprite or an instance by its place) and gives only the fields
 //! that differ, each whole. The collision goes as rectangles of cells while they are few
