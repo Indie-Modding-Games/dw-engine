@@ -11,10 +11,10 @@ Este documento es el resumen con el estado del día. Los diseños que se acuerda
 | 1 | Tubería de assets | M | Cerrada (2026-10-20): el disco US se extrae entero (0 pendientes, 0 parciales) y el motor carga el resultado, extraído y cocinado; el formato cocinado de los vídeos pasa a la fase 5 |
 | 2 | Prueba vertical | M | Cerrada (2026-10-20) |
 | 3 | Núcleo jugable | L | Cerrada (2026-10-21) |
-| 4 | El juego original entero | XL | En curso: la historia entera se juega, del título a los créditos, y la beta cerrada llega por el lanzador; falta la primera estable ([qué la bloquea](#fase-4--el-juego-original-entero)) |
+| 4 | El juego original entero | XL | Cerrada (2026-11-17): la historia entera se juega del título a los créditos y `v0.1.0-beta.1082` es la primera versión estable |
 | 5 | Mods, modos y mejoras | Continuo | Empezada: el versus en línea y en la Arena, los modos de juego y los hooks de mods ya están en `main` |
 
-## Dónde estamos (2026-11-16)
+## Dónde estamos (2026-11-17)
 
 - **La fase 4 es solo el juego original.** Desde el 2026-10-22 la fase 4 es el juego original (vanilla) entero y
   jugable. Lo que no es del original pasa a la fase 5: modos de juego, el modo versus, la API de mods completa, la
@@ -28,12 +28,11 @@ Este documento es el resumen con el estado del día. Los diseños que se acuerda
 - **Fase 5 empezada.** El versus en línea y en la Arena, los modos de juego y los hooks de mods ya están en `main`.
 - **Beta cerrada por el lanzador.** Cada fusión en `main` que cambia código publica una versión de prueba
   (`<versión>-beta.<commits en main>`, canal «Pruebas» del lanzador, con la clave de la beta a través de la
-  [pasarela](modules/services/beta-gateway.md)). Todavía no se ha promovido ninguna estable. Paquetes para Linux,
+  [pasarela](modules/services/beta-gateway.md)). La primera estable, `v0.1.0-beta.1082`, se promovió el 2026-11-17 (canal «Estable»). Paquetes para Linux,
   Windows y macOS ([lanzador](modules/apps/launcher.md), [beta para Linux](guides/beta-linux.md),
   [beta para Windows y macOS](guides/beta-windows-macos.md)). La primera ronda de testers empezó el 2026-11-06.
-- **Lo siguiente:** arreglar lo que encuentren los testers (reportes F12), cerrar los huecos que quedan
-  ([huecos que el jugador notará](reference/port-coverage.md#huecos-que-el-jugador-notará)), promover la primera
-  versión estable y cerrar la fase 4. Después, la fase 5.
+- **Lo siguiente:** la fase 5. Los arreglos al juego original siguen saliendo como versiones de prueba y se promueven
+  a estable cuando están listos ([huecos que el jugador notará](reference/port-coverage.md#huecos-que-el-jugador-notará)).
 
 ## Fase 0 — Base
 
@@ -74,14 +73,9 @@ ventana y la ruta `route-loop-keyboard` ([prueba vertical](guides/vertical-slice
 
 **Hecho cuando:** el juego original se juega entero, del título a los créditos, y hay una versión estable publicada.
 
-**Estado (2026-11-16): en curso.** Las nueve etapas están abiertas, la cadena `route-full-01` a `route-full-09` juega
-la historia entera y la beta tiene versiones de prueba. Lo que bloquea el cierre de la fase:
-
-1. Todavía no hay versión estable, solo de prueba. Tarjeta: «Promover la primera estable cuando acabe la ronda de
-   testers».
-2. La cadena de la historia no se ha corrido sobre el `main` de hoy: estaba en verde el 2026-11-04 y han entrado más
-   cambios desde entonces. Tarjeta: «Correr `route-full-01` a `route-full-09` sobre el commit que se promueva a
-   estable».
+**Cerrada (2026-11-17).** Las nueve etapas están abiertas y la cadena `route-full-01` a `route-full-09` jugó la historia
+entera sobre `main` en `fd4f2901` sin reintentos (61 minutos). La versión de prueba de ese commit, `v0.1.0-beta.1082`,
+se promovió a primera versión estable.
 
 Al principio la fase 4 era «Contenido y modos». De su fase 4a
 ya están en `main` la conversión de los scripts a Lua, los paquetes de mods por ID, la API de Lua versionada, los
