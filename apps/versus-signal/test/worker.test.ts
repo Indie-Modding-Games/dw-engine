@@ -37,5 +37,13 @@ test("a host gets another code while the one it drew is taken", async () => {
   const hosted = await worker.fetch(new Request("https://signal.test/v1/host", upgrade), env);
   assert.equal(await hosted.text(), "room");
   assert.equal(asked.length, 3);
-  assert.match(asked[2], /^[2-9A-HJ-NP-Z]{4} https:\/\/room\/host\?code=[2-9A-HJ-NP-Z]{4}$/);
+  assert.match(asked[2], /^[2-9A-HJ-NP-Z]{4} https:\/\/room\/host\?code=[2-9A-HJ-NP-Z]{4}&public=0$/);
+});
+
+test("a host's room is private unless it asks for a listed one", async () => {
+  const { env, asked } = namespace(() => new Response("room"));
+  await worker.fetch(new Request("https://signal.test/v1/host?public=1", upgrade), env);
+  await worker.fetch(new Request("https://signal.test/v1/host?public=yes", upgrade), env);
+  assert.match(asked[0], /&public=1$/);
+  assert.match(asked[1], /&public=0$/);
 });

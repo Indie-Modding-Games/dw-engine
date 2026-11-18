@@ -18,6 +18,7 @@ anfitrión ──WebSocket /v1/host──►  sala K7Q2  ◄──WebSocket /v1/
 
 - El anfitrión abre `/v1/host` y recibe `room` con un código de cuatro caracteres (`23456789ABCDEFGHJKLMNPQRSTUVWXYZ`,
   sin 0, 1, O ni I). Si el código que sale está en uso, el Worker prueba otro.
+  La sala es privada: solo `/v1/host?public=1` la pone en la lista pública (`GET /v1/rooms`).
 - El invitado abre `/v1/join/<código>` (sin mayúsculas, espacios ni guiones) y recibe `joined`; el anfitrión recibe
   `peer` y empieza la oferta.
 - `signal` se reenvía tal cual al otro. Cuando los dos mandan `done` (ya están conectados) la sala se cierra; si solo

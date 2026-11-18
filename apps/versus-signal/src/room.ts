@@ -60,11 +60,21 @@ export class Room {
     this.#now = now;
   }
 
-  /** A host opens the room with its code; false when the code is taken (the worker picks another). */
-  async host(socket: Socket, code: string): Promise<boolean> {
+  /**
+   * A host opens the room with its code; false when the code is taken (the worker picks another). Only a room its host
+   * asked to be public goes in the directory: a private room's code is never listed.
+   */
+  async host(socket: Socket, code: string, listed = false): Promise<boolean> {
     if (await this.#state.get("opened")) return false;
     await this.#state.put("opened", this.#now());
     await this.#state.setAlarm(this.#now() + ROOM_LIFETIME_MS);
+    if (listed) await this.#list(code);
+    this.#state.accept(socket, "host");
+    socket.send(message({ type: "room", code }));
+    return true;
+  }
+
+  async #list(code: string): Promise<void> {
     this.#listing = {
       roomId: code,
       joinCode: code,
@@ -77,9 +87,6 @@ export class Room {
     };
     this.#code = code;
     await this.#state.publish?.(code, this.#listing);
-    this.#state.accept(socket, "host");
-    socket.send(message({ type: "room", code }));
-    return true;
   }
 
   /** A guest joins: the room must have its host and no guest yet. */
@@ -160,7 +167,7 @@ export class Room {
     }
     await this.#state.clear();
     this.#listing = null;
-    await this.#state.publish?.(this.#code, null);
+    if (this.#code) await this.#state.publish?.(this.#code, null);
     this.#code = "";
   }
 }
