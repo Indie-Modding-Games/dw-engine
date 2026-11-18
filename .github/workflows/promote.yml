@@ -43,7 +43,9 @@ jobs:
             exit 1
           }
           [ "$info" = "false true" ] || { echo "$TAG is not a published prerelease (draft prerelease: $info)" >&2; exit 1; }
-          stable="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>/dev/null || true)"
+          # Before the first stable release the API answers 404, and gh still prints its JSON body.
+          stable="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>/dev/null)" ||
+            stable=""
           if [ -n "$stable" ]; then
             python3 scripts/ci/release.py newer "${TAG#v}" "${stable#v}" || {
               echo "$TAG is not newer than the stable release $stable" >&2
