@@ -1,6 +1,8 @@
 # Multijugador cooperativo en línea (documento de diseño)
 
 Estado: **sala y arranque cooperativo implementados; sincronización del mundo parcial** (2026-11-16). El anfitrión inicia con un guardado propio; el invitado envía su guardado para importar solo su compañero. El cliente carga el mundo del host en memoria y no escribe sobre el guardado local. El host simula el campo y recibe comandos del invitado; el cliente presenta el avatar del host. NPCs, historia, interacciones y reconciliación del movimiento todavía no están replicados íntegramente. Consulta la [prueba manual de la sala](#prueba-manual-de-la-sala) antes de probar.
+> La ampliación del navegador de salas a cuatro participantes está especificada en el [plan de implementación del navegador y cuatro jugadores](coop-browser-4p.md). La implementación debe avanzar por sus puertas; el runtime actual sigue siendo de dos participantes.
+
 ## 0. Propósito y alcance
 
 La portada ofrece **Cooperativo** en ambos diseños del menú. Desde ahí se puede crear una sala o unirse con el código;

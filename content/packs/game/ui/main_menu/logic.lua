@@ -381,6 +381,11 @@ local function refresh_coop(document)
   local remoteReady = ui.setting("coop.remote_ready") == true
   local canStart = ui.setting("coop.can_start") == true
       and ui.setting("save.can_continue") == true
+  local home = view == "menu" or (view == "error" and role == "host")
+  local joinEntry = view == "join_entry" or (view == "error" and role == "guest")
+  document:get("coop-info"):set_class("coop-home", home)
+  document:get("coop-info"):set_class("coop-join-entry", joinEntry)
+  document:get("coop-info"):set_class("coop-lobby", not home and not joinEntry)
   local status = {
     menu = "main_menu.coop.status",
     join_entry = "main_menu.coop.enter_code",
@@ -398,6 +403,10 @@ local function refresh_coop(document)
   local error = ui.setting("coop.error")
   if error ~= nil and error ~= "" then
     local errorKey = {
+      bad_code = "main_menu.coop.error.bad_code",
+      no_join_transport = "main_menu.coop.error.no_join_transport",
+      transport_unavailable = "main_menu.coop.error.transport_unavailable",
+      rejected = "main_menu.coop.error.rejected",
       no_server = "main_menu.coop.error.no_server",
       server_unreachable = "main_menu.coop.error.server_unreachable",
       wrong_code = "main_menu.coop.error.wrong_code",
@@ -426,18 +435,19 @@ local function refresh_coop(document)
   document:get("coop-guest-ready"):set_text(t(guestReady and "main_menu.coop.ready_mark" or ""))
   document:get("coop-room-state"):set_text(t(key))
   local code
-  if view == "join_entry" or view == "joining" then
+  if joinEntry or view == "joining" then
     code = ui.setting("coop.typed")
     document:get("coop-room-code-entry"):set_text(t("main_menu.coop.code") .. " " .. (code or "____"))
     document:get("coop-room-code-entry"):set_class("hidden", false)
   else
     document:get("coop-room-code-entry"):set_class("hidden", true)
   end
-  local choosing = view == "menu" or view == "error"
+  local choosing = home
   local lostFocus = false
-  for _, id in ipairs({ "coop-host", "coop-join", "coop-ready", "coop-start" }) do
+  for _, id in ipairs({ "coop-host", "coop-join", "coop-connect", "coop-ready", "coop-start" }) do
     if document:get(id):has_focus() and
       ((id == "coop-host" or id == "coop-join") and not choosing
+        or id == "coop-connect" and not joinEntry
         or id == "coop-ready" and not (connected and role == "guest")
         or id == "coop-start" and not (connected and role == "host")) then
       lostFocus = true
@@ -448,9 +458,12 @@ local function refresh_coop(document)
   document:get("coop-ready"):set_class("hidden", not (connected and role == "guest"))
   document:get("coop-ready"):set_text(t(localReady and "main_menu.coop.unready" or "main_menu.coop.ready"))
   document:get("coop-start"):set_class("hidden", not (connected and role == "host"))
+  document:get("coop-connect"):set_class("hidden", not joinEntry)
   document:get("coop-start"):set_class("unavailable", not canStart)
   if lostFocus then
-    if connected and role == "guest" then
+    if joinEntry then
+      document:get("coop-connect"):focus()
+    elseif connected and role == "guest" then
       document:get("coop-ready"):focus()
     elseif connected and role == "host" then
       document:get("coop-start"):focus()

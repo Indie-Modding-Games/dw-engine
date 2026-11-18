@@ -28,6 +28,7 @@ public:
   void close();
   [[nodiscard]] bool host();
   void beginJoin();
+  bool submitJoin();
   void type(std::string_view text, bool enter);
   void tick(net::Millis now);
 

@@ -130,6 +130,8 @@ bool CoopConnection::join(std::string_view code) {
   return true;
 }
 
+bool CoopConnection::submitJoin() { return join(typed_); }
+
 void CoopConnection::type(std::string_view text, bool enter) {
   if (view_ != View::JoinEntry) return;
   for (const char value : text) {

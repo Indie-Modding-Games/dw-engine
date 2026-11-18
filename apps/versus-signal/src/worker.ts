@@ -2,6 +2,7 @@
 // (README.md). Plain JavaScript once the types are stripped; no dependencies.
 import { newCode, routeOf } from "./codes.ts";
 import { Room, type Role, type RoomState, type Socket } from "./room.ts";
+import { DirectoryObject } from "./directory.ts";
 
 // The few Workers runtime types used here (no @cloudflare/workers-types dependency).
 interface WebSocketLike extends Socket {
@@ -28,6 +29,7 @@ interface Namespace {
 }
 export interface Env {
   ROOMS: Namespace;
+  DIRECTORY?: Namespace;
 }
 declare const WebSocketPair: { new (): { 0: WebSocketLike; 1: WebSocketLike } };
 
@@ -48,6 +50,18 @@ function refused(reason: string): Response {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    if (request.method === "GET" && url.pathname === "/v1/rooms") {
+      if (!env.DIRECTORY) return Response.json({ rooms: [] }, { headers: { "Cache-Control": "no-store" } });
+      const directory = env.DIRECTORY.get(env.DIRECTORY.idFromName("public"));
+      const result = await directory.fetch(new Request("https://directory/rooms"));
+      if (request.headers.get("Upgrade") !== "websocket") return result;
+      const pair = new WebSocketPair();
+      pair[1].accept();
+      pair[1].send(await result.text());
+      pair[1].close(1000, "snapshot");
+      return upgraded(pair[0]);
+    }
     if (request.headers.get("Upgrade") !== "websocket") {
       return new Response("The versus signaling server speaks WebSocket only.\n", { status: 426 });
     }
@@ -75,7 +89,7 @@ export class RoomObject {
   #ctx: DurableObjectStateLike;
   #room: Room;
 
-  constructor(ctx: DurableObjectStateLike) {
+  constructor(ctx: DurableObjectStateLike, env: Env) {
     this.#ctx = ctx;
     const state: RoomState = {
       accept: (socket, role) => ctx.acceptWebSocket(socket as WebSocketLike, [role]),
@@ -91,6 +105,16 @@ export class RoomObject {
         await ctx.storage.deleteAll();
       },
       setAlarm: (at) => ctx.storage.setAlarm(at),
+      publish: async (code, listing) => {
+        if (!env.DIRECTORY) return;
+        const directory = env.DIRECTORY.get(env.DIRECTORY.idFromName("public"));
+        if (!code) return;
+        await directory.fetch(new Request(`https://directory/register?code=${code}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(listing),
+        }));
+      },
     };
     this.#room = new Room(state);
   }
@@ -127,3 +151,5 @@ export class RoomObject {
     await this.#room.alarm();
   }
 }
+
+export { DirectoryObject };

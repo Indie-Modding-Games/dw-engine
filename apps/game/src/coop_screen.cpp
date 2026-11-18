@@ -98,6 +98,14 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     publish();
     return true;
   }
+  if (command.name == "coop_connect") {
+    if (!isHost_ && active_ && (connection_.view() == CoopConnection::View::JoinEntry ||
+                                connection_.view() == CoopConnection::View::Error)) {
+      (void)connection_.submitJoin();
+      publish();
+    }
+    return true;
+  }
   if (command.name == "coop_ready") {
     if (!isHost_ && connection_.connected() && connection_.link() != nullptr) {
       if (localReady_) {

@@ -61,6 +61,7 @@
 					<p id="coop-room-code-entry" class="hidden"></p>
 					<button id="coop-host" onclick="ui.send('coop_host')" text-key="main_menu.coop.host"></button>
 					<button id="coop-join" onclick="ui.send('coop_join')" text-key="main_menu.coop.join"></button>
+					<button id="coop-connect" class="hidden" onclick="ui.send('coop_connect')" text-key="main_menu.coop.connect"></button>
 					<button id="coop-ready" class="hidden" onclick="ui.send('coop_ready')" text-key="main_menu.coop.ready"></button>
 					<button id="coop-start" class="hidden" onclick="ui.send('coop_start')" text-key="main_menu.coop.start"></button>
 					<button id="coop-back" onclick="close_coop(document)" text-key="common.back"></button>

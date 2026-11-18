@@ -1798,7 +1798,8 @@ int runGame(const Options& requested) {
       // The title menu's cooperative room actions belong to CoopScreen. Dispatch them before
       // generic UI add-ons and option handlers so they cannot be consumed or reported as unknown.
       if ((command.name == CoopOpenCommand || command.name == "coop_host" ||
-           command.name == "coop_join" || command.name == "coop_close" ||
+           command.name == "coop_join" || command.name == "coop_connect" ||
+           command.name == "coop_close" ||
            command.name == "coop_ready" || command.name == "coop_start") &&
           coop.handle(command)) {
         if (coop.takeGuestProfileRequest() || coop.takeStartRequested()) {

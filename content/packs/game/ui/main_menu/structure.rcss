@@ -14,36 +14,38 @@
 #coop-info h3 { margin: 0 0 10dp 0; font-size: 22dp; }
 #coop-info p { margin: 0 0 10dp 0; white-space: normal; }
 .coop-room-heading { margin: 0 0 18dp 0; }
-.coop-room-heading p { font-size: 20dp; }
+.coop-room-heading p { font-size: 17dp; }
 .coop-room-grid {
 	display: block;
 	position: relative;
 	width: 100%;
-	height: 260dp;
+	height: 220dp;
 }
 .coop-room-card {
 	position: absolute;
 	top: 0;
 	box-sizing: border-box;
-	min-height: 240dp;
-	padding: 16dp;
+	height: 210dp;
+	padding: 12dp;
 	border: 2dp #6a9fce;
 	background-color: #10283be8;
 }
-.coop-room-details { left: 0; width: 25%; }
-.coop-room-mode { left: 27%; width: 42%; }
-.coop-room-players { right: 0; width: 29%; }
-#coop-info p.coop-room-note { margin-top: 20dp; font-size: 16dp; color: #b7c8da; }
+.coop-room-details { left: 0; width: 26%; }
+.coop-room-mode { left: 28%; width: 40%; }
+.coop-room-players { right: 0; width: 30%; }
+.coop-room-details p { font-size: 17dp; }
+.coop-room-mode p:first-of-type { font-size: 22dp; }
+#coop-info p.coop-room-note { margin-top: 12dp; font-size: 15dp; color: #b7c8da; }
 .coop-player-row {
 	display: block;
 	position: relative;
-	min-height: 60dp;
+	height: 60dp;
 	margin: 4dp 0;
-	padding: 8dp;
+	padding: 6dp;
 	border: 1dp #52728f;
 	background-color: #071a2c;
 }
-.coop-player-row div { margin-left: 42dp; }
+.coop-player-row div { margin-left: 38dp; }
 .coop-player-row p { margin: 0; }
 .coop-player-icon {
 	position: absolute;
@@ -58,10 +60,18 @@
 }
 .coop-player-state { font-size: 16dp; color: #85d69b; }
 .coop-ready-mark { position: absolute; right: 8dp; top: 12dp; color: #72e894; }
-.coop-room-actions { margin-top: 16dp; text-align: center; }
-.coop-room-actions button { display: inline-block; margin: 4dp 8dp; }
+.coop-room-actions { margin-top: 12dp; text-align: center; }
+.coop-room-actions button { display: inline-block; margin: 4dp 6dp; font-size: 18dp; }
 .coop-room-actions .unavailable { opacity: 0.45; focus: none; tab-index: none; }
-#coop-room-code-entry { margin: 0 auto 12dp auto; font-size: 28dp; letter-spacing: 6dp; }
+#coop-room-code-entry { margin: 0 auto 8dp auto; font-size: 22dp; letter-spacing: 5dp; }
+#coop-info.coop-home .coop-room-grid { display: none; }
+#coop-info.coop-home .coop-room-actions { margin-top: 28dp; }
+#coop-info.coop-join-entry .coop-room-grid { display: none; }
+#coop-info.coop-join-entry #coop-host, #coop-info.coop-join-entry #coop-ready,
+#coop-info.coop-join-entry #coop-start { display: none; }
+#coop-info.coop-join-entry #coop-connect { display: inline-block; }
+#coop-info.coop-lobby #coop-host, #coop-info.coop-lobby #coop-join { display: none; }
+#coop-info.coop-join-entry #coop-room-code-entry { display: block; }
 #panel.coop-room {
 	position: absolute;
 	left: 3%;
