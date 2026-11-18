@@ -205,11 +205,11 @@ Field::Field(scene::World& world, FieldRules rules, ScriptWarpSetup scriptWarps)
   registry.emplace<Transform>(player_);
   registry.emplace<scene::ModelRef>(player_, rules_.player.model);
   registry.emplace<AnimationIntent>(player_);
-  registry.emplace<scene::PlayerTag>(player_);
+  registry.emplace<scene::PlayerTag>(player_, HostPlayerId);
   registry.emplace<Transform>(partner_);
   registry.emplace<scene::ModelRef>(partner_, rules_.partner.mover.model);
   registry.emplace<AnimationIntent>(partner_);
-  registry.emplace<scene::PartnerTag>(partner_);
+  registry.emplace<scene::PartnerTag>(partner_, HostPlayerId);
 }
 
 core::Result<void> Field::enterMap(const assets::MapDocument& map, std::int32_t exit) {
@@ -240,6 +240,7 @@ core::Result<void> Field::enterMap(const assets::MapDocument& map, std::int32_t 
   if (queued) {
     startScriptedMapChange(std::move(queued->first), queued->second);
   }
+  placeOtherPlayersNearHost();
   return {};
 }
 
@@ -311,6 +312,7 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn,
     scriptCamera_ = spawn.position;
   }
   releaseHandoff("map entry");
+  placeOtherPlayersNearHost();
 }
 
 void Field::startPlay() {
@@ -353,6 +355,127 @@ void Field::setInput(const FieldInput& input) {
   }
 }
 
+bool Field::setInput(PlayerId id, const FieldInput& input) {
+  if (id == HostPlayerId) {
+    setInput(input);
+    return true;
+  }
+  const auto player = std::ranges::find(otherPlayers_, id, [](const PlayerRuntime& runtime) {
+    return runtime.fieldPlayer.id;
+  });
+  if (player == otherPlayers_.end()) {
+    return false;
+  }
+  if (player->fieldPlayer.waitingAtWarp) {
+    player->fieldPlayer.input = {};
+    return true;
+  }
+  player->fieldPlayer.input = input;
+  // A command received while the shared world holds players cannot be banked for later.
+  if (input.cancelTarget || leaving_ || pendingChange_ || waitingForMap_ || scriptHeld_ ||
+      careHeld_ || itemHold_ != ItemHold::None) {
+    player->fieldPlayer.moveTarget.reset();
+    player->fieldPlayer.path.clear();
+    player->fieldPlayer.pathStallSeconds = 0.0F;
+  } else if (glm::length(input.stick) > rules_.input.deadZone) {
+    player->fieldPlayer.moveTarget.reset();
+    player->fieldPlayer.path.clear();
+    player->fieldPlayer.pathStallSeconds = 0.0F;
+  } else if (input.moveTarget) {
+    const glm::vec3 position =
+        world_->registry().get<Transform>(player->fieldPlayer.entity).position;
+    player->fieldPlayer.pathStallSeconds = 0.0F;
+    planPath(player->fieldPlayer.moveTarget, player->fieldPlayer.path, position,
+             *input.moveTarget, true);
+  }
+  return true;
+}
+
+core::Result<void> Field::addPlayer(PlayerId id, assets::SpawnPoint spawn) {
+  if (id != GuestPlayerId) {
+    return core::fail("field supports only one host and one guest player");
+  }
+  if (std::ranges::any_of(otherPlayers_, [id](const PlayerRuntime& player) {
+        return player.fieldPlayer.id == id;
+      })) {
+    return core::fail("field player id is already present");
+  }
+  if (mapId_.empty()) {
+    return core::fail("enter a map before adding a field player");
+  }
+  if (!fitsOnGrid(collision_, spawn.position, rules_.player.radius)) {
+    return core::fail("field player spawn is outside free map cells");
+  }
+  const GroundSquare atSpawn{.centre = ground(spawn.position), .half = rules_.player.radius};
+  const auto occupied = [&](scene::Entity entity, float radius) {
+    const GroundSquare body{.centre = ground(world_->registry().get<Transform>(entity).position),
+                            .half = radius};
+    return overlaps(atSpawn, body);
+  };
+  if (occupied(player_, rules_.player.radius) ||
+      occupied(partner_, rules_.partner.mover.radius)) {
+    return core::fail("field player spawn overlaps the host pair");
+  }
+  for (const NpcBody& npc : npcs_.bodies()) {
+    const GroundSquare body{.centre = ground(world_->registry().get<Transform>(npc.entity).position),
+                            .half = npc.half};
+    if (overlaps(atSpawn, body)) {
+      return core::fail("field player spawn overlaps an NPC");
+    }
+  }
+
+  const scene::Entity entity = world_->create();
+  entt::registry& registry = world_->registry();
+  registry.emplace<Transform>(entity);
+  scene::place(registry.get<Transform>(entity), spawn.position, spawn.yaw);
+  registry.emplace<scene::ModelRef>(entity, rules_.player.model);
+  registry.emplace<AnimationIntent>(entity);
+  registry.emplace<scene::PlayerTag>(entity, id);
+  PlayerRuntime player;
+  player.fieldPlayer.id = id;
+  player.fieldPlayer.entity = entity;
+  player.fieldPlayer.input.run = true;
+  otherPlayers_.push_back(std::move(player));
+  return {};
+}
+
+std::optional<CharacterState> Field::player(PlayerId id) const {
+  if (id == HostPlayerId) {
+    return player();
+  }
+  const auto player = std::ranges::find(otherPlayers_, id, [](const PlayerRuntime& runtime) {
+    return runtime.fieldPlayer.id;
+  });
+  if (player == otherPlayers_.end()) {
+    return std::nullopt;
+  }
+  const entt::registry& registry = world_->registry();
+  const Transform& transform = registry.get<Transform>(player->fieldPlayer.entity);
+  return CharacterState{.position = transform.position,
+                        .yaw = transform.yaw,
+                        .motion = registry.get<AnimationIntent>(player->fieldPlayer.entity).motion};
+}
+
+std::optional<scene::Entity> Field::playerEntity(PlayerId id) const {
+  if (id == HostPlayerId) {
+    return player_;
+  }
+  const auto player = std::ranges::find(otherPlayers_, id, [](const PlayerRuntime& runtime) {
+    return runtime.fieldPlayer.id;
+  });
+  if (player == otherPlayers_.end()) {
+    return std::nullopt;
+  }
+  return player->fieldPlayer.entity;
+}
+
+bool Field::waitingAtWarp(PlayerId id) const {
+  const auto player = std::ranges::find(otherPlayers_, id, [](const PlayerRuntime& runtime) {
+    return runtime.fieldPlayer.id;
+  });
+  return player != otherPlayers_.end() && player->fieldPlayer.waitingAtWarp;
+}
+
 void Field::dropMoveTarget() {
   if (moveTarget_ || !path_.empty()) {
     core::logDebug("[field] the click-to-move target is dropped");
@@ -373,6 +496,15 @@ void Field::tick(float seconds) {
   // its map their own tick does not run, and a transform left as an older tick left it would draw
   // a move that is not happening.
   beginTicks(seconds);
+  const bool worldHeld = leaving_ || pendingChange_ || waitingForMap_ || choice_ || mapId_.empty() ||
+                         scriptHeld_ || careHeld_ || itemHold_ != ItemHold::None;
+  if (worldHeld) {
+    resetOtherPlayerMotion(true);
+  } else {
+    for (PlayerRuntime& player : otherPlayers_) {
+      registry.get<AnimationIntent>(player.fieldPlayer.entity) = {};
+    }
+  }
   const bool wasFree = std::exchange(freeTick_, false);
   const bool wasFollowing = std::exchange(partnerFollowing_, false);
   registry.get<AnimationIntent>(partner_) = {};
@@ -424,6 +556,7 @@ void Field::tick(float seconds) {
     } else if (frame < fadeInFrames_ && fadeInHolds_) {
       dropMoveTarget();
       registry.get<AnimationIntent>(player_) = {};
+      resetOtherPlayerMotion(true);
       tickNpcs(seconds, false);
       overlapWatch_.clear();
       return;
@@ -442,6 +575,7 @@ void Field::tick(float seconds) {
   // tamer.c: tamerTickWalkingState keeps the way back before it moves the player.
   playerTrail_.tick(assets::collisionCellAt(registry.get<Transform>(player_).position), collision_);
   movePlayer(frames);
+  tickOtherPlayers(seconds);
   // tamer.c: checkMapInteraction: an NPC's section starts the script, so a confirm cell's section
   // that frame finds a script running and is dropped.
   if (touchNpcs()) {
@@ -486,12 +620,19 @@ bool Field::touchNpcs() {
 
 void Field::tickNpcs(float seconds, bool playerFree) {
   entt::registry& registry = world_->registry();
-  npcs_.tick(seconds, collision_,
-             {.player = {.centre = ground(registry.get<Transform>(player_).position),
-                         .half = rules_.player.radius},
-              .partner = {.centre = ground(registry.get<Transform>(partner_).position),
-                          .half = rules_.partner.mover.radius},
-              .playerFree = playerFree});
+  NpcSurroundings surroundings{
+      .player = {.centre = ground(registry.get<Transform>(player_).position),
+                 .half = rules_.player.radius},
+      .partner = {.centre = ground(registry.get<Transform>(partner_).position),
+                  .half = rules_.partner.mover.radius},
+      .otherPlayers = {},
+      .playerFree = playerFree};
+  for (const PlayerRuntime& player : otherPlayers_) {
+    surroundings.otherPlayers.push_back(
+        {.centre = ground(registry.get<Transform>(player.fieldPlayer.entity).position),
+         .half = rules_.player.radius});
+  }
+  npcs_.tick(seconds, collision_, surroundings);
   applyClipRootMotion(seconds);
 }
 
@@ -930,14 +1071,19 @@ void Field::leave(MapChange change) {
 }
 
 void Field::planPath(glm::vec3 target) {
-  moveTarget_.reset();
-  path_.clear();
   pathStallSeconds_ = 0.0F;
+  planPath(moveTarget_, path_, world_->registry().get<Transform>(player_).position, target);
+}
+
+void Field::planPath(std::optional<glm::vec3>& moveTarget, std::vector<glm::vec3>& path,
+                     glm::vec3 position, glm::vec3 target, bool allowTargetWarp) {
+  moveTarget.reset();
+  path.clear();
   const CollisionCell clicked = assets::collisionCellAt(target);
-  const glm::vec3 position = world_->registry().get<Transform>(player_).position;
   // Paths do not cross warps other than the one clicked.
-  const auto passable = [this](CollisionCell cell) {
-    return !keepsOff(collision_.trigger(cell).value_or(0));
+  const auto passable = [this, clicked, allowTargetWarp](CollisionCell cell) {
+    return (allowTargetWarp && cell == clicked) ||
+           !keepsOff(collision_.trigger(cell).value_or(0));
   };
   // The clicked cell, or the nearest ring of cells around it with one the player can get to.
   for (int ring = 0; ring <= ClickSearchCells; ++ring) {
@@ -949,20 +1095,20 @@ void Field::planPath(glm::vec3 target) {
         }
       }
     }
-    path_ = findPath(collision_, position, goals, rules_.player.radius, passable);
-    if (path_.empty()) {
+    path = findPath(collision_, position, goals, rules_.player.radius, passable);
+    if (path.empty()) {
       continue;
     }
     // In the clicked cell, the last step goes from its centre to the clicked point if nothing is in
     // the way.
-    const glm::vec3 point{target.x, path_.back().y, target.z};
-    const glm::vec3 centre = path_.back();
+    const glm::vec3 point{target.x, path.back().y, target.z};
+    const glm::vec3 centre = path.back();
     const GridMove last =
         moveOnGrid(collision_, centre, ground(point) - ground(centre), rules_.player.radius);
     if (ring == 0 && !last.blockedX && !last.blockedZ) {
-      path_.push_back(point);
+      path.push_back(point);
     }
-    moveTarget_ = path_.back();
+    moveTarget = path.back();
     return;
   }
 }
@@ -1025,6 +1171,245 @@ void Field::movePlayer(std::int32_t frames) {
   // and keeps its walk or run animation playing at full speed there: it is the animation that moves
   // it (anim.c: applyRootMomentum), and the collision only cancels the movement.
   world_->registry().get<AnimationIntent>(player_) = {.motion = playerMotion_, .speedScale = 1.0F};
+}
+
+void Field::tickOtherPlayers(float seconds) {
+  for (PlayerRuntime& player : otherPlayers_) {
+    moveOtherPlayer(player, seconds);
+  }
+}
+
+void Field::resetOtherPlayerMotion(bool clearInput) {
+  for (PlayerRuntime& player : otherPlayers_) {
+    player.motion = Motion::Idle;
+    player.pressed = false;
+    player.frameClock = rules_.transition.frameSeconds;
+    if (clearInput) {
+      player.fieldPlayer.input = {};
+      player.fieldPlayer.moveTarget.reset();
+      player.fieldPlayer.path.clear();
+      player.fieldPlayer.pathStallSeconds = 0.0F;
+    }
+    world_->registry().get<AnimationIntent>(player.fieldPlayer.entity) = {};
+  }
+}
+
+void Field::placeOtherPlayersNearHost() {
+  if (otherPlayers_.empty()) {
+    return;
+  }
+  const glm::vec3 host = world_->registry().get<Transform>(player_).position;
+  const std::array<glm::vec2, 8> directions{{{1.0F, 0.0F}, {-1.0F, 0.0F},
+                                              {0.0F, 1.0F}, {0.0F, -1.0F},
+                                              {1.0F, 1.0F}, {-1.0F, 1.0F},
+                                              {1.0F, -1.0F}, {-1.0F, -1.0F}}};
+  constexpr std::int32_t SpawnRings = 24;
+  const float spacing = (rules_.player.radius * 2.0F) + 25.0F;
+  for (PlayerRuntime& player : otherPlayers_) {
+    std::optional<glm::vec3> place;
+    for (std::int32_t ring = 1; ring <= SpawnRings && !place; ++ring) {
+      for (const glm::vec2 direction : directions) {
+        const glm::vec3 candidate =
+            host + glm::vec3{direction.x * spacing * static_cast<float>(ring), 0.0F,
+                             direction.y * spacing * static_cast<float>(ring)};
+        if (!fitsOnGrid(collision_, candidate, rules_.player.radius)) {
+          continue;
+        }
+        const GroundSquare square{.centre = ground(candidate), .half = rules_.player.radius};
+        const bool overlapsHost = overlaps(
+            square, {.centre = ground(host), .half = rules_.player.radius});
+        const glm::vec3 partner = world_->registry().get<Transform>(partner_).position;
+        const bool overlapsPartner = overlaps(
+            square, {.centre = ground(partner), .half = rules_.partner.mover.radius});
+        const bool overlapsNpc = std::ranges::any_of(npcs_.bodies(), [&](const NpcBody& npc) {
+          const GroundSquare body{
+              .centre = ground(world_->registry().get<Transform>(npc.entity).position),
+              .half = npc.half};
+          return overlaps(square, body);
+        });
+        const bool overlapsAnother = std::ranges::any_of(
+            otherPlayers_, [&](const PlayerRuntime& other) {
+              if (other.fieldPlayer.id == player.fieldPlayer.id) {
+                return false;
+              }
+              const GroundSquare body{
+                  .centre = ground(world_->registry().get<Transform>(other.fieldPlayer.entity)
+                                       .position),
+                  .half = rules_.player.radius};
+              return overlaps(square, body);
+            });
+        if (!overlapsHost && !overlapsPartner && !overlapsNpc && !overlapsAnother) {
+          place = candidate;
+          break;
+        }
+      }
+    }
+    if (place) {
+      const glm::vec2 towardHost = ground(host) - ground(*place);
+      scene::place(world_->registry().get<Transform>(player.fieldPlayer.entity), *place,
+                   assets::yawOfDirection({towardHost.x, 0.0F, towardHost.y}));
+    } else {
+      core::logWarning("[field] could not find a free spawn near the host for player {}",
+                       player.fieldPlayer.id);
+    }
+    player.motion = Motion::Idle;
+    player.pressed = false;
+    player.frameClock = rules_.transition.frameSeconds;
+    player.fieldPlayer.input = {};
+    player.fieldPlayer.moveTarget.reset();
+    player.fieldPlayer.path.clear();
+    player.fieldPlayer.waitingAtWarp = false;
+    world_->registry().get<AnimationIntent>(player.fieldPlayer.entity) = {};
+  }
+}
+
+void Field::moveOtherPlayer(PlayerRuntime& player, float seconds) {
+  constexpr float Slack = 1e-4F;
+  constexpr std::int32_t MaxFrames = 8;
+  Transform& transform = world_->registry().get<Transform>(player.fieldPlayer.entity);
+  if (!player.fieldPlayer.waitingAtWarp &&
+      warpsOn(collision_.trigger(assets::originalCellAt(transform.position)).value_or(0))) {
+    player.fieldPlayer.waitingAtWarp = true;
+  }
+  if (player.fieldPlayer.waitingAtWarp) {
+    player.fieldPlayer.input = {};
+    player.fieldPlayer.moveTarget.reset();
+    player.fieldPlayer.path.clear();
+    player.motion = Motion::Idle;
+    world_->registry().get<AnimationIntent>(player.fieldPlayer.entity) = {};
+    return;
+  }
+  const float frame = rules_.transition.frameSeconds;
+  const FieldInput& input = player.fieldPlayer.input;
+  const float length = glm::length(input.stick);
+  const bool wants = length > rules_.input.deadZone || player.fieldPlayer.moveTarget.has_value();
+  if (wants && !player.pressed && player.motion == Motion::Idle) {
+    player.frameClock = std::max(player.frameClock, frame);
+  }
+  player.pressed = wants;
+  std::int32_t frames = 0;
+  while (player.frameClock + Slack >= frame && frames < MaxFrames) {
+    player.frameClock = std::max(0.0F, player.frameClock - frame);
+    ++frames;
+  }
+  if (frames == MaxFrames) {
+    player.frameClock = 0.0F;
+  }
+  player.frameClock += seconds;
+
+  Step step;
+  if (length > rules_.input.deadZone) {
+    const glm::vec3 right{-cameraForward_.z, 0.0F, cameraForward_.x};
+    const glm::vec3 direction = (right * input.stick.x) + (cameraForward_ * input.stick.y);
+    step = {.direction = glm::normalize(ground(direction)), .run = input.run};
+  } else if (player.fieldPlayer.moveTarget) {
+    step = {.run = input.run, .followPath = true};
+  }
+  if (frames > 0) {
+    for (std::int32_t i = 0; i < frames; ++i) {
+      stepOtherPlayer(player, step);
+    }
+  }
+  world_->registry().get<AnimationIntent>(player.fieldPlayer.entity) = {
+      .motion = player.motion, .speedScale = 1.0F};
+}
+
+void Field::stepOtherPlayer(PlayerRuntime& player, const Step& step) {
+  const scene::Entity entity = player.fieldPlayer.entity;
+  Transform& transform = world_->registry().get<Transform>(entity);
+  const Motion wanted = (step.direction == glm::vec2{0.0F} && !step.followPath)
+                            ? Motion::Idle
+                            : (step.run ? Motion::Run : Motion::Walk);
+  const bool starts = wanted != player.motion;
+  player.motion = wanted;
+  if (wanted == Motion::Idle) {
+    return;
+  }
+  const float frame = rules_.transition.frameSeconds;
+  const float distance = (wanted == Motion::Run ? rules_.player.runSpeed : rules_.player.walkSpeed) *
+                         frame;
+  if (step.followPath) {
+    if (starts) {
+      return;
+    }
+    const glm::vec3 start = transform.position;
+    const glm::vec2 facing = followPath(player.fieldPlayer.moveTarget, player.fieldPlayer.path,
+                                        transform.position, distance);
+    if (facing == glm::vec2{0.0F}) {
+      player.motion = Motion::Idle;
+      return;
+    }
+    const glm::vec2 moved = ground(transform.position - start);
+    if (npcs_.blocks(start, transform.position, rules_.player.radius) ||
+        playerTouchesOtherPlayer(entity, start, moved)) {
+      transform.position = start;
+    }
+    transform.yaw = turnToward(transform.yaw,
+                               assets::yawOfDirection({facing.x, 0.0F, facing.y}),
+                               rules_.player.turnSpeed * frame);
+    if (!player.fieldPlayer.moveTarget) {
+      return;
+    }
+    const float advanced = groundDistance(transform.position, start);
+    player.fieldPlayer.pathStallSeconds = advanced < distance * StuckFraction
+                                               ? player.fieldPlayer.pathStallSeconds + frame
+                                               : 0.0F;
+    if (player.fieldPlayer.pathStallSeconds > PathStallSeconds) {
+      player.fieldPlayer.pathStallSeconds = 0.0F;
+      if (!player.fieldPlayer.path.empty()) {
+        player.fieldPlayer.path.erase(player.fieldPlayer.path.begin());
+      }
+      if (player.fieldPlayer.path.empty()) {
+        player.fieldPlayer.moveTarget.reset();
+      }
+    }
+    return;
+  }
+  transform.yaw = turnToward(transform.yaw,
+                             assets::yawOfDirection({step.direction.x, 0.0F, step.direction.y}),
+                             rules_.player.turnSpeed * frame);
+  if (starts) {
+    return;
+  }
+  const glm::vec3 start = transform.position;
+  const glm::vec2 movement = still(ground(assets::forwardOfYaw(transform.yaw)) * distance);
+  const glm::vec3 end = start + glm::vec3{movement.x, 0.0F, movement.y};
+  const bool touchesActor = playerTouchesOtherPlayer(entity, start, movement);
+  if (!stepCollides(collision_, start, movement, rules_.player.radius)) {
+    if (!touchesActor && !npcs_.blocks(start, end, rules_.player.radius)) {
+      transform.position = end;
+    }
+    return;
+  }
+  const Grace grace = collisionGrace(transform.yaw, distance, [&](glm::vec2 probe) {
+    const glm::vec3 probeEnd = start + glm::vec3{probe.x, 0.0F, probe.y};
+    return stepCollides(collision_, start, probe, rules_.player.radius) ||
+           playerTouchesOtherPlayer(entity, start, probe) ||
+           npcs_.blocks(start, probeEnd, rules_.player.radius);
+  });
+  transform.yaw = grace.yaw;
+  transform.position += glm::vec3{grace.step.x, 0.0F, grace.step.y};
+}
+
+bool Field::playerTouchesOtherPlayer(scene::Entity entity, glm::vec3 from, glm::vec2 step) const {
+  const GroundSquare moved{.centre = ground(from) + step, .half = rules_.player.radius};
+  const auto overlapsBody = [&](scene::Entity other, float radius) {
+    if (other == entity) {
+      return false;
+    }
+    const GroundSquare square{.centre = ground(world_->registry().get<Transform>(other).position),
+                              .half = radius};
+    return overlaps(moved, square);
+  };
+  if (overlapsBody(player_, rules_.player.radius) ||
+      (entity != player_ && overlapsBody(partner_, rules_.partner.mover.radius))) {
+    return true;
+  }
+  return std::ranges::any_of(otherPlayers_, [&](const PlayerRuntime& other) {
+    return overlapsBody(other.fieldPlayer.entity, rules_.player.radius) ||
+           (other.fieldPlayer.partner && overlapsBody(*other.fieldPlayer.partner,
+                                                       rules_.partner.mover.radius));
+  });
 }
 
 void Field::stepPlayer(const Step& step) {
@@ -1097,7 +1482,15 @@ bool Field::playerTouchesSomeone(glm::vec3 from, glm::vec2 step) const {
   const GroundSquare self{.centre = ground(to), .half = radius};
   const GroundSquare partner{.centre = ground(world_->registry().get<Transform>(partner_).position),
                              .half = rules_.partner.mover.radius};
-  return squaresOverlap(self, partner);
+  if (squaresOverlap(self, partner)) {
+    return true;
+  }
+  return std::ranges::any_of(otherPlayers_, [&](const PlayerRuntime& player) {
+    const GroundSquare other{
+        .centre = ground(world_->registry().get<Transform>(player.fieldPlayer.entity).position),
+        .half = rules_.player.radius};
+    return squaresOverlap(self, other);
+  });
 }
 
 void Field::walkForward(float distance) {
@@ -1110,7 +1503,8 @@ void Field::walkForward(float distance) {
   // 2); the map turns it aside (collisionGrace).
   if (!stepCollides(collision_, start, step, radius)) {
     // anim.c: applyRootMomentum: the whole step, the map tested no more.
-    if (!npcs_.blocks(start, start + glm::vec3{step.x, 0.0F, step.y}, radius)) {
+    if (!npcs_.blocks(start, start + glm::vec3{step.x, 0.0F, step.y}, radius) &&
+        (otherPlayers_.empty() || !playerTouchesOtherPlayer(player_, start, step))) {
       transform.position += glm::vec3{step.x, 0.0F, step.y};
     }
     return;
@@ -1129,15 +1523,20 @@ void Field::walkForward(float distance) {
 }
 
 glm::vec2 Field::followPath(glm::vec3& position, float distance) {
+  return followPath(moveTarget_, path_, position, distance);
+}
+
+glm::vec2 Field::followPath(std::optional<glm::vec3>& moveTarget,
+                            std::vector<glm::vec3>& path, glm::vec3& position, float distance) {
   // Walks from waypoint to waypoint, carrying what is left of the tick's distance from one to the
   // next, so the player stays on the lines the path was planned on.
   glm::vec2 facing{0.0F};
   float left = distance;
-  while (left > 0.0F && !path_.empty()) {
-    const glm::vec3 aim = path_.front();
+  while (left > 0.0F && !path.empty()) {
+    const glm::vec3 aim = path.front();
     const float away = groundDistance(aim, position);
     if (away <= WaypointReach) {
-      path_.erase(path_.begin());
+      path.erase(path.begin());
       continue;
     }
     facing = (ground(aim) - ground(position)) / away;
@@ -1150,22 +1549,22 @@ glm::vec2 Field::followPath(glm::vec3& position, float distance) {
       if (length == away) {
         position.x = aim.x;
         position.z = aim.z;
-        path_.erase(path_.begin());
+        path.erase(path.begin());
       }
       continue;
     }
     if (groundDistance(aim, position) <= WaypointReach) {
-      path_.erase(path_.begin());
+      path.erase(path.begin());
       continue;
     }
     // A wall: sliding is all this tick can do. Pressed against it close to the end is there.
-    if (path_.size() == 1 && groundDistance(aim, position) <= rules_.input.arriveDistance) {
-      path_.clear();
+    if (path.size() == 1 && groundDistance(aim, position) <= rules_.input.arriveDistance) {
+      path.clear();
     }
     break;
   }
-  if (path_.empty()) {
-    moveTarget_.reset();
+  if (path.empty()) {
+    moveTarget.reset();
   }
   return facing;
 }
@@ -1564,8 +1963,19 @@ void Field::movePartner(float seconds) {
                 .playerRadius = static_cast<std::int32_t>(std::lround(rules_.player.radius)),
                 .npcBlocks =
                     [&](OriginalPoint from, OriginalPoint to) {
-                      return npcs_.blocks(worldPointOf(from, height), worldPointOf(to, height),
-                                          radius);
+                      const glm::vec3 worldFrom = worldPointOf(from, height);
+                      const glm::vec3 worldTo = worldPointOf(to, height);
+                      if (npcs_.blocks(worldFrom, worldTo, radius)) {
+                        return true;
+                      }
+                      const GroundSquare nextPartner{.centre = ground(worldTo), .half = radius};
+                      return std::ranges::any_of(otherPlayers_, [&](const PlayerRuntime& other) {
+                        const GroundSquare player{
+                            .centre = ground(registry.get<Transform>(other.fieldPlayer.entity)
+                                                 .position),
+                            .half = rules_.player.radius};
+                        return overlaps(nextPartner, player);
+                      });
                     },
                 .mood = partnerMood_,
                 .randomBelow = partnerRandom_});

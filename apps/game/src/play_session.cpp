@@ -791,22 +791,23 @@ bool PlaySession::holdsMenu() const {
          discardScreen_.active() || scheduleScreen_.active() || shopScreen_.holdsPause();
 }
 
-void PlaySession::pressStory(const input::InputState& input) {
+void PlaySession::pressStory(const PlayerCommands& commands,
+                             const input::InputState& pointerInput) {
+  const StoryButtons& story = commands.story;
   // Skip the evolution (an engine improvement): confirm or cancel ends its scene.
   if (skipEvolution_ && evolutionScene_.active() &&
-      (input.wasPressed("confirm") || input.wasPressed("cancel"))) {
+      (story.confirmPressed || story.cancelPressed)) {
     evolutionScene_.skip();
     return;
   }
   if (gymScreen_.active()) {
-    gymScreen_.pressCancel(input.wasPressed("menu"),
-                           input.isDown("menu") || input.isDown("cancel"));
+    gymScreen_.pressCancel(story.menuPressed, story.menuDown || story.cancelPressed);
   }
-  if (storyScenes_.pressNaming(input)) {
+  if (storyScenes_.pressNaming(pointerInput)) {
     return;
   }
   if (storyTextbox_) {
-    storyTextbox_->press(input);
+    storyTextbox_->press(story, pointerInput);
   }
 }
 
@@ -913,9 +914,9 @@ void PlaySession::pressBattle(const input::InputState& input) {
   }
 }
 
-void PlaySession::tick(const game::field::FieldInput& intent, const FishingButtons& fishing) {
+void PlaySession::tick(const PlayerCommands& commands, const PlayerCommands& guestCommands) {
   fieldWalks_ = false;
-  tickSystems(intent, fishing);
+  tickSystems(commands.field, commands.fishing, guestCommands.field);
   tickWater();
   // A tick that did not leave the player walking freely (a talk, a battle, a gym course, a screen)
   // drops the click's target, so the player does not walk on to it once he is let go.
@@ -948,7 +949,8 @@ void PlaySession::tickWater() {
 }
 
 void PlaySession::tickSystems(const game::field::FieldInput& intent,
-                              const FishingButtons& fishing) {
+                              const FishingButtons& fishing,
+                              const game::field::FieldInput& guestIntent) {
   const ui::Ui& ui = *context_.ui;
   // Every tick starts with the characters where they stand: the screens below that run instead of
   // the field (a battle, the evolution, a sleep, the fishing, a menu) move them themselves or not
@@ -1071,7 +1073,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent,
     fieldWalks_ = !gymScreen_.active();
     // Without a course it only closes the last one's stats box.
     gymScreen_.tick(TickSeconds, intent);
-    scene_->tick(fieldIntent, static_cast<float>(TickSeconds));
+    scene_->tick(fieldIntent, guestIntent, static_cast<float>(TickSeconds));
     game_.systems.story->runNpcContacts(scene_->field().npcContacts());
     storyLink_->afterFieldTick();
     game_.session->tick(TickSeconds);

@@ -59,6 +59,7 @@
 #include "naming_box.hpp"
 #include "options.hpp"
 #include "partner_menu.hpp"
+#include "player_commands.hpp"
 #include "praise_scold_call.hpp"
 #include "recruit_bar.hpp"
 #include "remote_control.hpp"
@@ -232,7 +233,7 @@ public:
   // One logic tick: the battle, or the field and the game time unless a menu pauses them. A tick in
   // which the field does not take the player's walk (a menu, a screen or scene that runs instead,
   // a gym course) drops the click-to-move target, so the player never walks on to it afterwards.
-  void tick(const game::field::FieldInput& intent, const FishingButtons& fishing);
+  void tick(const PlayerCommands& commands, const PlayerCommands& guestCommands = {});
   // Counts a tick of play time (GameSession::countPlayTime, clock.c: tickPlaytime): the app calls
   // it on every tick of a played game but the paused ones and those of a movie, menus, battles and
   // scenes included.
@@ -258,7 +259,7 @@ public:
   // How much white the story's fade to white adds to the screen, from 0 to 1.
   [[nodiscard]] float whiteLevel() const { return storyProps_.whiteness(); }
   // Feeds the story's textboxes the player's keys, once per tick while no menu takes them.
-  void pressStory(const input::InputState& input);
+  void pressStory(const PlayerCommands& commands, const input::InputState& pointerInput);
   // Feeds the battle the buttons it reads outside its document: `extra`, the original's square,
   // calls the finisher.
   void pressBattle(const input::InputState& input);
@@ -397,7 +398,8 @@ private:
   // Takes the play options' commands (applyPlayOptions): keeps the value in the settings, saves
   // them and applies it. False for any other command.
   bool handlePlayOption(const ui::UiCommand& command);
-  void tickSystems(const game::field::FieldInput& intent, const FishingButtons& fishing);
+  void tickSystems(const game::field::FieldInput& intent, const FishingButtons& fishing,
+                   const game::field::FieldInput& guestIntent);
   void tickWater();
   [[nodiscard]] bool paused() const;
   // How the field animates: running, resting behind the game menu or frozen (field_clock.hpp).

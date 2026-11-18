@@ -2,7 +2,7 @@
    documents use is declared here, with the entries the keyboard and the gamepad move to and the class that hides
    what the scripts hide. The look is the skin's (ui/skins/<id>/, docs/architecture/ui.md#skins). */
 
-body, div, h1, h2, p, button, img {
+body, div, h1, h2, h3, p, button, img {
 	display: block;
 }
 

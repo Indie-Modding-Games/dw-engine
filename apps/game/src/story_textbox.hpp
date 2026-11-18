@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "story_text_rows.hpp"
+#include "player_commands.hpp"
 
 namespace dwe::app {
 
@@ -35,7 +36,7 @@ public:
   StoryTextbox& operator=(StoryTextbox&&) = delete;
 
   // Once per engine tick while the field runs and no menu takes the keys.
-  void press(const input::InputState& input);
+  void press(const StoryButtons& buttons, const input::InputState& pointerInput);
   // The UI API's story commands (story_commands.hpp): the presses they give reach the dialogue
   // only while the box on show waits for them, as the player's would. True for a story command,
   // taken or not.

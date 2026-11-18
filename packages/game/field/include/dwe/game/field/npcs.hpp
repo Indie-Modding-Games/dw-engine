@@ -92,6 +92,7 @@ struct NpcBody {
 struct NpcSurroundings {
   GroundSquare player;
   GroundSquare partner;
+  std::vector<GroundSquare> otherPlayers;
   // Whether the player moves freely (TAMER_STATE 0): only then does an NPC's touch count.
   bool playerFree = false;
 };

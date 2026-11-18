@@ -24,6 +24,18 @@ export interface RoomState {
   put(key: string, value: unknown): Promise<void>;
   clear(): Promise<void>;
   setAlarm(at: number): Promise<void>;
+  publish?(code: string, listing: RoomListing | null): Promise<void>;
+}
+
+export interface RoomListing {
+  roomId: string;
+  joinCode: string;
+  name: string;
+  message: string;
+  players: number;
+  capacity: number;
+  createdAt: number;
+  state: "waiting" | "full";
 }
 
 export type ErrorReason = "no-room" | "full" | "expired" | "left" | "bad-code";
@@ -40,6 +52,8 @@ function reject(socket: Socket, reason: ErrorReason): void {
 export class Room {
   #state: RoomState;
   #now: () => number;
+  #listing: RoomListing | null = null;
+  #code = "";
 
   constructor(state: RoomState, now: () => number = Date.now) {
     this.#state = state;
@@ -51,6 +65,18 @@ export class Room {
     if (await this.#state.get("opened")) return false;
     await this.#state.put("opened", this.#now());
     await this.#state.setAlarm(this.#now() + ROOM_LIFETIME_MS);
+    this.#listing = {
+      roomId: code,
+      joinCode: code,
+      name: "Cooperative room",
+      message: "Waiting for players",
+      players: 1,
+      capacity: 2,
+      createdAt: this.#now(),
+      state: "waiting",
+    };
+    this.#code = code;
+    await this.#state.publish?.(code, this.#listing);
     this.#state.accept(socket, "host");
     socket.send(message({ type: "room", code }));
     return true;
@@ -68,6 +94,11 @@ export class Room {
       return;
     }
     this.#state.accept(socket, "guest");
+    if (this.#listing) {
+      this.#listing.players = 2;
+      this.#listing.state = "full";
+      await this.#state.publish?.(this.#code, this.#listing);
+    }
     socket.send(message({ type: "joined" }));
     for (const host of hosts) host.send(message({ type: "peer" }));
   }
@@ -128,5 +159,8 @@ export class Room {
       for (const socket of this.#state.sockets(role)) socket.close(1000, "done");
     }
     await this.#state.clear();
+    this.#listing = null;
+    await this.#state.publish?.(this.#code, null);
+    this.#code = "";
   }
 }

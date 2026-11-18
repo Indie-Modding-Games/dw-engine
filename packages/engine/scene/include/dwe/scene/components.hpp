@@ -55,10 +55,14 @@ struct AnimationIntent {
   float speedScale = 1.0F;
 };
 
-// The entity the player controls.
-struct PlayerTag {};
+// The entity a player controls. The id is stable across a shared world and its replicas.
+struct PlayerTag {
+  std::uint8_t player = 0;
+};
 
-// The partner that follows the player.
-struct PartnerTag {};
+// The partner that follows a player.
+struct PartnerTag {
+  std::uint8_t player = 0;
+};
 
 } // namespace dwe::scene

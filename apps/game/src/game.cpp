@@ -10,6 +10,8 @@
 #include <dwe/core/message.hpp>
 #include <dwe/debug/debug_ui.hpp>
 #include <dwe/game/partner/field_animation.hpp>
+#include <dwe/game/save/save_file.hpp>
+#include <dwe/game/save/settings.hpp>
 #include <dwe/game/save/slots.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/input_state.hpp>
@@ -59,6 +61,9 @@
 #include "bug_reporter.hpp"
 #include "chibi_style.hpp"
 #include "common.hpp"
+#include "coop_gameplay_bridge.hpp"
+#include "coop_snapshot.hpp"
+#include "coop_screen.hpp"
 #include "content_mount.hpp"
 #include "control_log.hpp"
 #include "control_socket.hpp"
@@ -83,6 +88,8 @@
 #include "new_game_interview.hpp"
 #include "new_game_scene_rules.hpp"
 #include "partner_portrait.hpp"
+#include "player_commands.hpp"
+#include "player_registry.hpp"
 #include "pause_box.hpp"
 #include "play_session.hpp"
 #include "player_chart.hpp"
@@ -104,6 +111,17 @@
 
 namespace dwe::app {
 namespace {
+
+core::Result<game::save::SaveFile> readSaveSlot(const assets::VirtualFileSystem& files,
+                                               const Options& options,
+                                               game::save::SlotId slot, bool backup) {
+  auto storage = saveStorageFor(options, true);
+  if (!storage) return core::fail("save storage is not available");
+  auto settings = game::save::loadSaveSettings(files);
+  if (!settings) return std::unexpected{settings.error()};
+  game::save::SaveSlots slots{*storage, *settings};
+  return backup ? slots.loadBackup(slot) : slots.load(slot);
+}
 
 // Smaller changes of the map change's fade are not worth telling the UI.
 constexpr double FadeEpsilon = 1e-4;
@@ -850,6 +868,7 @@ int runGame(const Options& requested) {
   loadUserGamepadMappings();
 
   input::InputState input{input::defaultActionMap()};
+  PlayerRegistry players;
   auto scripts = script::ScriptVm::create();
   if (!scripts) {
     core::logError("{}", scripts.error().message);
@@ -942,6 +961,12 @@ int runGame(const Options& requested) {
   TitleScreen title{files, options, !autotest, **ui};
   // "Online versus" from the title's menu (versus_screen.hpp): no game behind it.
   VersusScreen versus{files, options, !autotest, **ui, renderer->get(), &sound};
+  CoopScreen coop{files, options, **ui};
+  std::unique_ptr<CoopGameplayBridge> coopBridge;
+  std::unique_ptr<NetworkFieldController> coopClientController;
+  NetworkFieldController* coopHostController = nullptr;
+  PlaySession* coopAttachedSession = nullptr;
+  std::uint32_t coopWorldTick = 0;
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
   // A boot asks the UI skin after the language box (an addition) until the player has chosen one;
@@ -1447,7 +1472,7 @@ int runGame(const Options& requested) {
     // A naming box open takes the keyboard's text as well as its keys.
     const bool takesText = (interview && interview->takesText()) ||
                            (flow.playing() != nullptr && flow.playing()->takesText()) ||
-                           (flow.playing() == nullptr && versus.takesText());
+                           (flow.playing() == nullptr && versus.takesText()) || coop.takesText();
     if (auto switched = window->setTextInput(takesText); !switched) {
       core::logDebug("game: {}", switched.error().message);
     }
@@ -1457,6 +1482,8 @@ int runGame(const Options& requested) {
       flow.playing()->type(typed, typedEnter);
     } else if (flow.playing() == nullptr && versus.takesText()) {
       versus.type(typed, typedEnter);
+    } else if (coop.takesText()) {
+      coop.type(typed, typedEnter);
     }
 
     const double now = platform->nowSeconds();
@@ -1639,6 +1666,21 @@ int runGame(const Options& requested) {
           title.show();
         }
       }
+      coop.tick(platform->nowSeconds());
+      if (flow.playing() == nullptr) {
+        if (auto networkSave = coop.takeRemoteStartText()) {
+          title.hide();
+          PlayStart start{.load = std::nullopt,
+                          .backup = false,
+                          .saveTo = std::nullopt,
+                          .choice = std::nullopt,
+                          .withoutSaving = false,
+                          .rulesetId = std::nullopt,
+                          .modeId = std::nullopt,
+                          .networkSaveText = std::move(*networkSave)};
+          startPlaying(start);
+        }
+      }
       if (flow.playing() != nullptr || !title.landing()) {
         titleIdleTicks = 0;
       } else if (movies && replayBootMovie && ++titleIdleTicks >= movieRules->landingIdleFrames) {
@@ -1650,14 +1692,48 @@ int runGame(const Options& requested) {
         titleAfterMovie = replayBootMovie;
       }
       PlaySession* play = flow.playing();
+      if (play != nullptr && coop.connected() && coopBridge == nullptr && coop.link() != nullptr) {
+        if (coop.isHost()) {
+          auto controller = std::make_unique<NetworkFieldController>();
+          coopHostController = controller.get();
+          if (auto added = play->scene().addCoopGuest(); !added) {
+            core::logError("coop: could not add guest to the field: {}", added.error().message);
+            coopHostController = nullptr;
+          } else if (!players.addGuest("Guest", std::move(controller), PlayerLink::Connected)) {
+            core::logError("coop: the player registry rejected the guest slot");
+            coopHostController = nullptr;
+          } else {
+            coopBridge = std::make_unique<CoopGameplayBridge>(*coop.link(), *coopHostController);
+            coopAttachedSession = play;
+            core::logInfo("coop: guest commands now drive player 2 in the host field");
+          }
+        } else {
+          coopClientController = std::make_unique<NetworkFieldController>();
+          coopBridge = std::make_unique<CoopGameplayBridge>(*coop.link(), *coopClientController);
+          core::logInfo("coop: local field commands are connected to the host");
+        }
+      }
+      if (play != nullptr && coop.connected() && coop.isHost() && coopBridge != nullptr &&
+          coopAttachedSession != play) {
+        if (auto added = play->scene().addCoopGuest(); !added) {
+          core::logError("coop: could not add guest to the new field: {}", added.error().message);
+        } else {
+          coopAttachedSession = play;
+        }
+      }
+      if (coopBridge != nullptr) {
+        coopBridge->poll(net::Millis{static_cast<std::int64_t>(platform->nowSeconds() * 1000.0)});
+      }
       // clock.c: tickPlaytime runs every frame the game loop runs, under the menus and in battles
       // (measured: 140 frames in 420 vblanks with the bag's options open, 100 in 307 in a battle)
       // and not under the pause (none in 476 vblanks) or a movie, which return above.
       if (play != nullptr) {
         play->countPlayTime(TickSeconds / ticksPerTick);
       }
-      game::field::FieldInput intent;
-      FishingButtons fishing;
+      PlayerCommands commands;
+      WalkOrder walk;
+      input::Vector2 move{0.0F, 0.0F};
+      bool clickWalksAway = false;
       // A click walks the player only while the mouse is the walk control and nothing holds him (a
       // talk, a battle, a gym course, a screen). Elsewhere the click belongs to whatever is in
       // front (a page, a menu, an option) and must not start a walk once it closes.
@@ -1667,9 +1743,9 @@ int runGame(const Options& requested) {
         mouse.release();
       }
       if (play != nullptr && !(*ui)->capturesInput()) {
-        const input::Vector2 move = input.vector("move_left", "move_right", "move_up", "move_down");
+        move = input.vector("move_left", "move_right", "move_up", "move_down");
         // Up gives a negative y; the field's y points away from the camera.
-        const WalkOrder walk = walkOrderOf(
+        walk = walkOrderOf(
             walkControl.control(),
             {.keys = {move.x, -move.y},
              .clicked = pointerWalks ? mouse.take() : std::nullopt,
@@ -1679,30 +1755,22 @@ int runGame(const Options& requested) {
                                   glm::vec2{static_cast<float>((*renderer)->targetExtent().width),
                                             static_cast<float>((*renderer)->targetExtent().height)})
                             : std::nullopt});
-        intent.stick = walk.stick;
-        intent.run = !input.isDown("walk");
-        intent.moveTarget = walk.moveTarget;
         // A route's click on the ground walks there whatever walks the player (Autotest).
-        if (autotest && !intent.moveTarget) {
-          intent.moveTarget = autotest->takeWalkOrder();
+        if (autotest && !walk.moveTarget) {
+          walk.moveTarget = autotest->takeWalkOrder();
         }
-        // Escape, the right button or East drops a click-to-move target.
-        intent.cancelTarget = input.wasPressed("cancel");
-        const bool clickWalksAway =
-            intent.moveTarget && !MouseSteering::pressesInPlace(
-                                     *intent.moveTarget, play->scene().field().player().position);
-        intent.confirm =
-            clickWalksAway ? input.wasPressedByKeyOrPad("confirm") : input.wasPressed("confirm");
-        play->pressStory(input);
-        fishing = {.confirmDown = input.isDown("confirm"),
-                   .cancelPressed = intent.cancelTarget,
-                   .cameraDown = input.isDown("alt"),
-                   .left = move.x < 0.0F,
-                   .right = move.x > 0.0F,
-                   .up = move.y < 0.0F,
-                   .down = move.y > 0.0F};
+        clickWalksAway = walk.moveTarget && !MouseSteering::pressesInPlace(
+                                                  *walk.moveTarget,
+                                                  play->scene().field().player().position);
+        players.localController().sample(input, walk, move, clickWalksAway);
+        commands = players.next(HostPlayerId, ticksRun).value_or(PlayerCommands{});
+        play->pressStory(commands, input);
       } else {
         mouse.release();
+        if (play != nullptr) {
+          players.localController().neutral();
+          commands = players.next(HostPlayerId, ticksRun).value_or(PlayerCommands{});
+        }
       }
       if (play != nullptr) {
         // The battle's document holds the input, but not the finisher's button nor the quick
@@ -1715,7 +1783,28 @@ int runGame(const Options& requested) {
         play->pressPartnerMenu(input);
         play->pressDestinationChoice(input);
         play->pressCurling(input);
-        play->tick(intent, fishing);
+        const PlayerCommands guestCommands =
+            players.next(GuestPlayerId, ticksRun).value_or(PlayerCommands{});
+        if (coopBridge != nullptr && coop.connected() && !coop.isHost()) {
+          if (auto sent = coopBridge->sendLocalField(commands); !sent) {
+            core::logWarning("coop: could not send field input: {}", sent.error().message);
+          }
+        }
+        play->tick(commands, guestCommands);
+        if (coopBridge != nullptr && coop.connected() && coop.isHost() && ticksRun % 3 == 0) {
+          auto snapshot = makeCoopSnapshot(play->scene().field(), play->scene().field().mapId(),
+                                           ++coopWorldTick,
+                                           coopHostController != nullptr
+                                               ? coopHostController->latestSequence().value_or(0)
+                                               : 0);
+          if (snapshot) {
+            if (auto sent = coopBridge->sendHostSnapshot(*snapshot); !sent) {
+              core::logWarning("coop: could not send world snapshot: {}", sent.error().message);
+            }
+          } else {
+            core::logWarning("coop: could not capture world snapshot: {}", snapshot.error().message);
+          }
+        }
         if (trace) {
           trace->write(play->traceFrame(ticksRun, input));
         }
@@ -1732,6 +1821,18 @@ int runGame(const Options& requested) {
     }
 
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
+      // The title menu's cooperative room actions belong to CoopScreen. Dispatch them before
+      // generic UI add-ons and option handlers so they cannot be consumed or reported as unknown.
+      if ((command.name == CoopOpenCommand || command.name == "coop_host" ||
+           command.name == "coop_join" || command.name == "coop_connect" ||
+           command.name == "coop_close" ||
+           command.name == "coop_ready" || command.name == "coop_start") &&
+          coop.handle(command)) {
+        if (coop.takeGuestProfileRequest() || coop.takeStartRequested()) {
+          static_cast<void>(title.handle(ui::UiCommand{.name = "continue", .value = {}}));
+        }
+        continue;
+      }
       if (uiAddons.handle(command)) {
         continue;
       }
@@ -1887,6 +1988,37 @@ int runGame(const Options& requested) {
       }
       if (flow.playing() == nullptr && title.handle(command)) {
         if (const auto start = title.takeStart()) {
+          if (coop.selectingGuestProfile() || coop.selectingHostStart()) {
+            if (!start->load) {
+              coop.reportError("Choose a saved game in this room first.");
+              title.show();
+              continue;
+            }
+            auto save = readSaveSlot(files, options, *start->load, start->backup);
+            if (!save) {
+              coop.reportError(save.error().message);
+              title.show();
+              continue;
+            }
+            auto saveText = game::save::writeSaveFile(*save);
+            if (!saveText) {
+              coop.reportError(saveText.error().message);
+              title.show();
+              continue;
+            }
+            if (coop.selectingGuestProfile()) {
+              if (auto provided = coop.provideGuestSave(*saveText); !provided) {
+                coop.reportError(provided.error().message);
+                title.show();
+              }
+              continue;
+            }
+            if (auto sent = coop.sendHostStart(*saveText); !sent) {
+              coop.reportError(sent.error().message);
+              title.show();
+              continue;
+            }
+          }
           if (start->load) {
             // Give the shared save indicator time to render and animate before the synchronous
             // save read starts blocking this loop.
@@ -1944,6 +2076,29 @@ int runGame(const Options& requested) {
       versus.update(gameSeconds, drawAlpha, graphics.options());
     }
     if (PlaySession* play = flow.playing()) {
+      if (coopBridge != nullptr && coop.connected() && !coop.isHost()) {
+        std::optional<game::field::CharacterState> hostState;
+        if (const auto presented = coopBridge->presentedWorld(drawAlpha);
+            presented && presented->mapId == play->scene().field().mapId()) {
+          const auto hostPlayer = std::ranges::find_if(presented->entities, [](const auto& entity) {
+            return entity.owner == game::coop::HostPlayerId &&
+                   entity.role == game::coop::EntityRole::Player;
+          });
+          if (hostPlayer != presented->entities.end()) {
+            const scene::Motion motion = hostPlayer->motion == game::coop::Motion::Run
+                                             ? scene::Motion::Run
+                                         : hostPlayer->motion == game::coop::Motion::Walk
+                                             ? scene::Motion::Walk
+                                             : scene::Motion::Idle;
+            hostState = game::field::CharacterState{.position = hostPlayer->position,
+                                                     .yaw = hostPlayer->yaw,
+                                                     .motion = motion};
+          }
+        }
+        if (auto shown = play->scene().presentCoopHost(hostState); !shown) {
+          core::logWarning("coop: could not present host player: {}", shown.error().message);
+        }
+      }
       play->update(sessionCommands, autotest.get(), frameStats, gameSeconds, drawAlpha);
       screenFade->setDarkness(play->fadeLevel());
       screenFade->setWhiteness(play->whiteLevel());

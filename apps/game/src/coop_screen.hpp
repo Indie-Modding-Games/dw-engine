@@ -1,0 +1,73 @@
+#pragma once
+
+#include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/ui/ui.hpp>
+
+#include <memory>
+#include <string>
+#include <string_view>
+#include <utility>
+
+#include "coop_connection.hpp"
+#include "options.hpp"
+
+#include <dwe/game/coop/profile_transfer.hpp>
+
+namespace dwe::app {
+
+inline constexpr std::string_view CoopOpenCommand = "coop_open";
+
+// The main-menu cooperative lobby: creates or joins a WebRTC room and keeps the validated coop
+// handshake alive. The connected link is exposed for the gameplay bridge to attach next.
+class CoopScreen {
+public:
+  CoopScreen(const assets::VirtualFileSystem& files, const Options& options, ui::Ui& ui);
+  bool handle(const ui::UiCommand& command);
+  [[nodiscard]] bool takesText() const { return active_ && connection_.takesText(); }
+  void type(std::string_view text, bool enter);
+  void tick(double nowSeconds);
+  [[nodiscard]] bool active() const { return active_; }
+  [[nodiscard]] game::coop::CoopLink* link() { return connection_.link(); }
+  [[nodiscard]] bool connected() const { return connection_.connected(); }
+  [[nodiscard]] bool isHost() const { return isHost_; }
+  [[nodiscard]] bool guestReady() const { return remoteReady_; }
+  [[nodiscard]] bool takeStartRequested() { return std::exchange(startRequested_, false); }
+  [[nodiscard]] bool takeGuestProfileRequest() { return std::exchange(guestProfileRequest_, false); }
+  [[nodiscard]] bool selectingGuestProfile() const { return selectingGuestProfile_; }
+  [[nodiscard]] bool selectingHostStart() const { return selectingHostStart_; }
+  [[nodiscard]] std::optional<std::string> takeRemoteStartText();
+  [[nodiscard]] core::Result<void> provideGuestSave(std::string_view saveText);
+  [[nodiscard]] core::Result<void> sendHostStart(std::string_view saveText);
+  void reportError(std::string message);
+
+private:
+  void publish();
+  void receiveMessages();
+  void completeRemoteStart();
+  [[nodiscard]] core::Result<void> sendProfile(game::coop::ProfilePayloadKind kind,
+                                               std::uint32_t transferId,
+                                               std::string_view saveText);
+
+  ui::Ui* ui_;
+  CoopConnection connection_;
+  bool active_ = false;
+  bool isHost_ = false;
+  bool localReady_ = false;
+  bool remoteReady_ = false;
+  bool startRequested_ = false;
+  bool guestProfileRequest_ = false;
+  bool selectingGuestProfile_ = false;
+  bool selectingHostStart_ = false;
+  std::string localError_;
+  std::uint32_t nextTransferId_ = 1;
+  std::optional<std::uint32_t> guestTransferId_;
+  std::optional<std::uint32_t> hostTransferId_;
+  game::coop::ProfileAssembler guestAssembler_;
+  game::coop::ProfileAssembler hostAssembler_;
+  std::optional<std::string> guestSaveText_;
+  std::optional<std::string> hostSaveText_;
+  std::optional<game::coop::JoinState> remoteJoinState_;
+  std::optional<std::string> remoteStartText_;
+};
+
+} // namespace dwe::app

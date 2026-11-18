@@ -142,6 +142,46 @@ struct Content {
 
 } // namespace
 
+TEST_CASE("the main menu exposes a localized cooperative access entry") {
+  const auto checkLayout = [](Content& content, std::string_view label) {
+    content.load(MainMenuDocument);
+    content.ui->show(MainMenuDocument, true);
+    content.ui->update();
+    CHECK(content.ui->elementText(MainMenuDocument, "multiplayer") == label);
+    CHECK_FALSE(content.ui->elementHasClass(MainMenuDocument, "multiplayer", "hidden"));
+    CHECK(content.ui->elementHasClass(MainMenuDocument, "coop-info", "hidden"));
+    const auto click = [&](std::string_view id) {
+      const auto point = content.ui->elementCenter(MainMenuDocument, id);
+      REQUIRE(point.has_value());
+      static_cast<void>(
+          content.ui->handleEvent(platform::MouseMoved{.x = point->x, .y = point->y}));
+      static_cast<void>(content.ui->handleEvent(
+          platform::MouseButtonChanged{.button = platform::MouseButton::Left, .down = true}));
+      static_cast<void>(content.ui->handleEvent(
+          platform::MouseButtonChanged{.button = platform::MouseButton::Left, .down = false}));
+      content.ui->update();
+    };
+    click("multiplayer");
+    CHECK_FALSE(content.ui->elementHasClass(MainMenuDocument, "coop-info", "hidden"));
+    CHECK(content.ui->focusedElementId(MainMenuDocument) == "coop-host");
+    click("coop-host");
+    const std::vector<ui::UiCommand> commands = content.ui->takeCommands();
+    REQUIRE(commands.size() == 2);
+    CHECK(commands[0].name == "coop_open");
+    CHECK(commands[1].name == "coop_host");
+    click("coop-back");
+    CHECK(content.ui->elementHasClass(MainMenuDocument, "coop-info", "hidden"));
+  };
+  {
+    Content modern;
+    checkLayout(modern, "Cooperative");
+  }
+  {
+    Content original{DiscArt::Extracted};
+    checkLayout(original, "COOPERATIVE");
+  }
+}
+
 TEST_CASE("the start skin is --ui-skin, else the saved one, else the packs' default") {
   const std::optional<std::string> none;
   CHECK(startUiSkin(std::string{"modern"}, std::string{"test_contrast"}) ==

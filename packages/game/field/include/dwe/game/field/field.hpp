@@ -45,6 +45,23 @@ struct FieldInput {
   bool confirm = false;
 };
 
+using PlayerId = std::uint8_t;
+inline constexpr PlayerId HostPlayerId = 0;
+inline constexpr PlayerId GuestPlayerId = 1;
+
+// The per-player portion of a shared field. Map, NPCs, scripts and transitions remain owned once
+// by Field; an optional partner belongs to this player and is absent until supplied by the app.
+struct FieldPlayer {
+  PlayerId id = HostPlayerId;
+  scene::Entity entity{};
+  std::optional<scene::Entity> partner;
+  FieldInput input;
+  std::optional<glm::vec3> moveTarget;
+  std::vector<glm::vec3> path;
+  float pathStallSeconds = 0.0F;
+  bool waitingAtWarp = false;
+};
+
 // The player stepped on a warp: the app loads `map` and calls Field::enterMap with `exit`.
 struct MapChange {
   std::string map;
@@ -193,6 +210,14 @@ public:
 
   // Sets the intent for the next ticks.
   void setInput(const FieldInput& input);
+  [[nodiscard]] bool setInput(PlayerId id, const FieldInput& input);
+  // Adds the guest body to this shared field. Its optional companion remains absent until the
+  // app provides a guest profile.
+  core::Result<void> addPlayer(PlayerId id, assets::SpawnPoint spawn);
+  [[nodiscard]] std::optional<CharacterState> player(PlayerId id) const;
+  [[nodiscard]] std::optional<scene::Entity> playerEntity(PlayerId id) const;
+  [[nodiscard]] bool waitingAtWarp(PlayerId id) const;
+  [[nodiscard]] std::size_t playerCount() const { return otherPlayers_.size() + 1; }
 
   // Advances the logic by `seconds` (the app's fixed tick). On a warp the player walks on for the
   // fade out, without collision and without input; then nothing moves until the app enters the new
@@ -584,6 +609,24 @@ private:
     bool followPath = false;
   };
 
+  struct PlayerRuntime {
+    FieldPlayer fieldPlayer;
+    scene::Motion motion = scene::Motion::Idle;
+    bool pressed = false;
+    float frameClock = 0.0F;
+  };
+  void tickOtherPlayers(float seconds);
+  void moveOtherPlayer(PlayerRuntime& player, float seconds);
+  void stepOtherPlayer(PlayerRuntime& player, const Step& step);
+  void resetOtherPlayerMotion(bool clearInput);
+  void placeOtherPlayersNearHost();
+  [[nodiscard]] bool playerTouchesOtherPlayer(scene::Entity entity, glm::vec3 from,
+                                             glm::vec2 step) const;
+  void planPath(std::optional<glm::vec3>& moveTarget, std::vector<glm::vec3>& path,
+                glm::vec3 position, glm::vec3 target, bool allowTargetWarp = false);
+  glm::vec2 followPath(std::optional<glm::vec3>& moveTarget, std::vector<glm::vec3>& path,
+                       glm::vec3& position, float distance);
+
   Step playerStep();
   // Gives the current map's extra toilets their cells, or frees the cells they took.
   void placeExtraToilets();
@@ -712,6 +755,7 @@ private:
   std::vector<std::pair<std::string, std::int32_t>> ambiguousReported_;
   scene::Entity player_;
   scene::Entity partner_;
+  std::vector<PlayerRuntime> otherPlayers_;
   FieldNpcs npcs_;
 
   // A character's move over the frame that last stepped it, for drawnPose: from where it was drawn

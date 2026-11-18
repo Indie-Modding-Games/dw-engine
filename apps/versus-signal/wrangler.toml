@@ -8,6 +8,14 @@ compatibility_date = "2026-10-01"
 name = "ROOMS"
 class_name = "RoomObject"
 
+[[durable_objects.bindings]]
+name = "DIRECTORY"
+class_name = "DirectoryObject"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["RoomObject"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["DirectoryObject"]

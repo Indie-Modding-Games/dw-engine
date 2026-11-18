@@ -1,6 +1,6 @@
 # 0024. Cooperativo en línea con un host autoritativo y jugadores movidos por controladores
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada para implementación
 - **Fecha:** 2026-11-16
 
 ## Contexto
@@ -13,11 +13,12 @@ El detalle está en [Multijugador cooperativo en línea](../architecture/multipl
 
 ## Decisión
 
-Un PC, el **host**, simula el mundo entero y es la autoridad. El otro, el **cliente**, manda sus comandos (y, en la
-primera versión, la posición de su propio jugador, que el host valida) y dibuja lo que el host le replica: snapshots
-no fiables a 20 Hz y eventos fiables. Los dos jugadores son los mismos datos (`FieldPlayer`). Lo que cambia es el
-`PlayerController` que les da `PlayerCommands` cada tick: local, remoto o scripteado. El transporte, la señalización y
-el saludo son los del versus.
+Un PC, el **host**, simula el mundo entero y es la autoridad. El cliente manda comandos numerados; el host simula el
+movimiento de ambos jugadores. El cliente puede predecir visualmente solo su propio movimiento y reconciliarlo contra
+snapshots completos no fiables a 20 Hz. La predicción no activa efectos de juego. Eventos y acciones críticas viajan
+fiables, con acciones identificadas para deduplicación. Los dos jugadores son los mismos datos (`FieldPlayer`). Lo
+que cambia es el `PlayerController` que les da `PlayerCommands` cada tick: local, remoto o scripteado. El transporte,
+la señalización y el saludo son los del versus.
 
 ## Consecuencias
 
@@ -26,8 +27,18 @@ el saludo son los del versus.
   repeticiones y entrada más limpia.
 - El cliente no necesita simular el mundo ni coincidir bit a bit con el host. Las diferencias de floats entre
   máquinas no rompen la partida.
-- La latencia del host se nota en todo lo que no es el movimiento propio (NPCs, diálogos, combate). Con dos jugadores
-  y una conexión directa es aceptable.
+- La latencia del host se nota en interacciones y acciones críticas (NPCs, diálogos, combate); el movimiento local
+  puede ocultarla visualmente, sin adelantar efectos de juego.
+- Los snapshots iniciales son completos para evitar una base delta perdida. Los deltas se reconsideran solo con
+  mediciones de ancho de banda y un protocolo explícito de recuperación.
+- `packages/game/*` no se depende entre sí: `game/coop` contiene DTOs/códecs y máquina de enlace sobre `core`/`net`;
+  `apps/game` compone el puente con `field`, `packages/session` y `FieldScene`. No se reutiliza directamente el tipo
+  C++ `Identity` de `versus`, aunque se mantengan campos y validación de identidad compatibles.
+- La cámara de seguimiento sigue siendo local; para el rescate del compañero cada cliente reporta al host un
+  `PlayerViewState` lógico (rectángulo visible del fondo, mapa y secuencia). El host valida y usa ese metadato, nunca
+  una posición propuesta por el cliente. Para escenas compartidas deriva el ancla del centro de la vista y los datos
+  del mapa. Frecuencia acordada: hasta 20 Hz; una vista caduca tras 500 ms sin actualización. Los límites geométricos
+  exactos se cierran antes de C0b.
 - Para unirse hace falta un punto seguro (campo libre), porque el guardado no lleva el estado pasajero.
 - Las tarjetas de salas y perfil online (#291–#295) pasan a ser base común del versus y del cooperativo.
 

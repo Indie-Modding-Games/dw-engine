@@ -131,6 +131,9 @@ void Field::beginTransforms() {
   entt::registry& registry = world_->registry();
   scene::beginTick(registry.get<Transform>(player_));
   scene::beginTick(registry.get<Transform>(partner_));
+  for (const PlayerRuntime& player : otherPlayers_) {
+    scene::beginTick(registry.get<Transform>(player.fieldPlayer.entity));
+  }
   npcs_.beginTick();
 }
 

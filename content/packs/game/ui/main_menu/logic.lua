@@ -7,7 +7,7 @@
 --
 -- Two layouts of the same entries, as the skin lays them out (ui.layout("menu")):
 -- - The modern one: play (a new game), continue (greyed and skipped unless the game publishes
---   save.can_continue), online versus, options, quit.
+--   save.can_continue), online versus, cooperative access, options, quit.
 -- - The original's (menu: original), the original's title screen (main.c: main):
 --   - "boot": the "Press Start" screen (runLandingScreen), when the game says so (title.boot).
 --     It fades in from black, its line blinks, and Start fades it out (40 frames each).
@@ -72,8 +72,9 @@ local leaving = false
 local pending_view = nil
 
 local entries = {
-  menu = { "play", "continue", "erase", "versus", "battle", "options", "quit" },
+  menu = { "play", "continue", "erase", "versus", "multiplayer", "battle", "options", "quit" },
   battle = { "battle-yes", "battle-no" },
+  coop = { "coop-host", "coop-join", "coop-ready", "coop-start", "coop-back" },
   language = {
     "language-1",
     "language-2",
@@ -143,6 +144,7 @@ local function refresh(document)
   local own = orig and "main_menu.original." or "main_menu."
   document:get("play"):set_text(t(own .. "new_game"))
   document:get("continue"):set_text(t(own .. "continue"))
+  document:get("multiplayer"):set_text(t(own .. "coop"))
   -- Modern: greyed and skipped (structure.rcss). Original: greyed, but the cursor stops on it.
   document:get("continue"):set_class("unavailable", not saved and not orig)
   document:get("continue"):set_class("dimmed", not saved and orig)
@@ -203,19 +205,21 @@ end
 local function lay_out(document)
   local orig = original()
   was_original = orig
-  local shown = (orig or view == "options") and view or "menu"
+  local shown = (orig or view == "options" or view == "coop") and view or "menu"
   local function show(id, visible)
     document:get(id):set_class("hidden", not visible)
   end
   show("press-start", shown == "boot")
-  show("panel", shown == "menu")
-  for _, id in ipairs({ "erase", "battle" }) do
-    show(id, orig)
+  show("panel", shown == "menu" or shown == "coop")
+  for _, id in ipairs({ "play", "continue", "multiplayer", "options" }) do
+    show(id, shown == "menu")
   end
-  -- Quit is the options page's in the original layout, whose menu has the original's entries and
-  -- options.
-  show("quit", not orig)
-  show("versus", not orig)
+  show("versus", shown == "menu" and not orig)
+  show("erase", shown == "menu" and orig)
+  show("battle", shown == "menu" and orig)
+  show("quit", shown == "menu" and not orig)
+  show("coop-info", shown == "coop")
+  document:get("panel"):set_class("coop-room", shown == "coop")
   show("language-box", shown == "language")
   if shown == "language" then
     -- The box in the middle of the screen: its heading and START (180dp with its padding) and a
@@ -287,6 +291,8 @@ local function enter(document, name)
   elseif name == "language" then
     local current = index_of(ui.languages(), ui.setting("language")) or 1
     set_view(document, "language", "language-" .. current)
+  elseif name == "coop" then
+    set_view(document, "coop", "coop-host")
   end
 end
 
@@ -356,6 +362,118 @@ function open_versus()
   ui.send("versus")
 end
 
+function open_coop(document)
+  remembered.menu = "multiplayer"
+  set_view(document, "coop", "coop-host")
+  ui.send("coop_open")
+end
+
+function close_coop(document)
+  ui.send("coop_close")
+  close_view(document)
+end
+
+local function refresh_coop(document)
+  local view = ui.setting("coop.view") or "menu"
+  local roomCode = ui.setting("coop.code")
+  local role = ui.setting("coop.role") or "host"
+  local connected = ui.setting("coop.connected") == true
+  local localReady = ui.setting("coop.local_ready") == true
+  local remoteReady = ui.setting("coop.remote_ready") == true
+  local canStart = ui.setting("coop.can_start") == true
+      and ui.setting("save.can_continue") == true
+  local home = view == "menu" or (view == "error" and role == "host")
+  local joinEntry = view == "join_entry" or (view == "error" and role == "guest")
+  document:get("coop-info"):set_class("coop-home", home)
+  document:get("coop-info"):set_class("coop-join-entry", joinEntry)
+  document:get("coop-info"):set_class("coop-lobby", not home and not joinEntry)
+  local status = {
+    menu = "main_menu.coop.status",
+    join_entry = "main_menu.coop.enter_code",
+    hosting = roomCode ~= nil and roomCode ~= "" and "main_menu.coop.waiting"
+      or "main_menu.coop.creating",
+    joining = "main_menu.coop.connecting",
+    connected = "main_menu.coop.connected",
+    error = "main_menu.coop.error",
+    closed = "main_menu.coop.status",
+  }
+  local key = status[view] or status.error
+  local text = t(key)
+  document:get("coop-room-title"):set_text(t(
+    role == "host" and "main_menu.coop.host_title" or "main_menu.coop.guest_title"))
+  local error = ui.setting("coop.error")
+  if error ~= nil and error ~= "" then
+    local errorKey = {
+      bad_code = "main_menu.coop.error.bad_code",
+      no_join_transport = "main_menu.coop.error.no_join_transport",
+      transport_unavailable = "main_menu.coop.error.transport_unavailable",
+      rejected = "main_menu.coop.error.rejected",
+      no_server = "main_menu.coop.error.no_server",
+      server_unreachable = "main_menu.coop.error.server_unreachable",
+      wrong_code = "main_menu.coop.error.wrong_code",
+      room_full = "main_menu.coop.error.room_full",
+      signal_timeout = "main_menu.coop.error.signal_timeout",
+      no_direct_route = "main_menu.coop.error.no_direct_route",
+      connection_closed = "main_menu.coop.error.connection_closed",
+      content_identity_unavailable = "main_menu.coop.error.content_identity_unavailable",
+      ruleset_unavailable = "main_menu.coop.error.ruleset_unavailable",
+    }
+    local message = errorKey[error] and t(errorKey[error]) or error
+    text = text .. " " .. message
+  end
+  document:get("coop-status"):set_text(text)
+  document:get("coop-room-code"):set_text(roomCode ~= nil and roomCode ~= "" and roomCode or "----")
+  local countKey = connected and "main_menu.coop.players_full" or "main_menu.coop.players_waiting"
+  document:get("coop-player-count"):set_text(t(countKey))
+  local hostReady = role == "host" or remoteReady
+  local guestReady = role == "guest" and localReady or remoteReady
+  document:get("coop-host-state"):set_text(t(
+    hostReady and "main_menu.coop.player_ready" or "main_menu.coop.player_connected"))
+  document:get("coop-guest-state"):set_text(t(
+    not connected and "main_menu.coop.player_waiting"
+      or (guestReady and "main_menu.coop.player_ready" or "main_menu.coop.player_connected")))
+  document:get("coop-host-ready"):set_text(t(hostReady and "main_menu.coop.ready_mark" or ""))
+  document:get("coop-guest-ready"):set_text(t(guestReady and "main_menu.coop.ready_mark" or ""))
+  document:get("coop-room-state"):set_text(t(key))
+  local code
+  if joinEntry or view == "joining" then
+    code = ui.setting("coop.typed")
+    document:get("coop-room-code-entry"):set_text(t("main_menu.coop.code") .. " " .. (code or "____"))
+    document:get("coop-room-code-entry"):set_class("hidden", false)
+  else
+    document:get("coop-room-code-entry"):set_class("hidden", true)
+  end
+  local choosing = home
+  local lostFocus = false
+  for _, id in ipairs({ "coop-host", "coop-join", "coop-connect", "coop-ready", "coop-start" }) do
+    if document:get(id):has_focus() and
+      ((id == "coop-host" or id == "coop-join") and not choosing
+        or id == "coop-connect" and not joinEntry
+        or id == "coop-ready" and not (connected and role == "guest")
+        or id == "coop-start" and not (connected and role == "host")) then
+      lostFocus = true
+    end
+  end
+  document:get("coop-host"):set_class("hidden", not choosing)
+  document:get("coop-join"):set_class("hidden", not choosing)
+  document:get("coop-ready"):set_class("hidden", not (connected and role == "guest"))
+  document:get("coop-ready"):set_text(t(localReady and "main_menu.coop.unready" or "main_menu.coop.ready"))
+  document:get("coop-start"):set_class("hidden", not (connected and role == "host"))
+  document:get("coop-connect"):set_class("hidden", not joinEntry)
+  document:get("coop-start"):set_class("unavailable", not canStart)
+  if lostFocus then
+    if joinEntry then
+      document:get("coop-connect"):focus()
+    elseif connected and role == "guest" then
+      document:get("coop-ready"):focus()
+    elseif connected and role == "host" then
+      document:get("coop-start"):focus()
+    else
+      document:get("coop-back"):focus()
+    end
+  end
+end
+
 function erase_game()
   remembered.menu = "erase"
   if ui.setting("save.can_continue") == true then
@@ -418,11 +536,13 @@ end
 function on_setting(document, _name)
   title_picture.apply(document, PictureBoxes)
   refresh(document)
+  refresh_coop(document)
 end
 
 function on_language(document)
   refresh(document)
   refresh_prompts(document)
+  refresh_coop(document)
 end
 
 function on_device(document)
@@ -517,6 +637,9 @@ function on_action(document, action)
     enter(document, "menu")
     return true
   end
+  if view == "coop" and (action == "up" or action == "down") then
+    return step_entries(document, entries.coop, action == "up" and -1 or 1)
+  end
   if original() then
     if view == "boot" then
       -- Start, confirm or a click goes on (runLandingScreen takes Start; confirm and the pointer
@@ -531,6 +654,8 @@ function on_action(document, action)
     if action == "cancel" or action == "menu" then
       if view == "language" then
         close_language(document)
+      elseif view == "coop" then
+        close_coop(document)
       elseif view ~= "menu" then
         close_view(document)
       end

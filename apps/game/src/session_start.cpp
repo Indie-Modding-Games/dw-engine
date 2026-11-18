@@ -33,6 +33,13 @@ std::uint64_t newSeed() {
 // Starts the playthrough itself: the slot's save, or a new game (AppFlow saves it to its slot).
 core::Result<void> begin(session::GameSession& session, const PlayStart& start,
                          std::uint64_t seed) {
+  if (start.networkSaveText) {
+    auto file = game::save::parseSaveFile(*start.networkSaveText);
+    if (!file) return std::unexpected{file.error()};
+    if (auto loaded = session.loadFile(*file); !loaded) return loaded;
+    core::logInfo("coop: loaded the host's shared save in memory");
+    return {};
+  }
   if (start.load) {
     if (auto loaded = session.load(*start.load, start.backup); !loaded) {
       return loaded;
@@ -55,6 +62,13 @@ core::Result<void> begin(session::GameSession& session, const PlayStart& start,
 // game's is the one the new game's rules screen chose, else the command line's.
 std::string rulesetFor(const assets::VirtualFileSystem& files, const Options& options,
                        const PlayStart& play, game::save::SaveStorage* storage) {
+  if (play.networkSaveText) {
+    if (auto file = game::save::parseSaveFile(*play.networkSaveText);
+        file && !file->header.rulesetId.empty()) {
+      return file->header.rulesetId;
+    }
+    return options.ruleset;
+  }
   if (play.load && storage != nullptr) {
     if (auto settings = game::save::loadSaveSettings(files)) {
       const game::save::SaveSlots slots{*storage, *settings};
@@ -120,7 +134,9 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
   if (play.withoutSaving) {
     eraseAutosavesWithoutSlot(files, options, keepsSaves);
   }
-  GameStart start{.storage = play.withoutSaving ? nullptr : saveStorageFor(options, keepsSaves),
+  GameStart start{.storage = (play.withoutSaving || play.networkSaveText)
+                                  ? nullptr
+                                  : saveStorageFor(options, keepsSaves),
                   .session = nullptr,
                   .systems = session::createGameSystems(files)};
   start.systems.story->setStoryStage(options.storyStage);

@@ -95,6 +95,148 @@ TEST_CASE("the stick moves the player relative to the map's camera") {
   CHECK(world.registry().get<dwe::scene::ModelRef>(field.playerEntity()).asset ==
         "digimon/species_g/model");
   CHECK(world.first<dwe::scene::PartnerTag>() == field.partnerEntity());
+  CHECK(world.registry().get<dwe::scene::PlayerTag>(field.playerEntity()).player ==
+        dwe::game::field::HostPlayerId);
+  CHECK(world.registry().get<dwe::scene::PartnerTag>(field.partnerEntity()).player ==
+        dwe::game::field::HostPlayerId);
+}
+
+TEST_CASE("host and guest bodies use independent movement commands in one field") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  REQUIRE(field.addPlayer(dwe::game::field::GuestPlayerId, at(500.0F, 0.0F)));
+  REQUIRE(field.playerCount() == 2);
+
+  CHECK(field.player(dwe::game::field::HostPlayerId)->position == glm::vec3{0.0F, 0.0F, 0.0F});
+  CHECK(field.player(dwe::game::field::GuestPlayerId)->position == glm::vec3{500.0F, 0.0F, 0.0F});
+  CHECK(field.playerEntity(dwe::game::field::GuestPlayerId).has_value());
+  CHECK(world.registry().get<dwe::scene::PlayerTag>(
+            *field.playerEntity(dwe::game::field::GuestPlayerId))
+            .player == dwe::game::field::GuestPlayerId);
+  CHECK_FALSE(field.setInput(2, {.stick = {1.0F, 0.0F}, .run = true}));
+
+  CHECK(field.setInput(dwe::game::field::HostPlayerId,
+                       {.stick = {0.0F, 1.0F}, .run = true}));
+  CHECK(field.setInput(dwe::game::field::GuestPlayerId,
+                       {.stick = {1.0F, 0.0F}, .run = true}));
+  run(field, 1.0F);
+
+  const auto host = field.player(dwe::game::field::HostPlayerId);
+  const auto guest = field.player(dwe::game::field::GuestPlayerId);
+  REQUIRE(host.has_value());
+  REQUIRE(guest.has_value());
+  CHECK(host->position.z == doctest::Approx(-950.0F).epsilon(1e-3));
+  CHECK(host->position.x == doctest::Approx(0.0F));
+  CHECK(guest->position.x == doctest::Approx(1450.0F).epsilon(1e-3));
+  CHECK(guest->position.z == doctest::Approx(0.0F));
+  CHECK(host->motion == Motion::Run);
+  CHECK(guest->motion == Motion::Run);
+}
+
+TEST_CASE("the guest follows its own click-to-move path") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(-1000.0F, 0.0F));
+  REQUIRE(field.addPlayer(dwe::game::field::GuestPlayerId, at(0.0F, 0.0F)));
+
+  CHECK(field.setInput(dwe::game::field::GuestPlayerId,
+                       {.run = true, .moveTarget = glm::vec3{500.0F, 0.0F, 0.0F}}));
+  run(field, 2.0F);
+
+  const auto guest = field.player(dwe::game::field::GuestPlayerId);
+  REQUIRE(guest.has_value());
+  CHECK(guest->position.x == doctest::Approx(500.0F).epsilon(0.5));
+  CHECK(guest->position.z == doctest::Approx(0.0F).epsilon(0.5));
+}
+
+TEST_CASE("the guest waits on its warp until the host enters the next map") {
+  MapDocument town = roomMap("town");
+  fill(town, {.column = 50, .row = 40}, {.column = 52, .row = 41}, 112);
+  town.warps[2] = {.exit = 2,
+                   .spawn = {0, 0, 300},
+                   .rotation = 0,
+                   .targetMap = 218,
+                   .targetMapId = "house",
+                   .targetExit = 0};
+
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(town, at(500.0F, 0.0F));
+  REQUIRE(field.addPlayer(dwe::game::field::GuestPlayerId, at(100.0F, -700.0F)));
+  const glm::vec3 target{100.0F, 0.0F, -900.0F};
+  CHECK(dwe::assets::collisionCellAt(target) == CollisionCell{.column = 51, .row = 41});
+  REQUIRE(field.setInput(dwe::game::field::GuestPlayerId,
+                         {.run = true, .moveTarget = target}));
+  run(field, 5.0F);
+
+  CHECK(field.waitingAtWarp(dwe::game::field::GuestPlayerId));
+  CHECK_FALSE(field.mapChangePending());
+  const auto guest = field.player(dwe::game::field::GuestPlayerId);
+  REQUIRE(guest.has_value());
+  CHECK(field.warpsOn(field.collision().trigger(
+                          dwe::assets::originalCellAt(guest->position)).value_or(0)));
+  const glm::vec3 waitingPosition = guest->position;
+  CHECK(field.setInput(dwe::game::field::GuestPlayerId,
+                       {.stick = {1.0F, 0.0F}, .run = true}));
+  run(field, 1.0F);
+  CHECK(field.player(dwe::game::field::GuestPlayerId)->position == waitingPosition);
+
+  const MapDocument house = roomMap("house");
+  field.enterMapAt(house, at(500.0F, 0.0F));
+  CHECK_FALSE(field.waitingAtWarp(dwe::game::field::GuestPlayerId));
+}
+
+TEST_CASE("two player bodies stop at each other's collision boundary") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(-200.0F, 0.0F));
+  REQUIRE(field.addPlayer(dwe::game::field::GuestPlayerId, at(200.0F, 0.0F, Pi)));
+
+  CHECK(field.setInput(dwe::game::field::HostPlayerId,
+                       {.stick = {1.0F, 0.0F}, .run = true}));
+  CHECK(field.setInput(dwe::game::field::GuestPlayerId,
+                       {.stick = {-1.0F, 0.0F}, .run = true}));
+  run(field, 1.0F);
+
+  const auto host = field.player(dwe::game::field::HostPlayerId);
+  const auto guest = field.player(dwe::game::field::GuestPlayerId);
+  REQUIRE(host.has_value());
+  REQUIRE(guest.has_value());
+  CHECK(guest->position.x - host->position.x >= 100.0F);
+}
+
+TEST_CASE("the guest body also respects the host partner's collision boundary") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(-500.0F, 0.0F), at(0.0F, 0.0F));
+  REQUIRE(field.addPlayer(dwe::game::field::GuestPlayerId, at(500.0F, 0.0F, Pi)));
+
+  CHECK(field.setInput(dwe::game::field::GuestPlayerId,
+                       {.stick = {-1.0F, 0.0F}, .run = true}));
+  for (int tick = 0; tick < 60; ++tick) {
+    field.tick(Tick);
+    const auto guest = field.player(dwe::game::field::GuestPlayerId);
+    REQUIRE(guest.has_value());
+    CHECK(std::abs(guest->position.x - field.partner().position.x) >= 110.0F);
+  }
+}
+
+TEST_CASE("map entry keeps the guest beside the host in the shared map") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  const MapDocument map = roomMap("room");
+  field.enterMapAt(map, at(0.0F, 0.0F));
+  REQUIRE(field.addPlayer(dwe::game::field::GuestPlayerId, at(500.0F, 0.0F)));
+
+  field.enterMapAt(map, at(1000.0F, 0.0F));
+  const auto host = field.player(dwe::game::field::HostPlayerId);
+  const auto guest = field.player(dwe::game::field::GuestPlayerId);
+  REQUIRE(host.has_value());
+  REQUIRE(guest.has_value());
+  CHECK(glm::distance(host->position, guest->position) >= 200.0F);
+  CHECK(glm::distance(host->position, guest->position) < 500.0F);
+  CHECK(guest->position != glm::vec3{500.0F, 0.0F, 0.0F});
 }
 
 TEST_CASE("the same input gives the same move at any tick rate") {

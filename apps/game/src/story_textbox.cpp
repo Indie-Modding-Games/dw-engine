@@ -117,25 +117,25 @@ StoryTextbox::~StoryTextbox() {
   ui_->hide(StoryTextboxDocument);
 }
 
-void StoryTextbox::press(const input::InputState& input) {
+void StoryTextbox::press(const StoryButtons& buttons, const input::InputState& pointerInput) {
   const DialogueView& view = story_->dialogue().view();
-  game::story::DialogueKeys keys{.confirm = input.wasPressed("confirm"),
-                                 .cancel = input.wasPressed("cancel"),
-                                 .up = input.wasPressed("move_up"),
-                                 .down = input.wasPressed("move_down")};
+  game::story::DialogueKeys keys{.confirm = buttons.confirmPressed,
+                                 .cancel = buttons.cancelPressed,
+                                 .up = buttons.upPressed,
+                                 .down = buttons.downPressed};
   // A selection: a click picks the option under the pointer, not the cursor's, and the cursor
   // follows the pointer over the options (the engine's pointer). A click off the options picks
   // nothing; a page waiting for confirm takes a click anywhere.
   if (view.open && view.cursor) {
     const std::size_t first = view.speaker.kind != SpeakerKind::None ? 1 : 0;
-    const OptionPointer pointer = optionPointer(*ui_, input, first);
-    keys.confirm = input.wasPressedByKeyOrPad("confirm");
+    const OptionPointer pointer = optionPointer(*ui_, pointerInput, first);
+    keys.confirm = buttons.confirmPressedByKeyOrPad;
     keys.pointed =
         pointer.pointed.transform([](std::size_t row) { return static_cast<std::int64_t>(row); });
     keys.clicked =
         pointer.clicked.transform([](std::size_t row) { return static_cast<std::int64_t>(row); });
   }
-  confirmHeld_ = input.isDown("confirm");
+  confirmHeld_ = buttons.confirmDown;
   story_->dialogue().press(keys, confirmHeld_);
 }
 
