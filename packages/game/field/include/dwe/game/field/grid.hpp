@@ -4,6 +4,7 @@
 #include <dwe/core/math.hpp>
 
 #include <functional>
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -36,6 +37,25 @@ bool stepCollides(const assets::MapCollision& collision, glm::vec3 position, glm
 
 // Whether a character of this radius may stand here: no blocked cell under its probes on any side.
 bool fitsOnGrid(const assets::MapCollision& collision, glm::vec3 position, float radius);
+
+// An NPC the battle lets go of: where the fight left it, the spot its map record loads it at, its
+// species' radius and whether the scene after the fight keeps it.
+struct ReleasedNpc {
+  glm::vec3 at{};
+  glm::vec3 home{};
+  float radius = 0.0F;
+  // A fixed fight's enemy (battle_main.c:794 keeps it on the map): the script goes on with it
+  // where the fight left it, as Birdramon's nest scene talks with it there.
+  bool keptForScene = false;
+};
+
+// Where a released NPC stands; nothing when it stays where the fight left it, as the original
+// leaves every fighter (battle_main.c:778). A fight can end with one on ground no NPC may stand on
+// (inside a wall it crossed thin, past the map's edge) where the player could not reach it again:
+// it goes back to its record's spot (an engine improvement, #163), unless the scene keeps it or
+// that spot is no free ground either (a flier's record up in the sky).
+std::optional<glm::vec3> releasedNpcSpot(const assets::MapCollision& collision,
+                                         const ReleasedNpc& npc);
 
 // Whether the straight ground line between two points is free of blocked cells along five parallel
 // lines spread over `halfWidth` to each side (map.c: isFiveTileWidePathBlocked).

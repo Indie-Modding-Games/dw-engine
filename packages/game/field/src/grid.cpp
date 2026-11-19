@@ -147,6 +147,14 @@ bool fitsOnGrid(const MapCollision& collision, glm::vec3 position, float radius)
          !collision.isBlocked(assets::collisionCellAt(position));
 }
 
+std::optional<glm::vec3> releasedNpcSpot(const MapCollision& collision, const ReleasedNpc& npc) {
+  if (npc.keptForScene || fitsOnGrid(collision, npc.at, npc.radius) ||
+      !fitsOnGrid(collision, npc.home, npc.radius)) {
+    return std::nullopt;
+  }
+  return npc.home;
+}
+
 bool isLineClear(const MapCollision& collision, glm::vec3 from, glm::vec3 to, float halfWidth) {
   const glm::vec2 start{from.x, from.z};
   const glm::vec2 delta = glm::vec2{to.x, to.z} - start;
