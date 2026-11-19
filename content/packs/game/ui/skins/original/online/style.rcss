@@ -1,0 +1,111 @@
+/* The online screens in the original look, what the five share: the original's window (ui.c: renderUIBoxBorder, as
+   .original-box in theme.rcss) with a darker fill so the text stays readable over the title's picture, the heading
+   yellow #FFF371 for titles, the ink #D0D0D0 for entries, the description grey #B2B2B2 for hints, the font at its
+   two sharp sizes (33dp and 22dp, three and two times its 11-pixel cell), a cyan line over the prompts and the key
+   caps of theme.rcss. The focused row keeps the original's selector outline (#A0A000) with the heading-yellow cursor
+   beside it, as the UI concept's versus menus draw it. The layout stays each screen's structure.rcss unless a sheet
+   moves a box; no rounded cards. */
+
+#scrim {
+	background-color: #04070ad0;
+}
+
+/* The windows. */
+#panel,
+.box,
+#title-plate,
+#toast,
+.dialog,
+#code-chip,
+.room-button {
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: #1d262ef0;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+#title {
+	font-size: 33dp;
+	font-weight: normal;
+	color: #fff371;
+	white-space: nowrap;
+}
+
+/* The prompts: under a cyan line in a panel, a window of their own on a stage; text at 22dp with the theme's key caps,
+   wrapping to a second row rather than clipping. */
+#prompts {
+	font-size: 22dp;
+	line-height: 30dp;
+	color: #d0d0d0;
+	white-space: normal;
+}
+
+.prompt {
+	display: inline-block;
+	margin-right: 12dp;
+	white-space: nowrap;
+}
+
+.key {
+	font-size: 22dp;
+	line-height: 24dp;
+	background-color: #1d3a50;
+}
+
+/* A row of a menu: the room for the cursor at its left, and the outline round it once focused. */
+.hub-entry,
+.status-button,
+.room-row,
+.action,
+.dialog-option,
+.mode-row,
+#profile-back,
+#name-field {
+	border: 3dp transparent;
+	border-left-width: 27dp;
+	border-radius: 0;
+	background-color: transparent;
+	color: #d0d0d0;
+	decorator: none;
+}
+
+.hub-entry:focus,
+.status-button:focus,
+.room-row:focus,
+.action:focus,
+.dialog-option:focus,
+.mode-row:focus,
+#profile-back:focus,
+#name-field:focus {
+	border-color: transparent;
+	background-color: transparent;
+	color: #d0d0d0;
+	decorator: image(online-cursor scale-none left center) border-box, ninepatch(online-outline-outer, online-outline-inner, 1) padding-box;
+}
+
+/* A button that is a window of its own: the cursor and the outline inside it. */
+.room-button {
+	color: #d0d0d0;
+}
+
+.room-button:focus {
+	border-color: transparent;
+	background-color: #1d262ef0;
+	color: #d0d0d0;
+	decorator: image(online-cursor scale-none left center) padding-box, ninepatch(online-outline-outer, online-outline-inner, 1) padding-box,
+		original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+/* The notices: the description grey on the window, the warning in the shared orange. */
+#toast-text {
+	color: #d0d0d0;
+	font-size: 22dp;
+	line-height: 27dp;
+}
+
+.toast-icon { display: none; }
+
+/* The profile icons drawn as they are, without a frame. */
+.profile-icon { background-color: transparent; }

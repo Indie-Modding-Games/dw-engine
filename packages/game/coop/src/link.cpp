@@ -131,6 +131,7 @@ void CoopLink::handle(const Message& message) {
                                                             .sessionId = sessionId}}));
     if (accepted) {
       remotePlayer_ = GuestPlayerId;
+      remoteName_ = hello->playerName;
       phase_ = LinkPhase::Ready;
     } else {
       failure_ = failureFor(reason);

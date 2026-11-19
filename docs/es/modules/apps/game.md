@@ -2182,6 +2182,75 @@ confirm cell to the player standing on it». El mismo caso de NPC junto a casill
 de tiendas y en otros mapas (67 NPC en 45 mapas tienen una casilla de confirmar al alcance de la mejora); en todos, con
 la mejora, la casilla bajo el jugador gana como en el original.
 
+## Salas en línea
+
+«Multijugador» en el menú del título abre el menú **Multijugador** (`ui/online_hub`): Versus en línea, Cooperativo
+(Buscar salas), Perfil y Volver, sobre una ficha con el nombre en línea, el icono y el récord de versus del jugador.
+Cooperativo lleva a **Buscar salas** (`ui/online_rooms`) y desde ahí a la **Sala** (`ui/online_room`). Cada una es un
+documento propio que solo lee por el espacio `online` de la API de la interfaz
+([API de la interfaz](../../modding/ui-api.md)), con un aspecto propio en cada skin; el lobby cooperativo que vivía
+dentro del menú principal es ahora estas pantallas.
+
+- **Perfil** (`ui/online_profile`): el nombre en línea (se escribe en el sitio; Intro o confirmar del mando lo guarda,
+  cancelar borra una letra y con el campo vacío termina la edición), el icono de una lista fija (huevo, dispositivo, corona,
+  espadas, árbol, pesa; izquierda y derecha lo eligen) y el récord de versus (victorias y derrotas). `OnlineProfile`
+  (`online_profile.hpp`) lo guarda en los ajustes del juego (`settings.yaml`), no en la partida, y su nombre es el del
+  jugador en todas las salas (12 letras como mucho; «Jugador» hasta que se escribe uno).
+- **Conectando y errores** (`ui/online_status`): mientras se crea una sala o se entra en ella la pantalla lo dice con
+  puntos que se mueven y ofrece Cancelar; si falla, dice por qué con palabras (no se llega al servidor, la sala está
+  llena, el código no existe...) con Reintentar (`online.retry` pide la misma sala otra vez) y Volver.
+
+- **Buscar salas**: las salas públicas (nombre, modo, jugadores sobre plazas, barras de ping; una sala llena se ve pero
+  no se puede elegir), cinco filas con flechas de desplazamiento, el filtro «Buscar sala», «Entrar por código» para
+  salas privadas y amigos, «Crear sala» (pregunta Pública, en la lista, o Privada, solo por código; Pública primero) y
+  «Buscar partida» (entra en la primera sala abierta de un modo que el juego puede jugar, o propone crear una pública).
+  Avisos de teclas: Aceptar, Volver, Actualizar (`tab_next`), Buscar partida (`tab_previous`). Los campos de texto
+  toman el teclado mientras se editan; con mando, arriba y abajo cambian la letra del código.
+- **Sala**: la ficha de la sala (escena, nombre, código, anfitrión, modo, estado, jugadores, pública o privada), la
+  lista de modos para el anfitrión (Campaña es cooperativo, Batalla es versus; Entrenamiento y Libre dicen que aún no
+  están) o el modo elegido para un invitado, los jugadores (hasta cuatro) con la corona del anfitrión y las marcas de
+  listo de los invitados, Iniciar (anfitrión) o Listo (invitado), el chip del código en los dos, Salir de la sala y un
+  aviso de lo que pasa ahora. El anfitrión no tiene marca de listo: es quien inicia. Cancelar va primero a Salir de la
+  sala, así un cancelar sin querer no deja la sala.
+
+`OnlineRooms` (`online_rooms.hpp`) publica los ajustes `online.*` y recibe los pasos de las pantallas. Dos costuras
+separan la parte de red: `RoomDirectory` lista las salas públicas y `RoomBackend` abre, une y lleva la sala. Los pasos
+de la sala son los comandos del propio lobby cooperativo (`coop_host` con pública o privada, `coop_join` con código,
+`coop_ready`, `coop_start`), que `CoopRoomBackend` (`online_coop_room.hpp`) pasa a `CoopScreen`; `online_leave` corta
+el enlace (el `coop_close` del lobby conserva un compañero conectado para elegir partida). `RoomListing` lleva los
+campos del listado del directorio (id de sala, código, nombre, mensaje, nombre del anfitrión, jugadores, plazas,
+creación y estado waiting, full o starting) más el modo y el ping, que el directorio aún no manda.
+
+Con un servidor de señalización configurado, `SignalRoomDirectory` (`online_signal_directory.hpp`) lista las salas
+públicas del servidor (`/v1/rooms`), y una sala creada como Pública se abre con `public=1` para que salga en esa lista;
+a una Privada solo se llega por su código. Sin servidor, la lista lo dice y remite al código. El servidor no manda ni
+el modo ni un ping, así que una sala de la lista dice Campaña y no muestra barras de ping. Una sala cooperativa admite
+al anfitrión y un invitado, así que sus salas dicen 2 plazas y solo Campaña se puede jugar. Con las herramientas
+de desarrollo (o `--online-sample`), la tecla del menú cambia a la fuente de ejemplo (`SampleDirectory`,
+`SampleRoomBackend`): siete salas de ejemplo de hasta cuatro jugadores y una sala propia a la que entran dos invitados
+de ejemplo que se ponen listos, marcadas «Datos de ejemplo» en pantalla; nunca inicia una partida. Tests:
+`apps/game/tests/online_rooms_tests.cpp`, `apps/game/tests/online_profile_tests.cpp`,
+`packages/engine/ui/tests/online_screens_tests.cpp`.
+
+### En la partida cooperativa
+
+`CoopHud` (`coop_hud.hpp`) enseña el documento `coop_hud`, con un estilo propio que no cambia con el aspecto,
+mientras tiene algo que enseñar:
+
+- **Etiqueta con el nombre**: el nombre del otro jugador flota sobre su cabeza mientras el campo corre (se oculta con
+  los paneles del HUD en menús, charlas y combates, y fuera de la ventana). En el anfitrión es el nombre en línea del
+  invitado (el `Hello` del enlace cooperativo), o «Invitado 1» si no tiene; en el invitado es «Anfitrión», porque el
+  nombre del anfitrión no le llega al invitado. `FieldScene::coopPeerHeadInWindow` proyecta el personaje del invitado
+  (anfitrión) o el anfitrión presentado (invitado) con la cámara del mapa.
+- **«`<nombre>` se desconectó.»**: cuando el enlace del invitado se cierra durante la partida, el anfitrión ve este aviso
+  unos segundos y la etiqueta se va; el hueco del invitado se queda para que vuelva a conectarse.
+- **El anfitrión se fue**: cuando el enlace del anfitrión se cierra durante la partida, la partida del invitado acaba
+  (era el mundo del anfitrión), vuelve el menú principal y encima sale el aviso «El anfitrión cerró la sala. Volviste
+  al menú.».
+
+El bucle del juego (`game.cpp`) engancha los dos donde suelta el puente de juego (`coopLinkLoss`). Tests:
+`apps/game/tests/coop_hud_tests.cpp`.
+
 ## Versus en línea
 
 «Versus en línea» («Online versus» en inglés) sale en el menú del título (con el aspecto moderno es su propia fila;

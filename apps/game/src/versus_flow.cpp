@@ -320,6 +320,7 @@ void VersusFlow::startScore(game::tournament::VersusScoreShow::Moment moment) {
   if (moment == Moment::Last) {
     if (const auto side = series_->link().series().winner()) {
       winner = *side == Side::Host ? 0 : 1;
+      outcome_ = *side == series_->link().side();
     }
   }
   desc_.view->showScore(true, moment == Moment::Last, winner);

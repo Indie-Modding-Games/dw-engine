@@ -343,6 +343,10 @@ public:
   // The story's triggers, variables and running script, and the camera, for story_state.
   [[nodiscard]] StoryStateView storyStateView() const;
 
+  // Whether the field ran on the last update: false while a menu, a talk, a fade or a battle stops
+  // its game time, as the field HUD's panels hide (the co-op tag hides with them).
+  [[nodiscard]] bool fieldRunning() const { return fieldRunning_; }
+
   // Whether the save indicator is on screen, so the app draws its figure this frame.
   [[nodiscard]] bool saveIndicatorShown() const {
     return saveIndicator_ && saveIndicator_->shown();
@@ -527,6 +531,8 @@ private:
   bool guardFactsChanged_ = false;
   // Whether this tick gave the field the player's walk (tick).
   bool fieldWalks_ = false;
+  // Whether the field's game time ran on the last update (fieldRunning).
+  bool fieldRunning_ = false;
   // Whether the dialog on screen asks to go back to the title screen.
   bool toTitleAsked_ = false;
   bool toTitle_ = false;

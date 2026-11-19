@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.17.0 | The `online` namespace arrives: the public room list (`online.list()`), the room the player is in (`online.room()`), the modes (`online.modes()`) and the screens' state (`online.state()`), with their steps (`online.host`, `online.join`, `online.join_by_code`, `online.quick_match`, `online.set_ready`, `online.start`, `online.leave`...) and the `online.changed` event. The room steps are the co-op lobby's commands (`coop_host`, `coop_join` with a code, `coop_ready`, `coop_start`). The player's online profile (`online.profile()`, `online.icons()`, `online.save_name`, `online.set_icon`) and `online.retry` after a failure. The new screens `online_hub`, `online_profile`, `online_status`, `online_rooms` and `online_room` only read through it. The `coop_hud` screen shows the co-op game's tag over the other player (`coop_hud.tag.*`) and its notices (`coop_hud.notice.*`) |
 | 0.16.0 | The improved shop job: the bar gains `shop_job.top`, `shop_job.bonus`, `shop_job.bonus_icon`, `shop_job.bonus_icon_rect`, `shop_job.tier` and `shop_job.improved` (also in `field.shop_job()`), and the `shop_job_rules` command (the ? button that opens the rules panel). The `shop_job_mode` option arrives. The new screens `shop_haggle` and `shop_job_rules` are described in the [job's reference](../reference/shop-job.md#interface) |
 | 0.15.0 | The `story` namespaces arrive (the story's text box: `story.textbox()`, `story.choice()`, `story.input()`; the actions `story.advance`, `story.choose` and `story.cancel`; the events `story.changed`, `story.text` and `story.input`), `dialog` (the save dialog: `dialog.state()`, `dialog.options()`, `dialog.answer`, `dialog.cancel`, the event `dialog.changed`) and `naming` (the name box: `naming.state()`, `naming.cell`, `naming.write`, `naming.erase`, `naming.accept`, the event `naming.changed`). New settings `story_textbox.speaker`, `speaker_kind`, `options`, `first_option`, `input` and `page`, and the commands `story_advance`, `story_choose`, `story_cancel`, `naming_write`, `naming_erase` and `naming_accept`. The `story_textbox`, `dialog` and `naming_box` screens only read through them. An addon only sends them while its box is waiting for the player |
 | 0.14.0 | The `battle` namespace arrives: the battle state, the fighters, the command strip, the finisher, the opening, the numbers, the enemies' bars, the shout, the end box and what a cup battle shows (`battle.match()`), with its actions (`battle.command`, `battle.charge`, `battle.open_bag`, `battle.close_bag`, `battle.close`, `battle.end_count`, `battle.end_counted`) and events (`battle.started`, `battle.ended`, `battle.phase`, `battle.changed`...). The `battle` and `tournament_match` screens only read through it. The `versus` namespace arrives: each view of online versus (`versus.state()`, `versus.setup()`, `versus.lineup()`, `versus.fighters()`, `versus.score()`...), its steps (`versus.step`, `versus.pick`) and its event (`versus.changed`); the `versus` screen only reads through it and through `battle.intro()`. An addon only sends the battle commands at their moment: those of the battle in the `fight` phase, closing the bag with the bag open and those of the end box in the `end` phase |
@@ -88,12 +89,12 @@ The list comes from `apps/game/src/ui_contract.cpp`. A test compares it with thi
 `content/schemas/ui_api/ui_api.json` (the same list for tools and editors) and with what each screen's scripts read and
 send; `DWE_WRITE_API_DOC=1` when running the game's tests rewrites both. For now it covers the HUD, the pause menu, the
 partner menu, the startup's skin box, the notices, the battle (with what a cup battle shows), online
-versus and the story boxes (the text box, the save dialog and the name box); the rest of the screens comes later.
+versus, the online rooms, the co-op game's tag and notices and the story boxes (the text box, the save dialog and the name box); the rest of the screens comes later.
 
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.16.0**.
+UI API version: **0.17.0**.
 
 ### `ui`
 
@@ -402,6 +403,24 @@ UI API version: **0.16.0**.
 | `save_indicator.opacity` | setting | number | How visible the indicator is, from 0 to 1. |
 | `save_indicator.lift` | setting | number | How far the indicator has risen on appearing, from 0 to 1. |
 | `save_indicator.figure` | setting | yes/no | Whether the indicator shows the spinning figure. |
+
+### `coop_hud`
+
+| Name | Kind | Value | What it is |
+|---|---|---|---|
+| `coop_hud.tag.visible` | setting | yes/no | Whether the other co-op player's name shows over their head (they are in the window and the field runs). |
+| `coop_hud.tag.x` | setting | number | Where the point over the other player's head is, in percent of the window's width. |
+| `coop_hud.tag.y` | setting | number | Where the point over the other player's head is, in percent of the window's height. |
+| `coop_hud.tag.name` | setting | text | The other player's own name; empty when they are named by a text key. |
+| `coop_hud.tag.name_key` | setting | text | The text key that names the other player without a name of their own (the host, or a guest by number). |
+| `coop_hud.tag.number` | setting | number | The number that fills {number} in the name's text key. |
+| `coop_hud.tag.revision` | setting | number | Goes up each time the tag's values change: the tag is drawn again. |
+| `coop_hud.notice.shown` | setting | yes/no | Whether a co-op notice shows (a few seconds each). |
+| `coop_hud.notice.text` | setting | text | The notice's text key; {name} in it stands for the player it is about. |
+| `coop_hud.notice.name` | setting | text | The own name of the player the notice is about; empty when named by a text key. |
+| `coop_hud.notice.name_key` | setting | text | The text key that names the player the notice is about, if they have no name. |
+| `coop_hud.notice.number` | setting | number | The number that fills {number} in that text key. |
+| `coop_hud.notice.revision` | setting | number | Goes up with each notice and when it goes: the notice is drawn again. |
 
 ### `money_box`
 
@@ -866,5 +885,117 @@ UI API version: **0.16.0**.
 | `versus.step(step: string): boolean, string?` | action | yes/no | A step in the view: up, down, left, right, confirm, cancel, menu, tab_previous, tab_next or finisher (the finisher, with its meter full). |
 | `versus.pick(row: integer): boolean, string?` | action | yes/no | Goes to a row of the view (or to a command of the player's strip) and confirms it. |
 | `versus.changed` | event | table | The versus changed. Comes from `versus.revision`. |
+
+### `online`
+
+| Name | Kind | Value | What it is |
+|---|---|---|---|
+| `online.revision` | setting | number | Goes up each time the online state changes. |
+| `online.open` | setting | yes/no | Whether the rooms screens are open. |
+| `online.sample` | setting | yes/no | Whether the list and the room are the development sample's. |
+| `online.sample_offered` | setting | yes/no | Whether the switch to the sample rooms is offered (the developer tools are on). |
+| `online.list.state` | setting | text | The public room list: loading, ready or unavailable. |
+| `online.list.error` | setting | text | Why the list is unavailable (an error code), or empty. |
+| `online.rooms` | setting | number | How many rooms the list has. |
+| `online.room.<n>.id` | setting | text | The room's id in the list. |
+| `online.room.<n>.name` | setting | text | The name its host gave it, or empty. |
+| `online.room.<n>.name_key` | setting | text | The text key of its name when it has no name of its own (the sample rooms). |
+| `online.room.<n>.mode` | setting | text | Its game mode: campaign, versus, training or free. |
+| `online.room.<n>.players` | setting | number | How many players are in it. |
+| `online.room.<n>.capacity` | setting | number | How many players fit. |
+| `online.room.<n>.ping` | setting | number | The round trip to it in milliseconds; -1 when not measured. |
+| `online.room.<n>.joinable` | setting | yes/no | Whether it can be joined now (waiting, not full, a mode this game plays in rooms). |
+| `online.room.<n>.code` | setting | text | Its join code. |
+| `online.room.<n>.message` | setting | text | The host's message, or empty. |
+| `online.room.<n>.host_name` | setting | text | The host's name, or empty. |
+| `online.room.<n>.state` | setting | text | waiting, full or starting. |
+| `online.field` | setting | text | The text field taking the keyboard: filter, code, name, or empty. |
+| `online.filter` | setting | text | What is typed in the room search. |
+| `online.code` | setting | text | What is typed in the room code field. |
+| `online.code_length` | setting | number | How many characters a room code has. |
+| `online.quick` | setting | text | none when the quick match found no room to join; else empty. |
+| `online.notice` | setting | text | A step the game did not take (a notice code), or empty. |
+| `online.can_retry` | setting | yes/no | Whether online_retry has a room to ask for again (one was asked for). |
+| `online.profile.name` | setting | text | The name the other players see (kept in the game's settings). |
+| `online.profile.named` | setting | yes/no | Whether the player chose that name (false while it is the default one). |
+| `online.profile.icon` | setting | text | The profile's icon id. |
+| `online.profile.wins` | setting | number | Online versus matches won. |
+| `online.profile.losses` | setting | number | Online versus matches lost. |
+| `online.profile.draft` | setting | text | The name being typed on the profile screen. |
+| `online.icons` | setting | number | How many icons a profile can pick from. |
+| `online.icon.<n>.id` | setting | text | An icon's id, in the screens' order. |
+| `online.modes` | setting | number | How many game modes a room lists. |
+| `online.mode.<n>.id` | setting | text | A mode's id, in the screens' order. |
+| `online.mode.<n>.available` | setting | yes/no | Whether the mode can be played in rooms now. |
+| `online.current.active` | setting | yes/no | Whether the player is in a room. |
+| `online.current.code` | setting | text | The room's code; empty until it has one. |
+| `online.current.name` | setting | text | The room's name, or empty. |
+| `online.current.name_key` | setting | text | The text key of its name when it has no name of its own. |
+| `online.current.host` | setting | yes/no | Whether this player hosts it. |
+| `online.current.listed` | setting | yes/no | Whether it is public (in the list) rather than private (by code only). |
+| `online.current.phase` | setting | text | connecting, open, connected, ready, playing or closed. |
+| `online.current.mode` | setting | text | The room's game mode. |
+| `online.current.capacity` | setting | number | How many players fit. |
+| `online.current.error` | setting | text | Why it closed or a step failed (an error code or the game's words), or empty. |
+| `online.current.can_start` | setting | yes/no | Whether the host can start now. |
+| `online.current.can_ready` | setting | yes/no | Whether this guest can mark itself ready now. |
+| `online.current.ready` | setting | yes/no | Whether this player is ready. |
+| `online.current.members` | setting | number | How many players are in the room. |
+| `online.member.<n>.name` | setting | text | A member's name, or empty. |
+| `online.member.<n>.name_key` | setting | text | The text key of a member's name when it has none of its own. |
+| `online.member.<n>.icon` | setting | text | The member's profile icon id, or empty when it has not sent one. |
+| `online.member.<n>.host` | setting | yes/no | Whether the member hosts the room. |
+| `online.member.<n>.ready` | setting | yes/no | Whether the member is ready. |
+| `online.member.<n>.local` | setting | yes/no | Whether the member is the player at this machine. |
+| `online_open` | command | — | The rooms screens opened: the list is asked for. |
+| `online_close` | command | — | The rooms screens closed. |
+| `online_refresh` | command | — | Asks for the room list again. |
+| `online_field` | command | text | The text field that takes the keyboard: filter, code, name, or empty for none. |
+| `online_filter` | command | text | Replaces the room search's text. |
+| `online_code` | command | text | Replaces the code field's text. |
+| `online_profile_name` | command | text | Replaces the name being typed on the profile screen. |
+| `online_profile_save` | command | — | Keeps the typed name as the profile's (notice name_empty when nothing is left). |
+| `online_profile_icon` | command | text | Changes the profile's icon. |
+| `online_retry` | command | — | Asks again for the room last asked for (hosting, joining from the list or by code). |
+| `coop_host` | command | yes/no | The co-op lobby's: opens a room this player hosts, true public (listed), false private (by code only). |
+| `online_join` | command | text | Joins a listed room by its id. |
+| `coop_join` | command | text | The co-op lobby's: joins a room by the code given (without one it opens the lobby's code entry). |
+| `online_join_code` | command | — | Joins a room by the code typed in the code field. |
+| `online_quick` | command | — | Joins the first open room of a playable mode, or answers online.quick none. |
+| `online_mode` | command | text | The host picks the room's mode. |
+| `coop_ready` | command | — | The co-op lobby's: the guest marks itself ready, or not when it was. |
+| `coop_start` | command | — | The co-op lobby's: the host starts the room's game. |
+| `online_leave` | command | — | Leaves the room (the host closes it). |
+| `online_dismiss` | command | — | Clears the notice, the quick match's answer and a room that closed. |
+| `online_sample` | command | yes/no | Switches to the sample rooms and back (only with the developer tools on). |
+| `online.state(): table` | query | table | The screens' state: open, sample, sample_offered, field, filter, code, code_length, quick, notice, notice_key and can_retry. |
+| `online.profile(): table` | query | table | The player's online profile: name, named, icon, wins, losses and draft. |
+| `online.icons(): table` | query | table | The icons a profile can pick: id and label_key. |
+| `online.list(): table` | query | table | The room list: state, error, error_key, total and the rooms matching the filter (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, joinable). |
+| `online.modes(): table` | query | table | The game modes: id, label_key, description_key, short_key, available and selected. |
+| `online.room(): table?` | query | table | The room the player is in, or nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready and members (name, icon, host, ready, local). |
+| `online.error_key(code: string?): string` | query | text | The text key of an error code; unknown codes give online.error.unknown. |
+| `online.notice_key(code: string?): string` | query | text | The text key of a notice code. |
+| `online.open(): boolean` | action | yes/no | The rooms screens opened. |
+| `online.close(): boolean` | action | yes/no | The rooms screens closed. |
+| `online.refresh(): boolean` | action | yes/no | Asks for the list again. |
+| `online.edit(field: string?): boolean, string?` | action | yes/no | The text field that takes the keyboard: filter, code, name or nil. |
+| `online.set_filter(value: string): boolean, string?` | action | yes/no | Replaces the room search's text. |
+| `online.set_code(value: string): boolean, string?` | action | yes/no | Replaces the code field's text. |
+| `online.host(public: boolean): boolean, string?` | action | yes/no | Opens a room: public (listed) or private (by code only). |
+| `online.join(room_id: string): boolean, string?` | action | yes/no | Joins a listed room. |
+| `online.join_by_code(code: string?): boolean, string?` | action | yes/no | Joins a room by a code, or by the typed one. |
+| `online.quick_match(): boolean` | action | yes/no | Joins the first open playable room, or answers quick = none. |
+| `online.set_mode(id: string): boolean, string?` | action | yes/no | The host picks the room's mode. |
+| `online.set_ready(ready: boolean): boolean, string?` | action | yes/no | The guest marks itself ready or not. |
+| `online.start(): boolean` | action | yes/no | The host starts the game. |
+| `online.leave(): boolean` | action | yes/no | Leaves the room. |
+| `online.set_name_draft(value: string): boolean, string?` | action | yes/no | Replaces the name being typed on the profile screen. |
+| `online.save_name(): boolean` | action | yes/no | Keeps the typed name as the profile's. |
+| `online.set_icon(id: string): boolean, string?` | action | yes/no | Changes the profile's icon. |
+| `online.retry(): boolean` | action | yes/no | Asks again for the room last asked for, after a failure. |
+| `online.dismiss(): boolean` | action | yes/no | Clears the notice, the quick match's answer and a closed room. |
+| `online.set_sample(on: boolean): boolean, string?` | action | yes/no | Switches to the sample rooms and back. |
+| `online.changed` | event | table | The list, the room or the screens' state changed. Comes from `online.revision`. |
 
 <!-- /ui-api:generated -->

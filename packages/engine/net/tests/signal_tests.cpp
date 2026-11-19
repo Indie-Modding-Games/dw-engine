@@ -30,7 +30,46 @@ TEST_CASE("a typed room code is read without case, spaces or dashes") {
   CHECK_FALSE(normalizedRoomCode("K0Q2"));
   CHECK_FALSE(normalizedRoomCode("KIQ2"));
   CHECK(hostUrl("wss://signal.example/") == "wss://signal.example/v1/host");
+  CHECK(hostUrl("wss://signal.example", true) == "wss://signal.example/v1/host?public=1");
   CHECK(joinUrl("wss://signal.example", "K7Q2") == "wss://signal.example/v1/join/K7Q2");
+  CHECK(roomsUrl("wss://signal.example/") == "wss://signal.example/v1/rooms");
+}
+
+TEST_CASE("the public list holds the listed rooms only, read in one snapshot") {
+  FakeSignalServer server;
+  SignalClient listed{server.open(hostUrl("wss://fake", true))};
+  SignalClient unlisted{server.open(hostUrl("wss://fake"))};
+  listed.poll();
+  unlisted.poll();
+  RoomListRequest request{server.open(roomsUrl("wss://fake"))};
+  request.poll();
+  REQUIRE(request.done());
+  CHECK_FALSE(request.failed());
+  REQUIRE(request.rooms().has_value());
+  REQUIRE(request.rooms()->size() == 1);
+  const PublicRoom& room = request.rooms()->front();
+  CHECK(room.joinCode == listed.roomCode());
+  CHECK(room.roomId == listed.roomCode());
+  CHECK(room.players == 1);
+  CHECK(room.capacity == 2);
+  CHECK(room.state == "waiting");
+  // A server that cannot be reached fails the read instead of waiting for ever.
+  server.reachable = false;
+  RoomListRequest away{server.open(roomsUrl("wss://fake"))};
+  away.poll();
+  CHECK(away.failed());
+}
+
+TEST_CASE("a snapshot of the public list skips what cannot be a room") {
+  const auto rooms = parseRoomList(
+      R"({"rooms":[{"roomId":"a","joinCode":"k7q2","players":1,"capacity":4,"state":"waiting"},)"
+      R"({"joinCode":"nope"},7]})");
+  REQUIRE(rooms.has_value());
+  REQUIRE(rooms->size() == 1);
+  CHECK(rooms->front().joinCode == "K7Q2");
+  CHECK(rooms->front().capacity == 4);
+  CHECK_FALSE(parseRoomList("not json"));
+  CHECK_FALSE(parseRoomList(R"({"rooms":3})"));
 }
 
 TEST_CASE("the signaling client makes a room, pairs and relays both ways") {

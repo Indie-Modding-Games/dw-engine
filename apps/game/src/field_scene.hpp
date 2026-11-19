@@ -720,6 +720,10 @@ public:
   core::Result<void> presentCoopHost(std::optional<game::field::CharacterState> player,
                                      std::optional<game::field::CharacterState> partner = {},
                                      std::string_view partnerSpecies = {});
+  // Where the other co-op player's head lands in the window (fractions of it, outside 0..1 off
+  // it): the guest's character on the host, the host's presented one on the guest. Nothing while
+  // neither is in this field or the map's camera cannot project it.
+  [[nodiscard]] std::optional<glm::vec2> coopPeerHeadInWindow() const;
   // The map's sprite objects, which scripts and the gym's courses move (overworld.c:
   // tickMoveObjectTo, moveMapObjectsWithLimit).
   [[nodiscard]] render::MapDepthLayers& mapLayers() { return mapRenderer_->layers(); }

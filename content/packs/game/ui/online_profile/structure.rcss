@@ -1,0 +1,203 @@
+/* The online profile whatever the skin: one panel in the middle of the window (kept inside it by
+   common/screen_fit.lua): the title, the profile's head (icon, name, record), then a row each for the name, the icons
+   and the record, the note that it is kept in the settings, Back and the prompts. The skins give the look
+   (ui/skins/<id>/online_profile/); the plain colours here are the fallback of a skin without a sheet for it. */
+
+#scrim {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background-color: #08121ef2;
+}
+
+#panel {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 760dp;
+	height: 600dp;
+	margin-left: -380dp;
+	margin-top: -300dp;
+	box-sizing: border-box;
+	padding: 16dp 24dp;
+	border: 2dp #5c91bd;
+	background-color: #0c1d2ee8;
+}
+
+#title {
+	margin: 0 0 10dp 0;
+	font-size: 33dp;
+	line-height: 48dp;
+	white-space: nowrap;
+}
+
+.profile-icon { decorator: image(/ui/online_profile/icons/egg.png contain); }
+.profile-icon.icon-egg { decorator: image(/ui/online_profile/icons/egg.png contain); }
+.profile-icon.icon-device { decorator: image(/ui/online_profile/icons/device.png contain); }
+.profile-icon.icon-crown { decorator: image(/ui/online_profile/icons/crown.png contain); }
+.profile-icon.icon-swords { decorator: image(/ui/online_profile/icons/swords.png contain); }
+.profile-icon.icon-tree { decorator: image(/ui/online_profile/icons/tree.png contain); }
+.profile-icon.icon-dumbbell { decorator: image(/ui/online_profile/icons/dumbbell.png contain); }
+
+/* The head: the icon large at the left, the name beside it, the record at the right. */
+#profile-head {
+	position: relative;
+	height: 92dp;
+	margin-bottom: 10dp;
+	border-bottom: 1dp #2c4a68;
+}
+
+#head-icon {
+	position: absolute;
+	left: 0;
+	top: 4dp;
+	width: 76dp;
+	height: 76dp;
+}
+
+#head-name {
+	position: absolute;
+	left: 96dp;
+	top: 20dp;
+	width: 400dp;
+	font-size: 33dp;
+	line-height: 44dp;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#head-record {
+	position: absolute;
+	right: 0;
+	top: 24dp;
+	width: 180dp;
+	font-size: 22dp;
+	line-height: 36dp;
+	text-align: right;
+	white-space: nowrap;
+}
+
+/* A row: its label in a fixed column, its value after it. */
+.profile-row {
+	display: block;
+	position: relative;
+	height: 56dp;
+	margin: 0;
+	padding: 0 12dp;
+	box-sizing: border-box;
+	font-size: 24dp;
+	line-height: 56dp;
+	white-space: nowrap;
+	text-align: left;
+}
+
+.row-label {
+	display: inline-block;
+	width: 250dp;
+	opacity: 0.85;
+}
+
+#name-box {
+	display: inline-block;
+	width: 420dp;
+	height: 40dp;
+	padding: 0 10dp;
+	box-sizing: border-box;
+	border-bottom: 2dp #5c91bd;
+	line-height: 40dp;
+	vertical-align: middle;
+	overflow: hidden;
+}
+
+#name-caret { color: #efc63c; }
+.default-name #name-value { opacity: 0.7; }
+
+#name-hint {
+	margin: 2dp 0 8dp 274dp;
+	font-size: 18dp;
+	line-height: 24dp;
+	opacity: 0.75;
+}
+
+.icon-choice {
+	display: inline-block;
+	width: 52dp;
+	height: 52dp;
+	margin: 2dp 6dp 0 0;
+	padding: 4dp;
+	box-sizing: border-box;
+	vertical-align: top;
+	border: 2dp transparent;
+}
+
+.icon-choice.selected { border-color: #efc63c; }
+
+.icon-choice .profile-icon {
+	width: 40dp;
+	height: 40dp;
+}
+
+#icon-name {
+	position: absolute;
+	left: 274dp;
+	top: 52dp;
+	font-size: 18dp;
+	line-height: 24dp;
+	opacity: 0.75;
+}
+
+#record-row { margin-top: 30dp; }
+
+.record-label {
+	display: inline-block;
+	margin-right: 10dp;
+	opacity: 0.85;
+}
+
+.record-value {
+	display: inline-block;
+	width: 70dp;
+	color: #efc63c;
+}
+
+#saved-note {
+	margin: 8dp 0 0 12dp;
+	font-size: 18dp;
+	line-height: 24dp;
+	opacity: 0.75;
+}
+
+#profile-back {
+	position: absolute;
+	left: 24dp;
+	bottom: 56dp;
+	width: 220dp;
+	height: 44dp;
+	font-size: 22dp;
+	line-height: 44dp;
+	text-align: center;
+}
+
+#toast {
+	position: absolute;
+	left: 270dp;
+	right: 24dp;
+	bottom: 56dp;
+	height: 44dp;
+	font-size: 18dp;
+	line-height: 22dp;
+	color: #ffb070;
+}
+
+#prompts {
+	position: absolute;
+	left: 24dp;
+	right: 24dp;
+	bottom: 12dp;
+	font-size: 18dp;
+	white-space: nowrap;
+}
+
+.prompt { margin-right: 14dp; }

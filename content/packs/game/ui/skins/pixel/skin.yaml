@@ -69,6 +69,18 @@ screens:
     styles: [title/style, panel/style, new_game_mode/style]
   new_game_rules:
     styles: [title/style, panel/style, new_game_rules/style]
+  online_hub:
+    styles: [online_hub/style]
+  online_profile:
+    styles: [online_profile/style]
+  online_room:
+    styles: [online_room/style]
+  online_rooms:
+    styles: [online_rooms/style]
+  coop_hud:
+    styles: [coop_hud/style]
+  online_status:
+    styles: [online_status/style]
   partner_menu:
     styles: [partner_menu/style]
   pause_box:
@@ -215,3 +227,23 @@ sprite_sheets:
       menu-scold-icon: [512, 0, 128, 128]
       menu-settings-icon: [640, 0, 128, 128]
       menu-sleep-icon: [768, 0, 128, 128]
+  # The online rooms' art (scripts drew it from the UI concept: assets/icon-device.png, scene-island.png,
+  # scene-forest.png and the emblem; the small icons are pixel drawings in the concept's colours, no faces).
+  - name: nb-online
+    image: ui/skins/pixel/assets/online_icons
+    dp_per_pixel: 0.5
+    sprites:
+      nb-on-egg: [8, 6, 48, 52]
+      nb-on-crown: [74, 14, 44, 36]
+      nb-on-avatar: [132, 6, 56, 52]
+      nb-on-swords: [196, 4, 56, 56]
+      nb-on-dumbbell: [258, 14, 60, 36]
+      nb-on-tree: [326, 10, 52, 44]
+      nb-on-search: [396, 10, 40, 44]
+      nb-on-info: [460, 12, 40, 40]
+      nb-on-copy: [528, 16, 32, 32]
+      nb-on-check: [590, 18, 36, 28]
+      nb-on-play: [660, 18, 24, 28]
+      nb-on-device: [0, 64, 119, 112]
+      nb-on-island: [119, 64, 258, 84]
+      nb-on-forest: [377, 64, 196, 160]

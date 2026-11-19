@@ -1,0 +1,171 @@
+/* The online profile in the original look: one of the original's windows (online/style.rcss): the yellow title, the
+   head (the big icon, the name at three times the font's cell, the record in the heading yellow) over a dark cyan
+   line, then label and value rows: labels in the description grey, the name over a cyan line with the yellow caret,
+   the icons in a 1-pixel cyan frame when picked (the theme's outline when focused), the figures in yellow. Back is a
+   text row with the cursor and outline; the prompts sit under a light cyan line. */
+
+#panel {
+	width: 760dp;
+	height: 612dp;
+	margin-left: -380dp;
+	margin-top: -306dp;
+	padding: 9dp 30dp 0 30dp;
+}
+
+#title {
+	margin: 0 0 6dp 0;
+	line-height: 45dp;
+}
+
+#profile-head {
+	height: 81dp;
+	margin-bottom: 9dp;
+	border-bottom: 3dp #4a9fc5;
+}
+
+#head-icon {
+	left: 6dp;
+	top: 3dp;
+	width: 66dp;
+	height: 66dp;
+}
+
+#head-name {
+	left: 90dp;
+	top: 15dp;
+	width: 360dp;
+	font-size: 33dp;
+	line-height: 42dp;
+	color: #d0d0d0;
+}
+
+#head-record {
+	top: 15dp;
+	width: 230dp;
+	font-size: 33dp;
+	line-height: 42dp;
+	color: #fff371;
+	overflow: hidden;
+}
+
+/* The rows: the label column is 180dp after the cursor's room. */
+.profile-row {
+	height: 48dp;
+	padding: 0 9dp;
+	font-size: 33dp;
+	line-height: 42dp;
+}
+
+#icon-row,
+#record-row {
+	padding-left: 36dp;
+}
+
+.row-label {
+	width: 180dp;
+	color: #b2b2b2;
+	opacity: 1;
+}
+
+#name-box {
+	width: 440dp;
+	height: 39dp;
+	padding: 0 9dp;
+	border-bottom: 3dp #4a9fc5;
+	line-height: 36dp;
+	color: #d0d0d0;
+}
+
+#name-field.editing #name-box { border-bottom-color: #fff371; }
+#name-caret { color: #fff371; }
+.default-name #name-value { color: #b2b2b2; opacity: 1; }
+
+#name-hint {
+	margin: 3dp 0 6dp 216dp;
+	font-size: 22dp;
+	line-height: 27dp;
+	color: #b2b2b2;
+	opacity: 1;
+}
+
+#icon-row { height: 57dp; }
+
+.icon-choice {
+	width: 54dp;
+	height: 54dp;
+	margin: 0 9dp 0 0;
+	padding: 3dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	vertical-align: top;
+}
+
+.icon-choice.selected { border-color: #4a9fc5; }
+.icon-choice:focus { border-color: #a0a000; background-color: transparent; }
+
+.icon-choice .profile-icon {
+	width: 42dp;
+	height: 42dp;
+}
+
+#icon-name {
+	left: 216dp;
+	top: 57dp;
+	font-size: 22dp;
+	line-height: 27dp;
+	color: #b2b2b2;
+	opacity: 1;
+}
+
+#record-row { margin-top: 33dp; }
+
+.record-label {
+	margin-right: 9dp;
+	font-size: 22dp;
+	color: #b2b2b2;
+	opacity: 1;
+}
+
+.record-value {
+	width: 81dp;
+	color: #fff371;
+}
+
+#saved-note {
+	margin: 6dp 0 0 36dp;
+	font-size: 22dp;
+	line-height: 27dp;
+	color: #b2b2b2;
+	opacity: 1;
+}
+
+#profile-back {
+	left: 24dp;
+	bottom: 63dp;
+	width: 240dp;
+	height: 48dp;
+	padding: 0 9dp;
+	font-size: 33dp;
+	line-height: 42dp;
+	text-align: left;
+}
+
+#toast {
+	left: 282dp;
+	right: 24dp;
+	bottom: 63dp;
+	height: auto;
+	min-height: 48dp;
+	box-sizing: border-box;
+	padding: 6dp 12dp;
+}
+
+#toast-text { color: #ffb070; }
+
+#prompts {
+	left: 12dp;
+	right: 12dp;
+	bottom: 6dp;
+	padding: 9dp 18dp 0 18dp;
+	border-top: 3dp #90d9fa;
+}

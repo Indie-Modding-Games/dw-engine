@@ -8,7 +8,8 @@
 -- document, so the squeeze is measured over the next few ticks. `element` is what is squeezed,
 -- `parts` the elements whose drawn text is measured (the element itself when nil) and `room` the
 -- width in dp the text may take (the element's own width when nil, or a function that returns it
--- when the room is that of a box round the text, known only once laid out).
+-- when the room is that of a box round the text, known only once laid out). fit_text.cut(element,
+-- text, room) writes the text and cuts it with "..." instead, for names with no length limit.
 
 fit_text = {}
 
@@ -51,6 +52,80 @@ local function squeeze(entry)
   end
 end
 
+-- The letters of a text (a letter may take several bytes).
+local function letters_of(text)
+  local letters = {}
+  for letter in string.gmatch(text, "[\1-\127\194-\244][\128-\191]*") do
+    letters[#letters + 1] = letter
+  end
+  return letters
+end
+
+-- The texts cut so far, by element id: the same text written again shows cut at once, with no
+-- flash of its whole length.
+local cuts = {}
+
+local function cut_text(letters, kept)
+  return (string.gsub(table.concat(letters, "", 1, kept), "%s+$", "")) .. "..."
+end
+
+-- A cut text: fewer letters each tick, in proportion to how much it is over, until it fits with
+-- "..." after it.
+local function cut(entry)
+  local element = entry.element
+  if not element:valid() then
+    return
+  end
+  local room = entry.room
+  if type(room) == "function" then
+    room = room()
+  end
+  local width = text_width(element, entry.parts)
+  if room == nil or room <= 0 or width <= room + 0.5 then
+    return
+  end
+  -- The width of the text written last is known only once the document lays it out again: until
+  -- the measure changes, it is still the longer text's.
+  if entry.measured ~= nil and math.abs(width - entry.measured) < 0.5 then
+    return
+  end
+  entry.measured = width
+  local kept = entry.kept or #entry.letters
+  local next_kept = math.min(kept - 1, math.floor(kept * room / width))
+  entry.kept = math.max(1, next_kept)
+  element:set_text(cut_text(entry.letters, entry.kept))
+  cuts[element.id] = { text = entry.text, kept = entry.kept }
+end
+
+-- Writes `text` and cuts it to `room` (as fit's) with "..." at its end instead of squeezing it: for
+-- a name with no length limit (a room's), which would be squeezed past reading.
+function fit_text.cut(element, text, room)
+  element:set_property("transform", "none")
+  local entry = {
+    element = element,
+    parts = { element },
+    room = room,
+    ticks = measure_ticks,
+    text = text,
+    letters = letters_of(text),
+  }
+  local known = cuts[element.id]
+  if known ~= nil and known.text == text then
+    entry.kept = known.kept
+    element:set_text(cut_text(entry.letters, known.kept))
+  else
+    cuts[element.id] = nil
+    element:set_text(text)
+  end
+  for index, other in ipairs(pending) do
+    if other.element.id == element.id then
+      pending[index] = entry
+      return
+    end
+  end
+  pending[#pending + 1] = entry
+end
+
 function fit_text.fit(element, parts, room)
   local entry =
     { element = element, parts = parts or { element }, room = room, ticks = measure_ticks }
@@ -66,7 +141,11 @@ end
 function fit_text.tick()
   for index = #pending, 1, -1 do
     local entry = pending[index]
-    squeeze(entry)
+    if entry.letters ~= nil then
+      cut(entry)
+    else
+      squeeze(entry)
+    end
     entry.ticks = entry.ticks - 1
     if entry.ticks <= 0 then
       table.remove(pending, index)

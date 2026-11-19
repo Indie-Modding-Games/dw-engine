@@ -44,6 +44,11 @@ constexpr std::array<std::string_view, 15> PanelScreens{
     "fishing_notice",     "gym_slots", "egg_box",        "new_game_mode",
     "dev_menu",           "versus",    "skin_picker"};
 
+// The screens with a look of their own in every skin, loaded with the rest to check they load
+// cleanly.
+constexpr std::array<std::string_view, 6> OwnLookScreens{
+    "online_hub", "online_profile", "online_status", "online_rooms", "online_room", "coop_hud"};
+
 assets::AssetId idOf(std::string_view text) {
   auto id = assets::AssetId::parse(text);
   REQUIRE(id.has_value());
@@ -335,6 +340,9 @@ TEST_CASE(
   for (const std::string_view screen : PanelScreens) {
     REQUIRE(ui->loadDocument(screen, idOf(std::format("ui/{}/document", screen))));
   }
+  for (const std::string_view screen : OwnLookScreens) {
+    REQUIRE(ui->loadDocument(screen, idOf(std::format("ui/{}/document", screen))));
+  }
   CHECK(ui->checkSkinDocuments().empty());
   CHECK(ui->elementHasClass("pause_menu", "panel", "skin-original"));
   CHECK(ui->elementHasClass("dialog", "panel", "skin-original"));
@@ -390,6 +398,9 @@ TEST_CASE(
 
   loadScreens(*ui);
   for (const std::string_view screen : PanelScreens) {
+    REQUIRE(ui->loadDocument(screen, idOf(std::format("ui/{}/document", screen))));
+  }
+  for (const std::string_view screen : OwnLookScreens) {
     REQUIRE(ui->loadDocument(screen, idOf(std::format("ui/{}/document", screen))));
   }
   REQUIRE(ui->setSkin("devvago"));

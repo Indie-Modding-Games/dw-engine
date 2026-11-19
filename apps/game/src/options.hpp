@@ -50,6 +50,9 @@ struct Options {
   // simulated network, which joins the room and picks on its own (a developer's way to play and
   // look at the versus with one machine).
   bool versusLoopback = false;
+  // Set by --online-sample: the online rooms' screens show sample rooms and a sample room instead
+  // of the network's (online_rooms.hpp), to look at them with one machine.
+  bool onlineSample = false;
   // Set by --list-saves: log the save slots and quit, without a window.
   bool listSaves = false;
   // Set by --check-content: open every asset of the folder's packs and quit, without a window.

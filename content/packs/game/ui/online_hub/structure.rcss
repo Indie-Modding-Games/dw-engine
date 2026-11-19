@@ -1,0 +1,153 @@
+/* The «Multiplayer» hub whatever the skin: one panel in the middle of the window (kept inside it by
+   common/screen_fit.lua) with the title, the player's card (icon, name, versus record) and the entries, each a name
+   with a line under it saying what it opens. The skins give the look (ui/skins/<id>/online_hub/); the plain colours
+   here are the fallback of a skin without a sheet for it. */
+
+#scrim {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background-color: #08121ef2;
+}
+
+#panel {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 680dp;
+	height: 540dp;
+	margin-left: -340dp;
+	margin-top: -270dp;
+	box-sizing: border-box;
+	padding: 16dp 24dp;
+	border: 2dp #5c91bd;
+	background-color: #0c1d2ee8;
+}
+
+#title {
+	margin: 0 0 12dp 0;
+	font-size: 33dp;
+	line-height: 48dp;
+	white-space: nowrap;
+}
+
+/* The player's card: the icon at the left, «Playing as» over the name, the record at the right. */
+#player-card {
+	position: relative;
+	height: 84dp;
+	margin-bottom: 12dp;
+	border-bottom: 1dp #2c4a68;
+}
+
+.profile-icon {
+	decorator: image(/ui/online_profile/icons/egg.png contain);
+}
+
+.profile-icon.icon-egg { decorator: image(/ui/online_profile/icons/egg.png contain); }
+.profile-icon.icon-device { decorator: image(/ui/online_profile/icons/device.png contain); }
+.profile-icon.icon-crown { decorator: image(/ui/online_profile/icons/crown.png contain); }
+.profile-icon.icon-swords { decorator: image(/ui/online_profile/icons/swords.png contain); }
+.profile-icon.icon-tree { decorator: image(/ui/online_profile/icons/tree.png contain); }
+.profile-icon.icon-dumbbell { decorator: image(/ui/online_profile/icons/dumbbell.png contain); }
+
+#player-icon {
+	position: absolute;
+	left: 0;
+	top: 4dp;
+	width: 64dp;
+	height: 64dp;
+}
+
+#player-label {
+	position: absolute;
+	left: 84dp;
+	top: 2dp;
+	font-size: 18dp;
+	line-height: 26dp;
+	opacity: 0.75;
+	white-space: nowrap;
+}
+
+#player-name {
+	position: absolute;
+	left: 84dp;
+	top: 30dp;
+	width: 360dp;
+	font-size: 26dp;
+	line-height: 36dp;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#player-record {
+	position: absolute;
+	right: 0;
+	top: 30dp;
+	width: 160dp;
+	font-size: 22dp;
+	line-height: 36dp;
+	text-align: right;
+	white-space: nowrap;
+}
+
+/* An entry: its name and, under it, what it opens. */
+.hub-entry {
+	display: block;
+	position: relative;
+	height: 70dp;
+	margin: 0 0 6dp 0;
+	padding: 0 16dp 0 70dp;
+	box-sizing: border-box;
+	text-align: left;
+}
+
+.hub-entry.back {
+	height: 48dp;
+	padding-left: 70dp;
+}
+
+.entry-icon {
+	position: absolute;
+	left: 14dp;
+	top: 13dp;
+	width: 44dp;
+	height: 44dp;
+}
+
+#entry-versus .entry-icon { decorator: image(/ui/online_profile/icons/swords.png contain); }
+#entry-rooms .entry-icon { decorator: image(/ui/online_profile/icons/tree.png contain); }
+#entry-profile .entry-icon { decorator: image(/ui/online_profile/icons/egg.png contain); }
+
+.entry-name {
+	display: block;
+	padding-top: 6dp;
+	font-size: 26dp;
+	line-height: 34dp;
+	white-space: nowrap;
+}
+
+.back .entry-name {
+	padding-top: 0;
+	line-height: 48dp;
+}
+
+.entry-hint {
+	display: block;
+	font-size: 18dp;
+	line-height: 24dp;
+	opacity: 0.75;
+	white-space: nowrap;
+}
+
+#prompts {
+	position: absolute;
+	left: 24dp;
+	right: 24dp;
+	bottom: 12dp;
+	font-size: 18dp;
+	white-space: nowrap;
+}
+
+.prompt { margin-right: 14dp; }

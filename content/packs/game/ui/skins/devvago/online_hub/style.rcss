@@ -1,0 +1,52 @@
+/* The «Multiplayer» hub in the DevVago look, over ../online_common/style.rcss: one terminal card over the night grid,
+   the player's card with the name in the heading yellow, and the entries as the rules screen's rows (name at 30dp,
+   what it opens in Pixel Small in the description blue) with the skin's own icons where it has one (the device for the
+   rooms, the player's face for the profile). The layout stays the screen's (ui/online_hub/structure.rcss), larger. */
+
+#panel {
+	width: 780dp;
+	height: 580dp;
+	margin-left: -390dp;
+	margin-top: -290dp;
+	padding: 18dp 28dp;
+}
+
+#title {
+	margin: 0 0 12dp 0;
+	padding: 0 6dp 6dp 6dp;
+	line-height: 48dp;
+	border-bottom: 2dp #397ca4;
+}
+
+#player-card { height: 88dp; margin-bottom: 14dp; border-bottom: 2dp #397ca4; }
+#player-icon { left: 6dp; top: 6dp; width: 64dp; height: 64dp; }
+#player-label { left: 90dp; top: 2dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; color: #a8c7d9; opacity: 1; }
+#player-name { left: 90dp; top: 32dp; width: 420dp; font-size: 30dp; line-height: 44dp; color: #fff371; }
+#player-record { top: 36dp; width: 200dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 36dp; color: #d8f1ff; }
+
+.hub-entry {
+	height: 74dp;
+	margin: 0 0 8dp 0;
+	padding: 0 16dp 0 80dp;
+	border: 2dp #345875;
+	background-color: #0a2035;
+	color: #d8f1ff;
+}
+
+.hub-entry:focus {
+	border-color: #ffd51e;
+	background-color: #153653;
+	color: #ffe64a;
+}
+
+.hub-entry.back { height: 52dp; padding-left: 80dp; }
+.entry-icon { left: 14dp; top: 12dp; width: 48dp; height: 48dp; }
+#entry-rooms .entry-icon { decorator: image(menu-partner-icon contain center center); }
+#entry-profile .entry-icon { decorator: image(menu-player-icon contain center center); }
+.entry-name { padding-top: 2dp; font-size: 30dp; line-height: 40dp; }
+.back .entry-name { padding-top: 0; line-height: 48dp; }
+.entry-hint { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #a8c7d9; opacity: 1; }
+.hub-entry:focus .entry-hint { color: #d8f1ff; }
+
+#prompts { left: 28dp; right: 28dp; bottom: 16dp; line-height: 36dp; }
+.prompt { margin-right: 18dp; }

@@ -1,0 +1,308 @@
+/* The room in the modern look: the boxes as the pause menu's slate panels (../pause_menu/style.rcss) with rounded
+   corners and a hairline border, the title bare in bold, the room's card with the mode's art on an inset and its rows
+   as label and value in fixed columns, the box headings as amber-underlined tabs (as the options page's), the modes and
+   players as inset rows (the focus tints a mode amber with an amber bar at its left edge, the chosen one is ringed),
+   the host's crown and a green ready mark, outlined buttons that the focus fills amber, the code as an inset chip, the
+   notice as an inset with a bar, and the prompts as a bare line. Sizes on the look's type scale (../theme.rcss).
+
+   Every rule is scoped to #scrim:not(.skin-original): the skins that extend this one mark the scrim skin-original in
+   their skin.yaml (document_classes) and keep none of it. */
+
+#scrim:not(.skin-original) {
+	background-color: #06090de8;
+	color: #e9eef5;
+}
+
+#scrim:not(.skin-original) .box {
+	border: 1dp #263243;
+	border-radius: 12dp;
+	background-color: #121922f2;
+}
+
+#scrim:not(.skin-original) #title-plate {
+	padding: 0 4dp;
+	border: 0;
+	background-color: transparent;
+}
+
+#scrim:not(.skin-original) #title { font-size: 30dp; font-weight: bold; line-height: 64dp; }
+
+#scrim:not(.skin-original) #sample-badge {
+	left: 330dp;
+	top: 18dp;
+	height: 28dp;
+	padding: 0 12dp;
+	border-radius: 14dp;
+	font-size: 18dp;
+	font-weight: bold;
+	line-height: 28dp;
+	color: #f2a93b;
+	background-color: #f2a93b29;
+}
+
+/* The room's card: the mode's art on an inset, then the rows. */
+#scrim:not(.skin-original) #info-box { padding: 14dp 16dp; }
+
+#scrim:not(.skin-original) .scene {
+	height: 96dp;
+	margin-bottom: 12dp;
+	padding: 12dp;
+	border-radius: 8dp;
+	background-color: #1a2330;
+	decorator: image(/ui/online_profile/icons/tree.png contain center center) content-box;
+}
+
+#scrim:not(.skin-original) .scene.mode-versus { decorator: image(/ui/online_profile/icons/swords.png contain center center) content-box; }
+#scrim:not(.skin-original) .scene.mode-training { decorator: image(/ui/online_profile/icons/dumbbell.png contain center center) content-box; }
+#scrim:not(.skin-original) .scene.mode-free { decorator: image(/ui/online_profile/icons/device.png contain center center) content-box; }
+/* The guest's card carries the mode's class itself. */
+#scrim:not(.skin-original) #mode-card.mode-versus .scene { decorator: image(/ui/online_profile/icons/swords.png contain center center) content-box; }
+#scrim:not(.skin-original) #mode-card.mode-training .scene { decorator: image(/ui/online_profile/icons/dumbbell.png contain center center) content-box; }
+#scrim:not(.skin-original) #mode-card.mode-free .scene { decorator: image(/ui/online_profile/icons/device.png contain center center) content-box; }
+
+#scrim:not(.skin-original) .info-row {
+	height: 42dp;
+	font-size: 18dp;
+	line-height: 41dp;
+	border-bottom: 1dp #243042;
+}
+
+#scrim:not(.skin-original) .info-label { width: 118dp; color: #9aa8ba; overflow: hidden; }
+
+#scrim:not(.skin-original) .info-value {
+	left: 122dp;
+	width: 184dp;
+	font-size: 22dp;
+	font-weight: bold;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+#scrim:not(.skin-original) .accent { color: #f2a93b; }
+
+/* The box headings: an amber-underlined tab. */
+#scrim:not(.skin-original) .tab {
+	left: 18dp;
+	top: 12dp;
+	height: 32dp;
+	padding: 0 2dp;
+	border: 0;
+	border-bottom: 2dp #f2a93b;
+	font-size: 18dp;
+	font-weight: bold;
+	line-height: 32dp;
+	color: #e9eef5;
+	background-color: transparent;
+}
+
+/* The modes (host). */
+#scrim:not(.skin-original) #modes-box { padding: 58dp 16dp 12dp 16dp; }
+
+#scrim:not(.skin-original) .mode-row {
+	height: 70dp;
+	margin: 0 0 8dp 0;
+	padding: 0 12dp 0 74dp;
+	border: 1dp transparent;
+	border-left: 3dp transparent;
+	border-radius: 8dp;
+	color: #e9eef5;
+	background-color: #1a2330;
+	transition: background-color border-left-color 0.1s cubic-out;
+}
+
+#scrim:not(.skin-original) .mode-row:hover { background-color: #1f2a39; }
+#scrim:not(.skin-original) .mode-row.selected { border-color: #f2a93b80; }
+
+#scrim:not(.skin-original) .mode-row:focus {
+	border-left-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
+}
+
+#scrim:not(.skin-original) .mode-row.unavailable:not(:focus) { color: #5d6a7c; }
+#scrim:not(.skin-original) .mode-row.unavailable .mode-icon { opacity: 0.35; }
+
+#scrim:not(.skin-original) .mode-icon {
+	left: 14dp;
+	top: 13dp;
+	width: 42dp;
+	height: 42dp;
+	background-color: transparent;
+	decorator: image(/ui/online_profile/icons/tree.png contain center center);
+}
+
+#scrim:not(.skin-original) .mode-versus .mode-icon { decorator: image(/ui/online_profile/icons/swords.png contain center center); }
+#scrim:not(.skin-original) .mode-training .mode-icon { decorator: image(/ui/online_profile/icons/dumbbell.png contain center center); }
+#scrim:not(.skin-original) .mode-free .mode-icon { decorator: image(/ui/online_profile/icons/device.png contain center center); }
+
+#scrim:not(.skin-original) .mode-name {
+	padding-top: 6dp;
+	font-size: 22dp;
+	font-weight: bold;
+	line-height: 30dp;
+	overflow: hidden;
+}
+
+#scrim:not(.skin-original) .mode-text {
+	font-size: 18dp;
+	line-height: 24dp;
+	color: #9aa8ba;
+	opacity: 1;
+	overflow: hidden;
+}
+
+#scrim:not(.skin-original) .mode-row:focus .mode-text { color: #d5dce5; }
+#scrim:not(.skin-original) .mode-row.unavailable .mode-text { color: #5d6a7c; }
+#scrim:not(.skin-original) .mode-row.selected .mode-name { color: #f2a93b; }
+
+/* A guest's card of the chosen mode: its art on an inset, its name in amber, what it is. */
+#scrim:not(.skin-original) #mode-card { padding: 16dp; }
+#scrim:not(.skin-original) #mode-card-scene { height: 168dp; margin-bottom: 14dp; padding: 34dp; }
+#scrim:not(.skin-original) #mode-card-name { margin: 4dp 0 8dp 0; font-size: 30dp; font-weight: bold; line-height: 40dp; color: #f2a93b; }
+#scrim:not(.skin-original) #mode-card-text { margin: 0 20dp; font-size: 18dp; line-height: 26dp; color: #c9d3de; }
+
+/* The players. */
+#scrim:not(.skin-original) #players-box { padding: 58dp 14dp 12dp 14dp; }
+
+#scrim:not(.skin-original) .member {
+	height: 70dp;
+	margin: 0 0 8dp 0;
+	padding: 0 0 0 62dp;
+	border: 1dp transparent;
+	border-radius: 8dp;
+	font-size: 22dp;
+	color: #e9eef5;
+	background-color: #1a2330;
+}
+
+#scrim:not(.skin-original) .member.local { border-color: #3a4a5e; background-color: #223044; }
+#scrim:not(.skin-original) .member.waiting { color: #5d6a7c; background-color: #161e29; }
+#scrim:not(.skin-original) .member.hidden { display: none; }
+
+#scrim:not(.skin-original) .avatar {
+	left: 10dp;
+	top: 12dp;
+	width: 44dp;
+	height: 44dp;
+	border-radius: 22dp;
+	background-color: #3a4a5e;
+}
+
+#scrim:not(.skin-original) .member.local .avatar { background-color: #f2a93b; }
+#scrim:not(.skin-original) .member.waiting .avatar { background-color: #263243; }
+
+#scrim:not(.skin-original) .member-name {
+	width: 178dp;
+	height: 34dp;
+	padding-top: 6dp;
+	font-weight: bold;
+	line-height: 30dp;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+#scrim:not(.skin-original) .member.waiting .member-name {
+	width: 230dp;
+	height: 68dp;
+	padding-top: 0;
+	font-size: 18dp;
+	font-weight: normal;
+	line-height: 68dp;
+}
+
+#scrim:not(.skin-original) .member-mark { font-size: 18dp; line-height: 22dp; color: #f2a93b; }
+
+#scrim:not(.skin-original) .crown {
+	right: 12dp;
+	top: 10dp;
+	width: 28dp;
+	height: 22dp;
+	background-color: transparent;
+	decorator: image(/ui/online_profile/icons/crown.png contain center center);
+}
+
+#scrim:not(.skin-original) .ready-mark {
+	right: 12dp;
+	bottom: 8dp;
+	font-size: 18dp;
+	font-weight: bold;
+	line-height: 20dp;
+	color: #7ad37a;
+}
+
+/* The buttons: outlined, the focus fills them amber (the theme's focus). */
+#scrim:not(.skin-original) .room-button {
+	top: 480dp;
+	height: 56dp;
+	margin: 0;
+	padding: 0 12dp;
+	border: 1dp #3a4a5e;
+	border-radius: 8dp;
+	font-size: 22dp;
+	font-weight: bold;
+	line-height: 54dp;
+	color: #c9d3de;
+	background-color: #1a2330;
+}
+
+#scrim:not(.skin-original) .room-button:hover { background-color: #222d3c; }
+#scrim:not(.skin-original) .room-button:focus { border-color: #f2a93b; background-color: #f2a93b; color: #1a1f27; }
+#scrim:not(.skin-original) .room-button.unavailable { color: #5d6a7c; }
+#scrim:not(.skin-original) .room-button.unavailable:focus { color: #1a1f27; }
+
+/* The code as an inset chip. */
+#scrim:not(.skin-original) #code-chip {
+	top: 480dp;
+	padding: 0 14dp;
+	border: 1dp #263243;
+	border-radius: 8dp;
+	background-color: #1a2330;
+	font-size: 18dp;
+	line-height: 54dp;
+	color: #9aa8ba;
+}
+
+#scrim:not(.skin-original) .chip-code { margin-left: 8dp; font-size: 22dp; font-weight: bold; letter-spacing: 2dp; color: #f2a93b; }
+
+/* The notice: an inset with a bar at its left edge, amber for a warning. */
+#scrim:not(.skin-original) #toast {
+	top: 552dp;
+	height: 60dp;
+	padding: 6dp 16dp 6dp 52dp;
+	border: 0;
+	border-left: 3dp #3a4a5e;
+	border-radius: 8dp;
+	background-color: #1a2330;
+}
+
+#scrim:not(.skin-original) #toast.warning { border-left-color: #f2a93b; }
+
+#scrim:not(.skin-original) .toast-icon {
+	left: 14dp;
+	top: 9dp;
+	width: 22dp;
+	height: 22dp;
+	border: 2dp #9aa8ba;
+	border-radius: 11dp;
+}
+
+#scrim:not(.skin-original) #toast.warning .toast-icon { border-color: #f2a93b; }
+#scrim:not(.skin-original) #toast-text { padding-top: 2dp; font-size: 18dp; line-height: 22dp; color: #e9eef5; }
+
+/* The prompts: a bare line under the room's card; a language with longer words wraps it to a second line. */
+#scrim:not(.skin-original) #prompts {
+	left: 0;
+	top: 568dp;
+	width: 340dp;
+	height: 60dp;
+	padding: 2dp 4dp 0 4dp;
+	border: 0;
+	background-color: transparent;
+	font-size: 18dp;
+	line-height: 28dp;
+	color: #9aa8ba;
+	white-space: normal;
+}
+
+#scrim:not(.skin-original) .prompt { margin: 0 18dp 0 0; white-space: nowrap; }
+#scrim:not(.skin-original) .key { font-size: 18dp; line-height: 22dp; }

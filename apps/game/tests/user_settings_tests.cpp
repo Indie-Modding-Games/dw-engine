@@ -53,7 +53,11 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
                               .fairCardStock = false,
                               .chooseEggAfterLivesLost = true,
                               .generousTalk = true,
-                              .extraToilets = true};
+                              .extraToilets = true,
+                              .onlineName = "Ana: #1",
+                              .onlineIcon = "egg",
+                              .onlineWins = 3,
+                              .onlineLosses = 0};
   const auto text = formatUserSettings(settings);
   REQUIRE(text.has_value());
   CHECK(text->contains("ui_skin: test_contrast"));
@@ -90,6 +94,10 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK(read->battleSpeed == std::optional<std::string>{"key"});
   CHECK(read->enemyHpBars == std::optional<bool>{true});
   CHECK(read->gymSessions == std::optional<int>{4});
+  CHECK(read->onlineName == std::optional<std::string>{"Ana: #1"});
+  CHECK(read->onlineIcon == std::optional<std::string>{"egg"});
+  CHECK(read->onlineWins == std::optional<int>{3});
+  CHECK(read->onlineLosses == std::optional<int>{0});
   CHECK(read->quickBattleStart == std::optional<bool>{true});
   CHECK(read->difficulty == std::optional<std::string>{"easy"});
   CHECK(read->skipEvolution == std::optional<bool>{true});

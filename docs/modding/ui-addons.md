@@ -166,6 +166,7 @@ everything they read and send in the [interface API](ui-api.md):
 | `money_box` | The money box |
 | `lives_box` | The lives box |
 | `ui_notice` | The notice that an interface could not be used |
+| `coop_hud` | The co-op game: the other player's name over their head, and its notices |
 | `battle` | The battle: fighters, command strip, finisher, opening, numbers and end box |
 | `tournament_match` | What a cup battle shows on top: the name, the attributes, the time up, the damage |
 | `versus` | Online versus: the room, the code, the game and the partners, the battle, the scoreboard |

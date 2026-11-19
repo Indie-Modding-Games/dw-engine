@@ -2176,6 +2176,70 @@ confirm cell to the player standing on it". The same case of an NPC next to conf
 counters and in other maps (67 NPCs in 45 maps have a confirm cell within the improvement's reach); in all, with
 the improvement, the cell under the player wins as in the original.
 
+## Online rooms
+
+"Multiplayer" in the title menu opens the **Multiplayer** hub (`ui/online_hub`): Online versus, Co-op (Search rooms),
+Profile and Back, over a card with the player's online name, icon and versus record. Co-op leads to **Search rooms**
+(`ui/online_rooms`), and from there the **Room** lobby (`ui/online_room`). Every one is its own document, read only
+through the UI API's `online` namespace ([UI API](../../modding/ui-api.md)), with a look of its own in each skin; the
+co-op lobby that lived inside the main menu is now these screens.
+
+- **Profile** (`ui/online_profile`): the online name (typed in place; Enter or the pad's confirm saves it, cancel
+  erases a letter, and an empty field ends the edit), the icon from a fixed list (egg, device, crown, swords, tree,
+  dumbbell; left and right pick it) and the versus record (wins and losses). `OnlineProfile` (`online_profile.hpp`)
+  keeps it in the game's settings (`settings.yaml`), not in a save, and its name is the player's name in every room
+  (12 letters at most; «Player» until one is typed).
+- **Connecting and errors** (`ui/online_status`): while a room is being created or joined the screen says so with
+  moving dots and offers Cancel; when it fails it shows why in words (the server cannot be reached, the room is full,
+  the code is wrong...) with Retry (`online.retry` asks for the same room again) and Back.
+
+- **Search rooms**: the public rooms (name, mode, players out of capacity, ping bars; a full room is shown but disabled),
+  five rows with scroll arrows, a «Search room» filter, «Join by code» for private rooms and friends, «Create room»
+  (asks Public, listed, or Private, by code only; Public first) and «Find match» (joins the first open room of a mode
+  this game can play, or offers to create a public one). Prompts: Accept, Back, Refresh (`tab_next`), Find match
+  (`tab_previous`). Text fields take the keyboard while edited; a pad cycles the code's letters with up and down.
+- **Room**: the room's card (scene, name, code, host, mode, state, players, public or private), the mode list for the
+  host (Campaign is co-op, Battle is versus; Training and Free say they are not available yet) or the chosen mode for a
+  guest, the players (up to four) with the host's crown and the guests' ready marks, Start (host) or Ready (guest),
+  the code chip on both, Leave room and a notice of what happens next. The host has no ready mark: it starts. Cancel
+  goes to Leave room first, so a stray cancel does not drop the room.
+
+`OnlineRooms` (`online_rooms.hpp`) publishes the `online.*` settings and takes the screens' steps. Two seams keep the
+network side apart: `RoomDirectory` lists public rooms and `RoomBackend` hosts, joins and runs the room. The room
+steps are the co-op lobby's own commands (`coop_host` with public or private, `coop_join` with a code, `coop_ready`,
+`coop_start`), which `CoopRoomBackend` (`online_coop_room.hpp`) hands to `CoopScreen`; `online_leave` drops the link
+(the lobby's `coop_close` keeps a connected peer for the save step). `RoomListing` carries the fields of the
+directory's listing (room id, join code, name, message, host name, players, capacity, created at, state waiting, full
+or starting) plus the mode and the ping, which the directory does not send yet.
+
+With a signaling server configured, `SignalRoomDirectory` (`online_signal_directory.hpp`) lists the server's public
+rooms (`/v1/rooms`), and a room created as Public is hosted with `public=1` so it shows in that list; a Private one is
+reached by its code only. Without a server the list says so and points to the code. The server sends neither the mode
+nor a ping, so a listed room says Campaign and shows no ping bars. A co-op room holds the host and one guest, so its
+rooms say capacity 2 and only Campaign is playable. With the developer tools on
+(or `--online-sample`), the menu key switches to the sample source (`SampleDirectory`, `SampleRoomBackend`): seven
+sample rooms of up to four players, a hosted room that two sample guests join and ready, marked «Sample data» on screen; it
+never starts a game. Tests: `apps/game/tests/online_rooms_tests.cpp`, `apps/game/tests/online_profile_tests.cpp`,
+`packages/engine/ui/tests/online_screens_tests.cpp`.
+
+### In the co-op game
+
+`CoopHud` (`coop_hud.hpp`) shows the `coop_hud` document, with its own look in every skin, while it has something to
+show:
+
+- **Name tag**: the other player's name floats over their head while the field runs (it hides with the HUD's panels in
+  menus, talks and battles, and off the window). On the host it is the guest's online name (the `Hello` of the co-op
+  link), or «Guest 1» without one; on the guest it is «Host», since the host's name does not reach the guest.
+  `FieldScene::coopPeerHeadInWindow` projects the guest's character (host) or the presented host (guest) with the
+  map's camera.
+- **«`<name>` disconnected.»**: when the guest's link closes during play, the host gets this notice for a few seconds
+  and the tag goes; the guest's slot stays for a reconnect.
+- **The host left**: when the host's link closes during play, the guest's game ends (it was the host's world), the
+  main menu comes back and the notice «The host closed the room. You are back at the menu.» shows over it.
+
+The game loop (`game.cpp`) hooks both where it drops the gameplay bridge (`coopLinkLoss`). Tests:
+`apps/game/tests/coop_hud_tests.cpp`.
+
 ## Online versus
 
 "Online versus" appears in the title menu (with the modern skin it is its own row;

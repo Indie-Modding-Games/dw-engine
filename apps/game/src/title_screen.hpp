@@ -5,6 +5,7 @@
 #include <dwe/game/save/storage.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <array>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -21,6 +22,17 @@ inline constexpr std::string_view SaveSlotsDocument = "save_slots";
 inline constexpr std::string_view DialogDocument = "dialog";
 inline constexpr std::string_view NewGameRulesDocument = "new_game_rules";
 inline constexpr std::string_view NewGameModeDocument = "new_game_mode";
+// The online screens (online_rooms.hpp), opened from the menu's multiplayer entry: the hub, the
+// profile, the room search, the room, and the waiting and error screen.
+inline constexpr std::string_view OnlineHubDocument = "online_hub";
+inline constexpr std::string_view OnlineProfileDocument = "online_profile";
+inline constexpr std::string_view OnlineRoomsDocument = "online_rooms";
+inline constexpr std::string_view OnlineRoomDocument = "online_room";
+inline constexpr std::string_view OnlineStatusDocument = "online_status";
+// Every online screen, to hide them together.
+inline constexpr std::array<std::string_view, 5> OnlineDocuments{
+    OnlineHubDocument, OnlineProfileDocument, OnlineRoomsDocument, OnlineRoomDocument,
+    OnlineStatusDocument};
 
 // The title screen with no game: the main menu, the slot lists and their dialogs, shown and hidden
 // by the game as SaveFlow decides (docs/architecture/save-and-load.md, 3.4 and 3.5), and the

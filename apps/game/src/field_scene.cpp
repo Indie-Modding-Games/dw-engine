@@ -293,6 +293,24 @@ void FieldScene::placeCoopProxy(scene::Entity entity, const game::field::Charact
   world_.registry().get<scene::AnimationIntent>(entity).motion = state.motion;
 }
 
+std::optional<glm::vec2> FieldScene::coopPeerHeadInWindow() const {
+  // A little over the player character's head: twice the lift publishPlayerPoint takes to its
+  // waist, and some room for the tag (an estimate, not measured).
+  constexpr float HeadLift = 300.0F;
+  std::optional<glm::vec3> feet;
+  if (coopHostProxyActor_ && coopHostProxyShown_) {
+    feet = world_.registry().get<scene::Transform>(coopHostProxyActor_->entity).position;
+  } else if (!coopGuestActors_.empty()) {
+    if (const auto guest = field_->player(game::field::GuestPlayerId)) {
+      feet = guest->position;
+    }
+  }
+  if (!feet) {
+    return std::nullopt;
+  }
+  return worldToWindowFraction(*feet + glm::vec3{0.0F, HeadLift, 0.0F});
+}
+
 core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& renderer,
                                                              const assets::VirtualFileSystem& files,
                                                              const FieldSceneDesc& desc) {

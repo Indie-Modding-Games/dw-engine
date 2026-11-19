@@ -1,0 +1,200 @@
+/* The online profile in the modern look: the pause menu's slate panel (../pause_menu/style.rcss), the head as an inset
+   card, the rows that the focus tints amber with an amber bar at their left edge (as the options page's), the name in
+   an inset field that turns amber while typing, the icons as rounded tiles with an amber ring on the chosen one, and
+   the prompts at the foot. Sizes on the look's type scale (../theme.rcss): 30dp title, 22dp rows, 18dp notes.
+
+   Every rule is scoped to #scrim:not(.skin-original): the skins that extend this one mark the scrim skin-original in
+   their skin.yaml (document_classes) and keep none of it. */
+
+#scrim:not(.skin-original) {
+	background-color: #06090de8;
+}
+
+#scrim:not(.skin-original) #panel {
+	height: 636dp;
+	margin-top: -318dp;
+	padding: 20dp 24dp;
+	border: 1dp #263243;
+	border-radius: 12dp;
+	background-color: #121922f2;
+	color: #e9eef5;
+}
+
+#scrim:not(.skin-original) #title {
+	margin: 0 0 14dp 0;
+	padding: 0 4dp 10dp 4dp;
+	font-size: 30dp;
+	font-weight: bold;
+	line-height: 40dp;
+	border-bottom: 1dp #243042;
+}
+
+/* The head: an inset with the icon large at the left, the name beside it, the record at the right. */
+#scrim:not(.skin-original) #profile-head {
+	height: 88dp;
+	margin-bottom: 12dp;
+	border: 0;
+	border-radius: 8dp;
+	background-color: #1a2330;
+}
+
+#scrim:not(.skin-original) #head-icon { left: 14dp; top: 10dp; width: 68dp; height: 68dp; }
+
+#scrim:not(.skin-original) #head-name {
+	left: 100dp;
+	top: 22dp;
+	width: 380dp;
+	font-size: 30dp;
+	font-weight: bold;
+	line-height: 44dp;
+	overflow: hidden;
+}
+
+#scrim:not(.skin-original) #head-record {
+	right: 18dp;
+	top: 26dp;
+	width: 180dp;
+	font-size: 22dp;
+	font-weight: bold;
+	line-height: 36dp;
+	color: #f2a93b;
+	overflow: hidden;
+}
+
+/* The rows: the label in a fixed column, the value after it. Only the name row is a button. */
+#scrim:not(.skin-original) .profile-row {
+	height: 56dp;
+	padding: 0 12dp 0 9dp;
+	border-left: 3dp transparent;
+	border-radius: 6dp;
+	font-size: 22dp;
+	line-height: 56dp;
+	color: #e9eef5;
+	background-color: transparent;
+}
+
+#scrim:not(.skin-original) .row-label { width: 236dp; color: #9aa8ba; opacity: 1; }
+
+#scrim:not(.skin-original) #name-field { transition: background-color border-left-color 0.1s cubic-out; }
+#scrim:not(.skin-original) #name-field:hover { background-color: #ffffff0d; }
+
+#scrim:not(.skin-original) #name-field:focus {
+	border-left-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
+}
+
+#scrim:not(.skin-original) #name-field:focus .row-label { color: #e9eef5; }
+
+/* The name: an inset field, amber-edged while typing. */
+#scrim:not(.skin-original) #name-box {
+	width: 440dp;
+	height: 42dp;
+	padding: 0 12dp;
+	border: 1dp #3a4a5e;
+	border-radius: 6dp;
+	background-color: #0c1118;
+	line-height: 40dp;
+	font-weight: bold;
+}
+
+#scrim:not(.skin-original) #name-field.editing #name-box { border-color: #f2a93b; }
+#scrim:not(.skin-original) #name-caret { color: #f2a93b; }
+#scrim:not(.skin-original) .default-name #name-value { color: #9aa8ba; font-weight: normal; opacity: 1; }
+
+#scrim:not(.skin-original) #name-hint {
+	margin: 4dp 0 8dp 248dp;
+	font-size: 18dp;
+	line-height: 24dp;
+	color: #9aa8ba;
+	opacity: 1;
+}
+
+/* The icons: rounded tiles, the chosen one ringed in amber, the focused one tinted. */
+#scrim:not(.skin-original) .icon-choice {
+	width: 54dp;
+	height: 54dp;
+	margin: 1dp 8dp 0 0;
+	padding: 5dp;
+	border: 2dp #263243;
+	border-radius: 8dp;
+	background-color: #1a2330;
+	transition: background-color border-color 0.1s cubic-out;
+}
+
+#scrim:not(.skin-original) .icon-choice:hover { background-color: #263243; }
+#scrim:not(.skin-original) .icon-choice.selected { border-color: #f2a93b; }
+#scrim:not(.skin-original) .icon-choice:focus { background-color: #f2a93b47; border-color: #e9eef5; }
+#scrim:not(.skin-original) .icon-choice.selected:focus { border-color: #f2a93b; }
+#scrim:not(.skin-original) .icon-choice .profile-icon { width: 40dp; height: 40dp; }
+
+#scrim:not(.skin-original) #icon-name {
+	left: 248dp;
+	top: 58dp;
+	font-size: 18dp;
+	line-height: 24dp;
+	color: #f2a93b;
+	opacity: 1;
+}
+
+#scrim:not(.skin-original) #record-row { margin-top: 28dp; }
+#scrim:not(.skin-original) .record-label { margin-right: 10dp; color: #9aa8ba; opacity: 1; }
+#scrim:not(.skin-original) .record-value { width: 70dp; font-weight: bold; color: #f2a93b; }
+
+#scrim:not(.skin-original) #saved-note {
+	margin: 10dp 0 0 12dp;
+	font-size: 18dp;
+	line-height: 24dp;
+	color: #9aa8ba;
+	opacity: 1;
+}
+
+/* Back: an outlined button that the focus fills amber (the theme's focus). */
+#scrim:not(.skin-original) #profile-back {
+	left: 24dp;
+	bottom: 64dp;
+	width: 220dp;
+	height: 44dp;
+	padding: 0;
+	border: 1dp #3a4a5e;
+	border-radius: 8dp;
+	font-size: 22dp;
+	line-height: 42dp;
+	color: #c9d3de;
+}
+
+#scrim:not(.skin-original) #profile-back:focus { border-color: #f2a93b; color: #1a1f27; }
+
+/* A notice beside Back: an inset with an amber bar. */
+#scrim:not(.skin-original) #toast {
+	left: 262dp;
+	right: 24dp;
+	bottom: 64dp;
+	height: 44dp;
+	padding: 0 12dp;
+	box-sizing: border-box;
+	border-left: 3dp #f2a93b;
+	border-radius: 6dp;
+	background-color: #1a2330;
+	font-size: 18dp;
+	line-height: 22dp;
+	color: #f2c27a;
+}
+
+#scrim:not(.skin-original) #toast-text { margin: 0; padding-top: 0; line-height: 44dp; }
+
+#scrim:not(.skin-original) #prompts {
+	left: 24dp;
+	right: 24dp;
+	bottom: 14dp;
+	padding-top: 10dp;
+	border-top: 1dp #243042;
+	font-size: 18dp;
+	line-height: 28dp;
+	color: #9aa8ba;
+	text-align: right;
+	white-space: normal;
+}
+
+#scrim:not(.skin-original) .prompt { margin: 0 0 0 18dp; white-space: nowrap; }
+#scrim:not(.skin-original) .key { font-size: 18dp; line-height: 22dp; }

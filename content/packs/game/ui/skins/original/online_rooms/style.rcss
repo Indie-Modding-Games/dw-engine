@@ -1,0 +1,256 @@
+/* «Search rooms» in the original look: every box one of the original's windows (online/style.rcss) on the stage, the
+   yellow title and box titles, the list as the original's text menu at three times the font's cell with fixed columns
+   (name, mode, players, ping; each clipped to its width) under a heading line in yellow, the cursor and outline on the
+   focused room, the battle's arrow sprite on the scroll bar, the fields as dark wells in the darker cyan with the
+   yellow caret, and the prompts in a window of their own that wraps rather than clips. */
+
+/* The title and the sample badge. */
+#title-plate {
+	top: 0;
+	width: 480dp;
+	height: 60dp;
+	padding: 0 21dp;
+}
+
+#title { line-height: 54dp; }
+
+#sample-badge {
+	top: 12dp;
+	height: 36dp;
+	padding: 0 12dp;
+	font-size: 22dp;
+	line-height: 36dp;
+	color: #1d262e;
+	background-color: #fff371;
+}
+
+/* The list. */
+#list-box {
+	top: 72dp;
+	width: 816dp;
+	height: 480dp;
+	padding: 9dp 54dp 9dp 9dp;
+}
+
+#list-head {
+	height: 39dp;
+	font-size: 22dp;
+	line-height: 39dp;
+	color: #fff371;
+	border-bottom: 3dp #4a9fc5;
+}
+
+#list-head span,
+.room-row span,
+.room-row .ping {
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+/* The columns, in the row's padding box (after the cursor's 27dp), and the heading's over them. */
+/* The name at three times the font's cell, the rest at two (the players' column as wide as its heading). */
+.room-row .col-name { left: 51dp; width: 306dp; }
+.room-row .col-mode { left: 366dp; width: 126dp; font-size: 22dp; color: #b2b2b2; }
+.room-row .col-players { left: 498dp; width: 150dp; font-size: 22dp; }
+.room-row .col-ping { left: 654dp; width: 60dp; }
+#list-head .col-name { left: 78dp; width: 306dp; }
+#list-head .col-mode { left: 393dp; width: 126dp; }
+#list-head .col-players { left: 500dp; width: 170dp; }
+#list-head .col-ping { left: 681dp; width: 66dp; }
+
+#rows { margin-top: 9dp; }
+
+.room-row {
+	height: 66dp;
+	margin: 0 0 6dp 0;
+	padding: 0;
+	font-size: 33dp;
+	line-height: 60dp;
+}
+
+.room-row .room-name span { overflow: visible; }
+.room-row.full:not(:focus) { color: #8a949c; }
+.room-row.full .room-players { color: #ff7060; }
+
+/* The room's kind: the campaign's tree or the battle's swords (the profile icons). */
+.room-icon {
+	left: 6dp;
+	top: 12dp;
+	width: 36dp;
+	height: 36dp;
+	border-radius: 0;
+	background-color: transparent;
+	decorator: image(/ui/online_profile/icons/tree.png contain);
+}
+
+.room-icon-versus .room-icon {
+	background-color: transparent;
+	decorator: image(/ui/online_profile/icons/swords.png contain);
+}
+
+/* The ping: four bars of whole pixels. */
+.room-row .ping { height: 60dp; }
+.ping .bar { bottom: 15dp; width: 9dp; }
+.ping .bar-1 { left: 9dp; height: 9dp; }
+.ping .bar-2 { left: 21dp; height: 15dp; }
+.ping .bar-3 { left: 33dp; height: 21dp; }
+.ping .bar-4 { left: 45dp; height: 27dp; }
+.ping .bar { background-color: #2d3840; }
+
+#list-message {
+	left: 9dp;
+	top: 120dp;
+	width: 747dp;
+}
+
+#list-message-text { font-size: 33dp; line-height: 39dp; color: #d0d0d0; margin-bottom: 12dp; }
+#list-message-hint { font-size: 22dp; line-height: 27dp; color: #b2b2b2; }
+
+/* The scroll bar: the battle's arrow (BI_IN) up and turned down, a cyan thumb in a dark track. */
+#scroll {
+	right: 9dp;
+	top: 60dp;
+	width: 36dp;
+	height: 360dp;
+}
+
+.scroll-arrow {
+	width: 36dp;
+	height: 36dp;
+	border-width: 0;
+	background-color: transparent;
+	image-color: #90d9fa;
+	decorator: image(battle-up-arrow scale-none center center);
+}
+
+#scroll-down { transform: rotate(180deg); }
+.scroll-arrow.off { opacity: 0.3; }
+
+#scroll-track {
+	left: 12dp;
+	top: 42dp;
+	width: 12dp;
+	height: 276dp;
+	background-color: #2d3840;
+}
+
+#scroll-thumb {
+	width: 12dp;
+	background-color: #90d9fa;
+}
+
+/* The right column. */
+.side-box {
+	left: 832dp;
+	width: 400dp;
+	padding: 9dp 12dp;
+}
+
+#search-box { top: 72dp; height: 126dp; }
+#code-box { top: 210dp; height: 222dp; }
+#actions-box { top: 444dp; height: 108dp; padding: 9dp 12dp; }
+
+.side-title {
+	margin: 0 0 9dp 0;
+	font-size: 22dp;
+	line-height: 30dp;
+	color: #fff371;
+	overflow: hidden;
+}
+
+/* A field: a dark well in the darker cyan, the theme's outline when focused, yellow while typing. */
+.field {
+	height: 54dp;
+	padding: 0 12dp;
+	font-size: 22dp;
+	line-height: 48dp;
+	border: 3dp #4a9fc5;
+	background-color: #0b1014;
+	overflow: hidden;
+}
+
+.field:focus { border-color: #a0a000; background-color: #0b1014; }
+.field.editing { border-color: #fff371; }
+.field-icon { display: none; }
+.field-text { color: #d0d0d0; }
+.field-text.placeholder { color: #7a8590; }
+.caret { color: #fff371; }
+
+.cell {
+	width: 39dp;
+	margin: 0 6dp;
+	font-size: 33dp;
+	line-height: 42dp;
+	border-bottom: 3dp #90d9fa;
+}
+
+.cell.current { border-bottom-color: #fff371; color: #fff371; }
+
+.hint {
+	margin: 6dp 0 0 0;
+	height: 48dp;
+	font-size: 22dp;
+	line-height: 24dp;
+	color: #b2b2b2;
+	white-space: normal;
+	overflow: hidden;
+}
+
+/* The room actions: text rows with the cursor and outline. */
+.action {
+	height: 42dp;
+	margin: 6dp 0 0 0;
+	padding: 0 6dp;
+	font-size: 33dp;
+	line-height: 36dp;
+	text-align: left;
+}
+
+#enter { width: 240dp; margin: 3dp auto 0 auto; text-align: center; }
+#enter.unavailable, .action.unavailable { color: #7a8590; }
+#actions-box .action { margin: 0 0 3dp 0; }
+
+/* The prompts and the notice under the boxes. */
+#prompts {
+	top: 568dp;
+	width: 816dp;
+	height: auto;
+	min-height: 60dp;
+	padding: 12dp 15dp 9dp 15dp;
+	line-height: 30dp;
+	border: 3dp transparent;
+	background-color: #1d262ef0;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+#toast {
+	left: 832dp;
+	top: 568dp;
+	width: 400dp;
+	min-height: 60dp;
+	padding: 9dp 15dp;
+}
+
+/* The dialogs: a window with an opaque fill over the stage. */
+.dialog {
+	left: 276dp;
+	top: 150dp;
+	width: 680dp;
+	padding: 12dp 24dp 15dp 24dp;
+	background-color: #1d262efa;
+}
+
+.dialog-title { margin: 0 0 9dp 0; font-size: 33dp; line-height: 39dp; color: #fff371; }
+.dialog-text { margin: 0 0 9dp 0; font-size: 22dp; line-height: 27dp; color: #d0d0d0; }
+
+.dialog-option {
+	margin: 3dp 0;
+	padding: 3dp 9dp;
+	font-size: 33dp;
+	line-height: 36dp;
+	white-space: normal;
+}
+
+.option-name { display: block; width: auto; white-space: nowrap; }
+.option-hint { display: block; font-size: 22dp; line-height: 27dp; color: #b2b2b2; opacity: 1; }

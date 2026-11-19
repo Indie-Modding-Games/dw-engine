@@ -1,0 +1,69 @@
+<rml>
+<head>
+	<title>Room</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/screen_fit.lua"></script>
+	<script src="../common/fit_text.lua"></script>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<!-- The room the player is in (apps/game/src/online_rooms.hpp, read through the UI API's online namespace), as its
+	     host or as a guest: the room's card on the left, the game mode in the middle (the host picks it from the list,
+	     a guest sees the chosen one), the players on the right, the buttons and the code under them. -->
+	<div id="scrim">
+		<div id="stage">
+			<div id="title-plate"><h1 id="title"></h1></div>
+			<div id="sample-badge" class="hidden" text-key="online.sample_badge"></div>
+			<div id="device" class="decoration"></div>
+
+			<div id="info-box" class="box">
+				<div id="scene" class="scene"></div>
+				<div class="info-row"><span class="info-label" text-key="online.info.room"></span><span id="info-room" class="info-value"><span id="info-room-text"></span></span></div>
+				<div class="info-row"><span class="info-label" text-key="online.info.code"></span><span id="info-code" class="info-value"></span></div>
+				<div class="info-row"><span class="info-label" text-key="online.info.host"></span><span id="info-host" class="info-value"><span id="info-host-text"></span></span></div>
+				<div class="info-row"><span class="info-label" text-key="online.info.mode"></span><span id="info-mode" class="info-value accent"></span></div>
+				<div class="info-row"><span class="info-label" text-key="online.info.state"></span><span id="info-state" class="info-value"><span id="info-state-text"></span></span></div>
+				<div class="info-row"><span class="info-label" text-key="online.info.players"></span><span id="info-players" class="info-value"></span></div>
+				<div class="info-row"><span class="info-label" text-key="online.info.visibility"></span><span id="info-visibility" class="info-value"></span></div>
+			</div>
+
+			<!-- The host's mode list. -->
+			<div id="modes-box" class="box">
+				<div id="modes-tab" class="tab" text-key="online.modes_tab"></div>
+				<button id="mode-1" class="mode-row" onclick="pick_mode(document, 1)"><div class="mode-icon"></div><span id="mode-1-name" class="mode-name"></span><span id="mode-1-text" class="mode-text"></span></button>
+				<button id="mode-2" class="mode-row" onclick="pick_mode(document, 2)"><div class="mode-icon"></div><span id="mode-2-name" class="mode-name"></span><span id="mode-2-text" class="mode-text"></span></button>
+				<button id="mode-3" class="mode-row" onclick="pick_mode(document, 3)"><div class="mode-icon"></div><span id="mode-3-name" class="mode-name"></span><span id="mode-3-text" class="mode-text"></span></button>
+				<button id="mode-4" class="mode-row" onclick="pick_mode(document, 4)"><div class="mode-icon"></div><span id="mode-4-name" class="mode-name"></span><span id="mode-4-text" class="mode-text"></span></button>
+			</div>
+
+			<!-- A guest's view of the chosen mode. -->
+			<div id="mode-card" class="box hidden">
+				<div id="mode-card-scene" class="scene"></div>
+				<p id="mode-card-name"></p>
+				<p id="mode-card-text"></p>
+			</div>
+
+			<div id="players-box" class="box">
+				<div id="players-tab" class="tab"></div>
+				<div id="member-1" class="member"><div class="avatar"></div><span id="member-1-name" class="member-name"><span id="member-1-name-text"></span></span><span id="member-1-mark" class="member-mark"></span><div class="crown"></div><span id="member-1-ready" class="ready-mark" text-key="online.ready_mark"></span></div>
+				<div id="member-2" class="member"><div class="avatar"></div><span id="member-2-name" class="member-name"><span id="member-2-name-text"></span></span><span id="member-2-mark" class="member-mark"></span><div class="crown"></div><span id="member-2-ready" class="ready-mark" text-key="online.ready_mark"></span></div>
+				<div id="member-3" class="member"><div class="avatar"></div><span id="member-3-name" class="member-name"><span id="member-3-name-text"></span></span><span id="member-3-mark" class="member-mark"></span><div class="crown"></div><span id="member-3-ready" class="ready-mark" text-key="online.ready_mark"></span></div>
+				<div id="member-4" class="member"><div class="avatar"></div><span id="member-4-name" class="member-name"><span id="member-4-name-text"></span></span><span id="member-4-mark" class="member-mark"></span><div class="crown"></div><span id="member-4-ready" class="ready-mark" text-key="online.ready_mark"></span></div>
+			</div>
+
+			<button id="start" class="room-button main-button" onclick="press(document, 'start')"><div id="start-icon" class="button-icon"></div><span id="start-text"></span></button>
+			<div id="code-chip"><span class="chip-label" text-key="online.code_chip"></span><span id="chip-code" class="chip-code"></span><div class="chip-icon"></div></div>
+			<button id="leave" class="room-button" onclick="press(document, 'leave')" text-key="online.leave_room"></button>
+
+			<!-- What the player should know now: who starts, what is missing, why the room closed. -->
+			<div id="toast"><div class="toast-icon"></div><p id="toast-text"></p></div>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="online.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="online.leave"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

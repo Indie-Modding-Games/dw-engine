@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.16.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.17.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -590,6 +590,144 @@ function versus.step(step) end
 ---@return string?
 function versus.pick(row) end
 
+online = {}
+
+--- The screens' state: open, sample, sample_offered, field, filter, code, code_length, quick, notice, notice_key and can_retry.
+---@return table
+function online.state() end
+
+--- The player's online profile: name, named, icon, wins, losses and draft.
+---@return table
+function online.profile() end
+
+--- The icons a profile can pick: id and label_key.
+---@return table
+function online.icons() end
+
+--- The room list: state, error, error_key, total and the rooms matching the filter (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, joinable).
+---@return table
+function online.list() end
+
+--- The game modes: id, label_key, description_key, short_key, available and selected.
+---@return table
+function online.modes() end
+
+--- The room the player is in, or nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready and members (name, icon, host, ready, local).
+---@return table?
+function online.room() end
+
+--- The text key of an error code; unknown codes give online.error.unknown.
+---@param code string?
+---@return string
+function online.error_key(code) end
+
+--- The text key of a notice code.
+---@param code string?
+---@return string
+function online.notice_key(code) end
+
+--- The rooms screens opened.
+---@return boolean
+function online.open() end
+
+--- The rooms screens closed.
+---@return boolean
+function online.close() end
+
+--- Asks for the list again.
+---@return boolean
+function online.refresh() end
+
+--- The text field that takes the keyboard: filter, code, name or nil.
+---@param field string?
+---@return boolean
+---@return string?
+function online.edit(field) end
+
+--- Replaces the room search's text.
+---@param value string
+---@return boolean
+---@return string?
+function online.set_filter(value) end
+
+--- Replaces the code field's text.
+---@param value string
+---@return boolean
+---@return string?
+function online.set_code(value) end
+
+--- Opens a room: public (listed) or private (by code only).
+---@param public boolean
+---@return boolean
+---@return string?
+function online.host(public) end
+
+--- Joins a listed room.
+---@param room_id string
+---@return boolean
+---@return string?
+function online.join(room_id) end
+
+--- Joins a room by a code, or by the typed one.
+---@param code string?
+---@return boolean
+---@return string?
+function online.join_by_code(code) end
+
+--- Joins the first open playable room, or answers quick = none.
+---@return boolean
+function online.quick_match() end
+
+--- The host picks the room's mode.
+---@param id string
+---@return boolean
+---@return string?
+function online.set_mode(id) end
+
+--- The guest marks itself ready or not.
+---@param ready boolean
+---@return boolean
+---@return string?
+function online.set_ready(ready) end
+
+--- The host starts the game.
+---@return boolean
+function online.start() end
+
+--- Leaves the room.
+---@return boolean
+function online.leave() end
+
+--- Replaces the name being typed on the profile screen.
+---@param value string
+---@return boolean
+---@return string?
+function online.set_name_draft(value) end
+
+--- Keeps the typed name as the profile's.
+---@return boolean
+function online.save_name() end
+
+--- Changes the profile's icon.
+---@param id string
+---@return boolean
+---@return string?
+function online.set_icon(id) end
+
+--- Asks again for the room last asked for, after a failure.
+---@return boolean
+function online.retry() end
+
+--- Clears the notice, the quick match's answer and a closed room.
+---@return boolean
+function online.dismiss() end
+
+--- Switches to the sample rooms and back.
+---@param on boolean
+---@return boolean
+---@return string?
+function online.set_sample(on) end
+
 ---@alias UiEventName string
 ---| "story.changed" The box changed: it opened, grew, another page, the cursor.
 ---| "story.text" A new page appears.
@@ -618,3 +756,4 @@ function versus.pick(row) end
 ---| "battle.shout" The player's shout changed.
 ---| "battle.match" What a cup battle shows on top changed.
 ---| "versus.changed" The versus changed.
+---| "online.changed" The list, the room or the screens' state changed.

@@ -1,0 +1,30 @@
+<rml>
+<head>
+	<title>Connecting</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/screen_fit.lua"></script>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<!-- Getting into a room and why it failed (apps/game/src/online_rooms.hpp, read through the UI API's online
+	     namespace): while the room is connecting, what is happening and a way to cancel; once it closed, why, with a
+	     retry when the game can ask for it again. The room's own screen (ui/online_room) takes over once it opens. -->
+	<div id="scrim">
+		<div id="panel">
+			<h1 id="title"></h1>
+			<div id="status-icon"><div id="dot-1" class="dot"></div><div id="dot-2" class="dot"></div><div id="dot-3" class="dot"></div></div>
+			<p id="status-text"></p>
+			<p id="status-detail"></p>
+			<div id="buttons">
+				<button id="retry" class="status-button" onclick="press(document, 'retry')" text-key="online.retry"></button>
+				<button id="back" class="status-button" onclick="press(document, 'back')"></button>
+			</div>
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="online.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span id="prompt-cancel-text"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

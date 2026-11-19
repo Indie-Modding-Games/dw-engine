@@ -131,8 +131,8 @@ struct Content {
     REQUIRE_MESSAGE(loaded.has_value(), loaded.error().message);
   }
 
-  // The skin picker's row of a skin: the skins the player can pick, in their order, from 1. A hidden
-  // skin (the modern base) has no row.
+  // The skin picker's row of a skin: the skins the player can pick, in their order, from 1. A
+  // hidden skin (the modern base) has no row.
   [[nodiscard]] std::string rowOf(std::string_view skin) const {
     const auto offered = ui->skins().offered();
     const auto found = std::ranges::find(offered, skin);
@@ -143,43 +143,35 @@ struct Content {
 
 } // namespace
 
-TEST_CASE("the main menu exposes a localized cooperative access entry") {
+TEST_CASE("the main menu's multiplayer entry opens the multiplayer hub") {
   const auto checkLayout = [](Content& content, std::string_view label) {
     content.load(MainMenuDocument);
+    content.load("online_hub");
+    content.load("online_rooms");
+    content.load("online_room");
     content.ui->show(MainMenuDocument, true);
     content.ui->update();
     CHECK(content.ui->elementText(MainMenuDocument, "multiplayer") == label);
     CHECK_FALSE(content.ui->elementHasClass(MainMenuDocument, "multiplayer", "hidden"));
-    CHECK(content.ui->elementHasClass(MainMenuDocument, "coop-info", "hidden"));
-    const auto click = [&](std::string_view id) {
-      const auto point = content.ui->elementCenter(MainMenuDocument, id);
-      REQUIRE(point.has_value());
-      static_cast<void>(
-          content.ui->handleEvent(platform::MouseMoved{.x = point->x, .y = point->y}));
-      static_cast<void>(content.ui->handleEvent(
-          platform::MouseButtonChanged{.button = platform::MouseButton::Left, .down = true}));
-      static_cast<void>(content.ui->handleEvent(
-          platform::MouseButtonChanged{.button = platform::MouseButton::Left, .down = false}));
-      content.ui->update();
-    };
-    click("multiplayer");
-    CHECK_FALSE(content.ui->elementHasClass(MainMenuDocument, "coop-info", "hidden"));
-    CHECK(content.ui->focusedElementId(MainMenuDocument) == "coop-host");
-    click("coop-host");
-    const std::vector<ui::UiCommand> commands = content.ui->takeCommands();
-    REQUIRE(commands.size() == 2);
-    CHECK(commands[0].name == "coop_open");
-    CHECK(commands[1].name == "coop_host");
-    click("coop-back");
-    CHECK(content.ui->elementHasClass(MainMenuDocument, "coop-info", "hidden"));
+    const auto point = content.ui->elementCenter(MainMenuDocument, "multiplayer");
+    REQUIRE(point.has_value());
+    static_cast<void>(content.ui->handleEvent(platform::MouseMoved{.x = point->x, .y = point->y}));
+    static_cast<void>(content.ui->handleEvent(
+        platform::MouseButtonChanged{.button = platform::MouseButton::Left, .down = true}));
+    static_cast<void>(content.ui->handleEvent(
+        platform::MouseButtonChanged{.button = platform::MouseButton::Left, .down = false}));
+    content.ui->update();
+    CHECK_FALSE(content.ui->isVisible(MainMenuDocument));
+    CHECK(content.ui->isVisible("online_hub"));
+    CHECK_FALSE(content.ui->isVisible("online_rooms"));
   };
   {
     Content modern;
-    checkLayout(modern, "Cooperative");
+    checkLayout(modern, "Multiplayer");
   }
   {
     Content original{DiscArt::Extracted};
-    checkLayout(original, "COOPERATIVE");
+    checkLayout(original, "MULTIPLAYER");
   }
 }
 
@@ -419,8 +411,9 @@ TEST_CASE("a boot asks the language, then the skin in that language, then Press 
     content.load(MainMenuDocument);
     content.load(SkinPickerDocument);
     content.ui->setSetting(LanguageFirstSetting, asksLanguage(std::nullopt, settings.language));
-    BootTitle title{content, changer, language,
-                    asksUiSkin(std::nullopt, settings.uiSkin, content.ui->skins().offered().size())};
+    BootTitle title{
+        content, changer, language,
+        asksUiSkin(std::nullopt, settings.uiSkin, content.ui->skins().offered().size())};
     title.showMenu(false);
     title.second();
     // The language box first, with no picker yet.
@@ -447,8 +440,8 @@ TEST_CASE("a boot asks the language, then the skin in that language, then Press 
     const auto offered = content.ui->skins().offered();
     CHECK(std::ranges::find(offered, "modern") == offered.end());
 
-    // Moving the cursor puts a skin on at once, without saving it. The modern skin is hidden, so the
-    // test moves to one of the three offered ones, `pixel`.
+    // Moving the cursor puts a skin on at once, without saving it. The modern skin is hidden, so
+    // the test moves to one of the three offered ones, `pixel`.
     REQUIRE(content.ui->callScript(SkinPickerDocument, "skin_focus",
                                    std::vector<std::string>{content.rowOf("pixel")}));
     title.apply();

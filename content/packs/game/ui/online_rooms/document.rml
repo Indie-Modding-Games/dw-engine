@@ -1,0 +1,94 @@
+<rml>
+<head>
+	<title>Search rooms</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/screen_fit.lua"></script>
+	<script src="../common/fit_text.lua"></script>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<!-- «Search rooms» (apps/game/src/online_rooms.hpp, read through the UI API's online namespace): the public rooms on
+	     the left, the search, the code entry and the room actions on the right, the prompts under them. The whole stage
+	     is one box kept inside the window (common/screen_fit.lua). -->
+	<div id="scrim">
+		<div id="stage">
+			<div id="title-plate"><h1 id="title" text-key="online.rooms_title"></h1></div>
+			<div id="sample-badge" class="hidden" text-key="online.sample_badge"></div>
+			<div id="device" class="decoration"></div>
+
+			<div id="list-box" class="box">
+				<div id="list-head">
+					<span class="col-name" text-key="online.column.room"></span>
+					<span class="col-mode" text-key="online.column.mode"></span>
+					<span class="col-players" text-key="online.column.players"></span>
+					<span class="col-ping" text-key="online.column.ping"></span>
+				</div>
+				<div id="rows">
+					<button id="row-1" class="room-row" onclick="pick_row(document, 1)"><div class="room-icon"></div><span id="row-1-name" class="col-name room-name"><span id="row-1-name-text"></span></span><span id="row-1-mode" class="col-mode room-mode"></span><span id="row-1-players" class="col-players room-players"></span><div id="row-1-ping" class="col-ping ping"><div class="bar bar-1"></div><div class="bar bar-2"></div><div class="bar bar-3"></div><div class="bar bar-4"></div></div></button>
+					<button id="row-2" class="room-row" onclick="pick_row(document, 2)"><div class="room-icon"></div><span id="row-2-name" class="col-name room-name"><span id="row-2-name-text"></span></span><span id="row-2-mode" class="col-mode room-mode"></span><span id="row-2-players" class="col-players room-players"></span><div id="row-2-ping" class="col-ping ping"><div class="bar bar-1"></div><div class="bar bar-2"></div><div class="bar bar-3"></div><div class="bar bar-4"></div></div></button>
+					<button id="row-3" class="room-row" onclick="pick_row(document, 3)"><div class="room-icon"></div><span id="row-3-name" class="col-name room-name"><span id="row-3-name-text"></span></span><span id="row-3-mode" class="col-mode room-mode"></span><span id="row-3-players" class="col-players room-players"></span><div id="row-3-ping" class="col-ping ping"><div class="bar bar-1"></div><div class="bar bar-2"></div><div class="bar bar-3"></div><div class="bar bar-4"></div></div></button>
+					<button id="row-4" class="room-row" onclick="pick_row(document, 4)"><div class="room-icon"></div><span id="row-4-name" class="col-name room-name"><span id="row-4-name-text"></span></span><span id="row-4-mode" class="col-mode room-mode"></span><span id="row-4-players" class="col-players room-players"></span><div id="row-4-ping" class="col-ping ping"><div class="bar bar-1"></div><div class="bar bar-2"></div><div class="bar bar-3"></div><div class="bar bar-4"></div></div></button>
+					<button id="row-5" class="room-row" onclick="pick_row(document, 5)"><div class="room-icon"></div><span id="row-5-name" class="col-name room-name"><span id="row-5-name-text"></span></span><span id="row-5-mode" class="col-mode room-mode"></span><span id="row-5-players" class="col-players room-players"></span><div id="row-5-ping" class="col-ping ping"><div class="bar bar-1"></div><div class="bar bar-2"></div><div class="bar bar-3"></div><div class="bar bar-4"></div></div></button>
+				</div>
+				<!-- Shown instead of the rows: asking, nothing open, nothing matching, or no list yet. -->
+				<div id="list-message" class="hidden">
+					<p id="list-message-text"></p>
+					<p id="list-message-hint"></p>
+				</div>
+				<div id="scroll">
+					<button id="scroll-up" class="scroll-arrow" onclick="scroll_list(document, -1)"></button>
+					<div id="scroll-track"><div id="scroll-thumb"></div></div>
+					<button id="scroll-down" class="scroll-arrow" onclick="scroll_list(document, 1)"></button>
+				</div>
+			</div>
+
+			<div id="search-box" class="box side-box">
+				<p class="side-title" text-key="online.search"></p>
+				<button id="filter" class="field" onclick="click_side(document, 'filter')"><div class="field-icon"></div><span id="filter-text" class="field-text"></span><span id="filter-caret" class="caret hidden">_</span></button>
+			</div>
+
+			<div id="code-box" class="box side-box">
+				<p class="side-title" text-key="online.code_title"></p>
+				<button id="code" class="field code-field" onclick="click_side(document, 'code')">
+					<span id="cell-1" class="cell"></span><span id="cell-2" class="cell"></span><span id="cell-3" class="cell"></span><span id="cell-4" class="cell"></span><span id="cell-5" class="cell hidden"></span><span id="cell-6" class="cell hidden"></span>
+				</button>
+				<p id="code-hint" class="hint"></p>
+				<button id="enter" class="action" onclick="click_side(document, 'enter')" text-key="online.enter"></button>
+			</div>
+
+			<div id="actions-box" class="box side-box">
+				<button id="create" class="action" onclick="click_side(document, 'create')" text-key="online.create"></button>
+				<button id="quick" class="action" onclick="click_side(document, 'quick')" text-key="online.quick"></button>
+			</div>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="online.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="online.back"></span></span>
+				<span class="prompt"><span class="key" id="prompt-refresh"></span><span text-key="online.refresh"></span></span>
+				<span id="prompt-quick-box" class="prompt"><span class="key" id="prompt-quick"></span><span text-key="online.quick"></span></span>
+				<span id="prompt-sample-box" class="prompt hidden"><span class="key" id="prompt-sample"></span><span text-key="online.sample"></span></span>
+			</div>
+
+			<!-- A notice: a step the game did not take, or why a room did not open. -->
+			<div id="toast" class="hidden"><div class="toast-icon"></div><p id="toast-text"></p></div>
+
+			<!-- Creating a room: public (listed) or private (by code only), public first. -->
+			<div id="create-dialog" class="dialog hidden">
+				<p class="dialog-title" text-key="online.create.title"></p>
+				<button id="create-public" class="dialog-option" onclick="choose_dialog(document, 1)"><span class="option-name" text-key="online.create.public"></span><span class="option-hint" text-key="online.create.public_hint"></span></button>
+				<button id="create-private" class="dialog-option" onclick="choose_dialog(document, 2)"><span class="option-name" text-key="online.create.private"></span><span class="option-hint" text-key="online.create.private_hint"></span></button>
+				<button id="create-cancel" class="dialog-option" onclick="choose_dialog(document, 3)"><span class="option-name" text-key="online.create.cancel"></span></button>
+			</div>
+
+			<!-- The quick match found no open room: create a public one? -->
+			<div id="quick-dialog" class="dialog hidden">
+				<p class="dialog-title" text-key="online.quick.none"></p>
+				<p class="dialog-text" text-key="online.quick.create"></p>
+				<button id="quick-yes" class="dialog-option" onclick="choose_dialog(document, 1)"><span class="option-name" text-key="common.yes"></span></button>
+				<button id="quick-no" class="dialog-option" onclick="choose_dialog(document, 2)"><span class="option-name" text-key="common.no"></span></button>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

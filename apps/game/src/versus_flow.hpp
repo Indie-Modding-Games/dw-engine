@@ -17,6 +17,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dwe::app {
@@ -123,6 +124,8 @@ public:
   // Starts again at the menu, with no link.
   void open();
   [[nodiscard]] View view() const { return view_; }
+  // Once per series that ended with a winner: whether this side won (a drawn series gives none).
+  std::optional<bool> takeOutcome() { return std::exchange(outcome_, std::nullopt); }
   // Gives the battles their view once it is built (the screen builds its arena while the players
   // link, not when the menu opens); before a series starts.
   void attachView(VersusBattleView* view) { desc_.view = view; }
@@ -165,6 +168,7 @@ private:
 
   VersusFlowDesc desc_;
   View view_ = View::Menu;
+  std::optional<bool> outcome_;
   bool closed_ = false;
   std::int32_t cursor_ = 0;
   // The series length the host picks, by its place in the rules' series, and its arena, by its

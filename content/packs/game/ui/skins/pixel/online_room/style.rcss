@@ -1,0 +1,200 @@
+/* «Room» in the pixel look (the UI concept's rooms-lobby mockup): the room's card with the island, the modes with their
+   icons and the gold ▶ and line on the chosen one (a guest sees the chosen mode over the forest), the players with
+   avatars, the host's crown and green ready ticks, the gold Start button, the code chip and the notice. The layout
+   stays the screen's (ui/online_room/structure.rcss). */
+
+#scrim {
+	background-color: #08141c;
+	decorator: image(/ui/skins/pixel/assets/online_back.png cover center center);
+}
+
+.box,
+#title-plate,
+#prompts,
+#toast,
+#code-chip {
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+}
+
+#code-chip,
+#toast { decorator: ninepatch(nb-box-outer, nb-box-inner, 1) border-box; }
+#toast.warning { decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box; }
+
+#title-plate { padding: 0 30dp; }
+#title { font-size: 36dp; line-height: 58dp; color: #f2f0e1; }
+
+#device {
+	display: block;
+	position: absolute;
+	right: 8dp;
+	top: -6dp;
+	width: 84dp;
+	height: 80dp;
+	decorator: image(nb-on-device contain center center);
+}
+
+#sample-badge { font-family: "Pixel Small"; font-size: 26dp; color: #050c1a; }
+
+/* The room's card. */
+#info-box { padding: 18dp 20dp; }
+.scene { background-color: #10223a; decorator: image(nb-on-island cover center center); }
+.info-row { font-family: "Pixel Small"; font-size: 26dp; border-bottom-color: #26364d; }
+.info-label { width: 128dp; color: #b6e4f7; }
+.info-value { left: 128dp; width: 166dp; }
+.accent { color: #efc63c; }
+
+/* The tabs over the modes and the players. */
+.tab {
+	top: 6dp;
+	border: 3dp transparent;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	padding: 0 30dp;
+	background-color: transparent;
+	decorator: ninepatch(nb-tab-on-outer, nb-tab-on-inner, 1) border-box;
+}
+
+/* The modes: the ▶ in each row's wide left border, the line on the focused one. */
+#modes-box { padding: 60dp 20dp 12dp 48dp; }
+
+.mode-row {
+	width: 486dp;
+	margin-left: -34dp;
+	border: 3dp transparent;
+	border-left-width: 34dp;
+	padding-left: 70dp;
+	background-color: transparent;
+	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) padding-box;
+}
+
+.mode-row:focus {
+	border-color: transparent;
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+.mode-row.selected .mode-name { color: #efc63c; }
+.mode-row.unavailable { color: #5f6f82; }
+.mode-row.unavailable .mode-icon { opacity: 0.4; }
+/* The name over its few words, on two lines. */
+.mode-name { display: block; width: 360dp; font-size: 30dp; line-height: 30dp; padding-top: 4dp; }
+.mode-text { display: block; width: 360dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 24dp; padding-top: 0;
+	white-space: nowrap; color: #b6e4f7; opacity: 1; }
+.mode-row.unavailable .mode-text { color: #5f6f82; }
+
+.mode-icon {
+	left: 12dp;
+	top: 12dp;
+	width: 44dp;
+	height: 42dp;
+	background-color: transparent;
+	decorator: image(nb-on-device contain center center);
+}
+
+.mode-versus .mode-icon { decorator: image(nb-on-swords contain center center); }
+.mode-training .mode-icon { decorator: image(nb-on-dumbbell contain center center); }
+.mode-free .mode-icon { decorator: image(nb-on-tree contain center center); }
+
+/* A guest's card of the chosen mode. */
+#mode-card { padding: 20dp; }
+#mode-card-scene { decorator: image(nb-on-forest contain center center); background-color: transparent; }
+#mode-card.mode-versus #mode-card-scene { decorator: image(nb-on-swords contain center center); }
+#mode-card-name { font-size: 36dp; color: #efc63c; }
+#mode-card-text { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; }
+
+/* The players. */
+#players-box { padding: 60dp 18dp 12dp 18dp; }
+
+.member {
+	border: 3dp transparent;
+	font-size: 30dp;
+	background-color: transparent;
+	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;
+}
+
+.member.local { decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box; }
+.member.waiting { color: #5f6f82; }
+
+.avatar {
+	border-radius: 0;
+	background-color: transparent;
+	decorator: image(nb-on-avatar contain center center);
+}
+
+.member.waiting .avatar { opacity: 0.35; }
+.member.waiting .member-name { width: 220dp; font-family: "Pixel Small"; font-size: 26dp; }
+/* The name and its mark («(Host)») share the row's height: the name a little higher, the mark right under it. */
+.member-name { height: 32dp; padding-top: 2dp; line-height: 30dp; }
+.member-mark { font-family: "Pixel Small"; font-size: 22dp; line-height: 22dp; color: #efc63c; }
+
+.crown {
+	width: 30dp;
+	height: 24dp;
+	background-color: transparent;
+	decorator: image(nb-on-crown contain center center);
+}
+
+.ready-mark {
+	padding-left: 24dp;
+	font-family: "Pixel Small";
+	font-size: 22dp;
+	color: #5fd36a;
+	decorator: image(nb-on-check contain left center);
+}
+
+/* The buttons, the code and the notice. */
+.room-button {
+	border: 3dp transparent;
+	font-size: 30dp;
+	background-color: transparent;
+	decorator: ninepatch(nb-key-outer, nb-key-inner, 1) border-box;
+}
+
+.room-button:focus {
+	border-color: transparent;
+	color: #efc63c;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
+
+/* Start and Ready are the gold buttons of the mockup. */
+#start {
+	color: #050c1a;
+	background-color: #efc63c;
+	decorator: none;
+}
+
+#start:focus {
+	color: #050c1a;
+	background-color: #ffe58a;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
+
+#start.unavailable { color: #5f6f82; background-color: #26364d; }
+
+.button-icon { width: 14dp; height: 20dp; decorator: image(nb-on-play contain center center); }
+#start.action-ready .button-icon { width: 22dp; decorator: image(nb-on-check contain center center); }
+#start.unavailable .button-icon { opacity: 0.4; }
+
+#start { width: 284dp; }
+#code-chip { left: 660dp; width: 224dp; padding: 0 8dp; font-family: "Pixel Small"; font-size: 26dp; }
+.chip-code { margin-left: 6dp; color: #efc63c; letter-spacing: 1dp; }
+
+.chip-icon {
+	display: inline-block;
+	width: 18dp;
+	height: 18dp;
+	margin-left: 6dp;
+	decorator: image(nb-on-copy contain center center);
+}
+
+/* Two lines of notice beside the prompts. */
+#toast { left: 420dp; top: 552dp; width: 812dp; height: 70dp; padding: 7dp 16dp 4dp 56dp; }
+.toast-icon { top: 20dp; }
+.toast-icon { border: 0; border-radius: 0; decorator: image(nb-on-info contain center center); }
+#toast-text { font-family: "Pixel Small"; font-size: 22dp; line-height: 24dp; }
+
+#prompts { top: 570dp; width: 404dp; padding: 0 10dp; font-family: "Pixel Small"; font-size: 26dp; }
+.prompt { margin-right: 8dp; }

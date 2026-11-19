@@ -1,0 +1,253 @@
+/* The room in the original look: every box one of the original's windows (online/style.rcss) on the stage. The room's
+   card is label and value rows (labels in the description grey at two times the font's cell, values in the ink at
+   three, the mode in the heading yellow) without the empty picture; the modes and the players are text lists under a
+   yellow box title (the modes as plain text rows, the guest's card with the mode's profile icon), with the cursor and
+   outline on the focused mode, the host's crown, the player's own name in yellow and "ready" in cyan; Start and Leave
+   are windows of their own, and the notice and the prompts sit in windows under them. */
+
+#title-plate {
+	top: 0;
+	width: 480dp;
+	height: 60dp;
+	padding: 0 21dp;
+}
+
+#title { line-height: 54dp; }
+
+#sample-badge {
+	top: 12dp;
+	height: 36dp;
+	padding: 0 12dp;
+	font-size: 22dp;
+	line-height: 36dp;
+	color: #1d262e;
+	background-color: #fff371;
+}
+
+/* The room's card: no picture (the original has none for a room), label and value rows. */
+#info-box {
+	top: 72dp;
+	width: 384dp;
+	height: 528dp;
+	padding: 18dp 15dp 12dp 15dp;
+}
+
+#scene { display: none; }
+
+.info-row {
+	height: 60dp;
+	line-height: 57dp;
+	border-bottom: 3dp #33414a;
+	overflow: hidden;
+}
+
+.info-label {
+	width: 162dp;
+	font-size: 22dp;
+	color: #b2b2b2;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.info-value {
+	left: 162dp;
+	width: 186dp;
+	font-size: 33dp;
+	color: #d0d0d0;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.info-value.accent { color: #fff371; }
+
+/* The modes (host) and the chosen mode (guest). */
+#modes-box,
+#mode-card {
+	left: 396dp;
+	top: 72dp;
+	width: 472dp;
+	height: 384dp;
+	padding: 57dp 15dp 9dp 15dp;
+}
+
+.tab {
+	left: 18dp;
+	top: 9dp;
+	height: 39dp;
+	padding: 0;
+	font-size: 22dp;
+	line-height: 39dp;
+	color: #fff371;
+	border-width: 0;
+	background-color: transparent;
+	overflow: hidden;
+}
+
+#players-tab { right: 15dp; }
+
+.mode-row {
+	height: 72dp;
+	margin: 0 0 6dp 0;
+	padding: 0 0 0 9dp;
+}
+
+.mode-row.unavailable:not(:focus) { color: #7a8590; }
+/* Text rows like the original's menus: no icons. */
+.mode-icon { display: none; }
+
+.mode-name {
+	width: 397dp;
+	padding-top: 3dp;
+	font-size: 33dp;
+	line-height: 36dp;
+	overflow: hidden;
+}
+
+.mode-text {
+	width: 397dp;
+	font-size: 22dp;
+	line-height: 27dp;
+	color: #b2b2b2;
+	opacity: 1;
+	overflow: hidden;
+}
+
+.mode-row.selected:not(:focus) .mode-name { color: #fff371; }
+.mode-row.selected:focus .mode-name { color: #fff371; }
+
+/* The guest's card: the mode's icon, its name in yellow, what it is under it. */
+#mode-card { padding: 21dp 24dp 15dp 24dp; }
+
+#mode-card-scene {
+	height: 108dp;
+	margin: 6dp 0 12dp 0;
+	background-color: transparent;
+	decorator: image(/ui/online_profile/icons/tree.png contain);
+}
+
+#mode-card.mode-versus #mode-card-scene { decorator: image(/ui/online_profile/icons/swords.png contain); }
+#mode-card.mode-training #mode-card-scene { decorator: image(/ui/online_profile/icons/dumbbell.png contain); }
+#mode-card.mode-free #mode-card-scene { decorator: image(/ui/online_profile/icons/device.png contain); }
+
+#mode-card-name { margin: 0 0 9dp 0; font-size: 33dp; line-height: 39dp; color: #fff371; }
+#mode-card-text { margin: 0; font-size: 22dp; line-height: 27dp; color: #d0d0d0; }
+
+/* The players. */
+#players-box {
+	left: 880dp;
+	top: 72dp;
+	width: 352dp;
+	height: 384dp;
+	padding: 57dp 12dp 9dp 12dp;
+}
+
+.member {
+	height: 72dp;
+	margin: 0 0 6dp 0;
+	padding: 0 0 0 12dp;
+	font-size: 33dp;
+	border: 0;
+	border-bottom: 3dp #33414a;
+	background-color: transparent;
+}
+
+.member.local { border-color: #33414a; background-color: #2d384080; }
+.member.local .member-name { color: #fff371; }
+.member.waiting { color: #7a8590; }
+.avatar { display: none; }
+
+.member-name {
+	width: 246dp;
+	height: 39dp;
+	padding-top: 6dp;
+	line-height: 36dp;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.member.waiting .member-name {
+	width: 304dp;
+	height: 69dp;
+	padding-top: 0;
+	font-size: 22dp;
+	line-height: 69dp;
+}
+
+.member-mark {
+	font-size: 22dp;
+	line-height: 24dp;
+	color: #fff371;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.crown {
+	right: 9dp;
+	top: 9dp;
+	width: 33dp;
+	height: 33dp;
+	background-color: transparent;
+	decorator: image(/ui/online_profile/icons/crown.png contain);
+}
+
+.ready-mark {
+	right: 9dp;
+	bottom: 6dp;
+	font-size: 22dp;
+	line-height: 27dp;
+	color: #90d9fa;
+}
+
+/* Start, the code and Leave: windows of their own in a row under the boxes. */
+.room-button {
+	top: 468dp;
+	height: 60dp;
+	padding: 0 6dp 0 24dp;
+	font-size: 33dp;
+	line-height: 54dp;
+}
+
+#start { left: 396dp; width: 208dp; }
+#leave { left: 880dp; width: 352dp; }
+.room-button.unavailable, .room-button.unavailable:focus { color: #7a8590; }
+
+#code-chip {
+	left: 616dp;
+	top: 468dp;
+	width: 252dp;
+	height: 60dp;
+	padding: 0 3dp;
+	font-size: 33dp;
+	line-height: 54dp;
+	text-align: center;
+	overflow: hidden;
+}
+
+.chip-label { font-size: 22dp; color: #b2b2b2; }
+.chip-code { margin-left: 6dp; color: #fff371; letter-spacing: 0; }
+
+/* The notice, then the prompts along the bottom. */
+#toast {
+	left: 396dp;
+	top: 538dp;
+	width: 836dp;
+	height: 68dp;
+	padding: 6dp 15dp 0 15dp;
+	overflow: hidden;
+}
+
+#toast-text { line-height: 24dp; }
+#toast.warning #toast-text { color: #ffb070; }
+
+#prompts {
+	left: 0;
+	top: 612dp;
+	width: 1232dp;
+	height: auto;
+	min-height: 60dp;
+	padding: 12dp 15dp 9dp 15dp;
+	border: 3dp transparent;
+	background-color: #1d262ef0;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}

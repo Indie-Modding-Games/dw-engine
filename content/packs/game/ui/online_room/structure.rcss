@@ -1,0 +1,326 @@
+/* The room whatever the skin: one stage of 1232 x 680dp in the middle of the window (kept inside it by
+   common/screen_fit.lua): the room's card on the left, the modes (host) or the chosen mode (guest) in the middle, the
+   players on the right, the buttons, the code and the notice under them, the prompts at the bottom. The skins give the
+   look (ui/skins/<id>/online_room/); the plain colours here are the fallback of a skin without a sheet for it. */
+
+#scrim {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background-color: #08121ef2;
+}
+
+#stage {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 1232dp;
+	height: 680dp;
+	margin-left: -616dp;
+	margin-top: -340dp;
+}
+
+.box {
+	position: absolute;
+	box-sizing: border-box;
+	border: 2dp #5c91bd;
+	background-color: #0c1d2ee8;
+}
+
+.decoration { display: none; }
+
+#title-plate {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 480dp;
+	height: 64dp;
+	box-sizing: border-box;
+	padding: 0 24dp;
+	border: 2dp #5c91bd;
+	background-color: #0c1d2ee8;
+}
+
+#title {
+	margin: 0;
+	font-size: 33dp;
+	line-height: 60dp;
+	white-space: nowrap;
+}
+
+#sample-badge {
+	position: absolute;
+	left: 500dp;
+	top: 14dp;
+	height: 36dp;
+	padding: 0 14dp;
+	font-size: 18dp;
+	line-height: 36dp;
+	color: #1a1f27;
+	background-color: #efc63c;
+}
+
+/* The room's card. */
+#info-box {
+	left: 0;
+	top: 84dp;
+	width: 340dp;
+	height: 470dp;
+	padding: 14dp 16dp;
+}
+
+.scene {
+	height: 128dp;
+	margin-bottom: 10dp;
+	background-color: #1d3c5a;
+}
+
+.info-row {
+	position: relative;
+	height: 42dp;
+	font-size: 22dp;
+	line-height: 40dp;
+	white-space: nowrap;
+	border-bottom: 1dp #2c4a68;
+}
+
+.info-label { display: inline-block; width: 172dp; color: #b6e4f7; }
+.info-value { display: inline-block; position: absolute; left: 172dp; width: 134dp; }
+.accent { color: #efc63c; }
+
+/* The modes (host) and the chosen mode (guest). */
+#modes-box,
+#mode-card {
+	left: 360dp;
+	top: 84dp;
+	width: 520dp;
+	height: 380dp;
+	padding: 56dp 16dp 12dp 16dp;
+}
+
+.tab {
+	position: absolute;
+	left: 16dp;
+	top: 10dp;
+	height: 36dp;
+	padding: 0 16dp;
+	font-size: 18dp;
+	line-height: 34dp;
+	white-space: nowrap;
+	border: 2dp #5c91bd;
+	background-color: #10283b;
+}
+
+.mode-row {
+	position: relative;
+	box-sizing: border-box;
+	width: 100%;
+	height: 72dp;
+	margin: 0 0 8dp 0;
+	padding: 0 0 0 76dp;
+	white-space: nowrap;
+	border: 2dp #24496c;
+	background-color: #0a1828;
+}
+
+.mode-row.unavailable:not(:focus) { color: #5f6f82; }
+
+.mode-icon {
+	position: absolute;
+	left: 14dp;
+	top: 14dp;
+	width: 44dp;
+	height: 40dp;
+	background-color: #4a79a8;
+}
+
+/* The mode's name over its few words. */
+.mode-name {
+	display: block;
+	font-size: 22dp;
+	line-height: 32dp;
+	padding-top: 6dp;
+}
+
+.mode-text {
+	display: block;
+	font-size: 16dp;
+	line-height: 24dp;
+	opacity: 0.75;
+}
+
+/* Gold unless focused: a focus that fills the row (the modern look) gives the words its own colour. */
+.mode-row.selected:not(:focus) .mode-name { color: #efc63c; }
+
+#mode-card { padding: 16dp; text-align: center; }
+#mode-card-scene { height: 200dp; }
+#mode-card-name { margin: 6dp 0; font-size: 30dp; color: #efc63c; }
+#mode-card-text { margin: 0 20dp; font-size: 18dp; white-space: normal; }
+
+/* The players. */
+#players-box {
+	left: 900dp;
+	top: 84dp;
+	width: 332dp;
+	height: 380dp;
+	padding: 56dp 12dp 12dp 12dp;
+}
+
+.member {
+	position: relative;
+	box-sizing: border-box;
+	height: 72dp;
+	margin: 0 0 8dp 0;
+	padding: 0 0 0 64dp;
+	font-size: 22dp;
+	white-space: nowrap;
+	border: 2dp #24496c;
+	background-color: #0a1828;
+}
+
+.member.waiting { color: #5f6f82; }
+.member.local { border-color: #9a8cf0; background-color: #1c1c44; }
+.member.hidden { display: none; }
+
+.avatar {
+	position: absolute;
+	left: 10dp;
+	top: 12dp;
+	width: 44dp;
+	height: 44dp;
+	border-radius: 22dp;
+	background-color: #4a79a8;
+}
+
+.member.waiting .avatar { background-color: #24496c; }
+
+.member-name {
+	display: block;
+	width: 170dp;
+	height: 34dp;
+	padding-top: 4dp;
+	line-height: 30dp;
+}
+
+.member.waiting .member-name { width: 228dp; line-height: 64dp; height: 68dp; padding-top: 0; font-size: 18dp; }
+
+.member-mark {
+	display: block;
+	font-size: 15dp;
+	line-height: 22dp;
+	color: #efc63c;
+}
+
+.crown {
+	display: none;
+	position: absolute;
+	right: 12dp;
+	top: 10dp;
+	width: 26dp;
+	height: 20dp;
+	background-color: #efc63c;
+}
+
+.member.host .crown { display: block; }
+
+.ready-mark {
+	display: none;
+	position: absolute;
+	right: 10dp;
+	bottom: 8dp;
+	font-size: 16dp;
+	line-height: 20dp;
+	color: #5fd36a;
+}
+
+.member.ready .ready-mark { display: inline-block; }
+
+/* The buttons, the code and the notice. */
+.room-button {
+	position: absolute;
+	top: 482dp;
+	box-sizing: border-box;
+	height: 56dp;
+	padding: 0 16dp;
+	font-size: 22dp;
+	line-height: 52dp;
+	text-align: center;
+	white-space: nowrap;
+	border: 2dp #5c91bd;
+}
+
+#start { left: 360dp; width: 290dp; }
+#leave { left: 900dp; width: 332dp; }
+.room-button.unavailable { color: #5f6f82; }
+
+.button-icon {
+	display: inline-block;
+	width: 0;
+	height: 0;
+	margin-right: 10dp;
+}
+
+#code-chip {
+	position: absolute;
+	left: 666dp;
+	top: 482dp;
+	width: 218dp;
+	height: 56dp;
+	box-sizing: border-box;
+	padding: 0 14dp;
+	font-size: 22dp;
+	line-height: 52dp;
+	white-space: nowrap;
+	border: 2dp #5c91bd;
+	background-color: #0c1d2ee8;
+}
+
+.chip-code { margin-left: 8dp; color: #efc63c; letter-spacing: 1dp; }
+.chip-icon { display: none; }
+
+#toast {
+	position: absolute;
+	left: 360dp;
+	top: 556dp;
+	width: 872dp;
+	height: 58dp;
+	box-sizing: border-box;
+	padding: 6dp 16dp 6dp 56dp;
+	border: 2dp #5c91bd;
+	background-color: #0c1d2ef2;
+}
+
+#toast.warning { border-color: #efc63c; }
+#toast.hidden { display: none; }
+
+.toast-icon {
+	position: absolute;
+	left: 14dp;
+	top: 13dp;
+	width: 26dp;
+	height: 26dp;
+	border: 2dp #f2f0e1;
+	border-radius: 13dp;
+}
+
+#toast-text { margin: 0; font-size: 16dp; line-height: 21dp; white-space: normal; }
+
+/* Under the room's card, and on under the notice when the keys need more room. */
+#prompts {
+	position: absolute;
+	left: 0;
+	top: 624dp;
+	width: 640dp;
+	height: 56dp;
+	box-sizing: border-box;
+	padding: 0 18dp;
+	font-size: 18dp;
+	line-height: 52dp;
+	white-space: nowrap;
+	border: 2dp #5c91bd;
+	background-color: #0c1d2ee8;
+}
+
+.prompt { margin-right: 22dp; }

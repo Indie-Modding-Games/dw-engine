@@ -1,0 +1,130 @@
+/* The «Multiplayer» hub in the modern look: the pause menu's slate panel (../pause_menu/style.rcss) with rounded
+   corners and a hairline border, the bold title over a hairline divider, the player's card as an inset, the entries as
+   rows that the focus tints amber with an amber bar at their left edge, and the prompts at the panel's foot. Sizes on
+   the look's type scale (../theme.rcss): 30dp title, 22dp entries and name, 18dp hints and prompts.
+
+   Every rule is scoped to #scrim:not(.skin-original): the skins that extend this one (the original look and its
+   descendants, devvago) mark the scrim skin-original in their skin.yaml (document_classes) and keep none of it. */
+
+#scrim:not(.skin-original) {
+	background-color: #06090de8;
+}
+
+#scrim:not(.skin-original) #panel {
+	padding: 20dp 24dp;
+	border: 1dp #263243;
+	border-radius: 12dp;
+	background-color: #121922f2;
+	color: #e9eef5;
+}
+
+#scrim:not(.skin-original) #title {
+	margin: 0 0 14dp 0;
+	padding: 0 4dp 10dp 4dp;
+	font-size: 30dp;
+	font-weight: bold;
+	line-height: 40dp;
+	border-bottom: 1dp #243042;
+}
+
+/* The player's card: an inset with the icon at the left, «Playing as» over the name, the record at the right. */
+#scrim:not(.skin-original) #player-card {
+	height: 84dp;
+	margin-bottom: 14dp;
+	border: 0;
+	border-radius: 8dp;
+	background-color: #1a2330;
+}
+
+#scrim:not(.skin-original) #player-icon { left: 14dp; top: 12dp; width: 60dp; height: 60dp; }
+
+#scrim:not(.skin-original) #player-label {
+	left: 92dp;
+	top: 10dp;
+	font-size: 18dp;
+	line-height: 24dp;
+	color: #9aa8ba;
+	opacity: 1;
+}
+
+#scrim:not(.skin-original) #player-name {
+	left: 92dp;
+	top: 36dp;
+	width: 340dp;
+	font-size: 22dp;
+	font-weight: bold;
+	line-height: 34dp;
+	overflow: hidden;
+}
+
+#scrim:not(.skin-original) #player-record {
+	right: 18dp;
+	top: 36dp;
+	width: 170dp;
+	font-size: 22dp;
+	font-weight: bold;
+	line-height: 34dp;
+	color: #f2a93b;
+	overflow: hidden;
+}
+
+/* An entry: the bar at its left edge is always there, transparent until the row takes the focus. */
+#scrim:not(.skin-original) .hub-entry {
+	height: 70dp;
+	margin: 0 0 4dp 0;
+	padding: 0 16dp 0 70dp;
+	border-left: 3dp transparent;
+	border-radius: 6dp;
+	color: #c9d3de;
+	background-color: transparent;
+	transition: background-color color border-left-color 0.1s cubic-out;
+}
+
+#scrim:not(.skin-original) .hub-entry:hover { background-color: #ffffff0d; }
+
+#scrim:not(.skin-original) .hub-entry:focus {
+	border-left-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
+}
+
+#scrim:not(.skin-original) .hub-entry:active { background-color: #f2a93b47; }
+
+#scrim:not(.skin-original) .hub-entry.back { height: 48dp; margin-top: 6dp; }
+
+#scrim:not(.skin-original) .entry-icon { left: 12dp; top: 13dp; width: 44dp; height: 44dp; }
+
+#scrim:not(.skin-original) .entry-name {
+	padding-top: 7dp;
+	font-size: 22dp;
+	font-weight: bold;
+	line-height: 32dp;
+}
+
+#scrim:not(.skin-original) .back .entry-name { padding-top: 0; line-height: 48dp; font-weight: normal; }
+
+#scrim:not(.skin-original) .entry-hint {
+	font-size: 18dp;
+	line-height: 24dp;
+	color: #9aa8ba;
+	opacity: 1;
+}
+
+#scrim:not(.skin-original) .hub-entry:focus .entry-hint { color: #d5dce5; }
+
+/* The prompts at the foot, right-aligned under a hairline, as the pause menu's. */
+#scrim:not(.skin-original) #prompts {
+	left: 24dp;
+	right: 24dp;
+	bottom: 14dp;
+	padding-top: 10dp;
+	border-top: 1dp #243042;
+	font-size: 18dp;
+	line-height: 28dp;
+	color: #9aa8ba;
+	text-align: right;
+	white-space: normal;
+}
+
+#scrim:not(.skin-original) .prompt { margin: 0 0 0 18dp; white-space: nowrap; }
+#scrim:not(.skin-original) .key { font-size: 18dp; line-height: 22dp; }

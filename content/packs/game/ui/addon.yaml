@@ -29,6 +29,11 @@ screens:
   discard_menu: discard_menu/document
   jukebox: jukebox/document
   versus: versus/document
+  online_hub: online_hub/document
+  online_profile: online_profile/document
+  online_status: online_status/document
+  online_rooms: online_rooms/document
+  online_room: online_room/document
   tournament_schedule: tournament_schedule/document
   tournament_bracket: tournament_bracket/document
   tournament_match: tournament_match/document
@@ -54,3 +59,4 @@ screens:
   save_indicator: save_indicator/document
   world_map: world_map/document
   ui_notice: ui_notice/document
+  coop_hud: coop_hud/document

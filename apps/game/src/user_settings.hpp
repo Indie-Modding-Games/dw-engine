@@ -206,6 +206,14 @@ struct UserSettings {
   // Developer tools (dev_tools: true, false; dev_tools.hpp): the debug console, the developer menu
   // and the map overlay; when not chosen yet, on in a development build and off in a package.
   std::optional<bool> devTools = std::nullopt;
+  // The online profile (online_profile.hpp; kept here, not in a save, so it is the same whatever
+  // game is loaded): the name the other players see (online_name), the icon next to it
+  // (online_icon: an id of the fixed list) and the online versus record (online_wins,
+  // online_losses). A default name and icon when not chosen yet.
+  std::optional<std::string> onlineName = std::nullopt;
+  std::optional<std::string> onlineIcon = std::nullopt;
+  std::optional<int> onlineWins = std::nullopt;
+  std::optional<int> onlineLosses = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

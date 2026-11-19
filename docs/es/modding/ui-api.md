@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.17.0 | Llega el espacio `online`: la lista de salas públicas (`online.list()`), la sala en la que está el jugador (`online.room()`), los modos (`online.modes()`) y el estado de las pantallas (`online.state()`), con sus pasos (`online.host`, `online.join`, `online.join_by_code`, `online.quick_match`, `online.set_ready`, `online.start`, `online.leave`...) y el evento `online.changed`. Los pasos de la sala son los comandos del lobby cooperativo (`coop_host`, `coop_join` con código, `coop_ready`, `coop_start`). El perfil en línea del jugador (`online.profile()`, `online.icons()`, `online.save_name`, `online.set_icon`) y `online.retry` tras un fallo. Las pantallas nuevas `online_hub`, `online_profile`, `online_status`, `online_rooms` y `online_room` solo leen por él. La pantalla `coop_hud` enseña la etiqueta sobre el otro jugador de la partida cooperativa (`coop_hud.tag.*`) y sus avisos (`coop_hud.notice.*`) |
 | 0.16.0 | El trabajo en la tienda mejorado: la barra gana `shop_job.top`, `shop_job.bonus`, `shop_job.bonus_icon`, `shop_job.bonus_icon_rect`, `shop_job.tier` y `shop_job.improved` (también en `field.shop_job()`), y el comando `shop_job_rules` (el botón ? que abre el panel de reglas). Llega la opción `shop_job_mode`. Las pantallas nuevas `shop_haggle` y `shop_job_rules` se describen en la [referencia del trabajo](../reference/shop-job.md#interfaz) |
 | 0.15.0 | Llegan los espacios `story` (el cuadro de texto de la historia: `story.textbox()`, `story.choice()`, `story.input()`; las acciones `story.advance`, `story.choose` y `story.cancel`; los eventos `story.changed`, `story.text` y `story.input`), `dialog` (el diálogo de guardar: `dialog.state()`, `dialog.options()`, `dialog.answer`, `dialog.cancel`, el evento `dialog.changed`) y `naming` (la caja del nombre: `naming.state()`, `naming.cell`, `naming.write`, `naming.erase`, `naming.accept`, el evento `naming.changed`). Nuevos ajustes `story_textbox.speaker`, `speaker_kind`, `options`, `first_option`, `input` y `page`, y los comandos `story_advance`, `story_choose`, `story_cancel`, `naming_write`, `naming_erase` y `naming_accept`. Las pantallas `story_textbox`, `dialog` y `naming_box` solo leen por ellos. Un addon solo los manda mientras su cuadro espera al jugador |
 | 0.14.0 | Llega el espacio `battle`: el estado del combate, los luchadores, la tira de órdenes, el golpe final, la apertura, los números, las barras de los enemigos, el grito, la caja del final y lo que enseña un combate de copa (`battle.match()`), con sus acciones (`battle.command`, `battle.charge`, `battle.open_bag`, `battle.close_bag`, `battle.close`, `battle.end_count`, `battle.end_counted`) y eventos (`battle.started`, `battle.ended`, `battle.phase`, `battle.changed`...). Las pantallas `battle` y `tournament_match` solo leen por él. Llega el espacio `versus`: cada vista del versus en línea (`versus.state()`, `versus.setup()`, `versus.lineup()`, `versus.fighters()`, `versus.score()`...), sus pasos (`versus.step`, `versus.pick`) y su evento (`versus.changed`); la pantalla `versus` solo lee por él y por `battle.intro()`. Un addon solo manda las órdenes del combate en su momento: las del combate en la fase `fight`, cerrar la bolsa con la bolsa abierta y las de la caja del final en la fase `end` |
@@ -88,13 +89,13 @@ La lista sale de `apps/game/src/ui_contract.cpp`. Un test la compara con esta p�
 `content/schemas/ui_api/ui_api.json` (la misma lista para herramientas y editores) y con lo que leen y mandan los
 scripts de cada pantalla; `DWE_WRITE_API_DOC=1` al correr los tests del juego reescribe las dos. De momento cubre el
 HUD, el menú de pausa, el menú del compañero, la caja del aspecto del arranque, los avisos, el combate (con lo
-que enseña un combate de copa), el versus en línea y las cajas de la historia (el cuadro de texto, el diálogo de
+que enseña un combate de copa), el versus en línea, las salas en línea, la etiqueta y los avisos de la partida cooperativa y las cajas de la historia (el cuadro de texto, el diálogo de
 guardar y la caja del nombre); el resto de pantallas llega después.
 
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.16.0**.
+Versión de la API de la interfaz: **0.17.0**.
 
 ### `ui`
 
@@ -403,6 +404,24 @@ Versión de la API de la interfaz: **0.16.0**.
 | `save_indicator.opacity` | ajuste | número | Cuánto se ve el indicador, de 0 a 1. |
 | `save_indicator.lift` | ajuste | número | Cuánto ha subido el indicador al aparecer, de 0 a 1. |
 | `save_indicator.figure` | ajuste | sí/no | Si el indicador enseña la figura que gira. |
+
+### `coop_hud`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `coop_hud.tag.visible` | ajuste | sí/no | Si el nombre del otro jugador cooperativo se ve sobre su cabeza (está en la ventana y el campo corre). |
+| `coop_hud.tag.x` | ajuste | número | Dónde está el punto sobre la cabeza del otro jugador, en porcentaje del ancho de la ventana. |
+| `coop_hud.tag.y` | ajuste | número | Dónde está el punto sobre la cabeza del otro jugador, en porcentaje del alto de la ventana. |
+| `coop_hud.tag.name` | ajuste | texto | El nombre propio del otro jugador; vacío cuando lo nombra una clave de texto. |
+| `coop_hud.tag.name_key` | ajuste | texto | La clave de texto que nombra al otro jugador sin nombre propio (el anfitrión, o un invitado por número). |
+| `coop_hud.tag.number` | ajuste | número | El número que rellena {number} en la clave de texto del nombre. |
+| `coop_hud.tag.revision` | ajuste | número | Sube cada vez que cambian los valores de la etiqueta: la etiqueta se vuelve a dibujar. |
+| `coop_hud.notice.shown` | ajuste | sí/no | Si se ve un aviso cooperativo (unos segundos cada uno). |
+| `coop_hud.notice.text` | ajuste | texto | La clave de texto del aviso; {name} en ella es el jugador del que habla. |
+| `coop_hud.notice.name` | ajuste | texto | El nombre propio del jugador del que habla el aviso; vacío cuando lo nombra una clave de texto. |
+| `coop_hud.notice.name_key` | ajuste | texto | La clave de texto que nombra al jugador del que habla el aviso, si no tiene nombre. |
+| `coop_hud.notice.number` | ajuste | número | El número que rellena {number} en esa clave de texto. |
+| `coop_hud.notice.revision` | ajuste | número | Sube con cada aviso y cuando se va: el aviso se vuelve a dibujar. |
 
 ### `money_box`
 
@@ -867,5 +886,117 @@ Versión de la API de la interfaz: **0.16.0**.
 | `versus.step(step: string): boolean, string?` | acción | sí/no | Un paso en la vista: up, down, left, right, confirm, cancel, menu, tab_previous, tab_next o finisher (el golpe final, con su medidor lleno). |
 | `versus.pick(row: integer): boolean, string?` | acción | sí/no | Va a una fila de la vista (o a una orden de la tira del jugador) y la confirma. |
 | `versus.changed` | evento | tabla | Cambió el versus. Sale de `versus.revision`. |
+
+### `online`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `online.revision` | ajuste | número | Sube cada vez que cambia el estado en línea. |
+| `online.open` | ajuste | sí/no | Si las pantallas de salas están abiertas. |
+| `online.sample` | ajuste | sí/no | Si la lista y la sala son las de la muestra de desarrollo. |
+| `online.sample_offered` | ajuste | sí/no | Si se ofrece el cambio a las salas de muestra (las herramientas de desarrollo están activas). |
+| `online.list.state` | ajuste | texto | La lista de salas públicas: loading, ready o unavailable. |
+| `online.list.error` | ajuste | texto | Por qué la lista no está disponible (un código de error), o vacío. |
+| `online.rooms` | ajuste | número | Cuántas salas tiene la lista. |
+| `online.room.<n>.id` | ajuste | texto | El id de la sala en la lista. |
+| `online.room.<n>.name` | ajuste | texto | El nombre que le dio su anfitrión, o vacío. |
+| `online.room.<n>.name_key` | ajuste | texto | La clave de texto de su nombre cuando no tiene uno propio (las salas de muestra). |
+| `online.room.<n>.mode` | ajuste | texto | Su modo de juego: campaign, versus, training o free. |
+| `online.room.<n>.players` | ajuste | número | Cuántos jugadores hay en ella. |
+| `online.room.<n>.capacity` | ajuste | número | Cuántos jugadores caben. |
+| `online.room.<n>.ping` | ajuste | número | El tiempo de ida y vuelta hasta ella en milisegundos; -1 si no se ha medido. |
+| `online.room.<n>.joinable` | ajuste | sí/no | Si se puede entrar ahora (en espera, no llena, de un modo que este juego juega en salas). |
+| `online.room.<n>.code` | ajuste | texto | Su código para entrar. |
+| `online.room.<n>.message` | ajuste | texto | El mensaje del anfitrión, o vacío. |
+| `online.room.<n>.host_name` | ajuste | texto | El nombre del anfitrión, o vacío. |
+| `online.room.<n>.state` | ajuste | texto | waiting, full o starting. |
+| `online.field` | ajuste | texto | El campo de texto que recibe el teclado: filter, code, name o vacío. |
+| `online.filter` | ajuste | texto | Lo escrito en la búsqueda de salas. |
+| `online.code` | ajuste | texto | Lo escrito en el campo del código de sala. |
+| `online.code_length` | ajuste | número | Cuántos caracteres tiene un código de sala. |
+| `online.quick` | ajuste | texto | none si la partida rápida no encontró ninguna sala a la que entrar; si no, vacío. |
+| `online.notice` | ajuste | texto | Un paso que el juego no dio (un código de aviso), o vacío. |
+| `online.can_retry` | ajuste | sí/no | Si online_retry tiene una sala que volver a pedir (se pidió una). |
+| `online.profile.name` | ajuste | texto | El nombre que ven los demás jugadores (se guarda en los ajustes del juego). |
+| `online.profile.named` | ajuste | sí/no | Si el jugador eligió ese nombre (false mientras es el de por defecto). |
+| `online.profile.icon` | ajuste | texto | El id del icono del perfil. |
+| `online.profile.wins` | ajuste | número | Versus en línea ganados. |
+| `online.profile.losses` | ajuste | número | Versus en línea perdidos. |
+| `online.profile.draft` | ajuste | texto | El nombre que se está escribiendo en la pantalla del perfil. |
+| `online.icons` | ajuste | número | Cuántos iconos puede elegir un perfil. |
+| `online.icon.<n>.id` | ajuste | texto | El id de un icono, en el orden de las pantallas. |
+| `online.modes` | ajuste | número | Cuántos modos de juego lista una sala. |
+| `online.mode.<n>.id` | ajuste | texto | El id de un modo, en el orden de las pantallas. |
+| `online.mode.<n>.available` | ajuste | sí/no | Si el modo se puede jugar ahora en salas. |
+| `online.current.active` | ajuste | sí/no | Si el jugador está en una sala. |
+| `online.current.code` | ajuste | texto | El código de la sala; vacío hasta que tiene uno. |
+| `online.current.name` | ajuste | texto | El nombre de la sala, o vacío. |
+| `online.current.name_key` | ajuste | texto | La clave de texto de su nombre cuando no tiene uno propio. |
+| `online.current.host` | ajuste | sí/no | Si este jugador es su anfitrión. |
+| `online.current.listed` | ajuste | sí/no | Si es pública (sale en la lista) y no privada (solo por código). |
+| `online.current.phase` | ajuste | texto | connecting, open, connected, ready, playing o closed. |
+| `online.current.mode` | ajuste | texto | El modo de juego de la sala. |
+| `online.current.capacity` | ajuste | número | Cuántos jugadores caben. |
+| `online.current.error` | ajuste | texto | Por qué se cerró o falló un paso (un código de error o las palabras del juego), o vacío. |
+| `online.current.can_start` | ajuste | sí/no | Si el anfitrión puede empezar ya. |
+| `online.current.can_ready` | ajuste | sí/no | Si este invitado puede marcarse como listo ya. |
+| `online.current.ready` | ajuste | sí/no | Si este jugador está listo. |
+| `online.current.members` | ajuste | número | Cuántos jugadores hay en la sala. |
+| `online.member.<n>.name` | ajuste | texto | El nombre de un miembro, o vacío. |
+| `online.member.<n>.name_key` | ajuste | texto | La clave de texto del nombre de un miembro cuando no tiene uno propio. |
+| `online.member.<n>.icon` | ajuste | texto | El id del icono del perfil del miembro, o vacío si no envió uno. |
+| `online.member.<n>.host` | ajuste | sí/no | Si el miembro es el anfitrión de la sala. |
+| `online.member.<n>.ready` | ajuste | sí/no | Si el miembro está listo. |
+| `online.member.<n>.local` | ajuste | sí/no | Si el miembro es el jugador de esta máquina. |
+| `online_open` | comando | — | Se abrieron las pantallas de salas: se pide la lista. |
+| `online_close` | comando | — | Se cerraron las pantallas de salas. |
+| `online_refresh` | comando | — | Vuelve a pedir la lista de salas. |
+| `online_field` | comando | texto | El campo de texto que recibe el teclado: filter, code, name o vacío para ninguno. |
+| `online_filter` | comando | texto | Reemplaza el texto de la búsqueda de salas. |
+| `online_code` | comando | texto | Reemplaza el texto del campo del código. |
+| `online_profile_name` | comando | texto | Reemplaza el nombre que se está escribiendo en la pantalla del perfil. |
+| `online_profile_save` | comando | — | Guarda el nombre escrito como el del perfil (aviso name_empty si no queda nada). |
+| `online_profile_icon` | comando | texto | Cambia el icono del perfil. |
+| `online_retry` | comando | — | Vuelve a pedir la última sala pedida (crearla, entrar desde la lista o por código). |
+| `coop_host` | comando | sí/no | El del lobby cooperativo: abre una sala de la que este jugador es anfitrión, true pública (en la lista), false privada (solo por código). |
+| `online_join` | comando | texto | Entra en una sala de la lista por su id. |
+| `coop_join` | comando | texto | El del lobby cooperativo: entra en una sala con el código dado (sin él abre la entrada de código del lobby). |
+| `online_join_code` | comando | — | Entra en una sala con el código escrito en el campo del código. |
+| `online_quick` | comando | — | Entra en la primera sala abierta de un modo jugable, o responde online.quick none. |
+| `online_mode` | comando | texto | El anfitrión elige el modo de la sala. |
+| `coop_ready` | comando | — | El del lobby cooperativo: el invitado se marca como listo, o deja de estarlo si ya lo estaba. |
+| `coop_start` | comando | — | El del lobby cooperativo: el anfitrión empieza la partida de la sala. |
+| `online_leave` | comando | — | Sale de la sala (el anfitrión la cierra). |
+| `online_dismiss` | comando | — | Borra el aviso, la respuesta de la partida rápida y una sala que se cerró. |
+| `online_sample` | comando | sí/no | Cambia a las salas de muestra y vuelve (solo con las herramientas de desarrollo activas). |
+| `online.state(): table` | consulta | tabla | El estado de las pantallas: open, sample, sample_offered, field, filter, code, code_length, quick, notice, notice_key y can_retry. |
+| `online.profile(): table` | consulta | tabla | El perfil en línea del jugador: name, named, icon, wins, losses y draft. |
+| `online.icons(): table` | consulta | tabla | Los iconos que puede elegir un perfil: id y label_key. |
+| `online.list(): table` | consulta | tabla | La lista de salas: state, error, error_key, total y las salas que cumplen el filtro (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, joinable). |
+| `online.modes(): table` | consulta | tabla | Los modos de juego: id, label_key, description_key, short_key, available y selected. |
+| `online.room(): table?` | consulta | tabla | La sala en la que está el jugador, o nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready y members (name, icon, host, ready, local). |
+| `online.error_key(code: string?): string` | consulta | texto | La clave de texto de un código de error; los códigos desconocidos dan online.error.unknown. |
+| `online.notice_key(code: string?): string` | consulta | texto | La clave de texto de un código de aviso. |
+| `online.open(): boolean` | acción | sí/no | Se abrieron las pantallas de salas. |
+| `online.close(): boolean` | acción | sí/no | Se cerraron las pantallas de salas. |
+| `online.refresh(): boolean` | acción | sí/no | Vuelve a pedir la lista. |
+| `online.edit(field: string?): boolean, string?` | acción | sí/no | El campo de texto que recibe el teclado: filter, code, name o nil. |
+| `online.set_filter(value: string): boolean, string?` | acción | sí/no | Reemplaza el texto de la búsqueda de salas. |
+| `online.set_code(value: string): boolean, string?` | acción | sí/no | Reemplaza el texto del campo del código. |
+| `online.host(public: boolean): boolean, string?` | acción | sí/no | Abre una sala: pública (en la lista) o privada (solo por código). |
+| `online.join(room_id: string): boolean, string?` | acción | sí/no | Entra en una sala de la lista. |
+| `online.join_by_code(code: string?): boolean, string?` | acción | sí/no | Entra en una sala con un código, o con el escrito. |
+| `online.quick_match(): boolean` | acción | sí/no | Entra en la primera sala abierta jugable, o responde quick = none. |
+| `online.set_mode(id: string): boolean, string?` | acción | sí/no | El anfitrión elige el modo de la sala. |
+| `online.set_ready(ready: boolean): boolean, string?` | acción | sí/no | El invitado se marca como listo o no. |
+| `online.start(): boolean` | acción | sí/no | El anfitrión empieza la partida. |
+| `online.leave(): boolean` | acción | sí/no | Sale de la sala. |
+| `online.set_name_draft(value: string): boolean, string?` | acción | sí/no | Reemplaza el nombre que se está escribiendo en la pantalla del perfil. |
+| `online.save_name(): boolean` | acción | sí/no | Guarda el nombre escrito como el del perfil. |
+| `online.set_icon(id: string): boolean, string?` | acción | sí/no | Cambia el icono del perfil. |
+| `online.retry(): boolean` | acción | sí/no | Vuelve a pedir la última sala pedida, tras un fallo. |
+| `online.dismiss(): boolean` | acción | sí/no | Borra el aviso, la respuesta de la partida rápida y una sala cerrada. |
+| `online.set_sample(on: boolean): boolean, string?` | acción | sí/no | Cambia a las salas de muestra y vuelve. |
+| `online.changed` | evento | tabla | Cambió la lista, la sala o el estado de las pantallas. Sale de `online.revision`. |
 
 <!-- /ui-api:generated -->
