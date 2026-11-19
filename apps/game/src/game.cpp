@@ -979,7 +979,7 @@ int runGame(const Options& requested) {
         std::make_unique<SampleRoomBackend>(*sampleDirectory, SampleConnectSeconds);
     return OnlineRooms{OnlineRooms::Desc{
         .directory = std::make_unique<SignalRoomDirectory>(coopSignalServer(files, options),
-                                                           net::openWebSocket),
+                                                           net::openWebSocket, coop.compat()),
         .backend = std::make_unique<CoopRoomBackend>(coop),
         .sampleDirectory = std::move(sampleDirectory),
         .sampleBackend = std::move(sampleBackend),
@@ -987,7 +987,14 @@ int runGame(const Options& requested) {
         .codeLength = net::RoomCodeLength,
         .profile = OnlineProfile::fromSettings(userSettings, *language)}};
   }();
-  coop.setPlayerName(online.profile().name());
+  // This player as the online rooms show it, and how they connect (the online profile).
+  const auto applyOnlineProfile = [&] {
+    coop.setPlayerName(online.profile().name());
+    coop.setPlayerIcon(online.profile().icon());
+    coop.setRelayOnly(online.profile().relayOnly());
+    versus.setRelayOnly(online.profile().relayOnly());
+  };
+  applyOnlineProfile();
   if (options.onlineSample) {
     online.setSample(true, platform->nowSeconds());
   }
@@ -1941,7 +1948,7 @@ int runGame(const Options& requested) {
           if (settingsFile) {
             saveUserSettings(*settingsFile, userSettings);
           }
-          coop.setPlayerName(online.profile().name());
+          applyOnlineProfile();
         }
         screens::publish(**ui, online.settings(), "online.revision");
         continue;

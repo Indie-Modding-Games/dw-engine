@@ -58,6 +58,10 @@ struct Welcome {
   PlayerId assignedPlayer = GuestPlayerId;
   RejectReason reason = RejectReason::None;
   std::uint64_t sessionId = 0;
+  // The host's name (its online profile), so the guest can show it. Only an accepted welcome
+  // carries it, at its end: a rejected one stays as the first protocol had it, so an older guest
+  // still reads why it was rejected. Empty from an older host.
+  std::string hostName;
 
   friend bool operator==(const Welcome&, const Welcome&) = default;
 };

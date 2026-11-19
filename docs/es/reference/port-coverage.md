@@ -268,11 +268,11 @@ Portado 41, parcial 4, falta 60.
 | `VS_queueRandomMove` | `vs/vs_main.c:1735` | falta | Elige al azar técnica y objetivo para la IA del luchador. | — |
 | `VS_loadVSAssets` | `vs/vs_scene.c:1147` | parcial | Prepara la arena del versus: música por escenario, cámara, luces y efectos. | `apps/game/src/versus_arena.cpp:1` · la arena 0 con su cámara, sus luces y los efectos; sin la música por escenario |
 | `VS_playVersusIntroSequence` | `vs/vs_scene.c:1558` | falta | Reproduce la presentación inicial del versus. | `apps/game/src/versus_arena.cpp:45` |
-| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | falta | Avanza la presentación del versus por estados. | `apps/game/src/versus_flow.cpp:448` |
+| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | falta | Avanza la presentación del versus por estados. | `apps/game/src/versus_flow.cpp:463` |
 | `VS_initializeCamera` | `vs/vs_scene.c:1851` | parcial | Coloca la cámara inicial de la arena del versus. | `apps/game/src/versus_arena.cpp:1` · la cámara de la copa (game::tournament::MatchCamera); sin medir contra la del versus |
 | `VS__createPressStartToBeginBox` | `vs/vs_select.c:409` | falta | Muestra el aviso de pulsar Start para empezar. | — |
 | `VS__initialize` | `vs/vs_select.c:442` | parcial | Flujo de preparación del versus: modo, mapa y selección de criaturas. | `apps/game/src/versus_flow.cpp:1` · sin elección de arena (VS__tickSelectMap) |
-| `VS__tickSelectMap` | `vs/vs_select.c:1166` | falta | Pantalla de elección del escenario del versus. | `apps/game/src/versus_flow.cpp:390` |
+| `VS__tickSelectMap` | `vs/vs_select.c:1166` | falta | Pantalla de elección del escenario del versus. | `apps/game/src/versus_flow.cpp:405` |
 
 ## Minijuego de piedras
 

@@ -19,3 +19,23 @@ new_sqlite_classes = ["RoomObject"]
 [[migrations]]
 tag = "v2"
 new_sqlite_classes = ["DirectoryObject"]
+
+# Limits per address (CF-Connecting-IP; README.md, "Limits"). Each Cloudflare location counts on its
+# own, so they are approximate: enough against a script, never felt by a player.
+[[ratelimits]]
+name = "HOST_LIMIT"
+namespace_id = "2911"
+simple = { limit = 6, period = 60 }
+
+[[ratelimits]]
+name = "LIST_LIMIT"
+namespace_id = "2912"
+simple = { limit = 5, period = 10 }
+
+# TURN relay (README.md, "TURN relay"): off until whoever deploys it sets four secrets
+# (`npx wrangler secret put ...`): TURN_KEY_ID and TURN_KEY_API_TOKEN (the TURN key),
+# TURN_ANALYTICS_TOKEN (Account Analytics read) and CLOUDFLARE_ACCOUNT_ID. Credentials go out only
+# while this month's relayed traffic, read from the account's analytics, is under the cap below;
+# with any secret missing or the analytics failing none go out, so the relay never costs money.
+[vars]
+TURN_MONTHLY_CAP_GB = 800

@@ -57,6 +57,10 @@ std::string_view peerFailureName(net::PeerFailure failure) {
     return "no_direct_route";
   case net::PeerFailure::Closed:
     return "connection_closed";
+  case net::PeerFailure::Refused:
+    return "server_refused";
+  case net::PeerFailure::NoRelay:
+    return "no_relay";
   }
   return "unknown";
 }
@@ -67,7 +71,43 @@ void CoopConnection::open() {
   view_ = View::Menu;
 }
 
+void CoopConnection::beginRoom(net::RoomSessionDesc desc) {
+  if (room_ && room_->noticesPending()) {
+    closing_.push_back(std::move(*room_));
+  }
+  room_.emplace(std::move(desc));
+}
+
+void CoopConnection::closeRoom(std::string reason) {
+  if (room_) {
+    room_->close(std::move(reason));
+  }
+}
+
+void CoopConnection::markRoomReady(bool ready) {
+  if (room_) {
+    room_->markReady(ready);
+  }
+}
+
+void CoopConnection::markRoomPlaying() {
+  if (room_) {
+    room_->markPlaying();
+  }
+}
+
+void CoopConnection::pollRoom() {
+  if (room_) {
+    room_->poll();
+  }
+  for (net::RoomSession& closing : closing_) {
+    closing.poll();
+  }
+  std::erase_if(closing_, [](const net::RoomSession& room) { return !room.noticesPending(); });
+}
+
 void CoopConnection::close() {
+  closeRoom({});
   if (link_ && view_ == View::Connected)
     link_->leave();
   link_.reset();
@@ -93,25 +133,36 @@ bool CoopConnection::host(bool listed) {
   ++generation_;
   peer_.reset();
   error_.clear();
-  peer_ = desc_.host(listed);
+  std::optional<net::PublicHost> listing;
+  if (listed) {
+    listing = net::PublicHost{.name = net::directoryName(playerName_),
+                              .icon = playerIcon_,
+                              .compat = desc_.compat,
+                              .mode = "campaign"};
+  }
+  beginRoom({.hosting = true, .code = {}, .server = desc_.signalServer, .open = desc_.open});
+  peer_ = desc_.host(listing);
   if (!peer_) {
     view_ = View::Error;
     error_ = "transport_unavailable";
+    closeRoom(error_);
     return false;
   }
   if (peer_->state() == net::PeerState::Failed) {
     view_ = View::Error;
     error_ = std::string{peerFailureName(peer_->failure())};
+    room_->observe(*peer_);
     return false;
   }
-  link_ =
-      std::make_unique<game::coop::CoopLink>(game::coop::CoopLink::host(*peer_, desc_.identity));
+  link_ = std::make_unique<game::coop::CoopLink>(
+      game::coop::CoopLink::host(*peer_, desc_.identity, playerName_));
   ++generation_;
   view_ = View::Hosting;
   return true;
 }
 
 void CoopConnection::beginJoin() {
+  closeRoom({});
   peer_.reset();
   link_.reset();
   ++generation_;
@@ -136,15 +187,18 @@ bool CoopConnection::join(std::string_view code) {
     error_ = desc_.configurationError;
     return false;
   }
+  beginRoom({.hosting = false, .code = *normalized, .server = {}, .open = {}});
   peer_ = desc_.join(*normalized);
   if (!peer_) {
     view_ = View::Error;
     error_ = "transport_unavailable";
+    closeRoom(error_);
     return false;
   }
   if (peer_->state() == net::PeerState::Failed) {
     view_ = View::Error;
     error_ = std::string{peerFailureName(peer_->failure())};
+    room_->observe(*peer_);
     return false;
   }
   link_ = std::make_unique<game::coop::CoopLink>(
@@ -172,9 +226,13 @@ void CoopConnection::type(std::string_view text, bool enter) {
 }
 
 void CoopConnection::tick(net::Millis now) {
+  pollRoom();
   if (link_ == nullptr || view_ == View::Error)
     return;
   link_->poll(now);
+  if (room_ && peer_ != nullptr) {
+    room_->observe(*peer_);
+  }
   if (link_->phase() == game::coop::LinkPhase::Ready) {
     view_ = View::Connected;
   } else if (link_->phase() == game::coop::LinkPhase::Rejected ||
@@ -187,11 +245,16 @@ void CoopConnection::tick(net::Millis now) {
       error_ = "rejected";
     }
     view_ = View::Error;
+    closeRoom(error_);
   }
 }
 
 std::string CoopConnection::code() const {
-  return peer_ != nullptr ? peer_->roomCode() : std::string{};
+  if (peer_ != nullptr && !peer_->roomCode().empty()) {
+    return peer_->roomCode();
+  }
+  // A guest's link has no code of its own: the room's is the one it joined.
+  return room_ && peer_ != nullptr ? room_->code() : std::string{};
 }
 
 std::string_view coopConnectionViewName(CoopConnection::View view) {

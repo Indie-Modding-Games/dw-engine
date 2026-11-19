@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/net/room_session.hpp>
 #include <dwe/screens/screen_settings.hpp>
 
 #include <array>
@@ -113,10 +114,10 @@ private:
 };
 
 // The room's life: being opened or joined, open (waiting for players), connected, everyone ready,
-// playing, or closed (left or failed; the error says why).
-enum class RoomPhase { Connecting, Open, Connected, Ready, Playing, Closed };
-
-[[nodiscard]] std::string_view roomPhaseName(RoomPhase phase);
+// playing, or closed (left or failed; the error says why). The network's room session keeps it
+// (dwe/net/room_session.hpp); the sample rooms set it themselves.
+using net::RoomPhase;
+using net::roomPhaseName;
 
 struct RoomMember {
   // The player's name; empty when the room does not carry names yet (the screens name them).

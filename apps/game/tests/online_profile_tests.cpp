@@ -2,7 +2,11 @@
 
 #include <doctest/doctest.h>
 
+#include <map>
+#include <memory>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "online_profile.hpp"
@@ -52,34 +56,132 @@ TEST_CASE("the online profile lives in the game's settings, with defaults where 
 }
 
 TEST_CASE("the signaling server's public rooms become the rooms screens' list") {
-  const std::vector<dwe::net::PublicRoom> rooms{{.roomId = "r1",
-                                                 .joinCode = "AB23",
-                                                 .name = "Cooperative room",
-                                                 .message = "Waiting for players",
-                                                 .players = 1,
-                                                 .capacity = 2,
-                                                 .createdAt = 10.0,
-                                                 .state = "waiting"},
-                                                {.roomId = "r2",
-                                                 .joinCode = "CD45",
-                                                 .name = "Sala de Ana",
-                                                 .message = {},
-                                                 .players = 2,
-                                                 .capacity = 2,
-                                                 .createdAt = 11.0,
-                                                 .state = "waiting"}};
+  const auto room = [](std::string code, std::string name, int players, std::string phase) {
+    return dwe::net::PublicRoom{.roomId = "r-" + code,
+                                .joinCode = code,
+                                .name = std::move(name),
+                                .message = {},
+                                .players = players,
+                                .capacity = 2,
+                                .createdAt = 10.0,
+                                .state = players < 2 ? "waiting" : "full",
+                                .phase = std::move(phase),
+                                .hostName = {},
+                                .icon = {},
+                                .compat = {},
+                                .mode = {}};
+  };
+  std::vector<dwe::net::PublicRoom> rooms{
+      room("AB23", "Cooperative room", 1, "open"), room("CD45", "Sala de Ana", 2, {}),
+      room("EF67", {}, 2, "connected"), room("GH89", {}, 2, "playing")};
+  rooms[0].hostName = "Ana";
+  rooms[0].mode = "versus";
+  // A first-protocol server's room: its state says it all.
+  rooms[1].state = "waiting";
   const std::vector<RoomListing> listed = SignalRoomDirectory::listings(rooms);
-  REQUIRE(listed.size() == 2);
+  // A room already playing is not listed.
+  REQUIRE(listed.size() == 3);
   // The server's generic name gives way to the screens' own words.
   CHECK(listed[0].name.empty());
   CHECK(listed[0].nameKey == "online.untitled_room");
-  CHECK(listed[0].mode == "campaign");
+  CHECK(listed[0].hostName == "Ana");
+  CHECK(listed[0].mode == "versus");
   CHECK(listed[0].pingMs == -1);
   CHECK(listed[0].state == ListingState::Waiting);
   CHECK(listed[1].name == "Sala de Ana");
   CHECK(listed[1].nameKey.empty());
+  CHECK(listed[1].mode == "campaign");
   // A room with every seat taken is full, whatever state the server gave it.
   CHECK(listed[1].state == ListingState::Full);
+  // Both players in: full.
+  CHECK(listed[2].state == ListingState::Full);
+}
+
+namespace {
+
+// A server that answers each URL with one message (or never, for a URL it does not know).
+class AnsweringSocket final : public dwe::net::SignalSocket {
+public:
+  explicit AnsweringSocket(std::optional<std::string> answer) : answer_{std::move(answer)} {}
+  void send(std::string /*text*/) override {}
+  std::optional<std::string> receive() override { return std::exchange(answer_, std::nullopt); }
+  [[nodiscard]] dwe::net::SocketState state() const override {
+    return answer_ ? dwe::net::SocketState::Open : dwe::net::SocketState::Closed;
+  }
+  void close() override { answer_.reset(); }
+
+private:
+  std::optional<std::string> answer_;
+};
+
+struct AnsweringServer {
+  std::map<std::string, std::string> answers;
+  std::vector<std::string> asked;
+
+  dwe::net::SocketOpener opener() {
+    return [this](const std::string& url) -> std::unique_ptr<dwe::net::SignalSocket> {
+      asked.push_back(url);
+      const auto found = answers.find(url);
+      return std::make_unique<AnsweringSocket>(
+          found != answers.end() ? std::optional<std::string>{found->second} : std::nullopt);
+    };
+  }
+};
+
+void settle(SignalRoomDirectory& directory) {
+  for (int tick = 0; tick < 4; ++tick) {
+    directory.tick(0.0);
+  }
+}
+
+} // namespace
+
+TEST_CASE("the public list asks what the server can do first, then its own game's rooms") {
+  AnsweringServer server;
+  server.answers["wss://s/v1/info"] = R"({"protocol":"v1","features":["public-rooms"]})";
+  server.answers["wss://s/v1/rooms?compat=coop-1-ab"] =
+      R"({"rooms":[{"roomId":"r","joinCode":"AB23","players":1,"capacity":2,"phase":"open",)"
+      R"("hostName":"Ana","state":"waiting"}]})";
+  SignalRoomDirectory directory{"wss://s", server.opener(), "coop-1-ab"};
+  directory.refresh(0.0);
+  CHECK(directory.state() == DirectoryState::Loading);
+  settle(directory);
+  REQUIRE(directory.state() == DirectoryState::Ready);
+  REQUIRE(directory.rooms().size() == 1);
+  CHECK(directory.rooms()[0].hostName == "Ana");
+  // The server's features are asked once.
+  directory.refresh(1.0);
+  settle(directory);
+  CHECK(server.asked == std::vector<std::string>{"wss://s/v1/info",
+                                                 "wss://s/v1/rooms?compat=coop-1-ab",
+                                                 "wss://s/v1/rooms?compat=coop-1-ab"});
+}
+
+TEST_CASE("the public list says when the server has none, or was asked too often") {
+  AnsweringServer server;
+  server.answers["wss://s/v1/info"] = R"({"protocol":"v1","features":[]})";
+  SignalRoomDirectory none{"wss://s", server.opener()};
+  none.refresh(0.0);
+  settle(none);
+  CHECK(none.state() == DirectoryState::Unavailable);
+  CHECK(none.error() == "directory_unavailable");
+
+  server.answers["wss://s/v1/info"] = R"({"protocol":"v1","features":["public-rooms"]})";
+  server.answers["wss://s/v1/rooms"] = R"({"type":"error","reason":"limit"})";
+  SignalRoomDirectory busy{"wss://s", server.opener()};
+  busy.refresh(0.0);
+  settle(busy);
+  CHECK(busy.state() == DirectoryState::Unavailable);
+  CHECK(busy.error() == "list_limit");
+
+  // A server that does not answer /v1/info is asked for its list all the same.
+  AnsweringServer older;
+  older.answers["wss://s/v1/rooms"] = R"({"rooms":[]})";
+  SignalRoomDirectory first{"wss://s", older.opener()};
+  first.refresh(0.0);
+  settle(first);
+  CHECK(first.state() == DirectoryState::Ready);
+  CHECK(first.rooms().empty());
 }
 
 TEST_CASE("without a signaling server the public list says so") {
@@ -87,4 +189,25 @@ TEST_CASE("without a signaling server the public list says so") {
   directory.refresh(0.0);
   CHECK(directory.state() == DirectoryState::Unavailable);
   CHECK(directory.error() == "no_server");
+}
+
+TEST_CASE("relay only is part of the online profile and its settings") {
+  UserSettings settings;
+  OnlineProfile profile = OnlineProfile::fromSettings(settings, "en");
+  CHECK_FALSE(profile.relayOnly());
+  // Never chosen: the settings keep not naming it.
+  profile.store(settings);
+  CHECK_FALSE(settings.onlineRelayOnly.has_value());
+  profile.setRelayOnly(true);
+  profile.store(settings);
+  CHECK(settings.onlineRelayOnly == true);
+  const auto written = formatUserSettings(settings);
+  REQUIRE(written);
+  CHECK(written->find("online_relay_only: true") != std::string::npos);
+  const auto read = parseUserSettings(*written);
+  REQUIRE(read);
+  CHECK(OnlineProfile::fromSettings(*read, "en").relayOnly());
+  profile.setRelayOnly(false);
+  profile.store(settings);
+  CHECK(settings.onlineRelayOnly == false);
 }

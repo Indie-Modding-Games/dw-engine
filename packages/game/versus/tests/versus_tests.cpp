@@ -273,6 +273,8 @@ TEST_CASE("a connection that fails ends the series with its reason") {
       {PeerFailure::RoomFull, LinkFailure::RoomFull},
       {PeerFailure::TimedOut, LinkFailure::TimedOut},
       {PeerFailure::NoRoute, LinkFailure::NoRoute},
+      {PeerFailure::Refused, LinkFailure::Refused},
+      {PeerFailure::NoRelay, LinkFailure::NoRelay},
       {PeerFailure::Closed, LinkFailure::Disconnected},
   };
   for (const auto& [peer, expected] : cases) {

@@ -49,6 +49,7 @@ void publishProfile(Ui& ui, std::string_view name) {
   ui.setSetting("online.profile.wins", 12.0);
   ui.setSetting("online.profile.losses", 3.0);
   ui.setSetting("online.profile.draft", std::string{});
+  ui.setSetting("online.profile.relay_only", true);
   constexpr std::array<std::string_view, 6> Icons{"egg",    "device", "crown",
                                                   "swords", "tree",   "dumbbell"};
   ui.setSetting("online.icons", static_cast<double>(Icons.size()));
@@ -285,9 +286,41 @@ TEST_CASE(
       };
       check("online_hub", "", {"panel", "player-card", "entry-rooms", "entry-back", "prompts"});
       check("online_profile", "",
-            {"panel", "name-field", "icon-6", "record-row", "profile-back", "prompts"});
+            {"panel", "name-field", "icon-6", "relay-field", "relay-hint", "record-row",
+             "profile-back", "prompts"});
       check("online_status", "connecting", {"panel", "status-icon", "back", "prompts"});
       check("online_status", "closed", {"panel", "status-text", "retry", "back", "prompts"});
+    }
+  }
+}
+
+TEST_CASE(
+    "the profile's connection row sits between the icons and the record, on under every skin") {
+  for (const std::string_view skin : Skins) {
+    for (const std::string_view language : {"en", "es"}) {
+      CAPTURE(skin);
+      CAPTURE(language);
+      Screen screen{"online_profile", language};
+      screen.skin(skin);
+      publishList(*screen.ui, "Room");
+      screen.ui->show("online_profile", true);
+      screen.frames(30);
+      const auto rect = [&](std::string_view id) {
+        CAPTURE(id);
+        const auto drawn = screen.ui->elementDrawnRect("online_profile", id);
+        REQUIRE(drawn.has_value());
+        return *drawn;
+      };
+      constexpr float Tolerance = 0.5F;
+      // Nothing overlaps: the icon's name, the connection, its hint, the record, the note, Back.
+      CHECK(rect("relay-field").top >= rect("icon-name").bottom - Tolerance);
+      CHECK(rect("relay-hint").top >= rect("relay-field").bottom - Tolerance);
+      CHECK(rect("record-row").top >= rect("relay-hint").bottom - Tolerance);
+      CHECK(rect("profile-back").top >= rect("saved-note").bottom - Tolerance);
+      // The value says relay only, and fits its row.
+      CHECK(screen.ui->elementHasClass("online_profile", "relay-value", "on"));
+      CHECK_FALSE(screen.ui->elementText("online_profile", "relay-value").empty());
+      CHECK(rect("relay-value").right <= rect("panel").right + Tolerance);
     }
   }
 }

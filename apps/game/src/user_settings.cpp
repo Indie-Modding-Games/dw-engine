@@ -78,6 +78,7 @@ constexpr std::string_view OnlineNameKey = "online_name";
 constexpr std::string_view OnlineIconKey = "online_icon";
 constexpr std::string_view OnlineWinsKey = "online_wins";
 constexpr std::string_view OnlineLossesKey = "online_losses";
+constexpr std::string_view OnlineRelayOnlyKey = "online_relay_only";
 constexpr std::string_view QuickBattleStartKey = "quick_battle_start";
 constexpr std::string_view DifficultyKey = "difficulty";
 constexpr std::string_view ShopJobModeKey = "shop_job_mode";
@@ -259,6 +260,7 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     for (const auto& [key, flag] :
          {std::pair{QuickBattleStartKey, &UserSettings::quickBattleStart},
+          std::pair{OnlineRelayOnlyKey, &UserSettings::onlineRelayOnly},
           std::pair{SkipEvolutionKey, &UserSettings::skipEvolution},
           std::pair{ChoiceCancelClosesKey, &UserSettings::choiceCancelCloses},
           std::pair{FairSicknessChanceKey, &UserSettings::fairSicknessChance},
@@ -487,6 +489,7 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   }
   for (const auto& [key, flag] :
        {std::pair{QuickBattleStartKey, &UserSettings::quickBattleStart},
+        std::pair{OnlineRelayOnlyKey, &UserSettings::onlineRelayOnly},
         std::pair{SkipEvolutionKey, &UserSettings::skipEvolution},
         std::pair{ChoiceCancelClosesKey, &UserSettings::choiceCancelCloses},
         std::pair{FairSicknessChanceKey, &UserSettings::fairSicknessChance},

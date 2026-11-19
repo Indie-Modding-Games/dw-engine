@@ -26,11 +26,11 @@ void countUp(ui::Ui& ui, std::string_view revision) {
 } // namespace
 
 CoopPeerLabel coopPeerLabel(bool localHosts, std::string_view remoteName) {
-  if (!localHosts) {
-    return {.name = {}, .key = std::string{HostPlayerText}, .number = 0};
-  }
   if (!remoteName.empty()) {
     return {.name = std::string{remoteName}, .key = {}, .number = 0};
+  }
+  if (!localHosts) {
+    return {.name = {}, .key = std::string{HostPlayerText}, .number = 0};
   }
   return {.name = {}, .key = std::string{GuestPlayerText}, .number = 1};
 }

@@ -6,9 +6,9 @@
 
 #panel {
 	width: 840dp;
-	height: 660dp;
+	height: 750dp;
 	margin-left: -420dp;
-	margin-top: -330dp;
+	margin-top: -375dp;
 	padding: 18dp 28dp;
 }
 
@@ -19,7 +19,7 @@
 	border-bottom: 2dp #397ca4;
 }
 
-#profile-head { height: 92dp; margin-bottom: 12dp; border-bottom: 2dp #397ca4; }
+#profile-head { height: 80dp; margin-bottom: 8dp; border-bottom: 2dp #397ca4; }
 #head-icon { left: 6dp; top: 4dp; width: 76dp; height: 76dp; }
 #head-name { left: 100dp; top: 18dp; width: 440dp; font-size: 30dp; line-height: 44dp; color: #fff371; }
 #head-record { top: 22dp; width: 220dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 40dp; color: #d8f1ff; }
@@ -55,7 +55,7 @@ div.profile-row {
 #name-caret { color: #ffd51e; }
 
 #name-hint {
-	margin: 6dp 0 8dp 214dp;
+	margin: 6dp 0 4dp 214dp;
 	font-family: "Pixel Small"; font-size: 26dp;
 	line-height: 28dp;
 	color: #a8c7d9;
@@ -77,12 +77,36 @@ div.profile-row {
 
 #icon-name { left: 214dp; top: 58dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #fff371; opacity: 1; }
 
-#record-row { margin-top: 30dp; }
+/* The connection: a small tile like the name's box, yellow while relay only is on. */
+#relay-field { margin-top: 34dp; }
+
+#relay-value {
+	min-width: 220dp;
+	height: 42dp;
+	padding: 0 10dp;
+	border: 2dp #397ca4;
+	background-color: #061321;
+	line-height: 38dp;
+	color: #d8f1ff;
+}
+
+#relay-value.on { color: #fff371; border-color: #fff371; }
+#relay-field:focus #relay-value { border-color: #ffd51e; }
+
+#relay-hint {
+	margin: 6dp 0 4dp 214dp;
+	font-family: "Pixel Small"; font-size: 26dp;
+	line-height: 28dp;
+	color: #a8c7d9;
+	opacity: 1;
+}
+
+#record-row { margin-top: 4dp; }
 .record-label { margin-right: 12dp; color: #a8c7d9; opacity: 1; }
 .record-value { width: 90dp; color: #fff371; }
 
 #saved-note {
-	margin: 8dp 0 0 12dp;
+	margin: 4dp 0 0 12dp;
 	font-family: "Pixel Small"; font-size: 26dp;
 	line-height: 28dp;
 	color: #a8c7d9;

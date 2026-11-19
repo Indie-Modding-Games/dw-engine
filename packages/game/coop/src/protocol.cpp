@@ -108,6 +108,9 @@ net::Bytes encode(const Message& message) {
           out.put(WelcomeKind);
           put(out, body.identity);
           out.put(body.accepted).put(body.assignedPlayer).put(body.reason).put(body.sessionId);
+          if (body.accepted && !body.hostName.empty()) {
+            out.put(std::string_view{body.hostName});
+          }
         } else if constexpr (std::is_same_v<T, Ready>) {
           out.put(ReadyKind).put(body.ready);
         } else if constexpr (std::is_same_v<T, JoinState>) {
@@ -179,6 +182,9 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
       return core::fail("invalid cooperative welcome");
     }
     welcome.reason = static_cast<RejectReason>(reason);
+    if (welcome.accepted && in.ok() && !in.done()) {
+      welcome.hostName = in.text();
+    }
     message = welcome;
     break;
   }

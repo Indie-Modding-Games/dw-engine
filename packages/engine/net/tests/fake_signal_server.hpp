@@ -28,34 +28,71 @@ public:
     const std::string joinPath = "/v1/join/";
     const std::string roomsPath = "/v1/rooms";
     const std::string path = url.substr(0, url.find('?'));
+    opened.push_back(url);
     if (!reachable) {
       socket->state_ = SocketState::Failed;
+    } else if (path.ends_with("/v1/info")) {
+      if (!knowsInfo) {
+        // A first-protocol server: no such route, the socket fails.
+        socket->state_ = SocketState::Failed;
+      } else {
+        nlohmann::json features = {"public-rooms", "room-state"};
+        if (!relays.empty()) {
+          features.push_back("relay");
+        }
+        socket->answer({{"protocol", "v1"}, {"features", features}});
+      }
+    } else if (path.ends_with("/state") && path.contains("/v1/rooms/")) {
+      notice(*socket, url);
     } else if (path.ends_with(roomsPath)) {
-      // One snapshot of the listed rooms that wait for a guest, then the server closes.
+      if (refuseList) {
+        socket->answer({{"type", "error"}, {"reason", "limit"}});
+        return socket;
+      }
+      // One snapshot of the listed rooms not playing, then the server closes.
+      const std::string compat = query(url, "compat");
       nlohmann::json rooms = nlohmann::json::array();
       for (const auto& [code, room] : rooms_) {
-        if (room.listed) {
+        if (room.listed && room.phase != "playing" && (compat.empty() || room.compat == compat)) {
           rooms.push_back({{"roomId", code},
                            {"joinCode", code},
                            {"name", "Cooperative room"},
                            {"message", "Waiting for players"},
-                           {"players", room.guest != nullptr ? 2 : 1},
+                           {"players", room.phase == "open" ? 1 : 2},
                            {"capacity", 2},
                            {"createdAt", 0},
-                           {"state", room.guest != nullptr ? "full" : "waiting"}});
+                           {"state", room.phase == "open" ? "waiting" : "full"},
+                           {"phase", room.phase},
+                           {"hostName", room.hostName},
+                           {"icon", "egg"},
+                           {"compat", room.compat},
+                           {"mode", "campaign"}});
         }
       }
-      socket->push({{"rooms", rooms}});
-      socket->state_ = SocketState::Closed;
+      socket->answer({{"rooms", rooms}});
     } else if (path.ends_with(hostPath)) {
+      if (refuseHost) {
+        socket->answer({{"type", "error"}, {"reason", "limit"}});
+        return socket;
+      }
       const std::string code = codes_.at(next_++ % codes_.size());
-      rooms_[code] = Room{.host = socket.get(), .listed = url.ends_with("?public=1")};
+      const bool listed = query(url, "public") == "1";
+      rooms_[code] = Room{.host = socket.get(),
+                          .listed = listed,
+                          .token = listed ? "token-" + code : std::string{},
+                          .hostName = query(url, "name"),
+                          .compat = query(url, "compat")};
       socket->room_ = code;
-      socket->push({{"type", "room"}, {"code", code}});
+      nlohmann::json made = {{"type", "room"}, {"code", code}};
+      if (listed) {
+        made["token"] = rooms_[code].token;
+      }
+      withRelays(made);
+      socket->push(made);
     } else if (const auto at = url.find(joinPath); at != std::string::npos) {
       const std::string code = url.substr(at + joinPath.size());
       const auto room = rooms_.find(code);
-      if (room == rooms_.end()) {
+      if (room == rooms_.end() || room->second.host == nullptr) {
         socket->push({{"type", "error"}, {"reason", "no-room"}});
         socket->state_ = SocketState::Closed;
       } else if (room->second.guest != nullptr) {
@@ -63,18 +100,38 @@ public:
         socket->state_ = SocketState::Closed;
       } else {
         room->second.guest = socket.get();
+        room->second.phase = "connected";
         socket->room_ = code;
-        socket->push({{"type", "joined"}});
+        nlohmann::json joined = {{"type", "joined"}};
+        withRelays(joined);
+        socket->push(joined);
         room->second.host->push({{"type", "peer"}});
       }
     }
     return socket;
   }
 
+  // A listed room's phase as the directory has it ("" when there is none).
+  [[nodiscard]] std::string phaseOf(const std::string& code) const {
+    const auto room = rooms_.find(code);
+    return room != rooms_.end() && room->second.listed ? room->second.phase : std::string{};
+  }
+
   // Whether the server answers at all.
   bool reachable = true;
+  // A first-protocol server, without /v1/info.
+  bool knowsInfo = true;
+  // The limits: the next host is refused, the list is refused.
+  bool refuseHost = false;
+  bool refuseList = false;
+  // The relay servers handed out with room and joined (none: no TURN).
+  nlohmann::json relays = nlohmann::json::array();
   // Rooms both peers said done to.
   std::size_t finishedRooms = 0;
+  // Every URL a socket was opened to, in order.
+  std::vector<std::string> opened;
+  // The host notices the directory took, as "<code> <state>".
+  std::vector<std::string> notices;
 
 private:
   class Socket;
@@ -82,8 +139,79 @@ private:
     Socket* host = nullptr;
     Socket* guest = nullptr;
     bool listed = false;
+    std::string token;
+    std::string hostName;
+    std::string compat;
+    // The directory's phase: open, connected, ready, playing.
+    std::string phase = "open";
     std::size_t done = 0;
   };
+
+  // A query parameter of a URL, percent-decoded ("" when it is not there).
+  static std::string query(const std::string& url, const std::string& name) {
+    const auto start = url.find('?');
+    if (start == std::string::npos) {
+      return {};
+    }
+    std::string rest = url.substr(start + 1);
+    while (!rest.empty()) {
+      const auto end = rest.find('&');
+      const std::string pair = rest.substr(0, end);
+      if (pair.starts_with(name + "=")) {
+        return decoded(pair.substr(name.size() + 1));
+      }
+      rest = end == std::string::npos ? std::string{} : rest.substr(end + 1);
+    }
+    return {};
+  }
+
+  static std::string decoded(const std::string& text) {
+    std::string out;
+    const auto hex = [](char digit) {
+      return digit <= '9' ? digit - '0' : (digit | 0x20) - 'a' + 10;
+    };
+    for (std::size_t at = 0; at < text.size(); ++at) {
+      if (text[at] == '%' && at + 2 < text.size()) {
+        out.push_back(static_cast<char>(hex(text[at + 1]) * 16 + hex(text[at + 2])));
+        at += 2;
+      } else {
+        out.push_back(text[at]);
+      }
+    }
+    return out;
+  }
+
+  void withRelays(nlohmann::json& message) const {
+    if (!relays.empty()) {
+      message["iceServers"] = relays;
+    }
+  }
+
+  // A host's state notice (`/v1/rooms/<code>/state?token=&state=`), as the directory answers it.
+  void notice(Socket& socket, const std::string& url) {
+    const std::string path = url.substr(0, url.find('?'));
+    const std::string prefix = "/v1/rooms/";
+    const auto at = path.find(prefix) + prefix.size();
+    const std::string code = path.substr(at, path.size() - at - std::string{"/state"}.size());
+    const std::string token = query(url, "token");
+    const std::string state = query(url, "state");
+    const auto room = rooms_.find(code);
+    if (state != "ready" && state != "playing" && state != "closed") {
+      socket.answer({{"type", "error"}, {"reason", "bad-state"}});
+    } else if (room == rooms_.end() || !room->second.listed) {
+      socket.answer({{"type", "error"}, {"reason", "no-room"}});
+    } else if (token != room->second.token) {
+      socket.answer({{"type", "error"}, {"reason", "bad-token"}});
+    } else {
+      notices.push_back(code + " " + state);
+      if (state == "closed") {
+        rooms_.erase(room);
+      } else {
+        room->second.phase = state;
+      }
+      socket.answer({{"type", "state"}});
+    }
+  }
 
   class Socket final : public SignalSocket {
   public:
@@ -111,7 +239,13 @@ private:
         room->second.guest->state_ = SocketState::Closed;
         room->second.host->room_.clear();
         room->second.guest->room_.clear();
-        server_->rooms_.erase(room);
+        // A listed room stays in the directory (connected): its host tells how it goes.
+        if (room->second.listed) {
+          room->second.host = nullptr;
+          room->second.guest = nullptr;
+        } else {
+          server_->rooms_.erase(room);
+        }
       }
     }
 
@@ -143,6 +277,11 @@ private:
     }
 
     void push(const nlohmann::json& message) { texts_.push_back(message.dump()); }
+    // One message, then the server closes (the list, /v1/info, a state notice).
+    void answer(const nlohmann::json& message) {
+      push(message);
+      state_ = SocketState::Closed;
+    }
 
   private:
     friend class FakeSignalServer;

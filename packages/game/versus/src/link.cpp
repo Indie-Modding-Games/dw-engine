@@ -36,6 +36,10 @@ LinkFailure failureOf(net::PeerFailure failure) {
     return LinkFailure::TimedOut;
   case net::PeerFailure::NoRoute:
     return LinkFailure::NoRoute;
+  case net::PeerFailure::Refused:
+    return LinkFailure::Refused;
+  case net::PeerFailure::NoRelay:
+    return LinkFailure::NoRelay;
   }
   return LinkFailure::Disconnected;
 }

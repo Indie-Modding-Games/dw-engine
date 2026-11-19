@@ -32,22 +32,32 @@ dwe::game::coop::Identity identity() {
           .gameVersion = "test",
           .contentHash = "content"};
 }
+
+CoopConnectionDesc roomDesc(
+    std::function<std::unique_ptr<dwe::net::PeerLink>(const std::optional<dwe::net::PublicHost>&)>
+        host,
+    std::function<std::unique_ptr<dwe::net::PeerLink>(std::string_view)> join) {
+  return {.identity = identity(),
+          .configurationError = {},
+          .host = std::move(host),
+          .join = std::move(join),
+          .compat = "coop-test-content",
+          .signalServer = {},
+          .open = {}};
+}
 } // namespace
 
 TEST_CASE("cooperative connection host and guest complete the room handshake") {
   dwe::net::LoopbackNetwork network{{}};
-  CoopConnection host{
-      {.identity = identity(),
-       .configurationError = {},
-       .host = [&](bool) { return std::make_unique<BorrowedPeer>(network.link(0)); },
-       .join = {}}};
-  CoopConnection guest{{.identity = identity(),
-                        .configurationError = {},
-                        .host = {},
-                        .join = [&](std::string_view code) {
-                          CHECK(code == "TEST");
-                          return std::make_unique<BorrowedPeer>(network.link(1));
-                        }}};
+  CoopConnection host{roomDesc(
+      [&](const std::optional<dwe::net::PublicHost>&) {
+        return std::make_unique<BorrowedPeer>(network.link(0));
+      },
+      {})};
+  CoopConnection guest{roomDesc({}, [&](std::string_view code) {
+    CHECK(code == "TEST");
+    return std::make_unique<BorrowedPeer>(network.link(1));
+  })};
   host.open();
   guest.open();
   REQUIRE(host.host());
@@ -72,9 +82,7 @@ TEST_CASE("cooperative connection host and guest complete the room handshake") {
 
 TEST_CASE("cooperative connection validates the entered room code") {
   CoopConnection connection{
-      {.identity = identity(), .configurationError = {}, .host = {}, .join = [](std::string_view) {
-         return std::unique_ptr<dwe::net::PeerLink>{};
-       }}};
+      roomDesc({}, [](std::string_view) { return std::unique_ptr<dwe::net::PeerLink>{}; })};
   connection.open();
   connection.beginJoin();
   connection.type("abc", true);
@@ -88,15 +96,13 @@ TEST_CASE("the lobby leaves the link to the gameplay bridge once play owns it") 
   // command.
   using namespace dwe::game::coop;
   dwe::net::LoopbackNetwork network{{}};
-  CoopConnection hostRoom{
-      {.identity = identity(),
-       .configurationError = {},
-       .host = [&](bool) { return std::make_unique<BorrowedPeer>(network.link(0)); },
-       .join = {}}};
-  CoopConnection guestRoom{
-      {.identity = identity(), .configurationError = {}, .host = {}, .join = [&](std::string_view) {
-         return std::make_unique<BorrowedPeer>(network.link(1));
-       }}};
+  CoopConnection hostRoom{roomDesc(
+      [&](const std::optional<dwe::net::PublicHost>&) {
+        return std::make_unique<BorrowedPeer>(network.link(0));
+      },
+      {})};
+  CoopConnection guestRoom{roomDesc(
+      {}, [&](std::string_view) { return std::make_unique<BorrowedPeer>(network.link(1)); })};
   hostRoom.open();
   guestRoom.open();
   REQUIRE(hostRoom.host());
@@ -162,4 +168,77 @@ TEST_CASE("the lobby leaves the link to the gameplay bridge once play owns it") 
   CHECK(hostRoom.linkGeneration() != played);
   CHECK_FALSE(hostRoom.linkInPlay());
   guestRoom.close();
+}
+
+TEST_CASE("the cooperative room's phase follows the link, the lobby and leaving") {
+  using dwe::net::RoomPhase;
+  dwe::net::LoopbackNetwork network{{}};
+  std::optional<dwe::net::PublicHost> told;
+  CoopConnection host{roomDesc(
+      [&](const std::optional<dwe::net::PublicHost>& listing) {
+        told = listing;
+        return std::make_unique<BorrowedPeer>(network.link(0));
+      },
+      {})};
+  CoopConnection guest{roomDesc(
+      {}, [&](std::string_view) { return std::make_unique<BorrowedPeer>(network.link(1)); })};
+  host.setPlayerName("  Ana*  ");
+  host.setPlayerIcon("crown");
+  guest.setPlayerName("Mika");
+  CHECK(host.room() == nullptr);
+  host.open();
+  guest.open();
+  REQUIRE(host.host(true));
+  // A public room is listed with the host's name as the directory takes it, its icon and key.
+  REQUIRE(told.has_value());
+  CHECK(told->name == "Ana");
+  CHECK(told->icon == "crown");
+  CHECK(told->compat == "coop-test-content");
+  CHECK(told->mode == "campaign");
+  REQUIRE(guest.join("TEST"));
+  REQUIRE(guest.room() != nullptr);
+  CHECK(guest.room()->phase() == RoomPhase::Connecting);
+  CHECK(guest.room()->code() == "TEST");
+  CHECK(guest.code() == "TEST");
+  for (std::uint32_t tick = 0; tick < 20 && (!host.connected() || !guest.connected()); ++tick) {
+    network.advance(dwe::net::Millis{10});
+    host.tick(network.now());
+    guest.tick(network.now());
+  }
+  REQUIRE(host.room() != nullptr);
+  CHECK(host.room()->hosting());
+  CHECK(host.room()->code() == "TEST");
+  CHECK(host.room()->phase() == RoomPhase::Connected);
+  CHECK(guest.room()->phase() == RoomPhase::Connected);
+  // Each knows the other's name: the host's reaches the guest with its welcome.
+  CHECK(host.remoteName() == "Mika");
+  CHECK(guest.remoteName() == "  Ana*  ");
+  host.markRoomReady(true);
+  CHECK(host.room()->phase() == RoomPhase::Ready);
+  host.markRoomReady(false);
+  CHECK(host.room()->phase() == RoomPhase::Connected);
+  host.markRoomPlaying();
+  CHECK(host.room()->phase() == RoomPhase::Playing);
+  // Playing never goes back to ready.
+  host.markRoomReady(true);
+  CHECK(host.room()->phase() == RoomPhase::Playing);
+  host.close();
+  CHECK(host.room()->phase() == RoomPhase::Closed);
+  CHECK_FALSE(host.room()->noticesPending());
+  guest.close();
+  CHECK(guest.room()->phase() == RoomPhase::Closed);
+}
+
+TEST_CASE("a cooperative room that cannot be made closes with the error") {
+  CoopConnection connection{roomDesc(
+      [](const std::optional<dwe::net::PublicHost>&) {
+        return std::unique_ptr<dwe::net::PeerLink>{};
+      },
+      {})};
+  connection.open();
+  CHECK_FALSE(connection.host(false));
+  CHECK(connection.view() == CoopConnection::View::Error);
+  REQUIRE(connection.room() != nullptr);
+  CHECK(connection.room()->phase() == dwe::net::RoomPhase::Closed);
+  CHECK(connection.room()->closeReason() == "transport_unavailable");
 }

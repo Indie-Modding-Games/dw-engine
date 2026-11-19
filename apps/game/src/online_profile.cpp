@@ -73,6 +73,7 @@ OnlineProfile OnlineProfile::fromSettings(const UserSettings& settings, std::str
   }
   profile.wins_ = std::max(0, settings.onlineWins.value_or(0));
   profile.losses_ = std::max(0, settings.onlineLosses.value_or(0));
+  profile.relayOnly_ = settings.onlineRelayOnly.value_or(false);
   return profile;
 }
 
@@ -83,6 +84,10 @@ void OnlineProfile::store(UserSettings& settings) const {
   settings.onlineIcon = icon_;
   settings.onlineWins = wins_;
   settings.onlineLosses = losses_;
+  // Written only once chosen, so a settings file that never chose it keeps not naming it.
+  if (relayOnly_ || settings.onlineRelayOnly) {
+    settings.onlineRelayOnly = relayOnly_;
+  }
 }
 
 bool OnlineProfile::setName(std::string_view typed) {

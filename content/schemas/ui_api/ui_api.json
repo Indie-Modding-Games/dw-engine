@@ -1,5 +1,5 @@
 {
-  "version": "0.17.0",
+  "version": "0.18.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "The value of a setting the game publishes; nil if it does not publish it.", "signature": "(name: string): any"},
@@ -738,6 +738,7 @@
       {"name": "online.profile.wins", "kind": "setting", "value": "number", "summary": "Online versus matches won."},
       {"name": "online.profile.losses", "kind": "setting", "value": "number", "summary": "Online versus matches lost."},
       {"name": "online.profile.draft", "kind": "setting", "value": "text", "summary": "The name being typed on the profile screen."},
+      {"name": "online.profile.relay_only", "kind": "setting", "value": "boolean", "summary": "Rooms connect through the server's relay only, hiding this machine's address."},
       {"name": "online.icons", "kind": "setting", "value": "number", "summary": "How many icons a profile can pick from."},
       {"name": "online.icon.<n>.id", "kind": "setting", "value": "text", "summary": "An icon's id, in the screens' order."},
       {"name": "online.modes", "kind": "setting", "value": "number", "summary": "How many game modes a room lists."},
@@ -772,6 +773,7 @@
       {"name": "online_profile_name", "kind": "command", "value": "text", "summary": "Replaces the name being typed on the profile screen."},
       {"name": "online_profile_save", "kind": "command", "value": "none", "summary": "Keeps the typed name as the profile's (notice name_empty when nothing is left)."},
       {"name": "online_profile_icon", "kind": "command", "value": "text", "summary": "Changes the profile's icon."},
+      {"name": "online_profile_relay", "kind": "command", "value": "boolean", "summary": "Connects the next rooms through the server's relay only (true) or directly (false)."},
       {"name": "online_retry", "kind": "command", "value": "none", "summary": "Asks again for the room last asked for (hosting, joining from the list or by code)."},
       {"name": "coop_host", "kind": "command", "value": "boolean", "summary": "The co-op lobby's: opens a room this player hosts, true public (listed), false private (by code only)."},
       {"name": "online_join", "kind": "command", "value": "text", "summary": "Joins a listed room by its id."},
@@ -785,7 +787,7 @@
       {"name": "online_dismiss", "kind": "command", "value": "none", "summary": "Clears the notice, the quick match's answer and a room that closed."},
       {"name": "online_sample", "kind": "command", "value": "boolean", "summary": "Switches to the sample rooms and back (only with the developer tools on)."},
       {"name": "online.state", "kind": "query", "value": "table", "summary": "The screens' state: open, sample, sample_offered, field, filter, code, code_length, quick, notice, notice_key and can_retry.", "signature": "(): table"},
-      {"name": "online.profile", "kind": "query", "value": "table", "summary": "The player's online profile: name, named, icon, wins, losses and draft.", "signature": "(): table"},
+      {"name": "online.profile", "kind": "query", "value": "table", "summary": "The player's online profile: name, named, icon, wins, losses, draft and relay_only.", "signature": "(): table"},
       {"name": "online.icons", "kind": "query", "value": "table", "summary": "The icons a profile can pick: id and label_key.", "signature": "(): table"},
       {"name": "online.list", "kind": "query", "value": "table", "summary": "The room list: state, error, error_key, total and the rooms matching the filter (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, joinable).", "signature": "(): table"},
       {"name": "online.modes", "kind": "query", "value": "table", "summary": "The game modes: id, label_key, description_key, short_key, available and selected.", "signature": "(): table"},
@@ -809,6 +811,7 @@
       {"name": "online.set_name_draft", "kind": "action", "value": "boolean", "summary": "Replaces the name being typed on the profile screen.", "signature": "(value: string): boolean, string?"},
       {"name": "online.save_name", "kind": "action", "value": "boolean", "summary": "Keeps the typed name as the profile's.", "signature": "(): boolean"},
       {"name": "online.set_icon", "kind": "action", "value": "boolean", "summary": "Changes the profile's icon.", "signature": "(id: string): boolean, string?"},
+      {"name": "online.set_relay_only", "kind": "action", "value": "boolean", "summary": "Connects the next rooms through the server's relay only, or directly when possible.", "signature": "(on: boolean): boolean, string?"},
       {"name": "online.retry", "kind": "action", "value": "boolean", "summary": "Asks again for the room last asked for, after a failure.", "signature": "(): boolean"},
       {"name": "online.dismiss", "kind": "action", "value": "boolean", "summary": "Clears the notice, the quick match's answer and a closed room.", "signature": "(): boolean"},
       {"name": "online.set_sample", "kind": "action", "value": "boolean", "summary": "Switches to the sample rooms and back.", "signature": "(on: boolean): boolean, string?"},

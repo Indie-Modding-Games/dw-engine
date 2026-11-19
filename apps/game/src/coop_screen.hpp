@@ -2,6 +2,7 @@
 
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/game/coop/profile_transfer.hpp>
+#include <dwe/net/rtc_peer_link.hpp>
 #include <dwe/ui/ui.hpp>
 
 #include <cstdint>
@@ -34,7 +35,16 @@ public:
   [[nodiscard]] bool active() const { return active_; }
   [[nodiscard]] game::coop::CoopLink* link() { return connection_.link(); }
   void setPlayerName(std::string name) { connection_.setPlayerName(std::move(name)); }
+  void setPlayerIcon(std::string icon) { connection_.setPlayerIcon(std::move(icon)); }
+  // Connect the next rooms through a relay (TURN) only: the other player never learns this
+  // machine's address (the online profile's «relay only»).
+  void setRelayOnly(bool relayOnly);
+  // The other player's name (the guest's on the host, the host's on the guest).
   [[nodiscard]] std::string remoteName() const { return connection_.remoteName(); }
+  // The directory key of the rooms this game can join (net::compatKey).
+  [[nodiscard]] const std::string& compat() const { return connection_.compat(); }
+  // The room's phase (nullptr before the first room).
+  [[nodiscard]] const net::RoomSession* room() const { return connection_.room(); }
   [[nodiscard]] std::uint64_t linkGeneration() const { return connection_.linkGeneration(); }
   void handLinkToPlay() { connection_.handLinkToPlay(); }
   void takeLinkBack() { connection_.takeLinkBack(); }
@@ -72,6 +82,7 @@ private:
                                                std::uint32_t transferId, std::string_view saveText);
 
   ui::Ui* ui_;
+  std::shared_ptr<net::RtcSettings> rtc_;
   CoopConnection connection_;
   bool active_ = false;
   bool isHost_ = false;

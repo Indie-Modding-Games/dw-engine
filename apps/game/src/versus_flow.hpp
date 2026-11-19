@@ -5,6 +5,7 @@
 #include <dwe/game/tournament/match_show.hpp>
 #include <dwe/game/versus/protocol.hpp>
 #include <dwe/net/peer_link.hpp>
+#include <dwe/net/room_session.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/battle_registry.hpp>
 #include <dwe/session/versus_series.hpp>
@@ -145,6 +146,9 @@ public:
   [[nodiscard]] const session::VersusSeries* series() const {
     return series_ ? &*series_ : nullptr;
   }
+  // The room of the last series hosted or joined (nullptr before the first): its phase follows
+  // the link, the lineups and the battles, and closes when the series ends or the player leaves.
+  [[nodiscard]] const net::RoomSession* room() const { return room_ ? &*room_ : nullptr; }
 
 private:
   void leave();
@@ -185,6 +189,8 @@ private:
   // The link before the series: the series refers to it, so it goes after it.
   std::unique_ptr<net::PeerLink> link_;
   std::optional<session::VersusSeries> series_;
+  // Versus rooms are reached by their code only, so the room sends the directory nothing.
+  std::optional<net::RoomSession> room_;
   std::int64_t ticks_ = 0;
   // Battle frames in a row with no tick played: the other machine is behind.
   std::int32_t stalledFrames_ = 0;

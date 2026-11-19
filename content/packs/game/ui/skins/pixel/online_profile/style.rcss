@@ -9,9 +9,9 @@
 
 #panel {
 	width: 860dp;
-	height: 640dp;
+	height: 730dp;
 	margin-left: -430dp;
-	margin-top: -320dp;
+	margin-top: -365dp;
 	padding: 20dp 34dp;
 	border: 3dp transparent;
 	background-color: transparent;
@@ -36,11 +36,12 @@
 	decorator: none;
 }
 
-#name-field:focus { color: #f2f0e1; decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box; }
+#name-field:focus,
+#relay-field:focus { color: #f2f0e1; decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box; }
 .row-label { color: #b6e4f7; opacity: 1; }
 #name-box { border-bottom: 3dp #7cb6e2; }
 .editing #name-box { border-bottom-color: #efc63c; }
-#name-hint, #icon-name, #saved-note { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #93a6bc; opacity: 1; }
+#name-hint, #icon-name, #relay-hint, #saved-note { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #93a6bc; opacity: 1; }
 
 .icon-choice {
 	width: 56dp;
@@ -55,6 +56,22 @@
 .icon-choice:focus { decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box; border-color: transparent; }
 .icon-choice .profile-icon { width: 42dp; height: 42dp; }
 #icon-name { top: 56dp; }
+
+/* The connection on a key cap, gold while relay only is on; the row clears the icon's name above it. */
+#relay-field { margin-top: 32dp; }
+
+#relay-value {
+	min-width: 240dp;
+	height: 46dp;
+	border: 3dp transparent;
+	line-height: 38dp;
+	color: #b6e4f7;
+	decorator: ninepatch(nb-key-outer, nb-key-inner, 1) border-box;
+}
+
+#relay-value.on { color: #efc63c; }
+#relay-hint { margin: 4dp 0 4dp 215dp; }
+#record-row { margin-top: 4dp; }
 
 .record-value { color: #efc63c; }
 

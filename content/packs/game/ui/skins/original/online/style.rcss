@@ -61,7 +61,8 @@
 .dialog-option,
 .mode-row,
 #profile-back,
-#name-field {
+#name-field,
+#relay-field {
 	border: 3dp transparent;
 	border-left-width: 27dp;
 	border-radius: 0;
@@ -77,7 +78,8 @@
 .dialog-option:focus,
 .mode-row:focus,
 #profile-back:focus,
-#name-field:focus {
+#name-field:focus,
+#relay-field:focus {
 	border-color: transparent;
 	background-color: transparent;
 	color: #d0d0d0;

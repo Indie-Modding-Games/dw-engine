@@ -14,7 +14,8 @@
 
 namespace dwe::app {
 namespace {
-CoopConnectionDesc connectionDesc(const assets::VirtualFileSystem& files, const Options& options) {
+CoopConnectionDesc connectionDesc(const assets::VirtualFileSystem& files, const Options& options,
+                                  const std::shared_ptr<net::RtcSettings>& settings) {
   game::coop::Identity identity{.gameVersion = DWE_GAME_VERSION, .contentHash = {}};
   std::string configurationError;
   if (auto rules = ruleset::loadRuleset(files, options.ruleset); rules) {
@@ -26,21 +27,25 @@ CoopConnectionDesc connectionDesc(const assets::VirtualFileSystem& files, const 
   } else {
     configurationError = "ruleset_unavailable";
   }
-  net::RtcSettings settings;
   if (auto config = game::versus::loadNetworkConfig(files); config) {
-    settings.iceServers = std::move(config->iceServers);
+    settings->iceServers = std::move(config->iceServers);
   }
-  settings.signalServer = coopSignalServer(files, options);
+  settings->signalServer = coopSignalServer(files, options);
+  std::string compat = net::compatKey("coop", identity.gameVersion, identity.contentHash);
+  // The settings are shared: the online profile's «relay only» changes them for the next room.
   return {.identity = std::move(identity),
           .configurationError = std::move(configurationError),
           .host =
-              [settings](bool listed) {
-                return net::RtcPeerLink::host(settings, net::openWebSocket, listed);
+              [settings](const std::optional<net::PublicHost>& listing) {
+                return net::RtcPeerLink::host(*settings, net::openWebSocket, listing);
               },
           .join =
               [settings](std::string_view code) {
-                return net::RtcPeerLink::join(settings, code, net::openWebSocket);
-              }};
+                return net::RtcPeerLink::join(*settings, code, net::openWebSocket);
+              },
+          .compat = std::move(compat),
+          .signalServer = settings->signalServer,
+          .open = net::openWebSocket};
 }
 } // namespace
 
@@ -55,7 +60,12 @@ std::string coopSignalServer(const assets::VirtualFileSystem& files, const Optio
 }
 
 CoopScreen::CoopScreen(const assets::VirtualFileSystem& files, const Options& options, ui::Ui& ui)
-    : ui_{&ui}, connection_{connectionDesc(files, options)} {}
+    : ui_{&ui}, rtc_{std::make_shared<net::RtcSettings>()},
+      connection_{connectionDesc(files, options, rtc_)} {}
+
+void CoopScreen::setRelayOnly(bool relayOnly) {
+  rtc_->relayOnly = relayOnly;
+}
 
 bool CoopScreen::handle(const ui::UiCommand& command) {
   if (command.name == CoopOpenCommand) {
@@ -130,6 +140,7 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
                 connection_.link()->send(game::coop::Message{game::coop::Ready{false}});
             sent) {
           localReady_ = false;
+          connection_.markRoomReady(false);
           localError_.clear();
         } else {
           localError_ = sent.error().message;
@@ -177,8 +188,11 @@ void CoopScreen::type(std::string_view text, bool enter) {
 }
 
 void CoopScreen::tick(double nowSeconds) {
-  if (connection_.link() == nullptr || connection_.view() == CoopConnection::View::Closed)
+  if (connection_.link() == nullptr || connection_.view() == CoopConnection::View::Closed) {
+    // A room that just closed may still be telling the directory.
+    connection_.pollRoom();
     return;
+  }
   constexpr double MillisPerSecond = 1000.0;
   connection_.tick(net::Millis{static_cast<std::int64_t>(nowSeconds * MillisPerSecond)});
   if (!connection_.linkInPlay())
@@ -193,6 +207,7 @@ void CoopScreen::receiveMessages() {
   while (auto message = connection_.link()->receive()) {
     if (const auto* ready = std::get_if<game::coop::Ready>(&*message); ready && isHost_) {
       remoteReady_ = ready->ready && guestSaveText_.has_value();
+      connection_.markRoomReady(remoteReady_);
     } else if (const auto* chunk = std::get_if<game::coop::ProfileChunk>(&*message)) {
       const bool guestProfile = isHost_ && chunk->kind == game::coop::ProfilePayloadKind::GuestSave;
       const bool hostSave = !isHost_ && chunk->kind == game::coop::ProfilePayloadKind::HostSave;
@@ -252,6 +267,7 @@ void CoopScreen::completeRemoteStart() {
     return;
   }
   remoteStartText_ = std::move(*combined);
+  connection_.markRoomPlaying();
 }
 
 std::optional<std::string> CoopScreen::takeRemoteStartText() {
@@ -302,6 +318,7 @@ core::Result<void> CoopScreen::provideGuestSave(std::string_view saveText) {
     return sent;
   }
   localReady_ = true;
+  connection_.markRoomReady(true);
   selectingGuestProfile_ = false;
   guestProfileRequest_ = false;
   localError_.clear();
@@ -343,6 +360,7 @@ core::Result<void> CoopScreen::sendHostStart(std::string_view saveText) {
   }
   selectingHostStart_ = false;
   startRequested_ = false;
+  connection_.markRoomPlaying();
   return {};
 }
 

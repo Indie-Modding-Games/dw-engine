@@ -8,6 +8,7 @@ dwe_add_module(net
         src/lockstep.cpp
         src/loopback.cpp
         src/reliable_channel.cpp
+        src/room_session.cpp
         src/rtc_peer_link.cpp
         src/signal.cpp
         src/trusted_roots.cpp

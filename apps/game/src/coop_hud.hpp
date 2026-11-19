@@ -50,10 +50,10 @@ struct CoopPeerLabel {
   friend bool operator==(const CoopPeerLabel&, const CoopPeerLabel&) = default;
 };
 
-// The label of the other player from this one's side. The guest's name reaches the host in its
-// hello (CoopLink::remoteName); the host's never reaches the guest, which calls it "Host". A
-// guest with no name is "Guest 1" (the host is the room's first member, as the rooms screen
-// counts them).
+// The label of the other player from this one's side: its name (CoopLink::remoteName: the guest's
+// from its hello, the host's from its welcome). An older host sends no name: the guest calls it
+// "Host". A guest with no name is "Guest 1" (the host is the room's first member, as the rooms
+// screen counts them).
 [[nodiscard]] CoopPeerLabel coopPeerLabel(bool localHosts, std::string_view remoteName);
 
 // The tag as the document shows it.

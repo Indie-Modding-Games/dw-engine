@@ -213,10 +213,18 @@ bool VersusScreen::open() {
         .battles = battles_.get(),
         .identity = std::move(*identity),
         .saves = [files, options, keepsSaves] { return savesIn(*files, *options, keepsSaves); },
-        .host = [settings] { return net::RtcPeerLink::host(settings, net::openWebSocket); },
+        // The online profile's «relay only» as it is when the link is made.
+        .host =
+            [this, settings] {
+              net::RtcSettings link = settings;
+              link.relayOnly = relayOnly_;
+              return net::RtcPeerLink::host(std::move(link), net::openWebSocket);
+            },
         .join =
-            [settings](std::string_view code) {
-              return net::RtcPeerLink::join(settings, code, net::openWebSocket);
+            [this, settings](std::string_view code) {
+              net::RtcSettings link = settings;
+              link.relayOnly = relayOnly_;
+              return net::RtcPeerLink::join(std::move(link), code, net::openWebSocket);
             },
         .seed =
             [] {

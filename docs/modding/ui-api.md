@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.18.0 | Rooms show real data: `online.room()` follows the room's phase as the network keeps it (open, connected, ready, playing, closed), and a guest sees the host's name. Listed rooms carry the host's name and mode, rooms already playing leave the list, and the list can say it was refreshed too often (`list_limit`). The online profile's relay only (`online.profile().relay_only`, `online.set_relay_only(on)`, command `online_profile_relay`) connects rooms through the server's relay so the other player never learns this machine's address. New errors: `server_refused`, `no_relay`, `list_limit` (online) and `versus.error.refused`, `versus.error.no_relay` |
 | 0.17.0 | The `online` namespace arrives: the public room list (`online.list()`), the room the player is in (`online.room()`), the modes (`online.modes()`) and the screens' state (`online.state()`), with their steps (`online.host`, `online.join`, `online.join_by_code`, `online.quick_match`, `online.set_ready`, `online.start`, `online.leave`...) and the `online.changed` event. The room steps are the co-op lobby's commands (`coop_host`, `coop_join` with a code, `coop_ready`, `coop_start`). The player's online profile (`online.profile()`, `online.icons()`, `online.save_name`, `online.set_icon`) and `online.retry` after a failure. The new screens `online_hub`, `online_profile`, `online_status`, `online_rooms` and `online_room` only read through it. The `coop_hud` screen shows the co-op game's tag over the other player (`coop_hud.tag.*`) and its notices (`coop_hud.notice.*`) |
 | 0.16.0 | The improved shop job: the bar gains `shop_job.top`, `shop_job.bonus`, `shop_job.bonus_icon`, `shop_job.bonus_icon_rect`, `shop_job.tier` and `shop_job.improved` (also in `field.shop_job()`), and the `shop_job_rules` command (the ? button that opens the rules panel). The `shop_job_mode` option arrives. The new screens `shop_haggle` and `shop_job_rules` are described in the [job's reference](../reference/shop-job.md#interface) |
 | 0.15.0 | The `story` namespaces arrive (the story's text box: `story.textbox()`, `story.choice()`, `story.input()`; the actions `story.advance`, `story.choose` and `story.cancel`; the events `story.changed`, `story.text` and `story.input`), `dialog` (the save dialog: `dialog.state()`, `dialog.options()`, `dialog.answer`, `dialog.cancel`, the event `dialog.changed`) and `naming` (the name box: `naming.state()`, `naming.cell`, `naming.write`, `naming.erase`, `naming.accept`, the event `naming.changed`). New settings `story_textbox.speaker`, `speaker_kind`, `options`, `first_option`, `input` and `page`, and the commands `story_advance`, `story_choose`, `story_cancel`, `naming_write`, `naming_erase` and `naming_accept`. The `story_textbox`, `dialog` and `naming_box` screens only read through them. An addon only sends them while its box is waiting for the player |
@@ -94,7 +95,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.17.0**.
+UI API version: **0.18.0**.
 
 ### `ui`
 
@@ -923,6 +924,7 @@ UI API version: **0.17.0**.
 | `online.profile.wins` | setting | number | Online versus matches won. |
 | `online.profile.losses` | setting | number | Online versus matches lost. |
 | `online.profile.draft` | setting | text | The name being typed on the profile screen. |
+| `online.profile.relay_only` | setting | yes/no | Rooms connect through the server's relay only, hiding this machine's address. |
 | `online.icons` | setting | number | How many icons a profile can pick from. |
 | `online.icon.<n>.id` | setting | text | An icon's id, in the screens' order. |
 | `online.modes` | setting | number | How many game modes a room lists. |
@@ -957,6 +959,7 @@ UI API version: **0.17.0**.
 | `online_profile_name` | command | text | Replaces the name being typed on the profile screen. |
 | `online_profile_save` | command | — | Keeps the typed name as the profile's (notice name_empty when nothing is left). |
 | `online_profile_icon` | command | text | Changes the profile's icon. |
+| `online_profile_relay` | command | yes/no | Connects the next rooms through the server's relay only (true) or directly (false). |
 | `online_retry` | command | — | Asks again for the room last asked for (hosting, joining from the list or by code). |
 | `coop_host` | command | yes/no | The co-op lobby's: opens a room this player hosts, true public (listed), false private (by code only). |
 | `online_join` | command | text | Joins a listed room by its id. |
@@ -970,7 +973,7 @@ UI API version: **0.17.0**.
 | `online_dismiss` | command | — | Clears the notice, the quick match's answer and a room that closed. |
 | `online_sample` | command | yes/no | Switches to the sample rooms and back (only with the developer tools on). |
 | `online.state(): table` | query | table | The screens' state: open, sample, sample_offered, field, filter, code, code_length, quick, notice, notice_key and can_retry. |
-| `online.profile(): table` | query | table | The player's online profile: name, named, icon, wins, losses and draft. |
+| `online.profile(): table` | query | table | The player's online profile: name, named, icon, wins, losses, draft and relay_only. |
 | `online.icons(): table` | query | table | The icons a profile can pick: id and label_key. |
 | `online.list(): table` | query | table | The room list: state, error, error_key, total and the rooms matching the filter (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, joinable). |
 | `online.modes(): table` | query | table | The game modes: id, label_key, description_key, short_key, available and selected. |
@@ -994,6 +997,7 @@ UI API version: **0.17.0**.
 | `online.set_name_draft(value: string): boolean, string?` | action | yes/no | Replaces the name being typed on the profile screen. |
 | `online.save_name(): boolean` | action | yes/no | Keeps the typed name as the profile's. |
 | `online.set_icon(id: string): boolean, string?` | action | yes/no | Changes the profile's icon. |
+| `online.set_relay_only(on: boolean): boolean, string?` | action | yes/no | Connects the next rooms through the server's relay only, or directly when possible. |
 | `online.retry(): boolean` | action | yes/no | Asks again for the room last asked for, after a failure. |
 | `online.dismiss(): boolean` | action | yes/no | Clears the notice, the quick match's answer and a closed room. |
 | `online.set_sample(on: boolean): boolean, string?` | action | yes/no | Switches to the sample rooms and back. |
