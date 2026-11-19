@@ -7,8 +7,9 @@ namespace dwe::app {
 namespace {
 
 // The console commands the developer menu's pages write (ui/dev_menu/logic.lua).
-constexpr std::array<std::string_view, 8> MenuCommands{
-    "give_item", "story_set", "partner_set", "clock_speed", "evolve", "warp", "sleep", "toilet"};
+constexpr std::array<std::string_view, 9> MenuCommands{"give_item",   "story_set", "partner_set",
+                                                       "clock_speed", "evolve",    "learn_all",
+                                                       "warp",        "sleep",     "toilet"};
 
 constexpr std::string_view ArgumentOpen = "(\"";
 constexpr std::string_view ArgumentClose = "\")";

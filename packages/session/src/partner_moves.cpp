@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cstddef>
 #include <format>
+#include <optional>
+#include <string>
 #include <utility>
 
 namespace dwe::session {
@@ -108,6 +110,20 @@ core::Result<PartnerMoves> partnerMovesFromYaml(const YamlNode& node) {
     }
   }
   return reader.finish(std::move(moves), messages::PartnerMovesStateText);
+}
+
+std::vector<std::string> learnableMoves(const assets::DigimonRow& species,
+                                        const game::battle::MoveCatalog& catalog) {
+  std::vector<std::string> moves;
+  for (const std::optional<std::string>& move : species.moves) {
+    if (!move || std::ranges::contains(moves, *move)) {
+      continue;
+    }
+    if (const auto ref = catalog.find(*move); ref && catalog.at(*ref).learnable) {
+      moves.push_back(*move);
+    }
+  }
+  return moves;
 }
 
 bool learn(PartnerMoves& moves, std::string_view move) {

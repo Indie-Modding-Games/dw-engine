@@ -1,11 +1,13 @@
 -- The developer menu (docs/modules/apps/game.md, «Developer tools»): F2 opens it over a
 -- game while the developer tools option is on. Each entry runs console lines with
 -- ui.send("dev_menu_run", line) (the game runs only the commands this menu offers), opens a page,
--- or sends the game menu's quick_save. The game publishes the lists it picks from:
+-- or sends the game menu's quick_save. The first page has a slot more than a list's page. The game
+-- publishes the lists it picks from:
 -- dev_menu.<list>.count and dev_menu.<list>.<n>.id/.name (from 0) for the lists items, species
 -- and maps (the maps the adventure visited). dev_menu_close closes it.
 
 local PageSize = 8
+local Slots = 9
 local Amounts = { 1, 10, 99 }
 
 local page_name = "main"
@@ -39,6 +41,11 @@ local Pages = {
       { label = "dev_menu.stats", page = "stats" },
       { label = "dev_menu.care", page = "care" },
       { label = "dev_menu.evolve", page = "species" },
+      {
+        label = "dev_menu.techniques",
+        done = "dev_menu.techniques_done",
+        lines = { 'learn_all("")' },
+      },
       { label = "dev_menu.warp", page = "maps" },
       { label = "dev_menu.save", send = "quick_save" },
     },
@@ -142,6 +149,9 @@ local function entry_of(slot)
   if list == nil then
     return Pages[page_name].entries[slot]
   end
+  if slot > PageSize then
+    return nil
+  end
   local index = (list_page - 1) * PageSize + slot - 1
   if index >= list_count() then
     return nil
@@ -163,7 +173,7 @@ local function refresh(document)
   local list = Lists[page_name]
   local title = list ~= nil and list.title or Pages[page_name].title
   document:get("title"):set_text(t(title))
-  for slot = 1, PageSize do
+  for slot = 1, Slots do
     local entry = entry_of(slot)
     local element = document:get("entry-" .. slot)
     element:set_class("hidden", entry == nil)
@@ -208,7 +218,8 @@ function choose(document, slot)
     return
   end
   run(entry.line ~= nil and { entry.line } or entry.lines)
-  document:get("done"):set_text(t("dev_menu.done", { what = label_of(entry) }))
+  local done = entry.done ~= nil and t(entry.done) or t("dev_menu.done", { what = label_of(entry) })
+  document:get("done"):set_text(done)
 end
 
 function next_amount(document)

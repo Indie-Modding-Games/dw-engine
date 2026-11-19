@@ -1359,8 +1359,8 @@ paquetes (`DWE_PACKAGE`) y encendido en las compilaciones de desarrollo; `--tuni
 
 El menú de desarrollo (`ui/dev_menu`, `DevMenuScreen`) es un menú modal sobre la partida que solo escribe líneas de
 consola: dar objetos (de 1, 10 o 99), fijar el dinero, la velocidad del reloj, las estadísticas, los cuidados
-(felicidad, disciplina, cansancio, errores, dormir, baño), hacer evolucionar, viajar a un mapa ya visitado y
-guardar (con el `quick_save` del menú de pausa). Las listas (objetos, especies, mapas) salen de las tablas del jugador con sus claves de nombre
+(felicidad, disciplina, cansancio, errores, dormir, baño), hacer evolucionar, aprender todas las técnicas, viajar a un
+mapa ya visitado y guardar (con el `quick_save` del menú de pausa). Las listas (objetos, especies, mapas) salen de las tablas del jugador con sus claves de nombre
 (`dev_menu.<lista>.count`, `.N.id`, `.N.name`). La de evolucionar es la de todas las especies con modelo
 (`EvolutionAdapter::cheatTargets`, `EvolutionTables::cheatTargets`), en el orden de la tabla: las formas de compañero,
 las especiales (virus, de objeto o evento, las Mega que añada un conjunto de reglas) y también los enemigos, los jefes y
@@ -1394,11 +1394,20 @@ están encendidas y la orden es de las que ofrece el menú (`devMenuLineAllowed`
 
 - `warp("<mapa> [salida]")`: cambia de mapa como un guion (`startScriptedMapChange`), con la salida 0 si no se da.
 - `partner_set("happiness <n>")` y `partner_set("tiredness <n>")`, de 0 a 100.
+- `learn_all("")` (la entrada Técnicas del menú, que luego dice que está hecho): el compañero aprende todas las técnicas
+  que puede aprender su especie actual (`BattleAdapter::learnAllMoves`, `session::learnableMoves`): los ataques de la
+  lista de su especie que el catálogo marca como aprendibles (por debajo de 0x3A, como los enseñan `battleMoveLearning`
+  y `TRN_tryLearnMove`), así que nunca su final ni una técnica que anima otra especie. Cada una se aprende como la
+  enseña `learnMove` (`dynamite_kick` trae su pareja), en la misma lista de aprendidas, así que salen en la lista de
+  técnicas, se pueden equipar, se guardan y siguen tras las evoluciones como cualquier aprendida. Repetirlo no enseña
+  nada nuevo; no hay forma de deshacerlo. Con los datos del original Agumon acaba con 7 aprendidas y Gabumon con 8.
 
 Pruebas: `dev_tools_tests.cpp` (qué líneas acepta el menú y cómo publica sus listas), `tables_tests.cpp` y
 `evolution_adapter_tests.cpp` (la lista de evolucionar tiene todas las especies con modelo y cada una evoluciona),
 `game_table_tests.cpp` (el orden de los sustitutos), `species_tests.cpp` (los cuidados prestados),
-`partner_clip_fallbacks_tests.cpp` (los clips sustitutos), `battle_adapter_tests.cpp` (los ataques prestados), `partner_set_command_tests.cpp`
+`partner_clip_fallbacks_tests.cpp` (los clips sustitutos), `battle_adapter_tests.cpp` (los ataques prestados;
+`learn_all`: el conjunto aprendible, una vez, equipado y guardado, y los dos compañeros iniciales con el contenido
+extraído), `dev_menu_tests.cpp` (la entrada Técnicas en todos los aspectos e idiomas), `partner_set_command_tests.cpp`
 y la ruta `route-dev-menu.yaml` (F2, dinero, un objeto, y con la opción apagada F2 no abre nada).
 
 ## Barras de reclutamiento

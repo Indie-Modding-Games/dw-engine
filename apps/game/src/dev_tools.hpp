@@ -19,8 +19,8 @@ inline constexpr bool DevToolsDefault = true;
 inline constexpr std::string_view DevMenuRunCommand = "dev_menu_run";
 
 // Whether the developer menu may run a console line: a single call, name("argument"), of one of
-// the commands the menu offers (give_item, story_set, partner_set, clock_speed, evolve, warp,
-// learn_move, sleep, toilet), so a document cannot run any other code through it.
+// the commands the menu offers (give_item, story_set, partner_set, clock_speed, evolve, learn_all,
+// warp, sleep, toilet), so a document cannot run any other code through it.
 [[nodiscard]] bool devMenuLineAllowed(std::string_view line);
 
 } // namespace dwe::app
