@@ -8,6 +8,7 @@ struct MapDocument;
 
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <vector>
 
 namespace dwe::ui {
@@ -33,9 +34,12 @@ struct MinimapGrid {
 
 // The minimap grid of a map: cells with the blocked bit are walls, warp triggers (110 + exit) whose
 // warp leads to a map are exits, and every other cell is floor (map_collision.c, tamer.c:
-// checkMapInteraction). The grid covers the map's 100 x 100 collision cells in world space, cell
-// (column, row) starting at ((column - 50) * 100, (row - 50) * 100).
-[[nodiscard]] MinimapGrid minimapGridOf(const assets::MapDocument& map);
+// checkMapInteraction). `stepExits` are the step triggers (51-79) whose script changes the map
+// when the player steps on them, as gias00's south edge (section 51: warp_to): exits too. The grid
+// covers the map's 100 x 100 collision cells in world space, cell (column, row) starting at
+// ((column - 50) * 100, (row - 50) * 100).
+[[nodiscard]] MinimapGrid minimapGridOf(const assets::MapDocument& map,
+                                        std::span<const std::int32_t> stepExits = {});
 
 // The part of the grid the minimap image shows and how it maps to the world.
 struct MinimapLayout {

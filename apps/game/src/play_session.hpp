@@ -433,7 +433,8 @@ private:
   // The shop job's progress bar (shop_job_bar.hpp), published when what it shows changed.
   void publishShopJob();
   // Publishes hud.minimap_allowed when it changes.
-  // Draws the minimap of the map's collision again (after a preview swapped it in place).
+  // Draws the minimap of the map's collision and of the step cells that change the map now again
+  // (on entering a map, after a preview swapped it in place or a trigger changed those cells).
   void refreshMinimap();
   void publishMinimapAllowed(const MinimapScene& scene);
   // The enemies the minimap marks now: none while minimap_enemies is off.
@@ -525,6 +526,8 @@ private:
   FishingScreen fishingScreen_;
   CurlingScreen curlingScreen_;
   std::uint32_t mapSerial_ = 0;
+  // The step cells the minimap paints as exits (Field::stepExits when it was last drawn).
+  std::vector<std::int32_t> minimapStepExits_;
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;
   bool evolutionRanLastFrame_ = false;

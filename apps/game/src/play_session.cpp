@@ -40,6 +40,7 @@
 #include <optional>
 #include <ranges>
 #include <set>
+#include <span>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -1735,7 +1736,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (scene_->mapSerial() != mapSerial_) {
     mapSerial_ = scene_->mapSerial();
     scene_->showExtraToilets();
-    ui.setMinimap(ui::minimapGridOf(scene_->map()), scene_->mapNameKey());
+    refreshMinimap();
     fishingScreen_.enterMap(*scene_, scene_->field().mapId());
     if (const auto& change = scene_->lastMapChange(); change && autotest != nullptr) {
       autotest->mapChanged(*change);
@@ -1839,6 +1840,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   }
   if (guardFactsChanged) {
     scene_->refreshScriptWarps();
+    if (!std::ranges::equal(scene_->field().stepExits(), minimapStepExits_)) {
+      refreshMinimap();
+    }
   }
 
   // clock.c: renderGameClock slides the clock and the bars off the screen whenever game time stands
@@ -1924,7 +1928,9 @@ std::vector<ui::MinimapMarker> PlaySession::minimapEnemyMarkers() {
 }
 
 void PlaySession::refreshMinimap() {
-  context_.ui->setMinimap(ui::minimapGridOf(scene_->map()), scene_->mapNameKey());
+  const std::span<const std::int32_t> stepExits = scene_->field().stepExits();
+  minimapStepExits_.assign(stepExits.begin(), stepExits.end());
+  context_.ui->setMinimap(ui::minimapGridOf(scene_->map(), stepExits), scene_->mapNameKey());
 }
 
 std::vector<ui::MinimapMarker> PlaySession::minimapItemMarkers() const {
