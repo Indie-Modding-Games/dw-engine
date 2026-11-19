@@ -136,7 +136,8 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
   if (play.withoutSaving) {
     eraseAutosavesWithoutSlot(files, options, keepsSaves);
   }
-  GameStart start{.storage = (play.withoutSaving || play.networkSaveText)
+  // A co-op guest's game has no slots either: it never writes the guest's saves.
+  GameStart start{.storage = (play.withoutSaving || play.coopGuest())
                                  ? nullptr
                                  : saveStorageFor(options, keepsSaves),
                   .session = nullptr,

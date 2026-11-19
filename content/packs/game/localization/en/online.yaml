@@ -173,6 +173,8 @@ cancel: "Cancel"
 # The co-op game's notices.
 coop.disconnected: "{name} disconnected."
 coop.host_left: "The host closed the room. You are back at the menu."
+# A guest's game is the host's world in memory: nothing of it is saved (multiplayer.md, "Saves in co-op").
+coop.guest_not_saved: "You are a guest: this game is not saved. Your own saves stay as they were."
 # The names of the sample rooms and players (developer tools).
 sample.room_1: "Saturday adventure"
 sample.room_2: "Easy exploring"

@@ -359,6 +359,35 @@ cliente descarte comandos pendientes al reconciliar su vista. Una `Action` fiabl
 conserva los ids procesados durante la sesión y responde con el mismo resultado a un reintento. Al reconectar empieza
 una sesión nueva con otro identificador; no se reenvían acciones pendientes de la sesión vieja.
 
+### 5.6 Guardado en cooperativo
+
+El cooperativo nunca cambia ni rompe las partidas guardadas de un jugador de ninguno de los dos. La regla:
+
+- **Solo una partida que arranca la sala es cooperativa.** El arranque del anfitrión (su propio guardado, elegido para
+  la sala) y el del invitado (el mundo del anfitrión) se unen a la sala. Una partida cargada desde la portada con una
+  sala todavía abierta sigue siendo de un jugador: el invitado no se añade y no envía nada (`PlayStart::coop`,
+  `PlaySession::coopGame`).
+- **El anfitrión guarda su propia partida, como partida de un jugador.** El guardado rápido, la máquina de guardado y
+  el autoguardado escriben la ranura del anfitrión como siempre. Nada del invitado llega a ese guardado: el cuerpo y
+  el compañero del invitado solo existen en el campo y ninguna sección del guardado los lee. Un guardado que el
+  anfitrión escribe en cooperativo es el mismo archivo que escribiría jugando solo, y se carga en un jugador como
+  cualquier otro.
+- **El invitado no guarda nada.** Su partida es una copia del mundo del anfitrión en memoria, con el compañero del
+  invitado. No tiene almacenamiento de guardado (ni autoguardado, ni guardado rápido, ni máquina de guardado) y la
+  copia no nombra ninguna ranura (`hostWorldWithGuestPartner`), así que nada puede tomar como propia una ranura del
+  disco del invitado. El guardado propio del invitado solo se lee, para enviar su compañero. El guardar del menú de
+  pausa lo avisa, su salir cierra sin guardar y un aviso lo dice al empezar la partida
+  (`online.coop.guest_not_saved`, `save.coop_guest`, `save.coop_guest_quit_confirm`).
+- **Salir, desconectarse o un cierre inesperado no cambian nada en disco.** El invitado no ha escrito nada; la ranura
+  del anfitrión guarda su último guardado, que nunca tuvo estado del invitado.
+
+Lo que gana el invitado todavía no vuelve a su propia partida (decisión 4 de §6, fase C4).
+
+Pruebas: `packages/session/tests/coop_saves_tests.cpp` (el guardado del anfitrión con un invitado en el campo es el
+guardado de un jugador y se carga en el lugar del anfitrión), `apps/game/tests/coop_guest_profile_tests.cpp` (la copia
+del invitado no nombra ranura) y `apps/game/tests/app_flow_tests.cpp` (la partida del invitado nunca se guarda en una
+ranura; solo las partidas de la sala son cooperativas).
+
 ## 6. Decisiones de juego (pendientes)
 
 | # | Pregunta | Recomendación | Alternativa |

@@ -23,7 +23,7 @@ extractCoopGuestPartnerProfile(std::string_view saveText);
 
 // Builds the guest's local presentation save from the host's world/save, replacing only the
 // companion section with the guest's companion. Neither guest world progress nor host files enter
-// this result.
+// this result, and it names no save slot: the guest's game is played in memory and never saved.
 [[nodiscard]] core::Result<std::string> hostWorldWithGuestPartner(std::string_view hostSaveText,
                                                                   std::string_view guestSaveText);
 

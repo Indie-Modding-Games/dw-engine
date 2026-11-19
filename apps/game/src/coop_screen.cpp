@@ -267,6 +267,9 @@ void CoopScreen::completeRemoteStart() {
     return;
   }
   remoteStartText_ = std::move(*combined);
+  // One game per JoinState: once the link comes back from the game, the same state must not start
+  // the host's world again (after the host left, that game would come back over the title).
+  remoteJoinState_.reset();
   connection_.markRoomPlaying();
 }
 
@@ -392,6 +395,9 @@ void CoopScreen::leave() {
   localError_.clear();
   guestSaveText_.reset();
   hostSaveText_.reset();
+  // A start the room had prepared goes with it.
+  remoteJoinState_.reset();
+  remoteStartText_.reset();
   publish();
 }
 

@@ -1739,6 +1739,10 @@ int runGame(const Options& requested) {
                           .modeId = std::nullopt,
                           .networkSaveText = std::move(*networkSave)};
           startPlaying(start);
+          if (flow.playing() != nullptr) {
+            // The guest plays the host's world and saves nothing: its own saves stay as they were.
+            coopHud.notice(CoopGuestNotSavedText);
+          }
         }
       }
       if (flow.playing() != nullptr || !title.landing()) {
@@ -1779,7 +1783,10 @@ int runGame(const Options& requested) {
       }
       if (play == nullptr)
         coopAttachFailed = nullptr;
-      if (play != nullptr && coop.connected() && coopBridge == nullptr && coop.link() != nullptr) {
+      // Only a game the room started joins it: a single-player game loaded while a room is still
+      // open stays single-player (multiplayer.md, "Saves in co-op").
+      if (play != nullptr && play->coopGame() && coop.connected() && coopBridge == nullptr &&
+          coop.link() != nullptr) {
         if (coop.isHost()) {
           if (coopHostController == nullptr) {
             // The registry owns the guest's controller for the whole run; a later bridge (another
@@ -2120,6 +2127,8 @@ int runGame(const Options& requested) {
       }
       if (flow.playing() == nullptr && title.handle(command)) {
         if (const auto start = title.takeStart()) {
+          // The host's own save, picked for the room's start: that game is the co-op one.
+          bool hostsCoop = false;
           if (coop.selectingGuestProfile() || coop.selectingHostStart()) {
             if (!start->load) {
               coop.reportError("choose_saved_game");
@@ -2150,12 +2159,14 @@ int runGame(const Options& requested) {
               title.show();
               continue;
             }
+            hostsCoop = true;
           }
           if (start->load) {
             // Give the shared save indicator time to render and animate before the synchronous
             // save read starts blocking this loop.
             loadingIndicator = true;
             loadAfterIndicator = *start;
+            loadAfterIndicator->coopHost = hostsCoop;
             loadingIndicatorSeconds = 0.0;
             (*ui)->setSetting(SaveIndicatorTextSetting, std::string{LoadingText});
             (*ui)->setSetting(SaveIndicatorOpacitySetting, 1.0);

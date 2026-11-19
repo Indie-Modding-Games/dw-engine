@@ -36,6 +36,15 @@ struct PlayStart {
   // A cooperative guest starts from the host's shared world in memory; this text is never written
   // into the guest's local save slots.
   std::optional<std::string> networkSaveText = std::nullopt;
+  // The host's own save, loaded by the co-op room's start: played with the guest in it and saved as
+  // the single-player game it is (docs/architecture/multiplayer.md, "Saves in co-op").
+  bool coopHost = false;
+
+  // A co-op guest's game: the host's world, played without saving anything.
+  [[nodiscard]] bool coopGuest() const { return networkSaveText.has_value(); }
+  // A game the co-op room started. Only these join the room: any other game stays single-player,
+  // even with a room still open.
+  [[nodiscard]] bool coop() const { return coopHost || coopGuest(); }
 
   friend bool operator==(const PlayStart&, const PlayStart&) = default;
 };
@@ -66,7 +75,8 @@ public:
     if (!started) {
       return std::unexpected{started.error()};
     }
-    if (start.saveTo) {
+    // A co-op guest's game is never written, not even to a slot it was handed.
+    if (start.saveTo && !start.coopGuest()) {
       if (auto saved = (*started)->saveTo(*start.saveTo); !saved) {
         saveFailed_ = true;
         return saved;
