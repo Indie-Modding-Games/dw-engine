@@ -248,6 +248,12 @@ void EffectRunner::noteHit(std::size_t slot) {
   }
 }
 
+void EffectRunner::releaseTouch(FighterId fighter) {
+  for (Slot& slot : slots_) {
+    std::erase(slot.hitTargets, fighter);
+  }
+}
+
 // BTL_stopEFESounds only ever looks at the first entry (it never moves its pointer); the runner
 // stops them all, so no held sound outlives the battle.
 void EffectRunner::stopAll() {

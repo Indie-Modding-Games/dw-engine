@@ -483,6 +483,93 @@ TEST_CASE("the hit chance: low levels always hit, a block stops all but a finish
   CHECK(bench.strategies.damage->hitChance(context.view(), PartnerId, 1, punch).percent < 100);
 }
 
+namespace {
+
+// One battle frame of the hits, in the loop's order (BTL_tickAttackHits takes the touches of the
+// frame before, then the effects touch again): the events it brings.
+BattleEvents hitFrame(Bench& bench) {
+  bench.events.clear();
+  BattleContext context = bench.context();
+  tickAttackHits(context);
+  tickAttacksInFlight(context);
+  return bench.events;
+}
+
+std::int32_t countOf(const BattleEvents& events, EventKind kind) {
+  return static_cast<std::int32_t>(std::ranges::count(events, kind, &BattleEvent::kind));
+}
+
+// A punch whose effect checks its line on attack frames 10 to 13 (Dynamite Kick's apply_line_hit),
+// about to touch the enemy for the first time.
+AttackInFlight kickOnEnemy(const Bench& bench) {
+  return {.attacker = PartnerId,
+          .defender = 1,
+          .move = Bench::move("punch"),
+          .origin = bench.state.fighters.at(PartnerId).position,
+          .framesLeft = 0,
+          .age = 10,
+          .clip = std::nullopt,
+          .hitPoint = std::nullopt,
+          .touch = std::nullopt,
+          .facingTarget = {},
+          .aim = std::nullopt,
+          .laterContacts = {11, 12, 13},
+          .contacted = false};
+}
+
+} // namespace
+
+TEST_CASE("an effect that checks over several frames touches a fighter that blocked it again") {
+  // battle_main.c: BTL_tickAttackHits: a block clears the fighter's isHit and holds it 3 frames, so
+  // the next check of the same effect touches it again. In the original's sweep (the enemy's block
+  // flag cleared every frame) Dynamite Kick blocked at its first contact for 97 and hit at the
+  // next for 446: 543 (measured 3 times, 2026-11-19).
+  Bench bench{duel(evenStats(500, 200), evenStats(5000, 200))};
+  bench.fighter(1).combatant.level = 4;
+  bench.fighter(1).blocking = true;
+  bench.state.inFlight.push_back(kickOnEnemy(bench));
+  CHECK(countOf(hitFrame(bench), EventKind::AttackLanded) == 1);
+  // The block takes the first touch and the effect touches again on the next frame.
+  BattleEvents events = hitFrame(bench);
+  CHECK(countOf(events, EventKind::AttackBlocked) == 1);
+  CHECK(countOf(events, EventKind::AttackLanded) == 1);
+  const std::int32_t chip = bench.fighter(1).pendingDamage;
+  CHECK(chip > 0);
+  // Still blocking within its 3 frames: blocked again, without damage, and held 3 more.
+  CHECK(bench.fighter(1).invulnerableFrames == 3);
+  bench.fighter(1).invulnerableFrames = 1;
+  events = hitFrame(bench);
+  CHECK(countOf(events, EventKind::AttackHit) == 0);
+  CHECK(bench.fighter(1).invulnerableFrames == 3);
+  CHECK(bench.fighter(1).pendingDamage == chip);
+  // The sweep's guard down (nothing left to dodge with): the last contact hits in full.
+  bench.fighter(1).blocking = false;
+  bench.fighter(1).speedReserve = 0;
+  events = hitFrame(bench);
+  REQUIRE(countOf(events, EventKind::AttackHit) == 1);
+  CHECK(bench.fighter(1).pendingDamage > chip * 3);
+  CHECK(bench.state.inFlight.empty());
+}
+
+TEST_CASE("an effect's later contacts pass by a fighter still in its hit reaction") {
+  // battle_effect.c: BTL_applyLineAttackHit skips a fighter whose isHit is set: after a hit the
+  // effect's later checks find nobody, and no miss shows.
+  Bench bench{duel(evenStats(500, 200), evenStats(5000, 200))};
+  bench.fighter(1).combatant.level = 1;
+  bench.state.inFlight.push_back(kickOnEnemy(bench));
+  static_cast<void>(hitFrame(bench));
+  BattleEvents events = hitFrame(bench);
+  REQUIRE(countOf(events, EventKind::AttackHit) == 1);
+  const std::int32_t damage = bench.fighter(1).pendingDamage;
+  for (int frame = 0; frame < 3; ++frame) {
+    events = hitFrame(bench);
+    CHECK(countOf(events, EventKind::AttackLanded) == 0);
+    CHECK(countOf(events, EventKind::AttackMissed) == 0);
+  }
+  CHECK(bench.fighter(1).pendingDamage == damage);
+  CHECK(bench.state.inFlight.empty());
+}
+
 TEST_CASE("pending damage drains in the original's steps") {
   Bench bench{duel(evenStats(5000, 100), evenStats(500, 100))};
   bench.fighter(PartnerId).pendingDamage = 1100;
@@ -1152,7 +1239,9 @@ TEST_CASE("with the original's rolls a hit draws its spark after the damage roll
                                          .hitPoint = std::nullopt,
                                          .touch = std::nullopt,
                                          .facingTarget = {},
-                                         .aim = std::nullopt});
+                                         .aim = std::nullopt,
+                                         .laterContacts = {},
+                                         .contacted = false});
     BattleContext context = sparks ? bench.originalContext() : bench.context();
     tickAttackHits(context);
     return std::pair{bench.random, bench.fighter(1).pendingDamage};
