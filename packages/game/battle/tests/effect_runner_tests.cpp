@@ -19,6 +19,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -993,13 +994,47 @@ constexpr std::string_view LineCheck = R"(- at: "0x0218"
     unused: "&base+0x0024"
 )";
 
+// The breath's pushes and box check (after l_0200's label), and the same box asked through
+// BTL_findHitEntity (found, mode 0, extent), which only says whether someone not hit yet is in it.
+constexpr std::string_view BoxPushes = R"(  op: push_address
+  address: "base+0x0020"
+- at: "0x0210"
+  op: push_address
+  address: "base+0x0000"
+- at: "0x0220"
+  op: sub
+  sub: check_collision
+  args:
+    extent: "&base+0x0020"
+    hit: "&base+0x0000"
+)";
+constexpr std::string_view FindCheck = R"(  op: push_address
+  address: "base+0x0000"
+- at: "0x0208"
+  op: push_immediate
+  value: 0
+- at: "0x0210"
+  op: push_address
+  address: "base+0x0020"
+- at: "0x0220"
+  op: sub
+  sub: find_hit_entity
+  args:
+    found: "&base+0x0000"
+    mode: 0
+    extent: "&base+0x0020"
+)";
+
 // The made-up breath with its instance at the origin and a check box of no size (the instance's
 // place at instance+4 and the extent at base+0x20, which the breath leaves unset); with `line`, its
-// check is a line to the source instead.
-EffectScript placedBreath(bool line = false) {
+// check is a line to the source instead, or the box asked through find_hit_entity.
+enum class BreathCheck : std::uint8_t { Box, Line, Find };
+EffectScript placedBreath(BreathCheck check) {
   std::string checked{ScriptYaml};
-  if (line) {
+  if (check == BreathCheck::Line) {
     checked.replace(checked.find(BoxCheck), BoxCheck.size(), LineCheck);
+  } else if (check == BreathCheck::Find) {
+    checked.replace(checked.find(BoxPushes), BoxPushes.size(), FindCheck);
   }
   const std::string script = checked + R"(- at: "0x0014"
   kind: variable
@@ -1040,7 +1075,7 @@ TEST_CASE("touching bodies, an effect's box check hits a fighter in reach and no
     const StandingPair bodies{defenderX, Wide};
     runner.setBodies(bodies);
     runner.touchBodies(true);
-    const std::size_t slot = runner.load(placedBreath());
+    const std::size_t slot = runner.load(placedBreath(BreathCheck::Box));
     runner.start(slot, 0, 1);
     sounds.log.clear();
     runner.tick();
@@ -1059,6 +1094,29 @@ TEST_CASE("touching bodies, an effect's box check hits a fighter in reach and no
   }
 }
 
+TEST_CASE("find_hit_entity says whether its box touches a fighter, marking nobody, live or "
+          "touching bodies") {
+  for (const auto& [defenderX, finds, probe] :
+       {std::tuple{0, true, true}, std::tuple{FarOff, false, true}, std::tuple{0, true, false},
+        std::tuple{FarOff, false, false}}) {
+    RecordingSounds sounds;
+    EffectRunner runner{sounds};
+    const StandingPair bodies{defenderX, Wide};
+    runner.setBodies(bodies);
+    // Live too: it decides no hit, so every one of Drill Spin's rocks ends on reaching its target.
+    runner.touchBodies(probe);
+    const std::size_t slot = runner.load(placedBreath(BreathCheck::Find));
+    runner.start(slot, 0, 1);
+    sounds.log.clear();
+    runner.tick();
+    // battle_main.c: BTL_findHitEntity: the same box as check_collision; the hit is left to the
+    // script (a flight probe now lands on these effects instead of falling back to its speed).
+    CHECK(runner.touched().empty());
+    CHECK((sounds.log ==
+           std::vector<Recorded>{{"play", 16}, {"stop", RecordingSounds::HeldVoice}}) == finds);
+  }
+}
+
 TEST_CASE("touching bodies, a line check hits the fighter on its body toward the source") {
   RecordingSounds sounds;
   EffectRunner runner{sounds};
@@ -1067,7 +1125,7 @@ TEST_CASE("touching bodies, a line check hits the fighter on its body toward the
   const StandingPair bodies{500, 50};
   runner.setBodies(bodies);
   runner.touchBodies(true);
-  const std::size_t slot = runner.load(placedBreath(true));
+  const std::size_t slot = runner.load(placedBreath(BreathCheck::Line));
   runner.start(slot, 0, 1);
   runner.tick();
   // BTL_applyLineAttackHit registers the hit at BTL_calculateAttackHitPosition: the defender's
@@ -1082,7 +1140,7 @@ TEST_CASE("a scripted flight lands on the frame the move's effect touches the de
     if (move != "made_up_breath") {
       return std::nullopt;
     }
-    return placedBreath();
+    return placedBreath(BreathCheck::Box);
   };
   const StandingPair near{0, Wide};
   const StandingPair far{FarOff, Wide};
@@ -1107,7 +1165,7 @@ TEST_CASE("a scripted flight aimed at one fighter touches a bystander in its rea
     if (move != "made_up_breath") {
       return std::nullopt;
     }
-    return placedBreath();
+    return placedBreath(BreathCheck::Box);
   };
   const StandingPair inReach{FarOff, Wide, 0};
   const StandingPair offToo{FarOff, Wide, FarOff};
@@ -1725,7 +1783,7 @@ bool lineTouches(std::array<std::int32_t, 2> source, std::array<std::int32_t, 2>
   const PlacedPair bodies{source, defender, size};
   runner.setBodies(bodies);
   runner.touchBodies(true);
-  const std::size_t slot = runner.load(placedBreath(true));
+  const std::size_t slot = runner.load(placedBreath(BreathCheck::Line));
   runner.start(slot, 0, 1);
   runner.tick();
   return !runner.touched().empty();

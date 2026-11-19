@@ -124,6 +124,8 @@
 			<p class="charge-hint"><span class="key" id="prompt-charge"></span><span text-key="battle.charge_hint"></span></p>
 		</div>
 
+		<div id="charge-gauge" class="hidden" onclick="charge()"><div id="charge-gauge-bars"><div id="cg-0" class="cg-bar hidden"></div><div id="cg-1" class="cg-bar hidden"></div><div id="cg-2" class="cg-bar hidden"></div><div id="cg-3" class="cg-bar hidden"></div><div id="cg-4" class="cg-bar hidden"></div><div id="cg-5" class="cg-bar hidden"></div><div id="cg-6" class="cg-bar hidden"></div><div id="cg-7" class="cg-bar hidden"></div><div id="cg-8" class="cg-bar hidden"></div><div id="cg-9" class="cg-bar hidden"></div></div></div>
+
 		<p id="revive" class="original-look hidden"></p>
 
 		<div id="match-clock" class="hidden"><div id="mc-side-1" class="mc-side"></div><div id="mc-side-2" class="mc-side"></div><div id="mc-d-0" class="mc-digit hidden"></div><div id="mc-d-1" class="mc-digit hidden"></div></div>

@@ -284,6 +284,27 @@ local function focus_command(document)
   end
 end
 
+-- The charge gauge over the partner while the finisher's aura lasts (command_menu.c:
+-- BTL_renderFinisherChargeup; battle.finisher().gauge): its top-left corner in percent of the
+-- window and a bar for every 8 of the charge, up to 10. The looks that keep the charge box hide it.
+local charge_gauge_bars = 10
+local charge_per_bar = 8
+
+local function draw_finisher_gauge(document)
+  local finisher = battle.finisher()
+  local gauge = finisher.gauge
+  set_class(document, "charge-gauge", "hidden", gauge == nil)
+  if gauge == nil then
+    return
+  end
+  set_property(document, "charge-gauge", "left", gauge.x .. "%")
+  set_property(document, "charge-gauge", "top", gauge.y .. "%")
+  local bars = math.min(charge_gauge_bars, math.floor(finisher.charge / charge_per_bar))
+  for index = 0, charge_gauge_bars - 1 do
+    set_class(document, "cg-" .. index, "hidden", index >= bars)
+  end
+end
+
 local function draw_finisher(document)
   local finisher = battle.finisher()
   local progress, goal = finisher.progress, finisher.goal
@@ -306,6 +327,7 @@ local function draw_finisher(document)
   lookup(document, "finisher"):set_class("ready", ready)
   lookup(document, "charge"):set_class("hidden", not finisher.charging)
   document:get("charge-fill"):set_property("width", math.min(100, finisher.charge) .. "%")
+  draw_finisher_gauge(document)
 end
 
 local function draw_revive(document, state)
@@ -1308,6 +1330,7 @@ on("battle.overlays", function(document)
   draw_hp_bars(document)
   draw_player_marks(document)
   draw_death_countdown(document)
+  draw_finisher_gauge(document)
 end)
 on("battle.shout", draw_shout)
 on("battle.speed", draw_speed)

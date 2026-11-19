@@ -87,6 +87,11 @@ moves:
   learned_together:
     - [dynamite_kick, dynamite_kick_48]
     - [horizontal_kick, horizontal_kick_57]
+  # utils2.c: entityGetTechFromAnim: a fighter's technique is its species row's move at the clip's slot, but
+  # H-Kabuterimon's clip 0x3C (slot 14) is High Electro Shocker where the row says Electro Shocker. The species table
+  # loads with these, so every fighter of the species (wild, story, cup rival, partner, versus) uses them.
+  slot_techniques:
+    - { species: hkab, slot: 14, move: high_electro_shocker }
 
 # The speed pool (battle_main.c: BTL_increaseSpeedBuffer).
 speed_reserve:

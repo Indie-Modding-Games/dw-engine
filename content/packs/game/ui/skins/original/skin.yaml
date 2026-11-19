@@ -1043,6 +1043,16 @@ sprite_sheets:
     sprites:
       vs-face-60: [32, 224, 16, 16]
       vs-face-64: [160, 224, 16, 16]
+  # The finisher's charge gauge over the partner (command_menu.c: BTL_renderFinisherChargeup; BTLCOMND, palette 2): the
+  # frame, u 0x58 v 0xe0 (here less 192), 46 x 12, and one bar, u 0x88, 4 x 6, drawn every 4 pixels from (3, 3).
+  - name: ow-charge-gauge
+    image: texture/etcdat/btlcomnd
+    palette: 2
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      charge-gauge-frame: [88, 32, 46, 12]
+      charge-gauge-bar: [136, 32, 4, 6]
   # The commands' cursor and the strip frame's pieces (palette 1).
   - name: ow-command-frame
     image: texture/etcdat/btlcomnd

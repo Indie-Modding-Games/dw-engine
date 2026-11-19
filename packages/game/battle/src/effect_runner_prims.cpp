@@ -255,8 +255,10 @@ bool EffectRunner::primOp(Slot& slot, std::string_view name,
     fixedCamera_ = true;
   } else if (name == "restore_camera") {
     fixedCamera_ = false;
-  } else if (name == "get_viewport_distance_2" && !args.empty()) {
-    // battle_effect.c: BTL_getViewportDistance2: the projection distance now in use.
+  } else if ((name == "get_viewport_distance" || name == "get_viewport_distance_2") &&
+             !args.empty()) {
+    // battle_effect.c: BTL_getViewportDistance and BTL_getViewportDistance2: the projection
+    // distance now in use (Confused Storm puts its spiral that far in front of the camera).
     write(slot, args[0], EffectWidth::Int32, fixedCamera_ ? FixedProjection : view_.projection);
   } else if (name == "render_line") {
     if (args.size() >= 7) {

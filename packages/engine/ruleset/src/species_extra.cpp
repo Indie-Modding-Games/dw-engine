@@ -18,6 +18,11 @@ using assets::YamlReader;
 using core::YamlNode;
 
 constexpr std::string_view SpeciesKey = "species";
+// The battle section's moves.slot_techniques (game/battle reads the rest of the section).
+constexpr std::string_view BattleSection = "battle";
+constexpr std::string_view SlotTechniquesKey = "slot_techniques";
+constexpr std::string_view SlotKey = "slot";
+constexpr std::string_view MoveKey = "move";
 // Read by the tournaments (packages/game/tournament: parseExtraPrizes), in the format of
 // tournament.yaml.
 constexpr std::string_view ExtraPrizesKey = "extra_prizes";
@@ -451,6 +456,43 @@ core::Result<SpeciesExtra> readSpeciesExtra(const Ruleset& ruleset) {
   return extra;
 }
 
+core::Result<std::vector<SlotTechnique>> readSlotTechniques(const Ruleset& ruleset) {
+  std::vector<SlotTechnique> techniques;
+  const Section* section = ruleset.section(BattleSection);
+  const YamlNode* moves = section != nullptr ? section->node.find(MovesKey) : nullptr;
+  const YamlNode* list = moves != nullptr ? moves->find(SlotTechniquesKey) : nullptr;
+  if (list == nullptr) {
+    return techniques;
+  }
+  YamlReader reader;
+  for (const YamlNode& item : reader.sequence(*list, SlotTechniquesKey)) {
+    if (!reader.expectKeys(item, SlotTechniquesKey, {SpeciesKey, SlotKey, MoveKey})) {
+      break;
+    }
+    techniques.push_back({.species = reader.text(reader.field(item, SpeciesKey)),
+                          .slot = reader.integer<std::int32_t>(reader.field(item, SlotKey)),
+                          .move = reader.text(reader.field(item, MoveKey))});
+  }
+  return reader.finish(std::move(techniques), section->file);
+}
+
+core::Result<void> applySlotTechniques(std::span<const SlotTechnique> techniques,
+                                       assets::DigimonTable& table) {
+  for (const SlotTechnique& technique : techniques) {
+    const auto row = std::ranges::find(table.digimon, technique.species, &assets::DigimonRow::id);
+    // A table without the species (a test's stand-in, a pack's own roster) has nothing to swap.
+    if (row == table.digimon.end()) {
+      continue;
+    }
+    if (technique.slot < 0 || std::cmp_greater_equal(technique.slot, row->moves.size())) {
+      return std::unexpected{tableError(
+          SlotTechniquesKey, std::format("{} has no move slot {}", row->id, technique.slot))};
+    }
+    row->moves.at(static_cast<std::size_t>(technique.slot)) = technique.move;
+  }
+  return {};
+}
+
 core::Result<void> checkSpeciesExtraSection(const Section& section) {
   SpeciesExtra extra;
   if (section.name == MegaStepSection) {
@@ -616,7 +658,20 @@ loadPatched(const assets::VirtualFileSystem& vfs, const Ruleset& ruleset, std::s
 
 core::Result<assets::DigimonTable> loadPatchedDigimonTable(const assets::VirtualFileSystem& vfs,
                                                            const Ruleset& ruleset) {
-  return loadPatched<assets::DigimonTable>(vfs, ruleset, "digimon", assets::loadDigimonTable);
+  auto table = loadPatched<assets::DigimonTable>(vfs, ruleset, "digimon", assets::loadDigimonTable);
+  if (!table) {
+    return table;
+  }
+  // After the species patches: a row copied from one of these species keeps the row's own move,
+  // as the original swaps the technique by the fighter's type alone.
+  const auto techniques = readSlotTechniques(ruleset);
+  if (!techniques) {
+    return std::unexpected{techniques.error()};
+  }
+  if (auto applied = applySlotTechniques(*techniques, *table); !applied) {
+    return std::unexpected{applied.error()};
+  }
+  return table;
 }
 
 core::Result<assets::RaiseTable> loadPatchedRaiseTable(const assets::VirtualFileSystem& vfs,

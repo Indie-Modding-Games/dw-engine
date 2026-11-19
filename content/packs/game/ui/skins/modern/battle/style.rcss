@@ -178,6 +178,12 @@
 	border-radius: 8dp;
 }
 
+/* The original look's small charge gauge over the partner (#charge-gauge) is not this look's: the box above shows and
+   hides with it. */
+#charge-gauge {
+	display: none;
+}
+
 #charge-title {
 	font-size: 22dp;
 	margin-bottom: 8dp;

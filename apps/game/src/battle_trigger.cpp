@@ -97,7 +97,8 @@ core::Result<MapBattle> mapBattleRequest(const game::field::Field& field,
              .kind = game::battle::BattleKind::Normal,
              .timeLimit = std::nullopt,
              .recruitOnVictory = std::nullopt,
-             .matchMusic = std::nullopt};
+             .matchMusic = std::nullopt,
+             .predefined = false};
   for (const std::size_t index : chosen) {
     if (index >= map.npcs.size()) {
       return core::fail(core::formatMessage(messages::NoMapNpc, field.mapId(), index));
@@ -124,6 +125,26 @@ core::Result<MapBattle> mapBattleRequest(const game::field::Field& field,
 
 void applyFixedFight(session::BattleRequest& request, bool fixedFight) {
   request.scripted = request.scripted || fixedFight;
+}
+
+session::BattleMusicFacts battleMusicFactsOf(const session::BattleRequest& request,
+                                             const assets::DigimonTable* species) {
+  session::BattleMusicFacts facts{.firstEnemy = {},
+                                  .firstEnemyType = std::nullopt,
+                                  .scripted = request.scripted || request.predefined,
+                                  .song = {}};
+  if (request.matchMusic) {
+    facts.song =
+        session::MusicSong{.font = request.matchMusic->font, .track = request.matchMusic->fight};
+  }
+  if (!request.enemies.empty()) {
+    facts.firstEnemy = request.enemies.front().species;
+    const assets::DigimonRow* row = species != nullptr ? species->find(facts.firstEnemy) : nullptr;
+    if (row != nullptr) {
+      facts.firstEnemyType = row->index;
+    }
+  }
+  return facts;
 }
 
 } // namespace dwe::app

@@ -564,6 +564,7 @@ son (b) y no están aquí: son `data/fishing`, que `dwx` extrae del overlay FISH
 | `moves.buff_uses.base` | 1 | a | Término de una fórmula. |
 | `moves.buff_uses.tiers` | 2 tramos | a | Tramos de inteligencia (categoría). |
 | `moves.learned_together` | 2 parejas de técnicas | **b** | Lista por técnica (`learnMove`, utils2.c). Destino: `data/moves` (`learned_with`). |
+| `moves.slot_techniques` | 1 casilla de una especie | **b** | Excepción por especie (`entityGetTechFromAnim`, utils2.c). Destino: `data/digimon` (la casilla de la fila). |
 | `speed_reserve.start` | 100 | a | Valor inicial. |
 | `speed_reserve.cap` | 100 | a | Tope. |
 | `speed_reserve.gain_every_frames` | 2 | a | Temporizador o duración. |

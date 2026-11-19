@@ -16,8 +16,10 @@
 // port and reads its outcome.
 namespace dwe::game::story {
 
-// The original's outcome, as start_battle writes it into a variable: -1, 0 or 1.
-enum class BattleOutcome : std::int8_t { Defeat = -1, Fled = 0, Victory = 1 };
+// The original's outcome, as start_battle writes it into a variable: -1, 0 or 1. NotStarted is
+// dwe's own: the battle could not start (no enemy on the map, a species missing from the content);
+// the story takes it as a flight, never as a win, and logs it as an error.
+enum class BattleOutcome : std::int8_t { Defeat = -1, Fled = 0, Victory = 1, NotStarted = 2 };
 
 // The numbers of the scripted battle, from the ruleset.
 struct StoryBattleRules {
@@ -51,6 +53,9 @@ struct ScriptedBattle {
   // No predefined enemies: the other NPCs on screen may join the touched one (btl.c:
   // handleBattleStart rolls them by the flee table).
   bool joinable = false;
+  // The script named the enemies (IS_PREDEFINED_BATTLE): btl.c: loadBattleData plays the event
+  // battle theme for it.
+  bool predefined = false;
 };
 
 class StoryBattlePort {
@@ -115,7 +120,7 @@ private:
   core::Result<ScriptedBattle> enemies();
   void fightTalkedTo(ScriptedBattle& battle) const;
   TaskStep afterBattle(BattleOutcome outcome);
-  TaskStep afterFlight();
+  TaskStep afterFlight(bool counted);
   [[nodiscard]] bool fixedFight() const;
 
   StoryStatePort* state_;

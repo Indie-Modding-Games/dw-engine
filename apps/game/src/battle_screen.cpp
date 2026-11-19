@@ -508,7 +508,30 @@ void BattleScreen::publishHpBars() {
                                             static_cast<double>(camera->viewportSize().y));
     }
   }
+  // command_menu.c: BTL_initializeFinisherChargeup, BTL_renderFinisherChargeup: the charge gauge
+  // over the partner while its finisher's aura lasts, where the point its species' height and
+  // FinisherGaugeLift over its place showed as the aura started.
+  const bool charging = battle_ && battle_->state().finisher.charging &&
+                        battle_->state().finisher.fighter == game::battle::PartnerId;
+  if (!charging) {
+    finisherGaugeCorner_.reset();
+  } else if (!finisherGaugeCorner_ && camera != nullptr && camera->viewportSize().y > 0.0F) {
+    const game::battle::Fighter& partner = battle_->state().partner();
+    const assets::DigimonRow* row =
+        desc_.species != nullptr ? desc_.species->find(partner.combatant.species) : nullptr;
+    const float lift =
+        static_cast<float>((row != nullptr ? row->height : 0) + screens::FinisherGaugeLift);
+    if (const std::optional<glm::vec2> point =
+            desc_.scene->worldToWindowFraction({static_cast<float>(partner.position.x), lift,
+                                                static_cast<float>(partner.position.z)})) {
+      finisherGaugeCorner_ = screens::finisherGaugeCornerOf(
+          {.x = point->x, .y = point->y}, static_cast<double>(camera->viewportSize().x) /
+                                              static_cast<double>(camera->viewportSize().y));
+    }
+  }
   screens::ScreenSettings settings = screens::settingsOf(bars);
+  std::ranges::move(screens::finisherGaugeSettingsOf(finisherGaugeCorner_),
+                    std::back_inserter(settings));
   std::ranges::move(screens::settingsOf(markers), std::back_inserter(settings));
   std::ranges::move(screens::settingsOf(deathCountdownAnchor_
                                             ? screens::deathCountdownLookOf(*timer)
@@ -1130,21 +1153,7 @@ void BattleScreen::close() {
 }
 
 session::BattleMusicFacts BattleScreen::musicFactsOf(const session::BattleRequest& request) const {
-  session::BattleMusicFacts facts{
-      .firstEnemy = {}, .firstEnemyType = std::nullopt, .scripted = request.scripted, .song = {}};
-  if (request.matchMusic) {
-    facts.song =
-        session::MusicSong{.font = request.matchMusic->font, .track = request.matchMusic->fight};
-  }
-  if (!request.enemies.empty()) {
-    facts.firstEnemy = request.enemies.front().species;
-    const assets::DigimonRow* row =
-        desc_.species != nullptr ? desc_.species->find(facts.firstEnemy) : nullptr;
-    if (row != nullptr) {
-      facts.firstEnemyType = row->index;
-    }
-  }
-  return facts;
+  return battleMusicFactsOf(request, desc_.species);
 }
 
 // The partner's bars tick with the strip (battle_hud.c: BTL_tickPartnerStatusBars reads

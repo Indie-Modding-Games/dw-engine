@@ -11,6 +11,7 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -163,7 +164,27 @@ core::Result<void> applySpeciesExtra(const SpeciesExtra& extra, assets::DigimonT
 core::Result<void> applySpeciesExtra(const SpeciesExtra& extra, assets::RaiseTable& table);
 core::Result<void> applySpeciesExtra(const SpeciesExtra& extra, assets::EvolutionTable& table);
 
+// A move that a species fights with from one slot of its row in place of the row's own
+// (utils2.c: entityGetTechFromAnim gives technique 0x70 for type 0x3C's clip 0x3C).
+struct SlotTechnique {
+  std::string species;
+  std::int32_t slot = 0;
+  std::string move;
+
+  friend bool operator==(const SlotTechnique&, const SlotTechnique&) = default;
+};
+
+// The battle section's moves.slot_techniques; empty for a ruleset without it.
+core::Result<std::vector<SlotTechnique>> readSlotTechniques(const Ruleset& ruleset);
+
+// Puts each move in its species' slot; a species the table lacks is skipped, a slot past the row is
+// an error.
+core::Result<void> applySlotTechniques(std::span<const SlotTechnique> techniques,
+                                       assets::DigimonTable& table);
+
 // The tables a ruleset names by role (digimon, raise, evolution), with its patches applied.
+// The species table also gets its slot techniques, so every fighter of a species (wild, story,
+// cup rival, partner, versus) fights with the same moves.
 core::Result<assets::DigimonTable> loadPatchedDigimonTable(const assets::VirtualFileSystem& vfs,
                                                            const Ruleset& ruleset);
 core::Result<assets::RaiseTable> loadPatchedRaiseTable(const assets::VirtualFileSystem& vfs,

@@ -44,6 +44,7 @@ constexpr std::string_view RandomInRange = "random_in_range";
 constexpr std::string_view IsTargetUnhit = "is_target_unhit";
 constexpr std::string_view HitTarget = "hit_target";
 constexpr std::string_view CheckTargetCollision = "check_target_collision";
+constexpr std::string_view FindHitEntity = "find_hit_entity";
 // The hit checks that register a hit, and where their `hit` argument is.
 constexpr std::array<std::string_view, 4> RegisteringHits = {"check_collision", "apply_box_hit",
                                                              "apply_radius_hit", "apply_line_hit"};
@@ -447,9 +448,12 @@ void EffectRunner::subOp(Slot& slot, const EffectInstruction& in) {
       stack_.pop_back();
     }
   }
+  // find_hit_entity only says where the effect is (Drill Spin's rocks end on reaching the target,
+  // every one of them), so it measures the bodies live too; the hits stay the battle's.
   if (transformOp(slot, in.sub, args) || vectorOp(slot, in.sub, args) ||
       drawOp(slot, in.sub, args) || primOp(slot, in.sub, args) || quadOp(slot, in.sub, args) ||
-      fighterOp(slot, in.sub, args) || (touchBodies_ && touchOp(slot, in.sub, args)) ||
+      fighterOp(slot, in.sub, args) ||
+      ((touchBodies_ || in.sub == FindHitEntity) && touchOp(slot, in.sub, args)) ||
       (!touchBodies_ && fxOp(slot, in.sub, args))) {
     return;
   }

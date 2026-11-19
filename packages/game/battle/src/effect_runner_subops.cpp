@@ -655,7 +655,10 @@ void EffectRunner::selectTarget(Slot& slot, bool random, std::int32_t argument) 
     return;
   }
   constexpr std::uint32_t Skips = 8;
-  const bool allowSelf = argument != 0;
+  // Assumption: the flight probe asks when the effect reaches another fighter, and the battle
+  // never lets a technique hit its own user, so its random pick passes over the source (Nightmare
+  // Syndromer's bats may fly back to their user in the original; there they hit nobody here).
+  const bool allowSelf = argument != 0 && !touchBodies_;
   if (std::ranges::none_of(fighters, [&](FighterId f) { return eligible(f, allowSelf); })) {
     return;
   }
@@ -759,11 +762,41 @@ bool EffectRunner::touchOp(Slot& slot, std::string_view name,
   const bool radius = name == "apply_radius_hit";
   const bool line = name == "apply_line_hit";
   const bool target = name == "check_target_collision";
-  if (!box && !radius && !line && !target) {
+  const bool find = name == "find_hit_entity";
+  if (!box && !radius && !line && !target && !find) {
     return false;
   }
   const EffectVector at = instancePosition(slot);
   SubEffect& self = context(slot);
+  // aabb.c: findAABBHitEntity: the fighter's box is radius / 2 wide and its height tall, from the
+  // ground up.
+  const auto inBox = [&](const EffectBody& body, const EffectVector& extent) {
+    const std::int64_t dx = static_cast<std::int64_t>(at.x) - body.location.x;
+    const std::int64_t dy =
+        static_cast<std::int64_t>(at.y) - (body.location.y - (body.height >> 1));
+    const std::int64_t dz = static_cast<std::int64_t>(at.z) - body.location.z;
+    return std::abs(dx) <= extent.x + (body.radius >> 1) &&
+           std::abs(dy) <= extent.y + (body.height >> 1) &&
+           std::abs(dz) <= extent.z + (body.radius >> 1);
+  };
+  const std::vector<FighterId> fighters =
+      bodies_ != nullptr ? bodies_->fighters() : std::vector<FighterId>{};
+  if (find) {
+    // BTL_findHitEntity(found, mode, extent): 1 when the box at the instance touches a standing
+    // fighter but the source, one not hit yet in mode 0 (isHit), any in mode 1; it marks nothing
+    // (the check_collision after it does).
+    if (args.size() < 3) {
+      return true;
+    }
+    const EffectVector extent = vectorAt(slot, args[2]);
+    const bool any = std::ranges::any_of(fighters, [&](FighterId fighter) {
+      const std::optional<EffectBody> body = bodies_->body(fighter);
+      return fighter != self.source && body && body->standing && inBox(*body, extent) &&
+             (args[1] != 0 || !std::ranges::contains(slot.hitTargets, fighter));
+    });
+    write(slot, args[0], EffectWidth::Int32, any ? 1 : 0);
+    return true;
+  }
   if (target) {
     // BTL_checkTargetCollision: within `radius` of the target's root on the ground; it marks
     // nothing.
@@ -788,8 +821,7 @@ bool EffectRunner::touchOp(Slot& slot, std::string_view name,
   const EffectVector extent = box ? vectorAt(slot, args[0]) : EffectVector{};
   const std::optional<EffectBody> source = bodyOf(self.source);
   bool any = false;
-  for (const FighterId fighter :
-       bodies_ != nullptr ? bodies_->fighters() : std::vector<FighterId>{}) {
+  for (const FighterId fighter : fighters) {
     if (fighter == self.source || std::ranges::contains(slot.hitTargets, fighter)) {
       continue;
     }
@@ -801,13 +833,7 @@ bool EffectRunner::touchOp(Slot& slot, std::string_view name,
     const std::int64_t dz = static_cast<std::int64_t>(at.z) - body->location.z;
     bool hit = false;
     if (box) {
-      // aabb.c: findAABBHitEntity: the fighter's box is radius / 2 wide and its height tall, from
-      // the ground up.
-      const std::int64_t dy =
-          static_cast<std::int64_t>(at.y) - (body->location.y - (body->height >> 1));
-      hit = std::abs(dx) <= extent.x + (body->radius >> 1) &&
-            std::abs(dy) <= extent.y + (body->height >> 1) &&
-            std::abs(dz) <= extent.z + (body->radius >> 1);
+      hit = inBox(*body, extent);
     } else if (radius) {
       // BTL_applyRadiusAttackHit: the squares of the radii added, not the radii.
       const std::int64_t r = args[0];

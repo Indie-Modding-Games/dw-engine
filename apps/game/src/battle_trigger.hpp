@@ -7,6 +7,7 @@
 #include <dwe/game/field/field.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/session/battle_adapter.hpp>
+#include <dwe/session/session_music.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -65,5 +66,11 @@ core::Result<MapBattle> mapBattleRequest(const game::field::Field& field,
 // rules change: the music keeps the request's own facts (btl.c: loadBattleData keys it on
 // IS_PREDEFINED_BATTLE, not on trigger 1).
 void applyFixedFight(session::BattleRequest& request, bool fixedFight);
+
+// btl.c: loadBattleData: what picks a battle's song: the first enemy (the boss's own track before
+// anything else), and whether the battle is predefined or the request is a story one (the event
+// battle theme), or a tournament match's own song.
+session::BattleMusicFacts battleMusicFactsOf(const session::BattleRequest& request,
+                                             const assets::DigimonTable* species);
 
 } // namespace dwe::app

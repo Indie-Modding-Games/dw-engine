@@ -85,6 +85,9 @@ struct BattleRequest {
   std::optional<std::string> recruitOnVictory;
   // A tournament match's own songs instead of the battle's (none: the battle's).
   std::optional<MatchMusic> matchMusic;
+  // The story named its enemies (btl.c: loadBattleData's IS_PREDEFINED_BATTLE, the script's
+  // variable 250 at 1): it plays the event battle theme unless its first enemy is the boss.
+  bool predefined = false;
 };
 
 // Where a versus battle's two fighters stand, on which map, and the spot off the field the
