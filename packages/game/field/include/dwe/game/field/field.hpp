@@ -218,6 +218,14 @@ public:
   [[nodiscard]] std::optional<scene::Entity> playerEntity(PlayerId id) const;
   [[nodiscard]] bool waitingAtWarp(PlayerId id) const;
   [[nodiscard]] std::size_t playerCount() const { return otherPlayers_.size() + 1; }
+  // Gives a guest player its partner: it follows that player as the host's partner follows the
+  // host (PartnerFollow, on the same frames), with no script, care or battle of its own. `clips`
+  // are its model's by original id (empty: it walks and runs at the partner rules' speeds). Adding
+  // it again replaces the model and the clips.
+  core::Result<void> addPartner(PlayerId id, std::string model, float radius,
+                                assets::ClipMotions clips = {});
+  [[nodiscard]] std::optional<CharacterState> partner(PlayerId id) const;
+  [[nodiscard]] std::optional<scene::Entity> partnerEntity(PlayerId id) const;
 
   // Advances the logic by `seconds` (the app's fixed tick). On a warp the player walks on for the
   // fade out, without collision and without input; then nothing moves until the app enters the new
@@ -616,13 +624,22 @@ private:
     bool followPath = false;
   };
 
+  struct OtherPartner {
+    scene::Entity entity{};
+    PartnerFollow follow{};
+    float radius = 0.0F;
+    scene::Motion motion = scene::Motion::Idle;
+  };
   struct PlayerRuntime {
     FieldPlayer fieldPlayer;
     scene::Motion motion = scene::Motion::Idle;
     bool pressed = false;
     float frameClock = 0.0F;
+    std::optional<OtherPartner> partner;
   };
   void tickOtherPlayers(float seconds);
+  void moveOtherPartners(std::int32_t frames);
+  void placeOtherPartner(const PlayerRuntime& player, OtherPartner& partner);
   void moveOtherPlayer(PlayerRuntime& player, float seconds);
   void stepOtherPlayer(PlayerRuntime& player, const Step& step);
   void resetOtherPlayerMotion(bool clearInput);

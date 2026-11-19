@@ -9,8 +9,8 @@ namespace dwe::app {
 toCoopEntityState(std::uint16_t networkId, game::coop::PlayerId owner, game::coop::EntityRole role,
                   const game::field::CharacterState& state);
 
-// Captures the player bodies and the host-owned partner for one authoritative field tick. NPCs and
-// guest-partner replication are added when their ownership/profile lifecycle is integrated.
+// Captures both players and their partners for one authoritative field tick (network ids 1 host
+// player, 2 host partner, 3 guest player, 4 guest partner). NPCs are not replicated yet.
 [[nodiscard]] core::Result<game::coop::Snapshot>
 makeCoopSnapshot(const game::field::Field& field, std::string mapId, std::uint32_t worldTick,
                  std::uint32_t acknowledgedCommand);
