@@ -185,7 +185,7 @@ zona o a un mapa sin clima, al cambiar la opción y con `--weather`.
 ## Dibujo (`apps/game`)
 
 - `FieldScene` (`field_scene_weather.cpp`) elige la zona al cargar cada mapa, avanza el fundido cada fotograma (la
-  animación se para con la pausa) y pasa los quads a `WeatherDrawer`.
+  animación se para con la pausa, no en un combate: `sceneryMoves`) y pasa los quads a `WeatherDrawer`.
 - `weatherQuads` (`weather_particles.cpp`) genera los quads sin estado, por hash del número de partícula y su ciclo:
   velo gris oscuro del nublado y la lluvia, sombras de nubes que pasan (textura de ruido que se repite), calor del sol
   de día, gotas inclinadas con salpicaduras en el suelo, copos que caen con deriva. Tamaños y velocidades en píxeles

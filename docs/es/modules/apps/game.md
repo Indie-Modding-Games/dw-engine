@@ -564,7 +564,7 @@ sea cual sea la que llevaban (el estado de andar del jugador y `overworld.c: set
 mientras el menú está abierto (`partner.c: partnerTickOverworld` con `IS_IN_MENU`, el jugador en su estado de reposo,
 el 6); los NPC se quedan quietos
 (`NPCEntityTickOverworld` vuelve en el acto). `FieldClock` (`field_clock.hpp`) lo decide cada fotograma:
-`MenuRest` con el menú (o la ficha del compañero abierta desde él), `Frozen` con cualquier otra pantalla.
+`MenuRest` con el menú (o la ficha del compañero abierta desde él), `Battle` en un combate, `Frozen` con cualquier otra pantalla.
 
 | Medida (twna01, menú abierto corriendo) | Original | dwe antes | dwe ahora | Estado |
 |---|---|---|---|---|
@@ -575,6 +575,24 @@ el 6); los NPC se quedan quietos
 
 Al cerrar el menú cada uno vuelve a lo que le toque (el paso del jugador o el seguimiento del compañero). Prueba:
 `field_clock_tests.cpp`; comparación en `_work/tmp/w21-trfield/contact_sheet.png`.
+
+En un combate los personajes del campo se quedan quietos, pero el escenario sigue moviéndose: el original dibuja el mapa
+con `map.c: renderMap` cada fotograma diga lo que diga `GAME_STATE`, y su `overworld.c: renderMapOverlays` avanza los
+temporizadores de los sprites animados y `renderMist` desplaza la niebla con `PLAYTIME_FRAMES`. dwe los paraba, y con
+ellos el clima y las hojas de la estación que se dibujan encima, durante todo el combate. `sceneryMoves(FieldClock)`
+mantiene ahora en marcha los sprites del mapa (`MapDepthLayers`), la niebla y el clima con `Running` y `Battle`; la pausa de
+Start (`utils2.c: handlePause`, que da vueltas hasta la siguiente pulsación) y el menú de pausa lo siguen parando todo,
+también en el campo.
+
+| Medida (mayo00, combate con Agumon) | Original | dwe antes | dwe ahora | Estado |
+|---|---|---|---|---|
+| Temporizador de un sprite animado del mapa | 189 a 193 en 10 refrescos (`GAME_STATE` 1), 164 a 168 al empezar el combate | parado | sigue contando | Igual |
+| `PLAYTIME_FRAMES` (deriva de la niebla) | 5070 a 5073 en 10 refrescos | niebla parada | se desplaza | Igual |
+| El mismo temporizador con la pausa de Start | se queda en 17 durante 32 refrescos | en el campo la lluvia, las hojas y los clips seguían | parado | Igual |
+| Lluvia y hojas (mejora, sin original) | no hay | quietas todo el combate, cartel de inicio incluido | caen | Mejora |
+
+Prueba: `field_clock_tests.cpp` "a battle stands the characters but the map's sprites, mist and weather move on";
+comparación en `_work/tmp/w112/sheets/battle-weather.png`.
 
 ## Líneas de los menús
 

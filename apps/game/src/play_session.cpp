@@ -59,6 +59,7 @@
 #include "partner_events.hpp"
 #include "partner_set_command.hpp"
 #include "partner_tab.hpp"
+#include "pause_box.hpp"
 #include "place_command.hpp"
 #include "player_chart.hpp"
 #include "story_map_edits.hpp"
@@ -2071,17 +2072,23 @@ bool PlaySession::paused() const {
 FieldClock PlaySession::fieldClock() const {
   const ui::Ui& ui = *context_.ui;
   return fieldClockOf({.gameMenu = ui.isVisible(MenuDocument) || ui.isVisible(PartnerMenuDocument),
-                       .otherScreen = ui.isVisible(MainMenuDocument) || screenStops()});
+                       .battle = battleScreen_.active(),
+                       .otherScreen = ui.isVisible(MainMenuDocument) ||
+                                      ui.isVisible(PauseBoxDocument) || otherScreenStops()});
 }
 
 bool PlaySession::screenStops() const {
-  return battleScreen_.active() || (sleepScreen_.active() && !sleepScreen_.fieldRuns()) ||
-         saveMachine_.active() || toTitleAsked_ || evolutionScene_.active() ||
-         deathScene_.active() || shopScreen_.active() || devMenu_.isOpen() ||
-         itemKeeperScreen_.active() || discardScreen_.active() || jukeboxScreen_.active() ||
-         tradeScreen_.active() || birdScreen_.active() || cardShopScreen_.active() ||
-         meritShopScreen_.active() || awardScreen_.active() || scheduleScreen_.active() ||
-         bracketScreen_.playing() || storyScenes_.tournamentIntro() || worldMapScreen_.isOpen();
+  return battleScreen_.active() || otherScreenStops();
+}
+
+bool PlaySession::otherScreenStops() const {
+  return (sleepScreen_.active() && !sleepScreen_.fieldRuns()) || saveMachine_.active() ||
+         toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
+         shopScreen_.active() || devMenu_.isOpen() || itemKeeperScreen_.active() ||
+         discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
+         birdScreen_.active() || cardShopScreen_.active() || meritShopScreen_.active() ||
+         awardScreen_.active() || scheduleScreen_.active() || bracketScreen_.playing() ||
+         storyScenes_.tournamentIntro() || worldMapScreen_.isOpen();
 }
 
 float PlaySession::fadeLevel() const {

@@ -1387,6 +1387,8 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   const bool paused = clock != FieldClock::Running;
   const bool menuRest = clock == FieldClock::MenuRest;
   const double animationSeconds = paused ? 0.0 : frameSeconds;
+  // The map's sprites, the mist and the weather move on in a battle too (sceneryMoves).
+  const bool sceneryStill = !sceneryMoves(clock);
   advanceFlames(animationSeconds);
   fighterSeconds_ = std::exchange(fighterSecondsDue_, 0.0);
   if (menuRest && !playerSceneClip_) {
@@ -1479,7 +1481,7 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
     prims.insert(prims.end(), minigamePrims_.begin(), minigamePrims_.end());
     // The mist (ordering-table entry 20) in front of the map's characters and effects, behind the
     // story's screen primitives (the shake's square, entry 9).
-    addMist(prims, frameSeconds, paused);
+    addMist(prims, frameSeconds, sceneryStill);
     prims.insert(prims.end(), storyScreenPrims_.begin(), storyScreenPrims_.end());
   }
   primDrawer_->set(std::move(prims), mapRenderer_->camera().scale());
@@ -1494,13 +1496,13 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   } else if (!cameraFocus_ || following) {
     cameraFocus_ = player.position;
   }
-  // The sprite animations wait while paused. A time-of-day fade under way does not: map.c:
-  // tickDaytimeTransition only waits for GAME_STATE, which the field's pause menu leaves alone; the
-  // lights switch when it ends.
+  // The sprite animations wait while paused, not in a battle. A time-of-day fade under way does
+  // not: map.c: tickDaytimeTransition only waits for GAME_STATE, which the field's pause menu
+  // leaves alone; the lights switch when it ends.
   mapRenderer_->setFocusPixel(cameraPixel_ ? cameraPixel_
                                            : followPixel(player.position, following));
-  mapRenderer_->update(animationSeconds, frameSeconds, *cameraFocus_);
-  updateWeather(frameSeconds, paused);
+  mapRenderer_->update(sceneryStill ? 0.0 : frameSeconds, frameSeconds, *cameraFocus_);
+  updateWeather(frameSeconds, sceneryStill);
   if (lightingDelay_ > 0.0) {
     lightingDelay_ -= frameSeconds;
     if (lightingDelay_ <= 0.0) {

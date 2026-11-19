@@ -562,7 +562,7 @@ whichever they had (the player's walking state and `overworld.c: setPartnerIdlin
 while the menu is open (`partner.c: partnerTickOverworld` with `IS_IN_MENU`, the player in its rest state,
 6); the NPCs stand still
 (`NPCEntityTickOverworld` returns immediately). `FieldClock` (`field_clock.hpp`) decides it every frame:
-`MenuRest` with the menu (or the partner's sheet opened from it), `Frozen` with any other screen.
+`MenuRest` with the menu (or the partner's sheet opened from it), `Battle` in a battle, `Frozen` with any other screen.
 
 | Measurement (twna01, menu opened while running) | Original | dwe before | dwe now | Status |
 |---|---|---|---|---|
@@ -573,6 +573,23 @@ while the menu is open (`partner.c: partnerTickOverworld` with `IS_IN_MENU`, the
 
 On closing the menu each one goes back to what it should do (the player's step or the partner's following). Test:
 `field_clock_tests.cpp`; comparison in `_work/tmp/w21-trfield/contact_sheet.png`.
+
+In a battle the field's characters stand, but the scenery keeps moving: the original draws the map with
+`map.c: renderMap` every frame whatever `GAME_STATE` says, and its `overworld.c: renderMapOverlays` steps the animated
+sprites' timers and `renderMist` drifts the mist with `PLAYTIME_FRAMES`. dwe used to stop them, and the weather and the
+season's leaves drawn over them, for the whole battle. `sceneryMoves(FieldClock)` now keeps the map's sprites
+(`MapDepthLayers`), the mist and the weather running with `Running` and `Battle`; Start's pause
+(`utils2.c: handlePause`, which spins until the next press) and the pause menu still stop everything, in the field too.
+
+| Measurement (mayo00, battle with Agumon) | Original | dwe before | dwe now | Status |
+|---|---|---|---|---|
+| Animated map sprite's timer | 189 to 193 in 10 refreshes (`GAME_STATE` 1), 164 to 168 as the battle starts | stopped | counts on | Same |
+| `PLAYTIME_FRAMES` (mist drift) | 5070 to 5073 in 10 refreshes | mist stopped | drifts | Same |
+| Same timer under Start's pause | stays at 17 for 32 refreshes | in the field the rain, the leaves and the clips went on | stopped | Same |
+| Rain and leaves (improvement, no original) | none | still for the whole battle, intro banner included | fall | Improvement |
+
+Test: `field_clock_tests.cpp` "a battle stands the characters but the map's sprites, mist and weather move on";
+comparison in `_work/tmp/w112/sheets/battle-weather.png`.
 
 ## Menu lines
 
