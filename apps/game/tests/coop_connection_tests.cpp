@@ -3,6 +3,7 @@
 #include <doctest/doctest.h>
 
 #include "coop_connection.hpp"
+#include "coop_gameplay_bridge.hpp"
 
 using namespace dwe::app;
 
@@ -78,4 +79,85 @@ TEST_CASE("cooperative connection validates the entered room code") {
   connection.type("abc", true);
   CHECK(connection.view() == CoopConnection::View::JoinEntry);
   CHECK(connection.error() == "bad_code");
+}
+
+TEST_CASE("the lobby leaves the link to the gameplay bridge once play owns it") {
+  // Remote player and partner drawn as bare shadows: CoopScreen::tick drained the link every frame,
+  // also during play, so the guest never saw a host snapshot and the host never saw a guest
+  // command.
+  using namespace dwe::game::coop;
+  dwe::net::LoopbackNetwork network{{}};
+  CoopConnection hostRoom{{.identity = identity(),
+                           .configurationError = {},
+                           .host = [&] { return std::make_unique<BorrowedPeer>(network.link(0)); },
+                           .join = {}}};
+  CoopConnection guestRoom{
+      {.identity = identity(), .configurationError = {}, .host = {}, .join = [&](std::string_view) {
+         return std::make_unique<BorrowedPeer>(network.link(1));
+       }}};
+  hostRoom.open();
+  guestRoom.open();
+  REQUIRE(hostRoom.host());
+  guestRoom.beginJoin();
+  guestRoom.type("TEST", true);
+  for (std::uint32_t tick = 0; tick < 20 && (!hostRoom.connected() || !guestRoom.connected());
+       ++tick) {
+    network.advance(dwe::net::Millis{10});
+    hostRoom.tick(network.now());
+    guestRoom.tick(network.now());
+  }
+  REQUIRE(hostRoom.connected());
+  REQUIRE(guestRoom.connected());
+  REQUIRE(hostRoom.link() != nullptr);
+  REQUIRE(guestRoom.link() != nullptr);
+  CHECK_FALSE(hostRoom.linkInPlay());
+
+  NetworkFieldController guestOnHost;
+  NetworkFieldController unused;
+  CoopGameplayBridge host{*hostRoom.link(), guestOnHost};
+  CoopGameplayBridge guest{*guestRoom.link(), unused};
+  hostRoom.handLinkToPlay();
+  guestRoom.handLinkToPlay();
+  // One game-loop frame on both peers, in CoopScreen::tick's order: the connection ticks, the
+  // lobby reads the link unless play owns it, then the bridge polls.
+  const auto frame = [&] {
+    network.advance(dwe::net::Millis{50});
+    for (CoopConnection* room : {&hostRoom, &guestRoom}) {
+      room->tick(network.now());
+      if (!room->linkInPlay()) {
+        while (room->link()->receive()) {
+        }
+      }
+    }
+    host.poll(network.now());
+    guest.poll(network.now());
+  };
+
+  PlayerCommands walk;
+  walk.sequence = 7;
+  walk.field.stick = {0.0F, -1.0F};
+  REQUIRE(guest.sendLocalField(walk));
+  const Snapshot snapshot{
+      .mapId = "field/main",
+      .worldTick = 90,
+      .acknowledgedCommand = 7,
+      .entities = {{.networkId = 1, .owner = HostPlayerId, .role = EntityRole::Player, .x = 10},
+                   {.networkId = 2, .owner = HostPlayerId, .role = EntityRole::Partner, .x = 20}}};
+  REQUIRE(host.sendHostSnapshot(snapshot));
+  frame();
+  CHECK(guestOnHost.next(0).field.stick.y == -1.0F);
+  const auto world = guest.presentedWorld(1.0F);
+  REQUIRE(world);
+  CHECK(world->entities.size() == 2);
+
+  // Another room means another link: the bridge must drop the old one and the lobby reads again.
+  const std::uint64_t played = hostRoom.linkGeneration();
+  hostRoom.close();
+  CHECK(hostRoom.linkGeneration() != played);
+  CHECK_FALSE(hostRoom.linkInPlay());
+  hostRoom.open();
+  REQUIRE(hostRoom.host());
+  CHECK(hostRoom.linkGeneration() != played);
+  CHECK_FALSE(hostRoom.linkInPlay());
+  guestRoom.close();
 }

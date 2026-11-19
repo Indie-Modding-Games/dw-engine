@@ -968,6 +968,7 @@ int runGame(const Options& requested) {
   std::unique_ptr<NetworkFieldController> coopClientController;
   NetworkFieldController* coopHostController = nullptr;
   PlaySession* coopAttachedSession = nullptr;
+  std::uint64_t coopBridgeLink = 0;
   std::uint32_t coopWorldTick = 0;
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
@@ -1694,8 +1695,24 @@ int runGame(const Options& requested) {
         titleAfterMovie = replayBootMovie;
       }
       PlaySession* play = flow.playing();
+      // The bridge borrows the connection's link, which is freed when the room closes or another
+      // one opens. Drop the bridge first so it never polls a dead link.
+      if (coopBridge != nullptr && (!coop.connected() || coop.link() == nullptr ||
+                                    coop.linkGeneration() != coopBridgeLink)) {
+        coopBridge.reset();
+        coopClientController.reset();
+        if (coopHostController != nullptr)
+          players.setGuestLink(PlayerLink::Dropped);
+        coop.takeLinkBack();
+        core::logInfo("coop: the link closed, the gameplay bridge was dropped");
+      }
       if (play != nullptr && coop.connected() && coopBridge == nullptr && coop.link() != nullptr) {
-        if (coop.isHost()) {
+        if (coop.isHost() && coopHostController != nullptr) {
+          // The guest slot stays in the registry after a drop; reconnect it to the new link.
+          players.setGuestLink(PlayerLink::Connected);
+          coopBridge = std::make_unique<CoopGameplayBridge>(*coop.link(), *coopHostController);
+          core::logInfo("coop: guest commands drive player 2 again");
+        } else if (coop.isHost()) {
           auto controller = std::make_unique<NetworkFieldController>();
           coopHostController = controller.get();
           if (auto added = play->scene().addCoopGuest(); !added) {
@@ -1713,6 +1730,12 @@ int runGame(const Options& requested) {
           coopClientController = std::make_unique<NetworkFieldController>();
           coopBridge = std::make_unique<CoopGameplayBridge>(*coop.link(), *coopClientController);
           core::logInfo("coop: local field commands are connected to the host");
+        }
+        if (coopBridge != nullptr) {
+          // From here the bridge alone reads the link; the lobby draining it too starved the
+          // bridge of snapshots and guest commands (remote players drew as bare shadows).
+          coopBridgeLink = coop.linkGeneration();
+          coop.handLinkToPlay();
         }
       }
       if (play != nullptr && coop.connected() && coop.isHost() && coopBridge != nullptr &&
@@ -1991,7 +2014,7 @@ int runGame(const Options& requested) {
         if (const auto start = title.takeStart()) {
           if (coop.selectingGuestProfile() || coop.selectingHostStart()) {
             if (!start->load) {
-              coop.reportError("Choose a saved game in this room first.");
+              coop.reportError("choose_saved_game");
               title.show();
               continue;
             }

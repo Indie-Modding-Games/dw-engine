@@ -166,7 +166,8 @@ void CoopScreen::tick(double nowSeconds) {
     return;
   constexpr double MillisPerSecond = 1000.0;
   connection_.tick(net::Millis{static_cast<std::int64_t>(nowSeconds * MillisPerSecond)});
-  receiveMessages();
+  if (!connection_.linkInPlay())
+    receiveMessages();
   if (active_)
     publish();
 }
@@ -224,7 +225,7 @@ void CoopScreen::completeRemoteStart() {
   }
   const auto parsed = game::save::parseSaveFile(*combined);
   if (!parsed || parsed->header.summary.map != remoteJoinState_->mapId) {
-    localError_ = parsed ? "host save map does not match the room start" : parsed.error().message;
+    localError_ = parsed ? "host_save_map_mismatch" : parsed.error().message;
     return;
   }
   remoteStartText_ = std::move(*combined);
