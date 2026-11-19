@@ -17,6 +17,7 @@
 #include <dwe/input/input_state.hpp>
 #include <dwe/input/keys.hpp>
 #include <dwe/localization/catalog.hpp>
+#include <dwe/net/signal.hpp>
 #include <dwe/platform/locale.hpp>
 #include <dwe/platform/platform.hpp>
 #include <dwe/platform/window.hpp>
@@ -65,6 +66,7 @@
 #include "control_log.hpp"
 #include "control_socket.hpp"
 #include "coop_gameplay_bridge.hpp"
+#include "coop_hud.hpp"
 #include "coop_screen.hpp"
 #include "coop_snapshot.hpp"
 #include "dev_assets_banner.hpp"
@@ -87,6 +89,9 @@
 #include "movie_screen.hpp"
 #include "new_game_interview.hpp"
 #include "new_game_scene_rules.hpp"
+#include "online_coop_room.hpp"
+#include "online_rooms.hpp"
+#include "online_signal_directory.hpp"
 #include "partner_portrait.hpp"
 #include "pause_box.hpp"
 #include "play_session.hpp"
@@ -964,6 +969,28 @@ int runGame(const Options& requested) {
   // "Online versus" from the title's menu (versus_screen.hpp): no game behind it.
   VersusScreen versus{files, options, !autotest, **ui, renderer->get(), &sound};
   CoopScreen coop{files, options, **ui};
+  // The online screens (online_rooms.hpp): the signaling server's public list and the co-op
+  // connection; the sample rooms (--online-sample, or the developer tools' switch on the screen)
+  // to look at them without a second machine. The online profile names this player to the others.
+  OnlineRooms online = [&] {
+    auto sampleDirectory = std::make_unique<SampleDirectory>();
+    constexpr double SampleConnectSeconds = 1.2;
+    auto sampleBackend =
+        std::make_unique<SampleRoomBackend>(*sampleDirectory, SampleConnectSeconds);
+    return OnlineRooms{OnlineRooms::Desc{
+        .directory = std::make_unique<SignalRoomDirectory>(coopSignalServer(files, options),
+                                                           net::openWebSocket),
+        .backend = std::make_unique<CoopRoomBackend>(coop),
+        .sampleDirectory = std::move(sampleDirectory),
+        .sampleBackend = std::move(sampleBackend),
+        .sampleOffered = options.onlineSample || userSettings.devTools.value_or(DevToolsDefault),
+        .codeLength = net::RoomCodeLength,
+        .profile = OnlineProfile::fromSettings(userSettings, *language)}};
+  }();
+  coop.setPlayerName(online.profile().name());
+  if (options.onlineSample) {
+    online.setSample(true, platform->nowSeconds());
+  }
   std::unique_ptr<CoopGameplayBridge> coopBridge;
   std::unique_ptr<NetworkFieldController> coopClientController;
   NetworkFieldController* coopHostController = nullptr;
@@ -971,6 +998,12 @@ int runGame(const Options& requested) {
   const PlaySession* coopAttachFailed = nullptr;
   std::uint64_t coopBridgeLink = 0;
   std::uint32_t coopWorldTick = 0;
+  // The co-op game's tag over the other player and its notices (coop_hud.hpp), and how the other
+  // player is named while a gameplay bridge is up.
+  CoopHud coopHud{**ui};
+  std::optional<CoopPeerLabel> coopPeer;
+  // The host's room went while the guest played: its game ends after this frame's ticks.
+  bool coopHostLeft = false;
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
   // A boot asks the UI skin after the language box (an addition) until the player has chosen one;
@@ -1476,7 +1509,8 @@ int runGame(const Options& requested) {
     // A naming box open takes the keyboard's text as well as its keys.
     const bool takesText = (interview && interview->takesText()) ||
                            (flow.playing() != nullptr && flow.playing()->takesText()) ||
-                           (flow.playing() == nullptr && versus.takesText()) || coop.takesText();
+                           (flow.playing() == nullptr && versus.takesText()) || coop.takesText() ||
+                           online.takesText();
     if (auto switched = window->setTextInput(takesText); !switched) {
       core::logDebug("game: {}", switched.error().message);
     }
@@ -1488,6 +1522,8 @@ int runGame(const Options& requested) {
       versus.type(typed, typedEnter);
     } else if (coop.takesText()) {
       coop.type(typed, typedEnter);
+    } else if (online.takesText()) {
+      online.type(typed, typedEnter, platform->nowSeconds());
     }
 
     const double now = platform->nowSeconds();
@@ -1666,12 +1702,25 @@ int runGame(const Options& requested) {
           versus.pressFinisher();
         }
         versus.tick(platform->nowSeconds());
+        if (const auto won = versus.takeOutcome()) {
+          // The online profile's record (settings.yaml).
+          online.recordVersus(*won);
+          static_cast<void>(online.takeProfileChanged());
+          online.profile().store(userSettings);
+          if (settingsFile) {
+            saveUserSettings(*settingsFile, userSettings);
+          }
+        }
         if (versus.takeClosed()) {
           title.show();
         }
       }
       coop.tick(platform->nowSeconds());
       if (flow.playing() == nullptr) {
+        online.tick(platform->nowSeconds());
+        online.setSampleOffered(options.onlineSample ||
+                                userSettings.devTools.value_or(DevToolsDefault));
+        screens::publish(**ui, online.settings(), "online.revision");
         if (auto networkSave = coop.takeRemoteStartText()) {
           title.hide();
           PlayStart start{.load = std::nullopt,
@@ -1708,6 +1757,18 @@ int runGame(const Options& requested) {
           players.setGuestLink(PlayerLink::Dropped);
         coop.takeLinkBack();
         core::logInfo("coop: the link or the game ended, the gameplay bridge was dropped");
+        switch (coopLinkLoss(coop.isHost(), play != nullptr)) {
+        case CoopLinkLoss::PeerLeft:
+          // The guest's slot stays for a reconnect; its tag goes until then.
+          coopHud.notice(CoopDisconnectedText, coopPeer.value_or(coopPeerLabel(true, {})));
+          break;
+        case CoopLinkLoss::HostLeft:
+          coopHostLeft = true;
+          break;
+        case CoopLinkLoss::Quiet:
+          break;
+        }
+        coopPeer.reset();
       }
       if (play == nullptr)
         coopAttachFailed = nullptr;
@@ -1740,6 +1801,7 @@ int runGame(const Options& requested) {
           // bridge of snapshots and guest commands (remote players drew as bare shadows).
           coopBridgeLink = coop.linkGeneration();
           coop.handLinkToPlay();
+          coopPeer = coopPeerLabel(coop.isHost(), coop.remoteName());
         }
       }
       // The guest and its partner in the host's field, in every game the bridge serves. The field
@@ -1854,6 +1916,36 @@ int runGame(const Options& requested) {
     }
 
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
+      // The rooms screens' steps (the UI API's online namespace), first: the room steps the co-op
+      // lobby also takes (coop_host, coop_join with a code, coop_ready, coop_start) reach it
+      // through the rooms' backend, or the sample rooms. Readying as a guest or starting as the
+      // host picks a save first, over the room (it shows again when the save is chosen or the slots
+      // are left).
+      if (const std::string* text = std::get_if<std::string>(&command.value); online.handle(
+              command.name, text != nullptr ? *text : std::string{},
+              std::holds_alternative<bool>(command.value) && std::get<bool>(command.value),
+              platform->nowSeconds())) {
+        if (coop.takeGuestProfileRequest() || coop.takeStartRequested()) {
+          (*ui)->hide(OnlineRoomDocument);
+          static_cast<void>(title.handle(ui::UiCommand{.name = "continue", .value = {}}));
+        }
+        if (command.name == "online_close" && flow.playing() == nullptr) {
+          // Back from the online screens to the title's menu, on its multiplayer entry.
+          for (const std::string_view document : OnlineDocuments) {
+            (*ui)->hide(document);
+          }
+          title.show();
+        }
+        if (online.takeProfileChanged()) {
+          online.profile().store(userSettings);
+          if (settingsFile) {
+            saveUserSettings(*settingsFile, userSettings);
+          }
+          coop.setPlayerName(online.profile().name());
+        }
+        screens::publish(**ui, online.settings(), "online.revision");
+        continue;
+      }
       // The title menu's cooperative room actions belong to CoopScreen. Dispatch them before
       // generic UI add-ons and option handlers so they cannot be consumed or reported as unknown.
       if ((command.name == CoopOpenCommand || command.name == "coop_host" ||
@@ -2083,6 +2175,17 @@ int runGame(const Options& requested) {
       screenFade->setWhiteness(0.0F);
       title.showBoot();
     }
+    if (std::exchange(coopHostLeft, false) && flow.playing() != nullptr) {
+      // The guest's game was the host's world: with the room gone it ends, and the main menu says
+      // why (coop_hud.hpp).
+      core::logInfo("coop: the host closed the room, back to the title screen");
+      coop.leave();
+      flow.toTitle();
+      screenFade->setDarkness(0.0F);
+      screenFade->setWhiteness(0.0F);
+      title.show();
+      coopHud.notice(CoopHostLeftText);
+    }
     if (flow.playing() != nullptr && flow.playing()->takeQuitGame()) {
       // The pause menu's quit, confirmed: the game is saved (quickSave, in its handler) and this
       // closes the window, as the title screen's quit does.
@@ -2138,6 +2241,12 @@ int runGame(const Options& requested) {
         }
       }
       play->update(sessionCommands, autotest.get(), frameStats, gameSeconds, drawAlpha);
+      const std::optional<glm::vec2> peerHead = play->scene().coopPeerHeadInWindow();
+      coopHud.showTag(coopTagViewOf(
+          coopPeer,
+          peerHead ? std::optional{screens::WindowFraction{.x = peerHead->x, .y = peerHead->y}}
+                   : std::nullopt,
+          play->fieldRunning()));
       screenFade->setDarkness(play->fadeLevel());
       screenFade->setWhiteness(play->whiteLevel());
       mapChangeView.show(play->scene(), play->fadeLevel());
@@ -2154,7 +2263,9 @@ int runGame(const Options& requested) {
       }
     } else {
       sessionCommands.drop(autotest.get());
+      coopHud.showTag({});
     }
+    coopHud.advance(frameSeconds);
     phases.mark(FramePhases::Update, platform->nowSeconds());
     if (consoleUiSkin) {
       uiSkinChanger.change(*std::exchange(consoleUiSkin, std::nullopt));

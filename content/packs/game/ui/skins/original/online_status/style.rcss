@@ -1,0 +1,76 @@
+/* Getting into a room in the original look: one of the original's windows (online/style.rcss) like the UI concept's
+   "creating" and "server error" boxes: the yellow title, what is happening in the ink at three times the font's cell
+   (the reason in orange once it failed), the line under it in the description grey, the waiting dots as the
+   original's square pixels, the buttons as text rows with the cursor and outline, the prompts under a cyan line. */
+
+#panel {
+	width: 760dp;
+	height: 408dp;
+	margin-left: -380dp;
+	margin-top: -204dp;
+	padding: 9dp 30dp 0 30dp;
+}
+
+#title {
+	margin: 0 0 3dp 0;
+	line-height: 45dp;
+}
+
+#status-icon {
+	height: 12dp;
+	font-size: 12dp;
+	line-height: 12dp;
+	margin: 6dp 0 15dp 0;
+	text-align: left;
+	padding-left: 12dp;
+}
+
+.dot {
+	width: 12dp;
+	height: 12dp;
+	margin: 0 12dp 0 0;
+	background-color: #4a9fc5;
+}
+
+.dot.lit { background-color: #fff371; }
+
+#status-text {
+	padding-left: 12dp;
+	font-size: 33dp;
+	line-height: 39dp;
+	color: #d0d0d0;
+}
+
+.closed #status-text { color: #ffb070; }
+
+#status-detail {
+	margin: 9dp 0 0 0;
+	padding-left: 12dp;
+	font-size: 22dp;
+	line-height: 27dp;
+	color: #b2b2b2;
+	opacity: 1;
+}
+
+#buttons {
+	left: 30dp;
+	right: 30dp;
+	bottom: 66dp;
+}
+
+.status-button {
+	width: 240dp;
+	height: 48dp;
+	margin: 0 12dp;
+	padding: 0 9dp;
+	font-size: 33dp;
+	line-height: 42dp;
+}
+
+#prompts {
+	left: 12dp;
+	right: 12dp;
+	bottom: 6dp;
+	padding: 9dp 18dp 0 18dp;
+	border-top: 3dp #90d9fa;
+}

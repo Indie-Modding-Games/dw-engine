@@ -1,0 +1,55 @@
+<rml>
+<head>
+	<title>Online profile</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/screen_fit.lua"></script>
+	<script src="../common/fit_text.lua"></script>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<!-- The online profile (apps/game/src/online_profile.hpp, read and asked through the UI API's online namespace):
+	     the name the other players see, typed with the keyboard; the icon, picked from a fixed list; and the online
+	     versus record. It is kept in the game's settings, not in a save. -->
+	<div id="scrim">
+		<div id="panel">
+			<h1 id="title" text-key="online.profile_title"></h1>
+			<div id="profile-head">
+				<div id="head-icon" class="profile-icon"></div>
+				<span id="head-name"><span id="head-name-text"></span></span>
+				<span id="head-record"></span>
+			</div>
+
+			<button id="name-field" class="profile-row" onclick="press(document, 'name')"><span class="row-label" text-key="online.profile.name"></span><span id="name-box"><span id="name-value"></span><span id="name-caret" class="hidden">_</span></span></button>
+			<p id="name-hint"></p>
+
+			<div id="icon-row" class="profile-row">
+				<span class="row-label" text-key="online.profile.icon"></span>
+				<button id="icon-1" class="icon-choice" onclick="pick_icon(document, 1)"><div id="icon-1-picture" class="profile-icon"></div></button>
+				<button id="icon-2" class="icon-choice" onclick="pick_icon(document, 2)"><div id="icon-2-picture" class="profile-icon"></div></button>
+				<button id="icon-3" class="icon-choice" onclick="pick_icon(document, 3)"><div id="icon-3-picture" class="profile-icon"></div></button>
+				<button id="icon-4" class="icon-choice" onclick="pick_icon(document, 4)"><div id="icon-4-picture" class="profile-icon"></div></button>
+				<button id="icon-5" class="icon-choice" onclick="pick_icon(document, 5)"><div id="icon-5-picture" class="profile-icon"></div></button>
+				<button id="icon-6" class="icon-choice" onclick="pick_icon(document, 6)"><div id="icon-6-picture" class="profile-icon"></div></button>
+				<span id="icon-name"></span>
+			</div>
+
+			<div id="record-row" class="profile-row">
+				<span class="row-label" text-key="online.profile.record"></span>
+				<span class="record-label" text-key="online.profile.wins"></span><span id="record-wins" class="record-value"></span>
+				<span class="record-label" text-key="online.profile.losses"></span><span id="record-losses" class="record-value"></span>
+			</div>
+
+			<p id="saved-note" text-key="online.profile.saved_note"></p>
+			<button id="profile-back" onclick="press(document, 'back')" text-key="online.back"></button>
+
+			<div id="toast" class="hidden"><p id="toast-text"></p></div>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span id="prompt-confirm-text"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span id="prompt-cancel-text"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

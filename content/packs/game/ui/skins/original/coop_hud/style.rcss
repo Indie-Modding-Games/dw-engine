@@ -1,0 +1,24 @@
+/* The co-op HUD in the original look: the notice in one of the original's windows (the box border and corners of
+   theme.rcss) with the ink at three times the font's cell, the name tag as a small window at twice the cell. */
+
+#tag,
+#notice {
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: #1d262ef0;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	color: #d0d0d0;
+}
+
+#tag {
+	padding: 2dp 12dp;
+	font-size: 22dp;
+	line-height: 28dp;
+}
+
+#notice {
+	padding: 12dp 24dp;
+	font-size: 33dp;
+	line-height: 39dp;
+}

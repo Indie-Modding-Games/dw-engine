@@ -168,6 +168,7 @@ Estas pantallas tienen en la [API de la interfaz](ui-api.md) todo lo que leen y 
 | `money_box` | El cuadro del dinero |
 | `lives_box` | El cuadro de vidas |
 | `ui_notice` | El aviso de que una interfaz no se pudo usar |
+| `coop_hud` | La partida cooperativa: el nombre del otro jugador sobre su cabeza, y sus avisos |
 | `battle` | El combate: luchadores, tira de órdenes, golpe final, apertura, números y caja del final |
 | `tournament_match` | Lo que un combate de copa enseña encima: el nombre, los atributos, el fin de tiempo, el daño |
 | `versus` | El versus en línea: la sala, el código, la partida y los compañeros, el combate, el marcador |

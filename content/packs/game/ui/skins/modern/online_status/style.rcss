@@ -1,0 +1,96 @@
+/* Getting into a room and why it failed, in the modern look: the pause menu's slate panel (../pause_menu/style.rcss)
+   with the bold title over a hairline divider, three rounded dots that light amber while it waits, the reason in the
+   look's warning colour once it closed, outlined buttons that the focus fills amber, and the prompts at the foot.
+
+   Every rule is scoped to #scrim:not(.skin-original): the skins that extend this one mark the scrim skin-original in
+   their skin.yaml (document_classes) and keep none of it. */
+
+#scrim:not(.skin-original) {
+	background-color: #06090de8;
+}
+
+#scrim:not(.skin-original) #panel {
+	height: 360dp;
+	margin-top: -180dp;
+	padding: 20dp 28dp;
+	border: 1dp #263243;
+	border-radius: 12dp;
+	background-color: #121922f2;
+	color: #e9eef5;
+}
+
+#scrim:not(.skin-original) #title {
+	margin: 0 0 14dp 0;
+	padding: 0 4dp 10dp 4dp;
+	font-size: 30dp;
+	font-weight: bold;
+	line-height: 40dp;
+	border-bottom: 1dp #243042;
+}
+
+#scrim:not(.skin-original) #status-icon { height: 16dp; margin: 10dp 0 14dp 0; }
+
+#scrim:not(.skin-original) .dot {
+	width: 14dp;
+	height: 14dp;
+	margin: 0 7dp;
+	border-radius: 7dp;
+	background-color: #263243;
+	transition: background-color 0.12s cubic-out;
+}
+
+#scrim:not(.skin-original) .dot.lit { background-color: #f2a93b; }
+
+#scrim:not(.skin-original) #status-text {
+	padding: 0 4dp;
+	font-size: 22dp;
+	line-height: 30dp;
+	text-align: center;
+}
+
+#scrim:not(.skin-original) #status-detail {
+	margin: 8dp 0 0 0;
+	padding: 0 4dp;
+	font-size: 18dp;
+	line-height: 24dp;
+	color: #9aa8ba;
+	text-align: center;
+	opacity: 1;
+}
+
+/* Once it closed there are no dots: the reason leads, left-aligned, in the warning colour. */
+#scrim:not(.skin-original) .closed #status-text { margin-top: 6dp; text-align: left; color: #e9a08f; }
+#scrim:not(.skin-original) .closed #status-detail { text-align: left; }
+
+#scrim:not(.skin-original) #buttons { left: 28dp; right: 28dp; bottom: 66dp; }
+
+#scrim:not(.skin-original) .status-button {
+	width: 220dp;
+	height: 44dp;
+	margin: 0 8dp;
+	padding: 0;
+	border: 1dp #3a4a5e;
+	border-radius: 8dp;
+	font-size: 22dp;
+	line-height: 42dp;
+	color: #c9d3de;
+}
+
+#scrim:not(.skin-original) .status-button:focus { border-color: #f2a93b; color: #1a1f27; }
+#scrim:not(.skin-original) .status-button.hidden { display: none; }
+
+#scrim:not(.skin-original) #prompts {
+	left: 28dp;
+	right: 28dp;
+	bottom: 14dp;
+	padding-top: 10dp;
+	border-top: 1dp #243042;
+	font-size: 18dp;
+	line-height: 28dp;
+	color: #9aa8ba;
+	text-align: right;
+	white-space: normal;
+}
+
+#scrim:not(.skin-original) .prompt { margin: 0 0 0 18dp; white-space: nowrap; }
+#scrim:not(.skin-original) .key { font-size: 18dp; line-height: 22dp; }

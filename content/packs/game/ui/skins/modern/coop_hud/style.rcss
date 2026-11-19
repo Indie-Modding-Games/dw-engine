@@ -1,0 +1,19 @@
+/* The co-op HUD in the modern look: the skin's dark rounded card with its amber line for the notice, and a soft pill
+   for the name tag, at the skin's readable text sizes. */
+
+#tag {
+	padding: 3dp 12dp;
+	border-radius: 12dp;
+	background-color: #121922d8;
+	font-size: 18dp;
+	color: #e9eef5;
+}
+
+#notice {
+	padding: 14dp 22dp;
+	border: 2dp #f2a93b;
+	border-radius: 12dp;
+	background-color: #121922f2;
+	font-size: 22dp;
+	color: #e9eef5;
+}

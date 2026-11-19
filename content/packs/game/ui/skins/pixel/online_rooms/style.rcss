@@ -1,0 +1,170 @@
+/* «Search rooms» in the pixel look (the UI concept's rooms-search mockup): the windows with the double light-blue line
+   and gold corner brackets over the grid with the emblem, the gold ▶ and line on the chosen row, egg icons, green
+   ping bars, the device in the corner and key caps on the prompts. The layout stays the screen's
+   (ui/online_rooms/structure.rcss). */
+
+#scrim {
+	background-color: #08141c;
+	decorator: image(/ui/skins/pixel/assets/online_back.png cover center center);
+}
+
+.box,
+#title-plate,
+#prompts,
+#toast,
+.dialog {
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+}
+
+#title-plate { padding: 0 30dp; }
+#title { font-size: 36dp; line-height: 58dp; color: #f2f0e1; }
+
+#device {
+	display: block;
+	position: absolute;
+	right: 8dp;
+	top: -6dp;
+	width: 84dp;
+	height: 80dp;
+	decorator: image(nb-on-device contain center center);
+}
+
+#sample-badge { font-family: "Pixel Small"; font-size: 26dp; color: #050c1a; }
+
+/* The list. */
+#list-head {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	color: #b6e4f7;
+	border-bottom: 2dp #4a79a8;
+	background-color: #10223a;
+}
+
+/* Room for the gold ▶ left of the rows (in each row's wide left border, as the concept's lists), and the columns
+   moved in to match. As the mockup, no mode column: the row's icon tells (an egg for the campaign, swords for a
+   battle). */
+#list-box { padding: 18dp 62dp 18dp 48dp; }
+.col-name { left: 56dp; width: 380dp; }
+.room-row .col-mode,
+#list-head .col-mode { display: none; }
+.col-players { left: 446dp; width: 140dp; }
+.col-ping { left: 596dp; width: 72dp; }
+
+.room-row {
+	width: 718dp;
+	margin-left: -34dp;
+	font-size: 30dp;
+	border: 3dp transparent;
+	border-left-width: 34dp;
+	background-color: transparent;
+	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) padding-box;
+}
+
+.room-row:focus {
+	border-color: transparent;
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+.room-icon {
+	width: 30dp;
+	height: 34dp;
+	top: 20dp;
+	border-radius: 0;
+	background-color: transparent;
+	decorator: image(nb-on-egg contain center center);
+}
+
+.room-icon-versus .room-icon {
+	background-color: transparent;
+	decorator: image(nb-on-swords contain center center);
+}
+
+.room-row.full { color: #93a6bc; }
+.room-row.full .room-players { color: #e2483d; }
+.room-mode { font-family: "Pixel Small"; font-size: 26dp; color: #b6e4f7; }
+
+.ping .bar { background-color: #26364d; }
+.ping.level-4 .bar,
+.ping.level-3 .bar-1, .ping.level-3 .bar-2, .ping.level-3 .bar-3 { background-color: #5fd36a; }
+.ping.level-2 .bar-1, .ping.level-2 .bar-2 { background-color: #efc63c; }
+.ping.level-1 .bar-1 { background-color: #e2483d; }
+
+#list-message-text { font-size: 30dp; }
+#list-message-hint { font-family: "Pixel Small"; font-size: 26dp; color: #93a6bc; }
+
+.scroll-arrow {
+	border: 0;
+	background-color: transparent;
+	decorator: image(nb-up-blue contain center center);
+}
+
+#scroll-down { decorator: image(nb-down-blue contain center center); }
+.scroll-arrow:focus { decorator: image(nb-up-blue contain center center); }
+#scroll-down:focus { decorator: image(nb-down-blue contain center center); }
+#scroll-track { border: 2dp #4a79a8; background-color: #0d1626; }
+#scroll-thumb { background-color: #7cb6e2; }
+
+/* The search, the code and the actions. */
+.side-box { padding: 18dp 26dp; }
+#actions-box { padding-top: 18dp; }
+.side-title { margin-bottom: 6dp; font-size: 30dp; line-height: 30dp; color: #f2f0e1; }
+
+.field {
+	border: 3dp transparent;
+	background-color: #0d1626;
+	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;
+}
+
+.field:focus,
+.field.editing {
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
+
+.field-icon {
+	border: 0;
+	border-radius: 0;
+	background-color: transparent;
+	decorator: image(nb-on-search contain center center);
+}
+
+.field-text { font-family: "Pixel Small"; font-size: 26dp; }
+.field-text.placeholder { color: #5f6f82; }
+.cell { font-size: 30dp; border-bottom-color: #7cb6e2; }
+.cell.current { border-bottom-color: #efc63c; color: #efc63c; }
+.hint { font-family: "Pixel Small"; font-size: 26dp; color: #93a6bc; }
+/* The code's hint takes two lines in this font: the box gives up some of its padding for it. */
+#code-box { padding-top: 12dp; padding-bottom: 10dp; }
+#code-hint { height: 44dp; margin-top: 4dp; line-height: 22dp; white-space: normal; }
+#enter { margin-top: 4dp; }
+
+.action {
+	font-size: 30dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: ninepatch(nb-key-outer, nb-key-inner, 1) border-box;
+}
+
+.action:focus { color: #efc63c; decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box; }
+#enter.unavailable, .action.unavailable { color: #5f6f82; }
+
+#prompts { width: 800dp; padding: 0 24dp; font-family: "Pixel Small"; font-size: 26dp; }
+.prompt { margin-right: 14dp; }
+
+#toast { left: 824dp; width: 408dp; }
+#toast-text { font-family: "Pixel Small"; font-size: 26dp; line-height: 26dp; }
+
+.toast-icon {
+	border: 0;
+	border-radius: 0;
+	decorator: image(nb-on-info contain center center);
+}
+
+.dialog-title { font-size: 30dp; color: #efc63c; }
+.dialog-text { font-family: "Pixel Small"; font-size: 26dp; }
+/* Each choice's hint goes under its name. */
+.dialog-option { font-size: 30dp; white-space: normal; }
+.option-name { display: block; width: auto; }
+.option-hint { display: block; font-family: "Pixel Small"; font-size: 26dp; line-height: 26dp; color: #93a6bc; opacity: 1; }

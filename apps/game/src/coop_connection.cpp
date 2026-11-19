@@ -78,7 +78,7 @@ void CoopConnection::close() {
   view_ = View::Closed;
 }
 
-bool CoopConnection::host() {
+bool CoopConnection::host(bool listed) {
   if (!desc_.configurationError.empty()) {
     view_ = View::Error;
     error_ = desc_.configurationError;
@@ -93,7 +93,7 @@ bool CoopConnection::host() {
   ++generation_;
   peer_.reset();
   error_.clear();
-  peer_ = desc_.host();
+  peer_ = desc_.host(listed);
   if (!peer_) {
     view_ = View::Error;
     error_ = "transport_unavailable";
@@ -148,7 +148,7 @@ bool CoopConnection::join(std::string_view code) {
     return false;
   }
   link_ = std::make_unique<game::coop::CoopLink>(
-      game::coop::CoopLink::guest(*peer_, desc_.identity, "Guest"));
+      game::coop::CoopLink::guest(*peer_, desc_.identity, playerName_));
   ++generation_;
   view_ = View::Joining;
   return true;

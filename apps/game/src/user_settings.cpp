@@ -74,6 +74,10 @@ constexpr std::string_view FavoriteFoodKey = "favorite_food";
 constexpr std::string_view WidescreenPicturesKey = "widescreen_pictures";
 constexpr std::string_view DevToolsKey = "dev_tools";
 constexpr std::string_view GymSessionsKey = "gym_sessions";
+constexpr std::string_view OnlineNameKey = "online_name";
+constexpr std::string_view OnlineIconKey = "online_icon";
+constexpr std::string_view OnlineWinsKey = "online_wins";
+constexpr std::string_view OnlineLossesKey = "online_losses";
 constexpr std::string_view QuickBattleStartKey = "quick_battle_start";
 constexpr std::string_view DifficultyKey = "difficulty";
 constexpr std::string_view ShopJobModeKey = "shop_job_mode";
@@ -240,6 +244,18 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* sessions = tree->find(GymSessionsKey)) {
       settings.gymSessions = reader.integer<int>(*sessions);
+    }
+    if (const core::YamlNode* name = tree->find(OnlineNameKey)) {
+      settings.onlineName = reader.text(*name);
+    }
+    if (const core::YamlNode* icon = tree->find(OnlineIconKey)) {
+      settings.onlineIcon = reader.text(*icon);
+    }
+    if (const core::YamlNode* wins = tree->find(OnlineWinsKey)) {
+      settings.onlineWins = reader.integer<int>(*wins);
+    }
+    if (const core::YamlNode* losses = tree->find(OnlineLossesKey)) {
+      settings.onlineLosses = reader.integer<int>(*losses);
     }
     for (const auto& [key, flag] :
          {std::pair{QuickBattleStartKey, &UserSettings::quickBattleStart},
@@ -454,6 +470,20 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.gymSessions) {
     root.set(std::string{GymSessionsKey},
              core::YamlNode::scalar(std::to_string(*settings.gymSessions)));
+  }
+  if (settings.onlineName) {
+    root.set(std::string{OnlineNameKey}, core::YamlNode::scalar(*settings.onlineName));
+  }
+  if (settings.onlineIcon) {
+    root.set(std::string{OnlineIconKey}, core::YamlNode::scalar(*settings.onlineIcon));
+  }
+  if (settings.onlineWins) {
+    root.set(std::string{OnlineWinsKey},
+             core::YamlNode::scalar(std::to_string(*settings.onlineWins)));
+  }
+  if (settings.onlineLosses) {
+    root.set(std::string{OnlineLossesKey},
+             core::YamlNode::scalar(std::to_string(*settings.onlineLosses)));
   }
   for (const auto& [key, flag] :
        {std::pair{QuickBattleStartKey, &UserSettings::quickBattleStart},

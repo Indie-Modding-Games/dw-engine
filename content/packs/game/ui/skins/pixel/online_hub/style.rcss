@@ -1,0 +1,58 @@
+/* The «Multiplayer» hub in the pixel look: the rooms screens' window (double light-blue line, gold corner brackets) over
+   the grid with the emblem, the gold ▶ and line on the chosen entry, and key caps on the prompts. The layout stays
+   the screen's (ui/online_hub/structure.rcss), larger for this skin's fonts. */
+
+#scrim {
+	background-color: #08141c;
+	decorator: image(/ui/skins/pixel/assets/online_back.png cover center center);
+}
+
+#panel {
+	width: 800dp;
+	height: 600dp;
+	margin-left: -400dp;
+	margin-top: -300dp;
+	padding: 20dp 34dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+}
+
+#title { font-size: 36dp; line-height: 50dp; color: #f2f0e1; }
+
+#player-card { height: 92dp; border-bottom: 2dp #4a79a8; }
+#player-icon { width: 72dp; height: 72dp; }
+#player-label { left: 92dp; font-family: "Pixel Small"; font-size: 26dp; color: #93a6bc; opacity: 1; }
+#player-name { left: 92dp; top: 32dp; width: 420dp; font-size: 30dp; color: #efc63c; }
+#player-record { top: 32dp; width: 200dp; font-size: 30dp; color: #b6e4f7; }
+
+/* The entries: room on the left for the gold ▶ (in the wide left border, as the rooms list). */
+.hub-entry {
+	width: 724dp;
+	height: 82dp;
+	margin: 0 0 6dp -34dp;
+	padding-left: 72dp;
+	border: 3dp transparent;
+	border-left-width: 34dp;
+	background-color: transparent;
+	color: #f2f0e1;
+	decorator: none;
+}
+
+.hub-entry:focus {
+	border-color: transparent;
+	color: #efc63c;
+	decorator: image(nb-cursor scale-none left center) border-box, ninepatch(nb-row-outer, nb-row-inner, 1) padding-box;
+}
+
+.hub-entry.back { height: 56dp; }
+.entry-icon { left: 12dp; top: 16dp; width: 46dp; height: 46dp; }
+#entry-versus .entry-icon { decorator: image(nb-on-swords contain center center); }
+#entry-rooms .entry-icon { decorator: image(nb-on-egg contain center center); }
+#entry-profile .entry-icon { decorator: image(nb-on-avatar contain center center); }
+.entry-name { padding-top: 4dp; font-size: 30dp; line-height: 40dp; }
+.back .entry-name { line-height: 50dp; }
+.entry-hint { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #93a6bc; opacity: 1; }
+
+#prompts { left: 34dp; bottom: 18dp; font-family: "Pixel Small"; font-size: 26dp; }

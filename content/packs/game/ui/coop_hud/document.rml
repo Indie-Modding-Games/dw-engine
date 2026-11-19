@@ -1,0 +1,12 @@
+<rml>
+<head>
+	<title>Co-op HUD</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="tag" class="hidden"><span id="tag-name"></span></div>
+	<div id="notice" class="hidden"><p id="notice-text"></p></div>
+</body>
+</rml>

@@ -1,0 +1,115 @@
+/* The online profile in the DevVago look, over ../online_common/style.rcss: the terminal card over the night grid, the
+   head with the big icon and the name in the heading yellow, the name field as a deeper blue box with the yellow
+   caret, the six icons on small tiles (the chosen one with a yellow line), the record's numbers in yellow and the
+   notes in the description blue. Labels in a narrower column than the screen's, so the small notes fit in two lines.
+   The layout stays the screen's (ui/online_profile/structure.rcss), larger. */
+
+#panel {
+	width: 840dp;
+	height: 660dp;
+	margin-left: -420dp;
+	margin-top: -330dp;
+	padding: 18dp 28dp;
+}
+
+#title {
+	margin: 0 0 10dp 0;
+	padding: 0 6dp 6dp 6dp;
+	line-height: 48dp;
+	border-bottom: 2dp #397ca4;
+}
+
+#profile-head { height: 92dp; margin-bottom: 12dp; border-bottom: 2dp #397ca4; }
+#head-icon { left: 6dp; top: 4dp; width: 76dp; height: 76dp; }
+#head-name { left: 100dp; top: 18dp; width: 440dp; font-size: 30dp; line-height: 44dp; color: #fff371; }
+#head-record { top: 22dp; width: 220dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 40dp; color: #d8f1ff; }
+
+/* The rows: the label in a 190dp column, the value after it. Only the name row is a button. */
+.profile-row {
+	height: 58dp;
+	padding: 0 12dp;
+	font-family: "Pixel Small"; font-size: 26dp;
+	line-height: 54dp;
+	color: #d8f1ff;
+}
+
+div.profile-row {
+	border: 0;
+	background-color: transparent;
+}
+
+.row-label { width: 190dp; color: #a8c7d9; opacity: 1; }
+.profile-row:focus .row-label { color: #ffe64a; }
+
+#name-box {
+	width: 560dp;
+	height: 42dp;
+	padding: 0 10dp;
+	border: 2dp #397ca4;
+	background-color: #061321;
+	line-height: 38dp;
+	color: #d8f1ff;
+}
+
+#name-field:focus #name-box { border-color: #ffd51e; }
+#name-caret { color: #ffd51e; }
+
+#name-hint {
+	margin: 6dp 0 8dp 214dp;
+	font-family: "Pixel Small"; font-size: 26dp;
+	line-height: 28dp;
+	color: #a8c7d9;
+	opacity: 1;
+}
+
+.icon-choice {
+	width: 54dp;
+	height: 54dp;
+	margin: 2dp 10dp 0 0;
+	padding: 5dp;
+	border: 2dp #345875;
+	background-color: #0a2035;
+}
+
+.icon-choice:focus { border-color: #ffd51e; background-color: #153653; }
+.icon-choice.selected { border-color: #fff371; background-color: #153653; }
+.icon-choice .profile-icon { width: 40dp; height: 40dp; }
+
+#icon-name { left: 214dp; top: 58dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #fff371; opacity: 1; }
+
+#record-row { margin-top: 30dp; }
+.record-label { margin-right: 12dp; color: #a8c7d9; opacity: 1; }
+.record-value { width: 90dp; color: #fff371; }
+
+#saved-note {
+	margin: 8dp 0 0 12dp;
+	font-family: "Pixel Small"; font-size: 26dp;
+	line-height: 28dp;
+	color: #a8c7d9;
+	opacity: 1;
+}
+
+#profile-back {
+	left: 28dp;
+	bottom: 70dp;
+	width: 240dp;
+	height: 52dp;
+	font-family: "Pixel Small"; font-size: 26dp;
+	line-height: 48dp;
+}
+
+#toast {
+	left: 290dp;
+	right: 28dp;
+	bottom: 70dp;
+	height: 52dp;
+	font-family: "Pixel Small"; font-size: 26dp;
+	line-height: 28dp;
+	color: #ffb070;
+}
+
+#toast.hidden { display: none; }
+#toast-text { margin: 0; }
+
+#prompts { left: 28dp; right: 28dp; bottom: 14dp; line-height: 36dp; }
+.prompt { margin-right: 18dp; }

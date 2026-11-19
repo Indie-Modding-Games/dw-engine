@@ -1,0 +1,98 @@
+/* The «Multiplayer» hub in the original look: one of the original's windows (online/style.rcss) like the UI concept's
+   versus menu: the yellow title, the player's icon, name and record over a dark cyan line, the entries as the
+   original's text menu (no icons: a name at three times the font's cell, what it opens in the description grey at two
+   times under it, the cursor and outline on the focused one) and the prompts under a light cyan line. */
+
+#panel {
+	width: 720dp;
+	height: 516dp;
+	margin-left: -360dp;
+	margin-top: -258dp;
+	padding: 9dp 24dp 0 24dp;
+}
+
+#title {
+	margin: 0 0 6dp 0;
+	line-height: 45dp;
+}
+
+#player-card {
+	height: 78dp;
+	margin-bottom: 9dp;
+	border-bottom: 3dp #4a9fc5;
+}
+
+#player-icon {
+	left: 3dp;
+	top: 3dp;
+	width: 54dp;
+	height: 54dp;
+}
+
+#player-label {
+	left: 75dp;
+	top: 0;
+	font-size: 22dp;
+	line-height: 27dp;
+	color: #b2b2b2;
+	opacity: 1;
+}
+
+#player-name {
+	left: 75dp;
+	top: 27dp;
+	width: 360dp;
+	font-size: 33dp;
+	line-height: 39dp;
+	color: #d0d0d0;
+}
+
+#player-record {
+	top: 27dp;
+	width: 220dp;
+	font-size: 33dp;
+	line-height: 39dp;
+	color: #fff371;
+	overflow: hidden;
+}
+
+.hub-entry {
+	height: 75dp;
+	margin: 0 0 3dp 0;
+	padding: 0 9dp;
+}
+
+.hub-entry.back {
+	height: 48dp;
+	padding-left: 9dp;
+}
+
+.entry-icon { display: none; }
+
+.entry-name {
+	padding-top: 4dp;
+	font-size: 33dp;
+	line-height: 36dp;
+	overflow: hidden;
+}
+
+.back .entry-name {
+	padding-top: 0;
+	line-height: 42dp;
+}
+
+.entry-hint {
+	font-size: 22dp;
+	line-height: 27dp;
+	color: #b2b2b2;
+	opacity: 1;
+	overflow: hidden;
+}
+
+#prompts {
+	left: 12dp;
+	right: 12dp;
+	bottom: 6dp;
+	padding: 9dp 12dp 0 12dp;
+	border-top: 3dp #90d9fa;
+}

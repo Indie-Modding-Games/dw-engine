@@ -17,17 +17,18 @@ body {
 /* Text that the original-look sheets style: the pixel skins draw it with the pixel fonts, and so
    does this one — accented letters and ñ read far better here than in the bitmap font (its cells
    clip the accents) and the type stays one system: Pixel Body for everything the page writes.
-   The size is !important on purpose: Pixel Body's cell is 15 pixels, so it rasterizes without
+   The size is 30dp on purpose: Pixel Body's cell is 15 pixels, so it rasterizes without
    horizontal bands only at whole multiples of it (30dp = two dp per pixel). The sheets still ask
    for the bitmap font's 33dp and 22dp here and there, and at those sizes the pixel font's rows
    land between the screen's pixels — the letters come out striped. 30dp everywhere fixes the
-   sampling without touching the boxes, which were sized for the taller 33. */
+   sampling without touching the boxes, which were sized for the taller 33. No !important: the style
+   parser rejects it and drops the whole declaration. */
 .original-look,
 .original-look.original-dialogue {
 	font-family: "Pixel Body";
 	font-weight: normal;
-	font-size: 30dp !important;
-	line-height: 33dp !important;
+	font-size: 30dp;
+	line-height: 33dp;
 	color: #d8f1ff;
 }
 

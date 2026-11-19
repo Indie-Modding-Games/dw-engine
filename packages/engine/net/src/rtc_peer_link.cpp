@@ -362,14 +362,15 @@ RtcPeerLink::~RtcPeerLink() {
   impl_->close();
 }
 
-std::unique_ptr<RtcPeerLink> RtcPeerLink::host(RtcSettings settings, const SocketOpener& open) {
+std::unique_ptr<RtcPeerLink> RtcPeerLink::host(RtcSettings settings, const SocketOpener& open,
+                                               bool listed) {
   const std::string server = settings.signalServer;
   std::unique_ptr<RtcPeerLink> link{new RtcPeerLink{std::move(settings), true}};
   if (server.empty()) {
     link->impl_->fail(PeerFailure::NoServer);
     return link;
   }
-  link->impl_->signal = std::make_unique<SignalClient>(open(hostUrl(server)));
+  link->impl_->signal = std::make_unique<SignalClient>(open(hostUrl(server, listed)));
   return link;
 }
 

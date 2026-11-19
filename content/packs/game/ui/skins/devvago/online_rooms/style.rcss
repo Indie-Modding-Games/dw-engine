@@ -1,0 +1,165 @@
+/* «Search rooms» in the DevVago look, over ../online_common/style.rcss: terminal cards over the night grid, the title
+   plate with the cover's yellow folder edge and the skin's device at the stage's right, the rooms as the rules
+   screen's rows in fixed columns (each cut to its width: name, mode, players, ping), the skin's device or the shared
+   swords as each room's mark, the battle's arrows on the scroll bar, the fields as deeper blue boxes, Create in the
+   cover's yellow, and the prompts wrapping onto a second line rather than running out of their bar. The layout stays
+   the screen's (ui/online_rooms/structure.rcss). */
+
+#title-plate { border-left: 8dp #ffd51e; padding: 0 22dp; }
+#title { line-height: 60dp; }
+
+#device {
+	display: block;
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 64dp;
+	height: 64dp;
+	decorator: image(menu-partner-icon contain center center);
+}
+
+#sample-badge { height: 40dp; top: 12dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 40dp; color: #081724; background-color: #ffd51e; }
+
+/* The list. */
+#list-head { height: 44dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 44dp; color: #a8c7d9; border-bottom: 2dp #397ca4; }
+
+/* The columns only: the name's inner text must stay unclipped, the logic measures it to cut it with "...". */
+#list-head > span,
+.room-row > span,
+.room-row > .ping {
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+/* Fixed columns with a clear gap between them: name 284dp, mode 130dp, players 150dp, ping 66dp. */
+.col-name { left: 58dp; width: 284dp; }
+.col-mode { left: 356dp; width: 130dp; }
+.col-players { left: 492dp; width: 150dp; }
+.col-ping { left: 652dp; width: 66dp; }
+
+.room-row {
+	height: 78dp;
+	font-family: "Pixel Small"; font-size: 26dp;
+	line-height: 74dp;
+	border: 2dp #345875;
+	background-color: #0a2035;
+	color: #d8f1ff;
+}
+
+.room-row:focus { border-color: #ffd51e; background-color: #153653; color: #ffe64a; }
+.room-row.full:not(:focus) { color: #6c8396; }
+.room-row.full .room-players { color: #ff6b5e; }
+.room-mode { color: #a8c7d9; }
+.room-row:focus .room-mode { color: #ffe64a; }
+
+.room-icon {
+	left: 10dp;
+	top: 16dp;
+	width: 42dp;
+	height: 42dp;
+	border-radius: 0;
+	background-color: transparent;
+	decorator: image(menu-partner-icon contain center center);
+}
+
+.room-icon-versus .room-icon { background-color: transparent; decorator: image(/ui/online_profile/icons/swords.png contain center center); }
+.room-row.full:not(:focus) .room-icon { opacity: 0.5; }
+
+.ping .bar { background-color: #345875; }
+
+#list-message-text { font-size: 30dp; line-height: 40dp; color: #d8f1ff; }
+#list-message-hint { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #a8c7d9; }
+
+/* The scroll bar: the battle's up arrow, turned for the way down. */
+.scroll-arrow { border: 2dp #345875; background-color: #0a2035; decorator: image(battle-up-arrow scale-none center center); }
+#scroll-down { decorator: image(battle-up-arrow flip-vertical scale-none center center); }
+#scroll-track { background-color: #061321; }
+#scroll-thumb { background-color: #72c7ff; }
+
+/* The right column: the code box taller, so its hint can take two lines. */
+#search-box { top: 84dp; height: 128dp; }
+#code-box { top: 224dp; height: 234dp; }
+#actions-box { top: 470dp; height: 102dp; padding-top: 10dp; }
+#actions-box .action { height: 40dp; line-height: 36dp; margin: 0 0 8dp 0; }
+.side-title { font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; color: #a8c7d9; }
+
+.field {
+	height: 56dp;
+	font-family: "Pixel Small"; font-size: 26dp;
+	line-height: 52dp;
+	border: 2dp #397ca4;
+	background-color: #061321;
+}
+
+.field:focus { border-color: #ffd51e; background-color: #0a2035; }
+.field.editing { border-color: #ffd51e; }
+.field-icon { border: 3dp #72c7ff; }
+.field-text { color: #d8f1ff; }
+.field-text.placeholder { color: #6c8396; }
+.caret { color: #ffd51e; }
+
+.cell { font-size: 30dp; line-height: 42dp; color: #d8f1ff; border-bottom: 3dp #72c7ff; }
+.cell.current { border-bottom-color: #ffd51e; color: #ffe64a; }
+.cell.hidden { display: none; }
+
+.hint { height: 52dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #a8c7d9; white-space: normal; overflow: hidden; }
+
+.action { height: 44dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 40dp; }
+#enter { width: 220dp; }
+#enter.unavailable, .action.unavailable { color: #6c8396; }
+
+/* Create is the gold button, as Start in the room; the focus lights it with a white line. */
+#create { border-color: #ffd51e; background-color: #ffd51e; color: #081724; }
+#create:focus { border-color: #ffffff; background-color: #ffe64a; color: #081724; }
+
+/* The prompts: a second line when the keys of this language do not fit in one. */
+#prompts {
+	top: 588dp;
+	border: 2dp #72c7ff;
+	background-color: #0b1c2df5;
+	decorator: vertical-gradient(#153653 #0a1929);
+	width: 852dp;
+	height: auto;
+	min-height: 56dp;
+	padding: 8dp 12dp 6dp 12dp;
+	font-family: "Pixel Small"; font-size: 26dp;
+	line-height: 34dp;
+	white-space: normal;
+}
+
+#prompts .prompt { display: inline-block; margin-right: 14dp; }
+#prompts #prompt-quick-box { display: none; }
+#prompts .prompt.hidden { display: none; }
+
+/* The notice beside the prompts. */
+#toast {
+	top: 588dp;
+	width: 368dp;
+	min-height: 56dp;
+	padding: 8dp 12dp 8dp 50dp;
+	border: 2dp #ffd51e;
+	background-color: #0b1c2df5;
+	decorator: vertical-gradient(#153653 #0a1929);
+}
+
+#toast.hidden { display: none; }
+.toast-icon { left: 12dp; top: 14dp; border: 2dp #ffd51e; }
+#toast-text { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #d8f1ff; }
+
+/* The dialogs: a card with the yellow line, options as rows with their few words under the name. */
+.dialog {
+	left: 296dp;
+	top: 150dp;
+	width: 640dp;
+	padding: 18dp 24dp;
+	border: 2dp #ffd51e;
+	background-color: #0b1c2dfa;
+	decorator: vertical-gradient(#153653 #0a1929);
+}
+
+.dialog-title { margin: 0 0 12dp 0; padding-bottom: 6dp; font-size: 30dp; line-height: 40dp; color: #fff371; border-bottom: 2dp #397ca4; }
+.dialog-text { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #d8f1ff; }
+.dialog-option { margin: 8dp 0; padding: 6dp 14dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; white-space: normal; text-align: left; }
+.option-name { display: block; width: auto; }
+.option-hint { display: block; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #a8c7d9; opacity: 1; }
+.dialog-option:focus .option-hint { color: #d8f1ff; }

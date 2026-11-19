@@ -1,0 +1,42 @@
+/* Getting into a room and why it failed, in the pixel look: the rooms screens' window over the grid with the emblem, the
+   gold dots while it waits, the reason in amber, and the buttons as key caps. The layout stays the screen's
+   (ui/online_status/structure.rcss), larger for this skin's fonts. */
+
+#scrim {
+	background-color: #08141c;
+	decorator: image(/ui/skins/pixel/assets/online_back.png cover center center);
+}
+
+#panel {
+	width: 800dp;
+	height: 380dp;
+	margin-left: -400dp;
+	margin-top: -190dp;
+	padding: 20dp 34dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+}
+
+#title { font-size: 36dp; line-height: 50dp; color: #f2f0e1; border-bottom: 2dp #4a79a8; }
+.dot { width: 16dp; height: 16dp; background-color: #24456a; }
+.dot.lit { background-color: #efc63c; }
+#status-text { font-size: 30dp; line-height: 38dp; color: #f2f0e1; }
+.closed #status-text { color: #ffb070; }
+#status-detail { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #93a6bc; opacity: 1; }
+#buttons { left: 34dp; right: 34dp; bottom: 70dp; }
+
+.status-button {
+	width: 260dp;
+	height: 52dp;
+	font-size: 30dp;
+	line-height: 46dp;
+	color: #f2f0e1;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: ninepatch(nb-key-outer, nb-key-inner, 1) border-box;
+}
+
+.status-button:focus { color: #efc63c; decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box; }
+#prompts { left: 34dp; bottom: 18dp; font-family: "Pixel Small"; font-size: 26dp; }

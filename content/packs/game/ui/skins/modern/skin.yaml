@@ -91,6 +91,21 @@ screens:
     styles: [ui/skins/modern/shop_haggle/style]
   shop_job_rules:
     styles: [ui/skins/modern/shop_haggle/style, ui/skins/modern/shop_job_rules/style]
+  # The online screens (the multiplayer hub, the profile, connecting, the room list and the room): the pause
+  # menu's slate panels and amber focus, each in its own sheet. Their rules are scoped to #scrim:not(.skin-original),
+  # so a skin that extends this one and marks the scrim skin-original keeps none of them.
+  online_hub:
+    styles: [ui/skins/modern/online_hub/style]
+  online_profile:
+    styles: [ui/skins/modern/online_profile/style]
+  coop_hud:
+    styles: [ui/skins/modern/coop_hud/style]
+  online_status:
+    styles: [ui/skins/modern/online_status/style]
+  online_rooms:
+    styles: [ui/skins/modern/online_rooms/style]
+  online_room:
+    styles: [ui/skins/modern/online_room/style]
 # How the screens that share a document and script with the original look are laid out: the scripts read these
 # options with ui.layout (docs/architecture/ui.md#skins). menu: the screen's layout; box: how
 # its boxes open (the original's grow from a gray outline).

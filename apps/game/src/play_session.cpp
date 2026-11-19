@@ -1823,6 +1823,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   // partnerTickNormal), so a care scene shows no need bubble; and in its training state
   // (partnerSetState(10)), so a course shows it while game time stands still.
   const bool fieldRunning = !paused() && field.gameTimeRan();
+  fieldRunning_ = fieldRunning;
   publishMinimapAllowed(MinimapScene{
       .fieldRunning = fieldRunning,
       .battle = battleScreen_.active(),

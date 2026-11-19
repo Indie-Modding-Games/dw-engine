@@ -293,6 +293,8 @@ bool readFlag(Options& options, std::string_view argument) {
     options.newGame = true;
   } else if (argument == "--versus-loopback") {
     options.versusLoopback = true;
+  } else if (argument == "--online-sample") {
+    options.onlineSample = true;
   } else if (argument == "--list-saves") {
     options.listSaves = true;
   } else if (argument == CheckSystemOption) {

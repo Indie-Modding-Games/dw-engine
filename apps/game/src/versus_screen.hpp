@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "field_scene.hpp"
@@ -58,6 +59,9 @@ public:
   // Takes the document's commands while it is open; false for any other command.
   bool handle(const ui::UiCommand& command);
   [[nodiscard]] bool takesText() const { return active_ && flow_ && flow_->takesText(); }
+  // An online series this player won (true) or lost (false), once, for the online profile's
+  // record; the local two-flow test gives none.
+  std::optional<bool> takeOutcome() { return std::exchange(outcome_, std::nullopt); }
   void type(std::string_view text, bool enter);
   // The finisher's own button (the "extra" input; vs_combat.c: VS__tickInput's square).
   void pressFinisher();
@@ -109,6 +113,7 @@ private:
   std::optional<VersusFlowDesc> rivalDesc_;
   std::unique_ptr<VersusLoopback> loopback_;
   std::optional<VersusFlow> flow_;
+  std::optional<bool> outcome_;
   // The last tick's time, for the loopback's clock.
   std::optional<double> lastSeconds_;
   bool active_ = false;

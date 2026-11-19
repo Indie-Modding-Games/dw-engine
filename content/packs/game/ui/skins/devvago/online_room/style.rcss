@@ -1,0 +1,188 @@
+/* «Room» in the DevVago look, over ../online_common/style.rcss: terminal cards over the night grid, the title plate
+   with the cover's yellow folder edge and the skin's device at the stage's right, the room's card headed by the cover's
+   island (the "PROJECT FOLDER" picture) with its labels in the description blue, the modes as the rules screen's rows
+   with an icon each (the chosen one in yellow), the players with the skin's player face, the shared crown and a green
+   ready mark, Start/Ready in the cover's yellow, the code chip and the notice. The columns are rearranged so the
+   card's values get more room: card 380dp, modes 480dp, players 340dp. */
+
+#title-plate { border-left: 8dp #ffd51e; padding: 0 22dp; }
+#title { line-height: 60dp; overflow: hidden; }
+
+#device {
+	display: block;
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 64dp;
+	height: 64dp;
+	decorator: image(menu-partner-icon contain center center);
+}
+
+#sample-badge { height: 40dp; top: 12dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 40dp; color: #081724; background-color: #ffd51e; }
+
+/* The room's card. */
+#info-box { width: 380dp; height: 524dp; padding: 14dp 16dp; }
+
+.scene {
+	height: 100dp;
+	margin-bottom: 12dp;
+	border: 2dp #397ca4;
+	background-color: #061321;
+	decorator: image(/ui/skins/devvago/assets/hero_title cover center center);
+}
+
+/* Each row is its label over its value, so a value gets the card's whole width (a room name cut with "..." keeps
+   most of its letters) and no label is cut. */
+.info-row { height: 52dp; padding-top: 2dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; border-bottom: 1dp #345875; }
+.info-label { display: block; width: 100%; color: #a8c7d9; overflow: hidden; white-space: nowrap; }
+.info-value { display: block; position: relative; left: 0; width: 100%; color: #d8f1ff; overflow: hidden; white-space: nowrap; }
+.accent { color: #fff371; }
+
+/* The tabs over the modes and the players. */
+.tab {
+	top: 12dp;
+	height: 36dp;
+	padding: 0 14dp;
+	font-family: "Pixel Small"; font-size: 26dp;
+	line-height: 32dp;
+	color: #081724;
+	border: 2dp #ffd51e;
+	background-color: #ffd51e;
+}
+
+/* The modes (host) and the chosen mode (guest). */
+#modes-box,
+#mode-card { left: 396dp; width: 480dp; height: 384dp; padding: 60dp 16dp 12dp 16dp; }
+
+.mode-row {
+	height: 72dp;
+	margin: 0 0 8dp 0;
+	padding: 0 10dp 0 74dp;
+	border: 2dp #345875;
+	background-color: #0a2035;
+	color: #d8f1ff;
+}
+
+.mode-row:focus { border-color: #ffd51e; background-color: #153653; color: #ffe64a; }
+.mode-row.unavailable:not(:focus) { color: #6c8396; }
+
+.mode-icon {
+	left: 12dp;
+	top: 12dp;
+	width: 46dp;
+	height: 46dp;
+	background-color: transparent;
+	decorator: image(menu-partner-icon contain center center);
+}
+
+.mode-versus .mode-icon { decorator: image(/ui/online_profile/icons/swords.png contain center center); }
+.mode-training .mode-icon { decorator: image(/ui/online_profile/icons/dumbbell.png contain center center); }
+.mode-free .mode-icon { decorator: image(/ui/online_profile/icons/tree.png contain center center); }
+.mode-row.unavailable .mode-icon { opacity: 0.4; }
+
+.mode-name { width: 380dp; padding-top: 6dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; overflow: hidden; white-space: nowrap; }
+.mode-text { width: 380dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #a8c7d9; opacity: 1; overflow: hidden; white-space: nowrap; }
+.mode-row:focus .mode-text { color: #d8f1ff; }
+.mode-row.unavailable .mode-text { color: #56708a; }
+.mode-row.selected:not(:focus) .mode-name { color: #fff371; }
+
+#mode-card { padding: 16dp; }
+
+#mode-card-scene {
+	height: 200dp;
+	border: 2dp #397ca4;
+	background-color: #061321;
+	decorator: image(/ui/skins/devvago/assets/hero_title cover center center);
+}
+
+#mode-card-name { margin: 10dp 0 6dp 0; font-size: 30dp; line-height: 40dp; color: #fff371; }
+#mode-card-text { margin: 0 12dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #d8f1ff; }
+
+/* The players. */
+#players-box { left: 892dp; width: 340dp; height: 384dp; padding: 60dp 12dp 12dp 12dp; }
+
+.member {
+	height: 72dp;
+	padding: 0 0 0 66dp;
+	font-family: "Pixel Small"; font-size: 26dp;
+	border: 2dp #345875;
+	background-color: #0a2035;
+	color: #d8f1ff;
+}
+
+.member.local { border-color: #72c7ff; background-color: #153653; }
+.member.waiting { color: #6c8396; }
+
+.avatar {
+	left: 10dp;
+	top: 12dp;
+	width: 46dp;
+	height: 46dp;
+	border-radius: 0;
+	background-color: transparent;
+	decorator: image(menu-player-icon contain center center);
+}
+
+.member.waiting .avatar { opacity: 0.3; }
+
+.member-name { width: 196dp; height: 34dp; padding-top: 6dp; line-height: 30dp; overflow: hidden; }
+.member.waiting .member-name { width: 236dp; height: 68dp; padding-top: 0; font-family: "Pixel Small"; font-size: 26dp; line-height: 68dp; }
+.member-mark { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #fff371; overflow: hidden; white-space: nowrap; }
+
+/* The crown at the row's top right; the ready mark on the second line, where a host has its mark (a host is never
+   marked ready). */
+.crown {
+	right: 10dp;
+	top: 10dp;
+	width: 30dp;
+	height: 26dp;
+	background-color: transparent;
+	decorator: image(/ui/online_profile/icons/crown.png contain center center);
+}
+
+.ready-mark { left: 66dp; right: auto; top: 40dp; bottom: auto; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #6fe07a; }
+
+/* The buttons, the code and the notice. */
+.room-button { top: 496dp; height: 52dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 48dp; }
+#start { left: 396dp; width: 232dp; border-color: #ffd51e; background-color: #ffd51e; color: #081724; }
+/* The focus keeps the gold fill and lights it, with a white line, so Start never reads as unfocused. */
+#start:focus { border-color: #ffffff; background-color: #ffe64a; color: #081724; }
+#start.unavailable { border-color: #345875; background-color: #0a2035; color: #6c8396; }
+#leave { left: 892dp; width: 340dp; }
+
+#code-chip {
+	left: 640dp;
+	top: 496dp;
+	width: 236dp;
+	height: 52dp;
+	padding: 0 12dp;
+	font-family: "Pixel Small"; font-size: 26dp;
+	line-height: 48dp;
+	color: #a8c7d9;
+	border: 2dp #397ca4;
+	background-color: #061321;
+	overflow: hidden;
+}
+
+.chip-code { color: #fff371; }
+
+#toast {
+	left: 396dp;
+	top: 560dp;
+	width: 836dp;
+	height: 60dp;
+	padding: 4dp 14dp 4dp 52dp;
+	border: 2dp #397ca4;
+	background-color: #0b1c2df5;
+	decorator: vertical-gradient(#153653 #0a1929);
+}
+
+#toast.warning { border-color: #ffd51e; }
+#toast.hidden { display: none; }
+.toast-icon { left: 12dp; top: 15dp; border: 2dp #72c7ff; }
+#toast.warning .toast-icon { border-color: #ffd51e; }
+#toast-text { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #d8f1ff; }
+
+/* Under the room's card and the notice. */
+#prompts { top: 632dp; border: 2dp #72c7ff; background-color: #0b1c2df5; decorator: vertical-gradient(#153653 #0a1929); width: 640dp; height: 48dp; padding: 0 16dp; line-height: 44dp; }
+.prompt { margin-right: 18dp; }

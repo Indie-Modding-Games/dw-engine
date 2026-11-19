@@ -140,6 +140,19 @@ screens:
     styles: [bug_report/style]
   fishing_hud:
     styles: [fishing_hud/style]
+  # The online screens (an engine addition): a sheet each over the shared one, in the look of the new game's rules.
+  online_hub:
+    styles: [online_common/style, online_hub/style]
+  online_profile:
+    styles: [online_common/style, online_profile/style]
+  coop_hud:
+    styles: [coop_hud/style]
+  online_status:
+    styles: [online_common/style, online_status/style]
+  online_rooms:
+    styles: [online_common/style, online_rooms/style]
+  online_room:
+    styles: [online_common/style, online_room/style]
 document_classes:
   # Style only: title-original and slots-original are read by their cover and slot list sheets.
   # skin-original marks the panel of the screens that share the modern look's sheets (pause_menu,
@@ -178,6 +191,18 @@ document_classes:
     panel: [skin-original]
   egg_box:
     panel: [skin-original]
+  # The online screens have their own sheets: skin-original keeps the modern look's ones (scoped
+  # #scrim:not(.skin-original)) off them.
+  online_hub:
+    scrim: [skin-original]
+  online_profile:
+    scrim: [skin-original]
+  online_status:
+    scrim: [skin-original]
+  online_rooms:
+    scrim: [skin-original]
+  online_room:
+    scrim: [skin-original]
   hud:
     field-meter-0-bar: [pips]
     field-meter-1-bar: [pips]

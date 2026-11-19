@@ -306,6 +306,9 @@ void VersusScreen::tick(double nowSeconds) {
     flow_->tick(net::Millis{static_cast<std::int64_t>(nowSeconds * MillisPerSecond)});
   }
   lastSeconds_ = nowSeconds;
+  if (const auto won = flow_->takeOutcome(); won && !loopback_) {
+    outcome_ = won;
+  }
   if (arena_) {
     arena_->tick(TickSeconds);
   }

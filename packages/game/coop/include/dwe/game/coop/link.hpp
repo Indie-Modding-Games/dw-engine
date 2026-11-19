@@ -5,6 +5,7 @@
 
 #include <deque>
 #include <optional>
+#include <string>
 
 namespace dwe::game::coop {
 
@@ -40,6 +41,8 @@ public:
   [[nodiscard]] LinkPhase phase() const { return phase_; }
   [[nodiscard]] LinkFailure failure() const { return failure_; }
   [[nodiscard]] std::optional<PlayerId> remotePlayer() const { return remotePlayer_; }
+  // The name the guest gave in its hello (its online profile), on the host; empty on the guest.
+  [[nodiscard]] const std::string& remoteName() const { return remoteName_; }
   [[nodiscard]] std::optional<Message> receive();
   core::Result<void> send(const Message& message);
   void leave(LeaveReason reason = LeaveReason::Quit);
@@ -56,6 +59,7 @@ private:
   LinkPhase phase_ = LinkPhase::Connecting;
   LinkFailure failure_ = LinkFailure::None;
   std::optional<PlayerId> remotePlayer_;
+  std::string remoteName_;
   std::deque<Message> incoming_;
   net::Millis now_{0};
   std::optional<net::Millis> opened_;

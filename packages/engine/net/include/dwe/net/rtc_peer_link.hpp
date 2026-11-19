@@ -40,7 +40,9 @@ std::unique_ptr<SignalSocket> openWebSocketTrusting(const std::string& url,
 // thread.
 class RtcPeerLink final : public PeerLink {
 public:
-  static std::unique_ptr<RtcPeerLink> host(RtcSettings settings, const SocketOpener& open);
+  // A listed room goes in the signaling server's public list; any other is reached by its code.
+  static std::unique_ptr<RtcPeerLink> host(RtcSettings settings, const SocketOpener& open,
+                                           bool listed = false);
   static std::unique_ptr<RtcPeerLink> join(RtcSettings settings, std::string_view code,
                                            const SocketOpener& open);
   ~RtcPeerLink() override;

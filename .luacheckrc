@@ -17,7 +17,7 @@ files["content/packs/*/ui/**/*.lua"] = {
     "ui", "t", "document_name", "skin_choice", "original_box", "bag_slot", "game_options",
     "panel_enter", "fit_text", "screen_fit", "title_picture", "hud_digits", "hud", "hooks",
     "clock", "field", "partner", "bag", "player", "options", "battle", "versus", "story", "dialog",
-    "naming",
+    "naming", "online",
   },
 }
 
@@ -39,7 +39,7 @@ files["content/packs/*/ui/api/*.lua"] = {
   read_globals = { "event_source" },
   globals = {
     "clock", "field", "partner", "bag", "player", "options", "battle", "versus", "story", "dialog",
-    "naming",
+    "naming", "online",
   },
 }
 

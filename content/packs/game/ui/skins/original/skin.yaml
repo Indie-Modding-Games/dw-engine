@@ -138,6 +138,21 @@ screens:
   # The save notice (an engine improvement): an original window with the figure and the text.
   save_indicator:
     styles: [ui/skins/original/save_indicator/style]
+  # The online screens (multiplayer hub, profile, connecting, room search, room; engine additions): the original's
+  # windows, its font in its two sharp sizes, the heading yellow and the description grey, and its selector outline
+  # with a cursor beside the focused row. online/style holds what the five share.
+  online_hub:
+    styles: [ui/skins/original/online/style, ui/skins/original/online_hub/style]
+  online_profile:
+    styles: [ui/skins/original/online/style, ui/skins/original/online_profile/style]
+  coop_hud:
+    styles: [ui/skins/original/coop_hud/style]
+  online_status:
+    styles: [ui/skins/original/online/style, ui/skins/original/online_status/style]
+  online_rooms:
+    styles: [ui/skins/original/online/style, ui/skins/original/online_rooms/style]
+  online_room:
+    styles: [ui/skins/original/online/style, ui/skins/original/online_room/style]
 # The original's layout in the screens that share a document and script with the modern look (ui.layout,
 # docs/architecture/ui.md#skins): each screen's arrangement and its boxes that grow from a gray outline.
 layout:
@@ -195,6 +210,17 @@ document_classes:
     panel: [skin-original]
   egg_box:
     panel: [skin-original]
+  # The online screens: the modern look's sheets for them skip a scrim marked skin-original.
+  online_hub:
+    scrim: [skin-original]
+  online_profile:
+    scrim: [skin-original]
+  online_status:
+    scrim: [skin-original]
+  online_rooms:
+    scrim: [skin-original]
+  online_room:
+    scrim: [skin-original]
   hud:
     field-meter-0-bar: [pips]
     field-meter-1-bar: [pips]
@@ -1151,3 +1177,14 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       boot-wide: [0, 0, 428, 206]
+  # The online screens' cursor and selector outline (an addition, drawn for this pack: the original's menus mark the
+  # focused row with the outline only): a 5 x 9 pixel arrow in the heading yellow 2 pixels in from its 9-pixel cell,
+  # and the outline's 1-pixel line in #A0A000 (main_menu.c: renderInitialMenu) as a nine-patch, 3 dp per pixel, round
+  # a hole large enough that stretching it smears no yellow inwards.
+  - name: ow-online-cursor
+    image: ui/skins/original/online/cursor
+    dp_per_pixel: 1
+    sprites:
+      online-cursor: [0, 0, 27, 27]
+      online-outline-outer: [0, 32, 240, 96]
+      online-outline-inner: [3, 35, 234, 90]

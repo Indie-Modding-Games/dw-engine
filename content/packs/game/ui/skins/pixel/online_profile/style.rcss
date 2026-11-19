@@ -1,0 +1,76 @@
+/* The online profile in the pixel look: the rooms screens' window over the grid with the emblem, the gold line on the
+   chosen row and icon, the name on a light-blue underline, and key caps on the prompts. The layout stays the screen's
+   (ui/online_profile/structure.rcss), larger for this skin's fonts. */
+
+#scrim {
+	background-color: #08141c;
+	decorator: image(/ui/skins/pixel/assets/online_back.png cover center center);
+}
+
+#panel {
+	width: 860dp;
+	height: 640dp;
+	margin-left: -430dp;
+	margin-top: -320dp;
+	padding: 20dp 34dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+}
+
+#title { font-size: 36dp; line-height: 50dp; color: #f2f0e1; }
+#profile-head { border-bottom: 2dp #4a79a8; }
+#head-name { width: 480dp; font-size: 36dp; color: #efc63c; }
+#head-record { width: 200dp; font-size: 30dp; color: #b6e4f7; }
+
+.profile-row {
+	width: 792dp;
+	height: 58dp;
+	margin-left: -12dp;
+	font-size: 30dp;
+	line-height: 52dp;
+	color: #f2f0e1;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: none;
+}
+
+#name-field:focus { color: #f2f0e1; decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box; }
+.row-label { color: #b6e4f7; opacity: 1; }
+#name-box { border-bottom: 3dp #7cb6e2; }
+.editing #name-box { border-bottom-color: #efc63c; }
+#name-hint, #icon-name, #saved-note { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #93a6bc; opacity: 1; }
+
+.icon-choice {
+	width: 56dp;
+	height: 56dp;
+	margin-top: 0;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: none;
+}
+
+.icon-choice.selected { decorator: ninepatch(nb-key-outer, nb-key-inner, 1) border-box; border-color: transparent; }
+.icon-choice:focus { decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box; border-color: transparent; }
+.icon-choice .profile-icon { width: 42dp; height: 42dp; }
+#icon-name { top: 56dp; }
+
+.record-value { color: #efc63c; }
+
+#profile-back {
+	left: 34dp;
+	bottom: 70dp;
+	width: 260dp;
+	height: 52dp;
+	font-size: 30dp;
+	line-height: 46dp;
+	color: #f2f0e1;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: ninepatch(nb-key-outer, nb-key-inner, 1) border-box;
+}
+
+#profile-back:focus { color: #efc63c; decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box; }
+#toast { left: 320dp; right: 34dp; bottom: 70dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 26dp; }
+#prompts { left: 34dp; bottom: 18dp; font-family: "Pixel Small"; font-size: 26dp; }

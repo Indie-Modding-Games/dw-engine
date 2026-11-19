@@ -1,0 +1,41 @@
+/* Getting into a room and why it failed, in the DevVago look, over ../online_common/style.rcss: the terminal card over
+   the night grid, three square dots lit in the focus yellow while it waits, the text at 30dp (the reason in amber),
+   the detail in the description blue and the buttons as the rules screen's. The layout stays the screen's
+   (ui/online_status/structure.rcss), larger. */
+
+#panel {
+	width: 780dp;
+	height: 400dp;
+	margin-left: -390dp;
+	margin-top: -200dp;
+	padding: 18dp 28dp;
+}
+
+#title {
+	margin: 0 0 8dp 0;
+	padding: 0 6dp 6dp 6dp;
+	line-height: 48dp;
+	border-bottom: 2dp #397ca4;
+}
+
+#status-icon { height: 18dp; margin: 16dp 0 22dp 0; line-height: 18dp; }
+.dot { width: 18dp; height: 18dp; margin: 0 9dp; background-color: #345875; }
+.dot.lit { background-color: #ffd51e; }
+
+#status-text { font-size: 30dp; line-height: 40dp; color: #d8f1ff; text-align: center; }
+.closed #status-text { font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; color: #ffb070; text-align: left; }
+#status-detail { margin-top: 10dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #a8c7d9; opacity: 1; text-align: center; }
+.closed #status-detail { text-align: left; }
+
+#buttons { left: 28dp; right: 28dp; bottom: 66dp; }
+
+.status-button {
+	width: 260dp;
+	height: 52dp;
+	margin: 0 10dp;
+	font-family: "Pixel Small"; font-size: 26dp;
+	line-height: 48dp;
+}
+
+#prompts { left: 28dp; right: 28dp; bottom: 14dp; line-height: 36dp; }
+.prompt { margin-right: 18dp; }

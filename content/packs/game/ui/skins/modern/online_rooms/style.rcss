@@ -1,0 +1,343 @@
+/* «Search rooms» in the modern look: the boxes as the pause menu's slate panels (../pause_menu/style.rcss) with
+   rounded corners and a hairline border, the title bare in bold, the rooms as inset rows that the focus tints amber
+   with an amber bar at their left edge, each column a fixed width that cuts what does not fit, the fields as dark
+   insets ringed amber while focused, outlined buttons that the focus fills amber, a thin scrollbar, and the prompts as
+   a bare line under the list that wraps to a second one instead of clipping. Sizes on the look's type scale
+   (../theme.rcss): 30dp title, 22dp rows and fields, 18dp headings, hints and prompts.
+
+   Every rule is scoped to #scrim:not(.skin-original): the skins that extend this one mark the scrim skin-original in
+   their skin.yaml (document_classes) and keep none of it. */
+
+#scrim:not(.skin-original) {
+	background-color: #06090de8;
+	color: #e9eef5;
+}
+
+#scrim:not(.skin-original) .box {
+	border: 1dp #263243;
+	border-radius: 12dp;
+	background-color: #121922f2;
+}
+
+/* The title, bare, with the sample data's badge as an amber pill beside it. */
+#scrim:not(.skin-original) #title-plate {
+	padding: 0 4dp;
+	border: 0;
+	background-color: transparent;
+}
+
+#scrim:not(.skin-original) #title { font-size: 30dp; font-weight: bold; line-height: 64dp; }
+
+#scrim:not(.skin-original) #sample-badge {
+	left: 330dp;
+	top: 18dp;
+	height: 28dp;
+	padding: 0 12dp;
+	border-radius: 14dp;
+	font-size: 18dp;
+	font-weight: bold;
+	line-height: 28dp;
+	color: #f2a93b;
+	background-color: #f2a93b29;
+}
+
+/* The list. Its columns have fixed widths that never overlap: the name is cut with "..." by the logic, the rest is
+   clipped. */
+#scrim:not(.skin-original) #list-box { padding: 12dp 52dp 12dp 16dp; }
+
+#scrim:not(.skin-original) #list-head {
+	height: 40dp;
+	font-size: 18dp;
+	font-weight: bold;
+	line-height: 40dp;
+	color: #9aa8ba;
+	border-bottom: 1dp #243042;
+}
+
+#scrim:not(.skin-original) .col-name { left: 60dp; width: 292dp; }
+#scrim:not(.skin-original) .col-mode { left: 366dp; width: 132dp; }
+#scrim:not(.skin-original) .col-players { left: 508dp; width: 112dp; }
+#scrim:not(.skin-original) .col-ping { left: 640dp; width: 70dp; }
+
+#scrim:not(.skin-original) #list-head span,
+#scrim:not(.skin-original) .room-row span,
+#scrim:not(.skin-original) .room-row .ping {
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+/* The name's own text sits inside its column. */
+#scrim:not(.skin-original) .room-name span { overflow: visible; }
+
+#scrim:not(.skin-original) #rows { margin-top: 8dp; }
+
+#scrim:not(.skin-original) .room-row {
+	height: 72dp;
+	margin: 0 0 6dp 0;
+	border: 0;
+	border-left: 3dp transparent;
+	border-radius: 8dp;
+	font-size: 22dp;
+	line-height: 72dp;
+	color: #e9eef5;
+	background-color: #1a2330;
+	transition: background-color border-left-color 0.1s cubic-out;
+}
+
+#scrim:not(.skin-original) .room-row:hover { background-color: #1f2a39; }
+
+#scrim:not(.skin-original) .room-row:focus {
+	border-left-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
+}
+
+#scrim:not(.skin-original) .room-mode { color: #9aa8ba; }
+#scrim:not(.skin-original) .room-row:focus .room-mode { color: #f2a93b; }
+#scrim:not(.skin-original) .room-row.full:not(:focus) { color: #5d6a7c; }
+#scrim:not(.skin-original) .room-row.full:not(:focus) .room-mode { color: #5d6a7c; }
+#scrim:not(.skin-original) .room-row.full .room-players { color: #ef7a6a; }
+
+/* The room's kind as the shared profile art: a tree for a co-op room, crossed swords for a versus one. */
+#scrim:not(.skin-original) .room-icon {
+	left: 12dp;
+	top: 16dp;
+	width: 38dp;
+	height: 38dp;
+	border-radius: 0;
+	background-color: transparent;
+	decorator: image(/ui/online_profile/icons/tree.png contain center center);
+}
+
+#scrim:not(.skin-original) .room-icon-versus .room-icon {
+	background-color: transparent;
+	decorator: image(/ui/online_profile/icons/swords.png contain center center);
+}
+
+#scrim:not(.skin-original) .room-row.full:not(:focus) .room-icon { opacity: 0.45; }
+
+#scrim:not(.skin-original) .room-row .ping { height: 72dp; }
+#scrim:not(.skin-original) .ping .bar { bottom: 23dp; width: 7dp; border-radius: 2dp; background-color: #2f3c4d; }
+#scrim:not(.skin-original) .ping .bar-1 { left: 14dp; height: 8dp; }
+#scrim:not(.skin-original) .ping .bar-2 { left: 24dp; height: 13dp; }
+#scrim:not(.skin-original) .ping .bar-3 { left: 34dp; height: 18dp; }
+#scrim:not(.skin-original) .ping .bar-4 { left: 44dp; height: 24dp; }
+#scrim:not(.skin-original) .ping.level-4 .bar { background-color: #7ad37a; }
+#scrim:not(.skin-original) .ping.level-3 .bar-1,
+#scrim:not(.skin-original) .ping.level-3 .bar-2,
+#scrim:not(.skin-original) .ping.level-3 .bar-3 { background-color: #7ad37a; }
+#scrim:not(.skin-original) .ping.level-2 .bar-1,
+#scrim:not(.skin-original) .ping.level-2 .bar-2 { background-color: #f2a93b; }
+#scrim:not(.skin-original) .ping.level-1 .bar-1 { background-color: #ef7a6a; }
+
+#scrim:not(.skin-original) #list-message-text { font-size: 22dp; line-height: 30dp; }
+#scrim:not(.skin-original) #list-message-hint { font-size: 18dp; line-height: 24dp; color: #9aa8ba; }
+
+/* A thin scrollbar with small arrow buttons. */
+#scrim:not(.skin-original) #scroll { right: 10dp; top: 64dp; width: 30dp; height: 402dp; }
+
+#scrim:not(.skin-original) .scroll-arrow {
+	width: 30dp;
+	height: 30dp;
+	border: 0;
+	border-radius: 6dp;
+	background-color: #1a2330;
+	image-color: #9aa8ba;
+}
+
+#scrim:not(.skin-original) .scroll-arrow:hover { background-color: #263243; image-color: #e9eef5; }
+#scrim:not(.skin-original) #scroll-up { decorator: image(/glyph/modern/@up contain center center); }
+#scrim:not(.skin-original) #scroll-down { decorator: image(/glyph/modern/@down contain center center); }
+#scrim:not(.skin-original) .scroll-arrow.off { opacity: 0.3; }
+
+#scrim:not(.skin-original) #scroll-track {
+	left: 13dp;
+	top: 38dp;
+	width: 4dp;
+	height: 326dp;
+	border-radius: 2dp;
+	background-color: #1a2330;
+}
+
+#scrim:not(.skin-original) #scroll-thumb { width: 4dp; border-radius: 2dp; background-color: #3a4a5e; }
+
+/* The right column. */
+#scrim:not(.skin-original) .side-box { padding: 12dp 20dp; }
+
+#scrim:not(.skin-original) .side-title {
+	margin: 0 0 8dp 0;
+	font-size: 18dp;
+	font-weight: bold;
+	line-height: 26dp;
+	color: #9aa8ba;
+}
+
+/* A field: a dark inset, ringed amber while focused and while typing. */
+#scrim:not(.skin-original) .field {
+	height: 52dp;
+	padding: 0 14dp;
+	border: 1dp #3a4a5e;
+	border-radius: 8dp;
+	font-size: 22dp;
+	line-height: 50dp;
+	color: #e9eef5;
+	background-color: #0c1118;
+	transition: border-color background-color 0.1s cubic-out;
+}
+
+#scrim:not(.skin-original) .field:hover { border-color: #5d6a7c; }
+#scrim:not(.skin-original) .field:focus { border-color: #f2a93b; background-color: #f2a93b14; color: #e9eef5; }
+#scrim:not(.skin-original) .field.editing { border-color: #f2a93b; background-color: #0c1118; }
+
+#scrim:not(.skin-original) .field-icon {
+	width: 18dp;
+	height: 18dp;
+	margin-right: 12dp;
+	border: 2dp #9aa8ba;
+	border-radius: 9dp;
+}
+
+#scrim:not(.skin-original) .field:focus .field-icon { border-color: #f2a93b; }
+#scrim:not(.skin-original) .field-text { color: #e9eef5; }
+#scrim:not(.skin-original) .field-text.placeholder { color: #5d6a7c; }
+#scrim:not(.skin-original) .caret { color: #f2a93b; }
+
+#scrim:not(.skin-original) .cell {
+	width: 40dp;
+	margin: 0 7dp;
+	font-size: 30dp;
+	font-weight: bold;
+	line-height: 40dp;
+	border-bottom: 3dp #3a4a5e;
+	color: #e9eef5;
+}
+
+#scrim:not(.skin-original) .cell.current { border-bottom-color: #f2a93b; color: #f2a93b; }
+#scrim:not(.skin-original) .cell.hidden { display: none; }
+
+#scrim:not(.skin-original) .hint {
+	margin: 6dp 0 0 2dp;
+	height: 24dp;
+	font-size: 18dp;
+	line-height: 24dp;
+	color: #9aa8ba;
+	overflow: hidden;
+}
+
+/* The buttons: outlined, the focus fills them amber (the theme's focus). */
+#scrim:not(.skin-original) .action {
+	height: 42dp;
+	padding: 0;
+	border: 1dp #3a4a5e;
+	border-radius: 8dp;
+	font-size: 22dp;
+	font-weight: bold;
+	line-height: 40dp;
+	color: #c9d3de;
+}
+
+#scrim:not(.skin-original) .action:hover { background-color: #ffffff0d; }
+#scrim:not(.skin-original) .action:focus { border-color: #f2a93b; background-color: #f2a93b; color: #1a1f27; }
+#scrim:not(.skin-original) #enter { width: 200dp; margin: 8dp auto 0 auto; }
+#scrim:not(.skin-original) .action.unavailable { color: #5d6a7c; }
+#scrim:not(.skin-original) .action.unavailable:focus { color: #1a1f27; }
+#scrim:not(.skin-original) #actions-box { padding: 13dp 20dp; }
+#scrim:not(.skin-original) #actions-box .action { margin: 0 0 8dp 0; }
+
+/* The prompts: a bare line under the list; a language with longer words wraps it to a second line. */
+#scrim:not(.skin-original) #prompts {
+	left: 0;
+	top: 588dp;
+	width: 800dp;
+	height: 64dp;
+	padding: 4dp 8dp 0 8dp;
+	border: 0;
+	background-color: transparent;
+	font-size: 18dp;
+	line-height: 28dp;
+	color: #9aa8ba;
+	white-space: normal;
+}
+
+#scrim:not(.skin-original) .prompt { margin: 0 18dp 0 0; white-space: nowrap; }
+#scrim:not(.skin-original) .key { font-size: 18dp; line-height: 22dp; }
+
+/* The notice under the right column: an inset with an amber bar. */
+#scrim:not(.skin-original) #toast {
+	left: 824dp;
+	top: 588dp;
+	width: 408dp;
+	min-height: 52dp;
+	padding: 8dp 14dp 8dp 50dp;
+	border: 0;
+	border-left: 3dp #f2a93b;
+	border-radius: 8dp;
+	background-color: #1a2330;
+}
+
+#scrim:not(.skin-original) .toast-icon {
+	left: 14dp;
+	top: 13dp;
+	width: 22dp;
+	height: 22dp;
+	border: 2dp #f2a93b;
+	border-radius: 11dp;
+}
+
+#scrim:not(.skin-original) #toast-text { font-size: 18dp; line-height: 24dp; color: #e9eef5; }
+
+/* The dialogs: a card over the stage, each option a row with the look's amber focus. */
+#scrim:not(.skin-original) .dialog {
+	padding: 20dp 24dp;
+	border: 1dp #3a4a5e;
+	border-radius: 12dp;
+	background-color: #121922;
+}
+
+#scrim:not(.skin-original) .dialog-title {
+	margin: 0 0 12dp 0;
+	padding-bottom: 10dp;
+	border-bottom: 1dp #243042;
+	font-size: 22dp;
+	font-weight: bold;
+	line-height: 30dp;
+	color: #e9eef5;
+}
+
+#scrim:not(.skin-original) .dialog-text { font-size: 18dp; line-height: 24dp; color: #9aa8ba; }
+
+#scrim:not(.skin-original) .dialog-option {
+	margin: 2dp 0;
+	padding: 8dp 12dp 8dp 9dp;
+	border: 0;
+	border-left: 3dp transparent;
+	border-radius: 6dp;
+	color: #c9d3de;
+	background-color: transparent;
+	white-space: normal;
+}
+
+#scrim:not(.skin-original) .dialog-option:hover { background-color: #ffffff0d; }
+
+#scrim:not(.skin-original) .dialog-option:focus {
+	border-left-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
+}
+
+/* The option's name over what it does. */
+#scrim:not(.skin-original) .option-name {
+	display: block;
+	width: auto;
+	font-size: 22dp;
+	font-weight: bold;
+	line-height: 30dp;
+}
+
+#scrim:not(.skin-original) .option-hint {
+	display: block;
+	font-size: 18dp;
+	line-height: 24dp;
+	color: #9aa8ba;
+	opacity: 1;
+}

@@ -26,11 +26,30 @@ public:
     auto socket = std::make_unique<Socket>(*this);
     const std::string hostPath = "/v1/host";
     const std::string joinPath = "/v1/join/";
+    const std::string roomsPath = "/v1/rooms";
+    const std::string path = url.substr(0, url.find('?'));
     if (!reachable) {
       socket->state_ = SocketState::Failed;
-    } else if (url.ends_with(hostPath)) {
+    } else if (path.ends_with(roomsPath)) {
+      // One snapshot of the listed rooms that wait for a guest, then the server closes.
+      nlohmann::json rooms = nlohmann::json::array();
+      for (const auto& [code, room] : rooms_) {
+        if (room.listed) {
+          rooms.push_back({{"roomId", code},
+                           {"joinCode", code},
+                           {"name", "Cooperative room"},
+                           {"message", "Waiting for players"},
+                           {"players", room.guest != nullptr ? 2 : 1},
+                           {"capacity", 2},
+                           {"createdAt", 0},
+                           {"state", room.guest != nullptr ? "full" : "waiting"}});
+        }
+      }
+      socket->push({{"rooms", rooms}});
+      socket->state_ = SocketState::Closed;
+    } else if (path.ends_with(hostPath)) {
       const std::string code = codes_.at(next_++ % codes_.size());
-      rooms_[code] = Room{.host = socket.get()};
+      rooms_[code] = Room{.host = socket.get(), .listed = url.ends_with("?public=1")};
       socket->room_ = code;
       socket->push({{"type", "room"}, {"code", code}});
     } else if (const auto at = url.find(joinPath); at != std::string::npos) {
@@ -62,6 +81,7 @@ private:
   struct Room {
     Socket* host = nullptr;
     Socket* guest = nullptr;
+    bool listed = false;
     std::size_t done = 0;
   };
 

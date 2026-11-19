@@ -36,10 +36,11 @@ dwe::game::coop::Identity identity() {
 
 TEST_CASE("cooperative connection host and guest complete the room handshake") {
   dwe::net::LoopbackNetwork network{{}};
-  CoopConnection host{{.identity = identity(),
-                       .configurationError = {},
-                       .host = [&] { return std::make_unique<BorrowedPeer>(network.link(0)); },
-                       .join = {}}};
+  CoopConnection host{
+      {.identity = identity(),
+       .configurationError = {},
+       .host = [&](bool) { return std::make_unique<BorrowedPeer>(network.link(0)); },
+       .join = {}}};
   CoopConnection guest{{.identity = identity(),
                         .configurationError = {},
                         .host = {},
@@ -87,10 +88,11 @@ TEST_CASE("the lobby leaves the link to the gameplay bridge once play owns it") 
   // command.
   using namespace dwe::game::coop;
   dwe::net::LoopbackNetwork network{{}};
-  CoopConnection hostRoom{{.identity = identity(),
-                           .configurationError = {},
-                           .host = [&] { return std::make_unique<BorrowedPeer>(network.link(0)); },
-                           .join = {}}};
+  CoopConnection hostRoom{
+      {.identity = identity(),
+       .configurationError = {},
+       .host = [&](bool) { return std::make_unique<BorrowedPeer>(network.link(0)); },
+       .join = {}}};
   CoopConnection guestRoom{
       {.identity = identity(), .configurationError = {}, .host = {}, .join = [&](std::string_view) {
          return std::make_unique<BorrowedPeer>(network.link(1));

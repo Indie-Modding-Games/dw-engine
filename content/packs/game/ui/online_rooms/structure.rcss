@@ -1,0 +1,367 @@
+/* «Search rooms» whatever the skin: one stage of 1232 x 680dp in the middle of the window (kept inside it by
+   common/screen_fit.lua), the room list on the left, the search, the code entry and the room actions on the right, the
+   prompts under the list. Sizes in dp at 720 lines; the skins give the look (ui/skins/<id>/online_rooms/). The plain
+   colours here are the fallback a skin without a sheet for this screen shows. */
+
+#scrim {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background-color: #08121ef2;
+}
+
+#stage {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 1232dp;
+	height: 680dp;
+	margin-left: -616dp;
+	margin-top: -340dp;
+}
+
+.box {
+	position: absolute;
+	box-sizing: border-box;
+	border: 2dp #5c91bd;
+	background-color: #0c1d2ee8;
+}
+
+.decoration { display: none; }
+
+#title-plate {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 480dp;
+	height: 64dp;
+	box-sizing: border-box;
+	padding: 0 24dp;
+	border: 2dp #5c91bd;
+	background-color: #0c1d2ee8;
+}
+
+#title {
+	margin: 0;
+	font-size: 33dp;
+	line-height: 60dp;
+	white-space: nowrap;
+}
+
+#sample-badge {
+	position: absolute;
+	left: 500dp;
+	top: 14dp;
+	height: 36dp;
+	padding: 0 14dp;
+	font-size: 18dp;
+	line-height: 36dp;
+	color: #1a1f27;
+	background-color: #efc63c;
+}
+
+/* The list (left). */
+#list-box {
+	left: 0;
+	top: 84dp;
+	width: 800dp;
+	height: 488dp;
+	padding: 12dp 56dp 12dp 16dp;
+}
+
+#list-head {
+	position: relative;
+	height: 44dp;
+	font-size: 22dp;
+	line-height: 44dp;
+	border-bottom: 2dp #5c91bd;
+	white-space: nowrap;
+}
+
+#list-head span,
+.room-row span,
+.room-row .ping {
+	display: inline-block;
+	position: absolute;
+	top: 0;
+}
+
+.col-name { left: 62dp; width: 280dp; }
+.col-mode { left: 350dp; width: 120dp; }
+.col-players { left: 474dp; width: 160dp; text-align: center; }
+.col-ping { left: 640dp; width: 76dp; text-align: center; }
+
+#rows {
+	position: relative;
+	margin-top: 10dp;
+}
+
+.room-row {
+	position: relative;
+	box-sizing: border-box;
+	width: 100%;
+	height: 78dp;
+	margin: 0 0 6dp 0;
+	padding: 0;
+	font-size: 22dp;
+	line-height: 74dp;
+	white-space: nowrap;
+	border: 2dp #24496c;
+	background-color: #0a1828;
+}
+
+.room-row.empty { visibility: hidden; }
+/* Greyed unless focused: a focus that fills the row (the modern look) gives the words its own colour. */
+.room-row.full:not(:focus) { color: #7f8c99; }
+.room-row.full .room-players { color: #e2483d; }
+
+.room-icon {
+	position: absolute;
+	left: 14dp;
+	top: 19dp;
+	width: 36dp;
+	height: 36dp;
+	border-radius: 18dp;
+	background-color: #7cb6e2;
+}
+
+.room-icon-versus .room-icon { background-color: #e2483d; }
+
+/* A long name is squeezed into its column by the logic (common/fit_text.lua), never cut. */
+.room-name span { position: static; display: inline; }
+
+/* The ping as four bars growing left to right, lit up to its level; none lit when nobody measured it. */
+.ping .bar {
+	position: absolute;
+	bottom: 24dp;
+	width: 8dp;
+	background-color: #34495e;
+}
+
+.room-row .ping { height: 74dp; }
+.ping .bar-1 { left: 14dp; height: 8dp; }
+.ping .bar-2 { left: 25dp; height: 14dp; }
+.ping .bar-3 { left: 36dp; height: 20dp; }
+.ping .bar-4 { left: 47dp; height: 26dp; }
+.ping.level-4 .bar { background-color: #5fd36a; }
+.ping.level-3 .bar-1, .ping.level-3 .bar-2, .ping.level-3 .bar-3 { background-color: #5fd36a; }
+.ping.level-2 .bar-1, .ping.level-2 .bar-2 { background-color: #efc63c; }
+.ping.level-1 .bar-1 { background-color: #e2483d; }
+
+#list-message {
+	position: absolute;
+	left: 16dp;
+	top: 120dp;
+	width: 712dp;
+	text-align: center;
+}
+
+#list-message-text { font-size: 22dp; margin-bottom: 16dp; }
+#list-message-hint { font-size: 18dp; color: #93a6bc; }
+
+#scroll {
+	position: absolute;
+	right: 10dp;
+	top: 68dp;
+	width: 36dp;
+	height: 404dp;
+}
+
+.scroll-arrow {
+	position: absolute;
+	left: 0;
+	width: 36dp;
+	height: 36dp;
+	padding: 0;
+	focus: none;
+	tab-index: none;
+	nav: none;
+	background-color: #24496c;
+}
+
+#scroll-up { top: 0; }
+#scroll-down { bottom: 0; }
+.scroll-arrow.off { opacity: 0.35; }
+
+#scroll-track {
+	position: absolute;
+	left: 10dp;
+	top: 44dp;
+	width: 16dp;
+	height: 316dp;
+	background-color: #0a1828;
+}
+
+#scroll-thumb {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 16dp;
+	height: 100%;
+	background-color: #4a79a8;
+}
+
+/* The right column. */
+.side-box {
+	left: 824dp;
+	width: 408dp;
+	padding: 12dp 20dp;
+}
+
+#search-box { top: 84dp; height: 128dp; }
+#code-box { top: 228dp; height: 216dp; }
+#actions-box { top: 460dp; height: 112dp; padding-top: 14dp; }
+
+.side-title {
+	margin: 0 0 10dp 0;
+	font-size: 22dp;
+	white-space: nowrap;
+}
+
+.field {
+	position: relative;
+	box-sizing: border-box;
+	width: 100%;
+	height: 56dp;
+	padding: 0 14dp;
+	font-size: 22dp;
+	line-height: 52dp;
+	white-space: nowrap;
+	border: 2dp #7cb6e2;
+	background-color: #050c1a;
+}
+
+.field-icon {
+	display: inline-block;
+	width: 22dp;
+	height: 22dp;
+	margin-right: 12dp;
+	vertical-align: middle;
+	border: 3dp #7cb6e2;
+	border-radius: 11dp;
+}
+
+.field-text { color: #f2f0e1; }
+.field-text.placeholder { color: #5f6f82; }
+.field.editing { border-color: #efc63c; }
+.caret { color: #efc63c; }
+
+.code-field {
+	text-align: center;
+	letter-spacing: 0;
+}
+
+.cell {
+	display: inline-block;
+	width: 44dp;
+	margin: 0 6dp;
+	font-size: 30dp;
+	text-align: center;
+	border-bottom: 3dp #b6e4f7;
+	line-height: 42dp;
+}
+
+.cell.current { border-bottom-color: #efc63c; color: #efc63c; }
+.cell.hidden { display: none; }
+
+.hint {
+	margin: 6dp 0 0 0;
+	height: 22dp;
+	font-size: 16dp;
+	line-height: 22dp;
+	color: #93a6bc;
+	white-space: nowrap;
+}
+
+.action {
+	box-sizing: border-box;
+	width: 100%;
+	height: 44dp;
+	margin: 8dp 0 0 0;
+	font-size: 22dp;
+	line-height: 38dp;
+	text-align: center;
+	white-space: nowrap;
+	border: 2dp #5c91bd;
+}
+
+#enter { width: 200dp; margin: 8dp auto 0 auto; }
+#enter.unavailable, .action.unavailable { color: #5f6f82; }
+#actions-box .action { margin-top: 0; margin-bottom: 8dp; }
+
+/* The prompts under the list. The quick match keeps its key but not its prompt: its button is on the right and
+   the bar has no room for it in the wider fonts. */
+#prompt-quick-box { display: none; }
+
+#prompts {
+	position: absolute;
+	left: 0;
+	top: 592dp;
+	width: 852dp;
+	height: 56dp;
+	box-sizing: border-box;
+	padding: 0 10dp;
+	font-size: 18dp;
+	line-height: 52dp;
+	white-space: nowrap;
+	border: 2dp #5c91bd;
+	background-color: #0c1d2ee8;
+}
+
+.prompt { margin-right: 10dp; }
+
+/* The notice beside the prompts. */
+#toast {
+	position: absolute;
+	left: 864dp;
+	top: 592dp;
+	width: 368dp;
+	min-height: 56dp;
+	box-sizing: border-box;
+	padding: 8dp 14dp 8dp 52dp;
+	border: 2dp #efc63c;
+	background-color: #0c1d2ef2;
+}
+
+.toast-icon {
+	position: absolute;
+	left: 12dp;
+	top: 12dp;
+	width: 26dp;
+	height: 26dp;
+	border: 2dp #f2f0e1;
+	border-radius: 13dp;
+}
+
+#toast-text { margin: 0; font-size: 16dp; line-height: 20dp; white-space: normal; }
+
+/* The dialogs over the stage. */
+.dialog {
+	position: absolute;
+	left: 316dp;
+	top: 170dp;
+	width: 600dp;
+	box-sizing: border-box;
+	padding: 20dp 28dp;
+	border: 2dp #efc63c;
+	background-color: #0c1d2efa;
+	z-index: 10;
+}
+
+.dialog-title { margin: 0 0 12dp 0; font-size: 22dp; color: #efc63c; white-space: normal; }
+.dialog-text { margin: 0 0 14dp 0; font-size: 18dp; white-space: normal; }
+
+.dialog-option {
+	box-sizing: border-box;
+	width: 100%;
+	margin: 6dp 0;
+	padding: 6dp 14dp;
+	font-size: 22dp;
+	line-height: 30dp;
+	white-space: nowrap;
+}
+
+.option-name { display: inline-block; width: 160dp; }
+.option-hint { font-size: 16dp; opacity: 0.7; white-space: normal; }

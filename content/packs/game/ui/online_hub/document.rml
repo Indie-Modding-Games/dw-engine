@@ -1,0 +1,34 @@
+<rml>
+<head>
+	<title>Multiplayer</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/screen_fit.lua"></script>
+	<script src="../common/fit_text.lua"></script>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<!-- The «Multiplayer» hub, opened from the title menu's multiplayer entry: the online versus, the co-op rooms
+	     (ui/online_rooms) and the online profile (ui/online_profile), with the profile's name, icon and record on top.
+	     Read and asked through the UI API's online namespace. -->
+	<div id="scrim">
+		<div id="panel">
+			<h1 id="title" text-key="online.hub_title"></h1>
+			<div id="player-card">
+				<div id="player-icon" class="profile-icon"></div>
+				<span id="player-label" text-key="online.hub.playing_as"></span>
+				<span id="player-name"><span id="player-name-text"></span></span>
+				<span id="player-record"></span>
+			</div>
+			<button id="entry-versus" class="hub-entry" onclick="pick(document, 'versus')"><div class="entry-icon"></div><span class="entry-name"><span id="entry-versus-name" text-key="online.hub.versus"></span></span><span class="entry-hint"><span id="entry-versus-hint" text-key="online.hub.versus_hint"></span></span></button>
+			<button id="entry-rooms" class="hub-entry" onclick="pick(document, 'rooms')"><div class="entry-icon"></div><span class="entry-name"><span id="entry-rooms-name" text-key="online.hub.rooms"></span></span><span class="entry-hint"><span id="entry-rooms-hint" text-key="online.hub.rooms_hint"></span></span></button>
+			<button id="entry-profile" class="hub-entry" onclick="pick(document, 'profile')"><div class="entry-icon"></div><span class="entry-name"><span id="entry-profile-name" text-key="online.hub.profile"></span></span><span class="entry-hint"><span id="entry-profile-hint" text-key="online.hub.profile_hint"></span></span></button>
+			<button id="entry-back" class="hub-entry back" onclick="pick(document, 'back')"><span class="entry-name" text-key="online.back"></span></button>
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="online.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="online.back"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

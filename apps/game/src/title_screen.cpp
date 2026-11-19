@@ -132,6 +132,9 @@ void TitleScreen::hide() {
   ui_->hide(DialogDocument);
   ui_->hide(NewGameRulesDocument);
   ui_->hide(NewGameModeDocument);
+  for (const std::string_view document : OnlineDocuments) {
+    ui_->hide(document);
+  }
 }
 
 bool TitleScreen::handle(const ui::UiCommand& command) {

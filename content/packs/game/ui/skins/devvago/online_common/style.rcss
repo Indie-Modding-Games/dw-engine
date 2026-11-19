@@ -1,0 +1,59 @@
+/* The online screens in the DevVago look, shared by their five sheets (listed first in skin.yaml): the title's night
+   grid with its halo behind them, the new game rules' terminal card for every window (a light cyan line round a
+   night blue gradient, a darker rule under the title), rows on a deeper blue with a thin line, and the skin's own
+   focus (a yellow line on blue, yellow text). Text is the skin's pixel fonts at their sharp sizes, Pixel Body at
+   30dp for titles and names, Pixel Small at 26dp for everything else (theme.rcss). The screens' layout is their
+   structure.rcss, moved by each screen's own sheet. */
+
+#scrim {
+	background-color: #061321;
+	decorator: image(/ui/skins/devvago/assets/main_menu_background fill);
+}
+
+#panel,
+.box,
+#title-plate {
+	border: 2dp #72c7ff;
+	border-radius: 0;
+	background-color: #0b1c2df5;
+	decorator: vertical-gradient(#153653 #0a1929);
+}
+
+#title {
+	font-size: 30dp;
+	font-weight: normal;
+	color: #d8f1ff;
+}
+
+/* Every button: a row of the rules screen until it has the focus. */
+button {
+	border: 2dp #345875;
+	border-radius: 0;
+	background-color: #0a2035;
+	color: #d8f1ff;
+}
+
+button:hover {
+	border-color: #72c7ff;
+	background-color: #153653;
+}
+
+button:focus {
+	border-color: #ffd51e;
+	background-color: #153653;
+	color: #ffe64a;
+}
+
+#prompts {
+	font-family: "Pixel Small"; font-size: 26dp;
+	color: #a8c7d9;
+}
+
+#prompts .prompt {
+	white-space: nowrap;
+}
+
+/* The profile's icons: the shared pictures (ui/online_profile/icons), on the skin's dark blue. */
+.profile-icon {
+	background-color: transparent;
+}

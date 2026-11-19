@@ -28,20 +28,31 @@ CoopConnectionDesc connectionDesc(const assets::VirtualFileSystem& files, const 
   }
   net::RtcSettings settings;
   if (auto config = game::versus::loadNetworkConfig(files); config) {
-    settings.signalServer = std::move(config->signalServer);
     settings.iceServers = std::move(config->iceServers);
   }
-  if (!options.versusServer.empty())
-    settings.signalServer = options.versusServer;
+  settings.signalServer = coopSignalServer(files, options);
   return {.identity = std::move(identity),
           .configurationError = std::move(configurationError),
-          .host = [settings] { return net::RtcPeerLink::host(settings, net::openWebSocket); },
+          .host =
+              [settings](bool listed) {
+                return net::RtcPeerLink::host(settings, net::openWebSocket, listed);
+              },
           .join =
               [settings](std::string_view code) {
                 return net::RtcPeerLink::join(settings, code, net::openWebSocket);
               }};
 }
 } // namespace
+
+std::string coopSignalServer(const assets::VirtualFileSystem& files, const Options& options) {
+  if (!options.versusServer.empty()) {
+    return options.versusServer;
+  }
+  if (auto config = game::versus::loadNetworkConfig(files); config) {
+    return std::move(config->signalServer);
+  }
+  return {};
+}
 
 CoopScreen::CoopScreen(const assets::VirtualFileSystem& files, const Options& options, ui::Ui& ui)
     : ui_{&ui}, connection_{connectionDesc(files, options)} {}
@@ -83,7 +94,9 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     remoteReady_ = false;
     localError_.clear();
     selectingHostStart_ = false;
-    (void)connection_.host();
+    // The rooms screens send whether the room is public (listed); a plain coop_host is private.
+    const bool* listed = std::get_if<bool>(&command.value);
+    (void)connection_.host(listed != nullptr && *listed);
     publish();
     return true;
   }
@@ -292,7 +305,8 @@ core::Result<void> CoopScreen::provideGuestSave(std::string_view saveText) {
   selectingGuestProfile_ = false;
   guestProfileRequest_ = false;
   localError_.clear();
-  ui_->show("main_menu", true);
+  // Back to the room the player readied in (ui/online_room).
+  ui_->show("online_room", true);
   publish();
   return {};
 }
@@ -330,6 +344,41 @@ core::Result<void> CoopScreen::sendHostStart(std::string_view saveText) {
   selectingHostStart_ = false;
   startRequested_ = false;
   return {};
+}
+
+void CoopScreen::joinCode(std::string_view code) {
+  if (!active_) {
+    connection_.open();
+    active_ = true;
+  }
+  isHost_ = false;
+  localReady_ = false;
+  remoteReady_ = false;
+  localError_.clear();
+  selectingGuestProfile_ = false;
+  connection_.beginJoin();
+  (void)connection_.join(code);
+  publish();
+}
+
+void CoopScreen::leave() {
+  connection_.close();
+  active_ = false;
+  isHost_ = false;
+  localReady_ = false;
+  remoteReady_ = false;
+  startRequested_ = false;
+  guestProfileRequest_ = false;
+  selectingGuestProfile_ = false;
+  selectingHostStart_ = false;
+  localError_.clear();
+  guestSaveText_.reset();
+  hostSaveText_.reset();
+  publish();
+}
+
+std::string CoopScreen::error() const {
+  return localError_.empty() ? std::string{connection_.error()} : localError_;
 }
 
 void CoopScreen::reportError(std::string message) {

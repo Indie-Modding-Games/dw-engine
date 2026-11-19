@@ -9,6 +9,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace dwe::net {
 
@@ -25,9 +26,29 @@ std::optional<std::string> normalizedRoomCode(std::string_view typed);
 inline constexpr std::string_view SignalProtocol = "v1";
 
 // Where a host makes its room and where a guest joins one, on the server `server`
-// (wss://host[:port][/prefix]).
-std::string hostUrl(std::string_view server);
+// (wss://host[:port][/prefix]). A listed room goes in the server's public list
+// (`/v1/host?public=1`); any other room is only reached by its code.
+std::string hostUrl(std::string_view server, bool listed = false);
 std::string joinUrl(std::string_view server, std::string_view code);
+// Where the public list is read: the server answers a WebSocket there with one snapshot of it.
+std::string roomsUrl(std::string_view server);
+
+// A room in the server's public list (apps/versus-signal/src/room.ts, RoomListing).
+struct PublicRoom {
+  std::string roomId;
+  std::string joinCode;
+  std::string name;
+  std::string message;
+  int players = 0;
+  int capacity = 0;
+  double createdAt = 0.0;
+  // "waiting", "full" or "starting".
+  std::string state;
+};
+
+// The rooms in a snapshot of the public list ({"rooms": [...]}); nothing when it is not one. A
+// room without a usable code is left out.
+std::optional<std::vector<PublicRoom>> parseRoomList(std::string_view text);
 
 enum class SocketState : std::uint8_t { Connecting, Open, Closed, Failed };
 
@@ -82,6 +103,23 @@ private:
   bool finished_ = false;
   std::optional<PeerFailure> failure_;
   std::deque<std::string> inbox_;
+};
+
+// One read of the public list: opens the socket, waits for the snapshot, closes. Nothing blocks.
+class RoomListRequest {
+public:
+  explicit RoomListRequest(std::unique_ptr<SignalSocket> socket);
+
+  // Reads what the server sent.
+  void poll();
+  [[nodiscard]] bool done() const { return rooms_.has_value() || failed_; }
+  [[nodiscard]] bool failed() const { return failed_; }
+  [[nodiscard]] const std::optional<std::vector<PublicRoom>>& rooms() const { return rooms_; }
+
+private:
+  std::unique_ptr<SignalSocket> socket_;
+  std::optional<std::vector<PublicRoom>> rooms_;
+  bool failed_ = false;
 };
 
 } // namespace dwe::net

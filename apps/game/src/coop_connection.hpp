@@ -15,7 +15,8 @@ namespace dwe::app {
 struct CoopConnectionDesc {
   game::coop::Identity identity;
   std::string configurationError;
-  std::function<std::unique_ptr<net::PeerLink>()> host;
+  // Makes a room; a listed one goes in the signaling server's public list.
+  std::function<std::unique_ptr<net::PeerLink>(bool listed)> host;
   std::function<std::unique_ptr<net::PeerLink>(std::string_view)> join;
 };
 
@@ -28,9 +29,12 @@ public:
   explicit CoopConnection(CoopConnectionDesc desc) : desc_{std::move(desc)} {}
   void open();
   void close();
-  [[nodiscard]] bool host();
+  [[nodiscard]] bool host(bool listed = false);
   void beginJoin();
   bool submitJoin();
+  // Joins a room by its code at once, without the typed entry (a room picked from the list, or a
+  // code typed on the rooms screen).
+  bool join(std::string_view code);
   void type(std::string_view text, bool enter);
   void tick(net::Millis now);
 
@@ -42,6 +46,12 @@ public:
   [[nodiscard]] std::string_view error() const { return error_; }
   [[nodiscard]] game::coop::CoopLink* link() { return link_.get(); }
   [[nodiscard]] const game::coop::CoopLink* link() const { return link_.get(); }
+  // The name this player gives the host when it joins (its online profile).
+  void setPlayerName(std::string name) { playerName_ = std::move(name); }
+  // The guest's name, on the host, once it is in; empty otherwise.
+  [[nodiscard]] std::string remoteName() const {
+    return link_ != nullptr ? link_->remoteName() : std::string{};
+  }
   // Changes whenever the link is replaced or dropped, so whoever kept a pointer to the old one can
   // tell it is gone (a freed link's address may be reused by the next one).
   [[nodiscard]] std::uint64_t linkGeneration() const { return generation_; }
@@ -53,7 +63,6 @@ public:
   [[nodiscard]] bool linkInPlay() const { return link_ != nullptr && playLink_ == generation_; }
 
 private:
-  bool join(std::string_view code);
   void refresh();
 
   CoopConnectionDesc desc_;
@@ -62,6 +71,7 @@ private:
   View view_ = View::Closed;
   std::string typed_;
   std::string error_;
+  std::string playerName_ = "Player";
   std::uint64_t generation_ = 0;
   std::optional<std::uint64_t> playLink_;
 };

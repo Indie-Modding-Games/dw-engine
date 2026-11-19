@@ -18,6 +18,10 @@ namespace dwe::app {
 
 inline constexpr std::string_view CoopOpenCommand = "coop_open";
 
+// The signaling server the co-op rooms use: --versus-server, else the packs' network config; empty
+// when neither names one.
+std::string coopSignalServer(const assets::VirtualFileSystem& files, const Options& options);
+
 // The main-menu cooperative lobby: creates or joins a WebRTC room and keeps the validated coop
 // handshake alive. The connected link is exposed for the gameplay bridge to attach next.
 class CoopScreen {
@@ -29,6 +33,8 @@ public:
   void tick(double nowSeconds);
   [[nodiscard]] bool active() const { return active_; }
   [[nodiscard]] game::coop::CoopLink* link() { return connection_.link(); }
+  void setPlayerName(std::string name) { connection_.setPlayerName(std::move(name)); }
+  [[nodiscard]] std::string remoteName() const { return connection_.remoteName(); }
   [[nodiscard]] std::uint64_t linkGeneration() const { return connection_.linkGeneration(); }
   void handLinkToPlay() { connection_.handLinkToPlay(); }
   void takeLinkBack() { connection_.takeLinkBack(); }
@@ -37,6 +43,16 @@ public:
   [[nodiscard]] std::string_view remotePartnerSpecies() const { return remotePartnerSpecies_; }
   [[nodiscard]] bool isHost() const { return isHost_; }
   [[nodiscard]] bool guestReady() const { return remoteReady_; }
+  [[nodiscard]] bool localReady() const { return localReady_; }
+  [[nodiscard]] CoopConnection::View view() const { return connection_.view(); }
+  [[nodiscard]] std::string code() const { return connection_.code(); }
+  // Why the room failed or the last step was refused: an error code, or a message.
+  [[nodiscard]] std::string error() const;
+  [[nodiscard]] bool canStart() const { return remoteReady_ && guestSaveText_.has_value(); }
+  // The rooms screen's steps (online_rooms.hpp: CoopRoomBackend): the same as the coop_*
+  // commands, except that a code joins at once and leaving closes even a connected room.
+  void joinCode(std::string_view code);
+  void leave();
   [[nodiscard]] bool takeStartRequested() { return std::exchange(startRequested_, false); }
   [[nodiscard]] bool takeGuestProfileRequest() {
     return std::exchange(guestProfileRequest_, false);
