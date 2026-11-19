@@ -282,6 +282,31 @@ A type byte at the start of each message, in the range `0x60–0x6F` (versus use
 
 The heartbeat and the timeouts are those of `CoopLink` (§4.6), with the same values as versus.
 
+### 5.6 Saves in co-op
+
+Co-op never changes or breaks either player's single-player saves. The rule:
+
+- **Only a game the room starts is a co-op game.** The host's start (its own save, picked for the room) and the
+  guest's start (the host's world) join the room. A game loaded from the title while a room is still open stays
+  single-player: the guest is not added to it and it sends nothing (`PlayStart::coop`, `PlaySession::coopGame`).
+- **The host saves its own game, as a single-player game.** The quick save, the save machine and the autosave write
+  the host's slot as always. Nothing of the guest reaches that save: the guest's body and partner live only in the
+  field, and no save section reads them. A save the host writes during co-op is the same file it would write alone,
+  and it loads in single player like any other.
+- **The guest saves nothing.** Its game is a copy of the host's world in memory, with the guest's partner in it. It has
+  no save storage (no autosave, quick save or save machine) and the copy names no slot
+  (`hostWorldWithGuestPartner`), so nothing can take a slot of the guest's disk as its own. The guest's own save is
+  only read, to send its partner. The pause menu's save says so, its quit closes without saving, and a notice says it
+  as the game starts (`online.coop.guest_not_saved`, `save.coop_guest`, `save.coop_guest_quit_confirm`).
+- **Leaving, dropping or crashing changes nothing on disk.** The guest has written nothing; the host's slot holds its
+  last save, which never had any guest state in it.
+
+What the guest earns does not go back to its own game yet (decision 4 of §6, phase C4).
+
+Tests: `packages/session/tests/coop_saves_tests.cpp` (a host's save with a guest in the field is the single-player
+save, and loads at the host's place), `apps/game/tests/coop_guest_profile_tests.cpp` (the guest's copy names no slot)
+and `apps/game/tests/app_flow_tests.cpp` (a guest's game is never saved to a slot; only the room's games are co-op).
+
 ## 6. Game decisions (pending)
 
 | # | Question | Recommendation | Alternative |

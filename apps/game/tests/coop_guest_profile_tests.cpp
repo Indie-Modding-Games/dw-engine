@@ -81,6 +81,28 @@ TEST_CASE("cooperative guest session keeps the host world and imports only the g
   CHECK(partner->stats.currentHp == 987);
 }
 
+TEST_CASE("a co-op guest's copy of the host world names no save slot to write to") {
+  // The host's save names the host's own slot; the guest's copy must not carry it over, or the
+  // guest's game would take the slot of the same number on the guest's disk as its own
+  // (GameSession::homeSlot: the quick save and the autosave write there).
+  game::save::SaveFile host;
+  host.header.summary.slot = "slot_02";
+  host.header.summary.map = "host_map";
+  host.header.autosaveReasons = {"map_change"};
+  host.sections.emplace("partner", game::save::SavedSection{.state = game::partner::toYaml(
+                                                                game::partner::PartnerState{})});
+  const auto hostText = game::save::writeSaveFile(host);
+  REQUIRE(hostText);
+
+  const auto merged = app::hostWorldWithGuestPartner(*hostText, guestSave());
+  REQUIRE(merged);
+  const auto loaded = game::save::parseSaveFile(*merged);
+  REQUIRE(loaded);
+  CHECK(loaded->header.summary.slot.empty());
+  CHECK(loaded->header.autosaveReasons.empty());
+  CHECK(loaded->header.summary.map == "host_map");
+}
+
 TEST_CASE("cooperative guest profile rejects missing partner and oversized transfer") {
   CHECK_FALSE(app::extractCoopGuestPartnerProfile(""));
   CHECK_FALSE(app::extractCoopGuestPartnerProfile(std::string(128U * 1024U + 1U, 'x')));

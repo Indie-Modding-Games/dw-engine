@@ -199,6 +199,38 @@ TEST_CASE("a new game in a slot is saved to it as it starts, or does not start")
   flow.toTitle();
 }
 
+TEST_CASE("a co-op guest's game is never saved to a slot, even one it was handed") {
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  auto flow = flowOn(packs, storage);
+  const PlayStart guest{.load = std::nullopt,
+                        .backup = false,
+                        .saveTo = FirstSlot,
+                        .choice = std::nullopt,
+                        .withoutSaving = false,
+                        .rulesetId = std::nullopt,
+                        .modeId = std::nullopt,
+                        .networkSaveText = std::string{"the host's world"}};
+  CHECK(guest.coopGuest());
+  CHECK(guest.coop());
+
+  const auto started = flow.play(guest);
+  REQUIRE_MESSAGE(started.has_value(), errorOf(started));
+  CHECK_FALSE(flow.saveFailed());
+  CHECK_FALSE(storage.read("slot_01.yaml").value().has_value());
+  flow.toTitle();
+}
+
+TEST_CASE("only the games the co-op room starts are co-op games") {
+  PlayStart start;
+  CHECK_FALSE(start.coop());
+  start.load = FirstSlot;
+  CHECK_FALSE(start.coop());
+  start.coopHost = true;
+  CHECK(start.coop());
+  CHECK_FALSE(start.coopGuest());
+}
+
 TEST_CASE("the game being played is gone before the next one starts") {
   const TestPacks packs;
   MemorySaveStorage storage;

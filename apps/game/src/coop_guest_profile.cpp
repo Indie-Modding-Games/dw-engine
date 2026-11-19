@@ -56,6 +56,11 @@ core::Result<std::string> hostWorldWithGuestPartner(std::string_view hostSaveTex
                                .state = game::partner::toYaml(guest->state)});
   host->header.summary.species = guest->species;
   host->header.summary.nickname = guest->nickname;
+  // The copy is the guest's to play, never to save: it names none of the host's slots, so nothing
+  // in the guest's game takes a slot of the guest's disk as its own (multiplayer.md, "Saves in
+  // co-op").
+  host->header.summary.slot.clear();
+  host->header.autosaveReasons.clear();
   return game::save::writeSaveFile(*host);
 }
 

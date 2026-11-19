@@ -406,6 +406,8 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
   }
   const bool cleared = start.load.has_value() && session.gameCleared();
   auto play = std::make_unique<PlaySession>(Key{}, context, std::move(*game), std::move(*scene));
+  play->coopGame_ = start.coop();
+  play->coopGuest_ = start.coopGuest();
   if (cleared) {
     // main.c: main, MAIN_STATE 2: a game saved after the ending plays ED2 before its field.
     core::logDebug("[port:save] main (main.c:3474): a finished game, its movie first");
@@ -1126,6 +1128,11 @@ void PlaySession::showLockNotice(const std::string& textKey) {
 }
 
 bool PlaySession::quickSave() {
+  if (coopGuest_) {
+    // A co-op guest's game is the host's world: it is never saved, here or anywhere.
+    showLockNotice("save.coop_guest");
+    return false;
+  }
   session::GameSession& session = *game_.session;
   const std::optional<game::save::SlotId> home = session.homeSlot();
   std::vector<game::save::SlotInfo> listed;
@@ -1515,8 +1522,10 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       context_.ui->hide(MenuDocument);
       screens::publish(
           *context_.ui,
-          dialogSettings(
-              {.text = "save.quit_confirm", .file = {}, .question = true, .startOnYes = true}),
+          dialogSettings({.text = coopGuest_ ? "save.coop_guest_quit_confirm" : "save.quit_confirm",
+                          .file = {},
+                          .question = true,
+                          .startOnYes = true}),
           "dialog.revision");
       context_.ui->show(DialogDocument, true);
       quitAsked_ = true;
@@ -1558,8 +1567,9 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     context_.ui->hide(DialogDocument);
     quitAsked_ = false;
     // Yes: the game writes its save once, and only then the app closes; a failed write shows its
-    // notice and the game goes on, so no progress is lost quietly.
-    if (yes != nullptr && *yes && quickSave()) {
+    // notice and the game goes on, so no progress is lost quietly. A co-op guest's game has nothing
+    // of its own to save: yes closes it.
+    if (yes != nullptr && *yes && (coopGuest_ || quickSave())) {
       quitGame_ = true;
     }
     return true;

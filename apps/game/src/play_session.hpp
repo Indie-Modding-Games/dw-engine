@@ -367,6 +367,12 @@ public:
   // the window when it takes it.
   [[nodiscard]] bool takeQuitGame() { return std::exchange(quitGame_, false); }
 
+  // Whether the co-op room started this game (PlayStart::coop): only such a game joins the room.
+  [[nodiscard]] bool coopGame() const { return coopGame_; }
+  // Whether this is a co-op guest's game: the host's world in memory, never saved; its save
+  // entries say so and its quit closes without saving (multiplayer.md, "Saves in co-op").
+  [[nodiscard]] bool coopGuest() const { return coopGuest_; }
+
   // The partner's status as the status page shows it (partner.* settings).
   [[nodiscard]] screens::ScreenSettings partnerStatus() const;
   // The story's triggers and variables, when the game runs the story (autotest's story.* settings).
@@ -541,6 +547,9 @@ private:
   // Whether the dialog on screen asks to save and quit the game.
   bool quitAsked_ = false;
   bool quitGame_ = false;
+  // PlayStart::coop and PlayStart::coopGuest of the start that built this game.
+  bool coopGame_ = false;
+  bool coopGuest_ = false;
   // Whether the dialog on screen is the story lock's message.
   bool lockNoticeShown_ = false;
   std::optional<MovieMoment> movieRequest_;

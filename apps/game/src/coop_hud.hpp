@@ -12,8 +12,8 @@ namespace dwe::app {
 
 // The co-op game's own HUD (an engine addition; the original has no online play): the other
 // player's name floating over their character in the field, and short notices about the room (the
-// other player dropped, the host closed the room). One small document whose look is its own,
-// whatever the skin, shown only while it has something to show.
+// other player dropped, the host closed the room, a guest's game is not saved). One small document
+// whose look is its own, whatever the skin, shown only while it has something to show.
 inline constexpr std::string_view CoopHudDocument = "coop_hud";
 // What the document reads. The tag: whether it shows, where (x and y in percent of the window, the
 // point over the character's head) and who it names (CoopPeerLabel: a name, else a text key with
@@ -36,6 +36,8 @@ inline constexpr std::string_view CoopNoticeRevisionSetting = "coop_hud.notice.r
 // The notices' texts (content/packs/game/localization/<language>/online.yaml).
 inline constexpr std::string_view CoopDisconnectedText = "online.coop.disconnected";
 inline constexpr std::string_view CoopHostLeftText = "online.coop.host_left";
+// As a guest's game starts: it is the host's world, and nothing of it is saved.
+inline constexpr std::string_view CoopGuestNotSavedText = "online.coop.guest_not_saved";
 // The words that name a player with no name of their own.
 inline constexpr std::string_view HostPlayerText = "online.host_player";
 inline constexpr std::string_view GuestPlayerText = "online.guest_player";
