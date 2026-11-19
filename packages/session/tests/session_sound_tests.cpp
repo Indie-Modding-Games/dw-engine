@@ -286,6 +286,42 @@ TEST_CASE("slots 3 and 4 hold the partner's species banks, 5 to 7 the last battl
   CHECK(audio.activeVoiceCount() == 8);
 }
 
+TEST_CASE("slots 3 and 4 keep the old form's banks while the evolution scene holds them") {
+  assets::MemoryFileSystem memory;
+  const assets::VirtualFileSystem files = speciesPack(memory);
+  audio::Audio audio{std::make_unique<audio::NullOutput>()};
+  session::SessionSound sound{audio, files};
+  // The partner is the new form (Monzaemon here) from the scene's start.
+  std::string partner = "monz";
+  sound.attachPartner([&partner] { return partner; });
+  sound.keepPartnerBank(3, "agum");
+  sound.keepPartnerBank(4, "agum");
+
+  // The burst clip's voice plays from the old form's vlall entry (evl.c: the new one reaches slot
+  // 3 only at the swap); the new form's sound is not in it.
+  sound.playSound(3, 49);
+  CHECK(audio.activeVoiceCount() == 1);
+  sound.playSound(3, 7);
+  CHECK(audio.activeVoiceCount() == 1);
+  // Slot 4 holds the old form's vball until getEvoSequenceState lets it go.
+  sound.playSound(4, 50);
+  CHECK(audio.activeVoiceCount() == 2);
+  sound.keepPartnerBank(4, std::nullopt);
+  sound.playSound(4, 50);
+  CHECK(audio.activeVoiceCount() == 2);
+
+  // The swap: slot 3 follows the partner again, the new form's voices.
+  sound.keepPartnerBank(3, std::nullopt);
+  sound.playSound(3, 49);
+  CHECK(audio.activeVoiceCount() == 2);
+  sound.playSound(3, 7);
+  CHECK(audio.activeVoiceCount() == 3);
+  // Other slots are not the partner's: nothing changes.
+  sound.keepPartnerBank(5, "agum");
+  sound.playSound(5, 50);
+  CHECK(audio.activeVoiceCount() == 3);
+}
+
 TEST_CASE("a slot from 5 to 7 takes the vball entry of a species number") {
   assets::MemoryFileSystem memory;
   const assets::VirtualFileSystem files = speciesPack(memory);

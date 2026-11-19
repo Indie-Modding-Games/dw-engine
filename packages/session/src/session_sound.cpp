@@ -100,6 +100,16 @@ void SessionSound::attachPartner(std::function<std::string()> species) {
   partnerSpecies_ = std::move(species);
 }
 
+void SessionSound::keepPartnerBank(std::int64_t slot, std::optional<std::string> species) {
+  if (slot != PartnerVoiceSlot && slot != PartnerSlot) {
+    return;
+  }
+  core::logDebug("[port:sound] loadVLALL (sound_async.c:269): slot {} keeps {}", slot,
+                 species.value_or("the partner's banks"));
+  keptPartnerBanks_.at(static_cast<std::size_t>(slot - PartnerVoiceSlot)) = std::move(species);
+  dropUnusedBanks();
+}
+
 void SessionSound::useEnemyBanks(std::span<const std::string> species) {
   for (std::size_t index = 0; index < enemyBanks_.size(); ++index) {
     // btl.c: loadBattleData loads only the slots of the enemies there are; the others keep theirs.
@@ -292,11 +302,17 @@ std::optional<std::string> SessionSound::folderOf(std::int64_t slot) {
   case SecondSystemSlot:
     return std::string{SecondSystemBank};
   case PartnerVoiceSlot:
-  case PartnerSlot:
+  case PartnerSlot: {
+    const std::optional<std::string>& kept =
+        keptPartnerBanks_.at(static_cast<std::size_t>(slot - PartnerVoiceSlot));
+    if (kept) {
+      return speciesFolder(*kept, slot == PartnerVoiceSlot);
+    }
     if (!partnerSpecies_) {
       return std::nullopt;
     }
     return speciesFolder(partnerSpecies_(), slot == PartnerVoiceSlot);
+  }
   case FirstEnemySlot:
   case FirstEnemySlot + 1:
   case LastEnemySlot:

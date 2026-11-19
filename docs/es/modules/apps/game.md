@@ -412,6 +412,26 @@ Medido en el original (forzado con la hora en `twna01`) y comparado por fotogram
   trozos, los 100 cuadrados y los 16 rayos; `EvolutionEffects::start` empieza con las listas vacías y los mismos topes
   (prueba `a new evolution starts with none of the last one's objects and keeps the caps`). La alineación de la
   memoria de trabajo no aplica.
+- Igual (2026-11-19, reporte de un tester: «al evolucionar no suena su propio grito sino el de la nueva forma»): los
+  clips del compañero tocan sus voces desde el slot 3 (`anim.c: tickAnimation`, instrucción 0x4000, sound/vlall).
+  `main/evl.c: getEvoSequenceState` llama a `loadVLALL` con la nueva forma: su vball llega al slot 4 al empezar la
+  escena, pero su vlall solo se lee, y `evl.c:539` (`waitForSoundBufferLoading(3)`) lo pone en el slot 3 en el cambio
+  (0x11C). Medido en el original (estado `01_field_outside_jijimon_house`, Agumon con `EVOLUTION_TARGET` 5): ningún
+  sonido durante la caminata ni el clip `ready`; en 0x6A los efectos 1 y 0 del slot 8 y las roturas (2 a 4); en el
+  frame 117 el clip de estallido (0xC) de Agumon toca `playSound(3, 0x32)` con el vlall de Agumon aún en el slot 3
+  (ninguna subida al slot 3 hasta el vblank 23642, frame 0x11C); en 0xD6 `stopSound` y el rugido (slot 8, 5); en el
+  estado 4 (frames 372 y 392) el clip `finish` (0xB) de Greymon toca `playSound(3, 0x31)` desde el vlall de Greymon.
+  Así, el grito del estallido es el de la forma vieja y el de después del cambio el de la nueva. dwe evoluciona al
+  compañero en la sesión antes de la escena y los slots 3 y 4 lo seguían enseguida: el grito del estallido (sonido
+  0x32) sonaba desde el vlall de Greymon (`sound/vlall/002` en vez de `001`). Ahora la escena deja los bancos de la
+  forma vieja en los slots 3 y 4 desde su inicio (`GameSession::keepPartnerSounds`, `SessionSound::keepPartnerBank`),
+  devuelve el slot 4 al compañero en `getEvoSequenceState` (el inicio de `Glowing`) y el slot 3 cuando dibuja la
+  nueva forma (`drawNewForm`, 0x11C), y suelta ambos al terminar o al saltarla. Todas las formas de evolucionar
+  (natural, Numemon y Sukamon, objeto, virus, la vuelta por guion, la consola) pasan por el estado 13 y esta escena;
+  la muerte y el renacer (`dooa.c`) cargan el vlall nuevo en el mismo momento en que cambia la forma, y los gritos de
+  batalla no usan esto. Prueba: `session_sound_tests.cpp` («slots 3 and 4 keep the old form's banks while the
+  evolution scene holds them»); en vivo, el estallido toca `slot=3 sound=50 bank=sound/vlall/001` y el clip `finish`
+  `sound/vlall/002`.
 
 Suposiciones:
 
