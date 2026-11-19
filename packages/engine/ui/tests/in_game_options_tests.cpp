@@ -362,7 +362,7 @@ TEST_CASE("every row's description stays inside its panel, in every skin and bot
   // The tester's report: in the original look a third line of some descriptions ran into the
   // separator and the Reset/Back row under the panel.
   for (const std::string_view language : {"es", "en"}) {
-    for (const std::string_view skin : {"original", "modern", "new", "devvago"}) {
+    for (const std::string_view skin : {"original", "modern", "pixel", "devvago"}) {
       CAPTURE(language);
       CAPTURE(skin);
       Screen screen{"pause_menu", language};

@@ -320,10 +320,15 @@ TEST_CASE(
   const WarningCapture warnings;
   auto ui = createUi(files, texts);
   CHECK(skinIds(*ui) ==
-        std::vector<std::string>{"devvago", "modern", "new", "original", "test_contrast"});
+        std::vector<std::string>{"devvago", "modern", "original", "pixel", "test_contrast"});
   CHECK(ui->skins().defaultSkin() == "original");
   CHECK(ui->skin() == "original");
   CHECK(texts.text(ui->skins().find("original")->nameKey) == "Original");
+  // The modern look stays the base of the chain and the start's fallback, but the player is not
+  // offered it: `offered` leaves it out while `find` still resolves it.
+  CHECK(ui->skins().offered() ==
+        std::vector<std::string>{"devvago", "original", "pixel", "test_contrast"});
+  CHECK(ui->skins().find("modern") != nullptr);
   loadScreens(*ui);
   // The screens that share the pause menu's panel, whose panel the skin marks as its own
   // (skin-original), so the modern look's rules stay off it.
@@ -373,7 +378,7 @@ TEST_CASE(
   CHECK(ui->skins().layoutOf(*devvago, "main_menu").at("menu") == "original");
   CHECK(ui->skins().layoutOf(*devvago, "main_menu").at("picture") == "modern");
   // No other skin of the game pack sets the options only devvago uses.
-  constexpr std::array<std::string_view, 3> Others{"modern", "original", "new"};
+  constexpr std::array<std::string_view, 3> Others{"modern", "original", "pixel"};
   for (const std::string_view other : Others) {
     const Skin* skin = ui->skins().find(other);
     REQUIRE(skin != nullptr);
@@ -1862,7 +1867,7 @@ TEST_CASE("under every skin the story's boxes advance, answer and take a name th
   const auto call = [&](std::string_view function, std::vector<std::string> arguments = {}) {
     REQUIRE(ui->callScript("story_probe", function, arguments));
   };
-  for (const std::string_view skin : {"original", "modern", "new", "devvago"}) {
+  for (const std::string_view skin : {"original", "modern", "pixel", "devvago"}) {
     CAPTURE(skin);
     REQUIRE(ui->setSkin(skin));
     static_cast<void>(ui->takeCommands());

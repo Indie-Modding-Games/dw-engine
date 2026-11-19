@@ -978,7 +978,7 @@ int runGame(const Options& requested) {
   // channel's) never.
   title.setAsksSkin(autotest ? autotest->asksSkinFirst()
                              : settingsFile && asksUiSkin(options.uiSkin, userSettings.uiSkin,
-                                                          (*ui)->skins().skins().size()));
+                                                          (*ui)->skins().offered().size()));
   // What waits for the movie that plays: the title, or a game to start (main.c: main).
   std::optional<PlayStart> startAfterMovie;
   // The new game that waits for the opening's questions.

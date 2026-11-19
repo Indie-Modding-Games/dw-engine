@@ -8,10 +8,27 @@
    #fff371 the yellow of headings, #288ad0 blue, #b2b2b2 the grey of descriptions. */
 
 body {
-	font-family: original-look;
+	font-family: "Pixel Body";
 	font-weight: normal;
-	font-size: 33dp;
-	color: #d0d0d0;
+	font-size: 30dp;
+	color: #d8f1ff;
+}
+
+/* Text that the original-look sheets style: the pixel skins draw it with the pixel fonts, and so
+   does this one — accented letters and ñ read far better here than in the bitmap font (its cells
+   clip the accents) and the type stays one system: Pixel Body for everything the page writes.
+   The size is !important on purpose: Pixel Body's cell is 15 pixels, so it rasterizes without
+   horizontal bands only at whole multiples of it (30dp = two dp per pixel). The sheets still ask
+   for the bitmap font's 33dp and 22dp here and there, and at those sizes the pixel font's rows
+   land between the screen's pixels — the letters come out striped. 30dp everywhere fixes the
+   sampling without touching the boxes, which were sized for the taller 33. */
+.original-look,
+.original-look.original-dialogue {
+	font-family: "Pixel Body";
+	font-weight: normal;
+	font-size: 30dp !important;
+	line-height: 33dp !important;
+	color: #d8f1ff;
 }
 
 /* An entry of a menu: plain text with the original's selector, a 1-pixel outline round the focused row
@@ -24,9 +41,9 @@ button {
 	margin: 0;
 	border-radius: 0;
 	border: 3dp transparent;
-	color: #d0d0d0;
+	color: #d8f1ff;
 	background-color: transparent;
-	line-height: 30dp;
+	line-height: 34dp;
 	transition: none;
 }
 
@@ -40,40 +57,51 @@ button:active {
 	background-color: #244764;
 }
 
-/* A button prompt. The original has none (it names no buttons on screen); they stay, small and in the description
-   grey, because the game is also played with a keyboard and a mouse. A documented delta of this skin. */
+/* A button prompt: the pixel skin's key cap — the name in Pixel Small, 2dp per pixel of the
+   font, the cap 34dp tall with room around the word so no letter touches its edges. */
 .key {
-	min-width: 18dp;
-	padding: 0 6dp;
-	margin-right: 6dp;
+	font-family: "Pixel Small";
+	min-width: 26dp;
+	height: 34dp;
+	padding: 0 9dp;
+	margin-right: 9dp;
 	border-radius: 0;
-	border: 3dp #90d9fa;
+	border: 2dp #90d9fa;
 	font-weight: normal;
-	font-size: 22dp;
-	color: #d0d0d0;
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #d8f1ff;
+	background-color: #102a40cc;
 }
 
-/* Button glyphs (../../common/base.rcss): a shape of the original's pad is the original font's own character, drawn as
-   the text around it is, with no key frame round it, as the original writes its buttons in its texts; a face button
-   of another family is a round frame round its letter or position. */
-.glyph-char {
-	display: inline;
-}
-
-.family-shapes .glyph-art {
+/* Button glyphs (../../common/base.rcss): the engine's own shape art inside the cap, like the
+   pixel skin. The bitmap font's characters and the animated frames are left out — over the
+   pixel caps they drew a second glyph behind the word's letters. */
+.glyph-char,
+.glyph-frame {
 	display: none;
 }
 
-.key.family-shapes {
-	min-width: 0dp;
-	padding: 0dp;
-	margin-right: 6dp;
-	border-width: 0dp;
-	font-size: 1em;
+.family-shapes .glyph-art,
+.family-positions .glyph-art {
+	display: inline-block;
+	width: 20dp;
+	height: 20dp;
+}
+
+.key.family-shapes,
+.key.family-positions {
+	min-width: 34dp;
+	padding: 0 6dp;
+	margin-right: 9dp;
+	border-width: 2dp;
+	font-size: 26dp;
 }
 
 .key.glyph-face {
-	border-radius: 15dp;
+	min-width: 34dp;
+	padding: 0 6dp;
+	border-radius: 0;
 }
 
 /* The original's window (ui.c: renderUIBoxStatic, renderUIBoxBorder), for any document's box: the fill #2D3840 at

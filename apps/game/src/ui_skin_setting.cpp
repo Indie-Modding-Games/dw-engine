@@ -19,6 +19,12 @@ std::optional<std::string> startUiSkin(const std::optional<std::string>& command
   if (saved == "legacy") {
     return std::string{"original"};
   }
+  // The pixel look was the `new` skin until its id and folder were renamed: a saved choice of
+  // `new` keeps the skin that player chose. The command line, as with every choice, is taken as it
+  // is, so after the rename it names the skin by its new id.
+  if (saved == "new") {
+    return std::string{"pixel"};
+  }
   return saved;
 }
 

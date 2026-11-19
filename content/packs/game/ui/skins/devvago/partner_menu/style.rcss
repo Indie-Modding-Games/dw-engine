@@ -1996,9 +1996,7 @@ body.layout-pages-compact #scrim .page.hidden { display: none; }
 
 /* Align the final-tech label, card, and action to the same outer width. The earlier rules add padding and borders outside their declared width. */
 #scrim.compact-partner #final-heading { box-sizing: border-box; }
-#scrim.compact-partner #tech-row-3 { top: 462dp; height: 50dp; box-sizing: border-box; border-radius: 3dp; }
-#scrim.compact-partner #tech-row-3 .tech-name { left: 9dp; top: 6dp; width: 300dp; height: 36dp; line-height: 36dp; }
-#scrim.compact-partner #tech-change { top: 520dp; box-sizing: border-box; }
+#scrim.compact-partner #tech-row-3 { box-sizing: border-box; border-radius: 0; }
 /* Keep the selectable attack grid above the detail layer and clip both to the editor frame. */
 #scrim.compact-partner.tech-editing #page-tech { overflow: hidden; }
 #scrim.compact-partner.tech-editing #tech-picker { z-index: 3; }
@@ -2082,3 +2080,279 @@ body.layout-pages-compact #scrim .page.hidden { display: none; }
 	color: #ffe64a; font-size: 12dp; line-height: 20dp; text-align: left; overflow: hidden;
 }
 #scrim.compact-partner.tech-editing #prompts { top: 532dp; }
+
+/* ==================================================================================================
+   Pixel dashboard: the compact partner screen in the pixel skin's type system.
+
+   Type scale, one step smaller than the first take: headings and values Pixel Small 26dp, field
+   labels 24dp, counters' words and the small data 22dp — nothing below 22. Three tracks with
+   20dp gutters, rows on a 30-40dp rhythm, insets with 10dp of side padding: text sits inside its
+   own box, never under a neighbour. The block is the file's last word: where the generations above
+   placed these ids differently, these rules win, and the `.status-text` / `.status-extras` /
+   `.favorite-food` mirrors keep the Spanish and the options variants on the same grid. */
+
+/* Tracks: profile 18..358, parameters 380..630, care and techniques 640..882. */
+#scrim.compact-partner #page-status, #scrim.compact-partner #page-tech {
+	left: 0; top: 48dp; width: 900dp; height: 570dp; box-sizing: border-box;
+}
+
+/* Headings, gold, one line 30dp tall. Pixel Small 26 is the only crisp pixel size below 30 —
+   every text on this screen uses it, so no letter shows sampler bands. */
+#scrim.compact-partner #profile-heading { left: 18dp; top: 8dp; width: 340dp; }
+#scrim.compact-partner #parameter-heading { left: 380dp; top: 8dp; width: 250dp; }
+#scrim.compact-partner #condition-heading { left: 640dp; top: 8dp; width: 242dp; }
+#scrim.compact-partner #profile-heading, #scrim.compact-partner #parameter-heading,
+#scrim.compact-partner #condition-heading, #scrim.compact-partner #techset-heading {
+	height: 30dp; decorator: none; background-color: transparent; border-width: 0;
+	font-family: "Pixel Small"; font-size: 26dp; font-weight: normal; line-height: 30dp;
+	color: #ffe64a; white-space: nowrap;
+}
+
+/* The field inset every value shares: navy plate, cyan light at the bottom-right. */
+#scrim.compact-partner #status-name, #scrim.compact-partner #status-species,
+#scrim.compact-partner #status-age, #scrim.compact-partner #status-weight,
+#scrim.compact-partner #status-food, #scrim.compact-partner #status-timers .timer-value {
+	box-sizing: border-box; margin: 0; border: 2dp #345875; border-right-color: #72c7ff;
+	border-bottom-color: #72c7ff; background-color: #0a2035; color: #eaf6ff;
+	white-space: nowrap; overflow: hidden;
+}
+
+/* Labels, right-aligned before their inset. Everything on this screen uses Pixel Small at 26dp:
+   its cell is 13px, so 26dp is exactly two dp per pixel — at other sizes the font sampler blends
+   pixel rows against each other and the letters show horizontal bands. */
+#scrim.compact-partner #status-name-label, #scrim.compact-partner #status-species-label {
+	font-family: "Pixel Small"; width: 112dp; height: 28dp; decorator: none; background-color: transparent;
+	border-width: 0; font-size: 26dp; line-height: 28dp; color: #8edcff; text-align: right; white-space: nowrap;
+}
+
+/* Track 1, profile. */
+#scrim.compact-partner #status-name-label { left: 18dp; top: 44dp; }
+#scrim.compact-partner #status-head { left: 134dp; top: 40dp; width: 224dp; height: 34dp; margin: 0; padding: 0; }
+#scrim.compact-partner #status-name {
+	display: block; width: 224dp; height: 34dp; padding: 0 10dp;
+	font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp;
+}
+#scrim.compact-partner #status-name.long { font-size: 26dp; }
+#scrim.compact-partner #status-species-line { left: 18dp; top: 80dp; width: 340dp; height: 34dp; }
+#scrim.compact-partner #status-species-label { left: 0; top: 3dp; }
+#scrim.compact-partner #status-species { left: 122dp; top: 0; width: 218dp; height: 34dp; padding: 0 10dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; }
+#scrim.compact-partner #status-age-line { left: 18dp; top: 120dp; width: 162dp; height: 30dp; }
+#scrim.compact-partner #status-weight-line { left: 196dp; top: 120dp; width: 162dp; height: 30dp; }
+#scrim.compact-partner #status-age-label, #scrim.compact-partner #status-weight-label {
+	left: 0; top: 1dp; width: 60dp; height: 28dp; decorator: none; background-color: transparent;
+	border-width: 0; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #8edcff; text-align: right; white-space: nowrap;
+}
+#scrim.compact-partner #status-age, #scrim.compact-partner #status-weight {
+	left: 64dp; top: 0; width: 98dp; height: 30dp; padding: 0 6dp;
+	font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp;
+}
+#scrim.compact-partner #status-food-line { left: 18dp; top: 156dp; width: 340dp; height: 58dp; }
+#scrim.compact-partner #status-food-line.hidden { display: none; }
+#scrim.compact-partner #status-food-label {
+	position: absolute; display: block; left: 0; top: 0; width: 340dp; height: 28dp; decorator: none;
+	color: #8edcff; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; text-align: left; white-space: nowrap;
+}
+#scrim.compact-partner #status-food {
+	position: absolute; left: 0; top: 28dp; width: 340dp; height: 30dp; padding: 0 10dp;
+	font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp;
+}
+#scrim.compact-partner #partner-portrait-clip { left: 18dp; top: 222dp; width: 196dp; height: 246dp; overflow: hidden; border: 2dp #345875; background-color: #071522; }
+#scrim.compact-partner #partner-portrait { left: -106dp; top: -138dp; width: 600dp; height: 450dp; }
+#scrim.compact-partner #status-life-label {
+	left: 226dp; top: 224dp; width: 132dp; height: 28dp; font-family: "Pixel Small";
+	font-size: 26dp; line-height: 28dp; color: #ffe64a;
+}
+#scrim.compact-partner #status-life-hearts { left: 226dp; top: 256dp; width: 132dp; height: 36dp; }
+#scrim.compact-partner .life-heart, #scrim.compact-partner .life-fill, #scrim.compact-partner .life-outline { width: 40dp; height: 33dp; }
+#scrim.compact-partner #life-heart-0 { left: 0; }
+#scrim.compact-partner #life-heart-1 { left: 44dp; }
+#scrim.compact-partner #life-heart-2 { left: 88dp; }
+#scrim.compact-partner #status-lives, #scrim.compact-partner #status-special-heading,
+#scrim.compact-partner #status-type-heading, #scrim.compact-partner #status-active-heading,
+#scrim.compact-partner #status-specials, #scrim.compact-partner #status-type,
+#scrim.compact-partner #status-active, #scrim.compact-partner #status-awake,
+#scrim.compact-partner #status-horizontal, #scrim.compact-partner #status-vertical,
+#scrim.compact-partner #status-mistakes .status-native-happiness { display: none; }
+
+/* Track 2, parameters: HP and MP as labelled bars, the four attributes as rows, the counters and
+   the progression timers under them (the last four ride on the sheet's extras, as before). The
+   block's rows end at 340 (two 52s and four 36s from 44): everything below starts after that,
+   the action bar after all of it — one column, never stacked. */
+#scrim.compact-partner #status-parameters { left: 380dp; top: 44dp; width: 250dp; }
+#scrim.compact-partner #status-parameters .bar-row { position: relative; height: 52dp; }
+#scrim.compact-partner #status-parameters .label {
+	position: absolute; left: 0; top: 0; width: 112dp; height: 28dp; padding: 0;
+	font-family: "Pixel Small"; decorator: none; background-color: transparent;
+	font-size: 26dp; line-height: 28dp; color: #8edcff;
+}
+#scrim.compact-partner #status-parameters .bar-row.pool .value {
+	position: absolute; left: 118dp; top: 0; width: 132dp; height: 28dp;
+	font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; text-align: right;
+	color: #d8f1ff; white-space: nowrap;
+}
+#scrim.compact-partner #status-parameters .bar-row.pool .bar { left: 0; top: 34dp; width: 250dp; height: 12dp; }
+#scrim.compact-partner #status-parameters .bar-row.pool .fill { top: 2dp; height: 8dp; }
+#scrim.compact-partner #status-parameters .pool-max, #scrim.compact-partner #status-parameters .pool-slash { display: none; }
+#scrim.compact-partner #status-parameters #stat-row-0, #scrim.compact-partner #status-parameters #stat-row-1,
+#scrim.compact-partner #status-parameters #stat-row-2, #scrim.compact-partner #status-parameters #stat-row-3 {
+	position: relative; left: 0; width: 250dp; height: 36dp; box-sizing: border-box; border-bottom: 1dp #193c56;
+}
+#scrim.compact-partner #status-parameters #stat-row-0 .label, #scrim.compact-partner #status-parameters #stat-row-1 .label,
+#scrim.compact-partner #status-parameters #stat-row-2 .label, #scrim.compact-partner #status-parameters #stat-row-3 .label {
+	left: 0; top: 4dp; width: 108dp; height: 28dp; line-height: 28dp;
+}
+#scrim.compact-partner #status-parameters #stat-row-0 .value, #scrim.compact-partner #status-parameters #stat-row-1 .value,
+#scrim.compact-partner #status-parameters #stat-row-2 .value, #scrim.compact-partner #status-parameters #stat-row-3 .value {
+	position: absolute; left: 116dp; top: 3dp; width: 134dp; height: 30dp;
+	font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; text-align: right; color: #d8f1ff;
+}
+#scrim.compact-partner #status-parameters #stat-row-0 .bar, #scrim.compact-partner #status-parameters #stat-row-1 .bar,
+#scrim.compact-partner #status-parameters #stat-row-2 .bar, #scrim.compact-partner #status-parameters #stat-row-3 .bar { display: none; }
+#scrim.compact-partner #status-battles, #scrim.compact-partner #status-mistakes {
+	position: absolute; top: 344dp; left: 380dp; width: 250dp; height: 34dp; padding: 0; border-width: 0; background-color: transparent;
+}
+#scrim.compact-partner #status-mistakes { top: 380dp; }
+#scrim.compact-partner #status-battles-label, #scrim.compact-partner #status-mistakes-label {
+	position: absolute; left: 0; top: 2dp; width: 144dp; height: 28dp; decorator: none; background-color: transparent;
+	border-width: 0; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #8edcff; text-align: left; white-space: nowrap;
+}
+#scrim.compact-partner #status-battles-value, #scrim.compact-partner #status-mistakes-value {
+	position: absolute; left: 150dp; top: 0; width: 100dp; height: 32dp; padding: 0; margin: 0; box-sizing: border-box;
+	border: 2dp #345875; border-right-color: #72c7ff; border-bottom-color: #72c7ff; background-color: #0a2035;
+	font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; text-align: right; color: #eaf6ff;
+}
+#scrim.compact-partner #status-timers {
+	position: absolute; left: 380dp; top: 416dp; width: 250dp; height: 70dp; padding: 0; border-width: 0; background-color: transparent;
+}
+#scrim.compact-partner #status-timers .timer-line { position: absolute; left: 0; top: 0; width: 250dp; height: 34dp; }
+#scrim.compact-partner #status-timers #status-lifetime { top: 0; }
+#scrim.compact-partner #status-timers #status-evolution { top: 36dp; }
+#scrim.compact-partner #status-timers .timer-label {
+	position: absolute; left: 0; top: 2dp; width: 146dp; height: 28dp; font-family: "Pixel Small";
+	font-size: 26dp; line-height: 28dp; color: #8edcff; text-align: left; white-space: nowrap;
+}
+#scrim.compact-partner #status-timers .timer-value {
+	position: absolute; left: 150dp; top: 0; width: 100dp; height: 32dp; padding: 0 6dp; text-align: center;
+	font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; color: #eaf6ff;
+}
+
+/* Track 3, care and techniques. */
+#scrim.compact-partner #conditions {
+	left: 640dp; top: 42dp; width: 242dp; height: 38dp; box-sizing: border-box; padding: 6dp 8dp;
+	border: 2dp #345875; background-color: #102a40;
+}
+#scrim.compact-partner #conditions .condition { width: 22dp; height: 22dp; }
+#scrim.compact-partner #conditions .profile-condition-sick { left: 0; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-injured { left: 30dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-hungry { left: 60dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-sleepy { left: 90dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-sulking { left: 120dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-tired { left: 150dp; top: 0; }
+#scrim.compact-partner #conditions .profile-condition-needs_toilet { left: 180dp; top: 0; }
+#scrim.compact-partner #no-condition {
+	display: block; position: absolute; left: 6dp; top: 4dp; width: 216dp; height: 30dp;
+	font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; color: #d8f1ff; white-space: nowrap;
+}
+#scrim.compact-partner #status-condition {
+	left: 640dp; top: 88dp; width: 242dp; height: 176dp; padding: 0; border-width: 0; background-color: transparent;
+}
+#scrim.compact-partner #status-condition .bar-row { position: relative; height: 44dp; }
+#scrim.compact-partner #status-condition .label {
+	position: absolute; left: 0; top: 0; width: 150dp; height: 28dp; padding: 0; font-family: "Pixel Small";
+	decorator: none; background-color: transparent; border-width: 0; font-size: 26dp; line-height: 28dp;
+	color: #8edcff; white-space: nowrap;
+}
+#scrim.compact-partner #status-condition .meter {
+	position: absolute; left: 0; top: 30dp; width: 160dp; height: 12dp; box-sizing: border-box; margin: 0;
+	border: 2dp #071522; border-right-color: #345875; border-bottom-color: #345875; background-color: #071522; decorator: none;
+}
+#scrim.compact-partner #status-condition .meter .fill { position: absolute; left: 0; top: 0; height: 8dp; }
+#scrim.compact-partner #status-condition #meter-2-fill { top: 0; height: 8dp; }
+#scrim.compact-partner #status-condition .value {
+	display: block; position: absolute; left: 166dp; top: 24dp; width: 76dp; height: 26dp;
+	font-family: "Pixel Small"; font-size: 26dp; line-height: 26dp; text-align: right; color: #d8f1ff; white-space: nowrap;
+}
+#scrim.compact-partner .status-native-happiness { display: none; }
+
+#scrim.compact-partner #techset-heading { left: 640dp; top: 272dp; width: 242dp; }
+#scrim.compact-partner #tech-columns, #scrim.compact-partner #final-columns,
+#scrim.compact-partner #techset-separator, #scrim.compact-partner #tech-final-separator,
+#scrim.compact-partner #tech-dots, #scrim.compact-partner #tech-final-dot,
+#scrim.compact-partner #tech-message { display: none; }
+#scrim.compact-partner .tech-row {
+	position: absolute; left: 640dp; width: 242dp; height: 38dp; box-sizing: border-box;
+	border-bottom: 1dp #193c56; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp;
+}
+#scrim.compact-partner #tech-row-0 { top: 306dp; }
+#scrim.compact-partner #tech-row-1 { top: 344dp; }
+#scrim.compact-partner #tech-row-2 { top: 382dp; }
+#scrim.compact-partner .tech-row .tech-name {
+	position: absolute; left: 0; top: 4dp; width: 184dp; height: 30dp; font-family: "Pixel Small";
+	font-size: 26dp; line-height: 30dp; color: #d8f1ff; white-space: nowrap; overflow: hidden;
+}
+#scrim.compact-partner .tech-row .tech-power {
+	position: absolute; left: 192dp; top: 6dp; width: 50dp; height: 26dp; font-family: "Pixel Small";
+	font-size: 26dp; line-height: 26dp; text-align: right; color: #a8c7d9;
+}
+#scrim.compact-partner .tech-row .tech-mp, #scrim.compact-partner .tech-row .tech-range,
+#scrim.compact-partner .tech-row .tech-effect { display: none; }
+#scrim.compact-partner #final-heading {
+	left: 640dp; top: 428dp; width: 242dp; height: 30dp; box-sizing: border-box; padding: 0 0 0 9dp;
+	border-width: 0; border-left: 4dp #ffd51e; background-color: #102a40; decorator: none;
+	font-family: "Pixel Small"; font-size: 26dp; font-weight: normal; line-height: 30dp; color: #ffe64a; white-space: nowrap;
+}
+#scrim.compact-partner #tech-row-3 {
+	left: 640dp; top: 462dp; width: 242dp; height: 44dp; padding: 5dp 6dp; box-sizing: border-box;
+	border: 2dp #527c98; border-radius: 0; background-color: #102a40;
+}
+#scrim.compact-partner #tech-row-3 .tech-name { left: 6dp; top: 7dp; width: 174dp; }
+#scrim.compact-partner #tech-row-3 .tech-power { left: 184dp; top: 8dp; width: 46dp; }
+#scrim.compact-partner #tech-row-3 .tech-mp, #scrim.compact-partner #tech-row-3 .tech-range,
+#scrim.compact-partner #tech-row-3 .tech-effect { display: none; }
+#scrim.compact-partner #tech-change {
+	left: 18dp; top: 512dp; width: 864dp; height: 34dp; box-sizing: border-box; padding: 0 0 0 12dp;
+	border-width: 0; border-left: 4dp #72c7ff; background-color: #102a40; decorator: none;
+	font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; color: #d8f1ff; white-space: nowrap; overflow: hidden;
+}
+#scrim.compact-partner #tech-change .tech-action-symbol { font-size: 26dp; line-height: 30dp; margin-right: 12dp; color: #90d9fa; }
+#scrim.compact-partner #tech-cancel { display: none; }
+
+/* The tabs of the panel and its Volver, on the same crisp scale. The label sits centered in the
+   flat tab: the classic rule offsets it 21dp for the trapezoid's edges, which the compact tabs
+   hide, and that offset is what left the word off-centre. */
+#scrim.compact-partner #tabs, body.layout-pages-compact #scrim #tabs { height: 40dp; margin: 0 0 4dp 16dp; }
+#scrim.compact-partner .tab, body.layout-pages-compact #scrim .tab {
+	min-width: 96dp; height: 34dp; padding: 0 12dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp;
+}
+#scrim.compact-partner .tab-label { position: relative; left: 0; top: 0; }
+body.layout-pages-compact #scrim #close { font-family: "Pixel Small"; font-size: 26dp; height: 34dp; line-height: 30dp; padding: 0 12dp; }
+#scrim.compact-partner #prompts { font-size: 26dp; height: 34dp; color: #a8c7d9; }
+
+/* The Spanish and the options variants, on the same numbers as above. */
+#scrim.compact-partner.status-text #status-name-label { left: 18dp; top: 44dp; width: 112dp; font-size: 26dp; line-height: 28dp; }
+#scrim.compact-partner.status-text #status-head { left: 134dp; top: 40dp; width: 224dp; height: 34dp; overflow: hidden; }
+#scrim.compact-partner.status-text #status-name { width: 224dp; }
+#scrim.compact-partner.status-text #status-name.long { width: 224dp; font-size: 26dp; }
+#scrim.compact-partner.status-text #status-species-line { left: 18dp; top: 80dp; width: 340dp; height: 34dp; }
+#scrim.compact-partner.status-text #status-species-line #status-species { left: 122dp; top: 0; width: 218dp; height: 34dp; padding: 0 10dp; font-size: 26dp; line-height: 30dp; }
+#scrim.compact-partner.status-text.status-extras #status-species-line #status-species { left: 122dp; top: 0; width: 218dp; height: 34dp; padding: 0 10dp; font-size: 26dp; line-height: 30dp; }
+#scrim.compact-partner.status-text #status-age-line { left: 18dp; top: 120dp; width: 162dp; height: 30dp; }
+#scrim.compact-partner.status-text #status-age-label { width: 60dp; font-size: 26dp; line-height: 28dp; }
+#scrim.compact-partner.status-text #status-age { left: 64dp; width: 98dp; font-size: 26dp; line-height: 30dp; }
+#scrim.compact-partner.status-text.status-extras #status-weight-line { left: 196dp; top: 120dp; width: 162dp; height: 30dp; }
+#scrim.compact-partner.status-text.status-extras #status-weight-label { left: 0; width: 60dp; font-size: 26dp; line-height: 28dp; text-align: right; }
+#scrim.compact-partner.status-text.status-extras #status-weight { left: 64dp; width: 98dp; font-size: 26dp; line-height: 30dp; }
+#scrim.compact-partner.status-text #status-parameters { left: 380dp; top: 44dp; width: 250dp; overflow: visible; }
+#scrim.compact-partner.status-text #status-timers { left: 380dp; top: 416dp; width: 250dp; height: 70dp; overflow: visible; }
+#scrim.compact-partner.status-text #status-condition { left: 640dp; top: 88dp; width: 242dp; }
+#scrim.compact-partner.status-text #status-battles-label, #scrim.compact-partner.status-text #status-mistakes-label { left: 0; top: 2dp; width: 144dp; font-size: 26dp; line-height: 28dp; text-align: left; }
+#scrim.compact-partner.status-text #status-battles-value, #scrim.compact-partner.status-text #status-mistakes-value { left: 150dp; top: 0; width: 100dp; font-size: 26dp; line-height: 30dp; }
+#scrim.compact-partner.status-text #status-mistakes { top: 380dp; }
+#scrim.compact-partner.status-text .tech-row .tech-name { overflow: hidden; white-space: nowrap; }
+#scrim.compact-partner.status-text .tech-row .tech-power { left: 192dp; width: 50dp; font-size: 26dp; line-height: 26dp; }
+#scrim.compact-partner.status-text .tech-row .tech-mp, #scrim.compact-partner.status-text .tech-row .tech-range { display: none; }
+#scrim.compact-partner.status-text #tech-row-3 .tech-power { left: 184dp; width: 46dp; font-size: 26dp; }
+#scrim.compact-partner.status-text #tech-row-3 .tech-range { display: none; }
+#scrim.compact-partner.favorite-food #partner-portrait-clip { left: 18dp; top: 222dp; width: 196dp; height: 246dp; }
+#scrim.compact-partner.favorite-food #partner-portrait { left: -106dp; top: -138dp; width: 600dp; height: 450dp; }
+#scrim.compact-partner.status-extras #page-status, #scrim.compact-partner.status-text.status-extras #page-status { height: 570dp; overflow: hidden; }

@@ -178,7 +178,7 @@ TEST_CASE("the partner's status page stays inside the window at every UI scale")
 
 TEST_CASE("the shop's window opens clear of the money box in every skin") {
   // The tester's report: in the original look «Anything else?» covered the money box's right side.
-  for (const std::string_view skin : {"original", "modern", "new", "devvago"}) {
+  for (const std::string_view skin : {"original", "modern", "pixel", "devvago"}) {
     CAPTURE(skin);
     Screen screen{"shop_menu", "es"};
     screen.skin(skin);

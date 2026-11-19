@@ -1,0 +1,28 @@
+# Preview of the `pixel` skin on the title's main menu: the game boots with `--ui-skin pixel`, the
+# route waits for the main menu to be shown, resizes the window, asserts the setting, and takes
+# one capture. The `pixel` skin extends `original` (docs/architecture/ui.md, «The Pixel art skin
+# (id `pixel`)»), so it needs content extracted with the original look's sprites (dwx 2 or later) —
+# the same sprites the `original` skin draws. Without extracted content the catalog drops `pixel`
+# (the sprite sheets it inherits reference `texture/etcdat/*` and friends that don't resolve), the
+# game falls back to `modern`, and the expect_setting step fails.
+#
+# How to run it (needs a build of the game binary and the extracted base pack):
+#
+#   scripts/dev.sh run \
+#       --content <folder with the extracted base pack> \
+#       --ui-skin pixel \
+#       --autotest tests/autotest/preview/route-preview-pixel.yaml \
+#       --shots build/shots
+#
+# The PNG lands at build/shots/main-menu-pixel.png. Run once per language, with --lang en and
+# --lang es (see docs/guides/vertical-slice.md). Add more screens by cloning steps from
+# tests/autotest/route-skin-original.yaml.
+name: preview-pixel-skin
+device: keyboard
+main_menu: true
+timeout: 60
+steps:
+  - wait: {shown: main_menu, seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {ui_skin: pixel}
+  - screenshot: main-menu-pixel

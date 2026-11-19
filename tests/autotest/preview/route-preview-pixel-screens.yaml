@@ -1,8 +1,8 @@
-# Screens of the `new` skin the player reported broken: pause main (first icon focused?), the
+# Screens of the `pixel` skin the player reported broken: pause main (first icon focused?), the
 # PLAYER page (must be classic native, not modern), the ITEMS/bag screen (arrows must not hop
 # tabs), and the partner screen (must not carry a stray tab). A manual preview, out of the gate's
-# route-*.yaml glob: run it with --ui-skin new, as route-preview-new.yaml's header shows.
-name: preview-new-screens
+# route-*.yaml glob: run it with --ui-skin pixel, as route-preview-pixel.yaml's header shows.
+name: preview-pixel-screens
 device: keyboard
 main_menu: true
 timeout: 120

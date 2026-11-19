@@ -101,7 +101,7 @@ TEST_CASE("the original look's player page widens the name's box for a name past
 TEST_CASE("the partner's sheet squeezes a name of wide letters into its box, in every skin") {
   // The tester's report: «ZERAPIONINO», eleven capitals, ran out of the original look's box and
   // over «Special».
-  for (const std::string_view skin : {"original", "modern", "new", "devvago"}) {
+  for (const std::string_view skin : {"original", "modern", "pixel", "devvago"}) {
     for (const std::string_view name : {std::string_view{"ZERAPIONINO"}, LongName}) {
       CAPTURE(skin);
       CAPTURE(name);

@@ -189,10 +189,10 @@
 	vertical-align: top;
 }
 
-#minimap-phase.phase-morning { decorator: image(/ui/skins/new/assets/icon_sources/icon_morning.png contain); }
-#minimap-phase.phase-day { decorator: image(/ui/skins/new/assets/icon_sources/icon_day.png contain); }
-#minimap-phase.phase-late { decorator: image(/ui/skins/new/assets/icon_sources/icon_late.png contain); }
-#minimap-phase.phase-night { decorator: image(/ui/skins/new/assets/icon_sources/icon_night.png contain); }
+#minimap-phase.phase-morning { decorator: image(/ui/skins/pixel/assets/icon_sources/icon_morning.png contain); }
+#minimap-phase.phase-day { decorator: image(/ui/skins/pixel/assets/icon_sources/icon_day.png contain); }
+#minimap-phase.phase-late { decorator: image(/ui/skins/pixel/assets/icon_sources/icon_late.png contain); }
+#minimap-phase.phase-night { decorator: image(/ui/skins/pixel/assets/icon_sources/icon_night.png contain); }
 
 /* The menu button (.menu-btn: a thin box 40 from the left, 24 from the bottom, the Tab key cap and "Menu"). */
 #menu-button,

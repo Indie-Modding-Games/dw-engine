@@ -1,9 +1,10 @@
 # The skins route: the game starts with the original look, the packs' default; the interface skin is switched live from
 # the main menu to the next one the packs offer, the test skin, then the screens that are already loaded (the HUD, the
-# pause menu and its options, the partner's menu, the battle screen) in it, and on to the modern skin from the pause
-# menu's options. It needs content extracted with the original look's sprites (dwx 2 or later) and the synthetic test
-# skin's mod pack: --mods tests/mods/ui_skin. It runs once per language, with --lang en and --lang es. How to run it:
-# docs/guides/vertical-slice.md.
+# pause menu and its options, the partner's menu, the battle screen) in it, and on to the next offered look from the
+# pause menu's options. The modern look is the base the others extend and the start's fallback, but it is hidden: it is
+# no longer among the skins the picker and the options row cycle through. It needs content extracted with the original
+# look's sprites (dwx 2 or later) and the synthetic test skin's mod pack: --mods tests/mods/ui_skin. It runs once per
+# language, with --lang en and --lang es. How to run it: docs/guides/vertical-slice.md.
 name: skins
 device: keyboard
 main_menu: true
@@ -14,15 +15,15 @@ steps:
   - expect_setting: {ui_skin: original}
   - screenshot: main-menu-original
   # The skin entry, on the Interface tab of the options page the title's Options opens, moves to the next skin the
-  # packs offer: the test pack's, which lays the main menu out as the modern one, its entries all in one box.
+  # packs offer: the pixel one, whose navy windows and gold brackets redraw the main menu over the original's layout.
   - menu_select: options
   - menu_select: ui-skin
-  - expect_setting: {ui_skin: test_contrast}
+  - expect_setting: {ui_skin: pixel}
   - wait: {seconds: 0.5}
-  - screenshot: title-options-test-contrast
+  - screenshot: title-options-pixel
   - menu_select: options-back
   - wait: {hidden: pause_menu, seconds: 0.5}
-  - screenshot: main-menu-test-contrast
+  - screenshot: main-menu-pixel
   # Play opens the slot list; the route plays without saving, which writes nothing.
   - menu_select: play
   - wait: {shown: save_slots, seconds: 0.5}
@@ -54,18 +55,20 @@ steps:
   - screenshot: battle-end
   # The end box closes by itself once it has counted, typed and waited.
   - wait: {hidden: battle, timeout: 60}
-  # On to the modern skin from the pause menu's options: past the test skin the list goes round to the first one the
-  # packs offer, devvago, and then to modern.
+  # On to the next offered look from the pause menu's options: from the pixel skin the list moves on
+  # to the test skin, and past it goes round to the first one the packs offer, devvago. The modern
+  # look is hidden (it is only the base the others extend and the start's fallback), so the cycle
+  # skips it.
   - menu: open
   - menu_select: open-options
+  - screenshot: pause-options-pixel
+  - menu_select: ui-skin
+  - expect_setting: {ui_skin: test_contrast}
+  - wait: {seconds: 0.5}
   - screenshot: pause-options-test-contrast
   - menu_select: ui-skin
   - expect_setting: {ui_skin: devvago}
   - wait: {seconds: 0.5}
   - screenshot: pause-options-devvago
-  - menu_select: ui-skin
-  - expect_setting: {ui_skin: modern}
-  - wait: {seconds: 0.5}
-  - screenshot: pause-options-modern
   - menu: close
   - wait: {menu_open: false}

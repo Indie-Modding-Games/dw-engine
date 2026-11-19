@@ -3,11 +3,11 @@
 # entirely.
 modern: "Moderno"
 original: "Original"
-new: "Pixel art"
+pixel: "Pixel art"
 devvago: "DevVago"
 # One line per skin under its name in the box at each boot (ui/skin_picker); a mod adds it with its name's key
 # plus .hint.
 modern.hint: "Paneles limpios y letra moderna."
 original.hint: "Los menús del juego original, nítidos."
-new.hint: "Ventanas azules y letra de píxeles."
+pixel.hint: "Ventanas azules y letra de píxeles."
 devvago.hint: "El diseño de DevVago: azul noche y menús compactos."

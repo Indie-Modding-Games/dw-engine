@@ -406,11 +406,10 @@ struct Ui::Impl {
             },
         .skins =
             [this]() {
-              std::vector<std::string> ids;
-              for (const Skin& skin : skins.skins()) {
-                ids.push_back(skin.id);
-              }
-              return ids;
+              // The skins the player picks from: the catalog's, leaving the hidden ones (such as the
+              // modern base and fallback) out. The picker's rows and the options page's ui.skins()
+              // cycle read this.
+              return skins.offered();
             },
         .skinNameKey = [this](std::string_view id) -> std::string {
           const Skin* skin = skins.find(id);

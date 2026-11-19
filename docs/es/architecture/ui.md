@@ -671,7 +671,7 @@ layout:                             # opcional: opciones de maquetación que lee
   | `bars` | `hud` | `continuous` (por defecto); `pips`, las barras del estado del campo se llenan en los 25 cuadritos del original |
   | `heading` | `save_machine` | `original` (o sin poner), el título de la máquina solo sobre el registro y las ranuras, como el original; `always`, también sobre la pregunta de guardar |
 
-  El moderno declara las suyas, y el original (y el new, que lo extiende) las del original. `pages: compact`, `pool`,
+  El moderno declara las suyas, y el original (y el pixel, que lo extiende) las del original. `pages: compact`, `pool`,
   `tabs` y `medals` solo las pone el aspecto DevVago; sin ellas cada pantalla hace lo de siempre (`tabs`, `medals` y
   `pool` solo cambian algo con la disposición del original del menú de pausa o en el menú del compañero). Las clases
   de `document_classes` quedan para el estilo (`skin-original`, `title-original`, `slots-original`, `pips`): ningún
@@ -807,12 +807,13 @@ El aspecto original hereda las hojas del moderno (`extends: modern`), así que p
 escriben como `#panel:not(.skin-original) …`. Así el aspecto original sigue dibujando sus cajas al píxel sin tener que
 deshacer cada regla moderna; una pantalla nueva que use `#panel` necesita esa clase en el aspecto original.
 
-### El aspecto Pixel art (id `new`)
+### El aspecto Pixel art (id `pixel`)
 
-El jugador lo ve como «Pixel art» (`ui_skin.new` en los textos); el id y la carpeta siguen siendo `new`, así que los
-ajustes guardados y `--ui-skin new` siguen valiendo.
+El jugador lo ve como «Pixel art» (`ui_skin.pixel` en los textos). Era el aspecto `new` hasta que se le cambiaron
+el id y la carpeta; una elección guardada de `new` lo sigue arrancando (el juego la traduce a `pixel` al entrar,
+como hace con el `legacy` más antiguo), y `--ui-skin` lo nombra por su id actual.
 
-`ui/skins/new` es la maqueta del concepto de interfaz llevada al juego: hereda del aspecto original
+`ui/skins/pixel` es la maqueta del concepto de interfaz llevada al juego: hereda del aspecto original
 (`extends: original`), así que conserva su disposición, sus pantallas y sus sprites, y cada pantalla solo añade una
 hoja de aspecto (`<pantalla>/style.rcss`) que cambia colores, letra, marcos y, donde la maqueta mueve o redimensiona una
 caja, su sitio. Las hojas compartidas son `theme.rcss` (letra, ventana `.original-box`, foco de los botones, teclas),
@@ -844,9 +845,9 @@ no la imagen ancha. Lo que aún difiere de la maqueta depende de cambios en los 
 
 ### El aspecto DevVago (id `devvago`)
 
-El diseño es de **DevVago**, que lo trajo en #308 como el aspecto `new`; cuando `new` pasó a ser el «Pixel art» de la
-maqueta (#310), su diseño se quedó como un aspecto propio con su nombre («DevVago» en los menús, `ui_skin.devvago`), en
-Opciones → Interfaz y en la caja del aspecto de los primeros arranques.
+El diseño es de **DevVago**, que lo trajo en #308 como el aspecto entonces llamado `new`; cuando `new` pasó a ser el
+«Pixel art» de la maqueta (#310) —hoy `pixel`—, su diseño se quedó como un aspecto propio con su nombre («DevVago» en
+los menús, `ui_skin.devvago`), en Opciones → Interfaz y en la caja del aspecto de los primeros arranques.
 
 - `ui/skins/devvago` extiende el moderno (`extends: modern`): cada pantalla pone su hoja encima de la del moderno, como
   en su versión, que llevaba una copia del moderno en `new/_base`. De esa copia solo queda lo que él añadió (los colores
