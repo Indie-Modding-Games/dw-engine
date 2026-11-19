@@ -582,7 +582,44 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The finisher's charge and the revive countdown: one of the original's boxes and the ink colour. */
+   The finisher's charge (command_menu.c: BTL_initializeFinisherChargeup, BTL_renderFinisherChargeup): no box, the small
+   gauge over the partner for the aura's 80 frames, where the game puts its top-left corner: BTLCOMND's 46 x 12 frame and a
+   4 x 6 bar every 4 pixels from (3, 3), one for every 8 of the charge. A click charges it as the key does. */
+
+#charge {
+	display: none;
+}
+
+#charge-gauge {
+	display: block;
+	position: absolute;
+	width: 138dp;
+	height: 36dp;
+	decorator: image(charge-gauge-frame);
+}
+
+#charge-gauge.hidden, .cg-bar.hidden {
+	display: none;
+}
+
+#charge-gauge-bars {
+	position: absolute;
+	left: 9dp;
+	top: 9dp;
+	width: 120dp;
+	height: 18dp;
+}
+
+.cg-bar {
+	display: block;
+	float: left;
+	width: 12dp;
+	height: 18dp;
+	decorator: image(charge-gauge-bar);
+}
+
+/* The revive countdown: one of the original's boxes and the ink colour (the box rules below are the charge box's, which
+   the looks built on this one may bring back). */
 
 #charge {
 	border-radius: 0;

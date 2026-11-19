@@ -53,7 +53,8 @@ core::Result<std::shared_ptr<StoryTask>> StoryBattles::startBattle() {
 }
 
 core::Result<ScriptedBattle> StoryBattles::enemies() {
-  ScriptedBattle battle{.enemies = {}, .fixedFight = fixedFight(), .joinable = false};
+  ScriptedBattle battle{
+      .enemies = {}, .fixedFight = fixedFight(), .joinable = false, .predefined = false};
   const auto predefined = state_->variable(rules_.predefinedVariable);
   if (!predefined) {
     return std::unexpected{predefined.error()};
@@ -62,6 +63,7 @@ core::Result<ScriptedBattle> StoryBattles::enemies() {
     fightTalkedTo(battle);
     return battle;
   }
+  battle.predefined = *predefined == 1;
   // script_interp.c: scriptInstruction64to7E turns each script id into its entity in place, and
   // btl.c: handleBattleStart reads them back.
   for (std::int64_t slot = 0; slot < rules_.enemyCount; ++slot) {
@@ -95,6 +97,7 @@ core::Result<ScriptedBattle> StoryBattles::enemies() {
     if (auto cleared = state_->setVariable(rules_.predefinedVariable, 0); !cleared) {
       return std::unexpected{cleared.error()};
     }
+    battle.predefined = false;
     fightTalkedTo(battle);
   }
   return battle;
@@ -119,6 +122,17 @@ bool StoryBattles::fixedFight() const {
 }
 
 TaskStep StoryBattles::afterBattle(BattleOutcome outcome) {
+  if (outcome == BattleOutcome::NotStarted) {
+    // A failure of dwe's own: a win would run the rest of the section (and maybe the story) for a
+    // fight that never happened; as a flight the section ends, the player is back on the screen
+    // before and the NPC can start it again.
+    core::logError("{}",
+                   messages::formatMessage(messages::PortBattleNotStarted, rules_.outcomeVariable));
+    if (auto written = state_->setVariable(rules_.outcomeVariable, 0); !written) {
+      core::logError("{}", written.error().message);
+    }
+    return afterFlight(false);
+  }
   // writePStat keeps the low byte: a defeat's -1 is 255.
   constexpr std::int64_t ByteMask = 0xFF;
   const std::int64_t value = static_cast<std::int64_t>(outcome) & ByteMask;
@@ -134,8 +148,9 @@ TaskStep StoryBattles::afterBattle(BattleOutcome outcome) {
                    messages::formatMessage(messages::PortBattleDefeat, 0, rules_.defeatSection));
     return TaskJump{.target = {.script = 0, .section = rules_.defeatSection}};
   case BattleOutcome::Fled:
-    return afterFlight();
+    return afterFlight(true);
   case BattleOutcome::Victory:
+  case BattleOutcome::NotStarted:
     break;
   }
   const bool fixed = fixedFight();
@@ -149,8 +164,10 @@ TaskStep StoryBattles::afterBattle(BattleOutcome outcome) {
   return TaskRunning{};
 }
 
-TaskStep StoryBattles::afterFlight() {
-  counters_.fled = std::min(counters_.fled + 1, rules_.counterMax);
+TaskStep StoryBattles::afterFlight(bool counted) {
+  if (counted) {
+    counters_.fled = std::min(counters_.fled + 1, rules_.counterMax);
+  }
   const ScreenPlace back = screens_->place();
   screens_->leaveByFlight();
   core::logDebug("{}", messages::formatMessage(messages::PortBattleFled, counters_.fled,

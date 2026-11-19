@@ -11,6 +11,7 @@
 #include <dwe/screens/damage_numbers.hpp>
 #include <dwe/screens/death_countdown.hpp>
 #include <dwe/screens/enemy_hp_bars.hpp>
+#include <dwe/screens/finisher_gauge.hpp>
 #include <dwe/screens/partner_bars.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/battle_effects.hpp>
@@ -336,6 +337,9 @@ private:
   // Where the fallen partner's countdown stands, taken when it shows (command_menu.c:
   // BTL_addDeathCountdown reads the partner's node once).
   std::optional<screens::WindowFraction> deathCountdownAnchor_;
+  // Where the finisher's charge gauge stands, taken as the aura starts (command_menu.c:
+  // BTL_initializeFinisherChargeup projects the point over the partner once).
+  std::optional<screens::WindowFraction> finisherGaugeCorner_;
   std::uint32_t partnerStance_ = 0;
   // FLEE_DISABLED, and the NPCs on screen when the battle started (overworld.c:1352 keeps
   // isOnScreen from the last field tick): the battle's end takes those off the map.

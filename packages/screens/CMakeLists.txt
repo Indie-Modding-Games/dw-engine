@@ -13,6 +13,7 @@ dwe_add_module(screens
         src/death_countdown.cpp
         src/enemy_hp_bars.cpp
         src/field_hud_view.cpp
+        src/finisher_gauge.cpp
         src/lives_box.cpp
         src/name_keys.cpp
         src/partner_bars.cpp

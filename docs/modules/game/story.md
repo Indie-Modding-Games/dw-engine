@@ -165,6 +165,9 @@ These are not rules of the original but nets against runaway scripts, far above 
   a jump. The original's stack has 8 frames (`pushScriptStack`), but it is a limit of its memory, not of the game.
 - **Resumes per frame:** 1024 (`StoryRunner::MaxResumesPerFrame`). The original has no limit; this only
   stops a section that never waits from hanging the game.
+- **A battle that cannot start:** `start_battle` (`tamer.c: startBattle`) always starts in the original; when the
+  port cannot build the battle (a content error), `BattleOutcome::NotStarted` logs the error and the story takes it as
+  a flight (outcome variable at 0, the flight counter untouched), never as a win, so the story does not advance.
 
 Passing a guard ends the script and notes it in the error log with the script and the section.
 

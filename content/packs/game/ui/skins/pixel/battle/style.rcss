@@ -300,8 +300,10 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The finisher's charge (.chg): the half window with brackets in the middle, the title, the gold bar, the hint. */
+   The finisher's charge (.chg): the half window with brackets in the middle, the title, the gold bar, the hint; this
+   look keeps the box the original one leaves for its small gauge over the partner. */
 #charge {
+	display: block;
 	box-sizing: border-box;
 	top: 270dp;
 	width: 480dp;
@@ -313,6 +315,10 @@
 	background-color: transparent;
 	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
 		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+}
+
+#charge-gauge {
+	display: none;
 }
 
 #charge-title {

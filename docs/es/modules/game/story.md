@@ -165,6 +165,10 @@ No son reglas del original sino redes contra scripts desbocados, muy por encima 
   un salto. La pila del original tiene 8 marcos (`pushScriptStack`), pero es un límite de su memoria, no del juego.
 - **Reanudaciones por fotograma:** 1024 (`StoryRunner::MaxResumesPerFrame`). El original no tiene límite; esto solo
   impide que una sección que nunca espera cuelgue el juego.
+- **Un combate que no puede empezar:** `start_battle` (`tamer.c: startBattle`) siempre empieza en el original; cuando
+  el port no puede montar el combate (un error de contenido), `BattleOutcome::NotStarted` anota el error y la historia lo
+  toma como una huida (variable de resultado a 0, sin tocar el contador de huidas), nunca como una victoria, así que la
+  historia no avanza.
 
 Pasar una guarda acaba el script y lo anota en el registro de errores con el script y la sección.
 

@@ -641,6 +641,37 @@ std::string zeroInstance(std::int32_t& at) {
 
 } // namespace
 
+TEST_CASE("both viewport distance sub-ops give the projection distance now in use") {
+  // battle_effect.c: BTL_getViewportDistance and BTL_getViewportDistance2 (Confused Storm reads the
+  // first one to put its spiral in front of the camera); each sprite sorts at what it was given.
+  const std::string render = renderOf([](std::int32_t& at) {
+    std::string out = pushes(at, {"base+0x00d0"});
+    out += subOf(at, "get_viewport_distance", 1);
+    out += pushes(at, {"base+0x00d4"});
+    out += subOf(at, "get_viewport_distance_2", 1);
+    out += screenSprite(at, 0, 0, 0, "base+0x00d0", 4096, -1);
+    return out + screenSprite(at, 0, 0, 0, "base+0x00d4", 4096, -1);
+  });
+  constexpr std::string_view Data = R"(- at: "0x00d0"
+  kind: int32
+  size: 4
+  value: 0
+- at: "0x00d4"
+  kind: int32
+  size: 4
+  value: 0
+)";
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::game::battle::EffectView view;
+  view.projection = 700;
+  runner.setView(view);
+  const std::vector<EffectScreenQuad> quads = firstFrame(runner, renderingScript(render, Data));
+  REQUIRE(quads.size() == 2);
+  CHECK(quads[0].order == 700);
+  CHECK(quads[1].order == 700);
+}
+
 TEST_CASE("a line is drawn from the projection's centre, four times round at half the colour "
           "with flag 0x20") {
   const std::string render = renderOf([](std::int32_t& at) {

@@ -344,7 +344,8 @@ La música que pone el script del mapa. El combate, el cambio de día y noche co
 - **Como el original:** `updateBGM` solo reinicia la canción si cambia la fuente o la variante (al pasar las 6:00 y
   las 21:00, o si un script cambia la variable 245); durante el combate no actúa. El combate para la música del
   campo y toca la fuente `battle.font`: `boss_track` si el primer enemigo es `boss`, `scripted_track` en un combate
-  con guion, `enemy_music_mapping[tipo − first_enemy_type]` para los tipos de `first_enemy_type` a
+  con guion (un combate de la historia con la variable 250 a 1, `IS_PREDEFINED_BATTLE` en `loadBattleData`, btl.c; 63
+  combates de historia y de jefe, el de Kunemon entre ellos, medido con `playMusic(0x21, 0)` desde `loadBattleData`), `enemy_music_mapping[tipo − first_enemy_type]` para los tipos de `first_enemy_type` a
   `end_enemy_type − 1` y `default_track` para el resto. Al acabar para la música; si se gana, al volver al campo la
   música del mapa empieza desde el principio; tras huir o perder sigue parada hasta que un script la pone.
 - **Diferencias con el original:** el original mira el tipo del primer enemigo para el jefe y el de la entidad que

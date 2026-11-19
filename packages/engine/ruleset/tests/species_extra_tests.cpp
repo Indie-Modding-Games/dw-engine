@@ -410,4 +410,26 @@ TEST_CASE("a copied move row replaces the species' whole row, and a level patch 
   CHECK_FALSE(applySpeciesExtra(missing, species).has_value());
 }
 
+TEST_CASE("a slot technique replaces one move of a species' row, and only that one") {
+  assets::DigimonRow beetle;
+  beetle.id = "beetlemon";
+  beetle.moves.at(0) = "claw";
+  beetle.moves.at(14) = "shock";
+  assets::DigimonRow other;
+  other.id = "othermon";
+  other.moves.at(14) = "shock";
+  assets::DigimonTable table{{beetle, other}};
+  const std::array techniques{
+      SlotTechnique{.species = "beetlemon", .slot = 14, .move = "big_shock"}};
+  REQUIRE(applySlotTechniques(techniques, table).has_value());
+  CHECK(table.find("beetlemon")->moves.at(14) == std::optional<std::string>{"big_shock"});
+  CHECK(table.find("beetlemon")->moves.at(0) == std::optional<std::string>{"claw"});
+  CHECK(table.find("othermon")->moves.at(14) == std::optional<std::string>{"shock"});
+
+  const std::array unknown{SlotTechnique{.species = "nobody", .slot = 1, .move = "kick"}};
+  CHECK(applySlotTechniques(unknown, table).has_value());
+  const std::array pastRow{SlotTechnique{.species = "beetlemon", .slot = 16, .move = "kick"}};
+  CHECK_FALSE(applySlotTechniques(pastRow, table).has_value());
+}
+
 } // namespace dwe::ruleset

@@ -103,3 +103,30 @@ TEST_CASE("a story battle under trigger 1 cannot be fled, whatever started it") 
   dwe::app::applyFixedFight(story, false);
   CHECK(story.scripted);
 }
+
+TEST_CASE("a predefined story battle's song is the event battle theme, a wild one's is not") {
+  // btl.c: loadBattleData: after the boss as first enemy, IS_PREDEFINED_BATTLE picks track 0; the
+  // story's trigger 1 (a fixed fight) changes the rules only. Before, a story battle carried only
+  // the fixed fight and 63 predefined battles played the wild battle songs.
+  dwe::scene::World world;
+  Field field{world, dwe::game::field::testing::originalRules()};
+  MapDocument map = dwe::game::field::testing::roomMap("room");
+  const std::vector<std::size_t> slots{addFighter(map, 300, 0)};
+  field.enterMapAt(map, {.position = {0.0F, 0.0F, 0.0F}, .yaw = 0.0F});
+  REQUIRE(field.npcs().spawn(
+      {.slot = slots[0], .species = 1, .autotalk = false, .model = "npc", .radius = 100.0F}));
+  const dwe::assets::DigimonTable species = foeTable();
+  auto battle = dwe::app::mapBattleRequest(field, map, species, slots);
+  REQUIRE(battle.has_value());
+  CHECK_FALSE(battle->request.predefined);
+
+  // The battle screen reads the song's facts before it applies trigger 1.
+  CHECK_FALSE(dwe::app::battleMusicFactsOf(battle->request, &species).scripted);
+
+  dwe::session::BattleRequest predefined = battle->request;
+  predefined.predefined = true;
+  const dwe::session::BattleMusicFacts facts = dwe::app::battleMusicFactsOf(predefined, &species);
+  CHECK(facts.scripted);
+  CHECK(facts.firstEnemy == "foe");
+  CHECK(facts.firstEnemyType == 1);
+}

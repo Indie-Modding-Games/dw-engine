@@ -24,7 +24,8 @@ public:
 
 // The fighters of one flight as the battle has them: the attacker, the one its effect aims at and
 // the one asked about (the same one, or a bystander on the way); the attacker's bones are its
-// attack clip's on the probe's frame.
+// attack clip's on the probe's frame, the others' as they show now (an effect that flies to a bone
+// of its target, get_target_bone_transform or set_transform_to_target_bone, needs them to land).
 class ProbeBodies final : public EffectBodies {
 public:
   ProbeBodies(const EffectBodies& bodies, const FlightPoses* poses, FighterId attacker,
@@ -48,7 +49,13 @@ public:
   }
   [[nodiscard]] std::optional<EffectMatrix> node(FighterId fighter,
                                                  std::int32_t index) const override {
-    if (fighter != attacker_ || poses_ == nullptr || !clip_) {
+    if (!std::ranges::contains(fighters_, fighter)) {
+      return std::nullopt;
+    }
+    if (fighter != attacker_) {
+      return bodies_->node(fighter, index);
+    }
+    if (poses_ == nullptr || !clip_) {
       return std::nullopt;
     }
     const std::optional<EffectBody> place = bodies_->body(fighter);

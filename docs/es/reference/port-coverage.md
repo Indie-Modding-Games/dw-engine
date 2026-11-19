@@ -62,13 +62,13 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 
 | Sistema | Ficheros del decomp | A portar | Portado | Parcial | Falta | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
-| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 155 | 155 | 0 | 0 | 100 % |
-| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 240 | 240 | 0 | 0 | 100 % |
+| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 156 | 156 | 0 | 0 | 100 % |
+| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 241 | 241 | 0 | 0 | 100 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colisión-y-cámara) | `main/` (5 ficheros) | 82 | 82 | 0 | 0 | 100 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 80 | 80 | 0 | 0 | 100 % |
 | [Compañero: IA y cuidado](#compañero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 49 | 0 | 0 | 100 % |
 | [Guion e intérprete](#guion-e-intérprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 97 | 97 | 0 | 0 | 100 % |
-| [Menús e interfaz](#menús-e-interfaz) | `main/` (8 ficheros) | 79 | 79 | 0 | 0 | 100 % |
+| [Menús e interfaz](#menús-e-interfaz) | `main/` (8 ficheros) | 80 | 80 | 0 | 0 | 100 % |
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 96 | 96 | 0 | 0 | 100 % |
 | [Evolución](#evolución) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 29 | 0 | 0 | 100 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 38 | 37 | 1 | 0 | 99 % |
@@ -81,7 +81,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#vídeos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 30 | 30 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#núcleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1456 funciones a portar | 1456 | 1391 | 5 | 60 | 96 % |
+| **Total** | 1459 funciones a portar | 1459 | 1394 | 5 | 60 | 96 % |
 
 ## Batalla
 
@@ -89,7 +89,7 @@ El combate normal: órdenes, IA, daño, estados, HUD, inicio y final, aprendizaj
 
 Ficheros del decomp: `btl/battle_hud.c`, `btl/battle_main.c`, `btl/battle_setup.c`, `btl/command_menu.c`, `btl/command_shout.c`, `main/battle_tick.c`, `main/battle_ui.c`, `main/btl.c`, `main/entity_text.c`.
 
-Portado 155, parcial 0, falta 0.
+Portado 156, parcial 0, falta 0.
 
 ## Efectos de batalla
 
@@ -97,7 +97,7 @@ La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cám
 
 Ficheros del decomp: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Portado 240, parcial 0, falta 0.
+Portado 241, parcial 0, falta 0.
 
 ## Campo: movimiento, colisión y cámara
 
@@ -137,7 +137,7 @@ Título, menú de juego, ficha del compañero, bolsa, cajas de interfaz, fundido
 
 Ficheros del decomp: `main/fade.c`, `main/font.c`, `main/game_menu.c`, `main/inventory.c`, `main/main_menu.c`, `main/new_game.c`, `main/sjis.c`, `main/ui.c`.
 
-Portado 79, parcial 0, falta 0.
+Portado 80, parcial 0, falta 0.
 
 ## Objetos y tiendas
 
@@ -268,11 +268,11 @@ Portado 41, parcial 4, falta 60.
 | `VS_queueRandomMove` | `vs/vs_main.c:1735` | falta | Elige al azar técnica y objetivo para la IA del luchador. | — |
 | `VS_loadVSAssets` | `vs/vs_scene.c:1147` | parcial | Prepara la arena del versus: música por escenario, cámara, luces y efectos. | `apps/game/src/versus_arena.cpp:1` · la arena 0 con su cámara, sus luces y los efectos; sin la música por escenario |
 | `VS_playVersusIntroSequence` | `vs/vs_scene.c:1558` | falta | Reproduce la presentación inicial del versus. | `apps/game/src/versus_arena.cpp:45` |
-| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | falta | Avanza la presentación del versus por estados. | `apps/game/src/versus_flow.cpp:447` |
+| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | falta | Avanza la presentación del versus por estados. | `apps/game/src/versus_flow.cpp:448` |
 | `VS_initializeCamera` | `vs/vs_scene.c:1851` | parcial | Coloca la cámara inicial de la arena del versus. | `apps/game/src/versus_arena.cpp:1` · la cámara de la copa (game::tournament::MatchCamera); sin medir contra la del versus |
 | `VS__createPressStartToBeginBox` | `vs/vs_select.c:409` | falta | Muestra el aviso de pulsar Start para empezar. | — |
 | `VS__initialize` | `vs/vs_select.c:442` | parcial | Flujo de preparación del versus: modo, mapa y selección de criaturas. | `apps/game/src/versus_flow.cpp:1` · sin elección de arena (VS__tickSelectMap) |
-| `VS__tickSelectMap` | `vs/vs_select.c:1166` | falta | Pantalla de elección del escenario del versus. | `apps/game/src/versus_flow.cpp:389` |
+| `VS__tickSelectMap` | `vs/vs_select.c:1166` | falta | Pantalla de elección del escenario del versus. | `apps/game/src/versus_flow.cpp:390` |
 
 ## Minijuego de piedras
 
@@ -308,6 +308,6 @@ Portado 51, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-982 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+979 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

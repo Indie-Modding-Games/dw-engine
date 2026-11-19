@@ -111,14 +111,17 @@ function battle.commands()
 end
 
 -- The finisher's gauge: progress of goal, ready (full), charging (its aura: each battle.charge()
--- counts) and charge (the aura's charge, in percent).
+-- counts), charge (the aura's charge, in percent) and gauge, the charge gauge over the partner
+-- while the aura lasts ({x, y}: its top-left corner, in percent), or nil.
 function battle.finisher()
+  local corner = numbers("battle.finisher.gauge")
   return {
     progress = whole("battle.finisher.progress"),
     goal = whole("battle.finisher.goal"),
     ready = value("battle.finisher.ready", false),
     charging = value("battle.finisher.charging", false),
     charge = whole("battle.finisher.charge"),
+    gauge = #corner == 2 and { x = corner[1], y = corner[2] } or nil,
   }
 end
 

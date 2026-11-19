@@ -456,7 +456,7 @@ function battle.fighters() end
 ---@return table
 function battle.commands() end
 
---- The finisher: progress, goal, ready, charging (the aura) and charge (as a percentage).
+--- The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil).
 ---@return table
 function battle.finisher() end
 

@@ -344,7 +344,8 @@ and modes 2–10 are in §6.6; the jukebox goes with the music shop.
 - **Like the original:** `updateBGM` only restarts the song if the source or the variant changes (on passing 6:00 and
   21:00, or if a script changes variable 245); it does not act during battle. Battle stops the field music and
   plays the `battle.font` source: `boss_track` if the first enemy is `boss`, `scripted_track` in a scripted
-  battle, `enemy_music_mapping[type − first_enemy_type]` for the types from `first_enemy_type` to
+  battle (a story battle with variable 250 at 1, `IS_PREDEFINED_BATTLE` in `loadBattleData`, btl.c; 63 story and boss
+  battles, the Kunemon fight among them, measured with `playMusic(0x21, 0)` from `loadBattleData`), `enemy_music_mapping[type − first_enemy_type]` for the types from `first_enemy_type` to
   `end_enemy_type − 1` and `default_track` for the rest. When it ends it stops the music; if you win, on returning to the field the
   map's music starts from the beginning; after fleeing or losing it stays stopped until a script sets it.
 - **Differences from the original:** the original looks at the type of the first enemy for the boss and at that of the entity that

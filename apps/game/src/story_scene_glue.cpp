@@ -229,13 +229,13 @@ void StorySceneGlue::startBattle(session::StoryScenes& scenes, BattleScreen& bat
     if (!battleRequest) {
       return std::unexpected{battleRequest.error()};
     }
+    battleRequest->request.predefined = request.predefined;
     return battle.start(std::move(battleRequest->request), std::move(battleRequest->enemyNpcs),
                         request.fixedFight);
   }();
   if (!started) {
-    core::logWarning("[port:battle] startBattle (tamer.c:832): {}; the story reads a victory",
-                     started.error().message);
-    scenes.battleFinished(game::story::BattleOutcome::Victory);
+    core::logError("[port:battle] startBattle (tamer.c:832): {}", started.error().message);
+    scenes.battleFinished(game::story::BattleOutcome::NotStarted);
     return;
   }
   storyBattle_ = true;

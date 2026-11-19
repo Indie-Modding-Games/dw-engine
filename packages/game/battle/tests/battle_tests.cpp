@@ -686,6 +686,36 @@ TEST_CASE("the finisher gauge fills, the command starts the aura and presses cha
   CHECK(battle.state().finisher.charge == 20);
 }
 
+TEST_CASE("the finisher's charge gauge goes with its aura, before the move starts") {
+  BattleSetup setup =
+      duel(evenStats(2000, 300), evenStats(2000, 100), {"punch", "", "", "big_finish"});
+  Battle battle = startBattle(setup, 11);
+  while (battle.state().partner().finisherProgress < battle.state().partner().finisherGoal &&
+         battle.state().frame < 5000) {
+    battle.step();
+  }
+  REQUIRE(battle.command(Command::Finisher));
+  bool started = false;
+  for (int frame = 0; frame < 400 && !started; ++frame) {
+    started = hasEvent(battle.step(), EventKind::FinisherStarted);
+  }
+  REQUIRE(started);
+  // command_menu.c: BTL_initializeFinisherChargeup: 0x50 frames of presses, the frame the aura
+  // starts among them; the original removes the gauge (measured: vblank 27785 to 28023) just
+  // before BTL_setupMoveExecution (28028).
+  int chargingFrames = 1;
+  bool attackStarted = false;
+  for (int frame = 0; frame < 200 && !attackStarted; ++frame) {
+    attackStarted = hasEvent(battle.step(), EventKind::AttackStarted);
+    if (battle.state().finisher.charging) {
+      ++chargingFrames;
+    }
+  }
+  REQUIRE(attackStarted);
+  CHECK(chargingFrames == 80);
+  CHECK_FALSE(battle.state().finisher.charging);
+}
+
 TEST_CASE("a counter needs 165 MP under the quirk") {
   BattleSetup setup = duel(evenStats(2000, 100), evenStats(2000, 100), {"punch"}, {"counter"});
   setup.enemies.front().stats.speed = 999;

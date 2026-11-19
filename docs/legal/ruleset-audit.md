@@ -564,6 +564,7 @@ The fishing tables (the fish classes, `FISH_BITE_CHANCE`, `FISH_BAIT_CHANCES`, t
 | `moves.buff_uses.base` | 1 | a | Term of a formula. |
 | `moves.buff_uses.tiers` | 2 brackets | a | Intelligence brackets (category). |
 | `moves.learned_together` | 2 pairs of techniques | **b** | Per-technique list (`learnMove`, utils2.c). Target: `data/moves` (`learned_with`). |
+| `moves.slot_techniques` | 1 species slot | **b** | Per-species exception (`entityGetTechFromAnim`, utils2.c). Target: `data/digimon` (the row's slot). |
 | `speed_reserve.start` | 100 | a | Initial value. |
 | `speed_reserve.cap` | 100 | a | Cap. |
 | `speed_reserve.gain_every_frames` | 2 | a | Timer or duration. |

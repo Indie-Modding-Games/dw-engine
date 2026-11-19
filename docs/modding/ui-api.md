@@ -696,6 +696,7 @@ UI API version: **0.17.0**.
 | `battle.finisher.ready` | setting | yes/no | Whether the finisher is ready. |
 | `battle.finisher.charging` | setting | yes/no | Whether the aura, in which each press charges the finisher, lasts. |
 | `battle.finisher.charge` | setting | number | The aura's charge, as a percentage. |
+| `battle.finisher.gauge` | setting | text | The charge gauge over the partner during the aura: its top-left corner (x, y as percentages), or empty. |
 | `battle.revive_seconds` | setting | number | The countdown to revive the fainted partner; -1 without one. |
 | `battle.match_seconds` | setting | number | The clock of a cup battle; -1 in the other battles. |
 | `battle.bag.available` | setting | yes/no | Whether the bag can be opened. |
@@ -752,7 +753,7 @@ UI API version: **0.17.0**.
 | `battle.state(): table` | query | table | The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil) and cup (a cup battle). |
 | `battle.fighters(): table` | query | table | The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted and hp_bar. |
 | `battle.commands(): table` | query | table | The command strip, the finisher first: command, label_key, icon, available, current and mp_cost. |
-| `battle.finisher(): table` | query | table | The finisher: progress, goal, ready, charging (the aura) and charge (as a percentage). |
+| `battle.finisher(): table` | query | table | The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil). |
 | `battle.strip(): table` | query | table | Where the strip and the partner's bars are when entering and leaving: top, bottom, blink, hp_x and mp_x (or nil). |
 | `battle.intro(): table` | query | table | The opening: step, anger (3 marks), flee (8), anger_scale, flash and pieces (the banner's pieces, with key). |
 | `battle.numbers(): table` | query | table | The numbers over the fighters: x, y (percentage), dx, dy, value, kind (damage, gain, poison) and icon. |

@@ -5,10 +5,12 @@
 #include <dwe/core/yaml.hpp>
 #include <dwe/ruleset/game_clock.hpp>
 #include <dwe/ruleset/ruleset.hpp>
+#include <dwe/ruleset/species_extra.hpp>
 #include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdlib>
 #include <filesystem>
@@ -73,6 +75,42 @@ TEST_CASE("the game pack's original ruleset loads, with the clock of the origina
   CHECK(clock->daysPerYear == 30);
   CHECK(clock->yearLimit == 100);
   CHECK(clock->start == GameTime{.year = 0, .day = 0, .hour = 8, .minute = 0});
+  // utils2.c: entityGetTechFromAnim: type 0x3C's clip 0x3C (slot 14) is technique 0x70.
+  const auto techniques = readSlotTechniques(*ruleset);
+  REQUIRE_MESSAGE(techniques.has_value(), errorOf(techniques));
+  CHECK(*techniques == std::vector<SlotTechnique>{
+                           {.species = "hkab", .slot = 14, .move = "high_electro_shocker"}});
+}
+
+// Runs only when DWE_CONTENT names a content folder: every path that builds a fighter (wild, story,
+// cup rival, partner, versus) reads the species table loadPatchedDigimonTable gives.
+TEST_CASE(
+    "the user's disc, extracted: H-Kabuterimon's finisher slot loads as High Electro Shocker") {
+  const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+  if (!mountedContent) {
+    MESSAGE("DWE_CONTENT is not set: skipping the test on the extracted content");
+    return;
+  }
+  const assets::DiskFileSystem disk;
+  auto found = assets::findPacks(disk, *mountedContent);
+  REQUIRE_MESSAGE(found.has_value(), errorOf(found));
+  found->packs.push_back({.path = DWE_GAME_PACK, .kind = assets::FoundPack::Kind::Folder});
+  const auto opened = assets::openPacks(disk, found->packs, dwe::assets::PackOrigin::Engine);
+  REQUIRE_MESSAGE(opened.has_value(), errorOf(opened));
+  const auto vfs = assets::VirtualFileSystem::mount(opened->locations);
+  REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
+  const auto ruleset = loadRuleset(*vfs, OriginalRuleset);
+  REQUIRE_MESSAGE(ruleset.has_value(), errorOf(ruleset));
+  const auto table = loadPatchedDigimonTable(*vfs, *ruleset);
+  REQUIRE_MESSAGE(table.has_value(), errorOf(table));
+  const assets::DigimonRow* row = table->find("hkab");
+  REQUIRE(row != nullptr);
+  CHECK(row->moves.at(14) == std::optional<std::string>{"high_electro_shocker"});
+  const assets::DigimonRow* kabuterimon = table->find("kabu");
+  if (kabuterimon != nullptr) {
+    CHECK(std::ranges::count(kabuterimon->moves,
+                             std::optional<std::string>{"high_electro_shocker"}) == 0);
+  }
 }
 
 // Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it). R3.2: the tables of

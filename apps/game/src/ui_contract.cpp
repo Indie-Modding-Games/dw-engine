@@ -782,6 +782,9 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(Battle, Setting, "battle.finisher.charging", Boolean,
           "Whether the aura, in which each press charges the finisher, lasts."),
     entry(Battle, Setting, "battle.finisher.charge", Number, "The aura's charge, as a percentage."),
+    entry(Battle, Setting, "battle.finisher.gauge", Text,
+          "The charge gauge over the partner during the aura: its top-left corner (x, y as "
+          "percentages), or empty."),
     entry(Battle, Setting, "battle.revive_seconds", Number,
           "The countdown to revive the fainted partner; -1 without one."),
     entry(Battle, Setting, "battle.match_seconds", Number,
@@ -886,7 +889,8 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     api(Battle, Query, "battle.commands", Table, "(): table",
         "The command strip, the finisher first: command, label_key, icon, available, current and mp_cost."),
     api(Battle, Query, "battle.finisher", Table, "(): table",
-        "The finisher: progress, goal, ready, charging (the aura) and charge (as a percentage)."),
+        "The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and "
+        "gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil)."),
     api(Battle, Query, "battle.strip", Table, "(): table",
         "Where the strip and the partner's bars are when entering and leaving: top, bottom, blink, hp_x and mp_x (or nil)."),
     api(Battle, Query, "battle.intro", Table, "(): table",

@@ -63,13 +63,13 @@ Only the functions to port count (ported + partial + missing); those tied to the
 
 | System | Decomp files | To port | Ported | Partial | Missing | Coverage |
 |---|---|---:|---:|---:|---:|---:|
-| [Battle](#battle) | `btl/`, `main/` (9 files) | 155 | 155 | 0 | 0 | 100 % |
-| [Battle effects](#battle-effects) | `btl/`, `main/` (6 files) | 240 | 240 | 0 | 0 | 100 % |
+| [Battle](#battle) | `btl/`, `main/` (9 files) | 156 | 156 | 0 | 0 | 100 % |
+| [Battle effects](#battle-effects) | `btl/`, `main/` (6 files) | 241 | 241 | 0 | 0 | 100 % |
 | [Field: movement, collision and camera](#field-movement-collision-and-camera) | `main/` (5 files) | 82 | 82 | 0 | 0 | 100 % |
 | [NPCs and map objects](#npcs-and-map-objects) | `main/` (8 files) | 80 | 80 | 0 | 0 | 100 % |
 | [Partner: AI and care](#partner-ai-and-care) | `main/partner.c`, `main/partner_impl.c` | 49 | 49 | 0 | 0 | 100 % |
 | [Script and interpreter](#script-and-interpreter) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 97 | 97 | 0 | 0 | 100 % |
-| [Menus and interface](#menus-and-interface) | `main/` (8 files) | 79 | 79 | 0 | 0 | 100 % |
+| [Menus and interface](#menus-and-interface) | `main/` (8 files) | 80 | 80 | 0 | 0 | 100 % |
 | [Items and shops](#items-and-shops) | `main/item.c`, `shop/script_menu.c` | 96 | 96 | 0 | 0 | 100 % |
 | [Evolution](#evolution) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 29 | 0 | 0 | 100 % |
 | [Training](#training) | `trn/`, `trn2/` (11 files) | 38 | 37 | 1 | 0 | 99 % |
@@ -82,7 +82,7 @@ Only the functions to port count (ported + partial + missing); those tied to the
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Videos and ending](#videos-and-ending) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 30 | 30 | 0 | 0 | 100 % |
 | [Core and platform](#core-and-platform) | `main/` (11 files) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1456 functions to port | 1456 | 1391 | 5 | 60 | 96 % |
+| **Total** | 1459 functions to port | 1459 | 1394 | 5 | 60 | 96 % |
 
 ## Battle
 
@@ -90,7 +90,7 @@ The normal fight: commands, AI, damage, status effects, HUD, start and end, lear
 
 Decomp files: `btl/battle_hud.c`, `btl/battle_main.c`, `btl/battle_setup.c`, `btl/command_menu.c`, `btl/command_shout.c`, `main/battle_tick.c`, `main/battle_ui.c`, `main/btl.c`, `main/entity_text.c`.
 
-Ported 155, partial 0, missing 0.
+Ported 156, partial 0, missing 0.
 
 ## Battle effects
 
@@ -98,7 +98,7 @@ The effect machine of the moves (EFE scripts): projectiles, hits, camera, partic
 
 Decomp files: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Ported 240, partial 0, missing 0.
+Ported 241, partial 0, missing 0.
 
 ## Field: movement, collision and camera
 
@@ -138,7 +138,7 @@ Title, game menu, partner sheet, bag, interface boxes, fades and text.
 
 Decomp files: `main/fade.c`, `main/font.c`, `main/game_menu.c`, `main/inventory.c`, `main/main_menu.c`, `main/new_game.c`, `main/sjis.c`, `main/ui.c`.
 
-Ported 79, partial 0, missing 0.
+Ported 80, partial 0, missing 0.
 
 ## Items and shops
 
@@ -269,11 +269,11 @@ Ported 41, partial 4, missing 60.
 | `VS_queueRandomMove` | `vs/vs_main.c:1735` | missing (cited in docs) | Randomly chooses move and target for the fighter's AI. | — |
 | `VS_loadVSAssets` | `vs/vs_scene.c:1147` | partial | Prepares the versus arena: music per stage, camera, lights and effects. | `apps/game/src/versus_arena.cpp:1` · arena 0 with its camera, its lights and the effects; without the music per stage |
 | `VS_playVersusIntroSequence` | `vs/vs_scene.c:1558` | missing | Plays the versus's opening introduction. | `apps/game/src/versus_arena.cpp:45` |
-| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | missing | Advances the versus introduction by states. | `apps/game/src/versus_flow.cpp:447` |
+| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | missing | Advances the versus introduction by states. | `apps/game/src/versus_flow.cpp:448` |
 | `VS_initializeCamera` | `vs/vs_scene.c:1851` | partial (cited in docs) | Places the versus arena's initial camera. | `apps/game/src/versus_arena.cpp:1` · the cup's camera (game::tournament::MatchCamera); not measured against the versus one |
 | `VS__createPressStartToBeginBox` | `vs/vs_select.c:409` | missing (cited in docs) | Shows the prompt to press Start to begin. | — |
 | `VS__initialize` | `vs/vs_select.c:442` | partial (cited in docs) | Versus setup flow: mode, map and Digimon selection. | `apps/game/src/versus_flow.cpp:1` · without arena choice (VS__tickSelectMap) |
-| `VS__tickSelectMap` | `vs/vs_select.c:1166` | missing | Versus stage selection screen. | `apps/game/src/versus_flow.cpp:389` |
+| `VS__tickSelectMap` | `vs/vs_select.c:1166` | missing | Versus stage selection screen. | `apps/game/src/versus_flow.cpp:390` |
 
 ## Curling minigame
 
@@ -309,6 +309,6 @@ Ported 51, partial 0, missing 0.
 
 ## Outside the counts
 
-982 decomp functions are tied to the console (drawing, memory, disc reading, hardware sound, internal tables, debugging, copies of the battle code in other overlays) and do not count in any figure. `python3 scripts/port_coverage.py --list` gives them with their reason (state `no-aplica`).
+979 decomp functions are tied to the console (drawing, memory, disc reading, hardware sound, internal tables, debugging, copies of the battle code in other overlays) and do not count in any figure. `python3 scripts/port_coverage.py --list` gives them with their reason (state `no-aplica`).
 
 <!-- port-coverage:end -->

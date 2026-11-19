@@ -697,6 +697,7 @@ Versión de la API de la interfaz: **0.17.0**.
 | `battle.finisher.ready` | ajuste | sí/no | Si el golpe final está listo. |
 | `battle.finisher.charging` | ajuste | sí/no | Si dura el aura en la que cada pulsación carga el golpe final. |
 | `battle.finisher.charge` | ajuste | número | La carga del aura, en porcentaje. |
+| `battle.finisher.gauge` | ajuste | texto | El indicador de carga sobre el compañero durante el aura: su esquina superior izquierda (x, y en porcentaje), o vacío. |
 | `battle.revive_seconds` | ajuste | número | La cuenta para revivir al compañero caído; -1 sin cuenta. |
 | `battle.match_seconds` | ajuste | número | El reloj de un combate de copa; -1 en los demás combates. |
 | `battle.bag.available` | ajuste | sí/no | Si la bolsa se puede abrir. |
@@ -753,7 +754,7 @@ Versión de la API de la interfaz: **0.17.0**.
 | `battle.state(): table` | consulta | tabla | El combate: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds y match_seconds (o nil) y cup (un combate de copa). |
 | `battle.fighters(): table` | consulta | tabla | Los luchadores, el compañero primero: name_key, status_key, hp, max_hp, mp, max_mp, fainted y hp_bar. |
 | `battle.commands(): table` | consulta | tabla | La tira de órdenes, el golpe final primero: command, label_key, icon, available, current y mp_cost. |
-| `battle.finisher(): table` | consulta | tabla | El golpe final: progress, goal, ready, charging (el aura) y charge (en porcentaje). |
+| `battle.finisher(): table` | consulta | tabla | El golpe final: progress, goal, ready, charging (el aura), charge (en porcentaje) y gauge (la esquina superior izquierda del indicador de carga sobre el compañero: x, y en porcentaje, o nil). |
 | `battle.strip(): table` | consulta | tabla | Dónde están la tira y las barras del compañero al entrar y salir: top, bottom, blink, hp_x y mp_x (o nil). |
 | `battle.intro(): table` | consulta | tabla | La apertura: step, anger (3 marcas), flee (8), anger_scale, flash y pieces (las piezas del cartel, con key). |
 | `battle.numbers(): table` | consulta | tabla | Los números sobre los luchadores: x, y (porcentaje), dx, dy, value, kind (damage, gain, poison) e icon. |

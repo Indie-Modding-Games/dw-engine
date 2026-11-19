@@ -39,13 +39,18 @@ bool heldByCounter(const BattleContext& context, FighterId id) {
   return false;
 }
 
-// The aura of the finisher counts down; true while it still plays.
+// The aura of the finisher counts down; true while it still plays. The charge gauge goes with it
+// (command_menu.c: BTL_initializeFinisherChargeup gives it 0x50 frames, as many as the aura's
+// BTL_FINISHER_TIMER; BTL_renderFinisherChargeup removes it once they run out, before the move
+// starts): the presses count from the aura's first frame to the one before its timer ends.
 bool auraPlaying(BattleContext& context, FighterId id) {
   FinisherState& finisher = context.state->finisher;
   if (finisher.auraFrames <= 0) {
     return false;
   }
-  --finisher.auraFrames;
+  if (--finisher.auraFrames == 0) {
+    finisher.charging = false;
+  }
   Fighter& fighter = context.fighter(id);
   if (fighter.target) {
     lookAt(fighter, context.fighter(*fighter.target).position);

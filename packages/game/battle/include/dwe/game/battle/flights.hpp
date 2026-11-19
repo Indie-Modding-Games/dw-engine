@@ -90,8 +90,9 @@ class ScriptedFlights final : public AttackFlights {
 public:
   // The extracted script of a move, nothing for a move without one.
   using ScriptSource = std::function<std::optional<assets::EffectScript>(std::string_view move)>;
-  // The longest flight looked for, in frames.
-  static constexpr std::int32_t MaxFrames = 120;
+  // The longest flight looked for, in frames: Nightmare Syndromer's bats land on frame 128 in the
+  // original.
+  static constexpr std::int32_t MaxFrames = 150;
 
   // `bodies`, and `poses` when given, must outlive it.
   ScriptedFlights(ScriptSource scripts, const EffectBodies& bodies,

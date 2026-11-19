@@ -271,6 +271,36 @@
               "type": "string"
             }
           }
+        },
+        "slot_techniques": {
+          "description": "Moves a species fights with from one slot of its row in place of the row's own; the species table loads with them.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "species",
+              "slot",
+              "move"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "species": {
+                "type": "string",
+                "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+                "entryReference": "data/digimon"
+              },
+              "slot": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 15
+              },
+              "move": {
+                "type": "string",
+                "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+                "entryReference": "data/moves"
+              }
+            }
+          }
         }
       },
       "description": "How the battle reads the moves table: finishers, counter, support moves, shared cooldown."

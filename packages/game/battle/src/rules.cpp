@@ -212,7 +212,8 @@ MoveRules readMoves(ValueReader& in, const YamlNode& node) {
                 {"mp_cost_multiplier", "finisher_first_index", "finisher_last_index",
                  "learnable_below_index", "counter", "flattened_shot", "speed_reserve_floor",
                  "shared_cooldown_frames", "buffs", "buff_uses", "learned_together"},
-                {"finisher_ids", "learnable_ids"})) {
+                // slot_techniques is the species table's (ruleset: loadPatchedDigimonTable).
+                {"finisher_ids", "learnable_ids", "slot_techniques"})) {
     return moves;
   }
   moves.mpCostMultiplier = in.positive(node, "mp_cost_multiplier");

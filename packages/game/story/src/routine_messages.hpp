@@ -33,6 +33,9 @@ inline constexpr std::string_view PortBattleOutcome =
 inline constexpr std::string_view PortBattleDefeat =
     "[port:battle] start_battle defeat (script_interp.c:1919): the script goes on at script {} "
     "section {:#x}";
+inline constexpr std::string_view PortBattleNotStarted =
+    "start_battle: the battle could not start; the story takes it as a flight (variable {} at 0), "
+    "not as a win";
 inline constexpr std::string_view PortBattleFled =
     "[port:battle] start_battle fled (script_interp.c:1928): battles fled {}, back to map {} exit "
     "{}";

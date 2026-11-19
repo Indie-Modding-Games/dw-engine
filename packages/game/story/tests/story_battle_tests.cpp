@@ -108,6 +108,7 @@ TEST_CASE("a battle with none predefined fights the NPC that touched the player"
   CHECK(battle.started->enemies == std::vector<std::int64_t>{4});
   CHECK(battle.started->joinable);
   CHECK_FALSE(battle.started->fixedFight);
+  CHECK_FALSE(battle.started->predefined);
 }
 
 TEST_CASE("a predefined battle fights the NPCs its variables name, turned into entities") {
@@ -127,6 +128,8 @@ TEST_CASE("a predefined battle fights the NPCs its variables name, turned into e
   CHECK(battle.started->fixedFight);
   CHECK(state.variable(FirstEnemy).value_or(-1) == 3);
   CHECK(state.variable(Predefined).value_or(-1) == 1);
+  // btl.c: loadBattleData plays the event battle theme for it (IS_PREDEFINED_BATTLE).
+  CHECK(battle.started->predefined);
 }
 
 TEST_CASE(
@@ -148,6 +151,7 @@ TEST_CASE(
   REQUIRE(battle.started.has_value());
   CHECK(battle.started->enemies == std::vector<std::int64_t>{4});
   CHECK(battle.started->joinable);
+  CHECK_FALSE(battle.started->predefined);
   CHECK(state.variable(Predefined).value_or(-1) == 0);
 }
 
@@ -184,4 +188,27 @@ TEST_CASE("a fixed fight won leaves the camera where it is") {
   battle.outcome = BattleOutcome::Victory;
   CHECK(std::holds_alternative<TaskDone>((*task)->tick()));
   CHECK(battle.cameraReturns == 0);
+}
+
+TEST_CASE("a battle that cannot start is taken as a flight, never as a win") {
+  // Before, the game reported a victory when it could not start a story battle (no enemy on the
+  // map, a species missing from the content), and the section went on as if the fight was won.
+  FakeState state;
+  REQUIRE(state.setVariable(Rules.outcomeVariable, 1));
+  FakeBattle battle = bridge();
+  ScreenHistory screens;
+  screens.start(3, 0);
+  screens.enter(5, 2);
+  StoryBattles battles{state, battle, screens, Rules};
+  const auto task = battles.startBattle();
+  REQUIRE(task.has_value());
+  battle.outcome = BattleOutcome::NotStarted;
+  const TaskStep step = (*task)->tick();
+  const auto* back = std::get_if<TaskMapChange>(&step);
+  REQUIRE(back != nullptr);
+  CHECK(back->change.map == 3);
+  CHECK(state.variable(Rules.outcomeVariable).value_or(-1) == 0);
+  CHECK(battle.cameraReturns == 0);
+  // A flight the player never took is not counted.
+  CHECK(battles.counters().fled == 0);
 }

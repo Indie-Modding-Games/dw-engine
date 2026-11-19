@@ -199,7 +199,8 @@ BattleRequest duelWithFoe() {
           .kind = BattleKind::Normal,
           .timeLimit = std::nullopt,
           .recruitOnVictory = "foe",
-          .matchMusic = std::nullopt};
+          .matchMusic = std::nullopt,
+          .predefined = false};
 }
 
 } // namespace
