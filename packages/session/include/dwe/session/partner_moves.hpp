@@ -89,6 +89,12 @@ inline constexpr std::int32_t ForgettableMoves = 0x3A;
 // Without it only the move itself goes.
 [[nodiscard]] std::vector<std::int32_t> movesClearedBy(std::int32_t number, bool mask16Bits = true);
 
+// The moves the partner of this species can learn (battle_ui.c: battleMoveLearning and
+// trn_reward.c: TRN_tryLearnMove only teach these): the moves of its list the catalog marks
+// learnable, so no finisher. In the list's order, each once.
+[[nodiscard]] std::vector<std::string> learnableMoves(const assets::DigimonRow& species,
+                                                      const game::battle::MoveCatalog& catalog);
+
 // Adds a learned move, keeping the list sorted; false if it was known.
 bool learn(PartnerMoves& moves, std::string_view move);
 // Removes a learned move; false if it was not known.

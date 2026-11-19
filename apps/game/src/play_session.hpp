@@ -200,6 +200,8 @@ struct SessionCommands {
   std::vector<std::string> partnerWrites;
   // learn_move("<move>") commands, in order (partner_events.hpp).
   std::vector<std::string> lessons;
+  // learn_all(""): every technique of the partner's species learned (partner_events.hpp).
+  bool learnAll = false;
   // warp("<map> [exit]"): the player goes to that map's exit as a script's map change takes him
   // (WarpCommand).
   std::optional<std::string> warp;

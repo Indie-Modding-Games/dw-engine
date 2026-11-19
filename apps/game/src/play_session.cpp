@@ -301,6 +301,9 @@ void SessionCommands::drop(Autotest* autotest) {
   if (!std::exchange(lessons, {}).empty()) {
     dropped(messages::LearnMoveFailed);
   }
+  if (std::exchange(learnAll, false)) {
+    dropped(messages::LearnAllFailed);
+  }
   if (std::exchange(saveMachine, false)) {
     dropped(messages::SaveMachineFailed);
   }
@@ -342,6 +345,7 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
                       [this](std::string_view what) { partnerWrites.emplace_back(what); });
   scripts.bindCommand(LearnMoveCommand,
                       [this](std::string_view move) { lessons.emplace_back(move); });
+  scripts.bindCommand(LearnAllCommand, [this](std::string_view) { learnAll = true; });
   scripts.bindCommand(EvolveCommand,
                       [this](std::string_view form) { evolution = std::string{form}; });
   care.bind(scripts);
@@ -1653,6 +1657,16 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     if (auto learned = learnMove(game_.systems.battle, *game_.session, species, lesson); !learned) {
       core::logWarning("{}",
                        core::formatMessage(messages::LearnMoveFailed, learned.error().message));
+    }
+  }
+  if (std::exchange(commands.learnAll, false)) {
+    if (game_.systems.battle == nullptr) {
+      core::logWarning("{}", core::formatMessage(messages::LearnAllFailed, messages::NoBattles));
+    } else {
+      const std::vector<std::string> learned = game_.systems.battle->learnAllMoves(*game_.session);
+      core::logInfo("{}",
+                    core::formatMessage(messages::LearnAllDone,
+                                        game_.session->partner().state().species, learned.size()));
     }
   }
   if (const auto npcs = std::exchange(commands.battle, std::nullopt)) {

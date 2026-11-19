@@ -1354,8 +1354,8 @@ packages (`DWE_PACKAGE`) and on in development builds; `--tuning` always turns t
 
 The development menu (`ui/dev_menu`, `DevMenuScreen`) is a modal menu over the game that only writes console lines:
 giving items (1, 10 or 99), setting money, the clock's speed, stats, care
-(happiness, discipline, tiredness, mistakes, sleeping, toilet), making evolve, traveling to an already visited map and
-saving (with the pause menu's `quick_save`). The lists (items, species, maps) come from the player's tables with their name keys
+(happiness, discipline, tiredness, mistakes, sleeping, toilet), making evolve, learning every technique, traveling to an
+already visited map and saving (with the pause menu's `quick_save`). The lists (items, species, maps) come from the player's tables with their name keys
 (`dev_menu.<list>.count`, `.N.id`, `.N.name`). The evolve one is that of all species with a model
 (`EvolutionAdapter::cheatTargets`, `EvolutionTables::cheatTargets`), in the table's order: the partner forms,
 the special ones (virus, by item or event, the Megas a ruleset adds) and also the enemies, the bosses and
@@ -1389,11 +1389,20 @@ are on and the command is one the menu offers (`devMenuLineAllowed`). For this t
 
 - `warp("<map> [exit]")`: changes map like a script (`startScriptedMapChange`), with exit 0 if none is given.
 - `partner_set("happiness <n>")` and `partner_set("tiredness <n>")`, from 0 to 100.
+- `learn_all("")` (the menu's Techniques entry, which then says it is done): the partner learns every technique its
+  current species can learn (`BattleAdapter::learnAllMoves`, `session::learnableMoves`): the moves of its species'
+  list that the catalog marks learnable (below 0x3A, as `battleMoveLearning` and `TRN_tryLearnMove` teach them), so
+  never its finisher nor a technique another species animates. Each is learned as `learnMove` teaches it (`dynamite_kick`
+  brings its pair), into the same learned list, so they show in the technique list, can be equipped, are saved
+  and stay through evolutions like any learned one. Running it again learns nothing new; there is no undo. With the
+  original's data Agumon ends with 7 and Gabumon with 8 learned.
 
 Tests: `dev_tools_tests.cpp` (which lines the menu accepts and how it publishes its lists), `tables_tests.cpp` and
 `evolution_adapter_tests.cpp` (the evolve list has all species with a model and each one evolves),
 `game_table_tests.cpp` (the order of the stand-ins), `species_tests.cpp` (the borrowed care),
-`partner_clip_fallbacks_tests.cpp` (the stand-in clips), `battle_adapter_tests.cpp` (the borrowed attacks), `partner_set_command_tests.cpp`
+`partner_clip_fallbacks_tests.cpp` (the stand-in clips), `battle_adapter_tests.cpp` (the borrowed attacks; `learn_all`:
+the learnable set, once, equipped and saved, and the two starting partners on extracted content),
+`dev_menu_tests.cpp` (the Techniques entry in every skin and language), `partner_set_command_tests.cpp`
 and the route `route-dev-menu.yaml` (F2, money, an item, and with the option off F2 opens nothing).
 
 ## Recruit bars

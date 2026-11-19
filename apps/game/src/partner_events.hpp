@@ -22,6 +22,10 @@ inline constexpr std::string_view EvolveCommand = "evolve";
 // gym's brains training teaches it and, with a place (0 to 3), equips it there, so a route can show
 // a technique the partner has not learned yet.
 inline constexpr std::string_view LearnMoveCommand = "learn_move";
+// And learn_all(""): the partner learns every technique its species can learn (the ones battles and
+// the gym's brains training teach it, no finisher), each as learn_move teaches it, so they show in
+// the technique list, can be equipped and are saved like any learned one (developer menu).
+inline constexpr std::string_view LearnAllCommand = "learn_all";
 
 // Shows what the partner's events change on screen: an evolution or a rebirth draws the partner's
 // new species in the field. Nothing shows the others yet (the HUD's reactions come with the map

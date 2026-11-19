@@ -21,6 +21,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -246,6 +247,18 @@ std::vector<std::string> BattleAdapter::learnMove(std::string_view move) {
         learned.push_back(id);
       }
     }
+  }
+  return learned;
+}
+
+std::vector<std::string> BattleAdapter::learnAllMoves(const GameSession& session) {
+  const assets::DigimonRow* row = rowOf(session.partner().state().species);
+  if (row == nullptr || catalog_ == nullptr) {
+    return {};
+  }
+  std::vector<std::string> learned;
+  for (const std::string& move : learnableMoves(*row, *catalog_)) {
+    std::ranges::move(learnMove(move), std::back_inserter(learned));
   }
   return learned;
 }

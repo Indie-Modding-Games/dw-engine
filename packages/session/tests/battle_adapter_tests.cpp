@@ -698,6 +698,43 @@ TEST_CASE("the partner's moves go in the save and come back") {
   CHECK(loading.battle->moves() == saving.battle->moves());
 }
 
+TEST_CASE("learn_all: the partner learns every move its species can learn, once, and saves them") {
+  const TestPacks packs;
+  Adapters saving;
+  auto saved = sessionWithBattle(packs, saving);
+  // The made-up list's moves the catalog marks learnable: no finisher, no gap, each once.
+  const DigimonTable table = madeUpDigimon();
+  const DigimonRow* row = table.find("agum");
+  REQUIRE(row != nullptr);
+  CHECK(dwe::session::learnableMoves(*row, saving.battle->catalog()) ==
+        std::vector<std::string>{"punch", "shot", "dynamite_kick", "war_cry", "poison_bite"});
+  const PartnerMoves before = saving.battle->moves();
+  const std::vector<std::string> learned = saving.battle->learnAllMoves(*saved);
+  // Each as learnMove teaches it: dynamite_kick brings its pair; what it knew is not new.
+  for (const std::string_view move :
+       {"punch", "shot", "dynamite_kick", "dynamite_kick_48", "war_cry", "poison_bite"}) {
+    CAPTURE(move);
+    CHECK(dwe::session::knows(saving.battle->moves(), move));
+    CHECK(std::ranges::contains(learned, move) != dwe::session::knows(before, move));
+  }
+  CHECK_FALSE(dwe::session::knows(saving.battle->moves(), "big_finish"));
+  CHECK(saving.battle->moves().learned.size() == 6);
+  CHECK(saving.battle->moves().equipped == before.equipped);
+  // Again: nothing new.
+  CHECK(saving.battle->learnAllMoves(*saved).empty());
+  CHECK(saving.battle->moves().learned.size() == 6);
+  // They can be equipped, and go in the save.
+  REQUIRE(saving.battle->equip(*saved, 1, 8).has_value());
+  REQUIRE(saving.battle->equip(*saved, 2, 3).has_value());
+  auto file = saved->saveFile();
+  REQUIRE_MESSAGE(file.has_value(), errorOf(file));
+  Adapters loading;
+  auto loaded = sessionWithBattle(packs, loading);
+  const auto read = loaded->loadFile(*file);
+  REQUIRE_MESSAGE(read.has_value(), errorOf(read));
+  CHECK(loading.battle->moves() == saving.battle->moves());
+}
+
 TEST_CASE("the moves' save form is checked: four places, positions in the list") {
   auto node = dwe::core::parseYaml("learned: [punch]\nequipped: [0, null, null]\n");
   REQUIRE(node.has_value());
@@ -924,4 +961,40 @@ TEST_CASE("the rules read again stay where the field and a running battle point 
   CHECK(&adapters.battle->catalog() == catalog);
   CHECK(rules->damage.partnerDealtPercent == 150);
   CHECK(catalog->find("punch").has_value());
+}
+
+TEST_CASE(
+    "the user's disc, extracted: learn_all teaches each starting partner its species' moves") {
+  struct Expected {
+    std::string_view species;
+    std::vector<std::string> learned;
+  };
+  // Their lists without the finisher (pepper_breath, blue_blaster); dynamite_kick comes with
+  // dynamite_kick_48 (utils2.c: learnMove).
+  const std::array<Expected, 2> partners{
+      Expected{"agum",
+               {"fire_tower", "heat_laser", "magma_bomb", "muscle_charge", "red_inferno",
+                "sonic_jab", "spit_fire"}},
+      Expected{"gabu",
+               {"dynamite_kick", "dynamite_kick_48", "fire_tower", "heat_laser", "megaton_punch",
+                "sonic_jab", "tremar", "war_cry"}}};
+  for (const Expected& partner : partners) {
+    CAPTURE(partner.species);
+    const auto extracted = extractedSession();
+    if (!extracted) {
+      MESSAGE("DWE_CONTENT is not set: skipping learn_all on extracted content");
+      return;
+    }
+    dwe::session::NewGameChoice choice{};
+    choice.partner = std::string{partner.species};
+    const auto started = extracted->session->startNewGame(choice);
+    REQUIRE_MESSAGE(started.has_value(), errorOf(started));
+    const std::vector<std::string> learned = extracted->battle->learnAllMoves(*extracted->session);
+    std::vector<std::string> known = extracted->battle->moves().learned;
+    std::ranges::sort(known);
+    CHECK(known == partner.learned);
+    // The starting technique was known already.
+    CHECK(learned.size() == partner.learned.size() - 1);
+    CHECK(extracted->battle->learnAllMoves(*extracted->session).empty());
+  }
 }

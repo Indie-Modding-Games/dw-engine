@@ -28,8 +28,8 @@ struct DevMenuLists {
 
 // The developer menu (docs/modules/apps/game.md, «Developer tools»): F2 opens it over a
 // game while the developer tools option is on. Its pages run the console's commands (give items,
-// money, the clock's speed, the partner's stats and care, evolve, warp) through the dev_menu_run
-// command (dev_tools.hpp), and saves with the game menu's own quick_save.
+// money, the clock's speed, the partner's stats and care, evolve, learn every technique, warp)
+// through the dev_menu_run command (dev_tools.hpp), and saves with the game menu's own quick_save.
 // The field and the game time wait while it is open.
 class DevMenuScreen {
 public:

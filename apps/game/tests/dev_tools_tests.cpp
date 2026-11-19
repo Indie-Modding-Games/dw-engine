@@ -34,6 +34,7 @@ TEST_CASE("developer tools: the menu runs only the console lines its pages write
   CHECK(dwe::app::devMenuLineAllowed(R"(partner_set("happiness 100"))"));
   CHECK(dwe::app::devMenuLineAllowed(R"(warp("map_a 2"))"));
   CHECK(dwe::app::devMenuLineAllowed(R"(sleep(""))"));
+  CHECK(dwe::app::devMenuLineAllowed(R"(learn_all(""))"));
   // Commands the menu never writes.
   CHECK_FALSE(dwe::app::devMenuLineAllowed(R"(save("1"))"));
   CHECK_FALSE(dwe::app::devMenuLineAllowed(R"(os.exit(""))"));

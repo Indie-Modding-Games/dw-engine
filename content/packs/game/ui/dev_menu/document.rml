@@ -19,6 +19,7 @@
 				<button id="entry-6" class="entry" onclick="choose(document, 6)"></button>
 				<button id="entry-7" class="entry" onclick="choose(document, 7)"></button>
 				<button id="entry-8" class="entry" onclick="choose(document, 8)"></button>
+				<button id="entry-9" class="entry" onclick="choose(document, 9)"></button>
 			</div>
 			<div id="pages">
 				<span id="page"></span>

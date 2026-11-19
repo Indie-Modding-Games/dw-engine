@@ -187,6 +187,10 @@ public:
   // TRN_tryLearnMove), with the moves learned along with it (utils2.c: learnMove). The ids it did
   // not know.
   std::vector<std::string> learnMove(std::string_view move);
+  // A debug aid (the console's learn_all): the partner learns every move its species can learn
+  // (learnableMoves), each as learnMove teaches it. The ids it did not know; none for a species
+  // without a row.
+  std::vector<std::string> learnAllMoves(const GameSession& session);
 
   [[nodiscard]] const PartnerMoves& moves() const { return moves_; }
   // The new form's moves after an evolution (evl.c: EVL_applyEvolution): it learns `learned` and
