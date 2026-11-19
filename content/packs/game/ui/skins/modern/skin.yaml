@@ -1,7 +1,10 @@
 # The modern look, the default one, for every screen. A look only changes how the UI looks: the documents
 # (ui/<screen>/document.rml) and their logic are the same with any of them (docs/architecture/ui.md#skins).
+# hidden: the modern look is the base every other look extends and the start's fallback, but it is no
+# longer offered to the player: the picker, the options page's row and the ui.skins() cycle leave it out.
 id: modern
 name: ui_skin.modern
+hidden: true
 theme:
   - ui/skins/modern/theme
 screens:

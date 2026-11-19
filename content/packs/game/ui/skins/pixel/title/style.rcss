@@ -5,7 +5,7 @@
 
 #scrim {
 	background-color: #050a1c;
-	decorator: image(/ui/skins/new/assets/title_wire.png cover center center);
+	decorator: image(/ui/skins/pixel/assets/title_wire.png cover center center);
 }
 
 #picture {
@@ -16,7 +16,7 @@
 	width: 335dp;
 	height: 139dp;
 	margin-left: 63dp;
-	decorator: image(/ui/skins/new/assets/hero_title.png contain center center);
+	decorator: image(/ui/skins/pixel/assets/hero_title.png contain center center);
 }
 
 #scrim.boot #picture,

@@ -123,7 +123,7 @@
 #panel.on-options.at-title { background-color: #2d3840e8; }
 /* The game's own actions (Save, back to title, quit) lead the page: one line at the box's top, at its right. */
 #options-quick { display: flex; flex-direction: row; justify-content: flex-end; margin-bottom: 3dp; }
-#options-quick button { display: inline-block; margin: 0 0 0 24dp; padding: 0 6dp; font-size: 22dp; }
+#options-quick button { display: inline-block; margin: 0 0 0 24dp; padding: 0 6dp; font-family: "Pixel Small"; font-size: 26dp; }
 #option-list { max-height: 352dp; overflow-y: auto; }
 #option-list scrollbarvertical { width: 6dp; margin-left: 6dp; }
 #option-list scrollbarvertical slidertrack { background-color: #2d3840; }
@@ -157,13 +157,13 @@
 /* The description panel takes as many lines as the focused row's description wraps to (four at most in either language
    with the original font), three at least so most rows do not move the actions under it; the list above is 48dp
    shorter than it was with two fixed lines, so a four-line description still leaves the page inside the window. */
-#option-info { display: flex; align-items: flex-start; height: auto; min-height: 81dp; margin-top: 6dp; padding: 6dp 9dp 0 9dp; border-top: 3dp #90d9fa; font-size: 22dp; line-height: 27dp; color: #b2b2b2; }
+#option-info { display: flex; align-items: flex-start; height: auto; min-height: 81dp; margin-top: 6dp; padding: 6dp 9dp 0 9dp; border-top: 3dp #90d9fa; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; color: #b2b2b2; }
 #option-tag { flex: 0 0 auto; margin-right: 12dp; padding: 0 6dp; border: 3dp #4a5a64; line-height: 21dp; color: #b2b2b2; white-space: nowrap; }
 #option-help { flex: 1 1 0; }
 #option-tag.improvement { border-color: #90d9fa; color: #fff371; }
 #option-foot { margin-top: 6dp; padding-top: 6dp; border-top: 3dp #90d9fa; }
 #option-actions button { display: inline-block; margin: 0 12dp 0 0; }
-#options-hints { margin-top: 6dp; font-size: 22dp; color: #b2b2b2; text-align: right; }
+#options-hints { margin-top: 6dp; font-family: "Pixel Small"; font-size: 26dp; color: #b2b2b2; text-align: right; }
 #options-hints .hint { margin-left: 12dp; white-space: nowrap; }
 #options-hints .key { margin-right: 3dp; }
 /* The reset's question: one of the original's boxes over the list. */
@@ -171,21 +171,24 @@
 	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
 		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box; }
 #reset-question { color: #fff371; }
-#reset-note { margin: 6dp 0 12dp 0; font-size: 22dp; color: #b2b2b2; }
+#reset-note { margin: 6dp 0 12dp 0; font-family: "Pixel Small"; font-size: 26dp; color: #b2b2b2; }
 #reset-buttons button { display: inline-block; margin: 0 12dp; }
 
 #prompts {
 	margin-top: 12dp;
 	padding-top: 6dp;
 	border-top: 3dp #90d9fa;
-	font-size: 22dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
 	color: #b2b2b2;
 }
 
 #page-main button {
 	text-align: center;
 	text-transform: uppercase;
-	font-size: 24dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
 	line-height: 30dp;
 }
 
@@ -233,6 +236,7 @@
 	left: -12dp;
 	width: 108dp;
 	margin: 0;
+	font-family: "Pixel Body";
 	font-size: 15dp;
 	line-height: 24dp;
 	text-align: center;
@@ -364,22 +368,24 @@
 #panel.on-player #player-tabs.player-native { display: flex; flex-direction: row; align-items: flex-end; }
 /* The strip takes the flat folder tabs the partner windows use (no classic sprites): labels 16,
    open bottom edge over the box's top line. Q/E (the pad's R/L) walk it as the options page's
-   tabs do (layout tabs: minimal). The Trophies live on the profile itself (layout medals: profile)
-   and the Card page is not offered; the Chart keeps its tab, the tree's only way in. */
-#panel.on-player #player-tab-card { display: none; }
-#panel.on-player .player-tab, #panel.on-player .player-tab:focus, #panel.on-player .player-tab:disabled { position: relative; flex: 0 0 auto; min-width: 120dp; height: 34dp; padding: 0 14dp; margin: 0 4dp 0 0; border: 2dp #4a6b82; border-bottom-width: 0; box-sizing: border-box; background-color: #16293a; opacity: 1; color: #9cbad0; font-size: 16dp; line-height: 30dp; text-align: center; }
+   tabs do (layout tabs: minimal). The Trophies live on the profile itself (layout medals:
+   profile); the Card tab is offered again, the cards list being the player's own. */
+#panel.on-player .player-tab, #panel.on-player .player-tab:focus, #panel.on-player .player-tab:disabled { position: relative; flex: 0 0 auto; min-width: 116dp; height: 34dp; padding: 0 12dp; margin: 0 4dp 0 0; border: 2dp #4a6b82; border-bottom-width: 0; box-sizing: border-box; background-color: #16293a; opacity: 1; color: #9cbad0; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; text-align: center; }
 #panel.on-player .player-tab.selected { background-color: #24405a; border-color: #72c7ff; color: #eaf6ff; }
 #panel.on-player .player-tab:focus { border-color: #ffd51e; color: #ffe64a; }
 #panel.on-player .player-tab .player-tab-left, #panel.on-player .player-tab .player-tab-middle, #panel.on-player .player-tab .player-tab-right { display: none; }
+/* The label sits centered in the flat tab: the classic rule offsets it for the trapezoid's edges,
+   which this skin hides. */
 #panel.on-player .player-tab-label { position: relative; top: 0; white-space: nowrap; }
+
 /* Q/E chips outside the strip's corners, like the options page's keys — the flat folder look on
    the strip's own baseline. Only the look with keyboard tab-switching paints them (the document
    carries them hidden otherwise). */
 body.layout-tabs-minimal #panel #player-tab-previous-key, body.layout-tabs-minimal #panel #player-tab-next-key, body.layout-tabs-minimal #panel #player-tab-back { display: inline-block; }
 body.layout-tabs-minimal #panel #player-tab-back { margin-left: auto; margin-right: 0; }
-#panel.on-player .tab-key { position: absolute; top: 14dp; min-width: 40dp; height: 34dp; padding: 0 6dp; border: 2dp #4a6b82; border-bottom-width: 0; box-sizing: border-box; background-color: #16293a; color: #9cbad0; font-size: 16dp; line-height: 30dp; text-align: center; }
-#panel.on-player #player-tab-previous-key { left: -46dp; }
-#panel.on-player #player-tab-next-key { right: -46dp; }
+#panel.on-player .tab-key { position: absolute; top: 14dp; min-width: 40dp; height: 34dp; padding: 0 6dp; border: 2dp #4a6b82; border-bottom-width: 0; box-sizing: border-box; background-color: #16293a; color: #9cbad0; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; text-align: center; }
+#panel.on-player #player-tab-previous-key { left: 0; margin-right: 8dp; }
+#panel.on-player #player-tab-next-key { right: 0; margin-left: 8dp; }
 /* renderMenuTab: an idle tab is the same texture shaded to 0x32/0x80 of its colour (renderRectPolyFT4 flag 1), not
    faded into what lies behind it. */
 .player-tab-left, .player-tab-middle, .player-tab-right { position: absolute; display: block; top: 0; height: 100%; image-color: #646464; }
@@ -394,13 +400,13 @@ body.layout-tabs-minimal #panel #player-tab-back { margin-left: auto; margin-rig
    right-aligned words beside boxed values, the portrait as its own framed column, the trophy
    shelf as an inset box of its own below. Small type throughout: labels 17, values 22, rank 20,
    where the classic port ran the original's 36-point words. */
-#panel.on-player .player-line { position: absolute; margin: 0; padding: 0; height: 30dp; line-height: 30dp; font-size: 17dp; color: #9cbad0; }
-#panel.on-player .player-value { position: absolute; top: 0; float: none; color: #d8f1ff; font-size: 22dp; line-height: 30dp; }
+#panel.on-player .player-line { position: absolute; margin: 0; padding: 0; height: 30dp; line-height: 30dp; font-family: "Pixel Small"; font-size: 26dp; color: #9cbad0; }
+#panel.on-player .player-value { position: absolute; top: 0; float: none; color: #d8f1ff; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; }
 #player-name-line { left: 320dp; top: 10dp; width: 84dp; text-align: right; }
 #panel.on-player #player-name { left: 96dp; top: 0; width: 288dp; white-space: nowrap; text-align: left; }
 #player-level-line { left: 320dp; top: 58dp; width: 84dp; text-align: right; }
 #panel.on-player #player-level, #panel.on-player #player-raised { left: 96dp; top: 0; width: 64dp; text-align: right; }
-#panel.on-player #player-rank { position: absolute; display: block; clear: none; left: 240dp; top: 2dp; width: 314dp; margin: 0; text-align: left; white-space: nowrap; font-size: 20dp; line-height: 28dp; color: #d8f1ff; }
+#panel.on-player #player-rank { position: absolute; display: block; clear: none; left: 240dp; top: 2dp; width: 314dp; margin: 0; text-align: left; white-space: nowrap; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; color: #d8f1ff; }
 #player-raised-line { left: 320dp; top: 104dp; width: 84dp; text-align: right; }
 #player-bits-line { left: 320dp; top: 150dp; width: 84dp; text-align: right; }
 #panel.on-player #player-bits { left: 96dp; top: 0; width: 142dp; text-align: right; }
@@ -457,7 +463,7 @@ body.layout-tabs-minimal #panel #player-tab-back { margin-left: auto; margin-rig
 #panel.on-player.player-tools-open #page-player { height: auto; }
 #panel.on-player.player-tools-open #player-tabs, #panel.on-player.player-tools-open #player-profile { display: none; }
 #panel.on-player.player-tools-open #player-tools { display: flex; flex-direction: row; flex-wrap: wrap; width: 534dp; }
-#panel.on-player.player-tools-open #player-tools button { width: 261dp; height: 48dp; margin: 0 6dp 6dp 0; padding: 0 12dp; box-sizing: border-box; border: 2dp #397ca4; background-color: #0b2237; color: #d8f1ff; font-size: 21dp; text-align: left; }
+#panel.on-player.player-tools-open #player-tools button { width: 261dp; height: 48dp; margin: 0 6dp 6dp 0; padding: 0 12dp; box-sizing: border-box; border: 2dp #397ca4; background-color: #0b2237; color: #d8f1ff; font-family: "Pixel Small"; font-size: 26dp; text-align: left; }
 #panel.on-player.player-tools-open #player-tools button:focus { border-color: #ffd51e; background-color: #153653; color: #ffe64a; }
 #panel.on-player.player-tools-open #player-tools #player-back { width: 528dp; margin-bottom: 0; }
 
@@ -498,7 +504,7 @@ body.layout-tabs-minimal #panel #player-tab-back { margin-left: auto; margin-rig
 .chart-arrow { width: 30dp; decorator: image(battle-up-arrow contain center center); }
 #chart-less { left: 66dp; }
 #chart-more { left: 180dp; transform: scaleY(-1); }
-#chart-page { left: 99dp; width: 78dp; font-size: 18dp; line-height: 36dp; color: #d8f1ff; text-align: center; white-space: nowrap; }
+#chart-page { left: 99dp; width: 78dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 36dp; color: #d8f1ff; text-align: center; white-space: nowrap; }
 #player-chart.chart-paged .chart-arrow, #player-chart.chart-paged #chart-page { display: block; }
 /* The cells: dark tiles with a thin frame; the focused one lights up gold like every control of
    the look, and the undiscovered forms are just hidden (the old grey bevel blocks fought the
@@ -520,7 +526,7 @@ body.layout-tabs-minimal #panel #player-tab-back { margin-left: auto; margin-rig
 /* The connectors are three stacked bands the logic paints by colour: the bands lie 3dp apart, so
    they must be 3dp tall to read as one line. */
 .chart-detail-line { position: absolute; height: 3dp; transform-origin: 0dp 0dp; pointer-events: none; }
-#chart-detail-tree, #chart-detail-level, #chart-detail-name { position: absolute; font-size: 22dp; line-height: 28dp; color: #d8f1ff; white-space: nowrap; }
+#chart-detail-tree, #chart-detail-level, #chart-detail-name { position: absolute; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; color: #d8f1ff; white-space: nowrap; }
 #chart-detail-tree { left: 0; width: 894dp; top: 14dp; color: #ffe64a; text-align: center; }
 #chart-detail-level { left: 81dp; top: 436dp; width: 324dp; text-align: center; }
 #chart-detail-name { left: 45dp; top: 488dp; width: 396dp; text-align: center; }
@@ -652,7 +658,7 @@ body.layout-medals-profile #panel .medal-cell,
 body.layout-medals-profile #panel .medal-cell:focus { width: 44dp; height: 64dp; padding: 0; border-width: 0; background-color: transparent; }
 body.layout-medals-profile #panel .medal-shadow { left: 0; width: 40dp; height: 64dp; }
 body.layout-medals-profile #panel .medal-ribbon { left: 4dp; width: 40dp; height: 64dp; }
-body.layout-medals-profile #panel #medal-name { left: 12dp; top: 254dp; width: 376dp; height: 24dp; font-size: 18dp; line-height: 24dp; text-align: center; color: #ffe64a; }
+body.layout-medals-profile #panel #medal-name { left: 12dp; top: 250dp; width: 376dp; height: 30dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; text-align: center; color: #ffe64a; }
 
 /* The card list's icons (renderCardsView), one pixel inside the slot; a card's picture (renderCardImage, 150 x 180) and
    copies (renderCardCount) in their boxes. */
@@ -676,11 +682,11 @@ body.layout-medals-profile #panel #medal-name { left: 12dp; top: 254dp; width: 3
 #panel.on-player #player-city { display: none; }
 /* Small type like the profile's: labels 17 in the strip's grey, values 22, flat inset boxes;
    the header sits under the strip on the grid's first rule. */
-#city-prosperity-label, #city-residents-label { position: absolute; height: 30dp; font-size: 17dp; line-height: 30dp; white-space: nowrap; color: #9cbad0; }
-#city-residents, #city-name, #city-points { position: absolute; height: 30dp; font-size: 22dp; line-height: 30dp; white-space: nowrap; }
+#city-prosperity-label, #city-residents-label { position: absolute; height: 30dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; white-space: nowrap; color: #9cbad0; }
+#city-residents, #city-name, #city-points { position: absolute; height: 30dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; white-space: nowrap; }
 #city-prosperity-label { left: 24dp; top: 10dp; width: 270dp; text-align: right; }
 #city-prosperity-box { left: 306dp; top: 9dp; width: 108dp; }
-#city-prosperity { position: absolute; left: 6dp; top: 1dp; width: 94dp; height: 30dp; font-size: 22dp; line-height: 30dp; text-align: right; color: #d8f1ff; }
+#city-prosperity { position: absolute; left: 6dp; top: 1dp; width: 94dp; height: 30dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; text-align: right; color: #d8f1ff; }
 #city-residents-label { left: 450dp; top: 10dp; width: 276dp; text-align: right; }
 #city-residents { left: 738dp; top: 10dp; width: 132dp; text-align: right; color: #d8f1ff; }
 /* The shelf block hides the medal page's rules by class; the city's own header rule stays. */
@@ -696,7 +702,7 @@ body.layout-medals-profile #panel #city-rule { display: block; }
 #city-name-box { left: 12dp; top: 456dp; width: 870dp; height: 32dp; }
 #city-name { left: 30dp; top: 458dp; width: 600dp; color: #d8f1ff; }
 #city-points { left: 700dp; top: 458dp; width: 170dp; text-align: right; color: #3cff3c; }
-#panel.on-player #city-prompts { right: 30dp; top: 500dp; height: 24dp; font-size: 17dp; line-height: 24dp; }
+#panel.on-player #city-prompts { right: 30dp; top: 496dp; height: 30dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; }
 
 /* Digital terminal treatment for the pause menu's field grid and its settings views.
    Keep the original command icons, but give each command a framed tile and a readable gold focus state. */

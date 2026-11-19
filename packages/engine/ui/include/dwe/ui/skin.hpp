@@ -114,6 +114,11 @@ struct Skin {
   // hotspot for the OS cursor; (0, 0) when not given.
   std::uint32_t cursorHotspotX = 0;
   std::uint32_t cursorHotspotY = 0;
+  // Whether the skin stays out of the list the player picks from (the skin picker, the options
+  // page's row and the ui.skins() cycle) but remains findable by id: another skin may extend it,
+  // and it may still be the start's `fallback` (ui/ui_skin.yaml) and the target of --ui-skin or a
+  // saved setting. False unless skin.yaml says `hidden: true`.
+  bool hidden = false;
 };
 
 // Reads a skin.yaml. Checks its shape, not that the assets it names exist (SkinCatalog does).

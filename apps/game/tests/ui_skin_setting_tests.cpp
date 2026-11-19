@@ -131,12 +131,13 @@ struct Content {
     REQUIRE_MESSAGE(loaded.has_value(), loaded.error().message);
   }
 
-  // The skin picker's row of a skin: the packs' skins in their order, from 1.
+  // The skin picker's row of a skin: the skins the player can pick, in their order, from 1. A hidden
+  // skin (the modern base) has no row.
   [[nodiscard]] std::string rowOf(std::string_view skin) const {
-    const auto& skins = ui->skins().skins();
-    const auto found = std::ranges::find(skins, skin, &ui::Skin::id);
-    REQUIRE(found != skins.end());
-    return std::to_string(std::distance(skins.begin(), found) + 1);
+    const auto offered = ui->skins().offered();
+    const auto found = std::ranges::find(offered, skin);
+    REQUIRE(found != offered.end());
+    return std::to_string(std::distance(offered.begin(), found) + 1);
   }
 };
 
@@ -278,7 +279,7 @@ TEST_CASE(
   }
 }
 
-TEST_CASE("a saved legacy skin, which the new skin replaced, starts as the original") {
+TEST_CASE("a saved legacy skin starts as its current id; the renamed pixel skin keeps it") {
   const test_support::TempFolder folder;
   const std::filesystem::path file = folder.path() / "settings.yaml";
   saveUserSettings(file, UserSettings{.language = "es",
@@ -296,11 +297,38 @@ TEST_CASE("a saved legacy skin, which the new skin replaced, starts as the origi
   applyStartUiSkin(*content.ui, startUiSkin(std::nullopt, saved.uiSkin));
   CHECK(content.ui->skin() == "original");
   CHECK(content.published() == ui::UiValue{std::string{"original"}});
+
+  // A player who chose the pixel skin while its id was still `new` keeps it after the rename.
+  saveUserSettings(file, UserSettings{.language = "es",
+                                      .textFont = std::nullopt,
+                                      .uiSkin = "new",
+                                      .uiAddon = std::nullopt,
+                                      .uiPlugins = std::nullopt,
+                                      .minimap = std::nullopt});
+  CHECK(startUiSkin(std::nullopt, loadUserSettings(file).uiSkin) ==
+        std::optional<std::string>{"pixel"});
+}
+
+TEST_CASE("a saved `new`, the pixel skin's id before the rename, starts as the pixel skin") {
+  const test_support::TempFolder folder;
+  const std::filesystem::path file = folder.path() / "settings.yaml";
+  saveUserSettings(file, UserSettings{.language = "es",
+                                      .textFont = std::nullopt,
+                                      .uiSkin = "new",
+                                      .uiAddon = std::nullopt,
+                                      .uiPlugins = std::nullopt,
+                                      .minimap = std::nullopt});
+  {
+    Content next{DiscArt::Extracted};
+    applyStartUiSkin(*next.ui, startUiSkin(std::nullopt, loadUserSettings(file).uiSkin));
+    CHECK(next.ui->skin() == "pixel");
+    CHECK(next.published() == ui::UiValue{std::string{"pixel"}});
+  }
 }
 
 TEST_CASE("a boot asks the skin until one is chosen, unless the command line names one") {
   CHECK(asksUiSkin(std::nullopt, std::nullopt, 2));
-  CHECK_FALSE(asksUiSkin(std::nullopt, std::string{"new"}, 2));
+  CHECK_FALSE(asksUiSkin(std::nullopt, std::string{"pixel"}, 2));
   CHECK_FALSE(asksUiSkin(std::string{"modern"}, std::nullopt, 2));
   // Nothing to choose from.
   CHECK_FALSE(asksUiSkin(std::nullopt, std::nullopt, 1));
@@ -392,7 +420,7 @@ TEST_CASE("a boot asks the language, then the skin in that language, then Press 
     content.load(SkinPickerDocument);
     content.ui->setSetting(LanguageFirstSetting, asksLanguage(std::nullopt, settings.language));
     BootTitle title{content, changer, language,
-                    asksUiSkin(std::nullopt, settings.uiSkin, content.ui->skins().skins().size())};
+                    asksUiSkin(std::nullopt, settings.uiSkin, content.ui->skins().offered().size())};
     title.showMenu(false);
     title.second();
     // The language box first, with no picker yet.
@@ -409,21 +437,24 @@ TEST_CASE("a boot asks the language, then the skin in that language, then Press 
     CHECK(content.ui->isVisible(SkinPickerDocument));
     CHECK_FALSE(content.ui->isVisible(MainMenuDocument));
     CHECK(content.ui->elementText(SkinPickerDocument, "title") == "Interfaz");
-    // The cursor starts on the skin shown, the packs' default, and the game pack's four skins each
-    // have a row.
+    // The cursor starts on the skin shown, the packs' default, and the game pack's three offered
+    // skins each have a row (the hidden modern base has none).
     CHECK(content.ui->focusedElementId(SkinPickerDocument) == "skin-" + content.rowOf("original"));
-    for (const std::string_view skin : {"original", "modern", "devvago", "new"}) {
+    for (const std::string_view skin : {"original", "devvago", "pixel"}) {
       CAPTURE(skin);
       CHECK(content.ui->elementShown(SkinPickerDocument, "skin-" + content.rowOf(skin)));
     }
+    const auto offered = content.ui->skins().offered();
+    CHECK(std::ranges::find(offered, "modern") == offered.end());
 
-    // Moving the cursor puts a skin on at once, without saving it.
+    // Moving the cursor puts a skin on at once, without saving it. The modern skin is hidden, so the
+    // test moves to one of the three offered ones, `pixel`.
     REQUIRE(content.ui->callScript(SkinPickerDocument, "skin_focus",
-                                   std::vector<std::string>{content.rowOf("modern")}));
+                                   std::vector<std::string>{content.rowOf("pixel")}));
     title.apply();
     content.ui->update();
-    CHECK(content.ui->skin() == "modern");
-    CHECK(content.published() == ui::UiValue{std::string{"modern"}});
+    CHECK(content.ui->skin() == "pixel");
+    CHECK(content.published() == ui::UiValue{std::string{"pixel"}});
     CHECK(content.ui->isVisible(SkinPickerDocument));
     CHECK_FALSE(loadUserSettings(file).uiSkin.has_value());
 
@@ -461,7 +492,7 @@ TEST_CASE("a boot asks the language, then the skin in that language, then Press 
     CHECK(saved.language == std::optional<std::string>{"es"});
     CHECK(saved.uiSkin == std::optional<std::string>{"original"});
     CHECK_FALSE(asksLanguage(std::nullopt, saved.language));
-    CHECK_FALSE(asksUiSkin(std::nullopt, saved.uiSkin, next.ui->skins().skins().size()));
+    CHECK_FALSE(asksUiSkin(std::nullopt, saved.uiSkin, next.ui->skins().offered().size()));
   }
 }
 
@@ -471,21 +502,21 @@ TEST_CASE("a boot with a saved language and skin goes straight to Press Start") 
   // Saved by an earlier run.
   saveUserSettings(file, UserSettings{.language = "es",
                                       .textFont = std::nullopt,
-                                      .uiSkin = "new",
+                                      .uiSkin = "pixel",
                                       .uiAddon = std::nullopt,
                                       .uiPlugins = std::nullopt,
                                       .minimap = std::nullopt});
   Content content{DiscArt::Extracted};
   UserSettings settings = loadUserSettings(file);
   applyStartUiSkin(*content.ui, startUiSkin(std::nullopt, settings.uiSkin));
-  REQUIRE(content.ui->skin() == "new");
+  REQUIRE(content.ui->skin() == "pixel");
   UiSkinChanger changer{*content.ui, settings, file};
   LanguageChanger language{*content.texts, *content.ui, settings, file};
   content.load(MainMenuDocument);
   content.load(SkinPickerDocument);
   content.ui->setSetting(LanguageFirstSetting, asksLanguage(std::nullopt, settings.language));
   BootTitle title{content, changer, language,
-                  asksUiSkin(std::nullopt, settings.uiSkin, content.ui->skins().skins().size())};
+                  asksUiSkin(std::nullopt, settings.uiSkin, content.ui->skins().offered().size())};
   CHECK_FALSE(title.picker.asks());
   title.showMenu(false);
   title.second();
@@ -493,7 +524,7 @@ TEST_CASE("a boot with a saved language and skin goes straight to Press Start") 
   CHECK_FALSE(content.ui->isVisible(SkinPickerDocument));
   CHECK_FALSE(title.sentCommand(SkinPickerAskCommand));
   CHECK(content.ui->elementShown(MainMenuDocument, "press-start"));
-  CHECK(content.ui->skin() == "new");
+  CHECK(content.ui->skin() == "pixel");
 }
 
 TEST_CASE("without the language box, the boot's skin picker comes before Press Start") {

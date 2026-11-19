@@ -241,6 +241,17 @@ const Skin* SkinCatalog::find(std::string_view id) const {
   return found == skins_.end() ? nullptr : &*found;
 }
 
+std::vector<std::string> SkinCatalog::offered() const {
+  std::vector<std::string> ids;
+  ids.reserve(skins_.size());
+  for (const Skin& skin : skins_) {
+    if (!skin.hidden) {
+      ids.push_back(skin.id);
+    }
+  }
+  return ids;
+}
+
 core::Result<std::vector<const Skin*>> SkinCatalog::chainOf(const Skin& skin) const {
   std::vector<const Skin*> chain{&skin};
   for (;;) {

@@ -279,11 +279,14 @@ core::Result<Skin> parseSkin(std::string_view yaml) {
   Skin skin;
   reader.expectKeys(*tree, messages::SkinWhat, {"id", "name"},
                     {"extends", "theme", "screens", "sprite_sheets", "document_classes", "layout",
-                     "cursor", "cursor_hotspot"});
+                     "cursor", "cursor_hotspot", "hidden"});
   skin.id = plainName(reader, reader.field(*tree, "id"));
   skin.nameKey = reader.text(reader.field(*tree, "name"));
   if (const core::YamlNode* extends = tree->find("extends")) {
     skin.extends = plainName(reader, *extends);
+  }
+  if (const core::YamlNode* hidden = tree->find("hidden")) {
+    skin.hidden = reader.boolean(*hidden);
   }
   if (const core::YamlNode* theme = tree->find("theme")) {
     skin.theme = assetIds(reader, *theme, messages::SkinThemeWhat);

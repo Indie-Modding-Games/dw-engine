@@ -6,7 +6,7 @@
    The lobby (lobby.html .vp). */
 #scrim {
 	background-color: #050a1c;
-	decorator: image(/ui/skins/new/assets/title_wire.png cover center center);
+	decorator: image(/ui/skins/pixel/assets/title_wire.png cover center center);
 }
 
 /* lobby.html .vp: 760 inside plus its padding. */

@@ -3,7 +3,7 @@
 
 /* The screen before the menu (002-003): dark, the logo large at the top, the green «PULSA» line with its key. */
 #scrim.boot {
-	decorator: image(/ui/skins/new/assets/boot.png cover center center);
+	decorator: image(/ui/skins/pixel/assets/boot.png cover center center);
 	padding: 0;
 }
 
@@ -11,11 +11,11 @@
 	box-sizing: border-box;
 	padding: 70dp 32% 459dp 32%;
 	background-color: transparent;
-	decorator: image(/ui/skins/new/assets/hero_title.png contain center center) content-box;
+	decorator: image(/ui/skins/pixel/assets/hero_title.png contain center center) content-box;
 }
 
 #press-start:focus {
-	decorator: image(/ui/skins/new/assets/hero_title.png contain center center) content-box;
+	decorator: image(/ui/skins/pixel/assets/hero_title.png contain center center) content-box;
 }
 
 #press-start-text {

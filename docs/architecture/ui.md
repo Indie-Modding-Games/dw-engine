@@ -670,7 +670,7 @@ layout:                             # optional: layout options that scripts read
   | `bars` | `hud` | `continuous` (by default); `pips`, the field status bars fill in the original's 25 squares |
   | `heading` | `save_machine` | `original` (or unset), the machine's title only over the record and the slots, like the original; `always`, also over the save question |
 
-  The modern skin declares its own, and the original (and the new one, which extends it) those of the original. `pages: compact`, `pool`,
+  The modern skin declares its own, and the original (and the pixel one, which extends it) those of the original. `pages: compact`, `pool`,
   `tabs` and `medals` are only set by the DevVago skin; without them each screen does what it always did (`tabs`, `medals` and
   `pool` only change something with the original arrangement of the pause menu or in the partner menu). The `document_classes`
   classes are left for styling (`skin-original`, `title-original`, `slots-original`, `pips`): no
@@ -805,12 +805,13 @@ The original-look skin inherits the modern one's sheets (`extends: modern`), so 
 written as `#panel:not(.skin-original) …`. That way the original-look skin keeps drawing its boxes pixel-exact without having to
 undo each modern rule; a new screen that uses `#panel` needs that class in the original-look skin.
 
-### The Pixel art skin (id `new`)
+### The Pixel art skin (id `pixel`)
 
-The player sees it as "Pixel art" (`ui_skin.new` in the texts); the id and the folder remain `new`, so saved
-settings and `--ui-skin new` remain valid.
+The player sees it as "Pixel art" (`ui_skin.pixel` in the texts). It was the `new` skin until its id and folder
+were renamed; a saved choice of `new` still starts it (the game maps it to `pixel` on the way in, as it does the
+older `legacy`), and `--ui-skin` names it by its current id.
 
-`ui/skins/new` is the interface concept's mockup brought into the game: it inherits from the original-look skin
+`ui/skins/pixel` is the interface concept's mockup brought into the game: it inherits from the original-look skin
 (`extends: original`), so it keeps its arrangement, its screens and its sprites, and each screen only adds a
 skin sheet (`<screen>/style.rcss`) that changes colors, typeface, frames and, where the mockup moves or resizes a
 box, its place. The shared sheets are `theme.rcss` (typeface, `.original-box` window, button focus, keys),
@@ -842,9 +843,9 @@ not the wide image. What still differs from the mockup depends on changes in the
 
 ### The DevVago skin (id `devvago`)
 
-The design is by **DevVago**, who brought it in #308 as the `new` skin; when `new` became the mockup's "Pixel art"
-(#310), his design stayed as a skin of its own with his name ("DevVago" in the menus, `ui_skin.devvago`), in
-Options → Interface and in the skin box of the first startups.
+The design is by **DevVago**, who brought it in #308 as the skin then named `new`; when `new` became the mockup's "Pixel
+art" — today `pixel` — (#310), his design stayed as a skin of its own with his name ("DevVago" in the menus,
+`ui_skin.devvago`), in Options → Interface and in the skin box of the first startups.
 
 - `ui/skins/devvago` extends the modern one (`extends: modern`): each screen puts its sheet on top of the modern one's, as
   in his version, which carried a copy of the modern one in `new/_base`. Of that copy only what he added remains (the colors

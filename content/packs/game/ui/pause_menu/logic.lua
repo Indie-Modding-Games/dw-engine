@@ -42,10 +42,12 @@ local function original_menu()
   return ui.layout("menu") == "original"
 end
 -- The player page's tabs in the original layout (skin.yaml layout: pause_menu: tabs): "minimal"
--- offers the profile, the chart and the city only, walked with the tab keys too; anything else all.
+-- offers the profile, the chart, the cards and the city, walked with the tab keys too; anything
+-- else all. The Medals tab stays out: the profile itself carries the trophy shelf (medals:
+-- profile).
 local function player_tabs()
   if ui.layout("tabs") == "minimal" then
-    return { "player", "chart", "city" }
+    return { "player", "chart", "card", "city" }
   end
   -- tickPlayerMenu: the four pages are always there, in this order; dwe adds the City tab.
   return { "player", "chart", "medals", "card", "city" }

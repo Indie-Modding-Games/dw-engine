@@ -24,6 +24,7 @@
     "id": { "description": "The skin's id: the name of its folder under ui/skins/.", "$ref": "#/$defs/plainName" },
     "name": { "description": "The text key of the name the menus show, such as ui_skin.<id> for the game pack's skins; a mod keeps its keys in a localization file of its own.", "type": "string", "minLength": 1 },
     "extends": { "description": "The id of a skin this one adds to: its sheets apply first, so this skin's rules win.", "$ref": "#/$defs/plainName" },
+    "hidden": { "description": "true keeps the skin out of the list the player picks from (the picker, the options page's row, the ui.skins() cycle) while it stays findable by id: another skin may extend it, it may still be ui/ui_skin.yaml's fallback, and --ui-skin or a saved setting may name it.", "type": "boolean" },
     "cursor": {
       "description": "The image this skin installs as the system mouse cursor while it is the one on screen. Written relative to the skin's own folder (`cursor: cursor` reads as `ui/skins/<id>/cursor`). The nearest skin in the chain that names one wins; a skin that does not leaves the system arrow.",
       "$ref": "#/$defs/assetId"

@@ -1,4 +1,4 @@
-# The new look: the original's layout (extends original) redrawn in the UI concept's look: navy windows with a
+# The pixel look: the original's layout (extends original) redrawn in the UI concept's look: navy windows with a
 # double light-blue line and gold corner brackets, pixel fonts, the gold ▶ cursor with a gold outline on the focused
 # row, key caps for the prompts, the concept's icons and a brandless title (the island with its halo and the
 # «PROJECT FOLDER» plate). The layout and the sprites it keeps come from the original skin, so like that one it needs
@@ -6,9 +6,9 @@
 # fallback skin (ui/ui_skin.yaml: fallback).
 #
 # Each screen's sheet only changes the look (and a position where the design moves a box); the values come from the
-# concept's design system (docs/architecture/ui.md, «The Pixel art skin (id `new`)»).
-id: new
-name: ui_skin.new
+# concept's design system (docs/architecture/ui.md, «The Pixel art skin (id `pixel`)»).
+id: pixel
+name: ui_skin.pixel
 extends: original
 # Yellow arrow with a black rim, as the designer drew it (hotspot at the tip); scripts/make_cursor.py redraws it.
 cursor: cursor
@@ -118,7 +118,7 @@ sprite_sheets:
   # Frames, cursor, key caps, tabs, bar fills and hearts of the design system, 2 pixels per dp (made from the
   # concept's theme.css values; see the skin's page in docs/architecture/ui.md).
   - name: nb-frames
-    image: ui/skins/new/assets/frames
+    image: ui/skins/pixel/assets/frames
     dp_per_pixel: 0.5
     sprites:
       nb-box-outer: [0, 0, 80, 80]
@@ -168,7 +168,7 @@ sprite_sheets:
   # 2 dp lit), one strip of 20 segments per row at 2 pixels per dp. A sprite cannot repeat, so each strip is as long
   # as the longest bar and a fill shows as much of it as its width (scale-none).
   - name: nb-bar-fills
-    image: ui/skins/new/assets/bar_fills
+    image: ui/skins/pixel/assets/bar_fills
     dp_per_pixel: 0.5
     sprites:
       nb-strip-hp: [0, 0, 400, 20]
@@ -176,7 +176,7 @@ sprite_sheets:
       nb-strip-rd: [0, 40, 400, 20]
   # The gym reels' seven symbols (258-261: flat shapes in the concept's colours), 42 dp each at 2 pixels per dp.
   - name: nb-reel-symbols
-    image: ui/skins/new/assets/reel_symbols
+    image: ui/skins/pixel/assets/reel_symbols
     dp_per_pixel: 0.5
     sprites:
       nb-reel-1: [0, 0, 84, 84]
@@ -187,24 +187,24 @@ sprite_sheets:
       nb-reel-6: [420, 0, 84, 84]
       nb-reel-7: [504, 0, 84, 84]
   - name: nb-bracket
-    image: ui/skins/new/assets/bracket_board
+    image: ui/skins/pixel/assets/bracket_board
     dp_per_pixel: 3
     sprites:
       nb-bracket-board: [0, 0, 256, 135]
   - name: nb-cup-card
-    image: ui/skins/new/assets/bracket_card
+    image: ui/skins/pixel/assets/bracket_card
     dp_per_pixel: 3
     sprites:
       nb-cup-card: [0, 0, 255, 128]
   - name: nb-clock-sides
-    image: ui/skins/new/assets/clock_sides
+    image: ui/skins/pixel/assets/clock_sides
     dp_per_pixel: 3
     sprites:
       nb-clock-1p: [0, 0, 8, 18]
       nb-clock-2p: [8, 0, 8, 18]
   # The concept's icons for the field menu, owner-approved (assets/icon_sources holds the single pictures).
   - name: new-field-icons
-    image: ui/skins/new/assets/menu_icons
+    image: ui/skins/pixel/assets/menu_icons
     original_size: [896, 128]
     dp_per_pixel: 2.1333333333333333
     sprites:

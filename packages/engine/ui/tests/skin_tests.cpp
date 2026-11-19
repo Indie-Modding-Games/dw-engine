@@ -72,6 +72,16 @@ TEST_CASE("a skin.yaml names the look of the screens") {
   REQUIRE(bare.has_value());
   CHECK(bare->screens.empty());
   CHECK_FALSE(bare->extends.has_value());
+  CHECK_FALSE(bare->hidden);
+}
+
+TEST_CASE("a skin.yaml marks a look hidden from the player") {
+  const auto hidden = parseSkin("id: base\nname: x\nhidden: true\n");
+  REQUIRE_MESSAGE(hidden.has_value(), hidden.error().message);
+  CHECK(hidden->hidden);
+  // A non-boolean hidden is refused; an omitted one is not hidden.
+  CHECK_FALSE(parseSkin("id: base\nname: x\nhidden: yes please\n").has_value());
+  CHECK_FALSE(parseSkin("id: base\nname: x\n").value().hidden);
 }
 
 TEST_CASE("a skin.yaml may name its theme, styles and document relative to its own folder") {

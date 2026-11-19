@@ -45,6 +45,12 @@ public:
   [[nodiscard]] const std::vector<Skin>& skins() const { return skins_; }
   [[nodiscard]] const Skin* find(std::string_view id) const;
 
+  // The ids of the skins the player picks from: those offered (in `skins`) minus the hidden ones, in
+  // the catalog's order. A hidden skin stays in `skins` and findable by `find`, so another skin may
+  // extend it and it may still be ui/ui_skin.yaml's fallback and the target of --ui-skin; it is only
+  // left out of the picker, the options page's row and the ui.skins() cycle.
+  [[nodiscard]] std::vector<std::string> offered() const;
+
   // The skin the packs start with (ui/ui_skin.yaml): its default, or its fallback when the default
   // is not offered, or an empty id when neither is.
   [[nodiscard]] const std::string& defaultSkin() const { return defaultSkin_; }
