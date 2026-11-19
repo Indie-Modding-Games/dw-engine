@@ -364,6 +364,9 @@ public:
   // A scene's sound bank in slot 8 instead of the map's, until nothing gives it back
   // (SessionSound::useSceneBank); nothing happens in a silent session.
   void useSceneSounds(std::optional<std::int32_t> soundId);
+  // Slot 3 or 4 keeps the banks of `species` instead of the partner's, or follows the partner
+  // again (SessionSound::keepPartnerBank); nothing happens in a silent session.
+  void keepPartnerSounds(std::int64_t slot, std::optional<std::string> species);
   // The battle bank in slot 8 from a battle's start; at its end a won one gives slot 8 back to the
   // map's bank and a fled or lost one keeps the battle's (SessionSound::startBattleBank,
   // endBattleBank); nothing happens in a silent session.

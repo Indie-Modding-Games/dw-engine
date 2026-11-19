@@ -35,6 +35,9 @@ constexpr std::string_view SparkImage = "texture/etcdat/defeff?palette=1";
 // The first seed of the effects' rolls (libc rand's increment); each scene takes the next.
 constexpr std::uint32_t FirstEffectSeed = 0x3039;
 constexpr std::uint32_t BitsPerMask = 64;
+// The partner's sound slots: its voices (sound/vlall) and its own bank (sound/vball).
+constexpr std::int64_t PartnerVoiceSlot = 3;
+constexpr std::int64_t PartnerBankSlot = 4;
 
 float progress(std::int32_t from, std::int32_t to, std::int32_t frame) {
   return std::clamp(static_cast<float>(frame - from) / static_cast<float>(to - from), 0.0F, 1.0F);
@@ -86,6 +89,10 @@ void EvolutionScene::start(const std::string& target) {
   stage_ = {};
   pendingSeconds_ = 0.0;
   burstClipPlaying_ = false;
+  // The partner is the new form already, but until getEvoSequenceState its sound slots still hold
+  // the old form's banks.
+  session_->keepPartnerSounds(PartnerVoiceSlot, drawn_);
+  session_->keepPartnerSounds(PartnerBankSlot, drawn_);
   // partnerTickEvolving (partner.c:751): the fishing stops for the scene.
   if (fishing_ != nullptr) {
     fishing_->setFishingDisabled();
@@ -133,6 +140,9 @@ void EvolutionScene::glow() {
   // getEvoSequenceState: the idle clip, the scene's sound bank in slot 8.
   scene_->playPartnerClip(rules_.clips.idle);
   session_->useSceneSounds(rules_.soundBank);
+  // getEvoSequenceState (main/evl.c:107): loadVLALL loads the new form's vball into slot 4 now,
+  // but only reads its vlall: slot 3 keeps the old form's voices until the swap.
+  session_->keepPartnerSounds(PartnerBankSlot, std::nullopt);
   pendingSeconds_ = 0.0;
   setPhase(Phase::Glowing);
 }
@@ -342,6 +352,8 @@ void EvolutionScene::drawNewForm() {
         "{}", core::formatMessage(messages::PartnerModelNotShown, target_, shown.error().message));
   }
   drawn_ = target_;
+  // evl.c:539: the new form's voices reach slot 3 with the new model.
+  session_->keepPartnerSounds(PartnerVoiceSlot, std::nullopt);
   stage_.partnerScale = glm::vec3{1.0F};
   scene_->setStage(stage_);
   burstClipPlaying_ = false;
@@ -385,6 +397,8 @@ void EvolutionScene::finish() {
   if (drawn_ != target_) {
     drawNewForm();
   }
+  session_->keepPartnerSounds(PartnerVoiceSlot, std::nullopt);
+  session_->keepPartnerSounds(PartnerBankSlot, std::nullopt);
   scene_->playPartnerClip(std::nullopt);
   scene_->setStage({});
   // partnerTickEvolving (partner.c:780): and comes back.

@@ -411,6 +411,25 @@ Measured in the original (forced with the time on `twna01`) and compared frame b
   groups, the 100 squares and the 16 rays; `EvolutionEffects::start` begins with empty lists and the same caps
   (test `a new evolution starts with none of the last one's objects and keeps the caps`). The alignment of the
   working memory does not apply.
+- Same (2026-11-19, a tester's report: "when it evolves it doesn't play its own cry but the new form's"): the
+  partner's clips play their voices from slot 3 (`anim.c: tickAnimation`, instruction 0x4000, sound/vlall).
+  `main/evl.c: getEvoSequenceState` calls `loadVLALL` with the new form: its vball reaches slot 4 as the scene starts,
+  but its vlall is only read, and `evl.c:539` (`waitForSoundBufferLoading(3)`) puts it in slot 3 at the swap (0x11C).
+  Measured in the original (state `01_field_outside_jijimon_house`, Agumon with `EVOLUTION_TARGET` 5): no sound
+  during the walk or the `ready` clip; at 0x6A the slot 8 effects 1 and 0 and the breaks (2 to 4); at frame 117 the
+  burst clip (0xC) of Agumon plays `playSound(3, 0x32)` with Agumon's vlall still in slot 3 (no upload of slot 3
+  until vblank 23642, frame 0x11C); at 0xD6 `stopSound` and the roar (slot 8, 5); in state 4 (frames 372 and 392)
+  the `finish` clip (0xB) of Greymon plays `playSound(3, 0x31)` from Greymon's vlall. So the burst cry is the old
+  form's and the one after the change the new form's. dwe evolves the partner in the session before the scene, and
+  slots 3 and 4 followed it at once: the burst cry (sound 0x32) played from Greymon's vlall (`sound/vlall/002`
+  instead of `001`). Now the scene keeps the old form's banks in slots 3 and 4 from its start
+  (`GameSession::keepPartnerSounds`, `SessionSound::keepPartnerBank`), gives slot 4 back to the partner at
+  `getEvoSequenceState` (the start of `Glowing`) and slot 3 when it draws the new form (`drawNewForm`, 0x11C), and
+  lets both go at its end or on skipping. Every way to evolve (natural, Numemon and Sukamon, item, virus, the
+  script's return, the console) goes through state 13 and this scene; death and rebirth (`dooa.c`) load the new
+  vlall at the same moment the form changes, and battle cries do not use this. Test: `session_sound_tests.cpp`
+  ("slots 3 and 4 keep the old form's banks while the evolution scene holds them"); live, the burst plays
+  `slot=3 sound=50 bank=sound/vlall/001` and the `finish` clip `sound/vlall/002`.
 
 Assumptions:
 

@@ -165,6 +165,12 @@ void GameSession::useSceneSounds(std::optional<std::int32_t> soundId) {
   }
 }
 
+void GameSession::keepPartnerSounds(std::int64_t slot, std::optional<std::string> species) {
+  if (sound_) {
+    sound_->keepPartnerBank(slot, std::move(species));
+  }
+}
+
 void GameSession::startBattleSounds() {
   if (sound_) {
     sound_->startBattleBank();

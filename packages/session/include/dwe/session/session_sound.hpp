@@ -48,6 +48,12 @@ public:
   // vlall entry of its type (a species no entry names takes the fallback one) and its vball entry.
   // The function gives the partner's species id, empty for none; it must outlive the sound.
   void attachPartner(std::function<std::string()> species);
+  // Slot 3 or 4 keeps the entry of `species` instead of following the partner; empty follows the
+  // partner again. The evolution scene keeps the old form's banks while it plays: main/evl.c:
+  // getEvoSequenceState loads the new form's vball into slot 4 as the scene starts, but its vlall
+  // reaches slot 3 only at the swap (evl.c:539, after EVL_applyEvolution), so the burst clip's
+  // voice is still the old form's. Other slots are ignored.
+  void keepPartnerBank(std::int64_t slot, std::optional<std::string> species);
   // The enemies of a battle, in their order: enemy i takes slot 4 + i with the vball entry of its
   // species (btl.c: loadBattleData, readVBALLSection(i + 4, type)). The slots keep them after the
   // battle, as the original does, until the next battle loads others.
@@ -85,6 +91,8 @@ private:
   // A fled or lost battle's bank, still in slot 8.
   bool battleBankKept_ = false;
   std::function<std::string()> partnerSpecies_;
+  // The species slots 3 and 4 keep instead of the partner's (keepPartnerBank), empty to follow it.
+  std::array<std::optional<std::string>, 2> keptPartnerBanks_;
   // The vball folders in slots 5 to 7, empty for a slot nothing loaded.
   std::array<std::optional<std::string>, 3> enemyBanks_;
   // Species id (and the original's number) -> folder, from the used_by of sound/vball/* and
