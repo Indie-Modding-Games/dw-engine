@@ -1,5 +1,6 @@
 #include "coop_screen.hpp"
 
+#include <dwe/core/log.hpp>
 #include <dwe/game/save/save_file.hpp>
 #include <dwe/game/versus/network.hpp>
 #include <dwe/net/rtc_peer_link.hpp>
@@ -60,6 +61,7 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     hostTransferId_.reset();
     guestSaveText_.reset();
     hostSaveText_.reset();
+    remotePartnerSpecies_.clear();
     remoteJoinState_.reset();
     remoteStartText_.reset();
     guestAssembler_.reset();
@@ -199,6 +201,14 @@ void CoopScreen::receiveMessages() {
         transferId.reset();
       } else if (*assembled) {
         std::string text{reinterpret_cast<const char*>((**assembled).data()), (**assembled).size()};
+        // The other player's partner, drawn beside them in play.
+        if (auto profile = extractCoopGuestPartnerProfile(text); profile) {
+          remotePartnerSpecies_ = profile->species;
+        } else {
+          remotePartnerSpecies_.clear();
+          core::logWarning("coop: the other player's partner cannot be shown: {}",
+                           profile.error().message);
+        }
         if (guestProfile) {
           guestSaveText_ = std::move(text);
         } else {

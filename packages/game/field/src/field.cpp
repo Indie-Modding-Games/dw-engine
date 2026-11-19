@@ -454,6 +454,132 @@ std::optional<CharacterState> Field::player(PlayerId id) const {
                         .motion = registry.get<AnimationIntent>(player->fieldPlayer.entity).motion};
 }
 
+core::Result<void> Field::addPartner(PlayerId id, std::string model, float radius,
+                                     assets::ClipMotions clips) {
+  const auto player = std::ranges::find(
+      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
+  if (player == otherPlayers_.end()) {
+    return core::fail("field partner needs its player first");
+  }
+  if (!(radius > 0.0F)) {
+    radius = rules_.partner.mover.radius;
+  }
+  entt::registry& registry = world_->registry();
+  if (!player->partner) {
+    const scene::Entity entity = world_->create();
+    registry.emplace<Transform>(entity);
+    registry.emplace<AnimationIntent>(entity);
+    registry.emplace<scene::ModelRef>(entity, std::move(model));
+    player->partner.emplace();
+    player->partner->entity = entity;
+    player->partner->radius = radius;
+    player->partner->follow.setGestureWait(rules_.partner.gestureIdlePlays);
+    placeOtherPartner(*player, *player->partner);
+  } else {
+    registry.emplace_or_replace<scene::ModelRef>(player->partner->entity, std::move(model));
+    player->partner->radius = radius;
+  }
+  OtherPartner& partner = *player->partner;
+  partner.follow.setRadius(static_cast<std::int32_t>(std::lround(radius)));
+  partner.follow.setClips(
+      clips.empty() ? defaultPartnerClips(rules_.partner.mover, rules_.transition.frameSeconds)
+                    : std::move(clips));
+  return {};
+}
+
+std::optional<CharacterState> Field::partner(PlayerId id) const {
+  if (id == HostPlayerId) {
+    return partner();
+  }
+  const auto player = std::ranges::find(
+      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
+  if (player == otherPlayers_.end() || !player->partner) {
+    return std::nullopt;
+  }
+  const entt::registry& registry = world_->registry();
+  const Transform& transform = registry.get<Transform>(player->partner->entity);
+  return CharacterState{.position = transform.position,
+                        .yaw = transform.yaw,
+                        .motion = registry.get<AnimationIntent>(player->partner->entity).motion};
+}
+
+std::optional<scene::Entity> Field::partnerEntity(PlayerId id) const {
+  if (id == HostPlayerId) {
+    return partner_;
+  }
+  const auto player = std::ranges::find(
+      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
+  if (player == otherPlayers_.end() || !player->partner) {
+    return std::nullopt;
+  }
+  return player->partner->entity;
+}
+
+void Field::placeOtherPartner(const PlayerRuntime& player, OtherPartner& partner) {
+  // Next to its player, on the first free side, as a map entry puts the host's partner; on the
+  // player when no side fits.
+  const Transform& body = world_->registry().get<Transform>(player.fieldPlayer.entity);
+  const float spacing = rules_.player.radius + partner.radius + 25.0F;
+  const glm::vec3 behind = -assets::forwardOfYaw(body.yaw);
+  constexpr std::array<float, 8> Turns{0.0F, 0.25F, -0.25F, 0.5F, 0.125F, -0.125F, 0.375F, -0.375F};
+  glm::vec3 place = body.position;
+  for (const float turn : Turns) {
+    const float angle = turn * Turn;
+    const glm::vec3 direction{(behind.x * std::cos(angle)) - (behind.z * std::sin(angle)), 0.0F,
+                              (behind.x * std::sin(angle)) + (behind.z * std::cos(angle))};
+    const glm::vec3 candidate = body.position + (direction * spacing);
+    if (fitsOnGrid(collision_, candidate, partner.radius)) {
+      place = candidate;
+      break;
+    }
+  }
+  const glm::vec2 towardPlayer = ground(body.position) - ground(place);
+  const float yaw = glm::length(towardPlayer) > 0.0F
+                        ? assets::yawOfDirection({towardPlayer.x, 0.0F, towardPlayer.y})
+                        : body.yaw;
+  scene::place(world_->registry().get<Transform>(partner.entity), place, yaw);
+  partner.follow.place(originalPointOf(place), assets::yawToOriginal(yaw));
+  partner.follow.forgetTrail(originalPointOf(body.position));
+  partner.motion = Motion::Idle;
+  world_->registry().get<AnimationIntent>(partner.entity) = {};
+}
+
+void Field::moveOtherPartners(std::int32_t frames) {
+  entt::registry& registry = world_->registry();
+  for (PlayerRuntime& player : otherPlayers_) {
+    if (!player.partner) {
+      continue;
+    }
+    OtherPartner& partner = *player.partner;
+    for (std::int32_t frame = 0; frame < frames; ++frame) {
+      const glm::vec3 playerPosition = registry.get<Transform>(player.fieldPlayer.entity).position;
+      Transform& transform = registry.get<Transform>(partner.entity);
+      if (groundDistance(transform.position, playerPosition) > rules_.partner.teleportDistance) {
+        placeOtherPartner(player, partner);
+        continue;
+      }
+      const float height = transform.position.y;
+      partner.follow.tick(
+          {.map = &collision_,
+           .player = originalPointOf(playerPosition),
+           .playerRadius = static_cast<std::int32_t>(std::lround(rules_.player.radius)),
+           .npcBlocks =
+               [&](OriginalPoint from, OriginalPoint to) {
+                 return npcs_.blocks(worldPointOf(from, height), worldPointOf(to, height),
+                                     partner.radius);
+               },
+           .mood = {},
+           .randomBelow = partnerRandom_ ? partnerRandom_
+                                         : std::function<std::int32_t(std::int32_t)>{
+                                               [](std::int32_t) { return 0; }}});
+      transform.position = worldPointOf(partner.follow.position(), height);
+      transform.yaw = std::remainder(assets::yawFromOriginal(partner.follow.rotation()), Turn);
+      partner.motion = motionOfClip(partner.follow.clip().id);
+    }
+    registry.get<AnimationIntent>(partner.entity) = {.motion = partner.motion, .speedScale = 1.0F};
+  }
+}
+
 std::optional<scene::Entity> Field::playerEntity(PlayerId id) const {
   if (id == HostPlayerId) {
     return player_;
@@ -589,6 +715,7 @@ void Field::tick(float seconds) {
     partnerFollowing_ = wasFollowing;
   }
   movePartnerFrames(frames);
+  moveOtherPartners(frames);
   tickNpcs(seconds, true);
   watchOverlaps(seconds);
 }
@@ -1192,6 +1319,10 @@ void Field::resetOtherPlayerMotion(bool clearInput) {
       player.fieldPlayer.pathStallSeconds = 0.0F;
     }
     world_->registry().get<AnimationIntent>(player.fieldPlayer.entity) = {};
+    if (player.partner) {
+      player.partner->motion = Motion::Idle;
+      world_->registry().get<AnimationIntent>(player.partner->entity) = {};
+    }
   }
 }
 
@@ -1265,6 +1396,9 @@ void Field::placeOtherPlayersNearHost() {
     player.fieldPlayer.path.clear();
     player.fieldPlayer.waitingAtWarp = false;
     world_->registry().get<AnimationIntent>(player.fieldPlayer.entity) = {};
+    if (player.partner) {
+      placeOtherPartner(player, *player.partner);
+    }
   }
 }
 
