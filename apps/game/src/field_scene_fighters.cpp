@@ -241,28 +241,31 @@ std::int32_t FieldScene::fighterEffectJoint(std::optional<std::int32_t> npc,
   return found != actor->effectJoints.end() ? found->second : joint;
 }
 
-void FieldScene::releaseFighters() {
+void FieldScene::releaseFighters(bool fixedFight) {
   // A fight can end with a fighter on ground the field will not let an NPC stand on: inside a
   // wall it crossed thin, behind a counter, past the map's edge. NPCs never move on their own, so
   // there the player cannot reach them again (the off-map fighters of #163): put the NPC back at
   // its record's spot, where the map loaded it (an engine improvement,
-  // docs/modules/game/battle.md).
-  const auto standOnFreeGround = [this](std::size_t slot, scene::Entity entity) {
+  // docs/modules/game/battle.md). A fixed fight's enemies stay for the scene that follows.
+  const auto standOnFreeGround = [this, fixedFight](std::size_t slot, scene::Entity entity) {
     const assets::MapNpc* record = field_->npcs().record(slot);
     if (record == nullptr || !record->digimon || !speciesRadius_) {
       return;
     }
     auto& transform = world_.registry().get<scene::Transform>(entity);
-    if (game::field::fitsOnGrid(field_->collision(), transform.position,
-                                speciesRadius_(*record->digimon))) {
+    const auto spot = game::field::releasedNpcSpot(
+        field_->collision(), {.at = transform.position,
+                              .home = assets::toWorldPosition(record->position),
+                              .radius = speciesRadius_(*record->digimon),
+                              .keptForScene = fixedFight});
+    if (!spot) {
       return;
     }
-    const glm::vec3 home = assets::toWorldPosition(record->position);
     core::logWarning(
         "[port:battle] the fight left the NPC in slot {} at ({:.0f}, {:.0f}), not free ground; it stands at "
         "its record's spot again ({:.0f}, {:.0f})",
-        slot, transform.position.x, transform.position.z, home.x, home.z);
-    transform.position = home;
+        slot, transform.position.x, transform.position.z, spot->x, spot->z);
+    transform.position = *spot;
   };
   const auto release = [this, &standOnFreeGround](Actor& actor) {
     if (!actor.fighter) {

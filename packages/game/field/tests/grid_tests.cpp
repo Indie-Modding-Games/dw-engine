@@ -15,6 +15,7 @@ using dwe::game::field::findPath;
 using dwe::game::field::fitsOnGrid;
 using dwe::game::field::isLineClear;
 using dwe::game::field::moveOnGrid;
+using dwe::game::field::releasedNpcSpot;
 using dwe::game::field::stepCollides;
 using dwe::game::field::testing::fill;
 using dwe::game::field::testing::roomMap;
@@ -116,6 +117,28 @@ TEST_CASE("a character fits where no probe touches a wall") {
   CHECK(fitsOnGrid(map.collision, {1899.0F, 0.0F, 0.0F}, Radius));
   CHECK_FALSE(fitsOnGrid(map.collision, {1901.0F, 0.0F, 0.0F}, Radius));
   CHECK_FALSE(fitsOnGrid(map.collision, {0.0F, 0.0F, -1950.0F}, Radius));
+}
+
+TEST_CASE("a released NPC off free ground goes home only when home is free and no scene keeps it") {
+  // The room is free from x and z -2000 to 2000; past it are walls.
+  const auto map = roomMap("room");
+  const glm::vec3 inWall{0.0F, 0.0F, -1950.0F};
+  const glm::vec3 home{500.0F, 0.0F, 500.0F};
+  // battle_main.c:778: one on free ground stays where the fight left it.
+  CHECK_FALSE(
+      releasedNpcSpot(map.collision, {.at = {0.0F, 0.0F, 0.0F}, .home = home, .radius = Radius}));
+  // In a wall, where the player cannot reach it: back at its record's spot (#163).
+  const auto back = releasedNpcSpot(map.collision, {.at = inWall, .home = home, .radius = Radius});
+  REQUIRE(back);
+  CHECK(*back == home);
+  // A fixed fight's enemy stays for the scene: gcan10's Birdramon ends the fight in its nest, off
+  // the free cells for its radius, and talks there.
+  CHECK_FALSE(releasedNpcSpot(
+      map.collision, {.at = inWall, .home = home, .radius = Radius, .keptForScene = true}));
+  // A record spot that is no free ground either (a flier's, out in the sky at (-2400, -700))
+  // gains nothing.
+  CHECK_FALSE(releasedNpcSpot(map.collision,
+                              {.at = inWall, .home = {-2400.0F, 0.0F, -700.0F}, .radius = Radius}));
 }
 
 TEST_CASE("sight lines see through free cells only") {

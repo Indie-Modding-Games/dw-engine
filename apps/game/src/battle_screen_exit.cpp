@@ -395,7 +395,7 @@ void BattleScreen::endExit() {
   if (desc_.scene != nullptr) {
     // The player's battle stance gives way to the field's own clips.
     desc_.scene->playPlayerSceneClip(std::nullopt);
-    desc_.scene->releaseFighters();
+    desc_.scene->releaseFighters(fixedFight_);
     for (const std::int32_t npc : std::exchange(onScreenAtStart_, {})) {
       if (fixedFight_ && std::ranges::contains(enemyNpcs_, npc)) {
         continue;

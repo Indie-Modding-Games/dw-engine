@@ -629,8 +629,9 @@ public:
   // same one unless its clips were made from another skeleton.
   [[nodiscard]] std::int32_t fighterEffectJoint(std::optional<std::int32_t> npc,
                                                 std::int32_t joint) const;
-  // The field takes the fighters back where they stand.
-  void releaseFighters();
+  // The field takes the fighters back where they stand; a fixed fight's enemies stay there for
+  // the scene that follows (game::field::releasedNpcSpot).
+  void releaseFighters(bool fixedFight = false);
   // A fighter of a stage of the scene's own that is no NPC of the map (a tournament's rival:
   // std_setup.c: STD_initializeOpponent's entity, placed by std_main.c: STD_placePlayer2): drawn
   // as this species with the NPCs' animations, scenery hidden or not, and held by the battle under
