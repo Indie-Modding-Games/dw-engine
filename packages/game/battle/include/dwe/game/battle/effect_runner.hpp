@@ -393,6 +393,9 @@ public:
   // hit_target hit is kept in touched(), in order. For the battle's flight probe (flights.hpp).
   void touchBodies(bool on) { touchBodies_ = on; }
   [[nodiscard]] const std::vector<EffectTouch>& touched() const { return touched_; }
+  // The fighter's touch came back as a block (battle_main.c: BTL_tickAttackHits clears its isHit):
+  // the checks of every slot may touch it again.
+  void releaseTouch(FighterId fighter);
   // How many times the scripts turned their source to its target (battle_effect.c:
   // BTL_faceTargetEntity); the battle turns the fighter itself, on the frames the probe saw it.
   [[nodiscard]] std::size_t targetFacings() const { return targetFacings_; }

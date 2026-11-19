@@ -111,7 +111,9 @@ TEST_CASE("a guard notes each attack once and forgets them as it drops") {
                           .hitPoint = std::nullopt,
                           .touch = std::nullopt,
                           .facingTarget = {},
-                          .aim = std::nullopt};
+                          .aim = std::nullopt,
+                          .laterContacts = {},
+                          .contacted = false};
   };
   const MoveRef punch = Bench::move("punch");
   const MoveRef shot = Bench::move("shot");

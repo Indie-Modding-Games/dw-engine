@@ -117,7 +117,8 @@ public:
     return EffectLanding{.frame = frame_,
                          .at = at_.has_value() ? at_ : std::optional{attackerAt},
                          .touch = std::nullopt,
-                         .facingTarget = {}};
+                         .facingTarget = {},
+                         .laterContacts = {}};
   }
 
   struct Question {
@@ -365,7 +366,8 @@ public:
     return EffectLanding{.frame = asked_++ == 0 ? first_ : later_,
                          .at = std::nullopt,
                          .touch = std::nullopt,
-                         .facingTarget = {}};
+                         .facingTarget = {},
+                         .laterContacts = {}};
   }
 
 private:
@@ -384,13 +386,19 @@ public:
   landing(std::string_view /*move*/, FighterId attacker, FighterId /*defender*/,
           std::optional<std::int32_t> /*clip*/) const override {
     if (attacker != PartnerId) {
-      return EffectLanding{
-          .frame = 3, .at = std::nullopt, .touch = std::nullopt, .facingTarget = {}};
+      return EffectLanding{.frame = 3,
+                           .at = std::nullopt,
+                           .touch = std::nullopt,
+                           .facingTarget = {},
+                           .laterContacts = {}};
     }
     std::vector<std::int32_t> facing(static_cast<std::size_t>(facing_));
     std::ranges::iota(facing, 0);
-    return EffectLanding{
-        .frame = frames_, .at = std::nullopt, .touch = std::nullopt, .facingTarget = facing};
+    return EffectLanding{.frame = frames_,
+                         .at = std::nullopt,
+                         .touch = std::nullopt,
+                         .facingTarget = facing,
+                         .laterContacts = {}};
   }
 
 private:
@@ -666,8 +674,11 @@ public:
   [[nodiscard]] std::optional<EffectLanding>
   landing(std::string_view /*move*/, FighterId /*attacker*/, FighterId /*defender*/,
           std::optional<std::int32_t> /*clip*/) const override {
-    return EffectLanding{
-        .frame = 10, .at = std::nullopt, .touch = std::nullopt, .facingTarget = {}};
+    return EffectLanding{.frame = 10,
+                         .at = std::nullopt,
+                         .touch = std::nullopt,
+                         .facingTarget = {},
+                         .laterContacts = {}};
   }
   [[nodiscard]] std::optional<EffectLanding>
   landingOn(std::string_view /*move*/, FighterId /*attacker*/, FighterId /*aim*/,
@@ -675,8 +686,11 @@ public:
     if (!bystanders_) {
       return std::nullopt;
     }
-    return EffectLanding{
-        .frame = 12, .at = std::nullopt, .touch = std::nullopt, .facingTarget = {}};
+    return EffectLanding{.frame = 12,
+                         .at = std::nullopt,
+                         .touch = std::nullopt,
+                         .facingTarget = {},
+                         .laterContacts = {}};
   }
 
 private:

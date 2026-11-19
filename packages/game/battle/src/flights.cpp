@@ -115,30 +115,39 @@ std::optional<EffectLanding> ScriptedFlights::probe(std::string_view move, Fight
   const std::size_t slot = runner.load(*found->second);
   static_cast<void>(runner.start(slot, attacker, aim));
   std::vector<std::int32_t> facingTarget;
+  std::optional<EffectLanding> landing;
   for (std::int32_t frame = 0; frame < MaxFrames; ++frame) {
     bodies.setFrame(frame);
     const std::size_t facings = runner.targetFacings();
+    const auto touches = std::ranges::count(runner.touched(), touched, &EffectTouch::fighter);
     runner.tick();
     // The render scripts run too, as each battle frame runs them after the ticks
     // (BTL_renderEFEEngine): some place their instance there (Magma Bomb's init_transform), which
     // a sub-effect it spawns later starts from.
     runner.render();
-    if (runner.targetFacings() != facings) {
+    if (!landing && runner.targetFacings() != facings) {
       facingTarget.push_back(frame);
     }
-    const auto touch = std::ranges::find(runner.touched(), touched, &EffectTouch::fighter);
-    if (touch != runner.touched().end()) {
-      return EffectLanding{.frame = frame,
-                           .at = touch->onBody ? std::nullopt
-                                               : std::optional{bodies.ground(touch->at)},
-                           .touch = touch->at,
-                           .facingTarget = std::move(facingTarget)};
+    if (std::ranges::count(runner.touched(), touched, &EffectTouch::fighter) != touches) {
+      if (landing) {
+        landing->laterContacts.push_back(frame);
+      } else {
+        const auto touch = std::ranges::find(runner.touched(), touched, &EffectTouch::fighter);
+        landing = EffectLanding{.frame = frame,
+                                .at = touch->onBody ? std::nullopt
+                                                    : std::optional{bodies.ground(touch->at)},
+                                .touch = touch->at,
+                                .facingTarget = std::move(facingTarget),
+                                .laterContacts = {}};
+      }
+      // A later check may touch the defender again should the battle take this touch as a block.
+      runner.releaseTouch(touched);
     }
     if (!runner.running(slot)) {
       break;
     }
   }
-  return std::nullopt;
+  return landing;
 }
 
 } // namespace dwe::game::battle
