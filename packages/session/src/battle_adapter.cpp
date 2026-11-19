@@ -479,7 +479,26 @@ void BattleAdapter::scaleBody(game::battle::Combatant& fighter, std::string_view
 
 core::Result<game::battle::Combatant>
 BattleAdapter::partnerCombatant(const GameSession& session) const {
-  const game::partner::PartnerState& partner = session.partner().state();
+  return visitingCombatant(visitorOf(session));
+}
+
+VisitingPartner BattleAdapter::visitorOf(const GameSession& session) const {
+  const game::partner::PartnerState& state = session.partner().state();
+  return {.species = state.species,
+          .stats = state.stats.base,
+          .hp = state.stats.currentHp,
+          .mp = state.stats.currentMp,
+          .chargeMode = state.stats.chargeMode,
+          .equipped = moves_.equipped,
+          .condition = {.discipline = state.mood.discipline,
+                        .tiredness = state.mood.tiredness,
+                        .sick = state.conditions.has(game::partner::Condition::Sick),
+                        .injured = state.conditions.has(game::partner::Condition::Injured),
+                        .knownMoves = moves_.learned}};
+}
+
+core::Result<game::battle::Combatant>
+BattleAdapter::visitingCombatant(const VisitingPartner& partner) const {
   const assets::DigimonRow* row = rowOf(partner.species);
   if (row == nullptr) {
     return core::fail(formatMessage(messages::UnknownPartnerSpecies, partner.species));
@@ -493,21 +512,23 @@ BattleAdapter::partnerCombatant(const GameSession& session) const {
       variants != partnerVariants_.end()) {
     fighter.moveVariants = variants->second;
   }
-  const StatBlock& base = partner.stats.base;
+  const StatBlock& base = partner.stats;
   fighter.stats = {.maxHp = base[Stat::Hp],
                    .maxMp = base[Stat::Mp],
                    .offense = base[Stat::Offense],
                    .defense = base[Stat::Defense],
                    .speed = base[Stat::Speed],
                    .brain = base[Stat::Brain]};
-  fighter.hp = partner.stats.currentHp;
-  fighter.mp = partner.stats.currentMp;
+  fighter.hp = partner.hp;
+  fighter.mp = partner.mp;
   // battle_setup.c: BTL_initializeCombat fights with the partner's own charge mode (0 unless a
   // mod changed it); the battle hands it back untouched, as BTL_deinitializeCombat restores it.
-  fighter.chargeMode = game::battle::chargeModeOf(partner.stats.chargeMode);
-  // btl.c: a position the species has no move at is left empty.
-  for (std::size_t place = 0; place < moves_.equipped.size(); ++place) {
-    if (const std::optional<MoveSlot> slot = moves_.equipped.at(place)) {
+  fighter.chargeMode = game::battle::chargeModeOf(partner.chargeMode);
+  // btl.c: a position the species has no move at is left empty (a visitor's slot past its row
+  // too).
+  for (std::size_t place = 0; place < partner.equipped.size(); ++place) {
+    if (const std::optional<MoveSlot> slot = partner.equipped.at(place);
+        slot && *slot >= 0 && std::cmp_less(*slot, row->moves.size())) {
       fighter.moves.at(place) = row->moves.at(static_cast<std::size_t>(*slot));
     }
   }
@@ -519,7 +540,8 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
   if (!rules_ || !section_) {
     return core::fail(std::string{messages::BattleNotRead});
   }
-  auto partner = partnerCombatant(session);
+  const VisitingPartner fighting = request.visitor ? *request.visitor : visitorOf(session);
+  auto partner = visitingCombatant(fighting);
   if (!partner) {
     return std::unexpected{partner.error()};
   }
@@ -537,24 +559,18 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
                                    .enemies = static_cast<std::int64_t>(request.enemies.size()),
                                    .firstEnemy = firstEnemy,
                                    .scripted = request.scripted};
-  const game::partner::PartnerState& state = session.partner().state();
-  game::battle::BattleSetup setup{
-      .partner = std::move(*partner),
-      .condition = {.discipline = state.mood.discipline,
-                    .tiredness = state.mood.tiredness,
-                    .sick = state.conditions.has(game::partner::Condition::Sick),
-                    .injured = state.conditions.has(game::partner::Condition::Injured),
-                    .knownMoves = moves_.learned},
-      .enemies = std::move(request.enemies),
-      .scripted = request.scripted,
-      .tamerless = request.tamerless,
-      .map = std::move(request.map),
-      .startMinute = session.clock().time().minute,
-      .tamer = request.tamer,
-      .kind = request.kind,
-      .timeLimit = request.timeLimit,
-      .recruitOnVictory = std::move(request.recruitOnVictory),
-      .versus = std::nullopt};
+  game::battle::BattleSetup setup{.partner = std::move(*partner),
+                                  .condition = fighting.condition,
+                                  .enemies = std::move(request.enemies),
+                                  .scripted = request.scripted,
+                                  .tamerless = request.tamerless,
+                                  .map = std::move(request.map),
+                                  .startMinute = session.clock().time().minute,
+                                  .tamer = request.tamer,
+                                  .kind = request.kind,
+                                  .timeLimit = request.timeLimit,
+                                  .recruitOnVictory = std::move(request.recruitOnVictory),
+                                  .versus = std::nullopt};
   ruleset::Random& random = session.random();
   const std::uint64_t high = random.next();
   const std::uint64_t seed = (high << SeedHalfBits) | random.next();
@@ -711,6 +727,23 @@ core::Result<BattleAftermath> BattleAdapter::finish(GameSession& session,
   session.hooks().battleEnded({.kind = kindName(result.kind),
                                .outcome = outcomeName(result.outcome),
                                .recruit = aftermath.recruitJoined.value_or(std::string{})});
+  session.afterSystemCommand();
+  return aftermath;
+}
+
+core::Result<BattleAftermath> BattleAdapter::finishVisitor(GameSession& session,
+                                                           const BattleResult& result) {
+  if (!rules_) {
+    return core::fail(std::string{messages::BattleNotRead});
+  }
+  BattleAftermath aftermath;
+  aftermath.drops = result.drops;
+  if (desc_.inventory != nullptr) {
+    desc_.inventory->inventory().addMoney(result.bits);
+  }
+  session.requestAutosave(AutosaveReason::BattleEnd);
+  session.hooks().battleEnded(
+      {.kind = kindName(result.kind), .outcome = outcomeName(result.outcome), .recruit = {}});
   session.afterSystemCommand();
   return aftermath;
 }

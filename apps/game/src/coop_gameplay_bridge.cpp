@@ -1,8 +1,22 @@
 #include "coop_gameplay_bridge.hpp"
 
 #include <algorithm>
+#include <variant>
 
 namespace dwe::app {
+
+namespace {
+
+bool isBattleMessage(const game::coop::Message& message) {
+  return std::holds_alternative<game::coop::BattleAsk>(message) ||
+         std::holds_alternative<game::coop::BattleBegin>(message) ||
+         std::holds_alternative<game::coop::BattleRefused>(message) ||
+         std::holds_alternative<game::coop::BattleFrame>(message) ||
+         std::holds_alternative<game::coop::BattleAction>(message) ||
+         std::holds_alternative<game::coop::BattleEnd>(message);
+}
+
+} // namespace
 
 void CoopGameplayBridge::poll(net::Millis now) {
   link_->poll(now);
@@ -32,6 +46,8 @@ void CoopGameplayBridge::poll(net::Millis now) {
         profileAssembler_.reset();
         profileTransferId_.reset();
       }
+    } else if (isBattleMessage(*message)) {
+      battles_.push_back(std::move(*message));
     } else {
       incoming_.push_back(std::move(*message));
     }
@@ -90,6 +106,18 @@ std::optional<CoopGameplayBridge::ReceivedProfile> CoopGameplayBridge::receivePr
 
 std::optional<PresentedCoopWorld> CoopGameplayBridge::presentedWorld(float alpha) const {
   return snapshots_.sample(alpha);
+}
+
+std::optional<game::coop::Message> CoopGameplayBridge::receiveBattle() {
+  if (battles_.empty())
+    return std::nullopt;
+  game::coop::Message message = std::move(battles_.front());
+  battles_.pop_front();
+  return message;
+}
+
+core::Result<void> CoopGameplayBridge::sendBattle(game::coop::Message message) {
+  return link_->send(message);
 }
 
 } // namespace dwe::app

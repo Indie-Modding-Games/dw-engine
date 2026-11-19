@@ -42,7 +42,7 @@ RejectReason identityMismatch(const Identity& expected, const Identity& actual) 
 
 net::Lane laneFor(const Message& message) {
   if (std::holds_alternative<Commands>(message) || std::holds_alternative<Snapshot>(message) ||
-      std::holds_alternative<ViewState>(message))
+      std::holds_alternative<ViewState>(message) || std::holds_alternative<BattleFrame>(message))
     return net::Lane::Unreliable;
   return net::Lane::Reliable;
 }
@@ -55,11 +55,18 @@ bool directionAllowed(Side receiver, const Message& message) {
       return true;
     if (std::holds_alternative<Ready>(message))
       return true;
+    // A battle the guest's partner fights, and its part in any battle.
+    if (std::holds_alternative<BattleAsk>(message) || std::holds_alternative<BattleAction>(message))
+      return true;
     if (const auto* chunk = std::get_if<ProfileChunk>(&message))
       return chunk->kind == ProfilePayloadKind::GuestSave;
     return false;
   }
   if (std::holds_alternative<JoinState>(message) || std::holds_alternative<Snapshot>(message))
+    return true;
+  if (std::holds_alternative<BattleBegin>(message) ||
+      std::holds_alternative<BattleRefused>(message) ||
+      std::holds_alternative<BattleFrame>(message) || std::holds_alternative<BattleEnd>(message))
     return true;
   if (const auto* chunk = std::get_if<ProfileChunk>(&message))
     return chunk->kind == ProfilePayloadKind::HostSave;

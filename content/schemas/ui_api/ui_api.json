@@ -1,5 +1,5 @@
 {
-  "version": "0.18.0",
+  "version": "0.19.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "The value of a setting the game publishes; nil if it does not publish it.", "signature": "(name: string): any"},
@@ -287,6 +287,30 @@
       {"name": "coop_hud.notice.name_key", "kind": "setting", "value": "text", "summary": "The text key that names the player the notice is about, if they have no name."},
       {"name": "coop_hud.notice.number", "kind": "setting", "value": "number", "summary": "The number that fills {number} in that text key."},
       {"name": "coop_hud.notice.revision", "kind": "setting", "value": "number", "summary": "Goes up with each notice and when it goes: the notice is drawn again."}
+    ],
+    "coop_battle": [
+      {"name": "coop_battle.shown", "kind": "setting", "value": "boolean", "summary": "Whether the host's battle shows on this co-op guest's screen."},
+      {"name": "coop_battle.role", "kind": "setting", "value": "text", "summary": "This player's part in it: starter (their partner fights and takes their orders) or helper (they help with items and cheers)."},
+      {"name": "coop_battle.phase", "kind": "setting", "value": "text", "summary": "Where the battle is: intro, fight, victory, end (the end box) or closing."},
+      {"name": "coop_battle.command", "kind": "setting", "value": "number", "summary": "The order the fighting partner follows now (a command's number)."},
+      {"name": "coop_battle.bag", "kind": "setting", "value": "boolean", "summary": "Whether an item can be thrown now."},
+      {"name": "coop_battle.fighter_count", "kind": "setting", "value": "number", "summary": "How many fighters there are: the partner first, then the enemies."},
+      {"name": "coop_battle.fighter.<n>.name_key", "kind": "setting", "value": "text", "summary": "The text key of a fighter's species name."},
+      {"name": "coop_battle.fighter.<n>.hp", "kind": "setting", "value": "number", "summary": "A fighter's HP now."},
+      {"name": "coop_battle.fighter.<n>.max_hp", "kind": "setting", "value": "number", "summary": "A fighter's most HP."},
+      {"name": "coop_battle.fighter.<n>.down", "kind": "setting", "value": "boolean", "summary": "Whether a fighter is beaten."},
+      {"name": "coop_battle.order_count", "kind": "setting", "value": "number", "summary": "How many orders the starter can give now (none for the helper)."},
+      {"name": "coop_battle.order.<n>.command", "kind": "setting", "value": "number", "summary": "An order's command number, sent with coop_battle_order."},
+      {"name": "coop_battle.order.<n>.label_key", "kind": "setting", "value": "text", "summary": "The text key of an order's name."},
+      {"name": "coop_battle.item_count", "kind": "setting", "value": "number", "summary": "How many kinds of items of this player's bag can be thrown in a battle."},
+      {"name": "coop_battle.item.<n>.id", "kind": "setting", "value": "text", "summary": "An item's id, sent with coop_battle_item."},
+      {"name": "coop_battle.item.<n>.name_key", "kind": "setting", "value": "text", "summary": "The text key of an item's name."},
+      {"name": "coop_battle.item.<n>.count", "kind": "setting", "value": "number", "summary": "How many of an item this player has."},
+      {"name": "coop_battle.revision", "kind": "setting", "value": "number", "summary": "Goes up each time the values above change: the screen is drawn again."},
+      {"name": "coop_battle_order", "kind": "command", "value": "number", "summary": "The starter's order for its partner (a command's number)."},
+      {"name": "coop_battle_cheer", "kind": "command", "value": "none", "summary": "A cheer: charges the finisher as the battle's charge buttons do."},
+      {"name": "coop_battle_item", "kind": "command", "value": "text", "summary": "Throws one of an item (its id) from this player's bag at the fighting partner."},
+      {"name": "coop_battle_close", "kind": "command", "value": "none", "summary": "The starter closes the end box."}
     ],
     "money_box": [
       {"name": "money_box.money", "kind": "setting", "value": "number", "summary": "The player's money."},

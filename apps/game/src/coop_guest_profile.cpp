@@ -2,6 +2,7 @@
 
 #include <dwe/game/partner/state_yaml.hpp>
 #include <dwe/game/save/save_file.hpp>
+#include <dwe/session/battle_adapter.hpp>
 
 #include <format>
 
@@ -54,6 +55,14 @@ core::Result<std::string> hostWorldWithGuestPartner(std::string_view hostSaveTex
       std::string{PartnerSection},
       game::save::SavedSection{.version = game::partner::PartnerStateVersion,
                                .state = game::partner::toYaml(guest->state)});
+  // The partner's moves (known and equipped) are the guest's too: its battles on the host fight
+  // with them (coop_battles.hpp).
+  if (auto parsedGuest = game::save::parseSaveFile(guestSaveText)) {
+    if (const auto moves = parsedGuest->sections.find(session::MovesSaveName);
+        moves != parsedGuest->sections.end()) {
+      host->sections.insert_or_assign(std::string{session::MovesSaveName}, moves->second);
+    }
+  }
   host->header.summary.species = guest->species;
   host->header.summary.nickname = guest->nickname;
   // The copy is the guest's to play, never to save: it names none of the host's slots, so nothing

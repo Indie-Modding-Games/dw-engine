@@ -60,3 +60,4 @@ screens:
   world_map: world_map/document
   ui_notice: ui_notice/document
   coop_hud: coop_hud/document
+  coop_battle: coop_battle/document

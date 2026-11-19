@@ -9,6 +9,7 @@
 #include <dwe/render/renderer.hpp>
 #include <dwe/render/upscale_cache.hpp>
 #include <dwe/rhi/device.hpp>
+#include <dwe/screens/name_keys.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/script/script_vm.hpp>
 #include <dwe/ui/ui.hpp>
@@ -410,6 +411,42 @@ public:
   // and initializeMusic around playMovie; session::SessionMusic::holdForMovie).
   void holdMusicForMovie(bool hold);
 
+  // Co-op battles (play_session_coop.cpp, coop_battles.hpp; docs/architecture/multiplayer.md, §6
+  // decision 3): one battle at a time, on the host's game.
+  [[nodiscard]] BattleScreen& battleScreen() { return battleScreen_; }
+  [[nodiscard]] const BattleScreen& battleScreen() const { return battleScreen_; }
+  // The host: whether a battle cannot start now (one runs, or a screen, a scene or a script holds
+  // the game).
+  [[nodiscard]] bool coopBattleBlocked() const;
+  // The host: starts the guest's battle against the map's NPCs in `npcs` with the guest's partner,
+  // where the guest and its partner stand in this field. This player watches and helps.
+  core::Result<void> startVisitorBattle(const std::vector<std::int32_t>& npcs,
+                                        session::VisitingPartner visitor, bool fixedFight,
+                                        bool predefined);
+  // The guest: the battles its story asks for go to the host (StorySceneGlue::handBattlesOver).
+  void handBattlesToHost(bool on) { storyScenes_.handBattlesOver(on); }
+  [[nodiscard]] std::optional<StorySceneGlue::HandedBattle> takeHandedBattle() {
+    return storyScenes_.takeHandedBattle();
+  }
+  void finishHandedBattle(game::story::BattleOutcome outcome) {
+    storyScenes_.finishHandedBattle(outcome);
+  }
+  // The guest: the handed battle runs in this game, solo (the host could not run it).
+  void runHandedBattleHere() { storyScenes_.runHandedBattleHere(); }
+  // The guest: its partner as the host's battle builds its fighter.
+  [[nodiscard]] session::VisitingPartner coopFighter() const;
+  // The guest: the field holds while the host's battle runs (its figures are the host's).
+  void holdForCoopBattle(bool on) { coopBattleHold_ = on; }
+  [[nodiscard]] bool heldForCoopBattle() const { return coopBattleHold_; }
+  // The guest: what the host's battle left its partner, given as its own battle's result.
+  core::Result<void> applyCoopSpoils(const game::battle::BattleResult& result);
+  // The guest: the items of its bag that can be thrown in a battle, with how many it has.
+  [[nodiscard]] std::vector<std::pair<std::string, std::int32_t>> coopThrowableItems() const;
+  // The guest: takes one of an item from its bag for a throw; false when it has none.
+  bool takeCoopItem(std::string_view itemId);
+  // The text keys of the species' and the items' names, for the guest's battle document.
+  [[nodiscard]] screens::NameKeys coopNameKeys() const;
+
 private:
   // Takes the play options' commands (applyPlayOptions): keeps the value in the settings, saves
   // them and applies it. False for any other command.
@@ -527,6 +564,8 @@ private:
   std::uint32_t mapSerial_ = 0;
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;
+  // The guest's field holds for the host's battle (holdForCoopBattle).
+  bool coopBattleHold_ = false;
   bool evolutionRanLastFrame_ = false;
   // The play options (applyPlayOptions): skip the evolution's scene on confirm or cancel, and the
   // options that change the running game's rules.

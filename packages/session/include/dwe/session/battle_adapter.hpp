@@ -66,6 +66,21 @@ struct MatchMusic {
   }
 };
 
+// A partner from another game that fights in this one's world: a co-op guest's
+// (docs/architecture/multiplayer.md, §6 decision 3), as its own game has it. The adapter builds its
+// fighter from this game's tables, as it builds the partner's.
+struct VisitingPartner {
+  std::string species;
+  // The stats in the original's order (StatBlock), and HP and MP now.
+  game::partner::StatBlock stats;
+  std::int32_t hp = 0;
+  std::int32_t mp = 0;
+  std::int32_t chargeMode = 0;
+  // The positions of its species' moves equipped in the four places.
+  std::array<std::optional<MoveSlot>, game::battle::EquippedSlots> equipped{};
+  game::battle::PartnerCondition condition;
+};
+
 // A battle the game or a script starts: everything but the partner, which the adapter builds from
 // the session.
 struct BattleRequest {
@@ -88,6 +103,9 @@ struct BattleRequest {
   // The story named its enemies (btl.c: loadBattleData's IS_PREDEFINED_BATTLE, the script's
   // variable 250 at 1): it plays the event battle theme unless its first enemy is the boss.
   bool predefined = false;
+  // Another game's partner fights instead of this session's (a co-op guest's battle): the session's
+  // partner takes no part, and finishVisitor gives the result back.
+  std::optional<VisitingPartner> visitor;
 };
 
 // Where a versus battle's two fighters stand, on which map, and the spot off the field the
@@ -145,8 +163,14 @@ public:
   // The partner as a fighter: its species' row, stats, HP, MP and equipped moves.
   [[nodiscard]] core::Result<game::battle::Combatant>
   partnerCombatant(const GameSession& session) const;
-  // Starts a battle with the partner, at the clock's minute, seeded from the session's random
-  // numbers.
+  // This session's partner as a visitor to another game's world (the co-op guest's, for the host
+  // to build its fighter from).
+  [[nodiscard]] VisitingPartner visitorOf(const GameSession& session) const;
+  // A visiting partner as a fighter: its species' row, its stats, HP, MP and equipped moves.
+  [[nodiscard]] core::Result<game::battle::Combatant>
+  visitingCombatant(const VisitingPartner& visitor) const;
+  // Starts a battle with the partner (or the request's visitor), at the clock's minute, seeded from
+  // the session's random numbers.
   core::Result<game::battle::Battle> start(GameSession& session, BattleRequest request);
   // A registered partner as a versus fighter (vs_scene.c: VS_loadFighterEntities): its species'
   // row, its record's stats at full HP and MP, its three techniques and its species' finisher
@@ -169,6 +193,12 @@ public:
   core::Result<BattleAftermath> finish(GameSession& session,
                                        const game::battle::BattleResult& result);
 
+  // A visitor's battle ended (BattleRequest::visitor): the world's part of the result only. The
+  // bits go to this game's bag and the drops land on its map; what the partner gets (stats, care,
+  // time, lives, moves) is the visitor's own game's to apply, and a defeat takes nothing from this
+  // bag.
+  core::Result<BattleAftermath> finishVisitor(GameSession& session,
+                                              const game::battle::BattleResult& result);
   // Throws one of an item of the bag at the partner (inventory.c: selectOptionMenu, main.c:
   // startThrowingItem): only while the battle's bag is available; the item is consumed at once and
   // its effect lands with the throw. The outcome says when the item was not thrown (not in the bag,

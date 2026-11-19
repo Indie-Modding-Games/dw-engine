@@ -3,6 +3,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/net/datagram.hpp>
 
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <span>
@@ -16,7 +17,7 @@ namespace dwe::game::coop {
 using PlayerId = std::uint8_t;
 inline constexpr PlayerId HostPlayerId = 0;
 inline constexpr PlayerId GuestPlayerId = 1;
-inline constexpr std::uint32_t ProtocolVersion = 2;
+inline constexpr std::uint32_t ProtocolVersion = 3;
 
 // A worst-case 255-byte map id plus 48 entities fits in one 1200-byte unreliable datagram,
 // including ChannelPeerLink's one-byte lane tag. JoinState travels reliably and can carry more.
@@ -157,6 +158,189 @@ struct ProfileChunk {
   friend bool operator==(const ProfileChunk&, const ProfileChunk&) = default;
 };
 
+// Co-op battles (docs/architecture/multiplayer.md, §6 decision 3): one battle at a time runs in the
+// shared world, on the host's simulation, and the partner of whoever started it fights. The other
+// player watches it and helps with items from their own bag and cheers for the finisher.
+
+// A battle's fighters and figures are few: the partner and up to three enemies, and the NPCs the
+// battle holds on the map (those that run off as it opens and walk away after it).
+inline constexpr std::size_t MaxBattleEnemies = 3;
+inline constexpr std::size_t MaxBattleFighters = MaxBattleEnemies + 1;
+inline constexpr std::size_t MaxBattleFigures = 24;
+inline constexpr std::size_t MaxBattleMoves = 64;
+inline constexpr std::size_t MaxBattleLeavers = 64;
+// A map NPC slot, or this for the fighting partner.
+inline constexpr std::int16_t PartnerFigureSlot = -1;
+
+// The visiting partner as the guest's game has it, for the host to build its fighter from its own
+// tables (session::VisitingPartner): its species, the stats in the original's order (HP, MP,
+// offense, defense, speed, brain), HP and MP now, charge mode, the move slots of its species' row
+// equipped in the four places (-1 for none), the care values the battle reads and what it knows.
+struct BattleFighterProfile {
+  std::string species;
+  std::array<std::int32_t, 6> stats{};
+  std::int32_t hp = 0;
+  std::int32_t mp = 0;
+  std::uint8_t chargeMode = 1;
+  std::array<std::int8_t, 4> equipped{-1, -1, -1, -1};
+  std::int32_t discipline = 0;
+  std::int32_t tiredness = 0;
+  bool sick = false;
+  bool injured = false;
+  std::vector<std::string> knownMoves;
+
+  friend bool operator==(const BattleFighterProfile&, const BattleFighterProfile&) = default;
+};
+
+// The guest touched an enemy (its map's script started a battle): it asks the host to run it with
+// its partner. `ask` is the guest's own count, which the answer names.
+struct BattleAsk {
+  std::uint32_t ask = 0;
+  std::string mapId;
+  // The map NPC slots the enemies are, in their order, joiners included.
+  std::vector<std::int16_t> enemyNpcs;
+  bool fixedFight = false;
+  bool predefined = false;
+  BattleFighterProfile fighter;
+
+  friend bool operator==(const BattleAsk&, const BattleAsk&) = default;
+};
+
+// A battle began on the host: who started it (that player's partner fights), the guest's ask it
+// answers (0 when the host started it), the map, the NPC slot of each enemy and each fighter's
+// species (the partner's first).
+struct BattleBegin {
+  std::uint32_t battle = 0;
+  PlayerId starter = HostPlayerId;
+  std::uint32_t ask = 0;
+  std::string mapId;
+  std::vector<std::int16_t> enemyNpcs;
+  std::vector<std::string> species;
+  bool fixedFight = false;
+
+  friend bool operator==(const BattleBegin&, const BattleBegin&) = default;
+};
+
+// Why the host did not run the battle the guest asked for.
+enum class BattleRefusal : std::uint8_t {
+  // Another battle runs in the world: the guest watches that one instead.
+  Busy,
+  // The guest is not on the host's map, or its enemies are not there: the guest's game runs it
+  // solo.
+  NotHere,
+  // The host's game could not start it (a screen, a scene or a script holds it, or the start
+  // failed): the guest's game runs it solo.
+  Failed,
+};
+
+struct BattleRefused {
+  std::uint32_t ask = 0;
+  BattleRefusal reason = BattleRefusal::Busy;
+
+  friend bool operator==(const BattleRefused&, const BattleRefused&) = default;
+};
+
+// What the battle screen shows, as the original's battle steps it.
+enum class BattlePhase : std::uint8_t { Intro, Fight, Victory, End, Closing };
+
+// A fighter's bars: HP and MP, their maxima, and whether it is down.
+struct BattleFighterState {
+  std::int32_t hp = 0;
+  std::int32_t mp = 0;
+  std::int32_t maxHp = 0;
+  std::int32_t maxMp = 0;
+  bool down = false;
+
+  friend bool operator==(const BattleFighterState&, const BattleFighterState&) = default;
+};
+
+// A body the battle holds on the map (app::FighterFigure): the partner or an NPC slot, where it
+// stands (integral world units) and faces, the clip it plays and how often it started, whether it
+// stands frozen on its first frame, and its clip's pace in sixteenths.
+struct BattleFigure {
+  std::int16_t slot = PartnerFigureSlot;
+  std::int32_t x = 0;
+  std::int32_t z = 0;
+  std::uint16_t yaw = 0;
+  std::uint16_t clip = 0;
+  std::uint32_t starts = 0;
+  bool frozen = false;
+  std::uint8_t pace = 16;
+
+  friend bool operator==(const BattleFigure&, const BattleFigure&) = default;
+};
+
+// One battle frame as the host shows it (20 a second, unreliable: a lost one is followed by the
+// next). `command` is the partner's current command and `menu` a bit per command the strip offers
+// now (bit n: battle command n); the starter picks from it.
+struct BattleFrame {
+  std::uint32_t battle = 0;
+  std::uint32_t frame = 0;
+  BattlePhase phase = BattlePhase::Intro;
+  std::uint8_t command = 0;
+  std::uint16_t menu = 0;
+  bool bagAvailable = false;
+  bool finisherCharging = false;
+  std::vector<BattleFighterState> fighters;
+  std::vector<BattleFigure> figures;
+
+  friend bool operator==(const BattleFrame&, const BattleFrame&) = default;
+};
+
+// What the guest does in a battle: as its starter, a command of the strip (`value`, the battle's
+// command number) and the end box's close; as either role, an item of its own bag thrown at the
+// fighting partner (`item`, an item id) and a cheer (a press of the finisher's charge).
+enum class BattleActionKind : std::uint8_t { Command, ThrowItem, Cheer, CloseEnd };
+
+struct BattleAction {
+  std::uint32_t battle = 0;
+  BattleActionKind kind = BattleActionKind::Command;
+  std::int32_t value = 0;
+  std::string item;
+
+  friend bool operator==(const BattleAction&, const BattleAction&) = default;
+};
+
+enum class BattleOutcome : std::uint8_t { Victory, Fled, Defeat };
+
+// What the battle left the visiting partner (game::battle::BattleResult's partner side), for the
+// guest's game to apply to it: HP and MP at the end, the stat raises, the moves learned, the care
+// and time it costs, the lives lost, what its brain opened and what the partner did.
+struct BattleSpoils {
+  std::int32_t hp = 0;
+  std::int32_t mp = 0;
+  std::array<std::int32_t, 6> statGains{};
+  std::vector<std::string> learnedMoves;
+  bool injured = false;
+  std::array<std::int32_t, 4> care{}; // happiness, discipline, tiredness, battles
+  std::int32_t food = 0;
+  std::int32_t livesLost = 0;
+  std::int32_t elapsedMinutes = 0;
+  bool hourCrossed = false;
+  std::int32_t lifetimeHoursLost = 0;
+  std::vector<std::uint8_t> commandsLearned;
+  std::int32_t mpDiscountLearned = 0;
+  std::array<std::int32_t, 4> counters{}; // attacks, big hits, blocks, statuses taken
+  bool anyoneHit = false;
+  bool partnerHit = false;
+  std::int64_t frames = 0;
+
+  friend bool operator==(const BattleSpoils&, const BattleSpoils&) = default;
+};
+
+// The battle is over on the host (its end box closed and the beaten enemies gone): how it ended,
+// the NPC slots that left the map after it, the bits it gave the host's bag and, when the guest
+// started it, what it left the guest's partner.
+struct BattleEnd {
+  std::uint32_t battle = 0;
+  BattleOutcome outcome = BattleOutcome::Victory;
+  std::vector<std::int16_t> leftMap;
+  std::int32_t bits = 0;
+  std::optional<BattleSpoils> spoils;
+
+  friend bool operator==(const BattleEnd&, const BattleEnd&) = default;
+};
+
 enum class LeaveReason : std::uint8_t { Quit, Disconnected, SessionEnded };
 struct Leave {
   LeaveReason reason = LeaveReason::Quit;
@@ -165,14 +349,21 @@ struct Leave {
 };
 
 using Message = std::variant<Hello, Welcome, Ready, JoinState, Commands, Snapshot, ViewState, Leave,
-                             ProfileChunk>;
+                             ProfileChunk, BattleAsk, BattleBegin, BattleRefused, BattleFrame,
+                             BattleAction, BattleEnd>;
 
 inline constexpr std::uint8_t HelloKind = 0x60;
 inline constexpr std::uint8_t WelcomeKind = 0x61;
 inline constexpr std::uint8_t JoinStateKind = 0x62;
 inline constexpr std::uint8_t CommandsKind = 0x63;
+inline constexpr std::uint8_t BattleAskKind = 0x64;
+inline constexpr std::uint8_t BattleBeginKind = 0x65;
 inline constexpr std::uint8_t SnapshotKind = 0x66;
+inline constexpr std::uint8_t BattleRefusedKind = 0x67;
+inline constexpr std::uint8_t BattleFrameKind = 0x68;
+inline constexpr std::uint8_t BattleActionMessageKind = 0x69;
 inline constexpr std::uint8_t LeaveKind = 0x6A;
+inline constexpr std::uint8_t BattleEndKind = 0x6B;
 inline constexpr std::uint8_t ViewStateKind = 0x6C;
 inline constexpr std::uint8_t ProfileChunkKind = 0x6D;
 inline constexpr std::uint8_t ReadyKind = 0x6E;

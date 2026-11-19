@@ -2283,6 +2283,20 @@ show:
 The game loop (`game.cpp`) hooks both where it drops the gameplay bridge (`coopLinkLoss`). Tests:
 `apps/game/tests/coop_hud_tests.cpp`.
 
+**Battles together** ([multiplayer, §6.1](../../architecture/multiplayer.md)): `CoopBattles` (`coop_battles.hpp`) runs
+one battle at a time on the host's game. On the guest, `StorySceneGlue::handBattlesOver` hands every battle its story
+asks for to the host as a `BattleAsk`; the host checks it (`game::coop::BattleReferee`), starts it with the guest's
+partner as `session::BattleRequest::visitor` (`PlaySession::startVisitorBattle`; `FieldScene::BattlePartner::CoopGuest`
+draws it on the guest's partner) and tells the guest of every battle it runs (`BattleBegin`, a `BattleFrame` every 3
+ticks, `BattleEnd`). The guest's field holds (`PlaySession::holdForCoopBattle`) and its actors take the frames'
+figures (`FieldScene::holdFighter`; the host's partner is `BattlePartner::CoopHost`); the `coop_battle` document shows
+the life bars, the starter's orders, the cheer and the items of its own bag. On the host, `BattleScreen::visiting`
+blocks its own orders and finisher and takes the guest's (`commandFromVisitor`, `cheer`, `throwLentItem`,
+`closeEnd`); `BattleAdapter::finishVisitor` keeps the bits and drops in the host's world, and the partner's part goes
+back as `BattleSpoils`, which the guest's `BattleAdapter::finish` applies. The `extra` button orders the finisher for a
+starter and cheers for a helper. Tests: `packages/game/coop/tests/battle_tests.cpp`,
+`packages/session/tests/battle_adapter_tests.cpp`.
+
 ## Online versus
 
 "Online versus" appears in the title menu (with the modern skin it is its own row;

@@ -52,6 +52,18 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
     // A flee the story did not ask for has no map change after it: the black screen fades back in.
     scene.field().releaseShade();
   }
+  if (const auto handed = std::exchange(handedOutcome_, std::nullopt)) {
+    scenes.battleFinished(*handed);
+  }
+  if (std::exchange(runHandedHere_, false) && handedWaits_ && handedRequest_) {
+    // The host could not run it: a solo battle here, as with no other player around.
+    const game::story::ScriptedBattle request = *std::exchange(handedRequest_, std::nullopt);
+    handedWaits_ = false;
+    handed_.reset();
+    const bool handOver = std::exchange(handOver_, false);
+    startBattle(scenes, battle, species, scene, request);
+    handOver_ = handOver;
+  }
   if (const auto request = scenes.takeBattleRequest()) {
     startBattle(scenes, battle, species, scene, *request);
   }
@@ -221,6 +233,21 @@ void StorySceneGlue::startBattle(session::StoryScenes& scenes, BattleScreen& bat
       npcs.push_back(static_cast<std::size_t>(joiner));
     }
   }
+  if (handOver_) {
+    if (npcs.empty()) {
+      scenes.battleFinished(game::story::BattleOutcome::NotStarted);
+      return;
+    }
+    HandedBattle handed{
+        .npcs = {}, .fixedFight = request.fixedFight, .predefined = request.predefined};
+    for (const std::size_t npc : npcs) {
+      handed.npcs.push_back(static_cast<std::int32_t>(npc));
+    }
+    handed_ = std::move(handed);
+    handedRequest_ = request;
+    handedWaits_ = true;
+    return;
+  }
   auto started = [&]() -> core::Result<void> {
     if (species == nullptr || npcs.empty()) {
       return core::fail("no enemy of the map's NPCs");
@@ -239,6 +266,21 @@ void StorySceneGlue::startBattle(session::StoryScenes& scenes, BattleScreen& bat
     return;
   }
   storyBattle_ = true;
+}
+
+void StorySceneGlue::finishHandedBattle(game::story::BattleOutcome outcome) {
+  if (!std::exchange(handedWaits_, false)) {
+    return;
+  }
+  handed_.reset();
+  handedRequest_.reset();
+  handedOutcome_ = outcome;
+}
+
+void StorySceneGlue::runHandedBattleHere() {
+  if (handedWaits_) {
+    runHandedHere_ = true;
+  }
 }
 
 } // namespace dwe::app
