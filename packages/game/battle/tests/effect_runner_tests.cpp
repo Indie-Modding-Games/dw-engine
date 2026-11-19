@@ -1028,9 +1028,22 @@ constexpr std::string_view FindCheck = R"(  op: push_address
 // The made-up breath with its instance at the origin and a check box of no size (the instance's
 // place at instance+4 and the extent at base+0x20, which the breath leaves unset); with `line`, its
 // check is a line to the source instead, or the box asked through find_hit_entity.
+// With `goesOn`, a hit no longer ends it: it checks on every frame until it gives up.
 enum class BreathCheck : std::uint8_t { Box, Line, Find };
-EffectScript placedBreath(BreathCheck check) {
+EffectScript placedBreath(BreathCheck check, bool goesOn = false) {
   std::string checked{ScriptYaml};
+  if (goesOn) {
+    constexpr std::string_view EndsOnHit = R"(- at: "0x0280"
+  op: load_immediate
+  value: -1
+- at: "0x0290"
+  op: apply_operator
+  variable: "instance+0x0000"
+  width: 4
+  operator: set
+)";
+    checked.erase(checked.find(EndsOnHit), EndsOnHit.size());
+  }
   if (check == BreathCheck::Line) {
     checked.replace(checked.find(BoxCheck), BoxCheck.size(), LineCheck);
   } else if (check == BreathCheck::Find) {
@@ -1156,6 +1169,34 @@ TEST_CASE("a scripted flight lands on the frame the move's effect touches the de
   CHECK_FALSE(farFlights.landing("made_up_breath", 0, 1, std::nullopt).has_value());
   CHECK_FALSE(nearFlights.landing("no_effect", 0, 1, std::nullopt).has_value());
   CHECK_FALSE(nearFlights.landing("made_up_breath", 1, 1, std::nullopt).has_value());
+}
+
+TEST_CASE("a scripted flight keeps the later contacts of a check that runs over several frames") {
+  // battle_effect.c: Dynamite Kick's apply_line_hit runs on four frames whatever it finds: a
+  // fighter that blocked the first contact (BTL_tickAttackHits clears its isHit) is touched again
+  // on the next ones. The made-up breath that goes on after its hit checks frames 0 and 1.
+  const auto source = [](std::string_view move) -> std::optional<EffectScript> {
+    if (move == "made_up_breath") {
+      return placedBreath(BreathCheck::Line);
+    }
+    if (move == "made_up_kick") {
+      return placedBreath(BreathCheck::Line, true);
+    }
+    return std::nullopt;
+  };
+  const StandingPair near{500, 50};
+  const dwe::game::battle::ScriptedFlights flights{source, near};
+  const std::optional<dwe::game::battle::EffectLanding> kick =
+      flights.landing("made_up_kick", 0, 1, std::nullopt);
+  REQUIRE(kick.has_value());
+  CHECK(kick->frame == 0);
+  CHECK(kick->laterContacts == std::vector<std::int32_t>{1});
+  // The breath ends on its hit: one contact, on the same frame.
+  const std::optional<dwe::game::battle::EffectLanding> breath =
+      flights.landing("made_up_breath", 0, 1, std::nullopt);
+  REQUIRE(breath.has_value());
+  CHECK(breath->frame == 0);
+  CHECK(breath->laterContacts.empty());
 }
 
 TEST_CASE("a scripted flight aimed at one fighter touches a bystander in its reach") {

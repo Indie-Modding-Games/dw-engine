@@ -29,6 +29,10 @@ struct EffectLanding {
   // (battle_effect.c: BTL_faceTargetEntity, the scripts' face_target): Spit Fire does it every
   // frame until its fire leaves.
   std::vector<std::int32_t> facingTarget;
+  // The later attack frames on which the effect's checks touch the fighter again once it is free
+  // to be touched: a check that runs over several frames touches a fighter that blocked the
+  // contact before (BTL_tickAttackHits clears its isHit), never one still in its hit reaction.
+  std::vector<std::int32_t> laterContacts;
 
   bool operator==(const EffectLanding&) const = default;
 };
@@ -85,7 +89,8 @@ public:
 
 // The flights of the techniques' effect scripts: each question runs the move's script on its own
 // with the attacker and the defender where the battle has them (EffectRunner::touchBodies), frame
-// by frame, until its hit checks touch the defender.
+// by frame, until its hit checks touch the defender, then on to the script's end for the later
+// contacts, the defender freed after each touch as a block frees it.
 class ScriptedFlights final : public AttackFlights {
 public:
   // The extracted script of a move, nothing for a move without one.

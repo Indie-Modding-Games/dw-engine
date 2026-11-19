@@ -172,6 +172,11 @@ struct AttackInFlight {
   // The fighter the effect aims at when the defender is a bystander it touches on its way
   // (AttackFlights::landingOn); nothing when it aims at the defender.
   std::optional<FighterId> aim;
+  // The later attack frames on which the effect touches the defender again (EffectLanding), and
+  // whether it already touched it once: a later contact reaches a fighter that blocked, and passes
+  // one still in its hit reaction by.
+  std::vector<std::int32_t> laterContacts;
+  bool contacted = false;
 };
 
 // battle_effect.c: BTL_addAuraProjectile, BTL_tickAuraProjectile: the shot a flattened fighter

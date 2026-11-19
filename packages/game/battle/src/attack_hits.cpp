@@ -377,7 +377,28 @@ bool refreshLanding(const BattleContext& context, AttackInFlight& attack, std::i
   attack.hitPoint = landing->at;
   attack.touch = touchOf(*landing);
   attack.facingTarget = landing->facingTarget;
+  attack.laterContacts = landing->laterContacts;
   return true;
+}
+
+// battle_effect.c: BTL_applyLineAttackHit and the other checks, run again on a later frame: the
+// attack touches its defender again, unless it is still in its hit reaction (isHit) or down.
+// Whatever it touches it reaches, as a first contact does.
+bool touchesAgain(const BattleContext& context, const AttackInFlight& attack) {
+  const Fighter& defender = context.fighter(attack.defender);
+  return !defender.fainted && !defender.struck;
+}
+
+// The same attack on its way to its next contact with the defender, if its effect has one.
+std::optional<AttackInFlight> nextContact(const AttackInFlight& attack) {
+  if (!attack.age || attack.laterContacts.empty()) {
+    return std::nullopt;
+  }
+  AttackInFlight next = attack;
+  next.contacted = true;
+  next.framesLeft = std::max(next.laterContacts.front() - *next.age, 0);
+  next.laterContacts.erase(next.laterContacts.begin());
+  return next;
 }
 
 // An attack leaving `id` for `defender`: it lands when the move's effect touches the defender,
@@ -396,7 +417,9 @@ AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId de
                         .hitPoint = std::nullopt,
                         .touch = std::nullopt,
                         .facingTarget = {},
-                        .aim = std::nullopt};
+                        .aim = std::nullopt,
+                        .laterContacts = {},
+                        .contacted = false};
   if (!travels) {
     return flight;
   }
@@ -416,6 +439,7 @@ AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId de
     flight.hitPoint = landing->at;
     flight.touch = touchOf(*landing);
     flight.facingTarget = landing->facingTarget;
+    flight.laterContacts = landing->laterContacts;
     return flight;
   }
   const std::int64_t distance =
@@ -561,8 +585,12 @@ void tickAttacksInFlight(BattleContext& context) {
     if (attack.age) {
       // battle_effect.c: BTL_tickEFEEngine checks the effect's hit boxes against where the fighters
       // stand on each frame: a defender walking into the effect is touched sooner, one walking
-      // away later. Where the effect would never touch it now, the last answer holds.
-      static_cast<void>(refreshLanding(context, attack, *attack.age));
+      // away later. Where the effect would never touch it now, the last answer holds. Once it
+      // touched the defender the later contacts keep their frames: the defender stands in its
+      // block or its hit reaction.
+      if (!attack.contacted) {
+        static_cast<void>(refreshLanding(context, attack, *attack.age));
+      }
       ++*attack.age;
     }
     if (attack.framesLeft > 0) {
@@ -570,7 +598,13 @@ void tickAttacksInFlight(BattleContext& context) {
       stillFlying.push_back(attack);
       continue;
     }
+    if (std::optional<AttackInFlight> next = nextContact(attack)) {
+      stillFlying.push_back(std::move(*next));
+    }
     Fighter& defender = context.fighter(attack.defender);
+    if (attack.contacted && !touchesAgain(context, attack)) {
+      continue;
+    }
     // A fighter in its hit reaction cannot be hit again (isHit): what reaches it then is lost
     // (an assumption).
     if (attack.aim && (defender.fainted || defender.struck)) {

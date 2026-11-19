@@ -128,6 +128,8 @@ std::uint64_t Battle::checksum() const {
     hash.add(attack.defender);
     hash.add(attack.move);
     hash.add(attack.framesLeft);
+    hash.add(attack.contacted);
+    hash.add(attack.laterContacts.size());
   }
   hash.add(state_.sharedCooldown);
   hash.add(state_.rivalSharedCooldown);
