@@ -417,6 +417,9 @@ local function refresh_coop(document)
       connection_closed = "main_menu.coop.error.connection_closed",
       content_identity_unavailable = "main_menu.coop.error.content_identity_unavailable",
       ruleset_unavailable = "main_menu.coop.error.ruleset_unavailable",
+      no_host_transport = "main_menu.coop.error.no_host_transport",
+      choose_saved_game = "main_menu.coop.error.choose_saved_game",
+      host_save_map_mismatch = "main_menu.coop.error.host_save_map_mismatch",
     }
     local message = errorKey[error] and t(errorKey[error]) or error
     text = text .. " " .. message

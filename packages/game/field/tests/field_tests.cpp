@@ -232,6 +232,42 @@ TEST_CASE("map entry keeps the guest beside the host in the shared map") {
   CHECK(guest->position != glm::vec3{500.0F, 0.0F, 0.0F});
 }
 
+TEST_CASE("the guest's partner follows the guest, not the host") {
+  using dwe::game::field::GuestPlayerId;
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  const MapDocument map = roomMap("room");
+  field.enterMapAt(map, at(-1500.0F, 0.0F));
+  CHECK_FALSE(field.addPartner(GuestPlayerId, "models/guest_partner", 120.0F));
+  REQUIRE(field.addPlayer(GuestPlayerId, at(0.0F, 0.0F)));
+  REQUIRE(field.addPartner(GuestPlayerId, "models/guest_partner", 120.0F));
+  const auto entity = field.partnerEntity(GuestPlayerId);
+  REQUIRE(entity.has_value());
+  CHECK(world.registry().get<dwe::scene::ModelRef>(*entity).asset == "models/guest_partner");
+  const auto placed = field.partner(GuestPlayerId);
+  REQUIRE(placed.has_value());
+  CHECK(glm::distance(placed->position, glm::vec3{0.0F, 0.0F, 0.0F}) < 400.0F);
+
+  CHECK(field.setInput(GuestPlayerId, {.stick = {1.0F, 0.0F}, .run = true}));
+  run(field, 1.0F);
+  const auto guest = field.player(GuestPlayerId);
+  const auto partner = field.partner(GuestPlayerId);
+  REQUIRE(guest.has_value());
+  REQUIRE(partner.has_value());
+  // It went after the guest (to +x), far from where it started and from the host on the left.
+  CHECK(partner->position.x > placed->position.x + 300.0F);
+  CHECK(partner->motion != Motion::Idle);
+  CHECK(glm::distance(partner->position, guest->position) < 1000.0F);
+
+  // A map entry brings it back beside its player.
+  field.enterMapAt(map, at(1000.0F, 0.0F));
+  const auto moved = field.player(GuestPlayerId);
+  const auto followed = field.partner(GuestPlayerId);
+  REQUIRE(moved.has_value());
+  REQUIRE(followed.has_value());
+  CHECK(glm::distance(followed->position, moved->position) < 400.0F);
+}
+
 TEST_CASE("the same input gives the same move at any tick rate") {
   auto map = roomMap("room");
   fill(map, {.column = 60, .row = 30}, {.column = 60, .row = 69}, Blocked);

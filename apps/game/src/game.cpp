@@ -967,7 +967,9 @@ int runGame(const Options& requested) {
   std::unique_ptr<CoopGameplayBridge> coopBridge;
   std::unique_ptr<NetworkFieldController> coopClientController;
   NetworkFieldController* coopHostController = nullptr;
-  PlaySession* coopAttachedSession = nullptr;
+  // The game whose field refused the guest, so it is not tried again every frame.
+  const PlaySession* coopAttachFailed = nullptr;
+  std::uint64_t coopBridgeLink = 0;
   std::uint32_t coopWorldTick = 0;
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
@@ -1694,19 +1696,38 @@ int runGame(const Options& requested) {
         titleAfterMovie = replayBootMovie;
       }
       PlaySession* play = flow.playing();
+      // The bridge borrows the connection's link, which is freed when the room closes or another
+      // one opens, and serves the game being played. Drop it when either goes (the title screen
+      // too) so it never polls a dead link; a new game or link gets a new one below.
+      if (coopBridge != nullptr &&
+          (play == nullptr || !coop.connected() || coop.link() == nullptr ||
+           coop.linkGeneration() != coopBridgeLink)) {
+        coopBridge.reset();
+        coopClientController.reset();
+        if (coopHostController != nullptr)
+          players.setGuestLink(PlayerLink::Dropped);
+        coop.takeLinkBack();
+        core::logInfo("coop: the link or the game ended, the gameplay bridge was dropped");
+      }
+      if (play == nullptr)
+        coopAttachFailed = nullptr;
       if (play != nullptr && coop.connected() && coopBridge == nullptr && coop.link() != nullptr) {
         if (coop.isHost()) {
-          auto controller = std::make_unique<NetworkFieldController>();
-          coopHostController = controller.get();
-          if (auto added = play->scene().addCoopGuest(); !added) {
-            core::logError("coop: could not add guest to the field: {}", added.error().message);
-            coopHostController = nullptr;
-          } else if (!players.addGuest("Guest", std::move(controller), PlayerLink::Connected)) {
-            core::logError("coop: the player registry rejected the guest slot");
-            coopHostController = nullptr;
+          if (coopHostController == nullptr) {
+            // The registry owns the guest's controller for the whole run; a later bridge (another
+            // game or link) reconnects the same slot.
+            auto controller = std::make_unique<NetworkFieldController>();
+            NetworkFieldController* raw = controller.get();
+            if (players.addGuest("Guest", std::move(controller), PlayerLink::Connected)) {
+              coopHostController = raw;
+            } else {
+              core::logError("coop: the player registry rejected the guest slot");
+            }
           } else {
+            players.setGuestLink(PlayerLink::Connected);
+          }
+          if (coopHostController != nullptr) {
             coopBridge = std::make_unique<CoopGameplayBridge>(*coop.link(), *coopHostController);
-            coopAttachedSession = play;
             core::logInfo("coop: guest commands now drive player 2 in the host field");
           }
         } else {
@@ -1714,13 +1735,24 @@ int runGame(const Options& requested) {
           coopBridge = std::make_unique<CoopGameplayBridge>(*coop.link(), *coopClientController);
           core::logInfo("coop: local field commands are connected to the host");
         }
+        if (coopBridge != nullptr) {
+          // From here the bridge alone reads the link; the lobby draining it too starved the
+          // bridge of snapshots and guest commands (remote players drew as bare shadows).
+          coopBridgeLink = coop.linkGeneration();
+          coop.handLinkToPlay();
+        }
       }
-      if (play != nullptr && coop.connected() && coop.isHost() && coopBridge != nullptr &&
-          coopAttachedSession != play) {
-        if (auto added = play->scene().addCoopGuest(); !added) {
-          core::logError("coop: could not add guest to the new field: {}", added.error().message);
-        } else {
-          coopAttachedSession = play;
+      // The guest and its partner in the host's field, in every game the bridge serves. The field
+      // says what is missing (a pointer to the last game could match a new one at its address).
+      if (play != nullptr && coop.isHost() && coopBridge != nullptr && coopAttachFailed != play) {
+        const game::field::Field& field = play->scene().field();
+        const bool partnerMissing =
+            !coop.remotePartnerSpecies().empty() && !field.partner(game::field::GuestPlayerId);
+        if (!field.player(game::field::GuestPlayerId) || partnerMissing) {
+          if (auto added = play->scene().addCoopGuest(coop.remotePartnerSpecies()); !added) {
+            core::logError("coop: could not add the guest to the field: {}", added.error().message);
+            coopAttachFailed = play;
+          }
         }
       }
       if (coopBridge != nullptr) {
@@ -1991,7 +2023,7 @@ int runGame(const Options& requested) {
         if (const auto start = title.takeStart()) {
           if (coop.selectingGuestProfile() || coop.selectingHostStart()) {
             if (!start->load) {
-              coop.reportError("Choose a saved game in this room first.");
+              coop.reportError("choose_saved_game");
               title.show();
               continue;
             }
@@ -2079,23 +2111,30 @@ int runGame(const Options& requested) {
     if (PlaySession* play = flow.playing()) {
       if (coopBridge != nullptr && coop.connected() && !coop.isHost()) {
         std::optional<game::field::CharacterState> hostState;
+        std::optional<game::field::CharacterState> hostPartnerState;
         if (const auto presented = coopBridge->presentedWorld(drawAlpha);
             presented && presented->mapId == play->scene().field().mapId()) {
-          const auto hostPlayer = std::ranges::find_if(presented->entities, [](const auto& entity) {
-            return entity.owner == game::coop::HostPlayerId &&
-                   entity.role == game::coop::EntityRole::Player;
-          });
-          if (hostPlayer != presented->entities.end()) {
+          const auto hostBody =
+              [&](game::coop::EntityRole role) -> std::optional<game::field::CharacterState> {
+            const auto found = std::ranges::find_if(presented->entities, [&](const auto& entity) {
+              return entity.owner == game::coop::HostPlayerId && entity.role == role;
+            });
+            if (found == presented->entities.end())
+              return std::nullopt;
             const scene::Motion motion =
-                hostPlayer->motion == game::coop::Motion::Run    ? scene::Motion::Run
-                : hostPlayer->motion == game::coop::Motion::Walk ? scene::Motion::Walk
-                                                                 : scene::Motion::Idle;
-            hostState = game::field::CharacterState{
-                .position = hostPlayer->position, .yaw = hostPlayer->yaw, .motion = motion};
-          }
+                found->motion == game::coop::Motion::Run    ? scene::Motion::Run
+                : found->motion == game::coop::Motion::Walk ? scene::Motion::Walk
+                                                            : scene::Motion::Idle;
+            return game::field::CharacterState{
+                .position = found->position, .yaw = found->yaw, .motion = motion};
+          };
+          hostState = hostBody(game::coop::EntityRole::Player);
+          hostPartnerState = hostBody(game::coop::EntityRole::Partner);
         }
-        if (auto shown = play->scene().presentCoopHost(hostState); !shown) {
-          core::logWarning("coop: could not present host player: {}", shown.error().message);
+        if (auto shown = play->scene().presentCoopHost(hostState, hostPartnerState,
+                                                       coop.remotePartnerSpecies());
+            !shown) {
+          core::logWarning("coop: could not present the host pair: {}", shown.error().message);
         }
       }
       play->update(sessionCommands, autotest.get(), frameStats, gameSeconds, drawAlpha);

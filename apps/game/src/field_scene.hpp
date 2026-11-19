@@ -710,12 +710,16 @@ public:
   }
   // The field the story's scripted moves drive (game::field::Field::holdForScript).
   [[nodiscard]] game::field::Field& field() { return *field_; }
-  // Adds and renders the connected guest as a second field-controlled player. The host uses this
-  // only after a peer has completed the coop handshake.
-  core::Result<void> addCoopGuest();
-  // Presents the host player from an interpolated network snapshot on the guest instance. It is
-  // render-only and does not enter local collision, triggers or world simulation.
-  core::Result<void> presentCoopHost(std::optional<game::field::CharacterState> state);
+  // Adds and renders the connected guest as a second field-controlled player, with its partner of
+  // `partnerSpecies` following it (none when empty). The host uses this only after a peer has
+  // completed the coop handshake. Calling it again adds only what is missing.
+  core::Result<void> addCoopGuest(std::string_view partnerSpecies = {});
+  // Presents the host player and its partner (of `partnerSpecies`) from an interpolated network
+  // snapshot on the guest instance. It is render-only and does not enter local collision, triggers
+  // or world simulation; a missing state hides that body.
+  core::Result<void> presentCoopHost(std::optional<game::field::CharacterState> player,
+                                     std::optional<game::field::CharacterState> partner = {},
+                                     std::string_view partnerSpecies = {});
   // The map's sprite objects, which scripts and the gym's courses move (overworld.c:
   // tickMoveObjectTo, moveMapObjectsWithLimit).
   [[nodiscard]] render::MapDepthLayers& mapLayers() { return mapRenderer_->layers(); }
@@ -1199,6 +1203,21 @@ private:
   std::vector<std::unique_ptr<Actor>> coopGuestActors_;
   std::unique_ptr<Actor> coopHostProxyActor_;
   bool coopHostProxyShown_ = false;
+  // A remote partner drawn at its species' size: the guest's on the host (a field body that follows
+  // the guest), the host's on the guest (from snapshots).
+  struct CoopPartner {
+    std::unique_ptr<Actor> actor;
+    std::string species;
+    std::string failedSpecies;
+    float scale = 1.0F;
+    bool shown = false;
+  };
+  core::Result<void> addCoopGuestPlayer();
+  void placeCoopProxy(scene::Entity entity, const game::field::CharacterState& state);
+  core::Result<void> loadCoopPartner(CoopPartner& partner, scene::Entity entity,
+                                     std::string_view species);
+  CoopPartner coopGuestPartner_;
+  CoopPartner coopHostPartner_;
   // The field rules' partner mover, for a partner loaded again with another species' model.
   game::field::MoverRules partnerMover_;
   std::function<float(std::string_view)> speciesRadius_;

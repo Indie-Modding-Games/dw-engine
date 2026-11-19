@@ -81,6 +81,13 @@ core::Result<game::coop::Snapshot> makeCoopSnapshot(const game::field::Field& fi
       return std::unexpected{state.error()};
     snapshot.entities.push_back(*state);
   }
+  if (const auto guestPartner = field.partner(game::coop::GuestPlayerId)) {
+    auto state = toCoopEntityState(4, game::coop::GuestPlayerId, game::coop::EntityRole::Partner,
+                                   *guestPartner);
+    if (!state)
+      return std::unexpected{state.error()};
+    snapshot.entities.push_back(*state);
+  }
   return snapshot;
 }
 

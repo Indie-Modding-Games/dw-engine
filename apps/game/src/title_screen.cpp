@@ -94,6 +94,17 @@ void TitleScreen::showBoot() {
   showMenu(true);
 }
 
+void TitleScreen::returnToCoop() {
+  listShown_ = false;
+  ui_->hide(SaveSlotsDocument);
+  ui_->hide(DialogDocument);
+  ui_->hide(NewGameRulesDocument);
+  ui_->hide(NewGameModeDocument);
+  ui_->setSetting("title.resume_coop", true);
+  ui_->show(MainMenuDocument, true);
+  ui_->setSetting("title.resume_coop", false);
+}
+
 void TitleScreen::showMenu(bool boot, bool afterSkinPicker) {
   listShown_ = false;
   landing_ = false;

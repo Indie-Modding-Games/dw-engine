@@ -4,7 +4,9 @@
 #include <dwe/game/coop/profile_transfer.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -27,7 +29,12 @@ public:
   void tick(double nowSeconds);
   [[nodiscard]] bool active() const { return active_; }
   [[nodiscard]] game::coop::CoopLink* link() { return connection_.link(); }
+  [[nodiscard]] std::uint64_t linkGeneration() const { return connection_.linkGeneration(); }
+  void handLinkToPlay() { connection_.handLinkToPlay(); }
+  void takeLinkBack() { connection_.takeLinkBack(); }
   [[nodiscard]] bool connected() const { return connection_.connected(); }
+  // The species of the other player's partner, from the save they sent (empty until it arrives).
+  [[nodiscard]] std::string_view remotePartnerSpecies() const { return remotePartnerSpecies_; }
   [[nodiscard]] bool isHost() const { return isHost_; }
   [[nodiscard]] bool guestReady() const { return remoteReady_; }
   [[nodiscard]] bool takeStartRequested() { return std::exchange(startRequested_, false); }
@@ -66,6 +73,7 @@ private:
   game::coop::ProfileAssembler hostAssembler_;
   std::optional<std::string> guestSaveText_;
   std::optional<std::string> hostSaveText_;
+  std::string remotePartnerSpecies_;
   std::optional<game::coop::JoinState> remoteJoinState_;
   std::optional<std::string> remoteStartText_;
 };

@@ -2,8 +2,10 @@
 
 #include <dwe/game/coop/link.hpp>
 
+#include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -40,6 +42,15 @@ public:
   [[nodiscard]] std::string_view error() const { return error_; }
   [[nodiscard]] game::coop::CoopLink* link() { return link_.get(); }
   [[nodiscard]] const game::coop::CoopLink* link() const { return link_.get(); }
+  // Changes whenever the link is replaced or dropped, so whoever kept a pointer to the old one can
+  // tell it is gone (a freed link's address may be reused by the next one).
+  [[nodiscard]] std::uint64_t linkGeneration() const { return generation_; }
+  // The link has one inbox. Once the play session's gameplay bridge reads it, the lobby must not:
+  // draining it too starved the bridge of snapshots and guest commands, so remote players drew as
+  // bare shadows. A new link (another room) goes back to the lobby on its own.
+  void handLinkToPlay() { playLink_ = generation_; }
+  void takeLinkBack() { playLink_.reset(); }
+  [[nodiscard]] bool linkInPlay() const { return link_ != nullptr && playLink_ == generation_; }
 
 private:
   bool join(std::string_view code);
@@ -51,6 +62,8 @@ private:
   View view_ = View::Closed;
   std::string typed_;
   std::string error_;
+  std::uint64_t generation_ = 0;
+  std::optional<std::uint64_t> playLink_;
 };
 
 [[nodiscard]] std::string_view coopConnectionViewName(CoopConnection::View view);
