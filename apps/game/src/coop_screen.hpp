@@ -4,7 +4,9 @@
 #include <dwe/game/coop/profile_transfer.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -27,6 +29,9 @@ public:
   void tick(double nowSeconds);
   [[nodiscard]] bool active() const { return active_; }
   [[nodiscard]] game::coop::CoopLink* link() { return connection_.link(); }
+  [[nodiscard]] std::uint64_t linkGeneration() const { return connection_.linkGeneration(); }
+  void handLinkToPlay() { connection_.handLinkToPlay(); }
+  void takeLinkBack() { connection_.takeLinkBack(); }
   [[nodiscard]] bool connected() const { return connection_.connected(); }
   [[nodiscard]] bool isHost() const { return isHost_; }
   [[nodiscard]] bool guestReady() const { return remoteReady_; }

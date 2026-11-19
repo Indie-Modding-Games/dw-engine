@@ -71,6 +71,7 @@ void CoopConnection::close() {
   if (link_ && view_ == View::Connected)
     link_->leave();
   link_.reset();
+  ++generation_;
   peer_.reset();
   typed_.clear();
   error_.clear();
@@ -89,6 +90,7 @@ bool CoopConnection::host() {
     return false;
   }
   link_.reset();
+  ++generation_;
   peer_.reset();
   error_.clear();
   peer_ = desc_.host();
@@ -104,6 +106,7 @@ bool CoopConnection::host() {
   }
   link_ =
       std::make_unique<game::coop::CoopLink>(game::coop::CoopLink::host(*peer_, desc_.identity));
+  ++generation_;
   view_ = View::Hosting;
   return true;
 }
@@ -111,6 +114,7 @@ bool CoopConnection::host() {
 void CoopConnection::beginJoin() {
   peer_.reset();
   link_.reset();
+  ++generation_;
   error_.clear();
   typed_.clear();
   view_ = View::JoinEntry;
@@ -145,6 +149,7 @@ bool CoopConnection::join(std::string_view code) {
   }
   link_ = std::make_unique<game::coop::CoopLink>(
       game::coop::CoopLink::guest(*peer_, desc_.identity, "Guest"));
+  ++generation_;
   view_ = View::Joining;
   return true;
 }

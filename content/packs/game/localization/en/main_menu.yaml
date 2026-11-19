@@ -54,6 +54,9 @@ coop.error.no_direct_route: "The computers could not establish a direct connecti
 coop.error.connection_closed: "The connection to the other player was closed."
 coop.error.content_identity_unavailable: "Could not verify the installed content identity."
 coop.error.ruleset_unavailable: "Could not load the game rules."
+coop.error.no_host_transport: "Hosting is not configured."
+coop.error.choose_saved_game: "Choose a saved game in this room first."
+coop.error.host_save_map_mismatch: "The host's save is on a different map than the room start."
 coop.code: "Code:"
 coop.room: "Room code:"
 # Opens the in-game options page over the title screen.

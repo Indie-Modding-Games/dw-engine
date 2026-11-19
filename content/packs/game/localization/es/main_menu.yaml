@@ -54,6 +54,9 @@ coop.error.no_direct_route: "No se pudo establecer una conexión directa entre l
 coop.error.connection_closed: "La conexión con el otro jugador se cerró."
 coop.error.content_identity_unavailable: "No se pudo comprobar la identidad del contenido instalado."
 coop.error.ruleset_unavailable: "No se pudieron cargar las reglas del juego."
+coop.error.no_host_transport: "La conexión para crear salas no está configurada."
+coop.error.choose_saved_game: "Primero elige una partida guardada en esta sala."
+coop.error.host_save_map_mismatch: "La partida del anfitrión está en otro mapa distinto al del inicio de la sala."
 coop.code: "Código:"
 coop.room: "Código de sala:"
 # Abre la página de opciones de la partida sobre la portada.
