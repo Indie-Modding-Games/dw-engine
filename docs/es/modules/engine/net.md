@@ -11,8 +11,9 @@ señalización. Depende de `core` y, por dentro, de libdatachannel; no sabe nada
 |---|---|
 | `PeerLink` | Un extremo de la conexión con el otro par, con dos carriles (`Lane`): `Reliable` (cada mensaje llega una vez y en orden) y `Unreliable` (puede llegar tarde, desordenado o nunca). Nada bloquea: `poll(now)` lo mueve y los mensajes esperan en él. Dice su estado (`Connecting`, `Open`, `Failed`), por qué falló (`PeerFailure`), cuándo oyó al otro por última vez, el código de la sala y si el otro ya llegó a ella |
 | `RtcPeerLink` | El enlace de verdad: WebRTC con canales de datos (libdatachannel). `host(settings, open)` crea una sala en el servidor de señalización y ofrece; `join(settings, code, open)` entra con el código y responde. Intercambian sus candidatos ICE por el servidor y, cuando los dos canales están abiertos, le dicen al servidor que cierre la sala y siguen de par a par. Carril fiable: canal `control` (fiable y ordenado); sin garantías: canal `inputs` (desordenado, sin reenvíos). Manda un byte `0x00` cada 250 ms por `inputs` para que el otro sepa que sigue ahí |
-| `RtcSettings` | El servidor de señalización (`ws://` o `wss://`; vacío = no hay), los servidores ICE (`stun:`, más adelante `turn:`) y cuánto pueden tardar los dos en abrir una ruta una vez están en la sala (30 s) |
-| `SignalClient`, `SignalSocket`, `openWebSocket` | El lado del juego del protocolo de señalización ([versus-signal](https://github.com/Indie-Modding-Games/dw-engine/tree/main/apps/versus-signal)): rutas `/v1/host` y `/v1/join/<código>`, mensajes JSON `room`, `peer`, `joined`, `signal`, `done` y `error`. El socket es el cliente WebSocket de libdatachannel; los tests ponen uno en memoria |
+| `RtcSettings` | El servidor de señalización (`ws://` o `wss://`; vacío = no hay), los servidores ICE (`stun:` y `turn:`), `relayOnly` (solo candidatos de relevo: el otro par nunca sabe la dirección de esta máquina) y cuánto pueden tardar los dos en abrir una ruta una vez están en la sala (30 s). Los relevos que da el servidor con `room` o `joined` (`IceServer`, credenciales de corta vida) se suman a los servidores ICE como URLs `turn:` UDP (`relayUrls`): el agente ICE de libdatachannel no hace relevo por TCP ni TLS |
+| `RoomSession`, `RoomPhase` | La fase de una sala (`room_session.hpp`): Connecting, Open, Connected, Ready, Playing, Closed. `observe(link)` sigue al enlace (su código, el otro par, su fallo); los flujos dicen `markReady`, `markPlaying` y `close`. El anfitrión de una sala pública manda cada uno al directorio con su token (`stateUrl`, un `SignalRequest` cada vez); un aviso que falla queda en el registro y la sala sigue |
+| `SignalClient`, `SignalSocket`, `openWebSocket` | El lado del juego del protocolo de señalización ([versus-signal](https://github.com/Indie-Modding-Games/dw-engine/tree/main/apps/versus-signal)): rutas `/v1/host` (con `PublicHost`: nombre, icono, clave de compatibilidad y modo de una sala pública) y `/v1/join/<código>`, mensajes JSON `room` (con el token de una sala pública y los relevos), `peer`, `joined` (con los relevos), `signal`, `done` y `error`. `SignalRequest`, `RoomListRequest` y `ServerInfoRequest` preguntan una cosa al servidor por un socket propio (un aviso de estado, la lista pública, `/v1/info`). El socket es el cliente WebSocket de libdatachannel; los tests ponen uno en memoria |
 | `normalizedRoomCode` | Los códigos de sala: cuatro caracteres de `23456789ABCDEFGHJKLMNPQRSTUVWXYZ` (sin 0, 1, O ni I, que se confunden). Acepta minúsculas, espacios y guiones; lo que no puede ser un código no se manda |
 | `DatagramLink`, `ChannelPeerLink` | Un enlace de datagramas sin garantías (ninguno pasa de `MaxDatagram`, 1200 bytes) y un `PeerLink` encima: un byte de carril delante y un `ReliableChannel` para el carril fiable. Lo usa el enlace de pruebas |
 | `LoopbackNetwork` | Dos pares simulados en un proceso para los tests (`link(side)`, código de sala `TEST`), con su reloj (`advance`) y `LinkConditions`: latencia, variación (que desordena), pérdida y duplicados con semilla, y `cut()` para un par que se va sin avisar |
@@ -33,8 +34,10 @@ Los mensajes del lockstep empiezan con `0x40` (entradas) y `0x41` (suma); los de
 | `WrongCode` | No hay sala con ese código (o ya caducó) |
 | `RoomFull` | La sala ya tiene a sus dos jugadores |
 | `TimedOut` | La sala caducó esperando al invitado, o los dos no abrieron una ruta en 30 s |
-| `NoRoute` | ICE falló: no hay ruta directa entre las dos redes (hace falta TURN, que aún no hay) |
+| `NoRoute` | ICE falló: no hay ruta entre las dos redes (sin relevo del servidor, o con uno que no respondió) |
 | `Closed` | La conexión se cerró después de abrirse |
+| `Refused` | El servidor rechazó la sala: demasiadas salas, demasiadas en poco tiempo desde esta dirección, o un apodo que no acepta |
+| `NoRelay` | Solo por relevo está activado y el servidor no dio ningún relevo |
 
 Un aviso de «desconectado» de WebRTC no cierra el enlace: puede volver solo, y el silencio del versus (8 s) decide.
 
@@ -79,8 +82,9 @@ servidor de la URL y venir de una autoridad de confianza. Si no, el socket falla
 
 ## Límites
 
-- Sin TURN: dos redes que no dejan ruta directa (algunos NAT simétricos, redes de empresa) acaban en `NoRoute`. El
-  servidor podría dar más adelante credenciales TURN de corta vida, y `ice_servers` ya es una lista de datos.
+- Sin los secretos de TURN del servidor no hay relevo: dos redes que no dejan ruta directa (algunos NAT simétricos,
+  redes de empresa) acaban en `NoRoute`. Con ellos, el servidor da credenciales de corta vida con cada sala. Solo
+  relevos UDP: una red que bloquea todo UDP sigue sin poder conectar.
 - El servidor de señalización está desplegado en `wss://dwe-versus-signal.regamelabs.workers.dev`
   (`versus/network.yaml`); `--versus-server` lo cambia al arrancar.
 
@@ -91,7 +95,8 @@ desorden), reenvío, silencio y corte, mensajes ajenos y demasiado grandes; el l
 pérdida, la repetición y el acuse de las entradas, mensajes de otro combate, los ticks sin entrada, la
 desincronización en su tick y los mensajes dañados; los códigos de sala; el cliente de señalización contra un servidor
 en memoria con las reglas del de verdad (pareja y reenvío, código que no existe, sala llena, servidor caído, invitado
-que se va); y dos `RtcPeerLink` de verdad que se conectan en la misma máquina por ese servidor en memoria (sin red ni
+que se va, `/v1/info`, la lista pública, una sala rechazada, avisos de estado y relevos); las fases y avisos de la sesión
+de sala (`room_session_tests.cpp`, también solo por relevo con y sin relevos); y dos `RtcPeerLink` de verdad que se conectan en la misma máquina por ese servidor en memoria (sin red ni
 STUN) y hablan por los dos carriles.
 
 El certificado del servidor (`tls_tests.cpp`): un servidor TLS local (el de libdatachannel) con certificados de prueba

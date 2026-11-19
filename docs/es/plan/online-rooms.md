@@ -1,8 +1,15 @@
 # Online: salas, búsqueda de partida y perfil (propuesta)
 
-Propuesta de diseño para el issue #289 («Modo Online»). Nada de esto está hecho: es lo que se acordaría antes de
-programar, y termina con las tarjetas en que se divide. Es de la fase 5 (lo que no es del original) y todo va como
-**Mejora opcional**: el versus de hoy, con código de sala, sigue igual y es el de siempre.
+Propuesta de diseño para el issue #289 («Modo Online»): lo que se acordó antes de programar, y termina con las
+tarjetas en que se divide. Es de la fase 5 (lo que no es del original) y todo va como **Mejora opcional**: el versus de
+hoy, con código de sala, sigue igual y es el de siempre.
+
+**Avance.** Hecho: el directorio de salas públicas del servidor con sus límites (tarjeta 1, #291), el estado
+explícito de la sala en el cliente (tarjeta 2, #292: `net::RoomSession`, que usan el versus y la sala cooperativa; el
+invitado ve el nombre del anfitrión), las pantallas de salas y el perfil en línea (tarjetas 3 y 4) y TURN con
+credenciales de corta vida más el «solo por relevo» del perfil (tarjeta 5, #295; funciona en cuanto el servidor tiene
+sus secretos de TURN, ver el [servidor](../modules/services/versus-signal.md#relevo-turn)). Falta: espectadores
+(tarjeta 6). La tabla «Estado actual» de abajo es cómo estaba antes.
 
 ## Resumen
 

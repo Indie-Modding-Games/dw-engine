@@ -9,8 +9,9 @@
 </head>
 <body>
 	<!-- The online profile (apps/game/src/online_profile.hpp, read and asked through the UI API's online namespace):
-	     the name the other players see, typed with the keyboard; the icon, picked from a fixed list; and the online
-	     versus record. It is kept in the game's settings, not in a save. -->
+	     the name the other players see, typed with the keyboard; the icon, picked from a fixed list; how rooms connect
+	     (directly, or through the server's relay only); and the online versus record. It is kept in the game's
+	     settings, not in a save. -->
 	<div id="scrim">
 		<div id="panel">
 			<h1 id="title" text-key="online.profile_title"></h1>
@@ -33,6 +34,9 @@
 				<button id="icon-6" class="icon-choice" onclick="pick_icon(document, 6)"><div id="icon-6-picture" class="profile-icon"></div></button>
 				<span id="icon-name"></span>
 			</div>
+
+			<button id="relay-field" class="profile-row" onclick="press(document, 'relay')"><span class="row-label" text-key="online.profile.relay"></span><span id="relay-value"></span></button>
+			<p id="relay-hint" text-key="online.profile.relay_hint"></p>
 
 			<div id="record-row" class="profile-row">
 				<span class="row-label" text-key="online.profile.record"></span>

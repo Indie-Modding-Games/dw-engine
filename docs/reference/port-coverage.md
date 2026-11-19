@@ -269,11 +269,11 @@ Ported 41, partial 4, missing 60.
 | `VS_queueRandomMove` | `vs/vs_main.c:1735` | missing (cited in docs) | Randomly chooses move and target for the fighter's AI. | — |
 | `VS_loadVSAssets` | `vs/vs_scene.c:1147` | partial | Prepares the versus arena: music per stage, camera, lights and effects. | `apps/game/src/versus_arena.cpp:1` · arena 0 with its camera, its lights and the effects; without the music per stage |
 | `VS_playVersusIntroSequence` | `vs/vs_scene.c:1558` | missing | Plays the versus's opening introduction. | `apps/game/src/versus_arena.cpp:45` |
-| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | missing | Advances the versus introduction by states. | `apps/game/src/versus_flow.cpp:448` |
+| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | missing | Advances the versus introduction by states. | `apps/game/src/versus_flow.cpp:463` |
 | `VS_initializeCamera` | `vs/vs_scene.c:1851` | partial (cited in docs) | Places the versus arena's initial camera. | `apps/game/src/versus_arena.cpp:1` · the cup's camera (game::tournament::MatchCamera); not measured against the versus one |
 | `VS__createPressStartToBeginBox` | `vs/vs_select.c:409` | missing (cited in docs) | Shows the prompt to press Start to begin. | — |
 | `VS__initialize` | `vs/vs_select.c:442` | partial (cited in docs) | Versus setup flow: mode, map and Digimon selection. | `apps/game/src/versus_flow.cpp:1` · without arena choice (VS__tickSelectMap) |
-| `VS__tickSelectMap` | `vs/vs_select.c:1166` | missing | Versus stage selection screen. | `apps/game/src/versus_flow.cpp:390` |
+| `VS__tickSelectMap` | `vs/vs_select.c:1166` | missing | Versus stage selection screen. | `apps/game/src/versus_flow.cpp:405` |
 
 ## Curling minigame
 

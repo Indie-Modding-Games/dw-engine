@@ -2193,9 +2193,12 @@ dentro del menú principal es ahora estas pantallas.
 
 - **Perfil** (`ui/online_profile`): el nombre en línea (se escribe en el sitio; Intro o confirmar del mando lo guarda,
   cancelar borra una letra y con el campo vacío termina la edición), el icono de una lista fija (huevo, dispositivo, corona,
-  espadas, árbol, pesa; izquierda y derecha lo eligen) y el récord de versus (victorias y derrotas). `OnlineProfile`
-  (`online_profile.hpp`) lo guarda en los ajustes del juego (`settings.yaml`), no en la partida, y su nombre es el del
-  jugador en todas las salas (12 letras como mucho; «Jugador» hasta que se escribe uno).
+  espadas, árbol, pesa; izquierda y derecha lo eligen), la conexión (Directa, o Solo por relevo: confirmar, izquierda o
+  derecha la cambian) y el récord de versus (victorias y derrotas). `OnlineProfile` (`online_profile.hpp`) lo guarda en
+  los ajustes del juego (`settings.yaml`, `online_relay_only` para la conexión), no en la partida, y su nombre es el del
+  jugador en todas las salas (12 letras como mucho; «Jugador» hasta que se escribe uno). Solo por relevo conecta las
+  salas cooperativas y de versus solo por el relevo (TURN) del servidor de señalización, así el otro jugador nunca sabe
+  la dirección de esta máquina; un servidor sin relevo hace fallar esa sala con «sin relevo».
 - **Conectando y errores** (`ui/online_status`): mientras se crea una sala o se entra en ella la pantalla lo dice con
   puntos que se mueven y ofrece Cancelar; si falla, dice por qué con palabras (no se llega al servidor, la sala está
   llena, el código no existe...) con Reintentar (`online.retry` pide la misma sala otra vez) y Volver.
@@ -2218,13 +2221,26 @@ separan la parte de red: `RoomDirectory` lista las salas públicas y `RoomBacken
 de la sala son los comandos del propio lobby cooperativo (`coop_host` con pública o privada, `coop_join` con código,
 `coop_ready`, `coop_start`), que `CoopRoomBackend` (`online_coop_room.hpp`) pasa a `CoopScreen`; `online_leave` corta
 el enlace (el `coop_close` del lobby conserva un compañero conectado para elegir partida). `RoomListing` lleva los
-campos del listado del directorio (id de sala, código, nombre, mensaje, nombre del anfitrión, jugadores, plazas,
-creación y estado waiting, full o starting) más el modo y el ping, que el directorio aún no manda.
+campos del listado del directorio (id de sala, código, nombre, mensaje, nombre del anfitrión, modo, jugadores, plazas,
+creación y estado waiting, full o starting) más el ping, que el directorio aún no manda.
 
-Con un servidor de señalización configurado, `SignalRoomDirectory` (`online_signal_directory.hpp`) lista las salas
-públicas del servidor (`/v1/rooms`), y una sala creada como Pública se abre con `public=1` para que salga en esa lista;
-a una Privada solo se llega por su código. Sin servidor, la lista lo dice y remite al código. El servidor no manda ni
-el modo ni un ping, así que una sala de la lista dice Campaña y no muestra barras de ping. Una sala cooperativa admite
+La fase de la sala es un `net::RoomSession` (`dwe/net/room_session.hpp`): Connecting, Open (el anfitrión tiene su
+código), Connected (llegó el otro jugador), Ready, Playing y Closed. Sigue al enlace, y el lobby dice el resto: la marca
+de listo del invitado (o quitarla) la pone en Ready, el inicio del anfitrión y la llegada del invitado al mundo del
+anfitrión la ponen en Playing, salir o un fallo la cierran con el error. `CoopConnection` la lleva y la pantalla de Sala
+enseña su fase tal cual. El anfitrión de una sala pública avisa al directorio de cada paso (`ready`, `playing`,
+`closed`, con el token de la sala), así la lista enseña la sala llena y la quita cuando juega; un aviso que falla queda
+en el registro y la entrada caduca en el servidor. El nombre del anfitrión llega al invitado al final de la bienvenida
+cooperativa, así la Sala y la etiqueta del invitado lo enseñan (un anfitrión antiguo no lo manda: «Anfitrión»).
+`VersusFlow` también lleva una sesión de sala, del código al final de la serie.
+
+Con un servidor de señalización configurado, `SignalRoomDirectory` (`online_signal_directory.hpp`) pregunta primero al
+servidor qué sabe hacer (`/v1/info`; uno sin salas públicas deja la lista sin servicio) y luego lista las salas públicas
+de la clave de compatibilidad de este juego (`/v1/rooms?compat=`, de la versión del juego del protocolo cooperativo y la
+suma del contenido: `net::compatKey`). Una sala creada como Pública se abre con `public=1` y el nombre, icono, clave y
+modo del anfitrión, para que salga en esa lista; a una Privada solo se llega por su código. Las salas que ya juegan no
+salen, y una lista actualizada demasiadas veces lo dice (`list_limit`). Sin servidor, la lista lo dice y remite al
+código. El servidor no manda ping, así que una sala de la lista no muestra barras de ping. Una sala cooperativa admite
 al anfitrión y un invitado, así que sus salas dicen 2 plazas y solo Campaña se puede jugar. Con las herramientas
 de desarrollo (o `--online-sample`), la tecla del menú cambia a la fuente de ejemplo (`SampleDirectory`,
 `SampleRoomBackend`): siete salas de ejemplo de hasta cuatro jugadores y una sala propia a la que entran dos invitados
@@ -2238,9 +2254,9 @@ de ejemplo que se ponen listos, marcadas «Datos de ejemplo» en pantalla; nunca
 mientras tiene algo que enseñar:
 
 - **Etiqueta con el nombre**: el nombre del otro jugador flota sobre su cabeza mientras el campo corre (se oculta con
-  los paneles del HUD en menús, charlas y combates, y fuera de la ventana). En el anfitrión es el nombre en línea del
-  invitado (el `Hello` del enlace cooperativo), o «Invitado 1» si no tiene; en el invitado es «Anfitrión», porque el
-  nombre del anfitrión no le llega al invitado. `FieldScene::coopPeerHeadInWindow` proyecta el personaje del invitado
+  los paneles del HUD en menús, charlas y combates, y fuera de la ventana). Es el nombre en línea del otro jugador: el
+  del invitado por el `Hello` del enlace cooperativo, el del anfitrión por su `Welcome`; sin uno, «Invitado 1» en el
+  anfitrión y «Anfitrión» en el invitado. `FieldScene::coopPeerHeadInWindow` proyecta el personaje del invitado
   (anfitrión) o el anfitrión presentado (invitado) con la cámara del mapa.
 - **«`<nombre>` se desconectó.»**: cuando el enlace del invitado se cierra durante la partida, el anfitrión ve este aviso
   unos segundos y la etiqueta se va; el hueco del invitado se queda para que vuelva a conectarse.

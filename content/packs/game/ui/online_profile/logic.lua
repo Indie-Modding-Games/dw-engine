@@ -1,11 +1,13 @@
 -- The online profile (ui/online_profile), read and asked through the UI API's online namespace
 -- (docs/modding/ui-api.md): the name the other players see, the icon and the online versus record,
--- kept in the game's settings. Up and down go through the name, the icons and Back; left and right
--- pick an icon at once. Confirm on the name gives the keyboard's letters to it (the game types
--- them, online.edit): Enter keeps the name, cancel erases the last letter or, with none left,
--- leaves the field keeping the old name. A gamepad's confirm keeps what is typed.
+-- kept in the game's settings, and how rooms connect (directly, or through the server's relay
+-- only). Up and down go through the name, the icons, the connection and Back; left and right pick
+-- an icon at once, and confirm, left or right switch the connection. Confirm on the name gives the
+-- keyboard's letters to it (the game types them, online.edit): Enter keeps the name, cancel erases
+-- the last letter or, with none left, leaves the field keeping the old name. A gamepad's confirm
+-- keeps what is typed.
 
-local Rows = { "name", "icon", "back" }
+local Rows = { "name", "icon", "relay", "back" }
 local EditSettleSeconds = 0.25
 
 local row = 1
@@ -57,6 +59,8 @@ local function place_focus(document)
   elseif id == "icon" then
     local icons = online.icons()
     document:get("icon-" .. icon_index(icons, online.profile().icon)):focus()
+  elseif id == "relay" then
+    document:get("relay-field"):focus()
   else
     document:get("profile-back"):focus()
   end
@@ -115,6 +119,10 @@ local function refresh(document)
   local chosen = icons[icon_index(icons, profile.icon)]
   document:get("icon-name"):set_text(chosen ~= nil and t(chosen.label_key) or "")
 
+  local relay = document:get("relay-value")
+  relay:set_class("on", profile.relay_only)
+  relay:set_text(t(profile.relay_only and "online.profile.relay_on" or "online.profile.relay_off"))
+
   document:get("record-wins"):set_text(tostring(profile.wins))
   document:get("record-losses"):set_text(tostring(profile.losses))
 
@@ -168,8 +176,17 @@ function pick_icon(document, index)
   refresh(document)
 end
 
+local function switch_relay(document)
+  row = 3
+  online.dismiss()
+  online.set_relay_only(not online.profile().relay_only)
+  refresh(document)
+end
+
 function press(document, button)
-  if button == "name" then
+  if button == "relay" then
+    switch_relay(document)
+  elseif button == "name" then
     row = 1
     if editing then
       end_edit(document, true)
@@ -238,6 +255,8 @@ function on_action(document, action)
     end
     if Rows[row] == "name" then
       press(document, "name")
+    elseif Rows[row] == "relay" then
+      switch_relay(document)
     elseif Rows[row] == "back" then
       leave()
     end
@@ -251,6 +270,8 @@ function on_action(document, action)
     if index >= 1 and index <= #icons then
       online.set_icon(icons[index].id)
     end
+  elseif (action == "left" or action == "right") and Rows[row] == "relay" then
+    switch_relay(document)
   end
   return true
 end

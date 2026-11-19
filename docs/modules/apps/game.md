@@ -2186,9 +2186,12 @@ co-op lobby that lived inside the main menu is now these screens.
 
 - **Profile** (`ui/online_profile`): the online name (typed in place; Enter or the pad's confirm saves it, cancel
   erases a letter, and an empty field ends the edit), the icon from a fixed list (egg, device, crown, swords, tree,
-  dumbbell; left and right pick it) and the versus record (wins and losses). `OnlineProfile` (`online_profile.hpp`)
-  keeps it in the game's settings (`settings.yaml`), not in a save, and its name is the player's name in every room
-  (12 letters at most; «Player» until one is typed).
+  dumbbell; left and right pick it), the connection (Direct, or Relay only: confirm, left or right switch it) and the
+  versus record (wins and losses). `OnlineProfile` (`online_profile.hpp`) keeps it in the game's settings
+  (`settings.yaml`, `online_relay_only` for the connection), not in a save, and its name is the player's name in every
+  room (12 letters at most; «Player» until one is typed). Relay only connects co-op and versus rooms through the
+  signaling server's relay (TURN) alone, so the other player never learns this machine's address; a server with no
+  relay makes such a room fail with «no relay».
 - **Connecting and errors** (`ui/online_status`): while a room is being created or joined the screen says so with
   moving dots and offers Cancel; when it fails it shows why in words (the server cannot be reached, the room is full,
   the code is wrong...) with Retry (`online.retry` asks for the same room again) and Back.
@@ -2209,13 +2212,25 @@ network side apart: `RoomDirectory` lists public rooms and `RoomBackend` hosts, 
 steps are the co-op lobby's own commands (`coop_host` with public or private, `coop_join` with a code, `coop_ready`,
 `coop_start`), which `CoopRoomBackend` (`online_coop_room.hpp`) hands to `CoopScreen`; `online_leave` drops the link
 (the lobby's `coop_close` keeps a connected peer for the save step). `RoomListing` carries the fields of the
-directory's listing (room id, join code, name, message, host name, players, capacity, created at, state waiting, full
-or starting) plus the mode and the ping, which the directory does not send yet.
+directory's listing (room id, join code, name, message, host name, mode, players, capacity, created at, state waiting,
+full or starting) plus the ping, which the directory does not send yet.
 
-With a signaling server configured, `SignalRoomDirectory` (`online_signal_directory.hpp`) lists the server's public
-rooms (`/v1/rooms`), and a room created as Public is hosted with `public=1` so it shows in that list; a Private one is
-reached by its code only. Without a server the list says so and points to the code. The server sends neither the mode
-nor a ping, so a listed room says Campaign and shows no ping bars. A co-op room holds the host and one guest, so its
+The room's phase is a `net::RoomSession` (`dwe/net/room_session.hpp`): Connecting, Open (the host has its code),
+Connected (the other player arrived), Ready, Playing and Closed. It follows the link, and the lobby says the rest: the
+guest's ready mark (or its taking it back) makes it Ready, the host's start and the guest's arrival in the host's world
+make it Playing, leaving or a failure close it with the error. `CoopConnection` owns it and the Room screen shows its
+phase as is. A public room's host tells the directory each step (`ready`, `playing`, `closed`, with the room's token),
+so the list shows the room full and drops it once it plays; a notice that fails is logged and the entry expires on the
+server. The host's name reaches the guest at the end of the co-op welcome, so the guest's Room screen and name tag show
+it (an older host sends none: «Host»). `VersusFlow` keeps a room session too, from the code to the series' end.
+
+With a signaling server configured, `SignalRoomDirectory` (`online_signal_directory.hpp`) first asks the server what it
+can do (`/v1/info`; one without public rooms leaves the list unavailable), then lists the public rooms of this game's
+compatibility key (`/v1/rooms?compat=`, from the co-op protocol's game version and content sum: `net::compatKey`). A
+room created as Public is hosted with `public=1` and the host's name, icon, key and mode, so it shows in that list; a
+Private one is reached by its code only. Rooms already playing are not listed, and a list refreshed too often says so
+(`list_limit`). Without a server the list says so and points to the code. The server sends no ping, so a listed room
+shows no ping bars. A co-op room holds the host and one guest, so its
 rooms say capacity 2 and only Campaign is playable. With the developer tools on
 (or `--online-sample`), the menu key switches to the sample source (`SampleDirectory`, `SampleRoomBackend`): seven
 sample rooms of up to four players, a hosted room that two sample guests join and ready, marked «Sample data» on screen; it
@@ -2228,8 +2243,8 @@ never starts a game. Tests: `apps/game/tests/online_rooms_tests.cpp`, `apps/game
 show:
 
 - **Name tag**: the other player's name floats over their head while the field runs (it hides with the HUD's panels in
-  menus, talks and battles, and off the window). On the host it is the guest's online name (the `Hello` of the co-op
-  link), or «Guest 1» without one; on the guest it is «Host», since the host's name does not reach the guest.
+  menus, talks and battles, and off the window). It is the other player's online name: the guest's from the `Hello` of
+  the co-op link, the host's from its `Welcome`; without one, «Guest 1» on the host and «Host» on the guest.
   `FieldScene::coopPeerHeadInWindow` projects the guest's character (host) or the presented host (guest) with the
   map's camera.
 - **«`<name>` disconnected.»**: when the guest's link closes during play, the host gets this notice for a few seconds

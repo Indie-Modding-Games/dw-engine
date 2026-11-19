@@ -60,35 +60,30 @@ std::optional<RoomView> CoopRoomBackend::room() const {
                 .canReady = !isHost && connected,
                 .localReady = !isHost && coop_->localReady(),
                 .mode = "campaign"};
-  switch (view) {
-  case View::Hosting:
-    room.phase = room.code.empty() ? RoomPhase::Connecting : RoomPhase::Open;
-    break;
-  case View::Joining:
-    room.phase = RoomPhase::Connecting;
-    break;
-  case View::Connected:
-    room.phase = (isHost ? coop_->guestReady() : coop_->localReady()) ? RoomPhase::Ready
-                                                                      : RoomPhase::Connected;
-    break;
-  default:
+  // The room session keeps the phase (net::RoomSession); the lobby's error closes it.
+  const net::RoomSession* session = coop_->room();
+  room.phase = session != nullptr ? session->phase() : RoomPhase::Connecting;
+  if (view == View::Error || room.phase == RoomPhase::Closed) {
     room.phase = RoomPhase::Closed;
     room.error = coop_->error();
     if (room.error.empty()) {
       room.error = "unknown";
     }
-    break;
   }
   // The host has no ready mark of its own: it starts the room when the guest is ready.
   if (isHost || connected) {
     room.members.push_back(unnamedMember(true, false, isHost));
+    if (!isHost) {
+      // The host's profile name, from its welcome (an older host sends none: the screens call it
+      // the host).
+      room.members.back().name = coop_->remoteName();
+    }
   }
   if (connected) {
     const bool guestReady = isHost ? coop_->guestReady() : coop_->localReady();
     room.members.push_back(unnamedMember(false, guestReady, !isHost));
     if (isHost) {
-      // The guest's profile name, from its hello. The host's own name does not reach the guest
-      // yet (the protocol's welcome has no field for it): the screens call it the host.
+      // The guest's profile name, from its hello.
       room.members.back().name = coop_->remoteName();
     }
   }

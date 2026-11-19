@@ -1,8 +1,15 @@
 # Online: rooms, matchmaking and profile (proposal)
 
-Design proposal for issue #289 ("Online Mode"). None of this is done: it is what would be agreed before programming,
-and it ends with the cards it is split into. It belongs to phase 5 (what is not from the original) and all of it goes
-in as an **optional Improvement**: today's versus, with a room code, stays as it is and is the usual one.
+Design proposal for issue #289 ("Online Mode"): what was agreed before programming, ending with the cards it is split
+into. It belongs to phase 5 (what is not from the original) and all of it goes in as an **optional Improvement**:
+today's versus, with a room code, stays as it is and is the usual one.
+
+**Progress.** Done: the server's public room directory with its limits (card 1, #291), the explicit room state in
+the client (card 2, #292: `net::RoomSession`, used by the versus and the co-op room; the guest sees the host's name),
+the rooms screens and the online profile (cards 3 and 4) and TURN with short-lived credentials plus the profile's
+"relay only" (card 5, #295; it works once the server has its TURN secrets, see the
+[server](../modules/services/versus-signal.md#relay-turn)). Left: spectators (card 6). The "Current status" table
+below is how things were before.
 
 ## Summary
 

@@ -73,24 +73,6 @@ constexpr std::size_t FilterLength = 24;
 
 } // namespace
 
-std::string_view roomPhaseName(RoomPhase phase) {
-  switch (phase) {
-  case RoomPhase::Connecting:
-    return "connecting";
-  case RoomPhase::Open:
-    return "open";
-  case RoomPhase::Connected:
-    return "connected";
-  case RoomPhase::Ready:
-    return "ready";
-  case RoomPhase::Playing:
-    return "playing";
-  case RoomPhase::Closed:
-    return "closed";
-  }
-  return "closed";
-}
-
 std::string_view listingStateName(ListingState state) {
   switch (state) {
   case ListingState::Waiting:
@@ -400,6 +382,11 @@ bool OnlineRooms::handle(std::string_view name, const std::string& text, bool fl
     if (profile_.setIcon(text)) {
       profileChanged_ = true;
     }
+  } else if (name == "online_profile_relay") {
+    if (profile_.relayOnly() != flag) {
+      profile_.setRelayOnly(flag);
+      profileChanged_ = true;
+    }
   } else if (name == "online_retry") {
     retry(nowSeconds);
   } else if (name == "online_filter") {
@@ -572,6 +559,7 @@ screens::ScreenSettings OnlineRooms::settings() const {
   add("online.profile.name", profile_.name());
   add("online.profile.named", profile_.named());
   add("online.profile.icon", profile_.icon());
+  add("online.profile.relay_only", profile_.relayOnly());
   add("online.profile.wins", static_cast<double>(profile_.wins()));
   add("online.profile.losses", static_cast<double>(profile_.losses()));
   add("online.profile.draft", nameDraft_);

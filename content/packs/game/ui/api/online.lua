@@ -38,6 +38,9 @@ local Errors = {
   signal_timeout = true,
   no_direct_route = true,
   connection_closed = true,
+  server_refused = true,
+  no_relay = true,
+  list_limit = true,
   content_identity_unavailable = true,
   ruleset_unavailable = true,
   choose_saved_game = true,
@@ -109,8 +112,9 @@ end
 
 -- This player's online profile (kept in the game's settings, not in a save): name (the one the
 -- other players see), named (false while it is the default one), icon (an id of online.icons()),
--- wins and losses (the online versus record) and draft (the name being typed on the profile
--- screen).
+-- wins and losses (the online versus record), draft (the name being typed on the profile
+-- screen) and relay_only (rooms connect through the server's relay only, so the other player never
+-- learns this machine's address).
 function online.profile()
   return {
     name = text("online.profile.name"),
@@ -119,6 +123,7 @@ function online.profile()
     wins = whole("online.profile.wins"),
     losses = whole("online.profile.losses"),
     draft = text("online.profile.draft"),
+    relay_only = flag("online.profile.relay_only"),
   }
 end
 
@@ -153,6 +158,15 @@ function online.set_icon(id)
     return false, "id must be a string"
   end
   ui.send("online_profile_icon", id)
+  return true
+end
+
+-- Connects the next rooms through the server's relay only (true) or directly when possible (false).
+function online.set_relay_only(on)
+  if type(on) ~= "boolean" then
+    return false, "on must be a boolean"
+  end
+  ui.send("online_profile_relay", on)
   return true
 end
 

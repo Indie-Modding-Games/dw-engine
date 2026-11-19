@@ -11,8 +11,8 @@
 }
 
 #scrim:not(.skin-original) #panel {
-	height: 636dp;
-	margin-top: -318dp;
+	height: 726dp;
+	margin-top: -363dp;
 	padding: 20dp 24dp;
 	border: 1dp #263243;
 	border-radius: 12dp;
@@ -75,16 +75,20 @@
 
 #scrim:not(.skin-original) .row-label { width: 236dp; color: #9aa8ba; opacity: 1; }
 
-#scrim:not(.skin-original) #name-field { transition: background-color border-left-color 0.1s cubic-out; }
-#scrim:not(.skin-original) #name-field:hover { background-color: #ffffff0d; }
+#scrim:not(.skin-original) #name-field,
+#scrim:not(.skin-original) #relay-field { transition: background-color border-left-color 0.1s cubic-out; }
+#scrim:not(.skin-original) #name-field:hover,
+#scrim:not(.skin-original) #relay-field:hover { background-color: #ffffff0d; }
 
-#scrim:not(.skin-original) #name-field:focus {
+#scrim:not(.skin-original) #name-field:focus,
+#scrim:not(.skin-original) #relay-field:focus {
 	border-left-color: #f2a93b;
 	background-color: #f2a93b29;
 	color: #ffffff;
 }
 
-#scrim:not(.skin-original) #name-field:focus .row-label { color: #e9eef5; }
+#scrim:not(.skin-original) #name-field:focus .row-label,
+#scrim:not(.skin-original) #relay-field:focus .row-label { color: #e9eef5; }
 
 /* The name: an inset field, amber-edged while typing. */
 #scrim:not(.skin-original) #name-box {
@@ -137,7 +141,32 @@
 	opacity: 1;
 }
 
-#scrim:not(.skin-original) #record-row { margin-top: 28dp; }
+/* The connection: a pill like the name's field, amber while relay only is on. */
+#scrim:not(.skin-original) #relay-field { margin-top: 30dp; }
+
+#scrim:not(.skin-original) #relay-value {
+	min-width: 180dp;
+	height: 42dp;
+	padding: 0 14dp;
+	border: 1dp #3a4a5e;
+	border-radius: 21dp;
+	background-color: #0c1118;
+	line-height: 40dp;
+	font-weight: bold;
+	color: #9aa8ba;
+}
+
+#scrim:not(.skin-original) #relay-value.on { color: #f2a93b; border-color: #f2a93b; }
+
+#scrim:not(.skin-original) #relay-hint {
+	margin: 4dp 0 4dp 248dp;
+	font-size: 18dp;
+	line-height: 24dp;
+	color: #9aa8ba;
+	opacity: 1;
+}
+
+#scrim:not(.skin-original) #record-row { margin-top: 4dp; }
 #scrim:not(.skin-original) .record-label { margin-right: 10dp; color: #9aa8ba; opacity: 1; }
 #scrim:not(.skin-original) .record-value { width: 70dp; font-weight: bold; color: #f2a93b; }
 

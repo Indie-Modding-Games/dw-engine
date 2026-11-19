@@ -76,16 +76,16 @@ const CoopPeerLabel Ana{.name = "Ana", .key = {}, .number = 0};
 
 } // namespace
 
-TEST_CASE("the co-op tag names the guest by its name on the host, and the host by role") {
+TEST_CASE("the co-op tag names the other player by its name, or by its role without one") {
   CHECK(coopPeerLabel(true, "Ana") == Ana);
   // A guest that sent no name is the room's second member: "Guest 1".
   CHECK(coopPeerLabel(true, "") ==
         CoopPeerLabel{.name = {}, .key = std::string{GuestPlayerText}, .number = 1});
-  // The host's name never reaches the guest: whatever the link says, the guest calls it "Host".
+  // An older host sends no name: the guest calls it "Host".
   CHECK(coopPeerLabel(false, "") ==
         CoopPeerLabel{.name = {}, .key = std::string{HostPlayerText}, .number = 0});
-  CHECK(coopPeerLabel(false, "Ana").key == HostPlayerText);
-  CHECK(coopPeerLabel(false, "Ana").name.empty());
+  // The host's name reaches the guest with its welcome.
+  CHECK(coopPeerLabel(false, "Ana") == Ana);
 }
 
 TEST_CASE("the co-op tag shows only with a linked player whose head is in the running field") {

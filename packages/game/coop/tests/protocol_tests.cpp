@@ -38,12 +38,14 @@ TEST_CASE("cooperative control and state messages round trip") {
                     .accepted = true,
                     .assignedPlayer = GuestPlayerId,
                     .reason = RejectReason::None,
-                    .sessionId = 0x1020304050607080ULL});
+                    .sessionId = 0x1020304050607080ULL,
+                    .hostName = {}});
   roundTrip(Welcome{.identity = identity(),
                     .accepted = false,
                     .assignedPlayer = GuestPlayerId,
                     .reason = RejectReason::RoomFull,
-                    .sessionId = 42});
+                    .sessionId = 42,
+                    .hostName = {}});
   roundTrip(Ready{.ready = false});
   roundTrip(Ready{.ready = true});
   roundTrip(JoinState{.formatVersion = 1,
@@ -326,4 +328,53 @@ TEST_CASE("remote command buffer rejects old sequences and expires to neutral") 
                     net::Millis{120}));
   CHECK(buffer.current(net::Millis{300}).stickX == -100);
   CHECK(buffer.current(net::Millis{371}) == FieldCommand{});
+}
+
+TEST_CASE("an accepted welcome tells the guest the host's name; a rejected one reads as before") {
+  roundTrip(Welcome{.identity = identity(),
+                    .accepted = true,
+                    .assignedPlayer = GuestPlayerId,
+                    .reason = RejectReason::None,
+                    .sessionId = 7,
+                    .hostName = "José"});
+  // A rejected welcome has no name: the same bytes as the first protocol's, which an older guest
+  // reads to say why it was turned away.
+  const Welcome rejected{.identity = identity(),
+                         .accepted = false,
+                         .assignedPlayer = GuestPlayerId,
+                         .reason = RejectReason::VersionMismatch,
+                         .sessionId = 0,
+                         .hostName = "Mika"};
+  const auto bytes = encode(Message{rejected});
+  const auto plain = encode(Message{Welcome{.identity = identity(),
+                                            .accepted = false,
+                                            .assignedPlayer = GuestPlayerId,
+                                            .reason = RejectReason::VersionMismatch,
+                                            .sessionId = 0,
+                                            .hostName = {}}});
+  CHECK(bytes == plain);
+  // An older host's accepted welcome (no name) still reads, with no name.
+  const auto older = decode(encode(Message{Welcome{.identity = identity(),
+                                                   .accepted = true,
+                                                   .assignedPlayer = GuestPlayerId,
+                                                   .reason = RejectReason::None,
+                                                   .sessionId = 9,
+                                                   .hostName = {}}}));
+  REQUIRE(older);
+  REQUIRE(older->has_value());
+  CHECK(std::get<Welcome>(**older).hostName.empty());
+}
+
+TEST_CASE("each side of a cooperative link knows the other's name") {
+  net::LoopbackNetwork network({});
+  CoopLink host = CoopLink::host(network.link(0), identity(), "Mika");
+  CoopLink guest = CoopLink::guest(network.link(1), identity(), "Ana");
+  for (int i = 0; i < 8; ++i) {
+    network.advance(net::Millis{1});
+    host.poll(network.now());
+    guest.poll(network.now());
+  }
+  REQUIRE(guest.phase() == LinkPhase::Ready);
+  CHECK(host.remoteName() == "Ana");
+  CHECK(guest.remoteName() == "Mika");
 }

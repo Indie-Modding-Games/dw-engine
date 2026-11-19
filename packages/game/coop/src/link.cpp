@@ -70,8 +70,11 @@ bool directionAllowed(Side receiver, const Message& message) {
 CoopLink::CoopLink(net::PeerLink& link, Side side, Identity identity, LinkTimeouts timeouts)
     : link_{&link}, side_{side}, identity_{std::move(identity)}, timeouts_{timeouts} {}
 
-CoopLink CoopLink::host(net::PeerLink& link, Identity identity, LinkTimeouts timeouts) {
-  return CoopLink{link, Side::Host, std::move(identity), timeouts};
+CoopLink CoopLink::host(net::PeerLink& link, Identity identity, std::string playerName,
+                        LinkTimeouts timeouts) {
+  CoopLink result{link, Side::Host, std::move(identity), timeouts};
+  result.playerName_ = std::move(playerName);
+  return result;
 }
 
 CoopLink CoopLink::guest(net::PeerLink& link, Identity identity, std::string playerName,
@@ -124,11 +127,13 @@ void CoopLink::handle(const Message& message) {
     const RejectReason reason = identityMismatch(identity_, hello->identity);
     const bool accepted = reason == RejectReason::None;
     const std::uint64_t sessionId = accepted ? nextSessionId() : 0;
-    link_->send(net::Lane::Reliable, encode(Message{Welcome{.identity = identity_,
-                                                            .accepted = accepted,
-                                                            .assignedPlayer = GuestPlayerId,
-                                                            .reason = reason,
-                                                            .sessionId = sessionId}}));
+    link_->send(net::Lane::Reliable,
+                encode(Message{Welcome{.identity = identity_,
+                                       .accepted = accepted,
+                                       .assignedPlayer = GuestPlayerId,
+                                       .reason = reason,
+                                       .sessionId = sessionId,
+                                       .hostName = accepted ? playerName_ : std::string{}}}));
     if (accepted) {
       remotePlayer_ = GuestPlayerId;
       remoteName_ = hello->playerName;
@@ -155,6 +160,7 @@ void CoopLink::handle(const Message& message) {
       return;
     }
     remotePlayer_ = HostPlayerId;
+    remoteName_ = welcome->hostName;
     phase_ = LinkPhase::Ready;
     return;
   }

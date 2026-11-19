@@ -44,6 +44,11 @@ enum class PeerFailure : std::uint8_t {
   NoRoute,
   // The connection closed after it was open.
   Closed,
+  // The signaling server refused the room: one of its limits (too many rooms from this address or
+  // in its list, too many requests) or a nickname it does not take.
+  Refused,
+  // Relay only was asked for and the server handed out no relay (TURN) server to go through.
+  NoRelay,
 };
 
 // One end of a connection to the other peer, with a reliable ordered lane and an unreliable one.
@@ -71,6 +76,8 @@ public:
   [[nodiscard]] virtual std::string roomCode() const { return {}; }
   // Whether the other peer reached the room (for the host: a guest typed its code).
   [[nodiscard]] virtual bool peerFound() const { return state() == PeerState::Open; }
+  // The host's key for its public room's state notices (RoomSession); empty for any other room.
+  [[nodiscard]] virtual std::string roomToken() const { return {}; }
 };
 
 } // namespace dwe::net

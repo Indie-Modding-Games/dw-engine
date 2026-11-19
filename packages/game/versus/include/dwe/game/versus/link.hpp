@@ -43,7 +43,8 @@ enum class LinkFailure : std::uint8_t {
   Damaged,
   // The connection (net::PeerFailure): no signaling server set up, the server out of reach, no
   // room with that code, a room that already has two players, no route in time, no direct route
-  // between the two machines, or a connection that closed.
+  // between the two machines, a connection that closed, a room the server refused (a limit), or
+  // relay only without a relay server.
   NoServer,
   ServerUnreachable,
   WrongCode,
@@ -51,6 +52,8 @@ enum class LinkFailure : std::uint8_t {
   TimedOut,
   NoRoute,
   Disconnected,
+  Refused,
+  NoRelay,
 };
 
 struct LinkTimeouts {

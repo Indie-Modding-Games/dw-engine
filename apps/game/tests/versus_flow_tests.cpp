@@ -30,6 +30,7 @@ using dwe::net::Millis;
 using dwe::net::PeerFailure;
 using dwe::net::PeerLink;
 using dwe::net::PeerState;
+using dwe::net::RoomPhase;
 using dwe::session::testing::errorOf;
 using dwe::session::testing::TestPacks;
 using versus_test::Machine;
@@ -278,7 +279,15 @@ TEST_CASE("two machines play an online versus series from the menus to the resul
   LoopbackNetwork network{{.latency = Millis{40}, .jitter = Millis{30}, .lossPercent = 5}, 3};
   Player host{packs, network, 0, hostPartners()};
   Player guest{packs, network, 1, guestPartners()};
+  CHECK(host.flow->room() == nullptr);
   connect(network, host, guest);
+  // The room session keeps the phase: both in the room once linked.
+  REQUIRE(host.flow->room() != nullptr);
+  REQUIRE(guest.flow->room() != nullptr);
+  CHECK(host.flow->room()->hosting());
+  CHECK_FALSE(guest.flow->room()->hosting());
+  CHECK(host.flow->room()->phase() == RoomPhase::Connected);
+  CHECK(guest.flow->room()->phase() == RoomPhase::Connected);
 
   pickLineup(host, {0, 1, 2});
   pickLineup(guest, {1, 0, 2});
@@ -286,6 +295,8 @@ TEST_CASE("two machines play an online versus series from the menus to the resul
        [&] { return host.flow->view() == View::Match && guest.flow->view() == View::Match; });
   REQUIRE(host.flow->view() == View::Match);
   REQUIRE(guest.flow->view() == View::Match);
+  CHECK(host.flow->room()->phase() == RoomPhase::Playing);
+  CHECK(guest.flow->room()->phase() == RoomPhase::Playing);
   CHECK(number(*host.flow, "versus.local") == 0);
   CHECK(number(*guest.flow, "versus.local") == 1);
   // vs_combat.c: VS__combatInit: each side's command icons, the hovered one starting on Auto, the
@@ -304,6 +315,10 @@ TEST_CASE("two machines play an online versus series from the menus to the resul
   INFO("guest error: " << text(*guest.flow, "versus.error_key"));
   REQUIRE(host.flow->view() == View::Result);
   REQUIRE(guest.flow->view() == View::Result);
+  // The series ended: its room closed, with no error.
+  CHECK(host.flow->room()->phase() == RoomPhase::Closed);
+  CHECK(host.flow->room()->closeReason().empty());
+  CHECK(guest.flow->room()->phase() == RoomPhase::Closed);
   CHECK(number(*host.flow, "versus.results") == 3);
   CHECK(number(*host.flow, "versus.wins.0") == number(*guest.flow, "versus.wins.0"));
   CHECK(number(*host.flow, "versus.wins.1") == number(*guest.flow, "versus.wins.1"));
@@ -346,6 +361,9 @@ TEST_CASE(
   guest.flow->tick(network.now());
   REQUIRE(guest.flow->view() == View::Error);
   CHECK(text(*guest.flow, "versus.error_key") == "versus.error.wrong_code");
+  REQUIRE(guest.flow->room() != nullptr);
+  CHECK(guest.flow->room()->phase() == RoomPhase::Closed);
+  CHECK(guest.flow->room()->failure() == dwe::net::PeerFailure::WrongCode);
   guest.flow->act("confirm");
   REQUIRE(guest.flow->view() == View::Menu);
 
@@ -354,12 +372,18 @@ TEST_CASE(
   guest.flow->type("TEST", true);
   REQUIRE(guest.flow->view() == View::Joining);
   CHECK(text(*guest.flow, "versus.stage") == "connecting");
+  // The loopback's link is open at once: the room counts as connected, never as open.
+  CHECK(guest.flow->room()->phase() != RoomPhase::Closed);
+  CHECK(guest.flow->room()->phase() != RoomPhase::Open);
+  CHECK(guest.flow->room()->code() == "TEST");
   for (int tick = 0; tick < 60 * 30 && guest.flow->view() == View::Joining; ++tick) {
     guest.flow->tick(network.now());
     network.advance(Tick);
   }
   REQUIRE(guest.flow->view() == View::Error);
   CHECK(text(*guest.flow, "versus.error_key") == "versus.error.no_answer");
+  CHECK(guest.flow->room()->phase() == RoomPhase::Closed);
+  CHECK(guest.flow->room()->closeReason() == "versus.error.no_answer");
   guest.flow->act("confirm");
   CHECK(guest.flow->view() == View::Menu);
   guest.flow->act("cancel");
@@ -386,6 +410,10 @@ TEST_CASE("a player who leaves a battle ends the series for the other one") {
   play(network, host, guest, 600, [&] { return host.flow->view() == View::Error; });
   REQUIRE(host.flow->view() == View::Error);
   CHECK(text(*host.flow, "versus.error_key") == "versus.error.left");
+  // Leaving closed the guest's room; the host's closed with the error.
+  CHECK(guest.flow->room()->phase() == RoomPhase::Closed);
+  CHECK(host.flow->room()->phase() == RoomPhase::Closed);
+  CHECK(host.flow->room()->closeReason() == "versus.error.left");
 }
 
 TEST_CASE("vs_select.c: a partner is picked once and a save needs one per battle") {

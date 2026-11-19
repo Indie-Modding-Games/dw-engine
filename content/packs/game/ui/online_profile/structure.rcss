@@ -1,6 +1,6 @@
 /* The online profile whatever the skin: one panel in the middle of the window (kept inside it by
-   common/screen_fit.lua): the title, the profile's head (icon, name, record), then a row each for the name, the icons
-   and the record, the note that it is kept in the settings, Back and the prompts. The skins give the look
+   common/screen_fit.lua): the title, the profile's head (icon, name, record), then a row each for the name, the icons,
+   the connection (direct or relay only) and the record, the note that it is kept in the settings, Back and the prompts. The skins give the look
    (ui/skins/<id>/online_profile/); the plain colours here are the fallback of a skin without a sheet for it. */
 
 #scrim {
@@ -17,9 +17,9 @@
 	left: 50%;
 	top: 50%;
 	width: 760dp;
-	height: 600dp;
+	height: 684dp;
 	margin-left: -380dp;
-	margin-top: -300dp;
+	margin-top: -342dp;
 	box-sizing: border-box;
 	padding: 16dp 24dp;
 	border: 2dp #5c91bd;
@@ -148,7 +148,31 @@
 	opacity: 0.75;
 }
 
-#record-row { margin-top: 30dp; }
+/* The connection: a switch after its label, gold while relay only is on; the row clears the icon's name above it. */
+#relay-field { margin-top: 30dp; }
+
+#relay-value {
+	display: inline-block;
+	min-width: 120dp;
+	height: 40dp;
+	padding: 0 12dp;
+	box-sizing: border-box;
+	border: 2dp #5c91bd;
+	line-height: 36dp;
+	text-align: center;
+	vertical-align: middle;
+}
+
+#relay-value.on { color: #efc63c; border-color: #efc63c; }
+
+#relay-hint {
+	margin: 2dp 0 4dp 274dp;
+	font-size: 18dp;
+	line-height: 24dp;
+	opacity: 0.75;
+}
+
+#record-row { margin-top: 4dp; }
 
 .record-label {
 	display: inline-block;

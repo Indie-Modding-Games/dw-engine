@@ -24,6 +24,7 @@ using game::versus::LinkFailure;
 using game::versus::LinkPhase;
 using game::versus::RoundResult;
 using game::versus::Side;
+using net::RoomPhase;
 
 // The game ticks 60 times a second and the battle 20 (battle_main.c: BTL_battleTickFrame).
 constexpr std::int64_t TicksPerFrame = 3;
@@ -120,6 +121,10 @@ std::string failureKey(LinkFailure failure) {
     return "versus.error.no_route";
   case LinkFailure::Disconnected:
     return "versus.error.disconnected";
+  case LinkFailure::Refused:
+    return "versus.error.refused";
+  case LinkFailure::NoRelay:
+    return "versus.error.no_relay";
   }
   return "versus.error.unknown";
 }
@@ -152,6 +157,9 @@ void VersusFlow::open() {
   }
   series_.reset();
   link_.reset();
+  if (room_) {
+    room_->close();
+  }
   view_ = View::Menu;
   closed_ = false;
   cursor_ = 0;
@@ -210,6 +218,9 @@ void VersusFlow::fail(std::string key, std::string detail) {
   if (desc_.view != nullptr) {
     desc_.view->battlesOver();
   }
+  if (room_) {
+    room_->close(key);
+  }
   errorKey_ = std::move(key);
   errorDetail_ = std::move(detail);
   view_ = View::Error;
@@ -217,7 +228,9 @@ void VersusFlow::fail(std::string key, std::string detail) {
 }
 
 void VersusFlow::startHosting() {
+  room_.emplace(net::RoomSessionDesc{.hosting = true, .code = {}, .server = {}, .open = {}});
   link_ = desc_.host();
+  room_->observe(*link_);
   const game::versus::SeriesSetup setup{.battles = battles(),
                                         .arena = arenaOf(),
                                         .seed = desc_.seed(),
@@ -234,7 +247,9 @@ void VersusFlow::startJoining() {
     badEntry_ = true;
     return;
   }
+  room_.emplace(net::RoomSessionDesc{.hosting = false, .code = *code, .server = {}, .open = {}});
   link_ = desc_.join(*code);
+  room_->observe(*link_);
   series_.emplace(*desc_.battles, game::versus::VersusLink::guest(*link_, desc_.identity),
                   Placement);
   core::logInfo("versus: joining room {}", *code);
@@ -568,6 +583,9 @@ void VersusFlow::tick(net::Millis now) {
     return;
   }
   series_->poll(now);
+  if (room_ && link_ != nullptr) {
+    room_->observe(*link_);
+  }
   game::versus::VersusLink& link = series_->link();
   // Once the series is decided the other player may leave while this one still shows its end.
   if (link.phase() == LinkPhase::Failed && !link.series().finished()) {
@@ -581,6 +599,11 @@ void VersusFlow::tick(net::Millis now) {
     enterSavePick();
   }
   if (view_ == View::WaitingLineup && link.phase() == LinkPhase::Playing) {
+    // Both lineups are in: the room is ready, and the series starts.
+    if (room_) {
+      room_->markReady(true);
+      room_->markPlaying();
+    }
     if (desc_.view != nullptr) {
       // VS_CURRENT_BATTLE -1: the score before the first battle, on the series' arena.
       desc_.view->useArena(arenaOf());
@@ -614,6 +637,9 @@ void VersusFlow::tick(net::Millis now) {
     }
   } else if (view_ == View::Intermission) {
     tickPresentation();
+  }
+  if (view_ == View::Result && room_) {
+    room_->close();
   }
 }
 
@@ -678,16 +704,16 @@ screens::ScreenSettings VersusFlow::settings() const {
   }
   case View::Hosting:
   case View::Joining: {
-    // How far the connection got: the host's room, the guest that arrived, the route.
-    const net::PeerLink* link = link_.get();
-    const std::string code = link != nullptr ? link->roomCode() : std::string{};
+    // How far the connection got, by the room's phase: the host's room being made, the host
+    // waiting in it for a guest, then the route between them.
+    const RoomPhase phase = room_ ? room_->phase() : RoomPhase::Connecting;
     std::string stage = "connecting";
-    if (view_ == View::Hosting && code.empty()) {
+    if (view_ == View::Hosting && phase == RoomPhase::Connecting) {
       stage = "creating";
-    } else if (view_ == View::Hosting && link != nullptr && !link->peerFound()) {
+    } else if (view_ == View::Hosting && phase == RoomPhase::Open) {
       stage = "waiting";
     }
-    add("versus.code", code);
+    add("versus.code", room_ ? room_->code() : std::string{});
     add("versus.stage", stage);
     break;
   }

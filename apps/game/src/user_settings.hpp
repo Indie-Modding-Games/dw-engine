@@ -209,11 +209,14 @@ struct UserSettings {
   // The online profile (online_profile.hpp; kept here, not in a save, so it is the same whatever
   // game is loaded): the name the other players see (online_name), the icon next to it
   // (online_icon: an id of the fixed list) and the online versus record (online_wins,
-  // online_losses). A default name and icon when not chosen yet.
+  // online_losses). A default name and icon when not chosen yet. Relay only (online_relay_only)
+  // connects online rooms through the signaling server's relay (TURN), never directly, so the
+  // other player never learns this machine's address; off when not chosen.
   std::optional<std::string> onlineName = std::nullopt;
   std::optional<std::string> onlineIcon = std::nullopt;
   std::optional<int> onlineWins = std::nullopt;
   std::optional<int> onlineLosses = std::nullopt;
+  std::optional<bool> onlineRelayOnly = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

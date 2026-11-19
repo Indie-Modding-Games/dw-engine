@@ -5,8 +5,10 @@
 #include <nlohmann/json.hpp>
 #include <rtc/rtc.h>
 
+#include <algorithm>
 #include <array>
 #include <deque>
+#include <iterator>
 #include <mutex>
 #include <utility>
 #include <vector>
@@ -272,15 +274,30 @@ struct RtcPeerLink::Impl {
     }
   }
 
-  bool makeConnection() {
+  // The servers the peer connection uses: the game's own, then the relays the signaling server
+  // handed out; relay only keeps the relays (turn:) alone.
+  [[nodiscard]] std::vector<std::string> iceServers() const {
+    std::vector<std::string> all = settings.iceServers;
+    if (signal) {
+      std::ranges::move(relayUrls(signal->iceServers()), std::back_inserter(all));
+    }
+    if (settings.relayOnly) {
+      std::erase_if(all, [](const std::string& url) { return !url.starts_with("turn:"); });
+    }
+    return all;
+  }
+
+  bool makeConnection(const std::vector<std::string>& urls) {
     std::vector<const char*> servers;
-    servers.reserve(settings.iceServers.size());
-    for (const std::string& server : settings.iceServers) {
+    servers.reserve(urls.size());
+    for (const std::string& server : urls) {
       servers.push_back(server.c_str());
     }
     rtcConfiguration configuration{};
     configuration.iceServers = servers.data();
     configuration.iceServersCount = static_cast<int>(servers.size());
+    configuration.iceTransportPolicy =
+        settings.relayOnly ? RTC_TRANSPORT_POLICY_RELAY : RTC_TRANSPORT_POLICY_ALL;
     connection = rtcCreatePeerConnection(&configuration);
     if (connection < 0) {
       core::logWarning("versus: cannot make a peer connection ({})", connection);
@@ -363,14 +380,15 @@ RtcPeerLink::~RtcPeerLink() {
 }
 
 std::unique_ptr<RtcPeerLink> RtcPeerLink::host(RtcSettings settings, const SocketOpener& open,
-                                               bool listed) {
+                                               const std::optional<PublicHost>& listing) {
   const std::string server = settings.signalServer;
   std::unique_ptr<RtcPeerLink> link{new RtcPeerLink{std::move(settings), true}};
   if (server.empty()) {
     link->impl_->fail(PeerFailure::NoServer);
     return link;
   }
-  link->impl_->signal = std::make_unique<SignalClient>(open(hostUrl(server, listed)));
+  link->impl_->signal =
+      std::make_unique<SignalClient>(open(listing ? hostUrl(server, *listing) : hostUrl(server)));
   return link;
 }
 
@@ -423,7 +441,15 @@ void RtcPeerLink::poll(Millis now) {
   }
   if (signal.paired() && !impl.pairedAt) {
     impl.pairedAt = now;
-    if (!impl.makeConnection()) {
+    const std::vector<std::string> servers = impl.iceServers();
+    if (impl.settings.relayOnly && servers.empty()) {
+      core::logWarning("versus: relay only, and the signaling server handed out no relay");
+      impl.fail(PeerFailure::NoRelay);
+      return;
+    }
+    core::logInfo("versus: opening the route with {} ICE servers{}", servers.size(),
+                  impl.settings.relayOnly ? " (relay only)" : "");
+    if (!impl.makeConnection(servers)) {
       impl.fail(PeerFailure::NoRoute);
       return;
     }
@@ -510,6 +536,10 @@ std::optional<Millis> RtcPeerLink::lastHeard() const {
 
 std::string RtcPeerLink::roomCode() const {
   return impl_->signal ? impl_->signal->roomCode() : std::string{};
+}
+
+std::string RtcPeerLink::roomToken() const {
+  return impl_->signal ? impl_->signal->roomToken() : std::string{};
 }
 
 bool RtcPeerLink::peerFound() const {

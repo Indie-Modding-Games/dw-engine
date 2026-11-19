@@ -33,7 +33,9 @@ struct LinkTimeouts {
 // lanes. World and save interpretation stay in the app/session layer.
 class CoopLink {
 public:
-  static CoopLink host(net::PeerLink& link, Identity identity, LinkTimeouts timeouts = {});
+  // `playerName`: the host's name (its online profile), told to the guest in the welcome.
+  static CoopLink host(net::PeerLink& link, Identity identity, std::string playerName = {},
+                       LinkTimeouts timeouts = {});
   static CoopLink guest(net::PeerLink& link, Identity identity, std::string playerName,
                         LinkTimeouts timeouts = {});
 
@@ -41,7 +43,8 @@ public:
   [[nodiscard]] LinkPhase phase() const { return phase_; }
   [[nodiscard]] LinkFailure failure() const { return failure_; }
   [[nodiscard]] std::optional<PlayerId> remotePlayer() const { return remotePlayer_; }
-  // The name the guest gave in its hello (its online profile), on the host; empty on the guest.
+  // The other player's name (its online profile): the guest's, from its hello, on the host; the
+  // host's, from its welcome, on the guest. Empty until the link is ready, or from an older host.
   [[nodiscard]] const std::string& remoteName() const { return remoteName_; }
   [[nodiscard]] std::optional<Message> receive();
   core::Result<void> send(const Message& message);
@@ -60,6 +63,8 @@ private:
   LinkFailure failure_ = LinkFailure::None;
   std::optional<PlayerId> remotePlayer_;
   std::string remoteName_;
+  // This side's own name, told to the guest (on the host).
+  std::string playerName_;
   std::deque<Message> incoming_;
   net::Millis now_{0};
   std::optional<net::Millis> opened_;

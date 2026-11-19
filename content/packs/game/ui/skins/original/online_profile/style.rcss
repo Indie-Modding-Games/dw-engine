@@ -6,9 +6,9 @@
 
 #panel {
 	width: 760dp;
-	height: 612dp;
+	height: 702dp;
 	margin-left: -380dp;
-	margin-top: -306dp;
+	margin-top: -351dp;
 	padding: 9dp 30dp 0 30dp;
 }
 
@@ -117,7 +117,31 @@
 	opacity: 1;
 }
 
-#record-row { margin-top: 33dp; }
+/* The connection: its value over a cyan line like the name's, in yellow while relay only is on. */
+#relay-field { margin-top: 33dp; }
+
+#relay-value {
+	min-width: 240dp;
+	height: 39dp;
+	padding: 0 9dp;
+	border: 0;
+	border-bottom: 3dp #4a9fc5;
+	line-height: 36dp;
+	text-align: left;
+	color: #d0d0d0;
+}
+
+#relay-value.on { color: #fff371; border-bottom-color: #fff371; }
+
+#relay-hint {
+	margin: 3dp 0 3dp 216dp;
+	font-size: 22dp;
+	line-height: 27dp;
+	color: #b2b2b2;
+	opacity: 1;
+}
+
+#record-row { margin-top: 3dp; }
 
 .record-label {
 	margin-right: 9dp;

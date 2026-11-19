@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.17.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.18.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -596,7 +596,7 @@ online = {}
 ---@return table
 function online.state() end
 
---- The player's online profile: name, named, icon, wins, losses and draft.
+--- The player's online profile: name, named, icon, wins, losses, draft and relay_only.
 ---@return table
 function online.profile() end
 
@@ -713,6 +713,12 @@ function online.save_name() end
 ---@return boolean
 ---@return string?
 function online.set_icon(id) end
+
+--- Connects the next rooms through the server's relay only, or directly when possible.
+---@param on boolean
+---@return boolean
+---@return string?
+function online.set_relay_only(on) end
 
 --- Asks again for the room last asked for, after a failure.
 ---@return boolean

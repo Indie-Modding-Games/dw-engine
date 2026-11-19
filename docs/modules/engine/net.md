@@ -11,8 +11,9 @@ server client. It depends on `core` and, inside, on libdatachannel; it knows not
 |---|---|
 | `PeerLink` | One end of the connection with the other peer, with two lanes (`Lane`): `Reliable` (each message arrives once and in order) and `Unreliable` (it may arrive late, out of order or never). Nothing blocks: `poll(now)` moves it and the messages wait in it. It says its state (`Connecting`, `Open`, `Failed`), why it failed (`PeerFailure`), when it last heard from the other one, the room code and whether the other one has already reached it |
 | `RtcPeerLink` | The real link: WebRTC with data channels (libdatachannel). `host(settings, open)` creates a room on the signaling server and offers; `join(settings, code, open)` enters with the code and answers. They exchange their ICE candidates through the server and, when both channels are open, tell the server to close the room and continue peer to peer. Reliable lane: `control` channel (reliable and ordered); unreliable: `inputs` channel (unordered, no retransmits). It sends a `0x00` byte every 250 ms on `inputs` so the other one knows it is still there |
-| `RtcSettings` | The signaling server (`ws://` or `wss://`; empty = none), the ICE servers (`stun:`, later `turn:`) and how long the two can take to open a route once they are in the room (30 s) |
-| `SignalClient`, `SignalSocket`, `openWebSocket` | The game's side of the signaling protocol ([versus-signal](https://github.com/Indie-Modding-Games/dw-engine/tree/main/apps/versus-signal)): routes `/v1/host` and `/v1/join/<code>`, JSON messages `room`, `peer`, `joined`, `signal`, `done` and `error`. The socket is libdatachannel's WebSocket client; the tests put an in-memory one |
+| `RtcSettings` | The signaling server (`ws://` or `wss://`; empty = none), the ICE servers (`stun:` and `turn:`), `relayOnly` (only relay candidates: the other peer never learns this machine's address) and how long the two can take to open a route once they are in the room (30 s). The relays the server hands out with `room` or `joined` (`IceServer`, short-lived credentials) are added to the ICE servers as UDP `turn:` URLs (`relayUrls`): libdatachannel's ICE agent does not relay over TCP or TLS |
+| `RoomSession`, `RoomPhase` | A room's phase (`room_session.hpp`): Connecting, Open, Connected, Ready, Playing, Closed. `observe(link)` follows the link (its code, the other peer, its failure); the flows say `markReady`, `markPlaying` and `close`. A public room's host sends each of those to the directory with its token (`stateUrl`, one `SignalRequest` at a time); a notice that fails is logged and the room goes on |
+| `SignalClient`, `SignalSocket`, `openWebSocket` | The game's side of the signaling protocol ([versus-signal](https://github.com/Indie-Modding-Games/dw-engine/tree/main/apps/versus-signal)): routes `/v1/host` (with `PublicHost`: name, icon, compatibility key and mode for a public room) and `/v1/join/<code>`, JSON messages `room` (with a public room's token and the relays), `peer`, `joined` (with the relays), `signal`, `done` and `error`. `SignalRequest`, `RoomListRequest` and `ServerInfoRequest` ask the server one thing over a socket of their own (a state notice, the public list, `/v1/info`). The socket is libdatachannel's WebSocket client; the tests put an in-memory one |
 | `normalizedRoomCode` | The room codes: four characters from `23456789ABCDEFGHJKLMNPQRSTUVWXYZ` (without 0, 1, O or I, which get confused). It accepts lowercase, spaces and hyphens; what cannot be a code is not sent |
 | `DatagramLink`, `ChannelPeerLink` | An unreliable datagram link (none exceeds `MaxDatagram`, 1200 bytes) and a `PeerLink` on top: a lane byte in front and a `ReliableChannel` for the reliable lane. The test link uses it |
 | `LoopbackNetwork` | Two simulated peers in one process for the tests (`link(side)`, room code `TEST`), with its clock (`advance`) and `LinkConditions`: latency, jitter (which reorders), loss and duplicates with a seed, and `cut()` for a peer that leaves without warning |
@@ -33,8 +34,10 @@ Lockstep messages start with `0x40` (inputs) and `0x41` (checksum); those of ver
 | `WrongCode` | There is no room with that code (or it already expired) |
 | `RoomFull` | The room already has its two players |
 | `TimedOut` | The room expired waiting for the guest, or the two did not open a route in 30 s |
-| `NoRoute` | ICE failed: there is no direct route between the two networks (TURN is needed, which does not exist yet) |
+| `NoRoute` | ICE failed: there is no route between the two networks (without a relay from the server, or with one that did not answer) |
 | `Closed` | The connection closed after opening |
+| `Refused` | The server refused the room: too many rooms, too many in a short time from this address, or a nickname it does not take |
+| `NoRelay` | Relay only is on and the server handed out no relay |
 
 A WebRTC "disconnected" notice does not close the link: it may come back on its own, and versus's silence timeout (8 s) decides.
 
@@ -79,8 +82,9 @@ URL and come from a trusted authority. If not, the socket fails and versus count
 
 ## Limits
 
-- No TURN: two networks that do not allow a direct route (some symmetric NATs, corporate networks) end up in `NoRoute`. The
-  server could later give short-lived TURN credentials, and `ice_servers` is already a list of data.
+- Without the server's TURN secrets there is no relay: two networks that do not allow a direct route (some symmetric
+  NATs, corporate networks) end up in `NoRoute`. With them, the server hands out short-lived credentials with each
+  room. Only UDP relays: a network that blocks all UDP still cannot connect.
 - The signaling server is deployed at `wss://dwe-versus-signal.regamelabs.workers.dev`
   (`versus/network.yaml`); `--versus-server` changes it at startup.
 
@@ -91,7 +95,8 @@ reordering), resend, silence and cut, foreign and oversized messages; lockstep b
 repetition and ack of the inputs, messages from another fight, ticks without input, desync
 at its tick and damaged messages; the room codes; the signaling client against an in-memory
 server with the real one's rules (pairing and forwarding, code that does not exist, full room, server down, guest
-who leaves); and two real `RtcPeerLink`s that connect on the same machine through that in-memory server (without network or
+who leaves, `/v1/info`, the public list, a refused room, state notices and relays); the room session's phases and
+notices (`room_session_tests.cpp`, also relay only with and without relays); and two real `RtcPeerLink`s that connect on the same machine through that in-memory server (without network or
 STUN) and talk over both lanes.
 
 The server's certificate (`tls_tests.cpp`): a local TLS server (libdatachannel's) with synthetic test

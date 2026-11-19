@@ -37,6 +37,9 @@ public:
   [[nodiscard]] int losses() const { return losses_; }
   // Whether the player chose a name (else the default one shows).
   [[nodiscard]] bool named() const { return named_; }
+  // Online rooms connect through the server's relay only (UserSettings::onlineRelayOnly).
+  [[nodiscard]] bool relayOnly() const { return relayOnly_; }
+  void setRelayOnly(bool on) { relayOnly_ = on; }
 
   // False (and nothing changes) for a name with nothing left once cleaned.
   bool setName(std::string_view typed);
@@ -50,6 +53,7 @@ private:
   int wins_ = 0;
   int losses_ = 0;
   bool named_ = false;
+  bool relayOnly_ = false;
 };
 
 } // namespace dwe::app
