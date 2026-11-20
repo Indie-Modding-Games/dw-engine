@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.23.0 | Every partner fights in a co-op battle: an ally's card counts down its revive (`battle.ally.<n>.revive_seconds`, `revive_seconds` in `battle.allies()`), and the `coop_battle` screen shows each fallen partner's countdown (`coop_battle.fighter.<n>.revive_seconds`) and lets the player pick the partner its items fly to (`coop_battle.target`, the `coop_battle_target` command). The `coop_difficulty` option arrives (off, standard or hard) |
 | 0.22.0 | The `coop_trade` screen trades items between two co-op players: the phase (`coop_trade.phase`), the other player (`coop_trade.other.*`), this player's bag (`coop_trade.bag.<n>.*`), both offers (`coop_trade.own.<n>.*`, `coop_trade.their.<n>.*`) and both ready marks, with the commands `coop_trade_answer`, `coop_trade_add`, `coop_trade_take`, `coop_trade_confirm` and `coop_trade_cancel`. The `coop_hud` tag says when the other player can be asked (`coop_hud.tag.trade`) |
 | 0.21.0 | Rooms of up to four players: each member says when its seat is taken while its connection is still being set up (`online.member.<n>.arriving`), and the co-op HUD shows a tag over each of the other players (`coop_hud.tag.<n>.*` for the second and third) |
 | 0.20.0 | Both partners fight in a co-op battle: the battle screen lists the other players' partners fighting beside this player's (`battle.ally.<n>.*`, `battle.allies()`), and its partner, strip, finisher and bag are this player's own. The `coop_battle` screen gains the role `ally`, the fighters' MP, side and whether one is this player's (`coop_battle.fighter.<n>.mp`, `.max_mp`, `.side`, `.mine`); orders and items go to this player's own partner |
@@ -99,7 +100,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.22.0**.
+UI API version: **0.23.0**.
 
 ### `ui`
 
@@ -323,6 +324,7 @@ UI API version: **0.22.0**.
 | `quick_battle_start` | option | yes/no | Quick battle start. |
 | `difficulty` | option | text | Difficulty: normal or easy. |
 | `shop_job_mode` | option | text | The canyon shop job: improved or original. |
+| `coop_difficulty` | option | text | How co-op battles scale their enemies: off, standard or hard. |
 | `skip_evolution` | option | yes/no | Skip the evolution scene. |
 | `choice_cancel_closes` | option | yes/no | Cancel closes a choice. |
 | `fair_sickness_chance` | option | yes/no | Fair chance of falling sick. |
@@ -454,6 +456,8 @@ UI API version: **0.22.0**.
 | `coop_battle.fighter.<n>.max_mp` | setting | number | A fighter's most MP. |
 | `coop_battle.fighter.<n>.side` | setting | text | Whose side a fighter is on: partner (a player's partner) or enemy. |
 | `coop_battle.fighter.<n>.mine` | setting | yes/no | Whether a fighter is this player's own partner. |
+| `coop_battle.fighter.<n>.revive_seconds` | setting | number | A fallen partner's revive countdown in seconds; -1 without one. |
+| `coop_battle.target` | setting | number | The fighter this player's items fly to (a partner's number, picked with coop_battle_target); -1 for its own partner (the fighting one for a helper). |
 | `coop_battle.order_count` | setting | number | How many orders this player can give its partner now (none for the helper). |
 | `coop_battle.order.<n>.command` | setting | number | An order's command number, sent with coop_battle_order. |
 | `coop_battle.order.<n>.label_key` | setting | text | The text key of an order's name. |
@@ -464,7 +468,8 @@ UI API version: **0.22.0**.
 | `coop_battle.revision` | setting | number | Goes up each time the values above change: the screen is drawn again. |
 | `coop_battle_order` | command | number | This player's order for its own partner (a command's number). |
 | `coop_battle_cheer` | command | — | A cheer: charges the finisher as the battle's charge buttons do. |
-| `coop_battle_item` | command | text | Throws one of an item (its id) from this player's bag at its own partner (the fighting one for a helper). |
+| `coop_battle_item` | command | text | Throws one of an item (its id) from this player's bag at the partner coop_battle.target names, else at its own partner (the fighting one for a helper). |
+| `coop_battle_target` | command | number | Picks the partner this player's items fly to (a fighter's number); the same again picks none. |
 | `coop_battle_close` | command | — | The starter closes the end box. |
 
 ### `coop_trade`
@@ -787,6 +792,7 @@ UI API version: **0.22.0**.
 | `battle.ally.<n>.max_mp` | setting | number | An ally's maximum MP. |
 | `battle.ally.<n>.fainted` | setting | yes/no | Whether an ally has fainted. |
 | `battle.ally.<n>.hp_bar` | setting | yes/no | Always on for an ally. |
+| `battle.ally.<n>.revive_seconds` | setting | number | The countdown to revive a fainted ally; -1 without one. |
 | `battle.finisher.progress` | setting | number | How much the finisher gauge has charged. |
 | `battle.finisher.goal` | setting | number | How much it has to charge to be full. |
 | `battle.finisher.ready` | setting | yes/no | Whether the finisher is ready. |
@@ -848,7 +854,7 @@ UI API version: **0.22.0**.
 | `battle_end_counted` | command | — | The count of the bits at the battle's end has finished. For an addon, only in the end phase. |
 | `battle.state(): table` | query | table | The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil) and cup (a cup battle). |
 | `battle.fighters(): table` | query | table | The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted and hp_bar. |
-| `battle.allies(): table` | query | table | The other players' partners fighting beside this player's in a co-op battle (empty otherwise): name_key, status_key, hp, max_hp, mp, max_mp and fainted. |
+| `battle.allies(): table` | query | table | The other players' partners fighting beside this player's in a co-op battle (empty otherwise): name_key, status_key, hp, max_hp, mp, max_mp, fainted and revive_seconds (a fallen ally's countdown, or nil). |
 | `battle.commands(): table` | query | table | The command strip, the finisher first: command, label_key, icon, available, current and mp_cost. |
 | `battle.finisher(): table` | query | table | The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil). |
 | `battle.strip(): table` | query | table | Where the strip and the partner's bars are when entering and leaving: top, bottom, blink, hp_x and mp_x (or nil). |

@@ -195,6 +195,22 @@ void GameSession::useEnemySounds(std::span<const std::string> species) {
   }
 }
 
+void GameSession::useAllySounds(std::span<const std::string> species) {
+  if (sound_) {
+    sound_->useAllyBanks(species);
+  }
+}
+
+void GameSession::keepPartnerSounds(std::optional<std::string> species) {
+  // The partner's voice (vlall) and body (vball) slots.
+  constexpr std::int64_t PartnerVoiceSlot = 3;
+  constexpr std::int64_t PartnerSlot = 4;
+  if (sound_) {
+    sound_->keepPartnerBank(PartnerVoiceSlot, species);
+    sound_->keepPartnerBank(PartnerSlot, std::move(species));
+  }
+}
+
 core::Result<void> GameSession::setUp() {
   const ruleset::Ruleset& current = store_.current();
   auto species = speciesOf(desc_, current);

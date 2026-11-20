@@ -7,6 +7,7 @@
 #include <dwe/game/story/story_ports.hpp>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -19,6 +20,11 @@
 #include <vector>
 
 namespace dwe::session {
+
+// An engine addition: the slots of a co-op battle's other partners (game::battle::AllyState), one
+// per ally in the battle's order, past the original's (docs/architecture/coop-combat.md §4).
+inline constexpr std::int64_t FirstAllySoundSlot = 16;
+inline constexpr std::size_t AllySoundSlots = 3;
 
 // The original's sound slots on the game's audio
 // (docs/architecture/audio.md#64-effects-in-detail): slot 0 plays sound/ss, slot 1 sound/sl,
@@ -58,6 +64,9 @@ public:
   // species (btl.c: loadBattleData, readVBALLSection(i + 4, type)). The slots keep them after the
   // battle, as the original does, until the next battle loads others.
   void useEnemyBanks(std::span<const std::string> species);
+  // A co-op battle's allies, in their order: ally i takes slot FirstAllySoundSlot + i with the
+  // vball entry of its species; empty lets them go.
+  void useAllyBanks(std::span<const std::string> species);
   // One of slots 4 to 7 takes the vball entry of the original's species number `type`
   // (sound_async.c: readVBALLSection), as routine 51 loads the final boss's into slot 5. Slot 4 is
   // the partner's: it is left alone.
@@ -95,6 +104,8 @@ private:
   std::array<std::optional<std::string>, 2> keptPartnerBanks_;
   // The vball folders in slots 5 to 7, empty for a slot nothing loaded.
   std::array<std::optional<std::string>, 3> enemyBanks_;
+  // The vball folders of the co-op allies' slots (useAllyBanks).
+  std::array<std::optional<std::string>, AllySoundSlots> allyBanks_;
   // Species id (and the original's number) -> folder, from the used_by of sound/vball/* and
   // sound/vlall/*.
   bool speciesBanksRead_ = false;

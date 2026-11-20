@@ -553,6 +553,27 @@ versus:
   # in tournament.yaml (arena.arenas): T_TOGI, B_TOGI and E_TOGI (vs_scene.c: VS_ARENA_MODELS).
   arenas: [0, 1, 2]
 
+# Co-op battles (an engine addition: the original has no co-op; docs/architecture/coop-difficulty.md §5): with the
+# option coop_difficulty on (standard by default, hard adds hard_hp_bonus_percent to the HP), the enemies grow with the
+# partners that fight, percents of the original value for 1, 2, 3 and 4 partners. Normal fights and fixed fights
+# (trigger 1: story bosses) have their own table. Each player there whose partner does not fight adds helper_hp_percent
+# to the HP. One partner and nobody helping: always the original numbers. Def, Speed and Brains never change, and the
+# stat gains read the enemies' original stats.
+coop_scaling:
+  normal:
+    hp_percent: [100, 180, 250, 320]
+    mp_percent: [100, 150, 200, 250]
+    offense_percent: [100, 100, 105, 110]
+    finisher_fill_percent: [100, 125, 150, 175]
+  fixed:
+    hp_percent: [100, 200, 290, 370]
+    # Fixed fights spend no MP.
+    mp_percent: [100, 100, 100, 100]
+    offense_percent: [100, 105, 110, 115]
+    finisher_fill_percent: [100, 125, 150, 175]
+  helper_hp_percent: 15
+  hard_hp_bonus_percent: 25
+
 # Quirks of the original (docs/reference/battle.md, "Quirks"). true reproduces the original; another ruleset turns them off.
 quirks:
   # partner_impl.c: handlePostBattleTiredness divides the spent MP by the max before multiplying by 10, so it

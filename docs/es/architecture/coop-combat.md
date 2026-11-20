@@ -368,11 +368,26 @@ tarea:
   cae, su compañero sigue por su cuenta.
 - Tarea 10, en parte: la pantalla de combate muestra las tarjetas de los aliados (`battle.allies`, PV y PM) en todas las
   pieles; el panel `coop_battle` del invitado muestra los PV de todos los luchadores, los PM de los compañeros y marca
-  el suyo; las órdenes van al compañero propio. Falta: elegir a qué aliado va un objeto (va al compañero propio, o al
-  que pelea si el propio ya no está), la animación del objeto lanzado por un aliado en la otra pantalla, los sonidos de
-  la especie del aliado y su insignia de cuenta atrás.
-- Falta: la tarea 11 (dificultad cooperativa), la 12 y siguientes, y más de un invitado en un combate (el anfitrión y
-  un invitado pelean juntos; el protocolo y el combate ya admiten hasta `MaxPlayers` compañeros).
+  el suyo; las órdenes van al compañero propio.
+
+**Hecho (2026-11-20, versión 9 del protocolo, API de la interfaz 0.23.0): todos los compañeros pelean.** Cualquier
+invitado puede empezar un combate, y cada jugador de ese mapa cuyo compañero está libre pelea en él (hasta tres aliados
+junto al compañero de quien inicia): en los combates del anfitrión, todo invitado libre; en el de un invitado, el
+anfitrión y los demás invitados libres. El enlace de cada invitado lleva sus propias peticiones, ofertas y acciones; el
+anfitrión manda a cada uno sus propios fotogramas (la tira, la bolsa y el remate de su compañero) y su propio final, con
+botín solo para el invitado cuyo compañero peleó. Si un invitado se cae, su compañero sigue por su cuenta; los demás
+siguen jugando.
+
+- Tarea 10, más: la tarjeta de un aliado caído cuenta atrás hasta que se levanta (`battle.ally.<n>.revive_seconds`), y
+  el panel del invitado enseña la cuenta atrás de cada compañero caído. Cada jugador elige a qué compañero van sus
+  objetos (el botón Apuntar del panel; `BattleAction.value` lleva el objetivo), y el objeto que lanza un invitado sale
+  del cuerpo de ese jugador en la pantalla del anfitrión, con la animación de lanzar. Cada aliado suena como su especie
+  (los bancos de sonido de los aliados en las ranuras 16–18; el compañero visitante conserva su especie en las del
+  compañero).
+- Tarea 11: la dificultad cooperativa, ver [dificultad cooperativa](coop-difficulty.md) §9.
+- Falta: la tarea 12 (un combate por mapa: mientras uno sigue, otro en otro mapa se rechaza), las mecánicas opcionales
+  de §8, un grito por domador, y que la pantalla del propio invitado dibuje los lanzamientos y los sonidos de los
+  aliados del combate del anfitrión (su campo enseña a los luchadores donde los ponen los fotogramas del anfitrión).
 
 1. **Refactorización de los lados del combate:** sustituir `PartnerId` por `side`, `owner` y las consultas
    `isPlayerSide`, `partnerOf`, `partners`, `enemies`; primero los compañeros, después los enemigos. Sin cambios de

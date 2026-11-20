@@ -590,7 +590,8 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
                                   .timeLimit = request.timeLimit,
                                   .recruitOnVictory = std::move(request.recruitOnVictory),
                                   .versus = std::nullopt,
-                                  .allies = {}};
+                                  .allies = {},
+                                  .coopScaling = request.coopScaling};
   for (const BattleAlly& ally : request.allies) {
     const VisitingPartner joining = ally.visitor ? *ally.visitor : visitorOf(session);
     auto fighter = visitingCombatant(joining);
@@ -709,7 +710,8 @@ BattleAdapter::startVersus(const game::versus::VersusFighter& host,
       .timeLimit = rules_->versus->timeLimitSeconds,
       .recruitOnVictory = std::nullopt,
       .versus = game::battle::VersusSetup{.rivalDiscipline = guest.discipline},
-      .allies = {}};
+      .allies = {},
+      .coopScaling = {}};
   return game::battle::Battle::start(std::move(setup), *rules_, *catalog_, std::move(*strategies),
                                      seed);
 }

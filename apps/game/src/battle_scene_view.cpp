@@ -2,6 +2,7 @@
 
 #include <dwe/assets/map_document.hpp>
 #include <dwe/render/map_camera.hpp>
+#include <dwe/session/session_sound.hpp>
 
 #include <glm/common.hpp>
 #include <glm/geometric.hpp>
@@ -47,6 +48,22 @@ game::battle::EffectView effectViewOf(const render::MapCamera& camera) {
   return view;
 }
 
+namespace {
+
+// The sound slot of fighter `id`: the original's, the partner's first and the enemies' after it;
+// a co-op ally's own past them (session::FirstAllySoundSlot, loaded with its species' bank).
+std::int64_t soundSlotOf(const game::battle::BattleState& state, game::battle::FighterId id,
+                         std::int64_t firstSoundSlot) {
+  for (std::size_t ally = 0; ally < state.allies.size(); ++ally) {
+    if (state.allies[ally].id == id && ally < session::AllySoundSlots) {
+      return session::FirstAllySoundSlot + static_cast<std::int64_t>(ally);
+    }
+  }
+  return firstSoundSlot + static_cast<std::int64_t>(id);
+}
+
+} // namespace
+
 std::vector<FighterFigure> fighterFiguresOf(const game::battle::BattleState& state,
                                             std::int64_t firstSoundSlot) {
   std::vector<FighterFigure> figures;
@@ -59,7 +76,7 @@ std::vector<FighterFigure> fighterFiguresOf(const game::battle::BattleState& sta
          .clip = static_cast<std::uint32_t>(fighter.shown.clip),
          .starts = fighter.shown.starts,
          .frozen = fighter.shown.frozen,
-         .soundSlot = firstSoundSlot + static_cast<std::int64_t>(figures.size()),
+         .soundSlot = soundSlotOf(state, figures.size(), firstSoundSlot),
          .pace = 1.0F,
          .scale = {fighter.shown.flat.across, fighter.shown.flat.up, fighter.shown.flat.across},
          .flatSprite = fighter.shown.flat.sprite});

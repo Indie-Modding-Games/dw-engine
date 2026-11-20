@@ -202,7 +202,8 @@ BattleRequest duelWithFoe() {
           .matchMusic = std::nullopt,
           .predefined = false,
           .visitor = std::nullopt,
-          .allies = {}};
+          .allies = {},
+          .coopScaling = {}};
 }
 
 } // namespace

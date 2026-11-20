@@ -34,20 +34,11 @@ constexpr std::string_view SpeciesModelLeaf = "model";
 } // namespace
 
 FieldScene::Actor* FieldScene::battlePartnerActor() const {
-  switch (battlePartner_) {
-  case BattlePartner::Own:
-    break;
-  case BattlePartner::CoopGuest:
-  case BattlePartner::CoopHost: {
-    // Co-op battles run between the host and its first guest (one link for now, #352).
-    const CoopPartner* remote =
-        coopPartnerOf(battlePartner_ == BattlePartner::CoopGuest ? game::field::GuestPlayerId
-                                                                 : game::field::HostPlayerId);
-    if (remote != nullptr && remote->actor) {
+  if (battlePartner_) {
+    if (const CoopPartner* remote = coopPartnerOf(*battlePartner_);
+        remote != nullptr && remote->actor) {
       return remote->actor.get();
     }
-    break;
-  }
   }
   return partnerActor_.get();
 }

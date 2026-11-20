@@ -318,7 +318,54 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
   // btl.c: loadBattleData: everyone stands as the battle loads.
   startShownClips(state);
   battle.setup_ = std::move(setup);
+  battle.scaleEnemies();
   return battle;
+}
+
+void Battle::scaleEnemies() {
+  std::size_t partners = 0;
+  for (FighterId id = 0; id < state_.fighters.size(); ++id) {
+    if (state_.isPlayerSide(id) && state_.fighters[id].departure != Departure::Fled) {
+      ++partners;
+    }
+  }
+  const ScalingFactors next = coopScalingFactors(*rules_, setup_.coopScaling.level, partners,
+                                                 setup_.coopScaling.helpers, setup_.scripted);
+  if (next == scaling_) {
+    return;
+  }
+  const auto percentOf = [](std::int32_t value, std::int32_t percent) {
+    return static_cast<std::int32_t>(static_cast<std::int64_t>(value) * percent / Hundred);
+  };
+  // The same share of the new maximum; a fighter with some left keeps at least 1.
+  const auto keepShare = [](std::int32_t value, std::int32_t oldMax, std::int32_t newMax) {
+    if (value <= 0 || oldMax <= 0) {
+      return value <= 0 ? value : newMax;
+    }
+    return std::max<std::int32_t>(
+        1, static_cast<std::int32_t>(static_cast<std::int64_t>(value) * newMax / oldMax));
+  };
+  for (FighterId id = 1; id <= state_.enemyCount(); ++id) {
+    Fighter& enemy = state_.fighters[id];
+    const CombatStats& base = enemy.startStats;
+    const std::int32_t maxHp = std::max(1, percentOf(base.maxHp, next.hp));
+    const std::int32_t maxMp = percentOf(base.maxMp, next.mp);
+    enemy.hp = std::min(keepShare(enemy.hp, enemy.stats.maxHp, maxHp), maxHp);
+    enemy.mp = std::min(keepShare(enemy.mp, enemy.stats.maxMp, maxMp), maxMp);
+    enemy.stats.maxHp = maxHp;
+    enemy.stats.maxMp = maxMp;
+    // Off grows by the change of factor (a buff it took stays), never past the stat cap nor below
+    // its own.
+    const std::int32_t offense = static_cast<std::int32_t>(
+        static_cast<std::int64_t>(enemy.stats.offense) * next.offense / scaling_.offense);
+    enemy.stats.offense =
+        std::max(base.offense, std::min(offense, std::max(rules_->limits.statCap, base.offense)));
+    const std::int32_t goal =
+        std::max(1, (rules_->finisher.goalBase - base.speed) * Hundred / next.finisherFill);
+    enemy.finisherGoal = goal;
+    enemy.finisherProgress = std::min(enemy.finisherProgress, goal);
+  }
+  scaling_ = next;
 }
 
 core::Result<void> Battle::command(Command command) {
@@ -801,6 +848,8 @@ bool Battle::endCoop() {
                        .status = StatusEffect::None,
                        .command = Command::None});
   }
+  // A partner that ran off no longer counts for the enemies' scaling.
+  scaleEnemies();
   const std::vector<FighterId> in = state_.partnersIn();
   if (in.empty()) {
     const bool anyFled = std::ranges::any_of(state_.fighters, [](const Fighter& fighter) {

@@ -270,6 +270,16 @@ first ride from frzl16 (175 and 352 set) runs the entry with routine 262 answeri
 section 0x3C plays as the original's (Whamon at (1465, 2906), rotation 0). Sheet:
 `_work/tmp/w112/sheets/whamon-improvement.png`.
 
+## Co-op difficulty
+
+An optional improvement, standard by default, for co-op only ([co-op difficulty](../../architecture/coop-difficulty.md)):
+the original has no online play, so off keeps its numbers. The `coop_difficulty` setting (row "Co-op difficulty",
+"Dificultad cooperativa" in Spanish, Game tab, values `off`, `standard` and `hard`, saved in the user's settings) is read
+by `PlaySession::applyPlayOptions` into `PlaySession::coopLevel()`. On the host, `CoopBattles` hands it to
+`BattleScreen::setCoopScaling` with the number of helpers (players on the map whose partner does not fight), and the
+battle request carries it to `game::battle::BattleSetup::coopScaling`. A battle with one partner and no helper is the
+original's whatever the setting. Only the host's value counts: its game runs every co-op battle.
+
 ## Praise and scold
 
 "Praise" and "Scold" in the field menu (Tab) play the original's scene (`partner.c: partnerTickPraiseScold`,

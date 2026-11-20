@@ -88,6 +88,11 @@ void SessionSound::dropUnusedBanks() {
       used.insert(std::move(*folder));
     }
   }
+  for (const std::optional<std::string>& ally : allyBanks_) {
+    if (ally) {
+      used.insert(*ally);
+    }
+  }
   std::erase_if(banks_, [&](const auto& entry) {
     return entry.first != SystemBank && entry.first != SecondSystemBank &&
            entry.first != mapBank_ && entry.first != sceneBank_ &&
@@ -120,6 +125,14 @@ void SessionSound::useEnemyBanks(std::span<const std::string> species) {
                      FirstEnemySlot + static_cast<std::int64_t>(index), species[index],
                      enemyBanks_.at(index).value_or("none"));
     }
+  }
+  dropUnusedBanks();
+}
+
+void SessionSound::useAllyBanks(std::span<const std::string> species) {
+  for (std::size_t index = 0; index < allyBanks_.size(); ++index) {
+    allyBanks_.at(index) =
+        index < species.size() ? speciesFolder(species[index], false) : std::nullopt;
   }
   dropUnusedBanks();
 }
@@ -317,6 +330,10 @@ std::optional<std::string> SessionSound::folderOf(std::int64_t slot) {
   case FirstEnemySlot + 1:
   case LastEnemySlot:
     return enemyBanks_.at(static_cast<std::size_t>(slot - FirstEnemySlot));
+  case FirstAllySoundSlot:
+  case FirstAllySoundSlot + 1:
+  case FirstAllySoundSlot + 2:
+    return allyBanks_.at(static_cast<std::size_t>(slot - FirstAllySoundSlot));
   case MapSlot:
     if (inBattle_ || battleBankKept_) {
       return std::string{BattleBank};

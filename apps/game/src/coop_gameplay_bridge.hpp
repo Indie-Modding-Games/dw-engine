@@ -13,11 +13,6 @@ namespace dwe::app {
 
 // App-layer seam between the network protocol and player controllers. It translates only field
 // movement in this milestone and leaves join/snapshot/profile messages queued for session setup.
-// The co-op battles run with one ally guest, player 1 (#363, coop_battles.hpp): whether a peer's
-// bridge carries them. A guest's only peer is the host.
-[[nodiscard]] constexpr bool coopBattlePeer(bool host, game::coop::PlayerId peer) {
-  return !host || peer == game::coop::GuestPlayerId;
-}
 
 class CoopGameplayBridge {
 public:
@@ -41,9 +36,6 @@ public:
   // The co-op battles' messages (coop_battles.hpp), in their own queue, and sending one.
   [[nodiscard]] std::optional<game::coop::Message> receiveBattle();
   [[nodiscard]] core::Result<void> sendBattle(game::coop::Message message);
-  // The host, for a guest that does not fight with it: refuses its battle asks as busy and drops
-  // its other battle messages (its offers), so nothing waits on them.
-  void refuseBattles();
   // The item trades' messages (coop_trades.hpp), in their own queue; they are sent with send.
   [[nodiscard]] std::optional<game::coop::Message> receiveTrade();
   // The host's snapshots smoothed for a frame drawn at `now` (the poll clock).

@@ -692,3 +692,14 @@
 .ally .bar-digits {
 	display: none;
 }
+
+/* A fallen ally's revive countdown, after its name. */
+.ally-revive {
+	margin-left: 10dp;
+	font-size: 18dp;
+	color: #ffd34a;
+}
+
+.ally-revive.hidden {
+	display: none;
+}
