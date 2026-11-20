@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "guard_yaml.hpp"
 #include "messages.hpp"
 
 namespace dwe::game::field {
@@ -96,6 +97,12 @@ Truth factValue(const GuardTest& test, const GuardFacts& facts) {
       return truthOf(compares(test.compare, signed16(*stat), signed16(test.value)));
     }
     return truthOf(compares(test.compare, *stat & Unsigned16Mask, test.value & Unsigned16Mask));
+  }
+  if (test.test == VariableTestName) {
+    // script_interp.c: scriptIfInstruction compares the variable's byte with the entry's.
+    const auto value = facts.variables ? facts.variables(test.operand) : std::nullopt;
+    return value ? truthOf(compares(test.compare, *value & ByteMask, test.value & ByteMask))
+                 : Truth::Unknown;
   }
   if (test.test == ConditionTestName) {
     const auto conditions = facts.conditions ? facts.conditions() : std::nullopt;
@@ -285,6 +292,12 @@ void readOperands(YamlReader& reader, const YamlNode& node, GuardTest& test) {
     test.operand = reader.integer<std::int32_t>(reader.field(node, "stat"));
     test.compare = readComparison(reader, node);
     test.value = reader.integer<std::int64_t>(reader.field(node, "value"));
+  } else if (test.test == VariableTestName &&
+             reader.expectKeys(node, "a variable test", {"test", "pstat", "compare", "value"},
+                               {"combine", "code"})) {
+    test.operand = reader.integer<std::int32_t>(reader.field(node, "pstat"));
+    test.compare = readComparison(reader, node);
+    test.value = reader.integer<std::int64_t>(reader.field(node, "value"));
   } else if (test.test == ConditionTestName &&
              reader.expectKeys(node, "a condition test", {"test", "mask", "negate"},
                                {"combine", "code"})) {
@@ -316,6 +329,8 @@ GuardTest readTest(YamlReader& reader, const YamlNode& node) {
   readOperands(reader, node, test);
   return test;
 }
+
+} // namespace
 
 WarpGuard readGuard(YamlReader& reader, const YamlNode* node) {
   WarpGuard guard;
@@ -373,6 +388,8 @@ WarpGuard readGuard(YamlReader& reader, const YamlNode* node) {
   }
   return guard;
 }
+
+namespace {
 
 ScriptWarp readWarp(YamlReader& reader, const YamlNode& item) {
   ScriptWarp warp;

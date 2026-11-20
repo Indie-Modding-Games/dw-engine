@@ -204,6 +204,7 @@ const std::vector<DocumentSchema>& documentSchemas() {
       {.schema = "versus", .ids = {"data/versus"}},
       {.schema = "boot", .ids = {"disc/boot"}},
       {.schema = "script_warps", .ids = {"field/script_warps"}},
+      {.schema = "npc_spawns", .ids = {"field/npc_spawns"}},
       {.schema = MapSchema, .ids = {"map/*/data"}},
       {.schema = "collision", .ids = {"arena/*/collision"}},
       {.schema = "image",

@@ -2136,6 +2136,7 @@ int runGame(const Options& requested) {
                                       : coopGuestWorld ? coopGuestWorld->share(worldView)
                                                        : CoopWorldShare{};
           applyCoopMapEdits(play->scene(), worldShare.mapEdits);
+          play->followCoopFacts(worldShare.facts);
           outgoing.insert(outgoing.end(), std::make_move_iterator(worldShare.out.begin()),
                           std::make_move_iterator(worldShare.out.end()));
           // Each message goes to the player it is for: a guest's own bridge on the host, the

@@ -271,6 +271,11 @@ map, hand-written modules, the story patches and the errors).
   an `IF` of triggers that the oracle knows, the path is not `unstructured` and the warp has a destination map. Those
   that cannot be decided (other tests, choices by the player or by a variable, unstructured paths) are not
   taken and are logged once per map and tile (`ScriptWarpUndecided`).
+- **The same conditions for the head's NPCs**: `dwx extract` also writes `field/npc_spawns`, each NPC a map's MAPHEAD
+  section spawns (`set_digimon`) with the guard of its path, in the form above, simplified (a test the path already
+  made is not repeated, a path that contradicts itself is dropped, two paths that differ in one decision become one). Those guards also carry `pstat` tests
+  (a variable byte against a value); `GuardFacts::variables` reads them, and without that reader they stay unknown, so
+  the warps above decide exactly as before. Co-op uses them (see [multiplayer](multiplayer.md)).
 - **Policy for the unknown** (`UnknownPolicy`, `script_warps.hpp`): decides what the field does with the two things
   that the extraction says it does not know, and only with them. `decide(warp, oracle, policy)` gives the truth and what the
   policy let through.
