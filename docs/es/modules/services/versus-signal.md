@@ -39,6 +39,12 @@ siguiente socket con `/v1/host/<code>?token=&taken=<n>` para el siguiente invita
 quedar libre. La sala comprueba a su anfitrión cada 2 minutos, vive como mucho una hora y se cierra con el último socket
 de su anfitrión. `/v1/info` incluye la capacidad `seats`.
 
+Cuando la partida empieza el anfitrión lo dice en su cuenta de plazas, `{"type":"seats","taken":n,"playing":true,"open":true}`
+(#352, #356). La sala sigue entonces mientras dure la partida (un día como mucho), su entrada de la lista muestra la
+partida en curso (fase `playing`, estado `waiting` mientras tenga plaza libre y admita jugadores nuevos), y cuando cae el
+último socket del anfitrión espera un minuto a que el anfitrión vuelva a abrir una plaza antes de cerrarse. Los
+anfitriones que nunca mandan `playing` tienen la sala como antes.
+
 ## Salas públicas
 
 Un segundo Durable Object, el directorio, guarda las salas públicas. Un anfitrión público dice quién es

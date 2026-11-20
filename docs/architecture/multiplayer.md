@@ -251,7 +251,7 @@ rest of the pieces.
 5. The client loads the map in mirror mode and appears next to the host's player.
 6. The snapshots begin.
 
-Reconnection follows the same path. If the guest leaves, their player and partner disappear at the next safe
+Reconnection follows the same path (§5.10). If the guest leaves, their player and partner disappear at the next safe
 point, and the host keeps playing alone.
 
 ### 5.4 Signaling, relay and rooms
@@ -465,9 +465,9 @@ What #352 and #359 add (protocol version 7, kinds `0xA0`–`0xA2`).
 host waits (`apps/versus-signal`, "Rooms of up to four"): the host holds one link waiting for the next guest, each
 guest pairs with one of them, and the room never relays one pair's signals to another. In the game,
 `CoopConnection` owns one `CoopLink` per guest, welcomes each with the lowest free id (1 to 3) and lets one guest
-leave the lobby without closing the room. Once the game starts the room takes nobody else; a guest that leaves a
-started game goes, the others play on, and the room ends with its last guest. Rooms of two (versus, older games)
-work as before.
+leave the lobby without closing the room. Once the game starts, a room of three or four keeps a seat waiting
+(§5.10): late joiners and guests coming back get in while the others play on. Rooms of two (versus, older games)
+work as before: the room takes nobody else once the game starts, and ends with its guest.
 
 **Lobby.** `CoopScreen` keeps each guest's ready mark and save apart; the host starts once every guest in is ready,
 and sends the same save to all of them. The host tells every guest who is in the room:
@@ -497,6 +497,42 @@ on the host and, per guest, what it holds, how many world ticks it is behind and
 Tests: `packages/game/coop/tests/sync_watch_tests.cpp`, `apps/game/tests/coop_connection_tests.cpp` (four seats),
 `apps/game/tests/coop_sync_tests.cpp` (2, 3 and 4 players headless over lossy links, converging) and the seat tests of
 `apps/versus-signal/test`.
+
+### 5.10 Joining and rejoining a game in progress
+
+What #352 and #356 add (protocol version 10, no new kinds: fields on `Hello`, `Welcome` and `Lobby`).
+
+**Seats while playing.** A room of three or four keeps one host link waiting for the next guest after the game
+starts, as it does in the lobby. The host's room option "open to new players" (on by default, `online.set_open_to_join`)
+decides who takes it: open, anyone with the code or the listing; closed, only a guest coming back to its seat (any
+other gets `RejectReason::Closed`, `room_closed` on the guest's screen). The signaling Worker lists such a game as one
+to join while it has a free seat and is open (`apps/versus-signal`, "Games in progress"); the rooms screen shows it
+with its player count and the "game in progress" mode text.
+
+**A late joiner** goes through the usual path: `Hello`, `Welcome` with the lowest free id, the lobby (`Lobby` says the
+game is under way, `playing`) and its ready mark with its own save. The host then answers with the live world instead
+of the start save: the field's current save (`PlaySession::reportSave`) as `HostSave` chunks and `JoinState`, so
+the guest starts from where the game is now. On the host its gameplay bridge is attached only then, and
+`CoopHostWorld` takes it in as a guest of any game: the world sync of §5.7/§5.8, the correction that puts it next to
+the host and its partner spawned. The host sees a "joined" notice with its name.
+
+**A returning guest.** The host hands every guest a seat key in its `Welcome` (`seatKey`, random per seat). A guest
+keeps it with the room code; when its link drops (silence or disconnect, not the host closing the room), it goes back
+to the rooms screen, rejoins the same code with the key in its `Hello` (`rejoinKey`) and readies again with the save it
+brought before. Within the grace window (`CoopRejoinGrace`, 5 minutes) the host gives it the same player id and key
+back. The key is the only proof: a guest without it (a restarted game, another machine) joins as a new player even
+with the same name, so nobody who happens to share a name (the default "Player") takes a dropped seat. A guest whose
+old link is still open (the host has not noticed the drop yet) takes its seat over with its key, and the old link is
+closed. Past the grace window
+it is a new player. A departed guest's id is held during the window, so a late joiner never takes it.
+
+**What is left out.** The returning guest's own progress while away is not kept apart: it plays from the host's
+world as any late joiner (its partner is the one in the save it brings). Rooms of two keep closing their seat at
+start (versus has no game to join).
+
+Tests: `packages/game/coop/tests/protocol_tests.cpp` (fields round trip, admission through real `CoopLink`s),
+`apps/game/tests/coop_connection_tests.cpp` (join at 2→3, drop and rejoin by key, no seat back without the key, taking a seat over, a closed game, the grace
+window), `packages/engine/net/tests/signal_tests.cpp` and the game-in-progress tests of `apps/versus-signal/test`.
 
 ## 6. Game decisions (pending)
 

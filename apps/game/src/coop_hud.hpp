@@ -45,6 +45,10 @@ inline constexpr std::string_view CoopNoticeRevisionSetting = "coop_hud.notice.r
 // The notices' texts (content/packs/game/localization/<language>/online.yaml).
 inline constexpr std::string_view CoopDisconnectedText = "online.coop.disconnected";
 inline constexpr std::string_view CoopHostLeftText = "online.coop.host_left";
+// A guest whose link to the host dropped during the game: it goes back to its seat (#356).
+inline constexpr std::string_view CoopRejoiningText = "online.coop.rejoining";
+// The host's game under way: a player joined it, {name}, or came back to its seat.
+inline constexpr std::string_view CoopJoinedText = "online.coop.joined";
 // As a guest's game starts: it is the host's world, and nothing of it is saved.
 inline constexpr std::string_view CoopGuestNotSavedText = "online.coop.guest_not_saved";
 // A guest whose host is busy (a long load there): it waits for the host, {name}.

@@ -2,7 +2,10 @@
 // guests. The host keeps one socket waiting for the next guest; each guest is paired with a waiting
 // host socket, the two trade their WebRTC messages, and once both say they are connected their
 // sockets close while the room stays for the next one. The host says how many guests it holds
-// (`taken`), so a seat that freed (a guest left the lobby) is offered again.
+// (`taken`), so a seat that freed (a guest left the lobby) is offered again. Once its game is under
+// way the host keeps a socket waiting too (README.md, "Games in progress"): late joiners and
+// guests coming back to their seat get in the same way, and a listed room shows the game as one
+// to join while it takes new players.
 import type { DirectoryEntry, ErrorReason, RoomState, Socket } from "./room.ts";
 import type { IceServer } from "./turn.ts";
 
@@ -12,6 +15,11 @@ export const MAX_SEATS = 4;
 export const SEAT_CHECK_MS = 2 * 60 * 1000;
 /** A seated room lives at most this long, however long its host keeps waiting. */
 export const SEATED_LIFETIME_MS = 60 * 60 * 1000;
+/** A room whose game is under way lives at most this long (a long play session). */
+export const PLAYING_LIFETIME_MS = 24 * 60 * 60 * 1000;
+/** A room whose game is under way waits this long for its host to open a seat again after its
+ * last socket went (a dropped connection to this server), then closes. */
+export const HOST_RETURN_MS = 60 * 1000;
 
 /** How many seats a host asked for: 2 to MAX_SEATS (2, the two-player room, for anything else). */
 export function seatsOf(asked: string | null | undefined): number {
@@ -38,6 +46,11 @@ interface Seating {
   /** Sockets of pairs that finished: their closing is not the host leaving. */
   finished: string[];
   next: number;
+  /** The host said its game is under way, and whether it takes new players then. */
+  playing?: boolean;
+  open?: boolean;
+  /** When the host's last socket of a game under way went (it may open a seat again soon). */
+  hostGoneAt?: number;
 }
 
 function message(value: object): string {
@@ -124,6 +137,7 @@ export class Seats {
       return;
     }
     seating.taken = Math.max(0, Math.min(seating.seats - 1, Math.trunc(taken) || 0));
+    delete seating.hostGoneAt;
     const tag = `h${seating.next++}`;
     this.#state.accept(socket, "host", tag);
     trySend(socket, message(withIce({ type: "room", code: seating.code, token, seats: seating.seats }, iceServers)));
@@ -204,6 +218,11 @@ export class Seats {
       await this.#save(seating);
     } else if (type === "seats" && role === "host" && typeof parsed.taken === "number") {
       seating.taken = Math.max(0, Math.min(seating.seats - 1, Math.trunc(parsed.taken)));
+      // A game under way stays one (its host never takes it back to the lobby).
+      if (parsed.playing === true || seating.playing) {
+        seating.playing = true;
+        seating.open = parsed.playing === true ? parsed.open !== false : seating.open !== false;
+      }
       await this.#save(seating);
       await this.#publish(seating);
     }
@@ -232,7 +251,15 @@ export class Seats {
       if (other) reject(other, "left");
     }
     // The host's last socket closing (not a finished pair's) is the host leaving: the room closes.
+    // A game under way waits a moment for its host to open a seat again: its game goes on, only
+    // its line to this server dropped.
     const hosts = this.#state.sockets("host").filter((host) => host !== socket);
+    if (this.#state.roleOf(socket) === "host" && hosts.length === 0 && seating.playing) {
+      seating.hostGoneAt = this.#now();
+      await this.#save(seating);
+      await this.#state.setAlarm(this.#now() + HOST_RETURN_MS);
+      return;
+    }
     if (this.#state.roleOf(socket) === "host" && hosts.length === 0) {
       for (const role of ["guest"] as const) {
         for (const left of this.#state.sockets(role)) if (left !== socket) reject(left, "left");
@@ -249,9 +276,15 @@ export class Seats {
     const seating = await this.#load();
     if (!seating) return;
     const now = this.#now();
-    if (this.#state.sockets("host").length > 0 && now - seating.openedAt < SEATED_LIFETIME_MS) {
+    const lifetime = seating.playing ? PLAYING_LIFETIME_MS : SEATED_LIFETIME_MS;
+    if (this.#state.sockets("host").length > 0 && now - seating.openedAt < lifetime) {
       await this.#state.setAlarm(now + SEAT_CHECK_MS);
       await this.#publish(seating);
+      return;
+    }
+    if (seating.hostGoneAt !== undefined && now - seating.hostGoneAt < HOST_RETURN_MS &&
+      now - seating.openedAt < lifetime) {
+      await this.#state.setAlarm(seating.hostGoneAt + HOST_RETURN_MS);
       return;
     }
     for (const role of ["host", "guest"] as const) {
@@ -271,12 +304,13 @@ export class Seats {
 
   /**
    * A listed room leaves the list when it closes with nobody in, and stays (for its host's
-   * notices, as a two-seat room does) when the host holds guests.
+   * notices, as a two-seat room does) when the host holds guests. A game under way leaves it: its
+   * host can no longer seat anyone.
    */
   async #forget(seating: Seating): Promise<void> {
     const listing = (await this.#state.get("listing")) as DirectoryEntry | undefined;
     await this.#state.clear();
-    if (listing && seating.taken === 0) await this.#state.publish?.(listing.joinCode, null);
+    if (listing && (seating.taken === 0 || seating.playing)) await this.#state.publish?.(listing.joinCode, null);
   }
 
   async #publish(seating: Seating): Promise<void> {
@@ -284,13 +318,15 @@ export class Seats {
     if (!listing) return;
     const players = Math.min(seating.seats, 1 + this.#used(seating));
     const full = players >= seating.seats;
+    // A game under way is listed to join while it has a seat and its host takes new players.
+    const joinable = !full && (!seating.playing || seating.open !== false);
     const updated: DirectoryEntry = {
       ...listing,
       players,
       capacity: seating.seats,
-      state: full ? "full" : "waiting",
-      phase: full ? "connected" : "open",
-      message: full ? "Connected" : "Waiting for players",
+      state: joinable ? "waiting" : "full",
+      phase: seating.playing ? "playing" : full ? "connected" : "open",
+      message: seating.playing ? "Game in progress" : full ? "Connected" : "Waiting for players",
       updatedAt: this.#now(),
     };
     await this.#state.put("listing", updated);

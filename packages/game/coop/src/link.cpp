@@ -21,6 +21,8 @@ LinkFailure failureFor(RejectReason reason) {
     return LinkFailure::RoomFull;
   case RejectReason::Busy:
     return LinkFailure::Busy;
+  case RejectReason::Closed:
+    return LinkFailure::RoomClosed;
   }
   return LinkFailure::Damaged;
 }
@@ -123,10 +125,11 @@ void CoopLink::assignGuest(PlayerId id) {
 }
 
 CoopLink CoopLink::guest(net::PeerLink& link, Identity identity, std::string playerName,
-                         LinkTimeouts timeouts) {
+                         LinkTimeouts timeouts, std::uint64_t rejoinKey) {
   CoopLink result{link, Side::Guest, std::move(identity), timeouts};
   link.send(net::Lane::Reliable, encode(Message{Hello{.identity = result.identity_,
-                                                      .playerName = std::move(playerName)}}));
+                                                      .playerName = std::move(playerName),
+                                                      .rejoinKey = rejoinKey}}));
   return result;
 }
 
@@ -169,7 +172,18 @@ void CoopLink::handle(const Message& message) {
       fail(LinkFailure::Damaged, true);
       return;
     }
-    const RejectReason reason = identityMismatch(identity_, hello->identity);
+    RejectReason reason = identityMismatch(identity_, hello->identity);
+    if (reason == RejectReason::None && admission_) {
+      // The room decides the seat (#356): a returning guest's own, a new one's, or a refusal.
+      const Admission admission = admission_(*hello);
+      reason = admission.refused;
+      if (reason == RejectReason::None && validGuest(admission.id)) {
+        guestId_ = admission.id;
+        seatKey_ = admission.seatKey;
+      } else if (reason == RejectReason::None) {
+        reason = RejectReason::RoomFull;
+      }
+    }
     const bool accepted = reason == RejectReason::None;
     const std::uint64_t sessionId = accepted ? nextSessionId() : 0;
     link_->send(net::Lane::Reliable,
@@ -178,7 +192,8 @@ void CoopLink::handle(const Message& message) {
                                        .assignedPlayer = guestId_,
                                        .reason = reason,
                                        .sessionId = sessionId,
-                                       .hostName = accepted ? playerName_ : std::string{}}}));
+                                       .hostName = accepted ? playerName_ : std::string{},
+                                       .seatKey = accepted ? seatKey_ : 0}}));
     if (accepted) {
       remotePlayer_ = guestId_;
       remoteName_ = hello->playerName;
@@ -207,6 +222,7 @@ void CoopLink::handle(const Message& message) {
     remotePlayer_ = HostPlayerId;
     localPlayer_ = welcome->assignedPlayer;
     remoteName_ = welcome->hostName;
+    seatKey_ = welcome->seatKey;
     phase_ = LinkPhase::Ready;
     return;
   }

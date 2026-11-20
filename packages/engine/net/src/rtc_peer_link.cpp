@@ -461,9 +461,9 @@ std::unique_ptr<RtcPeerLink> RtcPeerLink::hostSeat(RtcSettings settings, std::st
   return link;
 }
 
-void RtcPeerLink::announceSeats(int taken) {
+void RtcPeerLink::announceSeats(const SeatsNotice& notice) {
   if (impl_->signal && !impl_->signal->paired()) {
-    impl_->signal->tellSeats(taken);
+    impl_->signal->tellSeats(notice);
   }
 }
 

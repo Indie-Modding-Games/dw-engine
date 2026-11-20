@@ -234,7 +234,7 @@ TEST_CASE("a host seats two WebRTC guests in one room, each on a link of its own
       RtcPeerLink::hostSeat(settings, first->roomCode(), first->roomToken(), 1, openerOf(server));
   second->poll(now());
   CHECK(second->roomCode() == "K7Q2");
-  second->announceSeats(1);
+  second->announceSeats({.taken = 1, .playing = false, .joinable = true});
   auto two = RtcPeerLink::join(settings, "K7Q2", openerOf(server));
   connect(*second, *two);
   REQUIRE(second->state() == PeerState::Open);
@@ -264,6 +264,13 @@ TEST_CASE("a host seats two WebRTC guests in one room, each on a link of its own
   auto third = RtcPeerLink::join(settings, "K7Q2", openerOf(server));
   third->poll(now());
   CHECK(third->failure() == PeerFailure::RoomFull);
+  // The game started: the host's next seat says it is under way and whether it takes new players.
+  auto playing =
+      RtcPeerLink::hostSeat(settings, first->roomCode(), first->roomToken(), 2, openerOf(server));
+  playing->poll(now());
+  playing->announceSeats({.taken = 2, .playing = true, .joinable = false});
+  playing->poll(now());
+  CHECK(server.gamesUnderway == std::vector<std::string>{"closed"});
 }
 
 TEST_CASE("a channel peer link keeps the lanes apart over one datagram link") {

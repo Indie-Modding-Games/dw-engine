@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.24.0 | A game in progress takes players: the room list shows a game under way that has a seat as `in_progress` (`online.list()` rooms gain `in_progress`), the room says whether its game is under way and whether it takes new players (`online.current.in_progress`, `online.current.open_to_join`, `online.room()` `in_progress` and `open_to_join`), and the host opens or closes it to new players (`online.set_open_to_join`, `online_open_to_join`) |
 | 0.23.0 | Every partner fights in a co-op battle: an ally's card counts down its revive (`battle.ally.<n>.revive_seconds`, `revive_seconds` in `battle.allies()`), and the `coop_battle` screen shows each fallen partner's countdown (`coop_battle.fighter.<n>.revive_seconds`) and lets the player pick the partner its items fly to (`coop_battle.target`, the `coop_battle_target` command). The `coop_difficulty` option arrives (off, standard or hard) |
 | 0.22.0 | The `coop_trade` screen trades items between two co-op players: the phase (`coop_trade.phase`), the other player (`coop_trade.other.*`), this player's bag (`coop_trade.bag.<n>.*`), both offers (`coop_trade.own.<n>.*`, `coop_trade.their.<n>.*`) and both ready marks, with the commands `coop_trade_answer`, `coop_trade_add`, `coop_trade_take`, `coop_trade_confirm` and `coop_trade_cancel`. The `coop_hud` tag says when the other player can be asked (`coop_hud.tag.trade`) |
 | 0.21.0 | Rooms of up to four players: each member says when its seat is taken while its connection is still being set up (`online.member.<n>.arriving`), and the co-op HUD shows a tag over each of the other players (`coop_hud.tag.<n>.*` for the second and third) |
@@ -100,7 +101,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.23.0**.
+UI API version: **0.24.0**.
 
 ### `ui`
 
@@ -1012,7 +1013,7 @@ UI API version: **0.23.0**.
 | `online.room.<n>.code` | setting | text | Its join code. |
 | `online.room.<n>.message` | setting | text | The host's message, or empty. |
 | `online.room.<n>.host_name` | setting | text | The host's name, or empty. |
-| `online.room.<n>.state` | setting | text | waiting, full or starting. |
+| `online.room.<n>.state` | setting | text | waiting, full, starting or in_progress (a game under way that takes players). |
 | `online.field` | setting | text | The text field taking the keyboard: filter, code, name, or empty. |
 | `online.filter` | setting | text | What is typed in the room search. |
 | `online.code` | setting | text | What is typed in the room code field. |
@@ -1046,6 +1047,8 @@ UI API version: **0.23.0**.
 | `online.current.can_ready` | setting | yes/no | Whether this guest can mark itself ready now. |
 | `online.current.ready` | setting | yes/no | Whether this player is ready. |
 | `online.current.members` | setting | number | How many players are in the room. |
+| `online.current.in_progress` | setting | yes/no | Whether the room's game is under way (a guest that readies joins it). |
+| `online.current.open_to_join` | setting | yes/no | Whether the room's game, once under way, takes new players (guests coming back to their seat always get in). |
 | `online.member.<n>.name` | setting | text | A member's name, or empty. |
 | `online.member.<n>.name_key` | setting | text | The text key of a member's name when it has none of its own. |
 | `online.member.<n>.icon` | setting | text | The member's profile icon id, or empty when it has not sent one. |
@@ -1072,15 +1075,16 @@ UI API version: **0.23.0**.
 | `online_mode` | command | text | The host picks the room's mode. |
 | `coop_ready` | command | — | The co-op lobby's: the guest marks itself ready, or not when it was. |
 | `coop_start` | command | — | The co-op lobby's: the host starts the room's game. |
+| `online_open_to_join` | command | yes/no | The host says whether its game, once under way, takes new players (true, the default) or only guests coming back. |
 | `online_leave` | command | — | Leaves the room (the host closes it). |
 | `online_dismiss` | command | — | Clears the notice, the quick match's answer and a room that closed. |
 | `online_sample` | command | yes/no | Switches to the sample rooms and back (only with the developer tools on). |
 | `online.state(): table` | query | table | The screens' state: open, sample, sample_offered, field, filter, code, code_length, quick, notice, notice_key and can_retry. |
 | `online.profile(): table` | query | table | The player's online profile: name, named, icon, wins, losses, draft and relay_only. |
 | `online.icons(): table` | query | table | The icons a profile can pick: id and label_key. |
-| `online.list(): table` | query | table | The room list: state, error, error_key, total and the rooms matching the filter (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, joinable). |
+| `online.list(): table` | query | table | The room list: state, error, error_key, total and the rooms matching the filter (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, in_progress, joinable). |
 | `online.modes(): table` | query | table | The game modes: id, label_key, description_key, short_key, available and selected. |
-| `online.room(): table?` | query | table | The room the player is in, or nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready and members (name, icon, host, ready, local). |
+| `online.room(): table?` | query | table | The room the player is in, or nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready, in_progress, open_to_join and members (name, icon, host, ready, local). |
 | `online.error_key(code: string?): string` | query | text | The text key of an error code; unknown codes give online.error.unknown. |
 | `online.notice_key(code: string?): string` | query | text | The text key of a notice code. |
 | `online.open(): boolean` | action | yes/no | The rooms screens opened. |
@@ -1096,6 +1100,7 @@ UI API version: **0.23.0**.
 | `online.set_mode(id: string): boolean, string?` | action | yes/no | The host picks the room's mode. |
 | `online.set_ready(ready: boolean): boolean, string?` | action | yes/no | The guest marks itself ready or not. |
 | `online.start(): boolean` | action | yes/no | The host starts the game. |
+| `online.set_open_to_join(open: boolean): boolean, string?` | action | yes/no | The host says whether its game, once under way, takes new players or only guests coming back. |
 | `online.leave(): boolean` | action | yes/no | Leaves the room. |
 | `online.set_name_draft(value: string): boolean, string?` | action | yes/no | Replaces the name being typed on the profile screen. |
 | `online.save_name(): boolean` | action | yes/no | Keeps the typed name as the profile's. |

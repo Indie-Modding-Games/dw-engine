@@ -4,6 +4,7 @@
 #include <dwe/net/signal.hpp>
 
 #include <algorithm>
+#include <random>
 #include <utility>
 
 namespace dwe::app {
@@ -32,6 +33,8 @@ std::string_view linkFailureName(game::coop::LinkFailure failure) {
     return "room_full";
   case Failure::Busy:
     return "busy";
+  case Failure::RoomClosed:
+    return "room_closed";
   case Failure::Damaged:
     return "damaged";
   case Failure::Disconnected:
@@ -95,10 +98,93 @@ void CoopConnection::markRoomPlaying() {
   if (room_) {
     room_->markPlaying();
   }
-  // The game started: no more guests come in, and the link that waited for one goes.
+  if (!hosting_) {
+    return;
+  }
+  playing_ = true;
+  if (hostSeats() > 2) {
+    // A room of more seats goes on taking players (#356): the link waiting for the next one stays,
+    // and the server hears the game is under way.
+    return;
+  }
+  // A room of two: no more guests come in, and the link that waited for one goes.
   seatsOpen_ = false;
   std::erase_if(seats_, [](const Seat& seat) {
     return seat.link->phase() == game::coop::LinkPhase::Connecting;
+  });
+}
+
+std::vector<game::coop::PlayerId> CoopConnection::held() const {
+  std::vector<game::coop::PlayerId> out;
+  for (const Departed& departed : departed_) {
+    out.push_back(departed.id);
+  }
+  std::ranges::sort(out);
+  return out;
+}
+
+std::uint64_t CoopConnection::newSeatKey() {
+  // Not a secret worth guarding (the seat only says which player comes back; its save is its
+  // own), only unlikely to be guessed or repeated.
+  static thread_local std::mt19937_64 random{std::random_device{}()};
+  std::uint64_t key = 0;
+  while (key == 0) {
+    key = random() ^ ++seatKeys_;
+  }
+  return key;
+}
+
+game::coop::Admission CoopConnection::admit(const game::coop::Hello& hello, const Seat& seat) {
+  using game::coop::RejectReason;
+  // A guest coming back within the grace, by its seat key only: a name proves nothing (another
+  // player may have the same one), so a guest without its key joins as a new player.
+  auto back = departed_.end();
+  if (hello.rejoinKey != 0) {
+    back = std::ranges::find(departed_, hello.rejoinKey, &Departed::key);
+  }
+  if (back != departed_.end()) {
+    const game::coop::Admission admission{
+        .refused = RejectReason::None, .id = back->id, .seatKey = back->key};
+    core::logInfo("coop: player {} came back to its seat", back->id);
+    departed_.erase(back);
+    return admission;
+  }
+  // Back before this host heard it drop (its old link has not timed out yet): the new link takes
+  // the seat over and the old one goes.
+  if (hello.rejoinKey != 0) {
+    for (Seat& other : seats_) {
+      if (&other != &seat && other.link->phase() == game::coop::LinkPhase::Ready &&
+          other.link->seatKey() == hello.rejoinKey) {
+        core::logInfo("coop: player {} came back before its old link dropped",
+                      other.link->guestId());
+        other.link->leave(game::coop::LeaveReason::SessionEnded);
+        return {
+            .refused = RejectReason::None, .id = other.link->guestId(), .seatKey = hello.rejoinKey};
+      }
+    }
+  }
+  if (playing_ && !openToNewPlayers_) {
+    return {.refused = RejectReason::Closed, .id = game::coop::GuestPlayerId, .seatKey = 0};
+  }
+  const auto id = freeGuestId(&seat, true);
+  if (!id) {
+    return {.refused = RejectReason::RoomFull, .id = game::coop::GuestPlayerId, .seatKey = 0};
+  }
+  return {.refused = RejectReason::None, .id = *id, .seatKey = newSeatKey()};
+}
+
+void CoopConnection::watchHello(Seat& seat) {
+  // The seat may move in seats_; its link does not.
+  const game::coop::CoopLink* link = seat.link.get();
+  seat.link->admit([this, link](const game::coop::Hello& hello) {
+    for (const Seat& candidate : seats_) {
+      if (candidate.link.get() == link) {
+        return admit(hello, candidate);
+      }
+    }
+    return game::coop::Admission{.refused = game::coop::RejectReason::RoomFull,
+                                 .id = game::coop::GuestPlayerId,
+                                 .seatKey = 0};
   });
 }
 
@@ -124,7 +210,11 @@ void CoopConnection::close() {
   seats_.clear();
   seatsOpen_ = false;
   guestEverIn_ = false;
-  announced_ = 0;
+  announced_ = {};
+  playing_ = false;
+  openToNewPlayers_ = true;
+  departed_.clear();
+  returning_ = false;
   roomCode_.clear();
   roomToken_.clear();
   link_.reset();
@@ -224,12 +314,18 @@ bool CoopConnection::linkInPlay() const {
   return !in.empty() && inPlay_.contains(in.front().generation);
 }
 
-std::optional<game::coop::PlayerId> CoopConnection::freeGuestId(const Seat* except) const {
+std::optional<game::coop::PlayerId> CoopConnection::freeGuestId(const Seat* except,
+                                                                bool welcomed) const {
   for (game::coop::PlayerId id = game::coop::GuestPlayerId;
        id < static_cast<game::coop::PlayerId>(hostSeats()); ++id) {
-    const bool taken = std::ranges::any_of(
-        seats_, [&](const Seat& seat) { return &seat != except && seat.link->guestId() == id; });
-    if (!taken) {
+    const bool taken = std::ranges::any_of(seats_, [&](const Seat& seat) {
+      return &seat != except && seat.link->guestId() == id &&
+             (!welcomed || seat.link->phase() == game::coop::LinkPhase::Ready);
+    });
+    // A guest that dropped out of the game keeps its seat for a while (#356).
+    const bool held =
+        std::ranges::any_of(departed_, [&](const Departed& departed) { return departed.id == id; });
+    if (!taken && !held) {
       return id;
     }
   }
@@ -248,7 +344,8 @@ const CoopConnection::Seat* CoopConnection::waitingSeat() const {
 
 void CoopConnection::openSeat() {
   if (!seatsOpen_ || hostSeats() <= 2 || waitingSeat() != nullptr || roomCode_.empty() ||
-      roomToken_.empty() || static_cast<int>(seats_.size()) >= hostSeats() - 1) {
+      roomToken_.empty() || static_cast<int>(seats_.size()) >= hostSeats() - 1 ||
+      now_ < seatRetryAt_) {
     return;
   }
   const int taken = readyGuests();
@@ -264,7 +361,9 @@ void CoopConnection::openSeat() {
       *peer, desc_.identity, playerName_, game::coop::LinkTimeouts{}, id));
   seats_.push_back({.peer = std::move(peer), .link = std::move(link), .generation = 0});
   seats_.back().generation = nextGeneration();
-  announced_ = taken;
+  watchHello(seats_.back());
+  // The seat's address told the server how many guests are in; how the game goes follows.
+  announced_ = {.taken = taken, .playing = false, .joinable = true};
 }
 
 bool CoopConnection::host(bool listed) {
@@ -285,7 +384,10 @@ bool CoopConnection::host(bool listed) {
   roomCode_.clear();
   roomToken_.clear();
   guestEverIn_ = false;
-  announced_ = 0;
+  announced_ = {};
+  playing_ = false;
+  departed_.clear();
+  seatRetryAt_ = net::Millis{0};
   hosting_ = true;
   seatsOpen_ = true;
   error_.clear();
@@ -314,6 +416,9 @@ bool CoopConnection::host(bool listed) {
       game::coop::CoopLink::host(*peer, desc_.identity, playerName_));
   seats_.push_back({.peer = std::move(peer), .link = std::move(link), .generation = 0});
   seats_.back().generation = nextGeneration();
+  if (hostSeats() > 2) {
+    watchHello(seats_.back());
+  }
   view_ = View::Hosting;
   return true;
 }
@@ -349,6 +454,7 @@ bool CoopConnection::join(std::string_view code) {
   }
   hosting_ = false;
   seats_.clear();
+  returning_ = false;
   beginRoom({.hosting = false, .code = *normalized, .server = {}, .open = {}});
   peer_ = desc_.join(*normalized);
   if (!peer_) {
@@ -363,8 +469,12 @@ bool CoopConnection::join(std::string_view code) {
     room_->observe(*peer_);
     return false;
   }
-  link_ = std::make_unique<game::coop::CoopLink>(
-      game::coop::CoopLink::guest(*peer_, desc_.identity, playerName_));
+  // Back to a room it was in: its seat key asks for its seat (#356).
+  const std::uint64_t rejoinKey =
+      ticket_ && ticket_->code == *normalized ? ticket_->key : std::uint64_t{0};
+  returning_ = rejoinKey != 0;
+  link_ = std::make_unique<game::coop::CoopLink>(game::coop::CoopLink::guest(
+      *peer_, desc_.identity, playerName_, game::coop::LinkTimeouts{}, rejoinKey));
   ++generation_;
   view_ = View::Joining;
   return true;
@@ -394,6 +504,15 @@ void CoopConnection::fail(std::string error) {
 }
 
 void CoopConnection::tickHost(net::Millis now) {
+  now_ = now;
+  // A seat held past the grace is free again.
+  std::erase_if(departed_, [&](const Departed& departed) {
+    if (now - departed.at < CoopRejoinGrace) {
+      return false;
+    }
+    core::logInfo("coop: player {} did not come back in time, its seat is free", departed.id);
+    return true;
+  });
   for (Seat& seat : seats_) {
     if (seat.link->phase() == game::coop::LinkPhase::Connecting) {
       // The waiting link welcomes its guest with the lowest id free at that moment.
@@ -442,12 +561,30 @@ void CoopConnection::tickHost(net::Millis now) {
     }
     core::logInfo("coop: player {} {} the room", seat->link->guestId(),
                   seat->link->remotePlayer() ? "left" : "did not get into");
+    const game::coop::PlayerId id = seat->link->guestId();
+    // A player that drops out of the game keeps its seat for a while (#356), unless it is back on
+    // another link already (it took its seat over).
+    const bool backAlready = std::ranges::any_of(seats_, [&](const Seat& other) {
+      return &other != &*seat && other.link->phase() == game::coop::LinkPhase::Ready &&
+             other.link->guestId() == id;
+    });
+    if (playing_ && seat->link->remotePlayer() && !backAlready) {
+      departed_.push_back({.id = id, .key = seat->link->seatKey(), .at = now});
+    }
+    if (!seat->link->remotePlayer()) {
+      // A waiting seat that ended without a guest (the server, the route): the next one opens in a
+      // moment, not every frame.
+      seatRetryAt_ = now + net::Millis{2000};
+    }
     lastReason = reasonOf(*seat);
     inPlay_.erase(seat->generation);
+    // What its link said last (a refusal's welcome, a goodbye) goes out before the link does.
+    seat->peer->poll(now);
     seat = seats_.erase(seat);
   }
-  // A started game whose last guest went ends its room as a two-seat room did: no one is left to
-  // play with and no one can come in.
+  // A started game whose last guest went and that takes no one more ends its room as a two-seat
+  // room did: no one is left to play with and no one can come in. A room that still seats players
+  // waits for them (#356).
   if (lastReason && !seatsOpen_ && seats_.empty()) {
     fail(*lastReason);
     return;
@@ -460,11 +597,14 @@ void CoopConnection::tickHost(net::Millis now) {
     view_ = View::Hosting;
   }
   openSeat();
-  // The server offers a seat that freed again: the waiting link says how many guests are in.
-  if (const int taken = readyGuests(); taken != announced_) {
+  // The server offers a seat that freed again (the waiting link says how many guests are in) and
+  // lists a game under way that takes players.
+  const net::SeatsNotice notice{
+      .taken = readyGuests(), .playing = playing_, .joinable = openToNewPlayers_};
+  if (notice != announced_) {
     if (const Seat* waiting = waitingSeat()) {
-      waiting->peer->announceSeats(taken);
-      announced_ = taken;
+      waiting->peer->announceSeats(notice);
+      announced_ = notice;
     }
   }
 }
@@ -474,8 +614,8 @@ void CoopConnection::tick(net::Millis now) {
   if (view_ == View::Error)
     return;
   if (hosting_) {
-    if (!seats_.empty())
-      tickHost(now);
+    // Also with no link at all: a game under way waits for its next seat and its held ones (#356).
+    tickHost(now);
     return;
   }
   if (link_ == nullptr)
@@ -485,6 +625,10 @@ void CoopConnection::tick(net::Millis now) {
     room_->observe(*peer_);
   }
   if (link_->phase() == game::coop::LinkPhase::Ready) {
+    if (view_ != View::Connected && link_->seatKey() != 0 && !code().empty()) {
+      // Its seat in this room, to come back to after a drop.
+      ticket_ = Ticket{.code = code(), .key = link_->seatKey()};
+    }
     view_ = View::Connected;
   } else if (link_->phase() == game::coop::LinkPhase::Rejected ||
              link_->phase() == game::coop::LinkPhase::Failed ||

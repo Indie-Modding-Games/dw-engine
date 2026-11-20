@@ -27,8 +27,10 @@ inline constexpr std::size_t MaxPlayers = 4;
 // spoils' departure (#351, #361). 7: rooms of up to four players' lobby and the sync diagnostics
 // (#352, #359). 8: item trades between players (#360). 9: every guest's partner fights: battles
 // started by any guest, every free guest an ally, each fighter's revive countdown in the frames
-// and an item's target partner (#351, #361, #362).
-inline constexpr std::uint32_t ProtocolVersion = 9;
+// and an item's target partner (#351, #361, #362). 10: a game in progress takes players: the
+// host's seat key in its welcome and a returning guest's in its hello, the lobby's game under way
+// and whether it takes new players, and the refusal of a room closed to them (#352, #356).
+inline constexpr std::uint32_t ProtocolVersion = 10;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
   return id < MaxPlayers;
@@ -58,6 +60,9 @@ struct Identity {
 struct Hello {
   Identity identity;
   std::string playerName;
+  // A guest coming back to a room it dropped from: the seat key the host's welcome gave it there
+  // (0 for a new player). The host gives it its seat and player id back.
+  std::uint64_t rejoinKey = 0;
 
   friend bool operator==(const Hello&, const Hello&) = default;
 };
@@ -69,6 +74,8 @@ enum class RejectReason : std::uint8_t {
   ContentMismatch,
   RoomFull,
   Busy,
+  // The game is under way and its host closed it to new players (a returning one still gets in).
+  Closed,
 };
 
 struct Welcome {
@@ -81,6 +88,9 @@ struct Welcome {
   // carries it, at its end: a rejected one stays as the first protocol had it, so an older guest
   // still reads why it was rejected. Empty from an older host.
   std::string hostName;
+  // The guest's key to its seat: given back in its hello (Hello::rejoinKey), it returns to the same
+  // seat and player id after a drop. Accepted welcomes only; 0 from an older host.
+  std::uint64_t seatKey = 0;
 
   friend bool operator==(const Welcome&, const Welcome&) = default;
 };
@@ -730,6 +740,10 @@ struct Lobby {
   std::uint8_t capacity = 2;
   // The host first, then the guests by id.
   std::vector<LobbySeat> seats;
+  // The game is under way (#356): a guest that picks its save joins it at once. `open`: the host
+  // takes new players while it plays (a returning one gets in either way).
+  bool playing = false;
+  bool open = true;
 
   friend bool operator==(const Lobby&, const Lobby&) = default;
 };

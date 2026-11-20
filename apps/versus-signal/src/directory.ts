@@ -100,7 +100,8 @@ export class DirectoryObject {
   }
 
   /**
-   * The rooms a game may join or see: of its compatibility key (all without one), not playing,
+   * The rooms a game may join or see: of its compatibility key (all without one), not playing
+   * unless their game takes players (a seated room's game in progress with a free seat, `waiting`),
    * oldest first, MAX_OPEN_ROOMS at most. Connected and ready rooms show as full.
    */
   async #list(url: URL): Promise<Response> {
@@ -109,7 +110,9 @@ export class DirectoryObject {
     if (Array.isArray(stored) && entries.length !== stored.length) await this.#save(entries);
     const compat = url.searchParams.get("compat");
     const rooms = entries
-      .filter((entry) => entry.phase !== "playing" && (!compat || entry.compat === compat))
+      .filter((entry) =>
+        (entry.phase !== "playing" || entry.state === "waiting") && (!compat || entry.compat === compat)
+      )
       .sort((a, b) => a.createdAt - b.createdAt)
       .slice(0, MAX_OPEN_ROOMS)
       .map(shown);
@@ -136,8 +139,11 @@ export class DirectoryObject {
         return new Response("This address has an open room already.\n", { status: 409 });
       }
     }
-    // A game under way stays hidden: a seated room's later counts do not list it again.
-    others.push(current?.phase === "playing" ? { ...body, phase: "playing", state: "full" } : body);
+    // A game under way stays one: a seated room's later counts do not take it back to the lobby
+    // (only the room's own word that its game takes players lists it again).
+    others.push(
+      current?.phase === "playing" && body.phase !== "playing" ? { ...body, phase: "playing", state: "full" } : body,
+    );
     await this.#save(others);
     return new Response(null, { status: 204 });
   }
@@ -162,7 +168,9 @@ export class DirectoryObject {
     const others = entries.filter((room) => room !== entry);
     if (state !== "closed") {
       const phase: RoomPhase = state === "ready" ? "ready" : "playing";
-      others.push({ ...entry, phase, state: "full", updatedAt: this.#now() });
+      // A game its seated room already lists as one to join keeps that (the two may cross).
+      const keep = phase === "playing" && entry.phase === "playing";
+      others.push({ ...entry, phase, state: keep ? entry.state : "full", updatedAt: this.#now() });
     }
     await this.#save(others);
     return new Response(null, { status: 204 });

@@ -32,7 +32,9 @@ inline constexpr int MaxRoomPlayers = 4;
 
 // A public room's state in the directory: waiting for players, full (shown, but disabled), or
 // starting its game.
-enum class ListingState { Waiting, Full, Starting };
+// A room in the list: waiting for players, full, starting, or with its game under way and seats
+// for more (#356: it is joined as a waiting one is).
+enum class ListingState { Waiting, Full, Starting, InProgress };
 
 [[nodiscard]] std::string_view listingStateName(ListingState state);
 
@@ -61,7 +63,8 @@ struct RoomListing {
 
 // Whether a listed room takes one more player: waiting and not full.
 [[nodiscard]] inline bool hasSeat(const RoomListing& room) {
-  return room.state == ListingState::Waiting && room.players < room.capacity;
+  return (room.state == ListingState::Waiting || room.state == ListingState::InProgress) &&
+         room.players < room.capacity;
 }
 
 // What the list is doing: asking, ready with its rooms, or unavailable (with an error code).
@@ -163,6 +166,10 @@ struct RoomView {
   bool localReady = false;
   // The mode the room was listed with, when it was joined from the list.
   std::string mode;
+  // The room's game is under way (#356): a guest that readies joins it at once. Whether it takes
+  // new players then (the host's choice).
+  bool inProgress = false;
+  bool openToNewPlayers = true;
 };
 
 // A room that could not be opened or joined, and why.
@@ -186,6 +193,8 @@ public:
   virtual void setReady(bool ready) = 0;
   // Asks to start the room's game; false with a notice code when it cannot.
   virtual std::optional<std::string> start() = 0;
+  // The host's choice: whether its game, once under way, takes new players (#356).
+  virtual void setOpenToNewPlayers(bool /*open*/) {}
   virtual void tick(double nowSeconds) = 0;
   [[nodiscard]] virtual std::optional<RoomView> room() const = 0;
   // Whether a mode can be played over this backend's rooms.
@@ -288,6 +297,9 @@ public:
   bool takeProfileChanged() { return std::exchange(profileChanged_, false); }
   // An online versus ended: the profile's record counts it.
   void recordVersus(bool won);
+  // Opens the rooms screens on the room of `code` and joins it, as typing its code does: a guest
+  // that dropped out of a game under way goes back to its seat (#356).
+  void rejoin(std::string_view code, double nowSeconds);
 
 private:
   // What the player last asked to get into a room, which «Retry» asks again.

@@ -4,6 +4,7 @@
 #include <dwe/net/peer_link.hpp>
 
 #include <deque>
+#include <functional>
 #include <optional>
 #include <string>
 
@@ -20,8 +21,18 @@ enum class LinkFailure : std::uint8_t {
   ContentMismatch,
   RoomFull,
   Busy,
+  // The game is under way and closed to new players.
+  RoomClosed,
   Damaged,
   Disconnected
+};
+
+// The host's answer to a guest's hello (CoopLink::admit): the seat it gets, or why not.
+struct Admission {
+  RejectReason refused = RejectReason::None;
+  PlayerId id = GuestPlayerId;
+  // The seat's key for the welcome (Welcome::seatKey).
+  std::uint64_t seatKey = 0;
 };
 
 struct LinkTimeouts {
@@ -41,8 +52,9 @@ public:
   // `guestId`: the player id the host's registry gives the guest on this link (one link per guest).
   static CoopLink host(net::PeerLink& link, Identity identity, std::string playerName = {},
                        LinkTimeouts timeouts = {}, PlayerId guestId = GuestPlayerId);
+  // `rejoinKey`: the seat key of the room the guest dropped from, when it comes back (0: new).
   static CoopLink guest(net::PeerLink& link, Identity identity, std::string playerName,
-                        LinkTimeouts timeouts = {});
+                        LinkTimeouts timeouts = {}, std::uint64_t rejoinKey = 0);
 
   void poll(net::Millis now);
   [[nodiscard]] LinkPhase phase() const { return phase_; }
@@ -55,6 +67,13 @@ public:
   // (#352); once welcomed it no longer changes.
   [[nodiscard]] PlayerId guestId() const { return guestId_; }
   void assignGuest(PlayerId id);
+  // On the host: who decides the seat of this link's guest once its hello says who it is (a guest
+  // coming back with its seat key, a new player while the game is under way). Without it the
+  // guest gets guestId() and no seat key.
+  void admit(std::function<Admission(const Hello&)> decide) { admission_ = std::move(decide); }
+  // The key to this link's seat: the one its welcome gave (on either side); 0 before it, or from
+  // an older host.
+  [[nodiscard]] std::uint64_t seatKey() const { return seatKey_; }
   // Why the other side said it left (once the phase is Left by its message); none when the link
   // dropped without a word.
   [[nodiscard]] std::optional<LeaveReason> leaveReason() const { return leaveReason_; }
@@ -80,6 +99,8 @@ private:
   PlayerId localPlayer_ = HostPlayerId;
   PlayerId guestId_ = GuestPlayerId;
   std::optional<LeaveReason> leaveReason_;
+  std::function<Admission(const Hello&)> admission_;
+  std::uint64_t seatKey_ = 0;
   std::string remoteName_;
   // This side's own name, told to the guest (on the host).
   std::string playerName_;

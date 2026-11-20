@@ -40,6 +40,10 @@ struct CoopConnectionDesc {
   net::SocketOpener open;
 };
 
+// How long a guest that dropped out of a game under way keeps its seat: coming back within it, it
+// gets the same player id (its seat key says it is the same player, #356).
+inline constexpr net::Millis CoopRejoinGrace{5 * 60 * 1000};
+
 // App-level host/join handshake. It owns the transports and CoopLinks for as long as the room is
 // open, and keeps the room code and failure state available to the UI. The room's phase is a
 // net::RoomSession: it follows the link, the lobby says when everyone is ready and when play
@@ -49,6 +53,11 @@ struct CoopConnectionDesc {
 // than two seats it keeps one more link waiting for the next guest while the room is in its lobby,
 // gives each guest the lowest free player id, and a guest that leaves frees its seat without
 // closing the room for the others.
+//
+// A room of more seats goes on taking players once its game started (#356): the host keeps a link
+// waiting while it plays, a late joiner comes in through it as in the lobby, and a guest that
+// dropped comes back to its own seat and player id within CoopRejoinGrace. The host may close the
+// game to new players (openToNewPlayers); a returning guest still gets in.
 class CoopConnection {
 public:
   enum class View { Closed, Menu, JoinEntry, Hosting, Joining, Connected, Error };
@@ -100,10 +109,21 @@ public:
   [[nodiscard]] const std::string& compat() const { return desc_.compat; }
   // The room this player is in or last left (nullptr before the first one).
   [[nodiscard]] const net::RoomSession* room() const { return room_ ? &*room_ : nullptr; }
-  // Everyone picked what they play (or one took it back), and the game started: the room takes
-  // no more guests from then on.
+  // Everyone picked what they play (or one took it back), and the game started. A room of two
+  // takes no more guests from then on; a room of more seats keeps one waiting (#356).
   void markRoomReady(bool ready);
   void markRoomPlaying();
+  // On the host: the game is under way (markRoomPlaying).
+  [[nodiscard]] bool playing() const { return playing_; }
+  // On the host: whether a game under way takes new players (open, the default) or only the
+  // guests coming back to their seat. The room's listing shows it.
+  void setOpenToNewPlayers(bool open) { openToNewPlayers_ = open; }
+  [[nodiscard]] bool openToNewPlayers() const { return openToNewPlayers_; }
+  // On the host: the guests that dropped out of the game and keep their seat for now, by id.
+  [[nodiscard]] std::vector<game::coop::PlayerId> held() const;
+  // On a guest: this link came back to the seat it had in this room (its seat key went in the
+  // hello). The host decides: the welcome's id says whether it got the same seat.
+  [[nodiscard]] bool returning() const { return returning_; }
   // Moves the room's notices on, also once the lobby closed (tick() does it as well).
   void pollRoom();
   // The other player's name once it is in (the first guest's on the host, the host's on the
@@ -145,14 +165,21 @@ private:
   void tickHost(net::Millis now);
   void fail(std::string error);
   [[nodiscard]] std::uint64_t nextGeneration() { return ++generation_; }
-  // The lowest guest id no other seat holds (none when all are taken).
-  [[nodiscard]] std::optional<game::coop::PlayerId> freeGuestId(const Seat* except) const;
+  // The lowest guest id no other seat holds (none when all are taken). `welcomed`: only the seats
+  // whose guest is in count (a waiting link's id is only what it would give).
+  [[nodiscard]] std::optional<game::coop::PlayerId> freeGuestId(const Seat* except,
+                                                                bool welcomed = false) const;
   // The host's first guest's seat (the lowest id), else the one waiting for a guest.
   [[nodiscard]] const Seat* primarySeat() const;
   // The host's link still waiting for a guest, if any.
   [[nodiscard]] const Seat* waitingSeat() const;
   // Opens the next seat when the room takes more guests and none waits.
   void openSeat();
+  // A guest's hello on one of the host's links: the seat it gets (#356).
+  [[nodiscard]] game::coop::Admission admit(const game::coop::Hello& hello, const Seat& seat);
+  [[nodiscard]] std::uint64_t newSeatKey();
+  // Hands the host's link to admit().
+  void watchHello(Seat& seat);
   [[nodiscard]] int readyGuests() const;
   // A new room replaces the last one; a closed one is kept until its notices reached the server.
   void beginRoom(net::RoomSessionDesc desc);
@@ -169,7 +196,30 @@ private:
   bool seatsOpen_ = false;
   // Any guest got in: from then a guest leaving no longer closes the room (a room of more seats).
   bool guestEverIn_ = false;
-  int announced_ = 0;
+  net::SeatsNotice announced_;
+  bool playing_ = false;
+  bool openToNewPlayers_ = true;
+  // A guest that dropped out of the game under way: its seat waits for it until `at` plus the
+  // grace.
+  struct Departed {
+    game::coop::PlayerId id = game::coop::GuestPlayerId;
+    std::uint64_t key = 0;
+    net::Millis at{0};
+  };
+  std::vector<Departed> departed_;
+  net::Millis now_{0};
+  // A waiting seat that ended without a guest is opened again from then on (not every frame while
+  // the server cannot be reached).
+  net::Millis seatRetryAt_{0};
+  std::uint64_t seatKeys_ = 0;
+  // On a guest: the seat key the host gave it in the last room it was in, by code, and whether
+  // the link now joining went back to it.
+  struct Ticket {
+    std::string code;
+    std::uint64_t key = 0;
+  };
+  std::optional<Ticket> ticket_;
+  bool returning_ = false;
   std::string roomCode_;
   std::string roomToken_;
   View view_ = View::Closed;

@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.24.0 | Una partida en curso admite jugadores: la lista de salas muestra una partida en marcha con plaza libre como `in_progress` (las salas de `online.list()` ganan `in_progress`), la sala dice si su partida está en marcha y si admite jugadores nuevos (`online.current.in_progress`, `online.current.open_to_join`, `in_progress` y `open_to_join` de `online.room()`), y el anfitrión la abre o la cierra a jugadores nuevos (`online.set_open_to_join`, `online_open_to_join`) |
 | 0.23.0 | Todos los compañeros luchan en un combate cooperativo: la tarjeta de un aliado cuenta atrás hasta que se levanta (`battle.ally.<n>.revive_seconds`, `revive_seconds` en `battle.allies()`), y la pantalla `coop_battle` enseña la cuenta atrás de cada compañero caído (`coop_battle.fighter.<n>.revive_seconds`) y deja elegir a qué compañero van los objetos del jugador (`coop_battle.target`, el comando `coop_battle_target`). Llega la opción `coop_difficulty` (off, standard o hard) |
 | 0.22.0 | La pantalla `coop_trade` intercambia objetos entre dos jugadores cooperativos: la fase (`coop_trade.phase`), el otro jugador (`coop_trade.other.*`), la bolsa de este jugador (`coop_trade.bag.<n>.*`), las dos ofertas (`coop_trade.own.<n>.*`, `coop_trade.their.<n>.*`) y las dos marcas de listo, con los comandos `coop_trade_answer`, `coop_trade_add`, `coop_trade_take`, `coop_trade_confirm` y `coop_trade_cancel`. La etiqueta de `coop_hud` dice cuándo se le puede pedir al otro jugador (`coop_hud.tag.trade`) |
 | 0.21.0 | Salas de hasta cuatro jugadores: cada miembro dice cuándo su plaza está ocupada mientras su conexión aún se establece (`online.member.<n>.arriving`), y el HUD cooperativo muestra una etiqueta sobre cada uno de los otros jugadores (`coop_hud.tag.<n>.*` para el segundo y el tercero) |
@@ -101,7 +102,7 @@ guardar y la caja del nombre); el resto de pantallas llega después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.23.0**.
+Versión de la API de la interfaz: **0.24.0**.
 
 ### `ui`
 
@@ -935,7 +936,7 @@ Versión de la API de la interfaz: **0.23.0**.
 | `online.room.<n>.code` | ajuste | texto | Su código para entrar. |
 | `online.room.<n>.message` | ajuste | texto | El mensaje del anfitrión, o vacío. |
 | `online.room.<n>.host_name` | ajuste | texto | El nombre del anfitrión, o vacío. |
-| `online.room.<n>.state` | ajuste | texto | waiting, full o starting. |
+| `online.room.<n>.state` | ajuste | texto | waiting, full, starting o in_progress (una partida en marcha que admite jugadores). |
 | `online.field` | ajuste | texto | El campo de texto que recibe el teclado: filter, code, name o vacío. |
 | `online.filter` | ajuste | texto | Lo escrito en la búsqueda de salas. |
 | `online.code` | ajuste | texto | Lo escrito en el campo del código de sala. |
@@ -968,6 +969,8 @@ Versión de la API de la interfaz: **0.23.0**.
 | `online.current.can_ready` | ajuste | sí/no | Si este invitado puede marcarse como listo ya. |
 | `online.current.ready` | ajuste | sí/no | Si este jugador está listo. |
 | `online.current.members` | ajuste | número | Cuántos jugadores hay en la sala. |
+| `online.current.in_progress` | ajuste | sí/no | Si la partida de la sala está en marcha (un invitado que se marca listo entra en ella). |
+| `online.current.open_to_join` | ajuste | sí/no | Si la partida de la sala, una vez en marcha, admite jugadores nuevos (los invitados que vuelven a su plaza siempre entran). |
 | `online.member.<n>.name` | ajuste | texto | El nombre de un miembro, o vacío. |
 | `online.member.<n>.name_key` | ajuste | texto | La clave de texto del nombre de un miembro cuando no tiene uno propio. |
 | `online.member.<n>.icon` | ajuste | texto | El id del icono del perfil del miembro, o vacío si no envió uno. |
@@ -993,15 +996,16 @@ Versión de la API de la interfaz: **0.23.0**.
 | `online_mode` | comando | texto | El anfitrión elige el modo de la sala. |
 | `coop_ready` | comando | — | El del lobby cooperativo: el invitado se marca como listo, o deja de estarlo si ya lo estaba. |
 | `coop_start` | comando | — | El del lobby cooperativo: el anfitrión empieza la partida de la sala. |
+| `online_open_to_join` | comando | sí/no | El anfitrión dice si su partida, una vez en marcha, admite jugadores nuevos (true, por defecto) o solo a los invitados que vuelven. |
 | `online_leave` | comando | — | Sale de la sala (el anfitrión la cierra). |
 | `online_dismiss` | comando | — | Borra el aviso, la respuesta de la partida rápida y una sala que se cerró. |
 | `online_sample` | comando | sí/no | Cambia a las salas de muestra y vuelve (solo con las herramientas de desarrollo activas). |
 | `online.state(): table` | consulta | tabla | El estado de las pantallas: open, sample, sample_offered, field, filter, code, code_length, quick, notice, notice_key y can_retry. |
 | `online.profile(): table` | consulta | tabla | El perfil en línea del jugador: name, named, icon, wins, losses y draft. |
 | `online.icons(): table` | consulta | tabla | Los iconos que puede elegir un perfil: id y label_key. |
-| `online.list(): table` | consulta | tabla | La lista de salas: state, error, error_key, total y las salas que cumplen el filtro (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, joinable). |
+| `online.list(): table` | consulta | tabla | La lista de salas: state, error, error_key, total y las salas que cumplen el filtro (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, in_progress, joinable). |
 | `online.modes(): table` | consulta | tabla | Los modos de juego: id, label_key, description_key, short_key, available y selected. |
-| `online.room(): table?` | consulta | tabla | La sala en la que está el jugador, o nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready y members (name, icon, host, ready, local). |
+| `online.room(): table?` | consulta | tabla | La sala en la que está el jugador, o nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready, in_progress, open_to_join y members (name, icon, host, ready, local). |
 | `online.error_key(code: string?): string` | consulta | texto | La clave de texto de un código de error; los códigos desconocidos dan online.error.unknown. |
 | `online.notice_key(code: string?): string` | consulta | texto | La clave de texto de un código de aviso. |
 | `online.open(): boolean` | acción | sí/no | Se abrieron las pantallas de salas. |
@@ -1017,6 +1021,7 @@ Versión de la API de la interfaz: **0.23.0**.
 | `online.set_mode(id: string): boolean, string?` | acción | sí/no | El anfitrión elige el modo de la sala. |
 | `online.set_ready(ready: boolean): boolean, string?` | acción | sí/no | El invitado se marca como listo o no. |
 | `online.start(): boolean` | acción | sí/no | El anfitrión empieza la partida. |
+| `online.set_open_to_join(open: boolean): boolean, string?` | acción | sí/no | El anfitrión dice si su partida, una vez en marcha, admite jugadores nuevos o solo a los invitados que vuelven. |
 | `online.leave(): boolean` | acción | sí/no | Sale de la sala. |
 | `online.set_name_draft(value: string): boolean, string?` | acción | sí/no | Reemplaza el nombre que se está escribiendo en la pantalla del perfil. |
 | `online.save_name(): boolean` | acción | sí/no | Guarda el nombre escrito como el del perfil. |

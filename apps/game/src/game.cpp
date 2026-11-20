@@ -1940,11 +1940,26 @@ int runGame(const Options& requested) {
         if (!coopHostWorld) {
           coopHostWorld.emplace(online.profile().name(), std::string{});
         }
-        // Every guest in gets its bridge: the session's registry takes the id its link welcomed
-        // it with.
+        // A guest that picked its save while the game is under way gets the host's world as it is
+        // now (#356): its game starts there, and it gets its bridge below as the others did.
+        for (const game::coop::PlayerId id : coop.guestsWaitingForWorld()) {
+          ReportSave saved;
+          const auto world = play->reportSave(saved);
+          if (!world) {
+            // Nothing to save at this moment (a scene, a load): the next frame tries again.
+            continue;
+          }
+          if (auto sent = coop.sendJoinInProgress(id, *world); !sent) {
+            core::logWarning("coop: player {} could not join the game under way: {}", id,
+                             sent.error().message);
+          }
+        }
+        // Every guest in that was sent the host's world gets its bridge: the session's registry
+        // takes the id its link welcomed it with.
         for (const CoopConnection::Guest& guest : coopGuestsIn) {
           if (std::ranges::any_of(
-                  coopPeers, [&](const CoopPeer& peer) { return peer.link == guest.generation; })) {
+                  coopPeers, [&](const CoopPeer& peer) { return peer.link == guest.generation; }) ||
+              !coop.guestStarted(guest.id)) {
             continue;
           }
           const std::string name = guest.link->remoteName();
@@ -1976,6 +1991,10 @@ int runGame(const Options& requested) {
           // From here the bridge alone reads the link; the lobby draining it too starved the
           // bridge of snapshots and guest commands (remote players drew as bare shadows).
           coop.handLinkToPlay(guest.generation);
+          if (coop.joinedLate(guest.id)) {
+            // Joined or back after the game began (#356): the host's players hear it.
+            coopHud.notice(CoopJoinedText, peer.label);
+          }
           core::logInfo("coop: guest commands now drive player {} in the host field", guest.id);
           coopPeers.push_back(std::move(peer));
         }
@@ -2536,14 +2555,26 @@ int runGame(const Options& requested) {
     }
     if (std::exchange(coopHostLeft, false) && flow.playing() != nullptr) {
       // The guest's game was the host's world: with the room gone it ends, and the main menu says
-      // why (coop_hud.hpp).
-      core::logInfo("coop: the host closed the room, back to the title screen");
+      // why (coop_hud.hpp). A link that only dropped (the host did not end the game) goes back to
+      // the room at once: its seat waits for it (#356).
+      const std::string droppedFrom = coop.droppedFrom();
+      core::logInfo("coop: {}", droppedFrom.empty()
+                                    ? "the host closed the room, back to the title screen"
+                                    : "the link to the host dropped, back to the room");
       coop.leave();
       flow.toTitle();
       screenFade->setDarkness(0.0F);
       screenFade->setWhiteness(0.0F);
       title.show();
-      coopHud.notice(CoopHostLeftText);
+      if (droppedFrom.empty()) {
+        coopHud.notice(CoopHostLeftText);
+      } else {
+        coopHud.notice(CoopRejoiningText);
+        title.hide();
+        online.rejoin(droppedFrom, platform->nowSeconds());
+        (*ui)->show(OnlineRoomsDocument, true);
+        screens::publish(**ui, online.settings(), "online.revision");
+      }
     }
     if (flow.playing() != nullptr && flow.playing()->takeQuitGame()) {
       // The pause menu's quit, confirmed: the game is saved (quickSave, in its handler) and this

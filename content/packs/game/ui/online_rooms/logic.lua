@@ -113,7 +113,11 @@ local function fill_rows(document)
       -- A long name is cut into its column with "..." (common/fit_text.lua).
       local name_text = document:get(id .. "-name-text")
       fit_text.cut(name_text, room.name, column_width(document:get(id .. "-name")))
-      document:get(id .. "-mode"):set_text(t(room.mode_key))
+      -- A game already under way that takes players says so in place of its mode (#356).
+      document
+        :get(id .. "-mode")
+        :set_text(room.in_progress and t("online.mode_in_progress") or t(room.mode_key))
+      element:set_class("in-progress", room.in_progress)
       document
         :get(id .. "-players")
         :set_text(say("online.players", { players = room.players, capacity = room.capacity }))

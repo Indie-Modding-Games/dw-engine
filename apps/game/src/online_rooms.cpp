@@ -82,6 +82,8 @@ std::string_view listingStateName(ListingState state) {
     return "full";
   case ListingState::Starting:
     return "starting";
+  case ListingState::InProgress:
+    return "in_progress";
   }
   return "full";
 }
@@ -99,7 +101,9 @@ RoomView closedRoom(std::string code, std::string error) {
           .canStart = false,
           .canReady = false,
           .localReady = false,
-          .mode = {}};
+          .mode = {},
+          .inProgress = false,
+          .openToNewPlayers = true};
 }
 
 void SampleDirectory::refresh(double nowSeconds) {
@@ -130,7 +134,9 @@ void SampleRoomBackend::host(bool listed, double nowSeconds) {
                    .canStart = false,
                    .canReady = false,
                    .localReady = false,
-                   .mode = {}};
+                   .mode = {},
+                   .inProgress = false,
+                   .openToNewPlayers = true};
   openedAt_ = nowSeconds;
   arrive(nowSeconds);
 }
@@ -182,7 +188,9 @@ void SampleRoomBackend::joinNow(const RoomListing& listing, double nowSeconds) {
                    .canStart = false,
                    .canReady = true,
                    .localReady = false,
-                   .mode = listing.mode};
+                   .mode = listing.mode,
+                   .inProgress = listing.state == ListingState::InProgress,
+                   .openToNewPlayers = true};
   openedAt_ = nowSeconds;
 }
 
@@ -425,6 +433,8 @@ bool OnlineRooms::handle(std::string_view name, const std::string& text, bool fl
     joinTyped(nowSeconds);
   } else if (name == "online_quick") {
     quickMatch(nowSeconds);
+  } else if (name == "online_open_to_join") {
+    backend().setOpenToNewPlayers(flag);
   } else if (name == "online_mode") {
     const auto room = backend().room();
     if (room && room->isHost && modeAvailable(text)) {
@@ -449,6 +459,12 @@ bool OnlineRooms::handle(std::string_view name, const std::string& text, bool fl
     return false;
   }
   return true;
+}
+
+void OnlineRooms::rejoin(std::string_view code, double nowSeconds) {
+  static_cast<void>(handle("online_open", {}, false, nowSeconds));
+  static_cast<void>(handle("online_code", std::string{code}, false, nowSeconds));
+  joinTyped(nowSeconds);
 }
 
 void OnlineRooms::joinTyped(double nowSeconds) {
@@ -595,6 +611,8 @@ screens::ScreenSettings OnlineRooms::settings() const {
     add("online.current.can_ready", room->canReady);
     add("online.current.ready", room->localReady);
     add("online.current.members", static_cast<double>(room->members.size()));
+    add("online.current.in_progress", room->inProgress);
+    add("online.current.open_to_join", room->openToNewPlayers);
     for (std::size_t index = 0; index < room->members.size(); ++index) {
       const RoomMember& member = room->members[index];
       // This player shows with its profile's name and icon; the others with theirs when known.

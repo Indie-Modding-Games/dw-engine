@@ -10,9 +10,13 @@ namespace {
 constexpr double AnswerSeconds = 8.0;
 
 // The room's phase as the list shows it (a first-protocol server sends its state only); none
-// for a room already playing, which the list leaves out.
+// for a room already playing that takes no one, which the list leaves out. A game under way with
+// seats for more is listed to join (#356).
 std::optional<ListingState> listingState(const net::PublicRoom& room, int players, int capacity) {
   if (room.phase == "playing") {
+    if (room.state == "waiting" && players < capacity) {
+      return ListingState::InProgress;
+    }
     return std::nullopt;
   }
   if (room.phase == "connected" || room.phase == "ready") {
