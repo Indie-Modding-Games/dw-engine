@@ -1,0 +1,447 @@
+#include <dwe/game/coop/battle.hpp>
+#include <dwe/game/coop/link.hpp>
+#include <dwe/game/coop/protocol.hpp>
+#include <dwe/net/loopback.hpp>
+
+#include <doctest/doctest.h>
+
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+using namespace dwe::game::coop;
+namespace net = dwe::net;
+
+namespace {
+
+Identity identity() {
+  return {.protocol = ProtocolVersion, .gameVersion = "1.2.3", .contentHash = "content-hash"};
+}
+
+template <typename T>
+void roundTrip(const T& value) {
+  const auto bytes = encode(Message{value});
+  const auto decoded = decode(bytes);
+  REQUIRE(decoded);
+  REQUIRE(decoded->has_value());
+  CHECK(std::get<T>(**decoded) == value);
+}
+
+BattleFighterProfile fighter() {
+  return {.species = "agumon",
+          .stats = {1200, 800, 150, 120, 100, 90},
+          .hp = 1100,
+          .mp = 600,
+          .chargeMode = 1,
+          .equipped = {0, 3, -1, 15},
+          .discipline = 50,
+          .tiredness = 10,
+          .sick = false,
+          .injured = true,
+          .knownMoves = {"spit_fire", "sticky_net"}};
+}
+
+BattleSpoils spoils() {
+  return {.hp = 900,
+          .mp = 500,
+          .statGains = {10, 0, 2, 1, 0, 3},
+          .learnedMoves = {"heat_laser"},
+          .injured = false,
+          .care = {2, -1, 5, 1},
+          .food = -3,
+          .livesLost = 0,
+          .elapsedMinutes = 3,
+          .hourCrossed = true,
+          .lifetimeHoursLost = 0,
+          .commandsLearned = {3, 8},
+          .mpDiscountLearned = 10,
+          .counters = {4, 1, 2, 0},
+          .anyoneHit = true,
+          .partnerHit = true,
+          .frames = 600};
+}
+
+BattleFrame frame(std::uint32_t battle, std::uint32_t number) {
+  return {.battle = battle,
+          .frame = number,
+          .phase = BattlePhase::Fight,
+          .command = 3,
+          .menu = 0x0FFE,
+          .bagAvailable = true,
+          .finisherCharging = false,
+          .fighters = {{.hp = 1000, .mp = 500, .maxHp = 1200, .maxMp = 800},
+                       {.hp = 0, .mp = 10, .maxHp = 300, .maxMp = 100, .down = true}},
+          .figures = {{.slot = PartnerFigureSlot,
+                       .x = -1200,
+                       .z = 3400,
+                       .yaw = 0x4000,
+                       .clip = 0x2E,
+                       .starts = 7,
+                       .frozen = false,
+                       .pace = 16},
+                      {.slot = 5, .x = 200, .z = -40, .yaw = 3, .clip = 1, .starts = 2}}};
+}
+
+BattleAction act(std::uint32_t battle, BattleActionKind kind, std::int32_t value = 0,
+                 std::string item = {}) {
+  return {.battle = battle, .kind = kind, .value = value, .item = std::move(item)};
+}
+
+BattleEnd ending(std::uint32_t battle, BattleOutcome outcome = BattleOutcome::Victory,
+                 std::vector<std::int16_t> leftMap = {}, std::int32_t bits = 0,
+                 std::optional<BattleSpoils> spoils = std::nullopt) {
+  return {.battle = battle,
+          .outcome = outcome,
+          .leftMap = std::move(leftMap),
+          .bits = bits,
+          .spoils = std::move(spoils)};
+}
+
+// A host and a guest linked over a simulated network, both ready.
+struct Linked {
+  net::LoopbackNetwork network{{}};
+  CoopLink host = CoopLink::host(network.link(0), identity());
+  CoopLink guest = CoopLink::guest(network.link(1), identity(), "Guest");
+
+  Linked() { pump(); }
+  void pump() {
+    for (int i = 0; i < 8; ++i) {
+      network.advance(net::Millis{1});
+      host.poll(network.now());
+      guest.poll(network.now());
+    }
+  }
+};
+
+} // namespace
+
+TEST_CASE("cooperative battle messages round trip") {
+  roundTrip(BattleAsk{.ask = 3,
+                      .mapId = "native_forest",
+                      .enemyNpcs = {4, 6},
+                      .fixedFight = true,
+                      .predefined = false,
+                      .fighter = fighter()});
+  roundTrip(BattleBegin{.battle = 9,
+                        .starter = GuestPlayerId,
+                        .ask = 3,
+                        .mapId = "native_forest",
+                        .enemyNpcs = {4, 6},
+                        .species = {"agumon", "goburimon", "goburimon"},
+                        .fixedFight = false});
+  roundTrip(BattleBegin{.battle = 10,
+                        .starter = HostPlayerId,
+                        .ask = 0,
+                        .mapId = "native_forest",
+                        .enemyNpcs = {1},
+                        .species = {"gabumon", "kunemon"},
+                        .fixedFight = true});
+  roundTrip(BattleRefused{.ask = 3, .reason = BattleRefusal::Busy});
+  roundTrip(BattleRefused{.ask = 4, .reason = BattleRefusal::NotHere});
+  roundTrip(frame(9, 42));
+  roundTrip(act(9, BattleActionKind::Command, 8));
+  roundTrip(act(9, BattleActionKind::ThrowItem, 0, "medicine"));
+  roundTrip(act(9, BattleActionKind::Cheer));
+  roundTrip(act(9, BattleActionKind::CloseEnd));
+  roundTrip(ending(9, BattleOutcome::Victory, std::vector<std::int16_t>{4, 6, 7}, 120, spoils()));
+  roundTrip(ending(10, BattleOutcome::Fled, std::vector<std::int16_t>{}, 0));
+}
+
+TEST_CASE("cooperative battle messages reject what the battle cannot be") {
+  const auto rejects = [](const Message& message) {
+    const auto decoded = decode(encode(message));
+    CHECK_FALSE(decoded);
+  };
+  // No ask number, no map, no enemy, more enemies than a battle has, a negative slot.
+  rejects(BattleAsk{.ask = 0, .mapId = "m", .enemyNpcs = {1}, .fighter = fighter()});
+  rejects(BattleAsk{.ask = 1, .mapId = "", .enemyNpcs = {1}, .fighter = fighter()});
+  rejects(BattleAsk{.ask = 1, .mapId = "m", .enemyNpcs = {}, .fighter = fighter()});
+  rejects(BattleAsk{.ask = 1, .mapId = "m", .enemyNpcs = {1, 2, 3, 4}, .fighter = fighter()});
+  rejects(BattleAsk{.ask = 1, .mapId = "m", .enemyNpcs = {-2}, .fighter = fighter()});
+  // A fighter without a species, with a move slot past its row, with an unknown charge mode.
+  BattleFighterProfile broken = fighter();
+  broken.species.clear();
+  rejects(BattleAsk{.ask = 1, .mapId = "m", .enemyNpcs = {1}, .fighter = broken});
+  broken = fighter();
+  broken.equipped[0] = 16;
+  rejects(BattleAsk{.ask = 1, .mapId = "m", .enemyNpcs = {1}, .fighter = broken});
+  broken = fighter();
+  broken.chargeMode = 3;
+  rejects(BattleAsk{.ask = 1, .mapId = "m", .enemyNpcs = {1}, .fighter = broken});
+  // A begin whose species do not match its fighters, or a guest's begin with no ask.
+  rejects(BattleBegin{
+      .battle = 1, .starter = HostPlayerId, .mapId = "m", .enemyNpcs = {1}, .species = {"a"}});
+  rejects(BattleBegin{.battle = 1,
+                      .starter = GuestPlayerId,
+                      .ask = 0,
+                      .mapId = "m",
+                      .enemyNpcs = {1},
+                      .species = {"a", "b"}});
+  rejects(BattleBegin{.battle = 1,
+                      .starter = HostPlayerId,
+                      .ask = 5,
+                      .mapId = "m",
+                      .enemyNpcs = {1},
+                      .species = {"a", "b"}});
+  // A frame of no battle, a command past the strip's.
+  rejects(frame(0, 1));
+  BattleFrame strange = frame(1, 1);
+  strange.command = 12;
+  rejects(strange);
+  strange = frame(1, 1);
+  strange.figures.resize(MaxBattleFigures + 1);
+  rejects(strange);
+  // A command that is none, an item with no id.
+  rejects(act(1, BattleActionKind::Command, 0));
+  rejects(act(1, BattleActionKind::ThrowItem));
+  rejects(BattleRefused{.ask = 0});
+  // An unknown action kind on the wire.
+  auto bytes = encode(Message{act(1, BattleActionKind::Cheer)});
+  bytes[5] = 9;
+  CHECK_FALSE(decode(bytes));
+}
+
+TEST_CASE("a full battle frame fits one unreliable datagram") {
+  BattleFrame full = frame(1, 1);
+  full.fighters.assign(MaxBattleFighters, {.hp = 1, .mp = 1, .maxHp = 1, .maxMp = 1});
+  full.figures.assign(MaxBattleFigures, {.slot = 300, .x = -999'999, .z = 999'999});
+  const auto bytes = encode(Message{full});
+  CHECK(bytes.size() + 1 <= net::MaxDatagram);
+  roundTrip(full);
+}
+
+TEST_CASE("each side sends only its own battle messages") {
+  Linked linked;
+  REQUIRE(linked.host.phase() == LinkPhase::Ready);
+  REQUIRE(linked.guest.phase() == LinkPhase::Ready);
+  // The guest asks and acts; it never tells the host about a battle.
+  CHECK(linked.guest.send(
+      Message{BattleAsk{.ask = 1, .mapId = "m", .enemyNpcs = {1}, .fighter = fighter()}}));
+  CHECK(linked.guest.send(Message{act(1, BattleActionKind::Cheer)}));
+  CHECK_FALSE(linked.guest.send(Message{frame(1, 1)}));
+  CHECK_FALSE(linked.guest.send(Message{ending(1, BattleOutcome::Victory, {}, 0)}));
+  // The host tells; it never asks.
+  CHECK(linked.host.send(Message{frame(1, 1)}));
+  CHECK(linked.host.send(Message{BattleRefused{.ask = 1}}));
+  CHECK_FALSE(linked.host.send(
+      Message{BattleAsk{.ask = 1, .mapId = "m", .enemyNpcs = {1}, .fighter = fighter()}}));
+  CHECK_FALSE(linked.host.send(Message{act(1, BattleActionKind::Cheer)}));
+}
+
+TEST_CASE("the referee runs one battle at a time and pulls the second player in as helper") {
+  BattleReferee referee;
+  const BattleAsk ask{.ask = 4, .mapId = "forest", .enemyNpcs = {2}, .fighter = fighter()};
+  CHECK(referee.judge(ask, "forest", false) == std::nullopt);
+  CHECK(referee.judge(ask, "beach", false) == BattleRefusal::NotHere);
+  // The host's own battle started first: the guest's ask waits for nothing, it is refused, and the
+  // guest helps in the host's battle.
+  CHECK(referee.judge(ask, "forest", true) == BattleRefusal::Busy);
+  const BattleBegin hosts =
+      referee.begin(HostPlayerId, 0, "forest", {3}, {"gabumon", "kunemon"}, false);
+  CHECK(hosts.battle == 1);
+  CHECK(hosts.ask == 0);
+  CHECK(referee.judge(ask, "forest", false) == BattleRefusal::Busy);
+  CHECK(referee.roleOf(HostPlayerId) == BattleRole::Starter);
+  CHECK(referee.roleOf(GuestPlayerId) == BattleRole::Helper);
+  // A helper throws its own items and cheers; it neither commands nor closes the end box.
+  CHECK(referee.allows(act(1, BattleActionKind::ThrowItem, 0, "meat")));
+  CHECK(referee.allows(act(1, BattleActionKind::Cheer)));
+  CHECK_FALSE(referee.allows(act(1, BattleActionKind::Command, 2)));
+  CHECK_FALSE(referee.allows(act(1, BattleActionKind::CloseEnd)));
+  CHECK_FALSE(referee.allows(act(2, BattleActionKind::Cheer)));
+  // The host's battle gives the guest nothing back.
+  const auto end = referee.end(BattleOutcome::Victory, {3}, 50, spoils());
+  REQUIRE(end);
+  CHECK(end->battle == 1);
+  CHECK(end->bits == 50);
+  CHECK_FALSE(end->spoils);
+  CHECK_FALSE(referee.running());
+  CHECK_FALSE(referee.end(BattleOutcome::Victory, {}, 0, std::nullopt));
+}
+
+TEST_CASE("the guest's battle takes its commands and gives its partner the spoils") {
+  BattleReferee referee;
+  const BattleBegin begin =
+      referee.begin(GuestPlayerId, 7, "forest", {2, 5}, {"agumon", "a", "b"}, false);
+  CHECK(begin.starter == GuestPlayerId);
+  CHECK(begin.ask == 7);
+  CHECK(referee.roleOf(GuestPlayerId) == BattleRole::Starter);
+  CHECK(referee.roleOf(HostPlayerId) == BattleRole::Helper);
+  CHECK(referee.allows(act(begin.battle, BattleActionKind::Command, 8)));
+  CHECK(referee.allows(act(begin.battle, BattleActionKind::CloseEnd)));
+  CHECK(referee.starterPresent());
+  const auto end = referee.end(BattleOutcome::Defeat, {}, 0, spoils());
+  REQUIRE(end);
+  REQUIRE(end->spoils);
+  CHECK(end->spoils->hp == 900);
+}
+
+TEST_CASE("a guest that drops mid-battle leaves its partner fighting on its own") {
+  BattleReferee referee;
+  const BattleBegin begin = referee.begin(GuestPlayerId, 1, "forest", {2}, {"agumon", "a"}, false);
+  referee.guestLeft();
+  CHECK_FALSE(referee.starterPresent());
+  // Nothing more of the guest counts, and the end keeps nothing for it.
+  CHECK_FALSE(referee.allows(act(begin.battle, BattleActionKind::Command, 2)));
+  const auto end = referee.end(BattleOutcome::Victory, {2}, 30, spoils());
+  REQUIRE(end);
+  CHECK_FALSE(end->spoils);
+  CHECK(end->bits == 30);
+  // A host battle while the guest is away goes on with its starter there.
+  referee.begin(HostPlayerId, 0, "forest", {2}, {"gabumon", "a"}, false);
+  CHECK(referee.starterPresent());
+  referee.guestJoined();
+  CHECK_FALSE(referee.guestGone());
+}
+
+TEST_CASE("the mirror follows the host's battle and keeps only the newest frame") {
+  BattleMirror mirror;
+  const BattleAsk ask = mirror.ask("forest", {2}, false, true, fighter());
+  CHECK(ask.ask == 1);
+  CHECK(ask.predefined);
+  CHECK(mirror.pendingAsk() == 1U);
+  CHECK_FALSE(mirror.action(BattleActionKind::Cheer));
+
+  // The host's own battle began first: the guest watches it as its helper, and its ask is
+  // refused afterwards.
+  mirror.receive(BattleBegin{.battle = 3,
+                             .starter = HostPlayerId,
+                             .ask = 0,
+                             .mapId = "forest",
+                             .enemyNpcs = {4},
+                             .species = {"gabumon", "kunemon"}});
+  REQUIRE(mirror.takeBegan());
+  CHECK(mirror.pendingAsk() == 1U);
+  CHECK(mirror.role() == BattleRole::Helper);
+  CHECK(mirror.action(BattleActionKind::ThrowItem, 0, "meat"));
+  CHECK_FALSE(mirror.action(BattleActionKind::Command, 2));
+  mirror.receive(BattleRefused{.ask = 9, .reason = BattleRefusal::Busy});
+  CHECK_FALSE(mirror.takeRefused());
+  mirror.receive(BattleRefused{.ask = 1, .reason = BattleRefusal::Busy});
+  const auto refused = mirror.takeRefused();
+  REQUIRE(refused);
+  CHECK(refused->reason == BattleRefusal::Busy);
+  CHECK_FALSE(mirror.pendingAsk());
+
+  mirror.receive(frame(3, 10));
+  mirror.receive(frame(3, 8));
+  mirror.receive(frame(2, 50));
+  REQUIRE(mirror.frame());
+  CHECK(mirror.frame()->frame == 10);
+  mirror.receive(frame(3, 11));
+  CHECK(mirror.frame()->frame == 11);
+
+  // An end for another battle changes nothing; the host's battle's end brings no spoils.
+  mirror.receive(ending(2, BattleOutcome::Victory, {}, 0));
+  CHECK_FALSE(mirror.takeEnded());
+  mirror.receive(ending(3, BattleOutcome::Victory, std::vector<std::int16_t>{4}, 0, spoils()));
+  const auto ended = mirror.takeEnded();
+  REQUIRE(ended);
+  CHECK_FALSE(ended->spoils);
+  CHECK(ended->leftMap == std::vector<std::int16_t>{4});
+  CHECK_FALSE(mirror.running());
+  CHECK_FALSE(mirror.frame());
+}
+
+TEST_CASE("the guest's own battle answers its ask and brings its spoils") {
+  BattleMirror mirror;
+  const BattleAsk ask = mirror.ask("forest", {2}, false, false, fighter());
+  mirror.receive(BattleBegin{.battle = 5,
+                             .starter = GuestPlayerId,
+                             .ask = ask.ask,
+                             .mapId = "forest",
+                             .enemyNpcs = {2},
+                             .species = {"agumon", "kunemon"}});
+  CHECK_FALSE(mirror.pendingAsk());
+  CHECK(mirror.role() == BattleRole::Starter);
+  const auto command = mirror.action(BattleActionKind::Command, 8);
+  REQUIRE(command);
+  CHECK(command->battle == 5);
+  mirror.receive(ending(5, BattleOutcome::Victory, {}, 0, spoils()));
+  const auto ended = mirror.takeEnded();
+  REQUIRE(ended);
+  REQUIRE(ended->spoils);
+  CHECK(ended->spoils->learnedMoves == std::vector<std::string>{"heat_laser"});
+}
+
+TEST_CASE("the host leaving drops the guest's ask and battle") {
+  BattleMirror mirror;
+  const BattleAsk ask = mirror.ask("forest", {2}, false, false, fighter());
+  const BattleMirror::Dropped asked = mirror.hostLeft();
+  CHECK(asked.ask == ask.ask);
+  CHECK_FALSE(asked.battle);
+
+  mirror.receive(BattleBegin{.battle = 1,
+                             .starter = HostPlayerId,
+                             .mapId = "forest",
+                             .enemyNpcs = {2},
+                             .species = {"gabumon", "kunemon"}});
+  const BattleMirror::Dropped fighting = mirror.hostLeft();
+  CHECK_FALSE(fighting.ask);
+  CHECK(fighting.battle);
+  CHECK_FALSE(mirror.running());
+  CHECK_FALSE(mirror.takeBegan());
+}
+
+TEST_CASE("a co-op battle runs over the link from the guest's ask to its end") {
+  Linked linked;
+  BattleReferee referee;
+  BattleMirror mirror;
+  const auto deliverToHost = [&]() -> std::optional<Message> {
+    linked.guest.poll(linked.network.now());
+    linked.network.advance(net::Millis{1});
+    linked.host.poll(linked.network.now());
+    return linked.host.receive();
+  };
+  const auto deliverToGuest = [&]() -> std::optional<Message> {
+    linked.host.poll(linked.network.now());
+    linked.network.advance(net::Millis{1});
+    linked.guest.poll(linked.network.now());
+    return linked.guest.receive();
+  };
+
+  REQUIRE(linked.guest.send(Message{mirror.ask("forest", {2}, false, false, fighter())}));
+  const auto asked = deliverToHost();
+  REQUIRE(asked);
+  const auto& ask = std::get<BattleAsk>(*asked);
+  CHECK(ask.fighter == fighter());
+  REQUIRE_FALSE(referee.judge(ask, "forest", false));
+  const BattleBegin begin = referee.begin(GuestPlayerId, ask.ask, ask.mapId, ask.enemyNpcs,
+                                          {ask.fighter.species, "kunemon"}, ask.fixedFight);
+  REQUIRE(linked.host.send(Message{begin}));
+  REQUIRE(linked.host.send(Message{frame(begin.battle, 1)}));
+  for (int i = 0; i < 2; ++i) {
+    const auto told = deliverToGuest();
+    REQUIRE(told);
+    std::visit(
+        [&](const auto& body) {
+          using T = std::decay_t<decltype(body)>;
+          if constexpr (std::is_same_v<T, BattleBegin> || std::is_same_v<T, BattleFrame>) {
+            mirror.receive(body);
+          }
+        },
+        *told);
+  }
+  REQUIRE(mirror.takeBegan());
+  REQUIRE(mirror.frame());
+
+  const auto command = mirror.action(BattleActionKind::Command, 2);
+  REQUIRE(command);
+  REQUIRE(linked.guest.send(Message{*command}));
+  const auto acted = deliverToHost();
+  REQUIRE(acted);
+  CHECK(referee.allows(std::get<BattleAction>(*acted)));
+
+  const auto end = referee.end(BattleOutcome::Victory, {2}, 40, spoils());
+  REQUIRE(end);
+  REQUIRE(linked.host.send(Message{*end}));
+  const auto ended = deliverToGuest();
+  REQUIRE(ended);
+  mirror.receive(std::get<BattleEnd>(*ended));
+  const auto taken = mirror.takeEnded();
+  REQUIRE(taken);
+  REQUIRE(taken->spoils);
+  CHECK(*taken->spoils == spoils());
+}

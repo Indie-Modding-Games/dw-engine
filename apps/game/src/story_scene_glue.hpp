@@ -4,6 +4,8 @@
 #include <dwe/session/story_scenes.hpp>
 
 #include <cstdint>
+#include <optional>
+#include <utility>
 #include <vector>
 
 #include "battle_screen.hpp"
@@ -108,6 +110,27 @@ public:
   // One engine tick of the player's buttons for the story's naming box; true when it took them.
   bool pressNaming(const input::InputState& input) { return naming_.press(input); }
 
+  // A co-op guest's battles run on the host (docs/architecture/multiplayer.md, §6 decision 3): with
+  // this on, a battle the story asks for is handed over (takeHandedBattle) instead of started, and
+  // the story waits until finishHandedBattle gives its outcome.
+  struct HandedBattle {
+    // The map NPC slots the enemies are, joiners included.
+    std::vector<std::int32_t> npcs;
+    bool fixedFight = false;
+    bool predefined = false;
+  };
+  void handBattlesOver(bool on) { handOver_ = on; }
+  [[nodiscard]] bool handsBattlesOver() const { return handOver_; }
+  [[nodiscard]] std::optional<HandedBattle> takeHandedBattle() {
+    return std::exchange(handed_, std::nullopt);
+  }
+  // Whether a handed battle waits for its outcome.
+  [[nodiscard]] bool handedBattleWaits() const { return handedWaits_; }
+  // The handed battle's outcome, given to the story's script on the next update.
+  void finishHandedBattle(game::story::BattleOutcome outcome);
+  // The handed battle runs in this game after all (the host could not run it), on the next update.
+  void runHandedBattleHere();
+
 private:
   bool takeSaveMachine(const session::StoryScreenRequest& request);
   void startBattle(session::StoryScenes& scenes, BattleScreen& battle,
@@ -116,6 +139,13 @@ private:
 
   // Whether the battle on the screen is the story's.
   bool storyBattle_ = false;
+  bool handOver_ = false;
+  std::optional<HandedBattle> handed_;
+  bool handedWaits_ = false;
+  // The story's ask of the battle handed over, kept to run it here; and whether to.
+  std::optional<game::story::ScriptedBattle> handedRequest_;
+  bool runHandedHere_ = false;
+  std::optional<game::story::BattleOutcome> handedOutcome_;
   StoryShop shop_;
   StoryItemKeeper itemKeeper_;
   StoryGym gym_;

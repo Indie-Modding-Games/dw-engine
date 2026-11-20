@@ -394,10 +394,69 @@ ranura; solo las partidas de la sala son cooperativas).
 |---|---|---|---|
 | 1 | ¿Qué trae el invitado? | **Confirmado:** se transfiere su partida completa y se extraen solo identidad, modelo y estado actual del compañero; historia, mapa y progreso compartido siguen bajo el host. | Importar al mundo host el resto de la partida del invitado: descartado. |
 | 2 | ¿Quién inicia cambio de mapa? | **Confirmado:** solo el anfitrión inicia el cambio compartido. Si el invitado llega a un warp, se detiene allí hasta que el host cambie el mapa. | Que el invitado cambie el mapa por sí mismo: descartado. |
-| 3 | Combate | Primera versión: pelea el compañero de **quien empieza el combate**; el otro ayuda con objetos u órdenes de ánimo y ve el combate. Más adelante, los dos compañeros juntos. | Los dos compañeros desde el principio: hay que rehacer los lados del combate (IA enemiga, golpes, comandos, HUD). |
+| 3 | Combate | **Decidida (C3, primera versión):** pelea el compañero de **quien empieza el combate**; el otro ayuda con objetos de su propia bolsa y ánimos, y ve el combate. Un combate a la vez. Más adelante, los dos compañeros juntos. Ver §6.1. | Los dos compañeros desde el principio: hay que rehacer los lados del combate (IA enemiga, golpes, comandos, HUD). |
 | 4 | Progreso | La historia, los flags, el dinero y el mundo son **del host**. El invitado se lleva a su partida su compañero (stats, edad, técnicas) y los objetos que consiga. | Progreso compartido en las dos partidas: rompe la historia del invitado. |
 | 5 | Pausa y menús | Los menús personales son locales y **no pausan** el mundo. Solo el host puede solicitar pausa global con Start; el host confirma el cambio de reloj y lo replica a ambos. | Pausa para los dos con cualquier menú: corta el juego del otro a cada rato. |
 | 6 | Diálogos y escenas | Congelan a los dos jugadores. **Avanza quien los abrió**; el otro ve el mismo cuadro. | Cualquiera avanza: más rápido, pero se saltan textos del otro. |
+
+### 6.1 La decisión 3 tal como está hecha (C3)
+
+El invitado ejecuta su propia copia del mundo del anfitrión, así que un combate que comparten los dos jugadores tiene
+que correr en un solo sitio. Corre en la **simulación del anfitrión**:
+
+- **Cuándo se comparte (ticket #351).** Solo mientras el otro jugador está en el mismo mapa. El invitado pasa los
+  combates de su script al anfitrión solo mientras la última instantánea del anfitrión nombra el mapa del invitado (y
+  no hay un cambio de mapa en curso); en cualquier otro sitio el combate es del propio invitado, en solitario, igual que
+  en un jugador, y nada espera al anfitrión. Los combates del anfitrión solo se muestran a un invitado en ese mapa que no
+  esté en un combate propio en solitario. Esta comprobación es una costura pequeña (`hostOnThisMap` en
+  `apps/game/src/coop_battles.cpp`) pensada para cambiarse al registro de jugadores del núcleo cooperativo cuando llegue.
+
+- **Quién pelea.** El compañero del jugador cuyo script de mapa lo empezó (un enemigo salvaje tocado, un NPC con el que
+  se habló, un combate de la historia). Un combate que pide el script del invitado va al anfitrión como `BattleAsk`
+  (mapa, las ranuras de NPC de los enemigos con los que se suman ya sorteados, las marcas de combate fijo y predefinido,
+  y el luchador del compañero del invitado: especie, stats, PV, PM, modo de carga, técnicas equipadas, condición,
+  técnicas conocidas). El anfitrión lo empieza con ese compañero visitante donde está el compañero del invitado en su
+  campo (`session::BattleRequest::visitor`); el compañero del anfitrión no participa.
+- **Un combate a la vez.** El mundo compartido corre un combate, así que un encuentro nunca crea dos. Una petición
+  mientras corre uno se rechaza por ocupado (`BattleRefused`): el script del invitado recibe «no empezó», como cuando
+  un combate no puede empezar en el original, y el invitado entra al combate en curso como ayudante. Una petición que el
+  anfitrión no puede aceptar por otro motivo (se fue del mapa entretanto, o está en una pantalla, escena o script)
+  también se rechaza, y entonces el juego del invitado corre ese combate él mismo, en solitario. Cada combate que empieza
+  el anfitrión en el mapa del invitado (el de su historia, el de un torneo) se le muestra al invitado igual.
+- **Qué ve el otro jugador.** El anfitrión envía `BattleBegin`, luego un `BattleFrame` cada 3 ticks (fase, orden
+  actual, órdenes disponibles, si se puede usar la bolsa, PV y PM de los luchadores y cada figura retenida: sitio,
+  orientación, clip y su inicio) y luego `BattleEnd`. El campo del invitado se detiene y dibuja sus propios actores
+  donde los ponen los frames; la pantalla `coop_battle` muestra las barras de vida, las órdenes del que empezó y la
+  ayuda del ayudante. La cámara del ayudante se gira hacia el combate cuando empieza y vuelve cuando termina.
+- **Qué puede hacer cada jugador.** El que empezó da las órdenes (los comandos de la tira, el remate) y cierra el
+  cuadro final. Los dos pueden lanzar un objeto **de su propia bolsa** (el objeto del invitado sale de su bolsa; el
+  juego del anfitrión presta uno y lo lanza) y **animar** (una pulsación de la carga del remate). En el anfitrión, un
+  combate del invitado bloquea la tira y el botón del remate del anfitrión; su bolsa funciona.
+  Los botones de la pantalla se usan con el ratón o con las flechas y confirmar; el botón extra del campo pide el
+  remate al que empezó y anima en el ayudante.
+- **Quién lo tocó.** En el anfitrión, un enemigo que choca con el cuerpo del invitado solo queda bloqueado: el propio
+  juego del invitado procesa ese toque y pide el combate, así que el guion del anfitrión nunca lo empieza con el
+  compañero del anfitrión.
+- **Recompensas y derrota (decisión 4).** Los bits y los objetos que caen van al mundo del anfitrión. Lo que el combate
+  deja al compañero que peleó (PV, PM, subidas de stats, técnicas aprendidas, cuidados, vidas perdidas, lesión,
+  contadores) vuelve al invitado en `BattleEnd` y su juego lo aplica como el resultado de su propio combate, derrota
+  incluida (sus vidas y sus escenas). Los NPC que el combate quitó del mapa también van en `BattleEnd`, para que los dos
+  campos los quiten.
+- **Desconexión.** Si el invitado se cae en su propio combate, su compañero sigue peleando solo con su última orden (a
+  su aire desde entonces) y no se envía nada de vuelta; el anfitrión sigue mirando y ayudando y puede cerrar el cuadro
+  final. Si se cae el anfitrión, la petición pendiente del invitado pasa a ser un combate en solitario de su propio
+  juego, y el combate en pantalla se va (su script recibe «no empezó»); nada queda detenido.
+
+Siguiente paso: los dos compañeros peleando juntos. El protocolo ya lleva quién empezó y la especie de cada luchador, y
+las acciones del ayudante pasan por el mismo `BattleAction`; lo que falta es un segundo lado de compañero en el propio
+combate (los objetivos de la IA enemiga, los golpes, la bolsa y el HUD suponen solo al luchador 0, §2).
+
+Límites de esta primera versión: los efectos de las técnicas, los números de daño y las marcas de estado solo se dibujan
+en el anfitrión; el invitado ve moverse a los luchadores y las barras de vida. Los luchadores de torneo que no son NPC
+del mapa no se dibujan en el invitado. El objeto del ayudante se dibuja lanzado desde el domador del anfitrión. Los
+enemigos saltan a los sitios del anfitrión cuando empieza el combate (hasta entonces cada juego simula sus propios
+NPC). Los objetos que caen solo aparecen en el mundo del anfitrión. Mientras el anfitrión tiene su menú abierto, el
+combate espera para los dos.
 
 ## 7. Fases
 
@@ -406,7 +465,7 @@ ranura; solo las partidas de la sala son cooperativas).
 | **C0, sin red** | `PlayerCommands` y los tres controladores; pantallas por acciones; `FieldPlayer`; cámara y prueba de fuera de pantalla fuera del renderer; `PlayerRegistry`. | El juego de un jugador no cambia (cadena de la historia en verde). Un test con dos jugadores scriptados en el mismo `Field` (solo en tests, nunca como modo local). | 2–3 semanas |
 | **C1, verse caminar** | `game/coop` con saludo, unión en punto seguro, snapshots completos, `WorldMirror`, simulación de movimiento autoritativa en host y predicción visual local reconciliada. | Dos PCs en el mismo mapa se ven caminar, cada uno con su compañero detrás; el host resuelve colisiones y triggers con pérdidas simuladas. | ~2 semanas |
 | **C2, interactuar** | NPCs y casillas por jugador, diálogos replicados, cambio de mapa en grupo, menús sin pausa, desconexión y reconexión. | Un tramo de la historia jugado entre dos PCs. | ~3 semanas |
-| **C3, combate** | Según la decisión 3. | Un combate de la historia ganado en cooperativo. | 2–6 semanas |
+| **C3, combate** | Según la decisión 3 (§6.1). **Hecha, primera versión:** combates en el anfitrión para los dos jugadores cuando comparten mapa (en solitario si no, #351), la vista del otro jugador, ayuda y órdenes, recompensas de vuelta al invitado, desconexión en combate. Falta: los dos compañeros en un combate. | Un combate de la historia ganado en cooperativo. | 2–6 semanas |
 | **C4, invitado** | Progreso del invitado de vuelta a su partida, nombres sobre los jugadores, indicador de latencia, pulido. | El invitado vuelve a su partida con lo ganado. | — |
 
 ### 7.1 Corte de arquitectura y orden de implementación

@@ -148,10 +148,15 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   matchEndSong_.reset();
   // After the music's facts: trigger 1 changes the battle's rules, not its song.
   applyFixedFight(request, fixedFight);
+  const bool visiting = request.visitor.has_value();
   auto battle = desc_.battle->start(*desc_.session, std::move(request));
   if (!battle) {
     return std::unexpected{battle.error()};
   }
+  visiting_ = visiting;
+  visitorResult_.reset();
+  leftMap_.clear();
+  coopOutcome_.reset();
   battle_.emplace(std::move(*battle));
   if (!shotColumns_) {
     shotColumns_ = readShotColumns(desc_.files);
@@ -824,7 +829,8 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
   }
   if (command.name == BattleCommandName) {
     const auto* number = std::get_if<double>(&command.value);
-    if (battle_ && number != nullptr) {
+    // A visitor's partner takes its own player's commands (commandFromVisitor).
+    if (battle_ && number != nullptr && !visiting_) {
       const auto chosen = static_cast<game::battle::Command>(static_cast<int>(*number));
       if (auto taken = battle_->command(chosen); !taken) {
         core::logInfo("{}", core::formatMessage(messages::BattleCommandRefused,
@@ -881,8 +887,9 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
 }
 
 void BattleScreen::pressFinisher() {
-  // Nothing is taken while the battle opens, as for the strip's commands.
-  if (!battle_ || intro_) {
+  // Nothing is taken while the battle opens, as for the strip's commands, nor from the helper of a
+  // visitor's battle.
+  if (!battle_ || intro_ || visiting_) {
     return;
   }
   // Before the gauge is full the button does nothing, as in the original.
@@ -1022,6 +1029,7 @@ void BattleScreen::finish() {
   }
   const game::battle::BattleResult& result = *finished;
   outcome_ = result.outcome;
+  coopOutcome_ = result.outcome;
   won_ = result.outcome == game::battle::Outcome::Victory;
   const bool match = result.kind == game::battle::BattleKind::Tournament;
   // battle_main.c: BTL_deinitializeCombat: without a victory the numbers go at once
@@ -1053,7 +1061,12 @@ void BattleScreen::finish() {
   }
   core::logInfo("{}", core::formatMessage(messages::BattleFinished,
                                           game::battle::outcomeTextKey(result.outcome)));
-  auto aftermath = desc_.battle->finish(*desc_.session, result);
+  // A visitor's battle gives this world its bits and drops; the rest is the visitor's game's.
+  auto aftermath = visiting_ ? desc_.battle->finishVisitor(*desc_.session, result)
+                             : desc_.battle->finish(*desc_.session, result);
+  if (visiting_) {
+    visitorResult_ = result;
+  }
   if (!aftermath) {
     core::logError("{}",
                    core::formatMessage(messages::BattleStartFailed, aftermath.error().message));

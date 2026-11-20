@@ -632,6 +632,19 @@ public:
   // The field takes the fighters back where they stand; a fixed fight's enemies stay there for
   // the scene that follows (game::field::releasedNpcSpot).
   void releaseFighters(bool fixedFight = false);
+  // Whose partner a battle's partner (fighter 0, no NPC slot) is drawn on: this game's own, or in
+  // co-op the other player's (docs/architecture/multiplayer.md, §6 decision 3: the partner of who
+  // started the battle fights): the guest's on the host, the host's presented one on the guest.
+  enum class BattlePartner : std::uint8_t { Own, CoopGuest, CoopHost };
+  void setBattlePartner(BattlePartner partner) { battlePartner_ = partner; }
+  [[nodiscard]] BattlePartner battlePartner() const { return battlePartner_; }
+  // The bodies a battle holds now (the partner, no slot, and the map's NPCs by slot), as the battle
+  // left them: what the co-op host shows the guest of its battle.
+  struct HeldFigure {
+    std::optional<std::int32_t> npc;
+    FighterFigure figure;
+  };
+  [[nodiscard]] std::vector<HeldFigure> heldFigures() const;
   // A fighter of a stage of the scene's own that is no NPC of the map (a tournament's rival:
   // std_setup.c: STD_initializeOpponent's entity, placed by std_main.c: STD_placePlayer2): drawn
   // as this species with the NPCs' animations, scenery hidden or not, and held by the battle under
@@ -1238,6 +1251,10 @@ private:
   std::vector<std::unique_ptr<Actor>> npcActors_;
   // addStageFighter's, by id.
   std::vector<std::pair<std::int32_t, std::unique_ptr<Actor>>> stageFighters_;
+  BattlePartner battlePartner_ = BattlePartner::Own;
+  // The actor the battle's partner is drawn on (setBattlePartner), the own partner when the chosen
+  // one is not there.
+  [[nodiscard]] Actor* battlePartnerActor() const;
   // The NPCs whose model could not be loaded, logged once each.
   std::vector<scene::Entity> npcsNotShown_;
   // The battle time given to the held fighters since the last update, and in this update.

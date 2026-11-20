@@ -313,10 +313,64 @@ and `apps/game/tests/app_flow_tests.cpp` (a guest's game is never saved to a slo
 |---|---|---|---|
 | 1 | What does the guest bring? | Their tamer and **their partner** from their own game, as a visitor. | Only a tamer, with no partner: much cheaper, but it contributes less. |
 | 2 | Shared map? | Yes: they go **as a group**, and an exit takes both. | Each in their own map: the host would simulate several `Field` at once. |
-| 3 | Battle | First version: the partner of **whoever starts the battle** fights; the other helps with items or cheering commands and sees the battle. Later, both partners together. | Both partners from the start: the battle's sides have to be redone (enemy AI, hits, commands, HUD). |
+| 3 | Battle | **Decided (C3, first version):** the partner of **whoever starts the battle** fights; the other helps with items from their own bag and cheers, and sees the battle. One battle at a time. Later, both partners together. See §6.1. | Both partners from the start: the battle's sides have to be redone (enemy AI, hits, commands, HUD). |
 | 4 | Progress | The story, the flags, the money and the world belong **to the host**. The guest takes back to their game their partner (stats, age, techniques) and the items they obtain. | Shared progress in both games: it breaks the guest's story. |
 | 5 | Pause and menus | In co-op, menus **do not pause** the world. Only the host pauses with Start, and it pauses for both. | Pause for both with any menu: it interrupts the other player's game all the time. |
 | 6 | Dialogs and scenes | They freeze both players. **Whoever opened them advances**; the other sees the same box. | Anyone advances: faster, but the other's texts get skipped. |
+
+### 6.1 Decision 3 as built (C3)
+
+The guest runs its own copy of the host's world, so a battle both players share has to run in one place. It runs on
+the **host's simulation**:
+
+- **When it is shared (ticket #351).** Only while the other player stands on the same map. The guest hands its
+  script's battles to the host only while the host's last snapshot names the guest's map (and no map change is under
+  way); anywhere else the battle is the guest's own, solo, exactly as in single player, and nothing waits for the
+  host. The host's battles are shown only to a guest on that map that is not in a solo battle of its own. This check
+  is a small seam (`hostOnThisMap` in `apps/game/src/coop_battles.cpp`) meant to switch to the co-op core's player
+  registry once it lands.
+
+- **Who fights.** The partner of the player whose map script started it (a wild enemy touched, an NPC talked to, a story
+  fight). A battle the guest's script asks for goes to the host as `BattleAsk` (map, the enemies' NPC slots with the
+  joiners already rolled, the fixed-fight and predefined flags, and the guest partner's fighter: species, stats, HP, MP,
+  charge mode, equipped moves, condition, known moves). The host starts it with that visiting partner standing where the
+  guest's partner stands in its field (`session::BattleRequest::visitor`); the host's own partner takes no part.
+- **One battle at a time.** The shared world runs one battle, so one encounter never makes two. An ask while one
+  runs is refused as busy (`BattleRefused`): the guest's script gets "not started", as when a battle cannot start in
+  the original, and the guest is pulled into the running battle as its helper. An ask the host cannot take for any
+  other reason (it left the map meanwhile, or it is in a screen, scene or script) is refused too, and the guest's game
+  then runs that battle itself, solo. Every battle the host starts on the guest's map (its story's, a tournament's) is
+  shown to the guest the same way.
+- **What the other player sees.** The host sends `BattleBegin`, then a `BattleFrame` every 3 ticks (phase, current
+  order, the orders available, whether the bag can be used, the fighters' HP and MP, and every held figure: place,
+  heading, clip and its start), then `BattleEnd`. The guest's field holds and draws its own actors where the frames put
+  them; the `coop_battle` screen shows the life bars, the starter's orders and the helper's help.
+  A helper's camera turns to the battle when it begins and comes back when it ends.
+- **What each player can do.** The starter gives the orders (the strip's commands, the finisher) and closes the end
+  box. Both can throw an item **from their own bag** (the guest's item leaves its bag; the host's game lends one and
+  throws it) and **cheer** (a press of the finisher's charge). On the host, a guest's battle blocks the host's strip and
+  finisher button; its bag works. The screen's buttons take the mouse, or the arrows and confirm; the field's extra
+  button calls the finisher for the starter and cheers for the helper.
+- **Who touched it.** On the host, an enemy that walks into the guest's body is only blocked by it: the guest's own game
+  runs that touch and asks for the battle, so the host's script never starts it with the host's partner.
+- **Rewards and defeat (decision 4).** Bits and drops go to the host's world. What the battle leaves the fighting
+  partner (HP, MP, stat gains, learned moves, care, lives lost, injury, counters) goes back to the guest in `BattleEnd`
+  and the guest's game applies it as its own battle's result, defeat included (its lives and its scenes). The NPCs the
+  battle took off the map go in `BattleEnd` too, so both fields drop them.
+- **Disconnection.** If the guest drops in its own battle, its partner fights on alone on its last order (its own call
+  from then on) and nothing is sent back; the host keeps watching and helping and can close the end box. If the host
+  drops, the guest's waiting ask becomes a solo battle of its own game, and the battle on screen goes (its script gets
+  "not started"); nothing is left holding.
+
+Next step: both partners fighting together. The protocol already carries the starter and each fighter's species, and the
+helper's actions go through the same `BattleAction`; what is missing is a second partner side in the battle itself
+(enemy AI targets, hits, the bag and the HUD assume fighter 0 alone, §2).
+
+Limits of this first version: the techniques' effects, the damage numbers and the status marks are drawn only on the
+host; the guest sees the fighters move and the life bars. Tournament fighters that are not map NPCs are not drawn on
+the guest. A helper's item is drawn thrown from the host's tamer. The enemies jump to the host's places when the battle
+starts (each game simulates its own NPCs until then). Drops fall only in the host's world. While the host has its menu
+open, the battle waits for both.
 
 ## 7. Phases
 
@@ -325,7 +379,7 @@ and `apps/game/tests/app_flow_tests.cpp` (a guest's game is never saved to a slo
 | **C0, no network** | `PlayerCommands` and the three controllers; screens by actions; `FieldPlayer`; camera and off-screen test outside the renderer; `PlayerRegistry`. | The single-player game does not change (story chain green). A test with two scripted players in the same `Field` (only in tests, never as a local mode). | 2–3 weeks |
 | **C1, see each other walk** | `game/coop` with handshake, joining at a safe point, snapshots, `WorldMirror`, own movement validated by the host. | Two PCs on the same map see each other walk, each with their partner behind, with simulated losses. | ~2 weeks |
 | **C2, interact** | NPCs and tiles per player, replicated dialogs, group map change, menus without pause, disconnection and reconnection. | A stretch of the story played between two PCs. | ~3 weeks |
-| **C3, battle** | According to decision 3. | A story battle won in co-op. | 2–6 weeks |
+| **C3, battle** | According to decision 3 (§6.1). **Done, first version:** host-run battles for both players when they share a map (solo otherwise, #351), the other player's view, help and orders, rewards back to the guest, disconnection in battle. Left: both partners in one battle. | A story battle won in co-op. | 2–6 weeks |
 | **C4, guest** | The guest's progress back to their game, names over the players, latency indicator, polish. | The guest returns to their game with what they earned. | — |
 
 ### 7.1 Tests

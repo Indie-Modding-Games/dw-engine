@@ -52,7 +52,7 @@ ReportPose poseOf(const game::field::CharacterState& state) {
 
 std::string_view PlaySession::busyWith() const {
   const game::field::Field& field = scene_->field();
-  if (battleScreen_.active()) {
+  if (battleScreen_.active() || coopBattleHold_) {
     return "battle";
   }
   if (evolutionScene_.active()) {
@@ -136,7 +136,7 @@ BugReportState PlaySession::reportState() const {
   state.time = {.year = time.year, .day = time.day, .hour = time.hour, .minute = time.minute};
   const std::string_view busy = busyWith();
   state.screen = busy.empty() || busy == "script" || busy == "map_change" ? "field" : busy;
-  if (battleScreen_.active()) {
+  if (battleScreen_.active() || coopBattleHold_) {
     state.battlePhase = valueText(ui.setting(BattlePhaseSetting));
   }
   session::StoryAdapter* story = game_.systems.story;

@@ -1,0 +1,205 @@
+-- The host's battle on a co-op guest's screen (apps/game/src/coop_battles.hpp). The partner of the
+-- player who started it fights; this player either gives it orders (coop_battle.role "starter")
+-- or helps (role "helper"). Both cheer (the finisher's charge) and throw items from their own bag.
+-- The fighters are coop_battle.fighter.<n>.*, the partner first; the orders coop_battle.order.<n>.*
+-- and the items coop_battle.item.<n>.*. Everything redraws when coop_battle.revision counts up.
+-- The mouse clicks the buttons; the keys and the pad move between them and confirm one.
+
+local MaxFighters = 4
+local MaxOrders = 12
+local MaxItems = 8
+
+local function number(name)
+  local value = ui.setting(name)
+  return type(value) == "number" and math.floor(value) or 0
+end
+
+local function text(name)
+  local value = ui.setting(name)
+  return type(value) == "string" and value or ""
+end
+
+local function named(key)
+  if key == "" then
+    return ""
+  end
+  return t(key)
+end
+
+local function draw_fighters(document)
+  local count = number("coop_battle.fighter_count")
+  for index = 0, MaxFighters - 1 do
+    local row = document:get("fighter-" .. index)
+    local shown = index < count
+    row:set_class("hidden", not shown)
+    if shown then
+      local prefix = "coop_battle.fighter." .. index .. "."
+      local hp, most = number(prefix .. "hp"), number(prefix .. "max_hp")
+      local share = most > 0 and math.max(0, math.min(1, hp / most)) or 0
+      row:set_class("partner", index == 0)
+      row:set_class("down", ui.setting(prefix .. "down") == true)
+      document:get("fighter-" .. index .. "-name"):set_text(named(text(prefix .. "name_key")))
+      document
+        :get("fighter-" .. index .. "-fill")
+        :set_property("width", string.format("%.1f%%", share * 100))
+      document:get("fighter-" .. index .. "-hp"):set_text(string.format("%d/%d", hp, most))
+    end
+  end
+end
+
+local function draw_orders(document, starter, fighting)
+  local count = starter and fighting and number("coop_battle.order_count") or 0
+  local current = number("coop_battle.command")
+  for index = 0, MaxOrders - 1 do
+    local button = document:get("order-" .. index)
+    local shown = index < count
+    button:set_class("hidden", not shown)
+    if shown then
+      local prefix = "coop_battle.order." .. index .. "."
+      button:set_text(named(text(prefix .. "label_key")))
+      button:set_class("current", number(prefix .. "command") == current)
+    end
+  end
+end
+
+local function draw_items(document, fighting)
+  local count = number("coop_battle.item_count")
+  local usable = fighting and ui.setting("coop_battle.bag") == true
+  document:get("items-title"):set_text(t("coop_battle.items"))
+  for index = 0, MaxItems - 1 do
+    local button = document:get("item-" .. index)
+    local shown = index < count
+    button:set_class("hidden", not shown)
+    if shown then
+      local prefix = "coop_battle.item." .. index .. "."
+      button:set_text(
+        string.format("%s x%d", named(text(prefix .. "name_key")), number(prefix .. "count"))
+      )
+      button:set_class("unavailable", not usable)
+    end
+  end
+  local none = document:get("no-items")
+  none:set_class("hidden", count > 0)
+  none:set_text(t("coop_battle.no_items"))
+end
+
+local function draw(document)
+  local shown = ui.setting("coop_battle.shown") == true
+  document:get("panel"):set_class("hidden", not shown)
+  if not shown then
+    return
+  end
+  local starter = text("coop_battle.role") == "starter"
+  local phase = text("coop_battle.phase")
+  local fighting = phase == "fight"
+  document
+    :get("title")
+    :set_text(t(starter and "coop_battle.title_starter" or "coop_battle.title_helper"))
+  document:get("phase"):set_text(t("coop_battle.phase_" .. (phase ~= "" and phase or "intro")))
+  draw_fighters(document)
+  draw_orders(document, starter, fighting)
+  draw_items(document, fighting)
+  local cheer = document:get("cheer")
+  cheer:set_text(t("coop_battle.cheer"))
+  cheer:set_class("unavailable", not fighting)
+  local close = document:get("close")
+  close:set_text(t("coop_battle.close"))
+  close:set_class("hidden", not (starter and phase == "end"))
+end
+
+-- The buttons the keys move between, in the panel's order: those shown and usable now.
+local selected = 1
+
+local function choices(document)
+  local list = {}
+  local function add(id, run)
+    local button = document:get(id)
+    if not button:has_class("hidden") and not button:has_class("unavailable") then
+      list[#list + 1] = { button = button, run = run }
+    end
+  end
+  for index = 0, MaxOrders - 1 do
+    add("order-" .. index, function()
+      order(index)
+    end)
+  end
+  add("cheer", function()
+    cheer()
+  end)
+  for index = 0, MaxItems - 1 do
+    add("item-" .. index, function()
+      throw_item(index)
+    end)
+  end
+  add("close", function()
+    close_end()
+  end)
+  return list
+end
+
+local function place_focus(document)
+  local list = choices(document)
+  if #list == 0 then
+    return
+  end
+  selected = math.max(1, math.min(#list, selected))
+  list[selected].button:focus()
+end
+
+function order(index)
+  local command = ui.setting("coop_battle.order." .. index .. ".command")
+  if type(command) == "number" then
+    ui.send("coop_battle_order", command)
+  end
+end
+
+function cheer()
+  ui.send("coop_battle_cheer")
+end
+
+function throw_item(index)
+  local id = ui.setting("coop_battle.item." .. index .. ".id")
+  if type(id) == "string" and id ~= "" and ui.setting("coop_battle.bag") == true then
+    ui.send("coop_battle_item", id)
+  end
+end
+
+function close_end()
+  ui.send("coop_battle_close")
+end
+
+function on_show(document)
+  draw(document)
+  place_focus(document)
+end
+
+function on_setting(document, name)
+  if name == "coop_battle.revision" or name == "coop_battle.shown" then
+    -- Each battle starts on the first button.
+    if text("coop_battle.phase") == "intro" then
+      selected = 1
+    end
+    draw(document)
+    place_focus(document)
+  end
+end
+
+function on_action(document, action)
+  if action == "up" or action == "left" then
+    selected = selected - 1
+    place_focus(document)
+  elseif action == "down" or action == "right" then
+    selected = selected + 1
+    place_focus(document)
+  elseif action == "confirm" then
+    local list = choices(document)
+    if list[selected] ~= nil then
+      list[selected].run()
+    end
+  end
+  return true
+end
+
+function on_language(document)
+  draw(document)
+end

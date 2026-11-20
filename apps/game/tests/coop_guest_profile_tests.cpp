@@ -107,3 +107,27 @@ TEST_CASE("cooperative guest profile rejects missing partner and oversized trans
   CHECK_FALSE(app::extractCoopGuestPartnerProfile(""));
   CHECK_FALSE(app::extractCoopGuestPartnerProfile(std::string(128U * 1024U + 1U, 'x')));
 }
+
+TEST_CASE("cooperative guest session fights with the guest partner's own moves") {
+  game::save::SaveFile host;
+  host.sections.emplace("partner", game::save::SavedSection{.state = game::partner::toYaml(
+                                                                game::partner::PartnerState{})});
+  host.sections.emplace("moves", game::save::SavedSection{
+                                     .version = 1, .state = core::YamlNode::scalar("host_moves")});
+  const auto hostText = game::save::writeSaveFile(host);
+  REQUIRE(hostText);
+  auto guest = game::save::parseSaveFile(guestSave());
+  REQUIRE(guest);
+  guest->sections.insert_or_assign(
+      "moves",
+      game::save::SavedSection{.version = 1, .state = core::YamlNode::scalar("guest_moves")});
+  const auto guestText = game::save::writeSaveFile(*guest);
+  REQUIRE(guestText);
+
+  const auto merged = app::hostWorldWithGuestPartner(*hostText, *guestText);
+  REQUIRE(merged);
+  const auto loaded = game::save::parseSaveFile(*merged);
+  REQUIRE(loaded);
+  REQUIRE(loaded->sections.contains("moves"));
+  CHECK(loaded->sections.at("moves").state == core::YamlNode::scalar("guest_moves"));
+}
