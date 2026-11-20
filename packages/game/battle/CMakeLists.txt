@@ -36,6 +36,7 @@ dwe_add_module(battle
         src/effect_runner_quads.cpp
         src/flights.cpp
         src/joining.cpp
+        src/coop_scaling.cpp
         src/simulation.cpp
         src/text_keys.cpp
     DEPS core assets ruleset)

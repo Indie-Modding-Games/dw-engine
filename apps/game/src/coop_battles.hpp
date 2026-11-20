@@ -7,12 +7,15 @@
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <span>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include "battle_screen.hpp"
 
 namespace dwe::app {
 
@@ -27,6 +30,9 @@ inline constexpr std::string_view CoopBattleDocument = "coop_battle";
 inline constexpr std::string_view CoopBattleOrderCommand = "coop_battle_order";
 inline constexpr std::string_view CoopBattleCheerCommand = "coop_battle_cheer";
 inline constexpr std::string_view CoopBattleItemCommand = "coop_battle_item";
+// The partner this player's next items fly to (a fighter's number; the same again picks none,
+// so they fly to this player's own partner, or the fighting one).
+inline constexpr std::string_view CoopBattleTargetCommand = "coop_battle_target";
 inline constexpr std::string_view CoopBattleCloseCommand = "coop_battle_close";
 // Its settings (ui_contract.cpp lists them all); each publish counts the revision up.
 inline constexpr std::string_view CoopBattleRevisionSetting = "coop_battle.revision";
@@ -42,47 +48,63 @@ inline constexpr std::string_view CoopBattleRevisionSetting = "coop_battle.revis
 
 // The co-op battles of a played game (docs/architecture/multiplayer.md, §6 decision 3;
 // coop-combat.md): the shared world runs one battle at a time on the host's game. The partner of
-// the player who started it fights, and the other player's beside it when that player stands on the
-// map, free (the guest's offer; the host's own in a guest's battle). Each player commands their own
-// partner, throws items from their own bag and cheers; a player without a partner in it helps.
+// the player who started it fights, and every other player's beside it (up to three) when that
+// player stands on the map, free (a guest's offer; the host's own in a guest's battle). Each player
+// commands their own partner, throws items from their own bag and cheers; a player without a
+// partner in it helps. The enemies scale by the partners that fight and the players who help
+// (coop-difficulty.md; the host's coop_difficulty).
 //
-// On the host it answers the guest's asks (BattleReferee), tells the guest of every battle that
-// begins, sends its frames and its end, and applies the guest's actions. On the guest the story's
-// battles go to the host (PlaySession::handBattlesToHost) while the host stands on the same map;
-// elsewhere, or when the host cannot run one, they are the guest's own solo battles. The guest's
-// field holds while a host battle on its map runs, its fighters drawn where the host's frames put
-// them, and the guest's own script gets the outcome when it ends.
+// On the host it answers every guest's asks (BattleReferee), tells the guests of every battle that
+// begins, sends each its own frames and its end, and applies each guest's actions. On a guest the
+// story's battles go to the host (PlaySession::handBattlesToHost) while the host stands on the same
+// map; elsewhere, or when the host cannot run one, they are the guest's own solo battles. The
+// guest's field holds while a host battle on its map runs, its fighters drawn where the host's
+// frames put them, and the guest's own script gets the outcome when it ends.
 class CoopBattles {
 public:
   enum class Role : std::uint8_t { None, Host, Guest };
 
+  // The other side of a link the battles go through: each guest's on the host, the host's on a
+  // guest.
+  struct Peer {
+    game::coop::PlayerId id = game::coop::HostPlayerId;
+    CoopGameplayBridge* bridge = nullptr;
+  };
+
   explicit CoopBattles(ui::Ui& ui) : ui_{&ui} {}
 
-  // Once per tick after the game's tick. `bridge` is null while there is no link (the battle's
-  // bookkeeping still runs on the host, so a battle the guest left ends cleanly). `here` lists the
-  // players on this game's map by the session's presence query (coopPlayerHere).
-  void tick(PlaySession& play, CoopGameplayBridge* bridge, Role role,
+  // Once per tick after the game's tick. `peers` is empty while there is no link (the battle's
+  // bookkeeping still runs on the host, so a battle the guests left ends cleanly). `self` is this
+  // game's own player id; `here` lists the players on this game's map by the session's presence
+  // query (coopPlayerHere).
+  void tick(PlaySession& play, std::span<const Peer> peers, Role role, game::coop::PlayerId self,
             std::span<const game::coop::PlayerId> here);
   // The guest's battle document's commands; false for any other.
   bool handle(const ui::UiCommand& command);
   // The guest's buttons outside the document: `extra` calls the finisher for the starter and
   // cheers for the helper, as the battle's square button does.
   void press(const input::InputState& input);
-  // The host: the guest's link went. Its partner fights on alone and nothing is sent back.
-  void guestLeft();
+  // The host: guest `guest`'s link went. Its partner fights on alone and nothing is sent back.
+  void guestLeft(game::coop::PlayerId guest);
   // The guest: the host went. The battle shown and the ask waiting go.
   void hostLeft(PlaySession* play);
   // No game is played any more: everything goes.
   void reset();
 
 private:
-  void hostTick(PlaySession& play, CoopGameplayBridge* bridge);
-  void answer(PlaySession& play, CoopGameplayBridge& bridge, const game::coop::BattleAsk& ask);
-  void apply(PlaySession& play, const game::coop::BattleAction& action);
+  void hostTick(PlaySession& play);
+  void answer(PlaySession& play, const Peer& from, const game::coop::BattleAsk& ask);
+  void apply(PlaySession& play, game::coop::PlayerId from, const game::coop::BattleAction& action);
+  void endBattle(PlaySession& play);
   void offerAllies(PlaySession& play);
+  [[nodiscard]] std::vector<BattleScreen::CoopAlly> freeAllies(const PlaySession& play,
+                                                               game::coop::PlayerId starter) const;
+  [[nodiscard]] game::battle::CoopScaling
+  scalingOf(const PlaySession& play, game::coop::PlayerId starter,
+            std::span<const BattleScreen::CoopAlly> allies) const;
   [[nodiscard]] game::coop::BattleBegin beginOf(PlaySession& play, game::coop::PlayerId starter,
                                                 std::uint32_t ask);
-  [[nodiscard]] game::coop::BattleFrame frameOf(const PlaySession& play);
+  [[nodiscard]] game::coop::BattleFrame frameOf(const PlaySession& play, game::coop::PlayerId to);
   void guestTick(PlaySession& play, CoopGameplayBridge& bridge);
   void sendOffer(PlaySession& play, CoopGameplayBridge& bridge);
   void startShowing(PlaySession& play, const game::coop::BattleBegin& begin);
@@ -91,12 +113,17 @@ private:
   void stopShowing(PlaySession& play, const game::coop::BattleEnd& end);
   void lookAtBattle(PlaySession& play, const game::coop::BattleFrame& frame);
   void lookBack(PlaySession& play);
+  void pickTarget(const ui::UiValue& value);
   void publish(const PlaySession& play);
   void hideDocument();
   void send(CoopGameplayBridge* bridge, game::coop::Message message);
+  void sendTo(game::coop::PlayerId to, game::coop::Message message);
+  void sendAll(const game::coop::Message& message);
 
   ui::Ui* ui_;
   PlaySession* play_ = nullptr;
+  // This tick's peers (tick's `peers`).
+  std::vector<Peer> peers_;
   game::coop::BattleReferee referee_;
   std::uint32_t frames_ = 0;
   std::uint64_t ticks_ = 0;
@@ -115,6 +142,8 @@ private:
   std::optional<std::uint32_t> shownFrame_;
   // The fighters as the last frame with them showed them (the end's frames have none).
   std::vector<game::coop::BattleFighterState> fighters_;
+  // The partner the guest's items fly to (a fighter's number), when it picked one.
+  std::optional<std::size_t> target_;
   // The guest's actions from its document, sent on the next tick.
   std::vector<game::coop::BattleAction> actions_;
   bool documentShown_ = false;

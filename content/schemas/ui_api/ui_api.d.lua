@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.22.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.23.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -452,7 +452,7 @@ function battle.state() end
 ---@return table
 function battle.fighters() end
 
---- The other players' partners fighting beside this player's in a co-op battle (empty otherwise): name_key, status_key, hp, max_hp, mp, max_mp and fainted.
+--- The other players' partners fighting beside this player's in a co-op battle (empty otherwise): name_key, status_key, hp, max_hp, mp, max_mp, fainted and revive_seconds (a fallen ally's countdown, or nil).
 ---@return table
 function battle.allies() end
 

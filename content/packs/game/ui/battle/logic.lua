@@ -153,7 +153,8 @@ local function draw_fighter(document, index)
   panel:set_class("fainted", fighter.fainted)
 end
 
--- An ally's card (co-op): its name and status, and its HP and MP as the partner's bars draw them.
+-- An ally's card (co-op): its name and status, its HP and MP as the partner's bars draw them and,
+-- once it falls, its revive countdown.
 local function draw_ally(document, index, ally)
   local prefix = "ally-" .. index
   lookup(document, prefix):set_class("hidden", ally == nil)
@@ -174,6 +175,12 @@ local function draw_ally(document, index, ally)
     )
   end
   lookup(document, prefix):set_class("fainted", ally.fainted)
+  -- A fallen ally's revive countdown, as the partner's own over its body.
+  local revive = lookup(document, prefix .. "-revive")
+  revive:set_class("hidden", ally.revive_seconds == nil)
+  if ally.revive_seconds ~= nil then
+    revive:set_text(t("battle.revive_countdown", { seconds = ally.revive_seconds }))
+  end
 end
 
 local function draw_allies(document)

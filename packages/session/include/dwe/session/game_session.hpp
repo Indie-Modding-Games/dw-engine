@@ -378,6 +378,12 @@ public:
   // The enemies' species banks in slots 5 to 7, in the battle's order
   // (SessionSound::useEnemyBanks); nothing happens in a silent session.
   void useEnemySounds(std::span<const std::string> species);
+  // A co-op battle's allies' species banks (SessionSound::useAllyBanks); nothing happens in a
+  // silent session.
+  void useAllySounds(std::span<const std::string> species);
+  // Slot 4 (and 3) keeps `species`' banks instead of the partner's while a co-op guest's partner
+  // fights for it (SessionSound::keepPartnerBank); none follows the partner again.
+  void keepPartnerSounds(std::optional<std::string> species);
 
 private:
   GameSession(SessionDesc desc, ruleset::RulesetStore store);

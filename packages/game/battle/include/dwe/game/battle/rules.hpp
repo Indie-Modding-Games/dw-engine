@@ -388,6 +388,26 @@ struct VersusRules {
   std::vector<std::int32_t> arenas;
 };
 
+// A co-op battle's enemies by how many partners fight (docs/architecture/coop-difficulty.md §5):
+// percents of the original value, one per count of partners from 1 to CoopScalingPartners.
+inline constexpr std::size_t CoopScalingPartners = 4;
+struct CoopScalingTable {
+  std::array<std::int32_t, CoopScalingPartners> hpPercent{};
+  std::array<std::int32_t, CoopScalingPartners> mpPercent{};
+  std::array<std::int32_t, CoopScalingPartners> offensePercent{};
+  std::array<std::int32_t, CoopScalingPartners> finisherFillPercent{};
+};
+
+// An engine addition: the original has no co-op. The tables of normal and fixed fights (trigger
+// 1), what each helper (a player there whose partner does not fight) adds to the enemies' HP, and
+// what the hard level adds to it on top.
+struct CoopScalingRules {
+  CoopScalingTable normal;
+  CoopScalingTable fixed;
+  std::int32_t helperHpPercent = 0;
+  std::int32_t hardHpBonusPercent = 0;
+};
+
 // Engine values for what the original's animations and map collision decide (Gap until measured).
 struct TimingRules {
   std::int32_t attackFrames = 0;
@@ -456,6 +476,8 @@ struct BattleRules {
   TimingRules timing;
   // None in a ruleset without versus matches.
   std::optional<VersusRules> versus;
+  // None in a ruleset without co-op scaling: co-op battles keep the original numbers.
+  std::optional<CoopScalingRules> coopScaling;
   ruleset::Quirks quirks;
   EffectRules effects;
 };

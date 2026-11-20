@@ -38,15 +38,16 @@ bool PlaySession::coopBattleBlocked() const {
          scene_->field().mapChangePending();
 }
 
-core::Result<void> PlaySession::startVisitorBattle(const std::vector<std::int32_t>& npcs,
+core::Result<void> PlaySession::startVisitorBattle(game::field::PlayerId owner,
+                                                   const std::vector<std::int32_t>& npcs,
                                                    session::VisitingPartner visitor,
                                                    bool fixedFight, bool predefined) {
   if (!species_) {
     return core::fail("no species table for the battle");
   }
   const game::field::Field& field = scene_->field();
-  const auto guest = field.player(game::field::GuestPlayerId);
-  const auto guestPartner = field.partner(game::field::GuestPlayerId);
+  const auto guest = field.player(owner);
+  const auto guestPartner = field.partner(owner);
   if (!guest || !guestPartner) {
     return core::fail("the guest or its partner is not in this field");
   }
@@ -67,11 +68,12 @@ core::Result<void> PlaySession::startVisitorBattle(const std::vector<std::int32_
   battle->request.partner = battlePointOf(guestPartner->position);
   battle->request.predefined = predefined;
   battle->request.visitor = std::move(visitor);
-  scene_->setBattlePartner(FieldScene::BattlePartner::CoopGuest);
+  scene_->setBattlePartner(owner);
+  battleScreen_.setVisitorOwner(owner);
   auto started =
       battleScreen_.start(std::move(battle->request), std::move(battle->enemyNpcs), fixedFight);
   if (!started) {
-    scene_->setBattlePartner(FieldScene::BattlePartner::Own);
+    scene_->setBattlePartner(std::nullopt);
   }
   return started;
 }

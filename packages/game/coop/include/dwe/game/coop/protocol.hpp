@@ -25,8 +25,10 @@ inline constexpr std::size_t MaxPlayers = 4;
 // ground items and the claims on items two players could take (#357). 6: both partners fight
 // together: the guest's battle offer, the allies of a battle begin, their figures and the
 // spoils' departure (#351, #361). 7: rooms of up to four players' lobby and the sync diagnostics
-// (#352, #359). 8: item trades between players (#360).
-inline constexpr std::uint32_t ProtocolVersion = 8;
+// (#352, #359). 8: item trades between players (#360). 9: every guest's partner fights: battles
+// started by any guest, every free guest an ally, each fighter's revive countdown in the frames
+// and an item's target partner (#351, #361, #362).
+inline constexpr std::uint32_t ProtocolVersion = 9;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
   return id < MaxPlayers;
@@ -277,13 +279,15 @@ struct BattleRefused {
 // What the battle screen shows, as the original's battle steps it.
 enum class BattlePhase : std::uint8_t { Intro, Fight, Victory, End, Closing };
 
-// A fighter's bars: HP and MP, their maxima, and whether it is down.
+// A fighter's bars: HP and MP, their maxima, whether it is down and, for a partner down, the
+// whole seconds its revive countdown shows (0: none shown).
 struct BattleFighterState {
   std::int32_t hp = 0;
   std::int32_t mp = 0;
   std::int32_t maxHp = 0;
   std::int32_t maxMp = 0;
   bool down = false;
+  std::uint8_t reviveSeconds = 0;
 
   friend bool operator==(const BattleFighterState&, const BattleFighterState&) = default;
 };
@@ -322,9 +326,10 @@ struct BattleFrame {
   friend bool operator==(const BattleFrame&, const BattleFrame&) = default;
 };
 
-// What the guest does in a battle: as its starter, a command of the strip (`value`, the battle's
-// command number) and the end box's close; as either role, an item of its own bag thrown at the
-// fighting partner (`item`, an item id) and a cheer (a press of the finisher's charge).
+// What the guest does in a battle: with a partner in it, a command of the strip for that partner
+// (`value`, the battle's command number); as its starter the end box's close; in any role an item
+// of its own bag thrown (`item`, an item id; `value` the fighter it flies to plus one, 0 for the
+// thrower's own partner or the fighting one) and a cheer (a press of the finisher's charge).
 enum class BattleActionKind : std::uint8_t { Command, ThrowItem, Cheer, CloseEnd };
 
 struct BattleAction {

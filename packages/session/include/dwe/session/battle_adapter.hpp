@@ -119,6 +119,8 @@ struct BattleRequest {
   std::optional<VisitingPartner> visitor;
   // A co-op battle's other partners (game::battle::BattleSetup::allies), in their order.
   std::vector<BattleAlly> allies;
+  // A co-op battle's difficulty (game::battle::BattleSetup::coopScaling); off outside co-op.
+  game::battle::CoopScaling coopScaling;
 };
 
 // Where a versus battle's two fighters stand, on which map, and the spot off the field the

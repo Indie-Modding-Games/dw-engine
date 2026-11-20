@@ -184,15 +184,6 @@ core::Result<void> CoopGameplayBridge::sendBattle(game::coop::Message message) {
   return link_->send(message);
 }
 
-void CoopGameplayBridge::refuseBattles() {
-  while (auto battle = receiveBattle()) {
-    if (const auto* ask = std::get_if<game::coop::BattleAsk>(&*battle)) {
-      (void)sendBattle(
-          game::coop::BattleRefused{.ask = ask->ask, .reason = game::coop::BattleRefusal::Busy});
-    }
-  }
-}
-
 net::Millis CoopGameplayBridge::worldQuietFor(net::Millis now) const {
   const std::optional<net::Millis> since = lastSnapshot_ ? lastSnapshot_ : firstPolled_;
   return since ? std::max(net::Millis{0}, now - *since) : net::Millis{0};

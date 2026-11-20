@@ -1498,7 +1498,7 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   }
   for (auto& [id, body] : coopBodies_) {
     if (body.shown && body.player) {
-      animate(*body.player, animationSeconds);
+      animate(*body.player, body.sceneClip ? frameSeconds : animationSeconds);
       // A guest's field body plays its steps where the host hears them.
       if (body.fieldBody)
         playClipSounds(*body.player);
@@ -1661,6 +1661,47 @@ bool FieldScene::playerClipPlayedThrough() const {
 
 std::optional<glm::vec3> FieldScene::playerNodePoint(std::uint32_t node, glm::vec3 offset) const {
   return nodePoint(*playerActor_, node, offset);
+}
+
+bool FieldScene::playCoopPlayerClip(game::field::PlayerId id, std::optional<std::uint32_t> clip) {
+  const auto found = coopBodies_.find(id);
+  if (found == coopBodies_.end() || !found->second.player) {
+    return false;
+  }
+  CoopBody& body = found->second;
+  Actor& actor = *body.player;
+  body.sceneClip = clip.has_value();
+  if (clip == actor.heldClip) {
+    return true;
+  }
+  actor.heldClip = clip;
+  if (clip) {
+    if (!actor.player->play(*clip, ClipFadeSeconds)) {
+      core::logWarning("{}", core::formatMessage(messages::NoPlayerClip, *clip));
+    }
+  } else {
+    actor.motion.reset();
+  }
+  return true;
+}
+
+bool FieldScene::coopPlayerClipPlayedThrough(game::field::PlayerId id) const {
+  const auto found = coopBodies_.find(id);
+  if (found == coopBodies_.end() || !found->second.player) {
+    return true;
+  }
+  const Actor& actor = *found->second.player;
+  return !actor.heldClip || actor.player->playedThrough();
+}
+
+std::optional<glm::vec3> FieldScene::coopPlayerNodePoint(game::field::PlayerId id,
+                                                         std::uint32_t node,
+                                                         glm::vec3 offset) const {
+  const auto found = coopBodies_.find(id);
+  if (found == coopBodies_.end() || !found->second.player || !found->second.shown) {
+    return std::nullopt;
+  }
+  return nodePoint(*found->second.player, node, offset);
 }
 
 std::optional<glm::mat4> FieldScene::playerNodeTransform(std::uint32_t node) const {

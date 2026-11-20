@@ -1362,6 +1362,135 @@
       },
       "description": "The versus series (vs_scene.c: VS_initializeVS); optional, no versus without it."
     },
+    "coop_scaling": {
+      "type": "object",
+      "required": [
+        "normal",
+        "fixed",
+        "helper_hp_percent",
+        "hard_hp_bonus_percent"
+      ],
+      "additionalProperties": false,
+      "description": "Engine addition: co-op battles' enemies by the number of partners that fight (docs/architecture/coop-difficulty.md).",
+      "properties": {
+        "normal": {
+          "type": "object",
+          "required": [
+            "hp_percent",
+            "mp_percent",
+            "offense_percent",
+            "finisher_fill_percent"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "hp_percent": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "description": "The enemies' max HP (and HP), percent of the original, for 1 to 4 partners."
+            },
+            "mp_percent": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "description": "The enemies' max MP (and MP), percent of the original, for 1 to 4 partners."
+            },
+            "offense_percent": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "description": "The enemies' offense, percent of the original (up to the stat cap), for 1 to 4 partners."
+            },
+            "finisher_fill_percent": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "description": "How fast the enemies' finisher fills, percent of the original, for 1 to 4 partners."
+            }
+          },
+          "description": "Normal fights."
+        },
+        "fixed": {
+          "type": "object",
+          "required": [
+            "hp_percent",
+            "mp_percent",
+            "offense_percent",
+            "finisher_fill_percent"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "hp_percent": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "description": "The enemies' max HP (and HP), percent of the original, for 1 to 4 partners."
+            },
+            "mp_percent": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "description": "The enemies' max MP (and MP), percent of the original, for 1 to 4 partners."
+            },
+            "offense_percent": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "description": "The enemies' offense, percent of the original (up to the stat cap), for 1 to 4 partners."
+            },
+            "finisher_fill_percent": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "description": "How fast the enemies' finisher fills, percent of the original, for 1 to 4 partners."
+            }
+          },
+          "description": "Fixed fights (trigger 1)."
+        },
+        "helper_hp_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "What each player there whose partner does not fight adds to the enemies' HP percent."
+        },
+        "hard_hp_bonus_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "What the hard level adds to the enemies' HP percent."
+        }
+      }
+    },
     "quirks": {
       "type": "object",
       "required": [],

@@ -1181,6 +1181,14 @@
 	display: none;
 }
 
+/* A fallen ally's revive countdown, after its name in the countdown's yellow. */
+.ally-revive {
+	font-size: 22dp;
+	line-height: 30dp;
+	margin-left: 12dp;
+	color: #f8e050;
+}
+
 /* The values in the original's digits, as the partner's (the modern skin shows none on a card). */
 .ally .bar-digits {
 	display: block;

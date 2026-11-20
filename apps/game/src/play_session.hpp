@@ -152,6 +152,17 @@ inline constexpr std::string_view WhamonInWaterSetting = "whamon_in_water";
 inline constexpr std::string_view ShopJobModeSetting = "shop_job_mode";
 inline constexpr std::string_view ShopJobImproved = "improved";
 inline constexpr std::string_view ShopJobOriginal = "original";
+// Co-op difficulty (an engine improvement; docs/architecture/coop-difficulty.md): how a co-op
+// battle scales its enemies by the partners that fight and the players who help. Standard is the
+// default; off keeps the original's numbers. Only the host's counts: its game runs the battles.
+inline constexpr std::string_view CoopDifficultySetting = "coop_difficulty";
+inline constexpr std::string_view CoopDifficultyOff = "off";
+inline constexpr std::string_view CoopDifficultyStandard = "standard";
+inline constexpr std::string_view CoopDifficultyHard = "hard";
+// The saved coop_difficulty as the battles take it (standard when not chosen or unknown), and its
+// name.
+[[nodiscard]] game::battle::CoopLevel coopLevelOf(const std::optional<std::string>& saved);
+[[nodiscard]] std::string_view coopLevelName(game::battle::CoopLevel level);
 // The console's and the developer menu's warp("<map> [exit]"): the player goes to that map, at that
 // exit (0 when not given), as a script's map change takes him (FieldScene::startScriptedMapChange),
 // whatever the story. A debug aid.
@@ -432,9 +443,11 @@ public:
   // The host: whether a battle cannot start now (one runs, or a screen, a scene or a script holds
   // the game).
   [[nodiscard]] bool coopBattleBlocked() const;
-  // The host: starts the guest's battle against the map's NPCs in `npcs` with the guest's partner,
-  // where the guest and its partner stand in this field. This player watches and helps.
-  core::Result<void> startVisitorBattle(const std::vector<std::int32_t>& npcs,
+  // The host: starts guest `owner`'s battle against the map's NPCs in `npcs` with that guest's
+  // partner, where the guest and its partner stand in this field. This player's partner joins it
+  // when BattleScreen::setCoopAllies names it; otherwise this player watches and helps.
+  core::Result<void> startVisitorBattle(game::field::PlayerId owner,
+                                        const std::vector<std::int32_t>& npcs,
                                         session::VisitingPartner visitor, bool fixedFight,
                                         bool predefined);
   // The guest: the battles its story asks for go to the host (StorySceneGlue::handBattlesOver).
@@ -449,6 +462,8 @@ public:
   void runHandedBattleHere() { storyScenes_.runHandedBattleHere(); }
   // The guest: its partner as the host's battle builds its fighter.
   [[nodiscard]] session::VisitingPartner coopFighter() const;
+  // The co-op difficulty the battles this game runs scale their enemies by (coop_difficulty).
+  [[nodiscard]] game::battle::CoopLevel coopLevel() const { return coopLevel_; }
   // The guest: the field holds while the host's battle runs (its figures are the host's).
   void holdForCoopBattle(bool on) { coopBattleHold_ = on; }
   [[nodiscard]] bool heldForCoopBattle() const { return coopBattleHold_; }
@@ -593,6 +608,7 @@ private:
   // The play options (applyPlayOptions): skip the evolution's scene on confirm or cancel, and the
   // options that change the running game's rules.
   bool skipEvolution_ = false;
+  game::battle::CoopLevel coopLevel_ = game::battle::CoopLevel::Standard;
   RuleOptions ruleOptions_;
   // What hud.minimap_allowed last said (minimap_setting.hpp: minimapAllowed); nothing before the
   // first frame publishes it.

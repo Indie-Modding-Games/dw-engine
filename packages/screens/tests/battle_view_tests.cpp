@@ -68,6 +68,23 @@ TEST_CASE("the battle view names the fighters and shows their bars") {
   CHECK_FALSE(view.reviveSeconds.has_value());
 }
 
+TEST_CASE("only the player's side shows a revive countdown, never a fallen enemy") {
+  Battle battle = startBattle(duel(evenStats(900, 100), evenStats(700, 80)), 3);
+  battle.defeatPartner();
+  while (!battle.finished() && !dwe::screens::reviveSecondsOf(battle, PartnerId) &&
+         battle.state().frame < 20000) {
+    battle.step();
+  }
+  REQUIRE(dwe::screens::reviveSecondsOf(battle, PartnerId).has_value());
+  battle.defeatEnemies();
+  while (!battle.finished() && !battle.state().fighters[1].fainted &&
+         battle.state().frame < 20000) {
+    battle.step();
+  }
+  REQUIRE(battle.state().fighters[1].fainted);
+  CHECK_FALSE(dwe::screens::reviveSecondsOf(battle, 1).has_value());
+}
+
 TEST_CASE("the battle view's menu is the battle's, with the original's command names") {
   const auto species = fixtureSpecies();
   const NameKeys names{&species, nullptr, &testCatalog()};

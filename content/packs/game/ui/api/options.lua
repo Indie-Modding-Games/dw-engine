@@ -303,6 +303,19 @@ local descriptors = {
     help = "pause_menu.help.whamon_in_water",
     original = false,
   },
+  -- Co-op difficulty: how a co-op battle scales its enemies by the partners that fight and the
+  -- players who help (docs/architecture/coop-difficulty.md). Standard by default; off keeps the
+  -- original's numbers. Only the host's counts: its game runs the battles.
+  {
+    name = "coop_difficulty",
+    label = "pause_menu.coop_difficulty",
+    values = { "off", "standard", "hard" },
+    texts = "pause_menu.coop_difficulty",
+    default = "standard",
+    tab = "game",
+    help = "pause_menu.help.coop_difficulty",
+    original = "off",
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).

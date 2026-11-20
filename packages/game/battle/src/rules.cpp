@@ -421,6 +421,38 @@ VersusRules readVersus(ValueReader& in, const YamlNode& node) {
   return versus;
 }
 
+CoopScalingTable readCoopScalingTable(ValueReader& in, const YamlNode& node,
+                                      std::string_view what) {
+  if (!in.group(node, what,
+                {"hp_percent", "mp_percent", "offense_percent", "finisher_fill_percent"})) {
+    return {};
+  }
+  const auto row = [&](std::string_view key) {
+    auto values = in.numbers<CoopScalingPartners>(node, key, false);
+    for (const std::int32_t value : values) {
+      if (in.yaml().ok() && value <= 0) {
+        in.yaml().fail(in.field(node, key), messages::formatMessage(messages::NotPositive, key));
+      }
+    }
+    return values;
+  };
+  return {.hpPercent = row("hp_percent"),
+          .mpPercent = row("mp_percent"),
+          .offensePercent = row("offense_percent"),
+          .finisherFillPercent = row("finisher_fill_percent")};
+}
+
+CoopScalingRules readCoopScaling(ValueReader& in, const YamlNode& node) {
+  if (!in.group(node, "coop_scaling",
+                {"normal", "fixed", "helper_hp_percent", "hard_hp_bonus_percent"})) {
+    return {};
+  }
+  return {.normal = readCoopScalingTable(in, in.field(node, "normal"), "normal"),
+          .fixed = readCoopScalingTable(in, in.field(node, "fixed"), "fixed"),
+          .helperHpPercent = in.count(node, "helper_hp_percent"),
+          .hardHpBonusPercent = in.count(node, "hard_hp_bonus_percent")};
+}
+
 PartnerAiRules readPartnerAi(ValueReader& in, const YamlNode& node) {
   if (!in.group(node, "partner_ai",
                 {"status_target_brain", "switch_margin", "scored_target_brain", "power_weights",
@@ -789,7 +821,7 @@ core::Result<BattleRules> readBattleRules(const ruleset::Section& section) {
                  "partner_ai",    "enemy_ai",  "hit",         "damage",     "status",
                  "finisher",      "condition", "ending",      "item_throw", "hud",
                  "consequences",  "rewards",   "joining",     "timing",     "quirks"},
-                {"effects", "versus"})) {
+                {"effects", "versus", "coop_scaling"})) {
     return std::unexpected{reader.error(section.file)};
   }
   BattleRules rules{.strategies = readStrategies(in, in.field(root, "strategies")),
@@ -818,10 +850,14 @@ core::Result<BattleRules> readBattleRules(const ruleset::Section& section) {
                     .joining = readJoining(in, in.field(root, "joining")),
                     .timing = readTiming(in, in.field(root, "timing")),
                     .versus = {},
+                    .coopScaling = {},
                     .quirks = {},
                     .effects = readEffects(in, root)};
   if (root.find("versus") != nullptr) {
     rules.versus = readVersus(in, in.field(root, "versus"));
+  }
+  if (root.find("coop_scaling") != nullptr) {
+    rules.coopScaling = readCoopScaling(in, in.field(root, "coop_scaling"));
   }
   Menus menus = readMenus(in, in.field(root, "commands"));
   rules.menus = std::move(menus.battle);

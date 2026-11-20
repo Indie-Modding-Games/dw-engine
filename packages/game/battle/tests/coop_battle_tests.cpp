@@ -166,3 +166,76 @@ TEST_CASE("allies have no place in a versus match") {
   setup.versus = VersusSetup{};
   CHECK_FALSE(Battle::start(setup, originalRules(), testCatalog(), originalStrategies(), 1));
 }
+
+// docs/architecture/coop-difficulty.md §5: the enemies grow with the partners that fight.
+TEST_CASE("co-op scaling follows the ruleset's tables and leaves single player alone") {
+  const BattleRules& rules = originalRules();
+  REQUIRE(rules.coopScaling.has_value());
+  // One partner and nobody helping: the original, whatever the level.
+  for (const CoopLevel level : {CoopLevel::Off, CoopLevel::Standard, CoopLevel::Hard}) {
+    CHECK(coopScalingFactors(rules, level, 1, 0, false) == ScalingFactors{});
+    CHECK(coopScalingFactors(rules, level, 1, 0, true) == ScalingFactors{});
+  }
+  // Off: the original numbers even with four partners.
+  CHECK(coopScalingFactors(rules, CoopLevel::Off, 4, 0, false) == ScalingFactors{});
+  CHECK(coopScalingFactors(rules, CoopLevel::Standard, 2, 0, false) ==
+        ScalingFactors{.hp = 180, .mp = 150, .offense = 100, .finisherFill = 125});
+  CHECK(coopScalingFactors(rules, CoopLevel::Standard, 3, 0, false) ==
+        ScalingFactors{.hp = 250, .mp = 200, .offense = 105, .finisherFill = 150});
+  CHECK(coopScalingFactors(rules, CoopLevel::Standard, 4, 0, false) ==
+        ScalingFactors{.hp = 320, .mp = 250, .offense = 110, .finisherFill = 175});
+  CHECK(coopScalingFactors(rules, CoopLevel::Standard, 4, 0, true) ==
+        ScalingFactors{.hp = 370, .mp = 100, .offense = 115, .finisherFill = 175});
+  // A helper adds 15 to the HP, the hard level 25 more.
+  CHECK(coopScalingFactors(rules, CoopLevel::Standard, 1, 1, false).hp == 115);
+  CHECK(coopScalingFactors(rules, CoopLevel::Standard, 2, 1, false).hp == 195);
+  CHECK(coopScalingFactors(rules, CoopLevel::Hard, 2, 0, false).hp == 205);
+  // A ruleset without the tables keeps the original numbers.
+  BattleRules plain = rules;
+  plain.coopScaling.reset();
+  CHECK(coopScalingFactors(plain, CoopLevel::Hard, 4, 2, true) == ScalingFactors{});
+}
+
+TEST_CASE("two partners face a scaled enemy; the stat gains read its original stats") {
+  BattleSetup setup = coopDuel(evenStats(400, 300), evenStats(400, 300), evenStats(1000, 200));
+  setup.coopScaling = {.level = CoopLevel::Standard, .helpers = 0};
+  Battle scaled = startBattle(setup, 7);
+  const Fighter& enemy = scaled.state().fighters.at(1);
+  CHECK(scaled.scaling() ==
+        ScalingFactors{.hp = 180, .mp = 150, .offense = 100, .finisherFill = 125});
+  CHECK(enemy.stats.maxHp == 1800);
+  CHECK(enemy.hp == 1800);
+  CHECK(enemy.stats.maxMp == 750);
+  CHECK(enemy.stats.offense == 200);
+  CHECK(enemy.finisherGoal == (originalRules().finisher.goalBase - 200) * 100 / 125);
+  CHECK(enemy.startStats.maxHp == 1000);
+  // The same battle with the option off has the original enemy.
+  setup.coopScaling.level = CoopLevel::Off;
+  Battle plain = startBattle(setup, 7);
+  CHECK(plain.state().fighters.at(1).stats.maxHp == 1000);
+  CHECK(plain.scaling() == ScalingFactors{});
+}
+
+TEST_CASE("an ally that runs off rescales the enemies, keeping their share of HP") {
+  BattleSetup setup = coopDuel(evenStats(400, 100), evenStats(400, 100), evenStats(1000, 100));
+  setup.coopScaling = {.level = CoopLevel::Standard, .helpers = 0};
+  Battle battle = startBattle(setup, 5);
+  const FighterId ally = battle.state().allies.front().id;
+  REQUIRE(battle.state().fighters.at(1).stats.maxHp == 1800);
+  REQUIRE(battle.command(Command::Flee, ally));
+  stepUntil(battle, [&] { return battle.state().fighters[ally].gone(); });
+  REQUIRE_FALSE(battle.finished());
+  const Fighter& enemy = battle.state().fighters.at(1);
+  CHECK(battle.scaling() == ScalingFactors{});
+  CHECK(enemy.stats.maxHp == 1000);
+  CHECK(enemy.hp > 0);
+  CHECK(enemy.hp <= 1000);
+}
+
+TEST_CASE("a lone partner with a helper faces a bit more HP") {
+  BattleSetup setup = duel(evenStats(400, 100), evenStats(1000, 100));
+  setup.coopScaling = {.level = CoopLevel::Standard, .helpers = 1};
+  Battle battle = startBattle(setup, 5);
+  CHECK(battle.state().fighters.at(1).stats.maxHp == 1150);
+  CHECK(battle.state().fighters.at(1).stats.maxMp == 500);
+}

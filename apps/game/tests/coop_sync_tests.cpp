@@ -277,34 +277,34 @@ TEST_CASE("four players keep their links through a 30 s load on the host or on a
   runStalled(2);
 }
 
-TEST_CASE("with four players a battle runs with player 1, and the others' asks are refused busy") {
+TEST_CASE("with four players every guest's battle messages reach the host on its own link") {
   Session session{4, {}};
   coop::BattleFighterProfile fighter;
   fighter.species = "partner";
-  CHECK(coopBattlePeer(false, coop::HostPlayerId));
   for (const auto& guest : session.guests) {
-    CAPTURE(guest->id);
-    CHECK(coopBattlePeer(true, guest->id) == (guest->id == coop::GuestPlayerId));
     REQUIRE(guest->guestSide.sendBattle(coop::BattleAsk{.ask = 7U + guest->id,
                                                         .mapId = "room",
                                                         .enemyNpcs = {1},
                                                         .fixedFight = false,
                                                         .predefined = false,
                                                         .fighter = fighter}));
+    REQUIRE(guest->guestSide.sendBattle(coop::BattleOffer{.available = true, .fighter = fighter}));
   }
   for (int step = 0; step < 10; ++step) {
     session.tick(false);
   }
-  // The host's loop: player 1's ask waits for the battles; the others are told the world is busy.
+  // The host's loop reads each guest's ask and offer from that guest's bridge (CoopBattles), and
+  // answers each on it.
   for (auto& guest : session.guests) {
-    if (coopBattlePeer(true, guest->id)) {
-      const auto ask = guest->hostSide.receiveBattle();
-      REQUIRE(ask);
-      CHECK(std::get<coop::BattleAsk>(*ask).ask == 8U);
-    } else {
-      guest->hostSide.refuseBattles();
-      CHECK_FALSE(guest->hostSide.receiveBattle());
-    }
+    CAPTURE(guest->id);
+    const auto ask = guest->hostSide.receiveBattle();
+    REQUIRE(ask);
+    CHECK(std::get<coop::BattleAsk>(*ask).ask == 7U + guest->id);
+    const auto offer = guest->hostSide.receiveBattle();
+    REQUIRE(offer);
+    CHECK(std::get<coop::BattleOffer>(*offer).available);
+    REQUIRE(guest->hostSide.sendBattle(
+        coop::BattleRefused{.ask = 7U + guest->id, .reason = coop::BattleRefusal::Busy}));
   }
   for (int step = 0; step < 10; ++step) {
     session.tick(false);
@@ -312,14 +312,8 @@ TEST_CASE("with four players a battle runs with player 1, and the others' asks a
   for (auto& guest : session.guests) {
     CAPTURE(guest->id);
     const auto answer = guest->guestSide.receiveBattle();
-    if (guest->id == coop::GuestPlayerId) {
-      CHECK_FALSE(answer);
-      continue;
-    }
     REQUIRE(answer);
-    const auto& refused = std::get<coop::BattleRefused>(*answer);
-    CHECK(refused.ask == 7U + guest->id);
-    CHECK(refused.reason == coop::BattleRefusal::Busy);
+    CHECK(std::get<coop::BattleRefused>(*answer).ask == 7U + guest->id);
     CHECK(guest->hostLink.phase() == coop::LinkPhase::Ready);
   }
 }

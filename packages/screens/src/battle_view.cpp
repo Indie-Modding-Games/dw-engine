@@ -36,6 +36,7 @@ constexpr std::string_view MaxMpField = "max_mp";
 constexpr std::string_view FaintedField = "fainted";
 constexpr std::string_view HpBarField = "hp_bar";
 constexpr std::string_view StatusField = "status";
+constexpr std::string_view ReviveSecondsField = "revive_seconds";
 constexpr std::string_view CommandField = "command";
 constexpr std::string_view LabelField = "label";
 constexpr std::string_view AvailableField = "available";
@@ -77,22 +78,13 @@ FighterView fighterViewOf(const battle::Fighter& fighter, bool hpBarShown, const
           .hpBarShown = hpBarShown,
           .statusKey = status == battle::StatusEffect::None
                            ? std::string{}
-                           : std::string{battle::statusTextKey(status)}};
+                           : std::string{battle::statusTextKey(status)},
+          .reviveSeconds = std::nullopt};
 }
 
 bool gaugeFull(const battle::Fighter& fighter) {
   return fighter.hasFinisher() && fighter.finisherGoal > 0 &&
          fighter.finisherProgress >= fighter.finisherGoal;
-}
-
-std::optional<std::int32_t> reviveSecondsOf(const battle::Battle& battle, battle::FighterId own) {
-  const battle::EndingRules& ending = battle.rules().ending;
-  const std::int32_t deathFrames = battle.deathFramesOf(own);
-  if (!battle.state().fighters.at(own).fainted || deathFrames < ending.reviveCountdownShownAt) {
-    return std::nullopt;
-  }
-  const std::int32_t framesLeft = std::max(0, ending.reviveFrames - deathFrames);
-  return (framesLeft + battle::FramesPerSecond - 1) / battle::FramesPerSecond;
 }
 
 void addFighter(ScreenSettings& settings, std::size_t index, const FighterView& fighter,
@@ -108,6 +100,10 @@ void addFighter(ScreenSettings& settings, std::size_t index, const FighterView& 
   add(FaintedField, fighter.fainted);
   add(HpBarField, fighter.hpBarShown);
   add(StatusField, fighter.statusKey);
+  if (list == BattleAllyList) {
+    add(ReviveSecondsField,
+        fighter.reviveSeconds ? static_cast<double>(*fighter.reviveSeconds) : NoValue);
+  }
 }
 
 void addCommand(ScreenSettings& settings, std::size_t index, const CommandEntry& entry) {
@@ -128,6 +124,18 @@ std::string countName(std::string_view list) {
 }
 
 } // namespace
+
+std::optional<std::int32_t> reviveSecondsOf(const battle::Battle& battle, battle::FighterId own) {
+  const battle::EndingRules& ending = battle.rules().ending;
+  const std::int32_t deathFrames = battle.deathFramesOf(own);
+  // Only the player's side revives: a fallen enemy shows no countdown.
+  if (!battle.state().isPlayerSide(own) || !battle.state().fighters.at(own).fainted ||
+      deathFrames < ending.reviveCountdownShownAt) {
+    return std::nullopt;
+  }
+  const std::int32_t framesLeft = std::max(0, ending.reviveFrames - deathFrames);
+  return (framesLeft + battle::FramesPerSecond - 1) / battle::FramesPerSecond;
+}
 
 // A technique's or the finisher's entry shows its move's name; the others the original's command
 // name.
@@ -195,6 +203,7 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names,
   for (battle::FighterId id = 0; id < state.fighters.size(); ++id) {
     if (id != own && !state.allies.empty() && state.isPlayerSide(id)) {
       view.allies.push_back(fighterViewOf(state.fighters[id], true, names));
+      view.allies.back().reviveSeconds = reviveSecondsOf(battle, id);
     }
   }
   const battle::Fighter& partner = state.fighters[own];

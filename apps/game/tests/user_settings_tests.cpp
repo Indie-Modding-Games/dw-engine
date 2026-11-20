@@ -45,6 +45,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
                               .gymSessions = 4,
                               .quickBattleStart = true,
                               .difficulty = "easy",
+                              .coopDifficulty = "hard",
                               .skipEvolution = true,
                               .choiceCancelCloses = true,
                               .fairSicknessChance = true,
@@ -100,6 +101,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK(read->onlineLosses == std::optional<int>{0});
   CHECK(read->quickBattleStart == std::optional<bool>{true});
   CHECK(read->difficulty == std::optional<std::string>{"easy"});
+  CHECK(read->coopDifficulty == std::optional<std::string>{"hard"});
   CHECK(read->skipEvolution == std::optional<bool>{true});
   CHECK(read->choiceCancelCloses == std::optional<bool>{true});
   CHECK(read->fairSicknessChance == std::optional<bool>{true});

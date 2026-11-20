@@ -1250,6 +1250,12 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 	line-height: 30dp;
 }
 
+.ally-revive {
+	font-size: 20dp;
+	line-height: 30dp;
+	color: #ffe64a;
+}
+
 .ally .hp-label { decorator: image(battle-hp); }
 .ally .mp-label { decorator: image(battle-mp); }
 

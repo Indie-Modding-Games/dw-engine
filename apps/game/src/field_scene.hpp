@@ -309,6 +309,13 @@ public:
   // original axes and units, in the world; nothing if the node is no joint of the skin.
   [[nodiscard]] std::optional<glm::vec3> playerNodePoint(std::uint32_t node,
                                                          glm::vec3 offset) const;
+  // Another co-op player's body as the three above (BattleScreen::startThrow: that player's throw
+  // in a battle on this game): a scene clip held over its motion, until none gives it back;
+  // false when this scene draws no body for `id`.
+  bool playCoopPlayerClip(game::field::PlayerId id, std::optional<std::uint32_t> clip);
+  [[nodiscard]] bool coopPlayerClipPlayedThrough(game::field::PlayerId id) const;
+  [[nodiscard]] std::optional<glm::vec3>
+  coopPlayerNodePoint(game::field::PlayerId id, std::uint32_t node, glm::vec3 offset) const;
   // The transform of one of the player's model nodes in the world (fish.c: FISH_getBoneTransform),
   // in the world's axes; nothing if the node is no joint of the skin.
   [[nodiscard]] std::optional<glm::mat4> playerNodeTransform(std::uint32_t node) const;
@@ -638,12 +645,13 @@ public:
   // The field takes the fighters back where they stand; a fixed fight's enemies stay there for
   // the scene that follows (game::field::releasedNpcSpot).
   void releaseFighters(bool fixedFight = false);
-  // Whose partner a battle's partner (fighter 0, no NPC slot) is drawn on: this game's own, or in
-  // co-op the other player's (docs/architecture/multiplayer.md, §6 decision 3: the partner of who
-  // started the battle fights): the guest's on the host, the host's presented one on the guest.
-  enum class BattlePartner : std::uint8_t { Own, CoopGuest, CoopHost };
-  void setBattlePartner(BattlePartner partner) { battlePartner_ = partner; }
-  [[nodiscard]] BattlePartner battlePartner() const { return battlePartner_; }
+  // Whose partner a battle's partner (fighter 0, no NPC slot) is drawn on: this game's own (none),
+  // or in co-op another player's (docs/architecture/multiplayer.md, §6 decision 3: the partner of
+  // who started the battle fights), the one the scene draws for that player id.
+  void setBattlePartner(std::optional<game::field::PlayerId> owner) { battlePartner_ = owner; }
+  [[nodiscard]] std::optional<game::field::PlayerId> battlePartner() const {
+    return battlePartner_;
+  }
   // A co-op battle's other partners (docs/architecture/coop-combat.md §4) are held by this slot
   // (below the NPCs' and the stage fighters'): player `owner`'s partner, this game's own when the
   // scene draws no other player by that id.
@@ -1263,6 +1271,8 @@ private:
     CoopPartner partner;
     bool fieldBody = false;
     bool shown = false;
+    // Its clip runs while the field waits (playCoopPlayerClip).
+    bool sceneClip = false;
   };
   core::Result<void> addCoopGuestPlayer(game::field::PlayerId id, CoopBody& body);
   void placeCoopProxy(scene::Entity entity, const game::field::CharacterState& state);
@@ -1293,7 +1303,7 @@ private:
   std::vector<std::unique_ptr<Actor>> npcActors_;
   // addStageFighter's, by id.
   std::vector<std::pair<std::int32_t, std::unique_ptr<Actor>>> stageFighters_;
-  BattlePartner battlePartner_ = BattlePartner::Own;
+  std::optional<game::field::PlayerId> battlePartner_;
   // The actor the battle's partner is drawn on (setBattlePartner), the own partner when the chosen
   // one is not there.
   [[nodiscard]] Actor* battlePartnerActor() const;

@@ -1,8 +1,10 @@
 #include <dwe/game/battle/items.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 #include "battle_screen.hpp"
 #include "field_scene.hpp"
@@ -20,19 +22,26 @@ constexpr std::uint32_t ThrowHandNode = 9;
 
 } // namespace
 
-void BattleScreen::startThrow(assets::ItemHandle item, game::battle::FighterId thrower) {
+void BattleScreen::startThrow(assets::ItemHandle item, game::battle::FighterId thrower,
+                              std::optional<game::coop::PlayerId> hand) {
   if (desc_.scene == nullptr) {
     return;
   }
-  desc_.scene->playPlayerSceneClip(PlayerThrowClip);
-  playerThrowing_ = true;
+  if (!hand) {
+    desc_.scene->playPlayerSceneClip(PlayerThrowClip);
+    playerThrowing_ = true;
+  } else if (desc_.scene->playCoopPlayerClip(*hand, PlayerThrowClip) &&
+             !std::ranges::contains(coopThrowing_, *hand)) {
+    // Co-op: the other player's body throws on this game as this player's own does.
+    coopThrowing_.push_back(*hand);
+  }
   const assets::ItemEntry& entry = desc_.inventory->items().at(item);
   const std::optional<assets::ItemEntry::Icon> icon = entry.icon();
   if (!icon) {
     return;
   }
-  thrown_ =
-      ThrownSprite{.icon = icon->cell, .palette = icon->palette, .flight = {}, .thrower = thrower};
+  thrown_ = ThrownSprite{
+      .icon = icon->cell, .palette = icon->palette, .flight = {}, .thrower = thrower, .hand = hand};
   holdThrown();
   showThrown();
 }
@@ -46,6 +55,13 @@ void BattleScreen::stepThrow() {
     playerThrowing_ = false;
     standPlayer();
   }
+  std::erase_if(coopThrowing_, [this](game::coop::PlayerId id) {
+    if (!desc_.scene->coopPlayerClipPlayedThrough(id)) {
+      return false;
+    }
+    static_cast<void>(desc_.scene->playCoopPlayerClip(id, std::nullopt));
+    return true;
+  });
   // main.c: tickThrownItem: once the item reached the partner, removeTamerItem drops it
   // (TAMER_ITEM back to 0xFF).
   if (!thrown_ || !battle_ || !battle_->thrownItemOf(thrown_->thrower)) {
@@ -66,9 +82,14 @@ void BattleScreen::stepThrow() {
 
 void BattleScreen::holdThrown() {
   // addThrownItem, tickThrownItem: in the hand the item follows the node.
+  if (!thrown_) {
+    return;
+  }
   const std::optional<glm::vec3> hand =
-      desc_.scene->playerNodePoint(ThrowHandNode, glm::vec3{0.0F});
-  if (!thrown_ || !hand) {
+      thrown_->hand
+          ? desc_.scene->coopPlayerNodePoint(*thrown_->hand, ThrowHandNode, glm::vec3{0.0F})
+          : desc_.scene->playerNodePoint(ThrowHandNode, glm::vec3{0.0F});
+  if (!hand) {
     return;
   }
   thrown_->flight =
@@ -96,7 +117,11 @@ void BattleScreen::endThrow() {
   playerThrowing_ = false;
   if (desc_.scene != nullptr) {
     desc_.scene->setFlyingItem(std::nullopt);
+    for (const game::coop::PlayerId id : coopThrowing_) {
+      static_cast<void>(desc_.scene->playCoopPlayerClip(id, std::nullopt));
+    }
   }
+  coopThrowing_.clear();
 }
 
 } // namespace dwe::app

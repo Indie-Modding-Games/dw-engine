@@ -82,6 +82,20 @@ body {
 	border-left: 3dp #ffe08a;
 }
 
+/* A fallen partner's revive countdown, and the button that makes a partner the target of this player's items (the
+   picked one marked as the current order is). */
+.fighter .revive {
+	margin-left: 8dp;
+	font-size: 16dp;
+	color: #ffd34a;
+}
+
+.fighter .target {
+	margin: 0 0 0 8dp;
+	padding: 0 8dp;
+	font-size: 15dp;
+}
+
 #orders,
 #help {
 	display: block;
