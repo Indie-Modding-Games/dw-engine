@@ -28,7 +28,6 @@ bool roleAllows(BattleRole role, BattleActionKind kind) {
 }
 
 bool spoilsInRange(const BattleSpoils& spoils) {
-  // The stats' own limits (evl.c: EVL_clampBaseStats) and a day of battle at most.
   constexpr std::int32_t MaxPool = 9999;
   constexpr std::int32_t MaxCare = 100;
   constexpr std::int32_t MaxLives = 99;

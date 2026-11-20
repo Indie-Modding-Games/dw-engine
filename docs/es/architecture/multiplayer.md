@@ -411,8 +411,9 @@ invitado una vez por segundo en un punto seguro (nada ocupado, ningún guardado 
 - **cambió la bolsa** (un intercambio, un reclamo, una compra): se escribe enseguida, para que un cierre inesperado no
   deje un objeto intercambiado en dos partidas;
 - **solo cambió el compañero** (lo que creció en una batalla, los cuidados): se escribe en el siguiente punto seguro 30
-  segundos después de la última escritura (o del inicio de la partida), así una partida larga pierde poco ante un cierre sin escribir la ranura
-  cada pocos segundos;
+  segundos después de la última escritura (o del inicio de la partida), así una partida larga pierde poco ante un
+  cierre sin escribir la ranura cada pocos segundos; una escritura que falla espera lo mismo antes de volver a
+  intentarlo, y el final de la partida lo intenta igual;
 - **la partida termina**, la termine lo que la termine: volver a la portada, que el anfitrión cierre la sala, que se
   caiga la conexión (antes de volver al puesto), salir desde el menú de pausa o cerrar la ventana
   (`AppFlow::setBeforeEnd`). Una partida ocupada al terminar (una batalla) escribe su último punto seguro: lo que una
@@ -421,9 +422,11 @@ invitado una vez por segundo en un punto seguro (nada ocupado, ningún guardado 
 **Cómo se escribe sin riesgo.** Primero se vuelve a leer la ranura, que tiene que seguir siendo la partida que trajo el
 invitado (mismo momento de inicio, domador y reglas); una ranura que otra partida ocupó mientras tanto no se toca y se
 avisa al invitado (`online.coop.home_failed`). El compañero que vuelve tiene que ser uno que una partida pueda dejar
-(`checkReturningPartner`: cada stat dentro de su límite, PV y PM sin pasarlos, sin vidas, vida, edad ni peso
+(`checkReturningPartner`: cada stat dentro de su límite, 9999 para PV y PM y 999 para el resto, los límites a los
+que el juego original ajusta las stats de un compañero; PV y PM sin pasarlos; sin vidas, vida, edad ni peso
 negativos), y el resultado de una batalla del anfitrión solo se aplica cuando sus valores son de los que deja una
-batalla (`game::coop::spoilsInRange`), así un anfitrión manipulado o roto no puede escribir basura en el guardado del
+batalla (`game::coop::spoilsInRange`: PV, PM y ganancias dentro de esos límites, cambios de cuidado dentro de ±100, como
+mucho 99 vidas perdidas y un día de batalla como mucho), así un anfitrión manipulado o roto no puede escribir basura en el guardado del
 invitado. La primera escritura de una partida cooperativa deja la ranura como estaba a su lado
 (`slot_NN.yaml.before_coop`), y cada escritura deja la anterior como la copia de seguridad de siempre (`.bak`). El
 guardado escrito lleva una nota (sección `coop_return`: el nombre del anfitrión y el compañero) que el juego muestra una

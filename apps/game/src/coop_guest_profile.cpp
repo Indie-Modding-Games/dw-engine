@@ -63,10 +63,6 @@ core::Result<std::string> hostWorldWithGuestPartner(std::string_view hostSaveTex
       std::string{PartnerSection},
       game::save::SavedSection{.version = game::partner::PartnerStateVersion,
                                .state = game::partner::toYaml(guest->state)});
-  // The rest of what the guest brings is its own too: the partner's moves (known and equipped),
-  // which its battles on the host fight with (coop_battles.hpp), the species it raised, and its bag
-  // with its bits. It plays with them in the host's world and takes them home when it leaves
-  // (coop_guest_return.hpp); the host's bag and money stay the host's.
   if (auto parsedGuest = game::save::parseSaveFile(guestSaveText)) {
     for (const std::string_view name : CoopGuestOwnSections) {
       if (name == PartnerSection) {
@@ -77,7 +73,6 @@ core::Result<std::string> hostWorldWithGuestPartner(std::string_view hostSaveTex
       }
     }
   }
-  // A note the host's own save brought back from another co-op game is the host's to read.
   host->sections.erase(std::string{CoopReturnSection});
   host->header.summary.species = guest->species;
   host->header.summary.nickname = guest->nickname;

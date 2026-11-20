@@ -108,8 +108,6 @@ core::Result<void> SaveSlots::erase(SlotId slot) {
   if (auto valid = checkSlot(slot); !valid) {
     return valid;
   }
-  // A slot's erase leaves nothing behind: its save, its .bak and the save before a co-op game all
-  // go, so no backup of a save the player deleted is kept.
   const auto eraseFiles = [this](SlotId target) -> core::Result<void> {
     if (auto removed = storage_->remove(slotFileName(target), ""); !removed) {
       return removed;

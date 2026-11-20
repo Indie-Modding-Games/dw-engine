@@ -21,9 +21,6 @@ inline constexpr std::string_view ManualSlotPrefix = "slot";
 inline constexpr std::string_view AutosaveSlotPrefix = "autosave";
 inline constexpr std::string_view SlotFileExtension = ".yaml";
 inline constexpr std::string_view BackupSuffix = ".bak";
-// A slot's save as it was before a co-op game first wrote its guest's progress into it
-// (`slot_01.yaml.before_coop`, docs/architecture/multiplayer.md, "Saves in co-op"): kept until
-// the next co-op game replaces it, or the slot is erased.
 inline constexpr std::string_view BeforeCoopSuffix = ".before_coop";
 
 // Autosave: an old autosave file, read-only.
@@ -43,7 +40,6 @@ std::string slotFileName(SlotId slot);
 // The backup of a slot's file: the file as it was before the last save.
 std::string slotBackupName(SlotId slot);
 
-// The slot's save before a co-op game wrote it (BeforeCoopSuffix).
 std::string slotBeforeCoopName(SlotId slot);
 
 // What the slot list shows of one slot.

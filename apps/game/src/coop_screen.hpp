@@ -104,15 +104,9 @@ public:
   [[nodiscard]] bool selectingGuestProfile() const { return selectingGuestProfile_; }
   [[nodiscard]] bool selectingHostStart() const { return selectingHostStart_; }
   [[nodiscard]] std::optional<std::string> takeRemoteStartText();
-  // The guest's own save for the room, read from `slot` (or its backup): the slot its progress goes
-  // home to (coop_guest_return.hpp).
   [[nodiscard]] core::Result<void> provideGuestSave(std::string_view saveText,
                                                     game::save::SlotId slot, bool backup);
-  // On a guest: the save it brought to the room and the slot it came from, for its game to take its
-  // progress home to; nothing before it picked one.
   [[nodiscard]] std::optional<CoopGuestHome::Home> broughtHome() const;
-  // On a guest: its progress went home and the slot now holds `text`; coming back to the room after
-  // a drop brings that save, so nothing it took home comes in twice.
   void keepBrought(std::string text);
   [[nodiscard]] core::Result<void> sendHostStart(std::string_view saveText);
   // A game in progress (#356). On the host: the guests in that picked their save while the game

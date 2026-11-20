@@ -244,7 +244,6 @@ TEST_CASE("the game being played is gone before the next one starts") {
 }
 
 TEST_CASE("every game goes through the ending hook before it ends, while it is still whole") {
-  // A co-op guest's progress goes home there (coop_guest_return.hpp), whatever ends its game.
   const TestPacks packs;
   MemorySaveStorage storage;
   auto flow = flowOn(packs, storage);
@@ -256,7 +255,6 @@ TEST_CASE("every game goes through the ending hook before it ends, while it is s
   flow.toTitle();
   CHECK(ended.empty());
   REQUIRE(flow.play({}).has_value());
-  // Another game ends the first one; the title ends the second.
   REQUIRE(flow.play({}).has_value());
   flow.toTitle();
   CHECK(ended == std::vector<int>{1, 1});

@@ -690,7 +690,6 @@ TEST_CASE("a guest takes a battle's spoils only when a battle could leave them")
   CHECK(spoilsInRange(spoils));
   CHECK(spoilsInRange(BattleSpoils{}));
 
-  // What a tampered or broken host could send: each is refused on its own.
   const auto refused = [&](auto change) {
     BattleSpoils bad = spoils;
     change(bad);
