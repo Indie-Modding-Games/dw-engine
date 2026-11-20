@@ -724,20 +724,36 @@ public:
   }
   // The field the story's scripted moves drive (game::field::Field::holdForScript).
   [[nodiscard]] game::field::Field& field() { return *field_; }
-  // Adds and renders the connected guest as a second field-controlled player, with its partner of
-  // `partnerSpecies` following it (none when empty). The host uses this only after a peer has
-  // completed the coop handshake. Calling it again adds only what is missing.
-  core::Result<void> addCoopGuest(std::string_view partnerSpecies = {});
-  // Presents the host player and its partner (of `partnerSpecies`) from an interpolated network
-  // snapshot on the guest instance. It is render-only and does not enter local collision, triggers
-  // or world simulation; a missing state hides that body.
-  core::Result<void> presentCoopHost(std::optional<game::field::CharacterState> player,
-                                     std::optional<game::field::CharacterState> partner = {},
-                                     std::string_view partnerSpecies = {});
-  // Where the other co-op player's head lands in the window (fractions of it, outside 0..1 off
-  // it): the guest's character on the host, the host's presented one on the guest. Nothing while
-  // neither is in this field or the map's camera cannot project it.
-  [[nodiscard]] std::optional<glm::vec2> coopPeerHeadInWindow() const;
+  // Adds and renders guest `id` of a co-op game as a field body of its own, with its partner of
+  // `partnerSpecies` following it (none when empty). The host uses this for each guest that
+  // completed the handshake. Calling it again adds only what is missing.
+  core::Result<void> addCoopGuest(game::field::PlayerId id, std::string_view partnerSpecies = {});
+  // Takes another player of a co-op game and its partner out of this scene, its field body too
+  // (the player left the session): nothing of it stays drawn.
+  void removeCoopPlayer(game::field::PlayerId id);
+  // Presents another player `id` of a co-op game and its partner (of `partnerSpecies`) as the host
+  // reported them, already smoothed for this frame. Render-only: no collision, triggers or world
+  // simulation of this instance takes them in; a missing state hides that body.
+  core::Result<void> presentCoopPlayer(game::field::PlayerId id,
+                                       std::optional<game::field::CharacterState> player,
+                                       std::optional<game::field::CharacterState> partner = {},
+                                       std::string_view partnerSpecies = {});
+  // A co-op guest's own player, put where the host says (a PlayerCorrection, #354): on this map at
+  // once; on another through a map change that arrives at `at` (the exit, if any, is the one the
+  // host came in by, for the change's look; the place is `at` either way).
+  void moveCoopSelf(const std::string& mapId, std::optional<std::int32_t> exit,
+                    assets::SpawnPoint at);
+  // Whether the field still goes to the map moveCoopSelf asked for.
+  [[nodiscard]] bool movingCoopSelf() const { return coopArrival_.has_value(); }
+  // The other players this scene draws, by id (field bodies on the host, presented ones on a
+  // guest).
+  [[nodiscard]] std::vector<game::field::PlayerId> coopPlayers() const;
+  // Where co-op player `id` is drawn now; nothing while it is hidden.
+  [[nodiscard]] std::optional<game::field::CharacterState>
+  coopDrawnPose(game::field::PlayerId id) const;
+  // Where co-op player `id`'s head lands in the window (fractions of it, outside 0..1 off it).
+  // Nothing while it is not drawn in this field or the map's camera cannot project it.
+  [[nodiscard]] std::optional<glm::vec2> coopHeadInWindow(game::field::PlayerId id) const;
   // The map's sprite objects, which scripts and the gym's courses move (overworld.c:
   // tickMoveObjectTo, moveMapObjectsWithLimit).
   [[nodiscard]] render::MapDepthLayers& mapLayers() { return mapRenderer_->layers(); }
@@ -1218,11 +1234,8 @@ private:
   double flameSeconds_ = 0.0;
   std::unique_ptr<Actor> playerActor_;
   std::unique_ptr<Actor> partnerActor_;
-  std::vector<std::unique_ptr<Actor>> coopGuestActors_;
-  std::unique_ptr<Actor> coopHostProxyActor_;
-  bool coopHostProxyShown_ = false;
-  // A remote partner drawn at its species' size: the guest's on the host (a field body that follows
-  // the guest), the host's on the guest (from snapshots).
+  // A remote partner drawn at its species' size: a guest's on the host (a field body that follows
+  // that guest), the others' on a guest (from snapshots).
   struct CoopPartner {
     std::unique_ptr<Actor> actor;
     std::string species;
@@ -1230,12 +1243,28 @@ private:
     float scale = 1.0F;
     bool shown = false;
   };
-  core::Result<void> addCoopGuestPlayer();
+  // Another player of a co-op game: a field body on the host (its guests), drawn only on a guest
+  // (the host and the other guests).
+  struct CoopBody {
+    std::unique_ptr<Actor> player;
+    CoopPartner partner;
+    bool fieldBody = false;
+    bool shown = false;
+  };
+  core::Result<void> addCoopGuestPlayer(game::field::PlayerId id, CoopBody& body);
   void placeCoopProxy(scene::Entity entity, const game::field::CharacterState& state);
   core::Result<void> loadCoopPartner(CoopPartner& partner, scene::Entity entity,
                                      std::string_view species);
-  CoopPartner coopGuestPartner_;
-  CoopPartner coopHostPartner_;
+  // The partner drawn for co-op player `id`, if this scene has that player.
+  [[nodiscard]] CoopPartner* coopPartnerOf(game::field::PlayerId id);
+  [[nodiscard]] const CoopPartner* coopPartnerOf(game::field::PlayerId id) const;
+  std::map<game::field::PlayerId, CoopBody> coopBodies_;
+  // Where moveCoopSelf puts the player on the map it changes to.
+  struct CoopArrival {
+    std::string map;
+    assets::SpawnPoint at;
+  };
+  std::optional<CoopArrival> coopArrival_;
   // The field rules' partner mover, for a partner loaded again with another species' model.
   game::field::MoverRules partnerMover_;
   std::function<float(std::string_view)> speciesRadius_;

@@ -16,8 +16,20 @@ namespace dwe::game::coop {
 
 using PlayerId = std::uint8_t;
 inline constexpr PlayerId HostPlayerId = 0;
+// The first guest's id. Guests take the lowest free id up to MaxPlayers - 1 (the host gives it in
+// its welcome); nothing in the protocol is fixed to two players.
 inline constexpr PlayerId GuestPlayerId = 1;
-inline constexpr std::uint32_t ProtocolVersion = 3;
+inline constexpr std::size_t MaxPlayers = 4;
+// 3: co-op battles (#363). 4: the owner's player states, the host's corrections and the roster
+// (#353, #354, #355).
+inline constexpr std::uint32_t ProtocolVersion = 4;
+
+[[nodiscard]] constexpr bool validPlayer(PlayerId id) {
+  return id < MaxPlayers;
+}
+[[nodiscard]] constexpr bool validGuest(PlayerId id) {
+  return id != HostPlayerId && validPlayer(id);
+}
 
 // A worst-case 255-byte map id plus 48 entities fits in one 1200-byte unreliable datagram,
 // including ChannelPeerLink's one-byte lane tag. JoinState travels reliably and can carry more.
@@ -341,6 +353,59 @@ struct BattleEnd {
   friend bool operator==(const BattleEnd&, const BattleEnd&) = default;
 };
 
+// A player's own transform, sent by the guest that owns it (unreliable, about 20 per second). The
+// host keeps the newest valid one per player (authority.hpp) and drops stale ones: `sequence` is
+// the sender's tick count (60 per second), so it also times the movement, and `epoch` is the newest
+// host correction the guest applied, so states sent before it are told apart.
+struct PlayerState {
+  PlayerId player = GuestPlayerId;
+  std::uint32_t sequence = 0;
+  std::uint16_t epoch = 0;
+  std::string mapId;
+  std::int32_t x = 0;
+  std::int32_t y = 0;
+  std::int32_t z = 0;
+  std::uint16_t yaw = 0;
+  Motion motion = Motion::Idle;
+
+  friend bool operator==(const PlayerState&, const PlayerState&) = default;
+};
+
+// The host puts a guest's player somewhere (it joined, the group changed map, or the host refused
+// its state): the guest goes there, on that map, and sends its states with that epoch from then on.
+// `exit` is the exit the host's map was entered by, when the guest has to change map; none keeps
+// the guest's own map change rules out of it (it enters at the place).
+struct PlayerCorrection {
+  PlayerId player = GuestPlayerId;
+  std::uint16_t epoch = 0;
+  std::string mapId;
+  std::optional<std::int32_t> exit;
+  std::int32_t x = 0;
+  std::int32_t y = 0;
+  std::int32_t z = 0;
+  std::uint16_t yaw = 0;
+
+  friend bool operator==(const PlayerCorrection&, const PlayerCorrection&) = default;
+};
+
+// Who is in the session, from the host, on every change (reliable). A guest shows exactly these
+// players and drops whatever it drew for one that is gone.
+struct RosterEntry {
+  PlayerId id = HostPlayerId;
+  std::string name;
+  // The species of the player's partner (empty when it has none).
+  std::string partnerSpecies;
+
+  friend bool operator==(const RosterEntry&, const RosterEntry&) = default;
+};
+
+struct Roster {
+  std::uint32_t revision = 0;
+  std::vector<RosterEntry> players;
+
+  friend bool operator==(const Roster&, const Roster&) = default;
+};
+
 enum class LeaveReason : std::uint8_t { Quit, Disconnected, SessionEnded };
 struct Leave {
   LeaveReason reason = LeaveReason::Quit;
@@ -350,7 +415,7 @@ struct Leave {
 
 using Message = std::variant<Hello, Welcome, Ready, JoinState, Commands, Snapshot, ViewState, Leave,
                              ProfileChunk, BattleAsk, BattleBegin, BattleRefused, BattleFrame,
-                             BattleAction, BattleEnd>;
+                             BattleAction, BattleEnd, PlayerState, PlayerCorrection, Roster>;
 
 inline constexpr std::uint8_t HelloKind = 0x60;
 inline constexpr std::uint8_t WelcomeKind = 0x61;
@@ -367,6 +432,10 @@ inline constexpr std::uint8_t BattleEndKind = 0x6B;
 inline constexpr std::uint8_t ViewStateKind = 0x6C;
 inline constexpr std::uint8_t ProfileChunkKind = 0x6D;
 inline constexpr std::uint8_t ReadyKind = 0x6E;
+// The co-op range goes on past 0x6F (versus uses 0x10-0x14 and lockstep 0x40/0x41).
+inline constexpr std::uint8_t PlayerStateKind = 0x70;
+inline constexpr std::uint8_t PlayerCorrectionKind = 0x71;
+inline constexpr std::uint8_t RosterKind = 0x72;
 
 [[nodiscard]] net::Bytes encode(const Message& message);
 // Returns empty for a message owned by another protocol. Messages in this range are validated and

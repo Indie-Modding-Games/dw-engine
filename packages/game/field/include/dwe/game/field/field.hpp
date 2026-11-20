@@ -48,6 +48,8 @@ struct FieldInput {
 using PlayerId = std::uint8_t;
 inline constexpr PlayerId HostPlayerId = 0;
 inline constexpr PlayerId GuestPlayerId = 1;
+// The most players one field holds: the host and up to three guests.
+inline constexpr std::size_t MaxFieldPlayers = 4;
 
 // The per-player portion of a shared field. Map, NPCs, scripts and transitions remain owned once
 // by Field; an optional partner belongs to this player and is absent until supplied by the app.
@@ -211,9 +213,18 @@ public:
   // Sets the intent for the next ticks.
   void setInput(const FieldInput& input);
   [[nodiscard]] bool setInput(PlayerId id, const FieldInput& input);
-  // Adds the guest body to this shared field. Its optional companion remains absent until the
-  // app provides a guest profile.
+  // Adds a guest body (any id but the host's, below MaxFieldPlayers) to this shared field. Its
+  // optional companion remains absent until the app provides a guest profile.
   core::Result<void> addPlayer(PlayerId id, assets::SpawnPoint spawn);
+  // Takes a guest body and its partner out of the field (the player left the session); false when
+  // there was none.
+  bool removePlayer(PlayerId id);
+  // Moves a guest body to where its owner says it is, every tick from now on, instead of walking it
+  // from its input: the owner simulates its own player and the session's authority checked the
+  // state. The body is placed as it is, without collision, warps or input; its partner follows it
+  // as usual. Nothing undoes it until the player is placed again (placeOtherPlayersNearHost) or
+  // driven with nothing. False when there is no such guest.
+  bool drivePlayer(PlayerId id, std::optional<CharacterState> state);
   [[nodiscard]] std::optional<CharacterState> player(PlayerId id) const;
   [[nodiscard]] std::optional<scene::Entity> playerEntity(PlayerId id) const;
   [[nodiscard]] bool waitingAtWarp(PlayerId id) const;
@@ -325,6 +336,10 @@ public:
   // exploration's choice ask it before they fade out or write a trigger. An empty filter lets
   // every one through. A script's own map change (startScriptedMapChange) is its caller's to ask.
   void setExitFilter(ExitFilter filter) { exitFilter_ = std::move(filter); }
+  // Keeps every map change of the player closed, without the filter's notice: a co-op guest goes
+  // where the host goes and takes no exit of its own.
+  void holdExits(bool held) { exitsHeld_ = held; }
+  [[nodiscard]] bool exitsHeld() const { return exitsHeld_; }
   // The last map change the filter kept closed, once; the player stayed.
   [[nodiscard]] std::optional<MapChange> takeClosedExit() {
     return std::exchange(closedExit_, std::nullopt);
@@ -636,8 +651,11 @@ private:
     bool pressed = false;
     float frameClock = 0.0F;
     std::optional<OtherPartner> partner;
+    // Where the owner says the body is (drivePlayer): placed there instead of walking.
+    std::optional<CharacterState> driven;
   };
   void tickOtherPlayers(float seconds);
+  void placeDrivenPlayers();
   void moveOtherPartners(std::int32_t frames);
   void placeOtherPartner(const PlayerRuntime& player, OtherPartner& partner);
   void moveOtherPlayer(PlayerRuntime& player, float seconds);
@@ -873,6 +891,7 @@ private:
   std::vector<TriggerStep> triggerSteps_;
   ExitFilter exitFilter_;
   std::optional<MapChange> closedExit_;
+  bool exitsHeld_ = false;
   // Whether the cell being checked now asked for a closed map change: then it asks for nothing
   // else.
   bool exitClosedNow_ = false;

@@ -10,7 +10,9 @@ namespace dwe::game::coop {
 
 namespace {
 
-constexpr std::uint8_t LastKind = ReadyKind;
+constexpr std::uint8_t LastKind = RosterKind;
+// A roster name or partner species longer than this is damaged.
+constexpr std::size_t MaxRosterText = 64;
 
 void put(net::WireWriter& out, const Identity& identity) {
   out.put(identity.protocol).put(std::string_view{identity.gameVersion});
@@ -61,7 +63,7 @@ bool validField(const FieldCommand& field) {
 }
 
 bool validEntity(const EntityState& entity) {
-  return entity.owner <= GuestPlayerId &&
+  return validPlayer(entity.owner) &&
          static_cast<std::uint8_t>(entity.role) <= static_cast<std::uint8_t>(EntityRole::Npc) &&
          static_cast<std::uint8_t>(entity.motion) <= static_cast<std::uint8_t>(Motion::Run) &&
          validCoordinate(entity.x, MaxWorldCoordinate) &&
@@ -306,6 +308,24 @@ net::Bytes encode(const Message& message) {
           out.put(ViewStateKind).put(body.player).put(body.sequence);
           out.put(std::string_view{body.mapId});
           out.put(body.left).put(body.top).put(body.right).put(body.bottom);
+        } else if constexpr (std::is_same_v<T, PlayerState>) {
+          out.put(PlayerStateKind).put(body.player).put(body.sequence).put(body.epoch);
+          out.put(std::string_view{body.mapId});
+          out.put(body.x).put(body.y).put(body.z).put(body.yaw).put(body.motion);
+        } else if constexpr (std::is_same_v<T, PlayerCorrection>) {
+          out.put(PlayerCorrectionKind).put(body.player).put(body.epoch);
+          out.put(std::string_view{body.mapId}).put(body.exit.has_value());
+          if (body.exit) {
+            out.put(*body.exit);
+          }
+          out.put(body.x).put(body.y).put(body.z).put(body.yaw);
+        } else if constexpr (std::is_same_v<T, Roster>) {
+          out.put(RosterKind).put(body.revision);
+          out.put(static_cast<std::uint8_t>(body.players.size()));
+          for (const RosterEntry& entry : body.players) {
+            out.put(entry.id).put(std::string_view{entry.name});
+            out.put(std::string_view{entry.partnerSpecies});
+          }
         } else if constexpr (std::is_same_v<T, Leave>) {
           out.put(LeaveKind).put(body.reason);
         } else if constexpr (std::is_same_v<T, BattleAsk>) {
@@ -383,7 +403,7 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     welcome.sessionId = in.get<std::uint64_t>();
     if (!validIdentity(welcome.identity) ||
         reason > static_cast<std::uint8_t>(RejectReason::Busy) ||
-        welcome.assignedPlayer != GuestPlayerId ||
+        (welcome.accepted && !validGuest(welcome.assignedPlayer)) ||
         (welcome.accepted && reason != static_cast<std::uint8_t>(RejectReason::None)) ||
         (!welcome.accepted && reason == static_cast<std::uint8_t>(RejectReason::None))) {
       return core::fail("invalid cooperative welcome");
@@ -473,7 +493,7 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     view.top = in.get<std::int32_t>();
     view.right = in.get<std::int32_t>();
     view.bottom = in.get<std::int32_t>();
-    if (view.player > GuestPlayerId || view.mapId.empty() || view.left >= view.right ||
+    if (!validPlayer(view.player) || view.mapId.empty() || view.left >= view.right ||
         view.top >= view.bottom || !validCoordinate(view.left, MaxViewCoordinate) ||
         !validCoordinate(view.top, MaxViewCoordinate) ||
         !validCoordinate(view.right, MaxViewCoordinate) ||
@@ -627,6 +647,76 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
       end.spoils = std::move(read);
     }
     message = std::move(end);
+    break;
+  }
+  case PlayerStateKind: {
+    PlayerState state;
+    state.player = in.get<PlayerId>();
+    state.sequence = in.get<std::uint32_t>();
+    state.epoch = in.get<std::uint16_t>();
+    state.mapId = in.text();
+    state.x = in.get<std::int32_t>();
+    state.y = in.get<std::int32_t>();
+    state.z = in.get<std::int32_t>();
+    state.yaw = in.get<std::uint16_t>();
+    const std::uint8_t motion = in.get<std::uint8_t>();
+    if (!in.ok() || !validGuest(state.player) || state.mapId.empty() ||
+        motion > static_cast<std::uint8_t>(Motion::Run) ||
+        !validCoordinate(state.x, MaxWorldCoordinate) ||
+        !validCoordinate(state.y, MaxWorldCoordinate) ||
+        !validCoordinate(state.z, MaxWorldCoordinate)) {
+      return core::fail("invalid cooperative player state");
+    }
+    state.motion = static_cast<Motion>(motion);
+    message = std::move(state);
+    break;
+  }
+  case PlayerCorrectionKind: {
+    PlayerCorrection correction;
+    correction.player = in.get<PlayerId>();
+    correction.epoch = in.get<std::uint16_t>();
+    correction.mapId = in.text();
+    bool hasExit = false;
+    if (!getFlag(in, hasExit)) {
+      return core::fail("invalid cooperative correction flag");
+    }
+    if (hasExit) {
+      correction.exit = in.get<std::int32_t>();
+    }
+    correction.x = in.get<std::int32_t>();
+    correction.y = in.get<std::int32_t>();
+    correction.z = in.get<std::int32_t>();
+    correction.yaw = in.get<std::uint16_t>();
+    if (!in.ok() || !validGuest(correction.player) || correction.mapId.empty() ||
+        (correction.exit && *correction.exit < 0) ||
+        !validCoordinate(correction.x, MaxWorldCoordinate) ||
+        !validCoordinate(correction.y, MaxWorldCoordinate) ||
+        !validCoordinate(correction.z, MaxWorldCoordinate)) {
+      return core::fail("invalid cooperative player correction");
+    }
+    message = std::move(correction);
+    break;
+  }
+  case RosterKind: {
+    Roster roster;
+    roster.revision = in.get<std::uint32_t>();
+    const std::uint8_t count = in.get<std::uint8_t>();
+    if (count == 0 || count > MaxPlayers) {
+      return core::fail(std::format("cooperative roster has {} players", count));
+    }
+    std::unordered_set<PlayerId> ids;
+    for (std::uint8_t i = 0; i < count && in.ok(); ++i) {
+      RosterEntry entry{.id = in.get<PlayerId>(), .name = in.text(), .partnerSpecies = in.text()};
+      if (!validPlayer(entry.id) || !ids.insert(entry.id).second ||
+          entry.name.size() > MaxRosterText || entry.partnerSpecies.size() > MaxRosterText) {
+        return core::fail("invalid or duplicate player in cooperative roster");
+      }
+      roster.players.push_back(std::move(entry));
+    }
+    if (!in.ok() || !ids.contains(HostPlayerId)) {
+      return core::fail("cooperative roster has no host");
+    }
+    message = std::move(roster);
     break;
   }
   case LeaveKind: {

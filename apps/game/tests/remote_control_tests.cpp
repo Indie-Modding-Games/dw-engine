@@ -114,6 +114,7 @@ struct FakeGame {
                   .partner = std::nullopt,
                   .npcs = {{.id = 11,
                             .pose = {.x = -839.0F, .y = 0.0F, .z = -2210.0F, .yaw = 0.0F}}},
+                  .players = {},
                   .view = ControlView{.x = 12.0F, .y = 0.0F, .width = 320.0F, .height = 240.0F}};
             },
         .previewMap =
@@ -469,7 +470,7 @@ TEST_CASE("live answers where everyone stands in one compact line") {
             R"({"id":1,"ok":true,"tick":42,"paused":false,"mode":"field","map":"twna01",)"
             R"("busy":true,"preview":"twna01","log":3,)"
             R"("player":{"x":256,"y":0,"z":1285.5,"yaw":1.5},"partner":null,)"
-            R"("npcs":[{"id":11,"x":-839,"y":0,"z":-2210,"yaw":0}],)"
+            R"("npcs":[{"id":11,"x":-839,"y":0,"z":-2210,"yaw":0}],"players":[],)"
             R"("view":{"x":12,"y":0,"w":320,"h":240}})"});
 
   ControlHost title = game.host();
@@ -483,7 +484,8 @@ TEST_CASE("live answers where everyone stands in one compact line") {
   CHECK(lines(idle) ==
         std::vector<std::string>{
             R"({"id":2,"ok":true,"tick":0,"paused":false,"mode":"title","map":"","busy":false,)"
-            R"("preview":null,"log":0,"player":null,"partner":null,"npcs":[],"view":null})"});
+            R"("preview":null,"log":0,"player":null,"partner":null,"npcs":[],"players":[],)"
+            R"("view":null})"});
 }
 
 TEST_CASE("live stays cheap with a crowded map") {

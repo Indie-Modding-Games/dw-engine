@@ -5,81 +5,72 @@
 
 namespace dwe::app {
 
-namespace {
-bool isNewer(std::uint32_t candidate, std::uint32_t current) {
-  const std::uint32_t delta = candidate - current;
-  return delta != 0 && delta < 0x80000000u;
-}
-
-float interpolateYaw(std::uint16_t from, std::uint16_t to, float alpha) {
-  std::int32_t delta = static_cast<std::int32_t>(to) - static_cast<std::int32_t>(from);
-  if (delta > 32767)
-    delta -= 65536;
-  if (delta < -32768)
-    delta += 65536;
-  float units = static_cast<float>(from) + (static_cast<float>(delta) * alpha);
-  if (units < 0.0F)
-    units += 65536.0F;
-  if (units >= 65536.0F)
-    units -= 65536.0F;
-  return units * (6.2831853071795864769F / 65536.0F);
-}
-
-PresentedCoopEntity present(const game::coop::EntityState& state) {
-  return {.networkId = state.networkId,
-          .owner = state.owner,
-          .role = state.role,
-          .position = {static_cast<float>(state.x), static_cast<float>(state.y),
-                       static_cast<float>(state.z)},
-          .yaw = static_cast<float>(state.yaw) * (6.2831853071795864769F / 65536.0F),
-          .motion = state.motion};
-}
-} // namespace
-
-bool CoopSnapshotInterpolation::push(game::coop::Snapshot snapshot) {
-  if (!latest_ || snapshot.mapId != latest_->mapId) {
-    previous_.reset();
-    latest_ = std::move(snapshot);
-    return true;
-  }
-  if (!isNewer(snapshot.worldTick, latest_->worldTick))
+bool CoopSnapshotInterpolation::push(game::coop::Snapshot snapshot, net::Millis now) {
+  if (latest_ && snapshot.mapId == latest_->mapId &&
+      !game::coop::sequenceNewer(snapshot.worldTick, latest_->worldTick))
     return false;
-  previous_ = std::move(latest_);
+  if (latest_ && snapshot.mapId != latest_->mapId)
+    tracks_.clear();
+  const net::Millis sentAt = SnapshotPeriod * static_cast<std::int64_t>(snapshot.worldTick);
+  for (const game::coop::EntityState& state : snapshot.entities) {
+    (void)tracks_[state.networkId].push(snapshot.worldTick, sentAt,
+                                        {.mapId = snapshot.mapId,
+                                         .x = state.x,
+                                         .y = state.y,
+                                         .z = state.z,
+                                         .yaw = state.yaw,
+                                         .motion = state.motion},
+                                        now);
+  }
+  // An entity the host no longer sends (a player who left) goes with its track.
+  std::erase_if(tracks_, [&](const auto& track) {
+    return std::ranges::find(snapshot.entities, track.first, &game::coop::EntityState::networkId) ==
+           snapshot.entities.end();
+  });
   latest_ = std::move(snapshot);
   return true;
 }
 
-std::optional<PresentedCoopWorld> CoopSnapshotInterpolation::sample(float alpha) const {
+std::optional<PresentedCoopWorld> CoopSnapshotInterpolation::sample(net::Millis now) const {
   if (!latest_)
     return std::nullopt;
-  const float t = std::isfinite(alpha) ? std::clamp(alpha, 0.0F, 1.0F) : 1.0F;
   PresentedCoopWorld world{.mapId = latest_->mapId,
                            .worldTick = latest_->worldTick,
                            .acknowledgedCommand = latest_->acknowledgedCommand,
                            .entities = {}};
   world.entities.reserve(latest_->entities.size());
   for (const game::coop::EntityState& state : latest_->entities) {
-    PresentedCoopEntity entity = present(state);
-    if (previous_) {
-      const auto prior = std::ranges::find(previous_->entities, state.networkId,
-                                           &game::coop::EntityState::networkId);
-      if (prior != previous_->entities.end() && prior->owner == state.owner &&
-          prior->role == state.role) {
-        entity.position =
-            glm::mix(glm::vec3{static_cast<float>(prior->x), static_cast<float>(prior->y),
-                               static_cast<float>(prior->z)},
-                     entity.position, t);
-        entity.yaw = interpolateYaw(prior->yaw, state.yaw, t);
-      }
-    }
-    world.entities.push_back(entity);
+    const auto track = tracks_.find(state.networkId);
+    const auto pose = track != tracks_.end() ? track->second.sample(now) : std::nullopt;
+    if (!pose)
+      continue;
+    world.entities.push_back({.networkId = state.networkId,
+                              .owner = state.owner,
+                              .role = state.role,
+                              .position = {pose->x, pose->y, pose->z},
+                              .yaw = pose->yaw,
+                              .motion = pose->motion});
   }
   return world;
 }
 
+std::vector<game::coop::PlayerId>
+CoopSnapshotInterpolation::playersOn(std::string_view mapId) const {
+  std::vector<game::coop::PlayerId> present;
+  if (!latest_ || latest_->mapId != mapId)
+    return present;
+  for (const game::coop::EntityState& state : latest_->entities) {
+    if (state.role == game::coop::EntityRole::Player &&
+        !std::ranges::contains(present, state.owner))
+      present.push_back(state.owner);
+  }
+  std::ranges::sort(present);
+  return present;
+}
+
 void CoopSnapshotInterpolation::reset() {
-  previous_.reset();
   latest_.reset();
+  tracks_.clear();
 }
 
 } // namespace dwe::app

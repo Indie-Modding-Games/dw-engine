@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "coop_gameplay_bridge.hpp"
+#include "coop_world.hpp"
 #include "fighter_figure.hpp"
 #include "play_session.hpp"
 
@@ -162,15 +163,6 @@ std::string_view phaseName(coop::BattlePhase phase) {
   return "fight";
 }
 
-// The presence seam (#351): whether the host stands on this guest's map, so a battle the guest's
-// story starts is shared; elsewhere it is a solo battle of the guest's own game. It reads the
-// host's last snapshot; the co-op core's player registry takes its place once it lands.
-bool hostOnThisMap(PlaySession& play, const CoopGameplayBridge& bridge) {
-  const game::field::Field& field = play.scene().field();
-  const auto world = bridge.presentedWorld(0.0F);
-  return world && !field.mapChangePending() && world->mapId == field.mapId();
-}
-
 } // namespace
 
 coop::BattleOutcome coopOutcomeOf(game::battle::Outcome outcome) {
@@ -257,14 +249,19 @@ game::battle::BattleResult resultOf(const coop::BattleSpoils& spoils, coop::Batt
   return result;
 }
 
-void CoopBattles::tick(PlaySession& play, CoopGameplayBridge* bridge, Role role) {
+void CoopBattles::tick(PlaySession& play, CoopGameplayBridge* bridge, Role role,
+                       std::span<const coop::PlayerId> here) {
+  here_.assign(here.begin(), here.end());
   if (play_ != &play) {
     reset();
     play_ = &play;
   }
   ++ticks_;
+  // A battle the guest's story starts is shared while the host stands on its map (#351); elsewhere
+  // it is a solo battle of the guest's own game.
   play.handBattlesToHost(role == Role::Guest && bridge != nullptr &&
-                         !play.battleScreen().active() && hostOnThisMap(play, *bridge));
+                         !play.battleScreen().active() &&
+                         coopPlayerHere(play.scene().field(), here_, coop::HostPlayerId));
   if (role == Role::Guest && bridge != nullptr) {
     guestTick(play, *bridge);
     return;
@@ -347,6 +344,12 @@ void CoopBattles::hostTick(PlaySession& play, CoopGameplayBridge* bridge) {
 
 void CoopBattles::answer(PlaySession& play, CoopGameplayBridge& bridge,
                          const coop::BattleAsk& ask) {
+  if (!coopPlayerHere(play.scene().field(), here_, coop::GuestPlayerId)) {
+    // The session puts the guest elsewhere (its states have not reached this map yet).
+    core::logInfo("coop: the guest's battle {} is refused: the guest is not on this map", ask.ask);
+    send(&bridge, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::NotHere});
+    return;
+  }
   if (const auto refusal =
           referee_.judge(ask, play.scene().field().mapId(), play.battleScreen().active())) {
     core::logInfo("coop: the guest's battle {} is refused: the world is busy or elsewhere",

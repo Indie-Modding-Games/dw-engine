@@ -38,15 +38,16 @@ FieldScene::Actor* FieldScene::battlePartnerActor() const {
   case BattlePartner::Own:
     break;
   case BattlePartner::CoopGuest:
-    if (coopGuestPartner_.actor) {
-      return coopGuestPartner_.actor.get();
+  case BattlePartner::CoopHost: {
+    // Co-op battles run between the host and its first guest (one link for now, #352).
+    const CoopPartner* remote =
+        coopPartnerOf(battlePartner_ == BattlePartner::CoopGuest ? game::field::GuestPlayerId
+                                                                 : game::field::HostPlayerId);
+    if (remote != nullptr && remote->actor) {
+      return remote->actor.get();
     }
     break;
-  case BattlePartner::CoopHost:
-    if (coopHostPartner_.actor) {
-      return coopHostPartner_.actor.get();
-    }
-    break;
+  }
   }
   return partnerActor_.get();
 }
@@ -103,9 +104,9 @@ void FieldScene::settleActors(double seconds) {
     }
   };
   glide(*partnerActor_);
-  for (const CoopPartner* remote : {&coopGuestPartner_, &coopHostPartner_}) {
-    if (remote->actor) {
-      glide(*remote->actor);
+  for (auto& [id, body] : coopBodies_) {
+    if (body.partner.actor) {
+      glide(*body.partner.actor);
     }
   }
   for (const auto& actor : npcActors_) {
@@ -149,9 +150,9 @@ scene::Pose FieldScene::drawnPose(scene::Entity entity, float alpha) const {
     if (held(*partnerActor_)) {
       return heldPlace(*partnerActor_);
     }
-    for (const CoopPartner* remote : {&coopGuestPartner_, &coopHostPartner_}) {
-      if (remote->actor && held(*remote->actor)) {
-        return heldPlace(*remote->actor);
+    for (const auto& [id, body] : coopBodies_) {
+      if (body.partner.actor && held(*body.partner.actor)) {
+        return heldPlace(*body.partner.actor);
       }
     }
     for (const auto& actor : npcActors_) {
@@ -328,9 +329,9 @@ void FieldScene::releaseFighters(bool fixedFight) {
     }
   };
   release(*partnerActor_);
-  for (const CoopPartner* remote : {&coopGuestPartner_, &coopHostPartner_}) {
-    if (remote->actor) {
-      release(*remote->actor);
+  for (auto& [id, body] : coopBodies_) {
+    if (body.partner.actor) {
+      release(*body.partner.actor);
     }
   }
   // The NPCs that ran off left the map at the intro's end (battle_setup.c:316) while the field

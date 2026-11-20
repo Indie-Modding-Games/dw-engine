@@ -154,7 +154,7 @@ TEST_CASE("the lobby leaves the link to the gameplay bridge once play owns it") 
   REQUIRE(host.sendHostSnapshot(snapshot));
   frame();
   CHECK(guestOnHost.next(0).field.stick.y == -1.0F);
-  const auto world = guest.presentedWorld(1.0F);
+  const auto world = guest.presentedWorld(network.now());
   REQUIRE(world);
   CHECK(world->entities.size() == 2);
 

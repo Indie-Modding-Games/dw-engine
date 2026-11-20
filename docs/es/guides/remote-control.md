@@ -144,7 +144,7 @@ el texto del cargador con el fichero y la línea.
 ```json
 {"id": 3, "ok": true, "tick": 5120, "paused": false, "mode": "field", "map": "twna01", "busy": false,
  "preview": null, "log": 12, "player": {"x": 256, "y": 0, "z": 1285.5, "yaw": 1.5708},
- "partner": {"x": 180, "y": 0, "z": 1300, "yaw": 3.1416}, "npcs": [{"id": 11, "x": -839, "y": 0, "z": -2210, "yaw": 0}],
+ "partner": {"x": 180, "y": 0, "z": 1300, "yaw": 3.1416}, "npcs": [{"id": 11, "x": -839, "y": 0, "z": -2210, "yaw": 0}], "players": [],
  "view": {"x": 0, "y": 16, "w": 320, "h": 240}}
 ```
 
@@ -155,6 +155,9 @@ el texto del cargador con el fichero y la línea.
   como los guarda el campo (no en los ejes del original de la traza de estado): el suelo es el plano XZ, y una
   casilla de colisión es `columna = floor(x / 100) + 50`, `fila = floor(z / 100) + 50`. Sin partida son `null` y
   `[]`; durante una batalla siguen siendo los del campo, donde se pelea.
+- `players`: en una partida cooperativa, los otros jugadores que esta partida dibuja en su mapa, por id de jugador
+  (`id`, 0 el anfitrión), en el sitio donde se dibujan en este fotograma (`[]` fuera del cooperativo; un jugador en
+  otro mapa no aparece).
 - `yaw` en radianes, como lo guarda el motor: el personaje mira hacia `(sin yaw, cos yaw)` en `(x, z)`, es decir,
   `yaw = 0` mira hacia +Z del mundo (filas crecientes de la rejilla) y un `yaw` positivo gira de +Z hacia +X
   (`assets::forwardOfYaw`). Para una flecha en la rejilla: `dir = (sin yaw, cos yaw)` en `(columna, fila)`.

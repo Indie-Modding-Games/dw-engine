@@ -42,7 +42,8 @@ RejectReason identityMismatch(const Identity& expected, const Identity& actual) 
 
 net::Lane laneFor(const Message& message) {
   if (std::holds_alternative<Commands>(message) || std::holds_alternative<Snapshot>(message) ||
-      std::holds_alternative<ViewState>(message) || std::holds_alternative<BattleFrame>(message))
+      std::holds_alternative<ViewState>(message) || std::holds_alternative<BattleFrame>(message) ||
+      std::holds_alternative<PlayerState>(message))
     return net::Lane::Unreliable;
   return net::Lane::Reliable;
 }
@@ -51,7 +52,10 @@ bool directionAllowed(Side receiver, const Message& message) {
   if (std::holds_alternative<Leave>(message))
     return true;
   if (receiver == Side::Host) {
-    if (std::holds_alternative<Commands>(message) || std::holds_alternative<ViewState>(message))
+    // The guest's input and its own player's transform; whether that player is the guest's own is
+    // the authority's to judge (WorldAuthority::accept).
+    if (std::holds_alternative<Commands>(message) || std::holds_alternative<ViewState>(message) ||
+        std::holds_alternative<PlayerState>(message))
       return true;
     if (std::holds_alternative<Ready>(message))
       return true;
@@ -62,7 +66,10 @@ bool directionAllowed(Side receiver, const Message& message) {
       return chunk->kind == ProfilePayloadKind::GuestSave;
     return false;
   }
-  if (std::holds_alternative<JoinState>(message) || std::holds_alternative<Snapshot>(message))
+  // The shared world's state comes from the host only (#353): a guest that sends any of these
+  // loses its link.
+  if (std::holds_alternative<JoinState>(message) || std::holds_alternative<Snapshot>(message) ||
+      std::holds_alternative<PlayerCorrection>(message) || std::holds_alternative<Roster>(message))
     return true;
   if (std::holds_alternative<BattleBegin>(message) ||
       std::holds_alternative<BattleRefused>(message) ||
@@ -78,9 +85,10 @@ CoopLink::CoopLink(net::PeerLink& link, Side side, Identity identity, LinkTimeou
     : link_{&link}, side_{side}, identity_{std::move(identity)}, timeouts_{timeouts} {}
 
 CoopLink CoopLink::host(net::PeerLink& link, Identity identity, std::string playerName,
-                        LinkTimeouts timeouts) {
+                        LinkTimeouts timeouts, PlayerId guestId) {
   CoopLink result{link, Side::Host, std::move(identity), timeouts};
   result.playerName_ = std::move(playerName);
+  result.guestId_ = validGuest(guestId) ? guestId : GuestPlayerId;
   return result;
 }
 
@@ -137,12 +145,12 @@ void CoopLink::handle(const Message& message) {
     link_->send(net::Lane::Reliable,
                 encode(Message{Welcome{.identity = identity_,
                                        .accepted = accepted,
-                                       .assignedPlayer = GuestPlayerId,
+                                       .assignedPlayer = guestId_,
                                        .reason = reason,
                                        .sessionId = sessionId,
                                        .hostName = accepted ? playerName_ : std::string{}}}));
     if (accepted) {
-      remotePlayer_ = GuestPlayerId;
+      remotePlayer_ = guestId_;
       remoteName_ = hello->playerName;
       phase_ = LinkPhase::Ready;
     } else {
@@ -162,17 +170,18 @@ void CoopLink::handle(const Message& message) {
       return;
     }
     if (identityMismatch(identity_, welcome->identity) != RejectReason::None ||
-        welcome->assignedPlayer != GuestPlayerId || welcome->sessionId == 0) {
+        !validGuest(welcome->assignedPlayer) || welcome->sessionId == 0) {
       fail(LinkFailure::Damaged);
       return;
     }
     remotePlayer_ = HostPlayerId;
+    localPlayer_ = welcome->assignedPlayer;
     remoteName_ = welcome->hostName;
     phase_ = LinkPhase::Ready;
     return;
   }
   if (const auto* leaveMessage = std::get_if<Leave>(&message)) {
-    (void)leaveMessage;
+    leaveReason_ = leaveMessage->reason;
     phase_ = LinkPhase::Left;
     return;
   }

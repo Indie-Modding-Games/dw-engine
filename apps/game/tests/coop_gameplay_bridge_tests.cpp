@@ -66,7 +66,7 @@ TEST_CASE("coop gameplay bridge routes guest movement into the host controller")
   REQUIRE(host.sendHostSnapshot(snapshot));
   network.advance(dwe::net::Millis{1});
   guest.poll(network.now());
-  const auto receivedSnapshot = guest.presentedWorld(1.0F);
+  const auto receivedSnapshot = guest.presentedWorld(network.now());
   REQUIRE(receivedSnapshot);
   CHECK(receivedSnapshot->mapId == snapshot.mapId);
   REQUIRE(receivedSnapshot->entities.size() == 2);
@@ -158,9 +158,12 @@ TEST_CASE("each game sees the other player's partner following them, interpolate
   }
   send();
 
-  const auto before = guest.presentedWorld(0.0F);
-  const auto middle = guest.presentedWorld(0.5F);
-  const auto after = guest.presentedWorld(1.0F);
+  // The host stamped the snapshots 50 ms apart (world ticks 1 and 2): drawn 100 ms behind the
+  // quickest delivery, `received` + 50 shows the first, + 100 the second, + 75 halfway.
+  const dwe::net::Millis received = network.now();
+  const auto before = guest.presentedWorld(received + dwe::net::Millis{50});
+  const auto middle = guest.presentedWorld(received + dwe::net::Millis{75});
+  const auto after = guest.presentedWorld(received + dwe::net::Millis{100});
   REQUIRE(before);
   REQUIRE(middle);
   REQUIRE(after);

@@ -388,6 +388,68 @@ guardado de un jugador y se carga en el lugar del anfitrión), `apps/game/tests/
 del invitado no nombra ranura) y `apps/game/tests/app_flow_tests.cpp` (la partida del invitado nunca se guarda en una
 ranura; solo las partidas de la sala son cooperativas).
 
+### 5.7 Mundo compartido: autoridad, jugadores y mapas
+
+Lo que hacen hoy las primeras piezas del cooperativo de §5.2 y §5.3 (#353, #354, #355, #356, #358). Funciona con
+hasta 4 jugadores (`game::coop::MaxPlayers`): el jugador 0 es el anfitrión, los invitados son del 1 al 3, y nada
+nombra un segundo jugador fijo.
+
+**Quién decide qué.** El `WorldAuthority` del anfitrión (`packages/game/coop`) guarda la sesión: quién está en ella
+(el registro de jugadores), el mapa en el que está el grupo y la última transformación válida de cada jugador.
+
+| Estado | Dueño | Cómo lo saben los demás |
+|---|---|---|
+| Quién está en la sesión, la especie de su compañero | anfitrión (`WorldAuthority`) | `Roster` en cada cambio |
+| El mapa del grupo, salidas y llegadas | anfitrión | `PlayerCorrection` con la salida por la que entró |
+| La posición propia de un invitado | el invitado, revisada por el anfitrión | `PlayerState`, rechazado o corregido si es imposible |
+| La posición del anfitrión, NPCs, historia, reloj, batallas | anfitrión | instantáneas (§5.1) y eventos |
+| Cómo se dibuja un jugador remoto | cada partida, en local | interpolación (abajo); nunca escribe la autoridad |
+
+**Mensajes.** Tres tipos se suman a la tabla de §5.5 y ocupan el lugar de su esbozo `OwnPose` y `PoseFix` (versión 4
+del protocolo):
+
+| Tipo | Nombre | Canal | Dirección | Contenido |
+|---|---|---|---|---|
+| `0x70` | `PlayerState` | no fiable | cliente → anfitrión | Id del jugador, secuencia (el tick del invitado), la época de corrección que sigue, mapa, posición, orientación, movimiento. Cada 3 ticks. |
+| `0x71` | `PlayerCorrection` | fiable | anfitrión → cliente | Dónde pone el anfitrión a ese jugador: mapa, posición, orientación, la salida en un cambio de mapa y una época nueva. |
+| `0x72` | `Roster` | fiable | anfitrión → cliente | Revisión y, por jugador, id, nombre y especie del compañero. |
+
+**Sincronización de la transformación.** El invitado mueve su propio jugador y lo informa. El anfitrión acepta un
+estado solo si el enlace es dueño de ese jugador, es más nuevo que el último aceptado (los paquetes tardíos,
+duplicados o desordenados se descartan), lleva la época de la última corrección (ningún estado de antes de una
+corrección ni de un mapa anterior), está en el mapa del grupo y se alcanza desde la última pose válida a la velocidad
+máxima del jugador. Un cuerpo que quedaría dentro de una pared en el mapa del anfitrión no se lleva allí. Tras 3
+rechazos seguidos el anfitrión devuelve al jugador a su última pose válida, y los dos lados vuelven a coincidir. Un
+salto del lado del invitado (un `place` de un script) es uno de esos rechazos: se corrige, no se adopta.
+
+**Mapas (decisión 2 de §6).** El grupo va adonde va el anfitrión. Las salidas propias del invitado quedan retenidas
+(`Field::holdExits`); cuando el anfitrión cambia de mapa, cada invitado recibe una corrección con el mapa nuevo, la
+salida y el punto de aparición del anfitrión, y llega justo allí. Los estados del mapa o la época anteriores se
+rechazan, y el invitado no informa nada mientras viaja. Cada jugador sigue teniendo su propio mapa actual: un jugador
+remoto en otro mapa no se dibuja ni se mueve, y vuelve a mostrarse cuando llega.
+
+**Interpolación.** Los jugadores remotos se dibujan desde un búfer corto de estados con hora (`PoseTrack`): 100 ms por
+detrás del más nuevo, mezclando los dos que rodean ese momento. Los estados tardíos nunca hacen retroceder una pista,
+un hueco corto se extrapola como mucho 100 ms y luego se queda quieto, un paso de más de 800 unidades (un salto de
+mapa o una corrección) se dibuja como salto, y un emisor cuyo reloj se pausó se retoma sin una recuperación lenta. El
+anfitrión dibuja así a los invitados, y los invitados dibujan a todos desde las instantáneas del anfitrión, con la
+hora del reloj del anfitrión. Dibujar es solo presentación: nunca cambia lo que guarda la autoridad.
+
+**Ciclo de vida.** Un invitado entra cuando termina su saludo: recibe el id libre más bajo, un cuerpo y un compañero
+en el campo del anfitrión junto a él, una corrección a ese sitio y un roster nuevo. Sale con `Leave`, con un enlace
+caído o con un cierre inesperado: su registro, cuerpo, compañero y búferes desaparecen en los dos lados, y el roster
+lo quita. Cuando una partida cooperativa termina en cualquiera de los lados (volver a la portada, salir), ese lado
+envía `Leave` y cierra la sala; un invitado cuyo anfitrión se fue vuelve a la portada. Un jugador que vuelve entra
+como nuevo, con un estado limpio.
+
+**Presencia.** `WorldAuthority::playersOn(map)` (anfitrión) y `CoopGameplayBridge::playersOn(map)` (invitado, desde la
+última instantánea) dicen qué jugadores están en un mapa, para los sistemas que necesitan a los demás cerca
+(batallas, objetos compartidos).
+
+Pruebas: `packages/game/coop/tests/authority_tests.cpp`, `apps/game/tests/coop_world_tests.cpp`,
+`apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` y los casos
+cooperativos de `packages/game/field/tests/field_tests.cpp`.
+
 ## 6. Decisiones de juego (pendientes)
 
 | # | Pregunta | Recomendación | Alternativa |
@@ -408,8 +470,9 @@ que correr en un solo sitio. Corre en la **simulación del anfitrión**:
   combates de su script al anfitrión solo mientras la última instantánea del anfitrión nombra el mapa del invitado (y
   no hay un cambio de mapa en curso); en cualquier otro sitio el combate es del propio invitado, en solitario, igual que
   en un jugador, y nada espera al anfitrión. Los combates del anfitrión solo se muestran a un invitado en ese mapa que no
-  esté en un combate propio en solitario. Esta comprobación es una costura pequeña (`hostOnThisMap` en
-  `apps/game/src/coop_battles.cpp`) pensada para cambiarse al registro de jugadores del núcleo cooperativo cuando llegue.
+  esté en un combate propio en solitario. Los dos lados preguntan a la consulta de presencia de la sesión (§5.7,
+  `coopPlayerHere`): la autoridad del anfitrión, que además rechaza la petición de un invitado que no sitúa en su mapa,
+  y la última instantánea del invitado.
 
 - **Quién pelea.** El compañero del jugador cuyo script de mapa lo empezó (un enemigo salvaje tocado, un NPC con el que
   se habló, un combate de la historia). Un combate que pide el script del invitado va al anfitrión como `BattleAsk`

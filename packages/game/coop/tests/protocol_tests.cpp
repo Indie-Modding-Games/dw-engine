@@ -102,12 +102,38 @@ TEST_CASE("cooperative control and state messages round trip") {
                          .kind = ProfilePayloadKind::HostSave,
                          .bytes = {5, 6, 7}});
   roundTrip(Leave{.reason = LeaveReason::Disconnected});
+  roundTrip(PlayerState{.player = 3,
+                        .sequence = 0xFFFFFFFEU,
+                        .epoch = 9,
+                        .mapId = "mayo01",
+                        .x = -2309,
+                        .y = 0,
+                        .z = MaxWorldCoordinate,
+                        .yaw = 65535,
+                        .motion = Motion::Walk});
+  roundTrip(PlayerCorrection{.player = 2,
+                             .epoch = 4,
+                             .mapId = "mayo02",
+                             .exit = 1,
+                             .x = 10,
+                             .y = -5,
+                             .z = 20,
+                             .yaw = 300});
+  roundTrip(PlayerCorrection{
+      .player = 1, .epoch = 1, .mapId = "m", .exit = {}, .x = 0, .y = 0, .z = 0, .yaw = 0});
+  // Only guests send states and get corrections; a roster always has its host.
+  CHECK_FALSE(decode(encode(Message{PlayerState{.player = HostPlayerId, .mapId = "m"}})));
+  CHECK_FALSE(decode(encode(Message{PlayerState{.player = MaxPlayers, .mapId = "m"}})));
+  CHECK_FALSE(decode(encode(
+      Message{Roster{.revision = 1, .players = {{.id = 1, .name = "g", .partnerSpecies = {}}}}})));
 }
 
 TEST_CASE("cooperative decoder ignores foreign message kinds and rejects damaged frames") {
   CHECK(decode(std::vector<std::uint8_t>{})->has_value() == false);
   CHECK(decode(std::vector<std::uint8_t>{0x10, 0x01})->has_value() == false);
-  CHECK_FALSE(decode(std::vector<std::uint8_t>{0x70, 0x01})->has_value());
+  CHECK_FALSE(decode(std::vector<std::uint8_t>{0x80, 0x01})->has_value());
+  // A known kind cut short is damaged, not foreign.
+  CHECK_FALSE(decode(std::vector<std::uint8_t>{PlayerStateKind, 0x01}));
 
   const auto bytes =
       encode(Message{Commands{.sequence = 5, .field = {.run = true, .moveTarget = std::nullopt}}});
