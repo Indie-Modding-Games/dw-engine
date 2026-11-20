@@ -3,6 +3,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/core/fixed_step.hpp>
 #include <dwe/game/battle/combatant.hpp>
+#include <dwe/game/battle/coop_scaling.hpp>
 #include <dwe/game/battle/events.hpp>
 #include <dwe/game/battle/flights.hpp>
 #include <dwe/game/battle/ground.hpp>
@@ -87,6 +88,10 @@ struct BattleSetup {
   // is commanded as the partner is (Battle::command with its id), throws its own player's items
   // and gets its own result (Battle::allyResults).
   std::vector<AllySetup> allies;
+  // A co-op battle's difficulty (docs/architecture/coop-difficulty.md): the enemies' HP, MP,
+  // offense and finisher grow with the partners that fight (the starter's and the allies) and the
+  // helpers. Off, or one partner and no helper: the original numbers.
+  CoopScaling coopScaling;
 };
 
 enum class Outcome : std::uint8_t { Victory, Fled, Defeat };
@@ -225,6 +230,9 @@ public:
   void releaseAlly(FighterId ally);
   // The co-op allies' results once the battle finished (empty without allies).
   [[nodiscard]] const std::vector<AllyResult>& allyResults() const { return allyResults_; }
+  // The co-op scaling the enemies have now (100 everywhere outside co-op); it changes when a
+  // partner runs off (docs/architecture/coop-difficulty.md §4: a knocked out one still counts).
+  [[nodiscard]] const ScalingFactors& scaling() const { return scaling_; }
   // A players' side fighter's revive countdown so far (0 while it stands).
   [[nodiscard]] std::int32_t deathFramesOf(FighterId id) const;
   [[nodiscard]] bool itemInFlight() const { return state_.thrownItem.has_value(); }
@@ -322,6 +330,10 @@ private:
   // finish running off or their countdown ends; it is over when the enemies are down with a
   // partner standing, or no partner is left. Whether it ended this frame.
   bool endCoop();
+  // Scales the enemies for the partners that have not run off, keeping the fraction of HP and MP
+  // each has (docs/architecture/coop-difficulty.md §4); their original stats stay in startStats,
+  // which the rewards read.
+  void scaleEnemies();
   // The frame's context, with its events going to `events`.
   BattleContext contextOf(BattleEvents& events);
   // The events not yet returned by step(): those of the last frame are dropped once returned.
@@ -345,6 +357,7 @@ private:
   bool chargePressed_ = false;
   bool cheered_ = false;
   std::vector<AllyResult> allyResults_;
+  ScalingFactors scaling_;
   bool delivered_ = false;
 };
 

@@ -347,10 +347,24 @@ PR #363, and alone the battle is the original one. What landed, by task:
   (role `ally`), the host checks every action's role. A guest who drops leaves its partner on its own call.
 - Task 10, partly: the battle screen shows the allies' cards (`battle.allies`, HP and MP) in every skin; the guest's
   `coop_battle` panel shows every fighter's HP, the partners' MP and marks its own partner; orders go to one's own
-  partner. Not yet: the bag's ally target choice (an item goes to one's own partner, or the one fighting if it is gone),
-  an ally's thrown item animation on the other screen, the ally's species sounds and its death-countdown badge.
-- Not yet: task 11 (co-op difficulty), task 12 and later, and more than one guest in a battle (the host and one guest
-  fight together; the protocol and the battle already take up to `MaxPlayers` partners).
+  partner.
+
+**Built (2026-11-20, protocol version 9, UI API 0.23.0): every partner fights.** Any guest can start a battle, and every
+player on that map whose partner is free fights in it (up to three allies beside the starter's partner): in the host's
+own battles every free guest, in a guest's battle the host and every other free guest. Each guest's link carries its own
+asks, offers and actions; the host sends each guest its own frames (its partner's strip, bag and finisher) and its own
+end, with spoils only for a guest whose partner fought. A guest who drops leaves its partner on its own call; the others
+play on.
+
+- Task 10, more: an ally's card counts down its revive when it falls (`battle.ally.<n>.revive_seconds`), and the
+  guest's panel shows each fallen partner's countdown. A player picks the partner its items fly to (the panel's Aim
+  button; `BattleAction.value` carries the target), and an item a guest throws leaves that player's body on the host's
+  screen with the throw's clip. Each ally sounds as its own species (allies' sound banks in slots 16–18; a visitor's
+  partner keeps its own species in the partner slots).
+- Task 11: co-op difficulty, see [co-op difficulty](coop-difficulty.md) §9.
+- Not yet: task 12 (one battle per map: a second battle on another map is still refused while one runs), the optional
+  mechanics of §8, a per-player shout, and the guest's own screen drawing the throws and the allies' sounds of the host's
+  battle (the guest's field shows the fighters where the host's frames put them).
 
 1. **Battle sides refactor:** replace `PartnerId` with `side`, `owner` and the queries `isPlayerSide`, `partnerOf`,
    `partners`, `enemies`; partners first, enemies after. No behaviour change (solo tests and story chain green).

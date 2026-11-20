@@ -184,6 +184,12 @@ public:
     std::optional<session::VisitingPartner> visitor;
   };
   void setCoopAllies(std::vector<CoopAlly> allies) { coopAllies_ = std::move(allies); }
+  // Co-op: the player whose partner fights the next visitor's battle (PlaySession::
+  // startVisitorBattle), and how the next field battle with partners of other players scales its
+  // enemies (docs/architecture/coop-difficulty.md; CoopBattles keeps it current: the host's
+  // coop_difficulty and the players on the map who help without a partner in it).
+  void setVisitorOwner(game::coop::PlayerId owner) { visitorOwner_ = owner; }
+  void setCoopScaling(game::battle::CoopScaling scaling) { coopScaling_ = scaling; }
   // The partner player `owner` commands in the running battle, if any.
   [[nodiscard]] std::optional<game::battle::FighterId> fighterOf(game::coop::PlayerId owner) const;
   // The allies' results once the battle finished (for the guests' games), once.
@@ -201,10 +207,11 @@ public:
   // Another player's press of the finisher's charge buttons: its own partner's finisher takes it
   // whole, another's as a cheer.
   void cheer(game::coop::PlayerId from);
-  // An item from another player's own bag thrown at its partner (the fighting one when it has none
-  // in the battle): this game's bag lends it one and throws it, so its own count does not change.
-  // False when it is not thrown.
-  bool throwLentItem(game::coop::PlayerId from, std::string_view itemId);
+  // An item from another player's own bag thrown at `target` when that is a partner still in the
+  // battle, else at its own partner (the fighting one when it has none in the battle): this game's
+  // bag lends it one and throws it, so its own count does not change. False when it is not thrown.
+  bool throwLentItem(game::coop::PlayerId from, std::string_view itemId,
+                     std::optional<game::battle::FighterId> target = std::nullopt);
   // The other player closes the end box.
   void closeEnd() { close(); }
   // A visitor's battle's result once it finished (for the visitor's own game), once.
@@ -231,6 +238,9 @@ private:
   // The partner a thrower's item lands on: its own while it is in the battle, else the fighting
   // one.
   [[nodiscard]] game::battle::FighterId throwTargetOf(game::battle::FighterId thrower) const;
+  // A co-op player's picked target when it is a partner still in the battle; none otherwise.
+  [[nodiscard]] std::optional<game::battle::FighterId>
+  coopTargetOf(std::optional<game::battle::FighterId> target) const;
   [[nodiscard]] screens::NameKeys names() const;
   void publish() const;
   void tickIntro(double seconds);
@@ -276,9 +286,11 @@ private:
   void syncBag();
   void throwItem(double slot);
   // battle_screen_throw.cpp: the player's throw and the item on its way to the partner (main.c:
-  // startThrowingItem, tickThrownItem, renderThrownItem), a battle frame at a time.
+  // startThrowingItem, tickThrownItem, renderThrownItem), a battle frame at a time. In co-op
+  // `hand` is another player whose body throws it on this game (none: this game's own player).
   void startThrow(assets::ItemHandle item,
-                  game::battle::FighterId thrower = game::battle::PartnerId);
+                  game::battle::FighterId thrower = game::battle::PartnerId,
+                  std::optional<game::coop::PlayerId> hand = std::nullopt);
   void stepThrow();
   void holdThrown();
   void showThrown() const;
@@ -341,6 +353,8 @@ private:
   // setCoopAllies; the partner this game's player commands (the partner, or in a visitor's battle
   // its own ally, or none); the allies' results.
   std::vector<CoopAlly> coopAllies_;
+  game::coop::PlayerId visitorOwner_ = game::coop::GuestPlayerId;
+  game::battle::CoopScaling coopScaling_;
   std::optional<game::battle::FighterId> localFighter_;
   std::vector<game::battle::AllyResult> allyResults_;
   // The field's bag document is open over the battle.
@@ -395,9 +409,13 @@ private:
     std::optional<game::battle::ItemFlight> flight;
     // Whose player threw it (co-op: this player's own ally).
     game::battle::FighterId thrower = game::battle::PartnerId;
+    // Co-op: the other player whose hand holds it (none: this game's own player's).
+    std::optional<game::coop::PlayerId> hand;
   };
   std::optional<ThrownSprite> thrown_;
   bool playerThrowing_ = false;
+  // Co-op: the other players whose throw's clip still plays.
+  std::vector<game::coop::PlayerId> coopThrowing_;
   bool partnerPosing_ = false;
   // The battle's map and the items its beaten enemies left: they land on the ground when the end
   // box closes (battle_ui.c: handleBattleEndBox calls spawnDroppedItems last).

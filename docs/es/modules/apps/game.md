@@ -272,6 +272,17 @@ antes. El primer viaje desde frzl16 (175 y 352 puestos) corre la entrada con la 
 hace nada y la sección 0x3C se juega como la del original (Whamon en (1465, 2906), rotación 0). Hoja:
 `_work/tmp/w112/sheets/whamon-improvement.png`.
 
+## Dificultad cooperativa
+
+Una mejora opcional, estándar por defecto, solo para el cooperativo
+([dificultad cooperativa](../../architecture/coop-difficulty.md)): el original no tiene juego en línea, así que
+desactivada deja sus números. El ajuste `coop_difficulty` (fila «Dificultad cooperativa», «Co-op difficulty» en inglés,
+pestaña Juego, valores `off`, `standard` y `hard`, guardado en los ajustes del usuario) lo lee
+`PlaySession::applyPlayOptions` en `PlaySession::coopLevel()`. En el anfitrión, `CoopBattles` se lo pasa a
+`BattleScreen::setCoopScaling` con el número de ayudantes (jugadores del mapa cuyo compañero no pelea), y la petición de
+combate lo lleva a `game::battle::BattleSetup::coopScaling`. Un combate con un solo compañero y sin ayudantes es el del
+original sea cual sea el ajuste. Solo cuenta el valor del anfitrión: su juego corre todos los combates cooperativos.
+
 ## Felicitar y regañar
 
 «Felicitar» y «Regañar» del menú del campo (Tab) juegan la escena del original (`partner.c: partnerTickPraiseScold`,

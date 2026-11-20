@@ -1,6 +1,7 @@
 # Dificultad cooperativa según el número de jugadores (documento de diseño)
 
-Estado: **propuesta** (2026-11-19, ticket #361). Nada de esto está implementado. Se apoya en el
+Estado: **hecho** (2026-11-20, ticket #361) para las estadísticas y el remate de los enemigos en combates normales y
+fijos; §9 dice qué entró y en qué difiere de esta propuesta. Se apoya en el
 [cooperativo en línea](multiplayer.md), el [ADR 0024](../adr/0024-co-op-with-authoritative-host.md), la primera versión
 de los combates cooperativos (#351, PR #363) y el diseño de combate con ambos compañeros de
 [combate cooperativo](coop-combat.md). Las sesiones de hasta cuatro jugadores son el ticket #352
@@ -257,6 +258,19 @@ Por verificar antes de ajustar (no aparecen en las fuentes leídas): Myotismon (
 mgen06), Mamemon y Piximon. Cada fila se puede sobrescribir por id en los datos (§9).
 
 ## 9. Implementación
+
+**Lo que entró (2026-11-20).** La opción es `coop_difficulty` (pestaña Juego: desactivada, estándar por defecto,
+difícil; guardada como `UserSettings::coopDifficulty`); solo cuenta la del anfitrión. Las tablas viven en las reglas de
+combate (`content/packs/game/rules/original/battle.yaml`, sección `coop_scaling`: `normal` y `fixed` con `hp_percent`,
+`mp_percent`, `offense_percent` y `finisher_fill_percent` por número de compañeros, más `helper_hp_percent` y
+`hard_hp_bonus_percent`), no en un `coop.yaml` nuevo, así que un mod las ajusta con el resto del combate. La función
+pura es `game::battle::coopScalingFactors`; el `CoopBattles` del anfitrión pone el nivel y los ayudantes (jugadores del
+mapa cuyo compañero no pelea) en `BattleSetup::coopScaling`, y `Battle::start` escala los PV y PM máximos, el ataque y la
+meta del remate de los enemigos desde sus estadísticas sin escalar. `startStats` se queda sin escalar, así que las
+subidas de estadísticas son las del original. Cuando un compañero huye, los enemigos se vuelven a escalar para los que
+quedan, cada uno conservando su proporción de PV y PM; un compañero fuera de combate sigue contando. No se construyó de
+la propuesta de abajo: el extra en la tirada de unión (un combate que empieza un invitado no tiene tirada en el
+anfitrión a la que sumar), los `overrides` por combate, las opciones de recompensa de §5.3 y mostrarlo en la sala.
 
 ### 9.1 Ajuste
 

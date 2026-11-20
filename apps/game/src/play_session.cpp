@@ -1226,6 +1226,28 @@ RuleChoices ruleChoicesOf(const UserSettings& settings) {
 
 } // namespace
 
+game::battle::CoopLevel coopLevelOf(const std::optional<std::string>& saved) {
+  if (saved == CoopDifficultyOff) {
+    return game::battle::CoopLevel::Off;
+  }
+  if (saved == CoopDifficultyHard) {
+    return game::battle::CoopLevel::Hard;
+  }
+  return game::battle::CoopLevel::Standard;
+}
+
+std::string_view coopLevelName(game::battle::CoopLevel level) {
+  switch (level) {
+  case game::battle::CoopLevel::Off:
+    return CoopDifficultyOff;
+  case game::battle::CoopLevel::Hard:
+    return CoopDifficultyHard;
+  case game::battle::CoopLevel::Standard:
+    break;
+  }
+  return CoopDifficultyStandard;
+}
+
 void PlaySession::applyPlayOptions() {
   const UserSettings& settings = *context_.userSettings;
   for (const PlayOption& option : PlayOptions) {
@@ -1248,6 +1270,8 @@ void PlaySession::applyPlayOptions() {
   }
   battleScreen_.setQuickStart(settings.quickBattleStart.value_or(false));
   skipEvolution_ = settings.skipEvolution.value_or(false);
+  coopLevel_ = coopLevelOf(settings.coopDifficulty);
+  context_.ui->setSetting(CoopDifficultySetting, std::string{coopLevelName(coopLevel_)});
   scene_->field().setGenerousTalk(settings.generousTalk.value_or(false));
   scene_->field().setExtraToiletsOn(settings.extraToilets.value_or(false));
   scene_->showExtraToilets();

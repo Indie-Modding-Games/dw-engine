@@ -203,6 +203,16 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
     enemySpecies.push_back(enemy.species);
   }
   desc_.session->useEnemySounds(enemySpecies);
+  // A co-op battle: each ally sounds as its own species, and in a visitor's battle the fighting
+  // partner as the visitor's (an engine addition, docs/architecture/coop-combat.md §4).
+  std::vector<std::string> allySpecies;
+  for (const game::battle::AllyState& ally : battle_->state().allies) {
+    allySpecies.push_back(battle_->state().fighters.at(ally.id).combatant.species);
+  }
+  desc_.session->useAllySounds(allySpecies);
+  if (visiting_) {
+    desc_.session->keepPartnerSounds(battle_->state().partner().combatant.species);
+  }
   if (game::story::SoundPort* sound = desc_.session->sound();
       sound != nullptr && desc_.files != nullptr) {
     effects_.emplace(*desc_.files, *sound);
@@ -1038,6 +1048,9 @@ void BattleScreen::finish() {
   // BTL_deinitializeCombat reloads the map's bank only after a victory; a tournament's match ends
   // with the arena's bank again (std_setup.c: loadMapSounds(0x10)). A battle that never gave a
   // result ends as a won one.
+  if (visiting_) {
+    desc_.session->keepPartnerSounds(std::nullopt);
+  }
   desc_.session->endBattleSounds(!finished || finished->outcome == game::battle::Outcome::Victory ||
                                  finished->kind == game::battle::BattleKind::Tournament);
   session::SessionMusic* music = desc_.session->music();

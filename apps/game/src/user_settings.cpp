@@ -82,6 +82,7 @@ constexpr std::string_view OnlineRelayOnlyKey = "online_relay_only";
 constexpr std::string_view QuickBattleStartKey = "quick_battle_start";
 constexpr std::string_view DifficultyKey = "difficulty";
 constexpr std::string_view ShopJobModeKey = "shop_job_mode";
+constexpr std::string_view CoopDifficultyKey = "coop_difficulty";
 constexpr std::string_view SkipEvolutionKey = "skip_evolution";
 constexpr std::string_view ChoiceCancelClosesKey = "choice_cancel_closes";
 constexpr std::string_view FairSicknessChanceKey = "fair_sickness_chance";
@@ -279,6 +280,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* difficulty = tree->find(DifficultyKey)) {
       settings.difficulty = reader.text(*difficulty);
+    }
+    if (const core::YamlNode* coopDifficulty = tree->find(CoopDifficultyKey)) {
+      settings.coopDifficulty = reader.text(*coopDifficulty);
     }
     if (const core::YamlNode* shopJob = tree->find(ShopJobModeKey)) {
       settings.shopJobMode = reader.text(*shopJob);
@@ -509,6 +513,9 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   }
   if (settings.difficulty) {
     root.set(std::string{DifficultyKey}, core::YamlNode::scalar(*settings.difficulty));
+  }
+  if (settings.coopDifficulty) {
+    root.set(std::string{CoopDifficultyKey}, core::YamlNode::scalar(*settings.coopDifficulty));
   }
   if (settings.shopJobMode) {
     root.set(std::string{ShopJobModeKey}, core::YamlNode::scalar(*settings.shopJobMode));

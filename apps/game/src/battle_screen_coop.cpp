@@ -44,10 +44,13 @@ game::coop::BattlePhase BattleScreen::coopPhase() const {
 }
 
 void BattleScreen::addCoopAllies(session::BattleRequest& request) const {
-  if (coopAllies_.empty() || desc_.scene == nullptr || request.kind != BattleKind::Normal ||
-      request.timeLimit || request.tamerless) {
+  if (desc_.scene == nullptr || request.kind != BattleKind::Normal || request.timeLimit ||
+      request.tamerless) {
     return;
   }
+  // The enemies scale by the partners that fight and the players who help (an engine addition,
+  // docs/architecture/coop-difficulty.md); one partner without helpers keeps the original's.
+  request.coopScaling = coopScaling_;
   const game::field::Field& field = desc_.scene->field();
   for (const CoopAlly& ally : coopAllies_) {
     const auto player = field.player(ally.owner);
@@ -73,7 +76,7 @@ std::optional<game::battle::FighterId> BattleScreen::fighterOf(game::coop::Playe
     }
   }
   // The fighting partner is the visitor's in a visitor's battle, this game's own otherwise.
-  if ((owner == game::coop::HostPlayerId) != visiting_) {
+  if (owner == (visiting_ ? visitorOwner_ : game::coop::HostPlayerId)) {
     return game::battle::PartnerId;
   }
   return std::nullopt;
@@ -96,6 +99,19 @@ game::battle::FighterId BattleScreen::throwTargetOf(game::battle::FighterId thro
     return thrower;
   }
   return game::battle::PartnerId;
+}
+
+std::optional<game::battle::FighterId>
+BattleScreen::coopTargetOf(std::optional<game::battle::FighterId> target) const {
+  if (!battle_ || !target) {
+    return std::nullopt;
+  }
+  const game::battle::BattleState& state = battle_->state();
+  if (*target >= state.fighters.size() || !state.isPlayerSide(*target) ||
+      state.fighters.at(*target).gone()) {
+    return std::nullopt;
+  }
+  return target;
 }
 
 bool BattleScreen::commandFromPlayer(game::coop::PlayerId owner, game::battle::Command command) {
@@ -127,7 +143,8 @@ void BattleScreen::cheer(game::coop::PlayerId from) {
   }
 }
 
-bool BattleScreen::throwLentItem(game::coop::PlayerId from, std::string_view itemId) {
+bool BattleScreen::throwLentItem(game::coop::PlayerId from, std::string_view itemId,
+                                 std::optional<game::battle::FighterId> target) {
   if (!battle_ || intro_ || desc_.inventory == nullptr) {
     return false;
   }
@@ -141,22 +158,24 @@ bool BattleScreen::throwLentItem(game::coop::PlayerId from, std::string_view ite
     core::logInfo("coop: no room to lend the other player's item {}", itemId);
     return false;
   }
-  // A player with a partner of its own in the battle throws from where it stands, at it; a helper
-  // throws as this game's player does (#363).
+  // A player with a partner of its own in the battle throws from where it stands, at it or at the
+  // partner it picked; a helper throws as this game's player does (#363), at the one it picked.
   const std::optional<game::battle::FighterId> own = fighterOf(from);
   const game::battle::FighterId thrower = own.value_or(game::battle::PartnerId);
-  auto thrown = own ? desc_.battle->throwItem(*battle_, *item, thrower, throwTargetOf(thrower))
-                    : desc_.battle->throwItem(*battle_, *item);
+  const std::optional<game::battle::FighterId> picked = coopTargetOf(target);
+  auto thrown = own || picked ? desc_.battle->throwItem(*battle_, *item, thrower,
+                                                        picked.value_or(throwTargetOf(thrower)))
+                              : desc_.battle->throwItem(*battle_, *item);
   if (!thrown || thrown->outcome != game::inventory::UseOutcome::Used) {
     bag.remove(*item, 1);
     core::logInfo("coop: the other player's item {} was not thrown{}", itemId,
                   thrown ? std::string{} : ": " + thrown.error().message);
     return false;
   }
-  core::logInfo("coop: the other player threw {}", itemId);
-  if (thrower == game::battle::PartnerId) {
-    startThrow(*item);
-  }
+  core::logInfo("coop: player {} threw {}", from, itemId);
+  // Its body throws it where this game draws one; the fighting partner's thrower is this game's
+  // own player in a helper's throw (#363).
+  startThrow(*item, thrower, own ? std::optional<game::coop::PlayerId>{from} : std::nullopt);
   publish();
   return true;
 }

@@ -64,6 +64,11 @@ BattleSpoils spoils() {
           .frames = 600};
 }
 
+// The spoils of guest `guest`'s partner, as the host hands them to the referee's end.
+std::vector<std::pair<PlayerId, BattleSpoils>> spoilsOf(PlayerId guest) {
+  return {{guest, spoils()}};
+}
+
 BattleFrame frame(std::uint32_t battle, std::uint32_t number) {
   return {.battle = battle,
           .frame = number,
@@ -246,6 +251,7 @@ TEST_CASE("each side sends only its own battle messages") {
 
 TEST_CASE("the referee runs one battle at a time and pulls the second player in as helper") {
   BattleReferee referee;
+  referee.guestJoined(GuestPlayerId);
   const BattleAsk ask{.ask = 4, .mapId = "forest", .enemyNpcs = {2}, .fighter = fighter()};
   CHECK(referee.judge(ask, "forest", false) == std::nullopt);
   CHECK(referee.judge(ask, "beach", false) == BattleRefusal::NotHere);
@@ -260,54 +266,57 @@ TEST_CASE("the referee runs one battle at a time and pulls the second player in 
   CHECK(referee.roleOf(HostPlayerId) == BattleRole::Starter);
   CHECK(referee.roleOf(GuestPlayerId) == BattleRole::Helper);
   // A helper throws its own items and cheers; it neither commands nor closes the end box.
-  CHECK(referee.allows(act(1, BattleActionKind::ThrowItem, 0, "meat")));
-  CHECK(referee.allows(act(1, BattleActionKind::Cheer)));
-  CHECK_FALSE(referee.allows(act(1, BattleActionKind::Command, 2)));
-  CHECK_FALSE(referee.allows(act(1, BattleActionKind::CloseEnd)));
-  CHECK_FALSE(referee.allows(act(2, BattleActionKind::Cheer)));
+  CHECK(referee.allows(GuestPlayerId, act(1, BattleActionKind::ThrowItem, 0, "meat")));
+  CHECK(referee.allows(GuestPlayerId, act(1, BattleActionKind::Cheer)));
+  CHECK_FALSE(referee.allows(GuestPlayerId, act(1, BattleActionKind::Command, 2)));
+  CHECK_FALSE(referee.allows(GuestPlayerId, act(1, BattleActionKind::CloseEnd)));
+  CHECK_FALSE(referee.allows(GuestPlayerId, act(2, BattleActionKind::Cheer)));
+  // A guest the referee does not know (not joined) is not heard.
+  CHECK_FALSE(referee.allows(2, act(1, BattleActionKind::Cheer)));
   // The host's battle gives the guest nothing back.
-  const auto end = referee.end(BattleOutcome::Victory, {3}, 50, spoils());
-  REQUIRE(end);
-  CHECK(end->battle == 1);
-  CHECK(end->bits == 50);
-  CHECK_FALSE(end->spoils);
+  const auto ends = referee.end(BattleOutcome::Victory, {3}, 50, spoilsOf(GuestPlayerId));
+  REQUIRE(ends.size() == 1);
+  const BattleEnd& end = ends.front().end;
+  CHECK(ends.front().to == GuestPlayerId);
+  CHECK(end.battle == 1);
+  CHECK(end.bits == 50);
+  CHECK_FALSE(end.spoils);
   CHECK_FALSE(referee.running());
-  CHECK_FALSE(referee.end(BattleOutcome::Victory, {}, 0, std::nullopt));
+  CHECK(referee.end(BattleOutcome::Victory, {}, 0, {}).empty());
 }
 
 TEST_CASE("the guest's battle takes its commands and gives its partner the spoils") {
   BattleReferee referee;
+  referee.guestJoined(GuestPlayerId);
   const BattleBegin begin =
       referee.begin(GuestPlayerId, 7, "forest", {2, 5}, {"agumon", "a", "b"}, false);
   CHECK(begin.starter == GuestPlayerId);
   CHECK(begin.ask == 7);
   CHECK(referee.roleOf(GuestPlayerId) == BattleRole::Starter);
   CHECK(referee.roleOf(HostPlayerId) == BattleRole::Helper);
-  CHECK(referee.allows(act(begin.battle, BattleActionKind::Command, 8)));
-  CHECK(referee.allows(act(begin.battle, BattleActionKind::CloseEnd)));
+  CHECK(referee.allows(GuestPlayerId, act(begin.battle, BattleActionKind::Command, 8)));
+  CHECK(referee.allows(GuestPlayerId, act(begin.battle, BattleActionKind::CloseEnd)));
   CHECK(referee.starterPresent());
-  const auto end = referee.end(BattleOutcome::Defeat, {}, 0, spoils());
-  REQUIRE(end);
-  REQUIRE(end->spoils);
-  CHECK(end->spoils->hp == 900);
+  const auto ends = referee.end(BattleOutcome::Defeat, {}, 0, spoilsOf(GuestPlayerId));
+  REQUIRE(ends.size() == 1);
+  REQUIRE(ends.front().end.spoils);
+  CHECK(ends.front().end.spoils->hp == 900);
 }
 
 TEST_CASE("a guest that drops mid-battle leaves its partner fighting on its own") {
   BattleReferee referee;
+  referee.guestJoined(GuestPlayerId);
   const BattleBegin begin = referee.begin(GuestPlayerId, 1, "forest", {2}, {"agumon", "a"}, false);
-  referee.guestLeft();
+  referee.guestLeft(GuestPlayerId);
   CHECK_FALSE(referee.starterPresent());
-  // Nothing more of the guest counts, and the end keeps nothing for it.
-  CHECK_FALSE(referee.allows(act(begin.battle, BattleActionKind::Command, 2)));
-  const auto end = referee.end(BattleOutcome::Victory, {2}, 30, spoils());
-  REQUIRE(end);
-  CHECK_FALSE(end->spoils);
-  CHECK(end->bits == 30);
+  // Nothing more of the guest counts, and nothing is sent to it.
+  CHECK_FALSE(referee.allows(GuestPlayerId, act(begin.battle, BattleActionKind::Command, 2)));
+  CHECK(referee.end(BattleOutcome::Victory, {2}, 30, spoilsOf(GuestPlayerId)).empty());
   // A host battle while the guest is away goes on with its starter there.
   referee.begin(HostPlayerId, 0, "forest", {2}, {"gabumon", "a"}, false);
   CHECK(referee.starterPresent());
-  referee.guestJoined();
-  CHECK_FALSE(referee.guestGone());
+  referee.guestJoined(GuestPlayerId);
+  CHECK(referee.present(GuestPlayerId));
 }
 
 TEST_CASE("the mirror follows the host's battle and keeps only the newest frame") {
@@ -408,6 +417,7 @@ TEST_CASE("the host leaving drops the guest's ask and battle") {
 TEST_CASE("a co-op battle runs over the link from the guest's ask to its end") {
   Linked linked;
   BattleReferee referee;
+  referee.guestJoined(GuestPlayerId);
   BattleMirror mirror;
   const auto deliverToHost = [&]() -> std::optional<Message> {
     linked.guest.poll(linked.network.now());
@@ -452,11 +462,11 @@ TEST_CASE("a co-op battle runs over the link from the guest's ask to its end") {
   REQUIRE(linked.guest.send(Message{*command}));
   const auto acted = deliverToHost();
   REQUIRE(acted);
-  CHECK(referee.allows(std::get<BattleAction>(*acted)));
+  CHECK(referee.allows(GuestPlayerId, std::get<BattleAction>(*acted)));
 
-  const auto end = referee.end(BattleOutcome::Victory, {2}, 40, spoils());
-  REQUIRE(end);
-  REQUIRE(linked.host.send(Message{*end}));
+  const auto ends = referee.end(BattleOutcome::Victory, {2}, 40, spoilsOf(GuestPlayerId));
+  REQUIRE(ends.size() == 1);
+  REQUIRE(linked.host.send(Message{ends.front().end}));
   const auto ended = deliverToGuest();
   REQUIRE(ended);
   mirror.receive(std::get<BattleEnd>(*ended));
@@ -514,12 +524,13 @@ TEST_CASE("both partners fight: the begin names the allies and their figures tra
 
 TEST_CASE("the guest's partner joins the host's battle when it offers it, and commands it") {
   BattleReferee referee;
-  CHECK_FALSE(referee.offered());
-  referee.receive(BattleOffer{.available = true, .fighter = fighter()});
-  REQUIRE(referee.offered());
-  CHECK(referee.offered()->species == "agumon");
-  referee.receive(BattleOffer{.available = false, .fighter = fighter()});
-  CHECK_FALSE(referee.offered());
+  referee.guestJoined(GuestPlayerId);
+  CHECK_FALSE(referee.offered(GuestPlayerId));
+  referee.receive(GuestPlayerId, BattleOffer{.available = true, .fighter = fighter()});
+  REQUIRE(referee.offered(GuestPlayerId));
+  CHECK(referee.offered(GuestPlayerId)->species == "agumon");
+  referee.receive(GuestPlayerId, BattleOffer{.available = false, .fighter = fighter()});
+  CHECK_FALSE(referee.offered(GuestPlayerId));
 
   const BattleBegin begin = referee.begin(HostPlayerId, 0, "forest", {2},
                                           {"gabumon", "a", "agumon"}, false, {GuestPlayerId});
@@ -527,17 +538,17 @@ TEST_CASE("the guest's partner joins the host's battle when it offers it, and co
   CHECK(referee.roleOf(GuestPlayerId) == BattleRole::Ally);
   CHECK(referee.roleOf(HostPlayerId) == BattleRole::Starter);
   // An ally commands its own partner and helps; the end box is the starter's.
-  CHECK(referee.allows(act(begin.battle, BattleActionKind::Command, 8)));
-  CHECK(referee.allows(act(begin.battle, BattleActionKind::Cheer)));
-  CHECK_FALSE(referee.allows(act(begin.battle, BattleActionKind::CloseEnd)));
-  const auto end = referee.end(BattleOutcome::Victory, {2}, 40, spoils());
-  REQUIRE(end);
-  REQUIRE(end->spoils);
+  CHECK(referee.allows(GuestPlayerId, act(begin.battle, BattleActionKind::Command, 8)));
+  CHECK(referee.allows(GuestPlayerId, act(begin.battle, BattleActionKind::Cheer)));
+  CHECK_FALSE(referee.allows(GuestPlayerId, act(begin.battle, BattleActionKind::CloseEnd)));
+  const auto ends = referee.end(BattleOutcome::Victory, {2}, 40, spoilsOf(GuestPlayerId));
+  REQUIRE(ends.size() == 1);
+  REQUIRE(ends.front().end.spoils);
 
   // A guest that leaves takes its offer with it.
-  referee.receive(BattleOffer{.available = true, .fighter = fighter()});
-  referee.guestLeft();
-  CHECK_FALSE(referee.offered());
+  referee.receive(GuestPlayerId, BattleOffer{.available = true, .fighter = fighter()});
+  referee.guestLeft(GuestPlayerId);
+  CHECK_FALSE(referee.offered(GuestPlayerId));
 }
 
 TEST_CASE("the mirror sends its offer only when it changes, and knows it is an ally") {
@@ -569,4 +580,98 @@ TEST_CASE("the mirror sends its offer only when it changes, and knows it is an a
   // The host gone, the offer is sent again on the next link.
   static_cast<void>(mirror.hostLeft());
   CHECK(mirror.offer(false, hurt));
+}
+
+// docs/architecture/coop-combat.md §4.1: every guest there and free fights as an ally.
+TEST_CASE("every guest there joins as an ally and gets only its own spoils") {
+  BattleReferee referee;
+  for (PlayerId guest = GuestPlayerId; validPlayer(guest); ++guest) {
+    referee.guestJoined(guest);
+    BattleFighterProfile offered = fighter();
+    offered.species = "guest_" + std::to_string(guest);
+    referee.receive(guest, BattleOffer{.available = true, .fighter = offered});
+  }
+  CHECK(referee.guests() == std::vector<PlayerId>{1, 2, 3});
+  REQUIRE(referee.offered(3));
+  CHECK(referee.offered(3)->species == "guest_3");
+  // Player 2 started it; the host's partner and the other guests' fight beside its own.
+  const BattleBegin begin =
+      referee.begin(2, 9, "forest", {4}, {"a", "foe", "b", "c", "d"}, false, {HostPlayerId, 1, 3});
+  CHECK(begin.starter == 2);
+  CHECK(begin.ask == 9);
+  CHECK(referee.roleOf(2) == BattleRole::Starter);
+  CHECK(referee.roleOf(1) == BattleRole::Ally);
+  CHECK(referee.roleOf(3) == BattleRole::Ally);
+  CHECK(referee.roleOf(HostPlayerId) == BattleRole::Ally);
+  for (PlayerId guest = GuestPlayerId; validPlayer(guest); ++guest) {
+    CHECK(referee.allows(guest, act(begin.battle, BattleActionKind::Command, 2)));
+  }
+  CHECK(referee.allows(2, act(begin.battle, BattleActionKind::CloseEnd)));
+  CHECK_FALSE(referee.allows(3, act(begin.battle, BattleActionKind::CloseEnd)));
+  // Player 3 drops mid-battle: its partner fights on, it hears nothing more.
+  referee.guestLeft(3);
+  CHECK_FALSE(referee.allows(3, act(begin.battle, BattleActionKind::Cheer)));
+  CHECK_FALSE(referee.offered(3));
+  std::vector<std::pair<PlayerId, BattleSpoils>> spoiled;
+  for (PlayerId guest = GuestPlayerId; validPlayer(guest); ++guest) {
+    BattleSpoils own = spoils();
+    own.hp = 100 * guest;
+    spoiled.emplace_back(guest, own);
+  }
+  const auto ends = referee.end(BattleOutcome::Victory, {4}, 40, spoiled);
+  REQUIRE(ends.size() == 2);
+  CHECK(ends[0].to == 1);
+  CHECK(ends[1].to == 2);
+  REQUIRE(ends[0].end.spoils);
+  REQUIRE(ends[1].end.spoils);
+  CHECK(ends[0].end.spoils->hp == 100);
+  CHECK(ends[1].end.spoils->hp == 200);
+  CHECK(ends[0].end.bits == 40);
+}
+
+TEST_CASE("a guest that is not in the battle helps; its mirror knows its own id") {
+  BattleMirror mirror{3};
+  CHECK(mirror.self() == 3);
+  mirror.receive(BattleBegin{.battle = 2,
+                             .starter = HostPlayerId,
+                             .ask = 0,
+                             .mapId = "forest",
+                             .enemyNpcs = {2},
+                             .species = {"gabumon", "kunemon", "agumon"},
+                             .fixedFight = false,
+                             .allies = {GuestPlayerId}});
+  CHECK(mirror.role() == BattleRole::Helper);
+  CHECK_FALSE(mirror.action(BattleActionKind::Command, 2));
+  CHECK(mirror.action(BattleActionKind::ThrowItem, 0, "meat"));
+  mirror.receive(ending(2, BattleOutcome::Victory, {}, 0, spoils()));
+  const auto ended = mirror.takeEnded();
+  REQUIRE(ended);
+  CHECK_FALSE(ended->spoils);
+  // Its own ask's begin makes it the starter.
+  const BattleAsk ask = mirror.ask("forest", {2}, false, false, fighter());
+  mirror.receive(BattleBegin{.battle = 3,
+                             .starter = 3,
+                             .ask = ask.ask,
+                             .mapId = "forest",
+                             .enemyNpcs = {2},
+                             .species = {"agumon", "kunemon"},
+                             .fixedFight = false,
+                             .allies = {}});
+  CHECK(mirror.role() == BattleRole::Starter);
+  CHECK_FALSE(mirror.pendingAsk());
+}
+
+TEST_CASE("a battle frame carries each partner's revive countdown and an item's target") {
+  BattleFrame withCountdown = frame(3, 4);
+  withCountdown.fighters.front().down = true;
+  withCountdown.fighters.front().reviveSeconds = 7;
+  roundTrip(withCountdown);
+  const auto rejects = [](const Message& message) {
+    const auto decoded = decode(encode(message));
+    CHECK_FALSE(decoded);
+  };
+  roundTrip(act(3, BattleActionKind::ThrowItem, 3, "meat"));
+  rejects(act(3, BattleActionKind::ThrowItem, -1, "meat"));
+  rejects(act(3, BattleActionKind::ThrowItem, static_cast<std::int32_t>(MaxBattleFighters) + 1,
+              "meat"));
 }

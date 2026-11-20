@@ -100,7 +100,8 @@ core::Result<MapBattle> mapBattleRequest(const game::field::Field& field,
              .matchMusic = std::nullopt,
              .predefined = false,
              .visitor = std::nullopt,
-             .allies = {}};
+             .allies = {},
+             .coopScaling = {}};
   for (const std::size_t index : chosen) {
     if (index >= map.npcs.size()) {
       return core::fail(core::formatMessage(messages::NoMapNpc, field.mapId(), index));

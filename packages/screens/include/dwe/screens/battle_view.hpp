@@ -52,6 +52,11 @@ inline constexpr std::string_view MatchSecondsSetting = "battle.match_seconds";
 [[nodiscard]] std::string commandIconOf(game::battle::Command command,
                                         const game::battle::Fighter& fighter,
                                         const game::battle::MoveCatalog& moves);
+// The whole seconds a fainted partner's revive countdown shows (the ending rules' revive frames,
+// shown from reviveCountdownShownAt); none while it stands, before the countdown shows or for an
+// enemy.
+[[nodiscard]] std::optional<std::int32_t> reviveSecondsOf(const game::battle::Battle& battle,
+                                                          game::battle::FighterId fighter);
 
 // A fighter's bars and name (battle_hud.c: BTL_renderPartnerStatusBars; battle_main.c:
 // BTL_renderEnemyHPBars).
@@ -67,6 +72,9 @@ struct FighterView {
   bool hpBarShown = true;
   // The key of its status effect (battle.status.<name>), or empty without one.
   std::string statusKey;
+  // A co-op ally's revive countdown in whole seconds while it shows (as the partner's
+  // BattleView::reviveSeconds); none otherwise.
+  std::optional<std::int32_t> reviveSeconds;
 
   friend bool operator==(const FighterView&, const FighterView&) = default;
 };

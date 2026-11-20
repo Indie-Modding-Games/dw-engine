@@ -430,3 +430,10 @@
 	color: #f2f0e1;
 	font-effect: shadow(2dp 2dp #050c1a);
 }
+
+.ally-revive {
+	font-family: "Pixel Small";
+	font-size: 22dp;
+	color: #ffe64a;
+	font-effect: shadow(2dp 2dp #050c1a);
+}

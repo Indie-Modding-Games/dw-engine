@@ -1,6 +1,7 @@
 # Co-op difficulty by player count (design document)
 
-Status: **proposal** (2026-11-19, ticket #361). Nothing here is implemented. It builds on
+Status: **built** (2026-11-20, ticket #361) for the enemies' stats and finisher in normal and fixed fights; §9 says
+what landed and where it differs from this proposal. It builds on
 [online co-op](multiplayer.md), [ADR 0024](../adr/0024-co-op-with-authoritative-host.md), the first version of co-op
 battles (#351, PR #363) and the battle design for both partners in [co-op combat](coop-combat.md). Sessions of up to
 four players are ticket #352 ([room browser and four players](coop-browser-4p.md)).
@@ -244,6 +245,18 @@ To verify before tuning (not found in the sources read): Myotismon (Grey Lord's 
 Mamemon and Piximon. Every row can be overridden by id in the data (§9).
 
 ## 9. Implementation
+
+**What landed (2026-11-20).** The option is `coop_difficulty` (Game tab: off, standard by default, hard; saved as
+`UserSettings::coopDifficulty`); only the host's counts. The tables live in the battle rules
+(`content/packs/game/rules/original/battle.yaml`, section `coop_scaling`: `normal` and `fixed` with `hp_percent`,
+`mp_percent`, `offense_percent` and `finisher_fill_percent` per partner count, plus `helper_hp_percent` and
+`hard_hp_bonus_percent`), not in a new `coop.yaml`, so a mod tunes them with the rest of the battle. The pure function
+is `game::battle::coopScalingFactors`; the host's `CoopBattles` puts the level and the helpers (players on the map whose
+partner does not fight) in `BattleSetup::coopScaling`, and `Battle::start` scales the enemies' max HP, MP, offense and
+finisher goal from their unscaled stats. `startStats` stay unscaled, so stat gains are the original's. When a partner
+runs, the enemies scale again for the partners left, each keeping its HP and MP share; a knocked-out partner still
+counts. Not built from the proposal below: the join roll bonus (a guest-started battle has no roll on the host to add
+to), the per-fight `overrides`, the reward options of §5.3 and the lobby display.
 
 ### 9.1 Setting
 

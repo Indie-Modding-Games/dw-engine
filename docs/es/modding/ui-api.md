@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.23.0 | Todos los compañeros luchan en un combate cooperativo: la tarjeta de un aliado cuenta atrás hasta que se levanta (`battle.ally.<n>.revive_seconds`, `revive_seconds` en `battle.allies()`), y la pantalla `coop_battle` enseña la cuenta atrás de cada compañero caído (`coop_battle.fighter.<n>.revive_seconds`) y deja elegir a qué compañero van los objetos del jugador (`coop_battle.target`, el comando `coop_battle_target`). Llega la opción `coop_difficulty` (off, standard o hard) |
 | 0.22.0 | La pantalla `coop_trade` intercambia objetos entre dos jugadores cooperativos: la fase (`coop_trade.phase`), el otro jugador (`coop_trade.other.*`), la bolsa de este jugador (`coop_trade.bag.<n>.*`), las dos ofertas (`coop_trade.own.<n>.*`, `coop_trade.their.<n>.*`) y las dos marcas de listo, con los comandos `coop_trade_answer`, `coop_trade_add`, `coop_trade_take`, `coop_trade_confirm` y `coop_trade_cancel`. La etiqueta de `coop_hud` dice cuándo se le puede pedir al otro jugador (`coop_hud.tag.trade`) |
 | 0.21.0 | Salas de hasta cuatro jugadores: cada miembro dice cuándo su plaza está ocupada mientras su conexión aún se establece (`online.member.<n>.arriving`), y el HUD cooperativo muestra una etiqueta sobre cada uno de los otros jugadores (`coop_hud.tag.<n>.*` para el segundo y el tercero) |
 | 0.20.0 | Los dos compañeros luchan en un combate cooperativo: la pantalla de combate lista los compañeros de los otros jugadores que luchan junto al de este (`battle.ally.<n>.*`, `battle.allies()`), y su compañero, su tira, su remate y su bolsa son los de este jugador. La pantalla `coop_battle` gana el papel `ally`, el MP de los luchadores, su bando y si uno es el de este jugador (`coop_battle.fighter.<n>.mp`, `.max_mp`, `.side`, `.mine`); las órdenes y los objetos van a su propio compañero |
@@ -100,7 +101,7 @@ guardar y la caja del nombre); el resto de pantallas llega después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.21.0**.
+Versión de la API de la interfaz: **0.23.0**.
 
 ### `ui`
 
@@ -324,6 +325,7 @@ Versión de la API de la interfaz: **0.21.0**.
 | `quick_battle_start` | opción | sí/no | Inicio rápido de combate. |
 | `difficulty` | opción | texto | Dificultad: normal o easy. |
 | `shop_job_mode` | opción | texto | Trabajo en la tienda del cañón: improved (mejorado) u original. |
+| `coop_difficulty` | opción | texto | Cómo escalan los enemigos en los combates cooperativos: off (desactivada), standard (estándar) o hard (difícil). |
 | `skip_evolution` | opción | sí/no | Saltar la escena de evolución. |
 | `choice_cancel_closes` | opción | sí/no | Cancelar cierra una elección. |
 | `fair_sickness_chance` | opción | sí/no | Probabilidad justa de enfermar. |
@@ -713,6 +715,7 @@ Versión de la API de la interfaz: **0.21.0**.
 | `battle.ally.<n>.max_mp` | ajuste | número | Los PM máximos de un aliado. |
 | `battle.ally.<n>.fainted` | ajuste | sí/no | Si un aliado se ha desmayado. |
 | `battle.ally.<n>.hp_bar` | ajuste | sí/no | Siempre activo para un aliado. |
+| `battle.ally.<n>.revive_seconds` | ajuste | número | La cuenta atrás para que se levante un aliado caído; -1 sin ella. |
 | `battle.finisher.progress` | ajuste | número | Lo que lleva cargado el indicador del golpe final. |
 | `battle.finisher.goal` | ajuste | número | Lo que tiene que cargar para estar lleno. |
 | `battle.finisher.ready` | ajuste | sí/no | Si el golpe final está listo. |
@@ -774,7 +777,7 @@ Versión de la API de la interfaz: **0.21.0**.
 | `battle_end_counted` | comando | — | La cuenta de los bits del final del combate ha terminado. Un addon, solo en la fase end. |
 | `battle.state(): table` | consulta | tabla | El combate: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds y match_seconds (o nil) y cup (un combate de copa). |
 | `battle.fighters(): table` | consulta | tabla | Los luchadores, el compañero primero: name_key, status_key, hp, max_hp, mp, max_mp, fainted y hp_bar. |
-| `battle.allies(): table` | consulta | tabla | Los compañeros de los otros jugadores que pelean junto al de este en un combate cooperativo (vacío si no): name_key, status_key, hp, max_hp, mp, max_mp y fainted. |
+| `battle.allies(): table` | consulta | tabla | Los compañeros de los otros jugadores que pelean junto al de este en un combate cooperativo (vacío si no): name_key, status_key, hp, max_hp, mp, max_mp, fainted y revive_seconds (la cuenta atrás de un aliado caído, o nil). |
 | `battle.commands(): table` | consulta | tabla | La tira de órdenes, el golpe final primero: command, label_key, icon, available, current y mp_cost. |
 | `battle.finisher(): table` | consulta | tabla | El golpe final: progress, goal, ready, charging (el aura), charge (en porcentaje) y gauge (la esquina superior izquierda del indicador de carga sobre el compañero: x, y en porcentaje, o nil). |
 | `battle.strip(): table` | consulta | tabla | Dónde están la tira y las barras del compañero al entrar y salir: top, bottom, blink, hp_x y mp_x (o nil). |

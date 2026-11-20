@@ -5,6 +5,7 @@
 #include <format>
 #include <type_traits>
 #include <unordered_set>
+#include <utility>
 
 namespace dwe::game::coop {
 
@@ -485,7 +486,7 @@ net::Bytes encode(const Message& message) {
           out.put(static_cast<std::uint8_t>(body.fighters.size()));
           for (const BattleFighterState& fighter : body.fighters) {
             out.put(fighter.hp).put(fighter.mp).put(fighter.maxHp).put(fighter.maxMp);
-            out.put(fighter.down);
+            out.put(fighter.down).put(fighter.reviveSeconds);
           }
           out.put(static_cast<std::uint8_t>(body.figures.size()));
           for (const BattleFigure& figure : body.figures) {
@@ -772,6 +773,7 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
       if (!getFlag(in, fighter.down)) {
         return core::fail("invalid cooperative battle fighter");
       }
+      fighter.reviveSeconds = in.get<std::uint8_t>();
       frame.fighters.push_back(fighter);
     }
     const std::uint8_t figures = in.get<std::uint8_t>();
@@ -805,7 +807,8 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     if ((action.kind == BattleActionKind::Command &&
          (action.value <= 0 || action.value > LastBattleCommand)) ||
         (action.kind == BattleActionKind::ThrowItem &&
-         (action.item.empty() || action.item.size() > MaxBattleText))) {
+         (action.item.empty() || action.item.size() > MaxBattleText || action.value < 0 ||
+          std::cmp_greater(action.value, MaxBattleFighters)))) {
       return core::fail("invalid cooperative battle action value");
     }
     message = std::move(action);

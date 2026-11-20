@@ -391,6 +391,11 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
           "Whose side a fighter is on: partner (a player's partner) or enemy."),
     entry(CoopBattle, Setting, "coop_battle.fighter.<n>.mine", Boolean,
           "Whether a fighter is this player's own partner."),
+    entry(CoopBattle, Setting, "coop_battle.fighter.<n>.revive_seconds", Number,
+          "A fallen partner's revive countdown in seconds; -1 without one."),
+    entry(CoopBattle, Setting, "coop_battle.target", Number,
+          "The fighter this player's items fly to (a partner's number, picked with "
+          "coop_battle_target); -1 for its own partner (the fighting one for a helper)."),
     entry(CoopBattle, Setting, "coop_battle.order_count", Number,
           "How many orders this player can give its partner now (none for the helper)."),
     entry(CoopBattle, Setting, "coop_battle.order.<n>.command", Number,
@@ -412,8 +417,11 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(CoopBattle, Command, "coop_battle_cheer", None,
           "A cheer: charges the finisher as the battle's charge buttons do."),
     entry(CoopBattle, Command, "coop_battle_item", Text,
-          "Throws one of an item (its id) from this player's bag at its own partner (the fighting "
-          "one for a helper)."),
+          "Throws one of an item (its id) from this player's bag at the partner coop_battle.target "
+          "names, else at its own partner (the fighting one for a helper)."),
+    entry(CoopBattle, Command, "coop_battle_target", Number,
+          "Picks the partner this player's items fly to (a fighter's number); the same again picks "
+          "none."),
     entry(CoopBattle, Command, "coop_battle_close", None, "The starter closes the end box."),
     entry(CoopTrade, Setting, "coop_trade.shown", Boolean,
           "Whether an item trade with another co-op player shows (an ask or the trade itself)."),
@@ -531,6 +539,8 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(PauseMenu, Option, "quick_battle_start", Boolean, "Quick battle start."),
     entry(PauseMenu, Option, "difficulty", Text, "Difficulty: normal or easy."),
     entry(PauseMenu, Option, "shop_job_mode", Text, "The canyon shop job: improved or original."),
+    entry(PauseMenu, Option, "coop_difficulty", Text,
+          "How co-op battles scale their enemies: off, standard or hard."),
     entry(PauseMenu, Option, "skip_evolution", Boolean, "Skip the evolution scene."),
     entry(PauseMenu, Option, "choice_cancel_closes", Boolean, "Cancel closes a choice."),
     entry(PauseMenu, Option, "fair_sickness_chance", Boolean, "Fair chance of falling sick."),
@@ -932,6 +942,8 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(Battle, Setting, "battle.ally.<n>.max_mp", Number, "An ally's maximum MP."),
     entry(Battle, Setting, "battle.ally.<n>.fainted", Boolean, "Whether an ally has fainted."),
     entry(Battle, Setting, "battle.ally.<n>.hp_bar", Boolean, "Always on for an ally."),
+    entry(Battle, Setting, "battle.ally.<n>.revive_seconds", Number,
+          "The countdown to revive a fainted ally; -1 without one."),
     entry(Battle, Setting, "battle.finisher.progress", Number,
           "How much the finisher gauge has charged."),
     entry(Battle, Setting, "battle.finisher.goal", Number, "How much it has to charge to be full."),
@@ -1045,7 +1057,8 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
         "The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted and hp_bar."),
     api(Battle, Query, "battle.allies", Table, "(): table",
         "The other players' partners fighting beside this player's in a co-op battle (empty "
-        "otherwise): name_key, status_key, hp, max_hp, mp, max_mp and fainted."),
+        "otherwise): name_key, status_key, hp, max_hp, mp, max_mp, fainted and revive_seconds (a "
+        "fallen ally's countdown, or nil)."),
     api(Battle, Query, "battle.commands", Table, "(): table",
         "The command strip, the finisher first: command, label_key, icon, available, current and mp_cost."),
     api(Battle, Query, "battle.finisher", Table, "(): table",

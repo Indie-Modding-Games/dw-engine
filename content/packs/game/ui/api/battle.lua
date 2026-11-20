@@ -86,6 +86,10 @@ local function fighters_of(list)
       fainted = value(entry(list, index, "fainted"), false),
       hp_bar = value(entry(list, index, "hp_bar"), false),
     }
+    -- Only an ally's card has its revive countdown (the partner's is battle.state's).
+    if ui.setting(entry(list, index, "revive_seconds")) ~= nil then
+      found[index + 1].revive_seconds = seconds(entry(list, index, "revive_seconds"))
+    end
   end
   return found
 end
@@ -99,7 +103,8 @@ function battle.fighters()
 end
 
 -- The other players' partners fighting beside this player's in a co-op battle, with the same
--- fields as battle.fighters; empty in any other battle.
+-- fields as battle.fighters and revive_seconds (a fallen ally's countdown, or nil); empty in any
+-- other battle.
 function battle.allies()
   return fighters_of("battle.ally")
 end

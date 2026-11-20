@@ -576,9 +576,9 @@ listo y un invitado cuyo enlace aún se está conectando (`online.member.<n>.arr
 **Juego.** En el anfitrión cada invitado tiene su propio puente de juego, controlador y cuerpo: sus comandos mueven a su
 propio jugador (`GuestFieldIntent`), sus estados llegan a la autoridad con su id, las correcciones y las listas de
 jugadores le llegan solo a él, y cada uno recibe las instantáneas con el acuse de sus propios comandos. Un invitado
-dibuja a todos desde las instantáneas y pone una etiqueta a cada otro jugador (`coop_hud.tag.<n>.*`). Los combates
-siguen siendo con un invitado aliado, el jugador 1 (#361); las peticiones de combate de los demás se rechazan como
-ocupado, así que nada se queda esperando.
+dibuja a todos desde las instantáneas y pone una etiqueta a cada otro jugador (`coop_hud.tag.<n>.*`). El enlace de
+cada invitado lleva sus propios mensajes de combate: cualquier invitado puede empezar un combate, y cada jugador libre
+de ese mapa pelea en él ([combate cooperativo](coop-combat.md) §12).
 
 **Diagnóstico de sincronía.** Una herramienta de desarrollo detrás de la consola (F1), que solo se abre con las
 herramientas de desarrollo activas, así que nunca corre en las builds de release. `coop_sync("on")` en el anfitrión

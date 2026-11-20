@@ -484,8 +484,8 @@ link is still connecting (`online.member.<n>.arriving`).
 **Play.** On the host every guest has its own gameplay bridge, controller and body: its commands move its own player
 (`GuestFieldIntent`), its states reach the authority under its id, corrections and rosters go only to it, and each
 gets the snapshots with its own command acknowledgement. A guest draws everyone from the snapshots and tags each other
-player (`coop_hud.tag.<n>.*`). Battles still run with one ally guest, player 1 (#361); the others' battle asks are
-refused as busy, so nothing waits on them.
+player (`coop_hud.tag.<n>.*`). Every guest's link carries its own battle messages: any guest can start a battle, and
+every free player on that map fights in it ([co-op combat](coop-combat.md) §12).
 
 **Sync diagnostics.** A developer tool behind the console (F1), which only opens with the developer tools on, so it
 never runs in release builds. `coop_sync("on")` on the host tells every guest to report; `coop_sync("report")` prints

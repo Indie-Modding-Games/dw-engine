@@ -852,6 +852,8 @@ int runGame(const Options& requested) {
                     userSettings.difficulty.value_or(std::string{DifficultyNormal}));
   (*ui)->setSetting(ShopJobModeSetting,
                     userSettings.shopJobMode.value_or(std::string{ShopJobImproved}));
+  (*ui)->setSetting(CoopDifficultySetting,
+                    std::string{coopLevelName(coopLevelOf(userSettings.coopDifficulty))});
   (*ui)->setSetting(AutosaveSetting, userSettings.autosave.value_or(true));
   // The options only a game applies, for the title's options page (title_options.hpp).
   publishGameToggles(**ui, userSettings);
@@ -1038,12 +1040,13 @@ int runGame(const Options& requested) {
   const auto coopBridge = [&]() -> CoopGameplayBridge* {
     return coopPeers.empty() ? nullptr : coopPeers.front().bridge.get();
   };
-  // The bridge the co-op battles go through: the host's on a guest, player 1's on the host.
-  const auto coopBattleBridge = [&]() -> CoopGameplayBridge* {
-    const auto peer = std::ranges::find_if(coopPeers, [&](const CoopPeer& candidate) {
-      return coopBattlePeer(coop.isHost(), candidate.id);
-    });
-    return peer == coopPeers.end() ? nullptr : peer->bridge.get();
+  // The links the co-op battles go through: every guest's on the host, the host's on a guest.
+  const auto coopBattlePeers = [&] {
+    std::vector<CoopBattles::Peer> peers;
+    for (const CoopPeer& peer : coopPeers) {
+      peers.push_back({.id = peer.id, .bridge = peer.bridge.get()});
+    }
+    return peers;
   };
   std::uint32_t coopWorldTick = 0;
   // The co-op game's shared world (coop_world.hpp): the host's authority over the session, or a
@@ -1862,7 +1865,6 @@ int runGame(const Options& requested) {
           ++peer;
           continue;
         }
-        const bool fought = coopBattlePeer(coop.isHost(), peer->id);
         // The player that went is gone everywhere: its slot, its record, its body and its partner
         // (#355). A player that comes back joins as a new one.
         if (coop.isHost()) {
@@ -1889,9 +1891,7 @@ int runGame(const Options& requested) {
         core::logInfo("coop: player {} went, its gameplay bridge was dropped", peer->id);
         switch (coopLinkLoss(coop.isHost(), play != nullptr)) {
         case CoopLinkLoss::PeerLeft:
-          if (fought) {
-            coopBattles.guestLeft();
-          }
+          coopBattles.guestLeft(peer->id);
           // A trade with that player closes; a swap the host applied for it is undone.
           coopTrades.playerLeft(peer->id);
           coopHud.notice(CoopDisconnectedText, peer->label);
@@ -2030,10 +2030,6 @@ int runGame(const Options& requested) {
           } else if (coopGuestWorld) {
             coopGuestWorld->receive(message);
           }
-        }
-        // The other guests' battle asks get a refusal: battles run with player 1 (#363).
-        if (!coopBattlePeer(coop.isHost(), peer.id)) {
-          peer.bridge->refuseBattles();
         }
       }
       // A guest whose host went quiet (a long load there) says it waits for it, not a frozen
@@ -2178,10 +2174,11 @@ int runGame(const Options& requested) {
             !coopLinked     ? std::vector<game::coop::PlayerId>{}
             : coopHostWorld ? coopHostWorld->authority().playersOn(coopMap)
                             : coopBridge()->playersOn(coopMap);
-        coopBattles.tick(*play, coopLinked ? coopBattleBridge() : nullptr,
+        coopBattles.tick(*play, coopLinked ? coopBattlePeers() : std::vector<CoopBattles::Peer>{},
                          !coopLinked     ? CoopBattles::Role::None
                          : coop.isHost() ? CoopBattles::Role::Host
                                          : CoopBattles::Role::Guest,
+                         coopGuestWorld ? coopGuestWorld->self() : game::coop::HostPlayerId,
                          coopHere);
         // The trades: on the host, where every player of the session stands; a battle on the
         // host's map keeps everyone there busy (they fight or watch it).
@@ -2398,6 +2395,24 @@ int runGame(const Options& requested) {
         if (const std::string* mode = std::get_if<std::string>(&command.value)) {
           changeShopJobMode(*mode);
         }
+        continue;
+      }
+      if (command.name == CoopDifficultySetting) {
+        // The co-op difficulty (play_session.hpp): off, standard or hard; anything else changes
+        // nothing.
+        if (const std::string* level = std::get_if<std::string>(&command.value);
+            level != nullptr && (*level == CoopDifficultyOff || *level == CoopDifficultyStandard ||
+                                 *level == CoopDifficultyHard)) {
+          userSettings.coopDifficulty = *level;
+          if (settingsFile) {
+            saveUserSettings(*settingsFile, userSettings);
+          }
+          if (PlaySession* play = flow.playing()) {
+            play->applyPlayOptions();
+          }
+        }
+        (*ui)->setSetting(CoopDifficultySetting,
+                          std::string{coopLevelName(coopLevelOf(userSettings.coopDifficulty))});
         continue;
       }
       if (command.name == WalkControlSetting) {

@@ -3,12 +3,14 @@
 #include "coop_battles.hpp"
 
 #include <dwe/core/log.hpp>
+#include <dwe/screens/battle_view.hpp>
 #include <dwe/screens/name_keys.hpp>
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <numbers>
 #include <optional>
 #include <span>
@@ -36,6 +38,8 @@ constexpr std::uint64_t OfferTicks = 3;
 constexpr float FullTurn = 2.0F * std::numbers::pi_v<float>;
 constexpr float YawSteps = 65536.0F;
 constexpr float PaceSteps = 16.0F;
+// A number the guest's document reads as none (no target picked, no countdown shown).
+constexpr double NoTarget = -1.0;
 
 std::uint16_t yawOf(float radians) {
   float turn = std::fmod(radians, FullTurn);
@@ -257,32 +261,40 @@ game::battle::BattleResult resultOf(const coop::BattleSpoils& spoils, coop::Batt
   return result;
 }
 
-void CoopBattles::tick(PlaySession& play, CoopGameplayBridge* bridge, Role role,
-                       std::span<const coop::PlayerId> here) {
+void CoopBattles::tick(PlaySession& play, std::span<const Peer> peers, Role role,
+                       coop::PlayerId self, std::span<const coop::PlayerId> here) {
   here_.assign(here.begin(), here.end());
+  peers_.assign(peers.begin(), peers.end());
   if (play_ != &play) {
     reset();
     play_ = &play;
   }
   ++ticks_;
+  CoopGameplayBridge* host =
+      role == Role::Guest && !peers_.empty() ? peers_.front().bridge : nullptr;
   // A battle the guest's story starts is shared while the host stands on its map (#351); elsewhere
   // it is a solo battle of the guest's own game.
-  play.handBattlesToHost(role == Role::Guest && bridge != nullptr &&
-                         !play.battleScreen().active() &&
+  play.handBattlesToHost(host != nullptr && !play.battleScreen().active() &&
                          coopPlayerHere(play.scene().field(), here_, coop::HostPlayerId));
-  if (role == Role::Guest && bridge != nullptr) {
-    guestTick(play, *bridge);
+  if (host != nullptr) {
+    if (mirror_.self() != self && !mirror_.running() && !mirror_.pendingAsk()) {
+      mirror_ = coop::BattleMirror{self};
+    }
+    guestTick(play, *host);
     return;
   }
   if (mirror_.running() || mirror_.pendingAsk() || play.heldForCoopBattle() || ownBattle_) {
     hostLeft(&play);
   }
-  hostTick(play, role == Role::Host ? bridge : nullptr);
+  if (role != Role::Host) {
+    peers_.clear();
+  }
+  hostTick(play);
 }
 
 void CoopBattles::reset() {
   referee_ = {};
-  mirror_ = {};
+  mirror_ = coop::BattleMirror{mirror_.self()};
   frames_ = 0;
   asked_.reset();
   ownBattle_ = false;
@@ -290,6 +302,7 @@ void CoopBattles::reset() {
   watching_ = false;
   shownFrame_.reset();
   fighters_.clear();
+  target_.reset();
   actions_.clear();
   cameraOnBattle_ = false;
   play_ = nullptr;
@@ -305,20 +318,35 @@ void CoopBattles::send(CoopGameplayBridge* bridge, coop::Message message) {
   }
 }
 
+void CoopBattles::sendTo(coop::PlayerId to, coop::Message message) {
+  if (const auto peer = std::ranges::find(peers_, to, &Peer::id); peer != peers_.end()) {
+    send(peer->bridge, std::move(message));
+  }
+}
+
+void CoopBattles::sendAll(const coop::Message& message) {
+  for (const Peer& peer : peers_) {
+    send(peer.bridge, message);
+  }
+}
+
 // ---- The host ----
 
-void CoopBattles::hostTick(PlaySession& play, CoopGameplayBridge* bridge) {
-  if (bridge != nullptr) {
-    if (referee_.guestGone()) {
-      referee_.guestJoined();
+void CoopBattles::hostTick(PlaySession& play) {
+  for (const Peer& peer : peers_) {
+    if (peer.bridge == nullptr || !coop::validGuest(peer.id)) {
+      continue;
     }
-    while (auto message = bridge->receiveBattle()) {
+    if (!referee_.present(peer.id)) {
+      referee_.guestJoined(peer.id);
+    }
+    while (auto message = peer.bridge->receiveBattle()) {
       if (const auto* ask = std::get_if<coop::BattleAsk>(&*message)) {
-        answer(play, *bridge, *ask);
+        answer(play, peer, *ask);
       } else if (const auto* action = std::get_if<coop::BattleAction>(&*message)) {
-        apply(play, *action);
+        apply(play, peer.id, *action);
       } else if (const auto* offer = std::get_if<coop::BattleOffer>(&*message)) {
-        referee_.receive(*offer);
+        referee_.receive(peer.id, *offer);
       }
     }
   }
@@ -327,112 +355,163 @@ void CoopBattles::hostTick(PlaySession& play, CoopGameplayBridge* bridge) {
   if (screen.active() && !referee_.running()) {
     static_cast<void>(screen.takeCoopOutcome());
     static_cast<void>(screen.takeLeftMap());
-    send(bridge, beginOf(play, coop::HostPlayerId, 0));
+    sendAll(beginOf(play, coop::HostPlayerId, 0));
   }
+  // Each guest's frame shows its own partner's strip, bag and finisher.
   if (referee_.running() && screen.active() && ticks_ % FrameTicks == 0) {
-    send(bridge, frameOf(play));
+    ++frames_;
+    for (const Peer& peer : peers_) {
+      send(peer.bridge, frameOf(play, peer.id));
+    }
   }
   if (referee_.running() && !screen.active()) {
-    const game::battle::Outcome outcome =
-        screen.takeCoopOutcome().value_or(game::battle::Outcome::Fled);
-    std::vector<std::int16_t> leftMap;
-    for (const std::int32_t npc : screen.takeLeftMap()) {
-      leftMap.push_back(static_cast<std::int16_t>(npc));
-    }
-    const auto visitor = screen.takeVisitorResult();
-    std::optional<coop::BattleSpoils> spoils;
-    if (visitor) {
-      spoils = spoilsOf(*visitor);
-    }
-    // The guest's partner fought beside the host's: its own share goes back.
-    for (const game::battle::AllyResult& ally : screen.takeAllyResults()) {
-      if (ally.owner == coop::GuestPlayerId) {
-        spoils = spoilsOf(ally.result);
-      }
-    }
-    const std::int32_t bits = visitor ? visitor->bits : 0;
-    if (auto end = referee_.end(coopOutcomeOf(outcome), std::move(leftMap), bits, spoils)) {
-      core::logInfo("coop: battle {} ended", end->battle);
-      send(bridge, std::move(*end));
-    }
-    play.scene().setBattlePartner(FieldScene::BattlePartner::Own);
+    endBattle(play);
   }
   offerAllies(play);
 }
 
-// The partners that join the host's next field battle (docs/architecture/coop-combat.md §3): the
-// guest's, while it stands on this map and offers it (free of menus, scenes and battles).
-void CoopBattles::offerAllies(PlaySession& play) {
+void CoopBattles::endBattle(PlaySession& play) {
+  BattleScreen& screen = play.battleScreen();
+  const coop::PlayerId starter = referee_.running()->starter;
+  const game::battle::Outcome outcome =
+      screen.takeCoopOutcome().value_or(game::battle::Outcome::Fled);
+  std::vector<std::int16_t> leftMap;
+  for (const std::int32_t npc : screen.takeLeftMap()) {
+    leftMap.push_back(static_cast<std::int16_t>(npc));
+  }
+  // Each guest whose partner fought gets its own share back: the starter's as the visitor, the
+  // others' as allies.
+  std::vector<std::pair<coop::PlayerId, coop::BattleSpoils>> spoils;
+  const auto visitor = screen.takeVisitorResult();
+  if (visitor) {
+    spoils.emplace_back(starter, spoilsOf(*visitor));
+  }
+  for (const game::battle::AllyResult& ally : screen.takeAllyResults()) {
+    if (ally.owner != coop::HostPlayerId) {
+      spoils.emplace_back(ally.owner, spoilsOf(ally.result));
+    }
+  }
+  const std::int32_t bits = visitor ? visitor->bits : 0;
+  for (coop::BattleReferee::Addressed& end :
+       referee_.end(coopOutcomeOf(outcome), std::move(leftMap), bits, spoils)) {
+    core::logInfo("coop: battle {} ended for player {}", end.end.battle, end.to);
+    sendTo(end.to, std::move(end.end));
+  }
+  play.scene().setBattlePartner(std::nullopt);
+}
+
+// The guests whose partners join a battle `starter` begins (docs/architecture/coop-combat.md §3):
+// every other guest standing on this map and offering it (free of menus, scenes and battles).
+std::vector<BattleScreen::CoopAlly> CoopBattles::freeAllies(const PlaySession& play,
+                                                            coop::PlayerId starter) const {
   std::vector<BattleScreen::CoopAlly> allies;
-  if (const auto offered = referee_.offered();
-      offered && coopPlayerHere(play.scene().field(), here_, coop::GuestPlayerId)) {
-    allies.push_back({.owner = coop::GuestPlayerId, .visitor = visitorOf(*offered)});
+  for (const coop::PlayerId guest : referee_.guests()) {
+    const auto offered = referee_.offered(guest);
+    if (guest != starter && offered && coopPlayerHere(play.scene().field(), here_, guest)) {
+      allies.push_back({.owner = guest, .visitor = visitorOf(*offered)});
+    }
   }
-  play.battleScreen().setCoopAllies(std::move(allies));
+  return allies;
 }
 
-void CoopBattles::guestLeft() {
-  referee_.guestLeft();
+// How the battle scales its enemies (docs/architecture/coop-difficulty.md): the host's
+// coop_difficulty, and each guest on this map whose partner does not fight helps.
+game::battle::CoopScaling
+CoopBattles::scalingOf(const PlaySession& play, coop::PlayerId starter,
+                       std::span<const BattleScreen::CoopAlly> allies) const {
+  std::int32_t helpers = 0;
+  for (const coop::PlayerId guest : referee_.guests()) {
+    if (guest != starter && !std::ranges::contains(allies, guest, &BattleScreen::CoopAlly::owner) &&
+        coopPlayerHere(play.scene().field(), here_, guest)) {
+      ++helpers;
+    }
+  }
+  return {.level = play.coopLevel(), .helpers = helpers};
+}
+
+// The partners that join the host's next field battle, and how it scales.
+void CoopBattles::offerAllies(PlaySession& play) {
+  std::vector<BattleScreen::CoopAlly> allies = freeAllies(play, coop::HostPlayerId);
+  BattleScreen& screen = play.battleScreen();
+  screen.setCoopScaling(scalingOf(play, coop::HostPlayerId, allies));
+  screen.setCoopAllies(std::move(allies));
+}
+
+void CoopBattles::guestLeft(coop::PlayerId guest) {
+  referee_.guestLeft(guest);
   if (play_ != nullptr) {
-    play_->battleScreen().releaseAlly(coop::GuestPlayerId);
+    play_->battleScreen().releaseAlly(guest);
   }
 }
 
-void CoopBattles::answer(PlaySession& play, CoopGameplayBridge& bridge,
-                         const coop::BattleAsk& ask) {
-  if (!coopPlayerHere(play.scene().field(), here_, coop::GuestPlayerId)) {
+void CoopBattles::answer(PlaySession& play, const Peer& from, const coop::BattleAsk& ask) {
+  if (!coopPlayerHere(play.scene().field(), here_, from.id)) {
     // The session puts the guest elsewhere (its states have not reached this map yet).
-    core::logInfo("coop: the guest's battle {} is refused: the guest is not on this map", ask.ask);
-    send(&bridge, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::NotHere});
+    core::logInfo("coop: player {}'s battle {} is refused: it is not on this map", from.id,
+                  ask.ask);
+    send(from.bridge, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::NotHere});
     return;
   }
   if (const auto refusal =
           referee_.judge(ask, play.scene().field().mapId(), play.battleScreen().active())) {
-    core::logInfo("coop: the guest's battle {} is refused: the world is busy or elsewhere",
+    core::logInfo("coop: player {}'s battle {} is refused: the world is busy or elsewhere", from.id,
                   ask.ask);
-    send(&bridge, coop::BattleRefused{.ask = ask.ask, .reason = *refusal});
+    send(from.bridge, coop::BattleRefused{.ask = ask.ask, .reason = *refusal});
     return;
   }
   if (play.coopBattleBlocked()) {
     // A screen, a scene or a script holds this game: the guest's game runs the battle, solo.
-    core::logInfo("coop: the guest's battle {} runs on its own game: this one is held", ask.ask);
-    send(&bridge, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::Failed});
+    core::logInfo("coop: player {}'s battle {} runs on its own game: this one is held", from.id,
+                  ask.ask);
+    send(from.bridge, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::Failed});
     return;
   }
   std::vector<std::int32_t> npcs;
   for (const std::int16_t npc : ask.enemyNpcs) {
     npcs.push_back(npc);
   }
-  // The host stands on the guest's map and is free: its own partner fights beside the guest's.
-  play.battleScreen().setCoopAllies({{.owner = coop::HostPlayerId, .visitor = std::nullopt}});
-  if (auto started =
-          play.startVisitorBattle(npcs, visitorOf(ask.fighter), ask.fixedFight, ask.predefined);
+  // The host stands on the guest's map and is free: its own partner fights beside the guest's, and
+  // so does every other free guest's on this map.
+  std::vector<BattleScreen::CoopAlly> allies{
+      {.owner = coop::HostPlayerId, .visitor = std::nullopt}};
+  std::ranges::move(freeAllies(play, from.id), std::back_inserter(allies));
+  BattleScreen& screen = play.battleScreen();
+  screen.setCoopScaling(scalingOf(play, from.id, allies));
+  screen.setCoopAllies(std::move(allies));
+  if (auto started = play.startVisitorBattle(from.id, npcs, visitorOf(ask.fighter), ask.fixedFight,
+                                             ask.predefined);
       !started) {
-    core::logWarning("coop: the guest's battle did not start: {}", started.error().message);
-    send(&bridge, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::Failed});
+    core::logWarning("coop: player {}'s battle did not start: {}", from.id,
+                     started.error().message);
+    send(from.bridge, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::Failed});
     return;
   }
-  core::logInfo("coop: the guest's partner fights{}",
-                play.battleScreen().fighterOf(coop::HostPlayerId) ? ", this player's beside it"
-                                                                  : "; this player helps");
-  send(&bridge, beginOf(play, coop::GuestPlayerId, ask.ask));
+  core::logInfo("coop: player {}'s partner fights{}", from.id,
+                screen.fighterOf(coop::HostPlayerId) ? ", this player's beside it"
+                                                     : "; this player helps");
+  sendAll(beginOf(play, from.id, ask.ask));
 }
 
-void CoopBattles::apply(PlaySession& play, const coop::BattleAction& action) {
-  if (!referee_.allows(action)) {
+void CoopBattles::apply(PlaySession& play, coop::PlayerId from, const coop::BattleAction& action) {
+  if (!referee_.allows(from, action)) {
     return;
   }
   BattleScreen& screen = play.battleScreen();
   switch (action.kind) {
   case coop::BattleActionKind::Command:
-    static_cast<void>(screen.commandFromPlayer(coop::GuestPlayerId,
-                                               static_cast<game::battle::Command>(action.value)));
+    static_cast<void>(
+        screen.commandFromPlayer(from, static_cast<game::battle::Command>(action.value)));
     break;
   case coop::BattleActionKind::ThrowItem:
-    static_cast<void>(screen.throwLentItem(coop::GuestPlayerId, action.item));
+    static_cast<void>(screen.throwLentItem(
+        from, action.item,
+        action.value > 0
+            ? std::optional<game::battle::FighterId>{static_cast<game::battle::FighterId>(
+                  action.value - 1)}
+            : std::nullopt));
     break;
   case coop::BattleActionKind::Cheer:
-    screen.cheer(coop::GuestPlayerId);
+    screen.cheer(from);
     break;
   case coop::BattleActionKind::CloseEnd:
     if (screen.coopPhase() == coop::BattlePhase::End) {
@@ -464,10 +543,10 @@ coop::BattleBegin CoopBattles::beginOf(PlaySession& play, coop::PlayerId starter
                         std::move(species), screen.fixedFight(), std::move(allies));
 }
 
-coop::BattleFrame CoopBattles::frameOf(const PlaySession& play) {
+coop::BattleFrame CoopBattles::frameOf(const PlaySession& play, coop::PlayerId to) {
   const BattleScreen& screen = play.battleScreen();
   coop::BattleFrame frame{.battle = referee_.running()->battle,
-                          .frame = ++frames_,
+                          .frame = frames_,
                           .phase = screen.coopPhase(),
                           .command = 0,
                           .menu = 0,
@@ -478,8 +557,7 @@ coop::BattleFrame CoopBattles::frameOf(const PlaySession& play) {
   if (const game::battle::Battle* battle = screen.battle()) {
     const game::battle::BattleState& state = battle->state();
     // The guest's own partner's strip, bag and finisher (the fighting one's when it has none).
-    const game::battle::FighterId own =
-        screen.fighterOf(coop::GuestPlayerId).value_or(game::battle::PartnerId);
+    const game::battle::FighterId own = screen.fighterOf(to).value_or(game::battle::PartnerId);
     const game::battle::CommandState& commands = state.commandsOf(own);
     frame.command = static_cast<std::uint8_t>(commands.current);
     for (const game::battle::Command command : commands.menu) {
@@ -487,15 +565,17 @@ coop::BattleFrame CoopBattles::frameOf(const PlaySession& play) {
     }
     frame.bagAvailable = battle->bagAvailableFor(own);
     frame.finisherCharging = state.finisher.charging;
-    for (const auto& fighter : state.fighters) {
-      if (frame.fighters.size() >= coop::MaxBattleFighters) {
-        break;
-      }
-      frame.fighters.push_back({.hp = fighter.hp,
-                                .mp = fighter.mp,
-                                .maxHp = fighter.stats.maxHp,
-                                .maxMp = fighter.stats.maxMp,
-                                .down = fighter.hp <= 0});
+    for (game::battle::FighterId id = 0;
+         id < state.fighters.size() && frame.fighters.size() < coop::MaxBattleFighters; ++id) {
+      const game::battle::Fighter& fighter = state.fighters[id];
+      const std::optional<std::int32_t> revive = screens::reviveSecondsOf(*battle, id);
+      frame.fighters.push_back(
+          {.hp = fighter.hp,
+           .mp = fighter.mp,
+           .maxHp = fighter.stats.maxHp,
+           .maxMp = fighter.stats.maxMp,
+           .down = fighter.hp <= 0,
+           .reviveSeconds = static_cast<std::uint8_t>(std::clamp(revive.value_or(0), 0, 255))});
     }
   }
   for (const FieldScene::HeldFigure& held : play.scene().heldFigures()) {
@@ -589,11 +669,13 @@ void CoopBattles::sendOffer(PlaySession& play, CoopGameplayBridge& bridge) {
 }
 
 void CoopBattles::startShowing(PlaySession& play, const coop::BattleBegin& begin) {
-  ownBattle_ = begin.starter == coop::GuestPlayerId && asked_ && *asked_ == begin.ask;
+  const coop::PlayerId self = mirror_.self();
+  ownBattle_ = begin.starter == self && asked_ && *asked_ == begin.ask;
   if (ownBattle_) {
     asked_.reset();
   }
-  allyBattle_ = std::ranges::contains(begin.allies, coop::GuestPlayerId);
+  allyBattle_ = std::ranges::contains(begin.allies, self);
+  target_.reset();
   // A battle the host started on another map, or while this game runs its own solo battle, is
   // not this player's to watch: its field goes on (its partner, when it joined, still fights).
   watching_ =
@@ -609,8 +691,9 @@ void CoopBattles::startShowing(PlaySession& play, const coop::BattleBegin& begin
                 : allyBattle_ ? "commands its partner beside the host's"
                               : "helps");
   play.holdForCoopBattle(true);
-  play.scene().setBattlePartner(ownBattle_ ? FieldScene::BattlePartner::Own
-                                           : FieldScene::BattlePartner::CoopHost);
+  // The fighting partner is the starter's: this player's own, or the one this scene draws for it.
+  play.scene().setBattlePartner(
+      begin.starter == self ? std::nullopt : std::optional<game::field::PlayerId>{begin.starter});
   shownFrame_.reset();
   fighters_.clear();
   publish(play);
@@ -672,7 +755,7 @@ void CoopBattles::stopShowing(PlaySession& play, const coop::BattleEnd& end) {
     }
   }
   play.holdForCoopBattle(false);
-  play.scene().setBattlePartner(FieldScene::BattlePartner::Own);
+  play.scene().setBattlePartner(std::nullopt);
   applySpoils(play, end);
   if (ownBattle_) {
     play.finishHandedBattle(storyOutcomeOf(end.outcome));
@@ -683,6 +766,7 @@ void CoopBattles::stopShowing(PlaySession& play, const coop::BattleEnd& end) {
   watching_ = false;
   shownFrame_.reset();
   fighters_.clear();
+  target_.reset();
   hideDocument();
 }
 
@@ -706,7 +790,7 @@ void CoopBattles::hostLeft(PlaySession* play) {
     if ((dropped.battle && watching_) || play->heldForCoopBattle()) {
       play->scene().releaseFighters();
       play->holdForCoopBattle(false);
-      play->scene().setBattlePartner(FieldScene::BattlePartner::Own);
+      play->scene().setBattlePartner(std::nullopt);
     }
     if (ownBattle_) {
       // Its battle went with the host's game: the story goes on as if none began.
@@ -742,6 +826,10 @@ bool CoopBattles::handle(const ui::UiCommand& command) {
     }
     return std::nullopt;
   }();
+  if (command.name == CoopBattleTargetCommand) {
+    pickTarget(command.value);
+    return true;
+  }
   if (!kind) {
     return false;
   }
@@ -753,12 +841,14 @@ bool CoopBattles::handle(const ui::UiCommand& command) {
     item = *text;
   }
   if (*kind == coop::BattleActionKind::ThrowItem) {
-    // The item comes out of this player's own bag; the host's lends one to throw.
+    // The item comes out of this player's own bag; the host's lends one to throw, at the partner
+    // picked (its fighter's number + 1; 0 for this player's own or the fighting one).
     const auto& frame = mirror_.frame();
     PlaySession* play = play_;
     if (play == nullptr || !frame || !frame->bagAvailable || !play->takeCoopItem(item)) {
       return true;
     }
+    value = target_ ? static_cast<std::int32_t>(*target_) + 1 : 0;
   }
   if (auto action = mirror_.action(*kind, value, std::move(item))) {
     actions_.push_back(std::move(*action));
@@ -784,6 +874,24 @@ void CoopBattles::press(const input::InputState& input) {
 
 // ---- The guest's document ----
 
+// The partner the guest's next items fly to: a partner's number picks it, the same again or any
+// other number picks none.
+void CoopBattles::pickTarget(const ui::UiValue& value) {
+  const auto* number = std::get_if<double>(&value);
+  const auto& running = mirror_.running();
+  if (number == nullptr || !running || *number < 0.0) {
+    target_.reset();
+  } else {
+    const auto index = static_cast<std::size_t>(*number);
+    const std::size_t enemies = running->enemyNpcs.size();
+    const bool partner = index < fighters_.size() && (index == 0 || index > enemies);
+    target_ = partner && target_ != index ? std::optional<std::size_t>{index} : std::nullopt;
+  }
+  if (play_ != nullptr) {
+    publish(*play_);
+  }
+}
+
 void CoopBattles::publish(const PlaySession& play) {
   const auto& running = mirror_.running();
   if (!running) {
@@ -804,7 +912,7 @@ void CoopBattles::publish(const PlaySession& play) {
     }
     const std::size_t ally = index - 1 - enemies;
     return index > enemies && ally < running->allies.size() &&
-           running->allies[ally] == coop::GuestPlayerId;
+           running->allies[ally] == mirror_.self();
   };
   screens::ScreenSettings settings{
       {.name = "coop_battle.shown", .value = true},
@@ -813,7 +921,8 @@ void CoopBattles::publish(const PlaySession& play) {
        .value = std::string{phaseName(frame ? frame->phase : coop::BattlePhase::Intro)}},
       {.name = "coop_battle.command", .value = static_cast<double>(frame ? frame->command : 0)},
       {.name = "coop_battle.bag", .value = frame && frame->bagAvailable},
-      {.name = "coop_battle.fighter_count", .value = static_cast<double>(fighters_.size())}};
+      {.name = "coop_battle.fighter_count", .value = static_cast<double>(fighters_.size())},
+      {.name = "coop_battle.target", .value = target_ ? static_cast<double>(*target_) : NoTarget}};
   for (std::size_t index = 0; index < fighters_.size(); ++index) {
     const coop::BattleFighterState& fighter = fighters_[index];
     const std::string species =
@@ -834,6 +943,10 @@ void CoopBattles::publish(const PlaySession& play) {
                         .value = std::string{index == 0 || index > enemies ? "partner" : "enemy"}});
     settings.push_back({.name = screens::listEntryName("coop_battle.fighter", index, "mine"),
                         .value = mine(index)});
+    settings.push_back(
+        {.name = screens::listEntryName("coop_battle.fighter", index, "revive_seconds"),
+         .value =
+             fighter.reviveSeconds > 0 ? static_cast<double>(fighter.reviveSeconds) : NoTarget});
   }
   std::size_t orders = 0;
   if (commands && frame) {
