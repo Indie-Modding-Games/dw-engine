@@ -44,11 +44,18 @@ enum class StoryImprovement : std::uint8_t {
   // the player came in (story/patches/angemon_zone_093.lua; option angemon_event_zone, on by
   // default).
   AngemonZone = 1,
+  // Whamon waits in the water by its confirm cell at the Secret Beach Cave before the Ogremon
+  // event (story/patches/whamon_water_136.lua; option whamon_in_water, on by default).
+  WhamonInWater = 2,
 };
 
 // The engine's routine a story patch calls with an improvement's number in the operand variable
 // (254): it answers there 1 when the improvement is on, 0 when it is off or unknown.
 inline constexpr std::int64_t StoryImprovementRoutine = 261;
+// The engine's routine that writes to the operand variable the arrival section a map change left
+// to run after the map's entry section (game::story::StoryRunner::arrivalAhead), NoArrivalSection
+// (0xFF) when none: a patched entry section tells a ride in from a walk in.
+inline constexpr std::int64_t ArrivalSectionRoutine = 262;
 
 // A sound of the story's scenes: the bank slot and the sound in it.
 struct StorySceneSound {

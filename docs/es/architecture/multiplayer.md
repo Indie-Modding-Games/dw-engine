@@ -722,3 +722,6 @@ tras cada cambio y la regresión amplia solo al cerrar cada fase.
   [señalización](../modules/services/versus-signal.md): la red que se reutiliza.
 - [field](../modules/game/field.md), [battle](../modules/game/battle.md) y [session](../modules/apps/session.md): los
   módulos que cambian.
+- [Combate cooperativo](coop-combat.md) (#362): todos los compañeros en un mismo lado, el paso siguiente a los primeros
+  combates cooperativos.
+- [Dificultad cooperativa](coop-difficulty.md) (#361): escalado de los enemigos y recompensas según el número de jugadores.

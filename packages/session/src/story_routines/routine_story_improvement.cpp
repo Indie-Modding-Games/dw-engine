@@ -1,4 +1,6 @@
 #include <dwe/core/log.hpp>
+#include <dwe/game/story/section_host.hpp>
+#include <dwe/game/story/story_runner.hpp>
 
 #include <cstdint>
 
@@ -13,7 +15,8 @@ constexpr std::int64_t On = 1;
 constexpr std::int64_t Off = 0;
 
 bool known(std::int64_t number) {
-  return number == static_cast<std::int64_t>(StoryImprovement::AngemonZone);
+  return number == static_cast<std::int64_t>(StoryImprovement::AngemonZone) ||
+         number == static_cast<std::int64_t>(StoryImprovement::WhamonInWater);
 }
 
 } // namespace
@@ -32,6 +35,26 @@ core::Result<void> registerStoryImprovementRoutine(StoryScenesContext& scenes) {
         core::logDebug("[mod:story] routine {}: story improvement {} is {}",
                        StoryImprovementRoutine, number, on ? "on" : "off");
         if (auto written = scenes.state().setVariable(scenes.rules.operandVariable, on ? On : Off);
+            !written) {
+          return std::unexpected{written.error()};
+        }
+        return game::story::RoutineGoesOn{};
+      });
+}
+
+// Routine 262, the engine's own: a story patch of a map's entry section asks whether the player
+// came by a script's map change with an arrival section, which runs right after (map.c:
+// scriptTickChangeMap). It answers in the operand variable with that section, or NoArrivalSection
+// when the player walked in, loaded a save or the change named none.
+core::Result<void> registerArrivalSectionRoutine(StoryScenesContext& scenes) {
+  return scenes.routines.registerRoutine(
+      ArrivalSectionRoutine,
+      [&scenes](game::story::RoutineNumber /*routine*/) -> core::Result<game::story::RoutineStart> {
+        const std::int64_t arrival =
+            scenes.runner().arrivalAhead().value_or(game::story::NoArrivalSection);
+        core::logDebug("[mod:story] routine {}: arrival section ahead {}", ArrivalSectionRoutine,
+                       arrival);
+        if (auto written = scenes.state().setVariable(scenes.rules.operandVariable, arrival);
             !written) {
           return std::unexpected{written.error()};
         }

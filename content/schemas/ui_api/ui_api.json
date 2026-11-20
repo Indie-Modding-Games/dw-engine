@@ -212,6 +212,7 @@
       {"name": "generous_talk", "kind": "option", "value": "boolean", "summary": "Generous talk."},
       {"name": "extra_toilets", "kind": "option", "value": "boolean", "summary": "Extra toilets."},
       {"name": "angemon_event_zone", "kind": "option", "value": "boolean", "summary": "Angemon's event zone."},
+      {"name": "whamon_in_water", "kind": "option", "value": "boolean", "summary": "Whamon in the water."},
       {"name": "smooth_motion", "kind": "option", "value": "boolean", "summary": "Smooth motion."},
       {"name": "hd_scenery", "kind": "option", "value": "boolean", "summary": "HD scenery."},
       {"name": "scenery_quality", "kind": "option", "value": "text", "summary": "Scenery quality: upscaled or smooth."},

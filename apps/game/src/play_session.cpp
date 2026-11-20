@@ -40,6 +40,7 @@
 #include <optional>
 #include <ranges>
 #include <set>
+#include <span>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -58,6 +59,7 @@
 #include "partner_events.hpp"
 #include "partner_set_command.hpp"
 #include "partner_tab.hpp"
+#include "pause_box.hpp"
 #include "place_command.hpp"
 #include "player_chart.hpp"
 #include "story_map_edits.hpp"
@@ -1199,7 +1201,9 @@ constexpr std::array PlayOptions{
     PlayOption{.setting = ExtraToiletsSetting, .saved = &UserSettings::extraToilets},
     PlayOption{.setting = AngemonEventZoneSetting,
                .saved = &UserSettings::angemonEventZone,
-               .fallback = true}};
+               .fallback = true},
+    PlayOption{
+        .setting = WhamonInWaterSetting, .saved = &UserSettings::whamonInWater, .fallback = true}};
 
 RuleChoices ruleChoicesOf(const UserSettings& settings) {
   const std::string difficulty = settings.difficulty.value_or(std::string{DifficultyNormal});
@@ -1230,6 +1234,8 @@ void PlaySession::applyPlayOptions() {
   if (game_.systems.scenes != nullptr) {
     game_.systems.scenes->setImprovement(session::StoryImprovement::AngemonZone,
                                          settings.angemonEventZone.value_or(true));
+    game_.systems.scenes->setImprovement(session::StoryImprovement::WhamonInWater,
+                                         settings.whamonInWater.value_or(true));
   }
   battleScreen_.setQuickStart(settings.quickBattleStart.value_or(false));
   skipEvolution_ = settings.skipEvolution.value_or(false);
@@ -1747,7 +1753,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (scene_->mapSerial() != mapSerial_) {
     mapSerial_ = scene_->mapSerial();
     scene_->showExtraToilets();
-    ui.setMinimap(ui::minimapGridOf(scene_->map()), scene_->mapNameKey());
+    refreshMinimap();
     fishingScreen_.enterMap(*scene_, scene_->field().mapId());
     if (const auto& change = scene_->lastMapChange(); change && autotest != nullptr) {
       autotest->mapChanged(*change);
@@ -1851,6 +1857,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   }
   if (guardFactsChanged) {
     scene_->refreshScriptWarps();
+    if (!std::ranges::equal(scene_->field().stepExits(), minimapStepExits_)) {
+      refreshMinimap();
+    }
   }
 
   // clock.c: renderGameClock slides the clock and the bars off the screen whenever game time stands
@@ -1936,7 +1945,9 @@ std::vector<ui::MinimapMarker> PlaySession::minimapEnemyMarkers() {
 }
 
 void PlaySession::refreshMinimap() {
-  context_.ui->setMinimap(ui::minimapGridOf(scene_->map()), scene_->mapNameKey());
+  const std::span<const std::int32_t> stepExits = scene_->field().stepExits();
+  minimapStepExits_.assign(stepExits.begin(), stepExits.end());
+  context_.ui->setMinimap(ui::minimapGridOf(scene_->map(), stepExits), scene_->mapNameKey());
 }
 
 std::vector<ui::MinimapMarker> PlaySession::minimapItemMarkers() const {
@@ -2077,12 +2088,17 @@ bool PlaySession::paused() const {
 FieldClock PlaySession::fieldClock() const {
   const ui::Ui& ui = *context_.ui;
   return fieldClockOf({.gameMenu = ui.isVisible(MenuDocument) || ui.isVisible(PartnerMenuDocument),
-                       .otherScreen = ui.isVisible(MainMenuDocument) || screenStops()});
+                       .battle = battleScreen_.active() || coopBattleHold_,
+                       .otherScreen = ui.isVisible(MainMenuDocument) ||
+                                      ui.isVisible(PauseBoxDocument) || otherScreenStops()});
 }
 
 bool PlaySession::screenStops() const {
-  return battleScreen_.active() || coopBattleHold_ ||
-         (sleepScreen_.active() && !sleepScreen_.fieldRuns()) || saveMachine_.active() ||
+  return battleScreen_.active() || coopBattleHold_ || otherScreenStops();
+}
+
+bool PlaySession::otherScreenStops() const {
+  return (sleepScreen_.active() && !sleepScreen_.fieldRuns()) || saveMachine_.active() ||
          toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
          shopScreen_.active() || devMenu_.isOpen() || itemKeeperScreen_.active() ||
          discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||

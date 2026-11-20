@@ -138,6 +138,10 @@ inline constexpr std::string_view ExtraToiletsSetting = "extra_toilets";
 // session::StoryImprovement::AngemonZone): once Angemon's light is freed, his event also starts on
 // the Ice Sanctuary ground floor's corridor, whatever way the player came in.
 inline constexpr std::string_view AngemonEventZoneSetting = "angemon_event_zone";
+// Whamon in the water (an engine improvement, on unless turned off;
+// session::StoryImprovement::WhamonInWater): before the Ogremon event, Whamon waits in the water by
+// its confirm cell at the Secret Beach Cave.
+inline constexpr std::string_view WhamonInWaterSetting = "whamon_in_water";
 // The canyon shop's job (game::shop_job; session::ShopJobAdapter): improved, the default, plays the
 // line of customers and the haggle screen; original plays the original's price menus.
 inline constexpr std::string_view ShopJobModeSetting = "shop_job_mode";
@@ -455,10 +459,13 @@ private:
                    const game::field::FieldInput& guestIntent);
   void tickWater();
   [[nodiscard]] bool paused() const;
-  // How the field animates: running, resting behind the game menu or frozen (field_clock.hpp).
+  // How the field animates: running, resting behind the game menu, in a battle or frozen
+  // (field_clock.hpp).
   [[nodiscard]] FieldClock fieldClock() const;
   // A screen, a scene or a battle that stops the field, the menus aside.
   [[nodiscard]] bool screenStops() const;
+  // The screens besides a battle that stop the field.
+  [[nodiscard]] bool otherScreenStops() const;
   // What keeps the game from being saved as it is now (a battle, a script, a scene), or empty when
   // the field is free.
   [[nodiscard]] std::string_view busyWith() const;
@@ -470,7 +477,8 @@ private:
   // The shop job's progress bar (shop_job_bar.hpp), published when what it shows changed.
   void publishShopJob();
   // Publishes hud.minimap_allowed when it changes.
-  // Draws the minimap of the map's collision again (after a preview swapped it in place).
+  // Draws the minimap of the map's collision and of the step cells that change the map now again
+  // (on entering a map, after a preview swapped it in place or a trigger changed those cells).
   void refreshMinimap();
   void publishMinimapAllowed(const MinimapScene& scene);
   // The enemies the minimap marks now: none while minimap_enemies is off.
@@ -562,6 +570,8 @@ private:
   FishingScreen fishingScreen_;
   CurlingScreen curlingScreen_;
   std::uint32_t mapSerial_ = 0;
+  // The step cells the minimap paints as exits (Field::stepExits when it was last drawn).
+  std::vector<std::int32_t> minimapStepExits_;
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;
   // The guest's field holds for the host's battle (holdForCoopBattle).

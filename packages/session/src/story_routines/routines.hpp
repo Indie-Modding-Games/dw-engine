@@ -83,5 +83,6 @@ core::Result<void> registerBossBuildupRoutine(StoryScenesContext& scenes);
 // The improved shop job's engine routines 256 to 260 (routine_shop_job.cpp).
 core::Result<void> registerShopJobRoutines(StoryScenesContext& scenes);
 core::Result<void> registerStoryImprovementRoutine(StoryScenesContext& scenes);
+core::Result<void> registerArrivalSectionRoutine(StoryScenesContext& scenes);
 
 } // namespace dwe::session

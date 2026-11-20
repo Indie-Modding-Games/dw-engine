@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <numbers>
+#include <span>
 
 namespace dwe::ui {
 namespace {
@@ -28,7 +29,8 @@ void putPixel(assets::Image& image, std::uint32_t x, std::uint32_t y, std::uint3
 using core::collision::FirstWarpTrigger;
 constexpr std::int32_t WarpCount = core::collision::WarpTriggerCount;
 
-MinimapCell minimapCellOf(const assets::MapDocument& map, assets::CollisionCell cell) {
+MinimapCell minimapCellOf(const assets::MapDocument& map, assets::CollisionCell cell,
+                          std::span<const std::int32_t> stepExits) {
   switch (map.collision.kind(cell)) {
   case assets::CollisionKind::Blocked:
     return MinimapCell::Blocked;
@@ -37,7 +39,11 @@ MinimapCell minimapCellOf(const assets::MapDocument& map, assets::CollisionCell 
   case assets::CollisionKind::Trigger:
     break;
   }
-  const std::int32_t exit = static_cast<std::int32_t>(map.collision.value(cell)) - FirstWarpTrigger;
+  const auto trigger = static_cast<std::int32_t>(map.collision.value(cell));
+  if (std::ranges::contains(stepExits, trigger)) {
+    return MinimapCell::Exit;
+  }
+  const std::int32_t exit = trigger - FirstWarpTrigger;
   if (exit < 0 || exit >= WarpCount) {
     return MinimapCell::Walkable;
   }
@@ -48,7 +54,7 @@ MinimapCell minimapCellOf(const assets::MapDocument& map, assets::CollisionCell 
 
 } // namespace
 
-MinimapGrid minimapGridOf(const assets::MapDocument& map) {
+MinimapGrid minimapGridOf(const assets::MapDocument& map, std::span<const std::int32_t> stepExits) {
   constexpr int Size = assets::MapCollision::Size;
   const glm::vec3 origin = assets::collisionCellMin(assets::CollisionCell{.column = 0, .row = 0});
   MinimapGrid grid{
@@ -62,7 +68,8 @@ MinimapGrid minimapGridOf(const assets::MapDocument& map) {
   grid.cells.reserve(static_cast<std::size_t>(Size) * Size);
   for (int row = 0; row < Size; ++row) {
     for (int column = 0; column < Size; ++column) {
-      grid.cells.push_back(minimapCellOf(map, assets::CollisionCell{.column = column, .row = row}));
+      grid.cells.push_back(
+          minimapCellOf(map, assets::CollisionCell{.column = column, .row = row}, stepExits));
     }
   }
   return grid;
