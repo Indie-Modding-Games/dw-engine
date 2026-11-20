@@ -13,6 +13,14 @@ sistemas salen de ella, así que una ruta con la misma semilla juega igual cada 
 reloj del sistema y la escribe en el log (`game: new game, seed <n>`) para poder repetir la partida de un informe de
 fallo. Con `--load` la opción no cambia nada: la partida cargada sigue con el estado de los números que guardó.
 
+## Variante de juego
+
+El modo de la partida es su [variante](../../architecture/game-variants.md). `PlaySession` construye con él un
+`ModeOptions` (`src/mode_options.{hpp,cpp}`): `playSettings()` es la configuración del jugador con las opciones fijas
+del modo encima, que leen las opciones de juego, los objetos raros y la exploración libre; publica `options.variant` y
+`options.locked.<opción>` mientras vive la partida, y `runGame` descarta los comandos que cambiarían una opción fija
+(`PlaySession::refusesFixedOption`). El archivo de configuración del jugador nunca se escribe por ello.
+
 ## El compañero en el campo
 
 El campo dibuja al compañero con el modelo de su especie: `digimon/<especie>/model` del paquete base, con las
@@ -2033,8 +2041,8 @@ contenido oculto) pasa a una página siguiente del árbol ([etapas canónicas](#
 Una forma nueva usa el icono de otra especie con otra paleta hasta que haya iconos propios.
 
 **Modo de juego.** Antes de las reglas, `TitleScreen` pregunta el modo (`ui/new_game_mode`, `NewGameModes` en
-`new_game_mode.hpp`) solo si los paquetes traen más de uno ([modes](../game/modes.md)); el juego trae solo
-«Historia original», así que no sale. Publica `new_game_mode.count` y `new_game_mode.<n>.id`, `name` y `description`
+`new_game_mode.hpp`) solo si los paquetes traen más de uno ([modes](../game/modes.md)); el juego trae las dos
+[variantes de juego](../../architecture/game-variants.md), Clásico Mejorado y Modo Folder, así que siempre sale. Publica `new_game_mode.count` y `new_game_mode.<n>.id`, `name` y `description`
 y recibe `new_game_mode` con el id o `new_game_mode_back`. El modo elegido va a `PlayStart::modeId` y a la sesión
 (`SessionDesc::modeId`, sección `mode` del guardado). Las reglas salen después solo para un modo que admite
 `original` y `oculto`; otro modo empieza con su `ruleset`.

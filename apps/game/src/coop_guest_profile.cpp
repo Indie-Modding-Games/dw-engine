@@ -1,5 +1,6 @@
 #include "coop_guest_profile.hpp"
 
+#include <dwe/game/modes/game_mode.hpp>
 #include <dwe/game/partner/state_yaml.hpp>
 #include <dwe/game/save/save_file.hpp>
 #include <dwe/session/battle_adapter.hpp>
@@ -13,6 +14,8 @@
 namespace dwe::app {
 namespace {
 constexpr std::string_view PartnerSection = "partner";
+constexpr std::string_view ModeSection = "mode";
+constexpr std::string_view ModeIdKey = "id";
 constexpr std::size_t MaxGuestSaveBytes = 128U * 1024U;
 static_assert(CoopGuestOwnSections[0] == PartnerSection);
 static_assert(CoopGuestOwnSections[1] == session::MovesSaveName);
@@ -82,6 +85,21 @@ core::Result<std::string> hostWorldWithGuestPartner(std::string_view hostSaveTex
   host->header.summary.slot.clear();
   host->header.autosaveReasons.clear();
   return game::save::writeSaveFile(*host);
+}
+
+std::string coopSaveMode(std::string_view saveText) {
+  const auto parsed = game::save::parseSaveFile(saveText);
+  if (!parsed) {
+    return {};
+  }
+  std::string_view saved = parsed->header.summary.mode;
+  if (const auto section = parsed->sections.find(ModeSection); section != parsed->sections.end()) {
+    if (const core::YamlNode* id = section->second.state.find(ModeIdKey);
+        id != nullptr && id->isScalar()) {
+      saved = id->text();
+    }
+  }
+  return std::string{game::modes::currentModeId(saved)};
 }
 
 } // namespace dwe::app

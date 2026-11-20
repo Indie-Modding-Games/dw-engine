@@ -27,3 +27,7 @@
 	font-size: 26dp;
 	line-height: 28dp;
 }
+
+@media (max-width: 560dp) {
+	#notice { padding: 8dp 14dp; font-size: 26dp; line-height: 28dp; }
+}

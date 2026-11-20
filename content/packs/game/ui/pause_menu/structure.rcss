@@ -15,6 +15,9 @@
 #page-options .option.kind-list .arrow, #page-options .option.kind-range .arrow { display: inline-block; }
 #page-options .option.kind-range .bar { display: inline-block; }
 #page-options .option.hidden, #option-tag.hidden, #reset-confirm.hidden { display: none; }
+#page-options .option.locked .label, #page-options .option.locked .control { opacity: 0.6; }
+#page-options .option.locked:focus .label, #page-options .option.locked:focus .control { opacity: 0.85; }
+#page-options .option.locked .arrow { visibility: hidden; }
 /* Over the title the game's save and back-to-title actions are hidden (logic.lua: at_title). */
 #options-quick button.hidden { display: none; }
 #panel.on-options #prompts { display: none; }

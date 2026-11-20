@@ -52,7 +52,8 @@ SaveFile guestHomeSave() {
                          .tamer = "Mia",
                          .species = "agumon",
                          .nickname = "Sparky",
-                         .map = "guest_town"};
+                         .map = "guest_town",
+                         .mode = {}};
   file.header.label = "agumon guest_town";
   file.sections.emplace("partner", partnerSection("agumon", 900));
   file.sections.emplace("moves", SavedSection{.state = scalar("guest_moves")});
@@ -79,7 +80,8 @@ SaveFile playedSave(std::string_view species = "greymon",
                          .tamer = "Host",
                          .species = std::string{species},
                          .nickname = "Sparky",
-                         .map = "host_jungle"};
+                         .map = "host_jungle",
+                         .mode = {}};
   file.sections.emplace("partner", partnerSection(species, hp));
   file.sections.emplace("moves", SavedSection{.state = scalar("guest_moves_and_new_one")});
   file.sections.emplace("evolution", SavedSection{.state = scalar("raised_agumon_greymon")});

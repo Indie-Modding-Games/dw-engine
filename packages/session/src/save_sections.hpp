@@ -75,7 +75,6 @@ private:
   SessionState* state_;
 };
 
-// The game mode the playthrough plays. A save from before modes existed plays the original story.
 class ModeSave final : public game::save::SectionSerializer {
 public:
   explicit ModeSave(SessionState& state) : state_(&state) {}

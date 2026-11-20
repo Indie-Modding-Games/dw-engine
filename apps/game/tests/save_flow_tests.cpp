@@ -56,7 +56,8 @@ UiValue valueOf(const ScreenSettings& settings, std::string_view name) {
 
 SaveNames names() {
   return {.species = [](std::string_view id) { return "names." + std::string{id}; },
-          .map = [](std::string_view) { return std::string{}; }};
+          .map = [](std::string_view) { return std::string{}; },
+          .mode = [](std::string_view id) { return "modes." + std::string{id} + "_name"; }};
 }
 
 // Three manual slots: an empty slot 1, a save in slot 2, a damaged slot 3 with its backup; and an
@@ -121,6 +122,8 @@ TEST_CASE("continue lists the saves and says why one cannot be loaded") {
   CHECK(valueOf(list, "save.slot.0.species_key") == UiValue{std::string{"names.agumon"}});
   CHECK(valueOf(list, "save.slot.0.map") == UiValue{std::string{"twna01"}});
   CHECK(valueOf(list, "save.slot.0.updated") == UiValue{std::string{"2026-10-22"}});
+  CHECK(valueOf(list, "save.slot.0.mode") == UiValue{std::string{"folder"}});
+  CHECK(valueOf(list, "save.slot.0.mode_key") == UiValue{std::string{"modes.folder_name"}});
   CHECK(valueOf(list, "save.slot.1.state") == UiValue{std::string{"damaged"}});
   CHECK(valueOf(list, "save.slot.2.kind") == UiValue{std::string{"autosave"}});
   CHECK(valueOf(list, "save.slot.2.state") == UiValue{std::string{"newer"}});

@@ -129,7 +129,7 @@ struct SessionDesc {
   std::string rulesetId{ruleset::OriginalRuleset};
   std::optional<ruleset::Ruleset> rules;
   // The game mode a new game plays (packages/game/modes); a loaded game plays its save's.
-  std::string modeId{game::modes::OriginalMode};
+  std::string modeId{game::modes::DefaultMode};
   // The partner species, when already read (dwe-sim shares one table between its runs, tests make
   // their own); otherwise read from the ruleset's digimon and raise tables.
   std::shared_ptr<const game::partner::SpeciesTable> species;

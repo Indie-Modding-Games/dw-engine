@@ -55,7 +55,7 @@ struct SessionState {
   bool cleared = false;
   std::optional<std::string> clearedMap;
   // The game mode the playthrough plays (packages/game/modes), saved in its own section.
-  std::string mode{game::modes::OriginalMode};
+  std::string mode{game::modes::DefaultMode};
   const game::field::Field* field = nullptr;
 };
 

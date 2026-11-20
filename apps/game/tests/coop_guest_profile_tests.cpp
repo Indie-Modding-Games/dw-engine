@@ -131,3 +131,23 @@ TEST_CASE("cooperative guest session fights with the guest partner's own moves")
   REQUIRE(loaded->sections.contains("moves"));
   CHECK(loaded->sections.at("moves").state == core::YamlNode::scalar("guest_moves"));
 }
+
+TEST_CASE("co-op reads the game variant a save plays, a save from before the variants as Folder "
+          "Mode") {
+  game::save::SaveFile file;
+  auto text = game::save::writeSaveFile(file);
+  REQUIRE(text);
+  CHECK(app::coopSaveMode(*text) == "folder");
+  file.header.summary.mode = "classic";
+  text = game::save::writeSaveFile(file);
+  REQUIRE(text);
+  CHECK(app::coopSaveMode(*text) == "classic");
+  core::YamlNode mode = core::YamlNode::mapping();
+  mode.set("id", core::YamlNode::scalar("original"));
+  file.sections.emplace("mode", game::save::SavedSection{.version = 1, .state = std::move(mode)});
+  text = game::save::writeSaveFile(file);
+  REQUIRE(text);
+  CHECK(app::coopSaveMode(*text) == "folder");
+  CHECK(app::coopSaveMode("not a save").empty());
+  CHECK(app::coopSaveMode(guestSave()) == "folder");
+}

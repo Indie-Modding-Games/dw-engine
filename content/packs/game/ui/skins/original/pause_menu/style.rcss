@@ -161,6 +161,7 @@
 #option-tag { flex: 0 0 auto; margin-right: 12dp; padding: 0 6dp; border: 3dp #4a5a64; line-height: 21dp; color: #b2b2b2; white-space: nowrap; }
 #option-help { flex: 1 1 0; }
 #option-tag.improvement { border-color: #90d9fa; color: #fff371; }
+#option-tag.locked { border-color: #a06a4a; color: #f0b090; }
 #option-foot { margin-top: 6dp; padding-top: 6dp; border-top: 3dp #90d9fa; }
 #option-actions button { display: inline-block; margin: 0 12dp 0 0; }
 #options-hints { margin-top: 6dp; font-size: 22dp; color: #b2b2b2; text-align: right; }

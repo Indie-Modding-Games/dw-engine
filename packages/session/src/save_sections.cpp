@@ -314,12 +314,12 @@ core::Result<void> ModeSave::read(const YamlNode& state) {
   if (auto done = reader.finish(true, messages::ModeStateText); !done) {
     return std::unexpected{done.error()};
   }
-  state_->mode = std::move(mode);
+  state_->mode = std::string{game::modes::currentModeId(mode)};
   return {};
 }
 
 core::Result<void> ModeSave::readMissing() {
-  state_->mode = std::string{game::modes::OriginalMode};
+  state_->mode = std::string{game::modes::DefaultMode};
   return {};
 }
 
@@ -348,7 +348,9 @@ game::save::SaveSummary summaryFromSections(const game::save::SaveFile& file) {
           .tamer = {},
           .species = sections::sectionText(file, sections::PartnerName, sections::SpeciesKey),
           .nickname = {},
-          .map = sections::sectionText(file, sections::FieldName, sections::MapKey)};
+          .map = sections::sectionText(file, sections::FieldName, sections::MapKey),
+          .mode = std::string{game::modes::currentModeId(
+              sections::sectionText(file, sections::ModeName, sections::ModeIdKey))}};
 }
 
 } // namespace dwe::session

@@ -1688,9 +1688,16 @@ local function entry_text(entry)
   return game_options.text(entry)
 end
 
+local function entry_locked(entry)
+  return entry.setting ~= nil and options.locked(entry.setting)
+end
+
 -- Asks the game for the entry's value step away; clamp for left and right (and the arrows), which
 -- stop a number at its ends, while confirming wraps it round (game_options.change).
 local function entry_change(entry, step, clamp)
+  if entry_locked(entry) then
+    return
+  end
   if entry.change ~= nil then
     entry.change(step)
   else
@@ -1705,6 +1712,9 @@ local function entry_tag(entry)
   if entry.tag == false then
     return nil
   end
+  if entry_locked(entry) then
+    return "locked"
+  end
   if entry.original == nil then
     return "improvement"
   end
@@ -1717,13 +1727,21 @@ end
 
 local function tab_entries(tab)
   local list = {}
+  local locked = {}
   for _, entries in ipairs({ display_entries, game_options }) do
     for _, entry in ipairs(entries) do
       local shown = entry.shown == nil or entry.shown()
-      if tab_of(entry) == tab and #list < option_slots and shown then
-        list[#list + 1] = entry
+      if tab_of(entry) == tab and #list + #locked < option_slots and shown then
+        if entry_locked(entry) then
+          locked[#locked + 1] = entry
+        else
+          list[#list + 1] = entry
+        end
       end
     end
+  end
+  for _, entry in ipairs(locked) do
+    list[#list + 1] = entry
   end
   return list
 end
@@ -1767,13 +1785,26 @@ local function refresh_option_info(document)
     quit = at_title and "pause_menu.help.quit_title" or "pause_menu.help.quit",
   }
   local help = entry ~= nil and entry.help or action_help[info_focus]
-  document:get("option-help"):set_text(help and t(help) or "")
   local tag = entry ~= nil and entry_tag(entry) or nil
+  if tag == "locked" then
+    local variant = options.variant()
+    document
+      :get("option-help")
+      :set_text(t("pause_menu.help.locked", { variant = variant and t(variant) or "" }))
+  else
+    document:get("option-help"):set_text(help and t(help) or "")
+  end
   local element = document:get("option-tag")
   element:set_class("hidden", tag == nil)
   element:set_class("improvement", tag == "improvement")
   element:set_class("original", tag == "original")
-  element:set_text(tag and t("pause_menu.tag." .. tag) or "")
+  element:set_class("locked", tag == "locked")
+  if tag == "locked" then
+    local variant = options.variant()
+    element:set_text(t("pause_menu.tag.locked", { variant = variant and t(variant) or "" }))
+  else
+    element:set_text(tag and t("pause_menu.tag." .. tag) or "")
+  end
 end
 
 local function refresh_option_rows(document)
@@ -1787,6 +1818,7 @@ local function refresh_option_rows(document)
       local value = entry_value(entry)
       parts.label:set_text(t(entry.label))
       parts.value:set_text(entry_text(entry))
+      parts.row:set_class("locked", entry_locked(entry))
       for _, name in ipairs({ "toggle", "list", "range" }) do
         parts.row:set_class("kind-" .. name, kind == name)
       end

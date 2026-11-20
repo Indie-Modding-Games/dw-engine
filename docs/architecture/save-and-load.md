@@ -164,6 +164,7 @@ partner collides with an NPC (`main.c: initializeLoadedMap: 3821-3857`) is not d
 | "Not used" | Empty slot | Same |
 | "Damaged" / "Has backup" | `SlotInfo::Damaged`, `hasBackup` | New (the original did not list it as valid) |
 | Play time and save date | `play_seconds`, `updated` | Documented **improvement**, from the header that already exists |
+| Game variant | `summary.mode` (Classic Enhanced or Folder Mode, [game variants](game-variants.md)); empty reads as Folder Mode | New: the original had one way to play |
 
 The old autosaves that remain go below the manual ones ("Old autosave N"), only when continuing and
 when erasing (they are not chosen when starting).

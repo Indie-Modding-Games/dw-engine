@@ -348,32 +348,38 @@ TEST_CASE("the connecting screen offers only to cancel, a failed room offers to 
 }
 
 TEST_CASE("the co-op notice stays inside the window under every skin") {
+  constexpr std::array<std::string_view, 5> Notices{
+      "online.coop.disconnected", "online.coop.guest_not_saved", "online.coop.guest_other_variant",
+      "online.coop.guest_other_variant_kept", "online.coop.player_other_variant"};
   for (const std::string_view skin : Skins) {
     for (const Window& window : Windows) {
-      CAPTURE(skin);
-      CAPTURE(window.width);
-      CAPTURE(window.scale);
-      Screen screen{"coop_hud", "es"};
-      screen.skin(skin);
-      screen.ui->resize(window.width, window.height);
-      screen.ui->setScale(window.scale);
-      screen.ui->setSetting("coop_hud.tag.visible", true);
-      screen.ui->setSetting("coop_hud.tag.x", 50.0);
-      screen.ui->setSetting("coop_hud.tag.y", 50.0);
-      screen.ui->setSetting("coop_hud.tag.name", std::string{LongName});
-      screen.ui->setSetting("coop_hud.notice.shown", true);
-      screen.ui->setSetting("coop_hud.notice.text", std::string{"online.coop.disconnected"});
-      screen.ui->setSetting("coop_hud.notice.name", std::string{LongName});
-      screen.ui->show("coop_hud", true);
-      screen.frames(10);
-      for (const std::string_view id : {"tag", "notice"}) {
-        CAPTURE(id);
-        REQUIRE(screen.ui->elementShown("coop_hud", id));
-        const auto drawn = screen.ui->elementDrawnRect("coop_hud", id);
-        REQUIRE(drawn.has_value());
-        checkInside(*drawn, windowRect(window));
+      for (const std::string_view notice : Notices) {
+        CAPTURE(skin);
+        CAPTURE(window.width);
+        CAPTURE(window.scale);
+        CAPTURE(notice);
+        Screen screen{"coop_hud", "es"};
+        screen.skin(skin);
+        screen.ui->resize(window.width, window.height);
+        screen.ui->setScale(window.scale);
+        screen.ui->setSetting("coop_hud.tag.visible", true);
+        screen.ui->setSetting("coop_hud.tag.x", 50.0);
+        screen.ui->setSetting("coop_hud.tag.y", 50.0);
+        screen.ui->setSetting("coop_hud.tag.name", std::string{LongName});
+        screen.ui->setSetting("coop_hud.notice.shown", true);
+        screen.ui->setSetting("coop_hud.notice.text", std::string{notice});
+        screen.ui->setSetting("coop_hud.notice.name", std::string{LongName});
+        screen.ui->show("coop_hud", true);
+        screen.frames(10);
+        for (const std::string_view id : {"tag", "notice"}) {
+          CAPTURE(id);
+          REQUIRE(screen.ui->elementShown("coop_hud", id));
+          const auto drawn = screen.ui->elementDrawnRect("coop_hud", id);
+          REQUIRE(drawn.has_value());
+          checkInside(*drawn, windowRect(window));
+        }
+        CHECK(screen.ui->elementText("coop_hud", "notice-text").contains(LongName));
       }
-      CHECK(screen.ui->elementText("coop_hud", "notice-text").contains(LongName));
     }
   }
 }

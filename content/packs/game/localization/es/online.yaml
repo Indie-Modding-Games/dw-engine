@@ -204,6 +204,10 @@ coop.came_home: "De vuelta del mundo de {name}: tu compañero y tu bolsa volvier
 # cooperativa (coop-training.md): el reloj del mundo no se detiene por él.
 coop.training: "Entrenando"
 coop.training_clock: "Entrenas en compañía: el tiempo del mundo sigue corriendo y cada sesión cuenta su propia hora para tu compañero."
+# Un invitado que trajo una partida de la otra variante, y el aviso del anfitrión (game-variants.md, "Cooperativo").
+coop.guest_other_variant: "El mundo de {name} juega otra variante, con sus reglas. Tu compañero y tu bolsa vuelven igual."
+coop.guest_other_variant_kept: "El mundo de {name} juega otra variante: nada vuelve contigo, tu partida queda como estaba."
+coop.player_other_variant: "{name} trajo una partida de otra variante: las reglas de tu partida rigen para los dos."
 # Los nombres de las salas y jugadores de ejemplo (herramientas de desarrollo).
 sample.room_1: "Aventura del sábado"
 sample.room_2: "Exploración tranquila"

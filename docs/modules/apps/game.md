@@ -13,6 +13,14 @@ systems come from it, so a route with the same seed plays the same every time. W
 system clock and writes it to the log (`game: new game, seed <n>`) so that the game from a bug report can be repeated.
 With `--load` the option changes nothing: the loaded game continues with the state of the random numbers it saved.
 
+## Game variant
+
+The game's mode is its [variant](../../architecture/game-variants.md). `PlaySession` builds a `ModeOptions`
+(`src/mode_options.{hpp,cpp}`) from it: `playSettings()` is the player's settings with the mode's fixed options on top,
+which the play options, the rare items and free exploration read; it publishes `options.variant` and
+`options.locked.<option>` while the game lives, and `runGame` drops the commands that would change a fixed option
+(`PlaySession::refusesFixedOption`). The player's settings file is never written for it.
+
 ## The partner on the field
 
 The field draws the partner with the model of its species: `digimon/<species>/model` of the base pack, with the
@@ -2021,8 +2029,8 @@ hidden content) goes to a following page of the tree ([canonical stages](#canoni
 A new form uses another species' icon with another palette until it has icons of its own.
 
 **Game mode.** Before the rules, `TitleScreen` asks for the mode (`ui/new_game_mode`, `NewGameModes` in
-`new_game_mode.hpp`) only if the packs bring more than one ([modes](../game/modes.md)); the game only brings
-"Original story", so it does not appear. It publishes `new_game_mode.count` and `new_game_mode.<n>.id`, `name` and `description`
+`new_game_mode.hpp`) only if the packs bring more than one ([modes](../game/modes.md)); the game brings the two
+[game variants](../../architecture/game-variants.md), Classic Enhanced and Folder Mode, so it always appears. It publishes `new_game_mode.count` and `new_game_mode.<n>.id`, `name` and `description`
 and receives `new_game_mode` with the id or `new_game_mode_back`. The chosen mode goes to `PlayStart::modeId` and to the session
 (`SessionDesc::modeId`, `mode` section of the save). The rules appear afterward only for a mode that admits
 `original` and `oculto`; another mode starts with its `ruleset`.

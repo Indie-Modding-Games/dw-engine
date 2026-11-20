@@ -888,7 +888,16 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     api(Options, Query, "options.get", Any, "(name: string): any",
         "An option's value now (or its default value); nil if it does not exist."),
     api(Options, Action, "options.set", Boolean, "(name: string, value: any): boolean, string?",
-        "Asks to give an option a value; checks the type and the values it accepts."),
+        "Asks to give an option a value; checks the type and the values it accepts, and refuses an option the game fixes."),
+    api(Options, Query, "options.variant", Text, "(): string?",
+        "The name key of the game variant (the game mode) of the game being played; nil at the title."),
+    api(Options, Query, "options.locked", Boolean, "(name: string): boolean",
+        "Whether the game being played fixes the option at one value (Classic Enhanced fixes those that change the rules); set refuses it while the game lasts."),
+    entry(
+        Options, Setting, "options.variant", Text,
+        "The name key of the game variant being played; empty at the title. See options.variant()."),
+    entry(Options, Setting, "options.locked.<name>", Boolean,
+          "Whether the game being played fixes the option. Read it with options.locked(name)."),
     event(Options, "options.changed", "@options",
           "An option changed; name says which and value its value."),
     // The battle (apps/game: battle_screen.cpp, tournament_match_screen.cpp; packages/screens:

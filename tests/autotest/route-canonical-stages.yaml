@@ -21,7 +21,10 @@ steps:
   - menu_select: slot-1
   - wait: {shown: dialog, seconds: 0.5, timeout: 30}
   - menu_select: yes
-  - wait: {shown: new_game_rules, seconds: 0.5, timeout: 30}
+  # Folder Mode, the variant whose rules screen offers the extras (docs/architecture/game-variants.md).
+  - wait: {shown: new_game_mode, seconds: 0.5, timeout: 30}
+  - menu_select: mode-2
+  - wait: {shown: new_game_rules, hidden: new_game_mode, seconds: 0.5, timeout: 30}
   # Every species as a partner starts on (docs/modules/game/extra-evolutions.md): off, so the chart is this route's.
   - menu_select: rules-all
   - wait: {seconds: 0.3}

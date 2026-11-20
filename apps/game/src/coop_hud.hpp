@@ -56,6 +56,10 @@ inline constexpr std::string_view CoopWentHomeText = "online.coop.went_home";
 inline constexpr std::string_view CoopHomeFailedText = "online.coop.home_failed";
 inline constexpr std::string_view CoopCameHomeText = "online.coop.came_home";
 inline constexpr double CoopFieldNoticeSeconds = 8.0;
+inline constexpr std::string_view CoopGuestOtherVariantText = "online.coop.guest_other_variant";
+inline constexpr std::string_view CoopPlayerOtherVariantText = "online.coop.player_other_variant";
+inline constexpr std::string_view CoopGuestOtherVariantKeptText =
+    "online.coop.guest_other_variant_kept";
 // A guest whose host is busy (a long load there): it waits for the host, {name}.
 inline constexpr std::string_view CoopWaitingHostText = "online.coop.waiting_host";
 // The words that name a player with no name of their own.

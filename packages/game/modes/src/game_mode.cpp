@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "messages.hpp"
 
@@ -24,6 +25,7 @@ constexpr std::string_view DescriptionKey = "description";
 constexpr std::string_view RulesetKey = "ruleset";
 constexpr std::string_view RulesetsKey = "rulesets";
 constexpr std::string_view OrderKey = "order";
+constexpr std::string_view OptionsKey = "options";
 
 bool isModeId(std::string_view id) {
   return !id.empty() && id.front() >= 'a' && id.front() <= 'z' &&
@@ -42,7 +44,40 @@ std::string filledText(YamlReader& reader, const YamlNode& node) {
   return text;
 }
 
+std::vector<OptionPin> readPins(YamlReader& reader, const YamlNode& node) {
+  std::vector<OptionPin> pins;
+  if (!node.isMapping()) {
+    reader.fail(node, messages::ModeOptionsNotMapping);
+    return pins;
+  }
+  for (const core::YamlEntry& entry : node.entries()) {
+    if (!isModeId(entry.key)) {
+      reader.fail(entry.value, core::formatMessage(messages::ModeBadOption, entry.key));
+      break;
+    }
+    if (!entry.value.isScalar() || entry.value.text().empty()) {
+      reader.fail(entry.value, core::formatMessage(messages::ModeOptionNotScalar, entry.key));
+      break;
+    }
+    pins.push_back({.option = entry.key, .value = entry.value.text()});
+  }
+  return pins;
+}
+
 } // namespace
+
+std::string_view currentModeId(std::string_view saved) {
+  return saved.empty() || saved == LegacyStoryMode ? DefaultMode : saved;
+}
+
+bool takesProgressFrom(const GameMode& save, const GameMode& world) {
+  if (save.id == world.id) {
+    return true;
+  }
+  return save.options.empty() && std::ranges::all_of(world.rulesets, [&](const std::string& id) {
+           return std::ranges::contains(save.rulesets, id);
+         });
+}
 
 core::Result<GameMode> parseGameMode(std::string_view yaml, std::string_view folder) {
   auto tree = core::parseYaml(yaml);
@@ -52,7 +87,8 @@ core::Result<GameMode> parseGameMode(std::string_view yaml, std::string_view fol
   const YamlNode& root = *tree;
   YamlReader reader;
   if (!reader.expectKeys(root, messages::ModeText,
-                         {IdKey, NameKey, DescriptionKey, RulesetKey, RulesetsKey, OrderKey})) {
+                         {IdKey, NameKey, DescriptionKey, RulesetKey, RulesetsKey, OrderKey},
+                         {OptionsKey})) {
     return std::unexpected{reader.error(messages::ModeText)};
   }
   GameMode mode;
@@ -79,6 +115,9 @@ core::Result<GameMode> parseGameMode(std::string_view yaml, std::string_view fol
     reader.fail(rulesetNode, core::formatMessage(messages::ModeRulesetNotListed, mode.ruleset));
   }
   mode.order = reader.integer<std::int32_t>(reader.field(root, OrderKey));
+  if (const YamlNode* options = root.find(OptionsKey); options != nullptr && reader.ok()) {
+    mode.options = readPins(reader, *options);
+  }
   return reader.finish(std::move(mode), messages::ModeText);
 }
 

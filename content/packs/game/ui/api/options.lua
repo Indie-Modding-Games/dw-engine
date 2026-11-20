@@ -727,12 +727,27 @@ function options.get(name)
   return value
 end
 
+function options.variant()
+  local key = ui.setting("options.variant")
+  if type(key) ~= "string" or key == "" then
+    return nil
+  end
+  return key
+end
+
+function options.locked(name)
+  return ui.setting("options.locked." .. tostring(name)) == true
+end
+
 -- Asks the game to give an option a value. Returns true when the request is queued, or false and
 -- why; the game answers with options.changed.
 function options.set(name, value)
   local option = descriptor(name)
   if option == nil then
     return false, "no option " .. tostring(name)
+  end
+  if options.locked(name) then
+    return false, name .. " is fixed in this game"
   end
   local kind = kind_of(option)
   if kind == "range" then

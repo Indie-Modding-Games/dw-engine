@@ -28,4 +28,6 @@ extractCoopGuestPartnerProfile(std::string_view saveText);
 [[nodiscard]] core::Result<std::string> hostWorldWithGuestPartner(std::string_view hostSaveText,
                                                                   std::string_view guestSaveText);
 
+[[nodiscard]] std::string coopSaveMode(std::string_view saveText);
+
 } // namespace dwe::app

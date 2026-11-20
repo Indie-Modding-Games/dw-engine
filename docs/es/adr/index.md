@@ -59,3 +59,4 @@ sustituido.
 | [0023](0023-remaster-pipeline.md) | Remaster por recetas, con proveedores intercambiables, caché por contenido y local por defecto | Sustituida por 0025 |
 | [0024](0024-co-op-with-authoritative-host.md) | Cooperativo en línea con un host autoritativo y jugadores movidos por controladores | Propuesta |
 | [0025](0025-high-definition-in-the-engine.md) | Alta definición en el motor, con solo pasos deterministas fuera de línea | Aceptada |
+| [0026](0026-game-variants-as-modes.md) | Variantes de juego como modos de juego con opciones fijas | Aceptada |

@@ -207,6 +207,10 @@ coop.came_home: "Back from {name}'s world: your partner and your bag came home w
 # (coop-training.md): the world's clock does not stop for it.
 coop.training: "Training"
 coop.training_clock: "Training in company: the world's time keeps running, and each session counts its own hour for your partner."
+# A guest who brought a save of the other game variant, and the host's notice of it (game-variants.md, "Co-op").
+coop.guest_other_variant: "{name}'s world plays another variant, under its rules. Your partner and bag still go home."
+coop.guest_other_variant_kept: "{name}'s world plays another variant: nothing goes home, your save stays as it was."
+coop.player_other_variant: "{name} brought a save of another variant: your game's rules apply to both of you."
 # The names of the sample rooms and players (developer tools).
 sample.room_1: "Saturday adventure"
 sample.room_2: "Easy exploring"

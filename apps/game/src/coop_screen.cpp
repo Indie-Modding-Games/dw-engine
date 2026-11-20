@@ -408,6 +408,12 @@ std::string_view CoopScreen::partnerSpeciesOf(game::coop::PlayerId id) const {
                                 : std::string_view{};
 }
 
+std::string CoopScreen::saveModeOf(game::coop::PlayerId id) const {
+  const auto lobby = guests_.find(id);
+  return lobby != guests_.end() && lobby->second.saveText ? coopSaveMode(*lobby->second.saveText)
+                                                          : std::string{};
+}
+
 std::string_view CoopScreen::remotePartnerSpecies() const {
   if (!isHost_) {
     return remotePartnerSpecies_;
@@ -502,6 +508,8 @@ void CoopScreen::completeRemoteStart() {
     return;
   }
   remoteStartText_ = std::move(*combined);
+  hostVariant_ = coopSaveMode(*hostSaveText_);
+  ownVariant_ = coopSaveMode(*guestSaveText_);
   // One game per JoinState: once the link comes back from the game, the same state must not start
   // the host's world again (after the host left, that game would come back over the title).
   remoteJoinState_.reset();

@@ -363,6 +363,11 @@
 	color: #efc63c;
 }
 
+#option-tag.locked {
+	border-color: #a0503c;
+	color: #f08a6a;
+}
+
 #option-foot {
 	margin: 0 30dp 0 -16dp;
 	padding: 8dp 12dp 0 12dp;

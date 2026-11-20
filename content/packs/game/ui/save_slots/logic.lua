@@ -1,8 +1,8 @@
 -- The title screen's slot list (docs/architecture/save-and-load.md, 3.4 and 3.5): the empty
 -- slots for a new game, or the saves to continue. The game publishes the slots as settings
 -- (save.slots.mode, "new" or "continue"; save.slots, the count; save.slot.<n>.kind, number, state,
--- nickname, species, species_key, map, map_key, play_seconds and updated, from 0; and
--- save.slots.newest, the entry saved last, where continuing starts) and shows this document; it
+-- nickname, species, species_key, map, map_key, mode, mode_key, play_seconds and updated, from 0;
+-- and save.slots.newest, the entry saved last, where continuing starts) and shows this document; it
 -- sends choose_slot with the entry, from 0, play_without_saving or slots_back. Pages of six
 -- entries, turned with left and right or the page buttons. The page and the row chosen stay while a
 -- dialog about it is open, and start over when the list is opened from the main menu (on_show's
@@ -163,6 +163,7 @@ local function label_of(entry)
       named(entry, "map"),
       played(entry),
       field(entry, "updated"),
+      named(entry, "mode"),
     }) do
       if part ~= "" then
         table.insert(parts, part)
@@ -262,6 +263,10 @@ local function refresh_detail(document)
         end
       end
       lines = { partner_of(row.entry), table.concat(parts, "  ") }
+      local variant = named(row.entry, "mode")
+      if variant ~= "" then
+        lines[1] = lines[1] .. "  -  " .. variant
+      end
       -- An old autosave's short row label ("CONTINUE OLD 1") is named in full here.
       if row.kind == "autosave" then
         lines[1] = t("save.slots.autosave", { number = row.number }) .. "  " .. lines[1]

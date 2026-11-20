@@ -213,6 +213,9 @@ tab.interface: "Interface"
 # or behaves as it.
 tag.improvement: "Improvement"
 tag.original: "As the original"
+# The tag and help of an option the game's variant fixes (docs/architecture/game-variants.md).
+tag.locked: "Fixed in {variant}"
+help.locked: "{variant} keeps this option as the original game has it while you play this game. Start a Folder Mode game to change it."
 # The keys at the foot of the options: Q/E switch tabs, left/right change the value.
 hint.tabs: "Tab"
 hint.change: "Change"

@@ -1,0 +1,21 @@
+# Classic Enhanced (docs/architecture/game-variants.md): the original game's story, rules, balance and progression,
+# with the engine's technical and comfort improvements and its bug fixes. It starts with the original's rules and
+# offers no other, and its games fix the options that change the rules, the progression or the content at the
+# original's values; the options page shows them locked while one of its games is played.
+id: classic
+name: modes.classic_name
+description: modes.classic_description
+ruleset: original
+rulesets: [original]
+order: 0
+options:
+  # The easy difficulty changes the original's balance.
+  difficulty: normal
+  # Rare evolution items lying in the field are not in the original.
+  rare_items: false
+  # Map changes that go anywhere skip the original's progression.
+  free_exploration: false
+  # Extra toilet booths change the care's map.
+  extra_toilets: false
+  # Taking the egg after losing every life changes the original's rebirth rule.
+  choose_egg_after_lives_lost: false
