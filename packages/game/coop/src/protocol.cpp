@@ -10,7 +10,7 @@ namespace dwe::game::coop {
 
 namespace {
 
-constexpr std::uint8_t LastKind = RosterKind;
+constexpr std::uint8_t LastKind = ClaimAnswerKind;
 // A roster name or partner species longer than this is damaged.
 constexpr std::size_t MaxRosterText = 64;
 
@@ -267,6 +267,45 @@ bool getSpoils(net::WireReader& in, BattleSpoils& spoils) {
   return in.ok() && spoils.hp >= 0 && spoils.mp >= 0 && spoils.frames >= 0;
 }
 
+void putEdits(net::WireWriter& out, const std::vector<WorldEdit>& edits) {
+  out.put(static_cast<std::uint8_t>(edits.size()));
+  for (const WorldEdit& edit : edits) {
+    out.put(edit.kind).put(edit.key).put(edit.value);
+    if (edit.kind == WorldEditKind::MapBlock) {
+      out.put(edit.width).put(edit.height);
+    }
+  }
+}
+
+bool getEdits(net::WireReader& in, std::vector<WorldEdit>& edits) {
+  const std::uint8_t count = in.get<std::uint8_t>();
+  if (count > MaxWorldEdits) {
+    return false;
+  }
+  for (std::uint8_t i = 0; i < count && in.ok(); ++i) {
+    const std::uint8_t kind = in.get<std::uint8_t>();
+    if (kind > static_cast<std::uint8_t>(WorldEditKind::MapBlock)) {
+      return false;
+    }
+    WorldEdit edit{.kind = static_cast<WorldEditKind>(kind),
+                   .key = in.get<std::int32_t>(),
+                   .value = in.get<std::int32_t>()};
+    if (edit.kind == WorldEditKind::MapBlock) {
+      edit.width = in.get<std::int16_t>();
+      edit.height = in.get<std::int16_t>();
+    }
+    const bool valid = edit.kind == WorldEditKind::Trigger
+                           ? edit.key >= 0 && (edit.value == 0 || edit.value == 1)
+                       : edit.kind == WorldEditKind::MapBlock ? edit.width > 0 && edit.height > 0
+                                                              : edit.key >= 0;
+    if (!valid) {
+      return false;
+    }
+    edits.push_back(edit);
+  }
+  return in.ok();
+}
+
 } // namespace
 
 net::Bytes encode(const Message& message) {
@@ -326,6 +365,42 @@ net::Bytes encode(const Message& message) {
             out.put(entry.id).put(std::string_view{entry.name});
             out.put(std::string_view{entry.partnerSpecies});
           }
+        } else if constexpr (std::is_same_v<T, WorldAsk>) {
+          out.put(WorldAskKind).put(body.ask).put(std::string_view{body.mapId});
+          putEdits(out, body.edits);
+        } else if constexpr (std::is_same_v<T, WorldChange>) {
+          out.put(WorldChangeKind).put(body.revision).put(body.origin).put(body.ask);
+          out.put(std::string_view{body.mapId});
+          putEdits(out, body.edits);
+        } else if constexpr (std::is_same_v<T, WorldSync>) {
+          out.put(WorldSyncKind).put(body.revision).put(body.part).put(body.parts);
+          out.put(body.firstTrigger).put(static_cast<std::uint16_t>(body.triggers.size()));
+          std::uint8_t bits = 0;
+          for (std::size_t i = 0; i < body.triggers.size(); ++i) {
+            if (body.triggers[i]) {
+              bits = static_cast<std::uint8_t>(bits | (1U << (i % 8)));
+            }
+            if (i % 8 == 7 || i + 1 == body.triggers.size()) {
+              out.put(bits);
+              bits = 0;
+            }
+          }
+          out.put(body.firstVariable).put(static_cast<std::uint16_t>(body.variables.size()));
+          for (const std::int32_t value : body.variables) {
+            out.put(value);
+          }
+        } else if constexpr (std::is_same_v<T, GroundItems>) {
+          out.put(GroundItemsKind).put(std::string_view{body.mapId}).put(body.mapSerial);
+          out.put(static_cast<std::uint8_t>(body.items.size()));
+          for (const GroundEntry& entry : body.items) {
+            out.put(entry.id).put(entry.slot).put(std::string_view{entry.item});
+            out.put(entry.column).put(entry.row).put(entry.x).put(entry.y).put(entry.z);
+          }
+        } else if constexpr (std::is_same_v<T, ItemClaim>) {
+          out.put(ItemClaimKind).put(body.claim).put(body.kind).put(body.key).put(body.id);
+          out.put(std::string_view{body.mapId});
+        } else if constexpr (std::is_same_v<T, ClaimAnswer>) {
+          out.put(ClaimAnswerKind).put(body.claim).put(body.granted);
         } else if constexpr (std::is_same_v<T, Leave>) {
           out.put(LeaveKind).put(body.reason);
         } else if constexpr (std::is_same_v<T, BattleAsk>) {
@@ -717,6 +792,110 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
       return core::fail("cooperative roster has no host");
     }
     message = std::move(roster);
+    break;
+  }
+  case WorldAskKind: {
+    WorldAsk ask{.ask = in.get<std::uint32_t>(), .mapId = in.text(), .edits = {}};
+    if (!getEdits(in, ask.edits) || ask.mapId.empty()) {
+      return core::fail("invalid cooperative world ask");
+    }
+    message = std::move(ask);
+    break;
+  }
+  case WorldChangeKind: {
+    WorldChange change{.revision = in.get<std::uint32_t>(),
+                       .origin = in.get<PlayerId>(),
+                       .ask = in.get<std::uint32_t>(),
+                       .mapId = in.text(),
+                       .edits = {}};
+    if (!getEdits(in, change.edits) || !validPlayer(change.origin) || change.revision == 0) {
+      return core::fail("invalid cooperative world change");
+    }
+    message = std::move(change);
+    break;
+  }
+  case WorldSyncKind: {
+    WorldSync sync{.revision = in.get<std::uint32_t>(),
+                   .part = in.get<std::uint16_t>(),
+                   .parts = in.get<std::uint16_t>(),
+                   .firstTrigger = in.get<std::int32_t>(),
+                   .triggers = {},
+                   .firstVariable = 0,
+                   .variables = {}};
+    const std::uint16_t triggers = in.get<std::uint16_t>();
+    if (!in.ok() || triggers > MaxSyncTriggers || sync.parts == 0 || sync.part >= sync.parts ||
+        sync.firstTrigger < 0) {
+      return core::fail("invalid cooperative world sync");
+    }
+    sync.triggers.reserve(triggers);
+    for (std::size_t byte = 0; byte < (triggers + 7U) / 8U && in.ok(); ++byte) {
+      const std::uint8_t bits = in.get<std::uint8_t>();
+      for (std::size_t bit = 0; bit < 8 && sync.triggers.size() < triggers; ++bit) {
+        sync.triggers.push_back(((bits >> bit) & 1U) != 0);
+      }
+    }
+    sync.firstVariable = in.get<std::int32_t>();
+    const std::uint16_t variables = in.get<std::uint16_t>();
+    if (!in.ok() || variables > MaxSyncVariables || sync.firstVariable < 0) {
+      return core::fail("invalid cooperative world sync variables");
+    }
+    for (std::uint16_t i = 0; i < variables && in.ok(); ++i) {
+      sync.variables.push_back(in.get<std::int32_t>());
+    }
+    message = std::move(sync);
+    break;
+  }
+  case GroundItemsKind: {
+    GroundItems ground{.mapId = in.text(), .mapSerial = in.get<std::uint32_t>(), .items = {}};
+    const std::uint8_t count = in.get<std::uint8_t>();
+    if (!in.ok() || ground.mapId.empty() || count > MaxGroundEntries) {
+      return core::fail("invalid cooperative ground items");
+    }
+    std::unordered_set<std::uint8_t> slots;
+    for (std::uint8_t i = 0; i < count && in.ok(); ++i) {
+      GroundEntry entry{.id = in.get<std::uint32_t>(),
+                        .slot = in.get<std::uint8_t>(),
+                        .item = in.text(),
+                        .column = in.get<std::int16_t>(),
+                        .row = in.get<std::int16_t>(),
+                        .x = in.get<std::int32_t>(),
+                        .y = in.get<std::int32_t>(),
+                        .z = in.get<std::int32_t>()};
+      if (entry.id == 0 || entry.item.empty() || entry.item.size() > MaxGroundItemId ||
+          !slots.insert(entry.slot).second || !validCoordinate(entry.x, MaxWorldCoordinate) ||
+          !validCoordinate(entry.y, MaxWorldCoordinate) ||
+          !validCoordinate(entry.z, MaxWorldCoordinate)) {
+        return core::fail("invalid or duplicate cooperative ground item");
+      }
+      ground.items.push_back(std::move(entry));
+    }
+    message = std::move(ground);
+    break;
+  }
+  case ItemClaimKind: {
+    ItemClaim claim{
+        .claim = in.get<std::uint32_t>(), .kind = ClaimKind::Chest, .key = 0, .id = 0, .mapId = {}};
+    const std::uint8_t claimKind = in.get<std::uint8_t>();
+    claim.key = in.get<std::int32_t>();
+    claim.id = in.get<std::uint32_t>();
+    claim.mapId = in.text();
+    if (!in.ok() || claimKind > static_cast<std::uint8_t>(ClaimKind::GroundItem) ||
+        claim.claim == 0 || claim.key < 0 || claim.mapId.empty()) {
+      return core::fail("invalid cooperative item claim");
+    }
+    claim.kind = static_cast<ClaimKind>(claimKind);
+    if (claim.kind == ClaimKind::GroundItem && claim.id == 0) {
+      return core::fail("cooperative item claim names no ground item");
+    }
+    message = std::move(claim);
+    break;
+  }
+  case ClaimAnswerKind: {
+    ClaimAnswer answer{.claim = in.get<std::uint32_t>(), .granted = in.get<bool>()};
+    if (!in.ok() || answer.claim == 0) {
+      return core::fail("invalid cooperative claim answer");
+    }
+    message = answer;
     break;
   }
   case LeaveKind: {

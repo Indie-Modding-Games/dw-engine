@@ -509,6 +509,21 @@ bool StoryAdapter::hasPlayerItem(std::int32_t slot) const {
          state_.trigger(FirstPlayerItemTrigger + slot).value_or(false);
 }
 
+bool StoryAdapter::playerOwnTrigger(std::int32_t trigger) const {
+  const auto within = [trigger](std::int32_t first, std::int32_t count) {
+    return trigger >= first && trigger < first + count;
+  };
+  return within(FirstRaisedTrigger, RaisedSpeciesLimit) ||
+         within(extraRaisedRange_.firstTrigger, extraRaisedRange_.species) ||
+         within(FirstMedalTrigger, MedalCount) || within(FirstPlayerItemTrigger, PlayerItemCount) ||
+         std::cmp_equal(trigger, flow_.talkFacingTrigger);
+}
+
+bool StoryAdapter::playerOwnVariable(std::int32_t variable) const {
+  return std::cmp_equal(variable, flow_.frozenVariable) ||
+         std::cmp_equal(variable, flow_.showNameVariable);
+}
+
 core::Result<void> StoryAdapter::addSaveSections(game::save::SaveSections& sections) {
   game::save::MigrationChain chain;
   chain.add(game::story::storyStateFromVersion1);

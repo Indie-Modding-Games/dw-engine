@@ -35,6 +35,11 @@ constexpr std::string_view ItemSetting = "field_item_notice.item";
 constexpr std::string_view FoundText = "main.tamer_messages.0000";
 constexpr std::string_view BagFullText = "main.tamer_messages.0001";
 constexpr std::string_view EmptyText = "main.tamer_messages.0002";
+// Co-op: another player took the item first (#357).
+constexpr std::string_view GoneText = "online.coop.item_gone";
+// A co-op guest's take waits this many original frames (ten seconds) for the host's word, then
+// counts as refused.
+constexpr std::int32_t ClaimWaitFrames = 200;
 // map_object.c: CHEST_TMD and CHEST_SCALE (1).
 constexpr std::string_view ChestModel = "model/etcna/taka";
 // tamerTickTakeChest state 0: startAnimation(player, 0), and partnerTickIdle's clip 0.
@@ -162,6 +167,10 @@ void FieldItemsScreen::originalFrame() {
     }
     return;
   }
+  if (step_ == Step::Claiming) {
+    settleClaim();
+    return;
+  }
   if (closing_) {
     // tamerTickTakeChest state 3: the bag was full, the drawer goes back in; the counter waits.
     if (items.slideTrayIn(slot_)) {
@@ -183,7 +192,8 @@ bool FieldItemsScreen::chestStep() const {
 }
 
 bool FieldItemsScreen::ready() const {
-  return active() && !boxDue_ && step_ != Step::Opening && !closing_ && counter_.takes(chestStep());
+  return active() && !boxDue_ && step_ != Step::Opening && step_ != Step::Claiming && !closing_ &&
+         counter_.takes(chestStep());
 }
 
 void FieldItemsScreen::publishReady() {
@@ -263,6 +273,9 @@ void FieldItemsScreen::answer() {
   counter_.reset();
   switch (step_) {
   case Step::GroundItem: {
+    if (const auto& lying = items_->items().ground()[slot_]; lying && claimTake(lying->item)) {
+      return;
+    }
     const session::TakeOutcome outcome = items_->pickUp(slot_);
     if (outcome == session::TakeOutcome::BagFull) {
       // tamerTickPickupItem state 3: the second words, and the counter waits again.
@@ -271,14 +284,22 @@ void FieldItemsScreen::answer() {
         publishReady();
         return;
       }
-    } else if (const auto& rules = items_->rules();
-               outcome == session::TakeOutcome::Taken && rules && sound_ != nullptr) {
-      sound_->playSound(rules->pickupSound.slot, rules->pickupSound.sound);
+    } else if (outcome == session::TakeOutcome::Taken) {
+      playPickupSound();
+    } else if (shared_) {
+      // Co-op: another player picked it up while the notice was open.
+      show(Step::Gone, GoneText, std::nullopt);
+      publishReady();
+      return;
     }
     close();
     return;
   }
   case Step::Chest: {
+    if (const auto& chest = items_->items().chests()[slot_];
+        chest && !chest->taken && claimTake(chest->item)) {
+      return;
+    }
     // tamerTickTakeChest state 2: the item is the player's (setTrigger) and the notice waits for
     // the confirm that closes it (state 4); with the bag full the drawer goes back in (state 3)
     // under the second words.
@@ -289,6 +310,9 @@ void FieldItemsScreen::answer() {
                outcome == session::TakeOutcome::BagFull && chest) {
       closing_ = true;
       show(Step::BagFull, BagFullText, chest->item);
+    } else if (shared_) {
+      // Co-op: another player emptied it while the notice was open.
+      show(Step::Gone, GoneText, std::nullopt);
     } else {
       close();
       return;
@@ -299,18 +323,85 @@ void FieldItemsScreen::answer() {
   case Step::Taken:
   case Step::BagFull:
   case Step::Empty:
+  case Step::Gone:
     close();
     return;
   case Step::None:
   case Step::Opening:
+  case Step::Claiming:
     return;
   }
 }
 
-void FieldItemsScreen::show(Step step, std::string_view text, assets::ItemHandle item) {
+bool FieldItemsScreen::claimTake(assets::ItemHandle item) {
+  if (!claims_ || !inventory_->inventory().hasRoomFor(item)) {
+    return false;
+  }
+  claim_ = {
+      .state = FieldItemClaim::State::Asked, .chest = chestStep(), .index = slot_, .number = 0};
+  claimed_ = item;
+  claimFrames_ = 0;
+  step_ = Step::Claiming;
+  publishReady();
+  return true;
+}
+
+void FieldItemsScreen::settleClaim() {
+  game::field::FieldItems& items = items_->items();
+  const bool chest = claim_.chest;
+  switch (claim_.state) {
+  case FieldItemClaim::State::Granted: {
+    claim_ = {};
+    if (chest) {
+      // The host set the chest's trigger; the drawer stays out and the notice waits for the
+      // confirm that closes it, as for a chest taken in single player.
+      (void)items_->receive(*claimed_);
+      if (const auto& placed = items.chests()[slot_]; placed && !placed->taken) {
+        items.markTaken(slot_);
+      }
+      step_ = Step::Taken;
+      counter_.reset();
+      publishReady();
+      return;
+    }
+    const auto& lying = items.ground()[slot_];
+    const session::TakeOutcome outcome =
+        lying && lying->item == *claimed_ ? items_->pickUp(slot_) : items_->receive(*claimed_);
+    if (outcome == session::TakeOutcome::Taken) {
+      playPickupSound();
+    }
+    close();
+    return;
+  }
+  case FieldItemClaim::State::Refused:
+    break;
+  case FieldItemClaim::State::None:
+  case FieldItemClaim::State::Asked:
+  case FieldItemClaim::State::Sent:
+    if (++claimFrames_ <= ClaimWaitFrames) {
+      return;
+    }
+    core::logWarning("coop: no answer from the host on taking '{}'; the take is dropped",
+                     inventory_->items().at(*claimed_).id);
+    break;
+  }
+  claim_ = {};
+  counter_.reset();
+  show(Step::Gone, GoneText, std::nullopt);
+  publishReady();
+}
+
+void FieldItemsScreen::playPickupSound() {
+  if (const auto& rules = items_->rules(); rules && sound_ != nullptr) {
+    sound_->playSound(rules->pickupSound.slot, rules->pickupSound.sound);
+  }
+}
+
+void FieldItemsScreen::show(Step step, std::string_view text,
+                            std::optional<assets::ItemHandle> item) {
   step_ = step;
   const screens::NameKeys names{nullptr, &inventory_->items(), nullptr};
-  ui_->setSetting(ItemSetting, step == Step::Empty ? std::string{} : names.item(item));
+  ui_->setSetting(ItemSetting, step == Step::Empty || !item ? std::string{} : names.item(*item));
   ui_->setSetting(TextSetting, std::string{text});
   ui_->setSetting(PhaseSetting, std::string{"open"});
   ui_->show(FieldItemNoticeDocument, true);
@@ -319,6 +410,7 @@ void FieldItemsScreen::show(Step step, std::string_view text, assets::ItemHandle
 void FieldItemsScreen::close() {
   const bool shown = step_ != Step::Opening && !boxDue_;
   step_ = Step::None;
+  claim_ = {};
   boxDue_ = false;
   closing_ = false;
   publishReady();

@@ -202,6 +202,10 @@ public:
   // Takes a chest's item into the bag and sets its trigger (tamer.c: tamerTickTakeChest).
   TakeOutcome takeChest(std::size_t chest);
 
+  // An item the co-op host granted this game's player (#357): into the bag. The world shows it
+  // taken by the host's word (its chest trigger, its ground list), not by this game's.
+  TakeOutcome receive(assets::ItemHandle item);
+
   // An item a script lays on a cell of the map the player is on (item.c: spawnItem), by the
   // original's item number; false when there is no such item or no room on the ground. A spot
   // where a rare item lies keeps it: the script's item does not come (true).

@@ -173,6 +173,8 @@ cancel: "Cancelar"
 # Los avisos de la partida cooperativa.
 coop.disconnected: "{name} se desconectó."
 coop.host_left: "El anfitrión cerró la sala. Volviste al menú."
+# Otro jugador tomó primero el objeto del cofre o del suelo (field_item_notice).
+coop.item_gone: "¡Tarde! Otro jugador ya lo tomó."
 # La partida del invitado es el mundo del anfitrión en memoria: no se guarda nada de ella (multiplayer.md, «Guardado en cooperativo»).
 coop.guest_not_saved: "Eres invitado: esta partida no se guarda. Tus partidas guardadas quedan como estaban."
 # Los nombres de las salas y jugadores de ejemplo (herramientas de desarrollo).

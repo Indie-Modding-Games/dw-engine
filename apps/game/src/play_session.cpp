@@ -410,6 +410,8 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
   auto play = std::make_unique<PlaySession>(Key{}, context, std::move(*game), std::move(*scene));
   play->coopGame_ = start.coop();
   play->coopGuest_ = start.coopGuest();
+  // Co-op (#357): a guest's chest or ground take waits for the host's word.
+  play->fieldItemsScreen_.setCoop(start.coop(), start.coopGuest());
   if (cleared) {
     // main.c: main, MAIN_STATE 2: a game saved after the ending plays ED2 before its field.
     core::logDebug("[port:save] main (main.c:3474): a finished game, its movie first");
@@ -931,6 +933,8 @@ void PlaySession::pressBattle(const input::InputState& input) {
 
 void PlaySession::tick(const PlayerCommands& commands, const PlayerCommands& guestCommands) {
   fieldWalks_ = false;
+  // Only this tick's: co-op takes them right after it (takeCoopWorld).
+  coopMapEdits_.clear();
   tickSystems(commands.field, commands.fishing, guestCommands.field);
   tickWater();
   // A tick that did not leave the player walking freely (a talk, a battle, a gym course, a screen)
@@ -1098,7 +1102,11 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
     game_.systems.story->runNpcContacts(scene_->field().npcContacts());
     storyLink_->afterFieldTick();
     game_.session->tick(TickSeconds);
-    applyStoryMapEdits(*scene_, game_.systems.storyOrders);
+    std::vector<game::coop::WorldEdit> mapEdits =
+        applyStoryMapEdits(*scene_, game_.systems.storyOrders);
+    if (coopGame_) {
+      coopMapEdits_.insert(coopMapEdits_.end(), mapEdits.begin(), mapEdits.end());
+    }
     if (game_.systems.storyOrders != nullptr) {
       const std::vector<std::int32_t> damage = game_.systems.storyOrders->takePartnerDamage();
       std::optional<screens::WindowFraction> feet;
@@ -2073,6 +2081,33 @@ float PlaySession::speciesScale(std::string_view species) const {
 
 screens::ScreenSettings PlaySession::partnerStatus() const {
   return partnerMenu_.statusSettings();
+}
+
+CoopWorldView PlaySession::takeCoopWorld() {
+  const game::field::Field& field = scene_->field();
+  CoopWorldView view{
+      .story = game_.systems.story != nullptr ? &game_.systems.story->state() : nullptr,
+      .items = game_.systems.fieldItems != nullptr ? &game_.systems.fieldItems->items() : nullptr,
+      .itemTable = game_.systems.inventory != nullptr ? &game_.systems.inventory->items() : nullptr,
+      .mapId = field.mapId(),
+      .mapSerial = scene_->mapSerial(),
+      .settled = !field.mapId().empty() && !field.mapChangePending(),
+      .mapEdits = std::exchange(coopMapEdits_, {}),
+      .shared = {},
+      .claim = coopGuest_ ? &fieldItemsScreen_.claim() : nullptr};
+  if (const session::StoryAdapter* story = game_.systems.story; story != nullptr) {
+    view.shared = [story](const game::coop::WorldEdit& edit) {
+      switch (edit.kind) {
+      case game::coop::WorldEditKind::Trigger:
+        return !story->playerOwnTrigger(edit.key);
+      case game::coop::WorldEditKind::Variable:
+        return !story->playerOwnVariable(edit.key);
+      default:
+        return true;
+      }
+    };
+  }
+  return view;
 }
 
 const game::story::StoryState* PlaySession::storyState() const {

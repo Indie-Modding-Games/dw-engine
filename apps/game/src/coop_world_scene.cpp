@@ -69,4 +69,14 @@ void presentCoopPlayers(FieldScene& scene, const PresentedCoopWorld* world,
   }
 }
 
+void applyCoopMapEdits(FieldScene& scene, std::span<const coop::WorldEdit> edits) {
+  for (const coop::WorldEdit& edit : edits) {
+    if (edit.kind == coop::WorldEditKind::MapObject) {
+      scene.setMapObjectFlag(edit.key, edit.value);
+    } else if (edit.kind == coop::WorldEditKind::MapBlock) {
+      scene.blockCells({.column = edit.key, .row = edit.value}, edit.width, edit.height);
+    }
+  }
+}
+
 } // namespace dwe::app

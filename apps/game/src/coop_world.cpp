@@ -93,9 +93,23 @@ void CoopHostWorld::leave(coop::PlayerId id) {
   tracks_.erase(id);
   placed_.erase(id);
   verdicts_.erase(id);
+  ledger_.leave(id);
+  synced_.erase(id);
+  std::erase_if(asks_, [id](const auto& ask) { return ask.first == id; });
+  std::erase_if(claims_, [id](const auto& claim) { return claim.first == id; });
+  lastClaim_.erase(id);
 }
 
 void CoopHostWorld::receive(coop::PlayerId from, const coop::Message& message, net::Millis now) {
+  if (const auto* ask = std::get_if<coop::WorldAsk>(&message)) {
+    // Taken after the host's next tick (share), against its own world.
+    asks_.emplace_back(from, *ask);
+    return;
+  }
+  if (const auto* claim = std::get_if<coop::ItemClaim>(&message)) {
+    claims_.emplace_back(from, *claim);
+    return;
+  }
   const auto* state = std::get_if<coop::PlayerState>(&message);
   if (state == nullptr) {
     return;
@@ -198,6 +212,13 @@ void CoopGuestWorld::receive(const coop::Message& message) {
     if (!roster_ || coop::sequenceNewer(roster->revision, roster_->revision)) {
       roster_ = *roster;
     }
+  } else if (const auto* ground = std::get_if<coop::GroundItems>(&message)) {
+    ground_.receive(*ground);
+  } else if (const auto* answer = std::get_if<coop::ClaimAnswer>(&message)) {
+    answers_.push_back(*answer);
+  } else if (std::holds_alternative<coop::WorldChange>(message) ||
+             std::holds_alternative<coop::WorldSync>(message)) {
+    worldIn_.push_back(message);
   }
 }
 

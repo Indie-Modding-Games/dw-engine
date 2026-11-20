@@ -34,6 +34,7 @@
 #include "bug_report.hpp"
 #include "care_commands.hpp"
 #include "chart_requirements.hpp"
+#include "coop_world_state.hpp"
 #include "curling_screen.hpp"
 #include "death_scene.hpp"
 #include "dev_menu_screen.hpp"
@@ -382,6 +383,10 @@ public:
   [[nodiscard]] screens::ScreenSettings partnerStatus() const;
   // The story's triggers and variables, when the game runs the story (autotest's story.* settings).
   [[nodiscard]] const game::story::StoryState* storyState() const;
+  // What co-op shares of this game's world after the last tick (#357, coop_world_state.hpp): its
+  // story, its ground items and chests, and the map edits its scripts made in that tick (handed
+  // once). Only a co-op game records the map edits.
+  [[nodiscard]] CoopWorldView takeCoopWorld();
   [[nodiscard]] std::string_view partnerSpecies() const {
     return game_.session->partner().state().species;
   }
@@ -599,6 +604,8 @@ private:
   // PlayStart::coop and PlayStart::coopGuest of the start that built this game.
   bool coopGame_ = false;
   bool coopGuest_ = false;
+  // The map edits this tick's scripts made, for co-op to share (takeCoopWorld).
+  std::vector<game::coop::WorldEdit> coopMapEdits_;
   // Whether the dialog on screen is the story lock's message.
   bool lockNoticeShown_ = false;
   std::optional<MovieMoment> movieRequest_;

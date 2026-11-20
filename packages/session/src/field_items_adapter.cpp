@@ -481,4 +481,16 @@ TakeOutcome FieldItemsAdapter::takeChest(std::size_t chest) {
   return TakeOutcome::Taken;
 }
 
+TakeOutcome FieldItemsAdapter::receive(assets::ItemHandle item) {
+  game::inventory::Inventory& bag = inventory_->inventory();
+  if (!bag.hasRoomFor(item)) {
+    core::logWarning("coop: no room in the bag for the granted '{}'",
+                     inventory_->items().at(item).id);
+    return TakeOutcome::BagFull;
+  }
+  bag.add(item, 1);
+  core::logDebug("coop: '{}' granted into the bag", inventory_->items().at(item).id);
+  return TakeOutcome::Taken;
+}
+
 } // namespace dwe::session

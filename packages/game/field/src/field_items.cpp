@@ -221,6 +221,21 @@ void FieldItems::markTaken(std::size_t chest) {
   }
 }
 
+bool FieldItems::takenElsewhere(std::size_t chest) {
+  if (chest >= chests_.size() || !chests_[chest] || chests_[chest]->taken) {
+    return false;
+  }
+  chests_[chest]->taken = true;
+  chests_[chest]->tray = ChestTrayOut;
+  return true;
+}
+
+void FieldItems::replaceGround(std::span<const std::optional<GroundItem>> ground) {
+  const auto slots =
+      std::min(ground.size(), static_cast<std::size_t>(std::max(rules_.groundSlots, 0)));
+  ground_.assign(ground.begin(), ground.begin() + static_cast<std::ptrdiff_t>(slots));
+}
+
 void FieldItems::enterMap(std::string_view mapId) {
   if (mapId != mapId_) {
     mapId_ = mapId;

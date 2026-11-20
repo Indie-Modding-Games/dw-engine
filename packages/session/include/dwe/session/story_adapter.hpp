@@ -215,6 +215,12 @@ public:
   [[nodiscard]] std::int32_t medalCount() const;
   // Whether the player page's item box `slot` (0 to PlayerItemCount - 1) shows its item.
   [[nodiscard]] bool hasPlayerItem(std::int32_t slot) const;
+  // Which triggers and variables belong to one player rather than to the world co-op players
+  // share (multiplayer.md, "Shared world interactions"): the raised species, the medals and the
+  // player page's items are the player's own, and so are the script flow's own (the freeze, the
+  // talk's facing, the next map's name), which follow that player's scripts. The rest is the world.
+  [[nodiscard]] bool playerOwnTrigger(std::int32_t trigger) const;
+  [[nodiscard]] bool playerOwnVariable(std::int32_t variable) const;
   // The ruleset's digimon table, when the rules named one the packs have.
   [[nodiscard]] const assets::DigimonTable* digimonTable() const {
     return digimon_ ? &*digimon_ : nullptr;

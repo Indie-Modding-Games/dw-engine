@@ -105,6 +105,13 @@ public:
 
   // Marks a chest taken.
   void markTaken(std::size_t chest);
+  // A chest another co-op player took (its trigger came set from the session, #357): taken, with
+  // its drawer out at once, as spawnChest shows a taken chest. False when it was taken already.
+  bool takenElsewhere(std::size_t chest);
+
+  // The ground as the co-op host has it on this map (#357): exactly these items in these slots
+  // (slots past the ground's are dropped), and nothing of this game's own.
+  void replaceGround(std::span<const std::optional<GroundItem>> ground);
 
   // One original frame of a chest's drawer sliding out (map_object.c: tickOpenChestTray) or back in
   // (tickCloseChestTray); true once it is all the way out or in. A slot without a chest is done.

@@ -404,6 +404,7 @@ nombra un segundo jugador fijo.
 | La posición propia de un invitado | el invitado, revisada por el anfitrión | `PlayerState`, rechazado o corregido si es imposible |
 | La posición del anfitrión, NPCs, historia, reloj, batallas | anfitrión | instantáneas (§5.1) y eventos |
 | Cómo se dibuja un jugador remoto | cada partida, en local | interpolación (abajo); nunca escribe la autoridad |
+| Lo que los jugadores cambian en el mundo (cofres, triggers, puertas, objetos del suelo) | anfitrión | `WorldChange`, `WorldSync`, `GroundItems` (§5.8) |
 
 **Mensajes.** Tres tipos se suman a la tabla de §5.5 y ocupan el lugar de su esbozo `OwnPose` y `PoseFix` (versión 4
 del protocolo):
@@ -449,6 +450,82 @@ como nuevo, con un estado limpio.
 Pruebas: `packages/game/coop/tests/authority_tests.cpp`, `apps/game/tests/coop_world_tests.cpp`,
 `apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` y los casos
 cooperativos de `packages/game/field/tests/field_tests.cpp`.
+
+### 5.8 Interacciones del mundo compartido
+
+Cada partida de la sesión corre su propia copia del mundo del anfitrión (§6.1), así que lo que un jugador hace en ese
+mundo tiene que llegar a las copias de los demás, o un cofre que un jugador abrió sigue lleno para el resto (#357). El
+anfitrión es el único que aplica una interacción compartida al mundo; las partidas de los demás piden, y se les cuenta
+el resultado.
+
+**Qué se comparte y qué es local.**
+
+| Interacción | Se guarda como | Compartida o local | Cómo viaja |
+|---|---|---|---|
+| Triggers de historia que pone cualquier jugador: eventos jugados, NPCs reclutados, tiendas abiertas, puertas y mecanismos abiertos para siempre | triggers de historia | compartida | `WorldAsk` → anfitrión → `WorldChange` |
+| Variables de historia (contadores que lleva un script) | variables de historia | compartida | igual |
+| Cofres | su trigger de historia | compartida: un solo jugador recibe el objeto, y el cofre se ve tomado (cajón fuera) en todas las partidas al momento | lo que toma un invitado es un `ItemClaim`, que responde un `ClaimAnswer`; luego `WorldChange` |
+| Objetos en el suelo (los objetos al azar del mapa, lo que sueltan las batallas) | el suelo del anfitrión | compartida en el mapa del anfitrión: toda partida allí muestra el suelo del anfitrión, y un objeto es de un solo jugador | `GroundItems` desde el anfitrión; la recogida de un invitado es un `ItemClaim` |
+| Puertas y mecanismos que un script mueve mientras los jugadores miran | ediciones en vivo del mapa (flags de objetos, celdas cerradas) | compartida con los jugadores de ese mapa; en la siguiente visita el script de cabecera del mapa las reconstruye desde los triggers compartidos | `WorldAsk` → anfitrión → `WorldChange` |
+| Medallas, especies criadas, los objetos clave de la página del jugador (cañas) | triggers de historia | local: de cada jugador | nunca se envían |
+| La congelación de un script, el trigger de encarar en una charla, el nombre del mapa siguiente | variables de historia y un trigger | local: siguen los scripts propios de ese jugador | nunca se envían |
+| La bolsa, los bits, el compañero y sus cuidados, los menús, los diálogos en pantalla, la cámara | sistemas de la sesión | local | nunca se envían (batallas: §6.1) |
+
+Los hechos locales salen de las reglas de la historia (`StoryAdapter::playerOwnTrigger` y `playerOwnVariable`): un
+ruleset que mueve la congelación o el encarar a otro número los mueve también.
+
+**Cómo funciona.** Tras cada tick cada partida compara su historia con lo último que acordó con la sesión
+(`CoopStoryBaseline`): lo que cambiaron sus propios scripts y sistemas es su novedad. La novedad del anfitrión solo hay
+que contarla, porque su partida es el mundo. Un invitado envía su novedad como `WorldAsk`; el `WorldLedger` del
+anfitrión descarta una petición que ya tomó (cada invitado numera sus peticiones), se queda solo con la parte
+compartida, acepta ediciones del mapa solo para el mapa en el que está la sesión, aplica lo que cambia su mundo, y
+envía a cada invitado un `WorldChange` con la revisión
+siguiente, el jugador cuya interacción fue y los valores nuevos. Un invitado aplica un cambio una sola vez
+(`WorldReplica`: una revisión que no es más nueva que la última tomada se descarta), y lo que aplica del anfitrión nunca
+lo devuelve como propio. Los valores son absolutos (un trigger puesto, el valor de una variable), así que aplicar uno
+dos veces es aplicarlo una. Cuando dos jugadores cambian el mismo hecho a la vez decide el orden del anfitrión, y todas
+las partidas terminan con el valor del anfitrión.
+
+**Tomar un objeto.** Un cofre o un objeto del suelo lo podrían tomar dos jugadores a la vez, así que lo que toma un
+invitado pregunta antes. Cuando el invitado confirma, su aviso del objeto sigue en pantalla (el cajón de un cofre ya
+está fuera) y su partida envía un `ItemClaim`: el trigger del cofre, o la ranura y el id del objeto del suelo. El
+anfitrión responde las reclamaciones de cada invitado en orden y una sola vez (una reclamación enviada otra vez se
+descarta): concedida mientras el trigger del cofre no está puesto o el objeto sigue en el suelo con ese id, y entonces
+pone el trigger o quita el objeto de su suelo y se lo cuenta a todos como siempre. Solo con un `ClaimAnswer` concedido
+mete la partida del invitado el objeto en la bolsa; rechazada (o sin respuesta en diez segundos) el invitado no recibe
+nada y el aviso dice que otro jugador lo tomó (`online.coop.item_gone`). El anfitrión toma al momento, como en la
+partida de un jugador, así que si toma dentro del mismo viaje de ida y vuelta va primero; si al tomar el objeto ya no
+está porque otro lo tomó con el aviso abierto, recibe el mismo aviso. En un mapa en el que no está el anfitrión, el
+suelo de un invitado es suyo y no hace falta reclamar. La partida de un jugador nunca reclama.
+
+**Entrar tarde y cambiar de mapa.** Un invitado que entra recibe toda la historia compartida (`WorldSync`, en partes
+que caben en un datagrama) y el suelo del anfitrión; todos los invitados los reciben otra vez cuando el anfitrión entra
+en un mapa. La sincronización lleva la revisión del anfitrión, así que un cambio que ya está en ella no se aplica otra
+vez.
+
+**Guardado (§5.6).** El mundo es del anfitrión: lo que un invitado cambia en él está en el siguiente guardado del
+anfitrión, como cualquier cosa que haga el anfitrión. El invitado sigue sin guardar nada, y su propio guardado nunca se
+escribe.
+
+**Mensajes** (versión 5 del protocolo, rango `0x90–0x9F`):
+
+| Tipo | Nombre | Canal | Dirección | Contenido |
+|---|---|---|---|---|
+| `0x90` | `WorldAsk` | fiable | cliente → anfitrión | El número de petición del invitado, su mapa y las ediciones (trigger, variable, objeto del mapa, celdas cerradas). |
+| `0x91` | `WorldChange` | fiable | anfitrión → cliente | Revisión, el jugador del que vino y su petición, el mapa, las ediciones. |
+| `0x92` | `WorldSync` | fiable | anfitrión → cliente | Revisión, parte, y un tramo de triggers (bits) y variables. |
+| `0x93` | `GroundItems` | fiable | anfitrión → cliente | El mapa del anfitrión y su carga, y cada objeto del suelo: id, ranura, objeto, celda y lugar. |
+| `0x94` | `ItemClaim` | fiable | cliente → anfitrión | El número de reclamación del invitado, cofre u objeto del suelo, el trigger del cofre o la ranura y el id del objeto, el mapa. |
+| `0x95` | `ClaimAnswer` | fiable | anfitrión → cliente | El número de reclamación y si se concedió. |
+
+**Límites.** Un NPC que otro jugador reclutó se va del mapa de esta partida en su siguiente carga, no al momento (su trigger llega
+al momento, pero el NPC en pantalla sigue los scripts propios de esta partida hasta que el mapa vuelve a cargar). Solo
+viajan las ediciones en vivo del mapa; cualquier otra cosa que un script haga en pantalla (una escena, el paseo de un
+personaje) se queda en la partida que lo corrió.
+
+Pruebas: `packages/game/coop/tests/world_state_tests.cpp`, `apps/game/tests/coop_world_state_tests.cpp` (un anfitrión
+y dos invitados con mensajes codificados), el caso cooperativo de `packages/game/field/tests/field_items_tests.cpp` y
+el de `packages/session/tests/story_adapter_tests.cpp`.
 
 ## 6. Decisiones de juego (pendientes)
 

@@ -1984,6 +1984,15 @@ int runGame(const Options& requested) {
               outgoing.push_back({.to = game::coop::HostPlayerId, .message = std::move(*state)});
             }
           }
+          // The world's interactions (#357): what this game changed of the shared world, and the
+          // others' changes into it, through the host.
+          CoopWorldView worldView = play->takeCoopWorld();
+          CoopWorldShare worldShare = coopHostWorld    ? coopHostWorld->share(worldView)
+                                      : coopGuestWorld ? coopGuestWorld->share(worldView)
+                                                       : CoopWorldShare{};
+          applyCoopMapEdits(play->scene(), worldShare.mapEdits);
+          outgoing.insert(outgoing.end(), std::make_move_iterator(worldShare.out.begin()),
+                          std::make_move_iterator(worldShare.out.end()));
           for (const CoopOutgoing& message : outgoing) {
             if (auto sent = coopBridge->send(message.message); !sent) {
               core::logWarning("coop: could not send to player {}: {}", message.to,
