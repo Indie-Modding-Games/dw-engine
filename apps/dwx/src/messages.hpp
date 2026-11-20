@@ -113,6 +113,14 @@ inline constexpr std::string_view ScriptWarpsMatch =
     "{} matches the story Lua: {} map changes from {} story modules";
 inline constexpr std::string_view ScriptWarpsDiffer =
     "{} does not match the story Lua; write it again with -o. {}";
+inline constexpr std::string_view NpcSpawnsWritten =
+    "Wrote {}: {} NPC spawns from {} story modules";
+inline constexpr std::string_view NpcSpawnsMatch =
+    "{} matches the story Lua: {} NPC spawns from {} story modules";
+inline constexpr std::string_view NpcSpawnsDiffer =
+    "{} does not match the story Lua; write it again with --spawns. {}";
+inline constexpr std::string_view NpcSpawnsNotPacked =
+    "the packs have no {} (extracted by an older dwx), so it is not compared";
 inline constexpr std::string_view ScriptWarpsDifferAt =
     "First difference, line {}:\n  packs: {}\n  Lua:   {}";
 

@@ -886,3 +886,40 @@ TEST_CASE("a patch reaches only its own routines, and says so with its line") {
                    "return { script = 1, sections = {} }")
             .contains("a routine's function that does not end"));
 }
+
+TEST_CASE("a patch's named numbers read as the numbers, in its sections and its routines") {
+  // As the game pack's patches name an improvement and a species (whamon_water_136.lua).
+  const auto patch = script::readLuaPatch(R"lua(local story <const> = story
+local Improvement <const> = 2
+local Whamon <const> = 0x05
+local Below <const> = -1
+local routines = {}
+
+function routines.ask()
+  story.set_var(254, Improvement) -- var, value
+  story.call_routine(261)
+end
+
+return { script = 1, sections = {
+  [1] = function(original)
+    routines.ask()
+    if story.var(254) == 1 then
+      story.spawn_npc(Whamon, 0, 0) -- species, slot, autotalk
+    end
+    story.set_var(Improvement, Below)
+    return original()
+  end,
+} }
+)lua",
+                                          "game:story/patches/named.lua");
+  REQUIRE_MESSAGE(patch.has_value(), errorOf(patch));
+  REQUIRE(patch->sections.size() == 1);
+  CHECK(patch->sections[0].pieces[0].contains("story.spawn_npc(5, 0, 0)"));
+  CHECK(patch->sections[0].pieces[0].contains("story.set_var(2, -1)"));
+  REQUIRE(patch->routines.size() == 1);
+  CHECK(patch->routines[0].body.contains("story.set_var(254, 2)"));
+  // A local that is not constant, or names no number, is still out of the walk's reach.
+  CHECK(errorOf(script::readLuaPatch("local Count = 2\nreturn { script = 1, sections = {} }",
+                                     "my_mod:story/patches/p.lua"))
+            .contains("a local at the top of a patch"));
+}

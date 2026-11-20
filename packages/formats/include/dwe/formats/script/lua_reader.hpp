@@ -60,7 +60,8 @@ core::Result<LuaListing> readLuaModule(std::string_view code, const LuaLineMap* 
 // A story patch (story/patches/*.lua, docs/modding/story.md) read for the walks: the sections
 // it gives, as code the module can take in. Only the shape the reader can follow: at the top,
 // locals that only name story's own (`local story <const> = story`, `local ENDED <const> =
-// story.ENDED`) and, once, `local routines = {}`, after which go the patch's private routines
+// story.ENDED`) or a number (`local Whamon <const> = 5`, which the patch's code gets as the number)
+// and, once, `local routines = {}`, after which go the patch's private routines
 // (`function routines.<name>() ... end`, no parameters, the body of a module's routine); then
 // `return { script = <id>, sections = { [<id>] = function(original) ... end } }`. In a section,
 // `original()` is called as a routine is (`return original()`, `if original() == ENDED then return

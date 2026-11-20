@@ -211,3 +211,51 @@ TEST_CASE("a variable the map head writes itself leaves its spawns undecided") {
   Facts rolled{.triggers = {}, .variables = {{110, 3}}};
   CHECK(spawnsInSlot(*read, "town", 5, rolled.guard()) == Truth::Unknown);
 }
+
+// File City's visitors (MAPHEAD of twnb01): the section counts the visitors it placed (variable
+// 38) and stops at three, so whether one stood there on load is not known from the story alone.
+TEST_CASE("a visitor the count leaves undecided goes when no way places it any more") {
+  const auto read = parseNpcSpawns(R"(spawns:
+- map: town
+  slot: 3
+  species: 152
+  autotalk: false
+  guard:
+    terms:
+    - if:
+      - test: pstat
+        compare: eq
+        pstat: 38
+        value: 3
+      holds: false
+    - if:
+      - test: trigger
+        clear: true
+        trigger: 79
+      - test: trigger
+        combine: and
+        trigger: 232
+      holds: true
+  section_writes:
+  - 38
+  source:
+    script: 0
+    section: 180
+)");
+  REQUIRE(read);
+  const Facts before{.triggers = {{232, true}}, .variables = {{38, 2}}};
+  const Facts after{.triggers = {{232, true}, {79, true}}, .variables = {{38, 2}}};
+  REQUIRE(spawnsInSlot(*read, "town", 3, before.guard()) == Truth::Unknown);
+  REQUIRE(spawnsInSlot(*read, "town", 3, after.guard()) == Truth::False);
+  // Without a look at the map nothing moves; standing there, it goes.
+  CHECK(npcPresenceChange(*read, "town", before.guard(), after.guard()).empty());
+  const auto standing = [](std::size_t slot) { return slot == 3; };
+  const auto change = npcPresenceChange(*read, "town", before.guard(), after.guard(), standing);
+  CHECK(change.leave == std::vector<std::size_t>{3});
+  CHECK(change.arrive.empty());
+  // Not standing there (the count had reached three): nothing to take off.
+  const auto away = [](std::size_t /*slot*/) { return false; };
+  CHECK(npcPresenceChange(*read, "town", before.guard(), after.guard(), away).empty());
+  // Back the other way it stays undecided: no fourth visitor is ever added.
+  CHECK(npcPresenceChange(*read, "town", after.guard(), before.guard(), away).empty());
+}

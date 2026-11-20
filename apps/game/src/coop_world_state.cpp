@@ -99,7 +99,8 @@ void CoopStoryBaseline::reset(const game::story::StoryState& state) {
 }
 
 std::vector<coop::WorldEdit> CoopStoryBaseline::changes(const game::story::StoryState& state,
-                                                        const coop::WorldScope& shared) {
+                                                        const coop::WorldScope& shared,
+                                                        std::vector<CoopFactChange>* changed) {
   std::vector<coop::WorldEdit> edits;
   if (!ready_ || std::cmp_not_equal(triggers_.size(), state.triggerCount()) ||
       std::cmp_not_equal(variables_.size(), state.variableCount())) {
@@ -117,17 +118,24 @@ std::vector<coop::WorldEdit> CoopStoryBaseline::changes(const game::story::Story
         .kind = coop::WorldEditKind::Trigger, .key = i, .value = now ? 1 : 0};
     if (sharedBy(shared, edit)) {
       edits.push_back(edit);
+      if (changed != nullptr) {
+        changed->push_back({.edit = edit, .previous = now ? 0 : 1});
+      }
     }
   }
   for (std::int32_t i = 0; i < state.variableCount(); ++i) {
     const std::int32_t now = state.variable(i).value_or(0);
-    if (now == variables_[static_cast<std::size_t>(i)]) {
+    const std::int32_t was = variables_[static_cast<std::size_t>(i)];
+    if (now == was) {
       continue;
     }
     variables_[static_cast<std::size_t>(i)] = now;
     const coop::WorldEdit edit{.kind = coop::WorldEditKind::Variable, .key = i, .value = now};
     if (sharedBy(shared, edit)) {
       edits.push_back(edit);
+      if (changed != nullptr) {
+        changed->push_back({.edit = edit, .previous = was});
+      }
     }
   }
   return edits;
@@ -356,7 +364,7 @@ CoopWorldShare CoopHostWorld::share(CoopWorldView& view) {
     facts_.reset(story);
   }
   // The host's own interactions: its game is the world, so they only need telling.
-  std::vector<coop::WorldEdit> own = facts_.changes(story, view.shared);
+  std::vector<coop::WorldEdit> own = facts_.changes(story, view.shared, &share.ownFacts);
   if (view.settled) {
     own.insert(own.end(), view.mapEdits.begin(), view.mapEdits.end());
   }
@@ -457,7 +465,7 @@ CoopWorldShare CoopGuestWorld::share(CoopWorldView& view) {
     facts_.reset(story);
   }
   // What this game changed: its own news, asked of the host.
-  std::vector<coop::WorldEdit> mine = facts_.changes(story, view.shared);
+  std::vector<coop::WorldEdit> mine = facts_.changes(story, view.shared, &share.ownFacts);
   if (view.settled) {
     mine.insert(mine.end(), view.mapEdits.begin(), view.mapEdits.end());
   }

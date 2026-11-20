@@ -128,7 +128,8 @@ Truth spawnsInSlot(std::span<const NpcSpawnRule> rules, std::string_view map, st
 }
 
 NpcPresenceChange npcPresenceChange(std::span<const NpcSpawnRule> rules, std::string_view map,
-                                    const GuardFacts& before, const GuardFacts& after) {
+                                    const GuardFacts& before, const GuardFacts& after,
+                                    const NpcSlotOccupied& occupied) {
   NpcPresenceChange change;
   std::set<std::size_t> slots;
   for (const NpcSpawnRule& rule : rules) {
@@ -139,7 +140,8 @@ NpcPresenceChange npcPresenceChange(std::span<const NpcSpawnRule> rules, std::st
   for (const std::size_t slot : slots) {
     const Truth was = spawnsInSlot(rules, map, slot, before);
     const Truth now = spawnsInSlot(rules, map, slot, after);
-    if (was == Truth::True && now == Truth::False) {
+    const bool stood = was == Truth::True || (was == Truth::Unknown && occupied && occupied(slot));
+    if (stood && now == Truth::False) {
       change.leave.push_back(slot);
     } else if (was == Truth::False && now == Truth::True) {
       change.arrive.push_back(holdingSpawn(rules, map, slot, after));

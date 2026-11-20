@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iterator>
 #include <optional>
@@ -36,6 +37,39 @@ end
 
 return { script = 0, sections = { [0x0068] = routines.town } }
 )lua";
+
+// The same MAPHEAD section placing an NPC on entering: species 83 in slot 0 while trigger 12 is
+// clear (a recruit that leaves once it joined).
+constexpr std::string_view SpawningMapHead = R"lua(local story <const> = story
+local ENDED <const> = story.ENDED
+local routines = {}
+
+function routines.town()
+  story.set_script(1, 104) -- script, map
+  if not story.trigger(12) then
+    story.spawn_npc(83, 0, 1) -- species, slot, autotalk
+  end
+  return ENDED
+end
+
+return { script = 0, sections = { [0x0068] = routines.town } }
+)lua";
+
+constexpr std::string_view SpawnRecord = R"(- map: twna01
+  slot: 0
+  species: 83
+  autotalk: true
+  guard:
+    terms:
+    - if:
+      - test: trigger
+        clear: true
+        trigger: 12
+      holds: true
+  source:
+    script: 0
+    section: 104
+)";
 
 // The town's script: a step that warps to room08 behind a trigger, and a section that opens the
 // transport menu.
@@ -147,23 +181,21 @@ TEST_CASE("dwx script-warps compares with the packs' field/script_warps and writ
   const std::string derived = derive(folder).yaml;
   folder.write("content/base/field/script_warps.yaml", derived);
   const auto folders = foldersOf(folder);
-  CHECK(scriptWarpsCommand(folders, std::nullopt, dwe::dwx::DefaultTransportRules) ==
-        dwe::dwx::ExitOk);
+  CHECK(scriptWarpsCommand(folders, {}, dwe::dwx::DefaultTransportRules) == dwe::dwx::ExitOk);
 
   // A mod moves the warp in the Lua: the packed document no longer matches until it is written.
   std::string edited{TownModule};
   edited.replace(edited.find("warp_to(118, 2"), std::string_view{"warp_to(118, 2"}.size(),
                  "warp_to(118, 3");
   folder.write("content/base/story/001.lua", edited);
-  CHECK(scriptWarpsCommand(folders, std::nullopt, dwe::dwx::DefaultTransportRules) ==
-        dwe::dwx::ExitUnknown);
+  CHECK(scriptWarpsCommand(folders, {}, dwe::dwx::DefaultTransportRules) == dwe::dwx::ExitUnknown);
   const std::filesystem::path out = folder.path() / "content/base/field/script_warps.yaml";
-  CHECK(scriptWarpsCommand(folders, out, dwe::dwx::DefaultTransportRules) == dwe::dwx::ExitOk);
+  CHECK(scriptWarpsCommand(folders, {.warps = out, .spawns = {}},
+                           dwe::dwx::DefaultTransportRules) == dwe::dwx::ExitOk);
   const std::string written = readText(out);
   CHECK(written != derived);
   CHECK(written.contains("    map: room08\n    exit: 3\n"));
-  CHECK(scriptWarpsCommand(folders, std::nullopt, dwe::dwx::DefaultTransportRules) ==
-        dwe::dwx::ExitOk);
+  CHECK(scriptWarpsCommand(folders, {}, dwe::dwx::DefaultTransportRules) == dwe::dwx::ExitOk);
 }
 
 TEST_CASE("dwx script-warps fails, naming the module and its line, on Lua it cannot follow") {
@@ -178,7 +210,8 @@ TEST_CASE("dwx script-warps fails, naming the module and its line, on Lua it can
   REQUIRE_FALSE(derived.has_value());
   CHECK(derived.error().message.contains("story/001: line 6"));
   const std::filesystem::path out = folder.path() / "out.yaml";
-  CHECK(scriptWarpsCommand(folders, out, dwe::dwx::DefaultTransportRules) == dwe::dwx::ExitFailed);
+  CHECK(scriptWarpsCommand(folders, {.warps = out, .spawns = {}},
+                           dwe::dwx::DefaultTransportRules) == dwe::dwx::ExitFailed);
   CHECK_FALSE(std::filesystem::exists(out));
 }
 
@@ -194,9 +227,11 @@ TEST_CASE("dwx script-warps does not use a line map that the Lua no longer match
 
 // Runs only when DWE_CONTENT names a content folder that dwx extracted (scripts/dev.sh mounts it).
 // With the game pack's transport destinations alone, the story Lua gives the base pack's
-// field/script_warps byte for byte. The game pack's own story patches (the improved shop job)
-// change the scripts they patch, so with the whole game pack the walk only has to follow them.
-TEST_CASE("the user's disc, extracted: the story Lua gives field/script_warps as extracted") {
+// field/script_warps and field/npc_spawns byte for byte. The game pack's own story patches (the
+// improved shop job) change the scripts they patch, so with the whole game pack the walk only has
+// to follow them.
+TEST_CASE(
+    "the user's disc, extracted: the story Lua gives field/script_warps and npc_spawns as extracted") {
   const std::optional<std::filesystem::path> content = dwe::test_support::userContent();
   if (!content) {
     MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
@@ -211,8 +246,7 @@ TEST_CASE("the user's disc, extracted: the story Lua gives field/script_warps as
   rulesOnly.write("rules/original/bird_transport.yaml",
                   std::string{std::istreambuf_iterator<char>{source}, {}});
   const std::vector<std::filesystem::path> asExtracted{*content, rulesOnly.path()};
-  CHECK(scriptWarpsCommand(asExtracted, std::nullopt, dwe::dwx::DefaultTransportRules) ==
-        dwe::dwx::ExitOk);
+  CHECK(scriptWarpsCommand(asExtracted, {}, dwe::dwx::DefaultTransportRules) == dwe::dwx::ExitOk);
 
   const std::vector<std::filesystem::path> withGamePack{*content, DWE_GAME_PACK};
   const auto patched = deriveScriptWarps(withGamePack, dwe::dwx::DefaultTransportRules);
@@ -270,4 +304,42 @@ TEST_CASE("dwx script-warps fails, naming the patch and its line, on a patch it 
   const auto derived = deriveScriptWarps(folders, dwe::dwx::DefaultTransportRules);
   REQUIRE_FALSE(derived.has_value());
   CHECK(derived.error().message.contains("story/001: my_mod:story/patches/wrap.lua:4: "));
+}
+
+TEST_CASE("dwx script-warps derives field/npc_spawns from the map heads, a mod's patch included") {
+  const TempFolder folder;
+  writeContent(folder);
+  folder.write("content/base/story/000.lua", std::string{SpawningMapHead});
+  const DerivedScriptWarps derived = derive(folder);
+  CHECK(derived.spawns == 1);
+  CHECK(derived.spawnsYaml == std::format("spawns:\n{}", SpawnRecord));
+
+  // Written with --spawns (and -o), the packs match the Lua again.
+  const auto folders = foldersOf(folder);
+  const std::filesystem::path warps = folder.path() / "content/base/field/script_warps.yaml";
+  const std::filesystem::path spawns = folder.path() / "content/base/field/npc_spawns.yaml";
+  CHECK(scriptWarpsCommand(folders, {.warps = warps, .spawns = spawns},
+                           dwe::dwx::DefaultTransportRules) == dwe::dwx::ExitOk);
+  CHECK(readText(spawns) == derived.spawnsYaml);
+  CHECK(scriptWarpsCommand(folders, {}, dwe::dwx::DefaultTransportRules) == dwe::dwx::ExitOk);
+
+  // A mod's patch of the map head brings a visitor behind trigger 13, named by a constant.
+  folder.write("content/mod/pack.yaml", "id: mod\nversion: 1.0.0\nlayer: mods\n");
+  folder.write("content/mod/story/patches/visitor.lua", R"lua(local story <const> = story
+local Visitor <const> = 84
+return { script = 0, sections = {
+  [0x0068] = function(original)
+    if story.trigger(13) then
+      story.spawn_npc(Visitor, 1, 0) -- species, slot, autotalk
+    end
+    return original()
+  end,
+} }
+)lua");
+  const DerivedScriptWarps patched = derive(folder);
+  CHECK(patched.spawns == 2);
+  CHECK(patched.spawnsYaml.contains("  slot: 1\n  species: 84\n  autotalk: false\n"));
+  CHECK(hasNote(patched, "story/000: patched by mod:story/patches/visitor.lua"));
+  // The packed document is now behind the Lua until it is written again.
+  CHECK(scriptWarpsCommand(folders, {}, dwe::dwx::DefaultTransportRules) == dwe::dwx::ExitUnknown);
 }

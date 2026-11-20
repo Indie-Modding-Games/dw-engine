@@ -240,13 +240,15 @@ int runExportImages(std::span<char*> options) {
 int runScriptWarps(std::span<char*> options) {
   std::vector<std::filesystem::path> folders(1);
   bool hasContent = false;
-  std::optional<std::filesystem::path> out;
+  ScriptWarpsOutputs outputs;
   std::string rules{DefaultTransportRules};
   for (std::size_t i = 0; i < options.size(); ++i) {
     const std::string_view option{options[i]};
     const bool hasValue = i + 1 < options.size();
     if ((option == "-o" || option == "--out") && hasValue) {
-      out = options[++i];
+      outputs.warps = options[++i];
+    } else if (option == "--spawns" && hasValue) {
+      outputs.spawns = options[++i];
     } else if (option == "--with" && hasValue) {
       folders.emplace_back(options[++i]);
     } else if (option == "--rules" && hasValue) {
@@ -263,7 +265,7 @@ int runScriptWarps(std::span<char*> options) {
     printUsage();
     return ExitFailed;
   }
-  return scriptWarpsCommand(folders, out, rules);
+  return scriptWarpsCommand(folders, outputs, rules);
 }
 
 } // namespace

@@ -5,7 +5,7 @@ fijos; §9 dice qué entró y en qué difiere de esta propuesta. Se apoya en el
 [cooperativo en línea](multiplayer.md), el [ADR 0024](../adr/0024-co-op-with-authoritative-host.md), la primera versión
 de los combates cooperativos (#351, PR #363) y el diseño de combate con ambos compañeros de
 [combate cooperativo](coop-combat.md). Las sesiones de hasta cuatro jugadores son el ticket #352
-([navegador de salas y cuatro jugadores](../../architecture/coop-browser-4p.md)).
+([navegador de salas y cuatro jugadores](coop-browser-4p.md)).
 
 **Regla cero:** el juego de un jugador no cambia. Con un solo compañero peleando y nadie ayudando, todos los factores de
 este documento valen exactamente 100 % y ningún camino de código difiere del actual. El escalado cooperativo es una

@@ -200,7 +200,7 @@ secciones de NPC no se distinguen.
 vuelve a sacar del Lua de los paquetes ([dwx](../modules/apps/dwx.md#dwx-script-warps)):
 
 ```sh
-dwx script-warps <carpeta de contenido> [--with <carpeta>]... [--rules <id>] [-o <archivo>]
+dwx script-warps <carpeta de contenido> [--with <carpeta>]... [--rules <id>] [-o <archivo>] [--spawns <archivo>]
 ```
 
 - **Cómo.** `formats::script::readLuaModule` (`lua_reader.hpp`) lee cada módulo de vuelta al listado y a la
@@ -229,9 +229,11 @@ dwx script-warps <carpeta de contenido> [--with <carpeta>]... [--rules <id>] [-o
   mapa de `data/maps` y los destinos del transporte de `rules/<id>/bird_transport` (`destinations`; `--rules`, por
   defecto `original`). Ese ruleset está en el paquete del equipo, así que con el contenido del jugador hace falta
   `--with content/packs/game`; sin el documento, el transporte queda fuera y una nota lo dice.
-- **Comprobar y escribir.** Sin `-o` compara con el `field/script_warps` de los paquetes y dice la primera línea que
-  difiere (código 1); con `-o` escribe el documento (por ejemplo en `field/script_warps.yaml` del mod, que gana al del
-  paquete base). `data/new_game_story` no se vuelve a sacar.
+- **Comprobar y escribir.** Sin `-o` ni `--spawns` compara con el `field/script_warps` y el `field/npc_spawns` de los
+  paquetes (este solo si los paquetes lo tienen) y dice la primera línea que difiere (código 1); con `-o` escribe
+  `field/script_warps` y con `--spawns` los NPC que colocan las cabeceras de mapa, `field/npc_spawns`, el mismo
+  documento que escribe `dwx extract` (por ejemplo en `field/script_warps.yaml` y `field/npc_spawns.yaml` del mod, que
+  ganan a los del paquete base; la carpeta se crea si falta). `data/new_game_story` no se vuelve a sacar.
 - **Parches de historia.** Antes del recorrido aplica los `story/patches/*.lua` de los paquetes
   ([historia](../modding/story.md)) como el juego (`session::StoryLuaHost`): de abajo arriba en la pila y por id
   dentro de un paquete, y el de más arriba gana cada sección. `formats::script::readLuaPatch` lee cada parche y
@@ -242,8 +244,10 @@ dwx script-warps <carpeta de contenido> [--with <carpeta>]... [--rules <id>] [-o
   (`n`, el puesto del parche en la pila desde 1; con un `_` más si el módulo ya usa ese nombre) y sus llamadas se
   renombran; un `routines.<nombre>` que el parche no define es un error con su línea. Un script que solo dan
   parches se lee igual, sin módulo. El lector solo sigue `original()` como subrutina (`return original()` o
-  `if original() == ENDED then return ENDED end`); otro uso (`local r = original()`, `original` en una condición, un
-  local de arriba que no sea un nombre de `story`) es un **error con el fichero del parche y su línea**
+  `if original() == ENDED then return ENDED end`); un `local Nombre <const> = 5` de arriba es un número con nombre,
+  que el código del parche recibe como el número. Otro uso (`local r = original()`, `original` en una condición, un
+  local de arriba que no sea un nombre de `story` ni un número con nombre, una función propia del parche) es un
+  **error con el fichero del parche y su línea**
   (`mi_mod:story/patches/x.lua:4: ...`) y no se escribe nada: dejar el parche fuera daría los cambios de mapa de la
   sección que el juego ya no corre. Las líneas del parche no tienen offset, así que los registros de un módulo
   parcheado salen sin `offset` y una nota nombra los parches. Sin parches, el resultado no cambia.
@@ -277,7 +281,8 @@ líneas viejo, módulos escritos a mano, los parches de historia y los errores).
   difieren en una decisión pasan a ser uno). Esas
   condiciones también llevan pruebas `pstat` (un byte de variable contra un valor); `GuardFacts::variables` las lee y
   sin ese lector quedan desconocidas, así que los warps de arriba deciden exactamente como antes. El cooperativo las usa
-  (ver [multijugador](multiplayer.md)).
+  (ver [multijugador](multiplayer.md)). `dwx script-warps --spawns` saca el mismo documento del Lua, así que la
+  cabecera de mapa de un mod también llega ([desde el Lua](#desde-el-lua)).
 - **Política de lo desconocido** (`UnknownPolicy`, `script_warps.hpp`): decide qué hace el campo con las dos cosas
   que la extracción dice no saber, y solo con ellas. `decide(warp, oráculo, política)` da la verdad y lo que la
   política dejó pasar.
