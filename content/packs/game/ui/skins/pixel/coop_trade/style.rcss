@@ -1,0 +1,56 @@
+/* The item trade between players in the new look, as its item trader (trade_menu/style): navy half windows with
+   brackets, the column titles in light blue over a light-blue rule, the gold row on the focused item, the pixel
+   fonts. */
+
+.box {
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+	font-family: "Pixel Body";
+	font-size: 28dp;
+	color: #f2f0e1;
+}
+
+#title,
+.heading {
+	font-family: "Pixel Body";
+	color: #b6e4f7;
+}
+
+.column {
+	border-width: 0;
+}
+
+.heading {
+	border-bottom: 3dp #7cb6e2;
+}
+
+button.row {
+	border-width: 0;
+	background-color: transparent;
+}
+
+button.row:hover,
+button.row:focus {
+	border-width: 0;
+	background-color: transparent;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
+
+.row.offered .count,
+.state.ready {
+	color: #5fd36a;
+}
+
+button {
+	border: 2dp #7cb6e2;
+	border-radius: 0;
+	background-color: #0d1a33;
+	color: #f2f0e1;
+}
+
+button:hover,
+button:focus {
+	border-color: #f2c94c;
+}

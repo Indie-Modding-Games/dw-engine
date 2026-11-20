@@ -72,6 +72,7 @@
 #include "coop_screen.hpp"
 #include "coop_snapshot.hpp"
 #include "coop_sync.hpp"
+#include "coop_trades.hpp"
 #include "coop_world.hpp"
 #include "dev_assets_banner.hpp"
 #include "dev_tools.hpp"
@@ -1056,8 +1057,43 @@ int runGame(const Options& requested) {
   CoopHud coopHud{**ui};
   // The battles while playing together (coop_battles.hpp).
   CoopBattles coopBattles{**ui};
+  // The item trades between the players (coop_trades.hpp).
+  CoopTrades coopTrades{**ui};
   // The host's room went while the guest played: its game ends after this frame's ticks.
   bool coopHostLeft = false;
+  // How a player of the session is named (the trades' document and notices): a player of a link
+  // as its tag names it, any other by its name in the session, else "Guest {number}".
+  const auto coopLabelOf = [&](game::coop::PlayerId id) -> CoopPeerLabel {
+    if (coop.isHost()) {
+      const auto peer = std::ranges::find(coopPeers, id, &CoopPeer::id);
+      if (peer != coopPeers.end()) {
+        return peer->label;
+      }
+    } else if (id == game::coop::HostPlayerId && !coopPeers.empty()) {
+      return coopPeers.front().label;
+    }
+    std::string name;
+    if (coopHostWorld) {
+      for (const game::coop::PlayerRecord& record : coopHostWorld->authority().players()) {
+        if (record.id == id) {
+          name = record.name;
+        }
+      }
+    } else if (coopGuestWorld && coopGuestWorld->roster()) {
+      for (const game::coop::RosterEntry& entry : coopGuestWorld->roster()->players) {
+        if (entry.id == id) {
+          name = entry.name;
+        }
+      }
+    }
+    if (!name.empty()) {
+      return {.name = std::move(name), .key = {}, .number = 0};
+    }
+    if (id == game::coop::HostPlayerId) {
+      return {.name = {}, .key = std::string{HostPlayerText}, .number = 0};
+    }
+    return {.name = {}, .key = std::string{GuestPlayerText}, .number = id};
+  };
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
   // A boot asks the UI skin after the language box (an addition) until the player has chosen one;
@@ -1856,10 +1892,13 @@ int runGame(const Options& requested) {
           if (fought) {
             coopBattles.guestLeft();
           }
+          // A trade with that player closes; a swap the host applied for it is undone.
+          coopTrades.playerLeft(peer->id);
           coopHud.notice(CoopDisconnectedText, peer->label);
           break;
         case CoopLinkLoss::HostLeft:
           coopBattles.hostLeft(play);
+          coopTrades.hostLeft();
           coopHostLeft = true;
           break;
         case CoopLinkLoss::Quiet:
@@ -1886,6 +1925,7 @@ int runGame(const Options& requested) {
       }
       if (play == nullptr) {
         coopBattles.reset();
+        coopTrades.reset();
         coopLeftBodies.clear();
       } else if (!coopLeftBodies.empty() && !play->battleScreen().active()) {
         for (const game::field::PlayerId id : coopLeftBodies) {
@@ -2058,6 +2098,7 @@ int runGame(const Options& requested) {
         }
         play->pressBattle(input);
         coopBattles.press(input);
+        coopTrades.press(input, *play);
         play->pressItemKeeper(input);
         play->pressPartnerMenu(input);
         play->pressDestinationChoice(input);
@@ -2141,6 +2182,39 @@ int runGame(const Options& requested) {
                          : coop.isHost() ? CoopBattles::Role::Host
                                          : CoopBattles::Role::Guest,
                          coopHere);
+        // The trades: on the host, where every player of the session stands; a battle on the
+        // host's map keeps everyone there busy (they fight or watch it).
+        std::vector<game::coop::TradePlace> tradeWorld;
+        if (coopLinked && coopHostWorld) {
+          const bool battling = play->battleScreen().active();
+          const std::string hostMap =
+              play->scene().field().mapChangePending() ? std::string{} : coopMap;
+          for (const game::coop::PlayerRecord& record : coopHostWorld->authority().players()) {
+            std::string map = record.id == game::coop::HostPlayerId ? hostMap
+                              : record.pose                         ? record.pose->mapId
+                                                                    : std::string{};
+            const bool busy = battling && !map.empty() && map == hostMap;
+            tradeWorld.push_back({.player = record.id, .map = std::move(map), .busy = busy});
+          }
+        }
+        // The host routes each guest's trade messages through that guest's link (two guests
+        // trade through the host); a guest's one link goes to the host.
+        std::vector<CoopTradeLink> tradeLinks;
+        if (coopLinked) {
+          for (const CoopPeer& peer : coopPeers) {
+            tradeLinks.push_back({.player = coop.isHost() ? peer.id : game::coop::HostPlayerId,
+                                  .bridge = peer.bridge.get()});
+          }
+        }
+        coopTrades.tick(*play, tradeLinks,
+                        !coopLinked     ? CoopTrades::Role::None
+                        : coop.isHost() ? CoopTrades::Role::Host
+                                        : CoopTrades::Role::Guest,
+                        coopGuestWorld ? coopGuestWorld->self() : game::coop::HostPlayerId,
+                        tradeWorld, coopLabelOf);
+        if (auto notice = coopTrades.takeNotice()) {
+          coopHud.notice(notice->key, coopLabelOf(notice->player));
+        }
         if (coopLinked && coop.isHost() && ticksRun % 3 == 0) {
           // One capture of the world for every guest, each told the newest of its own commands
           // the host took.
@@ -2245,6 +2319,9 @@ int runGame(const Options& requested) {
         continue;
       }
       if (flow.playing() != nullptr && coopBattles.handle(command)) {
+        continue;
+      }
+      if (flow.playing() != nullptr && coopTrades.handle(command)) {
         continue;
       }
       if (flow.playing() != nullptr && flow.playing()->handle(command)) {
@@ -2509,7 +2586,7 @@ int runGame(const Options& requested) {
             coopTagViewOf(label,
                           head ? std::optional{screens::WindowFraction{.x = head->x, .y = head->y}}
                                : std::nullopt,
-                          play->fieldRunning()));
+                          play->fieldRunning(), coopTrades.askNearest(*play, id)));
       }
       coopHud.showTags(coopTags);
       screenFade->setDarkness(play->fadeLevel());

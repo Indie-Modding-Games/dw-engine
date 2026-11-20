@@ -6,9 +6,9 @@
 	<script src="logic.lua"></script>
 </head>
 <body>
-	<div id="tag" class="tag hidden"><span id="tag-name"></span></div>
-	<div id="tag-2" class="tag hidden"><span id="tag-2-name"></span></div>
-	<div id="tag-3" class="tag hidden"><span id="tag-3-name"></span></div>
+	<div id="tag" class="tag hidden"><span id="tag-name"></span><div id="tag-trade" class="trade hidden"></div></div>
+	<div id="tag-2" class="tag hidden"><span id="tag-2-name"></span><div id="tag-2-trade" class="trade hidden"></div></div>
+	<div id="tag-3" class="tag hidden"><span id="tag-3-name"></span><div id="tag-3-trade" class="trade hidden"></div></div>
 	<div id="notice" class="hidden"><p id="notice-text"></p></div>
 </body>
 </rml>

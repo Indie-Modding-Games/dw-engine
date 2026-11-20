@@ -61,3 +61,4 @@ screens:
   ui_notice: ui_notice/document
   coop_hud: coop_hud/document
   coop_battle: coop_battle/document
+  coop_trade: coop_trade/document

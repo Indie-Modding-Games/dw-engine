@@ -1,0 +1,51 @@
+/* The item trade between players in the modern look: the skin's dark rounded cards with their amber line, soft pill
+   buttons and amber focus, as the co-op battle panel. */
+
+.box {
+	border: 2dp #f2a93b;
+	border-radius: 12dp;
+	background-color: #121922f2;
+	color: #e9eef5;
+}
+
+#title {
+	color: #f2a93b;
+}
+
+.column {
+	border-color: #2a3644;
+	border-radius: 8dp;
+	background-color: #0e141bb0;
+}
+
+.heading {
+	color: #9fb0c2;
+	border-bottom-color: #2a3644;
+}
+
+button {
+	border-radius: 14dp;
+	background-color: #1d2733;
+	border-color: #3a4a5c;
+}
+
+button:hover,
+button:focus,
+button.row:hover,
+button.row:focus {
+	border-color: #f2a93b;
+}
+
+button.row {
+	border-radius: 8dp;
+	background-color: transparent;
+	border-color: transparent;
+}
+
+button.row:focus {
+	background-color: #1d2733;
+}
+
+.row.offered .count {
+	color: #f2a93b;
+}

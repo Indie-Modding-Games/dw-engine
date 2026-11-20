@@ -115,6 +115,14 @@ screens::NameKeys PlaySession::coopNameKeys() const {
           nullptr};
 }
 
+session::InventoryAdapter* PlaySession::coopInventory() {
+  return game_.systems.inventory;
+}
+
+const session::InventoryAdapter* PlaySession::coopInventory() const {
+  return game_.systems.inventory;
+}
+
 bool PlaySession::takeCoopItem(std::string_view itemId) {
   session::InventoryAdapter* inventory = game_.systems.inventory;
   if (inventory == nullptr) {

@@ -1,0 +1,72 @@
+<rml>
+<head>
+	<title>Co-op trade</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim" class="hidden">
+		<div id="ask" class="box hidden">
+			<p id="ask-text"></p>
+			<div id="ask-buttons">
+				<button id="accept" class="hidden" onclick="answer(true)"></button>
+				<button id="refuse" class="hidden" onclick="answer(false)"></button>
+				<button id="ask-cancel" class="hidden" onclick="cancel_trade()"></button>
+			</div>
+		</div>
+		<div id="window" class="box hidden">
+			<p id="title"></p>
+			<div id="columns">
+				<div id="bag" class="column">
+					<p id="bag-title" class="heading"></p>
+					<p id="bag-up" class="more hidden">▲</p>
+				<button id="bag-0" class="row hidden" onclick="pick_bag(0)"><img id="bag-0-icon" class="icon hidden"/><span id="bag-0-name" class="name"></span><span id="bag-0-count" class="count"></span></button>
+				<button id="bag-1" class="row hidden" onclick="pick_bag(1)"><img id="bag-1-icon" class="icon hidden"/><span id="bag-1-name" class="name"></span><span id="bag-1-count" class="count"></span></button>
+				<button id="bag-2" class="row hidden" onclick="pick_bag(2)"><img id="bag-2-icon" class="icon hidden"/><span id="bag-2-name" class="name"></span><span id="bag-2-count" class="count"></span></button>
+				<button id="bag-3" class="row hidden" onclick="pick_bag(3)"><img id="bag-3-icon" class="icon hidden"/><span id="bag-3-name" class="name"></span><span id="bag-3-count" class="count"></span></button>
+				<button id="bag-4" class="row hidden" onclick="pick_bag(4)"><img id="bag-4-icon" class="icon hidden"/><span id="bag-4-name" class="name"></span><span id="bag-4-count" class="count"></span></button>
+				<button id="bag-5" class="row hidden" onclick="pick_bag(5)"><img id="bag-5-icon" class="icon hidden"/><span id="bag-5-name" class="name"></span><span id="bag-5-count" class="count"></span></button>
+				<button id="bag-6" class="row hidden" onclick="pick_bag(6)"><img id="bag-6-icon" class="icon hidden"/><span id="bag-6-name" class="name"></span><span id="bag-6-count" class="count"></span></button>
+				<button id="bag-7" class="row hidden" onclick="pick_bag(7)"><img id="bag-7-icon" class="icon hidden"/><span id="bag-7-name" class="name"></span><span id="bag-7-count" class="count"></span></button>
+				<button id="bag-8" class="row hidden" onclick="pick_bag(8)"><img id="bag-8-icon" class="icon hidden"/><span id="bag-8-name" class="name"></span><span id="bag-8-count" class="count"></span></button>
+				<button id="bag-9" class="row hidden" onclick="pick_bag(9)"><img id="bag-9-icon" class="icon hidden"/><span id="bag-9-name" class="name"></span><span id="bag-9-count" class="count"></span></button>
+					<p id="bag-down" class="more hidden">▼</p>
+					<p id="bag-none" class="none hidden"></p>
+				</div>
+				<div id="own" class="column">
+					<p id="own-title" class="heading"></p>
+				<button id="own-0" class="row hidden" onclick="pick_own(0)"><img id="own-0-icon" class="icon hidden"/><span id="own-0-name" class="name"></span><span id="own-0-count" class="count"></span></button>
+				<button id="own-1" class="row hidden" onclick="pick_own(1)"><img id="own-1-icon" class="icon hidden"/><span id="own-1-name" class="name"></span><span id="own-1-count" class="count"></span></button>
+				<button id="own-2" class="row hidden" onclick="pick_own(2)"><img id="own-2-icon" class="icon hidden"/><span id="own-2-name" class="name"></span><span id="own-2-count" class="count"></span></button>
+				<button id="own-3" class="row hidden" onclick="pick_own(3)"><img id="own-3-icon" class="icon hidden"/><span id="own-3-name" class="name"></span><span id="own-3-count" class="count"></span></button>
+				<button id="own-4" class="row hidden" onclick="pick_own(4)"><img id="own-4-icon" class="icon hidden"/><span id="own-4-name" class="name"></span><span id="own-4-count" class="count"></span></button>
+				<button id="own-5" class="row hidden" onclick="pick_own(5)"><img id="own-5-icon" class="icon hidden"/><span id="own-5-name" class="name"></span><span id="own-5-count" class="count"></span></button>
+				<button id="own-6" class="row hidden" onclick="pick_own(6)"><img id="own-6-icon" class="icon hidden"/><span id="own-6-name" class="name"></span><span id="own-6-count" class="count"></span></button>
+				<button id="own-7" class="row hidden" onclick="pick_own(7)"><img id="own-7-icon" class="icon hidden"/><span id="own-7-name" class="name"></span><span id="own-7-count" class="count"></span></button>
+					<p id="own-none" class="none hidden"></p>
+					<p id="own-state" class="state"></p>
+				</div>
+				<div id="their" class="column">
+					<p id="their-title" class="heading"></p>
+				<div id="their-0" class="row hidden"><img id="their-0-icon" class="icon hidden"/><span id="their-0-name" class="name"></span><span id="their-0-count" class="count"></span></div>
+				<div id="their-1" class="row hidden"><img id="their-1-icon" class="icon hidden"/><span id="their-1-name" class="name"></span><span id="their-1-count" class="count"></span></div>
+				<div id="their-2" class="row hidden"><img id="their-2-icon" class="icon hidden"/><span id="their-2-name" class="name"></span><span id="their-2-count" class="count"></span></div>
+				<div id="their-3" class="row hidden"><img id="their-3-icon" class="icon hidden"/><span id="their-3-name" class="name"></span><span id="their-3-count" class="count"></span></div>
+				<div id="their-4" class="row hidden"><img id="their-4-icon" class="icon hidden"/><span id="their-4-name" class="name"></span><span id="their-4-count" class="count"></span></div>
+				<div id="their-5" class="row hidden"><img id="their-5-icon" class="icon hidden"/><span id="their-5-name" class="name"></span><span id="their-5-count" class="count"></span></div>
+				<div id="their-6" class="row hidden"><img id="their-6-icon" class="icon hidden"/><span id="their-6-name" class="name"></span><span id="their-6-count" class="count"></span></div>
+				<div id="their-7" class="row hidden"><img id="their-7-icon" class="icon hidden"/><span id="their-7-name" class="name"></span><span id="their-7-count" class="count"></span></div>
+					<p id="their-none" class="none hidden"></p>
+					<p id="their-state" class="state"></p>
+				</div>
+			</div>
+			<div id="actions">
+				<button id="confirm" onclick="toggle_confirm()"></button>
+				<button id="cancel" onclick="cancel_trade()"></button>
+			</div>
+			<p id="help"></p>
+		</div>
+	</div>
+</body>
+</rml>

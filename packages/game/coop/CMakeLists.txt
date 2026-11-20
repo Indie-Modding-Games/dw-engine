@@ -8,4 +8,5 @@ dwe_add_module(coop
         src/protocol.cpp
         src/sync_watch.cpp
         src/world_state.cpp
+        src/trade.cpp
     DEPS core net)

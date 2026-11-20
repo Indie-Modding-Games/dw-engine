@@ -102,6 +102,8 @@ screens:
     styles: [ui/skins/modern/coop_hud/style]
   coop_battle:
     styles: [ui/skins/modern/coop_battle/style]
+  coop_trade:
+    styles: [ui/skins/modern/coop_trade/style]
   online_status:
     styles: [ui/skins/modern/online_status/style]
   online_rooms:

@@ -123,6 +123,61 @@ void Inventory::remove(assets::ItemHandle item, std::int32_t count) {
   }
 }
 
+SwapCheck Inventory::swapOn(std::vector<std::optional<Stack>>& slots, std::span<const Stack> give,
+                            std::span<const Stack> get) const {
+  for (const Stack& given : give) {
+    std::int32_t held = 0;
+    for (const std::optional<Stack>& slot : slots) {
+      if (slot && slot->item == given.item) {
+        held += slot->count;
+      }
+    }
+    if (given.count <= 0 || held < given.count) {
+      return SwapCheck::Missing;
+    }
+    std::int32_t left = given.count;
+    for (std::optional<Stack>& slot : slots) {
+      if (left == 0) {
+        break;
+      }
+      if (!slot || slot->item != given.item) {
+        continue;
+      }
+      const std::int32_t taken = std::min(left, slot->count);
+      slot->count -= taken;
+      left -= taken;
+      if (slot->count == 0) {
+        slot.reset();
+      }
+    }
+  }
+  for (const Stack& got : get) {
+    if (got.count <= 0) {
+      return SwapCheck::NoRoom;
+    }
+    // Overflow past a stack's limit is never lost in a swap: it does not fit.
+    const AddResult added = stacking_->add(slots, got.item, got.count, rules_.bag.maxStack, false);
+    if (added.added != got.count || added.lost > 0) {
+      return SwapCheck::NoRoom;
+    }
+  }
+  return SwapCheck::Ok;
+}
+
+SwapCheck Inventory::canSwap(std::span<const Stack> give, std::span<const Stack> get) const {
+  std::vector<std::optional<Stack>> trial{slots().begin(), slots().end()};
+  return swapOn(trial, give, get);
+}
+
+SwapCheck Inventory::swap(std::span<const Stack> give, std::span<const Stack> get) {
+  std::vector<std::optional<Stack>> trial{slots().begin(), slots().end()};
+  const SwapCheck check = swapOn(trial, give, get);
+  if (check == SwapCheck::Ok) {
+    std::ranges::copy(trial, usableSlots().begin());
+  }
+  return check;
+}
+
 core::Result<void> Inventory::move(std::size_t from, std::size_t to) {
   const std::size_t size = slots().size();
   for (const std::size_t slot : {from, to}) {

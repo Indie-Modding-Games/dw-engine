@@ -31,6 +31,9 @@ inline constexpr std::string_view CoopTagRevisionSetting = "coop_hud.tag.revisio
 // The other tags of a room of more than two (#352): coop_hud.tag.<n>.* for n 2 and 3, with the
 // same fields as the first; the first tag's revision redraws them all.
 inline constexpr std::size_t MaxCoopTags = 3;
+// Whether the tag says that player can be asked for a trade now (the trade key's hint); the
+// other tags' is coop_hud.tag.<n>.trade.
+inline constexpr std::string_view CoopTagTradeSetting = "coop_hud.tag.trade";
 // The notice: whether it shows, its text key ("{name}" in it stands for the player it is about)
 // and that player, as the tag names them; its revision counts up with each notice.
 inline constexpr std::string_view CoopNoticeShownSetting = "coop_hud.notice.shown";
@@ -74,16 +77,19 @@ struct CoopTagView {
   double x = 0.0;
   double y = 0.0;
   CoopPeerLabel peer;
+  // The trade key's hint under the name (coop_trades.hpp: CoopTrades::askNearest).
+  bool trade = false;
 
   friend bool operator==(const CoopTagView&, const CoopTagView&) = default;
 };
 
 // The tag of the other player (none while no one is linked) from where their head lands in the
 // window (none when it does not project): hidden off the window, or while the field does not run
-// (a menu, a talk or a battle stops it, and the field's HUD hides too).
+// (a menu, a talk or a battle stops it, and the field's HUD hides too). `trade` shows the trade
+// key's hint under the name.
 [[nodiscard]] CoopTagView coopTagViewOf(const std::optional<CoopPeerLabel>& peer,
                                         std::optional<screens::WindowFraction> head,
-                                        bool fieldRunning);
+                                        bool fieldRunning, bool trade = false);
 
 // What losing the co-op link during play means for this player: nothing out of play, a notice
 // that the guest dropped on the host (its slot stays for a reconnect), and back to the title on

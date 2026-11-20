@@ -325,3 +325,49 @@ TEST_CASE("money stops at 999999 and never goes below 0") {
   inventory.spendMoney(1000000);
   CHECK(inventory.money() == 0);
 }
+
+TEST_CASE("a swap gives exactly what it names from every stack and takes what it gets") {
+  Inventory inventory = bagHolding(
+      {stackOf(handleOf(Tonic), 2), stackOf(handleOf(Bun), 4), stackOf(handleOf(Tonic), 3)}, 10);
+  const std::array give{stackOf(handleOf(Tonic), 4)};
+  const std::array get{stackOf(handleOf(Steak), 2), stackOf(handleOf(Bun), 1)};
+  CHECK(inventory.canSwap(give, get) == SwapCheck::Ok);
+  CHECK(inventory.totalOf(handleOf(Tonic)) == 5);
+  CHECK(inventory.swap(give, get) == SwapCheck::Ok);
+  CHECK(inventory.totalOf(handleOf(Tonic)) == 1);
+  CHECK(inventory.totalOf(handleOf(Bun)) == 5);
+  CHECK(inventory.totalOf(handleOf(Steak)) == 2);
+  // The first stack ran out first: its slot is free and the steak took it.
+  CHECK(itemsInOrder(inventory)[0] == Steak);
+}
+
+TEST_CASE("a swap that does not fit changes nothing") {
+  Inventory inventory = bagHolding({stackOf(handleOf(Tonic), 2), stackOf(handleOf(Bun), 98)}, 10);
+  const InventoryState before = inventory.state();
+  SUBCASE("giving more than the bag holds") {
+    const std::array give{stackOf(handleOf(Tonic), 3)};
+    CHECK(inventory.canSwap(give, {}) == SwapCheck::Missing);
+    CHECK(inventory.swap(give, {}) == SwapCheck::Missing);
+  }
+  SUBCASE("getting past a stack's limit is never lost: it does not fit") {
+    const std::array give{stackOf(handleOf(Tonic), 1)};
+    const std::array get{stackOf(handleOf(Bun), 2)};
+    CHECK(inventory.swap(give, get) == SwapCheck::NoRoom);
+  }
+  SUBCASE("a full bag takes no new kind, even after giving part of a stack") {
+    for (std::int32_t item = 0; item < 8; ++item) {
+      REQUIRE(inventory.add(filler(item), 1).taken());
+    }
+    const InventoryState full = inventory.state();
+    const std::array give{stackOf(handleOf(Tonic), 1)};
+    const std::array get{stackOf(handleOf(Steak), 1)};
+    CHECK(inventory.swap(give, get) == SwapCheck::NoRoom);
+    CHECK(inventory.state() == full);
+    // Giving the whole stack frees its slot for it.
+    const std::array whole{stackOf(handleOf(Tonic), 2)};
+    CHECK(inventory.swap(whole, get) == SwapCheck::Ok);
+    CHECK(inventory.totalOf(handleOf(Steak)) == 1);
+    return;
+  }
+  CHECK(inventory.state() == before);
+}

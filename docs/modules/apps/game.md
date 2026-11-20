@@ -2350,6 +2350,18 @@ back as `BattleSpoils`, which the guest's `BattleAdapter::finish` applies. The `
 player whose partner fights and cheers for a helper. Tests: `packages/game/coop/tests/battle_tests.cpp`,
 `packages/session/tests/battle_adapter_tests.cpp`.
 
+**Item trades** ([multiplayer, §6.2](../../architecture/multiplayer.md)): `CoopTrades` (`coop_trades.hpp`) runs the
+host's `game::coop::TradeBroker` and every player's own `TradeParty`. The `trade` action (T) asks the nearest player
+within `CoopTradeReach`; each tag of the co-op HUD shows the key's hint (`coop_hud.tag.trade`, `coop_hud.tag.<n>.trade`)
+while that player can be asked.
+The `coop_trade` document shows the ask, then the player's bag, both offers and both ready marks, and sends
+`coop_trade_answer`, `coop_trade_add`, `coop_trade_take`, `coop_trade_confirm` and `coop_trade_cancel`. Each game swaps
+its own bag through `InventoryTradeBag` (`Inventory::canSwap` and `Inventory::swap`, all or nothing; its undo swaps
+back), and only items the original lets the player throw away can be given. Each guest's bridge hands its trade messages
+over as they come (`CoopGameplayBridge::receiveTrade`); `CoopTradeLink` names the player at each link's other end, so the
+host routes any two players' trade, two guests included. Tests: `packages/game/coop/tests/trade_tests.cpp`,
+`apps/game/tests/coop_trades_tests.cpp`.
+
 ## Online versus
 
 "Online versus" appears in the title menu (with the modern skin it is its own row;

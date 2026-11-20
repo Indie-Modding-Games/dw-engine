@@ -24,6 +24,10 @@
 #include <utility>
 #include <vector>
 
+namespace dwe::session {
+class InventoryAdapter;
+}
+
 #include "app_flow.hpp"
 #include "autotest.hpp"
 #include "award_screen.hpp"
@@ -456,6 +460,9 @@ public:
   bool takeCoopItem(std::string_view itemId);
   // The text keys of the species' and the items' names, for the guest's battle document.
   [[nodiscard]] screens::NameKeys coopNameKeys() const;
+  // The bag a co-op trade swaps items on (coop_trades.hpp); null in a game without one.
+  [[nodiscard]] session::InventoryAdapter* coopInventory();
+  [[nodiscard]] const session::InventoryAdapter* coopInventory() const;
 
 private:
   // Takes the play options' commands (applyPlayOptions): keeps the value in the settings, saves

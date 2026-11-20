@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.22.0 | The `coop_trade` screen trades items between two co-op players: the phase (`coop_trade.phase`), the other player (`coop_trade.other.*`), this player's bag (`coop_trade.bag.<n>.*`), both offers (`coop_trade.own.<n>.*`, `coop_trade.their.<n>.*`) and both ready marks, with the commands `coop_trade_answer`, `coop_trade_add`, `coop_trade_take`, `coop_trade_confirm` and `coop_trade_cancel`. The `coop_hud` tag says when the other player can be asked (`coop_hud.tag.trade`) |
 | 0.21.0 | Rooms of up to four players: each member says when its seat is taken while its connection is still being set up (`online.member.<n>.arriving`), and the co-op HUD shows a tag over each of the other players (`coop_hud.tag.<n>.*` for the second and third) |
 | 0.20.0 | Both partners fight in a co-op battle: the battle screen lists the other players' partners fighting beside this player's (`battle.ally.<n>.*`, `battle.allies()`), and its partner, strip, finisher and bag are this player's own. The `coop_battle` screen gains the role `ally`, the fighters' MP, side and whether one is this player's (`coop_battle.fighter.<n>.mp`, `.max_mp`, `.side`, `.mine`); orders and items go to this player's own partner |
 | 0.19.0 | The `coop_battle` screen shows the host's battle on a co-op guest's screen: its role (`coop_battle.role`), phase, the fighters' life (`coop_battle.fighter.<n>.*`), the starter's orders (`coop_battle.order.<n>.*`) and the items of its own bag it can throw (`coop_battle.item.<n>.*`), with the commands `coop_battle_order`, `coop_battle_cheer`, `coop_battle_item` and `coop_battle_close` |
@@ -98,7 +99,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.21.0**.
+UI API version: **0.22.0**.
 
 ### `ui`
 
@@ -420,12 +421,14 @@ UI API version: **0.21.0**.
 | `coop_hud.tag.name_key` | setting | text | The text key that names the other player without a name of their own (the host, or a guest by number). |
 | `coop_hud.tag.number` | setting | number | The number that fills {number} in the name's text key. |
 | `coop_hud.tag.revision` | setting | number | Goes up each time the tag's values change: the tag is drawn again. |
+| `coop_hud.tag.trade` | setting | yes/no | Whether the other player can be asked for a trade now (the trade key's hint under the name). |
 | `coop_hud.tag.<n>.visible` | setting | yes/no | In a room of more than two, whether the tag over another player shows (n 2 and 3; coop_hud.tag.revision redraws them too). |
 | `coop_hud.tag.<n>.x` | setting | number | Where that tag's anchor is across the window, in percent. |
 | `coop_hud.tag.<n>.y` | setting | number | Where that tag's anchor is down the window, in percent. |
 | `coop_hud.tag.<n>.name` | setting | text | That player's own name, or empty. |
 | `coop_hud.tag.<n>.name_key` | setting | text | The text key that names that player when it has no name of its own. |
 | `coop_hud.tag.<n>.number` | setting | number | The number that fills {number} in that name's text key. |
+| `coop_hud.tag.<n>.trade` | setting | yes/no | Whether that player can be asked for a trade now (the trade key's hint under the name). |
 | `coop_hud.notice.shown` | setting | yes/no | Whether a co-op notice shows (a few seconds each). |
 | `coop_hud.notice.text` | setting | text | The notice's text key; {name} in it stands for the player it is about. |
 | `coop_hud.notice.name` | setting | text | The own name of the player the notice is about; empty when named by a text key. |
@@ -463,6 +466,48 @@ UI API version: **0.21.0**.
 | `coop_battle_cheer` | command | — | A cheer: charges the finisher as the battle's charge buttons do. |
 | `coop_battle_item` | command | text | Throws one of an item (its id) from this player's bag at its own partner (the fighting one for a helper). |
 | `coop_battle_close` | command | — | The starter closes the end box. |
+
+### `coop_trade`
+
+| Name | Kind | Value | What it is |
+|---|---|---|---|
+| `coop_trade.shown` | setting | yes/no | Whether an item trade with another co-op player shows (an ask or the trade itself). |
+| `coop_trade.phase` | setting | text | Where the trade is: asking (this player waits for the answer), invited (the other player asks this one), open (both choose) or executing (both are ready: the items change hands). |
+| `coop_trade.other.name` | setting | text | The other player's own name; empty when named by a text key. |
+| `coop_trade.other.name_key` | setting | text | The text key that names the other player without a name of their own. |
+| `coop_trade.other.number` | setting | number | The number that fills {number} in that text key. |
+| `coop_trade.bag_count` | setting | number | How many kinds of items this player's bag holds. |
+| `coop_trade.bag.<n>.id` | setting | text | A bag item's id, sent with coop_trade_add. |
+| `coop_trade.bag.<n>.name_key` | setting | text | The text key of a bag item's name. |
+| `coop_trade.bag.<n>.count` | setting | number | How many of a bag item are left out of the offer. |
+| `coop_trade.bag.<n>.offered` | setting | number | How many of a bag item this player offers. |
+| `coop_trade.bag.<n>.tradeable` | setting | yes/no | Whether a bag item can be given (what can be thrown away). |
+| `coop_trade.bag.<n>.item_color` | setting | number | A bag item's use: 0 field, 1 battle, 2 both, 255 none. |
+| `coop_trade.bag.<n>.icon` | setting | text | A bag item's icon image. |
+| `coop_trade.bag.<n>.icon_rect` | setting | text | The icon's part of that image. |
+| `coop_trade.own_count` | setting | number | How many kinds of items this player offers. |
+| `coop_trade.own.<n>.id` | setting | text | An offered item's id, sent with coop_trade_take. |
+| `coop_trade.own.<n>.name_key` | setting | text | The text key of an offered item's name. |
+| `coop_trade.own.<n>.count` | setting | number | How many of an item this player offers. |
+| `coop_trade.own.<n>.item_color` | setting | number | An offered item's use: 0 field, 1 battle, 2 both, 255 none. |
+| `coop_trade.own.<n>.icon` | setting | text | An offered item's icon image. |
+| `coop_trade.own.<n>.icon_rect` | setting | text | The icon's part of that image. |
+| `coop_trade.their_count` | setting | number | How many kinds of items the other player offers. |
+| `coop_trade.their.<n>.id` | setting | text | An item the other player offers: its id. |
+| `coop_trade.their.<n>.name_key` | setting | text | The text key of that item's name. |
+| `coop_trade.their.<n>.count` | setting | number | How many of it the other player offers. |
+| `coop_trade.their.<n>.item_color` | setting | number | That item's use: 0 field, 1 battle, 2 both, 255 none. |
+| `coop_trade.their.<n>.icon` | setting | text | That item's icon image. |
+| `coop_trade.their.<n>.icon_rect` | setting | text | The icon's part of that image. |
+| `coop_trade.own_confirmed` | setting | yes/no | Whether this player is ready to trade what is on the table. |
+| `coop_trade.their_confirmed` | setting | yes/no | Whether the other player is ready; any change of an offer takes both back. |
+| `coop_trade.can_confirm` | setting | yes/no | Whether this player can say ready now (something is on the table and its own last change reached the host). |
+| `coop_trade.revision` | setting | number | Goes up each time the values above change: the screen is drawn again. |
+| `coop_trade_answer` | command | yes/no | The answer to a trade ask: true accepts. |
+| `coop_trade_add` | command | text | Puts one more of a bag item (its id) on the table. |
+| `coop_trade_take` | command | text | Takes one of an offered item (its id) back. |
+| `coop_trade_confirm` | command | yes/no | Says ready (true) or takes it back (false). |
+| `coop_trade_cancel` | command | — | Calls the trade (or this player's ask) off. |
 
 ### `money_box`
 

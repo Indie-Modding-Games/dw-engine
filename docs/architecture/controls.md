@@ -55,6 +55,7 @@ one the prompts show.
 | `extra` | **Q** | — | West (□) | The original's □ button. Triggers the finisher in battle; clears everything in the name box (gamepad); advances phases in shops. |
 | `tab_previous` / `tab_next` | **Q** / **E** | — | LeftShoulder (L1) / RightShoulder (R1) | Previous / next tab of a page with tabs (the [in-game options](../modules/apps/game.md#in-game-options)); they arrive as `NavCommand::TabPrevious`/`TabNext` and a page without tabs does not use them. They share a key with `extra`/`alt` and a button with `world_map`/`walk`, which do nothing while the menu is open. |
 | `help` | H | — | Left trigger | On-screen rules of the minigame (the shop job: opens and closes its panel while its bar is visible). A dwe improvement; F1 belongs to the console. |
+| `trade` | T | — | RightStick (R3) | Co-op only: asks the nearest player in reach for an item trade ([multiplayer, §6.2](multiplayer.md)). The hint under that player's tag names the key. |
 | `debug_console` | ` or F1 | — | — | Development console. |
 | `report_bug` | F12 | — | — | In-game bug report. |
 | `debug_time_day/dusk/night` | 1 / 2 / 3 | — | — | Development views (`dwe-game --map`). |

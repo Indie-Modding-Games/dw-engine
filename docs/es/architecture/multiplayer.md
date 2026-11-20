@@ -532,7 +532,7 @@ y dos invitados con mensajes codificados), el caso cooperativo de `packages/game
 el de `packages/session/tests/story_adapter_tests.cpp`.
 ### 5.9 Salas de cuatro y el diagnóstico de sincronía
 
-Lo que añaden #352 y #359 (versión 6 del protocolo, tipos `0xA0`–`0xA2`).
+Lo que añaden #352 y #359 (versión 7 del protocolo, tipos `0xA0`–`0xA2`).
 
 **Salas.** Una sala cooperativa sienta al anfitrión y hasta tres invitados. El Worker de señalización mantiene esa sala
 abierta mientras el anfitrión espera (`apps/versus-signal`, "Rooms of up to four"): el anfitrión tiene un enlace
@@ -647,6 +647,74 @@ del mapa no se dibujan en el invitado. El objeto del ayudante se dibuja lanzado 
 enemigos saltan a los sitios del anfitrión cuando empieza el combate (hasta entonces cada juego simula sus propios
 NPC). Los objetos que caen solo aparecen en el mundo del anfitrión. Mientras el anfitrión tiene su menú abierto, el
 combate espera para los dos.
+
+### 6.2 Intercambio de objetos (#360)
+
+Dos jugadores de la misma partida cooperativa se pasan objetos. El dinero, los compañeros y los intercambios de las
+tiendas quedan fuera.
+
+- **Pedirlo.** Un jugador se acerca a otro en el mismo mapa (a 500 unidades como mucho, cinco celdas de colisión) y
+  pulsa `trade` (T; en el mando, pulsar el stick derecho). Bajo la etiqueta del otro jugador aparece la tecla mientras
+  se le puede pedir. El otro recibe una caja para aceptar o rechazar; quien pide puede retirarlo. Un jugador en un
+  combate, una pantalla, una escena u otro intercambio está ocupado; una petición para alguien que ahora no puede verla
+  espera y el HUD lo avisa una vez.
+- **La mesa.** La pantalla `coop_trade` (las tres columnas del comerciante de objetos, en cada skin) enseña la bolsa
+  propia, lo que da y lo que da el otro, con cantidades, y la marca de listo de cada lado. Confirmar pone uno más del
+  objeto enfocado de la bolsa en la mesa o retira uno; `tab_next` (E) dice listo; `cancel` (Ctrl) lo cancela. El ratón
+  pulsa filas y botones. Cualquier cambio de una oferta quita las dos marcas de listo, y un listo nombra la revisión de
+  las ofertas, así que un listo de algo anterior no cuenta.
+- **Qué se puede dar.** Lo que el original deja tirar y vender (`droppable`); los objetos clave se quedan. Como mucho 8
+  tipos y 999 de cada uno por oferta.
+- **Quién arbitra.** El anfitrión corre `game::coop::TradeBroker` para toda la sesión: numera cada intercambio, guarda
+  las ofertas de los dos jugadores, comprueba que siguen cerca, libres y en un mismo mapa, y cierra el intercambio si uno
+  se va. El juego de cada jugador guarda su propia bolsa (`TradeParty` en cada jugador; la del anfitrión se alimenta en
+  local) y solo ese juego la cambia; el anfitrión nunca escribe la bolsa de un invitado.
+- **Hacerlo.** Cuando los dos están listos en la misma revisión el intercambio se congela (no se acepta cambio ni
+  cancelación) y el árbitro pide a los dos juegos que comprueben su lado (`TradePrepare`: lo que da, lo que recibe).
+  Cada uno responde con la comprobación de su bolsa (`Inventory::canSwap`: tiene cada objeto y lo que recibe cabe). Solo
+  si los dos están bien manda `TradeCommit`; cada juego cambia entonces de una vez (`Inventory::swap`, todo o nada, sin
+  perder nada por una pila llena) y lo confirma. Si un lado falla ahí, o un jugador se va tras el commit, el árbitro
+  manda `TradeRevert` a quien pudo cambiar, que deshace el cambio (lo que la bolsa tomó entretanto se queda; solo si ya
+  no cabe vuelve la bolsa a sus huecos de antes). El canal fiable mantiene la reversión detrás del commit, y un commit o
+  reversión de un intercambio que el juego ya no tiene se ignora: ningún objeto se duplica ni se pierde.
+- **Solo entre bolsas.** Un intercambio pasa objetos de la bolsa de un jugador a la de otro y nunca toca un cofre ni el
+  suelo: tomar un objeto del mundo sigue pasando solo por las reclamaciones del anfitrión (`ItemClaim`, §5.8), así que un intercambio no es otra forma de tomarlo.
+- **Historial.** El árbitro guarda los últimos 32 intercambios cerrados y su resultado; un mensaje para un id cerrado
+  no hace nada.
+- **Guardado.** El lado del anfitrión es su propia partida, que se guarda como de un jugador (§5.6). La bolsa del
+  invitado es parte de su copia sin guardar, así que lo que intercambia vive lo que dura esa partida, como todo lo
+  demás que hace el invitado.
+
+**Mensajes** (versión 8 del protocolo):
+
+| Tipo | Nombre | Dirección | Contenido |
+|---|---|---|---|
+| `0xB0` | `TradeAsk` | cliente → anfitrión | El jugador al que se pide. |
+| `0xB1` | `TradeAnswer` | cliente → anfitrión | Id del intercambio, acepta o rechaza. |
+| `0xB2` | `TradeOffer` | cliente → anfitrión | Id y la oferta entera (objetos y cantidades). |
+| `0xB3` | `TradeConfirm` | cliente → anfitrión | Id, la revisión que confirma, listo o no. |
+| `0xB4` | `TradeCancel` | cliente → anfitrión | Id. |
+| `0xB5` | `TradeState` | anfitrión → cliente | Id, sus dos jugadores, fase, revisión, las dos ofertas y las dos marcas de listo. |
+| `0xB6` | `TradePrepare` | anfitrión → cliente | Id, lo que este lado da y recibe. |
+| `0xB7` | `TradeCommit` | anfitrión → cliente | Id: cambiar ahora. |
+| `0xB8` | `TradeRevert` | anfitrión → cliente | Id: deshacer el cambio. |
+| `0xB9` | `TradeReply` | cliente → anfitrión | Id, paso (preparado o aplicado) y la comprobación de la bolsa. |
+| `0xBA` | `TradeClosed` | anfitrión → cliente | Id, resultado (hecho, rechazado, cancelado, se fue, ocupado, lejos, falta, no intercambiable, sin espacio) y quién lo causó. |
+
+Todos van por el canal fiable.
+
+Intercambian dos jugadores cualesquiera de una sala de hasta cuatro, también dos invitados: el juego del anfitrión lee
+los mensajes de intercambio de cada invitado de su propio enlace (el enlace dice quién los manda) y manda el correo del
+árbitro por el enlace del jugador al que va (`CoopTradeLink`), así que dos invitados intercambian a través del
+anfitrión.
+
+Límites: el anfitrión se fía de la comprobación que hace un invitado de su propia bolsa (el juego del invitado es una
+copia que corre él mismo).
+
+Pruebas: `packages/game/coop/tests/trade_tests.cpp` (el flujo entero, marcas de listo y revisiones viejas, rechazos,
+ocupado, lejos, bolsas llenas, objetos que faltan o no se pueden dar, un cambio fallido revertido, jugadores que se van
+antes y después del commit, cuatro jugadores en dos intercambios, mensajes ajenos y el códec),
+`packages/game/inventory/tests/bag_tests.cpp` (el cambio) y `apps/game/tests/coop_trades_tests.cpp`.
 
 ## 7. Fases
 

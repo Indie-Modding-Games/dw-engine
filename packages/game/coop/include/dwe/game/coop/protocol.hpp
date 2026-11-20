@@ -25,8 +25,8 @@ inline constexpr std::size_t MaxPlayers = 4;
 // ground items and the claims on items two players could take (#357). 6: both partners fight
 // together: the guest's battle offer, the allies of a battle begin, their figures and the
 // spoils' departure (#351, #361). 7: rooms of up to four players' lobby and the sync diagnostics
-// (#352, #359).
-inline constexpr std::uint32_t ProtocolVersion = 7;
+// (#352, #359). 8: item trades between players (#360).
+inline constexpr std::uint32_t ProtocolVersion = 8;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
   return id < MaxPlayers;
@@ -561,6 +561,141 @@ struct ClaimAnswer {
   friend bool operator==(const ClaimAnswer&, const ClaimAnswer&) = default;
 };
 
+// Item trades between two players of the session (#360; docs/architecture/multiplayer.md, "Item
+// trades"). A player asks another on its map, the other accepts or refuses, both put items of
+// their own bag on the table and confirm; the host referees it (trade.hpp) and has each side swap
+// the items at once. Each bag stays its owner's: the host never writes another player's bag, it
+// only asks each side to check and then to apply the swap.
+inline constexpr std::size_t MaxTradeItems = 8;
+inline constexpr std::uint16_t MaxTradeCount = 999;
+
+// Some of one item (its id in data/items) on the table.
+struct TradeItem {
+  std::string item;
+  std::uint16_t count = 0;
+
+  friend bool operator==(const TradeItem&, const TradeItem&) = default;
+};
+
+// A player asks `with` for a trade (to the host).
+struct TradeAsk {
+  PlayerId with = HostPlayerId;
+
+  friend bool operator==(const TradeAsk&, const TradeAsk&) = default;
+};
+
+// The asked player's yes or no (to the host).
+struct TradeAnswer {
+  std::uint32_t trade = 0;
+  bool accept = false;
+
+  friend bool operator==(const TradeAnswer&, const TradeAnswer&) = default;
+};
+
+// A player's whole offer, replacing its last one (to the host).
+struct TradeOffer {
+  std::uint32_t trade = 0;
+  std::vector<TradeItem> items;
+
+  friend bool operator==(const TradeOffer&, const TradeOffer&) = default;
+};
+
+// A player confirms (or takes back its confirmation of) the table as the state `revision` showed
+// it (to the host).
+struct TradeConfirm {
+  std::uint32_t trade = 0;
+  std::uint32_t revision = 0;
+  bool confirmed = false;
+
+  friend bool operator==(const TradeConfirm&, const TradeConfirm&) = default;
+};
+
+// A player calls the trade off, or takes back its ask (to the host).
+struct TradeCancel {
+  std::uint32_t trade = 0;
+
+  friend bool operator==(const TradeCancel&, const TradeCancel&) = default;
+};
+
+// Asked: waiting for the asked player's answer. Open: both put items on the table. Executing: both
+// confirmed; the offers are frozen while each side swaps.
+enum class TradePhase : std::uint8_t { Asked, Open, Executing };
+
+// The table as the host holds it, to both players on every change. Index 0 is the asker's side,
+// 1 the asked player's. Any change of an offer counts `revision` up and clears both confirmations.
+struct TradeState {
+  std::uint32_t trade = 0;
+  std::array<PlayerId, 2> players{HostPlayerId, GuestPlayerId};
+  TradePhase phase = TradePhase::Asked;
+  std::uint32_t revision = 0;
+  std::array<std::vector<TradeItem>, 2> offers;
+  std::array<bool, 2> confirmed{false, false};
+
+  friend bool operator==(const TradeState&, const TradeState&) = default;
+};
+
+// The host asks one side to check the swap on its bag: what it gives and what it gets.
+struct TradePrepare {
+  std::uint32_t trade = 0;
+  std::vector<TradeItem> give;
+  std::vector<TradeItem> get;
+
+  friend bool operator==(const TradePrepare&, const TradePrepare&) = default;
+};
+
+// Both sides can swap: apply it (the swap the prepare named).
+struct TradeCommit {
+  std::uint32_t trade = 0;
+
+  friend bool operator==(const TradeCommit&, const TradeCommit&) = default;
+};
+
+// The other side could not apply it or left before it did: undo the swap if it was applied.
+struct TradeRevert {
+  std::uint32_t trade = 0;
+
+  friend bool operator==(const TradeRevert&, const TradeRevert&) = default;
+};
+
+// How a side's bag takes the swap: fine, it no longer holds what it gives, something it gives
+// cannot be traded (the original's rule for throwing away), or it has no room for what it gets.
+enum class TradeCheck : std::uint8_t { Ok, Missing, Untradeable, NoRoom };
+enum class TradeStep : std::uint8_t { Prepared, Applied };
+
+// A side's answer to a prepare or a commit (to the host).
+struct TradeReply {
+  std::uint32_t trade = 0;
+  TradeStep step = TradeStep::Prepared;
+  TradeCheck check = TradeCheck::Ok;
+
+  friend bool operator==(const TradeReply&, const TradeReply&) = default;
+};
+
+enum class TradeOutcome : std::uint8_t {
+  Done,
+  Refused,
+  Cancelled,
+  // A player left the session, or the other dropped.
+  Left,
+  // The other player is in another trade or a battle.
+  Busy,
+  // The two players are not on the same map.
+  Apart,
+  Missing,
+  Untradeable,
+  NoRoom,
+};
+
+// The trade is over, and why; `by` is the player it is about (who refused, cancelled, left or
+// failed the check). Both bags are as the outcome says: swapped when done, untouched otherwise.
+struct TradeClosed {
+  std::uint32_t trade = 0;
+  TradeOutcome outcome = TradeOutcome::Done;
+  PlayerId by = HostPlayerId;
+
+  friend bool operator==(const TradeClosed&, const TradeClosed&) = default;
+};
+
 enum class LeaveReason : std::uint8_t { Quit, Disconnected, SessionEnded };
 struct Leave {
   LeaveReason reason = LeaveReason::Quit;
@@ -630,7 +765,9 @@ using Message =
     std::variant<Hello, Welcome, Ready, JoinState, Commands, Snapshot, ViewState, Leave,
                  ProfileChunk, BattleAsk, BattleBegin, BattleRefused, BattleFrame, BattleAction,
                  BattleEnd, PlayerState, PlayerCorrection, Roster, WorldAsk, WorldChange, WorldSync,
-                 GroundItems, ItemClaim, ClaimAnswer, BattleOffer, Lobby, SyncWatch, SyncReport>;
+                 GroundItems, ItemClaim, ClaimAnswer, BattleOffer, Lobby, SyncWatch, SyncReport,
+                 TradeAsk, TradeAnswer, TradeOffer, TradeConfirm, TradeCancel, TradeState,
+                 TradePrepare, TradeCommit, TradeRevert, TradeReply, TradeClosed>;
 
 inline constexpr std::uint8_t HelloKind = 0x60;
 inline constexpr std::uint8_t WelcomeKind = 0x61;
@@ -664,6 +801,18 @@ inline constexpr std::uint8_t ClaimAnswerKind = 0x95;
 inline constexpr std::uint8_t LobbyKind = 0xA0;
 inline constexpr std::uint8_t SyncWatchKind = 0xA1;
 inline constexpr std::uint8_t SyncReportKind = 0xA2;
+// Item trades (#360): 0xB0-0xBF.
+inline constexpr std::uint8_t TradeAskKind = 0xB0;
+inline constexpr std::uint8_t TradeAnswerKind = 0xB1;
+inline constexpr std::uint8_t TradeOfferKind = 0xB2;
+inline constexpr std::uint8_t TradeConfirmKind = 0xB3;
+inline constexpr std::uint8_t TradeCancelKind = 0xB4;
+inline constexpr std::uint8_t TradeStateKind = 0xB5;
+inline constexpr std::uint8_t TradePrepareKind = 0xB6;
+inline constexpr std::uint8_t TradeCommitKind = 0xB7;
+inline constexpr std::uint8_t TradeRevertKind = 0xB8;
+inline constexpr std::uint8_t TradeReplyKind = 0xB9;
+inline constexpr std::uint8_t TradeClosedKind = 0xBA;
 
 [[nodiscard]] net::Bytes encode(const Message& message);
 // Returns empty for a message owned by another protocol. Messages in this range are validated and

@@ -132,6 +132,11 @@ ActionMap defaultActionMap() {
   map.bind("help", KeyBinding{keys::H});
   map.bind("help", GamepadAxisBinding{.axis = GamepadAxis::LeftTrigger, .direction = 1.0F});
 
+  // Asks the nearest other player for an item trade in a co-op game (a dwe improvement; apps/game
+  // coop_trades.hpp): T, and the pad's right stick press, which the original's pad never had.
+  map.bind("trade", KeyBinding{keys::T});
+  map.bind("trade", GamepadButtonBinding{GamepadButton::RightStick});
+
   map.bind("debug_console", KeyBinding{keys::Grave});
   map.bind("debug_console", KeyBinding{keys::F1});
 

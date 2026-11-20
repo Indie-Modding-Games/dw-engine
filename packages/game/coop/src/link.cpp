@@ -68,6 +68,12 @@ bool directionAllowed(Side receiver, const Message& message) {
         std::holds_alternative<BattleAction>(message) ||
         std::holds_alternative<BattleOffer>(message))
       return true;
+    // A trade's asks, answers, offers and replies; the host referees them (trade.hpp).
+    if (std::holds_alternative<TradeAsk>(message) || std::holds_alternative<TradeAnswer>(message) ||
+        std::holds_alternative<TradeOffer>(message) ||
+        std::holds_alternative<TradeConfirm>(message) ||
+        std::holds_alternative<TradeCancel>(message) || std::holds_alternative<TradeReply>(message))
+      return true;
     if (const auto* chunk = std::get_if<ProfileChunk>(&message))
       return chunk->kind == ProfilePayloadKind::GuestSave;
     return false;
@@ -85,6 +91,11 @@ bool directionAllowed(Side receiver, const Message& message) {
   if (std::holds_alternative<BattleBegin>(message) ||
       std::holds_alternative<BattleRefused>(message) ||
       std::holds_alternative<BattleFrame>(message) || std::holds_alternative<BattleEnd>(message))
+    return true;
+  if (std::holds_alternative<TradeState>(message) ||
+      std::holds_alternative<TradePrepare>(message) ||
+      std::holds_alternative<TradeCommit>(message) ||
+      std::holds_alternative<TradeRevert>(message) || std::holds_alternative<TradeClosed>(message))
     return true;
   if (const auto* chunk = std::get_if<ProfileChunk>(&message))
     return chunk->kind == ProfilePayloadKind::HostSave;

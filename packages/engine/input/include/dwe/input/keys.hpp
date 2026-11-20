@@ -19,6 +19,7 @@ constexpr KeyCode P = 19;
 constexpr KeyCode Q = 20;
 constexpr KeyCode R = 21;
 constexpr KeyCode S = 22;
+constexpr KeyCode T = 23;
 constexpr KeyCode W = 26;
 constexpr KeyCode Digit1 = 30;
 constexpr KeyCode Digit2 = 31;
