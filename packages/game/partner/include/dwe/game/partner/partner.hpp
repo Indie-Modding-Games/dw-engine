@@ -266,7 +266,7 @@ private:
   [[nodiscard]] std::int32_t unhappyChecksWhileSkipping(std::int32_t hour,
                                                         std::int32_t hours) const;
   void passTrainingHour(const TrainingPlace& place, const TrainingCourse& course,
-                        ruleset::GameClock& clock);
+                        ruleset::GameClock& clock, bool sharedClock);
   void addDays(std::int64_t days, bool ages);
 
   // Starts the care of a species (initializePartner, initializeEvolvedPartner,

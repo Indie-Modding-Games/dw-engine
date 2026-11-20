@@ -18,7 +18,7 @@ struct UiApiVersion {
 
   friend constexpr auto operator<=>(const UiApiVersion&, const UiApiVersion&) = default;
 };
-inline constexpr UiApiVersion CurrentUiApiVersion{.major = 0, .minor = 24, .patch = 0};
+inline constexpr UiApiVersion CurrentUiApiVersion{.major = 0, .minor = 25, .patch = 0};
 
 // A version as text: "0.9.0".
 [[nodiscard]] std::string uiApiVersionText(UiApiVersion version);

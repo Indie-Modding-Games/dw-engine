@@ -37,6 +37,7 @@ dwe_add_module(session
         src/session_rules.cpp
         src/session_music.cpp
         src/session_sound.cpp
+        src/shared_clock.cpp
         src/battle_effects.cpp
         src/discard_menu.cpp
         src/item_trader.cpp

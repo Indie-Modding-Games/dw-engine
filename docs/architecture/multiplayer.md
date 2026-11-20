@@ -287,6 +287,9 @@ heartbeat on its own while the game does not poll it, for up to 90 s (`LinkTimeo
 than the 8 s of silence drops nobody, and a game hung past that is still dropped. A guest whose host goes quiet
 shows "Waiting for" and its name instead of a frozen screen.
 
+The snapshot's game clock above was never built: the world's clock reaches the guests with `WorldClock` (`0xC0`), and
+who trains with `TrainingStatus` (`0xC1`), both from protocol 11 ([training in a shared world](coop-training.md), #365).
+
 ### 5.6 Saves in co-op
 
 Co-op never changes or breaks either player's single-player saves. The rule:
@@ -756,3 +759,4 @@ each section. Two games on one PC are the loopback harness of the co-op tests in
   modules that change.
 - [Co-op combat](coop-combat.md) (#362): every partner on one side, the next step after the first co-op battles.
 - [Co-op difficulty](coop-difficulty.md) (#361): enemy scaling and rewards by the number of players.
+- [Training in a shared world](coop-training.md) (#365): one world clock, the host's, and training without moving it.

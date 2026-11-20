@@ -22,3 +22,9 @@
 	font-size: 26dp;
 	color: #f2f0e1;
 }
+
+/* The line under a name while that player trains, in the skin's pixel font at its sharp size. */
+.tag .training {
+	font-size: 26dp;
+	line-height: 28dp;
+}

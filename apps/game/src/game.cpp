@@ -73,6 +73,7 @@
 #include "coop_snapshot.hpp"
 #include "coop_sync.hpp"
 #include "coop_trades.hpp"
+#include "coop_training.hpp"
 #include "coop_world.hpp"
 #include "dev_assets_banner.hpp"
 #include "dev_tools.hpp"
@@ -1062,6 +1063,8 @@ int runGame(const Options& requested) {
   CoopBattles coopBattles{**ui};
   // The item trades between the players (coop_trades.hpp).
   CoopTrades coopTrades{**ui};
+  // The world's clock and who trains (#365).
+  CoopTraining coopTraining;
   // The host's room went while the guest played: its game ends after this frame's ticks.
   bool coopHostLeft = false;
   // How a player of the session is named (the trades' document and notices): a player of a link
@@ -1894,6 +1897,7 @@ int runGame(const Options& requested) {
           coopBattles.guestLeft(peer->id);
           // A trade with that player closes; a swap the host applied for it is undone.
           coopTrades.playerLeft(peer->id);
+          coopTraining.playerLeft(peer->id);
           coopHud.notice(CoopDisconnectedText, peer->label);
           break;
         case CoopLinkLoss::HostLeft:
@@ -1914,6 +1918,7 @@ int runGame(const Options& requested) {
         coopHostWorld.reset();
         coopGuestWorld.reset();
         coopSync.reset();
+        coopTraining.reset();
         coop.takeLinkBack();
         core::logInfo("coop: the link or the game ended, the gameplay bridges were dropped");
         // A co-op game that ended (back to the title) ends its room: the others hear it leave
@@ -2187,6 +2192,20 @@ int runGame(const Options& requested) {
           coopSync.guestTick(play->scene().field(), presented ? &*presented : nullptr,
                              coopGuestWorld->self(), *coopBridge(), ticksRun);
         }
+        // One clock for the world, the host's, and who of the players trains (#365).
+        if (coopLinked && coop.isHost()) {
+          std::vector<CoopTrainingPeer> trainees;
+          for (CoopPeer& peer : coopPeers) {
+            trainees.push_back({.id = peer.id, .bridge = peer.bridge.get()});
+          }
+          coopTraining.hostTick(play->gameSession(), play->trainingCourse(), trainees, TickSeconds);
+        } else if (coopLinked && coopGuestWorld) {
+          coopTraining.guestTick(play->gameSession(), play->trainingCourse(),
+                                 coopGuestWorld->self(), *coopBridge());
+        }
+        if (coopLinked && coopTraining.takeClockNotice()) {
+          coopHud.notice(CoopTrainingClockText);
+        }
         // Who stands on this game's map: the host's authority, or a guest's newest snapshot.
         const std::string& coopMap = play->scene().field().mapId();
         const std::vector<game::coop::PlayerId> coopHere =
@@ -2210,7 +2229,9 @@ int runGame(const Options& requested) {
             std::string map = record.id == game::coop::HostPlayerId ? hostMap
                               : record.pose                         ? record.pose->mapId
                                                                     : std::string{};
-            const bool busy = battling && !map.empty() && map == hostMap;
+            // A player on a gym course trains on until its session ends (#365).
+            const bool busy =
+                (battling && !map.empty() && map == hostMap) || coopTraining.training(record.id);
             tradeWorld.push_back({.player = record.id, .map = std::move(map), .busy = busy});
           }
         }
@@ -2629,11 +2650,12 @@ int runGame(const Options& requested) {
       std::vector<CoopTagView> coopTags;
       for (const auto& [id, label] : coopOthers) {
         const std::optional<glm::vec2> head = play->scene().coopHeadInWindow(id);
-        coopTags.push_back(
-            coopTagViewOf(label,
-                          head ? std::optional{screens::WindowFraction{.x = head->x, .y = head->y}}
-                               : std::nullopt,
-                          play->fieldRunning(), coopTrades.askNearest(*play, id)));
+        coopTags.push_back(coopTagViewOf(
+            label,
+            head ? std::optional{screens::WindowFraction{.x = head->x, .y = head->y}}
+                 : std::nullopt,
+            play->fieldRunning(), coopTrades.askNearest(*play, id) && !coopTraining.training(id),
+            coopTraining.training(id)));
       }
       coopHud.showTags(coopTags);
       screenFade->setDarkness(play->fadeLevel());

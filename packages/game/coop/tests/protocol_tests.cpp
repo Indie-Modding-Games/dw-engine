@@ -246,7 +246,7 @@ TEST_CASE(
 TEST_CASE("cooperative decoder ignores foreign message kinds and rejects damaged frames") {
   CHECK(decode(std::vector<std::uint8_t>{})->has_value() == false);
   CHECK(decode(std::vector<std::uint8_t>{0x10, 0x01})->has_value() == false);
-  CHECK_FALSE(decode(std::vector<std::uint8_t>{0xC0, 0x01})->has_value());
+  CHECK_FALSE(decode(std::vector<std::uint8_t>{0xD0, 0x01})->has_value());
   // A kind of the co-op ranges this game does not know is skipped too.
   CHECK_FALSE(decode(std::vector<std::uint8_t>{0x8F, 0x01})->has_value());
   // A known kind cut short is damaged, not foreign.

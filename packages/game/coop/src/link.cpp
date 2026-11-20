@@ -71,6 +71,9 @@ bool directionAllowed(Side receiver, const Message& message) {
         std::holds_alternative<BattleOffer>(message))
       return true;
     // A trade's asks, answers, offers and replies; the host referees them (trade.hpp).
+    // Whether the guest's own partner trains (#365); the host takes it as that guest's.
+    if (std::holds_alternative<TrainingStatus>(message))
+      return true;
     if (std::holds_alternative<TradeAsk>(message) || std::holds_alternative<TradeAnswer>(message) ||
         std::holds_alternative<TradeOffer>(message) ||
         std::holds_alternative<TradeConfirm>(message) ||
@@ -98,6 +101,10 @@ bool directionAllowed(Side receiver, const Message& message) {
       std::holds_alternative<TradePrepare>(message) ||
       std::holds_alternative<TradeCommit>(message) ||
       std::holds_alternative<TradeRevert>(message) || std::holds_alternative<TradeClosed>(message))
+    return true;
+  // The world's clock is the host's, and so is the word of who trains (#365).
+  if (std::holds_alternative<WorldClock>(message) ||
+      std::holds_alternative<TrainingStatus>(message))
     return true;
   if (const auto* chunk = std::get_if<ProfileChunk>(&message))
     return chunk->kind == ProfilePayloadKind::HostSave;

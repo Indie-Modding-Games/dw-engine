@@ -50,7 +50,7 @@ CoopPeerLabel coopPeerLabel(bool localHosts, std::string_view remoteName) {
 
 CoopTagView coopTagViewOf(const std::optional<CoopPeerLabel>& peer,
                           std::optional<screens::WindowFraction> head, bool fieldRunning,
-                          bool trade) {
+                          bool trade, bool training) {
   if (!peer || !head || !fieldRunning || head->x < 0.0 || head->x > 1.0 || head->y < 0.0 ||
       head->y > 1.0) {
     // A hidden tag keeps no place or name, so it publishes nothing while it stays hidden.
@@ -60,7 +60,8 @@ CoopTagView coopTagViewOf(const std::optional<CoopPeerLabel>& peer,
           .x = head->x * Percent,
           .y = head->y * Percent,
           .peer = *peer,
-          .trade = trade};
+          .trade = trade,
+          .training = training};
 }
 
 CoopLinkLoss coopLinkLoss(bool localHosts, bool playing) {
@@ -89,6 +90,7 @@ void CoopHud::showTags(std::span<const CoopTagView> views) {
     settings.push_back({.name = prefix + "name_key", .value = view.peer.key});
     settings.push_back({.name = prefix + "number", .value = static_cast<double>(view.peer.number)});
     settings.push_back({.name = prefix + "trade", .value = view.trade});
+    settings.push_back({.name = prefix + "training", .value = view.training});
   }
   screens::publish(*ui_, settings, CoopTagRevisionSetting);
   published_ = shown;

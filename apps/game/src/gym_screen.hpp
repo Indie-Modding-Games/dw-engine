@@ -81,6 +81,8 @@ public:
 
   // Whether a course runs: the player has no control meanwhile.
   [[nodiscard]] bool active() const { return run_ != nullptr; }
+  // The running course's id (gym.yaml: courses), empty when none runs.
+  [[nodiscard]] std::string courseId() const;
 
   // The original's cancel (dw/input.h: CANCEL_BUTTON, the triangle on the American pad) is the
   // menu button here: while a course runs it ends the session instead of opening the menu.

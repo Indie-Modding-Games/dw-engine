@@ -65,6 +65,9 @@ void GymFieldPorts::setTraining(bool training) {
   // The player's state 8 and partner.c: partnerSetState(10): both stand for the course. A course
   // the console starts finds the field free and holds it itself.
   game::field::Field& field = this->field();
+  // In co-op the world's clock runs on while the course holds its player
+  // (docs/architecture/coop-training.md); alone, the field's hold stops it as before.
+  session().holdForCourse(training);
   if (training) {
     ownHold_ = !field.heldByScript();
     field.holdForScript(true);

@@ -149,13 +149,13 @@ core::Result<TrainingResult> Partner::train(const TrainingRequest& request,
                                                                         .state = state_,
                                                                         .species = *species_,
                                                                         .request = request}));
-  passTrainingHour(*place, *course, clock);
+  passTrainingHour(*place, *course, clock, request.sharedClock);
   emit(EventKind::Trained, 1);
   return TrainingResult{.gains = gains};
 }
 
 void Partner::passTrainingHour(const TrainingPlace& place, const TrainingCourse& course,
-                               ruleset::GameClock& clock) {
+                               ruleset::GameClock& clock, bool sharedClock) {
   // trn_reward.c: TRN_advanceTrainingTime (and TRN2_ for the second place).
   const TrainingRules& rules = rules_->training;
   MoodState& mood = state_.mood;
@@ -169,10 +169,14 @@ void Partner::passTrainingHour(const TrainingPlace& place, const TrainingCourse&
   // TRN_saveTrainingStartTime keeps the time the course started and TRN_advanceTrainingTime sets
   // the hour after it. The game time stands still while the course holds the field, so the time now
   // is the start's.
+  // On a shared clock (co-op) the world's time goes on as it is: the hour is the partner's alone,
+  // and a midnight is the world's to cross (each player's session would add one otherwise).
   const ruleset::GameTime before = clock.time();
   const std::int32_t hour = (before.hour + 1) % constants::HoursPerDay;
-  const ruleset::ClockAdvance advance = clock.jumpTo(hour, before.minute);
-  addDays(advance.days, true);
+  if (!sharedClock) {
+    const ruleset::ClockAdvance advance = clock.jumpTo(hour, before.minute);
+    addDays(advance.days, true);
+  }
   if (hour % life().unhappyLifetime.everyHours == 0) {
     loseUnhappyLifetime();
   }

@@ -411,6 +411,10 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
   auto play = std::make_unique<PlaySession>(Key{}, context, std::move(*game), std::move(*scene));
   play->coopGame_ = start.coop();
   play->coopGuest_ = start.coopGuest();
+  // Co-op (docs/architecture/coop-training.md): one clock for the world, the host's.
+  session.shareClock(start.coopGuest() ? session::ClockShare::Guest
+                     : start.coop()    ? session::ClockShare::Host
+                                       : session::ClockShare::Own);
   // Co-op (#357): a guest's chest or ground take waits for the host's word.
   play->fieldItemsScreen_.setCoop(start.coop(), start.coopGuest());
   if (cleared) {

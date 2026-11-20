@@ -29,8 +29,9 @@ inline constexpr std::size_t MaxPlayers = 4;
 // started by any guest, every free guest an ally, each fighter's revive countdown in the frames
 // and an item's target partner (#351, #361, #362). 10: a game in progress takes players: the
 // host's seat key in its welcome and a returning guest's in its hello, the lobby's game under way
-// and whether it takes new players, and the refusal of a room closed to them (#352, #356).
-inline constexpr std::uint32_t ProtocolVersion = 10;
+// and whether it takes new players, and the refusal of a room closed to them (#352, #356). 11: the
+// world's clock, the host's, told to every guest, and who of the players trains (#365).
+inline constexpr std::uint32_t ProtocolVersion = 11;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
   return id < MaxPlayers;
@@ -780,13 +781,38 @@ struct SyncReport {
   friend bool operator==(const SyncReport&, const SyncReport&) = default;
 };
 
+// The world's clock, the host's (docs/architecture/coop-training.md): its time in frames since year
+// 0, whether it runs now and at what speed (the tuning panel's multiplier, in thousandths). The
+// host tells every guest about once a second and at once when it stops, starts or jumps; a guest's
+// clock follows it.
+struct WorldClock {
+  std::int64_t elapsedFrames = 0;
+  bool running = false;
+  std::uint32_t speedThousandths = 1000;
+
+  friend bool operator==(const WorldClock&, const WorldClock&) = default;
+};
+
+// A course id longer than this is damaged.
+inline constexpr std::size_t MaxCourseText = 32;
+
+// Who trains (#365): a player's course while it runs, empty once it ends. A guest tells the host
+// about its own; the host tells every guest about everyone's, its own included.
+struct TrainingStatus {
+  PlayerId player = HostPlayerId;
+  std::string course;
+
+  friend bool operator==(const TrainingStatus&, const TrainingStatus&) = default;
+};
+
 using Message =
     std::variant<Hello, Welcome, Ready, JoinState, Commands, Snapshot, ViewState, Leave,
                  ProfileChunk, BattleAsk, BattleBegin, BattleRefused, BattleFrame, BattleAction,
                  BattleEnd, PlayerState, PlayerCorrection, Roster, WorldAsk, WorldChange, WorldSync,
                  GroundItems, ItemClaim, ClaimAnswer, BattleOffer, Lobby, SyncWatch, SyncReport,
                  TradeAsk, TradeAnswer, TradeOffer, TradeConfirm, TradeCancel, TradeState,
-                 TradePrepare, TradeCommit, TradeRevert, TradeReply, TradeClosed>;
+                 TradePrepare, TradeCommit, TradeRevert, TradeReply, TradeClosed, WorldClock,
+                 TrainingStatus>;
 
 inline constexpr std::uint8_t HelloKind = 0x60;
 inline constexpr std::uint8_t WelcomeKind = 0x61;
@@ -832,6 +858,9 @@ inline constexpr std::uint8_t TradeCommitKind = 0xB7;
 inline constexpr std::uint8_t TradeRevertKind = 0xB8;
 inline constexpr std::uint8_t TradeReplyKind = 0xB9;
 inline constexpr std::uint8_t TradeClosedKind = 0xBA;
+// Training in a shared world (#365): 0xC0-0xCF.
+inline constexpr std::uint8_t WorldClockKind = 0xC0;
+inline constexpr std::uint8_t TrainingStatusKind = 0xC1;
 
 [[nodiscard]] net::Bytes encode(const Message& message);
 // Returns empty for a message owned by another protocol. Messages in this range are validated and

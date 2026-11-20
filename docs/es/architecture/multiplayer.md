@@ -364,6 +364,10 @@ cliente descarte comandos pendientes al reconciliar su vista. Una `Action` fiabl
 conserva los ids procesados durante la sesión y responde con el mismo resultado a un reintento. Al reconectar empieza
 una sesión nueva con otro identificador; no se reenvían acciones pendientes de la sesión vieja.
 
+El reloj de juego de la instantánea nunca se hizo: el reloj del mundo llega a los invitados con `WorldClock` (`0xC0`), y
+quién entrena con `TrainingStatus` (`0xC1`), ambos desde el protocolo 11
+([entrenar en un mundo compartido](coop-training.md), #365).
+
 ### 5.6 Guardado en cooperativo
 
 El cooperativo nunca cambia ni rompe las partidas guardadas de un jugador de ninguno de los dos. La regla:
@@ -1003,3 +1007,5 @@ de cada sección. Dos partidas en un PC son el arnés en bucle local de las prue
 - [Combate cooperativo](coop-combat.md) (#362): todos los compañeros en un mismo lado, el paso siguiente a los primeros
   combates cooperativos.
 - [Dificultad cooperativa](coop-difficulty.md) (#361): escalado de los enemigos y recompensas según el número de jugadores.
+- [Entrenar en un mundo compartido](coop-training.md) (#365): un único reloj del mundo, el del anfitrión, y entrenar sin
+  moverlo.

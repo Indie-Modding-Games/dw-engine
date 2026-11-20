@@ -12,7 +12,7 @@ namespace dwe::game::coop {
 namespace {
 
 // The highest kind: the ranges below it that hold no kind decode as another protocol's.
-constexpr std::uint8_t LastKind = TradeClosedKind;
+constexpr std::uint8_t LastKind = TrainingStatusKind;
 
 // A kind this protocol may decode: any byte outside is another protocol's (versus, lockstep).
 constexpr bool coopKind(std::uint8_t kind) {
@@ -539,6 +539,11 @@ net::Bytes encode(const Message& message) {
           out.put(TradeReplyKind).put(body.trade).put(body.step).put(body.check);
         } else if constexpr (std::is_same_v<T, TradeClosed>) {
           out.put(TradeClosedKind).put(body.trade).put(body.outcome).put(body.by);
+        } else if constexpr (std::is_same_v<T, WorldClock>) {
+          out.put(WorldClockKind).put(body.elapsedFrames).put(body.running);
+          out.put(body.speedThousandths);
+        } else if constexpr (std::is_same_v<T, TrainingStatus>) {
+          out.put(TrainingStatusKind).put(body.player).put(std::string_view{body.course});
         } else {
           out.put(ProfileChunkKind)
               .put(body.transferId)
@@ -1203,6 +1208,29 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     }
     closed.outcome = static_cast<TradeOutcome>(outcome);
     message = closed;
+    break;
+  }
+  case WorldClockKind: {
+    WorldClock clock;
+    clock.elapsedFrames = in.get<std::int64_t>();
+    if (!getFlag(in, clock.running)) {
+      return core::fail("invalid cooperative world clock");
+    }
+    clock.speedThousandths = in.get<std::uint32_t>();
+    if (!in.ok() || clock.elapsedFrames < 0) {
+      return core::fail("invalid cooperative world clock");
+    }
+    message = clock;
+    break;
+  }
+  case TrainingStatusKind: {
+    TrainingStatus status;
+    status.player = in.get<PlayerId>();
+    status.course = in.text();
+    if (!in.ok() || !validPlayer(status.player) || status.course.size() > MaxCourseText) {
+      return core::fail("invalid cooperative training status");
+    }
+    message = std::move(status);
     break;
   }
   default:

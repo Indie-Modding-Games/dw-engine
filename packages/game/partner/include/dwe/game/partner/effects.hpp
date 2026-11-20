@@ -117,6 +117,10 @@ struct TrainingRequest {
   // The story flag of the course's stat is set (training.yaml: upgrade_flags; isTriggerSet).
   bool gymUpgraded = false;
   bool hasTrainingManual = false;
+  // An engine addition for co-op (docs/architecture/coop-training.md): the world's clock is shared
+  // and no session moves it. The hour is the partner's own: it pays every cost of the hour, and the
+  // day, the age and the time of day stay the world's.
+  bool sharedClock = false;
 };
 
 } // namespace dwe::game::partner
