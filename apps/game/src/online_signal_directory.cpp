@@ -43,8 +43,8 @@ std::vector<RoomListing> SignalRoomDirectory::listings(std::span<const net::Publ
     if (!state) {
       continue;
     }
-    // The server names every room alike for now («Cooperative room»): the screens show their
-    // own words for a room without a name of its own.
+    // The server names every room alike for now («Cooperative room»): the screens name a room
+    // without a name of its own after its host (ui/api/online.lua).
     const bool genericName = room.name.empty() || room.name == "Cooperative room";
     out.push_back(RoomListing{.roomId = room.roomId,
                               .joinCode = room.joinCode,
@@ -55,7 +55,7 @@ std::vector<RoomListing> SignalRoomDirectory::listings(std::span<const net::Publ
                               .capacity = capacity,
                               .createdAt = room.createdAt,
                               .state = *state,
-                              .nameKey = genericName ? "online.untitled_room" : std::string{},
+                              .nameKey = {},
                               .mode = room.mode.empty() ? std::string{"campaign"} : room.mode,
                               .pingMs = -1});
   }

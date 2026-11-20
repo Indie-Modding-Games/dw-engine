@@ -24,8 +24,9 @@ inline constexpr std::size_t MaxPlayers = 4;
 // (#353, #354, #355). 5: the shared world's interactions: story facts, live map edits, the
 // ground items and the claims on items two players could take (#357). 6: both partners fight
 // together: the guest's battle offer, the allies of a battle begin, their figures and the
-// spoils' departure (#351, #361).
-inline constexpr std::uint32_t ProtocolVersion = 6;
+// spoils' departure (#351, #361). 7: rooms of up to four players' lobby and the sync diagnostics
+// (#352, #359).
+inline constexpr std::uint32_t ProtocolVersion = 7;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
   return id < MaxPlayers;
@@ -567,11 +568,70 @@ struct Leave {
   friend bool operator==(const Leave&, const Leave&) = default;
 };
 
+// The room before its game, as the host keeps it (#352): every seat taken, so that each guest
+// shows all of them, not only the host and itself. Reliable, on every change.
+enum class SeatState : std::uint8_t {
+  // In the room, its link open, its save not picked yet.
+  Connected,
+  // It picked its save and waits for the host to start.
+  Ready,
+};
+
+struct LobbySeat {
+  PlayerId id = HostPlayerId;
+  std::string name;
+  SeatState state = SeatState::Connected;
+
+  friend bool operator==(const LobbySeat&, const LobbySeat&) = default;
+};
+
+struct Lobby {
+  // How many players the room seats, host included (2 to MaxPlayers).
+  std::uint8_t capacity = 2;
+  // The host first, then the guests by id.
+  std::vector<LobbySeat> seats;
+
+  friend bool operator==(const Lobby&, const Lobby&) = default;
+};
+
+// The sync diagnostics (#359), developer tools only: the host asks every guest to report what it
+// holds of the shared world (on) or to stop (off). Reliable.
+struct SyncWatch {
+  bool on = false;
+
+  friend bool operator==(const SyncWatch&, const SyncWatch&) = default;
+};
+
+// One player as a guest holds it: where it draws it now (its own player, where it stands).
+struct SyncHeld {
+  PlayerId id = HostPlayerId;
+  std::string mapId;
+  std::int32_t x = 0;
+  std::int32_t y = 0;
+  std::int32_t z = 0;
+
+  friend bool operator==(const SyncHeld&, const SyncHeld&) = default;
+};
+
+// A guest's report while the host watches (unreliable, a few per second): what it holds of every
+// player, and what it saw of the host's snapshots (the newest world tick, how many it missed and
+// how many came late or twice).
+struct SyncReport {
+  std::uint32_t sequence = 0;
+  std::uint32_t snapshotTick = 0;
+  std::uint32_t snapshotsLost = 0;
+  std::uint32_t snapshotsLate = 0;
+  std::vector<SyncHeld> players;
+
+  friend bool operator==(const SyncReport&, const SyncReport&) = default;
+};
+
 using Message =
     std::variant<Hello, Welcome, Ready, JoinState, Commands, Snapshot, ViewState, Leave,
                  ProfileChunk, BattleAsk, BattleBegin, BattleRefused, BattleFrame, BattleAction,
                  BattleEnd, PlayerState, PlayerCorrection, Roster, WorldAsk, WorldChange, WorldSync,
-                 GroundItems, ItemClaim, ClaimAnswer, BattleOffer>;
+                 GroundItems, ItemClaim, ClaimAnswer, BattleOffer, Lobby, SyncWatch,
+                 SyncReport>;
 
 inline constexpr std::uint8_t HelloKind = 0x60;
 inline constexpr std::uint8_t WelcomeKind = 0x61;
@@ -601,6 +661,10 @@ inline constexpr std::uint8_t WorldSyncKind = 0x92;
 inline constexpr std::uint8_t GroundItemsKind = 0x93;
 inline constexpr std::uint8_t ItemClaimKind = 0x94;
 inline constexpr std::uint8_t ClaimAnswerKind = 0x95;
+// Players and diagnostics (#352, #359): 0xA0-0xAF.
+inline constexpr std::uint8_t LobbyKind = 0xA0;
+inline constexpr std::uint8_t SyncWatchKind = 0xA1;
+inline constexpr std::uint8_t SyncReportKind = 0xA2;
 
 [[nodiscard]] net::Bytes encode(const Message& message);
 // Returns empty for a message owned by another protocol. Messages in this range are validated and

@@ -4,6 +4,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <deque>
 #include <map>
 #include <memory>
@@ -15,7 +16,8 @@ namespace dwe::net::test {
 
 // The signaling server's rooms (services/versus-signal) in one process, for the tests: a host
 // gets the next code of `codes`, a guest joins by code, and until both say done each one's
-// "signal" messages go to the other.
+// "signal" messages go to the other. A room of more than two seats takes its host's next seats
+// (`/v1/host/<code>?token=`): each seat is a pair of its own here, keyed "<code>/<n>".
 class FakeSignalServer {
 public:
   explicit FakeSignalServer(std::vector<std::string> codes = {"K7Q2", "M4XP"})
@@ -26,6 +28,7 @@ public:
     auto socket = std::make_unique<Socket>(*this);
     const std::string hostPath = "/v1/host";
     const std::string joinPath = "/v1/join/";
+    const std::string seatPath = "/v1/host/";
     const std::string roomsPath = "/v1/rooms";
     const std::string path = url.substr(0, url.find('?'));
     opened.push_back(url);
@@ -70,6 +73,26 @@ public:
         }
       }
       socket->answer({{"rooms", rooms}});
+    } else if (const auto seatAt = path.find(seatPath); seatAt != std::string::npos) {
+      const std::string code = path.substr(seatAt + seatPath.size());
+      const auto seated = seated_.find(code);
+      if (seated == seated_.end()) {
+        socket->push({{"type", "error"}, {"reason", "no-room"}});
+        socket->state_ = SocketState::Closed;
+      } else if (query(url, "token") != seated->second.token) {
+        socket->push({{"type", "error"}, {"reason", "bad-token"}});
+        socket->state_ = SocketState::Closed;
+      } else {
+        seatsTaken.push_back(std::stoi(query(url, "taken")));
+        const std::string key = code + "/" + std::to_string(++seated->second.opened);
+        Room seat;
+        seat.host = socket.get();
+        rooms_[key] = seat;
+        socket->room_ = key;
+        nlohmann::json made = {{"type", "room"}, {"code", code}, {"token", seated->second.token}};
+        withRelays(made);
+        socket->push(made);
+      }
     } else if (path.ends_with(hostPath)) {
       if (refuseHost) {
         socket->answer({{"type", "error"}, {"reason", "limit"}});
@@ -77,21 +100,38 @@ public:
       }
       const std::string code = codes_.at(next_++ % codes_.size());
       const bool listed = query(url, "public") == "1";
+      const int seats = query(url, "seats").empty() ? 2 : std::stoi(query(url, "seats"));
+      const bool tokened = listed || seats > 2;
+      if (seats > 2) {
+        seated_[code] = Seated{.token = "token-" + code};
+      }
       rooms_[code] = Room{.host = socket.get(),
                           .listed = listed,
-                          .token = listed ? "token-" + code : std::string{},
+                          .token = tokened ? "token-" + code : std::string{},
                           .hostName = query(url, "name"),
                           .compat = query(url, "compat")};
       socket->room_ = code;
       nlohmann::json made = {{"type", "room"}, {"code", code}};
-      if (listed) {
+      if (tokened) {
         made["token"] = rooms_[code].token;
       }
       withRelays(made);
       socket->push(made);
     } else if (const auto at = url.find(joinPath); at != std::string::npos) {
       const std::string code = url.substr(at + joinPath.size());
-      const auto room = rooms_.find(code);
+      auto room = rooms_.find(code);
+      if (seated_.contains(code)) {
+        // A seated room: the first of its host's sockets that waits for a guest.
+        room = std::ranges::find_if(rooms_, [&](const auto& entry) {
+          return (entry.first == code || entry.first.starts_with(code + "/")) &&
+                 entry.second.host != nullptr && entry.second.guest == nullptr;
+        });
+        if (room == rooms_.end()) {
+          socket->push({{"type", "error"}, {"reason", "full"}});
+          socket->state_ = SocketState::Closed;
+          return socket;
+        }
+      }
       if (room == rooms_.end() || room->second.host == nullptr) {
         socket->push({{"type", "error"}, {"reason", "no-room"}});
         socket->state_ = SocketState::Closed;
@@ -101,7 +141,7 @@ public:
       } else {
         room->second.guest = socket.get();
         room->second.phase = "connected";
-        socket->room_ = code;
+        socket->room_ = room->first;
         nlohmann::json joined = {{"type", "joined"}};
         withRelays(joined);
         socket->push(joined);
@@ -132,6 +172,8 @@ public:
   std::vector<std::string> opened;
   // The host notices the directory took, as "<code> <state>".
   std::vector<std::string> notices;
+  // The guests a seated room's host said it holds: with each next seat, then by message.
+  std::vector<int> seatsTaken;
 
 private:
   class Socket;
@@ -233,6 +275,8 @@ private:
         if (other != nullptr) {
           other->push(message);
         }
+      } else if (message.value("type", "") == "seats") {
+        server_->seatsTaken.push_back(message.value("taken", -1));
       } else if (message.value("type", "") == "done" && ++room->second.done == 2) {
         ++server_->finishedRooms;
         room->second.host->state_ = SocketState::Closed;
@@ -291,8 +335,14 @@ private:
     std::deque<std::string> texts_;
   };
 
+  struct Seated {
+    std::string token;
+    int opened = 0;
+  };
+
   std::vector<std::string> codes_;
   std::size_t next_ = 0;
+  std::map<std::string, Seated> seated_;
   std::map<std::string, Room> rooms_;
 };
 

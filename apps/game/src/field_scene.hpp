@@ -252,6 +252,12 @@ inline constexpr std::string_view NpcCharacter = "models/partner";
 // is missing or wrong.
 SpriteCharacterTable loadSpriteCharacters(const assets::VirtualFileSystem& files);
 
+// One co-op guest's field intent for a tick on the host (its commands, by its player id).
+struct GuestFieldIntent {
+  game::field::PlayerId id = game::field::GuestPlayerId;
+  game::field::FieldInput input;
+};
+
 class FieldScene {
 public:
   // Loads the field rules, the characters (models/tamer and models/partner) and the start map from
@@ -269,9 +275,9 @@ public:
   // One logic tick of the field with this intent. The owner of the game clock advances it next, by
   // the time the field played (Field::gameTimeRan), and then calls finishTick.
   void tick(const game::field::FieldInput& input, float seconds);
-  // A host-authoritative online tick: the host intent drives story/world interactions; the remote
-  // intent only moves the guest's FieldPlayer through the same Field simulation.
-  void tick(const game::field::FieldInput& input, const game::field::FieldInput& guestInput,
+  // A host-authoritative online tick: the host intent drives story/world interactions; each guest's
+  // intent only moves that guest's FieldPlayer through the same Field simulation (#352).
+  void tick(const game::field::FieldInput& input, std::span<const GuestFieldIntent> guests,
             float seconds);
   // Ends the tick: follows the clock's time of day, and loads the map of a warp the player stepped
   // on, keeping the partner.

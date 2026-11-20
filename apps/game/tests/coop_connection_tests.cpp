@@ -2,6 +2,12 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
+#include <array>
+#include <format>
+#include <memory>
+#include <set>
+
 #include "coop_connection.hpp"
 #include "coop_gameplay_bridge.hpp"
 
@@ -27,6 +33,28 @@ private:
   dwe::net::PeerLink* peer_;
 };
 
+// A host's link in a room of more seats: it carries the room's token, as the signaling server's
+// room message does.
+class SeatedPeer final : public dwe::net::PeerLink {
+public:
+  explicit SeatedPeer(dwe::net::PeerLink& peer) : peer_{&peer} {}
+  void send(dwe::net::Lane lane, std::span<const std::uint8_t> bytes) override {
+    peer_->send(lane, bytes);
+  }
+  std::optional<dwe::net::Bytes> receive(dwe::net::Lane lane) override {
+    return peer_->receive(lane);
+  }
+  void poll(dwe::net::Millis now) override { peer_->poll(now); }
+  dwe::net::PeerState state() const override { return peer_->state(); }
+  dwe::net::PeerFailure failure() const override { return peer_->failure(); }
+  std::optional<dwe::net::Millis> lastHeard() const override { return peer_->lastHeard(); }
+  std::string roomCode() const override { return peer_->roomCode(); }
+  std::string roomToken() const override { return "token"; }
+
+private:
+  dwe::net::PeerLink* peer_;
+};
+
 dwe::game::coop::Identity identity() {
   return {.protocol = dwe::game::coop::ProtocolVersion,
           .gameVersion = "test",
@@ -41,6 +69,8 @@ CoopConnectionDesc roomDesc(
           .configurationError = {},
           .host = std::move(host),
           .join = std::move(join),
+          .seat = {},
+          .seats = 2,
           .compat = "coop-test-content",
           .signalServer = {},
           .open = {}};
@@ -241,4 +271,123 @@ TEST_CASE("a cooperative room that cannot be made closes with the error") {
   REQUIRE(connection.room() != nullptr);
   CHECK(connection.room()->phase() == dwe::net::RoomPhase::Closed);
   CHECK(connection.room()->closeReason() == "transport_unavailable");
+}
+
+namespace {
+
+// A host with seats for four and three guests, each over a loopback network of its own (the
+// signaling server pairs each guest with one of the host's links); the fourth network serves a
+// seat the host offers again once a guest left.
+struct FourSeats {
+  std::array<std::unique_ptr<dwe::net::LoopbackNetwork>, 4> networks;
+  std::unique_ptr<CoopConnection> host;
+  std::array<std::unique_ptr<CoopConnection>, 3> guests;
+  std::vector<std::string> seatsAsked;
+
+  FourSeats() {
+    for (auto& network : networks) {
+      network = std::make_unique<dwe::net::LoopbackNetwork>(dwe::net::LinkConditions{});
+    }
+    CoopConnectionDesc desc = roomDesc(
+        [this](const std::optional<dwe::net::PublicHost>&) {
+          return std::make_unique<SeatedPeer>(networks[0]->link(0));
+        },
+        {});
+    desc.seat = [this](std::string_view code, std::string_view token, int taken) {
+      seatsAsked.push_back(std::format("{}/{}/{}", code, token, taken));
+      return std::make_unique<SeatedPeer>(
+          networks[std::min(seatsAsked.size(), networks.size() - 1)]->link(0));
+    };
+    desc.seats = 4;
+    host = std::make_unique<CoopConnection>(std::move(desc));
+    for (std::size_t index = 0; index < guests.size(); ++index) {
+      guests[index] =
+          std::make_unique<CoopConnection>(roomDesc({}, [this, index](std::string_view) {
+            return std::make_unique<BorrowedPeer>(networks[index]->link(1));
+          }));
+    }
+  }
+
+  void run(std::uint32_t ticks) {
+    for (std::uint32_t tick = 0; tick < ticks; ++tick) {
+      for (auto& network : networks) {
+        network->advance(dwe::net::Millis{10});
+      }
+      const dwe::net::Millis now = networks[0]->now();
+      host->tick(now);
+      for (auto& guest : guests) {
+        guest->tick(now);
+      }
+    }
+  }
+};
+
+} // namespace
+
+TEST_CASE("a host seats three guests in one room, each with its own player id (#352)") {
+  FourSeats room;
+  room.host->open();
+  REQUIRE(room.host->host());
+  CHECK(room.host->seats() == 4);
+  for (auto& guest : room.guests) {
+    guest->open();
+    REQUIRE(guest->join("TEST"));
+  }
+  room.run(30);
+  CHECK(room.host->view() == CoopConnection::View::Connected);
+  const auto in = room.host->guests();
+  REQUIRE(in.size() == 3);
+  for (std::size_t index = 0; index < in.size(); ++index) {
+    CHECK(in[index].id == index + 1);
+  }
+  std::set<dwe::game::coop::PlayerId> given;
+  for (auto& guest : room.guests) {
+    REQUIRE(guest->connected());
+    given.insert(guest->link()->localPlayer());
+  }
+  CHECK(given == std::set<dwe::game::coop::PlayerId>{1, 2, 3});
+  // The host asked the server for its next seats with the room's code and token.
+  REQUIRE(room.seatsAsked.size() == 2);
+  CHECK(room.seatsAsked.front().starts_with("TEST/token/"));
+
+  // The second guest leaves the lobby: the others stay, the room goes on and offers its seat again.
+  const dwe::game::coop::PlayerId leaving = room.guests[1]->link()->localPlayer();
+  room.guests[1]->close();
+  room.run(5);
+  CHECK(room.host->view() == CoopConnection::View::Connected);
+  const auto left = room.host->guests();
+  REQUIRE(left.size() == 2);
+  CHECK(std::ranges::none_of(
+      left, [&](const CoopConnection::Guest& guest) { return guest.id == leaving; }));
+  CHECK(room.guests[0]->connected());
+  CHECK(room.guests[2]->connected());
+  REQUIRE(room.seatsAsked.size() == 3);
+  CHECK(room.seatsAsked.back() == "TEST/token/2");
+  room.host->close();
+}
+
+TEST_CASE("a started room of four ends once its last guest went, like a room of two") {
+  FourSeats room;
+  room.host->open();
+  REQUIRE(room.host->host());
+  room.guests[0]->open();
+  REQUIRE(room.guests[0]->join("TEST"));
+  room.guests[1]->open();
+  REQUIRE(room.guests[1]->join("TEST"));
+  room.run(30);
+  REQUIRE(room.host->guests().size() == 2);
+  room.host->markRoomPlaying();
+  room.host->handLinkToPlay();
+  for (const CoopConnection::Guest& guest : room.host->guests()) {
+    CHECK(room.host->linkInPlay(guest.generation));
+  }
+  room.guests[0]->close();
+  room.run(5);
+  // One guest still plays: the host's game goes on with it.
+  CHECK(room.host->view() == CoopConnection::View::Connected);
+  REQUIRE(room.host->guests().size() == 1);
+  room.guests[1]->close();
+  room.run(5);
+  CHECK(room.host->view() == CoopConnection::View::Error);
+  room.host->close();
 }

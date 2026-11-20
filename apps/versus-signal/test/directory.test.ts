@@ -168,8 +168,16 @@ class FakeState implements RoomState {
   storage = new Map<string, unknown>();
   published: [string, DirectoryEntry | null][] = [];
   answer: "listed" | "refused" = "listed";
-  accept(socket: Socket, role: Role): void {
+  tags = new Map<Socket, string>();
+  accept(socket: Socket, role: Role, tag?: string): void {
     this.roles.set(socket, role);
+    if (tag) this.tags.set(socket, tag);
+  }
+  tagOf(socket: Socket): string | null {
+    return this.tags.get(socket) ?? null;
+  }
+  tagged(tag: string): Socket[] {
+    return [...this.tags].filter(([s, t]) => t === tag && !(s as FakeSocket).closed).map(([s]) => s);
   }
   sockets(role: Role): Socket[] {
     return [...this.roles].filter(([s, r]) => r === role && !(s as FakeSocket).closed).map(([s]) => s);

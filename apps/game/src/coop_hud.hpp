@@ -3,8 +3,11 @@
 #include <dwe/screens/field_hud_view.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <array>
+#include <chrono>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -25,6 +28,9 @@ inline constexpr std::string_view CoopTagNameSetting = "coop_hud.tag.name";
 inline constexpr std::string_view CoopTagNameKeySetting = "coop_hud.tag.name_key";
 inline constexpr std::string_view CoopTagNumberSetting = "coop_hud.tag.number";
 inline constexpr std::string_view CoopTagRevisionSetting = "coop_hud.tag.revision";
+// The other tags of a room of more than two (#352): coop_hud.tag.<n>.* for n 2 and 3, with the
+// same fields as the first; the first tag's revision redraws them all.
+inline constexpr std::size_t MaxCoopTags = 3;
 // The notice: whether it shows, its text key ("{name}" in it stands for the player it is about)
 // and that player, as the tag names them; its revision counts up with each notice.
 inline constexpr std::string_view CoopNoticeShownSetting = "coop_hud.notice.shown";
@@ -38,6 +44,8 @@ inline constexpr std::string_view CoopDisconnectedText = "online.coop.disconnect
 inline constexpr std::string_view CoopHostLeftText = "online.coop.host_left";
 // As a guest's game starts: it is the host's world, and nothing of it is saved.
 inline constexpr std::string_view CoopGuestNotSavedText = "online.coop.guest_not_saved";
+// A guest whose host is busy (a long load there): it waits for the host, {name}.
+inline constexpr std::string_view CoopWaitingHostText = "online.coop.waiting_host";
 // The words that name a player with no name of their own.
 inline constexpr std::string_view HostPlayerText = "online.host_player";
 inline constexpr std::string_view GuestPlayerText = "online.guest_player";
@@ -57,6 +65,8 @@ struct CoopPeerLabel {
 // "Host". A guest with no name is "Guest 1" (the host is the room's first member, as the rooms
 // screen counts them).
 [[nodiscard]] CoopPeerLabel coopPeerLabel(bool localHosts, std::string_view remoteName);
+// The label of player `id` in a room of up to four: its name, else "Host" or "Guest {id}".
+[[nodiscard]] CoopPeerLabel coopPlayerLabel(std::uint8_t id, std::string_view name);
 
 // The tag as the document shows it.
 struct CoopTagView {
@@ -82,6 +92,21 @@ enum class CoopLinkLoss : std::uint8_t { Quiet, PeerLeft, HostLeft };
 [[nodiscard]] CoopLinkLoss coopLinkLoss(bool localHosts, bool playing);
 
 // Publishes the tag and the notices to the document, and shows it while either is up.
+// A guest whose host's world stays quiet (the host is busy with a long load, its link kept alive)
+// says it waits for the host instead of looking frozen: the notice comes once the quiet passed
+// QuietAfter and again before it goes while the quiet lasts.
+class CoopHostWait {
+public:
+  static constexpr std::chrono::milliseconds QuietAfter{2000};
+  static constexpr std::chrono::milliseconds Every{3000};
+
+  // Whether the notice is due at `now`, the host's world quiet for `quietFor`.
+  [[nodiscard]] bool due(std::chrono::milliseconds quietFor, std::chrono::milliseconds now);
+
+private:
+  std::optional<std::chrono::milliseconds> shownAt_;
+};
+
 class CoopHud {
 public:
   // How long a notice stays.
@@ -90,7 +115,9 @@ public:
   explicit CoopHud(ui::Ui& ui) : ui_{&ui} {}
 
   // The tag this frame; publishes only what changed.
-  void showTag(const CoopTagView& view);
+  void showTag(const CoopTagView& view) { showTags({&view, 1}); }
+  // A tag over each other player this frame (up to MaxCoopTags; the ones past them hide).
+  void showTags(std::span<const CoopTagView> views);
   // Shows a notice for NoticeSeconds, in place of the one up; `peer` fills its "{name}".
   void notice(std::string_view textKey, const CoopPeerLabel& peer = {});
   // Counts the notice's time down (real seconds), and shows or hides the document.
@@ -101,7 +128,7 @@ private:
   void showDocument();
 
   ui::Ui* ui_;
-  std::optional<CoopTagView> published_;
+  std::optional<std::array<CoopTagView, MaxCoopTags>> published_;
   double noticeLeft_ = 0.0;
   bool noticePublished_ = false;
 };

@@ -178,6 +178,9 @@
 #scrim:not(.skin-original) .member.local { border-color: #3a4a5e; background-color: #223044; }
 #scrim:not(.skin-original) .member.waiting { color: #5d6a7c; background-color: #161e29; }
 #scrim:not(.skin-original) .member.hidden { display: none; }
+#scrim:not(.skin-original) .member.arriving { color: #a7b3c4; }
+#scrim:not(.skin-original) .member.arriving .avatar { opacity: 0.6; }
+#scrim:not(.skin-original) .member.arriving .member-mark { color: #6fb8ff; }
 
 #scrim:not(.skin-original) .avatar {
 	left: 10dp;

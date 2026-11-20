@@ -81,9 +81,9 @@ TEST_CASE("the signaling server's public rooms become the rooms screens' list") 
   const std::vector<RoomListing> listed = SignalRoomDirectory::listings(rooms);
   // A room already playing is not listed.
   REQUIRE(listed.size() == 3);
-  // The server's generic name gives way to the screens' own words.
+  // The server's generic name gives way to the screens' own: the room is named after its host.
   CHECK(listed[0].name.empty());
-  CHECK(listed[0].nameKey == "online.untitled_room");
+  CHECK(listed[0].nameKey.empty());
   CHECK(listed[0].hostName == "Ana");
   CHECK(listed[0].mode == "versus");
   CHECK(listed[0].pingMs == -1);

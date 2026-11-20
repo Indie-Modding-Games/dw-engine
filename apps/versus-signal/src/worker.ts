@@ -4,6 +4,7 @@
 import { newCode, normalizedCode, PROTOCOL, routeOf } from "./codes.ts";
 import { Room, type HostOptions, type Role, type RoomState, type Socket } from "./room.ts";
 import { DirectoryObject } from "./directory.ts";
+import { seatsOf } from "./seats.ts";
 import { allowed, type RateLimit, validCompat, validIcon, validMode, validName } from "./limits.ts";
 import { turnEnabled, turnServers, type Fetcher, type IceServer, type TurnEnv, type UsageCache, type UsageReading } from "./turn.ts";
 
@@ -81,7 +82,7 @@ function directoryOf(env: Env): Stub | null {
 
 /** What this server can do, so a game offers only that (GET /v1/info). */
 export function info(env: Env): { protocol: string; features: string[] } {
-  const features = env.DIRECTORY ? ["public-rooms", "room-state"] : [];
+  const features = env.DIRECTORY ? ["public-rooms", "room-state", "seats"] : ["seats"];
   if (turnEnabled(env)) features.push("relay");
   return { protocol: PROTOCOL, features };
 }
@@ -184,10 +185,11 @@ async function host(request: Request, url: URL, env: Env): Promise<Response> {
   const asked = hostQuery(url);
   if ("refuse" in asked) return refused(asked.refuse);
   const { query, listed } = asked;
-  if (listed) {
-    query.set("ip", addressOf(request));
-    query.set("token", newToken());
-  }
+  // A room of more than two seats (seats.ts); two, the first protocol's room, without the field.
+  const seats = seatsOf(url.searchParams.get("seats"));
+  if (seats > 2) query.set("seats", String(seats));
+  if (listed) query.set("ip", addressOf(request));
+  if (listed || seats > 2) query.set("token", newToken());
   // The room reads its code first and whether it is public last, as in the first protocol.
   const extra = query.size > 0 ? `${query.toString()}&` : "";
   for (let attempt = 0; attempt < HOST_ATTEMPTS; attempt++) {
@@ -221,6 +223,14 @@ export default {
     }
     const route = routeOf(url.pathname);
     if (route.kind === "host") return host(request, url, env);
+    if (route.kind === "seat") {
+      const room = env.ROOMS.get(env.ROOMS.idFromName(route.code));
+      const seat = new URLSearchParams({
+        token: url.searchParams.get("token") ?? "",
+        taken: url.searchParams.get("taken") ?? "0",
+      });
+      return room.fetch(await roomRequest(`https://room/seat?${seat.toString()}`, request, env, route.code));
+    }
     if (route.kind === "join") {
       const room = env.ROOMS.get(env.ROOMS.idFromName(route.code));
       return room.fetch(await roomRequest("https://room/join", request, env, route.code));
@@ -249,12 +259,14 @@ export class RoomObject {
   constructor(ctx: DurableObjectStateLike, env: Env) {
     this.#ctx = ctx;
     const state: RoomState = {
-      accept: (socket, role) => ctx.acceptWebSocket(socket as WebSocketLike, [role]),
+      accept: (socket, role, tag) => ctx.acceptWebSocket(socket as WebSocketLike, tag ? [role, tag] : [role]),
       sockets: (role) => ctx.getWebSockets(role),
       roleOf: (socket) => {
         const tag = ctx.getTags(socket as WebSocketLike)[0];
         return tag === "host" || tag === "guest" ? (tag as Role) : null;
       },
+      tagOf: (socket) => ctx.getTags(socket as WebSocketLike)[1] ?? null,
+      tagged: (tag) => ctx.getWebSockets(tag),
       get: (key) => ctx.storage.get(key),
       put: (key, value) => ctx.storage.put(key, value),
       clear: async () => {
@@ -290,16 +302,20 @@ export class RoomObject {
         mode: asked.get("mode") ?? "campaign",
         ip: asked.get("ip") ?? "",
         token: asked.get("token") ?? "",
+        seats: seatsOf(asked.get("seats")),
         iceServers,
       };
       const opened = await this.#room.host(pair[1], asked.get("code") ?? "", options);
       if (opened === false) return new Response(null, { status: 409 });
       if (opened === "limit") return refused("limit");
+    } else if (url.pathname === "/seat") {
+      // The host's next seat; one that is not let in is never accepted by the object either.
+      const token = url.searchParams.get("token") ?? "";
+      if (!(await this.#room.admitsSeat(token))) pair[1].accept();
+      await this.#room.seat(pair[1], token, Number(url.searchParams.get("taken") ?? "0"), iceServers);
     } else {
       // A refused guest is never accepted by the object: its socket only hears why.
-      const hosts = this.#ctx.getWebSockets("host").length;
-      const guests = this.#ctx.getWebSockets("guest").length;
-      if (hosts === 0 || guests > 0) pair[1].accept();
+      if (!(await this.#room.admits())) pair[1].accept();
       await this.#room.join(pair[1], iceServers);
     }
     return upgraded(pair[0]);

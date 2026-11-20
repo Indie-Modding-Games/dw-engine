@@ -43,7 +43,7 @@ RejectReason identityMismatch(const Identity& expected, const Identity& actual) 
 net::Lane laneFor(const Message& message) {
   if (std::holds_alternative<Commands>(message) || std::holds_alternative<Snapshot>(message) ||
       std::holds_alternative<ViewState>(message) || std::holds_alternative<BattleFrame>(message) ||
-      std::holds_alternative<PlayerState>(message))
+      std::holds_alternative<PlayerState>(message) || std::holds_alternative<SyncReport>(message))
     return net::Lane::Unreliable;
   return net::Lane::Reliable;
 }
@@ -57,7 +57,10 @@ bool directionAllowed(Side receiver, const Message& message) {
     if (std::holds_alternative<Commands>(message) || std::holds_alternative<ViewState>(message) ||
         std::holds_alternative<PlayerState>(message))
       return true;
-    if (std::holds_alternative<Ready>(message))
+    if (std::holds_alternative<Ready>(message) || std::holds_alternative<SyncReport>(message))
+      return true;
+    // What the guest's game changed of the shared world, and its takes, asked of the host (#357).
+    if (std::holds_alternative<WorldAsk>(message) || std::holds_alternative<ItemClaim>(message))
       return true;
     // A battle the guest's partner fights, its part in any battle and whether its partner can join
     // the host's.
@@ -72,7 +75,12 @@ bool directionAllowed(Side receiver, const Message& message) {
   // The shared world's state comes from the host only (#353): a guest that sends any of these
   // loses its link.
   if (std::holds_alternative<JoinState>(message) || std::holds_alternative<Snapshot>(message) ||
-      std::holds_alternative<PlayerCorrection>(message) || std::holds_alternative<Roster>(message))
+      std::holds_alternative<PlayerCorrection>(message) ||
+      std::holds_alternative<Roster>(message) || std::holds_alternative<Lobby>(message) ||
+      std::holds_alternative<SyncWatch>(message))
+    return true;
+  if (std::holds_alternative<WorldChange>(message) || std::holds_alternative<WorldSync>(message) ||
+      std::holds_alternative<GroundItems>(message) || std::holds_alternative<ClaimAnswer>(message))
     return true;
   if (std::holds_alternative<BattleBegin>(message) ||
       std::holds_alternative<BattleRefused>(message) ||
@@ -85,7 +93,9 @@ bool directionAllowed(Side receiver, const Message& message) {
 } // namespace
 
 CoopLink::CoopLink(net::PeerLink& link, Side side, Identity identity, LinkTimeouts timeouts)
-    : link_{&link}, side_{side}, identity_{std::move(identity)}, timeouts_{timeouts} {}
+    : link_{&link}, side_{side}, identity_{std::move(identity)}, timeouts_{timeouts} {
+  link.keepAliveWhileBusy(timeouts_.busy);
+}
 
 CoopLink CoopLink::host(net::PeerLink& link, Identity identity, std::string playerName,
                         LinkTimeouts timeouts, PlayerId guestId) {
@@ -93,6 +103,12 @@ CoopLink CoopLink::host(net::PeerLink& link, Identity identity, std::string play
   result.playerName_ = std::move(playerName);
   result.guestId_ = validGuest(guestId) ? guestId : GuestPlayerId;
   return result;
+}
+
+void CoopLink::assignGuest(PlayerId id) {
+  if (side_ == Side::Host && phase_ == LinkPhase::Connecting && validGuest(id)) {
+    guestId_ = id;
+  }
 }
 
 CoopLink CoopLink::guest(net::PeerLink& link, Identity identity, std::string playerName,

@@ -71,6 +71,7 @@
 #include "coop_hud.hpp"
 #include "coop_screen.hpp"
 #include "coop_snapshot.hpp"
+#include "coop_sync.hpp"
 #include "coop_world.hpp"
 #include "dev_assets_banner.hpp"
 #include "dev_tools.hpp"
@@ -948,6 +949,17 @@ int runGame(const Options& requested) {
                    : value == "off" ? std::optional<bool>{false}
                                     : std::nullopt);
   });
+  // The co-op game's sync diagnostics (#359): the console's coop_sync("on"|"off"|"report"), a
+  // developer tool like the console itself (F1), refused where the developer tools are off.
+  CoopSync coopSync;
+  (*scripts)->bindCommand(
+      CoopSyncCommand, [&coopSync, &userSettings, tuning = options.tuning](std::string_view value) {
+        if (!userSettings.devTools.value_or(DevToolsDefault) && !tuning) {
+          core::logWarning("coop sync: the developer tools are off");
+          return;
+        }
+        coopSync.ask(value);
+      });
 
   SessionCommands sessionCommands;
   sessionCommands.bind(**scripts);
@@ -1001,12 +1013,37 @@ int runGame(const Options& requested) {
   if (options.onlineSample) {
     online.setSample(true, platform->nowSeconds());
   }
-  std::unique_ptr<CoopGameplayBridge> coopBridge;
-  std::unique_ptr<NetworkFieldController> coopClientController;
-  NetworkFieldController* coopHostController = nullptr;
-  // The game whose field refused the guest, so it is not tried again every frame.
-  const PlaySession* coopAttachFailed = nullptr;
-  std::uint64_t coopBridgeLink = 0;
+  // The co-op game's gameplay bridges, one per other player (#352): on the host one per guest in
+  // play, by id; on a guest the one to the host. Each borrows its connection link (by generation).
+  struct CoopPeer {
+    game::coop::PlayerId id = game::coop::HostPlayerId;
+    std::uint64_t link = 0;
+    std::string name;
+    std::string partner;
+    // The host's: the registry's controller of this guest. A guest's: its own, of the host's.
+    NetworkFieldController* controller = nullptr;
+    std::unique_ptr<NetworkFieldController> ownController;
+    std::unique_ptr<CoopGameplayBridge> bridge;
+    // How the tag and the notices name this player.
+    CoopPeerLabel label;
+    // The game whose field refused this guest, so it is not tried again every frame.
+    const PlaySession* attachFailed = nullptr;
+  };
+  std::vector<CoopPeer> coopPeers;
+  // A guest's notice while its host is busy with a long load (the links stay alive meanwhile).
+  CoopHostWait coopHostWait;
+  // The bridge of what is shared with one other player at a time (the battles, #363): the host's
+  // first guest's (the lowest id), or a guest's to the host.
+  const auto coopBridge = [&]() -> CoopGameplayBridge* {
+    return coopPeers.empty() ? nullptr : coopPeers.front().bridge.get();
+  };
+  // The bridge the co-op battles go through: the host's on a guest, player 1's on the host.
+  const auto coopBattleBridge = [&]() -> CoopGameplayBridge* {
+    const auto peer = std::ranges::find_if(coopPeers, [&](const CoopPeer& candidate) {
+      return coopBattlePeer(coop.isHost(), candidate.id);
+    });
+    return peer == coopPeers.end() ? nullptr : peer->bridge.get();
+  };
   std::uint32_t coopWorldTick = 0;
   // The co-op game's shared world (coop_world.hpp): the host's authority over the session, or a
   // guest's side of it. Both go with the bridge.
@@ -1014,14 +1051,11 @@ int runGame(const Options& requested) {
   std::optional<CoopGuestWorld> coopGuestWorld;
   // Players that left while a battle ran: their bodies go once it ends.
   std::set<game::field::PlayerId> coopLeftBodies;
-  // The other player the bridge's link serves on the host (the registry's id for that guest).
-  game::coop::PlayerId coopRemote = game::coop::GuestPlayerId;
   // The co-op game's tag over the other player and its notices (coop_hud.hpp), and how the other
   // player is named while a gameplay bridge is up.
   CoopHud coopHud{**ui};
   // The battles while playing together (coop_battles.hpp).
   CoopBattles coopBattles{**ui};
-  std::optional<CoopPeerLabel> coopPeer;
   // The host's room went while the guest played: its game ends after this frame's ticks.
   bool coopHostLeft = false;
   // A new game asks its rules (an addition); an autotest only when its route asks.
@@ -1769,49 +1803,60 @@ int runGame(const Options& requested) {
         titleAfterMovie = replayBootMovie;
       }
       PlaySession* play = flow.playing();
-      // The bridge borrows the connection's link, which is freed when the room closes or another
-      // one opens, and serves the game being played. Drop it when either goes (the title screen
-      // too) so it never polls a dead link; a new game or link gets a new one below.
-      if (coopBridge != nullptr &&
-          (play == nullptr || !coop.connected() || coop.link() == nullptr ||
-           coop.linkGeneration() != coopBridgeLink)) {
-        coopBridge.reset();
-        coopClientController.reset();
+      // Each bridge borrows a connection link, which is freed when its player leaves, the room
+      // closes or another one opens, and serves the game being played. Drop it when either goes
+      // (the title screen too) so it never polls a dead link; a new game or link gets a new one
+      // below. On the host one guest leaving drops its bridge only: the others play on (#352).
+      const std::vector<CoopConnection::Guest> coopGuestsIn =
+          coop.isHost() ? coop.guests() : std::vector<CoopConnection::Guest>{};
+      const auto coopPeerGone = [&](const CoopPeer& peer) {
+        if (play == nullptr || !coop.connected()) {
+          return true;
+        }
+        if (!coop.isHost()) {
+          return coop.link() == nullptr || coop.linkGeneration() != peer.link;
+        }
+        return std::ranges::none_of(coopGuestsIn, [&](const CoopConnection::Guest& guest) {
+          return guest.generation == peer.link;
+        });
+      };
+      bool coopDropped = false;
+      for (auto peer = coopPeers.begin(); peer != coopPeers.end();) {
+        if (!coopPeerGone(*peer)) {
+          ++peer;
+          continue;
+        }
+        const bool fought = coopBattlePeer(coop.isHost(), peer->id);
         // The player that went is gone everywhere: its slot, its record, its body and its partner
         // (#355). A player that comes back joins as a new one.
-        if (coopHostController != nullptr) {
-          players.removeGuest(coopRemote);
-          coopHostController = nullptr;
-        }
-        if (coopHostWorld) {
-          coopHostWorld->leave(coopRemote);
+        if (coop.isHost()) {
+          players.removeGuest(peer->id);
+          if (coopHostWorld) {
+            coopHostWorld->leave(peer->id);
+          }
         }
         if (play != nullptr) {
           // A battle under way may fight with a partner of theirs: those bodies go when it ends.
           const bool battling = play->battleScreen().active();
           for (const game::field::PlayerId id : play->scene().coopPlayers()) {
+            if (coop.isHost() && id != peer->id) {
+              continue;
+            }
             if (battling) {
               coopLeftBodies.insert(id);
             } else {
               play->scene().removeCoopPlayer(id);
             }
           }
-          play->scene().field().holdExits(false);
         }
-        coopHostWorld.reset();
-        coopGuestWorld.reset();
-        coop.takeLinkBack();
-        core::logInfo("coop: the link or the game ended, the gameplay bridge was dropped");
-        // A co-op game that ended (back to the title) ends its room: the other side hears it
-        // leave instead of waiting on a game that is gone.
-        if (play == nullptr && coop.connected()) {
-          core::logInfo("coop: the co-op game ended, leaving the room");
-          coop.leave();
-        }
+        coop.takeLinkBack(peer->link);
+        core::logInfo("coop: player {} went, its gameplay bridge was dropped", peer->id);
         switch (coopLinkLoss(coop.isHost(), play != nullptr)) {
         case CoopLinkLoss::PeerLeft:
-          coopBattles.guestLeft();
-          coopHud.notice(CoopDisconnectedText, coopPeer.value_or(coopPeerLabel(true, {})));
+          if (fought) {
+            coopBattles.guestLeft();
+          }
+          coopHud.notice(CoopDisconnectedText, peer->label);
           break;
         case CoopLinkLoss::HostLeft:
           coopBattles.hostLeft(play);
@@ -1820,10 +1865,26 @@ int runGame(const Options& requested) {
         case CoopLinkLoss::Quiet:
           break;
         }
-        coopPeer.reset();
+        peer = coopPeers.erase(peer);
+        coopDropped = true;
+      }
+      if (coopDropped && coopPeers.empty()) {
+        if (play != nullptr) {
+          play->scene().field().holdExits(false);
+        }
+        coopHostWorld.reset();
+        coopGuestWorld.reset();
+        coopSync.reset();
+        coop.takeLinkBack();
+        core::logInfo("coop: the link or the game ended, the gameplay bridges were dropped");
+        // A co-op game that ended (back to the title) ends its room: the others hear it leave
+        // instead of waiting on a game that is gone.
+        if (play == nullptr && coop.connected()) {
+          core::logInfo("coop: the co-op game ended, leaving the room");
+          coop.leave();
+        }
       }
       if (play == nullptr) {
-        coopAttachFailed = nullptr;
         coopBattles.reset();
         coopLeftBodies.clear();
       } else if (!coopLeftBodies.empty() && !play->battleScreen().active()) {
@@ -1834,73 +1895,112 @@ int runGame(const Options& requested) {
       }
       // Only a game the room started joins it: a single-player game loaded while a room is still
       // open stays single-player (multiplayer.md, "Saves in co-op").
-      if (play != nullptr && play->coopGame() && coop.connected() && coopBridge == nullptr &&
-          coop.link() != nullptr) {
-        const net::Millis joinedAt{static_cast<std::int64_t>(platform->nowSeconds() * 1000.0)};
-        if (coop.isHost()) {
-          // The session's registry gives the guest its id; the link welcomed it with the same one.
-          coopRemote = coop.link()->remotePlayer().value_or(game::coop::GuestPlayerId);
-          coopLeftBodies.erase(coopRemote);
+      const net::Millis joinedAt{static_cast<std::int64_t>(platform->nowSeconds() * 1000.0)};
+      if (play != nullptr && play->coopGame() && coop.connected() && coop.isHost()) {
+        if (!coopHostWorld) {
           coopHostWorld.emplace(online.profile().name(), std::string{});
-          const auto joined = coopHostWorld->join(
-              coop.remoteName(), std::string{coop.remotePartnerSpecies()}, joinedAt);
+        }
+        // Every guest in gets its bridge: the session's registry takes the id its link welcomed
+        // it with.
+        for (const CoopConnection::Guest& guest : coopGuestsIn) {
+          if (std::ranges::any_of(
+                  coopPeers, [&](const CoopPeer& peer) { return peer.link == guest.generation; })) {
+            continue;
+          }
+          const std::string name = guest.link->remoteName();
+          const std::string partner{coop.partnerSpeciesOf(guest.id)};
+          coopLeftBodies.erase(guest.id);
+          const auto joined = coopHostWorld->join(name, partner, joinedAt, guest.id);
+          if (joined != guest.id) {
+            core::logError("coop: the session could not take player {} as its link welcomed it",
+                           guest.id);
+            continue;
+          }
           auto controller = std::make_unique<NetworkFieldController>();
           NetworkFieldController* raw = controller.get();
-          if (joined != coopRemote) {
-            core::logError("coop: the session gave the guest another id than its link");
-            coopHostWorld.reset();
-          } else if (players.addGuest(coopRemote,
-                                      coop.remoteName().empty() ? "Guest" : coop.remoteName(),
-                                      std::move(controller), PlayerLink::Connected)) {
-            coopHostController = raw;
-          } else {
-            core::logError("coop: the player registry rejected the guest slot");
-            coopHostWorld.reset();
+          if (!players.addGuest(guest.id, name.empty() ? "Guest" : name, std::move(controller),
+                                PlayerLink::Connected)) {
+            core::logError("coop: the player registry rejected guest slot {}", guest.id);
+            coopHostWorld->leave(guest.id);
+            continue;
           }
-          if (coopHostController != nullptr) {
-            coopBridge = std::make_unique<CoopGameplayBridge>(*coop.link(), *coopHostController);
-            core::logInfo("coop: guest commands now drive player 2 in the host field");
-          }
-        } else {
-          coopClientController = std::make_unique<NetworkFieldController>();
-          coopBridge = std::make_unique<CoopGameplayBridge>(*coop.link(), *coopClientController);
-          coopGuestWorld.emplace(coop.link()->localPlayer());
-          // The group goes where the host goes: the guest takes no exit of its own.
-          play->scene().field().holdExits(true);
-          core::logInfo("coop: joined the host's session as player {}", coop.link()->localPlayer());
-        }
-        if (coopBridge != nullptr) {
+          CoopPeer peer{.id = guest.id,
+                        .link = guest.generation,
+                        .name = name,
+                        .partner = partner,
+                        .controller = raw,
+                        .ownController = nullptr,
+                        .bridge = std::make_unique<CoopGameplayBridge>(*guest.link, *raw),
+                        .label = coopPlayerLabel(guest.id, name),
+                        .attachFailed = nullptr};
           // From here the bridge alone reads the link; the lobby draining it too starved the
           // bridge of snapshots and guest commands (remote players drew as bare shadows).
-          coopBridgeLink = coop.linkGeneration();
-          coop.handLinkToPlay();
-          coopPeer = coopPeerLabel(coop.isHost(), coop.remoteName());
+          coop.handLinkToPlay(guest.generation);
+          core::logInfo("coop: guest commands now drive player {} in the host field", guest.id);
+          coopPeers.push_back(std::move(peer));
         }
+        std::ranges::sort(coopPeers, {}, &CoopPeer::id);
+      } else if (play != nullptr && play->coopGame() && coop.connected() && coopPeers.empty() &&
+                 coop.link() != nullptr) {
+        auto controller = std::make_unique<NetworkFieldController>();
+        NetworkFieldController* raw = controller.get();
+        CoopPeer peer{.id = game::coop::HostPlayerId,
+                      .link = coop.linkGeneration(),
+                      .name = coop.remoteName(),
+                      .partner = std::string{coop.remotePartnerSpecies()},
+                      .controller = raw,
+                      .ownController = std::move(controller),
+                      .bridge = std::make_unique<CoopGameplayBridge>(*coop.link(), *raw),
+                      .label = coopPeerLabel(false, coop.remoteName()),
+                      .attachFailed = nullptr};
+        coopGuestWorld.emplace(coop.link()->localPlayer());
+        // The group goes where the host goes: the guest takes no exit of its own.
+        play->scene().field().holdExits(true);
+        core::logInfo("coop: joined the host's session as player {}", coop.link()->localPlayer());
+        coop.handLinkToPlay();
+        coopPeers.push_back(std::move(peer));
       }
-      // The guest and its partner in the host's field, in every game the bridge serves. The field
+      // Each guest and its partner in the host's field, in every game the bridges serve. The field
       // says what is missing (a pointer to the last game could match a new one at its address).
-      if (play != nullptr && coop.isHost() && coopBridge != nullptr && coopAttachFailed != play) {
-        const game::field::Field& field = play->scene().field();
-        const bool partnerMissing =
-            !coop.remotePartnerSpecies().empty() && !field.partner(coopRemote);
-        if (!field.player(coopRemote) || partnerMissing) {
-          if (auto added = play->scene().addCoopGuest(coopRemote, coop.remotePartnerSpecies());
-              !added) {
-            core::logError("coop: could not add the guest to the field: {}", added.error().message);
-            coopAttachFailed = play;
+      // One guest a frame: loading its models takes a while on a slow machine, and the links of
+      // the others must still hear from the host in between.
+      if (play != nullptr && coop.isHost()) {
+        for (CoopPeer& peer : coopPeers) {
+          if (peer.attachFailed == play) {
+            continue;
+          }
+          const game::field::Field& field = play->scene().field();
+          const bool partnerMissing = !peer.partner.empty() && !field.partner(peer.id);
+          if (!field.player(peer.id) || partnerMissing) {
+            if (auto added = play->scene().addCoopGuest(peer.id, peer.partner); !added) {
+              core::logError("coop: could not add player {} to the field: {}", peer.id,
+                             added.error().message);
+              peer.attachFailed = play;
+            }
+            break;
           }
         }
       }
       const net::Millis coopNow{static_cast<std::int64_t>(platform->nowSeconds() * 1000.0)};
-      if (coopBridge != nullptr) {
-        coopBridge->poll(coopNow);
-        for (const game::coop::Message& message : coopBridge->takeWorldMessages()) {
+      for (CoopPeer& peer : coopPeers) {
+        peer.bridge->poll(coopNow);
+        for (const game::coop::Message& message : peer.bridge->takeWorldMessages()) {
           if (coopHostWorld) {
-            coopHostWorld->receive(coopRemote, message, coopNow);
+            coopHostWorld->receive(peer.id, message, coopNow);
           } else if (coopGuestWorld) {
             coopGuestWorld->receive(message);
           }
         }
+        // The other guests' battle asks get a refusal: battles run with player 1 (#363).
+        if (!coopBattlePeer(coop.isHost(), peer.id)) {
+          peer.bridge->refuseBattles();
+        }
+      }
+      // A guest whose host went quiet (a long load there) says it waits for it, not a frozen
+      // screen.
+      if (play != nullptr && !coop.isHost() && !coopPeers.empty() &&
+          coopHostWait.due(coopPeers.front().bridge->worldQuietFor(coopNow), coopNow)) {
+        coopHud.notice(CoopWaitingHostText, coopPeers.front().label);
       }
       // clock.c: tickPlaytime runs every frame the game loop runs, under the menus and in battles
       // (measured: 140 frames in 420 vblanks with the bag's options open, 100 in 307 in a battle)
@@ -1962,18 +2062,26 @@ int runGame(const Options& requested) {
         play->pressPartnerMenu(input);
         play->pressDestinationChoice(input);
         play->pressCurling(input);
-        const PlayerCommands guestCommands =
-            players.next(GuestPlayerId, ticksRun).value_or(PlayerCommands{});
-        if (coopBridge != nullptr && coop.connected() && !coop.isHost()) {
-          if (auto sent = coopBridge->sendLocalField(commands); !sent) {
+        // Each guest in play moves its own player in the host's field (#352).
+        std::vector<GuestFieldIntent> guestIntents;
+        if (coop.isHost()) {
+          for (const CoopPeer& peer : coopPeers) {
+            guestIntents.push_back(
+                {.id = peer.id,
+                 .input = players.next(peer.id, ticksRun).value_or(PlayerCommands{}).field});
+          }
+        }
+        const bool coopLinked = !coopPeers.empty() && coop.connected();
+        if (coopLinked && !coop.isHost()) {
+          if (auto sent = coopBridge()->sendLocalField(commands); !sent) {
             core::logWarning("coop: could not send field input: {}", sent.error().message);
           }
         }
-        if (coopGuestWorld && coopBridge != nullptr && coop.connected()) {
+        if (coopGuestWorld && coopLinked) {
           applyCoopMove(play->scene(), *coopGuestWorld);
         }
-        play->tick(commands, guestCommands);
-        if (coopBridge != nullptr && coop.connected()) {
+        play->tick(commands, guestIntents);
+        if (coopLinked) {
           std::vector<CoopOutgoing> outgoing;
           if (coopHostWorld) {
             outgoing = coopHostWorld->tick(play->scene().field(), play->scene().mapSerial(),
@@ -1993,32 +2101,58 @@ int runGame(const Options& requested) {
           applyCoopMapEdits(play->scene(), worldShare.mapEdits);
           outgoing.insert(outgoing.end(), std::make_move_iterator(worldShare.out.begin()),
                           std::make_move_iterator(worldShare.out.end()));
+          // Each message goes to the player it is for: a guest's own bridge on the host, the
+          // host's on a guest.
           for (const CoopOutgoing& message : outgoing) {
-            if (auto sent = coopBridge->send(message.message); !sent) {
+            const auto peer = std::ranges::find_if(coopPeers, [&](const CoopPeer& candidate) {
+              return !coop.isHost() || candidate.id == message.to;
+            });
+            if (peer == coopPeers.end()) {
+              continue;
+            }
+            if (auto sent = peer->bridge->send(message.message); !sent) {
               core::logWarning("coop: could not send to player {}: {}", message.to,
                                sent.error().message);
             }
           }
         }
-        const bool coopLinked = coopBridge != nullptr && coop.connected();
+        if (coopLinked && coop.isHost()) {
+          std::vector<CoopSyncPeer> watched;
+          for (CoopPeer& peer : coopPeers) {
+            watched.push_back({.id = peer.id, .bridge = peer.bridge.get()});
+          }
+          for (const std::string& line :
+               coopSync.hostTick(play->scene().field(), coopWorldTick, watched, coopNow)) {
+            core::logInfo("coop sync: {}", line);
+          }
+        } else if (coopLinked && coopGuestWorld) {
+          const auto presented = coopBridge()->presentedWorld(coopNow);
+          coopSync.guestTick(play->scene().field(), presented ? &*presented : nullptr,
+                             coopGuestWorld->self(), *coopBridge(), ticksRun);
+        }
         // Who stands on this game's map: the host's authority, or a guest's newest snapshot.
         const std::string& coopMap = play->scene().field().mapId();
         const std::vector<game::coop::PlayerId> coopHere =
             !coopLinked     ? std::vector<game::coop::PlayerId>{}
             : coopHostWorld ? coopHostWorld->authority().playersOn(coopMap)
-                            : coopBridge->playersOn(coopMap);
-        coopBattles.tick(*play, coopLinked ? coopBridge.get() : nullptr,
+                            : coopBridge()->playersOn(coopMap);
+        coopBattles.tick(*play, coopLinked ? coopBattleBridge() : nullptr,
                          !coopLinked     ? CoopBattles::Role::None
                          : coop.isHost() ? CoopBattles::Role::Host
                                          : CoopBattles::Role::Guest,
                          coopHere);
-        if (coopBridge != nullptr && coop.connected() && coop.isHost() && ticksRun % 3 == 0) {
-          auto snapshot = makeCoopSnapshot(
-              play->scene().field(), play->scene().field().mapId(), ++coopWorldTick,
-              coopHostController != nullptr ? coopHostController->latestSequence().value_or(0) : 0);
+        if (coopLinked && coop.isHost() && ticksRun % 3 == 0) {
+          // One capture of the world for every guest, each told the newest of its own commands
+          // the host took.
+          auto snapshot = makeCoopSnapshot(play->scene().field(), play->scene().field().mapId(),
+                                           ++coopWorldTick, 0);
           if (snapshot) {
-            if (auto sent = coopBridge->sendHostSnapshot(*snapshot); !sent) {
-              core::logWarning("coop: could not send world snapshot: {}", sent.error().message);
+            for (CoopPeer& peer : coopPeers) {
+              snapshot->acknowledgedCommand = peer.controller->latestSequence().value_or(0);
+              if (auto sent = peer.bridge->sendHostSnapshot(*snapshot); !sent) {
+                core::logWarning("coop: could not send world snapshot to player {}: {}", peer.id,
+                                 sent.error().message);
+              }
             }
           } else {
             core::logWarning("coop: could not capture world snapshot: {}",
@@ -2344,20 +2478,40 @@ int runGame(const Options& requested) {
       versus.update(gameSeconds, drawAlpha, graphics.options());
     }
     if (PlaySession* play = flow.playing()) {
-      if (coopBridge != nullptr && coop.connected() && coopGuestWorld) {
+      if (!coopPeers.empty() && coop.connected() && coopGuestWorld) {
         const net::Millis drawnAt{static_cast<std::int64_t>(platform->nowSeconds() * 1000.0)};
-        const auto presented = coopBridge->presentedWorld(drawnAt);
+        const auto presented = coopBridge()->presentedWorld(drawnAt);
         presentCoopPlayers(play->scene(), presented ? &*presented : nullptr, *coopGuestWorld,
                            coop.remotePartnerSpecies());
       }
       play->update(sessionCommands, autotest.get(), frameStats, gameSeconds, drawAlpha);
-      const std::optional<glm::vec2> peerHead =
-          play->scene().coopHeadInWindow(coop.isHost() ? coopRemote : game::coop::HostPlayerId);
-      coopHud.showTag(coopTagViewOf(
-          coopPeer,
-          peerHead ? std::optional{screens::WindowFraction{.x = peerHead->x, .y = peerHead->y}}
-                   : std::nullopt,
-          play->fieldRunning()));
+      // A tag over each other player: the host's guests; on a guest the host and the other
+      // guests of its roster (#352).
+      std::vector<std::pair<game::coop::PlayerId, CoopPeerLabel>> coopOthers;
+      if (coop.isHost()) {
+        for (const CoopPeer& peer : coopPeers) {
+          coopOthers.emplace_back(peer.id, peer.label);
+        }
+      } else if (!coopPeers.empty()) {
+        coopOthers.emplace_back(game::coop::HostPlayerId, coopPeers.front().label);
+        if (coopGuestWorld && coopGuestWorld->roster()) {
+          for (const game::coop::RosterEntry& entry : coopGuestWorld->roster()->players) {
+            if (entry.id != game::coop::HostPlayerId && entry.id != coopGuestWorld->self()) {
+              coopOthers.emplace_back(entry.id, coopPlayerLabel(entry.id, entry.name));
+            }
+          }
+        }
+      }
+      std::vector<CoopTagView> coopTags;
+      for (const auto& [id, label] : coopOthers) {
+        const std::optional<glm::vec2> head = play->scene().coopHeadInWindow(id);
+        coopTags.push_back(
+            coopTagViewOf(label,
+                          head ? std::optional{screens::WindowFraction{.x = head->x, .y = head->y}}
+                               : std::nullopt,
+                          play->fieldRunning()));
+      }
+      coopHud.showTags(coopTags);
       screenFade->setDarkness(play->fadeLevel());
       screenFade->setWhiteness(play->whiteLevel());
       mapChangeView.show(play->scene(), play->fadeLevel());

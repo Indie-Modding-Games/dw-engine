@@ -1,6 +1,7 @@
 #include "coop_gameplay_bridge.hpp"
 
 #include <algorithm>
+#include <utility>
 #include <variant>
 
 namespace dwe::app {
@@ -20,13 +21,22 @@ bool isBattleMessage(const game::coop::Message& message) {
 } // namespace
 
 void CoopGameplayBridge::poll(net::Millis now) {
+  if (!firstPolled_) {
+    firstPolled_ = now;
+  }
   link_->poll(now);
   remoteController_->setNow(now);
   while (auto message = link_->receive()) {
     if (const auto* commands = std::get_if<game::coop::Commands>(&*message)) {
+      (void)commandWatch_.observe(commands->sequence);
       (void)remoteController_->receive(*commands, now);
     } else if (const auto* snapshot = std::get_if<game::coop::Snapshot>(&*message)) {
+      (void)snapshotWatch_.observe(snapshot->worldTick);
+      lastSnapshot_ = now;
       (void)snapshots_.push(*snapshot, now);
+    } else if (std::holds_alternative<game::coop::SyncWatch>(*message) ||
+               std::holds_alternative<game::coop::SyncReport>(*message)) {
+      sync_.push_back(std::move(*message));
     } else if (std::holds_alternative<game::coop::PlayerState>(*message) ||
                std::holds_alternative<game::coop::PlayerCorrection>(*message) ||
                std::holds_alternative<game::coop::Roster>(*message) ||
@@ -119,6 +129,10 @@ std::optional<PresentedCoopWorld> CoopGameplayBridge::presentedWorld(net::Millis
   return snapshots_.sample(now);
 }
 
+std::vector<game::coop::Message> CoopGameplayBridge::takeSyncMessages() {
+  return std::exchange(sync_, {});
+}
+
 std::vector<game::coop::Message> CoopGameplayBridge::takeWorldMessages() {
   return std::exchange(world_, {});
 }
@@ -137,6 +151,20 @@ std::optional<game::coop::Message> CoopGameplayBridge::receiveBattle() {
 
 core::Result<void> CoopGameplayBridge::sendBattle(game::coop::Message message) {
   return link_->send(message);
+}
+
+void CoopGameplayBridge::refuseBattles() {
+  while (auto battle = receiveBattle()) {
+    if (const auto* ask = std::get_if<game::coop::BattleAsk>(&*battle)) {
+      (void)sendBattle(
+          game::coop::BattleRefused{.ask = ask->ask, .reason = game::coop::BattleRefusal::Busy});
+    }
+  }
+}
+
+net::Millis CoopGameplayBridge::worldQuietFor(net::Millis now) const {
+  const std::optional<net::Millis> since = lastSnapshot_ ? lastSnapshot_ : firstPolled_;
+  return since ? std::max(net::Millis{0}, now - *since) : net::Millis{0};
 }
 
 } // namespace dwe::app

@@ -112,6 +112,9 @@
 
 .member.local { border-color: #72c7ff; background-color: #153653; }
 .member.waiting { color: #6c8396; }
+.member.arriving { color: #a9c3d8; }
+.member.arriving .avatar { opacity: 0.6; }
+.member.arriving .member-mark { color: #72c7ff; }
 
 .avatar {
 	left: 10dp;

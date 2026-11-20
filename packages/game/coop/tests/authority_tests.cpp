@@ -83,6 +83,18 @@ TEST_CASE("the registry gives each joining guest the lowest free id, up to four 
   CHECK(std::get<Roster>(**decoded) == roster);
 }
 
+TEST_CASE("a guest joins as the id its link gave it, never a taken one or the host's") {
+  WorldAuthority authority{"Host", ""};
+  CHECK(authority.join("C", "", ms(0), PlayerId{3}) == PlayerId{3});
+  CHECK(authority.join("A", "", ms(0), PlayerId{1}) == PlayerId{1});
+  CHECK_FALSE(authority.join("again", "", ms(0), PlayerId{3}));
+  CHECK_FALSE(authority.join("host", "", ms(0), HostPlayerId));
+  CHECK_FALSE(authority.join("past", "", ms(0), PlayerId{MaxPlayers}));
+  // Without an id the next one takes the lowest free.
+  CHECK(authority.join("B", "", ms(0)) == PlayerId{2});
+  CHECK(authority.full());
+}
+
 TEST_CASE("a guest that reconnects is a clean new record") {
   WorldAuthority authority = sessionWithGuest();
   REQUIRE(authority.accept(GuestPlayerId, stateAt(GuestPlayerId, 10, 50), ms(100)) ==

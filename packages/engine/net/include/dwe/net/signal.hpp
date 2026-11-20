@@ -26,6 +26,8 @@ std::optional<std::string> normalizedRoomCode(std::string_view typed);
 
 // The signaling protocol's version, in the server's paths.
 inline constexpr std::string_view SignalProtocol = "v1";
+// The most players a room seats, its host included (apps/versus-signal/src/seats.ts).
+inline constexpr int MaxRoomSeats = 4;
 
 // What a public room's host tells the directory about it (`/v1/host?public=1&...`): its nickname
 // and profile icon, the compatibility key (games only list rooms of their own) and the mode. The
@@ -53,8 +55,14 @@ std::string percentEncoded(std::string_view text);
 // Where a host makes its room and where a guest joins one, on the server `server`
 // (wss://host[:port][/prefix]). A listed room goes in the server's public list
 // (`/v1/host?public=1`); any other room is only reached by its code.
-std::string hostUrl(std::string_view server, bool listed = false);
-std::string hostUrl(std::string_view server, const PublicHost& listing);
+// `seats`: how many players the room seats, host included (2 to MaxRoomSeats); a room of more
+// than two keeps taking guests through its host's next seats (seatUrl).
+std::string hostUrl(std::string_view server, bool listed = false, int seats = 2);
+std::string hostUrl(std::string_view server, const PublicHost& listing, int seats = 2);
+// Where the host of a room of more than two seats waits for its next guest, with the room's token
+// and how many guests it holds now (`taken`): the server pairs the next guest with it.
+std::string seatUrl(std::string_view server, std::string_view code, std::string_view token,
+                    int taken);
 std::string joinUrl(std::string_view server, std::string_view code);
 // Where the public list is read: the server answers a WebSocket there with one snapshot of it,
 // of the rooms of one compatibility key (all without one).
@@ -150,6 +158,9 @@ public:
   void relay(std::string_view data);
   // The peers are connected: the server may close the room.
   void finish();
+  // The host of a room of more than two seats tells how many guests it holds now, so the server
+  // offers a seat that freed again (only while this socket is still open).
+  void tellSeats(int taken);
 
   // The next JSON object the other peer relayed, if any.
   std::optional<std::string> receive();

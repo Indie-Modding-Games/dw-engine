@@ -52,13 +52,6 @@ local function host_name(room)
   return ""
 end
 
-local function room_name(room)
-  if room.name ~= "" then
-    return room.name
-  end
-  return t(room.host and "online.own_room" or "online.untitled_room")
-end
-
 local function place_focus(document)
   if focus == "mode" then
     document:get("mode-" .. mode_row):focus()
@@ -104,12 +97,18 @@ local function fill_members(document, room)
     element:set_class("host", member ~= nil and member.host)
     element:set_class("ready", member ~= nil and member.ready and not member.host)
     element:set_class("local", member ~= nil and member["local"])
+    -- A seat taken by a player still connecting: the row is theirs, its mark says they are coming.
+    element:set_class("arriving", member ~= nil and member.arriving)
     local name_text = document:get(id .. "-name-text")
     name_text:set_text(member ~= nil and member.name or t("online.waiting_player"))
     fit_text.fit(name_text, nil, column_width(document:get(id .. "-name")))
-    document
-      :get(id .. "-mark")
-      :set_text(member ~= nil and member.host and t("online.host_mark") or "")
+    local mark = ""
+    if member ~= nil and member.host then
+      mark = t("online.host_mark")
+    elseif member ~= nil and member.arriving then
+      mark = t("online.arriving_mark")
+    end
+    document:get(id .. "-mark"):set_text(mark)
   end
   document
     :get("players-tab")
@@ -164,11 +163,7 @@ local function refresh(document)
   local code = room.code ~= "" and room.code or "----"
   -- The room's name is cut into the card's column with "...", the player's squeezed into it
   -- (common/fit_text.lua).
-  fit_text.cut(
-    document:get("info-room-text"),
-    room_name(room),
-    column_width(document:get("info-room"))
-  )
+  fit_text.cut(document:get("info-room-text"), room.name, column_width(document:get("info-room")))
   document:get("info-code"):set_text(code)
   document:get("info-host-text"):set_text(host_name(room))
   fit_text.fit(document:get("info-host-text"), nil, column_width(document:get("info-host")))

@@ -117,6 +117,9 @@
 
 .member.local { decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box; }
 .member.waiting { color: #5f6f82; }
+.member.arriving { color: #a3b3c6; }
+.member.arriving .avatar { opacity: 0.6; }
+.member.arriving .member-mark { color: #7fd4ff; }
 
 .avatar {
 	border-radius: 0;

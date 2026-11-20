@@ -1,7 +1,7 @@
 /* The co-op HUD in the pixel look: the notice in the skin's framed box with its gold corner brackets, the name tag on a
    thin framed plate, both in the skin's pixel fonts. */
 
-#tag {
+.tag {
 	padding: 2dp 12dp;
 	border: 3dp transparent;
 	border-radius: 0;

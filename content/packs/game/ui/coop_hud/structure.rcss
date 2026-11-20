@@ -9,7 +9,7 @@ body {
 }
 
 /* Anchored at its bottom centre on the point over the head. */
-#tag {
+.tag {
 	position: absolute;
 	transform: translate(-50%, -100%);
 	padding: 2dp 8dp;

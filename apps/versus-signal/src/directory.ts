@@ -3,6 +3,7 @@
 // once its peers are connected (POST /v1/rooms/<code>/state, with the token the host got).
 import { MAX_OPEN_ROOMS, OPEN_ROOMS_PER_IP } from "./limits.ts";
 import type { DirectoryEntry, RoomListing, RoomPhase } from "./room.ts";
+import { MAX_SEATS } from "./seats.ts";
 
 /** An open room leaves the list with its room (5 minutes); this is only the fallback. */
 export const OPEN_MAX_AGE_MS = 5 * 60 * 1000;
@@ -23,7 +24,8 @@ interface DirectoryState {
 }
 
 function live(entry: DirectoryEntry, now: number): boolean {
-  if (entry.phase === "open") return now - entry.createdAt < OPEN_MAX_AGE_MS;
+  // A room of more than two seats stays open while its host waits, refreshing its entry.
+  if (entry.phase === "open") return now - (entry.updatedAt ?? entry.createdAt) < OPEN_MAX_AGE_MS;
   return now - (entry.updatedAt ?? entry.createdAt) < STATE_MAX_AGE_MS;
 }
 
@@ -36,8 +38,9 @@ function shown(entry: DirectoryEntry): RoomListing {
 function validEntry(entry: unknown, code: string): entry is DirectoryEntry {
   if (typeof entry !== "object" || entry === null) return false;
   const e = entry as DirectoryEntry;
-  return e.joinCode === code && e.roomId === code && e.capacity === 2 &&
-    Number.isInteger(e.players) && e.players >= 1 && e.players <= 2 &&
+  return e.joinCode === code && e.roomId === code &&
+    Number.isInteger(e.capacity) && e.capacity >= 2 && e.capacity <= MAX_SEATS &&
+    Number.isInteger(e.players) && e.players >= 1 && e.players <= e.capacity &&
     typeof e.name === "string" && typeof e.message === "string" &&
     e.name.length <= 48 && e.message.length <= 120 &&
     ["open", "connected", "ready", "playing"].includes(e.phase) &&
@@ -133,7 +136,8 @@ export class DirectoryObject {
         return new Response("This address has an open room already.\n", { status: 409 });
       }
     }
-    others.push(body);
+    // A game under way stays hidden: a seated room's later counts do not list it again.
+    others.push(current?.phase === "playing" ? { ...body, phase: "playing", state: "full" } : body);
     await this.#save(others);
     return new Response(null, { status: 204 });
   }
@@ -153,8 +157,8 @@ export class DirectoryObject {
     if (typeof token !== "string" || !token || token !== entry.token) {
       return Response.json({ error: "bad-token" }, { status: 403 });
     }
-    // Ready and playing come after the guest arrived (the room made it connected).
-    if (state !== "closed" && entry.phase === "open") return Response.json({ error: "bad-state" }, { status: 409 });
+    // Ready and playing come after a guest arrived (the room counts it).
+    if (state !== "closed" && entry.players < 2) return Response.json({ error: "bad-state" }, { status: 409 });
     const others = entries.filter((room) => room !== entry);
     if (state !== "closed") {
       const phase: RoomPhase = state === "ready" ? "ready" : "playing";

@@ -31,6 +31,8 @@ CoopConnectionDesc connectionDesc(const assets::VirtualFileSystem& files, const 
     settings->iceServers = std::move(config->iceServers);
   }
   settings->signalServer = coopSignalServer(files, options);
+  // A co-op room seats its host and up to three guests (#352).
+  settings->seats = static_cast<int>(game::coop::MaxPlayers);
   std::string compat = net::compatKey("coop", identity.gameVersion, identity.contentHash);
   // The settings are shared: the online profile's «relay only» changes them for the next room.
   return {.identity = std::move(identity),
@@ -43,6 +45,12 @@ CoopConnectionDesc connectionDesc(const assets::VirtualFileSystem& files, const 
               [settings](std::string_view code) {
                 return net::RtcPeerLink::join(*settings, code, net::openWebSocket);
               },
+          .seat =
+              [settings](std::string_view code, std::string_view token, int taken) {
+                return net::RtcPeerLink::hostSeat(*settings, code, token, taken,
+                                                  net::openWebSocket);
+              },
+          .seats = settings->seats,
           .compat = std::move(compat),
           .signalServer = settings->signalServer,
           .open = net::openWebSocket};
@@ -85,8 +93,10 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     remotePartnerSpecies_.clear();
     remoteJoinState_.reset();
     remoteStartText_.reset();
-    guestAssembler_.reset();
     hostAssembler_.reset();
+    lobby_.reset();
+    guests_.clear();
+    lobbySent_.clear();
     localError_.clear();
     publish();
     return true;
@@ -102,6 +112,8 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     isHost_ = true;
     localReady_ = true;
     remoteReady_ = false;
+    guests_.clear();
+    lobbySent_.clear();
     localError_.clear();
     selectingHostStart_ = false;
     // The rooms screens send whether the room is public (listed); a plain coop_host is private.
@@ -154,7 +166,7 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     return true;
   }
   if (command.name == "coop_start") {
-    if (isHost_ && connection_.connected() && remoteReady_ && guestSaveText_) {
+    if (isHost_ && connection_.connected() && guestReady()) {
       startRequested_ = true;
       selectingHostStart_ = true;
     }
@@ -195,26 +207,202 @@ void CoopScreen::tick(double nowSeconds) {
   }
   constexpr double MillisPerSecond = 1000.0;
   connection_.tick(net::Millis{static_cast<std::int64_t>(nowSeconds * MillisPerSecond)});
-  if (!connection_.linkInPlay())
-    receiveMessages();
+  if (isHost_) {
+    followGuests();
+  }
+  receiveMessages();
   if (active_)
     publish();
 }
 
+void CoopScreen::followGuests() {
+  const auto in = connection_.guests();
+  // A guest gone (left, dropped) takes its lobby state with it; a new link for an id is a new
+  // guest.
+  std::erase_if(guests_, [&](const auto& entry) {
+    return std::ranges::none_of(in, [&](const CoopConnection::Guest& guest) {
+      return guest.id == entry.first && guest.generation == entry.second.generation;
+    });
+  });
+  for (const CoopConnection::Guest& guest : in) {
+    if (!guests_.contains(guest.id)) {
+      guests_[guest.id].generation = guest.generation;
+    }
+  }
+  std::erase_if(lobbySent_, [&](const auto& entry) {
+    return std::ranges::none_of(
+        in, [&](const CoopConnection::Guest& guest) { return guest.generation == entry.first; });
+  });
+  const bool anyReady = guestReady();
+  if (anyReady != remoteReady_) {
+    remoteReady_ = anyReady;
+    connection_.markRoomReady(anyReady);
+  }
+  // Every guest still in the lobby hears who is in the room whenever that changes.
+  const game::coop::Lobby lobby = lobbyMessage();
+  for (const CoopConnection::Guest& guest : in) {
+    if (connection_.linkInPlay(guest.generation)) {
+      continue;
+    }
+    const auto sent = lobbySent_.find(guest.generation);
+    if (sent != lobbySent_.end() && sent->second == lobby) {
+      continue;
+    }
+    if (guest.link->send(game::coop::Message{lobby})) {
+      lobbySent_[guest.generation] = lobby;
+    }
+  }
+}
+
+game::coop::Lobby CoopScreen::lobbyMessage() const {
+  game::coop::Lobby lobby{.capacity = static_cast<std::uint8_t>(connection_.seats()), .seats = {}};
+  for (const CoopLobbyMember& member : lobbyMembers()) {
+    if (member.arriving) {
+      continue;
+    }
+    lobby.seats.push_back(
+        {.id = member.id,
+         // The host's own row names it as its profile does (the screen shows "you" without it).
+         .name = (member.host ? connection_.playerName() : member.name).substr(0, 64),
+         .state = member.ready ? game::coop::SeatState::Ready : game::coop::SeatState::Connected});
+  }
+  return lobby;
+}
+
+std::vector<CoopLobbyMember> CoopScreen::lobbyMembers() const {
+  std::vector<CoopLobbyMember> members;
+  if (isHost_) {
+    members.push_back({.id = game::coop::HostPlayerId,
+                       .name = {},
+                       .host = true,
+                       .ready = true,
+                       .arriving = false,
+                       .local = true});
+    for (const CoopConnection::Guest& guest : connection_.guests()) {
+      const auto lobby = guests_.find(guest.id);
+      members.push_back({.id = guest.id,
+                         .name = guest.link->remoteName(),
+                         .host = false,
+                         .ready = lobby != guests_.end() && lobby->second.ready,
+                         .arriving = false,
+                         .local = false});
+    }
+    for (const game::coop::PlayerId id : connection_.arriving()) {
+      members.push_back(
+          {.id = id, .name = {}, .host = false, .ready = false, .arriving = true, .local = false});
+    }
+    return members;
+  }
+  if (!connection_.connected()) {
+    return members;
+  }
+  const game::coop::PlayerId self =
+      connection_.link() != nullptr ? connection_.link()->localPlayer() : game::coop::GuestPlayerId;
+  if (lobby_) {
+    for (const game::coop::LobbySeat& seat : lobby_->seats) {
+      const bool local = seat.id == self;
+      members.push_back({.id = seat.id,
+                         .name = seat.name,
+                         .host = seat.id == game::coop::HostPlayerId,
+                         .ready = local ? localReady_ : seat.state == game::coop::SeatState::Ready,
+                         .arriving = false,
+                         .local = local});
+    }
+    if (std::ranges::none_of(members, &CoopLobbyMember::local)) {
+      members.push_back({.id = self,
+                         .name = {},
+                         .host = false,
+                         .ready = localReady_,
+                         .arriving = false,
+                         .local = true});
+    }
+  } else {
+    // An older host, or its lobby not here yet: the host and this guest.
+    members.push_back({.id = game::coop::HostPlayerId,
+                       .name = connection_.remoteName(),
+                       .host = true,
+                       .ready = false,
+                       .arriving = false,
+                       .local = false});
+    members.push_back({.id = self,
+                       .name = {},
+                       .host = false,
+                       .ready = localReady_,
+                       .arriving = false,
+                       .local = true});
+  }
+  std::ranges::sort(members, {}, &CoopLobbyMember::id);
+  return members;
+}
+
+int CoopScreen::capacity() const {
+  if (isHost_) {
+    return connection_.seats();
+  }
+  return lobby_ ? lobby_->capacity : 2;
+}
+
+bool CoopScreen::guestReady() const {
+  if (!isHost_) {
+    return false;
+  }
+  const auto in = connection_.guests();
+  return !in.empty() && std::ranges::all_of(in, [&](const CoopConnection::Guest& guest) {
+    const auto lobby = guests_.find(guest.id);
+    return lobby != guests_.end() && lobby->second.ready && lobby->second.saveText.has_value();
+  });
+}
+
+std::string CoopScreen::guestName(game::coop::PlayerId id) const {
+  for (const CoopConnection::Guest& guest : connection_.guests()) {
+    if (guest.id == id) {
+      return guest.link->remoteName();
+    }
+  }
+  return {};
+}
+
+std::string_view CoopScreen::partnerSpeciesOf(game::coop::PlayerId id) const {
+  const auto lobby = guests_.find(id);
+  return lobby != guests_.end() ? std::string_view{lobby->second.partnerSpecies}
+                                : std::string_view{};
+}
+
+std::string_view CoopScreen::remotePartnerSpecies() const {
+  if (!isHost_) {
+    return remotePartnerSpecies_;
+  }
+  const auto in = connection_.guests();
+  return in.empty() ? std::string_view{} : partnerSpeciesOf(in.front().id);
+}
+
 void CoopScreen::receiveMessages() {
-  if (connection_.link() == nullptr)
+  if (isHost_) {
+    for (const CoopConnection::Guest& guest : connection_.guests()) {
+      if (!connection_.linkInPlay(guest.generation)) {
+        receiveFrom(*guest.link, &guests_[guest.id]);
+      }
+    }
     return;
-  while (auto message = connection_.link()->receive()) {
-    if (const auto* ready = std::get_if<game::coop::Ready>(&*message); ready && isHost_) {
-      remoteReady_ = ready->ready && guestSaveText_.has_value();
-      connection_.markRoomReady(remoteReady_);
+  }
+  if (connection_.link() != nullptr && !connection_.linkInPlay()) {
+    receiveFrom(*connection_.link(), nullptr);
+  }
+}
+
+void CoopScreen::receiveFrom(game::coop::CoopLink& link, GuestLobby* guest) {
+  while (auto message = link.receive()) {
+    if (const auto* ready = std::get_if<game::coop::Ready>(&*message); ready && guest != nullptr) {
+      guest->ready = ready->ready && guest->saveText.has_value();
     } else if (const auto* chunk = std::get_if<game::coop::ProfileChunk>(&*message)) {
-      const bool guestProfile = isHost_ && chunk->kind == game::coop::ProfilePayloadKind::GuestSave;
-      const bool hostSave = !isHost_ && chunk->kind == game::coop::ProfilePayloadKind::HostSave;
+      const bool guestProfile =
+          guest != nullptr && chunk->kind == game::coop::ProfilePayloadKind::GuestSave;
+      const bool hostSave =
+          guest == nullptr && chunk->kind == game::coop::ProfilePayloadKind::HostSave;
       if (!guestProfile && !hostSave)
         continue;
-      auto& assembler = guestProfile ? guestAssembler_ : hostAssembler_;
-      auto& transferId = guestProfile ? guestTransferId_ : hostTransferId_;
+      auto& assembler = guestProfile ? guest->assembler : hostAssembler_;
+      auto& transferId = guestProfile ? guest->transferId : hostTransferId_;
       if (!transferId || *transferId != chunk->transferId) {
         if (const auto begun = assembler.begin(chunk->transferId, chunk->count, chunk->kind);
             !begun) {
@@ -230,25 +418,32 @@ void CoopScreen::receiveMessages() {
       } else if (*assembled) {
         std::string text{reinterpret_cast<const char*>((**assembled).data()), (**assembled).size()};
         // The other player's partner, drawn beside them in play.
+        std::string species;
         if (auto profile = extractCoopGuestPartnerProfile(text); profile) {
-          remotePartnerSpecies_ = profile->species;
+          species = profile->species;
         } else {
-          remotePartnerSpecies_.clear();
           core::logWarning("coop: the other player's partner cannot be shown: {}",
                            profile.error().message);
         }
         if (guestProfile) {
-          guestSaveText_ = std::move(text);
+          guest->partnerSpecies = std::move(species);
+          guest->saveText = std::move(text);
         } else {
+          remotePartnerSpecies_ = std::move(species);
           hostSaveText_ = std::move(text);
         }
       }
     } else if (const auto* state = std::get_if<game::coop::JoinState>(&*message);
-               state && !isHost_) {
+               state && guest == nullptr) {
       remoteJoinState_ = *state;
+    } else if (const auto* lobby = std::get_if<game::coop::Lobby>(&*message);
+               lobby && guest == nullptr) {
+      lobby_ = *lobby;
     }
   }
-  completeRemoteStart();
+  if (guest == nullptr) {
+    completeRemoteStart();
+  }
 }
 
 void CoopScreen::completeRemoteStart() {
@@ -277,10 +472,10 @@ std::optional<std::string> CoopScreen::takeRemoteStartText() {
   return std::exchange(remoteStartText_, std::nullopt);
 }
 
-core::Result<void> CoopScreen::sendProfile(game::coop::ProfilePayloadKind kind,
+core::Result<void> CoopScreen::sendProfile(game::coop::CoopLink& link,
+                                           game::coop::ProfilePayloadKind kind,
                                            std::uint32_t transferId, std::string_view saveText) {
-  if (connection_.link() == nullptr || saveText.empty() ||
-      saveText.size() > game::coop::MaxProfileBytes) {
+  if (saveText.empty() || saveText.size() > game::coop::MaxProfileBytes) {
     return core::fail("cooperative save profile is empty, too large, or disconnected");
   }
   const auto* begin = reinterpret_cast<const std::uint8_t*>(saveText.data());
@@ -294,7 +489,7 @@ core::Result<void> CoopScreen::sendProfile(game::coop::ProfilePayloadKind kind,
                                    .count = static_cast<std::uint16_t>(count),
                                    .kind = kind,
                                    .bytes = net::Bytes{begin + offset, begin + offset + size}};
-    if (auto sent = connection_.link()->send(game::coop::Message{std::move(chunk)}); !sent) {
+    if (auto sent = link.send(game::coop::Message{std::move(chunk)}); !sent) {
       return sent;
     }
   }
@@ -311,7 +506,8 @@ core::Result<void> CoopScreen::provideGuestSave(std::string_view saveText) {
   std::uint32_t transferId = nextTransferId_++;
   if (transferId == 0)
     transferId = nextTransferId_++;
-  if (auto sent = sendProfile(game::coop::ProfilePayloadKind::GuestSave, transferId, saveText);
+  if (auto sent = sendProfile(*connection_.link(), game::coop::ProfilePayloadKind::GuestSave,
+                              transferId, saveText);
       !sent) {
     return sent;
   }
@@ -332,8 +528,8 @@ core::Result<void> CoopScreen::provideGuestSave(std::string_view saveText) {
 }
 
 core::Result<void> CoopScreen::sendHostStart(std::string_view saveText) {
-  if (!selectingHostStart_ || !isHost_ || !remoteReady_ || !guestSaveText_ ||
-      connection_.link() == nullptr) {
+  const auto in = connection_.guests();
+  if (!selectingHostStart_ || !isHost_ || !guestReady() || in.empty()) {
     return core::fail("the host cannot start this room yet");
   }
   const auto save = game::save::parseSaveFile(saveText);
@@ -354,12 +550,16 @@ core::Result<void> CoopScreen::sendHostStart(std::string_view saveText) {
                               .saveTransferId = transferId,
                               .saveChunkCount = static_cast<std::uint16_t>(count),
                               .entities = {}};
-  if (auto sent = sendProfile(game::coop::ProfilePayloadKind::HostSave, transferId, saveText);
-      !sent) {
-    return sent;
-  }
-  if (auto sent = connection_.link()->send(game::coop::Message{std::move(state)}); !sent) {
-    return sent;
+  // Every guest gets the host's world, the same transfer for all.
+  for (const CoopConnection::Guest& guest : in) {
+    if (auto sent = sendProfile(*guest.link, game::coop::ProfilePayloadKind::HostSave, transferId,
+                                saveText);
+        !sent) {
+      return sent;
+    }
+    if (auto sent = guest.link->send(game::coop::Message{state}); !sent) {
+      return sent;
+    }
   }
   selectingHostStart_ = false;
   startRequested_ = false;
@@ -395,6 +595,9 @@ void CoopScreen::leave() {
   localError_.clear();
   guestSaveText_.reset();
   hostSaveText_.reset();
+  lobby_.reset();
+  guests_.clear();
+  lobbySent_.clear();
   // A start the room had prepared goes with it.
   remoteJoinState_.reset();
   remoteStartText_.reset();
@@ -419,8 +622,8 @@ void CoopScreen::publish() {
   ui_->setSetting("coop.role", std::string{isHost_ ? "host" : "guest"});
   ui_->setSetting("coop.connected", connection_.connected());
   ui_->setSetting("coop.local_ready", localReady_);
-  ui_->setSetting("coop.remote_ready", remoteReady_);
-  ui_->setSetting("coop.can_start", remoteReady_ && guestSaveText_.has_value());
+  ui_->setSetting("coop.remote_ready", isHost_ ? guestReady() : remoteReady_);
+  ui_->setSetting("coop.can_start", guestReady());
 }
 
 } // namespace dwe::app

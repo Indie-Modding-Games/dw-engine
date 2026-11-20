@@ -1010,9 +1010,11 @@ void FieldScene::tick(const game::field::FieldInput& input, float seconds) {
 }
 
 void FieldScene::tick(const game::field::FieldInput& input,
-                      const game::field::FieldInput& guestInput, float seconds) {
+                      std::span<const GuestFieldIntent> guests, float seconds) {
   field_->setInput(input);
-  (void)field_->setInput(game::field::GuestPlayerId, guestInput);
+  for (const GuestFieldIntent& guest : guests) {
+    (void)field_->setInput(guest.id, guest.input);
+  }
   field_->tick(seconds);
   fieldEffects_.advance(seconds, field_->rules().transition.frameSeconds);
 }

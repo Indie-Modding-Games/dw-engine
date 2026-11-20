@@ -7,6 +7,7 @@
 #include <doctest/doctest.h>
 
 #include <array>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -168,6 +169,18 @@ TEST_CASE("a co-op notice names the player who left and goes after a few seconds
   hud.ui->update();
   CHECK_FALSE(coop.noticeShown());
   CHECK_FALSE(hud.ui->isVisible(CoopHudDocument));
+}
+
+TEST_CASE("a guest whose host goes quiet in a long load is told it waits, again while it lasts") {
+  using std::chrono::milliseconds;
+  CoopHostWait wait;
+  CHECK_FALSE(wait.due(milliseconds{500}, milliseconds{1000}));
+  CHECK(wait.due(CoopHostWait::QuietAfter, milliseconds{3000}));
+  CHECK_FALSE(wait.due(milliseconds{3000}, milliseconds{4000}));
+  CHECK(wait.due(milliseconds{6000}, milliseconds{6000}));
+  // The host back: quiet again later starts over.
+  CHECK_FALSE(wait.due(milliseconds{0}, milliseconds{6500}));
+  CHECK(wait.due(milliseconds{2500}, milliseconds{7000}));
 }
 
 } // namespace dwe::app

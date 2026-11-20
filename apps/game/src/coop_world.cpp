@@ -78,8 +78,9 @@ CoopHostWorld::CoopHostWorld(std::string hostName, std::string hostPartner)
     : authority_{std::move(hostName), std::move(hostPartner)} {}
 
 std::optional<coop::PlayerId> CoopHostWorld::join(std::string name, std::string partner,
-                                                  net::Millis now) {
-  const auto id = authority_.join(std::move(name), std::move(partner), now);
+                                                  net::Millis now,
+                                                  std::optional<coop::PlayerId> as) {
+  const auto id = authority_.join(std::move(name), std::move(partner), now, as);
   if (id) {
     core::logInfo("coop: player {} joined the session ({} players)", *id, authority_.size());
   }

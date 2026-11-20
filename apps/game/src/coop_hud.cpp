@@ -2,7 +2,10 @@
 
 #include <dwe/screens/screen_settings.hpp>
 
+#include <algorithm>
+#include <format>
 #include <variant>
+#include <vector>
 
 namespace dwe::app {
 namespace {
@@ -24,6 +27,16 @@ void countUp(ui::Ui& ui, std::string_view revision) {
 }
 
 } // namespace
+
+CoopPeerLabel coopPlayerLabel(std::uint8_t id, std::string_view name) {
+  if (!name.empty()) {
+    return {.name = std::string{name}, .key = {}, .number = 0};
+  }
+  if (id == 0) {
+    return {.name = {}, .key = std::string{HostPlayerText}, .number = 0};
+  }
+  return {.name = {}, .key = std::string{GuestPlayerText}, .number = id};
+}
 
 CoopPeerLabel coopPeerLabel(bool localHosts, std::string_view remoteName) {
   if (!remoteName.empty()) {
@@ -52,20 +65,27 @@ CoopLinkLoss coopLinkLoss(bool localHosts, bool playing) {
   return localHosts ? CoopLinkLoss::PeerLeft : CoopLinkLoss::HostLeft;
 }
 
-void CoopHud::showTag(const CoopTagView& view) {
-  if (published_ == view) {
+void CoopHud::showTags(std::span<const CoopTagView> views) {
+  std::array<CoopTagView, MaxCoopTags> shown{};
+  std::copy_n(views.begin(), std::min(views.size(), shown.size()), shown.begin());
+  if (published_ == shown) {
     return;
   }
-  screens::publish(
-      *ui_,
-      {{.name = std::string{CoopTagVisibleSetting}, .value = view.visible},
-       {.name = std::string{CoopTagXSetting}, .value = view.x},
-       {.name = std::string{CoopTagYSetting}, .value = view.y},
-       {.name = std::string{CoopTagNameSetting}, .value = view.peer.name},
-       {.name = std::string{CoopTagNameKeySetting}, .value = view.peer.key},
-       {.name = std::string{CoopTagNumberSetting}, .value = static_cast<double>(view.peer.number)}},
-      CoopTagRevisionSetting);
-  published_ = view;
+  screens::ScreenSettings settings;
+  for (std::size_t index = 0; index < shown.size(); ++index) {
+    const CoopTagView& view = shown[index];
+    // The first tag keeps its names (coop_hud.tag.*); the others are coop_hud.tag.<n>.*.
+    const std::string prefix =
+        index == 0 ? std::string{"coop_hud.tag."} : std::format("coop_hud.tag.{}.", index + 1);
+    settings.push_back({.name = prefix + "visible", .value = view.visible});
+    settings.push_back({.name = prefix + "x", .value = view.x});
+    settings.push_back({.name = prefix + "y", .value = view.y});
+    settings.push_back({.name = prefix + "name", .value = view.peer.name});
+    settings.push_back({.name = prefix + "name_key", .value = view.peer.key});
+    settings.push_back({.name = prefix + "number", .value = static_cast<double>(view.peer.number)});
+  }
+  screens::publish(*ui_, settings, CoopTagRevisionSetting);
+  published_ = shown;
   showDocument();
 }
 
@@ -95,7 +115,8 @@ void CoopHud::advance(double seconds) {
 
 void CoopHud::showDocument() {
   // A UI change (another addon, a reload) may hide it; it comes back while it has something.
-  const bool wanted = noticePublished_ || (published_ && published_->visible);
+  const bool wanted =
+      noticePublished_ || (published_ && std::ranges::any_of(*published_, &CoopTagView::visible));
   if (wanted != ui_->isVisible(CoopHudDocument)) {
     if (wanted) {
       ui_->show(CoopHudDocument);
@@ -103,6 +124,18 @@ void CoopHud::showDocument() {
       ui_->hide(CoopHudDocument);
     }
   }
+}
+
+bool CoopHostWait::due(std::chrono::milliseconds quietFor, std::chrono::milliseconds now) {
+  if (quietFor < QuietAfter) {
+    shownAt_.reset();
+    return false;
+  }
+  if (shownAt_ && now - *shownAt_ < Every) {
+    return false;
+  }
+  shownAt_ = now;
+  return true;
 }
 
 } // namespace dwe::app

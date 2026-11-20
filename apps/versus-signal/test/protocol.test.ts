@@ -166,13 +166,13 @@ async function post(env: Env, code: string, body: unknown) {
 test("/v1/info says what the server can do, over HTTP and as a WebSocket snapshot", async () => {
   const plain = server();
   const answer = await worker.fetch(new Request("https://signal.test/v1/info"), plain.env);
-  assert.deepEqual(await answer.json(), { protocol: "v1", features: ["public-rooms", "room-state"] });
+  assert.deepEqual(await answer.json(), { protocol: "v1", features: ["public-rooms", "room-state", "seats"] });
   const keyOnly = await worker.fetch(new Request("https://signal.test/v1/info"),
     server({ TURN_KEY_ID: "key", TURN_KEY_API_TOKEN: "secret" }).env);
-  assert.deepEqual((await keyOnly.json() as { features: string[] }).features, ["public-rooms", "room-state"]);
+  assert.deepEqual((await keyOnly.json() as { features: string[] }).features, ["public-rooms", "room-state", "seats"]);
   const relayed = server(TURN_SECRETS);
   const { heard } = await connect(relayed.env, "/v1/info");
-  assert.deepEqual(heard(), [{ protocol: "v1", features: ["public-rooms", "room-state", "relay"] }]);
+  assert.deepEqual(heard(), [{ protocol: "v1", features: ["public-rooms", "room-state", "seats", "relay"] }]);
 });
 
 test("a public room is listed with its host's name until it plays, then its host closes it", async () => {
@@ -343,4 +343,86 @@ test("a state notice for a code that cannot be one, or a GET, is refused", async
   const get = await worker.fetch(new Request("https://signal.test/v1/rooms/K7Q2/state"), signal.env);
   assert.equal(get.status, 405);
   assert.equal(await post(signal.env, "K7Q2", { token: "t", state: "dancing" }), 400);
+});
+
+/** A peer's socket closing (the room object's webSocketClose). */
+async function gone(env: ReturnType<typeof server>, code: string, socket: FakeWs) {
+  socket.closed ??= "gone";
+  await env.rooms.objects.get(code)!.object.webSocketClose(socket as never);
+}
+
+test("a room of four seats pairs each guest with the host's waiting socket and counts its seats", async () => {
+  const signal = server();
+  const host = await connect(signal.env, "/v1/host?public=1&name=Mika&compat=coop-5-abc&seats=4");
+  const opened = host.heard()[0] as { type: string; code: string; token: string; seats: number };
+  assert.equal(opened.seats, 4);
+  assert.match(opened.token, /^[0-9a-f]{32}$/);
+  const shown = () => (list(signal.env, "?compat=coop-5-abc")).then((answer) => answer.body.rooms![0]);
+  assert.deepEqual([(await shown()).players, (await shown()).capacity, (await shown()).state], [1, 4, "waiting"]);
+
+  // The first guest: paired with the host's first socket, signals go between the two only.
+  const first = await connect(signal.env, `/v1/join/${opened.code}`, "5.6.7.8");
+  assert.deepEqual(first.heard(), [{ type: "joined" }]);
+  assert.deepEqual(host.heard().at(-1), { type: "peer" });
+  await say(signal, opened.code, host.server, { type: "signal", data: { description: "offer", type: "offer" } });
+  assert.deepEqual(first.heard().at(-1), { type: "signal", data: { description: "offer", type: "offer" } });
+  await say(signal, opened.code, first.server, { type: "done" });
+  await say(signal, opened.code, host.server, { type: "done" });
+  assert.equal(host.server.closed, "done");
+  await gone(signal, opened.code, host.server);
+  await gone(signal, opened.code, first.server);
+  // Its pair is done and the room stays: the host holds that guest, three of four seats are free.
+  assert.equal((await shown()).players, 2);
+
+  // A second guest waits for the host's next seat, which a wrong token cannot take.
+  const second = await connect(signal.env, `/v1/join/${opened.code}`, "5.6.7.9");
+  assert.deepEqual(second.heard(), [{ type: "joined" }]);
+  const intruder = await connect(signal.env, `/v1/host/${opened.code}?token=nope&taken=1`);
+  assert.deepEqual(intruder.heard(), [{ type: "error", reason: "bad-token" }]);
+  const seat = await connect(signal.env, `/v1/host/${opened.code}?token=${opened.token}&taken=1`);
+  assert.deepEqual(seat.heard(), [{ type: "room", code: opened.code, token: opened.token, seats: 4 }, { type: "peer" }]);
+  await say(signal, opened.code, second.server, { type: "signal", data: { candidate: "c", mid: "0" } });
+  assert.deepEqual(seat.heard().at(-1), { type: "signal", data: { candidate: "c", mid: "0" } });
+
+  // A third guest queues for the next seat; the room is full, a fourth one hears so.
+  const third = await connect(signal.env, `/v1/join/${opened.code}`, "5.6.7.10");
+  assert.deepEqual(third.heard(), [{ type: "joined" }]);
+  assert.deepEqual([(await shown()).players, (await shown()).state], [4, "full"]);
+  const late = await connect(signal.env, `/v1/join/${opened.code}`, "5.6.7.11");
+  assert.deepEqual(late.heard(), [{ type: "error", reason: "full" }]);
+
+  // The second guest leaves before connecting: its host socket hears it, the room stays.
+  await gone(signal, opened.code, second.server);
+  assert.deepEqual(seat.heard().at(-1), { type: "error", reason: "left" });
+  await gone(signal, opened.code, seat.server);
+  assert.equal((await shown()).players, 3);
+  // The host's next seat takes the queued third guest.
+  const next = await connect(signal.env, `/v1/host/${opened.code}?token=${opened.token}&taken=1`);
+  assert.deepEqual(next.heard().at(-1), { type: "peer" });
+
+  // The host says a guest left its lobby: that seat is offered again.
+  await say(signal, opened.code, next.server, { type: "seats", taken: 0 });
+  assert.equal((await shown()).players, 2);
+
+  // The host's last socket goes: the queued and paired guests hear it, the room closes.
+  await gone(signal, opened.code, next.server);
+  assert.deepEqual(third.heard().at(-1), { type: "error", reason: "left" });
+  assert.deepEqual((await list(signal.env, "?compat=coop-5-abc")).body.rooms, []);
+});
+
+test("a room asks for two to four seats; anything else is the two-seat room of the first protocol", async () => {
+  const signal = server();
+  for (const asked of ["seats=9", "seats=1", "seats=x", ""]) {
+    const host = await connect(signal.env, `/v1/host?${asked}`);
+    assert.deepEqual(Object.keys(host.heard()[0] as object), ["type", "code"], asked);
+  }
+  const three = await connect(signal.env, "/v1/host?seats=3");
+  assert.equal((three.heard()[0] as { seats: number }).seats, 3);
+  const code = (three.heard()[0] as { code: string }).code;
+  await connect(signal.env, `/v1/join/${code}`, "5.6.7.8");
+  await connect(signal.env, `/v1/join/${code}`, "5.6.7.9");
+  const late = await connect(signal.env, `/v1/join/${code}`, "5.6.7.10");
+  assert.deepEqual(late.heard(), [{ type: "error", reason: "full" }]);
+  const nowhere = await connect(signal.env, "/v1/host/K7Q2?token=x&taken=0");
+  assert.deepEqual(nowhere.heard(), [{ type: "error", reason: "no-room" }]);
 });

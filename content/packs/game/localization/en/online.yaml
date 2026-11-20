@@ -48,12 +48,14 @@ info.visibility: "Access:"
 visibility.public: "Public"
 visibility.private: "Private"
 untitled_room: "Untitled room"
-own_room: "Your room"
+# A room with no name of its own is named after its host.
+room_of: "{name}'s room"
 modes_tab: "Game mode"
 players_title: "Players ({players} / {capacity})"
 waiting_player: "Waiting for a player..."
 host_mark: "(Host)"
 ready_mark: "Ready"
+arriving_mark: "Connecting..."
 not_ready: "Not ready"
 you: "You"
 host_player: "Host"
@@ -69,7 +71,7 @@ info.guest_ready: "You are ready. The game starts when the host decides."
 info.host_waiting: "Share the code so another player can join."
 info.host_public: "Your room is listed. Players can also join with the code."
 info.host_ready: "Everyone is ready. You can start the game."
-info.host_not_ready: "Wait for the guest to be ready to start."
+info.host_not_ready: "Wait for every guest to be ready to start."
 info.connecting: "Connecting to the room..."
 info.closed: "The room closed."
 # A room's phases.
@@ -175,6 +177,8 @@ coop.disconnected: "{name} disconnected."
 coop.host_left: "The host closed the room. You are back at the menu."
 # Another player took the chest's or the ground's item first (field_item_notice).
 coop.item_gone: "Too late! Someone else took it."
+# A guest whose host is busy with a long load.
+coop.waiting_host: "Waiting for {name}..."
 # A guest's game is the host's world in memory: nothing of it is saved (multiplayer.md, "Saves in co-op").
 coop.guest_not_saved: "You are a guest: this game is not saved. Your own saves stay as they were."
 # The names of the sample rooms and players (developer tools).

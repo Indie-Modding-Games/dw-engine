@@ -6,8 +6,10 @@
 
 #include <doctest/doctest.h>
 
+#include <array>
 #include <cstdint>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -126,6 +128,88 @@ TEST_CASE("cooperative control and state messages round trip") {
   CHECK_FALSE(decode(encode(Message{PlayerState{.player = MaxPlayers, .mapId = "m"}})));
   CHECK_FALSE(decode(encode(
       Message{Roster{.revision = 1, .players = {{.id = 1, .name = "g", .partnerSpecies = {}}}}})));
+}
+
+LobbySeat seat(PlayerId id, std::string name = "x", SeatState state = SeatState::Connected) {
+  return {.id = id, .name = std::move(name), .state = state};
+}
+
+SyncHeld held(PlayerId id, std::string mapId = "m", std::int32_t x = 0) {
+  return {.id = id, .mapId = std::move(mapId), .x = x, .y = 0, .z = 0};
+}
+
+SyncReport report(std::uint32_t sequence, std::vector<SyncHeld> players = {}) {
+  return {.sequence = sequence,
+          .snapshotTick = 0,
+          .snapshotsLost = 0,
+          .snapshotsLate = 0,
+          .players = std::move(players)};
+}
+
+TEST_CASE("the lobby of up to four seats and the sync diagnostics round-trip and are checked") {
+  roundTrip(Lobby{.capacity = 4,
+                  .seats = {seat(HostPlayerId, "Mika", SeatState::Ready), seat(1, "Ana"),
+                            seat(3, "Leo", SeatState::Ready)}});
+  roundTrip(SyncWatch{.on = true});
+  roundTrip(SyncReport{.sequence = 7,
+                       .snapshotTick = 0xFFFFFFF0U,
+                       .snapshotsLost = 2,
+                       .snapshotsLate = 1,
+                       .players = {{.id = 0, .mapId = "mayo01", .x = -10, .y = 0, .z = 30},
+                                   {.id = 2, .mapId = "mayo02", .x = 1, .y = 2, .z = 3}}});
+  roundTrip(report(0));
+  // A lobby always has its host, no more seats than it seats, and no seat twice.
+  CHECK_FALSE(decode(encode(Message{Lobby{.capacity = 4, .seats = {seat(1)}}})));
+  CHECK_FALSE(decode(encode(Message{Lobby{.capacity = 2, .seats = {seat(0), seat(1), seat(2)}}})));
+  CHECK_FALSE(decode(encode(Message{Lobby{.capacity = 5, .seats = {seat(0)}}})));
+  CHECK_FALSE(decode(encode(Message{Lobby{.capacity = 3, .seats = {seat(0), seat(0)}}})));
+  CHECK_FALSE(decode(encode(Message{report(1, {held(MaxPlayers)})})));
+  CHECK_FALSE(decode(encode(Message{report(1, {held(1, "m", MaxWorldCoordinate + 1)})})));
+}
+
+TEST_CASE(
+    "each side sends only its own messages: the lobby, the sync watch and report, the world's") {
+  net::LoopbackNetwork network{{}};
+  auto host = CoopLink::host(network.link(0), identity(), "Host");
+  auto guest = CoopLink::guest(network.link(1), identity(), "Guest");
+  for (int tick = 0;
+       tick < 10 && (host.phase() != LinkPhase::Ready || guest.phase() != LinkPhase::Ready);
+       ++tick) {
+    network.advance(net::Millis{10});
+    host.poll(network.now());
+    guest.poll(network.now());
+  }
+  REQUIRE(host.phase() == LinkPhase::Ready);
+  REQUIRE(guest.phase() == LinkPhase::Ready);
+  REQUIRE(host.send(Message{Lobby{.capacity = 3, .seats = {seat(0, "Host")}}}));
+  REQUIRE(host.send(Message{SyncWatch{.on = true}}));
+  REQUIRE(guest.send(Message{report(1)}));
+  for (int tick = 0; tick < 5; ++tick) {
+    network.advance(net::Millis{10});
+    host.poll(network.now());
+    guest.poll(network.now());
+  }
+  const auto lobby = guest.receive();
+  REQUIRE(lobby);
+  CHECK(std::holds_alternative<Lobby>(*lobby));
+  CHECK(guest.receive() == std::optional<Message>{Message{SyncWatch{.on = true}}});
+  CHECK(host.receive() == std::optional<Message>{Message{report(1)}});
+  // Neither side sends the other's messages.
+  CHECK_FALSE(guest.send(Message{Lobby{.capacity = 2, .seats = {seat(0)}}}));
+  CHECK_FALSE(guest.send(Message{SyncWatch{.on = false}}));
+  CHECK_FALSE(host.send(Message{report(2)}));
+  // The shared world's messages go over the link too (#357): asks and claims to the host, its
+  // changes and answers to the guest.
+  const Message change{
+      WorldChange{.revision = 1, .origin = 0, .ask = 0, .mapId = "m", .edits = {}}};
+  const Message claim{
+      ItemClaim{.claim = 1, .kind = ClaimKind::Chest, .key = 3, .id = 0, .mapId = "m"}};
+  CHECK(guest.send(Message{WorldAsk{.ask = 1, .mapId = "m", .edits = {}}}));
+  CHECK(guest.send(claim));
+  CHECK(host.send(change));
+  CHECK(host.send(Message{ClaimAnswer{.claim = 1, .granted = true}}));
+  CHECK_FALSE(guest.send(change));
+  CHECK_FALSE(host.send(claim));
 }
 
 TEST_CASE("cooperative decoder ignores foreign message kinds and rejects damaged frames") {
@@ -339,10 +423,60 @@ TEST_CASE("cooperative handshake and silence timeouts end the link") {
       guest.poll(network.now());
     }
     REQUIRE(guest.phase() == LinkPhase::Ready);
+    // The host goes without a word: nothing more comes.
+    network.cut();
     network.advance(net::Millis{8000});
     guest.poll(network.now());
     CHECK(guest.phase() == LinkPhase::Failed);
     CHECK(guest.failure() == LinkFailure::Silence);
+  }
+}
+
+TEST_CASE("a side busy with a long load keeps its link, and one that hangs is dropped in time") {
+  // `stalled`: which side stops polling (0 the host, 1 the guest); `stall`: for how long.
+  const auto run = [](std::size_t stalled, net::Millis stall) {
+    net::LoopbackNetwork network({.latency = net::Millis{20},
+                                  .jitter = net::Millis{10},
+                                  .lossPercent = 5,
+                                  .duplicatePercent = 0});
+    CoopLink host = CoopLink::host(network.link(0), identity());
+    CoopLink guest = CoopLink::guest(network.link(1), identity(), "Guest");
+    std::array<CoopLink*, 2> sides{&host, &guest};
+    const auto step = [&](bool both) {
+      network.advance(net::Millis{50});
+      for (std::size_t side = 0; side < sides.size(); ++side) {
+        if (both || side != stalled) {
+          sides.at(side)->poll(network.now());
+        }
+      }
+    };
+    for (int i = 0; i < 40; ++i) {
+      step(true);
+    }
+    REQUIRE(host.phase() == LinkPhase::Ready);
+    REQUIRE(guest.phase() == LinkPhase::Ready);
+    // The stalled side's game is busy (it neither polls nor sends); the other goes on.
+    const net::Millis until = network.now() + stall;
+    while (network.now() < until && sides.at(1 - stalled)->phase() == LinkPhase::Ready) {
+      step(false);
+    }
+    const LinkPhase waited = sides.at(1 - stalled)->phase();
+    const LinkFailure why = sides.at(1 - stalled)->failure();
+    for (int i = 0; i < 40; ++i) {
+      step(true);
+    }
+    return std::tuple{waited, why, sides.at(stalled)->phase()};
+  };
+  for (const std::size_t stalled : {std::size_t{0}, std::size_t{1}}) {
+    CAPTURE(stalled);
+    // A 30 s load: both sides still hold the link once it ends.
+    const auto [waited, why, after] = run(stalled, net::Millis{30000});
+    CHECK(waited == LinkPhase::Ready);
+    CHECK(after == LinkPhase::Ready);
+    // A game that hangs: past LinkTimeouts::busy and the silence, the other side lets it go.
+    const auto hung = run(stalled, net::Millis{120000});
+    CHECK(std::get<0>(hung) == LinkPhase::Failed);
+    CHECK(std::get<1>(hung) == LinkFailure::Silence);
   }
 }
 

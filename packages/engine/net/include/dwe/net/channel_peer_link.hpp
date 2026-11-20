@@ -26,6 +26,11 @@ public:
   [[nodiscard]] std::string roomCode() const override { return roomCode_; }
 
   [[nodiscard]] const ReliableChannel& channel() const { return channel_; }
+  void keepAliveWhileBusy(Millis limit) override { busyLimit_ = limit; }
+  // What a transport's own threads do while the game is busy (keepAliveWhileBusy): once poll()
+  // has not run for a moment, takes what arrived and sends what is due, as poll() would. The
+  // loopback network calls it as its clock moves.
+  void serviceWhileBusy(Millis now);
 
 private:
   // The reliable lane's side of the datagram link: what the channel sends gets the lane's tag,
@@ -47,6 +52,10 @@ private:
   std::deque<Bytes> reliableIn_;
   std::deque<Bytes> unreliableIn_;
   std::optional<Millis> lastUnreliable_;
+  Millis busyLimit_{0};
+  std::optional<Millis> lastPolled_;
+
+  void service(Millis now);
 };
 
 } // namespace dwe::net

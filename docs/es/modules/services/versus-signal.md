@@ -28,6 +28,17 @@ anfitrión ──WebSocket /v1/host──►  sala K7Q2  ◄──WebSocket /v1/
 
 El Durable Object usa la API de hibernación de WebSockets: una sala esperando no gasta mientras nadie habla.
 
+## Salas de hasta cuatro
+
+El cooperativo sienta hasta cuatro jugadores (#352). El anfitrión lo pide con `/v1/host?seats=4` (3 o 4; cualquier
+otro valor es la sala de dos de arriba, igual que siempre para los juegos antiguos) y recibe un token en su mensaje
+`room`. La sala sigue abierta mientras el anfitrión espera: cada invitado se empareja con un socket del anfitrión que
+espera, los dos se conectan como arriba y sus sockets se cierran cuando ambos dicen `done`, y el anfitrión abre su
+siguiente socket con `/v1/host/<code>?token=&taken=<n>` para el siguiente invitado. Un invitado de más sobre
+`seats - 1` recibe `full`; un anfitrión que perdió a un invitado dice `{"type":"seats","taken":n}` y la plaza vuelve a
+quedar libre. La sala comprueba a su anfitrión cada 2 minutos, vive como mucho una hora y se cierra con el último socket
+de su anfitrión. `/v1/info` incluye la capacidad `seats`.
+
 ## Salas públicas
 
 Un segundo Durable Object, el directorio, guarda las salas públicas. Un anfitrión público dice quién es

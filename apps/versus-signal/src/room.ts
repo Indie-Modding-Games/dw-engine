@@ -1,5 +1,6 @@
 // One room: a host, then a guest, and the messages between them until both are connected. The
 // Durable Object (worker.ts) gives it the room's sockets and storage; the tests give it fakes.
+import { Seats } from "./seats.ts";
 import type { IceServer } from "./turn.ts";
 
 /** How long a room lives at most: the host waits for a guest and both open their route. */
@@ -21,9 +22,13 @@ export type Published = "listed" | "refused";
 
 /** The parts of a Durable Object's state the room uses. */
 export interface RoomState {
-  accept(socket: Socket, role: Role): void;
+  /** Takes a socket in as `role`; a seated room (seats.ts) also gives each socket its own tag. */
+  accept(socket: Socket, role: Role, tag?: string): void;
   sockets(role: Role): Socket[];
   roleOf(socket: Socket): Role | null;
+  /** The tag a socket was taken in with (null without one), and the open sockets with a tag. */
+  tagOf(socket: Socket): string | null;
+  tagged(tag: string): Socket[];
   get(key: string): Promise<unknown>;
   put(key: string, value: unknown): Promise<void>;
   clear(): Promise<void>;
@@ -76,11 +81,14 @@ export interface HostOptions {
   ip?: string;
   /** Relay servers for this peer (turn.ts), sent with `room`; none without TURN. */
   iceServers?: IceServer[];
-  /** The host's token for its state notices (POST /v1/rooms/<code>/state); listed rooms only. */
+  /** The host's token for its state notices (POST /v1/rooms/<code>/state) and, in a room of more
+   * than two seats, for its next seat's socket; listed or seated rooms only. */
   token?: string;
+  /** How many players the room seats, host included: 2 (the default) to 4 (seats.ts). */
+  seats?: number;
 }
 
-export type ErrorReason = "no-room" | "full" | "expired" | "left" | "bad-code" | "limit" | "bad-name";
+export type ErrorReason = "no-room" | "full" | "expired" | "left" | "bad-code" | "limit" | "bad-name" | "bad-token";
 
 function message(value: object): string {
   return JSON.stringify(value);
@@ -113,10 +121,33 @@ function withIce(value: Record<string, unknown>, iceServers: IceServer[] | undef
 export class Room {
   #state: RoomState;
   #now: () => number;
+  #seats: Seats;
 
   constructor(state: RoomState, now: () => number = Date.now) {
     this.#state = state;
     this.#now = now;
+    this.#seats = new Seats(state, now);
+  }
+
+  /** Whether the host asked for more than two seats: then seats.ts runs the room. */
+  async #seated(): Promise<boolean> {
+    return Boolean(await this.#state.get("seating"));
+  }
+
+  /** Whether a guest would get in now; a socket that would not is accepted only to hear why. */
+  async admits(): Promise<boolean> {
+    if (await this.#seated()) return this.#seats.admits();
+    return this.#state.sockets("host").length > 0 && this.#state.sockets("guest").length === 0;
+  }
+
+  /** Whether a seated room takes a host's next seat with this token. */
+  async admitsSeat(token: string): Promise<boolean> {
+    return this.#seats.admitsSeat(token);
+  }
+
+  /** The host's next seat in a room of more than two seats (`/v1/host/<code>?token=&taken=`). */
+  async seat(socket: Socket, token: string, taken: number, iceServers?: IceServer[]): Promise<void> {
+    await this.#seats.seat(socket, token, taken, iceServers);
   }
 
   /**
@@ -130,15 +161,22 @@ export class Room {
     if (await this.#state.get("opened")) return false;
     await this.#state.put("opened", this.#now());
     await this.#state.setAlarm(this.#now() + ROOM_LIFETIME_MS);
+    const seats = asked.seats ?? 2;
     let token: string | undefined;
-    if (asked.listed) {
+    if (asked.listed || seats > 2) {
       token = asked.token ?? "";
+    }
+    if (asked.listed) {
       const entry = this.#entry(code, asked, token);
       if ((await this.#state.publish?.(code, entry)) === "refused") {
         await this.#state.clear();
         return "limit";
       }
       await this.#state.put("listing", entry);
+    }
+    if (seats > 2) {
+      await this.#seats.open(socket, code, seats, token ?? "", asked.iceServers);
+      return true;
     }
     this.#state.accept(socket, "host");
     const opened: Record<string, unknown> = { type: "room", code };
@@ -155,7 +193,7 @@ export class Room {
       name: "Cooperative room",
       message: "Waiting for players",
       players: 1,
-      capacity: 2,
+      capacity: asked.seats ?? 2,
       createdAt: now,
       state: "waiting",
       phase: "open",
@@ -171,6 +209,10 @@ export class Room {
 
   /** A guest joins: the room must have its host and no guest yet. */
   async join(socket: Socket, iceServers?: IceServer[]): Promise<void> {
+    if (await this.#seated()) {
+      await this.#seats.join(socket, iceServers);
+      return;
+    }
     const hosts = this.#state.sockets("host");
     if (hosts.length === 0) {
       reject(socket, "no-room");
@@ -211,6 +253,10 @@ export class Room {
     }
     if (typeof parsed !== "object" || parsed === null) return;
     const { type, data } = parsed as { type?: unknown; data?: unknown };
+    if (await this.#seated()) {
+      await this.#seats.message(socket, type, parsed as Record<string, unknown>);
+      return;
+    }
     if (type === "signal" && typeof data === "object" && data !== null) {
       for (const other of this.#state.sockets(role === "host" ? "guest" : "host")) {
         trySend(other, message({ type: "signal", data }));
@@ -233,6 +279,10 @@ export class Room {
   async closed(socket: Socket): Promise<void> {
     const role = this.#state.roleOf(socket);
     if (!role) return;
+    if (await this.#seated()) {
+      await this.#seats.closed(socket);
+      return;
+    }
     // The room already closed (both connected, or it expired) and its sockets are closing with it:
     // nobody is left to tell, and the room is forgotten already.
     if (!(await this.#state.get("opened"))) return;
@@ -244,6 +294,10 @@ export class Room {
 
   /** The room's time is up: whoever is still there hears it expired, unless both were connected. */
   async alarm(): Promise<void> {
+    if (await this.#seated()) {
+      await this.#seats.alarm();
+      return;
+    }
     const connected = (await this.#state.get("done:host")) || (await this.#state.get("done:guest"));
     for (const role of ["host", "guest"] as const) {
       for (const socket of this.#state.sockets(role)) {
@@ -260,6 +314,10 @@ export class Room {
    * directory how it goes (POST /v1/rooms/<code>/state). Any other leaves the list.
    */
   async close(): Promise<void> {
+    if (await this.#seated()) {
+      await this.#seats.close();
+      return;
+    }
     for (const role of ["host", "guest"] as const) {
       for (const socket of this.#state.sockets(role)) {
         try {
