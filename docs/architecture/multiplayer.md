@@ -436,3 +436,5 @@ open, the battle waits for both.
   [signaling](../modules/services/versus-signal.md): the network that is reused.
 - [field](../modules/game/field.md), [battle](../modules/game/battle.md) and [session](../modules/apps/session.md): the
   modules that change.
+- [Co-op combat](coop-combat.md) (#362): every partner on one side, the next step after the first co-op battles.
+- [Co-op difficulty](coop-difficulty.md) (#361): enemy scaling and rewards by the number of players.
