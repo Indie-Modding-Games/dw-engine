@@ -125,3 +125,29 @@ TEST_CASE("a save the host wrote in co-op loads in a single-player game at the h
   CHECK(later->savedPlace()->spawn.position == host.position);
   CHECK(later->homeSlot() == std::optional<SlotId>{HostSlot});
 }
+
+TEST_CASE("a note a co-op guest's return left in its save is taken once and gone from the next") {
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  auto game = newGame(packs, &storage);
+  REQUIRE(game->save(HostSlot));
+  auto file = game->saveFile();
+  REQUIRE(file.has_value());
+  file->sections.insert_or_assign(
+      "coop_return", dwe::game::save::SavedSection{
+                         .version = 1, .state = dwe::core::YamlNode::scalar("from a friend")});
+
+  auto later = newGame(packs, &storage);
+  auto loaded = later->loadFile(*file);
+  REQUIRE_MESSAGE(loaded.has_value(), errorOf(loaded));
+  // A section a system reads is never taken.
+  CHECK_FALSE(later->takeUnreadSection("partner").has_value());
+  const auto note = later->takeUnreadSection("coop_return");
+  REQUIRE(note.has_value());
+  CHECK(note->state == dwe::core::YamlNode::scalar("from a friend"));
+  CHECK_FALSE(later->takeUnreadSection("coop_return").has_value());
+  auto next = later->saveFile();
+  REQUIRE(next.has_value());
+  CHECK_FALSE(next->sections.contains("coop_return"));
+  CHECK(next->sections.contains("partner"));
+}

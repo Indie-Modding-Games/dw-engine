@@ -220,7 +220,8 @@ tiene (mejora documentada). La pregunta sale sobre la lista (`dialog.at_title`).
 
 `Borrar partida` (en gris sin partidas, como `Continuar`) → la misma lista con «BORRAR RANURA n» y las ranuras que este
 juego puede escribir (no las de un juego más nuevo) → «¿Borrar esta aventura?» **con el cursor en «No»** → la
-ranura queda vacía (`SaveSlots::erase`): se borran su fichero, su `.bak` y los autoguardados antiguos de esa partida (y sus
+ranura queda vacía (`SaveSlots::erase`): se borran su fichero, su `.bak`, la copia que guardó de ella la vuelta de un
+invitado cooperativo (`.before_coop`, [multiplayer.md](multiplayer.md) §5.6) y los autoguardados antiguos de esa partida (y sus
 `.bak`), así que no queda copia de una partida que el jugador borró. Si no se puede borrar, aviso «save.erase_failed» y el error al registro. Tras borrar vuelve a la
 lista. El original borra el fichero de la tarjeta sin copia (`main_menu.c: tickMainMenu`).
 

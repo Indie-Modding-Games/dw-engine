@@ -23,6 +23,13 @@ enum class BattleRole : std::uint8_t { Starter, Helper, Ally };
 // anyone.
 [[nodiscard]] bool roleAllows(BattleRole role, BattleActionKind kind);
 
+// Whether what a battle on the host left the guest's partner holds only values a battle can leave
+// (HP and MP within the stats' limits, no negative or runaway gains, lives, care or counters). A
+// guest applies spoils only when they do: they become its partner's growth, which it takes home to
+// its own save (multiplayer.md, "Saves in co-op"), so a tampered or broken host cannot write
+// garbage there.
+[[nodiscard]] bool spoilsInRange(const BattleSpoils& spoils);
+
 // The host's side of the co-op battles (docs/architecture/multiplayer.md, §6 decision 3;
 // coop-combat.md): the shared world runs one battle at a time, on the host's simulation. It numbers
 // each battle, knows who started the running one and whose partners fight in it, keeps each

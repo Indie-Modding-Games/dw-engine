@@ -381,21 +381,72 @@ El cooperativo nunca cambia ni rompe las partidas guardadas de un jugador de nin
   el compañero del invitado solo existen en el campo y ninguna sección del guardado los lee. Un guardado que el
   anfitrión escribe en cooperativo es el mismo archivo que escribiría jugando solo, y se carga en un jugador como
   cualquier otro.
-- **El invitado no guarda nada.** Su partida es una copia del mundo del anfitrión en memoria, con el compañero del
-  invitado. No tiene almacenamiento de guardado (ni autoguardado, ni guardado rápido, ni máquina de guardado) y la
-  copia no nombra ninguna ranura (`hostWorldWithGuestPartner`), así que nada puede tomar como propia una ranura del
-  disco del invitado. El guardado propio del invitado solo se lee, para enviar su compañero. El guardar del menú de
-  pausa lo avisa, su salir cierra sin guardar y un aviso lo dice al empezar la partida
-  (`online.coop.guest_not_saved`, `save.coop_guest`, `save.coop_guest_quit_confirm`).
-- **Salir, desconectarse o un cierre inesperado no cambian nada en disco.** El invitado no ha escrito nada; la ranura
-  del anfitrión guarda su último guardado, que nunca tuvo estado del invitado.
+- **La partida del invitado no guarda nada del mundo del anfitrión.** Su partida es una copia del mundo del anfitrión
+  en memoria con las secciones **propias** del invitado: su compañero, las técnicas del compañero, las especies que
+  crió y su bolsa con sus bits (`CoopGuestOwnSections`, `hostWorldWithGuestPartner`). No tiene almacenamiento de
+  guardado (ni autoguardado, ni guardado rápido, ni máquina de guardado) y la copia no nombra ninguna ranura, así que
+  nada puede tomar como propia una ranura del disco del invitado. El guardar y el salir del menú de pausa dicen qué
+  pasa, y un aviso lo dice al empezar la partida (`online.coop.guest_not_saved`, `save.coop_guest`,
+  `save.coop_guest_quit_confirm`).
+- **El invitado se lleva a casa su propio progreso (decisión 4, fase C4).** Esas cuatro secciones vuelven a la ranura de
+  la que el invitado trajo su guardado; el resto de esa ranura queda exactamente como estaba en disco.
 
-Lo que gana el invitado todavía no vuelve a su propia partida (decisión 4 de §6, fase C4).
+**Qué vuelve a casa y qué nunca.**
+
+| Vuelve a casa | Nunca vuelve |
+|---|---|
+| El compañero: stats, PV y PM, edad, vida, vidas, cuidados (hambre, baño, sueño, ánimo, enfermedad), evolución, sus contadores | La historia, los triggers y variables, las medallas y los objetos clave de la página del jugador (triggers de historia) |
+| Las técnicas que conoce y lleva equipadas | El mapa, el lugar donde está, el reloj y el clima |
+| Las especies que crió (la sección de evolución) | La bolsa y los bits del anfitrión: el invitado nunca los tuvo, su partida jugó con los suyos |
+| Su bolsa y sus bits, como los dejó su partida: lo que compró con sus bits, recogió (un reclamo concedido), recibió en un intercambio o usó | El historial del domador, las cartas, el stock de las tiendas y todo lo demás del mundo del anfitrión |
+
+El invitado jugó con su propia bolsa y sus bits desde el principio, así que llevarlos a casa es llevarse la bolsa con la
+que sale; el dinero del anfitrión nunca está en ella. Los bits que da una batalla en el anfitrión van al mundo del
+anfitrión, como antes (§6.1).
+
+**Cuándo se escribe** (`CoopGuestHome`, `apps/game/src/coop_guest_return.hpp`). La aplicación mira la partida del
+invitado una vez por segundo en un punto seguro (nada ocupado, ningún guardado esperando, ningún intercambio abierto:
+`PlaySession::coopGuestSave`) y se queda con el más nuevo:
+
+- **cambió la bolsa** (un intercambio, un reclamo, una compra): se escribe enseguida, para que un cierre inesperado no
+  deje un objeto intercambiado en dos partidas;
+- **solo cambió el compañero** (lo que creció en una batalla, los cuidados): se escribe en el siguiente punto seguro 30
+  segundos después de la última escritura (o del inicio de la partida), así una partida larga pierde poco ante un cierre sin escribir la ranura
+  cada pocos segundos;
+- **la partida termina**, la termine lo que la termine: volver a la portada, que el anfitrión cierre la sala, que se
+  caiga la conexión (antes de volver al puesto), salir desde el menú de pausa o cerrar la ventana
+  (`AppFlow::setBeforeEnd`). Una partida ocupada al terminar (una batalla) escribe su último punto seguro: lo que una
+  batalla dejó a medias no vuelve a casa.
+
+**Cómo se escribe sin riesgo.** Primero se vuelve a leer la ranura, que tiene que seguir siendo la partida que trajo el
+invitado (mismo momento de inicio, domador y reglas); una ranura que otra partida ocupó mientras tanto no se toca y se
+avisa al invitado (`online.coop.home_failed`). El compañero que vuelve tiene que ser uno que una partida pueda dejar
+(`checkReturningPartner`: cada stat dentro de su límite, PV y PM sin pasarlos, sin vidas, vida, edad ni peso
+negativos), y el resultado de una batalla del anfitrión solo se aplica cuando sus valores son de los que deja una
+batalla (`game::coop::spoilsInRange`), así un anfitrión manipulado o roto no puede escribir basura en el guardado del
+invitado. La primera escritura de una partida cooperativa deja la ranura como estaba a su lado
+(`slot_NN.yaml.before_coop`), y cada escritura deja la anterior como la copia de seguridad de siempre (`.bak`). El
+guardado escrito lleva una nota (sección `coop_return`: el nombre del anfitrión y el compañero) que el juego muestra una
+vez cuando aparece el campo tras cargar el guardado (`online.coop.came_home`, «De vuelta del mundo de {name}...») y que el siguiente guardado
+quita (`GameSession::takeUnreadSection`); al terminar la partida del invitado, el HUD también lo dice
+(`online.coop.went_home`).
+
+**Sin duplicados.** El anfitrión manda sobre cada objeto que entra en la bolsa del invitado desde el mundo (reclamos,
+§5.8; intercambios, §6.2): un reclamo rechazado no da nada. Una vuelta reemplaza la bolsa de la ranura por la de la
+partida, nunca suma, así que escribir dos veces escribe la misma bolsa. Un invitado que se desconecta y vuelve a su
+puesto (§5.10) trae el guardado que se llevó a casa (`CoopScreen::keepBrought`), no el primero que trajo, así nada de
+lo que se llevó entra dos veces; un invitado que reinicia su juego entra con la ranura como se escribió por última vez.
+
+- **La ranura del anfitrión nunca ve al invitado.** Guarda su último guardado, que nunca tuvo estado del invitado, y se
+  carga sola como antes.
 
 Pruebas: `packages/session/tests/coop_saves_tests.cpp` (el guardado del anfitrión con un invitado en el campo es el
-guardado de un jugador y se carga en el lugar del anfitrión), `apps/game/tests/coop_guest_profile_tests.cpp` (la copia
-del invitado no nombra ranura) y `apps/game/tests/app_flow_tests.cpp` (la partida del invitado nunca se guarda en una
-ranura; solo las partidas de la sala son cooperativas).
+guardado de un jugador y se carga en el lugar del anfitrión; la nota de la vuelta se toma una vez),
+`apps/game/tests/coop_guest_profile_tests.cpp` (la copia del invitado no nombra ranura),
+`apps/game/tests/coop_guest_return_tests.cpp` (qué vuelve y qué nunca, otra partida o un compañero fuera de rango no se
+tocan, cuándo se escribe, las copias de seguridad, una vuelta al puesto que trae el guardado que se llevó),
+`packages/game/coop/tests/battle_tests.cpp` (botín fuera de rango) y `apps/game/tests/app_flow_tests.cpp` (la partida del
+invitado nunca se guarda en una ranura; solo las partidas de la sala son cooperativas).
 
 ### 5.7 Mundo compartido: autoridad, jugadores y mapas
 
@@ -513,8 +564,8 @@ en un mapa. La sincronización lleva la revisión del anfitrión, así que un ca
 vez.
 
 **Guardado (§5.6).** El mundo es del anfitrión: lo que un invitado cambia en él está en el siguiente guardado del
-anfitrión, como cualquier cosa que haga el anfitrión. El invitado sigue sin guardar nada, y su propio guardado nunca se
-escribe.
+anfitrión, como cualquier cosa que haga el anfitrión. Nada del mundo entra en el guardado propio del invitado: solo
+vuelven a casa su compañero y su bolsa (§5.6).
 
 **Mensajes** (versión 5 del protocolo, rango `0x90–0x9F`):
 
@@ -638,8 +689,8 @@ así nadie que comparta nombre por casualidad (el «Jugador» por defecto) toma 
 viejo sigue abierto (el anfitrión aún no notó la caída) recupera su plaza con su clave, y el enlace viejo se cierra. Pasada la ventana es un jugador nuevo. El id de un
 invitado que se fue queda reservado durante la ventana, así un jugador tardío nunca lo toma.
 
-**Lo que queda fuera.** El progreso propio del invitado mientras estuvo fuera no se guarda aparte: juega desde el mundo
-del anfitrión como cualquier jugador tardío (su compañero es el del guardado que trae). Las salas de dos siguen cerrando
+**Lo que queda fuera.** El invitado que vuelve juega desde el mundo del anfitrión como cualquier jugador tardío; su
+compañero y su bolsa son los que se llevó a casa cuando se le cayó la conexión (§5.6). Las salas de dos siguen cerrando
 su plaza al empezar (el versus no tiene partida a la que unirse).
 
 Pruebas: `packages/game/coop/tests/protocol_tests.cpp` (ida y vuelta de los campos, admisión por `CoopLink` reales),
@@ -656,7 +707,7 @@ Propuestas el 2026-11-16 con una recomendación cada una; así quedaron hechas.
 | 1 | ¿Qué trae el invitado? | Su personaje y **su compañero** de su propia partida, de visita en el mundo del anfitrión (§5.6). |
 | 2 | ¿Mapa compartido? | Sí: el grupo va donde va el anfitrión. Las salidas propias de un invitado se retienen y el cambio de mapa del anfitrión los lleva a todos (§5.7). Cada partida sigue conociendo su mapa, así que un jugador que aún carga simplemente no se dibuja. |
 | 3 | Combate | **Pelean todos los compañeros.** Lo empiece quien lo empiece, se suma cada compañero libre de ese mapa, hasta cuatro (§6.1, [combate cooperativo](coop-combat.md) §12), y los enemigos escalan según cuántos pelean ([dificultad cooperativa](coop-difficulty.md)). |
-| 4 | Progreso | La historia, los triggers, el dinero y el mundo son **del anfitrión**, guardados en su propia ranura como en un jugador (§5.6). Los cambios de cualquier jugador a ese mundo pasan por el anfitrión (§5.8). El invitado no guarda nada; llevarse lo ganado a su partida aún no está hecho (§10). |
+| 4 | Progreso | La historia, los triggers, el dinero y el mundo son **del anfitrión**, guardados en su propia ranura como en un jugador (§5.6). Los cambios de cualquier jugador a ese mundo pasan por el anfitrión (§5.8). El invitado juega con su propio compañero, sus técnicas, las especies que crió y su bolsa con sus bits, y se los lleva a su propia ranura al salir y en puntos seguros mientras tanto (C4, §5.6); nada del mundo del anfitrión va con ellos. |
 | 5 | Pausa y menús | Cada partida corre su propia copia del mundo del anfitrión, así que un menú o la pausa solo paran la partida de ese jugador; los demás siguen. Un combate compartido espera mientras el anfitrión tiene el menú abierto (§6.1). |
 | 6 | Diálogos y escenas | Los scripts de un jugador corren en su partida: sus diálogos y escenas son suyos y los demás siguen jugando. Lo que una escena cambia en el mundo llega a los demás por el anfitrión (§5.8), y los NPCs que trae o se lleva aparecen al momento en todas las partidas. |
 
@@ -757,8 +808,8 @@ tiendas quedan fuera.
 - **Historial.** El árbitro guarda los últimos 32 intercambios cerrados y su resultado; un mensaje para un id cerrado
   no hace nada.
 - **Guardado.** El lado del anfitrión es su propia partida, que se guarda como de un jugador (§5.6). La bolsa del
-  invitado es parte de su copia sin guardar, así que lo que intercambia vive lo que dura esa partida, como todo lo
-  demás que hace el invitado.
+  invitado es suya y vuelve a su ranura justo después de cerrarse el intercambio (§5.6), así que un objeto
+  intercambiado nunca está en los guardados de las dos partidas.
 
 **Mensajes** (versión 8 del protocolo):
 
@@ -794,7 +845,8 @@ antes y después del commit, cuatro jugadores en dos intercambios, mensajes ajen
 ## 7. Fases
 
 El plan tal como se escribió el 2026-11-16. C0 a C3 están hechas (§5, §6.1; pelean todos los compañeros desde #377);
-de C4 están hechos los nombres sobre los jugadores (`coop_hud.tag`) y falta el progreso del invitado de vuelta (§10).
+de C4 están hechos los nombres sobre los jugadores (`coop_hud.tag`) y el progreso del invitado de vuelta a su partida
+(§5.6).
 
 | Fase | Contenido | Criterio de cierre | Tiempo |
 |---|---|---|---|
@@ -802,7 +854,7 @@ de C4 están hechos los nombres sobre los jugadores (`coop_hud.tag`) y falta el 
 | **C1, verse caminar** | `game/coop` con saludo, unión en punto seguro, snapshots completos, `WorldMirror`, simulación de movimiento autoritativa en host y predicción visual local reconciliada. | Dos PCs en el mismo mapa se ven caminar, cada uno con su compañero detrás; el host resuelve colisiones y triggers con pérdidas simuladas. | ~2 semanas |
 | **C2, interactuar** | NPCs y casillas por jugador, diálogos replicados, cambio de mapa en grupo, menús sin pausa, desconexión y reconexión. | Un tramo de la historia jugado entre dos PCs. | ~3 semanas |
 | **C3, combate** | Según la decisión 3 (§6.1). **Hecha, primera versión:** combates en el anfitrión para los dos jugadores cuando comparten mapa (en solitario si no, #351), la vista del otro jugador, ayuda y órdenes, recompensas de vuelta al invitado, desconexión en combate; después los dos compañeros (#374) y todos los compañeros (#377). | Un combate de la historia ganado en cooperativo. | 2–6 semanas |
-| **C4, invitado** | Progreso del invitado de vuelta a su partida, nombres sobre los jugadores, indicador de latencia, pulido. | El invitado vuelve a su partida con lo ganado. | — |
+| **C4, invitado** | Progreso del invitado de vuelta a su partida (**hecho:** §5.6), nombres sobre los jugadores, indicador de latencia, pulido. | El invitado vuelve a su partida con lo ganado. | — |
 
 ### 7.1 Corte de arquitectura y orden de implementación
 
@@ -981,10 +1033,12 @@ Lo hecho, por ticket (las issues #351 a #362 son las historias de jugador; sigue
 | Unirse y volver a una partida en curso (#352, #356) | §5.10 |
 | Combates con todos los compañeros (#351, #362) y dificultad cooperativa (#361) | §6.1, [combate cooperativo](coop-combat.md), [dificultad cooperativa](coop-difficulty.md) |
 | Intercambio de objetos (#360) | §6.2 |
+| El invitado se lleva su compañero y su bolsa a casa (#355) | §5.6 |
 
 Lo que falta, como seguimiento:
 
-- El progreso del invitado de vuelta a su partida (decisión 4).
+- La ficha del domador y las cartas del invitado se quedan en el mundo del anfitrión: solo vuelven a casa el
+  compañero, las técnicas, las especies criadas y la bolsa (§5.6).
 - Un combate por mapa a la vez ([combate cooperativo](coop-combat.md) §12, tarea 12) y las mecánicas opcionales de
   combate de su §8.
 - Los NPCs que colocan o mueven los scripts propios de un mapa, y los que tienen una condición desconocida (una tirada

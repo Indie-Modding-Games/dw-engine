@@ -3,13 +3,21 @@
 #include <dwe/game/partner/state_yaml.hpp>
 #include <dwe/game/save/save_file.hpp>
 #include <dwe/session/battle_adapter.hpp>
+#include <dwe/session/evolution_adapter.hpp>
+#include <dwe/session/inventory_adapter.hpp>
 
 #include <format>
+
+#include "coop_guest_return.hpp"
 
 namespace dwe::app {
 namespace {
 constexpr std::string_view PartnerSection = "partner";
 constexpr std::size_t MaxGuestSaveBytes = 128U * 1024U;
+static_assert(CoopGuestOwnSections[0] == PartnerSection);
+static_assert(CoopGuestOwnSections[1] == session::MovesSaveName);
+static_assert(CoopGuestOwnSections[2] == session::EvolutionSaveName);
+static_assert(CoopGuestOwnSections[3] == session::InventorySaveName);
 } // namespace
 
 core::Result<CoopGuestPartnerProfile> extractCoopGuestPartnerProfile(std::string_view saveText) {
@@ -55,14 +63,22 @@ core::Result<std::string> hostWorldWithGuestPartner(std::string_view hostSaveTex
       std::string{PartnerSection},
       game::save::SavedSection{.version = game::partner::PartnerStateVersion,
                                .state = game::partner::toYaml(guest->state)});
-  // The partner's moves (known and equipped) are the guest's too: its battles on the host fight
-  // with them (coop_battles.hpp).
+  // The rest of what the guest brings is its own too: the partner's moves (known and equipped),
+  // which its battles on the host fight with (coop_battles.hpp), the species it raised, and its bag
+  // with its bits. It plays with them in the host's world and takes them home when it leaves
+  // (coop_guest_return.hpp); the host's bag and money stay the host's.
   if (auto parsedGuest = game::save::parseSaveFile(guestSaveText)) {
-    if (const auto moves = parsedGuest->sections.find(session::MovesSaveName);
-        moves != parsedGuest->sections.end()) {
-      host->sections.insert_or_assign(std::string{session::MovesSaveName}, moves->second);
+    for (const std::string_view name : CoopGuestOwnSections) {
+      if (name == PartnerSection) {
+        continue;
+      }
+      if (const auto own = parsedGuest->sections.find(name); own != parsedGuest->sections.end()) {
+        host->sections.insert_or_assign(std::string{name}, own->second);
+      }
     }
   }
+  // A note the host's own save brought back from another co-op game is the host's to read.
+  host->sections.erase(std::string{CoopReturnSection});
   host->header.summary.species = guest->species;
   host->header.summary.nickname = guest->nickname;
   // The copy is the guest's to play, never to save: it names none of the host's slots, so nothing

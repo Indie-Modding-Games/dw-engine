@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <format>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -97,20 +98,29 @@ void CoopHud::showTags(std::span<const CoopTagView> views) {
   showDocument();
 }
 
-void CoopHud::notice(std::string_view textKey, const CoopPeerLabel& peer) {
+void CoopHud::notice(std::string_view textKey, const CoopPeerLabel& peer, double seconds) {
   publishLabel(*ui_, peer, CoopNoticeNameSetting, CoopNoticeNameKeySetting,
                CoopNoticeNumberSetting);
   ui_->setSetting(CoopNoticeTextSetting, std::string{textKey});
   ui_->setSetting(CoopNoticeShownSetting, true);
   countUp(*ui_, CoopNoticeRevisionSetting);
-  noticeLeft_ = NoticeSeconds;
+  noticeLeft_ = seconds;
   noticePublished_ = true;
   showDocument();
+}
+
+void CoopHud::noticeNext(std::string_view textKey, const CoopPeerLabel& peer, double seconds) {
+  next_ = Pending{.textKey = std::string{textKey}, .peer = peer, .seconds = seconds};
 }
 
 void CoopHud::advance(double seconds) {
   if (noticeLeft_ > 0.0 && seconds > 0.0) {
     noticeLeft_ -= seconds;
+  }
+  if (noticeLeft_ <= 0.0 && next_) {
+    const Pending next = *std::exchange(next_, std::nullopt);
+    notice(next.textKey, next.peer, next.seconds);
+    return;
   }
   if (noticeLeft_ <= 0.0 && noticePublished_) {
     noticeLeft_ = 0.0;

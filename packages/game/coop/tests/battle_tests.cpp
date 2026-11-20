@@ -675,3 +675,34 @@ TEST_CASE("a battle frame carries each partner's revive countdown and an item's 
   rejects(act(3, BattleActionKind::ThrowItem, static_cast<std::int32_t>(MaxBattleFighters) + 1,
               "meat"));
 }
+
+TEST_CASE("a guest takes a battle's spoils only when a battle could leave them") {
+  BattleSpoils spoils;
+  spoils.hp = 640;
+  spoils.mp = 300;
+  spoils.statGains = {12, 8, 3, 2, 1, 4};
+  spoils.care = {2, -1, 5, 1};
+  spoils.food = -10;
+  spoils.livesLost = 1;
+  spoils.elapsedMinutes = 3;
+  spoils.counters = {4, 1, 0, 2};
+  spoils.frames = 1800;
+  CHECK(spoilsInRange(spoils));
+  CHECK(spoilsInRange(BattleSpoils{}));
+
+  // What a tampered or broken host could send: each is refused on its own.
+  const auto refused = [&](auto change) {
+    BattleSpoils bad = spoils;
+    change(bad);
+    return !spoilsInRange(bad);
+  };
+  CHECK(refused([](BattleSpoils& bad) { bad.hp = 10'000; }));
+  CHECK(refused([](BattleSpoils& bad) { bad.mp = -1; }));
+  CHECK(refused([](BattleSpoils& bad) { bad.statGains[2] = 1'000'000; }));
+  CHECK(refused([](BattleSpoils& bad) { bad.statGains[0] = -5; }));
+  CHECK(refused([](BattleSpoils& bad) { bad.care[0] = 500; }));
+  CHECK(refused([](BattleSpoils& bad) { bad.livesLost = -1; }));
+  CHECK(refused([](BattleSpoils& bad) { bad.elapsedMinutes = 100'000; }));
+  CHECK(refused([](BattleSpoils& bad) { bad.counters[1] = -3; }));
+  CHECK(refused([](BattleSpoils& bad) { bad.frames = -1; }));
+}

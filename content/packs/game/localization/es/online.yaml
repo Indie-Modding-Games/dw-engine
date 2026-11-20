@@ -193,8 +193,12 @@ coop.joined: "{name} entró en la partida."
 coop.item_gone: "¡Tarde! Otro jugador ya lo tomó."
 # Un invitado cuyo anfitrión está ocupado en una carga larga.
 coop.waiting_host: "Esperando a {name}..."
-# La partida del invitado es el mundo del anfitrión en memoria: no se guarda nada de ella (multiplayer.md, «Guardado en cooperativo»).
-coop.guest_not_saved: "Eres invitado: esta partida no se guarda. Tus partidas guardadas quedan como estaban."
+# La partida del invitado es el mundo del anfitrión en memoria: solo su compañero y su bolsa vuelven a su propio
+# guardado (multiplayer.md, «Guardado en cooperativo»); {name} es el anfitrión.
+coop.guest_not_saved: "Estás en el mundo de {name}. Tu compañero y tu bolsa vuelven contigo; lo demás se queda aquí."
+coop.went_home: "De vuelta del mundo de {name}: tu compañero y tu bolsa están en tu partida."
+coop.home_failed: "Tu compañero y tu bolsa no pudieron volver. Tu partida queda como estaba."
+coop.came_home: "De vuelta del mundo de {name}: tu compañero y tu bolsa volvieron contigo."
 # Un jugador que entrena en el gimnasio, bajo su etiqueta; y el primer curso de una partida
 # cooperativa (coop-training.md): el reloj del mundo no se detiene por él.
 coop.training: "Entrenando"

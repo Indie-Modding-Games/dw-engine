@@ -51,10 +51,12 @@ machine_empty_slot: "."
 to_title_confirm: "Anything not saved will be lost. Return to the title screen?"
 # Quitting the game from the pause menu (3.8): "Yes" writes the save and closes the game; "No" keeps playing.
 quit_confirm: "Save the game before quitting?"
-# A co-op guest's game, which is never saved (docs/architecture/multiplayer.md, "Saves in co-op"): the pause
-# menu's save, and its quit, whose yes closes the game without saving.
-coop_guest: "Co-op guests do not save: this is the host's world. Your own saves stay as they were."
-coop_guest_quit_confirm: "This co-op game is not saved on your side. Quit the game?"
+# A co-op guest's game, which saves nothing but its partner and bag, taken home to its own slot
+# (docs/architecture/multiplayer.md, "Saves in co-op"): the pause menu's save, and its quit, whose yes takes them
+# home and closes the game, and its return to the title screen, whose yes takes them home first.
+coop_guest: "Guests do not save here: this is the host's world. Your partner and your bag go home to your save on their own."
+coop_guest_quit_confirm: "Your partner and your bag go home to your save. Quit the game?"
+coop_guest_to_title_confirm: "Your partner and your bag go home to your save. Leave the host's world for the title screen?"
 # Erasing a save from the title screen (docs/architecture/save-and-load.md). The dialog shows the save's file
 # name below.
 confirm_erase: "Erase this adventure?"

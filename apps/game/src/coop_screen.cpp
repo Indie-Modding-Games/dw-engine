@@ -517,7 +517,8 @@ core::Result<void> CoopScreen::sendProfile(game::coop::CoopLink& link,
   return {};
 }
 
-core::Result<void> CoopScreen::provideGuestSave(std::string_view saveText) {
+core::Result<void> CoopScreen::provideGuestSave(std::string_view saveText, game::save::SlotId slot,
+                                                bool backup) {
   if (!selectingGuestProfile_ || isHost_ || connection_.link() == nullptr) {
     return core::fail("the guest profile was not requested by this room");
   }
@@ -527,6 +528,8 @@ core::Result<void> CoopScreen::provideGuestSave(std::string_view saveText) {
   if (auto sent = sendGuestSave(saveText); !sent) {
     return sent;
   }
+  brought_->slot = slot;
+  brought_->backup = backup;
   selectingGuestProfile_ = false;
   guestProfileRequest_ = false;
   localError_.clear();
@@ -555,8 +558,27 @@ core::Result<void> CoopScreen::sendGuestSave(std::string_view saveText) {
   }
   localReady_ = true;
   connection_.markRoomReady(true);
-  brought_ = BroughtSave{.code = connection_.code(), .text = std::string{saveText}};
+  // The same save brought again (back to the room after a drop) keeps the slot it came from.
+  brought_ = BroughtSave{.code = connection_.code(),
+                         .text = std::string{saveText},
+                         .slot = brought_ ? brought_->slot : std::nullopt,
+                         .backup = brought_ && brought_->backup};
   return {};
+}
+
+std::optional<CoopGuestHome::Home> CoopScreen::broughtHome() const {
+  if (isHost_ || !brought_ || !brought_->slot) {
+    return std::nullopt;
+  }
+  return CoopGuestHome::Home{
+      .slot = *brought_->slot, .backup = brought_->backup, .text = brought_->text};
+}
+
+void CoopScreen::keepBrought(std::string text) {
+  if (brought_) {
+    brought_->text = std::move(text);
+    brought_->backup = false;
+  }
 }
 
 core::Result<void> CoopScreen::sendWorld(game::coop::CoopLink& link, std::string_view saveText) {

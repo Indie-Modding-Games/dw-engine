@@ -186,6 +186,11 @@ public:
   // them.
   [[nodiscard]] core::Result<game::save::SaveFile> saveFile() const;
 
+  // Takes a section of the loaded save that no system reads, such as the note a co-op guest's
+  // return leaves for the app to show once (docs/architecture/multiplayer.md, "Saves in co-op"):
+  // the next save no longer has it. Nothing when the save has no such section or a system reads it.
+  [[nodiscard]] std::optional<game::save::SavedSection> takeUnreadSection(std::string_view name);
+
   // Writes the playthrough to a slot at once. A manual slot becomes the playthrough's slot. Only
   // the sleep's own save writes during its care scene; every other save asks savesWait() first.
   core::Result<void> save(game::save::SlotId slot);

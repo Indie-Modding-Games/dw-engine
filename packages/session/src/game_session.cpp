@@ -433,6 +433,19 @@ core::Result<game::save::SaveFile> GameSession::saveFile() const {
   return file;
 }
 
+std::optional<game::save::SavedSection> GameSession::takeUnreadSection(std::string_view name) {
+  if (sections_.version(name) != 0) {
+    return std::nullopt;
+  }
+  const auto found = file_.sections.find(name);
+  if (found == file_.sections.end()) {
+    return std::nullopt;
+  }
+  game::save::SavedSection section = std::move(found->second);
+  file_.sections.erase(found);
+  return section;
+}
+
 core::Result<void> GameSession::save(game::save::SlotId slot) {
   if (!slots_) {
     return core::fail(std::string{messages::NoStorage});

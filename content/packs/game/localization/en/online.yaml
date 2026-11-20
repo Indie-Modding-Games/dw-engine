@@ -193,8 +193,15 @@ coop.joined: "{name} joined the game."
 coop.item_gone: "Too late! Someone else took it."
 # A guest whose host is busy with a long load.
 coop.waiting_host: "Waiting for {name}..."
-# A guest's game is the host's world in memory: nothing of it is saved (multiplayer.md, "Saves in co-op").
-coop.guest_not_saved: "You are a guest: this game is not saved. Your own saves stay as they were."
+# A guest's game is the host's world in memory: only its partner and bag go home to its own save (multiplayer.md,
+# "Saves in co-op"); {name} is the host.
+coop.guest_not_saved: "You are in {name}'s world. Your partner and your bag go home with you; the rest stays here."
+# The guest's partner and bag went back into its own save as its game ended.
+coop.went_home: "Back from {name}'s world: your partner and your bag are in your save."
+# They could not go back (the slot changed or could not be written): the save stays as it was.
+coop.home_failed: "Your partner and your bag could not go home. Your save stays as it was."
+# A save that came back from a co-op game, once its field shows after the load.
+coop.came_home: "Back from {name}'s world: your partner and your bag came home with you."
 # A player training at the gym, under their tag; and the first course of a co-op game
 # (coop-training.md): the world's clock does not stop for it.
 coop.training: "Training"

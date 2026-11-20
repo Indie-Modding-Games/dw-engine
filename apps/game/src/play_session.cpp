@@ -1589,11 +1589,13 @@ bool PlaySession::handle(const ui::UiCommand& command) {
         !praiseScold_.active() && !feedScene_.active() && !fieldToilet_.active() &&
         !fieldPoop_.active()) {
       context_.ui->hide(MenuDocument);
-      screens::publish(
-          *context_.ui,
-          dialogSettings(
-              {.text = "save.to_title_confirm", .file = {}, .question = true, .startOnYes = false}),
-          "dialog.revision");
+      screens::publish(*context_.ui,
+                       dialogSettings({.text = coopGuest_ ? "save.coop_guest_to_title_confirm"
+                                                          : "save.to_title_confirm",
+                                       .file = {},
+                                       .question = true,
+                                       .startOnYes = false}),
+                       "dialog.revision");
       context_.ui->show(DialogDocument, true);
       toTitleAsked_ = true;
       lockNoticeShown_ = false;
