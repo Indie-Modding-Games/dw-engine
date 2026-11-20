@@ -20,6 +20,19 @@ body {
 	white-space: nowrap;
 }
 
+/* The trade key's hint under a name. */
+.tag .trade {
+	display: block;
+	font-size: 13dp;
+	color: #ffd479;
+	text-align: center;
+}
+
+/* The class rule above outranks .hidden on its own. */
+.tag .trade.hidden {
+	display: none;
+}
+
 #notice {
 	position: absolute;
 	left: 15%;

@@ -1,0 +1,53 @@
+/* The item trade between players in the terminal-blue look, as its item trader: blue panels with the original's
+   box frame, cyan rules and yellow focus. */
+
+.box {
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: #0b1c2df2;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	font-family: original-look;
+	color: #d5eaf7;
+}
+
+.row {
+	font-family: original-look-dialogue;
+}
+
+#title { color: #ffe64a; }
+
+.column {
+	border-color: #338bb4;
+	border-radius: 0;
+}
+
+.heading {
+	color: #d5eaf7;
+	border-bottom-color: #338bb4;
+}
+
+button {
+	border: 2dp #338bb4;
+	border-radius: 0;
+	background-color: #102a40;
+	color: #d5eaf7;
+}
+
+button:hover,
+button:focus,
+button.row:hover,
+button.row:focus {
+	border-color: #ffd51e;
+	background-color: #153653;
+}
+
+button.row {
+	border-color: transparent;
+	background-color: transparent;
+}
+
+.row.offered .count,
+.state.ready {
+	color: #ffd51e;
+}

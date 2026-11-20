@@ -149,6 +149,8 @@ screens:
     styles: [ui/skins/original/coop_hud/style]
   coop_battle:
     styles: [ui/skins/original/coop_battle/style]
+  coop_trade:
+    styles: [ui/skins/original/coop_trade/style]
   online_status:
     styles: [ui/skins/original/online/style, ui/skins/original/online_status/style]
   online_rooms:

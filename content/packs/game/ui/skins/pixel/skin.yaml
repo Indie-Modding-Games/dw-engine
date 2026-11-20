@@ -79,6 +79,8 @@ screens:
     styles: [online_rooms/style]
   coop_hud:
     styles: [coop_hud/style]
+  coop_trade:
+    styles: [coop_trade/style]
   online_status:
     styles: [online_status/style]
   partner_menu:

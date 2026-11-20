@@ -17,6 +17,10 @@
 
 namespace dwe::game::inventory {
 
+// Whether a swap of items fits a bag (Inventory::swap): it does, the bag holds fewer of an item
+// than it gives, or it has no room for all it gets (a stack's limit or no free slot).
+enum class SwapCheck : std::uint8_t { Ok, Missing, NoRoom };
+
 // What a save keeps of the inventory.
 struct InventoryState {
   // Every slot the bag can have (max_slots); those past slotCount are not shown and not used.
@@ -68,6 +72,13 @@ public:
   // (item.c: removeItem).
   void remove(assets::ItemHandle item, std::int32_t count);
 
+  // Gives `give` and takes `get` in one go (a co-op trade, an engine addition; the original has no
+  // trades between players): each item given comes out of its stacks first to last, exactly that
+  // many; each item got goes in by the stacking rule, none of it lost. All of it happens, or
+  // nothing when it does not fit (the answer). canSwap only says whether it would.
+  [[nodiscard]] SwapCheck canSwap(std::span<const Stack> give, std::span<const Stack> get) const;
+  SwapCheck swap(std::span<const Stack> give, std::span<const Stack> get);
+
   // Swaps two slots (inventory.c: the menu's move, moveItem).
   core::Result<void> move(std::size_t from, std::size_t to);
 
@@ -96,6 +107,9 @@ public:
 
 private:
   [[nodiscard]] std::span<std::optional<Stack>> usableSlots();
+  // canSwap and swap on a copy of the usable slots, which holds the result when it fits.
+  [[nodiscard]] SwapCheck swapOn(std::vector<std::optional<Stack>>& slots,
+                                 std::span<const Stack> give, std::span<const Stack> get) const;
   [[nodiscard]] std::vector<std::size_t> occupiedSlots() const;
   [[nodiscard]] std::int32_t defeatLossCount() const;
   [[nodiscard]] std::optional<Stack> pickOccupiedStack(ruleset::Random& random) const;

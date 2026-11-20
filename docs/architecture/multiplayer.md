@@ -443,7 +443,7 @@ guests over encoded messages), the co-op case of `packages/game/field/tests/fiel
 `packages/session/tests/story_adapter_tests.cpp`.
 ### 5.9 Rooms of four and the sync diagnostics
 
-What #352 and #359 add (protocol version 6, kinds `0xA0`–`0xA2`).
+What #352 and #359 add (protocol version 7, kinds `0xA0`–`0xA2`).
 
 **Rooms.** A co-op room seats the host and up to three guests. The signaling Worker keeps such a room open while the
 host waits (`apps/versus-signal`, "Rooms of up to four"): the host holds one link waiting for the next guest, each
@@ -548,6 +548,70 @@ host; the guest sees the fighters move and the life bars. Tournament fighters th
 the guest. A helper's item is drawn thrown from the host's tamer. The enemies jump to the host's places when the battle
 starts (each game simulates its own NPCs until then). Drops fall only in the host's world. While the host has its menu
 open, the battle waits for both.
+
+### 6.2 Item trades (#360)
+
+Two players of the same co-op game hand each other items. Money, partners and the shops' trades stay out.
+
+- **Asking.** A player walks up to another one on the same map (at most 500 units apart, five collision cells) and
+  presses `trade` (T; the pad's right stick press). The hint under the other player's tag shows the key while it can be
+  asked. The other one gets a box to accept or refuse; the asker can call the ask off. A player in a battle, a screen,
+  a scene or another trade is busy; an ask for a player who cannot see it now waits and the HUD says so once.
+- **The table.** The `coop_trade` screen (the item trader's three columns, in every skin) shows the player's own bag,
+  what it gives and what the other gives, with amounts, and each side's ready mark. Confirm puts one more of the focused
+  bag item on the table or takes one back; `tab_next` (E) says ready; `cancel` (Ctrl) calls it off. The mouse clicks
+  the rows and buttons. Every change of either offer takes both ready marks back, and a ready names the offers'
+  revision, so a ready for something older is ignored.
+- **What can be given.** What the original lets the player throw away and sell (`droppable`); key items stay. At most
+  8 kinds and 999 of each per offer.
+- **Who referees.** The host runs `game::coop::TradeBroker` for the whole session: it numbers each trade, keeps the
+  two players' offers, checks that both are still near, free and on one map, and closes a trade when one of them
+  leaves. Each player's game keeps its own bag (`TradeParty` on every player, the host's own fed locally) and only that
+  game changes it; the host never writes a guest's bag.
+- **Doing it.** When both are ready on the same revision the trade freezes (no change or cancel is taken) and the
+  broker asks both games to check their side (`TradePrepare`: what it gives, what it gets). Each answers with its bag's
+  check (`Inventory::canSwap`: it has every item, and what it gets fits). Only when both are fine does the broker send
+  `TradeCommit`; each game then swaps in one step (`Inventory::swap`, all or nothing, nothing lost to a full stack)
+  and says so. A side that fails at that point, or a player who leaves after the commit, makes the broker send
+  `TradeRevert` to whoever may have swapped, which swaps back (what the bag took meanwhile stays; only if that no
+  longer fits does the bag go back to its slots before the swap). The reliable lane keeps the revert after the commit,
+  and a commit or revert for a trade a game no longer holds is ignored, so no item is doubled or lost.
+- **Only between bags.** A trade moves items from one player's bag to another's and never touches a chest or the
+  ground: taking an item from the world still goes only through the host's claims (`ItemClaim`, §5.8), so a trade is
+  no second way to take one.
+- **History.** The broker keeps the last 32 closed trades and their outcome; a message for a closed trade id does
+  nothing.
+- **Saves.** The host's side is the host's game, saved as single-player (§5.6). The guest's bag is part of its unsaved
+  copy, so what it trades lives as long as that game, like everything else the guest does.
+
+**Messages** (protocol version 8):
+
+| Type | Name | Direction | Content |
+|---|---|---|---|
+| `0xB0` | `TradeAsk` | client → host | The player asked. |
+| `0xB1` | `TradeAnswer` | client → host | Trade id, accept or refuse. |
+| `0xB2` | `TradeOffer` | client → host | Trade id and the whole offer (items and amounts). |
+| `0xB3` | `TradeConfirm` | client → host | Trade id, the revision it confirms, ready or not. |
+| `0xB4` | `TradeCancel` | client → host | Trade id. |
+| `0xB5` | `TradeState` | host → client | Trade id, its two players, phase, revision, both offers and both ready marks. |
+| `0xB6` | `TradePrepare` | host → client | Trade id, what this side gives and gets. |
+| `0xB7` | `TradeCommit` | host → client | Trade id: swap now. |
+| `0xB8` | `TradeRevert` | host → client | Trade id: undo the swap. |
+| `0xB9` | `TradeReply` | client → host | Trade id, step (prepared or applied) and the bag's check. |
+| `0xBA` | `TradeClosed` | host → client | Trade id, outcome (done, refused, cancelled, left, busy, apart, missing, untradeable, no room) and who caused it. |
+
+All of them go on the reliable lane.
+
+Any two players of a room of up to four trade, two guests included: the host's game reads each guest's trade messages
+from that guest's own link (the link says who sent them) and sends the broker's mail on the link of the player it is
+for (`CoopTradeLink`), so two guests trade through the host.
+
+Limits: the host trusts a guest's check of its own bag (the guest's game is a copy it runs itself).
+
+Tests: `packages/game/coop/tests/trade_tests.cpp` (the whole flow, ready marks and stale revisions, refusals, busy,
+apart, full bags, missing and untradeable items, a failed swap reverted, players leaving before and after the commit,
+four players in two trades, foreign messages and the codec), `packages/game/inventory/tests/bag_tests.cpp` (the swap)
+and `apps/game/tests/coop_trades_tests.cpp`.
 
 ## 7. Phases
 

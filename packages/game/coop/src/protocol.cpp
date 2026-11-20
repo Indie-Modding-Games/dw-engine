@@ -11,7 +11,7 @@ namespace dwe::game::coop {
 namespace {
 
 // The highest kind: the ranges below it that hold no kind decode as another protocol's.
-constexpr std::uint8_t LastKind = SyncReportKind;
+constexpr std::uint8_t LastKind = TradeClosedKind;
 
 // A kind this protocol may decode: any byte outside is another protocol's (versus, lockstep).
 constexpr bool coopKind(std::uint8_t kind) {
@@ -129,6 +129,38 @@ bool getTexts(net::WireReader& in, std::vector<std::string>& texts, std::size_t 
     texts.push_back(std::move(text));
   }
   return in.ok();
+}
+
+// Item trades (protocol.hpp: TradeAsk and the others).
+constexpr std::size_t MaxTradeItemText = 64;
+
+void putTradeItems(net::WireWriter& out, const std::vector<TradeItem>& items) {
+  out.put(static_cast<std::uint8_t>(items.size()));
+  for (const TradeItem& item : items) {
+    out.put(std::string_view{item.item}).put(item.count);
+  }
+}
+
+// A list of items with no id twice, each with 1 to MaxTradeCount.
+bool getTradeItems(net::WireReader& in, std::vector<TradeItem>& items) {
+  const std::uint8_t count = in.get<std::uint8_t>();
+  if (!in.ok() || count > MaxTradeItems) {
+    return false;
+  }
+  std::unordered_set<std::string> ids;
+  for (std::uint8_t i = 0; i < count && in.ok(); ++i) {
+    TradeItem item{.item = in.text(), .count = in.get<std::uint16_t>()};
+    if (item.item.empty() || item.item.size() > MaxTradeItemText || item.count == 0 ||
+        item.count > MaxTradeCount || !ids.insert(item.item).second) {
+      return false;
+    }
+    items.push_back(std::move(item));
+  }
+  return in.ok();
+}
+
+void putTradePlayers(net::WireWriter& out, const std::array<PlayerId, 2>& players) {
+  out.put(players[0]).put(players[1]);
 }
 
 void putSlots(net::WireWriter& out, const std::vector<std::int16_t>& slots) {
@@ -469,6 +501,36 @@ net::Bytes encode(const Message& message) {
           if (body.spoils) {
             put(out, *body.spoils);
           }
+        } else if constexpr (std::is_same_v<T, TradeAsk>) {
+          out.put(TradeAskKind).put(body.with);
+        } else if constexpr (std::is_same_v<T, TradeAnswer>) {
+          out.put(TradeAnswerKind).put(body.trade).put(body.accept);
+        } else if constexpr (std::is_same_v<T, TradeOffer>) {
+          out.put(TradeOfferKind).put(body.trade);
+          putTradeItems(out, body.items);
+        } else if constexpr (std::is_same_v<T, TradeConfirm>) {
+          out.put(TradeConfirmKind).put(body.trade).put(body.revision).put(body.confirmed);
+        } else if constexpr (std::is_same_v<T, TradeCancel>) {
+          out.put(TradeCancelKind).put(body.trade);
+        } else if constexpr (std::is_same_v<T, TradeState>) {
+          out.put(TradeStateKind).put(body.trade);
+          putTradePlayers(out, body.players);
+          out.put(body.phase).put(body.revision);
+          putTradeItems(out, body.offers[0]);
+          putTradeItems(out, body.offers[1]);
+          out.put(body.confirmed[0]).put(body.confirmed[1]);
+        } else if constexpr (std::is_same_v<T, TradePrepare>) {
+          out.put(TradePrepareKind).put(body.trade);
+          putTradeItems(out, body.give);
+          putTradeItems(out, body.get);
+        } else if constexpr (std::is_same_v<T, TradeCommit>) {
+          out.put(TradeCommitKind).put(body.trade);
+        } else if constexpr (std::is_same_v<T, TradeRevert>) {
+          out.put(TradeRevertKind).put(body.trade);
+        } else if constexpr (std::is_same_v<T, TradeReply>) {
+          out.put(TradeReplyKind).put(body.trade).put(body.step).put(body.check);
+        } else if constexpr (std::is_same_v<T, TradeClosed>) {
+          out.put(TradeClosedKind).put(body.trade).put(body.outcome).put(body.by);
         } else {
           out.put(ProfileChunkKind)
               .put(body.transferId)
@@ -1014,6 +1076,113 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
       return core::fail("unknown cooperative leave reason");
     }
     message = Leave{.reason = static_cast<LeaveReason>(reason)};
+    break;
+  }
+  case TradeAskKind: {
+    TradeAsk ask{.with = in.get<PlayerId>()};
+    if (!in.ok() || !validPlayer(ask.with)) {
+      return core::fail("invalid cooperative trade ask");
+    }
+    message = ask;
+    break;
+  }
+  case TradeAnswerKind: {
+    TradeAnswer answer;
+    answer.trade = in.get<std::uint32_t>();
+    if (!getFlag(in, answer.accept) || answer.trade == 0) {
+      return core::fail("invalid cooperative trade answer");
+    }
+    message = answer;
+    break;
+  }
+  case TradeOfferKind: {
+    TradeOffer offer;
+    offer.trade = in.get<std::uint32_t>();
+    if (!in.ok() || offer.trade == 0 || !getTradeItems(in, offer.items)) {
+      return core::fail("invalid cooperative trade offer");
+    }
+    message = std::move(offer);
+    break;
+  }
+  case TradeConfirmKind: {
+    TradeConfirm confirm;
+    confirm.trade = in.get<std::uint32_t>();
+    confirm.revision = in.get<std::uint32_t>();
+    if (!getFlag(in, confirm.confirmed) || confirm.trade == 0) {
+      return core::fail("invalid cooperative trade confirmation");
+    }
+    message = confirm;
+    break;
+  }
+  case TradeCancelKind: {
+    TradeCancel cancel{.trade = in.get<std::uint32_t>()};
+    if (!in.ok() || cancel.trade == 0) {
+      return core::fail("invalid cooperative trade cancel");
+    }
+    message = cancel;
+    break;
+  }
+  case TradeStateKind: {
+    TradeState state;
+    state.trade = in.get<std::uint32_t>();
+    state.players = {in.get<PlayerId>(), in.get<PlayerId>()};
+    const std::uint8_t phase = in.get<std::uint8_t>();
+    state.revision = in.get<std::uint32_t>();
+    if (!in.ok() || state.trade == 0 || !validPlayer(state.players[0]) ||
+        !validPlayer(state.players[1]) || state.players[0] == state.players[1] ||
+        phase > static_cast<std::uint8_t>(TradePhase::Executing) ||
+        !getTradeItems(in, state.offers[0]) || !getTradeItems(in, state.offers[1]) ||
+        !getFlag(in, state.confirmed[0]) || !getFlag(in, state.confirmed[1])) {
+      return core::fail("invalid cooperative trade state");
+    }
+    state.phase = static_cast<TradePhase>(phase);
+    message = std::move(state);
+    break;
+  }
+  case TradePrepareKind: {
+    TradePrepare prepare;
+    prepare.trade = in.get<std::uint32_t>();
+    if (!in.ok() || prepare.trade == 0 || !getTradeItems(in, prepare.give) ||
+        !getTradeItems(in, prepare.get)) {
+      return core::fail("invalid cooperative trade prepare");
+    }
+    message = std::move(prepare);
+    break;
+  }
+  case TradeCommitKind:
+  case TradeRevertKind: {
+    const std::uint32_t trade = in.get<std::uint32_t>();
+    if (!in.ok() || trade == 0) {
+      return core::fail("invalid cooperative trade commit or revert");
+    }
+    message = kind == TradeCommitKind ? Message{TradeCommit{trade}} : Message{TradeRevert{trade}};
+    break;
+  }
+  case TradeReplyKind: {
+    TradeReply reply;
+    reply.trade = in.get<std::uint32_t>();
+    const std::uint8_t step = in.get<std::uint8_t>();
+    const std::uint8_t check = in.get<std::uint8_t>();
+    if (!in.ok() || reply.trade == 0 || step > static_cast<std::uint8_t>(TradeStep::Applied) ||
+        check > static_cast<std::uint8_t>(TradeCheck::NoRoom)) {
+      return core::fail("invalid cooperative trade reply");
+    }
+    reply.step = static_cast<TradeStep>(step);
+    reply.check = static_cast<TradeCheck>(check);
+    message = reply;
+    break;
+  }
+  case TradeClosedKind: {
+    TradeClosed closed;
+    closed.trade = in.get<std::uint32_t>();
+    const std::uint8_t outcome = in.get<std::uint8_t>();
+    closed.by = in.get<PlayerId>();
+    if (!in.ok() || closed.trade == 0 ||
+        outcome > static_cast<std::uint8_t>(TradeOutcome::NoRoom) || !validPlayer(closed.by)) {
+      return core::fail("invalid cooperative trade close");
+    }
+    closed.outcome = static_cast<TradeOutcome>(outcome);
+    message = closed;
     break;
   }
   default:

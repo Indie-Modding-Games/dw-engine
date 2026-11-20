@@ -44,6 +44,8 @@ public:
   // The host, for a guest that does not fight with it: refuses its battle asks as busy and drops
   // its other battle messages (its offers), so nothing waits on them.
   void refuseBattles();
+  // The item trades' messages (coop_trades.hpp), in their own queue; they are sent with send.
+  [[nodiscard]] std::optional<game::coop::Message> receiveTrade();
   // The host's snapshots smoothed for a frame drawn at `now` (the poll clock).
   [[nodiscard]] std::optional<PresentedCoopWorld> presentedWorld(net::Millis now) const;
   // Presence on a guest (for what is shared per map, such as battles): the players the host's
@@ -74,6 +76,7 @@ private:
   NetworkFieldController* remoteController_;
   std::deque<game::coop::Message> incoming_;
   std::deque<game::coop::Message> battles_;
+  std::deque<game::coop::Message> trades_;
   game::coop::ProfileAssembler profileAssembler_;
   std::deque<ReceivedProfile> profiles_;
   std::optional<std::uint32_t> profileTransferId_;

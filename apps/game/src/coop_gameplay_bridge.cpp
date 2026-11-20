@@ -1,6 +1,7 @@
 #include "coop_gameplay_bridge.hpp"
 
 #include <algorithm>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
@@ -16,6 +17,25 @@ bool isBattleMessage(const game::coop::Message& message) {
          std::holds_alternative<game::coop::BattleAction>(message) ||
          std::holds_alternative<game::coop::BattleOffer>(message) ||
          std::holds_alternative<game::coop::BattleEnd>(message);
+}
+
+bool isTradeMessage(const game::coop::Message& message) {
+  return std::visit(
+      [](const auto& body) {
+        using T = std::decay_t<decltype(body)>;
+        return std::is_same_v<T, game::coop::TradeAsk> ||
+               std::is_same_v<T, game::coop::TradeAnswer> ||
+               std::is_same_v<T, game::coop::TradeOffer> ||
+               std::is_same_v<T, game::coop::TradeConfirm> ||
+               std::is_same_v<T, game::coop::TradeCancel> ||
+               std::is_same_v<T, game::coop::TradeState> ||
+               std::is_same_v<T, game::coop::TradePrepare> ||
+               std::is_same_v<T, game::coop::TradeCommit> ||
+               std::is_same_v<T, game::coop::TradeRevert> ||
+               std::is_same_v<T, game::coop::TradeReply> ||
+               std::is_same_v<T, game::coop::TradeClosed>;
+      },
+      message);
 }
 
 } // namespace
@@ -69,6 +89,8 @@ void CoopGameplayBridge::poll(net::Millis now) {
       }
     } else if (isBattleMessage(*message)) {
       battles_.push_back(std::move(*message));
+    } else if (isTradeMessage(*message)) {
+      trades_.push_back(std::move(*message));
     } else {
       incoming_.push_back(std::move(*message));
     }
@@ -146,6 +168,15 @@ std::optional<game::coop::Message> CoopGameplayBridge::receiveBattle() {
     return std::nullopt;
   game::coop::Message message = std::move(battles_.front());
   battles_.pop_front();
+  return message;
+}
+
+std::optional<game::coop::Message> CoopGameplayBridge::receiveTrade() {
+  if (trades_.empty()) {
+    return std::nullopt;
+  }
+  game::coop::Message message = std::move(trades_.front());
+  trades_.pop_front();
   return message;
 }
 

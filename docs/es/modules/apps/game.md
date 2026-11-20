@@ -2366,6 +2366,18 @@ resultado del aliado vuelve en el botín (`BattleScreen::takeAllyResults`);
 como `BattleSpoils`, que aplica el `BattleAdapter::finish` del invitado. El botón `extra` ordena el remate al jugador cuyo
 compañero pelea y anima al ayudante. Tests: `packages/game/coop/tests/battle_tests.cpp`, `packages/session/tests/battle_adapter_tests.cpp`.
 
+**Intercambio de objetos** ([multijugador, §6.2](../../architecture/multiplayer.md)): `CoopTrades` (`coop_trades.hpp`)
+corre el `game::coop::TradeBroker` del anfitrión y el `TradeParty` propio de cada jugador. La acción `trade` (T) se lo
+pide al jugador más cercano dentro de `CoopTradeReach`; cada etiqueta del HUD cooperativo enseña la pista de la tecla
+(`coop_hud.tag.trade`, `coop_hud.tag.<n>.trade`) mientras se le puede pedir. El documento `coop_trade` enseña la petición y después la bolsa del
+jugador, las dos ofertas y las dos marcas de listo, y manda `coop_trade_answer`, `coop_trade_add`, `coop_trade_take`,
+`coop_trade_confirm` y `coop_trade_cancel`. Cada juego cambia su propia bolsa con `InventoryTradeBag`
+(`Inventory::canSwap` e `Inventory::swap`, todo o nada; deshacer cambia de vuelta), y solo se pueden dar los objetos
+que el original deja tirar. El puente de cada invitado entrega sus mensajes de intercambio tal como llegan
+(`CoopGameplayBridge::receiveTrade`); `CoopTradeLink` nombra al jugador del otro lado de cada enlace, así que el
+anfitrión lleva el intercambio de dos jugadores cualesquiera, también dos invitados. Tests: `packages/game/coop/tests/trade_tests.cpp`,
+`apps/game/tests/coop_trades_tests.cpp`.
+
 ## Versus en línea
 
 «Versus en línea» («Online versus» en inglés) sale en el menú del título (con el aspecto moderno es su propia fila;

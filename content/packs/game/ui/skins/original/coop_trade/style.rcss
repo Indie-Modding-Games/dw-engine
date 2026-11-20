@@ -1,0 +1,72 @@
+/* The item trade between players in the original look: the original's windows (theme.rcss .original-box) as the
+   item trader's, its font and grey ink, the heading yellow, square buttons with the yellow selector outline. */
+
+.box {
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: #2d3840e0;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	font-family: original-look;
+	color: #d0d0d0;
+	font-size: 22dp;
+	line-height: 28dp;
+}
+
+#ask { background-color: #293942; }
+
+#title,
+.heading {
+	color: #f8f800;
+}
+
+.column {
+	border: 2dp #505860;
+	border-radius: 0;
+}
+
+.heading {
+	border-bottom-color: #505860;
+}
+
+.row {
+	font-family: original-look-dialogue;
+	height: 32dp;
+	border-radius: 0;
+}
+
+.row.item-field .name,
+.row.item-battle .name,
+.row.item-shared .name {
+	color: #d0d0d0;
+}
+
+.row.offered .count,
+.state.ready {
+	color: #f8f800;
+}
+
+button {
+	border: 2dp #808080;
+	border-radius: 0;
+	background-color: #283038;
+	color: #d0d0d0;
+}
+
+button:hover,
+button:focus,
+button.row:hover,
+button.row:focus {
+	border-color: #f8f800;
+	background-color: #283038;
+}
+
+button.row {
+	border-color: transparent;
+	background-color: transparent;
+}
+
+#help {
+	color: #a0a0a0;
+	font-size: 20dp;
+}
