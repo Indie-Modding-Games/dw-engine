@@ -398,6 +398,7 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(PauseMenu, Option, "generous_talk", Boolean, "Generous talk."),
     entry(PauseMenu, Option, "extra_toilets", Boolean, "Extra toilets."),
     entry(PauseMenu, Option, "angemon_event_zone", Boolean, "Angemon's event zone."),
+    entry(PauseMenu, Option, "whamon_in_water", Boolean, "Whamon in the water."),
     entry(PauseMenu, Option, "smooth_motion", Boolean, "Smooth motion."),
     entry(PauseMenu, Option, "hd_scenery", Boolean, "HD scenery."),
     entry(PauseMenu, Option, "scenery_quality", Text, "Scenery quality: upscaled or smooth."),

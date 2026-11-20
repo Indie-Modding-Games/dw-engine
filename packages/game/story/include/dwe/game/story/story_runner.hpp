@@ -169,6 +169,10 @@ public:
   [[nodiscard]] bool busy() const {
     return pending_.has_value() || !sections_.empty() || continueAt_.has_value() || changingMap_;
   }
+  // The section of the map's script the script stack runs once the current section ends: a map
+  // change's arrival section while the map's entry section runs (map.c: scriptTickChangeMap), if
+  // any.
+  [[nodiscard]] std::optional<std::uint16_t> arrivalAhead() const;
   // The sections now running, the first one requested first.
   [[nodiscard]] std::vector<SectionRef> runningSections() const;
   // The same, each with where it stands in its code (SectionHost::lines).

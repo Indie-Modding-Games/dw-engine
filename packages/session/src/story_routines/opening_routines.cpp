@@ -8,7 +8,7 @@ namespace dwe::session {
 core::Result<void> registerOpeningRoutines(StoryScenesContext& scenes) {
   using Register = core::Result<void> (*)(StoryScenesContext&);
   // One line per routine file.
-  constexpr std::array<Register, 39> Routines{
+  constexpr std::array<Register, 40> Routines{
       &registerDiscardItemRoutine,
       &registerMeritShopRoutine,
       &registerTradeShopRoutine,
@@ -48,6 +48,7 @@ core::Result<void> registerOpeningRoutines(StoryScenesContext& scenes) {
       &registerBossBuildupRoutine,
       &registerShopJobRoutines,
       &registerStoryImprovementRoutine,
+      &registerArrivalSectionRoutine,
   };
   for (const Register add : Routines) {
     if (auto added = add(scenes); !added) {

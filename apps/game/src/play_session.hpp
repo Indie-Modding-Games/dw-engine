@@ -137,6 +137,10 @@ inline constexpr std::string_view ExtraToiletsSetting = "extra_toilets";
 // session::StoryImprovement::AngemonZone): once Angemon's light is freed, his event also starts on
 // the Ice Sanctuary ground floor's corridor, whatever way the player came in.
 inline constexpr std::string_view AngemonEventZoneSetting = "angemon_event_zone";
+// Whamon in the water (an engine improvement, on unless turned off;
+// session::StoryImprovement::WhamonInWater): before the Ogremon event, Whamon waits in the water by
+// its confirm cell at the Secret Beach Cave.
+inline constexpr std::string_view WhamonInWaterSetting = "whamon_in_water";
 // The canyon shop's job (game::shop_job; session::ShopJobAdapter): improved, the default, plays the
 // line of customers and the haggle screen; original plays the original's price menus.
 inline constexpr std::string_view ShopJobModeSetting = "shop_job_mode";

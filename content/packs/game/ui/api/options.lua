@@ -292,6 +292,17 @@ local descriptors = {
     help = "pause_menu.help.angemon_event_zone",
     original = false,
   },
+  -- Whamon in the water: before the Ogremon event, Whamon waits in the water by its confirm spot
+  -- at the Secret Beach Cave (on by default; off, as the original, it stays far back out of
+  -- sight while the player can already talk to it).
+  {
+    name = "whamon_in_water",
+    label = "pause_menu.whamon_in_water",
+    default = true,
+    tab = "game",
+    help = "pause_menu.help.whamon_in_water",
+    original = false,
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).

@@ -238,6 +238,40 @@ Comprobado en vivo (dwe, `icsa01,2` con 322, 323 y 324 puestos): el teletranspor
 (0, 200), como el original; con la opción activa, entrar en la franja reproduce el evento hasta el final (trigger 220
 puesto); desactivada desde la pestaña Juego, la franja corre la sección del original y no empieza nada.
 
+### Whamon en el agua
+
+Una mejora opcional, activa por defecto, pedida tras el reporte de un tester. En el original, Whamon (entidad 5 de la
+Cueva de la Playa Secreta, ogre10, script 136) aparece al fondo en (752, 4022), fuera de cámara, y solo llega al agua en
+(1457, 2916) cuando el trigger 224 (el evento de Ogremon) está activo: la sección de entrada del mapa (0xFE) lo desliza
+ahí, y las secciones de llegada del viaje (0x3C, el primer viaje desde frzl16; 0x3D, desde el script 162) hacen lo mismo
+cuando el jugador llega a lomos de él. Antes de 224 el jugador ya puede hablarle desde las celdas de confirmar de la
+orilla (valor 81, sección 0x51: «Going back to the city?») sin que se vea en pantalla. Medido en el original por w112c
+(2026-11-19, hoja `_work/tmp/w112/sheets/whamon.png`): en la celda de confirmar con 224 limpio, Whamon sigue en (752,
+4022) y la pregunta sale sin Whamon a la vista; dwe hace lo mismo con la opción desactivada.
+
+El ajuste `whamon_in_water` (fila «Whamon en el agua», «Whamon in the water» en inglés, pestaña Juego, guardado en los
+ajustes del usuario) llega a `session::StoryScenes::setImprovement(StoryImprovement::WhamonInWater)`. El parche de
+historia `story/patches/whamon_water_136.lua` del pack del juego envuelve la sección 0xFE: con 224 limpio pregunta a la
+rutina 261 por la mejora 2 y, activa, a la rutina 262 del motor por la sección de llegada que corre tras la entrada
+(`game::story::StoryRunner::arrivalAhead`, respuesta en la variable 254, 0xFF ninguna). Al entrar andando o al cargar
+partida con la opción activa, gira a Whamon a la rotación 3584 (la cabeza hacia la orilla), espera un fotograma (un
+deslizamiento pedido en el mismo hueco terminaría el giro) y lo desliza hacia (1500, 2800) en 8 fotogramas, esperándolo;
+mantiene su clip de reposo. Un deslizamiento puede pararse hasta un paso más allá de su punto (tamer.c:
+tickEntityMoveTo; el deslizamiento de 2 fotogramas a (1457, 2916) del original tras 224 deja a Whamon en (1809, 2363)),
+así que los 8 fotogramas dejan eso a (93, −152) como mucho. Ese punto queda frente a la celda de confirmar (885, 1561),
+fuera de las celdas transitables de la orilla y lejos de la máquina verde (objetos 29 a 56 en torno a (160, 2200)).
+Después corre la sección del original. Tras 224, al llegar en el viaje (0x3C, 0x3D) y con la opción desactivada, la
+sección es la del original, así que las escenas de llegada y el sitio de después del evento no cambian; hablar y el
+viaje (sección 0x51) son los del original. Tests: «the map's entry section knows the arrival section that runs after it»
+(`story_runner_tests.cpp`), «routine 261 tells a story patch whether a story improvement is on», «routine 262 tells a
+map's entry section the arrival section that runs after it» y «the Whamon patch puts Whamon in the water before the
+Ogremon event» (`story_improvement_tests.cpp`). Comprobado en vivo (dwe, 2026-11-19, `ogre11,0` con 224 limpio y luego
+`warp("ogre10 0")`): la rutina 262 responde 255, Whamon acaba en (1589, 2654) con rotación 3584, en el agua junto a la
+orilla, y confirmar en (885, 1561) muestra «Going back to the city?» con Whamon a la vista; «I'm going back» viaja como
+antes. El primer viaje desde frzl16 (175 y 352 puestos) corre la entrada con la rutina 262 respondiendo 60, el parche no
+hace nada y la sección 0x3C se juega como la del original (Whamon en (1465, 2906), rotación 0). Hoja:
+`_work/tmp/w112/sheets/whamon-improvement.png`.
+
 ## Felicitar y regañar
 
 «Felicitar» y «Regañar» del menú del campo (Tab) juegan la escena del original (`partner.c: partnerTickPraiseScold`,

@@ -252,6 +252,7 @@ generous_talk: "Generous talk range"
 # Extra toilets: a few more toilet booths where the partner can go (off by default).
 extra_toilets: "Extra toilets"
 angemon_event_zone: "Angemon on the ground floor"
+whamon_in_water: "Whamon in the water"
 # {tab} is the tab's name.
 reset_question: "Reset the {tab} options?"
 reset_note: "Window mode, look, language and font stay."
@@ -282,6 +283,7 @@ help.choose_egg_after_lives_lost: "When your partner loses all its lives, you ch
 help.generous_talk: "Talk to characters and read signs from a little further, whichever way you face. The original needs you closer."
 help.extra_toilets: "Adds a few more toilet booths, such as the one by the gym sign. Stand in front of one when your partner needs to go. The original has only its own toilets."
 help.angemon_event_zone: "Once Angemon's light is freed, his event starts on the Ice Sanctuary's ground floor however you come back. The original only starts it from the trapdoor stairs."
+help.whamon_in_water: "Before the Ogremon event, Whamon waits in the water by the Secret Beach Cave's shore, where you talk to it. The original leaves it far back, out of sight."
 help.status_extras: "The status page shows tiredness, mistakes, battles, waking hours, lifetime and evolution."
 help.display_mode: "Play in a window or full screen."
 help.vsync: "Syncs the frames with the display so the picture does not tear."

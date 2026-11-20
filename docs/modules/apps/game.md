@@ -237,6 +237,39 @@ patch plays the event on the corridor band once the light is freed" (`story_impr
 original; with the option on, walking into the band plays the event to its end (trigger 220 set); with it off from the
 Game tab, the band runs the original's section and nothing starts.
 
+### Whamon in the water
+
+An optional improvement, on by default, asked for after a tester report. In the original, Whamon (entity 5 of the Secret
+Beach Cave, ogre10, script 136) spawns far back at (752, 4022), off camera, and only comes into the water at (1457,
+2916) once trigger 224 (the Ogremon event) is set: the map's entry section (0xFE) slides it there, and the ride's
+arrival sections (0x3C, the first trip from frzl16; 0x3D, from script 162) do the same when the player comes on its
+back. Before 224 the player can still talk to it from the confirm cells by the shore (value 81, section 0x51: "Going
+back to the city?") while it is not on screen. Measured in the original by w112c (2026-11-19, sheet
+`_work/tmp/w112/sheets/whamon.png`): on the confirm cell with 224 clear, Whamon stays at (752, 4022) and the prompt
+shows with no Whamon in view; dwe does the same with the option off.
+
+The `whamon_in_water` setting (row "Whamon in the water", "Whamon en el agua" in Spanish, Game tab, saved in the user's
+settings) reaches `session::StoryScenes::setImprovement(StoryImprovement::WhamonInWater)`. The story patch
+`story/patches/whamon_water_136.lua` of the game pack wraps section 0xFE: with 224 clear it asks routine 261 for
+improvement 2 and, on, the engine's routine 262 for the arrival section that runs after the entry
+(`game::story::StoryRunner::arrivalAhead`, answered in variable 254, 0xFF none). On a walk in or a loaded save with the
+option on, it turns Whamon to rotation 3584 (its head to the shore), waits a frame (a slide ordered on the same slot
+would end the turn) and slides it toward (1500, 2800) in 8 frames, waiting for it; it keeps its idle clip. A slide can
+stop up to one step past its point (tamer.c: tickEntityMoveTo; the original's 2-frame slide to (1457, 2916) after 224
+leaves Whamon at (1809, 2363)), so the 8 frames keep that within (93, -152) of it. That spot is off the confirm cell
+(885, 1561), outside the shore's walkable cells and clear of the green machine (objects 29 to 56 around (160, 2200)).
+Then the original's section runs. After 224, on a ride in (0x3C, 0x3D) and with the option off, the section is the
+original's, so the ride's arrival scenes and the spot after the event do not change; talking and the ride (section 0x51)
+are the original's. Tests: "the map's entry section knows the arrival section that runs after it"
+(`story_runner_tests.cpp`), "routine 261 tells a story patch whether a story improvement is on", "routine 262 tells a
+map's entry section the arrival section that runs after it" and "the Whamon patch puts Whamon in the water before the
+Ogremon event" (`story_improvement_tests.cpp`). Checked live (dwe, 2026-11-19, `ogre11,0` with 224 cleared, then
+`warp("ogre10 0")`): routine 262 answers 255, Whamon ends at (1589, 2654) with rotation 3584, in the water by the shore,
+and confirming on (885, 1561) shows "Going back to the city?" with Whamon in view; "I'm going back" warps as before. The
+first ride from frzl16 (175 and 352 set) runs the entry with routine 262 answering 60, the patch does nothing and
+section 0x3C plays as the original's (Whamon at (1465, 2906), rotation 0). Sheet:
+`_work/tmp/w112/sheets/whamon-improvement.png`.
+
 ## Praise and scold
 
 "Praise" and "Scold" in the field menu (Tab) play the original's scene (`partner.c: partnerTickPraiseScold`,

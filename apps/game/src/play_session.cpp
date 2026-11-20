@@ -1194,7 +1194,9 @@ constexpr std::array PlayOptions{
     PlayOption{.setting = ExtraToiletsSetting, .saved = &UserSettings::extraToilets},
     PlayOption{.setting = AngemonEventZoneSetting,
                .saved = &UserSettings::angemonEventZone,
-               .fallback = true}};
+               .fallback = true},
+    PlayOption{
+        .setting = WhamonInWaterSetting, .saved = &UserSettings::whamonInWater, .fallback = true}};
 
 RuleChoices ruleChoicesOf(const UserSettings& settings) {
   const std::string difficulty = settings.difficulty.value_or(std::string{DifficultyNormal});
@@ -1225,6 +1227,8 @@ void PlaySession::applyPlayOptions() {
   if (game_.systems.scenes != nullptr) {
     game_.systems.scenes->setImprovement(session::StoryImprovement::AngemonZone,
                                          settings.angemonEventZone.value_or(true));
+    game_.systems.scenes->setImprovement(session::StoryImprovement::WhamonInWater,
+                                         settings.whamonInWater.value_or(true));
   }
   battleScreen_.setQuickStart(settings.quickBattleStart.value_or(false));
   skipEvolution_ = settings.skipEvolution.value_or(false);

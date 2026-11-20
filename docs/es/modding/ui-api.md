@@ -330,6 +330,7 @@ Versión de la API de la interfaz: **0.17.0**.
 | `generous_talk` | opción | sí/no | Conversación generosa. |
 | `extra_toilets` | opción | sí/no | Baños extra. |
 | `angemon_event_zone` | opción | sí/no | Zona del evento de Angemon. |
+| `whamon_in_water` | opción | sí/no | Whamon en el agua. |
 | `smooth_motion` | opción | sí/no | Movimiento suave. |
 | `hd_scenery` | opción | sí/no | Escenarios HD. |
 | `scenery_quality` | opción | texto | Calidad de los escenarios: upscaled o smooth. |
