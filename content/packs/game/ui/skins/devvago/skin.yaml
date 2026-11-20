@@ -77,6 +77,8 @@ screens:
   # The item trade between co-op players: the same boxes.
   coop_trade:
     styles: [coop_trade/style]
+  coop_battle:
+    styles: [coop_battle/style]
   # The bird transport: the original's boxes and the PLACE and POINT labels.
   bird_transport:
     styles: [original_lists/style, bird_transport/style]

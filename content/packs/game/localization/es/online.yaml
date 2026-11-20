@@ -45,6 +45,7 @@ info.mode: "Modo:"
 info.state: "Estado:"
 info.players: "Jugadores:"
 info.visibility: "Acceso:"
+info.difficulty: "Dificultad:"
 visibility.public: "Pública"
 visibility.private: "Privada"
 # El acceso, y si una partida en curso admite jugadores nuevos (#356).

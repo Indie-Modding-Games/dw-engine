@@ -39,11 +39,11 @@
 #sample-badge { font-family: "Pixel Small"; font-size: 26dp; color: #050c1a; }
 
 /* The room's card. */
-#info-box { padding: 18dp 20dp; }
-.scene { background-color: #10223a; decorator: image(nb-on-island cover center center); }
-.info-row { font-family: "Pixel Small"; font-size: 26dp; border-bottom-color: #26364d; }
-.info-label { width: 128dp; color: #b6e4f7; }
-.info-value { left: 128dp; width: 166dp; }
+#info-box { padding: 14dp 16dp; }
+.scene { height: 80dp; background-color: #10223a; decorator: image(nb-on-island cover center center); }
+.info-row { height: 38dp; line-height: 36dp; font-family: "Pixel Small"; font-size: 26dp; border-bottom-color: #26364d; }
+.info-label { width: 130dp; font-size: 18dp; color: #b6e4f7; }
+.info-value { left: 130dp; width: 218dp; font-size: 22dp; }
 .accent { color: #efc63c; }
 
 /* The tabs over the modes and the players. */
@@ -199,5 +199,14 @@
 .toast-icon { border: 0; border-radius: 0; decorator: image(nb-on-info contain center center); }
 #toast-text { font-family: "Pixel Small"; font-size: 22dp; line-height: 24dp; }
 
-#prompts { top: 570dp; width: 404dp; padding: 0 10dp; font-family: "Pixel Small"; font-size: 26dp; }
+#prompts {
+	top: 556dp;
+	width: 404dp;
+	height: 84dp;
+	padding: 4dp 10dp;
+	font-family: "Pixel Small";
+	font-size: 22dp;
+	line-height: 36dp;
+	white-space: normal;
+}
 .prompt { margin-right: 8dp; }

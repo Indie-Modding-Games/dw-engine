@@ -1,5 +1,5 @@
 {
-  "version": "0.26.0",
+  "version": "0.27.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "The value of a setting the game publishes; nil if it does not publish it.", "signature": "(name: string): any"},
@@ -205,6 +205,7 @@
       {"name": "difficulty", "kind": "option", "value": "text", "summary": "Difficulty: normal or easy."},
       {"name": "shop_job_mode", "kind": "option", "value": "text", "summary": "The canyon shop job: improved or original."},
       {"name": "coop_difficulty", "kind": "option", "value": "text", "summary": "How co-op battles scale their enemies: off, standard or hard."},
+      {"name": "coop_open_to_join", "kind": "option", "value": "boolean", "summary": "Whether a co-op game this player hosts takes new players once under way."},
       {"name": "skip_evolution", "kind": "option", "value": "boolean", "summary": "Skip the evolution scene."},
       {"name": "choice_cancel_closes", "kind": "option", "value": "boolean", "summary": "Cancel closes a choice."},
       {"name": "fair_sickness_chance", "kind": "option", "value": "boolean", "summary": "Fair chance of falling sick."},
@@ -858,6 +859,7 @@
       {"name": "online.current.members", "kind": "setting", "value": "number", "summary": "How many players are in the room."},
       {"name": "online.current.in_progress", "kind": "setting", "value": "boolean", "summary": "Whether the room's game is under way (a guest that readies joins it)."},
       {"name": "online.current.open_to_join", "kind": "setting", "value": "boolean", "summary": "Whether the room's game, once under way, takes new players (guests coming back to their seat always get in)."},
+      {"name": "online.current.coop_difficulty", "kind": "setting", "value": "text", "summary": "The host's co-op difficulty: off, standard, hard, or empty until it is known."},
       {"name": "online.member.<n>.name", "kind": "setting", "value": "text", "summary": "A member's name, or empty."},
       {"name": "online.member.<n>.name_key", "kind": "setting", "value": "text", "summary": "The text key of a member's name when it has none of its own."},
       {"name": "online.member.<n>.icon", "kind": "setting", "value": "text", "summary": "The member's profile icon id, or empty when it has not sent one."},
@@ -893,7 +895,7 @@
       {"name": "online.icons", "kind": "query", "value": "table", "summary": "The icons a profile can pick: id and label_key.", "signature": "(): table"},
       {"name": "online.list", "kind": "query", "value": "table", "summary": "The room list: state, error, error_key, total and the rooms matching the filter (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, in_progress, joinable).", "signature": "(): table"},
       {"name": "online.modes", "kind": "query", "value": "table", "summary": "The game modes: id, label_key, description_key, short_key, available and selected.", "signature": "(): table"},
-      {"name": "online.room", "kind": "query", "value": "table", "summary": "The room the player is in, or nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready, in_progress, open_to_join and members (name, icon, host, ready, local).", "signature": "(): table?"},
+      {"name": "online.room", "kind": "query", "value": "table", "summary": "The room the player is in, or nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready, in_progress, open_to_join, coop_difficulty, coop_difficulty_key and members (name, icon, host, ready, local).", "signature": "(): table?"},
       {"name": "online.error_key", "kind": "query", "value": "text", "summary": "The text key of an error code; unknown codes give online.error.unknown.", "signature": "(code: string?): string"},
       {"name": "online.notice_key", "kind": "query", "value": "text", "summary": "The text key of a notice code.", "signature": "(code: string?): string"},
       {"name": "online.open", "kind": "action", "value": "boolean", "summary": "The rooms screens opened.", "signature": "(): boolean"},

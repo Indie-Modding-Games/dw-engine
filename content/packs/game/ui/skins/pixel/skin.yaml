@@ -81,6 +81,8 @@ screens:
     styles: [coop_hud/style]
   coop_trade:
     styles: [coop_trade/style]
+  coop_battle:
+    styles: [coop_battle/style]
   online_status:
     styles: [online_status/style]
   partner_menu:

@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.27.0 | The room shows the host's co-op difficulty before a guest readies (`online.current.coop_difficulty`, `online.room()` `coop_difficulty` and `coop_difficulty_key`), and the `coop_open_to_join` option arrives: whether a co-op game the player hosts takes new players once under way, applied at once to the room it hosts |
 | 0.26.0 | Nine languages: the naming box turns pages of letters (`naming_box.pages`, `naming_box.page`, `naming_box.page_name`, `page` in `naming.state()`), and `ui.upper` and `ui.lower` know accented, Greek and Cyrillic letters |
 | 0.25.0 | The co-op tag says when a player trains at the gym (`coop_hud.tag.training`, `coop_hud.tag.<n>.training`) |
 | 0.24.0 | A game in progress takes players: the room list shows a game under way that has a seat as `in_progress` (`online.list()` rooms gain `in_progress`), the room says whether its game is under way and whether it takes new players (`online.current.in_progress`, `online.current.open_to_join`, `online.room()` `in_progress` and `open_to_join`), and the host opens or closes it to new players (`online.set_open_to_join`, `online_open_to_join`) |
@@ -103,7 +104,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.26.0**.
+UI API version: **0.27.0**.
 
 ### `ui`
 
@@ -330,6 +331,7 @@ UI API version: **0.26.0**.
 | `difficulty` | option | text | Difficulty: normal or easy. |
 | `shop_job_mode` | option | text | The canyon shop job: improved or original. |
 | `coop_difficulty` | option | text | How co-op battles scale their enemies: off, standard or hard. |
+| `coop_open_to_join` | option | yes/no | Whether a co-op game this player hosts takes new players once under way. |
 | `skip_evolution` | option | yes/no | Skip the evolution scene. |
 | `choice_cancel_closes` | option | yes/no | Cancel closes a choice. |
 | `fair_sickness_chance` | option | yes/no | Fair chance of falling sick. |
@@ -1058,6 +1060,7 @@ UI API version: **0.26.0**.
 | `online.current.members` | setting | number | How many players are in the room. |
 | `online.current.in_progress` | setting | yes/no | Whether the room's game is under way (a guest that readies joins it). |
 | `online.current.open_to_join` | setting | yes/no | Whether the room's game, once under way, takes new players (guests coming back to their seat always get in). |
+| `online.current.coop_difficulty` | setting | text | The host's co-op difficulty: off, standard, hard, or empty until it is known. |
 | `online.member.<n>.name` | setting | text | A member's name, or empty. |
 | `online.member.<n>.name_key` | setting | text | The text key of a member's name when it has none of its own. |
 | `online.member.<n>.icon` | setting | text | The member's profile icon id, or empty when it has not sent one. |
@@ -1093,7 +1096,7 @@ UI API version: **0.26.0**.
 | `online.icons(): table` | query | table | The icons a profile can pick: id and label_key. |
 | `online.list(): table` | query | table | The room list: state, error, error_key, total and the rooms matching the filter (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, in_progress, joinable). |
 | `online.modes(): table` | query | table | The game modes: id, label_key, description_key, short_key, available and selected. |
-| `online.room(): table?` | query | table | The room the player is in, or nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready, in_progress, open_to_join and members (name, icon, host, ready, local). |
+| `online.room(): table?` | query | table | The room the player is in, or nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready, in_progress, open_to_join, coop_difficulty, coop_difficulty_key and members (name, icon, host, ready, local). |
 | `online.error_key(code: string?): string` | query | text | The text key of an error code; unknown codes give online.error.unknown. |
 | `online.notice_key(code: string?): string` | query | text | The text key of a notice code. |
 | `online.open(): boolean` | action | yes/no | The rooms screens opened. |

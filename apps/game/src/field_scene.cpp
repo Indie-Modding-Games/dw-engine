@@ -194,30 +194,9 @@ core::Result<void> FieldScene::addCoopGuest(game::field::PlayerId id,
 }
 
 core::Result<void> FieldScene::addCoopGuestPlayer(game::field::PlayerId id, CoopBody& body) {
-  const glm::vec3 origin = field_->player().position;
-  constexpr std::array<glm::vec2, 8> Directions{{{1.0F, 0.0F},
-                                                 {-1.0F, 0.0F},
-                                                 {0.0F, 1.0F},
-                                                 {0.0F, -1.0F},
-                                                 {0.7071F, 0.7071F},
-                                                 {-0.7071F, 0.7071F},
-                                                 {0.7071F, -0.7071F},
-                                                 {-0.7071F, -0.7071F}}};
-  core::Result<void> added = core::fail("no free spawn point for cooperative guest");
-  for (const float distance : {256.0F, 512.0F, 768.0F, 1024.0F}) {
-    for (const glm::vec2 direction : Directions) {
-      const assets::SpawnPoint spawn{
-          .position = origin + glm::vec3{direction.x * distance, 0.0F, direction.y * distance},
-          .yaw = field_->player().yaw};
-      added = field_->addPlayer(id, spawn);
-      if (added)
-        break;
-    }
-    if (added)
-      break;
-  }
-  if (!added)
+  if (auto added = field_->addPlayerNearHost(id); !added) {
     return added;
+  }
   const auto entity = field_->playerEntity(id);
   if (!entity)
     return core::fail("cooperative guest has no field entity");

@@ -255,6 +255,31 @@ bool getFigure(net::WireReader& in, BattleFigure& figure) {
          validCoordinate(figure.z, MaxWorldCoordinate);
 }
 
+void put(net::WireWriter& out, const BattleThrow& thrown) {
+  out.put(thrown.serial).put(thrown.thrower).put(std::string_view{thrown.item}).put(thrown.stage);
+  out.put(thrown.x).put(thrown.z).put(thrown.height).put(thrown.target);
+}
+
+bool getThrow(net::WireReader& in, BattleThrow& thrown) {
+  thrown.serial = in.get<std::uint16_t>();
+  thrown.thrower = in.get<PlayerId>();
+  thrown.item = in.text();
+  const auto stage = in.get<std::uint8_t>();
+  thrown.x = in.get<std::int32_t>();
+  thrown.z = in.get<std::int32_t>();
+  thrown.height = in.get<std::int32_t>();
+  thrown.target = in.get<std::uint8_t>();
+  if (!in.ok() || stage > static_cast<std::uint8_t>(BattleThrowStage::Landed)) {
+    return false;
+  }
+  thrown.stage = static_cast<BattleThrowStage>(stage);
+  return validPlayer(thrown.thrower) && !thrown.item.empty() &&
+         thrown.item.size() <= MaxBattleText && thrown.target < MaxBattleFighters &&
+         validCoordinate(thrown.x, MaxWorldCoordinate) &&
+         validCoordinate(thrown.z, MaxWorldCoordinate) &&
+         validCoordinate(thrown.height, MaxWorldCoordinate);
+}
+
 void put(net::WireWriter& out, const BattleSpoils& spoils) {
   out.put(spoils.hp).put(spoils.mp);
   putInts(out, spoils.statGains);
@@ -379,7 +404,7 @@ net::Bytes encode(const Message& message) {
           for (const LobbySeat& seat : body.seats) {
             out.put(seat.id).put(std::string_view{seat.name}).put(seat.state);
           }
-          out.put(body.playing).put(body.open);
+          out.put(body.playing).put(body.open).put(body.difficulty);
         } else if constexpr (std::is_same_v<T, SyncWatch>) {
           out.put(SyncWatchKind).put(body.on);
         } else if constexpr (std::is_same_v<T, SyncReport>) {
@@ -498,6 +523,10 @@ net::Bytes encode(const Message& message) {
           out.put(static_cast<std::uint8_t>(body.figures.size()));
           for (const BattleFigure& figure : body.figures) {
             put(out, figure);
+          }
+          out.put(static_cast<std::uint8_t>(body.throws.size()));
+          for (const BattleThrow& thrown : body.throws) {
+            put(out, thrown);
           }
         } else if constexpr (std::is_same_v<T, BattleAction>) {
           out.put(BattleActionMessageKind).put(body.battle).put(body.kind).put(body.value);
@@ -805,6 +834,17 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
       }
       frame.figures.push_back(figure);
     }
+    const std::uint8_t throws = in.get<std::uint8_t>();
+    if (!in.ok() || throws > MaxBattleThrows) {
+      return core::fail("invalid cooperative battle frame throws");
+    }
+    for (std::uint8_t i = 0; i < throws && in.ok(); ++i) {
+      BattleThrow thrown;
+      if (!getThrow(in, thrown)) {
+        return core::fail("invalid cooperative battle throw");
+      }
+      frame.throws.push_back(std::move(thrown));
+    }
     if (bytes.size() + 1 > net::MaxDatagram) {
       return core::fail("cooperative battle frame exceeds the unreliable datagram limit");
     }
@@ -1054,6 +1094,13 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     // An older host's lobby ends here: its game is not under way.
     if (!in.done() && (!getFlag(in, lobby.playing) || !getFlag(in, lobby.open))) {
       return core::fail("invalid cooperative lobby game state");
+    }
+    if (!in.done()) {
+      const auto difficulty = in.get<std::uint8_t>();
+      if (!in.ok() || difficulty > static_cast<std::uint8_t>(CoopDifficulty::Hard)) {
+        return core::fail("invalid cooperative lobby difficulty");
+      }
+      lobby.difficulty = static_cast<CoopDifficulty>(difficulty);
     }
     message = std::move(lobby);
     break;
