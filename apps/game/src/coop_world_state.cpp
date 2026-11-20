@@ -175,6 +175,16 @@ bool CoopStoryBaseline::apply(game::story::StoryState& state, const coop::WorldE
   return true;
 }
 
+bool CoopStoryBaseline::apply(game::story::StoryState& state, const coop::WorldEdit& edit,
+                              std::vector<CoopFactChange>& changed) {
+  const auto before = current(state, edit);
+  if (!before || !apply(state, edit)) {
+    return false;
+  }
+  changed.push_back({.edit = edit, .previous = before->value});
+  return true;
+}
+
 std::vector<coop::WorldSync> storySync(std::uint32_t revision,
                                        const game::story::StoryState& state) {
   std::vector<bool> triggers(static_cast<std::size_t>(state.triggerCount()));
@@ -189,10 +199,11 @@ std::vector<coop::WorldSync> storySync(std::uint32_t revision,
 }
 
 void applyStorySync(game::story::StoryState& state, CoopStoryBaseline& baseline,
-                    const coop::WorldSync& sync, const coop::WorldScope& shared) {
+                    const coop::WorldSync& sync, const coop::WorldScope& shared,
+                    std::vector<CoopFactChange>& changed) {
   const auto applyShared = [&](const coop::WorldEdit& edit) {
     if (sharedBy(shared, edit)) {
-      (void)baseline.apply(state, edit);
+      (void)baseline.apply(state, edit, changed);
     }
   };
   for (std::size_t i = 0; i < sync.triggers.size(); ++i) {
@@ -311,7 +322,7 @@ bool CoopHostWorld::grant(CoopWorldView& view, const coop::ItemClaim& claim, Coo
     // Taken: its trigger set, here and then on every game (the claimer's item notice gives it).
     const coop::WorldEdit taken{.kind = coop::WorldEditKind::Trigger, .key = claim.key, .value = 1};
     if (!sharedBy(view.shared, taken) || !CoopStoryBaseline::differs(*view.story, taken) ||
-        !facts_.apply(*view.story, taken)) {
+        !facts_.apply(*view.story, taken, share.facts)) {
       return false;
     }
     chestsMayChange = true;
@@ -374,7 +385,7 @@ CoopWorldShare CoopHostWorld::share(CoopWorldView& view) {
     if (taken.change) {
       for (const coop::WorldEdit& edit : taken.change->edits) {
         if (isFact(edit)) {
-          chestsMayChange |= facts_.apply(story, edit);
+          chestsMayChange |= facts_.apply(story, edit, share.facts);
         } else if (isMapEdit(edit)) {
           share.mapEdits.push_back(edit);
         }
@@ -469,7 +480,7 @@ CoopWorldShare CoopGuestWorld::share(CoopWorldView& view) {
       for (const coop::WorldEdit& edit : change->edits) {
         if (isFact(edit)) {
           if (sharedBy(view.shared, edit)) {
-            chestsMayChange |= facts_.apply(story, edit);
+            chestsMayChange |= facts_.apply(story, edit, share.facts);
           }
         } else if (isMapEdit(edit) && change->origin != self_ && change->mapId == view.mapId &&
                    view.settled) {
@@ -478,7 +489,7 @@ CoopWorldShare CoopGuestWorld::share(CoopWorldView& view) {
       }
     } else if (const auto* sync = std::get_if<coop::WorldSync>(&message)) {
       if (replica_.take(*sync)) {
-        applyStorySync(story, facts_, *sync, view.shared);
+        applyStorySync(story, facts_, *sync, view.shared, share.facts);
         chestsMayChange = true;
         if (sync->part + 1 == sync->parts) {
           core::logInfo("coop: the shared world is at the host's revision {}", sync->revision);

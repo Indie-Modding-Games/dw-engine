@@ -38,6 +38,7 @@ class InventoryAdapter;
 #include "bug_report.hpp"
 #include "care_commands.hpp"
 #include "chart_requirements.hpp"
+#include "coop_npc_presence.hpp"
 #include "coop_world_state.hpp"
 #include "curling_screen.hpp"
 #include "death_scene.hpp"
@@ -392,6 +393,10 @@ public:
   // story, its ground items and chests, and the map edits its scripts made in that tick (handed
   // once). Only a co-op game records the map edits.
   [[nodiscard]] CoopWorldView takeCoopWorld();
+  // After co-op applied the shared world's changes of a tick: the NPCs the other players' story
+  // changes (`facts`) bring to or take off this map, shown once it stands still
+  // (coop_npc_presence.hpp).
+  void followCoopFacts(std::span<const CoopFactChange> facts);
   [[nodiscard]] std::string_view partnerSpecies() const {
     return game_.session->partner().state().species;
   }
@@ -614,6 +619,10 @@ private:
   bool coopGuest_ = false;
   // The map edits this tick's scripts made, for co-op to share (takeCoopWorld).
   std::vector<game::coop::WorldEdit> coopMapEdits_;
+  // What other players' story changes do to this map's NPCs, and the map heads' spawns it reads
+  // (field/npc_spawns, read on the first change).
+  CoopNpcPresence coopNpcs_;
+  std::optional<std::vector<game::field::NpcSpawnRule>> npcSpawns_;
   // Whether the dialog on screen is the story lock's message.
   bool lockNoticeShown_ = false;
   std::optional<MovieMoment> movieRequest_;

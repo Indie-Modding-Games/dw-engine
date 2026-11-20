@@ -83,6 +83,11 @@ if (auto change = field.takeMapChange()) {
   `sets_flags` of the taken warp; afterward the field decides the map's tiles again (`refreshScriptWarps`).
   `keepsOff(trigger)` says which tiles the click-to-go avoids (not the warp tile the player is standing on).
   See [script warps](../../architecture/script-warps.md).
+- **NPCs of the map's head section** (`npc_spawns.hpp`): those of `field/npc_spawns` (each NPC the MAPHEAD section
+  spawns, with its condition). `npcPresenceChange` says which slots a change of facts empties and which spawns it
+  brings in; `GuardFacts::variables` reads the byte a `pstat` test compares (unset, the test is unknown, so the script
+  warps are unchanged). Co-op uses it to show another player's recruit at once (see
+  [multiplayer](../../architecture/multiplayer.md)).
 - **NPCs that see the player** (`FieldNpcs`, with `npc.tracking` in `field/rules`): depending on the `followMode` of their
   record, an NPC looks at the player, runs to where it saw them and returns, or follows them while they are in its radius
   (`overworld.c: NPCEntityTickOverworld`). While it reacts it does not follow its route. If an NPC with `autotalk` bumps into
@@ -322,5 +327,5 @@ Each leg starts when the fade in releases the player (a click while it holds the
 points at the next point of the path as soon as a step reaches the current one: the player advances the run of one frame
 (50 units) at once.
 Each piece also has its own: `partner_follow_tests.cpp`, `player_trail_tests.cpp`, `field_items_tests.cpp`,
-`script_warps_tests.cpp`, `boss_arrival_tests.cpp`, `white_fade_tests.cpp` and `reachability_tests.cpp` (slow: that a new
+`script_warps_tests.cpp`, `npc_spawns_tests.cpp`, `boss_arrival_tests.cpp`, `white_fade_tests.cpp` and `reachability_tests.cpp` (slow: that a new
 game reaches its maps and comes back).

@@ -48,13 +48,17 @@ inline constexpr std::string_view ItemCountTestName = "item_count";
 inline constexpr std::string_view MoneyTestName = "money";
 inline constexpr std::string_view StatTestName = "stat";
 inline constexpr std::string_view ConditionTestName = "condition";
+// A story variable (pstat) test: read only with GuardFacts::variables, which the field's own warps
+// leave empty.
+inline constexpr std::string_view VariableTestName = "pstat";
 
 // The script's stat whose value the original compares as signed (script_value.c: scriptCompareStat,
 // the happiness).
 inline constexpr std::int32_t SignedScriptStat = 9;
 
-// An IF entry. The field reads trigger tests, the bag's item counts, the money and the partner's
-// stats and conditions; any other test is kept by its name and is never decided.
+// An IF entry. The field reads trigger tests, the bag's item counts, the money, the partner's stats
+// and conditions and the story's variables; any other test is kept by its name and is never
+// decided.
 struct GuardTest {
   std::string test; // the listing's name: "trigger", "pstat", "item_count"...
   TestCombine combine = TestCombine::Replace;
@@ -167,6 +171,8 @@ using MoneyReader = std::function<std::optional<std::int64_t>()>;
 using StatReader = std::function<std::optional<std::int64_t>(std::int32_t stat)>;
 // The partner's conditions as the original's bits (params.h: CONDITION_*).
 using ConditionReader = std::function<std::optional<std::uint32_t>()>;
+// A story variable (script_interp.c: readPStat), by number.
+using VariableReader = std::function<std::optional<std::int64_t>(std::int32_t variable)>;
 
 // Sets or clears a story trigger: what a script warp the field takes sets on its way (sets_flags).
 using TriggerWriter = std::function<void(std::int32_t trigger, bool set)>;
@@ -182,6 +188,7 @@ struct GuardFacts {
   MoneyReader money;
   StatReader stat;
   ConditionReader conditions;
+  VariableReader variables;
 };
 
 // The decision of a guard, in three values: every term must hold. A recursion, a test of a trigger

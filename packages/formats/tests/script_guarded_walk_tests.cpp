@@ -61,6 +61,17 @@ void ifTriggerElseGoto(ScriptBuilder& script, unsigned trigger, bool clear, unsi
   script.u8({0x19, 0x00});
 }
 
+// IF variable == value, else go to `target` (the entry {code 0x08, pad, variable, value}).
+void ifVariableElseGoto(ScriptBuilder& script, unsigned variable, unsigned value, unsigned target) {
+  script.u8({0x19, 0x00, 0x08, 0x00, variable, value});
+  script.u8({0x18, 0x00}).u16(target);
+  script.u8({0x19, 0x00});
+}
+
+void setVariable(ScriptBuilder& script, unsigned variable, unsigned value) {
+  script.u8({0x1E, 0x00, variable, value});
+}
+
 void warpTo(ScriptBuilder& script, unsigned screen, unsigned exit) {
   script.u8({0x4B, screen, exit, NoSection});
 }
@@ -83,6 +94,10 @@ void callRoutine(ScriptBuilder& script, unsigned routine) {
 
 void giveItem(ScriptBuilder& script, unsigned item) {
   script.u8({0x28, 0x00, item, 1});
+}
+
+void setDigimon(ScriptBuilder& script, unsigned species, unsigned slot, bool autotalk) {
+  script.u8({0x47, species, slot, autotalk ? 1U : 0U});
 }
 
 void endSection(ScriptBuilder& script) {
@@ -644,6 +659,111 @@ TEST_CASE(
   CHECK(dwe::formats::script::warpViaOf(80) == WarpVia::Confirm);
   CHECK(dwe::formats::script::warpViaOf(dwe::formats::script::EnterSection) == WarpVia::Enter);
   CHECK(dwe::formats::script::warpViaOf(3) == WarpVia::Other);
+}
+
+TEST_CASE("each NPC a map's MAPHEAD section spawns comes with the decision that leads to it") {
+  constexpr std::uint16_t Map = 5;
+  constexpr std::uint16_t Global = 0x40;
+  constexpr std::uint16_t MapScript = 1;
+  constexpr unsigned Recruited = 232;
+  ScriptBuilder mapHead{{{Map, 16}, {dwe::formats::script::NewGameSection, 44}, {Global, 52}}};
+  setScript(mapHead, MapScript, Map);                                  // 16
+  ifTriggerElseGoto(mapHead, Recruited, true, 38);                     // 22: until recruited
+  setDigimon(mapHead, 152, 1, false);                                  // 34
+  setDigimon(mapHead, 77, 0, true);                                    // 38: always
+  endSection(mapHead);                                                 // 42
+  setScript(mapHead, MapScript, dwe::formats::script::NewGameSection); // 44
+  endSection(mapHead);                                                 // 50
+  setDigimon(mapHead, 9, 2, false);                                    // 52: loads no map's script
+  endSection(mapHead);
+  ScriptBuilder mapScript{{{dwe::formats::script::EnterSection, 8}}};
+  endSection(mapScript);
+  const std::map<std::uint16_t, Prepared> scripts{
+      {dwe::formats::script::MapHeadScript, prepare(mapHead)}, {MapScript, prepare(mapScript)}};
+  const auto spawns = dwe::formats::script::findMapHeadSpawns(lookupOf(scripts));
+  REQUIRE(spawns.size() == 2);
+  CHECK(spawns[0].map == Map);
+  CHECK(spawns[0].section == Map);
+  CHECK(spawns[0].slot == 1);
+  CHECK(spawns[0].species == 152);
+  CHECK_FALSE(spawns[0].autotalk);
+  REQUIRE(spawns[0].guard.terms.size() == 1);
+  const BranchTerm& recruit = branchOf(spawns[0].guard.terms[0]);
+  REQUIRE(recruit.tests.size() == 1);
+  CHECK(recruit.tests[0].test == dwe::formats::script::ConditionTest::Trigger);
+  CHECK(recruit.tests[0].code == 0x01); // a clear trigger
+  REQUIRE_FALSE(recruit.tests[0].arguments.empty());
+  CHECK(recruit.tests[0].arguments.back().value == static_cast<std::int32_t>(Recruited));
+  CHECK(recruit.holds);
+  CHECK(spawns[1].slot == 0);
+  CHECK(spawns[1].autotalk);
+  CHECK(spawns[1].guard.terms.empty());
+
+  const dwe::formats::script::MapName mapName =
+      [](std::uint16_t map) -> std::optional<std::string> {
+    return map == Map ? std::optional<std::string>{"room01"} : std::nullopt;
+  };
+  const auto document =
+      dwe::formats::script::mapHeadSpawnsToYaml(spawns, lookupOf(scripts), mapName);
+  const auto problems = dwe::formats::test::checkAgainstSchema(document, "npc_spawns");
+  CHECK_MESSAGE(problems.empty(), (problems.empty() ? std::string{} : problems.front()));
+  const auto yaml = dwe::core::emitYaml(document);
+  REQUIRE(yaml.has_value());
+  CHECK(yaml->starts_with("spawns:\n- map: room01\n  slot: 1\n  species: 152\n  autotalk: false\n"
+                          "  guard:\n    terms:\n    - if:\n      - test: trigger\n"));
+  CHECK(yaml->contains("  source:\n    script: 0\n    section: 5\n    offset: 34\n"));
+}
+
+TEST_CASE(
+    "a MAPHEAD spawn's paths are simplified, and the variables its section writes are named") {
+  constexpr std::uint16_t Map = 5;
+  constexpr std::uint16_t OtherMap = 6;
+  constexpr std::uint16_t MapScript = 1;
+  constexpr unsigned Chapter = 38;
+  constexpr unsigned Rolled = 42;
+  ScriptBuilder mapHead{{{Map, 12}, {OtherMap, 56}}};
+  setScript(mapHead, MapScript, Map);          // 12
+  ifVariableElseGoto(mapHead, Chapter, 3, 34); // 18
+  setTrigger(mapHead, 9);                      // 30: the arms meet with different triggers
+  ifVariableElseGoto(mapHead, Chapter, 3, 50); // 34: the same test again
+  setDigimon(mapHead, 16, 4, false);           // 46: only in chapter 3
+  setDigimon(mapHead, 77, 0, false);           // 50: on every path
+  endSection(mapHead);                         // 54
+  setScript(mapHead, MapScript, OtherMap);     // 56
+  setVariable(mapHead, Rolled, 1);             // 62: the section writes what it tests
+  ifVariableElseGoto(mapHead, Rolled, 1, 82);  // 66
+  setDigimon(mapHead, 5, 6, false);            // 78
+  endSection(mapHead);                         // 82
+  ScriptBuilder mapScript{{{dwe::formats::script::EnterSection, 8}}};
+  endSection(mapScript);
+  const std::map<std::uint16_t, Prepared> scripts{
+      {dwe::formats::script::MapHeadScript, prepare(mapHead)}, {MapScript, prepare(mapScript)}};
+  const auto spawns = dwe::formats::script::findMapHeadSpawns(lookupOf(scripts));
+  REQUIRE(spawns.size() == 3);
+  // Chapter 3 twice is one test, and "not chapter 3, then chapter 3" cannot run.
+  CHECK(spawns[0].slot == 4);
+  REQUIRE(spawns[0].guard.terms.size() == 1);
+  CHECK(branchOf(spawns[0].guard.terms[0]).tests[0].test ==
+        dwe::formats::script::ConditionTest::Pstat);
+  CHECK(branchOf(spawns[0].guard.terms[0]).holds);
+  CHECK(spawns[0].sectionWrites.empty());
+  // Reached whatever the chapter: no decision left.
+  CHECK(spawns[1].slot == 0);
+  CHECK(spawns[1].guard.terms.empty());
+  CHECK(spawns[2].slot == 6);
+  REQUIRE(spawns[2].guard.terms.size() == 1);
+  CHECK(spawns[2].sectionWrites == std::vector<std::uint16_t>{Rolled});
+
+  const dwe::formats::script::MapName mapName = [](std::uint16_t) {
+    return std::optional<std::string>{};
+  };
+  const auto document =
+      dwe::formats::script::mapHeadSpawnsToYaml(spawns, lookupOf(scripts), mapName);
+  const auto problems = dwe::formats::test::checkAgainstSchema(document, "npc_spawns");
+  CHECK_MESSAGE(problems.empty(), (problems.empty() ? std::string{} : problems.front()));
+  const auto yaml = dwe::core::emitYaml(document);
+  REQUIRE(yaml.has_value());
+  CHECK(yaml->contains("section_writes:"));
 }
 
 TEST_CASE("a new game's spawn on a step cell makes the opening's map change at once") {

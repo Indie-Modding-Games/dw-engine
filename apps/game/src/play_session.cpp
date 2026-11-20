@@ -4,6 +4,7 @@
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/game/battle/combatant.hpp>
+#include <dwe/game/field/npc_spawns.hpp>
 #include <dwe/game/inventory/inventory.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/ruleset/species_extra.hpp>
@@ -2081,6 +2082,41 @@ float PlaySession::speciesScale(std::string_view species) const {
 
 screens::ScreenSettings PlaySession::partnerStatus() const {
   return partnerMenu_.statusSettings();
+}
+
+void PlaySession::followCoopFacts(std::span<const CoopFactChange> facts) {
+  session::StoryAdapter* story = game_.systems.story;
+  if (story == nullptr) {
+    return;
+  }
+  coopNpcs_.note(scene_->mapSerial(), facts);
+  if (!coopNpcs_.pending()) {
+    return;
+  }
+  if (!npcSpawns_) {
+    auto read = game::field::loadNpcSpawns(*context_.files);
+    if (!read) {
+      core::logWarning("coop: field/npc_spawns: {}", read.error().message);
+    } else if (read->empty()) {
+      core::logInfo("coop: the content has no field/npc_spawns (extracted by an older dwx): NPCs "
+                    "follow other players' story changes on the next map load");
+    }
+    npcSpawns_ = read ? std::move(*read) : std::vector<game::field::NpcSpawnRule>{};
+  }
+  const game::field::Field& field = scene_->field();
+  const bool ready = !field.mapId().empty() && !field.mapChangePending() && !story->scriptRunning();
+  game::field::GuardFacts now =
+      session::fieldGuardFacts(*game_.session, game_.systems.inventory, *story);
+  now.variables = [story](std::int32_t variable) -> std::optional<std::int64_t> {
+    const auto value = story->state().variable(variable);
+    return value ? std::optional<std::int64_t>{*value} : std::nullopt;
+  };
+  (void)coopNpcs_.follow(
+      *npcSpawns_, field.mapId(), scene_->mapSerial(), ready, now,
+      {.npcs = &scene_->npcs(), .spawn = [story](const game::field::NpcSpawnRule& spawn) {
+         return story->spawnNpc(spawn.species, static_cast<std::int64_t>(spawn.slot),
+                                spawn.autotalk);
+       }});
 }
 
 CoopWorldView PlaySession::takeCoopWorld() {

@@ -143,6 +143,10 @@ public:
   // The field's NPCs the story's NPC orders change (story_npcs.hpp); they must outlive the
   // attachment, and nullptr detaches.
   void attachNpcs(game::field::FieldNpcs* npcs);
+  // Puts a map record's NPC on the attached field as the map-head's spawn_npc does, without holding
+  // the world: co-op shows at once an NPC another player's story change brings
+  // (docs/architecture/multiplayer.md). False when nothing spawned.
+  bool spawnNpc(std::int64_t species, std::int64_t slot, bool autotalk);
   // Asks for the sections of the NPCs the player touched or talked to in the last field tick, as
   // events, at the next frame; a running script drops them (tamer.c: checkMapInteraction).
   void runNpcContacts(std::span<const game::field::NpcContact> contacts);

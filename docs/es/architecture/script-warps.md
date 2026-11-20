@@ -271,6 +271,13 @@ líneas viejo, módulos escritos a mano, los parches de historia y los errores).
   un `IF` de disparadores que el oráculo sabe, el camino no es `unstructured` y el warp tiene mapa de destino. Los
   que no se pueden decidir (otras pruebas, elecciones del jugador o de una variable, caminos no estructurados) no se
   toman y se registran una vez por mapa y casilla (`ScriptWarpUndecided`).
+- **Las mismas condiciones para los NPC de la cabecera**: `dwx extract` también escribe `field/npc_spawns`, cada NPC
+  que la sección MAPHEAD de un mapa coloca (`set_digimon`) con la condición de su camino, en la forma de arriba,
+  simplificada (una prueba que el camino ya hizo no se repite, un camino que se contradice se descarta y dos caminos que
+  difieren en una decisión pasan a ser uno). Esas
+  condiciones también llevan pruebas `pstat` (un byte de variable contra un valor); `GuardFacts::variables` las lee y
+  sin ese lector quedan desconocidas, así que los warps de arriba deciden exactamente como antes. El cooperativo las usa
+  (ver [multijugador](multiplayer.md)).
 - **Política de lo desconocido** (`UnknownPolicy`, `script_warps.hpp`): decide qué hace el campo con las dos cosas
   que la extracción dice no saber, y solo con ellas. `decide(warp, oráculo, política)` da la verdad y lo que la
   política dejó pasar.

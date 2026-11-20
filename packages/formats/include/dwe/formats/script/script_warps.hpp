@@ -168,6 +168,36 @@ using MapName = std::function<std::optional<std::string>(std::uint16_t map)>;
 core::YamlNode scriptWarpsToYaml(const ScriptWarps& warps, const ScriptLookup& lookup,
                                  const MapName& mapName);
 
+// An NPC the MAPHEAD section of a map puts on it as the map is entered (set_digimon, overworld.c:
+// scriptSetDigimon), with what its path takes: whether it stands there depends on those decisions
+// (a recruit's NPC is spawned while its trigger is clear). A slot spawned on several paths gives
+// one entry per way through, simplified: a test the path already made is not repeated, a path that
+// contradicts itself is dropped and two paths that differ only in one decision become one.
+struct MapHeadSpawn {
+  std::uint16_t map = 0; // the map whose script the section loads (set_script)
+  std::uint16_t section = 0;
+  std::uint8_t slot = 0;
+  std::uint8_t species = 0;
+  bool autotalk = false;
+  PathGuard guard;
+  ScriptPlace place; // the set_digimon
+  // The variables the guard tests that the section itself writes (set_pstat, store_random...; not
+  // the clock that store_date writes once): what they held when the section ran is not known later.
+  std::vector<std::uint16_t> sectionWrites;
+
+  bool operator==(const MapHeadSpawn&) const = default;
+};
+
+// The NPC spawns of every MAPHEAD section that loads a map's script, by section and in the order
+// the walk finds them.
+std::vector<MapHeadSpawn> findMapHeadSpawns(const ScriptLookup& lookup);
+
+// field/npc_spawns (content/schemas/npc_spawns.schema.json): one entry per spawn with the map, the
+// NPC record's slot, the species, autotalk, the guard (as script_warps writes it) and where it is
+// (`source`).
+core::YamlNode mapHeadSpawnsToYaml(const std::vector<MapHeadSpawn>& spawns,
+                                   const ScriptLookup& lookup, const MapName& mapName);
+
 // data/new_game_story (content/schemas/new_game_story.schema.json): the map, its script, the
 // triggers set and the opening, when there is one.
 core::YamlNode newGameTriggersToYaml(const NewGameTriggers& triggers, const MapName& mapName);
