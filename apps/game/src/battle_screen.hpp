@@ -4,6 +4,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/game/battle/battle.hpp>
 #include <dwe/game/battle/player_retreat.hpp>
+#include <dwe/game/coop/protocol.hpp>
 #include <dwe/screens/battle_intro.hpp>
 #include <dwe/screens/battle_view.hpp>
 #include <dwe/screens/command_menu.hpp>
@@ -166,8 +167,40 @@ public:
   // and hands the opening's frame to its document.
   void showIntro(const EnemyAnchor& anchor);
 
-  // Takes the battle document's commands; false for any other command.
+  // Takes the battle document's commands; false for any other command. In a visitor's battle this
+  // player only helps: the strip's commands and the finisher's button do nothing.
   bool handle(const ui::UiCommand& command);
+
+  // Co-op battles (battle_screen_coop.cpp; docs/architecture/multiplayer.md, §6 decision 3). The
+  // running battle's partner is a visitor's (a co-op guest's, session::BattleRequest::visitor):
+  // that player commands it from its own game, and this one watches and helps.
+  [[nodiscard]] bool visiting() const { return visiting_; }
+  // What the screen shows, for the other player's screen: the opening, the fight, the victory's
+  // poses, the end box, or what follows it.
+  [[nodiscard]] game::coop::BattlePhase coopPhase() const;
+  // A command of the visitor's player, as its strip would give it; false when the battle does not
+  // take it now.
+  bool commandFromVisitor(game::battle::Command command);
+  // The other player's cheer: a press of the finisher's charge buttons.
+  void cheer();
+  // An item from the other player's own bag thrown at the partner: this game's bag lends it one
+  // and throws it, so its own count does not change. False when it is not thrown.
+  bool throwLentItem(std::string_view itemId);
+  // The other player closes the end box.
+  void closeEnd() { close(); }
+  // A visitor's battle's result once it finished (for the visitor's own game), once.
+  [[nodiscard]] std::optional<game::battle::BattleResult> takeVisitorResult() {
+    return std::exchange(visitorResult_, std::nullopt);
+  }
+  // The NPC slots the battle took off the map (they stay off until the map loads again), since
+  // the last call.
+  [[nodiscard]] std::vector<std::int32_t> takeLeftMap() { return std::exchange(leftMap_, {}); }
+  // How the last battle ended, once, for the other player's screen (the story takes takeOutcome).
+  [[nodiscard]] std::optional<game::battle::Outcome> takeCoopOutcome() {
+    return std::exchange(coopOutcome_, std::nullopt);
+  }
+  // Whether the running battle is a fixed fight (story trigger 1: no Run).
+  [[nodiscard]] bool fixedFight() const { return fixedFight_; }
   // The original's square button (battle_tick.c: handleCommands): calls the finisher once its
   // gauge is full, whatever command the strip has.
   void pressFinisher();
@@ -226,6 +259,8 @@ private:
   void endThrow();
   void finish();
   void close();
+  // battle_screen_exit.cpp: an NPC off the map until it loads again (takeLeftMap).
+  bool takeOff(std::int32_t npc);
   // battle_screen_exit.cpp: what the battle leaves on the map.
   [[nodiscard]] bool offScreen(std::int32_t npc, float x, float z) const;
   [[nodiscard]] std::vector<std::int32_t> npcsOnScreen() const;
@@ -272,6 +307,11 @@ private:
   // effect scripts and the bodies.
   std::optional<game::battle::ScriptedFlights> flights_;
   bool ending_ = false;
+  // A visitor's battle (visiting()), its result for the visitor's game, and the NPCs it took off.
+  bool visiting_ = false;
+  std::optional<game::battle::BattleResult> visitorResult_;
+  std::vector<std::int32_t> leftMap_;
+  std::optional<game::battle::Outcome> coopOutcome_;
   // The field's bag document is open over the battle.
   // Enemy life bars over every enemy still standing (setEnemyHpBars).
   bool enemyHpBarsAlways_ = false;

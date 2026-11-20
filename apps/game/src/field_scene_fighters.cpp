@@ -33,9 +33,43 @@ constexpr std::string_view SpeciesModelLeaf = "model";
 
 } // namespace
 
+FieldScene::Actor* FieldScene::battlePartnerActor() const {
+  switch (battlePartner_) {
+  case BattlePartner::Own:
+    break;
+  case BattlePartner::CoopGuest:
+    if (coopGuestPartner_.actor) {
+      return coopGuestPartner_.actor.get();
+    }
+    break;
+  case BattlePartner::CoopHost:
+    if (coopHostPartner_.actor) {
+      return coopHostPartner_.actor.get();
+    }
+    break;
+  }
+  return partnerActor_.get();
+}
+
+std::vector<FieldScene::HeldFigure> FieldScene::heldFigures() const {
+  std::vector<HeldFigure> held;
+  if (const Actor* partner = battlePartnerActor(); partner != nullptr && partner->fighter) {
+    held.push_back({.npc = std::nullopt, .figure = *partner->fighter});
+  }
+  for (const std::unique_ptr<Actor>& actor : npcActors_) {
+    if (!actor->fighter) {
+      continue;
+    }
+    if (const auto slot = field_->npcs().slotOf(actor->entity)) {
+      held.push_back({.npc = static_cast<std::int32_t>(*slot), .figure = *actor->fighter});
+    }
+  }
+  return held;
+}
+
 FieldScene::Actor* FieldScene::fighterActor(std::optional<std::int32_t> npc) const {
   if (!npc) {
-    return partnerActor_.get();
+    return battlePartnerActor();
   }
   if (const auto staged = std::ranges::find(
           stageFighters_, *npc, &std::pair<std::int32_t, std::unique_ptr<Actor>>::first);
@@ -69,6 +103,11 @@ void FieldScene::settleActors(double seconds) {
     }
   };
   glide(*partnerActor_);
+  for (const CoopPartner* remote : {&coopGuestPartner_, &coopHostPartner_}) {
+    if (remote->actor) {
+      glide(*remote->actor);
+    }
+  }
   for (const auto& actor : npcActors_) {
     glide(*actor);
   }
@@ -109,6 +148,11 @@ scene::Pose FieldScene::drawnPose(scene::Entity entity, float alpha) const {
     };
     if (held(*partnerActor_)) {
       return heldPlace(*partnerActor_);
+    }
+    for (const CoopPartner* remote : {&coopGuestPartner_, &coopHostPartner_}) {
+      if (remote->actor && held(*remote->actor)) {
+        return heldPlace(*remote->actor);
+      }
     }
     for (const auto& actor : npcActors_) {
       if (held(*actor)) {
@@ -284,6 +328,11 @@ void FieldScene::releaseFighters(bool fixedFight) {
     }
   };
   release(*partnerActor_);
+  for (const CoopPartner* remote : {&coopGuestPartner_, &coopHostPartner_}) {
+    if (remote->actor) {
+      release(*remote->actor);
+    }
+  }
   // The NPCs that ran off left the map at the intro's end (battle_setup.c:316) while the field
   // did not tick: the battle's hold on them went with them, so there is nothing to give back.
   forgetGoneNpcs();

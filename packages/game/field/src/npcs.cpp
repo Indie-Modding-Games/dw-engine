@@ -805,14 +805,17 @@ void FieldNpcs::move(Npc& npc, float seconds, const assets::MapCollision& collis
   const glm::vec2 facing = ground(assets::forwardOfYaw(transform.yaw));
   // The original tests one frame of its animation's motion ahead.
   const float speed = speedOf(npc.motion);
-  const Blocker blocker = probe(npc, facing * (speed * frameSeconds_), collision, surroundings);
+  const glm::vec2 probeStep = facing * (speed * frameSeconds_);
+  const Blocker blocker = probe(npc, probeStep, collision, surroundings);
   if (blocker != npc.blocker) {
     core::logDebug("[port:npc] entityCheckCollision (map.c:3400): script id {} blocked {} -> {}",
                    npc.scriptId, static_cast<int>(npc.blocker), static_cast<int>(blocker));
   }
   npc.blocker = blocker;
   // overworld.c:1328 (US): an NPC with autotalk that walks into the free player runs its section.
-  if (blocker == Blocker::Player && surroundings.playerFree && npc.autotalk) {
+  // Another player of a co-op game only blocks it: their own game runs that touch.
+  if (blocker == Blocker::Player && surroundings.playerFree && npc.autotalk &&
+      leadingEdgeInside(squareOf(npc), probeStep, surroundings.player)) {
     core::logDebug("[port:npc] NPCEntityTickOverworld (overworld.c:1328): script id {} touches "
                    "the player",
                    npc.scriptId);

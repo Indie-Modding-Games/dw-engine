@@ -243,7 +243,12 @@ core::Result<void> FieldScene::presentCoopHost(std::optional<game::field::Charac
                                                std::optional<game::field::CharacterState> partner,
                                                std::string_view partnerSpecies) {
   coopHostProxyShown_ = false;
-  coopHostPartner_.shown = false;
+  // A battle holds the host's partner on this screen (setBattlePartner): the battle places it.
+  if (coopHostPartner_.actor && coopHostPartner_.actor->fighter) {
+    partner.reset();
+  } else {
+    coopHostPartner_.shown = false;
+  }
   if (state) {
     if (!coopHostProxyActor_) {
       const scene::Entity entity = world_.create();

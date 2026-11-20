@@ -2348,6 +2348,20 @@ mientras tiene algo que enseñar:
 El bucle del juego (`game.cpp`) engancha los dos donde suelta el puente de juego (`coopLinkLoss`). Tests:
 `apps/game/tests/coop_hud_tests.cpp`.
 
+**Combates juntos** ([multijugador, §6.1](../../architecture/multiplayer.md)): `CoopBattles` (`coop_battles.hpp`) corre
+un combate a la vez en el juego del anfitrión. En el invitado, `StorySceneGlue::handBattlesOver` pasa al anfitrión cada
+combate que pide su historia como un `BattleAsk`; el anfitrión lo comprueba (`game::coop::BattleReferee`), lo empieza
+con el compañero del invitado como `session::BattleRequest::visitor` (`PlaySession::startVisitorBattle`;
+`FieldScene::BattlePartner::CoopGuest` lo dibuja sobre el compañero del invitado) y le cuenta al invitado cada combate
+que corre (`BattleBegin`, un `BattleFrame` cada 3 ticks, `BattleEnd`). El campo del invitado se detiene
+(`PlaySession::holdForCoopBattle`) y sus actores toman las figuras de los frames (`FieldScene::holdFighter`; el
+compañero del anfitrión es `BattlePartner::CoopHost`); el documento `coop_battle` muestra las barras de vida, las
+órdenes del que empezó, el ánimo y los objetos de su propia bolsa. En el anfitrión, `BattleScreen::visiting` bloquea sus
+propias órdenes y el remate y toma las del invitado (`commandFromVisitor`, `cheer`, `throwLentItem`, `closeEnd`);
+`BattleAdapter::finishVisitor` deja los bits y los objetos en el mundo del anfitrión, y la parte del compañero vuelve
+como `BattleSpoils`, que aplica el `BattleAdapter::finish` del invitado. El botón `extra` ordena el remate al que empezó
+y anima al ayudante. Tests: `packages/game/coop/tests/battle_tests.cpp`, `packages/session/tests/battle_adapter_tests.cpp`.
+
 ## Versus en línea
 
 «Versus en línea» («Online versus» en inglés) sale en el menú del título (con el aspecto moderno es su propia fila;

@@ -3071,3 +3071,30 @@ TEST_CASE("a script let go takes its glide and its finished clips off the NPCs")
   run(field, 0.5F);
   CHECK(*field.npcs().positionOf(5) == before);
 }
+
+TEST_CASE("an autotalk NPC walking into the co-op guest's body runs no section on the host") {
+  // overworld.c:1328 (US): an NPC that walks into the free player runs its section. In a co-op
+  // game the guest's body only blocks it on the host: the guest's own game runs that touch.
+  const auto touches = [](bool guestInTheWay) {
+    MapDocument map = roomMap("room");
+    const std::size_t slot = addNpc(map, 1200.0F, 0.0F, 7);
+    map.npcs[slot].aiSections = {1, 0, -1, 0, 0, 0, 0, 0};
+    map.npcs[slot].waypoints = {glm::ivec3{-1200, 0, 0}, glm::ivec3{600, 0, 0}};
+    dwe::scene::World world;
+    Field field{world, originalRules()};
+    field.enterMapAt(map, guestInTheWay ? at(0.0F, -1500.0F) : at(0.0F, 0.0F));
+    REQUIRE(field.addPlayer(dwe::game::field::GuestPlayerId,
+                            guestInTheWay ? at(0.0F, 0.0F) : at(0.0F, -1500.0F)));
+    REQUIRE(field.npcs().spawn(
+        {.slot = slot, .species = 1, .autotalk = true, .model = "npc", .radius = 100.0F}));
+    bool touched = false;
+    for (int tick = 0; tick < 240 && !touched; ++tick) {
+      field.tick(Tick);
+      touched = std::ranges::any_of(field.npcContacts(),
+                                    [](const auto& contact) { return contact.scriptId == 7; });
+    }
+    return touched;
+  };
+  CHECK(touches(false));
+  CHECK_FALSE(touches(true));
+}
