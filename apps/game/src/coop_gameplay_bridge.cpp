@@ -57,6 +57,9 @@ void CoopGameplayBridge::poll(net::Millis now) {
     } else if (std::holds_alternative<game::coop::SyncWatch>(*message) ||
                std::holds_alternative<game::coop::SyncReport>(*message)) {
       sync_.push_back(std::move(*message));
+    } else if (std::holds_alternative<game::coop::WorldClock>(*message) ||
+               std::holds_alternative<game::coop::TrainingStatus>(*message)) {
+      training_.push_back(std::move(*message));
     } else if (std::holds_alternative<game::coop::PlayerState>(*message) ||
                std::holds_alternative<game::coop::PlayerCorrection>(*message) ||
                std::holds_alternative<game::coop::Roster>(*message) ||
@@ -153,6 +156,10 @@ std::optional<PresentedCoopWorld> CoopGameplayBridge::presentedWorld(net::Millis
 
 std::vector<game::coop::Message> CoopGameplayBridge::takeSyncMessages() {
   return std::exchange(sync_, {});
+}
+
+std::vector<game::coop::Message> CoopGameplayBridge::takeTrainingMessages() {
+  return std::exchange(training_, {});
 }
 
 std::vector<game::coop::Message> CoopGameplayBridge::takeWorldMessages() {

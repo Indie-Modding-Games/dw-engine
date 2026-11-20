@@ -408,6 +408,10 @@ void GymScreen::tick(double seconds, const game::field::FieldInput& intent) {
   }
 }
 
+std::string GymScreen::courseId() const {
+  return run_ != nullptr ? run_->course().id : std::string{};
+}
+
 void GymScreen::publishRecord(const game::gym::CourseRun& run) {
   // docs/guides/check-training.md: a route reads them with expect_range.
   constexpr std::array<std::string_view, 6> StatNames{"hp",      "mp",    "offense",

@@ -34,8 +34,13 @@ bool throwable(const assets::ItemEntry& entry) {
 } // namespace
 
 bool PlaySession::coopBattleBlocked() const {
-  return battleScreen_.active() || screenStops() || storyBusy() ||
+  // A partner on a gym course is busy too: it trains on until its session ends (#365).
+  return battleScreen_.active() || screenStops() || storyBusy() || gymScreen_.active() ||
          scene_->field().mapChangePending();
+}
+
+std::string PlaySession::trainingCourse() const {
+  return gymScreen_.courseId();
 }
 
 core::Result<void> PlaySession::startVisitorBattle(game::field::PlayerId owner,

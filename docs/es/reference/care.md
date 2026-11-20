@@ -196,6 +196,8 @@ Es parte del cuidado porque gasta tiempo, cansa y baja la felicidad (`src/trn/`)
 
 - **Coste por sesión** (`TRN_advanceTrainingTime`): 1 hora de juego (con todo lo que pasa en una hora), cansancio,
   energía y felicidad.
+  En cooperativo (añadido del motor) el compañero paga la misma hora pero el reloj del mundo compartido no salta;
+  ver [entrenar en un mundo compartido](../architecture/coop-training.md).
 - **Ganancia** (`TRN_calculateTrainingMultiplier`): una base por gimnasio, multiplicada por:
   - aptitud de la especie para ese stat: ×0,8 a ×1,1 (`trainingType` en `RAISE_DATA`);
   - nivel: ×0,9 (bebé y entrenamiento), ×1,0 (novato), ×1,1 (campeón), ×1,2 (definitivo);

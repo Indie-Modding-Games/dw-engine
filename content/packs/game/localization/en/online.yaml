@@ -195,6 +195,10 @@ coop.item_gone: "Too late! Someone else took it."
 coop.waiting_host: "Waiting for {name}..."
 # A guest's game is the host's world in memory: nothing of it is saved (multiplayer.md, "Saves in co-op").
 coop.guest_not_saved: "You are a guest: this game is not saved. Your own saves stay as they were."
+# A player training at the gym, under their tag; and the first course of a co-op game
+# (coop-training.md): the world's clock does not stop for it.
+coop.training: "Training"
+coop.training_clock: "Training in company: the world's time keeps running, and each session counts its own hour for your partner."
 # The names of the sample rooms and players (developer tools).
 sample.room_1: "Saturday adventure"
 sample.room_2: "Easy exploring"

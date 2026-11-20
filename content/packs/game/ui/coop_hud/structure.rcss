@@ -28,8 +28,17 @@ body {
 	text-align: center;
 }
 
-/* The class rule above outranks .hidden on its own. */
-.tag .trade.hidden {
+/* The line that says the player trains at the gym (#365). */
+.tag .training {
+	display: block;
+	font-size: 13dp;
+	color: #8fd8ff;
+	text-align: center;
+}
+
+/* The class rules above outrank .hidden on their own. */
+.tag .trade.hidden,
+.tag .training.hidden {
 	display: none;
 }
 

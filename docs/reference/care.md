@@ -193,6 +193,8 @@ It is part of care because it spends time, tires and lowers happiness (`src/trn/
 
 - **Cost per session** (`TRN_advanceTrainingTime`): 1 game hour (with everything that happens in an hour),
   tiredness, energy and happiness.
+  In co-op (engine addition) the partner pays the same hour but the shared world's clock does not jump; see
+  [training in a shared world](../architecture/coop-training.md).
 - **Gain** (`TRN_calculateTrainingMultiplier`): a base per gym, multiplied by:
   - the species' aptitude for that stat: ×0.8 to ×1.1 (`trainingType` in `RAISE_DATA`);
   - level: ×0.9 (Fresh and In-Training), ×1.0 (Rookie), ×1.1 (Champion), ×1.2 (Ultimate);

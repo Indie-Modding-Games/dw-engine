@@ -511,10 +511,21 @@ void GameSession::countPlayTime(double realSeconds) {
 
 void GameSession::advanceGameTime(double realSeconds) {
   // The field stops game time during a map change (tamer.c: stopGameTime); without a field it
-  // always runs.
-  const bool timeRuns = state_->field == nullptr || state_->field->gameTimeRan();
-  const ruleset::ClockAdvance advance =
-      timeRuns ? state_->clock.advance(realSeconds) : ruleset::ClockAdvance{};
+  // always runs. In co-op a training course holds its player only: the world's clock runs on
+  // (docs/architecture/coop-training.md).
+  const bool shared = clockShare_ != ClockShare::Own;
+  const bool timeRuns =
+      state_->field == nullptr || state_->field->gameTimeRan() || (shared && courseHeld_);
+  ruleset::ClockAdvance advance{};
+  if (clockShare_ == ClockShare::Guest) {
+    follower_.pass(realSeconds);
+    if (timeRuns) {
+      advance = followWorld(realSeconds);
+    }
+  } else if (timeRuns) {
+    advance = state_->clock.advance(realSeconds);
+  }
+  clockRan_ = timeRuns && state_->clock.running() && state_->clock.speed() > 0.0;
   if (!state_->playing) {
     return;
   }
@@ -522,10 +533,83 @@ void GameSession::advanceGameTime(double realSeconds) {
   if (timeRuns && music_) {
     music_->updateBgm();
   }
-  state_->partner.tick(state_->clock, advance, careContext());
+  // The course's partner waits for its hour (train), and a guest's partner does not live again
+  // what it lived before going back to the world's time.
+  const ruleset::ClockAdvance care =
+      shared && courseHeld_ ? ruleset::ClockAdvance{} : unlived(advance);
+  state_->partner.tick(state_->clock, care, careContext());
   for (const std::unique_ptr<SessionSystem>& system : desc_.systems) {
-    system->tick(*this, advance);
+    system->tick(*this, care);
   }
+}
+
+ruleset::ClockAdvance GameSession::followWorld(double realSeconds) {
+  ruleset::GameClock& clock = state_->clock;
+  if (!follower_.heard()) {
+    // Before the host's first word the guest's clock runs on its own, from the host's world it
+    // started with.
+    return clock.advance(realSeconds);
+  }
+  const ruleset::ClockRules& rules = clock.rules();
+  const ClockFollow step =
+      follower_.follow(clock.elapsedFrames(), rules.framesPerSecond, rules.framesPerMinute);
+  if (step.backTo) {
+    core::logInfo("[coop] the guest's clock goes back to the world's: frame {} to {}",
+                  clock.elapsedFrames(), *step.backTo);
+    livedUntil_ = std::max(livedUntil_, clock.elapsedFrames());
+    clock.restore(*step.backTo, 0.0);
+    return {};
+  }
+  if (step.skippedHours > 0) {
+    // The host slept or a story skipped time: the guest's partner skips those hours as a script's
+    // time skip does (partner_impl.c: skipHours), and does not live them frame by frame.
+    core::logInfo("[coop] the world skipped {} hours: the guest's clock follows",
+                  step.skippedHours);
+    if (state_->playing) {
+      state_->partner.skipHours(step.skippedHours, clock);
+    }
+    const auto framesPerHour =
+        static_cast<std::int64_t>(rules.framesPerMinute) * ruleset::MinutesPerHour;
+    clock.restore(clock.elapsedFrames() + (step.skippedHours * framesPerHour),
+                  clock.pendingFrames());
+    livedUntil_ = std::max(livedUntil_, clock.elapsedFrames());
+  }
+  return clock.advanceFrames(step.frames);
+}
+
+ruleset::ClockAdvance GameSession::unlived(const ruleset::ClockAdvance& advance) const {
+  const std::int64_t now = state_->clock.elapsedFrames();
+  if (livedUntil_ <= now - advance.frames) {
+    return advance;
+  }
+  ruleset::ClockAdvance rest = advance;
+  rest.frames = std::max<std::int64_t>(now - livedUntil_, 0);
+  return rest;
+}
+
+void GameSession::shareClock(ClockShare share) {
+  if (share == clockShare_) {
+    return;
+  }
+  clockShare_ = share;
+  follower_.reset();
+  livedUntil_ = 0;
+}
+
+void GameSession::hearWorldClock(const WorldTime& time) {
+  if (clockShare_ == ClockShare::Guest) {
+    follower_.hear(time);
+  }
+}
+
+WorldTime GameSession::worldTime() const {
+  return {.elapsedFrames = state_->clock.elapsedFrames(),
+          .running = clockRan_,
+          .speed = state_->clock.speed()};
+}
+
+void GameSession::holdForCourse(bool held) {
+  courseHeld_ = held;
 }
 
 bool GameSession::playerFree() const {
@@ -963,7 +1047,9 @@ void GameSession::wakeUp() {
 
 core::Result<game::partner::TrainingResult>
 GameSession::train(const game::partner::TrainingRequest& request) {
-  auto trained = state_->partner.train(request, state_->clock);
+  game::partner::TrainingRequest session = request;
+  session.sharedClock = session.sharedClock || clockShare_ != ClockShare::Own;
+  auto trained = state_->partner.train(session, state_->clock);
   afterCommand();
   return trained;
 }
