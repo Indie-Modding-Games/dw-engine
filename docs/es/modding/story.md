@@ -98,8 +98,9 @@ return {
   que el juego antes de sacar los cambios de mapa, así que un `story.warp_to` de un parche llega a
   `field/script_warps`. El recorrido solo sigue lo que sabe leer: `original()` como en una subrutina
   (`return original()`, o `if original() == ENDED then return ENDED end` y seguir), no guardado en una variable
-  (`local r = original()`). Un parche así corre bien en el juego, pero `dwx script-warps` falla y nombra el fichero
-  del parche y su línea.
+  (`local r = original()`). Arriba se pueden nombrar números (`local Whamon <const> = 5`); otros locales y funciones
+  propias del parche no (escribe la prueba en línea, con `if` anidados). Un parche así corre bien en el juego, pero
+  `dwx script-warps` falla y nombra el fichero del parche y su línea.
 - Un parche no ve las `routines` del módulo: corre en su propio entorno. Si una sección necesita código compartido del
   script (el `return routines.at_0100()` del Lua generado), el parche trae su copia como rutina privada: arriba,
   `local routines = {}` y después `function routines.<nombre>() ... end` (sin parámetros y sin `original`). Dentro del
@@ -143,7 +144,9 @@ El [editor de mapas](../modules/apps/mapper.md#eventos) escribe estos parches po
    juego en el estado que la sección necesita, recarga el mapa, lleva al jugador al evento y enseña lo que cambió.
 
 Si el cambio añade o mueve un `story.warp_to`, vuelve a sacar `field/script_warps` con `dwx script-warps` (el editor
-lo hace solo si sabe dónde está `dwx`, en «Archivo → Ajustes…»). Antes de publicar, `dwx validate` sobre el mod.
+lo hace solo si sabe dónde está `dwx`, en «Archivo → Ajustes…»). Si cambia qué NPC coloca una cabecera de mapa
+(script 0), escribe también `field/npc_spawns` con `--spawns`, para que el cooperativo los muestre llegar e irse al
+momento. Antes de publicar, `dwx validate` sobre el mod.
 
 ## Editar escenas con la línea de tiempo
 

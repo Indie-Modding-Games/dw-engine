@@ -1,8 +1,10 @@
 # Online co-op multiplayer (design document)
 
-Status: **proposal** (2026-11-16). None of this is implemented. The game decisions in §6 carry a
-recommendation, but are pending approval. The architecture decision is in
-[ADR 0024](../adr/0024-co-op-with-authoritative-host.md). To resume the work, start at §10.
+Status: **built, being polished** (2026-11-20). Rooms of up to four, the shared world, co-op battles with every
+partner, co-op difficulty, item trades and joining a game in progress are in the game (§5.6 to §6.2); §6 says how each
+game decision turned out and §10 what is left. Sections 1 to 4 and §7 are the plan this started from (2026-11-16), kept
+for its reasoning: where they differ from §5 and §6, those win. The architecture decision is
+[ADR 0024](../adr/0024-co-op-with-authoritative-host.md).
 
 ## 0. Purpose and scope
 
@@ -11,7 +13,7 @@ walking, talking to NPCs, advancing the story and fighting.
 
 **In scope:**
 
-- two players online, a host and a guest;
+- up to four players online, a host and up to three guests (§5.9);
 - a direct connection between PCs over WebRTC, with the signaling Worker used only for the first contact;
 - the host's game world, with its story;
 - the guest with their own player (and their partner, depending on decision 1 of §6).
@@ -20,7 +22,6 @@ walking, talking to NPCs, advancing the story and fighting.
 
 - versus, which already exists and is something else: a standalone lockstep battle ([versus](../modules/game/versus.md));
 - local multiplayer on a single screen, which the project ruled out;
-- more than two players (the design does not close it off, but it is not tested);
 - dedicated servers and persistent games.
 
 ## 1. The idea in one sentence
@@ -438,23 +439,33 @@ triggers and variables (a recruited character is gone, its helper stands in its 
 scene that changes the fact also changes the screen in the game that ran it (the recruit scene takes its NPC away
 itself), but the other games only get the fact. So `dwx extract` writes `field/npc_spawns`: every NPC the head
 sections spawn, with the condition that leads to it (the same conditions as the script warps, plus the byte test of a
-variable). When a fact another player changed arrives, `CoopNpcPresence` compares each NPC's condition on the current
-map before and after it: an NPC whose condition stops holding leaves (as the recruit scene does), and one whose
-condition starts holding comes in (as the next load would place it). It waits for the map to finish loading and for
-any running script, and drops what came before the current map load (that load already read the new facts). The
-player's own changes keep the original behaviour, so the recruiter sees the helper on the next load while the other
-players see it at once. The head section is never run again.
+variable). When a shared fact changes, `CoopNpcPresence` compares each NPC's condition on the current map before and
+after it: an NPC whose condition stops holding leaves (as the recruit scene does), and one whose condition starts
+holding comes in (as the next load would place it). It waits for the map to finish loading and for any running script,
+and drops what came before the current map load (that load already read the new facts). The head section is never run
+again.
+
+- **Another player's change** moves NPCs both ways. Some heads keep a count or roll a die while they place NPCs (File
+  City's visitors: at most three, some picked at random), so whether such an NPC stood there on load is not known from
+  the story alone (`section_writes`). Those still leave when they stand on the map and no way through the head places
+  them any more; they never arrive at once, since the count or the roll could have left them out.
+- **This game's own change** only brings newcomers, once its scene is over: the recruiter sees the helper come as the
+  others do, and a shop opened in town gets its keeper at once. What the scene left standing stays until the next
+  load, as in the original. Single player is unchanged: it never follows anything.
+- **Mods.** A mod that changes a map head in Lua (`story/000.lua` or a story patch of script 0) writes the document
+  again with `dwx script-warps --spawns <file>` ([script warps](script-warps.md#from-the-lua)), as it does for its map
+  changes; without it the base pack's document stays in use.
 
 Not covered: NPCs that a map's own scripts place or move (a scene's walk, the map's entry routine showing or hiding
-objects), conditions the extraction cannot read (a forget or a loop in the section, a stat other than a variable byte, a
-variable the head section writes itself such as a random roll or a counter, listed in `section_writes`),
-heads patched by a mod's Lua (the document comes from the disc), and content extracted by an older dwx (the NPCs then
-follow on the next load, as before). Only the map's live edits travel otherwise; anything else a script does on screen
-stays in the game that ran it.
+objects), conditions the extraction cannot read (a forget or a loop in the section, a stat other than a variable byte),
+and content extracted by an older dwx (the NPCs then follow on the next load, as before). Only the map's live edits
+travel otherwise; anything else a script does on screen stays in the game that ran it.
 
 Tests: `packages/game/coop/tests/world_state_tests.cpp`, `apps/game/tests/coop_world_state_tests.cpp` (a host and two
 guests over encoded messages), `apps/game/tests/coop_npc_presence_tests.cpp` (a recruit on either side over a real
-`CoopLink`), `packages/game/field/tests/npc_spawns_tests.cpp`, the MAPHEAD case of
+`CoopLink`, the recruiter's own helper and a visitor the count leaves undecided),
+`packages/game/field/tests/npc_spawns_tests.cpp`, `apps/dwx/tests/script_warps_command_tests.cpp` (the spawns derived
+from the Lua, a mod's patch included), the MAPHEAD case of
 `packages/formats/tests/script_guarded_walk_tests.cpp`, the co-op case of
 `packages/game/field/tests/field_items_tests.cpp` and of `packages/session/tests/story_adapter_tests.cpp`.
 ### 5.9 Rooms of four and the sync diagnostics
@@ -534,18 +545,20 @@ Tests: `packages/game/coop/tests/protocol_tests.cpp` (fields round trip, admissi
 `apps/game/tests/coop_connection_tests.cpp` (join at 2→3, drop and rejoin by key, no seat back without the key, taking a seat over, a closed game, the grace
 window), `packages/engine/net/tests/signal_tests.cpp` and the game-in-progress tests of `apps/versus-signal/test`.
 
-## 6. Game decisions (pending)
+## 6. Game decisions
 
-| # | Question | Recommendation | Alternative |
-|---|---|---|---|
-| 1 | What does the guest bring? | Their tamer and **their partner** from their own game, as a visitor. | Only a tamer, with no partner: much cheaper, but it contributes less. |
-| 2 | Shared map? | Yes: they go **as a group**, and an exit takes both. | Each in their own map: the host would simulate several `Field` at once. |
-| 3 | Battle | **Decided (C3, first version):** the partner of **whoever starts the battle** fights; the other helps with items from their own bag and cheers, and sees the battle. One battle at a time. Later, both partners together. See §6.1. | Both partners from the start: the battle's sides have to be redone (enemy AI, hits, commands, HUD). |
-| 4 | Progress | The story, the flags, the money and the world belong **to the host**. The guest takes back to their game their partner (stats, age, techniques) and the items they obtain. | Shared progress in both games: it breaks the guest's story. |
-| 5 | Pause and menus | In co-op, menus **do not pause** the world. Only the host pauses with Start, and it pauses for both. | Pause for both with any menu: it interrupts the other player's game all the time. |
-| 6 | Dialogs and scenes | They freeze both players. **Whoever opened them advances**; the other sees the same box. | Anyone advances: faster, but the other's texts get skipped. |
+Proposed on 2026-11-16 with a recommendation each; this is how they were built.
 
-### 6.1 Decision 3 as built (C3)
+| # | Question | As built |
+|---|---|---|
+| 1 | What does the guest bring? | Their character and **their partner** from their own save, as a visitor in the host's world (§5.6). |
+| 2 | Shared map? | Yes: the group goes where the host goes. A guest's own exits are held and the host's map change takes everyone (§5.7). Each game still knows its own map, so a player who is still loading is simply not drawn. |
+| 3 | Battle | **Every partner fights.** Whoever starts it, every free partner on that map joins, up to four (§6.1, [co-op combat](coop-combat.md) §12), and the enemies scale with how many fight ([co-op difficulty](coop-difficulty.md)). |
+| 4 | Progress | The story, the triggers, the money and the world are **the host's**, saved in the host's own slot as single-player (§5.6). Every player's changes to that world go through the host (§5.8). The guest saves nothing; taking what it earned back to its own game is not built yet (§10). |
+| 5 | Pause and menus | Every game runs its own copy of the host's world, so a menu or the pause stops only that player's game; the others play on. A shared battle waits while the host has its menu open (§6.1). |
+| 6 | Dialogs and scenes | A player's scripts run in that player's game: its dialogs and scenes are its own, and the others keep playing. What a scene changes in the world reaches the others through the host (§5.8), and the NPCs it brings or takes away show at once in every game. |
+
+### 6.1 Battles (decision 3)
 
 The guest runs its own copy of the host's world, so a battle both players share has to run in one place. It runs on
 the **host's simulation**:
@@ -667,12 +680,15 @@ and `apps/game/tests/coop_trades_tests.cpp`.
 
 ## 7. Phases
 
+The plan as written on 2026-11-16. C0 to C3 are built (§5, §6.1; every partner fights since #377); of C4 the names
+over the players are built (`coop_hud.tag`) and the guest's progress back is left (§10).
+
 | Phase | Content | Closing criterion | Time |
 |---|---|---|---|
 | **C0, no network** | `PlayerCommands` and the three controllers; screens by actions; `FieldPlayer`; camera and off-screen test outside the renderer; `PlayerRegistry`. | The single-player game does not change (story chain green). A test with two scripted players in the same `Field` (only in tests, never as a local mode). | 2–3 weeks |
 | **C1, see each other walk** | `game/coop` with handshake, joining at a safe point, snapshots, `WorldMirror`, own movement validated by the host. | Two PCs on the same map see each other walk, each with their partner behind, with simulated losses. | ~2 weeks |
 | **C2, interact** | NPCs and tiles per player, replicated dialogs, group map change, menus without pause, disconnection and reconnection. | A stretch of the story played between two PCs. | ~3 weeks |
-| **C3, battle** | According to decision 3 (§6.1). **Done, first version:** host-run battles for both players when they share a map (solo otherwise, #351), the other player's view, help and orders, rewards back to the guest, disconnection in battle. Left: both partners in one battle. | A story battle won in co-op. | 2–6 weeks |
+| **C3, battle** | According to decision 3 (§6.1). **Done, first version:** host-run battles for both players when they share a map (solo otherwise, #351), the other player's view, help and orders, rewards back to the guest, disconnection in battle; then both partners (#374) and every partner (#377). | A story battle won in co-op. | 2–6 weeks |
 | **C4, guest** | The guest's progress back to their game, names over the players, latency indicator, polish. | The guest returns to their game with what they earned. | — |
 
 ### 7.1 Tests
@@ -698,27 +714,36 @@ and `apps/game/tests/coop_trades_tests.cpp`.
 
 ## 9. Open questions
 
-- The six decisions in §6.
-- If the guest brings a partner: how to validate that their game has not been tampered with (probably it is not validated, same
-  as in versus, and the `contentHash` is enough).
-- What the guest sees during a story scene that only the host triggers (script camera for both, according to
-  §4.5, but it remains to be reviewed scene by scene).
-- Whether `ScriptedController` fully replaces the autotest's key injection or lives alongside it.
+- How to check that a guest's game was not tampered with. Today the `contentHash` of the handshake is all, as in
+  versus.
+- What the others should see of a scene only one player runs (§6, decision 6): today each player sees only its own.
+- Whether the guest should take what it earned back to its own save (decision 4), and how without breaking its story.
 
 ## 10. How to resume
 
-1. Reread this document and [ADR 0024](../adr/0024-co-op-with-authoritative-host.md).
-2. Close the decisions in §6 and note them here (change the status from "proposal" to "approved" and the ADR to
-   "Accepted").
-3. Create the cards on the board, one per phase in §7, starting with C0. That phase does not touch the network, so it can
-   start in parallel with the room cards (#291–#294).
-4. First step of C0: `PlayerCommands` and `LocalController`. Move to `LocalController` the code of `apps/game/src/game.cpp`
-   that today builds `FieldInput` and distributes `InputState` to the screens, without changing the behavior. Then,
-   `FieldPlayer` in `packages/game/field`.
-5. The starting files: `packages/game/field/{include/dwe/game/field/field.hpp,src/field.cpp}`,
-   `apps/game/src/{game.cpp,play_session.cpp,field_scene.cpp,field_camera_follow.hpp}`,
-   `packages/session/include/dwe/session/game_session.hpp`, `packages/engine/net/` and `packages/game/versus/` (the network
-   that is reused).
+What is built, by ticket (the issues #351 to #362 are the player stories; they stay open as reference):
+
+| Area | Where |
+|---|---|
+| Saves never touched by co-op (#350) | §5.6 |
+| Authority, players, maps, interpolation (#353 to #356, #358) | §5.7 |
+| Shared world: triggers, chests, ground items, doors, NPCs shown at once (#357) | §5.8 |
+| Rooms of four, sync diagnostics (#352, #359) | §5.9, [room browser](coop-browser-4p.md) |
+| Joining and rejoining a game in progress (#352, #356) | §5.10 |
+| Battles with every partner (#351, #362) and co-op difficulty (#361) | §6.1, [co-op combat](coop-combat.md), [co-op difficulty](coop-difficulty.md) |
+| Item trades (#360) | §6.2 |
+
+What is left, as follow-ups:
+
+- The guest's progress back to its own game (decision 4).
+- One battle per map at once ([co-op combat](coop-combat.md) §12, task 12) and the optional battle mechanics of its §8.
+- The NPCs that a map's own scripts place or move, and the spawns whose condition stays unknown (a random roll in the
+  map head), still follow on the next load (§5.8, «World changes shown at once»).
+
+To pick it up: the protocol's message kinds and what each version added are in
+`packages/game/coop/include/dwe/game/coop/protocol.hpp`; the game side starts in `apps/game/src/coop_*.{hpp,cpp}`
+(`coop_world.hpp` for the shared world, `coop_connection.hpp` for rooms and seats) and the tests named at the end of
+each section. Two games on one PC are the loopback harness of the co-op tests in `apps/game/tests`.
 
 ## 11. Related documents
 

@@ -1,56 +1,84 @@
-# Navegador de salas cooperativas para cuatro jugadores
+# Co-op room browser for four players
 
-Estado: **implementado** (2026-11-20, #352; ver `multiplayer.md` §5.9). Una diferencia con este diseño: en vez de un `peerId` en cada mensaje sobre un único socket, el anfitrión abre un socket por plaza (`/v1/host/<code>?token=&taken=`) y la sala empareja a cada invitado con uno; así cada señal solo llega a su pareja y el protocolo de dos jugadores no cambia. Diseño original (2026-11-17): El límite propuesto es cuatro jugadores en total: un anfitrión y hasta tres invitados. La lista contiene salas cooperativas activas, no servidores dedicados; el mundo se sigue simulando en el anfitrión y el tráfico de juego viaja por WebRTC.
+Status: **built** (2026-11-20, #352; see [multiplayer](multiplayer.md) §5.9 and §5.10). One difference from this
+design: instead of a `peerId` on every message over a single socket, the host opens one socket per seat
+(`/v1/host/<code>?token=&taken=`) and the room pairs each guest with one of them; that way each signal only reaches its
+pair and the two-player protocol does not change. Original design (2026-11-17): the proposed limit is four players in
+all, a host and up to three guests. The list holds active co-op rooms, not dedicated servers; the world is still
+simulated on the host and the game traffic travels over WebRTC.
 
-## Estado actual y motivo del cambio
+## State before the change and why it changes
 
-El Worker `apps/versus-signal` solo empareja un anfitrión y un invitado mediante un código efímero. No enumera salas. `RtcPeerLink` representa un solo par WebRTC, `CoopLink` asigna únicamente el jugador remoto 1, y `FieldScene::addCoopGuest` agrega un solo actor. Cambiar el número en la UI o aceptar tres sockets en el Worker produciría una sala que el juego no puede simular.
+The `apps/versus-signal` Worker only pairs one host and one guest through a short-lived code. It does not list rooms.
+`RtcPeerLink` stands for a single WebRTC pair, `CoopLink` only assigns remote player 1, and
+`FieldScene::addCoopGuest` adds a single actor. Changing the number in the UI or taking three sockets in the Worker
+would give a room the game cannot simulate.
 
-## Contratos que se implementarán
+## Contracts to build
 
-### Sala pública
+### Public room
 
-`RoomListing` llevará `roomId`, `joinCode`, `name`, `message`, `hostName`, `players`, `capacity`, `createdAt` y `state`. `players` estará entre 1 y 4; `state` será `waiting`, `full` o `starting`. El directorio no guardará nombres de guardados, identidad de compañeros ni estado del mundo. Nombre y mensaje tendrán límites de longitud, se tratarán como texto y usarán valores predeterminados. Una sala desaparece al cerrarse o expirar; una sala completa se muestra deshabilitada.
+`RoomListing` carries `roomId`, `joinCode`, `name`, `message`, `hostName`, `players`, `capacity`, `createdAt` and
+`state`. `players` is between 1 and 4; `state` is `waiting`, `full` or `starting`. The directory keeps no save names,
+partner identity or world state. Name and message have length limits, are treated as plain text and have defaults. A
+room disappears when it closes or expires; a full room shows disabled.
 
-### Autoridad y conexiones
+### Authority and connections
 
-El anfitrión conserva autoridad única. Cada invitado necesita un enlace WebRTC independiente con el anfitrión, una identidad asignada en el rango 1..3 y su propio buffer de comandos. El host procesa comandos de los tres invitados dentro del mismo tick autoritativo y publica el estado a cada enlace. No se usará malla completa entre clientes: no añade autoridad y multiplica conexiones.
+The host keeps sole authority. Each guest needs its own WebRTC link with the host, an id in the range 1..3 and its own
+command buffer. The host takes the commands of the three guests within the same authoritative tick and publishes the
+state to each link. There is no full mesh between clients: it adds no authority and multiplies connections.
 
-La señalización debe enrutar cada oferta/respuesta/candidato por `peerId`; no se difundirá SDP a todos los miembros de la sala. La capacidad se confirma atómicamente al reservar el asiento y se libera en salida, desconexión y expiración. Reintentos usan un `requestId` para no reservar asientos duplicados.
+Signaling has to route each offer, answer and candidate by `peerId`; SDP is never broadcast to every member of the
+room. Capacity is confirmed atomically when a seat is reserved and freed on leave, disconnect and expiry. Retries use a
+`requestId` so no seat is reserved twice.
 
-## Archivos y modificaciones previstas
+## Planned files and changes
 
-| Área | Archivos | Cambio |
+| Area | Files | Change |
 |---|---|---|
-| Directorio de salas | `apps/versus-signal/src/worker.ts`, `room.ts`, nuevo `directory.ts`, `wrangler.toml` | DO de directorio; registro/actualización/liberación de salas y asientos; endpoint WebSocket versionado para listar y reservar; limpieza TTL. Migración de binding Durable Object. |
-| Señalización cliente | `packages/engine/net/include/dwe/net/signal.hpp`, `rtc_peer_link.hpp`, `src/signal.cpp`, `src/rtc_peer_link.cpp` | DTO/cliente asíncrono de directorio y ruteo de señalización por participante. Mantener el transporte WebRTC y errores de red existentes. |
-| Protocolo coop | `packages/game/coop/include/dwe/game/coop/protocol.hpp`, `src/protocol.cpp`, `src/link.cpp` | Protocolo nuevo versionado; `MaxPlayers=4`, asignación explícita de id, identidad/remitente validado por enlace y mensajes de lobby/listo/salida. No aceptar paquetes de un id distinto al asignado. |
-| Runtime/app | `apps/game/src/coop_connection.*`, `coop_screen.*`, `coop_gameplay_bridge.*`, `coop_commands.*`, `game.cpp` | Propiedad de tres enlaces invitados, lista/refresh, mensajes del estado de sala, reserva/salida, handshake individual y fan-out del estado. El anfitrión inicia solo cuando cada participante conectado está listo y tiene perfil válido. |
-| Simulación | `packages/game/field/include/dwe/game/field/field.hpp`, `src/field*`; `apps/game/src/field_scene.*`, `play_session.*` | Colección de jugadores indexada por `PlayerId`; alta/baja segura de ids 1..3, comandos independientes, cámara local y compañeros asociados al dueño. Sistemas del mundo siguen ejecutándose una vez por tick. |
-| UI y textos | `content/packs/game/ui/main_menu/{document.rml,logic.lua,structure.rcss}`, `content/packs/game/localization/{es,en}/main_menu.yaml` | Pantalla de búsqueda, actualización, filas de sala, mensaje, plazas ocupadas, estado/errores, crear sala con nombre/mensaje y vista de lobby para anfitrión/invitados. Acciones visibles según rol. |
-| Documentación | `docs/architecture/multijugador.md`, `apps/versus-signal/README.md`, `docs/modulos/services/versus-signal.md` | Reflejar topología, privacidad del directorio, límites, despliegue coordinado y guía manual. |
+| Room directory | `apps/versus-signal/src/worker.ts`, `room.ts`, new `directory.ts`, `wrangler.toml` | Directory Durable Object; registering, updating and freeing rooms and seats; versioned WebSocket endpoint to list and reserve; TTL cleanup. Durable Object binding migration. |
+| Client signaling | `packages/engine/net/include/dwe/net/signal.hpp`, `rtc_peer_link.hpp`, `src/signal.cpp`, `src/rtc_peer_link.cpp` | Directory DTO and async client, signaling routed per participant. Keep the WebRTC transport and the existing network errors. |
+| Co-op protocol | `packages/game/coop/include/dwe/game/coop/protocol.hpp`, `src/protocol.cpp`, `src/link.cpp` | New versioned protocol; `MaxPlayers=4`, explicit id assignment, identity and sender checked per link, lobby, ready and leave messages. No packet from an id other than the assigned one is taken. |
+| Runtime and app | `apps/game/src/coop_connection.*`, `coop_screen.*`, `coop_gameplay_bridge.*`, `coop_commands.*`, `game.cpp` | Ownership of three guest links, list and refresh, room state messages, reserve and leave, a handshake per guest and the state fanned out. The host starts only when every connected participant is ready with a valid profile. |
+| Simulation | `packages/game/field/include/dwe/game/field/field.hpp`, `src/field*`; `apps/game/src/field_scene.*`, `play_session.*` | Players indexed by `PlayerId`; safe add and remove of ids 1..3, separate commands, local camera and partners tied to their owner. World systems still run once a tick. |
+| UI and text | `content/packs/game/ui/main_menu/{document.rml,logic.lua,structure.rcss}`, `content/packs/game/localization/{es,en}/main_menu.yaml` | Search screen, refresh, room rows, message, seats taken, state and errors, creating a room with a name and message, and the lobby for host and guests. Actions shown by role. |
+| Documentation | `docs/architecture/multiplayer.md`, `apps/versus-signal/README.md`, `docs/modules/services/versus-signal.md` | Topology, directory privacy, limits, coordinated deploy and the manual guide. |
 
-## Orden de implementación
+## Build order
 
-1. **Contratos y ciclo de vida del directorio:** definir DTOs, límites y transiciones; hacer que creación, reserva, salida y expiración sean atómicas. La sala es la fuente de verdad de capacidad.
-2. **Señalización multi-peer:** añadir `peerId` a los mensajes y verificar que cada señal llega solo a su pareja anfitrión/invitado. Mantener compatibilidad aislada con el endpoint actual durante la transición; no mezclar dos versiones dentro de una sala.
-3. **Protocolo y runtime host:** cambiar de un `CoopLink` singular a una colección indexada; validar el id asignado y neutralizar por separado el input expirado de cada jugador.
-4. **Simulación para cuatro jugadores:** permitir cuatro `FieldPlayer` en un mapa compartido, con propietario y compañero por jugador; mantener cámara y entrada local en cada instancia.
-5. **UI del navegador:** listar solo salas `waiting`, mostrar `players/capacity` y mensaje, refrescar bajo demanda y periódicamente; reservar asiento antes del handshake; mostrar errores y permitir reintentar sin perder selección.
-6. **Arranque de partida:** anfitrión elige guardado y decide iniciar; cada invitado aporta su perfil de compañero. El mundo/progreso y cambios de mapa siguen perteneciendo al host.
-7. **Despliegue:** desplegar el Worker con migración y endpoint nuevo antes de distribuir el cliente. La lista no funcionará contra el Worker anterior; presentar un error de incompatibilidad claro.
+1. **Directory contracts and lifecycle:** define the DTOs, limits and transitions; make create, reserve, leave and
+   expiry atomic. The room is the source of truth for capacity.
+2. **Multi-peer signaling:** add `peerId` to the messages and check that each signal reaches only its host/guest pair.
+   Keep the current endpoint working on its own during the transition; never mix two versions in one room.
+3. **Host protocol and runtime:** go from a single `CoopLink` to an indexed collection; check the assigned id and
+   neutralise each player's stale input separately.
+4. **Simulation for four players:** allow four `FieldPlayer` on a shared map, each with its owner and partner; keep
+   the camera and the local input in each instance.
+5. **Browser UI:** list only `waiting` rooms, show `players/capacity` and the message, refresh on demand and
+   periodically; reserve a seat before the handshake; show errors and let the player retry without losing the
+   selection.
+6. **Starting the game:** the host picks a save and decides when to start; each guest brings its partner profile. The
+   world, the progress and the map changes still belong to the host.
+7. **Deploy:** deploy the Worker with the migration and the new endpoint before shipping the client. The list does not
+   work against the old Worker; show a clear incompatibility error.
 
-## Verificación prevista
+## Planned checks
 
-- Directorio: crear/listar/actualizar/reservar/liberar; límite 4; dos reservas simultáneas para el último asiento; TTL y sala fantasma.
-- Worker: señalización dirigida, aislamiento entre parejas, no filtrar salas cerradas, respuestas acotadas y errores estructurados.
-- Protocolo: versión incompatible, id no asignado, paquete malformado, duplicados y salida de cada invitado.
-- Runtime/field: tres buffers de comando independientes, jugadores ids 0..3, compañeros correctos, una sola actualización del mundo por tick y desconexión de un invitado sin afectar a los demás.
-- Manual: cuatro instancias, lista, sala llena, mensajes, entrada/salida, desconexión durante reserva, inicio autoritativo y guardado local de cada invitado intacto.
+- Directory: create, list, update, reserve and free; the limit of 4; two reservations racing for the last seat; TTL
+  and ghost rooms.
+- Worker: directed signaling, pairs kept apart, closed rooms never listed, bounded answers and structured errors.
+- Protocol: incompatible version, unassigned id, malformed packet, duplicates and each guest leaving.
+- Runtime and field: three separate command buffers, player ids 0..3, the right partners, one world update per tick and
+  one guest disconnecting without touching the others.
+- Manual: four instances, the list, a full room, messages, joining and leaving, a disconnect during a reservation, the
+  authoritative start and every guest's local save left untouched.
 
-## Riesgos y límites explícitos
+## Risks and explicit limits
 
-- La lista hace públicas la existencia, el nombre, el mensaje y la ocupación de una sala. No publicar perfiles ni progreso.
-- Un directorio central puede ser punto caliente; limitar frecuencia de refresco, tamaño de respuesta y número de salas anunciadas, con paginación o filtro si crece.
-- La capacidad de cuatro no debe habilitarse en UI hasta completar protocolo, runtime y simulación. El orden anterior evita anunciar plazas que no se pueden usar.
-- El despliegue del Worker es una operación separada del cambio local y requiere acceso a la cuenta Cloudflare correspondiente.
+- The list makes a room's existence, name, message and occupancy public. Never publish profiles or progress.
+- A central directory can become a hot spot; limit refresh rate, answer size and the number of rooms listed, with
+  paging or a filter if it grows.
+- The capacity of four must not show in the UI until protocol, runtime and simulation are done. The order above avoids
+  offering seats that cannot be used.
+- Deploying the Worker is a separate step from the local change and needs access to the matching Cloudflare account.

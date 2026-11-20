@@ -2108,12 +2108,14 @@ screens::ScreenSettings PlaySession::partnerStatus() const {
   return partnerMenu_.statusSettings();
 }
 
-void PlaySession::followCoopFacts(std::span<const CoopFactChange> facts) {
+void PlaySession::followCoopFacts(std::span<const CoopFactChange> facts,
+                                  std::span<const CoopFactChange> ownFacts) {
   session::StoryAdapter* story = game_.systems.story;
   if (story == nullptr) {
     return;
   }
   coopNpcs_.note(scene_->mapSerial(), facts);
+  coopNpcs_.note(scene_->mapSerial(), ownFacts, CoopNpcPresence::Origin::Own);
   if (!coopNpcs_.pending()) {
     return;
   }

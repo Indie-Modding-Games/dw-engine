@@ -17,12 +17,16 @@ namespace dwe::dwx {
 // another.
 inline constexpr std::string_view DefaultTransportRules = "original";
 
-// field/script_warps as the story Lua of the packs gives it (docs/architecture/script-warps.md,
-// «From the Lua»).
+// field/script_warps and field/npc_spawns as the story Lua of the packs gives them
+// (docs/architecture/script-warps.md, «From the Lua»).
 struct DerivedScriptWarps {
-  std::string yaml; // the document, as dwx extract writes it
+  std::string yaml; // field/script_warps, as dwx extract writes it
+  // field/npc_spawns, as dwx extract writes it: the NPCs the map heads put on their maps, which
+  // co-op shows at once when another player's story change moves them.
+  std::string spawnsYaml;
   std::size_t modules = 0;
   std::size_t warps = 0;
+  std::size_t spawns = 0;
   // What a reader should know: modules whose line map was not used (their records have no
   // offsets), maps that cannot be read, a ruleset without destinations.
   std::vector<std::string> notes;
@@ -40,10 +44,18 @@ core::Result<DerivedScriptWarps> deriveScriptWarps(const assets::VirtualFileSyst
 core::Result<DerivedScriptWarps> deriveScriptWarps(std::span<const std::filesystem::path> folders,
                                                    std::string_view rules);
 
-// dwx script-warps: with `out`, writes the derived document there; without, compares it with the
-// field/script_warps of the packs and says where they first differ. ExitOk when written or equal,
-// ExitUnknown when they differ, ExitFailed when the Lua or the packs do not read.
+// Where dwx script-warps writes the derived documents: field/script_warps to `warps`,
+// field/npc_spawns to `spawns`.
+struct ScriptWarpsOutputs {
+  std::optional<std::filesystem::path> warps;
+  std::optional<std::filesystem::path> spawns;
+};
+
+// dwx script-warps: with an output, writes the derived documents asked for there; without, compares
+// them with the packs' field/script_warps and field/npc_spawns (the latter only when the packs have
+// it) and says where they first differ. ExitOk when written or equal, ExitUnknown when one differs,
+// ExitFailed when the Lua or the packs do not read.
 int scriptWarpsCommand(std::span<const std::filesystem::path> folders,
-                       const std::optional<std::filesystem::path>& out, std::string_view rules);
+                       const ScriptWarpsOutputs& outputs, std::string_view rules);
 
 } // namespace dwe::dwx

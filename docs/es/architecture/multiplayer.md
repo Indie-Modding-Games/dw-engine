@@ -1,22 +1,22 @@
 # Multijugador cooperativo en línea (documento de diseño)
 
-Estado: **sala y arranque cooperativo implementados; sincronización del mundo parcial** (2026-11-16). El anfitrión inicia con un guardado propio; el invitado envía su guardado para importar solo su compañero. El cliente carga el mundo del host en memoria y no escribe sobre el guardado local. El host simula el campo y recibe comandos del invitado; el cliente presenta el avatar del host. NPCs, historia, interacciones y reconciliación del movimiento todavía no están replicados íntegramente. Consulta la [prueba manual de la sala](#prueba-manual-de-la-sala) antes de probar.
-> La ampliación del navegador de salas a cuatro participantes está especificada en el [plan de implementación del navegador y cuatro jugadores](../../architecture/coop-browser-4p.md). La implementación debe avanzar por sus puertas; el runtime actual sigue siendo de dos participantes.
+Estado: **hecho, en pulido** (2026-11-20). Las salas de hasta cuatro, el mundo compartido, los combates cooperativos
+con todos los compañeros, la dificultad cooperativa, el intercambio de objetos y unirse a una partida en curso están
+en el juego (§5.6 a §6.2); §6 dice cómo quedó cada decisión de juego y §10 qué falta. Las secciones 1 a 4 y §7 son el
+plan del que se partió (2026-11-16), que se conserva por su razonamiento: donde difieren de §5 y §6, mandan estas. La
+decisión de arquitectura está en el [ADR 0024](../adr/0024-co-op-with-authoritative-host.md).
 
 ## 0. Propósito y alcance
 
-La portada ofrece **Cooperativo** en ambos diseños del menú. Desde ahí se puede crear una sala o unirse con el código;
-la app usa WebRTC y completa el saludo cooperativo. Al volver atrás conserva la conexión para cargar la misma partida
-en ambos equipos; las órdenes del invitado ya controlan el segundo cuerpo simulado por el host. La vista del invitado
-dibuja el avatar del host desde snapshots, pero no recibe NPCs, historia ni progreso, y su movimiento local todavía no
-se reconcilia. La entrada es distinta del versus en línea existente.
+La portada ofrece **Multijugador** y, dentro, el cooperativo: buscar salas, crear una o unirse con el código. Usa
+WebRTC y es distinto del versus en línea.
 
 **Propósito:** que un segundo jugador se conecte por internet a la partida de otro y jueguen juntos en el mismo mundo:
 caminar, hablar con NPCs, avanzar la historia y pelear.
 
 **Dentro del alcance:**
 
-- dos jugadores en línea, un host y un invitado;
+- hasta cuatro jugadores en línea, un anfitrión y hasta tres invitados (§5.9);
 - conexión directa entre PCs por WebRTC, con el Worker de señalización solo para el primer contacto;
 - el mundo de la partida del host, con su historia;
 - el invitado con su propio jugador (y su compañero, según la decisión 1 de §6).
@@ -25,7 +25,6 @@ caminar, hablar con NPCs, avanzar la historia y pelear.
 
 - el versus, que ya existe y es otra cosa: un combate suelto en lockstep ([versus](../modules/game/versus.md));
 - el multijugador local en una misma pantalla, que el proyecto descartó;
-- más de dos jugadores (el diseño no lo cierra, pero no se prueba);
 - servidores dedicados y partidas persistentes.
 
 ### Prueba manual de la sala
@@ -35,7 +34,9 @@ caminar, hablar con NPCs, avanzar la historia y pelear.
 3. El anfitrión pulsa **Iniciar** y elige su guardado. Ese guardado aporta el mundo y el progreso compartido.
 4. El invitado debe cargar el mapa del anfitrión con su compañero y sin sobrescribir su guardado local. Ambos verifican movimiento y cámara local.
 
-El protocolo de sala y transferencia sí permite hacer esta prueba de arranque. La sincronización en vivo todavía es parcial: el host recibe comandos de campo del invitado y simula un segundo jugador; el cliente recibe/presenta el avatar del host. NPCs, historia, interacciones y progreso no se replican íntegramente, y el movimiento local del invitado aún no se reconcilia con snapshots. Los cambios de mapa los inicia solo el anfitrión.
+Con tres o cuatro instancias se prueba igual una sala de cuatro (§5.9); un invitado que entra con la partida en curso
+sigue el mismo camino (§5.10).
+
 ## 1. Idea en una frase
 
 Los dos jugadores usan **los mismos datos de jugador** y los mismos sistemas de juego. Cada instancia combina una
@@ -527,25 +528,35 @@ partir de los triggers y variables de la historia (un personaje reclutado ya no 
 tendero viene de día). La escena que cambia el hecho también cambia la pantalla en la partida que la corrió (la escena
 de reclutamiento quita su NPC ella misma), pero las otras partidas solo reciben el hecho. Por eso `dwx extract` escribe
 `field/npc_spawns`: cada NPC que las secciones de cabecera colocan, con la condición que lleva a él (las mismas
-condiciones que los warps de script, más la prueba de un byte de variable). Cuando llega un hecho que cambió otro
-jugador, `CoopNpcPresence` compara la condición de cada NPC del mapa actual antes y después: un NPC cuya condición deja
-de cumplirse se va (como lo hace la escena de reclutamiento) y uno cuya condición empieza a cumplirse entra (como lo
+condiciones que los warps de script, más la prueba de un byte de variable). Cuando cambia un hecho compartido,
+`CoopNpcPresence` compara la condición de cada NPC del mapa actual antes y después: un NPC cuya condición deja de
+cumplirse se va (como lo hace la escena de reclutamiento) y uno cuya condición empieza a cumplirse entra (como lo
 colocaría la siguiente carga). Espera a que el mapa termine de cargar y a cualquier script en curso, y descarta lo que
-llegó antes de la carga actual del mapa (esa carga ya leyó los hechos nuevos). Los cambios propios del jugador
-mantienen el comportamiento original, así que quien recluta ve al ayudante en la siguiente carga y los demás lo ven al
-momento. La sección de cabecera nunca se vuelve a correr.
+llegó antes de la carga actual del mapa (esa carga ya leyó los hechos nuevos). La sección de cabecera nunca se vuelve
+a correr.
+
+- **El cambio de otro jugador** mueve NPCs en los dos sentidos. Algunas cabeceras llevan una cuenta o tiran un dado
+  mientras colocan NPCs (los visitantes de File City: tres como mucho, algunos al azar), así que no se sabe solo por la
+  historia si ese NPC estaba al cargar (`section_writes`). Esos se van igualmente si están en el mapa y ningún camino
+  de la cabecera los coloca ya; nunca llegan al momento, porque la cuenta o la tirada podían haberlos dejado fuera.
+- **El cambio propio de la partida** solo trae a los que llegan, cuando termina su escena: quien recluta ve venir al
+  ayudante como los demás, y una tienda abierta en la ciudad tiene a su tendero al momento. Lo que la escena dejó en pie
+  se queda hasta la siguiente carga, como en el original. Un jugador solo no cambia: nunca sigue nada.
+- **Mods.** Un mod que cambia una cabecera de mapa en Lua (`story/000.lua` o un parche de historia del script 0)
+  vuelve a escribir el documento con `dwx script-warps --spawns <archivo>` ([warps de script](script-warps.md#desde-el-lua)),
+  como hace con sus cambios de mapa; sin él se sigue usando el documento del paquete base.
 
 Sin cubrir: NPCs que colocan o mueven los scripts propios del mapa (el paseo de una escena, la rutina de entrada del
 mapa mostrando u ocultando objetos), condiciones que la extracción no puede leer (un olvido o un bucle en la sección, un
-stat que no sea un byte de variable, una variable que la propia sección de cabecera escribe como una tirada al azar o
-un contador, listada en `section_writes`), cabeceras parcheadas por el Lua de un mod (el documento sale del disco) y
-contenido extraído por un dwx anterior (los NPCs siguen entonces en la siguiente carga, como antes). Fuera de eso solo
-viajan las ediciones en vivo del mapa; cualquier otra cosa que un script haga en pantalla se queda en la partida que
-lo corrió.
+stat que no sea un byte de variable) y contenido extraído por un dwx anterior (los NPCs siguen entonces en la
+siguiente carga, como antes). Fuera de eso solo viajan las ediciones en vivo del mapa; cualquier otra cosa que un
+script haga en pantalla se queda en la partida que lo corrió.
 
 Pruebas: `packages/game/coop/tests/world_state_tests.cpp`, `apps/game/tests/coop_world_state_tests.cpp` (un anfitrión
 y dos invitados con mensajes codificados), `apps/game/tests/coop_npc_presence_tests.cpp` (un reclutamiento en cada lado
-sobre un `CoopLink` real), `packages/game/field/tests/npc_spawns_tests.cpp`, el caso MAPHEAD de
+sobre un `CoopLink` real, el ayudante propio de quien recluta y un visitante que la cuenta deja sin decidir),
+`packages/game/field/tests/npc_spawns_tests.cpp`, `apps/dwx/tests/script_warps_command_tests.cpp` (los NPC sacados
+del Lua, con el parche de un mod), el caso MAPHEAD de
 `packages/formats/tests/script_guarded_walk_tests.cpp`, el caso cooperativo de
 `packages/game/field/tests/field_items_tests.cpp` y el de `packages/session/tests/story_adapter_tests.cpp`.
 ### 5.9 Salas de cuatro y el diagnóstico de sincronía
@@ -632,18 +643,20 @@ Pruebas: `packages/game/coop/tests/protocol_tests.cpp` (ida y vuelta de los camp
 la ventana de gracia), `packages/engine/net/tests/signal_tests.cpp` y las pruebas de partidas en curso de
 `apps/versus-signal/test`.
 
-## 6. Decisiones de juego (pendientes)
+## 6. Decisiones de juego
 
-| # | Pregunta | Recomendación | Alternativa |
-|---|---|---|---|
-| 1 | ¿Qué trae el invitado? | **Confirmado:** se transfiere su partida completa y se extraen solo identidad, modelo y estado actual del compañero; historia, mapa y progreso compartido siguen bajo el host. | Importar al mundo host el resto de la partida del invitado: descartado. |
-| 2 | ¿Quién inicia cambio de mapa? | **Confirmado:** solo el anfitrión inicia el cambio compartido. Si el invitado llega a un warp, se detiene allí hasta que el host cambie el mapa. | Que el invitado cambie el mapa por sí mismo: descartado. |
-| 3 | Combate | **Decidida (C3, primera versión):** pelea el compañero de **quien empieza el combate**; el otro ayuda con objetos de su propia bolsa y ánimos, y ve el combate. Un combate a la vez. Más adelante, los dos compañeros juntos. Ver §6.1. | Los dos compañeros desde el principio: hay que rehacer los lados del combate (IA enemiga, golpes, comandos, HUD). |
-| 4 | Progreso | La historia, los flags, el dinero y el mundo son **del host**. El invitado se lleva a su partida su compañero (stats, edad, técnicas) y los objetos que consiga. | Progreso compartido en las dos partidas: rompe la historia del invitado. |
-| 5 | Pausa y menús | Los menús personales son locales y **no pausan** el mundo. Solo el host puede solicitar pausa global con Start; el host confirma el cambio de reloj y lo replica a ambos. | Pausa para los dos con cualquier menú: corta el juego del otro a cada rato. |
-| 6 | Diálogos y escenas | Congelan a los dos jugadores. **Avanza quien los abrió**; el otro ve el mismo cuadro. | Cualquiera avanza: más rápido, pero se saltan textos del otro. |
+Propuestas el 2026-11-16 con una recomendación cada una; así quedaron hechas.
 
-### 6.1 La decisión 3 tal como está hecha (C3)
+| # | Pregunta | Tal como está hecha |
+|---|---|---|
+| 1 | ¿Qué trae el invitado? | Su personaje y **su compañero** de su propia partida, de visita en el mundo del anfitrión (§5.6). |
+| 2 | ¿Mapa compartido? | Sí: el grupo va donde va el anfitrión. Las salidas propias de un invitado se retienen y el cambio de mapa del anfitrión los lleva a todos (§5.7). Cada partida sigue conociendo su mapa, así que un jugador que aún carga simplemente no se dibuja. |
+| 3 | Combate | **Pelean todos los compañeros.** Lo empiece quien lo empiece, se suma cada compañero libre de ese mapa, hasta cuatro (§6.1, [combate cooperativo](coop-combat.md) §12), y los enemigos escalan según cuántos pelean ([dificultad cooperativa](coop-difficulty.md)). |
+| 4 | Progreso | La historia, los triggers, el dinero y el mundo son **del anfitrión**, guardados en su propia ranura como en un jugador (§5.6). Los cambios de cualquier jugador a ese mundo pasan por el anfitrión (§5.8). El invitado no guarda nada; llevarse lo ganado a su partida aún no está hecho (§10). |
+| 5 | Pausa y menús | Cada partida corre su propia copia del mundo del anfitrión, así que un menú o la pausa solo paran la partida de ese jugador; los demás siguen. Un combate compartido espera mientras el anfitrión tiene el menú abierto (§6.1). |
+| 6 | Diálogos y escenas | Los scripts de un jugador corren en su partida: sus diálogos y escenas son suyos y los demás siguen jugando. Lo que una escena cambia en el mundo llega a los demás por el anfitrión (§5.8), y los NPCs que trae o se lleva aparecen al momento en todas las partidas. |
+
+### 6.1 Combates (decisión 3)
 
 El invitado ejecuta su propia copia del mundo del anfitrión, así que un combate que comparten los dos jugadores tiene
 que correr en un solo sitio. Corre en la **simulación del anfitrión**:
@@ -776,12 +789,15 @@ antes y después del commit, cuatro jugadores en dos intercambios, mensajes ajen
 
 ## 7. Fases
 
+El plan tal como se escribió el 2026-11-16. C0 a C3 están hechas (§5, §6.1; pelean todos los compañeros desde #377);
+de C4 están hechos los nombres sobre los jugadores (`coop_hud.tag`) y falta el progreso del invitado de vuelta (§10).
+
 | Fase | Contenido | Criterio de cierre | Tiempo |
 |---|---|---|---|
 | **C0, sin red** | `PlayerCommands` y los tres controladores; pantallas por acciones; `FieldPlayer`; cámara y prueba de fuera de pantalla fuera del renderer; `PlayerRegistry`. | El juego de un jugador no cambia (cadena de la historia en verde). Un test con dos jugadores scriptados en el mismo `Field` (solo en tests, nunca como modo local). | 2–3 semanas |
 | **C1, verse caminar** | `game/coop` con saludo, unión en punto seguro, snapshots completos, `WorldMirror`, simulación de movimiento autoritativa en host y predicción visual local reconciliada. | Dos PCs en el mismo mapa se ven caminar, cada uno con su compañero detrás; el host resuelve colisiones y triggers con pérdidas simuladas. | ~2 semanas |
 | **C2, interactuar** | NPCs y casillas por jugador, diálogos replicados, cambio de mapa en grupo, menús sin pausa, desconexión y reconexión. | Un tramo de la historia jugado entre dos PCs. | ~3 semanas |
-| **C3, combate** | Según la decisión 3 (§6.1). **Hecha, primera versión:** combates en el anfitrión para los dos jugadores cuando comparten mapa (en solitario si no, #351), la vista del otro jugador, ayuda y órdenes, recompensas de vuelta al invitado, desconexión en combate. Falta: los dos compañeros en un combate. | Un combate de la historia ganado en cooperativo. | 2–6 semanas |
+| **C3, combate** | Según la decisión 3 (§6.1). **Hecha, primera versión:** combates en el anfitrión para los dos jugadores cuando comparten mapa (en solitario si no, #351), la vista del otro jugador, ayuda y órdenes, recompensas de vuelta al invitado, desconexión en combate; después los dos compañeros (#374) y todos los compañeros (#377). | Un combate de la historia ganado en cooperativo. | 2–6 semanas |
 | **C4, invitado** | Progreso del invitado de vuelta a su partida, nombres sobre los jugadores, indicador de latencia, pulido. | El invitado vuelve a su partida con lo ganado. | — |
 
 ### 7.1 Corte de arquitectura y orden de implementación
@@ -943,28 +959,37 @@ tras cada cambio y la regresión amplia solo al cerrar cada fase.
 
 ## 9. Preguntas abiertas
 
-- Las seis decisiones de §6.
-- Si el invitado trae compañero: cómo se valida que su partida no está manipulada (probablemente no se valida, igual
-  que en el versus, y basta con el `contentHash`).
-- Qué ve el invitado durante una escena de la historia que solo el host dispara (cámara de script para los dos, según
-  §4.5, pero falta revisar escena por escena).
-- Si `ScriptedController` sustituye del todo a la inyección de teclas del autotest o convive con ella.
-- Fijar el rango de viewport y de centro que permite el seguimiento de cámara. Queda acordado refrescar como máximo a 20 Hz y caducar tras 500 ms. La regla propuesta es aceptar rectángulos válidos dentro del fondo activo y no usar vistas caducadas; esto bloquea rescates remotos en C0b hasta fijar esos límites geométricos.
+- Cómo comprobar que la partida de un invitado no está manipulada. Hoy solo está el `contentHash` del saludo, como en
+  el versus.
+- Qué deberían ver los demás de una escena que solo corre un jugador (§6, decisión 6): hoy cada uno ve solo la suya.
+- Si el invitado debe llevarse lo ganado a su partida (decisión 4), y cómo sin romper su historia.
 
 ## 10. Cómo retomarlo
 
-1. Releer este documento y el [ADR 0024](../adr/0024-co-op-with-authoritative-host.md).
-2. Cerrar las decisiones de §6 y apuntarlas aquí (pasar el estado de «propuesta» a «aprobado» y el ADR a
-   «Aceptada»).
-3. Crear las tarjetas en el tablero, una por fase de §7, empezando por C0. Esa fase no toca la red, así que puede
-   empezar en paralelo con las tarjetas de salas (#291–#294).
-4. Primer paso de C0: `PlayerCommands` y `LocalController`. Mover a `LocalController` el código de `apps/game/src/game.cpp`
-   que hoy arma `FieldInput` y reparte `InputState` a las pantallas, sin cambiar el comportamiento. Después,
-   `FieldPlayer` en `packages/game/field`.
-5. Los archivos de partida: `packages/game/field/{include/dwe/game/field/field.hpp,src/field.cpp}`,
-   `apps/game/src/{game.cpp,play_session.cpp,field_scene.cpp,field_camera_follow.hpp}`,
-   `packages/session/include/dwe/session/game_session.hpp`, `packages/engine/net/` y `packages/game/versus/` (la red
-   que se reutiliza).
+Lo hecho, por ticket (las issues #351 a #362 son las historias de jugador; siguen abiertas como referencia):
+
+| Área | Dónde |
+|---|---|
+| Partidas que el cooperativo nunca toca (#350) | §5.6 |
+| Autoridad, jugadores, mapas, interpolación (#353 a #356, #358) | §5.7 |
+| Mundo compartido: triggers, cofres, objetos del suelo, puertas, NPCs al momento (#357) | §5.8 |
+| Salas de cuatro, diagnóstico de sincronía (#352, #359) | §5.9, [buscador de salas](coop-browser-4p.md) |
+| Unirse y volver a una partida en curso (#352, #356) | §5.10 |
+| Combates con todos los compañeros (#351, #362) y dificultad cooperativa (#361) | §6.1, [combate cooperativo](coop-combat.md), [dificultad cooperativa](coop-difficulty.md) |
+| Intercambio de objetos (#360) | §6.2 |
+
+Lo que falta, como seguimiento:
+
+- El progreso del invitado de vuelta a su partida (decisión 4).
+- Un combate por mapa a la vez ([combate cooperativo](coop-combat.md) §12, tarea 12) y las mecánicas opcionales de
+  combate de su §8.
+- Los NPCs que colocan o mueven los scripts propios de un mapa, y los que tienen una condición desconocida (una tirada
+  al azar en la cabecera del mapa), siguen apareciendo en la siguiente carga (§5.8, «Cambios del mundo al momento»).
+
+Para retomarlo: los tipos de mensaje del protocolo y lo que añade cada versión están en
+`packages/game/coop/include/dwe/game/coop/protocol.hpp`; el lado del juego empieza en `apps/game/src/coop_*.{hpp,cpp}`
+(`coop_world.hpp` para el mundo compartido, `coop_connection.hpp` para salas y plazas) y en las pruebas citadas al final
+de cada sección. Dos partidas en un PC son el arnés en bucle local de las pruebas cooperativas de `apps/game/tests`.
 
 ## 11. Documentos relacionados
 

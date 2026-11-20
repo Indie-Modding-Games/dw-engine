@@ -34,12 +34,14 @@ struct CoopOutgoing {
 };
 
 // What a game takes from the shared world in a tick (#357): the messages to send, the other
-// players' live map edits for its scene (applyCoopMapEdits) and the shared facts they changed in
-// its story (for the NPCs its map head puts on the map: CoopNpcPresence).
+// players' live map edits for its scene (applyCoopMapEdits), the shared facts they changed in its
+// story and the ones its own scripts changed (for the NPCs its map head puts on the map:
+// CoopNpcPresence).
 struct CoopWorldShare {
   std::vector<CoopOutgoing> out;
   std::vector<game::coop::WorldEdit> mapEdits;
   std::vector<CoopFactChange> facts;
+  std::vector<CoopFactChange> ownFacts;
 };
 
 // The host's side of the shared world (#353, #354, #355), built when its co-op game links a guest

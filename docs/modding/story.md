@@ -98,8 +98,10 @@ return {
 - `dwx script-warps` ([script warps](../architecture/script-warps.md#from-the-lua)) applies the patches the same way
   as the game before extracting the map changes, so a patch's `story.warp_to` reaches `field/script_warps`. The walk
   only follows what it can read: `original()` as in a subroutine (`return original()`, or
-  `if original() == ENDED then return ENDED end` and carry on), not stored in a variable (`local r = original()`). A
-  patch like that runs fine in the game, but `dwx script-warps` fails and names the patch's file and its line.
+  `if original() == ENDED then return ENDED end` and carry on), not stored in a variable (`local r = original()`).
+  Numbers can be named at the top (`local Whamon <const> = 5`); other locals and functions of the patch's own cannot
+  (write a test inline as nested `if`s). A patch like that runs fine in the game, but `dwx script-warps` fails and
+  names the patch's file and its line.
 - A patch does not see the module's `routines`: it runs in its own environment. If a section needs shared code from the
   script (the `return routines.at_0100()` of the generated Lua), the patch brings its copy as a private routine: at
   the top, `local routines = {}` and then `function routines.<name>() ... end` (without parameters and without
@@ -143,7 +145,8 @@ The [map editor](../modules/apps/mapper.md#events) writes these patches for you:
    state the section needs, reloads the map, takes the player to the event and shows what changed.
 
 If the change adds or moves a `story.warp_to`, extract `field/script_warps` again with `dwx script-warps` (the editor
-does it by itself if it knows where `dwx` is, in "File → Settings…"). Before publishing, run `dwx validate` on the mod.
+does it by itself if it knows where `dwx` is, in "File → Settings…"). If it changes which NPCs a map head (script 0)
+places, write `field/npc_spawns` too with `--spawns`, so co-op shows them coming and going at once. Before publishing, run `dwx validate` on the mod.
 
 ## Edit scenes with the timeline
 

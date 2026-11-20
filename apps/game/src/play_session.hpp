@@ -405,9 +405,10 @@ public:
   // once). Only a co-op game records the map edits.
   [[nodiscard]] CoopWorldView takeCoopWorld();
   // After co-op applied the shared world's changes of a tick: the NPCs the other players' story
-  // changes (`facts`) bring to or take off this map, shown once it stands still
-  // (coop_npc_presence.hpp).
-  void followCoopFacts(std::span<const CoopFactChange> facts);
+  // changes (`facts`) bring to or take off this map, and those this game's own (`ownFacts`) bring
+  // to it, shown once it stands still (coop_npc_presence.hpp).
+  void followCoopFacts(std::span<const CoopFactChange> facts,
+                       std::span<const CoopFactChange> ownFacts = {});
   [[nodiscard]] std::string_view partnerSpecies() const {
     return game_.session->partner().state().species;
   }

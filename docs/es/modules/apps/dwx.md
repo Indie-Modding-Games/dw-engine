@@ -137,7 +137,7 @@ Los tests: `tests/export_images_tests.cpp`, con un contenido sintético.
 ## `dwx script-warps`
 
 ```sh
-dwx script-warps <carpeta de contenido> [--with <carpeta de paquetes>]... [--rules <id>] [-o <archivo>]
+dwx script-warps <carpeta de contenido> [--with <carpeta de paquetes>]... [--rules <id>] [-o <archivo>] [--spawns <archivo>]
 ```
 
 Vuelve a sacar `field/script_warps` del Lua de la historia de los paquetes (`story/<n>.lua` y su mapa de líneas, con
@@ -147,14 +147,17 @@ que los cambios de mapa que un mod mueve en el Lua lleguen al campo. Detalles en
 
 - Monta los paquetes del contenido y de cada `--with`. Los destinos del transporte vienen de
   `rules/<id>/bird_transport` (por defecto `original`, del paquete del equipo: `--with content/packs/game`).
-- Sin `-o` compara con el `field/script_warps` de los paquetes: código 0 si coinciden, 1 si no (dice la primera línea
-  distinta). Con `-o` escribe el documento ahí.
+- Sin `-o` ni `--spawns` compara con el `field/script_warps` de los paquetes y, si lo tienen, con su
+  `field/npc_spawns`: código 0 si coinciden, 1 si no (dice la primera línea distinta). Con `-o` escribe ahí
+  `field/script_warps`, y con `--spawns` los NPC que colocan las cabeceras de mapa (`field/npc_spawns`, que el
+  cooperativo lee para mostrarlos al momento), creando la carpeta si falta.
 - Falla (código 2, sin escribir) si un módulo no se lee, con el módulo y la línea, o si un parche usa `original` de una
   forma que el recorrido no sigue, con el fichero del parche y su línea. Las notas dicen qué módulos no usan
   su mapa de líneas (sus registros salen sin `offset`), qué mapas no se leen y si falta el ruleset del transporte.
 
-Los tests: `tests/script_warps_command_tests.cpp`, con un contenido sintético, y uno con `DWE_CONTENT` que comprueba
-que el paquete base sale byte a byte.
+Los tests: `tests/script_warps_command_tests.cpp`, con un contenido sintético (con el parche de un mod a una cabecera
+de mapa), y uno con `DWE_CONTENT` que comprueba que los dos documentos del paquete base salen byte a byte y que los
+parches del paquete del juego se siguen.
 
 ## `dwx evolution-guide`
 

@@ -136,7 +136,7 @@ The tests: `tests/export_images_tests.cpp`, with synthetic content.
 ## `dwx script-warps`
 
 ```sh
-dwx script-warps <content folder> [--with <packs folder>]... [--rules <id>] [-o <file>]
+dwx script-warps <content folder> [--with <packs folder>]... [--rules <id>] [-o <file>] [--spawns <file>]
 ```
 
 Extracts `field/script_warps` again from the story Lua of the packs (`story/<n>.lua` and its line map, with
@@ -146,14 +146,17 @@ that the map changes that a mod moves in the Lua reach the field. Details in
 
 - It mounts the packs of the content and of each `--with`. The transport destinations come from
   `rules/<id>/bird_transport` (default `original`, from the team pack: `--with content/packs/game`).
-- Without `-o` it compares with the packs' `field/script_warps`: code 0 if they match, 1 if not (it says the first
-  differing line). With `-o` it writes the document there.
+- Without `-o` or `--spawns` it compares with the packs' `field/script_warps` and, when they have it,
+  `field/npc_spawns`: code 0 if they match, 1 if not (it says the first differing line). With `-o` it writes
+  `field/script_warps` there, and with `--spawns` the NPCs the map heads place (`field/npc_spawns`, which co-op reads
+  to show them at once), making the folder when missing.
 - It fails (code 2, without writing) if a module cannot be read, with the module and the line, or if a patch uses `original` in a
   way the walk does not follow, with the patch file and its line. The notes say which modules do not use
   their line map (their records come out without `offset`), which maps are not read and whether the transport ruleset is missing.
 
-The tests: `tests/script_warps_command_tests.cpp`, with synthetic content, and one with `DWE_CONTENT` that checks
-that the base pack comes out byte for byte.
+The tests: `tests/script_warps_command_tests.cpp`, with synthetic content (a mod's patch of a map head included), and
+one with `DWE_CONTENT` that checks that the base pack's two documents come out byte for byte and that the game pack's
+patches are followed.
 
 ## `dwx evolution-guide`
 

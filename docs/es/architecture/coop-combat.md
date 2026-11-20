@@ -4,7 +4,7 @@ Estado: **implementado en parte** (2026-11-20, #351, #361). Propuesto el 2026-11
 siguiente a la primera versión de los combates cooperativos (#351, PR #363), donde solo pelea el compañero de quien
 inicia el combate. La sección 12 dice qué está hecho. Se apoya en el [cooperativo en línea](multiplayer.md), el [ADR
 0024](../adr/0024-co-op-with-authoritative-host.md), las sesiones de hasta cuatro jugadores (#352, [navegador de salas y
-cuatro jugadores](../../architecture/coop-browser-4p.md)) y el escalado de la [dificultad
+cuatro jugadores](coop-browser-4p.md)) y el escalado de la [dificultad
 cooperativa](coop-difficulty.md).
 
 **Regla cero:** con un solo compañero del lado de los jugadores, el combate es exactamente el de hoy: la misma
@@ -420,7 +420,7 @@ funciona en el mismo `Battle`; la tarea 2 lo extiende al lado de los jugadores.
 ## 13. Documentos relacionados
 
 - [Multijugador cooperativo en línea](multiplayer.md), [ADR 0024](../adr/0024-co-op-with-authoritative-host.md) y
-  [navegador de salas y cuatro jugadores](../../architecture/coop-browser-4p.md).
+  [navegador de salas y cuatro jugadores](coop-browser-4p.md).
 - [Dificultad cooperativa](coop-difficulty.md).
 - [Módulo de combate](../modules/game/battle.md), [referencia del combate](../reference/battle.md),
   [versus](../modules/game/versus.md).

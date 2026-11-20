@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -49,7 +50,10 @@ Truth spawnsInSlot(std::span<const NpcSpawnRule> rules, std::string_view map, st
 
 // What a change of the facts does to the NPCs a map's section puts on it: the slots it put an NPC
 // in before and no longer would, and the spawns it now makes in slots it left empty before. A slot
-// whose decision is Unknown either way is left alone.
+// whose decision before is Unknown (a count or a random roll the section keeps for itself, as File
+// City's visitors) leaves too when `occupied` says its NPC stands on the map and no way through the
+// section places it any more: the next load would not show it. Anything else Unknown either way is
+// left alone.
 struct NpcPresenceChange {
   std::vector<std::size_t> leave;
   std::vector<const NpcSpawnRule*> arrive;
@@ -57,7 +61,11 @@ struct NpcPresenceChange {
   [[nodiscard]] bool empty() const { return leave.empty() && arrive.empty(); }
 };
 
+// Whether the NPC of a map's slot stands on the map now.
+using NpcSlotOccupied = std::function<bool(std::size_t slot)>;
+
 NpcPresenceChange npcPresenceChange(std::span<const NpcSpawnRule> rules, std::string_view map,
-                                    const GuardFacts& before, const GuardFacts& after);
+                                    const GuardFacts& before, const GuardFacts& after,
+                                    const NpcSlotOccupied& occupied = {});
 
 } // namespace dwe::game::field

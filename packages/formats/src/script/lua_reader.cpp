@@ -1666,12 +1666,44 @@ std::string renamed(std::string_view code, const RoutineNames& names) {
   return result;
 }
 
+// A patch's code with each of its named numbers (a name read on its own, not a field) written as
+// the number.
+std::string withConstants(std::string_view code,
+                          const std::map<std::string, std::int64_t, std::less<>>& constants) {
+  const auto tokens = tokenize(code);
+  if (!tokens || constants.empty()) {
+    return std::string{code};
+  }
+  std::string result;
+  std::size_t copied = 0;
+  for (std::size_t index = 0; index < tokens->size(); ++index) {
+    const Token& name = (*tokens)[index];
+    const bool field =
+        index > 0 && ((*tokens)[index - 1].text == "." || (*tokens)[index - 1].text == ":");
+    if (name.kind != TokenKind::Name || field) {
+      continue;
+    }
+    if (const auto found = constants.find(name.text); found != constants.end()) {
+      result += code.substr(copied, name.begin - copied);
+      result += std::to_string(found->second);
+      copied = name.end;
+    }
+  }
+  result += code.substr(copied);
+  return result;
+}
+
 // Reads a patch's tokens: the shape readLuaPatch describes, each section's body cut out of the
 // code.
 class PatchReader {
 public:
   PatchReader(std::string_view code, std::vector<Token> tokens, LuaPatch& patch)
       : code_(code), tokens_(std::move(tokens)), patch_(&patch) {}
+
+  // The named numbers at the top of the patch (local Name <const> = 5).
+  [[nodiscard]] const std::map<std::string, std::int64_t, std::less<>>& constants() const {
+    return constants_;
+  }
 
   core::Result<void> read() {
     while (!error_) {
@@ -1769,14 +1801,27 @@ private:
     }
   }
 
-  // local story <const> = story, local ENDED <const> = story.ENDED: the module has the same.
+  // local story <const> = story, local ENDED <const> = story.ENDED: the module has the same. Or a
+  // named number, local Name <const> = 5, which the patch's code then reads as that number.
   void topLocal() {
     const Token& local = next();
+    bool constant = false;
     if (accept("<")) {
+      constant = is("const");
       next();
       expect(">");
     }
     expect("=");
+    const bool negative = is("-") && peek(1).kind == TokenKind::Number;
+    if (constant && local.kind == TokenKind::Name && local.text != StoryTable &&
+        (peek().kind == TokenKind::Number || negative)) {
+      if (negative) {
+        next();
+      }
+      const std::int64_t value = next().number;
+      constants_[local.text] = negative ? -value : value;
+      return;
+    }
     const bool story = accept(StoryTable);
     std::string field;
     if (story && accept(".")) {
@@ -1785,7 +1830,8 @@ private:
     const bool same = field.empty() ? local.text == StoryTable : field == local.text;
     if (!error_ && (!story || !same)) {
       fail(local, "a local at the top of a patch that is not one of story's own names "
-                  "(local story <const> = story, local ENDED <const> = story.ENDED)");
+                  "(local story <const> = story, local ENDED <const> = story.ENDED) or a named "
+                  "number (local Name <const> = 5)");
     }
   }
 
@@ -1942,6 +1988,7 @@ private:
   std::size_t at_ = 0;
   std::optional<std::string> error_;
   bool routinesTable_ = false;
+  std::map<std::string, std::int64_t, std::less<>> constants_;
   // Each routines.<name> the bodies use, and its line.
   std::vector<std::pair<std::string, std::size_t>> references_;
 };
@@ -1954,8 +2001,18 @@ core::Result<LuaPatch> readLuaPatch(std::string_view code, std::string name) {
   if (!tokens) {
     return core::fail(inPatch(patch.name, tokens.error().message));
   }
-  if (auto read = PatchReader{code, std::move(*tokens), patch}.read(); !read) {
+  PatchReader reader{code, std::move(*tokens), patch};
+  if (auto read = reader.read(); !read) {
     return std::unexpected{read.error()};
+  }
+  // The module has none of the patch's named numbers: its code gets the numbers themselves.
+  for (LuaPatchSection& section : patch.sections) {
+    for (std::string& piece : section.pieces) {
+      piece = withConstants(piece, reader.constants());
+    }
+  }
+  for (LuaPatchRoutine& routine : patch.routines) {
+    routine.body = withConstants(routine.body, reader.constants());
   }
   return patch;
 }

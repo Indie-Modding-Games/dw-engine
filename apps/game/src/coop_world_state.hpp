@@ -38,8 +38,8 @@ struct CoopWorldView {
   FieldItemClaim* claim = nullptr;
 };
 
-// A shared fact another player changed in this game, with the value it had: what the map head of
-// the map this game stands on decided with (CoopNpcPresence).
+// A shared fact changed in this game, by another player or by its own scripts, with the value it
+// had: what the map head of the map this game stands on decided with (CoopNpcPresence).
 struct CoopFactChange {
   game::coop::WorldEdit edit;
   std::int32_t previous = 0;
@@ -51,9 +51,11 @@ class CoopStoryBaseline {
 public:
   [[nodiscard]] bool ready() const { return ready_; }
   void reset(const game::story::StoryState& state);
-  // The shared facts that differ from the baseline, as edits; the baseline takes them.
-  [[nodiscard]] std::vector<game::coop::WorldEdit> changes(const game::story::StoryState& state,
-                                                           const game::coop::WorldScope& shared);
+  // The shared facts that differ from the baseline, as edits; the baseline takes them. With
+  // `changed`, each is noted there with the value it had.
+  [[nodiscard]] std::vector<game::coop::WorldEdit>
+  changes(const game::story::StoryState& state, const game::coop::WorldScope& shared,
+          std::vector<CoopFactChange>* changed = nullptr);
   // Writes a fact edit into the state and the baseline; whether the state changed. Map and ground
   // edits, and facts the state has no room for, change nothing.
   bool apply(game::story::StoryState& state, const game::coop::WorldEdit& edit);

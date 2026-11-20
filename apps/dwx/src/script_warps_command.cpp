@@ -41,6 +41,7 @@ constexpr std::string_view StoryPrefix = "story/";
 constexpr std::string_view PatchFolder = "story/patches/";
 constexpr std::string_view LinesSuffix = "_lines";
 constexpr std::string_view ScriptWarpsId = "field/script_warps";
+constexpr std::string_view NpcSpawnsId = "field/npc_spawns";
 constexpr std::string_view TransportSection = "bird_transport";
 constexpr std::string_view DestinationsKey = "destinations";
 
@@ -304,6 +305,24 @@ readModules(const assets::VirtualFileSystem& files, std::vector<std::string>& no
   return modules;
 }
 
+// Writes a derived document, making its folder (a mod's field/) when there is none; false, having
+// said why, when it cannot.
+bool writeText(const std::filesystem::path& path, std::string_view text) {
+  if (path.has_parent_path()) {
+    std::error_code ignored;
+    std::filesystem::create_directories(path.parent_path(), ignored);
+  }
+  std::ofstream file{path, std::ios::binary};
+  file << text;
+  file.close();
+  if (!file) {
+    std::println(stderr, "dwx: {}",
+                 core::formatMessage(messages::ScriptWarpsCannotWrite, assets::pathText(path)));
+    return false;
+  }
+  return true;
+}
+
 // Where two documents first differ: the line number and both lines.
 std::string firstDifference(std::string_view packed, std::string_view derived) {
   std::size_t line = 1;
@@ -422,6 +441,13 @@ core::Result<DerivedScriptWarps> deriveScriptWarps(const assets::VirtualFileSyst
     return std::unexpected{text.error()};
   }
   derived.yaml = std::move(*text);
+  const std::vector<script::MapHeadSpawn> spawns = script::findMapHeadSpawns(lookup);
+  derived.spawns = spawns.size();
+  auto spawnsText = core::emitYaml(script::mapHeadSpawnsToYaml(spawns, lookup, mapName));
+  if (!spawnsText) {
+    return std::unexpected{spawnsText.error()};
+  }
+  derived.spawnsYaml = std::move(*spawnsText);
   return derived;
 }
 
@@ -435,7 +461,7 @@ core::Result<DerivedScriptWarps> deriveScriptWarps(std::span<const std::filesyst
 }
 
 int scriptWarpsCommand(std::span<const std::filesystem::path> folders,
-                       const std::optional<std::filesystem::path>& out, std::string_view rules) {
+                       const ScriptWarpsOutputs& outputs, std::string_view rules) {
   auto mounted = mountFolders(folders);
   auto derived = mounted ? deriveScriptWarps(mounted->files, rules)
                          : core::Result<DerivedScriptWarps>{std::unexpected{mounted.error()}};
@@ -446,17 +472,23 @@ int scriptWarpsCommand(std::span<const std::filesystem::path> folders,
   for (const std::string& note : derived->notes) {
     std::println(stderr, "note: {}", note);
   }
-  if (out) {
-    std::ofstream file{*out, std::ios::binary};
-    file << derived->yaml;
-    file.close();
-    if (!file) {
-      std::println(stderr, "dwx: {}",
-                   core::formatMessage(messages::ScriptWarpsCannotWrite, assets::pathText(*out)));
-      return ExitFailed;
+  if (outputs.warps || outputs.spawns) {
+    if (outputs.warps) {
+      if (!writeText(*outputs.warps, derived->yaml)) {
+        return ExitFailed;
+      }
+      std::println("{}", core::formatMessage(messages::ScriptWarpsWritten,
+                                             assets::pathText(*outputs.warps), derived->warps,
+                                             derived->modules));
     }
-    std::println("{}", core::formatMessage(messages::ScriptWarpsWritten, assets::pathText(*out),
-                                           derived->warps, derived->modules));
+    if (outputs.spawns) {
+      if (!writeText(*outputs.spawns, derived->spawnsYaml)) {
+        return ExitFailed;
+      }
+      std::println("{}", core::formatMessage(messages::NpcSpawnsWritten,
+                                             assets::pathText(*outputs.spawns), derived->spawns,
+                                             derived->modules));
+    }
     return ExitOk;
   }
   auto packed = readText(mounted->files, ScriptWarpsId);
@@ -464,13 +496,33 @@ int scriptWarpsCommand(std::span<const std::filesystem::path> folders,
     std::println(stderr, "dwx: {}: {}", ScriptWarpsId, packed.error().message);
     return ExitFailed;
   }
+  int exit = ExitOk;
   const std::string difference = firstDifference(*packed, derived->yaml);
   if (difference.empty()) {
     std::println("{}", core::formatMessage(messages::ScriptWarpsMatch, ScriptWarpsId,
                                            derived->warps, derived->modules));
-    return ExitOk;
+  } else {
+    std::println("{}", core::formatMessage(messages::ScriptWarpsDiffer, ScriptWarpsId, difference));
+    exit = ExitUnknown;
   }
-  std::println("{}", core::formatMessage(messages::ScriptWarpsDiffer, ScriptWarpsId, difference));
+  // field/npc_spawns, when the packs have it (content extracted before it existed has none).
+  auto spawnsId = assets::AssetId::parse(NpcSpawnsId);
+  if (!spawnsId || mounted->files.resolve(*spawnsId) == nullptr) {
+    std::println("{}", core::formatMessage(messages::NpcSpawnsNotPacked, NpcSpawnsId));
+    return exit;
+  }
+  auto packedSpawns = readText(mounted->files, NpcSpawnsId);
+  if (!packedSpawns) {
+    std::println(stderr, "dwx: {}: {}", NpcSpawnsId, packedSpawns.error().message);
+    return ExitFailed;
+  }
+  const std::string spawnsDifference = firstDifference(*packedSpawns, derived->spawnsYaml);
+  if (spawnsDifference.empty()) {
+    std::println("{}", core::formatMessage(messages::NpcSpawnsMatch, NpcSpawnsId, derived->spawns,
+                                           derived->modules));
+    return exit;
+  }
+  std::println("{}", core::formatMessage(messages::NpcSpawnsDiffer, NpcSpawnsId, spawnsDifference));
   return ExitUnknown;
 }
 

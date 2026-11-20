@@ -200,7 +200,7 @@ Lua (`story/<n>.lua`): moving a `story.warp_to` there did not change the documen
 again from the packs' Lua ([dwx](../modules/apps/dwx.md#dwx-script-warps)):
 
 ```sh
-dwx script-warps <content folder> [--with <folder>]... [--rules <id>] [-o <file>]
+dwx script-warps <content folder> [--with <folder>]... [--rules <id>] [-o <file>] [--spawns <file>]
 ```
 
 - **How.** `formats::script::readLuaModule` (`lua_reader.hpp`) reads each module back into the listing and the
@@ -229,9 +229,11 @@ dwx script-warps <content folder> [--with <folder>]... [--rules <id>] [-o <file>
   from `data/maps` and the transport destinations from `rules/<id>/bird_transport` (`destinations`; `--rules`, by
   default `original`). That ruleset is in the team's pack, so with the player's content `--with content/packs/game`
   is needed; without the document, the transport is left out and a note says so.
-- **Check and write.** Without `-o` it compares with the packs' `field/script_warps` and says the first line that
-  differs (code 1); with `-o` it writes the document (for example to the mod's `field/script_warps.yaml`, which wins over the
-  base pack's). `data/new_game_story` is not extracted again.
+- **Check and write.** Without `-o` or `--spawns` it compares with the packs' `field/script_warps` and
+  `field/npc_spawns` (the latter only when the packs have it) and says the first line that differs (code 1); with `-o`
+  it writes `field/script_warps` and with `--spawns` the NPCs the map heads place, `field/npc_spawns`, the same
+  document `dwx extract` writes (for example to the mod's `field/script_warps.yaml` and `field/npc_spawns.yaml`, which
+  win over the base pack's; the folder is made when missing). `data/new_game_story` is not extracted again.
 - **Story patches.** Before the walk it applies the packs' `story/patches/*.lua`
   ([story](../modding/story.md)) like the game (`session::StoryLuaHost`): from the bottom of the stack up and by id
   within a pack, and the topmost one wins each section. `formats::script::readLuaPatch` reads each patch and
@@ -242,8 +244,10 @@ dwx script-warps <content folder> [--with <folder>]... [--rules <id>] [-o <file>
   (`n`, the patch's position in the stack from 1; with one more `_` if the module already uses that name) and their calls are
   renamed; a `routines.<name>` that the patch does not define is an error with its line. A script that is only given by
   patches is read the same, without a module. The reader only follows `original()` as a subroutine (`return original()` or
-  `if original() == ENDED then return ENDED end`); any other use (`local r = original()`, `original` in a condition, a
-  top-level local that is not a `story` name) is an **error with the patch's file and its line**
+  `if original() == ENDED then return ENDED end`); a top-level `local Name <const> = 5` is a named number, which the
+  patch's code gets as the number. Any other use (`local r = original()`, `original` in a condition, a top-level local
+  that is neither a `story` name nor a named number, a function of the patch's own) is an **error with the patch's
+  file and its line**
   (`my_mod:story/patches/x.lua:4: ...`) and nothing is written: leaving the patch out would give the map changes of the
   section that the game no longer runs. The patch's lines have no offset, so the records of a patched module
   come out without `offset` and a note names the patches. Without patches, the result does not change.
@@ -275,7 +279,8 @@ map, hand-written modules, the story patches and the errors).
   section spawns (`set_digimon`) with the guard of its path, in the form above, simplified (a test the path already
   made is not repeated, a path that contradicts itself is dropped, two paths that differ in one decision become one). Those guards also carry `pstat` tests
   (a variable byte against a value); `GuardFacts::variables` reads them, and without that reader they stay unknown, so
-  the warps above decide exactly as before. Co-op uses them (see [multiplayer](multiplayer.md)).
+  the warps above decide exactly as before. Co-op uses them (see [multiplayer](multiplayer.md)). `dwx script-warps
+  --spawns` derives the same document from the Lua, so a mod's map head reaches it ([from the Lua](#from-the-lua)).
 - **Policy for the unknown** (`UnknownPolicy`, `script_warps.hpp`): decides what the field does with the two things
   that the extraction says it does not know, and only with them. `decide(warp, oracle, policy)` gives the truth and what the
   policy let through.
