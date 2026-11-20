@@ -7,6 +7,7 @@
 
 #include <doctest/doctest.h>
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -248,6 +249,13 @@ TEST_CASE("a map's collision becomes a minimap grid") {
   CHECK(grid.originX == doctest::Approx(-5000.0F));
   CHECK(grid.originZ == doctest::Approx(-5000.0F));
   CHECK(grid.cellSize == doctest::Approx(100.0F));
+
+  // A step cell whose script changes the map (gias00's south edge, section 51) is an exit too.
+  constexpr std::array<std::int32_t, 1> StepExits{60};
+  const MinimapGrid withSteps = minimapGridOf(map, StepExits);
+  const std::size_t stepCell = (4U * 100U) + 8U;
+  CHECK(withSteps.cells[stepCell] == MinimapCell::Exit);
+  CHECK(withSteps.cells[(4U * 100U) + 6U] == MinimapCell::Walkable);
 }
 
 TEST_CASE("the user's disc, extracted: every map with a file gives a minimap") {

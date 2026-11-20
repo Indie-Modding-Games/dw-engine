@@ -330,6 +330,7 @@ UI API version: **0.19.0**.
 | `generous_talk` | option | yes/no | Generous talk. |
 | `extra_toilets` | option | yes/no | Extra toilets. |
 | `angemon_event_zone` | option | yes/no | Angemon's event zone. |
+| `whamon_in_water` | option | yes/no | Whamon in the water. |
 | `smooth_motion` | option | yes/no | Smooth motion. |
 | `hd_scenery` | option | yes/no | HD scenery. |
 | `scenery_quality` | option | text | Scenery quality: upscaled or smooth. |

@@ -186,7 +186,7 @@ the option is changed and with `--weather`.
 ## Drawing (`apps/game`)
 
 - `FieldScene` (`field_scene_weather.cpp`) picks the area when each map loads, advances the fade every frame (the
-  animation stops with pause) and passes the quads to `WeatherDrawer`.
+  animation stops with pause, not in a battle: `sceneryMoves`) and passes the quads to `WeatherDrawer`.
 - `weatherQuads` (`weather_particles.cpp`) generates the quads statelessly, by hash of the particle number and its
   cycle: a dark gray veil for cloudy and rain, shadows of passing clouds (a repeating noise texture), sun heat by day,
   slanted drops with splashes on the ground, flakes that fall with drift. Sizes and speeds are in pixels of the

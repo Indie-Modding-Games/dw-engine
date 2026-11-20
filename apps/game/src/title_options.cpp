@@ -60,6 +60,8 @@ constexpr std::array Toggles{
     GameToggle{.setting = "angemon_event_zone",
                .saved = &UserSettings::angemonEventZone,
                .fallback = true},
+    GameToggle{
+        .setting = "whamon_in_water", .saved = &UserSettings::whamonInWater, .fallback = true},
     // Graphics tab.
     GameToggle{.setting = "smooth_motion", .saved = &UserSettings::smoothMotion, .fallback = true},
     GameToggle{

@@ -237,6 +237,39 @@ patch plays the event on the corridor band once the light is freed" (`story_impr
 original; with the option on, walking into the band plays the event to its end (trigger 220 set); with it off from the
 Game tab, the band runs the original's section and nothing starts.
 
+### Whamon in the water
+
+An optional improvement, on by default, asked for after a tester report. In the original, Whamon (entity 5 of the Secret
+Beach Cave, ogre10, script 136) spawns far back at (752, 4022), off camera, and only comes into the water at (1457,
+2916) once trigger 224 (the Ogremon event) is set: the map's entry section (0xFE) slides it there, and the ride's
+arrival sections (0x3C, the first trip from frzl16; 0x3D, from script 162) do the same when the player comes on its
+back. Before 224 the player can still talk to it from the confirm cells by the shore (value 81, section 0x51: "Going
+back to the city?") while it is not on screen. Measured in the original by w112c (2026-11-19, sheet
+`_work/tmp/w112/sheets/whamon.png`): on the confirm cell with 224 clear, Whamon stays at (752, 4022) and the prompt
+shows with no Whamon in view; dwe does the same with the option off.
+
+The `whamon_in_water` setting (row "Whamon in the water", "Whamon en el agua" in Spanish, Game tab, saved in the user's
+settings) reaches `session::StoryScenes::setImprovement(StoryImprovement::WhamonInWater)`. The story patch
+`story/patches/whamon_water_136.lua` of the game pack wraps section 0xFE: with 224 clear it asks routine 261 for
+improvement 2 and, on, the engine's routine 262 for the arrival section that runs after the entry
+(`game::story::StoryRunner::arrivalAhead`, answered in variable 254, 0xFF none). On a walk in or a loaded save with the
+option on, it turns Whamon to rotation 3584 (its head to the shore), waits a frame (a slide ordered on the same slot
+would end the turn) and slides it toward (1500, 2800) in 8 frames, waiting for it; it keeps its idle clip. A slide can
+stop up to one step past its point (tamer.c: tickEntityMoveTo; the original's 2-frame slide to (1457, 2916) after 224
+leaves Whamon at (1809, 2363)), so the 8 frames keep that within (93, -152) of it. That spot is off the confirm cell
+(885, 1561), outside the shore's walkable cells and clear of the green machine (objects 29 to 56 around (160, 2200)).
+Then the original's section runs. After 224, on a ride in (0x3C, 0x3D) and with the option off, the section is the
+original's, so the ride's arrival scenes and the spot after the event do not change; talking and the ride (section 0x51)
+are the original's. Tests: "the map's entry section knows the arrival section that runs after it"
+(`story_runner_tests.cpp`), "routine 261 tells a story patch whether a story improvement is on", "routine 262 tells a
+map's entry section the arrival section that runs after it" and "the Whamon patch puts Whamon in the water before the
+Ogremon event" (`story_improvement_tests.cpp`). Checked live (dwe, 2026-11-19, `ogre11,0` with 224 cleared, then
+`warp("ogre10 0")`): routine 262 answers 255, Whamon ends at (1589, 2654) with rotation 3584, in the water by the shore,
+and confirming on (885, 1561) shows "Going back to the city?" with Whamon in view; "I'm going back" warps as before. The
+first ride from frzl16 (175 and 352 set) runs the entry with routine 262 answering 60, the patch does nothing and
+section 0x3C plays as the original's (Whamon at (1465, 2906), rotation 0). Sheet:
+`_work/tmp/w112/sheets/whamon-improvement.png`.
+
 ## Praise and scold
 
 "Praise" and "Scold" in the field menu (Tab) play the original's scene (`partner.c: partnerTickPraiseScold`,
@@ -562,7 +595,7 @@ whichever they had (the player's walking state and `overworld.c: setPartnerIdlin
 while the menu is open (`partner.c: partnerTickOverworld` with `IS_IN_MENU`, the player in its rest state,
 6); the NPCs stand still
 (`NPCEntityTickOverworld` returns immediately). `FieldClock` (`field_clock.hpp`) decides it every frame:
-`MenuRest` with the menu (or the partner's sheet opened from it), `Frozen` with any other screen.
+`MenuRest` with the menu (or the partner's sheet opened from it), `Battle` in a battle, `Frozen` with any other screen.
 
 | Measurement (twna01, menu opened while running) | Original | dwe before | dwe now | Status |
 |---|---|---|---|---|
@@ -573,6 +606,23 @@ while the menu is open (`partner.c: partnerTickOverworld` with `IS_IN_MENU`, the
 
 On closing the menu each one goes back to what it should do (the player's step or the partner's following). Test:
 `field_clock_tests.cpp`; comparison in `_work/tmp/w21-trfield/contact_sheet.png`.
+
+In a battle the field's characters stand, but the scenery keeps moving: the original draws the map with
+`map.c: renderMap` every frame whatever `GAME_STATE` says, and its `overworld.c: renderMapOverlays` steps the animated
+sprites' timers and `renderMist` drifts the mist with `PLAYTIME_FRAMES`. dwe used to stop them, and the weather and the
+season's leaves drawn over them, for the whole battle. `sceneryMoves(FieldClock)` now keeps the map's sprites
+(`MapDepthLayers`), the mist and the weather running with `Running` and `Battle`; Start's pause
+(`utils2.c: handlePause`, which spins until the next press) and the pause menu still stop everything, in the field too.
+
+| Measurement (mayo00, battle with Agumon) | Original | dwe before | dwe now | Status |
+|---|---|---|---|---|
+| Animated map sprite's timer | 189 to 193 in 10 refreshes (`GAME_STATE` 1), 164 to 168 as the battle starts | stopped | counts on | Same |
+| `PLAYTIME_FRAMES` (mist drift) | 5070 to 5073 in 10 refreshes | mist stopped | drifts | Same |
+| Same timer under Start's pause | stays at 17 for 32 refreshes | in the field the rain, the leaves and the clips went on | stopped | Same |
+| Rain and leaves (improvement, no original) | none | still for the whole battle, intro banner included | fall | Improvement |
+
+Test: `field_clock_tests.cpp` "a battle stands the characters but the map's sprites, mist and weather move on";
+comparison in `_work/tmp/w112/sheets/battle-weather.png`.
 
 ## Menu lines
 

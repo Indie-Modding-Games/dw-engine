@@ -9,6 +9,7 @@
 #include <deque>
 #include <format>
 #include <map>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -333,6 +334,38 @@ TEST_CASE("a warp_to the field took runs its arrival section after the new map's
     runFrames(runner, 3);
     CHECK_FALSE(runner.busy());
     CHECK(host.open() == 0);
+  }
+}
+
+TEST_CASE("the map's entry section knows the arrival section that runs after it") {
+  // The Secret Beach Cave (screen 142, script 136): a ride on Whamon arrives with section 0x3C,
+  // which runs after the map's entry section (0xFE); a walk in arrives with none.
+  constexpr std::int32_t Map = 142;
+  constexpr SectionRef MapHead{.script = StoryRunner::MapHeadScript, .section = Map};
+  constexpr SectionRef Entry{.script = 136, .section = StoryRunner::MapEntrySection};
+  constexpr SectionRef Arrival{.script = 136, .section = 0x3c};
+  for (const bool arrives : {false, true}) {
+    CAPTURE(arrives);
+    ScriptedHost host;
+    host.define(MapHead, {frames(1), SectionEnded{}});
+    host.define(Entry, {frames(1), SectionEnded{}});
+    host.define(Arrival, {SectionEnded{}});
+    StoryRunner runner = makeRunner(host);
+    CHECK_FALSE(runner.arrivalAhead().has_value());
+    if (arrives) {
+      runner.arriveWith(Arrival.section);
+    }
+    runner.enterMap(Map);
+    // The map head's set_script.
+    REQUIRE(runner.setScript(Entry.script, Map));
+    runFrames(runner, 1);
+    REQUIRE(runner.runningSections() == std::vector{Entry});
+    CHECK(runner.arrivalAhead() == (arrives ? std::optional<std::uint16_t>{Arrival.section}
+                                            : std::optional<std::uint16_t>{}));
+    runFrames(runner, 3);
+    CHECK(std::ranges::contains(host.log(), std::string{"start 136:0x3c"}) == arrives);
+    CHECK_FALSE(runner.arrivalAhead().has_value());
+    CHECK_FALSE(runner.busy());
   }
 }
 

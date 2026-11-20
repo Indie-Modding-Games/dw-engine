@@ -92,6 +92,7 @@ constexpr std::string_view ChooseEggAfterLivesLostKey = "choose_egg_after_lives_
 constexpr std::string_view GenerousTalkKey = "generous_talk";
 constexpr std::string_view ExtraToiletsKey = "extra_toilets";
 constexpr std::string_view AngemonEventZoneKey = "angemon_event_zone";
+constexpr std::string_view WhamonInWaterKey = "whamon_in_water";
 
 } // namespace
 
@@ -270,7 +271,8 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
           std::pair{ChooseEggAfterLivesLostKey, &UserSettings::chooseEggAfterLivesLost},
           std::pair{GenerousTalkKey, &UserSettings::generousTalk},
           std::pair{ExtraToiletsKey, &UserSettings::extraToilets},
-          std::pair{AngemonEventZoneKey, &UserSettings::angemonEventZone}}) {
+          std::pair{AngemonEventZoneKey, &UserSettings::angemonEventZone},
+          std::pair{WhamonInWaterKey, &UserSettings::whamonInWater}}) {
       if (const core::YamlNode* value = tree->find(key)) {
         settings.*flag = reader.boolean(*value);
       }
@@ -499,7 +501,8 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
         std::pair{ChooseEggAfterLivesLostKey, &UserSettings::chooseEggAfterLivesLost},
         std::pair{GenerousTalkKey, &UserSettings::generousTalk},
         std::pair{ExtraToiletsKey, &UserSettings::extraToilets},
-        std::pair{AngemonEventZoneKey, &UserSettings::angemonEventZone}}) {
+        std::pair{AngemonEventZoneKey, &UserSettings::angemonEventZone},
+        std::pair{WhamonInWaterKey, &UserSettings::whamonInWater}}) {
     if (const std::optional<bool>& value = settings.*flag; value) {
       root.set(std::string{key}, core::YamlNode::scalar(*value ? "true" : "false"));
     }

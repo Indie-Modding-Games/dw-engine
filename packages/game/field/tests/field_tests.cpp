@@ -8,6 +8,7 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <memory>
@@ -1559,12 +1560,15 @@ TEST_CASE(
   Field field{world, originalRules(), {.warps = {houseDoor()}, .facts = story.reader()}};
   field.enterMapAt(house, at(0.0F, 1000.0F));
   CHECK(field.warpsOn(51));
+  CHECK(std::ranges::equal(field.stepExits(), std::array{51}));
   story.set.insert(203);
   field.refreshScriptWarps();
   CHECK_FALSE(field.warpsOn(51));
+  CHECK(field.stepExits().empty());
   story.set.erase(203);
   field.refreshScriptWarps();
   CHECK(field.warpsOn(51));
+  CHECK(std::ranges::equal(field.stepExits(), std::array{51}));
 }
 
 namespace {

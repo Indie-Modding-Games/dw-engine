@@ -199,6 +199,16 @@ void StoryRunner::setVariableAtStart(std::int64_t value) {
   variableAtStart_ = value;
 }
 
+std::optional<std::uint16_t> StoryRunner::arrivalAhead() const {
+  // returnFromScript pops the stack from its back; the map-loaded entries open no arrival.
+  for (const Continuation& next : continuations_ | std::views::reverse) {
+    if (const auto* section = std::get_if<RunSection>(&next)) {
+      return section->section;
+    }
+  }
+  return std::nullopt;
+}
+
 std::vector<SectionRef> StoryRunner::runningSections() const {
   return sections_ | std::views::transform(&RunningSection::ref) | std::ranges::to<std::vector>();
 }

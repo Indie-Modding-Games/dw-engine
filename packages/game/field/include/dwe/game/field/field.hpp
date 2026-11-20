@@ -338,6 +338,9 @@ public:
   // decided taken. Click-to-move and the autotest's walks keep off these cells unless one is where
   // they go.
   [[nodiscard]] bool warpsOn(std::int32_t trigger) const;
+  // The step cells of the current map that warpsOn: those whose script changes the map now. The
+  // minimap paints them as exits.
+  [[nodiscard]] std::span<const std::int32_t> stepExits() const { return warpingStepCells_; }
 
   // Whether a walk must keep off the cells with this trigger: those that warp (warpsOn), except the
   // ones of the trigger the player stands on, which fire nothing until stepped onto again (after

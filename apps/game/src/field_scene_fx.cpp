@@ -252,7 +252,8 @@ void FieldScene::addMist(std::vector<ScenePrim>& prims, double frameSeconds, boo
                              static_cast<std::int32_t>(std::floor(scroll.y))};
   const bool drawn = mistShown_ && !mapLayerHidden_ && !stage_.sceneryHidden && !stage_.camera;
   // map.c: renderMap runs renderMist once a frame of the original, 20 a second, the pause
-  // menu's included (PLAYTIME_FRAMES counts on under it); the field's own pause stops it.
+  // menu's included (PLAYTIME_FRAMES counts on under it), and in a battle; the field's own pause
+  // stops it.
   const double originalFrame = field_->rules().transition.frameSeconds;
   if (!paused && originalFrame > 0.0) {
     mistSeconds_ += frameSeconds;
