@@ -382,3 +382,5 @@ and `apps/game/tests/app_flow_tests.cpp` (a guest's game is never saved to a slo
   [signaling](../modules/services/versus-signal.md): the network that is reused.
 - [field](../modules/game/field.md), [battle](../modules/game/battle.md) and [session](../modules/apps/session.md): the
   modules that change.
+- [Co-op combat](coop-combat.md) (#362): every partner on one side, the next step after the first co-op battles.
+- [Co-op difficulty](coop-difficulty.md) (#361): enemy scaling and rewards by the number of players.
