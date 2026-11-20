@@ -1,5 +1,6 @@
 #include <dwe/game/coop/battle.hpp>
 
+#include <algorithm>
 #include <utility>
 
 namespace dwe::game::coop {
@@ -16,6 +17,7 @@ bool newer(std::uint32_t candidate, std::uint32_t current) {
 bool roleAllows(BattleRole role, BattleActionKind kind) {
   switch (kind) {
   case BattleActionKind::Command:
+    return role != BattleRole::Helper;
   case BattleActionKind::CloseEnd:
     return role == BattleRole::Starter;
   case BattleActionKind::ThrowItem:
@@ -38,26 +40,38 @@ std::optional<BattleRefusal> BattleReferee::judge(const BattleAsk& ask, std::str
 
 BattleBegin BattleReferee::begin(PlayerId starter, std::uint32_t ask, std::string mapId,
                                  std::vector<std::int16_t> enemyNpcs,
-                                 std::vector<std::string> species, bool fixedFight) {
+                                 std::vector<std::string> species, bool fixedFight,
+                                 std::vector<PlayerId> allies) {
   const std::uint32_t battle = next_++;
   if (next_ == 0) {
     next_ = 1;
   }
-  running_ = Running{.battle = battle, .starter = starter, .ask = ask};
+  running_ = Running{.battle = battle, .starter = starter, .ask = ask, .allies = allies};
   return {.battle = battle,
           .starter = starter,
           .ask = starter == GuestPlayerId ? ask : 0,
           .mapId = std::move(mapId),
           .enemyNpcs = std::move(enemyNpcs),
           .species = std::move(species),
-          .fixedFight = fixedFight};
+          .fixedFight = fixedFight,
+          .allies = std::move(allies)};
+}
+
+std::optional<BattleFighterProfile> BattleReferee::offered() const {
+  if (!offer_ || !offer_->available || guestGone_) {
+    return std::nullopt;
+  }
+  return offer_->fighter;
 }
 
 std::optional<BattleRole> BattleReferee::roleOf(PlayerId player) const {
   if (!running_) {
     return std::nullopt;
   }
-  return running_->starter == player ? BattleRole::Starter : BattleRole::Helper;
+  if (running_->starter == player) {
+    return BattleRole::Starter;
+  }
+  return std::ranges::contains(running_->allies, player) ? BattleRole::Ally : BattleRole::Helper;
 }
 
 bool BattleReferee::allows(const BattleAction& action) const {
@@ -75,7 +89,8 @@ std::optional<BattleEnd> BattleReferee::end(BattleOutcome outcome,
     return std::nullopt;
   }
   const Running ended = *std::exchange(running_, std::nullopt);
-  if (ended.starter != GuestPlayerId || guestGone_) {
+  if ((ended.starter != GuestPlayerId && !std::ranges::contains(ended.allies, GuestPlayerId)) ||
+      guestGone_) {
     spoils.reset();
   }
   return BattleEnd{.battle = ended.battle,
@@ -141,7 +156,7 @@ void BattleMirror::receive(const BattleEnd& end) {
     return;
   }
   BattleEnd ended = end;
-  if (running_->starter != GuestPlayerId) {
+  if (role() == BattleRole::Helper) {
     ended.spoils.reset();
   }
   running_.reset();
@@ -165,7 +180,20 @@ std::optional<BattleRole> BattleMirror::role() const {
   if (!running_) {
     return std::nullopt;
   }
-  return running_->starter == GuestPlayerId ? BattleRole::Starter : BattleRole::Helper;
+  if (running_->starter == GuestPlayerId) {
+    return BattleRole::Starter;
+  }
+  return std::ranges::contains(running_->allies, GuestPlayerId) ? BattleRole::Ally
+                                                                : BattleRole::Helper;
+}
+
+std::optional<BattleOffer> BattleMirror::offer(bool available, BattleFighterProfile fighter) {
+  BattleOffer next{.available = available, .fighter = std::move(fighter)};
+  if (offered_ && *offered_ == next) {
+    return std::nullopt;
+  }
+  offered_ = next;
+  return next;
 }
 
 std::optional<BattleAction> BattleMirror::action(BattleActionKind kind, std::int32_t value,
@@ -180,6 +208,7 @@ std::optional<BattleAction> BattleMirror::action(BattleActionKind kind, std::int
 
 BattleMirror::Dropped BattleMirror::hostLeft() {
   Dropped dropped{.ask = std::exchange(pending_, std::nullopt), .battle = running_.has_value()};
+  offered_.reset();
   running_.reset();
   frame_.reset();
   began_.reset();

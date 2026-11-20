@@ -10,11 +10,14 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace dwe::game::battle {
 
-// Fighters are numbered as in the original: the partner is 0 and the enemies 1 to 3.
+// Fighters are numbered as in the original: the partner is 0 and the enemies 1 to 3. A co-op battle
+// (docs/architecture/coop-combat.md) adds the other players' partners after the enemies, so the
+// partner and the enemies keep their numbers.
 using FighterId = std::size_t;
 inline constexpr FighterId PartnerId = 0;
 // In a versus match (vs_combat.c) the other player's partner is fighter 1.
@@ -210,6 +213,10 @@ struct ActiveAttack {
   bool followed = false;
 };
 
+// How a players' side fighter left a co-op battle that goes on (docs/architecture/coop-combat.md
+// §4.7, §4.8).
+enum class Departure : std::uint8_t { None, Fled, KnockedOut };
+
 struct Fighter {
   Combatant combatant;
   // The equipped moves, resolved in the catalog.
@@ -285,6 +292,9 @@ struct Fighter {
   std::int32_t finisherGoal = 0;
 
   bool fainted = false;
+  // Out of a co-op battle that goes on without it: it ran off, or its countdown ran out. Nobody
+  // targets it and it does nothing more (never with one partner: the battle ends instead).
+  Departure departure = Departure::None;
   // Frames since its HP bar last showed damage (battle_main.c: BTL_renderEnemyHPBars); it starts
   // hidden.
   std::int32_t hpBarFrames = 0;
@@ -294,6 +304,18 @@ struct Fighter {
   // BTL_isFighterDefeated).
   [[nodiscard]] bool defeated() const { return hp - pendingDamage <= 0; }
   [[nodiscard]] bool hasFinisher() const { return moves[FinisherSlot].has_value(); }
+  [[nodiscard]] bool gone() const { return departure != Departure::None; }
+};
+
+// What the battle needs to know about the partner beyond its combatant: the care values the rules
+// read.
+struct PartnerCondition {
+  std::int32_t discipline = 0;
+  std::int32_t tiredness = 0;
+  bool sick = false;
+  bool injured = false;
+  // The moves it already knows, so it does not learn them again.
+  std::vector<std::string> knownMoves;
 };
 
 // The partner's side of the menu and the commands (battle_setup.c, battle_tick.c).
@@ -344,6 +366,28 @@ struct FinisherState {
 struct ThrownItemState {
   ThrownItem item;
   std::int32_t frames = 0;
+  // The partner it flies to: the thrower's own, or in co-op an ally's.
+  FighterId target = PartnerId;
+};
+
+// Another player's partner in a co-op battle (docs/architecture/coop-combat.md §4): fighter `id`,
+// commanded by player `owner` as the partner is by this one, with its own menu, counters, thrown
+// item, countdown and flight. What the partner keeps in BattleState, an ally keeps here.
+struct AllyState {
+  FighterId id = 0;
+  std::uint8_t owner = 0;
+  CommandState commands;
+  PartnerCondition condition;
+  BattleCounters counters;
+  // Where its player stands: it runs there when called back, and its items leave from there.
+  Point tamer;
+  std::optional<ThrownItemState> thrownItem;
+  std::optional<std::int32_t> fleeFrames;
+  std::int32_t deathFrames = 0;
+  // Its player's bag is open (the ally takes no command meanwhile).
+  bool bagOpen = false;
+  // Its player left the session: it fights on its own call and takes no more commands.
+  bool released = false;
 };
 
 // A tournament match's clock (std_main.c: STD_addFighterCounter, STD_tickFighterCounter): the
@@ -391,29 +435,49 @@ struct BattleState {
   std::optional<MatchClock> matchClock;
   // Only in a versus match, which also runs on a match clock.
   std::optional<VersusRival> rival;
+  // Only in a co-op battle: the other players' partners, fighters after the enemies.
+  std::vector<AllyState> allies;
+  // The enemies' count, which the allies follow in the fighters.
+  std::size_t enemies = 0;
 
   [[nodiscard]] Fighter& partner() { return fighters.front(); }
   [[nodiscard]] const Fighter& partner() const { return fighters.front(); }
-  [[nodiscard]] std::size_t enemyCount() const { return fighters.size() - 1; }
+  [[nodiscard]] std::size_t enemyCount() const { return enemies; }
+  [[nodiscard]] bool isEnemy(FighterId id) const { return id >= 1 && id <= enemies; }
+  // The players' side: the partner and the allies.
+  [[nodiscard]] bool isPlayerSide(FighterId id) const { return id == PartnerId || id > enemies; }
+  // Whether `self` fights `other`: everyone but itself, the allies of its own side and whoever is
+  // gone. Enemies may hit each other, as in the original; partners never hit each other.
+  [[nodiscard]] bool foes(FighterId self, FighterId other) const {
+    return self != other && !fighters[other].gone() && !(isPlayerSide(self) && isPlayerSide(other));
+  }
+  // The ally that fighter `id` is, if it is one.
+  [[nodiscard]] AllyState* allyOf(FighterId id);
+  [[nodiscard]] const AllyState* allyOf(FighterId id) const;
+  // The players' side's fighters still in the battle (not gone).
+  [[nodiscard]] std::vector<FighterId> partnersIn() const;
+  // The counters of a players' side fighter (none for an enemy).
+  [[nodiscard]] BattleCounters* countersOf(FighterId id);
   // The living fighters other than `self` (battle_main.c: BTL_getRemainingEnemies): for the partner
-  // the enemies, for an enemy the partner and the other enemies.
+  // the enemies, for an enemy the partner and the other enemies (and the allies, in co-op).
   [[nodiscard]] std::vector<FighterId> remainingOthers(FighterId self) const;
   // The enemies not yet defeated (battle_main.c: BTL_countLivingEnemies, BTL_isFighterDefeated for
   // each).
   [[nodiscard]] std::int32_t livingEnemies() const;
   [[nodiscard]] bool frozenByFinisher() const { return finisher.fighter.has_value(); }
   [[nodiscard]] bool versus() const { return rival.has_value(); }
-  // A fighter a player commands: the partner, and the rival in a versus match.
+  // A fighter a player commands: the partner, the rival in a versus match and the co-op allies.
   [[nodiscard]] bool commanded(FighterId id) const {
-    return id == PartnerId || (rival.has_value() && id == RivalId);
+    return id == PartnerId || (rival.has_value() && id == RivalId) || allyOf(id) != nullptr;
   }
   // The commands of a commanded fighter.
-  [[nodiscard]] CommandState& commandsOf(FighterId id) {
-    return id == PartnerId ? commands : rival->commands;
-  }
-  [[nodiscard]] const CommandState& commandsOf(FighterId id) const {
-    return id == PartnerId ? commands : rival->commands;
-  }
+  [[nodiscard]] CommandState& commandsOf(FighterId id);
+  [[nodiscard]] const CommandState& commandsOf(FighterId id) const;
+  // The frames a players' side fighter has been running off, if it was called back.
+  [[nodiscard]] std::optional<std::int32_t>& fleeFramesOf(FighterId id);
+  [[nodiscard]] const std::optional<std::int32_t>& fleeFramesOf(FighterId id) const;
+  // Where the player of a players' side fighter stands.
+  [[nodiscard]] Point tamerOf(FighterId id) const;
 };
 
 // The clip a fighter stands with (btl.c: startBattleIdleAnimation): weak while poisoned or at a

@@ -85,20 +85,20 @@ bool gaugeFull(const battle::Fighter& fighter) {
          fighter.finisherProgress >= fighter.finisherGoal;
 }
 
-std::optional<std::int32_t> reviveSecondsOf(const battle::Battle& battle) {
-  const battle::BattleState& state = battle.state();
+std::optional<std::int32_t> reviveSecondsOf(const battle::Battle& battle, battle::FighterId own) {
   const battle::EndingRules& ending = battle.rules().ending;
-  if (!state.partner().fainted || state.deathFrames < ending.reviveCountdownShownAt) {
+  const std::int32_t deathFrames = battle.deathFramesOf(own);
+  if (!battle.state().fighters.at(own).fainted || deathFrames < ending.reviveCountdownShownAt) {
     return std::nullopt;
   }
-  const std::int32_t framesLeft = std::max(0, ending.reviveFrames - state.deathFrames);
+  const std::int32_t framesLeft = std::max(0, ending.reviveFrames - deathFrames);
   return (framesLeft + battle::FramesPerSecond - 1) / battle::FramesPerSecond;
 }
 
-void addFighter(ScreenSettings& settings, std::size_t index, const FighterView& fighter) {
+void addFighter(ScreenSettings& settings, std::size_t index, const FighterView& fighter,
+                std::string_view list = BattleFighterList) {
   const auto add = [&](std::string_view field, ui::UiValue value) {
-    settings.push_back(
-        {.name = listEntryName(BattleFighterList, index, field), .value = std::move(value)});
+    settings.push_back({.name = listEntryName(list, index, field), .value = std::move(value)});
   };
   add(NameField, fighter.nameKey);
   add(HpField, static_cast<double>(fighter.hp));
@@ -166,46 +166,60 @@ std::string commandIconOf(battle::Command command, const battle::Fighter& partne
 namespace {
 
 // A technique's MP cost to the partner now; the other commands cost nothing.
-std::int32_t techniqueCostOf(const battle::Battle& battle, battle::Command command) {
+std::int32_t techniqueCostOf(const battle::Battle& battle, battle::Command command,
+                             battle::FighterId own) {
   const auto number = static_cast<std::int32_t>(command);
   constexpr auto FirstTechnique = static_cast<std::int32_t>(battle::Command::Technique1);
   constexpr auto LastTechnique = static_cast<std::int32_t>(battle::Command::Technique3);
   if (number < FirstTechnique || number > LastTechnique) {
     return 0;
   }
-  return battle.partnerMoveCost(static_cast<std::size_t>(number - FirstTechnique)).value_or(0);
+  return battle.partnerMoveCost(static_cast<std::size_t>(number - FirstTechnique), own).value_or(0);
 }
 
 } // namespace
 
-BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names) {
+BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names,
+                        battle::FighterId own) {
   const battle::BattleState& state = battle.state();
   BattleView view;
-  for (battle::FighterId id = 0; id < state.fighters.size(); ++id) {
-    view.fighters.push_back(fighterViewOf(state.fighters[id], battle.hpBarShown(id), names));
+  if (own >= state.fighters.size() || !state.commanded(own)) {
+    own = battle::PartnerId;
   }
-  const battle::Fighter& partner = state.partner();
-  for (const battle::Command command : battle.menu()) {
+  view.fighters.push_back(fighterViewOf(state.fighters[own], battle.hpBarShown(own), names));
+  for (battle::FighterId id = 1; id < state.fighters.size(); ++id) {
+    if (!state.isPlayerSide(id) || state.allies.empty()) {
+      view.fighters.push_back(fighterViewOf(state.fighters[id], battle.hpBarShown(id), names));
+    }
+  }
+  for (battle::FighterId id = 0; id < state.fighters.size(); ++id) {
+    if (id != own && !state.allies.empty() && state.isPlayerSide(id)) {
+      view.allies.push_back(fighterViewOf(state.fighters[id], true, names));
+    }
+  }
+  const battle::Fighter& partner = state.fighters[own];
+  const battle::CommandState& commands = state.commandsOf(own);
+  for (const battle::Command command : commands.menu) {
     view.menu.push_back({.command = command,
                          .labelKey = commandLabelOf(command, partner, names),
                          .available = command != battle::Command::Finisher || gaugeFull(partner),
-                         .current = command == state.commands.current,
+                         .current = command == commands.current,
                          .icon = commandIconOf(command, partner, battle.moves()),
-                         .mpCost = techniqueCostOf(battle, command)});
+                         .mpCost = techniqueCostOf(battle, command, own)});
   }
-  const bool partnerCharging = state.finisher.fighter == battle::PartnerId;
+  const bool partnerCharging = state.finisher.fighter == own;
   view.finisher = {.progress = partner.finisherProgress,
                    .goal = partner.finisherGoal,
                    .ready = gaugeFull(partner),
                    .charging = partnerCharging && state.finisher.charging,
                    .charge = partnerCharging ? state.finisher.charge : 0};
-  view.reviveSeconds = reviveSecondsOf(battle);
+  view.reviveSeconds = reviveSecondsOf(battle, own);
   if (state.matchClock) {
     view.matchSeconds = state.matchClock->seconds;
   }
-  view.bagAvailable = battle.bagAvailable();
+  view.bagAvailable = battle.bagAvailableFor(own);
   view.bagOpen = battle.bagOpen();
-  view.itemInFlight = battle.itemInFlight();
+  view.itemInFlight = battle.thrownItemOf(own).has_value();
   return view;
 }
 
@@ -333,6 +347,11 @@ ScreenSettings settingsOf(const BattleView& view) {
       {.name = countName(BattleFighterList), .value = static_cast<double>(view.fighters.size())});
   for (std::size_t index = 0; index < view.fighters.size(); ++index) {
     addFighter(settings, index, view.fighters[index]);
+  }
+  settings.push_back(
+      {.name = countName(BattleAllyList), .value = static_cast<double>(view.allies.size())});
+  for (std::size_t index = 0; index < view.allies.size(); ++index) {
+    addFighter(settings, index, view.allies[index], BattleAllyList);
   }
   settings.push_back(
       {.name = countName(BattleMenuList), .value = static_cast<double>(view.menu.size())});

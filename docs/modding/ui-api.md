@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.20.0 | Both partners fight in a co-op battle: the battle screen lists the other players' partners fighting beside this player's (`battle.ally.<n>.*`, `battle.allies()`), and its partner, strip, finisher and bag are this player's own. The `coop_battle` screen gains the role `ally`, the fighters' MP, side and whether one is this player's (`coop_battle.fighter.<n>.mp`, `.max_mp`, `.side`, `.mine`); orders and items go to this player's own partner |
 | 0.19.0 | The `coop_battle` screen shows the host's battle on a co-op guest's screen: its role (`coop_battle.role`), phase, the fighters' life (`coop_battle.fighter.<n>.*`), the starter's orders (`coop_battle.order.<n>.*`) and the items of its own bag it can throw (`coop_battle.item.<n>.*`), with the commands `coop_battle_order`, `coop_battle_cheer`, `coop_battle_item` and `coop_battle_close` |
 | 0.18.0 | Rooms show real data: `online.room()` follows the room's phase as the network keeps it (open, connected, ready, playing, closed), and a guest sees the host's name. Listed rooms carry the host's name and mode, rooms already playing leave the list, and the list can say it was refreshed too often (`list_limit`). The online profile's relay only (`online.profile().relay_only`, `online.set_relay_only(on)`, command `online_profile_relay`) connects rooms through the server's relay so the other player never learns this machine's address. New errors: `server_refused`, `no_relay`, `list_limit` (online) and `versus.error.refused`, `versus.error.no_relay` |
 | 0.17.0 | The `online` namespace arrives: the public room list (`online.list()`), the room the player is in (`online.room()`), the modes (`online.modes()`) and the screens' state (`online.state()`), with their steps (`online.host`, `online.join`, `online.join_by_code`, `online.quick_match`, `online.set_ready`, `online.start`, `online.leave`...) and the `online.changed` event. The room steps are the co-op lobby's commands (`coop_host`, `coop_join` with a code, `coop_ready`, `coop_start`). The player's online profile (`online.profile()`, `online.icons()`, `online.save_name`, `online.set_icon`) and `online.retry` after a failure. The new screens `online_hub`, `online_profile`, `online_status`, `online_rooms` and `online_room` only read through it. The `coop_hud` screen shows the co-op game's tag over the other player (`coop_hud.tag.*`) and its notices (`coop_hud.notice.*`) |
@@ -96,7 +97,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.19.0**.
+UI API version: **0.20.0**.
 
 ### `ui`
 
@@ -430,16 +431,20 @@ UI API version: **0.19.0**.
 | Name | Kind | Value | What it is |
 |---|---|---|---|
 | `coop_battle.shown` | setting | yes/no | Whether the host's battle shows on this co-op guest's screen. |
-| `coop_battle.role` | setting | text | This player's part in it: starter (their partner fights and takes their orders) or helper (they help with items and cheers). |
+| `coop_battle.role` | setting | text | This player's part in it: starter (their partner fights and takes their orders), ally (their partner fights beside the starter's and takes their orders) or helper (they help with items and cheers). |
 | `coop_battle.phase` | setting | text | Where the battle is: intro, fight, victory, end (the end box) or closing. |
-| `coop_battle.command` | setting | number | The order the fighting partner follows now (a command's number). |
+| `coop_battle.command` | setting | number | The order this player's partner follows now (the fighting one's for a helper; a command's number). |
 | `coop_battle.bag` | setting | yes/no | Whether an item can be thrown now. |
-| `coop_battle.fighter_count` | setting | number | How many fighters there are: the partner first, then the enemies. |
+| `coop_battle.fighter_count` | setting | number | How many fighters there are: the partner first, then the enemies, then the allies. |
 | `coop_battle.fighter.<n>.name_key` | setting | text | The text key of a fighter's species name. |
 | `coop_battle.fighter.<n>.hp` | setting | number | A fighter's HP now. |
 | `coop_battle.fighter.<n>.max_hp` | setting | number | A fighter's most HP. |
 | `coop_battle.fighter.<n>.down` | setting | yes/no | Whether a fighter is beaten. |
-| `coop_battle.order_count` | setting | number | How many orders the starter can give now (none for the helper). |
+| `coop_battle.fighter.<n>.mp` | setting | number | A fighter's MP now. |
+| `coop_battle.fighter.<n>.max_mp` | setting | number | A fighter's most MP. |
+| `coop_battle.fighter.<n>.side` | setting | text | Whose side a fighter is on: partner (a player's partner) or enemy. |
+| `coop_battle.fighter.<n>.mine` | setting | yes/no | Whether a fighter is this player's own partner. |
+| `coop_battle.order_count` | setting | number | How many orders this player can give its partner now (none for the helper). |
 | `coop_battle.order.<n>.command` | setting | number | An order's command number, sent with coop_battle_order. |
 | `coop_battle.order.<n>.label_key` | setting | text | The text key of an order's name. |
 | `coop_battle.item_count` | setting | number | How many kinds of items of this player's bag can be thrown in a battle. |
@@ -447,9 +452,9 @@ UI API version: **0.19.0**.
 | `coop_battle.item.<n>.name_key` | setting | text | The text key of an item's name. |
 | `coop_battle.item.<n>.count` | setting | number | How many of an item this player has. |
 | `coop_battle.revision` | setting | number | Goes up each time the values above change: the screen is drawn again. |
-| `coop_battle_order` | command | number | The starter's order for its partner (a command's number). |
+| `coop_battle_order` | command | number | This player's order for its own partner (a command's number). |
 | `coop_battle_cheer` | command | — | A cheer: charges the finisher as the battle's charge buttons do. |
-| `coop_battle_item` | command | text | Throws one of an item (its id) from this player's bag at the fighting partner. |
+| `coop_battle_item` | command | text | Throws one of an item (its id) from this player's bag at its own partner (the fighting one for a helper). |
 | `coop_battle_close` | command | — | The starter closes the end box. |
 
 ### `money_box`
@@ -712,7 +717,7 @@ UI API version: **0.19.0**.
 | `battle.menu.blink` | setting | yes/no | Whether the icon under the cursor shows its second frame. |
 | `battle.bars.hp_x` | setting | number | The left edge of the partner's HP bar while it enters or leaves. |
 | `battle.bars.mp_x` | setting | number | The left edge of the partner's MP bar while it enters or leaves. |
-| `battle.fighter.count` | setting | number | How many fighters there are: the partner (0) and the enemies. |
+| `battle.fighter.count` | setting | number | How many fighters there are: the partner (0, in co-op this player's own) and the enemies. |
 | `battle.fighter.<n>.name` | setting | text | The text key of its name. |
 | `battle.fighter.<n>.status` | setting | text | The text key of its status ailment, or empty. |
 | `battle.fighter.<n>.hp` | setting | number | A fighter's HP. |
@@ -721,6 +726,15 @@ UI API version: **0.19.0**.
 | `battle.fighter.<n>.max_mp` | setting | number | A fighter's maximum MP. |
 | `battle.fighter.<n>.fainted` | setting | yes/no | Whether it has fainted. |
 | `battle.fighter.<n>.hp_bar` | setting | yes/no | Whether its HP bar is shown now (an enemy's, for a while after taking damage). |
+| `battle.ally.count` | setting | number | How many other players' partners fight beside the partner (co-op; 0 otherwise). |
+| `battle.ally.<n>.name` | setting | text | The text key of an ally's name. |
+| `battle.ally.<n>.status` | setting | text | The text key of an ally's status ailment, or empty. |
+| `battle.ally.<n>.hp` | setting | number | An ally's HP. |
+| `battle.ally.<n>.max_hp` | setting | number | An ally's maximum HP. |
+| `battle.ally.<n>.mp` | setting | number | An ally's MP. |
+| `battle.ally.<n>.max_mp` | setting | number | An ally's maximum MP. |
+| `battle.ally.<n>.fainted` | setting | yes/no | Whether an ally has fainted. |
+| `battle.ally.<n>.hp_bar` | setting | yes/no | Always on for an ally. |
 | `battle.finisher.progress` | setting | number | How much the finisher gauge has charged. |
 | `battle.finisher.goal` | setting | number | How much it has to charge to be full. |
 | `battle.finisher.ready` | setting | yes/no | Whether the finisher is ready. |
@@ -782,6 +796,7 @@ UI API version: **0.19.0**.
 | `battle_end_counted` | command | — | The count of the bits at the battle's end has finished. For an addon, only in the end phase. |
 | `battle.state(): table` | query | table | The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil) and cup (a cup battle). |
 | `battle.fighters(): table` | query | table | The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted and hp_bar. |
+| `battle.allies(): table` | query | table | The other players' partners fighting beside this player's in a co-op battle (empty otherwise): name_key, status_key, hp, max_hp, mp, max_mp and fainted. |
 | `battle.commands(): table` | query | table | The command strip, the finisher first: command, label_key, icon, available, current and mp_cost. |
 | `battle.finisher(): table` | query | table | The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil). |
 | `battle.strip(): table` | query | table | Where the strip and the partner's bars are when entering and leaving: top, bottom, blink, hp_x and mp_x (or nil). |

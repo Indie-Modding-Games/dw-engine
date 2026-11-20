@@ -216,7 +216,7 @@ void BattleScreen::startExit() {
                  "startAnimation({:#x}){}",
                  GetUpClip, fixedFight_ ? "; a fixed fight's stand (0x21) and stay" : "");
   if (!fixedFight_) {
-    figures_.resize(std::min<std::size_t>(figures_.size(), 1));
+    enemiesLeft_ = true;
   }
   if (exit.leavers.empty()) {
     return;

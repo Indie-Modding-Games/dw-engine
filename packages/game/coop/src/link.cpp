@@ -59,8 +59,11 @@ bool directionAllowed(Side receiver, const Message& message) {
       return true;
     if (std::holds_alternative<Ready>(message))
       return true;
-    // A battle the guest's partner fights, and its part in any battle.
-    if (std::holds_alternative<BattleAsk>(message) || std::holds_alternative<BattleAction>(message))
+    // A battle the guest's partner fights, its part in any battle and whether its partner can join
+    // the host's.
+    if (std::holds_alternative<BattleAsk>(message) ||
+        std::holds_alternative<BattleAction>(message) ||
+        std::holds_alternative<BattleOffer>(message))
       return true;
     if (const auto* chunk = std::get_if<ProfileChunk>(&message))
       return chunk->kind == ProfilePayloadKind::GuestSave;

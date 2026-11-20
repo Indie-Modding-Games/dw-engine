@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.20.0 | Los dos compañeros luchan en un combate cooperativo: la pantalla de combate lista los compañeros de los otros jugadores que luchan junto al de este (`battle.ally.<n>.*`, `battle.allies()`), y su compañero, su tira, su remate y su bolsa son los de este jugador. La pantalla `coop_battle` gana el papel `ally`, el MP de los luchadores, su bando y si uno es el de este jugador (`coop_battle.fighter.<n>.mp`, `.max_mp`, `.side`, `.mine`); las órdenes y los objetos van a su propio compañero |
 | 0.19.0 | La pantalla `coop_battle` enseña el combate del anfitrión en la pantalla del invitado cooperativo: su papel (`coop_battle.role`), la fase, la vida de los luchadores (`coop_battle.fighter.<n>.*`), las órdenes del que empezó (`coop_battle.order.<n>.*`) y los objetos de su propia bolsa que puede lanzar (`coop_battle.item.<n>.*`), con los comandos `coop_battle_order`, `coop_battle_cheer`, `coop_battle_item` y `coop_battle_close` |
 | 0.18.0 | Las salas enseñan datos reales: `online.room()` sigue la fase de la sala tal como la lleva la red (abierta, conectada, lista, jugando, cerrada) y el invitado ve el nombre del anfitrión. Las salas de la lista traen el nombre del anfitrión y el modo, las que ya juegan salen de la lista y la lista puede decir que se actualizó demasiadas veces (`list_limit`). El «solo por relevo» del perfil en línea (`online.profile().relay_only`, `online.set_relay_only(on)`, comando `online_profile_relay`) conecta las salas por el relé del servidor, así el otro jugador nunca sabe la dirección de esta máquina. Errores nuevos: `server_refused`, `no_relay`, `list_limit` (en línea) y `versus.error.refused`, `versus.error.no_relay` |
 | 0.17.0 | Llega el espacio `online`: la lista de salas públicas (`online.list()`), la sala en la que está el jugador (`online.room()`), los modos (`online.modes()`) y el estado de las pantallas (`online.state()`), con sus pasos (`online.host`, `online.join`, `online.join_by_code`, `online.quick_match`, `online.set_ready`, `online.start`, `online.leave`...) y el evento `online.changed`. Los pasos de la sala son los comandos del lobby cooperativo (`coop_host`, `coop_join` con código, `coop_ready`, `coop_start`). El perfil en línea del jugador (`online.profile()`, `online.icons()`, `online.save_name`, `online.set_icon`) y `online.retry` tras un fallo. Las pantallas nuevas `online_hub`, `online_profile`, `online_status`, `online_rooms` y `online_room` solo leen por él. La pantalla `coop_hud` enseña la etiqueta sobre el otro jugador de la partida cooperativa (`coop_hud.tag.*`) y sus avisos (`coop_hud.notice.*`) |
@@ -695,6 +696,15 @@ Versión de la API de la interfaz: **0.17.0**.
 | `battle.fighter.<n>.max_mp` | ajuste | número | Los PM máximos de un luchador. |
 | `battle.fighter.<n>.fainted` | ajuste | sí/no | Si ha caído. |
 | `battle.fighter.<n>.hp_bar` | ajuste | sí/no | Si su barra de PV se ve ahora (la de un enemigo, un rato tras recibir daño). |
+| `battle.ally.count` | ajuste | número | Cuántos compañeros de otros jugadores pelean junto al compañero (cooperativo; si no, 0). |
+| `battle.ally.<n>.name` | ajuste | texto | La clave de texto del nombre de un aliado. |
+| `battle.ally.<n>.status` | ajuste | texto | La clave de texto del estado alterado de un aliado, o vacío. |
+| `battle.ally.<n>.hp` | ajuste | número | Los PV de un aliado. |
+| `battle.ally.<n>.max_hp` | ajuste | número | Los PV máximos de un aliado. |
+| `battle.ally.<n>.mp` | ajuste | número | Los PM de un aliado. |
+| `battle.ally.<n>.max_mp` | ajuste | número | Los PM máximos de un aliado. |
+| `battle.ally.<n>.fainted` | ajuste | sí/no | Si un aliado se ha desmayado. |
+| `battle.ally.<n>.hp_bar` | ajuste | sí/no | Siempre activo para un aliado. |
 | `battle.finisher.progress` | ajuste | número | Lo que lleva cargado el indicador del golpe final. |
 | `battle.finisher.goal` | ajuste | número | Lo que tiene que cargar para estar lleno. |
 | `battle.finisher.ready` | ajuste | sí/no | Si el golpe final está listo. |
@@ -756,6 +766,7 @@ Versión de la API de la interfaz: **0.17.0**.
 | `battle_end_counted` | comando | — | La cuenta de los bits del final del combate ha terminado. Un addon, solo en la fase end. |
 | `battle.state(): table` | consulta | tabla | El combate: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds y match_seconds (o nil) y cup (un combate de copa). |
 | `battle.fighters(): table` | consulta | tabla | Los luchadores, el compañero primero: name_key, status_key, hp, max_hp, mp, max_mp, fainted y hp_bar. |
+| `battle.allies(): table` | consulta | tabla | Los compañeros de los otros jugadores que pelean junto al de este en un combate cooperativo (vacío si no): name_key, status_key, hp, max_hp, mp, max_mp y fainted. |
 | `battle.commands(): table` | consulta | tabla | La tira de órdenes, el golpe final primero: command, label_key, icon, available, current y mp_cost. |
 | `battle.finisher(): table` | consulta | tabla | El golpe final: progress, goal, ready, charging (el aura), charge (en porcentaje) y gauge (la esquina superior izquierda del indicador de carga sobre el compañero: x, y en porcentaje, o nil). |
 | `battle.strip(): table` | consulta | tabla | Dónde están la tira y las barras del compañero al entrar y salir: top, bottom, blink, hp_x y mp_x (o nil). |

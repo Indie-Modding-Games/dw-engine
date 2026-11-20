@@ -192,7 +192,7 @@ Point centerOf(const std::vector<Fighter>& fighters) {
 }
 
 bool enemiesDown(const BattleState& state) {
-  for (FighterId id = 1; id < state.fighters.size(); ++id) {
+  for (FighterId id = 1; id <= state.enemyCount(); ++id) {
     if (state.fighters[id].pose != Pose::Fainted) {
       return false;
     }
@@ -235,6 +235,34 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
     }
     state.fighters.push_back(std::move(*enemy));
   }
+  state.enemies = setup.enemies.size();
+  // docs/architecture/coop-combat.md §4.1: the other players' partners, after the enemies.
+  if (!setup.allies.empty() && (versus || setup.timeLimit)) {
+    return core::fail(std::string{messages::VersusShape});
+  }
+  for (const AllySetup& ally : setup.allies) {
+    auto fighter = makeFighter(ally.partner, rules, moves, Side::Partner);
+    if (!fighter) {
+      return std::unexpected{fighter.error()};
+    }
+    if (ally.condition.sick || ally.condition.injured) {
+      applySicknessPenalty(*fighter, rules);
+    }
+    AllyState allyState{.id = state.fighters.size(),
+                        .owner = ally.owner,
+                        .commands = {},
+                        .condition = ally.condition,
+                        .counters = {},
+                        .tamer = ally.tamer,
+                        .thrownItem = std::nullopt,
+                        .fleeFrames = std::nullopt,
+                        .deathFrames = 0,
+                        .released = false};
+    allyState.commands.menu = buildMenu(rules, *fighter, setup.scripted, false);
+    allyState.commands.savedChargeMode = fighter->chargeMode;
+    state.fighters.push_back(std::move(*fighter));
+    state.allies.push_back(std::move(allyState));
+  }
   std::vector<std::int32_t> nodeCounts;
   for (Fighter& each : state.fighters) {
     each.hpBarFrames = rules.hud.enemyHpBarFrames;
@@ -266,8 +294,26 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
                                   .enemyStartHp = state.fighters.at(1).hp};
   }
   lookAt(state.partner(), state.fighters.at(1).position);
-  for (FighterId id = 1; id < state.fighters.size(); ++id) {
+  for (FighterId id = 1; id <= state.enemyCount(); ++id) {
     lookAt(state.fighters[id], state.partner().position);
+  }
+  // docs/architecture/coop-combat.md §4.2: the touched enemy goes for the starter's partner, the
+  // others for the partner nearest to them.
+  for (const AllyState& ally : state.allies) {
+    lookAt(state.fighters[ally.id], state.fighters.at(1).position);
+  }
+  if (!state.allies.empty()) {
+    state.fighters.at(1).target = PartnerId;
+    for (FighterId id = 2; id <= state.enemyCount(); ++id) {
+      FighterId nearest = PartnerId;
+      for (const AllyState& ally : state.allies) {
+        if (distanceSquared(state.fighters[id].position, state.fighters[ally.id].position) <
+            distanceSquared(state.fighters[id].position, state.fighters[nearest].position)) {
+          nearest = ally.id;
+        }
+      }
+      state.fighters[id].target = nearest;
+    }
   }
   // btl.c: loadBattleData: everyone stands as the battle loads.
   startShownClips(state);
@@ -289,12 +335,17 @@ core::Result<void> Battle::command(Command command, FighterId side) {
   if (state_.tamerless) {
     return core::fail(std::string{messages::NoCommands});
   }
-  if (state_.bagOpen) {
+  const AllyState* ally = state_.allyOf(side);
+  if (ally != nullptr && ally->released) {
+    return core::fail(std::string{messages::NotCommanded});
+  }
+  // In co-op a player's bag holds only their own partner (docs/architecture/multiplayer.md §6).
+  if (ally != nullptr ? ally->bagOpen : state_.bagOpen) {
     return core::fail(std::string{messages::BagOpen});
   }
   // battle_tick.c: handleCommands: once the partner is called back it only runs (currentCommand 1
   // returns before the buttons are read), the finisher's button included.
-  if (state_.fleeFrames) {
+  if (state_.fleeFramesOf(side) || state_.fighters.at(side).gone()) {
     return core::fail(std::string{messages::Fleeing});
   }
   CommandState& commands = state_.commandsOf(side);
@@ -323,9 +374,9 @@ core::Result<void> Battle::command(Command command, FighterId side) {
   case Command::Flee:
     commands.buffered = command;
     commands.current = command;
-    state_.fleeFrames = 0;
+    state_.fleeFramesOf(side) = 0;
     pending().push_back({.kind = EventKind::FleeStarted,
-                         .fighter = PartnerId,
+                         .fighter = side,
                          .other = std::nullopt,
                          .move = std::nullopt,
                          .amount = 0,
@@ -356,13 +407,13 @@ core::Result<void> Battle::command(Command command, FighterId side) {
   commands.delay =
       state_.versus()
           ? 0
-          : strategies_.obedience->commandDelay(context.view(), setup_.condition.discipline);
+          : strategies_.obedience->commandDelay(context.view(side), context.disciplineOf(side));
   return {};
 }
 
 void Battle::defeatEnemies() {
   BattleContext context = contextOf(pending());
-  for (FighterId enemy = 1; enemy < state_.fighters.size(); ++enemy) {
+  for (FighterId enemy = 1; enemy <= state_.enemyCount(); ++enemy) {
     strikeDown(context, enemy);
   }
 }
@@ -402,17 +453,65 @@ void Battle::pressFinisherCharge() {
   chargePressed_ = true;
 }
 
+void Battle::cheerFinisher() {
+  cheered_ = true;
+}
+
+bool Battle::bagAvailableFor(FighterId thrower) const {
+  const AllyState* ally = state_.allyOf(thrower);
+  if (ally == nullptr) {
+    return bagAvailable();
+  }
+  return !result_ && !state_.tamerless && !ally->fleeFrames && !ally->thrownItem &&
+         !state_.fighters.at(thrower).gone();
+}
+
+core::Result<void> Battle::throwItem(ThrownItem item, FighterId thrower, FighterId target) {
+  if (!bagAvailableFor(thrower)) {
+    return core::fail(std::string{messages::BagUnavailable});
+  }
+  if (target >= state_.fighters.size() || !state_.isPlayerSide(target) ||
+      state_.fighters[target].gone()) {
+    return core::fail(std::string{messages::BagUnavailable});
+  }
+  BattleContext context = contextOf(pending());
+  battle::throwItem(context, item, thrower, target);
+  return {};
+}
+
+void Battle::releaseAlly(FighterId ally) {
+  if (AllyState* state = state_.allyOf(ally)) {
+    state->released = true;
+    state->commands.buffered = Command::YourCall;
+    if (state->commands.current != Command::Flee) {
+      state->commands.current = Command::YourCall;
+    }
+  }
+}
+
+std::int32_t Battle::deathFramesOf(FighterId id) const {
+  const AllyState* ally = state_.allyOf(id);
+  return ally != nullptr ? ally->deathFrames : state_.deathFrames;
+}
+
 void Battle::setClips(FighterId fighter, FighterClips clips) {
   state_.fighters.at(fighter).clips = std::make_shared<const FighterClips>(std::move(clips));
 }
 
 std::optional<std::int32_t> Battle::partnerMoveCost(std::size_t slot) const {
-  const std::optional<MoveRef>& ref = state_.partner().moves.at(slot);
+  return partnerMoveCost(slot, PartnerId);
+}
+
+std::optional<std::int32_t> Battle::partnerMoveCost(std::size_t slot, FighterId id) const {
+  const Fighter& fighter = state_.fighters.at(id);
+  const std::optional<MoveRef>& ref = fighter.moves.at(slot);
   if (!ref) {
     return std::nullopt;
   }
-  const bool unwell = setup_.condition.sick || setup_.condition.injured;
-  return partnerMpCost(*rules_, moves_->at(*ref).mpCost, state_.partner().stats.brain, unwell,
+  const AllyState* ally = state_.allyOf(id);
+  const PartnerCondition& condition = ally != nullptr ? ally->condition : setup_.condition;
+  const bool unwell = condition.sick || condition.injured;
+  return partnerMpCost(*rules_, moves_->at(*ref).mpCost, fighter.stats.brain, unwell,
                        MpCostUse::Payment);
 }
 
@@ -433,6 +532,31 @@ void Battle::closeBag() {
   state_.bagOpen = false;
 }
 
+bool Battle::bagOpen(FighterId thrower) const {
+  const AllyState* ally = state_.allyOf(thrower);
+  return ally != nullptr ? ally->bagOpen : state_.bagOpen;
+}
+
+core::Result<void> Battle::openBag(FighterId thrower) {
+  AllyState* ally = state_.allyOf(thrower);
+  if (ally == nullptr) {
+    return openBag();
+  }
+  if (!bagAvailableFor(thrower)) {
+    return core::fail(std::string{messages::BagUnavailable});
+  }
+  ally->bagOpen = true;
+  return {};
+}
+
+void Battle::closeBag(FighterId thrower) {
+  if (AllyState* ally = state_.allyOf(thrower)) {
+    ally->bagOpen = false;
+  } else {
+    closeBag();
+  }
+}
+
 core::Result<void> Battle::throwItem(ThrownItem item) {
   if (!bagAvailable()) {
     return core::fail(std::string{messages::BagUnavailable});
@@ -443,14 +567,24 @@ core::Result<void> Battle::throwItem(ThrownItem item) {
 }
 
 std::optional<std::int32_t> Battle::thrownItemFlightFrame() const {
-  if (!state_.thrownItem) {
+  return thrownItemFlightFrame(PartnerId);
+}
+
+const std::optional<ThrownItemState>& Battle::thrownItemOf(FighterId thrower) const {
+  const AllyState* ally = state_.allyOf(thrower);
+  return ally != nullptr ? ally->thrownItem : state_.thrownItem;
+}
+
+std::optional<std::int32_t> Battle::thrownItemFlightFrame(FighterId thrower) const {
+  const std::optional<ThrownItemState>& item = thrownItemOf(thrower);
+  if (!item) {
     return std::nullopt;
   }
-  return flightFrameOf(*state_.thrownItem, rules_->itemThrow);
+  return flightFrameOf(*item, rules_->itemThrow);
 }
 
 bool Battle::hpBarShown(FighterId fighter) const {
-  return fighter == PartnerId ||
+  return state_.isPlayerSide(fighter) ||
          state_.fighters.at(fighter).hpBarFrames < rules_->hud.enemyHpBarFrames;
 }
 
@@ -522,22 +656,27 @@ const BattleEvents& Battle::step() {
   if (state_.matchClock && endMatch()) {
     return events_;
   }
+  if (!state_.allies.empty() && endCoop()) {
+    return events_;
+  }
   // battle_setup.c: BTL_isBattleFinished, before anything else of the frame.
   const Fighter& partner = state_.partner();
-  if (!state_.matchClock && state_.fleeFrames && *state_.fleeFrames >= rules_->ending.fleeFrames &&
-      !partner.defeated()) {
+  if (!state_.matchClock && state_.allies.empty() && state_.fleeFrames &&
+      *state_.fleeFrames >= rules_->ending.fleeFrames && !partner.defeated()) {
     finish(Outcome::Fled);
     return events_;
   }
   // The countdown waits while a thrown item is on its way (TAMER_ITEM.worldItem.type != 0xff).
-  if (!state_.matchClock && partner.fainted && partner.pose == Pose::Fainted &&
-      !state_.thrownItem && ++state_.deathFrames >= rules_->ending.reviveFrames) {
+  if (!state_.matchClock && state_.allies.empty() && partner.fainted &&
+      partner.pose == Pose::Fainted && !state_.thrownItem &&
+      ++state_.deathFrames >= rules_->ending.reviveFrames) {
     finish(Outcome::Defeat);
     return events_;
   }
   // The win also needs the partner to outlive the damage still on its way: a lethal hit that lands
   // with the last enemy's fall drains the partner to 0 HP, it faints and the countdown follows.
-  if (!state_.matchClock && !partner.fainted && !partner.defeated() && enemiesDown(state_)) {
+  if (!state_.matchClock && state_.allies.empty() && !partner.fainted && !partner.defeated() &&
+      enemiesDown(state_)) {
     finish(Outcome::Victory);
     return events_;
   }
@@ -547,11 +686,14 @@ const BattleEvents& Battle::step() {
   tickThrownItem(context);
   // command_menu.c: BTL_tickFinisherChargeup.
   FinisherState& finisher = state_.finisher;
-  if (finisher.charging && chargePressed_ && finisher.charge < rules_->finisher.chargeCap) {
-    finisher.charge =
-        std::min(finisher.charge + rules_->finisher.chargePerPress, rules_->finisher.chargeCap);
+  // A cheer (co-op) adds half of a press, at least 1.
+  const std::int32_t pressed = chargePressed_ ? rules_->finisher.chargePerPress
+                               : cheered_     ? std::max(rules_->finisher.chargePerPress / 2, 1)
+                                              : 0;
+  if (finisher.charging && pressed > 0 && finisher.charge < rules_->finisher.chargeCap) {
+    finisher.charge = std::min(finisher.charge + pressed, rules_->finisher.chargeCap);
     events_.push_back({.kind = EventKind::FinisherCharged,
-                       .fighter = PartnerId,
+                       .fighter = finisher.fighter.value_or(PartnerId),
                        .other = std::nullopt,
                        .move = std::nullopt,
                        .amount = finisher.charge,
@@ -559,6 +701,7 @@ const BattleEvents& Battle::step() {
                        .command = Command::None});
   }
   chargePressed_ = false;
+  cheered_ = false;
   drainPendingDamage(context);
   tickHpBars(context);
   updateShownClips(context);
@@ -570,6 +713,11 @@ const BattleEvents& Battle::step() {
   statusVisuals_.tick(originalRolls_ ? random_ : statusVisuals_.ownRolls(), state_.fighters);
   if (state_.fleeFrames) {
     ++*state_.fleeFrames;
+  }
+  for (AllyState& ally : state_.allies) {
+    if (ally.fleeFrames) {
+      ++*ally.fleeFrames;
+    }
   }
   // std_main.c: STD_tickFighterCounter, an object of the frame's end: a second goes every 20
   // counted frames while neither side is down.
@@ -628,6 +776,56 @@ bool Battle::endMatch() {
   return true;
 }
 
+bool Battle::endCoop() {
+  const EndingRules& ending = rules_->ending;
+  for (const FighterId id : state_.partnersIn()) {
+    Fighter& fighter = state_.fighters[id];
+    std::optional<std::int32_t>& flee = state_.fleeFramesOf(id);
+    AllyState* ally = state_.allyOf(id);
+    std::int32_t& countdown = ally != nullptr ? ally->deathFrames : state_.deathFrames;
+    if (flee && *flee >= ending.fleeFrames && !fighter.defeated()) {
+      fighter.departure = Departure::Fled;
+    } else if (fighter.fainted && fighter.pose == Pose::Fainted && !itemFlyingTo(state_, id) &&
+               ++countdown >= ending.reviveFrames) {
+      fighter.departure = Departure::KnockedOut;
+    } else {
+      continue;
+    }
+    fighter.planned = true;
+    fighter.target.reset();
+    events_.push_back({.kind = EventKind::PartnerLeft,
+                       .fighter = id,
+                       .other = std::nullopt,
+                       .move = std::nullopt,
+                       .amount = 0,
+                       .status = StatusEffect::None,
+                       .command = Command::None});
+  }
+  const std::vector<FighterId> in = state_.partnersIn();
+  if (in.empty()) {
+    const bool anyFled = std::ranges::any_of(state_.fighters, [](const Fighter& fighter) {
+      return fighter.departure == Departure::Fled;
+    });
+    finish(anyFled ? Outcome::Fled : Outcome::Defeat);
+    return true;
+  }
+  const bool standing = std::ranges::any_of(in, [this](FighterId id) {
+    const Fighter& fighter = state_.fighters[id];
+    return !fighter.fainted && !fighter.defeated();
+  });
+  if (standing && enemiesDown(state_)) {
+    // A partner still down when the team wins counts as knocked out (it did not get up).
+    for (const FighterId id : in) {
+      if (state_.fighters[id].fainted) {
+        state_.fighters[id].departure = Departure::KnockedOut;
+      }
+    }
+    finish(Outcome::Victory);
+    return true;
+  }
+  return false;
+}
+
 BattleEvents Battle::advance(double seconds) {
   return advance(seconds, [](const BattleEvents& /*frame*/) {});
 }
@@ -654,8 +852,18 @@ void Battle::finish(Outcome outcome, bool draw) {
     Fighter& partner = state_.partner();
     partner.hp = std::max(partner.hp - partner.pendingDamage, 0);
     partner.pendingDamage = 0;
+    for (const AllyState& ally : state_.allies) {
+      Fighter& fighter = state_.fighters[ally.id];
+      fighter.hp = std::max(fighter.hp - fighter.pendingDamage, 0);
+      fighter.pendingDamage = 0;
+    }
   }
   result_ = settleBattle(outcome, setup_, state_, *rules_, *moves_, random_);
+  for (const AllyState& ally : state_.allies) {
+    allyResults_.push_back(
+        {.owner = ally.owner,
+         .result = settleAlly(outcome, setup_, state_, ally, *rules_, *moves_, random_)});
+  }
   if (state_.matchClock) {
     result_->timeUp = state_.matchClock->seconds == 0;
     result_->draw = draw;

@@ -274,8 +274,8 @@ void applyMoveStatus(BattleContext& context, FighterId id, MoveRef move) {
                   .status = data.status,
                   .command = Command::None});
   }
-  if (id == PartnerId) {
-    ++context.state->counters.statusesTaken;
+  if (BattleCounters* counters = context.state->countersOf(id)) {
+    ++counters->statusesTaken;
   }
 }
 

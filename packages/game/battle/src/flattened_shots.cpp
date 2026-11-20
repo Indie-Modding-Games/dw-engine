@@ -32,7 +32,7 @@ std::optional<FighterId> touchedBy(const BattleContext& context, const Flattened
   const BattleState& state = *context.state;
   for (FighterId id = 0; id < state.fighters.size(); ++id) {
     const Fighter& fighter = state.fighters[id];
-    if (id == shot.attacker || fighter.fainted) {
+    if (!state.foes(shot.attacker, id) || fighter.fainted) {
       continue;
     }
     const std::int32_t bodyHalfHeight = fighter.combatant.height >> 1;

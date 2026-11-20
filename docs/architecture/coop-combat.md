@@ -1,9 +1,10 @@
 # Co-op combat with every partner (design document)
 
-Status: **proposal** (2026-11-19, ticket #362). Nothing here is implemented. It is the step after the first version of
-co-op battles (#351, PR #363), where only the starter's partner fights. It builds on [online
-co-op](multiplayer.md), [ADR 0024](../adr/0024-co-op-with-authoritative-host.md), sessions of up to four players (#352,
-[room browser and four players](coop-browser-4p.md)) and the scaling in [co-op difficulty](coop-difficulty.md).
+Status: **partly implemented** (2026-11-20, #351, #361). Proposed 2026-11-19 (ticket #362) as the step after the first
+version of co-op battles (#351, PR #363), where only the starter's partner fights. Section 12 says what is built. It
+builds on [online co-op](multiplayer.md), [ADR 0024](../adr/0024-co-op-with-authoritative-host.md), sessions of up to
+four players (#352, [room browser and four players](coop-browser-4p.md)) and the scaling in [co-op
+difficulty](coop-difficulty.md).
 
 **Rule zero:** with one partner on the players' side the battle is exactly today's: same fighter layout, same AI, same
 commands, same results. Everything new only runs with two or more partners, and every extra mechanic in §8 is an
@@ -325,6 +326,31 @@ These reuse existing commands and moves; none is a new technique (out of scope f
 ## 12. Implementation tasks
 
 Ready to become issues, in order; each one keeps single player unchanged and is tested alone.
+
+**Built (2026-11-20, protocol version 6, UI API 0.20.0).** When the guest's partner is on the map where the host's
+encounter starts and not busy, it fights beside the host's partner in the host's battle; otherwise the guest helps as in
+PR #363, and alone the battle is the original one. What landed, by task:
+
+- Tasks 1–3, partly: the second partner is an **ally** (`BattleSetup::allies`, `AllySetup` with its owner) placed
+  **after the enemies**, not before them as §4.1 says: slot 0 stays the starter's partner and enemies keep their
+  numbers, so the solo layout and every enemy index are untouched. `isPlayerSide` and `foes` answer the side questions;
+  `PartnerId` stays for the starter. Each ally has its own commands, bag, thrown item, flee and countdown
+  (`AllyState`); finisher progress is per fighter already.
+- Tasks 4–6: enemies target any partner and turn to their attacker; partners never hit each other; Run and the
+  knockout countdown are per partner (`Departure`); the battle ends when the enemies are down with a partner standing
+  or when no partner is left (a flee if any ran, else a loss). A partner out on a win ends with 1 HP and happiness −10.
+- Task 7: `Battle::allyResults` gives each ally its own result; bits, drops and recruits stay in the host's world (the
+  battle's own result). The guest applies its ally result (stat gains uncapped) through the spoils, which now carry the
+  departure.
+- Tasks 8–9: `BattleOffer` (0x80) tells the host the guest's partner can join; `BattleBegin.allies` names the allies;
+  `BattleFrame` carries every fighter (up to `MaxBattleEnemies + MaxPlayers`); the guest commands only its own partner
+  (role `ally`), the host checks every action's role. A guest who drops leaves its partner on its own call.
+- Task 10, partly: the battle screen shows the allies' cards (`battle.allies`, HP and MP) in every skin; the guest's
+  `coop_battle` panel shows every fighter's HP, the partners' MP and marks its own partner; orders go to one's own
+  partner. Not yet: the bag's ally target choice (an item goes to one's own partner, or the one fighting if it is gone),
+  an ally's thrown item animation on the other screen, the ally's species sounds and its death-countdown badge.
+- Not yet: task 11 (co-op difficulty), task 12 and later, and more than one guest in a battle (the host and one guest
+  fight together; the protocol and the battle already take up to `MaxPlayers` partners).
 
 1. **Battle sides refactor:** replace `PartnerId` with `side`, `owner` and the queries `isPlayerSide`, `partnerOf`,
    `partners`, `enemies`; partners first, enemies after. No behaviour change (solo tests and story chain green).

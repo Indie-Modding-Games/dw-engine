@@ -29,16 +29,25 @@ struct BattleContext {
   [[nodiscard]] BattleView view() const { return view(PartnerId); }
   // The view the partner strategies decide for `actor` with.
   [[nodiscard]] BattleView view(FighterId actor) const {
+    const PartnerCondition& own = conditionOf(actor);
     return {.rules = rules,
             .moves = moves,
             .state = state,
             .random = random,
-            .partnerSick = condition->sick,
-            .partnerInjured = condition->injured,
+            .partnerSick = own.sick,
+            .partnerInjured = own.injured,
             .actor = actor};
+  }
+  // The care values of a players' side fighter: the partner's, or a co-op ally's own.
+  [[nodiscard]] const PartnerCondition& conditionOf(FighterId id) const {
+    const AllyState* ally = state->allyOf(id);
+    return ally != nullptr ? ally->condition : *condition;
   }
   // The discipline a commanded fighter obeys with (vs_combat.c: VS_DISCIPLINE).
   [[nodiscard]] std::int32_t disciplineOf(FighterId id) const {
+    if (const AllyState* ally = state->allyOf(id)) {
+      return ally->condition.discipline;
+    }
     return id == PartnerId ? condition->discipline : state->rival->discipline;
   }
   // The rolls of the status visuals and of the hit sparks: the battle's when they are the
@@ -76,6 +85,12 @@ void selectTarget(BattleContext& context, FighterId id, std::optional<FighterId>
 void resetAction(Fighter& fighter);
 // Sets a fighter's target and reports it.
 void setTarget(BattleContext& context, FighterId id, std::optional<FighterId> target);
+// The partner an enemy goes for when nothing else draws it: the partner, or in a co-op battle the
+// one it already targets while that one stands, else the nearest standing one
+// (docs/architecture/coop-combat.md §4.2).
+FighterId enemyTargetOf(const BattleContext& context, FighterId enemy);
+// Every partner in the battle is at 0 HP: the enemies stand idle (with one partner, the partner).
+bool playersDown(const BattleState& state);
 
 // fighter_actions.cpp: what each fighter does this frame (battle_main.c: BTL_tickFighterStates).
 void tickFighterStates(BattleContext& context);
@@ -136,7 +151,11 @@ void addFinisherProgress(BattleContext& context, FighterId id, std::int32_t amou
 
 // thrown_item.cpp: the tamer's thrown item (main.c: startThrowingItem, tickThrownItem) and what it
 // does when it lands (item.c), and the HUD's HP bars (battle_main.c: BTL_renderEnemyHPBars).
-void throwItem(BattleContext& context, const ThrownItem& item);
+// The item `thrower`'s player throws at `target` (the partner's player for the partner).
+void throwItem(BattleContext& context, const ThrownItem& item, FighterId thrower = PartnerId,
+               FighterId target = PartnerId);
+// Whether an item is on its way to a partner: its countdown waits meanwhile.
+bool itemFlyingTo(const BattleState& state, FighterId id);
 void tickThrownItem(BattleContext& context);
 // The frame of the thrown item's flight, or none while it is still in the player's hand.
 [[nodiscard]] std::optional<std::int32_t> flightFrameOf(const ThrownItemState& thrown,
@@ -145,7 +164,7 @@ void tickThrownItem(BattleContext& context);
 void restorePartner(Fighter& partner, std::int32_t hp, std::int32_t mp);
 // Gets the fallen partner up with `hp` and resets every fighter's action (battle_setup.c:
 // BTL_isBattleFinished).
-void revivePartner(BattleContext& context, std::int32_t hp);
+void revivePartner(BattleContext& context, std::int32_t hp, FighterId id = PartnerId);
 // An enemy's HP bar shows again on damage and counts the frames after its hit reaction and its
 // damage drain.
 void tickHpBars(BattleContext& context);

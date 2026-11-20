@@ -43,6 +43,7 @@ enum class EventKind : std::uint8_t {
   MpRestored,      // a thrown item healed `amount` MP of `fighter` (as the item reads, not capped)
   HealingShown,    // a thrown item's healing particles rise over `fighter`; `amount` 1 with a ring
   BattleEnded,     // the result is ready
+  PartnerLeft,     // co-op: `fighter` left the battle, which goes on (its departure says how)
 };
 
 struct BattleEvent {

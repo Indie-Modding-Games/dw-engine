@@ -4,6 +4,8 @@
 -- the game's.
 
 local max_fighters = 4
+-- The other players' partners in a co-op battle (battle.allies; ally-0..2 in the document).
+local max_allies = 3
 local max_commands = 11
 local finisher_segments = 6
 local finisher_marks = 8
@@ -149,6 +151,36 @@ local function draw_fighter(document, index)
     document:get(prefix .. "-hp-row"):set_class("hidden", not fighter.hp_bar)
   end
   panel:set_class("fainted", fighter.fainted)
+end
+
+-- An ally's card (co-op): its name and status, and its HP and MP as the partner's bars draw them.
+local function draw_ally(document, index, ally)
+  local prefix = "ally-" .. index
+  lookup(document, prefix):set_class("hidden", ally == nil)
+  if ally == nil then
+    return
+  end
+  lookup(document, prefix .. "-name"):set_text(text(ally.name_key))
+  lookup(document, prefix .. "-status"):set_text(text(ally.status_key))
+  set_class(document, prefix .. "-hp-row", "low", ally.max_hp > 0 and ally.hp * 5 < ally.max_hp)
+  for stat, row in pairs({ hp = 0, mp = 1 }) do
+    local current = ally[stat]
+    lookup(document, prefix .. "-" .. stat .. "-label"):set_text(t(stat_label_keys[row]))
+    lookup(document, prefix .. "-" .. stat):set_text(tostring(current))
+    hud_digits.draw(document, prefix .. "-" .. stat .. "-d-", current, set_class)
+    lookup(document, prefix .. "-" .. stat .. "-fill"):set_property(
+      "width",
+      percent(current, ally["max_" .. stat]) .. "%"
+    )
+  end
+  lookup(document, prefix):set_class("fainted", ally.fainted)
+end
+
+local function draw_allies(document)
+  local allies = battle.allies()
+  for index = 0, max_allies - 1 do
+    draw_ally(document, index, allies[index + 1])
+  end
 end
 
 local function command_available(index)
@@ -1227,6 +1259,7 @@ local function draw(document)
   for index = 0, max_fighters - 1 do
     draw_fighter(document, index)
   end
+  draw_allies(document)
   bag_open = state.bag.open
   draw_bag(document, state)
   draw_commands(document)

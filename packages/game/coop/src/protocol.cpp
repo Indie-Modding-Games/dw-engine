@@ -101,6 +101,7 @@ constexpr std::size_t MaxBattleText = 64;
 constexpr std::int8_t MaxEquippedSlot = 15;
 constexpr std::uint8_t LastBattleCommand = 11;
 constexpr std::uint8_t LastMenuEntry = 8;
+constexpr std::uint8_t LastDeparture = 2;
 
 void putTexts(net::WireWriter& out, const std::vector<std::string>& texts) {
   out.put(static_cast<std::uint8_t>(texts.size()));
@@ -210,7 +211,7 @@ bool getFigure(net::WireReader& in, BattleFigure& figure) {
     return false;
   }
   figure.pace = in.get<std::uint8_t>();
-  return in.ok() && figure.slot >= PartnerFigureSlot &&
+  return in.ok() && figure.slot >= LowestFigureSlot &&
          validCoordinate(figure.x, MaxWorldCoordinate) &&
          validCoordinate(figure.z, MaxWorldCoordinate);
 }
@@ -222,7 +223,7 @@ void put(net::WireWriter& out, const BattleSpoils& spoils) {
   out.put(spoils.injured);
   putInts(out, spoils.care);
   out.put(spoils.food).put(spoils.livesLost).put(spoils.elapsedMinutes).put(spoils.hourCrossed);
-  out.put(spoils.lifetimeHoursLost);
+  out.put(spoils.lifetimeHoursLost).put(spoils.departure);
   out.put(static_cast<std::uint8_t>(spoils.commandsLearned.size()));
   for (const std::uint8_t entry : spoils.commandsLearned) {
     out.put(entry);
@@ -247,8 +248,9 @@ bool getSpoils(net::WireReader& in, BattleSpoils& spoils) {
     return false;
   }
   spoils.lifetimeHoursLost = in.get<std::int32_t>();
+  spoils.departure = in.get<std::uint8_t>();
   const std::uint8_t entries = in.get<std::uint8_t>();
-  if (!in.ok() || entries > LastMenuEntry + 1) {
+  if (!in.ok() || entries > LastMenuEntry + 1 || spoils.departure > LastDeparture) {
     return false;
   }
   for (std::uint8_t i = 0; i < entries && in.ok(); ++i) {
@@ -414,6 +416,13 @@ net::Bytes encode(const Message& message) {
           putSlots(out, body.enemyNpcs);
           putTexts(out, body.species);
           out.put(body.fixedFight);
+          out.put(static_cast<std::uint8_t>(body.allies.size()));
+          for (const PlayerId ally : body.allies) {
+            out.put(ally);
+          }
+        } else if constexpr (std::is_same_v<T, BattleOffer>) {
+          out.put(BattleOfferKind).put(body.available);
+          put(out, body.fighter);
         } else if constexpr (std::is_same_v<T, BattleRefused>) {
           out.put(BattleRefusedKind).put(body.ask).put(body.reason);
         } else if constexpr (std::is_same_v<T, BattleFrame>) {
@@ -616,13 +625,31 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     begin.ask = in.get<std::uint32_t>();
     begin.mapId = in.text();
     if (!getSlots(in, begin.enemyNpcs, MaxBattleEnemies) ||
-        !getTexts(in, begin.species, MaxBattleFighters) || !getFlag(in, begin.fixedFight) ||
-        begin.battle == 0 || begin.starter > GuestPlayerId || begin.mapId.empty() ||
-        begin.enemyNpcs.empty() || begin.species.size() != begin.enemyNpcs.size() + 1 ||
-        (begin.starter == GuestPlayerId) != (begin.ask != 0)) {
+        !getTexts(in, begin.species, MaxBattleFighters) || !getFlag(in, begin.fixedFight)) {
+      return core::fail("invalid cooperative battle begin");
+    }
+    const std::uint8_t allies = in.get<std::uint8_t>();
+    for (std::uint8_t i = 0; i < allies && in.ok() && allies < MaxPlayers; ++i) {
+      begin.allies.push_back(in.get<PlayerId>());
+    }
+    if (!in.ok() || allies >= MaxPlayers || begin.battle == 0 || begin.starter > GuestPlayerId ||
+        begin.mapId.empty() || begin.enemyNpcs.empty() ||
+        begin.species.size() != begin.enemyNpcs.size() + 1 + begin.allies.size() ||
+        (begin.starter == GuestPlayerId) != (begin.ask != 0) ||
+        !std::ranges::all_of(begin.allies, [&](PlayerId ally) {
+          return validPlayer(ally) && ally != begin.starter;
+        })) {
       return core::fail("invalid cooperative battle begin");
     }
     message = std::move(begin);
+    break;
+  }
+  case BattleOfferKind: {
+    BattleOffer offer;
+    if (!getFlag(in, offer.available) || !getFighter(in, offer.fighter)) {
+      return core::fail("invalid cooperative battle offer");
+    }
+    message = std::move(offer);
     break;
   }
   case BattleRefusedKind: {

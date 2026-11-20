@@ -22,8 +22,10 @@ inline constexpr PlayerId GuestPlayerId = 1;
 inline constexpr std::size_t MaxPlayers = 4;
 // 3: co-op battles (#363). 4: the owner's player states, the host's corrections and the roster
 // (#353, #354, #355). 5: the shared world's interactions: story facts, live map edits, the
-// ground items and the claims on items two players could take (#357).
-inline constexpr std::uint32_t ProtocolVersion = 5;
+// ground items and the claims on items two players could take (#357). 6: both partners fight
+// together: the guest's battle offer, the allies of a battle begin, their figures and the
+// spoils' departure (#351, #361).
+inline constexpr std::uint32_t ProtocolVersion = 6;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
   return id < MaxPlayers;
@@ -171,19 +173,26 @@ struct ProfileChunk {
   friend bool operator==(const ProfileChunk&, const ProfileChunk&) = default;
 };
 
-// Co-op battles (docs/architecture/multiplayer.md, §6 decision 3): one battle at a time runs in the
-// shared world, on the host's simulation, and the partner of whoever started it fights. The other
-// player watches it and helps with items from their own bag and cheers for the finisher.
+// Co-op battles (docs/architecture/multiplayer.md, §6 decision 3; coop-combat.md): one battle at a
+// time runs in the shared world, on the host's simulation, and the partner of whoever started it
+// fights, with the partners of the players there who are free to join (its allies). A player
+// without a partner in it watches and helps with items from their own bag and cheers for the
+// finisher.
 
-// A battle's fighters and figures are few: the partner and up to three enemies, and the NPCs the
-// battle holds on the map (those that run off as it opens and walk away after it).
+// A battle's fighters and figures are few: the partner, up to three enemies and the other players'
+// partners, and the NPCs the battle holds on the map (those that run off as it opens and walk away
+// after it).
 inline constexpr std::size_t MaxBattleEnemies = 3;
-inline constexpr std::size_t MaxBattleFighters = MaxBattleEnemies + 1;
+inline constexpr std::size_t MaxBattleFighters = MaxBattleEnemies + MaxPlayers;
 inline constexpr std::size_t MaxBattleFigures = 24;
 inline constexpr std::size_t MaxBattleMoves = 64;
 inline constexpr std::size_t MaxBattleLeavers = 64;
-// A map NPC slot, or this for the fighting partner.
+// A map NPC slot, or this for the fighting partner, or allyFigureSlot for an ally.
 inline constexpr std::int16_t PartnerFigureSlot = -1;
+[[nodiscard]] constexpr std::int16_t allyFigureSlot(PlayerId owner) {
+  return static_cast<std::int16_t>(-2 - static_cast<std::int16_t>(owner));
+}
+inline constexpr std::int16_t LowestFigureSlot = allyFigureSlot(MaxPlayers - 1);
 
 // The visiting partner as the guest's game has it, for the host to build its fighter from its own
 // tables (session::VisitingPartner): its species, the stats in the original's order (HP, MP,
@@ -219,9 +228,19 @@ struct BattleAsk {
   friend bool operator==(const BattleAsk&, const BattleAsk&) = default;
 };
 
+// Whether the guest's partner is free to join a battle the host starts on its map, and as what
+// fighter (sent when either changes): not while the guest is in a menu, a scene or a battle of its
+// own (docs/architecture/coop-combat.md §3).
+struct BattleOffer {
+  bool available = false;
+  BattleFighterProfile fighter;
+
+  friend bool operator==(const BattleOffer&, const BattleOffer&) = default;
+};
+
 // A battle began on the host: who started it (that player's partner fights), the guest's ask it
-// answers (0 when the host started it), the map, the NPC slot of each enemy and each fighter's
-// species (the partner's first).
+// answers (0 when the host started it), the map, the NPC slot of each enemy, each fighter's
+// species (the partner's first, then the enemies', then the allies') and the player of each ally.
 struct BattleBegin {
   std::uint32_t battle = 0;
   PlayerId starter = HostPlayerId;
@@ -230,6 +249,7 @@ struct BattleBegin {
   std::vector<std::int16_t> enemyNpcs;
   std::vector<std::string> species;
   bool fixedFight = false;
+  std::vector<PlayerId> allies;
 
   friend bool operator==(const BattleBegin&, const BattleBegin&) = default;
 };
@@ -284,8 +304,9 @@ struct BattleFigure {
 };
 
 // One battle frame as the host shows it (20 a second, unreliable: a lost one is followed by the
-// next). `command` is the partner's current command and `menu` a bit per command the strip offers
-// now (bit n: battle command n); the starter picks from it.
+// next). `command` is the current command of the partner the guest commands (the fighting one when
+// it has none in the battle) and `menu` a bit per command the strip offers it now (bit n: battle
+// command n); `bagAvailable` and `finisherCharging` are that partner's too.
 struct BattleFrame {
   std::uint32_t battle = 0;
   std::uint32_t frame = 0;
@@ -331,6 +352,9 @@ struct BattleSpoils {
   std::int32_t elapsedMinutes = 0;
   bool hourCrossed = false;
   std::int32_t lifetimeHoursLost = 0;
+  // How the partner left a co-op battle the team's outcome is not its own
+  // (game::battle::Departure: 0 none, 1 ran off, 2 knocked out).
+  std::uint8_t departure = 0;
   std::vector<std::uint8_t> commandsLearned;
   std::int32_t mpDiscountLearned = 0;
   std::array<std::int32_t, 4> counters{}; // attacks, big hits, blocks, statuses taken
@@ -342,8 +366,8 @@ struct BattleSpoils {
 };
 
 // The battle is over on the host (its end box closed and the beaten enemies gone): how it ended,
-// the NPC slots that left the map after it, the bits it gave the host's bag and, when the guest
-// started it, what it left the guest's partner.
+// the NPC slots that left the map after it, the bits it gave the host's bag and, when the guest's
+// partner fought in it, what it left that partner.
 struct BattleEnd {
   std::uint32_t battle = 0;
   BattleOutcome outcome = BattleOutcome::Victory;
@@ -543,10 +567,11 @@ struct Leave {
   friend bool operator==(const Leave&, const Leave&) = default;
 };
 
-using Message = std::variant<Hello, Welcome, Ready, JoinState, Commands, Snapshot, ViewState, Leave,
-                             ProfileChunk, BattleAsk, BattleBegin, BattleRefused, BattleFrame,
-                             BattleAction, BattleEnd, PlayerState, PlayerCorrection, Roster,
-                             WorldAsk, WorldChange, WorldSync, GroundItems, ItemClaim, ClaimAnswer>;
+using Message =
+    std::variant<Hello, Welcome, Ready, JoinState, Commands, Snapshot, ViewState, Leave,
+                 ProfileChunk, BattleAsk, BattleBegin, BattleRefused, BattleFrame, BattleAction,
+                 BattleEnd, PlayerState, PlayerCorrection, Roster, WorldAsk, WorldChange, WorldSync,
+                 GroundItems, ItemClaim, ClaimAnswer, BattleOffer>;
 
 inline constexpr std::uint8_t HelloKind = 0x60;
 inline constexpr std::uint8_t WelcomeKind = 0x61;
@@ -567,6 +592,8 @@ inline constexpr std::uint8_t ReadyKind = 0x6E;
 inline constexpr std::uint8_t PlayerStateKind = 0x70;
 inline constexpr std::uint8_t PlayerCorrectionKind = 0x71;
 inline constexpr std::uint8_t RosterKind = 0x72;
+// Co-op combat owns 0x80-0x8F.
+inline constexpr std::uint8_t BattleOfferKind = 0x80;
 // The shared world's interactions (#357) take 0x90-0x9F.
 inline constexpr std::uint8_t WorldAskKind = 0x90;
 inline constexpr std::uint8_t WorldChangeKind = 0x91;

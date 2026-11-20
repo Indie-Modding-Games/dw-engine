@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -98,7 +99,7 @@ void changeTarget(BattleContext& context, FighterId id, const std::vector<Fighte
       const std::optional<FighterId> skipped = history.at(commands.changeTurn ^ 1U);
       std::optional<FighterId> next;
       for (FighterId other = 1; other < context.state->fighters.size(); ++other) {
-        if (self.target != other && skipped != other) {
+        if (context.state->isEnemy(other) && self.target != other && skipped != other) {
           next = other;
           break;
         }
@@ -299,7 +300,7 @@ void tickEnemy(BattleContext& context, FighterId id, bool& stop) {
     clearStatusFlags(enemy);
     return;
   }
-  if (context.state->partner().hp == 0) {
+  if (playersDown(*context.state)) {
     standIdle(enemy);
     resetFlatten(enemy);
     enemy.knockedBack = false;
@@ -317,7 +318,7 @@ void tickEnemy(BattleContext& context, FighterId id, bool& stop) {
   }
   if (enemy.status.flattened) {
     enemy.queuedMove = context.moves->flattenedShot();
-    setTarget(context, id, PartnerId);
+    setTarget(context, id, enemyTargetOf(context, id));
     enemy.moveRange = static_cast<std::int32_t>(MoveRange::Ranged);
     enemy.planned = true;
     return;
@@ -334,13 +335,13 @@ void tickEnemy(BattleContext& context, FighterId id, bool& stop) {
   }
   if (enemy.status.flatFrames == 0 && enemy.hasFinisher() &&
       enemy.finisherProgress == enemy.finisherGoal) {
-    setTarget(context, id, PartnerId);
+    setTarget(context, id, enemyTargetOf(context, id));
     queueMove(context, id, FinisherSlot);
     enemy.finisherProgress = 0;
     return;
   }
   if (!enemy.chasingAttacker) {
-    setTarget(context, id, PartnerId);
+    setTarget(context, id, enemyTargetOf(context, id));
   }
   if (context.state->matchClock) {
     // std_main.c: STD_tickEnemyAI: a tournament rival is cautious one time in ten, otherwise it
@@ -467,14 +468,20 @@ void selectTarget(BattleContext& context, FighterId id, std::optional<FighterId>
     return;
   }
   Fighter& fighter = context.fighter(id);
-  if (id != PartnerId || forced) {
+  const bool playerSide = context.state->isPlayerSide(id);
+  if (!playerSide || forced) {
     if (!toward) {
-      setTarget(context, id, PartnerId);
+      if (!playerSide) {
+        setTarget(context, id, enemyTargetOf(context, id));
+      } else if (id == PartnerId) {
+        setTarget(context, id, PartnerId);
+      } else {
+        setTarget(context, id, context.strategies->partnerAi->chooseTarget(context.view(id)));
+      }
       return;
     }
-    if (id != PartnerId &&
-        !context.strategies->obedience->enemyTurnsToAttacker(context.view(), id)) {
-      setTarget(context, id, PartnerId);
+    if (!playerSide && !context.strategies->obedience->enemyTurnsToAttacker(context.view(), id)) {
+      setTarget(context, id, enemyTargetOf(context, id));
       return;
     }
     if (context.fighter(*toward).defeated()) {
@@ -484,11 +491,50 @@ void selectTarget(BattleContext& context, FighterId id, std::optional<FighterId>
     setTarget(context, id, toward);
     return;
   }
-  setTarget(context, id, context.strategies->partnerAi->chooseTarget(context.view()));
+  setTarget(context, id, context.strategies->partnerAi->chooseTarget(context.view(id)));
+}
+
+FighterId enemyTargetOf(const BattleContext& context, FighterId enemy) {
+  const BattleState& state = *context.state;
+  if (state.allies.empty()) {
+    return PartnerId;
+  }
+  const Fighter& self = state.fighters.at(enemy);
+  const auto standing = [&state](FighterId id) {
+    const Fighter& fighter = state.fighters.at(id);
+    return !fighter.gone() && fighter.hp > 0;
+  };
+  if (self.target && state.isPlayerSide(*self.target) && standing(*self.target)) {
+    return *self.target;
+  }
+  std::optional<FighterId> nearest;
+  std::int64_t best = 0;
+  for (const FighterId id : state.partnersIn()) {
+    const std::int64_t distance = distanceSquared(self.position, state.fighters.at(id).position);
+    if (standing(id) && (!nearest || distance < best)) {
+      nearest = id;
+      best = distance;
+    }
+  }
+  if (nearest) {
+    return *nearest;
+  }
+  const std::vector<FighterId> in = state.partnersIn();
+  return in.empty() ? PartnerId : in.front();
+}
+
+bool playersDown(const BattleState& state) {
+  if (state.allies.empty()) {
+    return state.partner().hp == 0;
+  }
+  return std::ranges::all_of(state.partnersIn(),
+                             [&state](FighterId id) { return state.fighters.at(id).hp == 0; });
 }
 
 void tickPartnerAi(BattleContext& context) {
-  tickCommanded(context, PartnerId);
+  if (!context.state->partner().gone()) {
+    tickCommanded(context, PartnerId);
+  }
 }
 
 void tickEnemyAi(BattleContext& context) {
@@ -501,10 +547,15 @@ void tickEnemyAi(BattleContext& context) {
     }
   }
   bool stop = false;
-  for (FighterId id = 1; id < state.fighters.size() && !stop; ++id) {
+  // A finisher's freeze stops the enemies after the one that saw it; the co-op allies after them
+  // still tick, as the partner did before them.
+  for (FighterId id = 1; id < state.fighters.size(); ++id) {
+    if (state.fighters[id].gone()) {
+      continue;
+    }
     if (state.commanded(id)) {
       tickCommanded(context, id);
-    } else {
+    } else if (!stop) {
       tickEnemy(context, id, stop);
     }
   }

@@ -1,6 +1,7 @@
 /* The host's battle on a co-op guest's screen (apps/game/src/coop_battles.hpp): a panel on the right with the fighters'
-   life bars, the starter's orders, the cheer and the items to throw. This is the plain look; a skin restyles it
-   (skins/<skin>/coop_battle/style.rcss). Over the field, under the interface's own notices. */
+   life bars (the partners' MP too, this player's own marked), the orders for this player's partner, the cheer and the
+   items to throw. This is the plain look; a skin restyles it (skins/<skin>/coop_battle/style.rcss). Over the field,
+   under the interface's own notices. */
 body {
 	width: 100%;
 	height: 100%;
@@ -67,6 +68,18 @@ body {
 .fighter .hp {
 	margin-left: 8dp;
 	font-size: 16dp;
+}
+
+/* The partners show their MP after the HP; the one this player commands is marked with a line at its left. */
+.fighter .mp {
+	margin-left: 8dp;
+	font-size: 16dp;
+	color: #8fc4ff;
+}
+
+.fighter.mine {
+	padding-left: 6dp;
+	border-left: 3dp #ffe08a;
 }
 
 #orders,

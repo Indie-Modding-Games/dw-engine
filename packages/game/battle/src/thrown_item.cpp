@@ -19,9 +19,10 @@ constexpr std::int32_t ThrowBend = 5;
 // main.c: tickThrownItem: each step covers 1 / (0x19 - frame) of the ground left.
 constexpr std::int32_t FlightSteps = 0x19;
 
-void emitPartnerEvent(BattleContext& context, EventKind kind, std::int32_t amount) {
+void emitPartnerEvent(BattleContext& context, EventKind kind, std::int32_t amount,
+                      FighterId partner = PartnerId) {
   context.emit({.kind = kind,
-                .fighter = PartnerId,
+                .fighter = partner,
                 .other = std::nullopt,
                 .move = std::nullopt,
                 .amount = amount,
@@ -33,9 +34,9 @@ void emitPartnerEvent(BattleContext& context, EventKind kind, std::int32_t amoun
 // value when the battle started (INITIAL_COMBAT_STATS); BTL_buffStats keeps it within the cap and
 // shows the gain over the partner in green with the stat's icon (addEntityText(partner, 0, 0xb,
 // gain, 3 to 5)), as it computed it.
-void boost(BattleContext& context, Fighter& partner, const StatBoost& disk) {
-  const auto raise = [&context, &disk](std::int32_t& stat, std::int32_t start, std::int32_t amount,
-                                       EventKind shown) {
+void boost(BattleContext& context, FighterId id, Fighter& partner, const StatBoost& disk) {
+  const auto raise = [&context, &disk, id](std::int32_t& stat, std::int32_t start,
+                                           std::int32_t amount, EventKind shown) {
     if (amount == 0) {
       return;
     }
@@ -45,7 +46,7 @@ void boost(BattleContext& context, Fighter& partner, const StatBoost& disk) {
       gain = std::min(amount, limit - stat);
     }
     stat = std::min(stat + gain, disk.limitCap);
-    emitPartnerEvent(context, shown, gain);
+    emitPartnerEvent(context, shown, gain, id);
   };
   raise(partner.stats.offense, partner.startStats.offense, disk.offense, EventKind::OffenseRaised);
   raise(partner.stats.defense, partner.startStats.defense, disk.defense, EventKind::DefenseRaised);
@@ -54,7 +55,7 @@ void boost(BattleContext& context, Fighter& partner, const StatBoost& disk) {
 
 // battle_main.c: BTL_healStatusEffect(1): the rings, in the colour of the last of poison,
 // confusion, stun and flattening the partner has, when it has any.
-void showCureRings(BattleContext& context, const Fighter& partner) {
+void showCureRings(BattleContext& context, FighterId id, const Fighter& partner) {
   using Kind = StatusVisuals::CureKind;
   const StatusState& status = partner.status;
   std::optional<Kind> kind;
@@ -71,15 +72,15 @@ void showCureRings(BattleContext& context, const Fighter& partner) {
     kind = Kind::Flattening;
   }
   if (kind) {
-    context.visuals->addBuffRings(PartnerId, partner, *kind);
+    context.visuals->addBuffRings(id, partner, *kind);
   }
 }
 
 // item.c: the item's handler, now that it reached the partner. The healing ones show what they
 // heal over the partner (addEntityText(partner, 0, 0xb, value, icon)): the item's own amount, not
 // what the maximum let in; handleDoubleFloppy shows the HP and then the MP.
-void land(BattleContext& context, const ThrownItem& item) {
-  Fighter& partner = context.fighter(PartnerId);
+void land(BattleContext& context, const ThrownItem& item, FighterId id) {
+  Fighter& partner = context.fighter(id);
   if (item.consciousOnly && partner.fainted) {
     return;
   }
@@ -90,24 +91,24 @@ void land(BattleContext& context, const ThrownItem& item) {
                                 ? WholeRestoreHp
                                 : partner.stats.maxHp * *item.reviveHpPercent / WholePercent;
     if (partner.fainted) {
-      revivePartner(context, hp);
+      revivePartner(context, hp, id);
     } else {
       restorePartner(partner, hp, 0);
     }
-    emitPartnerEvent(context, EventKind::HpRestored, hp);
+    emitPartnerEvent(context, EventKind::HpRestored, hp, id);
   }
   restorePartner(partner, item.hp, item.mp);
   if (item.hp > 0) {
-    emitPartnerEvent(context, EventKind::HpRestored, item.hp);
+    emitPartnerEvent(context, EventKind::HpRestored, item.hp, id);
   }
   if (item.mp > 0) {
-    emitPartnerEvent(context, EventKind::MpRestored, item.mp);
+    emitPartnerEvent(context, EventKind::MpRestored, item.mp, id);
   }
   if (item.curesStatus) {
     if (item.cureRings && context.visuals != nullptr) {
-      showCureRings(context, partner);
+      showCureRings(context, id, partner);
     }
-    cureStatus(context, PartnerId);
+    cureStatus(context, id);
   }
   if (item.protects) {
     partner.status.protectedFromStatus = true;
@@ -115,15 +116,38 @@ void land(BattleContext& context, const ThrownItem& item) {
   // item.c: handleHPHealingItem, handleMPHealingItem, handleDoubleFloppy and handleRestore end
   // with addHealingParticleEffect(partner, ring).
   if (item.healingParticles) {
-    emitPartnerEvent(context, EventKind::HealingShown, item.healingRing ? 1 : 0);
+    emitPartnerEvent(context, EventKind::HealingShown, item.healingRing ? 1 : 0, id);
   }
   if (item.boost) {
-    boost(context, partner, *item.boost);
+    boost(context, id, partner, *item.boost);
     // main.c: handleBuffDisks ends with BTL_addBuffDiskEffect, unless the partner is down.
     if (!partner.fainted && context.visuals != nullptr) {
-      context.visuals->addBuffDisk(PartnerId, partner);
+      context.visuals->addBuffDisk(id, partner);
     }
   }
+}
+
+// One item on its way: it lands on the flight's last frame (main.c: tickThrownItem).
+void tickFlight(BattleContext& context, std::optional<ThrownItemState>& thrown) {
+  if (!thrown) {
+    return;
+  }
+  const ItemThrowRules& rules = context.rules->itemThrow;
+  ++thrown->frames;
+  // The step of the flight's last frame lands it (TAMER_ITEM.time reaches 0x18 after it).
+  const std::optional<std::int32_t> flight = flightFrameOf(*thrown, rules);
+  if (!flight || *flight < rules.flightFrames - 1) {
+    return;
+  }
+  const ThrownItem item = thrown->item;
+  const FighterId target = thrown->target;
+  thrown.reset();
+  land(context, item, target);
+  // main.c: tickThrownItem: BTL_addItemParticles(ENTITY_TABLE[1]) after the item's handler.
+  if (context.visuals != nullptr) {
+    context.visuals->addItemParticles(target, context.fighter(target));
+  }
+  emitPartnerEvent(context, EventKind::ItemLanded, 0, target);
 }
 
 } // namespace
@@ -169,9 +193,9 @@ void restorePartner(Fighter& partner, std::int32_t hp, std::int32_t mp) {
   partner.mp = std::min(partner.mp + mp, partner.stats.maxMp);
 }
 
-void revivePartner(BattleContext& context, std::int32_t hp) {
+void revivePartner(BattleContext& context, std::int32_t hp, FighterId id) {
   BattleState& state = *context.state;
-  Fighter& partner = state.partner();
+  Fighter& partner = state.fighters.at(id);
   // battle_setup.c: BTL_isBattleFinished, at the end of the revive animation (its length is not
   // modelled).
   partner.fainted = false;
@@ -179,7 +203,11 @@ void revivePartner(BattleContext& context, std::int32_t hp) {
   partner.hp = std::clamp(hp, 1, partner.stats.maxHp);
   partner.pendingDamage = 0;
   standIdle(partner);
-  state.deathFrames = 0;
+  if (AllyState* ally = state.allyOf(id)) {
+    ally->deathFrames = 0;
+  } else {
+    state.deathFrames = 0;
+  }
   // battle_setup.c: BTL_isBattleFinished: a finisher frozen by the fall ends with its aura.
   if (state.finisher.fighter) {
     removeFinisherAura(context);
@@ -195,35 +223,37 @@ void revivePartner(BattleContext& context, std::int32_t hp) {
       fighter.moveRange = 0;
     }
   }
-  emitPartnerEvent(context, EventKind::Revived, partner.hp);
+  emitPartnerEvent(context, EventKind::Revived, partner.hp, id);
 }
 
-void throwItem(BattleContext& context, const ThrownItem& item) {
-  context.state->bagOpen = false;
-  context.state->thrownItem = ThrownItemState{.item = item, .frames = 0};
-  emitPartnerEvent(context, EventKind::ItemThrown, 0);
+void throwItem(BattleContext& context, const ThrownItem& item, FighterId thrower,
+               FighterId target) {
+  BattleState& state = *context.state;
+  const ThrownItemState thrown{.item = item, .frames = 0, .target = target};
+  if (AllyState* ally = state.allyOf(thrower)) {
+    ally->bagOpen = false;
+    ally->thrownItem = thrown;
+  } else {
+    state.bagOpen = false;
+    state.thrownItem = thrown;
+  }
+  emitPartnerEvent(context, EventKind::ItemThrown, 0, target);
 }
 
 void tickThrownItem(BattleContext& context) {
-  std::optional<ThrownItemState>& thrown = context.state->thrownItem;
-  if (!thrown) {
-    return;
+  tickFlight(context, context.state->thrownItem);
+  for (AllyState& ally : context.state->allies) {
+    tickFlight(context, ally.thrownItem);
   }
-  const ItemThrowRules& rules = context.rules->itemThrow;
-  ++thrown->frames;
-  // The step of the flight's last frame lands it (TAMER_ITEM.time reaches 0x18 after it).
-  const std::optional<std::int32_t> flight = flightFrameOf(*thrown, rules);
-  if (!flight || *flight < rules.flightFrames - 1) {
-    return;
+}
+
+bool itemFlyingTo(const BattleState& state, FighterId id) {
+  if (state.thrownItem && state.thrownItem->target == id) {
+    return true;
   }
-  const ThrownItem item = thrown->item;
-  thrown.reset();
-  land(context, item);
-  // main.c: tickThrownItem: BTL_addItemParticles(ENTITY_TABLE[1]) after the item's handler.
-  if (context.visuals != nullptr) {
-    context.visuals->addItemParticles(PartnerId, context.fighter(PartnerId));
-  }
-  emitPartnerEvent(context, EventKind::ItemLanded, 0);
+  return std::ranges::any_of(state.allies, [id](const AllyState& ally) {
+    return ally.thrownItem && ally.thrownItem->target == id;
+  });
 }
 
 void tickHpBars(BattleContext& context) {

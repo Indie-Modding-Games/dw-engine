@@ -2356,11 +2356,15 @@ con el compañero del invitado como `session::BattleRequest::visitor` (`PlaySess
 que corre (`BattleBegin`, un `BattleFrame` cada 3 ticks, `BattleEnd`). El campo del invitado se detiene
 (`PlaySession::holdForCoopBattle`) y sus actores toman las figuras de los frames (`FieldScene::holdFighter`; el
 compañero del anfitrión es `BattlePartner::CoopHost`); el documento `coop_battle` muestra las barras de vida, las
-órdenes del que empezó, el ánimo y los objetos de su propia bolsa. En el anfitrión, `BattleScreen::visiting` bloquea sus
-propias órdenes y el remate y toma las del invitado (`commandFromVisitor`, `cheer`, `throwLentItem`, `closeEnd`);
+órdenes para el compañero de este jugador, el ánimo y los objetos de su propia bolsa. En el anfitrión,
+`BattleScreen::visiting` bloquea sus propias órdenes y el remate y toma las del invitado (`commandFromPlayer`, `cheer`,
+`throwLentItem`, `closeEnd`). Cuando los dos compañeros están en el mapa del combate, el del invitado se une como aliado
+(`CoopBattles` lee el `BattleOffer` del invitado; `BattleScreen::setCoopAllies`): cada juego da órdenes a su propio
+compañero (`BattleScreen::fighterOf`), la pantalla de combate muestra la tarjeta del otro (`battle.allies`) y el
+resultado del aliado vuelve en el botín (`BattleScreen::takeAllyResults`);
 `BattleAdapter::finishVisitor` deja los bits y los objetos en el mundo del anfitrión, y la parte del compañero vuelve
-como `BattleSpoils`, que aplica el `BattleAdapter::finish` del invitado. El botón `extra` ordena el remate al que empezó
-y anima al ayudante. Tests: `packages/game/coop/tests/battle_tests.cpp`, `packages/session/tests/battle_adapter_tests.cpp`.
+como `BattleSpoils`, que aplica el `BattleAdapter::finish` del invitado. El botón `extra` ordena el remate al jugador cuyo
+compañero pelea y anima al ayudante. Tests: `packages/game/coop/tests/battle_tests.cpp`, `packages/session/tests/battle_adapter_tests.cpp`.
 
 ## Versus en línea
 

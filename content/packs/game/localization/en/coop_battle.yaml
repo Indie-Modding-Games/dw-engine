@@ -1,6 +1,7 @@
 # The host's battle on a co-op guest's screen (ui/coop_battle).
 title_starter: "Your partner is fighting!"
 title_helper: "Your friend's partner is fighting. Lend a hand!"
+title_ally: "Your partner fights beside your friend's!"
 phase_intro: "The battle begins..."
 phase_fight: "Fight!"
 phase_victory: "The battle is won!"
@@ -10,3 +11,4 @@ cheer: "Cheer"
 items: "Throw an item"
 no_items: "No items to throw."
 close: "Continue"
+mp: "MP"

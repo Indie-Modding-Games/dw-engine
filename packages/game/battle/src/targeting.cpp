@@ -38,7 +38,7 @@ WeakestChoice weakestOther(const BattleView& view, FighterId self) {
   WeakestChoice choice;
   std::int32_t best = NoScore;
   for (FighterId id = 0; id < view.state->fighters.size(); ++id) {
-    if (id == self || view.state->fighters[id].defeated() || me.target == id) {
+    if (!view.state->foes(self, id) || view.state->fighters[id].defeated() || me.target == id) {
       continue;
     }
     const std::int32_t score = targetScore(view, self, id);
@@ -60,7 +60,7 @@ std::vector<FighterId> afflictedOthers(const BattleView& view, FighterId self) {
   std::vector<FighterId> afflicted;
   for (FighterId id = 0; id < view.state->fighters.size(); ++id) {
     const Fighter& other = view.state->fighters[id];
-    if (id != self && !other.defeated() && other.status.any()) {
+    if (view.state->foes(self, id) && !other.defeated() && other.status.any()) {
       afflicted.push_back(id);
     }
   }
@@ -71,7 +71,7 @@ std::optional<FighterId> nearestOther(const BattleState& state, FighterId self) 
   std::optional<FighterId> nearest;
   std::int64_t best = std::numeric_limits<std::int64_t>::max();
   for (FighterId id = 0; id < state.fighters.size(); ++id) {
-    if (id == self || state.fighters[id].defeated()) {
+    if (!state.foes(self, id) || state.fighters[id].defeated()) {
       continue;
     }
     const std::int64_t distance =

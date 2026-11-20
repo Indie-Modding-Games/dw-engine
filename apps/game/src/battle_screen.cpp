@@ -149,12 +149,19 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   // After the music's facts: trigger 1 changes the battle's rules, not its song.
   applyFixedFight(request, fixedFight);
   const bool visiting = request.visitor.has_value();
+  addCoopAllies(request);
+  std::vector<std::int32_t> fighterNpcs = enemyNpcs;
+  for (const session::BattleAlly& ally : request.allies) {
+    fighterNpcs.push_back(FieldScene::allyFighterSlot(ally.owner));
+  }
   auto battle = desc_.battle->start(*desc_.session, std::move(request));
   if (!battle) {
     return std::unexpected{battle.error()};
   }
   visiting_ = visiting;
   visitorResult_.reset();
+  allyResults_.clear();
+  enemiesLeft_ = false;
   leftMap_.clear();
   coopOutcome_.reset();
   battle_.emplace(std::move(*battle));
@@ -164,14 +171,17 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   partnerBeforeFrame_.reset();
   effects_.reset();
   enemyNpcs_ = std::move(enemyNpcs);
+  fighterNpcs_ = std::move(fighterNpcs);
+  localFighter_ = visiting_ ? fighterOf(game::coop::HostPlayerId)
+                            : std::optional<game::battle::FighterId>{game::battle::PartnerId};
   // The ground also knows where the field draws the fighters' models (BTL_tickEnemyAI projects an
   // enemy's node 1).
   ground_.reset();
   if (desc_.ground != nullptr && desc_.scene != nullptr) {
-    ground_.emplace(*desc_.ground, *desc_.scene, enemyNpcs_);
+    ground_.emplace(*desc_.ground, *desc_.scene, fighterNpcs_);
   }
   battle_->setGround(ground_ ? &*ground_ : desc_.ground);
-  bodies_.emplace(*battle_, desc_.scene, desc_.species, enemyNpcs_);
+  bodies_.emplace(*battle_, desc_.scene, desc_.species, fighterNpcs_);
   // The fighters move and time their animations by their models' clips, and the techniques fly as
   // their effect scripts do.
   for (game::battle::FighterId id = 0; id < battle_->state().fighters.size(); ++id) {
@@ -320,7 +330,7 @@ void BattleScreen::showEffects() const {
 // fighter's actor and its species' height and radius; none once the battle is over.
 void BattleScreen::showStatusVisuals() const {
   if (desc_.scene != nullptr) {
-    showBattleStatus(*desc_.scene, battle_ ? &*battle_ : nullptr, desc_.species, enemyNpcs_,
+    showBattleStatus(*desc_.scene, battle_ ? &*battle_ : nullptr, desc_.species, fighterNpcs_,
                      shotColumns_ ? &*shotColumns_ : nullptr);
   }
 }
@@ -395,10 +405,10 @@ void BattleScreen::stepNumbers(const game::battle::BattleEvents& frame) {
       continue;
     }
     std::optional<screens::WindowFraction> feet;
-    if (desc_.scene != nullptr && (event.fighter == 0 || event.fighter <= enemyNpcs_.size())) {
+    if (desc_.scene != nullptr && (event.fighter == 0 || event.fighter <= fighterNpcs_.size())) {
       const std::optional<std::int32_t> npc =
           event.fighter == 0 ? std::nullopt
-                             : std::optional<std::int32_t>{enemyNpcs_[event.fighter - 1]};
+                             : std::optional<std::int32_t>{fighterNpcs_[event.fighter - 1]};
       if (const std::optional<glm::vec2> shown = desc_.scene->fighterFeetOnWindow(npc)) {
         feet = screens::WindowFraction{.x = shown->x, .y = shown->y};
       }
@@ -561,10 +571,11 @@ void BattleScreen::showFighters(double seconds) {
   for (std::size_t index = 0; index < figures_.size(); ++index) {
     std::optional<std::int32_t> npc;
     if (index > 0) {
-      if (index > enemyNpcs_.size()) {
+      // The beaten enemies walk off on their own (startExit).
+      if (index > fighterNpcs_.size() || (enemiesLeft_ && index <= enemyNpcs_.size())) {
         continue;
       }
-      npc = enemyNpcs_[index - 1];
+      npc = fighterNpcs_[index - 1];
     }
     if (!desc_.scene->holdFighter(npc, figures_[index]) && seconds == 0.0) {
       core::logWarning("{}",
@@ -829,14 +840,15 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
   }
   if (command.name == BattleCommandName) {
     const auto* number = std::get_if<double>(&command.value);
-    // A visitor's partner takes its own player's commands (commandFromVisitor).
-    if (battle_ && number != nullptr && !visiting_) {
+    // Each player commands their own partner: a visitor's takes its player's commands
+    // (commandFromPlayer); in its battle this player commands its own ally, if it fights.
+    if (battle_ && number != nullptr && localFighter_) {
       const auto chosen = static_cast<game::battle::Command>(static_cast<int>(*number));
-      if (auto taken = battle_->command(chosen); !taken) {
+      if (auto taken = battle_->command(chosen, *localFighter_); !taken) {
         core::logInfo("{}", core::formatMessage(messages::BattleCommandRefused,
                                                 game::battle::commandTextKey(chosen),
                                                 taken.error().message));
-      } else {
+      } else if (*localFighter_ == game::battle::PartnerId) {
         shout(chosen);
       }
     }
@@ -844,7 +856,13 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
   }
   if (command.name == BattleChargeCommand) {
     if (battle_) {
-      battle_->pressFinisherCharge();
+      // Another player's finisher takes this player's press as a cheer (co-op).
+      const game::battle::FinisherState& finisher = battle_->state().finisher;
+      if (!finisher.fighter || finisher.fighter == localFighter_) {
+        battle_->pressFinisherCharge();
+      } else {
+        battle_->cheerFinisher();
+      }
     }
     return true;
   }
@@ -854,7 +872,7 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
   }
   if (command.name == BattleBagCloseCommand) {
     if (battle_) {
-      battle_->closeBag();
+      battle_->closeBag(localFighter_.value_or(game::battle::PartnerId));
       publish();
     }
     return true;
@@ -888,17 +906,17 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
 
 void BattleScreen::pressFinisher() {
   // Nothing is taken while the battle opens, as for the strip's commands, nor from the helper of a
-  // visitor's battle.
-  if (!battle_ || intro_ || visiting_) {
+  // visitor's battle; in co-op it calls this player's own partner's finisher.
+  if (!battle_ || intro_ || !localFighter_) {
     return;
   }
   // Before the gauge is full the button does nothing, as in the original.
-  if (auto taken = battle_->command(game::battle::Command::Finisher); !taken) {
+  if (auto taken = battle_->command(game::battle::Command::Finisher, *localFighter_); !taken) {
     core::logDebug(
         "{}", core::formatMessage(messages::BattleCommandRefused,
                                   game::battle::commandTextKey(game::battle::Command::Finisher),
                                   taken.error().message));
-  } else {
+  } else if (*localFighter_ == game::battle::PartnerId) {
     shout(game::battle::Command::Finisher);
   }
 }
@@ -912,7 +930,9 @@ void BattleScreen::publish() const {
   if (!battle_) {
     return;
   }
-  screens::publish(*desc_.ui, screens::settingsOf(screens::battleViewOf(*battle_, names())),
+  screens::publish(*desc_.ui,
+                   screens::settingsOf(screens::battleViewOf(
+                       *battle_, names(), localFighter_.value_or(game::battle::PartnerId))),
                    screens::BattleRevisionSetting);
 }
 
@@ -920,7 +940,7 @@ void BattleScreen::openBag() {
   if (!battle_) {
     return;
   }
-  if (auto opened = battle_->openBag(); !opened) {
+  if (auto opened = battle_->openBag(localFighter_.value_or(game::battle::PartnerId)); !opened) {
     core::logInfo("{}", core::formatMessage(messages::BattleBagRefused, opened.error().message));
     return;
   }
@@ -947,12 +967,13 @@ void BattleScreen::syncBag() {
   if (!bagShown_) {
     return;
   }
-  const bool open = battle_ && battle_->bagOpen();
+  const game::battle::FighterId own = localFighter_.value_or(game::battle::PartnerId);
+  const bool open = battle_ && battle_->bagOpen(own);
   if (!desc_.ui->isVisible(PartnerMenuDocument)) {
     bagShown_ = false;
     desc_.ui->setSetting(PartnerMenuContextSetting, std::string{});
     if (open) {
-      battle_->closeBag();
+      battle_->closeBag(own);
       publish();
     }
   } else if (!open) {
@@ -973,7 +994,11 @@ void BattleScreen::throwItem(double slot) {
                   core::formatMessage(messages::BattleThrowRefused, slot, messages::EmptyBagSlot));
     return;
   }
-  auto thrown = desc_.battle->throwItem(*battle_, *item);
+  // In a visitor's battle this player throws at its own partner, when it fights (co-op).
+  const game::battle::FighterId own = localFighter_.value_or(game::battle::PartnerId);
+  auto thrown = own == game::battle::PartnerId
+                    ? desc_.battle->throwItem(*battle_, *item)
+                    : desc_.battle->throwItem(*battle_, *item, own, throwTargetOf(own));
   if (!thrown) {
     core::logInfo("{}",
                   core::formatMessage(messages::BattleThrowRefused, slot, thrown.error().message));
@@ -983,7 +1008,7 @@ void BattleScreen::throwItem(double slot) {
   } else {
     core::logInfo("{}", core::formatMessage(messages::BattleItemThrown,
                                             desc_.inventory->items().at(*item).id));
-    startThrow(*item);
+    startThrow(*item, own);
   }
   publish();
 }
@@ -991,7 +1016,9 @@ void BattleScreen::throwItem(double slot) {
 void BattleScreen::finish() {
   const std::optional<game::battle::BattleResult> finished =
       battle_ ? battle_->result() : std::nullopt;
+  allyResults_ = battle_ ? battle_->allyResults() : std::vector<game::battle::AllyResult>{};
   battle_.reset();
+  localFighter_.reset();
   endThrow();
   publishHpBars();
   showStatusVisuals();
@@ -1072,6 +1099,21 @@ void BattleScreen::finish() {
                    core::formatMessage(messages::BattleStartFailed, aftermath.error().message));
     aftermath = session::BattleAftermath{};
   }
+  // Co-op: this game's own partner fought beside a visitor's. Its share is this game's, and the
+  // end box shows it with the bits and the drops the battle left here.
+  game::battle::BattleResult shown = result;
+  if (const auto own = std::ranges::find(allyResults_, game::coop::HostPlayerId,
+                                         &game::battle::AllyResult::owner);
+      visiting_ && own != allyResults_.end()) {
+    shown = own->result;
+    shown.bits = result.bits;
+    shown.drops = result.drops;
+    if (auto ownAftermath = desc_.battle->finish(*desc_.session, own->result)) {
+      ownAftermath->drops = aftermath->drops;
+      aftermath = std::move(*ownAftermath);
+    }
+    allyResults_.erase(own);
+  }
   drops_ = aftermath->drops;
   if (result.outcome == game::battle::Outcome::Fled) {
     // BTL_deinitializeCombat runs BTL_handleVictorySequence (the end box with its stats and bits)
@@ -1081,7 +1123,7 @@ void BattleScreen::finish() {
     close();
     return;
   }
-  screens::BattleEndView view = screens::battleEndViewOf(result, *aftermath, names());
+  screens::BattleEndView view = screens::battleEndViewOf(shown, *aftermath, names());
   const game::partner::CareLimits& limits = desc_.session->partnerRules().care.limits;
   for (const game::partner::Stat stat : game::partner::AllStats) {
     view.statMaxima.at(static_cast<std::size_t>(stat)) =

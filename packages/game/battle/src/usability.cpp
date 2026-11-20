@@ -50,7 +50,10 @@ bool moveUsable(const BattleView& view, FighterId fighter, std::size_t slot) {
   std::int32_t cost = move.mpCost;
   // A versus rival pays as the partner does (vs_main.c: VS_isMoveUsable, the brain's discount).
   if (view.state->commanded(fighter)) {
-    const bool unwell = fighter == PartnerId && (view.partnerSick || view.partnerInjured);
+    const AllyState* ally = view.state->allyOf(fighter);
+    const bool unwell = ally != nullptr
+                            ? ally->condition.sick || ally->condition.injured
+                            : fighter == PartnerId && (view.partnerSick || view.partnerInjured);
     cost = partnerMpCost(*view.rules, cost, self.stats.brain, unwell, MpCostUse::Check);
   }
   return self.mp >= cost;

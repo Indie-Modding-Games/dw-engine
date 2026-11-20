@@ -81,6 +81,17 @@ struct VisitingPartner {
   game::battle::PartnerCondition condition;
 };
 
+// Another player's partner fighting beside the partner in a co-op battle
+// (docs/architecture/coop-combat.md §4.1): a guest's visiting partner, or none for this session's
+// own (the host's partner joining a guest's battle); where it and its player stand, and that
+// player's id.
+struct BattleAlly {
+  std::optional<VisitingPartner> visitor;
+  game::battle::Point partner;
+  game::battle::Point tamer;
+  std::uint8_t owner = 0;
+};
+
 // A battle the game or a script starts: everything but the partner, which the adapter builds from
 // the session.
 struct BattleRequest {
@@ -106,6 +117,8 @@ struct BattleRequest {
   // Another game's partner fights instead of this session's (a co-op guest's battle): the session's
   // partner takes no part, and finishVisitor gives the result back.
   std::optional<VisitingPartner> visitor;
+  // A co-op battle's other partners (game::battle::BattleSetup::allies), in their order.
+  std::vector<BattleAlly> allies;
 };
 
 // Where a versus battle's two fighters stand, on which map, and the spot off the field the
@@ -205,6 +218,12 @@ public:
   // not usable in battle).
   core::Result<game::inventory::UseResult> throwItem(game::battle::Battle& battle,
                                                      assets::ItemHandle item) const;
+  // The same from a co-op battle where this player's partner is `thrower` (the partner or an
+  // ally), at `target`.
+  core::Result<game::inventory::UseResult> throwItem(game::battle::Battle& battle,
+                                                     assets::ItemHandle item,
+                                                     game::battle::FighterId thrower,
+                                                     game::battle::FighterId target) const;
 
   // Equips the species' move at `slot` in one of the four places, or empties it.
   core::Result<void> equip(const GameSession& session, std::size_t place,

@@ -2340,11 +2340,14 @@ partner as `session::BattleRequest::visitor` (`PlaySession::startVisitorBattle`;
 draws it on the guest's partner) and tells the guest of every battle it runs (`BattleBegin`, a `BattleFrame` every 3
 ticks, `BattleEnd`). The guest's field holds (`PlaySession::holdForCoopBattle`) and its actors take the frames'
 figures (`FieldScene::holdFighter`; the host's partner is `BattlePartner::CoopHost`); the `coop_battle` document shows
-the life bars, the starter's orders, the cheer and the items of its own bag. On the host, `BattleScreen::visiting`
-blocks its own orders and finisher and takes the guest's (`commandFromVisitor`, `cheer`, `throwLentItem`,
-`closeEnd`); `BattleAdapter::finishVisitor` keeps the bits and drops in the host's world, and the partner's part goes
+the life bars, the orders for this player's partner, the cheer and the items of its own bag. On the host,
+`BattleScreen::visiting` blocks its own orders and finisher and takes the guest's (`commandFromPlayer`, `cheer`,
+`throwLentItem`, `closeEnd`). When both partners are on the battle's map, the guest's partner joins as an ally
+(`CoopBattles` reads the guest's `BattleOffer`; `BattleScreen::setCoopAllies`): each game commands its own partner
+(`BattleScreen::fighterOf`), the battle screen shows the other's card (`battle.allies`) and the ally's result goes back
+in the spoils (`BattleScreen::takeAllyResults`); `BattleAdapter::finishVisitor` keeps the bits and drops in the host's world, and the partner's part goes
 back as `BattleSpoils`, which the guest's `BattleAdapter::finish` applies. The `extra` button orders the finisher for a
-starter and cheers for a helper. Tests: `packages/game/coop/tests/battle_tests.cpp`,
+player whose partner fights and cheers for a helper. Tests: `packages/game/coop/tests/battle_tests.cpp`,
 `packages/session/tests/battle_adapter_tests.cpp`.
 
 ## Online versus

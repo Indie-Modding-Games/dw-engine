@@ -13,6 +13,7 @@ bool isBattleMessage(const game::coop::Message& message) {
          std::holds_alternative<game::coop::BattleRefused>(message) ||
          std::holds_alternative<game::coop::BattleFrame>(message) ||
          std::holds_alternative<game::coop::BattleAction>(message) ||
+         std::holds_alternative<game::coop::BattleOffer>(message) ||
          std::holds_alternative<game::coop::BattleEnd>(message);
 }
 

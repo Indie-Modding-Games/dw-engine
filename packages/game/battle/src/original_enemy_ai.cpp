@@ -20,7 +20,7 @@ public:
     const Fighter& self = view.state->fighters.at(selfId);
     std::array<std::int32_t, EquippedSlots> weights = self.combatant.movePriorities;
     bool anotherEnemyStands = false;
-    for (FighterId other = 1; other < view.state->fighters.size(); ++other) {
+    for (FighterId other = 1; other <= view.state->enemyCount(); ++other) {
       if (other != selfId && !view.state->fighters[other].defeated()) {
         anotherEnemyStands = true;
       }

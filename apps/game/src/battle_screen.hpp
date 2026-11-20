@@ -175,17 +175,36 @@ public:
   // running battle's partner is a visitor's (a co-op guest's, session::BattleRequest::visitor):
   // that player commands it from its own game, and this one watches and helps.
   [[nodiscard]] bool visiting() const { return visiting_; }
+  // Co-op: the other players' partners that join the next field battle beside the fighting one
+  // (docs/architecture/coop-combat.md §4): a guest's (its visitor) or this game's own (no visitor,
+  // in a guest's battle). CoopBattles keeps it current; none in the original's battles, the cups'
+  // and versus matches, nor a battle without the tamer.
+  struct CoopAlly {
+    game::coop::PlayerId owner = game::coop::HostPlayerId;
+    std::optional<session::VisitingPartner> visitor;
+  };
+  void setCoopAllies(std::vector<CoopAlly> allies) { coopAllies_ = std::move(allies); }
+  // The partner player `owner` commands in the running battle, if any.
+  [[nodiscard]] std::optional<game::battle::FighterId> fighterOf(game::coop::PlayerId owner) const;
+  // The allies' results once the battle finished (for the guests' games), once.
+  [[nodiscard]] std::vector<game::battle::AllyResult> takeAllyResults() {
+    return std::exchange(allyResults_, {});
+  }
+  // A player whose link went: its partner fights on its own call.
+  void releaseAlly(game::coop::PlayerId owner);
   // What the screen shows, for the other player's screen: the opening, the fight, the victory's
   // poses, the end box, or what follows it.
   [[nodiscard]] game::coop::BattlePhase coopPhase() const;
-  // A command of the visitor's player, as its strip would give it; false when the battle does not
-  // take it now.
-  bool commandFromVisitor(game::battle::Command command);
-  // The other player's cheer: a press of the finisher's charge buttons.
-  void cheer();
-  // An item from the other player's own bag thrown at the partner: this game's bag lends it one
-  // and throws it, so its own count does not change. False when it is not thrown.
-  bool throwLentItem(std::string_view itemId);
+  // A command of another player for its own partner (the visitor's or its ally), as its strip
+  // would give it; false when the battle does not take it now.
+  bool commandFromPlayer(game::coop::PlayerId owner, game::battle::Command command);
+  // Another player's press of the finisher's charge buttons: its own partner's finisher takes it
+  // whole, another's as a cheer.
+  void cheer(game::coop::PlayerId from);
+  // An item from another player's own bag thrown at its partner (the fighting one when it has none
+  // in the battle): this game's bag lends it one and throws it, so its own count does not change.
+  // False when it is not thrown.
+  bool throwLentItem(game::coop::PlayerId from, std::string_view itemId);
   // The other player closes the end box.
   void closeEnd() { close(); }
   // A visitor's battle's result once it finished (for the visitor's own game), once.
@@ -206,6 +225,12 @@ public:
   void pressFinisher();
 
 private:
+  // battle_screen_coop.cpp: the co-op allies a field battle starts with (setCoopAllies), where the
+  // field has them and their players.
+  void addCoopAllies(session::BattleRequest& request) const;
+  // The partner a thrower's item lands on: its own while it is in the battle, else the fighting
+  // one.
+  [[nodiscard]] game::battle::FighterId throwTargetOf(game::battle::FighterId thrower) const;
   [[nodiscard]] screens::NameKeys names() const;
   void publish() const;
   void tickIntro(double seconds);
@@ -252,7 +277,8 @@ private:
   void throwItem(double slot);
   // battle_screen_throw.cpp: the player's throw and the item on its way to the partner (main.c:
   // startThrowingItem, tickThrownItem, renderThrownItem), a battle frame at a time.
-  void startThrow(assets::ItemHandle item);
+  void startThrow(assets::ItemHandle item,
+                  game::battle::FighterId thrower = game::battle::PartnerId);
   void stepThrow();
   void holdThrown();
   void showThrown() const;
@@ -312,6 +338,11 @@ private:
   std::optional<game::battle::BattleResult> visitorResult_;
   std::vector<std::int32_t> leftMap_;
   std::optional<game::battle::Outcome> coopOutcome_;
+  // setCoopAllies; the partner this game's player commands (the partner, or in a visitor's battle
+  // its own ally, or none); the allies' results.
+  std::vector<CoopAlly> coopAllies_;
+  std::optional<game::battle::FighterId> localFighter_;
+  std::vector<game::battle::AllyResult> allyResults_;
   // The field's bag document is open over the battle.
   // Enemy life bars over every enemy still standing (setEnemyHpBars).
   bool enemyHpBarsAlways_ = false;
@@ -362,6 +393,8 @@ private:
     std::int32_t icon = 0;
     std::uint8_t palette = 0;
     std::optional<game::battle::ItemFlight> flight;
+    // Whose player threw it (co-op: this player's own ally).
+    game::battle::FighterId thrower = game::battle::PartnerId;
   };
   std::optional<ThrownSprite> thrown_;
   bool playerThrowing_ = false;
@@ -374,6 +407,10 @@ private:
   // and as it left them until the end box closes; the NPC each enemy is.
   std::vector<FighterFigure> figures_;
   std::vector<std::int32_t> enemyNpcs_;
+  // Who each fighter after the partner is drawn on: the enemies' NPCs, then the co-op allies'
+  // slots (FieldScene::allyFighterSlot). The beaten enemies' figures are let go as they get up.
+  std::vector<std::int32_t> fighterNpcs_;
+  bool enemiesLeft_ = false;
   // Where the fallen partner's countdown stands, taken when it shows (command_menu.c:
   // BTL_addDeathCountdown reads the partner's node once).
   std::optional<screens::WindowFraction> deathCountdownAnchor_;

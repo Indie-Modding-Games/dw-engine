@@ -54,8 +54,20 @@ FieldScene::Actor* FieldScene::battlePartnerActor() const {
 
 std::vector<FieldScene::HeldFigure> FieldScene::heldFigures() const {
   std::vector<HeldFigure> held;
-  if (const Actor* partner = battlePartnerActor(); partner != nullptr && partner->fighter) {
-    held.push_back({.npc = std::nullopt, .figure = *partner->fighter});
+  const Actor* fighting = battlePartnerActor();
+  if (fighting != nullptr && fighting->fighter) {
+    held.push_back({.npc = std::nullopt, .figure = *fighting->fighter});
+  }
+  // The co-op allies: the partners other than the fighting one that a battle holds.
+  const auto ally = [&](const Actor* actor) {
+    if (actor != nullptr && actor != fighting && actor->fighter && actor->fighterSlot &&
+        *actor->fighterSlot < -1) {
+      held.push_back({.npc = actor->fighterSlot, .figure = *actor->fighter});
+    }
+  };
+  ally(partnerActor_.get());
+  for (const auto& [id, body] : coopBodies_) {
+    ally(body.partner.actor.get());
   }
   for (const std::unique_ptr<Actor>& actor : npcActors_) {
     if (!actor->fighter) {
@@ -71,6 +83,13 @@ std::vector<FieldScene::HeldFigure> FieldScene::heldFigures() const {
 FieldScene::Actor* FieldScene::fighterActor(std::optional<std::int32_t> npc) const {
   if (!npc) {
     return battlePartnerActor();
+  }
+  if (*npc < -1 && *npc >= allyFighterSlot(game::field::PlayerId{0xFF})) {
+    const auto owner = static_cast<game::field::PlayerId>(-2 - *npc);
+    if (const CoopPartner* remote = coopPartnerOf(owner); remote != nullptr && remote->actor) {
+      return remote->actor.get();
+    }
+    return partnerActor_.get();
   }
   if (const auto staged = std::ranges::find(
           stageFighters_, *npc, &std::pair<std::int32_t, std::unique_ptr<Actor>>::first);
@@ -195,6 +214,7 @@ bool FieldScene::holdFighter(std::optional<std::int32_t> npc, const FighterFigur
   // btl.c: loadBattleData sets the enemies' stats.current.vabId, which they keep after it.
   actor->soundSlot = figure.soundSlot;
   actor->fighter = figure;
+  actor->fighterSlot = npc;
   if (!starts) {
     return true;
   }
@@ -317,6 +337,7 @@ void FieldScene::releaseFighters(bool fixedFight) {
       return;
     }
     actor.fighter.reset();
+    actor.fighterSlot.reset();
     actor.fighterGlide = {};
     actor.clipTween = {};
     actor.motion.reset();
