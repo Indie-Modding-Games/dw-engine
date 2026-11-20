@@ -161,6 +161,8 @@ struct ControlLive {
   std::optional<ControlPose> player;
   std::optional<ControlPose> partner;
   std::vector<ControlNpcPose> npcs;
+  // The other players of a co-op game where this game draws them, by player id (in `id`).
+  std::vector<ControlNpcPose> players;
   // None while no map camera is up.
   std::optional<ControlView> view;
 };

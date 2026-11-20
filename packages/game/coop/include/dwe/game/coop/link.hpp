@@ -34,8 +34,9 @@ struct LinkTimeouts {
 class CoopLink {
 public:
   // `playerName`: the host's name (its online profile), told to the guest in the welcome.
+  // `guestId`: the player id the host's registry gives the guest on this link (one link per guest).
   static CoopLink host(net::PeerLink& link, Identity identity, std::string playerName = {},
-                       LinkTimeouts timeouts = {});
+                       LinkTimeouts timeouts = {}, PlayerId guestId = GuestPlayerId);
   static CoopLink guest(net::PeerLink& link, Identity identity, std::string playerName,
                         LinkTimeouts timeouts = {});
 
@@ -43,6 +44,11 @@ public:
   [[nodiscard]] LinkPhase phase() const { return phase_; }
   [[nodiscard]] LinkFailure failure() const { return failure_; }
   [[nodiscard]] std::optional<PlayerId> remotePlayer() const { return remotePlayer_; }
+  // This side's own player id: the host's, or the one the host's welcome gave this guest.
+  [[nodiscard]] PlayerId localPlayer() const { return localPlayer_; }
+  // Why the other side said it left (once the phase is Left by its message); none when the link
+  // dropped without a word.
+  [[nodiscard]] std::optional<LeaveReason> leaveReason() const { return leaveReason_; }
   // The other player's name (its online profile): the guest's, from its hello, on the host; the
   // host's, from its welcome, on the guest. Empty until the link is ready, or from an older host.
   [[nodiscard]] const std::string& remoteName() const { return remoteName_; }
@@ -62,6 +68,9 @@ private:
   LinkPhase phase_ = LinkPhase::Connecting;
   LinkFailure failure_ = LinkFailure::None;
   std::optional<PlayerId> remotePlayer_;
+  PlayerId localPlayer_ = HostPlayerId;
+  PlayerId guestId_ = GuestPlayerId;
+  std::optional<LeaveReason> leaveReason_;
   std::string remoteName_;
   // This side's own name, told to the guest (on the host).
   std::string playerName_;

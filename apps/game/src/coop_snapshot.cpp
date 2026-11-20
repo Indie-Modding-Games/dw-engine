@@ -35,7 +35,7 @@ core::Result<game::coop::EntityState> toCoopEntityState(std::uint16_t networkId,
                                                         game::coop::EntityRole role,
                                                         const game::field::CharacterState& state) {
   constexpr double Tau = std::numbers::pi_v<double> * 2.0;
-  if (networkId == 0 || owner > game::coop::GuestPlayerId ||
+  if (networkId == 0 || !game::coop::validPlayer(owner) ||
       static_cast<std::uint8_t>(role) > static_cast<std::uint8_t>(game::coop::EntityRole::Npc) ||
       !validPosition(state.position) || !std::isfinite(state.yaw)) {
     return core::fail("cooperative snapshot entity has invalid identity or transform");
@@ -74,19 +74,22 @@ core::Result<game::coop::Snapshot> makeCoopSnapshot(const game::field::Field& fi
   if (!partner)
     return std::unexpected{partner.error()};
   snapshot.entities.push_back(*partner);
-  if (const auto guest = field.player(game::coop::GuestPlayerId)) {
-    auto state =
-        toCoopEntityState(3, game::coop::GuestPlayerId, game::coop::EntityRole::Player, *guest);
-    if (!state)
-      return std::unexpected{state.error()};
-    snapshot.entities.push_back(*state);
-  }
-  if (const auto guestPartner = field.partner(game::coop::GuestPlayerId)) {
-    auto state = toCoopEntityState(4, game::coop::GuestPlayerId, game::coop::EntityRole::Partner,
-                                   *guestPartner);
-    if (!state)
-      return std::unexpected{state.error()};
-    snapshot.entities.push_back(*state);
+  // Every guest body in the host's field, and its partner: ids 2n+1 and 2n+2 for player n.
+  for (game::coop::PlayerId id = game::coop::GuestPlayerId; game::coop::validPlayer(id); ++id) {
+    const auto playerId = static_cast<std::uint16_t>((id * 2) + 1);
+    if (const auto guest = field.player(id)) {
+      auto state = toCoopEntityState(playerId, id, game::coop::EntityRole::Player, *guest);
+      if (!state)
+        return std::unexpected{state.error()};
+      snapshot.entities.push_back(*state);
+    }
+    if (const auto guestPartner = field.partner(id)) {
+      auto state = toCoopEntityState(static_cast<std::uint16_t>(playerId + 1), id,
+                                     game::coop::EntityRole::Partner, *guestPartner);
+      if (!state)
+        return std::unexpected{state.error()};
+      snapshot.entities.push_back(*state);
+    }
   }
   return snapshot;
 }

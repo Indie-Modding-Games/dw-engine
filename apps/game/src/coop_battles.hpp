@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -56,8 +57,10 @@ public:
   explicit CoopBattles(ui::Ui& ui) : ui_{&ui} {}
 
   // Once per tick after the game's tick. `bridge` is null while there is no link (the battle's
-  // bookkeeping still runs on the host, so a battle the guest left ends cleanly).
-  void tick(PlaySession& play, CoopGameplayBridge* bridge, Role role);
+  // bookkeeping still runs on the host, so a battle the guest left ends cleanly). `here` lists the
+  // players on this game's map by the session's presence query (coopPlayerHere).
+  void tick(PlaySession& play, CoopGameplayBridge* bridge, Role role,
+            std::span<const game::coop::PlayerId> here);
   // The guest's battle document's commands; false for any other.
   bool handle(const ui::UiCommand& command);
   // The guest's buttons outside the document: `extra` calls the finisher for the starter and
@@ -92,6 +95,8 @@ private:
   game::coop::BattleReferee referee_;
   std::uint32_t frames_ = 0;
   std::uint64_t ticks_ = 0;
+  // The players on this game's map this tick (tick's `here`).
+  std::vector<game::coop::PlayerId> here_;
   game::coop::BattleMirror mirror_;
   // The guest's ask waiting for its answer, and whether the battle shown is the one it asked for.
   std::optional<std::uint32_t> asked_;

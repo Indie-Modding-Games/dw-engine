@@ -307,6 +307,65 @@ Tests: `packages/session/tests/coop_saves_tests.cpp` (a host's save with a guest
 save, and loads at the host's place), `apps/game/tests/coop_guest_profile_tests.cpp` (the guest's copy names no slot)
 and `apps/game/tests/app_flow_tests.cpp` (a guest's game is never saved to a slot; only the room's games are co-op).
 
+### 5.7 Shared world: authority, players and maps
+
+What the first co-op builds of §5.2 and §5.3 do today (#353, #354, #355, #356, #358). It works for up to 4 players
+(`game::coop::MaxPlayers`): player 0 is the host, guests are 1 to 3, and nothing names a fixed second player.
+
+**Who decides what.** The host's `WorldAuthority` (`packages/game/coop`) holds the session: who is in it (the player
+registry), the map the group is on and every player's newest valid transform.
+
+| State | Owner | How the others learn it |
+|---|---|---|
+| Who is in the session, their partner species | host (`WorldAuthority`) | `Roster` on every change |
+| The group's map, exits and arrivals | host | `PlayerCorrection` with the exit it came in by |
+| A guest's own position | the guest, checked by the host | `PlayerState`, refused or corrected when impossible |
+| The host's position, NPCs, story, clock, battles | host | snapshots (§5.1) and events |
+| How a remote player is drawn | each game, locally | interpolation (below); it never writes the authority |
+
+**Messages.** Three kinds join the table of §5.5 and take the place of its `OwnPose` and `PoseFix` sketch (protocol
+version 4):
+
+| Type | Name | Channel | Direction | Content |
+|---|---|---|---|---|
+| `0x70` | `PlayerState` | unreliable | client → host | Player id, sequence (the guest's tick), the correction epoch it follows, map, position, heading, motion. Every 3 ticks. |
+| `0x71` | `PlayerCorrection` | reliable | host → client | Where the host puts that player: map, position, heading, the exit for a map change, and a new epoch. |
+| `0x72` | `Roster` | reliable | host → client | Revision and, per player, id, name and partner species. |
+
+**Transform sync.** The guest moves its own player and reports it. The host takes a state only when the link owns that
+player, it is newer than the last one taken (late, duplicated and reordered packets are dropped), it carries the
+newest correction's epoch (no state from before a correction or a previous map), it is on the group's map, and it
+is reachable from the last valid pose at the player's top speed. A body that would stand in a wall on the host's map
+is not driven there. After 3 refusals in a row the host sends the player back to its last valid pose, so both sides
+agree again. A guest-side jump (a script's `place`) is one of those refusals: it is corrected, not adopted.
+
+**Maps (decision 2 of §6).** The group goes where the host goes. The guest's own exits are held
+(`Field::holdExits`); when the host changes map, every guest gets a correction with the new map, the exit and the
+host's spawn spot, and arrives there exactly. States from the old map or epoch are refused, and the guest reports
+nothing while it travels. Each player still has its own current map: a remote player on another map is neither drawn
+nor driven, and is shown again when it arrives.
+
+**Interpolation.** Remote players are drawn from a short buffer of timed states (`PoseTrack`): 100 ms behind the
+newest one, blending between the two around that moment. Late states never move a track back, a short gap
+extrapolates for at most 100 ms and then holds, a step longer than 800 units (a warp or a correction) is drawn as a
+jump, and a sender whose clock paused is picked up again without a slow catch-up. The host draws guests this way,
+and guests draw everyone from the host's snapshots, timed on the host's clock. Drawing is presentation only: it
+never changes what the authority holds.
+
+**Lifecycle.** A guest joins when its handshake completes: it gets the lowest free id, a body and partner in the
+host's field next to the host, a correction to that spot and a new roster. It leaves on `Leave`, a dropped link or a
+crash: its record, body, partner and buffers go on both sides, and the roster drops it. When a co-op game ends on
+either side (return to title, quit), that side sends `Leave` and closes the room; a guest whose host left goes back
+to the title. A player who comes back joins as new, with a clean state.
+
+**Presence.** `WorldAuthority::playersOn(map)` (host) and `CoopGameplayBridge::playersOn(map)` (guest, from the
+latest snapshot) say which players stand on a map, for systems that need the others nearby (battles, shared
+objects).
+
+Tests: `packages/game/coop/tests/authority_tests.cpp`, `apps/game/tests/coop_world_tests.cpp`,
+`apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` and the
+co-op cases of `packages/game/field/tests/field_tests.cpp`.
+
 ## 6. Game decisions (pending)
 
 | # | Question | Recommendation | Alternative |
@@ -326,9 +385,9 @@ the **host's simulation**:
 - **When it is shared (ticket #351).** Only while the other player stands on the same map. The guest hands its
   script's battles to the host only while the host's last snapshot names the guest's map (and no map change is under
   way); anywhere else the battle is the guest's own, solo, exactly as in single player, and nothing waits for the
-  host. The host's battles are shown only to a guest on that map that is not in a solo battle of its own. This check
-  is a small seam (`hostOnThisMap` in `apps/game/src/coop_battles.cpp`) meant to switch to the co-op core's player
-  registry once it lands.
+  host. The host's battles are shown only to a guest on that map that is not in a solo battle of its own. Both sides
+  ask the session's presence query (§5.7, `coopPlayerHere`): the host's authority, which also refuses an ask from a
+  guest it does not place on its map, and the guest's newest snapshot.
 
 - **Who fights.** The partner of the player whose map script started it (a wild enemy touched, an NPC talked to, a story
   fight). A battle the guest's script asks for goes to the host as `BattleAsk` (map, the enemies' NPC slots with the

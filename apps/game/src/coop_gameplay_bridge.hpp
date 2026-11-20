@@ -34,7 +34,18 @@ public:
   // The co-op battles' messages (coop_battles.hpp), in their own queue, and sending one.
   [[nodiscard]] std::optional<game::coop::Message> receiveBattle();
   [[nodiscard]] core::Result<void> sendBattle(game::coop::Message message);
-  [[nodiscard]] std::optional<PresentedCoopWorld> presentedWorld(float alpha) const;
+  // The host's snapshots smoothed for a frame drawn at `now` (the poll clock).
+  [[nodiscard]] std::optional<PresentedCoopWorld> presentedWorld(net::Millis now) const;
+  // Presence on a guest (for what is shared per map, such as battles): the players the host's
+  // newest snapshot shows on `mapId`. The host asks its CoopHostWorld's authority instead.
+  [[nodiscard]] std::vector<game::coop::PlayerId> playersOn(std::string_view mapId) const {
+    return snapshots_.playersOn(mapId);
+  }
+  // The shared world's messages received since the last call, in order: the guests' states on the
+  // host; the host's corrections and rosters on a guest (#353, #354, #355).
+  [[nodiscard]] std::vector<game::coop::Message> takeWorldMessages();
+  // This side's own player state, sent unreliably (only the newest matters).
+  [[nodiscard]] core::Result<void> send(const game::coop::Message& message);
 
 private:
   game::coop::CoopLink* link_;
@@ -45,6 +56,7 @@ private:
   std::deque<ReceivedProfile> profiles_;
   std::optional<std::uint32_t> profileTransferId_;
   CoopSnapshotInterpolation snapshots_;
+  std::vector<game::coop::Message> world_;
 };
 
 } // namespace dwe::app

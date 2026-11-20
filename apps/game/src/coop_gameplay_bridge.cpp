@@ -25,7 +25,11 @@ void CoopGameplayBridge::poll(net::Millis now) {
     if (const auto* commands = std::get_if<game::coop::Commands>(&*message)) {
       (void)remoteController_->receive(*commands, now);
     } else if (const auto* snapshot = std::get_if<game::coop::Snapshot>(&*message)) {
-      (void)snapshots_.push(*snapshot);
+      (void)snapshots_.push(*snapshot, now);
+    } else if (std::holds_alternative<game::coop::PlayerState>(*message) ||
+               std::holds_alternative<game::coop::PlayerCorrection>(*message) ||
+               std::holds_alternative<game::coop::Roster>(*message)) {
+      world_.push_back(std::move(*message));
     } else if (const auto* chunk = std::get_if<game::coop::ProfileChunk>(&*message)) {
       if (!profileTransferId_ || *profileTransferId_ != chunk->transferId) {
         if (auto begun = profileAssembler_.begin(chunk->transferId, chunk->count, chunk->kind);
@@ -104,8 +108,16 @@ std::optional<CoopGameplayBridge::ReceivedProfile> CoopGameplayBridge::receivePr
   return profile;
 }
 
-std::optional<PresentedCoopWorld> CoopGameplayBridge::presentedWorld(float alpha) const {
-  return snapshots_.sample(alpha);
+std::optional<PresentedCoopWorld> CoopGameplayBridge::presentedWorld(net::Millis now) const {
+  return snapshots_.sample(now);
+}
+
+std::vector<game::coop::Message> CoopGameplayBridge::takeWorldMessages() {
+  return std::exchange(world_, {});
+}
+
+core::Result<void> CoopGameplayBridge::send(const game::coop::Message& message) {
+  return link_->send(message);
 }
 
 std::optional<game::coop::Message> CoopGameplayBridge::receiveBattle() {

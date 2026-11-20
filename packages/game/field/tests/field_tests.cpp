@@ -25,6 +25,7 @@
 using dwe::assets::CollisionCell;
 using dwe::assets::MapCollision;
 using dwe::assets::MapDocument;
+using dwe::game::field::CharacterState;
 using dwe::game::field::ExtraToilet;
 using dwe::game::field::Field;
 using dwe::game::field::FieldInput;
@@ -131,6 +132,85 @@ TEST_CASE("host and guest bodies use independent movement commands in one field"
   CHECK(guest->position.z == doctest::Approx(0.0F));
   CHECK(host->motion == Motion::Run);
   CHECK(guest->motion == Motion::Run);
+}
+
+TEST_CASE("a field holds up to three guests, each by its id, and lets any of them go") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  for (dwe::game::field::PlayerId id = 1; id < dwe::game::field::MaxFieldPlayers; ++id) {
+    REQUIRE(field.addPlayer(id, at(600.0F * static_cast<float>(id), 0.0F)));
+    REQUIRE(field.addPartner(id, "models/guest_partner", 50.0F));
+  }
+  CHECK(field.playerCount() == 4);
+  CHECK_FALSE(field.addPlayer(2, at(-600.0F, 0.0F)));
+  CHECK_FALSE(field.addPlayer(dwe::game::field::HostPlayerId, at(-600.0F, 0.0F)));
+  CHECK_FALSE(field.addPlayer(4, at(-600.0F, 0.0F)));
+
+  const auto body = *field.playerEntity(2);
+  const auto partner = *field.partnerEntity(2);
+  CHECK(field.removePlayer(2));
+  CHECK_FALSE(field.removePlayer(2));
+  CHECK(field.playerCount() == 3);
+  CHECK_FALSE(field.player(2).has_value());
+  CHECK_FALSE(field.partner(2).has_value());
+  // Nothing of it stays in the world: no body, no stray partner.
+  CHECK_FALSE(world.registry().valid(body));
+  CHECK_FALSE(world.registry().valid(partner));
+  CHECK(field.player(1)->position.x == doctest::Approx(600.0F));
+  CHECK(field.player(3)->position.x == doctest::Approx(1800.0F));
+  // Its id is free again: a player that comes back is a new body.
+  CHECK(field.addPlayer(2, at(1200.0F, 0.0F)));
+}
+
+TEST_CASE("a driven guest stands where its owner says, not where its input walks it") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  REQUIRE(field.addPlayer(dwe::game::field::GuestPlayerId, at(500.0F, 0.0F)));
+  CHECK_FALSE(field.drivePlayer(3, CharacterState{}));
+
+  CHECK(field.drivePlayer(dwe::game::field::GuestPlayerId,
+                          CharacterState{.position = {700.0F, 0.0F, -300.0F},
+                                         .yaw = Pi / 2.0F,
+                                         .motion = Motion::Run}));
+  CHECK(field.setInput(dwe::game::field::GuestPlayerId, {.stick = {-1.0F, 0.0F}, .run = true}));
+  run(field, 0.5F);
+  auto guest = field.player(dwe::game::field::GuestPlayerId);
+  REQUIRE(guest.has_value());
+  CHECK(guest->position == glm::vec3{700.0F, 0.0F, -300.0F});
+  CHECK(guest->yaw == doctest::Approx(Pi / 2.0F));
+  CHECK(guest->motion == Motion::Run);
+
+  // Placed again by the host (a map entry), it walks from its input until it is driven again.
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  const glm::vec3 placed = field.player(dwe::game::field::GuestPlayerId)->position;
+  CHECK(placed != glm::vec3{700.0F, 0.0F, -300.0F});
+  CHECK(field.setInput(dwe::game::field::GuestPlayerId, {.stick = {1.0F, 0.0F}, .run = true}));
+  run(field, 1.0F);
+  CHECK(field.player(dwe::game::field::GuestPlayerId)->position.x > placed.x);
+}
+
+TEST_CASE("held exits keep every map change closed, without the filter's notice") {
+  MapDocument town = roomMap("town");
+  fill(town, {.column = 50, .row = 40}, {.column = 52, .row = 41}, 112);
+  town.warps[2] = {.exit = 2,
+                   .spawn = {0, 0, 300},
+                   .rotation = 0,
+                   .targetMap = 218,
+                   .targetMapId = "house",
+                   .targetExit = 0};
+
+  for (const bool held : {false, true}) {
+    dwe::scene::World world;
+    Field field{world, originalRules()};
+    field.enterMapAt(town, at(100.0F, -500.0F));
+    field.holdExits(held);
+    field.setInput({.run = true, .moveTarget = glm::vec3{100.0F, 0.0F, -900.0F}});
+    run(field, 3.0F);
+    CHECK(field.mapChangePending() != held);
+    CHECK_FALSE(field.takeClosedExit().has_value());
+  }
 }
 
 TEST_CASE("the guest follows its own click-to-move path") {

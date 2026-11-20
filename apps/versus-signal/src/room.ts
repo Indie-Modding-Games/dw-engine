@@ -86,9 +86,23 @@ function message(value: object): string {
   return JSON.stringify(value);
 }
 
+/** Sends unless the socket is already closing: a peer may go at any moment, and a send after its
+ * close throws in the runtime. */
+function trySend(socket: Socket, text: string): void {
+  try {
+    socket.send(text);
+  } catch {
+    // Gone: nothing to tell it.
+  }
+}
+
 function reject(socket: Socket, reason: ErrorReason): void {
-  socket.send(message({ type: "error", reason }));
-  socket.close(1000, reason);
+  trySend(socket, message({ type: "error", reason }));
+  try {
+    socket.close(1000, reason);
+  } catch {
+    // Already closed.
+  }
 }
 
 /** Adds the relay servers to a message, only when there are some (the first protocol had none). */
@@ -199,7 +213,7 @@ export class Room {
     const { type, data } = parsed as { type?: unknown; data?: unknown };
     if (type === "signal" && typeof data === "object" && data !== null) {
       for (const other of this.#state.sockets(role === "host" ? "guest" : "host")) {
-        other.send(message({ type: "signal", data }));
+        trySend(other, message({ type: "signal", data }));
       }
     } else if (type === "done") {
       await this.#state.put(`done:${role}`, true);
@@ -219,6 +233,9 @@ export class Room {
   async closed(socket: Socket): Promise<void> {
     const role = this.#state.roleOf(socket);
     if (!role) return;
+    // The room already closed (both connected, or it expired) and its sockets are closing with it:
+    // nobody is left to tell, and the room is forgotten already.
+    if (!(await this.#state.get("opened"))) return;
     if (!(await this.#finished())) {
       for (const other of this.#state.sockets(role === "host" ? "guest" : "host")) reject(other, "left");
     }
@@ -244,7 +261,13 @@ export class Room {
    */
   async close(): Promise<void> {
     for (const role of ["host", "guest"] as const) {
-      for (const socket of this.#state.sockets(role)) socket.close(1000, "done");
+      for (const socket of this.#state.sockets(role)) {
+        try {
+          socket.close(1000, "done");
+        } catch {
+          // Already closed.
+        }
+      }
     }
     await this.#forget(await this.#finished());
   }

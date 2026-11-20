@@ -554,6 +554,13 @@ std::string RemoteControl::liveFields() const {
     fields += ',';
     appendPose(fields, live.npcs[index].pose);
   }
+  fields += R"(],"players":[)";
+  for (std::size_t index = 0; index < live.players.size(); ++index) {
+    fields += index == 0 ? R"({"id":)" : R"(,{"id":)";
+    appendNumber(fields, live.players[index].id);
+    fields += ',';
+    appendPose(fields, live.players[index].pose);
+  }
   fields += R"(],"view":)";
   if (live.view) {
     fields += R"({"x":)";

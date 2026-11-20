@@ -100,6 +100,51 @@ test("the room closes once both say they are connected, and its code is free aga
   assert.equal(await room.host(new FakeSocket(), "K7Q2"), true);
 });
 
+test("sockets closing after the room closed are not written to, and the room stays forgotten", async () => {
+  // The runtime lists a closing socket a while longer and throws on a send to it; each socket's
+  // close event comes after the room closed them both.
+  class ClosingSocket extends FakeSocket {
+    override send(text: string): void {
+      if (this.closed !== null) throw new Error("Can't call WebSocket send() after close()");
+      super.send(text);
+    }
+  }
+  class LingeringState extends FakeState {
+    override sockets(role: Role): Socket[] {
+      return [...this.roles].filter(([, r]) => r === role).map(([s]) => s);
+    }
+  }
+  const published: [string, unknown][] = [];
+  const state = new LingeringState();
+  (state as RoomState).publish = async (code, listing) => {
+    published.push([code, listing === null ? null : "listed"]);
+  };
+  const room = new Room(state, () => 1000);
+  const host = new ClosingSocket();
+  const guest = new ClosingSocket();
+  assert.equal(await room.host(host, "K7Q2", true), true);
+  await room.join(guest);
+  await room.message(host, JSON.stringify({ type: "done" }));
+  await room.message(guest, JSON.stringify({ type: "done" }));
+  assert.equal(host.closed, "done");
+  const sentBefore = host.sent.length + guest.sent.length;
+  await room.closed(host);
+  await room.closed(guest);
+  assert.equal(host.sent.length + guest.sent.length, sentBefore);
+  // The connected room's listing is the host's to update; its sockets closing do not drop it.
+  assert.deepEqual(published, [["K7Q2", "listed"], ["K7Q2", "listed"]]);
+  // A signal to a peer that just closed is dropped, not thrown.
+  const other = new Room(new LingeringState(), () => 1000);
+  const lone = new ClosingSocket();
+  const gone = new ClosingSocket();
+  await other.host(lone, "M4XP");
+  await other.join(gone);
+  gone.close(1001, "gone");
+  await other.message(lone, JSON.stringify({ type: "signal", data: { sdp: "x" } }));
+  await other.closed(gone);
+  assert.deepEqual(lone.last(), { type: "error", reason: "left" });
+});
+
 test("a taken code, a room without host and a full room are refused", async () => {
   const { room } = await pairedRoom();
   assert.equal(await room.host(new FakeSocket(), "K7Q2"), false);

@@ -392,8 +392,8 @@ bool Field::setInput(PlayerId id, const FieldInput& input) {
 }
 
 core::Result<void> Field::addPlayer(PlayerId id, assets::SpawnPoint spawn) {
-  if (id != GuestPlayerId) {
-    return core::fail("field supports only one host and one guest player");
+  if (id == HostPlayerId || id >= MaxFieldPlayers) {
+    return core::fail("field player id is not a guest's");
   }
   if (std::ranges::any_of(otherPlayers_, [id](const PlayerRuntime& player) {
         return player.fieldPlayer.id == id;
@@ -436,6 +436,51 @@ core::Result<void> Field::addPlayer(PlayerId id, assets::SpawnPoint spawn) {
   player.fieldPlayer.input.run = true;
   otherPlayers_.push_back(std::move(player));
   return {};
+}
+
+bool Field::removePlayer(PlayerId id) {
+  const auto player = std::ranges::find(
+      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
+  if (player == otherPlayers_.end()) {
+    return false;
+  }
+  if (player->partner) {
+    world_->destroy(player->partner->entity);
+  }
+  world_->destroy(player->fieldPlayer.entity);
+  otherPlayers_.erase(player);
+  return true;
+}
+
+bool Field::drivePlayer(PlayerId id, std::optional<CharacterState> state) {
+  const auto player = std::ranges::find(
+      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
+  if (player == otherPlayers_.end()) {
+    return false;
+  }
+  player->driven = state;
+  if (state) {
+    player->fieldPlayer.input = {};
+    player->fieldPlayer.moveTarget.reset();
+    player->fieldPlayer.path.clear();
+    player->fieldPlayer.waitingAtWarp = false;
+  }
+  return true;
+}
+
+void Field::placeDrivenPlayers() {
+  entt::registry& registry = world_->registry();
+  for (PlayerRuntime& player : otherPlayers_) {
+    if (!player.driven) {
+      continue;
+    }
+    Transform& transform = registry.get<Transform>(player.fieldPlayer.entity);
+    transform.position = player.driven->position;
+    transform.yaw = player.driven->yaw;
+    player.motion = player.driven->motion;
+    registry.get<AnimationIntent>(player.fieldPlayer.entity) = {.motion = player.driven->motion,
+                                                                .speedScale = 1.0F};
+  }
 }
 
 std::optional<CharacterState> Field::player(PlayerId id) const {
@@ -626,6 +671,11 @@ void Field::tick(float seconds) {
     for (PlayerRuntime& player : otherPlayers_) {
       registry.get<AnimationIntent>(player.fieldPlayer.entity) = {};
     }
+  }
+  // A driven guest is where its owner says on every tick of this map, held or not: its owner's
+  // world does not hold it with the host's scripts.
+  if (!leaving_ && !pendingChange_ && !waitingForMap_ && !mapId_.empty()) {
+    placeDrivenPlayers();
   }
   const bool wasFree = std::exchange(freeTick_, false);
   const bool wasFollowing = std::exchange(partnerFollowing_, false);
@@ -1153,6 +1203,12 @@ void Field::chooseDestination(std::optional<std::size_t> place) {
 }
 
 bool Field::exitOpen(const MapChange& change) {
+  if (exitsHeld_) {
+    core::logDebug("[field] exits held: {} cell {} to {} stays closed", mapId_, change.trigger,
+                   change.map);
+    exitClosedNow_ = true;
+    return false;
+  }
   if (!exitFilter_ || exitFilter_(mapId_, change.map)) {
     return true;
   }
@@ -1395,6 +1451,7 @@ void Field::placeOtherPlayersNearHost() {
     player.fieldPlayer.moveTarget.reset();
     player.fieldPlayer.path.clear();
     player.fieldPlayer.waitingAtWarp = false;
+    player.driven.reset();
     world_->registry().get<AnimationIntent>(player.fieldPlayer.entity) = {};
     if (player.partner) {
       placeOtherPartner(player, *player.partner);
@@ -1405,6 +1462,9 @@ void Field::placeOtherPlayersNearHost() {
 void Field::moveOtherPlayer(PlayerRuntime& player, float seconds) {
   constexpr float Slack = 1e-4F;
   constexpr std::int32_t MaxFrames = 8;
+  if (player.driven) {
+    return;
+  }
   Transform& transform = world_->registry().get<Transform>(player.fieldPlayer.entity);
   if (!player.fieldPlayer.waitingAtWarp &&
       warpsOn(collision_.trigger(assets::originalCellAt(transform.position)).value_or(0))) {

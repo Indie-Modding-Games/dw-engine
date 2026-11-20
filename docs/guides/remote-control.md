@@ -143,7 +143,7 @@ loader's text with the file and the line.
 ```json
 {"id": 3, "ok": true, "tick": 5120, "paused": false, "mode": "field", "map": "twna01", "busy": false,
  "preview": null, "log": 12, "player": {"x": 256, "y": 0, "z": 1285.5, "yaw": 1.5708},
- "partner": {"x": 180, "y": 0, "z": 1300, "yaw": 3.1416}, "npcs": [{"id": 11, "x": -839, "y": 0, "z": -2210, "yaw": 0}],
+ "partner": {"x": 180, "y": 0, "z": 1300, "yaw": 3.1416}, "npcs": [{"id": 11, "x": -839, "y": 0, "z": -2210, "yaw": 0}], "players": [],
  "view": {"x": 0, "y": 16, "w": 320, "h": 240}}
 ```
 
@@ -154,6 +154,8 @@ loader's text with the file and the line.
   the field keeps them (not in the original's axes of the state trace): the floor is the XZ plane, and a collision
   tile is `column = floor(x / 100) + 50`, `row = floor(z / 100) + 50`. Without a game they are `null` and `[]`; during
   a battle they are still the field's, where the fight takes place.
+- `players`: in a co-op game, the other players this game draws on its map, by player id (`id`, 0 the host), at the
+  place they are drawn this frame (`[]` outside co-op, and a player on another map is not listed).
 - `yaw` in radians, as the engine keeps it: the character looks toward `(sin yaw, cos yaw)` in `(x, z)`, that is,
   `yaw = 0` looks toward world +Z (increasing grid rows) and a positive `yaw` turns from +Z toward +X
   (`assets::forwardOfYaw`). For an arrow on the grid: `dir = (sin yaw, cos yaw)` in `(column, row)`.

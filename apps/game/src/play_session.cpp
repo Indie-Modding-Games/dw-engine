@@ -2251,6 +2251,11 @@ ControlLive PlaySession::live() const {
     const auto& transform = registry.get<scene::Transform>(body.entity);
     live.npcs.push_back({.id = body.scriptId, .pose = poseOf(transform.position, transform.yaw)});
   }
+  for (const game::field::PlayerId id : scene_->coopPlayers()) {
+    if (const auto drawn = scene_->coopDrawnPose(id)) {
+      live.players.push_back({.id = id, .pose = poseOf(drawn->position, drawn->yaw)});
+    }
+  }
   if (const render::MapCamera* camera = scene_->camera();
       camera != nullptr && camera->scale() > 0.0F) {
     const glm::vec2 size = camera->viewportSize() / camera->scale();
