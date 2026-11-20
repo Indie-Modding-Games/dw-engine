@@ -65,6 +65,7 @@
 #include "content_mount.hpp"
 #include "control_log.hpp"
 #include "control_socket.hpp"
+#include "coop_battles.hpp"
 #include "coop_gameplay_bridge.hpp"
 #include "coop_hud.hpp"
 #include "coop_screen.hpp"
@@ -1008,6 +1009,8 @@ int runGame(const Options& requested) {
   // The co-op game's tag over the other player and its notices (coop_hud.hpp), and how the other
   // player is named while a gameplay bridge is up.
   CoopHud coopHud{**ui};
+  // The battles while playing together (coop_battles.hpp).
+  CoopBattles coopBattles{**ui};
   std::optional<CoopPeerLabel> coopPeer;
   // The host's room went while the guest played: its game ends after this frame's ticks.
   bool coopHostLeft = false;
@@ -1770,10 +1773,12 @@ int runGame(const Options& requested) {
         core::logInfo("coop: the link or the game ended, the gameplay bridge was dropped");
         switch (coopLinkLoss(coop.isHost(), play != nullptr)) {
         case CoopLinkLoss::PeerLeft:
+          coopBattles.guestLeft();
           // The guest's slot stays for a reconnect; its tag goes until then.
           coopHud.notice(CoopDisconnectedText, coopPeer.value_or(coopPeerLabel(true, {})));
           break;
         case CoopLinkLoss::HostLeft:
+          coopBattles.hostLeft(play);
           coopHostLeft = true;
           break;
         case CoopLinkLoss::Quiet:
@@ -1781,8 +1786,10 @@ int runGame(const Options& requested) {
         }
         coopPeer.reset();
       }
-      if (play == nullptr)
+      if (play == nullptr) {
         coopAttachFailed = nullptr;
+        coopBattles.reset();
+      }
       // Only a game the room started joins it: a single-player game loaded while a room is still
       // open stays single-player (multiplayer.md, "Saves in co-op").
       if (play != nullptr && play->coopGame() && coop.connected() && coopBridge == nullptr &&
@@ -1889,6 +1896,7 @@ int runGame(const Options& requested) {
           battleSpeed.press();
         }
         play->pressBattle(input);
+        coopBattles.press(input);
         play->pressItemKeeper(input);
         play->pressPartnerMenu(input);
         play->pressDestinationChoice(input);
@@ -1901,6 +1909,11 @@ int runGame(const Options& requested) {
           }
         }
         play->tick(commands, guestCommands);
+        const bool coopLinked = coopBridge != nullptr && coop.connected();
+        coopBattles.tick(*play, coopLinked ? coopBridge.get() : nullptr,
+                         !coopLinked     ? CoopBattles::Role::None
+                         : coop.isHost() ? CoopBattles::Role::Host
+                                         : CoopBattles::Role::Guest);
         if (coopBridge != nullptr && coop.connected() && coop.isHost() && ticksRun % 3 == 0) {
           auto snapshot = makeCoopSnapshot(
               play->scene().field(), play->scene().field().mapId(), ++coopWorldTick,
@@ -1997,6 +2010,9 @@ int runGame(const Options& requested) {
       }
       // The opening's questions and naming take the UI API's story commands.
       if (interview && interview->handle(command)) {
+        continue;
+      }
+      if (flow.playing() != nullptr && coopBattles.handle(command)) {
         continue;
       }
       if (flow.playing() != nullptr && flow.playing()->handle(command)) {

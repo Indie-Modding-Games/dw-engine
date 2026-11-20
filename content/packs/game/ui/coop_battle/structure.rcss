@@ -1,0 +1,116 @@
+/* The host's battle on a co-op guest's screen (apps/game/src/coop_battles.hpp): a panel on the right with the fighters'
+   life bars, the starter's orders, the cheer and the items to throw. This is the plain look; a skin restyles it
+   (skins/<skin>/coop_battle/style.rcss). Over the field, under the interface's own notices. */
+body {
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	z-index: 100;
+}
+
+#panel {
+	position: absolute;
+	right: 16dp;
+	top: 16dp;
+	width: 30%;
+	padding: 12dp 16dp;
+	border: 3dp #c9d3de;
+	border-radius: 8dp;
+	background-color: #1a1f27e0;
+	color: #f2f4f7;
+	font-size: 18dp;
+	pointer-events: auto;
+}
+
+#title {
+	font-size: 20dp;
+	margin-bottom: 4dp;
+}
+
+#phase {
+	color: #aeb8c4;
+	margin-bottom: 8dp;
+}
+
+.fighter {
+	display: block;
+	margin: 4dp 0;
+}
+
+.fighter .name {
+	display: block;
+}
+
+.fighter.partner .name {
+	color: #ffe08a;
+}
+
+.fighter.down {
+	opacity: 0.5;
+}
+
+.fighter .bar {
+	display: inline-block;
+	width: 70%;
+	height: 10dp;
+	background-color: #3a4350;
+	border-radius: 3dp;
+}
+
+.fighter .fill {
+	display: block;
+	height: 100%;
+	background-color: #5fd16b;
+	border-radius: 3dp;
+}
+
+.fighter .hp {
+	margin-left: 8dp;
+	font-size: 16dp;
+}
+
+#orders,
+#help {
+	display: block;
+	margin-top: 10dp;
+}
+
+#items-title,
+#no-items {
+	margin-top: 6dp;
+	color: #aeb8c4;
+}
+
+button {
+	display: inline-block;
+	margin: 3dp;
+	padding: 4dp 10dp;
+	border: 2dp #6d7a8a;
+	border-radius: 5dp;
+	background-color: #2b333f;
+	color: #f2f4f7;
+}
+
+button:hover,
+button:focus {
+	border-color: #ffe08a;
+}
+
+button.current {
+	background-color: #4a5a2b;
+}
+
+button.unavailable {
+	opacity: 0.45;
+}
+
+#close {
+	display: block;
+	margin-top: 10dp;
+	text-align: center;
+}
+
+.hidden,
+#close.hidden {
+	display: none;
+}

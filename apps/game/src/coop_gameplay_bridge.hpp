@@ -31,12 +31,16 @@ public:
     net::Bytes bytes;
   };
   [[nodiscard]] std::optional<ReceivedProfile> receiveProfile();
+  // The co-op battles' messages (coop_battles.hpp), in their own queue, and sending one.
+  [[nodiscard]] std::optional<game::coop::Message> receiveBattle();
+  [[nodiscard]] core::Result<void> sendBattle(game::coop::Message message);
   [[nodiscard]] std::optional<PresentedCoopWorld> presentedWorld(float alpha) const;
 
 private:
   game::coop::CoopLink* link_;
   NetworkFieldController* remoteController_;
   std::deque<game::coop::Message> incoming_;
+  std::deque<game::coop::Message> battles_;
   game::coop::ProfileAssembler profileAssembler_;
   std::deque<ReceivedProfile> profiles_;
   std::optional<std::uint32_t> profileTransferId_;

@@ -100,6 +100,8 @@ screens:
     styles: [ui/skins/modern/online_profile/style]
   coop_hud:
     styles: [ui/skins/modern/coop_hud/style]
+  coop_battle:
+    styles: [ui/skins/modern/coop_battle/style]
   online_status:
     styles: [ui/skins/modern/online_status/style]
   online_rooms:

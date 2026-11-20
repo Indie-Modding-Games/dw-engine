@@ -8,6 +8,7 @@ dwe_add_app(game
         src/battle_screen_exit.cpp
         src/battle_screen_retreat.cpp
         src/battle_screen_throw.cpp
+        src/battle_screen_coop.cpp
         src/battle_trigger.cpp
         src/care_commands.cpp
         src/chart_requirements.cpp
@@ -19,6 +20,7 @@ dwe_add_app(game
         src/coop_commands.cpp
         src/coop_connection.cpp
         src/coop_hud.cpp
+        src/coop_battles.cpp
         src/online_coop_room.cpp
         src/online_profile.cpp
         src/online_signal_directory.cpp
@@ -109,6 +111,7 @@ dwe_add_app(game
         src/shop_job_bar.cpp
         src/play_session.cpp
         src/play_session_report.cpp
+        src/play_session_coop.cpp
         src/remote_control.cpp
         src/bug_report.cpp
         src/bug_reporter.cpp

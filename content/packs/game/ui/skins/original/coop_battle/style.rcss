@@ -1,0 +1,44 @@
+/* The co-op battle panel in the original look: one of the original's windows (the box border and corners of
+   theme.rcss), its grey ink, the partner's name in the heading yellow and the original's green life bars. */
+
+#panel {
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: #1d262ef0;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	color: #d0d0d0;
+	font-size: 22dp;
+	line-height: 28dp;
+}
+
+#title {
+	color: #e8d048;
+	font-size: 22dp;
+}
+
+.fighter.partner .name {
+	color: #e8d048;
+}
+
+.fighter .bar {
+	border-radius: 0;
+	background-color: #303030;
+}
+
+.fighter .fill {
+	border-radius: 0;
+	background-color: #30c030;
+}
+
+button {
+	border: 2dp #808080;
+	border-radius: 0;
+	background-color: #283038;
+	color: #d0d0d0;
+}
+
+button:hover,
+button:focus {
+	border-color: #e8d048;
+}

@@ -247,7 +247,7 @@ void BattleScreen::startFlight() {
       if (std::ranges::contains(onScreenAtStart_, npc) || std::ranges::contains(enemyNpcs_, npc)) {
         continue;
       }
-      if (unload(*desc_.scene, npc)) {
+      if (takeOff(npc)) {
         ++gone;
       }
     }
@@ -347,7 +347,7 @@ void BattleScreen::endFlight() {
     return;
   }
   for (const Leaver& leaver : std::exchange(fleers_, {})) {
-    if (unload(*desc_.scene, leaver.npc)) {
+    if (takeOff(leaver.npc)) {
       core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:316): NPC slot {} off "
                      "the map",
                      leaver.npc);
@@ -400,7 +400,7 @@ void BattleScreen::endExit() {
       if (fixedFight_ && std::ranges::contains(enemyNpcs_, npc)) {
         continue;
       }
-      if (unload(*desc_.scene, npc)) {
+      if (takeOff(npc)) {
         core::logDebug("[port:battle] BTL_battleMain (battle_main.c:{}): NPC slot {} off the map",
                        fixedFight_ ? 794 : 806, npc);
       }
@@ -410,6 +410,14 @@ void BattleScreen::endExit() {
   if (session::SessionMusic* music = desc_.session->music(); music != nullptr) {
     music->leaveBattle(std::exchange(won_, false));
   }
+}
+
+bool BattleScreen::takeOff(std::int32_t npc) {
+  if (!unload(*desc_.scene, npc)) {
+    return false;
+  }
+  leftMap_.push_back(npc);
+  return true;
 }
 
 } // namespace dwe::app

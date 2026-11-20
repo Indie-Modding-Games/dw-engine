@@ -200,7 +200,8 @@ BattleRequest duelWithFoe() {
           .timeLimit = std::nullopt,
           .recruitOnVictory = "foe",
           .matchMusic = std::nullopt,
-          .predefined = false};
+          .predefined = false,
+          .visitor = std::nullopt};
 }
 
 } // namespace
@@ -997,4 +998,49 @@ TEST_CASE(
     CHECK(learned.size() == partner.learned.size() - 1);
     CHECK(extracted->battle->learnAllMoves(*extracted->session).empty());
   }
+}
+
+TEST_CASE("a visiting partner fights instead of the session's and leaves it untouched") {
+  const TestPacks packs;
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters);
+  dwe::session::VisitingPartner visitor = adapters.battle->visitorOf(*session);
+  CHECK(visitor.species == "agum");
+  CHECK(visitor.stats == session->partner().state().stats.base);
+  // Another game's partner: its own stats, HP and moves (one slot past its row stays empty).
+  visitor.stats[Stat::Hp] = 2000;
+  visitor.stats[Stat::Offense] = 333;
+  visitor.hp = 1500;
+  visitor.mp = 12;
+  visitor.equipped = {2, 40, std::nullopt, FinisherPosition};
+  visitor.condition.knownMoves = {"dynamite_kick"};
+  const auto fighter = adapters.battle->visitingCombatant(visitor);
+  REQUIRE_MESSAGE(fighter.has_value(), errorOf(fighter));
+  CHECK(fighter->stats.maxHp == 2000);
+  CHECK(fighter->stats.offense == 333);
+  CHECK(fighter->hp == 1500);
+  CHECK(fighter->moves.at(0) == "dynamite_kick");
+  CHECK_FALSE(fighter->moves.at(1).has_value());
+  CHECK(fighter->moves.at(dwe::game::battle::FinisherSlot) == "big_finish");
+
+  BattleRequest request = duelWithFoe();
+  request.visitor = visitor;
+  auto battle = adapters.battle->start(*session, std::move(request));
+  REQUIRE_MESSAGE(battle.has_value(), errorOf(battle));
+  CHECK(battle->state().partner().combatant.hp == 1500);
+  CHECK(battle->state().partner().combatant.stats.offense == 333);
+
+  // Its result: the bits are this world's, the partner here gets nothing of it.
+  const PartnerState before = session->partner().state();
+  const std::int32_t money = adapters.inventory->inventory().money();
+  BattleResult lost = victory();
+  lost.outcome = Outcome::Defeat;
+  lost.livesLost = 1;
+  const auto aftermath = adapters.battle->finishVisitor(*session, lost);
+  REQUIRE_MESSAGE(aftermath.has_value(), errorOf(aftermath));
+  CHECK(session->partner().state() == before);
+  CHECK(adapters.inventory->inventory().money() == money + Bits);
+  CHECK(aftermath->drops.size() == 1);
+  CHECK(aftermath->itemsLost.empty());
+  CHECK(adapters.battle->moves().learned == std::vector<std::string>{"punch"});
 }

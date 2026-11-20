@@ -1031,6 +1031,13 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
       return;
     }
   }
+  // A co-op guest's field holds while the host's battle runs; its fighters are drawn as the host
+  // sends them (coop_battles.hpp).
+  if (coopBattleHold_) {
+    scene_->holdCamera(true);
+    scene_->runFighters(TickSeconds);
+    return;
+  }
   scene_->holdCamera(battleScreen_.active());
   if (battleScreen_.active()) {
     // fade.c: a fade in the battle started under runs on with the drawing.
@@ -1680,7 +1687,12 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     }
   }
   if (const auto npcs = std::exchange(commands.battle, std::nullopt)) {
-    startBattle(battleScreen_, species, *scene_, *npcs);
+    // A co-op guest's battles run on the host (coop_battles.hpp); the console starts none here.
+    if (storyScenes_.handsBattlesOver()) {
+      core::logWarning("coop: battle(\"{}\") refused: a guest's battles run on the host", *npcs);
+    } else {
+      startBattle(battleScreen_, species, *scene_, *npcs);
+    }
   }
   if (std::exchange(commands.battleWin, false) && !battleScreen_.defeatEnemies()) {
     core::logWarning("{}", core::formatMessage(messages::BattleWinFailed, messages::NoFight));
@@ -2069,13 +2081,14 @@ FieldClock PlaySession::fieldClock() const {
 }
 
 bool PlaySession::screenStops() const {
-  return battleScreen_.active() || (sleepScreen_.active() && !sleepScreen_.fieldRuns()) ||
-         saveMachine_.active() || toTitleAsked_ || evolutionScene_.active() ||
-         deathScene_.active() || shopScreen_.active() || devMenu_.isOpen() ||
-         itemKeeperScreen_.active() || discardScreen_.active() || jukeboxScreen_.active() ||
-         tradeScreen_.active() || birdScreen_.active() || cardShopScreen_.active() ||
-         meritShopScreen_.active() || awardScreen_.active() || scheduleScreen_.active() ||
-         bracketScreen_.playing() || storyScenes_.tournamentIntro() || worldMapScreen_.isOpen();
+  return battleScreen_.active() || coopBattleHold_ ||
+         (sleepScreen_.active() && !sleepScreen_.fieldRuns()) || saveMachine_.active() ||
+         toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
+         shopScreen_.active() || devMenu_.isOpen() || itemKeeperScreen_.active() ||
+         discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
+         birdScreen_.active() || cardShopScreen_.active() || meritShopScreen_.active() ||
+         awardScreen_.active() || scheduleScreen_.active() || bracketScreen_.playing() ||
+         storyScenes_.tournamentIntro() || worldMapScreen_.isOpen();
 }
 
 float PlaySession::fadeLevel() const {

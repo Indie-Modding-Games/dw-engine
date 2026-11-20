@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.19.0 | The `coop_battle` screen shows the host's battle on a co-op guest's screen: its role (`coop_battle.role`), phase, the fighters' life (`coop_battle.fighter.<n>.*`), the starter's orders (`coop_battle.order.<n>.*`) and the items of its own bag it can throw (`coop_battle.item.<n>.*`), with the commands `coop_battle_order`, `coop_battle_cheer`, `coop_battle_item` and `coop_battle_close` |
 | 0.18.0 | Rooms show real data: `online.room()` follows the room's phase as the network keeps it (open, connected, ready, playing, closed), and a guest sees the host's name. Listed rooms carry the host's name and mode, rooms already playing leave the list, and the list can say it was refreshed too often (`list_limit`). The online profile's relay only (`online.profile().relay_only`, `online.set_relay_only(on)`, command `online_profile_relay`) connects rooms through the server's relay so the other player never learns this machine's address. New errors: `server_refused`, `no_relay`, `list_limit` (online) and `versus.error.refused`, `versus.error.no_relay` |
 | 0.17.0 | The `online` namespace arrives: the public room list (`online.list()`), the room the player is in (`online.room()`), the modes (`online.modes()`) and the screens' state (`online.state()`), with their steps (`online.host`, `online.join`, `online.join_by_code`, `online.quick_match`, `online.set_ready`, `online.start`, `online.leave`...) and the `online.changed` event. The room steps are the co-op lobby's commands (`coop_host`, `coop_join` with a code, `coop_ready`, `coop_start`). The player's online profile (`online.profile()`, `online.icons()`, `online.save_name`, `online.set_icon`) and `online.retry` after a failure. The new screens `online_hub`, `online_profile`, `online_status`, `online_rooms` and `online_room` only read through it. The `coop_hud` screen shows the co-op game's tag over the other player (`coop_hud.tag.*`) and its notices (`coop_hud.notice.*`) |
 | 0.16.0 | The improved shop job: the bar gains `shop_job.top`, `shop_job.bonus`, `shop_job.bonus_icon`, `shop_job.bonus_icon_rect`, `shop_job.tier` and `shop_job.improved` (also in `field.shop_job()`), and the `shop_job_rules` command (the ? button that opens the rules panel). The `shop_job_mode` option arrives. The new screens `shop_haggle` and `shop_job_rules` are described in the [job's reference](../reference/shop-job.md#interface) |
@@ -95,7 +96,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.18.0**.
+UI API version: **0.19.0**.
 
 ### `ui`
 
@@ -422,6 +423,33 @@ UI API version: **0.18.0**.
 | `coop_hud.notice.name_key` | setting | text | The text key that names the player the notice is about, if they have no name. |
 | `coop_hud.notice.number` | setting | number | The number that fills {number} in that text key. |
 | `coop_hud.notice.revision` | setting | number | Goes up with each notice and when it goes: the notice is drawn again. |
+
+### `coop_battle`
+
+| Name | Kind | Value | What it is |
+|---|---|---|---|
+| `coop_battle.shown` | setting | yes/no | Whether the host's battle shows on this co-op guest's screen. |
+| `coop_battle.role` | setting | text | This player's part in it: starter (their partner fights and takes their orders) or helper (they help with items and cheers). |
+| `coop_battle.phase` | setting | text | Where the battle is: intro, fight, victory, end (the end box) or closing. |
+| `coop_battle.command` | setting | number | The order the fighting partner follows now (a command's number). |
+| `coop_battle.bag` | setting | yes/no | Whether an item can be thrown now. |
+| `coop_battle.fighter_count` | setting | number | How many fighters there are: the partner first, then the enemies. |
+| `coop_battle.fighter.<n>.name_key` | setting | text | The text key of a fighter's species name. |
+| `coop_battle.fighter.<n>.hp` | setting | number | A fighter's HP now. |
+| `coop_battle.fighter.<n>.max_hp` | setting | number | A fighter's most HP. |
+| `coop_battle.fighter.<n>.down` | setting | yes/no | Whether a fighter is beaten. |
+| `coop_battle.order_count` | setting | number | How many orders the starter can give now (none for the helper). |
+| `coop_battle.order.<n>.command` | setting | number | An order's command number, sent with coop_battle_order. |
+| `coop_battle.order.<n>.label_key` | setting | text | The text key of an order's name. |
+| `coop_battle.item_count` | setting | number | How many kinds of items of this player's bag can be thrown in a battle. |
+| `coop_battle.item.<n>.id` | setting | text | An item's id, sent with coop_battle_item. |
+| `coop_battle.item.<n>.name_key` | setting | text | The text key of an item's name. |
+| `coop_battle.item.<n>.count` | setting | number | How many of an item this player has. |
+| `coop_battle.revision` | setting | number | Goes up each time the values above change: the screen is drawn again. |
+| `coop_battle_order` | command | number | The starter's order for its partner (a command's number). |
+| `coop_battle_cheer` | command | — | A cheer: charges the finisher as the battle's charge buttons do. |
+| `coop_battle_item` | command | text | Throws one of an item (its id) from this player's bag at the fighting partner. |
+| `coop_battle_close` | command | — | The starter closes the end box. |
 
 ### `money_box`
 
