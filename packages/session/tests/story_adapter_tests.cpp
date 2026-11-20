@@ -239,6 +239,31 @@ TEST_CASE("a ruleset's capacity sizes the story and gives more species raised tr
   CHECK(loaded.story->state().variable(259).value() == 90'000);
 }
 
+TEST_CASE("co-op keeps a player's own story facts out of the shared world") {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory},
+                        {"rules/modded/ruleset.yaml", ModdedRuleset},
+                        {"rules/modded/story.yaml", ModdedStory}};
+  const auto session = moddedStorySession(packs);
+  const StoryAdapter& story = *session.story;
+  // The raised species (the base's and the ruleset's), the medals, the item boxes and the talk's
+  // facing are the player's own.
+  for (const std::int32_t own :
+       {FirstRaisedTrigger, FirstRaisedTrigger + 62, 800, 831, dwe::session::FirstMedalTrigger,
+        dwe::session::FirstMedalTrigger + 17, dwe::session::FirstPlayerItemTrigger, 48, 44}) {
+    CHECK_MESSAGE(story.playerOwnTrigger(own), own);
+  }
+  // Chests, recruits, doors and story events are the world's.
+  for (const std::int32_t world : {0, 43, 49, 100, FirstRaisedTrigger + 63, 832, 863}) {
+    CHECK_FALSE_MESSAGE(story.playerOwnTrigger(world), world);
+  }
+  // The freeze and the next map's name follow each player's scripts.
+  CHECK(story.playerOwnVariable(0));
+  CHECK(story.playerOwnVariable(6));
+  CHECK_FALSE(story.playerOwnVariable(1));
+  CHECK_FALSE(story.playerOwnVariable(259));
+}
+
 TEST_CASE("a story section saved at version 1 still loads") {
   const TestPacks packs{{"data/digimon.yaml", digimonTable},
                         {"data/new_game_story.yaml", newGameStory}};

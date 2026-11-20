@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
+#include <utility>
 #include <variant>
 
 #include "field_scene.hpp"
@@ -38,17 +39,33 @@ void FieldScene::blockCells(assets::CollisionCell from, std::int32_t width, std:
   field_->blockCells(from, width, height);
 }
 
-void applyStoryMapEdits(FieldScene& scene, session::StoryGameOrders* orders) {
+std::vector<game::coop::WorldEdit> applyStoryMapEdits(FieldScene& scene,
+                                                      session::StoryGameOrders* orders) {
+  std::vector<game::coop::WorldEdit> applied;
   if (orders == nullptr) {
-    return;
+    return applied;
   }
   for (const session::StoryMapEdit& edit : orders->takeMapEdits()) {
     if (const auto* flag = std::get_if<session::StoryObjectFlag>(&edit)) {
       scene.setMapObjectFlag(flag->object, flag->flag);
+      if (flag->object >= 0) {
+        applied.push_back({.kind = game::coop::WorldEditKind::MapObject,
+                           .key = flag->object,
+                           .value = flag->flag});
+      }
     } else if (const auto* rect = std::get_if<session::StoryBlockedRect>(&edit)) {
       scene.blockCells({.column = rect->column, .row = rect->row}, rect->width, rect->height);
+      if (rect->column >= 0 && rect->width > 0 && rect->height > 0 &&
+          std::in_range<std::int16_t>(rect->width) && std::in_range<std::int16_t>(rect->height)) {
+        applied.push_back({.kind = game::coop::WorldEditKind::MapBlock,
+                           .key = rect->column,
+                           .value = rect->row,
+                           .width = static_cast<std::int16_t>(rect->width),
+                           .height = static_cast<std::int16_t>(rect->height)});
+      }
     }
   }
+  return applied;
 }
 
 } // namespace dwe::app

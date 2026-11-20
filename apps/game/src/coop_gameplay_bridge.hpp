@@ -41,8 +41,9 @@ public:
   [[nodiscard]] std::vector<game::coop::PlayerId> playersOn(std::string_view mapId) const {
     return snapshots_.playersOn(mapId);
   }
-  // The shared world's messages received since the last call, in order: the guests' states on the
-  // host; the host's corrections and rosters on a guest (#353, #354, #355).
+  // The shared world's messages received since the last call, in order: the guests' states and
+  // world asks on the host; the host's corrections, rosters, world changes and syncs and ground
+  // items on a guest (#353, #354, #355, #357).
   [[nodiscard]] std::vector<game::coop::Message> takeWorldMessages();
   // This side's own player state, sent unreliably (only the newest matters).
   [[nodiscard]] core::Result<void> send(const game::coop::Message& message);

@@ -10,7 +10,10 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string_view>
+
+#include "field_item_claim.hpp"
 
 namespace dwe::app {
 
@@ -58,6 +61,17 @@ public:
   // Whether a notice holds the player.
   [[nodiscard]] bool active() const { return step_ != Step::None; }
 
+  // Co-op (#357): in a shared world another player may take the item first. `shared`: a take that
+  // finds it gone says so. `claims` (a guest): a take waits for the host's word (claim()), the
+  // notice and the chest's drawer staying out meanwhile, and the item is the player's only once
+  // granted. The host takes at once, as in single player, which this leaves untouched.
+  void setCoop(bool shared, bool claims) {
+    shared_ = shared;
+    claims_ = claims;
+  }
+  // The take waiting for the host, for the guest's co-op world to send and answer.
+  [[nodiscard]] FieldItemClaim& claim() { return claim_; }
+
   // Before the field ticks, while it is idle: offers the item under the player, or, on `confirm`,
   // the chest in reach, and runs an open notice's original frames by `seconds`. Returns whether it
   // took the confirm, which the field then does not see. While an item on the ground is offered
@@ -82,15 +96,33 @@ public:
 private:
   // Opening: the chest's drawer slides out before its notice. Taken: the chest's item is in the
   // bag and its notice waits for the confirm that closes it (tamerTickTakeChest state 4).
-  enum class Step : std::uint8_t { None, GroundItem, Opening, Chest, Taken, BagFull, Empty };
+  // Claiming: a co-op guest's take waits for the host. Gone: another player took it first.
+  enum class Step : std::uint8_t {
+    None,
+    GroundItem,
+    Opening,
+    Chest,
+    Taken,
+    BagFull,
+    Empty,
+    Claiming,
+    Gone
+  };
 
-  void show(Step step, std::string_view text, assets::ItemHandle item);
+  // `item` named under the words (none for an empty chest or an item gone).
+  void show(Step step, std::string_view text, std::optional<assets::ItemHandle> item);
   // The box shrinks back into the player and the notice lets the player go.
   void close();
   // One original frame of the notice (20 a second).
   void originalFrame();
   // The confirm the notice's step waits for has come.
   void answer();
+  // A co-op guest's take of `item` goes to the host first: whether it went (not with the bag full,
+  // which the take says as in single player).
+  bool claimTake(assets::ItemHandle item);
+  // An original frame of a claim: the host's word applied once it came.
+  void settleClaim();
+  void playPickupSound();
   [[nodiscard]] bool chestStep() const;
   // Whether the step takes a confirm on this frame of the counter.
   [[nodiscard]] bool ready() const;
@@ -120,6 +152,12 @@ private:
   bool playerClipHeld_ = false;
   // The partner stands on its clip 0 for a chest, until the tick after its notice closes.
   bool partnerClipHeld_ = false;
+  bool shared_ = false;
+  bool claims_ = false;
+  FieldItemClaim claim_;
+  // The item claimed, and the original frames its claim has waited.
+  std::optional<assets::ItemHandle> claimed_;
+  std::int32_t claimFrames_ = 0;
 };
 
 } // namespace dwe::app

@@ -3,6 +3,7 @@
 #include <doctest/doctest.h>
 #include <glm/vec3.hpp>
 
+#include <optional>
 #include <vector>
 
 using dwe::game::field::Chest;
@@ -179,4 +180,27 @@ TEST_CASE("map.c changeMap: a load of the same map clears the last load's ground
   CHECK(items.chests().empty());
   REQUIRE(items.spawn(item, {.column = 67, .row = 42}, 0.0F));
   CHECK(items.ground().size() == 1);
+}
+
+TEST_CASE("co-op: a chest another player took shows taken at once, and the host's ground is laid") {
+  FieldItems items = itemsWithRoom();
+  REQUIRE(items.spawnChest(ogreChest(false)));
+  CHECK(items.takenElsewhere(0));
+  CHECK(items.chests()[0]->taken);
+  CHECK(items.chests()[0]->tray == ChestTrayOut);
+  // Already taken, or no chest there: nothing changes.
+  CHECK_FALSE(items.takenElsewhere(0));
+  CHECK_FALSE(items.takenElsewhere(1));
+
+  const dwe::assets::ItemHandle item = table().handleOf(table().entries().front());
+  REQUIRE(items.spawn(item, {.column = 1, .row = 1}, 0.0F));
+  // The host's list replaces what this game laid; slots past the ground's room are dropped.
+  const std::vector<std::optional<dwe::game::field::GroundItem>> host{
+      dwe::game::field::GroundItem{.item = item, .cell = {.column = 7, .row = 8}, .position = {}},
+      dwe::game::field::GroundItem{.item = item, .cell = {.column = 9, .row = 9}, .position = {}}};
+  items.replaceGround(host);
+  REQUIRE(items.ground().size() == 1);
+  CHECK(items.ground()[0]->cell == dwe::assets::CollisionCell{.column = 7, .row = 8});
+  items.replaceGround({});
+  CHECK(items.ground().empty());
 }

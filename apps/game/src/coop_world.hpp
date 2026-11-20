@@ -14,6 +14,8 @@
 #include <string_view>
 #include <vector>
 
+#include "coop_world_state.hpp"
+
 namespace dwe::app {
 
 class FieldScene;
@@ -31,6 +33,13 @@ struct CoopOutgoing {
   game::coop::Message message;
 };
 
+// What a game takes from the shared world in a tick (#357): the messages to send and the other
+// players' live map edits for its scene (applyCoopMapEdits).
+struct CoopWorldShare {
+  std::vector<CoopOutgoing> out;
+  std::vector<game::coop::WorldEdit> mapEdits;
+};
+
 // The host's side of the shared world (#353, #354, #355), built when its co-op game links a guest
 // and dropped with that game. The authority holds who is in the session and each player's newest
 // valid transform; this drives the guests' bodies in the host's field from the states their
@@ -45,7 +54,7 @@ public:
                                                          net::Millis now);
   // A guest left, dropped or went quiet: its record and its track go.
   void leave(game::coop::PlayerId id);
-  // A message received on guest `from`'s link (only its PlayerState matters here).
+  // A message received on guest `from`'s link (its PlayerState, WorldAsk and ItemClaim matter).
   void receive(game::coop::PlayerId from, const game::coop::Message& message, net::Millis now);
   // After the host's field tick: the host's pose and map into the authority, the guests' bodies
   // driven or put in place, and what to send (corrections, the roster when it changed).
@@ -53,9 +62,30 @@ public:
   [[nodiscard]] std::vector<CoopOutgoing> tick(game::field::Field& field, std::uint32_t mapSerial,
                                                std::optional<std::int32_t> arrivalExit,
                                                net::Millis now);
+  // After the tick, the world's interactions (#357): the host's own changes for every guest, the
+  // guests' asks taken (applied here, then sent to everyone) or left out, the guests' claims on
+  // chests and ground items answered (the first claim on an item still there gets it), the whole
+  // story to a guest that joined and to everyone when the map changed, and the ground's list
+  // whenever it changed. The host's own takes need no claim: its game is the world.
+  [[nodiscard]] CoopWorldShare share(CoopWorldView& view);
+  [[nodiscard]] const game::coop::WorldLedger& ledger() const { return ledger_; }
 
 private:
+  // Whether a claim's item is still there; taking it off the world (and telling the guests) if so.
+  bool grant(CoopWorldView& view, const game::coop::ItemClaim& claim, CoopWorldShare& share,
+             bool& chestsMayChange);
+
   game::coop::WorldAuthority authority_;
+  game::coop::WorldLedger ledger_;
+  CoopStoryBaseline facts_;
+  CoopGroundTracker ground_;
+  std::vector<std::pair<game::coop::PlayerId, game::coop::WorldAsk>> asks_;
+  std::vector<std::pair<game::coop::PlayerId, game::coop::ItemClaim>> claims_;
+  // Each guest's last claim answered: a claim sent again is answered once.
+  std::map<game::coop::PlayerId, std::uint32_t> lastClaim_;
+  // Guests sent the whole story since they joined, and the map load it was last sent for.
+  std::set<game::coop::PlayerId> synced_;
+  std::optional<std::uint32_t> syncSerial_;
   std::map<game::coop::PlayerId, game::coop::PoseTrack> tracks_;
   // Guests put in the field on the current map (the others get a correction on the next tick).
   std::set<game::coop::PlayerId> placed_;
@@ -93,9 +123,25 @@ public:
   [[nodiscard]] bool inSession(game::coop::PlayerId id) const;
   // The partner species the roster gives player `id` (empty when none).
   [[nodiscard]] std::string partnerOf(game::coop::PlayerId id) const;
+  // After the tick, the world's interactions (#357): what this game changed of the shared world
+  // goes to the host as an ask, and the item notice's take as a claim; the host's changes and
+  // syncs are applied once each, in order; on the host's map the ground is the host's; the host's
+  // answer to the claim goes to the notice.
+  [[nodiscard]] CoopWorldShare share(CoopWorldView& view);
+  [[nodiscard]] std::uint32_t worldRevision() const { return replica_.revision(); }
 
 private:
+  // Sends the notice's take to the host (an item of this game's own ground is granted at once).
+  void claim(const CoopWorldView& view, CoopWorldShare& share);
+
   game::coop::PlayerId self_;
+  game::coop::WorldReplica replica_;
+  CoopStoryBaseline facts_;
+  CoopGroundMirror ground_;
+  // The host's changes and syncs, in the order they came.
+  std::vector<game::coop::Message> worldIn_;
+  std::uint32_t claims_ = 0;
+  std::vector<game::coop::ClaimAnswer> answers_;
   // The newest correction applied: states carry it so the host drops ones from before.
   std::uint16_t epoch_ = 0;
   std::optional<game::coop::PlayerCorrection> pending_;
@@ -113,6 +159,9 @@ private:
 
 // The guest's side, against its scene: the host's move of its player, before the field tick.
 void applyCoopMove(FieldScene& scene, CoopGuestWorld& guest);
+
+// The other players' doors and mechanisms on this game's map (#357), as its own scripts' edits.
+void applyCoopMapEdits(FieldScene& scene, std::span<const game::coop::WorldEdit> edits);
 
 // A guest draws the other players of the session as the host's snapshot smoothed for this frame
 // shows them (`world`; none before the first): each player and its partner by id, hidden while

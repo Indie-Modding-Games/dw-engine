@@ -28,7 +28,13 @@ void CoopGameplayBridge::poll(net::Millis now) {
       (void)snapshots_.push(*snapshot, now);
     } else if (std::holds_alternative<game::coop::PlayerState>(*message) ||
                std::holds_alternative<game::coop::PlayerCorrection>(*message) ||
-               std::holds_alternative<game::coop::Roster>(*message)) {
+               std::holds_alternative<game::coop::Roster>(*message) ||
+               std::holds_alternative<game::coop::WorldAsk>(*message) ||
+               std::holds_alternative<game::coop::WorldChange>(*message) ||
+               std::holds_alternative<game::coop::WorldSync>(*message) ||
+               std::holds_alternative<game::coop::GroundItems>(*message) ||
+               std::holds_alternative<game::coop::ItemClaim>(*message) ||
+               std::holds_alternative<game::coop::ClaimAnswer>(*message)) {
       world_.push_back(std::move(*message));
     } else if (const auto* chunk = std::get_if<game::coop::ProfileChunk>(&*message)) {
       if (!profileTransferId_ || *profileTransferId_ != chunk->transferId) {

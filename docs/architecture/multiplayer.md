@@ -322,6 +322,7 @@ registry), the map the group is on and every player's newest valid transform.
 | A guest's own position | the guest, checked by the host | `PlayerState`, refused or corrected when impossible |
 | The host's position, NPCs, story, clock, battles | host | snapshots (§5.1) and events |
 | How a remote player is drawn | each game, locally | interpolation (below); it never writes the authority |
+| What players change in the world (chests, triggers, doors, ground items) | host | `WorldChange`, `WorldSync`, `GroundItems` (§5.8) |
 
 **Messages.** Three kinds join the table of §5.5 and take the place of its `OwnPose` and `PoseFix` sketch (protocol
 version 4):
@@ -365,6 +366,77 @@ objects).
 Tests: `packages/game/coop/tests/authority_tests.cpp`, `apps/game/tests/coop_world_tests.cpp`,
 `apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` and the
 co-op cases of `packages/game/field/tests/field_tests.cpp`.
+
+### 5.8 Shared world interactions
+
+Every game of the session runs its own copy of the host's world (§6.1), so what one player does to that world has to
+reach the others' copies, or a chest one player opened stays full for the rest (#357). The host is the only one that
+applies a shared interaction to the world; the others' games ask, and are told the result.
+
+**What is shared and what is local.**
+
+| Interaction | Kept as | Shared or local | How it travels |
+|---|---|---|---|
+| Story triggers set by any player: events played, NPCs recruited, shops opened, doors and mechanisms opened for good | story triggers | shared | `WorldAsk` → host → `WorldChange` |
+| Story variables (counters a script keeps) | story variables | shared | same |
+| Chests | their story trigger | shared: one player gets the item, and the chest shows taken (drawer out) in every game at once | a guest's take is an `ItemClaim`, answered by `ClaimAnswer`; then `WorldChange` |
+| Items lying on the ground (the map's random items, battle drops) | the host's ground | shared on the host's map: every game there shows the host's ground, and an item goes to one player only | `GroundItems` from the host; a guest's pick-up is an `ItemClaim` |
+| Doors and mechanisms a script moves while players watch | live map edits (object flags, closed cells) | shared with the players on that map; on the next visit the map's head script rebuilds them from the shared triggers | `WorldAsk` → host → `WorldChange` |
+| Medals, raised species, the player page's key items (rods) | story triggers | local: each player's own | never sent |
+| A script's freeze, the talk facing trigger, the next map's name | story variables and a trigger | local: they follow that player's own scripts | never sent |
+| The bag, bits, the partner and its care, menus, dialogs on screen, the camera | session systems | local | never sent (battles: §6.1) |
+
+The local facts come from the story rules (`StoryAdapter::playerOwnTrigger` and `playerOwnVariable`): a ruleset that
+moves the freeze or the talk facing to another number moves them too.
+
+**How it works.** After every tick each game compares its story with what it last agreed with the session
+(`CoopStoryBaseline`): what its own scripts and systems changed is its news. The host's news only needs telling, as
+its game is the world. A guest sends its news as a `WorldAsk`; the host's `WorldLedger` drops an ask it took already
+(each guest numbers its asks), keeps only the shared part, takes map edits only for the map the session is on,
+applies what changes its world, and sends every guest a
+`WorldChange` with the next revision, the player whose interaction it was and the new values. A guest applies a change
+once (`WorldReplica`: a revision not newer than the newest taken is dropped), and what it applies from the host is
+never sent back as its own. Values are absolute (a trigger set, a variable's value), so applying one twice is applying
+it once. When two players change the same fact at once the host's order decides, and every game ends up with the
+host's value.
+
+**Taking an item.** A chest or an item on the ground could be taken by two players at once, so a guest's take asks
+first. When the guest confirms, its item notice stays up (a chest's drawer is already out) and its game sends an
+`ItemClaim`: the chest's trigger, or the ground item's slot and id. The host answers each guest's claims in order and
+once (a claim sent again is dropped): granted while the chest's trigger is unset or the item still lies there with that
+id, and then it sets the trigger or takes the item off its ground and tells everyone as usual. Only on a granted
+`ClaimAnswer` does the guest's game put the item in the bag; refused (or with no answer for ten seconds) the guest gets
+nothing and the notice says another player took it (`online.coop.item_gone`). The host takes at once, as in single
+player, so its take within the same round trip comes first; a take that finds the item gone while its notice was open
+gets the same notice. On a map the host is not on, a guest's ground is its own and needs no claim. Single player never
+claims.
+
+**Joining late and changing map.** A guest that joins gets the whole shared story (`WorldSync`, in parts that fit a
+datagram) and the host's ground; every guest gets them again when the host enters a map. The sync carries the host's
+revision, so a change already in it is not applied again.
+
+**Saves (§5.6).** The world is the host's: what a guest changes in it is in the host's next save, like anything the
+host does. The guest still saves nothing, and its own save is never written.
+
+**Messages** (protocol version 5, range `0x90–0x9F`):
+
+| Type | Name | Channel | Direction | Content |
+|---|---|---|---|---|
+| `0x90` | `WorldAsk` | reliable | client → host | The guest's ask number, its map and the edits (trigger, variable, map object, closed cells). |
+| `0x91` | `WorldChange` | reliable | host → client | Revision, the player it came from and its ask, the map, the edits. |
+| `0x92` | `WorldSync` | reliable | host → client | Revision, part, and a run of triggers (bits) and variables. |
+| `0x93` | `GroundItems` | reliable | host → client | The host's map and map load, and each item on the ground: id, slot, item, cell and place. |
+| `0x94` | `ItemClaim` | reliable | client → host | The guest's claim number, chest or ground item, the chest's trigger or the item's slot and id, the map. |
+| `0x95` | `ClaimAnswer` | reliable | host → client | The claim number and whether it was granted. |
+
+**Limits.** An NPC another player recruited
+leaves this game's map on its next load, not at once (its trigger arrives at once, but the NPC on screen follows this
+game's own scripts until the map loads again). Only the map's live edits travel; anything else a script does on screen
+(a scene, a character's walk) stays in the game that ran it.
+
+Tests: `packages/game/coop/tests/world_state_tests.cpp`, `apps/game/tests/coop_world_state_tests.cpp` (a host and two
+guests over encoded messages), the co-op case of `packages/game/field/tests/field_items_tests.cpp` and of
+`packages/session/tests/story_adapter_tests.cpp`.
 
 ## 6. Game decisions (pending)
 

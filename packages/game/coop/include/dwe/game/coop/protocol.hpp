@@ -21,8 +21,9 @@ inline constexpr PlayerId HostPlayerId = 0;
 inline constexpr PlayerId GuestPlayerId = 1;
 inline constexpr std::size_t MaxPlayers = 4;
 // 3: co-op battles (#363). 4: the owner's player states, the host's corrections and the roster
-// (#353, #354, #355).
-inline constexpr std::uint32_t ProtocolVersion = 4;
+// (#353, #354, #355). 5: the shared world's interactions: story facts, live map edits, the
+// ground items and the claims on items two players could take (#357).
+inline constexpr std::uint32_t ProtocolVersion = 5;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
   return id < MaxPlayers;
@@ -406,6 +407,135 @@ struct Roster {
   friend bool operator==(const Roster&, const Roster&) = default;
 };
 
+// The shared world (#357, multiplayer.md "Shared world interactions"). Every game of the session
+// runs its own copy of the host's world; what one player's interactions change in it that the
+// others must see goes through the host: a guest's game asks (WorldAsk), the host takes what is
+// shared and valid, applies it and tells every guest (WorldChange), numbered by its revision so a
+// change is never applied twice. A guest that joins or changes map gets the whole state again
+// (WorldSync, GroundItems). An item two players could take at once is claimed first (ItemClaim):
+// the host gives it to one of them only.
+enum class WorldEditKind : std::uint8_t {
+  // A story trigger: `key` the trigger, `value` 1 set or 0 clear (chests, recruits, doors,
+  // shops, story events: the original keeps them all as triggers).
+  Trigger,
+  // A story variable: `key` the variable, `value` its value.
+  Variable,
+  // A live edit of the map in front of the players (a door or mechanism a script moves): object
+  // `key` takes flag `value` (set_obj_visibility).
+  MapObject,
+  // A live edit of the map: the cells from column `key`, row `value`, `width` by `height`, closed.
+  MapBlock,
+};
+
+// One change of the shared world, as a new value (setting it twice is setting it once).
+struct WorldEdit {
+  WorldEditKind kind = WorldEditKind::Trigger;
+  std::int32_t key = 0;
+  std::int32_t value = 0;
+  // MapBlock only.
+  std::int16_t width = 0;
+  std::int16_t height = 0;
+
+  friend bool operator==(const WorldEdit&, const WorldEdit&) = default;
+};
+
+// A reliable message holds at most this many edits (each a few bytes, under the 1200-byte limit).
+inline constexpr std::size_t MaxWorldEdits = 64;
+
+// A guest's game changed the shared world (its script set a trigger, a door moved): the host takes
+// what is shared. `ask` is the guest's own count;
+// `mapId` the map the guest was on.
+struct WorldAsk {
+  std::uint32_t ask = 0;
+  std::string mapId;
+  std::vector<WorldEdit> edits;
+
+  friend bool operator==(const WorldAsk&, const WorldAsk&) = default;
+};
+
+// The shared world changed on the host: its revision (one more than the last change), the player
+// whose interaction it was and the ask it answers (0 for the host's own), the map the map edits
+// belong to, and the new values.
+struct WorldChange {
+  std::uint32_t revision = 0;
+  PlayerId origin = HostPlayerId;
+  std::uint32_t ask = 0;
+  std::string mapId;
+  std::vector<WorldEdit> edits;
+
+  friend bool operator==(const WorldChange&, const WorldChange&) = default;
+};
+
+// The whole of the shared story at the host's `revision`, in `parts` messages: triggers from
+// `firstTrigger` and variables from `firstVariable` on, each part the next run of them.
+inline constexpr std::size_t MaxSyncTriggers = 4096;
+inline constexpr std::size_t MaxSyncVariables = 128;
+struct WorldSync {
+  std::uint32_t revision = 0;
+  std::uint16_t part = 0;
+  std::uint16_t parts = 1;
+  std::int32_t firstTrigger = 0;
+  std::vector<bool> triggers;
+  std::int32_t firstVariable = 0;
+  std::vector<std::int32_t> variables;
+
+  friend bool operator==(const WorldSync&, const WorldSync&) = default;
+};
+
+// An item on the host's ground: its id (new each time an item comes to lie there), its slot, the
+// item's id, its cell and its place in integral world units.
+struct GroundEntry {
+  std::uint32_t id = 0;
+  std::uint8_t slot = 0;
+  std::string item;
+  std::int16_t column = 0;
+  std::int16_t row = 0;
+  std::int32_t x = 0;
+  std::int32_t y = 0;
+  std::int32_t z = 0;
+
+  friend bool operator==(const GroundEntry&, const GroundEntry&) = default;
+};
+
+inline constexpr std::size_t MaxGroundEntries = 16;
+inline constexpr std::size_t MaxGroundItemId = 32;
+
+// What lies on the ground of the host's map, sent when it changes and to a guest arriving there:
+// on that map a guest's ground is the host's.
+struct GroundItems {
+  std::string mapId;
+  std::uint32_t mapSerial = 0;
+  std::vector<GroundEntry> items;
+
+  friend bool operator==(const GroundItems&, const GroundItems&) = default;
+};
+
+// What a guest's player takes: a chest's item (`key` the chest's trigger) or an item on the ground
+// (`key` its slot, `id` its id in GroundItems).
+enum class ClaimKind : std::uint8_t { Chest, GroundItem };
+
+// A guest's player confirmed taking an item another player could take too: its game gives it only
+// once the host answers that it was still there (ClaimAnswer), so one item has one taker. `claim`
+// is the guest's own count; `mapId` the map the guest stands on.
+struct ItemClaim {
+  std::uint32_t claim = 0;
+  ClaimKind kind = ClaimKind::Chest;
+  std::int32_t key = 0;
+  std::uint32_t id = 0;
+  std::string mapId;
+
+  friend bool operator==(const ItemClaim&, const ItemClaim&) = default;
+};
+
+// The host's answer to a claim: granted, the item is the guest's and the world shows it taken
+// (WorldChange, GroundItems); refused, someone took it first.
+struct ClaimAnswer {
+  std::uint32_t claim = 0;
+  bool granted = false;
+
+  friend bool operator==(const ClaimAnswer&, const ClaimAnswer&) = default;
+};
+
 enum class LeaveReason : std::uint8_t { Quit, Disconnected, SessionEnded };
 struct Leave {
   LeaveReason reason = LeaveReason::Quit;
@@ -415,7 +545,8 @@ struct Leave {
 
 using Message = std::variant<Hello, Welcome, Ready, JoinState, Commands, Snapshot, ViewState, Leave,
                              ProfileChunk, BattleAsk, BattleBegin, BattleRefused, BattleFrame,
-                             BattleAction, BattleEnd, PlayerState, PlayerCorrection, Roster>;
+                             BattleAction, BattleEnd, PlayerState, PlayerCorrection, Roster,
+                             WorldAsk, WorldChange, WorldSync, GroundItems, ItemClaim, ClaimAnswer>;
 
 inline constexpr std::uint8_t HelloKind = 0x60;
 inline constexpr std::uint8_t WelcomeKind = 0x61;
@@ -436,6 +567,13 @@ inline constexpr std::uint8_t ReadyKind = 0x6E;
 inline constexpr std::uint8_t PlayerStateKind = 0x70;
 inline constexpr std::uint8_t PlayerCorrectionKind = 0x71;
 inline constexpr std::uint8_t RosterKind = 0x72;
+// The shared world's interactions (#357) take 0x90-0x9F.
+inline constexpr std::uint8_t WorldAskKind = 0x90;
+inline constexpr std::uint8_t WorldChangeKind = 0x91;
+inline constexpr std::uint8_t WorldSyncKind = 0x92;
+inline constexpr std::uint8_t GroundItemsKind = 0x93;
+inline constexpr std::uint8_t ItemClaimKind = 0x94;
+inline constexpr std::uint8_t ClaimAnswerKind = 0x95;
 
 [[nodiscard]] net::Bytes encode(const Message& message);
 // Returns empty for a message owned by another protocol. Messages in this range are validated and
