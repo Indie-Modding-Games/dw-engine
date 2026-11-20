@@ -76,8 +76,17 @@ public:
   [[nodiscard]] virtual std::string roomCode() const { return {}; }
   // Whether the other peer reached the room (for the host: a guest typed its code).
   [[nodiscard]] virtual bool peerFound() const { return state() == PeerState::Open; }
-  // The host's key for its public room's state notices (RoomSession); empty for any other room.
+  // The host's key for its public room's state notices (RoomSession) and, in a room of more than
+  // two seats, for its next seat (RtcPeerLink::hostSeat); empty for any other room.
   [[nodiscard]] virtual std::string roomToken() const { return {}; }
+  // A host's link still waiting for its guest tells the signaling server how many guests the host
+  // holds now (a room of more than two seats); nothing on any other link.
+  virtual void announceSeats(int /*taken*/) {}
+  // Keeps the line alive while the game is busy and does not poll (a long load): the transport
+  // goes on taking what arrives and sending its keepalives on its own, so the other peer's silence
+  // timeout does not drop this one. Once poll() has not run for `limit`, it stops and the silence
+  // decides again (a game that hangs). Zero, the default: only poll() keeps the line alive.
+  virtual void keepAliveWhileBusy(Millis /*limit*/) {}
 };
 
 } // namespace dwe::net

@@ -281,6 +281,10 @@ A type byte at the start of each message, in the range `0x60–0x6F` (versus use
 | `0x6A` | `Leave` | reliable | both | Exit reason. |
 
 The heartbeat and the timeouts are those of `CoopLink` (§4.6), with the same values as versus.
+A side busy with a long load (its frame loop stalled) keeps its links alive: the transport sends the
+heartbeat on its own while the game does not poll it, for up to 90 s (`LinkTimeouts::busy`), so a load longer
+than the 8 s of silence drops nobody, and a game hung past that is still dropped. A guest whose host goes quiet
+shows "Waiting for" and its name instead of a frozen screen.
 
 ### 5.6 Saves in co-op
 
@@ -437,6 +441,46 @@ game's own scripts until the map loads again). Only the map's live edits travel;
 Tests: `packages/game/coop/tests/world_state_tests.cpp`, `apps/game/tests/coop_world_state_tests.cpp` (a host and two
 guests over encoded messages), the co-op case of `packages/game/field/tests/field_items_tests.cpp` and of
 `packages/session/tests/story_adapter_tests.cpp`.
+### 5.9 Rooms of four and the sync diagnostics
+
+What #352 and #359 add (protocol version 6, kinds `0xA0`–`0xA2`).
+
+**Rooms.** A co-op room seats the host and up to three guests. The signaling Worker keeps such a room open while the
+host waits (`apps/versus-signal`, "Rooms of up to four"): the host holds one link waiting for the next guest, each
+guest pairs with one of them, and the room never relays one pair's signals to another. In the game,
+`CoopConnection` owns one `CoopLink` per guest, welcomes each with the lowest free id (1 to 3) and lets one guest
+leave the lobby without closing the room. Once the game starts the room takes nobody else; a guest that leaves a
+started game goes, the others play on, and the room ends with its last guest. Rooms of two (versus, older games)
+work as before.
+
+**Lobby.** `CoopScreen` keeps each guest's ready mark and save apart; the host starts once every guest in is ready,
+and sends the same save to all of them. The host tells every guest who is in the room:
+
+| Type | Name | Channel | Direction | Content |
+|---|---|---|---|---|
+| `0xA0` | `Lobby` | reliable | host → client | Capacity (2 to 4) and, per seat taken, id, name and state (connected or ready). |
+| `0xA1` | `SyncWatch` | reliable | host → client | Whether the host watches the sync (#359). |
+| `0xA2` | `SyncReport` | unreliable | client → host | While watched, twice a second: report sequence, the newest snapshot tick, snapshots lost and late, and where it holds every player. |
+
+The rooms screen shows four rows in every skin: free, taken, the host with its crown, ready marks, and a guest whose
+link is still connecting (`online.member.<n>.arriving`).
+
+**Play.** On the host every guest has its own gameplay bridge, controller and body: its commands move its own player
+(`GuestFieldIntent`), its states reach the authority under its id, corrections and rosters go only to it, and each
+gets the snapshots with its own command acknowledgement. A guest draws everyone from the snapshots and tags each other
+player (`coop_hud.tag.<n>.*`). Battles still run with one ally guest, player 1 (#361); the others' battle asks are
+refused as busy, so nothing waits on them.
+
+**Sync diagnostics.** A developer tool behind the console (F1), which only opens with the developer tools on, so it
+never runs in release builds. `coop_sync("on")` on the host tells every guest to report; `coop_sync("report")` prints
+the whole picture once and `coop_sync("off")` stops it. While on, the log says when a player changes map, when
+snapshots or commands are lost or come late, and when a guest holds a player somewhere else (another map, or farther
+than 600 units) for more than two seconds, and again when it is back in sync. The report lists every player's place
+on the host and, per guest, what it holds, how many world ticks it is behind and what it lost.
+
+Tests: `packages/game/coop/tests/sync_watch_tests.cpp`, `apps/game/tests/coop_connection_tests.cpp` (four seats),
+`apps/game/tests/coop_sync_tests.cpp` (2, 3 and 4 players headless over lossy links, converging) and the seat tests of
+`apps/versus-signal/test`.
 
 ## 6. Game decisions (pending)
 

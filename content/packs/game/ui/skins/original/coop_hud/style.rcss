@@ -1,7 +1,7 @@
 /* The co-op HUD in the original look: the notice in one of the original's windows (the box border and corners of
    theme.rcss) with the ink at three times the font's cell, the name tag as a small window at twice the cell. */
 
-#tag,
+.tag,
 #notice {
 	border: 3dp transparent;
 	border-radius: 0;
@@ -11,7 +11,7 @@
 	color: #d0d0d0;
 }
 
-#tag {
+.tag {
 	padding: 2dp 12dp;
 	font-size: 22dp;
 	line-height: 28dp;

@@ -1,6 +1,6 @@
 # Navegador de salas cooperativas para cuatro jugadores
 
-Estado: **diseño de implementación** (2026-11-17). El límite propuesto es cuatro jugadores en total: un anfitrión y hasta tres invitados. La lista contiene salas cooperativas activas, no servidores dedicados; el mundo se sigue simulando en el anfitrión y el tráfico de juego viaja por WebRTC.
+Estado: **implementado** (2026-11-20, #352; ver `multiplayer.md` §5.9). Una diferencia con este diseño: en vez de un `peerId` en cada mensaje sobre un único socket, el anfitrión abre un socket por plaza (`/v1/host/<code>?token=&taken=`) y la sala empareja a cada invitado con uno; así cada señal solo llega a su pareja y el protocolo de dos jugadores no cambia. Diseño original (2026-11-17): El límite propuesto es cuatro jugadores en total: un anfitrión y hasta tres invitados. La lista contiene salas cooperativas activas, no servidores dedicados; el mundo se sigue simulando en el anfitrión y el tráfico de juego viaja por WebRTC.
 
 ## Estado actual y motivo del cambio
 

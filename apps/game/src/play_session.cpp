@@ -931,11 +931,11 @@ void PlaySession::pressBattle(const input::InputState& input) {
   }
 }
 
-void PlaySession::tick(const PlayerCommands& commands, const PlayerCommands& guestCommands) {
+void PlaySession::tick(const PlayerCommands& commands, std::span<const GuestFieldIntent> guests) {
   fieldWalks_ = false;
   // Only this tick's: co-op takes them right after it (takeCoopWorld).
   coopMapEdits_.clear();
-  tickSystems(commands.field, commands.fishing, guestCommands.field);
+  tickSystems(commands.field, commands.fishing, guests);
   tickWater();
   // A tick that did not leave the player walking freely (a talk, a battle, a gym course, a screen)
   // drops the click's target, so the player does not walk on to it once he is let go.
@@ -968,7 +968,7 @@ void PlaySession::tickWater() {
 }
 
 void PlaySession::tickSystems(const game::field::FieldInput& intent, const FishingButtons& fishing,
-                              const game::field::FieldInput& guestIntent) {
+                              std::span<const GuestFieldIntent> guests) {
   const ui::Ui& ui = *context_.ui;
   // Every tick starts with the characters where they stand: the screens below that run instead of
   // the field (a battle, the evolution, a sleep, the fishing, a menu) move them themselves or not
@@ -1098,7 +1098,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
     fieldWalks_ = !gymScreen_.active();
     // Without a course it only closes the last one's stats box.
     gymScreen_.tick(TickSeconds, intent);
-    scene_->tick(fieldIntent, guestIntent, static_cast<float>(TickSeconds));
+    scene_->tick(fieldIntent, guests, static_cast<float>(TickSeconds));
     game_.systems.story->runNpcContacts(scene_->field().npcContacts());
     storyLink_->afterFieldTick();
     game_.session->tick(TickSeconds);

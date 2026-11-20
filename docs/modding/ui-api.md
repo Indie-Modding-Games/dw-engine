@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.21.0 | Rooms of up to four players: each member says when its seat is taken while its connection is still being set up (`online.member.<n>.arriving`), and the co-op HUD shows a tag over each of the other players (`coop_hud.tag.<n>.*` for the second and third) |
 | 0.20.0 | Both partners fight in a co-op battle: the battle screen lists the other players' partners fighting beside this player's (`battle.ally.<n>.*`, `battle.allies()`), and its partner, strip, finisher and bag are this player's own. The `coop_battle` screen gains the role `ally`, the fighters' MP, side and whether one is this player's (`coop_battle.fighter.<n>.mp`, `.max_mp`, `.side`, `.mine`); orders and items go to this player's own partner |
 | 0.19.0 | The `coop_battle` screen shows the host's battle on a co-op guest's screen: its role (`coop_battle.role`), phase, the fighters' life (`coop_battle.fighter.<n>.*`), the starter's orders (`coop_battle.order.<n>.*`) and the items of its own bag it can throw (`coop_battle.item.<n>.*`), with the commands `coop_battle_order`, `coop_battle_cheer`, `coop_battle_item` and `coop_battle_close` |
 | 0.18.0 | Rooms show real data: `online.room()` follows the room's phase as the network keeps it (open, connected, ready, playing, closed), and a guest sees the host's name. Listed rooms carry the host's name and mode, rooms already playing leave the list, and the list can say it was refreshed too often (`list_limit`). The online profile's relay only (`online.profile().relay_only`, `online.set_relay_only(on)`, command `online_profile_relay`) connects rooms through the server's relay so the other player never learns this machine's address. New errors: `server_refused`, `no_relay`, `list_limit` (online) and `versus.error.refused`, `versus.error.no_relay` |
@@ -97,7 +98,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.20.0**.
+UI API version: **0.21.0**.
 
 ### `ui`
 
@@ -419,6 +420,12 @@ UI API version: **0.20.0**.
 | `coop_hud.tag.name_key` | setting | text | The text key that names the other player without a name of their own (the host, or a guest by number). |
 | `coop_hud.tag.number` | setting | number | The number that fills {number} in the name's text key. |
 | `coop_hud.tag.revision` | setting | number | Goes up each time the tag's values change: the tag is drawn again. |
+| `coop_hud.tag.<n>.visible` | setting | yes/no | In a room of more than two, whether the tag over another player shows (n 2 and 3; coop_hud.tag.revision redraws them too). |
+| `coop_hud.tag.<n>.x` | setting | number | Where that tag's anchor is across the window, in percent. |
+| `coop_hud.tag.<n>.y` | setting | number | Where that tag's anchor is down the window, in percent. |
+| `coop_hud.tag.<n>.name` | setting | text | That player's own name, or empty. |
+| `coop_hud.tag.<n>.name_key` | setting | text | The text key that names that player when it has no name of its own. |
+| `coop_hud.tag.<n>.number` | setting | number | The number that fills {number} in that name's text key. |
 | `coop_hud.notice.shown` | setting | yes/no | Whether a co-op notice shows (a few seconds each). |
 | `coop_hud.notice.text` | setting | text | The notice's text key; {name} in it stands for the player it is about. |
 | `coop_hud.notice.name` | setting | text | The own name of the player the notice is about; empty when named by a text key. |
@@ -994,6 +1001,7 @@ UI API version: **0.20.0**.
 | `online.member.<n>.host` | setting | yes/no | Whether the member hosts the room. |
 | `online.member.<n>.ready` | setting | yes/no | Whether the member is ready. |
 | `online.member.<n>.local` | setting | yes/no | Whether the member is the player at this machine. |
+| `online.member.<n>.arriving` | setting | yes/no | Whether the member's seat is taken while its connection is still being set up. |
 | `online_open` | command | — | The rooms screens opened: the list is asked for. |
 | `online_close` | command | — | The rooms screens closed. |
 | `online_refresh` | command | — | Asks for the room list again. |

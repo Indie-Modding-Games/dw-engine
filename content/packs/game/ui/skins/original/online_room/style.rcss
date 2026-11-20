@@ -154,6 +154,8 @@
 .member.local { border-color: #33414a; background-color: #2d384080; }
 .member.local .member-name { color: #fff371; }
 .member.waiting { color: #7a8590; }
+.member.arriving { color: #b4bcc4; }
+.member.arriving .member-mark { color: #8fd0ff; }
 .avatar { display: none; }
 
 .member-name {

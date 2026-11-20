@@ -48,12 +48,14 @@ info.visibility: "Acceso:"
 visibility.public: "Pública"
 visibility.private: "Privada"
 untitled_room: "Sala sin nombre"
-own_room: "Tu sala"
+# Una sala sin nombre propio lleva el de su anfitrión.
+room_of: "Sala de {name}"
 modes_tab: "Modo de juego"
 players_title: "Jugadores ({players} / {capacity})"
 waiting_player: "Esperando jugador..."
 host_mark: "(Anfitrión)"
 ready_mark: "Listo"
+arriving_mark: "Conectando..."
 not_ready: "No listo"
 you: "Tú"
 host_player: "Anfitrión"
@@ -69,7 +71,7 @@ info.guest_ready: "Estás listo. La partida empezará cuando el anfitrión lo de
 info.host_waiting: "Comparte el código para que otro jugador entre."
 info.host_public: "Tu sala aparece en la lista. También pueden entrar con el código."
 info.host_ready: "Todos están listos. Puedes iniciar la partida."
-info.host_not_ready: "Espera a que el invitado esté listo para iniciar."
+info.host_not_ready: "Espera a que todos los invitados estén listos para iniciar."
 info.connecting: "Conectando con la sala..."
 info.closed: "La sala se cerró."
 # Las fases de una sala.
@@ -175,6 +177,8 @@ coop.disconnected: "{name} se desconectó."
 coop.host_left: "El anfitrión cerró la sala. Volviste al menú."
 # Otro jugador tomó primero el objeto del cofre o del suelo (field_item_notice).
 coop.item_gone: "¡Tarde! Otro jugador ya lo tomó."
+# Un invitado cuyo anfitrión está ocupado en una carga larga.
+coop.waiting_host: "Esperando a {name}..."
 # La partida del invitado es el mundo del anfitrión en memoria: no se guarda nada de ella (multiplayer.md, «Guardado en cooperativo»).
 coop.guest_not_saved: "Eres invitado: esta partida no se guarda. Tus partidas guardadas quedan como estaban."
 # Los nombres de las salas y jugadores de ejemplo (herramientas de desarrollo).

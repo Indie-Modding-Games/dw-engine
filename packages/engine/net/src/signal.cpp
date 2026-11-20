@@ -24,7 +24,7 @@ PeerFailure failureOf(std::string_view reason) {
   if (reason == "left") {
     return PeerFailure::Closed;
   }
-  if (reason == "limit" || reason == "bad-name") {
+  if (reason == "limit" || reason == "bad-name" || reason == "bad-token") {
     return PeerFailure::Refused;
   }
   return PeerFailure::ServerUnreachable;
@@ -202,12 +202,28 @@ std::string percentEncoded(std::string_view text) {
   return out;
 }
 
-std::string hostUrl(std::string_view server, bool listed) {
-  return base(server) + "/host" + (listed ? "?public=1" : "");
+namespace {
+// A room of more than two seats says so; two seats is the first protocol's room, without it.
+std::string seatsQuery(int seats, bool first) {
+  if (seats <= 2) {
+    return {};
+  }
+  return std::string{first ? "?" : "&"} + "seats=" + std::to_string(std::min(seats, MaxRoomSeats));
+}
+} // namespace
+
+std::string hostUrl(std::string_view server, bool listed, int seats) {
+  return base(server) + "/host" + (listed ? "?public=1" : "") + seatsQuery(seats, !listed);
 }
 
-std::string hostUrl(std::string_view server, const PublicHost& listing) {
-  std::string url = base(server) + "/host?public=1";
+std::string seatUrl(std::string_view server, std::string_view code, std::string_view token,
+                    int taken) {
+  return base(server) + "/host/" + std::string{code} + "?token=" + percentEncoded(token) +
+         "&taken=" + std::to_string(std::max(taken, 0));
+}
+
+std::string hostUrl(std::string_view server, const PublicHost& listing, int seats) {
+  std::string url = base(server) + "/host?public=1" + seatsQuery(seats, false);
   const std::string name = directoryName(listing.name);
   if (!name.empty()) {
     url += "&name=" + percentEncoded(name);
@@ -430,6 +446,13 @@ void SignalClient::finish() {
   }
   finished_ = true;
   socket_->send(json{{"type", "done"}}.dump());
+}
+
+void SignalClient::tellSeats(int taken) {
+  if (finished_ || failure_) {
+    return;
+  }
+  socket_->send(json{{"type", "seats"}, {"taken", std::max(taken, 0)}}.dump());
 }
 
 std::optional<std::string> SignalClient::receive() {

@@ -57,7 +57,29 @@ std::optional<Bytes> ChannelPeerLink::receive(Lane lane) {
   return message;
 }
 
+namespace {
+
+// How long poll() must have been away before the link counts the game as busy.
+constexpr Millis BusyAfter{500};
+
+} // namespace
+
 void ChannelPeerLink::poll(Millis now) {
+  lastPolled_ = now;
+  service(now);
+}
+
+void ChannelPeerLink::serviceWhileBusy(Millis now) {
+  if (busyLimit_ <= Millis{0} || !lastPolled_) {
+    return;
+  }
+  const Millis away = now - *lastPolled_;
+  if (away >= BusyAfter && away < busyLimit_) {
+    service(now);
+  }
+}
+
+void ChannelPeerLink::service(Millis now) {
   while (std::optional<Bytes> datagram = link_->receive()) {
     if (datagram->empty()) {
       continue;

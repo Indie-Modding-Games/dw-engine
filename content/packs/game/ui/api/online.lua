@@ -199,6 +199,29 @@ local function shown_name(name, key)
   return key ~= "" and t(key) or ""
 end
 
+-- A text key's text with its {words} filled from values.
+local function say(key, values)
+  return (
+    string.gsub(t(key), "{([%w_]+)}", function(word)
+      local value = values[word]
+      return value ~= nil and tostring(value) or ""
+    end)
+  )
+end
+
+-- A room's name: the one it was given, else its host's ("Ana's room"), else untitled. The list and
+-- the room say it alike.
+local function room_title(name, key, host)
+  local shown = shown_name(name, key)
+  if shown ~= "" then
+    return shown
+  end
+  if host ~= "" then
+    return say("online.room_of", { name = host })
+  end
+  return t("online.untitled_room")
+end
+
 -- The public room list: state (loading, ready or unavailable), error and error_key (why it is
 -- unavailable), total (rooms listed) and rooms, those whose name has the typed filter in it, each
 -- {id, code, name, message, host_name, state (waiting, full or starting), mode, mode_key, players,
@@ -212,7 +235,8 @@ function online.list()
   local total = whole("online.rooms")
   for index = 0, total - 1 do
     local prefix = "online.room." .. index .. "."
-    local name = shown_name(text(prefix .. "name"), text(prefix .. "name_key"))
+    local name =
+      room_title(text(prefix .. "name"), text(prefix .. "name_key"), text(prefix .. "host_name"))
     if filter == "" or string.find(string.lower(name), filter, 1, true) ~= nil then
       local players = whole(prefix .. "players")
       local capacity = whole(prefix .. "capacity")
@@ -270,18 +294,24 @@ end
 -- phase (connecting, open, connected, ready, playing, closed) and phase_key, mode and mode_key,
 -- capacity, error, error_key and detail (why it closed, and the game's own words), can_start (the
 -- host can start), can_ready (the guest can mark itself ready), ready (this player is ready) and
--- members, each {name, host, ready, local}. A member with no name of its own is named by its
--- place: you, the host or the guest by number.
+-- members, each {name, host, ready, local, arriving}: a room seats up to four (capacity), and an
+-- arriving member holds its seat while its connection is still being set up. A member with no name
+-- of its own is named by its place: you, the host or the guest by number.
 function online.room()
   if not flag("online.current.active") then
     return nil
   end
   local members = {}
+  local host_name = ""
   for index = 0, whole("online.current.members") - 1 do
     local prefix = "online.member." .. index .. "."
     local is_host = flag(prefix .. "host")
     local is_local = flag(prefix .. "local")
     local name = shown_name(text(prefix .. "name"), text(prefix .. "name_key"))
+    if is_host then
+      -- The room is named after its host as the list names it: the host's own profile name.
+      host_name = name ~= "" and name or (is_local and text("online.profile.name") or "")
+    end
     if name == "" then
       if is_local then
         name = t("online.you")
@@ -299,6 +329,7 @@ function online.room()
       host = is_host,
       ready = flag(prefix .. "ready"),
       ["local"] = is_local,
+      arriving = flag(prefix .. "arriving"),
     })
   end
   local phase = text("online.current.phase")
@@ -306,7 +337,7 @@ function online.room()
   local error = text("online.current.error")
   return {
     code = text("online.current.code"),
-    name = shown_name(text("online.current.name"), text("online.current.name_key")),
+    name = room_title(text("online.current.name"), text("online.current.name_key"), host_name),
     host = flag("online.current.host"),
     listed = flag("online.current.listed"),
     phase = phase,

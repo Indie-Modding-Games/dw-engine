@@ -90,9 +90,10 @@ public:
 
   // Registry. A joining guest takes the lowest free id (none when the session is full): a guest
   // that comes back after it left joins again as a new record, with a fresh epoch and sequence, so
-  // nothing of its old link can write into the new one.
+  // nothing of its old link can write into the new one. `as`: the id its link already gave it
+  // (the host's welcome, #352); none when that id is taken or not a guest's.
   [[nodiscard]] std::optional<PlayerId> join(std::string name, std::string partnerSpecies,
-                                             net::Millis now);
+                                             net::Millis now, std::optional<PlayerId> as = {});
   // Removes a guest (left, dropped or timed out); false when it was not there. The host stays.
   bool leave(PlayerId id);
   void setPartner(PlayerId id, std::string partnerSpecies);

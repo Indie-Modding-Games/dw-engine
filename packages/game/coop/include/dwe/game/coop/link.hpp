@@ -27,6 +27,10 @@ enum class LinkFailure : std::uint8_t {
 struct LinkTimeouts {
   net::Millis answer{10000};
   net::Millis silence{8000};
+  // How long a side busy with a long load (it does not poll) keeps its line alive anyway
+  // (net::PeerLink::keepAliveWhileBusy), so the others wait for it instead of dropping it after
+  // `silence`; past it, the game counts as hung and the silence decides.
+  net::Millis busy{90000};
 };
 
 // Owns the coop handshake and moves protocol messages across the engine's reliable/unreliable
@@ -46,6 +50,11 @@ public:
   [[nodiscard]] std::optional<PlayerId> remotePlayer() const { return remotePlayer_; }
   // This side's own player id: the host's, or the one the host's welcome gave this guest.
   [[nodiscard]] PlayerId localPlayer() const { return localPlayer_; }
+  // On the host: the id this link's guest gets in the welcome. A room of up to four players keeps
+  // a link waiting for its next guest and gives it the lowest free id until that guest says hello
+  // (#352); once welcomed it no longer changes.
+  [[nodiscard]] PlayerId guestId() const { return guestId_; }
+  void assignGuest(PlayerId id);
   // Why the other side said it left (once the phase is Left by its message); none when the link
   // dropped without a word.
   [[nodiscard]] std::optional<LeaveReason> leaveReason() const { return leaveReason_; }

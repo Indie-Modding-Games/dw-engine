@@ -6,11 +6,13 @@
 #include <dwe/ui/ui.hpp>
 
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "coop_connection.hpp"
 #include "options.hpp"
@@ -23,8 +25,23 @@ inline constexpr std::string_view CoopOpenCommand = "coop_open";
 // when neither names one.
 std::string coopSignalServer(const assets::VirtualFileSystem& files, const Options& options);
 
+// A player in the room's lobby as the screens show it (#352): the host, each guest in, and a
+// guest still on its way in.
+struct CoopLobbyMember {
+  game::coop::PlayerId id = game::coop::HostPlayerId;
+  std::string name;
+  bool host = false;
+  bool ready = false;
+  // On its way in: its link found the room and it has not said hello yet.
+  bool arriving = false;
+  // The player at this machine.
+  bool local = false;
+};
+
 // The main-menu cooperative lobby: creates or joins a WebRTC room and keeps the validated coop
-// handshake alive. The connected link is exposed for the gameplay bridge to attach next.
+// handshake alive. The connected links are exposed for the gameplay bridges to attach next. The
+// host keeps each guest's lobby state (its ready mark, the save it brings and its partner) by
+// player id and tells every guest who is in the room (#352).
 class CoopScreen {
 public:
   CoopScreen(const assets::VirtualFileSystem& files, const Options& options, ui::Ui& ui);
@@ -39,26 +56,42 @@ public:
   // Connect the next rooms through a relay (TURN) only: the other player never learns this
   // machine's address (the online profile's «relay only»).
   void setRelayOnly(bool relayOnly);
-  // The other player's name (the guest's on the host, the host's on the guest).
+  // The other player's name (the first guest's on the host, the host's on the guest).
   [[nodiscard]] std::string remoteName() const { return connection_.remoteName(); }
+  // The host's guests in the room, by id (none on a guest).
+  [[nodiscard]] std::vector<CoopConnection::Guest> guests() const { return connection_.guests(); }
+  // A guest's name (its online profile), on the host.
+  [[nodiscard]] std::string guestName(game::coop::PlayerId id) const;
+  // The species of a guest's partner, from the save it sent, on the host (empty until it arrives).
+  [[nodiscard]] std::string_view partnerSpeciesOf(game::coop::PlayerId id) const;
+  // Everyone in the room, host first then by id, as the host knows it (on a guest, as the host's
+  // lobby last said; before it, the host and this guest).
+  [[nodiscard]] std::vector<CoopLobbyMember> lobbyMembers() const;
+  // How many players the room seats, host included.
+  [[nodiscard]] int capacity() const;
   // The directory key of the rooms this game can join (net::compatKey).
   [[nodiscard]] const std::string& compat() const { return connection_.compat(); }
   // The room's phase (nullptr before the first room).
   [[nodiscard]] const net::RoomSession* room() const { return connection_.room(); }
+  [[nodiscard]] CoopConnection& connection() { return connection_; }
   [[nodiscard]] std::uint64_t linkGeneration() const { return connection_.linkGeneration(); }
   void handLinkToPlay() { connection_.handLinkToPlay(); }
+  void handLinkToPlay(std::uint64_t generation) { connection_.handLinkToPlay(generation); }
+  void takeLinkBack(std::uint64_t generation) { connection_.takeLinkBack(generation); }
   void takeLinkBack() { connection_.takeLinkBack(); }
   [[nodiscard]] bool connected() const { return connection_.connected(); }
-  // The species of the other player's partner, from the save they sent (empty until it arrives).
-  [[nodiscard]] std::string_view remotePartnerSpecies() const { return remotePartnerSpecies_; }
+  // On a guest, the species of the host's partner, from the save it sent (empty until it arrives);
+  // on the host, its first guest's (partnerSpeciesOf).
+  [[nodiscard]] std::string_view remotePartnerSpecies() const;
   [[nodiscard]] bool isHost() const { return isHost_; }
-  [[nodiscard]] bool guestReady() const { return remoteReady_; }
+  // On the host: every guest in is ready (with its save), and there is at least one.
+  [[nodiscard]] bool guestReady() const;
   [[nodiscard]] bool localReady() const { return localReady_; }
   [[nodiscard]] CoopConnection::View view() const { return connection_.view(); }
   [[nodiscard]] std::string code() const { return connection_.code(); }
   // Why the room failed or the last step was refused: an error code, or a message.
   [[nodiscard]] std::string error() const;
-  [[nodiscard]] bool canStart() const { return remoteReady_ && guestSaveText_.has_value(); }
+  [[nodiscard]] bool canStart() const { return guestReady(); }
   // The rooms screen's steps (online_rooms.hpp: CoopRoomBackend): the same as the coop_*
   // commands, except that a code joins at once and leaving closes even a connected room.
   void joinCode(std::string_view code);
@@ -75,10 +108,25 @@ public:
   void reportError(std::string message);
 
 private:
+  // What the host keeps of one guest in its lobby.
+  struct GuestLobby {
+    std::uint64_t generation = 0;
+    bool ready = false;
+    std::optional<std::uint32_t> transferId;
+    game::coop::ProfileAssembler assembler;
+    std::optional<std::string> saveText;
+    std::string partnerSpecies;
+  };
+
   void publish();
   void receiveMessages();
+  void receiveFrom(game::coop::CoopLink& link, GuestLobby* guest);
+  // The host's lobby follows its links (a guest in, a guest gone) and tells every guest.
+  void followGuests();
+  [[nodiscard]] game::coop::Lobby lobbyMessage() const;
   void completeRemoteStart();
-  [[nodiscard]] core::Result<void> sendProfile(game::coop::ProfilePayloadKind kind,
+  [[nodiscard]] core::Result<void> sendProfile(game::coop::CoopLink& link,
+                                               game::coop::ProfilePayloadKind kind,
                                                std::uint32_t transferId, std::string_view saveText);
 
   ui::Ui* ui_;
@@ -94,13 +142,17 @@ private:
   bool selectingHostStart_ = false;
   std::string localError_;
   std::uint32_t nextTransferId_ = 1;
+  // On a guest: its own save's transfer, the host's save and partner, and the host's lobby.
   std::optional<std::uint32_t> guestTransferId_;
   std::optional<std::uint32_t> hostTransferId_;
-  game::coop::ProfileAssembler guestAssembler_;
   game::coop::ProfileAssembler hostAssembler_;
   std::optional<std::string> guestSaveText_;
   std::optional<std::string> hostSaveText_;
   std::string remotePartnerSpecies_;
+  std::optional<game::coop::Lobby> lobby_;
+  // On the host: each guest in, by id, and the lobby each guest's link was last told.
+  std::map<game::coop::PlayerId, GuestLobby> guests_;
+  std::map<std::uint64_t, game::coop::Lobby> lobbySent_;
   std::optional<game::coop::JoinState> remoteJoinState_;
   std::optional<std::string> remoteStartText_;
 };

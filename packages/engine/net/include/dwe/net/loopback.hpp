@@ -41,7 +41,9 @@ public:
   // The peer link of peer 0 or 1 over its datagram link (ChannelPeerLink), with a made-up room
   // code; it lives as long as the network.
   [[nodiscard]] PeerLink& link(std::size_t side);
-  // Moves the clock on; the datagrams due by then can be received.
+  // Moves the clock on; the datagrams due by then can be received. A peer link asked to keep the
+  // line alive while busy (PeerLink::keepAliveWhileBusy) and not polled for a moment is serviced
+  // here, as a transport's own threads would; its poll() clock must be this one.
   void advance(Millis elapsed);
   [[nodiscard]] Millis now() const { return now_; }
   // Cuts the link: from now on nothing arrives either way (a peer that leaves without a word).

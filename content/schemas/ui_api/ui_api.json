@@ -1,5 +1,5 @@
 {
-  "version": "0.20.0",
+  "version": "0.21.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "The value of a setting the game publishes; nil if it does not publish it.", "signature": "(name: string): any"},
@@ -282,6 +282,12 @@
       {"name": "coop_hud.tag.name_key", "kind": "setting", "value": "text", "summary": "The text key that names the other player without a name of their own (the host, or a guest by number)."},
       {"name": "coop_hud.tag.number", "kind": "setting", "value": "number", "summary": "The number that fills {number} in the name's text key."},
       {"name": "coop_hud.tag.revision", "kind": "setting", "value": "number", "summary": "Goes up each time the tag's values change: the tag is drawn again."},
+      {"name": "coop_hud.tag.<n>.visible", "kind": "setting", "value": "boolean", "summary": "In a room of more than two, whether the tag over another player shows (n 2 and 3; coop_hud.tag.revision redraws them too)."},
+      {"name": "coop_hud.tag.<n>.x", "kind": "setting", "value": "number", "summary": "Where that tag's anchor is across the window, in percent."},
+      {"name": "coop_hud.tag.<n>.y", "kind": "setting", "value": "number", "summary": "Where that tag's anchor is down the window, in percent."},
+      {"name": "coop_hud.tag.<n>.name", "kind": "setting", "value": "text", "summary": "That player's own name, or empty."},
+      {"name": "coop_hud.tag.<n>.name_key", "kind": "setting", "value": "text", "summary": "The text key that names that player when it has no name of its own."},
+      {"name": "coop_hud.tag.<n>.number", "kind": "setting", "value": "number", "summary": "The number that fills {number} in that name's text key."},
       {"name": "coop_hud.notice.shown", "kind": "setting", "value": "boolean", "summary": "Whether a co-op notice shows (a few seconds each)."},
       {"name": "coop_hud.notice.text", "kind": "setting", "value": "text", "summary": "The notice's text key; {name} in it stands for the player it is about."},
       {"name": "coop_hud.notice.name", "kind": "setting", "value": "text", "summary": "The own name of the player the notice is about; empty when named by a text key."},
@@ -803,6 +809,7 @@
       {"name": "online.member.<n>.host", "kind": "setting", "value": "boolean", "summary": "Whether the member hosts the room."},
       {"name": "online.member.<n>.ready", "kind": "setting", "value": "boolean", "summary": "Whether the member is ready."},
       {"name": "online.member.<n>.local", "kind": "setting", "value": "boolean", "summary": "Whether the member is the player at this machine."},
+      {"name": "online.member.<n>.arriving", "kind": "setting", "value": "boolean", "summary": "Whether the member's seat is taken while its connection is still being set up."},
       {"name": "online_open", "kind": "command", "value": "none", "summary": "The rooms screens opened: the list is asked for."},
       {"name": "online_close", "kind": "command", "value": "none", "summary": "The rooms screens closed."},
       {"name": "online_refresh", "kind": "command", "value": "none", "summary": "Asks for the room list again."},

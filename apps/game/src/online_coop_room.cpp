@@ -53,7 +53,7 @@ std::optional<RoomView> CoopRoomBackend::room() const {
                 .isHost = isHost,
                 .listed = listed_,
                 .phase = RoomPhase::Connecting,
-                .capacity = 2,
+                .capacity = coop_->capacity(),
                 .members = {},
                 .error = {},
                 .canStart = isHost && coop_->canStart(),
@@ -70,21 +70,15 @@ std::optional<RoomView> CoopRoomBackend::room() const {
       room.error = "unknown";
     }
   }
-  // The host has no ready mark of its own: it starts the room when the guest is ready.
-  if (isHost || connected) {
-    room.members.push_back(unnamedMember(true, false, isHost));
-    if (!isHost) {
-      // The host's profile name, from its welcome (an older host sends none: the screens call it
-      // the host).
-      room.members.back().name = coop_->remoteName();
-    }
-  }
-  if (connected) {
-    const bool guestReady = isHost ? coop_->guestReady() : coop_->localReady();
-    room.members.push_back(unnamedMember(false, guestReady, !isHost));
-    if (isHost) {
-      // The guest's profile name, from its hello.
-      room.members.back().name = coop_->remoteName();
+  // Everyone in the room, the host first: up to four players (#352); a guest whose connection is
+  // still being set up holds its seat as arriving.
+  for (const CoopLobbyMember& member : coop_->lobbyMembers()) {
+    room.members.push_back(unnamedMember(member.host, member.ready && !member.host, member.local));
+    room.members.back().arriving = member.arriving;
+    if (!member.local) {
+      // The others' profile names, from their hello (or the host's lobby); an older peer sends
+      // none and the screens name it by its place.
+      room.members.back().name = member.name;
     }
   }
   return room;

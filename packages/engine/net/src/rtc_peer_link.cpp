@@ -7,9 +7,14 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <deque>
 #include <iterator>
 #include <mutex>
+#include <stop_token>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -30,6 +35,14 @@ constexpr std::string_view InputsLabel = "inputs";
 // there between battles (the versus link's silence timeout).
 constexpr Millis KeepAliveEvery{250};
 constexpr std::uint8_t KeepAlive = 0x00;
+// How long poll() must have been away before the keepalives go from a thread of their own
+// (keepAliveWhileBusy).
+constexpr Millis BusyAfter{500};
+
+// A clock of its own for the busy keepalives: the thread cannot read the game's.
+Millis steadyNow() {
+  return std::chrono::duration_cast<Millis>(std::chrono::steady_clock::now().time_since_epoch());
+}
 
 std::size_t laneIndex(Lane lane) {
   return lane == Lane::Reliable ? 0 : 1;
@@ -243,11 +256,52 @@ struct RtcPeerLink::Impl {
   std::optional<Millis> lastHeard;
   Millis lastSent{0};
   bool everConnected = false;
+  // The keepalives while the game is busy (keepAliveWhileBusy): a thread sends them on the
+  // unreliable lane while it is open (libdatachannel sends from any thread) and poll() has been
+  // away between BusyAfter and busyLimit, on the steady clock.
+  std::atomic<std::int64_t> busyLimit{0};
+  std::atomic<std::int64_t> polledAt{0};
+  std::atomic<int> busyChannel{-1};
+  std::jthread busyKeeper;
+
+  void keepAliveWhileBusy(Millis limit) {
+    busyLimit = limit.count();
+    polledAt = steadyNow().count();
+    if (limit <= Millis{0} || busyKeeper.joinable()) {
+      return;
+    }
+    busyKeeper = std::jthread{[this](const std::stop_token& stop) {
+      std::mutex mutex;
+      std::condition_variable_any wake;
+      while (!stop.stop_requested()) {
+        {
+          std::unique_lock lock{mutex};
+          (void)wake.wait_for(lock, stop, KeepAliveEvery, [] { return false; });
+        }
+        const int channel = busyChannel.load();
+        const Millis away = steadyNow() - Millis{polledAt.load()};
+        if (!stop.stop_requested() && channel >= 0 && away >= BusyAfter &&
+            away < Millis{busyLimit.load()}) {
+          const char keepAlive = static_cast<char>(KeepAlive);
+          rtcSendMessage(channel, &keepAlive, 1);
+        }
+      }
+    }};
+  }
+
+  void stopBusyKeeper() {
+    busyChannel = -1;
+    if (busyKeeper.joinable()) {
+      busyKeeper.request_stop();
+      busyKeeper.join();
+    }
+  }
 
   void fail(PeerFailure why) {
     if (state == PeerState::Failed) {
       return;
     }
+    busyChannel = -1;
     core::logInfo("versus: the peer link failed ({})", static_cast<int>(why));
     state = PeerState::Failed;
     failure = why;
@@ -357,6 +411,7 @@ struct RtcPeerLink::Impl {
   }
 
   void close() {
+    stopBusyKeeper();
     for (const int channel : channels) {
       if (channel >= 0) {
         rtcSetUserPointer(channel, nullptr);
@@ -387,9 +442,29 @@ std::unique_ptr<RtcPeerLink> RtcPeerLink::host(RtcSettings settings, const Socke
     link->impl_->fail(PeerFailure::NoServer);
     return link;
   }
-  link->impl_->signal =
-      std::make_unique<SignalClient>(open(listing ? hostUrl(server, *listing) : hostUrl(server)));
+  const int seats = link->impl_->settings.seats;
+  link->impl_->signal = std::make_unique<SignalClient>(
+      open(listing ? hostUrl(server, *listing, seats) : hostUrl(server, false, seats)));
   return link;
+}
+
+std::unique_ptr<RtcPeerLink> RtcPeerLink::hostSeat(RtcSettings settings, std::string_view code,
+                                                   std::string_view token, int taken,
+                                                   const SocketOpener& open) {
+  const std::string server = settings.signalServer;
+  std::unique_ptr<RtcPeerLink> link{new RtcPeerLink{std::move(settings), true}};
+  if (server.empty()) {
+    link->impl_->fail(PeerFailure::NoServer);
+    return link;
+  }
+  link->impl_->signal = std::make_unique<SignalClient>(open(seatUrl(server, code, token, taken)));
+  return link;
+}
+
+void RtcPeerLink::announceSeats(int taken) {
+  if (impl_->signal && !impl_->signal->paired()) {
+    impl_->signal->tellSeats(taken);
+  }
 }
 
 std::unique_ptr<RtcPeerLink> RtcPeerLink::join(RtcSettings settings, std::string_view code,
@@ -428,7 +503,12 @@ std::optional<Bytes> RtcPeerLink::receive(Lane lane) {
   return message;
 }
 
+void RtcPeerLink::keepAliveWhileBusy(Millis limit) {
+  impl_->keepAliveWhileBusy(limit);
+}
+
 void RtcPeerLink::poll(Millis now) {
+  impl_->polledAt = steadyNow().count();
   Impl& impl = *impl_;
   if (impl.state == PeerState::Failed || !impl.signal) {
     return;
@@ -495,6 +575,7 @@ void RtcPeerLink::poll(Millis now) {
   if (impl.state == PeerState::Connecting) {
     if (open[0] && open[1]) {
       impl.state = PeerState::Open;
+      impl.busyChannel = impl.channels.at(1);
       impl.lastHeard = now;
       signal.finish();
       std::deque<Bytes> pending = std::exchange(impl.pendingReliable, {});

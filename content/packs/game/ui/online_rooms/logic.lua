@@ -112,8 +112,7 @@ local function fill_rows(document)
     if room ~= nil then
       -- A long name is cut into its column with "..." (common/fit_text.lua).
       local name_text = document:get(id .. "-name-text")
-      local name = room.name ~= "" and room.name or t("online.untitled_room")
-      fit_text.cut(name_text, name, column_width(document:get(id .. "-name")))
+      fit_text.cut(name_text, room.name, column_width(document:get(id .. "-name")))
       document:get(id .. "-mode"):set_text(t(room.mode_key))
       document
         :get(id .. "-players")

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/game/coop/profile_transfer.hpp>
+#include <dwe/game/coop/sync_watch.hpp>
 
 #include <deque>
 #include <span>
@@ -12,6 +13,12 @@ namespace dwe::app {
 
 // App-layer seam between the network protocol and player controllers. It translates only field
 // movement in this milestone and leaves join/snapshot/profile messages queued for session setup.
+// The co-op battles run with one ally guest, player 1 (#363, coop_battles.hpp): whether a peer's
+// bridge carries them. A guest's only peer is the host.
+[[nodiscard]] constexpr bool coopBattlePeer(bool host, game::coop::PlayerId peer) {
+  return !host || peer == game::coop::GuestPlayerId;
+}
+
 class CoopGameplayBridge {
 public:
   CoopGameplayBridge(game::coop::CoopLink& link, NetworkFieldController& remoteController)
@@ -34,6 +41,9 @@ public:
   // The co-op battles' messages (coop_battles.hpp), in their own queue, and sending one.
   [[nodiscard]] std::optional<game::coop::Message> receiveBattle();
   [[nodiscard]] core::Result<void> sendBattle(game::coop::Message message);
+  // The host, for a guest that does not fight with it: refuses its battle asks as busy and drops
+  // its other battle messages (its offers), so nothing waits on them.
+  void refuseBattles();
   // The host's snapshots smoothed for a frame drawn at `now` (the poll clock).
   [[nodiscard]] std::optional<PresentedCoopWorld> presentedWorld(net::Millis now) const;
   // Presence on a guest (for what is shared per map, such as battles): the players the host's
@@ -47,6 +57,17 @@ public:
   [[nodiscard]] std::vector<game::coop::Message> takeWorldMessages();
   // This side's own player state, sent unreliably (only the newest matters).
   [[nodiscard]] core::Result<void> send(const game::coop::Message& message);
+  // The sync diagnostics' messages (#359): the host's SyncWatch on a guest, a guest's SyncReport
+  // on the host, in order.
+  [[nodiscard]] std::vector<game::coop::Message> takeSyncMessages();
+  // What reached this side of the other's numbered streams (#359): the host's snapshots on a
+  // guest (by world tick), a guest's commands on the host (by sequence).
+  [[nodiscard]] const game::coop::SequenceWatch& snapshotWatch() const { return snapshotWatch_; }
+  [[nodiscard]] const game::coop::SequenceWatch& commandWatch() const { return commandWatch_; }
+  // How long, at `now` (the poll clock), no snapshot of the host's world came: since the last one,
+  // or since this bridge first polled before any. A long quiet on a guest means the host is busy
+  // (a long load), and the guest says it waits (CoopHostWait).
+  [[nodiscard]] net::Millis worldQuietFor(net::Millis now) const;
 
 private:
   game::coop::CoopLink* link_;
@@ -58,6 +79,11 @@ private:
   std::optional<std::uint32_t> profileTransferId_;
   CoopSnapshotInterpolation snapshots_;
   std::vector<game::coop::Message> world_;
+  std::vector<game::coop::Message> sync_;
+  game::coop::SequenceWatch snapshotWatch_;
+  game::coop::SequenceWatch commandWatch_;
+  std::optional<net::Millis> firstPolled_;
+  std::optional<net::Millis> lastSnapshot_;
 };
 
 } // namespace dwe::app

@@ -28,6 +28,16 @@ host ──WebSocket /v1/host──►  room K7Q2  ◄──WebSocket /v1/join/K
 
 The Durable Object uses the WebSocket hibernation API: a room that is waiting costs nothing while nobody talks.
 
+## Rooms of up to four
+
+Co-op seats up to four players (#352). The host asks with `/v1/host?seats=4` (3 or 4; anything else is the two-seat
+room above, unchanged for older games) and gets a token in its `room` message. The room then stays open while the host
+waits: each guest pairs with one waiting host socket, the two connect as above and their sockets close once both say
+`done`, and the host opens its next socket with `/v1/host/<code>?token=&taken=<n>` for the next guest. A guest more
+than `seats - 1` gets `full`; a host that lost a guest says `{"type":"seats","taken":n}` and the seat is free again. The
+room checks on its host every 2 minutes, lives at most an hour and closes with its host's last socket. `/v1/info`
+lists the `seats` feature.
+
 ## Public rooms
 
 A second Durable Object, the directory, keeps the public rooms. A public host says who it is

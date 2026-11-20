@@ -183,6 +183,10 @@
 .member.waiting { color: #5f6f82; }
 .member.local { border-color: #9a8cf0; background-color: #1c1c44; }
 .member.hidden { display: none; }
+/* A seat taken by a player whose connection is still being set up: its mark says so. */
+.member.arriving { color: #9fb0c4; }
+.member.arriving .avatar { opacity: 0.6; }
+.member.arriving .member-mark { color: #8fd0ff; }
 
 .avatar {
 	position: absolute;

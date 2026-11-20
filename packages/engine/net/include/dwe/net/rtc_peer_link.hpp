@@ -23,6 +23,9 @@ struct RtcSettings {
   bool relayOnly = false;
   // Once both peers are in the room, how long they may take to open a route.
   Millis connectTimeout{30000};
+  // How many players a hosted room seats, host included (2 to MaxRoomSeats). Past the first guest
+  // each one comes in through the host's next seat (hostSeat).
+  int seats = 2;
 };
 
 // A WebSocket to the signaling server (libdatachannel's client). A wss:// server's certificate
@@ -48,6 +51,12 @@ public:
                                            const std::optional<PublicHost>& listing = std::nullopt);
   static std::unique_ptr<RtcPeerLink> join(RtcSettings settings, std::string_view code,
                                            const SocketOpener& open);
+  // The host's next seat in its room `code` of more than two seats (the room's token, from the
+  // first link's roomToken()): a link of its own that waits for the room's next guest. `taken`:
+  // the guests the host holds now.
+  static std::unique_ptr<RtcPeerLink> hostSeat(RtcSettings settings, std::string_view code,
+                                               std::string_view token, int taken,
+                                               const SocketOpener& open);
   ~RtcPeerLink() override;
   RtcPeerLink(const RtcPeerLink&) = delete;
   RtcPeerLink& operator=(const RtcPeerLink&) = delete;
@@ -63,6 +72,8 @@ public:
   [[nodiscard]] std::string roomCode() const override;
   [[nodiscard]] bool peerFound() const override;
   [[nodiscard]] std::string roomToken() const override;
+  void announceSeats(int taken) override;
+  void keepAliveWhileBusy(Millis limit) override;
 
 private:
   struct Impl;

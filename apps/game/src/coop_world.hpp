@@ -49,9 +49,11 @@ public:
   CoopHostWorld(std::string hostName, std::string hostPartner);
 
   [[nodiscard]] const game::coop::WorldAuthority& authority() const { return authority_; }
-  // A guest's handshake completed: its record (none when the session is full).
-  [[nodiscard]] std::optional<game::coop::PlayerId> join(std::string name, std::string partner,
-                                                         net::Millis now);
+  // A guest's handshake completed: its record (none when the session is full), with the id its
+  // link gave it when `as` says one (none when that id is taken).
+  [[nodiscard]] std::optional<game::coop::PlayerId>
+  join(std::string name, std::string partner, net::Millis now,
+       std::optional<game::coop::PlayerId> as = {});
   // A guest left, dropped or went quiet: its record and its track go.
   void leave(game::coop::PlayerId id);
   // A message received on guest `from`'s link (its PlayerState, WorldAsk and ItemClaim matter).

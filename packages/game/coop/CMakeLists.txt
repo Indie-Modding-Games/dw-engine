@@ -6,5 +6,6 @@ dwe_add_module(coop
         src/profile_transfer.cpp
         src/link.cpp
         src/protocol.cpp
+        src/sync_watch.cpp
         src/world_state.cpp
     DEPS core net)

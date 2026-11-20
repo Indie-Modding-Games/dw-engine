@@ -10,7 +10,13 @@ namespace dwe::game::coop {
 
 namespace {
 
-constexpr std::uint8_t LastKind = ClaimAnswerKind;
+// The highest kind: the ranges below it that hold no kind decode as another protocol's.
+constexpr std::uint8_t LastKind = SyncReportKind;
+
+// A kind this protocol may decode: any byte outside is another protocol's (versus, lockstep).
+constexpr bool coopKind(std::uint8_t kind) {
+  return kind >= HelloKind && kind <= LastKind;
+}
 // A roster name or partner species longer than this is damaged.
 constexpr std::size_t MaxRosterText = 64;
 
@@ -328,6 +334,22 @@ net::Bytes encode(const Message& message) {
           }
         } else if constexpr (std::is_same_v<T, Ready>) {
           out.put(ReadyKind).put(body.ready);
+        } else if constexpr (std::is_same_v<T, Lobby>) {
+          out.put(LobbyKind).put(body.capacity);
+          out.put(static_cast<std::uint8_t>(body.seats.size()));
+          for (const LobbySeat& seat : body.seats) {
+            out.put(seat.id).put(std::string_view{seat.name}).put(seat.state);
+          }
+        } else if constexpr (std::is_same_v<T, SyncWatch>) {
+          out.put(SyncWatchKind).put(body.on);
+        } else if constexpr (std::is_same_v<T, SyncReport>) {
+          out.put(SyncReportKind).put(body.sequence).put(body.snapshotTick);
+          out.put(body.snapshotsLost).put(body.snapshotsLate);
+          out.put(static_cast<std::uint8_t>(body.players.size()));
+          for (const SyncHeld& held : body.players) {
+            out.put(held.id).put(std::string_view{held.mapId});
+            out.put(held.x).put(held.y).put(held.z);
+          }
         } else if constexpr (std::is_same_v<T, JoinState>) {
           out.put(JoinStateKind).put(body.formatVersion).put(std::string_view{body.mapId});
           out.put(body.worldTick).put(body.saveTransferId).put(body.saveChunkCount);
@@ -461,7 +483,7 @@ net::Bytes encode(const Message& message) {
 }
 
 core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes) {
-  if (bytes.empty() || bytes.front() < HelloKind || bytes.front() > LastKind) {
+  if (bytes.empty() || !coopKind(bytes.front())) {
     return std::optional<Message>{};
   }
   net::WireReader in{bytes};
@@ -923,6 +945,67 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
       return core::fail("invalid cooperative claim answer");
     }
     message = answer;
+    break;
+  }
+  case LobbyKind: {
+    Lobby lobby;
+    lobby.capacity = in.get<std::uint8_t>();
+    const std::uint8_t count = in.get<std::uint8_t>();
+    if (lobby.capacity < 2 || lobby.capacity > MaxPlayers || count == 0 || count > lobby.capacity) {
+      return core::fail("invalid cooperative lobby size");
+    }
+    std::unordered_set<PlayerId> ids;
+    for (std::uint8_t i = 0; i < count && in.ok(); ++i) {
+      LobbySeat seat{.id = in.get<PlayerId>(), .name = in.text(), .state = SeatState::Connected};
+      const std::uint8_t state = in.get<std::uint8_t>();
+      if (!validPlayer(seat.id) || !ids.insert(seat.id).second ||
+          seat.name.size() > MaxRosterText || state > static_cast<std::uint8_t>(SeatState::Ready)) {
+        return core::fail("invalid or duplicate seat in cooperative lobby");
+      }
+      seat.state = static_cast<SeatState>(state);
+      lobby.seats.push_back(std::move(seat));
+    }
+    if (!in.ok() || !ids.contains(HostPlayerId)) {
+      return core::fail("cooperative lobby has no host");
+    }
+    message = std::move(lobby);
+    break;
+  }
+  case SyncWatchKind: {
+    bool on = false;
+    if (!getFlag(in, on)) {
+      return core::fail("invalid cooperative sync watch");
+    }
+    message = SyncWatch{.on = on};
+    break;
+  }
+  case SyncReportKind: {
+    SyncReport report;
+    report.sequence = in.get<std::uint32_t>();
+    report.snapshotTick = in.get<std::uint32_t>();
+    report.snapshotsLost = in.get<std::uint32_t>();
+    report.snapshotsLate = in.get<std::uint32_t>();
+    const std::uint8_t count = in.get<std::uint8_t>();
+    if (count > MaxPlayers) {
+      return core::fail("cooperative sync report has too many players");
+    }
+    std::unordered_set<PlayerId> ids;
+    for (std::uint8_t i = 0; i < count && in.ok(); ++i) {
+      SyncHeld held;
+      held.id = in.get<PlayerId>();
+      held.mapId = in.text();
+      held.x = in.get<std::int32_t>();
+      held.y = in.get<std::int32_t>();
+      held.z = in.get<std::int32_t>();
+      if (!validPlayer(held.id) || !ids.insert(held.id).second || held.mapId.size() > 255 ||
+          !validCoordinate(held.x, MaxWorldCoordinate) ||
+          !validCoordinate(held.y, MaxWorldCoordinate) ||
+          !validCoordinate(held.z, MaxWorldCoordinate)) {
+        return core::fail("invalid player in cooperative sync report");
+      }
+      report.players.push_back(std::move(held));
+    }
+    message = std::move(report);
     break;
   }
   case LeaveKind: {

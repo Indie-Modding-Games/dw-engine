@@ -245,7 +245,8 @@ public:
   // One logic tick: the battle, or the field and the game time unless a menu pauses them. A tick in
   // which the field does not take the player's walk (a menu, a screen or scene that runs instead,
   // a gym course) drops the click-to-move target, so the player never walks on to it afterwards.
-  void tick(const PlayerCommands& commands, const PlayerCommands& guestCommands = {});
+  // `guests`: each co-op guest's field intent on the host (#352), none in a single-player game.
+  void tick(const PlayerCommands& commands, std::span<const GuestFieldIntent> guests = {});
   // Counts a tick of play time (GameSession::countPlayTime, clock.c: tickPlaytime): the app calls
   // it on every tick of a played game but the paused ones and those of a movie, menus, battles and
   // scenes included.
@@ -461,7 +462,7 @@ private:
   // them and applies it. False for any other command.
   bool handlePlayOption(const ui::UiCommand& command);
   void tickSystems(const game::field::FieldInput& intent, const FishingButtons& fishing,
-                   const game::field::FieldInput& guestIntent);
+                   std::span<const GuestFieldIntent> guests);
   void tickWater();
   [[nodiscard]] bool paused() const;
   // How the field animates: running, resting behind the game menu, in a battle or frozen

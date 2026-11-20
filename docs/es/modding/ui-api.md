@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.21.0 | Salas de hasta cuatro jugadores: cada miembro dice cuándo su plaza está ocupada mientras su conexión aún se establece (`online.member.<n>.arriving`), y el HUD cooperativo muestra una etiqueta sobre cada uno de los otros jugadores (`coop_hud.tag.<n>.*` para el segundo y el tercero) |
 | 0.20.0 | Los dos compañeros luchan en un combate cooperativo: la pantalla de combate lista los compañeros de los otros jugadores que luchan junto al de este (`battle.ally.<n>.*`, `battle.allies()`), y su compañero, su tira, su remate y su bolsa son los de este jugador. La pantalla `coop_battle` gana el papel `ally`, el MP de los luchadores, su bando y si uno es el de este jugador (`coop_battle.fighter.<n>.mp`, `.max_mp`, `.side`, `.mine`); las órdenes y los objetos van a su propio compañero |
 | 0.19.0 | La pantalla `coop_battle` enseña el combate del anfitrión en la pantalla del invitado cooperativo: su papel (`coop_battle.role`), la fase, la vida de los luchadores (`coop_battle.fighter.<n>.*`), las órdenes del que empezó (`coop_battle.order.<n>.*`) y los objetos de su propia bolsa que puede lanzar (`coop_battle.item.<n>.*`), con los comandos `coop_battle_order`, `coop_battle_cheer`, `coop_battle_item` y `coop_battle_close` |
 | 0.18.0 | Las salas enseñan datos reales: `online.room()` sigue la fase de la sala tal como la lleva la red (abierta, conectada, lista, jugando, cerrada) y el invitado ve el nombre del anfitrión. Las salas de la lista traen el nombre del anfitrión y el modo, las que ya juegan salen de la lista y la lista puede decir que se actualizó demasiadas veces (`list_limit`). El «solo por relevo» del perfil en línea (`online.profile().relay_only`, `online.set_relay_only(on)`, comando `online_profile_relay`) conecta las salas por el relé del servidor, así el otro jugador nunca sabe la dirección de esta máquina. Errores nuevos: `server_refused`, `no_relay`, `list_limit` (en línea) y `versus.error.refused`, `versus.error.no_relay` |
@@ -98,7 +99,7 @@ guardar y la caja del nombre); el resto de pantallas llega después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.17.0**.
+Versión de la API de la interfaz: **0.21.0**.
 
 ### `ui`
 
@@ -420,6 +421,12 @@ Versión de la API de la interfaz: **0.17.0**.
 | `coop_hud.tag.name_key` | ajuste | texto | La clave de texto que nombra al otro jugador sin nombre propio (el anfitrión, o un invitado por número). |
 | `coop_hud.tag.number` | ajuste | número | El número que rellena {number} en la clave de texto del nombre. |
 | `coop_hud.tag.revision` | ajuste | número | Sube cada vez que cambian los valores de la etiqueta: la etiqueta se vuelve a dibujar. |
+| `coop_hud.tag.<n>.visible` | ajuste | sí/no | En una sala de más de dos, si se ve la etiqueta sobre otro jugador (n 2 y 3; coop_hud.tag.revision también las redibuja). |
+| `coop_hud.tag.<n>.x` | ajuste | número | Dónde está el ancla de esa etiqueta a lo ancho de la ventana, en porcentaje. |
+| `coop_hud.tag.<n>.y` | ajuste | número | Dónde está el ancla de esa etiqueta a lo alto de la ventana, en porcentaje. |
+| `coop_hud.tag.<n>.name` | ajuste | texto | El nombre propio de ese jugador, o vacío. |
+| `coop_hud.tag.<n>.name_key` | ajuste | texto | La clave de texto que nombra a ese jugador cuando no tiene nombre propio. |
+| `coop_hud.tag.<n>.number` | ajuste | número | El número que rellena {number} en la clave de texto de ese nombre. |
 | `coop_hud.notice.shown` | ajuste | sí/no | Si se ve un aviso cooperativo (unos segundos cada uno). |
 | `coop_hud.notice.text` | ajuste | texto | La clave de texto del aviso; {name} en ella es el jugador del que habla. |
 | `coop_hud.notice.name` | ajuste | texto | El nombre propio del jugador del que habla el aviso; vacío cuando lo nombra una clave de texto. |
@@ -963,6 +970,7 @@ Versión de la API de la interfaz: **0.17.0**.
 | `online.member.<n>.host` | ajuste | sí/no | Si el miembro es el anfitrión de la sala. |
 | `online.member.<n>.ready` | ajuste | sí/no | Si el miembro está listo. |
 | `online.member.<n>.local` | ajuste | sí/no | Si el miembro es el jugador de esta máquina. |
+| `online.member.<n>.arriving` | ajuste | sí/no | Si la plaza del miembro está ocupada mientras su conexión aún se establece. |
 | `online_open` | comando | — | Se abrieron las pantallas de salas: se pide la lista. |
 | `online_close` | comando | — | Se cerraron las pantallas de salas. |
 | `online_refresh` | comando | — | Vuelve a pedir la lista de salas. |

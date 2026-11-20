@@ -129,11 +129,19 @@ struct RoomMember {
   bool local = false;
   // Its profile's icon (OnlineProfile::Icons); empty when the room does not carry it.
   std::string icon;
+  // Its seat is taken but its connection is still being set up (a room of more than two, #352).
+  bool arriving = false;
 };
 
 // A member with no name of its own (the screens name it by its place).
 [[nodiscard]] inline RoomMember unnamedMember(bool host, bool ready, bool local) {
-  return {.name = {}, .nameKey = {}, .host = host, .ready = ready, .local = local, .icon = {}};
+  return {.name = {},
+          .nameKey = {},
+          .host = host,
+          .ready = ready,
+          .local = local,
+          .icon = {},
+          .arriving = false};
 }
 
 // The room the player is in.

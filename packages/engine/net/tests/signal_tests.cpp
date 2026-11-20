@@ -194,6 +194,78 @@ TEST_CASE("two WebRTC peers connect through the signaling server and talk on bot
   CHECK(host->lastHeard());
 }
 
+TEST_CASE(
+    "a room of more than two seats asks for them, and its host's next seat carries the token") {
+  CHECK(hostUrl("wss://signal.test", false, 4) == "wss://signal.test/v1/host?seats=4");
+  CHECK(hostUrl("wss://signal.test", true, 3) == "wss://signal.test/v1/host?public=1&seats=3");
+  CHECK(hostUrl("wss://signal.test", false, 2) == "wss://signal.test/v1/host");
+  CHECK(hostUrl("wss://signal.test", PublicHost{.name = "Mika", .icon = {}, .compat = {}}, 4) ==
+        "wss://signal.test/v1/host?public=1&seats=4&name=Mika&mode=campaign");
+  CHECK(seatUrl("wss://signal.test/", "K7Q2", "a b", 2) ==
+        "wss://signal.test/v1/host/K7Q2?token=a%20b&taken=2");
+}
+
+TEST_CASE("a host seats two WebRTC guests in one room, each on a link of its own") {
+  FakeSignalServer server;
+  RtcSettings settings{.signalServer = "wss://fake", .iceServers = {}};
+  settings.seats = 3;
+  auto first = RtcPeerLink::host(settings, openerOf(server));
+  first->poll(Millis{0});
+  REQUIRE(first->roomCode() == "K7Q2");
+  REQUIRE(first->roomToken() == "token-K7Q2");
+  auto one = RtcPeerLink::join(settings, "K7Q2", openerOf(server));
+  const auto start = std::chrono::steady_clock::now();
+  const auto now = [&] {
+    return std::chrono::duration_cast<Millis>(std::chrono::steady_clock::now() - start);
+  };
+  const auto connect = [&](PeerLink& host, PeerLink& guest) {
+    while ((host.state() != PeerState::Open || guest.state() != PeerState::Open) &&
+           host.state() != PeerState::Failed && guest.state() != PeerState::Failed &&
+           now() < Millis{20000}) {
+      host.poll(now());
+      guest.poll(now());
+      std::this_thread::sleep_for(Millis{5});
+    }
+  };
+  connect(*first, *one);
+  REQUIRE(first->state() == PeerState::Open);
+  // The next seat waits for the room's next guest and says how many the host holds.
+  auto second =
+      RtcPeerLink::hostSeat(settings, first->roomCode(), first->roomToken(), 1, openerOf(server));
+  second->poll(now());
+  CHECK(second->roomCode() == "K7Q2");
+  second->announceSeats(1);
+  auto two = RtcPeerLink::join(settings, "K7Q2", openerOf(server));
+  connect(*second, *two);
+  REQUIRE(second->state() == PeerState::Open);
+  REQUIRE(two->state() == PeerState::Open);
+  CHECK(server.seatsTaken == std::vector<int>{1, 1});
+  // Each guest hears only its own link.
+  const std::array<std::uint8_t, 1> toOne{1};
+  const std::array<std::uint8_t, 1> toTwo{2};
+  first->send(Lane::Reliable, toOne);
+  second->send(Lane::Reliable, toTwo);
+  std::optional<Bytes> heardOne;
+  std::optional<Bytes> heardTwo;
+  const auto deadline = now() + Millis{5000};
+  while ((!heardOne || !heardTwo) && now() < deadline) {
+    for (PeerLink* link :
+         {static_cast<PeerLink*>(first.get()), static_cast<PeerLink*>(second.get()),
+          static_cast<PeerLink*>(one.get()), static_cast<PeerLink*>(two.get())}) {
+      link->poll(now());
+    }
+    heardOne = heardOne ? heardOne : one->receive(Lane::Reliable);
+    heardTwo = heardTwo ? heardTwo : two->receive(Lane::Reliable);
+    std::this_thread::sleep_for(Millis{5});
+  }
+  CHECK(heardOne == Bytes{1});
+  CHECK(heardTwo == Bytes{2});
+  // A third guest finds the room full: no seat waits for it.
+  auto third = RtcPeerLink::join(settings, "K7Q2", openerOf(server));
+  third->poll(now());
+  CHECK(third->failure() == PeerFailure::RoomFull);
+}
+
 TEST_CASE("a channel peer link keeps the lanes apart over one datagram link") {
   LoopbackNetwork network{{.latency = Millis{10}, .lossPercent = 30}, 4};
   PeerLink& one = network.link(0);

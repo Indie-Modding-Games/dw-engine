@@ -48,7 +48,8 @@ RoomMember sampleMember(int number, bool host, bool ready) {
           .ready = ready,
           .local = false,
           .icon = std::string{OnlineProfile::Icons.at(static_cast<std::size_t>(number) %
-                                                      OnlineProfile::Icons.size())}};
+                                                      OnlineProfile::Icons.size())},
+          .arriving = false};
 }
 
 std::string upper(std::string_view text) {
@@ -606,6 +607,7 @@ screens::ScreenSettings OnlineRooms::settings() const {
       add(listEntryName("online.member", index, "host"), member.host);
       add(listEntryName("online.member", index, "ready"), member.ready);
       add(listEntryName("online.member", index, "local"), member.local);
+      add(listEntryName("online.member", index, "arriving"), member.arriving);
     }
   }
   return out;

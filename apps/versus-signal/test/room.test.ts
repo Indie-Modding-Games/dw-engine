@@ -3,6 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { ALPHABET, newCode, normalizedCode, routeOf } from "../src/codes.ts";
 import { DONE_GRACE_MS, ROOM_LIFETIME_MS, Room, type Role, type RoomState, type Socket } from "../src/room.ts";
+import { SEAT_CHECK_MS, SEATED_LIFETIME_MS } from "../src/seats.ts";
 
 class FakeSocket implements Socket {
   sent: unknown[] = [];
@@ -22,8 +23,16 @@ class FakeState implements RoomState {
   roles = new Map<Socket, Role>();
   storage = new Map<string, unknown>();
   alarm: number | null = null;
-  accept(socket: Socket, role: Role): void {
+  tags = new Map<Socket, string>();
+  accept(socket: Socket, role: Role, tag?: string): void {
     this.roles.set(socket, role);
+    if (tag) this.tags.set(socket, tag);
+  }
+  tagOf(socket: Socket): string | null {
+    return this.tags.get(socket) ?? null;
+  }
+  tagged(tag: string): Socket[] {
+    return [...this.tags].filter(([s, t]) => t === tag && !(s as FakeSocket).closed).map(([s]) => s);
   }
   sockets(role: Role): Socket[] {
     return [...this.roles].filter(([socket, r]) => r === role && !(socket as FakeSocket).closed).map(([s]) => s);
@@ -197,4 +206,22 @@ test("only a room its host asked to list goes in the directory, never a private 
   await listed.close();
   assert.deepEqual(published.map(([code, listing]) => [code, listing === null ? null : (listing as { players: number }).players]),
     [["M4XP", 1], ["M4XP", 2], ["M4XP", null]]);
+});
+
+test("a seated room goes on while its host waits, up to its lifetime, then expires", async () => {
+  const state = new FakeState();
+  let now = 1000;
+  const room = new Room(state, () => now);
+  const host = new FakeSocket();
+  assert.equal(await room.host(host, "K7Q2", { seats: 4, token: "t" }), true);
+  assert.deepEqual(host.sent[0], { type: "room", code: "K7Q2", token: "t", seats: 4 });
+  assert.equal(state.alarm, 1000 + SEAT_CHECK_MS);
+  now += SEAT_CHECK_MS;
+  await room.alarm();
+  assert.equal(host.closed, null);
+  assert.equal(state.alarm, now + SEAT_CHECK_MS);
+  now = 1000 + SEATED_LIFETIME_MS;
+  await room.alarm();
+  assert.deepEqual(host.last(), { type: "error", reason: "expired" });
+  assert.equal(state.storage.size, 0);
 });

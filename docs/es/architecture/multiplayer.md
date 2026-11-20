@@ -350,6 +350,10 @@ Un byte de tipo al principio de cada mensaje, en el rango `0x60–0x6F` (el vers
 
 `CoopLink` aplica 10 s para la respuesta inicial y 8 s de silencio tras recibir tráfico; el protocolo no añade un
 mensaje de latido propio. El buffer neutraliza el comando actual tras 250 ms sin uno nuevo.
+Un lado ocupado en una carga larga (su bucle de frames detenido) mantiene sus enlaces: el transporte envía el latido
+por su cuenta mientras el juego no lo atiende, hasta 90 s (`LinkTimeouts::busy`), así una carga más larga que los 8 s
+de silencio no expulsa a nadie y un juego colgado más allá se sigue expulsando. Un invitado cuyo host calla muestra
+«Esperando a» y su nombre en vez de una pantalla congelada.
 
 No se comparten relojes de simulación: cada emisor numera sus comandos localmente; solo el host numera ticks de mundo.
 El host descarta secuencias repetidas o atrasadas, aplica el comando válido más reciente según la política de buffer
@@ -526,6 +530,49 @@ personaje) se queda en la partida que lo corrió.
 Pruebas: `packages/game/coop/tests/world_state_tests.cpp`, `apps/game/tests/coop_world_state_tests.cpp` (un anfitrión
 y dos invitados con mensajes codificados), el caso cooperativo de `packages/game/field/tests/field_items_tests.cpp` y
 el de `packages/session/tests/story_adapter_tests.cpp`.
+### 5.9 Salas de cuatro y el diagnóstico de sincronía
+
+Lo que añaden #352 y #359 (versión 6 del protocolo, tipos `0xA0`–`0xA2`).
+
+**Salas.** Una sala cooperativa sienta al anfitrión y hasta tres invitados. El Worker de señalización mantiene esa sala
+abierta mientras el anfitrión espera (`apps/versus-signal`, "Rooms of up to four"): el anfitrión tiene un enlace
+esperando al siguiente invitado, cada invitado se empareja con uno de ellos y la sala nunca pasa las señales de una
+pareja a otra. En el juego, `CoopConnection` tiene un `CoopLink` por invitado, recibe a cada uno con el id libre más
+bajo (1 a 3) y deja que un invitado salga del lobby sin cerrar la sala. Cuando la partida empieza la sala ya no admite
+a nadie; un invitado que deja una partida empezada se va, los demás siguen jugando y la sala termina con su último
+invitado. Las salas de dos (versus, juegos anteriores) funcionan como siempre.
+
+**Lobby.** `CoopScreen` lleva aparte la marca de listo y el guardado de cada invitado; el anfitrión empieza cuando todos
+los invitados dentro están listos, y manda el mismo guardado a todos. El anfitrión dice a cada invitado quién está en
+la sala:
+
+| Tipo | Nombre | Canal | Dirección | Contenido |
+|---|---|---|---|---|
+| `0xA0` | `Lobby` | fiable | anfitrión → cliente | Capacidad (2 a 4) y, por plaza ocupada, id, nombre y estado (conectado o listo). |
+| `0xA1` | `SyncWatch` | fiable | anfitrión → cliente | Si el anfitrión vigila la sincronía (#359). |
+| `0xA2` | `SyncReport` | no fiable | cliente → anfitrión | Mientras se vigila, dos veces por segundo: número de informe, el tick de la instantánea más nueva, instantáneas perdidas y tardías, y dónde tiene a cada jugador. |
+
+La pantalla de salas muestra cuatro filas en todas las skins: libre, ocupada, el anfitrión con su corona, las marcas de
+listo y un invitado cuyo enlace aún se está conectando (`online.member.<n>.arriving`).
+
+**Juego.** En el anfitrión cada invitado tiene su propio puente de juego, controlador y cuerpo: sus comandos mueven a su
+propio jugador (`GuestFieldIntent`), sus estados llegan a la autoridad con su id, las correcciones y las listas de
+jugadores le llegan solo a él, y cada uno recibe las instantáneas con el acuse de sus propios comandos. Un invitado
+dibuja a todos desde las instantáneas y pone una etiqueta a cada otro jugador (`coop_hud.tag.<n>.*`). Los combates
+siguen siendo con un invitado aliado, el jugador 1 (#361); las peticiones de combate de los demás se rechazan como
+ocupado, así que nada se queda esperando.
+
+**Diagnóstico de sincronía.** Una herramienta de desarrollo detrás de la consola (F1), que solo se abre con las
+herramientas de desarrollo activas, así que nunca corre en las builds de release. `coop_sync("on")` en el anfitrión
+pide a cada invitado que informe; `coop_sync("report")` imprime el cuadro completo una vez y `coop_sync("off")` lo
+para. Mientras está activo, el log dice cuándo un jugador cambia de mapa, cuándo se pierden o llegan tarde
+instantáneas o comandos, y cuándo un invitado tiene a un jugador en otro sitio (otro mapa, o a más de 600 unidades)
+durante más de dos segundos, y otra vez cuando vuelve a estar sincronizado. El informe lista dónde tiene el anfitrión a
+cada jugador y, por invitado, dónde lo tiene él, cuántos ticks del mundo va por detrás y qué perdió.
+
+Tests: `packages/game/coop/tests/sync_watch_tests.cpp`, `apps/game/tests/coop_connection_tests.cpp` (cuatro plazas),
+`apps/game/tests/coop_sync_tests.cpp` (2, 3 y 4 jugadores sin ventana sobre enlaces con pérdidas, convergiendo) y los
+tests de plazas de `apps/versus-signal/test`.
 
 ## 6. Decisiones de juego (pendientes)
 

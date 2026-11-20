@@ -26,11 +26,24 @@ export function normalizedCode(typed: string): string | null {
   return code;
 }
 
-export type Route = { kind: "host" } | { kind: "join"; code: string } | { kind: "bad-code" } | { kind: "unknown" };
+export type Route =
+  | { kind: "host" }
+  | { kind: "seat"; code: string }
+  | { kind: "join"; code: string }
+  | { kind: "bad-code" }
+  | { kind: "unknown" };
 
-/** What a request's path asks for: /v1/host makes a room, /v1/join/<code> joins one. */
+/**
+ * What a request's path asks for: /v1/host makes a room, /v1/host/<code> is its host's next seat
+ * (a room of more than two seats), /v1/join/<code> joins one.
+ */
 export function routeOf(pathname: string): Route {
   if (pathname === `/${PROTOCOL}/host`) return { kind: "host" };
+  const seat = new RegExp(`^/${PROTOCOL}/host/([^/]+)$`).exec(pathname);
+  if (seat) {
+    const code = normalizedCode(decodeURIComponent(seat[1]));
+    return code ? { kind: "seat", code } : { kind: "bad-code" };
+  }
   const join = new RegExp(`^/${PROTOCOL}/join/([^/]+)$`).exec(pathname);
   if (join) {
     const code = normalizedCode(decodeURIComponent(join[1]));

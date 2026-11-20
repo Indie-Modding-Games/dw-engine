@@ -24,7 +24,8 @@ JSON text messages over the WebSocket. The version is in the path (`/v1/`).
 | server → host | `{"type":"peer"}` | The guest has arrived: the host starts the offer. |
 | either → server | `{"type":"signal","data":{…}}` | It is relayed as is to the other (`data` is the description `{"description","type"}` or a candidate `{"candidate","mid"}`). |
 | either → server | `{"type":"done"}` | It is already connected. When both say it, the server closes the room; if only one says it, it closes the room after 10 s. |
-| server → either | `{"type":"error","reason":…}` | And it closes: `no-room` (there is no room with that code), `full` (there are already two), `left` (the other left before connecting), `expired` (5 minutes passed), `limit` (a limit below), `bad-name` (a nickname it does not take). |
+| server → either | `{"type":"error","reason":…}` | And it closes: `no-room` (there is no room with that code), `full` (there are already two), `left` (the other left before connecting), `expired` (5 minutes passed), `limit` (a limit below), `bad-name` (a nickname it does not take), `bad-token` (a seat of a room of more than two with the wrong token). |
+| host → server | `{"type":"seats","taken":n}` | Rooms of more than two only: how many guests the host holds now (one left: its seat is offered again). |
 
 - The codes use `23456789ABCDEFGHJKLMNPQRSTUVWXYZ` (no 0, 1, O or I) and are read ignoring case, spaces and hyphens.
   If the code that comes out is already in use, the Worker tries another.
@@ -33,16 +34,34 @@ JSON text messages over the WebSocket. The version is in the path (`/v1/`).
 - What is new since the first version are fields and routes an old game never asks for: `/v1/host` and
   `/v1/join/<code>` work for it as before, and it ignores the fields it does not know.
 
+### Rooms of up to four
+
+The co-op game seats up to four players: the host asks for them with `seats=N` (3 or 4; 2, or anything else, is the
+two-player room above, unchanged). Such a room always gets a token, and stays open while the host waits for guests:
+
+- The host's first socket (`/v1/host?seats=4…`) waits for the first guest. Each guest pairs with one waiting host
+  socket, the two trade their WebRTC messages as above, and once both say `done` their two sockets close while the
+  room stays.
+- For each next guest the host opens one more socket, `/v1/host/<code>?token=<token>&taken=<n>` (`n`: the guests it
+  holds now), which waits as the first one did. A guest that arrives while no host socket waits queues for the next.
+- The room is full once its host holds `seats - 1` guests (counting those connecting): a guest more gets `full`. A
+  host that lost a guest says so with `{"type":"seats","taken":n}`, and the seat is free again.
+- The room checks on its host every 2 minutes and lives at most an hour; it closes when the host's last socket goes
+  (a pair that finished does not count), with `left` for the guests still waiting. Its listing shows `players` and
+  `capacity` as they are (`full`/`connected` once every seat is taken).
+
 ### Routes
 
 | Route | What it does |
 |---|---|
 | `/v1/host` (WebSocket) | Makes a private room: only its code reaches it. |
 | `/v1/host?public=1&name=&icon=&compat=&mode=` (WebSocket) | Makes a public room, listed in the directory with the host's nickname and icon, its compatibility key and its mode (`campaign` or `versus`). |
+| `/v1/host?…&seats=<n>` (WebSocket) | Makes a room of `n` players (3 or 4), private or public as above, with a token in its `room` message. |
+| `/v1/host/<code>?token=<token>&taken=<n>` (WebSocket) | The host's next socket in its room of more than two, waiting for the next guest. |
 | `/v1/join/<code>` (WebSocket) | Joins a room by its code. |
 | `GET /v1/rooms?compat=<key>` | The public rooms of that compatibility key (all without one) that are not playing, oldest first, 50 at most: `{"rooms":[{"roomId","joinCode","name","message","players","capacity","createdAt","state","phase","hostName","icon","compat","mode","updatedAt"}]}`. Over a WebSocket it is one message, then the server closes. |
 | `POST /v1/rooms/<code>/state` | The host's notice of how its public room goes, with `{"token","state"}`; `state` is `ready`, `playing` or `closed`. 204, or `{"error":…}`: `bad-token` (403), `no-room` (404), `bad-state` (400, or 409 for `ready`/`playing` before a guest arrived). Over a WebSocket (the game's client) the two go in the query (`?token=&state=`) and the answer is one message, `{"type":"state"}` or an error. |
-| `GET /v1/info` | What the server can do: `{"protocol":"v1","features":["public-rooms","room-state","relay"]}` (`relay` only with TURN on). Over a WebSocket it is one message. A server without this route is a first-version one: no public rooms. |
+| `GET /v1/info` | What the server can do: `{"protocol":"v1","features":["public-rooms","room-state","seats","relay"]}` (`relay` only with TURN on; `seats`: rooms of up to four). Over a WebSocket it is one message. A server without this route is a first-version one: no public rooms. |
 
 ### Public rooms
 

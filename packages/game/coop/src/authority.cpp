@@ -98,8 +98,11 @@ WorldAuthority::WorldAuthority(std::string hostName, std::string hostPartner, Au
 }
 
 std::optional<PlayerId> WorldAuthority::join(std::string name, std::string partnerSpecies,
-                                             net::Millis now) {
-  for (PlayerId id = GuestPlayerId; validPlayer(id); ++id) {
+                                             net::Millis now, std::optional<PlayerId> as) {
+  if (as && (!validGuest(*as) || find(*as) != nullptr)) {
+    return std::nullopt;
+  }
+  for (PlayerId id = as.value_or(GuestPlayerId); validPlayer(id); ++id) {
     if (find(id) != nullptr) {
       continue;
     }

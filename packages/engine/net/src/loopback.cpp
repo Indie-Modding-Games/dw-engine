@@ -56,6 +56,13 @@ PeerLink& LoopbackNetwork::link(std::size_t side) {
 
 void LoopbackNetwork::advance(Millis elapsed) {
   now_ += elapsed;
+  // A peer busy elsewhere still has its transport running, as a real one does on its own threads
+  // (the peers poll on the network's clock).
+  for (const std::unique_ptr<ChannelPeerLink>& link : links_) {
+    if (link) {
+      link->serviceWhileBusy(now_);
+    }
+  }
 }
 
 void LoopbackNetwork::post(std::size_t from, std::span<const std::uint8_t> datagram) {

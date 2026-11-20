@@ -1,7 +1,7 @@
 /* The co-op HUD in the DevVago look: the terminal card of the online screens (a light cyan line round a night blue
    gradient) for the notice and the name tag, in the skin's pixel fonts at their sharp sizes. */
 
-#tag,
+.tag,
 #notice {
 	border: 2dp #72c7ff;
 	border-radius: 0;
@@ -10,7 +10,7 @@
 	color: #d8f1ff;
 }
 
-#tag {
+.tag {
 	padding: 2dp 12dp;
 	font-family: "Pixel Small"; font-size: 26dp;
 	line-height: 28dp;
