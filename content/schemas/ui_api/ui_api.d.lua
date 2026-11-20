@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.23.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.24.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -608,7 +608,7 @@ function online.profile() end
 ---@return table
 function online.icons() end
 
---- The room list: state, error, error_key, total and the rooms matching the filter (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, joinable).
+--- The room list: state, error, error_key, total and the rooms matching the filter (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, in_progress, joinable).
 ---@return table
 function online.list() end
 
@@ -616,7 +616,7 @@ function online.list() end
 ---@return table
 function online.modes() end
 
---- The room the player is in, or nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready and members (name, icon, host, ready, local).
+--- The room the player is in, or nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready, in_progress, open_to_join and members (name, icon, host, ready, local).
 ---@return table?
 function online.room() end
 
@@ -697,6 +697,12 @@ function online.set_ready(ready) end
 --- The host starts the game.
 ---@return boolean
 function online.start() end
+
+--- The host says whether its game, once under way, takes new players or only guests coming back.
+---@param open boolean
+---@return boolean
+---@return string?
+function online.set_open_to_join(open) end
 
 --- Leaves the room.
 ---@return boolean

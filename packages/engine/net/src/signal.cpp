@@ -448,11 +448,16 @@ void SignalClient::finish() {
   socket_->send(json{{"type", "done"}}.dump());
 }
 
-void SignalClient::tellSeats(int taken) {
+void SignalClient::tellSeats(const SeatsNotice& notice) {
   if (finished_ || failure_) {
     return;
   }
-  socket_->send(json{{"type", "seats"}, {"taken", std::max(taken, 0)}}.dump());
+  json message{{"type", "seats"}, {"taken", std::max(notice.taken, 0)}};
+  if (notice.playing) {
+    message["playing"] = true;
+    message["open"] = notice.joinable;
+  }
+  socket_->send(message.dump());
 }
 
 std::optional<std::string> SignalClient::receive() {

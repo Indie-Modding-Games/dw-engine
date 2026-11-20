@@ -51,6 +51,17 @@ enum class PeerFailure : std::uint8_t {
   NoRelay,
 };
 
+// What a host's link still waiting for its guest tells the signaling server about its room of
+// more than two seats: how many guests it holds now and whether its game is under way, and then
+// whether it takes new players (the room's listing shows it as a game to join, #356).
+struct SeatsNotice {
+  int taken = 0;
+  bool playing = false;
+  bool joinable = true;
+
+  friend bool operator==(const SeatsNotice&, const SeatsNotice&) = default;
+};
+
 // One end of a connection to the other peer, with a reliable ordered lane and an unreliable one.
 // Nothing here blocks: poll() moves it on and the messages wait in it until received. Messages
 // sent on the reliable lane before it opens wait for it; on the unreliable lane they are dropped.
@@ -80,8 +91,8 @@ public:
   // two seats, for its next seat (RtcPeerLink::hostSeat); empty for any other room.
   [[nodiscard]] virtual std::string roomToken() const { return {}; }
   // A host's link still waiting for its guest tells the signaling server how many guests the host
-  // holds now (a room of more than two seats); nothing on any other link.
-  virtual void announceSeats(int /*taken*/) {}
+  // holds now and how its game goes (a room of more than two seats); nothing on any other link.
+  virtual void announceSeats(const SeatsNotice& /*notice*/) {}
   // Keeps the line alive while the game is busy and does not poll (a long load): the transport
   // goes on taking what arrives and sending its keepalives on its own, so the other peer's silence
   // timeout does not drop this one. Once poll() has not run for `limit`, it stops and the silence

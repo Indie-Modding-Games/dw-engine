@@ -25,7 +25,7 @@ JSON text messages over the WebSocket. The version is in the path (`/v1/`).
 | either → server | `{"type":"signal","data":{…}}` | It is relayed as is to the other (`data` is the description `{"description","type"}` or a candidate `{"candidate","mid"}`). |
 | either → server | `{"type":"done"}` | It is already connected. When both say it, the server closes the room; if only one says it, it closes the room after 10 s. |
 | server → either | `{"type":"error","reason":…}` | And it closes: `no-room` (there is no room with that code), `full` (there are already two), `left` (the other left before connecting), `expired` (5 minutes passed), `limit` (a limit below), `bad-name` (a nickname it does not take), `bad-token` (a seat of a room of more than two with the wrong token). |
-| host → server | `{"type":"seats","taken":n}` | Rooms of more than two only: how many guests the host holds now (one left: its seat is offered again). |
+| host → server | `{"type":"seats","taken":n}` | Rooms of more than two only: how many guests the host holds now (one left: its seat is offered again). Once its game is under way it adds `"playing":true` and `"open"` (whether the game takes new players): see "Games in progress". |
 
 - The codes use `23456789ABCDEFGHJKLMNPQRSTUVWXYZ` (no 0, 1, O or I) and are read ignoring case, spaces and hyphens.
   If the code that comes out is already in use, the Worker tries another.
@@ -49,6 +49,20 @@ two-player room above, unchanged). Such a room always gets a token, and stays op
 - The room checks on its host every 2 minutes and lives at most an hour; it closes when the host's last socket goes
   (a pair that finished does not count), with `left` for the guests still waiting. Its listing shows `players` and
   `capacity` as they are (`full`/`connected` once every seat is taken).
+
+### Games in progress
+
+A room of up to four keeps seating guests after its game starts (late joiners, and guests coming back after a drop):
+
+- The host keeps one socket waiting as in the lobby and says the game is under way in its seat count,
+  `{"type":"seats","taken":n,"playing":true,"open":true}` (`open: false`: the game takes back only its own guests;
+  the game itself checks who is coming back). Once said, the room stays a game under way.
+- Its listing shows `phase: "playing"`, the message "Game in progress", and `state: "waiting"` while it has a free seat
+  and is open (`full` otherwise); the list (`GET /v1/rooms`) shows playing rooms only in that state. A host's
+  `playing` notice keeps it so.
+- The room lives at most a day (`PLAYING_LIFETIME_MS`) instead of an hour. When the host's last socket closes it waits
+  a minute (`HOST_RETURN_MS`) for the host to open a seat again, then closes and leaves the list.
+- A host that never sends `playing` (an older game) gets the room exactly as before.
 
 ### Routes
 

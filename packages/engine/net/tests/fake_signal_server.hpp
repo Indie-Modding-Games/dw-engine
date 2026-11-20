@@ -174,6 +174,8 @@ public:
   std::vector<std::string> notices;
   // The guests a seated room's host said it holds: with each next seat, then by message.
   std::vector<int> seatsTaken;
+  // What the seat notices said of a game under way: "open" or "closed" to new players (#356).
+  std::vector<std::string> gamesUnderway;
 
 private:
   class Socket;
@@ -277,6 +279,9 @@ private:
         }
       } else if (message.value("type", "") == "seats") {
         server_->seatsTaken.push_back(message.value("taken", -1));
+        if (message.value("playing", false)) {
+          server_->gamesUnderway.push_back(message.value("open", true) ? "open" : "closed");
+        }
       } else if (message.value("type", "") == "done" && ++room->second.done == 2) {
         ++server_->finishedRooms;
         room->second.host->state_ = SocketState::Closed;

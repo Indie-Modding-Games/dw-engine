@@ -72,7 +72,7 @@ public:
   [[nodiscard]] std::string roomCode() const override;
   [[nodiscard]] bool peerFound() const override;
   [[nodiscard]] std::string roomToken() const override;
-  void announceSeats(int taken) override;
+  void announceSeats(const SeatsNotice& notice) override;
   void keepAliveWhileBusy(Millis limit) override;
 
 private:

@@ -315,7 +315,7 @@ entrada neutral. No se envía `OwnPose` ni `PoseFix` en esta versión.
    antes de habilitar controles.
 6. Empiezan los snapshots.
 
-La reconexión vuelve a ejecutar el saludo y a recibir un `JoinState` actual; no se reanuda un búfer viejo. Si el
+La reconexión vuelve a ejecutar el saludo y a recibir un `JoinState` actual; no se reanuda un búfer viejo (§5.10). Si el
 invitado se va, su jugador y su compañero desaparecen en el siguiente punto seguro, y el host sigue jugando solo. El
 protocolo distingue una desconexión temporal de una salida definitiva antes de borrar el estado del visitante.
 
@@ -538,9 +538,10 @@ Lo que añaden #352 y #359 (versión 7 del protocolo, tipos `0xA0`–`0xA2`).
 abierta mientras el anfitrión espera (`apps/versus-signal`, "Rooms of up to four"): el anfitrión tiene un enlace
 esperando al siguiente invitado, cada invitado se empareja con uno de ellos y la sala nunca pasa las señales de una
 pareja a otra. En el juego, `CoopConnection` tiene un `CoopLink` por invitado, recibe a cada uno con el id libre más
-bajo (1 a 3) y deja que un invitado salga del lobby sin cerrar la sala. Cuando la partida empieza la sala ya no admite
-a nadie; un invitado que deja una partida empezada se va, los demás siguen jugando y la sala termina con su último
-invitado. Las salas de dos (versus, juegos anteriores) funcionan como siempre.
+bajo (1 a 3) y deja que un invitado salga del lobby sin cerrar la sala. Cuando la partida empieza, una sala de tres o
+cuatro mantiene una plaza esperando (§5.10): entran jugadores tardíos e invitados que vuelven mientras los demás siguen
+jugando. Las salas de dos (versus, juegos anteriores) funcionan como siempre: la sala ya no admite a nadie cuando la
+partida empieza y termina con su invitado.
 
 **Lobby.** `CoopScreen` lleva aparte la marca de listo y el guardado de cada invitado; el anfitrión empieza cuando todos
 los invitados dentro están listos, y manda el mismo guardado a todos. El anfitrión dice a cada invitado quién está en
@@ -573,6 +574,45 @@ cada jugador y, por invitado, dónde lo tiene él, cuántos ticks del mundo va p
 Tests: `packages/game/coop/tests/sync_watch_tests.cpp`, `apps/game/tests/coop_connection_tests.cpp` (cuatro plazas),
 `apps/game/tests/coop_sync_tests.cpp` (2, 3 y 4 jugadores sin ventana sobre enlaces con pérdidas, convergiendo) y los
 tests de plazas de `apps/versus-signal/test`.
+
+### 5.10 Unirse y volver a una partida en curso
+
+Lo que añaden #352 y #356 (versión 10 del protocolo, sin tipos nuevos: campos en `Hello`, `Welcome` y `Lobby`).
+
+**Plazas durante la partida.** Una sala de tres o cuatro mantiene un enlace del anfitrión esperando al siguiente
+invitado después de empezar la partida, igual que en el lobby. La opción de sala «abierta a jugadores nuevos» del
+anfitrión (activa por defecto, `online.set_open_to_join`) decide quién la ocupa: abierta, cualquiera con el código o la
+entrada de la lista; cerrada, solo un invitado que vuelve a su plaza (cualquier otro recibe `RejectReason::Closed`,
+`room_closed` en su pantalla). El Worker de señalización lista esa partida como una a la que unirse mientras tenga plaza
+libre y esté abierta (`apps/versus-signal`, "Games in progress"); la pantalla de salas la muestra con su número de
+jugadores y el texto de modo «partida en curso».
+
+**Un jugador tardío** sigue el camino de siempre: `Hello`, `Welcome` con el id libre más bajo, el lobby (`Lobby` dice
+que la partida está en marcha, `playing`) y su marca de listo con su propio guardado. El anfitrión responde entonces con
+el mundo en vivo en lugar del guardado de inicio: el guardado actual del campo (`PlaySession::reportSave`) como
+fragmentos `HostSave` y `JoinState`, así el invitado empieza desde donde va la partida. En el anfitrión su puente de
+juego se conecta solo entonces, y `CoopHostWorld` lo recibe como a cualquier invitado: la sincronía del mundo de
+§5.7/§5.8, la corrección que lo pone junto al anfitrión y su compañero aparecido. El anfitrión ve el aviso «se unió» con
+su nombre.
+
+**Un invitado que vuelve.** El anfitrión da a cada invitado una clave de plaza en su `Welcome` (`seatKey`, aleatoria por
+plaza). El invitado la guarda con el código de la sala; cuando su enlace cae (silencio o desconexión, no el anfitrión
+cerrando la sala), vuelve a la pantalla de salas, entra de nuevo al mismo código con la clave en su `Hello`
+(`rejoinKey`) y se marca listo otra vez con el guardado que trajo antes. Dentro de la ventana de gracia
+(`CoopRejoinGrace`, 5 minutos) el anfitrión le devuelve el mismo id de jugador y la misma clave. La clave es la única
+prueba: un invitado sin ella (un juego reiniciado, otra máquina) entra como jugador nuevo aunque tenga el mismo nombre,
+así nadie que comparta nombre por casualidad (el «Jugador» por defecto) toma una plaza caída. Un invitado cuyo enlace
+viejo sigue abierto (el anfitrión aún no notó la caída) recupera su plaza con su clave, y el enlace viejo se cierra. Pasada la ventana es un jugador nuevo. El id de un
+invitado que se fue queda reservado durante la ventana, así un jugador tardío nunca lo toma.
+
+**Lo que queda fuera.** El progreso propio del invitado mientras estuvo fuera no se guarda aparte: juega desde el mundo
+del anfitrión como cualquier jugador tardío (su compañero es el del guardado que trae). Las salas de dos siguen cerrando
+su plaza al empezar (el versus no tiene partida a la que unirse).
+
+Pruebas: `packages/game/coop/tests/protocol_tests.cpp` (ida y vuelta de los campos, admisión por `CoopLink` reales),
+`apps/game/tests/coop_connection_tests.cpp` (entrar de 2 a 3, caer y volver por clave, sin plaza de vuelta sin la clave, recuperar una plaza aún abierta, una partida cerrada,
+la ventana de gracia), `packages/engine/net/tests/signal_tests.cpp` y las pruebas de partidas en curso de
+`apps/versus-signal/test`.
 
 ## 6. Decisiones de juego (pendientes)
 

@@ -31,6 +31,10 @@ void CoopRoomBackend::setReady(bool ready) {
   }
 }
 
+void CoopRoomBackend::setOpenToNewPlayers(bool open) {
+  static_cast<void>(coop_->handle(ui::UiCommand{.name = "coop_open_to_join", .value = open}));
+}
+
 std::optional<std::string> CoopRoomBackend::start() {
   if (!coop_->canStart()) {
     return std::string{"not_ready"};
@@ -59,7 +63,9 @@ std::optional<RoomView> CoopRoomBackend::room() const {
                 .canStart = isHost && coop_->canStart(),
                 .canReady = !isHost && connected,
                 .localReady = !isHost && coop_->localReady(),
-                .mode = "campaign"};
+                .mode = "campaign",
+                .inProgress = coop_->gameUnderway(),
+                .openToNewPlayers = coop_->openToNewPlayers()};
   // The room session keeps the phase (net::RoomSession); the lobby's error closes it.
   const net::RoomSession* session = coop_->room();
   room.phase = session != nullptr ? session->phase() : RoomPhase::Connecting;

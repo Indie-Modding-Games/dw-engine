@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { ALPHABET, newCode, normalizedCode, routeOf } from "../src/codes.ts";
 import { DONE_GRACE_MS, ROOM_LIFETIME_MS, Room, type Role, type RoomState, type Socket } from "../src/room.ts";
-import { SEAT_CHECK_MS, SEATED_LIFETIME_MS } from "../src/seats.ts";
+import { HOST_RETURN_MS, PLAYING_LIFETIME_MS, SEAT_CHECK_MS, SEATED_LIFETIME_MS } from "../src/seats.ts";
 
 class FakeSocket implements Socket {
   sent: unknown[] = [];
@@ -224,4 +224,39 @@ test("a seated room goes on while its host waits, up to its lifetime, then expir
   await room.alarm();
   assert.deepEqual(host.last(), { type: "error", reason: "expired" });
   assert.equal(state.storage.size, 0);
+});
+
+test("a seated room whose game is under way outlives the lobby's hour, and waits a moment for its host", async () => {
+  const state = new FakeState();
+  let now = 1000;
+  const room = new Room(state, () => now);
+  const host = new FakeSocket();
+  assert.equal(await room.host(host, "K7Q2", { seats: 4, token: "t" }), true);
+  await room.message(host, JSON.stringify({ type: "seats", taken: 1, playing: true, open: true }));
+  now = 1000 + SEATED_LIFETIME_MS;
+  await room.alarm();
+  assert.equal(host.closed, null);
+  // Its host's line drops: the room waits for a seat again, then closes once the wait is over.
+  host.closed = "gone";
+  await room.closed(host);
+  assert.equal(state.alarm, now + HOST_RETURN_MS);
+  assert.notEqual(state.storage.size, 0);
+  const back = new FakeSocket();
+  await room.seat(back, "t", 1);
+  assert.deepEqual(back.sent[0], { type: "room", code: "K7Q2", token: "t", seats: 4 });
+  back.closed = "gone";
+  await room.closed(back);
+  now += HOST_RETURN_MS;
+  await room.alarm();
+  assert.equal(state.storage.size, 0);
+  // However long a game goes, its room ends with the day.
+  const day = new FakeState();
+  now = 1000;
+  const long = new Room(day, () => now);
+  const longHost = new FakeSocket();
+  await long.host(longHost, "M4XP", { seats: 3, token: "u" });
+  await long.message(longHost, JSON.stringify({ type: "seats", taken: 1, playing: true }));
+  now = 1000 + PLAYING_LIFETIME_MS;
+  await long.alarm();
+  assert.deepEqual(longHost.last(), { type: "error", reason: "expired" });
 });

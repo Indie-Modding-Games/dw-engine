@@ -35,6 +35,7 @@ local Errors = {
   server_unreachable = true,
   wrong_code = true,
   room_full = true,
+  room_closed = true,
   signal_timeout = true,
   no_direct_route = true,
   connection_closed = true,
@@ -224,9 +225,10 @@ end
 
 -- The public room list: state (loading, ready or unavailable), error and error_key (why it is
 -- unavailable), total (rooms listed) and rooms, those whose name has the typed filter in it, each
--- {id, code, name, message, host_name, state (waiting, full or starting), mode, mode_key, players,
--- capacity, ping (milliseconds, -1 unknown), ping_level (0 to 4), full, joinable}. A full room is
--- listed but not joinable.
+-- {id, code, name, message, host_name, state (waiting, full, starting or in_progress), mode,
+-- mode_key, players, capacity, ping (milliseconds, -1 unknown), ping_level (0 to 4), full,
+-- in_progress, joinable}. A full room is listed but not joinable; a room in progress is a game
+-- already under way that takes players: joining it joins that game.
 function online.list()
   local state = text("online.list.state")
   local error = text("online.list.error")
@@ -256,7 +258,8 @@ function online.list()
         capacity = capacity,
         ping = ping,
         ping_level = ping_level(ping),
-        full = room_state ~= "waiting" or players >= capacity,
+        full = (room_state ~= "waiting" and room_state ~= "in_progress") or players >= capacity,
+        in_progress = room_state == "in_progress",
         joinable = flag(prefix .. "joinable"),
       })
     end
@@ -293,7 +296,9 @@ end
 -- The room the player is in, or nil: code, name, host (this player hosts it), listed (public) ,
 -- phase (connecting, open, connected, ready, playing, closed) and phase_key, mode and mode_key,
 -- capacity, error, error_key and detail (why it closed, and the game's own words), can_start (the
--- host can start), can_ready (the guest can mark itself ready), ready (this player is ready) and
+-- host can start), can_ready (the guest can mark itself ready), ready (this player is ready),
+-- in_progress (its game is under way: a guest that readies joins it), open_to_join (a game under
+-- way takes new players; the host sets it with online.set_open_to_join) and
 -- members, each {name, host, ready, local, arriving}: a room seats up to four (capacity), and an
 -- arriving member holds its seat while its connection is still being set up. A member with no name
 -- of its own is named by its place: you, the host or the guest by number.
@@ -351,6 +356,8 @@ function online.room()
     can_start = flag("online.current.can_start"),
     can_ready = flag("online.current.can_ready"),
     ready = flag("online.current.ready"),
+    in_progress = flag("online.current.in_progress"),
+    open_to_join = flag("online.current.open_to_join"),
     members = members,
   }
 end
@@ -458,6 +465,16 @@ function online.set_ready(ready)
   if ready ~= flag("online.current.ready") then
     ui.send("coop_ready")
   end
+  return true
+end
+
+-- The host says whether its game, once under way, takes new players (true, the default) or only
+-- the guests coming back to their seat.
+function online.set_open_to_join(open)
+  if type(open) ~= "boolean" then
+    return false, "open must be true or false"
+  end
+  ui.send("online_open_to_join", open)
   return true
 end
 

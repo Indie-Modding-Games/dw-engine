@@ -9,6 +9,9 @@
 -- room» first and leaves from there, so a stray cancel does not drop the room. A room that closes
 -- (the other left, the link failed) hands over to the waiting and error screen (ui/online_status),
 -- which says why and offers to retry.
+-- Once the game is under way the room goes on taking players: the host chooses with the menu
+-- button whether it takes new ones then or only the guests coming back to their seat, and a guest
+-- that joins a game in progress readies (picks its save) to go straight into it.
 
 local ModeRows = 4
 local MemberRows = 4
@@ -41,6 +44,7 @@ end
 local function refresh_prompts(document)
   document:get("prompt-confirm"):set_prompt("confirm")
   document:get("prompt-cancel"):set_prompt("cancel")
+  document:get("prompt-join"):set_prompt("menu")
 end
 
 local function host_name(room)
@@ -134,6 +138,8 @@ local function fill_toast(document, room)
     else
       key = room.listed and "online.info.host_public" or "online.info.host_waiting"
     end
+  elseif room.in_progress then
+    key = room.ready and "online.info.guest_joining" or "online.info.guest_in_progress"
   else
     key = room.ready and "online.info.guest_ready" or "online.info.guest"
   end
@@ -174,9 +180,15 @@ local function refresh(document)
     players = #room.members,
     capacity = room.capacity,
   }))
+  -- Public or private, and whether the game takes new players once under way (#356).
+  document:get("info-visibility"):set_text(say("online.visibility.joining", {
+    visibility = t(room.listed and "online.visibility.public" or "online.visibility.private"),
+    joining = t(room.open_to_join and "online.join_open" or "online.join_closed"),
+  }))
+  show(document, "prompt-join-box", room.host and room.phase ~= "closed")
   document
-    :get("info-visibility")
-    :set_text(t(room.listed and "online.visibility.public" or "online.visibility.private"))
+    :get("prompt-join-text")
+    :set_text(t(room.open_to_join and "online.close_to_join" or "online.open_to_join"))
   document:get("chip-code"):set_text(code)
   for _, id in ipairs({ "campaign", "versus", "training", "free" }) do
     document:get("scene"):set_class("mode-" .. id, room.mode == id)
@@ -295,6 +307,10 @@ function on_action(document, action)
     return true
   end
   local buttons = { "start", "leave" }
+  if action == "menu" and room.host then
+    online.set_open_to_join(not room.open_to_join)
+    return true
+  end
   if action == "cancel" then
     if focus == "leave" or room.phase == "closed" then
       leave_room(document)

@@ -35,19 +35,23 @@ void roundTrip(const T& value) {
 } // namespace
 
 TEST_CASE("cooperative control and state messages round trip") {
-  roundTrip(Hello{.identity = identity(), .playerName = "Guest"});
+  roundTrip(Hello{.identity = identity(), .playerName = "Guest", .rejoinKey = 0});
+  roundTrip(
+      Hello{.identity = identity(), .playerName = "Guest", .rejoinKey = 0xABCDEF0123456789ULL});
   roundTrip(Welcome{.identity = identity(),
                     .accepted = true,
                     .assignedPlayer = GuestPlayerId,
                     .reason = RejectReason::None,
                     .sessionId = 0x1020304050607080ULL,
-                    .hostName = {}});
+                    .hostName = {},
+                    .seatKey = 0});
   roundTrip(Welcome{.identity = identity(),
                     .accepted = false,
                     .assignedPlayer = GuestPlayerId,
                     .reason = RejectReason::RoomFull,
                     .sessionId = 42,
-                    .hostName = {}});
+                    .hostName = {},
+                    .seatKey = 0});
   roundTrip(Ready{.ready = false});
   roundTrip(Ready{.ready = true});
   roundTrip(JoinState{.formatVersion = 1,
@@ -149,7 +153,28 @@ SyncReport report(std::uint32_t sequence, std::vector<SyncHeld> players = {}) {
 TEST_CASE("the lobby of up to four seats and the sync diagnostics round-trip and are checked") {
   roundTrip(Lobby{.capacity = 4,
                   .seats = {seat(HostPlayerId, "Mika", SeatState::Ready), seat(1, "Ana"),
-                            seat(3, "Leo", SeatState::Ready)}});
+                            seat(3, "Leo", SeatState::Ready)},
+                  .playing = false,
+                  .open = true});
+  // A game under way that takes no new players, and the welcome's seat key (#356).
+  roundTrip(Lobby{.capacity = 4,
+                  .seats = {seat(HostPlayerId, "Mika"), seat(2, "Ana")},
+                  .playing = true,
+                  .open = false});
+  roundTrip(Welcome{.identity = identity(),
+                    .accepted = true,
+                    .assignedPlayer = 2,
+                    .reason = RejectReason::None,
+                    .sessionId = 3,
+                    .hostName = {},
+                    .seatKey = 0x0123456789ABCDEFULL});
+  roundTrip(Welcome{.identity = identity(),
+                    .accepted = false,
+                    .assignedPlayer = GuestPlayerId,
+                    .reason = RejectReason::Closed,
+                    .sessionId = 0,
+                    .hostName = {},
+                    .seatKey = 0});
   roundTrip(SyncWatch{.on = true});
   roundTrip(SyncReport{.sequence = 7,
                        .snapshotTick = 0xFFFFFFF0U,
@@ -159,10 +184,14 @@ TEST_CASE("the lobby of up to four seats and the sync diagnostics round-trip and
                                    {.id = 2, .mapId = "mayo02", .x = 1, .y = 2, .z = 3}}});
   roundTrip(report(0));
   // A lobby always has its host, no more seats than it seats, and no seat twice.
-  CHECK_FALSE(decode(encode(Message{Lobby{.capacity = 4, .seats = {seat(1)}}})));
-  CHECK_FALSE(decode(encode(Message{Lobby{.capacity = 2, .seats = {seat(0), seat(1), seat(2)}}})));
-  CHECK_FALSE(decode(encode(Message{Lobby{.capacity = 5, .seats = {seat(0)}}})));
-  CHECK_FALSE(decode(encode(Message{Lobby{.capacity = 3, .seats = {seat(0), seat(0)}}})));
+  CHECK_FALSE(decode(
+      encode(Message{Lobby{.capacity = 4, .seats = {seat(1)}, .playing = false, .open = true}})));
+  CHECK_FALSE(decode(encode(Message{Lobby{
+      .capacity = 2, .seats = {seat(0), seat(1), seat(2)}, .playing = false, .open = true}})));
+  CHECK_FALSE(decode(
+      encode(Message{Lobby{.capacity = 5, .seats = {seat(0)}, .playing = false, .open = true}})));
+  CHECK_FALSE(decode(encode(
+      Message{Lobby{.capacity = 3, .seats = {seat(0), seat(0)}, .playing = false, .open = true}})));
   CHECK_FALSE(decode(encode(Message{report(1, {held(MaxPlayers)})})));
   CHECK_FALSE(decode(encode(Message{report(1, {held(1, "m", MaxWorldCoordinate + 1)})})));
 }
@@ -181,7 +210,8 @@ TEST_CASE(
   }
   REQUIRE(host.phase() == LinkPhase::Ready);
   REQUIRE(guest.phase() == LinkPhase::Ready);
-  REQUIRE(host.send(Message{Lobby{.capacity = 3, .seats = {seat(0, "Host")}}}));
+  REQUIRE(host.send(
+      Message{Lobby{.capacity = 3, .seats = {seat(0, "Host")}, .playing = false, .open = true}}));
   REQUIRE(host.send(Message{SyncWatch{.on = true}}));
   REQUIRE(guest.send(Message{report(1)}));
   for (int tick = 0; tick < 5; ++tick) {
@@ -195,7 +225,8 @@ TEST_CASE(
   CHECK(guest.receive() == std::optional<Message>{Message{SyncWatch{.on = true}}});
   CHECK(host.receive() == std::optional<Message>{Message{report(1)}});
   // Neither side sends the other's messages.
-  CHECK_FALSE(guest.send(Message{Lobby{.capacity = 2, .seats = {seat(0)}}}));
+  CHECK_FALSE(guest.send(
+      Message{Lobby{.capacity = 2, .seats = {seat(0)}, .playing = false, .open = true}}));
   CHECK_FALSE(guest.send(Message{SyncWatch{.on = false}}));
   CHECK_FALSE(host.send(Message{report(2)}));
   // The shared world's messages go over the link too (#357): asks and claims to the host, its
@@ -239,7 +270,8 @@ TEST_CASE("cooperative decoder ignores foreign message kinds and rejects damaged
 TEST_CASE("cooperative decoder checks identity, snapshots, and view bounds") {
   auto mismatch = encode(Message{
       Hello{.identity = {.protocol = 99, .gameVersion = "1.2.3", .contentHash = "content-hash"},
-            .playerName = "Guest"}});
+            .playerName = "Guest",
+            .rejoinKey = 0}});
   const auto hello = decode(mismatch);
   REQUIRE(hello);
   CHECK(std::get<Hello>(**hello).identity.protocol == 99);
@@ -498,7 +530,8 @@ TEST_CASE("an accepted welcome tells the guest the host's name; a rejected one r
                     .assignedPlayer = GuestPlayerId,
                     .reason = RejectReason::None,
                     .sessionId = 7,
-                    .hostName = "José"});
+                    .hostName = "José",
+                    .seatKey = 0});
   // A rejected welcome has no name: the same bytes as the first protocol's, which an older guest
   // reads to say why it was turned away.
   const Welcome rejected{.identity = identity(),
@@ -506,14 +539,16 @@ TEST_CASE("an accepted welcome tells the guest the host's name; a rejected one r
                          .assignedPlayer = GuestPlayerId,
                          .reason = RejectReason::VersionMismatch,
                          .sessionId = 0,
-                         .hostName = "Mika"};
+                         .hostName = "Mika",
+                         .seatKey = 0};
   const auto bytes = encode(Message{rejected});
   const auto plain = encode(Message{Welcome{.identity = identity(),
                                             .accepted = false,
                                             .assignedPlayer = GuestPlayerId,
                                             .reason = RejectReason::VersionMismatch,
                                             .sessionId = 0,
-                                            .hostName = {}}});
+                                            .hostName = {},
+                                            .seatKey = 0}});
   CHECK(bytes == plain);
   // An older host's accepted welcome (no name) still reads, with no name.
   const auto older = decode(encode(Message{Welcome{.identity = identity(),
@@ -521,7 +556,8 @@ TEST_CASE("an accepted welcome tells the guest the host's name; a rejected one r
                                                    .assignedPlayer = GuestPlayerId,
                                                    .reason = RejectReason::None,
                                                    .sessionId = 9,
-                                                   .hostName = {}}}));
+                                                   .hostName = {},
+                                                   .seatKey = 0}}));
   REQUIRE(older);
   REQUIRE(older->has_value());
   CHECK(std::get<Welcome>(**older).hostName.empty());
@@ -539,4 +575,45 @@ TEST_CASE("each side of a cooperative link knows the other's name") {
   REQUIRE(guest.phase() == LinkPhase::Ready);
   CHECK(host.remoteName() == "Ana");
   CHECK(guest.remoteName() == "Mika");
+}
+
+TEST_CASE("the host's admission seats a returning guest by its key and refuses a closed game") {
+  const auto connect = [](CoopLink& host, CoopLink& guest, net::LoopbackNetwork& network) {
+    for (int i = 0; i < 8 && guest.phase() == LinkPhase::Connecting; ++i) {
+      network.advance(net::Millis{1});
+      host.poll(network.now());
+      guest.poll(network.now());
+    }
+  };
+  std::vector<Hello> heard;
+  const auto decide = [&](const Hello& hello) {
+    heard.push_back(hello);
+    if (hello.rejoinKey == 77) {
+      return Admission{.refused = RejectReason::None, .id = 3, .seatKey = 77};
+    }
+    return Admission{.refused = RejectReason::Closed, .id = GuestPlayerId, .seatKey = 0};
+  };
+  // Back with its key: the welcome gives it its own seat and the same key again.
+  net::LoopbackNetwork back({});
+  CoopLink host = CoopLink::host(back.link(0), identity(), "Mika");
+  host.admit(decide);
+  CoopLink returning =
+      CoopLink::guest(back.link(1), identity(), "Ana", LinkTimeouts{}, std::uint64_t{77});
+  connect(host, returning, back);
+  REQUIRE(returning.phase() == LinkPhase::Ready);
+  CHECK(returning.localPlayer() == 3);
+  CHECK(returning.seatKey() == 77);
+  CHECK(host.guestId() == 3);
+  CHECK(host.seatKey() == 77);
+  REQUIRE(heard.size() == 1);
+  CHECK(heard.front().rejoinKey == 77);
+  // A new player while the game is closed to them is turned away with why.
+  net::LoopbackNetwork closed({});
+  CoopLink closedHost = CoopLink::host(closed.link(0), identity(), "Mika");
+  closedHost.admit(decide);
+  CoopLink stranger = CoopLink::guest(closed.link(1), identity(), "Leo");
+  connect(closedHost, stranger, closed);
+  CHECK(stranger.phase() == LinkPhase::Rejected);
+  CHECK(stranger.failure() == LinkFailure::RoomClosed);
+  CHECK(closedHost.phase() == LinkPhase::Rejected);
 }

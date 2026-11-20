@@ -358,12 +358,18 @@ net::Bytes encode(const Message& message) {
           out.put(HelloKind);
           put(out, body.identity);
           out.put(std::string_view{body.playerName});
+          if (body.rejoinKey != 0) {
+            out.put(body.rejoinKey);
+          }
         } else if constexpr (std::is_same_v<T, Welcome>) {
           out.put(WelcomeKind);
           put(out, body.identity);
           out.put(body.accepted).put(body.assignedPlayer).put(body.reason).put(body.sessionId);
-          if (body.accepted && !body.hostName.empty()) {
+          if (body.accepted && (!body.hostName.empty() || body.seatKey != 0)) {
             out.put(std::string_view{body.hostName});
+          }
+          if (body.accepted && body.seatKey != 0) {
+            out.put(body.seatKey);
           }
         } else if constexpr (std::is_same_v<T, Ready>) {
           out.put(ReadyKind).put(body.ready);
@@ -373,6 +379,7 @@ net::Bytes encode(const Message& message) {
           for (const LobbySeat& seat : body.seats) {
             out.put(seat.id).put(std::string_view{seat.name}).put(seat.state);
           }
+          out.put(body.playing).put(body.open);
         } else if constexpr (std::is_same_v<T, SyncWatch>) {
           out.put(SyncWatchKind).put(body.on);
         } else if constexpr (std::is_same_v<T, SyncReport>) {
@@ -554,7 +561,10 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
   std::optional<Message> message;
   switch (kind) {
   case HelloKind: {
-    Hello hello{.identity = getIdentity(in), .playerName = in.text()};
+    Hello hello{.identity = getIdentity(in), .playerName = in.text(), .rejoinKey = 0};
+    if (in.ok() && !in.done()) {
+      hello.rejoinKey = in.get<std::uint64_t>();
+    }
     if (!validIdentity(hello.identity) || hello.playerName.empty()) {
       return core::fail("invalid cooperative hello identity or player name");
     }
@@ -571,7 +581,7 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     const std::uint8_t reason = in.get<std::uint8_t>();
     welcome.sessionId = in.get<std::uint64_t>();
     if (!validIdentity(welcome.identity) ||
-        reason > static_cast<std::uint8_t>(RejectReason::Busy) ||
+        reason > static_cast<std::uint8_t>(RejectReason::Closed) ||
         (welcome.accepted && !validGuest(welcome.assignedPlayer)) ||
         (welcome.accepted && reason != static_cast<std::uint8_t>(RejectReason::None)) ||
         (!welcome.accepted && reason == static_cast<std::uint8_t>(RejectReason::None))) {
@@ -580,6 +590,9 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     welcome.reason = static_cast<RejectReason>(reason);
     if (welcome.accepted && in.ok() && !in.done()) {
       welcome.hostName = in.text();
+    }
+    if (welcome.accepted && in.ok() && !in.done()) {
+      welcome.seatKey = in.get<std::uint64_t>();
     }
     message = welcome;
     break;
@@ -1032,6 +1045,10 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     }
     if (!in.ok() || !ids.contains(HostPlayerId)) {
       return core::fail("cooperative lobby has no host");
+    }
+    // An older host's lobby ends here: its game is not under way.
+    if (!in.done() && (!getFlag(in, lobby.playing) || !getFlag(in, lobby.open))) {
+      return core::fail("invalid cooperative lobby game state");
     }
     message = std::move(lobby);
     break;

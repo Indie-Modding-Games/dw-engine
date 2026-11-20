@@ -19,6 +19,7 @@ public:
   void leave() override;
   void setReady(bool ready) override;
   std::optional<std::string> start() override;
+  void setOpenToNewPlayers(bool open) override;
   void tick(double /*nowSeconds*/) override {}
   [[nodiscard]] std::optional<RoomView> room() const override;
   // Only the campaign plays over the co-op link; the versus has its own connection.

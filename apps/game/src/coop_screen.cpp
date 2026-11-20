@@ -165,6 +165,14 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     }
     return true;
   }
+  if (command.name == "coop_open_to_join") {
+    // The host's choice: whether its game, once under way, takes new players (#356).
+    if (const bool* open = std::get_if<bool>(&command.value); open != nullptr && isHost_) {
+      connection_.setOpenToNewPlayers(*open);
+      publish();
+    }
+    return true;
+  }
   if (command.name == "coop_start") {
     if (isHost_ && connection_.connected() && guestReady()) {
       startRequested_ = true;
@@ -211,6 +219,17 @@ void CoopScreen::tick(double nowSeconds) {
     followGuests();
   }
   receiveMessages();
+  // Back in the room it dropped out of, while its game is under way: the save it brought takes it
+  // back in without asking again (#356).
+  if (!isHost_ && !localReady_ && connection_.connected() && connection_.returning() && brought_ &&
+      brought_->code == connection_.code() && lobby_ && lobby_->playing) {
+    const std::string text = brought_->text;
+    if (auto sent = sendGuestSave(text); !sent) {
+      localError_ = sent.error().message;
+    } else {
+      core::logInfo("coop: back in the room, rejoining its game with the save brought before");
+    }
+  }
   if (active_)
     publish();
 }
@@ -266,6 +285,8 @@ game::coop::Lobby CoopScreen::lobbyMessage() const {
          .name = (member.host ? connection_.playerName() : member.name).substr(0, 64),
          .state = member.ready ? game::coop::SeatState::Ready : game::coop::SeatState::Connected});
   }
+  lobby.playing = connection_.playing();
+  lobby.open = connection_.openToNewPlayers();
   return lobby;
 }
 
@@ -503,6 +524,22 @@ core::Result<void> CoopScreen::provideGuestSave(std::string_view saveText) {
   if (const auto profile = extractCoopGuestPartnerProfile(saveText); !profile) {
     return std::unexpected{profile.error()};
   }
+  if (auto sent = sendGuestSave(saveText); !sent) {
+    return sent;
+  }
+  selectingGuestProfile_ = false;
+  guestProfileRequest_ = false;
+  localError_.clear();
+  // Back to the room the player readied in (ui/online_room).
+  ui_->show("online_room", true);
+  publish();
+  return {};
+}
+
+core::Result<void> CoopScreen::sendGuestSave(std::string_view saveText) {
+  if (connection_.link() == nullptr) {
+    return core::fail("the guest is not in a room");
+  }
   std::uint32_t transferId = nextTransferId_++;
   if (transferId == 0)
     transferId = nextTransferId_++;
@@ -518,20 +555,11 @@ core::Result<void> CoopScreen::provideGuestSave(std::string_view saveText) {
   }
   localReady_ = true;
   connection_.markRoomReady(true);
-  selectingGuestProfile_ = false;
-  guestProfileRequest_ = false;
-  localError_.clear();
-  // Back to the room the player readied in (ui/online_room).
-  ui_->show("online_room", true);
-  publish();
+  brought_ = BroughtSave{.code = connection_.code(), .text = std::string{saveText}};
   return {};
 }
 
-core::Result<void> CoopScreen::sendHostStart(std::string_view saveText) {
-  const auto in = connection_.guests();
-  if (!selectingHostStart_ || !isHost_ || !guestReady() || in.empty()) {
-    return core::fail("the host cannot start this room yet");
-  }
+core::Result<void> CoopScreen::sendWorld(game::coop::CoopLink& link, std::string_view saveText) {
   const auto save = game::save::parseSaveFile(saveText);
   if (!save)
     return std::unexpected{save.error()};
@@ -546,20 +574,88 @@ core::Result<void> CoopScreen::sendHostStart(std::string_view saveText) {
       saveText.size() > game::coop::MaxProfileBytes) {
     return core::fail("the host save exceeds the cooperative transfer limit");
   }
-  game::coop::JoinState state{.mapId = save->header.summary.map,
-                              .saveTransferId = transferId,
-                              .saveChunkCount = static_cast<std::uint16_t>(count),
-                              .entities = {}};
-  // Every guest gets the host's world, the same transfer for all.
+  if (auto sent = sendProfile(link, game::coop::ProfilePayloadKind::HostSave, transferId, saveText);
+      !sent) {
+    return sent;
+  }
+  return link.send(
+      game::coop::Message{game::coop::JoinState{.mapId = save->header.summary.map,
+                                                .saveTransferId = transferId,
+                                                .saveChunkCount = static_cast<std::uint16_t>(count),
+                                                .entities = {}}});
+}
+
+std::vector<game::coop::PlayerId> CoopScreen::guestsWaitingForWorld() const {
+  std::vector<game::coop::PlayerId> out;
+  if (!isHost_ || !connection_.playing()) {
+    return out;
+  }
+  for (const CoopConnection::Guest& guest : connection_.guests()) {
+    const auto lobby = guests_.find(guest.id);
+    if (lobby != guests_.end() && lobby->second.ready && lobby->second.saveText &&
+        !lobby->second.started) {
+      out.push_back(guest.id);
+    }
+  }
+  return out;
+}
+
+bool CoopScreen::guestStarted(game::coop::PlayerId id) const {
+  const auto lobby = guests_.find(id);
+  return lobby != guests_.end() && lobby->second.started;
+}
+
+bool CoopScreen::joinedLate(game::coop::PlayerId id) const {
+  const auto lobby = guests_.find(id);
+  return lobby != guests_.end() && lobby->second.late;
+}
+
+core::Result<void> CoopScreen::sendJoinInProgress(game::coop::PlayerId id,
+                                                  std::string_view saveText) {
+  const auto lobby = guests_.find(id);
+  if (!isHost_ || !connection_.playing() || lobby == guests_.end() || lobby->second.started) {
+    return core::fail("no guest waits for the game under way");
+  }
+  for (const CoopConnection::Guest& guest : connection_.guests()) {
+    if (guest.id != id) {
+      continue;
+    }
+    if (auto sent = sendWorld(*guest.link, saveText); !sent) {
+      return sent;
+    }
+    lobby->second.started = true;
+    lobby->second.late = true;
+    core::logInfo("coop: player {} joins the game under way", id);
+    return {};
+  }
+  return core::fail("the guest left");
+}
+
+std::string CoopScreen::droppedFrom() const {
+  const game::coop::CoopLink* link = connection_.link();
+  if (isHost_ || link == nullptr || link->phase() != game::coop::LinkPhase::Failed) {
+    return {};
+  }
+  // The route went quiet or broke (not the host's own goodbye): the seat waits for it.
+  const auto failure = link->failure();
+  if (failure != game::coop::LinkFailure::Silence &&
+      failure != game::coop::LinkFailure::Disconnected) {
+    return {};
+  }
+  return connection_.code();
+}
+
+core::Result<void> CoopScreen::sendHostStart(std::string_view saveText) {
+  const auto in = connection_.guests();
+  if (!selectingHostStart_ || !isHost_ || !guestReady() || in.empty()) {
+    return core::fail("the host cannot start this room yet");
+  }
+  // Every guest gets the host's world.
   for (const CoopConnection::Guest& guest : in) {
-    if (auto sent = sendProfile(*guest.link, game::coop::ProfilePayloadKind::HostSave, transferId,
-                                saveText);
-        !sent) {
+    if (auto sent = sendWorld(*guest.link, saveText); !sent) {
       return sent;
     }
-    if (auto sent = guest.link->send(game::coop::Message{state}); !sent) {
-      return sent;
-    }
+    guests_[guest.id].started = true;
   }
   selectingHostStart_ = false;
   startRequested_ = false;
@@ -624,6 +720,8 @@ void CoopScreen::publish() {
   ui_->setSetting("coop.local_ready", localReady_);
   ui_->setSetting("coop.remote_ready", isHost_ ? guestReady() : remoteReady_);
   ui_->setSetting("coop.can_start", guestReady());
+  ui_->setSetting("coop.in_progress", gameUnderway());
+  ui_->setSetting("coop.open_to_join", openToNewPlayers());
 }
 
 } // namespace dwe::app

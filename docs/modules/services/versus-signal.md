@@ -38,6 +38,12 @@ than `seats - 1` gets `full`; a host that lost a guest says `{"type":"seats","ta
 room checks on its host every 2 minutes, lives at most an hour and closes with its host's last socket. `/v1/info`
 lists the `seats` feature.
 
+Once the game starts the host says so in its seat count, `{"type":"seats","taken":n,"playing":true,"open":true}`
+(#352, #356). The room then keeps going while the game does (a day at most), its listing shows the game in progress
+(phase `playing`, state `waiting` while it has a free seat and takes new players), and when the host's last socket
+drops it waits a minute for the host to open a seat again before closing. Hosts that never send `playing` get the room
+as before.
+
 ## Public rooms
 
 A second Durable Object, the directory, keeps the public rooms. A public host says who it is

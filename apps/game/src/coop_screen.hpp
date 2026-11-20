@@ -105,6 +105,27 @@ public:
   [[nodiscard]] std::optional<std::string> takeRemoteStartText();
   [[nodiscard]] core::Result<void> provideGuestSave(std::string_view saveText);
   [[nodiscard]] core::Result<void> sendHostStart(std::string_view saveText);
+  // A game in progress (#356). On the host: the guests in that picked their save while the game
+  // is under way and still wait for the host's world, by id; `sendJoinInProgress` sends one of
+  // them the host's world as it is now (its game's save of this moment), as the start sent it to
+  // the others. Only a guest sent the world plays (guestStarted).
+  [[nodiscard]] std::vector<game::coop::PlayerId> guestsWaitingForWorld() const;
+  [[nodiscard]] core::Result<void> sendJoinInProgress(game::coop::PlayerId id,
+                                                      std::string_view saveText);
+  [[nodiscard]] bool guestStarted(game::coop::PlayerId id) const;
+  // The guest joined (or came back to) the game once it was under way.
+  [[nodiscard]] bool joinedLate(game::coop::PlayerId id) const;
+  // On a guest: the host's lobby says its game is under way (a pick of the save joins it).
+  [[nodiscard]] bool gameUnderway() const {
+    return isHost_ ? connection_.playing() : lobby_.has_value() && lobby_->playing;
+  }
+  // Whether the game under way takes new players (the host's choice, open by default).
+  [[nodiscard]] bool openToNewPlayers() const {
+    return isHost_ ? connection_.openToNewPlayers() : !lobby_.has_value() || lobby_->open;
+  }
+  // On a guest that dropped out of a game under way: the room's code, to go back to it (it keeps
+  // its seat for a while, CoopRejoinGrace); empty when the host ended the game itself.
+  [[nodiscard]] std::string droppedFrom() const;
   void reportError(std::string message);
 
 private:
@@ -116,6 +137,9 @@ private:
     game::coop::ProfileAssembler assembler;
     std::optional<std::string> saveText;
     std::string partnerSpecies;
+    // It was sent the host's world (the start, or a join while the game is under way).
+    bool started = false;
+    bool late = false;
   };
 
   void publish();
@@ -125,6 +149,10 @@ private:
   void followGuests();
   [[nodiscard]] game::coop::Lobby lobbyMessage() const;
   void completeRemoteStart();
+  // Sends the guest's save and readiness to the host.
+  [[nodiscard]] core::Result<void> sendGuestSave(std::string_view saveText);
+  // Sends one guest the host's world: the save's chunks, then where it starts.
+  [[nodiscard]] core::Result<void> sendWorld(game::coop::CoopLink& link, std::string_view saveText);
   [[nodiscard]] core::Result<void> sendProfile(game::coop::CoopLink& link,
                                                game::coop::ProfilePayloadKind kind,
                                                std::uint32_t transferId, std::string_view saveText);
@@ -155,6 +183,13 @@ private:
   std::map<std::uint64_t, game::coop::Lobby> lobbySent_;
   std::optional<game::coop::JoinState> remoteJoinState_;
   std::optional<std::string> remoteStartText_;
+  // On a guest: the save it brought to the last room, by code, so that coming back to that room
+  // after a drop takes it again without asking (#356).
+  struct BroughtSave {
+    std::string code;
+    std::string text;
+  };
+  std::optional<BroughtSave> brought_;
 };
 
 } // namespace dwe::app

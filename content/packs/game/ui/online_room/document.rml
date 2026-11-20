@@ -62,6 +62,7 @@
 			<div id="prompts">
 				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="online.accept"></span></span>
 				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="online.leave"></span></span>
+				<span id="prompt-join-box" class="prompt hidden"><span class="key" id="prompt-join"></span><span id="prompt-join-text"></span></span>
 			</div>
 		</div>
 	</div>

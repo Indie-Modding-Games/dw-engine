@@ -159,8 +159,10 @@ public:
   // The peers are connected: the server may close the room.
   void finish();
   // The host of a room of more than two seats tells how many guests it holds now, so the server
-  // offers a seat that freed again (only while this socket is still open).
-  void tellSeats(int taken);
+  // offers a seat that freed again, and whether its game is under way and takes new players
+  // (only while this socket is still open). A server that predates games in progress ignores the
+  // last two.
+  void tellSeats(const SeatsNotice& notice);
 
   // The next JSON object the other peer relayed, if any.
   std::optional<std::string> receive();
