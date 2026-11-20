@@ -7,11 +7,13 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <iterator>
 #include <map>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -34,6 +36,10 @@ constexpr std::string_view RoutineOperand = "routine";
 // ge).
 constexpr std::int32_t AtLeastComparison = 2;
 constexpr std::string_view MapOperand = "map";
+constexpr std::string_view SpawnOp = "set_digimon";
+constexpr std::string_view SpeciesOperand = "digimon";
+constexpr std::string_view SlotOperand = "slot";
+constexpr std::string_view AutotalkOperand = "autotalk";
 
 bool loadsScript(const ListingInstruction& instruction) {
   return instruction.role == FlowRole::LoadScript;
@@ -82,6 +88,153 @@ std::optional<Load> loadOf(const ScriptLookup& lookup, const GuardedInstruction&
   }
   return Load{.script = static_cast<std::uint16_t>(*script),
               .map = static_cast<std::uint16_t>(*map)};
+}
+
+bool spawnsNpc(const ListingInstruction& instruction) {
+  return instruction.op == SpawnOp;
+}
+
+// The instructions that write a variable (disassembly.cpp: the ops with a pstat operand that store
+// into it). store_date is not one: it writes the clock once, before the tests, and the state keeps
+// it.
+constexpr std::array<std::string_view, 8> VariableWriteOps = {
+    "set_pstat",          "add_to_pstat", "reduce_pstat",           "store_map_id",
+    "store_digimon_type", "store_random", "add_minutes_to_date_at", "add_minutes_to_date_at_2"};
+constexpr std::string_view VariableOperand = "pstat";
+constexpr std::string_view TriggerOperand = "trigger";
+
+bool writesVariable(const ListingInstruction& instruction) {
+  return std::ranges::contains(VariableWriteOps, instruction.op);
+}
+
+// The variable or trigger number a test reads.
+std::optional<std::int32_t> testedNumber(const Condition& test) {
+  const std::string_view name =
+      test.test == ConditionTest::Pstat ? VariableOperand : TriggerOperand;
+  for (const Argument& argument : test.arguments) {
+    if (argument.name == name) {
+      return argument.value;
+    }
+  }
+  return std::nullopt;
+}
+
+// A decision whose tests read the same thing wherever the path meets them: only triggers (the walk
+// resolves those the path writes itself) and variables the section does not write.
+bool stableDecision(const BranchTerm& term, std::span<const std::uint16_t> written) {
+  return std::ranges::all_of(term.tests, [&](const Condition& test) {
+    if (test.test == ConditionTest::Trigger) {
+      return true;
+    }
+    const auto number = testedNumber(test);
+    return test.test == ConditionTest::Pstat && number &&
+           !std::ranges::contains(written, static_cast<std::uint16_t>(*number));
+  });
+}
+
+// Drops the decisions a path repeats; false when the path takes a decision both ways (it cannot
+// run). Paths that may forget a trigger or that go round a loop are kept as they are.
+bool dropRepeatedDecisions(PathGuard& guard, std::span<const std::uint16_t> written) {
+  if (guard.unstructured || std::ranges::any_of(guard.terms, [](const GuardTerm& term) {
+        return !std::holds_alternative<BranchTerm>(term.decision) &&
+               !std::holds_alternative<ChoiceTerm>(term.decision);
+      })) {
+    return true;
+  }
+  std::vector<GuardTerm> kept;
+  for (GuardTerm& term : guard.terms) {
+    const auto* branch = std::get_if<BranchTerm>(&term.decision);
+    if (branch != nullptr && stableDecision(*branch, written)) {
+      const auto earlier = std::ranges::find_if(kept, [&](const GuardTerm& other) {
+        const auto* taken = std::get_if<BranchTerm>(&other.decision);
+        return taken != nullptr && taken->tests == branch->tests;
+      });
+      if (earlier != kept.end()) {
+        if (std::get<BranchTerm>(earlier->decision).holds != branch->holds) {
+          return false;
+        }
+        continue;
+      }
+    }
+    kept.push_back(std::move(term));
+  }
+  guard.terms = std::move(kept);
+  return true;
+}
+
+// Two paths to the same spawn that differ only in one decision, taken one way by each: the spawn
+// does not depend on it. Gives the index of that decision.
+std::optional<std::size_t> onlyDifference(const PathGuard& left, const PathGuard& right) {
+  if (left.unstructured != right.unstructured || left.terms.size() != right.terms.size()) {
+    return std::nullopt;
+  }
+  std::optional<std::size_t> found;
+  for (std::size_t index = 0; index < left.terms.size(); ++index) {
+    if (left.terms[index] == right.terms[index]) {
+      continue;
+    }
+    const auto* one = std::get_if<BranchTerm>(&left.terms[index].decision);
+    const auto* other = std::get_if<BranchTerm>(&right.terms[index].decision);
+    if (found || one == nullptr || other == nullptr || one->tests != other->tests ||
+        one->holds == other->holds) {
+      return std::nullopt;
+    }
+    found = index;
+  }
+  return found;
+}
+
+bool sameSpawn(const MapHeadSpawn& left, const MapHeadSpawn& right) {
+  return left.map == right.map && left.slot == right.slot && left.species == right.species &&
+         left.autotalk == right.autotalk && left.place == right.place;
+}
+
+// The spawns of one section, with fewer and shorter guards that hold on the same facts.
+void simplifySpawns(std::vector<MapHeadSpawn>& spawns, std::span<const std::uint16_t> written) {
+  std::erase_if(spawns,
+                [&](MapHeadSpawn& spawn) { return !dropRepeatedDecisions(spawn.guard, written); });
+  for (bool merged = true; merged;) {
+    merged = false;
+    for (std::size_t first = 0; first < spawns.size(); ++first) {
+      for (std::size_t second = first + 1; second < spawns.size();) {
+        if (!sameSpawn(spawns[first], spawns[second])) {
+          ++second;
+          continue;
+        }
+        if (spawns[first].guard == spawns[second].guard) {
+          spawns.erase(spawns.begin() + static_cast<std::ptrdiff_t>(second));
+          merged = true;
+          continue;
+        }
+        if (const auto index = onlyDifference(spawns[first].guard, spawns[second].guard)) {
+          auto& terms = spawns[first].guard.terms;
+          terms.erase(terms.begin() + static_cast<std::ptrdiff_t>(*index));
+          spawns.erase(spawns.begin() + static_cast<std::ptrdiff_t>(second));
+          merged = true;
+          second = first + 1;
+          continue;
+        }
+        ++second;
+      }
+    }
+  }
+  for (MapHeadSpawn& spawn : spawns) {
+    for (const GuardTerm& term : spawn.guard.terms) {
+      const auto* branch = std::get_if<BranchTerm>(&term.decision);
+      if (branch == nullptr) {
+        continue;
+      }
+      for (const Condition& test : branch->tests) {
+        const auto number = testedNumber(test);
+        if (test.test == ConditionTest::Pstat && number &&
+            std::ranges::contains(written, static_cast<std::uint16_t>(*number)) &&
+            !std::ranges::contains(spawn.sectionWrites, static_cast<std::uint16_t>(*number))) {
+          spawn.sectionWrites.push_back(static_cast<std::uint16_t>(*number));
+        }
+      }
+    }
+    std::ranges::sort(spawn.sectionWrites);
+  }
 }
 
 bool callsTransport(const ListingInstruction& instruction) {
@@ -506,6 +659,88 @@ YamlNode scriptWarpsToYaml(const ScriptWarps& warps, const ScriptLookup& lookup,
   }
   YamlNode node = YamlNode::mapping();
   node.set("warps", std::move(list));
+  return node;
+}
+
+std::vector<MapHeadSpawn> findMapHeadSpawns(const ScriptLookup& lookup) {
+  std::vector<MapHeadSpawn> spawns;
+  const auto mapHead = lookup(MapHeadScript);
+  if (!mapHead || mapHead->listing == nullptr) {
+    return spawns;
+  }
+  for (const ListingSection& section : mapHead->listing->runnableSections()) {
+    std::optional<Load> load;
+    for (const GuardedInstruction& found :
+         walkSection(MapHeadScript, section.id, lookup, &loadsScript)) {
+      load = loadOf(lookup, found);
+      if (load) {
+        break;
+      }
+    }
+    if (!load) {
+      continue;
+    }
+    std::vector<std::uint16_t> written;
+    for (const GuardedInstruction& found :
+         walkSection(MapHeadScript, section.id, lookup, &writesVariable)) {
+      const ListingInstruction* instruction = instructionAt(lookup, found.place);
+      const auto variable =
+          instruction != nullptr ? instruction->argument(VariableOperand) : std::nullopt;
+      if (variable && !std::ranges::contains(written, static_cast<std::uint16_t>(*variable))) {
+        written.push_back(static_cast<std::uint16_t>(*variable));
+      }
+    }
+    std::vector<MapHeadSpawn> sectionSpawns;
+    for (GuardedInstruction& found : walkSection(MapHeadScript, section.id, lookup, &spawnsNpc)) {
+      const ListingInstruction* instruction = instructionAt(lookup, found.place);
+      const auto species = instruction != nullptr ? instruction->argument(SpeciesOperand)
+                                                  : std::optional<std::int32_t>{};
+      const auto slot = instruction != nullptr ? instruction->argument(SlotOperand)
+                                               : std::optional<std::int32_t>{};
+      if (!species || !slot) {
+        continue;
+      }
+      sectionSpawns.push_back({.map = load->map,
+                               .section = section.id,
+                               .slot = static_cast<std::uint8_t>(*slot),
+                               .species = static_cast<std::uint8_t>(*species),
+                               .autotalk = instruction->argument(AutotalkOperand).value_or(0) != 0,
+                               .guard = std::move(found.guard),
+                               .place = found.place,
+                               .sectionWrites = {}});
+    }
+    simplifySpawns(sectionSpawns, written);
+    std::ranges::move(sectionSpawns, std::back_inserter(spawns));
+  }
+  return spawns;
+}
+
+YamlNode mapHeadSpawnsToYaml(const std::vector<MapHeadSpawn>& spawns, const ScriptLookup& lookup,
+                             const MapName& mapName) {
+  YamlNode list = YamlNode::sequence();
+  for (const MapHeadSpawn& spawn : spawns) {
+    YamlNode node = YamlNode::mapping();
+    node.set("map", mapToYaml(mapName, spawn.map));
+    node.set("slot", yaml::number(spawn.slot));
+    node.set("species", yaml::number(spawn.species));
+    node.set("autotalk", yaml::boolean(spawn.autotalk));
+    if (hasGuard(spawn.guard)) {
+      node.set("guard", guardToYaml(spawn.guard, lookup));
+    }
+    if (!spawn.sectionWrites.empty()) {
+      node.set("section_writes", yaml::numbers(spawn.sectionWrites));
+    }
+    YamlNode source = YamlNode::mapping();
+    source.set(std::string{ScriptOperand}, yaml::number(spawn.place.script));
+    source.set("section", yaml::number(spawn.section));
+    if (const auto offset = offsetAt(lookup, spawn.place)) {
+      source.set(std::string{OffsetKey}, yaml::number(*offset));
+    }
+    node.set("source", std::move(source));
+    list.append(std::move(node));
+  }
+  YamlNode node = YamlNode::mapping();
+  node.set("spawns", std::move(list));
   return node;
 }
 

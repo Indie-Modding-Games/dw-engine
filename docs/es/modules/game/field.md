@@ -101,6 +101,11 @@ en las siguientes partes de C0b/C0c; hasta entonces esos sistemas siguen leyendo
   `sets_flags` del warp tomado; después el campo vuelve a decidir las casillas del mapa (`refreshScriptWarps`).
   `keepsOff(trigger)` dice qué casillas evita el clic para ir (no la del warp en la que está el jugador).
   Ver [warps de script](../../architecture/script-warps.md).
+- **NPC de la sección de cabecera del mapa** (`npc_spawns.hpp`): los de `field/npc_spawns` (cada NPC que la sección
+  MAPHEAD coloca, con su condición). `npcPresenceChange` dice qué ranuras vacía un cambio de hechos y qué apariciones
+  trae; `GuardFacts::variables` lee el byte que compara una prueba `pstat` (sin él la prueba es desconocida, así que los
+  warps de script no cambian). El cooperativo lo usa para mostrar al momento el reclutamiento de otro jugador (ver
+  [multijugador](../../architecture/multiplayer.md)).
 - **NPC que ven al jugador** (`FieldNpcs`, con `npc.tracking` en `field/rules`): según el `followMode` de su
   registro, un NPC mira al jugador, corre adonde lo vio y vuelve, o lo sigue mientras está en su radio
   (`overworld.c: NPCEntityTickOverworld`). Mientras reacciona no sigue su ruta. Si un NPC con `autotalk` choca con
@@ -340,5 +345,5 @@ Cada tramo empieza cuando el fundido de entrada suelta al jugador (un clic mient
 apunta al siguiente punto del camino en cuanto un paso llega al actual: el jugador avanza la carrera de un fotograma
 (50 unidades) de una vez.
 Cada pieza tiene además los suyos: `partner_follow_tests.cpp`, `player_trail_tests.cpp`, `field_items_tests.cpp`,
-`script_warps_tests.cpp`, `boss_arrival_tests.cpp`, `white_fade_tests.cpp` y `reachability_tests.cpp` (lento: que una
+`script_warps_tests.cpp`, `npc_spawns_tests.cpp`, `boss_arrival_tests.cpp`, `white_fade_tests.cpp` y `reachability_tests.cpp` (lento: que una
 partida nueva llega a sus mapas y vuelve).

@@ -38,6 +38,13 @@ struct CoopWorldView {
   FieldItemClaim* claim = nullptr;
 };
 
+// A shared fact another player changed in this game, with the value it had: what the map head of
+// the map this game stands on decided with (CoopNpcPresence).
+struct CoopFactChange {
+  game::coop::WorldEdit edit;
+  std::int32_t previous = 0;
+};
+
 // The story facts as this game and the session last agreed them: what the game changed since is
 // its news. Applying the session's values moves the baseline too, so they are never sent back.
 class CoopStoryBaseline {
@@ -50,6 +57,9 @@ public:
   // Writes a fact edit into the state and the baseline; whether the state changed. Map and ground
   // edits, and facts the state has no room for, change nothing.
   bool apply(game::story::StoryState& state, const game::coop::WorldEdit& edit);
+  // apply, noting the change in `changed` when it made one.
+  bool apply(game::story::StoryState& state, const game::coop::WorldEdit& edit,
+             std::vector<CoopFactChange>& changed);
   // Whether the state holds a different value for a fact edit (false for anything else).
   [[nodiscard]] static bool differs(const game::story::StoryState& state,
                                     const game::coop::WorldEdit& edit);
@@ -67,9 +77,10 @@ private:
 [[nodiscard]] std::vector<game::coop::WorldSync> storySync(std::uint32_t revision,
                                                            const game::story::StoryState& state);
 
-// Applies a sync part's shared values to the state and the baseline.
+// Applies a sync part's shared values to the state and the baseline, noting what changed.
 void applyStorySync(game::story::StoryState& state, CoopStoryBaseline& baseline,
-                    const game::coop::WorldSync& sync, const game::coop::WorldScope& shared);
+                    const game::coop::WorldSync& sync, const game::coop::WorldScope& shared,
+                    std::vector<CoopFactChange>& changed);
 
 // A chest whose trigger is set shows taken, wherever its trigger came from (another player took it,
 // #357). Returns how many changed.

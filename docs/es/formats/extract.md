@@ -91,7 +91,7 @@ llamadas y solo lee el disco a través del `Disc` que recibe.
 | `digimon_model` | `CHDAT/MMD<n>/<nombre>.MMD` | Un GLB con esqueleto, animaciones y textura |
 | `static_model` | Cualquier `.TMD` | Un GLB con un nodo por objeto, con textura si se sabe cuál |
 | `sound_bank` | Los siete `SOUND/VHB/*.VHB` | Un SoundFont y un YAML por banco, un WAV por muestra de efecto y un MIDI por pista de música |
-| `event_script` | `SCN/MAPHEAD.SCN` y `SCN/DG.SCN` | Un listado YAML por script, su módulo Lua (`story/<n>` y `story/<n>_lines`) y sus textos; de todos juntos, `data/new_game_stats`, `data/new_game_story` y `field/script_warps` ([Scripts](scripts.md)) |
+| `event_script` | `SCN/MAPHEAD.SCN` y `SCN/DG.SCN` | Un listado YAML por script, su módulo Lua (`story/<n>` y `story/<n>_lines`) y sus textos; de todos juntos, `data/new_game_stats`, `data/new_game_story`, `field/script_warps` y `field/npc_spawns` ([Scripts](scripts.md)) |
 | `overlay` | `<nombre>_REL.BIN` en la raíz | Los documentos de sus tablas de juego (FISH, STD, VS, TRN y BTL) |
 | `padding` | `MMM.DAT` | Nada: comprueba que es todo ceros |
 | `effect` | `ETCHI/EFEDAT.EFE` | Por técnica: `effect.yaml`, `script.yaml`, la textura y, si tiene TMD, un GLB ([Efectos](effects.md)) |
@@ -231,6 +231,7 @@ content/base/
 │                       new_game_stats, new_game_story
 ├─ disc/boot.yaml       SYSTEM.CNF
 ├─ field/script_warps.yaml  los cambios de mapa de los scripts
+├─ field/npc_spawns.yaml    los NPC que pone la sección de MAPHEAD de cada mapa, con sus guardas
 ├─ script/maphead.yaml, script/dg/<n>.yaml  listados de los scripts
 ├─ story/<n>.lua + <n>_lines.yaml  los scripts como módulos Lua
 ├─ text/en/<fuente>.yaml, font/main.png + main_meta.yaml
@@ -256,6 +257,7 @@ dice cuál sigue cada uno ([reglas `schemas`](../architecture/vfs.md#esquemas-de
 | `battle`, `cards`, `digimon`, `evolution`, `evolution_chart`, `evolution_chart_detail`, `fishing`, `item_effects`, `items`, `maps`, `medals`, `moves`, `music`, `new_game_stats`, `new_game_story`, `raise`, `shops`, `skeletons`, `stadium`, `tournaments`, `training`, `versus` | `data/<el mismo nombre>` |
 | `boot` | `disc/boot` |
 | `script_warps` | `field/script_warps` |
+| `npc_spawns` | `field/npc_spawns` |
 | `map` | `map/*/data` |
 | `collision` | `arena/*/collision` |
 | `image` | los `_meta` de las imágenes: `map/*/texture8/*_meta`, `map/*/texture4/*_meta`, `digimon/*/texture_meta`, `card/*_meta`, `effect/*/texture_meta`, `texture/**_meta` |

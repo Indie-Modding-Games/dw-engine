@@ -31,6 +31,10 @@ void StoryAdapter::attachNpcs(game::field::FieldNpcs* npcs) {
   npcs_->attach(npcs, npcs != nullptr ? &digimon_ : nullptr);
 }
 
+bool StoryAdapter::spawnNpc(std::int64_t species, std::int64_t slot, bool autotalk) {
+  return npcs_ != nullptr && npcs_->spawnNpc(species, slot, autotalk);
+}
+
 void StoryAdapter::followNpcHolds() {
   const bool runs = runner_ && runner_->busy();
   // script_interp.c:638: when the script ends, every NPC a pause held moves again.

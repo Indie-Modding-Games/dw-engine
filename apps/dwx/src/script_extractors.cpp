@@ -38,6 +38,8 @@ constexpr std::string_view NewGameStatsDocument = "new_game_stats";
 // game sets.
 constexpr std::string_view ScriptWarpsDocument = "script_warps";
 constexpr std::string_view NewGameStoryDocument = "new_game_story";
+// field/npc_spawns: the NPCs each map's MAPHEAD section puts on it, with their guards.
+constexpr std::string_view NpcSpawnsDocument = "npc_spawns";
 // The language of the story's text catalogs: the script texts decode with the US release's charset
 // (text::decodeScriptText).
 constexpr std::string_view StoryLanguage = "en";
@@ -325,6 +327,19 @@ addScriptWarps(Extraction& extraction, const Disc& disc,
                   "screen no map has; {} are picks of the transport menu ({} entries)",
                   warps.warps.size(), byVia[0], byVia[1], byVia[2], byVia[4], byVia[3], unguarded,
                   teleports, unnamed, transportPicks, sources.transport.size()));
+  const auto spawns = formats::script::findMapHeadSpawns(lookup);
+  auto spawnsOutput = yamlOutput(names::fieldDocument(NpcSpawnsDocument),
+                                 formats::script::mapHeadSpawnsToYaml(spawns, lookup, mapName));
+  if (!spawnsOutput) {
+    return std::unexpected{spawnsOutput.error()};
+  }
+  extraction.outputs.push_back(std::move(*spawnsOutput));
+  const auto guarded =
+      std::ranges::count_if(spawns, [](const formats::script::MapHeadSpawn& spawn) {
+        return !spawn.guard.terms.empty() || spawn.guard.unstructured;
+      });
+  extraction.notes.push_back(std::format("{} NPC spawns in the maps' MAPHEAD sections, {} guarded",
+                                         spawns.size(), guarded));
   extraction.notes.push_back(
       std::format("{} MAPHEAD sections load no map's script (new game, death, transport...); "
                   "their map changes are not in field/{}",

@@ -522,14 +522,32 @@ escribe.
 | `0x94` | `ItemClaim` | fiable | cliente → anfitrión | El número de reclamación del invitado, cofre u objeto del suelo, el trigger del cofre o la ranura y el id del objeto, el mapa. |
 | `0x95` | `ClaimAnswer` | fiable | anfitrión → cliente | El número de reclamación y si se concedió. |
 
-**Límites.** Un NPC que otro jugador reclutó se va del mapa de esta partida en su siguiente carga, no al momento (su trigger llega
-al momento, pero el NPC en pantalla sigue los scripts propios de esta partida hasta que el mapa vuelve a cargar). Solo
-viajan las ediciones en vivo del mapa; cualquier otra cosa que un script haga en pantalla (una escena, el paseo de un
-personaje) se queda en la partida que lo corrió.
+**Cambios del mundo al momento.** La sección de cabecera de un mapa decide al cargarlo qué personajes están en él, a
+partir de los triggers y variables de la historia (un personaje reclutado ya no está, su ayudante ocupa su lugar, un
+tendero viene de día). La escena que cambia el hecho también cambia la pantalla en la partida que la corrió (la escena
+de reclutamiento quita su NPC ella misma), pero las otras partidas solo reciben el hecho. Por eso `dwx extract` escribe
+`field/npc_spawns`: cada NPC que las secciones de cabecera colocan, con la condición que lleva a él (las mismas
+condiciones que los warps de script, más la prueba de un byte de variable). Cuando llega un hecho que cambió otro
+jugador, `CoopNpcPresence` compara la condición de cada NPC del mapa actual antes y después: un NPC cuya condición deja
+de cumplirse se va (como lo hace la escena de reclutamiento) y uno cuya condición empieza a cumplirse entra (como lo
+colocaría la siguiente carga). Espera a que el mapa termine de cargar y a cualquier script en curso, y descarta lo que
+llegó antes de la carga actual del mapa (esa carga ya leyó los hechos nuevos). Los cambios propios del jugador
+mantienen el comportamiento original, así que quien recluta ve al ayudante en la siguiente carga y los demás lo ven al
+momento. La sección de cabecera nunca se vuelve a correr.
+
+Sin cubrir: NPCs que colocan o mueven los scripts propios del mapa (el paseo de una escena, la rutina de entrada del
+mapa mostrando u ocultando objetos), condiciones que la extracción no puede leer (un olvido o un bucle en la sección, un
+stat que no sea un byte de variable, una variable que la propia sección de cabecera escribe como una tirada al azar o
+un contador, listada en `section_writes`), cabeceras parcheadas por el Lua de un mod (el documento sale del disco) y
+contenido extraído por un dwx anterior (los NPCs siguen entonces en la siguiente carga, como antes). Fuera de eso solo
+viajan las ediciones en vivo del mapa; cualquier otra cosa que un script haga en pantalla se queda en la partida que
+lo corrió.
 
 Pruebas: `packages/game/coop/tests/world_state_tests.cpp`, `apps/game/tests/coop_world_state_tests.cpp` (un anfitrión
-y dos invitados con mensajes codificados), el caso cooperativo de `packages/game/field/tests/field_items_tests.cpp` y
-el de `packages/session/tests/story_adapter_tests.cpp`.
+y dos invitados con mensajes codificados), `apps/game/tests/coop_npc_presence_tests.cpp` (un reclutamiento en cada lado
+sobre un `CoopLink` real), `packages/game/field/tests/npc_spawns_tests.cpp`, el caso MAPHEAD de
+`packages/formats/tests/script_guarded_walk_tests.cpp`, el caso cooperativo de
+`packages/game/field/tests/field_items_tests.cpp` y el de `packages/session/tests/story_adapter_tests.cpp`.
 ### 5.9 Salas de cuatro y el diagnóstico de sincronía
 
 Lo que añaden #352 y #359 (versión 7 del protocolo, tipos `0xA0`–`0xA2`).

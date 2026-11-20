@@ -433,14 +433,30 @@ host does. The guest still saves nothing, and its own save is never written.
 | `0x94` | `ItemClaim` | reliable | client → host | The guest's claim number, chest or ground item, the chest's trigger or the item's slot and id, the map. |
 | `0x95` | `ClaimAnswer` | reliable | host → client | The claim number and whether it was granted. |
 
-**Limits.** An NPC another player recruited
-leaves this game's map on its next load, not at once (its trigger arrives at once, but the NPC on screen follows this
-game's own scripts until the map loads again). Only the map's live edits travel; anything else a script does on screen
-(a scene, a character's walk) stays in the game that ran it.
+**World changes shown at once.** A map's head section decides on load which characters stand on it, from the story's
+triggers and variables (a recruited character is gone, its helper stands in its place, a shop keeper comes by day). The
+scene that changes the fact also changes the screen in the game that ran it (the recruit scene takes its NPC away
+itself), but the other games only get the fact. So `dwx extract` writes `field/npc_spawns`: every NPC the head
+sections spawn, with the condition that leads to it (the same conditions as the script warps, plus the byte test of a
+variable). When a fact another player changed arrives, `CoopNpcPresence` compares each NPC's condition on the current
+map before and after it: an NPC whose condition stops holding leaves (as the recruit scene does), and one whose
+condition starts holding comes in (as the next load would place it). It waits for the map to finish loading and for
+any running script, and drops what came before the current map load (that load already read the new facts). The
+player's own changes keep the original behaviour, so the recruiter sees the helper on the next load while the other
+players see it at once. The head section is never run again.
+
+Not covered: NPCs that a map's own scripts place or move (a scene's walk, the map's entry routine showing or hiding
+objects), conditions the extraction cannot read (a forget or a loop in the section, a stat other than a variable byte, a
+variable the head section writes itself such as a random roll or a counter, listed in `section_writes`),
+heads patched by a mod's Lua (the document comes from the disc), and content extracted by an older dwx (the NPCs then
+follow on the next load, as before). Only the map's live edits travel otherwise; anything else a script does on screen
+stays in the game that ran it.
 
 Tests: `packages/game/coop/tests/world_state_tests.cpp`, `apps/game/tests/coop_world_state_tests.cpp` (a host and two
-guests over encoded messages), the co-op case of `packages/game/field/tests/field_items_tests.cpp` and of
-`packages/session/tests/story_adapter_tests.cpp`.
+guests over encoded messages), `apps/game/tests/coop_npc_presence_tests.cpp` (a recruit on either side over a real
+`CoopLink`), `packages/game/field/tests/npc_spawns_tests.cpp`, the MAPHEAD case of
+`packages/formats/tests/script_guarded_walk_tests.cpp`, the co-op case of
+`packages/game/field/tests/field_items_tests.cpp` and of `packages/session/tests/story_adapter_tests.cpp`.
 ### 5.9 Rooms of four and the sync diagnostics
 
 What #352 and #359 add (protocol version 7, kinds `0xA0`–`0xA2`).

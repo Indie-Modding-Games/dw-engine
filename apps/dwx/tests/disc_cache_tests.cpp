@@ -77,6 +77,8 @@ constexpr std::array Fingerprints{
     FingerprintRow{.version = 15,
                    .fingerprint = "f267bd3d03d77cd687031714369bfdb5e343ed6c",
                    .unseenBySyntheticDisc = true},
+    // field/npc_spawns: the NPCs each map's head section spawns, with their conditions.
+    FingerprintRow{.version = 16, .fingerprint = "fa22a0864031f82df7d5448f341c457d749b43da"},
 };
 
 std::vector<std::byte> bytesOf(std::initializer_list<unsigned> values) {
