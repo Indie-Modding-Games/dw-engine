@@ -38,6 +38,7 @@ class InventoryAdapter;
 #include "bug_report.hpp"
 #include "care_commands.hpp"
 #include "chart_requirements.hpp"
+#include "coop_guest_return.hpp"
 #include "coop_npc_presence.hpp"
 #include "coop_world_state.hpp"
 #include "curling_screen.hpp"
@@ -435,6 +436,13 @@ public:
   // now, else the last snapshot of a free field (`save` says which, and why); nothing when there is
   // neither.
   [[nodiscard]] std::optional<std::string> reportSave(ReportSave& save) const;
+
+  // A co-op guest's game as a save, at a safe point only (nothing busy and no save waiting, as the
+  // autosave's): what its partner and bag take home (coop_guest_return.hpp). Nothing otherwise, and
+  // never in a game that is not a guest's.
+  [[nodiscard]] std::optional<game::save::SaveFile> coopGuestSave() const;
+  // The note a co-op return left in the loaded save, once: the next save drops it.
+  [[nodiscard]] std::optional<CoopReturnNote> takeCoopReturnNote();
 
   // The movie the game asks the app for (main.c: main): ED2 once a game saved after the ending is
   // loaded (MAIN_STATE 2, asked as the session is created), EDR once routine 53 ends the game

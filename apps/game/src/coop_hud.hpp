@@ -51,8 +51,17 @@ inline constexpr std::string_view CoopHostLeftText = "online.coop.host_left";
 inline constexpr std::string_view CoopRejoiningText = "online.coop.rejoining";
 // The host's game under way: a player joined it, {name}, or came back to its seat.
 inline constexpr std::string_view CoopJoinedText = "online.coop.joined";
-// As a guest's game starts: it is the host's world, and nothing of it is saved.
+// As a guest's game starts: it is the host's world, {name}'s, and only its partner and bag go home.
 inline constexpr std::string_view CoopGuestNotSavedText = "online.coop.guest_not_saved";
+// A guest's partner and bag went home to its save as its game ended, from {name}'s world; or they
+// could not (coop_guest_return.hpp).
+inline constexpr std::string_view CoopWentHomeText = "online.coop.went_home";
+inline constexpr std::string_view CoopHomeFailedText = "online.coop.home_failed";
+// A save that came back from {name}'s world, as it loads.
+inline constexpr std::string_view CoopCameHomeText = "online.coop.came_home";
+// The notices told as a game's field first shows (that one, and what a guest's game keeps) stay
+// longer than the room's: they are the first thing the game says.
+inline constexpr double CoopFieldNoticeSeconds = 8.0;
 // A guest whose host is busy (a long load there): it waits for the host, {name}.
 inline constexpr std::string_view CoopWaitingHostText = "online.coop.waiting_host";
 // The words that name a player with no name of their own.
@@ -133,8 +142,13 @@ public:
   void showTag(const CoopTagView& view) { showTags({&view, 1}); }
   // A tag over each other player this frame (up to MaxCoopTags; the ones past them hide).
   void showTags(std::span<const CoopTagView> views);
-  // Shows a notice for NoticeSeconds, in place of the one up; `peer` fills its "{name}".
-  void notice(std::string_view textKey, const CoopPeerLabel& peer = {});
+  // Shows a notice for `seconds`, in place of the one up; `peer` fills its "{name}".
+  void notice(std::string_view textKey, const CoopPeerLabel& peer = {},
+              double seconds = NoticeSeconds);
+  // Shows a notice once the one up is gone (from the next advance when none is): news no notice
+  // that comes right after it may hide, such as a guest's progress going home as the host leaves.
+  void noticeNext(std::string_view textKey, const CoopPeerLabel& peer = {},
+                  double seconds = NoticeSeconds);
   // Counts the notice's time down (real seconds), and shows or hides the document.
   void advance(double seconds);
   [[nodiscard]] bool noticeShown() const { return noticeLeft_ > 0.0; }
@@ -146,6 +160,12 @@ private:
   std::optional<std::array<CoopTagView, MaxCoopTags>> published_;
   double noticeLeft_ = 0.0;
   bool noticePublished_ = false;
+  struct Pending {
+    std::string textKey;
+    CoopPeerLabel peer;
+    double seconds = NoticeSeconds;
+  };
+  std::optional<Pending> next_;
 };
 
 } // namespace dwe::app

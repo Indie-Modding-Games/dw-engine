@@ -68,6 +68,7 @@
 #include "control_socket.hpp"
 #include "coop_battles.hpp"
 #include "coop_gameplay_bridge.hpp"
+#include "coop_guest_return.hpp"
 #include "coop_hud.hpp"
 #include "coop_screen.hpp"
 #include "coop_snapshot.hpp"
@@ -1100,6 +1101,65 @@ int runGame(const Options& requested) {
     }
     return {.name = {}, .key = std::string{GuestPlayerText}, .number = id};
   };
+  // A co-op guest's partner and bag go home to the slot it brought them from
+  // (coop_guest_return.hpp): at safe points while it plays (each second it looks; the bag at once,
+  // the partner's growth every while) and as its game ends, whatever ends it. `guestSafeSave` is
+  // its game at the last safe point, which the end writes when the game is busy then (a battle).
+  CoopGuestHome guestHome;
+  std::optional<game::save::SaveFile> guestSafeSave;
+  double guestHomeCheckAt = 0.0;
+  // A notice told once the field shows, not under the load's fade: what a co-op guest's game
+  // keeps, and that a save came back from one.
+  struct FieldNotice {
+    std::string_view key;
+    CoopPeerLabel peer;
+  };
+  std::optional<FieldNotice> fieldNotice;
+  const auto bringGuestHome = [&](PlaySession& play, bool ending) {
+    if (!play.coopGuest() || !guestHome.active()) {
+      return;
+    }
+    // A trade under way may still swap or swap back: its bag is not safe to take until it closes.
+    const bool trading = coopTrades.party() && (coopTrades.party()->state().has_value() ||
+                                                coopTrades.party()->holdsBag());
+    if (!trading) {
+      if (auto now = play.coopGuestSave()) {
+        guestSafeSave = std::move(*now);
+      }
+    }
+    const double seconds = platform->nowSeconds();
+    if (guestSafeSave &&
+        (ending ? guestHome.changed(*guestSafeSave) : guestHome.due(*guestSafeSave, seconds))) {
+      auto storage = saveStorageFor(options, true);
+      auto settings = game::save::loadSaveSettings(files);
+      core::Result<std::string> written = core::fail("save storage is not available");
+      if (storage != nullptr && !settings) {
+        written = std::unexpected{settings.error()};
+      } else if (storage != nullptr) {
+        written = guestHome.bringHome(
+            *storage, *settings, *guestSafeSave,
+            std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now()), seconds);
+      }
+      if (written) {
+        coop.keepBrought(std::move(*written));
+        if (ending) {
+          coopHud.noticeNext(CoopWentHomeText, coopPeerLabel(false, guestHome.host()));
+        }
+      } else {
+        guestHome.failed(seconds);
+        core::logWarning("coop: the partner and the bag could not go home: {}",
+                         written.error().message);
+        if (ending) {
+          coopHud.noticeNext(CoopHomeFailedText);
+        }
+      }
+    }
+    if (ending) {
+      guestHome.end();
+      guestSafeSave.reset();
+    }
+  };
+  flow.setBeforeEnd([&](PlaySession& play) { bringGuestHome(play, true); });
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
   // A boot asks the UI skin after the language box (an addition) until the player has chosen one;
@@ -1216,6 +1276,14 @@ int runGame(const Options& requested) {
       // The load is not game time: the next frame must not run it as a burst of ticks.
       step.reset();
       previous = platform->nowSeconds();
+      // A save back from a co-op game says so once (coop_guest_return.hpp), as the field shows.
+      fieldNotice.reset();
+      if (!start.coopGuest()) {
+        if (const auto note = flow.playing()->takeCoopReturnNote()) {
+          fieldNotice =
+              FieldNotice{.key = CoopCameHomeText, .peer = coopPeerLabel(false, note->host)};
+        }
+      }
       // A finished game's movie plays before its field (main.c: main, MAIN_STATE 2).
       if (const auto moment = flow.playing()->takeMovieRequest()) {
         playMovie(*moment);
@@ -1829,8 +1897,17 @@ int runGame(const Options& requested) {
                           .networkSaveText = std::move(*networkSave)};
           startPlaying(start);
           if (flow.playing() != nullptr) {
-            // The guest plays the host's world and saves nothing: its own saves stay as they were.
-            coopHud.notice(CoopGuestNotSavedText);
+            // The guest plays the host's world: only its partner and bag go home, to the slot it
+            // brought them from (coop_guest_return.hpp).
+            fieldNotice = FieldNotice{.key = CoopGuestNotSavedText,
+                                      .peer = coopPeerLabel(false, coop.remoteName())};
+            if (const auto home = coop.broughtHome()) {
+              if (auto begun = guestHome.begin(*home, coop.remoteName(), platform->nowSeconds());
+                  !begun) {
+                core::logWarning("coop: the partner and the bag will not go home: {}",
+                                 begun.error().message);
+              }
+            }
           }
         }
       }
@@ -2061,6 +2138,14 @@ int runGame(const Options& requested) {
       if (play != nullptr && !coop.isHost() && !coopPeers.empty() &&
           coopHostWait.due(coopPeers.front().bridge->worldQuietFor(coopNow), coopNow)) {
         coopHud.notice(CoopWaitingHostText, coopPeers.front().label);
+      }
+      if (play != nullptr && fieldNotice && !play->fadeProtected()) {
+        coopHud.noticeNext(fieldNotice->key, fieldNotice->peer, CoopFieldNoticeSeconds);
+        fieldNotice.reset();
+      }
+      if (play != nullptr && guestHome.active() && platform->nowSeconds() >= guestHomeCheckAt) {
+        guestHomeCheckAt = platform->nowSeconds() + 1.0;
+        bringGuestHome(*play, false);
       }
       // clock.c: tickPlaytime runs every frame the game loop runs, under the menus and in battles
       // (measured: 140 frames in 420 vblanks with the bag's options open, 100 in 307 in a battle)
@@ -2529,7 +2614,8 @@ int runGame(const Options& requested) {
               continue;
             }
             if (coop.selectingGuestProfile()) {
-              if (auto provided = coop.provideGuestSave(*saveText); !provided) {
+              if (auto provided = coop.provideGuestSave(*saveText, *start->load, start->backup);
+                  !provided) {
                 coop.reportError(provided.error().message);
                 title.show();
               }
@@ -2875,6 +2961,10 @@ int runGame(const Options& requested) {
     }
   }
   (*device)->waitIdle();
+  // A co-op guest's game still up as the app closes takes its partner and bag home first.
+  if (PlaySession* play = flow.playing()) {
+    bringGuestHome(*play, true);
+  }
   if (!autotest) {
     // The locals go in reverse order: the scene and the UI release their textures into the renderer
     // before it.

@@ -244,4 +244,23 @@ std::optional<std::string> PlaySession::reportSave(ReportSave& save) const {
   return std::move(*text);
 }
 
+std::optional<game::save::SaveFile> PlaySession::coopGuestSave() const {
+  if (!coopGuest_ || !busyWith().empty() || game_.session->savesWait()) {
+    return std::nullopt;
+  }
+  auto file = game_.session->saveFile();
+  if (!file) {
+    return std::nullopt;
+  }
+  return std::move(*file);
+}
+
+std::optional<CoopReturnNote> PlaySession::takeCoopReturnNote() {
+  const auto section = game_.session->takeUnreadSection(CoopReturnSection);
+  if (!section) {
+    return std::nullopt;
+  }
+  return coopReturnNoteOf(*section);
+}
+
 } // namespace dwe::app

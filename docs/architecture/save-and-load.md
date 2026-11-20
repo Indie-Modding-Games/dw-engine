@@ -220,7 +220,8 @@ have (documented improvement). The question comes up over the list (`dialog.at_t
 
 `Delete game` (grayed out with no games, like `Continue`) → the same list with "ERASE SLOT n" and the slots that this
 game can write (not those of a newer game) → "Erase this adventure?" **with the cursor on "No"** → the
-slot is left empty (`SaveSlots::erase`): its file, its `.bak` and the old autosaves of that game (and their
+slot is left empty (`SaveSlots::erase`): its file, its `.bak`, the copy a co-op guest's return kept of it
+(`.before_coop`, [multiplayer.md](multiplayer.md) §5.6) and the old autosaves of that game (and their
 `.bak` files) are erased, so no copy is left of a game that the player erased. If it cannot be erased, notice "save.erase_failed" and the error goes to the log. After erasing it returns to the
 list. The original erases the card file without a copy (`main_menu.c: tickMainMenu`).
 

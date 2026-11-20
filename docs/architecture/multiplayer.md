@@ -301,19 +301,65 @@ Co-op never changes or breaks either player's single-player saves. The rule:
   the host's slot as always. Nothing of the guest reaches that save: the guest's body and partner live only in the
   field, and no save section reads them. A save the host writes during co-op is the same file it would write alone,
   and it loads in single player like any other.
-- **The guest saves nothing.** Its game is a copy of the host's world in memory, with the guest's partner in it. It has
-  no save storage (no autosave, quick save or save machine) and the copy names no slot
-  (`hostWorldWithGuestPartner`), so nothing can take a slot of the guest's disk as its own. The guest's own save is
-  only read, to send its partner. The pause menu's save says so, its quit closes without saving, and a notice says it
-  as the game starts (`online.coop.guest_not_saved`, `save.coop_guest`, `save.coop_guest_quit_confirm`).
-- **Leaving, dropping or crashing changes nothing on disk.** The guest has written nothing; the host's slot holds its
-  last save, which never had any guest state in it.
+- **The guest's game saves nothing of the host's world.** Its game is a copy of the host's world in memory with the
+  guest's **own** sections in it: its partner, the partner's moves, the species it raised and its bag with its bits
+  (`CoopGuestOwnSections`, `hostWorldWithGuestPartner`). It has no save storage (no autosave, quick save or save
+  machine) and the copy names no slot, so nothing can take a slot of the guest's disk as its own. The pause menu's
+  save and quit say what happens, and a notice says it as the game starts (`online.coop.guest_not_saved`,
+  `save.coop_guest`, `save.coop_guest_quit_confirm`).
+- **The guest takes its own progress home (decision 4, phase C4).** Those four sections go back into the slot the
+  guest brought its save from; the rest of that slot stays exactly as it was on disk.
 
-What the guest earns does not go back to its own game yet (decision 4 of §6, phase C4).
+**What goes home and what never does.**
+
+| Goes home | Never goes home |
+|---|---|
+| The partner: stats, HP and MP, age, lifespan, lives, care (hunger, toilet, sleep, mood, sickness), evolution, its counters | The story, the triggers and variables, the medals and the player page's key items (story triggers) |
+| The moves it knows and has equipped | The map, the place it stands, the clock and the weather |
+| The species it raised (the evolution section) | The host's bag and bits: the guest never had them, its game played with its own |
+| Its bag and its bits, as its game left them: what it bought with its own bits, picked up (a granted claim), got in a trade or used | The tamer's record, the cards, the shops' stock and everything else of the host's world |
+
+The guest played with its own bag and bits from the start, so bringing them home is the bag it walked out with; the
+host's money is never in it. Bits a battle on the host gives go to the host's world, as before (§6.1).
+
+**When it is written** (`CoopGuestHome`, `apps/game/src/coop_guest_return.hpp`). The app looks at the guest's game
+once a second at a safe point (nothing busy, no save waiting, no trade open: `PlaySession::coopGuestSave`), and keeps
+the newest one:
+
+- **the bag changed** (a trade, a claim, a purchase): written at once, so a crash cannot leave a traded item in two
+  games;
+- **only the partner changed** (a battle's growth, care): written at the next safe point 30 seconds after the last
+  write (or the game's start), so a long game loses little to a crash without writing the slot every few seconds;
+- **the game ends**, whatever ends it: leaving to the title, the host closing the room, the link dropping (before
+  going back to the seat), quitting from the pause menu or closing the window (`AppFlow::setBeforeEnd`). A game busy
+  at its end (a battle) writes its last safe point: what a battle left unfinished does not go home.
+
+**How it is written safely.** The slot is read again first and must still be the playthrough the guest brought (same
+start time, tamer and ruleset); a slot another game took meanwhile is left alone and the guest is told
+(`online.coop.home_failed`). The returned partner must be one a game can leave (`checkReturningPartner`: every stat
+within its limit, HP and MP not above them, no negative lives, lifetime, age or weight), and a battle's result from
+the host is applied only when its values are ones a battle can leave (`game::coop::spoilsInRange`), so a tampered or
+broken host cannot write garbage into the guest's save. The first write of a co-op game keeps the slot as it was
+beside it (`slot_NN.yaml.before_coop`), and every write keeps the previous one as the slot's usual backup
+(`.bak`). The written save carries a note (`coop_return` section: the host's name and the partner) that the game shows
+once its field shows after the load (`online.coop.came_home`, "Back from {name}'s world...") and the next save drops
+(`GameSession::takeUnreadSection`); as the guest's game ends the HUD says it too (`online.coop.went_home`).
+
+**Anti-dupe.** The host is the authority over every item that enters the guest's bag from the world (claims, §5.8;
+trades, §6.2): a refused claim gives nothing. A return replaces the slot's bag with the game's bag, it never adds to
+it, so writing twice writes the same bag. A guest that drops and comes back to its seat (§5.10) brings the save it
+took home (`CoopScreen::keepBrought`), not the one it brought first, so nothing it took home comes in twice; a guest
+that restarts its game joins with the slot as it was last written.
+
+- **The host's slot never sees the guest.** The host's slot holds its last save, which never had any guest state in
+  it, and loads alone as before.
 
 Tests: `packages/session/tests/coop_saves_tests.cpp` (a host's save with a guest in the field is the single-player
-save, and loads at the host's place), `apps/game/tests/coop_guest_profile_tests.cpp` (the guest's copy names no slot)
-and `apps/game/tests/app_flow_tests.cpp` (a guest's game is never saved to a slot; only the room's games are co-op).
+save, and loads at the host's place; the return's note is taken once), `apps/game/tests/coop_guest_profile_tests.cpp`
+(the guest's copy names no slot), `apps/game/tests/coop_guest_return_tests.cpp` (what goes home and what never does,
+another playthrough or a partner out of range left alone, when it is written, the backups, a rejoin bringing the save
+it took home), `packages/game/coop/tests/battle_tests.cpp` (spoils out of range) and
+`apps/game/tests/app_flow_tests.cpp` (a guest's game is never saved to a slot; only the room's games are co-op).
 
 ### 5.7 Shared world: authority, players and maps
 
@@ -424,7 +470,7 @@ datagram) and the host's ground; every guest gets them again when the host enter
 revision, so a change already in it is not applied again.
 
 **Saves (§5.6).** The world is the host's: what a guest changes in it is in the host's next save, like anything the
-host does. The guest still saves nothing, and its own save is never written.
+host does. Nothing of the world goes into the guest's own save: only its partner and bag go home (§5.6).
 
 **Messages** (protocol version 5, range `0x90–0x9F`):
 
@@ -540,8 +586,8 @@ old link is still open (the host has not noticed the drop yet) takes its seat ov
 closed. Past the grace window
 it is a new player. A departed guest's id is held during the window, so a late joiner never takes it.
 
-**What is left out.** The returning guest's own progress while away is not kept apart: it plays from the host's
-world as any late joiner (its partner is the one in the save it brings). Rooms of two keep closing their seat at
+**What is left out.** The returning guest plays from the host's world as any late joiner; its partner and bag are
+the ones it took home when its link dropped (§5.6). Rooms of two keep closing their seat at
 start (versus has no game to join).
 
 Tests: `packages/game/coop/tests/protocol_tests.cpp` (fields round trip, admission through real `CoopLink`s),
@@ -557,7 +603,7 @@ Proposed on 2026-11-16 with a recommendation each; this is how they were built.
 | 1 | What does the guest bring? | Their character and **their partner** from their own save, as a visitor in the host's world (§5.6). |
 | 2 | Shared map? | Yes: the group goes where the host goes. A guest's own exits are held and the host's map change takes everyone (§5.7). Each game still knows its own map, so a player who is still loading is simply not drawn. |
 | 3 | Battle | **Every partner fights.** Whoever starts it, every free partner on that map joins, up to four (§6.1, [co-op combat](coop-combat.md) §12), and the enemies scale with how many fight ([co-op difficulty](coop-difficulty.md)). |
-| 4 | Progress | The story, the triggers, the money and the world are **the host's**, saved in the host's own slot as single-player (§5.6). Every player's changes to that world go through the host (§5.8). The guest saves nothing; taking what it earned back to its own game is not built yet (§10). |
+| 4 | Progress | The story, the triggers, the money and the world are **the host's**, saved in the host's own slot as single-player (§5.6). Every player's changes to that world go through the host (§5.8). The guest plays with its own partner, moves, raised species and bag with its bits, and takes them home to its own slot when it leaves and at safe points meanwhile (C4, §5.6); nothing of the host's world goes with them. |
 | 5 | Pause and menus | Every game runs its own copy of the host's world, so a menu or the pause stops only that player's game; the others play on. A shared battle waits while the host has its menu open (§6.1). |
 | 6 | Dialogs and scenes | A player's scripts run in that player's game: its dialogs and scenes are its own, and the others keep playing. What a scene changes in the world reaches the others through the host (§5.8), and the NPCs it brings or takes away show at once in every game. |
 
@@ -649,8 +695,8 @@ Two players of the same co-op game hand each other items. Money, partners and th
   no second way to take one.
 - **History.** The broker keeps the last 32 closed trades and their outcome; a message for a closed trade id does
   nothing.
-- **Saves.** The host's side is the host's game, saved as single-player (§5.6). The guest's bag is part of its unsaved
-  copy, so what it trades lives as long as that game, like everything else the guest does.
+- **Saves.** The host's side is the host's game, saved as single-player (§5.6). The guest's bag is its own, and goes
+  home to its slot right after the trade closes (§5.6), so a traded item is never in both games' saves.
 
 **Messages** (protocol version 8):
 
@@ -684,7 +730,7 @@ and `apps/game/tests/coop_trades_tests.cpp`.
 ## 7. Phases
 
 The plan as written on 2026-11-16. C0 to C3 are built (§5, §6.1; every partner fights since #377); of C4 the names
-over the players are built (`coop_hud.tag`) and the guest's progress back is left (§10).
+over the players (`coop_hud.tag`) and the guest's progress back to its own game (§5.6) are built.
 
 | Phase | Content | Closing criterion | Time |
 |---|---|---|---|
@@ -692,7 +738,7 @@ over the players are built (`coop_hud.tag`) and the guest's progress back is lef
 | **C1, see each other walk** | `game/coop` with handshake, joining at a safe point, snapshots, `WorldMirror`, own movement validated by the host. | Two PCs on the same map see each other walk, each with their partner behind, with simulated losses. | ~2 weeks |
 | **C2, interact** | NPCs and tiles per player, replicated dialogs, group map change, menus without pause, disconnection and reconnection. | A stretch of the story played between two PCs. | ~3 weeks |
 | **C3, battle** | According to decision 3 (§6.1). **Done, first version:** host-run battles for both players when they share a map (solo otherwise, #351), the other player's view, help and orders, rewards back to the guest, disconnection in battle; then both partners (#374) and every partner (#377). | A story battle won in co-op. | 2–6 weeks |
-| **C4, guest** | The guest's progress back to their game, names over the players, latency indicator, polish. | The guest returns to their game with what they earned. | — |
+| **C4, guest** | The guest's progress back to their game (**done:** §5.6), names over the players, latency indicator, polish. | The guest returns to their game with what they earned. | — |
 
 ### 7.1 Tests
 
@@ -735,10 +781,12 @@ What is built, by ticket (the issues #351 to #362 are the player stories; they s
 | Joining and rejoining a game in progress (#352, #356) | §5.10 |
 | Battles with every partner (#351, #362) and co-op difficulty (#361) | §6.1, [co-op combat](coop-combat.md), [co-op difficulty](coop-difficulty.md) |
 | Item trades (#360) | §6.2 |
+| The guest takes its partner and bag home (#355) | §5.6 |
 
 What is left, as follow-ups:
 
-- The guest's progress back to its own game (decision 4).
+- The guest's tamer record and cards stay in the host's world: only the partner, moves, raised species and bag go
+  home (§5.6).
 - One battle per map at once ([co-op combat](coop-combat.md) §12, task 12) and the optional battle mechanics of its §8.
 - The NPCs that a map's own scripts place or move, and the spawns whose condition stays unknown (a random roll in the
   map head), still follow on the next load (§5.8, «World changes shown at once»).

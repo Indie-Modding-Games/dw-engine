@@ -17,6 +17,10 @@ std::string slotBackupName(SlotId slot) {
   return std::format("{}{}", slotFileName(slot), BackupSuffix);
 }
 
+std::string slotBeforeCoopName(SlotId slot) {
+  return std::format("{}{}", slotFileName(slot), BeforeCoopSuffix);
+}
+
 SaveSlots::SaveSlots(SaveStorage& storage, const SaveSettings& settings)
     : storage_{&storage}, manualSlots_{settings.manualSlots} {}
 
@@ -104,10 +108,13 @@ core::Result<void> SaveSlots::erase(SlotId slot) {
   if (auto valid = checkSlot(slot); !valid) {
     return valid;
   }
-  // A slot's erase leaves nothing behind: its save and its .bak both go, so no backup of a save the
-  // player deleted is kept.
+  // A slot's erase leaves nothing behind: its save, its .bak and the save before a co-op game all
+  // go, so no backup of a save the player deleted is kept.
   const auto eraseFiles = [this](SlotId target) -> core::Result<void> {
     if (auto removed = storage_->remove(slotFileName(target), ""); !removed) {
+      return removed;
+    }
+    if (auto removed = storage_->remove(slotBeforeCoopName(target), ""); !removed) {
       return removed;
     }
     return storage_->remove(slotBackupName(target), "");

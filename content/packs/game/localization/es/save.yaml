@@ -51,10 +51,12 @@ machine_empty_slot: "."
 to_title_confirm: "Se perderá lo que no hayas guardado. ¿Volver a la portada?"
 # Quitting the game from the pause menu (3.8): «Sí» saves the game and closes it; «No» keeps playing.
 quit_confirm: "¿Guardar la partida antes de salir del juego?"
-# A co-op guest's game, which is never saved (docs/architecture/multiplayer.md, "Saves in co-op"): the pause
-# menu's save, and its quit, whose «Sí» closes the game without saving.
-coop_guest: "El invitado no guarda: este es el mundo del anfitrión. Tus partidas guardadas quedan como estaban."
-coop_guest_quit_confirm: "Esta partida cooperativa no se guarda en tu equipo. ¿Salir del juego?"
+# A co-op guest's game, which saves nothing but its partner and bag, taken home to its own slot
+# (docs/architecture/multiplayer.md, "Saves in co-op"): the pause menu's save, and its quit, whose «Sí» takes them
+# home and closes the game, and its return to the title screen, whose yes takes them home first.
+coop_guest: "El invitado no guarda aquí: este es el mundo del anfitrión. Tu compañero y tu bolsa vuelven solos a tu partida."
+coop_guest_quit_confirm: "Tu compañero y tu bolsa vuelven a tu partida. ¿Salir del juego?"
+coop_guest_to_title_confirm: "Tu compañero y tu bolsa vuelven a tu partida. ¿Dejar el mundo del anfitrión y volver a la portada?"
 # Erasing a save from the title screen (docs/architecture/save-and-load.md). The dialog shows the save file's
 # name below.
 confirm_erase: "¿Borrar esta aventura?"

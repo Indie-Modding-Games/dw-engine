@@ -242,3 +242,23 @@ TEST_CASE("the game being played is gone before the next one starts") {
   CHECK(aliveWhileStarting == std::vector<int>{0, 0});
   flow.toTitle();
 }
+
+TEST_CASE("every game goes through the ending hook before it ends, while it is still whole") {
+  // A co-op guest's progress goes home there (coop_guest_return.hpp), whatever ends its game.
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  auto flow = flowOn(packs, storage);
+  std::vector<int> ended;
+  flow.setBeforeEnd([&ended](Game& game) {
+    ended.push_back(Game::alive);
+    CHECK(game.session->playing());
+  });
+  flow.toTitle();
+  CHECK(ended.empty());
+  REQUIRE(flow.play({}).has_value());
+  // Another game ends the first one; the title ends the second.
+  REQUIRE(flow.play({}).has_value());
+  flow.toTitle();
+  CHECK(ended == std::vector<int>{1, 1});
+  CHECK(Game::alive == 0);
+}

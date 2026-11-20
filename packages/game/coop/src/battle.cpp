@@ -27,6 +27,29 @@ bool roleAllows(BattleRole role, BattleActionKind kind) {
   return false;
 }
 
+bool spoilsInRange(const BattleSpoils& spoils) {
+  // The stats' own limits (evl.c: EVL_clampBaseStats) and a day of battle at most.
+  constexpr std::int32_t MaxPool = 9999;
+  constexpr std::int32_t MaxCare = 100;
+  constexpr std::int32_t MaxLives = 99;
+  constexpr std::int32_t MaxCount = 9999;
+  constexpr std::int32_t MinutesPerDay = 24 * 60;
+  constexpr std::int64_t FramesPerDay = std::int64_t{60} * 60 * MinutesPerDay;
+  const auto within = [](auto value, auto low, auto high) { return value >= low && value <= high; };
+  return within(spoils.hp, 0, MaxPool) && within(spoils.mp, 0, MaxPool) &&
+         std::ranges::all_of(spoils.statGains,
+                             [&](std::int32_t gain) { return within(gain, 0, MaxPool); }) &&
+         std::ranges::all_of(
+             spoils.care, [&](std::int32_t change) { return within(change, -MaxCare, MaxCare); }) &&
+         within(spoils.food, -MaxCount, MaxCount) && within(spoils.livesLost, 0, MaxLives) &&
+         within(spoils.elapsedMinutes, 0, MinutesPerDay) &&
+         within(spoils.lifetimeHoursLost, 0, MaxCount) &&
+         within(spoils.mpDiscountLearned, 0, MaxCare) &&
+         std::ranges::all_of(spoils.counters,
+                             [&](std::int32_t count) { return within(count, 0, MaxCount); }) &&
+         within(spoils.frames, std::int64_t{0}, FramesPerDay);
+}
+
 std::optional<BattleRefusal> BattleReferee::judge(const BattleAsk& ask, std::string_view hostMap,
                                                   bool hostBusy) const {
   if (running_ || hostBusy) {

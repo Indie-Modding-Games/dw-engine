@@ -776,6 +776,13 @@ void CoopBattles::applySpoils(PlaySession& play, const coop::BattleEnd& end) {
   if (!end.spoils || (!ownBattle_ && !allyBattle_)) {
     return;
   }
+  // They become the partner's growth, which this game takes home to its own save: values no battle
+  // leaves are not taken (multiplayer.md, "Saves in co-op").
+  if (!coop::spoilsInRange(*end.spoils)) {
+    core::logWarning("coop: battle {} left the partner values out of range, not applied",
+                     end.battle);
+    return;
+  }
   if (auto applied = play.applyCoopSpoils(
           resultOf(*end.spoils, end.outcome, std::string{play.partnerSpecies()}));
       !applied) {

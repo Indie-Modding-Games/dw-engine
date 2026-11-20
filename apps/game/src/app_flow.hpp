@@ -89,11 +89,21 @@ public:
   // Whether the last play() failed at saving the new game to its slot, not at starting it.
   [[nodiscard]] bool saveFailed() const { return saveFailed_; }
 
-  // Ends the game being played without saving it.
-  void toTitle() { play_.reset(); }
+  // Ends the game being played without saving it; the game first goes through the ending hook.
+  void toTitle() {
+    if (play_ && beforeEnd_) {
+      beforeEnd_(*play_);
+    }
+    play_.reset();
+  }
+
+  // What every game goes through just before it ends, whatever ends it (the title, another game,
+  // the app closing): a co-op guest's progress goes home there (coop_guest_return.hpp).
+  void setBeforeEnd(std::function<void(Play&)> hook) { beforeEnd_ = std::move(hook); }
 
 private:
   Starter starter_;
+  std::function<void(Play&)> beforeEnd_;
   std::unique_ptr<Play> play_;
   bool saveFailed_ = false;
 };
