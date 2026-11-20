@@ -195,6 +195,10 @@ coop.item_gone: "¡Tarde! Otro jugador ya lo tomó."
 coop.waiting_host: "Esperando a {name}..."
 # La partida del invitado es el mundo del anfitrión en memoria: no se guarda nada de ella (multiplayer.md, «Guardado en cooperativo»).
 coop.guest_not_saved: "Eres invitado: esta partida no se guarda. Tus partidas guardadas quedan como estaban."
+# Un jugador que entrena en el gimnasio, bajo su etiqueta; y el primer curso de una partida
+# cooperativa (coop-training.md): el reloj del mundo no se detiene por él.
+coop.training: "Entrenando"
+coop.training_clock: "Entrenas en compañía: el tiempo del mundo sigue corriendo y cada sesión cuenta su propia hora para tu compañero."
 # Los nombres de las salas y jugadores de ejemplo (herramientas de desarrollo).
 sample.room_1: "Aventura del sábado"
 sample.room_2: "Exploración tranquila"

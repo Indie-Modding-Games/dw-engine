@@ -395,6 +395,11 @@ public:
   // Whether this is a co-op guest's game: the host's world in memory, never saved; its save
   // entries say so and its quit closes without saving (multiplayer.md, "Saves in co-op").
   [[nodiscard]] bool coopGuest() const { return coopGuest_; }
+  // The gym course this player's partner runs now (gym.yaml: courses), empty when none: the other
+  // co-op players see who trains (#365).
+  [[nodiscard]] std::string trainingCourse() const;
+  // The game's session: co-op tells it the world's clock (coop_training.hpp).
+  [[nodiscard]] session::GameSession& gameSession() { return *game_.session; }
 
   // The partner's status as the status page shows it (partner.* settings).
   [[nodiscard]] screens::ScreenSettings partnerStatus() const;

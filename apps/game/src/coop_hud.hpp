@@ -34,6 +34,8 @@ inline constexpr std::size_t MaxCoopTags = 3;
 // Whether the tag says that player can be asked for a trade now (the trade key's hint); the
 // other tags' is coop_hud.tag.<n>.trade.
 inline constexpr std::string_view CoopTagTradeSetting = "coop_hud.tag.trade";
+// Whether the tag says that player trains (#365); the other tags' is coop_hud.tag.<n>.training.
+inline constexpr std::string_view CoopTagTrainingSetting = "coop_hud.tag.training";
 // The notice: whether it shows, its text key ("{name}" in it stands for the player it is about)
 // and that player, as the tag names them; its revision counts up with each notice.
 inline constexpr std::string_view CoopNoticeShownSetting = "coop_hud.notice.shown";
@@ -83,6 +85,8 @@ struct CoopTagView {
   CoopPeerLabel peer;
   // The trade key's hint under the name (coop_trades.hpp: CoopTrades::askNearest).
   bool trade = false;
+  // Whether that player's partner is on a gym course now (#365): the tag says so under the name.
+  bool training = false;
 
   friend bool operator==(const CoopTagView&, const CoopTagView&) = default;
 };
@@ -90,10 +94,11 @@ struct CoopTagView {
 // The tag of the other player (none while no one is linked) from where their head lands in the
 // window (none when it does not project): hidden off the window, or while the field does not run
 // (a menu, a talk or a battle stops it, and the field's HUD hides too). `trade` shows the trade
-// key's hint under the name.
+// key's hint under the name, `training` that the player trains.
 [[nodiscard]] CoopTagView coopTagViewOf(const std::optional<CoopPeerLabel>& peer,
                                         std::optional<screens::WindowFraction> head,
-                                        bool fieldRunning, bool trade = false);
+                                        bool fieldRunning, bool trade = false,
+                                        bool training = false);
 
 // What losing the co-op link during play means for this player: nothing out of play, a notice
 // that the guest dropped on the host (its slot stays for a reconnect), and back to the title on

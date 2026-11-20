@@ -191,6 +191,57 @@ TEST_CASE("care.md training: a session takes an hour, tires, costs energy and ha
   CHECK(raising.state().toilet.poopLevel == 1'000'000 - 6);
 }
 
+TEST_CASE("coop-training.md: on a shared clock a session costs the partner its hour and leaves "
+          "the clock") {
+  OriginalRuleset original;
+  Raising solo(original.rules());
+  Raising shared(original.rules());
+  for (Raising* raising : {&solo, &shared}) {
+    raising->quiet();
+    raising->edit([](PartnerState& state) { state.mood.happiness = 100; });
+  }
+  trained(solo, hpCourse());
+  TrainingRequest request = hpCourse();
+  request.sharedClock = true;
+  const StatBlock gains = trained(shared, request);
+  // The world's clock stays where it was; the solo session moved its own an hour.
+  CHECK(shared.clock().time().hour == 8);
+  CHECK(shared.clock().time().minute == 0);
+  CHECK(solo.clock().time().hour == 9);
+  // Everything else is the solo session's: the gains and every cost of the hour.
+  CHECK(gains[Stat::Hp] == 80);
+  const PartnerState& a = solo.state();
+  const PartnerState& b = shared.state();
+  CHECK(b.stats.base[Stat::Hp] == a.stats.base[Stat::Hp]);
+  CHECK(b.mood.tiredness == a.mood.tiredness);
+  CHECK(b.mood.happiness == a.mood.happiness);
+  CHECK(b.hunger.energy == a.hunger.energy);
+  CHECK(b.hunger.foodLevel == a.hunger.foodLevel);
+  CHECK(b.toilet.poopLevel == a.toilet.poopLevel);
+  CHECK(b.evolution.hours == a.evolution.hours);
+  CHECK(b.life.remainingLifetime == a.life.remainingLifetime);
+  CHECK(b.life.age == a.life.age);
+}
+
+TEST_CASE("coop-training.md: a shared-clock session before midnight adds no day: the world's "
+          "midnight does") {
+  OriginalRuleset original;
+  Raising raising(original.rules());
+  raising.quiet();
+  raising.clock().jumpTo(23, 30);
+  const std::int64_t age = raising.state().life.age;
+  TrainingRequest request = hpCourse();
+  request.sharedClock = true;
+  trained(raising, request);
+  CHECK(raising.clock().time().hour == 23);
+  CHECK(raising.state().life.age == age);
+  Raising solo(original.rules());
+  solo.quiet();
+  solo.clock().jumpTo(23, 30);
+  trained(solo, hpCourse());
+  CHECK(solo.state().life.age == age + 1);
+}
+
 TEST_CASE("care.md training: overwork past 70 tiredness costs 3 happiness and 3 discipline") {
   OriginalRuleset original;
   Raising raising(original.rules());

@@ -5,7 +5,9 @@
 -- text key coop_hud.notice.text, where "{name}" stands for the player it is about. A player is
 -- named by their own name (*.name), else by a text key (*.name_key) whose "{number}" takes
 -- *.number. Under each name, the trade key's hint while that player can be asked for a trade
--- (coop_hud.tag.trade, coop_hud.tag.<n>.trade). Each part redraws when its revision counts up.
+-- (coop_hud.tag.trade, coop_hud.tag.<n>.trade), and a line while that player trains at the gym
+-- (coop_hud.tag.training, coop_hud.tag.<n>.training). Each part redraws when its revision counts
+-- up.
 
 local function named(name, key, number)
   if type(name) == "string" and name ~= "" then
@@ -37,6 +39,12 @@ local function draw_one_tag(document, id, prefix)
       ui.setting(prefix .. "number")
     )
   )
+  local training = document:get(id .. "-training")
+  local trains = ui.setting(prefix .. "training") == true
+  training:set_class("hidden", not trains)
+  if trains then
+    training:set_text(t("online.coop.training"))
+  end
   local trade = document:get(id .. "-trade")
   local hint = ui.setting(prefix .. "trade") == true
   trade:set_class("hidden", not hint)

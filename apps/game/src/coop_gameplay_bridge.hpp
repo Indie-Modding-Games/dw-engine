@@ -54,6 +54,9 @@ public:
   // The sync diagnostics' messages (#359): the host's SyncWatch on a guest, a guest's SyncReport
   // on the host, in order.
   [[nodiscard]] std::vector<game::coop::Message> takeSyncMessages();
+  // The world's clock and who trains (#365, coop_training.hpp): the host's clock and everyone's
+  // training on a guest, a guest's own training on the host, in order.
+  [[nodiscard]] std::vector<game::coop::Message> takeTrainingMessages();
   // What reached this side of the other's numbered streams (#359): the host's snapshots on a
   // guest (by world tick), a guest's commands on the host (by sequence).
   [[nodiscard]] const game::coop::SequenceWatch& snapshotWatch() const { return snapshotWatch_; }
@@ -75,6 +78,7 @@ private:
   CoopSnapshotInterpolation snapshots_;
   std::vector<game::coop::Message> world_;
   std::vector<game::coop::Message> sync_;
+  std::vector<game::coop::Message> training_;
   game::coop::SequenceWatch snapshotWatch_;
   game::coop::SequenceWatch commandWatch_;
   std::optional<net::Millis> firstPolled_;

@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.25.0 | The co-op tag says when a player trains at the gym (`coop_hud.tag.training`, `coop_hud.tag.<n>.training`) |
 | 0.24.0 | A game in progress takes players: the room list shows a game under way that has a seat as `in_progress` (`online.list()` rooms gain `in_progress`), the room says whether its game is under way and whether it takes new players (`online.current.in_progress`, `online.current.open_to_join`, `online.room()` `in_progress` and `open_to_join`), and the host opens or closes it to new players (`online.set_open_to_join`, `online_open_to_join`) |
 | 0.23.0 | Every partner fights in a co-op battle: an ally's card counts down its revive (`battle.ally.<n>.revive_seconds`, `revive_seconds` in `battle.allies()`), and the `coop_battle` screen shows each fallen partner's countdown (`coop_battle.fighter.<n>.revive_seconds`) and lets the player pick the partner its items fly to (`coop_battle.target`, the `coop_battle_target` command). The `coop_difficulty` option arrives (off, standard or hard) |
 | 0.22.0 | The `coop_trade` screen trades items between two co-op players: the phase (`coop_trade.phase`), the other player (`coop_trade.other.*`), this player's bag (`coop_trade.bag.<n>.*`), both offers (`coop_trade.own.<n>.*`, `coop_trade.their.<n>.*`) and both ready marks, with the commands `coop_trade_answer`, `coop_trade_add`, `coop_trade_take`, `coop_trade_confirm` and `coop_trade_cancel`. The `coop_hud` tag says when the other player can be asked (`coop_hud.tag.trade`) |
@@ -101,7 +102,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.24.0**.
+UI API version: **0.25.0**.
 
 ### `ui`
 
@@ -425,6 +426,7 @@ UI API version: **0.24.0**.
 | `coop_hud.tag.number` | setting | number | The number that fills {number} in the name's text key. |
 | `coop_hud.tag.revision` | setting | number | Goes up each time the tag's values change: the tag is drawn again. |
 | `coop_hud.tag.trade` | setting | yes/no | Whether the other player can be asked for a trade now (the trade key's hint under the name). |
+| `coop_hud.tag.training` | setting | yes/no | Whether the other player's partner is training at the gym now (a line under the name). |
 | `coop_hud.tag.<n>.visible` | setting | yes/no | In a room of more than two, whether the tag over another player shows (n 2 and 3; coop_hud.tag.revision redraws them too). |
 | `coop_hud.tag.<n>.x` | setting | number | Where that tag's anchor is across the window, in percent. |
 | `coop_hud.tag.<n>.y` | setting | number | Where that tag's anchor is down the window, in percent. |
@@ -432,6 +434,7 @@ UI API version: **0.24.0**.
 | `coop_hud.tag.<n>.name_key` | setting | text | The text key that names that player when it has no name of its own. |
 | `coop_hud.tag.<n>.number` | setting | number | The number that fills {number} in that name's text key. |
 | `coop_hud.tag.<n>.trade` | setting | yes/no | Whether that player can be asked for a trade now (the trade key's hint under the name). |
+| `coop_hud.tag.<n>.training` | setting | yes/no | Whether that player's partner is training at the gym now. |
 | `coop_hud.notice.shown` | setting | yes/no | Whether a co-op notice shows (a few seconds each). |
 | `coop_hud.notice.text` | setting | text | The notice's text key; {name} in it stands for the player it is about. |
 | `coop_hud.notice.name` | setting | text | The own name of the player the notice is about; empty when named by a text key. |

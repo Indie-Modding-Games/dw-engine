@@ -23,6 +23,7 @@
 #include <dwe/session/partner_view.hpp>
 #include <dwe/session/session_rules.hpp>
 #include <dwe/session/session_system.hpp>
+#include <dwe/session/shared_clock.hpp>
 
 #include <chrono>
 #include <cstddef>
@@ -313,7 +314,23 @@ public:
   core::Result<void> sleep(const game::partner::SleepContext& context);
   core::Result<void> fallAsleep(const game::partner::SleepContext& context);
   void wakeUp();
+  // A training session's award. In co-op its hour is the partner's own and the world's clock stays
+  // (TrainingRequest::sharedClock).
   core::Result<game::partner::TrainingResult> train(const game::partner::TrainingRequest& request);
+
+  // Co-op (docs/architecture/coop-training.md), an engine addition: who keeps this game's clock;
+  // Own outside co-op, where nothing below changes anything.
+  void shareClock(ClockShare share);
+  [[nodiscard]] ClockShare clockShare() const { return clockShare_; }
+  // A guest: the host's clock as it heard it. Its own clock follows it from then on.
+  void hearWorldClock(const WorldTime& time);
+  // The host: its clock as the world's, to tell the guests.
+  [[nodiscard]] WorldTime worldTime() const;
+  // A training course holds its player and partner (tamerSetState(8)). In co-op the world's clock
+  // runs on meanwhile, and the partner's care waits for the session's hour (train), as the
+  // original's clock stands still for it.
+  void holdForCourse(bool held);
+  [[nodiscard]] bool heldForCourse() const { return courseHeld_; }
 
   // After a system's command changed the partner (an item, an evolution): routes the partner's
   // events and writes a requested autosave, as the session's own commands do.
@@ -396,6 +413,12 @@ private:
   void followRules();
   core::Result<void> registerSaveSections();
   void advanceGameTime(double realSeconds);
+  // A guest's step after the world's clock; the partner's skipped hours, when the world skipped
+  // some, are paid here.
+  ruleset::ClockAdvance followWorld(double realSeconds);
+  // The part of `advance` the partner has not lived yet (a guest that went back to the world's time
+  // already lived some of it).
+  [[nodiscard]] ruleset::ClockAdvance unlived(const ruleset::ClockAdvance& advance) const;
   void followMap();
   // How the partner feels about the attached field's map now.
   [[nodiscard]] game::partner::AreaResponse areaOfFieldMap() const;
@@ -454,6 +477,14 @@ private:
   std::uint64_t savesWritten_ = 0;
   std::uint64_t autosavesSkipped_ = 0;
   PlayerNames names_;
+  ClockShare clockShare_ = ClockShare::Own;
+  WorldClockFollower follower_;
+  bool courseHeld_ = false;
+  // Whether the clock ran on the last tick (the world's, told to the guests on the host).
+  bool clockRan_ = false;
+  // A guest's partner lived up to this frame of the clock: a guest that went back to the world's
+  // time does not live those frames again.
+  std::int64_t livedUntil_ = 0;
 };
 
 } // namespace dwe::session

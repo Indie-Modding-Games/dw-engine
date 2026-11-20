@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.25.0 | La etiqueta cooperativa dice cuándo un jugador entrena en el gimnasio (`coop_hud.tag.training`, `coop_hud.tag.<n>.training`) |
 | 0.24.0 | Una partida en curso admite jugadores: la lista de salas muestra una partida en marcha con plaza libre como `in_progress` (las salas de `online.list()` ganan `in_progress`), la sala dice si su partida está en marcha y si admite jugadores nuevos (`online.current.in_progress`, `online.current.open_to_join`, `in_progress` y `open_to_join` de `online.room()`), y el anfitrión la abre o la cierra a jugadores nuevos (`online.set_open_to_join`, `online_open_to_join`) |
 | 0.23.0 | Todos los compañeros luchan en un combate cooperativo: la tarjeta de un aliado cuenta atrás hasta que se levanta (`battle.ally.<n>.revive_seconds`, `revive_seconds` en `battle.allies()`), y la pantalla `coop_battle` enseña la cuenta atrás de cada compañero caído (`coop_battle.fighter.<n>.revive_seconds`) y deja elegir a qué compañero van los objetos del jugador (`coop_battle.target`, el comando `coop_battle_target`). Llega la opción `coop_difficulty` (off, standard o hard) |
 | 0.22.0 | La pantalla `coop_trade` intercambia objetos entre dos jugadores cooperativos: la fase (`coop_trade.phase`), el otro jugador (`coop_trade.other.*`), la bolsa de este jugador (`coop_trade.bag.<n>.*`), las dos ofertas (`coop_trade.own.<n>.*`, `coop_trade.their.<n>.*`) y las dos marcas de listo, con los comandos `coop_trade_answer`, `coop_trade_add`, `coop_trade_take`, `coop_trade_confirm` y `coop_trade_cancel`. La etiqueta de `coop_hud` dice cuándo se le puede pedir al otro jugador (`coop_hud.tag.trade`) |
@@ -102,7 +103,7 @@ guardar y la caja del nombre); el resto de pantallas llega después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.24.0**.
+Versión de la API de la interfaz: **0.25.0**.
 
 ### `ui`
 
@@ -425,12 +426,16 @@ Versión de la API de la interfaz: **0.24.0**.
 | `coop_hud.tag.name_key` | ajuste | texto | La clave de texto que nombra al otro jugador sin nombre propio (el anfitrión, o un invitado por número). |
 | `coop_hud.tag.number` | ajuste | número | El número que rellena {number} en la clave de texto del nombre. |
 | `coop_hud.tag.revision` | ajuste | número | Sube cada vez que cambian los valores de la etiqueta: la etiqueta se vuelve a dibujar. |
+| `coop_hud.tag.trade` | ajuste | sí/no | Si al otro jugador se le puede pedir un intercambio ahora (la pista de la tecla de intercambio bajo el nombre). |
+| `coop_hud.tag.training` | ajuste | sí/no | Si el compañero del otro jugador entrena ahora en el gimnasio (una línea bajo el nombre). |
 | `coop_hud.tag.<n>.visible` | ajuste | sí/no | En una sala de más de dos, si se ve la etiqueta sobre otro jugador (n 2 y 3; coop_hud.tag.revision también las redibuja). |
 | `coop_hud.tag.<n>.x` | ajuste | número | Dónde está el ancla de esa etiqueta a lo ancho de la ventana, en porcentaje. |
 | `coop_hud.tag.<n>.y` | ajuste | número | Dónde está el ancla de esa etiqueta a lo alto de la ventana, en porcentaje. |
 | `coop_hud.tag.<n>.name` | ajuste | texto | El nombre propio de ese jugador, o vacío. |
 | `coop_hud.tag.<n>.name_key` | ajuste | texto | La clave de texto que nombra a ese jugador cuando no tiene nombre propio. |
 | `coop_hud.tag.<n>.number` | ajuste | número | El número que rellena {number} en la clave de texto de ese nombre. |
+| `coop_hud.tag.<n>.trade` | ajuste | sí/no | Si a ese jugador se le puede pedir un intercambio ahora (la pista de la tecla de intercambio bajo el nombre). |
+| `coop_hud.tag.<n>.training` | ajuste | sí/no | Si el compañero de ese jugador entrena ahora en el gimnasio. |
 | `coop_hud.notice.shown` | ajuste | sí/no | Si se ve un aviso cooperativo (unos segundos cada uno). |
 | `coop_hud.notice.text` | ajuste | texto | La clave de texto del aviso; {name} en ella es el jugador del que habla. |
 | `coop_hud.notice.name` | ajuste | texto | El nombre propio del jugador del que habla el aviso; vacío cuando lo nombra una clave de texto. |

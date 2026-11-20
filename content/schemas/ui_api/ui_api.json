@@ -1,5 +1,5 @@
 {
-  "version": "0.24.0",
+  "version": "0.25.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "The value of a setting the game publishes; nil if it does not publish it.", "signature": "(name: string): any"},
@@ -284,6 +284,7 @@
       {"name": "coop_hud.tag.number", "kind": "setting", "value": "number", "summary": "The number that fills {number} in the name's text key."},
       {"name": "coop_hud.tag.revision", "kind": "setting", "value": "number", "summary": "Goes up each time the tag's values change: the tag is drawn again."},
       {"name": "coop_hud.tag.trade", "kind": "setting", "value": "boolean", "summary": "Whether the other player can be asked for a trade now (the trade key's hint under the name)."},
+      {"name": "coop_hud.tag.training", "kind": "setting", "value": "boolean", "summary": "Whether the other player's partner is training at the gym now (a line under the name)."},
       {"name": "coop_hud.tag.<n>.visible", "kind": "setting", "value": "boolean", "summary": "In a room of more than two, whether the tag over another player shows (n 2 and 3; coop_hud.tag.revision redraws them too)."},
       {"name": "coop_hud.tag.<n>.x", "kind": "setting", "value": "number", "summary": "Where that tag's anchor is across the window, in percent."},
       {"name": "coop_hud.tag.<n>.y", "kind": "setting", "value": "number", "summary": "Where that tag's anchor is down the window, in percent."},
@@ -291,6 +292,7 @@
       {"name": "coop_hud.tag.<n>.name_key", "kind": "setting", "value": "text", "summary": "The text key that names that player when it has no name of its own."},
       {"name": "coop_hud.tag.<n>.number", "kind": "setting", "value": "number", "summary": "The number that fills {number} in that name's text key."},
       {"name": "coop_hud.tag.<n>.trade", "kind": "setting", "value": "boolean", "summary": "Whether that player can be asked for a trade now (the trade key's hint under the name)."},
+      {"name": "coop_hud.tag.<n>.training", "kind": "setting", "value": "boolean", "summary": "Whether that player's partner is training at the gym now."},
       {"name": "coop_hud.notice.shown", "kind": "setting", "value": "boolean", "summary": "Whether a co-op notice shows (a few seconds each)."},
       {"name": "coop_hud.notice.text", "kind": "setting", "value": "text", "summary": "The notice's text key; {name} in it stands for the player it is about."},
       {"name": "coop_hud.notice.name", "kind": "setting", "value": "text", "summary": "The own name of the player the notice is about; empty when named by a text key."},

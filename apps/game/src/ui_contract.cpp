@@ -338,6 +338,8 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(CoopHud, Setting, "coop_hud.tag.trade", Boolean,
           "Whether the other player can be asked for a trade now (the trade key's hint under the "
           "name)."),
+    entry(CoopHud, Setting, "coop_hud.tag.training", Boolean,
+          "Whether the other player's partner is training at the gym now (a line under the name)."),
     entry(CoopHud, Setting, "coop_hud.tag.<n>.visible", Boolean,
           "In a room of more than two, whether the tag over another player shows (n 2 and 3; "
           "coop_hud.tag.revision redraws them too)."),
@@ -353,6 +355,8 @@ constexpr auto Contract = std::to_array<UiContractEntry>({
     entry(
         CoopHud, Setting, "coop_hud.tag.<n>.trade", Boolean,
         "Whether that player can be asked for a trade now (the trade key's hint under the name)."),
+    entry(CoopHud, Setting, "coop_hud.tag.<n>.training", Boolean,
+          "Whether that player's partner is training at the gym now."),
     entry(CoopHud, Setting, "coop_hud.notice.shown", Boolean,
           "Whether a co-op notice shows (a few seconds each)."),
     entry(CoopHud, Setting, "coop_hud.notice.text", Text,
