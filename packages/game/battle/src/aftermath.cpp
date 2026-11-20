@@ -16,15 +16,30 @@ constexpr std::int32_t MinutesPerHour = 60;
 // Crossing an hour costs the partner an hour of its lifetime (tamer.c: advanceBattleTime).
 constexpr std::int32_t LifetimeHoursPerHour = 1;
 
+// docs/architecture/coop-combat.md §4.8: a co-op partner knocked out for good while its team won
+// gets up with 1 HP and loses some happiness, with no stat gains (an engine addition).
+constexpr std::int32_t KnockedOutHp = 1;
+constexpr std::int32_t KnockedOutHappiness = -10;
+
+// One partner of the players' side as the rewards read it: its fighter, its setup, its care values
+// and what it did.
+struct PartnerSide {
+  const Fighter& fighter;
+  const Combatant& combatant;
+  const PartnerCondition& condition;
+  const BattleCounters& counters;
+};
+
 StatValues statsOf(const CombatStats& stats) {
   return {stats.maxHp, stats.maxMp, stats.offense, stats.defense, stats.speed, stats.brain};
 }
 
 // battle_ui.c: battleStatsGainsAndDrops: each stat gains by how strong the strongest enemy was, and
 // when that gives nothing, by a chance from what the partner did.
-StatValues statGains(const BattleState& state, const BattleRules& rules, ruleset::Random& random) {
+StatValues statGains(const BattleState& state, const PartnerSide& side, const BattleRules& rules,
+                     ruleset::Random& random) {
   const RewardRules& rewards = rules.rewards;
-  const Fighter& partner = state.partner();
+  const Fighter& partner = side.fighter;
   const StatValues partnerStats = statsOf(partner.startStats);
   const std::size_t enemies = state.enemyCount();
   const std::int32_t factor = rewards.enemyFactors.at(enemies - 1);
@@ -43,7 +58,7 @@ StatValues statGains(const BattleState& state, const BattleRules& rules, ruleset
     }
   }
   const StatGainFallback& fallback = rewards.fallback;
-  const BattleCounters& counters = state.counters;
+  const BattleCounters& counters = side.counters;
   const std::int32_t maxHp = std::max(partner.stats.maxHp, 1);
   const std::int32_t hpLost = partner.combatant.hp - partner.hp;
   const StatValues chances{
@@ -83,16 +98,15 @@ std::vector<Drop> drops(const BattleSetup& setup, const BattleState& state,
 }
 
 // battle_ui.c: handleBattleEndBox, handleBattleInjury.
-bool injured(const BattleSetup& setup, const BattleState& state, const BattleRules& rules,
-             ruleset::Random& random) {
-  const bool hit = rules.quirks.on(quirk::InjuryCountsAnyHit) ? state.counters.anyoneHit
-                                                              : state.counters.partnerHit;
-  if (setup.condition.injured || !hit) {
+bool injured(const PartnerSide& side, const BattleRules& rules, ruleset::Random& random) {
+  const bool hit = rules.quirks.on(quirk::InjuryCountsAnyHit) ? side.counters.anyoneHit
+                                                              : side.counters.partnerHit;
+  if (side.condition.injured || !hit) {
     return false;
   }
-  const Fighter& partner = state.partner();
+  const Fighter& partner = side.fighter;
   const std::int32_t hpPercent = Hundred * partner.hp / std::max(partner.stats.maxHp, 1);
-  return random.below(Hundred) < setup.condition.tiredness - hpPercent;
+  return random.below(Hundred) < side.condition.tiredness - hpPercent;
 }
 
 // battle_hud.c: BTL_appendCommandLearnedText: the brain at the start plus its raise reaches a
@@ -131,10 +145,10 @@ std::int32_t mpDiscountLearned(const std::vector<MpDiscount>& discounts, std::in
 
 // battle_ui.c: battleMoveLearning: one of the enemy techniques seen, of the partner's specials and
 // in its species' list, by the move's chance for that special.
-std::vector<std::string> learnedMoves(const BattleSetup& setup, const BattleState& state,
+std::vector<std::string> learnedMoves(const PartnerSide& side, const BattleState& state,
                                       const MoveCatalog& moves, ruleset::Random& random) {
-  const Combatant& partner = setup.partner;
-  const std::vector<std::string>& known = setup.condition.knownMoves;
+  const Combatant& partner = side.combatant;
+  const std::vector<std::string>& known = side.condition.knownMoves;
   std::vector<MoveRef> candidates;
   for (const MoveRef ref : state.seenMoves) {
     const BattleMove& move = moves.at(ref);
@@ -188,61 +202,112 @@ void addPostBattleTiredness(BattleResult& result, const Fighter& partner,
 
 } // namespace
 
-BattleResult settleBattle(Outcome outcome, const BattleSetup& setup, const BattleState& state,
-                          const BattleRules& rules, const MoveCatalog& moves,
-                          ruleset::Random& random) {
-  const Fighter& partner = state.partner();
+namespace {
+
+// What the battle leaves one partner: the team's outcome, the partner's own `personal` one (it ran
+// off or was knocked out in a co-op battle that went on), and with `world` the bits, drops and
+// recruit too. The rolls go in the original's order.
+BattleResult settlePartner(Outcome outcome, const BattleSetup& setup, const BattleState& state,
+                           const PartnerSide& side, bool world, const BattleRules& rules,
+                           const MoveCatalog& moves, ruleset::Random& random) {
+  const Fighter& partner = side.fighter;
   const ConsequenceRules& consequences = rules.consequences;
   BattleResult result;
   result.outcome = outcome;
   result.frames = state.frame;
   result.partnerHp = partner.hp;
   result.partnerMp = partner.mp;
-  result.counters = state.counters;
+  result.counters = side.counters;
   result.kind = setup.kind;
-  result.partnerSpecies = setup.partner.species;
+  result.partnerSpecies = side.combatant.species;
+  result.departure = partner.departure;
   // std_main.c: STD_deinitializeCombat: a tournament match leaves the partner as it ends, no more;
   // nor does a versus match (vs_combat.c: VS__deinitializeCombat).
   if (setup.kind == BattleKind::Tournament || setup.kind == BattleKind::Versus) {
     return result;
   }
-  switch (outcome) {
-  case Outcome::Victory:
+  Outcome personal = outcome;
+  if (partner.departure == Departure::Fled) {
+    personal = Outcome::Fled;
+  } else if (partner.departure == Departure::KnockedOut && outcome != Outcome::Victory) {
+    personal = Outcome::Defeat;
+  }
+  if (world && outcome == Outcome::Victory) {
     for (const Combatant& enemy : setup.enemies) {
       result.bits += enemy.bits;
     }
-    result.statGains = statGains(state, rules, random);
-    result.drops = drops(setup, state, rules.rewards, random);
-    result.injured = injured(setup, state, rules, random);
-    {
-      const std::int32_t brain = partner.startStats.brain;
-      const std::int32_t raised =
-          brain + result.statGains.at(static_cast<std::size_t>(StatIndex::Brain));
-      result.commandsLearned = commandsLearned(rules.menus, brain, raised);
-      result.mpDiscountLearned = mpDiscountLearned(rules.condition.mpDiscounts, brain, raised);
+  }
+  if (partner.departure == Departure::KnockedOut && outcome == Outcome::Victory) {
+    result.partnerHp = KnockedOutHp;
+    result.care.happiness = KnockedOutHappiness;
+    if (world) {
+      result.drops = drops(setup, state, rules.rewards, random);
+      result.recruitJoined = setup.recruitOnVictory;
     }
-    result.learnedMoves = learnedMoves(setup, state, moves, random);
-    result.care = consequences.victory;
-    result.recruitJoined = setup.recruitOnVictory;
-    addPostBattleTiredness(result, partner, rules);
-    break;
-  case Outcome::Fled:
-    result.care = consequences.flee;
-    addPostBattleTiredness(result, partner, rules);
-    break;
-  case Outcome::Defeat:
-    result.care = consequences.defeat;
-    result.livesLost = consequences.defeatLives;
-    // The partner leaves with the HP and MP the fight left it. A lost battle goes on at MAPHEAD
-    // section 0x4DE, which calls tamer.c: tamerTickBattleLostLife and then the death map's
-    // section 0x48 (dg 212): that script tells a defeat from a sickness by the current HP being 0
-    // and gives the HP and MP back itself (add_stat 6 and 7).
-    break;
+    personal = outcome;
+  } else {
+    switch (personal) {
+    case Outcome::Victory:
+      result.statGains = statGains(state, side, rules, random);
+      if (world) {
+        result.drops = drops(setup, state, rules.rewards, random);
+      }
+      result.injured = injured(side, rules, random);
+      {
+        const std::int32_t brain = partner.startStats.brain;
+        const std::int32_t raised =
+            brain + result.statGains.at(static_cast<std::size_t>(StatIndex::Brain));
+        result.commandsLearned = commandsLearned(rules.menus, brain, raised);
+        result.mpDiscountLearned = mpDiscountLearned(rules.condition.mpDiscounts, brain, raised);
+      }
+      result.learnedMoves = learnedMoves(side, state, moves, random);
+      result.care = consequences.victory;
+      if (world) {
+        result.recruitJoined = setup.recruitOnVictory;
+      }
+      addPostBattleTiredness(result, partner, rules);
+      break;
+    case Outcome::Fled:
+      result.care = consequences.flee;
+      addPostBattleTiredness(result, partner, rules);
+      break;
+    case Outcome::Defeat:
+      result.care = consequences.defeat;
+      result.livesLost = consequences.defeatLives;
+      // The partner leaves with the HP and MP the fight left it. A lost battle goes on at MAPHEAD
+      // section 0x4DE, which calls tamer.c: tamerTickBattleLostLife and then the death map's
+      // section 0x48 (dg 212): that script tells a defeat from a sickness by the current HP being
+      // 0 and gives the HP and MP back itself (add_stat 6 and 7).
+      break;
+    }
   }
   result.elapsedMinutes = consequences.elapsedMinutes;
   result.hourCrossed = setup.startMinute + consequences.elapsedMinutes >= MinutesPerHour;
   result.lifetimeHoursLost = result.hourCrossed ? LifetimeHoursPerHour : 0;
   return result;
+}
+
+} // namespace
+
+BattleResult settleBattle(Outcome outcome, const BattleSetup& setup, const BattleState& state,
+                          const BattleRules& rules, const MoveCatalog& moves,
+                          ruleset::Random& random) {
+  const PartnerSide side{.fighter = state.partner(),
+                         .combatant = setup.partner,
+                         .condition = setup.condition,
+                         .counters = state.counters};
+  return settlePartner(outcome, setup, state, side, true, rules, moves, random);
+}
+
+BattleResult settleAlly(Outcome outcome, const BattleSetup& setup, const BattleState& state,
+                        const AllyState& ally, const BattleRules& rules, const MoveCatalog& moves,
+                        ruleset::Random& random) {
+  const Fighter& fighter = state.fighters.at(ally.id);
+  const PartnerSide side{.fighter = fighter,
+                         .combatant = fighter.combatant,
+                         .condition = ally.condition,
+                         .counters = ally.counters};
+  return settlePartner(outcome, setup, state, side, false, rules, moves, random);
 }
 
 } // namespace dwe::game::battle

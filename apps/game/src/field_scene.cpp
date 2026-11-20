@@ -717,6 +717,7 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
       .scriptedClip = std::nullopt,
       .heldClip = std::nullopt,
       .fighter = std::nullopt,
+      .fighterSlot = std::nullopt,
   });
   actor->player = std::make_unique<animation::AnimationPlayer>(*actor->model);
   actor->originalModel = isOriginalModel(*files_, actor->character.model);

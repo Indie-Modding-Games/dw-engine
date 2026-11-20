@@ -55,6 +55,7 @@ BattleSpoils spoils() {
           .elapsedMinutes = 3,
           .hourCrossed = true,
           .lifetimeHoursLost = 0,
+          .departure = 0,
           .commandsLearned = {3, 8},
           .mpDiscountLearned = 10,
           .counters = {4, 1, 2, 0},
@@ -130,14 +131,16 @@ TEST_CASE("cooperative battle messages round trip") {
                         .mapId = "native_forest",
                         .enemyNpcs = {4, 6},
                         .species = {"agumon", "goburimon", "goburimon"},
-                        .fixedFight = false});
+                        .fixedFight = false,
+                        .allies = {}});
   roundTrip(BattleBegin{.battle = 10,
                         .starter = HostPlayerId,
                         .ask = 0,
                         .mapId = "native_forest",
                         .enemyNpcs = {1},
                         .species = {"gabumon", "kunemon"},
-                        .fixedFight = true});
+                        .fixedFight = true,
+                        .allies = {}});
   roundTrip(BattleRefused{.ask = 3, .reason = BattleRefusal::Busy});
   roundTrip(BattleRefused{.ask = 4, .reason = BattleRefusal::NotHere});
   roundTrip(frame(9, 42));
@@ -171,20 +174,29 @@ TEST_CASE("cooperative battle messages reject what the battle cannot be") {
   broken.chargeMode = 3;
   rejects(BattleAsk{.ask = 1, .mapId = "m", .enemyNpcs = {1}, .fighter = broken});
   // A begin whose species do not match its fighters, or a guest's begin with no ask.
-  rejects(BattleBegin{
-      .battle = 1, .starter = HostPlayerId, .mapId = "m", .enemyNpcs = {1}, .species = {"a"}});
+  rejects(BattleBegin{.battle = 1,
+                      .starter = HostPlayerId,
+                      .mapId = "m",
+                      .enemyNpcs = {1},
+                      .species = {"a"},
+                      .fixedFight = false,
+                      .allies = {}});
   rejects(BattleBegin{.battle = 1,
                       .starter = GuestPlayerId,
                       .ask = 0,
                       .mapId = "m",
                       .enemyNpcs = {1},
-                      .species = {"a", "b"}});
+                      .species = {"a", "b"},
+                      .fixedFight = false,
+                      .allies = {}});
   rejects(BattleBegin{.battle = 1,
                       .starter = HostPlayerId,
                       .ask = 5,
                       .mapId = "m",
                       .enemyNpcs = {1},
-                      .species = {"a", "b"}});
+                      .species = {"a", "b"},
+                      .fixedFight = false,
+                      .allies = {}});
   // A frame of no battle, a command past the strip's.
   rejects(frame(0, 1));
   BattleFrame strange = frame(1, 1);
@@ -220,6 +232,7 @@ TEST_CASE("each side sends only its own battle messages") {
   CHECK(linked.guest.send(
       Message{BattleAsk{.ask = 1, .mapId = "m", .enemyNpcs = {1}, .fighter = fighter()}}));
   CHECK(linked.guest.send(Message{act(1, BattleActionKind::Cheer)}));
+  CHECK(linked.guest.send(Message{BattleOffer{.available = true, .fighter = fighter()}}));
   CHECK_FALSE(linked.guest.send(Message{frame(1, 1)}));
   CHECK_FALSE(linked.guest.send(Message{ending(1, BattleOutcome::Victory, {}, 0)}));
   // The host tells; it never asks.
@@ -228,6 +241,7 @@ TEST_CASE("each side sends only its own battle messages") {
   CHECK_FALSE(linked.host.send(
       Message{BattleAsk{.ask = 1, .mapId = "m", .enemyNpcs = {1}, .fighter = fighter()}}));
   CHECK_FALSE(linked.host.send(Message{act(1, BattleActionKind::Cheer)}));
+  CHECK_FALSE(linked.host.send(Message{BattleOffer{.available = true, .fighter = fighter()}}));
 }
 
 TEST_CASE("the referee runs one battle at a time and pulls the second player in as helper") {
@@ -311,7 +325,9 @@ TEST_CASE("the mirror follows the host's battle and keeps only the newest frame"
                              .ask = 0,
                              .mapId = "forest",
                              .enemyNpcs = {4},
-                             .species = {"gabumon", "kunemon"}});
+                             .species = {"gabumon", "kunemon"},
+                             .fixedFight = false,
+                             .allies = {}});
   REQUIRE(mirror.takeBegan());
   CHECK(mirror.pendingAsk() == 1U);
   CHECK(mirror.role() == BattleRole::Helper);
@@ -353,7 +369,9 @@ TEST_CASE("the guest's own battle answers its ask and brings its spoils") {
                              .ask = ask.ask,
                              .mapId = "forest",
                              .enemyNpcs = {2},
-                             .species = {"agumon", "kunemon"}});
+                             .species = {"agumon", "kunemon"},
+                             .fixedFight = false,
+                             .allies = {}});
   CHECK_FALSE(mirror.pendingAsk());
   CHECK(mirror.role() == BattleRole::Starter);
   const auto command = mirror.action(BattleActionKind::Command, 8);
@@ -377,7 +395,9 @@ TEST_CASE("the host leaving drops the guest's ask and battle") {
                              .starter = HostPlayerId,
                              .mapId = "forest",
                              .enemyNpcs = {2},
-                             .species = {"gabumon", "kunemon"}});
+                             .species = {"gabumon", "kunemon"},
+                             .fixedFight = false,
+                             .allies = {}});
   const BattleMirror::Dropped fighting = mirror.hostLeft();
   CHECK_FALSE(fighting.ask);
   CHECK(fighting.battle);
@@ -444,4 +464,109 @@ TEST_CASE("a co-op battle runs over the link from the guest's ask to its end") {
   REQUIRE(taken);
   REQUIRE(taken->spoils);
   CHECK(*taken->spoils == spoils());
+}
+
+TEST_CASE("both partners fight: the begin names the allies and their figures travel") {
+  roundTrip(BattleOffer{.available = true, .fighter = fighter()});
+  roundTrip(BattleOffer{.available = false, .fighter = fighter()});
+  roundTrip(BattleBegin{.battle = 11,
+                        .starter = HostPlayerId,
+                        .ask = 0,
+                        .mapId = "native_forest",
+                        .enemyNpcs = {4},
+                        .species = {"agumon", "goburimon", "gabumon"},
+                        .fixedFight = false,
+                        .allies = {GuestPlayerId}});
+  BattleFrame withAlly = frame(11, 3);
+  withAlly.figures.push_back({.slot = allyFigureSlot(GuestPlayerId), .x = 10, .z = 20});
+  roundTrip(withAlly);
+  BattleSpoils ranOff = spoils();
+  ranOff.departure = 1;
+  roundTrip(ending(11, BattleOutcome::Victory, {}, 50, ranOff));
+
+  const auto rejects = [](const Message& message) {
+    const auto decoded = decode(encode(message));
+    CHECK_FALSE(decoded);
+  };
+  // An ally that is the starter, or without its species.
+  rejects(BattleBegin{.battle = 1,
+                      .starter = HostPlayerId,
+                      .mapId = "m",
+                      .enemyNpcs = {1},
+                      .species = {"a", "b", "c"},
+                      .fixedFight = false,
+                      .allies = {HostPlayerId}});
+  rejects(BattleBegin{.battle = 1,
+                      .starter = HostPlayerId,
+                      .mapId = "m",
+                      .enemyNpcs = {1},
+                      .species = {"a", "b"},
+                      .fixedFight = false,
+                      .allies = {GuestPlayerId}});
+  // A figure below the last player's ally slot, a departure past knocked out.
+  BattleFrame low = frame(11, 4);
+  low.figures.push_back({.slot = static_cast<std::int16_t>(LowestFigureSlot - 1)});
+  rejects(low);
+  BattleSpoils unknown = spoils();
+  unknown.departure = 3;
+  rejects(ending(11, BattleOutcome::Victory, {}, 0, unknown));
+}
+
+TEST_CASE("the guest's partner joins the host's battle when it offers it, and commands it") {
+  BattleReferee referee;
+  CHECK_FALSE(referee.offered());
+  referee.receive(BattleOffer{.available = true, .fighter = fighter()});
+  REQUIRE(referee.offered());
+  CHECK(referee.offered()->species == "agumon");
+  referee.receive(BattleOffer{.available = false, .fighter = fighter()});
+  CHECK_FALSE(referee.offered());
+
+  const BattleBegin begin = referee.begin(HostPlayerId, 0, "forest", {2},
+                                          {"gabumon", "a", "agumon"}, false, {GuestPlayerId});
+  CHECK(begin.allies == std::vector<PlayerId>{GuestPlayerId});
+  CHECK(referee.roleOf(GuestPlayerId) == BattleRole::Ally);
+  CHECK(referee.roleOf(HostPlayerId) == BattleRole::Starter);
+  // An ally commands its own partner and helps; the end box is the starter's.
+  CHECK(referee.allows(act(begin.battle, BattleActionKind::Command, 8)));
+  CHECK(referee.allows(act(begin.battle, BattleActionKind::Cheer)));
+  CHECK_FALSE(referee.allows(act(begin.battle, BattleActionKind::CloseEnd)));
+  const auto end = referee.end(BattleOutcome::Victory, {2}, 40, spoils());
+  REQUIRE(end);
+  REQUIRE(end->spoils);
+
+  // A guest that leaves takes its offer with it.
+  referee.receive(BattleOffer{.available = true, .fighter = fighter()});
+  referee.guestLeft();
+  CHECK_FALSE(referee.offered());
+}
+
+TEST_CASE("the mirror sends its offer only when it changes, and knows it is an ally") {
+  BattleMirror mirror;
+  REQUIRE(mirror.offer(true, fighter()));
+  CHECK_FALSE(mirror.offer(true, fighter()));
+  BattleFighterProfile hurt = fighter();
+  hurt.hp = 10;
+  REQUIRE(mirror.offer(true, hurt));
+  REQUIRE(mirror.offer(false, hurt));
+  CHECK_FALSE(mirror.offer(false, hurt));
+
+  mirror.receive(BattleBegin{.battle = 4,
+                             .starter = HostPlayerId,
+                             .ask = 0,
+                             .mapId = "forest",
+                             .enemyNpcs = {2},
+                             .species = {"gabumon", "kunemon", "agumon"},
+                             .fixedFight = false,
+                             .allies = {GuestPlayerId}});
+  CHECK(mirror.role() == BattleRole::Ally);
+  CHECK(mirror.action(BattleActionKind::Command, 2));
+  CHECK_FALSE(mirror.action(BattleActionKind::CloseEnd));
+  mirror.receive(ending(4, BattleOutcome::Victory, {}, 0, spoils()));
+  const auto ended = mirror.takeEnded();
+  REQUIRE(ended);
+  // Its partner fought: the spoils are its own.
+  CHECK(ended->spoils);
+  // The host gone, the offer is sent again on the next link.
+  static_cast<void>(mirror.hostLeft());
+  CHECK(mirror.offer(false, hurt));
 }

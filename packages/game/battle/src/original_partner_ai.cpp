@@ -97,14 +97,15 @@ public:
   // battle_main.c: BTL_selectFighterTarget, the partner's own choice.
   std::optional<FighterId> chooseTarget(const BattleView& view) override {
     const BattleState& state = *view.state;
-    const Fighter& self = state.partner();
+    const FighterId actor = view.actor;
+    const Fighter& self = state.fighters.at(actor);
     const bool targetAlive = self.target && !state.fighters.at(*self.target).defeated();
-    if (state.commands.current == Command::Change && targetAlive) {
+    if (state.commandsOf(actor).current == Command::Change && targetAlive) {
       return self.target;
     }
     const PartnerAiRules& rules = view.rules->partnerAi;
     if (self.stats.brain >= rules.statusTargetBrain) {
-      const std::vector<FighterId> afflicted = afflictedOthers(view, PartnerId);
+      const std::vector<FighterId> afflicted = afflictedOthers(view, actor);
       if (afflicted.size() >= 2) {
         return afflicted.at(static_cast<std::size_t>(
             view.random->below(static_cast<std::int32_t>(afflicted.size()))));
@@ -112,11 +113,11 @@ public:
       if (afflicted.size() == 1) {
         return afflicted.front();
       }
-      const WeakestChoice weakest = weakestOther(view, PartnerId);
+      const WeakestChoice weakest = weakestOther(view, actor);
       if (!targetAlive) {
         return weakest.fighter;
       }
-      const std::int32_t current = targetScore(view, PartnerId, *self.target);
+      const std::int32_t current = targetScore(view, actor, *self.target);
       if (!weakest.fighter || current - weakest.score < rules.switchMargin) {
         return self.target;
       }
@@ -126,9 +127,9 @@ public:
       if (targetAlive) {
         return self.target;
       }
-      return weakestOther(view, PartnerId).fighter;
+      return weakestOther(view, actor).fighter;
     }
-    return nearestOther(state, PartnerId);
+    return nearestOther(state, actor);
   }
 
 private:

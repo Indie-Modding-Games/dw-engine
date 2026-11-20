@@ -493,9 +493,11 @@ the **host's simulation**:
   drops, the guest's waiting ask becomes a solo battle of its own game, and the battle on screen goes (its script gets
   "not started"); nothing is left holding.
 
-Next step: both partners fighting together. The protocol already carries the starter and each fighter's species, and the
-helper's actions go through the same `BattleAction`; what is missing is a second partner side in the battle itself
-(enemy AI targets, hits, the bag and the HUD assume fighter 0 alone, §2).
+**Both partners fight together** (protocol version 6, [co-op combat](coop-combat.md) §12). When the guest's partner is
+on the map where the host's encounter starts and is not busy (the guest sends `BattleOffer` when that changes), it
+joins the host's battle as an **ally**, after the enemies: the guest's role is `ally`, it orders its own partner and
+throws at it, and its partner's result comes back in the spoils. A partner away or busy is left out and its player
+helps as above. Each partner runs or is knocked out on its own; the team loses only when no partner is left.
 
 Limits of this first version: the techniques' effects, the damage numbers and the status marks are drawn only on the
 host; the guest sees the fighters move and the life bars. Tournament fighters that are not map NPCs are not drawn on

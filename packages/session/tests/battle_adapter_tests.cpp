@@ -201,7 +201,8 @@ BattleRequest duelWithFoe() {
           .recruitOnVictory = "foe",
           .matchMusic = std::nullopt,
           .predefined = false,
-          .visitor = std::nullopt};
+          .visitor = std::nullopt,
+          .allies = {}};
 }
 
 } // namespace
@@ -1043,4 +1044,30 @@ TEST_CASE("a visiting partner fights instead of the session's and leaves it unto
   CHECK(aftermath->drops.size() == 1);
   CHECK(aftermath->itemsLost.empty());
   CHECK(adapters.battle->moves().learned == std::vector<std::string>{"punch"});
+}
+
+TEST_CASE("a co-op ally fights beside the partner: a guest's visitor or this session's own") {
+  const TestPacks packs;
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters);
+  dwe::session::VisitingPartner visitor = adapters.battle->visitorOf(*session);
+  visitor.hp = 900;
+  BattleRequest request = duelWithFoe();
+  request.visitor = visitor;
+  // In a guest's battle the host's own partner joins beside the guest's.
+  request.allies.push_back({.visitor = std::nullopt,
+                            .partner = {.x = 300, .z = -600},
+                            .tamer = {.x = 300, .z = -800},
+                            .owner = 0});
+  auto battle = adapters.battle->start(*session, std::move(request));
+  REQUIRE_MESSAGE(battle.has_value(), errorOf(battle));
+  const dwe::game::battle::BattleState& state = battle->state();
+  REQUIRE(state.allies.size() == 1);
+  const dwe::game::battle::Fighter& ally = state.fighters.at(state.allies.front().id);
+  CHECK(ally.combatant.species == "agum");
+  CHECK(ally.combatant.hp == session->partner().state().stats.currentHp);
+  CHECK(ally.position.x == 300);
+  CHECK(state.partner().combatant.hp == 900);
+  // Throws from the ally's player land on it.
+  CHECK(battle->bagAvailableFor(state.allies.front().id));
 }

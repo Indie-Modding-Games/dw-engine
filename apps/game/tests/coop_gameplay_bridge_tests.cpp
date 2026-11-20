@@ -5,6 +5,8 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <optional>
+#include <variant>
 
 #include "coop_gameplay_bridge.hpp"
 #include "coop_snapshot.hpp"
@@ -72,6 +74,40 @@ TEST_CASE("coop gameplay bridge routes guest movement into the host controller")
   REQUIRE(receivedSnapshot->entities.size() == 2);
   CHECK(receivedSnapshot->entities[1].networkId == 3);
   CHECK(receivedSnapshot->entities[1].position.x == doctest::Approx(120.0F));
+}
+
+TEST_CASE("the guest's partner offer reaches the host's battles") {
+  using namespace dwe::game::coop;
+  dwe::net::LoopbackNetwork network({});
+  CoopLink hostLink = CoopLink::host(network.link(0), testIdentity());
+  CoopLink guestLink = CoopLink::guest(network.link(1), testIdentity(), "Guest");
+  NetworkFieldController remoteController;
+  CoopGameplayBridge host{hostLink, remoteController};
+  NetworkFieldController unusedController;
+  CoopGameplayBridge guest{guestLink, unusedController};
+  for (int i = 0; i < 8; ++i) {
+    network.advance(dwe::net::Millis{1});
+    host.poll(network.now());
+    guest.poll(network.now());
+  }
+  REQUIRE(guestLink.phase() == LinkPhase::Ready);
+
+  BattleFighterProfile fighter;
+  fighter.species = "gabu";
+  fighter.hp = 700;
+  REQUIRE(guest.sendBattle(Message{BattleOffer{.available = true, .fighter = fighter}}));
+  std::optional<Message> received;
+  for (int i = 0; i < 8 && !received; ++i) {
+    network.advance(dwe::net::Millis{1});
+    guest.poll(network.now());
+    host.poll(network.now());
+    received = host.receiveBattle();
+  }
+  REQUIRE(received);
+  const auto* offer = std::get_if<BattleOffer>(&*received);
+  REQUIRE(offer != nullptr);
+  CHECK(offer->available);
+  CHECK(offer->fighter.species == "gabu");
 }
 
 TEST_CASE("coop gameplay bridge transfers a full guest save in reliable bounded chunks") {

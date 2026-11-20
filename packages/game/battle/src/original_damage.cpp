@@ -35,8 +35,10 @@ public:
     if (them.status.stunned || them.status.flattened || them.disobeying) {
       return Certain;
     }
-    const bool sicknessCounts = rules.quirks.on(quirk::SicknessAlwaysHits) || defender == PartnerId;
-    if (view.partnerSick && sicknessCounts) {
+    const bool sicknessCounts =
+        rules.quirks.on(quirk::SicknessAlwaysHits) || view.state->isPlayerSide(defender);
+    const AllyState* ally = view.state->allyOf(defender);
+    if ((ally != nullptr ? ally->condition.sick : view.partnerSick) && sicknessCounts) {
       return Certain;
     }
     if (them.speedReserve <= 0 || isAttacking(*view.state, defender)) {

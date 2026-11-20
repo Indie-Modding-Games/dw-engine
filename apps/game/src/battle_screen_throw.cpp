@@ -20,7 +20,7 @@ constexpr std::uint32_t ThrowHandNode = 9;
 
 } // namespace
 
-void BattleScreen::startThrow(assets::ItemHandle item) {
+void BattleScreen::startThrow(assets::ItemHandle item, game::battle::FighterId thrower) {
   if (desc_.scene == nullptr) {
     return;
   }
@@ -31,7 +31,8 @@ void BattleScreen::startThrow(assets::ItemHandle item) {
   if (!icon) {
     return;
   }
-  thrown_ = ThrownSprite{.icon = icon->cell, .palette = icon->palette, .flight = {}};
+  thrown_ =
+      ThrownSprite{.icon = icon->cell, .palette = icon->palette, .flight = {}, .thrower = thrower};
   holdThrown();
   showThrown();
 }
@@ -47,15 +48,16 @@ void BattleScreen::stepThrow() {
   }
   // main.c: tickThrownItem: once the item reached the partner, removeTamerItem drops it
   // (TAMER_ITEM back to 0xFF).
-  if (!thrown_ || !battle_ || !battle_->itemInFlight()) {
+  if (!thrown_ || !battle_ || !battle_->thrownItemOf(thrown_->thrower)) {
     thrown_.reset();
     showThrown();
     return;
   }
-  const std::optional<std::int32_t> frame = battle_->thrownItemFlightFrame();
+  const game::battle::FighterId target = battle_->thrownItemOf(thrown_->thrower)->target;
+  const std::optional<std::int32_t> frame = battle_->thrownItemFlightFrame(thrown_->thrower);
   if (frame && thrown_->flight) {
-    thrown_->flight =
-        game::battle::stepItemFlight(*thrown_->flight, battle_->state().partner().position, *frame);
+    thrown_->flight = game::battle::stepItemFlight(
+        *thrown_->flight, battle_->state().fighters.at(target).position, *frame);
   } else {
     holdThrown();
   }

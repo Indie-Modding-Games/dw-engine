@@ -10,12 +10,14 @@
 
 namespace dwe::game::coop {
 
-// What a player is in the running battle: the one whose partner fights (it started it and gives
-// the commands) or the one who watches and helps.
-enum class BattleRole : std::uint8_t { Starter, Helper };
+// What a player is in the running battle: the one whose partner fights first (it started it and
+// gives the commands), one whose partner joined it beside that one (it commands its own), or one
+// who watches and helps.
+enum class BattleRole : std::uint8_t { Starter, Helper, Ally };
 
-// Whether a battle action is one a player in this role may take: the commands and the end box's
-// close belong to the starter; an item from one's own bag and a cheer to either.
+// Whether a battle action is one a player in this role may take: the commands belong to who has a
+// partner in it, the end box's close to the starter; an item from one's own bag and a cheer to
+// anyone.
 [[nodiscard]] bool roleAllows(BattleRole role, BattleActionKind kind);
 
 // The host's side of the co-op battles (docs/architecture/multiplayer.md, §6 decision 3): the
@@ -28,6 +30,7 @@ public:
     std::uint32_t battle = 0;
     PlayerId starter = HostPlayerId;
     std::uint32_t ask = 0;
+    std::vector<PlayerId> allies;
   };
 
   // Whether the battle the guest asks for can start: not while another one runs (the guest is
@@ -35,11 +38,15 @@ public:
   // the host's. None: it can.
   [[nodiscard]] std::optional<BattleRefusal> judge(const BattleAsk& ask, std::string_view hostMap,
                                                    bool hostBusy) const;
-  // A battle began in the host's world: the host's own (`ask` 0) or the guest's ask it accepted.
-  // The message that tells the guest.
+  // A battle began in the host's world: the host's own (`ask` 0) or the guest's ask it accepted,
+  // with the partners of `allies` beside the starter's. The message that tells the guest.
   BattleBegin begin(PlayerId starter, std::uint32_t ask, std::string mapId,
                     std::vector<std::int16_t> enemyNpcs, std::vector<std::string> species,
-                    bool fixedFight);
+                    bool fixedFight, std::vector<PlayerId> allies = {});
+  // The guest's newest offer of its partner for the host's battles (none since it joined or left).
+  void receive(const BattleOffer& offer) { offer_ = offer; }
+  // The partner the guest offers now: none when it is not free to join.
+  [[nodiscard]] std::optional<BattleFighterProfile> offered() const;
   [[nodiscard]] const std::optional<Running>& running() const { return running_; }
   // The role of a player in the running battle; none without one.
   [[nodiscard]] std::optional<BattleRole> roleOf(PlayerId player) const;
@@ -47,12 +54,15 @@ public:
   // role allows, while the guest is there.
   [[nodiscard]] bool allows(const BattleAction& action) const;
   // The running battle ended: the message that tells the guest (none without a running battle).
-  // Spoils go only to a guest that started it and is still there.
+  // Spoils go only to a guest whose partner fought in it and is still there.
   std::optional<BattleEnd> end(BattleOutcome outcome, std::vector<std::int16_t> leftMap,
                                std::int32_t bits, std::optional<BattleSpoils> spoils);
   // The guest dropped. A battle its partner fights goes on alone: the partner fights on its own
   // call (it takes no more commands) and nothing is sent back; the host keeps watching and helping.
-  void guestLeft() { guestGone_ = true; }
+  void guestLeft() {
+    guestGone_ = true;
+    offer_.reset();
+  }
   // The guest is back (a new link): it sees the next battle again.
   void guestJoined() { guestGone_ = false; }
   [[nodiscard]] bool guestGone() const { return guestGone_; }
@@ -63,6 +73,7 @@ public:
 private:
   std::uint32_t next_ = 1;
   std::optional<Running> running_;
+  std::optional<BattleOffer> offer_;
   bool guestGone_ = false;
 };
 
@@ -87,6 +98,9 @@ public:
   [[nodiscard]] std::optional<BattleRefused> takeRefused();
   [[nodiscard]] std::optional<BattleEnd> takeEnded();
 
+  // The offer of this guest's partner for the host's battles to send, when it changed since the
+  // last one sent (`available` with its fighter); none when it did not.
+  [[nodiscard]] std::optional<BattleOffer> offer(bool available, BattleFighterProfile fighter);
   // The running battle, its newest frame and this player's role in it.
   [[nodiscard]] const std::optional<BattleBegin>& running() const { return running_; }
   [[nodiscard]] const std::optional<BattleFrame>& frame() const { return frame_; }
@@ -106,6 +120,7 @@ public:
 
 private:
   std::uint32_t nextAsk_ = 1;
+  std::optional<BattleOffer> offered_;
   std::optional<std::uint32_t> pending_;
   std::optional<BattleBegin> running_;
   std::optional<BattleFrame> frame_;

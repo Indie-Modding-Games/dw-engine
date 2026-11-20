@@ -40,9 +40,11 @@ inline constexpr std::string_view CoopBattleRevisionSetting = "coop_battle.revis
                                                   game::coop::BattleOutcome outcome,
                                                   std::string partnerSpecies);
 
-// The co-op battles of a played game (docs/architecture/multiplayer.md, §6 decision 3): the
-// shared world runs one battle at a time on the host's game. The partner of the player who started
-// it fights; the other player watches and helps with items from their own bag and cheers.
+// The co-op battles of a played game (docs/architecture/multiplayer.md, §6 decision 3;
+// coop-combat.md): the shared world runs one battle at a time on the host's game. The partner of
+// the player who started it fights, and the other player's beside it when that player stands on the
+// map, free (the guest's offer; the host's own in a guest's battle). Each player commands their own
+// partner, throws items from their own bag and cheers; a player without a partner in it helps.
 //
 // On the host it answers the guest's asks (BattleReferee), tells the guest of every battle that
 // begins, sends its frames and its end, and applies the guest's actions. On the guest the story's
@@ -67,7 +69,7 @@ public:
   // cheers for the helper, as the battle's square button does.
   void press(const input::InputState& input);
   // The host: the guest's link went. Its partner fights on alone and nothing is sent back.
-  void guestLeft() { referee_.guestLeft(); }
+  void guestLeft();
   // The guest: the host went. The battle shown and the ask waiting go.
   void hostLeft(PlaySession* play);
   // No game is played any more: everything goes.
@@ -77,11 +79,14 @@ private:
   void hostTick(PlaySession& play, CoopGameplayBridge* bridge);
   void answer(PlaySession& play, CoopGameplayBridge& bridge, const game::coop::BattleAsk& ask);
   void apply(PlaySession& play, const game::coop::BattleAction& action);
+  void offerAllies(PlaySession& play);
   [[nodiscard]] game::coop::BattleBegin beginOf(PlaySession& play, game::coop::PlayerId starter,
                                                 std::uint32_t ask);
   [[nodiscard]] game::coop::BattleFrame frameOf(const PlaySession& play);
   void guestTick(PlaySession& play, CoopGameplayBridge& bridge);
+  void sendOffer(PlaySession& play, CoopGameplayBridge& bridge);
   void startShowing(PlaySession& play, const game::coop::BattleBegin& begin);
+  void applySpoils(PlaySession& play, const game::coop::BattleEnd& end);
   void showFrame(PlaySession& play);
   void stopShowing(PlaySession& play, const game::coop::BattleEnd& end);
   void lookAtBattle(PlaySession& play, const game::coop::BattleFrame& frame);
@@ -101,6 +106,8 @@ private:
   // The guest's ask waiting for its answer, and whether the battle shown is the one it asked for.
   std::optional<std::uint32_t> asked_;
   bool ownBattle_ = false;
+  // Whether this player's partner fights in the host's battle beside the host's.
+  bool allyBattle_ = false;
   // Whether this player watches the host's battle (it runs on this player's map), and whether
   // that one is a fixed fight (its enemies stay where it left them).
   bool watching_ = false;

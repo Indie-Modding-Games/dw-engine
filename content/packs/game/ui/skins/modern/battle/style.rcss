@@ -666,3 +666,29 @@
 #speed-plate.hidden {
 	display: none;
 }
+
+/* Co-op: the other players' partners fighting beside this one (#allies), each a smaller fighter panel under the
+   command row, at the left. */
+#allies {
+	position: absolute;
+	left: 24dp;
+	top: 132dp;
+}
+
+.ally {
+	width: 280dp;
+	padding: 6dp 10dp;
+}
+
+.ally .fighter-name {
+	font-size: 18dp;
+}
+
+.ally .bar-label,
+.ally .bar-value {
+	font-size: 18dp;
+}
+
+.ally .bar-digits {
+	display: none;
+}

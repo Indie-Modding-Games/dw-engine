@@ -18,6 +18,8 @@ namespace dwe::screens {
 // The settings of the battle screen (ui/battle/document), which refreshes on BattleRevisionSetting.
 inline constexpr std::string_view BattleRevisionSetting = "battle.revision";
 inline constexpr std::string_view BattleFighterList = "battle.fighter";
+// A co-op battle's other partners (docs/architecture/coop-combat.md §6).
+inline constexpr std::string_view BattleAllyList = "battle.ally";
 inline constexpr std::string_view BattleMenuList = "battle.menu";
 inline constexpr std::string_view BattleEndList = "battle.end";
 inline constexpr std::string_view BattleGainList = "battle.end.gain";
@@ -101,8 +103,10 @@ struct FinisherGauge {
 
 // What the battle screen shows while the battle runs.
 struct BattleView {
-  // The partner first, then the enemies.
+  // The partner first, then the enemies. In a co-op battle the partner is this player's own.
   std::vector<FighterView> fighters;
+  // A co-op battle's other partners, fighting beside it (none in the original's battles).
+  std::vector<FighterView> allies;
   std::vector<CommandEntry> menu;
   FinisherGauge finisher;
   // The seconds left to revive the fallen partner, once the countdown shows (command_menu.c:
@@ -175,8 +179,10 @@ struct BattleEndView {
   std::int32_t waitFrames = 0;
 };
 
-// The battle screen's view of a battle under way.
-[[nodiscard]] BattleView battleViewOf(const game::battle::Battle& battle, const NameKeys& names);
+// The battle screen's view of a battle under way, for the player who commands partner `own` (in a
+// co-op battle an ally can be this player's; the others show as its allies).
+[[nodiscard]] BattleView battleViewOf(const game::battle::Battle& battle, const NameKeys& names,
+                                      game::battle::FighterId own = game::battle::PartnerId);
 
 // The end box of a finished battle and what the session did with it.
 [[nodiscard]] BattleEndView battleEndViewOf(const game::battle::BattleResult& result,

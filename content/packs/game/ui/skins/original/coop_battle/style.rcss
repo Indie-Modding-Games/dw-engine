@@ -42,3 +42,11 @@ button:hover,
 button:focus {
 	border-color: #e8d048;
 }
+
+.fighter .mp {
+	color: #68a8e8;
+}
+
+.fighter.mine {
+	border-left-color: #e8d048;
+}

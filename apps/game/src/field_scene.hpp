@@ -638,8 +638,14 @@ public:
   enum class BattlePartner : std::uint8_t { Own, CoopGuest, CoopHost };
   void setBattlePartner(BattlePartner partner) { battlePartner_ = partner; }
   [[nodiscard]] BattlePartner battlePartner() const { return battlePartner_; }
-  // The bodies a battle holds now (the partner, no slot, and the map's NPCs by slot), as the battle
-  // left them: what the co-op host shows the guest of its battle.
+  // A co-op battle's other partners (docs/architecture/coop-combat.md §4) are held by this slot
+  // (below the NPCs' and the stage fighters'): player `owner`'s partner, this game's own when the
+  // scene draws no other player by that id.
+  [[nodiscard]] static constexpr std::int32_t allyFighterSlot(game::field::PlayerId owner) {
+    return -2 - static_cast<std::int32_t>(owner);
+  }
+  // The bodies a battle holds now (the partner, no slot, the map's NPCs and the co-op allies by
+  // slot), as the battle left them: what the co-op host shows the guest of its battle.
   struct HeldFigure {
     std::optional<std::int32_t> npc;
     FighterFigure figure;
@@ -815,8 +821,9 @@ private:
     std::uint32_t scriptedStarts = 0;
     // A clip that replaces the motion's (setPlayerClip).
     std::optional<std::uint32_t> heldClip;
-    // The battle's hold on it (holdFighter).
+    // The battle's hold on it (holdFighter), and the slot it was held by.
     std::optional<FighterFigure> fighter;
+    std::optional<std::int32_t> fighterSlot;
     // Where smooth motion draws it while held: gliding between the battle's frames, its clip
     // between the ticks.
     PoseGlide fighterGlide{};

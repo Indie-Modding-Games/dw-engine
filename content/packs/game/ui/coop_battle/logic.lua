@@ -1,11 +1,14 @@
 -- The host's battle on a co-op guest's screen (apps/game/src/coop_battles.hpp). The partner of the
--- player who started it fights; this player either gives it orders (coop_battle.role "starter")
--- or helps (role "helper"). Both cheer (the finisher's charge) and throw items from their own bag.
--- The fighters are coop_battle.fighter.<n>.*, the partner first; the orders coop_battle.order.<n>.*
--- and the items coop_battle.item.<n>.*. Everything redraws when coop_battle.revision counts up.
+-- player who started it fights, and so does this player's own when it was on the same map: this
+-- player gives their partner orders (coop_battle.role "starter" or "ally") or, with their partner
+-- left out, helps (role "helper"). Everyone cheers (the finisher's charge) and throws items from
+-- their own bag. The fighters are coop_battle.fighter.<n>.*, the starter's partner first, then the
+-- enemies, then the allies; the orders coop_battle.order.<n>.* and the items
+-- coop_battle.item.<n>.*. Everything redraws when coop_battle.revision counts up.
 -- The mouse clicks the buttons; the keys and the pad move between them and confirm one.
 
-local MaxFighters = 4
+-- The starter's partner, three enemies and up to three allies.
+local MaxFighters = 7
 local MaxOrders = 12
 local MaxItems = 8
 
@@ -36,19 +39,35 @@ local function draw_fighters(document)
       local prefix = "coop_battle.fighter." .. index .. "."
       local hp, most = number(prefix .. "hp"), number(prefix .. "max_hp")
       local share = most > 0 and math.max(0, math.min(1, hp / most)) or 0
-      row:set_class("partner", index == 0)
+      local partner = text(prefix .. "side") == "partner"
+      row:set_class("partner", partner)
+      row:set_class("enemy", not partner)
+      row:set_class("mine", ui.setting(prefix .. "mine") == true)
       row:set_class("down", ui.setting(prefix .. "down") == true)
       document:get("fighter-" .. index .. "-name"):set_text(named(text(prefix .. "name_key")))
       document
         :get("fighter-" .. index .. "-fill")
         :set_property("width", string.format("%.1f%%", share * 100))
       document:get("fighter-" .. index .. "-hp"):set_text(string.format("%d/%d", hp, most))
+      -- The partners show their MP too; an enemy's stays hidden, as in the battle's own HUD.
+      local mp = document:get("fighter-" .. index .. "-mp")
+      mp:set_class("hidden", not partner)
+      if partner then
+        mp:set_text(
+          string.format(
+            "%s %d/%d",
+            t("coop_battle.mp"),
+            number(prefix .. "mp"),
+            number(prefix .. "max_mp")
+          )
+        )
+      end
     end
   end
 end
 
-local function draw_orders(document, starter, fighting)
-  local count = starter and fighting and number("coop_battle.order_count") or 0
+local function draw_orders(document, commands, fighting)
+  local count = commands and fighting and number("coop_battle.order_count") or 0
   local current = number("coop_battle.command")
   for index = 0, MaxOrders - 1 do
     local button = document:get("order-" .. index)
@@ -89,15 +108,16 @@ local function draw(document)
   if not shown then
     return
   end
-  local starter = text("coop_battle.role") == "starter"
+  local role = text("coop_battle.role")
+  local starter = role == "starter"
+  -- The starter and an ally both command their own partner; a helper only cheers and throws.
+  local commands = starter or role == "ally"
   local phase = text("coop_battle.phase")
   local fighting = phase == "fight"
-  document
-    :get("title")
-    :set_text(t(starter and "coop_battle.title_starter" or "coop_battle.title_helper"))
+  document:get("title"):set_text(t("coop_battle.title_" .. (commands and role or "helper")))
   document:get("phase"):set_text(t("coop_battle.phase_" .. (phase ~= "" and phase or "intro")))
   draw_fighters(document)
-  draw_orders(document, starter, fighting)
+  draw_orders(document, commands, fighting)
   draw_items(document, fighting)
   local cheer = document:get("cheer")
   cheer:set_text(t("coop_battle.cheer"))

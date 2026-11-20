@@ -144,6 +144,9 @@ game::battle::ThrownItem thrownItemOf(const game::inventory::ItemEffect& effect)
 class ThrowTarget final : public game::inventory::ItemEffectTarget {
 public:
   explicit ThrowTarget(game::battle::Battle& battle) : battle_(&battle) {}
+  ThrowTarget(game::battle::Battle& battle, game::battle::FighterId thrower,
+              game::battle::FighterId target)
+      : battle_(&battle), thrower_(thrower), target_(target) {}
 
   bool accepts(const game::inventory::ItemEffect& /*effect*/,
                game::inventory::UseContext /*context*/) override {
@@ -152,13 +155,16 @@ public:
 
   void apply(const game::inventory::ItemEffect& effect,
              game::inventory::UseContext /*context*/) override {
-    thrown_ = battle_->throwItem(thrownItemOf(effect));
+    thrown_ = thrower_ ? battle_->throwItem(thrownItemOf(effect), *thrower_, target_)
+                       : battle_->throwItem(thrownItemOf(effect));
   }
 
   [[nodiscard]] const core::Result<void>& thrown() const { return thrown_; }
 
 private:
   game::battle::Battle* battle_;
+  std::optional<game::battle::FighterId> thrower_;
+  game::battle::FighterId target_ = game::battle::PartnerId;
   core::Result<void> thrown_;
 };
 
@@ -174,8 +180,21 @@ game::partner::BattleResult partnerResultOf(Outcome outcome) {
   return game::partner::BattleResult::Lost;
 }
 
+// A co-op partner's own end of the battle: running off is its flee, and being out of a lost one
+// its defeat (docs/architecture/coop-combat.md §4.7, §4.8); otherwise the battle's outcome.
+game::battle::Outcome ownOutcomeOf(const BattleResult& result) {
+  if (result.departure == game::battle::Departure::Fled) {
+    return game::battle::Outcome::Fled;
+  }
+  if (result.departure == game::battle::Departure::KnockedOut &&
+      result.outcome != game::battle::Outcome::Victory) {
+    return game::battle::Outcome::Defeat;
+  }
+  return result.outcome;
+}
+
 game::partner::BattleConsequences consequencesOf(const BattleResult& result) {
-  return {.result = partnerResultOf(result.outcome),
+  return {.result = partnerResultOf(ownOutcomeOf(result)),
           .injured = result.injured,
           .mood = {.happiness = result.care.happiness,
                    .discipline = result.care.discipline,
@@ -570,7 +589,20 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
                                   .kind = request.kind,
                                   .timeLimit = request.timeLimit,
                                   .recruitOnVictory = std::move(request.recruitOnVictory),
-                                  .versus = std::nullopt};
+                                  .versus = std::nullopt,
+                                  .allies = {}};
+  for (const BattleAlly& ally : request.allies) {
+    const VisitingPartner joining = ally.visitor ? *ally.visitor : visitorOf(session);
+    auto fighter = visitingCombatant(joining);
+    if (!fighter) {
+      return std::unexpected{fighter.error()};
+    }
+    fighter->position = ally.partner;
+    setup.allies.push_back({.partner = std::move(*fighter),
+                            .condition = joining.condition,
+                            .tamer = ally.tamer,
+                            .owner = ally.owner});
+  }
   ruleset::Random& random = session.random();
   const std::uint64_t high = random.next();
   const std::uint64_t seed = (high << SeedHalfBits) | random.next();
@@ -676,7 +708,8 @@ BattleAdapter::startVersus(const game::versus::VersusFighter& host,
       .kind = game::battle::BattleKind::Versus,
       .timeLimit = rules_->versus->timeLimitSeconds,
       .recruitOnVictory = std::nullopt,
-      .versus = game::battle::VersusSetup{.rivalDiscipline = guest.discipline}};
+      .versus = game::battle::VersusSetup{.rivalDiscipline = guest.discipline},
+      .allies = {}};
   return game::battle::Battle::start(std::move(setup), *rules_, *catalog_, std::move(*strategies),
                                      seed);
 }
@@ -760,6 +793,23 @@ core::Result<game::inventory::UseResult> BattleAdapter::throwItem(game::battle::
   auto used = desc_.inventory->useInBattle(item, target);
   if (used && !target.thrown()) {
     return std::unexpected{target.thrown().error()};
+  }
+  return used;
+}
+
+core::Result<game::inventory::UseResult>
+BattleAdapter::throwItem(game::battle::Battle& battle, assets::ItemHandle item,
+                         game::battle::FighterId thrower, game::battle::FighterId target) const {
+  if (desc_.inventory == nullptr) {
+    return core::fail(std::string{messages::BattleWithoutBag});
+  }
+  if (!battle.bagAvailableFor(thrower)) {
+    return core::fail(std::string{game::battle::messages::BagUnavailable});
+  }
+  ThrowTarget aimed{battle, thrower, target};
+  auto used = desc_.inventory->useInBattle(item, aimed);
+  if (used && !aimed.thrown()) {
+    return std::unexpected{aimed.thrown().error()};
   }
   return used;
 }

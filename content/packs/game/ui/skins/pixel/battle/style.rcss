@@ -416,3 +416,17 @@
 .gain-value {
 	color: #b6e4f7;
 }
+
+/* Co-op: the other players' partners (#allies, placed by the original skin), the name in the small pixel font over
+   the same capped bars as the partner's. */
+.ally .hp-label,
+.ally .mp-label {
+	decorator: none;
+}
+
+.ally .fighter-name {
+	font-family: "Pixel Small";
+	font-size: 22dp;
+	color: #f2f0e1;
+	font-effect: shadow(2dp 2dp #050c1a);
+}

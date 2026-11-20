@@ -41,11 +41,21 @@ std::vector<FighterId> reachedBy(const BattleContext& context, FighterId id, con
   case MoveRange::Self:
     return {id};
   case MoveRange::Area: {
-    if (id != PartnerId) {
-      return {PartnerId};
+    if (!state.isPlayerSide(id)) {
+      if (state.allies.empty()) {
+        return {PartnerId};
+      }
+      // In co-op every partner still standing (docs/architecture/coop-combat.md §4.2).
+      std::vector<FighterId> partners;
+      for (const FighterId partner : state.partnersIn()) {
+        if (!state.fighters[partner].fainted) {
+          partners.push_back(partner);
+        }
+      }
+      return partners;
     }
     std::vector<FighterId> enemies;
-    for (FighterId enemy = 1; enemy < state.fighters.size(); ++enemy) {
+    for (FighterId enemy = 1; enemy <= state.enemyCount(); ++enemy) {
       if (!state.fighters[enemy].fainted) {
         enemies.push_back(enemy);
       }
@@ -120,10 +130,10 @@ void retargetAfterHit(BattleContext& context, FighterId id, FighterId attacker) 
     selectTarget(context, id, attacker, true);
     return;
   }
-  if (id == PartnerId) {
+  if (context.state->isPlayerSide(id)) {
     const Fighter& partner = context.fighter(id);
     const bool turns = context.strategies->obedience->partnerTurnsToAttacker(
-        context.view(), context.condition->discipline);
+        context.view(id), context.disciplineOf(id));
     if (!turns && partner.target && !context.fighter(*partner.target).defeated()) {
       return;
     }
@@ -223,9 +233,10 @@ std::int32_t damageOf(BattleContext& context, const AttackInFlight& attack) {
   const DamageRules& rules = context.rules->damage;
   std::int32_t damage = context.strategies->damage->damage(context.view(), attack.attacker,
                                                            attack.defender, attack.move);
-  const std::int32_t percent = attack.attacker == PartnerId   ? rules.partnerDealtPercent
-                               : attack.defender == PartnerId ? rules.partnerTakenPercent
-                                                              : Hundred;
+  const BattleState& state = *context.state;
+  const std::int32_t percent = state.isPlayerSide(attack.attacker)   ? rules.partnerDealtPercent
+                               : state.isPlayerSide(attack.defender) ? rules.partnerTakenPercent
+                                                                     : Hundred;
   if (percent != Hundred) {
     damage = std::clamp(damage * percent / Hundred, rules.min, rules.max);
   }
@@ -248,10 +259,13 @@ void hit(BattleContext& context, const AttackInFlight& attack) {
                              id, move.iframes + HitSparkFrames);
   }
   context.state->counters.anyoneHit = true;
-  context.state->counters.partnerHit = context.state->counters.partnerHit || id == PartnerId;
-  if (id == PartnerId && fighter.stats.maxHp > 0 &&
+  BattleCounters* counters = context.state->countersOf(id);
+  if (counters != nullptr) {
+    counters->partnerHit = true;
+  }
+  if (counters != nullptr && fighter.stats.maxHp > 0 &&
       damage * Hundred / fighter.stats.maxHp >= context.rules->hit.bigHitPercent) {
-    ++context.state->counters.bigHits;
+    ++counters->bigHits;
   }
   addPendingDamage(context, fighter, damage);
   fighter.knockedBack = true;
@@ -305,8 +319,8 @@ void block(BattleContext& context, const AttackInFlight& attack) {
   const Fighter& attacker = context.fighter(attack.attacker);
   addFinisherProgress(context, attack.attacker,
                       attacker.finisherGoal * finisher.perBlockedAttack / finisher.progressDivisor);
-  if (id == PartnerId) {
-    ++context.state->counters.blocks;
+  if (BattleCounters* counters = context.state->countersOf(id)) {
+    ++counters->blocks;
   }
   lookAt(fighter, hitPointOf(context, attack));
   fighter.blocking = true;
@@ -459,7 +473,8 @@ void addBystanderFlights(BattleContext& context, FighterId id,
   const FighterId aim = attack.target.value_or(reached.front());
   const std::optional<std::int32_t> clip = moveClipOf(context, context.fighter(id), attack.move);
   for (FighterId other = 0; other < context.state->fighters.size(); ++other) {
-    if (other == id || context.fighter(other).fainted || std::ranges::contains(reached, other)) {
+    if (!context.state->foes(id, other) || context.fighter(other).fainted ||
+        std::ranges::contains(reached, other)) {
       continue;
     }
     AttackInFlight flight = flightOf(context, id, other, false);
@@ -612,7 +627,8 @@ void tickAttacksInFlight(BattleContext& context) {
       // is no attack on it.
       continue;
     }
-    if (defender.fainted || (defender.struck && attack.defender != attack.attacker)) {
+    if (defender.fainted || defender.gone() ||
+        (defender.struck && attack.defender != attack.attacker)) {
       context.emit({.kind = EventKind::AttackMissed,
                     .fighter = attack.defender,
                     .other = attack.attacker,
@@ -643,7 +659,10 @@ void tickAttackHits(BattleContext& context) {
     }
     const AttackInFlight attack = fighter.incoming.front();
     fighter.incoming.erase(fighter.incoming.begin());
-    if (state.fleeFrames && *state.fleeFrames >= context.rules->ending.fleeIgnoresHitsFrom) {
+    // A partner running off takes no more hits; with one partner nobody does meanwhile.
+    const std::optional<std::int32_t> flee =
+        state.isPlayerSide(id) || state.allies.empty() ? state.fleeFramesOf(id) : std::nullopt;
+    if (flee && *flee >= context.rules->ending.fleeIgnoresHitsFrom) {
       continue;
     }
     handleAttack(context, attack);

@@ -1220,3 +1220,39 @@ body #charge-title, body #revive { color: #ffe64a; }
 body #charge .bar { border-color: #071522; border-right-color: #72c7ff; border-bottom-color: #72c7ff; background-color: #071522; }
 body .charge-hint { color: #a8c7d9; }
 body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
+
+/* Co-op: the other players' partners (#allies) under the partner's panel, each in the same navy/cyan box. */
+#allies {
+	position: absolute;
+	right: 30dp;
+	top: 192dp;
+	left: auto;
+	width: 312dp;
+}
+
+.partner.ally {
+	box-sizing: border-box;
+	padding: 6dp 0 0 0;
+	margin: 0 0 6dp 0;
+	border: 1dp #72c7ff;
+	background-color: #0b1c2df2;
+}
+
+.partner.ally .fighter-head {
+	display: block;
+	height: 30dp;
+	margin: 0 0 3dp 12dp;
+	color: #d8f1ff;
+}
+
+.ally .fighter-name {
+	font-size: 22dp;
+	line-height: 30dp;
+}
+
+.ally .hp-label { decorator: image(battle-hp); }
+.ally .mp-label { decorator: image(battle-mp); }
+
+@media (max-width: 760dp) {
+	#allies { right: 12dp; }
+}

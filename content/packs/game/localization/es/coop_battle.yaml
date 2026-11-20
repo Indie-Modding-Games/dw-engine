@@ -1,6 +1,7 @@
 # La batalla del anfitrión en la pantalla del invitado cooperativo (ui/coop_battle).
 title_starter: "¡Tu compañero está luchando!"
 title_helper: "El compañero de tu amigo está luchando. ¡Échale una mano!"
+title_ally: "¡Tu compañero y el de tu amigo luchan juntos!"
 phase_intro: "Empieza la batalla..."
 phase_fight: "¡A luchar!"
 phase_victory: "¡Batalla ganada!"
@@ -10,3 +11,4 @@ cheer: "Animar"
 items: "Lanzar un objeto"
 no_items: "No hay objetos para lanzar."
 close: "Continuar"
+mp: "MP"

@@ -72,24 +72,36 @@ function battle.state()
   }
 end
 
--- The fighters, the partner first, then the enemies: name_key, status_key (its status effect's
--- text key, or ""), hp, max_hp, mp, max_mp, fainted and hp_bar (whether its HP bar shows now: the
--- partner's always, an enemy's a while after it takes damage).
-function battle.fighters()
-  local list = {}
-  for index = 0, whole("battle.fighter.count") - 1 do
-    list[index + 1] = {
-      name_key = value(entry("battle.fighter", index, "name"), ""),
-      status_key = value(entry("battle.fighter", index, "status"), ""),
-      hp = whole(entry("battle.fighter", index, "hp")),
-      max_hp = whole(entry("battle.fighter", index, "max_hp")),
-      mp = whole(entry("battle.fighter", index, "mp")),
-      max_mp = whole(entry("battle.fighter", index, "max_mp")),
-      fainted = value(entry("battle.fighter", index, "fainted"), false),
-      hp_bar = value(entry("battle.fighter", index, "hp_bar"), false),
+-- One fighter list the game publishes under `list` (battle.fighter or battle.ally).
+local function fighters_of(list)
+  local found = {}
+  for index = 0, whole(list .. ".count") - 1 do
+    found[index + 1] = {
+      name_key = value(entry(list, index, "name"), ""),
+      status_key = value(entry(list, index, "status"), ""),
+      hp = whole(entry(list, index, "hp")),
+      max_hp = whole(entry(list, index, "max_hp")),
+      mp = whole(entry(list, index, "mp")),
+      max_mp = whole(entry(list, index, "max_mp")),
+      fainted = value(entry(list, index, "fainted"), false),
+      hp_bar = value(entry(list, index, "hp_bar"), false),
     }
   end
-  return list
+  return found
+end
+
+-- The fighters, the partner first, then the enemies: name_key, status_key (its status effect's
+-- text key, or ""), hp, max_hp, mp, max_mp, fainted and hp_bar (whether its HP bar shows now: the
+-- partner's always, an enemy's a while after it takes damage). In a co-op battle the partner is
+-- this player's own.
+function battle.fighters()
+  return fighters_of("battle.fighter")
+end
+
+-- The other players' partners fighting beside this player's in a co-op battle, with the same
+-- fields as battle.fighters; empty in any other battle.
+function battle.allies()
+  return fighters_of("battle.ally")
 end
 
 -- The command strip in the game's order, the finisher first: command (the number battle.command

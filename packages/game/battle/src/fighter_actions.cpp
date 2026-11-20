@@ -483,7 +483,7 @@ bool followMoveCommand(BattleContext& context, FighterId id) {
   Fighter& partner = context.fighter(id);
   switch (context.state->commandsOf(id).current) {
   case Command::Flee:
-    walkToward(context, id, context.state->tamer);
+    walkToward(context, id, context.state->tamerOf(id));
     return true;
   case Command::Defend:
     standIdle(partner);
@@ -584,10 +584,10 @@ void beginAttack(BattleContext& context, FighterId id) {
   } else if (!fighter.target && move.needsTarget) {
     if (context.state->versus()) {
       setTarget(context, id, id == PartnerId ? RivalId : PartnerId);
-    } else if (id != PartnerId) {
-      setTarget(context, id, PartnerId);
+    } else if (!context.state->isPlayerSide(id)) {
+      setTarget(context, id, enemyTargetOf(context, id));
     } else {
-      for (FighterId enemy = 1; enemy < context.state->fighters.size(); ++enemy) {
+      for (FighterId enemy = 1; enemy <= context.state->enemyCount(); ++enemy) {
         if (!context.fighter(enemy).defeated()) {
           setTarget(context, id, enemy);
         }
@@ -595,7 +595,8 @@ void beginAttack(BattleContext& context, FighterId id) {
     }
   }
   if (context.state->commanded(id)) {
-    const bool unwell = id == PartnerId && (context.condition->sick || context.condition->injured);
+    const bool unwell = context.state->isPlayerSide(id) &&
+                        (context.conditionOf(id).sick || context.conditionOf(id).injured);
     if (!move.finisher) {
       fighter.pendingMp += partnerMpCost(*context.rules, move.mpCost, fighter.stats.brain, unwell,
                                          MpCostUse::Payment);
@@ -661,8 +662,8 @@ void endAnimation(BattleContext& context, FighterId id) {
     endFinisher(*context.state);
   }
   if (fighter.attack) {
-    if (id == PartnerId) {
-      ++context.state->counters.attacks;
+    if (BattleCounters* counters = context.state->countersOf(id)) {
+      ++counters->attacks;
     }
     fighter.chasingAttacker = false;
     fighter.coolingDown = true;

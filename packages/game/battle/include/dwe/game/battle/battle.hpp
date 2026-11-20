@@ -31,17 +31,6 @@ struct BattleContext;
 // (BattleResult::elapsedMinutes).
 inline constexpr std::int32_t FramesPerSecond = 20;
 
-// What the battle needs to know about the partner beyond its combatant: the care values the rules
-// read.
-struct PartnerCondition {
-  std::int32_t discipline = 0;
-  std::int32_t tiredness = 0;
-  bool sick = false;
-  bool injured = false;
-  // The moves it already knows, so it does not learn them again.
-  std::vector<std::string> knownMoves;
-};
-
 // What a battle is for the session: the tournaments and the arena have their own results and
 // autosave; a versus match (two players' partners) has no consequence at all.
 enum class BattleKind : std::uint8_t { Normal, Tournament, Arena, Versus };
@@ -53,6 +42,16 @@ enum class BattleKind : std::uint8_t { Normal, Tournament, Arena, Versus };
 struct VersusSetup {
   // VS_DISCIPLINE[1], from the rival's registered record.
   std::int32_t rivalDiscipline = 0;
+};
+
+// Another player's partner fighting beside the partner in a co-op battle
+// (docs/architecture/coop-combat.md §4): its fighter (where it stands in `partner.position`), its
+// care values, where its player stands and which player commands it.
+struct AllySetup {
+  Combatant partner;
+  PartnerCondition condition;
+  Point tamer;
+  std::uint8_t owner = 0;
 };
 
 struct BattleSetup {
@@ -84,6 +83,10 @@ struct BattleSetup {
   std::optional<std::string> recruitOnVictory;
   // Only for BattleKind::Versus: the rival is commanded and both menus are the versus menus.
   std::optional<VersusSetup> versus;
+  // A co-op battle's other partners, fighters after the enemies (none: the original battle). Each
+  // is commanded as the partner is (Battle::command with its id), throws its own player's items
+  // and gets its own result (Battle::allyResults).
+  std::vector<AllySetup> allies;
 };
 
 enum class Outcome : std::uint8_t { Victory, Fled, Defeat };
@@ -142,6 +145,9 @@ struct BattleResult {
   std::int32_t lifetimeHoursLost = 0;
   // What the partner did, for the session and the simulator.
   BattleCounters counters;
+  // In a co-op battle: how this partner ended it when the team's outcome is not its own
+  // (docs/architecture/coop-combat.md §4.7, §4.8): it ran off, or it was knocked out for good.
+  Departure departure = Departure::None;
   // The setup's kind, and the resident that joins the city now (only after a victory).
   BattleKind kind = BattleKind::Normal;
   std::optional<std::string> recruitJoined;
@@ -149,6 +155,13 @@ struct BattleResult {
   // the same damage; a draw is a defeat (std_main.c: STD_deinitializeCombat(1, 1)).
   bool timeUp = false;
   bool draw = false;
+};
+
+// A co-op ally's part of the result: its player and what the battle left its partner (the bits,
+// the drops and the recruit stay in the battle's own result).
+struct AllyResult {
+  std::uint8_t owner = 0;
+  BattleResult result;
 };
 
 // One battle, frame by frame. A UI calls the inputs as the player acts and step() once per frame
@@ -168,8 +181,13 @@ public:
   // VS___tickVSInput: the command takes no delay; the finisher only once its gauge is full).
   core::Result<void> command(Command command, FighterId side);
   // A press of the finisher charge buttons during the partner's finisher aura (command_menu.c:
-  // BTL_tickFinisherChargeup); at most one counts per frame.
+  // BTL_tickFinisherChargeup); at most one counts per frame. In a co-op battle it charges any
+  // partner's finisher: its own player's press.
   void pressFinisherCharge();
+  // Co-op: another player's press during a partner's aura (a cheer), at half the owner's rate
+  // (docs/architecture/coop-combat.md §4.5); with the owner's press the same frame only that one
+  // counts.
+  void cheerFinisher();
   // Where the player stands now: it runs back as the battle opens (PlayerRetreat), and a fleeing
   // partner runs there.
   void movePlayer(Point point) { state_.tamer = point; }
@@ -191,14 +209,31 @@ public:
   [[nodiscard]] bool bagOpen() const { return state_.bagOpen; }
   core::Result<void> openBag();
   void closeBag();
+  // Co-op: the bag of the player of `thrower` (the partner's is the one above).
+  [[nodiscard]] bool bagOpen(FighterId thrower) const;
+  core::Result<void> openBag(FighterId thrower);
+  void closeBag(FighterId thrower);
   // Throws an item at the partner (main.c: startThrowingItem): the bag closes, the item leaves the
   // player's hand on frame releaseFrame of the throw and lands on the last of its flightFrames,
   // always on the partner (tickThrownItem). The defeat countdown waits while it flies.
   core::Result<void> throwItem(ThrownItem item);
+  // Co-op: the player of `thrower` (the partner or an ally) throws at `target` (that partner or
+  // another one), from where that player stands. One item in flight per player.
+  [[nodiscard]] bool bagAvailableFor(FighterId thrower) const;
+  core::Result<void> throwItem(ThrownItem item, FighterId thrower, FighterId target);
+  // Co-op: an ally's player left the session: it fights on its own call, taking no more commands.
+  void releaseAlly(FighterId ally);
+  // The co-op allies' results once the battle finished (empty without allies).
+  [[nodiscard]] const std::vector<AllyResult>& allyResults() const { return allyResults_; }
+  // A players' side fighter's revive countdown so far (0 while it stands).
+  [[nodiscard]] std::int32_t deathFramesOf(FighterId id) const;
   [[nodiscard]] bool itemInFlight() const { return state_.thrownItem.has_value(); }
   // The frame of the thrown item's flight (itemThrowHeight, stepItemFlight), or none while no item
   // flies or it is still in the player's hand.
   [[nodiscard]] std::optional<std::int32_t> thrownItemFlightFrame() const;
+  // Co-op: the item the player of `thrower` (the partner or an ally) threw, and its flight's frame.
+  [[nodiscard]] const std::optional<ThrownItemState>& thrownItemOf(FighterId thrower) const;
+  [[nodiscard]] std::optional<std::int32_t> thrownItemFlightFrame(FighterId thrower) const;
   // Whether the HUD shows a fighter's HP bar: always the partner's, an enemy's for a while after
   // damage (battle_main.c: BTL_renderEnemyHPBars).
   [[nodiscard]] bool hpBarShown(FighterId fighter) const;
@@ -206,6 +241,8 @@ public:
   // BTL_setupMoveExecution: the brain's discount and the sick or injured surcharge), or none for an
   // empty slot.
   [[nodiscard]] std::optional<std::int32_t> partnerMoveCost(std::size_t slot) const;
+  // The same for a co-op ally (or the partner).
+  [[nodiscard]] std::optional<std::int32_t> partnerMoveCost(std::size_t slot, FighterId id) const;
 
   // Item effects on the partner (item.c): restore HP and MP, cure its status effects, keep new ones
   // off, revive it after it fell (before the countdown ends).
@@ -281,6 +318,10 @@ private:
   void finish(Outcome outcome, bool draw = false);
   // std_main.c: STD_checkEndCondition, for a tournament match: whether it ended this frame.
   bool endMatch();
+  // A co-op battle's end (docs/architecture/coop-combat.md §4.7, §4.8): partners leave as they
+  // finish running off or their countdown ends; it is over when the enemies are down with a
+  // partner standing, or no partner is left. Whether it ended this frame.
+  bool endCoop();
   // The frame's context, with its events going to `events`.
   BattleContext contextOf(BattleEvents& events);
   // The events not yet returned by step(): those of the last frame are dropped once returned.
@@ -302,6 +343,8 @@ private:
   const BattleGround* ground_ = nullptr;
   const AttackFlights* flights_ = nullptr;
   bool chargePressed_ = false;
+  bool cheered_ = false;
+  std::vector<AllyResult> allyResults_;
   bool delivered_ = false;
 };
 

@@ -1,10 +1,11 @@
 # Combate cooperativo con todos los compañeros (documento de diseño)
 
-Estado: **propuesta** (2026-11-19, ticket #362). Nada de esto está implementado. Es el paso siguiente a la primera
-versión de los combates cooperativos (#351, PR #363), donde solo pelea el compañero de quien inicia el combate. Se
-apoya en el [cooperativo en línea](multiplayer.md), el [ADR 0024](../adr/0024-co-op-with-authoritative-host.md), las
-sesiones de hasta cuatro jugadores (#352, [navegador de salas y cuatro jugadores](../../architecture/coop-browser-4p.md))
-y el escalado de la [dificultad cooperativa](coop-difficulty.md).
+Estado: **implementado en parte** (2026-11-20, #351, #361). Propuesto el 2026-11-19 (ticket #362) como el paso
+siguiente a la primera versión de los combates cooperativos (#351, PR #363), donde solo pelea el compañero de quien
+inicia el combate. La sección 12 dice qué está hecho. Se apoya en el [cooperativo en línea](multiplayer.md), el [ADR
+0024](../adr/0024-co-op-with-authoritative-host.md), las sesiones de hasta cuatro jugadores (#352, [navegador de salas y
+cuatro jugadores](../../architecture/coop-browser-4p.md)) y el escalado de la [dificultad
+cooperativa](coop-difficulty.md).
 
 **Regla cero:** con un solo compañero del lado de los jugadores, el combate es exactamente el de hoy: la misma
 disposición de luchadores, la misma IA, las mismas órdenes, los mismos resultados. Todo lo nuevo solo se activa con dos
@@ -342,6 +343,36 @@ Reutilizan órdenes y técnicas existentes; ninguna es una técnica nueva (fuera
 ## 12. Tareas de implementación
 
 Listas para convertirse en issues, en orden; cada una deja el modo de un jugador sin cambios y se prueba por separado.
+
+**Hecho (2026-11-20, versión 6 del protocolo, API de la interfaz 0.20.0).** Cuando el compañero del invitado está en el
+mapa donde empieza el encuentro del anfitrión y no está ocupado, pelea junto al compañero del anfitrión en el combate
+del anfitrión; si no, el invitado ayuda como en el PR #363, y a solas el combate es el original. Lo que entró, por
+tarea:
+
+- Tareas 1–3, en parte: el segundo compañero es un **aliado** (`BattleSetup::allies`, `AllySetup` con su dueño)
+  colocado **después de los enemigos**, no antes como dice §4.1: el hueco 0 sigue siendo el compañero de quien inicia y
+  los enemigos conservan sus números, así que la disposición en solitario y cada índice de enemigo no cambian.
+  `isPlayerSide` y `foes` responden las preguntas de bando; `PartnerId` sigue para quien inicia. Cada aliado tiene sus
+  órdenes, bolsa, objeto lanzado, huida y cuenta atrás propios (`AllyState`); el progreso del remate ya era por
+  luchador.
+- Tareas 4–6: los enemigos apuntan a cualquier compañero y se giran hacia quien les pega; los compañeros nunca se
+  golpean entre sí; huir y la cuenta atrás del K.O. son por compañero (`Departure`); el combate acaba cuando los
+  enemigos caen con algún compañero en pie o cuando no queda ninguno (huida si alguno huyó; si no, derrota). Un
+  compañero fuera de combate en una victoria acaba con 1 PV y felicidad −10.
+- Tarea 7: `Battle::allyResults` da a cada aliado su propio resultado; los bits, los objetos soltados y los reclutas se
+  quedan en el mundo del anfitrión (el resultado del propio combate). El invitado aplica el resultado de su aliado (las
+  subidas de estadísticas sin tope) mediante el botín, que ahora lleva la salida.
+- Tareas 8–9: `BattleOffer` (0x80) avisa al anfitrión de que el compañero del invitado puede unirse; `BattleBegin.allies`
+  nombra a los aliados; `BattleFrame` lleva a todos los luchadores (hasta `MaxBattleEnemies + MaxPlayers`); el invitado
+  solo da órdenes a su propio compañero (rol `ally`) y el anfitrión comprueba el rol de cada acción. Si el invitado se
+  cae, su compañero sigue por su cuenta.
+- Tarea 10, en parte: la pantalla de combate muestra las tarjetas de los aliados (`battle.allies`, PV y PM) en todas las
+  pieles; el panel `coop_battle` del invitado muestra los PV de todos los luchadores, los PM de los compañeros y marca
+  el suyo; las órdenes van al compañero propio. Falta: elegir a qué aliado va un objeto (va al compañero propio, o al
+  que pelea si el propio ya no está), la animación del objeto lanzado por un aliado en la otra pantalla, los sonidos de
+  la especie del aliado y su insignia de cuenta atrás.
+- Falta: la tarea 11 (dificultad cooperativa), la 12 y siguientes, y más de un invitado en un combate (el anfitrión y
+  un invitado pelean juntos; el protocolo y el combate ya admiten hasta `MaxPlayers` compañeros).
 
 1. **Refactorización de los lados del combate:** sustituir `PartnerId` por `side`, `owner` y las consultas
    `isPlayerSide`, `partnerOf`, `partners`, `enemies`; primero los compañeros, después los enemigos. Sin cambios de

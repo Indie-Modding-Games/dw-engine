@@ -587,9 +587,12 @@ que correr en un solo sitio. Corre en la **simulación del anfitrión**:
   final. Si se cae el anfitrión, la petición pendiente del invitado pasa a ser un combate en solitario de su propio
   juego, y el combate en pantalla se va (su script recibe «no empezó»); nada queda detenido.
 
-Siguiente paso: los dos compañeros peleando juntos. El protocolo ya lleva quién empezó y la especie de cada luchador, y
-las acciones del ayudante pasan por el mismo `BattleAction`; lo que falta es un segundo lado de compañero en el propio
-combate (los objetivos de la IA enemiga, los golpes, la bolsa y el HUD suponen solo al luchador 0, §2).
+**Los dos compañeros pelean juntos** (versión 6 del protocolo, [combate cooperativo](coop-combat.md) §12). Cuando el
+compañero del invitado está en el mapa donde empieza el encuentro del anfitrión y no está ocupado (el invitado manda
+`BattleOffer` cuando eso cambia), se une al combate del anfitrión como **aliado**, después de los enemigos: el rol del
+invitado es `ally`, da órdenes a su propio compañero y le lanza objetos, y el resultado de su compañero vuelve en el
+botín. Un compañero lejos u ocupado queda fuera y su jugador ayuda como arriba. Cada compañero huye o cae por su cuenta;
+el equipo solo pierde cuando no queda ningún compañero.
 
 Límites de esta primera versión: los efectos de las técnicas, los números de daño y las marcas de estado solo se dibujan
 en el anfitrión; el invitado ve moverse a los luchadores y las barras de vida. Los luchadores de torneo que no son NPC

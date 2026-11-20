@@ -1149,3 +1149,42 @@
 #speed-plate.hidden {
 	display: none;
 }
+
+/* ------------------------------------------------------------------------------------------------------------------
+   Co-op (not in the original): the other players' partners fighting beside this one (#allies), under the partner's
+   bars and finisher gauge at the right edge. Each card is the partner's bars again, with the species name over them
+   in the original's font. */
+#allies {
+	position: absolute;
+	right: 30dp;
+	top: 192dp;
+	left: auto;
+	width: 312dp;
+}
+
+.ally {
+	margin: 0 0 6dp 0;
+}
+
+.partner.ally .fighter-head {
+	display: block;
+	height: 30dp;
+	margin: 0 0 3dp 12dp;
+}
+
+.ally .fighter-name {
+	font-size: 24dp;
+	line-height: 30dp;
+}
+
+.ally .fighter-status {
+	display: none;
+}
+
+/* The values in the original's digits, as the partner's (the modern skin shows none on a card). */
+.ally .bar-digits {
+	display: block;
+}
+
+.ally .hp-label { decorator: image(battle-hp); }
+.ally .mp-label { decorator: image(battle-mp); }
