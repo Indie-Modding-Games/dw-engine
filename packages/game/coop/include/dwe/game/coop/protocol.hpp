@@ -30,8 +30,10 @@ inline constexpr std::size_t MaxPlayers = 4;
 // and an item's target partner (#351, #361, #362). 10: a game in progress takes players: the
 // host's seat key in its welcome and a returning guest's in its hello, the lobby's game under way
 // and whether it takes new players, and the refusal of a room closed to them (#352, #356). 11: the
-// world's clock, the host's, told to every guest, and who of the players trains (#365).
-inline constexpr std::uint32_t ProtocolVersion = 11;
+// world's clock, the host's, told to every guest, and who of the players trains (#365). 12: the
+// items thrown in a battle in its frames (the guest's screen draws them) and the host's co-op
+// difficulty in the lobby (#351, #361, #352).
+inline constexpr std::uint32_t ProtocolVersion = 12;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
   return id < MaxPlayers;
@@ -319,6 +321,22 @@ struct BattleFigure {
   friend bool operator==(const BattleFigure&, const BattleFigure&) = default;
 };
 
+enum class BattleThrowStage : std::uint8_t { Hand, Flight, Landed };
+
+struct BattleThrow {
+  std::uint16_t serial = 0;
+  PlayerId thrower = HostPlayerId;
+  std::string item;
+  BattleThrowStage stage = BattleThrowStage::Hand;
+  std::int32_t x = 0;
+  std::int32_t z = 0;
+  std::int32_t height = 0;
+  std::uint8_t target = 0;
+
+  friend bool operator==(const BattleThrow&, const BattleThrow&) = default;
+};
+inline constexpr std::size_t MaxBattleThrows = MaxPlayers;
+
 // One battle frame as the host shows it (20 a second, unreliable: a lost one is followed by the
 // next). `command` is the current command of the partner the guest commands (the fighting one when
 // it has none in the battle) and `menu` a bit per command the strip offers it now (bit n: battle
@@ -333,6 +351,7 @@ struct BattleFrame {
   bool finisherCharging = false;
   std::vector<BattleFighterState> fighters;
   std::vector<BattleFigure> figures;
+  std::vector<BattleThrow> throws;
 
   friend bool operator==(const BattleFrame&, const BattleFrame&) = default;
 };
@@ -728,6 +747,8 @@ enum class SeatState : std::uint8_t {
   Ready,
 };
 
+enum class CoopDifficulty : std::uint8_t { Off, Standard, Hard };
+
 struct LobbySeat {
   PlayerId id = HostPlayerId;
   std::string name;
@@ -745,6 +766,7 @@ struct Lobby {
   // takes new players while it plays (a returning one gets in either way).
   bool playing = false;
   bool open = true;
+  CoopDifficulty difficulty = CoopDifficulty::Standard;
 
   friend bool operator==(const Lobby&, const Lobby&) = default;
 };

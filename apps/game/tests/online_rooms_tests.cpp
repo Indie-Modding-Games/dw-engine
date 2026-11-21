@@ -32,7 +32,8 @@ public:
                      .localReady = false,
                      .mode = {},
                      .inProgress = false,
-                     .openToNewPlayers = true};
+                     .openToNewPlayers = true,
+                     .coopDifficulty = {}};
   }
   void join(const RoomListing& listing, double /*nowSeconds*/) override { joined = listing.roomId; }
   void joinByCode(std::string_view code, double /*nowSeconds*/) override {

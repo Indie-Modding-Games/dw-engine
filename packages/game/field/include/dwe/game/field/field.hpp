@@ -216,6 +216,7 @@ public:
   // Adds a guest body (any id but the host's, below MaxFieldPlayers) to this shared field. Its
   // optional companion remains absent until the app provides a guest profile.
   core::Result<void> addPlayer(PlayerId id, assets::SpawnPoint spawn);
+  core::Result<void> addPlayerNearHost(PlayerId id);
   // Takes a guest body and its partner out of the field (the player left the session); false when
   // there was none.
   bool removePlayer(PlayerId id);
@@ -665,6 +666,8 @@ private:
   void stepOtherPlayer(PlayerRuntime& player, const Step& step);
   void resetOtherPlayerMotion(bool clearInput);
   void placeOtherPlayersNearHost();
+  [[nodiscard]] bool spotTaken(glm::vec3 spot, PlayerId self) const;
+  [[nodiscard]] std::optional<glm::vec3> freeSpotNearHost(PlayerId self) const;
   [[nodiscard]] bool playerTouchesOtherPlayer(scene::Entity entity, glm::vec3 from,
                                               glm::vec2 step) const;
   void planPath(std::optional<glm::vec3>& moveTarget, std::vector<glm::vec3>& path,

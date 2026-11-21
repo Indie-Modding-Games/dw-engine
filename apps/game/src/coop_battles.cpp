@@ -32,6 +32,8 @@ namespace {
 namespace coop = game::coop;
 
 constexpr std::uint64_t FrameTicks = 3;
+constexpr std::uint32_t PlayerThrowClip = 6;
+constexpr std::uint32_t ThrowHandNode = 9;
 // How often the guest checks its partner's offer for the host's battles (20 times a second at 60
 // ticks).
 constexpr std::uint64_t OfferTicks = 3;
@@ -553,7 +555,8 @@ coop::BattleFrame CoopBattles::frameOf(const PlaySession& play, coop::PlayerId t
                           .bagAvailable = false,
                           .finisherCharging = false,
                           .fighters = {},
-                          .figures = {}};
+                          .figures = {},
+                          .throws = screen.coopThrows()};
   if (const game::battle::Battle* battle = screen.battle()) {
     const game::battle::BattleState& state = battle->state();
     // The guest's own partner's strip, bag and finisher (the fighting one's when it has none).
@@ -696,14 +699,44 @@ void CoopBattles::startShowing(PlaySession& play, const coop::BattleBegin& begin
       begin.starter == self ? std::nullopt : std::optional<game::field::PlayerId>{begin.starter});
   shownFrame_.reset();
   fighters_.clear();
+  sounds_ = coopBattleSoundsOf(begin, self);
+  play.useCoopBattleSounds(sounds_.enemies, sounds_.partners);
+  shownSpecies_ = begin.species;
+  glowBodies_.clear();
+  const auto bodyOf = [&play](std::optional<std::int32_t> npc, const std::string& species) {
+    FieldScene::StatusBody body{.npc = npc, .height = 0, .radius = 0, .conditionFx = std::nullopt};
+    if (const assets::DigimonTable* table = play.speciesTable()) {
+      if (const assets::DigimonRow* row = table->find(species)) {
+        body.height = row->height;
+        body.radius = row->radius;
+      }
+    }
+    return body;
+  };
+  const auto speciesAt = [&begin](std::size_t fighter) {
+    return fighter < begin.species.size() ? begin.species[fighter] : std::string{};
+  };
+  glowBodies_.push_back(bodyOf(std::nullopt, speciesAt(0)));
+  for (std::size_t enemy = 0; enemy < begin.enemyNpcs.size(); ++enemy) {
+    glowBodies_.push_back(bodyOf(begin.enemyNpcs[enemy], speciesAt(enemy + 1)));
+  }
+  for (std::size_t ally = 0; ally < begin.allies.size(); ++ally) {
+    glowBodies_.push_back(bodyOf(FieldScene::allyFighterSlot(begin.allies[ally]),
+                                 speciesAt(1 + begin.enemyNpcs.size() + ally)));
+  }
+  throws_.reset();
+  glows_.emplace();
   publish(play);
 }
 
 void CoopBattles::showFrame(PlaySession& play) {
+  stepThrowClips(play);
   const auto& frame = mirror_.frame();
   if (!frame || (shownFrame_ && *shownFrame_ == frame->frame)) {
     return;
   }
+  const std::uint32_t frames =
+      shownFrame_ && frame->frame > *shownFrame_ ? std::min(frame->frame - *shownFrame_, 20U) : 1U;
   shownFrame_ = frame->frame;
   if (!frame->fighters.empty()) {
     fighters_ = frame->fighters;
@@ -712,10 +745,103 @@ void CoopBattles::showFrame(PlaySession& play) {
     const std::optional<std::int32_t> npc = figure.slot == coop::PartnerFigureSlot
                                                 ? std::nullopt
                                                 : std::optional<std::int32_t>{figure.slot};
-    static_cast<void>(play.scene().holdFighter(npc, fighterOf(figure)));
+    FighterFigure held = fighterOf(figure);
+    held.soundSlot = sounds_.slotOf(figure.slot);
+    static_cast<void>(play.scene().holdFighter(npc, held));
   }
+  followThrows(play, *frame, frames);
   lookAtBattle(play, *frame);
   publish(play);
+}
+
+void CoopBattles::followThrows(PlaySession& play, const coop::BattleFrame& frame,
+                               std::uint32_t frames) {
+  FieldScene& scene = play.scene();
+  const coop::PlayerId self = mirror_.self();
+  const CoopThrowFollower::Step step = throws_.follow(frame.throws);
+  for (const coop::PlayerId thrower : step.started) {
+    const bool playing = thrower == self ? (scene.playPlayerSceneClip(PlayerThrowClip), true)
+                                         : scene.playCoopPlayerClip(thrower, PlayerThrowClip);
+    if (playing && !std::ranges::contains(throwing_, thrower)) {
+      throwing_.push_back(thrower);
+    }
+  }
+  if (!glows_) {
+    glows_.emplace();
+  }
+  for (std::uint32_t passed = 0; passed < frames; ++passed) {
+    glows_->tick(glows_->ownRolls());
+  }
+  for (const coop::BattleThrow& landed : step.landed) {
+    const auto figure = std::ranges::find_if(frame.figures, [&](const coop::BattleFigure& shown) {
+      return landed.target < glowBodies_.size() &&
+             shown.slot == glowBodies_[landed.target].npc.value_or(coop::PartnerFigureSlot);
+    });
+    if (figure == frame.figures.end()) {
+      continue;
+    }
+    game::battle::Fighter body;
+    body.position = {.x = figure->x, .z = figure->z};
+    body.combatant.height = glowBodies_[landed.target].height;
+    glows_->addItemParticles(landed.target, body);
+  }
+  scene.setStatusVisuals(glows_, glowBodies_);
+  std::optional<FlyingItemSprite> item;
+  const session::InventoryAdapter* inventory = play.coopInventory();
+  if (step.shown && inventory != nullptr) {
+    const std::optional<assets::ItemHandle> handle = inventory->items().handleOf(step.shown->item);
+    const std::optional<assets::ItemEntry::Icon> icon =
+        handle ? inventory->items().at(*handle).icon() : std::nullopt;
+    std::optional<glm::vec3> at;
+    if (step.shown->stage == coop::BattleThrowStage::Flight) {
+      at = glm::vec3{static_cast<float>(step.shown->x), static_cast<float>(step.shown->height),
+                     static_cast<float>(step.shown->z)};
+    } else if (step.shown->thrower == self) {
+      at = scene.playerNodePoint(ThrowHandNode, glm::vec3{0.0F});
+    } else {
+      at = scene.coopPlayerNodePoint(step.shown->thrower, ThrowHandNode, glm::vec3{0.0F});
+    }
+    if (icon && at) {
+      item = FlyingItemSprite{.position = *at, .icon = icon->cell, .palette = icon->palette};
+    }
+  }
+  scene.setFlyingItem(item);
+}
+
+void CoopBattles::stepThrowClips(PlaySession& play) {
+  FieldScene& scene = play.scene();
+  const coop::PlayerId self = mirror_.self();
+  std::erase_if(throwing_, [&](coop::PlayerId id) {
+    if (id == self) {
+      if (!scene.playerClipPlayedThrough()) {
+        return false;
+      }
+      scene.playPlayerSceneClip(std::nullopt);
+      return true;
+    }
+    if (!scene.coopPlayerClipPlayedThrough(id)) {
+      return false;
+    }
+    static_cast<void>(scene.playCoopPlayerClip(id, std::nullopt));
+    return true;
+  });
+}
+
+void CoopBattles::stopThrows(PlaySession& play) {
+  FieldScene& scene = play.scene();
+  for (const coop::PlayerId id : std::exchange(throwing_, {})) {
+    if (id == mirror_.self()) {
+      scene.playPlayerSceneClip(std::nullopt);
+    } else {
+      static_cast<void>(scene.playCoopPlayerClip(id, std::nullopt));
+    }
+  }
+  scene.setFlyingItem(std::nullopt);
+  scene.setStatusVisuals(std::nullopt, {});
+  glows_.reset();
+  glowBodies_.clear();
+  throws_.reset();
+  play.useCoopBattleSounds({}, {});
 }
 
 // The helper's camera jumps to the fighting partner once, as the host's own camera stands where
@@ -747,6 +873,7 @@ void CoopBattles::lookBack(PlaySession& play) {
 }
 
 void CoopBattles::stopShowing(PlaySession& play, const coop::BattleEnd& end) {
+  stopThrows(play);
   play.scene().releaseFighters(shownFixedFight_);
   lookBack(play);
   for (const std::int16_t npc : end.leftMap) {
@@ -793,6 +920,7 @@ void CoopBattles::hostLeft(PlaySession* play) {
   if (play != nullptr) {
     lookBack(*play);
     if ((dropped.battle && watching_) || play->heldForCoopBattle()) {
+      stopThrows(*play);
       play->scene().releaseFighters();
       play->holdForCoopBattle(false);
       play->scene().setBattlePartner(std::nullopt);

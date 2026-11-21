@@ -657,6 +657,8 @@ para. Mientras está activo, el log dice cuándo un jugador cambia de mapa, cuá
 instantáneas o comandos, y cuándo un invitado tiene a un jugador en otro sitio (otro mapa, o a más de 600 unidades)
 durante más de dos segundos, y otra vez cuando vuelve a estar sincronizado. El informe lista dónde tiene el anfitrión a
 cada jugador y, por invitado, dónde lo tiene él, cuántos ticks del mundo va por detrás y qué perdió.
+`coop_fell("<jugador>")` (la misma consola, solo en el anfitrión) derriba al compañero de ese jugador en el combate
+cooperativo del anfitrión, para probar la cuenta atrás del aliado y Apuntar de la bolsa sin un combate largo.
 
 Tests: `packages/game/coop/tests/sync_watch_tests.cpp`, `apps/game/tests/coop_connection_tests.cpp` (cuatro plazas),
 `apps/game/tests/coop_sync_tests.cpp` (2, 3 y 4 jugadores sin ventana sobre enlaces con pérdidas, convergiendo) y los
@@ -691,6 +693,19 @@ prueba: un invitado sin ella (un juego reiniciado, otra máquina) entra como jug
 así nadie que comparta nombre por casualidad (el «Jugador» por defecto) toma una plaza caída. Un invitado cuyo enlace
 viejo sigue abierto (el anfitrión aún no notó la caída) recupera su plaza con su clave, y el enlace viejo se cierra. Pasada la ventana es un jugador nuevo. El id de un
 invitado que se fue queda reservado durante la ventana, así un jugador tardío nunca lo toma.
+
+**Dónde aparecen.** Un invitado que entra o vuelve aparece en el sitio libre más cercano alrededor del anfitrión
+(`Field::addPlayerNearHost`: anillo a anillo, lejos de las paredes, de la pareja del anfitrión, de los NPC y de los
+demás jugadores y sus compañeros), la misma búsqueda que usa un cambio de mapa para poner a todos junto al anfitrión,
+así que tres jugadores que entran uno tras otro quedan uno al lado del otro y no en el mismo sitio.
+
+**Durante la partida** (versión 12 del protocolo, API de la interfaz 0.27). Los ajustes cooperativos del anfitrión
+están en la pestaña Juego de las opciones: «Abierto a nuevos jugadores» (`coop_open_to_join`, activa por defecto) es la
+opción de sala de arriba, guardada en los ajustes del anfitrión: cada sala que aloja empieza con ella, y cambiarla en
+mitad de la partida se aplica al momento (el listado del Worker la sigue con el siguiente aviso de plazas). El
+interruptor de la pantalla de la sala también cambia la opción. El `Lobby` del anfitrión lleva además su dificultad
+cooperativa (`difficulty`), así que la pantalla de la sala se la enseña a los invitados antes de marcarse listos
+(`online.current.coop_difficulty`).
 
 **Lo que queda fuera.** El invitado que vuelve juega desde el mundo del anfitrión como cualquier jugador tardío; su
 compañero y su bolsa son los que se llevó a casa cuando se le cayó la conexión (§5.6). Las salas de dos siguen cerrando

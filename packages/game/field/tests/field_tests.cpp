@@ -163,6 +163,45 @@ TEST_CASE("a field holds up to three guests, each by its id, and lets any of the
   CHECK(field.addPlayer(2, at(1200.0F, 0.0F)));
 }
 
+TEST_CASE("players who join or come back stand around the host, each on a free spot") {
+  using dwe::game::field::MaxFieldPlayers;
+  using dwe::game::field::PlayerId;
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(1900.0F, 0.0F));
+  const float radius = field.rules().player.radius;
+  const float spacing = (radius * 2.0F) + 25.0F;
+  const auto apart = [](glm::vec3 a, glm::vec3 b, float reach) {
+    return std::max(std::abs(a.x - b.x), std::abs(a.z - b.z)) >= reach;
+  };
+  for (PlayerId id = 1; id < MaxFieldPlayers; ++id) {
+    REQUIRE(field.addPlayerNearHost(id));
+    REQUIRE(field.addPartner(id, "models/guest_partner", 50.0F));
+  }
+  const auto spreadOut = [&] {
+    const glm::vec3 host = field.player().position;
+    for (PlayerId id = 1; id < MaxFieldPlayers; ++id) {
+      const glm::vec3 spot = field.player(id)->position;
+      CHECK(spot.x + radius <= 2000.0F);
+      CHECK(glm::distance(spot, host) <= spacing * 2.0F * std::numbers::sqrt2_v<float>);
+      CHECK(apart(spot, host, radius * 2.0F));
+      CHECK(apart(spot, field.partner().position, radius + field.rules().partner.mover.radius));
+      for (PlayerId other = 1; other < id; ++other) {
+        CHECK(apart(spot, field.player(other)->position, radius * 2.0F));
+      }
+    }
+  };
+  spreadOut();
+  CHECK(field.removePlayer(2));
+  REQUIRE(field.addPlayerNearHost(2));
+  for (const PlayerId other : {PlayerId{1}, PlayerId{3}}) {
+    CHECK(apart(field.player(2)->position, field.partner(other)->position, radius + 50.0F));
+  }
+  spreadOut();
+  CHECK(field.removePlayer(3));
+  CHECK_FALSE(field.addPlayer(3, at(field.player(1)->position.x, field.player(1)->position.z)));
+}
+
 TEST_CASE("a driven guest stands where its owner says, not where its input walks it") {
   dwe::scene::World world;
   Field field{world, originalRules()};

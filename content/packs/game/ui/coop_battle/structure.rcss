@@ -71,8 +71,11 @@ body {
 }
 
 /* The partners show their MP after the HP; the one this player commands is marked with a line at its left. */
+.fighter .line {
+	display: block;
+}
+
 .fighter .mp {
-	margin-left: 8dp;
 	font-size: 16dp;
 	color: #8fc4ff;
 }

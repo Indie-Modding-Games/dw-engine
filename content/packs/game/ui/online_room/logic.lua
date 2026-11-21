@@ -181,10 +181,25 @@ local function refresh(document)
     capacity = room.capacity,
   }))
   -- Public or private, and whether the game takes new players once under way (#356).
-  document:get("info-visibility"):set_text(say("online.visibility.joining", {
+  document:get("info-visibility-text"):set_text(say("online.visibility.joining", {
     visibility = t(room.listed and "online.visibility.public" or "online.visibility.private"),
     joining = t(room.open_to_join and "online.join_open" or "online.join_closed"),
   }))
+  fit_text.fit(
+    document:get("info-visibility-text"),
+    nil,
+    column_width(document:get("info-visibility"))
+  )
+  local difficulty_key = room.mode == "campaign" and room.coop_difficulty_key or nil
+  show(document, "info-difficulty-row", difficulty_key ~= nil)
+  if difficulty_key ~= nil then
+    document:get("info-difficulty-text"):set_text(t(difficulty_key))
+    fit_text.fit(
+      document:get("info-difficulty-text"),
+      nil,
+      column_width(document:get("info-difficulty"))
+    )
+  end
   show(document, "prompt-join-box", room.host and room.phase ~= "closed")
   document
     :get("prompt-join-text")

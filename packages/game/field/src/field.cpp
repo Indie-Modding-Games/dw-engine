@@ -406,21 +406,8 @@ core::Result<void> Field::addPlayer(PlayerId id, assets::SpawnPoint spawn) {
   if (!fitsOnGrid(collision_, spawn.position, rules_.player.radius)) {
     return core::fail("field player spawn is outside free map cells");
   }
-  const GroundSquare atSpawn{.centre = ground(spawn.position), .half = rules_.player.radius};
-  const auto occupied = [&](scene::Entity entity, float radius) {
-    const GroundSquare body{.centre = ground(world_->registry().get<Transform>(entity).position),
-                            .half = radius};
-    return overlaps(atSpawn, body);
-  };
-  if (occupied(player_, rules_.player.radius) || occupied(partner_, rules_.partner.mover.radius)) {
-    return core::fail("field player spawn overlaps the host pair");
-  }
-  for (const NpcBody& npc : npcs_.bodies()) {
-    const GroundSquare body{
-        .centre = ground(world_->registry().get<Transform>(npc.entity).position), .half = npc.half};
-    if (overlaps(atSpawn, body)) {
-      return core::fail("field player spawn overlaps an NPC");
-    }
+  if (spotTaken(spawn.position, id)) {
+    return core::fail("field player spawn overlaps another body");
   }
 
   const scene::Entity entity = world_->create();
@@ -436,6 +423,20 @@ core::Result<void> Field::addPlayer(PlayerId id, assets::SpawnPoint spawn) {
   player.fieldPlayer.input.run = true;
   otherPlayers_.push_back(std::move(player));
   return {};
+}
+
+core::Result<void> Field::addPlayerNearHost(PlayerId id) {
+  if (mapId_.empty()) {
+    return core::fail("enter a map before adding a field player");
+  }
+  const std::optional<glm::vec3> spot = freeSpotNearHost(id);
+  if (!spot) {
+    return core::fail("no free spot near the host for a field player");
+  }
+  const glm::vec2 towardHost =
+      ground(world_->registry().get<Transform>(player_).position) - ground(*spot);
+  return addPlayer(
+      id, {.position = *spot, .yaw = assets::yawOfDirection({towardHost.x, 0.0F, towardHost.y})});
 }
 
 bool Field::removePlayer(PlayerId id) {
@@ -1387,55 +1388,8 @@ void Field::placeOtherPlayersNearHost() {
     return;
   }
   const glm::vec3 host = world_->registry().get<Transform>(player_).position;
-  const std::array<glm::vec2, 8> directions{{{1.0F, 0.0F},
-                                             {-1.0F, 0.0F},
-                                             {0.0F, 1.0F},
-                                             {0.0F, -1.0F},
-                                             {1.0F, 1.0F},
-                                             {-1.0F, 1.0F},
-                                             {1.0F, -1.0F},
-                                             {-1.0F, -1.0F}}};
-  constexpr std::int32_t SpawnRings = 24;
-  const float spacing = (rules_.player.radius * 2.0F) + 25.0F;
   for (PlayerRuntime& player : otherPlayers_) {
-    std::optional<glm::vec3> place;
-    for (std::int32_t ring = 1; ring <= SpawnRings && !place; ++ring) {
-      for (const glm::vec2 direction : directions) {
-        const glm::vec3 candidate =
-            host + glm::vec3{direction.x * spacing * static_cast<float>(ring), 0.0F,
-                             direction.y * spacing * static_cast<float>(ring)};
-        if (!fitsOnGrid(collision_, candidate, rules_.player.radius)) {
-          continue;
-        }
-        const GroundSquare square{.centre = ground(candidate), .half = rules_.player.radius};
-        const bool overlapsHost =
-            overlaps(square, {.centre = ground(host), .half = rules_.player.radius});
-        const glm::vec3 partner = world_->registry().get<Transform>(partner_).position;
-        const bool overlapsPartner =
-            overlaps(square, {.centre = ground(partner), .half = rules_.partner.mover.radius});
-        const bool overlapsNpc = std::ranges::any_of(npcs_.bodies(), [&](const NpcBody& npc) {
-          const GroundSquare body{
-              .centre = ground(world_->registry().get<Transform>(npc.entity).position),
-              .half = npc.half};
-          return overlaps(square, body);
-        });
-        const bool overlapsAnother =
-            std::ranges::any_of(otherPlayers_, [&](const PlayerRuntime& other) {
-              if (other.fieldPlayer.id == player.fieldPlayer.id) {
-                return false;
-              }
-              const GroundSquare body{
-                  .centre =
-                      ground(world_->registry().get<Transform>(other.fieldPlayer.entity).position),
-                  .half = rules_.player.radius};
-              return overlaps(square, body);
-            });
-        if (!overlapsHost && !overlapsPartner && !overlapsNpc && !overlapsAnother) {
-          place = candidate;
-          break;
-        }
-      }
-    }
+    const std::optional<glm::vec3> place = freeSpotNearHost(player.fieldPlayer.id);
     if (place) {
       const glm::vec2 towardHost = ground(host) - ground(*place);
       scene::place(world_->registry().get<Transform>(player.fieldPlayer.entity), *place,
@@ -1457,6 +1411,54 @@ void Field::placeOtherPlayersNearHost() {
       placeOtherPartner(player, *player.partner);
     }
   }
+}
+
+bool Field::spotTaken(glm::vec3 spot, PlayerId self) const {
+  const entt::registry& registry = world_->registry();
+  const GroundSquare square{.centre = ground(spot), .half = rules_.player.radius};
+  const auto on = [&](scene::Entity entity, float half) {
+    return overlaps(square,
+                    {.centre = ground(registry.get<Transform>(entity).position), .half = half});
+  };
+  if (on(player_, rules_.player.radius) || on(partner_, rules_.partner.mover.radius)) {
+    return true;
+  }
+  if (std::ranges::any_of(npcs_.bodies(),
+                          [&](const NpcBody& npc) { return on(npc.entity, npc.half); })) {
+    return true;
+  }
+  return std::ranges::any_of(otherPlayers_, [&](const PlayerRuntime& other) {
+    if (other.fieldPlayer.id == self) {
+      return false;
+    }
+    return on(other.fieldPlayer.entity, rules_.player.radius) ||
+           (other.partner && on(other.partner->entity, other.partner->radius));
+  });
+}
+
+std::optional<glm::vec3> Field::freeSpotNearHost(PlayerId self) const {
+  const glm::vec3 host = world_->registry().get<Transform>(player_).position;
+  constexpr std::array<glm::vec2, 8> Directions{{{1.0F, 0.0F},
+                                                 {-1.0F, 0.0F},
+                                                 {0.0F, 1.0F},
+                                                 {0.0F, -1.0F},
+                                                 {1.0F, 1.0F},
+                                                 {-1.0F, 1.0F},
+                                                 {1.0F, -1.0F},
+                                                 {-1.0F, -1.0F}}};
+  constexpr std::int32_t SpawnRings = 24;
+  const float spacing = (rules_.player.radius * 2.0F) + 25.0F;
+  for (std::int32_t ring = 1; ring <= SpawnRings; ++ring) {
+    for (const glm::vec2 direction : Directions) {
+      const glm::vec3 candidate =
+          host + glm::vec3{direction.x * spacing * static_cast<float>(ring), 0.0F,
+                           direction.y * spacing * static_cast<float>(ring)};
+      if (fitsOnGrid(collision_, candidate, rules_.player.radius) && !spotTaken(candidate, self)) {
+        return candidate;
+      }
+    }
+  }
+  return std::nullopt;
 }
 
 void Field::moveOtherPlayer(PlayerRuntime& player, float seconds) {

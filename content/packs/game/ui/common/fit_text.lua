@@ -81,7 +81,23 @@ local function cut(entry)
     room = room()
   end
   local width = text_width(element, entry.parts)
-  if room == nil or room <= 0 or width <= room + 0.5 then
+  if room == nil or room <= 0 then
+    return
+  end
+  if width <= room + 0.5 then
+    -- A cut made while the screen still scaled itself can be too short: redo it once.
+    local kept = entry.kept
+    if kept ~= nil and kept < #entry.letters and not entry.rewritten then
+      local letter = width / (kept + 3)
+      if width + letter * 3 < room then
+        entry.rewritten = true
+        entry.ticks = measure_ticks
+        entry.kept = nil
+        entry.measured = nil
+        cuts[element.id] = nil
+        element:set_text(entry.text)
+      end
+    end
     return
   end
   -- The width of the text written last is known only once the document lays it out again: until

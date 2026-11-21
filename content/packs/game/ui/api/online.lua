@@ -298,9 +298,11 @@ end
 -- capacity, error, error_key and detail (why it closed, and the game's own words), can_start (the
 -- host can start), can_ready (the guest can mark itself ready), ready (this player is ready),
 -- in_progress (its game is under way: a guest that readies joins it), open_to_join (a game under
--- way takes new players; the host sets it with online.set_open_to_join) and
--- members, each {name, host, ready, local, arriving}: a room seats up to four (capacity), and an
--- arriving member holds its seat while its connection is still being set up. A member with no name
+-- way takes new players; the host sets it with online.set_open_to_join), coop_difficulty and
+-- coop_difficulty_key (off, standard or hard: how the host's battles scale their enemies, its
+-- coop_difficulty option; empty and nil until the host's lobby tells it) and members, each {name,
+-- host, ready, local, arriving}: a room seats up to four (capacity), and an arriving member holds
+-- its seat while its connection is still being set up. A member with no name
 -- of its own is named by its place: you, the host or the guest by number.
 function online.room()
   if not flag("online.current.active") then
@@ -340,6 +342,7 @@ function online.room()
   local phase = text("online.current.phase")
   local mode = text("online.current.mode")
   local error = text("online.current.error")
+  local coop_difficulty = text("online.current.coop_difficulty")
   return {
     code = text("online.current.code"),
     name = room_title(text("online.current.name"), text("online.current.name_key"), host_name),
@@ -358,6 +361,10 @@ function online.room()
     ready = flag("online.current.ready"),
     in_progress = flag("online.current.in_progress"),
     open_to_join = flag("online.current.open_to_join"),
+    coop_difficulty = coop_difficulty,
+    coop_difficulty_key = coop_difficulty ~= ""
+        and ("pause_menu.coop_difficulty." .. coop_difficulty)
+      or nil,
     members = members,
   }
 end
