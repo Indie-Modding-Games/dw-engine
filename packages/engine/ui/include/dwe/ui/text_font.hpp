@@ -4,8 +4,10 @@
 
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace dwe::ui {
 
@@ -50,10 +52,30 @@ struct OriginalLook {
   // The size of the modern family that draws missing characters, as a fraction of the bitmap font's
   // line height.
   float fallbackSize = 1.0F;
+  std::string fallbackFamily;
+  int fallbackPixels = 0;
 };
 
 // Reads ui/fonts/original_look.yaml.
 core::Result<OriginalLook> parseOriginalLook(std::string_view yaml);
+
+inline constexpr std::string_view FontFallbacksAsset = "ui/fonts/fallbacks";
+
+struct FallbackFace {
+  std::string family;
+  std::string language;
+  float scale = 1.0F;
+};
+
+struct FallbackChain {
+  std::vector<std::string> families;
+  std::vector<FallbackFace> faces;
+};
+
+core::Result<std::vector<FallbackChain>> parseFontFallbacks(std::string_view yaml);
+
+[[nodiscard]] std::vector<FallbackFace> fallbackOrder(std::span<const FallbackFace> faces,
+                                                      std::string_view language);
 
 // A text RmlUi wrote in capitals (text-transform: uppercase) with its accented letters in capitals
 // too. RmlUi only changes the letters a to z, so "Regañar" came out "REGAñAR": a text with capital

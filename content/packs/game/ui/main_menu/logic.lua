@@ -83,6 +83,7 @@ local entries = {
     "language-6",
     "language-7",
     "language-8",
+    "language-9",
     "language-done",
   },
 }
@@ -121,21 +122,11 @@ local function native_name(code)
   return (name ~= "" and name ~= key) and name or string.upper(code)
 end
 
--- Capitals of a text, the accented letters of the languages offered too (string.upper only knows
--- ASCII).
-local Capitals = {
-  ["á"] = "Á",
-  ["é"] = "É",
-  ["í"] = "Í",
-  ["ó"] = "Ó",
-  ["ú"] = "Ú",
-  ["ü"] = "Ü",
-  ["ñ"] = "Ñ",
-}
-
 local function upper(text)
-  return (string.upper(text):gsub("\195[\161\169\173\179\186\188\177]", Capitals))
+  return ui.upper(text)
 end
+
+local CompactLanguageRows = 6
 
 local function refresh(document)
   local orig = original()
@@ -220,11 +211,14 @@ local function lay_out(document)
   show("language-box", shown == "language")
   if shown == "language" then
     -- The box in the middle of the screen: its heading and START (180dp with its padding) and a
-    -- row of 60dp per language, 420dp at least (the skin's min-height).
-    local height = math.max(420, 180 + 60 * math.min(#ui.languages(), #entries.language - 1))
-    document
-      :get("language-box")
-      :set_property("top", string.format("%ddp", math.floor((720 - height) / 2)))
+    -- row of 60dp per language, 420dp at least (the skin's min-height). More than six languages
+    -- take compact rows of 42dp (structure.rcss), so that nine still fit the screen.
+    local rows = math.min(#ui.languages(), #entries.language - 1)
+    local compact = rows > CompactLanguageRows
+    local height = math.max(420, 180 + (compact and 42 or 60) * rows)
+    local box = document:get("language-box")
+    box:set_class("compact", compact)
+    box:set_property("top", string.format("%ddp", math.floor((720 - height) / 2)))
   end
   show("battle-box", shown == "battle")
   document:get("scrim"):set_class("boot", shown == "boot")

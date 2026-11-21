@@ -3,6 +3,7 @@ find_package(Lua REQUIRED)
 find_package(sol2 CONFIG REQUIRED)
 find_package(lodepng CONFIG REQUIRED)
 find_package(Ktx CONFIG REQUIRED)
+find_package(Freetype REQUIRED)
 
 dwe_add_module(ui
     LAYER services
@@ -33,7 +34,8 @@ dwe_add_module(ui
         src/ui_renderer.cpp
         src/world_map.cpp
     DEPS core platform input assets render script
-    PRIVATE_LIBS RmlUi::RmlUi sol2::sol2 ${LUA_LIBRARIES}
+    # FreeType reads which characters each loaded font has (font_engine.cpp: the fallback chains).
+    PRIVATE_LIBS RmlUi::RmlUi sol2::sol2 Freetype::Freetype ${LUA_LIBRARIES}
     # The image tests write indexed PNGs and KTX2 textures.
     TEST_LIBS lodepng KTX::ktx)
 

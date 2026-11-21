@@ -95,7 +95,7 @@ pub async fn images_prepare(state: State<'_, AppState>) -> Result<Overview> {
     if let Some(packs) = team_packs(&game) {
         command.arg("--with").arg(packs);
     }
-    let language = state.settings.lock().unwrap().language.clone();
+    let language = state.settings.lock().unwrap().language_or_fallback().to_owned();
     command.arg("--language").arg(language).arg("-o").arg(images.originals());
     log_line!("exporting the game's images into {}", images.originals().display());
     let cancel = state.cancel.clone();
@@ -174,7 +174,7 @@ pub fn images_remove_all(state: State<'_, AppState>) -> Result<()> {
 #[tauri::command]
 pub async fn images_export(state: State<'_, AppState>, folder: String) -> Result<String> {
     let (images, catalogue) = catalogue(&state)?;
-    let language = state.settings.lock().unwrap().language.clone();
+    let language = state.settings.lock().unwrap().language_or_fallback().to_owned();
     let written = blocking(move || images.export(&catalogue, Path::new(&folder), &language)).await?;
     log_line!("the game's images were exported to {}", written.display());
     Ok(written.display().to_string())

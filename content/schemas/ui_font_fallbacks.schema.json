@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Font fallback chains",
+  "description": "ui/fonts/fallbacks.yaml of the game pack: for each family, the faces that draw the characters it lacks, tried in order; the faces that name a language come first, among their group, for that language (docs/architecture/ui.md#fonts).",
+  "type": "object",
+  "required": [
+    "chains"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "chains": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "families",
+          "faces"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "families": {
+            "description": "The font-families the documents name that take this chain.",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "faces": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "family"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "family": {
+                  "description": "The family of a font under ui/fonts/, as the font file names it.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "language": {
+                  "description": "The language that tries this face first among its group (zh, ja, ko).",
+                  "type": "string",
+                  "pattern": "^[a-z]{2,3}(_[a-z0-9]{2,8})?$"
+                },
+                "scale": {
+                  "description": "The face's size as a fraction of the family's.",
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

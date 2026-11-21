@@ -366,6 +366,29 @@ TEST_CASE("a game saved to a slot loads from it") {
   CHECK_FALSE(unsaved->save(slot).has_value());
 }
 
+TEST_CASE("names in any alphabet come back from a save as they were typed") {
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  const SlotId slot{.kind = SlotKind::Manual, .index = 3};
+  const std::array<dwe::session::PlayerNames, 4> names{{
+      {.tamer = "Ёлка", .partner = "Ящер"},
+      {.tamer = "ゆうき", .partner = "コロモン"},
+      {.tamer = "민준", .partner = "아구몬"},
+      {.tamer = "小明", .partner = "Zoë: \"#1\""},
+  }};
+  for (const dwe::session::PlayerNames& typed : names) {
+    const auto session = newGame(packs, &storage);
+    session->setNames(typed);
+    const auto saved = session->save(slot);
+    REQUIRE_MESSAGE(saved.has_value(), errorOf(saved));
+    const auto loaded = newGame(packs, &storage, 5);
+    const auto read = loaded->load(slot);
+    REQUIRE_MESSAGE(read.has_value(), errorOf(read));
+    CHECK(loaded->names().tamer == typed.tamer);
+    CHECK(loaded->names().partner == typed.partner);
+  }
+}
+
 TEST_CASE("the partner going to sleep autosaves") {
   const TestPacks packs;
   MemorySaveStorage storage;

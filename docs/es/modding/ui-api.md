@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.26.0 | Nueve idiomas: el cuadro de nombre pasa páginas de letras (`naming_box.pages`, `naming_box.page`, `naming_box.page_name`, `page` en `naming.state()`), y `ui.upper` y `ui.lower` conocen las letras acentuadas, griegas y cirílicas |
 | 0.25.0 | La etiqueta cooperativa dice cuándo un jugador entrena en el gimnasio (`coop_hud.tag.training`, `coop_hud.tag.<n>.training`) |
 | 0.24.0 | Una partida en curso admite jugadores: la lista de salas muestra una partida en marcha con plaza libre como `in_progress` (las salas de `online.list()` ganan `in_progress`), la sala dice si su partida está en marcha y si admite jugadores nuevos (`online.current.in_progress`, `online.current.open_to_join`, `in_progress` y `open_to_join` de `online.room()`), y el anfitrión la abre o la cierra a jugadores nuevos (`online.set_open_to_join`, `online_open_to_join`) |
 | 0.23.0 | Todos los compañeros luchan en un combate cooperativo: la tarjeta de un aliado cuenta atrás hasta que se levanta (`battle.ally.<n>.revive_seconds`, `revive_seconds` en `battle.allies()`), y la pantalla `coop_battle` enseña la cuenta atrás de cada compañero caído (`coop_battle.fighter.<n>.revive_seconds`) y deja elegir a qué compañero van los objetos del jugador (`coop_battle.target`, el comando `coop_battle_target`). Llega la opción `coop_difficulty` (off, standard o hard) |
@@ -103,7 +104,7 @@ guardar y la caja del nombre); el resto de pantallas llega después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.25.0**.
+Versión de la API de la interfaz: **0.26.0**.
 
 ### `ui`
 
@@ -120,6 +121,8 @@ Versión de la API de la interfaz: **0.25.0**.
 | `ui.device(): string` | función | texto | El dispositivo en uso: keyboard_mouse o gamepad. |
 | `ui.gamepad_family(): string` | función | texto | La familia del mando en uso. |
 | `ui.languages(): string[]` | función | tabla | Los idiomas que el jugador puede elegir. |
+| `ui.upper(text: string): string` | función | texto | El texto en mayúsculas, también las letras con tilde, griegas y cirílicas (`string.upper` solo conoce ASCII). |
+| `ui.lower(text: string): string` | función | texto | El texto en minúsculas, en los mismos alfabetos. |
 | `ui.skins(): string[]` | función | tabla | Los aspectos que el jugador puede elegir. |
 | `ui.skin_name_key(id: string): string` | función | texto | La clave de texto del nombre de un aspecto; vacía si no existe. |
 | `ui.cue(name: string): boolean` | función | sí/no | Suena box_open, box_close o confirm; false con otro nombre. |
@@ -603,11 +606,14 @@ Versión de la API de la interfaz: **0.25.0**.
 | `naming_box.cursor_row` | ajuste | número | La fila del cursor en la rejilla; -1 en un botón. |
 | `naming_box.cursor_column` | ajuste | número | La columna del cursor en la rejilla; -1 en un botón. |
 | `naming_box.cursor_button` | ajuste | número | El botón del cursor: 0 Atrás, 1 Aceptar; -1 en la rejilla. |
+| `naming_box.pages` | ajuste | número | Las páginas de letras del idioma del jugador (las suyas y luego la latina). |
+| `naming_box.page` | ajuste | número | La página de letras que se ve, desde 0. |
+| `naming_box.page_name` | ajuste | texto | La clave de texto del nombre de la página que se ve. |
 | `naming_write` | comando | texto | Escribe las letras de la rejilla que lleva, como el teclado. |
 | `naming_erase` | comando | — | Quita la última letra, como cancelar. |
 | `naming_accept` | comando | — | Aceptar: el juego toma el nombre si no está vacío. |
 | `naming.is_open(): boolean` | consulta | sí/no | Si la caja de nombre se ve, esperando un nombre. |
-| `naming.state(): table` | consulta | tabla | La caja: title_key, length, letters, name, grid (rows, columns) y cursor (row, column, button). |
+| `naming.state(): table` | consulta | tabla | La caja: title_key, length, letters, name, grid (rows, columns), cursor (row, column, button) y page (index, count, name_key). |
 | `naming.cell(row: integer, column: integer): string` | consulta | texto | La letra de una celda de la rejilla, desde 0; " " si está vacía. |
 | `naming.write(letters: string): boolean, string?` | acción | sí/no | Pide escribir letras de la rejilla al final del nombre. |
 | `naming.erase(): boolean, string?` | acción | sí/no | Pide quitar la última letra. |

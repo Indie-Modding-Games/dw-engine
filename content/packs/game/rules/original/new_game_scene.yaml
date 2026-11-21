@@ -64,3 +64,94 @@ naming:
     - "01234"
     - "56789"
     - "     "
+  # An engine addition (docs/modules/apps/game.md#names-in-every-language): the rows above are the Latin page; a
+  # language adds pages of its own alphabet before it, as many rows each, and the page keys turn them. Korean writes
+  # its letters alone and the box joins them into syllables.
+  rows_page: naming.page.latin
+  pages:
+    ru:
+      - page: naming.page.cyrillic
+        rows:
+          - "АБВГД"
+          - "ЕЁЖЗИ"
+          - "ЙКЛМН"
+          - "ОПРСТ"
+          - "УФХЦЧ"
+          - "ШЩЪЫЬ"
+          - "ЭЮЯ  "
+          - "     "
+          - "     "
+          - "абвгд"
+          - "еёжзи"
+          - "йклмн"
+          - "опрст"
+          - "уфхцч"
+          - "шщъыь"
+          - "эюя  "
+          - "     "
+          - "     "
+    ja:
+      - page: naming.page.hiragana
+        rows:
+          - "あいうえお"
+          - "かきくけこ"
+          - "さしすせそ"
+          - "たちつてと"
+          - "なにぬねの"
+          - "はひふへほ"
+          - "まみむめも"
+          - "や ゆ よ"
+          - "らりるれろ"
+          - "わ を ん"
+          - "がぎぐげご"
+          - "ざじずぜぞ"
+          - "だぢづでど"
+          - "ばびぶべぼ"
+          - "ぱぴぷぺぽ"
+          - "ぁぃぅぇぉ"
+          - "っゃゅょー"
+          - "     "
+      - page: naming.page.katakana
+        rows:
+          - "アイウエオ"
+          - "カキクケコ"
+          - "サシスセソ"
+          - "タチツテト"
+          - "ナニヌネノ"
+          - "ハヒフヘホ"
+          - "マミムメモ"
+          - "ヤ ユ ヨ"
+          - "ラリルレロ"
+          - "ワ ヲ ン"
+          - "ガギグゲゴ"
+          - "ザジズゼゾ"
+          - "ダヂヅデド"
+          - "バビブベボ"
+          - "パピプペポ"
+          - "ァィゥェォ"
+          - "ッャュョー"
+          - "ヴ    "
+    ko:
+      - page: naming.page.hangul
+        rows:
+          - "ㄱㄲㄴㄷㄸ"
+          - "ㄹㅁㅂㅃㅅ"
+          - "ㅆㅇㅈㅉㅊ"
+          - "ㅋㅌㅍㅎ "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "ㅏㅐㅑㅒㅓ"
+          - "ㅔㅕㅖㅗㅘ"
+          - "ㅙㅚㅛㅜㅝ"
+          - "ㅞㅟㅠㅡㅢ"
+          - "ㅣ    "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+  # Typed text (an input method's) in these languages may also have Chinese, Japanese and Korean characters beyond
+  # the pages, when the fonts draw them.
+  typed_beyond_pages: [zh, ja, ko]

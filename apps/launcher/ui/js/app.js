@@ -7,7 +7,7 @@ import { api, listen, onDragDrop, openUrl, pickDisc, pickFolder } from "./api.js
 import { emblem, GAMES } from "./art.js";
 import { $, add, ask, el, icon, reconcile, toast } from "./dom.js";
 import { dropOnImages, showImages } from "./custom-images.js";
-import { failureText, formatBytes, getLanguage, setLanguage, t } from "./i18n.js";
+import { LANGUAGES, failureText, formatBytes, getLanguage, pickLanguage, setLanguage, t } from "./i18n.js";
 import { renderNotes } from "./notes.js";
 import { activeSettingsTab, mountSettings, openSettings, settingsOpen } from "./settings.js";
 import * as slots from "./slots.js";
@@ -554,6 +554,14 @@ function showMessage(title, body, log = null) {
 
 async function refresh() {
   state.status = await api.status();
+  if (!state.status.language) {
+    const system = pickLanguage(navigator.languages?.length ? navigator.languages : [navigator.language]);
+    try {
+      state.status = await api.setLanguage(system);
+    } catch {
+      state.status = { ...state.status, language: system };
+    }
+  }
   setLanguage(state.status.language);
   if (state.status.content_installed && !state.backgroundLoaded) {
     const still = await api.background();
@@ -773,8 +781,7 @@ function registerBuiltIns() {
     const select = el(
       "select",
       { id: "languageSelect", onchange: (e) => settingCall(() => api.setLanguage(e.target.value)) },
-      el("option", { value: "es", text: "Español" }),
-      el("option", { value: "en", text: "English" }),
+      ...LANGUAGES.map((l) => el("option", { value: l.code, lang: l.html, text: l.name })),
     );
     select.value = getLanguage();
     add(box, el("p", { text: t("s.langBody") }), el("div", { class: "row" }, el("label", { for: "languageSelect", class: "sr-only", text: t("s.langTitle") }), select));

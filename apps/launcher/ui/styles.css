@@ -1,6 +1,8 @@
 /* The launcher's look: near-black charcoal surfaces over the game's art, one teal accent (Jugar, the
    active item and the focus) and the game's own font (Noto Sans, copied from the game pack at build
-   time). Tokens first; components use only tokens. */
+   time; it covers Latin and Cyrillic). Chinese, Korean and Japanese take the system's own CJK
+   fonts (--cjk-fonts, chosen per lang so each language gets its own glyph shapes); nothing is
+   downloaded. Tokens first; components use only tokens. */
 
 @font-face {
   font-family: "Launcher Sans";
@@ -47,9 +49,24 @@
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --fast: 160ms;
   --medium: 240ms;
-  font-family: "Launcher Sans", "Noto Sans", system-ui, sans-serif;
+  /* Windows, macOS, then Linux (Noto CJK, Source Han, WenQuanYi) names of each script's fonts. */
+  --cjk-fonts: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC",
+    "Source Han Sans SC", "WenQuanYi Micro Hei", "Yu Gothic UI", "Meiryo", "Hiragino Sans", "Noto Sans CJK JP",
+    "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR";
+  font-family: "Launcher Sans", "Noto Sans", system-ui, var(--cjk-fonts), sans-serif;
   line-height: 1.5;
+  overflow-wrap: break-word;
 }
+:root:lang(ja) {
+  --cjk-fonts: "Yu Gothic UI", "Meiryo", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans CJK JP",
+    "Source Han Sans JP", "Microsoft YaHei UI", "Noto Sans CJK SC";
+}
+:root:lang(ko) {
+  --cjk-fonts: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Source Han Sans KR", "NanumGothic",
+    "Microsoft YaHei UI", "Noto Sans CJK SC";
+}
+/* Chinese, Korean and Japanese read badly with the tightened titles: normal spacing there. */
+:root:is(:lang(zh), :lang(ja), :lang(ko)) :is(.hero-title, .view-title) { letter-spacing: 0; }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -178,6 +195,7 @@ button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
   background: rgba(20, 22, 25, 0.72);
   backdrop-filter: blur(12px);
   font-size: 0.82rem;
+  max-width: 100%; min-width: 0;
 }
 .pill-tag { color: var(--text-muted); padding-left: var(--space-2); border-left: 1px solid rgba(255, 255, 255, 0.16); }
 .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); }
@@ -186,7 +204,7 @@ button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
 .dot.is-warn { background: var(--warning); }
 .dot.is-live { background: var(--accent); box-shadow: 0 0 0 3px rgba(93, 202, 165, 0.2); animation: pulse 1.8s ease-in-out infinite; }
 @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(93, 202, 165, 0); } }
-.pill-text { white-space: nowrap; }
+.pill-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .pill-progress { position: relative; width: 7.5rem; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
 .pill-progress-fill { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--text); transition: width var(--medium) linear; }
 .pill-progress.is-indeterminate .pill-progress-fill { width: 35%; animation: slide 1.4s var(--ease) infinite; }
@@ -197,6 +215,7 @@ button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
   display: inline-flex; align-items: center; gap: var(--space-2);
   min-height: 2rem; padding: 0 0.85rem;
   border: 0; border-radius: 999px; background: none;
+  max-width: 100%; min-width: 0;
 }
 .pill-button:hover { background: rgba(255, 255, 255, 0.07); }
 
@@ -563,12 +582,13 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
   position: relative;
   display: flex; align-items: center; gap: var(--space-3);
   min-height: 44px;
-  padding: 0 var(--space-3);
+  padding: 6px var(--space-3);
   border-radius: var(--radius-s);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-muted);
-  text-align: left;
+  text-align: left; line-height: 1.25;
+  overflow-wrap: anywhere; hyphens: auto;
   transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 .settings-tab .icon { display: grid; place-items: center; flex: none; }
@@ -672,7 +692,7 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
   display: inline-flex; align-items: center;
   padding: 2px var(--space-2);
   border-radius: 999px;
-  font-family: "Launcher Sans", "Noto Sans", system-ui, sans-serif;
+  font-family: "Launcher Sans", "Noto Sans", system-ui, var(--cjk-fonts), sans-serif;
   font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em; word-break: normal;
   background: rgba(255, 255, 255, 0.08); color: var(--text-muted);
 }
@@ -690,7 +710,8 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
   margin-bottom: var(--space-3); padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-s); border: 1px solid rgba(251, 191, 36, 0.4); background: rgba(40, 30, 8, 0.7);
 }
-.inline-notice p { color: var(--text) !important; }
+.inline-notice { flex-wrap: wrap; }
+.inline-notice p { color: var(--text) !important; flex: 1 1 16rem; }
 .inline-notice .button { flex-shrink: 0; white-space: nowrap; }
 
 /* Installed add-ons. */

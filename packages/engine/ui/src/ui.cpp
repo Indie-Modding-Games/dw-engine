@@ -183,10 +183,11 @@ void applyTextKeys(Rml::Element& root, const localization::Catalog& texts) {
   }
 }
 
-// The document's words in the player's language: its text keys, and MenuArtClass while the
-// language is the one the original's word pictures are in.
 void applyLanguage(Rml::Element& document, const localization::Catalog& texts) {
   applyTextKeys(document, texts);
+  if (document.GetAttribute<Rml::String>("lang", "") != texts.language()) {
+    document.SetAttribute("lang", texts.language());
+  }
   document.SetClass(Rml::String{MenuArtClass}, texts.language() == MenuArtLanguage);
 }
 
@@ -404,13 +405,7 @@ struct Ui::Impl {
             [this]() {
               return std::vector<std::string>{texts->languages().begin(), texts->languages().end()};
             },
-        .skins =
-            [this]() {
-              // The skins the player picks from: the catalog's, leaving the hidden ones (such as the
-              // modern base and fallback) out. The picker's rows and the options page's ui.skins()
-              // cycle read this.
-              return skins.offered();
-            },
+        .skins = [this]() { return skins.offered(); },
         .skinNameKey = [this](std::string_view id) -> std::string {
           const Skin* skin = skins.find(id);
           return skin != nullptr ? skin->nameKey : std::string{};
@@ -491,8 +486,25 @@ struct Ui::Impl {
     fontEngine =
         std::make_unique<FontEngine>(*Rml::GetFontEngineInterface(), std::move(*look),
                                      bitmap ? std::optional{std::move(*bitmap)} : std::nullopt);
+    auto chains = loadFontFallbacks();
+    if (!chains) {
+      return std::unexpected{chains.error()};
+    }
+    fontEngine->setFallbacks(std::move(*chains));
     Rml::SetFontEngineInterface(fontEngine.get());
     return {};
+  }
+
+  [[nodiscard]] core::Result<std::vector<FallbackChain>> loadFontFallbacks() const {
+    auto id = assets::AssetId::parse(FontFallbacksAsset);
+    if (!id || desc.files->resolve(*id) == nullptr) {
+      return std::vector<FallbackChain>{};
+    }
+    auto bytes = desc.files->read(*id);
+    if (!bytes) {
+      return std::unexpected{bytes.error()};
+    }
+    return parseFontFallbacks(textOf(*bytes));
   }
 
   [[nodiscard]] core::Result<BitmapFont> loadBitmapFont(const OriginalLook& look) const {
@@ -1065,6 +1077,9 @@ struct Ui::Impl {
   }
 
   void refreshTexts() {
+    if (fontEngine != nullptr && fontEngine->setLanguage(texts->language())) {
+      Rml::ReleaseFontResources();
+    }
     for (auto& [name, document] : documents) {
       applyLanguage(*document.element, *texts);
       applyMinimap(*document.element);
@@ -1608,6 +1623,9 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
   if (auto texts = impl->loadTexts(); !texts) {
     return std::unexpected{texts.error()};
   }
+  if (impl->fontEngine != nullptr) {
+    impl->fontEngine->setLanguage(impl->texts->language());
+  }
   constexpr std::uint32_t MarkerSize = 64;
   impl->sources.setGenerated("minimap_marker", buildMinimapMarker(MarkerSize));
   impl->sources.setGenerated("minimap_enemy", buildMinimapDot(MarkerSize));
@@ -1718,6 +1736,14 @@ void Ui::setTextFont(TextFont font) {
 
 TextFont Ui::textFont() const {
   return impl_->fontEngine != nullptr ? impl_->fontEngine->textFont() : TextFont::Modern;
+}
+
+bool Ui::fontsDraw(std::string_view text) const {
+  return impl_->fontEngine == nullptr || impl_->fontEngine->covers(text);
+}
+
+std::string_view Ui::language() const {
+  return impl_->texts != nullptr ? std::string_view{impl_->texts->language()} : std::string_view{};
 }
 
 const SkinCatalog& Ui::skins() const {

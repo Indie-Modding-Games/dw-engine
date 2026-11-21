@@ -18,6 +18,7 @@ use crate::launch;
 use crate::log_line;
 use crate::manifest;
 use crate::releases::{self, Client, Release, UpdateChannel};
+use crate::settings;
 use crate::store::{Game, GameStore};
 use crate::system_check::{self, Graphics, GraphicsCheck, Space};
 use crate::updates::{self, Stage};
@@ -33,6 +34,7 @@ pub struct Formats {
 
 #[derive(Serialize)]
 pub struct Status {
+    /// settings::LANGUAGES, or empty when none was chosen yet (the interface picks one).
     language: String,
     launcher_version: String,
     platform: String,
@@ -662,7 +664,7 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
 
 #[tauri::command]
 pub fn set_language(app: AppHandle, state: State<'_, AppState>, language: String) -> Result<Status> {
-    if language != "es" && language != "en" {
+    if !settings::is_language(&language) {
         return Err(Failure::new(code::IO, language));
     }
     {

@@ -912,8 +912,10 @@ color 1 of its CLUT, `0x6B5A`). Any document can use it for other text with that
   with accents, `ñ`, `ç` and `ý ÿ` in lowercase and uppercase, so a word like "ánimo" does not mix two fonts.
   None of that comes from the game's data: the marks and drawings are in the code, and the bases are read from the player's
   atlas. A letter the font already has is left as it is, and without the base letter nothing is composed. What is still
-  missing (parentheses, other alphabets...) is drawn by the modern one on the same baseline, at the size of the bitmap
-  line given by `fallback_size`; the original's substitution glyph is never drawn. Without the extracted font,
+  missing (parentheses, other alphabets...) is drawn on the same baseline by `fallback_family` (`Pixel Small`) with
+  its em `fallback_pixels` (13) of the bitmap font's pixels, so its pixels land on the same grid, and through its
+  fallback chain (see [Fonts](#fonts)); without those keys, by the modern one at the size of the bitmap line given by
+  `fallback_size`. The original's substitution glyph is never drawn. Without the extracted font,
   `original` draws with the modern one (with a warning in the log).
 - **The dialogue family** (`dialogue_family: original-look-dialogue`, the `.original-dialogue` class next to
   `.original-look`) is the same font with the spacing of the script's text windows and its item lists
@@ -1062,6 +1064,43 @@ for the next one; the movie's restart on inactivity stays as it was.
 
 The text box (`ui/story_textbox`) arrived with the story interpreter and the original-look skin draws it
 (`ui/skins/original/story_textbox`).
+
+## Fonts
+
+Every skin draws the nine languages (en, es, pt, fr, de, ru, zh, ko, ja). The families the documents name
+(`Noto Sans`, `Pixel Body`, `Pixel Small`, `original-look`) cover Latin with its accents, Greek and Cyrillic
+themselves; Chinese, Japanese and Korean come from **fallback chains**.
+
+- **The chains** are data: the `game` pack's `ui/fonts/fallbacks.yaml` (schema `ui_font_fallbacks`) gives each family
+  the faces that draw what it lacks, in order, each with an optional `language` and `scale`. `FontEngine` builds one
+  chained face per family and size: it splits each text into runs, each run drawn by the first face that has its
+  characters (spaces stay in the run they are in), and measures, draws and gives the line metrics of the family's own
+  face, so a line keeps its height whatever it holds. The faces with a `language` go first for that language within
+  their group (a group ends where a language comes again): Japanese draws its Han characters with the Japanese face, Chinese with the Simplified Chinese one and
+  Korean with the Korean one. The UI sets the language on the chains and on every document (`lang` attribute) when
+  the player changes it.
+- **The faces**, under `ui/fonts/cjk/`: `noto_sans_cjk_{sc,jp,kr}.otf` (Noto Sans CJK) for `Noto Sans`, and
+  `pixel_cjk_{sc,jp,kr}.otf` (Fusion Pixel 12px, built on Ark Pixel) for the pixel families, at 0.8 of `Pixel Body`
+  and 0.923 of `Pixel Small` so their 12-pixel em sits on those families' grids; after them the smooth faces and
+  `Noto Sans` catch anything else. The original look's bitmap font falls back to `Pixel Small` (see
+  [Original look](#original-look)), so it gets the same chain. `pixel_body.ttf` and `pixel_small.ttf` gained
+  Latin Extended-A, Greek and Cyrillic from the same misc-fixed sources as their ASCII. All are under the SIL Open
+  Font Licence; `cjk/cjk_fonts_license.txt` and `pixel_fonts_license.txt` name the sources and versions.
+- **Size.** The faces are subsets, not the full fonts: the GB 2312 set for Chinese, JIS X 0208 for Japanese, the
+  2,350 syllables of KS X 1001 for Korean, their punctuation and full-width forms, plus every character the repo's
+  texts use. About 5.4 MB in all (the full fonts are about 60 MB). They load with the UI like the other fonts; a
+  separate download per language would save little and add a failure mode. A character outside the subsets is drawn
+  by the next face of the chain or, with none, not at all (never a box): the naming box only takes characters the
+  fonts draw (`Ui::fontsDraw`). `scripts/art/make_fonts.py` (run with `uv run`) rebuilds them from the downloaded
+  sources, and its `check` command lists any character of the texts that no face covers.
+- **Line breaking.** RmlUi breaks lines only at spaces; our port (`tooling/vcpkg-ports/rmlui`, a patch over 6.3) also
+  breaks between Chinese and Japanese characters, keeping the closing punctuation (`。` `、` `」` small kana, `ー`)
+  off the start of a line and the opening ones (`「` `（`) off its end (kinsoku). Korean keeps breaking at spaces,
+  as it is written with them. The same patch makes `text-transform: uppercase` and `lowercase` know the accented
+  Latin, Greek and Cyrillic letters; Lua has `ui.upper` and `ui.lower` for the same.
+- **Longer texts.** German, Russian and French run longer than English; the boxes that hold a label grow with it,
+  and the language box switches to compact rows past six languages. Fixed-height rows take the family's own line
+  height, so a CJK line is as tall as a Latin one.
 
 ## Scripts
 

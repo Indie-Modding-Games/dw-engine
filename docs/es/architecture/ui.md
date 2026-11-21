@@ -914,8 +914,10 @@ el color 1 de su CLUT, `0x6B5A`). Cualquier documento puede usarla para otro tex
   con tilde, `ñ`, `ç` e `ý ÿ` en minúscula y mayúscula, así que una palabra como «ánimo» no mezcla dos fuentes.
   Nada de eso sale de los datos del juego: las marcas y los dibujos están en el código, y las bases se leen del atlas
   del jugador. Una letra que la fuente ya trae se queda como está, y sin la letra base no se compone. Lo que sigue
-  faltando (paréntesis, otros alfabetos...) lo dibuja la moderna en la misma línea base, al tamaño de la línea de mapa
-  de bits por `fallback_size`; nunca se dibuja el glifo de sustitución del original. Sin la fuente extraída,
+  faltando (paréntesis, otros alfabetos...) lo dibuja en la misma línea base `fallback_family` (`Pixel Small`), con su
+  em de `fallback_pixels` (13) píxeles de la fuente de mapa de bits, para que sus píxeles caigan en la misma rejilla, y
+  con su cadena de respaldo (ver [Fuentes](#fuentes)); sin esas claves, la moderna al tamaño de la línea de mapa de
+  bits por `fallback_size`. Nunca se dibuja el glifo de sustitución del original. Sin la fuente extraída,
   `original` dibuja con la moderna (con un aviso en el log).
 - **La familia de los diálogos** (`dialogue_family: original-look-dialogue`, la clase `.original-dialogue` junto a
   `.original-look`) es la misma fuente con el espacio de las ventanas de texto del guion y sus listas de objetos
@@ -1064,6 +1066,44 @@ para la siguiente; el reinicio de la película por inactividad sigue como estaba
 
 El cuadro de texto (`ui/story_textbox`) llegó con el intérprete de historia y el aspecto original lo dibuja
 (`ui/skins/original/story_textbox`).
+
+## Fuentes
+
+Todos los aspectos dibujan los nueve idiomas (en, es, pt, fr, de, ru, zh, ko, ja). Las familias que nombran los
+documentos (`Noto Sans`, `Pixel Body`, `Pixel Small`, `original-look`) cubren por sí mismas el latino con sus tildes,
+el griego y el cirílico; el chino, el japonés y el coreano vienen de **cadenas de respaldo**.
+
+- **Las cadenas** son datos: `ui/fonts/fallbacks.yaml` del paquete `game` (esquema `ui_font_fallbacks`) da a cada
+  familia las caras que dibujan lo que le falta, en orden, cada una con `language` y `scale` opcionales. `FontEngine`
+  arma una cara encadenada por familia y tamaño: parte cada texto en tramos, cada uno dibujado por la primera cara que
+  tiene sus caracteres (los espacios se quedan en el tramo en que están), y mide, dibuja y da las métricas de línea de
+  la cara propia de la familia, así una línea guarda su altura tenga lo que tenga. Las caras con `language` van
+  primero para ese idioma dentro de su grupo (un grupo acaba donde vuelve un idioma): el japonés dibuja sus caracteres Han con la cara japonesa, el chino con
+  la de chino simplificado y el coreano con la coreana. La UI pone el idioma en las cadenas y en cada documento
+  (atributo `lang`) cuando el jugador lo cambia.
+- **Las caras**, en `ui/fonts/cjk/`: `noto_sans_cjk_{sc,jp,kr}.otf` (Noto Sans CJK) para `Noto Sans`, y
+  `pixel_cjk_{sc,jp,kr}.otf` (Fusion Pixel 12px, hecha sobre Ark Pixel) para las familias de píxeles, a 0,8 de
+  `Pixel Body` y 0,923 de `Pixel Small` para que su em de 12 píxeles caiga en la rejilla de esas familias; detrás, las
+  caras suaves y `Noto Sans` recogen lo demás. La fuente de mapa de bits del aspecto original cae en `Pixel Small` (ver
+  [Aspecto original](#aspecto-original)), así que tiene la misma cadena. `pixel_body.ttf` y `pixel_small.ttf` ganaron
+  latino extendido A, griego y cirílico de las mismas fuentes misc-fixed que su ASCII. Todas tienen la licencia SIL
+  Open Font; `cjk/cjk_fonts_license.txt` y `pixel_fonts_license.txt` nombran las fuentes y versiones.
+- **Tamaño.** Las caras son subconjuntos, no las fuentes enteras: el juego GB 2312 para el chino, JIS X 0208 para el
+  japonés, las 2350 sílabas de KS X 1001 para el coreano, su puntuación y formas de ancho completo, más cada carácter
+  que usan los textos del repo. Unos 5,4 MB en total (las fuentes enteras pesan unos 60 MB). Se cargan con la UI como las
+  demás; una descarga aparte por idioma ahorraría poco y añadiría una forma de fallar. Un carácter fuera de los
+  subconjuntos lo dibuja la siguiente cara de la cadena o, si no hay, ninguna (nunca una caja): la caja de nombres
+  solo acepta caracteres que las fuentes dibujan (`Ui::fontsDraw`). `scripts/art/make_fonts.py` (con `uv run`) las
+  rehace desde las fuentes descargadas, y su orden `check` lista cualquier carácter de los textos que ninguna cara
+  cubre.
+- **Cortes de línea.** RmlUi solo corta en los espacios; nuestro port (`tooling/vcpkg-ports/rmlui`, un parche sobre
+  6.3) corta también entre caracteres chinos y japoneses, sin dejar la puntuación de cierre (`。` `、` `」`, kana
+  pequeños, `ー`) al principio de una línea ni la de apertura (`「` `（`) al final (kinsoku). El coreano sigue cortando
+  en los espacios, porque se escribe con ellos. El mismo parche hace que `text-transform: uppercase` y `lowercase`
+  conozcan las letras latinas con tilde, las griegas y las cirílicas; Lua tiene `ui.upper` y `ui.lower` para lo mismo.
+- **Textos más largos.** El alemán, el ruso y el francés son más largos que el inglés; las cajas con una etiqueta
+  crecen con ella, y la caja de idiomas pasa a filas compactas con más de seis idiomas. Las filas de alto fijo toman
+  el alto de línea de su familia, así una línea CJK mide lo mismo que una latina.
 
 ## Scripts
 

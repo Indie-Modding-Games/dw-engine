@@ -1,0 +1,33 @@
+# The faces that draw what each family lacks (docs/architecture/ui.md#fonts): for a character its family does not
+# have, the first face of its chain that has it draws it, on the same baseline. No text of any language draws as
+# empty boxes. The faces that name a language come first in the order of the player's language among their group,
+# so Chinese, Japanese and Korean each draw the ideographs they share in their own regional forms.
+# `scale` is the face's size as a fraction of the family's: the pixel faces (12 pixels to the em) draw their pixels
+# as large as the pixel families' (Pixel Body 15 pixels to the em, Pixel Small 13).
+chains:
+  # The smooth families: Noto Sans CJK, cut down to each language's characters (scripts/art/make_fonts.py).
+  - families: ["Noto Sans"]
+    faces:
+      - { family: "Noto Sans CJK SC", language: zh }
+      - { family: "Noto Sans CJK JP", language: ja }
+      - { family: "Noto Sans CJK KR", language: ko }
+  # The pixel families (the pixel skin, and the original look's bitmap font through original_look.yaml): Fusion
+  # Pixel's 12-pixel faces, then the smooth ones for whatever those lack.
+  - families: ["Pixel Body"]
+    faces:
+      - { family: "Fusion Pixel 12px Prop zh-Hans", language: zh, scale: 0.8 }
+      - { family: "Fusion Pixel 12px Prop ja", language: ja, scale: 0.8 }
+      - { family: "Fusion Pixel 12px Prop ko", language: ko, scale: 0.8 }
+      - { family: "Noto Sans CJK SC", language: zh, scale: 0.8 }
+      - { family: "Noto Sans CJK JP", language: ja, scale: 0.8 }
+      - { family: "Noto Sans CJK KR", language: ko, scale: 0.8 }
+      - { family: "Noto Sans", scale: 0.8 }
+  - families: ["Pixel Small"]
+    faces:
+      - { family: "Fusion Pixel 12px Prop zh-Hans", language: zh, scale: 0.923 }
+      - { family: "Fusion Pixel 12px Prop ja", language: ja, scale: 0.923 }
+      - { family: "Fusion Pixel 12px Prop ko", language: ko, scale: 0.923 }
+      - { family: "Noto Sans CJK SC", language: zh, scale: 0.923 }
+      - { family: "Noto Sans CJK JP", language: ja, scale: 0.923 }
+      - { family: "Noto Sans CJK KR", language: ko, scale: 0.923 }
+      - { family: "Noto Sans", scale: 0.923 }

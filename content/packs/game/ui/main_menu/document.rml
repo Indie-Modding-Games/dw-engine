@@ -43,6 +43,7 @@
 			<button id="language-6" class="language-row" onclick="pick_language(document, 6)"><img id="language-flag-6" class="flag hidden"/><span id="language-name-6" class="language-name"></span></button>
 			<button id="language-7" class="language-row" onclick="pick_language(document, 7)"><img id="language-flag-7" class="flag hidden"/><span id="language-name-7" class="language-name"></span></button>
 			<button id="language-8" class="language-row" onclick="pick_language(document, 8)"><img id="language-flag-8" class="flag hidden"/><span id="language-name-8" class="language-name"></span></button>
+			<button id="language-9" class="language-row" onclick="pick_language(document, 9)"><img id="language-flag-9" class="flag hidden"/><span id="language-name-9" class="language-name"></span></button>
 			<button id="language-done" onclick="close_language(document)" text-key="main_menu.original.language_done"></button>
 		</div>
 		<!-- The original look's battle mode question. -->

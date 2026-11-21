@@ -286,6 +286,8 @@ public:
   void setTextFont(TextFont font);
   // The player's choice; the packs' default until one is made.
   [[nodiscard]] TextFont textFont() const;
+  [[nodiscard]] bool fontsDraw(std::string_view text) const;
+  [[nodiscard]] std::string_view language() const;
 
   // The skins the packs offer (ui/skins/<id>/skin.yaml); a mod adds one by adding its folder.
   [[nodiscard]] const SkinCatalog& skins() const;

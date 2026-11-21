@@ -15,7 +15,7 @@ Cómo encontrar un cartel y escribir su overlay: [guía de carteles](../../guide
 | `sign_overlay.hpp` | El formato: `Sign` (imagen, región, borrado, texto, fuente, efectos), `parseSignOverlay`, `mergeSignOverlays` |
 | `sign_font.hpp` | `SignFont`: una fuente TrueType del paquete rasterizada con FreeType, sin hinting y con kerning |
 | `sign_painter.hpp` | `paintSign` / `paintSigns`: borra y dibuja en una copia de las imágenes y da parches; `applySignPatches` los aplica |
-| `map_signs.hpp` | `MapSigns`: lee los overlays del VFS, carga las fuentes y guarda los parches por mapa, idioma y revisión |
+| `map_signs.hpp` | `MapSigns`: lee los overlays del VFS, carga las fuentes (con las caras CJK de respaldo, `SignFont::addFallback`) y guarda los parches por mapa, idioma y revisión |
 
 ## Overlays
 
@@ -36,7 +36,7 @@ Un cartel dice:
 | `rotation`, `skew` | Grados de giro (horario) e inclinación de las letras, cuando no hay `corners` |
 | `clear` | Cómo se borra el texto viejo (abajo) |
 | `text` | La clave del texto, como `signs.trai00_title_top`; `\n` parte la línea |
-| `font`, `size` | Una fuente de `ui/fonts/` (`noto_sans_bold` por defecto) y su alto en píxeles de la imagen |
+| `font`, `size` | Una fuente de `ui/fonts/` (`noto_sans_bold` por defecto) y su alto en píxeles de la imagen; las letras que le faltan (chino, japonés, coreano) las dibuja `ui/fonts/cjk/noto_sans_cjk_*`, primero la del idioma del cartel |
 | `letter_spacing`, `line_spacing` | Píxeles extra entre letras y factor sobre el alto de línea |
 | `align`, `valign` | `left`/`center`/`right` y `top`/`middle`/`bottom` |
 | `vertical` | Una letra debajo de otra (una pancarta vertical) |

@@ -116,21 +116,27 @@ TEST_CASE("placeholders are what is between braces, and doubled braces are liter
   CHECK_FALSE(placeholdersOf("close}").has_value());
 }
 
-TEST_CASE("a plural placeholder is a count's name and its two words") {
+TEST_CASE("a plural placeholder is a count's name and its two to four words") {
   const auto plural = pluralPlaceholderOf("days:day|days");
   REQUIRE(plural.has_value());
   CHECK(plural->count == "days");
-  CHECK(plural->one == "day");
-  CHECK(plural->other == "days");
+  REQUIRE(plural->formCount == 2);
+  CHECK(plural->forms[0] == "day");
+  CHECK(plural->forms[1] == "days");
   CHECK_FALSE(pluralPlaceholderOf("days").has_value());
   CHECK_FALSE(pluralPlaceholderOf("color:2").has_value());
   CHECK_FALSE(pluralPlaceholderOf(":a|b").has_value());
-  CHECK_FALSE(pluralPlaceholderOf("n:a|b|c").has_value());
+  const auto russian = pluralPlaceholderOf("days:день|дня|дней");
+  REQUIRE(russian.has_value());
+  REQUIRE(russian->formCount == 3);
+  CHECK(russian->forms[2] == "дней");
+  CHECK(pluralPlaceholderOf("n:a|b|c|d").has_value());
+  CHECK_FALSE(pluralPlaceholderOf("n:a|b|c|d|e").has_value());
   // A word may be empty: "{n:|s}" adds an s for any count but one.
   const auto suffix = pluralPlaceholderOf("n:|s");
   REQUIRE(suffix.has_value());
-  CHECK(suffix->one.empty());
-  CHECK(suffix->other == "s");
+  CHECK(suffix->forms[0].empty());
+  CHECK(suffix->forms[1] == "s");
 }
 
 TEST_CASE("a translation is compared with its reference key by key") {
@@ -170,6 +176,24 @@ TEST_CASE("the translation check finds missing tables, keys, extra keys and plac
   // A language without the original's text shows it in English: that is not a problem.
   CHECK_FALSE(mentions(messages, "text/"));
   CHECK(messages.size() == 5);
+}
+
+TEST_CASE("a language with only its language table shows the rest in English, one more owes all") {
+  MemoryFileSystem memory;
+  memory.addFile("game/pack.yaml", "id: game\nversion: 1.0.0\nlayer: base\n");
+  memory.addFile("game/localization/en/language.yaml", "name: English\n");
+  memory.addFile("game/localization/en/menu.yaml", "title: Pause\n");
+  memory.addFile("game/localization/en/hud.yaml", "menu: Menu\n");
+  memory.addFile("game/localization/ru/language.yaml", "name: Русский\n");
+  memory.addFile("game/localization/ko/language.yaml", "name: 한국어\n");
+  memory.addFile("game/localization/ko/menu.yaml", "title: 일시 정지\n");
+  auto vfs = VirtualFileSystem::mount(memory, std::vector<std::filesystem::path>{"game"});
+  REQUIRE_MESSAGE(vfs.has_value(), vfs.error().message);
+  const std::vector<std::string> messages = messagesOf(checkTranslations(*vfs));
+  INFO(messages.size());
+  CHECK_FALSE(mentions(messages, "ru translation"));
+  CHECK(mentions(messages, "localization/en/hud: has no ko translation (localization/ko/hud)"));
+  CHECK(messages.size() == 1);
 }
 
 TEST_CASE(

@@ -49,8 +49,11 @@ public:
   SignFont& operator=(const SignFont&) = delete;
   ~SignFont();
 
+  void addFallback(SignFont fallback);
+
   // A line of UTF-8 text at `pixelSize` pixels per em, with `letterSpacing` extra pixels after
-  // each letter. Letters the font lacks are left out.
+  // each letter. A letter the font lacks is drawn by its first fallback that has it, at the same
+  // size and on the same baseline; one none has is left out.
   [[nodiscard]] TextLine drawLine(std::string_view text, float pixelSize,
                                   float letterSpacing) const;
   // The distance between baselines at `pixelSize`.
@@ -60,6 +63,7 @@ private:
   struct Face;
   explicit SignFont(std::unique_ptr<Face> face);
   std::unique_ptr<Face> face_;
+  std::vector<std::unique_ptr<Face>> fallbacks_;
 };
 
 // The code points of UTF-8 text; invalid bytes become U+FFFD.

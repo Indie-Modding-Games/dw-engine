@@ -64,14 +64,30 @@ text as is with `Catalog::find`.
 ### Plurals
 
 A word that changes with a count is written `{count:singular|plural}`: `"{days} {days:día|días}"` gives "1 día" and
-"2 días", and `"{days} {days:day|days}"` "1 day" and "2 days". The singular form is used only when the count is
-exactly 1 (`localization::takesOne`), the rule of English and Spanish; 0, 1.5 or a value that is not a number take the
-other. A form can be empty (`card{n:|s}`). The placeholder counts as that of its argument (`days`) when comparing
+"2 días", and `"{days} {days:day|days}"` "1 day" and "2 days". A form can be empty (`card{n:|s}`). Which form a count
+takes depends on the text's language (`localization::pluralCategory`, after the CLDR rules):
+
+| Language | Forms | Rule |
+|---|---|---|
+| en, es, de | `one\|other` | one for exactly 1; 0, 1.5 or a value that is not a number take other |
+| pt (Brazil), fr | `one\|other` | one for 0 and 1 (and anything below 2) |
+| ru | `one\|few\|many` | one for 1, 21, 31... (not 11); few for 2-4, 22-24... (not 12-14); many for the rest; a fraction takes few |
+| zh, ja, ko | `other` | one form; write the same word twice (`{n:个|个}`) or leave the word out |
+
+With two forms the first is "one" and the second everything else; with three, one, few (also used for other) and
+many; four forms are one, few, many and other. A count that is not a number takes the last form. The placeholder counts as that of its argument (`days`) when comparing
 languages, so each one puts its own words (`assets::pluralPlaceholderOf`, `localization::pluralWord`). It is used in
 the partner's age, the bits and lives in the battle's final panel, and the packs and cards of the bulk purchase.
 
 Each language has to have, in each key, the same set of placeholders as English. This way the word order can change
 between languages without touching the code.
+
+### Capitals
+
+A UI script writes a text in capitals with `ui.upper` (and in small letters with `ui.lower`), since Lua's
+`string.upper` only knows ASCII. They cover Latin with its accents (Latin-1 and Latin Extended-A), Greek and
+Cyrillic (`dwe/localization/text_case.hpp`); ß becomes SS, and Chinese, Japanese, Korean, signs and bytes that are not
+valid UTF-8 stay as they are.
 
 ## How a text is requested
 
@@ -183,5 +199,6 @@ into Spanish is a derivative ([assets](../legal/assets.md)).
 
 ## Fonts
 
-The UI font (Noto Sans) covers Spanish: `ñ`, accented vowels, `ü`, `¿` and `¡`. A language with another alphabet
-needs a font that covers it in its package.
+Every skin draws the nine languages: the fonts cover Latin with its accents, Greek and Cyrillic, and fallback chains
+add Chinese, Japanese and Korean ([UI, Fonts](ui.md#fonts)). A language with another alphabet needs a face that covers
+it in its package, added to `ui/fonts/fallbacks.yaml`.

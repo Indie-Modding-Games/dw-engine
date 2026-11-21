@@ -86,7 +86,7 @@ if (dwe.view === "background") {
 | Llamada | Qué hace | Requiere |
 |---|---|---|
 | `connect()` | Saluda al lanzador (reintenta unos segundos). Devuelve `{ api, view, id }`. | — |
-| `context()` | Datos de solo lectura: `api`, el complemento (`id`, `version`, sus permisos), `launcher_version`, `game_version`, `game_installed`, `content_installed`, `language` (`es`/`en`) y `platform`. **Nunca** rutas, la clave de la beta, el servidor de versiones ni el disco. | — |
+| `context()` | Datos de solo lectura: `api`, el complemento (`id`, `version`, sus permisos), `launcher_version`, `game_version`, `game_installed`, `content_installed`, `language` (`en`, `es`, `pt`, `fr`, `de`, `ru`, `zh`, `ko` o `ja`) y `platform`. **Nunca** rutas, la clave de la beta, el servidor de versiones ni el disco. | — |
 | `ui.sidebar({ label, icon })` | Un icono en la barra lateral que abre su página. `icon` es un `.svg`, `.png` o `.webp` de su carpeta (se muestra como imagen, nunca como HTML). | slot `sidebar` |
 | `ui.tab({ label, page? })` | Su página en el centro de la pantalla principal (`page`, por defecto `entry`) en la vista `tab`. Se abre desde su icono o desde la píldora «Complementos». | slot `tabs` |
 | `ui.settings({ label, page? })` | Una sección en Ajustes → Complementos con su página en la vista `settings`. | slot `settings` |
@@ -97,7 +97,8 @@ if (dwe.view === "background") {
 | `net.fetch(url, { method?, headers?, body? })` | Una petición `GET` o `POST` hecha por el lanzador. Devuelve `{ status, content_type, body }` (texto, hasta 1 MB). | `hosts` |
 | `on(event, listener)` | Eventos: `game.status` (`{ running, busy, ready, gameVersion, language }`, cada vez que cambia) y `language` (`{ language }`). | — |
 
-Las etiquetas (`label`) pueden ser un texto o `{ es, en }`; el lanzador elige el idioma del jugador.
+Las etiquetas (`label`) pueden ser un texto o un objeto por código de idioma (`{ en, es, fr, ... }`); el lanzador elige
+el idioma del jugador, si no `en`, si no el primero.
 
 ### net.fetch
 

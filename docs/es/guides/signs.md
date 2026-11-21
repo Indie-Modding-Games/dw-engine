@@ -43,8 +43,9 @@ gcan09_shop: "TIENDA\nMONOCROMO"
 
 ## 3. Escribir el overlay
 
-`content/packs/game/signs/<mapa>.yaml` para todos los idiomas; `content/packs/es-translation/signs/es/<mapa>.yaml`
-para uno solo (un cartel que en inglés ya se lee bien, o uno que en español se dibuja distinto, con el mismo `id`).
+`content/packs/game/signs/<mapa>.yaml` para todos los idiomas;
+`content/packs/<código>-translation/signs/<código>/<mapa>.yaml` (`es-translation/signs/es/`,
+`ru-translation/signs/ru/`...) para uno solo (un cartel que en inglés ya se lee bien, o uno que en español se dibuja distinto, con el mismo `id`).
 
 ```yaml
 signs:
