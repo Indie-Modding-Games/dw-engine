@@ -420,7 +420,13 @@ local function draw_tech(document)
   for index = 0, 3 do
     local base = "partner.technique." .. index .. "."
     local filled = not setting(base .. "empty", true)
-    document:get("tech-name-" .. index):set_text(filled and text(setting(base .. "name", "")) or "")
+    local name_box = document:get("tech-name-" .. index)
+    local name_text = document:get("tech-name-text-" .. index)
+    name_text:set_text(filled and text(setting(base .. "name", "")) or "")
+    fit_text.fit(name_text, nil, function()
+      local box_left, _, box_width = name_box:rect()
+      return box_width - (name_text:rect() - box_left)
+    end)
     for _, field in ipairs({ "power", "mp" }) do
       document
         :get("tech-" .. field .. "-" .. index)

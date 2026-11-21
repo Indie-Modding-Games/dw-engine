@@ -802,7 +802,7 @@ body.layout-medals-profile #panel #city-rule { display: block; }
 
 #panel.on-options .option-tab.selected {
 	border-bottom-color: #ffd51e;
-	color: #ffe64a;
+	color: #0a1929;
 }
 
 #panel.on-options button.option:focus {

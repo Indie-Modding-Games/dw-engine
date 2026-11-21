@@ -41,6 +41,8 @@ local function column_width(column)
   end
 end
 
+local squeezed_name_letters = 24
+
 local function refresh_prompts(document)
   document:get("prompt-confirm"):set_prompt("confirm")
   document:get("prompt-cancel"):set_prompt("cancel")
@@ -167,9 +169,14 @@ local function refresh(document)
     :get("title")
     :set_text(t(room.host and "online.room_title.host" or "online.room_title.guest"))
   local code = room.code ~= "" and room.code or "----"
-  -- The room's name is cut into the card's column with "...", the player's squeezed into it
-  -- (common/fit_text.lua).
-  fit_text.cut(document:get("info-room-text"), room.name, column_width(document:get("info-room")))
+  local room_text, room_column = document:get("info-room-text"), document:get("info-room")
+  if ((utf8 and utf8.len(room.name)) or #room.name) > squeezed_name_letters then
+    room_text:set_property("transform", "none")
+    fit_text.cut(room_text, room.name, column_width(room_column))
+  else
+    room_text:set_text(room.name)
+    fit_text.fit(room_text, nil, column_width(room_column))
+  end
   document:get("info-code"):set_text(code)
   document:get("info-host-text"):set_text(host_name(room))
   fit_text.fit(document:get("info-host-text"), nil, column_width(document:get("info-host")))

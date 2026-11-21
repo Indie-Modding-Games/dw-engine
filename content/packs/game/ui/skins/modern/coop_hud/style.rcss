@@ -17,3 +17,8 @@
 	font-size: 22dp;
 	color: #e9eef5;
 }
+
+.tag .training,
+.tag .trade {
+	font-size: 14dp;
+}

@@ -71,6 +71,12 @@ menu, `pool: current` in the partner's. The full list of screens and options is 
 - **The mouse cursor belongs to the system, not to RmlUi.** With `cursor:` and `cursor_hotspot:` the skin installs an
   image as the **OS cursor** while it is active: it always stays on top (modal menus included) without fighting the
   stacking. Without `cursor:`, the system arrow stays; switching skins restores it.
+- **Every screen in every shipped look.** The hidden `modern` base is not a look of its own: each skin the player can
+  pick (original, pixel, devvago) styles every screen another one styles, itself or through a pickable skin it
+  extends, so no screen falls back to the base's plain card. `dwe_ui_tests` checks it.
+- **Long texts squeezed, not cut.** Values whose length depends on the language or the player (a technique, an
+  access line, a save's place) are drawn through `common/fit_text.lua`, so a skin with a narrow column still shows
+  them whole, measured again when the player switches skin or interface size.
 - **If something fails**, the skin is left out with the reason in the log and the game goes on with the one it had.
 
 ## Test while editing

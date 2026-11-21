@@ -570,6 +570,7 @@ button:focus .original-look, button.original-look:focus {
 #tech-row-2 { top: 156dp; }
 #tech-row-3 { top: 267dp; }
 .tech-row span, .tech-columns span { position: absolute; display: block; }
+.tech-row .tech-name span { position: static; display: inline; }
 .tech-name { left: 75dp; width: 414dp; white-space: nowrap; overflow: hidden; }
 .tech-power { left: 495dp; width: 72dp; }
 .tech-mp { left: 618dp; width: 72dp; }

@@ -39,11 +39,11 @@
 #sample-badge { font-family: "Pixel Small"; font-size: 26dp; color: #050c1a; }
 
 /* The room's card. */
-#info-box { padding: 14dp 16dp; }
+#info-box { height: 478dp; padding: 14dp 16dp; }
 .scene { height: 80dp; background-color: #10223a; decorator: image(nb-on-island cover center center); }
 .info-row { height: 38dp; line-height: 36dp; font-family: "Pixel Small"; font-size: 26dp; border-bottom-color: #26364d; }
-.info-label { width: 130dp; font-size: 18dp; color: #b6e4f7; }
-.info-value { left: 130dp; width: 218dp; font-size: 22dp; }
+.info-label { width: 140dp; font-size: 22dp; color: #b6e4f7; }
+.info-value { left: 140dp; width: 208dp; font-size: 26dp; }
 .accent { color: #efc63c; }
 
 /* The tabs over the modes and the players. */
@@ -128,7 +128,15 @@
 }
 
 .member.waiting .avatar { opacity: 0.35; }
-.member.waiting .member-name { width: 220dp; font-family: "Pixel Small"; font-size: 26dp; }
+.member.waiting .member-name {
+	width: 220dp;
+	height: 58dp;
+	padding-top: 2dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 28dp;
+	white-space: normal;
+}
 /* The name and its mark («(Host)») share the row's height: the name a little higher, the mark right under it. */
 .member-name { height: 32dp; padding-top: 2dp; line-height: 30dp; }
 .member-mark { font-family: "Pixel Small"; font-size: 22dp; line-height: 22dp; color: #efc63c; }
@@ -141,7 +149,7 @@
 }
 
 .ready-mark {
-	padding-left: 24dp;
+	padding-left: 38dp;
 	font-family: "Pixel Small";
 	font-size: 22dp;
 	color: #5fd36a;

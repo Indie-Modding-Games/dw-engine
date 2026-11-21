@@ -54,3 +54,25 @@ button:hover,
 button:focus {
 	border-color: #f2c94c;
 }
+
+#title {
+	font-size: 28dp;
+}
+
+.row {
+	height: 34dp;
+	font-family: "Pixel Body";
+	font-size: 26dp;
+}
+
+.row .name {
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+#help {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #b6c4d6;
+}

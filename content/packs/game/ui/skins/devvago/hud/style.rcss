@@ -746,7 +746,7 @@ body #shop-job-rules:focus { border-color: #ffd51e; background-color: #153653; c
 	flex-direction: row;
 	align-items: center;
 	justify-content: center;
-	width: 94dp;
+	width: 116dp;
 	margin-top: -6dp;
 	margin-left: auto;
 	margin-right: auto;
