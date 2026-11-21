@@ -4,6 +4,8 @@
 #include <cmath>
 #include <cstdint>
 #include <optional>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "battle_screen.hpp"
@@ -19,6 +21,7 @@ constexpr std::uint32_t PlayerThrowClip = 6;
 // main.c: addThrownItem, tickThrownItem: the item sits on the player's node 9 (posData[9]) until it
 // leaves the hand.
 constexpr std::uint32_t ThrowHandNode = 9;
+constexpr std::int32_t LandedThrowFrames = 20;
 
 } // namespace
 
@@ -40,8 +43,14 @@ void BattleScreen::startThrow(assets::ItemHandle item, game::battle::FighterId t
   if (!icon) {
     return;
   }
-  thrown_ = ThrownSprite{
-      .icon = icon->cell, .palette = icon->palette, .flight = {}, .thrower = thrower, .hand = hand};
+  thrown_ = ThrownSprite{.icon = icon->cell,
+                         .palette = icon->palette,
+                         .flight = {},
+                         .thrower = thrower,
+                         .hand = hand,
+                         .serial = ++throwSerial_,
+                         .item = entry.id,
+                         .target = std::nullopt};
   holdThrown();
   showThrown();
 }
@@ -62,14 +71,31 @@ void BattleScreen::stepThrow() {
     static_cast<void>(desc_.scene->playCoopPlayerClip(id, std::nullopt));
     return true;
   });
+  for (LandedThrow& landed : landedThrows_) {
+    --landed.framesLeft;
+  }
+  std::erase_if(landedThrows_, [](const LandedThrow& landed) { return landed.framesLeft <= 0; });
   // main.c: tickThrownItem: once the item reached the partner, removeTamerItem drops it
   // (TAMER_ITEM back to 0xFF).
   if (!thrown_ || !battle_ || !battle_->thrownItemOf(thrown_->thrower)) {
+    if (thrown_ && battle_ && thrown_->target) {
+      landedThrows_.push_back(
+          {.thrown = {.serial = thrown_->serial,
+                      .thrower = thrown_->hand.value_or(game::coop::HostPlayerId),
+                      .item = thrown_->item,
+                      .stage = game::coop::BattleThrowStage::Landed,
+                      .x = 0,
+                      .z = 0,
+                      .height = 0,
+                      .target = static_cast<std::uint8_t>(*thrown_->target)},
+           .framesLeft = LandedThrowFrames});
+    }
     thrown_.reset();
     showThrown();
     return;
   }
   const game::battle::FighterId target = battle_->thrownItemOf(thrown_->thrower)->target;
+  thrown_->target = target;
   const std::optional<std::int32_t> frame = battle_->thrownItemFlightFrame(thrown_->thrower);
   if (frame && thrown_->flight) {
     thrown_->flight = game::battle::stepItemFlight(
@@ -111,9 +137,38 @@ void BattleScreen::showThrown() const {
                                               .palette = thrown_->palette});
 }
 
+std::vector<game::coop::BattleThrow> BattleScreen::coopThrows() const {
+  std::vector<game::coop::BattleThrow> throws;
+  for (const LandedThrow& landed : landedThrows_) {
+    if (throws.size() + 1 < game::coop::MaxBattleThrows) {
+      throws.push_back(landed.thrown);
+    }
+  }
+  if (thrown_ && !thrown_->item.empty()) {
+    game::coop::BattleThrow shown{
+        .serial = thrown_->serial,
+        .thrower = thrown_->hand.value_or(game::coop::HostPlayerId),
+        .item = thrown_->item,
+        .stage = game::coop::BattleThrowStage::Hand,
+        .x = 0,
+        .z = 0,
+        .height = 0,
+        .target = static_cast<std::uint8_t>(thrown_->target.value_or(game::battle::PartnerId))};
+    if (thrown_->flight && battle_ && battle_->thrownItemFlightFrame(thrown_->thrower)) {
+      shown.stage = game::coop::BattleThrowStage::Flight;
+      shown.x = thrown_->flight->point.x;
+      shown.z = thrown_->flight->point.z;
+      shown.height = thrown_->flight->height;
+    }
+    throws.push_back(std::move(shown));
+  }
+  return throws;
+}
+
 // The battle's end drops a thrown item still on its way (item.c: removeTamerItem).
 void BattleScreen::endThrow() {
   thrown_.reset();
+  landedThrows_.clear();
   playerThrowing_ = false;
   if (desc_.scene != nullptr) {
     desc_.scene->setFlyingItem(std::nullopt);

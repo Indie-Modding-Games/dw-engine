@@ -965,6 +965,22 @@ int runGame(const Options& requested) {
         }
         coopSync.ask(value);
       });
+  std::optional<game::coop::PlayerId> coopFell;
+  (*scripts)->bindCommand(CoopFellCommand, [&coopFell, &userSettings,
+                                            tuning = options.tuning](std::string_view value) {
+    if (!userSettings.devTools.value_or(DevToolsDefault) && !tuning) {
+      core::logWarning("coop fell: the developer tools are off");
+      return;
+    }
+    int player = -1;
+    const auto [end, error] = std::from_chars(value.data(), value.data() + value.size(), player);
+    if (error != std::errc{} || end != value.data() + value.size() || player < 0 ||
+        std::cmp_greater_equal(player, game::coop::MaxPlayers)) {
+      core::logWarning("coop fell: \"{}\" names no player (0 to 3)", value);
+      return;
+    }
+    coopFell = static_cast<game::coop::PlayerId>(player);
+  });
 
   SessionCommands sessionCommands;
   sessionCommands.bind(**scripts);
@@ -1015,6 +1031,9 @@ int runGame(const Options& requested) {
     versus.setRelayOnly(online.profile().relayOnly());
   };
   applyOnlineProfile();
+  coop.setCoopDifficulty(coopDifficultyOf(coopLevelOf(userSettings.coopDifficulty)));
+  coop.setOpenToJoin(userSettings.coopOpenToJoin.value_or(true));
+  (*ui)->setSetting(CoopOpenToJoinSetting, userSettings.coopOpenToJoin.value_or(true));
   if (options.onlineSample) {
     online.setSample(true, platform->nowSeconds());
   }
@@ -2288,6 +2307,15 @@ int runGame(const Options& requested) {
             !coopLinked     ? std::vector<game::coop::PlayerId>{}
             : coopHostWorld ? coopHostWorld->authority().playersOn(coopMap)
                             : coopBridge()->playersOn(coopMap);
+        if (const auto fell = std::exchange(coopFell, std::nullopt)) {
+          if (!coopLinked || !coop.isHost()) {
+            core::logWarning("coop fell: only the host of a co-op game runs its battles");
+          } else if (!play->battleScreen().defeatAlly(*fell)) {
+            core::logWarning("coop fell: player {} has no partner in a running battle", *fell);
+          } else {
+            core::logInfo("coop fell: player {}'s partner falls", *fell);
+          }
+        }
         coopBattles.tick(*play, coopLinked ? coopBattlePeers() : std::vector<CoopBattles::Peer>{},
                          !coopLinked     ? CoopBattles::Role::None
                          : coop.isHost() ? CoopBattles::Role::Host
@@ -2382,6 +2410,13 @@ int runGame(const Options& requested) {
             (*ui)->hide(document);
           }
           title.show();
+        }
+        if (const std::optional<bool> open = coop.takeOpenToJoinChange()) {
+          userSettings.coopOpenToJoin = *open;
+          if (settingsFile) {
+            saveUserSettings(*settingsFile, userSettings);
+          }
+          (*ui)->setSetting(CoopOpenToJoinSetting, *open);
         }
         if (online.takeProfileChanged()) {
           online.profile().store(userSettings);
@@ -2513,6 +2548,17 @@ int runGame(const Options& requested) {
         }
         continue;
       }
+      if (command.name == CoopOpenToJoinSetting) {
+        if (const bool* open = std::get_if<bool>(&command.value)) {
+          userSettings.coopOpenToJoin = *open;
+          coop.setOpenToJoin(*open);
+          if (settingsFile) {
+            saveUserSettings(*settingsFile, userSettings);
+          }
+        }
+        (*ui)->setSetting(CoopOpenToJoinSetting, userSettings.coopOpenToJoin.value_or(true));
+        continue;
+      }
       if (command.name == CoopDifficultySetting) {
         // The co-op difficulty (play_session.hpp): off, standard or hard; anything else changes
         // nothing.
@@ -2520,6 +2566,7 @@ int runGame(const Options& requested) {
             level != nullptr && (*level == CoopDifficultyOff || *level == CoopDifficultyStandard ||
                                  *level == CoopDifficultyHard)) {
           userSettings.coopDifficulty = *level;
+          coop.setCoopDifficulty(coopDifficultyOf(coopLevelOf(userSettings.coopDifficulty)));
           if (settingsFile) {
             saveUserSettings(*settingsFile, userSettings);
           }

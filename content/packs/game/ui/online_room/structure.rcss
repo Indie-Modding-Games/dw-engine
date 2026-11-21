@@ -72,7 +72,7 @@
 }
 
 .scene {
-	height: 128dp;
+	height: 84dp;
 	margin-bottom: 10dp;
 	background-color: #1d3c5a;
 }
@@ -86,8 +86,8 @@
 	border-bottom: 1dp #2c4a68;
 }
 
-.info-label { display: inline-block; width: 172dp; color: #b6e4f7; }
-.info-value { display: inline-block; position: absolute; left: 172dp; width: 134dp; }
+.info-label { display: inline-block; width: 132dp; color: #b6e4f7; }
+.info-value { display: inline-block; position: absolute; left: 132dp; width: 174dp; }
 .accent { color: #efc63c; }
 
 /* The modes (host) and the chosen mode (guest). */

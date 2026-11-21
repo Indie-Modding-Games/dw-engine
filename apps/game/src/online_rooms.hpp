@@ -170,6 +170,7 @@ struct RoomView {
   // new players then (the host's choice).
   bool inProgress = false;
   bool openToNewPlayers = true;
+  std::string coopDifficulty;
 };
 
 // A room that could not be opened or joined, and why.

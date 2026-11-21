@@ -385,9 +385,25 @@ siguen jugando.
   (los bancos de sonido de los aliados en las ranuras 16–18; el compañero visitante conserva su especie en las del
   compañero).
 - Tarea 11: la dificultad cooperativa, ver [dificultad cooperativa](coop-difficulty.md) §9.
+- Tarea 10, la pantalla del invitado (versión 12 del protocolo): el `BattleFrame` del anfitrión lleva los objetos
+  lanzados (`throws`: quién lo lanzó, el objeto, en la mano, en vuelo con su punto, o caído sobre un luchador), y la
+  pantalla del invitado los dibuja como la del anfitrión: la animación de lanzar en el cuerpo de quien lanza, el objeto
+  en vuelo y el brillo sobre el luchador donde cae (`CoopThrowFollower` empieza cada uno una sola vez aunque un
+  fotograma se repita). Cada cuerpo suena con el banco de su propia especie: los enemigos desde las ranuras del
+  original, los compañeros de los demás jugadores desde las de los aliados, 16–18 (`coopBattleSoundsOf`). En la
+  consola de desarrollo, `coop_fell("<jugador>")` derriba al compañero de ese jugador en el combate del anfitrión, para
+  probar la cuenta atrás y Apuntar sin un combate largo. Detalles:
+  - La animación es la de lanzar del jugador en el original (clip 6), con el objeto en el nodo 9 de la mano hasta que
+    sale.
+  - Un lanzamiento caído sigue en los fotogramas durante 20 fotogramas de combate, así un fotograma perdido no pierde
+    su brillo.
+  - Un lanzamiento que se ve por primera vez ya caído enseña su brillo pero no reproduce la animación.
+  - Los fotogramas perdidos no frenan los brillos: el invitado los avanza según los fotogramas que pasaron.
+  - Ranuras de sonido: el compañero de este juego conserva la ranura 4 y los enemigos toman de la 5 en adelante, como
+    en el original; cada otro compañero toma la siguiente ranura de aliado. Pasadas las tres de aliados, un cuerpo suena
+    desde la del compañero de este juego.
 - Falta: la tarea 12 (un combate por mapa: mientras uno sigue, otro en otro mapa se rechaza), las mecánicas opcionales
-  de §8, un grito por domador, y que la pantalla del propio invitado dibuje los lanzamientos y los sonidos de los
-  aliados del combate del anfitrión (su campo enseña a los luchadores donde los ponen los fotogramas del anfitrión).
+  de §8 y un grito por domador.
 
 1. **Refactorización de los lados del combate:** sustituir `PartnerId` por `side`, `owner` y las consultas
    `isPlayerSide`, `partnerOf`, `partners`, `enemies`; primero los compañeros, después los enemigos. Sin cambios de

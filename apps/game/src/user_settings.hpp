@@ -158,6 +158,7 @@ struct UserSettings {
   // Co-op difficulty (coop_difficulty: off, standard, hard; play_session.hpp): standard when not
   // chosen.
   std::optional<std::string> coopDifficulty = std::nullopt;
+  std::optional<bool> coopOpenToJoin = std::nullopt;
   // Skip the evolution (skip_evolution: true, false; EvolutionScene::skip): confirm or cancel ends
   // the evolution's scene at once; off when not chosen yet.
   std::optional<bool> skipEvolution = std::nullopt;

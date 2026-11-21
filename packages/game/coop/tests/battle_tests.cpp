@@ -87,7 +87,8 @@ BattleFrame frame(std::uint32_t battle, std::uint32_t number) {
                        .starts = 7,
                        .frozen = false,
                        .pace = 16},
-                      {.slot = 5, .x = 200, .z = -40, .yaw = 3, .clip = 1, .starts = 2}}};
+                      {.slot = 5, .x = 200, .z = -40, .yaw = 3, .clip = 1, .starts = 2}},
+          .throws = {}};
 }
 
 BattleAction act(std::uint32_t battle, BattleActionKind kind, std::int32_t value = 0,
@@ -704,4 +705,61 @@ TEST_CASE("a guest takes a battle's spoils only when a battle could leave them")
   CHECK(refused([](BattleSpoils& bad) { bad.elapsedMinutes = 100'000; }));
   CHECK(refused([](BattleSpoils& bad) { bad.counters[1] = -3; }));
   CHECK(refused([](BattleSpoils& bad) { bad.frames = -1; }));
+}
+
+TEST_CASE("a battle frame carries the items thrown, and the guest gets them over the link") {
+  BattleFrame thrown = frame(5, 9);
+  thrown.throws = {{.serial = 3,
+                    .thrower = 2,
+                    .item = "meat",
+                    .stage = BattleThrowStage::Flight,
+                    .x = -300,
+                    .z = 1200,
+                    .height = 250,
+                    .target = 4},
+                   {.serial = 2,
+                    .thrower = HostPlayerId,
+                    .item = "medicine",
+                    .stage = BattleThrowStage::Landed,
+                    .x = 0,
+                    .z = 0,
+                    .height = 0,
+                    .target = 0}};
+  roundTrip(thrown);
+  const auto rejects = [](BattleFrame bad) {
+    const auto decoded = decode(encode(Message{std::move(bad)}));
+    CHECK_FALSE(decoded);
+  };
+  BattleFrame bad = thrown;
+  bad.throws.front().thrower = MaxPlayers;
+  rejects(bad);
+  bad = thrown;
+  bad.throws.front().item.clear();
+  rejects(bad);
+  bad = thrown;
+  bad.throws.front().target = MaxBattleFighters;
+  rejects(bad);
+  bad = thrown;
+  bad.throws.assign(MaxBattleThrows + 1, thrown.throws.front());
+  rejects(bad);
+  auto bytes = encode(Message{frame(5, 9)});
+  bytes.back() = 1;
+  CHECK_FALSE(decode(bytes));
+  BattleFrame full = frame(1, 1);
+  full.fighters.assign(MaxBattleFighters, {.hp = 1, .mp = 1, .maxHp = 1, .maxMp = 1});
+  full.figures.assign(MaxBattleFigures, {.slot = 300, .x = -999'999, .z = 999'999});
+  full.throws.assign(MaxBattleThrows, {.serial = 0xFFFF,
+                                       .thrower = 3,
+                                       .item = std::string(64, 'i'),
+                                       .stage = BattleThrowStage::Hand,
+                                       .x = -999'999,
+                                       .z = 999'999,
+                                       .height = 999'999,
+                                       .target = 6});
+  CHECK(encode(Message{full}).size() + 1 <= net::MaxDatagram);
+  roundTrip(full);
+  Linked linked;
+  REQUIRE(linked.host.send(Message{thrown}));
+  linked.pump();
+  CHECK(linked.guest.receive() == std::optional<Message>{Message{thrown}});
 }

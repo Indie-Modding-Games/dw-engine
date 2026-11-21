@@ -5,6 +5,7 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/debug/debug_ui.hpp>
+#include <dwe/game/coop/protocol.hpp>
 #include <dwe/game/save/save_file.hpp>
 #include <dwe/render/renderer.hpp>
 #include <dwe/render/upscale_cache.hpp>
@@ -165,6 +166,7 @@ inline constexpr std::string_view CoopDifficultyHard = "hard";
 // name.
 [[nodiscard]] game::battle::CoopLevel coopLevelOf(const std::optional<std::string>& saved);
 [[nodiscard]] std::string_view coopLevelName(game::battle::CoopLevel level);
+[[nodiscard]] game::coop::CoopDifficulty coopDifficultyOf(game::battle::CoopLevel level);
 // The console's and the developer menu's warp("<map> [exit]"): the player goes to that map, at that
 // exit (0 when not given), as a script's map change takes him (FieldScene::startScriptedMapChange),
 // whatever the story. A debug aid.
@@ -484,6 +486,11 @@ public:
   [[nodiscard]] bool heldForCoopBattle() const { return coopBattleHold_; }
   // The guest: what the host's battle left its partner, given as its own battle's result.
   core::Result<void> applyCoopSpoils(const game::battle::BattleResult& result);
+  void useCoopBattleSounds(std::span<const std::string> enemies,
+                           std::span<const std::string> partners);
+  [[nodiscard]] const assets::DigimonTable* speciesTable() const {
+    return species_ ? &*species_ : nullptr;
+  }
   // The guest: the items of its bag that can be thrown in a battle, with how many it has.
   [[nodiscard]] std::vector<std::pair<std::string, std::int32_t>> coopThrowableItems() const;
   // The guest: takes one of an item from its bag for a throw; false when it has none.

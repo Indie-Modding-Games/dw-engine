@@ -556,6 +556,8 @@ the whole picture once and `coop_sync("off")` stops it. While on, the log says w
 snapshots or commands are lost or come late, and when a guest holds a player somewhere else (another map, or farther
 than 600 units) for more than two seconds, and again when it is back in sync. The report lists every player's place
 on the host and, per guest, what it holds, how many world ticks it is behind and what it lost.
+`coop_fell("<player>")` (same console, host only) fells that player's partner in the host's co-op battle, so the ally
+countdown and the Aim of the bag can be checked without a long fight.
 
 Tests: `packages/game/coop/tests/sync_watch_tests.cpp`, `apps/game/tests/coop_connection_tests.cpp` (four seats),
 `apps/game/tests/coop_sync_tests.cpp` (2, 3 and 4 players headless over lossy links, converging) and the seat tests of
@@ -588,6 +590,17 @@ with the same name, so nobody who happens to share a name (the default "Player")
 old link is still open (the host has not noticed the drop yet) takes its seat over with its key, and the old link is
 closed. Past the grace window
 it is a new player. A departed guest's id is held during the window, so a late joiner never takes it.
+
+**Where they stand.** A guest who joins or comes back stands on the nearest free spot around the host
+(`Field::addPlayerNearHost`: ring by ring, clear of the walls, the host pair, the NPCs and the other players and their
+partners), the same search a map change uses to put everyone near the host, so three players who join one after the
+other stand side by side instead of on one spot.
+
+**In the game** (protocol version 12, UI API 0.27). The host's co-op settings live in the options' Game tab: "Open to
+new players" (`coop_open_to_join`, on by default) is the room option above, kept in the host's settings: every room it
+hosts starts with it, and switching it in the middle of a game applies at once (the Worker's listing follows with the
+next seats notice). The room screen's own switch changes the option too. The host's `Lobby` also carries its co-op
+difficulty (`difficulty`), so the room screen shows it to the guests before they ready (`online.current.coop_difficulty`).
 
 **What is left out.** The returning guest plays from the host's world as any late joiner; its partner and bag are
 the ones it took home when its link dropped (§5.6). Rooms of two keep closing their seat at

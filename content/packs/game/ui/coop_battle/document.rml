@@ -14,57 +14,43 @@
 				<span id="fighter-0-name" class="name"></span>
 				<div class="bar"><div id="fighter-0-fill" class="fill"></div></div>
 				<span id="fighter-0-hp" class="hp"></span>
-				<span id="fighter-0-mp" class="mp hidden"></span>
-				<span id="fighter-0-revive" class="revive hidden"></span>
-				<button id="fighter-0-target" class="target hidden" onclick="pick_target(0)"></button>
+				<div class="line"><span id="fighter-0-mp" class="mp hidden"></span><span id="fighter-0-revive" class="revive hidden"></span><button id="fighter-0-target" class="target hidden" onclick="pick_target(0)"></button></div>
 			</div>
 			<div id="fighter-1" class="fighter hidden">
 				<span id="fighter-1-name" class="name"></span>
 				<div class="bar"><div id="fighter-1-fill" class="fill"></div></div>
 				<span id="fighter-1-hp" class="hp"></span>
-				<span id="fighter-1-mp" class="mp hidden"></span>
-				<span id="fighter-1-revive" class="revive hidden"></span>
-				<button id="fighter-1-target" class="target hidden" onclick="pick_target(1)"></button>
+				<div class="line"><span id="fighter-1-mp" class="mp hidden"></span><span id="fighter-1-revive" class="revive hidden"></span><button id="fighter-1-target" class="target hidden" onclick="pick_target(1)"></button></div>
 			</div>
 			<div id="fighter-2" class="fighter hidden">
 				<span id="fighter-2-name" class="name"></span>
 				<div class="bar"><div id="fighter-2-fill" class="fill"></div></div>
 				<span id="fighter-2-hp" class="hp"></span>
-				<span id="fighter-2-mp" class="mp hidden"></span>
-				<span id="fighter-2-revive" class="revive hidden"></span>
-				<button id="fighter-2-target" class="target hidden" onclick="pick_target(2)"></button>
+				<div class="line"><span id="fighter-2-mp" class="mp hidden"></span><span id="fighter-2-revive" class="revive hidden"></span><button id="fighter-2-target" class="target hidden" onclick="pick_target(2)"></button></div>
 			</div>
 			<div id="fighter-3" class="fighter hidden">
 				<span id="fighter-3-name" class="name"></span>
 				<div class="bar"><div id="fighter-3-fill" class="fill"></div></div>
 				<span id="fighter-3-hp" class="hp"></span>
-				<span id="fighter-3-mp" class="mp hidden"></span>
-				<span id="fighter-3-revive" class="revive hidden"></span>
-				<button id="fighter-3-target" class="target hidden" onclick="pick_target(3)"></button>
+				<div class="line"><span id="fighter-3-mp" class="mp hidden"></span><span id="fighter-3-revive" class="revive hidden"></span><button id="fighter-3-target" class="target hidden" onclick="pick_target(3)"></button></div>
 			</div>
 			<div id="fighter-4" class="fighter hidden">
 				<span id="fighter-4-name" class="name"></span>
 				<div class="bar"><div id="fighter-4-fill" class="fill"></div></div>
 				<span id="fighter-4-hp" class="hp"></span>
-				<span id="fighter-4-mp" class="mp hidden"></span>
-				<span id="fighter-4-revive" class="revive hidden"></span>
-				<button id="fighter-4-target" class="target hidden" onclick="pick_target(4)"></button>
+				<div class="line"><span id="fighter-4-mp" class="mp hidden"></span><span id="fighter-4-revive" class="revive hidden"></span><button id="fighter-4-target" class="target hidden" onclick="pick_target(4)"></button></div>
 			</div>
 			<div id="fighter-5" class="fighter hidden">
 				<span id="fighter-5-name" class="name"></span>
 				<div class="bar"><div id="fighter-5-fill" class="fill"></div></div>
 				<span id="fighter-5-hp" class="hp"></span>
-				<span id="fighter-5-mp" class="mp hidden"></span>
-				<span id="fighter-5-revive" class="revive hidden"></span>
-				<button id="fighter-5-target" class="target hidden" onclick="pick_target(5)"></button>
+				<div class="line"><span id="fighter-5-mp" class="mp hidden"></span><span id="fighter-5-revive" class="revive hidden"></span><button id="fighter-5-target" class="target hidden" onclick="pick_target(5)"></button></div>
 			</div>
 			<div id="fighter-6" class="fighter hidden">
 				<span id="fighter-6-name" class="name"></span>
 				<div class="bar"><div id="fighter-6-fill" class="fill"></div></div>
 				<span id="fighter-6-hp" class="hp"></span>
-				<span id="fighter-6-mp" class="mp hidden"></span>
-				<span id="fighter-6-revive" class="revive hidden"></span>
-				<button id="fighter-6-target" class="target hidden" onclick="pick_target(6)"></button>
+				<div class="line"><span id="fighter-6-mp" class="mp hidden"></span><span id="fighter-6-revive" class="revive hidden"></span><button id="fighter-6-target" class="target hidden" onclick="pick_target(6)"></button></div>
 			</div>
 		</div>
 		<div id="orders">

@@ -15,6 +15,7 @@ constexpr double SampleGuestSeconds = 2.0;
 // How many sample guests join a hosted sample room: one seat stays free, to show a waiting one.
 constexpr int SampleGuests = MaxRoomPlayers - 2;
 constexpr std::string_view SampleCode = "K7Q2";
+constexpr std::string_view SampleCoopDifficulty = "standard";
 
 RoomListing sampleRoom(std::string_view code, int number, std::string_view mode, int players,
                        int pingMs) {
@@ -103,7 +104,8 @@ RoomView closedRoom(std::string code, std::string error) {
           .localReady = false,
           .mode = {},
           .inProgress = false,
-          .openToNewPlayers = true};
+          .openToNewPlayers = true,
+          .coopDifficulty = {}};
 }
 
 void SampleDirectory::refresh(double nowSeconds) {
@@ -136,7 +138,8 @@ void SampleRoomBackend::host(bool listed, double nowSeconds) {
                    .localReady = false,
                    .mode = {},
                    .inProgress = false,
-                   .openToNewPlayers = true};
+                   .openToNewPlayers = true,
+                   .coopDifficulty = std::string{SampleCoopDifficulty}};
   openedAt_ = nowSeconds;
   arrive(nowSeconds);
 }
@@ -190,7 +193,8 @@ void SampleRoomBackend::joinNow(const RoomListing& listing, double nowSeconds) {
                    .localReady = false,
                    .mode = listing.mode,
                    .inProgress = listing.state == ListingState::InProgress,
-                   .openToNewPlayers = true};
+                   .openToNewPlayers = true,
+                   .coopDifficulty = std::string{SampleCoopDifficulty}};
   openedAt_ = nowSeconds;
 }
 
@@ -613,6 +617,7 @@ screens::ScreenSettings OnlineRooms::settings() const {
     add("online.current.members", static_cast<double>(room->members.size()));
     add("online.current.in_progress", room->inProgress);
     add("online.current.open_to_join", room->openToNewPlayers);
+    add("online.current.coop_difficulty", room->coopDifficulty);
     for (std::size_t index = 0; index < room->members.size(); ++index) {
       const RoomMember& member = room->members[index];
       // This player shows with its profile's name and icon; the others with theirs when known.
