@@ -1,7 +1,8 @@
 # Reference sheet: battle
 
 How combat worked in the original game, according to the decomp. It is step 1 of the
-[design cycle](../conventions/design-cycle.md): it describes the original, not what the mod will do.
+[design cycle](../conventions/design-cycle.md): it describes the original, not what the mod will do. The redesign —step
+2— is defined in [Combat system design](../architecture/combat-design.md), the base of all combat documentation.
 
 Marks: **(verified)** means it was read in the decomp's code; **(assumption)** means it is our own interpretation
 that still needs to be confirmed. Times are given in battle frames: the battle loop advances once per frame.
