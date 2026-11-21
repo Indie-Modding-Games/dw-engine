@@ -1,0 +1,11 @@
+
+#bug-report-toast {
+	padding: 9dp 18dp;
+	border: 3dp transparent;
+	background-color: transparent;
+	decorator: ninepatch(nb-box-outer, nb-box-inner, 1) border-box;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #f2f0e1;
+}

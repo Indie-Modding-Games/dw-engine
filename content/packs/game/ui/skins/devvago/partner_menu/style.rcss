@@ -566,6 +566,7 @@ button:focus .original-look, button.original-look:focus {
 #tech-row-2 { top: 156dp; }
 #tech-row-3 { top: 267dp; }
 .tech-row span, .tech-columns span { position: absolute; display: block; }
+.tech-row .tech-name span { position: static; display: inline; }
 .tech-name { left: 75dp; width: 414dp; white-space: nowrap; overflow: hidden; }
 .tech-power { left: 495dp; width: 72dp; }
 .tech-mp { left: 618dp; width: 72dp; }
@@ -2356,3 +2357,18 @@ body.layout-pages-compact #scrim #close { font-family: "Pixel Small"; font-size:
 #scrim.compact-partner.favorite-food #partner-portrait-clip { left: 18dp; top: 222dp; width: 196dp; height: 246dp; }
 #scrim.compact-partner.favorite-food #partner-portrait { left: -106dp; top: -138dp; width: 600dp; height: 450dp; }
 #scrim.compact-partner.status-extras #page-status, #scrim.compact-partner.status-text.status-extras #page-status { height: 570dp; overflow: hidden; }
+
+#scrim.compact-partner.status-extras #status-species-line #status-species { left: 122dp; width: 218dp; }
+#scrim.compact-partner #status-parameters .bar-row.pool .label {
+	left: 0; top: 0; width: 112dp; height: 28dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp;
+}
+#scrim.compact-partner #status-parameters #stat-row-0 .label, #scrim.compact-partner #status-parameters #stat-row-1 .label,
+#scrim.compact-partner #status-parameters #stat-row-2 .label, #scrim.compact-partner #status-parameters #stat-row-3 .label {
+	font-family: "Pixel Small"; font-size: 26dp;
+}
+#scrim.compact-partner #tech-row-3 .tech-name, #scrim.compact-partner #tech-row-3 .tech-power,
+#scrim.compact-partner.status-text #tech-row-3 .tech-name, #scrim.compact-partner.status-text #tech-row-3 .tech-power {
+	font-family: "Pixel Small"; font-size: 26dp; line-height: 26dp;
+}
+#scrim.compact-partner #status-weight-label, #scrim.compact-partner.status-text.status-extras #status-weight-label { width: 80dp; }
+#scrim.compact-partner #status-weight, #scrim.compact-partner.status-text.status-extras #status-weight { left: 84dp; width: 78dp; }

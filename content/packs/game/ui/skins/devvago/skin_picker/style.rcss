@@ -1,0 +1,53 @@
+
+#scrim #panel {
+	width: 780dp;
+	margin-left: -390dp;
+	padding: 24dp 30dp 18dp 30dp;
+}
+
+#scrim #title {
+	margin-bottom: 12dp;
+}
+
+#scrim #panel button.skin {
+	display: block;
+	width: 100%;
+	height: auto;
+	margin: 0 0 5dp 0;
+	padding: 6dp 15dp 8dp 15dp;
+	box-sizing: border-box;
+	border: 1dp #345875;
+	border-radius: 0;
+	background-color: #0a2035;
+	color: #d8f1ff;
+	font-size: 30dp;
+	line-height: 32dp;
+	text-align: left;
+}
+
+#scrim #panel button.skin.hidden {
+	display: none;
+}
+
+#scrim #panel button.skin:hover {
+	border-color: #72c7ff;
+	background-color: #153653;
+}
+
+#scrim #panel button.skin:focus {
+	border: 2dp #ffd51e;
+	background-color: #153653;
+	color: #ffe64a;
+}
+
+#scrim #panel .skin-hint {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 28dp;
+	color: #a8c7d9;
+	opacity: 1;
+}
+
+#scrim #panel button.skin:focus .skin-hint {
+	color: #d8f1ff;
+}

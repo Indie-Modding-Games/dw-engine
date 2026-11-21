@@ -18,6 +18,7 @@ fit_text = {}
 -- half a second of ticks rather than the three a frame a tick would need.
 local measure_ticks = 30
 local pending = {}
+local settled = {}
 
 local function text_width(element, parts)
   local left = element:rect()
@@ -116,6 +117,7 @@ end
 -- Writes `text` and cuts it to `room` (as fit's) with "..." at its end instead of squeezing it: for
 -- a name with no length limit (a room's), which would be squeezed past reading.
 function fit_text.cut(element, text, room)
+  settled[element.id] = nil
   element:set_property("transform", "none")
   local entry = {
     element = element,
@@ -143,6 +145,7 @@ function fit_text.cut(element, text, room)
 end
 
 function fit_text.fit(element, parts, room)
+  settled[element.id] = nil
   local entry =
     { element = element, parts = parts or { element }, room = room, ticks = measure_ticks }
   for index, other in ipairs(pending) do
@@ -154,7 +157,27 @@ function fit_text.fit(element, parts, room)
   pending[#pending + 1] = entry
 end
 
+local recheck_ticks = 30
+local until_recheck = recheck_ticks
+
+local function recheck()
+  for id, entry in pairs(settled) do
+    if not entry.element:valid() then
+      settled[id] = nil
+    elseif entry.letters ~= nil then
+      cut(entry)
+    else
+      squeeze(entry)
+    end
+  end
+end
+
 function fit_text.tick()
+  until_recheck = until_recheck - 1
+  if until_recheck <= 0 then
+    until_recheck = recheck_ticks
+    recheck()
+  end
   for index = #pending, 1, -1 do
     local entry = pending[index]
     if entry.letters ~= nil then
@@ -165,6 +188,9 @@ function fit_text.tick()
     entry.ticks = entry.ticks - 1
     if entry.ticks <= 0 then
       table.remove(pending, index)
+      if entry.element.id ~= "" then
+        settled[entry.element.id] = entry
+      end
     end
   end
 end

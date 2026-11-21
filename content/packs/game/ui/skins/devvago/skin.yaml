@@ -45,6 +45,8 @@ screens:
   # The new game's mode (only with more than one mode), with the rules box.
   new_game_mode:
     styles: [pause_menu/style, new_game_rules/style, new_game_mode/style]
+  skin_picker:
+    styles: [pause_menu/style, new_game_rules/style, skin_picker/style]
   sleep_menu:
     styles: [pause_menu/style, sleep_menu/style]
   # The development menu (F2), too.

@@ -79,7 +79,7 @@
 /* The right column: the code box taller, so its hint can take two lines. */
 #search-box { top: 84dp; height: 128dp; }
 #code-box { top: 224dp; height: 234dp; }
-#actions-box { top: 470dp; height: 102dp; padding-top: 10dp; }
+#actions-box { top: 462dp; height: 110dp; padding-top: 10dp; }
 #actions-box .action { height: 40dp; line-height: 36dp; margin: 0 0 8dp 0; }
 .side-title { font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp; color: #a8c7d9; }
 

@@ -123,6 +123,8 @@
 	color: #b6e4f7;
 }
 
+#scrim #page-status #status-species-label { left: 15dp; width: 96dp; }
+
 /* The insets (orig.css .oinset): a dark well, its top and left in ink, its right and bottom in the rim's blue. */
 #status-name,
 .line-value,
@@ -176,6 +178,8 @@
 	font-size: 26dp;
 	color: #f2f0e1;
 }
+
+#scrim #page-status .status-native-happiness { display: none; }
 
 #status-condition .meter,
 #scrim.status-text #status-condition .meter {

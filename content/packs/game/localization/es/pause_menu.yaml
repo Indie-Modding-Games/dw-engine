@@ -314,7 +314,7 @@ help.music_volume: "Volumen de la música y del sonido de las películas. 10 es 
 help.effects_volume: "Volumen de los efectos y de los sonidos de los menús. 10 es el nivel del original."
 help.continuous_music: "Si el mapa nuevo tiene la canción que ya suena, sigue sin empezar de nuevo."
 help.reverb: "El eco de sala del chip de sonido en la música y los efectos, como el original. Apagada, todo suena seco."
-help.ui_skin: "El aspecto de los menús y del HUD: el del original o el moderno."
+help.ui_skin: "El aspecto de los menús y del HUD: el del original, u otro estilo como el pixel art."
 help.ui_addon: "Una interfaz hecha por la comunidad en lugar de la del juego. Se aplica al cerrar el menú; con Mayús pulsada al arrancar vuelve la del juego."
 help.ui_plugins: "Los complementos de la comunidad (un reloj, avisos...) sobre la interfaz. Se aplica al cerrar el menú."
 help.ui_scale: "El tamaño de los menús y del HUD."

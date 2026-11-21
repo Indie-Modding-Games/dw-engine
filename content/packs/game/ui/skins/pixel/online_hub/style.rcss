@@ -47,7 +47,7 @@
 }
 
 .hub-entry.back { height: 56dp; }
-.entry-icon { left: 12dp; top: 16dp; width: 46dp; height: 46dp; }
+.entry-icon { display: block; left: 12dp; top: 16dp; width: 46dp; height: 46dp; }
 #entry-versus .entry-icon { decorator: image(nb-on-swords contain center center); }
 #entry-rooms .entry-icon { decorator: image(nb-on-egg contain center center); }
 #entry-profile .entry-icon { decorator: image(nb-on-avatar contain center center); }

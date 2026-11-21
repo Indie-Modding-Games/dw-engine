@@ -22,6 +22,7 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -1957,4 +1958,38 @@ TEST_CASE("under every skin the story's boxes advance, answer and take a name th
   }
 }
 
+TEST_CASE("every skin the player can pick styles each screen another pickable skin styles") {
+  Content content;
+  addOriginalArt(content);
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "en");
+  auto ui = createUi(files, texts);
+  const SkinCatalog& skins = ui->skins();
+  const auto styledBy = [&skins](std::string_view id) {
+    std::set<std::string> screens;
+    for (const Skin* link = skins.find(id); link != nullptr && !link->hidden;
+         link = link->extends ? skins.find(*link->extends) : nullptr) {
+      for (const auto& [screen, look] : link->screens) {
+        if (!look.styles.empty() || look.document) {
+          screens.insert(screen);
+        }
+      }
+    }
+    return screens;
+  };
+  std::vector<std::string> picked = skins.offered();
+  std::erase(picked, std::string{"test_contrast"});
+  REQUIRE(picked == std::vector<std::string>{"devvago", "original", "pixel"});
+  std::set<std::string> everyLook;
+  for (const std::string& id : picked) {
+    everyLook.insert_range(styledBy(id));
+  }
+  for (const std::string& id : picked) {
+    const std::set<std::string> own = styledBy(id);
+    for (const std::string& screen : everyLook) {
+      CHECK_MESSAGE(own.contains(screen),
+                    std::format("{} leaves {} to the hidden modern look", id, screen));
+    }
+  }
+}
 } // namespace dwe::ui

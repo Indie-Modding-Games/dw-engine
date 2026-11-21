@@ -117,7 +117,9 @@
 	display: inline-block;
 	margin: 0 0 2dp 0;
 	min-width: 156dp;
-	white-space: nowrap;
+	max-width: 100%;
+	white-space: normal;
+	text-align: center;
 	padding: 2dp 8dp;
 	box-sizing: border-box;
 	border-width: 0;
