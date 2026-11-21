@@ -4,7 +4,8 @@ The battle rules (`dwe::game::battle`, `game` layer) as a deterministic, screenl
 at 20 frames per second, commands, obedience, the partner's and enemies' AI, techniques, damage, blocking
 and counterattack, status effects, the finisher, the end of the battle and its consequences, rewards,
 technique learning, and enemies that join. The rules are in the
-[reference sheet](../../reference/battle.md).
+[reference sheet](../../reference/battle.md). The combat reinvention coming in an own ruleset is specified in [Combat
+system design](../../architecture/combat-design.md).
 
 It knows nothing about the partner or saves: it does not include `packages/game/partner` or `packages/game/save`. It receives `Combatant` (declared here)
 and the partner's condition, and returns a `BattleResult` that the session applies. It has no state to save: a battle

@@ -7,6 +7,9 @@ de los combates cooperativos (#351, PR #363) y el diseño de combate con ambos c
 [combate cooperativo](coop-combat.md). Las sesiones de hasta cuatro jugadores son el ticket #352
 ([navegador de salas y cuatro jugadores](coop-browser-4p.md)).
 
+**Base de diseño:** el rediseño del combate se define en el [Diseño del sistema de combate](combat-design.md), base de
+toda la documentación de combate; su capítulo 8 marca el objetivo de escalado cooperativo del nuevo sistema.
+
 **Regla cero:** el juego de un jugador no cambia. Con un solo compañero peleando y nadie ayudando, todos los factores de
 este documento valen exactamente 100 % y ningún camino de código difiere del actual. El escalado cooperativo es una
 mejora, documentada y opcional, que elige el anfitrión.
@@ -372,6 +375,7 @@ objetos usados.
 
 ## 12. Documentos relacionados
 
+- [Diseño del sistema de combate](combat-design.md) —la base: capítulo 8, cooperativo y escalado.
 - [Multijugador cooperativo en línea](multiplayer.md) y [ADR 0024](../adr/0024-co-op-with-authoritative-host.md).
 - [Combate cooperativo](coop-combat.md): ambos compañeros en un combate, elección de blanco, órdenes y derrota.
 - [Rulesets](rulesets.md), [módulo de combate](../modules/game/battle.md), [referencia de combate](../reference/battle.md).

@@ -1,7 +1,9 @@
 # Ficha de referencia: batalla
 
 Cómo funcionaban los combates del juego original, según el decomp. Es el paso 1 del
-[ciclo de diseño](../conventions/design-cycle.md): describe el original, no lo que hará el mod.
+[ciclo de diseño](../conventions/design-cycle.md): describe el original, no lo que hará el mod. El rediseño —paso 2—
+se define en el [Diseño del sistema de combate](../architecture/combat-design.md), base de toda la documentación de
+combate.
 
 Marcas: **(comprobado)** quiere decir que se leyó en el código del decomp; **(suposición)** quiere decir que es una
 interpretación nuestra que falta confirmar. Los tiempos se dan en fotogramas de batalla: el bucle de batalla
