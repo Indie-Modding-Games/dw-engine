@@ -1,0 +1,5 @@
+/* See-through like the original's box, so the partner stays visible behind it. */
+body #box {
+	background-color: transparent;
+	decorator: vertical-gradient(#153653b0 #0a1929b0);
+}
