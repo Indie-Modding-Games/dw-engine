@@ -1,5 +1,6 @@
 #include <dwe/core/log.hpp>
 
+#include <cstdio>
 #include <mutex>
 #include <print>
 #include <vector>
@@ -29,6 +30,8 @@ void writeLog(LogLevel level, std::string_view message) {
   Log& log = theLog();
   std::scoped_lock lock{log.mutex};
   std::println(stderr, "[{}] {}", logLevelName(level), message);
+  // Windows buffers a redirected stderr fully: a hung game would lose its last lines.
+  std::fflush(stderr);
   for (const LogSink& sink : log.sinks) {
     sink(level, message);
   }
