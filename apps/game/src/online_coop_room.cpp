@@ -1,8 +1,28 @@
 #include "online_coop_room.hpp"
 
+#include <dwe/game/coop/protocol.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <string>
+#include <string_view>
+
 namespace dwe::app {
+
+namespace {
+
+std::string_view coopDifficultyName(game::coop::CoopDifficulty difficulty) {
+  switch (difficulty) {
+  case game::coop::CoopDifficulty::Off:
+    return "off";
+  case game::coop::CoopDifficulty::Hard:
+    return "hard";
+  case game::coop::CoopDifficulty::Standard:
+    break;
+  }
+  return "standard";
+}
+
+} // namespace
 
 void CoopRoomBackend::host(bool listed, double /*nowSeconds*/) {
   listed_ = listed;
@@ -65,7 +85,11 @@ std::optional<RoomView> CoopRoomBackend::room() const {
                 .localReady = !isHost && coop_->localReady(),
                 .mode = "campaign",
                 .inProgress = coop_->gameUnderway(),
-                .openToNewPlayers = coop_->openToNewPlayers()};
+                .openToNewPlayers = coop_->openToNewPlayers(),
+                .coopDifficulty = {}};
+  if (const auto difficulty = coop_->coopDifficulty()) {
+    room.coopDifficulty = std::string{coopDifficultyName(*difficulty)};
+  }
   // The room session keeps the phase (net::RoomSession); the lobby's error closes it.
   const net::RoomSession* session = coop_->room();
   room.phase = session != nullptr ? session->phase() : RoomPhase::Connecting;

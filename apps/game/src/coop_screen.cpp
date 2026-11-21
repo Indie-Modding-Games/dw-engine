@@ -119,6 +119,7 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     // The rooms screens send whether the room is public (listed); a plain coop_host is private.
     const bool* listed = std::get_if<bool>(&command.value);
     (void)connection_.host(listed != nullptr && *listed);
+    connection_.setOpenToNewPlayers(openToJoin_);
     publish();
     return true;
   }
@@ -168,6 +169,8 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
   if (command.name == "coop_open_to_join") {
     // The host's choice: whether its game, once under way, takes new players (#356).
     if (const bool* open = std::get_if<bool>(&command.value); open != nullptr && isHost_) {
+      openToJoin_ = *open;
+      openToJoinChange_ = *open;
       connection_.setOpenToNewPlayers(*open);
       publish();
     }
@@ -287,7 +290,23 @@ game::coop::Lobby CoopScreen::lobbyMessage() const {
   }
   lobby.playing = connection_.playing();
   lobby.open = connection_.openToNewPlayers();
+  lobby.difficulty = difficulty_;
   return lobby;
+}
+
+void CoopScreen::setOpenToJoin(bool open) {
+  openToJoin_ = open;
+  if (isHost_) {
+    connection_.setOpenToNewPlayers(open);
+    publish();
+  }
+}
+
+std::optional<game::coop::CoopDifficulty> CoopScreen::coopDifficulty() const {
+  if (isHost_) {
+    return difficulty_;
+  }
+  return lobby_.has_value() ? std::optional{lobby_->difficulty} : std::nullopt;
 }
 
 std::vector<CoopLobbyMember> CoopScreen::lobbyMembers() const {

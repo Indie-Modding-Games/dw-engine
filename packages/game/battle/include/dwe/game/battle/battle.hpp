@@ -202,6 +202,7 @@ public:
   void defeatEnemies();
   // Its opposite: the partner takes damage enough to fall (a route that checks a lost fight).
   void defeatPartner();
+  void defeatPartner(FighterId partner);
   // A cup match's clock runs out now (a route that checks the time-up notice): the side that should
   // win (none: a draw) loses HP until its damage is less than the other's (or the same); nothing
   // outside a match.

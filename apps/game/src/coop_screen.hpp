@@ -2,6 +2,7 @@
 
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/game/coop/profile_transfer.hpp>
+#include <dwe/game/coop/protocol.hpp>
 #include <dwe/net/rtc_peer_link.hpp>
 #include <dwe/ui/ui.hpp>
 
@@ -38,6 +39,8 @@ struct CoopLobbyMember {
   // The player at this machine.
   bool local = false;
 };
+
+inline constexpr std::string_view CoopOpenToJoinSetting = "coop_open_to_join";
 
 // The main-menu cooperative lobby: creates or joins a WebRTC room and keeps the validated coop
 // handshake alive. The connected links are exposed for the gameplay bridges to attach next. The
@@ -123,10 +126,16 @@ public:
   [[nodiscard]] bool gameUnderway() const {
     return isHost_ ? connection_.playing() : lobby_.has_value() && lobby_->playing;
   }
+  void setOpenToJoin(bool open);
+  [[nodiscard]] std::optional<bool> takeOpenToJoinChange() {
+    return std::exchange(openToJoinChange_, std::nullopt);
+  }
   // Whether the game under way takes new players (the host's choice, open by default).
   [[nodiscard]] bool openToNewPlayers() const {
     return isHost_ ? connection_.openToNewPlayers() : !lobby_.has_value() || lobby_->open;
   }
+  void setCoopDifficulty(game::coop::CoopDifficulty difficulty) { difficulty_ = difficulty; }
+  [[nodiscard]] std::optional<game::coop::CoopDifficulty> coopDifficulty() const;
   // On a guest that dropped out of a game under way: the room's code, to go back to it (it keeps
   // its seat for a while, CoopRejoinGrace); empty when the host ended the game itself.
   [[nodiscard]] std::string droppedFrom() const;
@@ -182,6 +191,9 @@ private:
   std::optional<std::string> hostSaveText_;
   std::string remotePartnerSpecies_;
   std::optional<game::coop::Lobby> lobby_;
+  game::coop::CoopDifficulty difficulty_ = game::coop::CoopDifficulty::Standard;
+  bool openToJoin_ = true;
+  std::optional<bool> openToJoinChange_;
   // On the host: each guest in, by id, and the lobby each guest's link was last told.
   std::map<game::coop::PlayerId, GuestLobby> guests_;
   std::map<std::uint64_t, game::coop::Lobby> lobbySent_;

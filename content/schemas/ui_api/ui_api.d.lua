@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.26.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.27.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -626,7 +626,7 @@ function online.list() end
 ---@return table
 function online.modes() end
 
---- The room the player is in, or nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready, in_progress, open_to_join and members (name, icon, host, ready, local).
+--- The room the player is in, or nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready, in_progress, open_to_join, coop_difficulty, coop_difficulty_key and members (name, icon, host, ready, local).
 ---@return table?
 function online.room() end
 

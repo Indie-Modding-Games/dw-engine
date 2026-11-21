@@ -47,6 +47,9 @@
 	white-space: nowrap;
 }
 
+/* .prompt sets display, so a hidden one needs its own rule. */
+.prompt.hidden { display: none; }
+
 .key {
 	font-size: 22dp;
 	line-height: 24dp;
