@@ -251,6 +251,14 @@ std::optional<BattleRole> BattleMirror::role() const {
   return std::ranges::contains(running_->allies, self_) ? BattleRole::Ally : BattleRole::Helper;
 }
 
+std::optional<PlayerId> BattleMirror::waitingFor() const {
+  if (!running_ || !frame_ || frame_->phase != BattlePhase::End ||
+      action(BattleActionKind::CloseEnd)) {
+    return std::nullopt;
+  }
+  return running_->starter;
+}
+
 std::optional<BattleOffer> BattleMirror::offer(bool available, BattleFighterProfile fighter) {
   BattleOffer next{.available = available, .fighter = std::move(fighter)};
   if (offered_ && *offered_ == next) {

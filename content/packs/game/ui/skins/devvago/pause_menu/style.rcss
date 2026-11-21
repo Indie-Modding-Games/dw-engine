@@ -333,7 +333,7 @@
 .cursor-br { left: 72dp; top: 66dp; transform: scale(-1, -1); }
 
 
-#field-year-label, #field-day-label { position: absolute; top: 18dp; font-size: 33dp; line-height: 36dp; }
+#field-year-label, #field-day-label, #field-year-unit, #field-day-unit { position: absolute; top: 18dp; font-size: 33dp; line-height: 36dp; }
 #field-year-label { left: 15dp; }
 #field-day-label { left: 213dp; }
 #field-year-digits, #field-day-digits { position: absolute; top: 15dp; height: 36dp; white-space: nowrap; font-size: 0dp; }
@@ -343,6 +343,12 @@
 .date-digit.hidden { display: none; }
 /* The original's date has no room for the season (an engine improvement): only the modern skin shows it. */
 #field-season { display: none; }
+#panel.on-main #title-date.date-units { padding: 15dp 0 0 15dp; white-space: nowrap; }
+#title-date.date-units #field-year-label, #title-date.date-units #field-day-label, #title-date.date-units #field-year-unit, #title-date.date-units #field-day-unit, #title-date.date-units #field-year-digits, #title-date.date-units #field-day-digits { position: relative; left: 0; top: 0; display: inline-block; vertical-align: top; }
+#title-date.date-units #field-year-label, #title-date.date-units #field-day-label, #title-date.date-units #field-year-unit, #title-date.date-units #field-day-unit { top: 3dp; }
+#title-date.date-units #field-year-label, #title-date.date-units #field-day-label { margin-right: 6dp; }
+#title-date.date-units #field-year-unit { margin-right: 30dp; }
+#panel.on-main #title-date.date-units .hidden { display: none; }
 #field-date-separator { position: absolute; left: 9dp; top: 60dp; width: 372dp; height: 3dp; background-color: #90d9fa; border-top: 3dp #020202; border-bottom: 3dp #020202; }
 .digit-0 { decorator: image(menu-digit-0 scale-none center center); }
 .digit-1 { decorator: image(menu-digit-1 scale-none center center); }
@@ -731,7 +737,7 @@ body.layout-medals-profile #panel #city-rule { display: block; }
 /* The header's numbers: the classic port paints them as fixed pixel sprites over transparent
    text; this look drops the sprites and lets the text through, gold at the window's small
    scale, with both groups stood off their labels in columns. */
-#panel.on-main #field-year-label, #panel.on-main #field-day-label { position: absolute; top: 10dp; line-height: 26dp; }
+#panel.on-main #field-year-label, #panel.on-main #field-day-label, #panel.on-main #field-year-unit, #panel.on-main #field-day-unit { position: absolute; top: 10dp; line-height: 26dp; }
 #panel.on-main #field-year-label { left: 20dp; }
 #panel.on-main #field-day-label { left: 236dp; }
 /* Both groups share the labels' line box: the same top and line-height, and the digits ride
@@ -741,6 +747,13 @@ body.layout-medals-profile #panel #city-rule { display: block; }
 #panel.on-main #field-year-digits { left: 62dp; }
 #panel.on-main #field-day-digits { left: 282dp; }
 #panel.on-main .date-digit { decorator: none; width: auto; min-width: 14dp; height: 26dp; margin-right: 4dp; vertical-align: middle; color: #ffe64a; font-size: 26dp; line-height: 26dp; text-align: center; }
+
+#panel.on-main #title-date.date-units { padding: 10dp 0 0 20dp; }
+#panel.on-main #title-date.date-units #field-year-label, #panel.on-main #title-date.date-units #field-day-label, #panel.on-main #title-date.date-units #field-year-unit, #panel.on-main #title-date.date-units #field-day-unit, #panel.on-main #title-date.date-units #field-year-digits, #panel.on-main #title-date.date-units #field-day-digits { position: relative; left: 0; top: 0; display: inline-block; vertical-align: middle; }
+#panel.on-main #title-date.date-units #field-year-digits, #panel.on-main #title-date.date-units #field-day-digits { width: auto; }
+#panel.on-main #title-date.date-units #field-year-label, #panel.on-main #title-date.date-units #field-day-label { margin-right: 6dp; }
+#panel.on-main #title-date.date-units #field-year-unit { margin-right: 30dp; }
+#panel.on-main #title-date.date-units #field-year-label.hidden, #panel.on-main #title-date.date-units #field-day-label.hidden, #panel.on-main #title-date.date-units #field-year-unit.hidden, #panel.on-main #title-date.date-units #field-day-unit.hidden { display: none; }
 
 #panel.on-main #field-date-separator {
 	left: 12dp;

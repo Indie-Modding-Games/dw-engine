@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.29.0 | The `coop_battle` screen tells a player who cannot close the end box whom it waits on (`coop_battle.waiting`, the starter's `coop_battle.starter.name`, `name_key` and `number`) |
 | 0.28.0 | Game variants: `options.variant()` names the variant of the game being played (its mode's name key, nil at the title) and `options.locked(name)` says whether that variant fixes an option (`options.variant` and `options.locked.<name>` settings); `options.set` refuses a fixed option ([game variants](../architecture/game-variants.md)) |
 | 0.27.0 | The room shows the host's co-op difficulty before a guest readies (`online.current.coop_difficulty`, `online.room()` `coop_difficulty` and `coop_difficulty_key`), and the `coop_open_to_join` option arrives: whether a co-op game the player hosts takes new players once under way, applied at once to the room it hosts |
 | 0.26.0 | Nine languages: the naming box turns pages of letters (`naming_box.pages`, `naming_box.page`, `naming_box.page_name`, `page` in `naming.state()`), and `ui.upper` and `ui.lower` know accented, Greek and Cyrillic letters |
@@ -105,7 +106,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.28.0**.
+UI API version: **0.29.0**.
 
 ### `ui`
 
@@ -475,6 +476,10 @@ UI API version: **0.28.0**.
 | `coop_battle.item.<n>.id` | setting | text | An item's id, sent with coop_battle_item. |
 | `coop_battle.item.<n>.name_key` | setting | text | The text key of an item's name. |
 | `coop_battle.item.<n>.count` | setting | number | How many of an item this player has. |
+| `coop_battle.waiting` | setting | yes/no | Whether the end box is up and this player waits on the starter to close it. |
+| `coop_battle.starter.name` | setting | text | The name of the player who started the battle; empty when it has none. |
+| `coop_battle.starter.name_key` | setting | text | Without a name, the text key that names the starter (Host, Guest {number}). |
+| `coop_battle.starter.number` | setting | number | The number in the starter's name_key text. |
 | `coop_battle.revision` | setting | number | Goes up each time the values above change: the screen is drawn again. |
 | `coop_battle_order` | command | number | This player's order for its own partner (a command's number). |
 | `coop_battle_cheer` | command | — | A cheer: charges the finisher as the battle's charge buttons do. |

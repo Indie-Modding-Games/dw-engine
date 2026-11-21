@@ -659,7 +659,8 @@ the **host's simulation**:
   them; the `coop_battle` screen shows the life bars, the starter's orders and the helper's help.
   A helper's camera turns to the battle when it begins and comes back when it ends.
 - **What each player can do.** The starter gives the orders (the strip's commands, the finisher) and closes the end
-  box. Both can throw an item **from their own bag** (the guest's item leaves its bag; the host's game lends one and
+  box; the others see whom they wait on in its place (`Waiting for <name> to continue...`, `BattleMirror::waitingFor`)
+  until the starter closes it. Both can throw an item **from their own bag** (the guest's item leaves its bag; the host's game lends one and
   throws it) and **cheer** (a press of the finisher's charge). On the host, a guest's battle blocks the host's strip and
   finisher button; its bag works. The screen's buttons take the mouse, or the arrows and confirm; the field's extra
   button calls the finisher for the starter and cheers for the helper.

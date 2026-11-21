@@ -16,7 +16,9 @@
 }
 
 #field-year-label,
-#field-day-label {
+#field-day-label,
+#field-year-unit,
+#field-day-unit {
 	top: 15dp;
 	font-size: 30dp;
 	line-height: 36dp;
@@ -37,6 +39,15 @@
 	margin-right: 0;
 	color: #f2f0e1;
 	decorator: none;
+}
+
+#title-date.date-units #field-year-label, #title-date.date-units #field-day-label, #title-date.date-units #field-year-unit, #title-date.date-units #field-day-unit {
+	top: 0;
+}
+
+#title-date.date-units #field-year-unit,
+#title-date.date-units #field-day-unit {
+	margin-left: 6dp;
 }
 
 /* .osep.h: the blue line between two ink ones, 372 wide at 9,57. */

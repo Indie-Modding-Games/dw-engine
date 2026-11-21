@@ -74,6 +74,15 @@
 	color: #e9eef5;
 }
 
+#panel:not(.skin-original) #title-date.date-units #field-year-digits,
+#panel:not(.skin-original) #title-date.date-units #field-day-digits {
+	margin-right: 3dp;
+}
+
+#panel:not(.skin-original) #title-date.date-units #field-year-unit {
+	margin-right: 14dp;
+}
+
 /* The season after the day (the Seasons option), in the label's colour. */
 #panel:not(.skin-original) #field-season {
 	margin-left: 4dp;

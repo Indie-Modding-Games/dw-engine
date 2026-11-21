@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.29.0 | La pantalla `coop_battle` dice a quien no puede cerrar el cuadro final a quién espera (`coop_battle.waiting`, y `coop_battle.starter.name`, `name_key` y `number` de quien la empezó) |
 | 0.28.0 | Variantes de juego: `options.variant()` nombra la variante de la partida en juego (la clave del nombre de su modo, nil en el título) y `options.locked(name)` dice si esa variante fija una opción (ajustes `options.variant` y `options.locked.<name>`); `options.set` rechaza una opción fija ([variantes de juego](../architecture/game-variants.md)) |
 | 0.27.0 | La sala muestra la dificultad cooperativa del anfitrión antes de que un invitado se marque listo (`online.current.coop_difficulty`, `coop_difficulty` y `coop_difficulty_key` de `online.room()`), y llega la opción `coop_open_to_join`: si una partida cooperativa que aloja el jugador admite jugadores nuevos con la partida en marcha, aplicada al momento a la sala que aloja |
 | 0.26.0 | Nueve idiomas: el cuadro de nombre pasa páginas de letras (`naming_box.pages`, `naming_box.page`, `naming_box.page_name`, `page` en `naming.state()`), y `ui.upper` y `ui.lower` conocen las letras acentuadas, griegas y cirílicas |

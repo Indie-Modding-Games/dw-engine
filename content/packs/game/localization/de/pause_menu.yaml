@@ -119,6 +119,8 @@ chibi_style.external: "Externe"
 
 year_label: "Jahr"
 day_label: "Tag"
+year_unit: ""
+day_unit: ""
 player_tab_chart: "Baum"
 # The five tabs of the player page share the box's width, so the whole word fits.
 player_tab_medals: "Med."

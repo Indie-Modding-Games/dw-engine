@@ -83,6 +83,8 @@ chibi_style.external: "Сторонние"
 
 year_label: "Год"
 day_label: "День"
+year_unit: ""
+day_unit: ""
 player_tab_chart: "Схема"
 player_tab_medals: "Медали"
 player_tab_card: "Карты"

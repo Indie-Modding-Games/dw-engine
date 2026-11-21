@@ -244,3 +244,8 @@ A word that changes with a count takes the forms of the language: Russian writes
 and Portuguese use the first for 0 and 1, and Chinese, Japanese and Korean have one (write it twice, `{n:天|天}`); see
 [Plurals](../architecture/localization.md#plurals). In the naming box, Russian, Japanese and Korean get pages of their
 own letters before the Latin one ([names in every language](../modules/apps/game.md#names-in-every-language)).
+
+The pause header's date has a word before each number (`pause_menu.year_label`, `day_label`) and one after it
+(`year_unit`, `day_unit`); either may be empty. A language that writes the number first leaves the label empty
+(Japanese `1年目`, Korean `1년`), one that wraps it fills both (Chinese `第1年`), and the rest keep the label alone
+(`Year 1`). Every skin draws the words where they are, beside the digits.

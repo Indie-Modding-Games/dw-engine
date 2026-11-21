@@ -1099,11 +1099,17 @@ el griego y el cirílico; el chino, el japonés y el coreano vienen de **cadenas
   `Pixel Body` y 0,923 de `Pixel Small` para que su em de 12 píxeles caiga en la rejilla de esas familias; detrás, las
   caras suaves y `Noto Sans` recogen lo demás. La fuente de mapa de bits del aspecto original cae en `Pixel Small` (ver
   [Aspecto original](#aspecto-original)), así que tiene la misma cadena. `pixel_body.ttf` y `pixel_small.ttf` ganaron
-  latino extendido A, griego y cirílico de las mismas fuentes misc-fixed que su ASCII. Las dos celdas en negrita
-  dibujaban la «м» cirílica con una fila llena entre sus trazos, como una «н», así que `make_fonts.py` dibuja esa letra
-  de nuevo en las dos caras (su tabla `PIXEL_REDRAWN`, que reemplaza un glifo que la fuente ya tiene; `--fusion` solo
-  hace falta para las caras CJK), y `cyrillic_glyphs_tests.cpp` comprueba que cada letra cirílica está en cada fuente
-  de la interfaz, distinta de las demás en las caras de píxeles, sin la barra de la «н» en la «м». Todas
+  latino extendido A, griego y cirílico de las mismas fuentes misc-fixed que su ASCII. Donde esas celdas en
+  negrita funden dos letras cirílicas, `make_fonts.py` dibuja la letra de nuevo (su tabla `PIXEL_REDRAWN`, que
+  reemplaza un glifo que la fuente ya tiene; `--fusion` solo hace falta para las caras CJK): la «м» tenía una fila
+  llena entre sus trazos, como una «н», en las dos caras; las «И и Й й» de 7x13B tenían una diagonal de dos píxeles en
+  un hueco de dos que se lee como la barra de la «н» al escalarse (el aspecto original y el texto pequeño de la skin
+  de píxeles dibujan el ruso con ella), así que ganan una tercera columna y una diagonal de tres filas como las de
+  9x15B, y avanzan un píxel más, como la «м» redibujada; la «э» se distinguía de la «з» por un píxel, así que su barra
+  llega más a la izquierda. `cyrillic_glyphs_tests.cpp` comprueba que cada letra cirílica está en cada fuente de la
+  interfaz y se dibuja distinta de las demás en las cuatro (las caras de los aspectos moderno, de píxeles, devvago y
+  original, este último por su respaldo `Pixel Small`), y en las caras de píxeles que ningún par de letras se
+  diferencia en un solo píxel, que la «м» no tiene la barra de la «н» y que «И и Й й» suben de trazo a trazo. Todas
   tienen la licencia SIL Open Font; `cjk/cjk_fonts_license.txt` y `pixel_fonts_license.txt` nombran las fuentes y versiones.
 - **Tamaño.** Las caras son subconjuntos, no las fuentes enteras: el juego GB 2312 para el chino, JIS X 0208 para el
   japonés, las 2350 sílabas de KS X 1001 para el coreano, su puntuación y formas de ancho completo, más cada carácter
@@ -1111,8 +1117,8 @@ el griego y el cirílico; el chino, el japonés y el coreano vienen de **cadenas
   demás; una descarga aparte por idioma ahorraría poco y añadiría una forma de fallar. Un carácter fuera de los
   subconjuntos lo dibuja la siguiente cara de la cadena o, si no hay, ninguna (nunca una caja): la caja de nombres
   solo acepta caracteres que las fuentes dibujan (`Ui::fontsDraw`). `scripts/art/make_fonts.py` (con `uv run`) las
-  rehace desde las fuentes descargadas, y su orden `check` lista cualquier carácter de los textos que ninguna cara
-  cubre.
+  rehace desde las fuentes descargadas, y su orden `check`, que corre el trabajo linux de la CI, lista
+  cualquier carácter de los textos que ninguna cara cubre.
 - **Cortes de línea.** RmlUi solo corta en los espacios; nuestro port (`tooling/vcpkg-ports/rmlui`, un parche sobre
   6.3) corta también entre caracteres chinos y japoneses, sin dejar la puntuación de cierre (`。` `、` `」`, kana
   pequeños, `ー`) al principio de una línea ni la de apertura (`「` `（`) al final (kinsoku). El coreano sigue cortando

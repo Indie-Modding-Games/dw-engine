@@ -1,5 +1,5 @@
 {
-  "version": "0.28.0",
+  "version": "0.29.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "The value of a setting the game publishes; nil if it does not publish it.", "signature": "(name: string): any"},
@@ -327,6 +327,10 @@
       {"name": "coop_battle.item.<n>.id", "kind": "setting", "value": "text", "summary": "An item's id, sent with coop_battle_item."},
       {"name": "coop_battle.item.<n>.name_key", "kind": "setting", "value": "text", "summary": "The text key of an item's name."},
       {"name": "coop_battle.item.<n>.count", "kind": "setting", "value": "number", "summary": "How many of an item this player has."},
+      {"name": "coop_battle.waiting", "kind": "setting", "value": "boolean", "summary": "Whether the end box is up and this player waits on the starter to close it."},
+      {"name": "coop_battle.starter.name", "kind": "setting", "value": "text", "summary": "The name of the player who started the battle; empty when it has none."},
+      {"name": "coop_battle.starter.name_key", "kind": "setting", "value": "text", "summary": "Without a name, the text key that names the starter (Host, Guest {number})."},
+      {"name": "coop_battle.starter.number", "kind": "setting", "value": "number", "summary": "The number in the starter's name_key text."},
       {"name": "coop_battle.revision", "kind": "setting", "value": "number", "summary": "Goes up each time the values above change: the screen is drawn again."},
       {"name": "coop_battle_order", "kind": "command", "value": "number", "summary": "This player's order for its own partner (a command's number)."},
       {"name": "coop_battle_cheer", "kind": "command", "value": "none", "summary": "A cheer: charges the finisher as the battle's charge buttons do."},
