@@ -112,7 +112,6 @@ TEST_CASE("an erased slot is empty and leaves no backup") {
   const SlotId first{.kind = SlotKind::Manual, .index = 1};
   REQUIRE(slots.save(first, fileLabelled("first", at(8))));
   REQUIRE(slots.save(first, fileLabelled("second", at(9))));
-  // The copy a co-op guest's return kept beside it goes too.
   REQUIRE(storage.write(slotBeforeCoopName(first), "before co-op\n", ""));
   CHECK(slotBeforeCoopName(first) == "slot_01.yaml.before_coop");
   REQUIRE(slots.erase(first));

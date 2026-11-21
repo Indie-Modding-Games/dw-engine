@@ -16,9 +16,7 @@ constexpr std::string_view HostKey = "host";
 constexpr std::string_view SpeciesKey = "species";
 constexpr std::string_view PartnerSection = "partner";
 constexpr std::string_view InventorySection = "inventory";
-// As the session's slot list label: the species, then the map (GameSession::headerNow).
 constexpr std::string_view LabelSeparator = " ";
-// The stats' limits (evl.c: EVL_clampBaseStats).
 constexpr std::int32_t MaxPool = 9999;
 constexpr std::int32_t MaxStat = 999;
 
@@ -37,8 +35,6 @@ bool sameSection(const game::save::SaveFile& a, const game::save::SaveFile& b,
   return left->version == right->version && left->state == right->state;
 }
 
-// Whether two saves are the same playthrough: started at the same moment, by the same tamer, under
-// the same ruleset (GameSession::created tells a playthrough's saves from another's).
 bool samePlaythrough(const game::save::SaveHeader& a, const game::save::SaveHeader& b) {
   return a.created == b.created && a.summary.tamer == b.summary.tamer && a.rulesetId == b.rulesetId;
 }
@@ -218,8 +214,6 @@ core::Result<std::string> CoopGuestHome::bringHome(game::save::SaveStorage& stor
   if (!text) {
     return std::unexpected{text.error()};
   }
-  // The slot is the brought save from now on: a guest back in the room brings this one, and it is
-  // read from a slot (not its backup).
   home_->text = *text;
   home_->backup = false;
   brought_ = *returned;

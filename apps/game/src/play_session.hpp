@@ -437,11 +437,7 @@ public:
   // neither.
   [[nodiscard]] std::optional<std::string> reportSave(ReportSave& save) const;
 
-  // A co-op guest's game as a save, at a safe point only (nothing busy and no save waiting, as the
-  // autosave's): what its partner and bag take home (coop_guest_return.hpp). Nothing otherwise, and
-  // never in a game that is not a guest's.
   [[nodiscard]] std::optional<game::save::SaveFile> coopGuestSave() const;
-  // The note a co-op return left in the loaded save, once: the next save drops it.
   [[nodiscard]] std::optional<CoopReturnNote> takeCoopReturnNote();
 
   // The movie the game asks the app for (main.c: main): ED2 once a game saved after the ending is

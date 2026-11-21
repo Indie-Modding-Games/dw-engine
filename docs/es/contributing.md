@@ -55,3 +55,9 @@
 
 - Código, identificadores, comentarios y mensajes de commit: **inglés**.
 - Documentación: **inglés**, con la traducción al español en `docs/es/` (mismos nombres de fichero y títulos).
+
+## Comentarios en el código
+
+Pocos comentarios en el código: cómo funcionan las cosas lo explica la documentación. Nada de comentarios de cabecera
+de fichero o de función, ni citas del decomp o de issues, ni narrar los pasos; una línea corta vale solo donde el
+código confundiría sin su "por qué".

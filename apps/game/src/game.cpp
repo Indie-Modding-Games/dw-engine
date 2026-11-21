@@ -1101,15 +1101,9 @@ int runGame(const Options& requested) {
     }
     return {.name = {}, .key = std::string{GuestPlayerText}, .number = id};
   };
-  // A co-op guest's partner and bag go home to the slot it brought them from
-  // (coop_guest_return.hpp): at safe points while it plays (each second it looks; the bag at once,
-  // the partner's growth every while) and as its game ends, whatever ends it. `guestSafeSave` is
-  // its game at the last safe point, which the end writes when the game is busy then (a battle).
   CoopGuestHome guestHome;
   std::optional<game::save::SaveFile> guestSafeSave;
   double guestHomeCheckAt = 0.0;
-  // A notice told once the field shows, not under the load's fade: what a co-op guest's game
-  // keeps, and that a save came back from one.
   struct FieldNotice {
     std::string_view key;
     CoopPeerLabel peer;
@@ -1276,7 +1270,6 @@ int runGame(const Options& requested) {
       // The load is not game time: the next frame must not run it as a burst of ticks.
       step.reset();
       previous = platform->nowSeconds();
-      // A save back from a co-op game says so once (coop_guest_return.hpp), as the field shows.
       fieldNotice.reset();
       if (!start.coopGuest()) {
         if (const auto note = flow.playing()->takeCoopReturnNote()) {
@@ -1897,8 +1890,6 @@ int runGame(const Options& requested) {
                           .networkSaveText = std::move(*networkSave)};
           startPlaying(start);
           if (flow.playing() != nullptr) {
-            // The guest plays the host's world: only its partner and bag go home, to the slot it
-            // brought them from (coop_guest_return.hpp).
             fieldNotice = FieldNotice{.key = CoopGuestNotSavedText,
                                       .peer = coopPeerLabel(false, coop.remoteName())};
             if (const auto home = coop.broughtHome()) {
@@ -2961,7 +2952,6 @@ int runGame(const Options& requested) {
     }
   }
   (*device)->waitIdle();
-  // A co-op guest's game still up as the app closes takes its partner and bag home first.
   if (PlaySession* play = flow.playing()) {
     bringGuestHome(*play, true);
   }

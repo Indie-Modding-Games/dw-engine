@@ -329,7 +329,8 @@ the newest one:
 - **the bag changed** (a trade, a claim, a purchase): written at once, so a crash cannot leave a traded item in two
   games;
 - **only the partner changed** (a battle's growth, care): written at the next safe point 30 seconds after the last
-  write (or the game's start), so a long game loses little to a crash without writing the slot every few seconds;
+  write (or the game's start), so a long game loses little to a crash without writing the slot every few seconds; a write that fails waits as
+  long before the next try, and the game's end still tries;
 - **the game ends**, whatever ends it: leaving to the title, the host closing the room, the link dropping (before
   going back to the seat), quitting from the pause menu or closing the window (`AppFlow::setBeforeEnd`). A game busy
   at its end (a battle) writes its last safe point: what a battle left unfinished does not go home.
@@ -337,8 +338,10 @@ the newest one:
 **How it is written safely.** The slot is read again first and must still be the playthrough the guest brought (same
 start time, tamer and ruleset); a slot another game took meanwhile is left alone and the guest is told
 (`online.coop.home_failed`). The returned partner must be one a game can leave (`checkReturningPartner`: every stat
-within its limit, HP and MP not above them, no negative lives, lifetime, age or weight), and a battle's result from
-the host is applied only when its values are ones a battle can leave (`game::coop::spoilsInRange`), so a tampered or
+within its limit, 9999 for HP and MP and 999 for the rest, the limits the original game clamps a partner's stats
+to; HP and MP not above them; no negative lives, lifetime, age or weight), and a battle's result from
+the host is applied only when its values are ones a battle can leave (`game::coop::spoilsInRange`: HP, MP and gains within those limits, care changes within ±100, at most 99 lives
+lost and a day of battle at most), so a tampered or
 broken host cannot write garbage into the guest's save. The first write of a co-op game keeps the slot as it was
 beside it (`slot_NN.yaml.before_coop`), and every write keeps the previous one as the slot's usual backup
 (`.bak`). The written save carries a note (`coop_return` section: the host's name and the partner) that the game shows

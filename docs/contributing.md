@@ -55,3 +55,8 @@
 
 - Code, identifiers, comments and commit messages: **English**.
 - Documentation: **English**, with the Spanish translation in `docs/es/` (same file names and headings).
+
+## Code comments
+
+Keep comments in code rare: the docs explain how things work. No file or function header comments, no decomp or issue
+citations and no step-by-step narration; a short line is fine only where the code would mislead without its "why".

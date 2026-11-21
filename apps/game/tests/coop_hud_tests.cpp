@@ -174,7 +174,6 @@ TEST_CASE("a co-op notice names the player who left and goes after a few seconds
 TEST_CASE("a guest's progress going home is told after the host's leaving, not hidden by it") {
   CoopHudUi hud;
   CoopHud coop{*hud.ui};
-  // The game ends as the host leaves: the return is queued, then the host's notice comes.
   coop.noticeNext(CoopWentHomeText, Ana);
   coop.notice(CoopHostLeftText);
   hud.ui->update();
@@ -184,7 +183,6 @@ TEST_CASE("a guest's progress going home is told after the host's leaving, not h
   REQUIRE(coop.noticeShown());
   CHECK(hud.text("notice-text") ==
         "Back from Ana's world: your partner and your bag are in your save.");
-  // With nothing up it shows at the next frame; a longer one stays its own time.
   coop.advance(CoopHud::NoticeSeconds + 0.1);
   coop.noticeNext(CoopCameHomeText, Ana, 8.0);
   coop.advance(0.016);

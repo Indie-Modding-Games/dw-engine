@@ -558,7 +558,6 @@ core::Result<void> CoopScreen::sendGuestSave(std::string_view saveText) {
   }
   localReady_ = true;
   connection_.markRoomReady(true);
-  // The same save brought again (back to the room after a drop) keeps the slot it came from.
   brought_ = BroughtSave{.code = connection_.code(),
                          .text = std::string{saveText},
                          .slot = brought_ ? brought_->slot : std::nullopt,
