@@ -140,6 +140,14 @@ opacidad 1 − fundido en vez de la resta del original). El documento `ui/lives_
 | `lives_box.lives`, `lives_box.slots` | números | Las vidas que quedan tras perder una y los huecos (las vidas con las que se empieza) |
 | `lives_box.lost_full` | booleano | Si la vida recién perdida se ve llena este fotograma |
 
+El documento dibuja cada vida como la imagen del original (`life-N`, la celda llena o vacía de `ETCHI/LIFE.TIM`)
+dentro de un hueco (`slot-N`) que `logic.lua` marca `empty` para una vida ida o que se apaga parpadeando, así un
+aspecto puede dibujar su propia vida en el hueco y ocultar la imagen. El aspecto pixel dibuja así sus corazones y deja
+la caja translúcida (`image-color` c0 en su marco) para que el compañero se siga viendo detrás, como tras la caja
+translúcida del original. Antes dibujaba los corazones en la propia imagen bajo un `image-color` transparente, que
+los ocultaba también: una vida perdida enseñaba tres huecos vacíos y ningún parpadeo, el reporte «no vi la animación
+de muerte al perder las vidas» (2026-11-20).
+
 ## HUD del campo
 
 `fieldHudViewOf(hora, compañero, shown)` es el estado del campo: la hora y el día, felicidad y disciplina, hambre,

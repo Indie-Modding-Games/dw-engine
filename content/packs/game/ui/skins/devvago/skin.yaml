@@ -125,7 +125,7 @@ screens:
     styles: [story_textbox/style, curling_hud/style]
   # The lives box of a lost life: the original's box, like the story's.
   lives_box:
-    styles: [story_textbox/style]
+    styles: [story_textbox/style, lives_box/style]
   # The name box of the new game and of the scripts: the pause menu's panel, placed like the original.
   naming_box:
     styles: [pause_menu/style, naming_box/style]

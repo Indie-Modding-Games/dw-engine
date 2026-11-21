@@ -77,6 +77,10 @@ menu, `pool: current` in the partner's. The full list of screens and options is 
 - **Long texts squeezed, not cut.** Values whose length depends on the language or the player (a technique, an
   access line, a save's place) are drawn through `common/fit_text.lua`, so a skin with a narrow column still shows
   them whole, measured again when the player switches skin or interface size.
+- **`image-color` tints the decorators too.** RmlUi multiplies an element's image decorators (and its ninepatch) by
+  its `image-color`, not just an `<img>`'s picture: a transparent `image-color` that hides the original's picture also
+  hides a decorator drawn on the same element. Hide the picture with `display: none` and draw on an element round it
+  (the lives box wraps each life's picture in its `slot-N`, which marks a lost life `empty`).
 - **If something fails**, the skin is left out with the reason in the log and the game goes on with the one it had.
 
 ## Test while editing

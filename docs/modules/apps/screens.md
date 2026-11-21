@@ -140,6 +140,13 @@ opacity 1 − fade instead of the original's subtraction). The `ui/lives_box` do
 | `lives_box.lives`, `lives_box.slots` | numbers | The lives left after losing one and the slots (the lives you start with) |
 | `lives_box.lost_full` | boolean | Whether the life just lost is shown full this frame |
 
+The document draws each life as the original's picture (`life-N`, `ETCHI/LIFE.TIM`'s full or empty cell) inside a
+slot (`slot-N`) that `logic.lua` marks `empty` for a life gone or blinking out, so a skin can draw its own life on the
+slot and hide the picture. The pixel skin draws its hearts that way and leaves the box see-through (`image-color`
+c0 on its frame) so the partner stays visible behind it, as behind the original's translucent box. Before, it drew
+the hearts on the picture itself under a transparent `image-color`, which hid them too: a lost life showed three
+empty slots and no blink, the report "no death animation when losing the last life" (2026-11-20).
+
 ## Field HUD
 
 `fieldHudViewOf(time, partner, shown)` is the field's state: the time and day, happiness and discipline, hunger,

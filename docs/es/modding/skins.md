@@ -77,6 +77,11 @@ máquina de guardar también sobre su pregunta). Y algunas solo las usa por ahor
 - **Textos largos encogidos, no cortados.** Los valores cuyo largo depende del idioma o del jugador (una técnica, la
   línea de acceso, el lugar de una partida) se dibujan con `common/fit_text.lua`, así un aspecto con una columna
   estrecha los muestra enteros, medidos de nuevo cuando el jugador cambia de aspecto o de tamaño de interfaz.
+- **`image-color` tiñe también los decoradores.** RmlUi multiplica los decoradores de imagen de un elemento (y su
+  ninepatch) por su `image-color`, no solo la imagen de un `<img>`: un `image-color` transparente que oculta la imagen
+  del original oculta también un decorador dibujado en el mismo elemento. Oculta la imagen con `display: none` y dibuja
+  en un elemento que la envuelva (la caja de vidas envuelve la imagen de cada vida en su `slot-N`, que marca una vida
+  perdida con `empty`).
 - **Si algo falla**, el aspecto se deja fuera con el motivo en el log y el juego sigue con el que había.
 
 ## Probar mientras se edita

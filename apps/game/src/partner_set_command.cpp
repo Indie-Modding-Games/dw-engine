@@ -22,7 +22,7 @@ using Kind = PartnerWrite::Kind;
 
 constexpr std::int32_t ValueLimit = 99999;
 
-constexpr std::array<std::pair<std::string_view, Kind>, 14> Names{{{"hp", Kind::Hp},
+constexpr std::array<std::pair<std::string_view, Kind>, 16> Names{{{"hp", Kind::Hp},
                                                                    {"mp", Kind::Mp},
                                                                    {"offense", Kind::Offense},
                                                                    {"defense", Kind::Defense},
@@ -35,7 +35,9 @@ constexpr std::array<std::pair<std::string_view, Kind>, 14> Names{{{"hp", Kind::
                                                                    {"discipline", Kind::Discipline},
                                                                    {"poop", Kind::Poop},
                                                                    {"happiness", Kind::Happiness},
-                                                                   {"tiredness", Kind::Tiredness}}};
+                                                                   {"tiredness", Kind::Tiredness},
+                                                                   {"lives", Kind::Lives},
+                                                                   {"lifetime", Kind::Lifetime}}};
 
 std::optional<std::int32_t> integerOf(std::string_view text) {
   std::int32_t value = 0;
@@ -73,9 +75,10 @@ core::Result<PartnerWrite> partnerWriteFromText(std::string_view text) {
     }
   }
   const auto usage = [&] {
-    return core::fail(std::format("'{}': expected '<hp|mp|offense|defense|speed|brains|weight|"
-                                  "care|battles|hours|discipline|poop|happiness|tiredness> <0-{}>'",
-                                  text, ValueLimit));
+    return core::fail(std::format(
+        "'{}': expected '<hp|mp|offense|defense|speed|brains|weight|"
+        "care|battles|hours|discipline|poop|happiness|tiredness|lives|lifetime> <0-{}>'",
+        text, ValueLimit));
   };
   if (words.size() != 2) {
     return usage();
@@ -120,6 +123,13 @@ void applyPartnerWrite(game::partner::Partner& partner, const PartnerWrite& writ
     game::partner::PartnerState changed = state;
     (write.kind == Kind::Happiness ? changed.mood.happiness : changed.mood.tiredness) =
         std::clamp(write.value, 0, 100);
+    partner.takeStoryChange(std::move(changed));
+    return;
+  }
+  case Kind::Lives:
+  case Kind::Lifetime: {
+    game::partner::PartnerState changed = state;
+    (write.kind == Kind::Lives ? changed.life.lives : changed.life.remainingLifetime) = write.value;
     partner.takeStoryChange(std::move(changed));
     return;
   }
