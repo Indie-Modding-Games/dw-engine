@@ -768,7 +768,7 @@ que correr en un solo sitio. Corre en la **simulación del anfitrión**:
   donde los ponen los frames; la pantalla `coop_battle` muestra las barras de vida, las órdenes del que empezó y la
   ayuda del ayudante. La cámara del ayudante se gira hacia el combate cuando empieza y vuelve cuando termina.
 - **Qué puede hacer cada jugador.** El que empezó da las órdenes (los comandos de la tira, el remate) y cierra el
-  cuadro final; los demás ven en su lugar a quién esperan («Esperando a que <nombre> continúe...»,
+  cuadro final; los demás ven en su lugar a quién esperan (`Esperando a que <nombre> continúe...`,
   `BattleMirror::waitingFor`) hasta que lo cierra. Los dos pueden lanzar un objeto **de su propia bolsa** (el objeto del invitado sale de su bolsa; el
   juego del anfitrión presta uno y lo lanza) y **animar** (una pulsación de la carga del remate). En el anfitrión, un
   combate del invitado bloquea la tira y el botón del remate del anfitrión; su bolsa funciona.
