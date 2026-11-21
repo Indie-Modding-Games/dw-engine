@@ -6,6 +6,12 @@ builds on [online co-op](multiplayer.md), [ADR 0024](../adr/0024-co-op-with-auth
 four players (#352, [room browser and four players](coop-browser-4p.md)) and the scaling in [co-op
 difficulty](coop-difficulty.md).
 
+**Design base:** the base of all combat documentation in the project is the [Combat system
+design](combat-design.md) —the DWPF system to build toward: orders and the queue, techniques and arsenal, INT/VEL,
+positioning, co-op and balance— with its companion [technique costs](costo-mp.md) and [technique
+catalogue](tecnicas.md). This document specifies the co-op layer over the already-implemented `original` ruleset; for
+the redesign, chapter 8 of the base is the reference.
+
 **Rule zero:** with one partner on the players' side the battle is exactly today's: same fighter layout, same AI, same
 commands, same results. Everything new only runs with two or more partners, and every extra mechanic in §8 is an
 optional, documented improvement.
@@ -393,6 +399,8 @@ same `Battle`; task 2 extends that to the players' side.
 
 ## 13. Related documents
 
+- [Combat system design](combat-design.md) —the combat base—, [technique costs](costo-mp.md) and [technique
+  catalogue](tecnicas.md).
 - [Online co-op multiplayer](multiplayer.md), [ADR 0024](../adr/0024-co-op-with-authoritative-host.md) and [room
   browser and four players](coop-browser-4p.md).
 - [Co-op difficulty](coop-difficulty.md).

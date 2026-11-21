@@ -6,6 +6,9 @@ what landed and where it differs from this proposal. It builds on
 battles (#351, PR #363) and the battle design for both partners in [co-op combat](coop-combat.md). Sessions of up to
 four players are ticket #352 ([room browser and four players](coop-browser-4p.md)).
 
+**Design base:** the combat redesign is defined in [Combat system design](combat-design.md), the base of all combat
+documentation; its chapter 8 sets the co-op scaling target for the new system.
+
 **Rule zero:** the single-player game does not change. With one fighting partner and nobody helping, every factor in
 this document is exactly 100 % and no code path differs from today. Co-op scaling is an improvement, documented and
 optional, chosen by the host.
@@ -354,6 +357,7 @@ Extend the `battle` scenario with `--param partners=<species>,<species>...` (one
 
 ## 12. Related documents
 
+- [Combat system design](combat-design.md) —the base: chapter 8, co-op combat and scaling.
 - [Online co-op multiplayer](multiplayer.md) and [ADR 0024](../adr/0024-co-op-with-authoritative-host.md).
 - [Co-op combat](coop-combat.md): both partners in one battle, targeting, commands and loss.
 - [Rulesets](rulesets.md), [battle module](../modules/game/battle.md), [battle reference](../reference/battle.md).

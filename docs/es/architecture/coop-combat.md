@@ -7,6 +7,12 @@ inicia el combate. La sección 12 dice qué está hecho. Se apoya en el [coopera
 cuatro jugadores](coop-browser-4p.md)) y el escalado de la [dificultad
 cooperativa](coop-difficulty.md).
 
+**Base de diseño:** la base de toda la documentación de combate del proyecto es el
+[Diseño del sistema de combate](combat-design.md) —el sistema DWPF al que se llega: órdenes y cola, técnicas y arsenal,
+INT/VEL, posicionamiento, cooperativo y balance—, con sus complementos [costes de técnicas](costo-mp.md) y
+[catálogo de técnicas](tecnicas.md). Este documento especifica el cooperativo sobre el ruleset `original` ya
+implementado; para el rediseño, el capítulo 8 de la base es la referencia.
+
 **Regla cero:** con un solo compañero del lado de los jugadores, el combate es exactamente el de hoy: la misma
 disposición de luchadores, la misma IA, las mismas órdenes, los mismos resultados. Todo lo nuevo solo se activa con dos
 o más compañeros, y cada mecánica extra de §8 es una mejora opcional y documentada.
@@ -419,6 +425,8 @@ funciona en el mismo `Battle`; la tarea 2 lo extiende al lado de los jugadores.
 
 ## 13. Documentos relacionados
 
+- [Diseño del sistema de combate](combat-design.md) —la base del combate—, [costes de técnicas](costo-mp.md) y
+  [catálogo de técnicas](tecnicas.md).
 - [Multijugador cooperativo en línea](multiplayer.md), [ADR 0024](../adr/0024-co-op-with-authoritative-host.md) y
   [navegador de salas y cuatro jugadores](coop-browser-4p.md).
 - [Dificultad cooperativa](coop-difficulty.md).
