@@ -113,6 +113,7 @@ TextLine SignFont::drawLine(std::string_view text, float pixelSize, float letter
       }
     }
     if (glyphIndex == 0) {
+      ++line.missing;
       continue;
     }
     if (face != previousFace) {

@@ -36,8 +36,8 @@ dwe_add_module(ui
     DEPS core platform input assets render script
     # FreeType reads which characters each loaded font has (font_engine.cpp: the fallback chains).
     PRIVATE_LIBS RmlUi::RmlUi sol2::sol2 Freetype::Freetype ${LUA_LIBRARIES}
-    # The image tests write indexed PNGs and KTX2 textures.
-    TEST_LIBS lodepng KTX::ktx)
+    # The image tests write indexed PNGs and KTX2 textures; the glyph tests draw the pack's fonts.
+    TEST_LIBS lodepng KTX::ktx Freetype::Freetype)
 
 dwe_add_shaders(dwe_ui FILES shaders/rml.slang)
 

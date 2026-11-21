@@ -1,5 +1,5 @@
 {
-  "version": "0.27.0",
+  "version": "0.28.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "The value of a setting the game publishes; nil if it does not publish it.", "signature": "(name: string): any"},
@@ -573,7 +573,11 @@
     "options": [
       {"name": "options.list", "kind": "query", "value": "table", "summary": "The game's options in order: name, kind (toggle, list, range), label_key, help_key, tab, default, original, values, texts, min, max.", "signature": "(): table"},
       {"name": "options.get", "kind": "query", "value": "any", "summary": "An option's value now (or its default value); nil if it does not exist.", "signature": "(name: string): any"},
-      {"name": "options.set", "kind": "action", "value": "boolean", "summary": "Asks to give an option a value; checks the type and the values it accepts.", "signature": "(name: string, value: any): boolean, string?"},
+      {"name": "options.set", "kind": "action", "value": "boolean", "summary": "Asks to give an option a value; checks the type and the values it accepts, and refuses an option the game fixes.", "signature": "(name: string, value: any): boolean, string?"},
+      {"name": "options.variant", "kind": "query", "value": "text", "summary": "The name key of the game variant (the game mode) of the game being played; nil at the title.", "signature": "(): string?"},
+      {"name": "options.locked", "kind": "query", "value": "boolean", "summary": "Whether the game being played fixes the option at one value (Classic Enhanced fixes those that change the rules); set refuses it while the game lasts.", "signature": "(name: string): boolean"},
+      {"name": "options.variant", "kind": "setting", "value": "text", "summary": "The name key of the game variant being played; empty at the title. See options.variant()."},
+      {"name": "options.locked.<name>", "kind": "setting", "value": "boolean", "summary": "Whether the game being played fixes the option. Read it with options.locked(name)."},
       {"name": "options.changed", "kind": "event", "value": "table", "summary": "An option changed; name says which and value its value.", "source": "@options"}
     ],
     "battle": [

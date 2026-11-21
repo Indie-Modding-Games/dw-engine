@@ -8,8 +8,10 @@
 -- document, so the squeeze is measured over the next few ticks. `element` is what is squeezed,
 -- `parts` the elements whose drawn text is measured (the element itself when nil) and `room` the
 -- width in dp the text may take (the element's own width when nil, or a function that returns it
--- when the room is that of a box round the text, known only once laid out). fit_text.cut(element,
--- text, room) writes the text and cuts it with "..." instead, for names with no length limit.
+-- when the room is that of a box round the text, known only once laid out). `origin` is where the
+-- squeeze holds the text, its left edge when nil ("100% 50%" for a text set from its right edge).
+-- fit_text.cut(element, text, room) writes the text and cuts it with "..." instead, for names with
+-- no length limit.
 
 fit_text = {}
 
@@ -18,6 +20,7 @@ fit_text = {}
 -- half a second of ticks rather than the three a frame a tick would need.
 local measure_ticks = 30
 local pending = {}
+local settled = {}
 
 local function text_width(element, parts)
   local left = element:rect()
@@ -45,7 +48,7 @@ local function squeeze(entry)
   end
   local width = text_width(element, entry.parts)
   if room > 0 and width > room + 0.5 then
-    element:set_property("transform-origin", "0% 50%")
+    element:set_property("transform-origin", entry.origin or "0% 50%")
     element:set_property("transform", string.format("scale(%.4f, 1)", room / width))
   else
     element:set_property("transform", "none")
@@ -116,6 +119,7 @@ end
 -- Writes `text` and cuts it to `room` (as fit's) with "..." at its end instead of squeezing it: for
 -- a name with no length limit (a room's), which would be squeezed past reading.
 function fit_text.cut(element, text, room)
+  settled[element.id] = nil
   element:set_property("transform", "none")
   local entry = {
     element = element,
@@ -142,9 +146,15 @@ function fit_text.cut(element, text, room)
   pending[#pending + 1] = entry
 end
 
-function fit_text.fit(element, parts, room)
-  local entry =
-    { element = element, parts = parts or { element }, room = room, ticks = measure_ticks }
+function fit_text.fit(element, parts, room, origin)
+  settled[element.id] = nil
+  local entry = {
+    element = element,
+    parts = parts or { element },
+    room = room,
+    origin = origin,
+    ticks = measure_ticks,
+  }
   for index, other in ipairs(pending) do
     if other.element.id == element.id then
       pending[index] = entry
@@ -154,7 +164,27 @@ function fit_text.fit(element, parts, room)
   pending[#pending + 1] = entry
 end
 
+local recheck_ticks = 30
+local until_recheck = recheck_ticks
+
+local function recheck()
+  for id, entry in pairs(settled) do
+    if not entry.element:valid() then
+      settled[id] = nil
+    elseif entry.letters ~= nil then
+      cut(entry)
+    else
+      squeeze(entry)
+    end
+  end
+end
+
 function fit_text.tick()
+  until_recheck = until_recheck - 1
+  if until_recheck <= 0 then
+    until_recheck = recheck_ticks
+    recheck()
+  end
   for index = #pending, 1, -1 do
     local entry = pending[index]
     if entry.letters ~= nil then
@@ -165,6 +195,9 @@ function fit_text.tick()
     entry.ticks = entry.ticks - 1
     if entry.ticks <= 0 then
       table.remove(pending, index)
+      if entry.element.id ~= "" then
+        settled[entry.element.id] = entry
+      end
     end
   end
 end

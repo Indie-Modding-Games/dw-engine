@@ -108,9 +108,22 @@ local function refresh_prompts(document)
   document:get("prompt-cancel"):set_prompt("cancel")
 end
 
+local ColumnLabels = { "label-menu", "label-count" }
+
+local function fit_labels(document)
+  for _, id in ipairs(ColumnLabels) do
+    local column = document:get(id)
+    fit_text.fit(document:get(id .. "-text"), nil, function()
+      local _, _, width = column:rect()
+      return width
+    end)
+  end
+end
+
 function on_show(document)
   refresh(document)
   refresh_prompts(document)
+  fit_labels(document)
 end
 
 function on_setting(document, name)
@@ -122,6 +135,11 @@ end
 function on_language(document)
   refresh(document)
   refresh_prompts(document)
+  fit_labels(document)
+end
+
+function on_tick()
+  fit_text.tick()
 end
 
 function on_device(document)

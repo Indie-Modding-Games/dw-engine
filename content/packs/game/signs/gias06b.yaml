@@ -4,6 +4,5 @@ signs:
     region: [192, 35, 155, 32]
     clear: {mode: diffuse, rect: [192, 35, 155, 32], color: "#737373"}
     text: signs.gias06b_title
-    size: 22
     color: "#6b1010"
     colors: region

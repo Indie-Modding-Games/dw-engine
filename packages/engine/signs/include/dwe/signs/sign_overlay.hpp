@@ -136,11 +136,15 @@ struct Sign {
   std::string text;
   // A font of ui/fonts/ (its asset id's last part, such as noto_sans_bold).
   std::string font = "noto_sans_bold";
-  // The height of the font in pixels of the image.
-  float size = 10.0F;
+  // The font's size in pixels of the image; when missing, the box's height gives it.
+  std::optional<float> size;
+  // How many lines the box holds: the text may wrap at its spaces and hyphens up to that many.
+  std::int32_t lines = 1;
+  // Signs of one group are drawn at the size of the smallest among them.
+  std::string group;
   // Extra pixels between letters and a factor on the line height.
   float letterSpacing = 0.0F;
-  float lineSpacing = 1.0F;
+  float lineSpacing = 0.85F;
   HorizontalAlign align = HorizontalAlign::Center;
   VerticalAlign valign = VerticalAlign::Middle;
   // Degrees, clockwise, about the region's centre.

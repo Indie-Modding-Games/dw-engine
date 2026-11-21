@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.28.0 | Variantes de juego: `options.variant()` nombra la variante de la partida en juego (la clave del nombre de su modo, nil en el título) y `options.locked(name)` dice si esa variante fija una opción (ajustes `options.variant` y `options.locked.<name>`); `options.set` rechaza una opción fija ([variantes de juego](../architecture/game-variants.md)) |
 | 0.27.0 | La sala muestra la dificultad cooperativa del anfitrión antes de que un invitado se marque listo (`online.current.coop_difficulty`, `coop_difficulty` y `coop_difficulty_key` de `online.room()`), y llega la opción `coop_open_to_join`: si una partida cooperativa que aloja el jugador admite jugadores nuevos con la partida en marcha, aplicada al momento a la sala que aloja |
 | 0.26.0 | Nueve idiomas: el cuadro de nombre pasa páginas de letras (`naming_box.pages`, `naming_box.page`, `naming_box.page_name`, `page` en `naming.state()`), y `ui.upper` y `ui.lower` conocen las letras acentuadas, griegas y cirílicas |
 | 0.25.0 | La etiqueta cooperativa dice cuándo un jugador entrena en el gimnasio (`coop_hud.tag.training`, `coop_hud.tag.<n>.training`) |
@@ -105,7 +106,7 @@ guardar y la caja del nombre); el resto de pantallas llega después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.27.0**.
+Versión de la API de la interfaz: **0.28.0**.
 
 ### `ui`
 
@@ -687,7 +688,11 @@ Versión de la API de la interfaz: **0.27.0**.
 |---|---|---|---|
 | `options.list(): table` | consulta | tabla | Las opciones del juego en orden: name, kind (toggle, list, range), label_key, help_key, tab, default, original, values, texts, min, max. |
 | `options.get(name: string): any` | consulta | número o texto | El valor de una opción ahora (o su valor por defecto); nil si no existe. |
-| `options.set(name: string, value: any): boolean, string?` | acción | sí/no | Pide dar un valor a una opción; comprueba el tipo y los valores que admite. |
+| `options.set(name: string, value: any): boolean, string?` | acción | sí/no | Pide dar un valor a una opción; comprueba el tipo y los valores que admite, y rechaza una opción que el juego fija. |
+| `options.variant(): string?` | consulta | texto | La clave del nombre de la variante de juego (el modo de juego) de la partida en juego; nil en el título. |
+| `options.locked(name: string): boolean` | consulta | sí/no | Si la partida en juego fija la opción en un valor (Clásico Mejorado fija las que cambian las reglas); set la rechaza mientras dura la partida. |
+| `options.variant` | ajuste | texto | La clave del nombre de la variante de juego en juego; vacía en el título. Ver options.variant(). |
+| `options.locked.<name>` | ajuste | sí/no | Si la partida en juego fija la opción. Se lee con options.locked(name). |
 | `options.changed` | evento | tabla | Cambió una opción; name dice cuál y value su valor. Sale de `@options`. |
 
 ### `battle`

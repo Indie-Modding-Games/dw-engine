@@ -13,7 +13,7 @@ and a file that is read and written again comes out byte-for-byte identical.
 
 ```yaml
 format: dwe-save
-format_version: 3
+format_version: 4
 game_version: "0.1.0"
 ruleset: "original"
 label: "File City"
@@ -23,6 +23,7 @@ summary:
   species: "base:<species>"
   nickname: ""
   map: "base:<map>"
+  mode: "classic"
 created: "2026-10-01T08:00:00Z"
 updated: "2026-10-02T21:30:15Z"
 play_seconds: 5400
@@ -48,7 +49,7 @@ complete: true
 | `game_version` | The version of the game that wrote it, for people and bug reports |
 | `ruleset` | The ruleset the game is played with |
 | `label` | The text in the slot list (the map, the partner's name...) |
-| `summary` | What the slot list shows ([save and load](save-and-load.md#33-the-slots)): `slot`, the game's manual slot (the one that each of its autosaves also saves to; `""` if it has none); `tamer`, the tamer's name; `species`, the partner's species ID; `nickname`, its nickname; `map`, the map ID. The game fills it in when saving; a text the game does not have yet is left empty (today `tamer` and `nickname`) |
+| `summary` | What the slot list shows ([save and load](save-and-load.md#33-the-slots)): `slot`, the game's manual slot (the one that each of its autosaves also saves to; `""` if it has none); `tamer`, the tamer's name; `species`, the partner's species ID; `nickname`, its nickname; `map`, the map ID; `mode`, the game's [variant](game-variants.md) (its mode id, empty in a game from before format 4, which the list reads as Folder Mode). The game fills it in when saving; a text the game does not have yet is left empty (today `tamer` and `nickname`) |
 | `created`, `updated` | When the game started and when it was last saved, in UTC (`YYYY-MM-DDTHH:MM:SSZ`) |
 | `play_seconds` | Play time in seconds |
 | `autosave_reasons` | Why it was autosaved, with the name of each reason in the order it was requested (see [below](#when-it-autosaves)); `[]` if the player requested it. They are names and not numbers, so a reason from a newer game is listed the same |
@@ -65,11 +66,11 @@ steps that transform the YAML. The current version is the oldest one that is rea
 version cannot be raised without writing its step.
 
 - **The format** (`format_version`): its steps are in `formatMigrations()` in `packages/game/save` and are applied
-  when reading the file, over the whole document. Today it is version 3; step 1 → 2 adds `autosave_reasons: []` (a
+  when reading the file, over the whole document. Today it is version 4; step 1 → 2 adds `autosave_reasons: []` (a
   version 1 game was never an autosave with reasons) and 2 → 3 an empty `summary`: `packages/game/save` does not know
   the sections it would come from. The list fills it in when reading it with what the game gives it
   (`SaveSlots::setSummaryReader`; the game gives `session::summaryFromSections`, which reads the species and the map
-  from the `partner` and `field` sections), and the next save writes it in full.
+  from the `partner` and `field` sections), and the next save writes it in full. Step 3 → 4 adds an empty `summary.mode`, read the same way.
 - **Each section** (`sections.<name>.version`): the chain is registered by the system that owns the section and is
   applied when loading, over the section's `state`. Each system versions its own without touching the others.
 

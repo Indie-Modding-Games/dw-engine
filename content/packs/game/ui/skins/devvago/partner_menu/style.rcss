@@ -408,6 +408,16 @@
 	width: 216dp;
 }
 
+/* The item options grow from their left edge with their longest word. */
+#options {
+	width: auto;
+	min-width: 168dp;
+}
+
+#options button {
+	white-space: nowrap;
+}
+
 #confirm-box {
 	top: 309dp;
 	margin-left: -192dp;
@@ -445,10 +455,11 @@ button:focus .original-look, button.original-look:focus {
 #scrim.item-screen #bag-description { top: 543dp; height: 84dp; min-height: 0; box-sizing: border-box; padding: 21dp 75dp;
 	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
 		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box; }
-#scrim.item-screen #options { top: 120dp; width: 174dp; height: 252dp; box-sizing: border-box; margin-left: -426dp; padding: 15dp 24dp; }
-#scrim.item-screen #options button { box-sizing: border-box; width: 120dp; height: 48dp; line-height: 42dp; margin: 0 0 6dp 0; padding: 0 6dp; border: 3dp transparent; }
+/* The options grow with their longest word, away from the order box beside them. */
+#scrim.item-screen #options { top: 120dp; left: auto; right: 50%; width: auto; min-width: 174dp; height: 252dp; box-sizing: border-box; margin-left: 0; margin-right: 252dp; padding: 15dp 24dp; }
+#scrim.item-screen #options button { display: block; box-sizing: border-box; width: auto; min-width: 120dp; height: 48dp; line-height: 42dp; margin: 0 0 6dp 0; padding: 0 6dp; border: 3dp transparent; white-space: nowrap; }
 #scrim.item-screen #options button:focus, #scrim.item-screen #options button.active-option { border-color: #b0b0b0 #121212 #121212 #b0b0b0; background-color: #80808080; }
-#scrim.item-screen.item-column-right #options { margin-left: 6dp; }
+#scrim.item-screen.item-column-right #options { left: 50%; right: auto; margin-left: 6dp; margin-right: 0; }
 #scrim.item-screen.option-row-1 #options, #scrim.item-screen.option-row-1 #sort-box { top: 174dp; }
 #scrim.item-screen.option-row-2 #options, #scrim.item-screen.option-row-2 #sort-box { top: 228dp; }
 #scrim.item-screen.option-row-3 #options, #scrim.item-screen.option-row-3 #sort-box { top: 282dp; }
@@ -566,6 +577,7 @@ button:focus .original-look, button.original-look:focus {
 #tech-row-2 { top: 156dp; }
 #tech-row-3 { top: 267dp; }
 .tech-row span, .tech-columns span { position: absolute; display: block; }
+.tech-row .tech-name span { position: static; display: inline; }
 .tech-name { left: 75dp; width: 414dp; white-space: nowrap; overflow: hidden; }
 .tech-power { left: 495dp; width: 72dp; }
 .tech-mp { left: 618dp; width: 72dp; }
@@ -2144,7 +2156,7 @@ body.layout-pages-compact #scrim .page.hidden { display: none; }
 }
 #scrim.compact-partner #status-age, #scrim.compact-partner #status-weight {
 	left: 64dp; top: 0; width: 98dp; height: 30dp; padding: 0 6dp;
-	font-family: "Pixel Small"; font-size: 26dp; line-height: 30dp;
+	font-family: "Pixel Small"; font-size: 26dp; line-height: 26dp;
 }
 #scrim.compact-partner #status-food-line { left: 18dp; top: 156dp; width: 340dp; height: 58dp; }
 #scrim.compact-partner #status-food-line.hidden { display: none; }
@@ -2338,10 +2350,10 @@ body.layout-pages-compact #scrim #close { font-family: "Pixel Small"; font-size:
 #scrim.compact-partner.status-text.status-extras #status-species-line #status-species { left: 122dp; top: 0; width: 218dp; height: 34dp; padding: 0 10dp; font-size: 26dp; line-height: 30dp; }
 #scrim.compact-partner.status-text #status-age-line { left: 18dp; top: 120dp; width: 162dp; height: 30dp; }
 #scrim.compact-partner.status-text #status-age-label { width: 60dp; font-size: 26dp; line-height: 28dp; }
-#scrim.compact-partner.status-text #status-age { left: 64dp; width: 98dp; font-size: 26dp; line-height: 30dp; }
+#scrim.compact-partner.status-text #status-age { left: 64dp; width: 98dp; height: 30dp; padding: 0 6dp; font-size: 26dp; line-height: 26dp; }
 #scrim.compact-partner.status-text.status-extras #status-weight-line { left: 196dp; top: 120dp; width: 162dp; height: 30dp; }
 #scrim.compact-partner.status-text.status-extras #status-weight-label { left: 0; width: 60dp; font-size: 26dp; line-height: 28dp; text-align: right; }
-#scrim.compact-partner.status-text.status-extras #status-weight { left: 64dp; width: 98dp; font-size: 26dp; line-height: 30dp; }
+#scrim.compact-partner.status-text.status-extras #status-weight { left: 64dp; width: 98dp; height: 30dp; padding: 0 6dp; font-size: 26dp; line-height: 26dp; }
 #scrim.compact-partner.status-text #status-parameters { left: 380dp; top: 44dp; width: 250dp; overflow: visible; }
 #scrim.compact-partner.status-text #status-timers { left: 380dp; top: 416dp; width: 250dp; height: 70dp; overflow: visible; }
 #scrim.compact-partner.status-text #status-condition { left: 640dp; top: 88dp; width: 242dp; }
@@ -2356,3 +2368,18 @@ body.layout-pages-compact #scrim #close { font-family: "Pixel Small"; font-size:
 #scrim.compact-partner.favorite-food #partner-portrait-clip { left: 18dp; top: 222dp; width: 196dp; height: 246dp; }
 #scrim.compact-partner.favorite-food #partner-portrait { left: -106dp; top: -138dp; width: 600dp; height: 450dp; }
 #scrim.compact-partner.status-extras #page-status, #scrim.compact-partner.status-text.status-extras #page-status { height: 570dp; overflow: hidden; }
+
+#scrim.compact-partner.status-extras #status-species-line #status-species { left: 122dp; width: 218dp; }
+#scrim.compact-partner #status-parameters .bar-row.pool .label {
+	left: 0; top: 0; width: 112dp; height: 28dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp;
+}
+#scrim.compact-partner #status-parameters #stat-row-0 .label, #scrim.compact-partner #status-parameters #stat-row-1 .label,
+#scrim.compact-partner #status-parameters #stat-row-2 .label, #scrim.compact-partner #status-parameters #stat-row-3 .label {
+	font-family: "Pixel Small"; font-size: 26dp;
+}
+#scrim.compact-partner #tech-row-3 .tech-name, #scrim.compact-partner #tech-row-3 .tech-power,
+#scrim.compact-partner.status-text #tech-row-3 .tech-name, #scrim.compact-partner.status-text #tech-row-3 .tech-power {
+	font-family: "Pixel Small"; font-size: 26dp; line-height: 26dp;
+}
+#scrim.compact-partner #status-weight-label, #scrim.compact-partner.status-text.status-extras #status-weight-label { width: 80dp; }
+#scrim.compact-partner #status-weight, #scrim.compact-partner.status-text.status-extras #status-weight { left: 84dp; width: 78dp; }

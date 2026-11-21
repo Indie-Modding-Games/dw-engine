@@ -309,6 +309,13 @@ Co-op never changes or breaks either player's single-player saves. The rule:
   `save.coop_guest`, `save.coop_guest_quit_confirm`).
 - **The guest takes its own progress home (decision 4, phase C4).** Those four sections go back into the slot the
   guest brought its save from; the rest of that slot stays exactly as it was on disk.
+- **The host's variant rules.** The copy keeps the host's game mode, so a guest plays the host's
+  [game variant](game-variants.md) whatever its own save's. When the two differ, the guest's start notice says so, and
+  the host hears which player brought the other one (`online.coop.player_other_variant`); both compare the saves they
+  already exchange (`coopSaveMode`). The guest's progress still goes home when its save's variant takes everything the
+  host's can give (Folder Mode from a Classic Enhanced world, `game::modes::takesProgressFrom`,
+  `online.coop.guest_other_variant`); otherwise nothing goes home and the save stays as it was
+  (`online.coop.guest_other_variant_kept`), so a Classic Enhanced save never takes in what Folder Mode's rules made.
 
 **What goes home and what never does.**
 

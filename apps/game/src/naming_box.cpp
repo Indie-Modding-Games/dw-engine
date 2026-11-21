@@ -135,15 +135,26 @@ void NamingBox::choosePages() {
   page_ = 0;
   const std::string_view language = ui_->language();
   const std::string_view code = language.substr(0, language.find_first_of("_-"));
+  const std::vector<NamingPage>* own = nullptr;
   for (const std::string_view key : {language, code}) {
     if (const auto found = rules_.pages.find(key); found != rules_.pages.end()) {
-      for (const NamingPage& page : found->second) {
-        pages_.push_back({.name = page.name, .rows = &page.rows});
-      }
+      own = &found->second;
       break;
     }
   }
+  const auto addOwn = [&](bool afterRows) {
+    if (own == nullptr) {
+      return;
+    }
+    for (const NamingPage& page : *own) {
+      if (page.afterRows == afterRows) {
+        pages_.push_back({.name = page.name, .rows = &page.rows});
+      }
+    }
+  };
+  addOwn(false);
   pages_.push_back({.name = rules_.rowsPage, .rows = &rules_.rows});
+  addOwn(true);
   joinsHangul_ = std::ranges::any_of(pages_, [](const Page& page) {
     return std::ranges::any_of(*page.rows, [](const std::string& row) {
       return std::ranges::any_of(lettersOf(row),

@@ -566,7 +566,9 @@ TEST_CASE("a save from before the summary gets one from its sections") {
   // A section missing or of another shape gives an empty text, never an error.
   file.sections.erase("partner");
   file.sections.at("field").state = dwe::core::YamlNode::sequence();
-  CHECK(summaryFromSections(file) == dwe::game::save::SaveSummary{});
+  CHECK(summaryFromSections(file) ==
+        dwe::game::save::SaveSummary{
+            .slot = "", .tamer = "", .species = "", .nickname = "", .map = "", .mode = "folder"});
 }
 
 TEST_CASE("a finished game saves where it continues and loads finished until a story save") {
@@ -867,7 +869,9 @@ TEST_CASE(
   CHECK(shown % static_cast<std::int64_t>(Hour) / static_cast<std::int64_t>(Minute) == 59);
 }
 
-TEST_CASE("a game saves the mode it plays; a save from before the modes plays the original") {
+TEST_CASE(
+    "a game saves the mode it plays; a save from before the modes or the variants plays Folder "
+    "Mode") {
   const TestPacks packs;
   auto created = GameSession::create({.files = &packs.files(),
                                       .rulesetId = "original",
@@ -883,15 +887,21 @@ TEST_CASE("a game saves the mode it plays; a save from before the modes plays th
   GameSession& session = **created;
   REQUIRE(session.startNewGame());
   CHECK(session.mode() == "arena");
+  CHECK(session.saveFile().value().header.summary.mode == "arena");
 
   SaveFile file = throughText(session.saveFile().value());
   REQUIRE(file.sections.contains("mode"));
   const auto loaded = newGame(packs, nullptr, 99);
-  CHECK(loaded->mode() == "original");
+  CHECK(loaded->mode() == "folder");
   REQUIRE(loaded->loadFile(file));
   CHECK(loaded->mode() == "arena");
 
+  file.sections.at("mode").state.set("id", dwe::core::YamlNode::scalar("original"));
+  REQUIRE(loaded->loadFile(file));
+  CHECK(loaded->mode() == "folder");
+  CHECK(summaryFromSections(file).mode == "folder");
+
   file.sections.erase("mode");
   REQUIRE(loaded->loadFile(file));
-  CHECK(loaded->mode() == "original");
+  CHECK(loaded->mode() == "folder");
 }

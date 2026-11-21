@@ -1,5 +1,5 @@
 # The arena's entrance: the neon over the door (an arched green tube with the name in red and yellow
-# neon) and the cloth banner of the reception desk.
+# neon; the text keeps inside the tube) and the cloth banner of the reception desk.
 signs:
   - id: neon
     region: [361, 156, 144, 42]
@@ -9,9 +9,9 @@ signs:
       color: "#4a2121"
       tolerance: 30
       grow: 2
+    corners: [[365, 160], [501, 160], [501, 191], [365, 191]]
     text: signs.betl02_neon
     font: noto_sans_regular
-    size: 32
     letter_spacing: 4
     color: "#f7f718"
     outline: {color: "#f74229", width: 1}
@@ -22,6 +22,6 @@ signs:
     clear:
       mode: diffuse
       rect: [480, 304, 64, 33]
+    corners: [[483, 306], [541, 306], [541, 336], [483, 336]]
     text: signs.betl02_reception
-    size: 14
     color: "#c8d4dc"

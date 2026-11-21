@@ -1,0 +1,18 @@
+id: zh_translation
+version: 0.1.0
+layer: base
+priority: 2
+name:
+  en: "Simplified Chinese translation"
+  es: "Traducción al chino simplificado"
+  zh: "简体中文翻译"
+description:
+  en: "The team's own Simplified Chinese translation of the original's texts, as a delta over text/en of the base pack: only the Chinese, with the keys of text/en. See docs/guides/translate.md."
+  es: "Traducción propia del equipo al chino simplificado de los textos del original, como delta sobre text/en del paquete base: solo el chino, con las claves de text/en. Ver docs/guides/translate.md."
+  zh: "团队自己将原作文本翻译成简体中文，作为基础包 text/en 的增量：只含中文，键与 text/en 相同。参见 docs/guides/translate.md。"
+dependencies:
+  - id: base
+    min_version: 0.1.0
+schemas:
+  sign_overlay:
+    - signs/*/*

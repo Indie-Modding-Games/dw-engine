@@ -987,6 +987,7 @@ int runGame(const Options& requested) {
   // The partner's status for the autotest's checks, refreshed every frame of a run.
   screens::ScreenSettings partnerStatus;
 
+  const game::modes::ModeCatalog modeCatalog = game::modes::ModeCatalog::load(files);
   AppFlow<PlaySession> flow{[&](const PlayStart& start) {
     return PlaySession::create({.options = &options,
                                 .keepsSaves = !autotest,
@@ -998,10 +999,11 @@ int runGame(const Options& requested) {
                                 .debugUi = debugUi->get(),
                                 .userSettings = &userSettings,
                                 .settingsFile = settingsFile,
+                                .modes = &modeCatalog,
                                 .upscaleCache = upscaleCache},
                                start);
   }};
-  TitleScreen title{files, options, !autotest, **ui};
+  TitleScreen title{files, options, !autotest, **ui, modeCatalog};
   // "Online versus" from the title's menu (versus_screen.hpp): no game behind it.
   VersusScreen versus{files, options, !autotest, **ui, renderer->get(), &sound};
   CoopScreen coop{files, options, **ui};
@@ -1021,7 +1023,8 @@ int runGame(const Options& requested) {
         .sampleBackend = std::move(sampleBackend),
         .sampleOffered = options.onlineSample || userSettings.devTools.value_or(DevToolsDefault),
         .codeLength = net::RoomCodeLength,
-        .profile = OnlineProfile::fromSettings(userSettings, *language)}};
+        .profile = OnlineProfile::fromSettings(userSettings,
+                                               localization::tr(OnlineProfile::DefaultNameKey))}};
   }();
   // This player as the online rooms show it, and how they connect (the online profile).
   const auto applyOnlineProfile = [&] {
@@ -1909,9 +1912,17 @@ int runGame(const Options& requested) {
                           .networkSaveText = std::move(*networkSave)};
           startPlaying(start);
           if (flow.playing() != nullptr) {
-            fieldNotice = FieldNotice{.key = CoopGuestNotSavedText,
+            const bool otherVariant = coop.startedInOtherVariant();
+            const game::modes::GameMode* ownMode = modeCatalog.find(coop.ownVariant());
+            const game::modes::GameMode* hostMode = modeCatalog.find(coop.hostVariant());
+            const bool goesHome =
+                !otherVariant || (ownMode != nullptr && hostMode != nullptr &&
+                                  game::modes::takesProgressFrom(*ownMode, *hostMode));
+            fieldNotice = FieldNotice{.key = !otherVariant ? CoopGuestNotSavedText
+                                             : goesHome    ? CoopGuestOtherVariantText
+                                                           : CoopGuestOtherVariantKeptText,
                                       .peer = coopPeerLabel(false, coop.remoteName())};
-            if (const auto home = coop.broughtHome()) {
+            if (const auto home = coop.broughtHome(); goesHome && home) {
               if (auto begun = guestHome.begin(*home, coop.remoteName(), platform->nowSeconds());
                   !begun) {
                 core::logWarning("coop: the partner and the bag will not go home: {}",
@@ -2083,7 +2094,10 @@ int runGame(const Options& requested) {
           // From here the bridge alone reads the link; the lobby draining it too starved the
           // bridge of snapshots and guest commands (remote players drew as bare shadows).
           coop.handLinkToPlay(guest.generation);
-          if (coop.joinedLate(guest.id)) {
+          if (const std::string mode = coop.saveModeOf(guest.id);
+              !mode.empty() && mode != play->modeId()) {
+            coopHud.notice(CoopPlayerOtherVariantText, peer.label);
+          } else if (coop.joinedLate(guest.id)) {
             // Joined or back after the game began (#356): the host's players hear it.
             coopHud.notice(CoopJoinedText, peer.label);
           }
@@ -2441,6 +2455,10 @@ int runGame(const Options& requested) {
         continue;
       }
       if (uiAddons.handle(command)) {
+        continue;
+      }
+      if (PlaySession* play = flow.playing();
+          play != nullptr && play->refusesFixedOption(command)) {
         continue;
       }
       // The options the documents apply by themselves: shop extras, art fixes, widescreen pictures

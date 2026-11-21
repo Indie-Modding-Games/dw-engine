@@ -66,6 +66,19 @@ local function place_focus(document)
   end
 end
 
+local RowLabels = { "name-label", "icon-label", "relay-label", "record-label" }
+
+local function fit_row_labels(document)
+  for _, id in ipairs(RowLabels) do
+    local label = document:get(id .. "-text")
+    local column = document:get(id)
+    fit_text.fit(label, nil, function()
+      local _, _, width = column:rect()
+      return width
+    end)
+  end
+end
+
 local function refresh(document)
   local profile = online.profile()
   local state = online.state()
@@ -204,6 +217,7 @@ function on_show(document)
   editing = false
   settle = 0
   refresh(document)
+  fit_row_labels(document)
 end
 
 hooks.on("online.changed", function(_, document)
@@ -215,6 +229,7 @@ end)
 function on_language(document)
   refresh_prompts(document)
   refresh(document)
+  fit_row_labels(document)
 end
 
 function on_device(document)

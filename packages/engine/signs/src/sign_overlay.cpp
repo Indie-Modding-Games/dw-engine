@@ -168,9 +168,10 @@ float readPositive(assets::YamlReader& reader, const core::YamlNode& node, std::
 Sign readSign(assets::YamlReader& reader, const core::YamlNode& node) {
   Sign sign;
   if (!reader.expectKeys(node, "a sign", {"id", "region", "text"},
-                         {"target", "corners", "box", "clear", "font", "size", "letter_spacing",
-                          "line_spacing", "align", "valign", "rotation", "skew", "vertical", "fit",
-                          "color", "outline", "glow", "colors"})) {
+                         {"target", "corners", "box",      "clear",          "font",
+                          "size",   "lines",   "group",    "letter_spacing", "line_spacing",
+                          "align",  "valign",  "rotation", "skew",           "vertical",
+                          "fit",    "color",   "outline",  "glow",           "colors"})) {
     return sign;
   }
   sign.id = reader.text(reader.field(node, "id"));
@@ -197,6 +198,15 @@ Sign readSign(assets::YamlReader& reader, const core::YamlNode& node) {
   }
   if (const core::YamlNode* size = node.find("size")) {
     sign.size = readPositive(reader, *size, "size");
+  }
+  if (const core::YamlNode* lines = node.find("lines")) {
+    sign.lines = reader.integer<std::int32_t>(*lines);
+    if (reader.ok() && (sign.lines < 1 || sign.lines > 4)) {
+      reader.fail(*lines, "lines is 1 to 4");
+    }
+  }
+  if (const core::YamlNode* group = node.find("group")) {
+    sign.group = reader.text(*group);
   }
   if (const core::YamlNode* spacing = node.find("letter_spacing")) {
     sign.letterSpacing = reader.number(*spacing);

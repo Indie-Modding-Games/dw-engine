@@ -9,7 +9,7 @@ signs:
       tolerance: 40
     corners: [[338, 58], [384, 89], [384, 107], [338, 76]]
     text: signs.omoc08_tag_top
-    size: 13
+    group: tag
     color: "#d65a5a"
     colors: region
   - id: tag_bottom
@@ -22,6 +22,6 @@ signs:
       tolerance: 40
     corners: [[344, 98], [384, 125], [384, 143], [344, 116]]
     text: signs.omoc08_tag_bottom
-    size: 13
+    group: tag
     color: "#d65a5a"
     colors: region

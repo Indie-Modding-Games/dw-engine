@@ -151,7 +151,7 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
       {.files = &files,
        .rulesetId = rulesetFor(files, options, play, start.storage.get()),
        .rules = std::nullopt,
-       .modeId = play.modeId.value_or(std::string{game::modes::OriginalMode}),
+       .modeId = play.modeId.value_or(std::string{game::modes::DefaultMode}),
        .species = nullptr,
        .seed = seed,
        .storage = start.storage.get(),

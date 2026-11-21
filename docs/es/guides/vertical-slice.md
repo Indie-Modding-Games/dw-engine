@@ -317,8 +317,10 @@ for lang in en es; do
         --autotest tests/autotest/route-mod-map.yaml --shots <capturas>/$lang
 done
 ```
-- `route-game-modes.yaml`: con un segundo modo montado ([`tests/mods/game_mode`](../modules/tests/mods.md)), la
-  partida nueva pregunta el modo; «Historia original» sigue a la pantalla de reglas y «Práctica» empieza sin ella.
+- `route-game-modes.yaml`: la partida nueva pregunta el modo, con un tercero montado
+  ([`tests/mods/game_mode`](../modules/tests/mods.md)); «Modo Folder» sigue a la pantalla de reglas y «Práctica»
+  empieza sin ella. `route-classic-enhanced.yaml` empieza una partida del Clásico Mejorado, comprueba sus opciones fijas
+  en la página de opciones y su variante en la lista de ranuras ([variantes de juego](../architecture/game-variants.md)).
   Necesita una carpeta de partidas vacía. Se corre en los dos idiomas:
 
 ```sh

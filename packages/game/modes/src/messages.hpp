@@ -14,6 +14,12 @@ inline constexpr std::string_view ModeEmptyText = "the text is empty";
 // `ruleset` is not among `rulesets` (the ruleset).
 inline constexpr std::string_view ModeRulesetNotListed =
     "the ruleset '{}' must also be one of rulesets";
+inline constexpr std::string_view ModeOptionsNotMapping =
+    "options must be a mapping of option names to values";
+inline constexpr std::string_view ModeBadOption =
+    "'{}' is not an option name: a-z, 0-9 and '_', starting with a letter";
+inline constexpr std::string_view ModeOptionNotScalar =
+    "the option '{}' must be fixed to one value";
 inline constexpr std::string_view ModeRulesetTwice = "the ruleset '{}' is listed twice";
 // A mode names a ruleset no pack has (the mode, the ruleset).
 inline constexpr std::string_view ModeNoRuleset = "mode '{}': no pack has the ruleset '{}'";

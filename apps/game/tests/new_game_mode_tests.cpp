@@ -24,7 +24,8 @@ GameMode original() {
           .descriptionKey = "modes.original_description",
           .ruleset = "original",
           .rulesets = {"original", "oculto", "oculto_mega"},
-          .order = 0};
+          .order = 0,
+          .options = {}};
 }
 
 GameMode arena() {
@@ -33,7 +34,8 @@ GameMode arena() {
           .descriptionKey = "my_mod.arena_description",
           .ruleset = "arena_rules",
           .rulesets = {"arena_rules"},
-          .order = 10};
+          .order = 10,
+          .options = {}};
 }
 
 NewGameModes modes(std::vector<GameMode> list) {

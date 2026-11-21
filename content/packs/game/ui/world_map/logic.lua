@@ -91,6 +91,21 @@ local function draw_here(document)
   document:get("here"):set_class("hidden", place == "")
 end
 
+local LegendGap = 20
+
+local function fit_legends(document)
+  local legends = document:get("legends")
+  fit_text.fit(legends, {
+    document:get("legend-here"),
+    document:get("legend-exit"),
+    document:get("legend-unknown"),
+  }, function()
+    local left = legends:rect()
+    local close = document:get("close"):rect()
+    return close - LegendGap - left
+  end)
+end
+
 local function refresh(document)
   document:get("map-image"):set_attribute("src", ui.setting("world_map.image") or "")
   fit_map(document)
@@ -99,6 +114,7 @@ local function refresh(document)
   draw_exits(document)
   draw_here(document)
   document:get("close-key"):set_text(ui.prompt("world_map"))
+  fit_legends(document)
 end
 
 function on_show(document)
@@ -108,6 +124,11 @@ end
 -- The close key's glyph follows the device the player last used.
 function on_device(document)
   document:get("close-key"):set_text(ui.prompt("world_map"))
+  fit_legends(document)
+end
+
+function on_tick()
+  fit_text.tick()
 end
 
 function on_setting(document, name)

@@ -1,18 +1,21 @@
 #panel {
+	width: 34%;
 	border: 3dp transparent;
 	border-radius: 0;
 	background-color: transparent;
 	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
 		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
-	font-family: "Pixel Body";
-	font-size: 22dp;
-	line-height: 26dp;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 28dp;
 	color: #f2f0e1;
 }
 
 #title {
-	font-size: 22dp;
-	color: #f2c94c;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 32dp;
+	color: #efc63c;
 }
 
 #phase,
@@ -22,23 +25,14 @@
 }
 
 .fighter.partner .name {
-	color: #f2c94c;
-}
-
-.fighter .hp,
-.fighter .mp,
-.fighter .revive {
-	font-family: "Pixel Small";
-	font-size: 22dp;
-}
-
-.fighter .mp {
-	color: #7cb6e2;
+	color: #efc63c;
 }
 
 .fighter .bar {
+	width: 54%;
+	height: 12dp;
 	border-radius: 0;
-	background-color: #0d1a33;
+	background-color: #3a4d68;
 }
 
 .fighter .fill {
@@ -46,28 +40,52 @@
 	background-color: #5fd36a;
 }
 
-.fighter.mine {
-	border-left-color: #f2c94c;
-}
-
-button {
-	margin: 3dp;
-	padding: 2dp 10dp;
-	border: 2dp #7cb6e2;
-	border-radius: 0;
-	background-color: #0d1a33;
-	color: #f2f0e1;
-	font-family: "Pixel Small";
-	font-size: 22dp;
-}
-
-button:hover,
-button:focus,
-button.current {
-	border-color: #f2c94c;
-}
-
+.fighter .hp,
+.fighter .mp,
+.fighter .revive,
 .fighter .target {
+	font-size: 26dp;
+}
+
+.fighter .mp {
+	color: #4aa6ff;
+}
+
+.fighter.mine {
+	border-left-color: #efc63c;
+}
+
+#panel button {
+	margin: 2dp;
+	padding: 0 10dp;
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: transparent;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #f2f0e1;
+	decorator: ninepatch(nb-key-outer, nb-key-inner, 1) border-box;
+}
+
+#panel button:hover,
+#panel button:focus {
+	color: #efc63c;
+	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
+}
+
+#panel button.current {
+	color: #050c1a;
+	background-color: #efc63c;
+	decorator: none;
+}
+
+.fighter .revive {
 	padding: 0 6dp;
-	font-size: 20dp;
+	color: #050c1a;
+	background-color: #efc63c;
+}
+
+.fighter.down .name {
+	color: #8a93a6;
 }

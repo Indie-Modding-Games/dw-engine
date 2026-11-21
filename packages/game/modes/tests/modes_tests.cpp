@@ -13,9 +13,13 @@
 #include <utility>
 #include <vector>
 
+using dwe::game::modes::ClassicMode;
+using dwe::game::modes::currentModeId;
+using dwe::game::modes::DefaultMode;
+using dwe::game::modes::FolderMode;
 using dwe::game::modes::GameMode;
 using dwe::game::modes::ModeCatalog;
-using dwe::game::modes::OriginalMode;
+using dwe::game::modes::OptionPin;
 using dwe::game::modes::parseGameMode;
 
 namespace {
@@ -73,7 +77,8 @@ TEST_CASE("a mode manifest names its id, texts, rulesets and order") {
                           .descriptionKey = "my_mod.arena_description",
                           .ruleset = "arena_rules",
                           .rulesets = {"arena_rules"},
-                          .order = 10});
+                          .order = 10,
+                          .options = {}});
 }
 
 TEST_CASE("a mode manifest with a wrong id, a missing key or a ruleset it does not list fails") {
@@ -92,18 +97,77 @@ TEST_CASE("a mode manifest with a wrong id, a missing key or a ruleset it does n
   CHECK(errorOf(parseGameMode(badId, "Arena")).contains("is not a mode id"));
 }
 
-TEST_CASE("the game pack ships the original story as its only mode, and it is the default") {
+TEST_CASE("a mode manifest may fix options of the options page at one value each") {
+  std::string fixed{ArenaMode};
+  fixed += "options:\n  difficulty: normal\n  rare_items: false\n  gym_sessions: 1\n";
+  const auto mode = parseGameMode(fixed, "arena");
+  REQUIRE_MESSAGE(mode.has_value(), errorOf(mode));
+  CHECK(mode->options == std::vector<OptionPin>{{.option = "difficulty", .value = "normal"},
+                                                {.option = "rare_items", .value = "false"},
+                                                {.option = "gym_sessions", .value = "1"}});
+  CHECK(parseGameMode(ArenaMode, "arena")->options.empty());
+}
+
+TEST_CASE("a mode's fixed options must be a mapping of option names to one value") {
+  CHECK(errorOf(parseGameMode(std::string{ArenaMode} + "options: [difficulty]\n", "arena"))
+            .contains("options must be a mapping"));
+  CHECK(errorOf(parseGameMode(std::string{ArenaMode} + "options:\n  Bad: true\n", "arena"))
+            .contains("is not an option name"));
+  CHECK(errorOf(parseGameMode(std::string{ArenaMode} + "options:\n  difficulty: [a, b]\n", "arena"))
+            .contains("must be fixed to one value"));
+}
+
+TEST_CASE("the game pack ships the two variants, Classic Enhanced first, and Folder Mode is the "
+          "default") {
   const Packs packs{};
   const ModeCatalog catalog = ModeCatalog::load(packs.files());
-  REQUIRE(catalog.modes().size() == 1);
+  REQUIRE(catalog.modes().size() == 2);
   CHECK(catalog.skipped().empty());
-  const GameMode* original = catalog.defaultMode();
-  REQUIRE(original != nullptr);
-  CHECK(original->id == OriginalMode);
-  CHECK(original->ruleset == "original");
-  CHECK(original->rulesets == std::vector<std::string>{"original", "oculto", "oculto_mega", "todas",
-                                                       "todas_oculto", "todas_oculto_mega"});
-  CHECK_FALSE(catalog.asksMode());
+  CHECK(catalog.asksMode());
+  const GameMode& classic = catalog.modes()[0];
+  CHECK(classic.id == ClassicMode);
+  CHECK(classic.ruleset == "original");
+  CHECK(classic.rulesets == std::vector<std::string>{"original"});
+  CHECK(classic.options ==
+        std::vector<OptionPin>{{.option = "difficulty", .value = "normal"},
+                               {.option = "rare_items", .value = "false"},
+                               {.option = "free_exploration", .value = "false"},
+                               {.option = "extra_toilets", .value = "false"},
+                               {.option = "choose_egg_after_lives_lost", .value = "false"}});
+  const GameMode* folder = catalog.defaultMode();
+  REQUIRE(folder != nullptr);
+  CHECK(folder->id == FolderMode);
+  CHECK(folder == &catalog.modes()[1]);
+  CHECK(folder->ruleset == "original");
+  CHECK(folder->rulesets == std::vector<std::string>{"original", "oculto", "oculto_mega", "todas",
+                                                     "todas_oculto", "todas_oculto_mega"});
+  CHECK(folder->options.empty());
+}
+
+TEST_CASE("a Folder Mode save takes progress from a Classic Enhanced world, not the other way") {
+  const Packs packs{};
+  const ModeCatalog catalog = ModeCatalog::load(packs.files());
+  const GameMode* classic = catalog.find(ClassicMode);
+  const GameMode* folder = catalog.find(FolderMode);
+  REQUIRE(classic != nullptr);
+  REQUIRE(folder != nullptr);
+  CHECK(takesProgressFrom(*classic, *classic));
+  CHECK(takesProgressFrom(*folder, *folder));
+  CHECK(takesProgressFrom(*folder, *classic));
+  CHECK_FALSE(takesProgressFrom(*classic, *folder));
+  GameMode narrow = *folder;
+  narrow.id = "narrow";
+  narrow.rulesets = {"original", "oculto"};
+  CHECK_FALSE(takesProgressFrom(narrow, *folder));
+  CHECK(takesProgressFrom(narrow, *classic));
+}
+
+TEST_CASE("a save from before the variants plays Folder Mode") {
+  CHECK(DefaultMode == FolderMode);
+  CHECK(currentModeId("original") == FolderMode);
+  CHECK(currentModeId("") == FolderMode);
+  CHECK(currentModeId("classic") == ClassicMode);
+  CHECK(currentModeId("arena") == "arena");
 }
 
 TEST_CASE("a pack adds a mode, the list sorts by order, and a broken mode is left out") {
@@ -118,9 +182,10 @@ rulesets: [nowhere]
 order: 1
 )"}};
   const ModeCatalog catalog = ModeCatalog::load(packs.files());
-  REQUIRE(catalog.modes().size() == 2);
-  CHECK(catalog.modes()[0].id == OriginalMode);
-  CHECK(catalog.modes()[1].id == "arena");
+  REQUIRE(catalog.modes().size() == 3);
+  CHECK(catalog.modes()[0].id == ClassicMode);
+  CHECK(catalog.modes()[1].id == FolderMode);
+  CHECK(catalog.modes()[2].id == "arena");
   CHECK(catalog.asksMode());
   CHECK(catalog.find("arena") != nullptr);
   CHECK(catalog.find("broken") == nullptr);
@@ -129,7 +194,7 @@ order: 1
   CHECK(catalog.skipped()[1].reason == "mode 'lost': no pack has the ruleset 'nowhere'");
 }
 
-TEST_CASE("without the original story the default mode is the first of the list") {
+TEST_CASE("without Folder Mode the default mode is the first of the list") {
   const auto second = [](std::string id) {
     GameMode mode;
     mode.id = std::move(id);

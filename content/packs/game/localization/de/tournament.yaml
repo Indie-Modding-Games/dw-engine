@@ -1,0 +1,16 @@
+# The cup's bracket, for skins that name the round (the original look shows none). {round} is 1 or 2.
+bracket.round: "Runde {round}"
+bracket.final: "Finale"
+bracket.champion: "Sieger"
+# The cup's name by its grade, on the intro's card (for the skins that write it).
+bracket.cup: "Pokal {grade}"
+# A cup match: the intro's stats box (STD_renderIntroStats) and the damage box after the time ran out
+# (STD_renderTimeoutWindow).
+match.hp: "HP"
+match.mp: "MP"
+match.offense: "Angriff"
+match.defense: "Verteidigung"
+match.speed: "Tempo"
+match.brains: "Intelligenz"
+match.damage: "Schaden"
+match.time_up: "ZEIT UM"

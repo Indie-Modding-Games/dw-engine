@@ -22,8 +22,12 @@
 	line-height: 39dp;
 }
 
-/* The line under a name while that player trains, in the skin's pixel font at its sharp size. */
-.tag .training {
+.tag .training,
+.tag .trade {
 	font-size: 26dp;
 	line-height: 28dp;
+}
+
+@media (max-width: 560dp) {
+	#notice { padding: 8dp 14dp; font-size: 26dp; line-height: 28dp; }
 }

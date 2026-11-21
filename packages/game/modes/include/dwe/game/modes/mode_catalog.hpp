@@ -33,8 +33,6 @@ public:
   [[nodiscard]] std::span<const SkippedMode> skipped() const { return skipped_; }
   [[nodiscard]] const GameMode* find(std::string_view id) const;
 
-  // The mode a new game plays when the player is not asked: the original's story, else the first
-  // of the list; nullptr when there is none.
   [[nodiscard]] const GameMode* defaultMode() const;
 
   // Whether the player chooses a mode before a new game: only when there is more than one.

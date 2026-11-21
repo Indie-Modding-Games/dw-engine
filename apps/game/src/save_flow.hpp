@@ -24,6 +24,7 @@ enum class SlotListMode : std::uint8_t { NewGame, Continue, Erase };
 struct SaveNames {
   std::function<std::string(std::string_view)> species;
   std::function<std::string(std::string_view)> map;
+  std::function<std::string(std::string_view)> mode;
 };
 
 // A message of the title screen: a text key, the save file it is about, and whether it asks yes or

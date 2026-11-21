@@ -95,6 +95,21 @@ constexpr std::array Symbols{
     Bitmap{"@dpad_down", {".ooo.", "o.o.o", "ooooo", "o.+.o", ".+++."}},
     Bitmap{"@dpad_left", {".ooo.", "+.o.o", "++ooo", "+.o.o", ".ooo."}},
     Bitmap{"@dpad_right", {".ooo.", "o.o.+", "ooo++", "o.o.+", ".ooo."}},
+    Bitmap{"@left_bracket", {"##", "#.", "#.", "#.", "##"}},
+    Bitmap{"@right_bracket", {"##", ".#", ".#", ".#", "##"}},
+    Bitmap{"@backslash", {"#..", "#..", ".#.", "..#", "..#"}},
+    Bitmap{"@semicolon", {"..", ".#", "..", ".#", "#."}},
+    Bitmap{"@apostrophe", {"#", "#", ".", ".", "."}},
+    Bitmap{"@grave", {"#.", ".#", "..", "..", ".."}},
+    Bitmap{"@tab", {"...#.#", "....##", "######", "....##", "...#.#"}},
+    Bitmap{"@shift", {"..#..", ".#.#.", "##.##", ".#.#.", ".###."}},
+    Bitmap{"@caps_lock", {"..#..", ".###.", "#####", ".....", "#####"}},
+    Bitmap{"@menu", {"#####", ".....", "#####", ".....", "#####"}},
+    Bitmap{"@view", {"###..", "#.###", "###.#", "..#.#", "..###"}},
+    Bitmap{"@home", {"..#..", ".###.", "#####", ".#.#.", ".###."}},
+    Bitmap{"@mouse_left", {".#oo.", "##o.o", "ooooo", "o...o", ".ooo."}},
+    Bitmap{"@mouse_right", {".oo#.", "o.o##", "ooooo", "o...o", ".ooo."}},
+    Bitmap{"@mouse_middle", {".o#o.", "o.#.o", "ooooo", "o...o", ".ooo."}},
 };
 
 const Bitmap* findBitmap(std::span<const Bitmap> set, std::string_view name) {
@@ -399,6 +414,15 @@ core::Result<assets::Image> modernSymbol(std::string_view symbol) {
 }
 
 } // namespace
+
+bool classicDraws(std::string_view symbol) {
+  if (findBitmap(Symbols, symbol) != nullptr) {
+    return true;
+  }
+  return !symbol.empty() && std::ranges::all_of(symbol, [](char c) {
+    return c != '?' && findBitmap(SmallFont, std::string_view{&c, 1}) != nullptr;
+  });
+}
 
 int classicCapWidth(std::string_view symbol) {
   return std::max(ButtonWidth, symbolWidth(symbol) + (2 * CapMargin));

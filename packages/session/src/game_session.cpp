@@ -935,7 +935,8 @@ game::save::SaveHeader GameSession::headerNow() const {
                                   .tamer = names_.tamer,
                                   .species = state_->partner.state().species,
                                   .nickname = names_.partner,
-                                  .map = place ? place->map : std::string{}};
+                                  .map = place ? place->map : std::string{},
+                                  .mode = state_->mode};
   std::string label = summary.species;
   if (place) {
     label += LabelSeparator;

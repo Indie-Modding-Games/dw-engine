@@ -262,6 +262,18 @@ core::Result<void> learnMove(session::BattleAdapter* battle, const session::Game
                        static_cast<session::MoveSlot>(std::distance(row->moves.begin(), found)));
 }
 
+const game::modes::GameMode* modeOf(const PlayContext& context,
+                                    const session::GameSession& session) {
+  if (context.modes == nullptr) {
+    return nullptr;
+  }
+  const game::modes::GameMode* mode = context.modes->find(session.mode());
+  if (mode == nullptr) {
+    core::logWarning(messages::ModeNotMounted, session.mode());
+  }
+  return mode;
+}
+
 } // namespace
 
 void SessionCommands::drop(Autotest* autotest) {
@@ -441,12 +453,14 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                          std::unique_ptr<FieldScene> scene)
     : context_(context), game_(std::move(game)), scene_(std::move(scene)),
       species_(speciesOf(*context.files, *game_.session)),
+      modeOptions_(modeOf(context, *game_.session), context.ui),
       freeExploration_(
           {.ui = context.ui,
            .scene = scene_.get(),
            .settings = context.userSettings,
            .settingsFile = context.settingsFile},
-          startFreeExploration(context.options->explore, context.userSettings->freeExploration)),
+          startFreeExploration(context.options->explore,
+                               modeOptions_.over(*context.userSettings).freeExploration)),
       battleGround_(*scene_), battleScreen_({.session = game_.session.get(),
                                              .battle = game_.systems.battle,
                                              .inventory = game_.systems.inventory,
@@ -735,7 +749,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   context_.ui->setSetting(CanonicalStagesSetting,
                           context.userSettings->canonicalStages.value_or(false));
   // The rare items, off unless turned on.
-  const bool rareItems = context.userSettings->rareItems.value_or(false);
+  const bool rareItems = playSettings().rareItems.value_or(false);
   game_.systems.fieldItems->setRareItems(rareItems);
   context_.ui->setSetting(RareItemsSetting, rareItems);
   // The save indicator's document goes up before the HUD's, which takes the focus.
@@ -1264,8 +1278,20 @@ game::coop::CoopDifficulty coopDifficultyOf(game::battle::CoopLevel level) {
   return game::coop::CoopDifficulty::Standard;
 }
 
+const std::string& PlaySession::modeId() const {
+  return game_.session->mode();
+}
+
+UserSettings PlaySession::playSettings() const {
+  return modeOptions_.over(*context_.userSettings);
+}
+
+bool PlaySession::refusesFixedOption(const ui::UiCommand& command) {
+  return modeOptions_.refuse(command.name);
+}
+
 void PlaySession::applyPlayOptions() {
-  const UserSettings& settings = *context_.userSettings;
+  const UserSettings settings = playSettings();
   for (const PlayOption& option : PlayOptions) {
     context_.ui->setSetting(option.setting, (settings.*option.saved).value_or(option.fallback));
   }

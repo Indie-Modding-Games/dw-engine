@@ -208,6 +208,12 @@ body {
 	vertical-align: middle;
 }
 
+/* The legend keeps to the left of the close key: a long one is squeezed (common/fit_text.lua). */
+#legends {
+	display: inline-block;
+	white-space: nowrap;
+}
+
 .legend {
 	margin-right: 20dp;
 }

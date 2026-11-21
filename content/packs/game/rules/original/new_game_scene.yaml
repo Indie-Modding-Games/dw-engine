@@ -66,7 +66,8 @@ naming:
     - "     "
   # An engine addition (docs/modules/apps/game.md#names-in-every-language): the rows above are the Latin page; a
   # language adds pages of its own alphabet before it, as many rows each, and the page keys turn them. Korean writes
-  # its letters alone and the box joins them into syllables.
+  # its letters alone and the box joins them into syllables. A page with after_rows comes after the Latin page: the
+  # accented letters of a language written in it.
   rows_page: naming.page.latin
   pages:
     ru:
@@ -148,6 +149,94 @@ naming:
           - "ㅙㅚㅛㅜㅝ"
           - "ㅞㅟㅠㅡㅢ"
           - "ㅣ    "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+    de:
+      - page: naming.page.latin_de
+        after_rows: true
+        rows:
+          - "ÄÖÜ  "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "äöüß "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+    es:
+      - page: naming.page.latin_es
+        after_rows: true
+        rows:
+          - "ÁÉÍÓÚ"
+          - "ÑÜ   "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "áéíóú"
+          - "ñü   "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+    fr:
+      - page: naming.page.latin_fr
+        after_rows: true
+        rows:
+          - "ÀÂÇÉÈ"
+          - "ÊËÎÏÔ"
+          - "ŒÙÛÜŸ"
+          - "Æ    "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "àâçéè"
+          - "êëîïô"
+          - "œùûüÿ"
+          - "æ    "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+    pt:
+      - page: naming.page.latin_pt
+        after_rows: true
+        rows:
+          - "ÁÂÃÀÇ"
+          - "ÉÊÍÓÔ"
+          - "ÕÚ   "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "     "
+          - "áâãàç"
+          - "éêíóô"
+          - "õú   "
+          - "     "
+          - "     "
           - "     "
           - "     "
           - "     "

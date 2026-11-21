@@ -169,6 +169,16 @@ Los nombres de mapa se centran en 24 caracteres con espacios, como el original.
 | Player | Jugador |
 | Directional Pad | botones de dirección |
 | Press X | Presiona X |
+| Game mode / variant | Modo de juego / variante |
+| Classic Enhanced / Folder Mode | Clásico Mejorado / Modo Folder |
+| Fixed in {variant} (opción fijada) | Fija en {variant} |
+| Open to new players (co-op) | Abierto a nuevos jugadores |
+| Player (nombre en línea por defecto) | Jugador |
+| Bits (etiqueta de la moneda en los menús) | Bits |
+| Naming page of accented letters | ÁÉÍ (Á É Í Ó Ú Ñ Ü) |
+| The game's log (donde van los detalles de un error) | registro del juego |
+| Unknown variant (modo de una partida que no está instalado) | Variante desconocida |
+| Key caps of the classic prompts (`prompt.cap.*`) | ESC, TAB, SUPR, INSERT, INICIO, FIN, REPAG, AVPAG, BLOQMAY, MAYUS, CTRL, ALT, ALTGR |
 
 ## Historia
 

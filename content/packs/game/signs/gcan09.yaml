@@ -8,8 +8,8 @@ signs:
       quad: [[545, 69], [623, 75.5], [622, 94], [543, 89]]
     corners: [[547, 71], [621, 77], [620, 92], [545, 87]]
     text: signs.gcan09_shop
-    size: 9
-    line_spacing: 0.9
+    lines: 2
+    group: shop
     color: "#302828"
   - id: shop_lit
     target: {page: 2, bits: 8, clut: 16}
@@ -19,6 +19,6 @@ signs:
       quad: [[17, 117], [95, 123.5], [94, 142], [15, 137]]
     corners: [[19, 119], [93, 125], [92, 140], [17, 135]]
     text: signs.gcan09_shop
-    size: 9
-    line_spacing: 0.9
+    lines: 2
+    group: shop
     color: "#302828"

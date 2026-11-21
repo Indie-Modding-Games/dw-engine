@@ -7,8 +7,9 @@
    rows from y 6, 14 pixels apart. The cursor is the gold outline (#FFD600) round the letter, from 4 pixels left and
    up of it, 18 x 15, or round the button. The name's box is apart at (15, 180), 149 x 42: the letters 12 pixels
    apart and the yellow underscore (#C6C610) under the next one. The original says only "Name", not whose name, so
-   that line is hidden. The button prompts sit in the gap between the boxes, and the typing hint in the name's box:
-   the original has neither (see the theme). */
+   that line is hidden. The button prompts sit in the gap between the boxes, over the name's box and as wide as it
+   (squeezed to it, logic.lua), clear of Jijimon at its right, and the typing hint in the name's box: the original has
+   neither (see the theme). */
 
 body #panel {
 	top: 87dp;
@@ -104,10 +105,12 @@ body #prompts {
 	position: absolute;
 	left: 0;
 	top: 414dp;
-	width: 870dp;
+	width: 447dp;
 	margin: 0;
-	padding: 6dp 0 0 0;
+	padding: 0;
 	border-width: 0;
+	line-height: 30dp;
+	text-align: left;
 	white-space: nowrap;
 }
 

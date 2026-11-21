@@ -63,7 +63,7 @@ remove: [old]
   CHECK(sign.clear.color == PaletteColor{.red = 0x10, .green = 0x20, .blue = 0x30, .alpha = 255});
   CHECK(sign.text == "signs.board");
   CHECK(sign.font == "noto_sans_regular");
-  CHECK(sign.size == doctest::Approx(8.5));
+  CHECK(sign.size.value_or(0.0F) == doctest::Approx(8.5));
   CHECK(sign.letterSpacing == doctest::Approx(0.5));
   CHECK(sign.lineSpacing == doctest::Approx(0.9));
   CHECK(sign.align == HorizontalAlign::Left);
@@ -147,7 +147,7 @@ remove: [mat]
   const SignOverlay merged = mergeSignOverlays(common, spanish);
   REQUIRE(merged.signs.size() == 2);
   CHECK(merged.signs[0].id == "neon");
-  CHECK(merged.signs[0].size == doctest::Approx(7));
+  CHECK(merged.signs[0].size.value_or(0.0F) == doctest::Approx(7));
   CHECK(merged.signs[1].id == "rules");
   CHECK(merged.remove.empty());
 }

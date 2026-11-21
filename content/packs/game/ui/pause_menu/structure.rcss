@@ -15,6 +15,9 @@
 #page-options .option.kind-list .arrow, #page-options .option.kind-range .arrow { display: inline-block; }
 #page-options .option.kind-range .bar { display: inline-block; }
 #page-options .option.hidden, #option-tag.hidden, #reset-confirm.hidden { display: none; }
+#page-options .option.locked .label, #page-options .option.locked .control { opacity: 0.6; }
+#page-options .option.locked:focus .label, #page-options .option.locked:focus .control { opacity: 0.85; }
+#page-options .option.locked .arrow { visibility: hidden; }
 /* Over the title the game's save and back-to-title actions are hidden (logic.lua: at_title). */
 #options-quick button.hidden { display: none; }
 #panel.on-options #prompts { display: none; }
@@ -58,3 +61,9 @@
 #player-city-view { display: none; }
 #panel.player-city #player-city-view { display: block; }
 .city-cell.hidden, #city-cursor.hidden, .city-icon.hidden { display: none; }
+
+/* The cursors' pictures fill the frame round them, which the logic places and a skin may draw on instead. */
+.cursor-frame .cursor-picture { display: block; width: 100%; height: 100%; }
+
+/* The options' key hints keep to one line, squeezed into their room when long (common/fit_text.lua). */
+#options-hints-row { display: inline-block; white-space: nowrap; }

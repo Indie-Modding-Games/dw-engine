@@ -1,0 +1,9 @@
+# Words several menus use.
+yes: "Ja"
+no: "Nein"
+accept: "OK"
+back: "Zurück"
+cancel: "Abbrechen"
+# The currency, in the menus that label it.
+bits: "Bits"
+details_logged: "Die Einzelheiten stehen im Spielprotokoll."

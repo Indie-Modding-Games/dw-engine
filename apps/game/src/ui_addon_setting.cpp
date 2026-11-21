@@ -3,8 +3,10 @@
 #include <dwe/core/error.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
+#include <dwe/localization/catalog.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <ranges>
 #include <set>
@@ -25,6 +27,11 @@ std::string startUiAddon(bool safe, const std::optional<std::string>& saved) {
 }
 
 namespace {
+
+std::string reasonText(std::string_view key, std::string name) {
+  const std::array arguments{localization::TextArgument{.name = "name", .value = std::move(name)}};
+  return localization::tr(key, arguments);
+}
 
 // The battle's commands (battle_screen.hpp) and the window each one works in.
 enum class BattleWindow : std::uint8_t { None, Fight, Bag, End };
@@ -200,28 +207,35 @@ void UiAddonChanger::update(double seconds) {
 }
 
 void UiAddonChanger::addProblem(std::string problem) {
-  problem_ += (problem_.empty() ? "" : "; ") + std::move(problem);
+  problem_ += (problem_.empty() ? "" : " ") + std::move(problem);
 }
 
 void UiAddonChanger::useUi(const std::string& id) {
   std::string problem;
+  std::string reason;
   if (id == ui::DefaultUiId) {
     ui_->useDefaultUi();
   } else if (const ui::UiAddon* addon = find(id); addon == nullptr) {
     const auto unreadable = unreadable_.find(id);
-    problem = unreadable != unreadable_.end() ? unreadable->second
-                                              : core::formatMessage(messages::MissingUiAddon, id);
+    if (unreadable != unreadable_.end()) {
+      problem = unreadable->second;
+      reason = reasonText(UnreadableUiAddonKey, id);
+    } else {
+      problem = core::formatMessage(messages::MissingUiAddon, id);
+      reason = reasonText(MissingUiAddonKey, id);
+    }
   } else {
     // Put on again from its files: a reload reads what changed.
     ui_->useDefaultUi();
     if (auto used = ui_->useUiAddon(*addon); !used) {
       problem = used.error().message;
+      reason = reasonText(BrokenUiAddonKey, addon->name);
     }
   }
   if (!problem.empty()) {
     core::logWarning(messages::UiAddonFellBack, id, problem);
     ui_->useDefaultUi();
-    addProblem(std::move(problem));
+    addProblem(std::move(reason));
   }
 }
 
@@ -235,7 +249,7 @@ void UiAddonChanger::usePlugins(bool on) {
   for (const ui::UiAddon& plugin : plugins_) {
     if (auto added = ui_->addUiPlugin(plugin); !added) {
       core::logWarning(messages::UiPluginLeftOut, plugin.id, added.error().message);
-      addProblem(added.error().message);
+      addProblem(reasonText(BrokenUiPluginKey, plugin.name));
     }
   }
 }

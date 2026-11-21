@@ -46,7 +46,10 @@ queda así a propósito» de «falta traducir»:
   restos en japonés que el US no muestra, las siglas `HP`, `MP` y `Bits` y el nombre propio `Overdell`.
 
 Las reglas están al principio de `scripts/translation.sh` (`kept_english_blocks`, `kept_original_blocks`,
-`kept_name_block` y `kept_original_ids`).
+`kept_name_block` y `kept_original_ids`). Un idioma con otra escritura puede escribir los nombres a su manera (el
+coreano los escribe en hangul y el japonés en katakana; el chino los deja en inglés): en cuanto su `main.yaml` tiene un nombre de
+`main.digimon_names` que no es un título, esos nombres y las cadenas que son solo un nombre cuentan como traducidos
+para ese idioma y dejan de estar guardados (`own_names`).
 
 ## Cómo se traduce
 
@@ -128,6 +131,18 @@ dónde y cómo se dibujan, que va en un overlay por mapa. Un cartel que el origi
 en español va en `content/packs/es-translation/signs/es/<mapa>.yaml`. Cómo encontrar un cartel y escribir su
 overlay: [guía de carteles](signs.md).
 
+Al escribir el texto de un cartel:
+
+- Nunca elijas un tamaño: todos los carteles ajustan su texto al marco con una sola regla (letras tan altas como deja
+  la caja, encogidas solo si la línea más larga no cabe, [Ajuste](../modules/engine/signs.md#ajuste)). Escribe el
+  texto como lo diría el cartel; las palabras cortas se leen mejor en tableros pequeños.
+- Un `\n` solo dice dónde puede partirse el texto; el motor se queda con la forma que da letras más grandes y, en
+  tableros de dos líneas, también parte solo en espacios y guiones. El coreano no necesita `\n`: le bastan sus
+  espacios. El chino y el japonés solo se parten entre ideogramas donde haya un `\n`.
+- Cada cartel del juego se comprueba en cada idioma con `dwe_signs_tests` ("every shipped sign fits its box..."):
+  falla si un texto cruza su caja o necesitaría letras de menos de 4 píxeles. Entonces acorta el texto (una
+  abreviatura que el idioma use en carteles, un sinónimo más corto) y apunta el cambio en el glosario de tu idioma.
+
 ## Un idioma nuevo
 
 Además del inglés y el español, el juego se está traduciendo al portugués de Brasil (`pt`), francés (`fr`), alemán
@@ -144,7 +159,11 @@ Sumar un idioma con código `<código>` lleva estas piezas, todas siguiendo las 
 1. **Los textos del motor**: `content/packs/game/localization/<código>/`, con una copia de cada tabla de
    `localization/en/` (`common.yaml`, `pause_menu.yaml`, `shop.yaml`, `first_run.yaml`...) con las mismas claves y
    los argumentos `{nombre}` tal cual. Una clave que el idioma todavía no tiene se muestra en inglés, clave por clave,
-   así que una tabla se puede llenar de a poco.
+   así que una tabla se puede llenar de a poco; `scripts/translation.sh --lang <código> check` y
+   `dwe_localization_tests` (CI) fallan mientras falte alguna. Las teclas de los avisos clásicos (`prompt.cap.*` en
+   `prompt.yaml`) son lo que imprimen los teclados del idioma, en mayúsculas A-Z y 0-9 y como mucho 7 (`STRG`,
+   `SUPR`), o una marca dibujada (`@tab`, `@shift`, `@caps_lock`); el test `every language draws every cap whole`
+   falla con una letra que las teclas no pueden dibujar.
 2. **El nombre y la bandera del idioma**: `name` en su propio `language.yaml`, y `native.<código>` y `flag.<código>`
    en el `language.yaml` de **todos** los idiomas (la caja de idiomas los lista desde ahí). La imagen de la bandera va
    en `ui/flags/<código>`, que genera `scripts/art/make_flags.py`.
@@ -197,8 +216,8 @@ Sumar un idioma con código `<código>` lleva estas piezas, todas siguiendo las 
    [glosario del español](spanish-glossary.md): etapas, objetos, HP y MP, qué se hace con los nombres de los Digimon y
    con las técnicas.
 8. **El lanzador**: `apps/launcher/ui/js/i18n/<código>.js` con las claves de `en.js`.
-   `node apps/launcher/tools/i18n_check.mjs <código>` cuenta las claves que faltan (se muestran en inglés) y falla con
-   claves que el inglés no tiene o con `{marcadores}` distintos.
+   `node apps/launcher/tools/i18n_check.mjs <código>` lista las claves que faltan (se muestran en inglés) y falla con
+   ellas, con claves que el inglés no tiene o con `{marcadores}` distintos; CI lo corre para todos los idiomas.
 
 En el primer arranque, la pantalla del disco pregunta el idioma si hay más de uno: los lista desde las carpetas de
 `localization/` que tienen `language.yaml`, así que un idioma nuevo aparece en cuanto trae esa tabla. Con un solo

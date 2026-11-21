@@ -378,6 +378,7 @@ core::Result<void> StoryScenes::readRules(const ruleset::Ruleset& rules) {
   scenes.screens = game::story::ScreenHistory{scenes.rules.screens};
   scenes.screens.restore(kept);
   scenes.desc.story->seedNewGame(scenes.rules.newGameChain == NewGameChain::Seeded);
+  scenes.desc.story->setFixedFightTrigger(scenes.rules.battle.fixedFightTrigger);
   scenes.digimon.reset();
   if (const assets::AssetId* table = rules.table(game::evolution::DigimonTableRole)) {
     if (auto digimon = assets::loadDigimonTable(scenes.desc.story->files(), *table)) {

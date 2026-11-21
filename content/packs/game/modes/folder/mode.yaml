@@ -1,0 +1,10 @@
+# Folder Mode (docs/architecture/game-variants.md): the expanded game. Every option is the player's, and the rules
+# screen lets you choose the hidden content (docs/modules/game/evolution.md, "Hidden content"), the Ultimate to Mega
+# step and all species as partner, turned on in it (docs/modules/game/extra-evolutions.md). A save from before the
+# variants (mode "original") plays as this mode, so it keeps everything it had.
+id: folder
+name: modes.folder_name
+description: modes.folder_description
+ruleset: original
+rulesets: [original, oculto, oculto_mega, todas, todas_oculto, todas_oculto_mega]
+order: 1

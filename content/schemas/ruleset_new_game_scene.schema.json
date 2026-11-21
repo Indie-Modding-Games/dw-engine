@@ -54,7 +54,7 @@
         "repeat_frames": { "description": "Frames between the repeats of a held movement key.", "type": "integer", "minimum": 1 },
         "rows_page": { "description": "The text key of the rows' own page, shown while a language adds pages (an engine addition).", "type": "string", "minLength": 1 },
         "pages": {
-          "description": "The pages of letters a language adds before the rows (an engine addition), by language code: each a text key and as many rows as the rows above.",
+          "description": "The pages of letters a language adds before the rows, or after them with after_rows (an engine addition), by language code: each a text key and as many rows as the rows above.",
           "type": "object",
           "additionalProperties": {
             "type": "array",
@@ -65,7 +65,8 @@
               "additionalProperties": false,
               "properties": {
                 "page": { "type": "string", "minLength": 1 },
-                "rows": { "type": "array", "minItems": 2, "items": { "type": "string" } }
+                "rows": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+                "after_rows": { "description": "The page comes after the Latin page (rows) instead of before it.", "type": "boolean" }
               }
             }
           }

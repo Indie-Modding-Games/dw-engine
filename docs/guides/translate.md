@@ -46,7 +46,10 @@ tells "left this way on purpose" from "still to translate":
   version does not show, the abbreviations `HP`, `MP` and `Bits` and the proper name `Overdell`.
 
 The rules are at the top of `scripts/translation.sh` (`kept_english_blocks`, `kept_original_blocks`,
-`kept_name_block` and `kept_original_ids`).
+`kept_name_block` and `kept_original_ids`). A language written in another script may spell the names its own way
+(Korean writes them in Hangul, Japanese in katakana; Chinese keeps them in English): as soon as its `main.yaml` has a name of
+`main.digimon_names` that is not a title, those names and the strings that are just a name count as translated for
+that language and are no longer kept (`own_names`).
 
 ## How to translate
 
@@ -128,6 +131,18 @@ how they are drawn, which goes in an overlay per map. A sign that the original a
 needed in Spanish goes in `content/packs/es-translation/signs/es/<map>.yaml`. How to find a sign and write its
 overlay: [signs guide](signs.md).
 
+Writing a sign's text:
+
+- Never pick a size: every sign fits its text to its frame with one rule (letters as tall as the box allows,
+  shrunk only when the longest line does not fit, [Fitting](../modules/engine/signs.md#fitting)). Write the
+  text as the sign would say it; short words read best on small boards.
+- A `\n` only says where the text may break; the engine keeps whichever arrangement gives the largest letters, and
+  on boards that hold two lines it also breaks at spaces and hyphens by itself. Korean needs no `\n`: its spaces
+  are enough. Chinese and Japanese may break between ideographs only where a `\n` is.
+- Every shipped sign is checked in every language by `dwe_signs_tests` ("every shipped sign fits its box..."): it
+  fails when a text crosses its box or would need letters under 4 image pixels. Then shorten the text (an
+  abbreviation the language uses on signs, a shorter synonym) and write the change in your language's glossary.
+
 ## A new language
 
 Besides English and Spanish, the game is being translated into Brazilian Portuguese (`pt`), French (`fr`), German
@@ -144,7 +159,10 @@ Adding a language with code `<code>` takes these pieces, all following the Spani
 1. **The engine's texts**: `content/packs/game/localization/<code>/`, with a copy of each table in `localization/en/`
    (`common.yaml`, `pause_menu.yaml`, `shop.yaml`, `first_run.yaml`...) with the same keys and the `{name}` arguments
    as they are. A key the language does not have yet is shown in English, key by key, so a table can be filled bit by
-   bit.
+   bit; `scripts/translation.sh --lang <code> check` and `dwe_localization_tests` (CI) fail while one is missing.
+   The key caps of the classic prompts (`prompt.cap.*` in `prompt.yaml`) are what the language's keyboards print, in
+   capitals A-Z and 0-9 with at most 7 of them (`STRG`, `SUPR`), or a drawn mark (`@tab`, `@shift`, `@caps_lock`);
+   test `every language draws every cap whole` fails on a letter the caps cannot draw.
 2. **The language name and flag**: `name` in its own `language.yaml`, and `native.<code>` and `flag.<code>` in the
    `language.yaml` of **every** language (the language box lists them from there). The flag image goes in
    `ui/flags/<code>`, which `scripts/art/make_flags.py` generates.
@@ -196,8 +214,8 @@ Adding a language with code `<code>` takes these pieces, all following the Spani
    records the language's term decisions as the [Spanish glossary](spanish-glossary.md) does: stages, items, HP and
    MP, what is done with the Digimon names and the techniques.
 8. **The launcher**: `apps/launcher/ui/js/i18n/<code>.js` with the keys of `en.js`.
-   `node apps/launcher/tools/i18n_check.mjs <code>` counts the missing keys (shown in English) and fails on keys
-   English does not have or on `{placeholders}` that differ.
+   `node apps/launcher/tools/i18n_check.mjs <code>` lists the missing keys (shown in English) and fails on them, on
+   keys English does not have or on `{placeholders}` that differ; CI runs it for every language.
 
 On first start, the disc screen asks for the language if there is more than one: it lists them from the
 `localization/` folders that have `language.yaml`, so a new language appears as soon as it brings that table. With a

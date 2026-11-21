@@ -108,14 +108,15 @@ std::vector<std::string> readAutosaveReasons(YamlReader& reader, const YamlNode&
 SaveSummary readSummary(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(node, messages::SummaryWhat,
                          {summary_key::Slot, summary_key::Tamer, summary_key::Species,
-                          summary_key::Nickname, summary_key::Map})) {
+                          summary_key::Nickname, summary_key::Map, summary_key::Mode})) {
     return {};
   }
   return {.slot = reader.text(reader.field(node, summary_key::Slot)),
           .tamer = reader.text(reader.field(node, summary_key::Tamer)),
           .species = reader.text(reader.field(node, summary_key::Species)),
           .nickname = reader.text(reader.field(node, summary_key::Nickname)),
-          .map = reader.text(reader.field(node, summary_key::Map))};
+          .map = reader.text(reader.field(node, summary_key::Map)),
+          .mode = reader.text(reader.field(node, summary_key::Mode))};
 }
 
 SaveHeader readHeader(YamlReader& reader, const YamlNode& root) {
@@ -201,6 +202,7 @@ YamlNode writeSummary(const SaveSummary& summary) {
   node.set(std::string{summary_key::Species}, quoted(summary.species));
   node.set(std::string{summary_key::Nickname}, quoted(summary.nickname));
   node.set(std::string{summary_key::Map}, quoted(summary.map));
+  node.set(std::string{summary_key::Mode}, quoted(summary.mode));
   return node;
 }
 
@@ -209,6 +211,17 @@ YamlNode writeSummary(const SaveSummary& summary) {
 // (session::summaryFromSections) and does on its next save.
 core::Result<YamlNode> addSummary(YamlNode root) {
   root.set(std::string{save_key::Summary}, writeSummary({}));
+  return root;
+}
+
+core::Result<YamlNode> addSummaryMode(YamlNode root) {
+  const YamlNode* found = root.find(save_key::Summary);
+  if (found == nullptr || !found->isMapping()) {
+    return root;
+  }
+  YamlNode summary = *found;
+  summary.set(std::string{summary_key::Mode}, quoted({}));
+  root.set(std::string{save_key::Summary}, std::move(summary));
   return root;
 }
 
@@ -237,6 +250,7 @@ const MigrationChain& formatMigrations() {
     MigrationChain steps;
     steps.add(addAutosaveReasons); // 1 -> 2
     steps.add(addSummary);         // 2 -> 3
+    steps.add(addSummaryMode);     // 3 -> 4
     return steps;
   }();
   return chain;

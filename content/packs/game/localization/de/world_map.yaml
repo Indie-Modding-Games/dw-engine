@@ -1,0 +1,10 @@
+# The island map the M key opens (a dwe improvement): its title, where the player is, the places his map leads to,
+# the legend and the close key.
+title: "Inselkarte"
+here: "Du bist in:"
+exits: "Von hier aus erreichst du"
+no_exits: "Von hier gibt es keinen Ausgang"
+legend_here: "Du bist hier"
+legend_exit: "Von hier erreichbar"
+legend_unknown: "Noch nicht besucht"
+close: "Schließen"

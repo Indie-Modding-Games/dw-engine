@@ -680,8 +680,8 @@ body {
    they read over any ground, in the original-look font), the ring as the windows' border drawn round (four stripes of
    one original pixel, 3dp: black, light cyan, dark cyan and black from the inside out), the north mark and the player
    in the original's text yellow (#fff371) and the partner in the light cyan of its borders. A long name breaks into
-   centred lines inside its box instead of running past the disc. The menu button is a small box with the
-   prompt. */
+   centred lines inside its box instead of running past the disc, a word longer than the box too. The menu button is
+   a small box with the prompt. */
 
 #minimap {
 	right: 24dp;
@@ -704,6 +704,7 @@ body {
 	line-height: 22dp;
 	color: #d0d0d0;
 	white-space: normal;
+	word-break: break-word;
 }
 
 #minimap-frame {

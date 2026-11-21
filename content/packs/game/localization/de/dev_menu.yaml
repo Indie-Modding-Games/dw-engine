@@ -1,0 +1,31 @@
+# The developer menu (F2 with the developer tools on; apps/game/src/dev_menu_screen.hpp): runs console commands to
+# test the game.
+title: "Entwicklermenü"
+items: "Items"
+money: "Geld"
+clock: "Uhrtempo"
+stats: "Werte"
+care: "Pflege"
+evolve: "Digievolvieren"
+# The partner learns every technique its species can learn (no finisher).
+techniques: "Techniken"
+techniques_done: "Hat alle möglichen Techniken gelernt"
+warp: "Zu einer Karte springen"
+save: "Jetzt speichern"
+close: "Schließen"
+# How many of an item each entry of the list gives, {amount}.
+amount: "Menge: {amount}"
+# Sets the money to {bits}.
+money_set: "Geld auf {bits}"
+# The game clock at {speed} times its speed.
+clock_speed: "Uhr x{speed}"
+# Offense, defense, speed and brains to {value}; HP and MP to {life}.
+stats_set: "Werte auf {value} (HP und MP {life})"
+happiness_full: "Volles Glück"
+discipline_full: "Volle Disziplin"
+rested: "Keine Müdigkeit"
+no_mistakes: "Keine Pflegefehler"
+sleep: "Schlafen"
+toilet: "Aufs Klo gehen"
+# What the menu did last, {what}.
+done: "Erledigt: {what}"

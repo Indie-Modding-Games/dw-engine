@@ -35,6 +35,8 @@ struct TextLine {
   float baseline = 0.0F;
   // How far the pen moved (the line's advance).
   float advance = 0.0F;
+  // Letters neither the font nor its fallbacks have, left out.
+  std::int32_t missing = 0;
 };
 
 // A TrueType or OpenType font (the packs' ui/fonts/*.ttf) drawn to coverage, without hinting, so

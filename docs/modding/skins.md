@@ -71,10 +71,35 @@ menu, `pool: current` in the partner's. The full list of screens and options is 
 - **The mouse cursor belongs to the system, not to RmlUi.** With `cursor:` and `cursor_hotspot:` the skin installs an
   image as the **OS cursor** while it is active: it always stays on top (modal menus included) without fighting the
   stacking. Without `cursor:`, the system arrow stays; switching skins restores it.
+- **Every screen in every shipped look.** The hidden `modern` base is not a look of its own: each skin the player can
+  pick (original, pixel, devvago) styles every screen another one styles, itself or through a pickable skin it
+  extends, so no screen falls back to the base's plain card. `dwe_ui_tests` checks it.
+- **Long texts squeezed, not cut.** Values whose length depends on the language or the player (a technique, an
+  access line, a save's place) are drawn through `common/fit_text.lua`, so a skin with a narrow column still shows
+  them whole, measured again when the player switches skin or interface size. A text a skin may squeeze sits in its own
+  span inside its column (`player-record-text` in `player-record`, `label-menu-text` in `label-menu`), so the
+  column keeps its width and the text is measured, not the box. `fit_text.fit` takes an optional origin for the
+  squeeze (`"100% 50%"` keeps a right-aligned text against its right edge, as the chart's prompts beside the
+  stages). A value in a padded box (the partner's age and weight) is fitted to the room inside its padding, read from
+  where its text starts, so a right-aligned value that fits is never squeezed. A box whose content wraps breaks a word
+  longer than the box too (`word-break: break-word` on the minimap's place name), and a popup of choices grows with
+  its longest one away from the box next to it (the partner's item options).
+- **Every label inside its box.** In every skin and language a label stays inside the box drawn round it and clear of
+  the texts next to it, the same way everywhere: language-dependent texts through `fit_text`, rows with fixed columns
+  and a gap between them (the shop's name, then its price in a column of its own 24dp after it), and lines of key
+  hints squeezed into the room their foot leaves. A skin moves boxes so they do not cover each other (the shop's
+  description opens under a full page of rows, the naming box's hints sit over the name's box, clear of Jijimon), and
+  the co-op name tags of players standing together stack: the nearest player's keeps its place and each other one is
+  lifted over the tags it would cover, 4dp apart.
+  `dwe_ui_tests` loads every screen in every skin and language and fails on a text out of its box
+  (`label_fit_tests.cpp`), and checks the busy screens with their longest texts: the shop's rows, the minimap, the
+  naming box, the co-op name tags, the online room's notice and values, the options' foot, the key prompts
+  in the middle of the search's framed bar.
 - **`image-color` tints the decorators too.** RmlUi multiplies an element's image decorators (and its ninepatch) by
   its `image-color`, not just an `<img>`'s picture: a transparent `image-color` that hides the original's picture also
   hides a decorator drawn on the same element. Hide the picture with `display: none` and draw on an element round it
-  (the lives box wraps each life's picture in its `slot-N`, which marks a lost life `empty`).
+  (the lives box wraps each life's picture in its `slot-N`, which marks a lost life `empty`; the pause menu's chart,
+  medal and card cursors wrap theirs in a `.cursor-frame`).
 - **If something fails**, the skin is left out with the reason in the log and the game goes on with the one it had.
 
 ## Test while editing

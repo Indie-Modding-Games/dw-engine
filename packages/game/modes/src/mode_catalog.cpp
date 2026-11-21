@@ -96,8 +96,8 @@ const GameMode* ModeCatalog::find(std::string_view id) const {
 }
 
 const GameMode* ModeCatalog::defaultMode() const {
-  if (const GameMode* original = find(OriginalMode)) {
-    return original;
+  if (const GameMode* folder = find(DefaultMode)) {
+    return folder;
   }
   return modes_.empty() ? nullptr : &modes_.front();
 }

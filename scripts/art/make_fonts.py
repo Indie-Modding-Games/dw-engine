@@ -18,7 +18,7 @@ Only GSUB/GPOS and hinting are dropped: RmlUi draws through FreeType without sha
 character outside these sets is found by `check`, and running the script again adds it.
 
 Usage:
-  uv run scripts/art/make_fonts.py make --fusion <folder of the Fusion Pixel 12px proportional .otf files>
+  uv run scripts/art/make_fonts.py make [--fusion <folder of the Fusion Pixel 12px proportional .otf files>]
       [--noto-cjk /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc] [--misc /usr/share/fonts/X11/misc]
   uv run scripts/art/make_fonts.py check
 """
@@ -49,6 +49,43 @@ PIXEL_RANGES = [
     (0x20AC, 0x20AC),
     (0x2116, 0x2116),
 ]
+
+# Glyphs drawn again over misc-fixed's, where its bold cell blurs one letter into another: the lowercase em (м) of
+# 9x15B and 7x13B fills a row between its stems and reads as en (н). Each is (advance, left, ascent, rows) in pixels,
+# as read_pcf gives them.
+PIXEL_REDRAWN = {
+    "pixel_body.ttf": {
+        0x043C: (
+            9,
+            0,
+            7,
+            [
+                [0, 1, 1, 0, 0, 0, 1, 1, 0],
+                [0, 1, 1, 1, 0, 1, 1, 1, 0],
+                [0, 1, 1, 0, 1, 0, 1, 1, 0],
+                [0, 1, 1, 0, 0, 0, 1, 1, 0],
+                [0, 1, 1, 0, 0, 0, 1, 1, 0],
+                [0, 1, 1, 0, 0, 0, 1, 1, 0],
+                [0, 1, 1, 0, 0, 0, 1, 1, 0],
+            ],
+        ),
+    },
+    "pixel_small.ttf": {
+        0x043C: (
+            7,
+            0,
+            6,
+            [
+                [1, 1, 0, 0, 0, 1, 1],
+                [1, 1, 1, 0, 1, 1, 1],
+                [1, 1, 0, 1, 0, 1, 1],
+                [1, 1, 0, 0, 0, 1, 1],
+                [1, 1, 0, 0, 0, 1, 1],
+                [1, 1, 0, 0, 0, 1, 1],
+            ],
+        ),
+    },
+}
 
 # The CJK fonts: the language whose texts they draw first, Noto Sans CJK's face in the collection, the Fusion Pixel
 # file, and the legacy encoding whose characters are the common set.
@@ -227,11 +264,13 @@ def extend_pixel_font(path, pcf):
     font = TTFont(path)
     cmap = font.getBestCmap()
     glyphs = read_pcf(pcf)
+    redrawn = PIXEL_REDRAWN.get(Path(path).name, {})
+    glyphs.update(redrawn)
     order = list(font.getGlyphOrder())
     added = 0
     for low, high in PIXEL_RANGES:
         for code in range(low, high + 1):
-            if code in cmap or code not in glyphs:
+            if (code in cmap and code not in redrawn) or code not in glyphs:
                 continue
             advance, left, ascent, rows = glyphs[code]
             name = f"uni{code:04X}"
@@ -295,6 +334,8 @@ def make(arguments):
     for name, pcf in PIXEL_FONTS.items():
         added = extend_pixel_font(FONTS / name, misc / pcf)
         print(f"{name}: {added} glyphs added from {pcf}")
+    if arguments.fusion is None:
+        return
     for key, spec in CJK.items():
         chars = charset(key)
         noto = FONTS / "cjk" / f"noto_sans_cjk_{key}.otf"
@@ -348,7 +389,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
     making = commands.add_parser("make")
-    making.add_argument("--fusion", required=True)
+    making.add_argument("--fusion")
     making.add_argument("--noto-cjk", default="/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc")
     making.add_argument("--misc", default="/usr/share/fonts/X11/misc")
     commands.add_parser("check")

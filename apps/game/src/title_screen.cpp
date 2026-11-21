@@ -17,6 +17,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "battle_trigger.hpp"
 #include "common.hpp"
@@ -42,8 +43,18 @@ bool hasRuleset(const assets::VirtualFileSystem& files, std::string_view id) {
 
 // The names of the saves' species and maps in the packs' tables; a table the packs lack leaves its
 // IDs unnamed.
-SaveNames namesOf(const assets::VirtualFileSystem& files, const Options& options) {
+SaveNames namesOf(const assets::VirtualFileSystem& files, const Options& options,
+                  const game::modes::ModeCatalog& modes) {
   SaveNames names;
+  auto modeNames = std::make_shared<std::vector<std::pair<std::string, std::string>>>();
+  for (const game::modes::GameMode& mode : modes.modes()) {
+    modeNames->emplace_back(mode.id, mode.nameKey);
+  }
+  names.mode = [modeNames](std::string_view id) {
+    const auto found =
+        std::ranges::find(*modeNames, id, &std::pair<std::string, std::string>::first);
+    return found == modeNames->end() ? std::string{} : found->second;
+  };
   if (auto rules = ruleset::loadRuleset(files, options.ruleset)) {
     if (auto table = speciesTable(files, *rules)) {
       auto species = std::make_shared<const assets::DigimonTable>(std::move(*table));
@@ -78,11 +89,11 @@ std::optional<game::save::SaveSlots> slotsIn(const assets::VirtualFileSystem& fi
 } // namespace
 
 TitleScreen::TitleScreen(const assets::VirtualFileSystem& files, const Options& options,
-                         bool keepsSaves, ui::Ui& ui)
+                         bool keepsSaves, ui::Ui& ui, game::modes::ModeCatalog modes)
     : ui_(&ui), storage_(saveStorageFor(options, keepsSaves)),
       slots_(slotsIn(files, storage_.get())),
-      flow_(slots_ ? &*slots_ : nullptr, namesOf(files, options)),
-      modes_(game::modes::ModeCatalog::load(files)), megaOffered_(hasRuleset(files, MegaRuleset)),
+      flow_(slots_ ? &*slots_ : nullptr, namesOf(files, options, modes)), modes_(std::move(modes)),
+      megaOffered_(hasRuleset(files, MegaRuleset)),
       allOffered_(hasRuleset(files, AllSpeciesRuleset)) {}
 
 void TitleScreen::show() {

@@ -68,6 +68,10 @@ public:
   [[nodiscard]] std::string guestName(game::coop::PlayerId id) const;
   // The species of a guest's partner, from the save it sent, on the host (empty until it arrives).
   [[nodiscard]] std::string_view partnerSpeciesOf(game::coop::PlayerId id) const;
+  [[nodiscard]] std::string saveModeOf(game::coop::PlayerId id) const;
+  [[nodiscard]] bool startedInOtherVariant() const { return hostVariant_ != ownVariant_; }
+  [[nodiscard]] const std::string& hostVariant() const { return hostVariant_; }
+  [[nodiscard]] const std::string& ownVariant() const { return ownVariant_; }
   // Everyone in the room, host first then by id, as the host knows it (on a guest, as the host's
   // lobby last said; before it, the host and this guest).
   [[nodiscard]] std::vector<CoopLobbyMember> lobbyMembers() const;
@@ -188,6 +192,8 @@ private:
   std::optional<std::uint32_t> hostTransferId_;
   game::coop::ProfileAssembler hostAssembler_;
   std::optional<std::string> guestSaveText_;
+  std::string hostVariant_;
+  std::string ownVariant_;
   std::optional<std::string> hostSaveText_;
   std::string remotePartnerSpecies_;
   std::optional<game::coop::Lobby> lobby_;

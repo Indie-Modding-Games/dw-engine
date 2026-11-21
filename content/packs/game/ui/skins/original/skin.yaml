@@ -149,6 +149,10 @@ screens:
     styles: [ui/skins/original/coop_hud/style]
   coop_battle:
     styles: [ui/skins/original/coop_battle/style]
+  bug_report:
+    styles: [ui/skins/original/bug_report/style]
+  fishing_hud:
+    styles: [ui/skins/original/fishing_hud/style]
   coop_trade:
     styles: [ui/skins/original/coop_trade/style]
   online_status:

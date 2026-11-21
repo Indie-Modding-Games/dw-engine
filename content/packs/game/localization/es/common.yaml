@@ -4,3 +4,6 @@ no: "No"
 accept: "Aceptar"
 back: "Volver"
 cancel: "Cancelar"
+# The currency, in the menus that label it.
+bits: "Bits"
+details_logged: "Los detalles están en el registro del juego."

@@ -1,5 +1,8 @@
-# The game modes (modes/<id>/mode.yaml) and the list where one is picked (ui/new_game_mode). Terms from the glossary
-# (docs/guides/spanish-glossary.md).
+# The game modes (modes/<id>/mode.yaml) and the list where one is picked (ui/new_game_mode). The two the game ships are
+# its variants (docs/architecture/game-variants.md). Terms from the glossary (docs/guides/spanish-glossary.md).
 title: "Modo de juego"
-original_name: "Historia original"
-original_description: "La historia del juego original con sus reglas."
+classic_name: "Clásico Mejorado"
+classic_description: "El juego original: su historia, reglas y equilibrio tal como eran, con mejores gráficos, opciones de comodidad y errores corregidos."
+folder_name: "Modo Folder"
+folder_description: "El juego ampliado: contenido oculto, todas las especies como compañero, el paso a Mega y todas las opciones, reglas incluidas."
+unknown_name: "Variante desconocida"

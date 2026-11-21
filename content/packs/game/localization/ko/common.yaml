@@ -1,0 +1,9 @@
+# Words several menus use.
+yes: "예"
+no: "아니요"
+accept: "확인"
+back: "뒤로"
+cancel: "취소"
+# The currency, in the menus that label it.
+bits: "Bits"
+details_logged: "자세한 내용은 게임 로그에 있어요."

@@ -1,0 +1,8 @@
+yes: "Sim"
+no: "Não"
+accept: "Aceitar"
+back: "Voltar"
+cancel: "Cancelar"
+# The currency, in the menus that label it.
+bits: "Bits"
+details_logged: "Os detalhes estão no registro do jogo."

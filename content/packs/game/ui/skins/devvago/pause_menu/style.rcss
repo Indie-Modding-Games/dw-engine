@@ -161,9 +161,12 @@
 #option-tag { flex: 0 0 auto; margin-right: 12dp; padding: 0 6dp; border: 3dp #4a5a64; line-height: 21dp; color: #b2b2b2; white-space: nowrap; }
 #option-help { flex: 1 1 0; }
 #option-tag.improvement { border-color: #90d9fa; color: #fff371; }
-#option-foot { margin-top: 6dp; padding-top: 6dp; border-top: 3dp #90d9fa; }
+#option-tag.locked { border-color: #a06a4a; color: #f0b090; }
+/* The foot is one line: the actions at the left, the key hints in the rest of it. */
+#option-foot { display: flex; align-items: center; margin-top: 6dp; padding-top: 6dp; border-top: 3dp #90d9fa; }
+#option-actions { flex: 0 0 auto; }
 #option-actions button { display: inline-block; margin: 0 12dp 0 0; }
-#options-hints { margin-top: 6dp; font-family: "Pixel Small"; font-size: 26dp; color: #b2b2b2; text-align: right; }
+#options-hints { flex: 1 1 0; margin-top: 0; font-family: "Pixel Small"; font-size: 26dp; color: #b2b2b2; text-align: right; }
 #options-hints .hint { margin-left: 12dp; white-space: nowrap; }
 #options-hints .key { margin-right: 3dp; }
 /* The reset's question: one of the original's boxes over the list. */
@@ -802,7 +805,7 @@ body.layout-medals-profile #panel #city-rule { display: block; }
 
 #panel.on-options .option-tab.selected {
 	border-bottom-color: #ffd51e;
-	color: #ffe64a;
+	color: #0a1929;
 }
 
 #panel.on-options button.option:focus {
@@ -819,6 +822,11 @@ body.layout-medals-profile #panel #city-rule { display: block; }
 #panel.on-options #option-tag.improvement {
 	border-color: #72c7ff;
 	color: #ffe64a;
+}
+
+#panel.on-options #option-tag.locked {
+	border-color: #c9784a;
+	color: #ffb98a;
 }
 
 #panel.on-options #option-foot {

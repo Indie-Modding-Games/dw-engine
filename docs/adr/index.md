@@ -59,3 +59,4 @@ superseded.
 | [0023](0023-remaster-pipeline.md) | Remaster by recipes, with interchangeable providers, content cache and local by default | Superseded by 0025 |
 | [0024](0024-co-op-with-authoritative-host.md) | Online co-op with an authoritative host and players driven by controllers | Proposed |
 | [0025](0025-high-definition-in-the-engine.md) | High definition in the engine, with only deterministic steps offline | Accepted |
+| [0026](0026-game-variants-as-modes.md) | Game variants as game modes with fixed options | Accepted |

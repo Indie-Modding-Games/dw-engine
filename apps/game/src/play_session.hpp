@@ -6,6 +6,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/debug/debug_ui.hpp>
 #include <dwe/game/coop/protocol.hpp>
+#include <dwe/game/modes/mode_catalog.hpp>
 #include <dwe/game/save/save_file.hpp>
 #include <dwe/render/renderer.hpp>
 #include <dwe/render/upscale_cache.hpp>
@@ -64,6 +65,7 @@ class InventoryAdapter;
 #include "minimap_enemies.hpp"
 #include "minimap_items.hpp"
 #include "minimap_setting.hpp"
+#include "mode_options.hpp"
 #include "movie_rules.hpp"
 #include "naming_box.hpp"
 #include "options.hpp"
@@ -195,6 +197,7 @@ struct PlayContext {
   UserSettings* userSettings = nullptr;
   // Where the player's settings are saved; nothing for runs that must not touch them (autotests).
   std::optional<std::filesystem::path> settingsFile;
+  const game::modes::ModeCatalog* modes = nullptr;
   // Where HD scenery's upscaler keeps what it made; nothing keeps nothing.
   std::shared_ptr<const render::UpscaleCache> upscaleCache = nullptr;
 };
@@ -403,6 +406,8 @@ public:
   [[nodiscard]] std::string trainingCourse() const;
   // The game's session: co-op tells it the world's clock (coop_training.hpp).
   [[nodiscard]] session::GameSession& gameSession() { return *game_.session; }
+  bool refusesFixedOption(const ui::UiCommand& command);
+  [[nodiscard]] UserSettings playSettings() const;
 
   // The partner's status as the status page shows it (partner.* settings).
   [[nodiscard]] screens::ScreenSettings partnerStatus() const;
@@ -479,6 +484,7 @@ public:
   void runHandedBattleHere() { storyScenes_.runHandedBattleHere(); }
   // The guest: its partner as the host's battle builds its fighter.
   [[nodiscard]] session::VisitingPartner coopFighter() const;
+  [[nodiscard]] const std::string& modeId() const;
   // The co-op difficulty the battles this game runs scale their enemies by (coop_difficulty).
   [[nodiscard]] game::battle::CoopLevel coopLevel() const { return coopLevel_; }
   // The guest: the field holds while the host's battle runs (its figures are the host's).
@@ -553,6 +559,7 @@ private:
   GameStart game_;
   std::unique_ptr<FieldScene> scene_;
   std::optional<assets::DigimonTable> species_;
+  ModeOptions modeOptions_;
   FreeExploration freeExploration_;
   FieldBattleGround battleGround_;
   BattleScreen battleScreen_;

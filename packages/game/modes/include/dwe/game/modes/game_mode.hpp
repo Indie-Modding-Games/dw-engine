@@ -7,12 +7,21 @@
 #include <string_view>
 #include <vector>
 
-// A game mode (docs/modding/modes.md): a way to play the engine's content, declared by a pack in
-// modes/<id>/mode.yaml. The engine ships one, «Original story».
 namespace dwe::game::modes {
 
-// The mode a game plays when nothing chose another: the original's story.
-inline constexpr std::string_view OriginalMode = "original";
+inline constexpr std::string_view ClassicMode = "classic";
+inline constexpr std::string_view FolderMode = "folder";
+inline constexpr std::string_view LegacyStoryMode = "original";
+inline constexpr std::string_view DefaultMode = FolderMode;
+
+[[nodiscard]] std::string_view currentModeId(std::string_view saved);
+
+struct OptionPin {
+  std::string option;
+  std::string value;
+
+  friend bool operator==(const OptionPin&, const OptionPin&) = default;
+};
 
 struct GameMode {
   // The mode's folder name, which mode.yaml repeats: a-z, 0-9 and '_', from a letter.
@@ -27,12 +36,13 @@ struct GameMode {
   std::vector<std::string> rulesets;
   // Where the mode goes in the list: lower first, then by id.
   std::int32_t order = 0;
+  std::vector<OptionPin> options;
 
   friend bool operator==(const GameMode&, const GameMode&) = default;
 };
 
-// Parses the text of modes/<folder>/mode.yaml: exactly the keys id, name, description, ruleset,
-// rulesets and order; the id must be the folder's. Errors name the line and column.
 core::Result<GameMode> parseGameMode(std::string_view yaml, std::string_view folder);
+
+[[nodiscard]] bool takesProgressFrom(const GameMode& save, const GameMode& world);
 
 } // namespace dwe::game::modes

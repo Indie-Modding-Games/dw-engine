@@ -1,0 +1,20 @@
+# The naming box (script_menu.c: setupNameSelectorBox): whose name it asks for and its buttons.
+tamer: "Dein Name"
+partner: "Name deines Digimon"
+title: "Name"
+ok: "OK"
+back: "Löschen"
+clear: "Alles löschen"
+write: "Schreiben"
+typing: "Oder tipp den Namen ein und drück Enter"
+# The pages of letters, named by their first letters, the same in every language (rules/original/new_game_scene.yaml).
+page.latin: "ABC"
+page.cyrillic: "АБВ"
+page.hiragana: "あいう"
+page.katakana: "アイウ"
+page.hangul: "한글"
+# The accented letters of a language with the Latin alphabet, a page after the Latin one.
+page.latin_de: "ÄÖÜ"
+page.latin_es: "ÁÉÍ"
+page.latin_fr: "ÀÂÇ"
+page.latin_pt: "ÁÂÃ"

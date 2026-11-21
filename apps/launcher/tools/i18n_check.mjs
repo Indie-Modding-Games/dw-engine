@@ -27,8 +27,9 @@ for (const code of codes) {
   const extra = [...texts.keys()].filter((k) => !reference.has(k));
   const wrong = [...texts].filter(([k, v]) => reference.has(k) && placeholders(v) !== placeholders(reference.get(k)));
   console.log(`${code}: ${texts.size - extra.length}/${reference.size} keys, ${missing.length} missing, ${extra.length} extra, ${wrong.length} placeholder mismatches`);
+  for (const k of missing) console.log(`  missing: ${k}`);
   for (const k of extra) console.log(`  extra: ${k}`);
   for (const [k] of wrong) console.log(`  placeholders differ: ${k} (en: {${placeholders(reference.get(k))}})`);
-  if (extra.length || wrong.length) failed = true;
+  if (missing.length || extra.length || wrong.length) failed = true;
 }
 process.exit(failed ? 1 : 0);

@@ -13,11 +13,10 @@ local meters = 3
 local max_conditions = 7
 
 -- The original's labels: the item options (main.item_menu_labels: use, move, sort, drop), the sort
--- orders (main.inventory_sort_labels), the drop's question (main.inventory_confirm_labels) and
--- bits.
+-- orders (main.inventory_sort_labels) and the drop's question (main.inventory_confirm_labels).
 local option_names = { "use", "move", "sort", "drop" }
 local sort_orders = 3
-local bits_label_key = "main.battle_ui_bits_labels.0000"
+local bits_label_key = "common.bits"
 
 local function original_label(block, slot)
   return t(string.format("main.%s.%04d", block, slot))
@@ -254,6 +253,25 @@ local function draw_favorite_food(document)
     :set_text(food ~= "" and t(food) or t("partner_menu.favorite_food.none"))
 end
 
+local StatusValues = { "status-age", "status-weight" }
+
+local function fit_status_values(document)
+  for _, id in ipairs(StatusValues) do
+    local value_box = document:get(id)
+    local value = document:get(id .. "-text")
+    fit_text.fit(value, nil, function()
+      local box_left, _, box_width = value_box:rect()
+      local text_left, _, text_width = value:rect()
+      local before = text_left - box_left
+      local after = box_left + box_width - text_left - text_width
+      if after < 0 or before <= after then
+        return box_width - 2 * before
+      end
+      return box_width - after
+    end)
+  end
+end
+
 local function draw_status(document)
   -- The partner's own name when the player gave one, else its species' (PARTNER_ENTITY.name); the
   -- species on its own line.
@@ -280,14 +298,15 @@ local function draw_status(document)
     :get("status-lives")
     :set_text(t("partner_menu.lives", { lives = number("partner.lives") }))
   local original = original_menu()
-  document:get("status-age"):set_text(
+  document:get("status-age-text"):set_text(
     original and tostring(number("partner.age"))
       or t("partner_menu.age.value", { days = number("partner.age") })
   )
-  document:get("status-weight"):set_text(
+  document:get("status-weight-text"):set_text(
     original and tostring(number("partner.weight"))
       or t("partner_menu.weight.value", { weight = number("partner.weight") })
   )
+  fit_status_values(document)
   draw_favorite_food(document)
   for index = 0, 2 do
     local icon = document:get("status-special-" .. index)
@@ -420,7 +439,13 @@ local function draw_tech(document)
   for index = 0, 3 do
     local base = "partner.technique." .. index .. "."
     local filled = not setting(base .. "empty", true)
-    document:get("tech-name-" .. index):set_text(filled and text(setting(base .. "name", "")) or "")
+    local name_box = document:get("tech-name-" .. index)
+    local name_text = document:get("tech-name-text-" .. index)
+    name_text:set_text(filled and text(setting(base .. "name", "")) or "")
+    fit_text.fit(name_text, nil, function()
+      local box_left, _, box_width = name_box:rect()
+      return box_width - (name_text:rect() - box_left)
+    end)
     for _, field in ipairs({ "power", "mp" }) do
       document
         :get("tech-" .. field .. "-" .. index)
@@ -1050,11 +1075,25 @@ local function draw_art_fixes(document)
   document:get("status-happiness-name"):set_class("fixed", options.get("art_fixes"))
 end
 
+local TimerLabels = { "status-lifetime-label", "status-evolution-label" }
+
+local function fit_timer_labels(document)
+  for _, id in ipairs(TimerLabels) do
+    local column = document:get(id)
+    fit_text.fit(document:get(id .. "-text"), nil, function()
+      local _, _, width = column:rect()
+      return width
+    end, "50% 50%")
+  end
+end
+
 function on_show(document)
   draw_navigation(document)
   draw_art_fixes(document)
   panel_enter.start(document)
+  fit_timer_labels(document)
   status_condition_bob = nil
+  document:get("conditions"):remove_property("top")
   tech_info_focus = nil
   editing_tech = false
   show_tech_help(document, false)
@@ -1163,6 +1202,7 @@ function on_language(document)
   draw_tech_help(document)
   draw(document)
   draw_prompts(document)
+  fit_timer_labels(document)
 end
 
 function on_action(document, action)

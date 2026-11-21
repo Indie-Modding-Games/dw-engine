@@ -18,7 +18,7 @@
 				<div id="player-icon" class="profile-icon"></div>
 				<span id="player-label" text-key="online.hub.playing_as"></span>
 				<span id="player-name"><span id="player-name-text"></span></span>
-				<span id="player-record"></span>
+				<span id="player-record"><span id="player-record-text"></span></span>
 			</div>
 			<button id="entry-versus" class="hub-entry" onclick="pick(document, 'versus')"><div class="entry-icon"></div><span class="entry-name"><span id="entry-versus-name" text-key="online.hub.versus"></span></span><span class="entry-hint"><span id="entry-versus-hint" text-key="online.hub.versus_hint"></span></span></button>
 			<button id="entry-rooms" class="hub-entry" onclick="pick(document, 'rooms')"><div class="entry-icon"></div><span class="entry-name"><span id="entry-rooms-name" text-key="online.hub.rooms"></span></span><span class="entry-hint"><span id="entry-rooms-hint" text-key="online.hub.rooms_hint"></span></span></button>

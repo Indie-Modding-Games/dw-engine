@@ -1,0 +1,10 @@
+how_many: "Сколько?"
+give: "Отдаёшь {count} x {item}"
+get: "Получаешь {count} x {item}"
+most: "До {most}"
+packs: "Наборы"
+packs_ask: "Сколько наборов?\nМожно открыть до {most}."
+packs_got: "{packs} {packs:набор|набора|наборов}: {cards} {cards:карта|карты|карт}.
+Новые — жёлтым: {new}."
+card: "Карта"
+copies: "Копии"

@@ -1,0 +1,31 @@
+# The menu shown when the game starts.
+title: "Hauptmenü"
+new_game: "Neues Spiel"
+continue: "Fortsetzen"
+language: "Sprache"
+# The font of the text that looks like the original's (the map name): the original's bitmap font or a modern one.
+text_font: "Text im Original-Look"
+text_font.modern: "Nein"
+text_font.original: "Ja"
+# Opens the online versus against another player on their own machine.
+versus: "Online-Versus"
+# Opens the multiplayer hub (online versus, co-op rooms, profile) from the title menu.
+coop: "Mehrspieler"
+# Opens the in-game options page over the title screen.
+options: "Optionen"
+quit: "Spiel beenden"
+# The original look's title screen (ui/main_menu): the line of the screen before the menu, the menu's entries, the
+# battle mode question and the language box, in the original's capitals.
+# The line of the original look's "Press Start" screen: what goes on with the device in use, the key named as the
+# button prompts name it ({key}), or a click with the mouse. In capitals on screen.
+press_key: "Drück {key}"
+press_click: "Klicken"
+original.new_game: "NEUES SPIEL"
+original.continue: "SPIEL FORTSETZEN"
+original.erase: "SPIEL LÖSCHEN"
+original.battle_mode: "KAMPFMODUS"
+original.options: "OPTIONEN"
+original.coop: "MEHRSPIELER"
+original.battle_mode_message: "Ein Online-Versus mit den registrierten Partnern eines Spielstands spielen?"
+original.language_heading: "LANGUAGE - IDIOMA"
+original.language_done: "STARTEN"

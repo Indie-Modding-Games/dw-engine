@@ -95,6 +95,7 @@ dwe_add_app(game
         src/battle_speed.cpp
         src/gym_batch.cpp
         src/title_options.cpp
+        src/mode_options.cpp
         src/free_exploration.cpp
         src/game_saves.cpp
         src/model_viewer.cpp
@@ -274,7 +275,7 @@ if(BUILD_TESTING)
                                   src/pause_box.cpp src/place_command.cpp src/player_commands.cpp src/player_registry.cpp src/coop_commands.cpp src/coop_connection.cpp src/coop_hud.cpp src/coop_battle_view.cpp src/coop_trade_bag.cpp src/online_rooms.cpp src/online_profile.cpp src/online_signal_directory.cpp src/coop_guest_profile.cpp src/coop_guest_return.cpp src/coop_gameplay_bridge.cpp src/coop_snapshot.cpp src/coop_snapshot_interpolation.cpp src/coop_sync.cpp src/coop_training.cpp src/coop_world.cpp src/coop_world_state.cpp src/coop_npc_presence.cpp src/player_chart.cpp src/player_city.cpp src/partner_set_command.cpp src/story_set_command.cpp src/story_state_json.cpp src/shop_job_bar.cpp src/shop_haggle_screen.cpp src/shop_job_rules_panel.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
                                   src/save_indicator.cpp src/save_machine_flow.cpp src/award_screen.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_commands.cpp src/story_text_rows.cpp src/ui_addon_setting.cpp src/ui_contract.cpp src/ui_skin_setting.cpp src/user_settings.cpp src/walk_control.cpp src/battle_speed.cpp src/gym_batch.cpp src/rule_options.cpp src/world_map.cpp
                                   src/graphics_options.cpp src/weather_particles.cpp src/volume_setting.cpp src/sprite_characters.cpp src/partner_clip_fallbacks.cpp
-                                  src/title_options.cpp src/new_game_mode.cpp src/versus_flow.cpp src/language.cpp
+                                  src/title_options.cpp src/new_game_mode.cpp src/mode_options.cpp src/versus_flow.cpp src/language.cpp
                                   src/hangul_input.cpp src/naming_box.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::input dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::field dwe::evolution

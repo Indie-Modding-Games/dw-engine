@@ -1,0 +1,69 @@
+# Classic Enhanced (docs/architecture/game-variants.md): a new game from the main menu in the first mode of the list
+# starts right away with the original's rules, no rules screen, and its game fixes the options that change the rules.
+# The options page shows them locked and grouped last in the game tab, with their tag and help; a change of one is
+# refused and the value stays. Back at the title the locks are gone, and the slot list names the save's variant. Run
+# it with --saves <empty folder>, once per skin (--ui-skin original, devvago) and per language (--lang en, --lang es),
+# each with its own capture folder (docs/guides/vertical-slice.md).
+name: classic-enhanced
+device: keyboard
+timeout: 300
+main_menu: true
+new_game_rules: true
+text_fit: true
+steps:
+  - resize: [1280, 720]
+  - wait: {shown: main_menu, seconds: 1, timeout: 60}
+  - menu_select: play
+  - wait: {shown: save_slots, seconds: 0.5, timeout: 30}
+  - menu_select: slot-1
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - menu_select: yes
+  - wait: {shown: new_game_mode, seconds: 0.5, timeout: 30}
+  - expect_text_fits: all
+  - screenshot: variants
+  - tap: {key: down}
+  - wait: {seconds: 0.3}
+  - screenshot: variants-folder
+  - menu_select: mode-1
+  - wait: {map: twna01, hidden: new_game_mode, seconds: 2, timeout: 120}
+  - expect_setting: {options.variant: modes.classic_name}
+  - expect_setting: {options.locked.rare_items: true}
+  - expect_setting: {difficulty: normal}
+  - wait: {setting: {screen_fade: 0}, timeout: 10}
+  - script: save("slot_01")
+  - wait: {seconds: 1}
+  # Escape opens the options page on its game tab in every skin; the fixed rows come last.
+  - tap: {key: escape}
+  - wait: {menu_open: true, seconds: 0.6, timeout: 5}
+  - expect_text_fits: all
+  - screenshot: options-game
+  # A fixed row: confirming it changes nothing.
+  - menu_select: rare-items
+  - wait: {seconds: 0.3}
+  - expect_setting: {rare_items: false}
+  - expect_text_fits: all
+  - screenshot: options-locked-row
+  - tap: {key: escape}
+  - wait: {menu_open: false, seconds: 0.5, timeout: 5}
+  # Back to the title: the options page shows the player's own values again, and the slot list names the variant.
+  - tap: {key: escape}
+  - wait: {menu_open: true, seconds: 0.6, timeout: 5}
+  - tap: {key: up}
+  - tap: {key: right}
+  - tap: {key: return}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 5}
+  - menu_select: yes
+  - wait: {shown: main_menu, seconds: 2, timeout: 15}
+  - expect_setting: {options.variant: ""}
+  - expect_setting: {options.locked.rare_items: false}
+  # The original look (and the skins built on it) opens on its landing screen, which Return passes; the modern one
+  # shows the menu right away.
+  - when:
+      setting: {has_class.main_menu#press-start.hidden: "false"}
+      steps:
+        - tap: {key: return}
+        - wait: {seconds: 1}
+  - menu_select: continue
+  - wait: {shown: save_slots, seconds: 0.5, timeout: 10}
+  - expect_text_fits: all
+  - screenshot: slots-variant

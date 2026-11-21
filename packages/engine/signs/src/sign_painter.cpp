@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
@@ -22,10 +23,12 @@ constexpr std::int32_t Supersample = 4;
 constexpr std::int32_t PixelSamples = 4;
 // Coverage below this leaves a pixel as the clear made it.
 constexpr float Untouched = 1.0F / 48.0F;
-// The smallest font size fitting may shrink a text to, in image pixels.
-constexpr float SmallestSize = 3.0F;
-// How much of the box a fitted text may fill.
-constexpr float FitMargin = 0.96F;
+constexpr float SmallestSize = 1.0F;
+constexpr float ReferenceSize = 100.0F;
+constexpr float DefaultLetterExtent = 0.72F;
+constexpr std::size_t MostLines = 4;
+constexpr std::size_t MostBreaks = 12;
+constexpr float TieMargin = 1.01F;
 // A glow's halo is the blurred letters, this much brighter, before its strength.
 constexpr float GlowGain = 2.5F;
 // A diffuse clear copies the board's grain only when it has this many board pixels to take it from.
@@ -553,7 +556,7 @@ std::vector<std::string> linesOf(std::string_view text, bool vertical) {
   if (vertical) {
     for (const char32_t codePoint : decodeUtf8(text)) {
       if (codePoint != U'\n' && codePoint != U' ') {
-        lines.push_back(encodeUtf8(codePoint));
+        lines.push_back(encodeUtf8(codePoint == U'\u30FC' ? U'\uFF5C' : codePoint));
       }
     }
     return lines;
@@ -609,8 +612,8 @@ struct Upright {
   float pad = 0.0F;
 };
 
-Upright drawUpright(const Sign& sign, std::string_view text, const SignFont& font, PixelPoint box) {
-  const std::vector<std::string> lines = linesOf(text, sign.vertical);
+Upright drawUpright(const Sign& sign, const SignTextLayout& layout, const SignFont& font) {
+  const PixelPoint box = layout.box;
   const auto scale = static_cast<float>(Supersample);
   const float outlineWidth = sign.outline ? sign.outline->width : 0.0F;
   const float glowRadius = sign.glow ? sign.glow->radius : 0.0F;
@@ -625,22 +628,10 @@ Upright drawUpright(const Sign& sign, std::string_view text, const SignFont& fon
                   .values = std::vector<float>(static_cast<std::size_t>(canvasWidth) *
                                                static_cast<std::size_t>(canvasHeight))};
 
-  float size = sign.size;
-  Block block = layOut(font, lines, size * scale, sign.letterSpacing * scale, sign.lineSpacing);
-  // What the effects add around the letters counts towards fitting.
-  const float extra = 2.0F * outlineWidth * scale;
-  for (int attempt = 0; sign.fit && attempt < 6; ++attempt) {
-    const float width = block.width + extra;
-    const float height = block.bottom - block.top + extra;
-    const float shrink = std::min({1.0F, (box.x * scale * FitMargin) / std::max(width, 1.0F),
-                                   (box.y * scale * FitMargin) / std::max(height, 1.0F)});
-    if (shrink >= 0.995F || size <= SmallestSize) {
-      break;
-    }
-    size = std::max(size * shrink, SmallestSize);
-    block = layOut(font, lines, size * scale, sign.letterSpacing * scale, sign.lineSpacing);
-  }
-
+  const Block block =
+      layOut(font, layout.lines, layout.size * scale, sign.letterSpacing * scale, sign.lineSpacing);
+  const float marginX = (box.x - layout.room.x) / 2.0F;
+  const float marginY = (box.y - layout.room.y) / 2.0F;
   const float boxLeft = upright.pad * scale;
   const float boxTop = upright.pad * scale;
   const float boxWidth = box.x * scale;
@@ -648,9 +639,9 @@ Upright drawUpright(const Sign& sign, std::string_view text, const SignFont& fon
   const float blockHeight = block.bottom - block.top;
   float blockTop = boxTop + ((boxHeight - blockHeight) / 2.0F);
   if (sign.valign == VerticalAlign::Top) {
-    blockTop = boxTop + (outlineWidth * scale);
+    blockTop = boxTop + ((marginY + outlineWidth) * scale);
   } else if (sign.valign == VerticalAlign::Bottom) {
-    blockTop = boxTop + boxHeight - blockHeight - (outlineWidth * scale);
+    blockTop = boxTop + boxHeight - blockHeight - ((marginY + outlineWidth) * scale);
   }
   for (std::size_t index = 0; index < block.lines.size(); ++index) {
     const TextLine& line = block.lines[index];
@@ -660,9 +651,9 @@ Upright drawUpright(const Sign& sign, std::string_view text, const SignFont& fon
     const auto lineWidth = static_cast<float>(line.ink.width);
     float left = boxLeft + ((boxWidth - lineWidth) / 2.0F);
     if (sign.align == HorizontalAlign::Left) {
-      left = boxLeft + (outlineWidth * scale);
+      left = boxLeft + ((marginX + outlineWidth) * scale);
     } else if (sign.align == HorizontalAlign::Right) {
-      left = boxLeft + boxWidth - lineWidth - (outlineWidth * scale);
+      left = boxLeft + boxWidth - lineWidth - ((marginX + outlineWidth) * scale);
     }
     const float top = blockTop + (block.baselines[index] - line.baseline - block.top);
     const auto originX = static_cast<std::int32_t>(std::lround(left));
@@ -786,6 +777,182 @@ std::pair<std::array<PixelPoint, 4>, PixelPoint> placeBox(const Sign& sign) {
           size};
 }
 
+bool isCjk(char32_t codePoint) {
+  return (codePoint >= 0x1100 && codePoint <= 0x11FF) ||
+         (codePoint >= 0x2E80 && codePoint <= 0x9FFF) ||
+         (codePoint >= 0xAC00 && codePoint <= 0xD7AF) ||
+         (codePoint >= 0xF900 && codePoint <= 0xFAFF) ||
+         (codePoint >= 0xFF00 && codePoint <= 0xFFEF);
+}
+
+float letterExtent(const SignFont& font, std::string_view text, bool vertical) {
+  const std::string_view alphabet = vertical ? "M" : "H";
+  const bool cjk = std::ranges::any_of(decodeUtf8(text), isCjk);
+  TextLine line = font.drawLine(cjk ? "\xE5\x9B\xBD" : alphabet, ReferenceSize, 0.0F);
+  if (line.ink.width == 0) {
+    line = font.drawLine(alphabet, ReferenceSize, 0.0F);
+  }
+  const auto extent = static_cast<float>(vertical ? line.ink.width : line.ink.height);
+  return extent > 0.0F ? extent / ReferenceSize : DefaultLetterExtent;
+}
+
+struct Measured {
+  PixelPoint ink;
+  std::int32_t missing = 0;
+};
+
+Measured measure(const Sign& sign, const SignFont& font, std::span<const std::string> lines,
+                 float size) {
+  const auto scale = static_cast<float>(Supersample);
+  const Block block =
+      layOut(font, lines, size * scale, sign.letterSpacing * scale, sign.lineSpacing);
+  const float effects = (sign.outline ? 2.0F * sign.outline->width : 0.0F) +
+                        (sign.glow ? 2.0F * sign.glow->radius : 0.0F);
+  Measured measured{.ink = {.x = (block.width / scale) + effects,
+                            .y = ((block.bottom - block.top) / scale) + effects}};
+  for (const TextLine& line : block.lines) {
+    measured.missing += line.missing;
+  }
+  return measured;
+}
+
+float shrinkToFit(const Sign& sign, const SignFont& font, std::span<const std::string> lines,
+                  float size, PixelPoint room) {
+  if (!sign.fit) {
+    return size;
+  }
+  for (int attempt = 0; attempt < 12 && size > SmallestSize; ++attempt) {
+    const PixelPoint ink = measure(sign, font, lines, size).ink;
+    const float shrink = std::min(room.x / std::max(ink.x, 0.01F), room.y / std::max(ink.y, 0.01F));
+    if (shrink >= 1.0F) {
+      break;
+    }
+    size = std::max(size * std::min(shrink, 0.995F), SmallestSize);
+  }
+  return size;
+}
+
+struct Pieces {
+  std::vector<std::string> words;
+  std::vector<std::string> joiners;
+};
+
+Pieces piecesOf(std::string_view text) {
+  Pieces pieces;
+  const auto cut = [&](std::size_t from, std::size_t to, std::string joiner) {
+    pieces.words.emplace_back(text.substr(from, to - from));
+    pieces.joiners.push_back(std::move(joiner));
+  };
+  std::size_t start = 0;
+  if (text.contains('\n')) {
+    for (std::size_t at = text.find('\n'); at != std::string_view::npos;
+         at = text.find('\n', start)) {
+      const std::vector<char32_t> before = decodeUtf8(text.substr(start, at - start));
+      const std::vector<char32_t> after = decodeUtf8(text.substr(at + 1));
+      const bool hyphen = !before.empty() && before.back() == U'-';
+      const bool ideographs =
+          !before.empty() && !after.empty() && isCjk(before.back()) && isCjk(after.front());
+      cut(start, at, hyphen || ideographs ? "" : " ");
+      start = at + 1;
+    }
+  } else {
+    for (std::size_t at = 1; at + 1 < text.size(); ++at) {
+      if (text[at] == ' ') {
+        cut(start, at, " ");
+        start = at + 1;
+      } else if (text[at] == '-' && text[at + 1] != ' ') {
+        cut(start, at + 1, "");
+        start = at + 1;
+      }
+    }
+  }
+  pieces.words.emplace_back(text.substr(start));
+  return pieces;
+}
+
+std::vector<std::vector<std::string>> arrangements(const Pieces& pieces, std::size_t maxLines) {
+  const std::size_t breaks = pieces.joiners.size();
+  std::vector<std::vector<std::string>> found;
+  if (breaks > MostBreaks) {
+    return found;
+  }
+  for (std::uint32_t mask = 0; mask < (1U << breaks); ++mask) {
+    if (std::cmp_greater_equal(std::popcount(mask), maxLines)) {
+      continue;
+    }
+    std::vector<std::string> lines{pieces.words.front()};
+    for (std::size_t index = 0; index < breaks; ++index) {
+      if ((mask & (1U << index)) != 0U) {
+        lines.push_back(pieces.words[index + 1]);
+      } else {
+        lines.back() += pieces.joiners[index] + pieces.words[index + 1];
+      }
+    }
+    found.push_back(std::move(lines));
+  }
+  return found;
+}
+
+SignTextLayout layOutInBox(const Sign& sign, std::string_view text, const SignFont& font,
+                           PixelPoint box) {
+  SignTextLayout layout;
+  layout.box = box;
+  const float cross = sign.vertical ? box.x : box.y;
+  const auto marginFor = [&](std::size_t lines) {
+    return cross * SignMarginRatio /
+           static_cast<float>(sign.vertical ? 1 : std::max<std::size_t>(lines, 1));
+  };
+  const auto roomFor = [&](std::size_t lines) {
+    const float margin = marginFor(lines);
+    return sign.vertical ? PixelPoint{.x = box.x, .y = box.y - (2.0F * margin)}
+                         : PixelPoint{.x = box.x - (2.0F * margin), .y = box.y};
+  };
+  layout.room = roomFor(1);
+  if (text.empty()) {
+    return layout;
+  }
+  layout.lines = linesOf(text, sign.vertical);
+  const float step = font.lineHeight(ReferenceSize) / ReferenceSize * sign.lineSpacing;
+  const float extent = letterExtent(font, text, sign.vertical);
+  const auto baseFor = [&](std::size_t lines) {
+    const float count = sign.vertical ? 1.0F : static_cast<float>(lines);
+    return sign.size.value_or(std::max(cross - (2.0F * marginFor(lines)), 1.0F) /
+                              (extent + ((count - 1.0F) * step)));
+  };
+  const auto settle = [&](std::vector<std::string> lines) {
+    layout.room = roomFor(lines.size());
+    layout.baseSize = baseFor(lines.size());
+    layout.size = shrinkToFit(sign, font, lines, layout.baseSize, layout.room);
+    layout.lines = std::move(lines);
+  };
+  if (!sign.fit || sign.vertical) {
+    settle(layout.lines);
+  } else {
+    const Pieces pieces = piecesOf(text);
+    const std::size_t maxLines =
+        std::max(static_cast<std::size_t>(sign.lines), layout.lines.size());
+    float best = -1.0F;
+    std::vector<std::string> chosen = layout.lines;
+    for (std::vector<std::string>& lines :
+         arrangements(pieces, std::min<std::size_t>(maxLines, MostLines))) {
+      const float size =
+          shrinkToFit(sign, font, lines, baseFor(lines.size()), roomFor(lines.size()));
+      if (size > best * TieMargin || (size > best / TieMargin && lines.size() < chosen.size())) {
+        best = size;
+        chosen = std::move(lines);
+      }
+    }
+    settle(std::move(chosen));
+  }
+  const float legible = SignLegibleLetter / extent;
+  layout.floorSize =
+      layout.baseSize < legible ? 0.0F : std::min(layout.baseSize * SignFloorRatio, legible);
+  const Measured measured = measure(sign, font, layout.lines, layout.size);
+  layout.ink = measured.ink;
+  layout.missing = measured.missing;
+  return layout;
+}
+
 // Picks palette indices for colours: the nearest allowed colour, weighted for the eye.
 class Quantizer {
 public:
@@ -859,11 +1026,9 @@ std::vector<std::uint8_t> allowedIndices(const assets::IndexedImage& image,
   return allowed;
 }
 
-} // namespace
-
-PixelRect paintSign(assets::IndexedImage& image, std::span<const assets::PaletteColor> palette,
-                    const Sign& sign, std::string_view text, const SignFont& font,
-                    const assets::IndexedImage* original) {
+PixelRect paintLaidOut(assets::IndexedImage& image, std::span<const assets::PaletteColor> palette,
+                       const Sign& sign, const SignTextLayout& layout, const SignFont& font,
+                       const assets::IndexedImage* original) {
   const PixelRect bounds{.x = 0,
                          .y = 0,
                          .width = static_cast<std::int32_t>(image.width),
@@ -907,8 +1072,8 @@ PixelRect paintSign(assets::IndexedImage& image, std::span<const assets::Palette
 
   const auto [corners, box] = placeBox(sign);
   const std::optional<Matrix> toBox = invert(squareToQuad(corners));
-  if (toBox && !empty(region) && !text.empty()) {
-    const Upright upright = drawUpright(sign, text, font, box);
+  if (toBox && !empty(region) && !layout.lines.empty()) {
+    const Upright upright = drawUpright(sign, layout, font);
     const auto scale = static_cast<float>(Supersample);
     const Color fill = colorOf(sign.color);
     const float fillAlpha = static_cast<float>(sign.color.alpha) / 255.0F;
@@ -983,6 +1148,57 @@ PixelRect paintSign(assets::IndexedImage& image, std::span<const assets::Palette
     }
   }
   return changed;
+}
+
+} // namespace
+
+bool SignTextLayout::overflows() const {
+  constexpr float Slack = 0.01F;
+  return ink.x > room.x + Slack || ink.y > room.y + Slack;
+}
+
+bool SignTextLayout::tooSmall() const {
+  return size < floorSize - 0.01F;
+}
+
+SignTextLayout layOutSignText(const Sign& sign, std::string_view text, const SignFont& font) {
+  return layOutInBox(sign, text, font, placeBox(sign).second);
+}
+
+std::vector<SignTextLayout> layOutSigns(std::span<const Sign> signs,
+                                        const SignResources& resources) {
+  std::vector<SignTextLayout> layouts(signs.size());
+  std::vector<const SignFont*> fonts(signs.size(), nullptr);
+  std::unordered_map<std::string, float> smallest;
+  for (std::size_t index = 0; index < signs.size(); ++index) {
+    const Sign& sign = signs[index];
+    fonts[index] = resources.font ? resources.font(sign.font) : nullptr;
+    if (fonts[index] == nullptr) {
+      continue;
+    }
+    const std::string text = resources.text ? resources.text(sign.text) : sign.text;
+    layouts[index] = layOutSignText(sign, text, *fonts[index]);
+    if (!sign.group.empty() && !layouts[index].lines.empty()) {
+      const auto [found, added] = smallest.try_emplace(sign.group, layouts[index].size);
+      found->second = std::min(found->second, layouts[index].size);
+    }
+  }
+  for (std::size_t index = 0; index < signs.size(); ++index) {
+    const auto found = smallest.find(signs[index].group);
+    SignTextLayout& layout = layouts[index];
+    if (found == smallest.end() || layout.lines.empty() || layout.size <= found->second) {
+      continue;
+    }
+    layout.size = found->second;
+    layout.ink = measure(signs[index], *fonts[index], layout.lines, layout.size).ink;
+  }
+  return layouts;
+}
+
+PixelRect paintSign(assets::IndexedImage& image, std::span<const assets::PaletteColor> palette,
+                    const Sign& sign, std::string_view text, const SignFont& font,
+                    const assets::IndexedImage* original) {
+  return paintLaidOut(image, palette, sign, layOutSignText(sign, text, font), font, original);
 }
 
 assets::MapTexturePage* findSignPage(std::span<assets::MapTexturePage> pages,
@@ -1133,7 +1349,9 @@ PaintedSigns paintSigns(const assets::MapImages& images, std::span<const Sign> s
                         const SignResources& resources, const assets::MapObjects* objects) {
   PaintedSigns painted;
   assets::MapImages working = images;
-  for (const Sign& sign : signs) {
+  const std::vector<SignTextLayout> layouts = layOutSigns(signs, resources);
+  for (std::size_t index = 0; index < signs.size(); ++index) {
+    const Sign& sign = signs[index];
     const SignFont* font = resources.font ? resources.font(sign.font) : nullptr;
     if (font == nullptr) {
       painted.warnings.push_back(std::format("sign {}: no font {}", sign.id, sign.font));
@@ -1160,8 +1378,7 @@ PaintedSigns paintSigns(const assets::MapImages& images, std::span<const Sign> s
           std::format("sign {}: no palette at clut {}", sign.id, sign.target.clut));
       continue;
     }
-    const std::string text = resources.text ? resources.text(sign.text) : sign.text;
-    const PixelRect changed = paintSign(*image, *palette, sign, text, *font, original);
+    const PixelRect changed = paintLaidOut(*image, *palette, sign, layouts[index], *font, original);
     if (empty(changed)) {
       continue;
     }

@@ -52,8 +52,8 @@ visibility.private: "Privada"
 visibility.joining: "{visibility} · {joining}"
 join_open: "abierta"
 join_closed: "cerrada"
-open_to_join: "Admitir jugadores nuevos"
-close_to_join: "Cerrar a jugadores nuevos"
+open_to_join: "Admitir jugadores"
+close_to_join: "No admitir jugadores"
 # Una partida pública ya en curso que admite jugadores.
 mode_in_progress: "En curso"
 untitled_room: "Sala sin nombre"
@@ -137,6 +137,7 @@ error.damaged: "Llegó un mensaje dañado. La conexión se cerró."
 error.disconnected: "El otro jugador se desconectó."
 error.directory_unavailable: "La lista de salas públicas aún no está disponible."
 error.unknown: "Algo falló en la conexión."
+error.code: "Código: {code}"
 # Lo que el juego no hizo de un paso.
 notice.room_gone: "Esa sala ya no está abierta."
 notice.room_full: "Esa sala ya está llena."
@@ -158,6 +159,8 @@ hub.record: "{wins} V / {losses} D"
 # El perfil en línea (ui/online_profile).
 profile_title: "Perfil en línea"
 profile.name: "Nombre"
+# The name a profile shows until the player chooses one.
+profile.default_name: "Jugador"
 profile.name_hint: "Lo ven los demás jugadores en las salas y sobre tu personaje."
 profile.name_editing: "Escribe tu nombre y pulsa Intro."
 profile.icon: "Icono"
@@ -204,6 +207,10 @@ coop.came_home: "De vuelta del mundo de {name}: tu compañero y tu bolsa volvier
 # cooperativa (coop-training.md): el reloj del mundo no se detiene por él.
 coop.training: "Entrenando"
 coop.training_clock: "Entrenas en compañía: el tiempo del mundo sigue corriendo y cada sesión cuenta su propia hora para tu compañero."
+# Un invitado que trajo una partida de la otra variante, y el aviso del anfitrión (game-variants.md, "Cooperativo").
+coop.guest_other_variant: "El mundo de {name} juega otra variante, con sus reglas. Tu compañero y tu bolsa vuelven igual."
+coop.guest_other_variant_kept: "El mundo de {name} juega otra variante: nada vuelve contigo, tu partida queda como estaba."
+coop.player_other_variant: "{name} trajo una partida de otra variante: las reglas de tu partida rigen para los dos."
 # Los nombres de las salas y jugadores de ejemplo (herramientas de desarrollo).
 sample.room_1: "Aventura del sábado"
 sample.room_2: "Exploración tranquila"

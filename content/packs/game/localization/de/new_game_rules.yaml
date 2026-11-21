@@ -1,0 +1,12 @@
+# The new game's rules (ui/new_game_rules): every species as a partner, the original's or with its hidden content,
+# and the Ultimate to Mega step.
+title: "Spielregeln"
+all: "Jede Art als Partner: {value}"
+all_on: "Auch die Arten, die das Original nie aufziehen lässt, entstehen durch Evolution."
+all_off: "Nur die Arten des Originals."
+hidden: "Versteckte Inhalte: {value}"
+hidden_off: "Die Regeln des Originals."
+hidden_on: "Panjyamon, Gigadramon, MetalEtemon und Myotismon auch durch Evolution."
+mega: "Schritt von Ultra zu Mega: {value}"
+mega_about: "Ein Ultra kann zu Mega digievolvieren: MetalEtemon und Machinedramon."
+start: "Starten"

@@ -5,7 +5,6 @@ signs:
     clear: {mode: diffuse, quad: [[132, 111], [145, 107], [146, 120], [133, 125]], color: "#000808"}
     corners: [[133, 112], [144, 109], [145, 119], [134, 123]]
     text: signs.frzl06_east
-    size: 6
-    line_spacing: 0.85
+    lines: 2
     color: "#5ac6c6"
     colors: region

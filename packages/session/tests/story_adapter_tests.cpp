@@ -2,6 +2,7 @@
 #include <dwe/game/story/story_state_yaml.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/story_adapter.hpp>
+#include <dwe/session/story_scenes.hpp>
 
 #include <doctest/doctest.h>
 
@@ -151,6 +152,43 @@ TEST_CASE("the story is saved in its section and loaded back") {
   const auto read = loaded.session->loadFile(*file);
   REQUIRE_MESSAGE(read.has_value(), errorOf(read));
   CHECK(loaded.story->state() == saved.story->state());
+}
+
+TEST_CASE("a save neither keeps nor brings back the trigger of a fight that cannot be fled") {
+  constexpr std::int32_t FixedFightTrigger = 1;
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory}};
+  const auto unaware = storySession(packs);
+  REQUIRE(unaware.story->state().setTrigger(FixedFightTrigger, true).has_value());
+  REQUIRE(unaware.story->state().setTrigger(PlayedTrigger, true).has_value());
+  auto stale = unaware.session->saveFile();
+  REQUIRE_MESSAGE(stale.has_value(), errorOf(stale));
+
+  const auto loaded = storySession(packs);
+  loaded.story->setFixedFightTrigger(FixedFightTrigger);
+  const auto read = loaded.session->loadFile(*stale);
+  REQUIRE_MESSAGE(read.has_value(), errorOf(read));
+  CHECK_FALSE(isSet(*loaded.story, FixedFightTrigger));
+  CHECK(isSet(*loaded.story, PlayedTrigger));
+
+  auto adapter =
+      std::make_unique<StoryAdapter>(dwe::session::StoryAdapterDesc{.files = &packs.files()});
+  StoryAdapter* story = adapter.get();
+  std::vector<std::unique_ptr<SessionSystem>> systems;
+  systems.push_back(std::move(adapter));
+  systems.push_back(
+      std::make_unique<dwe::session::StoryScenes>(dwe::session::StoryScenesDesc{.story = story}));
+  const auto fighting = newGameWith(packs, std::move(systems));
+  REQUIRE(story->state().setTrigger(FixedFightTrigger, true).has_value());
+  REQUIRE(story->state().setTrigger(PlayedTrigger, true).has_value());
+  auto midFight = fighting->saveFile();
+  REQUIRE_MESSAGE(midFight.has_value(), errorOf(midFight));
+  CHECK(isSet(*story, FixedFightTrigger));
+  const auto reloaded = storySession(packs);
+  const auto again = reloaded.session->loadFile(*midFight);
+  REQUIRE_MESSAGE(again.has_value(), errorOf(again));
+  CHECK_FALSE(isSet(*reloaded.story, FixedFightTrigger));
+  CHECK(isSet(*reloaded.story, PlayedTrigger));
 }
 
 TEST_CASE("a save made before the story section loads, with the story as a new game leaves it") {

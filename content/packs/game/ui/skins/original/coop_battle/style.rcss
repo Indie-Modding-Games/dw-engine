@@ -22,6 +22,7 @@
 }
 
 .fighter .bar {
+	width: 54%;
 	border-radius: 0;
 	background-color: #303030;
 }
@@ -47,6 +48,30 @@ button:focus {
 	color: #68a8e8;
 }
 
+.fighter .hp,
+.fighter .mp,
+.fighter .revive,
+.fighter .target {
+	font-size: 22dp;
+}
+
 .fighter.mine {
 	border-left-color: #e8d048;
+}
+
+.fighter .revive {
+	padding: 0 6dp;
+	color: #1d262e;
+	background-color: #e8d048;
+}
+
+.fighter.down {
+	opacity: 1;
+}
+
+.fighter.down .name,
+.fighter.down .bar,
+.fighter.down .hp,
+.fighter.down .mp {
+	opacity: 0.5;
 }

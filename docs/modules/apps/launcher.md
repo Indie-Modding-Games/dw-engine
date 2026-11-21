@@ -47,7 +47,7 @@ element and the focus ring.
     saved) takes the system's language when it is one of them, else English, and saves it; a saved choice is
     never changed. The texts are one module per language in `ui/js/i18n/` (`en.js` is the reference: the
     others have the same keys and `{placeholders}`); a key a language lacks shows in English, and
-    `node apps/launcher/tools/i18n_check.mjs [code]` counts the missing keys and catches extra keys or changed
+    `node apps/launcher/tools/i18n_check.mjs [code]` (run by CI) fails on missing keys, extra keys or changed
     placeholders. The codes are kept in two lists that must match: `LANGUAGES` in `ui/js/i18n.js` (with the
     native names) and in `src-tauri/src/settings.rs`.
   - **Updates:** the channel, check on open, check now, automatic updates, the installed

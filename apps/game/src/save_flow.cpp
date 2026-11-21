@@ -1,6 +1,7 @@
 #include "save_flow.hpp"
 
 #include <dwe/core/log.hpp>
+#include <dwe/game/modes/game_mode.hpp>
 
 #include <algorithm>
 #include <format>
@@ -94,6 +95,10 @@ void addEntry(screens::ScreenSettings& settings, std::size_t index, const SlotIn
   add("species_key", keyOf(names.species, header.summary.species));
   add("map", header.summary.map);
   add("map_key", keyOf(names.map, header.summary.map));
+  const std::string_view mode =
+      info.header ? game::modes::currentModeId(header.summary.mode) : std::string_view{};
+  add("mode", std::string{mode});
+  add("mode_key", keyOf(names.mode, mode));
   add("play_seconds", static_cast<double>(header.playSeconds));
   add("updated", info.header ? std::format("{:%Y-%m-%d}", header.updated) : std::string{});
 }

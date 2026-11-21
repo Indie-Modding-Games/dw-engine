@@ -1,0 +1,46 @@
+signs:
+  - id: jijimon
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 0, 144, 56]
+    clear: transparent
+    text: signs.mayo_led_jijimon
+    lines: 2
+    group: posts
+    color: "#c68421"
+    colors: region
+  - id: town
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 56, 144, 56]
+    clear: transparent
+    text: signs.mayo_led_town
+    lines: 2
+    group: posts
+    color: "#c68421"
+    colors: region
+  - id: panorama
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 112, 144, 48]
+    clear: transparent
+    text: signs.mayo_led_panorama
+    lines: 2
+    group: posts
+    color: "#c68421"
+    colors: region
+  - id: drill
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 160, 144, 48]
+    clear: transparent
+    text: signs.mayo_led_drill
+    lines: 2
+    group: posts
+    color: "#c68421"
+    colors: region
+  - id: forest
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 208, 144, 47]
+    clear: transparent
+    text: signs.mayo_led_forest
+    lines: 2
+    group: posts
+    color: "#c68421"
+    colors: region

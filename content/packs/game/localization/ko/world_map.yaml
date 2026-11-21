@@ -1,0 +1,10 @@
+# The island map the M key opens (a dwe improvement): its title, where the player is, the places his map leads to,
+# the legend and the close key.
+title: "섬 지도"
+here: "현재 위치:"
+exits: "여기서 갈 수 있는 곳"
+no_exits: "여기서 나갈 길이 없어요"
+legend_here: "현재 위치"
+legend_exit: "여기서 갈 수 있음"
+legend_unknown: "아직 안 가 봄"
+close: "닫기"
