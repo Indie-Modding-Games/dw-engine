@@ -1,0 +1,4 @@
+# The egg box after a death (doo2.c: DOO2_openEggBox). {number} is the egg's number.
+title: "Wähle ein Ei"
+egg: "Ei {number}"
+take: "Wählen"

@@ -1,0 +1,7 @@
+title: "Куда?"
+place: "{name} ({map})"
+story: "сюжет"
+stay: "Остаться здесь"
+previous: "Предыдущая"
+next: "Следующая"
+page: "{page}/{pages}"

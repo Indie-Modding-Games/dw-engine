@@ -1,0 +1,71 @@
+# The battle screen (ui/battle) and the battle's own keys (packages/game/battle: text_keys.hpp). The command row shows the
+# original's command names (btl.command_names) and move names; command.* is the engine's fallback for tools.
+command.none: "없음"
+command.flee: "도망"
+command.attack: "공격"
+command.your_call: "알아서"
+command.moderate: "적당히"
+command.distance: "거리 두기"
+command.defend: "방어"
+command.change: "교체"
+command.technique_1: "기술 1"
+command.technique_2: "기술 2"
+command.technique_3: "기술 3"
+command.finisher: "필살기"
+outcome.victory: "승리!"
+outcome.fled: "무사히 도망쳤다."
+outcome.defeat: "졌다..."
+status.poison: "독"
+status.confusion: "혼란"
+status.stun: "기절"
+status.flatten: "납작"
+# The end box types the original's own lines (btl.battle_effect_messages); these finish one or are the engine's. The
+# marks are the original's: {color:7} yellow, {color:1} white, {br} a new row, {wait} the row that ends the line and
+# waits. {amount} is the MP bonus in percent, after the original's "reduced by".
+result.mp_bonus_percent: " {amount}%!{wait}"
+# {amount} is the bits won.
+result.bits: "{amount} Bits를 얻었다."
+# {amount} is how many lives the partner lost.
+result.lives_lost: "파트너가 목숨을{br}{color:7}{amount}{color:1}개 잃었다.{wait}"
+# {name} is the item's name and {amount} how many were lost.
+result.item_lost: "{color:7}{name}{color:1}을(를){br}{amount}개 잃었다.{wait}"
+# {name} is the name of who joined the city.
+result.recruit_joined: "{color:7}{name}{color:1}이(가){br}마을로 이사 온다!{wait}"
+# The short label before a healing or raise number over a fighter (modern look; the original look draws the icon).
+number_icon.hp: "HP"
+number_icon.mp: "MP"
+number_icon.offense: "공격"
+number_icon.defense: "방어"
+number_icon.speed: "속도"
+# {seconds} is the time left to get back up.
+revive_countdown: "일어나! {seconds}"
+# After a technique's name on the strip: the MP it costs the partner ({mp}, a number).
+mp_cost: "{mp} MP"
+finisher: "필살기"
+# The finisher gauge's word and the "press" mark once it is full, which the original look draws over the gauge
+# (one more letter of the word for each step the gauge fills; in English it shows the original's pictures).
+finisher_word: "필살기!!"
+finisher_push: "눌러!"
+# The word of the banner that opens a battle, in cells of the original's banner pieces: '#' a piece,
+# '.' a gap, 8 rows; a letter ends at a column with no piece, and at most 200 pieces fit. English
+# draws the original's own word.
+banner_shape: |-
+  ########.##.....####..##..########..##
+  .##..##..##....##..##.##..##........##
+  .##..##..##....##..##.##..#######...##
+  .##..##..####..##..##.##..##........##
+  .##..##..##....##..##.##..########..##
+  .##..##..##....##..##.##..............
+  ########.##.....####..##..########..##
+  .........##...........##..########..##
+charge: "필살기를 모아!"
+charge_hint: "버튼을 연타하세요"
+prompt.command: "명령하기"
+prompt.bag: "아이템"
+# The bag in battle: the button that opens it.
+bag.open: "아이템"
+# The marks over the fighters of a cup match between two of the same species (STD_renderPlayerMarker).
+mark.partner: "1P"
+mark.rival: "COM"
+# Quick battles: the plate while a fight runs at twice the speed.
+fast: "x2"

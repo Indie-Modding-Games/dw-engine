@@ -46,7 +46,10 @@ queda así a propósito» de «falta traducir»:
   restos en japonés que el US no muestra, las siglas `HP`, `MP` y `Bits` y el nombre propio `Overdell`.
 
 Las reglas están al principio de `scripts/translation.sh` (`kept_english_blocks`, `kept_original_blocks`,
-`kept_name_block` y `kept_original_ids`).
+`kept_name_block` y `kept_original_ids`). Un idioma con otra escritura puede escribir los nombres a su manera (el
+coreano los escribe en hangul y el japonés en katakana; el chino los deja en inglés): en cuanto su `main.yaml` tiene un nombre de
+`main.digimon_names` que no es un título, esos nombres y las cadenas que son solo un nombre cuentan como traducidos
+para ese idioma y dejan de estar guardados (`own_names`).
 
 ## Cómo se traduce
 

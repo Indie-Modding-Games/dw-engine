@@ -1,0 +1,119 @@
+# The partner's menu (ui/partner_menu): the status page, the item bag and the care page. The original's own labels
+# (HP, MP, the stats, the item options, the sort orders, the drop's question, bits) come from its text tables.
+tab.status: "Status"
+tab.items: "Items"
+tab.care: "Pflege"
+# The pages' names in the compact menu (skin.yaml layout: partner_menu: pages: compact).
+nav.partner: "Partner"
+nav.bag: "Tasche"
+# The partner's species, under its own name (game_menu.c: drawDigimonStatsStrings).
+species: "Art"
+age: "Alter"
+# {days} is the partner's age in days; {days:day|days} picks the word by the count (1 day, 2 days).
+age.value: "{days} {days:Tag|Tage}"
+weight: "Gew."
+# {weight} is the partner's weight.
+weight.value: "{weight} G"
+# {lives} is the lives the partner has left.
+lives: "Leben {lives}"
+happiness: "Glück"
+discipline: "Disziplin"
+virus: "Virus"
+# The status page's extras (the status_extras option), which the original hides: the tiredness bar, the count of
+# care mistakes and of battles, the hours it is awake, the hours of life it has left and the evolution counter.
+tiredness: "Müdigkeit"
+care_mistakes: "Fehler"
+battles: "Kämpfe"
+awake: "Wach"
+# {wake} and {sleepy} are the times it wakes up and gets sleepy, as 08:00.
+awake.value: "{wake}-{sleepy}"
+# {value} is a number from 0 to 100 (-100 to 100 for happiness) the status page writes as a percentage: happiness,
+# discipline and tiredness.
+percent.value: "{value}%"
+lifetime: "Lebensd."
+evolution: "Evo-Zähler"
+# {hours} is a count of game hours.
+hours.value: "{hours} h"
+# {hours} is the evolution counter and {check} the hours its level checks its evolution from.
+evolution.value: "{hours}/{check} h"
+# Its species' favourite food (the favorite_food option), with the item's name; "None" when it has none.
+favorite_food: "Lieblingsessen"
+favorite_food.none: "Keins"
+condition.none: "In guter Form"
+condition.sleepy: "Schläfrig"
+condition.tired: "Müde"
+condition.hungry: "Hungrig"
+condition.needs_toilet: "Muss aufs Klo"
+condition.sulking: "Schmollt"
+condition.injured: "Verletzt"
+condition.sick: "Krank"
+bag.empty: "-"
+# {name} is the item being moved.
+bag.move_prompt: "Wohin mit {name}?"
+# {name} is the item's name in all the bag results.
+bag_result.used: "{name} benutzt."
+bag_result.refused: "Dein Partner will {name} nicht."
+bag_result.not_usable_here: "{name} geht hier nicht."
+bag_result.not_in_bag: "Da ist nichts."
+bag_result.useless: "{name} würde jetzt nichts bringen."
+bag_result.moved: "{name} verschoben."
+bag_result.dropped: "{name} weggeworfen."
+bag_result.sorted: "Die Tasche ist sortiert."
+bag_result.failed: "Das geht nicht."
+care.praise: "Loben"
+care.scold: "Schimpfen"
+care.feed_hint: "Gib deinem Partner Essen aus der Tasche, um ihn zu füttern."
+care.training_hint: "Trainiert wird an den Trainingsorten draußen."
+care_result.praised: "Du hast deinen Partner gelobt."
+care_result.scolded: "Du hast mit deinem Partner geschimpft."
+
+# Sections of the DIGIMON profile.
+section.profile: "Profil"
+section.condition: "Zustand"
+section.parameter: "Werte"
+name: "Name"
+# The small headings of the profile's marks and of the technique details, where the original has pictures.
+profile.special: "Spezial"
+profile.type: "Typ"
+profile.active: "Aktiv"
+tech.data: "TECH.-DATEN"
+
+# Equipped moves and finisher.
+tab.tech: "Tech."
+tech.set: "Techniken"
+tech.final: "Spezial"
+tech.techs: "Techniken"
+tech.help_first: "Tech."
+tech.help_second: "Hilfe"
+# The help page of the change view (game_menu.c: renderDigimonMovesView, MENU_STATE 8): the two hints, split where
+# the page draws a technique cell and the key of the confirm action.
+tech.help_select_before: "Auswählen: wähle"
+tech.help_select_after: "zum Ausrüsten"
+tech.help_cancel_before: "Abbrechen:"
+tech.help_cancel_after: "nimmt sie ab"
+tech.power: "KRAFT"
+tech.mp: "MP"
+tech.range: "RW"
+tech.effect: "EFF"
+tech.range.1: "Kurz"
+tech.range.2: "Weit"
+tech.range.3: "Fläche"
+tech.range.4: "Selbst"
+tech.effect.1: "Gift"
+tech.effect.2: "Verw."
+tech.effect.3: "Betäub."
+tech.effect.4: "Platt"
+
+# The technique grid's rows, by specialty (the original draws them as pictures).
+tech.category.0: "FEUER"
+tech.category.1: "KAMPF"
+tech.category.2: "LUFT"
+tech.category.3: "ERDE"
+tech.category.4: "EIS"
+tech.category.5: "MECH"
+tech.category.6: "DRECK"
+
+tech.change: "Techniken wechseln"
+tech.unavailable: "Nur gelernte Techniken"
+tech.full: "Alle drei Plätze sind belegt"
+tech.need_attack: "Behalte eine Angriffstechnik"

@@ -1,0 +1,8 @@
+title: "岛屿地图"
+here: "你在："
+exits: "从这里可以前往"
+no_exits: "这里没有出口"
+legend_here: "你在这里"
+legend_exit: "可从这里前往"
+legend_unknown: "尚未到访"
+close: "关闭"

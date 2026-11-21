@@ -1,0 +1,51 @@
+command.none: "Nada"
+command.flee: "Fugir"
+command.attack: "Atacar"
+command.your_call: "Do seu jeito"
+command.moderate: "Moderado"
+command.distance: "Distância"
+command.defend: "Defender"
+command.change: "Trocar"
+command.technique_1: "Técnica 1"
+command.technique_2: "Técnica 2"
+command.technique_3: "Técnica 3"
+command.finisher: "Golpe final"
+outcome.victory: "Vitória!"
+outcome.fled: "Você escapou."
+outcome.defeat: "Derrota..."
+status.poison: "Envenenado"
+status.confusion: "Confuso"
+status.stun: "Atordoado"
+status.flatten: "Achatado"
+result.mp_bonus_percent: " {amount}%!{wait}"
+result.bits: "Você ganhou {amount} {amount:bit|bits}."
+result.lives_lost: "Seu parceiro perdeu{br}{color:7}{amount}{color:1} {amount:vida|vidas}.{wait}"
+result.item_lost: "Perdeu {color:7}{name}{color:1}{br}x{amount}.{wait}"
+result.recruit_joined: "{color:7}{name}{color:1}{br}vai se mudar para a cidade!{wait}"
+number_icon.hp: "HP"
+number_icon.mp: "MP"
+number_icon.offense: "ATQ"
+number_icon.defense: "DEF"
+number_icon.speed: "VEL"
+revive_countdown: "Levante! {seconds}"
+mp_cost: "{mp} MP"
+finisher: "Golpe final"
+finisher_word: "ARRASA!!"
+finisher_push: "APERTE"
+banner_shape: |-
+  ####.....##...######...##...##....##.##...##..
+  ##..##..####....##....####..##....##.##..####.
+  ##..##.##..##...##...##..##.##....##.##.##..##
+  ####...##..##...##...##..##.##....#####.##..##
+  ##..##.######...##...######.##....##.##.######
+  ##..##.##..##...##...##..##.##....##.##.##..##
+  ##..##.##..##...##...##..##.##....##.##.##..##
+  ####...##..##...##...##..##.#####.##.##.##..##
+charge: "Carregue o golpe final!"
+charge_hint: "Aperte sem parar"
+prompt.command: "Dê a ordem"
+prompt.bag: "Itens"
+bag.open: "Itens"
+mark.partner: "1P"
+mark.rival: "COM"
+fast: "x2"

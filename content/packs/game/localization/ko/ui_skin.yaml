@@ -1,0 +1,12 @@
+# The names of the game pack's UI skins in the menus (ui/skins/<id>/skin.yaml names its key). A mod's skin keeps its
+# name in a localization file of its own: one named ui_skin.yaml would replace this one whole.
+modern: "모던"
+original: "오리지널"
+pixel: "픽셀 아트"
+devvago: "DevVago"
+# One line per skin under its name in the boot's box (ui/skin_picker); a mod adds one with its name's key plus
+# .hint.
+modern.hint: "깔끔한 패널과 현대적인 글꼴."
+original.hint: "원작의 메뉴를 선명하게 다시 그렸어요."
+pixel.hint: "남색 창과 픽셀 글꼴."
+devvago.hint: "DevVago의 디자인: 밤하늘색과 촘촘한 메뉴."

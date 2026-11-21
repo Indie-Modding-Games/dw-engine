@@ -1,7 +1,4 @@
-# The language's own name, as the language selector shows it. The other tables of this language are
-# translated by people (docs/guides/translate.md#a-new-language); a key this folder does not have shows in English.
 name: "日本語"
-# Every language's name in that language, the same in every language's texts: the language box lists them so.
 native.en: "English"
 native.es: "Español"
 native.pt: "Português (Brasil)"
@@ -11,8 +8,6 @@ native.ru: "Русский"
 native.zh: "简体中文"
 native.ko: "한국어"
 native.ja: "日本語"
-# Every language's flag, the asset id of its image (ui/flags, scripts/art/make_flags.py), the same in every
-# language's texts: the language box shows it by the name.
 flag.en: "ui/flags/en"
 flag.es: "ui/flags/es"
 flag.pt: "ui/flags/pt"

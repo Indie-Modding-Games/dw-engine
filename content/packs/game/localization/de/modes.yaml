@@ -1,0 +1,4 @@
+# The game modes (modes/<id>/mode.yaml) and the list a mode is chosen from (ui/new_game_mode).
+title: "Spielmodus"
+original_name: "Originalgeschichte"
+original_description: "Die Geschichte des Originalspiels mit seinen Regeln."

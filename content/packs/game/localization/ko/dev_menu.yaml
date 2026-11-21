@@ -1,0 +1,31 @@
+# The developer menu (F2 with the developer tools on; apps/game/src/dev_menu_screen.hpp): runs console commands to
+# test the game.
+title: "개발자 메뉴"
+items: "아이템"
+money: "돈"
+clock: "시계 속도"
+stats: "능력치"
+care: "돌보기"
+evolve: "진화"
+# The partner learns every technique its species can learn (no finisher).
+techniques: "기술"
+techniques_done: "배울 수 있는 기술을 모두 배웠어요"
+warp: "맵으로 이동"
+save: "지금 저장"
+close: "닫기"
+# How many of an item each entry of the list gives, {amount}.
+amount: "수량: {amount}"
+# Sets the money to {bits}.
+money_set: "돈을 {bits}(으)로"
+# The game clock at {speed} times its speed.
+clock_speed: "시계 x{speed}"
+# Offense, defense, speed and brains to {value}; HP and MP to {life}.
+stats_set: "능력치를 {value}(으)로 (HP와 MP {life})"
+happiness_full: "행복 최대"
+discipline_full: "규율 최대"
+rested: "피로 없음"
+no_mistakes: "돌보기 실수 없음"
+sleep: "잠자기"
+toilet: "화장실 가기"
+# What the menu did last, {what}.
+done: "완료: {what}"

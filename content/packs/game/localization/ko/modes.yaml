@@ -1,0 +1,4 @@
+# The game modes (modes/<id>/mode.yaml) and the list a mode is chosen from (ui/new_game_mode).
+title: "게임 모드"
+original_name: "원작 스토리"
+original_description: "원작 게임의 스토리와 규칙."

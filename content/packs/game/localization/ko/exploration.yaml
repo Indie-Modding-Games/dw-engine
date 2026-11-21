@@ -1,0 +1,11 @@
+# The free exploration's chooser: a place the scripts of the cell the player stepped on can lead to.
+title: "어디로 갈까요?"
+# {name} is the map's name, {map} its id (several maps share a name).
+place: "{name} ({map})"
+# The place the story takes now, if any.
+story: "스토리"
+stay: "여기 머물기"
+previous: "이전"
+next: "다음"
+# {page} of {pages}.
+page: "{page}/{pages}"
