@@ -1473,6 +1473,8 @@ are on and the command is one the menu offers (`devMenuLineAllowed`). For this t
 
 - `warp("<map> [exit]")`: changes map like a script (`startScriptedMapChange`), with exit 0 if none is given.
 - `partner_set("happiness <n>")` and `partner_set("tiredness <n>")`, from 0 to 100.
+- `partner_set("lives <n>")` and `partner_set("lifetime <hours>")`, to reach the death scenes: the last life lost in a
+  battle and the death of old age.
 - `learn_all("")` (the menu's Techniques entry, which then says it is done): the partner learns every technique its
   current species can learn (`BattleAdapter::learnAllMoves`, `session::learnableMoves`): the moves of its species'
   list that the catalog marks learnable (below 0x3A, as `battleMoveLearning` and `TRN_tryLearnMove` teach them), so

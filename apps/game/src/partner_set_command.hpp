@@ -35,7 +35,9 @@ struct PartnerWrite {
     Discipline,
     Poop,
     Happiness,
-    Tiredness
+    Tiredness,
+    Lives,
+    Lifetime
   };
   Kind kind = Kind::Hp;
   std::int32_t value = 0;

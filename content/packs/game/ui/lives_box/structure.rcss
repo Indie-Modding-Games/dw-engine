@@ -55,6 +55,12 @@ body #box.outline {
 	height: 72dp;
 }
 
+.slot .life {
+	display: block;
+	width: 72dp;
+	height: 72dp;
+}
+
 #slot-0 { left: 222dp; }
 #slot-1 { left: 324dp; }
 #slot-2 { left: 426dp; }
