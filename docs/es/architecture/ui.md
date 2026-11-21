@@ -1099,8 +1099,12 @@ el griego y el cirílico; el chino, el japonés y el coreano vienen de **cadenas
   `Pixel Body` y 0,923 de `Pixel Small` para que su em de 12 píxeles caiga en la rejilla de esas familias; detrás, las
   caras suaves y `Noto Sans` recogen lo demás. La fuente de mapa de bits del aspecto original cae en `Pixel Small` (ver
   [Aspecto original](#aspecto-original)), así que tiene la misma cadena. `pixel_body.ttf` y `pixel_small.ttf` ganaron
-  latino extendido A, griego y cirílico de las mismas fuentes misc-fixed que su ASCII. Todas tienen la licencia SIL
-  Open Font; `cjk/cjk_fonts_license.txt` y `pixel_fonts_license.txt` nombran las fuentes y versiones.
+  latino extendido A, griego y cirílico de las mismas fuentes misc-fixed que su ASCII. Las dos celdas en negrita
+  dibujaban la «м» cirílica con una fila llena entre sus trazos, como una «н», así que `make_fonts.py` dibuja esa letra
+  de nuevo en las dos caras (su tabla `PIXEL_REDRAWN`, que reemplaza un glifo que la fuente ya tiene; `--fusion` solo
+  hace falta para las caras CJK), y `cyrillic_glyphs_tests.cpp` comprueba que cada letra cirílica está en cada fuente
+  de la interfaz, distinta de las demás en las caras de píxeles, sin la barra de la «н» en la «м». Todas
+  tienen la licencia SIL Open Font; `cjk/cjk_fonts_license.txt` y `pixel_fonts_license.txt` nombran las fuentes y versiones.
 - **Tamaño.** Las caras son subconjuntos, no las fuentes enteras: el juego GB 2312 para el chino, JIS X 0208 para el
   japonés, las 2350 sílabas de KS X 1001 para el coreano, su puntuación y formas de ancho completo, más cada carácter
   que usan los textos del repo. Unos 5,4 MB en total (las fuentes enteras pesan unos 60 MB). Se cargan con la UI como las

@@ -34,9 +34,13 @@ local function refresh(document)
     local _, _, width = column:rect()
     return width
   end)
-  document
-    :get("player-record")
-    :set_text(say("online.hub.record", { wins = profile.wins, losses = profile.losses }))
+  local record = document:get("player-record-text")
+  record:set_text(say("online.hub.record", { wins = profile.wins, losses = profile.losses }))
+  local record_column = document:get("player-record")
+  fit_text.fit(record, nil, function()
+    local _, _, width = record_column:rect()
+    return width
+  end)
   -- Each entry's name and the line under it are squeezed into the entry, past its icon.
   for _, entry in ipairs({ "versus", "rooms", "profile" }) do
     local button = document:get("entry-" .. entry)

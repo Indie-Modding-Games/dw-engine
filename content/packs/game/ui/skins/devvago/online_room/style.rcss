@@ -192,7 +192,8 @@
 #toast.hidden { display: none; }
 .toast-icon { left: 12dp; top: 15dp; border: 2dp #72c7ff; }
 #toast.warning .toast-icon { border-color: #ffd51e; }
-#toast-text { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #d8f1ff; }
+/* Two lines of the longest notice fit the 48dp inside the box. */
+#toast-text { font-family: "Pixel Small"; font-size: 22dp; line-height: 24dp; color: #d8f1ff; }
 
 /* Under the room's card and the notice. */
 #prompts { top: 632dp; border: 2dp #72c7ff; background-color: #0b1c2df5; decorator: vertical-gradient(#153653 #0a1929); width: auto; min-width: 640dp; height: 48dp; padding: 0 16dp; line-height: 44dp; white-space: nowrap; }

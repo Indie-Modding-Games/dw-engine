@@ -139,6 +139,8 @@ local function draw_amount(document)
   document:get("amount-total"):set_text(tostring(number("card_shop.amount.total")))
 end
 
+local ColumnLabels = { "label-menu", "label-price", "label-count" }
+
 local function refresh(document)
   local phase = ui.setting("card_shop.phase") or "closed"
   -- The talk only waits for the player to go on here (common/talk_wait.lua).
@@ -152,8 +154,15 @@ local function refresh(document)
   -- The summary's columns are titled in words; the other lists keep the skin's labels (which the
   -- original look draws as the original's pictures in English).
   local packs = ui.setting("card_shop.mode") == "packs"
-  document:get("label-menu"):set_text(t(packs and "bulk.card" or "list_labels.menu"))
-  document:get("label-count"):set_text(t(packs and "bulk.copies" or "list_labels.count"))
+  document:get("label-menu-text"):set_text(t(packs and "bulk.card" or "list_labels.menu"))
+  document:get("label-count-text"):set_text(t(packs and "bulk.copies" or "list_labels.count"))
+  for _, id in ipairs(ColumnLabels) do
+    local column = document:get(id)
+    fit_text.fit(document:get(id .. "-text"), nil, function()
+      local _, _, width = column:rect()
+      return width
+    end)
+  end
   draw_list(document)
   draw_talk(document, phase)
   draw_confirm(document)
@@ -182,4 +191,8 @@ end
 function on_action(_document, action)
   ui.send("card_shop_action", action)
   return true
+end
+
+function on_tick()
+  fit_text.tick()
 end

@@ -1662,7 +1662,7 @@ TEST_CASE("the modern skin's partner age says day for one and days for any other
       revision += 1.0;
       ui->setSetting("partner.revision", revision);
       ui->update();
-      return ui->elementText("partner_menu", "status-age");
+      return ui->elementText("partner_menu", "status-age-text");
     };
     CHECK(age(1.0) == one);
     CHECK(age(2.0) == two);

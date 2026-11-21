@@ -1095,8 +1095,11 @@ themselves; Chinese, Japanese and Korean come from **fallback chains**.
   and 0.923 of `Pixel Small` so their 12-pixel em sits on those families' grids; after them the smooth faces and
   `Noto Sans` catch anything else. The original look's bitmap font falls back to `Pixel Small` (see
   [Original look](#original-look)), so it gets the same chain. `pixel_body.ttf` and `pixel_small.ttf` gained
-  Latin Extended-A, Greek and Cyrillic from the same misc-fixed sources as their ASCII. All are under the SIL Open
-  Font Licence; `cjk/cjk_fonts_license.txt` and `pixel_fonts_license.txt` name the sources and versions.
+  Latin Extended-A, Greek and Cyrillic from the same misc-fixed sources as their ASCII. Both bold cells drew
+  Cyrillic «м» with a full row between its stems, like «н», so `make_fonts.py` draws that letter again in both faces
+  (its `PIXEL_REDRAWN` table, which replaces a glyph the source has; `--fusion` is only needed for the CJK faces), and
+  `cyrillic_glyphs_tests.cpp` checks every Cyrillic letter is in each UI font, drawn apart from the others in the pixel
+  faces, with no «н» bar in «м». All are under the SIL Open Font Licence; `cjk/cjk_fonts_license.txt` and `pixel_fonts_license.txt` name the sources and versions.
 - **Size.** The faces are subsets, not the full fonts: the GB 2312 set for Chinese, JIS X 0208 for Japanese, the
   2,350 syllables of KS X 1001 for Korean, their punctuation and full-width forms, plus every character the repo's
   texts use. About 5.4 MB in all (the full fonts are about 60 MB). They load with the UI like the other fonts; a

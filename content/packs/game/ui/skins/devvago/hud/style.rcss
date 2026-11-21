@@ -699,6 +699,7 @@ body #shop-job-rules:focus { border-color: #ffd51e; background-color: #153653; c
 	line-height: 22dp;
 	color: #d0d0d0;
 	white-space: normal;
+	word-break: break-word;
 }
 
 #minimap-frame {

@@ -3,6 +3,7 @@
 	<title>Shop menu</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/fit_text.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -35,8 +36,8 @@
 				<button id="row-8" class="row" onclick="pick(8)" onfocus="row_focus(document, 8)"><span id="row-8-text" class="row-text"></span><span id="row-8-name" class="row-name"></span><span id="row-8-price" class="row-price"></span></button>
 				<p id="empty" text-key="shop.empty"></p>
 				<p id="page"></p>
-				<button id="previous" class="page-turn" onclick="turn(document, -1)" text-key="shop.previous"></button>
-				<button id="next-page" class="page-turn" onclick="turn(document, 1)" text-key="shop.next_page"></button>
+				<button id="previous" class="page-turn" onclick="turn(document, -1)"><span id="previous-label" class="page-turn-label"><span id="previous-text" text-key="shop.previous"></span></span></button>
+				<button id="next-page" class="page-turn" onclick="turn(document, 1)"><span id="next-page-label" class="page-turn-label"><span id="next-page-text" text-key="shop.next_page"></span></span></button>
 				<button id="list-back" class="back" onclick="ui.send('shop_back', true)" onfocus="row_focus(document, 0)" text-key="shop.back"></button>
 				<p id="list-description" class="hidden"></p>
 			</div>

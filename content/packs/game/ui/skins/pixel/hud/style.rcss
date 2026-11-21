@@ -119,6 +119,7 @@
 	min-width: 156dp;
 	max-width: 100%;
 	white-space: normal;
+	word-break: break-word;
 	text-align: center;
 	padding: 2dp 8dp;
 	box-sizing: border-box;

@@ -30,6 +30,7 @@ body {
 	font-size: 14dp;
 	font-weight: bold;
 	color: #e6eef6;
+	word-break: break-word;
 	position: relative;
 	z-index: 1;
 }

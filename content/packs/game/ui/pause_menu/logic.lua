@@ -2024,6 +2024,20 @@ end
 
 -- The keys under the options: the tabs', left and right (the keyboard's arrows, the pad's
 -- directions), confirm and back, for the device in use.
+local OptionHints = { "hint-tabs", "hint-change", "hint-accept", "hint-back" }
+
+local function fit_option_hints(document)
+  local parts = {}
+  for _, id in ipairs(OptionHints) do
+    parts[#parts + 1] = document:get(id)
+  end
+  local column = document:get("options-hints")
+  fit_text.fit(document:get("options-hints-row"), parts, function()
+    local _, _, width = column:rect()
+    return width
+  end)
+end
+
 local function refresh_option_hints(document)
   document:get("tabs-previous-key"):set_prompt("tab_previous")
   document:get("tabs-next-key"):set_prompt("tab_next")
@@ -2034,6 +2048,7 @@ local function refresh_option_hints(document)
   document:get("hint-change-pad-less"):set_prompt("move_left")
   document:get("hint-change-pad-more"):set_prompt("move_right")
   document:get("hint-change"):set_class("pad", ui.device() == "gamepad")
+  fit_option_hints(document)
 end
 
 -- The calendar's season next to the day (the Seasons option, an engine improvement; the game
@@ -2117,6 +2132,25 @@ refresh_player = function(document)
   )
 end
 
+local ChartStages = 6
+local ChartPromptsGap = 12
+
+local function chart_prompts_room(document)
+  local prompts = document:get("chart-prompts")
+  return function()
+    local left, top, width, height = prompts:rect()
+    local right = left + width
+    local start = nil
+    for stage = 0, ChartStages - 1 do
+      local x, y, w, h = document:get("chart-stage-" .. stage):rect()
+      if w > 0 and x + w <= right and y < top + height and top < y + h then
+        start = math.max(start or x + w, x + w)
+      end
+    end
+    return start == nil and width or right - start - ChartPromptsGap
+  end
+end
+
 local function refresh_prompts(document)
   document:get("prompt-confirm"):set_prompt("confirm")
   document:get("prompt-cancel"):set_prompt("cancel")
@@ -2126,6 +2160,7 @@ local function refresh_prompts(document)
     document:get(page .. "-confirm-key"):set_prompt("confirm")
     document:get(page .. "-cancel-key"):set_prompt("cancel")
   end
+  fit_text.fit(document:get("chart-prompts"), nil, chart_prompts_room(document), "100% 50%")
   refresh_option_hints(document)
 end
 
@@ -2392,6 +2427,7 @@ end
 
 function on_tick(document, seconds)
   send_portraits(document)
+  fit_text.tick()
   original_box.tick(document, seconds)
   panel_enter.tick(document)
   chart_slide_tick(document, seconds)

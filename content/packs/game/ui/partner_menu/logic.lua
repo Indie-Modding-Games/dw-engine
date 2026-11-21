@@ -253,6 +253,25 @@ local function draw_favorite_food(document)
     :set_text(food ~= "" and t(food) or t("partner_menu.favorite_food.none"))
 end
 
+local StatusValues = { "status-age", "status-weight" }
+
+local function fit_status_values(document)
+  for _, id in ipairs(StatusValues) do
+    local value_box = document:get(id)
+    local value = document:get(id .. "-text")
+    fit_text.fit(value, nil, function()
+      local box_left, _, box_width = value_box:rect()
+      local text_left, _, text_width = value:rect()
+      local before = text_left - box_left
+      local after = box_left + box_width - text_left - text_width
+      if after < 0 or before <= after then
+        return box_width - 2 * before
+      end
+      return box_width - after
+    end)
+  end
+end
+
 local function draw_status(document)
   -- The partner's own name when the player gave one, else its species' (PARTNER_ENTITY.name); the
   -- species on its own line.
@@ -279,14 +298,15 @@ local function draw_status(document)
     :get("status-lives")
     :set_text(t("partner_menu.lives", { lives = number("partner.lives") }))
   local original = original_menu()
-  document:get("status-age"):set_text(
+  document:get("status-age-text"):set_text(
     original and tostring(number("partner.age"))
       or t("partner_menu.age.value", { days = number("partner.age") })
   )
-  document:get("status-weight"):set_text(
+  document:get("status-weight-text"):set_text(
     original and tostring(number("partner.weight"))
       or t("partner_menu.weight.value", { weight = number("partner.weight") })
   )
+  fit_status_values(document)
   draw_favorite_food(document)
   for index = 0, 2 do
     local icon = document:get("status-special-" .. index)
@@ -1055,11 +1075,25 @@ local function draw_art_fixes(document)
   document:get("status-happiness-name"):set_class("fixed", options.get("art_fixes"))
 end
 
+local TimerLabels = { "status-lifetime-label", "status-evolution-label" }
+
+local function fit_timer_labels(document)
+  for _, id in ipairs(TimerLabels) do
+    local column = document:get(id)
+    fit_text.fit(document:get(id .. "-text"), nil, function()
+      local _, _, width = column:rect()
+      return width
+    end, "50% 50%")
+  end
+end
+
 function on_show(document)
   draw_navigation(document)
   draw_art_fixes(document)
   panel_enter.start(document)
+  fit_timer_labels(document)
   status_condition_bob = nil
+  document:get("conditions"):remove_property("top")
   tech_info_focus = nil
   editing_tech = false
   show_tech_help(document, false)
@@ -1168,6 +1202,7 @@ function on_language(document)
   draw_tech_help(document)
   draw(document)
   draw_prompts(document)
+  fit_timer_labels(document)
 end
 
 function on_action(document, action)

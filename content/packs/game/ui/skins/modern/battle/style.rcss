@@ -195,11 +195,12 @@
 	color: #9aa7b6;
 }
 
-/* A tournament match's clock (std_main.c: STD_renderFighterCounter): the seconds left, top centre. */
+/* A tournament match's clock (std_main.c: STD_renderFighterCounter): the seconds left, top centre, under the command
+   row and the focused command's name. */
 #match-clock {
 	position: absolute;
 	left: 50%;
-	top: 48dp;
+	top: 112dp;
 	width: 120dp;
 	margin-left: -60dp;
 	padding: 6dp 0;

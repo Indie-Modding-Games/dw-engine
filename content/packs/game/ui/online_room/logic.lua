@@ -180,13 +180,15 @@ local function refresh(document)
   document:get("info-code"):set_text(code)
   document:get("info-host-text"):set_text(host_name(room))
   fit_text.fit(document:get("info-host-text"), nil, column_width(document:get("info-host")))
-  document:get("info-mode"):set_text(t(room.mode_key))
+  document:get("info-mode-text"):set_text(t(room.mode_key))
+  fit_text.fit(document:get("info-mode-text"), nil, column_width(document:get("info-mode")))
   document:get("info-state-text"):set_text(t(room.phase_key))
   fit_text.fit(document:get("info-state-text"), nil, column_width(document:get("info-state")))
-  document:get("info-players"):set_text(say("online.players", {
+  document:get("info-players-text"):set_text(say("online.players", {
     players = #room.members,
     capacity = room.capacity,
   }))
+  fit_text.fit(document:get("info-players-text"), nil, column_width(document:get("info-players")))
   -- Public or private, and whether the game takes new players once under way (#356).
   document:get("info-visibility-text"):set_text(say("online.visibility.joining", {
     visibility = t(room.listed and "online.visibility.public" or "online.visibility.private"),

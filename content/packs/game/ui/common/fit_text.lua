@@ -8,8 +8,10 @@
 -- document, so the squeeze is measured over the next few ticks. `element` is what is squeezed,
 -- `parts` the elements whose drawn text is measured (the element itself when nil) and `room` the
 -- width in dp the text may take (the element's own width when nil, or a function that returns it
--- when the room is that of a box round the text, known only once laid out). fit_text.cut(element,
--- text, room) writes the text and cuts it with "..." instead, for names with no length limit.
+-- when the room is that of a box round the text, known only once laid out). `origin` is where the
+-- squeeze holds the text, its left edge when nil ("100% 50%" for a text set from its right edge).
+-- fit_text.cut(element, text, room) writes the text and cuts it with "..." instead, for names with
+-- no length limit.
 
 fit_text = {}
 
@@ -46,7 +48,7 @@ local function squeeze(entry)
   end
   local width = text_width(element, entry.parts)
   if room > 0 and width > room + 0.5 then
-    element:set_property("transform-origin", "0% 50%")
+    element:set_property("transform-origin", entry.origin or "0% 50%")
     element:set_property("transform", string.format("scale(%.4f, 1)", room / width))
   else
     element:set_property("transform", "none")
@@ -144,10 +146,15 @@ function fit_text.cut(element, text, room)
   pending[#pending + 1] = entry
 end
 
-function fit_text.fit(element, parts, room)
+function fit_text.fit(element, parts, room, origin)
   settled[element.id] = nil
-  local entry =
-    { element = element, parts = parts or { element }, room = room, ticks = measure_ticks }
+  local entry = {
+    element = element,
+    parts = parts or { element },
+    room = room,
+    origin = origin,
+    ticks = measure_ticks,
+  }
   for index, other in ipairs(pending) do
     if other.element.id == element.id then
       pending[index] = entry

@@ -7,6 +7,7 @@
 	<script src="../common/original_box.lua"></script>
 	<script src="../common/panel_enter.lua"></script>
 	<script src="../common/game_options.lua"></script>
+	<script src="../common/fit_text.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -193,7 +194,7 @@
                     <button id="chart-cell-125" class="chart-cell hidden" onclick="chart_pick(document, 125)"><img id="chart-icon-125" class="chart-icon hidden"/></button>
                     <button id="chart-cell-126" class="chart-cell hidden" onclick="chart_pick(document, 126)"><img id="chart-icon-126" class="chart-icon hidden"/></button>
                     <button id="chart-cell-127" class="chart-cell hidden" onclick="chart_pick(document, 127)"><img id="chart-icon-127" class="chart-icon hidden"/></button>
-                    <img id="chart-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/>
+                    <div id="chart-cursor" class="hidden cursor-frame"><img class="cursor-picture" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/></div>
                   </div></div>
                   <div id="chart-less" class="chart-arrow" onclick="chart_less(document)"></div><div id="chart-page"></div><div id="chart-more" class="chart-arrow" onclick="chart_more(document)"></div>
                   <div id="chart-prompts" class="page-prompts"><div class="page-prompt"><span id="chart-confirm-key" class="prompt-key confirm-key"></span><span class="prompt-text" text-key="pause_menu.chart_select"></span></div><div class="page-prompt"><span id="chart-cancel-key" class="prompt-key cancel-key"></span><span class="prompt-text" text-key="common.cancel"></span></div></div>
@@ -338,7 +339,7 @@
                     <div id="chart-req-score"></div>
                     <div id="chart-req-next"></div>
                   </div>
-                  <img id="chart-detail-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/>
+                  <div id="chart-detail-cursor" class="hidden cursor-frame"><img class="cursor-picture" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/></div>
                 </div>
                 <div id="chart-detail-transition" class="hidden"></div>
                 <div id="player-medals-view" class="player-native">
@@ -362,7 +363,7 @@
                   <button id="medal-12" class="medal-cell" onclick="medal_pick(document, 12)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
                   <button id="medal-13" class="medal-cell" onclick="medal_pick(document, 13)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
                   <button id="medal-14" class="medal-cell" onclick="medal_pick(document, 14)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
-                  <img id="medals-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 208 24 24"/>
+                  <div id="medals-cursor" class="hidden cursor-frame"><img class="cursor-picture" src="/texture/etcdat/sboy?palette=15" rect="0 208 24 24"/></div>
                   <div id="medals-name-box" class="player-inset"></div>
                   <div id="medal-name" class="medal-text"></div>
                   <div id="medal-line-0" class="medal-text medal-line"></div>
@@ -439,7 +440,7 @@
                   <div id="card-63" class="card-cell"><img id="card-icon-63" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="224 112 16 16"/></div>
                   <div id="card-64" class="card-cell"><img id="card-icon-64" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="0 128 16 16"/></div>
                   <div id="card-65" class="card-cell"><img id="card-icon-65" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="32 128 16 16"/></div>
-                  <img id="cards-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/>
+                  <div id="cards-cursor" class="hidden cursor-frame"><img class="cursor-picture" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/></div>
                   <div id="card-detail" class="original-box box-closed"><img id="card-detail-image"/></div>
                   <div id="card-count-box" class="original-box box-closed"><span id="card-count"></span></div>
                   <div id="cards-prompts" class="page-prompts"><div class="page-prompt"><span id="cards-confirm-key" class="prompt-key confirm-key"></span><span class="prompt-text" text-key="pause_menu.chart_select"></span></div><div class="page-prompt"><span id="cards-cancel-key" class="prompt-key cancel-key"></span><span class="prompt-text" text-key="common.cancel"></span></div></div>
@@ -608,10 +609,10 @@
 						<button id="options-back" class="back" onclick="back(document)" onfocus="action_focus(document, 'back')" text-key="common.back"></button>
 					</div>
 					<div id="options-hints">
-						<span class="hint"><span class="key" id="hint-tab-previous"></span><span class="key" id="hint-tab-next"></span><span text-key="pause_menu.hint.tabs"></span></span>
+						<span id="options-hints-row"><span class="hint" id="hint-tabs"><span class="key" id="hint-tab-previous"></span><span class="key" id="hint-tab-next"></span><span text-key="pause_menu.hint.tabs"></span></span>
 						<span class="hint" id="hint-change"><span class="key arrow-key" id="hint-change-less"><span class="glyph-art"></span></span><span class="key arrow-key" id="hint-change-more"><span class="glyph-art"></span></span><span class="key pad-key" id="hint-change-pad-less"></span><span class="key pad-key" id="hint-change-pad-more"></span><span text-key="pause_menu.hint.change"></span></span>
-						<span class="hint"><span class="key" id="hint-confirm"></span><span text-key="common.accept"></span></span>
-						<span class="hint"><span class="key" id="hint-cancel"></span><span text-key="common.back"></span></span>
+						<span class="hint" id="hint-accept"><span class="key" id="hint-confirm"></span><span text-key="common.accept"></span></span>
+						<span class="hint" id="hint-back"><span class="key" id="hint-cancel"></span><span text-key="common.back"></span></span></span>
 					</div>
 				</div>
 				<!-- «Reset to defaults» asks first; the question covers the list until it is answered. -->

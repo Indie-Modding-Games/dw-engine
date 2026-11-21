@@ -76,12 +76,33 @@ máquina de guardar también sobre su pregunta). Y algunas solo las usa por ahor
   comprueba.
 - **Textos largos encogidos, no cortados.** Los valores cuyo largo depende del idioma o del jugador (una técnica, la
   línea de acceso, el lugar de una partida) se dibujan con `common/fit_text.lua`, así un aspecto con una columna
-  estrecha los muestra enteros, medidos de nuevo cuando el jugador cambia de aspecto o de tamaño de interfaz.
+  estrecha los muestra enteros, medidos de nuevo cuando el jugador cambia de aspecto o de tamaño de interfaz. Un texto
+  que un aspecto puede encoger va en su propio span dentro de su columna (`player-record-text` en `player-record`,
+  `label-menu-text` en `label-menu`), así la columna conserva su ancho y se mide el texto, no la caja. `fit_text.fit`
+  acepta un origen opcional para el encogido (`"100% 50%"` deja un texto alineado a la derecha pegado a su borde
+  derecho, como las teclas del gráfico junto a las etapas). Un valor en una caja con relleno (la edad y el peso del
+  compañero) se ajusta al sitio dentro de su relleno, leído de donde empieza su texto, así un valor alineado a la
+  derecha que cabe nunca se encoge. Una caja cuyo contenido salta de línea parte también una palabra más larga que la
+  caja (`word-break: break-word` en el nombre del lugar del minimapa), y un menú emergente de opciones crece con la
+  más larga lejos de la caja de al lado (las opciones de objeto del compañero).
+- **Cada letrero dentro de su caja.** En cada aspecto e idioma un letrero queda dentro de la caja dibujada a su
+  alrededor y sin tocar los textos de al lado, igual en todas partes: los textos que dependen del idioma con
+  `fit_text`, las filas con columnas fijas y un hueco entre ellas (el nombre en la tienda y su precio en una columna
+  propia 24dp después), y las líneas de teclas encogidas al sitio que les deja su pie. Un aspecto mueve las cajas para
+  que no se tapen (la descripción de la tienda se abre bajo una página llena de filas, las teclas de la caja del nombre
+  van sobre la caja del nombre, lejos de Jijimon), y las etiquetas de nombre del cooperativo de jugadores que están
+  juntos se apilan: la del jugador más cercano se queda en su sitio y cada otra sube sobre las que taparía, a 4dp.
+  `dwe_ui_tests` carga cada pantalla en cada aspecto e idioma y falla
+  con un texto fuera de su caja (`label_fit_tests.cpp`), y comprueba las pantallas más cargadas con sus textos más
+  largos: las filas de la tienda, el minimapa, la caja del nombre, las etiquetas de nombre del cooperativo, el aviso y
+  los valores de la sala online, el pie de las opciones, las teclas en el
+  centro de la barra enmarcada de la búsqueda.
 - **`image-color` tiñe también los decoradores.** RmlUi multiplica los decoradores de imagen de un elemento (y su
   ninepatch) por su `image-color`, no solo la imagen de un `<img>`: un `image-color` transparente que oculta la imagen
   del original oculta también un decorador dibujado en el mismo elemento. Oculta la imagen con `display: none` y dibuja
   en un elemento que la envuelva (la caja de vidas envuelve la imagen de cada vida en su `slot-N`, que marca una vida
-  perdida con `empty`).
+  perdida con `empty`; los cursores del gráfico, las medallas y las cartas del menú de pausa envuelven la suya en un
+  `.cursor-frame`).
 - **Si algo falla**, el aspecto se deja fuera con el motivo en el log y el juego sigue con el que había.
 
 ## Probar mientras se edita

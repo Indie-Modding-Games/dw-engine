@@ -48,10 +48,12 @@ body {
 	width: 666dp;
 }
 
+/* A column's title stays on one line, squeezed into its width when long (common/fit_text.lua). */
 .label {
 	position: absolute;
 	top: 12dp;
 	height: 21dp;
+	white-space: nowrap;
 }
 
 .label-menu { left: 21dp; width: 60dp; }
