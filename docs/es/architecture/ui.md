@@ -567,6 +567,14 @@ de una pantalla está en su `structure.rcss`, que es igual con todos los aspecto
 recorre los aspectos del paquete `game` y de `tests/mods` y falla si alguno escribe `nav-`. Los ids de los elementos, las clases que usan los scripts, los scripts
 y los ajustes y comandos que leen y envían son el contrato con el juego y no cambian con el aspecto.
 
+La navegación espacial (`nav: auto`) sí lee las cajas del aspecto: RmlUi solo pasa a la derecha a una caja cuyo borde
+izquierdo queda más allá del borde derecho de la actual, e igual hacia el otro lado. Donde las cajas de un aspecto
+pueden solaparse, la pantalla mueve el foco ella misma. La tira de órdenes de la batalla lo hace: izquierda y derecha
+van al icono más cercano cuyo centro queda hacia ese lado en pantalla (`ui/battle/logic.lua`), y pasado el último icono
+sigue la navegación por defecto. Las fichas del aspecto pixel son más anchas que el paso entre dos iconos, y sin esto el
+teclado y el mando no podían salir de la orden señalada, así que no se podía huir de una batalla salvaje
+(`battle_flee_tests.cpp` da Huir con las teclas en todos los aspectos).
+
 **`ui/skins/<id>/skin.yaml`** (esquema `ui_skin`, registrado en `pack.yaml`):
 
 ```yaml

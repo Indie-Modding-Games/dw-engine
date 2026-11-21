@@ -323,6 +323,39 @@ local function focus_command(document)
   end
 end
 
+-- Left and right move along the strip's icons by where each one's middle stands on screen, so a
+-- look whose tiles overlap (the pixel one) still reaches each of them; past the last icon the
+-- default navigation goes on to the entries round the strip.
+local function step_along_strip(document, step)
+  local icons = {}
+  local from = nil
+  for index = 0, command_count() - 1 do
+    if command(index).icon ~= "" then
+      local button = lookup(document, "command-" .. index)
+      local left, _, width = button:rect()
+      icons[#icons + 1] = { button = button, middle = left + width / 2 }
+      if button:has_focus() then
+        from = icons[#icons]
+      end
+    end
+  end
+  if from == nil then
+    return false
+  end
+  local best = nil
+  for _, icon in ipairs(icons) do
+    local ahead = (icon.middle - from.middle) * step
+    if ahead > 0 and (best == nil or ahead < (best.middle - from.middle) * step) then
+      best = icon
+    end
+  end
+  if best == nil then
+    return false
+  end
+  best.button:focus()
+  return true
+end
+
 -- The charge gauge over the partner while the finisher's aura lasts (command_menu.c:
 -- BTL_renderFinisherChargeup; battle.finisher().gauge): its top-left corner in percent of the
 -- window and a bar for every 8 of the charge, up to 10. The looks that keep the charge box hide it.
@@ -1398,7 +1431,7 @@ end
 -- button that opens the field's menu, whose items page this is), whose document then takes the
 -- buttons until it closes; confirm charges the finisher while its aura lasts; `cancel` does nothing
 -- on the fight itself (the UI's default for a modal's `cancel` would close the battle).
-function on_action(_document, action)
+function on_action(document, action)
   -- Nothing answers while the battle opens, nor during the victory poses before the end box
   -- (BTL_handleVictorySequence reads no buttons until handleBattleEndBox), nor while the command
   -- strip goes back up after it.
@@ -1422,6 +1455,9 @@ function on_action(_document, action)
   if action == "menu" then
     open_bag()
     return true
+  end
+  if action == "left" or action == "right" then
+    return step_along_strip(document, action == "right" and 1 or -1)
   end
   return action == "cancel" or action == "up" or action == "down"
 end

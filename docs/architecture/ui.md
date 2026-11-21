@@ -566,6 +566,13 @@ navigation is in its `structure.rcss`, which is the same with all skins. A test 
 walks through the skins of the `game` pack and of `tests/mods` and fails if any writes `nav-`. The elements' ids, the classes the scripts use, the scripts
 and the settings and commands they read and send are the contract with the game and do not change with the skin.
 
+Spatial navigation (`nav: auto`) still reads the skin's boxes: RmlUi only moves right to a box whose left edge is past
+the current one's right edge, and the same the other way. Where a skin's boxes may overlap, the screen moves the focus
+itself. The battle's command strip does: left and right go to the nearest icon whose middle stands that way on screen
+(`ui/battle/logic.lua`), and past the last icon the default navigation goes on. The pixel skin's tiles are wider than
+the gap between two icons, and without this the keyboard and the gamepad could not leave the hovered command, so a wild
+battle could not be fled (`battle_flee_tests.cpp` gives Run with the keys in every skin).
+
 **`ui/skins/<id>/skin.yaml`** (schema `ui_skin`, registered in `pack.yaml`):
 
 ```yaml
