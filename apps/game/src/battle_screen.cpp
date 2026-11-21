@@ -1182,6 +1182,15 @@ bool BattleScreen::defeatPartner() {
   return true;
 }
 
+bool BattleScreen::defeatAlly(game::coop::PlayerId owner) {
+  const std::optional<game::battle::FighterId> fighter = fighterOf(owner);
+  if (!battle_ || intro_ || ending_ || !fighter) {
+    return false;
+  }
+  battle_->defeatPartner(*fighter);
+  return true;
+}
+
 std::optional<game::battle::Outcome> BattleScreen::takeOutcome() {
   if (active()) {
     return std::nullopt;

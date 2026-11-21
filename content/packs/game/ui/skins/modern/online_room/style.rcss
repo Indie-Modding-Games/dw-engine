@@ -44,7 +44,7 @@
 #scrim:not(.skin-original) #info-box { padding: 14dp 16dp; }
 
 #scrim:not(.skin-original) .scene {
-	height: 96dp;
+	height: 60dp;
 	margin-bottom: 12dp;
 	padding: 12dp;
 	border-radius: 8dp;

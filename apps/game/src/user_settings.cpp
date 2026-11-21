@@ -83,6 +83,7 @@ constexpr std::string_view QuickBattleStartKey = "quick_battle_start";
 constexpr std::string_view DifficultyKey = "difficulty";
 constexpr std::string_view ShopJobModeKey = "shop_job_mode";
 constexpr std::string_view CoopDifficultyKey = "coop_difficulty";
+constexpr std::string_view CoopOpenToJoinKey = "coop_open_to_join";
 constexpr std::string_view SkipEvolutionKey = "skip_evolution";
 constexpr std::string_view ChoiceCancelClosesKey = "choice_cancel_closes";
 constexpr std::string_view FairSicknessChanceKey = "fair_sickness_chance";
@@ -273,7 +274,8 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
           std::pair{GenerousTalkKey, &UserSettings::generousTalk},
           std::pair{ExtraToiletsKey, &UserSettings::extraToilets},
           std::pair{AngemonEventZoneKey, &UserSettings::angemonEventZone},
-          std::pair{WhamonInWaterKey, &UserSettings::whamonInWater}}) {
+          std::pair{WhamonInWaterKey, &UserSettings::whamonInWater},
+          std::pair{CoopOpenToJoinKey, &UserSettings::coopOpenToJoin}}) {
       if (const core::YamlNode* value = tree->find(key)) {
         settings.*flag = reader.boolean(*value);
       }
@@ -506,7 +508,8 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
         std::pair{GenerousTalkKey, &UserSettings::generousTalk},
         std::pair{ExtraToiletsKey, &UserSettings::extraToilets},
         std::pair{AngemonEventZoneKey, &UserSettings::angemonEventZone},
-        std::pair{WhamonInWaterKey, &UserSettings::whamonInWater}}) {
+        std::pair{WhamonInWaterKey, &UserSettings::whamonInWater},
+        std::pair{CoopOpenToJoinKey, &UserSettings::coopOpenToJoin}}) {
     if (const std::optional<bool>& value = settings.*flag; value) {
       root.set(std::string{key}, core::YamlNode::scalar(*value ? "true" : "false"));
     }

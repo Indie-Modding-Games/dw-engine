@@ -1252,6 +1252,18 @@ std::string_view coopLevelName(game::battle::CoopLevel level) {
   return CoopDifficultyStandard;
 }
 
+game::coop::CoopDifficulty coopDifficultyOf(game::battle::CoopLevel level) {
+  switch (level) {
+  case game::battle::CoopLevel::Off:
+    return game::coop::CoopDifficulty::Off;
+  case game::battle::CoopLevel::Hard:
+    return game::coop::CoopDifficulty::Hard;
+  case game::battle::CoopLevel::Standard:
+    break;
+  }
+  return game::coop::CoopDifficulty::Standard;
+}
+
 void PlaySession::applyPlayOptions() {
   const UserSettings& settings = *context_.userSettings;
   for (const PlayOption& option : PlayOptions) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/game/battle/battle.hpp>
+#include <dwe/game/battle/status_visuals.hpp>
 #include <dwe/game/coop/battle.hpp>
 #include <dwe/game/coop/protocol.hpp>
 #include <dwe/input/input_state.hpp>
@@ -16,6 +17,8 @@
 #include <vector>
 
 #include "battle_screen.hpp"
+#include "coop_battle_view.hpp"
+#include "field_scene.hpp"
 
 namespace dwe::app {
 
@@ -34,6 +37,7 @@ inline constexpr std::string_view CoopBattleItemCommand = "coop_battle_item";
 // so they fly to this player's own partner, or the fighting one).
 inline constexpr std::string_view CoopBattleTargetCommand = "coop_battle_target";
 inline constexpr std::string_view CoopBattleCloseCommand = "coop_battle_close";
+inline constexpr std::string_view CoopFellCommand = "coop_fell";
 // Its settings (ui_contract.cpp lists them all); each publish counts the revision up.
 inline constexpr std::string_view CoopBattleRevisionSetting = "coop_battle.revision";
 
@@ -112,6 +116,9 @@ private:
   void showFrame(PlaySession& play);
   void stopShowing(PlaySession& play, const game::coop::BattleEnd& end);
   void lookAtBattle(PlaySession& play, const game::coop::BattleFrame& frame);
+  void followThrows(PlaySession& play, const game::coop::BattleFrame& frame, std::uint32_t frames);
+  void stepThrowClips(PlaySession& play);
+  void stopThrows(PlaySession& play);
   void lookBack(PlaySession& play);
   void pickTarget(const ui::UiValue& value);
   void publish(const PlaySession& play);
@@ -144,6 +151,12 @@ private:
   std::vector<game::coop::BattleFighterState> fighters_;
   // The partner the guest's items fly to (a fighter's number), when it picked one.
   std::optional<std::size_t> target_;
+  CoopBattleSounds sounds_;
+  CoopThrowFollower throws_;
+  std::vector<game::coop::PlayerId> throwing_;
+  std::optional<game::battle::StatusVisuals> glows_;
+  std::vector<FieldScene::StatusBody> glowBodies_;
+  std::vector<std::string> shownSpecies_;
   // The guest's actions from its document, sent on the next tick.
   std::vector<game::coop::BattleAction> actions_;
   bool documentShown_ = false;

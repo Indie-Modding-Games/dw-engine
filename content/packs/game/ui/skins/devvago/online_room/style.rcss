@@ -24,7 +24,7 @@
 #info-box { width: 380dp; height: 524dp; padding: 14dp 16dp; }
 
 .scene {
-	height: 100dp;
+	height: 48dp;
 	margin-bottom: 12dp;
 	border: 2dp #397ca4;
 	background-color: #061321;
@@ -33,8 +33,8 @@
 
 /* Each row is its label over its value, so a value gets the card's whole width (a room name cut with "..." keeps
    most of its letters) and no label is cut. */
-.info-row { height: 52dp; padding-top: 2dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; border-bottom: 1dp #345875; }
-.info-label { display: block; width: 100%; color: #a8c7d9; overflow: hidden; white-space: nowrap; }
+.info-row { height: 52dp; padding-top: 1dp; font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; border-bottom: 1dp #345875; }
+.info-label { display: block; width: 100%; font-size: 22dp; line-height: 22dp; color: #a8c7d9; overflow: hidden; white-space: nowrap; }
 .info-value { display: block; position: relative; left: 0; width: 100%; color: #d8f1ff; overflow: hidden; white-space: nowrap; }
 .accent { color: #fff371; }
 
@@ -187,5 +187,5 @@
 #toast-text { font-family: "Pixel Small"; font-size: 26dp; line-height: 28dp; color: #d8f1ff; }
 
 /* Under the room's card and the notice. */
-#prompts { top: 632dp; border: 2dp #72c7ff; background-color: #0b1c2df5; decorator: vertical-gradient(#153653 #0a1929); width: 640dp; height: 48dp; padding: 0 16dp; line-height: 44dp; }
+#prompts { top: 632dp; border: 2dp #72c7ff; background-color: #0b1c2df5; decorator: vertical-gradient(#153653 #0a1929); width: 900dp; height: 48dp; padding: 0 16dp; line-height: 44dp; }
 .prompt { margin-right: 18dp; }
