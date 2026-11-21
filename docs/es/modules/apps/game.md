@@ -1483,6 +1483,8 @@ están encendidas y la orden es de las que ofrece el menú (`devMenuLineAllowed`
 
 - `warp("<mapa> [salida]")`: cambia de mapa como un guion (`startScriptedMapChange`), con la salida 0 si no se da.
 - `partner_set("happiness <n>")` y `partner_set("tiredness <n>")`, de 0 a 100.
+- `partner_set("lives <n>")` y `partner_set("lifetime <horas>")`, para llegar a las escenas de muerte: la última
+  vida perdida en una batalla y la muerte de vejez.
 - `learn_all("")` (la entrada Técnicas del menú, que luego dice que está hecho): el compañero aprende todas las técnicas
   que puede aprender su especie actual (`BattleAdapter::learnAllMoves`, `session::learnableMoves`): los ataques de la
   lista de su especie que el catálogo marca como aprendibles (por debajo de 0x3A, como los enseñan `battleMoveLearning`
