@@ -29,7 +29,8 @@ end
 -- The box: title_key (whose name it asks), length (the most letters a name may have), letters (the
 -- name so far, one letter each, up to length), name (them joined, without the blanks at its end),
 -- grid ({rows, columns}), cursor ({row, column} on a letter, -1 each on a button; button: "back",
--- "ok" or nil).
+-- "ok" or nil), page ({index from 0, count, name_key}: the page of letters shown, of the language's
+-- pages and the Latin one).
 function naming.state()
   local length = whole("naming_box.length", 0)
   local letters = {}
@@ -47,6 +48,11 @@ function naming.state()
       row = whole("naming_box.cursor_row", -1),
       column = whole("naming_box.cursor_column", -1),
       button = button == 0 and "back" or button == 1 and "ok" or nil,
+    },
+    page = {
+      index = whole("naming_box.page", 0),
+      count = whole("naming_box.pages", 1),
+      name_key = text("naming_box.page_name"),
     },
   }
 end

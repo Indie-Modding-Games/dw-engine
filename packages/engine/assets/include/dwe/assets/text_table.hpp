@@ -5,6 +5,7 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -73,16 +74,18 @@ core::Result<TextTable> readTextTable(const VirtualFileSystem& fileSystem, const
                                       const TextTableName& name);
 
 // A placeholder that picks a word by a count (docs/architecture/localization.md#plurals):
-// {days:day|days} is "day" when the argument days is 1 and "days" otherwise.
+// {days:day|days} is "day" when the argument days is 1 and "days" otherwise. A language with more
+// forms writes them all in the order of its rule ({days:день|дня|дней} for one, few and many).
 struct PluralPlaceholder {
+  static constexpr std::size_t MaxForms = 4;
   // The argument that holds the count.
   std::string_view count;
-  // The word for one, and for any other count.
-  std::string_view one;
-  std::string_view other;
+  std::array<std::string_view, MaxForms> forms{};
+  std::size_t formCount = 0;
 };
 
-// The plural placeholder between a text's braces, as "days:day|days"; nothing when it is not one
+// The plural placeholder between a text's braces, as "days:day|days" (two to MaxForms words);
+// nothing when it is not one
 // (a name, or a control tag of the original's text such as "color:2").
 std::optional<PluralPlaceholder> pluralPlaceholderOf(std::string_view placeholder);
 

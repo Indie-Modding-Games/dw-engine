@@ -4,7 +4,8 @@
 -- only says "Name", so the original look hides it), the longest name, the letters so far, the
 -- grid's size and the cursor, naming.cell(row, column) a letter of the grid (a space for an empty
 -- cell), and naming.changed comes with each change. The game takes the buttons and the keyboard's
--- typing; the document never takes focus.
+-- typing; the document never takes focus. A language with an alphabet of its own has pages of
+-- letters, which naming.state().page names.
 
 local max_rows = 9
 local max_columns = 10
@@ -45,6 +46,8 @@ local function refresh(document)
   end
   document:get("button-back"):set_class("selected", state.cursor.button == "back")
   document:get("button-ok"):set_class("selected", state.cursor.button == "ok")
+  document:get("hint-page"):set_class("hidden", state.page.count < 2)
+  document:get("page-name"):set_text(state.page.count < 2 and "" or t(state.page.name_key))
 end
 
 local function refresh_prompts(document)
@@ -58,6 +61,13 @@ local function refresh_prompts(document)
   -- Start on a gamepad (the original's OK button), Tab on a keyboard.
   document:get("prompt-menu"):set_prompt(ui.device() == "gamepad" and "pause" or "menu")
   document:get("prompt-extra"):set_prompt("extra")
+  if keyboard then
+    document:get("page-previous"):set_text("<")
+    document:get("page-next"):set_text(">")
+  else
+    document:get("page-previous"):set_prompt("tab_previous")
+    document:get("page-next"):set_prompt("tab_next")
+  end
 end
 
 function on_show(document)

@@ -70,6 +70,11 @@ máquina de guardar también sobre su pregunta). Y algunas solo las usa por ahor
 - **El cursor del ratón es del sistema, no de RmlUi.** Con `cursor:` y `cursor_hotspot:` el aspecto instala una
   imagen como **cursor del SO** mientras esté puesto: queda siempre arriba (sobre menús modales incluidos) sin pelear
   con el apilado. Sin `cursor:`, la flecha del sistema se queda; cambiar de aspecto la restaura.
+- **`image-color` tiñe también los decoradores.** RmlUi multiplica los decoradores de imagen de un elemento (y su
+  ninepatch) por su `image-color`, no solo la imagen de un `<img>`: un `image-color` transparente que oculta la imagen
+  del original oculta también un decorador dibujado en el mismo elemento. Oculta la imagen con `display: none` y dibuja
+  en un elemento que la envuelva (la caja de vidas envuelve la imagen de cada vida en su `slot-N`, que marca una vida
+  perdida con `empty`).
 - **Si algo falla**, el aspecto se deja fuera con el motivo en el log y el juego sigue con el que había.
 
 ## Probar mientras se edita

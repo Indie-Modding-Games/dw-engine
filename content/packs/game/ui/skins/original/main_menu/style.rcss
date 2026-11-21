@@ -250,6 +250,12 @@
 	margin-left: -318dp;
 }
 
+/* Nine languages (compact rows): wider, so that the longest name in capitals ("PORTUGUÊS (BRASIL)") stays inside. */
+#language-box.compact {
+	width: 780dp;
+	margin-left: -390dp;
+}
+
 #battle-box {
 	left: 50%;
 	margin-left: -300dp;

@@ -86,7 +86,7 @@ if (dwe.view === "background") {
 | Call | What it does | Requires |
 |---|---|---|
 | `connect()` | Greets the launcher (retries for a few seconds). Returns `{ api, view, id }`. | — |
-| `context()` | Read-only data: `api`, the add-on (`id`, `version`, its permissions), `launcher_version`, `game_version`, `game_installed`, `content_installed`, `language` (`es`/`en`) and `platform`. **Never** paths, the beta key, the versions server or the disc. | — |
+| `context()` | Read-only data: `api`, the add-on (`id`, `version`, its permissions), `launcher_version`, `game_version`, `game_installed`, `content_installed`, `language` (`en`, `es`, `pt`, `fr`, `de`, `ru`, `zh`, `ko` or `ja`) and `platform`. **Never** paths, the beta key, the versions server or the disc. | — |
 | `ui.sidebar({ label, icon })` | An icon in the sidebar that opens its page. `icon` is an `.svg`, `.png` or `.webp` from its folder (shown as an image, never as HTML). | slot `sidebar` |
 | `ui.tab({ label, page? })` | Its page in the center of the home screen (`page`, by default `entry`) in the `tab` view. It is opened from its icon or from the "Add-ons" pill. | slot `tabs` |
 | `ui.settings({ label, page? })` | A section in Settings → Add-ons with its page in the `settings` view. | slot `settings` |
@@ -97,7 +97,8 @@ if (dwe.view === "background") {
 | `net.fetch(url, { method?, headers?, body? })` | A `GET` or `POST` request made by the launcher. Returns `{ status, content_type, body }` (text, up to 1 MB). | `hosts` |
 | `on(event, listener)` | Events: `game.status` (`{ running, busy, ready, gameVersion, language }`, every time it changes) and `language` (`{ language }`). | — |
 
-Labels (`label`) can be a text or `{ es, en }`; the launcher picks the player's language.
+Labels (`label`) can be a text or an object by language code (`{ en, es, fr, ... }`); the launcher picks the player's
+language, else `en`, else the first one.
 
 ### net.fetch
 

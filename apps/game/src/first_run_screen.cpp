@@ -37,7 +37,8 @@ namespace dwe::app {
 namespace {
 
 // The table of the screen's texts, and the one with each language's own name (its key `name`). The
-// screen offers every language of the game pack that has the first table.
+// screen offers every language of the game pack that has the second table; its texts a language
+// lacks show in English.
 constexpr std::string_view TextTable = "first_run";
 constexpr std::string_view LanguageTable = "language";
 constexpr std::string_view LanguageNameKey = "language.name";
@@ -45,7 +46,18 @@ constexpr std::string_view LanguageNameKey = "language.name";
 // The team's game pack and the files of it the screen reads (content::readTeamPackFile).
 constexpr std::string_view GamePack = "game";
 constexpr std::string_view FontFile = "ui/fonts/noto_sans_regular.ttf";
+struct CjkFont {
+  std::string_view language;
+  std::string_view file;
+};
+constexpr std::array CjkFonts{
+    CjkFont{.language = "zh", .file = "ui/fonts/cjk/noto_sans_cjk_sc.otf"},
+    CjkFont{.language = "ja", .file = "ui/fonts/cjk/noto_sans_cjk_jp.otf"},
+    CjkFont{.language = "ko", .file = "ui/fonts/cjk/noto_sans_cjk_kr.otf"},
+};
 constexpr float TextSize = 20.0F;
+constexpr int LanguageColumns = 3;
+constexpr float LanguageComboEms = 10.0F;
 constexpr float TitleSize = 32.0F;
 constexpr float ReferenceHeight = 720.0F;
 // The panel's share of the window.
@@ -87,8 +99,6 @@ struct LanguageChoice {
   std::string name;
 };
 
-// The game pack's languages with the screen's texts, by code, each named by its own
-// language.yaml; the reference language alone when the pack cannot be listed.
 std::vector<LanguageChoice> languageChoices() {
   std::set<std::string> codes{std::string{assets::ReferenceLanguage}};
   const auto files =
@@ -96,7 +106,7 @@ std::vector<LanguageChoice> languageChoices() {
   if (!files) {
     core::logWarning("first run: {}", files.error().message);
   } else {
-    const std::string table = std::format("/{}.yaml", TextTable);
+    const std::string table = std::format("/{}.yaml", LanguageTable);
     for (const std::string& file : *files) {
       const std::size_t slash = file.find('/');
       if (slash != std::string::npos && file.substr(slash) == table) {
@@ -134,7 +144,9 @@ public:
     const std::string full = std::format("{}.{}", TextTable, key);
     for (const assets::TextTable* table : {&texts_, &fallback_}) {
       if (const auto found = table->find(full); found != table->end()) {
-        return localization::formatText(found->second, arguments);
+        return localization::formatText(found->second, arguments,
+                                        table == &texts_ ? std::string_view{language_}
+                                                         : assets::ReferenceLanguage);
       }
     }
     return full;
@@ -197,11 +209,29 @@ std::optional<std::string> takePickedFile() {
   return std::exchange(picked.path, std::nullopt);
 }
 
+void addCjkFonts(ImGuiIO& io, std::string_view language) {
+  std::array order = CjkFonts;
+  std::ranges::stable_partition(
+      order, [&](const CjkFont& font) { return language.starts_with(font.language); });
+  ImFontConfig merge;
+  merge.MergeMode = true;
+  for (const CjkFont& cjk : order) {
+    const auto font = content::readTeamPackFile(content::teamPacksFolder(), GamePack, cjk.file);
+    if (!font) {
+      core::logWarning("first run: no {} ({})", cjk.file, font.error().message);
+      continue;
+    }
+    void* bytes = IM_ALLOC(font->size());
+    std::memcpy(bytes, font->data(), font->size());
+    io.Fonts->AddFontFromMemoryTTF(bytes, static_cast<int>(font->size()), TextSize, &merge);
+  }
+}
+
 // Sets ImGui up on the game's window and device, and takes it down again.
 class ImGuiSession {
 public:
-  static core::Result<std::unique_ptr<ImGuiSession>> create(platform::Window& window,
-                                                            rhi::Device& device) {
+  static core::Result<std::unique_ptr<ImGuiSession>>
+  create(platform::Window& window, rhi::Device& device, std::string_view language) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
@@ -214,6 +244,7 @@ public:
       void* bytes = IM_ALLOC(font->size());
       std::memcpy(bytes, font->data(), font->size());
       io.Fonts->AddFontFromMemoryTTF(bytes, static_cast<int>(font->size()), TextSize);
+      addCjkFonts(io, language);
     } else {
       core::logWarning("first run: no font ({}), using ImGui's own", font.error().message);
     }
@@ -355,11 +386,6 @@ runFirstRun(platform::Platform& platform, platform::Window& window, rhi::Device&
             const std::optional<std::string>& language) {
   auto userData =
       platform::userDataFolder(content::UserDataOrganization, content::UserDataApplication);
-  auto session = ImGuiSession::create(window, device);
-  if (!session) {
-    return std::unexpected{session.error()};
-  }
-
   // The player's language: --lang, the saved one, or the system's, as the game picks it.
   const std::optional<std::filesystem::path> settingsFile = userSettingsFile();
   UserSettings settings = settingsFile ? loadUserSettings(*settingsFile) : UserSettings{};
@@ -368,9 +394,16 @@ runFirstRun(platform::Platform& platform, platform::Window& window, rhi::Device&
   for (const LanguageChoice& choice : choices) {
     available.push_back(choice.code);
   }
+  const std::string firstLanguage =
+      startLanguage(available, language, settings.language, platform::systemLanguage())
+          .value_or(std::string{assets::ReferenceLanguage});
+
+  auto session = ImGuiSession::create(window, device, firstLanguage);
+  if (!session) {
+    return std::unexpected{session.error()};
+  }
   Texts tr;
-  tr.load(startLanguage(available, language, settings.language, platform::systemLanguage())
-              .value_or(std::string{assets::ReferenceLanguage}));
+  tr.load(firstLanguage);
 
   std::optional<std::filesystem::path> dwx;
   std::string noTool;
@@ -479,16 +512,20 @@ runFirstRun(platform::Platform& platform, platform::Window& window, rhi::Device&
       ImGui::Spacing();
       ImGui::TextWrapped("%s", tr("language_intro").c_str());
       ImGui::Spacing();
-      for (const LanguageChoice& choice : choices) {
-        if (focusLanguage && choice.code == tr.language()) {
-          ImGui::SetKeyboardFocusHere();
-          focusLanguage = false;
+      if (ImGui::BeginTable("languages", LanguageColumns)) {
+        for (const LanguageChoice& choice : choices) {
+          ImGui::TableNextColumn();
+          if (focusLanguage && choice.code == tr.language()) {
+            ImGui::SetKeyboardFocusHere();
+            focusLanguage = false;
+          }
+          if (ImGui::Button(choice.name.c_str(), {-1.0F, 0.0F})) {
+            chooseLanguage(choice.code);
+            choosingLanguage = false;
+            focusPath = true;
+          }
         }
-        if (ImGui::Button(choice.name.c_str(), {-1.0F, 0.0F})) {
-          chooseLanguage(choice.code);
-          choosingLanguage = false;
-          focusPath = true;
-        }
+        ImGui::EndTable();
       }
       ImGui::SetCursorPosY(ImGui::GetWindowHeight() - ImGui::GetFrameHeightWithSpacing() * 2.0F);
       ImGui::Separator();
@@ -559,23 +596,21 @@ runFirstRun(platform::Platform& platform, platform::Window& window, rhi::Device&
       ImGui::SetCursorPosY(ImGui::GetWindowHeight() - ImGui::GetFrameHeightWithSpacing() * 2.0F);
       ImGui::Separator();
       ImGui::TextDisabled("%s", tr("keys").c_str());
-      float barWidth = 0.0F;
-      for (const LanguageChoice& choice : choices) {
-        barWidth += ImGui::CalcTextSize(choice.name.c_str()).x +
-                    (ImGui::GetStyle().FramePadding.x * 2.0F) + ImGui::GetStyle().ItemSpacing.x;
-      }
+      const auto current = std::ranges::find(choices, tr.language(), &LanguageChoice::code);
+      const float comboWidth = ImGui::GetFontSize() * LanguageComboEms;
       ImGui::SameLine();
-      ImGui::SetCursorPosX(ImGui::GetWindowWidth() - barWidth - ImGui::GetStyle().WindowPadding.x);
-      for (const LanguageChoice& choice : choices) {
-        if (&choice != &choices.front()) {
-          ImGui::SameLine();
+      ImGui::SetCursorPosX(ImGui::GetWindowWidth() - comboWidth -
+                           ImGui::GetStyle().WindowPadding.x);
+      ImGui::SetNextItemWidth(comboWidth);
+      if (ImGui::BeginCombo("##language", current != choices.end() ? current->name.c_str()
+                                                                   : tr.language().c_str())) {
+        for (const LanguageChoice& choice : choices) {
+          const bool chosen = tr.language() == choice.code;
+          if (ImGui::Selectable(choice.name.c_str(), chosen) && !chosen) {
+            chooseLanguage(choice.code);
+          }
         }
-        const bool chosen = tr.language() == choice.code;
-        ImGui::BeginDisabled(chosen);
-        if (ImGui::Button(choice.name.c_str())) {
-          chooseLanguage(choice.code);
-        }
-        ImGui::EndDisabled();
+        ImGui::EndCombo();
       }
     }
     ImGui::End();

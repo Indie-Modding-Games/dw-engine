@@ -74,21 +74,19 @@ private:
 };
 
 // Fills the placeholders of a text: {name} becomes the value of the argument of that name,
-// {name:one|other} the word of the two that the argument's count takes (pluralWord), {{ and }}
-// become { and }. The layout tags of the original's text become plain text: {br} and {wait} a
-// new line, {color:N} nothing. Any other placeholder without an argument stays as written
+// {name:one|other} the word that the argument's count takes in the text's language (pluralWord),
+// {{ and }} become { and }. The layout tags of the original's text become plain text: {br} and
+// {wait} a new line, {color:N} nothing. Any other placeholder without an argument stays as written
 // ({digimon:pstat=3}), so it shows where it is missing.
-[[nodiscard]] std::string formatText(std::string_view text,
-                                     std::span<const TextArgument> arguments);
+[[nodiscard]] std::string formatText(std::string_view text, std::span<const TextArgument> arguments,
+                                     std::string_view language = FallbackLanguage);
 
-// Whether a count takes the word for one of a plural placeholder ({days:day|days}): exactly 1, the
-// rule of the packs' languages (English and Spanish say "1 day" but "0 days" and "1.5 days").
-[[nodiscard]] bool takesOne(double count);
+enum class PluralCategory : std::uint8_t { One, Few, Many, Other };
+[[nodiscard]] PluralCategory pluralCategory(std::string_view language, double count);
 
-// The word a plural placeholder gives for a count as an argument holds it ("1", "3"): its word for
-// one when takesOne, else its other word, also for a value that is not a number.
 [[nodiscard]] std::string_view pluralWord(const assets::PluralPlaceholder& plural,
-                                          std::string_view count);
+                                          std::string_view count,
+                                          std::string_view language = FallbackLanguage);
 
 // A number as a placeholder shows it: without decimals when it is whole ("3"), else in its shortest
 // form ("0.75").

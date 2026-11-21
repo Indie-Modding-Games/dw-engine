@@ -1,0 +1,172 @@
+diff --git a/Source/Core/ElementText.cpp b/Source/Core/ElementText.cpp
+index fe1dd2e..97393eb 100644
+--- a/Source/Core/ElementText.cpp
++++ b/Source/Core/ElementText.cpp
+@@ -22,6 +22,135 @@ static bool BuildToken(String& token, const char*& token_begin, const char* stri
+ 	bool break_at_endline, Style::TextTransform text_transformation, bool decode_escape_characters);
+ static bool LastToken(const char* token_begin, const char* string_end, bool collapse_white_space, bool break_at_endline);
+ 
++// Line breaking for Chinese and Japanese text, which has no spaces between words: a line may break
++// between two characters when either is an ideograph, kana or a full-width sign, unless the
++// second may not start a line or the first may not end one (the kinsoku rules of Japanese and
++// Chinese). Hangul is not in the set: Korean breaks at its spaces, as a word processor does by
++// default for Korean.
++static Character DecodeAt(const char* at, const char* end)
++{
++	return StringUtilities::ToCharacter(at, end);
++}
++
++static bool IsCjkBreakable(Character character)
++{
++	const char32_t c = static_cast<char32_t>(character);
++	return (c >= 0x2E80 && c <= 0x2FDF) ||   // CJK radicals
++		(c >= 0x3000 && c <= 0x30FF) ||       // CJK symbols and punctuation, hiragana, katakana
++		(c >= 0x3100 && c <= 0x31FF) ||       // bopomofo, kanbun, katakana extensions
++		(c >= 0x3400 && c <= 0x4DBF) ||       // CJK extension A
++		(c >= 0x4E00 && c <= 0x9FFF) ||       // CJK unified ideographs
++		(c >= 0xF900 && c <= 0xFAFF) ||       // CJK compatibility ideographs
++		(c >= 0xFE30 && c <= 0xFE4F) ||       // CJK compatibility forms
++		(c >= 0xFF00 && c <= 0xFFEF) ||       // half-width and full-width forms
++		(c >= 0x20000 && c <= 0x3FFFF);       // the supplementary ideographic planes
++}
++
++static bool IsNoLineStart(Character character)
++{
++	static const char32_t closing[] = U"!%),.:;?]}\u00A2\u00B0\u00BB\u2019\u201D\u2026\u2025\u2030\u2032\u2033\u2103"
++		U"\u3001\u3002\u3005\u3009\u300B\u300D\u300F\u3011\u3015\u3017\u3019\u301F\u303B"
++		U"\u3041\u3043\u3045\u3047\u3049\u3063\u3083\u3085\u3087\u308E\u3095\u3096"
++		U"\u309D\u309E\u30A0\u30A1\u30A3\u30A5\u30A7\u30A9\u30C3\u30E3\u30E5\u30E7\u30EE\u30F5\u30F6"
++		U"\u30FB\u30FC\u30FD\u30FE\u31F0\u31F1\u31F2\u31F3\u31F4\u31F5\u31F6\u31F7\u31F8\u31F9\u31FA\u31FB"
++		U"\u31FC\u31FD\u31FE\u31FF\uFE50\uFE51\uFE52\uFE54\uFE55\uFE56\uFE57\uFE5A\uFE5C\uFE5E"
++		U"\uFF01\uFF05\uFF09\uFF0C\uFF0E\uFF1A\uFF1B\uFF1F\uFF3D\uFF5D\uFF5E\uFF60\uFF61\uFF63\uFF64"
++		U"\uFF67\uFF68\uFF69\uFF6A\uFF6B\uFF6C\uFF6D\uFF6E\uFF6F\uFF70";
++	const char32_t c = static_cast<char32_t>(character);
++	for (const char32_t* it = closing; *it; ++it)
++		if (*it == c)
++			return true;
++	return false;
++}
++
++static bool IsNoLineEnd(Character character)
++{
++	static const char32_t opening[] = U"([{\u00AB\u2018\u201C\u3008\u300A\u300C\u300E\u3010\u3014\u3016\u3018\u301D"
++		U"\uFE59\uFE5B\uFE5D\uFF04\uFF08\uFF3B\uFF5B\uFF5F\uFF62\uFFE5";
++	const char32_t c = static_cast<char32_t>(character);
++	for (const char32_t* it = opening; *it; ++it)
++		if (*it == c)
++			return true;
++	return false;
++}
++
++static bool CanBreakBetween(Character before, Character after)
++{
++	if (before == Character::Null || after == Character::Null)
++		return false;
++	if (!IsCjkBreakable(before) && !IsCjkBreakable(after))
++		return false;
++	return !IsNoLineStart(after) && !IsNoLineEnd(before);
++}
++
++// The capitals and small letters RmlUi's text-transform changes beyond a to z: Latin-1, Latin
++// Extended-A, Greek and Cyrillic.
++static char32_t ToUpperCodepoint(char32_t c)
++{
++	if ((c >= 0xE0 && c <= 0xFE && c != 0xF7) || (c >= 0x3B1 && c <= 0x3C9 && c != 0x3C2) || (c >= 0x430 && c <= 0x44F))
++		return c - 0x20;
++	if (c == 0xFF)
++		return 0x178;
++	if (c == 0x3C2)
++		return 0x3A3;
++	if (c >= 0x450 && c <= 0x45F)
++		return c - 0x50;
++	if ((c >= 0x100 && c <= 0x137) || (c >= 0x14A && c <= 0x177) || (c >= 0x460 && c <= 0x481) || (c >= 0x48A && c <= 0x4BF) ||
++		(c >= 0x4D0 && c <= 0x52F))
++		return (c % 2 == 1) ? c - 1 : c;
++	if ((c >= 0x139 && c <= 0x148) || (c >= 0x179 && c <= 0x17E) || (c >= 0x4C1 && c <= 0x4CE))
++		return (c % 2 == 0) ? c - 1 : c;
++	return c;
++}
++
++static char32_t ToLowerCodepoint(char32_t c)
++{
++	if ((c >= 0xC0 && c <= 0xDE && c != 0xD7) || (c >= 0x391 && c <= 0x3A9 && c != 0x3A2) || (c >= 0x410 && c <= 0x42F))
++		return c + 0x20;
++	if (c == 0x178)
++		return 0xFF;
++	if (c >= 0x400 && c <= 0x40F)
++		return c + 0x50;
++	if ((c >= 0x100 && c <= 0x137) || (c >= 0x14A && c <= 0x177) || (c >= 0x460 && c <= 0x481) || (c >= 0x48A && c <= 0x4BF) ||
++		(c >= 0x4D0 && c <= 0x52F))
++		return (c % 2 == 0) ? c + 1 : c;
++	if ((c >= 0x139 && c <= 0x148) || (c >= 0x179 && c <= 0x17E) || (c >= 0x4C1 && c <= 0x4CE))
++		return (c % 2 == 1) ? c + 1 : c;
++	return c;
++}
++
++static void TransformCase(String& token, Style::TextTransform text_transformation)
++{
++	if (text_transformation != Style::TextTransform::Uppercase && text_transformation != Style::TextTransform::Lowercase)
++		return;
++	bool ascii = true;
++	for (char c : token)
++		ascii = ascii && static_cast<unsigned char>(c) < 0x80;
++	if (ascii)
++		return;
++	String result;
++	result.reserve(token.size());
++	for (StringIteratorU8 it(token); it; ++it)
++	{
++		const char32_t c = static_cast<char32_t>(*it);
++		const char32_t changed = text_transformation == Style::TextTransform::Uppercase ? ToUpperCodepoint(c) : ToLowerCodepoint(c);
++		result += StringUtilities::ToUTF8(static_cast<Character>(changed));
++	}
++	token = std::move(result);
++}
++
++static bool BuildTokenWithBreaks(String& token, const char*& token_begin, const char* string_end, bool first_token,
++	bool collapse_white_space, bool break_at_endline, Style::TextTransform text_transformation, bool decode_escape_characters);
++
++static bool BuildToken(String& token, const char*& token_begin, const char* string_end, bool first_token, bool collapse_white_space,
++	bool break_at_endline, Style::TextTransform text_transformation, bool decode_escape_characters)
++{
++	const bool result = BuildTokenWithBreaks(token, token_begin, string_end, first_token, collapse_white_space, break_at_endline,
++		text_transformation, decode_escape_characters);
++	TransformCase(token, text_transformation);
++	return result;
++}
++
+ static int RoundDownToIntegerClamped(float value)
+ {
+ 	constexpr int clamp = (1 << std::numeric_limits<float>::digits);
+@@ -568,8 +697,8 @@ void ElementText::GenerateDecoration(Mesh& mesh, const FontFaceHandle font_face_
+ 	}
+ }
+ 
+-static bool BuildToken(String& token, const char*& token_begin, const char* string_end, bool first_token, bool collapse_white_space,
+-	bool break_at_endline, Style::TextTransform text_transformation, bool decode_escape_characters)
++static bool BuildTokenWithBreaks(String& token, const char*& token_begin, const char* string_end, bool first_token,
++	bool collapse_white_space, bool break_at_endline, Style::TextTransform text_transformation, bool decode_escape_characters)
+ {
+ 	RMLUI_ASSERT(token_begin != string_end);
+ 
+@@ -639,6 +768,20 @@ static bool BuildToken(String& token, const char*& token_begin, const char* stri
+ 		// If we've transitioned from white-space characters to non-white-space characters, or vice-versa, then check
+ 		// if should terminate the token; if we're not collapsing white-space, then yes (as sections of white-space are
+ 		// non-breaking), otherwise only if we've transitioned from characters to white-space.
++		// Between two characters of Chinese or Japanese text the token may end: a place the line may
++		// break at (CanBreakBetween).
++		if (!parsing_white_space && !token.empty() && (static_cast<unsigned char>(*escape_begin) & 0xC0) != 0x80 &&
++			!StringUtilities::IsWhitespace(character))
++		{
++			const char* last = StringUtilities::SeekBackwardUTF8(&token.back(), token.data());
++			const Character before = DecodeAt(last, token.data() + token.size());
++			if (!StringUtilities::IsWhitespace(*last) && CanBreakBetween(before, DecodeAt(escape_begin, string_end)))
++			{
++				token_begin = escape_begin;
++				return false;
++			}
++		}
++
+ 		bool white_space = !force_non_whitespace && StringUtilities::IsWhitespace(character);
+ 		if (white_space != parsing_white_space)
+ 		{

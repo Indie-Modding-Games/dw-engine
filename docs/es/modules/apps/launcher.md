@@ -42,7 +42,14 @@ activo y el anillo de foco.
 - La página de un complemento ocupa el centro de la pantalla cuando se abre desde su icono o desde «Complementos».
 - **Ajustes**, por pestañas (lista vertical a la izquierda; ↑/↓ en la lista, Ctrl+Tab y Ctrl+Mayús+Tab o
   Ctrl+AvPág/RePág desde cualquier sitio del diálogo):
-  - **General:** idioma (español por defecto, inglés), carpeta de datos y requisitos del equipo.
+  - **General:** idioma, carpeta de datos y requisitos del equipo. La lista de idiomas tiene English, Español,
+    Português (Brasil), Français, Deutsch, Русский, 简体中文, 한국어 y 日本語. Una instalación nueva (sin idioma
+    guardado) toma el del sistema si es uno de ellos, si no inglés, y lo guarda; una elección guardada no se
+    cambia nunca. Los textos son un módulo por idioma en `ui/js/i18n/` (`en.js` es la referencia: los demás
+    tienen las mismas claves y `{marcadores}`); una clave que le falte a un idioma sale en inglés, y
+    `node apps/launcher/tools/i18n_check.mjs [código]` cuenta las claves que faltan y detecta claves de más o
+    marcadores cambiados. Los códigos están en dos listas que deben coincidir: `LANGUAGES` en `ui/js/i18n.js`
+    (con los nombres nativos) y en `src-tauri/src/settings.rs`.
   - **Actualizaciones:** el canal, buscar al abrir, buscar ahora, las actualizaciones automáticas, las versiones
     instaladas y volver a la anterior.
   - **Disco:** el disco recordado y volver a leerlo.
@@ -620,7 +627,7 @@ arranca el juego con `--mods` apuntando a él. Las reglas, los nombres y cómo l
 - **La lista:** `images_overview` agrupa los mapas por las letras de su id (el juego no tiene datos de zonas) con el
   nombre más repetido del grupo, y las imágenes por carpeta. Las miniaturas son URL `data:` de `images_thumbnail`.
 - **Exportar:** copia `originals/` en una carpeta nueva `dwe-images` (o `-2`, `-3`...) con `README.txt`
-  (`src-tauri/src/custom_images/readme_es.txt` o `readme_en.txt`, según el idioma del lanzador) y `maps.tsv`.
+  (`src-tauri/src/custom_images/readme_es.txt` en español, `readme_en.txt` en cualquier otro idioma) y `maps.tsv`.
 
 Los tests: `custom_images/tests.rs` y `the_players_images_are_mounted_while_they_are_on` en `launch.rs`.
 

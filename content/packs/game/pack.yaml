@@ -70,6 +70,8 @@ schemas:
     - localization/*/*
   ui_text_font:
     - ui/fonts/original_look
+  ui_font_fallbacks:
+    - ui/fonts/fallbacks
   ui_skin:
     - ui/skins/*/skin
   ui_skin_choice:

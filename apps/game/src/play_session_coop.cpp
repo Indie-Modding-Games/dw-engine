@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -96,6 +97,14 @@ core::Result<void> PlaySession::applyCoopSpoils(const game::battle::BattleResult
     return std::unexpected{finished.error()};
   }
   return {};
+}
+
+void PlaySession::useCoopBattleSounds(std::span<const std::string> enemies,
+                                      std::span<const std::string> partners) {
+  if (!enemies.empty()) {
+    game_.session->useEnemySounds(enemies);
+  }
+  game_.session->useAllySounds(partners);
 }
 
 std::vector<std::pair<std::string, std::int32_t>> PlaySession::coopThrowableItems() const {

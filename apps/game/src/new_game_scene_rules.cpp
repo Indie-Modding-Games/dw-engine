@@ -61,7 +61,8 @@ SceneSounds readSounds(YamlReader& reader, const YamlNode& node) {
 NamingRules readNaming(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(node, "the naming box",
                          {"length", "columns", "rows", "full_delete_takes_two",
-                          "repeat_delay_frames", "repeat_frames"})) {
+                          "repeat_delay_frames", "repeat_frames"},
+                         {"rows_page", "pages", "typed_beyond_pages"})) {
     return {};
   }
   NamingRules naming{
@@ -70,12 +71,39 @@ NamingRules readNaming(YamlReader& reader, const YamlNode& node) {
       .columns =
           static_cast<std::size_t>(reader.integer<std::uint32_t>(reader.field(node, "columns"))),
       .rows = {},
+      .rowsPage = {},
+      .pages = {},
+      .typedBeyondPages = {},
       .fullDeleteTakesTwo = reader.boolean(reader.field(node, "full_delete_takes_two")),
       .repeatDelayFrames = reader.integer<std::uint32_t>(reader.field(node, "repeat_delay_frames")),
       .repeatFrames = reader.integer<std::uint32_t>(reader.field(node, "repeat_frames")),
       .frameTicks = 1};
   for (const YamlNode& row : reader.sequence(reader.field(node, "rows"), "the letters' rows")) {
     naming.rows.push_back(reader.text(row));
+  }
+  if (const YamlNode* page = node.find("rows_page"); page != nullptr) {
+    naming.rowsPage = reader.text(*page);
+  }
+  if (const YamlNode* pages = node.find("pages"); pages != nullptr) {
+    for (const core::YamlEntry& language : pages->entries()) {
+      std::vector<NamingPage>& added = naming.pages[language.key];
+      for (const YamlNode& item : reader.sequence(language.value, "a language's pages")) {
+        if (!reader.expectKeys(item, "a page of letters", {"page", "rows"})) {
+          return {};
+        }
+        NamingPage page{.name = reader.text(reader.field(item, "page")), .rows = {}};
+        for (const YamlNode& row :
+             reader.sequence(reader.field(item, "rows"), "the page's rows", naming.rows.size())) {
+          page.rows.push_back(reader.text(row));
+        }
+        added.push_back(std::move(page));
+      }
+    }
+  }
+  if (const YamlNode* languages = node.find("typed_beyond_pages"); languages != nullptr) {
+    for (const YamlNode& language : reader.sequence(*languages, "the languages")) {
+      naming.typedBeyondPages.push_back(reader.text(language));
+    }
   }
   if (reader.ok() && (naming.length == 0 || naming.columns == 0 || naming.rows.empty() ||
                       naming.rows.size() % 2 != 0 || naming.repeatFrames == 0)) {

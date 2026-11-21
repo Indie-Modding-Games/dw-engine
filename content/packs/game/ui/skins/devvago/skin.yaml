@@ -77,6 +77,8 @@ screens:
   # The item trade between co-op players: the same boxes.
   coop_trade:
     styles: [coop_trade/style]
+  coop_battle:
+    styles: [coop_battle/style]
   # The bird transport: the original's boxes and the PLACE and POINT labels.
   bird_transport:
     styles: [original_lists/style, bird_transport/style]
@@ -121,7 +123,7 @@ screens:
     styles: [story_textbox/style, curling_hud/style]
   # The lives box of a lost life: the original's box, like the story's.
   lives_box:
-    styles: [story_textbox/style]
+    styles: [story_textbox/style, lives_box/style]
   # The name box of the new game and of the scripts: the pause menu's panel, placed like the original.
   naming_box:
     styles: [pause_menu/style, naming_box/style]

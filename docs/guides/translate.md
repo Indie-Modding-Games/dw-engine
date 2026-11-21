@@ -60,8 +60,10 @@ The rules are at the top of `scripts/translation.sh` (`kept_english_blocks`, `ke
 
 `status` gives the coverage per source (the story tables add up to one row; `status story` gives one per table) and
 `long` lists the translations that are longer than their English, to check that they fit. In the story, `long` lists
-instead the lines of more than 30 characters (or wider than the widest line of their English) and the texts with more
-lines than their English and than the box (4 rows); tags do not count.
+instead the lines of more than 30 columns (or wider than the widest line of their English) and the texts with more
+lines than their English and than the box (4 rows); tags do not count. Lengths are display columns: a Chinese,
+Japanese or Korean character counts two. Another language works the same with `--lang <code>`
+([A new language](#a-new-language)).
 
 ### Text rules
 
@@ -74,7 +76,7 @@ lines than their English and than the box (4 rows); tags do not count.
 - Strings with space padding (the map names centered in 24 characters) keep the width.
 - Strings that are one line of a box (those of fishing or curling) do not exceed the length of the original's lines,
   about 29 characters.
-- Story dialogue is split into lines with `\n` like the original: up to 30 characters per line not counting tags, and
+- Story dialogue is split into lines with `\n` like the original: up to 30 columns per line not counting tags, and
   if possible the same lines as the English (the box has 4 rows). The first line that names the speaker
   (`{color:7}<name> {color:1}\n`) is copied the same, with the space before the tag.
 
@@ -128,27 +130,99 @@ overlay: [signs guide](signs.md).
 
 ## A new language
 
-The game is prepared for more languages than Spanish and English, but a language is only published when there is a
-translation made by a person: nothing is machine-translated. Whoever translates into a new language (code `fr`, for
-example) needs:
+Besides English and Spanish, the game is being translated into Brazilian Portuguese (`pt`), French (`fr`), German
+(`de`), Russian (`ru`), Simplified Chinese (`zh`), Korean (`ko`) and Japanese (`ja`). These new languages have not had
+a review by native speakers yet: if you play in one of them and a text reads wrong, is unclear or does not fit, you
+are welcome to review it. Open an issue on the project's repository with the language, the screen or the line, the
+text as it is and how you would write it, or send the fix as a pull request to the language's tables. Each language's
+term decisions are in its glossary:
+[Deutsch](de-glossary.md), [Français](fr-glossary.md), [Português (Brasil)](pt-glossary.md),
+[Русский](ru-glossary.md), [简体中文](zh-glossary.md), [한국어](ko-glossary.md), [日本語](ja-glossary.md).
 
-1. **The engine's texts**: a `content/packs/game/localization/<code>/` folder with a copy of each table in
-   `localization/en/` (`common.yaml`, `pause_menu.yaml`, `shop.yaml`, `first_run.yaml`...) with the same keys and the
-   `{name}` arguments as they are. A missing key is shown in the fallback language.
-2. **The language name**: `name` in its `language.yaml`, and `native.<code>` and `flag.<code>` in the `language.yaml`
-   of **all** the languages (the language box lists them from there).
-3. **The flag**: its image in `ui/flags/<code>`, which `scripts/art/make_flags.py` generates.
-4. **The original's texts**: a delta pack like `content/packs/es-translation` with `text/<code>/`, its
-   `.sources.lock` and the same flow as above (`scripts/translation.sh`); without it, the game's dialogue appears in
-   English.
-5. **The signs**: the keys in `localization/<code>/signs.yaml` and, if needed, overlays per map
-   ([signs guide](signs.md)).
+Adding a language with code `<code>` takes these pieces, all following the Spanish ones.
+
+1. **The engine's texts**: `content/packs/game/localization/<code>/`, with a copy of each table in `localization/en/`
+   (`common.yaml`, `pause_menu.yaml`, `shop.yaml`, `first_run.yaml`...) with the same keys and the `{name}` arguments
+   as they are. A key the language does not have yet is shown in English, key by key, so a table can be filled bit by
+   bit.
+2. **The language name and flag**: `name` in its own `language.yaml`, and `native.<code>` and `flag.<code>` in the
+   `language.yaml` of **every** language (the language box lists them from there). The flag image goes in
+   `ui/flags/<code>`, which `scripts/art/make_flags.py` generates.
+3. **The original's texts**: a delta pack `content/packs/<code>-translation` with id `<code>_translation`, like
+   `es-translation`:
+
+   ```text
+   content/packs/<code>-translation/
+   ├─ pack.yaml
+   ├─ text/<code>/     main.yaml ... trn.yaml, story_NNN.yaml and the generated .sources.lock
+   └─ signs/<code>/    the sign overlays per map, when a sign needs one
+   ```
+
+   ```yaml
+   id: <code>_translation
+   version: 0.1.0
+   layer: base
+   priority: 2
+   name:
+     en: "<Language> translation"
+     es: "Traducción al <idioma>"
+   description:
+     en: "The team's own <Language> translation of the original's texts, a delta over text/en. See docs/guides/translate.md."
+     es: "Traducción propia del equipo al <idioma> de los textos del original, delta sobre text/en. Ver docs/guides/translate.md."
+   dependencies:
+     - id: base
+       min_version: 0.1.0
+   schemas:
+     sign_overlay:
+       - signs/*/*
+   ```
+
+   Nothing registers the pack: the game mounts every folder of `content/packs` that has a `pack.yaml`, and a package
+   cooks each one into its own `.pak` (`scripts/package/cook_team_packs.sh`). Without the pack, the game's dialogue
+   appears in English.
+4. **The translation flow**: the same as for Spanish ([How to translate](#how-to-translate) and
+   [How it is updated](#how-it-is-updated)), with the language as an option:
+   `scripts/translation.sh --lang <code> missing main`, `--lang <code> lock`, `--lang <code> check`... `--lang` picks
+   `content/packs/<code>-translation` and `text/<code>/` (`DWE_TRANSLATION_LANGUAGE=<code>` does the same, and
+   `--pack <folder>` points to another pack). `lock` needs the pack's `pack.yaml` to exist. The ids that are not
+   translated ([What is not translated](#what-is-not-translated)) are the same for every language.
+5. **Coverage**: `scripts/translation.sh coverage` (with `DWE_CONTENT`) prints, per language and per source, the
+   strings, the translated ones, the kept ones, the missing and the stale ones and the share done; then, per
+   language, its pack and the keys it has of English's in the engine's texts and in the launcher's. A language
+   without a pack shows 0%. `coverage fr de` limits it to some languages.
+6. **The signs**: the keys in `localization/<code>/signs.yaml` and, if needed, overlays per map in
+   `content/packs/<code>-translation/signs/<code>/<map>.yaml` ([signs guide](signs.md)).
+7. **The glossary**: `docs/guides/<code>-glossary.md`, with its Spanish copy in `docs/es/guides/<code>-glossary.md`,
+   records the language's term decisions as the [Spanish glossary](spanish-glossary.md) does: stages, items, HP and
+   MP, what is done with the Digimon names and the techniques.
+8. **The launcher**: `apps/launcher/ui/js/i18n/<code>.js` with the keys of `en.js`.
+   `node apps/launcher/tools/i18n_check.mjs <code>` counts the missing keys (shown in English) and fails on keys
+   English does not have or on `{placeholders}` that differ.
 
 On first start, the disc screen asks for the language if there is more than one: it lists them from the
-`localization/` folders that have `first_run.yaml`, so a new language appears as soon as it brings that table. With a
-single language it does not ask.
+`localization/` folders that have `language.yaml`, so a new language appears as soon as it brings that table. With a
+single language it does not ask. A language with only `language.yaml` shows every other text in English and the
+check lets it be; once it brings a second table, it owes all of them.
+
+### Line lengths in Chinese, Japanese and Korean
+
+Every length above is in display columns, as a monospaced terminal counts them: a Chinese, Japanese or Korean
+character (hanzi, kanji, kana, Hangul) and the full-width punctuation (`。`, `、`, `！`, `？`) take two. A story line
+holds 30 columns, so 15 of those characters, and the box keeps its 4 rows. `long` measures that way, in the story and
+in the tables (a translation wider than its English). Chinese and Japanese have no spaces: a line is broken with `\n`
+where a native reader would pause, never inside a word.
+
+### Fonts
 
 The classic font composes letters with acute, grave or circumflex accent, diaeresis, cedilla and tilde, the signs
-`¡ ¿ « » ‹ › „ ‚ ß º ª … ·` and the ligatures `æ œ` ([Texts and font](../formats/texts.md#font)). What it does not
-compose (Æ, Œ, other alphabets) comes out with the fallback font: it is visible, but in a different style. A language
-with its own alphabet also needs glyphs or a new font; that is not done.
+`¡ ¿ « » ‹ › „ ‚ ß º ª … ·` and the ligatures `æ œ` ([Texts and font](../formats/texts.md#font)). Cyrillic, Chinese,
+Japanese and Korean are drawn by the engine with its own fonts, which a translator does not need to touch:
+[UI fonts](../architecture/ui.md#fonts). `uv run scripts/art/make_fonts.py check` lists any character of the texts
+that no font draws; a character outside the fonts' sets needs them rebuilt (`make_fonts.py make`).
+
+### Plurals and names
+
+A word that changes with a count takes the forms of the language: Russian writes three (`{n:день|дня|дней}`), French
+and Portuguese use the first for 0 and 1, and Chinese, Japanese and Korean have one (write it twice, `{n:天|天}`); see
+[Plurals](../architecture/localization.md#plurals). In the naming box, Russian, Japanese and Korean get pages of their
+own letters before the Latin one ([names in every language](../modules/apps/game.md#names-in-every-language)).

@@ -31,6 +31,11 @@ inline constexpr std::string_view NotOneCharacter = "must be one character";
 inline constexpr std::string_view OriginalLookContext = "ui/fonts/original_look";
 inline constexpr std::string_view UnknownTextFont = "the text font must be modern or original";
 inline constexpr std::string_view FallbackSizeNotPositive = "fallback_size must be above 0";
+inline constexpr std::string_view FallbackPixelsNotPositive = "fallback_pixels must be above 0";
+inline constexpr std::string_view FallbackScaleNotPositive =
+    "a fallback face's scale must be above 0";
+inline constexpr std::string_view FallbackChainWithoutFaces = "a fallback chain must name a face";
+inline constexpr std::string_view FontFallbacksContext = "ui/fonts/fallbacks";
 inline constexpr std::string_view FontAtlasOutsideFonts =
     "the game reads the font's exact pixels, so it must live under font/ (an id such as font/main)";
 

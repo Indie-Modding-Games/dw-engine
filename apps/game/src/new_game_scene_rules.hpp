@@ -9,6 +9,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -19,10 +21,17 @@ namespace dwe::app {
 // The naming box (script_menu.c: setupNameSelectorBox, tickNamingBox): how many letters a name
 // takes and the letters' grid, row by row, `columns` letters each (a space is an empty cell). The
 // first half of the rows is the grid's left side, the second half its right side.
+struct NamingPage {
+  std::string name;
+  std::vector<std::string> rows;
+};
 struct NamingRules {
   std::size_t length = 0;
   std::size_t columns = 0;
   std::vector<std::string> rows;
+  std::string rowsPage;
+  std::map<std::string, std::vector<NamingPage>, std::less<>> pages;
+  std::vector<std::string> typedBeyondPages;
   // The American version's delete: with the name full it takes two letters back (namingDeleteLast
   // steps back before it clears, from a position that stopped at the last letter).
   bool fullDeleteTakesTwo = false;

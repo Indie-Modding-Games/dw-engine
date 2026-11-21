@@ -161,6 +161,30 @@ TEST_CASE("the lobby of up to four seats and the sync diagnostics round-trip and
                   .seats = {seat(HostPlayerId, "Mika"), seat(2, "Ana")},
                   .playing = true,
                   .open = false});
+  roundTrip(Lobby{.capacity = 3,
+                  .seats = {seat(HostPlayerId, "Mika")},
+                  .playing = false,
+                  .open = true,
+                  .difficulty = CoopDifficulty::Hard});
+  roundTrip(Lobby{.capacity = 2,
+                  .seats = {seat(HostPlayerId, "Mika")},
+                  .playing = false,
+                  .open = true,
+                  .difficulty = CoopDifficulty::Off});
+  {
+    auto bytes = encode(Message{Lobby{.capacity = 2,
+                                      .seats = {seat(HostPlayerId, "Mika")},
+                                      .playing = false,
+                                      .open = true,
+                                      .difficulty = CoopDifficulty::Hard}});
+    bytes.pop_back();
+    const auto older = decode(bytes);
+    REQUIRE(older);
+    REQUIRE(older->has_value());
+    CHECK(std::get<Lobby>(**older).difficulty == CoopDifficulty::Standard);
+    bytes.push_back(3);
+    CHECK_FALSE(decode(bytes));
+  }
   roundTrip(Welcome{.identity = identity(),
                     .accepted = true,
                     .assignedPlayer = 2,
@@ -210,8 +234,11 @@ TEST_CASE(
   }
   REQUIRE(host.phase() == LinkPhase::Ready);
   REQUIRE(guest.phase() == LinkPhase::Ready);
-  REQUIRE(host.send(
-      Message{Lobby{.capacity = 3, .seats = {seat(0, "Host")}, .playing = false, .open = true}}));
+  REQUIRE(host.send(Message{Lobby{.capacity = 3,
+                                  .seats = {seat(0, "Host")},
+                                  .playing = false,
+                                  .open = true,
+                                  .difficulty = CoopDifficulty::Hard}}));
   REQUIRE(host.send(Message{SyncWatch{.on = true}}));
   REQUIRE(guest.send(Message{report(1)}));
   for (int tick = 0; tick < 5; ++tick) {
@@ -221,7 +248,8 @@ TEST_CASE(
   }
   const auto lobby = guest.receive();
   REQUIRE(lobby);
-  CHECK(std::holds_alternative<Lobby>(*lobby));
+  REQUIRE(std::holds_alternative<Lobby>(*lobby));
+  CHECK(std::get<Lobby>(*lobby).difficulty == CoopDifficulty::Hard);
   CHECK(guest.receive() == std::optional<Message>{Message{SyncWatch{.on = true}}});
   CHECK(host.receive() == std::optional<Message>{Message{report(1)}});
   // Neither side sends the other's messages.

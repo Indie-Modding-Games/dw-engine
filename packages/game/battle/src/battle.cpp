@@ -473,6 +473,15 @@ void Battle::defeatPartner() {
   partner.pendingDamage = std::max(partner.pendingDamage, partner.hp);
 }
 
+void Battle::defeatPartner(FighterId partner) {
+  if (partner >= state_.fighters.size() || !state_.isPlayerSide(partner) ||
+      state_.fighters[partner].gone()) {
+    return;
+  }
+  Fighter& fighter = state_.fighters[partner];
+  fighter.pendingDamage = std::max(fighter.pendingDamage, fighter.hp);
+}
+
 void Battle::runOutClock(std::optional<bool> partnerWins) {
   if (!state_.matchClock || state_.fighters.size() < 2) {
     return;

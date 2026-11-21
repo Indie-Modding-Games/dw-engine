@@ -1328,6 +1328,30 @@ Measured: test route with the player "WWWWWWWWWWWW" and the partner "Bartholomew
 naming box in the interview (the key `new_game_scene: true`); before/after captures
 in both skins.
 
+## Names in every language
+
+An engine addition for the languages with other alphabets (it changes no rule). The ruleset's grid
+(`naming.rows`) is the Latin page; `naming.pages` of `rules/original/new_game_scene.yaml` adds pages before it per
+language, with as many rows each: Russian gets a Cyrillic page (capitals on the left, small letters on the right),
+Japanese hiragana and katakana pages (with the voiced and small kana and `ー`), Korean a page of Hangul letters
+(consonants on the left, vowels on the right). The page keys (`tab_previous`, `tab_next`: Q and E, or the shoulder
+buttons) and a click on the arrows beside the page's name turn them; the name may mix the letters of every page of
+the language. Chinese, and the other languages without an alphabet of their own, keep the Latin page.
+
+- **Korean** letters join into syllables as they are written, as on a Korean keyboard (`hangul_input.hpp`): ㅎ ㅏ ㄴ
+  gives 한, a vowel after a closed syllable takes its last consonant (한 + ㅏ = 하나), and an erase takes one letter
+  back (한 → 하 → ㅎ). A syllable is only made when the fonts draw it; the name length counts syllables.
+- **Typed text**: Chinese, Japanese and Korean typed through the system's input method may also have any of their
+  characters beyond the pages (`naming.typed_beyond_pages`), when the UI's fonts draw them (`Ui::fontsDraw`), so a
+  name never shows a box. Elsewhere a character outside the pages is refused, as before.
+- **Saves** keep the name as typed (UTF-8), whatever the script; a save made in one language loads the same name in
+  any other.
+
+The box publishes `naming_box.pages`, `naming_box.page` and `naming_box.page_name`, and `naming.state()` returns them
+as `page` (index, count, name_key). The pages' names (`naming.page.*`) are their first letters, the same in every
+language. Tested: `apps/game/tests/naming_box_tests.cpp`, `hangul_input_tests.cpp`, and the save round trip in
+`packages/session/tests/session_tests.cpp`.
+
 ## Space after names
 
 An optional improvement, on by default (it changes no rule): the `name_spacing` setting (row "Space after names"
@@ -1449,6 +1473,8 @@ are on and the command is one the menu offers (`devMenuLineAllowed`). For this t
 
 - `warp("<map> [exit]")`: changes map like a script (`startScriptedMapChange`), with exit 0 if none is given.
 - `partner_set("happiness <n>")` and `partner_set("tiredness <n>")`, from 0 to 100.
+- `partner_set("lives <n>")` and `partner_set("lifetime <hours>")`, to reach the death scenes: the last life lost in a
+  battle and the death of old age.
 - `learn_all("")` (the menu's Techniques entry, which then says it is done): the partner learns every technique its
   current species can learn (`BattleAdapter::learnAllMoves`, `session::learnableMoves`): the moves of its species'
   list that the catalog marks learnable (below 0x3A, as `battleMoveLearning` and `TRN_tryLearnMove` teach them), so

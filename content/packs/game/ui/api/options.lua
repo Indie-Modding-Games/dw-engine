@@ -316,6 +316,14 @@ local descriptors = {
     help = "pause_menu.help.coop_difficulty",
     original = "off",
   },
+  {
+    name = "coop_open_to_join",
+    label = "pause_menu.coop_open_to_join",
+    default = true,
+    tab = "game",
+    help = "pause_menu.help.coop_open_to_join",
+    original = true,
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).

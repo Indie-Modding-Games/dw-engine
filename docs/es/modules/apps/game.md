@@ -1336,6 +1336,32 @@ Medido: ruta de prueba con el jugador «WWWWWWWWWWWW» y el compañero «Barthol
 caja de nombres en la entrevista (la clave `new_game_scene: true`); capturas antes/después
 en las dos pieles.
 
+## Nombres en todos los idiomas
+
+Un añadido del motor para los idiomas con otros alfabetos (no cambia ninguna regla). La rejilla del ruleset
+(`naming.rows`) es la página latina; `naming.pages` de `rules/original/new_game_scene.yaml` añade páginas antes de ella
+por idioma, con las mismas filas cada una: el ruso tiene una página cirílica (mayúsculas a la izquierda, minúsculas a
+la derecha), el japonés páginas de hiragana y katakana (con los kana sonoros y pequeños y `ー`), el coreano una página
+de letras hangul (consonantes a la izquierda, vocales a la derecha). Las teclas de página (`tab_previous`, `tab_next`:
+Q y E, o los gatillos superiores) y un clic en las flechas junto al nombre de la página las pasan; el nombre puede
+mezclar las letras de todas las páginas del idioma. El chino, y los otros idiomas sin alfabeto propio, siguen con la
+página latina.
+
+- **El coreano** junta sus letras en sílabas al escribirlas, como un teclado coreano (`hangul_input.hpp`): ㅎ ㅏ ㄴ da
+  한, una vocal tras una sílaba cerrada se lleva su última consonante (한 + ㅏ = 하나), y borrar quita una letra cada vez
+  (한 → 하 → ㅎ). Una sílaba solo se forma si las fuentes la dibujan; el largo del nombre cuenta sílabas.
+- **Texto tecleado**: el chino, el japonés y el coreano escritos con el método de entrada del sistema pueden traer
+  también cualquiera de sus caracteres fuera de las páginas (`naming.typed_beyond_pages`), si las fuentes de la UI los
+  dibujan (`Ui::fontsDraw`), así un nombre nunca muestra una caja. En los demás se rechaza un carácter fuera de las
+  páginas, como antes.
+- **Las partidas** guardan el nombre tal como se escribió (UTF-8), sea cual sea la escritura; una partida guardada en
+  un idioma carga el mismo nombre en cualquier otro.
+
+La caja publica `naming_box.pages`, `naming_box.page` y `naming_box.page_name`, y `naming.state()` los devuelve como
+`page` (index, count, name_key). Los nombres de las páginas (`naming.page.*`) son sus primeras letras, iguales en todos
+los idiomas. Probado: `apps/game/tests/naming_box_tests.cpp`, `hangul_input_tests.cpp` y la ida y vuelta de la partida
+en `packages/session/tests/session_tests.cpp`.
+
 ## Espacio tras los nombres
 
 Mejora opcional, encendida por defecto (no cambia ninguna regla): el ajuste `name_spacing` (fila «Espacio tras los
@@ -1457,6 +1483,8 @@ están encendidas y la orden es de las que ofrece el menú (`devMenuLineAllowed`
 
 - `warp("<mapa> [salida]")`: cambia de mapa como un guion (`startScriptedMapChange`), con la salida 0 si no se da.
 - `partner_set("happiness <n>")` y `partner_set("tiredness <n>")`, de 0 a 100.
+- `partner_set("lives <n>")` y `partner_set("lifetime <horas>")`, para llegar a las escenas de muerte: la última
+  vida perdida en una batalla y la muerte de vejez.
 - `learn_all("")` (la entrada Técnicas del menú, que luego dice que está hecho): el compañero aprende todas las técnicas
   que puede aprender su especie actual (`BattleAdapter::learnAllMoves`, `session::learnableMoves`): los ataques de la
   lista de su especie que el catálogo marca como aprendibles (por debajo de 0x3A, como los enseñan `battleMoveLearning`

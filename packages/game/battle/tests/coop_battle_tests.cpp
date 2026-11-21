@@ -239,3 +239,21 @@ TEST_CASE("a lone partner with a helper faces a bit more HP") {
   CHECK(battle.state().fighters.at(1).stats.maxHp == 1150);
   CHECK(battle.state().fighters.at(1).stats.maxMp == 500);
 }
+
+TEST_CASE("one partner of a co-op battle can be felled on its own, never an enemy") {
+  Battle battle =
+      startBattle(coopDuel(evenStats(400, 100), evenStats(400, 300), evenStats(400, 100)), 9);
+  const FighterId ally = battle.state().allies.front().id;
+  const std::int32_t enemyHp = battle.state().fighters[1].hp;
+  battle.defeatPartner(1);
+  battle.defeatPartner(ally);
+  stepUntil(battle, [&] { return battle.state().fighters[ally].hp <= 0; });
+  REQUIRE_FALSE(battle.finished());
+  CHECK(battle.state().fighters[ally].hp <= 0);
+  CHECK_FALSE(battle.state().fighters[ally].gone());
+  CHECK(battle.state().partner().hp > 0);
+  CHECK(battle.state().fighters[1].hp > enemyHp / 2);
+  stepUntil(battle, [&] { return battle.state().fighters[ally].gone(); });
+  REQUIRE_FALSE(battle.finished());
+  CHECK(battle.state().fighters[ally].departure == Departure::KnockedOut);
+}

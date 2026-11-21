@@ -53,7 +53,8 @@ local function fill(document)
     local slot = document:get("slot-" .. index)
     slot:set_class("hidden", index >= slots)
     local full = index < lives or (index == lives and lost_full)
-    slot:set_attribute("rect", full and full_rect or empty_rect)
+    slot:set_class("empty", not full)
+    document:get("life-" .. index):set_attribute("rect", full and full_rect or empty_rect)
   end
 end
 

@@ -2,6 +2,7 @@ dwe_add_module(localization
     LAYER systems
     SOURCES
         src/catalog.cpp
+        src/text_case.cpp
     DEPS core assets)
 
 # The tests read the game pack's texts from the source tree.

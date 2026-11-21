@@ -63,14 +63,30 @@ para la UI: `{br}` y `{wait}` son un salto de línea, `{color:N}` desaparece y l
 ### Plurales
 
 Una palabra que cambia con una cuenta se escribe `{cuenta:singular|plural}`: `"{days} {days:día|días}"` da «1 día» y
-«2 días», y `"{days} {days:day|days}"` «1 day» y «2 days». La forma de uno sale solo con la cuenta exactamente 1
-(`localization::takesOne`), la regla del inglés y del español; 0, 1.5 o un valor que no es número toman la otra. Una
-forma puede ir vacía (`card{n:|s}`). El marcador cuenta como el de su argumento (`days`) al comparar idiomas, así cada
+«2 días», y `"{days} {days:day|days}"` «1 day» y «2 days». Una forma puede ir vacía (`card{n:|s}`). Qué forma toma
+una cuenta depende del idioma del texto (`localization::pluralCategory`, según las reglas de CLDR):
+
+| Idioma | Formas | Regla |
+|---|---|---|
+| en, es, de | `one\|other` | one con 1 exacto; 0, 1.5 o un valor que no es número toman other |
+| pt (Brasil), fr | `one\|other` | one con 0 y 1 (y todo lo menor que 2) |
+| ru | `one\|few\|many` | one con 1, 21, 31... (no 11); few con 2-4, 22-24... (no 12-14); many con el resto; una fracción toma few |
+| zh, ja, ko | `other` | una sola forma; se escribe la misma palabra dos veces (`{n:个|个}`) o se deja fuera |
+
+Con dos formas la primera es «one» y la segunda todo lo demás; con tres, one, few (también para other) y many;
+cuatro formas son one, few, many y other. Una cuenta que no es número toma la última forma. El marcador cuenta como el de su argumento (`days`) al comparar idiomas, así cada
 uno pone sus propias palabras (`assets::pluralPlaceholderOf`, `localization::pluralWord`). Se usa en la edad del
 compañero, los bits y las vidas del cuadro final del combate y los sobres y cartas de la compra en lote.
 
 Cada idioma tiene que tener en cada clave el mismo conjunto de marcadores que el inglés. Así el orden de las palabras
 puede cambiar entre idiomas sin tocar el código.
+
+### Mayúsculas
+
+Un script de la UI escribe un texto en mayúsculas con `ui.upper` (y en minúsculas con `ui.lower`), porque el
+`string.upper` de Lua solo conoce ASCII. Cubren el latín con sus tildes (Latin-1 y Latin Extended-A), el griego y el
+cirílico (`dwe/localization/text_case.hpp`); ß pasa a SS, y el chino, el japonés, el coreano, los signos y los bytes
+que no son UTF-8 válido quedan como están.
 
 ## Cómo se pide un texto
 
@@ -183,5 +199,6 @@ no tiene traducción sale en inglés, y siempre los nombres de Digimon. La tradu
 
 ## Fuentes
 
-La fuente de la UI (Noto Sans) cubre el español: `ñ`, vocales con tilde, `ü`, `¿` y `¡`. Un idioma con otro alfabeto
-necesita una fuente que lo cubra en su paquete.
+Todos los aspectos dibujan los nueve idiomas: las fuentes cubren el latino con sus tildes, el griego y el cirílico, y
+las cadenas de respaldo añaden el chino, el japonés y el coreano ([UI, Fuentes](ui.md#fuentes)). Un idioma con otro
+alfabeto necesita una cara que lo cubra en su paquete, añadida a `ui/fonts/fallbacks.yaml`.

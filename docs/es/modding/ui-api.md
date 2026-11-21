@@ -67,6 +67,8 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.27.0 | La sala muestra la dificultad cooperativa del anfitrión antes de que un invitado se marque listo (`online.current.coop_difficulty`, `coop_difficulty` y `coop_difficulty_key` de `online.room()`), y llega la opción `coop_open_to_join`: si una partida cooperativa que aloja el jugador admite jugadores nuevos con la partida en marcha, aplicada al momento a la sala que aloja |
+| 0.26.0 | Nueve idiomas: el cuadro de nombre pasa páginas de letras (`naming_box.pages`, `naming_box.page`, `naming_box.page_name`, `page` en `naming.state()`), y `ui.upper` y `ui.lower` conocen las letras acentuadas, griegas y cirílicas |
 | 0.25.0 | La etiqueta cooperativa dice cuándo un jugador entrena en el gimnasio (`coop_hud.tag.training`, `coop_hud.tag.<n>.training`) |
 | 0.24.0 | Una partida en curso admite jugadores: la lista de salas muestra una partida en marcha con plaza libre como `in_progress` (las salas de `online.list()` ganan `in_progress`), la sala dice si su partida está en marcha y si admite jugadores nuevos (`online.current.in_progress`, `online.current.open_to_join`, `in_progress` y `open_to_join` de `online.room()`), y el anfitrión la abre o la cierra a jugadores nuevos (`online.set_open_to_join`, `online_open_to_join`) |
 | 0.23.0 | Todos los compañeros luchan en un combate cooperativo: la tarjeta de un aliado cuenta atrás hasta que se levanta (`battle.ally.<n>.revive_seconds`, `revive_seconds` en `battle.allies()`), y la pantalla `coop_battle` enseña la cuenta atrás de cada compañero caído (`coop_battle.fighter.<n>.revive_seconds`) y deja elegir a qué compañero van los objetos del jugador (`coop_battle.target`, el comando `coop_battle_target`). Llega la opción `coop_difficulty` (off, standard o hard) |
@@ -103,7 +105,7 @@ guardar y la caja del nombre); el resto de pantallas llega después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.25.0**.
+Versión de la API de la interfaz: **0.27.0**.
 
 ### `ui`
 
@@ -120,6 +122,8 @@ Versión de la API de la interfaz: **0.25.0**.
 | `ui.device(): string` | función | texto | El dispositivo en uso: keyboard_mouse o gamepad. |
 | `ui.gamepad_family(): string` | función | texto | La familia del mando en uso. |
 | `ui.languages(): string[]` | función | tabla | Los idiomas que el jugador puede elegir. |
+| `ui.upper(text: string): string` | función | texto | El texto en mayúsculas, también las letras con tilde, griegas y cirílicas (`string.upper` solo conoce ASCII). |
+| `ui.lower(text: string): string` | función | texto | El texto en minúsculas, en los mismos alfabetos. |
 | `ui.skins(): string[]` | función | tabla | Los aspectos que el jugador puede elegir. |
 | `ui.skin_name_key(id: string): string` | función | texto | La clave de texto del nombre de un aspecto; vacía si no existe. |
 | `ui.cue(name: string): boolean` | función | sí/no | Suena box_open, box_close o confirm; false con otro nombre. |
@@ -328,6 +332,7 @@ Versión de la API de la interfaz: **0.25.0**.
 | `difficulty` | opción | texto | Dificultad: normal o easy. |
 | `shop_job_mode` | opción | texto | Trabajo en la tienda del cañón: improved (mejorado) u original. |
 | `coop_difficulty` | opción | texto | Cómo escalan los enemigos en los combates cooperativos: off (desactivada), standard (estándar) o hard (difícil). |
+| `coop_open_to_join` | opción | sí/no | Si una partida cooperativa que aloja este jugador admite jugadores nuevos una vez en marcha. |
 | `skip_evolution` | opción | sí/no | Saltar la escena de evolución. |
 | `choice_cancel_closes` | opción | sí/no | Cancelar cierra una elección. |
 | `fair_sickness_chance` | opción | sí/no | Probabilidad justa de enfermar. |
@@ -603,11 +608,14 @@ Versión de la API de la interfaz: **0.25.0**.
 | `naming_box.cursor_row` | ajuste | número | La fila del cursor en la rejilla; -1 en un botón. |
 | `naming_box.cursor_column` | ajuste | número | La columna del cursor en la rejilla; -1 en un botón. |
 | `naming_box.cursor_button` | ajuste | número | El botón del cursor: 0 Atrás, 1 Aceptar; -1 en la rejilla. |
+| `naming_box.pages` | ajuste | número | Las páginas de letras del idioma del jugador (las suyas y luego la latina). |
+| `naming_box.page` | ajuste | número | La página de letras que se ve, desde 0. |
+| `naming_box.page_name` | ajuste | texto | La clave de texto del nombre de la página que se ve. |
 | `naming_write` | comando | texto | Escribe las letras de la rejilla que lleva, como el teclado. |
 | `naming_erase` | comando | — | Quita la última letra, como cancelar. |
 | `naming_accept` | comando | — | Aceptar: el juego toma el nombre si no está vacío. |
 | `naming.is_open(): boolean` | consulta | sí/no | Si la caja de nombre se ve, esperando un nombre. |
-| `naming.state(): table` | consulta | tabla | La caja: title_key, length, letters, name, grid (rows, columns) y cursor (row, column, button). |
+| `naming.state(): table` | consulta | tabla | La caja: title_key, length, letters, name, grid (rows, columns), cursor (row, column, button) y page (index, count, name_key). |
 | `naming.cell(row: integer, column: integer): string` | consulta | texto | La letra de una celda de la rejilla, desde 0; " " si está vacía. |
 | `naming.write(letters: string): boolean, string?` | acción | sí/no | Pide escribir letras de la rejilla al final del nombre. |
 | `naming.erase(): boolean, string?` | acción | sí/no | Pide quitar la última letra. |
@@ -976,6 +984,7 @@ Versión de la API de la interfaz: **0.25.0**.
 | `online.current.members` | ajuste | número | Cuántos jugadores hay en la sala. |
 | `online.current.in_progress` | ajuste | sí/no | Si la partida de la sala está en marcha (un invitado que se marca listo entra en ella). |
 | `online.current.open_to_join` | ajuste | sí/no | Si la partida de la sala, una vez en marcha, admite jugadores nuevos (los invitados que vuelven a su plaza siempre entran). |
+| `online.current.coop_difficulty` | ajuste | texto | La dificultad cooperativa del anfitrión: off, standard, hard, o vacío hasta que se sepa. |
 | `online.member.<n>.name` | ajuste | texto | El nombre de un miembro, o vacío. |
 | `online.member.<n>.name_key` | ajuste | texto | La clave de texto del nombre de un miembro cuando no tiene uno propio. |
 | `online.member.<n>.icon` | ajuste | texto | El id del icono del perfil del miembro, o vacío si no envió uno. |
@@ -1010,7 +1019,7 @@ Versión de la API de la interfaz: **0.25.0**.
 | `online.icons(): table` | consulta | tabla | Los iconos que puede elegir un perfil: id y label_key. |
 | `online.list(): table` | consulta | tabla | La lista de salas: state, error, error_key, total y las salas que cumplen el filtro (id, code, name, message, host_name, state, mode, mode_key, players, capacity, ping, ping_level, full, in_progress, joinable). |
 | `online.modes(): table` | consulta | tabla | Los modos de juego: id, label_key, description_key, short_key, available y selected. |
-| `online.room(): table?` | consulta | tabla | La sala en la que está el jugador, o nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready, in_progress, open_to_join y members (name, icon, host, ready, local). |
+| `online.room(): table?` | consulta | tabla | La sala en la que está el jugador, o nil: code, name, host, listed, phase, phase_key, mode, mode_key, capacity, error, error_key, detail, can_start, can_ready, ready, in_progress, open_to_join, coop_difficulty, coop_difficulty_key y members (name, icon, host, ready, local). |
 | `online.error_key(code: string?): string` | consulta | texto | La clave de texto de un código de error; los códigos desconocidos dan online.error.unknown. |
 | `online.notice_key(code: string?): string` | consulta | texto | La clave de texto de un código de aviso. |
 | `online.open(): boolean` | acción | sí/no | Se abrieron las pantallas de salas. |

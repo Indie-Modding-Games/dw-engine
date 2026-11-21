@@ -42,6 +42,13 @@ enum class NameTarget : std::uint8_t { Tamer, Partner };
 // original has none) moves the cursor onto the cell or button it moves over, silently; a click on
 // a cell writes it and on Back or OK does what confirm there does; a click elsewhere does nothing.
 // It publishes naming_box.* settings and takes the field's buttons, not the UI's focus.
+//
+// An engine addition for the languages with other alphabets
+// (docs/modules/apps/game.md#names-in-every-language): the language's pages of letters come before
+// the ruleset's rows, and the page keys (tab_previous, tab_next) or a click on the page arrows turn
+// them; any page's letters may be written or typed, Korean letters join into syllables
+// (hangul_input.hpp), and in the languages that type through an input method any Chinese, Japanese
+// or Korean character the fonts draw is taken too.
 class NamingBox {
 public:
   NamingBox(ui::Ui& ui, NamingRules rules, SceneSounds sounds);
@@ -86,9 +93,16 @@ private:
     std::size_t column = 0;
   };
 
+  struct Page {
+    std::string_view name;
+    const std::vector<std::string>* rows = nullptr;
+  };
+
   [[nodiscard]] std::string letterAt(std::size_t side, std::size_t row, std::size_t column) const;
   [[nodiscard]] bool knows(std::string_view letter) const;
   [[nodiscard]] std::size_t sideRows() const { return rules_.rows.size() / 2; }
+  void choosePages();
+  void turnPage(int step);
   bool takeTyping();
   bool takeAsked();
   bool pressButtons(const input::InputState& input);
@@ -113,6 +127,10 @@ private:
   game::story::SoundPort* sound_ = nullptr;
   NameTarget target_ = NameTarget::Tamer;
   std::vector<std::string> letters_;
+  std::vector<Page> pages_;
+  std::size_t page_ = 0;
+  bool typedBeyondPages_ = false;
+  bool joinsHangul_ = false;
   std::size_t side_ = 0;
   std::size_t row_ = 0;
   std::size_t column_ = 0;

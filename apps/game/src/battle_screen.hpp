@@ -141,6 +141,7 @@ public:
   bool defeatEnemies();
   // The battle_lose debug command: the partner falls at once; false when no fight is running.
   bool defeatPartner();
+  bool defeatAlly(game::coop::PlayerId owner);
   // The battle_time_up debug command: a cup match's clock runs out, `side` ("win", "lose" or ""
   // for a draw) having dealt more damage; false when no fight is running.
   bool runOutClock(std::string_view side);
@@ -198,6 +199,7 @@ public:
   }
   // A player whose link went: its partner fights on its own call.
   void releaseAlly(game::coop::PlayerId owner);
+  [[nodiscard]] std::vector<game::coop::BattleThrow> coopThrows() const;
   // What the screen shows, for the other player's screen: the opening, the fight, the victory's
   // poses, the end box, or what follows it.
   [[nodiscard]] game::coop::BattlePhase coopPhase() const;
@@ -411,8 +413,17 @@ private:
     game::battle::FighterId thrower = game::battle::PartnerId;
     // Co-op: the other player whose hand holds it (none: this game's own player's).
     std::optional<game::coop::PlayerId> hand;
+    std::uint16_t serial = 0;
+    std::string item;
+    std::optional<game::battle::FighterId> target;
   };
   std::optional<ThrownSprite> thrown_;
+  std::uint16_t throwSerial_ = 0;
+  struct LandedThrow {
+    game::coop::BattleThrow thrown;
+    std::int32_t framesLeft = 0;
+  };
+  std::vector<LandedThrow> landedThrows_;
   bool playerThrowing_ = false;
   // Co-op: the other players whose throw's clip still plays.
   std::vector<game::coop::PlayerId> coopThrowing_;

@@ -85,6 +85,35 @@ TEST_CASE("only the player's side shows a revive countdown, never a fallen enemy
   CHECK_FALSE(dwe::screens::reviveSecondsOf(battle, 1).has_value());
 }
 
+TEST_CASE("a co-op ally's countdown shows while it can get up, and not once it is out") {
+  BattleSetup setup = duel(evenStats(400, 100), evenStats(400, 100));
+  setup.allies.push_back(
+      {.partner = fighterWith("buddy", evenStats(400, 300), {"punch"}, {.x = 300, .z = 0}),
+       .condition =
+           {.discipline = 50, .tiredness = 0, .sick = false, .injured = false, .knownMoves = {}},
+       .tamer = {.x = 300, .z = -800},
+       .owner = 1});
+  Battle battle = startBattle(std::move(setup), 9);
+  const dwe::game::battle::FighterId ally = battle.state().allies.front().id;
+  battle.defeatPartner(ally);
+  while (!battle.finished() && !dwe::screens::reviveSecondsOf(battle, ally) &&
+         battle.state().frame < 20000) {
+    battle.step();
+  }
+  REQUIRE(dwe::screens::reviveSecondsOf(battle, ally).has_value());
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  REQUIRE(dwe::screens::battleViewOf(battle, names).allies.size() == 1);
+  CHECK(dwe::screens::battleViewOf(battle, names).allies.front().reviveSeconds > 0);
+  while (!battle.finished() && !battle.state().fighters[ally].gone() &&
+         battle.state().frame < 20000) {
+    battle.step();
+  }
+  REQUIRE(battle.state().fighters[ally].gone());
+  CHECK_FALSE(dwe::screens::reviveSecondsOf(battle, ally).has_value());
+  CHECK_FALSE(dwe::screens::battleViewOf(battle, names).allies.front().reviveSeconds.has_value());
+}
+
 TEST_CASE("the battle view's menu is the battle's, with the original's command names") {
   const auto species = fixtureSpecies();
   const NameKeys names{&species, nullptr, &testCatalog()};

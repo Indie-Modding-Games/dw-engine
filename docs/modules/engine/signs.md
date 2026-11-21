@@ -15,7 +15,7 @@ How to find a sign and write its overlay: [signs guide](../../guides/signs.md).
 | `sign_overlay.hpp` | The format: `Sign` (image, region, erasing, text, font, effects), `parseSignOverlay`, `mergeSignOverlays` |
 | `sign_font.hpp` | `SignFont`: a TrueType font from the pack rasterized with FreeType, without hinting and with kerning |
 | `sign_painter.hpp` | `paintSign` / `paintSigns`: erases and draws on a copy of the images and gives patches; `applySignPatches` applies them |
-| `map_signs.hpp` | `MapSigns`: reads the overlays from the VFS, loads the fonts and keeps the patches by map, language and revision |
+| `map_signs.hpp` | `MapSigns`: reads the overlays from the VFS, loads the fonts (with the CJK faces as fallbacks, `SignFont::addFallback`) and keeps the patches by map, language and revision |
 
 ## Overlays
 
@@ -36,7 +36,7 @@ A sign says:
 | `rotation`, `skew` | Degrees of rotation (clockwise) and slant of the letters, when there are no `corners` |
 | `clear` | How the old text is erased (below) |
 | `text` | The text key, like `signs.trai00_title_top`; `\n` splits the line |
-| `font`, `size` | A font from `ui/fonts/` (`noto_sans_bold` by default) and its height in image pixels |
+| `font`, `size` | A font from `ui/fonts/` (`noto_sans_bold` by default) and its height in image pixels; the letters it lacks (Chinese, Japanese, Korean) are drawn by `ui/fonts/cjk/noto_sans_cjk_*`, the sign's language first |
 | `letter_spacing`, `line_spacing` | Extra pixels between letters and a factor on the line height |
 | `align`, `valign` | `left`/`center`/`right` and `top`/`middle`/`bottom` |
 | `vertical` | One letter under another (a vertical banner) |

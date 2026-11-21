@@ -4,6 +4,7 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <array>
 #include <filesystem>
 #include <format>
@@ -12,6 +13,8 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 using namespace dwe::localization;
@@ -181,14 +184,49 @@ TEST_CASE("a plural placeholder picks the word for one only for a count of exact
         "3 cards");
   // Without its count, it stays as written, as any placeholder without an argument.
   CHECK(formatText("{days:day|days}", {}) == "{days:day|days}");
-  CHECK(takesOne(1.0));
-  CHECK_FALSE(takesOne(0.0));
-  CHECK_FALSE(takesOne(-1.0));
-  CHECK_FALSE(takesOne(11.0));
-  const dwe::assets::PluralPlaceholder lives{.count = "amount", .one = "life", .other = "lives"};
+  CHECK(pluralCategory("en", 1.0) == PluralCategory::One);
+  CHECK(pluralCategory("en", 0.0) == PluralCategory::Other);
+  CHECK(pluralCategory("en", -1.0) == PluralCategory::One);
+  CHECK(pluralCategory("en", 11.0) == PluralCategory::Other);
+  const dwe::assets::PluralPlaceholder lives{
+      .count = "amount", .forms = {"life", "lives"}, .formCount = 2};
   CHECK(pluralWord(lives, "1") == "life");
   CHECK(pluralWord(lives, "3") == "lives");
   CHECK(pluralWord(lives, "one") == "lives");
+}
+
+TEST_CASE("each language takes its own plural rule") {
+  const auto days = [](std::string_view text, std::string_view count, std::string_view language) {
+    return formatText(text, std::array{TextArgument{.name = "n", .value = std::string{count}}},
+                      language);
+  };
+  CHECK(days("{n} {n:jour|jours}", "0", "fr") == "0 jour");
+  CHECK(days("{n} {n:jour|jours}", "1.5", "fr") == "1.5 jour");
+  CHECK(days("{n} {n:jour|jours}", "2", "fr") == "2 jours");
+  CHECK(days("{n} {n:dia|dias}", "0", "pt") == "0 dia");
+  CHECK(days("{n} {n:Tag|Tage}", "0", "de") == "0 Tage");
+  const std::string_view russian = "{n} {n:день|дня|дней}";
+  CHECK(days(russian, "1", "ru") == "1 день");
+  CHECK(days(russian, "21", "ru") == "21 день");
+  CHECK(days(russian, "11", "ru") == "11 дней");
+  CHECK(days(russian, "3", "ru") == "3 дня");
+  CHECK(days(russian, "13", "ru") == "13 дней");
+  CHECK(days(russian, "24", "ru") == "24 дня");
+  CHECK(days(russian, "5", "ru") == "5 дней");
+  CHECK(days(russian, "0", "ru") == "0 дней");
+  CHECK(days(russian, "1.5", "ru") == "1.5 дня");
+  CHECK(days("{n:a|b}", "21", "ru") == "a");
+  CHECK(days("{n:a|b}", "2", "ru") == "b");
+  CHECK(days("{n}{n:天|天}", "1", "zh") == "1天");
+  CHECK(days("{n:a|b}", "1", "ja") == "b");
+  CHECK(pluralCategory("ko", 1.0) == PluralCategory::Other);
+}
+
+TEST_CASE("a catalog words plurals in the language of the text it shows") {
+  Packs packs;
+  packs.memory.addFile("game/localization/ru/menu.yaml", "count: \"{n} {n:день|дня|дней}\"\n");
+  Catalog catalog = loaded(packs.mount(), "ru");
+  CHECK(catalog.text("menu.count", std::array{TextArgument{.name = "n", .value = "2"}}) == "2 дня");
 }
 
 TEST_CASE("the language changes at run time and an unknown one keeps the current") {
@@ -270,6 +308,34 @@ TEST_CASE("the game pack's Spanish texts cover every English key") {
   const Catalog catalog = loaded(*pack.files, "es");
   CHECK(catalog.warnings().empty());
   CHECK(catalog.text("language.name") == "Español");
+}
+
+TEST_CASE("each of the nine languages loads, names itself and shows English for a key it lacks") {
+  const GamePack pack;
+  const std::vector<std::string> languages = availableLanguages(*pack.files);
+  constexpr std::array<std::pair<std::string_view, std::string_view>, 9> Native{
+      {{"en", "English"},
+       {"es", "Español"},
+       {"pt", "Português (Brasil)"},
+       {"fr", "Français"},
+       {"de", "Deutsch"},
+       {"ru", "Русский"},
+       {"zh", "简体中文"},
+       {"ko", "한국어"},
+       {"ja", "日本語"}}};
+  const Catalog english = loaded(*pack.files, "en");
+  for (const auto& [code, name] : Native) {
+    CAPTURE(code);
+    CHECK(std::ranges::find(languages, code) != languages.end());
+    const Catalog catalog = loaded(*pack.files, code);
+    CHECK(catalog.language() == code);
+    CHECK(catalog.text(std::format("language.native.{}", code)) == name);
+    CHECK(english.text(std::format("language.native.{}", code)) == name);
+    CHECK(catalog.text("language.name") == name);
+    CHECK(catalog.text(std::format("language.flag.{}", code)) == std::format("ui/flags/{}", code));
+    CHECK(catalog.text("naming.page.latin") == "ABC");
+    CHECK(catalog.text("common.accept") != "common.accept");
+  }
 }
 
 // The other way round too: a key only one language has is a text the other shows in English, or one

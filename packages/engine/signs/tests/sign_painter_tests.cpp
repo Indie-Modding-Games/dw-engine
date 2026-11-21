@@ -26,7 +26,8 @@ namespace {
 
 std::vector<std::byte> fontFile(std::string_view name) {
   const std::filesystem::path path =
-      std::filesystem::path{DWE_GAME_PACK} / "ui" / "fonts" / std::format("{}.ttf", name);
+      std::filesystem::path{DWE_GAME_PACK} / "ui" / "fonts" /
+      std::format("{}.{}", name, name.starts_with("cjk/") ? "otf" : "ttf");
   std::ifstream stream{path, std::ios::binary};
   REQUIRE_MESSAGE(stream.good(), path.string());
   std::vector<char> bytes{std::istreambuf_iterator<char>{stream}, {}};
@@ -424,6 +425,21 @@ TEST_CASE("a sprite cut a few pixels off its instance still gets the sign where 
       CHECK(pixel(patched.pages.front().image, x, y) == pixel(patched.background, 6 + x, 4 + y));
     }
   }
+}
+
+TEST_CASE("a sign font draws the letters it lacks with its fallbacks, on the same baseline") {
+  auto latin = SignFont::load(fontFile("noto_sans_bold"));
+  REQUIRE_MESSAGE(latin.has_value(), latin.error().message);
+  constexpr float Size = 20.0F;
+  CHECK(latin->drawLine("东京", Size, 0.0F).advance == doctest::Approx(0.0F));
+  auto chinese = SignFont::load(fontFile("cjk/noto_sans_cjk_sc"));
+  REQUIRE_MESSAGE(chinese.has_value(), chinese.error().message);
+  latin->addFallback(std::move(*chinese));
+  const TextLine both = latin->drawLine("A东京", Size, 0.0F);
+  const TextLine letter = latin->drawLine("A", Size, 0.0F);
+  CHECK(both.advance == doctest::Approx(letter.advance + (2.0F * Size)).epsilon(0.05));
+  CHECK(both.ink.width > letter.ink.width);
+  CHECK(latin->drawLine("A", Size, 0.0F).advance == doctest::Approx(letter.advance));
 }
 
 TEST_CASE("map signs read the packs' overlays per language and keep the painting") {

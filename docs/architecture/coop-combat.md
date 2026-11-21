@@ -368,9 +368,22 @@ play on.
   screen with the throw's clip. Each ally sounds as its own species (allies' sound banks in slots 16–18; a visitor's
   partner keeps its own species in the partner slots).
 - Task 11: co-op difficulty, see [co-op difficulty](coop-difficulty.md) §9.
+- Task 10, the guest's screen (protocol version 12): the host's `BattleFrame` carries the items thrown (`throws`: who
+  threw it, the item, in the hand, on its way with its point, or landed on a fighter), and a guest's screen draws them
+  as the host's does: the throw's clip on the thrower's body, the item flying, and the glow over the fighter it lands
+  on (`CoopThrowFollower` starts each once however often a frame repeats). Each body plays its clips' sounds from its
+  own species' bank: the enemies from the original's slots, the other players' partners from the allies' slots 16–18
+  (`coopBattleSoundsOf`). The developer console's `coop_fell("<player>")` fells that player's partner in the host's
+  battle, to check the countdown and the Aim without a long fight. Details:
+  - The thrower's clip is the original's player throw (clip 6), with the item on the thrower's hand node 9 until it
+    leaves.
+  - A landed throw stays in the frames for 20 battle frames, so one lost frame does not lose its glow.
+  - A throw first seen already landed shows its glow but plays no clip.
+  - Lost frames do not stall the glows: the guest moves them on by the frames that went by.
+  - Sound slots: this game's partner keeps slot 4 and the enemies take 5 on, as in the original; each other partner
+    takes the next ally slot. Past the three ally slots, a body plays from this game's partner's slot.
 - Not yet: task 12 (one battle per map: a second battle on another map is still refused while one runs), the optional
-  mechanics of §8, a per-player shout, and the guest's own screen drawing the throws and the allies' sounds of the host's
-  battle (the guest's field shows the fighters where the host's frames put them).
+  mechanics of §8 and a per-player shout.
 
 1. **Battle sides refactor:** replace `PartnerId` with `side`, `owner` and the queries `isPlayerSide`, `partnerOf`,
    `partners`, `enemies`; partners first, enemies after. No behaviour change (solo tests and story chain green).

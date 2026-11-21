@@ -25,7 +25,8 @@
 				<div class="info-row"><span class="info-label" text-key="online.info.mode"></span><span id="info-mode" class="info-value accent"></span></div>
 				<div class="info-row"><span class="info-label" text-key="online.info.state"></span><span id="info-state" class="info-value"><span id="info-state-text"></span></span></div>
 				<div class="info-row"><span class="info-label" text-key="online.info.players"></span><span id="info-players" class="info-value"></span></div>
-				<div class="info-row"><span class="info-label" text-key="online.info.visibility"></span><span id="info-visibility" class="info-value"></span></div>
+				<div class="info-row"><span class="info-label" text-key="online.info.visibility"></span><span id="info-visibility" class="info-value"><span id="info-visibility-text"></span></span></div>
+				<div id="info-difficulty-row" class="info-row hidden"><span class="info-label" text-key="online.info.difficulty"></span><span id="info-difficulty" class="info-value"><span id="info-difficulty-text"></span></span></div>
 			</div>
 
 			<!-- The host's mode list. -->

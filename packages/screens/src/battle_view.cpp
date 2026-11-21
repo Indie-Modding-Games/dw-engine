@@ -128,8 +128,9 @@ std::string countName(std::string_view list) {
 std::optional<std::int32_t> reviveSecondsOf(const battle::Battle& battle, battle::FighterId own) {
   const battle::EndingRules& ending = battle.rules().ending;
   const std::int32_t deathFrames = battle.deathFramesOf(own);
-  // Only the player's side revives: a fallen enemy shows no countdown.
-  if (!battle.state().isPlayerSide(own) || !battle.state().fighters.at(own).fainted ||
+  // Only the player's side revives, and a partner whose countdown ran out stays down.
+  const battle::Fighter& fighter = battle.state().fighters.at(own);
+  if (!battle.state().isPlayerSide(own) || !fighter.fainted || fighter.gone() ||
       deathFrames < ending.reviveCountdownShownAt) {
     return std::nullopt;
   }
@@ -203,7 +204,9 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names,
   for (battle::FighterId id = 0; id < state.fighters.size(); ++id) {
     if (id != own && !state.allies.empty() && state.isPlayerSide(id)) {
       view.allies.push_back(fighterViewOf(state.fighters[id], true, names));
-      view.allies.back().reviveSeconds = reviveSecondsOf(battle, id);
+      const std::optional<std::int32_t> revive = reviveSecondsOf(battle, id);
+      view.allies.back().reviveSeconds =
+          revive && *revive > 0 ? revive : std::optional<std::int32_t>{};
     }
   }
   const battle::Fighter& partner = state.fighters[own];
