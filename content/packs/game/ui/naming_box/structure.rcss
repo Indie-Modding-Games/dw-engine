@@ -20,7 +20,8 @@ body #panel {
 .letter { display: inline-block; width: 28dp; text-align: center; }
 .letter.current { border-bottom: 3dp #d0d0d0; }
 .grid-row { display: block; height: 30dp; }
-.cell { display: inline-block; width: 40dp; height: 30dp; line-height: 30dp; text-align: center; }
+/* Top-aligned, so that a row mixing fonts (an empty cell's space beside a kana) keeps its place. */
+.cell { display: inline-block; width: 40dp; height: 30dp; line-height: 30dp; text-align: center; vertical-align: top; }
 .cell:nth-child(5) { margin-right: 24dp; }
 .cell.selected, .button.selected { decorator: none; background-color: #ffffff40; }
 #buttons { float: left; width: 90dp; margin: 60dp 10dp 0 0; }
@@ -41,3 +42,6 @@ body #panel {
 /* The letters past the longest name and the cells past the grid's size are hidden (the rules above would show
    them over the common .hidden). */
 body .letter.hidden, body .cell.hidden, body .grid-row.hidden { display: none; }
+/* The page arrows take the pointer (the body does not), so a click on them turns the page. */
+body .page-arrow { pointer-events: auto; }
+#page-name { margin: 0 6dp; }

@@ -43,8 +43,8 @@ gcan09_shop: "TIENDA\nMONOCROMO"
 
 ## 3. Write the overlay
 
-`content/packs/game/signs/<map>.yaml` for all languages; `content/packs/es-translation/signs/es/<map>.yaml` for a
-single one (a sign that already reads fine in English, or one that is drawn differently in Spanish, with the same
+`content/packs/game/signs/<map>.yaml` for all languages; `content/packs/<code>-translation/signs/<code>/<map>.yaml`
+(`es-translation/signs/es/`, `ru-translation/signs/ru/`...) for a single one (a sign that already reads fine in English, or one that is drawn differently in Spanish, with the same
 `id`).
 
 ```yaml

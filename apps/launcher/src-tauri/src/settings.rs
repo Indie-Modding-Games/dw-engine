@@ -23,13 +23,23 @@ pub const PLACEHOLDER_GATEWAY: &str = "https://beta-gateway.invalid";
 pub const DEFAULT_REPOSITORY: &str = "Indie-Modding-Games/dw-engine";
 /// Overrides the release server for one run (tests and local tries against a fake one).
 pub const API_BASE_ENV: &str = "DWE_LAUNCHER_API";
+/// The launcher's languages (their first BCP 47 part), in the order the language box lists them;
+/// the interface keeps the same list with their names (ui/js/i18n.js, LANGUAGES).
+pub const LANGUAGES: [&str; 9] = ["en", "es", "pt", "fr", "de", "ru", "zh", "ko", "ja"];
+/// The language of whatever has no text in the player's (the custom images' guide, add-ons).
+pub const FALLBACK_LANGUAGE: &str = "en";
+
+pub fn is_language(code: &str) -> bool {
+    LANGUAGES.contains(&code)
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 pub struct Settings {
     /// None: the game's own data folder (data_folder()).
     pub data_folder: Option<PathBuf>,
-    /// "es" or "en".
+    /// One of LANGUAGES, or empty while none was chosen (a new install): the interface then
+    /// picks the system's, or English, and saves it.
     pub language: String,
     /// Look for updates every time the launcher opens.
     pub check_updates: bool,
@@ -69,7 +79,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             data_folder: None,
-            language: "es".into(),
+            language: String::new(),
             check_updates: true,
             auto_update_launcher: true,
             auto_update_game: true,
@@ -93,10 +103,15 @@ impl Settings {
             .ok()
             .and_then(|text| serde_json::from_str(&text).ok())
             .unwrap_or_default();
-        if settings.language != "es" && settings.language != "en" {
-            settings.language = "es".into();
+        if !is_language(&settings.language) {
+            settings.language.clear();
         }
         settings
+    }
+
+    /// The language to use now: the chosen one, or English before the interface chose one.
+    pub fn language_or_fallback(&self) -> &str {
+        if self.language.is_empty() { FALLBACK_LANGUAGE } else { &self.language }
     }
 
     pub fn load() -> Settings {
@@ -170,9 +185,9 @@ mod tests {
         };
         settings.save_to(&file).unwrap();
         assert_eq!(Settings::load_from(&file), settings);
-        fs::write(&file, r#"{"language":"fr","check_updates":false}"#).unwrap();
+        fs::write(&file, r#"{"language":"xx","check_updates":false}"#).unwrap();
         let read = Settings::load_from(&file);
-        assert_eq!(read.language, "es");
+        assert_eq!(read.language, "");
         assert!(!read.check_updates);
         assert_eq!(read.repository, DEFAULT_REPOSITORY);
         // Settings written before the automatic updates existed turn them on.
@@ -180,6 +195,31 @@ mod tests {
         let saved = Settings { auto_update_game: false, last_check: Some(LastCheck::checked(5, None, None)), ..Settings::default() };
         saved.save_to(&file).unwrap();
         assert_eq!(Settings::load_from(&file), saved);
+    }
+
+    #[test]
+    fn a_new_install_leaves_the_language_to_the_system_and_a_saved_one_stays() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("settings.json");
+        // No settings file, or one without a language: not chosen yet, English until it is.
+        let new = Settings::load_from(&file);
+        assert_eq!(new.language, "");
+        assert_eq!(new.language_or_fallback(), FALLBACK_LANGUAGE);
+        fs::write(&file, r#"{"check_updates":true}"#).unwrap();
+        assert_eq!(Settings::load_from(&file).language, "");
+        // Every supported language survives a load; the ones an older launcher saved too.
+        for code in LANGUAGES {
+            fs::write(&file, format!(r#"{{"language":"{code}"}}"#)).unwrap();
+            let read = Settings::load_from(&file);
+            assert_eq!(read.language, code);
+            assert_eq!(read.language_or_fallback(), code);
+        }
+        // An unknown or regional code is not a choice: asked again.
+        for code in ["pt-BR", "EN", "zh-Hans", "it"] {
+            fs::write(&file, format!(r#"{{"language":"{code}"}}"#)).unwrap();
+            assert_eq!(Settings::load_from(&file).language, "", "{code}");
+        }
+        assert!(is_language("es") && is_language("ja") && !is_language(""));
     }
 
     #[test]

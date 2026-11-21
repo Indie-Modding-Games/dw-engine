@@ -143,11 +143,14 @@ body .letter.current {
 	border-bottom: 6dp #c6c610;
 }
 
+/* Held to the bottom, so that a hint of two lines (Japanese, Korean) grows upwards and stays inside the box. */
 body #typing {
 	position: absolute;
 	left: 18dp;
-	top: 75dp;
+	right: 18dp;
+	bottom: 12dp;
 	margin: 0;
 	font-size: 22dp;
+	line-height: 26dp;
 	color: #b2b2b2;
 }

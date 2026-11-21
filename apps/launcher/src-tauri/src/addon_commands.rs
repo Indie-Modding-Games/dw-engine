@@ -106,7 +106,7 @@ pub fn facts(state: &AppState) -> bridge::Facts {
     let settings = state.settings.lock().unwrap().clone();
     let data = settings.data_folder();
     bridge::Facts {
-        language: settings.language,
+        language: settings.language_or_fallback().to_owned(),
         game_version: GameStore::new(&data).current().map(|g| g.version),
         content_installed: content::has_base_pack(&content::content_folder(&data)),
         platform: manifest::platform_key(),

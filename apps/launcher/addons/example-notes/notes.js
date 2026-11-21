@@ -45,7 +45,7 @@
 
   await dwe.connect();
   const context = await dwe.context();
-  let language = context.language === "en" ? "en" : "es";
+  let language = context.language === "es" ? "es" : "en";
   const text = (key, ...args) => {
     const value = TEXTS[language][key];
     return typeof value === "function" ? value(...args) : value;
@@ -76,7 +76,7 @@
     await dwe.ui.settings({ label: LABEL });
     await publishNews(await loadNotes());
     dwe.on("language", async (event) => {
-      language = event.language === "en" ? "en" : "es";
+      language = event.language === "es" ? "es" : "en";
       await publishNews(await loadNotes());
     });
     return;

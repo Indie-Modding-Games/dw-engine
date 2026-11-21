@@ -17,6 +17,13 @@ original:
   # The row under the capitals' feet, from the top of the cell: the baseline.
   baseline: 10
   # The letters with accents and the signs the original does not have (á, Ñ, ü, ¿, ¡, «, »...) are composed with their own
-  # glyphs when it loads (docs/architecture/ui.md). What is still missing (parentheses, other alphabets...) is drawn with
-  # the modern one, on the same baseline and at this size, as a fraction of the bitmap font's line height.
+  # glyphs when it loads (docs/architecture/ui.md). What is still missing (parentheses, other alphabets...) is drawn on
+  # the same baseline with fallback_family below or, without it, the modern one at this size, as a fraction of the
+  # bitmap font's line height.
   fallback_size: 1.0
+  # What the bitmap font lacks (other alphabets, parentheses...) draws with this pixel family instead, its em this many
+  # pixels of the bitmap font, so each of its pixels lands on the bitmap font's grid; its own fallback chain
+  # (fallbacks.yaml) draws Chinese, Japanese and Korean in 12-pixel faces. Without these two keys, the modern family at
+  # fallback_size.
+  fallback_family: "Pixel Small"
+  fallback_pixels: 13

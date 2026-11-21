@@ -1,6 +1,8 @@
 Pixel Body and Pixel Small (pixel_body.ttf, pixel_small.ttf)
 Converted from the X11 "misc-fixed" bitmap fonts 9x15 bold (Pixel Body) and 7x13 bold (Pixel Small),
-ISO 8859-1 glyphs plus the horizontal ellipsis (U+2026), as pixel outlines in TrueType.
+ISO 8859-1 glyphs plus the horizontal ellipsis (U+2026), as pixel outlines in TrueType. Since 2026-11 also Latin
+Extended-A, Greek, Cyrillic and a few signs (dashes, quotes, euro, numero) from the same fonts' ISO 10646 versions
+(9x15B.pcf and 7x13B.pcf, X11 misc-fixed as packaged in xfonts-base), added by scripts/art/make_fonts.py.
 Source: https://gitlab.freedesktop.org/xorg/font/misc-misc
 
 The misc-fixed fonts are in the public domain ("Public domain font. Share and enjoy.").

@@ -14,3 +14,14 @@
 #fade { pointer-events: none; }
 /* The title picture filling the window (../common/title_picture.lua): only a skin that draws it shows it. */
 #picture, .picture-fade { display: none; pointer-events: none; }
+
+/* More than six languages: shorter rows and smaller flags, so that the box still fits the screen (logic.lua). The
+   extra class outweighs each skin's row rule. */
+#language-box.compact .language-row {
+	line-height: 36dp;
+}
+
+#language-box.compact .flag {
+	width: 54dp;
+	height: 36dp;
+}

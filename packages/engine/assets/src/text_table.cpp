@@ -171,8 +171,9 @@ std::string describe(const TranslationProblem& problem, const TextTable& referen
 class TranslationCheck {
 public:
   explicit TranslationCheck(const VirtualFileSystem& fileSystem) : tables_{loadTables(fileSystem)} {
+    // A language with only language.yaml is a stub: its other texts show in English.
     for (const auto& [name, table] : tables_) {
-      if (name.kind == TextTableKind::Engine) {
+      if (name.kind == TextTableKind::Engine && name.name != "language") {
         engineLanguages_.insert(name.language);
       }
     }
@@ -498,14 +499,22 @@ std::optional<PluralPlaceholder> pluralPlaceholderOf(std::string_view placeholde
   if (colon == std::string_view::npos || colon == 0) {
     return std::nullopt;
   }
-  const std::string_view forms = placeholder.substr(colon + 1);
-  const std::size_t bar = forms.find('|');
-  if (bar == std::string_view::npos || forms.find('|', bar + 1) != std::string_view::npos) {
+  std::string_view forms = placeholder.substr(colon + 1);
+  if (forms.find('|') == std::string_view::npos) {
     return std::nullopt;
   }
-  return PluralPlaceholder{.count = placeholder.substr(0, colon),
-                           .one = forms.substr(0, bar),
-                           .other = forms.substr(bar + 1)};
+  PluralPlaceholder plural{.count = placeholder.substr(0, colon)};
+  while (true) {
+    if (plural.formCount == PluralPlaceholder::MaxForms) {
+      return std::nullopt;
+    }
+    const std::size_t bar = forms.find('|');
+    plural.forms.at(plural.formCount++) = forms.substr(0, bar);
+    if (bar == std::string_view::npos) {
+      return plural;
+    }
+    forms.remove_prefix(bar + 1);
+  }
 }
 
 core::Result<std::vector<std::string>> placeholdersOf(std::string_view text) {

@@ -41,7 +41,8 @@ public:
                               const std::function<std::string(std::string_view)>& text);
 
 private:
-  const SignFont* font(std::string_view name);
+  const SignFont* font(std::string_view name, std::string_view language);
+  [[nodiscard]] std::optional<SignFont> loadFont(std::string_view name) const;
 
   const assets::VirtualFileSystem* files_;
   std::map<std::string, std::unique_ptr<SignFont>, std::less<>> fonts_;

@@ -1,5 +1,5 @@
 {
-  "version": "0.25.0",
+  "version": "0.26.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "The value of a setting the game publishes; nil if it does not publish it.", "signature": "(name: string): any"},
@@ -13,6 +13,8 @@
       {"name": "ui.device", "kind": "function", "value": "text", "summary": "The device in use: keyboard_mouse or gamepad.", "signature": "(): string"},
       {"name": "ui.gamepad_family", "kind": "function", "value": "text", "summary": "The family of the gamepad in use.", "signature": "(): string"},
       {"name": "ui.languages", "kind": "function", "value": "table", "summary": "The languages the player can choose.", "signature": "(): string[]"},
+      {"name": "ui.upper", "kind": "function", "value": "text", "summary": "The text in capitals, accented, Greek and Cyrillic letters too (`string.upper` only knows ASCII).", "signature": "(text: string): string"},
+      {"name": "ui.lower", "kind": "function", "value": "text", "summary": "The text in small letters, in the same alphabets.", "signature": "(text: string): string"},
       {"name": "ui.skins", "kind": "function", "value": "table", "summary": "The skins the player can choose.", "signature": "(): string[]"},
       {"name": "ui.skin_name_key", "kind": "function", "value": "text", "summary": "The text key of a skin's name; empty if it does not exist.", "signature": "(id: string): string"},
       {"name": "ui.cue", "kind": "function", "value": "boolean", "summary": "Plays box_open, box_close or confirm; false for any other name.", "signature": "(name: string): boolean"},
@@ -509,11 +511,14 @@
       {"name": "naming_box.cursor_row", "kind": "setting", "value": "number", "summary": "The cursor's row in the grid; -1 on a button."},
       {"name": "naming_box.cursor_column", "kind": "setting", "value": "number", "summary": "The cursor's column in the grid; -1 on a button."},
       {"name": "naming_box.cursor_button", "kind": "setting", "value": "number", "summary": "The cursor's button: 0 Back, 1 Accept; -1 in the grid."},
+      {"name": "naming_box.pages", "kind": "setting", "value": "number", "summary": "The pages of letters the player's language has (its own, then the Latin one)."},
+      {"name": "naming_box.page", "kind": "setting", "value": "number", "summary": "The page of letters shown, from 0."},
+      {"name": "naming_box.page_name", "kind": "setting", "value": "text", "summary": "The text key of the shown page's name."},
       {"name": "naming_write", "kind": "command", "value": "text", "summary": "Types the grid letters it carries, like the keyboard."},
       {"name": "naming_erase", "kind": "command", "value": "none", "summary": "Removes the last letter, like cancel."},
       {"name": "naming_accept", "kind": "command", "value": "none", "summary": "Accept: the game takes the name if it is not empty."},
       {"name": "naming.is_open", "kind": "query", "value": "boolean", "summary": "Whether the naming box is shown, waiting for a name.", "signature": "(): boolean"},
-      {"name": "naming.state", "kind": "query", "value": "table", "summary": "The box: title_key, length, letters, name, grid (rows, columns) and cursor (row, column, button).", "signature": "(): table"},
+      {"name": "naming.state", "kind": "query", "value": "table", "summary": "The box: title_key, length, letters, name, grid (rows, columns), cursor (row, column, button) and page (index, count, name_key).", "signature": "(): table"},
       {"name": "naming.cell", "kind": "query", "value": "text", "summary": "The letter of a grid cell, from 0; \" \" if it is empty.", "signature": "(row: integer, column: integer): string"},
       {"name": "naming.write", "kind": "action", "value": "boolean", "summary": "Asks to type grid letters at the end of the name.", "signature": "(letters: string): boolean, string?"},
       {"name": "naming.erase", "kind": "action", "value": "boolean", "summary": "Asks to remove the last letter.", "signature": "(): boolean, string?"},

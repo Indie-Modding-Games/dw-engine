@@ -42,7 +42,14 @@ element and the focus ring.
 - An add-on's page takes the center of the screen when opened from its icon or from "Add-ons".
 - **Settings**, in tabs (vertical list on the left; ↑/↓ in the list, Ctrl+Tab and Ctrl+Shift+Tab or
   Ctrl+PageDown/PageUp from anywhere in the dialog):
-  - **General:** language (Spanish by default, English), data folder and computer requirements.
+  - **General:** language, data folder and computer requirements. The language box lists English, Español,
+    Português (Brasil), Français, Deutsch, Русский, 简体中文, 한국어 and 日本語. A new install (no language
+    saved) takes the system's language when it is one of them, else English, and saves it; a saved choice is
+    never changed. The texts are one module per language in `ui/js/i18n/` (`en.js` is the reference: the
+    others have the same keys and `{placeholders}`); a key a language lacks shows in English, and
+    `node apps/launcher/tools/i18n_check.mjs [code]` counts the missing keys and catches extra keys or changed
+    placeholders. The codes are kept in two lists that must match: `LANGUAGES` in `ui/js/i18n.js` (with the
+    native names) and in `src-tauri/src/settings.rs`.
   - **Updates:** the channel, check on open, check now, automatic updates, the installed
     versions and going back to the previous one.
   - **Disc:** the remembered disc and reading it again.
@@ -619,7 +626,7 @@ starts the game with `--mods` pointing to it. The rules, the names and how the g
 - **The list:** `images_overview` groups the maps by the letters of their id (the game has no zone data) with the
   most repeated name of the group, and the images by folder. The thumbnails are `data:` URLs from `images_thumbnail`.
 - **Export:** it copies `originals/` into a new folder `dwe-images` (or `-2`, `-3`...) with `README.txt`
-  (`src-tauri/src/custom_images/readme_en.txt` or `readme_es.txt`, by the launcher's language) and `maps.tsv`.
+  (`src-tauri/src/custom_images/readme_es.txt` in Spanish, `readme_en.txt` in any other language) and `maps.tsv`.
 
 The tests: `custom_images/tests.rs` and `the_players_images_are_mounted_while_they_are_on` in `launch.rs`.
 

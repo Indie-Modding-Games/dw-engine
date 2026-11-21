@@ -29,6 +29,7 @@
 			<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="naming.back"></span></span>
 			<span class="prompt"><span class="key" id="prompt-menu"></span><span text-key="common.accept"></span></span>
 			<span class="prompt" id="hint-clear"><span class="key" id="prompt-extra"></span><span text-key="naming.clear"></span></span>
+			<span class="prompt" id="hint-page"><span class="key page-arrow" id="page-previous"></span><span id="page-name"></span><span class="key page-arrow" id="page-next"></span></span>
 		</div>
 	</div>
 	<div id="name-box">

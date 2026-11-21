@@ -211,6 +211,11 @@ constexpr std::array NativeContract{
     native("ui", "ui.gamepad_family", TextValue, "(): string", "The family of the gamepad in use."),
     native("ui", "ui.languages", TableValue, "(): string[]",
            "The languages the player can choose."),
+    native(
+        "ui", "ui.upper", TextValue, "(text: string): string",
+        "The text in capitals, accented, Greek and Cyrillic letters too (`string.upper` only knows ASCII)."),
+    native("ui", "ui.lower", TextValue, "(text: string): string",
+           "The text in small letters, in the same alphabets."),
     native("ui", "ui.skins", TableValue, "(): string[]", "The skins the player can choose."),
     native("ui", "ui.skin_name_key", TextValue, "(id: string): string",
            "The text key of a skin's name; empty if it does not exist."),

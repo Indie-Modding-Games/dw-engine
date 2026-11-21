@@ -4,11 +4,60 @@
 # is missing, stale or broken, and writes the pack's .sources.lock. It never writes the English
 # anywhere: what it prints is for the translator's terminal only.
 set -euo pipefail
+# awk reads the texts as bytes in every implementation (mawk, gawk, busybox): the widths below
+# decode the UTF-8 themselves.
+export LC_ALL=C
+
+fail() {
+  echo "translation.sh: $*" >&2
+  exit 1
+}
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-language="${DWE_TRANSLATION_LANGUAGE:-es}"
-pack="${DWE_TRANSLATION_PACK:-$root/content/packs/es-translation}"
+packs_dir="$root/content/packs"
+localization_dir="$packs_dir/game/localization"
+launcher_check="$root/apps/launcher/tools/i18n_check.mjs"
+launcher_texts="$root/apps/launcher/ui/js/i18n"
 reference_language="en"
+
+# The translation pack of a language: content/packs/<code>-translation (id <code>_translation).
+pack_of() {
+  echo "$packs_dir/$1-translation"
+}
+
+# --lang <code> and --pack <folder> may come anywhere in the arguments; they win over the
+# environment. The language picks its pack unless one is given.
+language="${DWE_TRANSLATION_LANGUAGE:-es}"
+pack="${DWE_TRANSLATION_PACK:-}"
+arguments=()
+while (($# > 0)); do
+  case "$1" in
+    --lang | --pack)
+      (($# > 1)) || fail "$1 needs a value"
+      if [[ "$1" == --lang ]]; then language="$2"; else pack="$2"; fi
+      shift 2
+      ;;
+    --lang=*)
+      language="${1#--lang=}"
+      shift
+      ;;
+    --pack=*)
+      pack="${1#--pack=}"
+      shift
+      ;;
+    *)
+      arguments+=("$1")
+      shift
+      ;;
+  esac
+done
+# (The guard keeps an empty list working in bash 3.2, the one macOS ships.)
+set -- ${arguments[@]+"${arguments[@]}"}
+# A language code as the packs write it: ISO 639 in lower case, maybe _ and a region or script.
+language_code='^[a-z]{2,3}(_[a-z0-9]{2,8})?$'
+[[ "$language" =~ $language_code ]] || fail "not a language code: $language"
+[[ "$language" != "$reference_language" ]] || fail "$reference_language is the original's language"
+pack="${pack:-$(pack_of "$language")}"
 translation_dir="$pack/text/$language"
 lock_file="$translation_dir/.sources.lock"
 # The tables of the executable and the overlays (block.slot keys, decimal slots) and the prefix of
@@ -19,7 +68,8 @@ story_prefix=story_
 # The slot of a key, zero-padded: main.move_names.0012. A story key keeps its slot as extracted, the
 # offset of its instruction in four hex digits (story_049.text.3b66).
 slot_digits=4
-# A line of a story textbox: the original's lines are 30 characters at most (not counting the tags);
+# A line of a story textbox: the original's lines are 30 columns at most (not counting the tags); a
+# wide character (Chinese, Japanese, Korean, full-width forms) takes two, so 15 of them fill a line.
 # long reports the translated lines wider than this (or than the widest line of their English) and
 # the texts with more lines than their English and than a box (4 rows) holds.
 story_line_width=30
@@ -51,7 +101,7 @@ kept_original_ids=(
 
 usage() {
   cat <<EOF
-Usage: scripts/translation.sh <command> [args]
+Usage: scripts/translation.sh [--lang <code>] [--pack <folder>] <command> [args]
 
   status [story]      Per source: strings, translated, kept in English, kept as the original,
                       missing, stale; the story tables add up in one row, or one row each with
@@ -69,18 +119,21 @@ Usage: scripts/translation.sh <command> [args]
                       the lock keeps its hash, so a stale one stays stale) and the kept ids
   accept <id>...      Mark the given ids as revised: their hash in the lock becomes the current
                       English's
+  coverage [code...]  Every language (or the given ones) side by side: per source, translated of
+                      the strings, kept, missing and stale, then the engine's own texts
+                      (localization/<code> keys of English's) and the launcher's
+
+Options:
+  --lang <code>               Language of the translation (default es): its pack is
+                              content/packs/<code>-translation and its texts text/<code>
+  --pack <folder>             The translation pack, when it is not the language's
 
 Environment:
   DWE_CONTENT                 Content folder extracted with dwx (its
                               base/text/$reference_language is read; required)
-  DWE_TRANSLATION_LANGUAGE    Language of the translation (default es)
-  DWE_TRANSLATION_PACK        The translation pack (default content/packs/es-translation)
+  DWE_TRANSLATION_LANGUAGE    Language of the translation, as --lang (default es)
+  DWE_TRANSLATION_PACK        The translation pack, as --pack (default the language's)
 EOF
-}
-
-fail() {
-  echo "translation.sh: $*" >&2
-  exit 1
 }
 
 english_dir() {
@@ -151,9 +204,9 @@ english_strings() {
   strings_in "$(english_dir)"
 }
 
-# Every translated string, as id<TAB>quoted text.
+# Every translated string, as id<TAB>quoted text (of the language's folder, or of the one given).
 translated_strings() {
-  strings_in "$translation_dir"
+  strings_in "${1:-$translation_dir}"
 }
 
 # An awk function that undoes the escapes of a YAML double-quoted string, and fails on one the
@@ -186,15 +239,16 @@ for at in range(0, len(fields) - 1, 2):
 '
 }
 
-# id<TAB>sha1 of each id in the lock's sources.
+# id<TAB>sha1 of each id in the sources of a lock (the language's by default).
 locked_hashes() {
-  [[ -f "$lock_file" ]] || return 0
+  local lock="${1:-$lock_file}"
+  [[ -f "$lock" ]] || return 0
   awk '/^sources:/ { inside = 1; next } /^[a-z_]+:/ { inside = 0 }
          inside && /^  "/ {
              key = $1; sub(/:$/, "", key); gsub(/"/, "", key)
              value = $2; gsub(/"/, "", value)
              print key "\t" value
-         }' "$lock_file"
+         }' "$lock"
 }
 
 # The pattern of the ids of some blocks (source.block).
@@ -204,9 +258,10 @@ blocks_pattern() {
   echo "^(${blocks//./[.]})[.][0-9]+$"
 }
 
-# The kept ids, as kind<TAB>id with kind english or original (see kept_english_blocks).
+# The kept ids of the loaded English, as kind<TAB>id with kind english or original (see
+# kept_english_blocks).
 kept_ids() {
-  english_strings | awk -F '\t' -v english_pattern="$(blocks_pattern "${kept_english_blocks[@]}")" \
+  awk -F '\t' -v english_pattern="$(blocks_pattern "${kept_english_blocks[@]}")" \
     -v original_pattern="$(blocks_pattern "${kept_original_blocks[@]}")" \
     -v name_block="$kept_name_block." \
     -v ids="${kept_original_ids[*]}" -v titles="${translated_name_ids[*]}" '
@@ -228,7 +283,7 @@ kept_ids() {
                     || name in kept_name)
                     print "original\t" id[i]
             }
-        }'
+        }' "$scratch/english"
 }
 
 # Prints the ids of id<TAB>translation<TAB>English rows whose sets of {tags} and placeholders
@@ -258,21 +313,59 @@ ids_with_other_codes() {
         codes($2) != codes($3) { print $1 }'
 }
 
-# For the id<TAB>translation<TAB>English rows: prints id<TAB>characters of the translation > of the
-# English for a longer translation of a table, and for a story text, id<TAB>line N: characters >
-# limit for each line wider than story_line_width and its English's widest line, and
-# id<TAB>lines: N > limit when it has more lines than its English and than a box holds. The
-# characters of a line do not count its tags.
+# An awk function that gives the display width of a UTF-8 text in columns: one per character, two
+# per East Asian wide or full-width one (the ranges of Unicode's EastAsianWidth W and F that a text
+# of the game can use: Hangul, CJK, kana, full-width forms, emoji).
+awk_width='
+    BEGIN {
+        for (i = 128; i < 256; i++) byte_value[sprintf("%c", i)] = i
+        split("4352-4447 11904-12350 12353-13311 13312-19903 19968-40959 40960-42191 " \
+              "43360-43391 44032-55203 63744-64255 65040-65049 65072-65135 65280-65376 " \
+              "65504-65510 127744-128591 129280-129535 131072-262141", wide_list, " ")
+        for (i in wide_list) {
+            split(wide_list[i], bounds, "-")
+            wide_from[i] = bounds[1] + 0; wide_to[i] = bounds[2] + 0
+        }
+    }
+    function byte_of(character) {
+        return (character in byte_value) ? byte_value[character] : 0
+    }
+    function wide(point,    i) {
+        for (i in wide_from) if (point >= wide_from[i] && point <= wide_to[i]) return 1
+        return 0
+    }
+    function display_width(text,    n, i, lead, point, columns) {
+        # Below U+0800 (no lead byte of three or four) every character is one column.
+        if (text !~ /[\340-\367]/) return length(text) - gsub(/[\200-\277]/, "", text)
+        n = length(text); columns = 0
+        for (i = 1; i <= n; i++) {
+            lead = byte_of(substr(text, i, 1))
+            if (lead >= 128 && lead < 192) continue
+            if (lead < 224) { columns++; continue }
+            if (lead < 240) {
+                point = (lead - 224) * 4096 + (byte_of(substr(text, i + 1, 1)) - 128) * 64 \
+                    + byte_of(substr(text, i + 2, 1)) - 128
+            } else {
+                point = (lead - 240) * 262144 + (byte_of(substr(text, i + 1, 1)) - 128) * 4096 \
+                    + (byte_of(substr(text, i + 2, 1)) - 128) * 64 \
+                    + byte_of(substr(text, i + 3, 1)) - 128
+            }
+            columns += wide(point) ? 2 : 1
+        }
+        return columns
+    }'
+
+# For the id<TAB>translation<TAB>English rows: prints id<TAB>width of the translation > of the
+# English for a longer translation of a table, and for a story text, id<TAB>line N: width > limit
+# for each line wider than story_line_width and its English's widest line, and id<TAB>lines: N >
+# limit when it has more lines than its English and than a box holds. Widths are display columns
+# (awk_width) and do not count a line's tags.
 longer_translations() {
   awk -F '\t' -v story_id="^$story_prefix" -v width="$story_line_width" \
-    -v rows="$story_box_rows" "$awk_unquote"'
-        function characters(text,    bytes) {
-            bytes = length(text)
-            return bytes - gsub(/[\200-\277]/, "", text)
-        }
+    -v rows="$story_box_rows" "$awk_unquote$awk_width"'
         function visible(line) {
             gsub(/\{\{|\}\}/, "_", line); gsub(/\{[^}]*\}/, "", line)
-            return characters(line)
+            return display_width(line)
         }
         function widest(text,    lines, n, i, most) {
             n = split(text, lines, "\n"); most = 0
@@ -282,8 +375,8 @@ longer_translations() {
         {
             translation = unquote($2); english = unquote($3)
             if ($1 !~ story_id) {
-                if (characters(translation) > characters(english))
-                    printf "%s\t%d > %d\n", $1, characters(translation), characters(english)
+                if (display_width(translation) > display_width(english))
+                    printf "%s\t%d > %d\n", $1, display_width(translation), display_width(english)
                 next
             }
             limit = widest(english) > width ? widest(english) : width
@@ -436,7 +529,14 @@ write_lock() {
   } >"$lock_file"
 }
 
+# lock and accept write in the pack: it must exist (docs/guides/translate.md#a-new-language).
+need_pack() {
+  [[ -f "$pack/pack.yaml" ]] || fail "no translation pack in $pack: create its pack.yaml first"
+  mkdir -p "$translation_dir"
+}
+
 command_lock() {
+  need_pack
   load
   english_hashes >"$scratch/hashes"
   # A locked hash wins over the current one, so that only accept clears a stale id.
@@ -447,6 +547,7 @@ command_lock() {
 
 command_accept() {
   (($# > 0)) || fail "accept needs at least one id"
+  need_pack
   load
   english_hashes >"$scratch/hashes"
   printf '%s\n' "$@" | LC_ALL=C sort >"$scratch/accepted"
@@ -455,6 +556,105 @@ command_accept() {
   cat "$scratch/fresh" <(rows_missing_from "$scratch/locked" "$scratch/fresh") >"$scratch/merged"
   write_lock "$scratch/merged"
   echo "accepted $# ids in $lock_file"
+}
+
+# The languages of the game besides English: the engine's localization folders, the translation
+# packs and the launcher's texts.
+known_languages() {
+  local path
+  {
+    for path in "$localization_dir"/*/; do basename "$path"; done
+    for path in "$packs_dir"/*-translation/; do basename "$path" -translation; done
+    for path in "$launcher_texts"/*.js; do basename "$path" .js; done
+  } | grep -E "$language_code" | grep -vx "$reference_language" | sort -u || true
+}
+
+# found/total: the keys of English's localization tables (localization/en/<table>.yaml) that a
+# language's tables have; a missing key shows in English.
+localization_keys() {
+  local reference="$localization_dir/$reference_language" files
+  [[ -d "$reference" ]] || { echo "-" && return 0; }
+  shopt -s nullglob
+  files=("$reference"/*.yaml "$localization_dir/$1"/*.yaml)
+  shopt -u nullglob
+  awk -v reference="$reference/" '
+        /^[A-Za-z0-9_.-]+: / {
+            table = FILENAME; sub(/.*\//, "", table)
+            key = table SUBSEP substr($1, 1, length($1) - 1)
+            if (index(FILENAME, reference) == 1) english[key] = 1
+            else found[key] = 1
+        }
+        END {
+            for (key in english) { total++; if (key in found) have++ }
+            printf "%d/%d\n", have, total
+        }' "${files[@]}"
+}
+
+# found/total: the launcher's texts of a language (apps/launcher/ui/js/i18n/<code>.js) against
+# English's, as its checker counts them; - without node or without the file.
+launcher_keys() {
+  local counted=""
+  if [[ -f "$launcher_texts/$1.js" ]] && command -v node >/dev/null; then
+    counted="$(node "$launcher_check" "$1" 2>/dev/null \
+      | awk -v code="$1:" '$1 == code { print $2; exit }' || true)"
+  fi
+  echo "${counted:--}"
+}
+
+command_coverage() {
+  local languages=("$@") code folder source file
+  if ((${#languages[@]} == 0)); then
+    while read -r code; do languages+=("$code"); done < <(known_languages)
+  fi
+  for code in "${languages[@]}"; do
+    [[ "$code" =~ $language_code ]] || fail "not a language code: $code"
+  done
+  find_sources
+  english_strings >"$scratch/english"
+  kept_ids >"$scratch/kept_ids"
+  english_hashes >"$scratch/hashes"
+  cut -f1 "$scratch/english" | sort -u >"$scratch/strings"
+  cut -f2 "$scratch/kept_ids" | sort -u >"$scratch/kept"
+  local columns=(strings translated kept missing stale)
+  local rows=("${fixed_sources[@]}" "${story_prefix%_}" all) pattern counts
+  echo "The original's texts (text/<code> of content/packs/<code>-translation); done is the"
+  echo "translated share of the strings that are not kept"
+  printf '%-8s %-9s' language source
+  printf ' %10s' "${columns[@]}" "done"
+  echo
+  for code in "${languages[@]}"; do
+    folder="$(pack_of "$code")/text/$code"
+    translated_strings "$folder" | cut -f1 | sort -u | comm -12 - "$scratch/strings" \
+      >"$scratch/translated"
+    comm -23 "$scratch/strings" "$scratch/translated" | comm -23 - "$scratch/kept" \
+      >"$scratch/missing"
+    join -t $'\t' <(locked_hashes "$folder/.sources.lock" | sort) <(sort "$scratch/hashes") \
+      | awk -F '\t' '$2 != $3 { print $1 }' >"$scratch/stale"
+    for source in "${rows[@]}"; do
+      pattern="$(source_pattern "$source")"
+      if [[ "$source" == all ]]; then pattern=.; fi
+      counts=()
+      for file in "${columns[@]}"; do
+        counts+=("$(grep -cE "$pattern" "$scratch/$file" || true)")
+      done
+      printf '%-8s %-9s' "$code" "$source"
+      printf ' %10s' "${counts[@]}"
+      awk -v strings="${counts[0]}" -v translated="${counts[1]}" -v kept="${counts[2]}" 'BEGIN {
+            if (strings == kept) print "          -"
+            else printf " %9.1f%%\n", 100 * translated / (strings - kept)
+          }'
+    done
+  done
+  echo
+  echo "The engine's texts (content/packs/game/localization/<code>) and the launcher's"
+  echo "(apps/launcher/ui/js/i18n/<code>.js): keys the language has of English's"
+  printf '%-8s %-14s %12s %12s\n' language pack engine launcher
+  for code in "${languages[@]}"; do
+    folder="$(pack_of "$code")"
+    if [[ -f "$folder/pack.yaml" ]]; then folder="${folder##*/}"; else folder="(none)"; fi
+    printf '%-8s %-14s %12s %12s\n' "$code" "$folder" "$(localization_keys "$code")" \
+      "$(launcher_keys "$code")"
+  done
 }
 
 command="${1:-}"
@@ -467,6 +667,7 @@ case "$command" in
   long) command_long ;;
   lock) command_lock ;;
   accept) command_accept "$@" ;;
+  coverage) command_coverage "$@" ;;
   *)
     usage
     [[ -z "$command" || "$command" == help ]]

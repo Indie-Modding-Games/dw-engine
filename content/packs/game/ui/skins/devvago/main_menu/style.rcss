@@ -444,6 +444,16 @@
 	background-color: #0a2035;
 }
 
+#language-box.compact .language-row {
+	height: 42dp;
+	line-height: 40dp;
+}
+
+#language-box.compact .flag {
+	width: 42dp;
+	height: 28dp;
+}
+
 #language-box .language-row.hidden {
 	display: none;
 }

@@ -2168,7 +2168,7 @@ function unknown() ui.send(t("nobody.has.this")) end
   const auto commands = ui->takeCommands();
   REQUIRE(commands.size() == 1);
   CHECK(commands[0].name == "languages");
-  CHECK(commands[0].value == UiValue{std::string{"en,es"}});
+  CHECK(commands[0].value == UiValue{std::string{"de,en,es,fr,ja,ko,pt,ru,zh"}});
 
   // A key no table has shows as itself, so the missing text is easy to spot.
   REQUIRE(ui->callScript("said", "unknown"));

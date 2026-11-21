@@ -59,8 +59,10 @@ Las reglas están al principio de `scripts/translation.sh` (`kept_english_blocks
 
 `status` da la cobertura por fuente (las tablas de la historia suman una fila; `status story` da una por tabla) y
 `long` lista las traducciones más largas que su inglés, para revisar que caben. En la historia, `long` lista en su
-lugar las líneas de más de 30 caracteres (o más anchas que la línea más ancha de su inglés) y los textos con más
-líneas que su inglés y que el cuadro (4 filas); las etiquetas no cuentan.
+lugar las líneas de más de 30 columnas (o más anchas que la línea más ancha de su inglés) y los textos con más
+líneas que su inglés y que el cuadro (4 filas); las etiquetas no cuentan. Los largos son columnas en pantalla: un
+carácter chino, japonés o coreano cuenta dos. Otro idioma funciona igual con `--lang <código>`
+([Un idioma nuevo](#un-idioma-nuevo)).
 
 ### Reglas del texto
 
@@ -73,7 +75,7 @@ líneas que su inglés y que el cuadro (4 filas); las etiquetas no cuentan.
 - Las cadenas con relleno de espacios (los nombres de mapa centrados en 24 caracteres) mantienen el ancho.
 - Las cadenas que son una línea de un cuadro (las de la pesca o el curling) no pasan del largo de las líneas del
   original, unos 29 caracteres.
-- El diálogo de la historia se parte en líneas con `\n` como el original: hasta 30 caracteres por línea sin contar
+- El diálogo de la historia se parte en líneas con `\n` como el original: hasta 30 columnas por línea sin contar
   las etiquetas, y a ser posible las mismas líneas que el inglés (el cuadro tiene 4 filas). La primera línea que nombra
   a quien habla (`{color:7}<nombre> {color:1}\n`) se copia igual, con el espacio antes de la etiqueta.
 
@@ -128,26 +130,102 @@ overlay: [guía de carteles](signs.md).
 
 ## Un idioma nuevo
 
-El juego está preparado para más idiomas que el español y el inglés, pero un idioma solo se publica cuando hay una
-traducción hecha por una persona: no se traduce nada a máquina. Quien traduzca a un idioma nuevo (código `fr`, por
-ejemplo) necesita:
+Además del inglés y el español, el juego se está traduciendo al portugués de Brasil (`pt`), francés (`fr`), alemán
+(`de`), ruso (`ru`), chino simplificado (`zh`), coreano (`ko`) y japonés (`ja`). Estos idiomas nuevos todavía no
+tuvieron una revisión de hablantes nativos: si juegas en uno de ellos y un texto suena mal, no se entiende o no cabe,
+tu revisión es bienvenida. Abre un issue en el repositorio del proyecto con el idioma, la pantalla o la línea, el texto
+como está y cómo lo escribirías, o manda el arreglo como pull request a las tablas del idioma. Las decisiones de
+términos de cada idioma están en su glosario:
+[Deutsch](de-glossary.md), [Français](fr-glossary.md), [Português (Brasil)](pt-glossary.md),
+[Русский](ru-glossary.md), [简体中文](zh-glossary.md), [한국어](ko-glossary.md), [日本語](ja-glossary.md).
 
-1. **Los textos del motor**: una carpeta `content/packs/game/localization/<código>/` con una copia de cada tabla de
-   `localization/en/` (`common.yaml`, `pause_menu.yaml`, `shop.yaml`, `first_run.yaml`...) con las mismas claves
-   y los argumentos `{nombre}` tal cual. Una clave que falta se muestra en el idioma de reserva.
-2. **El nombre del idioma**: `name` en su `language.yaml`, y `native.<código>` y `flag.<código>` en el
-   `language.yaml` de **todos** los idiomas (la caja de idiomas los lista desde ahí).
-3. **La bandera**: su imagen en `ui/flags/<código>`, que genera `scripts/art/make_flags.py`.
-4. **Los textos del original**: un paquete delta como `content/packs/es-translation` con `text/<código>/`, su
-   `.sources.lock` y el mismo flujo de arriba (`scripts/translation.sh`); sin él, el diálogo del juego sale en inglés.
-5. **Los carteles**: las claves de `localization/<código>/signs.yaml` y, si hace falta, overlays por mapa
-   ([guía de carteles](signs.md)).
+Sumar un idioma con código `<código>` lleva estas piezas, todas siguiendo las del español.
+
+1. **Los textos del motor**: `content/packs/game/localization/<código>/`, con una copia de cada tabla de
+   `localization/en/` (`common.yaml`, `pause_menu.yaml`, `shop.yaml`, `first_run.yaml`...) con las mismas claves y
+   los argumentos `{nombre}` tal cual. Una clave que el idioma todavía no tiene se muestra en inglés, clave por clave,
+   así que una tabla se puede llenar de a poco.
+2. **El nombre y la bandera del idioma**: `name` en su propio `language.yaml`, y `native.<código>` y `flag.<código>`
+   en el `language.yaml` de **todos** los idiomas (la caja de idiomas los lista desde ahí). La imagen de la bandera va
+   en `ui/flags/<código>`, que genera `scripts/art/make_flags.py`.
+3. **Los textos del original**: un paquete delta `content/packs/<código>-translation` con id `<código>_translation`,
+   como `es-translation`:
+
+   ```text
+   content/packs/<código>-translation/
+   ├─ pack.yaml
+   ├─ text/<código>/     main.yaml ... trn.yaml, story_NNN.yaml y el .sources.lock generado
+   └─ signs/<código>/    los overlays de carteles por mapa, cuando un cartel necesita uno
+   ```
+
+   ```yaml
+   id: <código>_translation
+   version: 0.1.0
+   layer: base
+   priority: 2
+   name:
+     en: "<Language> translation"
+     es: "Traducción al <idioma>"
+   description:
+     en: "The team's own <Language> translation of the original's texts, a delta over text/en. See docs/guides/translate.md."
+     es: "Traducción propia del equipo al <idioma> de los textos del original, delta sobre text/en. Ver docs/guides/translate.md."
+   dependencies:
+     - id: base
+       min_version: 0.1.0
+   schemas:
+     sign_overlay:
+       - signs/*/*
+   ```
+
+   Nada registra el paquete: el juego monta cada carpeta de `content/packs` que tiene un `pack.yaml`, y un paquete de
+   distribución cocina cada una en su propio `.pak` (`scripts/package/cook_team_packs.sh`). Sin el paquete, el diálogo
+   del juego sale en inglés.
+4. **El flujo de la traducción**: el mismo que para el español ([Cómo se traduce](#cómo-se-traduce) y
+   [Cómo se actualiza](#cómo-se-actualiza)), con el idioma como opción:
+   `scripts/translation.sh --lang <código> missing main`, `--lang <código> lock`, `--lang <código> check`... `--lang`
+   elige `content/packs/<código>-translation` y `text/<código>/` (`DWE_TRANSLATION_LANGUAGE=<código>` hace lo mismo, y
+   `--pack <carpeta>` apunta a otro paquete). `lock` necesita que exista el `pack.yaml` del paquete. Los ids que no se
+   traducen ([Qué no se traduce](#qué-no-se-traduce)) son los mismos en todos los idiomas.
+5. **La cobertura**: `scripts/translation.sh coverage` (con `DWE_CONTENT`) imprime, por idioma y por fuente, las
+   cadenas, las traducidas, las que se dejan, las que faltan y las desactualizadas y la parte hecha; después, por
+   idioma, su paquete y las claves que tiene de las del inglés en los textos del motor y en los del lanzador. Un idioma
+   sin paquete sale con 0%. `coverage fr de` la limita a algunos idiomas.
+6. **Los carteles**: las claves de `localization/<código>/signs.yaml` y, si hace falta, overlays por mapa en
+   `content/packs/<código>-translation/signs/<código>/<mapa>.yaml` ([guía de carteles](signs.md)).
+7. **El glosario**: `docs/guides/<código>-glossary.md`, con su copia en español en
+   `docs/es/guides/<código>-glossary.md`, apunta las decisiones de términos del idioma como lo hace el
+   [glosario del español](spanish-glossary.md): etapas, objetos, HP y MP, qué se hace con los nombres de los Digimon y
+   con las técnicas.
+8. **El lanzador**: `apps/launcher/ui/js/i18n/<código>.js` con las claves de `en.js`.
+   `node apps/launcher/tools/i18n_check.mjs <código>` cuenta las claves que faltan (se muestran en inglés) y falla con
+   claves que el inglés no tiene o con `{marcadores}` distintos.
 
 En el primer arranque, la pantalla del disco pregunta el idioma si hay más de uno: los lista desde las carpetas de
-`localization/` que tienen `first_run.yaml`, así que un idioma nuevo aparece en cuanto trae esa tabla. Con un solo
-idioma no pregunta.
+`localization/` que tienen `language.yaml`, así que un idioma nuevo aparece en cuanto trae esa tabla. Con un solo
+idioma no pregunta. Un idioma que solo tiene `language.yaml` muestra todos los demás textos en inglés y la revisión
+lo deja pasar; en cuanto trae una segunda tabla, las debe todas.
+
+### Largo de las líneas en chino, japonés y coreano
+
+Todos los largos de arriba son columnas en pantalla, como las cuenta una terminal de ancho fijo: un carácter chino,
+japonés o coreano (hanzi, kanji, kana, Hangul) y la puntuación de ancho completo (`。`, `、`, `！`, `？`) ocupan dos.
+Una línea de la historia tiene 30 columnas, o sea 15 de esos caracteres, y el cuadro mantiene sus 4 filas. `long` mide
+así, en la historia y en las tablas (una traducción más ancha que su inglés). El chino y el japonés no tienen
+espacios: la línea se parte con `\n` donde un lector nativo haría una pausa, nunca dentro de una palabra.
+
+### Fuentes
 
 La fuente clásica compone las letras con acento agudo, grave o circunflejo, diéresis, cedilla y virgulilla, los
-signos `¡ ¿ « » ‹ › „ ‚ ß º ª … ·` y las ligaduras `æ œ` ([Textos y fuente](../formats/texts.md#fuente)). Lo que no
-compone (Æ, Œ, otros alfabetos) sale con la fuente de reserva: se ve, pero con otro estilo. Un idioma con
-alfabeto propio necesita además glifos o una fuente nueva; eso no está hecho.
+signos `¡ ¿ « » ‹ › „ ‚ ß º ª … ·` y las ligaduras `æ œ` ([Textos y fuente](../formats/texts.md#fuente)). El cirílico,
+el chino, el japonés y el coreano los dibuja el motor con sus propias fuentes, que quien traduce no tiene que tocar:
+[fuentes de la interfaz](../architecture/ui.md#fuentes). `uv run scripts/art/make_fonts.py check` lista cualquier
+carácter de los textos que ninguna fuente dibuja; un carácter fuera de los juegos de las fuentes pide rehacerlas
+(`make_fonts.py make`).
+
+### Plurales y nombres
+
+Una palabra que cambia con una cuenta toma las formas del idioma: el ruso escribe tres (`{n:день|дня|дней}`), el
+francés y el portugués usan la primera con 0 y 1, y el chino, el japonés y el coreano tienen una (se escribe dos
+veces, `{n:天|天}`); ver [Plurales](../architecture/localization.md#plurales). En la caja de nombres, el ruso, el
+japonés y el coreano tienen páginas con sus propias letras antes de la latina
+([nombres en todos los idiomas](../modules/apps/game.md#nombres-en-todos-los-idiomas)).

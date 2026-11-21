@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.25.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.26.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -55,6 +55,16 @@ function ui.gamepad_family() end
 --- The languages the player can choose.
 ---@return string[]
 function ui.languages() end
+
+--- The text in capitals, accented, Greek and Cyrillic letters too (`string.upper` only knows ASCII).
+---@param text string
+---@return string
+function ui.upper(text) end
+
+--- The text in small letters, in the same alphabets.
+---@param text string
+---@return string
+function ui.lower(text) end
 
 --- The skins the player can choose.
 ---@return string[]
@@ -274,7 +284,7 @@ naming = {}
 ---@return boolean
 function naming.is_open() end
 
---- The box: title_key, length, letters, name, grid (rows, columns) and cursor (row, column, button).
+--- The box: title_key, length, letters, name, grid (rows, columns), cursor (row, column, button) and page (index, count, name_key).
 ---@return table
 function naming.state() end
 

@@ -3,10 +3,12 @@
 #include <dwe/core/log.hpp>
 #include <dwe/screens/screen_settings.hpp>
 
+#include <algorithm>
 #include <array>
 #include <format>
 #include <utility>
 
+#include "hangul_input.hpp"
 #include "story_commands.hpp"
 #include "story_text_rows.hpp"
 
@@ -28,6 +30,21 @@ constexpr std::array<std::string_view, 4> MoveActions{"move_up", "move_down", "m
 // left to the right side's last (NAMING_ROLLOVER: 0x19, 0x19 + 0x31).
 constexpr std::size_t ButtonEntryRow = 5;
 constexpr double NoCell = -1.0;
+constexpr std::string_view PagePreviousId = "page-previous";
+constexpr std::string_view PageNextId = "page-next";
+
+bool isEastAsian(std::string_view letter) {
+  if (letter.size() != 3) {
+    return false; // every one of them takes three bytes of UTF-8
+  }
+  const auto byte = [&](std::size_t at) {
+    return static_cast<char32_t>(static_cast<unsigned char>(letter[at]));
+  };
+  const char32_t c = ((byte(0) & 0x0FU) << 12U) | ((byte(1) & 0x3FU) << 6U) | (byte(2) & 0x3FU);
+  return (c >= 0x3000U && c <= 0x30FFU) || (c >= 0x3130U && c <= 0x318FU) ||
+         (c >= 0x3400U && c <= 0x4DBFU) || (c >= 0x4E00U && c <= 0x9FFFU) ||
+         (c >= 0xAC00U && c <= 0xD7A3U) || (c >= 0xF900U && c <= 0xFAFFU);
+}
 
 // The letters of a text: one UTF-8 character each.
 std::vector<std::string> lettersOf(std::string_view row) {
@@ -69,6 +86,7 @@ void NamingBox::open(NameTarget target, std::string_view name) {
   target_ = target;
   openLength_ = length_;
   letters_ = lettersOfName(name, openLength_);
+  choosePages();
   side_ = 0;
   row_ = 0;
   column_ = 0;
@@ -112,9 +130,44 @@ std::string NamingBox::name() const {
   return name;
 }
 
+void NamingBox::choosePages() {
+  pages_.clear();
+  page_ = 0;
+  const std::string_view language = ui_->language();
+  const std::string_view code = language.substr(0, language.find_first_of("_-"));
+  for (const std::string_view key : {language, code}) {
+    if (const auto found = rules_.pages.find(key); found != rules_.pages.end()) {
+      for (const NamingPage& page : found->second) {
+        pages_.push_back({.name = page.name, .rows = &page.rows});
+      }
+      break;
+    }
+  }
+  pages_.push_back({.name = rules_.rowsPage, .rows = &rules_.rows});
+  joinsHangul_ = std::ranges::any_of(pages_, [](const Page& page) {
+    return std::ranges::any_of(*page.rows, [](const std::string& row) {
+      return std::ranges::any_of(lettersOf(row),
+                                 [](const std::string& letter) { return isHangulJamo(letter); });
+    });
+  });
+  typedBeyondPages_ = std::ranges::any_of(rules_.typedBeyondPages, [&](const std::string& typed) {
+    return typed == language || typed == code;
+  });
+}
+
+void NamingBox::turnPage(int step) {
+  if (pages_.size() < 2) {
+    return;
+  }
+  const std::size_t count = pages_.size();
+  page_ = step > 0 ? (page_ + 1) % count : (page_ + count - 1) % count;
+  play(sounds_.cursor);
+}
+
 std::string NamingBox::letterAt(std::size_t side, std::size_t row, std::size_t column) const {
   // tickNamingBox: the left side's rows, then the right side's (NAMING_CHAR_PAGES[page * 2 + 1]).
-  const std::vector<std::string> letters = lettersOf(rules_.rows.at(row + (side * sideRows())));
+  const std::vector<std::string>& rows = pages_.empty() ? rules_.rows : *pages_.at(page_).rows;
+  const std::vector<std::string> letters = lettersOf(rows.at(row + (side * sideRows())));
   return column < letters.size() ? letters[column] : std::string{Blank};
 }
 
@@ -122,14 +175,16 @@ bool NamingBox::knows(std::string_view letter) const {
   if (letter == Blank) {
     return true;
   }
-  for (const std::string& row : rules_.rows) {
-    for (const std::string& known : lettersOf(row)) {
-      if (known == letter) {
-        return true;
+  for (const Page& page : pages_) {
+    for (const std::string& row : *page.rows) {
+      for (const std::string& known : lettersOf(row)) {
+        if (known == letter) {
+          return true;
+        }
       }
     }
   }
-  return false;
+  return typedBeyondPages_ && isEastAsian(letter) && ui_->fontsDraw(letter);
 }
 
 bool NamingBox::handle(const ui::UiCommand& command) {
@@ -223,6 +278,20 @@ bool NamingBox::pressButtons(const input::InputState& input) {
     row_ = spot->row;
     column_ = spot->column;
     typing_ = false;
+  }
+  if (clicked && !spot) {
+    const auto pointer = input.pointer();
+    for (const auto [id, step] : {std::pair{PagePreviousId, -1}, std::pair{PageNextId, 1}}) {
+      const auto rect = ui_->elementRect(NamingBoxDocument, std::string{id});
+      if (pointer && rect && rectHolds(*rect, {pointer->x, pointer->y})) {
+        turnPage(step);
+        return false;
+      }
+    }
+  }
+  if (input.wasPressed("tab_next") || input.wasPressed("tab_previous")) {
+    turnPage(input.wasPressed("tab_next") ? 1 : -1);
+    return false;
   }
   if (input.wasPressedByKeyOrPad("confirm") || (clicked && spot)) {
     if (!button_) {
@@ -347,6 +416,21 @@ void NamingBox::write(const std::string& letter) {
     play(sounds_.refused);
     return;
   }
+  if (joinsHangul_ && isHangulJamo(letter) && !letters_.empty()) {
+    if (const auto join = joinHangul(letters_.back(), letter);
+        join && ui_->fontsDraw(join->joined) &&
+        (!join->next || (letters_.size() < openLength_ && ui_->fontsDraw(*join->next)))) {
+      letters_.back() = join->joined;
+      if (join->next) {
+        letters_.push_back(*join->next);
+      }
+      if (letters_.size() == openLength_ && join->next) {
+        goTo(Button::Ok);
+      }
+      play(sounds_.confirm);
+      return;
+    }
+  }
   // The last letter is written again once the name is full; then the cursor goes to OK.
   if (letters_.size() == openLength_) {
     letters_.back() = letter;
@@ -361,6 +445,11 @@ void NamingBox::write(const std::string& letter) {
 
 void NamingBox::deleteLast() {
   if (letters_.empty()) {
+    return;
+  }
+  if (const auto fewer = unjoinHangul(letters_.back()); fewer && joinsHangul_) {
+    letters_.back() = *fewer;
+    play(sounds_.confirm);
     return;
   }
   // namingDeleteLast: the American version steps back before it clears, so a full name loses two.
@@ -407,6 +496,10 @@ void NamingBox::publish() {
        .value = button_ ? NoCell : static_cast<double>((side_ * rules_.columns) + column_)},
       {.name = std::format("{}.cursor_button", Prefix),
        .value = button_ ? static_cast<double>(std::to_underlying(*button_)) : NoCell},
+      {.name = std::format("{}.pages", Prefix), .value = static_cast<double>(pages_.size())},
+      {.name = std::format("{}.page", Prefix), .value = static_cast<double>(page_)},
+      {.name = std::format("{}.page_name", Prefix),
+       .value = pages_.empty() ? std::string{} : std::string{pages_.at(page_).name}},
   };
   // script_menu.c: renderNameDisplayBox: the name's box shows the letters so far, one per place,
   // and the skin draws the underscore under the next one.

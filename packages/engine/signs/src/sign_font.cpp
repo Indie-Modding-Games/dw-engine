@@ -76,6 +76,13 @@ core::Result<SignFont> SignFont::load(std::vector<std::byte> fontFile) {
   return SignFont{std::move(face)};
 }
 
+void SignFont::addFallback(SignFont fallback) {
+  fallbacks_.push_back(std::move(fallback.face_));
+  for (std::unique_ptr<Face>& face : fallback.fallbacks_) {
+    fallbacks_.push_back(std::move(face));
+  }
+}
+
 float SignFont::lineHeight(float pixelSize) const {
   if (!face_->setSize(pixelSize)) {
     return pixelSize;
@@ -88,17 +95,31 @@ TextLine SignFont::drawLine(std::string_view text, float pixelSize, float letter
   if (!face_->setSize(pixelSize)) {
     return line;
   }
-  FT_Face face = face_->face;
   std::vector<PlacedGlyph> glyphs;
   float pen = 0.0F;
   FT_UInt previous = 0;
-  const bool kerning = FT_HAS_KERNING(face);
+  FT_Face previousFace = nullptr;
   for (const char32_t codePoint : decodeUtf8(text)) {
-    const FT_UInt glyphIndex = FT_Get_Char_Index(face, codePoint);
+    FT_Face face = face_->face;
+    FT_UInt glyphIndex = FT_Get_Char_Index(face, codePoint);
+    for (const std::unique_ptr<Face>& fallback : fallbacks_) {
+      if (glyphIndex != 0) {
+        break;
+      }
+      if (const FT_UInt found = FT_Get_Char_Index(fallback->face, codePoint);
+          found != 0 && fallback->setSize(pixelSize)) {
+        face = fallback->face;
+        glyphIndex = found;
+      }
+    }
     if (glyphIndex == 0) {
       continue;
     }
-    if (kerning && previous != 0) {
+    if (face != previousFace) {
+      previous = 0;
+      previousFace = face;
+    }
+    if (FT_HAS_KERNING(face) && previous != 0) {
       FT_Vector delta{};
       if (FT_Get_Kerning(face, previous, glyphIndex, FT_KERNING_UNFITTED, &delta) == 0) {
         pen += static_cast<float>(delta.x) / FixedOne;

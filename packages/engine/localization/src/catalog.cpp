@@ -254,11 +254,15 @@ std::optional<std::string_view> Catalog::find(std::string_view key) const {
 }
 
 std::string Catalog::text(std::string_view key, std::span<const TextArgument> arguments) const {
+  if (const auto found = chosen_.find(key); found != chosen_.end()) {
+    return formatText(found->second, arguments, language_);
+  }
   const std::optional<std::string_view> found = find(key);
-  return found ? formatText(*found, arguments) : std::string{key};
+  return found ? formatText(*found, arguments, FallbackLanguage) : std::string{key};
 }
 
-std::string formatText(std::string_view text, std::span<const TextArgument> arguments) {
+std::string formatText(std::string_view text, std::span<const TextArgument> arguments,
+                       std::string_view language) {
   std::string formatted;
   formatted.reserve(text.size());
   std::size_t at = 0;
@@ -281,7 +285,7 @@ std::string formatText(std::string_view text, std::span<const TextArgument> argu
     if (const TextArgument* argument = argumentNamed(arguments, name)) {
       formatted += argument->value;
     } else if (count != nullptr) {
-      formatted += pluralWord(*plural, count->value);
+      formatted += pluralWord(*plural, count->value, language);
     } else {
       formatted += plainTag(name).value_or(text.substr(at, close - at + 1));
     }
@@ -290,15 +294,59 @@ std::string formatText(std::string_view text, std::span<const TextArgument> argu
   return formatted;
 }
 
-bool takesOne(double count) {
-  return count == 1.0;
+PluralCategory pluralCategory(std::string_view language, double count) {
+  const std::string_view base = language.substr(0, language.find('_'));
+  const double size = std::abs(count);
+  const bool whole = std::trunc(size) == size;
+  if (base == "zh" || base == "ja" || base == "ko") {
+    return PluralCategory::Other;
+  }
+  if (base == "fr" || base == "pt") {
+    return size < 2.0 ? PluralCategory::One : PluralCategory::Other;
+  }
+  if (base == "ru" || base == "uk") {
+    if (!whole || size >= LargestWholeNumber) {
+      return PluralCategory::Other;
+    }
+    const auto n = static_cast<long long>(size);
+    if (n % 10 == 1 && n % 100 != 11) {
+      return PluralCategory::One;
+    }
+    if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) {
+      return PluralCategory::Few;
+    }
+    return PluralCategory::Many;
+  }
+  return size == 1.0 ? PluralCategory::One : PluralCategory::Other;
 }
 
-std::string_view pluralWord(const assets::PluralPlaceholder& plural, std::string_view count) {
+std::string_view pluralWord(const assets::PluralPlaceholder& plural, std::string_view count,
+                            std::string_view language) {
+  const std::span forms{plural.forms.data(), plural.formCount};
+  if (forms.empty()) {
+    return {};
+  }
   double value = 0.0;
   const auto [end, error] = core::fromChars(count.data(), count.data() + count.size(), value);
-  const bool number = error == std::errc{} && end == count.data() + count.size();
-  return number && takesOne(value) ? plural.one : plural.other;
+  if (error != std::errc{} || end != count.data() + count.size()) {
+    return forms.back();
+  }
+  const PluralCategory category = pluralCategory(language, value);
+  if (forms.size() == 2) {
+    return category == PluralCategory::One ? forms[0] : forms[1];
+  }
+  if (forms.size() == 3) {
+    switch (category) {
+    case PluralCategory::One:
+      return forms[0];
+    case PluralCategory::Many:
+      return forms[2];
+    case PluralCategory::Few:
+    case PluralCategory::Other:
+      return forms[1];
+    }
+  }
+  return forms[std::min(static_cast<std::size_t>(category), forms.size() - 1)];
 }
 
 std::string numberText(double value) {

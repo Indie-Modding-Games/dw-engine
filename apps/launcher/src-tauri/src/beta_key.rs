@@ -181,7 +181,7 @@ mod tests {
         }
         // The gateway's 401 (failure "auth") says to update or reinstall the launcher, never to
         // type a key.
-        let texts = include_str!("../../ui/js/i18n.js");
+        let texts = [include_str!("../../ui/js/i18n/es.js"), include_str!("../../ui/js/i18n/en.js")].concat();
         let auth: Vec<&str> = texts.lines().filter(|l| l.trim_start().starts_with("auth: ")).collect();
         assert_eq!(auth.len(), 2, "{auth:?}");
         assert!(auth[0].contains("Actualiza el lanzador o vuelve a instalarlo desde la última versión"), "{}", auth[0]);

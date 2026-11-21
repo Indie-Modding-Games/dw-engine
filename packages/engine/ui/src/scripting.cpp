@@ -1,6 +1,7 @@
 #include "scripting.hpp"
 
 #include <dwe/core/log.hpp>
+#include <dwe/localization/text_case.hpp>
 #include <dwe/script/engine_code.hpp>
 
 #include <RmlUi/Core/Box.h>
@@ -852,6 +853,8 @@ void Scripting::registerApi() {
   api["languages"] = [this](sol::this_state lua) {
     return result(lua, [&] { return host_.languages(); });
   };
+  api["upper"] = [](std::string_view text) { return localization::upperCase(text); };
+  api["lower"] = [](std::string_view text) { return localization::lowerCase(text); };
   api["skins"] = [this](sol::this_state lua) { return result(lua, [&] { return host_.skins(); }); };
   api["skin_name_key"] = [this](std::string_view id, sol::this_state lua) {
     checkName(lua, id);
