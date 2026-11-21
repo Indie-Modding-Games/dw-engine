@@ -64,6 +64,27 @@ button:active {
 	background-color: transparent;
 }
 
+/* The gold four-corner cursor on a focused tile, 6dp round it; text rows keep the gold line. */
+.egg:focus,
+body .grid-row .cell.selected,
+body #panel .button.selected,
+#panel.on-main .field-menu-focus,
+#chart-cursor,
+#chart-detail-cursor,
+#medals-cursor,
+#cards-cursor,
+#city-cursor,
+#scrim .slot:focus,
+.tech-choice:focus,
+.command.no-icon:focus,
+#command-cursor,
+.vs-cursor,
+.cell-cursor,
+.icon-choice:focus,
+.icon-choice.selected:focus {
+	decorator: ninepatch(nb-ocur-outer, nb-ocur-inner, 1) border-box;
+}
+
 /* A key cap (theme.css .key, orig.css .okey-sm): light blue rim, blue fill, dark drop under it; the key's name in
    the small font. */
 .key {

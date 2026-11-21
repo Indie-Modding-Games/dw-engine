@@ -139,7 +139,6 @@
 #panel.on-main .field-menu-focus {
 	width: 87dp;
 	height: 78dp;
-	decorator: ninepatch(nb-ocur-outer, nb-ocur-inner, 1) border-box;
 }
 
 /* ---------------------------------------------------------------------------------------------------------------
@@ -591,15 +590,14 @@
 	letter-spacing: 0;
 }
 
-/* The cursors: the gold four corners on the frame in place of the original's picture. */
-#chart-cursor,
-#chart-detail-cursor,
-#medals-cursor,
-#cards-cursor {
-	decorator: ninepatch(nb-ocur-outer, nb-ocur-inner, 1) border-box;
-}
-
 .cursor-frame .cursor-picture { display: none; }
+
+#city-cursor {
+	width: 82dp;
+	height: 82dp;
+	margin: -3dp 0 0 -3dp;
+	border-width: 0;
+}
 
 /* Chart cells and card slots: bevelled grey (.sk), the stages keep their colours. */
 #panel.on-player .chart-cell,

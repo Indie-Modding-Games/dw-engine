@@ -60,19 +60,9 @@
 	margin: 0;
 	border-width: 0;
 	background-color: transparent;
-	decorator: none;
 }
 
-.command.no-icon:focus {
-	decorator: ninepatch(nb-ocur-outer, nb-ocur-inner, 1) border-box;
-}
-
-#command-cursor {
-	width: 48dp;
-	height: 48dp;
-	margin: 6dp 0 0 6dp;
-	border: 3dp #efc63c;
-	background-color: #efc63c30;
+.command.no-icon {
 	decorator: none;
 }
 

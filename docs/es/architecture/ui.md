@@ -829,9 +829,10 @@ como hace con el `legacy` más antiguo), y `--ui-skin` lo nombra por su id actua
 `ui/skins/pixel` es la maqueta del concepto de interfaz llevada al juego: hereda del aspecto original
 (`extends: original`), así que conserva su disposición, sus pantallas y sus sprites, y cada pantalla solo añade una
 hoja de aspecto (`<pantalla>/style.rcss`) que cambia colores, letra, marcos y, donde la maqueta mueve o redimensiona una
-caja, su sitio. Las hojas compartidas son `theme.rcss` (letra, ventana `.original-box`, foco de los botones, teclas),
-`panel/style.rcss` (el panel del menú de pausa y de las pantallas que lo comparten) y `title/style.rcss` (el fondo de
-la portada y el logotipo, también tras la lista de partidas, las reglas, el modo de juego y la máquina de guardado).
+caja, su sitio. Las hojas compartidas son `theme.rcss` (letra, ventana `.original-box`, foco de los botones, cursor de
+cuatro esquinas de las casillas, teclas), `panel/style.rcss` (el panel del menú de pausa y de las pantallas que lo
+comparten) y `title/style.rcss` (el fondo de la portada y el logotipo, también tras la lista de partidas, las reglas,
+el modo de juego y la máquina de guardado).
 
 - Ventanas: azul marino casi opaco con doble línea azul clara y, en las ventanas principales, escuadras doradas en
   dos esquinas. Son ninepatch de `assets/frames.png` (hoja `nb-frames`, dos píxeles por dp): `nb-box` (ventana),
@@ -839,8 +840,10 @@ la portada y el logotipo, también tras la lista de partidas, las reglas, el mod
   foco), `nb-ocur` (cursor de cuatro esquinas), `nb-key` (tecla), `nb-tab`/`nb-tab-on` (pestañas); y como imágenes las
   escuadras `nb-brk-tl`/`nb-brk-br`, el cursor `nb-cursor` (▶), flechas, rellenos de barra y corazones.
 - Foco: el ▶ dorado fuera de la fila y una línea dorada alrededor de ella (la fila tiene `margin-left: -26dp` y un
-  borde izquierdo transparente de 26dp donde se pinta el ▶, así el texto no se mueve); en rejillas y pestañas, el
-  cursor de cuatro esquinas.
+  borde izquierdo transparente de 26dp donde se pinta el ▶, así el texto no se mueve); en una casilla (celda de
+  rejilla, hueco de la bolsa, icono, carta, huevo, orden) el cursor de cuatro esquinas, a 6dp alrededor. Ese cursor es
+  una sola regla de `theme.rcss` que reusan todas las pantallas; cada pantalla solo da el tamaño al elemento enfocado
+  o a su elemento cursor (`focus_cursor_tests`).
 - Letra: dos fuentes de píxel, «Pixel Body» a 30dp para todo el texto y «Pixel Small» a 26dp para teclas, avisos,
   descripciones y etiquetas pequeñas (`ui/fonts/pixel_body.ttf`, `pixel_small.ttf`; Latin-1 más «…»).
 - Colores: tinta `#050c1a`, azul marino `#181f2c`, azul claro `#b6e4f7`, azul `#7cb6e2`, oro `#efc63c`, crema

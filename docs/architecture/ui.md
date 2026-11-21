@@ -825,9 +825,10 @@ older `legacy`), and `--ui-skin` names it by its current id.
 `ui/skins/pixel` is the interface concept's mockup brought into the game: it inherits from the original-look skin
 (`extends: original`), so it keeps its arrangement, its screens and its sprites, and each screen only adds a
 skin sheet (`<screen>/style.rcss`) that changes colors, typeface, frames and, where the mockup moves or resizes a
-box, its place. The shared sheets are `theme.rcss` (typeface, `.original-box` window, button focus, keys),
-`panel/style.rcss` (the pause menu's panel and that of the screens that share it) and `title/style.rcss` (the title
-screen's background and logo, also behind the games list, the rules, the game mode and the save machine).
+box, its place. The shared sheets are `theme.rcss` (typeface, `.original-box` window, button focus, the tiles'
+four-corner cursor, keys), `panel/style.rcss` (the pause menu's panel and that of the screens that share it) and
+`title/style.rcss` (the title screen's background and logo, also behind the games list, the rules, the game mode and
+the save machine).
 
 - Windows: nearly opaque navy blue with a double light-blue line and, on the main windows, gold corner brackets on
   two corners. They are ninepatches from `assets/frames.png` (`nb-frames` sheet, two pixels per dp): `nb-box` (window),
@@ -835,8 +836,10 @@ screen's background and logo, also behind the games list, the rules, the game mo
   row), `nb-ocur` (four-corner cursor), `nb-key` (key), `nb-tab`/`nb-tab-on` (tabs); and as images the
   brackets `nb-brk-tl`/`nb-brk-br`, the cursor `nb-cursor` (▶), arrows, bar fills and hearts.
 - Focus: the golden ▶ outside the row and a golden line around it (the row has `margin-left: -26dp` and a
-  transparent 26dp left border where the ▶ is painted, so the text does not move); on grids and tabs, the
-  four-corner cursor.
+  transparent 26dp left border where the ▶ is painted, so the text does not move); on a tile (a grid cell, a bag
+  slot, an icon, a card, an egg, a command) the four-corner cursor, 6dp round it. That cursor is one rule of
+  `theme.rcss` that every screen reuses; each screen only sizes the focused element or its cursor element
+  (`focus_cursor_tests`).
 - Typeface: two pixel fonts, "Pixel Body" at 30dp for all text and "Pixel Small" at 26dp for keys, notices,
   descriptions and small labels (`ui/fonts/pixel_body.ttf`, `pixel_small.ttf`; Latin-1 plus "…").
 - Colors: ink `#050c1a`, navy `#181f2c`, light blue `#b6e4f7`, blue `#7cb6e2`, gold `#efc63c`, cream

@@ -1,7 +1,7 @@
 /* The tournament desk in the new look (concept area C, tournament_schedule: 291-296): the title, the 5-day grid, the
    cup's details and the speech box as windows with brackets; light-blue grid lines, the days in the small font,
    each cup's class as a badge (gold when you can enter, grey when closed, red when your partner is above its
-   class), the gold line on the focused cell. */
+   class), the four corners round the focused cell. */
 
 body #title,
 body #grid,
@@ -46,9 +46,11 @@ body .hline {
 }
 
 .cell-cursor {
+	width: 58dp;
+	height: 52dp;
+	margin: -8dp 0 0 33dp;
 	border-width: 0;
 	background-color: transparent;
-	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
 }
 
 .cell {

@@ -2,10 +2,6 @@
    place, the original's egg icons, and the gold four-corner cursor (.ocur) round the egg in focus instead of the
    original's cursor sprite. */
 
-.egg:focus {
-	decorator: ninepatch(nb-ocur-outer, nb-ocur-inner, 1) border-box;
-}
-
 .egg:focus .egg-cursor {
 	display: none;
 }

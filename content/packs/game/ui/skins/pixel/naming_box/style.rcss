@@ -21,7 +21,6 @@ body .button {
 body .cell.selected,
 body .button.selected {
 	border-color: transparent;
-	decorator: ninepatch(nb-ocur-outer, nb-ocur-inner, 1) border-box;
 }
 
 #prompts {
