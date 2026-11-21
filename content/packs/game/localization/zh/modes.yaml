@@ -1,3 +1,7 @@
+# The game modes (modes/<id>/mode.yaml) and the list a mode is chosen from (ui/new_game_mode). The two the game ships
+# are its variants (docs/architecture/game-variants.md).
 title: "游戏模式"
-original_name: "原版剧情"
-original_description: "原版游戏的剧情与规则。"
+classic_name: "经典强化版"
+classic_description: "原版游戏：故事、规则和平衡保持原样，画面更好，附带便利选项并修正了错误。"
+folder_name: "Folder模式"
+folder_description: "扩展版游戏：隐藏内容、所有种类都可当伙伴、进化到究极体，以及包括规则在内的全部选项。"

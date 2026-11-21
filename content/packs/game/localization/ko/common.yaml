@@ -4,3 +4,5 @@ no: "아니요"
 accept: "확인"
 back: "뒤로"
 cancel: "취소"
+# The currency, in the menus that label it.
+bits: "Bits"

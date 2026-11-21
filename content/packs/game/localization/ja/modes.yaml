@@ -1,3 +1,7 @@
+# The game modes (modes/<id>/mode.yaml) and the list a mode is chosen from (ui/new_game_mode). The two the game ships
+# are its variants (docs/architecture/game-variants.md).
 title: "ゲームモード"
-original_name: "オリジナルストーリー"
-original_description: "元のゲームのストーリーを、元のルールで遊びます。"
+classic_name: "クラシック強化版"
+classic_description: "オリジナルのゲームです。ストーリー、ルール、バランスはそのままに、グラフィックの向上、便利なオプション、不具合の修正を加えています。"
+folder_name: "Folderモード"
+folder_description: "拡張版のゲームです。隠し要素、全種類をパートナーに、メガへの進化、ルールを含むすべてのオプションが使えます。"

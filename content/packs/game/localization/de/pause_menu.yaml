@@ -213,6 +213,9 @@ tab.interface: "Anzeige"
 # or behaves as it.
 tag.improvement: "Verbesserung"
 tag.original: "Wie das Original"
+# The tag and help of an option the game's variant fixes (docs/architecture/game-variants.md).
+tag.locked: "Fest: {variant}"
+help.locked: "{variant} lässt diese Option in diesem Spiel wie im Originalspiel. Starte ein Spiel im Folder-Modus, um sie zu ändern."
 # The keys at the foot of the options: Q/E switch tabs, left/right change the value.
 hint.tabs: "Reiter"
 hint.change: "Ändern"
@@ -257,6 +260,7 @@ coop_difficulty: "Koop-Schwierigkeit"
 coop_difficulty.off: "Aus"
 coop_difficulty.standard: "Standard"
 coop_difficulty.hard: "Schwer"
+coop_open_to_join: "Offen für neue Spieler"
 # {tab} is the tab's name.
 reset_question: "Optionen von „{tab}“ zurücksetzen?"
 reset_note: "Fenstermodus, Design, Sprache und Schrift bleiben."
@@ -289,6 +293,7 @@ help.extra_toilets: "Fügt ein paar Toiletten hinzu, etwa die beim Schild des Tr
 help.angemon_event_zone: "Ist Angemons Licht befreit, beginnt sein Ereignis im Erdgeschoss des Eisheiligtums, egal wie du zurückkommst. Im Original nur über die Falltür-Treppe."
 help.whamon_in_water: "Vor dem Ogremon-Ereignis wartet Whamon im Wasser am Ufer der Geheimen Strandhöhle, wo du mit ihm sprichst. Im Original ist es weit hinten, außer Sicht."
 help.coop_difficulty: "Im Koop werden die Gegner mit jedem kämpfenden Partner und jedem helfenden Spieler stärker. Standard hält den Kampf fair, Schwer macht ihn härter, Aus behält die Werte des Originals. Nur die Wahl des Gastgebers zählt."
+help.coop_open_to_join: "Wenn du im Koop Gastgeber bist, können neue Spieler deinem laufenden Spiel beitreten. Schalte es aus, damit es bei den bisherigen Spielern bleibt; wer die Verbindung verliert, kann trotzdem zurückkommen. Gilt sofort für deinen Raum."
 help.status_extras: "Die Statusseite zeigt Müdigkeit, Fehler, Kämpfe, Wachzeit, Lebensdauer und Evolution."
 help.display_mode: "Im Fenster oder im Vollbild spielen."
 help.vsync: "Gleicht die Bilder mit dem Bildschirm ab, damit das Bild nicht reißt."

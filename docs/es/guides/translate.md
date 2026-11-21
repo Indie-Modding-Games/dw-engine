@@ -159,7 +159,8 @@ Sumar un idioma con código `<código>` lleva estas piezas, todas siguiendo las 
 1. **Los textos del motor**: `content/packs/game/localization/<código>/`, con una copia de cada tabla de
    `localization/en/` (`common.yaml`, `pause_menu.yaml`, `shop.yaml`, `first_run.yaml`...) con las mismas claves y
    los argumentos `{nombre}` tal cual. Una clave que el idioma todavía no tiene se muestra en inglés, clave por clave,
-   así que una tabla se puede llenar de a poco.
+   así que una tabla se puede llenar de a poco; `scripts/translation.sh --lang <código> check` y
+   `dwe_localization_tests` (CI) fallan mientras falte alguna.
 2. **El nombre y la bandera del idioma**: `name` en su propio `language.yaml`, y `native.<código>` y `flag.<código>`
    en el `language.yaml` de **todos** los idiomas (la caja de idiomas los lista desde ahí). La imagen de la bandera va
    en `ui/flags/<código>`, que genera `scripts/art/make_flags.py`.
@@ -212,8 +213,8 @@ Sumar un idioma con código `<código>` lleva estas piezas, todas siguiendo las 
    [glosario del español](spanish-glossary.md): etapas, objetos, HP y MP, qué se hace con los nombres de los Digimon y
    con las técnicas.
 8. **El lanzador**: `apps/launcher/ui/js/i18n/<código>.js` con las claves de `en.js`.
-   `node apps/launcher/tools/i18n_check.mjs <código>` cuenta las claves que faltan (se muestran en inglés) y falla con
-   claves que el inglés no tiene o con `{marcadores}` distintos.
+   `node apps/launcher/tools/i18n_check.mjs <código>` lista las claves que faltan (se muestran en inglés) y falla con
+   ellas, con claves que el inglés no tiene o con `{marcadores}` distintos; CI lo corre para todos los idiomas.
 
 En el primer arranque, la pantalla del disco pregunta el idioma si hay más de uno: los lista desde las carpetas de
 `localization/` que tienen `language.yaml`, así que un idioma nuevo aparece en cuanto trae esa tabla. Con un solo

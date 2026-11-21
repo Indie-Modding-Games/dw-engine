@@ -158,6 +158,8 @@ hub.record: "{wins} V / {losses} D"
 # El perfil en línea (ui/online_profile).
 profile_title: "Perfil en línea"
 profile.name: "Nombre"
+# The name a profile shows until the player chooses one.
+profile.default_name: "Jugador"
 profile.name_hint: "Lo ven los demás jugadores en las salas y sobre tu personaje."
 profile.name_editing: "Escribe tu nombre y pulsa Intro."
 profile.icon: "Icono"

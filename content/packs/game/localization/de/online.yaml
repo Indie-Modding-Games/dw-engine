@@ -45,6 +45,7 @@ info.mode: "Modus:"
 info.state: "Status:"
 info.players: "Spieler:"
 info.visibility: "Zugang:"
+info.difficulty: "Schwierigkeit:"
 visibility.public: "Öffentlich"
 visibility.private: "Privat"
 # Access, and whether a game under way takes new players (#356).
@@ -157,6 +158,8 @@ hub.record: "{wins} S / {losses} N"
 # The online profile (ui/online_profile).
 profile_title: "Online-Profil"
 profile.name: "Name"
+# The name a profile shows until the player chooses one.
+profile.default_name: "Spieler"
 profile.name_hint: "Andere Spieler sehen ihn in Räumen und über deiner Figur."
 profile.name_editing: "Gib deinen Namen ein und drück Enter."
 profile.icon: "Symbol"
@@ -206,6 +209,10 @@ coop.came_home: "Zurück aus {name}s Welt: Dein Partner und deine Tasche sind mi
 # (coop-training.md): the world's clock does not stop for it.
 coop.training: "Training"
 coop.training_clock: "Training zu zweit: Die Zeit der Welt läuft weiter, und jede Sitzung zählt ihre eigene Stunde für deinen Partner."
+# A guest who brought a save of the other game variant, and the host's notice of it (game-variants.md, "Co-op").
+coop.guest_other_variant: "{name}s Welt spielt eine andere Variante, nach deren Regeln. Dein Partner und deine Tasche kehren trotzdem heim."
+coop.guest_other_variant_kept: "{name}s Welt spielt eine andere Variante: Nichts kehrt heim, dein Spielstand bleibt, wie er war."
+coop.player_other_variant: "{name} hat einen Spielstand einer anderen Variante mitgebracht: Die Regeln deines Spiels gelten für euch beide."
 # The names of the sample rooms and players (developer tools).
 sample.room_1: "Samstagsabenteuer"
 sample.room_2: "Gemütlich erkunden"

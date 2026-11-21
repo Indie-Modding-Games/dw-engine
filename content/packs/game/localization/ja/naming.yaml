@@ -11,3 +11,8 @@ page.cyrillic: "АБВ"
 page.hiragana: "あいう"
 page.katakana: "アイウ"
 page.hangul: "한글"
+# The accented letters of a language with the Latin alphabet, a page after the Latin one.
+page.latin_de: "ÄÖÜ"
+page.latin_es: "ÁÉÍ"
+page.latin_fr: "ÀÂÇ"
+page.latin_pt: "ÁÂÃ"

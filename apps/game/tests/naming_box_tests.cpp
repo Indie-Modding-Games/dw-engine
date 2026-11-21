@@ -94,6 +94,8 @@ NamingRules rules() {
   naming.pages["ru"] = {NamingPage{.name = "naming.page.cyrillic", .rows = {"АБВГЁ", "абвгё"}}};
   naming.pages["ko"] = {
       NamingPage{.name = "naming.page.hangul", .rows = {"ㄱㄴㄷㄹㅎ", "ㅏㅓㅗㅡㅣ"}}};
+  naming.pages["de"] = {
+      NamingPage{.name = "naming.page.latin_de", .rows = {"ÄÖÜ  ", "äöüß "}, .afterRows = true}};
   return naming;
 }
 
@@ -136,6 +138,21 @@ TEST_CASE(
   latin.type("ЁA", false);
   tick(latin);
   CHECK(latin.name() == "A");
+}
+
+TEST_CASE("a page of accented letters comes after the Latin one and its letters can be typed") {
+  const NamingUi german{"de"};
+  NamingBox box{*german.ui, rules(), {}};
+  box.open(NameTarget::Tamer, "");
+  CHECK(german.number("naming_box.pages") == 2.0);
+  CHECK(german.text("naming_box.page_name") == "naming.page.latin");
+  tick(box, input::keys::E);
+  CHECK(german.text("naming_box.page_name") == "naming.page.latin_de");
+  CHECK(german.text("naming_box.cell.0.0") == "Ä");
+  CHECK(german.text("naming_box.cell.0.5") == "ä");
+  box.type("Bäüß", false);
+  tick(box);
+  CHECK(box.name() == "Bäüß");
 }
 
 TEST_CASE(

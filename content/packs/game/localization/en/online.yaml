@@ -158,6 +158,8 @@ hub.record: "{wins} W / {losses} L"
 # The online profile (ui/online_profile).
 profile_title: "Online profile"
 profile.name: "Name"
+# The name a profile shows until the player chooses one.
+profile.default_name: "Player"
 profile.name_hint: "Other players see it in rooms and over your character."
 profile.name_editing: "Type your name and press Enter."
 profile.icon: "Icon"

@@ -181,6 +181,12 @@ Map names are in `text/ru/main.yaml` (`map_names.*`), centred in 24 characters w
 | Co-op | кооператив |
 | Directional Pad | крестовина |
 | Press X | Нажми X |
+| Game mode / variant | Режим игры / вариант игры |
+| Classic Enhanced / Folder Mode | Улучшенная классика / Режим Folder |
+| Fixed in {variant} (locked option) | Закреплено: {variant} |
+| Open to new players (co-op) | Открыто для новых игроков |
+| Player (default online name) | Игрок |
+| Bits (currency label in menus) | Bits |
 
 ## Story
 

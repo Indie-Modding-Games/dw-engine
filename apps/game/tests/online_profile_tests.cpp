@@ -27,11 +27,11 @@ TEST_CASE("a typed online name is kept tidy and cut to the longest a name may be
 
 TEST_CASE("the online profile lives in the game's settings, with defaults where they keep none") {
   UserSettings settings;
-  OnlineProfile fresh = OnlineProfile::fromSettings(settings, "es");
+  OnlineProfile fresh = OnlineProfile::fromSettings(settings, "Jugador");
   CHECK(fresh.name() == "Jugador");
   CHECK_FALSE(fresh.named());
   CHECK(fresh.icon() == "egg");
-  CHECK(OnlineProfile::fromSettings(settings, "en").name() == "Player");
+  CHECK(OnlineProfile::fromSettings(settings, "プレイヤー").name() == "プレイヤー");
 
   CHECK_FALSE(fresh.setName(" "));
   CHECK(fresh.name() == "Jugador");
@@ -43,7 +43,7 @@ TEST_CASE("the online profile lives in the game's settings, with defaults where 
   fresh.recordVersus(true);
   fresh.store(settings);
 
-  const OnlineProfile read = OnlineProfile::fromSettings(settings, "en");
+  const OnlineProfile read = OnlineProfile::fromSettings(settings, "Player");
   CHECK(read.name() == "Ana");
   CHECK(read.named());
   CHECK(read.icon() == "crown");
@@ -52,7 +52,7 @@ TEST_CASE("the online profile lives in the game's settings, with defaults where 
 
   // A settings file edited by hand with an unknown icon falls back to the first one.
   settings.onlineIcon = "dragon";
-  CHECK(OnlineProfile::fromSettings(settings, "en").icon() == "egg");
+  CHECK(OnlineProfile::fromSettings(settings, "Player").icon() == "egg");
 }
 
 TEST_CASE("the signaling server's public rooms become the rooms screens' list") {
@@ -193,7 +193,7 @@ TEST_CASE("without a signaling server the public list says so") {
 
 TEST_CASE("relay only is part of the online profile and its settings") {
   UserSettings settings;
-  OnlineProfile profile = OnlineProfile::fromSettings(settings, "en");
+  OnlineProfile profile = OnlineProfile::fromSettings(settings, "Player");
   CHECK_FALSE(profile.relayOnly());
   // Never chosen: the settings keep not naming it.
   profile.store(settings);

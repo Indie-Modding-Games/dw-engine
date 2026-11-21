@@ -188,6 +188,13 @@ Erfahren, Profi, Veteran, Elite, Super, Meister, Genie, Legende («Neuling» is 
 | Press X | Drück X |
 | Skin (UI look) | Design |
 | Co-op / Versus / Room / Host / Guest | Koop / Versus / Raum / Gastgeber / Gast |
+| Game mode / variant | Spielmodus / Variante |
+| Classic Enhanced / Folder Mode | Verbesserter Klassiker / Folder-Modus |
+| Fixed in {variant} (locked option) | Fest: {variant} |
+| Open to new players (co-op) | Offen für neue Spieler |
+| Player (default online name) | Spieler |
+| Bits (currency label in menus) | Bits |
+| Naming page of accented letters | ÄÖÜ (Ä Ö Ü ß) |
 
 ## Story
 

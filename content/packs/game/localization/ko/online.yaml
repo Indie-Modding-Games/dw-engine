@@ -45,6 +45,7 @@ info.mode: "모드:"
 info.state: "상태:"
 info.players: "인원:"
 info.visibility: "공개:"
+info.difficulty: "난이도:"
 visibility.public: "공개"
 visibility.private: "비공개"
 # Access, and whether a game under way takes new players (#356).
@@ -157,6 +158,8 @@ hub.record: "{wins}승 / {losses}패"
 # The online profile (ui/online_profile).
 profile_title: "온라인 프로필"
 profile.name: "이름"
+# The name a profile shows until the player chooses one.
+profile.default_name: "플레이어"
 profile.name_hint: "다른 플레이어가 방과 캐릭터 위에서 보는 이름이에요."
 profile.name_editing: "이름을 입력하고 Enter를 누르세요."
 profile.icon: "아이콘"
@@ -206,6 +209,10 @@ coop.came_home: "{name}의 세계에서 돌아왔어요: 파트너와 가방도 
 # (coop-training.md): the world's clock does not stop for it.
 coop.training: "훈련 중"
 coop.training_clock: "함께 훈련해요: 세계의 시간은 계속 흐르고, 훈련마다 파트너에게 한 시간씩 따로 계산돼요."
+# A guest who brought a save of the other game variant, and the host's notice of it (game-variants.md, "Co-op").
+coop.guest_other_variant: "{name}의 세계는 다른 버전이라 그 규칙을 따라요. 파트너와 가방은 그래도 함께 돌아와요."
+coop.guest_other_variant_kept: "{name}의 세계는 다른 버전이에요: 아무것도 가져오지 않고, 저장 데이터는 그대로예요."
+coop.player_other_variant: "{name}의 저장 데이터는 다른 버전이에요: 두 사람 모두 이 게임의 규칙을 따라요."
 # The names of the sample rooms and players (developer tools).
 sample.room_1: "토요일 모험"
 sample.room_2: "느긋한 탐험"

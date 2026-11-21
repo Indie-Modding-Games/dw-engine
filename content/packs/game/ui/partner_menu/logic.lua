@@ -13,11 +13,10 @@ local meters = 3
 local max_conditions = 7
 
 -- The original's labels: the item options (main.item_menu_labels: use, move, sort, drop), the sort
--- orders (main.inventory_sort_labels), the drop's question (main.inventory_confirm_labels) and
--- bits.
+-- orders (main.inventory_sort_labels) and the drop's question (main.inventory_confirm_labels).
 local option_names = { "use", "move", "sort", "drop" }
 local sort_orders = 3
-local bits_label_key = "main.battle_ui_bits_labels.0000"
+local bits_label_key = "common.bits"
 
 local function original_label(block, slot)
   return t(string.format("main.%s.%04d", block, slot))

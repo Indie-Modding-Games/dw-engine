@@ -213,6 +213,9 @@ tab.interface: "인터페이스"
 # or behaves as it.
 tag.improvement: "개선"
 tag.original: "원작대로"
+# The tag and help of an option the game's variant fixes (docs/architecture/game-variants.md).
+tag.locked: "{variant}에서 고정"
+help.locked: "{variant}에서는 이 게임을 하는 동안 이 설정이 원작 그대로예요. 바꾸려면 Folder 모드로 새 게임을 시작하세요."
 # The keys at the foot of the options: Q/E switch tabs, left/right change the value.
 hint.tabs: "탭"
 hint.change: "변경"
@@ -257,6 +260,7 @@ coop_difficulty: "협동 난이도"
 coop_difficulty.off: "끄기"
 coop_difficulty.standard: "표준"
 coop_difficulty.hard: "어려움"
+coop_open_to_join: "새 플레이어 참가 허용"
 # {tab} is the tab's name.
 reset_question: "{tab} 설정을 기본값으로 되돌릴까요?"
 reset_note: "창 모드, 스타일, 언어, 글꼴은 그대로예요."
@@ -289,6 +293,7 @@ help.extra_toilets: "체육관 표지판 옆 같은 곳에 화장실을 몇 개 
 help.angemon_event_zone: "엔젤몬의 빛을 풀어 주면 어느 길로 돌아오든 얼음 성역 1층에서 이벤트가 시작돼요. 원작은 뚜껑문 계단으로 와야만 시작돼요."
 help.whamon_in_water: "오거몬 이벤트 전에는 와몬이 비밀 해변 동굴의 물가에서 기다려서 말을 걸 수 있어요. 원작은 보이지 않는 먼 곳에 둬요."
 help.coop_difficulty: "협동에서 싸우는 파트너와 돕는 플레이어가 늘수록 적이 강해져요. 표준은 공정하게, 어려움은 더 세게, 끄기는 원작 수치 그대로. 호스트의 설정만 적용돼요."
+help.coop_open_to_join: "협동에서 호스트일 때, 이미 시작된 게임에 새 플레이어가 참가할 수 있어요. 끄면 지금 있는 플레이어만 함께하고, 연결이 끊긴 플레이어는 다시 돌아올 수 있어요. 호스트 중인 방에 바로 적용돼요."
 help.status_extras: "상태 화면에 피로, 실수, 배틀, 깨어 있는 시간, 수명, 진화가 나와요."
 help.display_mode: "창 모드나 전체 화면으로 플레이해요."
 help.vsync: "화면이 찢어지지 않도록 프레임을 모니터와 맞춰요."

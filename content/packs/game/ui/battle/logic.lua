@@ -35,13 +35,12 @@ local bars_moved = false
 local max_end_lines = 10
 local stat_count = 6
 
--- The original's labels (main.stat_labels: HP, MP, offense, defense, speed, brain;
--- main.battle_ui_bits_labels).
+-- The original's labels (main.stat_labels: HP, MP, offense, defense, speed, brain).
 local stat_label_keys = {}
 for index = 0, stat_count - 1 do
   stat_label_keys[index] = string.format("main.stat_labels.%04d", index)
 end
-local bits_label_key = "main.battle_ui_bits_labels.0000"
+local bits_label_key = "common.bits"
 
 local phase = "fight"
 local bag_open = false

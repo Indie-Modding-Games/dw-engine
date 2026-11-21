@@ -20,8 +20,9 @@ A new term that repeats is added here with the translation that first uses it. T
 4. Digimon names and the characters' names are written in katakana, our own reading of the English spelling, not the
    Japanese release's names (decision 2): «アグモン», «ジジモン», «マイオティスモン», «センタルモン». Japanese, like
    Korean, translates the `digimon_names` block (`own_names` in `scripts/translation.sh`); the speaker lines and every name inside a text use the same katakana. The generic word "Digimon" is «デジモン».
-5. `HP` and `MP` stay. The currency is «ビット» in Japanese text (the kept original label `Bits` stays where the lock
-   keeps it). Numbers are half-width digits with the original's figures.
+5. `HP` and `MP` stay. The currency is «ビット» everywhere, the menus' label too (`common.bits`; the original's
+   `Bits` label stays kept in the lock and is no longer shown). Numbers are half-width digits with the original's
+   figures.
 6. The stages, our own renderings of the English stages: **フレッシュ, 見習い, ルーキー, チャンピオン,
    アルティメット** (Fresh, In-Training, Rookie, Champion, Ultimate); with the canonical stages on: **デジエッグ,
    フレッシュ, 見習い, ルーキー, チャンピオン, アルティメット, メガ, ウルトラ**. The franchise's Japanese stage terms
@@ -190,6 +191,12 @@ Tamer titles: アマチュア, 新米, 初心者, 中級者, 上級者, ベテ�
 | Press X | Xを押してください |
 | Skin (UI look) | スキン |
 | Co-op / Versus / Room / Host / Guest | 協力プレイ / 対戦 / ルーム / ホスト / ゲスト |
+| Game mode / variant | ゲームモード / バージョン |
+| Classic Enhanced / Folder Mode | クラシック強化版 / Folderモード |
+| Fixed in {variant} (locked option) | {variant}では固定 |
+| Open to new players (co-op) | 新しいプレイヤーの参加 |
+| Player (default online name) | プレイヤー |
+| Bits (currency label in menus) | ビット (common.bits; the extracted label stays as kept) |
 
 ## Story
 

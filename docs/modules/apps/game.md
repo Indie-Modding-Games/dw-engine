@@ -1344,7 +1344,10 @@ language, with as many rows each: Russian gets a Cyrillic page (capitals on the 
 Japanese hiragana and katakana pages (with the voiced and small kana and `ー`), Korean a page of Hangul letters
 (consonants on the left, vowels on the right). The page keys (`tab_previous`, `tab_next`: Q and E, or the shoulder
 buttons) and a click on the arrows beside the page's name turn them; the name may mix the letters of every page of
-the language. Chinese, and the other languages without an alphabet of their own, keep the Latin page.
+the language. German, Spanish, French and Portuguese add a page of their accented letters after the Latin one
+(`after_rows: true`): «ÄÖÜ» (with ß), «ÁÉÍ» (with Ñ), «ÀÂÇ» (with Œ and Æ) and «ÁÂÃ», capitals on the left and small
+letters on the right, so a name like «Jürgen» or «Íñigo» can be written and typed. Chinese, and the other languages
+without an alphabet of their own, keep the Latin page.
 
 - **Korean** letters join into syllables as they are written, as on a Korean keyboard (`hangul_input.hpp`): ㅎ ㅏ ㄴ
   gives 한, a vowel after a closed syllable takes its last consonant (한 + ㅏ = 하나), and an erase takes one letter
@@ -2311,7 +2314,8 @@ co-op lobby that lived inside the main menu is now these screens.
   dumbbell; left and right pick it), the connection (Direct, or Relay only: confirm, left or right switch it) and the
   versus record (wins and losses). `OnlineProfile` (`online_profile.hpp`) keeps it in the game's settings
   (`settings.yaml`, `online_relay_only` for the connection), not in a save, and its name is the player's name in every
-  room (12 letters at most; «Player» until one is typed). Relay only connects co-op and versus rooms through the
+  room (12 letters at most; until one is typed, the language's `online.profile.default_name`, «Player» in English).
+  Relay only connects co-op and versus rooms through the
   signaling server's relay (TURN) alone, so the other player never learns this machine's address; a server with no
   relay makes such a room fail with «no relay».
 - **Connecting and errors** (`ui/online_status`): while a room is being created or joined the screen says so with

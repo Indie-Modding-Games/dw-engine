@@ -169,6 +169,13 @@ Map names are centered in 24 characters with spaces, like the original's.
 | Player | Jugador |
 | Directional Pad | botones de dirección |
 | Press X | Presiona X |
+| Game mode / variant | Modo de juego / variante |
+| Classic Enhanced / Folder Mode | Clásico Mejorado / Modo Folder |
+| Fixed in {variant} (locked option) | Fija en {variant} |
+| Open to new players (co-op) | Abierto a nuevos jugadores |
+| Player (default online name) | Jugador |
+| Bits (currency label in menus) | Bits |
+| Naming page of accented letters | ÁÉÍ (Á É Í Ó Ú Ñ Ü) |
 
 ## Story
 

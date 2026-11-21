@@ -191,6 +191,13 @@ etapa).
 | Press X | Drück X |
 | Skin (UI look) | Design |
 | Co-op / Versus / Room / Host / Guest | Koop / Versus / Raum / Gastgeber / Gast |
+| Game mode / variant | Spielmodus / Variante |
+| Classic Enhanced / Folder Mode | Verbesserter Klassiker / Folder-Modus |
+| Fixed in {variant} (opción fijada) | Fest: {variant} |
+| Open to new players (co-op) | Offen für neue Spieler |
+| Player (nombre en línea por defecto) | Spieler |
+| Bits (etiqueta de la moneda en los menús) | Bits |
+| Naming page of accented letters | ÄÖÜ (Ä Ö Ü ß) |
 
 ## Historia
 

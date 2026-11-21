@@ -1,4 +1,7 @@
-# The game modes (modes/<id>/mode.yaml) and the list a mode is chosen from (ui/new_game_mode).
+# The game modes (modes/<id>/mode.yaml) and the list a mode is chosen from (ui/new_game_mode). The two the game ships
+# are its variants (docs/architecture/game-variants.md).
 title: "Spielmodus"
-original_name: "Originalgeschichte"
-original_description: "Die Geschichte des Originalspiels mit seinen Regeln."
+classic_name: "Verbesserter Klassiker"
+classic_description: "Das Originalspiel: Geschichte, Regeln und Balance wie damals, mit besserer Grafik, Komfortoptionen und behobenen Fehlern."
+folder_name: "Folder-Modus"
+folder_description: "Das erweiterte Spiel: versteckte Inhalte, jede Art als Partner, der Schritt zu Mega und alle Optionen, Regeln inklusive."

@@ -88,10 +88,13 @@ NamingRules readNaming(YamlReader& reader, const YamlNode& node) {
     for (const core::YamlEntry& language : pages->entries()) {
       std::vector<NamingPage>& added = naming.pages[language.key];
       for (const YamlNode& item : reader.sequence(language.value, "a language's pages")) {
-        if (!reader.expectKeys(item, "a page of letters", {"page", "rows"})) {
+        if (!reader.expectKeys(item, "a page of letters", {"page", "rows"}, {"after_rows"})) {
           return {};
         }
-        NamingPage page{.name = reader.text(reader.field(item, "page")), .rows = {}};
+        const YamlNode* after = item.find("after_rows");
+        NamingPage page{.name = reader.text(reader.field(item, "page")),
+                        .rows = {},
+                        .afterRows = after != nullptr && reader.boolean(*after)};
         for (const YamlNode& row :
              reader.sequence(reader.field(item, "rows"), "the page's rows", naming.rows.size())) {
           page.rows.push_back(reader.text(row));

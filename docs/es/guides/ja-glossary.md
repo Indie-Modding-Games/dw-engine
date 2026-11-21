@@ -23,8 +23,9 @@ sigue salvo que esta página diga otra cosa.
    «センタルモン». El japonés, como el coreano, traduce el bloque `digimon_names` (`own_names` en
    `scripts/translation.sh`); las líneas del hablante y cada nombre dentro de un texto usan el mismo katakana. La
    palabra genérica «Digimon» es «デジモン».
-5. `HP` y `MP` quedan. La moneda es «ビット» en el texto japonés (la etiqueta `Bits` que el lock conserva como el
-   original queda). Los números van en dígitos de ancho medio con las cifras del original.
+5. `HP` y `MP` quedan. La moneda es «ビット» en todas partes, también la etiqueta de los menús (`common.bits`; la
+   etiqueta `Bits` del original sigue conservada en el lock y ya no se muestra). Los números van en dígitos de ancho
+   medio con las cifras del original.
 6. Las etapas, con nombres propios a partir de las etapas en inglés: **フレッシュ, 見習い, ルーキー, チャンピオン,
    アルティメット** (Fresh, In-Training, Rookie, Champion, Ultimate); con las etapas canónicas: **デジエッグ,
    フレッシュ, 見習い, ルーキー, チャンピオン, アルティメット, メガ, ウルトラ**. No se usan los términos japoneses de
@@ -195,6 +196,12 @@ Títulos de domador: アマチュア, 新米, 初心者, 中級者, 上級者, �
 | Press X | Xを押してください |
 | Skin (UI look) | スキン |
 | Co-op / Versus / Room / Host / Guest | 協力プレイ / 対戦 / ルーム / ホスト / ゲスト |
+| Game mode / variant | ゲームモード / バージョン |
+| Classic Enhanced / Folder Mode | クラシック強化版 / Folderモード |
+| Fixed in {variant} (opción fijada) | {variant}では固定 |
+| Open to new players (co-op) | 新しいプレイヤーの参加 |
+| Player (nombre en línea por defecto) | プレイヤー |
+| Bits (etiqueta de la moneda en los menús) | ビット (common.bits; la etiqueta extraída se deja como está) |
 
 ## Historia
 

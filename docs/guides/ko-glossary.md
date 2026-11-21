@@ -194,6 +194,12 @@ Item names fit in about 6 syllables (12 columns), like the original's 12 charact
 | Player | 플레이어 |
 | Directional Pad | 방향 버튼 |
 | Press X | {prompt:confirm} 버튼을 눌러 |
+| Game mode / variant | 게임 모드 / 버전 |
+| Classic Enhanced / Folder Mode | 클래식 강화판 / Folder 모드 |
+| Fixed in {variant} (locked option) | {variant}에서 고정 |
+| Open to new players (co-op) | 새 플레이어 참가 허용 |
+| Player (default online name) | 플레이어 |
+| Bits (currency label in menus) | Bits |
 
 ## Story
 

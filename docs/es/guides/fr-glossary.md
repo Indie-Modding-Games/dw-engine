@@ -191,6 +191,13 @@ por primera vez.
 | Press X | Appuie sur X |
 | Online, co-op, room | en ligne, coop, salon |
 | Host / Guest | hôte / invité |
+| Game mode / variant | Mode de jeu / variante |
+| Classic Enhanced / Folder Mode | Classique Amélioré / Mode Folder |
+| Fixed in {variant} (opción fijada) | Fixe en {variant} |
+| Open to new players (co-op) | Ouvert aux nouveaux joueurs |
+| Player (nombre en línea por defecto) | Joueur |
+| Bits (etiqueta de la moneda en los menús) | Bits |
+| Naming page of accented letters | ÀÂÇ (À Â Ç É È Ê Ë Î Ï Ô Œ Ù Û Ü Ÿ Æ) |
 
 ## Historia
 

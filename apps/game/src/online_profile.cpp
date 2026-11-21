@@ -21,10 +21,6 @@ std::size_t letterSize(unsigned char lead) {
   return (lead & 0xF8) == 0xF0 ? 4 : 1;
 }
 
-std::string defaultName(std::string_view language) {
-  return language.starts_with("es") ? "Jugador" : "Player";
-}
-
 } // namespace
 
 std::string OnlineProfile::cleanName(std::string_view typed) {
@@ -63,11 +59,12 @@ bool OnlineProfile::knownIcon(std::string_view icon) {
   return std::ranges::find(Icons, icon) != Icons.end();
 }
 
-OnlineProfile OnlineProfile::fromSettings(const UserSettings& settings, std::string_view language) {
+OnlineProfile OnlineProfile::fromSettings(const UserSettings& settings,
+                                          std::string_view defaultName) {
   OnlineProfile profile;
   const std::string name = cleanName(settings.onlineName.value_or(std::string{}));
   profile.named_ = !name.empty();
-  profile.name_ = profile.named_ ? name : defaultName(language);
+  profile.name_ = profile.named_ ? name : std::string{defaultName};
   if (settings.onlineIcon && knownIcon(*settings.onlineIcon)) {
     profile.icon_ = *settings.onlineIcon;
   }

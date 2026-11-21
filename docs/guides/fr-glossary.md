@@ -190,6 +190,13 @@ always say the same thing. How a translation is written and kept up to date is i
 | Press X | Appuie sur X |
 | Online, co-op, room | en ligne, coop, salon |
 | Host / Guest | hôte / invité |
+| Game mode / variant | Mode de jeu / variante |
+| Classic Enhanced / Folder Mode | Classique Amélioré / Mode Folder |
+| Fixed in {variant} (locked option) | Fixe en {variant} |
+| Open to new players (co-op) | Ouvert aux nouveaux joueurs |
+| Player (default online name) | Joueur |
+| Bits (currency label in menus) | Bits |
+| Naming page of accented letters | ÀÂÇ (À Â Ç É È Ê Ë Î Ï Ô Œ Ù Û Ü Ÿ Æ) |
 
 ## Story
 

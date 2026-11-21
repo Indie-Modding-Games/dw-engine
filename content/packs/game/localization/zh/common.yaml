@@ -3,3 +3,5 @@ no: "否"
 accept: "确定"
 back: "返回"
 cancel: "取消"
+# The currency, in the menus that label it.
+bits: "Bits"

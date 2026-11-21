@@ -1,4 +1,7 @@
-# The game modes (modes/<id>/mode.yaml) and the list a mode is chosen from (ui/new_game_mode).
+# The game modes (modes/<id>/mode.yaml) and the list a mode is chosen from (ui/new_game_mode). The two the game ships
+# are its variants (docs/architecture/game-variants.md).
 title: "게임 모드"
-original_name: "원작 스토리"
-original_description: "원작 게임의 스토리와 규칙."
+classic_name: "클래식 강화판"
+classic_description: "원작 게임: 이야기, 규칙, 밸런스는 그대로에 더 좋은 그래픽, 편의 설정, 버그 수정까지."
+folder_name: "Folder 모드"
+folder_description: "확장된 게임: 숨겨진 콘텐츠, 모든 종을 파트너로, 궁극체로의 진화, 규칙을 포함한 모든 설정."

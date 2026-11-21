@@ -159,7 +159,7 @@ Adding a language with code `<code>` takes these pieces, all following the Spani
 1. **The engine's texts**: `content/packs/game/localization/<code>/`, with a copy of each table in `localization/en/`
    (`common.yaml`, `pause_menu.yaml`, `shop.yaml`, `first_run.yaml`...) with the same keys and the `{name}` arguments
    as they are. A key the language does not have yet is shown in English, key by key, so a table can be filled bit by
-   bit.
+   bit; `scripts/translation.sh --lang <code> check` and `dwe_localization_tests` (CI) fail while one is missing.
 2. **The language name and flag**: `name` in its own `language.yaml`, and `native.<code>` and `flag.<code>` in the
    `language.yaml` of **every** language (the language box lists them from there). The flag image goes in
    `ui/flags/<code>`, which `scripts/art/make_flags.py` generates.
@@ -211,8 +211,8 @@ Adding a language with code `<code>` takes these pieces, all following the Spani
    records the language's term decisions as the [Spanish glossary](spanish-glossary.md) does: stages, items, HP and
    MP, what is done with the Digimon names and the techniques.
 8. **The launcher**: `apps/launcher/ui/js/i18n/<code>.js` with the keys of `en.js`.
-   `node apps/launcher/tools/i18n_check.mjs <code>` counts the missing keys (shown in English) and fails on keys
-   English does not have or on `{placeholders}` that differ.
+   `node apps/launcher/tools/i18n_check.mjs <code>` lists the missing keys (shown in English) and fails on them, on
+   keys English does not have or on `{placeholders}` that differ; CI runs it for every language.
 
 On first start, the disc screen asks for the language if there is more than one: it lists them from the
 `localization/` folders that have `language.yaml`, so a new language appears as soon as it brings that table. With a

@@ -111,7 +111,8 @@ Usage: scripts/translation.sh [--lang <code>] [--pack <folder>] <command> [args]
   stale               The translated ids whose English changed since they were translated, with the
                       new English
   check               Every problem: keys the English does not have, tags that differ, kept ids that
-                      are translated, stale ids; exits with 1 if there is any
+                      are translated, stale ids, and the engine's and the launcher's texts missing a
+                      key of English's; exits with 1 if there is any
   long                The translations longer than their English, with both lengths, to check that
                       they fit; for the story tables, the lines wider than the box's and the texts
                       with more lines than the box
@@ -507,6 +508,14 @@ command_check() {
     echo "translated but not in the lock: $id"
     problems=$((problems + 1))
   done < <(rows_missing_from "$scratch/translated" "$scratch/locked")
+  while read -r id; do
+    echo "engine text missing: $id"
+    problems=$((problems + 1))
+  done < <(localization_missing "$language")
+  while read -r id; do
+    echo "launcher text $id"
+    problems=$((problems + 1))
+  done < <(launcher_problems "$language")
   echo "$problems problems"
   ((problems == 0))
 }
@@ -599,6 +608,30 @@ localization_keys() {
             for (key in english) { total++; if (key in found) have++ }
             printf "%d/%d\n", have, total
         }' "${files[@]}"
+}
+
+# The keys of English's localization tables a language's tables lack, as <table>.<key>.
+localization_missing() {
+  local reference="$localization_dir/$reference_language" files
+  [[ -d "$reference" ]] || return 0
+  shopt -s nullglob
+  files=("$reference"/*.yaml "$localization_dir/$1"/*.yaml)
+  shopt -u nullglob
+  awk -v reference="$reference/" '
+        /^[A-Za-z0-9_.-]+: / {
+            table = FILENAME; sub(/.*\//, "", table); sub(/\.yaml$/, "", table)
+            key = table "." substr($1, 1, length($1) - 1)
+            if (index(FILENAME, reference) == 1) english[key] = 1
+            else found[key] = 1
+        }
+        END { for (key in english) if (!(key in found)) print key }' "${files[@]}" | LC_ALL=C sort
+}
+
+# The launcher's texts of a language its checker finds missing, extra or with other placeholders;
+# nothing without node or without the language's file.
+launcher_problems() {
+  [[ -f "$launcher_texts/$1.js" ]] && command -v node >/dev/null || return 0
+  node "$launcher_check" "$1" 2>/dev/null | awk '/^  [a-z ]+: / { sub(/^  /, ""); print }' || true
 }
 
 # found/total: the launcher's texts of a language (apps/launcher/ui/js/i18n/<code>.js) against

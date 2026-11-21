@@ -16,8 +16,10 @@ Lists go as `<list>.count` and `<list>.<i>.<field>` (`battle.fighter.0.hp`). Tex
 - the original's names (species, items, techniques) are keys of the extracted text tables, by their index
   in the data table (`NameKeys`: `main.digimon_names.NNNN`, `main.item_names.NNNN`, `main.move_names.NNNN`);
 - the labels the original has (the commands, `btl.command_names`; HP, MP, Offense..., `main.stat_labels`;
-  use, move, sort, drop, `main.item_menu_labels`; the bits, `main.battle_ui_bits_labels`) too;
-- the rest are the game's own keys in `localization/<language>/battle.yaml` and `partner_menu.yaml`.
+  use, move, sort, drop, `main.item_menu_labels`) too;
+- the rest are the game's own keys in `localization/<language>/battle.yaml` and `partner_menu.yaml`, and the currency's
+  label, `common.bits` (the original's `main.battle_ui_bits_labels` is kept as extracted in every translation, so the
+  language's own word for the currency, «ビット» in Japanese, comes from the engine's texts).
 
 ## Battle screen
 

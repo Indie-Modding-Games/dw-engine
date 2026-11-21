@@ -211,6 +211,13 @@ La lista completa es `main.map_names`, centrada en 24 columnas (dos por carácte
 | update channel: stable / testing (beta) | 更新渠道：稳定版 / 测试版 |
 | logs / safe mode | 日志 / 安全模式 |
 | disc image / extract | 光盘镜像 / 提取 |
+| Game mode / variant | 游戏模式 / 版本 |
+| Classic Enhanced / Folder Mode | 经典强化版 / Folder模式 |
+| Fixed in {variant} (opción fijada) | {variant}中固定 |
+| Open to new players (co-op) | 允许新玩家加入 |
+| Player (nombre en línea por defecto) | 玩家 |
+| Bits (etiqueta de la moneda en los menús) | Bits |
+| Hangul naming page | 한글 (las letras de la propia página, como en todos los idiomas) |
 
 ## Historia
 

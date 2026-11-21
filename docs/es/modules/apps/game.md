@@ -1352,8 +1352,10 @@ por idioma, con las mismas filas cada una: el ruso tiene una página cirílica (
 la derecha), el japonés páginas de hiragana y katakana (con los kana sonoros y pequeños y `ー`), el coreano una página
 de letras hangul (consonantes a la izquierda, vocales a la derecha). Las teclas de página (`tab_previous`, `tab_next`:
 Q y E, o los gatillos superiores) y un clic en las flechas junto al nombre de la página las pasan; el nombre puede
-mezclar las letras de todas las páginas del idioma. El chino, y los otros idiomas sin alfabeto propio, siguen con la
-página latina.
+mezclar las letras de todas las páginas del idioma. El alemán, el español, el francés y el portugués añaden una página
+de sus letras con tilde después de la latina (`after_rows: true`): «ÄÖÜ» (con ß), «ÁÉÍ» (con Ñ), «ÀÂÇ» (con Œ y Æ) y
+«ÁÂÃ», mayúsculas a la izquierda y minúsculas a la derecha, para poder escribir y teclear un nombre como «Jürgen» o
+«Íñigo». El chino, y los otros idiomas sin alfabeto propio, siguen con la página latina.
 
 - **El coreano** junta sus letras en sílabas al escribirlas, como un teclado coreano (`hangul_input.hpp`): ㅎ ㅏ ㄴ da
   한, una vocal tras una sílaba cerrada se lleva su última consonante (한 + ㅏ = 하나), y borrar quita una letra cada vez
@@ -2324,7 +2326,8 @@ dentro del menú principal es ahora estas pantallas.
   espadas, árbol, pesa; izquierda y derecha lo eligen), la conexión (Directa, o Solo por relevo: confirmar, izquierda o
   derecha la cambian) y el récord de versus (victorias y derrotas). `OnlineProfile` (`online_profile.hpp`) lo guarda en
   los ajustes del juego (`settings.yaml`, `online_relay_only` para la conexión), no en la partida, y su nombre es el del
-  jugador en todas las salas (12 letras como mucho; «Jugador» hasta que se escribe uno). Solo por relevo conecta las
+  jugador en todas las salas (12 letras como mucho; hasta que se escribe uno, el `online.profile.default_name` del
+  idioma, «Jugador» en español). Solo por relevo conecta las
   salas cooperativas y de versus solo por el relevo (TURN) del servidor de señalización, así el otro jugador nunca sabe
   la dirección de esta máquina; un servidor sin relevo hace fallar esa sala con «sin relevo».
 - **Conectando y errores** (`ui/online_status`): mientras se crea una sala o se entra en ella la pantalla lo dice con

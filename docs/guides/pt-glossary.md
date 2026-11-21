@@ -164,6 +164,13 @@ Bafo picante, Party time → Hora da festa, Bubble → Bolha. The full list is `
 | Add-ons (launcher) | Complementos |
 | Saves | jogos salvos |
 | Press X | Aperte X |
+| Game mode / variant | Modo de jogo / variante |
+| Classic Enhanced / Folder Mode | Clássico Aprimorado / Modo Folder |
+| Fixed in {variant} (locked option) | Fixa em {variant} |
+| Open to new players (co-op) | Aberto a novos jogadores |
+| Player (default online name) | Jogador |
+| Bits (currency label in menus) | Bits |
+| Naming page of accented letters | ÁÂÃ (Á Â Ã À Ç É Ê Í Ó Ô Õ Ú) |
 
 ## Story
 

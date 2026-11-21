@@ -198,6 +198,12 @@ Los nombres de objetos caben en unas 6 sílabas (12 columnas), como los 12 carac
 | Player | 플레이어 |
 | Directional Pad | 방향 버튼 |
 | Press X | {prompt:confirm} 버튼을 눌러 |
+| Game mode / variant | 게임 모드 / 버전 |
+| Classic Enhanced / Folder Mode | 클래식 강화판 / Folder 모드 |
+| Fixed in {variant} (opción fijada) | {variant}에서 고정 |
+| Open to new players (co-op) | 새 플레이어 참가 허용 |
+| Player (nombre en línea por defecto) | 플레이어 |
+| Bits (etiqueta de la moneda en los menús) | Bits |
 
 ## Historia
 

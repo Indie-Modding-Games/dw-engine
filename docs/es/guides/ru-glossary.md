@@ -181,6 +181,12 @@ Los nombres de mapa están en `text/ru/main.yaml` (`map_names.*`), centrados en 
 | Co-op | кооператив |
 | Directional Pad | крестовина |
 | Press X | Нажми X |
+| Game mode / variant | Режим игры / вариант игры |
+| Classic Enhanced / Folder Mode | Улучшенная классика / Режим Folder |
+| Fixed in {variant} (opción fijada) | Закреплено: {variant} |
+| Open to new players (co-op) | Открыто для новых игроков |
+| Player (nombre en línea por defecto) | Игрок |
+| Bits (etiqueta de la moneda en los menús) | Bits |
 
 ## Historia
 

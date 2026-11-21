@@ -1023,7 +1023,8 @@ int runGame(const Options& requested) {
         .sampleBackend = std::move(sampleBackend),
         .sampleOffered = options.onlineSample || userSettings.devTools.value_or(DevToolsDefault),
         .codeLength = net::RoomCodeLength,
-        .profile = OnlineProfile::fromSettings(userSettings, *language)}};
+        .profile = OnlineProfile::fromSettings(userSettings,
+                                               localization::tr(OnlineProfile::DefaultNameKey))}};
   }();
   // This player as the online rooms show it, and how they connect (the online profile).
   const auto applyOnlineProfile = [&] {

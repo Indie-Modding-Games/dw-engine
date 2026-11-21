@@ -370,6 +370,9 @@ jobs:
         working-directory: apps/versus-signal
         run: node --test
 
+      - name: Launcher texts in every language
+        run: node apps/launcher/tools/i18n_check.mjs
+
       - name: Release scripts tests
         working-directory: scripts/ci/tests
         run: |
