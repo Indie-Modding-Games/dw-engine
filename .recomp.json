@@ -1,0 +1,32 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "Digimon World",
+  "wikidata": "Q2320677",
+  "system": "PS1",
+  "type": "port",
+  "original": {
+    "region": "USA",
+    "serial": "SLUS-01032",
+    "sha1": "31ec666b987d5b007dec40eecc4092d27ed9085b"
+  },
+  "project": "dwe",
+  "status": "released",
+  "targets": ["Windows", "Linux", "macOS"],
+  "toolchain": ["SDL3", "Vulkan", "RmlUi"],
+  "approach": "Native C++26 engine that reads the player's own disc and rebuilds the game from its decompiled logic, with open formats, packs and mods",
+  "maintainers": [
+    { "name": "Indie-Modding-Games", "link": "https://github.com/Indie-Modding-Games" }
+  ],
+  "links": [
+    { "label": "Documentation", "url": "https://indie-modding-games.github.io/dw-engine/" },
+    { "label": "Releases", "url": "https://github.com/Indie-Modding-Games/dw-engine/releases" }
+  ],
+  "help": [
+    "Playtesting and bug reports",
+    "Translations",
+    "Community UI skins",
+    "Map editor"
+  ],
+  "tags": ["native", "vulkan", "modding", "multiplayer", "translations", "widescreen"],
+  "notes": "The whole story plays from start to finish. The extractor turns the player's disc into open formats, and the launcher keeps a stable and a test channel. On top of the original there are four interface skins, nine languages, online versus and co-op, optional improvements and a pack system for mods."
+}
