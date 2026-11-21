@@ -342,7 +342,7 @@
 #option-info {
 	height: auto;
 	min-height: 119dp;
-	margin: 5dp 30dp 0 -16dp;
+	margin: 0 30dp 0 -16dp;
 	padding: 8dp 12dp 0 12dp;
 	border-top: 3dp #7cb6e2;
 	font-family: "Pixel Small";
@@ -372,7 +372,7 @@
 #option-foot {
 	display: block;
 	margin: 0 30dp 0 -16dp;
-	padding: 8dp 12dp 0 12dp;
+	padding: 4dp 12dp 0 12dp;
 	border-top: 3dp #7cb6e2;
 }
 
@@ -384,7 +384,7 @@
 }
 
 #options-hints {
-	margin: 10dp 0 0 -20dp;
+	margin: 6dp 0 0 -20dp;
 	font-family: "Pixel Small";
 	font-size: 26dp;
 	color: #f2f0e1;
