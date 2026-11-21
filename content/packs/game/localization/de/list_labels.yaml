@@ -1,0 +1,13 @@
+# The column labels over the lists of the original's shop and keeper screens (item keeper, discard, card shop, merit
+# shop, bird transport, jukebox). The original look draws the original's pictures of these words in English and
+# these texts in any other language; the modern look writes them.
+menu: "ITEM"
+count: "ANZ."
+price: "PREIS"
+point: "PUNKTE"
+place: "ORT"
+number: "NR."
+title: "TITEL"
+# The trade's fixed column titles: what the trader asks for and what you get for it.
+want: "Ich will"
+have: "Du kriegst"

@@ -1,0 +1,9 @@
+# Texts of the development views.
+test_map: "Testkarte"
+# The banner shown while --dev-assets is on.
+assets_active: "Entwickler-Assets aktiv (--dev-assets)"
+# The notice that a bug report was saved (F12).
+report_saved: "Fehlerbericht gespeichert"
+
+technique: "Demo-Technik"
+finisher: "Demo-Spezial"

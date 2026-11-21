@@ -1,0 +1,8 @@
+title: "Carte de l'île"
+here: "Tu es ici :"
+exits: "D'ici, tu peux aller à"
+no_exits: "Aucune sortie d'ici"
+legend_here: "Tu es ici"
+legend_exit: "Accessible d'ici"
+legend_unknown: "Pas encore visité"
+close: "Fermer"

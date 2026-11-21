@@ -1,0 +1,7 @@
+title: "去哪里？"
+place: "{name}（{map}）"
+story: "剧情"
+stay: "留在这里"
+previous: "上一页"
+next: "下一页"
+page: "{page}/{pages}"

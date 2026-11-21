@@ -46,7 +46,10 @@ tells "left this way on purpose" from "still to translate":
   version does not show, the abbreviations `HP`, `MP` and `Bits` and the proper name `Overdell`.
 
 The rules are at the top of `scripts/translation.sh` (`kept_english_blocks`, `kept_original_blocks`,
-`kept_name_block` and `kept_original_ids`).
+`kept_name_block` and `kept_original_ids`). A language written in another script may spell the names its own way
+(Korean writes them in Hangul, Japanese in katakana; Chinese keeps them in English): as soon as its `main.yaml` has a name of
+`main.digimon_names` that is not a title, those names and the strings that are just a name count as translated for
+that language and are no longer kept (`own_names`).
 
 ## How to translate
 

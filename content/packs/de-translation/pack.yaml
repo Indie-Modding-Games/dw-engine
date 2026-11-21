@@ -1,0 +1,18 @@
+id: de_translation
+version: 0.1.0
+layer: base
+priority: 2
+name:
+  en: "German translation"
+  es: "Traducción al alemán"
+  de: "Deutsche Übersetzung"
+description:
+  en: "The team's own German translation of the original's texts, as a delta over text/en of the base pack: only the German, with the keys of text/en. See docs/guides/translate.md."
+  es: "Traducción propia del equipo al alemán de los textos del original, como delta sobre text/en del paquete base: solo el alemán, con las claves de text/en. Ver docs/guides/translate.md."
+  de: "Die eigene deutsche Übersetzung des Teams für die Texte des Originals, als Delta über text/en des Basispakets: nur das Deutsche, mit den Schlüsseln von text/en. Siehe docs/guides/translate.md."
+dependencies:
+  - id: base
+    min_version: 0.1.0
+schemas:
+  sign_overlay:
+    - signs/*/*

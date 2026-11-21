@@ -1,0 +1,16 @@
+# The cup's bracket, for skins that name the round (the original look shows none). {round} is 1 or 2.
+bracket.round: "{round}회전"
+bracket.final: "결승"
+bracket.champion: "우승"
+# The cup's name by its grade, on the intro's card (for the skins that write it).
+bracket.cup: "{grade}급 컵"
+# A cup match: the intro's stats box (STD_renderIntroStats) and the damage box after the time ran out
+# (STD_renderTimeoutWindow).
+match.hp: "HP"
+match.mp: "MP"
+match.offense: "공격력"
+match.defense: "방어력"
+match.speed: "속도"
+match.brains: "지능"
+match.damage: "대미지"
+match.time_up: "시간 종료"

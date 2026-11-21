@@ -1,0 +1,337 @@
+title.main: "Pause"
+title.minimap: "Minikarte"
+title.options: "Optionen"
+# Under the pause box: the key that opens the options from the pause ({key}, Esc on the keyboard; Select/Back on a pad).
+settings_hint: "{key} Optionen"
+date: "Jahr {year}   Tag {day}"
+continue: "Fortsetzen"
+partner: "Partner"
+items: "Item"
+player: "Spieler"
+title.player: "Spieler"
+player_name: "Name"
+player_level: "Stufe"
+player_bits: "Bits"
+player_time: "Zeit"
+minimap: "Minikarte"
+world_map: "Inselkarte"
+weather: "Wetter"
+seasons: "Jahreszeiten"
+season.spring: "Frühling"
+season.summer: "Sommer"
+season.autumn: "Herbst"
+season.winter: "Winter"
+hd_scenery: "HD-Kulissen"
+model_characters: "3D-Figuren"
+widescreen_pictures: "Breitbild-Bilder"
+options: "Optionen"
+praise: "Loben"
+scold: "Schimpfen"
+sleep: "Schlafen"
+fish: "Angeln"
+quick_save: "Speichern"
+to_title: "Zum Titelbild"
+quit: "Spiel beenden"
+minimap_mode: "Minikarte zeigen"
+# The round minimap (an engine improvement): shown or not, with either look.
+minimap_mode.on: "Ja"
+minimap_mode.off: "Nein"
+# Enemies on the minimap (an engine improvement): a red dot for each character on the map that can start a battle (on
+# by default; off, the minimap shows only the player and the partner).
+minimap_enemies: "Gegner auf Minikarte"
+# Items on the minimap (an engine improvement): a green diamond for each item lying on the map's ground (on by default;
+# off, the minimap shows none).
+minimap_items: "Items auf Minikarte"
+minimap_size: "Größe"
+minimap_size.small: "Klein"
+minimap_size.medium: "Mittel"
+minimap_size.large: "Groß"
+display_mode: "Anzeigemodus"
+display_mode.fullscreen: "Vollbild"
+display_mode.window: "Fenster"
+ui_scale: "Oberflächengröße"
+# {percent} is the scale in percent, a whole number.
+ui_scale.value: "{percent} %"
+vsync: "V-Sync"
+ui_skin: "Design"
+# The whole interface: the game's own or one under ui/addons (docs/modding/ui-addons.md).
+ui_addon: "Oberfläche"
+ui_addon.default: "Spieleigene"
+ui_addon.safe: "Spieleigene (sicher)"
+ui_plugins: "Plugins"
+# Free exploration: the scripts open every way they have, whatever the story (off by default).
+free_exploration: "Freies Erkunden"
+# Smooth motion: the characters and the camera glide between the original's frames (on by default).
+smooth_motion: "Flüssige Bewegung"
+# Save notice: a small figure and "Saving" in a corner while the game saves (on by default).
+save_notice: "Speicheranzeige"
+# Autosave: the game saves by itself to the adventure's own slot (on by default; off, only the player's saves write).
+autosave: "Autom. Speichern"
+# Music and effects volume (an engine addition; the original has no sound options): a step from 0 (silent) to 10
+# (the original's level, the default). The music includes the movies' sound.
+music_volume: "Musiklautstärke"
+effects_volume: "Effektlautstärke"
+# Digital time: the game time as HH:MM in a small box under the field's clock (on by default).
+digital_time: "Digitaluhr"
+# Bulk trades: the item trader and the card shop's packs ask how many at once (on by default).
+bulk_trades: "Mehrfachkauf"
+# Evolution requirements: the chart's tree tells what each target asks and how the partner stands (on by default).
+evolution_requirements: "Evolutionsbedingungen"
+translated_signs: "Übersetzte Schilder"
+# Status extras: the partner's tiredness bar and care mistakes on its status page, which the original hides (on by
+# default).
+status_extras: "Mehr Statuswerte"
+# Canonical stages: the chart names the stages as the series does and draws a Mega box (off by default).
+canonical_stages: "Kanonische Stufen"
+rare_items: "Seltene Items"
+walk_control: "Laufen mit"
+walk_control.keys: "Tastatur/Pad"
+walk_control.mouse: "Maus"
+# Long names: the naming box takes names of up to twelve letters instead of six (on by default).
+long_names: "Lange Namen"
+# Recruit bar: while a job or a match decides whether someone joins the city (the canyon shop, the stones game), a bar
+# shows how close the player is (on by default).
+shop_job_bar: "Anwerbe-Balken"
+# Space after names: a name a text inserts gets a space when the text runs it into the next word (on by default).
+name_spacing: "Leerzeichen nach Namen"
+# Shop extras: the item's description under the list, how many of each the player has and the money the trade leaves
+# (off by default: the original's shop only shows the description with Pause).
+shop_extras: "Laden-Extras"
+favorite_food: "Lieblingsessen zeigen"
+# Art fixes: the original look draws right what the original reads from the wrong part of its textures (the status
+# page's happiness label). Off by default, as the original.
+art_fixes: "Grafikfehler beheben"
+# Developer tools: the console (F1), the developer menu (F2) and the map overlay (F3).
+dev_tools: "Entwicklerwerkzeuge"
+# Continuous music: a map whose song is already playing lets it go on instead of starting it again
+# (on by default).
+continuous_music: "Durchgehende Musik"
+# Reverb: the sound chip's reverb on the tones that ask for it, as the original (on by default).
+reverb: "Hall"
+# Several needs: the bubble over the partner shows up to three of its needs at once, the most urgent first (on by
+# default; off, the original's: one at a time, the two most urgent taking turns).
+need_bubble_stack: "Mehrere Bedürfnisse"
+# Chibi style: the original game's models are chibi already; a model from elsewhere (a mod's, an imported one)
+# that is not is drawn with the original's proportions, the drawing only: off or external models (the default).
+chibi_style: "Chibi-Stil"
+chibi_style.off: "Nein"
+chibi_style.external: "Externe"
+
+year_label: "Jahr"
+day_label: "Tag"
+player_tab_chart: "Baum"
+# The five tabs of the player page share the box's width, so the whole word fits.
+player_tab_medals: "Med."
+player_tab_card: "Karte"
+player_tab_city: "Stadt"
+# The city's tab with the minimal tabs (skin.yaml layout: pause_menu: tabs: minimal).
+player_tab_prosperity: "Wohlstand"
+player_raised: "Aufgezogen"
+player_items: "Items"
+player_medals: "Medaillen"
+title.tools: "Engine-Werkzeuge"
+chart_select: "Wählen"
+
+chart_tree: "Baum"
+chart_level.1: "Baby"
+chart_level.2: "Training"
+chart_level.3: "Neuling"
+chart_level.4: "Champion"
+chart_level.5: "Ultra"
+# The stages with the canonical stages on (chart_stage.<stage>; egg and ultra have no species yet).
+chart_stage.egg: "Digi-Ei"
+chart_stage.fresh: "Baby I"
+chart_stage.in_training: "Baby II"
+chart_stage.rookie: "Kind"
+chart_stage.champion: "Erwachsen"
+chart_stage.ultimate: "Perfekt"
+chart_stage.mega: "Ultimativ"
+chart_stage.ultra: "Super-Ultimativ"
+
+# Evolution requirements on the chart's tree (an engine improvement): the panel's lines. Ranges and values are numbers
+# the game writes; {name} is a form's name.
+evoreq.care: "Fehler"
+evoreq.weight: "Gewicht"
+evoreq.stats: "Werte"
+evoreq.stats_top: "Höchster Wert"
+evoreq.stat.hp: "HP"
+evoreq.stat.mp: "MP"
+evoreq.stat.off: "Ang."
+evoreq.stat.def: "Vert."
+evoreq.stat.spd: "Tmp."
+evoreq.stat.brn: "Int."
+evoreq.bonus: "Bonus, eins von"
+evoreq.from: "Aus {name}"
+evoreq.disc: "Disziplin"
+evoreq.happy: "Glück"
+evoreq.battles: "Kämpfe"
+evoreq.techs: "Techniken"
+evoreq.special: "Spezial-Evolution"
+# A ruleset's condition (the hidden content): a city resident, the hour, a cup won.
+evoreq.gate: "Sonderbedingung"
+evoreq.always: "Immer"
+evoreq.time: "Prüfung bei"
+evoreq.hours: "{hours} h"
+# The partner's evolution counter against the hours its level checks from.
+evoreq.hours_of: "{hours}/{total} h"
+evoreq.fallback: "Wenn sonst keine"
+# How many of the four groups are met.
+evoreq.ready: "{met} von {total} erfüllt"
+evoreq.next: "Nächste Prüfung wählt es"
+evoreq.next_other: "Nächste Prüfung: {name}"
+evoreq.unknown: "???"
+
+medals_chart: "Medaillenliste"
+card_list: "Kartenliste"
+
+# The City tab (a dwe addition): who already lives in the city and who is missing, with their prosperity points.
+city_prosperity: "Wohlstand"
+city_residents: "Bewohner"
+# The field's graphics improvements (engine options; docs/architecture/render.md).
+shadows: "Schatten"
+shadows.sun: "Sonne"
+shadows.round: "Rund"
+shadows.off: "Aus"
+scenery_quality: "Kulissenqualität"
+scenery_quality.upscaled: "Hochskaliert"
+scenery_quality.smooth: "Geglättet"
+antialiasing: "Kantenglättung"
+texture_filter: "Modelltexturen"
+texture_filter.upscaled: "Hochskaliert"
+texture_filter.smooth: "Geglättet"
+texture_filter.nearest: "Pixel"
+enhanced_lighting: "Bessere Beleuchtung"
+vivid_colors: "Kräftige Farben"
+
+# The tabbed options page (docs/modules/apps/game.md, «In-game options»). The tabs share the box's top row: short
+# names.
+tab.game: "Spiel"
+tab.graphics: "Grafik"
+tab.sound: "Ton"
+tab.interface: "Anzeige"
+# The tag next to the focused row's description: whether with its current value the game does more than the original
+# or behaves as it.
+tag.improvement: "Verbesserung"
+tag.original: "Wie das Original"
+# The keys at the foot of the options: Q/E switch tabs, left/right change the value.
+hint.tabs: "Reiter"
+hint.change: "Ändern"
+options_reset: "Standard wiederherstellen"
+# Enemy life bars: a bar over every enemy still standing for the whole fight, cups too (off by default: the original's,
+# a wild enemy's a while after it is hit and none in a cup).
+enemy_hp_bars: "Gegner-Lebensbalken"
+# Gym sessions: how many sessions in a row a gym course runs (1, the original's, by default).
+gym_sessions: "Trainingseinheiten"
+# Quick battles: fights at twice the speed, switched with R (the right trigger on a pad) or always (off by default).
+battle_speed: "Schnelle Kämpfe"
+battle_speed.normal: "Aus"
+battle_speed.key: "Mit R"
+battle_speed.fast: "Immer"
+# Battles without the wait: a field fight starts the moment it triggers (off by default: the original's lead-in).
+quick_battle_start: "Kämpfe ohne Warten"
+# Difficulty: normal is the original's; easy eases fights, training and care as the ruleset says.
+difficulty: "Schwierigkeit"
+difficulty.normal: "Normal"
+difficulty.easy: "Leicht"
+shop_job_mode: "Ladenjob"
+shop_job_mode.improved: "Verbessert"
+shop_job_mode.original: "Original"
+# Skip evolutions: confirm or cancel ends an evolution's scene at once (off by default).
+skip_evolution: "Evolutionen überspringen"
+# Cancel closes choices: a cancel in a choice only closes it (off by default: the original's cancel).
+choice_cancel_closes: "Abbrechen schließt Auswahl"
+# Fair sickness chance, evolution averages, move forgetting and card stock: the original's quirks turned off
+# (off by default).
+fair_sickness_chance: "Faire Krankheitschance"
+fair_evolution_average: "Fairer Evolutionsschnitt"
+fair_move_forgetting: "Faires Vergessen"
+fair_card_stock: "Kartenangebot ohne Doppelte"
+choose_egg_after_lives_lost: "Ei wählen nach allen Leben"
+# Generous talk range: talking and reading signs reach a little further (off by default).
+generous_talk: "Größere Sprechweite"
+# Extra toilets: a few more toilet booths where the partner can go (off by default).
+extra_toilets: "Mehr Toiletten"
+angemon_event_zone: "Angemon im Erdgeschoss"
+whamon_in_water: "Whamon im Wasser"
+coop_difficulty: "Koop-Schwierigkeit"
+coop_difficulty.off: "Aus"
+coop_difficulty.standard: "Standard"
+coop_difficulty.hard: "Schwer"
+# {tab} is the tab's name.
+reset_question: "Optionen von „{tab}“ zurücksetzen?"
+reset_note: "Fenstermodus, Design, Sprache und Schrift bleiben."
+reset_confirm: "Zurücksetzen"
+# The rows' descriptions: one or two lines under the list.
+help.free_exploration: "Jeder Weg auf den Karten ist offen, egal was die Geschichte sagt."
+help.walk_control: "Laufe mit Tastatur und Pad oder mit der Maus (nie beides zugleich)."
+help.autosave: "Das Spiel speichert von selbst im Platz deines Abenteuers, wenn die Regeln es sagen."
+help.world_map: "M (L1 am Pad) öffnet eine Karte der ganzen Insel, die zeigt, wo du bist."
+help.bulk_trades: "Der Itemhändler und die Kartenpacks fragen, wie viele auf einmal."
+help.long_names: "Namen dürfen zwölf Buchstaben lang sein statt sechs wie im Original."
+help.evolution_requirements: "Der Evolutionsbaum zeigt, was jedes Ziel braucht und wie dein Partner dasteht."
+help.canonical_stages: "Der Baum nennt die Stufen wie die Serie und fügt ein Mega-Feld hinzu."
+help.rare_items: "Manche Itemstellen können ein seltenes Evolutionsitem verbergen. Braucht die versteckten Inhalte."
+help.battle_speed: "Kämpfe laufen doppelt so schnell, immer oder mit R (rechte Schultertaste). Gleiche Ergebnisse."
+help.enemy_hp_bars: "Ein Lebensbalken über jedem Gegner, den ganzen Kampf lang, auch bei Pokalen. Aus: nur kurz nach einem Treffer."
+help.gym_sessions: "Ein Trainingsgerät trainiert so viele Einheiten am Stück. Es wartet, während du dich um deinen Partner kümmerst; es stoppt, wenn du abbrichst, weggehst oder dein Partner verletzt oder krank wird."
+help.quick_battle_start: "Ein Kampf im Gelände beginnt sofort, ohne Vorlauf. Pokale behalten ihren."
+help.shop_job_mode: "Verbessert: eine faire Kundenschlange und ein Feilsch-Bildschirm mit den Chancen jedes Preises. Original: die Preismenüs des Originals."
+help.difficulty: "Normal ist das Original. Leicht: dein Partner trifft härter, steckt mehr ein, trainiert mehr, hat länger Zeit zum Essen und wird seltener krank."
+help.skip_evolution: "Bestätigen oder Abbrechen beendet die Szene einer Evolution sofort. Die neue Form bleibt gleich."
+help.choice_cancel_closes: "Abbrechen schließt eine Auswahl nur. Im Original wählen manche Auswahlen dann ihre erste Antwort."
+help.fair_sickness_chance: "Eine Krankheitschance unter null heißt keine Krankheit. Im Original macht sie deinen Partner immer krank."
+help.fair_evolution_average: "Jeder Evolutionskandidat wird nach seinen eigenen Werten gewogen, nicht nach Resten vom vorigen."
+help.fair_move_forgetting: "Beim Vergessen einer Technik geht nur diese verloren. Im Original kann eine andere mitgehen."
+help.fair_card_stock: "Der Kartenladen bietet dieselbe Karte nie zweimal am Tag an. Im Original schon."
+help.choose_egg_after_lives_lost: "Wenn dein Partner alle Leben verliert, wählst du das neue Ei, wie nach einem natürlichen Tod. Im Original ist es zufällig."
+help.generous_talk: "Sprich mit Figuren und lies Schilder aus etwas größerer Entfernung, egal wohin du schaust. Im Original musst du näher ran."
+help.extra_toilets: "Fügt ein paar Toiletten hinzu, etwa die beim Schild des Trainingsplatzes. Stell dich davor, wenn dein Partner muss. Das Original hat nur seine eigenen Toiletten."
+help.angemon_event_zone: "Ist Angemons Licht befreit, beginnt sein Ereignis im Erdgeschoss des Eisheiligtums, egal wie du zurückkommst. Im Original nur über die Falltür-Treppe."
+help.whamon_in_water: "Vor dem Ogremon-Ereignis wartet Whamon im Wasser am Ufer der Geheimen Strandhöhle, wo du mit ihm sprichst. Im Original ist es weit hinten, außer Sicht."
+help.coop_difficulty: "Im Koop werden die Gegner mit jedem kämpfenden Partner und jedem helfenden Spieler stärker. Standard hält den Kampf fair, Schwer macht ihn härter, Aus behält die Werte des Originals. Nur die Wahl des Gastgebers zählt."
+help.status_extras: "Die Statusseite zeigt Müdigkeit, Fehler, Kämpfe, Wachzeit, Lebensdauer und Evolution."
+help.display_mode: "Im Fenster oder im Vollbild spielen."
+help.vsync: "Gleicht die Bilder mit dem Bildschirm ab, damit das Bild nicht reißt."
+help.smooth_motion: "Figuren und Kamera gleiten zwischen den Bildern des Originals."
+help.hd_scenery: "Die Kulissen werden scharf in der Fensterauflösung gezeichnet. Nur das Aussehen ändert sich."
+help.scenery_quality: "Mit HD-Kulissen: einmal pro Karte hochskaliert (schärfer) oder nur geglättet."
+help.antialiasing: "Glättet die Kanten der 3D-Modelle."
+help.texture_filter: "Die Texturen der Modelle im Gelände, im Kampf und in den Menüs: hochskaliert, geglättet oder die Pixel des Originals."
+help.model_characters: "Figuren, die manche Orte als flache Bilder zeigen, werden mit ihren 3D-Modellen gezeichnet. Nur das Aussehen ändert sich."
+help.widescreen_pictures: "In einem breiten Fenster füllt das Titelbild es aus und die Filme füllen die Breite."
+help.enhanced_lighting: "Die Tageszeit färbt die Szene, und Lampen und Feuer beleuchten ihre Umgebung."
+help.vivid_colors: "Sattere Farben, sanfter Kontrast und ein Schimmer auf hellen Stellen. Menüs bleiben gleich."
+help.shadows: "Keine Schatten, der runde des Originals oder dazu ein Sonnenschatten, der sich mit der Uhr dreht."
+help.chibi_style: "Zeichnet Modelle von anderswo (Mods, Importe) mit den Proportionen des Originals."
+help.weather: "Regen, Gewitter, Schnee, Nebel, Wind, Wolken und Sonne auf den Außenkarten. Keine Regeländerung."
+help.seasons: "Frühling, Sommer, Herbst und Winter färben alle paar Tage die Außenwelt."
+help.music_volume: "Lautstärke der Musik und des Filmtons. 10 ist die Stufe des Originals."
+help.effects_volume: "Lautstärke der Effekte und Menütöne. 10 ist die Stufe des Originals."
+help.continuous_music: "Spielt das Lied der nächsten Karte schon, läuft es weiter, statt neu zu beginnen."
+help.reverb: "Der Raumhall des Soundchips auf Musik und Effekten, wie im Original. Aus klingt alles trocken."
+help.ui_skin: "Das Aussehen der Menüs und des HUD: das des Originals oder das moderne."
+help.ui_addon: "Eine Oberfläche der Community statt der des Spiels. Sie gilt, wenn das Menü schließt; halte beim Spielstart Umschalt gedrückt, um die des Spiels zurückzuholen."
+help.ui_plugins: "Die Plugins der Community (eine Uhr, Hinweise...) über der Oberfläche. Sie gelten, wenn das Menü schließt."
+help.ui_scale: "Die Größe der Menüs und des HUD."
+help.language: "Die Sprache der Texte."
+help.text_font: "Schreibt die Texte in der Schrift des Originals."
+help.translated_signs: "Die auf die Karten gemalten Schilder stehen in deiner Sprache."
+help.minimap: "Die runde Minikarte oben rechts, mit dem Namen der Karte, dem Tag und der Uhrzeit."
+help.minimap_enemies: "Ein roter Punkt auf der Minikarte für jeden Gegner, der einen Kampf beginnen kann."
+help.minimap_items: "Eine grüne Raute auf der Minikarte für jedes Item, das zum Aufheben am Boden liegt."
+help.digital_time: "Die Spielzeit in Ziffern (HH:MM) unter der Uhr."
+help.save_notice: "Eine kleine Figur und „Speichern“ in einer Ecke, während das Spiel speichert."
+help.need_bubble_stack: "Die Blase deines Partners zeigt bis zu fünf Bedürfnisse zugleich, das dringendste zuerst."
+help.shop_job_bar: "Ein Balken zeigt, wie nah du dran bist, während ein Job oder ein Spiel entscheidet, ob jemand einzieht."
+help.name_spacing: "Ein Name in einem Text klebt nie am nächsten Wort."
+help.shop_extras: "In Läden: die Beschreibung des gewählten Items, wie viele du hast und wie viel Geld dir bleibt."
+help.favorite_food: "Die Statusseite zeigt das Lieblingsessen deines Partners, und Itemlisten markieren es in Gold mit einem Herz."
+help.art_fixes: "Behebt Bilder, die das Original aus dem falschen Teil seiner Textur nimmt (das Glück auf der Statusseite)."
+help.dev_tools: "Schaltet die Konsole (F1), das Entwicklermenü (F2) und die Kartenebene (F3) ein. Zum Testen."
+help.options_reset: "Setzt die Optionen dieses Reiters auf Standard zurück. Fragt vorher."
+help.options_back: "Zurück zum Menü."
+help.quick_save: "Speichert das Spiel jetzt in seinem Platz."
+help.to_title: "Zurück zum Titelbild. Fragt vorher, ob gespeichert werden soll."
+help.quit: "Schließt das Spiel. Fragt vorher, ob gespeichert werden soll."
+# The same options over the title screen, with no game to save.
+help.quit_title: "Schließt das Spiel."

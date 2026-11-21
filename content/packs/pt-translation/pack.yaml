@@ -1,0 +1,16 @@
+id: pt_translation
+version: 0.1.0
+layer: base
+priority: 2
+name:
+  en: "Brazilian Portuguese translation"
+  es: "Traducción al portugués de Brasil"
+description:
+  en: "The team's own Brazilian Portuguese translation of the original's texts, as a delta over text/en of the base pack: only the Portuguese, with the keys of text/en. See docs/guides/translate.md."
+  es: "Traducción propia del equipo al portugués de Brasil de los textos del original, como delta sobre text/en del paquete base: solo el portugués, con las claves de text/en. Ver docs/guides/translate.md."
+dependencies:
+  - id: base
+    min_version: 0.1.0
+schemas:
+  sign_overlay:
+    - signs/*/*

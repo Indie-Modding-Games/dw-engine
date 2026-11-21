@@ -1,0 +1,18 @@
+id: fr_translation
+version: 0.1.0
+layer: base
+priority: 2
+name:
+  en: "French translation"
+  es: "Traducción al francés"
+  fr: "Traduction française"
+description:
+  en: "The team's own French translation of the original's texts, as a delta over text/en of the base pack: only the French, with the keys of text/en. See docs/guides/translate.md."
+  es: "Traducción propia del equipo de los textos del original al francés, como delta sobre text/en del paquete base: solo el francés, con las claves de text/en. Ver docs/guides/translate.md."
+  fr: "La traduction française des textes de l'original faite par l'équipe, en delta sur text/en du paquet de base : seulement le français, avec les clés de text/en. Voir docs/guides/translate.md."
+dependencies:
+  - id: base
+    min_version: 0.1.0
+schemas:
+  sign_overlay:
+    - signs/*/*

@@ -1,0 +1,7 @@
+title: "Où aller ?"
+place: "{name} ({map})"
+story: "histoire"
+stay: "Rester ici"
+previous: "Précédent"
+next: "Suivant"
+page: "{page}/{pages}"

@@ -1,0 +1,71 @@
+# The battle screen (ui/battle) and the battle's own keys (packages/game/battle: text_keys.hpp). The command row shows the
+# original's command names (btl.command_names) and move names; command.* is the engine's fallback for tools.
+command.none: "Nichts"
+command.flee: "Fliehen"
+command.attack: "Angreifen"
+command.your_call: "Nach Belieben"
+command.moderate: "Gemäßigt"
+command.distance: "Abstand"
+command.defend: "Defensiv"
+command.change: "Wechseln"
+command.technique_1: "Technik 1"
+command.technique_2: "Technik 2"
+command.technique_3: "Technik 3"
+command.finisher: "Spezialtechnik"
+outcome.victory: "Sieg!"
+outcome.fled: "Entkommen."
+outcome.defeat: "Verloren..."
+status.poison: "Vergiftet"
+status.confusion: "Verwirrt"
+status.stun: "Betäubt"
+status.flatten: "Platt"
+# The end box types the original's own lines (btl.battle_effect_messages); these finish one or are the engine's. The
+# marks are the original's: {color:7} yellow, {color:1} white, {br} a new row, {wait} the row that ends the line and
+# waits. {amount} is the MP bonus in percent, after the original's "reduced by".
+result.mp_bonus_percent: " {amount} %!{wait}"
+# {amount} is the bits won.
+result.bits: "{amount} {amount:Bit|Bits} gewonnen."
+# {amount} is how many lives the partner lost.
+result.lives_lost: "Dein Partner verlor{br}{color:7}{amount}{color:1} {amount:Leben|Leben}.{wait}"
+# {name} is the item's name and {amount} how many were lost.
+result.item_lost: "{color:7}{name}{color:1} x{amount}{br}verloren.{wait}"
+# {name} is the name of who joined the city.
+result.recruit_joined: "{color:7}{name}{color:1}{br}zieht in die Stadt!{wait}"
+# The short label before a healing or raise number over a fighter (modern look; the original look draws the icon).
+number_icon.hp: "HP"
+number_icon.mp: "MP"
+number_icon.offense: "ANG"
+number_icon.defense: "VER"
+number_icon.speed: "TMP"
+# {seconds} is the time left to get back up.
+revive_countdown: "Steh auf! {seconds}"
+# After a technique's name on the strip: the MP it costs the partner ({mp}, a number).
+mp_cost: "{mp} MP"
+finisher: "Spezialtechnik"
+# The finisher gauge's word and the "press" mark once it is full, which the original look draws over the gauge
+# (one more letter of the word for each step the gauge fills; in English it shows the original's pictures).
+finisher_word: "SPEZIAL!"
+finisher_push: "DRÜCK"
+# The word of the banner that opens a battle, in cells of the original's banner pieces: '#' a piece,
+# '.' a gap, 8 rows; a letter ends at a column with no piece, and at most 200 pieces fit. English
+# draws the original's own word.
+banner_shape: |-
+  ##..##...##...##...##.#####..######
+  ##.##...####..###.###.##..##.##....
+  ####...##..##.#######.##..##.##....
+  ###....##..##.##.#.##.#####..#####.
+  ###....######.##...##.##.....##....
+  ####...##..##.##...##.##.....##....
+  ##.##..##..##.##...##.##.....##....
+  ##..##.##..##.##...##.##.....##....
+charge: "Lade die Spezialtechnik!"
+charge_hint: "Immer wieder drücken"
+prompt.command: "Gib den Befehl"
+prompt.bag: "Items"
+# The bag in battle: the button that opens it.
+bag.open: "Items"
+# The marks over the fighters of a cup match between two of the same species (STD_renderPlayerMarker).
+mark.partner: "1P"
+mark.rival: "COM"
+# Quick battles: the plate while a fight runs at twice the speed.
+fast: "x2"
