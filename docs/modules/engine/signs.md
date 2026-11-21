@@ -35,12 +35,15 @@ A sign says:
 | `corners` | The four corners of the text (top left, top right, bottom right, bottom left), for a sign in perspective |
 | `rotation`, `skew` | Degrees of rotation (clockwise) and slant of the letters, when there are no `corners` |
 | `clear` | How the old text is erased (below) |
-| `text` | The text key, like `signs.trai00_title_top`; `\n` splits the line |
-| `font`, `size` | A font from `ui/fonts/` (`noto_sans_bold` by default) and its height in image pixels; the letters it lacks (Chinese, Japanese, Korean) are drawn by `ui/fonts/cjk/noto_sans_cjk_*`, the sign's language first |
-| `letter_spacing`, `line_spacing` | Extra pixels between letters and a factor on the line height |
+| `text` | The text key, like `signs.trai00_title_top`; `\n` marks where a line may break (see Fitting) |
+| `font` | A font from `ui/fonts/` (`noto_sans_bold` by default); the letters it lacks (Chinese, Japanese, Korean) are drawn by `ui/fonts/cjk/noto_sans_cjk_*`, the sign's language first |
+| `size` | Optional: the letters' size in image pixels instead of the one the box gives (see Fitting); shipped signs leave it out |
+| `letter_spacing`, `line_spacing` | Extra pixels between letters and a factor on the line height (0.85 by default) |
 | `align`, `valign` | `left`/`center`/`right` and `top`/`middle`/`bottom` |
 | `vertical` | One letter under another (a vertical banner) |
-| `fit` | Shrinks the text until it fits (yes by default) |
+| `lines` | How many lines the board holds (1 to 4, 1 by default): the text may wrap at spaces and hyphens up to that many |
+| `group` | Signs of one map with the same group are drawn at the size of the smallest among them (the two halves of a title, the rules of a board, the posts of a crossroads) |
+| `fit` | Fits the text to its box (yes by default); with `no`, the size is used as is and nothing wraps |
 | `color`, `outline`, `glow` | The letters' color, an outline `{color, width}` and a neon halo `{color, radius, strength}` |
 | `colors` | `all` (any opaque color of the palette) or `region` (only those the original uses around it) |
 
@@ -53,6 +56,40 @@ The `clear` modes:
 | `diffuse` | Removes only the pixels that move away from the board's color (`color`, or the most common) by more than `tolerance`, grows them `grow` pixels and fills them from the surrounding board, ring by ring, with the board's grain; `quad` limits the erasing to a quadrilateral |
 | `none` | Does not erase: the text is drawn on top (the second line of an already erased sign) |
 | `transparent` | Leaves the area transparent (the palette color with alpha 0), so that what is behind the sprite shows: the letters of a sprite page that is painted over the map (the lit signposts). The new letters are drawn without soft edges, because there is nothing to blend them with |
+
+## Fitting
+
+One rule sizes every sign, in every language (`layOutSignText` and `layOutSigns` in
+`sign_painter.cpp`):
+
+1. **Margins.** Along the text, each side keeps 15% (`SignMarginRatio`) of a line's height free (of
+   the box's height divided by its lines; for vertical text, of the box's width). Across the text
+   the whole box is used: the margin there is the font's own.
+2. **Base size.** The size whose letters fill the box's height: a capital `H` (or `国` for
+   Chinese, Japanese and Korean text) measured in the font, with the lines stacked at the line
+   spacing. A small box gives small letters, a big one big letters, so a sign looks as large as the
+   original text it covers. `size` overrides it.
+3. **Shrinking.** When the widest line (outline and halo included) does not fit the room between
+   the margins, the whole text shrinks uniformly until it does. Nothing ever crosses the box.
+4. **Lines.** Each way of breaking the text into at most `lines` lines (or as many as the text's
+   `\n` give) is tried; the one with the largest letters wins, and fewer lines win a tie. With
+   `\n` in the text, only those breaks are used (joined with a space, or with nothing after a
+   hyphen and between ideographs); without, spaces and hyphens are. So a translation only has to
+   say where its words may break, never where they must.
+5. **Groups.** Signs that share a `group` take the smallest size among them, so two halves of one
+   board never look different.
+6. **Floor.** A text may not shrink below letters 4 image pixels tall (`SignLegibleLetter`), or
+   60% of its base size when that is smaller (`SignFloorRatio`). A sign whose base size is already
+   below 4 pixels (a tiny board) has no floor. A text that would need to go under the floor must
+   be reworded, not squeezed.
+7. **Vertical text** keeps one letter under another; the Japanese long-vowel mark `ー` turns into
+   the vertical bar `｜`, as in printed vertical Japanese.
+
+`packages/engine/signs/tests/sign_content_tests.cpp` lays out every shipped sign of every map in
+every language with the real fonts and fails when one crosses its box, falls under its floor,
+lays out nothing or has letters no font draws. It runs with the rest of `dwe_signs_tests`, in
+the CI of every PR, without a disc: `build/ci/packages/engine/signs/dwe_signs_tests
+--test-case='every shipped sign*'` runs only this one.
 
 ## How it is painted
 
@@ -90,6 +127,8 @@ on by default; when off, the map shows the original textures.
   (`apps/game/src/sign_dump.cpp`). The images come from the player's disc: they go to `_work/tmp`, never to the repository.
 - `packages/engine/signs/tests`: overlay reading, erasing, text on a synthetic texture (without game data), rotation,
   perspective, effects, patches and `MapSigns`'s language change.
+- `packages/engine/signs/tests/sign_content_tests.cpp`: every shipped sign fits its box at no less than its floor, in
+  every language (see Fitting).
 - `tests/autotest/route-signs.yaml`: captures a map in the game's language and another with the option off.
 - `tests/autotest/route-signs-language.yaml`: changes the language in the pause menu of `gcan09` and captures the sign behind
   the open menu (already in the new language) and then on the field.

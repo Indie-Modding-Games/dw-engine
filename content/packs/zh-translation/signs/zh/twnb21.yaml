@@ -8,6 +8,5 @@ signs:
       tolerance: 40
     corners: [[519, 33], [700, 78], [698, 109], [517, 61]]
     text: signs.twnb_restaurant
-    size: 24
     color: "#6bc6bd"
     colors: region

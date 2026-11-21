@@ -39,6 +39,8 @@ agrega aquí con la traducción que lo usa primero. Las decisiones del español 
     cifra («Мясо: 300 Bits», «очков: {shopvar}»).
 11. Género gramatical después de un marcador o de un nombre de Digimon: una forma neutra que no necesite género («у
     {partner} рана», «Дигимон заболел») o el masculino, que concuerda con *Дигимон*.
+12. **Carteles de los mapas**: conservan el tamaño del cartel, así que un nombre largo se acorta solo ahí: el tablero
+    pequeño de la tienda de objetos del pueblo dice «ЛАВКА».
 
 ## Juego y crianza
 

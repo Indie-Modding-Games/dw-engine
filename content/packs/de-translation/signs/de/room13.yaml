@@ -7,6 +7,6 @@ signs:
     clear: {mode: diffuse, rect: [194, 90, 53, 28], color: "#080808", tolerance: 30}
     corners: [[195, 93], [243, 93], [243, 115], [195, 115]]
     text: signs.room13_reception
-    size: 10
+    group: reception
     color: "#f7c618"
     colors: region

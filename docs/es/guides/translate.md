@@ -131,6 +131,18 @@ dónde y cómo se dibujan, que va en un overlay por mapa. Un cartel que el origi
 en español va en `content/packs/es-translation/signs/es/<mapa>.yaml`. Cómo encontrar un cartel y escribir su
 overlay: [guía de carteles](signs.md).
 
+Al escribir el texto de un cartel:
+
+- Nunca elijas un tamaño: todos los carteles ajustan su texto al marco con una sola regla (letras tan altas como deja
+  la caja, encogidas solo si la línea más larga no cabe, [Ajuste](../modules/engine/signs.md#ajuste)). Escribe el
+  texto como lo diría el cartel; las palabras cortas se leen mejor en tableros pequeños.
+- Un `\n` solo dice dónde puede partirse el texto; el motor se queda con la forma que da letras más grandes y, en
+  tableros de dos líneas, también parte solo en espacios y guiones. El coreano no necesita `\n`: le bastan sus
+  espacios. El chino y el japonés solo se parten entre ideogramas donde haya un `\n`.
+- Cada cartel del juego se comprueba en cada idioma con `dwe_signs_tests` ("every shipped sign fits its box..."):
+  falla si un texto cruza su caja o necesitaría letras de menos de 4 píxeles. Entonces acorta el texto (una
+  abreviatura que el idioma use en carteles, un sinónimo más corto) y apunta el cambio en el glosario de tu idioma.
+
 ## Un idioma nuevo
 
 Además del inglés y el español, el juego se está traduciendo al portugués de Brasil (`pt`), francés (`fr`), alemán

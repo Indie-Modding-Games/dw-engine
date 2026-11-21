@@ -35,12 +35,15 @@ Un cartel dice:
 | `corners` | Las cuatro esquinas del texto (arriba izquierda, arriba derecha, abajo derecha, abajo izquierda), para un cartel en perspectiva |
 | `rotation`, `skew` | Grados de giro (horario) e inclinación de las letras, cuando no hay `corners` |
 | `clear` | Cómo se borra el texto viejo (abajo) |
-| `text` | La clave del texto, como `signs.trai00_title_top`; `\n` parte la línea |
-| `font`, `size` | Una fuente de `ui/fonts/` (`noto_sans_bold` por defecto) y su alto en píxeles de la imagen; las letras que le faltan (chino, japonés, coreano) las dibuja `ui/fonts/cjk/noto_sans_cjk_*`, primero la del idioma del cartel |
-| `letter_spacing`, `line_spacing` | Píxeles extra entre letras y factor sobre el alto de línea |
+| `text` | La clave del texto, como `signs.trai00_title_top`; `\n` marca dónde puede partirse la línea (ver Ajuste) |
+| `font` | Una fuente de `ui/fonts/` (`noto_sans_bold` por defecto); las letras que le faltan (chino, japonés, coreano) las dibuja `ui/fonts/cjk/noto_sans_cjk_*`, primero la del idioma del cartel |
+| `size` | Opcional: el tamaño de las letras en píxeles de la imagen en vez del que da la caja (ver Ajuste); los carteles del juego no lo llevan |
+| `letter_spacing`, `line_spacing` | Píxeles extra entre letras y factor sobre el alto de línea (0.85 por defecto) |
+| `lines` | Cuántas líneas caben en el tablero (1 a 4, 1 por defecto): el texto puede partirse en espacios y guiones hasta ese número |
+| `group` | Los carteles de un mapa con el mismo grupo se dibujan al tamaño del menor de ellos (las dos mitades de un título, las reglas de un tablero, los postes de un cruce) |
 | `align`, `valign` | `left`/`center`/`right` y `top`/`middle`/`bottom` |
 | `vertical` | Una letra debajo de otra (una pancarta vertical) |
-| `fit` | Encoge el texto hasta que cabe (por defecto sí) |
+| `fit` | Ajusta el texto a su caja (por defecto sí); con `no`, el tamaño se usa tal cual y nada se parte |
 | `color`, `outline`, `glow` | El color de las letras, un contorno `{color, width}` y un halo de neón `{color, radius, strength}` |
 | `colors` | `all` (cualquier color opaco de la paleta) o `region` (solo los que el original usa alrededor) |
 
@@ -53,6 +56,40 @@ Los modos de `clear`:
 | `diffuse` | Quita solo los píxeles que se alejan del color del tablero (`color`, o el más común) más de `tolerance`, los crece `grow` píxeles y los rellena desde el tablero de alrededor, anillo a anillo, con el grano del tablero; `quad` limita el borrado a un cuadrilátero |
 | `none` | No borra: el texto se dibuja encima (la segunda línea de un cartel ya borrado) |
 | `transparent` | Deja la zona transparente (el color de la paleta con alfa 0), para que se vea lo que hay detrás del sprite: las letras de una página de sprites que se pinta encima del mapa (los postes luminosos). Las letras nuevas se dibujan sin bordes suaves, porque no hay con qué mezclarlas |
+
+## Ajuste
+
+Una sola regla da el tamaño de todos los carteles, en todos los idiomas (`layOutSignText` y
+`layOutSigns` en `sign_painter.cpp`):
+
+1. **Márgenes.** A lo largo del texto, cada lado deja libre un 15% (`SignMarginRatio`) del alto de
+   una línea (el alto de la caja dividido entre sus líneas; en texto vertical, del ancho de la
+   caja). A lo ancho del texto se usa toda la caja: ahí el margen es el de la propia fuente.
+2. **Tamaño base.** El tamaño cuyas letras llenan el alto de la caja: una `H` mayúscula (o `国` en
+   chino, japonés y coreano) medida en la fuente, con las líneas apiladas según el interlineado.
+   Una caja pequeña da letras pequeñas y una grande, letras grandes, así el cartel se ve tan grande
+   como el texto original que tapa. `size` lo reemplaza.
+3. **Encoger.** Si la línea más ancha (con contorno y halo) no cabe entre los márgenes, todo el
+   texto se encoge por igual hasta que cabe. Nada cruza nunca la caja.
+4. **Líneas.** Se prueba cada forma de partir el texto en `lines` líneas como mucho (o tantas como
+   den los `\n` del texto); gana la de letras más grandes y, en empate, la de menos líneas. Con
+   `\n` en el texto solo se usan esos cortes (unidos con un espacio, o con nada tras un guion y
+   entre ideogramas); sin ellos, los espacios y guiones. Así una traducción solo dice dónde pueden
+   partirse sus palabras, nunca dónde deben.
+5. **Grupos.** Los carteles que comparten `group` toman el menor tamaño entre ellos, para que dos
+   mitades de un tablero nunca se vean distintas.
+6. **Suelo.** Un texto no puede encogerse por debajo de letras de 4 píxeles de alto
+   (`SignLegibleLetter`), o del 60% de su tamaño base si es menor (`SignFloorRatio`). Un cartel
+   cuyo tamaño base ya está por debajo de 4 píxeles (un tablero diminuto) no tiene suelo. Un texto
+   que necesitaría bajar del suelo se reescribe, no se aplasta.
+7. **Texto vertical**: una letra bajo otra; la marca de vocal larga japonesa `ー` pasa a la barra
+   vertical `｜`, como en el japonés impreso en vertical.
+
+`packages/engine/signs/tests/sign_content_tests.cpp` coloca cada cartel de cada mapa en cada
+idioma con las fuentes reales y falla si uno cruza su caja, queda bajo su suelo, no coloca nada o
+tiene letras que ninguna fuente dibuja. Corre con el resto de `dwe_signs_tests`, en la CI de cada
+PR, sin disco: `build/ci/packages/engine/signs/dwe_signs_tests --test-case='every shipped sign*'`
+corre solo esta.
 
 ## Cómo se pinta
 
@@ -90,6 +127,8 @@ activada por defecto; desactivada, el mapa muestra las texturas originales.
   (`apps/game/src/sign_dump.cpp`). Las imágenes salen del disco del jugador: van a `_work/tmp`, nunca al repositorio.
 - `packages/engine/signs/tests`: lectura de overlays, borrado, texto en una textura sintética (sin datos del juego), giro,
   perspectiva, efectos, parches y el cambio de idioma de `MapSigns`.
+- `packages/engine/signs/tests/sign_content_tests.cpp`: cada cartel del juego cabe en su caja sin bajar de su suelo,
+  en cada idioma (ver Ajuste).
 - `tests/autotest/route-signs.yaml`: captura un mapa en el idioma de la partida y otra con la opción apagada.
 - `tests/autotest/route-signs-language.yaml`: cambia el idioma en el menú de pausa de `gcan09` y captura el cartel detrás
   del menú abierto (ya en el idioma nuevo) y después en el campo.

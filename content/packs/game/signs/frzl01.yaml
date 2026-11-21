@@ -10,7 +10,6 @@ signs:
       tolerance: 40
     corners: [[370, 158], [409, 158], [409, 167], [370, 167]]
     text: signs.frzl01_notice_title
-    size: 7
     color: "#523021"
     colors: region
   - id: body
@@ -18,7 +17,6 @@ signs:
     clear: none
     corners: [[370, 168], [409, 168], [409, 185], [370, 185]]
     text: signs.frzl01_notice
-    size: 7
-    line_spacing: 0.85
+    lines: 2
     color: "#292921"
     colors: region

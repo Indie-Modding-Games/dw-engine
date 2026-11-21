@@ -29,6 +29,8 @@ por primera vez.
 9. **El texto que no cabe se acorta** como lo haría un localizador francés (abreviaturas con punto, un sinónimo más
    corto), nunca cortando una palabra.
 10. **El inglés roto se traduce por su intención**, conservando todos los códigos de control (la regla del español).
+11. **Carteles de los mapas**: conservan el tamaño del cartel, así que un nombre largo se acorta solo ahí: «Mt Panorama»
+    (sin punto, como «Mme») en las flechas pequeñas, y el grafiti del tablero de pesca dice «Chut~ On s'en fiche».
 
 ## Reglas generales
 

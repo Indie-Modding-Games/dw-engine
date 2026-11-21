@@ -131,6 +131,18 @@ how they are drawn, which goes in an overlay per map. A sign that the original a
 needed in Spanish goes in `content/packs/es-translation/signs/es/<map>.yaml`. How to find a sign and write its
 overlay: [signs guide](signs.md).
 
+Writing a sign's text:
+
+- Never pick a size: every sign fits its text to its frame with one rule (letters as tall as the box allows,
+  shrunk only when the longest line does not fit, [Fitting](../modules/engine/signs.md#fitting)). Write the
+  text as the sign would say it; short words read best on small boards.
+- A `\n` only says where the text may break; the engine keeps whichever arrangement gives the largest letters, and
+  on boards that hold two lines it also breaks at spaces and hyphens by itself. Korean needs no `\n`: its spaces
+  are enough. Chinese and Japanese may break between ideographs only where a `\n` is.
+- Every shipped sign is checked in every language by `dwe_signs_tests` ("every shipped sign fits its box..."): it
+  fails when a text crosses its box or would need letters under 4 image pixels. Then shorten the text (an
+  abbreviation the language uses on signs, a shorter synonym) and write the change in your language's glossary.
+
 ## A new language
 
 Besides English and Spanish, the game is being translated into Brazilian Portuguese (`pt`), French (`fr`), German

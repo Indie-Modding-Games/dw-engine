@@ -28,6 +28,8 @@ always say the same thing. How a translation is written and kept up to date is i
 9. **Text that does not fit is shortened** the way a French localizer would (abbreviations with a dot, a shorter
    synonym), never by cutting a word.
 10. **Broken English is translated by its intent**, keeping every control code (the Spanish rule).
+11. **Map signs** keep the sign's size, so a long name is shortened there only: «Mt Panorama» (no dot, as «Mme»)
+    on the small arrow boards, and the fishing board's graffiti says «Chut~ On s'en fiche».
 
 ## General rules
 

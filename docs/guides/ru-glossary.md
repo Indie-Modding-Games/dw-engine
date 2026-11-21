@@ -39,6 +39,8 @@ A new term that repeats is added here with the translation that first uses it. T
     («Мясо: 300 Bits», «очков: {shopvar}»).
 11. Grammatical gender after a placeholder or a Digimon name: neutral wording that does not need a gender («у
     {partner} рана», «Дигимон заболел») or the masculine, which agrees with *Дигимон*.
+12. **Map signs** keep the sign's size, so a long name is shortened there only: the small item shop board in town
+    says «ЛАВКА».
 
 ## Game and raising
 

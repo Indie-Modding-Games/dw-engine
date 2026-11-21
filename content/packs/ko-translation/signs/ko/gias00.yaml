@@ -6,8 +6,8 @@ signs:
     region: [0, 0, 96, 40]
     clear: transparent
     text: signs.gias00_town
-    size: 16
-    line_spacing: 0.9
+    lines: 2
+    group: posts
     color: "#d68410"
     colors: region
   - id: infinity
@@ -15,8 +15,7 @@ signs:
     region: [0, 40, 99, 32]
     clear: transparent
     text: signs.gias00_infinity
-    size: 13
-    line_spacing: 0.9
+    group: posts
     color: "#d68410"
     colors: region
   - id: trash
@@ -24,7 +23,6 @@ signs:
     region: [0, 72, 99, 32]
     clear: transparent
     text: signs.gias00_trash
-    size: 13
-    line_spacing: 0.9
+    group: posts
     color: "#d68410"
     colors: region

@@ -40,6 +40,8 @@ A new term that repeats is added here with the translation that first uses it. T
     or just the bare `{n}` with a counter («{days}일», «{count}개»). Counters: 개 (items), 마리 (fish, Digimon),
     번/회 (times), 일 (days), 년 (years), 장 (cards).
 11. Grammatical person: Korean drops «you» where it can; when it is needed the characters say **너**, never 당신.
+12. **Map signs** (`signs.yaml`) separate words with spaces, never `\n`: the engine breaks the line at a space
+    when the board holds two lines and keeps one line when that gives larger letters.
 
 ## Game and raising
 

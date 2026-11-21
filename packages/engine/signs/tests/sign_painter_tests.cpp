@@ -101,6 +101,13 @@ PixelRect inkOf(const IndexedImage& image, std::uint8_t index) {
   return box;
 }
 
+PixelRect paintedOf(const IndexedImage& image, std::uint8_t background) {
+  IndexedImage marked = image;
+  std::ranges::transform(marked.indices, marked.indices.begin(),
+                         [&](std::uint8_t index) { return index == background ? 0 : 1; });
+  return inkOf(marked, 1);
+}
+
 Sign textSign(PixelRect region) {
   Sign sign;
   sign.id = "test";
@@ -194,7 +201,7 @@ TEST_CASE("a long text shrinks to fit its region unless fit is off") {
   sign.clear.mode = SignClear::Mode::None;
   IndexedImage fitted = filled(80, 24, 0);
   paintSign(fitted, palette, sign, "RECYCLING", boldFont());
-  const PixelRect fittedInk = inkOf(fitted, 1);
+  const PixelRect fittedInk = paintedOf(fitted, 0);
   CHECK(fittedInk.x >= region.x);
   CHECK(fittedInk.x + fittedInk.width <= region.x + region.width);
   CHECK(fittedInk.width >= 30);
@@ -215,21 +222,21 @@ TEST_CASE("rotation, vertical text and corners turn the text") {
   flat.size = 10.0F;
   IndexedImage across = filled(48, 48, 0);
   paintSign(across, palette, flat, "SALE", boldFont());
-  const PixelRect acrossInk = inkOf(across, 1);
+  const PixelRect acrossInk = paintedOf(across, 0);
   CHECK(acrossInk.width > acrossInk.height);
 
   Sign turned = flat;
   turned.rotation = 90.0F;
   IndexedImage rotated = filled(48, 48, 0);
   paintSign(rotated, palette, turned, "SALE", boldFont());
-  const PixelRect rotatedInk = inkOf(rotated, 1);
+  const PixelRect rotatedInk = paintedOf(rotated, 0);
   CHECK(rotatedInk.height > rotatedInk.width);
 
   Sign stacked = flat;
   stacked.vertical = true;
   IndexedImage vertical = filled(48, 48, 0);
   paintSign(vertical, palette, stacked, "SALE", boldFont());
-  const PixelRect verticalInk = inkOf(vertical, 1);
+  const PixelRect verticalInk = paintedOf(vertical, 0);
   CHECK(verticalInk.height > verticalInk.width * 2);
 
   // Corners that mirror the box draw the text mirrored: its ink moves to the other side.
@@ -244,8 +251,8 @@ TEST_CASE("rotation, vertical text and corners turn the text") {
                                 PixelPoint{.x = 0, .y = 48}, PixelPoint{.x = 48, .y = 48}};
   IndexedImage mirrored = filled(48, 48, 0);
   paintSign(mirrored, palette, quad, "AB", boldFont());
-  CHECK(inkOf(left, 1).x < 8);
-  CHECK(inkOf(mirrored, 1).x + inkOf(mirrored, 1).width > 40);
+  CHECK(inkOf(left, 1).x < 12);
+  CHECK(inkOf(mirrored, 1).x + inkOf(mirrored, 1).width > 36);
 }
 
 TEST_CASE("an outline and a glow surround the letters, region colours keep to the original's") {

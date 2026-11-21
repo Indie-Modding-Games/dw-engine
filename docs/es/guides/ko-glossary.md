@@ -43,6 +43,8 @@ se agrega aquí con la traducción que lo usa primero. Las decisiones del españ
     (`{days:일|일}`) o solo el `{n}` con un clasificador («{days}일», «{count}개»). Clasificadores: 개 (objetos),
     마리 (peces, Digimon), 번/회 (veces), 일 (días), 년 (años), 장 (cartas).
 11. Persona: el coreano omite el «tú» siempre que puede; cuando hace falta los personajes dicen **너**, nunca 당신.
+12. **Carteles de los mapas** (`signs.yaml`): las palabras van separadas por espacios, nunca por `\n`: el motor
+    parte la línea en un espacio si el tablero tiene dos líneas y deja una sola si así las letras salen más grandes.
 
 ## Juego y crianza
 

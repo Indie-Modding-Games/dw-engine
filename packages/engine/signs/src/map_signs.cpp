@@ -83,6 +83,15 @@ const PaintedSigns& MapSigns::painted(const assets::MapImages& original,
   return painted_.emplace(key, std::move(painted)).first->second;
 }
 
+std::vector<SignTextLayout>
+MapSigns::layouts(std::string_view mapId, std::string_view language,
+                  const std::function<std::string(std::string_view)>& text) {
+  const SignOverlay signs = overlay(mapId, language);
+  return layOutSigns(signs.signs, {.text = text, .font = [this, language](std::string_view name) {
+                                     return font(name, language);
+                                   }});
+}
+
 std::optional<SignFont> MapSigns::loadFont(std::string_view name) const {
   const auto id = assets::AssetId::parse(std::format("{}{}", FontFolder, name));
   if (!id || files_->resolve(*id) == nullptr) {

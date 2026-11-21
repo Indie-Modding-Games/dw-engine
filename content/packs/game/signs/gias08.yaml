@@ -10,8 +10,6 @@ signs:
       tolerance: 50
     corners: [[99, 214], [225, 203], [225, 239], [100, 249]]
     text: signs.gias08_toilet
-    size: 26
-    line_spacing: 0.9
     color: "#f7b500"
     outline: {color: "#735a00", width: 1}
     colors: region
