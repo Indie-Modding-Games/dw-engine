@@ -41,7 +41,7 @@ struct PaintedSigns {
   std::vector<std::string> warnings;
 };
 
-// Where a sign's text goes in its box and at what size (docs/modules/engine/signs.md, "Fitting").
+// Where a sign's text goes in its box and at what size.
 struct SignTextLayout {
   std::vector<std::string> lines;
   float size = 0.0F;
@@ -56,7 +56,7 @@ struct SignTextLayout {
   [[nodiscard]] bool tooSmall() const;
 };
 
-// The fitting rule's margin and floor (docs/modules/engine/signs.md, "Fitting").
+// The fitting rule's margin and floor.
 inline constexpr float SignMarginRatio = 0.15F;
 inline constexpr float SignLegibleLetter = 4.0F;
 inline constexpr float SignFloorRatio = 0.6F;
