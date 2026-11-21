@@ -143,6 +143,14 @@ jobs:
         if: ${{ !cancelled() && env.BASE != '' }}
         run: scripts/dev.sh lint --since "$BASE"
 
+      # Every character of every language's texts has a glyph in the UI's fonts (scripts/art/make_fonts.py).
+      - name: Fonts of every text
+        if: ${{ !cancelled() }}
+        run: |
+          python3 -c 'import fontTools' 2>/dev/null \
+            || { sudo apt-get update -q && sudo apt-get install -y -q python3-fonttools; }
+          python3 scripts/art/make_fonts.py check
+
       # The build runs even when the format or the lint failed, so one run says everything.
       - name: Configure
         id: configure

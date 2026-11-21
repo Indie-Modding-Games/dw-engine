@@ -119,8 +119,12 @@ chibi_style: "Estilo chibi"
 chibi_style.off: "No"
 chibi_style.external: "Externos"
 
+# The pause header's date: the word before each number (label) and after it (unit), either may be empty, so a
+# language that writes the number first ("1年目") leaves the label empty and names the unit.
 year_label: "Año"
 day_label: "Día"
+year_unit: ""
+day_unit: ""
 player_tab_chart: "Árbol"
 # The five tabs of the status page share the box width; «Medallas» does not fit next to the other four.
 player_tab_medals: "Med."

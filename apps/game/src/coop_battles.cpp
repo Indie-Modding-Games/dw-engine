@@ -264,7 +264,9 @@ game::battle::BattleResult resultOf(const coop::BattleSpoils& spoils, coop::Batt
 }
 
 void CoopBattles::tick(PlaySession& play, std::span<const Peer> peers, Role role,
-                       coop::PlayerId self, std::span<const coop::PlayerId> here) {
+                       coop::PlayerId self, std::span<const coop::PlayerId> here,
+                       const LabelOf& labelOf) {
+  labelOf_ = labelOf;
   here_.assign(here.begin(), here.end());
   peers_.assign(peers.begin(), peers.end());
   if (play_ != &play) {
@@ -1056,6 +1058,13 @@ void CoopBattles::publish(const PlaySession& play) {
       {.name = "coop_battle.bag", .value = frame && frame->bagAvailable},
       {.name = "coop_battle.fighter_count", .value = static_cast<double>(fighters_.size())},
       {.name = "coop_battle.target", .value = target_ ? static_cast<double>(*target_) : NoTarget}};
+  const std::optional<coop::PlayerId> waitingFor = mirror_.waitingFor();
+  const CoopPeerLabel starter = labelOf_ ? labelOf_(running->starter) : CoopPeerLabel{};
+  settings.push_back({.name = "coop_battle.waiting", .value = waitingFor.has_value()});
+  settings.push_back({.name = "coop_battle.starter.name", .value = starter.name});
+  settings.push_back({.name = "coop_battle.starter.name_key", .value = starter.key});
+  settings.push_back(
+      {.name = "coop_battle.starter.number", .value = static_cast<double>(starter.number)});
   for (std::size_t index = 0; index < fighters_.size(); ++index) {
     const coop::BattleFighterState& fighter = fighters_[index];
     const std::string species =

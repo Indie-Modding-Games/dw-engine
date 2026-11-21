@@ -1095,18 +1095,23 @@ themselves; Chinese, Japanese and Korean come from **fallback chains**.
   and 0.923 of `Pixel Small` so their 12-pixel em sits on those families' grids; after them the smooth faces and
   `Noto Sans` catch anything else. The original look's bitmap font falls back to `Pixel Small` (see
   [Original look](#original-look)), so it gets the same chain. `pixel_body.ttf` and `pixel_small.ttf` gained
-  Latin Extended-A, Greek and Cyrillic from the same misc-fixed sources as their ASCII. Both bold cells drew
-  Cyrillic «м» with a full row between its stems, like «н», so `make_fonts.py` draws that letter again in both faces
-  (its `PIXEL_REDRAWN` table, which replaces a glyph the source has; `--fusion` is only needed for the CJK faces), and
-  `cyrillic_glyphs_tests.cpp` checks every Cyrillic letter is in each UI font, drawn apart from the others in the pixel
-  faces, with no «н» bar in «м». All are under the SIL Open Font Licence; `cjk/cjk_fonts_license.txt` and `pixel_fonts_license.txt` name the sources and versions.
+  Latin Extended-A, Greek and Cyrillic from the same misc-fixed sources as their ASCII. Where those bold
+  cells blur two Cyrillic letters together, `make_fonts.py` draws the letter again (its `PIXEL_REDRAWN` table, which
+  replaces a glyph the source has; `--fusion` is only needed for the CJK faces): «м» had a full row between its stems,
+  like «н», in both faces; 7x13B's «И и Й й» had a two-pixel diagonal in a two-pixel gap that reads as «н»'s bar once
+  scaled (the original look and the pixel skin's small text draw Russian with it), so they get a third column and a
+  three-row diagonal as 9x15B's have, and advance one more pixel, as the redrawn «м» does; «э» differed from «з» by
+  one pixel, so its bar reaches further left. `cyrillic_glyphs_tests.cpp` checks every Cyrillic letter is in each UI
+  font and drawn apart from the others in all four (the faces of the modern, pixel, devvago and original looks, the
+  last through its `Pixel Small` fallback), and in the pixel faces that no two letters differ by a single pixel, that
+  «м» has no «н» bar and that «И и Й й» climb from stem to stem. All are under the SIL Open Font Licence; `cjk/cjk_fonts_license.txt` and `pixel_fonts_license.txt` name the sources and versions.
 - **Size.** The faces are subsets, not the full fonts: the GB 2312 set for Chinese, JIS X 0208 for Japanese, the
   2,350 syllables of KS X 1001 for Korean, their punctuation and full-width forms, plus every character the repo's
   texts use. About 5.4 MB in all (the full fonts are about 60 MB). They load with the UI like the other fonts; a
   separate download per language would save little and add a failure mode. A character outside the subsets is drawn
   by the next face of the chain or, with none, not at all (never a box): the naming box only takes characters the
   fonts draw (`Ui::fontsDraw`). `scripts/art/make_fonts.py` (run with `uv run`) rebuilds them from the downloaded
-  sources, and its `check` command lists any character of the texts that no face covers.
+  sources, and its `check` command, which CI's linux job runs, lists any character of the texts that no face covers.
 - **Line breaking.** RmlUi breaks lines only at spaces; our port (`tooling/vcpkg-ports/rmlui`, a patch over 6.3) also
   breaks between Chinese and Japanese characters, keeping the closing punctuation (`。` `、` `」` small kana, `ー`)
   off the start of a line and the opening ones (`「` `（`) off its end (kinsoku). Korean keeps breaking at spaces,

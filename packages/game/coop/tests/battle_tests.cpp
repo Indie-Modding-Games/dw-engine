@@ -763,3 +763,46 @@ TEST_CASE("a battle frame carries the items thrown, and the guest gets them over
   linked.pump();
   CHECK(linked.guest.receive() == std::optional<Message>{Message{thrown}});
 }
+
+TEST_CASE("at the end box the allies and helpers wait on the starter, who alone closes it") {
+  const BattleBegin begin{.battle = 6,
+                          .starter = HostPlayerId,
+                          .ask = 0,
+                          .mapId = "forest",
+                          .enemyNpcs = {2},
+                          .species = {"gabumon", "kunemon", "agumon"},
+                          .fixedFight = false,
+                          .allies = {GuestPlayerId}};
+  BattleMirror ally;
+  BattleMirror helper{3};
+  for (BattleMirror* mirror : {&ally, &helper}) {
+    mirror->receive(begin);
+    CHECK_FALSE(mirror->waitingFor());
+    BattleFrame fight = frame(6, 1);
+    mirror->receive(fight);
+    CHECK_FALSE(mirror->waitingFor());
+    BattleFrame end = frame(6, 2);
+    end.phase = BattlePhase::End;
+    mirror->receive(end);
+    CHECK(mirror->waitingFor() == HostPlayerId);
+    CHECK_FALSE(mirror->action(BattleActionKind::CloseEnd));
+    mirror->receive(ending(6));
+    CHECK_FALSE(mirror->waitingFor());
+  }
+
+  BattleMirror starter;
+  const BattleAsk ask = starter.ask("forest", {2}, false, false, fighter());
+  starter.receive(BattleBegin{.battle = 7,
+                              .starter = GuestPlayerId,
+                              .ask = ask.ask,
+                              .mapId = "forest",
+                              .enemyNpcs = {2},
+                              .species = {"agumon", "kunemon"},
+                              .fixedFight = false,
+                              .allies = {}});
+  BattleFrame end = frame(7, 1);
+  end.phase = BattlePhase::End;
+  starter.receive(end);
+  CHECK_FALSE(starter.waitingFor());
+  CHECK(starter.action(BattleActionKind::CloseEnd));
+}

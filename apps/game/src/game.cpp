@@ -2335,7 +2335,7 @@ int runGame(const Options& requested) {
                          : coop.isHost() ? CoopBattles::Role::Host
                                          : CoopBattles::Role::Guest,
                          coopGuestWorld ? coopGuestWorld->self() : game::coop::HostPlayerId,
-                         coopHere);
+                         coopHere, coopLabelOf);
         // The trades: on the host, where every player of the session stands; a battle on the
         // host's map keeps everyone there busy (they fight or watch it).
         std::vector<game::coop::TradePlace> tradeWorld;

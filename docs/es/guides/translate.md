@@ -248,3 +248,8 @@ francés y el portugués usan la primera con 0 y 1, y el chino, el japonés y el
 veces, `{n:天|天}`); ver [Plurales](../architecture/localization.md#plurales). En la caja de nombres, el ruso, el
 japonés y el coreano tienen páginas con sus propias letras antes de la latina
 ([nombres en todos los idiomas](../modules/apps/game.md#nombres-en-todos-los-idiomas)).
+
+La fecha de la cabecera de la pausa tiene una palabra antes de cada número (`pause_menu.year_label`, `day_label`) y
+otra después (`year_unit`, `day_unit`); cualquiera puede quedar vacía. Un idioma que escribe primero el número deja
+vacía la primera (japonés `1年目`, coreano `1년`), uno que lo rodea llena las dos (chino `第1年`) y el resto deja solo
+la primera (`Año 1`). Todas las skins dibujan las palabras donde están, junto a las cifras.

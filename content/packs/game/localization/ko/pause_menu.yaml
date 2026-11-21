@@ -117,8 +117,10 @@ chibi_style: "꼬마 스타일"
 chibi_style.off: "아니요"
 chibi_style.external: "외부 모델"
 
-year_label: "연도"
-day_label: "날짜"
+year_label: ""
+day_label: ""
+year_unit: "년"
+day_unit: "일"
 player_tab_chart: "도감"
 # The five tabs of the player page share the box's width, so the whole word fits.
 player_tab_medals: "메달"

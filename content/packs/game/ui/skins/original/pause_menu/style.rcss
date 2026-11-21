@@ -331,7 +331,7 @@
 .cursor-br { left: 75dp; top: 66dp; transform: scale(-1, -1); }
 
 
-#field-year-label, #field-day-label { position: absolute; top: 18dp; font-size: 33dp; line-height: 36dp; }
+#field-year-label, #field-day-label, #field-year-unit, #field-day-unit { position: absolute; top: 18dp; font-size: 33dp; line-height: 36dp; }
 #field-year-label { left: 15dp; }
 #field-day-label { left: 213dp; }
 #field-year-digits, #field-day-digits { position: absolute; top: 15dp; height: 36dp; white-space: nowrap; font-size: 0dp; }
@@ -341,6 +341,12 @@
 .date-digit.hidden { display: none; }
 /* The original's date has no room for the season (an engine improvement): only the modern skin shows it. */
 #field-season { display: none; }
+#panel.on-main #title-date.date-units { padding: 15dp 0 0 15dp; white-space: nowrap; }
+#title-date.date-units #field-year-label, #title-date.date-units #field-day-label, #title-date.date-units #field-year-unit, #title-date.date-units #field-day-unit, #title-date.date-units #field-year-digits, #title-date.date-units #field-day-digits { position: relative; left: 0; top: 0; display: inline-block; vertical-align: top; }
+#title-date.date-units #field-year-label, #title-date.date-units #field-day-label, #title-date.date-units #field-year-unit, #title-date.date-units #field-day-unit { top: 3dp; }
+#title-date.date-units #field-year-label, #title-date.date-units #field-day-label { margin-right: 6dp; }
+#title-date.date-units #field-year-unit { margin-right: 30dp; }
+#panel.on-main #title-date.date-units .hidden { display: none; }
 #field-date-separator { position: absolute; left: 9dp; top: 60dp; width: 372dp; height: 3dp; background-color: #90d9fa; border-top: 3dp #020202; border-bottom: 3dp #020202; }
 .digit-0 { decorator: image(menu-digit-0 scale-none center center); }
 .digit-1 { decorator: image(menu-digit-1 scale-none center center); }

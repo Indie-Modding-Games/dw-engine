@@ -117,8 +117,12 @@ chibi_style: "Chibi style"
 chibi_style.off: "No"
 chibi_style.external: "External"
 
+# The pause header's date: the word before each number (label) and after it (unit), either may be empty, so a
+# language that writes the number first ("1年目") leaves the label empty and names the unit.
 year_label: "Year"
 day_label: "Day"
+year_unit: ""
+day_unit: ""
 player_tab_chart: "Chart"
 # The five tabs of the player page share the box's width, so the whole word fits.
 player_tab_medals: "Medals"

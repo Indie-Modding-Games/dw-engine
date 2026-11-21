@@ -120,6 +120,9 @@ public:
   [[nodiscard]] const std::optional<BattleBegin>& running() const { return running_; }
   [[nodiscard]] const std::optional<BattleFrame>& frame() const { return frame_; }
   [[nodiscard]] std::optional<BattleRole> role() const;
+  // The player whose end box this one waits on: the starter, once the battle's end box is up and
+  // this player cannot close it.
+  [[nodiscard]] std::optional<PlayerId> waitingFor() const;
   // An action to send for the running battle; none without one or when the role does not allow
   // it.
   [[nodiscard]] std::optional<BattleAction> action(BattleActionKind kind, std::int32_t value = 0,

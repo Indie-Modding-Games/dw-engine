@@ -10,6 +10,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <span>
 #include <string>
@@ -18,6 +19,7 @@
 
 #include "battle_screen.hpp"
 #include "coop_battle_view.hpp"
+#include "coop_hud.hpp"
 #include "field_scene.hpp"
 
 namespace dwe::app {
@@ -67,6 +69,7 @@ inline constexpr std::string_view CoopBattleRevisionSetting = "coop_battle.revis
 class CoopBattles {
 public:
   enum class Role : std::uint8_t { None, Host, Guest };
+  using LabelOf = std::function<CoopPeerLabel(game::coop::PlayerId)>;
 
   // The other side of a link the battles go through: each guest's on the host, the host's on a
   // guest.
@@ -80,9 +83,9 @@ public:
   // Once per tick after the game's tick. `peers` is empty while there is no link (the battle's
   // bookkeeping still runs on the host, so a battle the guests left ends cleanly). `self` is this
   // game's own player id; `here` lists the players on this game's map by the session's presence
-  // query (coopPlayerHere).
+  // query (coopPlayerHere). `labelOf` names a player of the session on the guest's document.
   void tick(PlaySession& play, std::span<const Peer> peers, Role role, game::coop::PlayerId self,
-            std::span<const game::coop::PlayerId> here);
+            std::span<const game::coop::PlayerId> here, const LabelOf& labelOf);
   // The guest's battle document's commands; false for any other.
   bool handle(const ui::UiCommand& command);
   // The guest's buttons outside the document: `extra` calls the finisher for the starter and
@@ -129,6 +132,7 @@ private:
 
   ui::Ui* ui_;
   PlaySession* play_ = nullptr;
+  LabelOf labelOf_;
   // This tick's peers (tick's `peers`).
   std::vector<Peer> peers_;
   game::coop::BattleReferee referee_;

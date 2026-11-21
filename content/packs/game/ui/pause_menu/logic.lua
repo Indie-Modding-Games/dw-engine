@@ -2061,6 +2061,18 @@ local function draw_season(document)
   element:set_class("hidden", not shown)
 end
 
+local function draw_date_words(document)
+  local units = false
+  for _, part in ipairs({ "year", "day" }) do
+    local label = t("pause_menu." .. part .. "_label")
+    local unit = t("pause_menu." .. part .. "_unit")
+    document:get("field-" .. part .. "-label"):set_class("hidden", label == "")
+    document:get("field-" .. part .. "-unit"):set_class("hidden", unit == "")
+    units = units or unit ~= ""
+  end
+  document:get("title-date"):set_class("date-units", units)
+end
+
 local function refresh(document)
   refresh_medals(document)
   draw_player_tab_labels(document)
@@ -2070,6 +2082,7 @@ local function refresh(document)
   local now = clock.now()
   draw_date_digits(document, "field-year-", 3, now.year)
   draw_date_digits(document, "field-day-", 2, now.day)
+  draw_date_words(document)
   draw_season(document)
   local original = original_menu()
   document:get("panel"):set_class("use-menu-art", (ui.setting("language") or "en") == "en")

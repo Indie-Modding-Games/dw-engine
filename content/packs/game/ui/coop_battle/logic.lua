@@ -32,6 +32,25 @@ local function named(key)
   return t(key)
 end
 
+local function starter_name()
+  local name = text("coop_battle.starter.name")
+  if name ~= "" then
+    return name
+  end
+  local key = text("coop_battle.starter.name_key")
+  if key == "" then
+    return ""
+  end
+  return (string.gsub(t(key), "{number}", tostring(number("coop_battle.starter.number"))))
+end
+
+local function phase_text(phase)
+  if ui.setting("coop_battle.waiting") == true then
+    return t("coop_battle.phase_waiting", { name = starter_name() })
+  end
+  return t("coop_battle.phase_" .. (phase ~= "" and phase or "intro"))
+end
+
 local function draw_fighters(document, aiming)
   local count = number("coop_battle.fighter_count")
   local target = number("coop_battle.target")
@@ -131,7 +150,7 @@ local function draw(document)
   local phase = text("coop_battle.phase")
   local fighting = phase == "fight"
   document:get("title"):set_text(t("coop_battle.title_" .. (commands and role or "helper")))
-  document:get("phase"):set_text(t("coop_battle.phase_" .. (phase ~= "" and phase or "intro")))
+  document:get("phase"):set_text(phase_text(phase))
   -- The partners can be aimed at while this player can throw.
   local aiming = fighting
     and ui.setting("coop_battle.bag") == true

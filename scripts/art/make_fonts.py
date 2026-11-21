@@ -50,40 +50,29 @@ PIXEL_RANGES = [
     (0x2116, 0x2116),
 ]
 
-# Glyphs drawn again over misc-fixed's, where its bold cell blurs one letter into another: the lowercase em (м) of
-# 9x15B and 7x13B fills a row between its stems and reads as en (н). Each is (advance, left, ascent, rows) in pixels,
-# as read_pcf gives them.
+# Glyphs drawn again over misc-fixed's where its bold cells blur two Cyrillic letters together
+# (docs/architecture/ui.md#fonts): (advance, left, ascent, rows) in pixels, as read_pcf gives them;
+# the rows are split on spaces, "#" for ink.
+
+
+def drawn(advance, left, ascent, rows):
+    return (advance, left, ascent, [[pixel == "#" for pixel in row] for row in rows.split()])
+
+
 PIXEL_REDRAWN = {
     "pixel_body.ttf": {
-        0x043C: (
-            9,
-            0,
-            7,
-            [
-                [0, 1, 1, 0, 0, 0, 1, 1, 0],
-                [0, 1, 1, 1, 0, 1, 1, 1, 0],
-                [0, 1, 1, 0, 1, 0, 1, 1, 0],
-                [0, 1, 1, 0, 0, 0, 1, 1, 0],
-                [0, 1, 1, 0, 0, 0, 1, 1, 0],
-                [0, 1, 1, 0, 0, 0, 1, 1, 0],
-                [0, 1, 1, 0, 0, 0, 1, 1, 0],
-            ],
-        ),
+        0x043C: drawn(9, 0, 7, ".##...##. .###.###. .##.#.##. .##...##. .##...##. .##...##. .##...##."),
+        0x044D: drawn(9, 0, 7, "..#####.. .##...##. ......##. ...#####. ......##. .##...##. ..#####.."),
     },
     "pixel_small.ttf": {
-        0x043C: (
-            7,
-            0,
-            6,
-            [
-                [1, 1, 0, 0, 0, 1, 1],
-                [1, 1, 1, 0, 1, 1, 1],
-                [1, 1, 0, 1, 0, 1, 1],
-                [1, 1, 0, 0, 0, 1, 1],
-                [1, 1, 0, 0, 0, 1, 1],
-                [1, 1, 0, 0, 0, 1, 1],
-            ],
+        0x0418: drawn(8, 0, 9, "##...## ##...## ##...## ##..### ##.#.## ###..## ##...## ##...## ##...##"),
+        0x0419: drawn(
+            8, 0, 11, "##...## .#####. ##...## ##...## ##...## ##..### ##.#.## ###..## ##...## ##...## ##...##"
         ),
+        0x0438: drawn(8, 0, 6, "##...## ##...## ##..### ##.#.## ###..## ##...##"),
+        0x0439: drawn(8, 0, 9, ".##.##. ..###.. ....... ##...## ##...## ##..### ##.#.## ###..## ##...##"),
+        0x043C: drawn(8, 0, 6, "##...## ###.### ##.#.## ##...## ##...## ##...##"),
+        0x044D: drawn(7, 0, 6, ".####.. ##..##. ..####. ....##. ##..##. .####.."),
     },
 }
 

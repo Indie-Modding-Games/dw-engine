@@ -83,6 +83,8 @@ chibi_style.external: "Externes"
 
 year_label: "An"
 day_label: "J"
+year_unit: ""
+day_unit: ""
 player_tab_chart: "Tableau"
 player_tab_medals: "Médailles"
 player_tab_card: "Cartes"
