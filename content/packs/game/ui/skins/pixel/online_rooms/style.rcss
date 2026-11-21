@@ -47,11 +47,11 @@
    moved in to match. As the mockup, no mode column: the row's icon tells (an egg for the campaign, swords for a
    battle). */
 #list-box { padding: 18dp 62dp 18dp 48dp; }
-.col-name { left: 56dp; width: 380dp; }
+.room-row .col-name, #list-head .col-name { left: 56dp; width: 380dp; }
 .room-row .col-mode,
 #list-head .col-mode { display: none; }
-.col-players { left: 446dp; width: 140dp; }
-.col-ping { left: 596dp; width: 72dp; }
+.room-row .col-players, #list-head .col-players { left: 446dp; width: 140dp; }
+.room-row .col-ping, #list-head .col-ping { left: 596dp; width: 72dp; }
 
 .room-row {
 	width: 718dp;
@@ -109,7 +109,7 @@
 
 /* The search, the code and the actions. */
 .side-box { padding: 18dp 26dp; }
-#actions-box { padding-top: 18dp; }
+#actions-box { height: 116dp; padding-top: 10dp; }
 .side-title { margin-bottom: 6dp; font-size: 30dp; line-height: 30dp; color: #f2f0e1; }
 
 .field {
@@ -135,9 +135,8 @@
 .cell { font-size: 30dp; border-bottom-color: #7cb6e2; }
 .cell.current { border-bottom-color: #efc63c; color: #efc63c; }
 .hint { font-family: "Pixel Small"; font-size: 26dp; color: #93a6bc; }
-/* The code's hint takes two lines in this font: the box gives up some of its padding for it. */
 #code-box { padding-top: 12dp; padding-bottom: 10dp; }
-#code-hint { height: 44dp; margin-top: 4dp; line-height: 22dp; white-space: normal; }
+#code-hint { height: 44dp; margin-top: 4dp; font-size: 22dp; line-height: 22dp; white-space: normal; }
 #enter { margin-top: 4dp; }
 
 .action {
@@ -150,7 +149,7 @@
 .action:focus { color: #efc63c; decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box; }
 #enter.unavailable, .action.unavailable { color: #5f6f82; }
 
-#prompts { width: 800dp; padding: 0 24dp; font-family: "Pixel Small"; font-size: 26dp; }
+#prompts { width: 800dp; padding: 0 24dp; line-height: 54dp; font-family: "Pixel Small"; font-size: 26dp; }
 .prompt { margin-right: 14dp; }
 
 #toast { left: 824dp; width: 408dp; }

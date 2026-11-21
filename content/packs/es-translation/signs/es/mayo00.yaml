@@ -6,8 +6,8 @@ signs:
     region: [0, 0, 128, 64]
     clear: transparent
     text: signs.mayo_led_jijimon
-    size: 20
-    line_spacing: 0.9
+    lines: 2
+    group: posts
     color: "#c68421"
     colors: region
   - id: town
@@ -15,8 +15,8 @@ signs:
     region: [0, 64, 136, 64]
     clear: transparent
     text: signs.mayo_led_town
-    size: 20
-    line_spacing: 0.9
+    lines: 2
+    group: posts
     color: "#c68421"
     colors: region
   - id: gym
@@ -24,8 +24,8 @@ signs:
     region: [0, 128, 120, 64]
     clear: transparent
     text: signs.mayo_led_gym
-    size: 20
-    line_spacing: 0.9
+    lines: 2
+    group: posts
     color: "#c68421"
     colors: region
   - id: forest
@@ -33,7 +33,7 @@ signs:
     region: [0, 192, 120, 63]
     clear: transparent
     text: signs.mayo_led_forest
-    size: 20
-    line_spacing: 0.9
+    lines: 2
+    group: posts
     color: "#c68421"
     colors: region

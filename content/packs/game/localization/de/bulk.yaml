@@ -1,0 +1,16 @@
+# The bulk trades (an engine improvement, the bulk_trades option): the item trader and the card
+# shop's packs ask how many at once.
+how_many: "Wie viele?"
+# The item trader's box: {count} of the {item} the player gives and gets.
+give: "Du gibst {count} x {item}"
+get: "Du bekommst {count} x {item}"
+# The most the bag allows, {most}.
+most: "Bis zu {most}"
+# The card shop's packs: the amount box's name, the keeper's question with the most packs the
+# money covers ({most}), and what they gave: {packs} packs, {cards} cards, {new} new ones.
+packs: "Päckchen"
+packs_ask: "Wie viele Päckchen?\nDu kannst bis zu {most} öffnen."
+packs_got: "{cards} {cards:Karte|Karten} aus {packs} {packs:Päckchen|Päckchen}.\nNeue sind gelb: {new}."
+# The column titles of the packs' summary.
+card: "Karte"
+copies: "Anzahl"

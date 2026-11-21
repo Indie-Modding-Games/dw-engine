@@ -390,6 +390,14 @@ El cooperativo nunca cambia ni rompe las partidas guardadas de un jugador de nin
   `save.coop_guest_quit_confirm`).
 - **El invitado se lleva a casa su propio progreso (decisión 4, fase C4).** Esas cuatro secciones vuelven a la ranura de
   la que el invitado trajo su guardado; el resto de esa ranura queda exactamente como estaba en disco.
+- **Rige la variante del anfitrión.** La copia conserva el modo de juego del anfitrión, así que un invitado juega la
+  [variante de juego](game-variants.md) del anfitrión sea cual sea la de su partida. Cuando difieren, el aviso de inicio
+  del invitado lo dice, y el anfitrión oye qué jugador trajo la otra (`online.coop.player_other_variant`); ambos
+  comparan las partidas que ya intercambian (`coopSaveMode`). El progreso del invitado vuelve a casa igual cuando la
+  variante de su partida admite todo lo que puede dar la del anfitrión (Modo Folder desde un mundo de Clásico Mejorado,
+  `game::modes::takesProgressFrom`, `online.coop.guest_other_variant`); si no, nada vuelve y la partida queda como
+  estaba (`online.coop.guest_other_variant_kept`), así que una partida de Clásico Mejorado nunca recibe lo que hicieron
+  las reglas del Modo Folder.
 
 **Qué vuelve a casa y qué nunca.**
 

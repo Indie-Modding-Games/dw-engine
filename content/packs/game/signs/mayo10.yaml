@@ -9,7 +9,6 @@ signs:
       tolerance: 30
     corners: [[507.6, 3.0], [591.4, 3.0], [591.4, 15.3], [507.6, 15.3]]
     text: signs.mayo_rules_title
-    size: 9
     color: "#731021"
     colors: region
   - id: rule_1
@@ -17,7 +16,7 @@ signs:
     clear: none
     corners: [[507.6, 18.6], [591.4, 18.6], [591.4, 28.9], [507.6, 28.9]]
     text: signs.mayo_rules_1
-    size: 7
+    group: rules
     color: "#101818"
     colors: region
   - id: rule_2
@@ -25,7 +24,7 @@ signs:
     clear: none
     corners: [[507.6, 30.2], [591.4, 30.2], [591.4, 40.6], [507.6, 40.6]]
     text: signs.mayo_rules_2
-    size: 7
+    group: rules
     color: "#101818"
     colors: region
   - id: graffiti
@@ -33,6 +32,5 @@ signs:
     clear: none
     corners: [[522.2, 45.2], [591.4, 45.2], [591.4, 62.8], [522.2, 62.8]]
     text: signs.mayo_rules_graffiti
-    size: 9
     color: "#101818"
     colors: region

@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.28.0 | Game variants: `options.variant()` names the variant of the game being played (its mode's name key, nil at the title) and `options.locked(name)` says whether that variant fixes an option (`options.variant` and `options.locked.<name>` settings); `options.set` refuses a fixed option ([game variants](../architecture/game-variants.md)) |
 | 0.27.0 | The room shows the host's co-op difficulty before a guest readies (`online.current.coop_difficulty`, `online.room()` `coop_difficulty` and `coop_difficulty_key`), and the `coop_open_to_join` option arrives: whether a co-op game the player hosts takes new players once under way, applied at once to the room it hosts |
 | 0.26.0 | Nine languages: the naming box turns pages of letters (`naming_box.pages`, `naming_box.page`, `naming_box.page_name`, `page` in `naming.state()`), and `ui.upper` and `ui.lower` know accented, Greek and Cyrillic letters |
 | 0.25.0 | The co-op tag says when a player trains at the gym (`coop_hud.tag.training`, `coop_hud.tag.<n>.training`) |
@@ -104,7 +105,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.27.0**.
+UI API version: **0.28.0**.
 
 ### `ui`
 
@@ -762,7 +763,11 @@ UI API version: **0.27.0**.
 |---|---|---|---|
 | `options.list(): table` | query | table | The game's options in order: name, kind (toggle, list, range), label_key, help_key, tab, default, original, values, texts, min, max. |
 | `options.get(name: string): any` | query | number or text | An option's value now (or its default value); nil if it does not exist. |
-| `options.set(name: string, value: any): boolean, string?` | action | yes/no | Asks to give an option a value; checks the type and the values it accepts. |
+| `options.set(name: string, value: any): boolean, string?` | action | yes/no | Asks to give an option a value; checks the type and the values it accepts, and refuses an option the game fixes. |
+| `options.variant(): string?` | query | text | The name key of the game variant (the game mode) of the game being played; nil at the title. |
+| `options.locked(name: string): boolean` | query | yes/no | Whether the game being played fixes the option at one value (Classic Enhanced fixes those that change the rules); set refuses it while the game lasts. |
+| `options.variant` | setting | text | The name key of the game variant being played; empty at the title. See options.variant(). |
+| `options.locked.<name>` | setting | yes/no | Whether the game being played fixes the option. Read it with options.locked(name). |
 | `options.changed` | event | table | An option changed; name says which and value its value. Comes from `@options`. |
 
 ### `battle`

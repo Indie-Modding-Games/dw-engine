@@ -123,8 +123,10 @@ local function draw_descriptions(document)
 end
 
 -- A row as one text (row-N-text) and again split into the name part and the price part from the
--- price on (row-N-name, row-N-price), for skins that set the price in its own column.
+-- price on (row-N-name, row-N-price): every skin sets the price in its own column, and the name
+-- gives way to it, squeezed, a column's gap before it.
 local PriceMarker = "\1"
+local PriceGap = 24
 local function draw_row(document, slot, row)
   document:get("row-" .. slot .. "-text"):set_text(row_label(row))
   local marked = row_label(row, PriceMarker)
@@ -133,8 +135,15 @@ local function draw_row(document, slot, row)
   local price = at
       and (tostring(number("shop.row." .. row .. ".price")) .. string.sub(marked, at + 1))
     or ""
-  document:get("row-" .. slot .. "-name"):set_text(name)
-  document:get("row-" .. slot .. "-price"):set_text(price)
+  local name_part = document:get("row-" .. slot .. "-name")
+  local price_part = document:get("row-" .. slot .. "-price")
+  name_part:set_text(name)
+  price_part:set_text(price)
+  fit_text.fit(name_part, nil, function()
+    local price_left = price_part:rect()
+    local name_left = name_part:rect()
+    return price_left - PriceGap - name_left
+  end)
 end
 
 local function refresh_list(document)
@@ -156,6 +165,11 @@ local function refresh_list(document)
   document:get("next-page"):set_class("hidden", not several)
   document:get("page"):set_class("hidden", not several)
   document:get("page"):set_text(t("shop.page", { page = page, pages = pages() }))
+  if several then
+    for _, turn_id in ipairs({ "previous", "next-page" }) do
+      fit_text.fit(document:get(turn_id .. "-label"), { document:get(turn_id .. "-text") })
+    end
+  end
 end
 
 local function refresh_amount(document)
@@ -297,6 +311,10 @@ end
 
 function on_device(document)
   refresh_prompts(document)
+end
+
+function on_tick()
+  fit_text.tick()
 end
 
 -- Cancel goes back a step (a line goes on); in the amount box up and down change the amount by one

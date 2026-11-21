@@ -1,0 +1,26 @@
+signs:
+  - id: town
+    target: {page: 1, bits: 8, clut: 16}
+    region: [0, 0, 96, 40]
+    clear: transparent
+    text: signs.gias00_town
+    lines: 2
+    group: posts
+    color: "#d68410"
+    colors: region
+  - id: infinity
+    target: {page: 1, bits: 8, clut: 16}
+    region: [0, 40, 99, 32]
+    clear: transparent
+    text: signs.gias00_infinity
+    group: posts
+    color: "#d68410"
+    colors: region
+  - id: trash
+    target: {page: 1, bits: 8, clut: 16}
+    region: [0, 72, 99, 32]
+    clear: transparent
+    text: signs.gias00_trash
+    group: posts
+    color: "#d68410"
+    colors: region

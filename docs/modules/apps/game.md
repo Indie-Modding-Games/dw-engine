@@ -13,6 +13,14 @@ systems come from it, so a route with the same seed plays the same every time. W
 system clock and writes it to the log (`game: new game, seed <n>`) so that the game from a bug report can be repeated.
 With `--load` the option changes nothing: the loaded game continues with the state of the random numbers it saved.
 
+## Game variant
+
+The game's mode is its [variant](../../architecture/game-variants.md). `PlaySession` builds a `ModeOptions`
+(`src/mode_options.{hpp,cpp}`) from it: `playSettings()` is the player's settings with the mode's fixed options on top,
+which the play options, the rare items and free exploration read; it publishes `options.variant` and
+`options.locked.<option>` while the game lives, and `runGame` drops the commands that would change a fixed option
+(`PlaySession::refusesFixedOption`). The player's settings file is never written for it.
+
 ## The partner on the field
 
 The field draws the partner with the model of its species: `digimon/<species>/model` of the base pack, with the
@@ -1336,7 +1344,10 @@ language, with as many rows each: Russian gets a Cyrillic page (capitals on the 
 Japanese hiragana and katakana pages (with the voiced and small kana and `ー`), Korean a page of Hangul letters
 (consonants on the left, vowels on the right). The page keys (`tab_previous`, `tab_next`: Q and E, or the shoulder
 buttons) and a click on the arrows beside the page's name turn them; the name may mix the letters of every page of
-the language. Chinese, and the other languages without an alphabet of their own, keep the Latin page.
+the language. German, Spanish, French and Portuguese add a page of their accented letters after the Latin one
+(`after_rows: true`): «ÄÖÜ» (with ß), «ÁÉÍ» (with Ñ), «ÀÂÇ» (with Œ and Æ) and «ÁÂÃ», capitals on the left and small
+letters on the right, so a name like «Jürgen» or «Íñigo» can be written and typed. Chinese, and the other languages
+without an alphabet of their own, keep the Latin page.
 
 - **Korean** letters join into syllables as they are written, as on a Korean keyboard (`hangul_input.hpp`): ㅎ ㅏ ㄴ
   gives 한, a vowel after a closed syllable takes its last consonant (한 + ㅏ = 하나), and an erase takes one letter
@@ -2021,8 +2032,8 @@ hidden content) goes to a following page of the tree ([canonical stages](#canoni
 A new form uses another species' icon with another palette until it has icons of its own.
 
 **Game mode.** Before the rules, `TitleScreen` asks for the mode (`ui/new_game_mode`, `NewGameModes` in
-`new_game_mode.hpp`) only if the packs bring more than one ([modes](../game/modes.md)); the game only brings
-"Original story", so it does not appear. It publishes `new_game_mode.count` and `new_game_mode.<n>.id`, `name` and `description`
+`new_game_mode.hpp`) only if the packs bring more than one ([modes](../game/modes.md)); the game brings the two
+[game variants](../../architecture/game-variants.md), Classic Enhanced and Folder Mode, so it always appears. It publishes `new_game_mode.count` and `new_game_mode.<n>.id`, `name` and `description`
 and receives `new_game_mode` with the id or `new_game_mode_back`. The chosen mode goes to `PlayStart::modeId` and to the session
 (`SessionDesc::modeId`, `mode` section of the save). The rules appear afterward only for a mode that admits
 `original` and `oculto`; another mode starts with its `ruleset`.
@@ -2303,7 +2314,8 @@ co-op lobby that lived inside the main menu is now these screens.
   dumbbell; left and right pick it), the connection (Direct, or Relay only: confirm, left or right switch it) and the
   versus record (wins and losses). `OnlineProfile` (`online_profile.hpp`) keeps it in the game's settings
   (`settings.yaml`, `online_relay_only` for the connection), not in a save, and its name is the player's name in every
-  room (12 letters at most; «Player» until one is typed). Relay only connects co-op and versus rooms through the
+  room (12 letters at most; until one is typed, the language's `online.profile.default_name`, «Player» in English).
+  Relay only connects co-op and versus rooms through the
   signaling server's relay (TURN) alone, so the other player never learns this machine's address; a server with no
   relay makes such a room fail with «no relay».
 - **Connecting and errors** (`ui/online_status`): while a room is being created or joined the screen says so with

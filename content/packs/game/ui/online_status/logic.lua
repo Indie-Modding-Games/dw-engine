@@ -44,7 +44,9 @@ local function refresh(document)
     document:get("status-text"):set_text(t(room.error_key))
     -- An error the game has no words for keeps its own code, small, under the generic text.
     local unknown = room.error_key == "online.error.unknown" and room.detail ~= nil
-    document:get("status-detail"):set_text(unknown and room.detail or "")
+    document
+      :get("status-detail")
+      :set_text(unknown and t("online.error.code", { code = room.detail }) or "")
   else
     document:get("title"):set_text(t(room.host and "online.create" or "online.room_title.guest"))
     document

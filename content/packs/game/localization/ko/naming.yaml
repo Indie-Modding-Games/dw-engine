@@ -1,0 +1,20 @@
+# The naming box (script_menu.c: setupNameSelectorBox): whose name it asks for and its buttons.
+tamer: "너의 이름"
+partner: "디지몬의 이름"
+title: "이름"
+ok: "확인"
+back: "뒤로"
+clear: "지우기"
+write: "입력"
+typing: "또는 이름 입력 후 Enter"
+# The pages of letters, named by their first letters, the same in every language (rules/original/new_game_scene.yaml).
+page.latin: "ABC"
+page.cyrillic: "АБВ"
+page.hiragana: "あいう"
+page.katakana: "アイウ"
+page.hangul: "한글"
+# The accented letters of a language with the Latin alphabet, a page after the Latin one.
+page.latin_de: "ÄÖÜ"
+page.latin_es: "ÁÉÍ"
+page.latin_fr: "ÀÂÇ"
+page.latin_pt: "ÁÂÃ"

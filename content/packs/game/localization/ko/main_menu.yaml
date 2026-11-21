@@ -1,0 +1,31 @@
+# The menu shown when the game starts.
+title: "메인 메뉴"
+new_game: "새 게임"
+continue: "이어하기"
+language: "언어"
+# The font of the text that looks like the original's (the map name): the original's bitmap font or a modern one.
+text_font: "원작풍 글꼴"
+text_font.modern: "아니요"
+text_font.original: "예"
+# Opens the online versus against another player on their own machine.
+versus: "온라인 대전"
+# Opens the multiplayer hub (online versus, co-op rooms, profile) from the title menu.
+coop: "멀티플레이"
+# Opens the in-game options page over the title screen.
+options: "설정"
+quit: "게임 종료"
+# The original look's title screen (ui/main_menu): the line of the screen before the menu, the menu's entries, the
+# battle mode question and the language box, in the original's capitals.
+# The line of the original look's "Press Start" screen: what goes on with the device in use, the key named as the
+# button prompts name it ({key}), or a click with the mouse. In capitals on screen.
+press_key: "{key}을(를) 누르세요"
+press_click: "클릭하세요"
+original.new_game: "새 게임"
+original.continue: "이어하기"
+original.erase: "데이터 삭제"
+original.battle_mode: "배틀 모드"
+original.options: "설정"
+original.coop: "멀티플레이"
+original.battle_mode_message: "저장 데이터에 등록된 파트너로 온라인 대전을 할까요?"
+original.language_heading: "언어 - LANGUAGE"
+original.language_done: "시작"

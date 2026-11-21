@@ -257,5 +257,14 @@ inline constexpr std::string_view RuleOptionNotNumber =
     "options: {}.{} is not a whole number, so no percent of it is set";
 inline constexpr std::string_view RuleOptionRefused = "options: {}.{} cannot take {}";
 inline constexpr std::string_view RuleOptionSet = "options: {}.{} = {}";
+inline constexpr std::string_view ModeOptionRefused =
+    "options: the mode {} cannot fix {} at {}: {}; it stays the player's";
+inline constexpr std::string_view ModeOptionNotFixable = "a mode cannot fix that option";
+inline constexpr std::string_view ModeOptionsFixed = "options: the mode {} fixes {}";
+inline constexpr std::string_view ModeOptionsNotApplied =
+    "options: the mode's fixed options are not applied: {}";
+inline constexpr std::string_view ModeNotMounted =
+    "options: no pack has the game's mode {}; it fixes no option";
+inline constexpr std::string_view ModeOptionLocked = "options: {} is fixed at {} in this game";
 
 } // namespace dwe::app::messages

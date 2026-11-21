@@ -1,0 +1,9 @@
+# The item keeper the story opens (shop/script_menu.c: tickItemKeeper). The keeper's lines are the story's texts
+# (MAPHEAD); these are the windows' titles and the help under them, with the keys of the device in use.
+kept_title: "Verwahrt"
+bag_title: "Dabei"
+help.use: "Mit"
+help.and: "und"
+help.one: "Items verschieben."
+help.ten: "in Zehnern verschieben"
+help.all: "alle verschieben."

@@ -3,6 +3,7 @@
 	<title>Island map</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/fit_text.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -71,9 +72,7 @@
 			<span id="no-exits" class="hidden" text-key="world_map.no_exits"></span>
 		</div>
 		<div id="footer">
-			<span class="legend-dot legend-here"></span><span class="legend" text-key="world_map.legend_here"></span>
-			<span class="legend-dot legend-exit"></span><span class="legend" text-key="world_map.legend_exit"></span>
-			<span class="legend-dot legend-unknown"></span><span class="legend" text-key="world_map.legend_unknown"></span>
+			<span id="legends"><span class="legend-dot legend-here"></span><span id="legend-here" class="legend" text-key="world_map.legend_here"></span><span class="legend-dot legend-exit"></span><span id="legend-exit" class="legend" text-key="world_map.legend_exit"></span><span class="legend-dot legend-unknown"></span><span id="legend-unknown" class="legend" text-key="world_map.legend_unknown"></span></span>
 			<span id="close"><span class="key" id="close-key"></span><span text-key="world_map.close"></span></span>
 		</div>
 	</div>

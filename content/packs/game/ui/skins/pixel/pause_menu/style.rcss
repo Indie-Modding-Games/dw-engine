@@ -363,7 +363,14 @@
 	color: #efc63c;
 }
 
+#option-tag.locked {
+	border-color: #a0503c;
+	color: #f08a6a;
+}
+
+/* Two lines here, as the mockup: the actions, then the key hints under them. */
 #option-foot {
+	display: block;
 	margin: 0 30dp 0 -16dp;
 	padding: 8dp 12dp 0 12dp;
 	border-top: 3dp #7cb6e2;
@@ -573,14 +580,15 @@
 	letter-spacing: 0;
 }
 
-/* The cursors (the original's frame pictures): hidden under the gold four corners. */
+/* The cursors: the gold four corners on the frame in place of the original's picture. */
 #chart-cursor,
 #chart-detail-cursor,
 #medals-cursor,
 #cards-cursor {
-	image-color: #ffffff00;
 	decorator: ninepatch(nb-ocur-outer, nb-ocur-inner, 1) border-box;
 }
+
+.cursor-frame .cursor-picture { display: none; }
 
 /* Chart cells and card slots: bevelled grey (.sk), the stages keep their colours. */
 #panel.on-player .chart-cell,

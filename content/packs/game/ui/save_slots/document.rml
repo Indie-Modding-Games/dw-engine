@@ -41,7 +41,7 @@
 		<!-- The original look's box with the focused save's summary. -->
 		<div id="detail" class="hidden">
 			<p id="detail-line-1"><span id="detail-line-1-text"></span></p>
-			<p id="detail-line-2"></p>
+			<p id="detail-line-2"><span id="detail-line-2-text"></span></p>
 		</div>
 	</div>
 </body>

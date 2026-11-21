@@ -224,14 +224,22 @@ TEST_CASE("the list fills the summary of saves that have none with the game's re
   const SlotId second{.kind = SlotKind::Manual, .index = 2};
   REQUIRE(slots.save(first, fileLabelled("old", at(8))));
   SaveFile summarized = fileLabelled("new", at(9));
-  summarized.header.summary = {
-      .slot = "slot_02", .tamer = "", .species = "base:sp_02", .nickname = "", .map = ""};
+  summarized.header.summary = {.slot = "slot_02",
+                               .tamer = "",
+                               .species = "base:sp_02",
+                               .nickname = "",
+                               .map = "",
+                               .mode = ""};
   REQUIRE(slots.save(second, summarized));
 
   CHECK(slots.list()[0].header.value_or(SaveHeader{}).summary == SaveSummary{});
   slots.setSummaryReader([](const SaveFile& file) {
-    return SaveSummary{
-        .slot = "", .tamer = "", .species = file.header.label, .nickname = "", .map = "read"};
+    return SaveSummary{.slot = "",
+                       .tamer = "",
+                       .species = file.header.label,
+                       .nickname = "",
+                       .map = "read",
+                       .mode = ""};
   });
   const auto infos = slots.list();
   CHECK(infos[0].header.value_or(SaveHeader{}).summary.species == "old");

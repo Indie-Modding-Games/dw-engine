@@ -4,13 +4,13 @@ signs:
     region: [567, 70, 37, 16]
     clear: {mode: diffuse, rect: [567, 70, 37, 16], color: "#000808"}
     text: signs.frzl06_east
-    size: 8
-    line_spacing: 0.85
+    lines: 2
+    group: posts
     color: "#ceefef"
   - id: west
     region: [529, 86, 31, 17]
     clear: {mode: diffuse, rect: [529, 86, 31, 17], color: "#000808"}
     text: signs.frzl06_west
-    size: 8
-    line_spacing: 0.85
+    lines: 2
+    group: posts
     color: "#5abd63"

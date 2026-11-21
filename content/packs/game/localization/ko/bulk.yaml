@@ -1,0 +1,16 @@
+# The bulk trades (an engine improvement, the bulk_trades option): the item trader and the card
+# shop's packs ask how many at once.
+how_many: "몇 개?"
+# The item trader's box: {count} of the {item} the player gives and gets.
+give: "{item} x {count} 주기"
+get: "{item} x {count} 받기"
+# The most the bag allows, {most}.
+most: "최대 {most}개"
+# The card shop's packs: the amount box's name, the keeper's question with the most packs the
+# money covers ({most}), and what they gave: {packs} packs, {cards} cards, {new} new ones.
+packs: "팩"
+packs_ask: "팩을 몇 개 드릴까요?\n{most}개까지 살 수 있어요."
+packs_got: "팩 {packs}개에서 카드 {cards}장이 나왔어요.\n새 카드는 노란색이에요: {new}장."
+# The column titles of the packs' summary.
+card: "카드"
+copies: "장수"

@@ -159,7 +159,12 @@ recorte de RmlUi (`EnableClipMask`) no están implementadas: solo hacen falta pa
   rutas `/glyph/classic/button|cap/<símbolo>/<dibujo>` (un botón redondo de 16 x 12 o una tecla de 12 de alto al
   estilo del original, con su parte de arriba hundiéndose un píxel por dibujo, y una letra de 3 x 5 propia) y
   `/glyph/modern/<símbolo>` (64 x 64, suavizado: las cuatro formas, las cuatro posiciones y las flechas `@left`,
-  `@right`, `@up` y `@down`), nunca logotipos de fabricantes.
+  `@right`, `@up` y `@down`), nunca logotipos de fabricantes. Una tecla clásica muestra lo que imprime el aparato del
+  jugador: los nombres cortos de un teclado vienen de los textos (`prompt.cap.*`: `STRG` y `ENTF` en alemán, `SUPR` en
+  español, o una marca dibujada como `@shift`), y Start, Back y Home de un mando muestran sus propias marcas (`@menu`,
+  `@view`, `@home`, `OPTIONS`, `L3`…), iguales en todos los idiomas; un botón del ratón se dibuja (`@mouse_left`). El
+  test `every language draws every cap whole` comprueba que ningún idioma deja una tecla con una letra que la fuente
+  de 3 x 5 no tiene.
 - **Marcadores en los textos:** `element:set_prompt_text(texto)` cambia cada `{prompt:<acción>}` del texto por el glifo
   de esa acción (`promptText`); con `set_prompt_text(texto, true)`, para un texto del original, también sus caracteres
   de botón y su «X button»: la cruz (que la extracción escribe «△», celda 77 de la fuente) es `confirm`, el triángulo
@@ -566,6 +571,14 @@ sus RML de reemplazo escriben propiedades `nav-*` (`nav-up`, `nav-down`, `nav-le
 de una pantalla está en su `structure.rcss`, que es igual con todos los aspectos. Un test (`skin_switch_tests.cpp`)
 recorre los aspectos del paquete `game` y de `tests/mods` y falla si alguno escribe `nav-`. Los ids de los elementos, las clases que usan los scripts, los scripts
 y los ajustes y comandos que leen y envían son el contrato con el juego y no cambian con el aspecto.
+
+La navegación espacial (`nav: auto`) sí lee las cajas del aspecto: RmlUi solo pasa a la derecha a una caja cuyo borde
+izquierdo queda más allá del borde derecho de la actual, e igual hacia el otro lado. Donde las cajas de un aspecto
+pueden solaparse, la pantalla mueve el foco ella misma. La tira de órdenes de la batalla lo hace: izquierda y derecha
+van al icono más cercano cuyo centro queda hacia ese lado en pantalla (`ui/battle/logic.lua`), y pasado el último icono
+sigue la navegación por defecto. Las fichas del aspecto pixel son más anchas que el paso entre dos iconos, y sin esto el
+teclado y el mando no podían salir de la orden señalada, así que no se podía huir de una batalla salvaje
+(`battle_flee_tests.cpp` da Huir con las teclas en todos los aspectos).
 
 **`ui/skins/<id>/skin.yaml`** (esquema `ui_skin`, registrado en `pack.yaml`):
 
@@ -1086,8 +1099,12 @@ el griego y el cirílico; el chino, el japonés y el coreano vienen de **cadenas
   `Pixel Body` y 0,923 de `Pixel Small` para que su em de 12 píxeles caiga en la rejilla de esas familias; detrás, las
   caras suaves y `Noto Sans` recogen lo demás. La fuente de mapa de bits del aspecto original cae en `Pixel Small` (ver
   [Aspecto original](#aspecto-original)), así que tiene la misma cadena. `pixel_body.ttf` y `pixel_small.ttf` ganaron
-  latino extendido A, griego y cirílico de las mismas fuentes misc-fixed que su ASCII. Todas tienen la licencia SIL
-  Open Font; `cjk/cjk_fonts_license.txt` y `pixel_fonts_license.txt` nombran las fuentes y versiones.
+  latino extendido A, griego y cirílico de las mismas fuentes misc-fixed que su ASCII. Las dos celdas en negrita
+  dibujaban la «м» cirílica con una fila llena entre sus trazos, como una «н», así que `make_fonts.py` dibuja esa letra
+  de nuevo en las dos caras (su tabla `PIXEL_REDRAWN`, que reemplaza un glifo que la fuente ya tiene; `--fusion` solo
+  hace falta para las caras CJK), y `cyrillic_glyphs_tests.cpp` comprueba que cada letra cirílica está en cada fuente
+  de la interfaz, distinta de las demás en las caras de píxeles, sin la barra de la «н» en la «м». Todas
+  tienen la licencia SIL Open Font; `cjk/cjk_fonts_license.txt` y `pixel_fonts_license.txt` nombran las fuentes y versiones.
 - **Tamaño.** Las caras son subconjuntos, no las fuentes enteras: el juego GB 2312 para el chino, JIS X 0208 para el
   japonés, las 2350 sílabas de KS X 1001 para el coreano, su puntuación y formas de ancho completo, más cada carácter
   que usan los textos del repo. Unos 5,4 MB en total (las fuentes enteras pesan unos 60 MB). Se cargan con la UI como las

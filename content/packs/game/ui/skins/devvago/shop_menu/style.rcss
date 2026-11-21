@@ -1,10 +1,10 @@
 /* Shop screens share the pause menu's terminal palette, with a wider centred layout for the keeper's dialogue,
-   choices, item list and quantity prompt. */
+   choices, item list and quantity prompt. A full page of eight rows ends above the description box (588dp). */
 
 #panel {
 	position: absolute;
 	left: 50%;
-	top: 96dp;
+	top: 90dp;
 	width: 690dp;
 	margin-left: -345dp;
 	padding: 18dp 24dp 16dp 24dp;
@@ -16,7 +16,7 @@
 }
 
 #line {
-	min-height: 54dp;
+	min-height: 42dp;
 	margin: 0 0 12dp 0;
 	padding: 0 9dp 12dp 9dp;
 	border-bottom: 2dp #397ca4;
@@ -81,10 +81,10 @@
 .row {
 	display: block;
 	width: 100%;
-	height: 39dp;
-	margin: 0 0 3dp 0;
+	height: 34dp;
+	margin: 0 0 2dp 0;
 	padding: 0 12dp;
-	line-height: 36dp;
+	line-height: 31dp;
 	text-align: left;
 }
 
@@ -98,10 +98,9 @@
 }
 
 #page {
-	position: absolute;
-	right: 0;
-	bottom: 0;
-	margin: 0;
+	float: right;
+	margin: 12dp 0 0 0;
+	line-height: 30dp;
 	color: #a8c7d9;
 	font-size: 14dp;
 }
@@ -115,7 +114,7 @@
 }
 
 .back {
-	margin-top: 9dp;
+	margin-top: 6dp;
 	color: #a8c7d9;
 }
 
@@ -168,7 +167,7 @@
 #amount-back { right: 2%; }
 
 #prompts {
-	margin-top: 12dp;
+	margin-top: 8dp;
 	padding-top: 9dp;
 	border-top: 1dp #397ca4;
 	color: #a8c7d9;

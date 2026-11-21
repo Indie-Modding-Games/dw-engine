@@ -1,0 +1,9 @@
+# Texts of the development views.
+test_map: "테스트 맵"
+# The banner shown while --dev-assets is on.
+assets_active: "개발용 에셋 사용 중 (--dev-assets)"
+# The notice that a bug report was saved (F12).
+report_saved: "버그 리포트를 저장했어요"
+
+technique: "데모 기술"
+finisher: "데모 필살기"

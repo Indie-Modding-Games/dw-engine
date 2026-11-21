@@ -20,10 +20,15 @@ namespace dwe::ui {
 //
 // A symbol is a short text in capitals (A-Z, 0-9, + - = , . ?) or a named one: @cross, @circle,
 // @square, @triangle (the shapes of the original's pad), @south, @east, @west, @north (the
-// position of a button among the four), @space, @enter, @backspace, @slash, @up, @down, @left,
-// @right and @dpad_up, @dpad_down, @dpad_left, @dpad_right.
+// position of a button among the four), @space, @enter, @backspace, @tab, @shift, @caps_lock,
+// @slash, @backslash, @left_bracket, @right_bracket, @semicolon, @apostrophe, @grave, @up, @down,
+// @left, @right, @dpad_up, @dpad_down, @dpad_left, @dpad_right, @menu, @view, @home (the pad's
+// own marks) and @mouse_left, @mouse_right, @mouse_middle.
 inline constexpr std::string_view GlyphPrefix = "glyph/";
 inline constexpr std::string_view ClassicGlyphPrefix = "glyph/classic/";
+
+// Whether a classic glyph draws this symbol whole: a named one, or a text all in its capitals.
+[[nodiscard]] bool classicDraws(std::string_view symbol);
 
 // How wide a classic cap with this symbol is, in the original's pixels.
 [[nodiscard]] int classicCapWidth(std::string_view symbol);

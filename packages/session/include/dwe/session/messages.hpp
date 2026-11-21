@@ -127,6 +127,9 @@ inline constexpr std::string_view StoryUnknownAtStart =
     "story: trigger {} is not known at the new game's start (data/new_game_story); it starts clear";
 inline constexpr std::string_view StoryMissingInSave =
     "story: the save has no story section (made before it existed); the story starts as a new game's";
+inline constexpr std::string_view FixedFightTriggerDropped =
+    "story: trigger {} (a fight that cannot be fled) holds only while its script runs: the save "
+    "leaves it clear";
 inline constexpr std::string_view StoryRaisedFromSave =
     "story: {} raised species of the evolution section raise their triggers";
 inline constexpr std::string_view StoryRaisedUnnumbered =

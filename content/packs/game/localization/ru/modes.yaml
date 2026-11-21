@@ -1,0 +1,8 @@
+# The game modes (modes/<id>/mode.yaml) and the list a mode is chosen from (ui/new_game_mode). The two the game ships
+# are its variants (docs/architecture/game-variants.md).
+title: "Режим игры"
+classic_name: "Улучшенная классика"
+classic_description: "Оригинальная игра: сюжет, правила и баланс как были, с улучшенной графикой, удобными настройками и исправленными ошибками."
+folder_name: "Режим Folder"
+folder_description: "Расширенная игра: скрытый контент, все виды в напарники, шаг к Мега и все настройки, включая правила."
+unknown_name: "Неизвестный вариант игры"

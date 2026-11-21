@@ -54,7 +54,7 @@ TEST_CASE("a save file is written and read back byte-identical") {
   file.sections.emplace("partner", SavedSection{.version = 3, .state = state});
   const auto text = writeSaveFile(file);
   REQUIRE(text);
-  CHECK(text->starts_with("format: dwe-save\nformat_version: 3\n"));
+  CHECK(text->starts_with("format: dwe-save\nformat_version: 4\n"));
   CHECK(text->ends_with("complete: true\n"));
 
   const auto read = parseSaveFile(*text);
@@ -186,7 +186,7 @@ TEST_CASE("the header is migrated by the format's chain") {
     YamlNode renamed = renamedKey(root, "title", "label");
     renamed.set("autosave_reasons", YamlNode::sequence());
     YamlNode summary = YamlNode::mapping();
-    for (const char* key : {"slot", "tamer", "species", "nickname", "map"}) {
+    for (const char* key : {"slot", "tamer", "species", "nickname", "map", "mode"}) {
       summary.set(key, YamlNode::scalar(""));
     }
     renamed.set("summary", summary);
@@ -199,8 +199,8 @@ TEST_CASE("the header is migrated by the format's chain") {
   CHECK(read->header.label == "File City");
 
   const auto newer = parseSaveFile(
-      replaced(readFixture("partner_v1.yaml"), "format_version: 3", "format_version: 4"));
-  CHECK(errorOf(newer).contains("the save format is version 4, newer than this game reads (3)"));
+      replaced(readFixture("partner_v1.yaml"), "format_version: 4", "format_version: 5"));
+  CHECK(errorOf(newer).contains("the save format is version 5, newer than this game reads (4)"));
 }
 
 TEST_CASE("format 1 saves load with no autosave reasons, and autosaves list theirs") {
@@ -233,12 +233,13 @@ TEST_CASE("the summary is written and read back, and format 2 saves load with an
                          .tamer = "Juan",
                          .species = "base:sp_01",
                          .nickname = "Spark",
-                         .map = "base:map_01"};
+                         .map = "base:map_01",
+                         .mode = "classic"};
   const auto text = writeSaveFile(file);
   REQUIRE(text);
-  CHECK(text->contains(
-      "label: \"File City\"\nsummary:\n  slot: \"slot_03\"\n  tamer: \"Juan\"\n"
-      "  species: \"base:sp_01\"\n  nickname: \"Spark\"\n  map: \"base:map_01\"\ncreated:"));
+  CHECK(text->contains("label: \"File City\"\nsummary:\n  slot: \"slot_03\"\n  tamer: \"Juan\"\n"
+                       "  species: \"base:sp_01\"\n  nickname: \"Spark\"\n  map: \"base:map_01\"\n"
+                       "  mode: \"classic\"\ncreated:"));
   const auto read = parseSaveFile(*text);
   REQUIRE_MESSAGE(read, errorOf(read));
   CHECK(read->header == file.header);
@@ -253,6 +254,16 @@ TEST_CASE("the summary is written and read back, and format 2 saves load with an
 
   CHECK(errorOf(parseSaveFile(replaced(*text, "  map: \"base:map_01\"\n", ""))).contains("map"));
   CHECK(errorOf(parseSaveFile(replaced(*text, "  tamer:", "  name:"))).starts_with("save file: "));
+}
+
+TEST_CASE("format 3 saves load with no game mode in their summary") {
+  const auto old = parseSaveFile(readFixture("format_v3.yaml"));
+  REQUIRE_MESSAGE(old, errorOf(old));
+  CHECK(old->header.summary.mode.empty());
+  CHECK(old->header == sampleFile().header);
+  CHECK(writeSaveFile(*old).value() == readFixture("partner_v1.yaml"));
+  CHECK(errorOf(parseSaveFile(replaced(readFixture("partner_v1.yaml"), "  mode: \"\"\n", "")))
+            .contains("mode"));
 }
 
 TEST_CASE("corrupt and truncated files are errors") {

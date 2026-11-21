@@ -56,7 +56,6 @@ signs:
       quad: [[545, 69], [623, 75.5], [622, 94], [543, 89]]
     corners: [[547, 71], [621, 77], [620, 92], [545, 87]]
     text: signs.gcan09_shop
-    size: 9
     color: "#302828"
 ```
 
@@ -67,7 +66,10 @@ signs:
   borrado se come el marco, limítalo con `quad`.
 - Copia los colores del original (el color de las letras, el contorno, el halo de un neón) y usa `colors: region`
   para que solo salgan colores que el cartel ya tenía.
-- El texto encoge solo hasta caber (`fit`); si queda muy pequeño, busca una traducción más corta.
+- No pongas `size`: el alto de la caja da el tamaño de las letras y el texto encoge solo hasta caber, la misma regla
+  para todos los carteles (Ajuste en el módulo). Ajusta `corners` al texto original para que el nuevo salga igual de
+  grande; pon `lines: 2` si el tablero tiene dos líneas y el mismo `group` a las piezas de un tablero.
+- Si el texto queda bajo su suelo, la prueba de contenido falla: busca una traducción más corta.
 - Un cartel luminoso hecho con sprites semitransparentes sobre un tablero oscuro (los postes de `mayo00` o `gias00`) se
   borra con `clear: transparent` en su página (`target`) y `colors: region`.
 

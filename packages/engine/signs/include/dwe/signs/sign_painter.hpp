@@ -41,6 +41,33 @@ struct PaintedSigns {
   std::vector<std::string> warnings;
 };
 
+// Where a sign's text goes in its box and at what size.
+struct SignTextLayout {
+  std::vector<std::string> lines;
+  float size = 0.0F;
+  float baseSize = 0.0F;
+  float floorSize = 0.0F;
+  PixelPoint box;
+  PixelPoint room;
+  PixelPoint ink;
+  std::int32_t missing = 0;
+
+  [[nodiscard]] bool overflows() const;
+  [[nodiscard]] bool tooSmall() const;
+};
+
+// The fitting rule's margin and floor.
+inline constexpr float SignMarginRatio = 0.15F;
+inline constexpr float SignLegibleLetter = 4.0F;
+inline constexpr float SignFloorRatio = 0.6F;
+
+SignTextLayout layOutSignText(const Sign& sign, std::string_view text, const SignFont& font);
+
+// The layouts of a map's signs, in order, with each group at its smallest size; a sign without a
+// font gets an empty layout.
+std::vector<SignTextLayout> layOutSigns(std::span<const Sign> signs,
+                                        const SignResources& resources);
+
 // Paints one sign with its text into an indexed image whose colours are `palette`; returns the
 // rectangle it changed (empty when nothing). `original`, the image before any sign was painted
 // (the same size), says which colours SignColors::Region allows; `image` itself when null. Used

@@ -1,0 +1,12 @@
+# The new game's rules (ui/new_game_rules): every species as a partner, the original's or with its hidden content,
+# and the Ultimate to Mega step.
+title: "게임 규칙"
+all: "모든 종을 파트너로: {value}"
+all_on: "원작에서 키울 수 없던 종으로도 진화해요."
+all_off: "원작의 종만."
+hidden: "숨겨진 콘텐츠: {value}"
+hidden_off: "원작의 규칙."
+hidden_on: "판쟈몬, 기가드라몬, 메탈에테몬, 마이오티스몬으로도 진화해요."
+mega: "완전체에서 궁극체로: {value}"
+mega_about: "완전체가 궁극체로 진화할 수 있어요: 메탈에테몬과 머신드라몬."
+start: "시작"

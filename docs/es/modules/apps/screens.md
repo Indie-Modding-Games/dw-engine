@@ -16,8 +16,10 @@ Las listas van como `<lista>.count` y `<lista>.<i>.<campo>` (`battle.fighter.0.h
 - los nombres del original (especies, objetos, técnicas) son claves de las tablas de texto extraídas, por su índice
   en la tabla de datos (`NameKeys`: `main.digimon_names.NNNN`, `main.item_names.NNNN`, `main.move_names.NNNN`);
 - las etiquetas que el original tiene (los comandos, `btl.command_names`; HP, MP, Ataque..., `main.stat_labels`;
-  usar, mover, ordenar, tirar, `main.item_menu_labels`; los bits, `main.battle_ui_bits_labels`) también;
-- lo demás son claves propias del juego en `localization/<idioma>/battle.yaml` y `partner_menu.yaml`.
+  usar, mover, ordenar, tirar, `main.item_menu_labels`) también;
+- lo demás son claves propias del juego en `localization/<idioma>/battle.yaml` y `partner_menu.yaml`, y la etiqueta de
+  la moneda, `common.bits` (el `main.battle_ui_bits_labels` del original se deja como se extrajo en todas las
+  traducciones, así la palabra del idioma para la moneda, «ビット» en japonés, sale de los textos del motor).
 
 ## Pantalla de combate
 

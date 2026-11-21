@@ -1,0 +1,7 @@
+title: "どこへ行きますか？"
+place: "{name} ({map})"
+story: "ストーリー"
+stay: "ここにとどまる"
+previous: "前へ"
+next: "次へ"
+page: "{page}/{pages}"

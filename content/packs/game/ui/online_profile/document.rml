@@ -21,11 +21,11 @@
 				<span id="head-record"></span>
 			</div>
 
-			<button id="name-field" class="profile-row" onclick="press(document, 'name')"><span class="row-label" text-key="online.profile.name"></span><span id="name-box"><span id="name-value"></span><span id="name-caret" class="hidden">_</span></span></button>
+			<button id="name-field" class="profile-row" onclick="press(document, 'name')"><span id="name-label" class="row-label"><span id="name-label-text" text-key="online.profile.name"></span></span><span id="name-box"><span id="name-value"></span><span id="name-caret" class="hidden">_</span></span></button>
 			<p id="name-hint"></p>
 
 			<div id="icon-row" class="profile-row">
-				<span class="row-label" text-key="online.profile.icon"></span>
+				<span id="icon-label" class="row-label"><span id="icon-label-text" text-key="online.profile.icon"></span></span>
 				<button id="icon-1" class="icon-choice" onclick="pick_icon(document, 1)"><div id="icon-1-picture" class="profile-icon"></div></button>
 				<button id="icon-2" class="icon-choice" onclick="pick_icon(document, 2)"><div id="icon-2-picture" class="profile-icon"></div></button>
 				<button id="icon-3" class="icon-choice" onclick="pick_icon(document, 3)"><div id="icon-3-picture" class="profile-icon"></div></button>
@@ -35,11 +35,11 @@
 				<span id="icon-name"></span>
 			</div>
 
-			<button id="relay-field" class="profile-row" onclick="press(document, 'relay')"><span class="row-label" text-key="online.profile.relay"></span><span id="relay-value"></span></button>
+			<button id="relay-field" class="profile-row" onclick="press(document, 'relay')"><span id="relay-label" class="row-label"><span id="relay-label-text" text-key="online.profile.relay"></span></span><span id="relay-value"></span></button>
 			<p id="relay-hint" text-key="online.profile.relay_hint"></p>
 
 			<div id="record-row" class="profile-row">
-				<span class="row-label" text-key="online.profile.record"></span>
+				<span id="record-label" class="row-label"><span id="record-label-text" text-key="online.profile.record"></span></span>
 				<span class="record-label" text-key="online.profile.wins"></span><span id="record-wins" class="record-value"></span>
 				<span class="record-label" text-key="online.profile.losses"></span><span id="record-losses" class="record-value"></span>
 			</div>

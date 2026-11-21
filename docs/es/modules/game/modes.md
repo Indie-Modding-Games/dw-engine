@@ -1,11 +1,13 @@
 # modes
 
 Los modos de juego (`dwe::game::modes`, capa `game`): qué partidas puede empezar el jugador. Un modo junta una forma de
-jugar con el ruleset con el que empieza; el juego trae uno solo, **Historia original**, y un mod añade los suyos con
-un manifiesto. Depende de `core` y `assets`; no dibuja nada.
+jugar con los rulesets que admite y, opcionalmente, las opciones que fijan sus partidas; el juego trae dos, las
+[variantes de juego](../../architecture/game-variants.md) **Clásico Mejorado** y **Modo Folder**, y un mod añade los
+suyos con un manifiesto. Depende de `core` y `assets`; no dibuja nada.
 
-El original no tiene modos: su partida nueva es siempre la misma historia. Los modos existen para que un mod
-pueda traer, por ejemplo, una arena de combates sin la historia (tarjeta #111).
+El original no tiene modos: su partida nueva es siempre la misma historia. Los modos existen para que el jugador elija
+las reglas del original o el juego ampliado, y para que un mod pueda traer, por ejemplo, una arena de combates sin la
+historia (tarjeta #111).
 
 ## El manifiesto
 
@@ -13,15 +15,19 @@ Cada modo es una carpeta `modes/<id>/` de un paquete con un `mode.yaml` (esquema
 que `dwx validate` comprueba):
 
 ```yaml
-id: original                          # el nombre de la carpeta
-name: modes.original_name             # clave de localización del nombre
-description: modes.original_description
+id: classic                           # el nombre de la carpeta
+name: modes.classic_name              # clave de localización del nombre
+description: modes.classic_description
 ruleset: original                     # el ruleset con el que empieza
-rulesets: [original, oculto, oculto_mega, todas, todas_oculto, todas_oculto_mega]   # los que admite; incluye ruleset
+rulesets: [original]                  # los que admite; incluye ruleset
 order: 0                              # posición en la lista (luego el id)
+options:                              # opcional: nombre de opción -> el valor que fijan sus partidas
+  difficulty: normal
+  rare_items: false
 ```
 
-Todas las claves son obligatorias y no admite otras. Un paquete de encima reemplaza un modo dando la misma carpeta,
+Todas las claves menos `options` son obligatorias y no admite otras. `options` se lee en `GameMode::options`
+(`OptionPin`: opción y valor como texto); el juego la aplica (`apps/game/src/mode_options.hpp`). Un paquete de encima reemplaza un modo dando la misma carpeta,
 como cualquier asset.
 
 ## Uso
@@ -29,20 +35,21 @@ como cualquier asset.
 ```cpp
 auto catalog = dwe::game::modes::ModeCatalog::load(files);   // los modos de los paquetes montados
 if (catalog.asksMode()) { /* más de uno: la partida nueva pregunta */ }
-const dwe::game::modes::GameMode* mode = catalog.defaultMode();   // original, o el primero
+const dwe::game::modes::GameMode* mode = catalog.defaultMode();   // folder, o el primero
 ```
 
 - **Catálogo**: `ModeCatalog::load` lee cada `modes/<carpeta>/mode`, comprueba que cada ruleset del modo existe
   (`rules/<id>/ruleset`) y deja fuera, con su motivo en el log, el modo que no se lee: un mod roto no impide
   arrancar. Ordena por `order` y luego por id.
 - **Partida nueva**: la pantalla de título (`apps/game/src/title_screen.cpp`, `NewGameModes`) muestra la lista
-  `ui/new_game_mode` solo si hay más de un modo; con uno, que es lo que trae el juego, no cambia nada. Después,
+  `ui/new_game_mode` solo si hay más de un modo; con uno (un mod que sustituye ambos), no pregunta nada. Después,
   la pantalla de reglas (`ui/new_game_rules`) sale solo para un modo que ofrece las reglas del original y su
   contenido oculto (`original` y `oculto` en `rulesets`); otro modo empieza con su `ruleset`. Las rutas de prueba
-  que no preguntan reglas tampoco preguntan modo: juegan la historia original con el `--ruleset` de la línea de
-  órdenes.
-- **Guardado**: la sesión guarda el modo en la sección `mode` (`id`); una partida guardada antes de los modos no la
-  tiene y se carga como `original` (`session::ModeSave`). `GameSession::mode()` lo devuelve.
+  que no preguntan reglas tampoco preguntan modo: juegan el Modo Folder (`DefaultMode`) con el `--ruleset` de la
+  línea de órdenes.
+- **Guardado**: la sesión guarda el modo en la sección `mode` (`id`) y en el resumen de la cabecera (formato 4); una
+  partida guardada antes de los modos no la tiene, y una guardada antes de las variantes tiene `original`: ambas se
+  cargan como `folder` (`currentModeId`, `session::ModeSave`). `GameSession::mode()` lo devuelve.
 
 ## Pendiente
 

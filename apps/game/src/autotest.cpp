@@ -551,6 +551,7 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
   } else if (kind == "menu_select") {
     step.kind = Kind::MenuSelect;
     step.text = reader.text(value);
+    step.timeout = 20.0;
   } else if (kind == "expect_setting" || kind == "expect_change") {
     step.kind = kind == "expect_setting" ? Kind::ExpectSetting : Kind::ExpectChange;
     step.timeout = 2.0;
@@ -1629,13 +1630,10 @@ bool Autotest::menuSelectStep(const AutotestHost& host, const AutotestStep& step
     progress.phase = 1;
     return false;
   }
-  // Down through the page, then up if it does not wrap round, then right and left through a row
-  // (the battle's commands). Enough downs for the longest page, a tab of the pause menu's options.
-  // A page with tabs (an element menu-tabs on screen: the options) holds only its shown tab's rows:
-  // while the entry is not there it steps to the next tab, then walks the tab up and down; it never
-  // presses right or left, which change a row.
   constexpr int DownTries = 14;
   constexpr int UpTries = 24;
+  constexpr int TabDownTries = 36;
+  constexpr int TabUpTries = 72;
   constexpr int RightTries = 36;
   constexpr int MaxTries = 48;
   constexpr int MaxTabSteps = 4;
@@ -1650,14 +1648,14 @@ bool Autotest::menuSelectStep(const AutotestHost& host, const AutotestStep& step
     progress.attempts = 0;
     return false;
   }
-  if (progress.attempts >= (tabbed ? UpTries : MaxTries)) {
+  if (progress.attempts >= (tabbed ? TabUpTries : MaxTries)) {
     failStep(std::format("cannot focus it; the focus is on '{}'", host.ui->focusedElementId(menu)));
     return false;
   }
   std::string_view direction = "left";
-  if (progress.attempts < DownTries) {
+  if (progress.attempts < (tabbed ? TabDownTries : DownTries)) {
     direction = "down";
-  } else if (progress.attempts < UpTries) {
+  } else if (progress.attempts < (tabbed ? TabUpTries : UpTries)) {
     direction = "up";
   } else if (progress.attempts < RightTries) {
     direction = "right";

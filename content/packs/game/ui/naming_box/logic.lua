@@ -70,21 +70,39 @@ local function refresh_prompts(document)
   end
 end
 
+local Prompts = { "hint-write", "hint-back", "hint-accept", "hint-clear", "hint-page" }
+
+local function fit_prompts(document)
+  local parts = {}
+  for _, id in ipairs(Prompts) do
+    parts[#parts + 1] = document:get(id)
+  end
+  fit_text.fit(document:get("prompts"), parts)
+end
+
 function on_show(document)
   refresh(document)
   refresh_prompts(document)
+  fit_prompts(document)
+end
+
+function on_tick()
+  fit_text.tick()
 end
 
 hooks.on("naming.changed", function(_, document)
   if ui.is_visible(document_name) then
     refresh(document)
+    fit_prompts(document)
   end
 end)
 
 function on_language(document)
   refresh(document)
+  fit_prompts(document)
 end
 
 function on_device(document)
   refresh_prompts(document)
+  fit_prompts(document)
 end

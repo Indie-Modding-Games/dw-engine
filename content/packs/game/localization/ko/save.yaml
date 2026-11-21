@@ -1,0 +1,76 @@
+# Save messages shown to the player (docs/architecture/save.md).
+autosaved: "자동 저장됨"
+autosave_failed: "자동 저장 실패"
+autosave_reason.map_change: "맵 이동"
+autosave_reason.battle_end: "배틀 후"
+autosave_reason.partner_sleep: "파트너가 잠듦"
+autosave_reason.new_day: "새로운 날"
+autosave_reason.evolution: "진화"
+autosave_reason.tournament_result: "대회 결과"
+autosave_reason.recruit_join: "마을에 새 주민"
+autosave_reason.key_item: "중요 아이템"
+autosave_reason.dangerous_area: "위험 지역 앞"
+autosave_reason.story_progress: "스토리 진행"
+autosave_reason.partner_reborn: "파트너 환생"
+# The title screen's slot lists and dialogs (docs/architecture/save-and-load.md). {number} counts slots from 1.
+slots.title_new: "새 모험 슬롯을 고르세요"
+slots.title_continue: "이어서 할 모험을 고르세요"
+slots.slot: "슬롯 {number}"
+# An autosave file from an older version, which had autosave slots of their own: it can be continued or erased,
+# never written.
+slots.autosave: "옛 자동 저장 {number}"
+slots.empty: "비어 있음"
+slots.damaged: "손상된 데이터"
+slots.newer: "새 버전의 데이터"
+slots.no_save: "저장하지 않고 플레이"
+slots.no_save_warning: "이 게임은 저장할 수 없어요. 그래도 시작할까요?"
+slots.full: "빈 슬롯이 없어요."
+confirm_new: "새 모험을 기록할까요?"
+confirm_continue: "이 모험을 이어서 할까요?"
+# The dialog shows the save file's name below these.
+failed: "게임을 저장할 수 없었어요."
+load_failed: "게임을 불러올 수 없었어요."
+start_failed: "게임을 시작할 수 없었어요."
+damaged_use_backup: "이 데이터는 손상됐어요. 이전 사본을 불러올까요?"
+damaged_no_backup: "이 데이터는 손상됐고 사본도 없어요."
+too_new: "이 데이터는 게임의 새 버전에서 저장됐어요."
+# A save in the game whose slot changed outside the game (docs/architecture/save-and-load.md, 4).
+home_damaged: "이 모험의 데이터가 손상됐어요. 덮어쓸까요?"
+home_other: "이 슬롯에는 다른 모험이 있어요. 덮어쓸까요?"
+home_newer: "이 슬롯에는 게임의 새 버전에서 저장한 데이터가 있어요. 덮어쓸 수 없어요."
+# The sleep menu, once the partner slept (docs/architecture/save-and-load.md, 3.6).
+sleep: "잠자기"
+sleep_and_save: "저장하고 잠자기"
+# The save machine (docs/architecture/save-and-load.md, 3.7).
+# The first line of the notice for a partner below Rookie (main_menu.c: drawMainMenuStrings, view 19): its name, its
+# species and the start of the original's next line; the rest are the original's text.
+machine_in_training: "{name}({species})은(는) 아직 어려요."
+# An empty slot of the battle registration's list (main_menu.c: the registry's rows).
+machine_empty_slot: "."
+# Back to the title screen from the pause menu (docs/architecture/save-and-load.md, 3.8).
+to_title_confirm: "저장하지 않은 내용은 사라져요. 타이틀 화면으로 돌아갈까요?"
+# Quitting the game from the pause menu (3.8): "Yes" writes the save and closes the game; "No" keeps playing.
+quit_confirm: "끝내기 전에 게임을 저장할까요?"
+# A co-op guest's game, which saves nothing but its partner and bag, taken home to its own slot
+# (docs/architecture/multiplayer.md, "Saves in co-op"): the pause menu's save, and its quit, whose yes takes them
+# home and closes the game, and its return to the title screen, whose yes takes them home first.
+coop_guest: "게스트는 여기서 저장하지 않아요: 호스트의 세계니까요. 파트너와 가방은 알아서 저장 데이터로 돌아가요."
+coop_guest_quit_confirm: "파트너와 가방은 저장 데이터로 돌아가요. 게임을 끝낼까요?"
+coop_guest_to_title_confirm: "파트너와 가방은 저장 데이터로 돌아가요. 호스트의 세계를 떠나 타이틀 화면으로 갈까요?"
+# Erasing a save from the title screen (docs/architecture/save-and-load.md). The dialog shows the save's file
+# name below.
+confirm_erase: "이 모험을 삭제할까요?"
+erase_failed: "데이터를 삭제할 수 없었어요."
+# The original look's slot list (ui/save_slots), in the original's capitals. {number} counts from 1.
+slots.original.new_slot: "슬롯 {number}"
+slots.original.continue_slot: "슬롯 {number} 이어하기"
+slots.original.continue_autosave: "옛 데이터 {number} 이어하기"
+slots.original.erase_slot: "슬롯 {number} 삭제"
+slots.original.erase_autosave: "옛 데이터 {number} 삭제"
+slots.original.no_save: "저장하지 않고 플레이"
+slots.original.in_use: "이 슬롯에는 이미 모험이 있어요."
+# The save indicator (an engine improvement): shown next to a small figure while the game saves.
+saving: "저장 중"
+loading: "불러오는 중"
+# The save indicator when an autosave was skipped: the adventure has no slot and every slot holds another one.
+autosave_no_slot: "자동 저장 안 됨: 모든 슬롯에 다른 모험이 있어요. 메뉴에서 저장하세요."

@@ -1,0 +1,8 @@
+yes: "はい"
+no: "いいえ"
+accept: "OK"
+back: "もどる"
+cancel: "キャンセル"
+# The currency, in the menus that label it.
+bits: "ビット"
+details_logged: "詳しくはゲームのログにあります。"

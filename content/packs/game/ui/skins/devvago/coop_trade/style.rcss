@@ -51,3 +51,24 @@ button.row {
 .state.ready {
 	color: #ffd51e;
 }
+
+.box {
+	font-size: 22dp;
+	line-height: 28dp;
+}
+
+.row {
+	height: 32dp;
+}
+
+.row .name {
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+#help {
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #a8c7d9;
+}

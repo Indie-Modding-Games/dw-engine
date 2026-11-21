@@ -1,0 +1,12 @@
+signs:
+  - id: restaurant
+    region: [516, 30, 186, 80]
+    clear:
+      mode: diffuse
+      quad: [[514, 28], [706, 74], [706, 114], [514, 58]]
+      color: "#4a844a"
+      tolerance: 40
+    corners: [[519, 33], [700, 78], [698, 109], [517, 61]]
+    text: signs.twnb_restaurant
+    color: "#6bc6bd"
+    colors: region

@@ -11,6 +11,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace dwe::assets {
 class VirtualFileSystem;
@@ -35,6 +36,10 @@ public:
   // The map's signs painted into `original` (the map's images as loaded) and into the sprites of
   // `objects` cut from the background over them, in a language, with the texts `text` gives.
   // Painted once per map, language and `textRevision`.
+  // How each sign of the map's overlay lays its text out in a language (the overlay's order).
+  std::vector<SignTextLayout> layouts(std::string_view mapId, std::string_view language,
+                                      const std::function<std::string(std::string_view)>& text);
+
   const PaintedSigns& painted(const assets::MapImages& original, const assets::MapObjects* objects,
                               std::string_view mapId, std::string_view language,
                               std::uint32_t textRevision,

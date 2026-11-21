@@ -394,6 +394,38 @@ TEST_CASE("every row's description stays inside its panel, in every skin and bot
   }
 }
 
+TEST_CASE("the options' foot and key hints stay in the window in every skin, in long languages") {
+  for (const std::string_view language : {"es", "de", "ru", "ja"}) {
+    for (const std::string_view skin : {"original", "modern", "pixel", "devvago"}) {
+      CAPTURE(language);
+      CAPTURE(skin);
+      Screen screen{"pause_menu", language};
+      screen.skin(skin);
+      screen.ui->setSetting("options.variant", std::string{"modes.classic_name"});
+      screen.ui->setSetting("options.locked.rare_items", true);
+      openOnOptions(screen);
+      for (const Tab& tab : Tabs) {
+        showTab(screen, tab.id);
+        for (const std::string_view row : tab.rows) {
+          CAPTURE(row);
+          focusRow(screen, row);
+          screen.frames(4);
+          const auto foot = screen.ui->elementDrawnRect(Menu, "option-foot");
+          const auto hints = screen.ui->elementDrawnRect(Menu, "options-hints");
+          const auto keys = screen.ui->elementDrawnRect(Menu, "options-hints-row");
+          REQUIRE(foot.has_value());
+          REQUIRE(hints.has_value());
+          REQUIRE(keys.has_value());
+          CHECK(foot->bottom <= 720.5F);
+          CHECK(keys->left >= hints->left - 0.5F);
+          CHECK(keys->right <= hints->right + 0.5F);
+          CHECK(keys->bottom <= 720.5F);
+        }
+      }
+    }
+  }
+}
+
 TEST_CASE("left and right change a row both ways; a number stops at its ends") {
   Screen screen{"pause_menu", "es"};
   screen.skin("modern");

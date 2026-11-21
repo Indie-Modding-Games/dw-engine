@@ -310,6 +310,9 @@ public:
         return std::unexpected{written.error()};
       }
     }
+    if (auto cleared = adapter_->clearFixedFight(saved); !cleared) {
+      return std::unexpected{cleared.error()};
+    }
     return game::story::toYaml(saved);
   }
 
@@ -331,6 +334,9 @@ public:
     core::logDebug(
         "[port:story] loadSavegame (main_menu.c:5058): variables 0 to {} read, the rest {}",
         game::story::SavedVariableCount - 1, ResetUnsavedVariablesOnLoad ? "start at 0" : "kept");
+    if (auto cleared = adapter_->clearFixedFight(*read); !cleared) {
+      return std::unexpected{cleared.error()};
+    }
     adapter_->state_ = *read;
     // The species past the triggers' numbers (the hidden content's) are kept only as the evolution
     // section's raised list, read before this section.
@@ -522,6 +528,18 @@ bool StoryAdapter::playerOwnTrigger(std::int32_t trigger) const {
 bool StoryAdapter::playerOwnVariable(std::int32_t variable) const {
   return std::cmp_equal(variable, flow_.frozenVariable) ||
          std::cmp_equal(variable, flow_.showNameVariable);
+}
+
+core::Result<void> StoryAdapter::clearFixedFight(game::story::StoryState& state) const {
+  if (!fixedFightTrigger_) {
+    return {};
+  }
+  const auto trigger = static_cast<std::int32_t>(*fixedFightTrigger_);
+  if (!state.trigger(trigger).value_or(false)) {
+    return {};
+  }
+  core::logDebug("{}", formatMessage(messages::FixedFightTriggerDropped, trigger));
+  return state.setTrigger(trigger, false);
 }
 
 core::Result<void> StoryAdapter::addSaveSections(game::save::SaveSections& sections) {

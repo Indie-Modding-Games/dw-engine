@@ -252,6 +252,8 @@ public:
   // Whether a new game's state is the one data/new_game_story leaves (the default), or clear but
   // for the partner's raised trigger, for the original's opening to set it.
   void seedNewGame(bool seed) { seedNewGame_ = seed; }
+  // Only holds while the script that set it runs: a save neither keeps it nor brings it back.
+  void setFixedFightTrigger(std::int64_t trigger) { fixedFightTrigger_ = trigger; }
 
   [[nodiscard]] game::story::StoryState& state() { return state_; }
   [[nodiscard]] const game::story::StoryState& state() const { return state_; }
@@ -272,6 +274,7 @@ private:
   core::Result<void> wire(const StorySectionRules& story,
                           const game::story::DialogueRules& dialogue);
   core::Result<void> wireNpcs();
+  core::Result<void> clearFixedFight(game::story::StoryState& state) const;
   void followNpcHolds();
   core::Result<void> wireFlow();
   core::Result<void> publishMotion();
@@ -330,6 +333,7 @@ private:
   std::uint32_t ticksPerFrame_ = 0;
   game::story::StoryFlowRules flow_;
   bool seedNewGame_ = true;
+  std::optional<std::int64_t> fixedFightTrigger_;
   // The cell sections asked on the last frame: a step cell asks every frame, logged once.
   std::vector<std::int32_t> askedCells_;
   FrameCells frameCells_;

@@ -164,6 +164,7 @@ partner choca con un NPC (`main.c: initializeLoadedMap: 3821-3857`) no se hace.
 | «Sin usar» | Ranura vacía | Igual |
 | «Dañada» / «Hay copia» | `SlotInfo::Damaged`, `hasBackup` | Nuevo (el original no la listaba como válida) |
 | Tiempo de juego y fecha de guardado | `play_seconds`, `updated` | **Mejora** documentada, de la cabecera que ya existe |
+| Variante de juego | `summary.mode` (Clásico Mejorado o Modo Folder, [variantes de juego](game-variants.md)); vacío se lee como Modo Folder | Nuevo: el original tenía una sola forma de jugar |
 
 Los autoguardados antiguos que queden van debajo de las manuales («Autoguardado antiguo N»), solo al continuar y al
 borrar (al empezar no se eligen).

@@ -24,6 +24,7 @@ namespace dwe::app {
 struct NamingPage {
   std::string name;
   std::vector<std::string> rows;
+  bool afterRows = false;
 };
 struct NamingRules {
   std::size_t length = 0;

@@ -76,8 +76,12 @@
    its left, so it does not rest on the colour alone. Both skins. */
 #list .row.favorite { color: #ffd34a; border-left: 6dp #ffd34a; }
 
-/* The row split into name and price (draw_row) is for skins that set the price in its own column. */
-.row-name,
-.row-price {
-	display: none;
-}
+/* A row in two columns in every skin (draw_row): the name from the left and the price right-aligned in its own
+   column, at the row's right padding, level with the name. */
+#list .row { position: relative; }
+#list .row .row-text { display: none; }
+#list .row .row-name { display: inline-block; white-space: nowrap; }
+#list .row .row-price { display: inline-block; position: absolute; right: 12dp; white-space: nowrap; }
+
+/* A page button's label fills its room and is squeezed into it (refresh_list). */
+.page-turn-label { display: block; white-space: nowrap; }

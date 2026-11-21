@@ -111,7 +111,8 @@ Usage: scripts/translation.sh [--lang <code>] [--pack <folder>] <command> [args]
   stale               The translated ids whose English changed since they were translated, with the
                       new English
   check               Every problem: keys the English does not have, tags that differ, kept ids that
-                      are translated, stale ids; exits with 1 if there is any
+                      are translated, stale ids, and the engine's and the launcher's texts missing a
+                      key of English's; exits with 1 if there is any
   long                The translations longer than their English, with both lengths, to check that
                       they fit; for the story tables, the lines wider than the box's and the texts
                       with more lines than the box
@@ -258,10 +259,20 @@ blocks_pattern() {
   echo "^(${blocks//./[.]})[.][0-9]+$"
 }
 
+own_names() {
+  awk -F '\t' -v block="$kept_name_block." -v titles="${translated_name_ids[*]}" '
+        BEGIN { n = split(titles, list, " "); for (i = 1; i <= n; i++) title[list[i]] = 1 }
+        index($1, block) == 1 && !($1 in title) { found = 1 }
+        END { exit !found }' "$1"
+}
+
 # The kept ids of the loaded English, as kind<TAB>id with kind english or original (see
 # kept_english_blocks).
 kept_ids() {
+  local names=0
+  if [[ -n "${1:-}" ]] && own_names "$1"; then names=1; fi
   awk -F '\t' -v english_pattern="$(blocks_pattern "${kept_english_blocks[@]}")" \
+    -v own_names="$names" \
     -v original_pattern="$(blocks_pattern "${kept_original_blocks[@]}")" \
     -v name_block="$kept_name_block." \
     -v ids="${kept_original_ids[*]}" -v titles="${translated_name_ids[*]}" '
@@ -272,13 +283,14 @@ kept_ids() {
         }
         {
             id[NR] = $1; text[NR] = $2
-            if (index($1, name_block) == 1 && !($1 in title_id)) kept_name[trimmed($2)] = 1
+            if (!own_names && index($1, name_block) == 1 && !($1 in title_id))
+                kept_name[trimmed($2)] = 1
         }
         END {
             for (i = 1; i <= NR; i++) {
                 name = trimmed(text[i])
                 if (id[i] in title_id) continue
-                if (id[i] ~ english_pattern) print "english\t" id[i]
+                if (id[i] ~ english_pattern && !own_names) print "english\t" id[i]
                 else if (id[i] ~ original_pattern || id[i] in original_id || name == "" \
                     || name in kept_name)
                     print "original\t" id[i]
@@ -402,7 +414,7 @@ load() {
   find_sources
   english_strings >"$scratch/english"
   translated_strings >"$scratch/translated"
-  kept_ids >"$scratch/kept_ids"
+  kept_ids "$scratch/translated" >"$scratch/kept_ids"
   awk -F '\t' '$1 == "english" { print $2 "\t" }' "$scratch/kept_ids" >"$scratch/kept_english"
   awk -F '\t' '$1 == "original" { print $2 "\t" }' "$scratch/kept_ids" >"$scratch/kept_original"
   cat "$scratch/kept_english" "$scratch/kept_original" >"$scratch/kept"
@@ -496,6 +508,14 @@ command_check() {
     echo "translated but not in the lock: $id"
     problems=$((problems + 1))
   done < <(rows_missing_from "$scratch/translated" "$scratch/locked")
+  while read -r id; do
+    echo "engine text missing: $id"
+    problems=$((problems + 1))
+  done < <(localization_missing "$language")
+  while read -r id; do
+    echo "launcher text $id"
+    problems=$((problems + 1))
+  done < <(launcher_problems "$language")
   echo "$problems problems"
   ((problems == 0))
 }
@@ -590,6 +610,30 @@ localization_keys() {
         }' "${files[@]}"
 }
 
+# The keys of English's localization tables a language's tables lack, as <table>.<key>.
+localization_missing() {
+  local reference="$localization_dir/$reference_language" files
+  [[ -d "$reference" ]] || return 0
+  shopt -s nullglob
+  files=("$reference"/*.yaml "$localization_dir/$1"/*.yaml)
+  shopt -u nullglob
+  awk -v reference="$reference/" '
+        /^[A-Za-z0-9_.-]+: / {
+            table = FILENAME; sub(/.*\//, "", table); sub(/\.yaml$/, "", table)
+            key = table "." substr($1, 1, length($1) - 1)
+            if (index(FILENAME, reference) == 1) english[key] = 1
+            else found[key] = 1
+        }
+        END { for (key in english) if (!(key in found)) print key }' "${files[@]}" | LC_ALL=C sort
+}
+
+# The launcher's texts of a language its checker finds missing, extra or with other placeholders;
+# nothing without node or without the language's file.
+launcher_problems() {
+  [[ -f "$launcher_texts/$1.js" ]] && command -v node >/dev/null || return 0
+  node "$launcher_check" "$1" 2>/dev/null | awk '/^  [a-z ]+: / { sub(/^  /, ""); print }' || true
+}
+
 # found/total: the launcher's texts of a language (apps/launcher/ui/js/i18n/<code>.js) against
 # English's, as its checker counts them; - without node or without the file.
 launcher_keys() {
@@ -611,10 +655,8 @@ command_coverage() {
   done
   find_sources
   english_strings >"$scratch/english"
-  kept_ids >"$scratch/kept_ids"
   english_hashes >"$scratch/hashes"
   cut -f1 "$scratch/english" | sort -u >"$scratch/strings"
-  cut -f2 "$scratch/kept_ids" | sort -u >"$scratch/kept"
   local columns=(strings translated kept missing stale)
   local rows=("${fixed_sources[@]}" "${story_prefix%_}" all) pattern counts
   echo "The original's texts (text/<code> of content/packs/<code>-translation); done is the"
@@ -624,7 +666,9 @@ command_coverage() {
   echo
   for code in "${languages[@]}"; do
     folder="$(pack_of "$code")/text/$code"
-    translated_strings "$folder" | cut -f1 | sort -u | comm -12 - "$scratch/strings" \
+    translated_strings "$folder" >"$scratch/translated_rows"
+    kept_ids "$scratch/translated_rows" | cut -f2 | sort -u >"$scratch/kept"
+    cut -f1 "$scratch/translated_rows" | sort -u | comm -12 - "$scratch/strings" \
       >"$scratch/translated"
     comm -23 "$scratch/strings" "$scratch/translated" | comm -23 - "$scratch/kept" \
       >"$scratch/missing"

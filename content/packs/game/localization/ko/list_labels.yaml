@@ -1,0 +1,13 @@
+# The column labels over the lists of the original's shop and keeper screens (item keeper, discard, card shop, merit
+# shop, bird transport, jukebox). The original look draws the original's pictures of these words in English and
+# these texts in any other language; the modern look writes them.
+menu: "메뉴"
+count: "개수"
+price: "가격"
+point: "포인트"
+place: "장소"
+number: "번호"
+title: "곡명"
+# The trade's fixed column titles: what the trader asks for and what you get for it.
+want: "원하는 것"
+have: "받는 것"

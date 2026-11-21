@@ -159,7 +159,11 @@ masks (`EnableClipMask`) are not implemented: they are only needed to clip trans
   routes `/glyph/classic/button|cap/<symbol>/<drawing>` (a round 16 x 12 button or a 12-high key in the
   original's style, with its top part sinking one pixel per drawing, and our own 3 x 5 letter) and
   `/glyph/modern/<symbol>` (64 x 64, smoothed: the four shapes, the four positions and the arrows `@left`,
-  `@right`, `@up` and `@down`), never manufacturers' logos.
+  `@right`, `@up` and `@down`), never manufacturers' logos. A classic cap shows what the player's hardware prints:
+  a keyboard's short names come from the texts (`prompt.cap.*`: `STRG` and `ENTF` in German, `SUPR` in Spanish, or a
+  drawn mark such as `@shift`), and a pad's Start, Back and Home show its own marks (`@menu`, `@view`, `@home`,
+  `OPTIONS`, `L3`…), the same in every language; a mouse button is drawn (`@mouse_left`). Test `every language draws
+  every cap whole` checks that no language leaves a cap with a letter the 3 x 5 font lacks.
 - **Markers in texts:** `element:set_prompt_text(text)` replaces each `{prompt:<action>}` in the text with that action's
   glyph (`promptText`); with `set_prompt_text(text, true)`, for an original text, also its button characters
   and its "X button": the cross (which extraction writes as "△", font cell 77) is `confirm`, the triangle
@@ -565,6 +569,13 @@ their replacement RML write `nav-*` properties (`nav-up`, `nav-down`, `nav-left`
 navigation is in its `structure.rcss`, which is the same with all skins. A test (`skin_switch_tests.cpp`)
 walks through the skins of the `game` pack and of `tests/mods` and fails if any writes `nav-`. The elements' ids, the classes the scripts use, the scripts
 and the settings and commands they read and send are the contract with the game and do not change with the skin.
+
+Spatial navigation (`nav: auto`) still reads the skin's boxes: RmlUi only moves right to a box whose left edge is past
+the current one's right edge, and the same the other way. Where a skin's boxes may overlap, the screen moves the focus
+itself. The battle's command strip does: left and right go to the nearest icon whose middle stands that way on screen
+(`ui/battle/logic.lua`), and past the last icon the default navigation goes on. The pixel skin's tiles are wider than
+the gap between two icons, and without this the keyboard and the gamepad could not leave the hovered command, so a wild
+battle could not be fled (`battle_flee_tests.cpp` gives Run with the keys in every skin).
 
 **`ui/skins/<id>/skin.yaml`** (schema `ui_skin`, registered in `pack.yaml`):
 
@@ -1084,8 +1095,11 @@ themselves; Chinese, Japanese and Korean come from **fallback chains**.
   and 0.923 of `Pixel Small` so their 12-pixel em sits on those families' grids; after them the smooth faces and
   `Noto Sans` catch anything else. The original look's bitmap font falls back to `Pixel Small` (see
   [Original look](#original-look)), so it gets the same chain. `pixel_body.ttf` and `pixel_small.ttf` gained
-  Latin Extended-A, Greek and Cyrillic from the same misc-fixed sources as their ASCII. All are under the SIL Open
-  Font Licence; `cjk/cjk_fonts_license.txt` and `pixel_fonts_license.txt` name the sources and versions.
+  Latin Extended-A, Greek and Cyrillic from the same misc-fixed sources as their ASCII. Both bold cells drew
+  Cyrillic «м» with a full row between its stems, like «н», so `make_fonts.py` draws that letter again in both faces
+  (its `PIXEL_REDRAWN` table, which replaces a glyph the source has; `--fusion` is only needed for the CJK faces), and
+  `cyrillic_glyphs_tests.cpp` checks every Cyrillic letter is in each UI font, drawn apart from the others in the pixel
+  faces, with no «н» bar in «м». All are under the SIL Open Font Licence; `cjk/cjk_fonts_license.txt` and `pixel_fonts_license.txt` name the sources and versions.
 - **Size.** The faces are subsets, not the full fonts: the GB 2312 set for Chinese, JIS X 0208 for Japanese, the
   2,350 syllables of KS X 1001 for Korean, their punctuation and full-width forms, plus every character the repo's
   texts use. About 5.4 MB in all (the full fonts are about 60 MB). They load with the UI like the other fonts; a

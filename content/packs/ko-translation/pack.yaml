@@ -1,0 +1,18 @@
+id: ko_translation
+version: 0.1.0
+layer: base
+priority: 2
+name:
+  en: "Korean translation"
+  es: "Traducción al coreano"
+  ko: "한국어 번역"
+description:
+  en: "The team's own Korean translation of the original's texts, as a delta over text/en of the base pack: only the Korean, with the keys of text/en. See docs/guides/translate.md."
+  es: "Traducción propia del equipo de los textos del original al coreano, como delta sobre text/en del paquete base: solo el coreano, con las claves de text/en. Ver docs/guides/translate.md."
+  ko: "팀이 직접 옮긴 원작 텍스트의 한국어 번역으로, 기본 팩의 text/en 위에 얹는 델타입니다: text/en의 키에 한국어만 담겨 있어요. docs/guides/translate.md를 보세요."
+dependencies:
+  - id: base
+    min_version: 0.1.0
+schemas:
+  sign_overlay:
+    - signs/*/*

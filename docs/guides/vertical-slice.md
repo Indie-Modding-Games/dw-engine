@@ -319,8 +319,10 @@ for lang in en es; do
         --autotest tests/autotest/route-mod-map.yaml --shots <captures>/$lang
 done
 ```
-- `route-game-modes.yaml`: with a second mode mounted ([`tests/mods/game_mode`](../modules/tests/mods.md)), the new
-  game asks for the mode; "Original story" is followed by the rules screen and "Practice" starts without it. It needs
+- `route-game-modes.yaml`: the new game asks for the mode, with a third one mounted
+  ([`tests/mods/game_mode`](../modules/tests/mods.md)); "Folder Mode" is followed by the rules screen and "Practice"
+  starts without it. `route-classic-enhanced.yaml` starts a Classic Enhanced game, checks its fixed options on the
+  options page and its variant on the slot list ([game variants](../architecture/game-variants.md)). It needs
   an empty saves folder. It is run in both languages:
 
 ```sh

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Game mode",
-  "description": "modes/<id>/mode.yaml: a game mode, a way to play the packs' content (packages/game/modes: parseGameMode, docs/modding/modes.md).",
+  "description": "modes/<id>/mode.yaml: a game mode, a way to play the packs' content, and the options its games fix (packages/game/modes: parseGameMode, docs/modding/modes.md, docs/architecture/game-variants.md).",
   "type": "object",
   "required": [
     "id",
@@ -46,6 +46,20 @@
     "order": {
       "description": "Where the mode goes in the mode list: lower first, then by id.",
       "type": "integer"
+    },
+    "options": {
+      "description": "The options of the options page (ui/api/options.lua) the mode's games fix, by name, at one value each (true, false, a value of a choice or a whole number); the options page shows them locked while one of its games is played.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": [
+          "boolean",
+          "string",
+          "integer"
+        ]
+      }
     }
   }
 }

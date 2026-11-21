@@ -1,0 +1,30 @@
+menu: "메뉴"
+# The field status. {hour} and {minute} are the game time with two digits each (00-23 and 00-59).
+clock.time: "{hour}:{minute}"
+# {day} is the day of the year (1-30 in the original's calendar) and {year} the year, both counted from 1.
+clock.date: "{year}년 {day}일"
+need.hunger: "배고픔"
+need.sleep: "졸림"
+need.toilet: "화장실"
+need.tired: "피곤함"
+need.injured: "부상"
+need.sick: "병"
+# The shop job's bar (the option shop_job_bar): its title, the customers served ({served} of {total}), the takings
+# against the total that makes the shopkeeper join ({tally} of {goal} bits) and the next mark: the better pay from
+# {tally}, the join from {tally}, then the join reached.
+shop_job.title: "가게 일"
+shop_job.customers: "손님 {served}/{total}"
+shop_job.tally: "{tally} / {goal} Bits"
+shop_job.better_pay: "{tally}부터 급여 인상"
+shop_job.join_from: "{tally}부터 마을에 합류"
+shop_job.joins: "마을에 합류!"
+shop_job.mark.pay: "급여 인상"
+shop_job.mark.join: "합류"
+shop_job.mark.bonus: "보너스"
+shop_job.bonus_from: "{tally}부터 보너스"
+shop_job.bonus_reached: "보너스 획득!"
+# The round minimap (an engine improvement): the north mark on its ring and the day under it, next to the time (clock.time).
+minimap.north: "북"
+minimap.day: "{day}일"
+# The lives box's word (on losing one), for skins that write it instead of the original's picture.
+lives_box.label: "목숨"

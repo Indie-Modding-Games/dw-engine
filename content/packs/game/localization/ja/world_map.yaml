@@ -1,0 +1,8 @@
+title: "島のマップ"
+here: "現在地:"
+exits: "ここから行ける場所"
+no_exits: "ここからの出口はありません"
+legend_here: "現在地"
+legend_exit: "ここから行ける"
+legend_unknown: "まだ行っていない"
+close: "閉じる"

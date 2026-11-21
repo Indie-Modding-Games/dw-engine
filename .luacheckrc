@@ -17,7 +17,7 @@ files["content/packs/*/ui/**/*.lua"] = {
     "ui", "t", "document_name", "skin_choice", "original_box", "bag_slot", "game_options",
     "panel_enter", "fit_text", "screen_fit", "title_picture", "hud_digits", "hud", "hooks",
     "clock", "field", "partner", "bag", "player", "options", "battle", "versus", "story", "dialog",
-    "naming", "online",
+    "naming", "online", "talk_wait",
   },
 }
 
@@ -39,7 +39,7 @@ files["content/packs/*/ui/api/*.lua"] = {
   read_globals = { "event_source" },
   globals = {
     "clock", "field", "partner", "bag", "player", "options", "battle", "versus", "story", "dialog",
-    "naming", "online",
+    "naming", "online", "talk_wait",
   },
 }
 
@@ -71,6 +71,10 @@ files["content/packs/*/ui/common/game_options.lua"] = {
 -- The text that shrinks to fit its room, loaded into the documents that need it.
 files["content/packs/*/ui/common/fit_text.lua"] = {
   globals = { "fit_text" },
+}
+
+files["content/packs/*/ui/common/talk_wait.lua"] = {
+  globals = { "talk_wait" },
 }
 
 -- A box kept whole inside the window, loaded into the documents with a box at the original's place.

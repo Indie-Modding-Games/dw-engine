@@ -1,0 +1,342 @@
+title.main: "일시정지"
+title.minimap: "미니맵"
+title.options: "설정"
+# Under the pause box: the key that opens the options from the pause ({key}, Esc on the keyboard; Select/Back on a pad).
+settings_hint: "{key} 설정"
+date: "{year}년   {day}일"
+continue: "계속하기"
+partner: "파트너"
+items: "아이템"
+player: "플레이어"
+title.player: "플레이어"
+player_name: "이름"
+player_level: "레벨"
+player_bits: "Bits"
+player_time: "시간"
+minimap: "미니맵"
+world_map: "섬 지도"
+weather: "날씨"
+seasons: "계절"
+season.spring: "봄"
+season.summer: "여름"
+season.autumn: "가을"
+season.winter: "겨울"
+hd_scenery: "HD 배경"
+model_characters: "3D 캐릭터"
+widescreen_pictures: "와이드 화면 그림"
+options: "설정"
+praise: "칭찬"
+scold: "꾸중"
+sleep: "재우기"
+fish: "낚시"
+quick_save: "저장"
+to_title: "타이틀로"
+quit: "게임 종료"
+minimap_mode: "미니맵 표시"
+# The round minimap (an engine improvement): shown or not, with either look.
+minimap_mode.on: "예"
+minimap_mode.off: "아니요"
+# Enemies on the minimap (an engine improvement): a red dot for each character on the map that can start a battle (on
+# by default; off, the minimap shows only the player and the partner).
+minimap_enemies: "미니맵에 적 표시"
+# Items on the minimap (an engine improvement): a green diamond for each item lying on the map's ground (on by default;
+# off, the minimap shows none).
+minimap_items: "미니맵에 아이템 표시"
+minimap_size: "크기"
+minimap_size.small: "작게"
+minimap_size.medium: "보통"
+minimap_size.large: "크게"
+display_mode: "화면"
+display_mode.fullscreen: "전체 화면"
+display_mode.window: "창 모드"
+ui_scale: "인터페이스 크기"
+# {percent} is the scale in percent, a whole number.
+ui_scale.value: "{percent}%"
+vsync: "수직 동기화"
+ui_skin: "인터페이스 스타일"
+# The whole interface: the game's own or one under ui/addons (docs/modding/ui-addons.md).
+ui_addon: "인터페이스"
+ui_addon.default: "게임 기본"
+ui_addon.safe: "게임 기본 (안전 모드)"
+ui_plugins: "플러그인"
+# Free exploration: the scripts open every way they have, whatever the story (off by default).
+free_exploration: "자유 탐험"
+# Smooth motion: the characters and the camera glide between the original's frames (on by default).
+smooth_motion: "부드러운 움직임"
+# Save notice: a small figure and "Saving" in a corner while the game saves (on by default).
+save_notice: "저장 알림"
+# Autosave: the game saves by itself to the adventure's own slot (on by default; off, only the player's saves write).
+autosave: "자동 저장"
+# Music and effects volume (an engine addition; the original has no sound options): a step from 0 (silent) to 10
+# (the original's level, the default). The music includes the movies' sound.
+music_volume: "음악 볼륨"
+effects_volume: "효과음 볼륨"
+# Digital time: the game time as HH:MM in a small box under the field's clock (on by default).
+digital_time: "디지털 시계"
+# Bulk trades: the item trader and the card shop's packs ask how many at once (on by default).
+bulk_trades: "한꺼번에 교환"
+# Evolution requirements: the chart's tree tells what each target asks and how the partner stands (on by default).
+evolution_requirements: "진화 조건"
+translated_signs: "번역된 표지판"
+# Status extras: the partner's tiredness bar and care mistakes on its status page, which the original hides (on by
+# default).
+status_extras: "상태 화면 추가 정보"
+# Canonical stages: the chart names the stages as the series does and draws a Mega box (off by default).
+canonical_stages: "시리즈식 세대"
+rare_items: "희귀 아이템"
+walk_control: "이동 방법"
+walk_control.keys: "키보드/패드"
+walk_control.mouse: "마우스"
+# Long names: the naming box takes names of up to twelve letters instead of six (on by default).
+long_names: "긴 이름"
+# Recruit bar: while a job or a match decides whether someone joins the city (the canyon shop, the stones game), a bar
+# shows how close the player is (on by default).
+shop_job_bar: "영입 막대"
+# Space after names: a name a text inserts gets a space when the text runs it into the next word (on by default).
+name_spacing: "이름 뒤 띄어쓰기"
+# Shop extras: the item's description under the list, how many of each the player has and the money the trade leaves
+# (off by default: the original's shop only shows the description with Pause).
+shop_extras: "상점 추가 정보"
+favorite_food: "좋아하는 음식 표시"
+# Art fixes: the original look draws right what the original reads from the wrong part of its textures (the status
+# page's happiness label). Off by default, as the original.
+art_fixes: "그래픽 수정"
+# Developer tools: the console (F1), the developer menu (F2) and the map overlay (F3).
+dev_tools: "개발자 도구"
+# Continuous music: a map whose song is already playing lets it go on instead of starting it again
+# (on by default).
+continuous_music: "음악 이어 듣기"
+# Reverb: the sound chip's reverb on the tones that ask for it, as the original (on by default).
+reverb: "잔향"
+# Several needs: the bubble over the partner shows up to three of its needs at once, the most urgent first (on by
+# default; off, the original's: one at a time, the two most urgent taking turns).
+need_bubble_stack: "요구 여러 개 표시"
+# Chibi style: the original game's models are chibi already; a model from elsewhere (a mod's, an imported one)
+# that is not is drawn with the original's proportions, the drawing only: off or external models (the default).
+chibi_style: "꼬마 스타일"
+chibi_style.off: "아니요"
+chibi_style.external: "외부 모델"
+
+year_label: "연도"
+day_label: "날짜"
+player_tab_chart: "도감"
+# The five tabs of the player page share the box's width, so the whole word fits.
+player_tab_medals: "메달"
+player_tab_card: "카드"
+player_tab_city: "마을"
+# The city's tab with the minimal tabs (skin.yaml layout: pause_menu: tabs: minimal).
+player_tab_prosperity: "번영도"
+player_raised: "육성수"
+player_items: "아이템"
+player_medals: "메달"
+title.tools: "엔진 도구"
+chart_select: "선택"
+
+chart_tree: "계보"
+chart_level.1: "유아기"
+chart_level.2: "유년기"
+chart_level.3: "성장기"
+chart_level.4: "성숙기"
+chart_level.5: "완전체"
+# The stages with the canonical stages on (chart_stage.<stage>; egg and ultra have no species yet).
+chart_stage.egg: "디지타마"
+chart_stage.fresh: "유년기 I"
+chart_stage.in_training: "유년기 II"
+chart_stage.rookie: "성장기"
+chart_stage.champion: "성숙기"
+chart_stage.ultimate: "완전체"
+chart_stage.mega: "궁극체"
+chart_stage.ultra: "초궁극체"
+
+# Evolution requirements on the chart's tree (an engine improvement): the panel's lines. Ranges and values are numbers
+# the game writes; {name} is a form's name.
+evoreq.care: "실수"
+evoreq.weight: "체중"
+evoreq.stats: "능력치"
+evoreq.stats_top: "최고 능력치"
+evoreq.stat.hp: "HP"
+evoreq.stat.mp: "MP"
+evoreq.stat.off: "공격"
+evoreq.stat.def: "방어"
+evoreq.stat.spd: "속도"
+evoreq.stat.brn: "지능"
+evoreq.bonus: "보너스, 다음 중 하나"
+evoreq.from: "{name}에서"
+evoreq.disc: "규율"
+evoreq.happy: "행복"
+evoreq.battles: "배틀"
+evoreq.techs: "기술"
+evoreq.special: "특별 진화"
+# A ruleset's condition (the hidden content): a city resident, the hour, a cup won.
+evoreq.gate: "특별 조건"
+evoreq.always: "항상"
+evoreq.time: "판정 시각"
+evoreq.hours: "{hours}시간"
+# The partner's evolution counter against the hours its level checks from.
+evoreq.hours_of: "{hours}/{total}시간"
+evoreq.fallback: "다른 게 없으면"
+# How many of the four groups are met.
+evoreq.ready: "{total}개 중 {met}개 충족"
+evoreq.next: "다음 판정에서 선택"
+evoreq.next_other: "다음 판정: {name}"
+evoreq.unknown: "???"
+
+medals_chart: "메달 도감"
+card_list: "카드 목록"
+
+# The City tab (a dwe addition): who already lives in the city and who is missing, with their prosperity points.
+city_prosperity: "번영도"
+city_residents: "주민"
+# The field's graphics improvements (engine options; docs/architecture/render.md).
+shadows: "그림자"
+shadows.sun: "햇빛"
+shadows.round: "원형"
+shadows.off: "끄기"
+scenery_quality: "배경 품질"
+scenery_quality.upscaled: "업스케일"
+scenery_quality.smooth: "부드럽게"
+antialiasing: "안티에일리어싱"
+texture_filter: "모델 텍스처"
+texture_filter.upscaled: "업스케일"
+texture_filter.smooth: "부드럽게"
+texture_filter.nearest: "픽셀"
+enhanced_lighting: "향상된 조명"
+vivid_colors: "선명한 색감"
+
+# The tabbed options page (docs/modules/apps/game.md, «In-game options»). The tabs share the box's top row: short
+# names.
+tab.game: "게임"
+tab.graphics: "그래픽"
+tab.sound: "사운드"
+tab.interface: "인터페이스"
+# The tag next to the focused row's description: whether with its current value the game does more than the original
+# or behaves as it.
+tag.improvement: "개선"
+tag.original: "원작대로"
+# The tag and help of an option the game's variant fixes (docs/architecture/game-variants.md).
+tag.locked: "{variant}에서 고정"
+help.locked: "{variant}에서는 이 게임을 하는 동안 이 설정이 원작 그대로예요. 바꾸려면 Folder 모드로 새 게임을 시작하세요."
+# The keys at the foot of the options: Q/E switch tabs, left/right change the value.
+hint.tabs: "탭"
+hint.change: "변경"
+options_reset: "기본값으로"
+# Enemy life bars: a bar over every enemy still standing for the whole fight, cups too (off by default: the original's,
+# a wild enemy's a while after it is hit and none in a cup).
+enemy_hp_bars: "적 체력 막대"
+# Gym sessions: how many sessions in a row a gym course runs (1, the original's, by default).
+gym_sessions: "체육관 연속 훈련"
+# Quick battles: fights at twice the speed, switched with R (the right trigger on a pad) or always (off by default).
+battle_speed: "빠른 배틀"
+battle_speed.normal: "끄기"
+battle_speed.key: "R로 전환"
+battle_speed.fast: "항상"
+# Battles without the wait: a field fight starts the moment it triggers (off by default: the original's lead-in).
+quick_battle_start: "대기 없는 배틀"
+# Difficulty: normal is the original's; easy eases fights, training and care as the ruleset says.
+difficulty: "난이도"
+difficulty.normal: "보통"
+difficulty.easy: "쉬움"
+shop_job_mode: "가게 일"
+shop_job_mode.improved: "개선판"
+shop_job_mode.original: "원작"
+# Skip evolutions: confirm or cancel ends an evolution's scene at once (off by default).
+skip_evolution: "진화 장면 건너뛰기"
+# Cancel closes choices: a cancel in a choice only closes it (off by default: the original's cancel).
+choice_cancel_closes: "취소로 선택지 닫기"
+# Fair sickness chance, evolution averages, move forgetting and card stock: the original's quirks turned off
+# (off by default).
+fair_sickness_chance: "공정한 발병 확률"
+fair_evolution_average: "공정한 진화 평균"
+fair_move_forgetting: "공정한 기술 잊기"
+fair_card_stock: "카드 중복 없는 진열"
+choose_egg_after_lives_lost: "목숨을 다 잃으면 알 선택"
+# Generous talk range: talking and reading signs reach a little further (off by default).
+generous_talk: "넓은 대화 범위"
+# Extra toilets: a few more toilet booths where the partner can go (off by default).
+extra_toilets: "화장실 추가"
+angemon_event_zone: "1층에서 엔젤몬 이벤트"
+whamon_in_water: "물속의 와몬"
+coop_difficulty: "협동 난이도"
+coop_difficulty.off: "끄기"
+coop_difficulty.standard: "표준"
+coop_difficulty.hard: "어려움"
+coop_open_to_join: "새 플레이어 참가 허용"
+# {tab} is the tab's name.
+reset_question: "{tab} 설정을 기본값으로 되돌릴까요?"
+reset_note: "창 모드, 스타일, 언어, 글꼴은 그대로예요."
+reset_confirm: "되돌리기"
+# The rows' descriptions: one or two lines under the list.
+help.free_exploration: "스토리와 상관없이 맵의 모든 길이 열려요."
+help.walk_control: "키보드와 패드로, 또는 마우스로 걸어요(둘을 함께 쓸 수는 없어요)."
+help.autosave: "규칙에 따라 게임이 모험의 슬롯에 알아서 저장해요."
+help.world_map: "M(패드는 L1)을 누르면 섬 전체 지도에 지금 있는 곳이 나와요."
+help.bulk_trades: "아이템 교환상과 카드 팩이 몇 개를 한꺼번에 살지 물어봐요."
+help.long_names: "이름을 원작의 6글자 대신 12글자까지 쓸 수 있어요."
+help.evolution_requirements: "진화 도감에 각 진화의 조건과 파트너의 현재 상태가 나와요."
+help.canonical_stages: "도감이 세대를 시리즈식으로 부르고 궁극체 칸을 더해요."
+help.rare_items: "아이템 자리에 희귀한 진화 아이템이 숨어 있을 수 있어요. 숨겨진 콘텐츠가 필요해요."
+help.battle_speed: "배틀이 2배 속도로 진행돼요. 항상, 또는 R(오른쪽 트리거)로 전환. 결과는 같아요."
+help.enemy_hp_bars: "배틀 내내 모든 적 위에 체력 막대가 보여요. 대회도요. 끄면 맞은 뒤 잠깐만 보여요."
+help.gym_sessions: "체육관 훈련을 이만큼 연달아 해요. 파트너를 돌보는 동안은 기다리고, 취소하거나 자리를 뜨거나 파트너가 다치거나 병에 걸리면 멈춰요."
+help.quick_battle_start: "필드의 배틀이 시작 연출 없이 바로 시작돼요. 대회는 그대로예요."
+help.shop_job_mode: "개선판: 공정한 손님 줄과 가격별 성공 확률이 보이는 흥정 화면. 원작: 원작의 가격 메뉴."
+help.difficulty: "보통은 원작 그대로. 쉬움: 파트너가 더 세게 때리고, 덜 맞고, 더 많이 성장하고, 밥 먹을 시간이 길고, 병에 덜 걸려요."
+help.skip_evolution: "선택이나 취소를 누르면 진화 장면이 바로 끝나요. 진화 결과는 같아요."
+help.choice_cancel_closes: "선택지에서 취소하면 닫히기만 해요. 원작에서는 첫 번째 답을 고르는 선택지도 있어요."
+help.fair_sickness_chance: "발병 확률이 0보다 낮으면 병에 걸리지 않아요. 원작에서는 오히려 꼭 병에 걸려요."
+help.fair_evolution_average: "진화 후보마다 자기 능력치로 비교해요. 앞 후보의 합계가 남아 섞이지 않아요."
+help.fair_move_forgetting: "기술을 잊으면 그 기술만 사라져요. 원작에서는 다른 기술까지 사라질 수 있어요."
+help.fair_card_stock: "카드 가게가 하루에 같은 카드를 두 번 내놓지 않아요. 원작에서는 그럴 수 있어요."
+help.choose_egg_after_lives_lost: "파트너가 목숨을 다 잃으면 수명이 다했을 때처럼 새 알을 직접 골라요. 원작에서는 무작위예요."
+help.generous_talk: "조금 더 멀리서, 어느 쪽을 보고 있든 말을 걸고 표지판을 읽어요. 원작은 더 가까이 가야 해요."
+help.extra_toilets: "체육관 표지판 옆 같은 곳에 화장실을 몇 개 더 놓아요. 파트너가 볼일이 급하면 그 앞에 서세요. 원작은 원래 화장실만 있어요."
+help.angemon_event_zone: "엔젤몬의 빛을 풀어 주면 어느 길로 돌아오든 얼음 성역 1층에서 이벤트가 시작돼요. 원작은 뚜껑문 계단으로 와야만 시작돼요."
+help.whamon_in_water: "오거몬 이벤트 전에는 와몬이 비밀 해변 동굴의 물가에서 기다려서 말을 걸 수 있어요. 원작은 보이지 않는 먼 곳에 둬요."
+help.coop_difficulty: "협동에서 싸우는 파트너와 돕는 플레이어가 늘수록 적이 강해져요. 표준은 공정하게, 어려움은 더 세게, 끄기는 원작 수치 그대로. 호스트의 설정만 적용돼요."
+help.coop_open_to_join: "협동에서 호스트일 때, 이미 시작된 게임에 새 플레이어가 참가할 수 있어요. 끄면 지금 있는 플레이어만 함께하고, 연결이 끊긴 플레이어는 다시 돌아올 수 있어요. 호스트 중인 방에 바로 적용돼요."
+help.status_extras: "상태 화면에 피로, 실수, 배틀, 깨어 있는 시간, 수명, 진화가 나와요."
+help.display_mode: "창 모드나 전체 화면으로 플레이해요."
+help.vsync: "화면이 찢어지지 않도록 프레임을 모니터와 맞춰요."
+help.smooth_motion: "캐릭터와 카메라가 원작의 프레임 사이를 부드럽게 움직여요."
+help.hd_scenery: "배경을 창 해상도로 선명하게 그려요. 보이는 것만 달라져요."
+help.scenery_quality: "HD 배경일 때: 맵마다 한 번 업스케일(더 선명) 또는 부드럽게만."
+help.antialiasing: "3D 모델의 가장자리를 매끄럽게 해요."
+help.texture_filter: "필드, 배틀, 메뉴의 모델 텍스처: 업스케일, 부드럽게, 또는 원작의 픽셀."
+help.model_characters: "일부 장소에서 평면 그림으로 나오는 캐릭터를 3D 모델로 그려요. 보이는 것만 달라져요."
+help.widescreen_pictures: "넓은 창에서 타이틀 그림이 화면을 채우고 동영상이 가로를 채워요."
+help.enhanced_lighting: "시간대에 따라 장면의 색이 바뀌고, 등불과 불이 주변을 밝혀요."
+help.vivid_colors: "더 풍부한 색, 은은한 대비, 밝은 곳의 빛 번짐. 메뉴는 바뀌지 않아요."
+help.shadows: "그림자 없음, 원작의 원형 그림자, 또는 시계에 따라 도는 햇빛 그림자도."
+help.chibi_style: "다른 곳(모드, 가져온 모델)의 모델을 원작의 비율로 그려요."
+help.weather: "바깥 맵에 비, 폭풍, 눈, 안개, 바람, 구름, 햇빛. 규칙은 바뀌지 않아요."
+help.seasons: "며칠마다 봄, 여름, 가을, 겨울이 바깥 풍경을 물들여요."
+help.music_volume: "음악과 동영상 소리의 볼륨. 10이 원작의 크기예요."
+help.effects_volume: "효과음과 메뉴 소리의 볼륨. 10이 원작의 크기예요."
+help.continuous_music: "다음 맵의 곡이 이미 나오고 있으면 처음부터 다시 틀지 않고 이어서 들려줘요."
+help.reverb: "원작처럼 음악과 효과음에 사운드 칩의 울림을 넣어요. 끄면 모두 건조하게 들려요."
+help.ui_skin: "메뉴와 HUD의 모습: 원작풍 또는 모던."
+help.ui_addon: "게임 기본 대신 커뮤니티가 만든 인터페이스를 써요. 메뉴를 닫으면 적용돼요. 게임을 시작할 때 Shift를 누르고 있으면 게임 기본으로 돌아가요."
+help.ui_plugins: "인터페이스 위에 얹는 커뮤니티 플러그인(시계, 알림...). 메뉴를 닫으면 적용돼요."
+help.ui_scale: "메뉴와 HUD의 크기."
+help.language: "텍스트의 언어."
+help.text_font: "텍스트를 원작의 글꼴로 써요."
+help.translated_signs: "맵에 그려진 표지판을 선택한 언어로 읽을 수 있어요."
+help.minimap: "오른쪽 위의 둥근 미니맵. 맵 이름, 날짜, 시간도 나와요."
+help.minimap_enemies: "배틀을 걸어 올 수 있는 적마다 미니맵에 빨간 점이 찍혀요."
+help.minimap_items: "땅에 떨어져 있어 주울 수 있는 아이템마다 미니맵에 초록 마름모가 찍혀요."
+help.digital_time: "시계 아래에 게임 시간을 숫자(HH:MM)로 보여 줘요."
+help.save_notice: "게임이 저장하는 동안 구석에 작은 그림과 “저장 중”이 나와요."
+help.need_bubble_stack: "파트너의 말풍선에 요구가 최대 5개까지 함께 나와요. 가장 급한 것부터요."
+help.shop_job_bar: "일이나 시합으로 누군가 마을에 합류할지 정해질 때 얼마나 가까운지 막대로 보여 줘요."
+help.name_spacing: "텍스트 속 이름이 다음 단어와 붙지 않아요."
+help.shop_extras: "상점에서: 고른 아이템의 설명, 가진 개수, 거래 뒤 남는 돈."
+help.favorite_food: "상태 화면에 파트너가 좋아하는 음식이 나오고, 아이템 목록에서는 금색과 하트로 표시돼요."
+help.art_fixes: "원작이 텍스처의 엉뚱한 부분에서 가져오는 그림(상태 화면의 행복)을 바로잡아요."
+help.dev_tools: "콘솔(F1), 개발자 메뉴(F2), 맵 오버레이(F3)를 켜요. 테스트용이에요."
+help.options_reset: "이 탭의 설정을 기본값으로 되돌려요. 먼저 물어봐요."
+help.options_back: "메뉴로 돌아가요."
+help.quick_save: "지금 게임을 슬롯에 저장해요."
+help.to_title: "타이틀 화면으로 돌아가요. 저장할지 먼저 물어봐요."
+help.quit: "게임을 종료해요. 저장할지 먼저 물어봐요."
+# The same options over the title screen, with no game to save.
+help.quit_title: "게임을 종료해요."

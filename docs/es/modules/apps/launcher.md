@@ -47,7 +47,7 @@ activo y el anillo de foco.
     guardado) toma el del sistema si es uno de ellos, si no inglés, y lo guarda; una elección guardada no se
     cambia nunca. Los textos son un módulo por idioma en `ui/js/i18n/` (`en.js` es la referencia: los demás
     tienen las mismas claves y `{marcadores}`); una clave que le falte a un idioma sale en inglés, y
-    `node apps/launcher/tools/i18n_check.mjs [código]` cuenta las claves que faltan y detecta claves de más o
+    `node apps/launcher/tools/i18n_check.mjs [código]` (lo corre CI) falla con claves que faltan, claves de más o
     marcadores cambiados. Los códigos están en dos listas que deben coincidir: `LANGUAGES` en `ui/js/i18n.js`
     (con los nombres nativos) y en `src-tauri/src/settings.rs`.
   - **Actualizaciones:** el canal, buscar al abrir, buscar ahora, las actualizaciones automáticas, las versiones

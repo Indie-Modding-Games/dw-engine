@@ -59,6 +59,59 @@ local function draw_tag(document)
   draw_one_tag(document, "tag-3", "coop_hud.tag.3.")
 end
 
+local TagIds = { "tag", "tag-2", "tag-3" }
+local TagGap = 4
+local lifts = {}
+
+local function stack_tags(document)
+  local shown = {}
+  for index, id in ipairs(TagIds) do
+    local tag = document:get(id)
+    local x, y, width, height = tag:rect()
+    if not tag:has_class("hidden") and width > 0 then
+      shown[#shown + 1] = {
+        id = id,
+        index = index,
+        tag = tag,
+        left = x - width / 2,
+        right = x + width / 2,
+        bottom = y + (lifts[id] or 0),
+        height = height,
+      }
+    else
+      lifts[id] = nil
+    end
+  end
+  table.sort(shown, function(one, other)
+    if one.bottom ~= other.bottom then
+      return one.bottom > other.bottom
+    end
+    return one.index < other.index
+  end)
+  local placed = {}
+  for _, entry in ipairs(shown) do
+    local bottom = entry.bottom
+    local moved = true
+    while moved do
+      moved = false
+      for _, other in ipairs(placed) do
+        local across = entry.left < other.right and other.left < entry.right
+        if across and bottom - entry.height < other.bottom and other.top < bottom then
+          bottom = other.top - TagGap
+          moved = true
+        end
+      end
+    end
+    placed[#placed + 1] =
+      { left = entry.left, right = entry.right, top = bottom - entry.height, bottom = bottom }
+    local lift = entry.bottom - bottom
+    if math.abs(lift - (lifts[entry.id] or 0)) > 0.5 then
+      lifts[entry.id] = lift
+      entry.tag:set_property("margin-top", string.format("%.1fdp", -lift))
+    end
+  end
+end
+
 local function draw_notice(document)
   local shown = ui.setting("coop_hud.notice.shown") == true
   document:get("notice"):set_class("hidden", not shown)
@@ -94,4 +147,8 @@ end
 function on_language(document)
   draw_tag(document)
   draw_notice(document)
+end
+
+function on_tick(document)
+  stack_tags(document)
 end

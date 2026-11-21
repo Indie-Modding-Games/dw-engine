@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.27.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.28.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -445,12 +445,21 @@ function options.list() end
 ---@return any
 function options.get(name) end
 
---- Asks to give an option a value; checks the type and the values it accepts.
+--- Asks to give an option a value; checks the type and the values it accepts, and refuses an option the game fixes.
 ---@param name string
 ---@param value any
 ---@return boolean
 ---@return string?
 function options.set(name, value) end
+
+--- The name key of the game variant (the game mode) of the game being played; nil at the title.
+---@return string?
+function options.variant() end
+
+--- Whether the game being played fixes the option at one value (Classic Enhanced fixes those that change the rules); set refuses it while the game lasts.
+---@param name string
+---@return boolean
+function options.locked(name) end
 
 battle = {}
 

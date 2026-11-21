@@ -1,0 +1,8 @@
+title: "Mapa da ilha"
+here: "Você está em:"
+exits: "Daqui você pode ir para"
+no_exits: "Não há saída daqui"
+legend_here: "Você está aqui"
+legend_exit: "Acessível daqui"
+legend_unknown: "Não visitado"
+close: "Fechar"

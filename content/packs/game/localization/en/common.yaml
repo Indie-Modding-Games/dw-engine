@@ -4,3 +4,7 @@ no: "No"
 accept: "Accept"
 back: "Back"
 cancel: "Cancel"
+# The currency, in the menus that label it.
+bits: "Bits"
+# The line under an error whose own words go to the log (ui_notice, versus).
+details_logged: "The details are in the game's log."

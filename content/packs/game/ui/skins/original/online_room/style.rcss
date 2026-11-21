@@ -42,7 +42,7 @@
 }
 
 .info-label {
-	width: 162dp;
+	width: 150dp;
 	font-size: 22dp;
 	color: #b2b2b2;
 	overflow: hidden;
@@ -50,8 +50,8 @@
 }
 
 .info-value {
-	left: 162dp;
-	width: 186dp;
+	left: 150dp;
+	width: 198dp;
 	font-size: 33dp;
 	color: #d0d0d0;
 	overflow: hidden;
@@ -59,6 +59,8 @@
 }
 
 .info-value.accent { color: #fff371; }
+
+#info-visibility { font-size: 22dp; }
 
 /* The modes (host) and the chosen mode (guest). */
 #modes-box,
@@ -209,14 +211,14 @@
 	line-height: 54dp;
 }
 
-#start { left: 396dp; width: 208dp; }
+#start { left: 396dp; width: 200dp; }
 #leave { left: 880dp; width: 352dp; }
 .room-button.unavailable, .room-button.unavailable:focus { color: #7a8590; }
 
 #code-chip {
-	left: 616dp;
+	left: 606dp;
 	top: 468dp;
-	width: 252dp;
+	width: 264dp;
 	height: 60dp;
 	padding: 0 3dp;
 	font-size: 33dp;

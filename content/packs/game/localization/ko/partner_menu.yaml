@@ -1,0 +1,119 @@
+# The partner's menu (ui/partner_menu): the status page, the item bag and the care page. The original's own labels
+# (HP, MP, the stats, the item options, the sort orders, the drop's question, bits) come from its text tables.
+tab.status: "상태"
+tab.items: "아이템"
+tab.care: "돌보기"
+# The pages' names in the compact menu (skin.yaml layout: partner_menu: pages: compact).
+nav.partner: "파트너"
+nav.bag: "가방"
+# The partner's species, under its own name (game_menu.c: drawDigimonStatsStrings).
+species: "종"
+age: "나이"
+# {days} is the partner's age in days; {days:day|days} picks the word by the count (1 day, 2 days).
+age.value: "{days}일"
+weight: "체중"
+# {weight} is the partner's weight.
+weight.value: "{weight} G"
+# {lives} is the lives the partner has left.
+lives: "목숨 {lives}"
+happiness: "행복"
+discipline: "규율"
+virus: "바이러스"
+# The status page's extras (the status_extras option), which the original hides: the tiredness bar, the count of
+# care mistakes and of battles, the hours it is awake, the hours of life it has left and the evolution counter.
+tiredness: "피로"
+care_mistakes: "실수"
+battles: "배틀"
+awake: "활동"
+# {wake} and {sleepy} are the times it wakes up and gets sleepy, as 08:00.
+awake.value: "{wake}-{sleepy}"
+# {value} is a number from 0 to 100 (-100 to 100 for happiness) the status page writes as a percentage: happiness,
+# discipline and tiredness.
+percent.value: "{value}%"
+lifetime: "수명"
+evolution: "진화 타이머"
+# {hours} is a count of game hours.
+hours.value: "{hours}시간"
+# {hours} is the evolution counter and {check} the hours its level checks its evolution from.
+evolution.value: "{hours}/{check}h"
+# Its species' favourite food (the favorite_food option), with the item's name; "None" when it has none.
+favorite_food: "좋아하는 음식"
+favorite_food.none: "없음"
+condition.none: "컨디션 좋음"
+condition.sleepy: "졸림"
+condition.tired: "피곤함"
+condition.hungry: "배고픔"
+condition.needs_toilet: "화장실 급함"
+condition.sulking: "삐짐"
+condition.injured: "부상"
+condition.sick: "병"
+bag.empty: "-"
+# {name} is the item being moved.
+bag.move_prompt: "{name}을(를) 어디에 둘까요?"
+# {name} is the item's name in all the bag results.
+bag_result.used: "{name}을(를) 사용했어요."
+bag_result.refused: "파트너가 {name}을(를) 받지 않아요."
+bag_result.not_usable_here: "{name}은(는) 여기서 쓸 수 없어요."
+bag_result.not_in_bag: "거기엔 아무것도 없어요."
+bag_result.useless: "지금은 {name}을(를) 써도 소용없어요."
+bag_result.moved: "{name}을(를) 옮겼어요."
+bag_result.dropped: "{name}을(를) 버렸어요."
+bag_result.sorted: "가방을 정리했어요."
+bag_result.failed: "그렇게 할 수 없어요."
+care.praise: "칭찬"
+care.scold: "꾸중"
+care.feed_hint: "파트너에게 먹이려면 가방의 음식을 사용하세요."
+care.training_hint: "훈련은 필드의 훈련 장소에서 해요."
+care_result.praised: "파트너를 칭찬했어요."
+care_result.scolded: "파트너를 꾸중했어요."
+
+# Sections of the DIGIMON profile.
+section.profile: "프로필"
+section.condition: "컨디션"
+section.parameter: "능력치"
+name: "이름"
+# The small headings of the profile's marks and of the technique details, where the original has pictures.
+profile.special: "특기"
+profile.type: "타입"
+profile.active: "활동"
+tech.data: "기술 데이터"
+
+# Equipped moves and finisher.
+tab.tech: "기술"
+tech.set: "장착중"
+tech.final: "필살"
+tech.techs: "기술"
+tech.help_first: "기술"
+tech.help_second: "도움말"
+# The help page of the change view (game_menu.c: renderDigimonMovesView, MENU_STATE 8): the two hints, split where
+# the page draws a technique cell and the key of the confirm action.
+tech.help_select_before: "선택:"
+tech.help_select_after: "기술 장착"
+tech.help_cancel_before: "취소:"
+tech.help_cancel_after: "기술 해제"
+tech.power: "위력"
+tech.mp: "MP"
+tech.range: "범위"
+tech.effect: "효과"
+tech.range.1: "근거리"
+tech.range.2: "원거리"
+tech.range.3: "광역"
+tech.range.4: "자신"
+tech.effect.1: "독"
+tech.effect.2: "혼란"
+tech.effect.3: "기절"
+tech.effect.4: "납작"
+
+# The technique grid's rows, by specialty (the original draws them as pictures).
+tech.category.0: "불꽃"
+tech.category.1: "격투"
+tech.category.2: "바람"
+tech.category.3: "대지"
+tech.category.4: "얼음"
+tech.category.5: "기계"
+tech.category.6: "오물"
+
+tech.change: "기술 바꾸기"
+tech.unavailable: "익힌 기술만 쓸 수 있어요"
+tech.full: "기술 칸 3개가 모두 찼어요"
+tech.need_attack: "공격 기술을 하나는 장착해 두세요"

@@ -17,12 +17,13 @@ public:
   // The icons a profile can show, in the profile screen's order.
   static constexpr std::array<std::string_view, 6> Icons{"egg",    "device", "crown",
                                                          "swords", "tree",   "dumbbell"};
+  static constexpr std::string_view DefaultNameKey = "online.profile.default_name";
   // A name's longest length, in letters (UTF-8 code points).
   static constexpr std::size_t NameLength = 12;
 
-  // The profile the settings keep; the defaults where they keep nothing. `language` picks the
-  // default name ("es": «Jugador», else "Player").
-  static OnlineProfile fromSettings(const UserSettings& settings, std::string_view language);
+  // The profile the settings keep; the defaults where they keep nothing, `defaultName` (the
+  // language's online.profile.default_name) for the name.
+  static OnlineProfile fromSettings(const UserSettings& settings, std::string_view defaultName);
   // Writes the profile into the settings.
   void store(UserSettings& settings) const;
 

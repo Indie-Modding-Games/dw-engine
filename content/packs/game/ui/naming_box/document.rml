@@ -3,6 +3,7 @@
 	<title>Naming box</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/fit_text.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -26,8 +27,8 @@
 		</div>
 		<div id="prompts">
 			<span class="prompt" id="hint-write"><span class="key" id="prompt-confirm"></span><span text-key="naming.write"></span></span>
-			<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="naming.back"></span></span>
-			<span class="prompt"><span class="key" id="prompt-menu"></span><span text-key="common.accept"></span></span>
+			<span class="prompt" id="hint-back"><span class="key" id="prompt-cancel"></span><span text-key="naming.back"></span></span>
+			<span class="prompt" id="hint-accept"><span class="key" id="prompt-menu"></span><span text-key="common.accept"></span></span>
 			<span class="prompt" id="hint-clear"><span class="key" id="prompt-extra"></span><span text-key="naming.clear"></span></span>
 			<span class="prompt" id="hint-page"><span class="key page-arrow" id="page-previous"></span><span id="page-name"></span><span class="key page-arrow" id="page-next"></span></span>
 		</div>

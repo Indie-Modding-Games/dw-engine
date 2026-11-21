@@ -137,6 +137,8 @@ error.damaged: "A damaged message arrived. The connection closed."
 error.disconnected: "The other player disconnected."
 error.directory_unavailable: "The public room list is not available yet."
 error.unknown: "Something went wrong with the connection."
+# The code of an error the game has no words for, small under error.unknown.
+error.code: "Code: {code}"
 # What the game did not do of a step.
 notice.room_gone: "That room is no longer open."
 notice.room_full: "That room is already full."
@@ -158,6 +160,8 @@ hub.record: "{wins} W / {losses} L"
 # The online profile (ui/online_profile).
 profile_title: "Online profile"
 profile.name: "Name"
+# The name a profile shows until the player chooses one.
+profile.default_name: "Player"
 profile.name_hint: "Other players see it in rooms and over your character."
 profile.name_editing: "Type your name and press Enter."
 profile.icon: "Icon"
@@ -207,6 +211,10 @@ coop.came_home: "Back from {name}'s world: your partner and your bag came home w
 # (coop-training.md): the world's clock does not stop for it.
 coop.training: "Training"
 coop.training_clock: "Training in company: the world's time keeps running, and each session counts its own hour for your partner."
+# A guest who brought a save of the other game variant, and the host's notice of it (game-variants.md, "Co-op").
+coop.guest_other_variant: "{name}'s world plays another variant, under its rules. Your partner and bag still go home."
+coop.guest_other_variant_kept: "{name}'s world plays another variant: nothing goes home, your save stays as it was."
+coop.player_other_variant: "{name} brought a save of another variant: your game's rules apply to both of you."
 # The names of the sample rooms and players (developer tools).
 sample.room_1: "Saturday adventure"
 sample.room_2: "Easy exploring"

@@ -41,7 +41,7 @@ class TitleScreen {
 public:
   // `keepsSaves` as startGame takes it: without a saves folder a new game starts with no list.
   TitleScreen(const assets::VirtualFileSystem& files, const Options& options, bool keepsSaves,
-              ui::Ui& ui);
+              ui::Ui& ui, game::modes::ModeCatalog modes);
 
   // Shows the main menu, with Continue greyed when there is no save.
   void show();

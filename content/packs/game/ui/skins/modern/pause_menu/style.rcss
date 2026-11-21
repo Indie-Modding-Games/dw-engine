@@ -406,6 +406,11 @@
 	color: #9aa8ba;
 }
 
+#panel:not(.skin-original) #option-tag.locked {
+	background-color: #e0705a29;
+	color: #f08a72;
+}
+
 /* The foot: Reset and Back at the left, the keys at the right. */
 #panel:not(.skin-original) #option-foot {
 	display: flex;

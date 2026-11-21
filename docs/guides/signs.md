@@ -56,7 +56,6 @@ signs:
       quad: [[545, 69], [623, 75.5], [622, 94], [543, 89]]
     corners: [[547, 71], [621, 77], [620, 92], [545, 87]]
     text: signs.gcan09_shop
-    size: 9
     color: "#302828"
 ```
 
@@ -67,7 +66,10 @@ signs:
   the erase eats the frame, limit it with `quad`.
 - Copy the original's colors (the letters' color, the outline, a neon's halo) and use `colors: region` so that only
   colors the sign already had come out.
-- The text shrinks on its own until it fits (`fit`); if it ends up very small, look for a shorter translation.
+- Do not give a `size`: the box's height gives the letters their size and the text shrinks on its own until it fits,
+  the same rule for every sign (Fitting in the module). Make `corners` hug the original text, so the new one comes out
+  as big; give `lines: 2` when the board holds two lines, and the same `group` to the pieces of one board.
+- If the text ends up under its floor, the content test fails: look for a shorter translation.
 - A glowing sign made with semi-transparent sprites over a dark board (the posts in `mayo00` or `gias00`) is erased
   with `clear: transparent` on its page (`target`) and `colors: region`.
 
