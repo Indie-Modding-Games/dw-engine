@@ -216,6 +216,9 @@ The full list is `main.map_names`, centered in 24 columns (two per Chinese chara
 | Player (default online name) | 玩家 |
 | Bits (currency label in menus) | Bits |
 | Hangul naming page | 한글 (the page's own letters, as in every language) |
+| The game's log (where an error's details go) | 游戏日志 |
+| Unknown variant (a save's mode that is not installed) | 未知版本 |
+| Key caps of the classic prompts (`prompt.cap.*`) | as on the keyboard, in English: ESC, DEL, CTRL, SHIFT… |
 
 ## Story
 

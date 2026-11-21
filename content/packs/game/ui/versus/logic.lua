@@ -286,7 +286,7 @@ end
 local function draw_error(document)
   local stopped = versus.error()
   document:get("error"):set_text(t(stopped.key))
-  document:get("error-detail"):set_text(stopped.detail)
+  document:get("error-detail"):set_text(stopped.detail ~= "" and t("common.details_logged") or "")
 end
 
 -- One side's bars (vs_hud.c: VS_renderFighterStatusBars): the fill is 50 pixels at most, 3dp each.

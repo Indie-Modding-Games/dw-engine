@@ -195,6 +195,9 @@ Erfahren, Profi, Veteran, Elite, Super, Meister, Genie, Legende («Neuling» is 
 | Player (default online name) | Spieler |
 | Bits (currency label in menus) | Bits |
 | Naming page of accented letters | ÄÖÜ (Ä Ö Ü ß) |
+| The game's log (where an error's details go) | Spielprotokoll |
+| Unknown variant (a save's mode that is not installed) | Unbekannte Variante |
+| Key caps of the classic prompts (`prompt.cap.*`) | ESC, @tab, ENTF, EINFG, POS1, ENDE, BILDAUF, BILDAB, @caps_lock, @shift, STRG, ALT, ALTGR |
 
 ## Story
 

@@ -127,6 +127,7 @@ error.damaged: "Пришло повреждённое сообщение. Сое
 error.disconnected: "Другой игрок отключился."
 error.directory_unavailable: "Список открытых комнат пока недоступен."
 error.unknown: "С соединением что-то пошло не так."
+error.code: "Код: {code}"
 notice.room_gone: "Эта комната уже закрыта."
 notice.room_full: "Эта комната уже заполнена."
 notice.mode_unavailable: "В этот режим пока нельзя играть в комнатах."

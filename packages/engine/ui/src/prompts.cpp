@@ -335,7 +335,7 @@ constexpr std::array OriginalButtons{
 constexpr std::string_view MarkerOpen = "{prompt:";
 constexpr char MarkerClose = '}';
 
-// The keys whose cap shows a symbol or a short name instead of their label.
+// The keys whose cap shows a drawn symbol, the same in every language.
 struct KeySymbol {
   std::string_view key;
   std::string_view symbol;
@@ -349,29 +349,55 @@ constexpr std::array KeySymbols{
     KeySymbol{.key = "down", .symbol = "@down"},
     KeySymbol{.key = "left", .symbol = "@left"},
     KeySymbol{.key = "right", .symbol = "@right"},
-    KeySymbol{.key = "escape", .symbol = "ESC"},
-    KeySymbol{.key = "tab", .symbol = "TAB"},
-    KeySymbol{.key = "delete", .symbol = "DEL"},
-    KeySymbol{.key = "insert", .symbol = "INS"},
-    KeySymbol{.key = "home", .symbol = "HOME"},
-    KeySymbol{.key = "end", .symbol = "END"},
-    KeySymbol{.key = "page_up", .symbol = "PGUP"},
-    KeySymbol{.key = "page_down", .symbol = "PGDN"},
-    KeySymbol{.key = "caps_lock", .symbol = "CAPS"},
-    KeySymbol{.key = "left_shift", .symbol = "SHIFT"},
-    KeySymbol{.key = "right_shift", .symbol = "SHIFT"},
-    KeySymbol{.key = "ctrl", .symbol = "CTRL"},
-    KeySymbol{.key = "shift", .symbol = "SHIFT"},
-    KeySymbol{.key = "alt", .symbol = "ALT"},
-    KeySymbol{.key = "left_ctrl", .symbol = "CTRL"},
-    KeySymbol{.key = "right_ctrl", .symbol = "CTRL"},
-    KeySymbol{.key = "left_alt", .symbol = "ALT"},
-    KeySymbol{.key = "right_alt", .symbol = "ALT"},
     KeySymbol{.key = "minus", .symbol = "-"},
     KeySymbol{.key = "equals", .symbol = "="},
     KeySymbol{.key = "comma", .symbol = ","},
     KeySymbol{.key = "period", .symbol = "."},
     KeySymbol{.key = "slash", .symbol = "@slash"},
+    KeySymbol{.key = "left_bracket", .symbol = "@left_bracket"},
+    KeySymbol{.key = "right_bracket", .symbol = "@right_bracket"},
+    KeySymbol{.key = "backslash", .symbol = "@backslash"},
+    KeySymbol{.key = "semicolon", .symbol = "@semicolon"},
+    KeySymbol{.key = "apostrophe", .symbol = "@apostrophe"},
+    KeySymbol{.key = "grave", .symbol = "@grave"},
+};
+
+// The keys whose cap shows the short name printed on the player's keyboard, from the texts
+// (prompt.cap.<cap>): Strg on a German one where an English one says Ctrl.
+struct KeyCap {
+  std::string_view key;
+  std::string_view cap;
+};
+constexpr std::array KeyCaps{
+    KeyCap{.key = "escape", .cap = "escape"},       KeyCap{.key = "tab", .cap = "tab"},
+    KeyCap{.key = "delete", .cap = "delete"},       KeyCap{.key = "insert", .cap = "insert"},
+    KeyCap{.key = "home", .cap = "home"},           KeyCap{.key = "end", .cap = "end"},
+    KeyCap{.key = "page_up", .cap = "page_up"},     KeyCap{.key = "page_down", .cap = "page_down"},
+    KeyCap{.key = "caps_lock", .cap = "caps_lock"}, KeyCap{.key = "shift", .cap = "shift"},
+    KeyCap{.key = "left_shift", .cap = "shift"},    KeyCap{.key = "right_shift", .cap = "shift"},
+    KeyCap{.key = "ctrl", .cap = "ctrl"},           KeyCap{.key = "left_ctrl", .cap = "ctrl"},
+    KeyCap{.key = "right_ctrl", .cap = "ctrl"},     KeyCap{.key = "alt", .cap = "alt"},
+    KeyCap{.key = "left_alt", .cap = "alt"},        KeyCap{.key = "right_alt", .cap = "alt_gr"},
+};
+constexpr std::string_view CapKeyPrefix = "prompt.cap.";
+
+// The pad buttons whose cap shows what the pad itself prints there, whatever the language.
+struct PadCap {
+  GamepadFamily family;
+  std::string_view button;
+  std::string_view symbol;
+};
+constexpr std::array PadCaps{
+    PadCap{.family = GamepadFamily::Xbox, .button = "start", .symbol = "@menu"},
+    PadCap{.family = GamepadFamily::Xbox, .button = "back", .symbol = "@view"},
+    PadCap{.family = GamepadFamily::Steam, .button = "start", .symbol = "@menu"},
+    PadCap{.family = GamepadFamily::Steam, .button = "back", .symbol = "@view"},
+    PadCap{.family = GamepadFamily::PlayStation, .button = "start", .symbol = "OPTIONS"},
+    PadCap{.family = GamepadFamily::PlayStation, .button = "back", .symbol = "CREATE"},
+    PadCap{.family = GamepadFamily::Nintendo, .button = "start", .symbol = "+"},
+    PadCap{.family = GamepadFamily::Nintendo, .button = "back", .symbol = "-"},
+    PadCap{.family = GamepadFamily::Generic, .button = "start", .symbol = "START"},
+    PadCap{.family = GamepadFamily::Generic, .button = "back", .symbol = "SELECT"},
 };
 
 // The longest text a cap draws: a longer label is cut (the drawing's font is the glyphs' own).
@@ -394,10 +420,38 @@ std::string symbolText(std::string_view label) {
   return text.empty() ? std::string{"?"} : text;
 }
 
-std::string keySymbol(std::string_view key, std::string_view label) {
+std::string keySymbol(std::string_view key, std::string_view label,
+                      const localization::Catalog& texts) {
   for (const KeySymbol& named : KeySymbols) {
     if (named.key == key) {
       return std::string{named.symbol};
+    }
+  }
+  for (const KeyCap& named : KeyCaps) {
+    if (named.key != key) {
+      continue;
+    }
+    if (auto found = texts.find(std::format("{}{}", CapKeyPrefix, named.cap))) {
+      const std::string cap = localization::formatText(*found, {});
+      return cap.starts_with('@') ? cap : symbolText(cap);
+    }
+    break;
+  }
+  return symbolText(label);
+}
+
+std::string padSymbol(GamepadFamily family, std::string_view button, std::string_view label) {
+  if (button == "guide") {
+    return "@home";
+  }
+  if (button == "left_stick_click" || button == "right_stick_click") {
+    const char side = button.starts_with("left") ? 'L' : 'R';
+    return family == GamepadFamily::PlayStation ? std::format("{}3", side)
+                                                : std::format("{}S", side);
+  }
+  for (const PadCap& cap : PadCaps) {
+    if (cap.family == family && cap.button == button) {
+      return std::string{cap.symbol};
     }
   }
   return symbolText(label);
@@ -501,15 +555,16 @@ PromptGlyph promptGlyph(const input::ActionMap& map, input::DeviceKind device, G
   glyph.label = controlLabel(glyph.control, family, texts);
   if (glyph.control.starts_with(KeyPrefix)) {
     glyph.kind = GlyphKind::Key;
-    glyph.symbol = keySymbol(std::string_view{glyph.control}.substr(KeyPrefix.size()), glyph.label);
+    glyph.symbol =
+        keySymbol(std::string_view{glyph.control}.substr(KeyPrefix.size()), glyph.label, texts);
     return glyph;
   }
   if (glyph.control.starts_with(MousePrefix)) {
     glyph.kind = GlyphKind::Mouse;
     const std::string_view button = std::string_view{glyph.control}.substr(MousePrefix.size());
-    glyph.symbol = button == "left"     ? "LMB"
-                   : button == "right"  ? "RMB"
-                   : button == "middle" ? "MMB"
+    glyph.symbol = button == "left"     ? "@mouse_left"
+                   : button == "right"  ? "@mouse_right"
+                   : button == "middle" ? "@mouse_middle"
                    : button == "back"   ? "M4"
                                         : "M5";
     return glyph;
@@ -546,7 +601,7 @@ PromptGlyph promptGlyph(const input::ActionMap& map, input::DeviceKind device, G
     return glyph;
   }
   glyph.kind = GlyphKind::Button;
-  glyph.symbol = symbolText(glyph.label);
+  glyph.symbol = padSymbol(family, button, glyph.label);
   return glyph;
 }
 

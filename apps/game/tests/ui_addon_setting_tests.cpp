@@ -136,7 +136,7 @@ TEST_CASE("a UI addon that cannot go on gives the game's own UI back, with a not
   const ui::UiValue problemValue = menu.ui->setting(UiAddonProblemSetting);
   const auto* problem = std::get_if<std::string>(&problemValue);
   REQUIRE(problem != nullptr);
-  CHECK(problem->contains("broken"));
+  CHECK(*problem == BrokenUiAddonKey);
   CHECK(menu.ui->isVisible(UiNoticeDocument));
   changer.update(UiNoticeSeconds + 1.0);
   CHECK_FALSE(menu.ui->isVisible(UiNoticeDocument));
@@ -170,8 +170,7 @@ TEST_CASE("a saved UI addon whose .zip gives none brings the game's own UI back,
   CHECK(changer.offered().size() == 2);
   changer.start();
   CHECK(menu.ui->uiAddon().empty());
-  CHECK(menu.ui->setting(UiAddonProblemSetting) ==
-        ui::UiValue{std::string{"ui/addons/clock.zip: evil.lua is encrypted"}});
+  CHECK(menu.ui->setting(UiAddonProblemSetting) == ui::UiValue{std::string{UnreadableUiAddonKey}});
   CHECK(menu.ui->isVisible(UiNoticeDocument));
 }
 

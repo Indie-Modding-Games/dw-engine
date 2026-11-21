@@ -18,6 +18,7 @@ namespace dwe::ui {
 
 using input::DeviceKind;
 using platform::GamepadFamily;
+using platform::KeyCode;
 
 namespace {
 
@@ -105,7 +106,7 @@ TEST_CASE("a modifier bound on both sides is named once, and one side alone by i
   CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "walk", labels) ==
         "Mayús");
   CHECK(promptGlyph(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "walk", labels).symbol ==
-        "SHIFT");
+        "MAYUS");
   map.bind("cancel", input::KeyBinding{input::keys::LeftCtrl});
   CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "cancel", labels) ==
         "Ctrl izq.");
@@ -193,6 +194,76 @@ TEST_CASE("a glyph draws the key or button of the device in use, in its family's
   CHECK(glyph(DeviceKind::Gamepad, GamepadFamily::Xbox, "debug_console").kind == GlyphKind::None);
 }
 
+TEST_CASE("a cap shows the key as the player's keyboard prints it, and the pad's own marks") {
+  input::ActionMap map;
+  const auto keyCap = [&](const GameTexts& texts, KeyCode key) {
+    map = input::ActionMap{};
+    map.bind("confirm", input::KeyBinding{key});
+    return promptGlyph(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "confirm",
+                       *texts.catalog)
+        .symbol;
+  };
+  const GameTexts german{"de"};
+  CHECK(keyCap(german, input::keys::LeftCtrl) == "STRG");
+  CHECK(keyCap(german, input::keys::Delete) == "ENTF");
+  CHECK(keyCap(german, input::keys::LeftShift) == "@shift");
+  const GameTexts japanese{"ja"};
+  CHECK(keyCap(japanese, input::keys::LeftCtrl) == "CTRL");
+  CHECK(keyCap(japanese, input::keys::Space) == "@space");
+
+  const input::ActionMap defaults = input::defaultActionMap();
+  CHECK(promptGlyph(defaults, DeviceKind::Gamepad, GamepadFamily::Xbox, "pause", *japanese.catalog)
+            .symbol == "@menu");
+}
+
+TEST_CASE("every language draws every cap whole") {
+  std::vector<KeyCode> keys;
+  for (KeyCode key = 4; key <= 82; ++key) {
+    if (!keyControl(key).empty()) {
+      keys.push_back(key);
+    }
+  }
+  for (KeyCode key = 224; key <= 230; ++key) {
+    if (!keyControl(key).empty()) {
+      keys.push_back(key);
+    }
+  }
+  for (const std::string_view language : {"en", "es", "pt", "fr", "de", "ru", "zh", "ko", "ja"}) {
+    CAPTURE(language);
+    const GameTexts texts{language};
+    for (const KeyCode key : keys) {
+      input::ActionMap map;
+      map.bind("confirm", input::KeyBinding{key});
+      const PromptGlyph glyph = promptGlyph(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox,
+                                            "confirm", *texts.catalog);
+      CAPTURE(glyph.control);
+      CHECK(classicDraws(glyph.symbol));
+    }
+    for (const platform::MouseButton button :
+         {platform::MouseButton::Left, platform::MouseButton::Right, platform::MouseButton::Middle,
+          platform::MouseButton::Back, platform::MouseButton::Forward}) {
+      input::ActionMap map;
+      map.bind("confirm", input::MouseBinding{button});
+      CHECK(classicDraws(promptGlyph(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "confirm",
+                                     *texts.catalog)
+                             .symbol));
+    }
+    for (const GamepadFamily family :
+         {GamepadFamily::Xbox, GamepadFamily::PlayStation, GamepadFamily::Nintendo,
+          GamepadFamily::Steam, GamepadFamily::Generic}) {
+      for (std::size_t button = 0; button < platform::GamepadButtonCount; ++button) {
+        input::ActionMap map;
+        map.bind("confirm",
+                 input::GamepadButtonBinding{static_cast<platform::GamepadButton>(button)});
+        const PromptGlyph glyph =
+            promptGlyph(map, DeviceKind::Gamepad, family, "confirm", *texts.catalog);
+        CAPTURE(glyph.control);
+        CHECK(classicDraws(glyph.symbol));
+      }
+    }
+  }
+}
+
 TEST_CASE("a glyph follows rebinding") {
   const GameTexts english{"en"};
   const localization::Catalog& labels = *english.catalog;
@@ -203,7 +274,7 @@ TEST_CASE("a glyph follows rebinding") {
   const PromptGlyph mouse =
       promptGlyph(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "confirm", labels);
   CHECK(mouse.kind == GlyphKind::Mouse);
-  CHECK(mouse.symbol == "LMB");
+  CHECK(mouse.symbol == "@mouse_left");
   const PromptGlyph trigger =
       promptGlyph(map, DeviceKind::Gamepad, GamepadFamily::Xbox, "confirm", labels);
   CHECK(trigger.kind == GlyphKind::Stick);

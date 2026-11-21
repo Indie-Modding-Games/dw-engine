@@ -5,3 +5,5 @@ classic_name: "Classic Enhanced"
 classic_description: "The original game: its story, rules and balance as they were, with better graphics, comfort options and bug fixes."
 folder_name: "Folder Mode"
 folder_description: "The expanded game: hidden content, every species as a partner, the Mega step and every option, rules included."
+# A saved game's mode that no installed pack has.
+unknown_name: "Unknown variant"

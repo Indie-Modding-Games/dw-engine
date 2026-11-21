@@ -1,1 +1,5 @@
 addon_failed: "Não foi possível usar uma interface da comunidade: o jogo continua sem ela."
+reason.missing: "A interface {name} não está instalada."
+reason.unreadable: "Não foi possível ler a interface {name}."
+reason.broken: "A interface {name} tem um erro."
+reason.plugin: "O plugin {name} tem um erro e ficou de fora."

@@ -303,10 +303,8 @@ std::string problemText(const Texts& tr, const content::DiscInstall& install) {
     const std::array arguments{localization::TextArgument{.name = "file", .value = detail}};
     return tr("error.missing_file", arguments);
   }
-  case content::InstallProblem::CannotRead: {
-    const std::array arguments{localization::TextArgument{.name = "detail", .value = detail}};
-    return tr("error.cannot_read", arguments);
-  }
+  case content::InstallProblem::CannotRead:
+    return std::format("{} {}", tr("error.cannot_read"), tr("error.details_logged"));
   case content::InstallProblem::NotTheGame:
     return tr("error.not_the_game");
   case content::InstallProblem::OtherRegion: {
@@ -319,14 +317,10 @@ std::string problemText(const Texts& tr, const content::DiscInstall& install) {
     const std::array arguments{localization::TextArgument{.name = "region", .value = region}};
     return tr("error.other_region", arguments);
   }
-  case content::InstallProblem::ExtractFailed: {
-    const std::array arguments{localization::TextArgument{.name = "detail", .value = detail}};
-    return tr("error.extract_failed", arguments);
-  }
-  case content::InstallProblem::NoTool: {
-    const std::array arguments{localization::TextArgument{.name = "detail", .value = detail}};
-    return tr("error.no_tool", arguments);
-  }
+  case content::InstallProblem::ExtractFailed:
+    return std::format("{} {}", tr("error.extract_failed"), tr("error.details_logged"));
+  case content::InstallProblem::NoTool:
+    return std::format("{} {}", tr("error.no_tool"), tr("error.details_logged"));
   case content::InstallProblem::None:
     break;
   }

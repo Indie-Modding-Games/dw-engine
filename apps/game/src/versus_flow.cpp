@@ -221,6 +221,9 @@ void VersusFlow::fail(std::string key, std::string detail) {
   if (room_) {
     room_->close(key);
   }
+  if (!detail.empty()) {
+    core::logWarning("versus: {}", detail);
+  }
   errorKey_ = std::move(key);
   errorDetail_ = std::move(detail);
   view_ = View::Error;
@@ -309,7 +312,6 @@ void VersusFlow::startBattle() {
     }
   });
   if (!started) {
-    core::logWarning("versus: {}", started.error().message);
     fail("versus.error.lineup", started.error().message);
     return;
   }

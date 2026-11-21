@@ -159,7 +159,11 @@ masks (`EnableClipMask`) are not implemented: they are only needed to clip trans
   routes `/glyph/classic/button|cap/<symbol>/<drawing>` (a round 16 x 12 button or a 12-high key in the
   original's style, with its top part sinking one pixel per drawing, and our own 3 x 5 letter) and
   `/glyph/modern/<symbol>` (64 x 64, smoothed: the four shapes, the four positions and the arrows `@left`,
-  `@right`, `@up` and `@down`), never manufacturers' logos.
+  `@right`, `@up` and `@down`), never manufacturers' logos. A classic cap shows what the player's hardware prints:
+  a keyboard's short names come from the texts (`prompt.cap.*`: `STRG` and `ENTF` in German, `SUPR` in Spanish, or a
+  drawn mark such as `@shift`), and a pad's Start, Back and Home show its own marks (`@menu`, `@view`, `@home`,
+  `OPTIONS`, `L3`…), the same in every language; a mouse button is drawn (`@mouse_left`). Test `every language draws
+  every cap whole` checks that no language leaves a cap with a letter the 3 x 5 font lacks.
 - **Markers in texts:** `element:set_prompt_text(text)` replaces each `{prompt:<action>}` in the text with that action's
   glyph (`promptText`); with `set_prompt_text(text, true)`, for an original text, also its button characters
   and its "X button": the cross (which extraction writes as "△", font cell 77) is `confirm`, the triangle

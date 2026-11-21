@@ -160,6 +160,9 @@ Adding a language with code `<code>` takes these pieces, all following the Spani
    (`common.yaml`, `pause_menu.yaml`, `shop.yaml`, `first_run.yaml`...) with the same keys and the `{name}` arguments
    as they are. A key the language does not have yet is shown in English, key by key, so a table can be filled bit by
    bit; `scripts/translation.sh --lang <code> check` and `dwe_localization_tests` (CI) fail while one is missing.
+   The key caps of the classic prompts (`prompt.cap.*` in `prompt.yaml`) are what the language's keyboards print, in
+   capitals A-Z and 0-9 with at most 7 of them (`STRG`, `SUPR`), or a drawn mark (`@tab`, `@shift`, `@caps_lock`);
+   test `every language draws every cap whole` fails on a letter the caps cannot draw.
 2. **The language name and flag**: `name` in its own `language.yaml`, and `native.<code>` and `flag.<code>` in the
    `language.yaml` of **every** language (the language box lists them from there). The flag image goes in
    `ui/flags/<code>`, which `scripts/art/make_flags.py` generates.

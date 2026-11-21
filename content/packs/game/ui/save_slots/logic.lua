@@ -60,6 +60,14 @@ local function named(entry, name)
   return key ~= "" and t(key) or field(entry, name)
 end
 
+-- The save's game mode by its name; one no installed pack has is an unknown variant, not its id.
+local function mode_name(entry)
+  if field(entry, "mode_key") == "" and field(entry, "mode") ~= "" then
+    return t("modes.unknown_name")
+  end
+  return named(entry, "mode")
+end
+
 -- The partner's own name and its species (main_menu.c: drawMainMenuStrings), or the species.
 local function partner_of(entry)
   local species = named(entry, "species")
@@ -163,7 +171,7 @@ local function label_of(entry)
       named(entry, "map"),
       played(entry),
       field(entry, "updated"),
-      named(entry, "mode"),
+      mode_name(entry),
     }) do
       if part ~= "" then
         table.insert(parts, part)
@@ -263,7 +271,7 @@ local function refresh_detail(document)
         end
       end
       lines = { partner_of(row.entry), table.concat(parts, "  ") }
-      local variant = named(row.entry, "mode")
+      local variant = mode_name(row.entry)
       if variant ~= "" then
         lines[1] = lines[1] .. "  -  " .. variant
       end

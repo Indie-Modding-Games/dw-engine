@@ -197,6 +197,9 @@ always say the same thing. How a translation is written and kept up to date is i
 | Player (default online name) | Joueur |
 | Bits (currency label in menus) | Bits |
 | Naming page of accented letters | ÀÂÇ (À Â Ç É È Ê Ë Î Ï Ô Œ Ù Û Ü Ÿ Æ) |
+| The game's log (where an error's details go) | journal du jeu |
+| Unknown variant (a save's mode that is not installed) | Variante inconnue |
+| Key caps of the classic prompts (`prompt.cap.*`) | ECHAP, TAB, SUPPR, INSER, DEBUT, FIN, PGPREC, PGSUIV, VERRMAJ, MAJ, CTRL, ALT, ALTGR |
 
 ## Story
 

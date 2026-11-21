@@ -218,6 +218,9 @@ La lista completa es `main.map_names`, centrada en 24 columnas (dos por carácte
 | Player (nombre en línea por defecto) | 玩家 |
 | Bits (etiqueta de la moneda en los menús) | Bits |
 | Hangul naming page | 한글 (las letras de la propia página, como en todos los idiomas) |
+| The game's log (donde van los detalles de un error) | 游戏日志 |
+| Unknown variant (modo de una partida que no está instalado) | 未知版本 |
+| Key caps of the classic prompts (`prompt.cap.*`) | como en el teclado, en inglés: ESC, DEL, CTRL, SHIFT… |
 
 ## Historia
 

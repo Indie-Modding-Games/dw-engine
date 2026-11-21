@@ -197,6 +197,9 @@ Tamer titles: アマチュア, 新米, 初心者, 中級者, 上級者, ベテ�
 | Open to new players (co-op) | 新しいプレイヤーの参加 |
 | Player (default online name) | プレイヤー |
 | Bits (currency label in menus) | ビット (common.bits; the extracted label stays as kept) |
+| The game's log (where an error's details go) | ゲームのログ |
+| Unknown variant (a save's mode that is not installed) | 不明なバージョン |
+| Key caps of the classic prompts (`prompt.cap.*`) | as on the keyboard, in English: ESC, DEL, CTRL, SHIFT… |
 
 ## Story
 

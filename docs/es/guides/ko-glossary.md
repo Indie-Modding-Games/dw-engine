@@ -204,6 +204,9 @@ Los nombres de objetos caben en unas 6 sílabas (12 columnas), como los 12 carac
 | Open to new players (co-op) | 새 플레이어 참가 허용 |
 | Player (nombre en línea por defecto) | 플레이어 |
 | Bits (etiqueta de la moneda en los menús) | Bits |
+| The game's log (donde van los detalles de un error) | 게임 로그 |
+| Unknown variant (modo de una partida que no está instalado) | 알 수 없는 버전 |
+| Key caps of the classic prompts (`prompt.cap.*`) | como en el teclado, en inglés: ESC, DEL, CTRL, SHIFT… |
 
 ## Historia
 

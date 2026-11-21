@@ -1,2 +1,6 @@
 # The notice that a community interface or plugin could not be used (ui/ui_notice): the game goes on without it.
 addon_failed: "커뮤니티 인터페이스를 사용할 수 없어서, 그 없이 게임을 계속해요."
+reason.missing: "{name} 인터페이스가 설치되어 있지 않아요."
+reason.unreadable: "{name} 인터페이스를 읽을 수 없어요."
+reason.broken: "{name} 인터페이스에 오류가 있어요."
+reason.plugin: "{name} 플러그인에 오류가 있어서 제외했어요."

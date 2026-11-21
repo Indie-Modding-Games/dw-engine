@@ -187,6 +187,9 @@ Los nombres de mapa están en `text/ru/main.yaml` (`map_names.*`), centrados en 
 | Open to new players (co-op) | Открыто для новых игроков |
 | Player (nombre en línea por defecto) | Игрок |
 | Bits (etiqueta de la moneda en los menús) | Bits |
+| The game's log (donde van los detalles de un error) | журнал игры |
+| Unknown variant (modo de una partida que no está instalado) | Неизвестный вариант игры |
+| Key caps of the classic prompts (`prompt.cap.*`) | como en el teclado, en inglés: ESC, DEL, CTRL, SHIFT… |
 
 ## Historia
 

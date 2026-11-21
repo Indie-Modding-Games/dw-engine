@@ -160,7 +160,10 @@ Sumar un idioma con código `<código>` lleva estas piezas, todas siguiendo las 
    `localization/en/` (`common.yaml`, `pause_menu.yaml`, `shop.yaml`, `first_run.yaml`...) con las mismas claves y
    los argumentos `{nombre}` tal cual. Una clave que el idioma todavía no tiene se muestra en inglés, clave por clave,
    así que una tabla se puede llenar de a poco; `scripts/translation.sh --lang <código> check` y
-   `dwe_localization_tests` (CI) fallan mientras falte alguna.
+   `dwe_localization_tests` (CI) fallan mientras falte alguna. Las teclas de los avisos clásicos (`prompt.cap.*` en
+   `prompt.yaml`) son lo que imprimen los teclados del idioma, en mayúsculas A-Z y 0-9 y como mucho 7 (`STRG`,
+   `SUPR`), o una marca dibujada (`@tab`, `@shift`, `@caps_lock`); el test `every language draws every cap whole`
+   falla con una letra que las teclas no pueden dibujar.
 2. **El nombre y la bandera del idioma**: `name` en su propio `language.yaml`, y `native.<código>` y `flag.<código>`
    en el `language.yaml` de **todos** los idiomas (la caja de idiomas los lista desde ahí). La imagen de la bandera va
    en `ui/flags/<código>`, que genera `scripts/art/make_flags.py`.

@@ -58,7 +58,8 @@ motivo sale en el registro; si era la interfaz elegida, vuelve la del juego y el
 ### Si algo sale mal
 
 - Si la interfaz elegida o un complemento no se pueden usar (está rota, es para otra versión del juego o le falta un archivo), vuelve
-  la del juego y un aviso arriba de la pantalla dice por qué durante unos segundos.
+  la del juego y un aviso arriba de la pantalla dice por qué durante unos segundos, en el idioma del jugador (no está
+  instalada, no se puede leer, tiene un error). Las palabras del propio error, para el autor del addon, van al registro.
 - **Modo seguro:** mantén pulsada **Mayús** mientras arranca el juego, o arráncalo con `--safe-ui`. Se usa solo la
   interfaz del juego y no se lee la carpeta de interfaces del usuario. Sirve para volver a un juego que funciona y
   elegir otra interfaz.

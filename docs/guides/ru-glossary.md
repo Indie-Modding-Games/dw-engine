@@ -187,6 +187,9 @@ Map names are in `text/ru/main.yaml` (`map_names.*`), centred in 24 characters w
 | Open to new players (co-op) | Открыто для новых игроков |
 | Player (default online name) | Игрок |
 | Bits (currency label in menus) | Bits |
+| The game's log (where an error's details go) | журнал игры |
+| Unknown variant (a save's mode that is not installed) | Неизвестный вариант игры |
+| Key caps of the classic prompts (`prompt.cap.*`) | as on the keyboard, in English: ESC, DEL, CTRL, SHIFT… |
 
 ## Story
 

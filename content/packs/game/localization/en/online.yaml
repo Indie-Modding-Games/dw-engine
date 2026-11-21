@@ -137,6 +137,8 @@ error.damaged: "A damaged message arrived. The connection closed."
 error.disconnected: "The other player disconnected."
 error.directory_unavailable: "The public room list is not available yet."
 error.unknown: "Something went wrong with the connection."
+# The code of an error the game has no words for, small under error.unknown.
+error.code: "Code: {code}"
 # What the game did not do of a step.
 notice.room_gone: "That room is no longer open."
 notice.room_full: "That room is already full."

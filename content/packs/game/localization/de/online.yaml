@@ -137,6 +137,7 @@ error.damaged: "Eine beschädigte Nachricht kam an. Die Verbindung wurde getrenn
 error.disconnected: "Der andere Spieler hat die Verbindung getrennt."
 error.directory_unavailable: "Die öffentliche Raumliste ist noch nicht verfügbar."
 error.unknown: "Bei der Verbindung ist etwas schiefgelaufen."
+error.code: "Code: {code}"
 # What the game did not do of a step.
 notice.room_gone: "Dieser Raum ist nicht mehr offen."
 notice.room_full: "Dieser Raum ist schon voll."

@@ -127,6 +127,7 @@ error.damaged: "壊れたメッセージが届きました。接続を閉じま�
 error.disconnected: "相手の接続が切れました。"
 error.directory_unavailable: "公開ルームの一覧はまだ使えません。"
 error.unknown: "接続に問題が起きました。"
+error.code: "コード: {code}"
 notice.room_gone: "そのルームはもう開いていません。"
 notice.room_full: "そのルームはもう満員です。"
 notice.mode_unavailable: "そのモードはまだルームで遊べません。"

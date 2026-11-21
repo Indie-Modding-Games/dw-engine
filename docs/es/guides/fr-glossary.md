@@ -198,6 +198,9 @@ por primera vez.
 | Player (nombre en línea por defecto) | Joueur |
 | Bits (etiqueta de la moneda en los menús) | Bits |
 | Naming page of accented letters | ÀÂÇ (À Â Ç É È Ê Ë Î Ï Ô Œ Ù Û Ü Ÿ Æ) |
+| The game's log (donde van los detalles de un error) | journal du jeu |
+| Unknown variant (modo de una partida que no está instalado) | Variante inconnue |
+| Key caps of the classic prompts (`prompt.cap.*`) | ECHAP, TAB, SUPPR, INSER, DEBUT, FIN, PGPREC, PGSUIV, VERRMAJ, MAJ, CTRL, ALT, ALTGR |
 
 ## Historia
 

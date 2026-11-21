@@ -58,7 +58,9 @@ up in the log; if it was the chosen interface, the game's own comes back and the
 ### If something goes wrong
 
 - If the chosen interface or a plugin cannot be used (it is broken, it is for another game version or a file is
-  missing), the game's own comes back and a notice at the top of the screen says why for a few seconds.
+  missing), the game's own comes back and a notice at the top of the screen says why for a few seconds, in the player's
+  language (not installed, cannot be read, has an error). The error's own words, for the addon's author, go to the
+  log.
 - **Safe mode:** hold **Shift** while the game starts, or start it with `--safe-ui`. Only the game's own interface is
   used and the user's interfaces folder is not read. It is useful for getting back to a working game and choosing
   another interface.

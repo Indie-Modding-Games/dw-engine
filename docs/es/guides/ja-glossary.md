@@ -202,6 +202,9 @@ Títulos de domador: アマチュア, 新米, 初心者, 中級者, 上級者, �
 | Open to new players (co-op) | 新しいプレイヤーの参加 |
 | Player (nombre en línea por defecto) | プレイヤー |
 | Bits (etiqueta de la moneda en los menús) | ビット (common.bits; la etiqueta extraída se deja como está) |
+| The game's log (donde van los detalles de un error) | ゲームのログ |
+| Unknown variant (modo de una partida que no está instalado) | 不明なバージョン |
+| Key caps of the classic prompts (`prompt.cap.*`) | como en el teclado, en inglés: ESC, DEL, CTRL, SHIFT… |
 
 ## Historia
 

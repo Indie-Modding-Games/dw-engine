@@ -22,8 +22,9 @@ namespace dwe::app {
 // The settings the documents read: the UI on (ui_addon, "default" for the game's own), the ones
 // offered (ui_addons, ids separated by spaces, the game's own first), each one's name
 // (ui_addon.name.<id>), whether the run is in safe mode (ui_addon.safe: the game's own UI only) and
-// why the last pick could not go on (ui_addon.problem, empty when it could). The ui_addon command
-// picks one; ui_addon_reload reads the one on again from its files.
+// why the last pick could not go on, in the player's language (ui_addon.problem, empty when it
+// could; the log has the details). The ui_addon command picks one; ui_addon_reload reads the one
+// on again from its files.
 inline constexpr std::string_view UiAddonSetting = "ui_addon";
 inline constexpr std::string_view UiAddonsSetting = "ui_addons";
 inline constexpr std::string_view UiAddonNamePrefix = "ui_addon.name.";
@@ -37,6 +38,10 @@ inline constexpr std::string_view UiPluginsCountSetting = "ui_plugins.count";
 // The notice that the game's own UI came back, and why; it hides by itself.
 inline constexpr std::string_view UiNoticeDocument = "ui_notice";
 inline constexpr double UiNoticeSeconds = 8.0;
+inline constexpr std::string_view MissingUiAddonKey = "ui_notice.reason.missing";
+inline constexpr std::string_view UnreadableUiAddonKey = "ui_notice.reason.unreadable";
+inline constexpr std::string_view BrokenUiAddonKey = "ui_notice.reason.broken";
+inline constexpr std::string_view BrokenUiPluginKey = "ui_notice.reason.plugin";
 
 // The UI the run starts with: the game's own in safe mode (--safe-ui, or Shift held at start) or
 // when nothing was picked; else the saved pick, which may no longer be offered (use() then says

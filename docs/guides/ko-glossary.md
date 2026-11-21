@@ -200,6 +200,9 @@ Item names fit in about 6 syllables (12 columns), like the original's 12 charact
 | Open to new players (co-op) | 새 플레이어 참가 허용 |
 | Player (default online name) | 플레이어 |
 | Bits (currency label in menus) | Bits |
+| The game's log (where an error's details go) | 게임 로그 |
+| Unknown variant (a save's mode that is not installed) | 알 수 없는 버전 |
+| Key caps of the classic prompts (`prompt.cap.*`) | as on the keyboard, in English: ESC, DEL, CTRL, SHIFT… |
 
 ## Story
 

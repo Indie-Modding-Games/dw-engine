@@ -137,6 +137,7 @@ error.damaged: "손상된 메시지가 와서 연결이 끊어졌어요."
 error.disconnected: "다른 플레이어의 연결이 끊어졌어요."
 error.directory_unavailable: "공개 방 목록을 아직 쓸 수 없어요."
 error.unknown: "연결에 문제가 생겼어요."
+error.code: "코드: {code}"
 # What the game did not do of a step.
 notice.room_gone: "그 방은 이제 열려 있지 않아요."
 notice.room_full: "그 방은 이미 꽉 찼어요."

@@ -1,1 +1,5 @@
 addon_failed: "コミュニティのインターフェースを使えませんでした。それなしでゲームを続けます。"
+reason.missing: "インターフェース「{name}」がインストールされていません。"
+reason.unreadable: "インターフェース「{name}」を読みこめませんでした。"
+reason.broken: "インターフェース「{name}」にエラーがあります。"
+reason.plugin: "プラグイン「{name}」にエラーがあるため、外しました。"

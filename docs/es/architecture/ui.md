@@ -159,7 +159,12 @@ recorte de RmlUi (`EnableClipMask`) no están implementadas: solo hacen falta pa
   rutas `/glyph/classic/button|cap/<símbolo>/<dibujo>` (un botón redondo de 16 x 12 o una tecla de 12 de alto al
   estilo del original, con su parte de arriba hundiéndose un píxel por dibujo, y una letra de 3 x 5 propia) y
   `/glyph/modern/<símbolo>` (64 x 64, suavizado: las cuatro formas, las cuatro posiciones y las flechas `@left`,
-  `@right`, `@up` y `@down`), nunca logotipos de fabricantes.
+  `@right`, `@up` y `@down`), nunca logotipos de fabricantes. Una tecla clásica muestra lo que imprime el aparato del
+  jugador: los nombres cortos de un teclado vienen de los textos (`prompt.cap.*`: `STRG` y `ENTF` en alemán, `SUPR` en
+  español, o una marca dibujada como `@shift`), y Start, Back y Home de un mando muestran sus propias marcas (`@menu`,
+  `@view`, `@home`, `OPTIONS`, `L3`…), iguales en todos los idiomas; un botón del ratón se dibuja (`@mouse_left`). El
+  test `every language draws every cap whole` comprueba que ningún idioma deja una tecla con una letra que la fuente
+  de 3 x 5 no tiene.
 - **Marcadores en los textos:** `element:set_prompt_text(texto)` cambia cada `{prompt:<acción>}` del texto por el glifo
   de esa acción (`promptText`); con `set_prompt_text(texto, true)`, para un texto del original, también sus caracteres
   de botón y su «X button»: la cruz (que la extracción escribe «△», celda 77 de la fuente) es `confirm`, el triángulo

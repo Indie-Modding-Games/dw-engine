@@ -172,6 +172,9 @@ Bafo picante, Party time → Hora da festa, Bubble → Bolha. La lista completa 
 | Player (nombre en línea por defecto) | Jogador |
 | Bits (etiqueta de la moneda en los menús) | Bits |
 | Naming page of accented letters | ÁÂÃ (Á Â Ã À Ç É Ê Í Ó Ô Õ Ú) |
+| The game's log (donde van los detalles de un error) | registro do jogo |
+| Unknown variant (modo de una partida que no está instalado) | Variante desconhecida |
+| Key caps of the classic prompts (`prompt.cap.*`) | como en el teclado, en inglés: ESC, DEL, CTRL, SHIFT… |
 
 ## Historia
 

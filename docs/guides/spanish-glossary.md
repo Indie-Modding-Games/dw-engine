@@ -176,6 +176,9 @@ Map names are centered in 24 characters with spaces, like the original's.
 | Player (default online name) | Jugador |
 | Bits (currency label in menus) | Bits |
 | Naming page of accented letters | ÁÉÍ (Á É Í Ó Ú Ñ Ü) |
+| The game's log (where an error's details go) | registro del juego |
+| Unknown variant (a save's mode that is not installed) | Variante desconocida |
+| Key caps of the classic prompts (`prompt.cap.*`) | ESC, TAB, SUPR, INSERT, INICIO, FIN, REPAG, AVPAG, BLOQMAY, MAYUS, CTRL, ALT, ALTGR |
 
 ## Story
 

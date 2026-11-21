@@ -198,6 +198,9 @@ etapa).
 | Player (nombre en línea por defecto) | Spieler |
 | Bits (etiqueta de la moneda en los menús) | Bits |
 | Naming page of accented letters | ÄÖÜ (Ä Ö Ü ß) |
+| The game's log (donde van los detalles de un error) | Spielprotokoll |
+| Unknown variant (modo de una partida que no está instalado) | Unbekannte Variante |
+| Key caps of the classic prompts (`prompt.cap.*`) | ESC, @tab, ENTF, EINFG, POS1, ENDE, BILDAUF, BILDAB, @caps_lock, @shift, STRG, ALT, ALTGR |
 
 ## Historia
 
