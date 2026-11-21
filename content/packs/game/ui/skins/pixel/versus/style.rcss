@@ -263,15 +263,6 @@
 	background-color: #1d3150;
 }
 
-.vs-cursor {
-	width: 48dp;
-	height: 48dp;
-	margin: 6dp 0 0 6dp;
-	border: 3dp #efc63c;
-	background-color: #efc63c30;
-	decorator: none;
-}
-
 /* The clock (.clock): a thin box; the 1P / 2P pieces and the digits stay the original's. */
 #vs-clock {
 	box-sizing: border-box;

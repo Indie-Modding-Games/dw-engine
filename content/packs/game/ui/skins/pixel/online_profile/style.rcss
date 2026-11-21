@@ -53,7 +53,7 @@
 }
 
 .icon-choice.selected { decorator: ninepatch(nb-key-outer, nb-key-inner, 1) border-box; border-color: transparent; }
-.icon-choice:focus { decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box; border-color: transparent; }
+.icon-choice:focus { border-color: transparent; }
 .icon-choice .profile-icon { width: 42dp; height: 42dp; }
 #icon-name { top: 56dp; }
 

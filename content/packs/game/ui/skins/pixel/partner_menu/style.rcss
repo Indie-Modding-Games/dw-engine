@@ -305,15 +305,17 @@
 
 /* ---- Bag (150-160) ---- */
 
-/* The rows (.slot): a line in the rim's blue under each, a gold outline on the focused one, red while moving. */
-.slot {
+/* The rows (.slot): a line in the rim's blue under each, the four corners on the focused one, a gold outline on
+   the picked one, red while moving. */
+.slot,
+.slot:focus {
 	border: 3dp transparent;
 	border-bottom-color: #4a5a6e;
 	font-size: 30dp;
 	color: #f2f0e1;
+	background-color: transparent;
 }
 
-.slot:focus,
 .slot.picked {
 	border-color: #efc63c;
 	background-color: #efc63c1a;
