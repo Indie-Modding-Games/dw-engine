@@ -106,7 +106,9 @@ void EvolutionScene::approach(float seconds) {
   if (std::exchange(approachPending_, false)) {
     if (field.heldByScript()) {
       // The script holds the two and moves them itself (its routines 2 and 10 evolve the partner):
-      // the scene starts where the partner stands.
+      // the scene starts where the partner stands. A warp the same script queued still has to run
+      // its fade out here, or the walk phase leaves the field on a frozen black frame.
+      advanceWarp(seconds);
       core::logDebug("[port:evolution] partnerTickEvolving (partner.c:758): a script holds the "
                      "partner, no walk");
       glow();
@@ -132,6 +134,18 @@ void EvolutionScene::approach(float seconds) {
   glow();
 }
 
+void EvolutionScene::advanceWarp(float seconds) {
+  // Only the map change's own fade out and load: while `leaving_`, `pendingChange_` or
+  // `waitingForMap_` hold the field, Field::tick advances the warp and returns before the player's
+  // free walk, so no NPC, clip or game clock moves under the scene. Once the map is in place the
+  // field is no longer changing and this stops; the new map's fade in runs when the scene lets go.
+  if (!scene_->field().mapChangePending()) {
+    return;
+  }
+  scene_->tick({}, seconds);
+  scene_->finishTick();
+}
+
 void EvolutionScene::glow() {
   // EVL_initEvoSequence: the order the bones break in, the squares on the partner's feet.
   effectSeed_ = effectSeed_ == 0 ? FirstEffectSeed : effectSeed_ + 1;
@@ -155,6 +169,13 @@ void EvolutionScene::tick(double seconds) {
     approach(static_cast<float>(seconds));
     return;
   }
+  // A scripted warp that is still resolving when the scene takes the field (leaving the canyon's
+  // Monochromon shop as the partner evolves is the case that froze the screen on black): its fade
+  // out and the new map's load must carry on under the scene, or `Field::tick` is never reached
+  // again until the scene ends and the player is left staring at the frozen fade. The scene's own
+  // stage hides the scenery and drives the camera, so the swap is not seen; the new map fades in
+  // when the scene lets the field go.
+  advanceWarp(static_cast<float>(seconds));
   pendingSeconds_ += seconds;
   while (active() && pendingSeconds_ >= frameSeconds_) {
     pendingSeconds_ -= frameSeconds_;
