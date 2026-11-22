@@ -4,11 +4,15 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
+#include <iostream>
+#include <limits>
 #include <map>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace {
 
@@ -199,4 +203,114 @@ TEST_CASE("the job pays by the tally's tier") {
   CHECK(payTierOf(tiers, 3072) == PayTier::Joins);
   CHECK(payTierOf(tiers, 3583) == PayTier::Joins);
   CHECK(payTierOf(tiers, 3584) == PayTier::Bonus);
+}
+
+// A design simulation, not a regression: it plays generated lines with real Haggle logic and
+// reports how often each strategy clears the thresholds. Run it with --tc="*sim*" to read the
+// table; it asserts nothing so it never blocks the suite.
+TEST_CASE("sim: a risk-taker's win rate over generated lines") {
+  const ShopJobRules rules = packRules();
+  constexpr std::uint64_t GameSeed = 987654321ULL;
+  constexpr std::uint64_t Lines = 4000;
+
+  struct Rate {
+    std::int64_t win3100 = 0;
+    std::int64_t win3600 = 0;
+    std::int64_t win4000 = 0;
+    std::int64_t sum = 0;
+    std::int64_t minScore = std::numeric_limits<std::int64_t>::max();
+    std::int64_t n = 0;
+  };
+
+  auto play = [&](auto pick) -> Rate {
+    Rate r;
+    for (std::uint64_t job = 1; job <= Lines; ++job) {
+      Random random{lineupSeed(GameSeed, job)};
+      const Lineup line = makeLineup(rules, random);
+      std::int64_t tally = 0;
+      for (const Customer& each : line.customers) {
+        Haggle haggle{rules, each};
+        haggle.talk();
+        for (int guard = 0; guard < 64 && !haggle.over(); ++guard) {
+          const OfferResult result = haggle.offer(pick(rules, haggle, each.item));
+          tally += result.profit;
+        }
+      }
+      ++r.n;
+      r.sum += tally;
+      r.minScore = std::min(r.minScore, tally);
+      if (tally > 3100) {
+        ++r.win3100;
+      }
+      if (tally >= 3600) {
+        ++r.win3600;
+      }
+      if (tally >= 4000) {
+        ++r.win4000;
+      }
+    }
+    return r;
+  };
+
+  const auto report = [](const std::string& name, const Rate& r) {
+    std::cout << name << std::string(8 - std::min<std::size_t>(name.size(), 8), ' ')
+              << " >3100:" << static_cast<int>(100.0 * static_cast<double>(r.win3100) / static_cast<double>(r.n))
+              << "%  >=3600:"
+              << static_cast<int>(100.0 * static_cast<double>(r.win3600) / static_cast<double>(r.n))
+              << "%  >=4000:"
+              << static_cast<int>(100.0 * static_cast<double>(r.win4000) / static_cast<double>(r.n))
+              << "%  mean:" << r.sum / r.n << "  min:" << r.minScore << "\n";
+  };
+
+  std::cout << "shop_job sim, " << Lines << " lines (talk every customer first):\n";
+
+  // The risk-taker: the dearest price the on-screen odds still make look likely enough to try.
+  // A lower bar gambles on a dearer price; a higher bar plays safe and sells cheap.
+  for (const int threshold : {20, 30, 40, 50, 60, 70, 80, 95}) {
+    report("T=" + std::to_string(threshold),
+           play([threshold](const ShopJobRules&, Haggle& haggle, std::size_t) -> Level {
+             for (Level level = 0; level < NoSale; ++level) {
+               if (haggle.chance(level) >= threshold) {
+                 return level;
+               }
+             }
+             return NoSale - 1;
+           }));
+  }
+
+  // The calculated gambler: highest expected profit, chance times price, on every turn.
+  report("EV",
+         play([](const ShopJobRules& rules, Haggle& haggle, std::size_t item) -> Level {
+           Level best = NoSale - 1;
+           std::int64_t bestValue = -1;
+           for (Level level = 0; level < NoSale; ++level) {
+             const std::int64_t value = static_cast<std::int64_t>(haggle.chance(level)) *
+                                        rules.profit(item, level);
+             if (value > bestValue) {
+               bestValue = value;
+               best = level;
+             }
+           }
+           return best;
+         }));
+
+  // The ceiling a perfect player reaches: the line's own perfect score.
+  Rate perfect;
+  for (std::uint64_t job = 1; job <= Lines; ++job) {
+    Random random{lineupSeed(GameSeed, job)};
+    const Lineup line = makeLineup(rules, random);
+    ++perfect.n;
+    perfect.sum += line.perfectScore;
+    perfect.minScore = std::min(perfect.minScore, line.perfectScore);
+    if (line.perfectScore > 3100) {
+      ++perfect.win3100;
+    }
+    if (line.perfectScore >= 3600) {
+      ++perfect.win3600;
+    }
+    if (line.perfectScore >= 4000) {
+      ++perfect.win4000;
+    }
+  }
+  report("perfect", perfect);
 }
