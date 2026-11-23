@@ -307,25 +307,55 @@ core::Result<GraphicsPipeline> GraphicsPipeline::create(Device& device, const Bi
   pipelineInfo.pDynamicState = &dynamic;
   pipelineInfo.layout = table.pipelineLayout();
 
-  GraphicsPipeline pipeline{device};
-  pipeline.layout_ = table.pipelineLayout();
-  pipeline.depthBias_ = desc.depth.bias;
-  VkResult result = gpuCheck("vkCreateGraphicsPipelines",
-                             vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo,
-                                                       nullptr, &pipeline.pipeline_));
-  if (result == VK_SUCCESS && desc.multisampled > 1) {
-    // The same pipeline for multisampled targets: only the rasterization's sample count differs.
-    multisample.rasterizationSamples = static_cast<VkSampleCountFlagBits>(desc.multisampled);
-    result = gpuCheck("vkCreateGraphicsPipelines (multisampled)",
-                      vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
-                                                &pipeline.multisampled_));
-    pipeline.multisampledSamples_ = desc.multisampled;
+  const auto build = [&](VkPipelineCreateFlags flags, VkPipeline& single,
+                         VkPipeline& multisampledPipeline) {
+    pipelineInfo.flags = flags;
+    VkResult status = gpuCheck(
+        "vkCreateGraphicsPipelines",
+        vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &single));
+    if (status == VK_SUCCESS && desc.multisampled > 1) {
+      // The same pipeline for multisampled targets: only the rasterization's sample count differs.
+      multisample.rasterizationSamples = static_cast<VkSampleCountFlagBits>(desc.multisampled);
+      status = gpuCheck("vkCreateGraphicsPipelines (multisampled)",
+                        vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+                                                  &multisampledPipeline));
+    }
+    return status;
+  };
+
+  VkPipeline single = VK_NULL_HANDLE;
+  VkPipeline multisampledPipeline = VK_NULL_HANDLE;
+  VkResult result = build(0, single, multisampledPipeline);
+  if (result != VK_SUCCESS && !gpuDeviceLost()) {
+    // Some proprietary drivers fail while optimizing a shader and return VK_ERROR_UNKNOWN or
+    // VK_ERROR_INITIALIZATION_FAILED. One retry with optimization off builds a slower pipeline,
+    // which is better than the game refusing to start. The hash ties this log line to the crash
+    // report's last pipeline.
+    core::logWarning("{}: pipeline build failed (Vulkan error {}, spirv {:#x}); retrying without "
+                     "optimization",
+                     desc.name, static_cast<int>(result), gpuSpirvHash(desc.spirv));
+    if (single != VK_NULL_HANDLE) {
+      vkDestroyPipeline(gpu, single, nullptr);
+    }
+    if (multisampledPipeline != VK_NULL_HANDLE) {
+      vkDestroyPipeline(gpu, multisampledPipeline, nullptr);
+    }
+    single = VK_NULL_HANDLE;
+    multisampledPipeline = VK_NULL_HANDLE;
+    result = build(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT, single, multisampledPipeline);
   }
   vkDestroyShaderModule(gpu, module, nullptr);
   if (result != VK_SUCCESS) {
     return core::fail(std::format("{}: could not create the pipeline (Vulkan error {})", desc.name,
                                   static_cast<int>(result)));
   }
+
+  GraphicsPipeline pipeline{device};
+  pipeline.layout_ = table.pipelineLayout();
+  pipeline.depthBias_ = desc.depth.bias;
+  pipeline.pipeline_ = single;
+  pipeline.multisampled_ = multisampledPipeline;
+  pipeline.multisampledSamples_ = desc.multisampled;
   return pipeline;
 }
 
