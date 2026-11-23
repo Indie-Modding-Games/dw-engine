@@ -373,13 +373,13 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   if (auto created = impl->createFrames(); !created) {
     return std::unexpected{created.error()};
   }
-  auto device = std::unique_ptr<Device>{new Device{std::move(impl)}};
+  auto newDevice = std::unique_ptr<Device>{new Device{std::move(impl)}};
   // The GPU report is what a crash reads and writes: capture the GPU, its driver and the limits
   // that AMD and Intel crash on, and install the crash reporter so an uncaught exception or a fault
   // inside the driver still leaves the trail.
-  gpuReportDevice(device->nativeHandles(), device->validationEnabled());
+  gpuReportDevice(newDevice->nativeHandles(), newDevice->validationEnabled());
   gpuInstallCrashReporter();
-  return device;
+  return newDevice;
 }
 
 Device::Device(std::unique_ptr<Impl> impl) : impl_{std::move(impl)} {}

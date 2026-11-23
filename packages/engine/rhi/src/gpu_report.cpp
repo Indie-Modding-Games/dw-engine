@@ -394,7 +394,7 @@ void gpuNoteActivity(std::string_view activity) {
 }
 
 std::string gpuActivity() {
-  const Record& rec = record();
+  Record& rec = record();
   const std::lock_guard lock(rec.mutex);
   return rec.activity;
 }
@@ -433,7 +433,7 @@ VkResult gpuCheck(std::string_view call, VkResult result) {
 }
 
 bool gpuDeviceLost() {
-  const Record& rec = record();
+  Record& rec = record();
   const std::lock_guard lock(rec.mutex);
   return rec.deviceLost;
 }
