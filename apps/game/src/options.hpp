@@ -133,6 +133,10 @@ struct Options {
   // off, graphics_options.hpp). The launcher's low-performance mode. Off by default.
   bool lowPerformance = false;
 
+  // Set by --rdna2-safe: the launcher's AMD RX 6000 (RDNA2) safe mode. The RHI only applies it to an
+  // AMD card whose model names that series, so it changes nothing on other GPUs. Off by default.
+  bool rdna2Safe = false;
+
   // The language of the texts (--lang en|es...), instead of the saved one or the system's; for
   // autotests.
   std::optional<std::string> language;
@@ -182,7 +186,7 @@ inline constexpr std::string_view Usage =
     "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--chibi] [--start <map>[,<exit>]] [--time day|dusk|night] [--weather <kind>] [--season <season>] [--lang "
     "<language>] "
     "[--text-font modern|original] [--ui-skin <id>] [--safe-ui] [--graphics <option>=<value>[,...]] "
-    "[--compatible] [--low-performance] "
+    "[--compatible] [--low-performance] [--rdna2-safe] "
     "[--new-game | --load <slot>] "
     "[--new-game-chain original|seeded] [--clock-speed <x>] "
     "[--seed <n>] [--original-rolls <state>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] [--trace <file>] "
@@ -203,6 +207,7 @@ inline constexpr std::string_view TuningOption = "--tuning";
 inline constexpr std::string_view SafeUiOption = "--safe-ui";
 inline constexpr std::string_view CompatibleOption = "--compatible";
 inline constexpr std::string_view LowPerformanceOption = "--low-performance";
+inline constexpr std::string_view Rdna2SafeOption = "--rdna2-safe";
 inline constexpr std::string_view ExploreOption = "--explore";
 inline constexpr std::string_view ChibiOption = "--chibi";
 inline constexpr std::string_view LanguageOption = "--lang";

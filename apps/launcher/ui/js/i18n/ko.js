@@ -113,6 +113,8 @@ export default {
     compatModeHint: "Vulkan 1.3 요구 대신 동적 렌더링 및 synchronization2 확장으로 Vulkan 1.2를 제공하는 드라이버의 그래픽 카드를 허용합니다. 오래된 카드와 드라이버용입니다.",
     lowPerfTitle: "저성능 모드",
     lowPerfHint: "가장 가벼운 설정으로 시작합니다: 안티앨리어싱, 향상된 조명, 선명한 색, HD 텍스처 없음.",
+    rdna2SafeTitle: "AMD RX 6000 안전 모드",
+    rdna2SafeHint: "AMD RX 6000(RDNA2) 전용: TDR을 피하기 위해 bindless 레이아웃을 단순화합니다. 다른 카드에서는 켜 두어도 아무것도 바뀌지 않습니다.",
     compatRescueHint: "이 카드는 호환 모드로 실행할 수 있습니다. 아래에서 켜면 플레이할 수 있습니다(네이티브 Vulkan 1.3보다 느림).",
     compatOk: "확인",
   },

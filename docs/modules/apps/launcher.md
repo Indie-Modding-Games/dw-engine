@@ -315,6 +315,12 @@ player's ones are applied after the software driver's, so they can correct a wro
 Lines that are not understood are ignored, never keep you from playing, and none of this is passed to the probe: it
 only changes how the game starts. It is saved in `settings.json`.
 
+**AMD RX 6000 (RDNA2) safe mode.** In Settings › General › Requirements there is an "AMD RX 6000 safe mode" switch.
+Turning it on starts the game with `--rdna2-safe`, which simplifies the bindless layout (it keeps only
+`UPDATE_AFTER_BIND`) to test the TDR on those cards. The game checks the GPU again: if it is not an AMD RX 6000 card, it
+ignores the flag, so nothing changes on any other card even if you leave it on. It writes `AMD RX 6000 safe mode: ...`
+to `game.log` when active. It does not replace software mode.
+
 **AppImage.** The AppImage's startup puts its folders ahead of `XDG_DATA_DIRS`, where the Vulkan loader
 looks for the computer's drivers; the launcher removes them from the environment of `--check-system` and of the game
 (`outside_appimage`).

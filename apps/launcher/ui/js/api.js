@@ -24,11 +24,13 @@ export const api = {
   installLauncherUpdate: () => call("install_launcher_update"),
   restartLauncher: () => call("restart_launcher"),
   setAutoUpdate: (what, enabled) => call("set_auto_update", { what, enabled }),
-  // The GPU compatibility mode (Vulkan 1.2 floor) and the low-performance mode (potato preset):
-  // the launcher's switches that pass --compatible / --low-performance to the game (system_check.rs,
-  // launch.rs).
+  // The GPU compatibility mode (Vulkan 1.2 floor), the low-performance mode (potato preset) and the
+  // AMD RX 6000 safe mode: the launcher's switches that pass --compatible / --low-performance /
+  // --rdna2-safe to the game (system_check.rs, launch.rs).
   setCompatibilityMode: (enabled) => call("set_compatibility_mode", { enabled }),
   setLowPerformanceMode: (enabled) => call("set_low_performance_mode", { enabled }),
+  // The AMD RX 6000 (RDNA2) safe mode: --rdna2-safe. The game only applies it on those cards.
+  setRdna2SafeMode: (enabled) => call("set_rdna2_safe_mode", { enabled }),
   // Manual ways out of a wrong GPU check: "auto", "skip" or "software", plus the game's own
   // arguments and environment (settings.rs). None of them can keep Play from starting the game.
   setLaunchMode: (mode) => call("set_launch_mode", { mode }),

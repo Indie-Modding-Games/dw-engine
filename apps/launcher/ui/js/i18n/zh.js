@@ -112,6 +112,8 @@ export default {
     compatModeHint: "接受其驱动通过动态渲染与 synchronization2 扩展提供 Vulkan 1.2（而非要求 Vulkan 1.3）的显卡，适用于较旧的显卡与驱动。",
     lowPerfTitle: "低性能模式",
     lowPerfHint: "以最轻量设置开始：无抗锯齿、无增强光照、无鲜艳色彩、无 HD 纹理。",
+    rdna2SafeTitle: "AMD RX 6000 安全模式",
+    rdna2SafeHint: "仅适用于 AMD RX 6000（RDNA2）：简化 bindless 布局以避免 TDR。在其他显卡上即使保持开启也不会改变任何内容。",
     compatRescueHint: "该显卡可通过兼容模式运行游戏：请在下方开启后再游玩（比原生 Vulkan 1.3 慢）。",
     compatOk: "知道了",
   },

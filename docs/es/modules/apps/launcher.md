@@ -317,6 +317,12 @@ software, así que pueden corregir un `VK_DRIVER_FILES` mal detectado. Las líne
 nunca impiden jugar, y nada de esto se pasa al sondeo: solo cambia el arranque del juego. Se guarda en
 `settings.json`.
 
+**Modo seguro AMD RX 6000 (RDNA2).** En Ajustes › General › Requisitos hay un interruptor «Modo seguro AMD RX 6000».
+Al activarlo el juego arranca con `--rdna2-safe` y simplifica el layout bindless (deja sólo `UPDATE_AFTER_BIND`) para
+probar el TDR de esas tarjetas. El juego comprueba de nuevo la GPU: si no es AMD y de la serie RX 6000, ignora el flag,
+así que en cualquier otra tarjeta no cambia nada aunque lo dejes activado. Escribe `AMD RX 6000 safe mode: ...` en
+`game.log` cuando está activo. No sustituye al modo software.
+
 **AppImage.** El arranque de la AppImage pone sus carpetas delante de `XDG_DATA_DIRS`, donde el cargador de Vulkan
 busca los controladores del equipo; el lanzador las quita del entorno de `--check-system` y del juego
 (`outside_appimage`).
