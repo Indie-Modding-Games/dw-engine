@@ -640,8 +640,13 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     }
     require_space(&state, system_check::PLAY_BYTES)?;
     let graphics = graphics_of(&state, &game, false, graphics_flags.compatibility).await;
+    // The launcher never refuses to play: even when the check found no GPU that can run the
+    // renderer (docs/modules/apps/launcher.md), the game still starts and fails on its own, writing
+    // the reason and the GPU report (rhi/gpu_report.cpp) to its log, whose end the launcher then
+    // shows with the end-of-game notice. A silent "you cannot play" here would hide exactly the
+    // information the player needs (an old card is usually a driver or compatibility-mode fix).
     if graphics.graphics == Graphics::Blocked {
-        return Err(Failure::new(code::NO_GPU, graphics.detail));
+        log_line!("no GPU can run the game: starting it anyway to see what the game reports");
     }
     if state.game_running.swap(true, Ordering::SeqCst) {
         return Ok(());
