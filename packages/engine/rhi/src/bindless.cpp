@@ -1,6 +1,7 @@
 #include <dwe/core/assert.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/rhi/bindless.hpp>
+#include <dwe/rhi/gpu_report.hpp>
 
 #include <algorithm>
 #include <array>
@@ -74,7 +75,8 @@ core::Result<std::unique_ptr<BindlessTable>> BindlessTable::create(Device& devic
     samplerInfo.addressModeV = SamplerTable[kind].address;
     samplerInfo.addressModeW = SamplerTable[kind].address;
     samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
-    if (vkCreateSampler(gpu.device, &samplerInfo, nullptr, &table->samplers_[kind]) != VK_SUCCESS) {
+    if (gpuCheck("vkCreateSampler", vkCreateSampler(gpu.device, &samplerInfo, nullptr,
+                                                    &table->samplers_[kind])) != VK_SUCCESS) {
       return core::fail("could not create the samplers of the bindless table");
     }
   }
@@ -110,7 +112,8 @@ core::Result<std::unique_ptr<BindlessTable>> BindlessTable::create(Device& devic
       .flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
       .bindingCount = static_cast<std::uint32_t>(bindings.size()),
       .pBindings = bindings.data()};
-  if (vkCreateDescriptorSetLayout(gpu.device, &layoutInfo, nullptr, &table->setLayout_) !=
+  if (gpuCheck("vkCreateDescriptorSetLayout",
+               vkCreateDescriptorSetLayout(gpu.device, &layoutInfo, nullptr, &table->setLayout_)) !=
       VK_SUCCESS) {
     return core::fail("could not create the layout of the bindless table");
   }
@@ -126,7 +129,8 @@ core::Result<std::unique_ptr<BindlessTable>> BindlessTable::create(Device& devic
       .maxSets = 1,
       .poolSizeCount = static_cast<std::uint32_t>(poolSizes.size()),
       .pPoolSizes = poolSizes.data()};
-  if (vkCreateDescriptorPool(gpu.device, &poolInfo, nullptr, &table->pool_) != VK_SUCCESS) {
+  if (gpuCheck("vkCreateDescriptorPool", vkCreateDescriptorPool(gpu.device, &poolInfo, nullptr,
+                                                                &table->pool_)) != VK_SUCCESS) {
     return core::fail("could not create the pool of the bindless table");
   }
   const VkDescriptorSetAllocateInfo setInfo{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -134,7 +138,8 @@ core::Result<std::unique_ptr<BindlessTable>> BindlessTable::create(Device& devic
                                             .descriptorPool = table->pool_,
                                             .descriptorSetCount = 1,
                                             .pSetLayouts = &table->setLayout_};
-  if (vkAllocateDescriptorSets(gpu.device, &setInfo, &table->set_) != VK_SUCCESS) {
+  if (gpuCheck("vkAllocateDescriptorSets",
+               vkAllocateDescriptorSets(gpu.device, &setInfo, &table->set_)) != VK_SUCCESS) {
     return core::fail("could not allocate the bindless table");
   }
 
@@ -148,8 +153,9 @@ core::Result<std::unique_ptr<BindlessTable>> BindlessTable::create(Device& devic
       .pSetLayouts = &table->setLayout_,
       .pushConstantRangeCount = 1,
       .pPushConstantRanges = &pushConstants};
-  if (vkCreatePipelineLayout(gpu.device, &pipelineLayoutInfo, nullptr, &table->pipelineLayout_) !=
-      VK_SUCCESS) {
+  if (gpuCheck("vkCreatePipelineLayout",
+               vkCreatePipelineLayout(gpu.device, &pipelineLayoutInfo, nullptr,
+                                      &table->pipelineLayout_)) != VK_SUCCESS) {
     return core::fail("could not create the pipeline layout of the bindless table");
   }
   core::logInfo("bindless table: {} textures", capacity);

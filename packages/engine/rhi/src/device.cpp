@@ -1,6 +1,7 @@
 #include <dwe/core/assert.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/rhi/device.hpp>
+#include <dwe/rhi/gpu_report.hpp>
 
 #include <SDL3/SDL_vulkan.h>
 #include <VkBootstrap.h>
@@ -197,7 +198,10 @@ core::Result<void> Device::Impl::createSwapchain() {
   VkSemaphoreCreateInfo semaphoreInfo{
       .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, .pNext = nullptr, .flags = 0};
   for (VkSemaphore& semaphore : renderFinished) {
-    vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore);
+    if (gpuCheck("vkCreateSemaphore (render finished)",
+                 vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore)) != VK_SUCCESS) {
+      return core::fail("could not create the render-finished semaphore");
+    }
   }
   swapchainStale = false;
   swapchainWindowSize = size;
@@ -231,12 +235,19 @@ core::Result<void> Device::Impl::createFrames() {
 
     VkSemaphoreCreateInfo semaphoreInfo{
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, .pNext = nullptr, .flags = 0};
-    vkCreateSemaphore(device, &semaphoreInfo, nullptr, &frame.imageAcquired);
+    if (gpuCheck("vkCreateSemaphore (image acquired)",
+                 vkCreateSemaphore(device, &semaphoreInfo, nullptr, &frame.imageAcquired)) !=
+        VK_SUCCESS) {
+      return core::fail("could not create the acquire semaphore of a frame");
+    }
 
     VkFenceCreateInfo fenceInfo{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
                                 .pNext = nullptr,
                                 .flags = VK_FENCE_CREATE_SIGNALED_BIT};
-    vkCreateFence(device, &fenceInfo, nullptr, &frame.finished);
+    if (gpuCheck("vkCreateFence (frame finished)",
+                 vkCreateFence(device, &fenceInfo, nullptr, &frame.finished)) != VK_SUCCESS) {
+      return core::fail("could not create the finished fence of a frame");
+    }
   }
   return {};
 }
@@ -362,7 +373,13 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   if (auto created = impl->createFrames(); !created) {
     return std::unexpected{created.error()};
   }
-  return std::unique_ptr<Device>{new Device{std::move(impl)}};
+  auto device = std::unique_ptr<Device>{new Device{std::move(impl)}};
+  // The GPU report is what a crash reads and writes: capture the GPU, its driver and the limits
+  // that AMD and Intel crash on, and install the crash reporter so an uncaught exception or a fault
+  // inside the driver still leaves the trail.
+  gpuReportDevice(device->nativeHandles(), device->validationEnabled());
+  gpuInstallCrashReporter();
+  return device;
 }
 
 Device::Device(std::unique_ptr<Impl> impl) : impl_{std::move(impl)} {}
@@ -372,7 +389,15 @@ Device::~Device() = default;
 std::optional<Frame> Device::beginFrame() {
   Impl& impl = *impl_;
   FrameSlot& slot = impl.frames[impl.frameIndex];
-  vkWaitForFences(impl.device, 1, &slot.finished, VK_TRUE, UINT64_MAX);
+  if (gpuDeviceLost()) {
+    // Already lost and reported once: stop drawing without re-logging the report every frame.
+    return std::nullopt;
+  }
+  if (gpuCheck("vkWaitForFences (previous frame)",
+               vkWaitForFences(impl.device, 1, &slot.finished, VK_TRUE, UINT64_MAX)) !=
+      VK_SUCCESS) {
+    return std::nullopt;
+  }
   // A fence also covers everything submitted before it, so every frame up to this slot's is done.
   impl.destroyRetired(slot.submittedFrame);
 
@@ -383,7 +408,14 @@ std::optional<Frame> Device::beginFrame() {
   const bool resized = size.width != impl.swapchainWindowSize.width ||
                        size.height != impl.swapchainWindowSize.height;
   if (impl.swapchainStale || resized) {
-    vkDeviceWaitIdle(impl.device);
+    // A swapchain rebuild is a driver-sensitive step (AMD and Intel both have bugs that fire on
+    // it); mark it and check the idle so a fault there is named instead of surfacing three frames
+    // later.
+    gpuNoteActivity("rebuilding the swapchain");
+    if (gpuCheck("vkDeviceWaitIdle (swapchain rebuild)", vkDeviceWaitIdle(impl.device)) !=
+        VK_SUCCESS) {
+      return std::nullopt;
+    }
     if (auto created = impl.createSwapchain(); !created) {
       core::logError("{}", created.error().message);
       return std::nullopt;
@@ -397,9 +429,14 @@ std::optional<Frame> Device::beginFrame() {
     impl.swapchainStale = true;
     return std::nullopt;
   }
-  DWE_ASSERT(acquired == VK_SUCCESS || acquired == VK_SUBOPTIMAL_KHR);
   if (acquired == VK_SUBOPTIMAL_KHR) {
     impl.swapchainStale = true;
+  } else if (const auto checked = gpuCheck("vkAcquireNextImageKHR", acquired);
+             checked != VK_SUCCESS) {
+    // The device is lost or a fault happened: gpuCheck has already written the report; stop drawing
+    // instead of aborting on the assert with the crash unrecorded.
+    impl.swapchainStale = true;
+    return std::nullopt;
   }
 
   vkResetFences(impl.device, 1, &slot.finished);
@@ -408,7 +445,7 @@ std::optional<Frame> Device::beginFrame() {
   VkCommandBufferBeginInfo beginInfo{};
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  vkBeginCommandBuffer(slot.commands, &beginInfo);
+  gpuCheck("vkBeginCommandBuffer", vkBeginCommandBuffer(slot.commands, &beginInfo));
 
   Frame frame{.commands = slot.commands,
               .image = impl.images[imageIndex],
@@ -452,11 +489,15 @@ void Device::endFrame(const Frame& frame) {
   Impl& impl = *impl_;
   FrameSlot& slot = impl.frames[impl.frameIndex];
 
+  // If the submit or the present fault, the trail says this is where it happened (which pass drew
+  // the last frame is already in `activity`, set by CommandList::beginRendering).
+  gpuNoteActivity(std::format("presenting frame {}", impl.submittedFrames + 1));
+
   transitionImage(frame.commands, frame.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                   VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_NONE,
                   VK_ACCESS_2_NONE);
-  vkEndCommandBuffer(frame.commands);
+  gpuCheck("vkEndCommandBuffer", vkEndCommandBuffer(frame.commands));
 
   VkSemaphore renderFinished = impl.renderFinished[frame.imageIndex];
 
@@ -482,7 +523,11 @@ void Device::endFrame(const Frame& frame) {
   submit.pCommandBufferInfos = &commands;
   submit.signalSemaphoreInfoCount = 1;
   submit.pSignalSemaphoreInfos = &signal;
-  vkQueueSubmit2(impl.queue, 1, &submit, slot.finished);
+  // The submit carries all the commands of the frame: a GPU fault that comes from one of the draws
+  // (a stale bindless index, a hang) reaches the CPU here, so the trail names this submit and the
+  // activity the renderer left from the last pass.
+  const auto submitted = vkQueueSubmit2(impl.queue, 1, &submit, slot.finished);
+  gpuCheck("vkQueueSubmit2 (frame)", submitted);
   slot.submittedFrame = ++impl.submittedFrames;
 
   VkSwapchainKHR swapchain = impl.swapchain;
@@ -495,6 +540,8 @@ void Device::endFrame(const Frame& frame) {
   present.pImageIndices = &frame.imageIndex;
   const VkResult presented = vkQueuePresentKHR(impl.queue, &present);
   if (presented == VK_ERROR_OUT_OF_DATE_KHR || presented == VK_SUBOPTIMAL_KHR) {
+    impl.swapchainStale = true;
+  } else if (gpuCheck("vkQueuePresentKHR (frame)", presented) != VK_SUCCESS) {
     impl.swapchainStale = true;
   }
 

@@ -1,5 +1,7 @@
 #include "vulkan_util.hpp"
 
+#include <dwe/rhi/gpu_report.hpp>
+
 #include <algorithm>
 #include <format>
 
@@ -234,7 +236,8 @@ core::Result<void> submitAndWait(Device& device,
   poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
   poolInfo.queueFamilyIndex = gpu.queueFamily;
-  if (vkCreateCommandPool(gpu.device, &poolInfo, nullptr, &oneOff.pool) != VK_SUCCESS) {
+  if (gpuCheck("vkCreateCommandPool (upload)",
+               vkCreateCommandPool(gpu.device, &poolInfo, nullptr, &oneOff.pool)) != VK_SUCCESS) {
     return core::fail("could not create the command pool of an upload");
   }
   VkCommandBufferAllocateInfo allocateInfo{};
@@ -243,20 +246,27 @@ core::Result<void> submitAndWait(Device& device,
   allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   allocateInfo.commandBufferCount = 1;
   VkCommandBuffer commands = VK_NULL_HANDLE;
-  if (vkAllocateCommandBuffers(gpu.device, &allocateInfo, &commands) != VK_SUCCESS) {
+  if (gpuCheck("vkAllocateCommandBuffers (upload)",
+               vkAllocateCommandBuffers(gpu.device, &allocateInfo, &commands)) != VK_SUCCESS) {
     return core::fail("could not allocate the commands of an upload");
   }
 
   VkCommandBufferBeginInfo beginInfo{};
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  vkBeginCommandBuffer(commands, &beginInfo);
+  if (gpuCheck("vkBeginCommandBuffer (upload)", vkBeginCommandBuffer(commands, &beginInfo)) !=
+      VK_SUCCESS) {
+    return core::fail("could not begin recording an upload");
+  }
   record(commands);
-  vkEndCommandBuffer(commands);
+  if (gpuCheck("vkEndCommandBuffer (upload)", vkEndCommandBuffer(commands)) != VK_SUCCESS) {
+    return core::fail("could not finish recording an upload");
+  }
 
   const VkFenceCreateInfo fenceInfo{
       .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .pNext = nullptr, .flags = 0};
-  if (vkCreateFence(gpu.device, &fenceInfo, nullptr, &oneOff.fence) != VK_SUCCESS) {
+  if (gpuCheck("vkCreateFence (upload)",
+               vkCreateFence(gpu.device, &fenceInfo, nullptr, &oneOff.fence)) != VK_SUCCESS) {
     return core::fail("could not create the fence of an upload");
   }
   VkCommandBufferSubmitInfo commandInfo{};
@@ -266,15 +276,13 @@ core::Result<void> submitAndWait(Device& device,
   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
   submit.commandBufferInfoCount = 1;
   submit.pCommandBufferInfos = &commandInfo;
-  if (const VkResult result = vkQueueSubmit2(gpu.queue, 1, &submit, oneOff.fence);
-      result != VK_SUCCESS) {
-    return core::fail(
-        std::format("could not submit an upload (Vulkan error {})", static_cast<int>(result)));
+  if (gpuCheck("vkQueueSubmit2 (upload)", vkQueueSubmit2(gpu.queue, 1, &submit, oneOff.fence)) !=
+      VK_SUCCESS) {
+    return core::fail("could not submit an upload");
   }
-  if (const VkResult result = vkWaitForFences(gpu.device, 1, &oneOff.fence, VK_TRUE, UINT64_MAX);
-      result != VK_SUCCESS) {
-    return core::fail(
-        std::format("an upload did not finish (Vulkan error {})", static_cast<int>(result)));
+  if (gpuCheck("vkWaitForFences (upload)",
+               vkWaitForFences(gpu.device, 1, &oneOff.fence, VK_TRUE, UINT64_MAX)) != VK_SUCCESS) {
+    return core::fail("an upload did not finish");
   }
   return {};
 }

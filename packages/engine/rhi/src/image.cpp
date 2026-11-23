@@ -1,6 +1,7 @@
 #include <dwe/core/assert.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/rhi/buffer.hpp>
+#include <dwe/rhi/gpu_report.hpp>
 #include <dwe/rhi/image.hpp>
 
 #include <vk_mem_alloc.h>
@@ -115,10 +116,10 @@ core::Result<Image> Image::create(Device& device, const ImageDesc& desc) {
   }
   if (const VkResult result = vmaCreateImage(device.allocator(), &imageInfo, &allocationInfo,
                                              &image.image_, &image.allocation_, nullptr);
-      result != VK_SUCCESS) {
+      gpuCheck("vmaCreateImage", result) != VK_SUCCESS) {
     image.device_ = nullptr;
-    return core::fail(std::format("could not create a {}x{} image (Vulkan error {})",
-                                  desc.extent.width, desc.extent.height, static_cast<int>(result)));
+    return core::fail(
+        std::format("could not create a {}x{} image", desc.extent.width, desc.extent.height));
   }
 
   VkImageViewCreateInfo viewInfo{};
@@ -131,7 +132,8 @@ core::Result<Image> Image::create(Device& device, const ImageDesc& desc) {
                                .levelCount = image.mipLevels_,
                                .baseArrayLayer = 0,
                                .layerCount = 1};
-  if (vkCreateImageView(gpu.device, &viewInfo, nullptr, &image.view_) != VK_SUCCESS) {
+  if (gpuCheck("vkCreateImageView",
+               vkCreateImageView(gpu.device, &viewInfo, nullptr, &image.view_)) != VK_SUCCESS) {
     return core::fail("could not create the view of an image");
   }
 

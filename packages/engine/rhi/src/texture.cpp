@@ -1,3 +1,4 @@
+#include <dwe/rhi/gpu_report.hpp>
 #include <dwe/rhi/texture.hpp>
 
 #include <algorithm>
@@ -74,10 +75,9 @@ core::Result<VkDeviceMemory> allocate(const NativeHandles& gpu,
                                   .allocationSize = requirements.size,
                                   .memoryTypeIndex = *type};
   VkDeviceMemory memory = VK_NULL_HANDLE;
-  if (const VkResult result = vkAllocateMemory(gpu.device, &info, nullptr, &memory);
-      result != VK_SUCCESS) {
-    return core::fail(std::format("could not allocate {} bytes of GPU memory (Vulkan error {})",
-                                  requirements.size, static_cast<int>(result)));
+  if (gpuCheck("vkAllocateMemory", vkAllocateMemory(gpu.device, &info, nullptr, &memory)) !=
+      VK_SUCCESS) {
+    return core::fail(std::format("could not allocate {} bytes of GPU memory", requirements.size));
   }
   return memory;
 }
@@ -124,7 +124,8 @@ core::Result<void> fill(Upload& upload, const NativeHandles& gpu,
   bufferInfo.size = offsets.back();
   bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
   bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  if (vkCreateBuffer(gpu.device, &bufferInfo, nullptr, &upload.buffer) != VK_SUCCESS) {
+  if (gpuCheck("vkCreateBuffer (staging)",
+               vkCreateBuffer(gpu.device, &bufferInfo, nullptr, &upload.buffer)) != VK_SUCCESS) {
     return core::fail("could not create the staging buffer of a texture");
   }
   VkMemoryRequirements requirements{};
@@ -139,7 +140,8 @@ core::Result<void> fill(Upload& upload, const NativeHandles& gpu,
   vkBindBufferMemory(gpu.device, upload.buffer, upload.memory, 0);
 
   void* mapped = nullptr;
-  if (vkMapMemory(gpu.device, upload.memory, 0, VK_WHOLE_SIZE, 0, &mapped) != VK_SUCCESS) {
+  if (gpuCheck("vkMapMemory (staging)", vkMapMemory(gpu.device, upload.memory, 0, VK_WHOLE_SIZE, 0,
+                                                    &mapped)) != VK_SUCCESS) {
     return core::fail("could not map the staging buffer of a texture");
   }
   for (std::size_t level = 0; level < levels.size(); ++level) {
