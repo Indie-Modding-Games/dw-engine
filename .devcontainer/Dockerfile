@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl wget gnupg lsb-release software-properties-common \
         git cmake ninja-build pkg-config python3 python3-venv \
-        zip unzip tar autoconf autoconf-archive automake libtool bison flex \
+        zip unzip tar p7zip-full autoconf autoconf-archive automake libtool bison flex \
         libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
         libxkbcommon-dev libwayland-dev wayland-protocols libdecor-0-dev libdrm-dev libgbm-dev \
         libegl1-mesa-dev libgles2-mesa-dev libasound2-dev libpulse-dev libpipewire-0.3-dev libjack-dev \

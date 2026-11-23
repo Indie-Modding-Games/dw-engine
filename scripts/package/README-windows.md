@@ -14,7 +14,9 @@ for running the game without it.
 - **Your own copy of the original game**, as a disc image of the North American release: a `.cue` file with its
   `.bin`, or an `.iso`. Nothing from the original game comes in this package, and nothing is downloaded.
 - 64-bit Windows 10 (version 1903 or later) or Windows 11.
-- A graphics card and driver with Vulkan 1.3 (current drivers of all the common graphics cards have it).
+- A graphics card and driver with Vulkan 1.3 (current drivers of all the common graphics cards have it). If none can
+  run the game, the launcher switches to the software renderer in `lib\lavapipe`: it works, but it is slower.
+  Updating the graphics driver is still the best fix.
 - About 1.5 GB of free disk space.
 
 Nothing else needs installing: the runtime libraries are inside the programs.

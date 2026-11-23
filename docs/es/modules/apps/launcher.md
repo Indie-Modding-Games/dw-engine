@@ -297,14 +297,16 @@ las que hay, para saber de qué fabricante es el controlador. La rama que limita
 distribución tiene que dejar pasar `--check-system`. El lanzador le da 20 s; sin respuesta (un juego anterior a la
 opción, que dice «bad argument») juega como antes.
 
-**Modo de compatibilidad (Linux).** El paquete de Linux trae el cargador de Vulkan (`lib/libvulkan.so.1`, que el juego
-busca primero) y el controlador de Vulkan por software de Mesa, lavapipe, en `lib/lavapipe/` ([guía de la beta en
-Linux](../../guides/beta-linux.md)). Si la primera comprobación no encuentra GPU que sirva, el lanzador repite
-`--check-system` con `VK_DRIVER_FILES` (y `VK_ICD_FILENAMES`) apuntando a `lib/lavapipe/lvp_icd.json` y
-`LD_LIBRARY_PATH` a esa carpeta; si así sirve, arranca el juego con ese mismo entorno. Va más lento (lo dibuja el
-procesador), pero el juego arranca en una máquina virtual o con un controlador viejo o ausente. El script `dwe` del
-paquete hace lo mismo para quien juega sin lanzador. Un equipo cuyo único Vulkan es uno por software del sistema
-(llvmpipe) también ve el aviso, sin cambiar de controlador.
+**Modo de compatibilidad.** El paquete trae el cargador de Vulkan (en Linux, `lib/libvulkan.so.1`, que el juego
+busca primero; en Windows, `bin/vulkan-1.dll`) y el controlador de Vulkan por software de Mesa, lavapipe, en
+`lib/lavapipe/` ([guía de la beta en Linux](../../guides/beta-linux.md), [guía de Windows y
+macOS](../../guides/beta-windows-macos.md)). Si la primera comprobación no encuentra GPU que sirva, el lanzador
+repite `--check-system` con `VK_DRIVER_FILES` (y `VK_ICD_FILENAMES`) apuntando al manifest de lavapipe:
+`lvp_icd.json` en Linux, `lvp_icd.x86_64.json` en Windows. En Linux añade `LD_LIBRARY_PATH` con esa carpeta; en
+Windows, `PATH`. Si así sirve, arranca el juego con ese mismo entorno. Va más lento (lo dibuja el procesador),
+pero el juego arranca en una máquina virtual o con un controlador viejo o ausente. Los scripts del paquete
+(`dwe` en Linux, `dwe.cmd` en Windows) hacen lo mismo para quien juega sin lanzador. Un equipo cuyo único Vulkan
+es uno por software del sistema (llvmpipe) también ve el aviso, sin cambiar de controlador.
 
 **AppImage.** El arranque de la AppImage pone sus carpetas delante de `XDG_DATA_DIRS`, donde el cargador de Vulkan
 busca los controladores del equipo; el lanzador las quita del entorno de `--check-system` y del juego
@@ -315,8 +317,10 @@ Intel sin el controlador de Vulkan de Mesa, así se juega con la tarjeta y no en
 puede instalar nada y se apoya en el modo de compatibilidad.
 
 **Windows.** El instalador trae WebView2 y el paquete del juego `vulkan-1.dll`; los controladores de las tarjetas no
-se pueden instalar con seguridad desde el lanzador, así que sin una tarjeta que sirva se ve la pantalla de arriba.
-Un lavapipe para Windows (para tener allí también modo de compatibilidad) está pendiente de decidir (abajo).
+se pueden instalar con seguridad desde el lanzador. El paquete trae lavapipe en `lib/lavapipe/`, así que sin una
+tarjeta que sirva se juega en modo de compatibilidad (más lento) y se ve el aviso de arriba. Actualizar el
+controlador de la tarjeta (o Windows) devuelve el rendimiento. No se reparte `dzn`: la compilación disponible no
+ofrece `descriptorIndexing` ni `bufferDeviceAddress`, que el juego exige incluso en ese modo.
 
 `DWE_LAUNCHER_FREE_BYTES=<bytes>` finge el espacio libre, para ver las pantallas de espacio sin llenar un disco; con
 `VK_DRIVER_FILES=/no/existe.json` en el entorno del lanzador la primera comprobación no encuentra GPU (modo de
@@ -632,11 +636,6 @@ arranca el juego con `--mods` apuntando a él. Las reglas, los nombres y cómo l
 Los tests: `custom_images/tests.rs` y `the_players_images_are_mounted_while_they_are_on` en `launch.rs`.
 
 ## Pendiente
-
-- Modo de compatibilidad en Windows: el puerto `mesa` de vcpkg tiene la opción `lavapipe`, pero necesita bajar y
-  compilar Mesa y LLVM enteros (fuentes de unos 50 MB y 150 MB, varias horas y más de 20 GB de compilación) y no
-  admite el runtime de C estático del triplete de Windows. La alternativa es una compilación ya hecha de Mesa para
-  Windows (unos 30 MB). Las dos son descargas nuevas: decide el responsable.
 
 - Probar el lanzador en un Windows de verdad y todo en un Mac (el llavero, rutas y el instalador de cada sistema).
 - Probar los complementos en Windows (allí el esquema es `http://dweaddon.localhost/`) y macOS.

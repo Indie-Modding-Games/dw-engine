@@ -296,14 +296,16 @@ those there are, to know which maker the driver is from. The branch that limits 
 distribution builds has to let `--check-system` through. The launcher gives it 20 s; with no answer (a game older than the
 option, which says "bad argument") it plays as before.
 
-**Compatibility mode (Linux).** The Linux package carries the Vulkan loader (`lib/libvulkan.so.1`, which the game
-looks for first) and Mesa's software Vulkan driver, lavapipe, in `lib/lavapipe/` ([Linux beta
-guide](../../guides/beta-linux.md)). If the first check finds no GPU that works, the launcher repeats
-`--check-system` with `VK_DRIVER_FILES` (and `VK_ICD_FILENAMES`) pointing to `lib/lavapipe/lvp_icd.json` and
-`LD_LIBRARY_PATH` to that folder; if it works that way, it starts the game with that same environment. It is slower (the
-processor draws it), but the game starts on a virtual machine or with an old or missing driver. The package's `dwe`
-script does the same for those who play without the launcher. A computer whose only Vulkan is a system software one
-(llvmpipe) also sees the notice, without switching drivers.
+**Compatibility mode.** The package carries the Vulkan loader (on Linux, `lib/libvulkan.so.1`, which the game
+looks for first; on Windows, `bin/vulkan-1.dll`) and Mesa's software Vulkan driver, lavapipe, in
+`lib/lavapipe/` ([Linux beta guide](../../guides/beta-linux.md), [Windows and macOS
+guide](../../guides/beta-windows-macos.md)). If the first check finds no GPU that works, the launcher repeats
+`--check-system` with `VK_DRIVER_FILES` (and `VK_ICD_FILENAMES`) pointing to lavapipe's manifest:
+`lvp_icd.json` on Linux, `lvp_icd.x86_64.json` on Windows. On Linux it also adds `LD_LIBRARY_PATH` with that
+folder; on Windows, `PATH`. If it works that way, it starts the game with that same environment. It is slower (the
+processor draws it), but the game starts on a virtual machine or with an old or missing driver. The package's
+scripts (`dwe` on Linux, `dwe.cmd` on Windows) do the same for those who play without the launcher. A computer
+whose only Vulkan is a system software one (llvmpipe) also sees the notice, without switching drivers.
 
 **AppImage.** The AppImage's startup puts its folders ahead of `XDG_DATA_DIRS`, where the Vulkan loader
 looks for the computer's drivers; the launcher removes them from the environment of `--check-system` and of the game
@@ -313,9 +315,11 @@ looks for the computer's drivers; the launcher removes them from the environment
 Intel card without Mesa's Vulkan driver, this way the game plays with the card and not in compatibility mode. The AppImage cannot
 install anything and relies on compatibility mode.
 
-**Windows.** The installer brings WebView2 and the game package `vulkan-1.dll`; card drivers cannot
-be installed safely from the launcher, so without a card that works the screen above is shown.
-A lavapipe for Windows (to have compatibility mode there too) is still to be decided (below).
+**Windows.** The installer brings WebView2 and the game package `vulkan-1.dll`; card drivers cannot be installed
+safely from the launcher. The package carries lavapipe in `lib/lavapipe/`, so without a card that works the game
+plays in compatibility mode (slower) and the notice above is shown. Updating the card's driver (or Windows) brings
+the performance back. `dzn` is not shipped: the available build does not offer `descriptorIndexing` or
+`bufferDeviceAddress`, which the game requires even in that mode.
 
 `DWE_LAUNCHER_FREE_BYTES=<bytes>` fakes the free space, to see the space screens without filling a disk; with
 `VK_DRIVER_FILES=/does/not/exist.json` in the launcher's environment the first check finds no GPU (compatibility mode
@@ -631,11 +635,6 @@ starts the game with `--mods` pointing to it. The rules, the names and how the g
 The tests: `custom_images/tests.rs` and `the_players_images_are_mounted_while_they_are_on` in `launch.rs`.
 
 ## To do
-
-- Compatibility mode on Windows: vcpkg's `mesa` port has the `lavapipe` option, but it needs to download and
-  build all of Mesa and LLVM (sources of about 50 MB and 150 MB, several hours and more than 20 GB of building) and does not
-  support the static C runtime of the Windows triplet. The alternative is a prebuilt Mesa for
-  Windows (about 30 MB). Both are new downloads: the owner decides.
 
 - Test the launcher on a real Windows and everything on a Mac (the keyring, paths and each system's installer).
 - Test the add-ons on Windows (there the scheme is `http://dweaddon.localhost/`) and macOS.

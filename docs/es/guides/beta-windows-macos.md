@@ -41,8 +41,12 @@ los informes de fallos.
   script los cocina con el `dwx` del preset `linux-clang-package` (lo compila si hace falta); cocinar da los mismos
   bytes en los dos sistemas dentro del alcance de la [ADR 0017](../adr/0017-cooking-and-pak-files.md#determinismo).
 - El CRT y la librería estándar de C++ van dentro de los programas (`/MT`), así que no hace falta instalar ningún
-  redistribuible. La única DLL que se reparte es el cargador de Vulkan; el script lee las importaciones de cada
-  programa (`llvm-readobj --coff-imports`) y se niega a empaquetar si alguna DLL no está en `bin/` ni es de Windows.
+  redistribuible. En `bin/` la única DLL que se reparte es el cargador de Vulkan; el script lee sus importaciones
+  (`llvm-readobj --coff-imports`) y se niega a empaquetar si alguna DLL no está en `bin/` ni es de Windows.
+- `lib/lavapipe/` trae una compilación fijada de lavapipe (Mesa 26.3.1, verificada por SHA256) para cuando ninguna
+  tarjeta sirva: el lanzador y `dwe.cmd` comprueban el equipo y cambian a ese controlador solo entonces. El script
+  baja el `7z` y lo extrae con `7z` (`p7zip-full` en la imagen de desarrollo). No se incluye `dzn`, porque su
+  compilación actual no ofrece `descriptorIndexing` ni `bufferDeviceAddress`.
 - El juego del paquete es un programa de ventana (`/SUBSYSTEM:WINDOWS`): no abre una consola al lado. Su salida va al
   registro que le da el lanzador (`<datos>\logs\game.log`). `dwx.exe` sigue siendo de consola, y el lanzador lo
   ejecuta sin ventana.
