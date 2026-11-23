@@ -285,7 +285,7 @@ Ajustes › General › Requisitos del equipo.
 |---|---|---|
 | Espacio libre | El del disco donde está `<datos>` (la carpeta existente más cercana): `statvfs` en Linux y macOS, `GetDiskFreeSpaceExW` en Windows. Leer el disco necesita unos 3 GB (la copia parcial, el archivo descomprimido y la descarga del juego); jugar, unos 200 MB. | Si falta, «Falta espacio en el disco» en el inicio con cuánto hace falta, dónde y cuánto hay, y los botones «Comprobar de nuevo» y «Elegir otra carpeta». Leer el disco y «Jugar» se niegan con `no-space` en vez de fallar a medias. |
 | Tarjeta gráfica | `dwe-game --check-system` del juego instalado (abajo), primero con los controladores del equipo. | Nada si sirve. Si ninguna tarjeta sirve, el juego arranca igual en **modo de compatibilidad** (abajo): un aviso que se cierra con «Entendido», una etiqueta «Modo de compatibilidad» arriba y el botón del controlador del fabricante. |
-| Nada puede mover el juego | Ni las tarjetas del equipo ni el controlador por software del paquete (o el paquete no lo trae: Windows y macOS por ahora). | «Tu tarjeta gráfica no puede mover el juego»: qué hacer, el botón de la página de controladores del fabricante (NVIDIA, AMD o Intel, según el `vendor` de la tarjeta; las tres si no se sabe), en Windows también «Abrir Windows Update», y «Comprobar de nuevo». «Jugar» se niega con `no-gpu`. |
+| Nada puede mover el juego | Ni las tarjetas del equipo ni el controlador por software del paquete (o el paquete no lo trae: macOS por ahora). | «Tu tarjeta gráfica no puede mover el juego»: qué hacer, el botón de la página de controladores del fabricante (NVIDIA, AMD o Intel, según el `vendor` de la tarjeta; las tres si no se sabe), en Windows también «Abrir Windows Update», y «Comprobar de nuevo». Pulsar «Jugar» sigue intentando arrancar: el juego escribe el motivo en su registro y el lanzador muestra el final. |
 
 **`dwe-game --check-system`** (`packages/engine/rhi/include/dwe/rhi/system_check.hpp`) crea una instancia de Vulkan y elige
 GPU con la misma versión (1.3) y las mismas funciones que `Device::create` (`renderer_requirements.hpp`), sin ventana,
@@ -308,6 +308,15 @@ pero el juego arranca en una máquina virtual o con un controlador viejo o ausen
 (`dwe` en Linux, `dwe.cmd` en Windows) hacen lo mismo para quien juega sin lanzador. Un equipo cuyo único Vulkan
 es uno por software del sistema (llvmpipe) también ve el aviso, sin cambiar de controlador.
 
+**Salidas manuales de arranque.** En Ajustes › Avanzado › Arranque del juego se puede dejar de depender de esa
+comprobación: «Modo de arranque» elige Automático (el de arriba), Sin comprobar (arranca con el controlador del
+sistema, sin sondeo y sin cambiar de controlador) o Software del paquete (usa lavapipe sin sondeo, para probar aunque
+la detección diga otra cosa). También se pueden escribir argumentos extra del juego y variables de entorno
+(`NOMBRE=valor`, una por línea, hasta 32 de cada); las del jugador se aplican después de las del controlador por
+software, así que pueden corregir un `VK_DRIVER_FILES` mal detectado. Las líneas que no se entienden se ignoran,
+nunca impiden jugar, y nada de esto se pasa al sondeo: solo cambia el arranque del juego. Se guarda en
+`settings.json`.
+
 **AppImage.** El arranque de la AppImage pone sus carpetas delante de `XDG_DATA_DIRS`, donde el cargador de Vulkan
 busca los controladores del equipo; el lanzador las quita del entorno de `--check-system` y del juego
 (`outside_appimage`).
@@ -324,7 +333,8 @@ ofrece `descriptorIndexing` ni `bufferDeviceAddress`, que el juego exige incluso
 
 `DWE_LAUNCHER_FREE_BYTES=<bytes>` finge el espacio libre, para ver las pantallas de espacio sin llenar un disco; con
 `VK_DRIVER_FILES=/no/existe.json` en el entorno del lanzador la primera comprobación no encuentra GPU (modo de
-compatibilidad si el juego trae `lib/lavapipe`, pantalla de bloqueo si no).
+compatibilidad si el juego trae `lib/lavapipe`; si no, aviso e intento de arranque, o arranque directo con el modo
+manual «Sin comprobar»).
 
 ## Carpetas
 

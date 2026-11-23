@@ -636,12 +636,16 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
 .row-label { display: flex; flex-direction: column; gap: 2px; font-size: 0.95rem; }
 .field-label { display: block; margin-top: var(--space-3); font-size: 0.85rem; color: var(--text-muted); }
 .setting label { font-size: 0.92rem; }
-.setting input[type="password"], .setting select {
+.setting input[type="password"], .setting input[type="text"], .setting select, .setting textarea {
   min-height: 44px; min-width: 280px; flex: 1 1 280px; max-width: 420px;
   padding: 0 var(--space-3);
   border-radius: var(--radius-s);
   border: 1px solid var(--border-strong);
   background: #0a1422; color: var(--text); font: inherit;
+}
+.setting textarea {
+  flex: 1 1 100%; max-width: none; min-height: 6rem; padding: var(--space-2) var(--space-3);
+  resize: vertical; font-family: ui-monospace, monospace; font-size: 0.85rem;
 }
 .setting select {
   flex: 0 1 280px;
@@ -857,7 +861,7 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
 .settings-tab[aria-selected="true"] { background: rgba(255, 255, 255, 0.06); border-color: transparent; }
 .settings-tab[aria-selected="true"] .icon { color: var(--text); }
 .setting { background: var(--surface-raised); }
-.setting input[type="password"], .setting select { background: #0f1012; }
+.setting input[type="password"], .setting input[type="text"], .setting select, .setting textarea { background: #0f1012; }
 .setting select:hover { border-color: var(--text-faint); }
 .setting select option { background: #141619; }
 .dialog .status-line.accent { color: var(--text) !important; }

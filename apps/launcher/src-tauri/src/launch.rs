@@ -45,13 +45,15 @@ impl GraphicsFlags {
 
 /// The game's command line. A data folder the player picked also gets the saves and the reports
 /// there, so everything the player chose to move stays together; the default one leaves them in the
-/// game's own folder (settings::default_data_folder).
-pub fn command(game: &Game, data: &Path, own_data_folder: bool, graphics: GraphicsFlags) -> Command {
+/// game's own folder (settings::default_data_folder). `extra` are the player's manual arguments
+/// (settings.rs), added last: they are plain arguments, not text for a shell to parse.
+pub fn command(game: &Game, data: &Path, own_data_folder: bool, graphics: GraphicsFlags, extra: &[String]) -> Command {
     let mut command = Command::new(game.game_program());
     command.arg("--content").arg(content_folder(data));
     for flag in graphics.args() {
         command.arg(flag);
     }
+    command.args(extra);
     if !own_data_folder {
         command.arg("--saves").arg(data.join("saves")).arg("--reports").arg(data.join("reports"));
     }
@@ -63,9 +65,9 @@ pub fn command(game: &Game, data: &Path, own_data_folder: bool, graphics: Graphi
 }
 
 /// `env`: what the game starts with besides the launcher's own environment (the software Vulkan
-/// driver's, system_check.rs).
+/// driver's, system_check.rs, plus the player's manual variables).
 #[allow(clippy::too_many_arguments)]
-pub fn start(game: &Game, data: &Path, own_data_folder: bool, env: &[(OsString, OsString)], graphics: GraphicsFlags) -> Result<Child> {
+pub fn start(game: &Game, data: &Path, own_data_folder: bool, env: &[(OsString, OsString)], graphics: GraphicsFlags, extra_args: &[String]) -> Result<Child> {
     let log = game_log(data);
     fs::create_dir_all(logs_folder(data))?;
     if log.exists() {
@@ -73,7 +75,7 @@ pub fn start(game: &Game, data: &Path, own_data_folder: bool, env: &[(OsString, 
     }
     let out = File::create(&log)?;
     let err = out.try_clone()?;
-    let mut command = command(game, data, own_data_folder, graphics);
+    let mut command = command(game, data, own_data_folder, graphics, extra_args);
     crate::system_check::outside_appimage(&mut command);
     command.envs(env.iter().map(|(k, v)| (k, v)));
     // No console window next to the game on Windows: its output goes to the log.
@@ -107,10 +109,10 @@ mod tests {
         let game = Game { dir: "/g".into(), version: "1.0.0".into(), commit: String::new(), extractor_version: None };
         let data = Path::new("/d");
         let at = |name: &str| data.join(name).to_string_lossy().into_owned();
-        let own = command(&game, data, true, GraphicsFlags::default());
+        let own = command(&game, data, true, GraphicsFlags::default(), &[]);
         let args: Vec<_> = own.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
         assert_eq!(args, ["--content".into(), at("content")]);
-        let moved = command(&game, data, false, GraphicsFlags::default());
+        let moved = command(&game, data, false, GraphicsFlags::default(), &[]);
         let args: Vec<_> = moved.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
         assert_eq!(args, ["--content".into(), at("content"), "--saves".into(), at("saves"), "--reports".into(), at("reports")]);
         let program = own.get_program().to_string_lossy().into_owned();
@@ -122,11 +124,24 @@ mod tests {
         let game = Game { dir: "/g".into(), version: "1.0.0".into(), commit: String::new(), extractor_version: None };
         let data = Path::new("/d");
         let args = |graphics: GraphicsFlags| -> Vec<String> {
-            command(&game, data, true, graphics).get_args().map(|a| a.to_string_lossy().into_owned()).collect()
+            command(&game, data, true, graphics, &[]).get_args().map(|a| a.to_string_lossy().into_owned()).collect()
         };
         assert!(args(GraphicsFlags { compatibility: true, low_performance: false }).contains(&"--compatible".to_string()));
         assert!(args(GraphicsFlags { compatibility: false, low_performance: true }).contains(&"--low-performance".to_string()));
         assert_eq!(args(GraphicsFlags { compatibility: true, low_performance: true }).len(), 4, "both flags, next to --content");
+    }
+
+    #[test]
+    fn the_manual_arguments_go_after_the_launchers() {
+        let game = Game { dir: "/g".into(), version: "1.0.0".into(), commit: String::new(), extractor_version: None };
+        let data = Path::new("/d");
+        let extra = vec!["--manual".to_string(), "with space".to_string()];
+        let args: Vec<String> = command(&game, data, true, GraphicsFlags { compatibility: true, low_performance: false }, &extra)
+            .get_args()
+            .map(|a| a.to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(args.last(), Some(&"with space".to_string()), "one argument, not two");
+        assert!(args.windows(2).any(|pair| pair == ["--compatible", "--manual"]));
     }
 
     #[test]
@@ -135,7 +150,7 @@ mod tests {
         let data = tempfile::tempdir().unwrap();
         let images = CustomImages::new(data.path());
         let args = || -> Vec<String> {
-            command(&game, data.path(), true, GraphicsFlags::default()).get_args().map(|a| a.to_string_lossy().into_owned()).collect()
+            command(&game, data.path(), true, GraphicsFlags::default(), &[]).get_args().map(|a| a.to_string_lossy().into_owned()).collect()
         };
         assert_eq!(args().len(), 2, "no pack, no --mods");
         let image = images.pack().join("map/mayo01/background_day.png");

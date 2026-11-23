@@ -163,6 +163,13 @@ pub fn software_manifest(game: &Game) -> Option<PathBuf> {
     SOFTWARE_MANIFESTS.iter().map(|name| folder.join(name)).find(|manifest| manifest.is_file())
 }
 
+/// The software driver's environment for a game that has one, empty when the package has no driver
+/// (a game made before the fallback, or a non-Windows non-Linux build). Used by the manual "software"
+/// launch mode, which does not probe first.
+pub fn software_env_for(game: &Game) -> Vec<(OsString, OsString)> {
+    software_manifest(game).as_deref().map(software_env).unwrap_or_default()
+}
+
 /// The environment that makes the game use only the package's software driver: the loader reads
 /// VK_DRIVER_FILES (VK_ICD_FILENAMES before 1.3.207). Linux needs LD_LIBRARY_PATH for the driver's
 /// libraries; on Windows the manifest names the DLL next to it, and PATH is added as well for any

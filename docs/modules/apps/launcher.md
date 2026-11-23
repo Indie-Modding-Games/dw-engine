@@ -284,7 +284,7 @@ Settings › General › Computer requirements.
 |---|---|---|
 | Free space | That of the disk where `<data>` is (the nearest existing folder): `statvfs` on Linux and macOS, `GetDiskFreeSpaceExW` on Windows. Reading the disc needs about 3 GB (the partial copy, the unpacked archive and the game download); playing, about 200 MB. | If it is short, "Not enough disk space" on the home screen with how much is needed, where and how much there is, and the buttons "Check again" and "Pick another folder". Reading the disc and "Play" refuse with `no-space` instead of failing halfway. |
 | Graphics card | `dwe-game --check-system` of the installed game (below), first with the computer's drivers. | Nothing if it works. If no card works, the game starts anyway in **compatibility mode** (below): a notice that closes with "Got it", a "Compatibility mode" label at the top and the maker's driver button. |
-| Nothing can run the game | Neither the computer's cards nor the package's software driver (or the package does not carry it: Windows and macOS for now). | "Your graphics card cannot run the game": what to do, the button to the maker's driver page (NVIDIA, AMD or Intel, according to the card's `vendor`; all three if unknown), on Windows also "Open Windows Update", and "Check again". "Play" refuses with `no-gpu`. |
+| Nothing can run the game | Neither the computer's cards nor the package's software driver (or the package does not carry it: macOS for now). | "Your graphics card cannot run the game": what to do, the button to the maker's driver page (NVIDIA, AMD or Intel, according to the card's `vendor`; all three if unknown), on Windows also "Open Windows Update", and "Check again". Pressing "Play" still tries to start: the game writes the reason to its log and the launcher shows the end. |
 
 **`dwe-game --check-system`** (`packages/engine/rhi/include/dwe/rhi/system_check.hpp`) creates a Vulkan instance and picks a
 GPU with the same version (1.3) and the same features as `Device::create` (`renderer_requirements.hpp`), with no window,
@@ -307,6 +307,14 @@ processor draws it), but the game starts on a virtual machine or with an old or 
 scripts (`dwe` on Linux, `dwe.cmd` on Windows) do the same for those who play without the launcher. A computer
 whose only Vulkan is a system software one (llvmpipe) also sees the notice, without switching drivers.
 
+**Manual launch way outs.** In Settings › Advanced › Starting the game you can stop relying on that check: "Launch
+mode" picks Automatic (the one above), Without checking (start with the system's driver, no probe and no driver
+change) or Package software (use lavapipe without probing, to try it even when detection says otherwise). You can
+also write extra game arguments and environment variables (`NAME=value`, one per line, up to 32 of each); the
+player's ones are applied after the software driver's, so they can correct a wrongly detected `VK_DRIVER_FILES`.
+Lines that are not understood are ignored, never keep you from playing, and none of this is passed to the probe: it
+only changes how the game starts. It is saved in `settings.json`.
+
 **AppImage.** The AppImage's startup puts its folders ahead of `XDG_DATA_DIRS`, where the Vulkan loader
 looks for the computer's drivers; the launcher removes them from the environment of `--check-system` and of the game
 (`outside_appimage`).
@@ -323,7 +331,8 @@ the performance back. `dzn` is not shipped: the available build does not offer `
 
 `DWE_LAUNCHER_FREE_BYTES=<bytes>` fakes the free space, to see the space screens without filling a disk; with
 `VK_DRIVER_FILES=/does/not/exist.json` in the launcher's environment the first check finds no GPU (compatibility mode
-if the game carries `lib/lavapipe`, block screen if not).
+if the game carries `lib/lavapipe`; if not, notice and start attempt, or a direct start with the manual "Without
+checking" mode).
 
 ## Folders
 
