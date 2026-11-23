@@ -85,6 +85,7 @@ fn no_launcher_command_can_be_named() {
         "status", "background", "check_updates", "install_disc", "reextract", "update_game", "rollback_game", "cancel",
         "play", "set_language", "set_check_updates", "set_data_folder", "save_token", "clear_token", "open_logs",
         "install_launcher_update", "restart_launcher", "set_auto_update", "set_update_channel", "addons_list", "addon_inspect", "addon_install", "addon_set_enabled",
+        "set_compatibility_mode", "set_low_performance_mode", "set_rdna2_safe_mode", "set_launch_mode", "set_extra_args", "set_extra_env",
         "addon_uninstall", "addons_safe_mode", "addons_dismiss_crash", "addon_call", "plugin:dialog|open",
         "plugin:opener|open_path", "plugin:opener|open_url", "plugin:updater|check", "plugin:updater|download_and_install",
         "token", "beta_key", "storage", "storage.get.token", "net", "net.fetch ", "Context", "__proto__", "constructor", "",

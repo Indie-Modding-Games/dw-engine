@@ -610,7 +610,7 @@ int runGame(const Options& requested) {
     return EXIT_FAILURE;
   }
   (*debugUi)->mountContent(options.content);
-  auto renderer = render::Renderer::create(**device);
+  auto renderer = render::Renderer::create(**device, {.rdna2Safe = options.rdna2Safe});
   if (!renderer) {
     core::logError("{}", renderer.error().message);
     return EXIT_FAILURE;

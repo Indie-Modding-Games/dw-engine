@@ -872,6 +872,7 @@ function registerBuiltIns() {
           checkRequirements(true);
         }),
         modeSwitch("lowPerfMode", t("req.lowPerfTitle"), t("req.lowPerfHint"), s.low_performance_mode, (on) => settingCall(() => api.setLowPerformanceMode(on))),
+        modeSwitch("rdna2SafeMode", t("req.rdna2SafeTitle"), t("req.rdna2SafeHint"), s.rdna2_safe_mode, (on) => settingCall(() => api.setRdna2SafeMode(on))),
       );
     }
     lines.push(el("div", { class: "row" }, againButton()));

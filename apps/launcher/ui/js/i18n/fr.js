@@ -112,6 +112,8 @@ export default {
     compatModeHint: "Accepte les cartes graphiques dont le pilote offre Vulkan 1.2 avec les extensions de rendu dynamique et de synchronisation au lieu d'exiger Vulkan 1.3. Pour les cartes et pilotes d'avant 2022.",
     lowPerfTitle: "Mode basse performance",
     lowPerfHint: "Démarre avec le plus léger : sans antialiasing, ni éclairage amélioré, ni couleurs vives, ni textures HD. Les options dans le jeu changent chacune d'elles.",
+    rdna2SafeTitle: "Mode sûr AMD RX 6000",
+    rdna2SafeHint: "Uniquement pour AMD RX 6000 (RDNA2) : simplifie le layout bindless pour éviter le TDR. Sur toute autre carte, cela ne change rien, même si tu le laisses activé.",
     compatRescueHint: "Cet ordinateur ne peut pas jouer avec Vulkan 1.3, mais le peut avec le mode compatibilité : active-le ci-dessous et appuie sur « Vérifier à nouveau ».",
     compatOk: "Compris",
   },
