@@ -2049,6 +2049,11 @@ y recibe `new_game_mode` con el id o `new_game_mode_back`. El modo elegido va a 
 (`SessionDesc::modeId`, sección `mode` del guardado). Las reglas salen después solo para un modo que admite
 `original` y `oculto`; otro modo empieza con su `ruleset`.
 
+**Requisito de diseño:** esta lista no es una pregunta extra antes del antiguo interruptor de contenido oculto: lo
+reemplaza. El modo se elige al crear la partida nueva y define el tipo de guardado; el contenido oculto forma parte de
+los rulesets del Modo Folder. Las filas de `ui/new_game_rules` que todavía lo piden son de la pantalla heredada y se
+están integrando en la elección de modo ([tarea 10](../../architecture/game-variants.md#plan-de-tareas)).
+
 Las rutas de prueba solo ven esta pantalla si lo piden (`new_game_rules: true`); las demás empiezan con las reglas
 del original, como antes. Las que la piden apagan antes «Todas las especies» (`menu_select: rules-all`).
 `route-hidden-content.yaml` elige el contenido oculto y hace evolucionar al compañero a

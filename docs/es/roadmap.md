@@ -85,7 +85,8 @@ aspectos de la interfaz y los tests de ida y vuelta del editor de mapas externo.
 
 - Historia reescrita sobre los scripts convertidos.
 - Profundidad de personajes: árboles de diálogo, afinidad y misiones.
-- Framework de modos de juego, cada uno con su ruleset, y el modo versus.
+- Framework de modos de juego, cada uno con su ruleset y opciones fijas, y el modo versus: las
+  [variantes de juego](architecture/game-variants.md) Clásico Mejorado y Modo Folder ya están en `main`.
 - API de mods completa: paquetes que añaden o sobrescriben contenido por ID, y hooks de Lua.
 - Más especies y mapas, fondos HD.
 - El formato cocinado de los vídeos.

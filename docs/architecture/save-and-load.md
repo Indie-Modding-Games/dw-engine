@@ -196,6 +196,11 @@ the phase 4 rule (IDs, not indices).
 `PlaySession` is created and **it is saved right away in the slot**, as the original creates the file at the start. With all 15 taken: notice "There are no free slots" and only "Play without
 saving" or going back. "Play without saving" warns that it will not be possible to save (like "no card").
 
+The mode selector belongs to this step: when the new save is created the player picks Classic Enhanced or Folder Mode,
+and that choice defines the save type written to the first file (`mode.id`, and `summary.mode` from format 4). It
+replaces the old "activate hidden content" question; hidden content is a Folder Mode ruleset, not a later switch. The
+legacy `ui/new_game_rules` rows are being folded into that choice ([task 10](game-variants.md#task-plan)).
+
 Without a games folder (the smoke routes) `New game` goes straight in, with no list: it is the "no
 card" path. That way `route-loop-keyboard` and the others stay the same, with the `play` button.
 

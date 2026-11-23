@@ -16,7 +16,9 @@ Términos del proyecto y su nombre en el código. Si un término no está aquí,
 | Ficha de referencia | Resumen de cómo funcionaba un sistema del original ([reference/](reference/index.md)) | `docs/reference/` |
 | Fuente (estado) | Asset en formato abierto y editable | — |
 | ID de asset | Nombre estable de un asset, como `map/file_city_01/background` | — |
-| Modo de juego | Combinación de sistemas con sus propias reglas (fase 5) | — |
+| Modo de juego | Una forma de jugar elegida al empezar una partida: un preajuste de rulesets y, opcionalmente, opciones fijas ([variantes de juego](architecture/game-variants.md)) | `dwe::game::modes` |
+| Variante de juego | Un modo de juego que ofrece una de las dos experiencias principales ([variantes de juego](architecture/game-variants.md)) | `dwe::game::modes::ClassicMode`, `dwe::game::modes::FolderMode` |
+| Tipo de guardado | La variante elegida al crear una partida nueva y guardada en ella; reemplaza la antigua activación de contenido oculto ([variantes de juego](architecture/game-variants.md#elegir-una-variante)) | `PlayStart::modeId`, `mode.id` |
 | Paquete | Una capa de contenido con su manifiesto (`pack.yaml`) | `dwe::assets::PackManifest` |
 | Partner | El Digimon que cría el jugador | `dwe::game::partner` |
 | Pilar de diseño | Frase del GDD que dice qué de la esencia del juego no se toca | — |

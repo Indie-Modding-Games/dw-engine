@@ -2038,6 +2038,11 @@ and receives `new_game_mode` with the id or `new_game_mode_back`. The chosen mod
 (`SessionDesc::modeId`, `mode` section of the save). The rules appear afterward only for a mode that admits
 `original` and `oculto`; another mode starts with its `ruleset`.
 
+**Design requirement:** this list is not an extra question in front of the old hidden-content switch: it replaces it.
+The mode is chosen when the new save is created and defines the save type; hidden content is part of Folder Mode's
+rulesets. The `ui/new_game_rules` rows that still ask for it are the legacy screen and are being folded into the mode
+choice ([task 10](../../architecture/game-variants.md#task-plan)).
+
 The test routes only see this screen if they ask for it (`new_game_rules: true`); the others start with the original's
 rules, as before. Those that ask for it first turn off "Every species" (`menu_select: rules-all`).
 `route-hidden-content.yaml` chooses hidden content and makes the partner evolve into

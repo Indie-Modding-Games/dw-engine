@@ -2,9 +2,11 @@
 
 Optional improvement, **on by default** (an exception to the rule of "the original by default", decided on 2026-11-10):
 every species with a model that the original never lets you raise is reached by evolving in a normal game, with its
-combat clips or with the ones the engine makes for it. It is chosen on the new game's [rules screen](../apps/game.md#hidden-content)
-with the row "All species as a partner" (Yes by default); with No the game uses the original's rules with nothing
-changed. The saved game remembers the ruleset.
+combat clips or with the ones the engine makes for it. It is chosen from Folder Mode's rulesets when a new save is
+created: the [mode selector](../../architecture/game-variants.md#choosing-a-variant) defines the save type and replaces
+the old hidden-content activation. The legacy [rules screen](../apps/game.md#hidden-content) still offers the row
+"All species as a partner" (Yes by default); with No the game uses the original's rules with nothing changed. The saved
+game remembers the ruleset.
 
 This document is the design: which species come in, where they come from, with what requirements and why. The format of
 the patches is in [rulesets](../../architecture/rulesets.md#per-species-patches) and the check rules in

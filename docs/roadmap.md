@@ -85,7 +85,8 @@ skins and the round-trip tests of the external map editor are already in `main`.
 
 - Rewritten story on top of the converted scripts.
 - Character depth: dialogue trees, affinity and quests.
-- Game modes framework, each with its own ruleset, and the versus mode.
+- Game modes framework, each with its own ruleset and fixed options, and the versus mode: the
+  [game variants](architecture/game-variants.md) Classic Enhanced and Folder Mode are in `main`.
 - Complete mod API: packs that add or override content by ID, and Lua hooks.
 - More species and maps, HD backgrounds.
 - The cooked format of the videos.
