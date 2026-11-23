@@ -62,6 +62,13 @@ pub struct Settings {
     /// What the player picked last: a disc image or an archive holding one. An update whose
     /// extractor reads discs differently reads it again from here.
     pub disc_source: Option<PathBuf>,
+    /// The compatibility mode (launch.rs, system_check.rs): starts the game with `--compatible`,
+    /// which accepts a Vulkan 1.2 GPU that offers dynamic rendering and synchronization2 through
+    /// their extensions instead of requiring Vulkan 1.3 core. For old cards and drivers.
+    pub compatibility_mode: bool,
+    /// The low-performance mode: starts the game with `--low-performance`, the lightest graphics
+    /// preset (every heavy option off), for weak GPUs and old iGPUs.
+    pub low_performance_mode: bool,
     /// The beta key an older launcher kept in the system keyring was removed (lib.rs,
     /// forget_old_beta_key): done once, by the first launcher with the key built in.
     pub old_beta_key_removed: bool,
@@ -88,6 +95,8 @@ impl Default for Settings {
             api_base: DEFAULT_API_BASE.into(),
             repository: DEFAULT_REPOSITORY.into(),
             disc_source: None,
+            compatibility_mode: false,
+            low_performance_mode: false,
             old_beta_key_removed: false,
         }
     }

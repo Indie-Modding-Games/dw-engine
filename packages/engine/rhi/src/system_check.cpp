@@ -14,12 +14,7 @@
 
 namespace dwe::rhi {
 
-void requireRendererFeatures(vkb::PhysicalDeviceSelector& selector) {
-  VkPhysicalDeviceVulkan13Features features13{};
-  features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-  features13.dynamicRendering = VK_TRUE;
-  features13.synchronization2 = VK_TRUE;
-
+void requireRendererFeatures(vkb::PhysicalDeviceSelector& selector, bool compatibleMode) {
   // Descriptor indexing for the bindless texture table and buffer device addresses for per-frame
   // data (docs/architecture/render.md).
   VkPhysicalDeviceVulkan12Features features12{};
@@ -36,6 +31,31 @@ void requireRendererFeatures(vkb::PhysicalDeviceSelector& selector) {
   VkPhysicalDeviceFeatures features{};
   features.samplerAnisotropy = VK_TRUE;
 
+  if (compatibleMode) {
+    // Dynamic rendering and synchronization2 asked as their extensions' features, on a Vulkan 1.2
+    // device. Requiring the extension also checks the feature, so a card selected this way really
+    // has both and vkCmdBeginRendering works.
+    VkPhysicalDeviceDynamicRenderingFeatures dynamicRendering{};
+    dynamicRendering.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
+    dynamicRendering.dynamicRendering = VK_TRUE;
+    VkPhysicalDeviceSynchronization2Features synchronization2{};
+    synchronization2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
+    synchronization2.synchronization2 = VK_TRUE;
+    // The selector keeps copies of the feature structures.
+    selector.set_minimum_version(1, 2)
+        .set_required_features(features)
+        .set_required_features_12(features12)
+        .add_required_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
+        .add_required_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
+        .add_required_extension_features(dynamicRendering)
+        .add_required_extension_features(synchronization2);
+    return;
+  }
+
+  VkPhysicalDeviceVulkan13Features features13{};
+  features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+  features13.dynamicRendering = VK_TRUE;
+  features13.synchronization2 = VK_TRUE;
   // The selector keeps copies of the feature structures.
   selector.set_minimum_version(1, 3)
       .set_required_features(features)
@@ -168,7 +188,7 @@ std::string oneLine(std::string_view text) {
 
 } // namespace
 
-SystemCheck checkSystem() {
+SystemCheck checkSystem(bool compatibleMode) {
   SystemCheck check;
   // Not headless: the builder asks for the window-system extensions a window will need. The
   // linked loader's vkGetInstanceProcAddr (vulkanEntry), as for the game's own instance.
@@ -190,7 +210,7 @@ SystemCheck checkSystem() {
     return check;
   }
   vkb::PhysicalDeviceSelector selector{instance.value()};
-  requireRendererFeatures(selector);
+  requireRendererFeatures(selector, compatibleMode);
   // No window: the surface is checked when the game opens one.
   auto selected = selector.defer_surface_initialization().select();
   if (selected) {

@@ -46,6 +46,10 @@ pub struct Status {
     /// "stable" or "testing" (releases::UpdateChannel).
     update_channel: UpdateChannel,
     last_check: Option<LastCheck>,
+    /// The compatibility mode: the game starts with --compatible (system_check.rs, launch.rs).
+    compatibility_mode: bool,
+    /// The low-performance mode: the game starts with --low-performance (launch.rs).
+    low_performance_mode: bool,
     /// A new launcher installed in this session: it runs after a restart.
     launcher_ready: Option<String>,
     /// This copy can replace itself (auto_update::launcher_replaceable).
@@ -154,6 +158,8 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
         auto_update_game: settings.auto_update_game,
         update_channel: settings.update_channel,
         last_check: settings.last_check.clone(),
+        compatibility_mode: settings.compatibility_mode,
+        low_performance_mode: settings.low_performance_mode,
         launcher_ready: state.launcher_ready.lock().unwrap().clone(),
         launcher_replaceable: auto_update::launcher_replaceable(),
         has_previous: store.has_previous(),
@@ -552,20 +558,21 @@ pub fn cancel(state: State<'_, AppState>) {
     state.cancel.store(true, Ordering::SeqCst);
 }
 
-/// The GPU check of a game: the one kept for its folder, or a new one (also when `again`). Runs
-/// off the page's thread; a second caller waits for the check in progress.
-async fn graphics_of(state: &AppState, game: &Game, again: bool) -> GraphicsCheck {
+/// The GPU check of a game: the one kept for its folder and Vulkan floor (`compatibility`), or a
+/// new one (also when `again`). Runs off the page's thread; a second caller waits for the check in
+/// progress. The kept check belongs to a floor, so changing the compatibility mode re-probes.
+async fn graphics_of(state: &AppState, game: &Game, again: bool, compatibility: bool) -> GraphicsCheck {
     let mut kept = state.graphics.lock().await;
-    if let Some((dir, check)) = kept.as_ref() {
-        if !again && *dir == game.dir {
+    if let Some((dir, floor, check)) = kept.as_ref() {
+        if !again && *dir == game.dir && *floor == compatibility {
             return check.clone();
         }
     }
     let probed = game.clone();
-    let check = tauri::async_runtime::spawn_blocking(move || system_check::check_graphics(&probed))
+    let check = tauri::async_runtime::spawn_blocking(move || system_check::check_graphics(&probed, compatibility))
         .await
         .unwrap_or_else(|_| GraphicsCheck::unknown());
-    *kept = Some((game.dir.clone(), check.clone()));
+    *kept = Some((game.dir.clone(), compatibility, check.clone()));
     check
 }
 
@@ -584,8 +591,9 @@ pub struct Requirements {
 pub async fn check_system(state: State<'_, AppState>, again: Option<bool>) -> Result<Requirements> {
     let data = data_folder(&state);
     let space = system_check::space(&data, system_check::free_bytes(&data));
+    let compatibility = state.settings.lock().unwrap().compatibility_mode;
     let graphics = match GameStore::new(&data).current() {
-        Some(game) => Some(graphics_of(&state, &game, again.unwrap_or(false)).await),
+        Some(game) => Some(graphics_of(&state, &game, again.unwrap_or(false), compatibility).await),
         None => None,
     };
     Ok(Requirements { os: std::env::consts::OS, space, graphics })
@@ -614,9 +622,16 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     if state.game_running.load(Ordering::SeqCst) {
         return Ok(());
     }
-    let (data, own) = {
+    let (data, own, graphics_flags) = {
         let settings = state.settings.lock().unwrap();
-        (settings.data_folder(), settings.uses_default_data_folder())
+        (
+            settings.data_folder(),
+            settings.uses_default_data_folder(),
+            launch::GraphicsFlags {
+                compatibility: settings.compatibility_mode,
+                low_performance: settings.low_performance_mode,
+            },
+        )
     };
     let game = GameStore::new(&data).current().ok_or_else(|| Failure::new(code::NO_GAME, ""))?;
     let content = content::content_folder(&data);
@@ -624,14 +639,14 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
         return Err(Failure::new(code::MISSING_FILE, content.display().to_string()));
     }
     require_space(&state, system_check::PLAY_BYTES)?;
-    let graphics = graphics_of(&state, &game, false).await;
+    let graphics = graphics_of(&state, &game, false, graphics_flags.compatibility).await;
     if graphics.graphics == Graphics::Blocked {
         return Err(Failure::new(code::NO_GPU, graphics.detail));
     }
     if state.game_running.swap(true, Ordering::SeqCst) {
         return Ok(());
     }
-    let mut child = match launch::start(&game, &data, own, &graphics.env) {
+    let mut child = match launch::start(&game, &data, own, &graphics.env, graphics_flags) {
         Ok(child) => child,
         Err(failure) => {
             state.game_running.store(false, Ordering::SeqCst);
@@ -712,6 +727,34 @@ pub fn set_update_channel(app: AppHandle, state: State<'_, AppState>, channel: S
     }
     *state.release.lock().unwrap() = None;
     log_line!("update channel: {chosen}");
+    Ok(status_of(&app, &state))
+}
+
+/// The compatibility mode (system_check.rs): the game starts with `--compatible`, accepting a
+/// Vulkan 1.2 GPU that has dynamic rendering and synchronization2 as extensions instead of
+/// requiring Vulkan 1.3 core. Off by default. The page re-checks the GPU (check_system again) to
+/// see the new result; the kept check is dropped so the next one runs with the new floor.
+#[tauri::command]
+pub fn set_compatibility_mode(app: AppHandle, state: State<'_, AppState>, enabled: bool) -> Result<Status> {
+    {
+        let mut settings = state.settings.lock().unwrap();
+        settings.compatibility_mode = enabled;
+        settings.save()?;
+    }
+    log_line!("compatibility mode: {enabled}");
+    Ok(status_of(&app, &state))
+}
+
+/// The low-performance mode: the game starts with `--low-performance`, the potato preset (every
+/// heavy option off, graphics_options.hpp), for weak GPUs and old iGPUs. No GPU re-check needed.
+#[tauri::command]
+pub fn set_low_performance_mode(app: AppHandle, state: State<'_, AppState>, enabled: bool) -> Result<Status> {
+    {
+        let mut settings = state.settings.lock().unwrap();
+        settings.low_performance_mode = enabled;
+        settings.save()?;
+    }
+    log_line!("low-performance mode: {enabled}");
     Ok(status_of(&app, &state))
 }
 

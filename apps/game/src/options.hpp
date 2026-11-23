@@ -124,6 +124,15 @@ struct Options {
   // lighting=on|off,colors=on|off; graphics_options.hpp): for captures and autotests, unsaved.
   std::optional<std::string> graphics;
 
+  // Set by --compatible: a Vulkan 1.2 GPU that offers dynamic rendering and synchronization2
+  // through their extensions is accepted instead of requiring Vulkan 1.3 core (the launcher's
+  // compatibility mode; rhi/renderer_requirements.hpp). Off by default.
+  bool compatibleMode = false;
+
+  // Set by --low-performance: starts the run with the potato preset (every heavy graphics option
+  // off, graphics_options.hpp). The launcher's low-performance mode. Off by default.
+  bool lowPerformance = false;
+
   // The language of the texts (--lang en|es...), instead of the saved one or the system's; for
   // autotests.
   std::optional<std::string> language;
@@ -173,6 +182,7 @@ inline constexpr std::string_view Usage =
     "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--chibi] [--start <map>[,<exit>]] [--time day|dusk|night] [--weather <kind>] [--season <season>] [--lang "
     "<language>] "
     "[--text-font modern|original] [--ui-skin <id>] [--safe-ui] [--graphics <option>=<value>[,...]] "
+    "[--compatible] [--low-performance] "
     "[--new-game | --load <slot>] "
     "[--new-game-chain original|seeded] [--clock-speed <x>] "
     "[--seed <n>] [--original-rolls <state>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] [--trace <file>] "
@@ -191,6 +201,8 @@ std::optional<session::NewGameChain> newGameChainNamed(std::string_view name);
 inline constexpr std::string_view CheckSystemOption = "--check-system";
 inline constexpr std::string_view TuningOption = "--tuning";
 inline constexpr std::string_view SafeUiOption = "--safe-ui";
+inline constexpr std::string_view CompatibleOption = "--compatible";
+inline constexpr std::string_view LowPerformanceOption = "--low-performance";
 inline constexpr std::string_view ExploreOption = "--explore";
 inline constexpr std::string_view ChibiOption = "--chibi";
 inline constexpr std::string_view LanguageOption = "--lang";

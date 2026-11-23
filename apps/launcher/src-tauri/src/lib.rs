@@ -55,7 +55,7 @@ pub struct AppState {
     pub launcher_pending: Mutex<Option<(tauri_plugin_updater::Update, Vec<u8>)>>,
     /// The last GPU check (system_check.rs) and the game folder it was made for; held while a
     /// check runs, so Play waits for the one the page started.
-    pub graphics: tokio::sync::Mutex<Option<(std::path::PathBuf, system_check::GraphicsCheck)>>,
+    pub graphics: tokio::sync::Mutex<Option<(std::path::PathBuf, bool, system_check::GraphicsCheck)>>,
 }
 
 /// Runs the launcher installer kept for the restart or the exit (Windows; elsewhere the new
@@ -181,6 +181,8 @@ pub fn run() {
             commands::restart_launcher,
             commands::set_auto_update,
             commands::set_update_channel,
+            commands::set_compatibility_mode,
+            commands::set_low_performance_mode,
             commands::check_system,
             commands::open_driver_page,
             addon_commands::addons_list,

@@ -26,6 +26,10 @@ struct DeviceDesc {
   // Waits for the display refresh before presenting; without it frames are presented as soon as
   // they are ready.
   bool vsync = true;
+  // Accepts a Vulkan 1.2 GPU that offers dynamic rendering and synchronization2 through their
+  // extensions instead of requiring Vulkan 1.3 core (the launcher's compatibility mode,
+  // renderer_requirements.hpp). Off by default.
+  bool compatibleMode = false;
 };
 
 // One frame being recorded: its command buffer and the swapchain image it draws into.

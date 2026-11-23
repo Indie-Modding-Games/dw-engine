@@ -149,6 +149,17 @@ GraphicsOptions startGraphicsOptions(const UserSettings& settings) {
   return options;
 }
 
+GraphicsOptions potatoGraphicsOptions() {
+  GraphicsOptions options;
+  options.shadows = ShadowMode::Off;
+  options.enhancedLighting = false;
+  options.vividColors = false;
+  options.sceneryQuality = SceneryQuality::Smooth;
+  options.antialiasing = false;
+  options.textureFilter = TextureFilter::Nearest;
+  return options;
+}
+
 std::optional<GraphicsOptions> withGraphicsFlag(GraphicsOptions options, std::string_view text) {
   for (const auto part : std::views::split(text, ',')) {
     const std::string_view item{part};

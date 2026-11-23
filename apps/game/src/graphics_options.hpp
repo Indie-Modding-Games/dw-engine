@@ -80,6 +80,11 @@ struct GraphicsOptions {
 // mode that is not one is logged and starts with the default.
 [[nodiscard]] GraphicsOptions startGraphicsOptions(const UserSettings& settings);
 
+// The low-performance preset (--low-performance, docs/architecture/render.md): every heavy option
+// off, for weak GPUs and old iGPUs that drop frames or crash on the enhanced look. The player can
+// still turn each one back on in the menus; this only changes what a run starts with.
+[[nodiscard]] GraphicsOptions potatoGraphicsOptions();
+
 // The options with a command line's --graphics on top: a comma-separated list of
 // shadows=off|round|sun, lighting=on|off, colors=on|off, scenery=smooth|upscaled, aa=on|off and
 // textures=nearest|smooth|upscaled. Nothing when the text is not one.
