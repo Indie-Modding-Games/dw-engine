@@ -1,3 +1,5 @@
+#include <dwe/core/log.hpp>
+#include <dwe/rhi/gpu_report.hpp>
 #include <dwe/rhi/pipeline.hpp>
 
 #include <array>
@@ -171,6 +173,15 @@ core::Result<GraphicsPipeline> GraphicsPipeline::create(Device& device, const Bi
     return std::unexpected{valid.error()};
   }
   const VkDevice gpu = device.nativeHandles().device;
+  // A driver whose optimized shader compiler crashes (the AMD proprietary one, on some pipelines,
+  // and an Intel iGPU driver at times) dies during this build, before returning any VkResult. The
+  // breadcrumb names the pipeline and hashes its SPIR-V so the crash report and an allow-list point
+  // at the same shader without shipping its source.
+  gpuNoteActivity(
+      std::format("building pipeline '{}' (spirv {:#x})", desc.name, gpuSpirvHash(desc.spirv)));
+  if (gpuDeviceLost()) {
+    return core::fail("the GPU device was lost; cannot build a pipeline");
+  }
 
   const VkShaderModuleCreateInfo moduleInfo{.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
                                             .pNext = nullptr,
@@ -178,7 +189,8 @@ core::Result<GraphicsPipeline> GraphicsPipeline::create(Device& device, const Bi
                                             .codeSize = desc.spirv.size_bytes(),
                                             .pCode = desc.spirv.data()};
   VkShaderModule module = VK_NULL_HANDLE;
-  if (vkCreateShaderModule(gpu, &moduleInfo, nullptr, &module) != VK_SUCCESS) {
+  if (gpuCheck("vkCreateShaderModule", vkCreateShaderModule(gpu, &moduleInfo, nullptr, &module)) !=
+      VK_SUCCESS) {
     return core::fail(std::format("{}: could not create the shader module", desc.name));
   }
 
@@ -298,13 +310,15 @@ core::Result<GraphicsPipeline> GraphicsPipeline::create(Device& device, const Bi
   GraphicsPipeline pipeline{device};
   pipeline.layout_ = table.pipelineLayout();
   pipeline.depthBias_ = desc.depth.bias;
-  VkResult result = vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
-                                              &pipeline.pipeline_);
+  VkResult result = gpuCheck("vkCreateGraphicsPipelines",
+                             vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo,
+                                                       nullptr, &pipeline.pipeline_));
   if (result == VK_SUCCESS && desc.multisampled > 1) {
     // The same pipeline for multisampled targets: only the rasterization's sample count differs.
     multisample.rasterizationSamples = static_cast<VkSampleCountFlagBits>(desc.multisampled);
-    result = vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
-                                       &pipeline.multisampled_);
+    result = gpuCheck("vkCreateGraphicsPipelines (multisampled)",
+                      vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+                                                &pipeline.multisampled_));
     pipeline.multisampledSamples_ = desc.multisampled;
   }
   vkDestroyShaderModule(gpu, module, nullptr);

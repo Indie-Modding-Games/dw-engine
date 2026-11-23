@@ -10,6 +10,7 @@ dwe_add_module(rhi
         src/command_list.cpp
         src/device.cpp
         src/frame_capture.cpp
+        src/gpu_report.cpp
         src/image.cpp
         src/pipeline.cpp
         src/system_check.cpp

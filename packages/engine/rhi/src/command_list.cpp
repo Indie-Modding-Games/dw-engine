@@ -1,5 +1,8 @@
 #include <dwe/core/assert.hpp>
 #include <dwe/rhi/command_list.hpp>
+#include <dwe/rhi/gpu_report.hpp>
+
+#include <format>
 
 #include "vulkan_util.hpp"
 
@@ -50,6 +53,12 @@ void CommandList::beginRendering(const RenderingDesc& desc) {
   rendering.colorAttachmentCount = 1;
   rendering.pColorAttachments = &color;
   rendering.pDepthAttachment = desc.depth.view != VK_NULL_HANDLE ? &depth : nullptr;
+  // vkCmdBeginRendering itself returns nothing: a fault in its dynamic rendering (a MSAA resolve
+  // mode an AMD or Intel driver mishandles, say) comes back at the submit, so mark the pass first
+  // and let the submit report name it.
+  gpuNoteActivity(std::format("dynamic rendering: {}x{}{}{} at {} samples", desc.extent.width,
+                              desc.extent.height, desc.depth.view ? " with depth" : "",
+                              desc.color.resolve ? " resolving the color" : "", desc.samples));
   vkCmdBeginRendering(commands_, &rendering);
 }
 
