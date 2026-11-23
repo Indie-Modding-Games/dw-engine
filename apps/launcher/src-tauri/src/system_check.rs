@@ -199,10 +199,15 @@ pub fn outside_appimage(command: &mut Command) {
     };
 }
 
-/// Runs the probe of a game with an extra environment; None when it gives no answer in time.
-pub fn run_probe(program: &Path, env: &[(OsString, OsString)], timeout: Duration) -> Option<Probe> {
+/// Runs the probe of a game with an extra environment and extra flags (the compatibility mode's
+/// `--compatible`, so the check reports what the game will really find); None when it gives no
+/// answer in time.
+pub fn run_probe(program: &Path, extra_args: &[&str], env: &[(OsString, OsString)], timeout: Duration) -> Option<Probe> {
     let mut command = Command::new(program);
     command.arg(PROBE_FLAG);
+    for flag in extra_args {
+        command.arg(flag);
+    }
     outside_appimage(&mut command);
     command.envs(env.iter().map(|(k, v)| (k, v)));
     if let Some(dir) = program.parent() {
@@ -249,6 +254,10 @@ pub struct GraphicsCheck {
     /// Why the computer's drivers were not enough (the probe's result), when they were not.
     pub reason: Option<ProbeResult>,
     pub detail: String,
+    /// The compatibility mode would let this machine run the game: the strict Vulkan 1.3 check
+    /// failed but the 1.2-plus-extensions one passed. The page offers the switch (only when
+    /// `compatibility` was not already on, since then it is the probe that ran).
+    pub compat_rescues: bool,
     /// The extra environment the game starts with (the software driver's), not for the page.
     #[serde(skip)]
     pub env: Vec<(OsString, OsString)>,
@@ -257,19 +266,30 @@ pub struct GraphicsCheck {
 impl GraphicsCheck {
     /// No answer: the game starts as before.
     pub fn unknown() -> Self {
-        Self { graphics: Graphics::Unknown, gpu: None, vendor: Vendor::Other, reason: None, detail: String::new(), env: Vec::new() }
+        Self { graphics: Graphics::Unknown, gpu: None, vendor: Vendor::Other, reason: None, detail: String::new(), compat_rescues: false, env: Vec::new() }
     }
 }
 
-/// Checks the game's GPU: first with the computer's drivers, then, when they cannot run it, with
-/// the package's software driver.
-pub fn check_graphics(game: &Game) -> GraphicsCheck {
+/// Checks the game's GPU with the chosen Vulkan floor (`compatibility`): the strict Vulkan 1.3
+/// probe with it off, the 1.2-plus-extensions one with it on. When the chosen probe fails, the
+/// compatibility probe is tried too, so the page can offer the switch; and when even that fails,
+/// with the package's software driver.
+pub fn check_graphics(game: &Game, compatibility: bool) -> GraphicsCheck {
     let program = game.game_program();
-    let system = run_probe(&program, &[], PROBE_TIMEOUT);
+    let chosen: &[&str] = if compatibility { &["--compatible"] } else { &[] };
+    let system = run_probe(&program, chosen, &[], PROBE_TIMEOUT);
     let failed = system.as_ref().is_some_and(|p| p.result != ProbeResult::Ok);
+    // The switch would rescue a machine whose strict probe failed: ask the relaxed one, unless the
+    // relaxed one is what already failed.
+    let compat_rescues = if failed && !compatibility {
+        run_probe(&program, &["--compatible"], &[], PROBE_TIMEOUT)
+            .is_some_and(|p| p.result == ProbeResult::Ok)
+    } else {
+        false
+    };
     let software = if failed { software_manifest(game) } else { None };
     let env = software.as_deref().map(software_env).unwrap_or_default();
-    let fallback = software.as_ref().and_then(|_| run_probe(&program, &env, PROBE_TIMEOUT));
+    let fallback = software.as_ref().and_then(|_| run_probe(&program, chosen, &env, PROBE_TIMEOUT));
     let graphics = decide(system.as_ref(), fallback.as_ref());
     let gpu = system.as_ref().and_then(|p| p.gpu.clone());
     let check = GraphicsCheck {
@@ -278,6 +298,7 @@ pub fn check_graphics(game: &Game) -> GraphicsCheck {
         gpu,
         reason: system.as_ref().filter(|p| p.result != ProbeResult::Ok).map(|p| p.result),
         detail: system.as_ref().map(|p| p.detail.clone()).unwrap_or_default(),
+        compat_rescues,
         env: if graphics == Graphics::Fallback { env } else { Vec::new() },
     };
     log_line!(
@@ -480,13 +501,13 @@ mod tests {
         };
         let answers = write("answers", &format!("[ \"$1\" = --check-system ] && printf '{}' \"$VK_DRIVER_FILES\"", "dwe-check-system 1\\nresult=ok\\ndetail=%s\\ndevices=1\\n"));
         let env = vec![("VK_DRIVER_FILES".into(), "/x.json".into())];
-        assert_eq!(run_probe(&answers, &env, PROBE_TIMEOUT).unwrap().detail, "/x.json");
+        assert_eq!(run_probe(&answers, &[], &env, PROBE_TIMEOUT).unwrap().detail, "/x.json");
         let silent = write("silent", "echo \"bad argument '$1'\" >&2; exit 1");
-        assert!(run_probe(&silent, &[], PROBE_TIMEOUT).is_none());
+        assert!(run_probe(&silent, &[], &[], PROBE_TIMEOUT).is_none());
         let hangs = write("hangs", "exec sleep 30");
         let start = Instant::now();
-        assert!(run_probe(&hangs, &[], Duration::from_millis(300)).is_none());
+        assert!(run_probe(&hangs, &[], &[], Duration::from_millis(300)).is_none());
         assert!(start.elapsed() < Duration::from_secs(5));
-        assert!(run_probe(&dir.path().join("missing"), &[], PROBE_TIMEOUT).is_none());
+        assert!(run_probe(&dir.path().join("missing"), &[], &[], PROBE_TIMEOUT).is_none());
     }
 }

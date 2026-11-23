@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
   if (options->checkSystem) {
-    const auto check = dwe::rhi::checkSystem();
+    const auto check = dwe::rhi::checkSystem(options->compatibleMode);
     std::fputs(dwe::rhi::formatSystemCheck(check).c_str(), stdout);
     return check.result == dwe::rhi::SystemCheckResult::Ok ? EXIT_SUCCESS : EXIT_FAILURE;
   }

@@ -580,7 +580,9 @@ int runGame(const Options& requested) {
       core::logWarning("game: {}", changed.error().message);
     }
   }
-  auto device = rhi::Device::create(*window, {.validation = Validation, .vsync = display.vsync});
+  auto device = rhi::Device::create(
+      *window,
+      {.validation = Validation, .vsync = display.vsync, .compatibleMode = options.compatibleMode});
   if (!device) {
     core::logError("{}", device.error().message);
     return EXIT_FAILURE;
@@ -645,6 +647,11 @@ int runGame(const Options& requested) {
   }
   // The enhanced graphics: the saved choices, with --graphics on top for this run only.
   GraphicsOptions startGraphics = startGraphicsOptions(userSettings);
+  // The launcher's low-performance mode starts the run from the potato preset; --graphics still
+  // overrides on top of it, and the player can change each option in the menus as usual.
+  if (options.lowPerformance) {
+    startGraphics = potatoGraphicsOptions();
+  }
   if (options.graphics) {
     startGraphics = withGraphicsFlag(startGraphics, *options.graphics).value_or(startGraphics);
   }

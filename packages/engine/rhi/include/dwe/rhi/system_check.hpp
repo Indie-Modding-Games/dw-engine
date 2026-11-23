@@ -44,7 +44,11 @@ struct SystemCheck {
 // Checks, without a window and without content, whether the renderer can start: creates a Vulkan
 // instance and selects a GPU with the same version and features as Device::create. Quick: it makes
 // no device. `dwe-game --check-system` prints it (formatSystemCheck) for the launcher.
-SystemCheck checkSystem();
+//
+// With `compatibleMode`, a Vulkan 1.2 GPU that offers dynamic rendering and synchronization2
+// through their extensions counts as suitable (the launcher's compatibility mode;
+// renderer_requirements.hpp).
+SystemCheck checkSystem(bool compatibleMode = false);
 
 // The check as `key=value` lines under a `dwe-check-system 1` header: result (ok, no-vulkan,
 // no-device, unsuitable), detail, devices, then gpu, vendor (0x....), kind (discrete, integrated,

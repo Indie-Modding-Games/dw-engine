@@ -326,10 +326,12 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   }
 
   vkb::PhysicalDeviceSelector selector{impl->instance};
-  requireRendererFeatures(selector);
+  requireRendererFeatures(selector, desc.compatibleMode);
   auto physicalDevice = selector.set_surface(impl->surface).select();
   if (!physicalDevice) {
-    return core::fail(std::format("no GPU supports Vulkan 1.3 with this window: {}",
+    return core::fail(std::format("no GPU supports the renderer's Vulkan floor ({}) with this "
+                                  "window: {}",
+                                  desc.compatibleMode ? "Vulkan 1.2 + extensions" : "Vulkan 1.3",
                                   physicalDevice.error().message()));
   }
   impl->physicalDevice = physicalDevice.value();

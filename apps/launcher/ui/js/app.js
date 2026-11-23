@@ -164,6 +164,15 @@ function renderNotice() {
 
 const MAKERS = { nvidia: "NVIDIA", amd: "AMD", intel: "Intel" };
 
+// Turns the compatibility mode on from the blocked notice and re-checks the GPU with the relaxed
+// Vulkan floor, so the notice clears and play starts working (system_check.rs).
+async function enableCompatibility() {
+  if (state.checkingSystem) return;
+  state.compatSeen = true;
+  await settingCall(() => api.setCompatibilityMode(true));
+  await checkRequirements(true);
+}
+
 async function checkRequirements(again = false) {
   if (state.checkingSystem) return;
   state.checkingSystem = true;
@@ -809,7 +818,14 @@ function registerBuiltIns() {
 
   section("requirements", "general", 20, "req.title", (box) => {
     const req = state.requirements;
+    const s = state.status;
     const lines = [el("p", { text: t("req.body") })];
+    // A small on/off switch for the graphics modes: the same look as the updates toggles.
+    const modeSwitch = (id, label, hint, checked, onSet) => {
+      const input = el("input", { type: "checkbox", role: "switch", class: "switch", id, onchange: (e) => onSet(e.target.checked) });
+      input.checked = checked;
+      return el("div", { class: "row between" }, el("label", { for: id, class: "row-label" }, el("span", { text: label }), el("span", { class: "muted small", text: hint })), input);
+    };
     if (!req) {
       lines.push(el("p", { class: "muted", text: t("req.checking") }));
     } else {
@@ -832,6 +848,21 @@ function registerBuiltIns() {
       }[kind];
       lines.push(el("p", { class: `status-line ${kind === "hardware" ? "accent" : kind === "unknown" ? "muted" : "warning"}`, role: "status", text }));
       if (kind === "fallback" || kind === "software" || kind === "blocked") lines.push(el("div", { class: "row" }, ...driverButtons(req)));
+      // The strict check failed but the relaxed Vulkan floor passed: offer the switch. Only when
+      // compatibility mode is not already on (then the probe above already ran with it).
+      if (kind === "blocked" && graphics?.compat_rescues && !s?.compatibility_mode) {
+        lines.push(el("p", { class: "muted small", text: t("req.compatRescueHint") }));
+        lines.push(el("div", { class: "row" }, el("button", { class: "button primary", type: "button", text: t("req.compatModeTitle"), onclick: enableCompatibility })));
+      }
+    }
+    if (s) {
+      lines.push(
+        modeSwitch("compatMode", t("req.compatModeTitle"), t("req.compatModeHint"), s.compatibility_mode, async (on) => {
+          await settingCall(() => api.setCompatibilityMode(on));
+          checkRequirements(true);
+        }),
+        modeSwitch("lowPerfMode", t("req.lowPerfTitle"), t("req.lowPerfHint"), s.low_performance_mode, (on) => settingCall(() => api.setLowPerformanceMode(on))),
+      );
     }
     lines.push(el("div", { class: "row" }, againButton()));
     add(box, ...lines);

@@ -24,6 +24,11 @@ export const api = {
   installLauncherUpdate: () => call("install_launcher_update"),
   restartLauncher: () => call("restart_launcher"),
   setAutoUpdate: (what, enabled) => call("set_auto_update", { what, enabled }),
+  // The GPU compatibility mode (Vulkan 1.2 floor) and the low-performance mode (potato preset):
+  // the launcher's switches that pass --compatible / --low-performance to the game (system_check.rs,
+  // launch.rs).
+  setCompatibilityMode: (enabled) => call("set_compatibility_mode", { enabled }),
+  setLowPerformanceMode: (enabled) => call("set_low_performance_mode", { enabled }),
   // "stable" or "testing"; the release found by the last check is dropped.
   setUpdateChannel: (channel) => call("set_update_channel", { channel }),
   // Free space and the GPU check (src-tauri/src/system_check.rs); again: check once more.

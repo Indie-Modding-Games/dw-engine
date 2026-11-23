@@ -18,12 +18,40 @@ pub fn game_log(data: &Path) -> PathBuf {
     logs_folder(data).join("game.log")
 }
 
+/// The graphics switches from the launcher's settings (settings.rs), turned into game flags.
+/// `compatibility` relaxes the Vulkan floor to 1.2 plus the dynamic-rendering and synchronization2
+/// extensions (--compatible); `low_performance` starts the run from the potato preset
+/// (--low-performance). Both are off unless the player turns them on.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct GraphicsFlags {
+    pub compatibility: bool,
+    pub low_performance: bool,
+}
+
+impl GraphicsFlags {
+    /// The flags for the probe and the game: --compatible changes what `--check-system` accepts, so
+    /// the launcher's Blocked/ok status must be read with the same switch the game will start with.
+    pub fn args(&self) -> Vec<&'static str> {
+        let mut flags = Vec::new();
+        if self.compatibility {
+            flags.push("--compatible");
+        }
+        if self.low_performance {
+            flags.push("--low-performance");
+        }
+        flags
+    }
+}
+
 /// The game's command line. A data folder the player picked also gets the saves and the reports
 /// there, so everything the player chose to move stays together; the default one leaves them in the
 /// game's own folder (settings::default_data_folder).
-pub fn command(game: &Game, data: &Path, own_data_folder: bool) -> Command {
+pub fn command(game: &Game, data: &Path, own_data_folder: bool, graphics: GraphicsFlags) -> Command {
     let mut command = Command::new(game.game_program());
     command.arg("--content").arg(content_folder(data));
+    for flag in graphics.args() {
+        command.arg(flag);
+    }
     if !own_data_folder {
         command.arg("--saves").arg(data.join("saves")).arg("--reports").arg(data.join("reports"));
     }
@@ -36,7 +64,8 @@ pub fn command(game: &Game, data: &Path, own_data_folder: bool) -> Command {
 
 /// `env`: what the game starts with besides the launcher's own environment (the software Vulkan
 /// driver's, system_check.rs).
-pub fn start(game: &Game, data: &Path, own_data_folder: bool, env: &[(OsString, OsString)]) -> Result<Child> {
+#[allow(clippy::too_many_arguments)]
+pub fn start(game: &Game, data: &Path, own_data_folder: bool, env: &[(OsString, OsString)], graphics: GraphicsFlags) -> Result<Child> {
     let log = game_log(data);
     fs::create_dir_all(logs_folder(data))?;
     if log.exists() {
@@ -44,7 +73,7 @@ pub fn start(game: &Game, data: &Path, own_data_folder: bool, env: &[(OsString, 
     }
     let out = File::create(&log)?;
     let err = out.try_clone()?;
-    let mut command = command(game, data, own_data_folder);
+    let mut command = command(game, data, own_data_folder, graphics);
     crate::system_check::outside_appimage(&mut command);
     command.envs(env.iter().map(|(k, v)| (k, v)));
     // No console window next to the game on Windows: its output goes to the log.
@@ -78,14 +107,26 @@ mod tests {
         let game = Game { dir: "/g".into(), version: "1.0.0".into(), commit: String::new(), extractor_version: None };
         let data = Path::new("/d");
         let at = |name: &str| data.join(name).to_string_lossy().into_owned();
-        let own = command(&game, data, true);
+        let own = command(&game, data, true, GraphicsFlags::default());
         let args: Vec<_> = own.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
         assert_eq!(args, ["--content".into(), at("content")]);
-        let moved = command(&game, data, false);
+        let moved = command(&game, data, false, GraphicsFlags::default());
         let args: Vec<_> = moved.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
         assert_eq!(args, ["--content".into(), at("content"), "--saves".into(), at("saves"), "--reports".into(), at("reports")]);
         let program = own.get_program().to_string_lossy().into_owned();
         assert!(program.ends_with(&format!("dwe-game{}", std::env::consts::EXE_SUFFIX)));
+    }
+
+    #[test]
+    fn the_graphics_switches_add_their_flags() {
+        let game = Game { dir: "/g".into(), version: "1.0.0".into(), commit: String::new(), extractor_version: None };
+        let data = Path::new("/d");
+        let args = |graphics: GraphicsFlags| -> Vec<String> {
+            command(&game, data, true, graphics).get_args().map(|a| a.to_string_lossy().into_owned()).collect()
+        };
+        assert!(args(GraphicsFlags { compatibility: true, low_performance: false }).contains(&"--compatible".to_string()));
+        assert!(args(GraphicsFlags { compatibility: false, low_performance: true }).contains(&"--low-performance".to_string()));
+        assert_eq!(args(GraphicsFlags { compatibility: true, low_performance: true }).len(), 4, "both flags, next to --content");
     }
 
     #[test]
@@ -94,7 +135,7 @@ mod tests {
         let data = tempfile::tempdir().unwrap();
         let images = CustomImages::new(data.path());
         let args = || -> Vec<String> {
-            command(&game, data.path(), true).get_args().map(|a| a.to_string_lossy().into_owned()).collect()
+            command(&game, data.path(), true, GraphicsFlags::default()).get_args().map(|a| a.to_string_lossy().into_owned()).collect()
         };
         assert_eq!(args().len(), 2, "no pack, no --mods");
         let image = images.pack().join("map/mayo01/background_day.png");
