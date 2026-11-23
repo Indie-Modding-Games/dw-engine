@@ -29,6 +29,11 @@ export const api = {
   // launch.rs).
   setCompatibilityMode: (enabled) => call("set_compatibility_mode", { enabled }),
   setLowPerformanceMode: (enabled) => call("set_low_performance_mode", { enabled }),
+  // Manual ways out of a wrong GPU check: "auto", "skip" or "software", plus the game's own
+  // arguments and environment (settings.rs). None of them can keep Play from starting the game.
+  setLaunchMode: (mode) => call("set_launch_mode", { mode }),
+  setExtraArgs: (args) => call("set_extra_args", { args }),
+  setExtraEnv: (env) => call("set_extra_env", { env }),
   // "stable" or "testing"; the release found by the last check is dropped.
   setUpdateChannel: (channel) => call("set_update_channel", { channel }),
   // Free space and the GPU check (src-tauri/src/system_check.rs); again: check once more.

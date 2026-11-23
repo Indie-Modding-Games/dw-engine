@@ -284,7 +284,7 @@ Settings › General › Computer requirements.
 |---|---|---|
 | Free space | That of the disk where `<data>` is (the nearest existing folder): `statvfs` on Linux and macOS, `GetDiskFreeSpaceExW` on Windows. Reading the disc needs about 3 GB (the partial copy, the unpacked archive and the game download); playing, about 200 MB. | If it is short, "Not enough disk space" on the home screen with how much is needed, where and how much there is, and the buttons "Check again" and "Pick another folder". Reading the disc and "Play" refuse with `no-space` instead of failing halfway. |
 | Graphics card | `dwe-game --check-system` of the installed game (below), first with the computer's drivers. | Nothing if it works. If no card works, the game starts anyway in **compatibility mode** (below): a notice that closes with "Got it", a "Compatibility mode" label at the top and the maker's driver button. |
-| Nothing can run the game | Neither the computer's cards nor the package's software driver (or the package does not carry it: Windows and macOS for now). | "Your graphics card cannot run the game": what to do, the button to the maker's driver page (NVIDIA, AMD or Intel, according to the card's `vendor`; all three if unknown), on Windows also "Open Windows Update", and "Check again". "Play" refuses with `no-gpu`. |
+| Nothing can run the game | Neither the computer's cards nor the package's software driver (or the package does not carry it: macOS for now). | "Your graphics card cannot run the game": what to do, the button to the maker's driver page (NVIDIA, AMD or Intel, according to the card's `vendor`; all three if unknown), on Windows also "Open Windows Update", and "Check again". Pressing "Play" still tries to start: the game writes the reason to its log and the launcher shows the end. |
 
 **`dwe-game --check-system`** (`packages/engine/rhi/include/dwe/rhi/system_check.hpp`) creates a Vulkan instance and picks a
 GPU with the same version (1.3) and the same features as `Device::create` (`renderer_requirements.hpp`), with no window,
@@ -296,14 +296,24 @@ those there are, to know which maker the driver is from. The branch that limits 
 distribution builds has to let `--check-system` through. The launcher gives it 20 s; with no answer (a game older than the
 option, which says "bad argument") it plays as before.
 
-**Compatibility mode (Linux).** The Linux package carries the Vulkan loader (`lib/libvulkan.so.1`, which the game
-looks for first) and Mesa's software Vulkan driver, lavapipe, in `lib/lavapipe/` ([Linux beta
-guide](../../guides/beta-linux.md)). If the first check finds no GPU that works, the launcher repeats
-`--check-system` with `VK_DRIVER_FILES` (and `VK_ICD_FILENAMES`) pointing to `lib/lavapipe/lvp_icd.json` and
-`LD_LIBRARY_PATH` to that folder; if it works that way, it starts the game with that same environment. It is slower (the
-processor draws it), but the game starts on a virtual machine or with an old or missing driver. The package's `dwe`
-script does the same for those who play without the launcher. A computer whose only Vulkan is a system software one
-(llvmpipe) also sees the notice, without switching drivers.
+**Compatibility mode.** The package carries the Vulkan loader (on Linux, `lib/libvulkan.so.1`, which the game
+looks for first; on Windows, `bin/vulkan-1.dll`) and Mesa's software Vulkan driver, lavapipe, in
+`lib/lavapipe/` ([Linux beta guide](../../guides/beta-linux.md), [Windows and macOS
+guide](../../guides/beta-windows-macos.md)). If the first check finds no GPU that works, the launcher repeats
+`--check-system` with `VK_DRIVER_FILES` (and `VK_ICD_FILENAMES`) pointing to lavapipe's manifest:
+`lvp_icd.json` on Linux, `lvp_icd.x86_64.json` on Windows. On Linux it also adds `LD_LIBRARY_PATH` with that
+folder; on Windows, `PATH`. If it works that way, it starts the game with that same environment. It is slower (the
+processor draws it), but the game starts on a virtual machine or with an old or missing driver. The package's
+scripts (`dwe` on Linux, `dwe.cmd` on Windows) do the same for those who play without the launcher. A computer
+whose only Vulkan is a system software one (llvmpipe) also sees the notice, without switching drivers.
+
+**Manual launch way outs.** In Settings › Advanced › Starting the game you can stop relying on that check: "Launch
+mode" picks Automatic (the one above), Without checking (start with the system's driver, no probe and no driver
+change) or Package software (use lavapipe without probing, to try it even when detection says otherwise). You can
+also write extra game arguments and environment variables (`NAME=value`, one per line, up to 32 of each); the
+player's ones are applied after the software driver's, so they can correct a wrongly detected `VK_DRIVER_FILES`.
+Lines that are not understood are ignored, never keep you from playing, and none of this is passed to the probe: it
+only changes how the game starts. It is saved in `settings.json`.
 
 **AppImage.** The AppImage's startup puts its folders ahead of `XDG_DATA_DIRS`, where the Vulkan loader
 looks for the computer's drivers; the launcher removes them from the environment of `--check-system` and of the game
@@ -313,13 +323,16 @@ looks for the computer's drivers; the launcher removes them from the environment
 Intel card without Mesa's Vulkan driver, this way the game plays with the card and not in compatibility mode. The AppImage cannot
 install anything and relies on compatibility mode.
 
-**Windows.** The installer brings WebView2 and the game package `vulkan-1.dll`; card drivers cannot
-be installed safely from the launcher, so without a card that works the screen above is shown.
-A lavapipe for Windows (to have compatibility mode there too) is still to be decided (below).
+**Windows.** The installer brings WebView2 and the game package `vulkan-1.dll`; card drivers cannot be installed
+safely from the launcher. The package carries lavapipe in `lib/lavapipe/`, so without a card that works the game
+plays in compatibility mode (slower) and the notice above is shown. Updating the card's driver (or Windows) brings
+the performance back. `dzn` is not shipped: the available build does not offer `descriptorIndexing` or
+`bufferDeviceAddress`, which the game requires even in that mode.
 
 `DWE_LAUNCHER_FREE_BYTES=<bytes>` fakes the free space, to see the space screens without filling a disk; with
 `VK_DRIVER_FILES=/does/not/exist.json` in the launcher's environment the first check finds no GPU (compatibility mode
-if the game carries `lib/lavapipe`, block screen if not).
+if the game carries `lib/lavapipe`; if not, notice and start attempt, or a direct start with the manual "Without
+checking" mode).
 
 ## Folders
 
@@ -631,11 +644,6 @@ starts the game with `--mods` pointing to it. The rules, the names and how the g
 The tests: `custom_images/tests.rs` and `the_players_images_are_mounted_while_they_are_on` in `launch.rs`.
 
 ## To do
-
-- Compatibility mode on Windows: vcpkg's `mesa` port has the `lavapipe` option, but it needs to download and
-  build all of Mesa and LLVM (sources of about 50 MB and 150 MB, several hours and more than 20 GB of building) and does not
-  support the static C runtime of the Windows triplet. The alternative is a prebuilt Mesa for
-  Windows (about 30 MB). Both are new downloads: the owner decides.
 
 - Test the launcher on a real Windows and everything on a Mac (the keyring, paths and each system's installer).
 - Test the add-ons on Windows (there the scheme is `http://dweaddon.localhost/`) and macOS.

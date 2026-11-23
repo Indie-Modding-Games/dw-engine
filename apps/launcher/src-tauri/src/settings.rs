@@ -3,6 +3,7 @@
 //! and the disc the content was read from. The beta key is never here (beta_key.rs).
 
 use serde::{Deserialize, Serialize};
+use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -28,9 +29,30 @@ pub const API_BASE_ENV: &str = "DWE_LAUNCHER_API";
 pub const LANGUAGES: [&str; 9] = ["en", "es", "pt", "fr", "de", "ru", "zh", "ko", "ja"];
 /// The language of whatever has no text in the player's (the custom images' guide, add-ons).
 pub const FALLBACK_LANGUAGE: &str = "en";
+/// How to start the game. "auto" probes the GPU and uses the package's software driver only when
+/// nothing else works (the default); "skip" starts as-is, without probing or changing drivers;
+/// "software" starts on the package's software driver, without probing. The last two are manual
+/// ways out of a wrong check: Play never refuses to start in any of them.
+pub const LAUNCH_MODES: [&str; 3] = ["auto", "skip", "software"];
+/// Limits for the manual launch options, so a saved settings.json cannot turn into a huge command
+/// line or environment. The page parses the same text; a bad line is ignored, never fatal.
+const MAX_EXTRA_ARGS: usize = 32;
+const MAX_EXTRA_ENV: usize = 32;
+const MAX_ARG_BYTES: usize = 256;
+const MAX_VALUE_BYTES: usize = 2048;
 
 pub fn is_language(code: &str) -> bool {
     LANGUAGES.contains(&code)
+}
+
+pub fn is_launch_mode(mode: &str) -> bool {
+    LAUNCH_MODES.contains(&mode)
+}
+
+fn valid_env_name(name: &str) -> bool {
+    let mut bytes = name.bytes();
+    bytes.next().is_some_and(|b| b.is_ascii_alphabetic() || b == b'_')
+        && bytes.all(|b| b.is_ascii_alphanumeric() || b == b'_')
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -69,6 +91,15 @@ pub struct Settings {
     /// The low-performance mode: starts the game with `--low-performance`, the lightest graphics
     /// preset (every heavy option off), for weak GPUs and old iGPUs.
     pub low_performance_mode: bool,
+    /// One of LAUNCH_MODES. Missing or unknown in an older settings.json: "auto".
+    pub launch_mode: String,
+    /// Extra game arguments, separated by whitespace, added after the launcher's own ones. Not
+    /// passed to the GPU probe: a flag the game accepts but the probe does not would make the
+    /// check look wrong.
+    pub extra_args: String,
+    /// Extra game environment, one NAME=value per line (# starts a comment). Lines the launcher
+    /// does not understand are ignored, so a wrong line never blocks the start.
+    pub extra_env: String,
     /// The beta key an older launcher kept in the system keyring was removed (lib.rs,
     /// forget_old_beta_key): done once, by the first launcher with the key built in.
     pub old_beta_key_removed: bool,
@@ -97,6 +128,9 @@ impl Default for Settings {
             disc_source: None,
             compatibility_mode: false,
             low_performance_mode: false,
+            launch_mode: "auto".into(),
+            extra_args: String::new(),
+            extra_env: String::new(),
             old_beta_key_removed: false,
         }
     }
@@ -153,6 +187,44 @@ impl Settings {
     pub fn uses_default_data_folder(&self) -> bool {
         self.data_folder.as_ref().is_none_or(|f| *f == default_data_folder())
     }
+
+    /// A hand-edited settings.json may hold anything; an unknown mode means the usual check.
+    pub fn launch_mode_or_default(&self) -> &str {
+        if is_launch_mode(&self.launch_mode) { &self.launch_mode } else { "auto" }
+    }
+
+    /// The manual arguments, split on whitespace. A command built by Rust gets these as separate
+    /// arguments: no shell interprets them, so no quoting or shell escape is needed (or supported).
+    pub fn game_args(&self) -> Vec<String> {
+        self.extra_args
+            .split_whitespace()
+            .filter(|arg| arg.len() <= MAX_ARG_BYTES)
+            .take(MAX_EXTRA_ARGS)
+            .map(str::to_string)
+            .collect()
+    }
+
+    /// The manual environment variables. The launcher's own (software driver) variables go first
+    /// in play(), so these win: a player can name a driver the auto-detection did not find.
+    pub fn game_env(&self) -> Vec<(OsString, OsString)> {
+        self.extra_env
+            .lines()
+            .take(MAX_EXTRA_ENV + 1)
+            .filter_map(|line| {
+                let line = line.trim();
+                if line.is_empty() || line.starts_with('#') {
+                    return None;
+                }
+                let (name, value) = line.split_once('=')?;
+                let (name, value) = (name.trim(), value.trim());
+                if !valid_env_name(name) || value.len() > MAX_VALUE_BYTES {
+                    return None;
+                }
+                Some((OsString::from(name), OsString::from(value)))
+            })
+            .take(MAX_EXTRA_ENV)
+            .collect()
+    }
 }
 
 /// The launcher's default data folder. On Linux and macOS it is the game's own
@@ -204,6 +276,39 @@ mod tests {
         let saved = Settings { auto_update_game: false, last_check: Some(LastCheck::checked(5, None, None)), ..Settings::default() };
         saved.save_to(&file).unwrap();
         assert_eq!(Settings::load_from(&file), saved);
+    }
+
+    #[test]
+    fn manual_launch_options_default_to_auto_and_ignore_bad_lines() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("settings.json");
+        // A settings.json from before these options existed, and one edited by hand with a mode we
+        // do not know: both start the game the usual way.
+        assert_eq!(Settings::load_from(&file).launch_mode_or_default(), "auto");
+        fs::write(&file, r#"{"launch_mode":"wrong"}"#).unwrap();
+        assert_eq!(Settings::load_from(&file).launch_mode_or_default(), "auto");
+
+        let saved = Settings {
+            launch_mode: "skip".into(),
+            extra_args: "  --compatible   --foo  ".into(),
+            extra_env: "# a comment\nVK_DRIVER_FILES=/x/y.json\nBAD-NAME=1\nNOEQUAL\nGOOD= a = b \n".into(),
+            ..Settings::default()
+        };
+        saved.save_to(&file).unwrap();
+        let read = Settings::load_from(&file);
+        assert_eq!(read.launch_mode_or_default(), "skip");
+        assert_eq!(read.game_args(), ["--compatible", "--foo"]);
+        let env = read.game_env();
+        assert_eq!(env.len(), 2, "{env:?}");
+        assert_eq!(env[0].0.to_string_lossy(), "VK_DRIVER_FILES");
+        assert_eq!(env[0].1.to_string_lossy(), "/x/y.json");
+        assert_eq!(env[1].0.to_string_lossy(), "GOOD");
+        assert_eq!(env[1].1.to_string_lossy(), "a = b");
+
+        // Too many arguments or variables do not fail the start; they are simply left out.
+        let many = Settings { extra_args: "x ".repeat(40), extra_env: "A=1\n".repeat(40), ..Settings::default() };
+        assert_eq!(many.game_args().len(), 32);
+        assert_eq!(many.game_env().len(), 32);
     }
 
     #[test]

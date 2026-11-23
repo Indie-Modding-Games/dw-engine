@@ -32,7 +32,7 @@ scripts/package_windows.sh --out <folder>
 
 It builds, in the development container, from Linux, the `windows-cross-package` preset (clang-cl with the static
 CRT, release, `DWE_PACKAGE`) and leaves `dwe-beta-<version>-<commit>-windows-x86_64.tar.xz` with the same shape as the
-Linux one: `bin/dwe-game.exe`, `bin/dwx.exe`, `bin/vulkan-1.dll`, `packs/`, `licenses/`, `LICENSE`,
+Linux one: `bin/dwe-game.exe`, `bin/dwx.exe`, `bin/vulkan-1.dll`, `lib/lavapipe/`, `packs/`, `licenses/`, `LICENSE`,
 `THIRD_PARTY_NOTICES.txt`, `README.md`, `VERSION`, `EXTRACTOR_VERSION` and `dwe.cmd` to start it without a launcher.
 The `.pdb` files are kept apart, for crash reports.
 
@@ -40,8 +40,12 @@ The `.pdb` files are kept apart, for crash reports.
   cooks them with the `dwx` from the `linux-clang-package` preset (it builds it if needed); cooking gives the same
   bytes on both systems within the scope of [ADR 0017](../adr/0017-cooking-and-pak-files.md#determinism).
 - The CRT and the C++ standard library are inside the programs (`/MT`), so no redistributable needs to be installed.
-  The only DLL that is shipped is the Vulkan loader; the script reads the imports of each program
+  In `bin/` the only DLL that is shipped is the Vulkan loader; the script reads its imports
   (`llvm-readobj --coff-imports`) and refuses to package if any DLL is neither in `bin/` nor part of Windows.
+- `lib/lavapipe/` carries a fixed build of lavapipe (Mesa 26.3.1, checked by SHA256) for when no card works: the
+  launcher and `dwe.cmd` check the computer and switch to that driver only then. The script downloads the `7z` and
+  unpacks it with `7z` (`p7zip-full` in the development image). `dzn` is not included, because its current build
+  offers neither `descriptorIndexing` nor `bufferDeviceAddress`.
 - The game in the package is a windowed program (`/SUBSYSTEM:WINDOWS`): it does not open a console next to it. Its
   output goes to the log the launcher gives it (`<data>\logs\game.log`). `dwx.exe` is still a console program, and the
   launcher runs it without a window.

@@ -952,7 +952,32 @@ function registerBuiltIns() {
     );
   });
 
-  section("logs", "advanced", 0, "s.logsTitle", (box) => {
+  section("launch", "advanced", 0, "s.launchTitle", (box) => {
+    const s = state.status;
+    if (!s) return;
+    const option = (mode) => el("option", { value: mode, text: t(`s.launchMode${mode[0].toUpperCase()}${mode.slice(1)}`) });
+    const mode = el("select", { id: "launchModeSelect", onchange: (e) => settingCall(() => api.setLaunchMode(e.target.value)) }, ...["auto", "skip", "software"].map(option));
+    mode.value = s.launch_mode || "auto";
+    const args = el("input", {
+      type: "text", id: "extraArgs", value: s.extra_args ?? "", spellcheck: "false", placeholder: t("s.launchArgsHint"),
+      onchange: (e) => settingCall(() => api.setExtraArgs(e.target.value)),
+    });
+    const env = el("textarea", {
+      id: "extraEnv", rows: "4", spellcheck: "false", placeholder: t("s.launchEnvHint"),
+      onchange: (e) => settingCall(() => api.setExtraEnv(e.target.value)),
+    });
+    env.value = s.extra_env ?? "";
+    add(box,
+      el("p", { text: t("s.launchBody") }),
+      el("div", { class: "row between" }, el("label", { for: "launchModeSelect", class: "row-label" }, el("span", { text: t("s.launchMode") })), mode),
+      el("label", { class: "field-label", for: "extraArgs", text: t("s.launchArgs") }),
+      args,
+      el("label", { class: "field-label", for: "extraEnv", text: t("s.launchEnv") }),
+      env,
+    );
+  });
+
+  section("logs", "advanced", 1, "s.logsTitle", (box) => {
     add(box,
       el("p", { text: t("s.logsBody") }),
       el("div", { class: "row" }, el("button", { class: "button", type: "button", text: t("s.logsOpen"), onclick: () => settingCall(() => api.openLogs().then(api.status)) })),

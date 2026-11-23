@@ -95,6 +95,11 @@ for program in dwe-game dwx; do
 done
 cp "$build_dir/vcpkg_installed/$triplet/bin/vulkan-1.dll" "$stage/bin/"
 
+# As on Linux, the package carries a software Vulkan driver for a computer whose GPU cannot run the
+# game (the launcher turns it on only then). A fixed, checksummed build is unpacked here; 7z comes
+# from the development image (p7zip-full).
+"$root/scripts/dev.sh" shell -c "scripts/package/software_vulkan_windows.sh '$stage'"
+
 # Every DLL a program or a shipped DLL imports is either shipped in bin/ or part of Windows.
 # The image has llvm-readobj under its LLVM version's folder only.
 # shellcheck disable=SC2016 # it expands in the container
@@ -130,8 +135,9 @@ done
 source "$root/scripts/package/no_disc_data.sh"
 package_no_disc_data "$stage" package_windows || exit 1
 
-# The player's way in without the launcher.
-printf '@echo off\r\nstart "" "%%~dp0bin\\dwe-game.exe" %%*\r\n' >"$stage/dwe.cmd"
+# The player's way in without the launcher. Like the Linux `dwe` script, it tries the package's
+# software driver when no graphics card can run the game.
+printf '@echo off\r\nsetlocal\r\n"%%~dp0bin\\dwe-game.exe" --check-system >nul 2>nul\r\nif errorlevel 1 (\r\n  echo dwe: no GPU here can run the game; using the software renderer ^(slow^).\r\n  echo dwe: updating the graphics driver may fix it.\r\n  set "VK_DRIVER_FILES=%%~dp0lib\\lavapipe\\lvp_icd.x86_64.json"\r\n  set "VK_ICD_FILENAMES=%%~dp0lib\\lavapipe\\lvp_icd.x86_64.json"\r\n  set "PATH=%%~dp0lib\\lavapipe;%%PATH%%"\r\n)\r\nstart "" "%%~dp0bin\\dwe-game.exe" %%*\r\n' >"$stage/dwe.cmd"
 cp "$root/scripts/package/README-windows.md" "$stage/README.md"
 printf '%s\n' "$commit" >"$stage/VERSION"
 sed -n 's/^inline constexpr int ExtractorVersion = \([0-9]*\);.*/\1/p' \

@@ -50,6 +50,11 @@ pub struct Status {
     compatibility_mode: bool,
     /// The low-performance mode: the game starts with --low-performance (launch.rs).
     low_performance_mode: bool,
+    /// Manual launch options (settings.rs): "auto", "skip" or "software".
+    launch_mode: String,
+    /// The player's extra game arguments and environment, as written in the settings page.
+    extra_args: String,
+    extra_env: String,
     /// A new launcher installed in this session: it runs after a restart.
     launcher_ready: Option<String>,
     /// This copy can replace itself (auto_update::launcher_replaceable).
@@ -160,6 +165,9 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
         last_check: settings.last_check.clone(),
         compatibility_mode: settings.compatibility_mode,
         low_performance_mode: settings.low_performance_mode,
+        launch_mode: settings.launch_mode_or_default().to_string(),
+        extra_args: settings.extra_args.clone(),
+        extra_env: settings.extra_env.clone(),
         launcher_ready: state.launcher_ready.lock().unwrap().clone(),
         launcher_replaceable: auto_update::launcher_replaceable(),
         has_previous: store.has_previous(),
@@ -615,15 +623,18 @@ pub fn open_driver_page(app: AppHandle, page: String) -> Result<()> {
 }
 
 /// Starts the game, hides the launcher while it runs and shows it again when it ends, with the
-/// end of the game's log when it failed. A computer whose GPUs cannot run the game starts it on
-/// the package's software driver; one where nothing can is refused (the page says what to do).
+/// end of the game's log when it failed. The usual start probes the GPU and falls back to the
+/// package's software driver when nothing else works; the manual modes in settings.rs skip that
+/// decision. Neither a failed probe nor a wrong detection refuses the start: the game writes the
+/// reason to its own log, whose end the launcher then shows.
 #[tauri::command]
 pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     if state.game_running.load(Ordering::SeqCst) {
         return Ok(());
     }
-    let (data, own, graphics_flags) = {
+    let (data, own, graphics_flags, launch_mode, extra_args, extra_env) = {
         let settings = state.settings.lock().unwrap();
+        let launch_mode = settings.launch_mode_or_default().to_string();
         (
             settings.data_folder(),
             settings.uses_default_data_folder(),
@@ -631,6 +642,9 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
                 compatibility: settings.compatibility_mode,
                 low_performance: settings.low_performance_mode,
             },
+            launch_mode,
+            settings.game_args(),
+            settings.game_env(),
         )
     };
     let game = GameStore::new(&data).current().ok_or_else(|| Failure::new(code::NO_GAME, ""))?;
@@ -639,26 +653,44 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
         return Err(Failure::new(code::MISSING_FILE, content.display().to_string()));
     }
     require_space(&state, system_check::PLAY_BYTES)?;
-    let graphics = graphics_of(&state, &game, false, graphics_flags.compatibility).await;
+    let graphics = if launch_mode == "auto" {
+        graphics_of(&state, &game, false, graphics_flags.compatibility).await
+    } else {
+        // A wrong "no GPU" answer must never keep the player from starting. In the manual modes
+        // there is no probe at all, so nothing can decide for them.
+        log_line!("launch mode {launch_mode}: skipping the GPU check");
+        GraphicsCheck::unknown()
+    };
+    let GraphicsCheck { graphics: kind, env: graphics_env, .. } = graphics;
     // The launcher never refuses to play: even when the check found no GPU that can run the
     // renderer (docs/modules/apps/launcher.md), the game still starts and fails on its own, writing
     // the reason and the GPU report (rhi/gpu_report.cpp) to its log, whose end the launcher then
     // shows with the end-of-game notice. A silent "you cannot play" here would hide exactly the
     // information the player needs (an old card is usually a driver or compatibility-mode fix).
-    if graphics.graphics == Graphics::Blocked {
+    if kind == Graphics::Blocked {
         log_line!("no GPU can run the game: starting it anyway to see what the game reports");
     }
     if state.game_running.swap(true, Ordering::SeqCst) {
         return Ok(());
     }
-    let mut child = match launch::start(&game, &data, own, &graphics.env, graphics_flags) {
+    let mut env = if launch_mode == "software" {
+        system_check::software_env_for(&game)
+    } else {
+        graphics_env
+    };
+    // The player's variables come last, so they win over the launcher's software driver ones.
+    env.extend(extra_env);
+    let mut child = match launch::start(&game, &data, own, &env, graphics_flags, &extra_args) {
         Ok(child) => child,
         Err(failure) => {
             state.game_running.store(false, Ordering::SeqCst);
             return Err(failure);
         }
     };
-    if graphics.graphics == Graphics::Fallback {
+    if launch_mode == "software" {
+        log_line!("launch mode software: starting it on the package's software driver");
+    }
+    if kind == Graphics::Fallback {
         log_line!("no GPU can run the game: starting it on the software driver");
     }
     log_line!("the game {} started", game.version);
@@ -760,6 +792,47 @@ pub fn set_low_performance_mode(app: AppHandle, state: State<'_, AppState>, enab
         settings.save()?;
     }
     log_line!("low-performance mode: {enabled}");
+    Ok(status_of(&app, &state))
+}
+
+/// The manual launch mode (settings.rs): "auto" checks the GPU as before, "skip" starts without
+/// checking and without changing drivers, "software" starts on the package's driver. Unknown
+/// values are refused, so a saved settings.json edited by hand cannot select anything else.
+#[tauri::command]
+pub fn set_launch_mode(app: AppHandle, state: State<'_, AppState>, mode: String) -> Result<Status> {
+    if !settings::is_launch_mode(&mode) {
+        return Err(Failure::new(code::IO, mode));
+    }
+    {
+        let mut settings = state.settings.lock().unwrap();
+        settings.launch_mode = mode.clone();
+        settings.save()?;
+    }
+    log_line!("launch mode: {mode}");
+    Ok(status_of(&app, &state))
+}
+
+/// The player's extra arguments and environment: saved as written. The launcher parses them on
+/// every start, ignoring bad lines (settings.rs), so a typo here never keeps Play from working.
+#[tauri::command]
+pub fn set_extra_args(app: AppHandle, state: State<'_, AppState>, args: String) -> Result<Status> {
+    {
+        let mut settings = state.settings.lock().unwrap();
+        settings.extra_args = args;
+        settings.save()?;
+    }
+    log_line!("the game's manual arguments were saved");
+    Ok(status_of(&app, &state))
+}
+
+#[tauri::command]
+pub fn set_extra_env(app: AppHandle, state: State<'_, AppState>, env: String) -> Result<Status> {
+    {
+        let mut settings = state.settings.lock().unwrap();
+        settings.extra_env = env;
+        settings.save()?;
+    }
+    log_line!("the game's manual environment was saved");
     Ok(status_of(&app, &state))
 }
 

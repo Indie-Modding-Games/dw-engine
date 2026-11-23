@@ -23,9 +23,10 @@ pub const PLAY_BYTES: u64 = 200 * 1024 * 1024;
 /// The probe makes a Vulkan instance and quits; a driver that hangs longer counts as none.
 pub const PROBE_TIMEOUT: Duration = Duration::from_secs(20);
 pub const PROBE_FLAG: &str = "--check-system";
-/// The software driver of a Linux package, from the game's folder.
+/// The software driver a package brings, from the game's folder (Linux and Windows).
 pub const SOFTWARE_DRIVER: &str = "lib/lavapipe";
-const SOFTWARE_MANIFEST: &str = "lvp_icd.json";
+/// Mesa names the manifest differently on each system.
+const SOFTWARE_MANIFESTS: [&str; 2] = ["lvp_icd.json", "lvp_icd.x86_64.json"];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -156,27 +157,48 @@ pub fn driver_page(vendor: Vendor) -> Option<&'static str> {
 /// Windows' own updates, which also bring GPU drivers.
 pub const WINDOWS_UPDATE: &str = "ms-settings:windowsupdate";
 
-/// The package's software driver manifest, when this game has one (Linux packages).
+/// The package's software driver manifest, when this game has one (Linux and Windows packages).
 pub fn software_manifest(game: &Game) -> Option<PathBuf> {
-    let manifest = game.dir.join(SOFTWARE_DRIVER).join(SOFTWARE_MANIFEST);
-    manifest.is_file().then_some(manifest)
+    let folder = game.dir.join(SOFTWARE_DRIVER);
+    SOFTWARE_MANIFESTS.iter().map(|name| folder.join(name)).find(|manifest| manifest.is_file())
+}
+
+/// The software driver's environment for a game that has one, empty when the package has no driver
+/// (a game made before the fallback, or a non-Windows non-Linux build). Used by the manual "software"
+/// launch mode, which does not probe first.
+pub fn software_env_for(game: &Game) -> Vec<(OsString, OsString)> {
+    software_manifest(game).as_deref().map(software_env).unwrap_or_default()
 }
 
 /// The environment that makes the game use only the package's software driver: the loader reads
-/// VK_DRIVER_FILES (VK_ICD_FILENAMES before 1.3.207), and the driver finds the libraries it
-/// brings through LD_LIBRARY_PATH.
+/// VK_DRIVER_FILES (VK_ICD_FILENAMES before 1.3.207). Linux needs LD_LIBRARY_PATH for the driver's
+/// libraries; on Windows the manifest names the DLL next to it, and PATH is added as well for any
+/// library that DLL loads.
 pub fn software_env(manifest: &Path) -> Vec<(OsString, OsString)> {
     let folder = manifest.parent().unwrap_or(manifest);
-    let mut libraries = OsString::from(folder.as_os_str());
-    if let Some(previous) = std::env::var_os("LD_LIBRARY_PATH").filter(|p| !p.is_empty()) {
-        libraries.push(":");
-        libraries.push(previous);
-    }
-    vec![
+    let mut env: Vec<(OsString, OsString)> = vec![
         ("VK_DRIVER_FILES".into(), manifest.as_os_str().to_owned()),
         ("VK_ICD_FILENAMES".into(), manifest.as_os_str().to_owned()),
-        ("LD_LIBRARY_PATH".into(), libraries),
-    ]
+    ];
+    #[cfg(unix)]
+    {
+        let mut libraries = OsString::from(folder.as_os_str());
+        if let Some(previous) = std::env::var_os("LD_LIBRARY_PATH").filter(|p| !p.is_empty()) {
+            libraries.push(":");
+            libraries.push(previous);
+        }
+        env.push(("LD_LIBRARY_PATH".into(), libraries));
+    }
+    #[cfg(windows)]
+    {
+        let mut path = OsString::from(folder.as_os_str());
+        if let Some(previous) = std::env::var_os("PATH").filter(|p| !p.is_empty()) {
+            path.push(";");
+            path.push(previous);
+        }
+        env.push(("PATH".into(), path));
+    }
+    env
 }
 
 /// XDG_DATA_DIRS without the AppImage's own folders (`appdir`): the AppImage's start script puts
@@ -480,12 +502,24 @@ mod tests {
         assert!(software_manifest(&game).is_none());
         let folder = dir.path().join(SOFTWARE_DRIVER);
         std::fs::create_dir_all(&folder).unwrap();
-        std::fs::write(folder.join(SOFTWARE_MANIFEST), "{}").unwrap();
+        let linux = folder.join(SOFTWARE_MANIFESTS[0]);
+        std::fs::write(&linux, "{}").unwrap();
         let manifest = software_manifest(&game).unwrap();
+        assert_eq!(manifest, linux);
         let env = software_env(&manifest);
         assert_eq!(env[0], ("VK_DRIVER_FILES".into(), manifest.clone().into_os_string()));
         assert_eq!(env[1].1, manifest.into_os_string());
+        #[cfg(unix)]
+        assert_eq!(env[2].0, "LD_LIBRARY_PATH");
+        #[cfg(windows)]
+        assert_eq!(env[2].0, "PATH");
         assert!(env[2].1.to_string_lossy().starts_with(&*folder.to_string_lossy()));
+
+        // Windows packages use Mesa's x86_64 manifest name instead.
+        std::fs::remove_file(&linux).unwrap();
+        let windows = folder.join(SOFTWARE_MANIFESTS[1]);
+        std::fs::write(&windows, "{}").unwrap();
+        assert_eq!(software_manifest(&game), Some(windows));
     }
 
     #[cfg(unix)]
