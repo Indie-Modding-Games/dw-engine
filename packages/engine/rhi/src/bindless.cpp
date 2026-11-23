@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <format>
 #include <utility>
 
@@ -16,6 +17,26 @@ constexpr std::uint32_t SamplerBinding = 1;
 
 // Anisotropy of the linear samplers, clamped to the GPU's limit.
 constexpr float MaxAnisotropy = 16.0F;
+// Anisotropic sampling with VK_LOD_CLAMP_NONE faults on some RDNA drivers. Our textures have far
+// fewer levels than this, so clamping the upper LOD changes no image and avoids the fault.
+constexpr float MaxAnisotropicLod = 24.0F;
+
+// Points a texture descriptor at an image view without needing the table: the deferred releases
+// run after frames finish, possibly after the table itself is gone.
+void writeView(VkDevice device, VkDescriptorSet set, std::uint32_t slot, VkImageView view) {
+  const VkDescriptorImageInfo imageInfo{.sampler = VK_NULL_HANDLE,
+                                        .imageView = view,
+                                        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+  VkWriteDescriptorSet descriptor{};
+  descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  descriptor.dstSet = set;
+  descriptor.dstBinding = TextureBinding;
+  descriptor.dstArrayElement = slot;
+  descriptor.descriptorCount = 1;
+  descriptor.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+  descriptor.pImageInfo = &imageInfo;
+  vkUpdateDescriptorSets(device, 1, &descriptor, 0, nullptr);
+}
 
 struct SamplerSettings {
   VkFilter filter;
@@ -74,7 +95,7 @@ core::Result<std::unique_ptr<BindlessTable>> BindlessTable::create(Device& devic
     samplerInfo.addressModeU = SamplerTable[kind].address;
     samplerInfo.addressModeV = SamplerTable[kind].address;
     samplerInfo.addressModeW = SamplerTable[kind].address;
-    samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
+    samplerInfo.maxLod = linear ? MaxAnisotropicLod : VK_LOD_CLAMP_NONE;
     if (gpuCheck("vkCreateSampler", vkCreateSampler(gpu.device, &samplerInfo, nullptr,
                                                     &table->samplers_[kind])) != VK_SUCCESS) {
       return core::fail("could not create the samplers of the bindless table");
@@ -143,6 +164,18 @@ core::Result<std::unique_ptr<BindlessTable>> BindlessTable::create(Device& devic
     return core::fail("could not allocate the bindless table");
   }
 
+  // Pre-fill every slot with a live white texel. A shader that reads an unregistered or stale
+  // id then samples defined pixels instead of a descriptor whose image may have been destroyed.
+  constexpr std::array WhiteTexel{std::byte{255}, std::byte{255}, std::byte{255}, std::byte{255}};
+  auto fallback = Image::createTexture(device, {.width = 1, .height = 1}, WhiteTexel);
+  if (!fallback) {
+    return std::unexpected{fallback.error()};
+  }
+  table->fallback_.emplace(std::move(*fallback));
+  for (std::uint32_t slot = 0; slot < capacity; ++slot) {
+    writeView(gpu.device, table->set_, slot, table->fallback_->view());
+  }
+
   const VkPushConstantRange pushConstants{
       .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS, .offset = 0, .size = PushConstantBytes};
   const VkPipelineLayoutCreateInfo pipelineLayoutInfo{
@@ -196,18 +229,7 @@ bool BindlessTable::replace(TextureId texture, const Image& image) {
 }
 
 void BindlessTable::write(std::uint32_t slot, const Image& image) {
-  const VkDescriptorImageInfo imageInfo{.sampler = VK_NULL_HANDLE,
-                                        .imageView = image.view(),
-                                        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
-  VkWriteDescriptorSet descriptor{};
-  descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  descriptor.dstSet = set_;
-  descriptor.dstBinding = TextureBinding;
-  descriptor.dstArrayElement = slot;
-  descriptor.descriptorCount = 1;
-  descriptor.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-  descriptor.pImageInfo = &imageInfo;
-  vkUpdateDescriptorSets(device_->nativeHandles().device, 1, &descriptor, 0, nullptr);
+  writeView(device_->nativeHandles().device, set_, slot, image.view());
 }
 
 bool BindlessTable::remove(TextureId texture) {
@@ -217,10 +239,17 @@ bool BindlessTable::remove(TextureId texture) {
     return false;
   }
   // Ids of the removed texture stop matching at once; its slot is reused only after the frames in
-  // flight.
+  // flight. In the same deferred step, point the slot back at the fallback: a driver that reads a
+  // stale id while the old image is being destroyed then samples a live view, not freed memory.
   live_[texture.index] = false;
   ++generations_[texture.index];
-  device_->destroyLater([slots = slots_, index = texture.index] { slots->release(index); });
+  const VkDevice gpu = device_->nativeHandles().device;
+  const VkDescriptorSet set = set_;
+  const VkImageView fallbackView = fallback_->view();
+  device_->destroyLater([slots = slots_, index = texture.index, gpu, set, fallbackView] {
+    writeView(gpu, set, index, fallbackView);
+    slots->release(index);
+  });
   return true;
 }
 
