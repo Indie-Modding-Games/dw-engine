@@ -38,3 +38,5 @@ __pycache__/
 /apps/launcher/src-tauri/notices/
 # Tauri's generated schemas
 /apps/launcher/src-tauri/gen/
+# Local Cargo build output when building the launcher directly (launcher.sh uses CARGO_TARGET_DIR)
+/apps/launcher/src-tauri/target/
