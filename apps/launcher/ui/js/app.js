@@ -232,10 +232,20 @@ function requirementNotice() {
   }
   const graphics = req.graphics;
   if (graphics?.graphics === "blocked") {
+    const base = t(req.os === "linux" ? "req.blockedBodyLinux" : "req.blockedBody", { gpu: gpuName(graphics) });
+    // The launcher never refuses to play: pressing Play still starts the game, and the game writes
+    // to its log what it could not find. When the relaxed Vulkan floor would pass, turning the
+    // compatibility mode on and checking again is the primary fix, above "update the driver".
+    const rescue = graphics?.compat_rescues && !s.compatibility_mode;
     return {
       title: t("req.blockedTitle"),
-      body: t(req.os === "linux" ? "req.blockedBodyLinux" : "req.blockedBody", { gpu: gpuName(graphics) }),
-      actions: el("div", { class: "row" }, againButton(true), ...driverButtons(req)),
+      body: rescue ? `${base} ${t("req.compatRescueHint")}` : base,
+      actions: el("div", { class: "row" }, ...(rescue
+        ? [
+            el("button", { class: "button primary", type: "button", text: t("req.compatModeTitle"), onclick: enableCompatibility }),
+            againButton(),
+          ]
+        : [againButton(true)]), ...driverButtons(req)),
     };
   }
   if ((graphics?.graphics === "fallback" || graphics?.graphics === "software") && !state.compatSeen) {
