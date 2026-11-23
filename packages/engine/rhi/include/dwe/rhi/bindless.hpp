@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace dwe::rhi {
@@ -86,6 +87,10 @@ private:
   // Points the shaders' texture `slot` at the image.
   void write(std::uint32_t slot, const Image& image);
 
+  // A white texel every unregistered slot points at, so a shader that reads a stale TextureId
+  // samples a live image instead of a descriptor the driver may fault on (some AMD and Intel
+  // drivers). Declared first: its view is retired after the table's own resources.
+  std::optional<Image> fallback_;
   Device* device_;
   VkDescriptorSetLayout setLayout_ = VK_NULL_HANDLE;
   VkDescriptorPool pool_ = VK_NULL_HANDLE;
