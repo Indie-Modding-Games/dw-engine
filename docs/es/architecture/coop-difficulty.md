@@ -26,7 +26,7 @@ los rulesets de dwe (`content/packs/game/rules/original/battle.yaml`), que lo po
   que llama a `START_BATTLE` → `startBattle` → `handleBattleStart` → `BTL_battleMain`.
 - **Las estadísticas del enemigo salen de la colocación, no de la especie.** HP, MP, Atq, Def, Vel, Int, técnicas, pesos
   de las técnicas (`movesPrio`) y la recompensa de bits son por colocación; solo el objeto que suelta y su probabilidad
-  salen de la tabla de especies. dwe los lee igual (`enemyFromMap` en `packages/game/battle/src/combatant.cpp`).
+  salen de la tabla de especies. dwe los lee igual (`enemyFromMap` en `packages/game/battle/src/core/combatant.cpp`).
 - **La curva es regional, no adaptativa.** Nada escala con el nivel ni el progreso del compañero. Mediana del Atq enemigo
   por región: Bosque Nativo 150, Sabana Engranaje 340, Pueblo Factorial 530, Mt. Infinity 680, Back Dimension 700
   (HP 3400–6100).

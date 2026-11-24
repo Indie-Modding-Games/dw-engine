@@ -25,7 +25,7 @@ from dwe's rulesets (`content/packs/game/rules/original/battle.yaml`), which por
   `START_BATTLE` → `startBattle` → `handleBattleStart` → `BTL_battleMain`.
 - **Enemy stats come from the placement, not the species.** HP, MP, Off, Def, Speed, Brains, moves, move weights
   (`movesPrio`) and the bits reward are per placement; only the drop item and its chance come from the species table.
-  dwe reads them the same way (`enemyFromMap` in `packages/game/battle/src/combatant.cpp`).
+  dwe reads them the same way (`enemyFromMap` in `packages/game/battle/src/core/combatant.cpp`).
 - **The curve is regional, not adaptive.** Nothing scales with the partner's level or progress. Median enemy Off by
   region: Native Forest 150, Gear Savanna 340, Factorial Town 530, Mt. Infinity 680, Back Dimension 700 (HP 3400–6100).
 - **Group size by join roll.** The touched enemy always fights; every other enemy on screen joins with a chance from a

@@ -1264,61 +1264,78 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The Folder battle (not in the original): the partner's defense bar, its active order with the phase's progress and
-   the orders that wait, in a plate at the bottom left. */
+   The Folder battle: the charge box's navy panel with its cyan line at the bottom left, as far from the edges as the
+   partner's panel is from the right. "Guard" in the accent yellow and the active order behind the yellow bar of the
+   command's name; the foe and the waiting orders in the small font. The bars sit in the charge bar's sunk well: the
+   guard cyan, light red once it breaks, the phase yellow. */
 #folder-panel {
-	position: absolute;
-	left: 16dp;
-	bottom: 16dp;
-	width: 300dp;
-	padding: 6dp 10dp;
-	font-size: 18dp;
-	color: #ffffff;
-	background-color: #000000b0;
-	border-radius: 8dp;
+	left: 30dp;
+	bottom: 30dp;
+	box-sizing: border-box;
+	width: 432dp;
+	padding: 9dp 15dp;
+	border: 2dp #72c7ff;
+	border-radius: 0;
+	background-color: #0b1c2df2;
+	decorator: vertical-gradient(#153653 #0a1929);
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #d8f1ff;
 }
 
-#folder-panel.hidden,
-#folder-panel .hidden {
-	display: none;
+/* A cup match's strip stands at the bottom left (#commands.match, top 504dp): the box goes up over its name. */
+#commands.match ~ #folder-panel {
+	bottom: 228dp;
 }
 
-#folder-panel .folder-row {
-	display: block;
+.folder-row {
+	margin-bottom: 3dp;
 }
 
-#folder-panel .folder-label {
-	display: inline-block;
-	width: 80dp;
+.folder-label {
+	margin-right: 12dp;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 33dp;
+	color: #ffe64a;
 }
 
-#folder-panel .folder-track {
-	display: inline-block;
-	width: 190dp;
-	height: 10dp;
-	background-color: #ffffff30;
+.folder-track {
+	height: 9dp;
+	border: 3dp #071522;
+	border-right-color: #72c7ff;
+	border-bottom-color: #72c7ff;
+	border-radius: 0;
+	background-color: #071522;
 }
 
-#folder-panel #folder-phase {
-	display: block;
-	width: 280dp;
-	height: 6dp;
-	margin-top: 2dp;
+.folder-fill {
+	border-radius: 0;
 }
 
-#folder-panel .folder-fill {
-	height: 100%;
-	background-color: #f0c040;
+#folder-bar-fill { background-color: #36bce8; }
+#folder-bar-fill.broken { background-color: #ff7775; }
+#folder-phase-fill { background-color: #ffe64a; }
+
+#folder-phase {
+	height: 3dp;
+	margin: 3dp 0 6dp 0;
 }
 
-#folder-panel #folder-bar-fill.broken {
-	background-color: #e04040;
+#folder-active {
+	padding-left: 9dp;
+	border-left: 3dp #ffd51e;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 33dp;
 }
 
-#folder-panel #folder-broken {
-	color: #ff6060;
+#folder-broken {
+	color: #ff7775;
 }
 
-#folder-panel p {
-	margin: 2dp 0;
+#folder-target,
+#folder-queue {
+	color: #a8c7d9;
 }

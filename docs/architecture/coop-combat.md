@@ -56,7 +56,7 @@ their own.
 
 ### 1.4 Targeting
 
-- **Enemies target only the partner** (dwe: `selectTarget` in `ai_ticks.cpp`, default `PartnerId`). One exception: an
+- **Enemies target only the partner** (dwe: `selectTarget` in `targets.cpp`, default `PartnerId`). One exception: an
   enemy hit by another enemy's area move turns on it 71 % of the time.
 - **The partner** (`BTL_selectFighterTarget`, dwe `original_partner_ai.cpp` and `targeting.cpp`): with Brains ≥ 300 it
   prefers an enemy with a status; ≥ 150 the weakest (HP and a Def and type score) and keeps it; below, the nearest.

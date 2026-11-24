@@ -429,61 +429,67 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The Folder battle (not in the original): the partner's defense bar, its active order with the phase's progress and
-   the orders that wait, in a plate at the bottom left. */
+   The Folder battle (not in the concept): the half window with brackets at the stage's bottom left, 40 and 24 from its
+   edges as the menu button. "Guard" in gold and the active order in the body font; the foe and the waiting orders in
+   the small font, muted. The bars are the line gauge's (fishing_hud): a sunk track in a blue rim with the gold fill,
+   red once the guard breaks; the phase's in the MP blue. */
 #folder-panel {
-	position: absolute;
-	left: 16dp;
-	bottom: 16dp;
-	width: 300dp;
-	padding: 6dp 10dp;
-	font-size: 18dp;
-	color: #ffffff;
-	background-color: #000000b0;
-	border-radius: 8dp;
+	left: 40dp;
+	bottom: 24dp;
+	width: 480dp;
+	padding: 18dp 24dp;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #f2f0e1;
 }
 
-#folder-panel.hidden,
-#folder-panel .hidden {
-	display: none;
+.folder-row {
+	margin-bottom: 4dp;
 }
 
-#folder-panel .folder-row {
-	display: block;
+.folder-label {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 36dp;
+	color: #efc63c;
 }
 
-#folder-panel .folder-label {
-	display: inline-block;
-	width: 80dp;
+.folder-track {
+	height: 8dp;
+	border: 2dp #4a79a8;
+	background-color: #0b1424;
 }
 
-#folder-panel .folder-track {
-	display: inline-block;
-	width: 190dp;
-	height: 10dp;
-	background-color: #ffffff30;
+#folder-bar-fill,
+#folder-bar-fill.broken,
+#folder-phase-fill {
+	background-color: transparent;
 }
 
-#folder-panel #folder-phase {
-	display: block;
-	width: 280dp;
-	height: 6dp;
-	margin-top: 2dp;
+#folder-bar-fill { decorator: image(nb-fill-gd); }
+#folder-bar-fill.broken { decorator: image(nb-fill-rd); }
+#folder-phase-fill { decorator: image(nb-fill-mp); }
+
+#folder-phase {
+	height: 4dp;
+	margin: 4dp 0 8dp 0;
 }
 
-#folder-panel .folder-fill {
-	height: 100%;
-	background-color: #f0c040;
+#folder-active {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 36dp;
 }
 
-#folder-panel #folder-bar-fill.broken {
-	background-color: #e04040;
+#folder-broken {
+	color: #e2483d;
 }
 
-#folder-panel #folder-broken {
-	color: #ff6060;
-}
-
-#folder-panel p {
-	margin: 2dp 0;
+#folder-target,
+#folder-queue {
+	color: #93a6bc;
 }

@@ -187,7 +187,7 @@ prosperidad) un Mega sigue contando como nivel 5.
   clips que `species_q` y en el campo se dibuja a 0,6 (`field_scale`: radio 400 frente a 220 de `species_u`).
 - **Sin la opción** nada cambia: un ultra no vuelve a revisar y `species_t` no se alcanza.
 
-Tests: `a partner's move variant replaces the table's move for it alone` (`packages/game/battle/tests/battle_tests.cpp`),
+Tests: `a partner's move variant replaces the table's move for it alone` (`packages/game/battle/tests/core/battle_tests.cpp`),
 `a ruleset's species patches give the partner its own type and move values`
 (`packages/session/tests/battle_adapter_tests.cpp`) y los de «Contenido oculto».
 

@@ -52,33 +52,40 @@ el progreso de la fase temporizada, y las órdenes en espera con su enemigo.
 ## Arquitectura
 
 ```text
-Battle::step
-  └── BattleSystem (src/battle_system.hpp, internal)
-        ├── ClassicBattle (classic_battle.cpp)  → the original's code, called exactly as before
-        └── FolderBattle  (folder_*.cpp)        → orders, execution cycle, stances, cover, defense bar
+packages/game/battle/src/
+├── core/        Battle, BattleContext, the BattleSystem interface and its factory (battle_systems.cpp)
+├── rules/       ruleset readers (rules_reader.cpp, folder_rules_reader.cpp), moves, boosted moves, co-op scaling
+├── mechanics/   what both systems share: decisions, actions, attacks, movement, status, animation, effects, player,
+│                strategies (the original AI, obedience and damage)
+├── classic/     ClassicBattle: the command strip, the commanded partner and enemy AI, the original hit and block
+└── folder/      FolderBattle: fighters, strip, orders (order book, checks, cycle), stances, defense, formulas
 ```
 
-- `BattleSystemId` (`Classic`, `Folder`) forma parte de `BattleSetup` (`system`). `Battle::start` construye el
-  `BattleSystem` correspondiente; nada más en el combate nombra un sistema.
-- La interfaz tiene los puntos en los que Folder se diferencia: las decisiones de un frame (`tickDecisions`), cómo se
-  resuelve un ataque que alcanza a un luchador (`handleAttack`), el inicio del combate (`start`) y lo que corre al final
-  del frame (`endFrame`). `ClassicBattle` reenvía cada uno a las funciones que corrían ahí antes (`tickPartnerAi`,
+- `BattleSystemId` (`Classic`, `Folder`) forma parte de `BattleSetup` (`system`). `makeBattleSystem`
+  (`core/battle_systems.cpp`) es el único sitio que conoce ambos sistemas; nada más en el combate nombra uno, y
+  `classic/` y `folder/` nunca se incluyen entre sí.
+- `BattleSystem` (`core/battle_system.hpp`) es una estrategia con los puntos en los que Folder se diferencia: el inicio
+  del combate (`start`), una orden de la tira (`command`; Huir es común y la maneja `Battle::command`), las decisiones de
+  un frame (`tickDecisions`), cómo se resuelve un ataque que alcanza a un luchador (`handleAttack`) y lo que corre al
+  final del frame (`endFrame`). `ClassicBattle` reenvía cada uno a las funciones que corrían ahí antes (`tickPartnerAi`,
   `tickEnemyAi`, el golpe y el bloqueo originales), en el mismo orden y con las mismas tiradas, así que Classic es el
-  mismo combate bit a bit. Classic no incluye nada de Folder.
+  mismo combate bit a bit.
+- El ciclo de órdenes de Folder es una máquina de estados (`folder/orders/order_cycle.cpp`): un manejador por fase
+  (idle, processing, positioning, preparing, recovering) sobre un `OrderTurn`; `order_book.cpp` encola y termina
+  órdenes y `order_checks.cpp` dice si una puede ejecutarse.
 - Folder guarda su propio estado en `BattleState::folder` (un opcional que solo tiene un combate Folder): la cola de
   órdenes de cada luchador, la fase de ejecución, la postura, la barra de defensa y la ruptura. Sus números son el grupo
   `battle.folder` del ruleset (`content/packs/game/rules/original/battle.yaml`), así que se pueden balancear sin
   código.
-- Folder reutiliza la maquinaria compartida que no es una regla: caminar y colisiones, las animaciones de ataque y los
-  vuelos de efectos, los estados alterados, la congelación del remate, los objetos lanzados y los eventos del HUD. Nunca
-  llama a la IA del partner original, a la obediencia ni a la fórmula de daño original.
+- Folder reutiliza `mechanics/`, nunca la IA del partner original, la obediencia ni la fórmula de daño original.
+- Los tests siguen el mismo árbol (`tests/core`, `tests/rules`, `tests/mechanics/...`, `tests/classic`, `tests/folder`).
 
 ### Código compartido modificado
 
 | Componente | Cambio | Efecto en Classic |
 |---|---|---|
-| `Battle::step`, `Battle::start` | Llaman al sistema de combate en lugar de a las funciones libres | Ninguno: Classic llama a las mismas funciones en el mismo orden |
-| `attack_hits.cpp` | `hit()` se divide en la tirada de daño y `landHit()`; `handleAttack` pregunta primero al sistema | Ninguno: Classic ejecuta el camino original |
+| `Battle::step`, `Battle::start`, `Battle::command` | Llaman al sistema de combate en lugar de a las funciones libres | Ninguno: Classic llama a las mismas funciones en el mismo orden |
+| `mechanics/attacks/attack_hits.cpp` | `hit()` se divide en la tirada de daño y `landHit()`; `handleAttack` pregunta primero al sistema | Ninguno: Classic ejecuta el camino original (`classic/attack_resolution.cpp`) |
 | `Fighter` | `moveScalePercent` (100) para el multiplicador de movimiento de VEL | Ninguno: solo Folder lo fija, y 100 omite el escalado |
 | `BattleState` | `folder` (opcional) | Ninguno: vacío en Classic; entonces no forma parte del checksum |
 | `BattleRules` | Grupo `folder` opcional | Ninguno: Classic nunca lo lee |

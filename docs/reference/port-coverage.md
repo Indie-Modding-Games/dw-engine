@@ -226,7 +226,7 @@ Ported 41, partial 4, missing 60.
 | `VS_tickCameraIntro` | `vs/vs_camera.c:658` | missing (cited in docs) | Advances the versus introduction's camera sequence. | — |
 | `VS_startCameraIntro` | `vs/vs_camera.c:683` | missing (cited in docs) | Starts the camera pass between the versus fighters. | — |
 | `VS_applyEntityViewpoint` | `vs/vs_camera.c:755` | missing (cited in docs) | Versus camera anchored to the fighter's view. | — |
-| `VS__combatInit` | `vs/vs_combat.c:280` | partial | Prepares the versus match: damage, clock, markers and both fighters' records. | `packages/game/battle/src/rules.cpp:1` · without the player markers or the 3D HUD records; online versus is shown as a panel |
+| `VS__combatInit` | `vs/vs_combat.c:280` | partial | Prepares the versus match: damage, clock, markers and both fighters' records. | `packages/game/battle/src/core/battle.cpp:152` · without the player markers or the 3D HUD records; online versus is shown as a panel |
 | `VS_setupDemoCombat` | `vs/vs_combat.c:449` | missing (cited in docs) | Prepares the demo's automatic match. | title demo: only the trial version's main calls it; this version's main plays the movie |
 | `VS_checkDemoEndCondition` | `vs/vs_combat.c:552` | missing (cited in docs) | Checks whether the demo ends by KO, time or a button. | title demo: only the trial version's main calls it; this version's main plays the movie |
 | `VS_cleanupDemoCombat` | `vs/vs_combat.c:750` | missing (cited in docs) | Closes the demo match and frees its objects. | title demo: only the trial version's main calls it; this version's main plays the movie |
@@ -269,11 +269,11 @@ Ported 41, partial 4, missing 60.
 | `VS_queueRandomMove` | `vs/vs_main.c:1735` | missing (cited in docs) | Randomly chooses move and target for the fighter's AI. | — |
 | `VS_loadVSAssets` | `vs/vs_scene.c:1147` | partial | Prepares the versus arena: music per stage, camera, lights and effects. | `apps/game/src/versus_arena.cpp:1` · arena 0 with its camera, its lights and the effects; without the music per stage |
 | `VS_playVersusIntroSequence` | `vs/vs_scene.c:1558` | missing | Plays the versus's opening introduction. | `apps/game/src/versus_arena.cpp:45` |
-| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | missing | Advances the versus introduction by states. | `apps/game/src/versus_flow.cpp:463` |
+| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | missing | Advances the versus introduction by states. | `apps/game/src/versus_flow.cpp:466` |
 | `VS_initializeCamera` | `vs/vs_scene.c:1851` | partial (cited in docs) | Places the versus arena's initial camera. | `apps/game/src/versus_arena.cpp:1` · the cup's camera (game::tournament::MatchCamera); not measured against the versus one |
 | `VS__createPressStartToBeginBox` | `vs/vs_select.c:409` | missing (cited in docs) | Shows the prompt to press Start to begin. | — |
 | `VS__initialize` | `vs/vs_select.c:442` | partial (cited in docs) | Versus setup flow: mode, map and Digimon selection. | `apps/game/src/versus_flow.cpp:1` · without arena choice (VS__tickSelectMap) |
-| `VS__tickSelectMap` | `vs/vs_select.c:1166` | missing | Versus stage selection screen. | `apps/game/src/versus_flow.cpp:405` |
+| `VS__tickSelectMap` | `vs/vs_select.c:1166` | missing | Versus stage selection screen. | `apps/game/src/versus_flow.cpp:408` |
 
 ## Curling minigame
 

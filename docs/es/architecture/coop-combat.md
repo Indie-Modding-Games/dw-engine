@@ -59,7 +59,7 @@ Los enemigos lanzan los suyos por su cuenta.
 
 ### 1.4 Elección de objetivo
 
-- **Los enemigos solo apuntan al compañero** (dwe: `selectTarget` en `ai_ticks.cpp`, por defecto `PartnerId`). Una
+- **Los enemigos solo apuntan al compañero** (dwe: `selectTarget` en `targets.cpp`, por defecto `PartnerId`). Una
   excepción: un enemigo alcanzado por la técnica de área de otro enemigo se vuelve contra él el 71 % de las veces.
 - **El compañero** (`BTL_selectFighterTarget`, en dwe `original_partner_ai.cpp` y `targeting.cpp`): con Inteligencia
   ≥ 300 prefiere un enemigo con un estado alterado; con ≥ 150, el más débil (HP y una puntuación de Defensa y tipo) y

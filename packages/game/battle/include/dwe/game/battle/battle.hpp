@@ -2,11 +2,12 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/core/fixed_step.hpp>
+#include <dwe/game/battle/battle_system_id.hpp>
 #include <dwe/game/battle/combatant.hpp>
 #include <dwe/game/battle/coop_scaling.hpp>
 #include <dwe/game/battle/events.hpp>
 #include <dwe/game/battle/flights.hpp>
-#include <dwe/game/battle/folder.hpp>
+#include <dwe/game/battle/folder/state.hpp>
 #include <dwe/game/battle/ground.hpp>
 #include <dwe/game/battle/hit_particles.hpp>
 #include <dwe/game/battle/items.hpp>

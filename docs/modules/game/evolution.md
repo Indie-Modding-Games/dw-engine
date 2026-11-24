@@ -182,7 +182,7 @@ counts as level 5.
   the field it is drawn at 0.6 (`field_scale`: radius 400 against `species_u`'s 220).
 - **Without the option** nothing changes: an ultimate does not check again and `species_t` is not reached.
 
-Tests: `a partner's move variant replaces the table's move for it alone` (`packages/game/battle/tests/battle_tests.cpp`),
+Tests: `a partner's move variant replaces the table's move for it alone` (`packages/game/battle/tests/core/battle_tests.cpp`),
 `a ruleset's species patches give the partner its own type and move values`
 (`packages/session/tests/battle_adapter_tests.cpp`) and those of "Hidden content".
 

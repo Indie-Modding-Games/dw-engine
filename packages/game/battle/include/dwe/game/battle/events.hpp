@@ -44,8 +44,8 @@ enum class EventKind : std::uint8_t {
   HealingShown,    // a thrown item's healing particles rise over `fighter`; `amount` 1 with a ring
   BattleEnded,     // the result is ready
   PartnerLeft,     // co-op: `fighter` left the battle, which goes on (its departure says how)
-  // The Folder battle (folder.hpp). An order's events carry its technique in `move`, its target in
-  // `other` and its number in `amount`, unless they say otherwise.
+  // The Folder battle (folder/state.hpp). An order's events carry its technique in `move`, its
+  // target in `other` and its number in `amount`, unless they say otherwise.
   OrderReceived,     // the order joined the queue of `fighter`
   OrderReplaced,     // a newer order took the queue place of this one
   OrderPhaseChanged, // the active order of `fighter` is in phase `amount` (OrderPhase)

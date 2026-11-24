@@ -48,32 +48,39 @@ the waiting orders with their foes.
 ## Architecture
 
 ```text
-Battle::step
-  └── BattleSystem (src/battle_system.hpp, internal)
-        ├── ClassicBattle (classic_battle.cpp)  → the original's code, called exactly as before
-        └── FolderBattle  (folder_*.cpp)        → orders, execution cycle, stances, cover, defense bar
+packages/game/battle/src/
+├── core/        Battle, BattleContext, the BattleSystem interface and its factory (battle_systems.cpp)
+├── rules/       ruleset readers (rules_reader.cpp, folder_rules_reader.cpp), moves, boosted moves, co-op scaling
+├── mechanics/   what both systems share: decisions, actions, attacks, movement, status, animation, effects, player,
+│                strategies (the original AI, obedience and damage)
+├── classic/     ClassicBattle: the command strip, the commanded partner and enemy AI, the original hit and block
+└── folder/      FolderBattle: fighters, strip, orders (order book, checks, cycle), stances, defense, formulas
 ```
 
-- `BattleSystemId` (`Classic`, `Folder`) is part of `BattleSetup` (`system`). `Battle::start` builds the matching
-  `BattleSystem`; nothing else in the battle names a system.
-- The interface has the points where Folder differs: the decisions of a frame (`tickDecisions`), how an attack that
-  reaches a fighter resolves (`handleAttack`), the start of the battle (`start`) and what runs at the end of the frame
+- `BattleSystemId` (`Classic`, `Folder`) is part of `BattleSetup` (`system`). `makeBattleSystem` (`core/battle_systems.cpp`)
+  is the only place that knows both systems; nothing else in the battle names one, and `classic/` and `folder/` never
+  include each other.
+- `BattleSystem` (`core/battle_system.hpp`) is a strategy with the points where Folder differs: the start of the battle
+  (`start`), a strip command (`command`; Run is shared and handled by `Battle::command`), the decisions of a frame
+  (`tickDecisions`), how an attack that reaches a fighter resolves (`handleAttack`) and what runs at the end of the frame
   (`endFrame`). `ClassicBattle` forwards each one to the functions that ran there before (`tickPartnerAi`,
   `tickEnemyAi`, the original hit and block), in the same order and with the same rolls, so Classic is the same battle
-  bit for bit. Classic includes nothing of Folder.
+  bit for bit.
+- Folder's order cycle is a state machine (`folder/orders/order_cycle.cpp`): one handler per phase (idle, processing,
+  positioning, preparing, recovering) over an `OrderTurn`; `order_book.cpp` queues and ends orders and `order_checks.cpp`
+  says whether one can run.
 - Folder keeps its own state in `BattleState::folder` (an optional that only a Folder battle has): each fighter's order
   queue, execution phase, stance, defense bar and break. Its numbers are the ruleset's `battle.folder` group
   (`content/packs/game/rules/original/battle.yaml`), so they can be balanced without code.
-- Folder reuses the shared machinery that is not a rule: walking and collision, the attack animations and effect
-  flights, the status effects, the finisher's freeze, the thrown items and the HUD's events. It never calls the original
-  partner AI, obedience or damage formula.
+- Folder reuses `mechanics/`, never the original partner AI, obedience or damage formula.
+- The tests mirror the tree (`tests/core`, `tests/rules`, `tests/mechanics/...`, `tests/classic`, `tests/folder`).
 
 ### Shared code touched
 
 | Component | Change | Effect on Classic |
 |---|---|---|
-| `Battle::step`, `Battle::start` | Call the battle system instead of the free functions | None: Classic calls the same functions in the same order |
-| `attack_hits.cpp` | `hit()` split into the damage roll and `landHit()`; `handleAttack` asks the system first | None: Classic runs the original path |
+| `Battle::step`, `Battle::start`, `Battle::command` | Call the battle system instead of the free functions | None: Classic calls the same functions in the same order |
+| `mechanics/attacks/attack_hits.cpp` | `hit()` split into the damage roll and `landHit()`; `handleAttack` asks the system first | None: Classic runs the original path (`classic/attack_resolution.cpp`) |
 | `Fighter` | `moveScalePercent` (100) for VEL's movement multiplier | None: only Folder sets it, and 100 skips the scaling |
 | `BattleState` | `folder` (optional) | None: empty in Classic; not part of the checksum then |
 | `BattleRules` | optional `folder` group | None: Classic never reads it |

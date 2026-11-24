@@ -706,61 +706,64 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The Folder battle (not in the original): the partner's defense bar, its active order with the phase's progress and
-   the orders that wait, in a plate at the bottom left. */
+   The Folder battle (not in the original): the partner's defense bar, the foe the orders aim at, the active order with
+   the phase's progress and the orders that wait, in a card like the fighters' beside the partner's panel at the bottom
+   left. The label and the defense bar share a row; an empty line takes no room. The other skins only change the look
+   and the place. */
 #folder-panel {
 	position: absolute;
-	left: 16dp;
-	bottom: 16dp;
-	width: 300dp;
-	padding: 6dp 10dp;
-	font-size: 18dp;
-	color: #ffffff;
-	background-color: #000000b0;
+	left: 396dp;
+	bottom: 56dp;
+	width: 330dp;
+	padding: 8dp 12dp;
+	background-color: #10161ee0;
+	border: 1dp #3a4a5e;
 	border-radius: 8dp;
+}
+
+.folder-row {
+	display: flex;
+	align-items: center;
+	margin-bottom: 4dp;
+}
+
+.folder-label {
+	margin-right: 8dp;
+	font-size: 22dp;
+}
+
+.folder-track {
+	flex: 1;
+	height: 10dp;
+	background-color: #2a323d;
+	border-radius: 3dp;
+}
+
+.folder-fill {
+	width: 0%;
+	height: 100%;
+	border-radius: 3dp;
+}
+
+#folder-bar-fill { background-color: #ffd34f; }
+#folder-bar-fill.broken { background-color: #ff5a48; }
+#folder-phase-fill { background-color: #4f9cff; }
+
+#folder-phase {
+	height: 6dp;
+	margin: 2dp 0 4dp 0;
+}
+
+#folder-broken {
+	color: #ff5a48;
+}
+
+#folder-target,
+#folder-queue {
+	color: #9aa7b6;
 }
 
 #folder-panel.hidden,
 #folder-panel .hidden {
 	display: none;
-}
-
-#folder-panel .folder-row {
-	display: block;
-}
-
-#folder-panel .folder-label {
-	display: inline-block;
-	width: 80dp;
-}
-
-#folder-panel .folder-track {
-	display: inline-block;
-	width: 190dp;
-	height: 10dp;
-	background-color: #ffffff30;
-}
-
-#folder-panel #folder-phase {
-	display: block;
-	width: 280dp;
-	height: 6dp;
-	margin-top: 2dp;
-}
-
-#folder-panel .folder-fill {
-	height: 100%;
-	background-color: #f0c040;
-}
-
-#folder-panel #folder-bar-fill.broken {
-	background-color: #e04040;
-}
-
-#folder-panel #folder-broken {
-	color: #ff6060;
-}
-
-#folder-panel p {
-	margin: 2dp 0;
 }

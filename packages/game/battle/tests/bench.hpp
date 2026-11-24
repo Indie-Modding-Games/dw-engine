@@ -7,8 +7,8 @@
 #include <memory>
 #include <utility>
 
-#include "../src/battle_context.hpp"
-#include "../src/battle_system.hpp"
+#include "core/battle_context.hpp"
+#include "core/battle_system.hpp"
 #include "fixture.hpp"
 
 namespace battle_test {
@@ -46,7 +46,7 @@ struct Bench {
   const BattleRules* rules;
   BattleState state;
   BattleStrategies strategies = originalStrategies();
-  std::unique_ptr<BattleSystem> system = makeClassicBattle();
+  std::unique_ptr<BattleSystem> system = makeBattleSystem(BattleSystemId::Classic);
   PartnerCondition condition;
   dwe::ruleset::Random random;
   BattleEvents events;

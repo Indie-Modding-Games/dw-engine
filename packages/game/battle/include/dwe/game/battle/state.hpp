@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dwe/game/battle/combatant.hpp>
-#include <dwe/game/battle/folder.hpp>
+#include <dwe/game/battle/folder/state.hpp>
 #include <dwe/game/battle/items.hpp>
 #include <dwe/game/battle/motion.hpp>
 #include <dwe/game/battle/moves.hpp>
@@ -443,7 +443,7 @@ struct BattleState {
   std::vector<AllyState> allies;
   // The enemies' count, which the allies follow in the fighters.
   std::size_t enemies = 0;
-  // Only in the Folder battle: the orders, stances and defense bars (folder.hpp).
+  // Only in the Folder battle: the orders, stances and defense bars (folder/state.hpp).
   std::optional<FolderState> folder;
 
   [[nodiscard]] Fighter& partner() { return fighters.front(); }
