@@ -50,6 +50,8 @@ pub struct Status {
     compatibility_mode: bool,
     /// The low-performance mode: the game starts with --low-performance (launch.rs).
     low_performance_mode: bool,
+    /// The AMD RX 6000 safe mode: the game starts with --rdna2-safe (launch.rs).
+    rdna2_safe_mode: bool,
     /// Manual launch options (settings.rs): "auto", "skip" or "software".
     launch_mode: String,
     /// The player's extra game arguments and environment, as written in the settings page.
@@ -165,6 +167,7 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
         last_check: settings.last_check.clone(),
         compatibility_mode: settings.compatibility_mode,
         low_performance_mode: settings.low_performance_mode,
+        rdna2_safe_mode: settings.rdna2_safe_mode,
         launch_mode: settings.launch_mode_or_default().to_string(),
         extra_args: settings.extra_args.clone(),
         extra_env: settings.extra_env.clone(),
@@ -641,6 +644,7 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
             launch::GraphicsFlags {
                 compatibility: settings.compatibility_mode,
                 low_performance: settings.low_performance_mode,
+                rdna2_safe: settings.rdna2_safe_mode,
             },
             launch_mode,
             settings.game_args(),
@@ -792,6 +796,20 @@ pub fn set_low_performance_mode(app: AppHandle, state: State<'_, AppState>, enab
         settings.save()?;
     }
     log_line!("low-performance mode: {enabled}");
+    Ok(status_of(&app, &state))
+}
+
+/// The AMD RX 6000 safe mode: the game starts with `--rdna2-safe`, which simplifies the bindless
+/// layout. The game checks the GPU again and ignores the flag on anything else, so leaving this on
+/// cannot change another card's behaviour. Off by default. No GPU re-check needed here.
+#[tauri::command]
+pub fn set_rdna2_safe_mode(app: AppHandle, state: State<'_, AppState>, enabled: bool) -> Result<Status> {
+    {
+        let mut settings = state.settings.lock().unwrap();
+        settings.rdna2_safe_mode = enabled;
+        settings.save()?;
+    }
+    log_line!("AMD RX 6000 safe mode: {enabled}");
     Ok(status_of(&app, &state))
 }
 

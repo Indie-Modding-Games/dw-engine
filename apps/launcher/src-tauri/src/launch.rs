@@ -21,11 +21,13 @@ pub fn game_log(data: &Path) -> PathBuf {
 /// The graphics switches from the launcher's settings (settings.rs), turned into game flags.
 /// `compatibility` relaxes the Vulkan floor to 1.2 plus the dynamic-rendering and synchronization2
 /// extensions (--compatible); `low_performance` starts the run from the potato preset
-/// (--low-performance). Both are off unless the player turns them on.
+/// (--low-performance); `rdna2_safe` asks the game to simplify its bindless layout (--rdna2-safe),
+/// which the game applies only on AMD RX 6000 cards. All are off unless the player turns them on.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct GraphicsFlags {
     pub compatibility: bool,
     pub low_performance: bool,
+    pub rdna2_safe: bool,
 }
 
 impl GraphicsFlags {
@@ -38,6 +40,9 @@ impl GraphicsFlags {
         }
         if self.low_performance {
             flags.push("--low-performance");
+        }
+        if self.rdna2_safe {
+            flags.push("--rdna2-safe");
         }
         flags
     }
@@ -126,9 +131,10 @@ mod tests {
         let args = |graphics: GraphicsFlags| -> Vec<String> {
             command(&game, data, true, graphics, &[]).get_args().map(|a| a.to_string_lossy().into_owned()).collect()
         };
-        assert!(args(GraphicsFlags { compatibility: true, low_performance: false }).contains(&"--compatible".to_string()));
-        assert!(args(GraphicsFlags { compatibility: false, low_performance: true }).contains(&"--low-performance".to_string()));
-        assert_eq!(args(GraphicsFlags { compatibility: true, low_performance: true }).len(), 4, "both flags, next to --content");
+        assert!(args(GraphicsFlags { compatibility: true, ..Default::default() }).contains(&"--compatible".to_string()));
+        assert!(args(GraphicsFlags { low_performance: true, ..Default::default() }).contains(&"--low-performance".to_string()));
+        assert!(args(GraphicsFlags { rdna2_safe: true, ..Default::default() }).contains(&"--rdna2-safe".to_string()));
+        assert_eq!(args(GraphicsFlags { compatibility: true, low_performance: true, ..Default::default() }).len(), 4, "both flags, next to --content");
     }
 
     #[test]
@@ -136,7 +142,7 @@ mod tests {
         let game = Game { dir: "/g".into(), version: "1.0.0".into(), commit: String::new(), extractor_version: None };
         let data = Path::new("/d");
         let extra = vec!["--manual".to_string(), "with space".to_string()];
-        let args: Vec<String> = command(&game, data, true, GraphicsFlags { compatibility: true, low_performance: false }, &extra)
+        let args: Vec<String> = command(&game, data, true, GraphicsFlags { compatibility: true, ..Default::default() }, &extra)
             .get_args()
             .map(|a| a.to_string_lossy().into_owned())
             .collect();

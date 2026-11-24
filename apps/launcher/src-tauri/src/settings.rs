@@ -91,6 +91,9 @@ pub struct Settings {
     /// The low-performance mode: starts the game with `--low-performance`, the lightest graphics
     /// preset (every heavy option off), for weak GPUs and old iGPUs.
     pub low_performance_mode: bool,
+    /// The AMD RX 6000 safe mode: starts the game with `--rdna2-safe`, which simplifies the
+    /// bindless layout. The game ignores it on other GPUs. Off by default.
+    pub rdna2_safe_mode: bool,
     /// One of LAUNCH_MODES. Missing or unknown in an older settings.json: "auto".
     pub launch_mode: String,
     /// Extra game arguments, separated by whitespace, added after the launcher's own ones. Not
@@ -128,6 +131,7 @@ impl Default for Settings {
             disc_source: None,
             compatibility_mode: false,
             low_performance_mode: false,
+            rdna2_safe_mode: false,
             launch_mode: "auto".into(),
             extra_args: String::new(),
             extra_env: String::new(),
@@ -273,6 +277,8 @@ mod tests {
         assert_eq!(read.repository, DEFAULT_REPOSITORY);
         // Settings written before the automatic updates existed turn them on.
         assert!(read.auto_update_launcher && read.auto_update_game);
+        // Old settings.json files load the switch off without losing the rest.
+        assert!(!read.rdna2_safe_mode);
         let saved = Settings { auto_update_game: false, last_check: Some(LastCheck::checked(5, None, None)), ..Settings::default() };
         saved.save_to(&file).unwrap();
         assert_eq!(Settings::load_from(&file), saved);

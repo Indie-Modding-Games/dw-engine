@@ -183,6 +183,7 @@ pub fn run() {
             commands::set_update_channel,
             commands::set_compatibility_mode,
             commands::set_low_performance_mode,
+            commands::set_rdna2_safe_mode,
             commands::set_launch_mode,
             commands::set_extra_args,
             commands::set_extra_env,
