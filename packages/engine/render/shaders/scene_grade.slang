@@ -5,7 +5,7 @@
 import dwe.bindless;
 
 struct Light {
-    // Window pixels: the centre and the radius where the light ends.
+    // Scene pixels: the centre and the radius where the light ends.
     float2 centre;
     float radius;
     float strength;
@@ -20,8 +20,10 @@ struct Push {
     float4 tint;
     // x vibrance, y contrast, z bloom, w the bloom's threshold.
     float4 grade;
-    // The window's last pixel (its size less one), and the bloom's reach in pixels.
+    // The scene texture's last pixel (its size less one), the window's pixels to the scene's (below 1 with a render
+    // scale), and the bloom's reach in the scene's pixels.
     int2 lastPixel;
+    float2 toScene;
     int bloomReach;
     uint scene;
     uint lightCount;
@@ -45,7 +47,7 @@ VertexOut vertexMain(uint vertex : SV_VulkanVertexID) {
     return output;
 }
 
-// The scene's texel at a window pixel, unfiltered (the scene is the window's size), clamped to the window. The
+// The scene's texel at a scene pixel, unfiltered (a render scale stretches it to the window), clamped to the scene. The
 // scene's index is the same for every pixel.
 float3 sceneAt(int2 pixel) {
     return gTextures[push.scene].Load(int3(clamp(pixel, int2(0), push.lastPixel), 0)).rgb;
@@ -58,7 +60,7 @@ float3 brightPart(float3 color) {
 
 [shader("fragment")]
 float4 fragmentMain(VertexOut input) : SV_Target {
-    const float2 pixel = input.position.xy;
+    const float2 pixel = input.position.xy * push.toScene;
     const int2 at = int2(pixel);
     float3 color = sceneAt(at) * push.tint.rgb;
 

@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.32.0 | Software mode ([software mode](../architecture/software-mode.md)): the options `auto_quality`, `render_scale` and `frame_limit`, and the `software_notice` notice with the `software_mode` setting |
 | 0.31.0 | The partner menu marks the partner's boosted technique (`partner.technique.<n>.boosted`, `partner.technique.choice.<n>.boosted`: its power and MP are already the boosted ones), and the `boosted_techniques` option arrives ([battle](../modules/game/battle.md#boosted-techniques)) |
 | 0.30.0 | The field's need meters and danger alert: `partner.gauges()` (hunger, the toilet and tiredness as they build up: `hud.gauge.<n>.label`, `need`, `value`, `max` and `fill`), `field.dangers()` and its event `field.danger` (the marks over the wild monsters that would crush the partner: `hud.danger.<n>.visible`, `x`, `y` and `hud.danger.revision`), and the options `need_meters` and `danger_alert` |
 | 0.29.0 | The `coop_battle` screen tells a player who cannot close the end box whom it waits on (`coop_battle.waiting`, the starter's `coop_battle.starter.name`, `name_key` and `number`) |
@@ -108,7 +109,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.31.0**.
+UI API version: **0.32.0**.
 
 ### `ui`
 
@@ -360,6 +361,9 @@ UI API version: **0.31.0**.
 | `angemon_event_zone` | option | yes/no | Angemon's event zone. |
 | `whamon_in_water` | option | yes/no | Whamon in the water. |
 | `boosted_techniques` | option | yes/no | Boosted techniques. |
+| `auto_quality` | option | yes/no | Automatic quality: the game adjusts the graphics to the frame time. |
+| `render_scale` | option | text | Render scale: 100, 75 or 50 (percent). |
+| `frame_limit` | option | text | Frame limit: off, 60 or 30. |
 | `smooth_motion` | option | yes/no | Smooth motion. |
 | `hd_scenery` | option | yes/no | HD scenery. |
 | `scenery_quality` | option | text | Scenery quality: upscaled or smooth. |
@@ -397,6 +401,12 @@ UI API version: **0.31.0**.
 | Name | Kind | Value | What it is |
 |---|---|---|---|
 | `ui_addon.problem` | setting | text | Why the chosen interface could not be used; empty if it could. |
+
+### `software_notice`
+
+| Name | Kind | Value | What it is |
+|---|---|---|---|
+| `software_mode` | setting | yes/no | Whether the game draws without a graphics card (software mode); the notice shows once a run. |
 
 ### `field_item_notice`
 

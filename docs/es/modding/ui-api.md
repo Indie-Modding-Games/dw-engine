@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.32.0 | Modo software ([modo software](../architecture/software-mode.md)): las opciones `auto_quality`, `render_scale` y `frame_limit`, y el aviso `software_notice` con el ajuste `software_mode` |
 | 0.31.0 | El menú del compañero marca su técnica potenciada (`partner.technique.<n>.boosted`, `partner.technique.choice.<n>.boosted`: su poder y su MP ya son los potenciados), y llega la opción `boosted_techniques` ([combate](../modules/game/battle.md#tecnicas-potenciadas)) |
 | 0.30.0 | Los medidores de necesidades y el aviso de peligro del campo: `partner.gauges()` (el hambre, el baño y el cansancio según se acumulan: `hud.gauge.<n>.label`, `need`, `value`, `max` y `fill`), `field.dangers()` y su evento `field.danger` (las marcas sobre los monstruos salvajes que aplastarían al compañero: `hud.danger.<n>.visible`, `x`, `y` y `hud.danger.revision`), y las opciones `need_meters` y `danger_alert` |
 | 0.29.0 | La pantalla `coop_battle` dice a quien no puede cerrar el cuadro final a quién espera (`coop_battle.waiting`, y `coop_battle.starter.name`, `name_key` y `number` de quien la empezó) |
@@ -109,7 +110,7 @@ guardar y la caja del nombre); el resto de pantallas llega después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.31.0**.
+Versión de la API de la interfaz: **0.32.0**.
 
 ### `ui`
 
@@ -361,6 +362,9 @@ Versión de la API de la interfaz: **0.31.0**.
 | `angemon_event_zone` | opción | sí/no | Zona del evento de Angemon. |
 | `whamon_in_water` | opción | sí/no | Whamon en el agua. |
 | `boosted_techniques` | opción | sí/no | Técnicas potenciadas. |
+| `auto_quality` | opción | sí/no | Calidad automática: el juego ajusta los gráficos al tiempo de cada fotograma. |
+| `render_scale` | opción | texto | Escala de renderizado: 100, 75 o 50 (por ciento). |
+| `frame_limit` | opción | texto | Límite de fotogramas: off, 60 o 30. |
 | `smooth_motion` | opción | sí/no | Movimiento suave. |
 | `hd_scenery` | opción | sí/no | Escenarios HD. |
 | `scenery_quality` | opción | texto | Calidad de los escenarios: upscaled o smooth. |
@@ -398,6 +402,12 @@ Versión de la API de la interfaz: **0.31.0**.
 | Nombre | Tipo | Valor | Qué es |
 |---|---|---|---|
 | `ui_addon.problem` | ajuste | texto | Por qué no se pudo usar la interfaz elegida; vacío si se pudo. |
+
+### `software_notice`
+
+| Nombre | Tipo | Valor | Qué es |
+|---|---|---|---|
+| `software_mode` | ajuste | sí/no | Si el juego dibuja sin tarjeta gráfica (modo software); el aviso sale una vez por partida. |
 
 ### `field_item_notice`
 

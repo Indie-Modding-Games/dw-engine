@@ -1,3 +1,4 @@
+#include <dwe/rhi/device.hpp>
 #include <dwe/rhi/system_check.hpp>
 
 #include <VkBootstrap.h>
@@ -121,6 +122,10 @@ GpuInfo describeGpu(VkPhysicalDevice device) {
     }
   }
   return info;
+}
+
+GpuInfo deviceGpu(const Device& device) {
+  return describeGpu(device.nativeHandles().physicalDevice);
 }
 
 namespace {

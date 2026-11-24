@@ -20,4 +20,18 @@ namespace dwe::render {
   return {.width = static_cast<std::uint32_t>(width), .height = static_cast<std::uint32_t>(height)};
 }
 
+inline constexpr float MinSceneScale = 0.25F;
+
+[[nodiscard]] constexpr rhi::Extent sceneTargetExtent(rhi::Extent window, float scale) {
+  if (!(scale < 1.0F)) {
+    return window;
+  }
+  const float kept = std::max(scale, MinSceneScale);
+  const auto scaled = [kept](std::uint32_t size) {
+    const auto pixels = static_cast<std::uint32_t>((static_cast<float>(size) * kept) + 0.5F);
+    return std::max<std::uint32_t>(pixels, 1U);
+  };
+  return {.width = scaled(window.width), .height = scaled(window.height)};
+}
+
 } // namespace dwe::render

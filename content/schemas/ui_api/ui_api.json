@@ -1,5 +1,5 @@
 {
-  "version": "0.31.0",
+  "version": "0.32.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "The value of a setting the game publishes; nil if it does not publish it.", "signature": "(name: string): any"},
@@ -230,6 +230,9 @@
       {"name": "angemon_event_zone", "kind": "option", "value": "boolean", "summary": "Angemon's event zone."},
       {"name": "whamon_in_water", "kind": "option", "value": "boolean", "summary": "Whamon in the water."},
       {"name": "boosted_techniques", "kind": "option", "value": "boolean", "summary": "Boosted techniques."},
+      {"name": "auto_quality", "kind": "option", "value": "boolean", "summary": "Automatic quality: the game adjusts the graphics to the frame time."},
+      {"name": "render_scale", "kind": "option", "value": "text", "summary": "Render scale: 100, 75 or 50 (percent)."},
+      {"name": "frame_limit", "kind": "option", "value": "text", "summary": "Frame limit: off, 60 or 30."},
       {"name": "smooth_motion", "kind": "option", "value": "boolean", "summary": "Smooth motion."},
       {"name": "hd_scenery", "kind": "option", "value": "boolean", "summary": "HD scenery."},
       {"name": "scenery_quality", "kind": "option", "value": "text", "summary": "Scenery quality: upscaled or smooth."},
@@ -264,6 +267,9 @@
     ],
     "ui_notice": [
       {"name": "ui_addon.problem", "kind": "setting", "value": "text", "summary": "Why the chosen interface could not be used; empty if it could."}
+    ],
+    "software_notice": [
+      {"name": "software_mode", "kind": "setting", "value": "boolean", "summary": "Whether the game draws without a graphics card (software mode); the notice shows once a run."}
     ],
     "field_item_notice": [
       {"name": "field_item_notice.text", "kind": "setting", "value": "text", "summary": "The text key of the notice for an item on the ground or in a chest."},

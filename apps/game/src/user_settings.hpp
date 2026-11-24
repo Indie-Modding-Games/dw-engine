@@ -125,9 +125,13 @@ struct UserSettings {
   std::optional<std::string> sceneryQuality = std::nullopt;
   std::optional<bool> antialiasing = std::nullopt;
   std::optional<std::string> textureFilter = std::nullopt;
+  std::optional<std::string> renderScale = std::nullopt;
+  std::optional<std::string> frameLimit = std::nullopt;
+  std::optional<bool> autoQuality = std::nullopt;
   // Whether the field shows the weather (weather: true, false; game::weather, an engine
   // improvement); on when not chosen.
   std::optional<bool> weather = std::nullopt;
+  bool weatherDefault = true;
   // Whether the field shows the seasons (seasons: true, false; game::weather, an engine
   // improvement); on when not chosen.
   std::optional<bool> seasons = std::nullopt;

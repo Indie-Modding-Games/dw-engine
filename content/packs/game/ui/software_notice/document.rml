@@ -1,0 +1,15 @@
+<rml>
+<head>
+	<title>Software notice</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="box">
+		<p id="title"></p>
+		<p id="body"></p>
+		<p id="fix"></p>
+	</div>
+</body>
+</rml>

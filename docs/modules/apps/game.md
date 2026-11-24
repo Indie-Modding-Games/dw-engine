@@ -1873,7 +1873,7 @@ The page is divided into four tabs; each row appears in only one:
 | Tab | Rows |
 |---|---|
 | Game | Walk with, Autosave, Island map, Items on minimap, Bulk trades, Long names, Evolution requirements, Canonical stages, Status extras, Rare items, Quick battles, Enemy life bars, Gym sessions, Battles without wait, Difficulty, Skip evolutions, Cancel closes choices, Fair sickness chance, Fair evolution average, Fair move forgetting, Card stock without repeats, Space after names, Free exploration |
-| Graphics | Display, Vertical sync, Smooth motion, HD scenery, Scenery quality, Antialiasing, Model textures, 3D characters, Widescreen pictures, Enhanced lighting, Vivid colors, Shadows, Chibi style, Weather, Seasons |
+| Graphics | Display, Vertical sync, Automatic quality, Render scale, Frame limit ([software mode](../../architecture/software-mode.md)), Smooth motion, HD scenery, Scenery quality, Antialiasing, Model textures, 3D characters, Widescreen pictures, Enhanced lighting, Vivid colors, Shadows, Chibi style, Weather, Seasons |
 | Sound | Music volume, Effects volume, Continuous music, Reverb |
 | Interface | Interface style, Interface scale, Language, Original-look text, Translated signs, Show minimap, Enemies on minimap, Digital time, Save notice, Several needs, Recruit bar, Shop extras, Art fixes, Developer tools |
 
