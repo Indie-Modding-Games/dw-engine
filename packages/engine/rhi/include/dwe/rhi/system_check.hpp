@@ -50,6 +50,10 @@ struct SystemCheck {
 // renderer_requirements.hpp).
 SystemCheck checkSystem(bool compatibleMode = false);
 
+class Device;
+
+GpuInfo deviceGpu(const Device& device);
+
 // The check as `key=value` lines under a `dwe-check-system 1` header: result (ok, no-vulkan,
 // no-device, unsuitable), detail, devices, then gpu, vendor (0x....), kind (discrete, integrated,
 // virtual, software, other), api (major.minor.patch) and driver when a GPU was found. Values are

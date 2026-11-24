@@ -4,6 +4,8 @@
 #include <dwe/render/upscale_cache.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <bitset>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <memory>
@@ -39,6 +41,9 @@ inline constexpr std::string_view AntialiasingSetting = "antialiasing";
 // The models' textures (nearest, smooth or upscaled): the original's texels, filtered with
 // mipmaps, or doubled by the upscaler and filtered (render::ModelRenderer::TextureFilter).
 inline constexpr std::string_view TextureFilterSetting = "texture_filter";
+inline constexpr std::string_view RenderScaleSetting = "render_scale";
+inline constexpr std::string_view FrameLimitSetting = "frame_limit";
+inline constexpr std::string_view AutoQualitySetting = "auto_quality";
 
 enum class ShadowMode : std::uint8_t { Off, Round, Sun };
 enum class SceneryQuality : std::uint8_t { Smooth, Upscaled };
@@ -50,6 +55,29 @@ enum class TextureFilter : std::uint8_t { Nearest, Smooth, Upscaled };
 [[nodiscard]] std::string_view sceneryQualityName(SceneryQuality quality);
 [[nodiscard]] std::optional<TextureFilter> parseTextureFilter(std::string_view name);
 [[nodiscard]] std::string_view textureFilterName(TextureFilter filter);
+[[nodiscard]] std::optional<int> parseRenderScale(std::string_view name);
+[[nodiscard]] std::string renderScaleName(int percent);
+[[nodiscard]] std::optional<int> parseFrameLimit(std::string_view name);
+[[nodiscard]] std::string frameLimitName(int framesPerSecond);
+
+enum class GraphicsKnob : std::uint8_t {
+  Shadows,
+  EnhancedLighting,
+  VividColors,
+  SceneryQuality,
+  Antialiasing,
+  TextureFilter,
+  RenderScale,
+  FrameLimit,
+  Weather,
+  Count,
+};
+using GraphicsKnobs = std::bitset<static_cast<std::size_t>(GraphicsKnob::Count)>;
+
+[[nodiscard]] constexpr std::size_t knobIndex(GraphicsKnob knob) {
+  return static_cast<std::size_t>(knob);
+}
+[[nodiscard]] GraphicsKnobs unchosenKnobs(const UserSettings& settings);
 
 // The renderer's filter for the option (render::ModelRenderer::TextureFilter).
 [[nodiscard]] render::TextureFilter renderTextureFilter(TextureFilter filter);
@@ -72,6 +100,9 @@ struct GraphicsOptions {
   SceneryQuality sceneryQuality = SceneryQuality::Upscaled;
   bool antialiasing = true;
   TextureFilter textureFilter = TextureFilter::Upscaled;
+  int renderScale = 100;
+  int frameLimit = 0;
+  bool autoQuality = false;
 
   friend bool operator==(const GraphicsOptions&, const GraphicsOptions&) = default;
 };
@@ -86,8 +117,9 @@ struct GraphicsOptions {
 [[nodiscard]] GraphicsOptions potatoGraphicsOptions();
 
 // The options with a command line's --graphics on top: a comma-separated list of
-// shadows=off|round|sun, lighting=on|off, colors=on|off, scenery=smooth|upscaled, aa=on|off and
-// textures=nearest|smooth|upscaled. Nothing when the text is not one.
+// shadows=off|round|sun, lighting=on|off, colors=on|off, scenery=smooth|upscaled, aa=on|off,
+// textures=nearest|smooth|upscaled, scale=100|75|50, fps=off|30|60 and auto=on|off. Nothing when
+// the text is not one.
 [[nodiscard]] std::optional<GraphicsOptions> withGraphicsFlag(GraphicsOptions options,
                                                               std::string_view text);
 
@@ -102,11 +134,16 @@ public:
 
   [[nodiscard]] const GraphicsOptions& options() const { return options_; }
 
-  // Takes a command; returns whether it was one of the six (a value of the wrong kind or an
+  // Takes a command; returns whether it was one of the nine (a value of the wrong kind or an
   // unknown mode changes nothing but is still taken), and publishes what is in use.
   bool handle(const ui::UiCommand& command, ui::Ui& ui);
-  // Publishes the six settings.
+  // Publishes the nine settings.
   void publish(ui::Ui& ui) const;
+
+  void setAutomatic(GraphicsKnobs knobs) { automatic_ = knobs; }
+  [[nodiscard]] GraphicsKnobs automatic() const { return automatic_; }
+  void release(GraphicsKnob knob) { automatic_.reset(knobIndex(knob)); }
+  void applyAutomatic(const GraphicsOptions& tuned, ui::Ui& ui);
 
 private:
   void save();
@@ -114,6 +151,7 @@ private:
   UserSettings* settings_;
   std::optional<std::filesystem::path> settingsFile_;
   GraphicsOptions options_;
+  GraphicsKnobs automatic_;
 };
 
 } // namespace dwe::app

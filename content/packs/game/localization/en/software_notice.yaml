@@ -1,0 +1,4 @@
+# The notice that the game draws without a graphics card (ui/software_notice, docs/architecture/software-mode.md).
+title: "Playing without a graphics card"
+body: "The game is drawing with the processor, so it may run slowly. The quality adjusts itself; you can change it in Options > Graphics."
+fix: "To fix it, install or update your graphics card's driver from its maker's website."

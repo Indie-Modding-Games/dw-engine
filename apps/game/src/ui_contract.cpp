@@ -31,6 +31,7 @@ constexpr std::string_view PauseMenu = "pause_menu";
 constexpr std::string_view PartnerMenu = "partner_menu";
 constexpr std::string_view SkinPicker = "skin_picker";
 constexpr std::string_view UiNotice = "ui_notice";
+constexpr std::string_view SoftwareNotice = "software_notice";
 constexpr std::string_view FieldItemNotice = "field_item_notice";
 constexpr std::string_view AwardNotice = "award_notice";
 constexpr std::string_view FishingNotice = "fishing_notice";
@@ -314,6 +315,9 @@ constexpr auto Contract =
               None, "Reads the interface in use and the plugins again from their files."),
         entry(UiNotice, Setting, "ui_addon.problem",
               Text, "Why the chosen interface could not be used; empty if it could."),
+        entry(SoftwareNotice, Setting, "software_mode", Boolean,
+              "Whether the game draws without a graphics card (software mode); the notice shows "
+              "once a run."),
 
         // The notices (docs/modding/ui-addons.md): small boxes the game shows over the field.
         entry(FieldItemNotice, Setting, "field_item_notice.text",
@@ -626,6 +630,10 @@ constexpr auto Contract =
         entry(PauseMenu, Option, "angemon_event_zone", Boolean, "Angemon's event zone."),
         entry(PauseMenu, Option, "whamon_in_water", Boolean, "Whamon in the water."),
         entry(PauseMenu, Option, "boosted_techniques", Boolean, "Boosted techniques."),
+        entry(PauseMenu, Option, "auto_quality", Boolean,
+              "Automatic quality: the game adjusts the graphics to the frame time."),
+        entry(PauseMenu, Option, "render_scale", Text, "Render scale: 100, 75 or 50 (percent)."),
+        entry(PauseMenu, Option, "frame_limit", Text, "Frame limit: off, 60 or 30."),
         entry(PauseMenu, Option, "smooth_motion", Boolean, "Smooth motion."),
         entry(PauseMenu, Option, "hd_scenery", Boolean, "HD scenery."),
         entry(PauseMenu, Option, "scenery_quality", Text, "Scenery quality: upscaled or smooth."),

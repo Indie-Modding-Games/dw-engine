@@ -24,9 +24,9 @@ enum class Pass : std::uint8_t {
 class DrawContext {
 public:
   DrawContext(rhi::CommandList& commands, rhi::UploadRing& upload, Pass pass, rhi::Extent extent,
-              rhi::TextureId sceneColor = {})
+              rhi::TextureId sceneColor = {}, rhi::Extent sceneExtent = {})
       : commands_(&commands), upload_(&upload), pass_(pass), extent_(extent),
-        sceneColor_(sceneColor) {}
+        sceneColor_(sceneColor), sceneExtent_(sceneExtent) {}
 
   [[nodiscard]] rhi::CommandList& commands() const { return *commands_; }
   // Per-frame memory for data that changes every frame; valid until the end of this frame on the
@@ -35,9 +35,10 @@ public:
   [[nodiscard]] Pass pass() const { return pass_; }
   // The size of the targets in pixels. The viewport and scissor start as the whole target.
   [[nodiscard]] rhi::Extent extent() const { return extent_; }
-  // In Pass::Post, the texture the scene pass drew this frame, the window's size; sampled with
+  // In Pass::Post, the texture the scene pass drew this frame (sceneExtent); sampled with
   // the bindless table. In the other passes, an invalid id.
   [[nodiscard]] rhi::TextureId sceneColor() const { return sceneColor_; }
+  [[nodiscard]] rhi::Extent sceneExtent() const { return sceneExtent_; }
 
 private:
   rhi::CommandList* commands_;
@@ -45,6 +46,7 @@ private:
   Pass pass_;
   rhi::Extent extent_;
   rhi::TextureId sceneColor_;
+  rhi::Extent sceneExtent_;
 };
 
 // What a drawer may use before the passes of a frame start (Drawer::prepare).

@@ -1839,7 +1839,9 @@ std::optional<glm::vec3> FieldScene::pickGround(glm::vec2 windowPixel) const {
   if (!mapRenderer_->hasMap()) {
     return std::nullopt;
   }
-  return mapRenderer_->camera().pickGround(windowPixel);
+  const float scale =
+      graphics_.renderScale < 100 ? static_cast<float>(graphics_.renderScale) / 100.0F : 1.0F;
+  return mapRenderer_->camera().pickGround(windowPixel * scale);
 }
 
 std::optional<glm::vec2> FieldScene::worldToWindow(glm::vec3 world) const {

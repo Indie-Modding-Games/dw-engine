@@ -732,7 +732,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
     scene_->setWeatherSeed(game_.systems.weather->seed());
   }
   scene_->forceWeather(context.options->weather);
-  const bool weather = context.userSettings->weather.value_or(true);
+  const bool weather = context.userSettings->weather.value_or(context.userSettings->weatherDefault);
   scene_->setWeatherEnabled(weather);
   context_.ui->setSetting(WeatherSetting, weather);
   // The seasons, on unless turned off, and a season --season forces.

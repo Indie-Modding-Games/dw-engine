@@ -1,0 +1,4 @@
+# The notice that the game draws without a graphics card (ui/software_notice, docs/architecture/software-mode.md).
+title: "그래픽 카드 없이 플레이 중"
+body: "프로세서로 화면을 그리고 있어서 느릴 수 있어요. 화질은 자동으로 조정되며, 설정 > 그래픽에서 바꿀 수 있어요."
+fix: "해결하려면 그래픽 카드 제조사 웹사이트에서 드라이버를 설치하거나 업데이트하세요."
