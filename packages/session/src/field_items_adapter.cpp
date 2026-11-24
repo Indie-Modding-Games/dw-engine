@@ -3,11 +3,13 @@
 #include <dwe/core/message.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/session/field_items_adapter.hpp>
+#include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/story_adapter.hpp>
 
 #include <algorithm>
 #include <cstddef>
+#include <format>
 #include <span>
 #include <string>
 #include <utility>
@@ -387,6 +389,39 @@ std::optional<assets::ItemHandle> FieldItemsAdapter::itemOf(std::int32_t origina
   return inventory_->items().handleOf(*entry);
 }
 
+core::Result<void> FieldItemsAdapter::startNewGame(GameSession& session) {
+  bindRandomizer(session);
+  return {};
+}
+
+void FieldItemsAdapter::afterLoad(GameSession& session) {
+  bindRandomizer(session);
+}
+
+void FieldItemsAdapter::bindRandomizer(const GameSession& session) {
+  randomizer_ = &session.randomizer();
+  randomItems_.clear();
+  if (randomizer_->settings().items) {
+    randomItems_ = inventory_->randomItems(*randomizer_);
+  }
+}
+
+std::optional<assets::ItemHandle> FieldItemsAdapter::placed(std::string_view mapId,
+                                                            std::string_view spot,
+                                                            assets::ItemHandle original) const {
+  if (randomizer_ == nullptr) {
+    return original;
+  }
+  const auto pick =
+      randomizer_->fieldItem(mapId, spot, inventory_->items().at(original).id, randomItems_);
+  if (!pick) {
+    return original;
+  }
+  core::logDebug("[randomizer] {} on {} {}: {}", inventory_->items().at(original).id, mapId, spot,
+                 *pick);
+  return inventory_->items().handleOf(*pick).value_or(original);
+}
+
 bool FieldItemsAdapter::spawnItem(std::string_view mapId, std::int32_t originalItem,
                                   assets::CollisionCell cell, float height) {
   items_.enterMap(mapId);
@@ -397,7 +432,8 @@ bool FieldItemsAdapter::spawnItem(std::string_view mapId, std::int32_t originalI
     return true;
   }
   const std::optional<assets::ItemHandle> item = itemOf(originalItem);
-  return item && items_.spawn(*item, cell, height);
+  return item && items_.spawn(*placed(mapId, std::format("{},{}", cell.column, cell.row), *item),
+                              cell, height);
 }
 
 bool FieldItemsAdapter::dropItem(std::string_view mapId, std::string_view item, glm::vec3 position,
@@ -417,10 +453,12 @@ bool FieldItemsAdapter::spawnChest(std::string_view mapId, std::int32_t original
                                    glm::vec3 position, std::int32_t rotation,
                                    std::int32_t trigger) {
   items_.enterMap(mapId);
-  const std::optional<assets::ItemHandle> item = itemOf(originalItem);
-  if (!item) {
+  const std::optional<assets::ItemHandle> original = itemOf(originalItem);
+  if (!original) {
     return false;
   }
+  const std::optional<assets::ItemHandle> item =
+      placed(mapId, std::format("chest{}", trigger), *original);
   const bool taken = story_->state().trigger(trigger).value_or(false);
   return items_.spawnChest({.item = *item,
                             .position = position,

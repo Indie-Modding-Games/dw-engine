@@ -112,6 +112,7 @@ inline constexpr std::string_view SeaSerpentScene =
 
 // The title screen (title_screen.cpp).
 inline constexpr std::string_view TitleCommand = "game: command {}";
+inline constexpr std::string_view RandomizedRun = "game: the new game is the randomized run {}";
 inline constexpr std::string_view SaveErased = "game: erased {}";
 inline constexpr std::string_view CannotEraseSave = "game: erase: {}";
 

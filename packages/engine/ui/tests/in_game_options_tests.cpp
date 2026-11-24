@@ -37,7 +37,7 @@ struct Tab {
   std::string_view id;
   std::span<const std::string_view> rows;
 };
-constexpr std::array<std::string_view, 31> GameRows{"walk-control",
+constexpr std::array<std::string_view, 33> GameRows{"walk-control",
                                                     "autosave",
                                                     "world-map",
                                                     "minimap-items",
@@ -59,11 +59,13 @@ constexpr std::array<std::string_view, 31> GameRows{"walk-control",
                                                     "fair-evolution-average",
                                                     "fair-move-forgetting",
                                                     "fair-card-stock",
+                                                    "roaming-rare-chance",
                                                     "choose-egg-after-lives-lost",
                                                     "generous-talk",
                                                     "extra-toilets",
                                                     "angemon-event-zone",
                                                     "whamon-in-water",
+                                                    "boosted-techniques",
                                                     "coop-difficulty",
                                                     "coop-open-to-join",
                                                     "name-spacing",
@@ -85,10 +87,11 @@ constexpr std::array<std::string_view, 15> GraphicsRows{"display-mode",
                                                         "seasons"};
 constexpr std::array<std::string_view, 4> SoundRows{"music-volume", "effects-volume",
                                                     "continuous-music", "reverb"};
-constexpr std::array<std::string_view, 15> InterfaceRows{
-    "ui-skin",      "ui-scale",        "language",      "text-font",   "translated-signs",
-    "show-minimap", "minimap-enemies", "digital-time",  "save-notice", "need-bubble-stack",
-    "shop-job-bar", "shop-extras",     "favorite-food", "art-fixes",   "dev-tools"};
+constexpr std::array<std::string_view, 17> InterfaceRows{
+    "ui-skin",      "ui-scale",        "language",     "text-font",   "translated-signs",
+    "show-minimap", "minimap-enemies", "digital-time", "save-notice", "need-bubble-stack",
+    "need-meters",  "danger-alert",    "shop-job-bar", "shop-extras", "favorite-food",
+    "art-fixes",    "dev-tools"};
 const std::array<Tab, 4> Tabs{{{.id = "game", .rows = GameRows},
                                {.id = "graphics", .rows = GraphicsRows},
                                {.id = "sound", .rows = SoundRows},
@@ -823,6 +826,62 @@ TEST_CASE("the options page turns the items on the minimap on and off, with its 
   CHECK(sent(screen.ui->takeCommands(), "minimap_items", UiValue{false}));
   screen.ui->setSetting("minimap_items", false);
   CHECK(screen.ui->elementText(Menu, "minimap-items-value") == "No");
+}
+
+TEST_CASE("the options page turns the need meters and the danger alert on and off, on by default") {
+  for (const std::string_view language : {"es", "de"}) {
+    CAPTURE(language);
+    Screen screen{"pause_menu", language};
+    openOnOptions(screen);
+    showTab(screen, "interface");
+    for (const std::string_view row : {"need-meters", "danger-alert"}) {
+      CAPTURE(row);
+      CHECK_FALSE(screen.ui->elementHasClass(Menu, row, "hidden"));
+      CHECK_FALSE(screen.ui->elementText(Menu, std::string{row} + "-label").empty());
+      CHECK(screen.ui->elementText(Menu, std::string{row} + "-value") ==
+            (language == "es" ? "Sí" : "Ja"));
+      focusRow(screen, row);
+      CHECK(screen.ui->elementText(Menu, "option-tag") ==
+            (language == "es" ? "Mejora" : "Verbesserung"));
+    }
+  }
+  Screen screen{"pause_menu", "es"};
+  openOnOptions(screen);
+  showTab(screen, "interface");
+  CHECK(screen.ui->elementText(Menu, "need-meters-label") == "Medidores de necesidades");
+  CHECK(screen.ui->elementText(Menu, "danger-alert-label") == "Aviso de peligro");
+  std::ignore = screen.ui->takeCommands();
+  adjust(screen, "need-meters", 1);
+  CHECK(sent(screen.ui->takeCommands(), "need_meters", UiValue{false}));
+  adjust(screen, "danger-alert", 1);
+  CHECK(sent(screen.ui->takeCommands(), "danger_alert", UiValue{false}));
+  screen.ui->setSetting("danger_alert", false);
+  CHECK(screen.ui->elementText(Menu, "danger-alert-value") == "No");
+}
+
+TEST_CASE(
+    "the need meters' and the danger alert's descriptions fit their panel in every language") {
+  for (const std::string_view language : {"en", "es", "de", "fr", "pt", "ru", "ja", "ko", "zh"}) {
+    for (const std::string_view skin : {"original", "pixel"}) {
+      CAPTURE(language);
+      CAPTURE(skin);
+      Screen screen{"pause_menu", language};
+      screen.skin(skin);
+      openOnOptions(screen);
+      showTab(screen, "interface");
+      for (const std::string_view row : {"need-meters", "danger-alert"}) {
+        CAPTURE(row);
+        focusRow(screen, row);
+        screen.frames(2);
+        const auto info = screen.ui->elementRect(Menu, "option-info");
+        const auto help = screen.ui->elementRect(Menu, "option-help");
+        REQUIRE(info.has_value());
+        REQUIRE(help.has_value());
+        CAPTURE(screen.ui->elementText(Menu, "option-help"));
+        CHECK(help.value_or(Ui::Rect{}).bottom <= info.value_or(Ui::Rect{}).bottom + 0.5F);
+      }
+    }
+  }
 }
 
 TEST_CASE("a list scrolled down starts the next tab and the next opening at its first row") {

@@ -81,7 +81,8 @@ body #panel .button.selected,
 .vs-cursor,
 .cell-cursor,
 .icon-choice:focus,
-.icon-choice.selected:focus {
+.icon-choice.selected:focus,
+#panel #presets .preset:focus {
 	decorator: ninepatch(nb-ocur-outer, nb-ocur-inner, 1) border-box;
 }
 

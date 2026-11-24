@@ -50,6 +50,27 @@ public:
   virtual std::int64_t next() = 0;
 };
 
+// A roll the player tunes: it hits when it writes `hitsAtMost` or less, `percent` times in 100.
+struct TunedRoll {
+  std::int64_t hitsAtMost = 0;
+  std::int32_t percent = 0;
+};
+
+// The rolls whose chance the player tunes, asked at each store_random; nothing rolls as the
+// original.
+class StoryRollPort {
+public:
+  StoryRollPort() = default;
+  StoryRollPort(const StoryRollPort&) = delete;
+  StoryRollPort& operator=(const StoryRollPort&) = delete;
+  StoryRollPort(StoryRollPort&&) = delete;
+  StoryRollPort& operator=(StoryRollPort&&) = delete;
+  virtual ~StoryRollPort() = default;
+
+  [[nodiscard]] virtual std::optional<TunedRoll> tuned(std::int64_t variable,
+                                                       std::int64_t highest) const = 0;
+};
+
 // The sound effects the story asks for. A slot is the original's sound slot (sound.c: playSound):
 // 0 system sounds, 1 the second system bank, 8 the bank of the map or the battle. The owner knows
 // which bank each slot holds. Effects never wait and never fail a script: a sound that cannot play

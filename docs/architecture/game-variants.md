@@ -56,6 +56,7 @@ Everything the engine does is shared; the variants only differ in the rules a ga
 | Free exploration | Fixed off | The player's option |
 | Extra toilets | Fixed off | The player's option |
 | Choose the egg after losing every life | Fixed off | The player's option |
+| Boosted techniques ([battle](../modules/game/battle.md#boosted-techniques)) | Fixed off | The player's option |
 | Online co-op | Yes (the host's variant rules the shared world) | Yes |
 | Online versus | The same for both: it is not a story game | The same |
 
@@ -111,7 +112,7 @@ Classic Enhanced" and a help line that says where it can be changed. At the titl
 A mode may only fix the options a game applies from its own settings: the difficulty, the rare items, free
 exploration, the extra toilets, the egg after losing every life, the four "fair" quirks, the generous talk range, the
 quick battle start, skipping evolutions, a cancel that closes a choice, Angemon's and Whamon's story fixes, the shop
-job's mode and the co-op difficulty (`FixableOptions`). A pin on another option, or with a value the setting cannot
+job's mode, the co-op difficulty and the boosted techniques (`FixableOptions`). A pin on another option, or with a value the setting cannot
 take, is left out with its reason in the log, and the others stay.
 
 ## Saves

@@ -263,8 +263,11 @@ void Device::Impl::destroyRetired(std::uint64_t completedFrame) {
 
 Device::Impl::~Impl() {
   if (device.device != VK_NULL_HANDLE) {
-    vkDeviceWaitIdle(device);
+    if (!gpuDeviceLost()) {
+      vkDeviceWaitIdle(device);
+    }
     destroyRetired(submittedFrames + 1);
+    gpuForgetDevice(device);
     vmaDestroyAllocator(allocator);
     for (FrameSlot& frame : frames) {
       vkDestroyFence(device, frame.finished, nullptr);
@@ -337,6 +340,18 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   impl->physicalDevice = physicalDevice.value();
   core::logInfo("GPU: {}", impl->physicalDevice.name);
 
+  GpuDiagnostics diagnostics;
+  diagnostics.bufferMarkers =
+      impl->physicalDevice.enable_extension_if_present(VK_AMD_BUFFER_MARKER_EXTENSION_NAME);
+  if (impl->physicalDevice.is_extension_present(VK_EXT_DEVICE_FAULT_EXTENSION_NAME)) {
+    VkPhysicalDeviceFaultFeaturesEXT fault{};
+    fault.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT;
+    fault.deviceFault = VK_TRUE;
+    diagnostics.deviceFault =
+        impl->physicalDevice.enable_extension_features_if_present(fault) &&
+        impl->physicalDevice.enable_extension_if_present(VK_EXT_DEVICE_FAULT_EXTENSION_NAME);
+  }
+
   auto device = vkb::DeviceBuilder{impl->physicalDevice}.build();
   if (!device) {
     return core::fail(
@@ -376,11 +391,7 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
     return std::unexpected{created.error()};
   }
   auto newDevice = std::unique_ptr<Device>{new Device{std::move(impl)}};
-  // The GPU report is what a crash reads and writes: capture the GPU, its driver and the limits
-  // that AMD and Intel crash on, and install the crash reporter so an uncaught exception or a fault
-  // inside the driver still leaves the trail.
-  gpuReportDevice(newDevice->nativeHandles(), newDevice->validationEnabled());
-  gpuInstallCrashReporter();
+  gpuReportDevice(*newDevice, diagnostics);
   return newDevice;
 }
 
@@ -392,7 +403,6 @@ std::optional<Frame> Device::beginFrame() {
   Impl& impl = *impl_;
   FrameSlot& slot = impl.frames[impl.frameIndex];
   if (gpuDeviceLost()) {
-    // Already lost and reported once: stop drawing without re-logging the report every frame.
     return std::nullopt;
   }
   if (gpuCheck("vkWaitForFences (previous frame)",
@@ -410,9 +420,6 @@ std::optional<Frame> Device::beginFrame() {
   const bool resized = size.width != impl.swapchainWindowSize.width ||
                        size.height != impl.swapchainWindowSize.height;
   if (impl.swapchainStale || resized) {
-    // A swapchain rebuild is a driver-sensitive step (AMD and Intel both have bugs that fire on
-    // it); mark it and check the idle so a fault there is named instead of surfacing three frames
-    // later.
     gpuNoteActivity("rebuilding the swapchain");
     if (gpuCheck("vkDeviceWaitIdle (swapchain rebuild)", vkDeviceWaitIdle(impl.device)) !=
         VK_SUCCESS) {
@@ -433,10 +440,7 @@ std::optional<Frame> Device::beginFrame() {
   }
   if (acquired == VK_SUBOPTIMAL_KHR) {
     impl.swapchainStale = true;
-  } else if (const auto checked = gpuCheck("vkAcquireNextImageKHR", acquired);
-             checked != VK_SUCCESS) {
-    // The device is lost or a fault happened: gpuCheck has already written the report; stop drawing
-    // instead of aborting on the assert with the crash unrecorded.
+  } else if (gpuCheck("vkAcquireNextImageKHR", acquired) != VK_SUCCESS) {
     impl.swapchainStale = true;
     return std::nullopt;
   }
@@ -491,14 +495,13 @@ void Device::endFrame(const Frame& frame) {
   Impl& impl = *impl_;
   FrameSlot& slot = impl.frames[impl.frameIndex];
 
-  // If the submit or the present fault, the trail says this is where it happened (which pass drew
-  // the last frame is already in `activity`, set by CommandList::beginRendering).
   gpuNoteActivity(std::format("presenting frame {}", impl.submittedFrames + 1));
 
   transitionImage(frame.commands, frame.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                  VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_NONE,
-                  VK_ACCESS_2_NONE);
+                  VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                  VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_NONE);
+  gpuMarker(frame.commands, GpuWork::Frame);
   gpuCheck("vkEndCommandBuffer", vkEndCommandBuffer(frame.commands));
 
   VkSemaphore renderFinished = impl.renderFinished[frame.imageIndex];
@@ -525,11 +528,7 @@ void Device::endFrame(const Frame& frame) {
   submit.pCommandBufferInfos = &commands;
   submit.signalSemaphoreInfoCount = 1;
   submit.pSignalSemaphoreInfos = &signal;
-  // The submit carries all the commands of the frame: a GPU fault that comes from one of the draws
-  // (a stale bindless index, a hang) reaches the CPU here, so the trail names this submit and the
-  // activity the renderer left from the last pass.
-  const auto submitted = vkQueueSubmit2(impl.queue, 1, &submit, slot.finished);
-  gpuCheck("vkQueueSubmit2 (frame)", submitted);
+  gpuCheck("vkQueueSubmit2 (frame)", vkQueueSubmit2(impl.queue, 1, &submit, slot.finished));
   slot.submittedFrame = ++impl.submittedFrames;
 
   VkSwapchainKHR swapchain = impl.swapchain;
@@ -558,8 +557,14 @@ void Device::destroyLater(std::function<void()> destroy) {
 }
 
 void Device::waitIdle() {
-  vkDeviceWaitIdle(impl_->device);
+  if (!gpuDeviceLost()) {
+    gpuCheck("vkDeviceWaitIdle", vkDeviceWaitIdle(impl_->device));
+  }
   impl_->destroyRetired(impl_->submittedFrames + 1);
+}
+
+bool Device::lost() const {
+  return gpuDeviceLost();
 }
 
 bool Device::supportsBc7() const {

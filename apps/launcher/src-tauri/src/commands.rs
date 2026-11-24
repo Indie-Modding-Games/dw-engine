@@ -18,7 +18,7 @@ use crate::launch;
 use crate::log_line;
 use crate::manifest;
 use crate::releases::{self, Client, Release, UpdateChannel};
-use crate::settings;
+use crate::settings::{self, GraphicsSwitch, LaunchMode};
 use crate::store::{Game, GameStore};
 use crate::system_check::{self, Graphics, GraphicsCheck, Space};
 use crate::updates::{self, Stage};
@@ -46,15 +46,9 @@ pub struct Status {
     /// "stable" or "testing" (releases::UpdateChannel).
     update_channel: UpdateChannel,
     last_check: Option<LastCheck>,
-    /// The compatibility mode: the game starts with --compatible (system_check.rs, launch.rs).
     compatibility_mode: bool,
-    /// The low-performance mode: the game starts with --low-performance (launch.rs).
     low_performance_mode: bool,
-    /// The AMD RX 6000 safe mode: the game starts with --rdna2-safe (launch.rs).
-    rdna2_safe_mode: bool,
-    /// Manual launch options (settings.rs): "auto", "skip" or "software".
-    launch_mode: String,
-    /// The player's extra game arguments and environment, as written in the settings page.
+    launch_mode: LaunchMode,
     extra_args: String,
     extra_env: String,
     /// A new launcher installed in this session: it runs after a restart.
@@ -96,6 +90,9 @@ fn emit(app: &AppHandle, task: &'static str, percent: Option<f64>, step: Option<
 struct GameExit {
     code: Option<i32>,
     failed: bool,
+    reason: Option<launch::ExitReason>,
+    offer_software: bool,
+    offer_compatible: bool,
     log: Vec<String>,
 }
 
@@ -167,8 +164,7 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
         last_check: settings.last_check.clone(),
         compatibility_mode: settings.compatibility_mode,
         low_performance_mode: settings.low_performance_mode,
-        rdna2_safe_mode: settings.rdna2_safe_mode,
-        launch_mode: settings.launch_mode_or_default().to_string(),
+        launch_mode: settings.launch_mode,
         extra_args: settings.extra_args.clone(),
         extra_env: settings.extra_env.clone(),
         launcher_ready: state.launcher_ready.lock().unwrap().clone(),
@@ -571,7 +567,7 @@ pub fn cancel(state: State<'_, AppState>) {
 
 /// The GPU check of a game: the one kept for its folder and Vulkan floor (`compatibility`), or a
 /// new one (also when `again`). Runs off the page's thread; a second caller waits for the check in
-/// progress. The kept check belongs to a floor, so changing the compatibility mode re-probes.
+/// progress.
 async fn graphics_of(state: &AppState, game: &Game, again: bool, compatibility: bool) -> GraphicsCheck {
     let mut kept = state.graphics.lock().await;
     if let Some((dir, floor, check)) = kept.as_ref() {
@@ -637,16 +633,11 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     }
     let (data, own, graphics_flags, launch_mode, extra_args, extra_env) = {
         let settings = state.settings.lock().unwrap();
-        let launch_mode = settings.launch_mode_or_default().to_string();
         (
             settings.data_folder(),
             settings.uses_default_data_folder(),
-            launch::GraphicsFlags {
-                compatibility: settings.compatibility_mode,
-                low_performance: settings.low_performance_mode,
-                rdna2_safe: settings.rdna2_safe_mode,
-            },
-            launch_mode,
+            settings.graphics_flags(),
+            settings.launch_mode,
             settings.game_args(),
             settings.game_env(),
         )
@@ -657,32 +648,31 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
         return Err(Failure::new(code::MISSING_FILE, content.display().to_string()));
     }
     require_space(&state, system_check::PLAY_BYTES)?;
-    let graphics = if launch_mode == "auto" {
+    let graphics = if launch_mode == LaunchMode::Auto {
         graphics_of(&state, &game, false, graphics_flags.compatibility).await
     } else {
-        // A wrong "no GPU" answer must never keep the player from starting. In the manual modes
-        // there is no probe at all, so nothing can decide for them.
         log_line!("launch mode {launch_mode}: skipping the GPU check");
         GraphicsCheck::unknown()
     };
     let GraphicsCheck { graphics: kind, env: graphics_env, .. } = graphics;
-    // The launcher never refuses to play: even when the check found no GPU that can run the
-    // renderer (docs/modules/apps/launcher.md), the game still starts and fails on its own, writing
-    // the reason and the GPU report (rhi/gpu_report.cpp) to its log, whose end the launcher then
-    // shows with the end-of-game notice. A silent "you cannot play" here would hide exactly the
-    // information the player needs (an old card is usually a driver or compatibility-mode fix).
+    // Never refused: a game that cannot start writes why to its log, which the launcher then shows.
     if kind == Graphics::Blocked {
         log_line!("no GPU can run the game: starting it anyway to see what the game reports");
     }
     if state.game_running.swap(true, Ordering::SeqCst) {
         return Ok(());
     }
-    let mut env = if launch_mode == "software" {
+    let mut env = if launch_mode == LaunchMode::Software {
         system_check::software_env_for(&game)
     } else {
         graphics_env
     };
-    // The player's variables come last, so they win over the launcher's software driver ones.
+    if launch_mode == LaunchMode::Software && env.is_empty() {
+        log_line!("launch mode software: this game has no software driver, starting it with the system's");
+    }
+    let on_software = !env.is_empty() && (launch_mode == LaunchMode::Software || kind == Graphics::Fallback);
+    let offer_software = !on_software && system_check::software_manifest(&game).is_some();
+    let offer_compatible = !on_software && !graphics_flags.compatibility && launch::knows_modes(&game);
     env.extend(extra_env);
     let mut child = match launch::start(&game, &data, own, &env, graphics_flags, &extra_args) {
         Ok(child) => child,
@@ -691,9 +681,6 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
             return Err(failure);
         }
     };
-    if launch_mode == "software" {
-        log_line!("launch mode software: starting it on the package's software driver");
-    }
     if kind == Graphics::Fallback {
         log_line!("no GPU can run the game: starting it on the software driver");
     }
@@ -702,6 +689,7 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
         let _ = window.hide();
     }
     let log = launch::game_log(&data);
+    let exited = game.clone();
     std::thread::spawn(move || {
         let code = child.wait().ok().and_then(|s| s.code());
         let failed = code != Some(0);
@@ -713,7 +701,8 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
             let _ = window.set_focus();
         }
         let tail = if failed { launch::tail(&log, 30) } else { Vec::new() };
-        let _ = app.emit("game-exited", GameExit { code, failed, log: tail });
+        let reason = launch::exit_reason(&exited, code);
+        let _ = app.emit("game-exited", GameExit { code, failed, reason, offer_software, offer_compatible, log: tail });
     });
     Ok(())
 }
@@ -771,86 +760,31 @@ pub fn set_update_channel(app: AppHandle, state: State<'_, AppState>, channel: S
     Ok(status_of(&app, &state))
 }
 
-/// The compatibility mode (system_check.rs): the game starts with `--compatible`, accepting a
-/// Vulkan 1.2 GPU that has dynamic rendering and synchronization2 as extensions instead of
-/// requiring Vulkan 1.3 core. Off by default. The page re-checks the GPU (check_system again) to
-/// see the new result; the kept check is dropped so the next one runs with the new floor.
+/// One graphics switch on or off. Turning --compatible on or off changes the GPU check, so the
+/// page checks again.
 #[tauri::command]
-pub fn set_compatibility_mode(app: AppHandle, state: State<'_, AppState>, enabled: bool) -> Result<Status> {
+pub fn set_graphics_switch(app: AppHandle, state: State<'_, AppState>, switch: GraphicsSwitch, enabled: bool) -> Result<Status> {
     {
         let mut settings = state.settings.lock().unwrap();
-        settings.compatibility_mode = enabled;
+        settings.set_graphics_switch(switch, enabled);
         settings.save()?;
     }
-    log_line!("compatibility mode: {enabled}");
+    log_line!("graphics switch {switch:?}: {enabled}");
     Ok(status_of(&app, &state))
 }
 
-/// The low-performance mode: the game starts with `--low-performance`, the potato preset (every
-/// heavy option off, graphics_options.hpp), for weak GPUs and old iGPUs. No GPU re-check needed.
+/// How Play starts the game and the player's own arguments and environment, saved as typed: they
+/// are read on each start, where a line that makes no sense is left out (settings.rs).
 #[tauri::command]
-pub fn set_low_performance_mode(app: AppHandle, state: State<'_, AppState>, enabled: bool) -> Result<Status> {
+pub fn set_launch_options(app: AppHandle, state: State<'_, AppState>, mode: LaunchMode, args: String, env: String) -> Result<Status> {
     {
         let mut settings = state.settings.lock().unwrap();
-        settings.low_performance_mode = enabled;
-        settings.save()?;
-    }
-    log_line!("low-performance mode: {enabled}");
-    Ok(status_of(&app, &state))
-}
-
-/// The AMD RX 6000 safe mode: the game starts with `--rdna2-safe`, which simplifies the bindless
-/// layout. The game checks the GPU again and ignores the flag on anything else, so leaving this on
-/// cannot change another card's behaviour. Off by default. No GPU re-check needed here.
-#[tauri::command]
-pub fn set_rdna2_safe_mode(app: AppHandle, state: State<'_, AppState>, enabled: bool) -> Result<Status> {
-    {
-        let mut settings = state.settings.lock().unwrap();
-        settings.rdna2_safe_mode = enabled;
-        settings.save()?;
-    }
-    log_line!("AMD RX 6000 safe mode: {enabled}");
-    Ok(status_of(&app, &state))
-}
-
-/// The manual launch mode (settings.rs): "auto" checks the GPU as before, "skip" starts without
-/// checking and without changing drivers, "software" starts on the package's driver. Unknown
-/// values are refused, so a saved settings.json edited by hand cannot select anything else.
-#[tauri::command]
-pub fn set_launch_mode(app: AppHandle, state: State<'_, AppState>, mode: String) -> Result<Status> {
-    if !settings::is_launch_mode(&mode) {
-        return Err(Failure::new(code::IO, mode));
-    }
-    {
-        let mut settings = state.settings.lock().unwrap();
-        settings.launch_mode = mode.clone();
-        settings.save()?;
-    }
-    log_line!("launch mode: {mode}");
-    Ok(status_of(&app, &state))
-}
-
-/// The player's extra arguments and environment: saved as written. The launcher parses them on
-/// every start, ignoring bad lines (settings.rs), so a typo here never keeps Play from working.
-#[tauri::command]
-pub fn set_extra_args(app: AppHandle, state: State<'_, AppState>, args: String) -> Result<Status> {
-    {
-        let mut settings = state.settings.lock().unwrap();
+        settings.launch_mode = mode;
         settings.extra_args = args;
-        settings.save()?;
-    }
-    log_line!("the game's manual arguments were saved");
-    Ok(status_of(&app, &state))
-}
-
-#[tauri::command]
-pub fn set_extra_env(app: AppHandle, state: State<'_, AppState>, env: String) -> Result<Status> {
-    {
-        let mut settings = state.settings.lock().unwrap();
         settings.extra_env = env;
         settings.save()?;
     }
-    log_line!("the game's manual environment was saved");
+    log_line!("launch mode: {mode}");
     Ok(status_of(&app, &state))
 }
 

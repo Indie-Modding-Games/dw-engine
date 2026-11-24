@@ -2,6 +2,7 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/game/battle/battle.hpp>
+#include <dwe/game/battle/boosted_moves.hpp>
 #include <dwe/game/partner/events.hpp>
 #include <dwe/game/partner/state.hpp>
 #include <dwe/game/save/autosave.hpp>
@@ -21,6 +22,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <format>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -330,6 +332,93 @@ TEST_CASE("a ruleset's species patches give the partner its own type and move va
   REQUIRE(table.has_value());
   CHECK(variant->second != *table);
   CHECK(catalog.at(*table).power == 30);
+}
+
+namespace {
+
+// A ruleset whose boosted techniques give the made-up partner `move` and the foe its punch.
+TestPacks boostedPacks(std::string_view move) {
+  return TestPacks{
+      {"rules/boosted/ruleset.yaml",
+       "id: boosted\nname: boosted\nversion: 0.1.0\ndescription: test\nextends: original\n"
+       "sections:\n  - boosted_moves\n"},
+      {"rules/boosted/boosted_moves.yaml",
+       std::format("power_percent: 125\nmp_cost_percent: 75\nspecies:\n  agum: {}\n  foe: punch\n",
+                   move)}};
+}
+
+} // namespace
+
+TEST_CASE("the partner fights with its boosted technique once it knows it and the option is on") {
+  const TestPacks packs = boostedPacks("punch");
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters, nullptr, "boosted");
+  CHECK(adapters.battle->boostedMoveOf("agum") == "punch");
+  CHECK_FALSE(adapters.battle->boostedMoveOf("nobody"));
+
+  // The option starts off: no boost.
+  auto off = adapters.battle->partnerCombatant(*session);
+  REQUIRE_MESSAGE(off.has_value(), errorOf(off));
+  CHECK_FALSE(off->moveVariants.contains("punch"));
+
+  adapters.battle->setBoostedMoves(true);
+  auto on = adapters.battle->partnerCombatant(*session);
+  REQUIRE_MESSAGE(on.has_value(), errorOf(on));
+  const auto variant = on->moveVariants.find("punch");
+  REQUIRE(variant != on->moveVariants.end());
+  const auto& catalog = adapters.battle->catalog();
+  CHECK(catalog.at(variant->second).boosted);
+  CHECK(catalog.at(variant->second).power == 37);
+  CHECK(catalog.at(variant->second).mpCost == 12);
+
+  // Enemies never fight with it, even a species with a pick.
+  auto battle = adapters.battle->start(*session, duelWithFoe());
+  REQUIRE_MESSAGE(battle.has_value(), errorOf(battle));
+  CHECK(battle->state().partner().moves.at(0) == variant->second);
+  CHECK(battle->state().fighters.at(1).moves.at(0) == catalog.find("punch"));
+
+  adapters.battle->setBoostedMoves(false);
+  auto offAgain = adapters.battle->partnerCombatant(*session);
+  REQUIRE_MESSAGE(offAgain.has_value(), errorOf(offAgain));
+  CHECK_FALSE(offAgain->moveVariants.contains("punch"));
+}
+
+TEST_CASE("a boosted technique the partner has not learned stays the table's") {
+  const TestPacks packs = boostedPacks("shot");
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters, nullptr, "boosted");
+  adapters.battle->setBoostedMoves(true);
+  REQUIRE_FALSE(dwe::session::knows(adapters.battle->moves(), "shot"));
+  auto fighter = adapters.battle->partnerCombatant(*session);
+  REQUIRE_MESSAGE(fighter.has_value(), errorOf(fighter));
+  CHECK_FALSE(fighter->moveVariants.contains("shot"));
+}
+
+TEST_CASE("a boosted pick the species cannot learn is left out") {
+  // The made-up partner's finisher, and a move that is not in the table.
+  for (const std::string_view move : {"big_finish", "no_such_move"}) {
+    CAPTURE(move);
+    const TestPacks packs = boostedPacks(move);
+    Adapters adapters;
+    auto session = sessionWithBattle(packs, adapters, nullptr, "boosted");
+    CHECK_FALSE(adapters.battle->boostedMoveOf("agum"));
+    CHECK(adapters.battle->boostedMoveOf("foe") == "punch");
+  }
+}
+
+TEST_CASE("the game pack's boosted techniques: power +25% and MP cost -25%") {
+  const TestPacks packs;
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters);
+  const dwe::ruleset::Section* section =
+      session->rules().current().section(dwe::game::battle::BoostedMovesSection);
+  REQUIRE(section != nullptr);
+  const auto rules = dwe::game::battle::readBoostedMoveRules(*section);
+  REQUIRE_MESSAGE(rules.has_value(), errorOf(rules));
+  CHECK(rules->powerPercent == 125);
+  CHECK(rules->mpCostPercent == 75);
+  CHECK(rules->species.size() >= 100);
+  CHECK(rules->species.at("agum") == "spit_fire");
 }
 
 TEST_CASE("a species drawn at another size fights with its body at that size") {
@@ -777,7 +866,7 @@ struct ExtractedSession {
 };
 
 // Nothing when DWE_CONTENT is not set (scripts/dev.sh mounts it).
-std::unique_ptr<ExtractedSession> extractedSession() {
+std::unique_ptr<ExtractedSession> extractedSession(std::string_view rulesetId = "original") {
   const std::optional<std::filesystem::path> mountedFolder = dwe::test_support::userContent();
   if (!mountedFolder) {
     return nullptr;
@@ -803,7 +892,7 @@ std::unique_ptr<ExtractedSession> extractedSession() {
   std::vector<std::unique_ptr<SessionSystem>> systems;
   systems.push_back(std::move(battle));
   auto session = GameSession::create({.files = &*made->files,
-                                      .rulesetId = "original",
+                                      .rulesetId = std::string{rulesetId},
                                       .rules = std::nullopt,
                                       .species = nullptr,
                                       .seed = 7,
@@ -845,6 +934,30 @@ void checkStartingPartner(const PartnerState& partner, const StartingStats& expe
 }
 
 } // namespace
+
+TEST_CASE("the user's disc, extracted: every boosted pick is a technique its species can learn") {
+  // Every species as a partner (todas) gives the character models the move rows they fight with.
+  const auto extracted = extractedSession("todas");
+  if (!extracted) {
+    MESSAGE("DWE_CONTENT is not set: skipping the boosted picks on extracted content");
+    return;
+  }
+  const dwe::ruleset::Section* section =
+      extracted->session->rules().current().section(dwe::game::battle::BoostedMovesSection);
+  REQUIRE(section != nullptr);
+  const auto rules = dwe::game::battle::readBoostedMoveRules(*section);
+  REQUIRE_MESSAGE(rules.has_value(), errorOf(rules));
+  const auto& catalog = extracted->battle->catalog();
+  for (const auto& [species, move] : rules->species) {
+    CAPTURE(species);
+    CAPTURE(move);
+    CHECK(extracted->battle->boostedMoveOf(species) == move);
+    const auto ref = catalog.find(move);
+    REQUIRE(ref.has_value());
+    CHECK(catalog.at(*ref).learnable);
+    CHECK_FALSE(catalog.at(*ref).finisher);
+  }
+}
 
 TEST_CASE(
     "the user's disc, extracted: the first partner starts with its first technique and its finisher") {

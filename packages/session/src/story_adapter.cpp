@@ -14,10 +14,12 @@
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_music_api.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <set>
 #include <utility>
+#include <vector>
 
 namespace dwe::session {
 
@@ -45,6 +47,12 @@ constexpr std::string_view ExtraVariableMaxKey = "extra_variable_max";
 constexpr std::string_view ExtraRaisedKey = "extra_raised";
 constexpr std::string_view FirstTriggerKey = "first_trigger";
 constexpr std::string_view SpeciesKey = "species";
+constexpr std::string_view RoamingRaresKey = "roaming_rares";
+constexpr std::string_view ScriptKey = "script";
+constexpr std::string_view SectionKey = "section";
+constexpr std::string_view VariableKey = "variable";
+constexpr std::string_view HighestKey = "highest";
+constexpr std::string_view HitsAtMostKey = "hits_at_most";
 // An engine guard, not a rule: past a second per frame of the original the story would crawl.
 constexpr std::int64_t MaxTicksPerFrame = 60;
 // A story variable is one byte in the state and in saves (script.h:158: ScriptState.pstats).
@@ -133,6 +141,32 @@ void readCapacity(assets::YamlReader& reader, const core::YamlNode& root,
                        .species = static_cast<std::int32_t>(species)};
 }
 
+std::vector<RoamingRareRoll> readRoamingRares(assets::YamlReader& reader,
+                                              const core::YamlNode& root) {
+  const core::YamlNode* list = root.isMapping() ? root.find(RoamingRaresKey) : nullptr;
+  if (list == nullptr || !reader.ok()) {
+    return {};
+  }
+  constexpr std::int64_t Sections = std::int64_t{std::numeric_limits<std::uint16_t>::max()} + 1;
+  constexpr std::int64_t Values = MaxVariableMax + 1;
+  std::vector<RoamingRareRoll> rolls;
+  for (const core::YamlNode& item : reader.sequence(*list, messages::StoryRoamingRaresText)) {
+    if (!reader.expectKeys(item, messages::StoryRoamingRareText,
+                           {ScriptKey, SectionKey, VariableKey, HighestKey, HitsAtMostKey})) {
+      break;
+    }
+    const auto script = static_cast<std::uint16_t>(stateNumber(reader, item, ScriptKey, Sections));
+    const auto at = static_cast<std::uint16_t>(stateNumber(reader, item, SectionKey, Sections));
+    const auto highest = stateNumber(reader, item, HighestKey, Values);
+    rolls.push_back(
+        {.section = {.script = script, .section = at},
+         .variable = stateNumber(reader, item, VariableKey, game::story::BaseVariableCount),
+         .highest = highest,
+         .hitsAtMost = stateNumber(reader, item, HitsAtMostKey, highest + 1)});
+  }
+  return rolls;
+}
+
 } // namespace
 
 core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section) {
@@ -142,7 +176,7 @@ core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section) 
                          {TicksPerFrameKey, VariableMaxKey, FrozenVariableKey, FrozenValueKey,
                           TalkFacingTriggerKey, ShowNameVariableKey, ShowNameByEventKey,
                           ShowNameAlwaysKey, ShowNameNeverKey},
-                         {CapacityKey})) {
+                         {CapacityKey, RoamingRaresKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   const core::YamlNode& ticksNode = reader.field(root, TicksPerFrameKey);
@@ -170,7 +204,8 @@ core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section) 
                           .rules = {.variableMax = variableMax},
                           .flow = flow,
                           .capacity = {},
-                          .extraRaised = {}};
+                          .extraRaised = {},
+                          .roamingRares = readRoamingRares(reader, root)};
   readCapacity(reader, root, rules);
   return reader.finish(rules, section.file);
 }
@@ -232,6 +267,37 @@ public:
 
 private:
   ruleset::Random* source_ = nullptr;
+};
+
+class StoryAdapter::RollPort final : public game::story::StoryRollPort {
+public:
+  explicit RollPort(const StoryAdapter& adapter) : adapter_{&adapter} {}
+
+  [[nodiscard]] std::optional<game::story::TunedRoll> tuned(std::int64_t variable,
+                                                            std::int64_t highest) const override {
+    const std::optional<std::int32_t> percent = adapter_->roamingRareChance_;
+    if (!percent || !adapter_->runner_) {
+      return std::nullopt;
+    }
+    const std::vector<game::story::SectionRef> running = adapter_->runner_->runningSections();
+    if (running.empty()) {
+      return std::nullopt;
+    }
+    const auto roll =
+        std::ranges::find_if(adapter_->roamingRares_, [&](const RoamingRareRoll& candidate) {
+          return candidate.section == running.back() && candidate.variable == variable &&
+                 candidate.highest == highest;
+        });
+    if (roll == adapter_->roamingRares_.end()) {
+      return std::nullopt;
+    }
+    core::logDebug("{}", formatMessage(messages::RoamingRareRollTuned, roll->section.script,
+                                       roll->section.section, *percent));
+    return game::story::TunedRoll{.hitsAtMost = roll->hitsAtMost, .percent = *percent};
+  }
+
+private:
+  const StoryAdapter* adapter_;
 };
 
 // The VM is built before any session, so its sound orders go through here to the session's sound
@@ -560,9 +626,12 @@ core::Result<void> StoryAdapter::wire(const StorySectionRules& story,
   vm_ = std::move(*vm);
   statePort_ = std::make_unique<StatePort>(state_);
   randomPort_ = std::make_unique<RandomPort>();
+  rollPort_ = std::make_unique<RollPort>(*this);
+  roamingRares_ = story.roamingRares;
   sound_ = std::make_unique<SoundRelay>();
   music_ = std::make_unique<MusicRelay>();
-  orders_ = std::make_unique<game::story::StoryOrders>(*statePort_, *randomPort_, story.rules);
+  orders_ = std::make_unique<game::story::StoryOrders>(*statePort_, *randomPort_, story.rules,
+                                                       rollPort_.get());
   host_ = std::make_unique<StoryLuaHost>(*vm_, *desc_.files);
   if (auto published = host_->publishApi(*statePort_, *orders_, *sound_); !published) {
     return core::fail(formatMessage(messages::StoryApiFailed, published.error().message));
@@ -621,7 +690,8 @@ void StoryAdapter::followCapacity(const StorySectionRules& story) {
 
 void StoryAdapter::followRules(const StorySectionRules& story,
                                const game::story::DialogueRules& dialogue) {
-  *orders_ = game::story::StoryOrders{*statePort_, *randomPort_, story.rules};
+  *orders_ = game::story::StoryOrders{*statePort_, *randomPort_, story.rules, rollPort_.get()};
+  roamingRares_ = story.roamingRares;
   dialogue_->dialogue().setRules(dialogue);
   if (story.ticksPerFrame == ticksPerFrame_ && sameFlow(story.flow, flow_)) {
     return;

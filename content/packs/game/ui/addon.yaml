@@ -19,6 +19,7 @@ screens:
   dialog: dialog/document
   new_game_rules: new_game_rules/document
   new_game_mode: new_game_mode/document
+  new_game_randomizer: new_game_randomizer/document
   skin_picker: skin_picker/document
   sleep_menu: sleep_menu/document
   save_machine: save_machine/document

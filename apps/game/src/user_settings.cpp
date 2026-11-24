@@ -50,6 +50,8 @@ constexpr std::string_view ShopJobBarKey = "shop_job_bar";
 constexpr std::string_view NameSpacingKey = "name_spacing";
 constexpr std::string_view ContinuousMusicKey = "continuous_music";
 constexpr std::string_view NeedBubbleStackKey = "need_bubble_stack";
+constexpr std::string_view NeedMetersKey = "need_meters";
+constexpr std::string_view DangerAlertKey = "danger_alert";
 constexpr std::string_view WorldMapKey = "world_map";
 constexpr std::string_view ChibiStyleKey = "chibi_style";
 constexpr std::string_view MinimapEnemiesKey = "minimap_enemies";
@@ -83,6 +85,7 @@ constexpr std::string_view QuickBattleStartKey = "quick_battle_start";
 constexpr std::string_view DifficultyKey = "difficulty";
 constexpr std::string_view ShopJobModeKey = "shop_job_mode";
 constexpr std::string_view CoopDifficultyKey = "coop_difficulty";
+constexpr std::string_view RoamingRareChanceKey = "roaming_rare_chance";
 constexpr std::string_view CoopOpenToJoinKey = "coop_open_to_join";
 constexpr std::string_view SkipEvolutionKey = "skip_evolution";
 constexpr std::string_view ChoiceCancelClosesKey = "choice_cancel_closes";
@@ -95,6 +98,7 @@ constexpr std::string_view GenerousTalkKey = "generous_talk";
 constexpr std::string_view ExtraToiletsKey = "extra_toilets";
 constexpr std::string_view AngemonEventZoneKey = "angemon_event_zone";
 constexpr std::string_view WhamonInWaterKey = "whamon_in_water";
+constexpr std::string_view BoostedTechniquesKey = "boosted_techniques";
 
 } // namespace
 
@@ -192,6 +196,12 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     if (const core::YamlNode* stack = tree->find(NeedBubbleStackKey)) {
       settings.needBubbleStack = reader.boolean(*stack);
     }
+    if (const core::YamlNode* meters = tree->find(NeedMetersKey)) {
+      settings.needMeters = reader.boolean(*meters);
+    }
+    if (const core::YamlNode* danger = tree->find(DangerAlertKey)) {
+      settings.dangerAlert = reader.boolean(*danger);
+    }
     if (const core::YamlNode* worldMap = tree->find(WorldMapKey)) {
       settings.worldMap = reader.boolean(*worldMap);
     }
@@ -275,6 +285,7 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
           std::pair{ExtraToiletsKey, &UserSettings::extraToilets},
           std::pair{AngemonEventZoneKey, &UserSettings::angemonEventZone},
           std::pair{WhamonInWaterKey, &UserSettings::whamonInWater},
+          std::pair{BoostedTechniquesKey, &UserSettings::boostedTechniques},
           std::pair{CoopOpenToJoinKey, &UserSettings::coopOpenToJoin}}) {
       if (const core::YamlNode* value = tree->find(key)) {
         settings.*flag = reader.boolean(*value);
@@ -288,6 +299,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* shopJob = tree->find(ShopJobModeKey)) {
       settings.shopJobMode = reader.text(*shopJob);
+    }
+    if (const core::YamlNode* roamingRares = tree->find(RoamingRareChanceKey)) {
+      settings.roamingRareChance = reader.text(*roamingRares);
     }
     if (const core::YamlNode* extras = tree->find(ShopExtrasKey)) {
       settings.shopExtras = reader.boolean(*extras);
@@ -413,6 +427,14 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
     root.set(std::string{NeedBubbleStackKey},
              core::YamlNode::scalar(*settings.needBubbleStack ? "true" : "false"));
   }
+  if (settings.needMeters) {
+    root.set(std::string{NeedMetersKey},
+             core::YamlNode::scalar(*settings.needMeters ? "true" : "false"));
+  }
+  if (settings.dangerAlert) {
+    root.set(std::string{DangerAlertKey},
+             core::YamlNode::scalar(*settings.dangerAlert ? "true" : "false"));
+  }
   if (settings.worldMap) {
     root.set(std::string{WorldMapKey},
              core::YamlNode::scalar(*settings.worldMap ? "true" : "false"));
@@ -509,6 +531,7 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
         std::pair{ExtraToiletsKey, &UserSettings::extraToilets},
         std::pair{AngemonEventZoneKey, &UserSettings::angemonEventZone},
         std::pair{WhamonInWaterKey, &UserSettings::whamonInWater},
+        std::pair{BoostedTechniquesKey, &UserSettings::boostedTechniques},
         std::pair{CoopOpenToJoinKey, &UserSettings::coopOpenToJoin}}) {
     if (const std::optional<bool>& value = settings.*flag; value) {
       root.set(std::string{key}, core::YamlNode::scalar(*value ? "true" : "false"));
@@ -522,6 +545,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   }
   if (settings.shopJobMode) {
     root.set(std::string{ShopJobModeKey}, core::YamlNode::scalar(*settings.shopJobMode));
+  }
+  if (settings.roamingRareChance) {
+    root.set(std::string{RoamingRareChanceKey},
+             core::YamlNode::scalar(*settings.roamingRareChance));
   }
   const auto flag = [&root](std::string_view key, const std::optional<bool>& value) {
     if (value) {

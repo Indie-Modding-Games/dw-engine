@@ -184,7 +184,22 @@ core::Result<void> EvolutionAdapter::readRules(const ruleset::Ruleset& rules) {
   if (!built) {
     return std::unexpected{built.error()};
   }
-  const game::evolution::Evolution& evolution = evolution_.emplace(std::move(*built));
+  game::evolution::Evolution& evolution = evolution_.emplace(std::move(*built));
+  stagePools_.clear();
+  const EvolutionTables& tables = evolution.tables();
+  for (const game::evolution::Species from : tables.allSpecies()) {
+    for (const game::evolution::Species target : tables.pathTargets(from)) {
+      if (!tables.isMega(target) && tables.statReference(target) != nullptr) {
+        stagePools_[tables.levelOf(target)].emplace_back(tables.idOf(target));
+      }
+    }
+  }
+  for (auto& [level, pool] : stagePools_) {
+    std::ranges::sort(pool);
+    const auto [first, last] = std::ranges::unique(pool);
+    pool.erase(first, last);
+  }
+  mapEvolutions();
   if (!maps_ && desc_.files != nullptr) {
     // Packs without a map table (tests' stand-in packs) leave the map unknown to the rules.
     if (auto maps = assets::loadMapTable(*desc_.files); maps) {
@@ -226,7 +241,36 @@ core::Result<void> EvolutionAdapter::startNewGame(GameSession& session) {
   if (const auto species = evolution_->tables().find(session.partner().state().species)) {
     raise(*species);
   }
+  bindRandomizer(session);
   return {};
+}
+
+void EvolutionAdapter::afterLoad(GameSession& session) {
+  bindRandomizer(session);
+}
+
+void EvolutionAdapter::bindRandomizer(const GameSession& session) {
+  randomizer_ = &session.randomizer();
+  mapEvolutions();
+}
+
+void EvolutionAdapter::mapEvolutions() {
+  if (!evolution_) {
+    return;
+  }
+  if (randomizer_ == nullptr || !randomizer_->settings().evolutions) {
+    evolution_->mapNaturalTargets({});
+    return;
+  }
+  evolution_->mapNaturalTargets([this](auto from, auto target) {
+    const EvolutionTables& chart = evolution_->tables();
+    const auto pool = stagePools_.find(chart.levelOf(target));
+    if (pool == stagePools_.end()) {
+      return target;
+    }
+    const auto picked = randomizer_->evolution(chart.idOf(from), chart.idOf(target), pool->second);
+    return picked ? chart.find(*picked).value_or(target) : target;
+  });
 }
 
 void EvolutionAdapter::tick(GameSession& session, const ruleset::ClockAdvance& advance) {

@@ -341,3 +341,74 @@ TEST_CASE("a confirm cell pressed between frames is asked for at the next frame"
   cells.clear();
   CHECK(cells.take({}, std::nullopt, true).empty());
 }
+
+namespace {
+
+// A stand-in for the plains' map entry (MAPHEAD 0x13, map 19): its roll places Mamemon (trigger 1
+// here) until Mamemon joined (213), then a later roll that the tests compare. Map 20's entry rolls
+// the same, but no roaming rare roll is listed for it.
+constexpr std::string_view MapHeadModule = R"lua(-- dwx lua 3: a module of the tests
+local story <const> = story
+local ENDED <const> = story.ENDED
+local function plains()
+  story.store_random(100, 99)
+  if story.var(100) <= 2 and not story.trigger(213) then
+    story.set_trigger(1)
+  end
+  story.store_random(101, 99)
+  return ENDED
+end
+return { script = 0, sections = { [19] = plains, [20] = plains } }
+)lua";
+constexpr std::int32_t Plains = 19;
+constexpr std::int32_t Unlisted = 20;
+constexpr std::int32_t Placed = 1;
+constexpr std::int32_t MamemonJoined = 213;
+constexpr int Entries = 2000;
+
+struct MapEntries {
+  int placed = 0;
+  std::vector<std::int32_t> laterRolls;
+};
+
+MapEntries enterRepeatedly(std::optional<std::int32_t> percent, std::int32_t map,
+                           bool joined = false) {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory},
+                        {"story/000.lua", MapHeadModule}};
+  const auto [session, story] = storySession(packs);
+  story->setRoamingRareChance(percent);
+  REQUIRE(story->state().setTrigger(MamemonJoined, joined));
+  MapEntries entries;
+  for (int entry = 0; entry < Entries; ++entry) {
+    REQUIRE(story->state().setTrigger(Placed, false));
+    story->mapEntered(map);
+    for (int tick = 0; tick < 30 && story->scriptRunning(); ++tick) {
+      session->tick(dwe::session::testing::Tick);
+    }
+    REQUIRE_FALSE(story->scriptRunning());
+    entries.placed += isSet(*story, Placed) ? 1 : 0;
+    entries.laterRolls.push_back(story->state().variable(101).value_or(-1));
+  }
+  return entries;
+}
+
+} // namespace
+
+TEST_CASE("a roaming rare's tuned chance places it about that often, with the original's draws") {
+  const MapEntries original = enterRepeatedly(std::nullopt, Plains);
+  const MapEntries tenPercent = enterRepeatedly(10, Plains);
+  CHECK(original.placed > Entries * 15 / 1000);
+  CHECK(original.placed < Entries * 45 / 1000);
+  CHECK(tenPercent.placed > Entries * 7 / 100);
+  CHECK(tenPercent.placed < Entries * 13 / 100);
+  CHECK(tenPercent.laterRolls == original.laterRolls);
+}
+
+TEST_CASE("the tuned chance leaves the original's conditions and other rolls alone") {
+  CHECK(enterRepeatedly(50, Plains, true).placed == 0);
+  const MapEntries unlisted = enterRepeatedly(50, Unlisted);
+  const MapEntries original = enterRepeatedly(std::nullopt, Unlisted);
+  CHECK(unlisted.placed == original.placed);
+  CHECK(unlisted.laterRolls == original.laterRolls);
+}

@@ -8,3 +8,5 @@ description: modes.folder_description
 ruleset: original
 rulesets: [original, oculto, oculto_mega, todas, todas_oculto, todas_oculto_mega]
 order: 1
+# New games may be randomized runs (docs/modules/game/randomizer.md).
+randomizer: true

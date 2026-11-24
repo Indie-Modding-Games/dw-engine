@@ -58,6 +58,7 @@ Todo lo que hace el motor es compartido; las variantes solo difieren en las regl
 | Exploración libre | Fija desactivada | La opción del jugador |
 | Baños extra | Fijos desactivados | La opción del jugador |
 | Elegir el huevo tras perder todas las vidas | Fijo desactivado | La opción del jugador |
+| Técnicas potenciadas ([combate](../modules/game/battle.md#tecnicas-potenciadas)) | Fijo desactivado | La opción del jugador |
 | Cooperativo en línea | Sí (la variante del host rige el mundo compartido) | Sí |
 | Versus en línea | Igual en ambas: no es una partida de historia | Igual |
 
@@ -117,8 +118,8 @@ título no hay nada fijo.
 Un modo solo puede fijar las opciones que una partida aplica desde su propia configuración: la dificultad, los objetos
 raros, la exploración libre, los baños extra, el huevo tras perder todas las vidas, los cuatro caprichos "justos", el
 rango de conversación generoso, el inicio rápido de combate, saltar evoluciones, un cancelar que cierra una elección,
-los arreglos de la historia de Angemon y Whamon, el modo del trabajo en la tienda y la dificultad del cooperativo
-(`FixableOptions`). Un valor fijo sobre otra opción, o con un valor que la opción no admite, se deja fuera con su motivo
+los arreglos de la historia de Angemon y Whamon, el modo del trabajo en la tienda, la dificultad del cooperativo y
+las técnicas potenciadas (`FixableOptions`). Un valor fijo sobre otra opción, o con un valor que la opción no admite, se deja fuera con su motivo
 en el log, y los demás se mantienen.
 
 ## Partidas guardadas

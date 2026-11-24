@@ -30,3 +30,16 @@ The only module that talks to Vulkan 1.3 ([ADR 0003](../../adr/0003-vulkan-and-s
   viewer); `Device::supportsBc7` says whether the GPU samples BC7.
 
 `LinearAllocator` and `SlotAllocator` are the CPU bookkeeping of the ring and of the table; their tests do not need a GPU.
+
+**Graphics report** (`gpu_report.hpp`). A process-wide record of the GPU, its driver, the current activity and the last
+12 Vulkan calls (`gpuCheck`). A failed call writes it to the log, and the game's crash handlers print it to stderr when
+the game dies of an uncaught exception or a fatal signal. Two optional breadcrumbs are turned on when the GPU has them,
+at almost no cost, and the log says which (`gpu report: device fault details on, GPU markers off`):
+
+- `VK_EXT_device_fault`: once the device is lost, the driver's description, the faulting address ranges and its vendor
+  records are added to the report.
+- `VK_AMD_buffer_marker`: the GPU writes a marker after each pass, image write, upload and present, so the report names
+  the last work it finished and the first it never reached (`frame markers: last finished #… ; first unfinished #…`).
+
+After a `VK_ERROR_DEVICE_LOST` nothing waits for the GPU any more (`Device::lost`): `beginFrame` gives no frame, and
+`waitIdle` and uploads return at once. The game then closes without saving, with exit code 113.

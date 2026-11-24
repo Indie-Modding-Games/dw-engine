@@ -108,7 +108,8 @@ std::vector<std::string> readAutosaveReasons(YamlReader& reader, const YamlNode&
 SaveSummary readSummary(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(node, messages::SummaryWhat,
                          {summary_key::Slot, summary_key::Tamer, summary_key::Species,
-                          summary_key::Nickname, summary_key::Map, summary_key::Mode})) {
+                          summary_key::Nickname, summary_key::Map, summary_key::Mode,
+                          summary_key::Randomizer})) {
     return {};
   }
   return {.slot = reader.text(reader.field(node, summary_key::Slot)),
@@ -116,7 +117,8 @@ SaveSummary readSummary(YamlReader& reader, const YamlNode& node) {
           .species = reader.text(reader.field(node, summary_key::Species)),
           .nickname = reader.text(reader.field(node, summary_key::Nickname)),
           .map = reader.text(reader.field(node, summary_key::Map)),
-          .mode = reader.text(reader.field(node, summary_key::Mode))};
+          .mode = reader.text(reader.field(node, summary_key::Mode)),
+          .randomizer = reader.text(reader.field(node, summary_key::Randomizer))};
 }
 
 SaveHeader readHeader(YamlReader& reader, const YamlNode& root) {
@@ -203,6 +205,7 @@ YamlNode writeSummary(const SaveSummary& summary) {
   node.set(std::string{summary_key::Nickname}, quoted(summary.nickname));
   node.set(std::string{summary_key::Map}, quoted(summary.map));
   node.set(std::string{summary_key::Mode}, quoted(summary.mode));
+  node.set(std::string{summary_key::Randomizer}, quoted(summary.randomizer));
   return node;
 }
 
@@ -214,15 +217,25 @@ core::Result<YamlNode> addSummary(YamlNode root) {
   return root;
 }
 
-core::Result<YamlNode> addSummaryMode(YamlNode root) {
+// Adds an empty text to the header's summary.
+core::Result<YamlNode> addSummaryText(YamlNode root, std::string_view key) {
   const YamlNode* found = root.find(save_key::Summary);
   if (found == nullptr || !found->isMapping()) {
     return root;
   }
   YamlNode summary = *found;
-  summary.set(std::string{summary_key::Mode}, quoted({}));
+  summary.set(std::string{key}, quoted({}));
   root.set(std::string{save_key::Summary}, std::move(summary));
   return root;
+}
+
+core::Result<YamlNode> addSummaryMode(YamlNode root) {
+  return addSummaryText(std::move(root), summary_key::Mode);
+}
+
+// Format 5 adds the run code of a randomized run; every older save is a game without one.
+core::Result<YamlNode> addSummaryRandomizer(YamlNode root) {
+  return addSummaryText(std::move(root), summary_key::Randomizer);
 }
 
 YamlNode writeSections(const SaveFile& file) {
@@ -248,9 +261,10 @@ const MigrationChain& formatMigrations() {
   // A change of the header or of how sections are stored adds a step here.
   static const MigrationChain chain = [] {
     MigrationChain steps;
-    steps.add(addAutosaveReasons); // 1 -> 2
-    steps.add(addSummary);         // 2 -> 3
-    steps.add(addSummaryMode);     // 3 -> 4
+    steps.add(addAutosaveReasons);   // 1 -> 2
+    steps.add(addSummary);           // 2 -> 3
+    steps.add(addSummaryMode);       // 3 -> 4
+    steps.add(addSummaryRandomizer); // 4 -> 5
     return steps;
   }();
   return chain;

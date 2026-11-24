@@ -110,7 +110,9 @@ TEST_CASE("the guest's partner offer reaches the host's battles") {
   CHECK(offer->fighter.species == "gabu");
 }
 
-TEST_CASE("coop gameplay bridge transfers a full guest save in reliable bounded chunks") {
+TEST_CASE("a bridge drops what no part of the play reads instead of queueing it") {
+  // A guest in play that keeps sending lobby messages (its ready, its save's chunks) must not grow
+  // a queue on the host that nothing drains; the messages the play reads still get through.
   using namespace dwe::game::coop;
   dwe::net::LoopbackNetwork network({});
   CoopLink hostLink = CoopLink::host(network.link(0), testIdentity());
@@ -126,20 +128,29 @@ TEST_CASE("coop gameplay bridge transfers a full guest save in reliable bounded 
   }
   REQUIRE(hostLink.phase() == LinkPhase::Ready);
 
-  dwe::net::Bytes save(2501);
-  for (std::size_t i = 0; i < save.size(); ++i)
-    save[i] = static_cast<std::uint8_t>(i % 251);
-  REQUIRE(guest.sendProfile(ProfilePayloadKind::GuestSave, 42, save));
+  constexpr std::size_t Flood = 200;
+  for (std::size_t i = 0; i < Flood; ++i) {
+    REQUIRE(guestLink.send(Message{Ready{.ready = true}}));
+    REQUIRE(guestLink.send(Message{ProfileChunk{.transferId = static_cast<std::uint32_t>(i + 1),
+                                                .index = 0,
+                                                .count = 1,
+                                                .kind = ProfilePayloadKind::GuestSave,
+                                                .bytes = dwe::net::Bytes(64, 7)}}));
+  }
+  PlayerCommands walk;
+  walk.sequence = 5;
+  walk.field.stick = {1.0F, 0.0F};
+  REQUIRE(guest.sendLocalField(walk));
   for (int i = 0; i < 20; ++i) {
     network.advance(dwe::net::Millis{1});
     host.poll(network.now());
     guest.poll(network.now());
   }
-  auto profile = host.receiveProfile();
-  REQUIRE(profile);
-  CHECK(profile->kind == ProfilePayloadKind::GuestSave);
-  CHECK(profile->transferId == 42);
-  CHECK(profile->bytes == save);
+  CHECK(host.ignored() == Flood * 2);
+  CHECK_FALSE(host.receiveBattle());
+  CHECK_FALSE(host.receiveTrade());
+  CHECK(host.takeWorldMessages().empty());
+  CHECK(hostController.latestSequence() == 5U);
 }
 
 TEST_CASE("each game sees the other player's partner following them, interpolated") {

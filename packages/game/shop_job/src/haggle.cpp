@@ -10,22 +10,12 @@ namespace {
 
 constexpr std::int64_t Percent = 100;
 
-// The weights after every budget moved `shift` levels.
-BudgetWeights shifted(const BudgetWeights& weights, std::int32_t shift) {
-  BudgetWeights moved{};
-  for (std::size_t budget = 0; budget < weights.size(); ++budget) {
-    const Level to = shiftBudget(static_cast<Level>(budget), shift);
-    moved.at(static_cast<std::size_t>(to)) += weights.at(budget);
-  }
-  return moved;
-}
-
 } // namespace
 
 Haggle::Haggle(const ShopJobRules& rules, const Customer& customer)
     : rules_{&rules}, customer_{customer}, patience_{rules.species.at(customer.species).patience},
       moodShift_{rules.moods.at(customer.mood).shift} {
-  known_ = shifted(budgetWeights(rules.species.at(customer.species)), moodShift_);
+  known_ = shiftWeights(budgetWeights(rules.species.at(customer.species)), moodShift_);
 }
 
 bool Haggle::canTalk() const {
@@ -91,7 +81,7 @@ bool Haggle::talk() {
   patience_ -= rules_->talkCost;
   moodShift_ += rules_->talkShift;
   customer_.budget = shiftBudget(customer_.budget, rules_->talkShift);
-  known_ = shifted(known_, rules_->talkShift);
+  known_ = shiftWeights(known_, rules_->talkShift);
   return true;
 }
 

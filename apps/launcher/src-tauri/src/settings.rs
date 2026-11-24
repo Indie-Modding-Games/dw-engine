@@ -2,13 +2,15 @@
 //! data folder, which the player may change): where the data goes, the language, the release server
 //! and the disc the content was read from. The beta key is never here (beta_key.rs).
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::{Map, Value};
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::auto_update::LastCheck;
 use crate::failure::Result;
+use crate::launch::GraphicsFlags;
 use crate::releases::UpdateChannel;
 use crate::store::write_atomically;
 
@@ -29,13 +31,7 @@ pub const API_BASE_ENV: &str = "DWE_LAUNCHER_API";
 pub const LANGUAGES: [&str; 9] = ["en", "es", "pt", "fr", "de", "ru", "zh", "ko", "ja"];
 /// The language of whatever has no text in the player's (the custom images' guide, add-ons).
 pub const FALLBACK_LANGUAGE: &str = "en";
-/// How to start the game. "auto" probes the GPU and uses the package's software driver only when
-/// nothing else works (the default); "skip" starts as-is, without probing or changing drivers;
-/// "software" starts on the package's software driver, without probing. The last two are manual
-/// ways out of a wrong check: Play never refuses to start in any of them.
-pub const LAUNCH_MODES: [&str; 3] = ["auto", "skip", "software"];
-/// Limits for the manual launch options, so a saved settings.json cannot turn into a huge command
-/// line or environment. The page parses the same text; a bad line is ignored, never fatal.
+/// Caps on the manual launch options; whatever goes past them is left out, never fatal.
 const MAX_EXTRA_ARGS: usize = 32;
 const MAX_EXTRA_ENV: usize = 32;
 const MAX_ARG_BYTES: usize = 256;
@@ -45,8 +41,54 @@ pub fn is_language(code: &str) -> bool {
     LANGUAGES.contains(&code)
 }
 
-pub fn is_launch_mode(mode: &str) -> bool {
-    LAUNCH_MODES.contains(&mode)
+/// How Play starts the game: Auto probes the GPU and falls back to the package's software driver,
+/// Skip starts with the system's drivers and no probe, Software starts on the package's driver.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LaunchMode {
+    #[default]
+    Auto,
+    Skip,
+    Software,
+}
+
+impl LaunchMode {
+    pub fn parse(text: &str) -> Option<Self> {
+        match text {
+            "auto" => Some(Self::Auto),
+            "skip" => Some(Self::Skip),
+            "software" => Some(Self::Software),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::Skip => "skip",
+            Self::Software => "software",
+        }
+    }
+}
+
+impl std::fmt::Display for LaunchMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// One of the graphics switches, as the page names it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum GraphicsSwitch {
+    Compatibility,
+    LowPerformance,
+}
+
+/// An unknown mode in a hand-edited file reads as Auto instead of resetting every setting.
+fn lenient_launch_mode<'de, D: Deserializer<'de>>(deserializer: D) -> std::result::Result<LaunchMode, D::Error> {
+    let value = Value::deserialize(deserializer)?;
+    Ok(value.as_str().and_then(LaunchMode::parse).unwrap_or_default())
 }
 
 fn valid_env_name(name: &str) -> bool {
@@ -84,28 +126,21 @@ pub struct Settings {
     /// What the player picked last: a disc image or an archive holding one. An update whose
     /// extractor reads discs differently reads it again from here.
     pub disc_source: Option<PathBuf>,
-    /// The compatibility mode (launch.rs, system_check.rs): starts the game with `--compatible`,
-    /// which accepts a Vulkan 1.2 GPU that offers dynamic rendering and synchronization2 through
-    /// their extensions instead of requiring Vulkan 1.3 core. For old cards and drivers.
+    /// The graphics switches (launch::GraphicsFlags): --compatible and --low-performance.
     pub compatibility_mode: bool,
-    /// The low-performance mode: starts the game with `--low-performance`, the lightest graphics
-    /// preset (every heavy option off), for weak GPUs and old iGPUs.
     pub low_performance_mode: bool,
-    /// The AMD RX 6000 safe mode: starts the game with `--rdna2-safe`, which simplifies the
-    /// bindless layout. The game ignores it on other GPUs. Off by default.
-    pub rdna2_safe_mode: bool,
-    /// One of LAUNCH_MODES. Missing or unknown in an older settings.json: "auto".
-    pub launch_mode: String,
-    /// Extra game arguments, separated by whitespace, added after the launcher's own ones. Not
-    /// passed to the GPU probe: a flag the game accepts but the probe does not would make the
-    /// check look wrong.
+    #[serde(deserialize_with = "lenient_launch_mode")]
+    pub launch_mode: LaunchMode,
+    /// The player's own game arguments (whitespace-separated) and environment (NAME=value lines),
+    /// kept as typed; game_args and game_env read them.
     pub extra_args: String,
-    /// Extra game environment, one NAME=value per line (# starts a comment). Lines the launcher
-    /// does not understand are ignored, so a wrong line never blocks the start.
     pub extra_env: String,
     /// The beta key an older launcher kept in the system keyring was removed (lib.rs,
     /// forget_old_beta_key): done once, by the first launcher with the key built in.
     pub old_beta_key_removed: bool,
+    /// Fields this launcher does not know (a newer one wrote them), saved back untouched.
+    #[serde(flatten)]
+    pub unknown: Map<String, Value>,
 }
 
 fn default_api_base() -> String {
@@ -131,11 +166,11 @@ impl Default for Settings {
             disc_source: None,
             compatibility_mode: false,
             low_performance_mode: false,
-            rdna2_safe_mode: false,
-            launch_mode: "auto".into(),
+            launch_mode: LaunchMode::Auto,
             extra_args: String::new(),
             extra_env: String::new(),
             old_beta_key_removed: false,
+            unknown: Map::new(),
         }
     }
 }
@@ -153,6 +188,7 @@ impl Settings {
         if !is_language(&settings.language) {
             settings.language.clear();
         }
+        settings.unknown.remove("api_base");
         settings
     }
 
@@ -192,13 +228,21 @@ impl Settings {
         self.data_folder.as_ref().is_none_or(|f| *f == default_data_folder())
     }
 
-    /// A hand-edited settings.json may hold anything; an unknown mode means the usual check.
-    pub fn launch_mode_or_default(&self) -> &str {
-        if is_launch_mode(&self.launch_mode) { &self.launch_mode } else { "auto" }
+    pub fn graphics_flags(&self) -> GraphicsFlags {
+        GraphicsFlags {
+            compatibility: self.compatibility_mode,
+            low_performance: self.low_performance_mode,
+        }
     }
 
-    /// The manual arguments, split on whitespace. A command built by Rust gets these as separate
-    /// arguments: no shell interprets them, so no quoting or shell escape is needed (or supported).
+    pub fn set_graphics_switch(&mut self, switch: GraphicsSwitch, enabled: bool) {
+        match switch {
+            GraphicsSwitch::Compatibility => self.compatibility_mode = enabled,
+            GraphicsSwitch::LowPerformance => self.low_performance_mode = enabled,
+        }
+    }
+
+    /// No shell reads these, so there is no quoting: each whitespace-separated word is one argument.
     pub fn game_args(&self) -> Vec<String> {
         self.extra_args
             .split_whitespace()
@@ -208,8 +252,6 @@ impl Settings {
             .collect()
     }
 
-    /// The manual environment variables. The launcher's own (software driver) variables go first
-    /// in play(), so these win: a player can name a driver the auto-detection did not find.
     pub fn game_env(&self) -> Vec<(OsString, OsString)> {
         self.extra_env
             .lines()
@@ -277,8 +319,6 @@ mod tests {
         assert_eq!(read.repository, DEFAULT_REPOSITORY);
         // Settings written before the automatic updates existed turn them on.
         assert!(read.auto_update_launcher && read.auto_update_game);
-        // Old settings.json files load the switch off without losing the rest.
-        assert!(!read.rdna2_safe_mode);
         let saved = Settings { auto_update_game: false, last_check: Some(LastCheck::checked(5, None, None)), ..Settings::default() };
         saved.save_to(&file).unwrap();
         assert_eq!(Settings::load_from(&file), saved);
@@ -288,21 +328,25 @@ mod tests {
     fn manual_launch_options_default_to_auto_and_ignore_bad_lines() {
         let dir = tempfile::tempdir().unwrap();
         let file = dir.path().join("settings.json");
-        // A settings.json from before these options existed, and one edited by hand with a mode we
-        // do not know: both start the game the usual way.
-        assert_eq!(Settings::load_from(&file).launch_mode_or_default(), "auto");
-        fs::write(&file, r#"{"launch_mode":"wrong"}"#).unwrap();
-        assert_eq!(Settings::load_from(&file).launch_mode_or_default(), "auto");
+        assert_eq!(Settings::load_from(&file).launch_mode, LaunchMode::Auto);
+        fs::write(&file, r#"{"launch_mode":"wrong","language":"es","compatibility_mode":true}"#).unwrap();
+        let hand_edited = Settings::load_from(&file);
+        assert_eq!(hand_edited.launch_mode, LaunchMode::Auto);
+        assert_eq!(hand_edited.language, "es", "a bad mode must not reset the other settings");
+        assert!(hand_edited.compatibility_mode);
+        fs::write(&file, r#"{"launch_mode":3,"language":"es"}"#).unwrap();
+        assert_eq!(Settings::load_from(&file).language, "es");
 
         let saved = Settings {
-            launch_mode: "skip".into(),
+            launch_mode: LaunchMode::Skip,
             extra_args: "  --compatible   --foo  ".into(),
             extra_env: "# a comment\nVK_DRIVER_FILES=/x/y.json\nBAD-NAME=1\nNOEQUAL\nGOOD= a = b \n".into(),
             ..Settings::default()
         };
         saved.save_to(&file).unwrap();
+        assert!(fs::read_to_string(&file).unwrap().contains(r#""launch_mode": "skip""#));
         let read = Settings::load_from(&file);
-        assert_eq!(read.launch_mode_or_default(), "skip");
+        assert_eq!(read.launch_mode, LaunchMode::Skip);
         assert_eq!(read.game_args(), ["--compatible", "--foo"]);
         let env = read.game_env();
         assert_eq!(env.len(), 2, "{env:?}");
@@ -311,10 +355,42 @@ mod tests {
         assert_eq!(env[1].0.to_string_lossy(), "GOOD");
         assert_eq!(env[1].1.to_string_lossy(), "a = b");
 
-        // Too many arguments or variables do not fail the start; they are simply left out.
         let many = Settings { extra_args: "x ".repeat(40), extra_env: "A=1\n".repeat(40), ..Settings::default() };
         assert_eq!(many.game_args().len(), 32);
         assert_eq!(many.game_env().len(), 32);
+    }
+
+    #[test]
+    fn each_graphics_switch_sets_its_own_flag() {
+        let mut settings = Settings::default();
+        settings.set_graphics_switch(GraphicsSwitch::LowPerformance, true);
+        assert_eq!(settings.graphics_flags(), GraphicsFlags { low_performance: true, ..Default::default() });
+        settings.set_graphics_switch(GraphicsSwitch::Compatibility, true);
+        settings.set_graphics_switch(GraphicsSwitch::LowPerformance, false);
+        assert_eq!(settings.graphics_flags(), GraphicsFlags { compatibility: true, ..Default::default() });
+        let named: GraphicsSwitch = serde_json::from_str(r#""low-performance""#).unwrap();
+        assert_eq!(named, GraphicsSwitch::LowPerformance);
+        assert!(serde_json::from_str::<GraphicsSwitch>(r#""rdna2-safe""#).is_err());
+    }
+
+    #[test]
+    fn fields_from_a_newer_launcher_survive_a_save() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("settings.json");
+        fs::write(&file, r#"{"language":"ko","future_switch":true,"future_table":{"a":[1,2]}}"#).unwrap();
+        let read = Settings::load_from(&file);
+        assert_eq!(read.language, "ko");
+        Settings { check_updates: false, ..read }.save_to(&file).unwrap();
+        let again: Value = serde_json::from_str(&fs::read_to_string(&file).unwrap()).unwrap();
+        assert_eq!(again["future_switch"], true);
+        assert_eq!(again["future_table"]["a"][1], 2);
+        assert_eq!(again["check_updates"], false);
+
+        fs::write(&file, r#"{"language":"es","rdna2_safe_mode":true}"#).unwrap();
+        let dropped = Settings::load_from(&file);
+        assert_eq!(dropped.graphics_flags(), GraphicsFlags::default(), "the removed switch adds no flag");
+        dropped.save_to(&file).unwrap();
+        assert!(fs::read_to_string(&file).unwrap().contains(r#""rdna2_safe_mode": true"#));
     }
 
     #[test]

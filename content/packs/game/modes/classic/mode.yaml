@@ -19,3 +19,7 @@ options:
   extra_toilets: false
   # Taking the egg after losing every life changes the original's rebirth rule.
   choose_egg_after_lives_lost: false
+  # The boosted techniques change the original's battle balance.
+  boosted_techniques: false
+  # The roaming rares appear at the original's chance.
+  roaming_rare_chance: original

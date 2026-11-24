@@ -2,13 +2,20 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/rhi/device.hpp>
+#include <dwe/rhi/system_check.hpp>
 #include <dwe/rhi/types.hpp>
 
 #include <vulkan/vulkan.h>
 
 #include <functional>
+#include <string_view>
 
 namespace dwe::rhi {
+
+// A GPU's name, vendor, kind, API version and driver.
+GpuInfo describeGpu(VkPhysicalDevice device);
+
+std::string_view gpuKindName(GpuKind kind);
 
 // The Vulkan format of a Format.
 VkFormat toVulkan(Format format);

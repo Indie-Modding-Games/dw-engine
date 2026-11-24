@@ -19,6 +19,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dwe::assets {
@@ -189,17 +190,18 @@ public:
   core::Result<game::battle::Battle> start(GameSession& session, BattleRequest request);
   // A registered partner as a versus fighter (vs_scene.c: VS_loadFighterEntities): its species'
   // row, its record's stats at full HP and MP, its three techniques and its species' finisher
-  // (VS_getFirstSpecialMove), with the normal charge mode. Fails on a species or a move this
-  // content does not have.
+  // (VS_getFirstSpecialMove), with the normal charge mode, and its boosted technique when
+  // `boosted` and it equips it. Fails on a species or a move this content does not have.
   [[nodiscard]] core::Result<game::battle::Combatant>
-  versusCombatant(const game::versus::VersusFighter& fighter) const;
+  versusCombatant(const game::versus::VersusFighter& fighter, bool boosted) const;
   // Starts one battle of a versus series between the host's partner (1P, the battle's partner)
-  // and the guest's (2P, its rival), with the rules' clock and the seed both machines agreed on.
-  // Nothing of the session takes part, so both machines build the same battle.
+  // and the guest's (2P, its rival), with the rules' clock, the seed and the boosted techniques
+  // both machines agreed on. Nothing of the session takes part, so both machines build the same
+  // battle.
   core::Result<game::battle::Battle> startVersus(const game::versus::VersusFighter& host,
                                                  const game::versus::VersusFighter& guest,
                                                  const VersusPlacement& placement,
-                                                 std::uint64_t seed) const;
+                                                 std::uint64_t seed, bool boosted) const;
   // An oracle run (--original-rolls): the battles from here on roll with the original's generator
   // from this state instead (game::battle::Battle::useOriginalRolls).
   void useOriginalRolls(std::optional<std::uint32_t> state) { originalRolls_ = state; }
@@ -279,6 +281,13 @@ public:
     return desc_.moves ? &*desc_.moves : nullptr;
   }
   [[nodiscard]] const game::battle::MoveCatalog& catalog() const;
+  // The boosted techniques (the option boosted_techniques; docs/modules/game/battle.md, «Boosted
+  // techniques»): with them on, a partner that knows its species' boosted technique fights with
+  // the catalog's boosted copy of it. Off until the game turns them on.
+  void setBoostedMoves(bool on) { boostedOn_ = on; }
+  [[nodiscard]] bool boostedMoves() const { return boostedOn_; }
+  // The species' boosted technique, if the ruleset gives it one it can learn.
+  [[nodiscard]] std::optional<std::string_view> boostedMoveOf(std::string_view species) const;
 
 private:
   class Serializer;
@@ -288,9 +297,16 @@ private:
   void borrowMoves();
   // A partner of a species with a size patch fights with its body (radius, height) at that size.
   void scaleBody(game::battle::Combatant& fighter, std::string_view species) const;
+  // Gives a partner of a species its boosted technique when the option is on and `known` (move
+  // ids) holds it.
+  void boost(game::battle::Combatant& fighter, std::string_view species,
+             std::vector<std::string> known) const;
   [[nodiscard]] std::optional<MoveSlot> finisherSlot(const assets::DigimonRow& row) const;
   void giveRewards(GameSession& session, const game::battle::BattleResult& result,
                    BattleAftermath& aftermath) const;
+  // A randomized run's drops: each enemy that drops an item drops its species' pick instead.
+  void randomizeDrops(const GameSession& session,
+                      std::vector<game::battle::Combatant>& enemies) const;
 
   BattleAdapterDesc desc_;
   std::optional<ruleset::Section> section_;
@@ -305,6 +321,10 @@ private:
   // A partner species' size (its patch's field_scale): its body in battle (radius, height) as
   // drawn.
   std::map<std::string, float, std::less<>> partnerScales_;
+  // Each species' boosted technique: its id and the catalog's boosted copy, made from the species'
+  // own variant of it when it has one.
+  std::map<std::string, std::pair<std::string, std::size_t>, std::less<>> boostedVariants_;
+  bool boostedOn_ = false;
   PartnerMoves moves_;
   // The rows of the species with a model and no move, with their stand-in's moves (borrowMoves).
   std::map<std::string, assets::DigimonRow, std::less<>> movesBorrowed_;

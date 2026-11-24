@@ -20,7 +20,7 @@ routes need content extracted from a disc, so they do not run in CI.
 | `route-save-*`, `route-sleep-save` | Saving and loading, also when sleeping ([save and load](../../architecture/save-and-load.md#6-routes-and-tests)) |
 | `route-bank*`, `route-bulk-*`, `route-feed-*`, `route-partner-*`, `route-status-extras` | Individual screens and systems: shops and the guardian, bulk changes, partner care, the status sheet |
 | `route-settings-*`, `route-options*`, `route-skin*`, `route-language`, `route-text-*`, `route-signs*`, `route-minimap*` | Options, UI skins, language, text that fits and signs |
-| `route-evolve`, `route-evolution-requirements`, `route-field-hud`, `route-free-exploration*`, `route-fade` | Evolution and its requirements, the field HUD, free exploration and fades |
+| `route-evolve`, `route-evolve-warp`, `route-evolution-requirements`, `route-field-hud`, `route-free-exploration*`, `route-fade` | Evolution and its requirements, the field HUD, free exploration and fades |
 | `route-menu-stress` | The game menu opened and closed hundreds of times: on a pass-through tile, with key presses during the frames of its box, with the partner moving, on the player page and at the smallest and largest UI scale |
 | `route-mod-*`, `route-hidden-*`, `route-dev-assets` | Mod packs, hidden content and development assets |
 | `training/route-training-<map>-<course>.yaml` | A whole session of each course of each gym, with `expect_range` on the `gym.session.*` settings ([checking training](../../guides/check-training.md)) |

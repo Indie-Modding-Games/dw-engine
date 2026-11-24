@@ -224,6 +224,10 @@ scripts/dev.sh run --content <folder> --lang en --saves $saves --load slot_01 \
   fog's second map (`--start mist03 --story-stage all`): the dots on arrival, with the player among the three wild
   ones and moving, and then the option turned off in the pause menu (`expect_setting`) and the minimap without dots.
   It is run with both looks (`--ui-skin original`, `modern`).
+- `route-field-alerts.yaml`: the [need meters](../modules/apps/game.md#need-meters) and the
+  [danger alert](../modules/apps/game.md#danger-alert) on the plain below the mountain (`--start miha01 --story-stage
+  all --ui-skin pixel`): the meters on arrival, the devils over the wild ones in view, and both rows on the options'
+  Interface tab (`expect_text_fits`). It is run once per language (`--lang es`, `de`).
 - `route-digital-time.yaml`: the [time in digits](../modules/apps/game.md#time-in-digits) under the HUD clock from a
   new game with the keyboard: 08:00 at 1280x720, 1920x1080 and 1024x768, the night (20:00), the pause menu open (the
   clock leaves with its box) and the option turned off from the menu. Each capture with the box checks that it does
@@ -329,6 +333,19 @@ done
 for lang in en es; do
     scripts/dev.sh run --content <folder> --mods tests/mods/game_mode --saves <empty folder> --lang $lang \
         --autotest tests/autotest/route-game-modes.yaml --shots <captures>/$lang
+done
+```
+- `route-randomizer.yaml`: a Folder Mode game through the [randomizer](../modules/game/randomizer.md)'s setup (off, then
+  the Chaos preset), its random starter on the field and on the partner's page, and a save;
+  `route-randomizer-slot.yaml`, run next with the same saves folder, shows the run code on the slot list. It needs an
+  empty saves folder:
+
+```sh
+for lang in en es; do
+    scripts/dev.sh run --content <folder> --saves <empty folder>/$lang --lang $lang \
+        --autotest tests/autotest/route-randomizer.yaml --shots <captures>/$lang
+    scripts/dev.sh run --content <folder> --saves <empty folder>/$lang --lang $lang \
+        --autotest tests/autotest/route-randomizer-slot.yaml --shots <captures>/$lang
 done
 ```
 - `route-stage2.yaml` and `route-stage2-jungle.yaml`: Stage 2 of the story, with the lock as it comes out (the

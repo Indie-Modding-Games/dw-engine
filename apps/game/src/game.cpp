@@ -610,7 +610,7 @@ int runGame(const Options& requested) {
     return EXIT_FAILURE;
   }
   (*debugUi)->mountContent(options.content);
-  auto renderer = render::Renderer::create(**device, {.rdna2Safe = options.rdna2Safe});
+  auto renderer = render::Renderer::create(**device);
   if (!renderer) {
     core::logError("{}", renderer.error().message);
     return EXIT_FAILURE;
@@ -863,6 +863,8 @@ int runGame(const Options& requested) {
                     userSettings.shopJobMode.value_or(std::string{ShopJobImproved}));
   (*ui)->setSetting(CoopDifficultySetting,
                     std::string{coopLevelName(coopLevelOf(userSettings.coopDifficulty))});
+  (*ui)->setSetting(RoamingRareChanceSetting,
+                    std::string{roamingRareStep(userSettings.roamingRareChance)});
   (*ui)->setSetting(AutosaveSetting, userSettings.autosave.value_or(true));
   // The options only a game applies, for the title's options page (title_options.hpp).
   publishGameToggles(**ui, userSettings);
@@ -1185,6 +1187,8 @@ int runGame(const Options& requested) {
   flow.setBeforeEnd([&](PlaySession& play) { bringGuestHome(play, true); });
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
+  title.setAsksRandomizer(autotest == nullptr || autotest->asksNewGameRandomizer());
+  title.setClipboard([] { return platform::Window::clipboardText(); });
   // A boot asks the UI skin after the language box (an addition) until the player has chosen one;
   // an autotest only when its route asks, and a run with no settings to keep it in (the control
   // channel's) never.
@@ -1284,7 +1288,6 @@ int runGame(const Options& requested) {
   bool running = true;
   std::optional<PlayStart> loadAfterIndicator;
   double loadingIndicatorSeconds = 0.0;
-  bool loadingIndicator = false;
   debug::FrameStats overlayStats{};
   // Built once; the frame takes it by reference, so drawing it allocates nothing.
   const auto drawOverlay = [&](const rhi::Frame& frame) {
@@ -1603,6 +1606,11 @@ int runGame(const Options& requested) {
   bool optionsDirect = false;
 
   while (running) {
+    if ((*device)->lost()) {
+      core::logError("game: the GPU stopped responding (device lost); closing without saving");
+      exitCode = DeviceLostExitCode;
+      return exitCode;
+    }
     events.clear();
     if (autotest && !routeOver) {
       const PlaySession* play = flow.playing();
@@ -1696,7 +1704,7 @@ int runGame(const Options& requested) {
     const bool takesText = (interview && interview->takesText()) ||
                            (flow.playing() != nullptr && flow.playing()->takesText()) ||
                            (flow.playing() == nullptr && versus.takesText()) || coop.takesText() ||
-                           online.takesText();
+                           online.takesText() || (flow.playing() == nullptr && title.takesText());
     if (auto switched = window->setTextInput(takesText); !switched) {
       core::logDebug("game: {}", switched.error().message);
     }
@@ -1710,6 +1718,8 @@ int runGame(const Options& requested) {
       coop.type(typed, typedEnter);
     } else if (online.takesText()) {
       online.type(typed, typedEnter, platform->nowSeconds());
+    } else if (flow.playing() == nullptr && title.takesText()) {
+      title.type(typed, typedEnter);
     }
 
     const double now = platform->nowSeconds();
@@ -2451,10 +2461,11 @@ int runGame(const Options& requested) {
       }
       // The title menu's cooperative room actions belong to CoopScreen. Dispatch them before
       // generic UI add-ons and option handlers so they cannot be consumed or reported as unknown.
-      if ((command.name == CoopOpenCommand || command.name == "coop_host" ||
-           command.name == "coop_join" || command.name == "coop_connect" ||
-           command.name == "coop_close" || command.name == "coop_ready" ||
-           command.name == "coop_start") &&
+      // coop_open_to_join is the pause menu's option too: its handler below saves it.
+      if ((command.name == CoopOpenCommand || command.name == CoopHostCommand ||
+           command.name == CoopJoinCommand || command.name == CoopConnectCommand ||
+           command.name == CoopCloseCommand || command.name == CoopReadyCommand ||
+           command.name == CoopStartCommand) &&
           coop.handle(command)) {
         if (coop.takeGuestProfileRequest() || coop.takeStartRequested()) {
           static_cast<void>(title.handle(ui::UiCommand{.name = "continue", .value = {}}));
@@ -2603,6 +2614,21 @@ int runGame(const Options& requested) {
                           std::string{coopLevelName(coopLevelOf(userSettings.coopDifficulty))});
         continue;
       }
+      if (command.name == RoamingRareChanceSetting) {
+        if (const std::string* chance = std::get_if<std::string>(&command.value);
+            chance != nullptr && roamingRareStep(*chance) == *chance) {
+          userSettings.roamingRareChance = *chance;
+          if (settingsFile) {
+            saveUserSettings(*settingsFile, userSettings);
+          }
+          if (PlaySession* play = flow.playing()) {
+            play->applyPlayOptions();
+          }
+        }
+        (*ui)->setSetting(RoamingRareChanceSetting,
+                          std::string{roamingRareStep(userSettings.roamingRareChance)});
+        continue;
+      }
       if (command.name == WalkControlSetting) {
         PlaySession* play = flow.playing();
         walkControl.change(command.value, play != nullptr ? &play->scene().field() : nullptr);
@@ -2646,6 +2672,7 @@ int runGame(const Options& requested) {
       if (flow.playing() == nullptr && command.name == VersusCommand) {
         // The arena draws with the smooth motion setting, as a game does (PlaySession).
         versus.setSmoothMotion(userSettings.smoothMotion.value_or(true));
+        versus.setBoostedMoves(userSettings.boostedTechniques.value_or(true));
         if (versus.open()) {
           title.hide();
         }
@@ -2694,7 +2721,6 @@ int runGame(const Options& requested) {
           if (start->load) {
             // Give the shared save indicator time to render and animate before the synchronous
             // save read starts blocking this loop.
-            loadingIndicator = true;
             loadAfterIndicator = *start;
             loadAfterIndicator->coopHost = hostsCoop;
             loadingIndicatorSeconds = 0.0;
@@ -2986,7 +3012,7 @@ int runGame(const Options& requested) {
       portraitScenes.push_back((*medalFigure)->scene(frameSeconds));
     }
     if (!showingMovie && saveFigure && (*saveFigure)->loaded() &&
-        (loadingIndicator || (flow.playing() != nullptr && flow.playing()->saveIndicatorShown())))
+        (loadAfterIndicator || (flow.playing() != nullptr && flow.playing()->saveIndicatorShown())))
       portraitScenes.push_back((*saveFigure)->scene(frameSeconds));
     mapOverlayShapes.clear();
     if (mapOverlay && !showingMovie) {
@@ -3013,7 +3039,6 @@ int runGame(const Options& requested) {
       if (loadingIndicatorSeconds >= 0.3) {
         PlayStart start = std::move(*loadAfterIndicator);
         loadAfterIndicator.reset();
-        loadingIndicator = false;
         (*ui)->setSetting(SaveIndicatorShownSetting, false);
         (*ui)->hide(SaveIndicatorDocument);
         startPlaying(start);

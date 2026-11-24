@@ -2101,6 +2101,25 @@ TEST_CASE("play starts with a long fade in that holds no one, and a map change t
   CHECK(field.fadeLevel() == doctest::Approx(0.0F));
 }
 
+TEST_CASE("a map change's fade in runs on while a care scene holds the player") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  REQUIRE(field.enterMap(roomMap("town"), 0).has_value());
+  run(field, 1.1F);
+  field.startScriptedMapChange({.map = "house", .exit = 0, .trigger = 54}, false);
+  std::optional<MapChange> change;
+  for (int i = 0; i < 120 && !change; ++i) {
+    field.tick(Tick);
+    change = field.takeMapChange();
+  }
+  REQUIRE(change.has_value());
+  REQUIRE(field.enterMap(roomMap("house"), 0).has_value());
+  field.holdForCare(true, dwe::game::field::CareClock::Stops);
+  CHECK(field.fadeLevel() == doctest::Approx(1.0F));
+  run(field, 1.1F);
+  CHECK(field.fadeLevel() == doctest::Approx(0.0F));
+}
+
 TEST_CASE("a loaded game starts with the same long fade in, at its saved place") {
   // main.c: main: fadeFromBlack(0x28) follows initializeLoadedMap as it follows a new game's
   // initializeMap: the saved map comes in from black over 40 frames, with the player free.

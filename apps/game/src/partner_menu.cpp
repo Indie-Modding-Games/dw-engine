@@ -256,7 +256,8 @@ screens::ScreenSettings PartnerMenu::statusSettings() const {
       // The fighter carries the ruleset's partner type (a species with no table type).
       view.type = static_cast<std::int32_t>(partner->type);
       if (const auto* species = desc_.battle->partnerRow(partner->species)) {
-        screens::setTechniqueChoices(view, *species, desc_.battle->moves(), *catalog, names);
+        screens::setTechniqueChoices(view, *species, desc_.battle->moves(), *catalog,
+                                     partner->moveVariants, names);
       }
     }
   }

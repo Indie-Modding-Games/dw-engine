@@ -88,6 +88,11 @@ private:
   CoopLink(net::PeerLink& link, Side side, Identity identity, LinkTimeouts timeouts);
   void handle(const Message& message);
   void fail(LinkFailure failure, bool sendLeave = false);
+  // Rejected, failed or left: the first of these holds, whatever the transport does next.
+  [[nodiscard]] bool ended() const {
+    return phase_ == LinkPhase::Rejected || phase_ == LinkPhase::Failed ||
+           phase_ == LinkPhase::Left;
+  }
 
   net::PeerLink* link_;
   Side side_;

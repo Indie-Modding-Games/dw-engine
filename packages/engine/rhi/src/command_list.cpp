@@ -53,9 +53,6 @@ void CommandList::beginRendering(const RenderingDesc& desc) {
   rendering.colorAttachmentCount = 1;
   rendering.pColorAttachments = &color;
   rendering.pDepthAttachment = desc.depth.view != VK_NULL_HANDLE ? &depth : nullptr;
-  // vkCmdBeginRendering itself returns nothing: a fault in its dynamic rendering (a MSAA resolve
-  // mode an AMD or Intel driver mishandles, say) comes back at the submit, so mark the pass first
-  // and let the submit report name it.
   gpuNoteActivity(std::format("dynamic rendering: {}x{}{}{} at {} samples", desc.extent.width,
                               desc.extent.height, desc.depth.view ? " with depth" : "",
                               desc.color.resolve ? " resolving the color" : "", desc.samples));
@@ -64,6 +61,7 @@ void CommandList::beginRendering(const RenderingDesc& desc) {
 
 void CommandList::endRendering() {
   vkCmdEndRendering(commands_);
+  gpuMarker(commands_, GpuWork::Frame);
 }
 
 void CommandList::colorPassBarrier() {
@@ -126,8 +124,12 @@ void CommandList::writeImage(const Image& image, const Rect& region,
   DWE_ASSERT(source.buffer != nullptr);
   DWE_ASSERT(
       checkImageWrite(image.extent(), image.format(), region, source.data.size()).has_value());
+  gpuNoteActivity(std::format("image write: {}x{} into {}x{} with {} mips", region.width,
+                              region.height, image.extent().width, image.extent().height,
+                              image.mipLevels()));
   recordImageWrite(commands_, image.native(), source.buffer->native(), source.offset, region,
                    image.extent(), image.mipLevels());
+  gpuMarker(commands_, GpuWork::Frame);
 }
 
 void CommandList::bindPipeline(const GraphicsPipeline& pipeline) {

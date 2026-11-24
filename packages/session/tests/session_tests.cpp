@@ -566,9 +566,13 @@ TEST_CASE("a save from before the summary gets one from its sections") {
   // A section missing or of another shape gives an empty text, never an error.
   file.sections.erase("partner");
   file.sections.at("field").state = dwe::core::YamlNode::sequence();
-  CHECK(summaryFromSections(file) ==
-        dwe::game::save::SaveSummary{
-            .slot = "", .tamer = "", .species = "", .nickname = "", .map = "", .mode = "folder"});
+  CHECK(summaryFromSections(file) == dwe::game::save::SaveSummary{.slot = "",
+                                                                  .tamer = "",
+                                                                  .species = "",
+                                                                  .nickname = "",
+                                                                  .map = "",
+                                                                  .mode = "folder",
+                                                                  .randomizer = ""});
 }
 
 TEST_CASE("a finished game saves where it continues and loads finished until a story save") {

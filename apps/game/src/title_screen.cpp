@@ -12,8 +12,10 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <optional>
+#include <random>
 #include <string>
 #include <utility>
 #include <variant>
@@ -28,6 +30,11 @@
 
 namespace dwe::app {
 namespace {
+
+std::uint64_t randomSeed() {
+  std::random_device device;
+  return (std::uint64_t{device()} << 32U) | device();
+}
 
 // The game pack's ruleset with the Ultimate to Mega step, which the new game's rules offer when the
 // packs have it.
@@ -93,7 +100,7 @@ TitleScreen::TitleScreen(const assets::VirtualFileSystem& files, const Options& 
     : ui_(&ui), storage_(saveStorageFor(options, keepsSaves)),
       slots_(slotsIn(files, storage_.get())),
       flow_(slots_ ? &*slots_ : nullptr, namesOf(files, options, modes)), modes_(std::move(modes)),
-      megaOffered_(hasRuleset(files, MegaRuleset)),
+      fixedSeed_(options.seed), megaOffered_(hasRuleset(files, MegaRuleset)),
       allOffered_(hasRuleset(files, AllSpeciesRuleset)) {}
 
 void TitleScreen::show() {
@@ -143,6 +150,8 @@ void TitleScreen::hide() {
   ui_->hide(DialogDocument);
   ui_->hide(NewGameRulesDocument);
   ui_->hide(NewGameModeDocument);
+  ui_->hide(NewGameRandomizerDocument);
+  randomizerShown_ = false;
   for (const std::string_view document : OnlineDocuments) {
     ui_->hide(document);
   }
@@ -221,7 +230,7 @@ bool TitleScreen::handle(const ui::UiCommand& command) {
     ui_->hide(NewGameRulesDocument);
     if (pending_ && ruleset != nullptr) {
       pending_->rulesetId = *ruleset;
-      start_ = std::exchange(pending_, std::nullopt);
+      finishNewGame();
     }
   } else if (name == "new_game_rules_back") {
     ui_->hide(NewGameRulesDocument);
@@ -233,6 +242,12 @@ bool TitleScreen::handle(const ui::UiCommand& command) {
       ui_->hide(NewGameModeDocument);
       chooseMode(*mode);
     }
+  } else if (name == NewGameRandomizerCommand) {
+    if (const std::string* action = std::get_if<std::string>(&command.value)) {
+      handleRandomizer(*action);
+    }
+    // Every step of the setup would flood the log: only the start is the player's choice.
+    return true;
   } else if (name == "new_game_mode_back") {
     ui_->hide(NewGameModeDocument);
     pending_.reset();
@@ -304,7 +319,7 @@ void TitleScreen::startOrAskRules(std::optional<PlayStart> start) {
 
 void TitleScreen::chooseMode(std::string_view mode) {
   if (modes_.choose(mode, *pending_) == NewGameModes::Next::Start) {
-    start_ = std::exchange(pending_, std::nullopt);
+    finishNewGame();
     return;
   }
   showRules();
@@ -316,6 +331,59 @@ void TitleScreen::showRules() {
                     {.name = "new_game_rules.all", .value = allOffered_}},
                    "new_game_rules.revision");
   ui_->show(NewGameRulesDocument, true);
+}
+
+void TitleScreen::finishNewGame() {
+  const game::modes::GameMode* mode =
+      pending_ && pending_->modeId ? modes_.catalog().find(*pending_->modeId) : nullptr;
+  if (mode == nullptr || !mode->randomizer || !asksRandomizer_) {
+    start_ = std::exchange(pending_, std::nullopt);
+    return;
+  }
+  randomizer_.open(fixedSeed_ ? *fixedSeed_ : randomSeed());
+  showRandomizer();
+}
+
+void TitleScreen::showRandomizer() {
+  randomizerShown_ = true;
+  screens::publish(*ui_, randomizer_.settings(), "new_game_randomizer.revision");
+  ui_->show(NewGameRandomizerDocument, true);
+}
+
+void TitleScreen::handleRandomizer(std::string_view action) {
+  if (!pending_ || !randomizerShown_) {
+    return;
+  }
+  switch (randomizer_.act(action)) {
+  case NewGameRandomizer::Outcome::Changed:
+    screens::publish(*ui_, randomizer_.settings(), "new_game_randomizer.revision");
+    return;
+  case NewGameRandomizer::Outcome::Start: {
+    randomizerShown_ = false;
+    ui_->hide(NewGameRandomizerDocument);
+    const game::randomizer::RunSettings& run = randomizer_.run();
+    if (run.active()) {
+      pending_->randomizer = run;
+      core::logInfo(messages::RandomizedRun, game::randomizer::runCode(run));
+    }
+    start_ = std::exchange(pending_, std::nullopt);
+    return;
+  }
+  case NewGameRandomizer::Outcome::Back:
+    randomizerShown_ = false;
+    ui_->hide(NewGameRandomizerDocument);
+    pending_.reset();
+    back();
+    return;
+  }
+}
+
+void TitleScreen::type(std::string_view text, bool enter) {
+  if (!takesText()) {
+    return;
+  }
+  randomizer_.type(text, enter);
+  screens::publish(*ui_, randomizer_.settings(), "new_game_randomizer.revision");
 }
 
 void TitleScreen::back() {

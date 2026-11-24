@@ -31,6 +31,20 @@ inline constexpr std::string_view MinimapEnemiesSetting = "minimap_enemies";
 // tell: many wild ones only turn to the player (2) and some that chase (12) only talk.
 [[nodiscard]] std::set<std::int32_t> fightingSections(const core::YamlNode& listing);
 
+// What makes a battle the story's and not a wild one (the ruleset's story_scenes.yaml: battle): a
+// section sets the fixed-fight trigger (no fleeing) or names the enemies in the predefined
+// variable before its start_battle (script_interp.c: SCRIPT_OP_START_BATTLE, btl.c:
+// handleBattleStart).
+struct StoryFightMarks {
+  std::int64_t fixedFightTrigger = 0;
+  std::int64_t predefinedVariable = 0;
+};
+
+// The fighting sections whose battle can be a wild one: a start_battle reached on some path with
+// neither mark set (set_trigger and unset_trigger of the trigger, set_pstat of the variable).
+[[nodiscard]] std::set<std::int32_t> wildFightingSections(const core::YamlNode& listing,
+                                                          const StoryFightMarks& marks);
+
 // Where a map NPC stands on the field by its script id, or nothing when it is not on the map (not
 // put there by the story, unloaded, or beaten and gone).
 using NpcPosition = std::function<std::optional<glm::vec3>(std::int32_t scriptId)>;
@@ -50,14 +64,21 @@ using NpcPosition = std::function<std::optional<glm::vec3>(std::int32_t scriptId
 class MinimapEnemyFinder {
 public:
   // The files must outlive the finder.
-  explicit MinimapEnemyFinder(const assets::VirtualFileSystem& files) : files_{&files} {}
+  explicit MinimapEnemyFinder(const assets::VirtualFileSystem& files, StoryFightMarks marks = {})
+      : files_{&files}, marks_{marks} {}
 
   [[nodiscard]] const std::set<std::int32_t>& sectionsOf(std::optional<std::uint16_t> script);
+  // Those of them whose battle can be a wild one (wildFightingSections).
+  [[nodiscard]] const std::set<std::int32_t>& wildSectionsOf(std::optional<std::uint16_t> script);
 
 private:
+  void read(std::optional<std::uint16_t> script);
+
   const assets::VirtualFileSystem* files_;
+  StoryFightMarks marks_;
   std::optional<std::optional<std::uint16_t>> read_;
   std::set<std::int32_t> sections_;
+  std::set<std::int32_t> wildSections_;
 };
 
 } // namespace dwe::app

@@ -152,6 +152,7 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
        .rulesetId = rulesetFor(files, options, play, start.storage.get()),
        .rules = std::nullopt,
        .modeId = play.modeId.value_or(std::string{game::modes::DefaultMode}),
+       .randomizer = play.randomizer.value_or(game::randomizer::RunSettings{}),
        .species = nullptr,
        .seed = seed,
        .storage = start.storage.get(),

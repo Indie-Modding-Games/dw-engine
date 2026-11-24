@@ -150,7 +150,7 @@ A new package, next to `game/versus` and with the same shape:
 | Piece | Side | What it does |
 |---|---|---|
 | `protocol` | both | Message types (one byte, in a range of their own, not stepping on those of versus or lockstep), handshake with `Identity` (protocol, game version and `contentHash`) and codecs with `WireWriter`/`WireReader`. |
-| `CoopLink` | both | Handshake, heartbeat, timeouts and exit reasons, like `VersusLink`. |
+| `CoopLink` | both | Handshake, heartbeat, timeouts and exit reasons, like `VersusLink`. The first way a link ends (refused, failed or left) is the one it keeps: a host's `Leave` that comes with its transport closing still reads as the host leaving, not as a drop. |
 | `CoopHost` + `Replicator` | host | Receives commands and gives them to `RemoteController`. Builds the snapshots and the events. |
 | `CoopClient` + `WorldMirror` | client | Sends commands. Applies snapshots with interpolation and events in order. Draws with the game's same scenes, in mirror mode (with no simulation of its own of the world). |
 
@@ -555,7 +555,9 @@ link is still connecting (`online.member.<n>.arriving`).
 (`GuestFieldIntent`), its states reach the authority under its id, corrections and rosters go only to it, and each
 gets the snapshots with its own command acknowledgement. A guest draws everyone from the snapshots and tags each other
 player (`coop_hud.tag.<n>.*`). Every guest's link carries its own battle messages: any guest can start a battle, and
-every free player on that map fights in it ([co-op combat](coop-combat.md) §12).
+every free player on that map fights in it ([co-op combat](coop-combat.md) §12). A bridge drops the messages no part of
+the play reads (a lobby's ready, a save's chunks) instead of queueing them, so a peer that keeps sending them grows
+nothing on the other side.
 
 **Sync diagnostics.** A developer tool behind the console (F1), which only opens with the developer tools on, so it
 never runs in release builds. `coop_sync("on")` on the host tells every guest to report; `coop_sync("report")` prints

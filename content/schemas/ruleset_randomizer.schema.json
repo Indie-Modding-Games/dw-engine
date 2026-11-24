@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: randomizer",
+  "description": "rules/<id>/randomizer.yaml: what a randomized run may change (packages/game/randomizer, docs/modules/game/randomizer.md). A run changes only what its settings turn on.",
+  "type": "object",
+  "required": ["enemies", "kept_items", "excluded_items", "excluded_species"],
+  "additionalProperties": false,
+  "properties": {
+    "enemies": {
+      "description": "The map NPC slots of the plain wild enemies, by map id: only these take another species. Every other NPC (bosses, story fights, recruits, characters) keeps its own.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "kept_items": {
+      "description": "Items that keep every place they are found in and never appear anywhere else (key items and the items the story checks in the bag), ids of data/items.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" }
+    },
+    "excluded_items": {
+      "description": "Items the randomizer never places or drops, ids of data/items.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" }
+    },
+    "excluded_species": {
+      "description": "Species no pick gives (evolution, starter, wild enemy), ids of data/digimon.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" }
+    }
+  }
+}

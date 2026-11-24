@@ -67,6 +67,8 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.31.0 | El menú del compañero marca su técnica potenciada (`partner.technique.<n>.boosted`, `partner.technique.choice.<n>.boosted`: su poder y su MP ya son los potenciados), y llega la opción `boosted_techniques` ([combate](../modules/game/battle.md#tecnicas-potenciadas)) |
+| 0.30.0 | Los medidores de necesidades y el aviso de peligro del campo: `partner.gauges()` (el hambre, el baño y el cansancio según se acumulan: `hud.gauge.<n>.label`, `need`, `value`, `max` y `fill`), `field.dangers()` y su evento `field.danger` (las marcas sobre los monstruos salvajes que aplastarían al compañero: `hud.danger.<n>.visible`, `x`, `y` y `hud.danger.revision`), y las opciones `need_meters` y `danger_alert` |
 | 0.29.0 | La pantalla `coop_battle` dice a quien no puede cerrar el cuadro final a quién espera (`coop_battle.waiting`, y `coop_battle.starter.name`, `name_key` y `number` de quien la empezó) |
 | 0.28.0 | Variantes de juego: `options.variant()` nombra la variante de la partida en juego (la clave del nombre de su modo, nil en el título) y `options.locked(name)` dice si esa variante fija una opción (ajustes `options.variant` y `options.locked.<name>`); `options.set` rechaza una opción fija ([variantes de juego](../architecture/game-variants.md)) |
 | 0.27.0 | La sala muestra la dificultad cooperativa del anfitrión antes de que un invitado se marque listo (`online.current.coop_difficulty`, `coop_difficulty` y `coop_difficulty_key` de `online.room()`), y llega la opción `coop_open_to_join`: si una partida cooperativa que aloja el jugador admite jugadores nuevos con la partida en marcha, aplicada al momento a la sala que aloja |
@@ -107,7 +109,7 @@ guardar y la caja del nombre); el resto de pantallas llega después.
 ## Referencia
 
 <!-- ui-api:generated -->
-Versión de la API de la interfaz: **0.28.0**.
+Versión de la API de la interfaz: **0.31.0**.
 
 ### `ui`
 
@@ -206,6 +208,15 @@ Versión de la API de la interfaz: **0.28.0**.
 | `hud.need.<n>.label` | ajuste | texto | La clave de texto de una necesidad (hambre, sueño, baño...). |
 | `hud.need.<n>.active` | ajuste | sí/no | Si el compañero tiene esa necesidad ahora. |
 | `hud.need.<n>.urgency` | ajuste | número | Su puesto entre las necesidades activas; 1 es la más urgente. |
+| `hud.gauge.<n>.label` | ajuste | texto | La clave de texto de la necesidad de un medidor (hambre, baño, cansancio). |
+| `hud.gauge.<n>.need` | ajuste | número | El puesto en la lista hud.need de la necesidad del medidor. |
+| `hud.gauge.<n>.value` | ajuste | número | Cuánto se ha acumulado la necesidad: 0 recién atendida, max cuando toca. |
+| `hud.gauge.<n>.max` | ajuste | número | El valor en el que la necesidad toca. |
+| `hud.gauge.<n>.fill` | ajuste | número | La barra del medidor en porcentaje entero, de 0 a 100. |
+| `hud.danger.revision` | ajuste | número | Sube cada vez que cambia una de las marcas de peligro de abajo. |
+| `hud.danger.<n>.visible` | ajuste | sí/no | Si el monstruo salvaje de ese hueco del mapa lleva la marca de peligro. |
+| `hud.danger.<n>.x` | ajuste | número | Dónde cuelga la marca, en porcentaje del ancho de la ventana. |
+| `hud.danger.<n>.y` | ajuste | número | Dónde cuelga la marca, en porcentaje del alto de la ventana. |
 | `hud.partner.area` | ajuste | número | 1 si al compañero le gusta la zona, 2 si no le gusta, 0 si ninguna de las dos. |
 | `hud.partner.revision` | ajuste | número | Sube cada vez que cambia la posición del compañero de abajo. |
 | `hud.partner.x` | ajuste | número | La posición del compañero en la ventana, en porcentaje de su ancho. |
@@ -234,6 +245,8 @@ Versión de la API de la interfaz: **0.28.0**.
 | `minimap_size` | opción | texto | El tamaño del minimapa. |
 | `digital_time` | opción | sí/no | La hora en cifras. |
 | `need_bubble_stack` | opción | sí/no | Todas las necesidades activas sobre el compañero, no solo la primera. |
+| `need_meters` | opción | sí/no | Los medidores de necesidades en el campo. |
+| `danger_alert` | opción | sí/no | La marca sobre los monstruos salvajes que aplastarían al compañero. |
 | `open_menu` | comando | — | Abre el menú de pausa (el botón de menú del HUD). |
 | `shop_job_rules` | comando | — | Abre el panel de reglas del trabajo en la tienda (el botón ? de su barra). |
 
@@ -335,6 +348,7 @@ Versión de la API de la interfaz: **0.28.0**.
 | `shop_job_mode` | opción | texto | Trabajo en la tienda del cañón: improved (mejorado) u original. |
 | `coop_difficulty` | opción | texto | Cómo escalan los enemigos en los combates cooperativos: off (desactivada), standard (estándar) o hard (difícil). |
 | `coop_open_to_join` | opción | sí/no | Si una partida cooperativa que aloja este jugador admite jugadores nuevos una vez en marcha. |
+| `roaming_rare_chance` | opción | texto | Cada cuánto salen los raros errantes: original, percent_5, percent_10, percent_25 o percent_50. |
 | `skip_evolution` | opción | sí/no | Saltar la escena de evolución. |
 | `choice_cancel_closes` | opción | sí/no | Cancelar cierra una elección. |
 | `fair_sickness_chance` | opción | sí/no | Probabilidad justa de enfermar. |
@@ -346,6 +360,7 @@ Versión de la API de la interfaz: **0.28.0**.
 | `extra_toilets` | opción | sí/no | Baños extra. |
 | `angemon_event_zone` | opción | sí/no | Zona del evento de Angemon. |
 | `whamon_in_water` | opción | sí/no | Whamon en el agua. |
+| `boosted_techniques` | opción | sí/no | Técnicas potenciadas. |
 | `smooth_motion` | opción | sí/no | Movimiento suave. |
 | `hd_scenery` | opción | sí/no | Escenarios HD. |
 | `scenery_quality` | opción | texto | Calidad de los escenarios: upscaled o smooth. |
@@ -367,6 +382,8 @@ Versión de la API de la interfaz: **0.28.0**.
 | `digital_time` | opción | sí/no | La hora en cifras. |
 | `save_notice` | opción | sí/no | El aviso de guardado. |
 | `need_bubble_stack` | opción | sí/no | Todas las necesidades activas sobre el compañero. |
+| `need_meters` | opción | sí/no | Los medidores de necesidades. |
+| `danger_alert` | opción | sí/no | El aviso de peligro. |
 | `shop_job_bar` | opción | sí/no | La barra del trabajo en la tienda. |
 | `name_spacing` | opción | sí/no | Espaciado de los nombres. |
 | `free_exploration` | opción | sí/no | Exploración libre. |
@@ -505,8 +522,8 @@ Versión de la API de la interfaz: **0.28.0**.
 | `partner.profile.type` | ajuste | número | Su tipo. |
 | `partner.profile.active` | ajuste | número | Su patrón de actividad. |
 | `partner.profile.special.<n>` | ajuste | número | Un tipo especial; -1 si ninguno. |
-| `partner.technique.<n>.<id>` | ajuste | número o texto | Una técnica equipada: empty, name, power, mp, range, effect. |
-| `partner.technique.choice.<n>.<id>` | ajuste | número o texto | Una técnica de la cuadrícula: name, available, equipped, known, power, mp, range, effect, slot, special. |
+| `partner.technique.<n>.<id>` | ajuste | número o texto | Una técnica equipada: empty, name, power, mp, range, effect, boosted. |
+| `partner.technique.choice.<n>.<id>` | ajuste | número o texto | Una técnica de la cuadrícula: name, available, equipped, known, power, mp, range, effect, slot, special, boosted. |
 | `partner.technique.can_finish` | ajuste | sí/no | Si la edición de técnicas puede acabar (queda una técnica de daño). |
 | `partner.technique.result` | ajuste | texto | La clave del mensaje del último cambio; vacía si no hay. |
 | `partner.care_result` | ajuste | texto | La clave del mensaje de la última felicitación o regañina. |
@@ -643,7 +660,9 @@ Versión de la API de la interfaz: **0.28.0**.
 | `field.fade` | evento | tabla | Cambió el fundido. Sale de `screen_fade`. |
 | `field.map_title` | evento | tabla | Cambió el nombre del mapa que se enseña. Sale de `map_title_key`. |
 | `field.minimap` | evento | tabla | Cambió si el minimapa puede verse o si algo lo tapa. Sale de `hud.minimap_allowed hud.minimap_covered battle.active`. |
+| `field.dangers(): table` | consulta | tabla | Las marcas de peligro sobre los monstruos salvajes que aplastarían al compañero: slot, x e y (porcentaje); vacía con la opción apagada o el campo parado. |
 | `field.shop_job` | evento | tabla | Cambió el trabajo en la tienda. Sale de `shop_job.revision`. |
+| `field.danger` | evento | tabla | Cambiaron las marcas de peligro. Sale de `hud.danger.revision`. |
 
 ### `partner`
 
@@ -651,12 +670,13 @@ Versión de la API de la interfaz: **0.28.0**.
 |---|---|---|---|
 | `partner.status(): table` | consulta | tabla | Las barras (meters: id, label_key, value, min, max, two_tone, mood), los PV y PM (pools) y lo que le parece el mapa (area: liked, disliked o nil). |
 | `partner.needs(): table` | consulta | tabla | Las necesidades en orden: id, label_key, active y urgency (1 la más urgente; 0 si no la tiene). |
+| `partner.gauges(): table` | consulta | tabla | Los medidores de necesidades en orden (hunger, toilet, tired): id, label_key, value, max, fill (porcentaje) y active. |
 | `partner.bubble(): table` | consulta | tabla | Dónde está su cabeza en la ventana: visible, x, y (porcentaje) y evolving (el cuadro de la burbuja de evolución, o nil). |
 | `partner.extras(): table?` | consulta | tabla | Errores de cuidado, combates y horas vividas; nil si el jugador tiene apagados los extras del estado. |
 | `partner.praise(): boolean` | acción | sí/no | Pide felicitarlo. |
 | `partner.scold(): boolean` | acción | sí/no | Pide regañarlo. |
 | `partner.toggle_technique(slot: integer): boolean, string?` | acción | sí/no | Pide equipar o quitar la técnica de ese hueco de la especie. |
-| `partner.changed` | evento | tabla | Cambió algo del compañero; name dice qué ajuste. Sale de `hud.revision partner.revision hud.meter.0.label hud.meter.1.label hud.pool.0.label hud.pool.1.label hud.need.0.label hud.need.1.label hud.need.2.label hud.need.3.label hud.need.4.label hud.need.5.label`. |
+| `partner.changed` | evento | tabla | Cambió algo del compañero; name dice qué ajuste. Sale de `hud.revision partner.revision hud.meter.0.label hud.meter.1.label hud.pool.0.label hud.pool.1.label hud.need.0.label hud.need.1.label hud.need.2.label hud.need.3.label hud.need.4.label hud.need.5.label hud.gauge.0.label hud.gauge.1.label hud.gauge.2.label`. |
 | `partner.bubble_moved` | evento | tabla | Su cabeza se movió en la ventana. Sale de `hud.partner.revision`. |
 
 ### `bag`

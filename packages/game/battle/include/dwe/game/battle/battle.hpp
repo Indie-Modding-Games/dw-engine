@@ -92,6 +92,9 @@ struct BattleSetup {
   // offense and finisher grow with the partners that fight (the starter's and the allies) and the
   // helpers. Off, or one partner and no helper: the original numbers.
   CoopScaling coopScaling;
+  // The chance in 100 of learning each technique the partner saw and can learn, instead of the
+  // move table's (a randomized run's choice); nothing for the table's. The rolls stay the same.
+  std::optional<std::int32_t> learnChance = std::nullopt;
 };
 
 enum class Outcome : std::uint8_t { Victory, Fled, Defeat };

@@ -446,10 +446,11 @@ local function draw_tech(document)
       local box_left, _, box_width = name_box:rect()
       return box_width - (name_text:rect() - box_left)
     end)
+    local boosted = filled and setting(base .. "boosted", false)
     for _, field in ipairs({ "power", "mp" }) do
-      document
-        :get("tech-" .. field .. "-" .. index)
-        :set_text(filled and tostring(number(base .. field)) or "")
+      local value = document:get("tech-" .. field .. "-" .. index)
+      value:set_text(filled and tostring(number(base .. field)) or "")
+      value:set_class("boosted", boosted)
     end
     for _, field in ipairs({ "range", "effect" }) do
       local value = number(base .. field)
@@ -504,7 +505,12 @@ local function draw_tech_info(document)
             label = tech_value_label(field, value)
           end
         end
-        document:get("tech-info-" .. field):set_text(label)
+        local info_value = document:get("tech-info-" .. field)
+        info_value:set_text(label)
+        info_value:set_class(
+          "boosted",
+          known and (field == "power" or field == "mp") and setting(base .. "boosted", false)
+        )
       end
       return
     end
@@ -524,6 +530,7 @@ local function draw_tech_choices(document)
       button:set_class("special-" .. special, number(base .. "special") == special)
     end
     button:set_class("unavailable", not setting(base .. "available", false))
+    button:set_class("boosted", setting(base .. "boosted", false))
   end
 end
 
@@ -603,14 +610,8 @@ function toggle_technique(document, slot)
   if compact_menu() and editing_tech then
     document:get("tech-choice-" .. slot):focus()
     draw_tech_info(document)
-    assign_technique(document, slot)
-    return
   end
-  if not setting("partner.technique.choice." .. slot .. ".available", false) then
-    document:get("tech-message"):set_text(t("partner_menu.tech.unavailable"))
-    return
-  end
-  ui.send("partner_toggle_technique", number("partner.technique.choice." .. slot .. ".slot"))
+  assign_technique(document, slot)
 end
 -- The slot the boxes over the bag are open on keeps its cursor under them (inventory.c:
 -- renderInventoryTop draws it in every state).

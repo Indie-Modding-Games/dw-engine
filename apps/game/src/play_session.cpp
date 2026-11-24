@@ -6,6 +6,7 @@
 #include <dwe/game/battle/combatant.hpp>
 #include <dwe/game/field/npc_spawns.hpp>
 #include <dwe/game/inventory/inventory.hpp>
+#include <dwe/game/randomizer/map_enemies.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/ruleset/species_extra.hpp>
 #include <dwe/scene/components.hpp>
@@ -84,6 +85,8 @@ constexpr int MapChangeSettleFrames = 5;
 // point.
 constexpr float BubbleDrop = 20.0F;
 constexpr float BubbleRise = 65.0F;
+// The danger alert's mark hangs this far over the top of the wild one's species height.
+constexpr float DangerMarkLift = 30.0F;
 
 // Where the partner's need bubble settles in the window; nothing off the map's camera.
 std::optional<screens::WindowFraction> partnerBubbleOf(const FieldScene& scene,
@@ -652,6 +655,13 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
     const ruleset::SpeciesPatch* patch = extra.find(species);
     return patch != nullptr ? patch->fieldScale.value_or(1.0F) : 1.0F;
   });
+  if (species_) {
+    scene_->attachMapNpcs(
+        [this, &session, pools = game::randomizer::stagePools(*species_, session.roster())](
+            std::string_view map, std::span<assets::MapNpc> npcs) {
+          game::randomizer::randomizeMapEnemies(session.randomizer(), map, npcs, *species_, pools);
+        });
+  }
   scene_->attachSound(session.sound(), [this](std::string_view species) {
     const auto* row = species_ ? species_->find(species) : nullptr;
     return row != nullptr
@@ -737,7 +747,13 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   minimapEnemiesShown_ = context.userSettings->minimapEnemies.value_or(true);
   context_.ui->setSetting(MinimapEnemiesSetting, minimapEnemiesShown_);
   if (context.files != nullptr) {
-    minimapEnemies_.emplace(*context.files);
+    StoryFightMarks storyFights;
+    if (game_.systems.scenes != nullptr) {
+      const game::story::StoryBattleRules& battle = game_.systems.scenes->rules().battle;
+      storyFights = {.fixedFightTrigger = battle.fixedFightTrigger,
+                     .predefinedVariable = battle.predefinedVariable};
+    }
+    minimapEnemies_.emplace(*context.files, storyFights);
     // The shops' and services' lines, read as the game loads rather than on the first visit's
     // frame (#221); they keep what this read (map_head_lines.cpp).
     static_cast<void>(session::readMapHeadLineTables(*context.files));
@@ -1230,7 +1246,10 @@ constexpr std::array PlayOptions{
                .saved = &UserSettings::angemonEventZone,
                .fallback = true},
     PlayOption{
-        .setting = WhamonInWaterSetting, .saved = &UserSettings::whamonInWater, .fallback = true}};
+        .setting = WhamonInWaterSetting, .saved = &UserSettings::whamonInWater, .fallback = true},
+    PlayOption{.setting = BoostedTechniquesSetting,
+               .saved = &UserSettings::boostedTechniques,
+               .fallback = true}};
 
 RuleChoices ruleChoicesOf(const UserSettings& settings) {
   const std::string difficulty = settings.difficulty.value_or(std::string{DifficultyNormal});
@@ -1311,15 +1330,21 @@ void PlaySession::applyPlayOptions() {
                                          settings.whamonInWater.value_or(true));
   }
   battleScreen_.setQuickStart(settings.quickBattleStart.value_or(false));
+  if (game_.systems.battle != nullptr) {
+    game_.systems.battle->setBoostedMoves(settings.boostedTechniques.value_or(true));
+  }
   skipEvolution_ = settings.skipEvolution.value_or(false);
   coopLevel_ = coopLevelOf(settings.coopDifficulty);
   context_.ui->setSetting(CoopDifficultySetting, std::string{coopLevelName(coopLevel_)});
   scene_->field().setGenerousTalk(settings.generousTalk.value_or(false));
   scene_->field().setExtraToiletsOn(settings.extraToilets.value_or(false));
   scene_->showExtraToilets();
+  const std::string_view roamingRares = roamingRareStep(settings.roamingRareChance);
+  context_.ui->setSetting(RoamingRareChanceSetting, std::string{roamingRares});
   if (game_.systems.story != nullptr) {
     game_.systems.story->dialogue().setCancelClosesChoice(
         settings.choiceCancelCloses.value_or(false));
+    game_.systems.story->setRoamingRareChance(roamingRarePercent(roamingRares));
   }
   ruleOptions_.choose(rules);
   ruleOptions_.keep(game_.session->rules());
@@ -1967,6 +1992,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
                        : std::nullopt,
                    evolutionScene_.bubbleFrame());
   publishShopJob();
+  publishDangerMarks(fieldRunning, species);
   battleScreen_.showIntro([&](const game::battle::Combatant& enemy, float lift) {
     return angerAnchorOf(*scene_, species, enemy, lift);
   });
@@ -2019,6 +2045,39 @@ std::vector<ui::MinimapMarker> PlaySession::minimapEnemyMarkers() {
   const game::field::FieldNpcs& npcs = scene_->field().npcs();
   return minimapEnemies(minimapEnemiesShown_, scene_->map().npcs, fighting,
                         [&](std::int32_t scriptId) { return npcs.positionOf(scriptId); });
+}
+
+void PlaySession::publishDangerMarks(bool fieldRunning, const assets::DigimonTable* species) {
+  DangerMarks marks{};
+  if (minimapEnemies_ && scene_ != nullptr && fieldRunning && game_.session->playing() &&
+      context_.userSettings->dangerAlert.value_or(true)) {
+    const game::story::StoryRunner* runner =
+        game_.systems.story != nullptr ? game_.systems.story->runner() : nullptr;
+    const std::set<std::int32_t>& wild =
+        minimapEnemies_->wildSectionsOf(runner != nullptr ? runner->mapScript() : std::nullopt);
+    const FieldScene& fieldScene = *scene_;
+    marks = dangerMarksOf(
+        true, fieldScene.map().npcs, wild, strengthOf(game_.session->partnerView()),
+        [&](std::size_t slot, const assets::MapNpc& npc) -> std::optional<screens::WindowFraction> {
+          std::optional<glm::vec3> at = fieldScene.field().npcs().positionAt(slot);
+          if (!at) {
+            return std::nullopt;
+          }
+          const assets::DigimonRow* row =
+              species != nullptr && npc.digimon ? species->find(*npc.digimon) : nullptr;
+          at->y += (row != nullptr ? static_cast<float>(row->height) : 0.0F) + DangerMarkLift;
+          const std::optional<glm::vec2> fraction = fieldScene.worldToWindowFraction(*at);
+          if (!fraction) {
+            return std::nullopt;
+          }
+          return screens::WindowFraction{.x = fraction->x, .y = fraction->y};
+        });
+  }
+  if (publishedDanger_ == marks) {
+    return;
+  }
+  screens::publish(*context_.ui, settingsOf(marks), DangerRevisionSetting);
+  publishedDanger_ = marks;
 }
 
 void PlaySession::refreshMinimap() {

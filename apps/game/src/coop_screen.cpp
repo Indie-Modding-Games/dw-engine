@@ -101,7 +101,7 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     publish();
     return true;
   }
-  if (command.name == "coop_host") {
+  if (command.name == CoopHostCommand) {
     // The title script sends coop_open when it reveals this view, but input can reach the
     // command queue before that lifecycle command is handled (for example after restoring the
     // title view). A host/join intent is sufficient to activate the lobby itself.
@@ -123,7 +123,7 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     publish();
     return true;
   }
-  if (command.name == "coop_join") {
+  if (command.name == CoopJoinCommand) {
     if (!active_) {
       connection_.open();
       active_ = true;
@@ -137,7 +137,7 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     publish();
     return true;
   }
-  if (command.name == "coop_connect") {
+  if (command.name == CoopConnectCommand) {
     if (!isHost_ && active_ &&
         (connection_.view() == CoopConnection::View::JoinEntry ||
          connection_.view() == CoopConnection::View::Error)) {
@@ -146,7 +146,7 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     }
     return true;
   }
-  if (command.name == "coop_ready") {
+  if (command.name == CoopReadyCommand) {
     if (!isHost_ && connection_.connected() && connection_.link() != nullptr) {
       if (localReady_) {
         if (const auto sent =
@@ -166,7 +166,7 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     }
     return true;
   }
-  if (command.name == "coop_open_to_join") {
+  if (command.name == CoopOpenToJoinCommand) {
     // The host's choice: whether its game, once under way, takes new players (#356).
     if (const bool* open = std::get_if<bool>(&command.value); open != nullptr && isHost_) {
       openToJoin_ = *open;
@@ -176,14 +176,14 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     }
     return true;
   }
-  if (command.name == "coop_start") {
+  if (command.name == CoopStartCommand) {
     if (isHost_ && connection_.connected() && guestReady()) {
       startRequested_ = true;
       selectingHostStart_ = true;
     }
     return true;
   }
-  if (command.name == "coop_close") {
+  if (command.name == CoopCloseCommand) {
     // Keep a ready peer alive while the player leaves the lobby to load their save. An unfinished
     // attempt is still cancelled when the page closes.
     if (!connection_.connected())
@@ -198,8 +198,6 @@ bool CoopScreen::handle(const ui::UiCommand& command) {
     publish();
     return true;
   }
-  if (!active_)
-    return false;
   return false;
 }
 
@@ -527,8 +525,7 @@ core::Result<void> CoopScreen::sendProfile(game::coop::CoopLink& link,
     return core::fail("cooperative save profile is empty, too large, or disconnected");
   }
   const auto* begin = reinterpret_cast<const std::uint8_t*>(saveText.data());
-  const std::size_t count =
-      (saveText.size() + game::coop::MaxProfileChunkBytes - 1) / game::coop::MaxProfileChunkBytes;
+  const std::size_t count = game::coop::profileChunkCount(saveText.size());
   for (std::size_t index = 0; index < count; ++index) {
     const std::size_t offset = index * game::coop::MaxProfileChunkBytes;
     const std::size_t size = std::min(game::coop::MaxProfileChunkBytes, saveText.size() - offset);
@@ -542,6 +539,13 @@ core::Result<void> CoopScreen::sendProfile(game::coop::CoopLink& link,
     }
   }
   return {};
+}
+
+std::uint32_t CoopScreen::nextTransferId() {
+  if (nextTransferId_ == 0) {
+    ++nextTransferId_;
+  }
+  return nextTransferId_++;
 }
 
 core::Result<void> CoopScreen::provideGuestSave(std::string_view saveText, game::save::SlotId slot,
@@ -570,9 +574,7 @@ core::Result<void> CoopScreen::sendGuestSave(std::string_view saveText) {
   if (connection_.link() == nullptr) {
     return core::fail("the guest is not in a room");
   }
-  std::uint32_t transferId = nextTransferId_++;
-  if (transferId == 0)
-    transferId = nextTransferId_++;
+  const std::uint32_t transferId = nextTransferId();
   if (auto sent = sendProfile(*connection_.link(), game::coop::ProfilePayloadKind::GuestSave,
                               transferId, saveText);
       !sent) {
@@ -613,24 +615,16 @@ core::Result<void> CoopScreen::sendWorld(game::coop::CoopLink& link, std::string
     return std::unexpected{save.error()};
   if (save->header.summary.map.empty())
     return core::fail("the host save has no map");
-  std::uint32_t transferId = nextTransferId_++;
-  if (transferId == 0)
-    transferId = nextTransferId_++;
-  const std::size_t count =
-      (saveText.size() + game::coop::MaxProfileChunkBytes - 1) / game::coop::MaxProfileChunkBytes;
-  if (count == 0 || count > game::coop::MaxProfileChunks ||
-      saveText.size() > game::coop::MaxProfileBytes) {
-    return core::fail("the host save exceeds the cooperative transfer limit");
-  }
+  const std::uint32_t transferId = nextTransferId();
   if (auto sent = sendProfile(link, game::coop::ProfilePayloadKind::HostSave, transferId, saveText);
       !sent) {
     return sent;
   }
-  return link.send(
-      game::coop::Message{game::coop::JoinState{.mapId = save->header.summary.map,
-                                                .saveTransferId = transferId,
-                                                .saveChunkCount = static_cast<std::uint16_t>(count),
-                                                .entities = {}}});
+  return link.send(game::coop::Message{game::coop::JoinState{
+      .mapId = save->header.summary.map,
+      .saveTransferId = transferId,
+      .saveChunkCount = static_cast<std::uint16_t>(game::coop::profileChunkCount(saveText.size())),
+      .entities = {}}});
 }
 
 std::vector<game::coop::PlayerId> CoopScreen::guestsWaitingForWorld() const {

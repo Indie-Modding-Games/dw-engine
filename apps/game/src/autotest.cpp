@@ -76,11 +76,12 @@ constexpr int StableFrames = 5;
 
 // The other documents menu_select picks from while they are open: the battle screen, the partner's
 // menu, free exploration's chooser, the title screen's slot list, the save dialog, the sleep
-// menu, the shop, the item keeper, the new game's rules and mode and the boot's skin picker.
-constexpr std::array<std::string_view, 11> ScreenDocuments{
-    "partner_menu",   "battle",        "destination_choice", "dialog",
-    "save_slots",     "sleep_menu",    "shop_menu",          "item_keeper",
-    "new_game_rules", "new_game_mode", "skin_picker"};
+// menu, the shop, the item keeper, the new game's rules, mode and randomizer and the boot's skin
+// picker.
+constexpr std::array<std::string_view, 12> ScreenDocuments{
+    "partner_menu",   "battle",        "destination_choice",  "dialog",
+    "save_slots",     "sleep_menu",    "shop_menu",           "item_keeper",
+    "new_game_rules", "new_game_mode", "new_game_randomizer", "skin_picker"};
 
 // The menu menu_select picks from: the pause menu while it is open (over the title too, as its
 // options), then the main menu, then the battle screen or the partner's menu; the pause menu when
@@ -748,8 +749,8 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   AutotestRoute route;
   reader.expectKeys(*document, "route", {"name", "device", "steps"},
                     {"gamepad", "timeout", "main_menu", "boot_screen", "language_first",
-                     "skin_first", "new_game_rules", "new_game_scene", "walk_control", "new_game",
-                     "names", "load_save", "movies", "text_fit"});
+                     "skin_first", "new_game_rules", "new_game_randomizer", "new_game_scene",
+                     "walk_control", "new_game", "names", "load_save", "movies", "text_fit"});
   route.name = reader.text(reader.field(*document, "name"));
   const core::YamlNode& device = reader.field(*document, "device");
   if (const auto known = deviceNamed(reader.text(device))) {
@@ -789,6 +790,12 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
     route.newGameRules = reader.boolean(*rules);
     if (route.newGameRules && !route.mainMenu) {
       reader.fail(*rules, "new_game_rules needs main_menu: true");
+    }
+  }
+  if (const core::YamlNode* randomizer = document->find("new_game_randomizer")) {
+    route.newGameRandomizer = reader.boolean(*randomizer);
+    if (route.newGameRandomizer && !route.newGameRules) {
+      reader.fail(*randomizer, "new_game_randomizer needs new_game_rules: true");
     }
   }
   if (const core::YamlNode* scene = document->find("new_game_scene")) {

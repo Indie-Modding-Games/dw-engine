@@ -1,7 +1,8 @@
 -- The title screen's slot list (docs/architecture/save-and-load.md, 3.4 and 3.5): the empty
 -- slots for a new game, or the saves to continue. The game publishes the slots as settings
 -- (save.slots.mode, "new" or "continue"; save.slots, the count; save.slot.<n>.kind, number, state,
--- nickname, species, species_key, map, map_key, mode, mode_key, play_seconds and updated, from 0;
+-- nickname, species, species_key, map, map_key, mode, mode_key, randomizer (a randomized run's
+-- code), play_seconds and updated, from 0;
 -- and save.slots.newest, the entry saved last, where continuing starts) and shows this document; it
 -- sends choose_slot with the entry, from 0, play_without_saving or slots_back. Pages of six
 -- entries, turned with left and right or the page buttons. The page and the row chosen stay while a
@@ -61,11 +62,18 @@ local function named(entry, name)
 end
 
 -- The save's game mode by its name; one no installed pack has is an unknown variant, not its id.
+-- A randomized run adds its run code.
 local function mode_name(entry)
+  local name = named(entry, "mode")
   if field(entry, "mode_key") == "" and field(entry, "mode") ~= "" then
-    return t("modes.unknown_name")
+    name = t("modes.unknown_name")
   end
-  return named(entry, "mode")
+  local code = field(entry, "randomizer")
+  if code ~= "" then
+    local run = t("new_game_randomizer.slot", { code = code })
+    name = name ~= "" and (name .. " · " .. run) or run
+  end
+  return name
 end
 
 -- The partner's own name and its species (main_menu.c: drawMainMenuStrings), or the species.

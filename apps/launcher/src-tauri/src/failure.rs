@@ -87,8 +87,6 @@ pub mod code {
     pub const ADDON_HOST: &str = "addon-host";
     /// Not enough free space in the data folder; the detail is the folder (system_check.rs).
     pub const NO_SPACE: &str = "no-space";
-    /// No GPU of this computer can run the game, not even with the software driver.
-    pub const NO_GPU: &str = "no-gpu";
     /// The player's images need the game and its content installed first.
     pub const IMAGES_NO_CONTENT: &str = "images-no-content";
     /// dwx export-images failed; the detail is what it said.

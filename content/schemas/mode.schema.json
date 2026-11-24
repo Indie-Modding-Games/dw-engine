@@ -60,6 +60,10 @@
           "integer"
         ]
       }
+    },
+    "randomizer": {
+      "type": "boolean",
+      "description": "Whether a new game of the mode may be a randomized run (docs/modules/game/randomizer.md). Off by default."
     }
   }
 }

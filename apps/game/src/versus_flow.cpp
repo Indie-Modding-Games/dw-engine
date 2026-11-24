@@ -237,7 +237,8 @@ void VersusFlow::startHosting() {
   const game::versus::SeriesSetup setup{.battles = battles(),
                                         .arena = arenaOf(),
                                         .seed = desc_.seed(),
-                                        .inputDelay = game::versus::DefaultInputDelay};
+                                        .inputDelay = game::versus::DefaultInputDelay,
+                                        .boostedMoves = desc_.boostedMoves && desc_.boostedMoves()};
   series_.emplace(*desc_.battles, game::versus::VersusLink::host(*link_, desc_.identity, setup),
                   Placement);
   core::logInfo("versus: hosting a series of {} on arena {}", setup.battles, setup.arena);

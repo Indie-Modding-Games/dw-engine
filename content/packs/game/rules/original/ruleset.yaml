@@ -32,6 +32,7 @@ sections:
   - evolution
   - battle
   - partner_moves
+  - boosted_moves
   - movies
   - story
   - dialogue
@@ -58,3 +59,4 @@ sections:
   - curling
   - shop_job
   - difficulty
+  - randomizer

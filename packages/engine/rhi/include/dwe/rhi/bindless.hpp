@@ -50,11 +50,9 @@ inline constexpr std::uint32_t PushConstantBytes = 128;
 // in push constants or in buffers read by device address.
 class BindlessTable {
 public:
-  // capacity is clamped to what the GPU supports. `rdna2Safe` is the launcher's opt-in AMD RX 6000
-  // mode; it is ignored on any other GPU (bindless.cpp).
+  // capacity is clamped to what the GPU supports.
   static core::Result<std::unique_ptr<BindlessTable>> create(Device& device,
-                                                             std::uint32_t capacity,
-                                                             bool rdna2Safe = false);
+                                                             std::uint32_t capacity);
 
   BindlessTable(const BindlessTable&) = delete;
   BindlessTable& operator=(const BindlessTable&) = delete;
@@ -89,9 +87,7 @@ private:
   // Points the shaders' texture `slot` at the image.
   void write(std::uint32_t slot, const Image& image);
 
-  // A white texel every unregistered slot points at, so a shader that reads a stale TextureId
-  // samples a live image instead of a descriptor the driver may fault on (some AMD and Intel
-  // drivers). Declared first: its view is retired after the table's own resources.
+  // What every unregistered slot points at. Declared first, so it is retired after the set.
   std::optional<Image> fallback_;
   Device* device_;
   VkDescriptorSetLayout setLayout_ = VK_NULL_HANDLE;

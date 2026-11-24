@@ -1,21 +1,23 @@
-#include <dwe/core/assert.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/rhi/gpu_report.hpp>
 
-#include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
 
 #include <algorithm>
 #include <array>
 #include <atomic>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <deque>
 #include <exception>
 #include <format>
 #include <mutex>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
+
+#include "gpu_report_text.hpp"
+#include "vulkan_util.hpp"
 
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -32,114 +34,207 @@
 namespace dwe::rhi {
 namespace {
 
-// How many calls the trail keeps. Enough to show the pipeline build, the upload and the submit that
-// led to a hang or a fault inside a driver.
+// Enough calls to show the uploads and the submit that led to a fault.
 constexpr std::size_t TrailLength = 12;
 
-// A PCI vendor id, as a name: which driver page to look at.
-std::string_view vendorName(std::uint32_t vendorId) {
-  switch (vendorId) {
-  case 0x10deU:
-    return "NVIDIA";
-  case 0x1002U:
-    return "AMD";
-  case 0x8086U:
-    return "Intel";
-  case 0x15adU:
-    return "VMware";
-  case 0x1af5U:
-    return "Broadcom";
-  case 0x13e0U:
-    return "Xilinx";
-  case 0x19eeU:
-    return "Qualcomm";
-  case 0x5143U:
-    return "Qualcomm (Arm)";
-  case 0x1010U:
-    return "imgtec";
-  case 0x10c3U:
-    return "Arm";
-  case 0x1d1fU:
-    return "3DFX";
-  case 0x1028U:
-    return "Huawei";
-  case 0x1ae0U:
-    return "Apple";
-  default:
-    return "an unknown vendor";
+// Labels of the newest markers of each kind of work: a few frames of passes.
+constexpr std::uint32_t MarkerLabels = 64;
+
+constexpr std::size_t WorkKinds = std::to_underlying(GpuWork::Upload) + 1;
+
+using Line = std::array<char, 256>;
+
+struct Markers {
+  std::uint32_t recorded = 0;
+  std::array<Line, MarkerLabels> labels{};
+};
+
+// Fixed buffers only: the crash handlers read them without allocating or locking.
+struct Record {
+  std::mutex mutex;
+  Line gpu{};
+  Line driver{};
+  Line limits{};
+  Line activity{};
+  std::array<Line, TrailLength> trail{};
+  std::size_t calls = 0;
+  bool deviceLost = false;
+  std::array<char, 4096> breadcrumbs{};
+
+  VkDevice device = VK_NULL_HANDLE;
+  PFN_vkGetDeviceFaultInfoEXT getFaultInfo = nullptr;
+  PFN_vkCmdWriteBufferMarkerAMD writeMarker = nullptr;
+  VmaAllocator allocator = VK_NULL_HANDLE;
+  VkBuffer markerBuffer = VK_NULL_HANDLE;
+  VmaAllocation markerAllocation = VK_NULL_HANDLE;
+  // One slot per kind of work, which the GPU writes and the CPU reads once the device is lost.
+  const volatile std::uint32_t* finished = nullptr;
+  std::array<Markers, WorkKinds> markers{};
+};
+
+Record& record() {
+  // Never destroyed: a crash handler may run while static objects are being torn down.
+  static auto* const instance = new Record();
+  return *instance;
+}
+
+template <std::size_t Size>
+void store(std::array<char, Size>& line, std::string_view text) {
+  const std::size_t length = std::min(text.size(), Size - 1);
+  std::ranges::copy(text.substr(0, length), line.begin());
+  line[length] = '\0';
+}
+
+// A string the driver filled in, which may not end in a null.
+template <std::size_t Size>
+std::string_view fixedText(const char (&chars)[Size]) {
+  return {chars, std::ranges::find(chars, '\0')};
+}
+
+// The trail's lines, oldest first.
+template <typename Visit>
+void forEachCall(const Record& rec, Visit visit) {
+  const std::size_t first = rec.calls < TrailLength ? 0 : rec.calls % TrailLength;
+  for (std::size_t step = 0; step < std::min(rec.calls, TrailLength); ++step) {
+    visit(rec.trail[(first + step) % TrailLength].data());
   }
 }
 
-// Vulkan's driver id (VkDriverId), named without the VK_DRIVER_ID_* macros so the report stays
-// stable across loader versions.
-std::string_view driverIdName(std::uint32_t driverId) {
-  switch (driverId) {
-  case 0U:
-    return "unknown";
-  case 1U:
-    return "AMD proprietary";
-  case 2U:
-    return "AMD open-source (AMDVLK)";
-  case 3U:
-    return "Mesa RADV";
-  case 4U:
-    return "NVIDIA proprietary";
-  case 5U:
-    return "Intel proprietary (Windows)";
-  case 6U:
-    return "Intel one driver (Linux)";
-  case 7U:
-    return "Mesa ANV";
-  case 8U:
-    return "Qualcomm";
-  case 9U:
-    return "Arm";
-  case 10U:
-    return "PowerVR";
-  case 11U:
-    return "imagination";
-  case 12U:
-    return "Mesa V3D";
-  case 13U:
-    return "Broadcom";
-  case 14U:
-    return "Tegra";
-  case 15U:
-    return "Breadboard (Google SwiftShader?)";
-  case 16U:
-    return "Broadcom VideoCore";
-  case 17U:
-    return "Mesa Etnaviv";
-  case 18U:
-    return "Mesa Freedreno";
-  case 19U:
-    return "Mesa Turnip";
-  case 20U:
-    return "Mesa Panvk";
-  case 21U:
-    return "Mesa Dozen";
-  case 22U:
-    return "Mesa Asahi";
-  case 23U:
-    return "Mesa Etnaviv";
-  case 24U:
-    return "Mesa Freedreno";
-  case 25U:
-    return "Mesa Turnip";
-  case 26U:
-    return "Mesa Panvk";
-  case 27U:
-    return "Mesa Dozen";
-  case 28U:
-    return "Mesa Asahi";
-  default:
-    return "an unnamed driver";
+std::string reportText(const Record& rec) {
+  std::string text =
+      std::format("gpu:      {}\ndriver:   {}\nlimits:   {}\nactivity: {}\n"
+                  "recent Vulkan calls (newest last):\n",
+                  rec.gpu.data(), rec.driver.data(), rec.limits.data(), rec.activity.data());
+  forEachCall(rec, [&text](const char* call) { text += std::format("  {}\n", call); });
+  text += rec.breadcrumbs.data();
+  return text;
+}
+
+std::string faultText(const Record& rec) {
+  if (rec.getFaultInfo == nullptr) {
+    return {};
+  }
+  VkDeviceFaultCountsEXT counts{};
+  counts.sType = VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT;
+  if (rec.getFaultInfo(rec.device, &counts, nullptr) < 0) {
+    return "device fault: the driver gave no details\n";
+  }
+  std::vector<VkDeviceFaultAddressInfoEXT> addresses(counts.addressInfoCount);
+  std::vector<VkDeviceFaultVendorInfoEXT> vendor(counts.vendorInfoCount);
+  counts.vendorBinarySize = 0;
+  VkDeviceFaultInfoEXT fault{};
+  fault.sType = VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_EXT;
+  fault.pAddressInfos = addresses.data();
+  fault.pVendorInfos = vendor.data();
+  if (rec.getFaultInfo(rec.device, &counts, &fault) < 0) {
+    return "device fault: the driver gave no details\n";
+  }
+  return describeDeviceFault(counts, fault);
+}
+
+std::string markerText(const Record& rec) {
+  if (rec.finished == nullptr) {
+    return {};
+  }
+  std::string text;
+  for (const auto [work, name] :
+       {std::pair{GpuWork::Frame, "frame"}, {GpuWork::Upload, "upload"}}) {
+    const auto slot = static_cast<std::size_t>(std::to_underlying(work));
+    const Markers& markers = rec.markers.at(slot);
+    text += describeMarkers(name, rec.finished[slot], markers.recorded,
+                            [&markers](std::uint32_t marker) -> std::optional<std::string_view> {
+                              if (marker + MarkerLabels <= markers.recorded) {
+                                return std::nullopt;
+                              }
+                              return markers.labels.at(marker % MarkerLabels).data();
+                            });
+  }
+  return text;
+}
+
+void createMarkerBuffer(Record& rec, VmaAllocator allocator) {
+  VkBufferCreateInfo bufferInfo{};
+  bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  bufferInfo.size = WorkKinds * sizeof(std::uint32_t);
+  bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  VmaAllocationCreateInfo allocationInfo{};
+  allocationInfo.usage = VMA_MEMORY_USAGE_AUTO;
+  allocationInfo.flags =
+      VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+  allocationInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+  VmaAllocationInfo allocated{};
+  if (vmaCreateBuffer(allocator, &bufferInfo, &allocationInfo, &rec.markerBuffer,
+                      &rec.markerAllocation, &allocated) != VK_SUCCESS) {
+    rec.writeMarker = nullptr;
+    return;
+  }
+  rec.allocator = allocator;
+  auto* const finished = static_cast<std::uint32_t*>(allocated.pMappedData);
+  std::fill_n(finished, WorkKinds, 0U);
+  rec.finished = finished;
+}
+
+std::atomic<bool> crashReported{false};
+
+void writeCrashReport() {
+  if (crashReported.exchange(true)) {
+    return;
+  }
+  const Record& rec = record();
+  std::fprintf(stderr,
+               "=== dwe graphics crash report ===\ngpu:      %s\ndriver:   %s\nlimits:   %s\n"
+               "activity: %s\nrecent Vulkan calls (newest last):\n",
+               rec.gpu.data(), rec.driver.data(), rec.limits.data(), rec.activity.data());
+  forEachCall(rec, [](const char* call) { std::fprintf(stderr, "  %s\n", call); });
+  std::fputs(rec.breadcrumbs.data(), stderr);
+  std::fflush(stderr);
+}
+
+std::terminate_handler previousTerminate = nullptr;
+
+[[noreturn]] void crashTerminate() {
+  writeCrashReport();
+  if (previousTerminate != nullptr) {
+    previousTerminate();
+  }
+  std::abort();
+}
+
+#ifdef _WIN32
+
+LPTOP_LEVEL_EXCEPTION_FILTER previousFilter = nullptr;
+
+LONG WINAPI crashFilter(PEXCEPTION_POINTERS pointers) {
+  writeCrashReport();
+  return previousFilter != nullptr ? previousFilter(pointers) : EXCEPTION_CONTINUE_SEARCH;
+}
+
+void installNativeCrashHandler() {
+  previousFilter = SetUnhandledExceptionFilter(&crashFilter);
+}
+
+#else
+
+constexpr std::array FatalSignals{SIGSEGV, SIGABRT, SIGFPE, SIGILL, SIGBUS};
+std::array<void (*)(int), FatalSignals.size()> previousHandlers{};
+
+void crashSignal(int number) {
+  writeCrashReport();
+  const auto* const found = std::ranges::find(FatalSignals, number);
+  const auto previous = previousHandlers.at(static_cast<std::size_t>(found - FatalSignals.begin()));
+  std::signal(number, previous == SIG_ERR || previous == SIG_IGN ? SIG_DFL : previous);
+  std::raise(number);
+}
+
+void installNativeCrashHandler() {
+  for (std::size_t i = 0; i < FatalSignals.size(); ++i) {
+    previousHandlers.at(i) = std::signal(FatalSignals.at(i), &crashSignal);
   }
 }
 
-// Vulkan's own name for a result, for the few that a crash usually comes back with; the rest fall
-// back to their number.
-std::string_view resultName(VkResult result) {
+#endif
+
+std::string resultText(VkResult result) {
   switch (result) {
   case VK_SUCCESS:
     return "VK_SUCCESS";
@@ -147,12 +242,10 @@ std::string_view resultName(VkResult result) {
     return "VK_NOT_READY";
   case VK_TIMEOUT:
     return "VK_TIMEOUT";
-  case VK_EVENT_SET:
-    return "VK_EVENT_SET";
-  case VK_EVENT_RESET:
-    return "VK_EVENT_RESET";
   case VK_INCOMPLETE:
     return "VK_INCOMPLETE";
+  case VK_SUBOPTIMAL_KHR:
+    return "VK_SUBOPTIMAL_KHR";
   case VK_ERROR_OUT_OF_HOST_MEMORY:
     return "VK_ERROR_OUT_OF_HOST_MEMORY";
   case VK_ERROR_OUT_OF_DEVICE_MEMORY:
@@ -169,265 +262,156 @@ std::string_view resultName(VkResult result) {
     return "VK_ERROR_EXTENSION_NOT_PRESENT";
   case VK_ERROR_FEATURE_NOT_PRESENT:
     return "VK_ERROR_FEATURE_NOT_PRESENT";
+  case VK_ERROR_INCOMPATIBLE_DRIVER:
+    return "VK_ERROR_INCOMPATIBLE_DRIVER";
   case VK_ERROR_TOO_MANY_OBJECTS:
     return "VK_ERROR_TOO_MANY_OBJECTS";
   case VK_ERROR_FORMAT_NOT_SUPPORTED:
     return "VK_ERROR_FORMAT_NOT_SUPPORTED";
-  case VK_ERROR_UNKNOWN:
-    return "VK_ERROR_UNKNOWN";
-  case VK_ERROR_FRAGMENTATION:
-    return "VK_ERROR_FRAGMENTATION";
-  case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT:
-    return "VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT";
+  case VK_ERROR_FRAGMENTED_POOL:
+    return "VK_ERROR_FRAGMENTED_POOL";
+  case VK_ERROR_OUT_OF_POOL_MEMORY:
+    return "VK_ERROR_OUT_OF_POOL_MEMORY";
+  case VK_ERROR_SURFACE_LOST_KHR:
+    return "VK_ERROR_SURFACE_LOST_KHR";
   case VK_ERROR_OUT_OF_DATE_KHR:
     return "VK_ERROR_OUT_OF_DATE_KHR";
-  case VK_SUBOPTIMAL_KHR:
-    return "VK_SUBOPTIMAL_KHR";
   default:
-    return "VkResult";
+    return std::format("VkResult {}", static_cast<int>(result));
   }
 }
 
-// Whether the result is an error rather than one of the success codes or the benign swapchain
-// states (out of date and suboptimal) that the device already handles by rebuilding the swapchain.
-bool isFailure(VkResult result) {
-  switch (result) {
-  case VK_SUCCESS:
-  case VK_NOT_READY:
-  case VK_TIMEOUT:
-  case VK_EVENT_SET:
-  case VK_EVENT_RESET:
-  case VK_INCOMPLETE:
-  case VK_SUBOPTIMAL_KHR:
-  case VK_ERROR_OUT_OF_DATE_KHR:
-    return false;
+std::string_view faultAddressText(VkDeviceFaultAddressTypeEXT type) {
+  switch (type) {
+  case VK_DEVICE_FAULT_ADDRESS_TYPE_READ_INVALID_EXT:
+    return "invalid read";
+  case VK_DEVICE_FAULT_ADDRESS_TYPE_WRITE_INVALID_EXT:
+    return "invalid write";
+  case VK_DEVICE_FAULT_ADDRESS_TYPE_EXECUTE_INVALID_EXT:
+    return "invalid execute";
+  case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_UNKNOWN_EXT:
+    return "instruction pointer (unknown)";
+  case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_INVALID_EXT:
+    return "instruction pointer (invalid)";
+  case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_FAULT_EXT:
+    return "instruction pointer (fault)";
   default:
-    return true;
+    return "address";
   }
-}
-
-// The process-wide record. The trail is read by a crash handler with no Device, so it lives here,
-// behind one mutex; a plain string, and a fixed buffer for the parts a signal handler may write.
-struct Record {
-  std::mutex mutex;
-  std::string gpu;
-  std::string vendor;
-  std::string driver;
-  std::string limits;
-  std::string activity;
-  std::deque<std::string> trail;
-  std::uint32_t vendorId = 0;
-  bool deviceLost = false;
-  bool installed = false;
-  bool reportBuilt = false;
-  // How many calls have entered the trail; the next slot to write is writes % TrailLength, and the
-  // oldest entry is the one after the newest once the ring has turned.
-  std::size_t writes = 0;
-  // The fields a signal handler writes from (fixed buffers, no allocation).
-  std::array<char, 256> gpuText{};
-  std::array<char, 256> driverText{};
-  std::array<char, 256> activityText{};
-  std::array<std::array<char, 96>, TrailLength> callText{};
-
-  // Copies a string into a fixed buffer for the signal handler to print.
-  void snapshot(std::array<char, 256>& buffer, const std::string& text) {
-    const std::size_t taken = std::min(text.size(), buffer.size() - 1);
-    std::memcpy(buffer.data(), text.data(), taken);
-    buffer[taken] = '\0';
-  }
-
-  // The most recent calls, oldest first, with the newest last.
-  void noteCall(std::string_view call, VkResult result) {
-    // The slot to overwrite is the one after the newest yet, taken from a running counter: the
-    // trail's last index is fixed once it is full and would keep overwriting one slot.
-    const std::size_t slot = writes++ % TrailLength;
-    trail.push_back(std::format("{}={} ({})", call, static_cast<int>(result), resultName(result)));
-    while (trail.size() > TrailLength) {
-      trail.pop_front();
-    }
-    std::snprintf(callText[slot].data(), callText[slot].size(), "%s", trail.back().c_str());
-  }
-};
-
-Record& record() {
-  // A leak on purpose: the crash handlers run while the process is unwinding and the record must
-  // still be alive then (a destroyed mutex or freed string would crash the handler too).
-  static Record* instance = new Record();
-  return *instance;
-}
-
-std::string formatVersion(std::uint32_t version) {
-  return std::format("{}.{}.{}", VK_API_VERSION_MAJOR(version), VK_API_VERSION_MINOR(version),
-                     VK_API_VERSION_PATCH(version));
-}
-
-void appendReport(std::string& text, const Record& rec) {
-  text += "dwe graphics crash report\n";
-  if (!rec.gpu.empty()) {
-    text += std::format("gpu:     {}\n", rec.gpu);
-  }
-  if (!rec.driver.empty()) {
-    text += std::format("driver:  {}\n", rec.driver);
-  }
-  if (!rec.limits.empty()) {
-    text += std::format("limits:  {}\n", rec.limits);
-  }
-  if (!rec.activity.empty()) {
-    text += std::format("activity: {}\n", rec.activity);
-  }
-  text += "recent Vulkan calls:\n";
-  if (rec.trail.empty()) {
-    text += "  (none recorded)\n";
-  }
-  for (const std::string& call : rec.trail) {
-    text += "  " + call + "\n";
-  }
-}
-
-// Writes the report through the plain-C buffers, for the crash handlers: no allocation, no mutex,
-// so it is safe to run while the process dies inside a driver.
-void writeReportToStderr(const Record& rec) {
-  std::fputs("=== dwe graphics crash report ===\n", stderr);
-  std::fprintf(stderr, "gpu:      %s\n", rec.gpuText.data());
-  std::fprintf(stderr, "driver:   %s\n", rec.driverText.data());
-  std::fprintf(stderr, "activity: %s\n", rec.activityText.data());
-  std::fputs("recent Vulkan calls (newest last):\n", stderr);
-  // The ring turns once full: the oldest entry is the slot the next write will take, so print from
-  // there to keep the calls in time order even across the wrap.
-  const std::size_t start = rec.writes < TrailLength ? 0 : rec.writes % TrailLength;
-  for (std::size_t step = 0; step < TrailLength; ++step) {
-    const std::array<char, 96>& call = rec.callText[(start + step) % TrailLength];
-    if (call[0] != '\0') {
-      std::fprintf(stderr, "  %s\n", call.data());
-    }
-  }
-  std::fflush(stderr);
 }
 
 } // namespace
 
-void gpuReportDevice(const NativeHandles& handles, bool validation) {
-  // One chain of property structures: the driver's own properties, the 1.2 ones, and the descriptor
-  // indexing limits (a GPU that clamps them low is a GPU where bindless goes wrong).
-  VkPhysicalDeviceDriverProperties driver{};
-  driver.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
-  VkPhysicalDeviceDescriptorIndexingProperties indexing{};
-  indexing.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
+void gpuReportDevice(const Device& device, GpuDiagnostics diagnostics) {
+  const NativeHandles handles = device.nativeHandles();
+  const GpuInfo gpu = describeGpu(handles.physicalDevice);
+  // NOLINTNEXTLINE(bugprone-invalid-enum-default-initialization): Vulkan fills it in.
   VkPhysicalDeviceVulkan12Properties properties12{};
   properties12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES;
-  properties12.pNext = &driver;
-  driver.pNext = &indexing;
-  indexing.pNext = nullptr;
   VkPhysicalDeviceProperties2 properties{};
   properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
   properties.pNext = &properties12;
   vkGetPhysicalDeviceProperties2(handles.physicalDevice, &properties);
+  const VkPhysicalDeviceLimits& limits = properties.properties.limits;
 
-  const VkPhysicalDeviceProperties& base = properties.properties;
-  const std::uint32_t driverId = driver.driverID;
-
-  // The driver: its VkDriverId as a name (which separates, say, Mesa ANV from the Intel proprietary
-  // Windows driver), then whatever human-readable name and version the driver itself gives in
-  // VkPhysicalDeviceDriverProperties::driverName and driverInfo.
-  std::string driverText{driverIdName(driverId)};
-  const bool driverHasName = driver.driverName[0] != '\0';
-  const bool driverHasInfo = driver.driverInfo[0] != '\0';
-  if (driverHasName && driverHasInfo) {
-    driverText = std::format("{}: {} {}", driverText, driver.driverName, driver.driverInfo);
-  } else if (driverHasName || driverHasInfo) {
-    driverText =
-        std::format("{}: {}", driverText, driverHasName ? driver.driverName : driver.driverInfo);
-  } else {
-    driverText = std::format("{} (driver version {:#x})", driverText, base.driverVersion);
-  }
-
-  // Whether the GPU samples BC7: an old or software GPU (and some iGPUs) does not, and then the
-  // renderer transcodes to RGBA8 (the path that fails on Intel drivers if it does).
-  bool bc7 = true;
-  for (const VkFormat format : {VK_FORMAT_BC7_UNORM_BLOCK, VK_FORMAT_BC7_SRGB_BLOCK}) {
-    VkFormatProperties formatProperties{};
-    vkGetPhysicalDeviceFormatProperties(handles.physicalDevice, format, &formatProperties);
-    if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) == 0) {
-      bc7 = false;
-    }
-  }
-
-  const std::string gpu =
-      std::format("{} (vendor 0x{:04x} {}, type {:d})", base.deviceName, base.vendorID,
-                  vendorName(base.vendorID), static_cast<int>(base.deviceType));
-  const std::string limits = std::format(
-      "api {}, max image {}x{}, max anisotropy {}, BC7 {}, bindless images up to {}",
-      formatVersion(base.apiVersion), base.limits.maxImageDimension2D,
-      base.limits.maxImageDimension2D, base.limits.maxSamplerAnisotropy, bc7 ? "yes" : "NO",
-      std::min(indexing.maxUpdateAfterBindDescriptorsInAllPools,
-               std::min(properties12.maxDescriptorSetUpdateAfterBindSampledImages,
-                        properties12.maxPerStageDescriptorUpdateAfterBindSampledImages)));
-
-  Record& rec = record();
+  const std::string gpuText =
+      std::format("{} (vendor {:#06x}, {})", gpu.name, gpu.vendorId, gpuKindName(gpu.kind));
+  const std::string driverText =
+      std::format("{}; api {}.{}.{}", gpu.driver, VK_API_VERSION_MAJOR(gpu.apiVersion),
+                  VK_API_VERSION_MINOR(gpu.apiVersion), VK_API_VERSION_PATCH(gpu.apiVersion));
+  const std::string limitsText = std::format(
+      "max image {}, max anisotropy {}, BC7 {}, bindless images up to {}; validation {}",
+      limits.maxImageDimension2D, limits.maxSamplerAnisotropy, device.supportsBc7() ? "yes" : "no",
+      std::min(properties12.maxDescriptorSetUpdateAfterBindSampledImages,
+               properties12.maxPerStageDescriptorUpdateAfterBindSampledImages),
+      device.validationEnabled() ? "on" : "off");
   {
+    Record& rec = record();
     const std::lock_guard lock(rec.mutex);
-    rec.gpu = gpu;
-    rec.vendor = std::string{vendorName(base.vendorID)};
-    rec.vendorId = base.vendorID;
-    rec.driver = std::format("{}; api {}", driverText, formatVersion(base.apiVersion));
-    rec.limits = std::format("{}; validation {}", limits, validation ? "on" : "off");
-    rec.reportBuilt = true;
-    rec.snapshot(rec.gpuText, gpu);
-    rec.snapshot(rec.driverText, rec.driver);
-    rec.snapshot(rec.activityText, rec.activity);
+    store(rec.gpu, gpuText);
+    store(rec.driver, driverText);
+    store(rec.limits, limitsText);
+    rec.device = handles.device;
+    if (diagnostics.deviceFault) {
+      rec.getFaultInfo = reinterpret_cast<PFN_vkGetDeviceFaultInfoEXT>(
+          vkGetDeviceProcAddr(handles.device, "vkGetDeviceFaultInfoEXT"));
+    }
+    if (diagnostics.bufferMarkers) {
+      rec.writeMarker = reinterpret_cast<PFN_vkCmdWriteBufferMarkerAMD>(
+          vkGetDeviceProcAddr(handles.device, "vkCmdWriteBufferMarkerAMD"));
+      if (rec.writeMarker != nullptr) {
+        createMarkerBuffer(rec, device.allocator());
+      }
+    }
+    diagnostics.deviceFault = rec.getFaultInfo != nullptr;
+    diagnostics.bufferMarkers = rec.writeMarker != nullptr;
   }
-  core::logInfo("gpu report: {}", gpu);
-  core::logInfo("gpu report: driver {}", rec.driver);
-  core::logInfo("gpu report: {}", rec.limits);
+  core::logInfo("gpu report: {}", gpuText);
+  core::logInfo("gpu report: driver {}", driverText);
+  core::logInfo("gpu report: {}", limitsText);
+  core::logInfo("gpu report: device fault details {}, GPU markers {}",
+                diagnostics.deviceFault ? "on" : "off", diagnostics.bufferMarkers ? "on" : "off");
+}
+
+void gpuForgetDevice(VkDevice device) {
+  Record& rec = record();
+  const std::lock_guard lock(rec.mutex);
+  if (rec.device != device) {
+    return;
+  }
+  if (rec.markerBuffer != VK_NULL_HANDLE) {
+    vmaDestroyBuffer(rec.allocator, rec.markerBuffer, rec.markerAllocation);
+  }
+  rec.device = VK_NULL_HANDLE;
+  rec.getFaultInfo = nullptr;
+  rec.writeMarker = nullptr;
+  rec.allocator = VK_NULL_HANDLE;
+  rec.markerBuffer = VK_NULL_HANDLE;
+  rec.markerAllocation = VK_NULL_HANDLE;
+  rec.finished = nullptr;
+}
+
+void gpuMarker(VkCommandBuffer commands, GpuWork work) {
+  Record& rec = record();
+  const std::lock_guard lock(rec.mutex);
+  if (rec.finished == nullptr) {
+    return;
+  }
+  const auto slot = static_cast<std::size_t>(std::to_underlying(work));
+  Markers& markers = rec.markers.at(slot);
+  ++markers.recorded;
+  store(markers.labels.at(markers.recorded % MarkerLabels), rec.activity.data());
+  rec.writeMarker(commands, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, rec.markerBuffer,
+                  slot * sizeof(std::uint32_t), markers.recorded);
 }
 
 void gpuNoteActivity(std::string_view activity) {
   Record& rec = record();
   const std::lock_guard lock(rec.mutex);
-  if (rec.activity == activity) {
-    return;
-  }
-  rec.activity = activity;
-  const std::size_t taken = std::min(activity.size(), rec.activityText.size() - 1);
-  std::memcpy(rec.activityText.data(), activity.data(), taken);
-  rec.activityText[taken] = '\0';
-}
-
-std::string gpuActivity() {
-  Record& rec = record();
-  const std::lock_guard lock(rec.mutex);
-  return rec.activity;
+  store(rec.activity, activity);
 }
 
 VkResult gpuCheck(std::string_view call, VkResult result) {
-  // The benign swapchain results are not recorded: they happen on every window resize and would
-  // push the calls that matter out of the trail.
+  // Every window resize brings these: they would push the calls that matter out of the trail.
   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
     return result;
   }
-  Record& rec = record();
+  std::string report;
   {
+    Record& rec = record();
     const std::lock_guard lock(rec.mutex);
-    // Every call the renderer marks is recorded, success or not: a fault that kills the process
-    // inside a driver never returns a failure to log, so the trail of the calls that did return is
-    // what names the one in flight.
-    rec.noteCall(call, result);
-    if (result == VK_ERROR_DEVICE_LOST) {
+    store(rec.trail.at(rec.calls % TrailLength), std::format("{} = {}", call, resultText(result)));
+    ++rec.calls;
+    if (result == VK_ERROR_DEVICE_LOST && !rec.deviceLost) {
       rec.deviceLost = true;
+      store(rec.breadcrumbs, faultText(rec) + markerText(rec));
+    }
+    if (result < 0) {
+      report = reportText(rec);
     }
   }
-  if (!isFailure(result)) {
-    return result;
-  }
-  const std::string text = gpuFailureReport();
-  if (result == VK_ERROR_DEVICE_LOST) {
-    core::logError(
-        "vulkan: {} reported VK_ERROR_DEVICE_LOST: the GPU reset or hung and the device cannot be "
-        "used again; drawing stops.\n{}",
-        call, text);
-  } else {
-    core::logError("vulkan: {} failed with {} ({}).\n{}", call, resultName(result),
-                   static_cast<int>(result), text);
+  if (result < 0) {
+    core::logError("vulkan: {} failed with {}\n{}", call, resultText(result), report);
   }
   return result;
 }
@@ -438,106 +422,57 @@ bool gpuDeviceLost() {
   return rec.deviceLost;
 }
 
-std::string gpuFailureReport() {
-  Record& rec = record();
-  std::string text;
-  {
-    const std::lock_guard lock(rec.mutex);
-    appendReport(text, rec);
+std::string describeDeviceFault(const VkDeviceFaultCountsEXT& counts,
+                                const VkDeviceFaultInfoEXT& fault) {
+  std::string text = std::format("device fault: {}\n", fixedText(fault.description));
+  for (const VkDeviceFaultAddressInfoEXT& address :
+       std::span{fault.pAddressInfos, counts.addressInfoCount}) {
+    const VkDeviceSize low = address.reportedAddress & ~(address.addressPrecision - 1);
+    text += std::format("  {} at {:#x}..{:#x}\n", faultAddressText(address.addressType), low,
+                        low + std::max<VkDeviceSize>(address.addressPrecision, 1) - 1);
+  }
+  for (const VkDeviceFaultVendorInfoEXT& vendor :
+       std::span{fault.pVendorInfos, counts.vendorInfoCount}) {
+    text += std::format("  vendor: {} (code {:#x}, data {:#x})\n", fixedText(vendor.description),
+                        vendor.vendorFaultCode, vendor.vendorFaultData);
   }
   return text;
 }
 
+std::string
+describeMarkers(std::string_view work, std::uint32_t finished, std::uint32_t recorded,
+                const std::function<std::optional<std::string_view>(std::uint32_t)>& label) {
+  const auto named = [&label](std::uint32_t marker) {
+    return std::format("#{} {}", marker, label(marker).value_or("(too old to name)"));
+  };
+  if (finished > recorded) {
+    return std::format("{} markers: the GPU wrote #{}, past the {} recorded\n", work, finished,
+                       recorded);
+  }
+  return std::format("{} markers: last finished {}; first unfinished {}\n", work,
+                     finished == 0 ? "none" : named(finished),
+                     finished == recorded ? "none" : named(finished + 1));
+}
+
 std::uint64_t gpuSpirvHash(std::span<const std::uint32_t> spirv) {
-  // FNV-1a over the SPIR-V words.
-  std::uint64_t hash = 14695981039346656037ULL;
+  constexpr std::uint64_t FnvOffset = 14695981039346656037ULL;
+  constexpr std::uint64_t FnvPrime = 1099511628211ULL;
+  std::uint64_t hash = FnvOffset;
   for (const std::uint32_t word : spirv) {
     for (std::size_t byte = 0; byte < sizeof(word); ++byte) {
       hash ^= (word >> (byte * 8)) & 0xFFU;
-      hash *= 1099511628211ULL;
+      hash *= FnvPrime;
     }
   }
   return hash;
 }
 
-namespace {
-
-// The previous terminate handler, kept so the normal crash path still runs after the report.
-std::terminate_handler previousTerminate = nullptr;
-
-// Runs when an exception reaches the top without being caught (a bad_alloc in a pipeline build, a
-// throw from a library). The mutex is NOT taken: another thread might hold it and the process is
-// already dying, so we only read the fixed C buffers, which the normal writer updates lock-free.
-void crashTerminate() {
-  static std::atomic<bool> entered{false};
-  if (!entered.exchange(true)) {
-    writeReportToStderr(record());
-  }
-  if (previousTerminate != nullptr) {
-    previousTerminate();
-  }
-  std::abort();
-}
-
-#ifdef _WIN32
-
-LONG WINAPI nativeCrashHandler(PEXCEPTION_POINTERS pointers) {
-  const DWORD code = pointers->ExceptionRecord->ExceptionCode;
-  // Anything the driver raises with severity 11 (the top two bits of the NTSTATUS code set): the
-  // access violation of the AMD proprietary compiler crash, the fast-fail from abort (which is what
-  // DWE_ASSERT reaches on Windows), stack overflow, divide by zero, illegal instruction. Breakpoint
-  // (0x80000003), single-step, and the MSVC C++ exception (0xE06D7363) are not severity-11 codes
-  // and fall through untouched, so a normal debug session or a caught exception does not spam
-  // stderr.
-  const bool fatal = (code & 0xC0000000UL) == 0xC0000000UL;
-  if (fatal) {
-    writeReportToStderr(record());
-  }
-  // Continue searching so WER and the launcher's own crash capture still see the exception.
-  return EXCEPTION_CONTINUE_SEARCH;
-}
-
-void installNativeCrashHandler() {
-  AddVectoredExceptionHandler(1, &nativeCrashHandler);
-}
-
-#else
-
-// Re-entrant so a fault inside the handler itself falls through to the default, which the launcher
-// and the crash reporter can still see.
-std::atomic<bool> handlingSignal{false};
-void nativeCrashHandler(int number) {
-  if (handlingSignal.exchange(true)) {
-    return;
-  }
-  writeReportToStderr(record());
-  handlingSignal.store(false);
-  std::signal(number, SIG_DFL);
-  std::raise(number);
-}
-
-void installNativeCrashHandler() {
-  for (const int number : {SIGSEGV, SIGABRT, SIGFPE, SIGILL, SIGBUS}) {
-    std::signal(number, &nativeCrashHandler);
-  }
-}
-
-#endif
-
-} // namespace
-
 void gpuInstallCrashReporter() {
-  Record& rec = record();
-  {
-    const std::lock_guard lock(rec.mutex);
-    if (rec.installed) {
-      return;
-    }
-    rec.installed = true;
-  }
-  previousTerminate = std::set_terminate(&crashTerminate);
-  installNativeCrashHandler();
-  core::logDebug("gpu crash reporter installed");
+  static std::once_flag installed;
+  std::call_once(installed, [] {
+    previousTerminate = std::set_terminate(&crashTerminate);
+    installNativeCrashHandler();
+  });
 }
 
 } // namespace dwe::rhi

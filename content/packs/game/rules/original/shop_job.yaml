@@ -3,8 +3,8 @@
 # (shop_job.hpp); rules for the player: docs/reference/shop-job.md. What the script reads (map, variables, the
 # original's pay) stays in story_scenes.yaml (shop_job).
 #
-# When the job starts the customer line is made with the playthrough's seed: one species and one item from each bag
-# per customer, an arrival mood and a hidden budget (the most expensive level it buys at), drawn from its species'
+# When the job starts the customer line is made with the playthrough's seed: each item's copies spread over the
+# species, an arrival mood and a hidden budget (the most expensive level it buys at), drawn from its species'
 # original acceptance table: P(budget at level k or more expensive) = acceptance of k.
 
 # What is told to the script (the story/patches/shop_job_*.lua patches): the result of each counter turn
@@ -57,8 +57,9 @@ reactions:
 # needs patience at the start.
 talk: {shift: 1, cost: 1, needs: 2}
 
-# The line is drawn again until the perfect score (selling to each customer at its budget after a chat)
-# falls between least and most, at most tries times.
+# The perfect score (selling to each customer at its budget after a chat) must fall between least and most: budgets
+# move to the nearest level the customer could have had, and a line that still misses is drawn again, at most tries
+# times.
 perfect_score: {least: 4000, most: 4300, tries: 10000}
 
 # The extra bonus at the end: with the tally from from, besides the original's pay, this item.

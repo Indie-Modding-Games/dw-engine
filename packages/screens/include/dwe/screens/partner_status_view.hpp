@@ -73,6 +73,8 @@ struct TechniqueView {
   std::int32_t mpCost = 0;
   std::int32_t range = 0;
   std::int32_t effect = 0;
+  // The partner's boosted technique (docs/modules/game/battle.md, «Boosted techniques»).
+  bool boosted = false;
 };
 
 struct TechniqueChoiceView {
@@ -132,6 +134,8 @@ struct PartnerStatusView {
 [[nodiscard]] PartnerStatusView partnerStatusViewOf(const session::PartnerView& partner,
                                                     const NameKeys& names);
 
+// The partner's own variants of a technique (Combatant::moveVariants), its boosted one included,
+// replace the table's power and MP cost.
 [[nodiscard]] std::array<std::optional<TechniqueView>, game::battle::EquippedSlots>
 equippedTechniqueViewsOf(const game::battle::Combatant& partner,
                          const game::battle::MoveCatalog& catalog, const NameKeys& names);
@@ -146,7 +150,8 @@ void setFavoriteFood(PartnerStatusView& view, std::optional<std::string_view> it
 
 void setTechniqueChoices(PartnerStatusView& view, const assets::DigimonRow& species,
                          const session::PartnerMoves& moves,
-                         const game::battle::MoveCatalog& catalog, const NameKeys& names);
+                         const game::battle::MoveCatalog& catalog,
+                         const game::battle::MoveVariants& variants, const NameKeys& names);
 
 [[nodiscard]] ScreenSettings settingsOf(const PartnerStatusView& view);
 

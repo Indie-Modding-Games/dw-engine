@@ -7,7 +7,9 @@
 #include <string>
 #include <variant>
 
+#include "danger_alert.hpp"
 #include "dev_tools.hpp"
+#include "field_hud.hpp"
 
 namespace dwe::app {
 namespace {
@@ -62,6 +64,9 @@ constexpr std::array Toggles{
                .fallback = true},
     GameToggle{
         .setting = "whamon_in_water", .saved = &UserSettings::whamonInWater, .fallback = true},
+    GameToggle{.setting = "boosted_techniques",
+               .saved = &UserSettings::boostedTechniques,
+               .fallback = true},
     // Graphics tab.
     GameToggle{.setting = "smooth_motion", .saved = &UserSettings::smoothMotion, .fallback = true},
     GameToggle{
@@ -84,7 +89,8 @@ constexpr std::array Toggles{
 
 // The options the UI applies by itself (the documents read their settings), at the title and in a
 // game alike: shop extras, the art fixes, the favourite food, the widescreen pictures (the movies
-// read it too, as each starts: game.cpp) and the developer tools.
+// read it too, as each starts: game.cpp), the developer tools, the need meters and the danger
+// alert (the game also reads it, to publish no marks while it is off).
 constexpr std::array UiToggles{
     GameToggle{.setting = "shop_extras", .saved = &UserSettings::shopExtras, .fallback = false},
     GameToggle{.setting = "art_fixes", .saved = &UserSettings::artFixes, .fallback = false},
@@ -94,6 +100,9 @@ constexpr std::array UiToggles{
                .fallback = WidescreenPicturesDefault},
     GameToggle{
         .setting = DevToolsSetting, .saved = &UserSettings::devTools, .fallback = DevToolsDefault},
+    GameToggle{.setting = NeedMetersSetting, .saved = &UserSettings::needMeters, .fallback = true},
+    GameToggle{
+        .setting = DangerAlertSetting, .saved = &UserSettings::dangerAlert, .fallback = true},
 };
 
 // Keeps a toggle's value in the settings, saves them and publishes it.

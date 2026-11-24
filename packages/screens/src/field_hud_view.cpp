@@ -48,6 +48,7 @@ static_assert(static_cast<int>(game::partner::AreaResponse::Disliked) == 2);
 constexpr std::string_view MeterList = FieldHudMeterList;
 constexpr std::string_view NeedList = FieldHudNeedList;
 constexpr std::string_view PoolList = FieldHudPoolList;
+constexpr std::string_view GaugeList = FieldHudGaugeList;
 
 constexpr std::string_view LabelField = "label";
 constexpr std::string_view TwoToneField = "two_tone";
@@ -57,6 +58,8 @@ constexpr std::string_view MaxField = "max";
 constexpr std::string_view ActiveField = "active";
 constexpr std::string_view UrgencyField = "urgency";
 constexpr std::string_view MoodField = "mood";
+constexpr std::string_view NeedField = "need";
+constexpr std::string_view FillField = "fill";
 
 // The dial's night (clock.c: renderGameClock) and the parts of the day flanking its boundaries.
 constexpr std::int32_t NightEndsHour = 6;
@@ -119,6 +122,8 @@ FieldHudView fieldHudViewOf(const ruleset::GameTime& time, const session::Partne
                     .meters = {meterOf(partner.happiness), meterOf(partner.discipline)},
                     .needs = {},
                     .urgency = {},
+                    .gauges = {meterOf(partner.hungerGauge), meterOf(partner.toiletGauge),
+                               meterOf(partner.tiredness)},
                     .pools = {},
                     .area = partner.area};
   for (std::size_t index = 0; index < NeedLabels.size(); ++index) {
@@ -169,6 +174,16 @@ std::string_view dayPhaseOf(std::int32_t hour) {
   return "day";
 }
 
+std::int32_t gaugeFillOf(const FieldMeterView& gauge) {
+  if (gauge.max <= gauge.min) {
+    return 0;
+  }
+  const std::int64_t span = static_cast<std::int64_t>(gauge.max) - gauge.min;
+  const std::int64_t done =
+      std::clamp(static_cast<std::int64_t>(gauge.value) - gauge.min, std::int64_t{0}, span);
+  return static_cast<std::int32_t>(done * static_cast<std::int64_t>(Percent) / span);
+}
+
 std::string_view meterMoodOf(const FieldMeterView& meter) {
   // value < (min + max) / 2, in whole numbers.
   return 2 * static_cast<std::int64_t>(meter.value) <
@@ -187,6 +202,13 @@ ScreenSettings fieldHudLabelSettings() {
   for (std::size_t index = 0; index < NeedLabels.size(); ++index) {
     settings.push_back({.name = listEntryName(NeedList, index, LabelField),
                         .value = std::string{NeedLabels.at(index).second}});
+  }
+  for (std::size_t index = 0; index < GaugeNeeds.size(); ++index) {
+    const std::size_t need = GaugeNeeds.at(index);
+    settings.push_back({.name = listEntryName(GaugeList, index, LabelField),
+                        .value = std::string{NeedLabels.at(need).second}});
+    settings.push_back({.name = listEntryName(GaugeList, index, NeedField),
+                        .value = number(static_cast<std::int32_t>(need))});
   }
   for (std::size_t index = 0; index < PoolStats.size(); ++index) {
     settings.push_back(
@@ -225,6 +247,15 @@ ScreenSettings settingsOf(const FieldHudView& view) {
         {.name = listEntryName(NeedList, index, ActiveField), .value = view.needs.at(index)});
     settings.push_back({.name = listEntryName(NeedList, index, UrgencyField),
                         .value = number(view.urgency.at(index))});
+  }
+  for (std::size_t index = 0; index < view.gauges.size(); ++index) {
+    const FieldMeterView& gauge = view.gauges.at(index);
+    settings.push_back(
+        {.name = listEntryName(GaugeList, index, ValueField), .value = number(gauge.value)});
+    settings.push_back(
+        {.name = listEntryName(GaugeList, index, MaxField), .value = number(gauge.max)});
+    settings.push_back(
+        {.name = listEntryName(GaugeList, index, FillField), .value = number(gaugeFillOf(gauge))});
   }
   for (std::size_t index = 0; index < view.pools.size(); ++index) {
     const FieldPoolView& pool = view.pools.at(index);

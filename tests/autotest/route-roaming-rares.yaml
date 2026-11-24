@@ -1,0 +1,37 @@
+# The roaming rares' chance (an engine improvement, docs/modules/apps/game.md, «Roaming rare chance»): the Game tab's row
+# at its default, 10%, with its description, then one step on with the arrow, at 1280x720 with every text fitting. Run
+# it once per language whose texts are longest (--lang de, --lang ru), each with its own capture folder.
+name: roaming-rares
+device: keyboard
+timeout: 200
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {roaming_rare_chance: percent_10}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.4}
+  - menu_select: roaming-rare-chance
+  - wait: {seconds: 0.3}
+  - expect_setting: {roaming_rare_chance: percent_25}
+  - tap: {key: left}
+  - wait: {seconds: 0.3}
+  - expect_setting: {roaming_rare_chance: percent_10}
+  - expect_text_fits: all
+  - screenshot: roaming-rares-row
+  - tap: {key: right}
+  - wait: {seconds: 0.3}
+  - expect_setting: {roaming_rare_chance: percent_25}
+  - expect_text_fits: all
+  - screenshot: roaming-rares-25

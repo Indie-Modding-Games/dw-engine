@@ -542,6 +542,9 @@ public:
   void attachSpeciesScale(std::function<float(std::string_view)> scale) {
     speciesScale_ = std::move(scale);
   }
+  // Changes a map's NPCs as it loads, before the field places them (a randomized run's enemies).
+  using MapNpcsHook = std::function<void(std::string_view map, std::span<assets::MapNpc> npcs)>;
+  void attachMapNpcs(MapNpcsHook hook) { mapNpcs_ = std::move(hook); }
   // The box of a species in the species table, which says whether its entity shows on screen.
   struct SpeciesBox {
     float radius = 0.0F;
@@ -1296,6 +1299,7 @@ private:
   // the pack has none or they do not read.
   std::optional<std::optional<assets::PartnerClipBook>> partnerClipBook_;
   std::function<float(std::string_view)> speciesScale_;
+  MapNpcsHook mapNpcs_;
   // The partner species' size (attachSpeciesScale), times the scenes' partnerScale.
   float partnerSpeciesScale_ = 1.0F;
   game::story::SoundPort* sound_ = nullptr;

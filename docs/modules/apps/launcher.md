@@ -272,6 +272,10 @@ its packs in `packs/` next to `bin/`), with the output in `<data>/logs/game.log`
 it starts it without a console window. If the player chose another data folder, it adds
 `--saves <data>/saves --reports <data>/reports`; with the default one the saves stay in the game's folder. When the game
 ends, the launcher comes back; if it ended with an error, it shows the last 30 lines of its log.
+Two exit codes get their own message. Exit 113 (from 0.1.0-beta.1133, or a build that is not a version) means the
+graphics card stopped responding: it asks to update the driver and, when they apply, suggests Vulkan 1.2 mode (off and
+known by that game) and the package's software driver (not used in that run). An older game's 113 gets the generic
+message, since it never returned it on purpose. Exit 0xCFFFFFFF means Windows closed the game because it hung.
 
 ## Computer requirements
 
@@ -294,7 +298,8 @@ output `key=value` lines under the header `dwe-check-system 1`: `result` (`ok`, 
 `virtual`, `software`, `other`), `api` and `driver`; it exits with 0 only if it is `ok`. When none works it names the best of
 those there are, to know which maker the driver is from. The branch that limits the options of the
 distribution builds has to let `--check-system` through. The launcher gives it 20 s; with no answer (a game older than the
-option, which says "bad argument") it plays as before.
+option, which says "bad argument") it plays as before. With `--compatible` it accepts Vulkan 1.2 when the driver has the
+dynamic rendering and synchronization2 extensions.
 
 **Compatibility mode.** The package carries the Vulkan loader (on Linux, `lib/libvulkan.so.1`, which the game
 looks for first; on Windows, `bin/vulkan-1.dll`) and Mesa's software Vulkan driver, lavapipe, in
@@ -307,19 +312,28 @@ processor draws it), but the game starts on a virtual machine or with an old or 
 scripts (`dwe` on Linux, `dwe.cmd` on Windows) do the same for those who play without the launcher. A computer
 whose only Vulkan is a system software one (llvmpipe) also sees the notice, without switching drivers.
 
-**Manual launch way outs.** In Settings › Advanced › Starting the game you can stop relying on that check: "Launch
-mode" picks Automatic (the one above), Without checking (start with the system's driver, no probe and no driver
-change) or Package software (use lavapipe without probing, to try it even when detection says otherwise). You can
-also write extra game arguments and environment variables (`NAME=value`, one per line, up to 32 of each); the
-player's ones are applied after the software driver's, so they can correct a wrongly detected `VK_DRIVER_FILES`.
-Lines that are not understood are ignored, never keep you from playing, and none of this is passed to the probe: it
-only changes how the game starts. It is saved in `settings.json`.
+**Graphics switches.** Settings › General › Computer requirements has two switches, off by default, that add a
+game flag to every start:
 
-**AMD RX 6000 (RDNA2) safe mode.** In Settings › General › Requirements there is an "AMD RX 6000 safe mode" switch.
-Turning it on starts the game with `--rdna2-safe`, which simplifies the bindless layout (it keeps only
-`UPDATE_AFTER_BIND`) to test the TDR on those cards. The game checks the GPU again: if it is not an AMD RX 6000 card, it
-ignores the flag, so nothing changes on any other card even if you leave it on. It writes `AMD RX 6000 safe mode: ...`
-to `game.log` when active. It does not replace software mode.
+| Switch | Flag | What it does |
+|---|---|---|
+| Vulkan 1.2 mode | `--compatible` | The game and its check accept Vulkan 1.2 with those two extensions, for older cards and drivers. When the computer's drivers fail the normal check but pass this one, the home notice offers "Turn on Vulkan 1.2 mode", both when nothing can run the game and when the software driver took over; turning it on checks again. |
+| Low-performance mode | `--low-performance` | Every start begins from the lightest graphics preset; the game's options can still change each one during the run. |
+
+A game older than a flag refuses the whole command line ("bad argument"), so the launcher only passes each flag to
+games that know it: both from 0.1.0-beta.1127 (a development build gets them). Going back to a previous version
+keeps Play working. Older launchers may still pass `--rdna2-safe`, which the game accepts and ignores; this launcher
+no longer has that switch, and a `rdna2_safe_mode` left in `settings.json` is kept but unused.
+
+**Manual launch options.** In Settings › Advanced › Starting the game you can stop relying on that check: "Launch
+mode" picks Automatic (the one above), Without checking (start with the system's driver, no probe and no driver
+change) or the package's software driver (use lavapipe without probing, to try it even when detection says
+otherwise; a package without lavapipe, such as the macOS one, starts with the system's driver). You can also write
+extra game arguments and environment variables (`NAME=value`, one per line, up to 32 of each); the player's ones are
+applied after the software driver's, so they can correct a wrongly detected `VK_DRIVER_FILES`. Lines that are not
+understood are ignored, never keep you from playing, and none of this is passed to the probe: it only changes how
+the game starts. It is saved in `settings.json`, which keeps the fields a newer launcher wrote, and an unknown launch
+mode there reads as Automatic.
 
 **AppImage.** The AppImage's startup puts its folders ahead of `XDG_DATA_DIRS`, where the Vulkan loader
 looks for the computer's drivers; the launcher removes them from the environment of `--check-system` and of the game

@@ -16,7 +16,7 @@ namespace dwe::app {
 inline constexpr std::string_view OptionsVariantSetting = "options.variant";
 inline constexpr std::string_view OptionsLockedPrefix = "options.locked.";
 
-inline constexpr std::array<std::string_view, 17> FixableOptions{"difficulty",
+inline constexpr std::array<std::string_view, 19> FixableOptions{"difficulty",
                                                                  "rare_items",
                                                                  "free_exploration",
                                                                  "extra_toilets",
@@ -32,7 +32,9 @@ inline constexpr std::array<std::string_view, 17> FixableOptions{"difficulty",
                                                                  "angemon_event_zone",
                                                                  "whamon_in_water",
                                                                  "shop_job_mode",
-                                                                 "coop_difficulty"};
+                                                                 "coop_difficulty",
+                                                                 "boosted_techniques",
+                                                                 "roaming_rare_chance"};
 
 [[nodiscard]] ui::UiValue pinnedUiValue(std::string_view text);
 

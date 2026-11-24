@@ -1,0 +1,38 @@
+<rml>
+<head>
+	<title>New game randomizer</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<div id="picture"></div>
+		<div id="panel">
+			<h1 id="title" text-key="new_game_randomizer.title"></h1>
+			<div id="presets">
+				<button id="preset-off" class="preset" onclick="act('preset:off')" onfocus="row_focus(document, 'preset-off')" text-key="new_game_randomizer.preset_off"></button>
+				<button id="preset-chaos" class="preset" onclick="act('preset:chaos')" onfocus="row_focus(document, 'preset-chaos')" text-key="new_game_randomizer.preset_chaos"></button>
+			</div>
+			<button id="evolutions" class="option" onclick="act('toggle:evolutions')" onfocus="row_focus(document, 'evolutions')"><span id="evolutions-label"></span><span id="evolutions-value" class="rule-value"></span><span id="evolutions-after"></span></button>
+			<button id="learn" class="option" onclick="act('learn')" onfocus="row_focus(document, 'learn')"><span id="learn-label"></span><span id="learn-value" class="rule-value"></span><span id="learn-after"></span></button>
+			<button id="starter" class="option" onclick="act('toggle:starter')" onfocus="row_focus(document, 'starter')"><span id="starter-label"></span><span id="starter-value" class="rule-value"></span><span id="starter-after"></span></button>
+			<button id="enemies" class="option" onclick="act('toggle:enemies')" onfocus="row_focus(document, 'enemies')"><span id="enemies-label"></span><span id="enemies-value" class="rule-value"></span><span id="enemies-after"></span></button>
+			<button id="items" class="option" onclick="act('toggle:items')" onfocus="row_focus(document, 'items')"><span id="items-label"></span><span id="items-value" class="rule-value"></span><span id="items-after"></span></button>
+			<button id="drops" class="option" onclick="act('toggle:drops')" onfocus="row_focus(document, 'drops')"><span id="drops-label"></span><span id="drops-value" class="rule-value"></span><span id="drops-after"></span></button>
+			<button id="seed" class="option" onclick="edit_seed()" onfocus="row_focus(document, 'seed')"><span id="seed-label"></span><span id="seed-value" class="rule-value"></span><span id="seed-after"></span></button>
+			<button id="paste" onclick="act('paste')" onfocus="row_focus(document, 'paste')" text-key="new_game_randomizer.paste"></button>
+			<button id="reseed" onclick="act('reseed')" onfocus="row_focus(document, 'reseed')" text-key="new_game_randomizer.reseed"></button>
+			<p id="code" class="code"></p>
+			<p id="about" class="about"></p>
+			<button id="start" onclick="act('start')" onfocus="row_focus(document, 'start')" text-key="new_game_rules.start"></button>
+			<button id="back" class="back" onclick="act('back')" onfocus="row_focus(document, 'back')" text-key="common.back"></button>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="common.back"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

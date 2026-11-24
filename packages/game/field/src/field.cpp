@@ -361,9 +361,8 @@ bool Field::setInput(PlayerId id, const FieldInput& input) {
     setInput(input);
     return true;
   }
-  const auto player = std::ranges::find(
-      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
-  if (player == otherPlayers_.end()) {
+  auto* player = otherPlayer(id);
+  if (player == nullptr) {
     return false;
   }
   if (player->fieldPlayer.waitingAtWarp) {
@@ -372,12 +371,7 @@ bool Field::setInput(PlayerId id, const FieldInput& input) {
   }
   player->fieldPlayer.input = input;
   // A command received while the shared world holds players cannot be banked for later.
-  if (input.cancelTarget || leaving_ || pendingChange_ || waitingForMap_ || scriptHeld_ ||
-      careHeld_ || itemHold_ != ItemHold::None) {
-    player->fieldPlayer.moveTarget.reset();
-    player->fieldPlayer.path.clear();
-    player->fieldPlayer.pathStallSeconds = 0.0F;
-  } else if (glm::length(input.stick) > rules_.input.deadZone) {
+  if (input.cancelTarget || worldHeld() || glm::length(input.stick) > rules_.input.deadZone) {
     player->fieldPlayer.moveTarget.reset();
     player->fieldPlayer.path.clear();
     player->fieldPlayer.pathStallSeconds = 0.0F;
@@ -440,8 +434,7 @@ core::Result<void> Field::addPlayerNearHost(PlayerId id) {
 }
 
 bool Field::removePlayer(PlayerId id) {
-  const auto player = std::ranges::find(
-      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
+  const auto player = std::ranges::find(otherPlayers_, id, &Field::playerIdOf);
   if (player == otherPlayers_.end()) {
     return false;
   }
@@ -454,9 +447,8 @@ bool Field::removePlayer(PlayerId id) {
 }
 
 bool Field::drivePlayer(PlayerId id, std::optional<CharacterState> state) {
-  const auto player = std::ranges::find(
-      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
-  if (player == otherPlayers_.end()) {
+  auto* player = otherPlayer(id);
+  if (player == nullptr) {
     return false;
   }
   player->driven = state;
@@ -488,9 +480,8 @@ std::optional<CharacterState> Field::player(PlayerId id) const {
   if (id == HostPlayerId) {
     return player();
   }
-  const auto player = std::ranges::find(
-      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
-  if (player == otherPlayers_.end()) {
+  auto* player = otherPlayer(id);
+  if (player == nullptr) {
     return std::nullopt;
   }
   const entt::registry& registry = world_->registry();
@@ -502,9 +493,8 @@ std::optional<CharacterState> Field::player(PlayerId id) const {
 
 core::Result<void> Field::addPartner(PlayerId id, std::string model, float radius,
                                      assets::ClipMotions clips) {
-  const auto player = std::ranges::find(
-      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
-  if (player == otherPlayers_.end()) {
+  auto* player = otherPlayer(id);
+  if (player == nullptr) {
     return core::fail("field partner needs its player first");
   }
   if (!(radius > 0.0F)) {
@@ -537,9 +527,8 @@ std::optional<CharacterState> Field::partner(PlayerId id) const {
   if (id == HostPlayerId) {
     return partner();
   }
-  const auto player = std::ranges::find(
-      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
-  if (player == otherPlayers_.end() || !player->partner) {
+  auto* player = otherPlayer(id);
+  if (player == nullptr || !player->partner) {
     return std::nullopt;
   }
   const entt::registry& registry = world_->registry();
@@ -553,9 +542,8 @@ std::optional<scene::Entity> Field::partnerEntity(PlayerId id) const {
   if (id == HostPlayerId) {
     return partner_;
   }
-  const auto player = std::ranges::find(
-      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
-  if (player == otherPlayers_.end() || !player->partner) {
+  auto* player = otherPlayer(id);
+  if (player == nullptr || !player->partner) {
     return std::nullopt;
   }
   return player->partner->entity;
@@ -630,18 +618,31 @@ std::optional<scene::Entity> Field::playerEntity(PlayerId id) const {
   if (id == HostPlayerId) {
     return player_;
   }
-  const auto player = std::ranges::find(
-      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
-  if (player == otherPlayers_.end()) {
+  auto* player = otherPlayer(id);
+  if (player == nullptr) {
     return std::nullopt;
   }
   return player->fieldPlayer.entity;
 }
 
 bool Field::waitingAtWarp(PlayerId id) const {
-  const auto player = std::ranges::find(
-      otherPlayers_, id, [](const PlayerRuntime& runtime) { return runtime.fieldPlayer.id; });
-  return player != otherPlayers_.end() && player->fieldPlayer.waitingAtWarp;
+  const auto* player = otherPlayer(id);
+  return player != nullptr && player->fieldPlayer.waitingAtWarp;
+}
+
+Field::PlayerRuntime* Field::otherPlayer(PlayerId id) {
+  const auto found = std::ranges::find(otherPlayers_, id, &Field::playerIdOf);
+  return found != otherPlayers_.end() ? &*found : nullptr;
+}
+
+const Field::PlayerRuntime* Field::otherPlayer(PlayerId id) const {
+  const auto found = std::ranges::find(otherPlayers_, id, &Field::playerIdOf);
+  return found != otherPlayers_.end() ? &*found : nullptr;
+}
+
+bool Field::worldHeld() const {
+  return leaving_ || pendingChange_ || waitingForMap_ || choice_ || mapId_.empty() || scriptHeld_ ||
+         careHeld_ || itemHold_ != ItemHold::None;
 }
 
 void Field::dropMoveTarget() {
@@ -664,9 +665,8 @@ void Field::tick(float seconds) {
   // its map their own tick does not run, and a transform left as an older tick left it would draw
   // a move that is not happening.
   beginTicks(seconds);
-  const bool worldHeld = leaving_ || pendingChange_ || waitingForMap_ || choice_ ||
-                         mapId_.empty() || scriptHeld_ || careHeld_ || itemHold_ != ItemHold::None;
-  if (worldHeld) {
+  const bool held = worldHeld();
+  if (held) {
     resetOtherPlayerMotion(true);
   } else {
     for (PlayerRuntime& player : otherPlayers_) {
@@ -682,8 +682,7 @@ void Field::tick(float seconds) {
   const bool wasFollowing = std::exchange(partnerFollowing_, false);
   registry.get<AnimationIntent>(partner_) = {};
   // The overlap watch looks at the ticks the player moves freely only; a hold starts it over.
-  if (leaving_ || pendingChange_ || waitingForMap_ || choice_ || mapId_.empty() || scriptHeld_ ||
-      careHeld_ || itemHold_ != ItemHold::None) {
+  if (held) {
     overlapWatch_.clear();
     // Held, the player has no click-to-move target to walk on to once let go.
     dropMoveTarget();
@@ -1928,6 +1927,7 @@ void Field::tickCare(float seconds) {
   tickCareWalk(seconds);
   tickCameraPan(seconds);
   tickNpcs(seconds, false);
+  tickFadeIn(seconds);
 }
 
 void Field::holdForItem(ItemHold hold) {

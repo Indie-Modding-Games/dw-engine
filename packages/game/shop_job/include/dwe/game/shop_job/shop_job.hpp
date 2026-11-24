@@ -131,12 +131,16 @@ struct Lineup {
 // buys nothing buys at the cheapest level when moved up, and one at the cheapest buys nothing when
 // moved down.
 [[nodiscard]] Level shiftBudget(Level budget, std::int32_t shift);
+// The weights after every budget moved `shift` levels (shiftBudget).
+[[nodiscard]] BudgetWeights shiftWeights(const BudgetWeights& weights, std::int32_t shift);
 // The reaction to an offer at `offer` from a customer whose budget is `budget`.
 [[nodiscard]] Reaction reactionTo(const ShopJobRules& rules, Level offer, Level budget);
 // The best tally a customer can give: one talk, then a sale at its budget.
 [[nodiscard]] std::int64_t perfectProfit(const ShopJobRules& rules, const Customer& customer);
-// A line of customers from the bags of species and items, drawn again until its perfect score
-// falls in the rules' window (the last one drawn if none does within maxLines).
+// A line of customers: each item's copies spread over the species, then a mood and a budget each.
+// Budgets move to neighbours the customer could have had until the perfect score falls in the
+// rules' window; a line that still misses it is drawn again (the last one if none fits within
+// maxLines).
 [[nodiscard]] Lineup makeLineup(const ShopJobRules& rules, ruleset::Random& random);
 // The seed of a job's line: a mix of the playthrough's seed and the job's number, never a roll of
 // the game's random numbers.

@@ -453,6 +453,19 @@ const assets::ItemTable& InventoryAdapter::items() const {
   return *desc_.items;
 }
 
+std::vector<std::string>
+InventoryAdapter::randomItems(const game::randomizer::Randomizer& randomizer) const {
+  std::vector<std::string> pool;
+  for (const assets::ItemEntry& entry : items().entries()) {
+    if (entry.originalIndex && !game::inventory::isKeyItem(entry, inventory().rules().use) &&
+        !randomizer.keepsItem(entry.id) && !randomizer.excludesItem(entry.id)) {
+      pool.push_back(entry.id);
+    }
+  }
+  std::ranges::sort(pool);
+  return pool;
+}
+
 std::optional<std::string> InventoryAdapter::favoriteFood(const GameSession& session) const {
   const std::optional<std::string>& food = session.partner().species().favoriteFood;
   if (!food || !desc_.items) {

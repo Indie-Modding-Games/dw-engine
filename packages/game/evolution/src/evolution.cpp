@@ -211,6 +211,13 @@ Species Evolution::require(std::string_view id) const {
   return tables_.find(id).value_or(0);
 }
 
+Species Evolution::mapped(Species from, Species target) const {
+  if (!naturalMap_ || tables_.isMega(target)) {
+    return target;
+  }
+  return naturalMap_(from, target);
+}
+
 std::optional<Species> Evolution::naturalTarget(const EvolutionInputs& inputs,
                                                 const EvolutionState& state) const {
   const auto hours = checkHoursFor(inputs.species);
@@ -242,17 +249,24 @@ EvolutionOutlook Evolution::outlook(const EvolutionInputs& inputs,
   const EvolutionQuery query{
       .tables = &tables_, .rules = &rules_, .inputs = &inputs, .state = &state};
   outlook.next = selection_->select(query, *scoring_);
+  if (outlook.next) {
+    outlook.next = mapped(inputs.species, *outlook.next);
+  }
   if (level == Level::Baby) {
     outlook.fixedTarget = outlook.next;
     return outlook;
   }
   for (const Species target : tables_.pathTargets(inputs.species)) {
     if (auto scored = scoring_->report(query, target)) {
+      scored->target = mapped(inputs.species, target);
       outlook.targets.push_back(std::move(*scored));
     }
   }
   if (level == Level::Rookie) {
     outlook.fallback = tables_.find(rules_.fallback.rookieTarget);
+    if (outlook.fallback) {
+      outlook.fallback = mapped(inputs.species, *outlook.fallback);
+    }
     outlook.fallbackHours = rules_.fallback.rookieHours;
   }
   return outlook;
@@ -330,6 +344,8 @@ NaturalCheck Evolution::checkNatural(const EvolutionInputs& inputs, const Evolut
       target = timerSpecialTarget(atHour, normal, checks.frames, random);
       if (target != normal) {
         reason = EvolutionReason::Special;
+      } else if (target) {
+        target = mapped(inputs.species, *target);
       }
     }
     if (target) {

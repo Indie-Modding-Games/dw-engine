@@ -9,10 +9,14 @@
 hud = {}
 
 -- The lists the game publishes, in its order (field_hud_view.hpp): happiness and discipline;
--- hunger, sleep, toilet, tiredness, injury and sickness; HP and MP.
+-- hunger, sleep, toilet, tiredness, injury and sickness; HP and MP; the need meters: hunger, the
+-- toilet and tiredness.
 hud.meter_count = 2
 hud.need_count = 6
 hud.pool_count = 2
+hud.gauge_count = 3
+-- The danger marks, one per NPC slot of a map (field.danger_count).
+hud.danger_count = 8
 
 hud.minimap_sizes = { small = true, medium = true, large = true }
 
@@ -51,6 +55,10 @@ function hud.labels()
   for index = 0, hud.pool_count - 1 do
     labels.pools[index] = status.pools[index + 1].label_key
   end
+  labels.gauges = {}
+  for index, gauge in ipairs(partner.gauges()) do
+    labels.gauges[index - 1] = gauge.label_key
+  end
   return labels
 end
 
@@ -88,7 +96,24 @@ function hud.field()
   for index = 0, hud.pool_count - 1 do
     state.pools[index] = status.pools[index + 1]
   end
+  state.gauges = {}
+  for index, gauge in ipairs(partner.gauges()) do
+    state.gauges[index - 1] = gauge
+  end
   return state
+end
+
+-- Whether the need meters show (the option need_meters, on unless turned off): hunger, the toilet
+-- and tiredness, each with its fill in percent (partner.gauges).
+function hud.need_meters()
+  return options.get("need_meters") ~= false
+end
+
+-- The danger marks over the wild monsters that would crush the partner (field.dangers): each with
+-- its NPC slot and where it hangs, in percent of the window. The game publishes none while the
+-- option danger_alert is off or the field is stopped.
+function hud.dangers()
+  return field.dangers()
 end
 
 -- The need bubble over the partner (bubble.c), one need at a time. The original picks it in this

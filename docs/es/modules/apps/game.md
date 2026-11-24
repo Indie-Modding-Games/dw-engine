@@ -280,6 +280,15 @@ antes. El primer viaje desde frzl16 (175 y 352 puestos) corre la entrada con la 
 hace nada y la sección 0x3C se juega como la del original (Whamon en (1465, 2906), rotación 0). Hoja:
 `_work/tmp/w112/sheets/whamon-improvement.png`.
 
+## Técnicas potenciadas
+
+El ajuste `boosted_techniques` (fila «Técnicas potenciadas», «Boosted techniques» en inglés, pestaña Juego, activo por
+defecto, guardado en los ajustes del usuario) llega a `session::BattleAdapter::setBoostedMoves` en `applyPlayOptions`
+de `PlaySession`, así que vale desde el siguiente combate. Activo, el compañero pelea con la técnica potenciada de su
+especie cuando ya la conoce ([combate](../game/battle.md#tecnicas-potenciadas)). El Clásico Mejorado lo fija en
+apagado. La pantalla de versus pasa el valor del anfitrión a la serie (`VersusScreen::setBoostedMoves`,
+`SeriesSetup::boostedMoves`).
+
 ## Dificultad cooperativa
 
 Una mejora opcional, estándar por defecto, solo para el cooperativo
@@ -485,6 +494,13 @@ Medido en el original (forzado con la hora en `twna01`) y comparado por fotogram
   batalla no usan esto. Prueba: `session_sound_tests.cpp` («slots 3 and 4 keep the old form's banks while the
   evolution scene holds them»); en vivo, el estallido toca `slot=3 sound=50 bank=sound/vlall/001` y el clip `finish`
   `sound/vlall/002`.
+- Igual (2026-11-23, reporte de un tester: al salir de la tienda del cañón mientras el compañero evoluciona la pantalla
+  se quedaba negra): el original dibuja sus fundidos en cada cuadro (`fade.c: renderFadeIn`), sea lo que sea lo que
+  lleva la lógica. La escena paraba el campo, así que el fundido de salida de un cambio de mapa por guion y el de
+  entrada del mapa nuevo se congelaban hasta que acababa. Ahora un cambio de mapa pendiente sigue bajo la escena
+  (`EvolutionScene::runFieldFade`), una escena que el guion sostiene empieza cuando el cambio ha llegado, y el fundido
+  de entrada sigue bajo la escena y bajo los cuidados (`Field::tickCare`). Pruebas: `field_tests.cpp` («a map change's
+  fade in runs on while a care scene holds the player»); `tests/autotest/route-evolve-warp.yaml`.
 
 Suposiciones:
 
@@ -1546,6 +1562,29 @@ hace daño primero (`hud.need.<i>.urgency`, de `game::partner::needDeadlinesOf`;
 | Burbuja con dos o más necesidades | `partner_impl.c: handleConditionBubble`: una cada vez, por prioridad (sueño, cansancio, hambre, baño, herida, enfermedad); a los 50 frames cambia a la más alta de las demás, así que se turnan las dos más urgentes y una tercera no sale | Hasta cinco en una fila de un globo ensanchado con las piezas del original (50, 68, 86 o 104 píxeles), ordenadas por el tiempo que falta para que cada una haga un daño duradero (baño, hambre, sueño, herida, enfermedad; el cansancio, sin plazo, detrás; empates por la prioridad del original), la más urgente a la izquierda, y metido en la ventana cerca de un borde; con una sola, la del original; apagada, la del original entera | `need_deadlines_tests.cpp`; `field_hud_view_tests.cpp`; `ui_tests`: «the need bubble shows several needs side by side ...»; `hud_fit_tests`; `user_settings_tests`; `in_game_options_tests`; capturas con 1, 3 y 5 necesidades al 100 % y al 130 % | Mejora (opción) |
 | Frames de la burbuja: crece en 10, cada necesidad anima por el contador de la burbuja (las tres «Z» del sueño, la gota que cae del cansancio, los cuadros de la comida, el baño, la herida y la enfermedad), estalla en el 51 y no se ve hasta el 60 | `bubble.c: tickConditionBubble`, `renderConditionBubble` (`CONDITION_ICON_SLEEPY`, `CONDITION_TIRED_FRAME_U`/`_MY`, `CONDITION_HUNGRY_FRAMES`); `partner_impl.c: handleConditionBubble` (`CONDITION_BUBBLE_TIMER`). Medido en DuckStation: 180 vblanks por burbuja, 150 al cambiar de necesidad; «Z» en los frames 12, 17, 23 y 28 | `ui/hud/presenter.lua` cuenta los frames y `view.lua` publica `frame-<n>`; el aspecto original lo dibuja (`style.rcss`, `skin.yaml`). Antes solo salía el primer cuadro de cada necesidad y la «Z» baja | `ui_tests`: «the need bubble plays the original's frames ...» | Igual (sin el vaivén de 12 unidades) |
 
+## Medidores de necesidades
+
+Una mejora opcional, activa por defecto (no cambia ninguna regla): el ajuste `need_meters` (fila "Medidores de
+necesidades" de la pestaña Interfaz de las opciones, en el título y en partida; se guarda en los ajustes del usuario)
+muestra el hambre, el baño y el cansancio como tres barras en el campo junto a las de felicidad y disciplina, todo el
+tiempo mientras el campo corre. Se ocultan con el resto del estado del campo en una batalla, un menú, una escena o una
+charla (`hud.shown`). Apagado, el campo muestra solo las dos barras del original.
+
+Cada barra se llena a medida que se acerca su necesidad, así que una barra llena dice que el compañero está por pedirla
+(o ya la pide, y entonces se pone roja: `hud.need.<i>.active`). Los valores son los del propio estado de cuidados
+(`packages/game/partner`: `needGaugesOf`, `need_gauges.hpp`), publicados como `hud.gauge.<i>.{value,max,fill}`
+([ui.md](../../architecture/ui.md#estado-del-campo)):
+
+| Barra | Valor | Rango |
+|---|---|---|
+| Hambre | Minutos de juego desde la última hora de comer: el intervalo menos `HungerState::foodLevel` (minutos hasta la siguiente comida) | El hueco entre la hora de comer anterior y la siguiente de la especie (`hunger_times`), o los intervalos fijos del bebé y del de entrenamiento (`care.hunger`) |
+| Baño | Pasos andados desde la última vez: el intervalo menos `ToiletState::poopLevel` (pasos que faltan) | El `poop_interval` de la especie, doblado tras ir al baño en una especie con la peculiaridad del original (`toiletDoublesPoopInterval`) |
+| Cansancio | `MoodState::tiredness` | De 0 a 100 (`tirednessMax`); el compañero se cansa en 80 |
+
+| Qué | Original | dwe | Test | Estado |
+|---|---|---|---|---|
+| Medidores de necesidades en el campo | No existe: una necesidad solo se ve como la burbuja sobre el compañero cuando ya toca (`partner_impl.c: handleConditionBubble`) | Barras de hambre, baño y cansancio con iconos pixel propios (comida, baño, gotas), doradas mientras la necesidad crece y rojas cuando ya toca; en el aspecto pixel, a la izquierda de las barras de felicidad y disciplina, entrando y saliendo con ellas. Los otros aspectos no las dibujan | `need_gauges_tests.cpp`; `field_hud_view_tests.cpp`; `hud_fit_tests.cpp`; `title_options_tests.cpp`; `in_game_options_tests.cpp` | Mejora (opción) |
+
 ## Minimapa redondo
 
 Mejora opcional, encendida por defecto con los dos aspectos (no cambia ninguna regla; el original no tiene
@@ -1591,6 +1630,30 @@ no. Un enemigo fuera de la vista del disco no se pinta (no se clava en el borde 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
 | Enemigos en el minimapa | No existe | Un punto rojo anaranjado con borde oscuro por cada personaje del mapa que puede pelear, donde está, bajo la flecha del jugador; con los dos aspectos. Medido en dwe: en el segundo mapa de la niebla salen los tres salvajes y se mueven con ellos, uno sale de la vista; en el túnel (dos que persiguen pero solo hablan) y en el pueblo, ninguno. Apagado, ninguno | `minimap_enemies_tests.cpp` (secciones que pelean, amigos fuera, posiciones vivas, apagado, lector del listado); `ui_tests.cpp` («the minimap marks the enemies in view round the player, under the player's arrow»); `minimap_tests.cpp` (el punto); `in_game_options_tests.cpp` («the options page turns the enemies on the minimap on and off…»); `user_settings_tests`; ruta `route-minimap-enemies.yaml` | Mejora (opción) |
+
+## Aviso de peligro
+
+Una mejora opcional, activa por defecto (no cambia ninguna regla): el ajuste `danger_alert` (fila "Aviso de peligro"
+de la pestaña Interfaz de las opciones, en el título y en partida; se guarda en los ajustes del usuario) hace flotar un
+pequeño diablo morado sobre cada monstruo salvaje del campo que aplastaría al compañero. Apagado, no se ve ninguno.
+
+La regla (`crushes`, `apps/game/src/danger_alert.hpp`): los PV del salvaje × (ataque + defensa) son al menos 2,5 veces
+los del compañero. Cada lado cuenta lo que usaría su batalla: el salvaje, su registro del mapa (`map/<id>/data.yaml`:
+`hp`, `current_hp` cuando el registro guarda algo, `off`, `def`), como lo lee `game::battle::enemyFromMap`; el
+compañero, sus PV actuales y su ataque y defensa, como los manda a la batalla `session::BattleAdapter::visitorOf`. Las
+marcas se calculan en cada frame, así que siguen los stats y los PV del compañero cuando cambian.
+
+Qué es un monstruo salvaje: uno cuya sección del script del mapa puede llegar a `start_battle` sin las marcas de pelea
+fija de la historia (el `story_scenes.yaml` del ruleset: `battle.fixed_fight_trigger`, puesto con `set_trigger`, y
+`battle.predefined_variable`, nombrado con `set_pstat`) por el camino (`wildFightingSections`,
+`apps/game/src/minimap_enemies.hpp`). La gente del pueblo que solo habla, los amigos reclutables y los jefes de la
+historia no llevan marca. `PlaySession::publishDangerMarks` pone cada marca un poco por encima de la cabeza del monstruo
+(la altura de su especie) y publica `hud.danger.<n>.{visible,x,y}` por hueco de NPC solo mientras el campo corre
+([ui.md](../../architecture/ui.md#estado-del-campo)).
+
+| Qué | Original | dwe | Test | Estado |
+|---|---|---|---|---|
+| Marca de peligro sobre salvajes fuertes | No existe | Un pequeño diablo morado, dibujo pixel propio, que flota suavemente sobre cada monstruo salvaje en pantalla que aplastaría al compañero; desaparece en batallas, menús y escenas | `danger_alert_tests.cpp` (exactamente 2,5 veces, compañero sin PV ni stats, PV de batalla, solo salvajes en pantalla, peleas de la historia fuera); `hud_fit_tests.cpp`; `title_options_tests.cpp`; `in_game_options_tests.cpp` | Mejora (opción) |
 
 ## Objetos en el minimapa
 
@@ -2157,6 +2220,57 @@ contenido oculto (rulesets `oculto` u `oculto_mega`, que traen la sección `rare
 azar pueden dejar un objeto raro de evolución en vez del suyo
 ([evolution.md](../game/evolution.md#objetos-raros-de-evolución)). Apagado, o con el ruleset `original`, los objetos
 del campo son los del original. Su ayuda (`pause_menu.help.rare_items`) avisa de que necesita el contenido oculto.
+
+## Probabilidad de los raros errantes
+
+Una mejora opcional, 10 % por defecto, de una propuesta de la comunidad: en el original los raros errantes salen tan
+poco que los jugadores pasan horas entrando y saliendo de sus mapas. El ajuste `roaming_rare_chance` (fila "Raros
+errantes", "Roaming rares" en inglés, pestaña Juego de las opciones del menú de pausa y de las del título, valores
+`original`, `percent_5`, `percent_10`, `percent_25` y `percent_50`, guardado en los ajustes del usuario) llega a
+`session::StoryAdapter::setRoamingRareChance` desde `PlaySession::applyPlayOptions` (`rule_options.hpp`:
+`roamingRareStep`, `roamingRarePercent`). Clásico Mejorado lo fija en `original` (`modes/classic/mode.yaml`); Folder
+Mode lo deja al jugador.
+
+**La regla del original.** Cada raro errante lo coloca la sección MAPHEAD de su mapa (script 0), que corre en cada
+entrada al mapa: `store_random` (`script_interp.c: scriptInstruction10to27`, `SCRIPT_OP_STORE_RANDOM`) escribe
+`randomLimit(100)` (`math.c`: `(100 * rand()) >> 15`) en una variable, y la sección coloca al raro cuando vale 2 o
+menos: 984 de las 32768 tiradas de `rand()`, un 3,0 %. No hay condición de hora, día ni etapa de la historia aparte del
+trigger de "ya se unió" del propio raro, y no hay otros raros errantes: las demás tiradas de MAPHEAD colocan a vecinos
+de la ciudad después de unirse (Piximon 2 de 10, MetalMamemon 1 de 8 en sus sitios del pueblo) o a personajes comunes
+(Otamamon 1 de 3).
+
+| Raro | Mapa | Sección MAPHEAD | Tirada | Lo coloca si | Notas |
+|---|---|---|---|---|---|
+| Piximon | trop01 (Jungla Tropical) | 0x0C | `store_random(100, 99)` | variable 100 ≤ 2 | Solo tira mientras el trigger 255 (unido) está apagado: una vez unido, la entrada no tira nada |
+| Mamemon | miha01 (llanura del Monte Panorama) | 0x13 | `store_random(100, 99)` | variable 100 ≤ 2 y trigger 213 apagado | Siempre tira; si no, salen tres Tutimon (81) |
+| MetalMamemon | fact02 (Ciudad Factorial) | 0x99 | `store_random(110, 99)` | variable 110 ≤ 2 y trigger 227 apagado | Siempre tira; si no, los guardias de día (7 a 18 h) o los de noche |
+
+**La mejora.** Las tiradas son datos: la lista `roaming_rares` de la sección de historia del ruleset
+(`rules/original/story.yaml`, esquema `ruleset_story`), cada una `{script, section, variable, highest, hits_at_most}`,
+así que un mod añade las suyas. `StoryOrders::storeRandom` pregunta a un `StoryRollPort` en cada tirada; el del
+adaptador solo responde si se eligió un paso distinto de `original`, la sección en curso
+(`StoryRunner::runningSections`, la última) está en la lista y coinciden la variable y el máximo. Entonces
+`game::story::tunedRollValue` convierte la misma tirada única en el valor: un acierto (0 a `hits_at_most`) para las
+`percent * 32768 / 100` tiradas más bajas y un fallo (por encima, hasta 99) para el resto, repartidos por igual. Solo
+cambia la probabilidad: las condiciones propias de la sección (el trigger de unido, la hora) siguen decidiendo, y la
+variable sigue tomando un valor de 0 a 99.
+
+- **Original** es el camino del original sin tocar: el puerto no responde, `(100 * r) >> 15`, así que las semillas
+  vanilla y la comparación con el oráculo no cambian.
+- **RNG.** Todos los pasos tiran una vez por tirada, como el original, así que todas las tiradas posteriores de la
+  sesión (el combate, el cuidado, el mapa siguiente) reciben los mismos números sea cual sea el paso. El mapa de Piximon
+  sigue sin tirar nada una vez que se unió.
+- **Cooperativo.** Cada juego corre sus propias entradas de mapa con el aleatorio de su sesión y su propio ajuste, igual
+  que ya tira los demás dados de entrada del original (los visitantes de File City); los raros no son apariciones
+  compartidas. Un raro que se une pone su trigger en el mundo compartido, así que se va de los mapas de los demás juegos
+  ([multijugador](../../architecture/multiplayer.md), `CoopNpcPresence`). El versus no tiene campo.
+
+Tests: "without a tuned roll store_random is the original's…", "a tuned roll hits its chance in 100 of the draws with
+the same single draw", "a tuned roll hits about its chance over many seeded draws" y "a tuned roll's hits stay at
+hits_at_most or less…" (`story_orders_tests.cpp`); "a roaming rare's tuned chance places it about that often, with the
+original's draws" y "the tuned chance leaves the original's conditions and other rolls alone"
+(`story_adapter_tests.cpp`); "the roaming rares appear 10% of the time by default and as the original in Classic"
+(`mode_options_tests.cpp`).
 
 ## Combates rápidos
 

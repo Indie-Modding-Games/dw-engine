@@ -27,7 +27,9 @@ options:                              # opcional: nombre de opción -> el valor 
   rare_items: false
 ```
 
-Todas las claves menos `options` son obligatorias y no admite otras. `options` se lee en `GameMode::options`
+Todas las claves menos `options` y `randomizer` son obligatorias y no admite otras. `randomizer: true` deja que las
+partidas nuevas del modo sean [partidas aleatorizadas](randomizer.md) (`GameMode::randomizer`, apagado por defecto); el
+juego lo enciende solo en el Modo Folder. `options` se lee en `GameMode::options`
 (`OptionPin`: opción y valor como texto); el juego la aplica (`apps/game/src/mode_options.hpp`). Un paquete de encima reemplaza un modo dando la misma carpeta,
 como cualquier asset.
 
@@ -49,7 +51,8 @@ const dwe::game::modes::GameMode* mode = catalog.defaultMode();   // folder, o e
   `original` y `oculto`; en el flujo previsto solo elige un ruleset del Modo Folder y no vuelve a pedir contenido oculto
   ([tarea 10](../../architecture/game-variants.md#plan-de-tareas)). Otro modo empieza con su `ruleset`. Las rutas de
   prueba que no preguntan reglas tampoco preguntan modo: juegan el Modo Folder (`DefaultMode`) con el `--ruleset` de la
-  línea de órdenes.
+  línea de órdenes. Tras el modo y sus reglas, un modo con `randomizer: true` muestra la
+  [configuración del aleatorizador](randomizer.md) (`ui/new_game_randomizer`).
 - **Guardado**: la sesión guarda el modo en la sección `mode` (`id`) y en el resumen de la cabecera (formato 4); una
   partida guardada antes de los modos no la tiene, y una guardada antes de las variantes tiene `original`: ambas se
   cargan como `folder` (`currentModeId`, `session::ModeSave`). `GameSession::mode()` lo devuelve.

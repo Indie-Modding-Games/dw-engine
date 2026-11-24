@@ -99,6 +99,10 @@ public:
   // destroyLater. Call it between frames, never while one is being recorded.
   void waitIdle();
 
+  // Whether the GPU reported the device lost (a reset or a hang): nothing more can be drawn, and
+  // beginFrame and waitIdle no longer wait for it.
+  [[nodiscard]] bool lost() const;
+
   // Returns true if the GPU samples BC7 textures, in both their UNORM and sRGB formats. Every
   // desktop GPU does; without it, textures are uploaded as RGBA8.
   [[nodiscard]] bool supportsBc7() const;

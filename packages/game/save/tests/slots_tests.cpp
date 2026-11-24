@@ -229,7 +229,8 @@ TEST_CASE("the list fills the summary of saves that have none with the game's re
                                .species = "base:sp_02",
                                .nickname = "",
                                .map = "",
-                               .mode = ""};
+                               .mode = "",
+                               .randomizer = ""};
   REQUIRE(slots.save(second, summarized));
 
   CHECK(slots.list()[0].header.value_or(SaveHeader{}).summary == SaveSummary{});
@@ -239,7 +240,8 @@ TEST_CASE("the list fills the summary of saves that have none with the game's re
                        .species = file.header.label,
                        .nickname = "",
                        .map = "read",
-                       .mode = ""};
+                       .mode = "",
+                       .randomizer = ""};
   });
   const auto infos = slots.list();
   CHECK(infos[0].header.value_or(SaveHeader{}).summary.species == "old");

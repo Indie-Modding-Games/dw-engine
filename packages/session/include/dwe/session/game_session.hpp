@@ -10,6 +10,7 @@
 #include <dwe/game/partner/events.hpp>
 #include <dwe/game/partner/partner.hpp>
 #include <dwe/game/partner/species.hpp>
+#include <dwe/game/randomizer/randomizer.hpp>
 #include <dwe/game/save/autosave.hpp>
 #include <dwe/game/save/save_file.hpp>
 #include <dwe/game/save/slots.hpp>
@@ -130,6 +131,9 @@ struct SessionDesc {
   std::optional<ruleset::Ruleset> rules;
   // The game mode a new game plays (packages/game/modes); a loaded game plays its save's.
   std::string modeId{game::modes::DefaultMode};
+  // The randomizer a new game plays with (docs/modules/game/randomizer.md); a loaded game plays its
+  // save's.
+  game::randomizer::RunSettings randomizer{};
   // The partner species, when already read (dwe-sim shares one table between its runs, tests make
   // their own); otherwise read from the ruleset's digimon and raise tables.
   std::shared_ptr<const game::partner::SpeciesTable> species;
@@ -374,6 +378,10 @@ public:
   [[nodiscard]] std::uint64_t seed() const { return seed_; }
   // The game mode the playthrough plays: the new game's (SessionDesc::modeId) or the loaded save's.
   [[nodiscard]] const std::string& mode() const;
+  // The run's randomizer: inactive unless the new game turned options on, or the save has them.
+  [[nodiscard]] const game::randomizer::Randomizer& randomizer() const;
+  // The species of the partner's raise rows, by id: what a randomized run picks wild enemies from.
+  [[nodiscard]] std::vector<std::string> roster() const;
   // The game events mods handle (game_hooks.hpp); they fire once ModScripts bound them.
   [[nodiscard]] GameHooks& hooks() { return hooks_; }
   // The story's sound slots, or nullptr for a silent session.
@@ -412,6 +420,8 @@ private:
   // The partner's stats at the start: the extracted ones, or the ruleset's when the packs have
   // none.
   [[nodiscard]] game::partner::PartnerStats startingStats(const NewGameRules& start) const;
+  // The species of the partner's own raise rows that are rookies, by id: the randomized starters.
+  [[nodiscard]] std::vector<std::string> rookies() const;
   void followRules();
   core::Result<void> registerSaveSections();
   void advanceGameTime(double realSeconds);

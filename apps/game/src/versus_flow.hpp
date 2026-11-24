@@ -85,6 +85,8 @@ struct VersusFlowDesc {
   std::function<std::unique_ptr<net::PeerLink>(std::string_view code)> join;
   // The seed of a new series, for the host.
   std::function<std::uint64_t()> seed;
+  // Whether the series the host starts plays with the boosted techniques (the host's option).
+  std::function<bool()> boostedMoves;
   // What shows the battles; none shows only the document. It must outlive the flow.
   VersusBattleView* view = nullptr;
   // Where an arena puts the host's and the guest's fighters (its start: vs_intro.c:

@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <ostream>
 #include <vector>
 
@@ -62,6 +63,55 @@ private:
 
 std::int64_t variableOf(const FakeState& state, std::int64_t variable) {
   return state.variable(variable).value_or(-1);
+}
+
+class CountingRandom final : public StoryRandomPort {
+public:
+  explicit CountingRandom(std::int64_t value) : value_{value} {}
+  std::int64_t next() override {
+    ++draws_;
+    return value_;
+  }
+  [[nodiscard]] int draws() const { return draws_; }
+
+private:
+  std::int64_t value_;
+  int draws_ = 0;
+};
+
+class TunesVariable final : public StoryRollPort {
+public:
+  TunesVariable(std::int64_t variable, std::int32_t percent)
+      : variable_{variable}, percent_{percent} {}
+  [[nodiscard]] std::optional<TunedRoll> tuned(std::int64_t variable,
+                                               std::int64_t highest) const override {
+    if (variable != variable_ || highest != 99) {
+      return std::nullopt;
+    }
+    return TunedRoll{.hitsAtMost = 2, .percent = percent_};
+  }
+
+private:
+  std::int64_t variable_;
+  std::int32_t percent_;
+};
+
+constexpr std::int64_t Draws = StoryRandomPort::RandomMax + 1;
+
+// Of every draw the random can give, how many make store_random(variable, 99) write 2 or less.
+std::int64_t hitsOverEveryDraw(const StoryRollPort* rolls, std::int64_t variable) {
+  FakeState state;
+  std::int64_t hits = 0;
+  for (std::int64_t drawn = 0; drawn < Draws; ++drawn) {
+    CountingRandom random{drawn};
+    StoryOrders orders{state, random, OriginalRules, rolls};
+    REQUIRE(orders.storeRandom(variable, 99));
+    REQUIRE(random.draws() == 1);
+    const std::int64_t value = variableOf(state, variable);
+    REQUIRE((value >= 0 && value <= 99));
+    hits += value <= 2 ? 1 : 0;
+  }
+  return hits;
 }
 
 } // namespace
@@ -171,6 +221,47 @@ TEST_CASE(
   CHECK(variableOf(state, 7) == 5);
   REQUIRE(middle.storeRandom(7, -3));
   CHECK(variableOf(state, 7) == 0);
+}
+
+TEST_CASE(
+    "without a tuned roll store_random is the original's: 984 of the 32768 draws write 0 to 2") {
+  CHECK(hitsOverEveryDraw(nullptr, 100) == 984);
+  const TunesVariable otherVariable{110, 50};
+  CHECK(hitsOverEveryDraw(&otherVariable, 100) == 984);
+}
+
+TEST_CASE("a tuned roll hits its chance in 100 of the draws with the same single draw") {
+  for (const std::int32_t percent : {0, 5, 10, 25, 50, 100}) {
+    const TunesVariable tuned{100, percent};
+    CHECK(hitsOverEveryDraw(&tuned, 100) == percent * Draws / 100);
+  }
+}
+
+TEST_CASE("a tuned roll hits about its chance over many seeded draws") {
+  FakeState state;
+  std::uint32_t seed = 12345;
+  const TunesVariable tuned{100, 10};
+  constexpr int Rolls = 20'000;
+  int hits = 0;
+  for (int roll = 0; roll < Rolls; ++roll) {
+    seed = (seed * 1103515245U) + 12345U;
+    FixedRandom random{static_cast<std::int64_t>((seed >> 16) & 0x7FFF)};
+    StoryOrders orders{state, random, OriginalRules, &tuned};
+    REQUIRE(orders.storeRandom(100, 99));
+    hits += variableOf(state, 100) <= 2 ? 1 : 0;
+  }
+  CHECK(hits > Rolls * 9 / 100);
+  CHECK(hits < Rolls * 11 / 100);
+}
+
+TEST_CASE("a tuned roll's hits stay at hits_at_most or less and its misses above it, in range") {
+  for (std::int64_t drawn = 0; drawn < Draws; drawn += 7) {
+    const std::int64_t value = tunedRollValue(drawn, 100, {.hitsAtMost = 2, .percent = 25});
+    CHECK(value >= 0);
+    CHECK(value <= 99);
+    CHECK((value <= 2) == (drawn < Draws / 4));
+  }
+  CHECK(tunedRollValue(Draws - 1, 3, {.hitsAtMost = 5, .percent = 10}) == 2);
 }
 
 TEST_CASE("delay waits its frames, at least one") {

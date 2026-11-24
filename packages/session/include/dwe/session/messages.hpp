@@ -37,6 +37,8 @@ inline constexpr std::string_view SpeciesFailed = "the species tables: {}";
 inline constexpr std::string_view SaveSettingsFailed = "save/settings: {}";
 inline constexpr std::string_view NewGameStatsFailed = "data/new_game_stats: {}";
 inline constexpr std::string_view UnknownStartSpecies = "new_game: partner '{}' has no raise row";
+// The randomized run starts with another partner (the original, the randomizer's).
+inline constexpr std::string_view RandomStarter = "randomizer: the starter {} is {} in this run";
 
 // Saving and loading.
 inline constexpr std::string_view NoStorage = "this session has no save storage";
@@ -63,6 +65,10 @@ inline constexpr std::string_view TamerStateText = "the tamer state";
 inline constexpr std::string_view FieldStateText = "the field state";
 inline constexpr std::string_view RandomStateText = "the random state";
 inline constexpr std::string_view ModeStateText = "the mode section";
+inline constexpr std::string_view RandomizerStateText = "the randomizer section";
+inline constexpr std::string_view NotARunSeed = "'{}' is not a randomizer seed";
+inline constexpr std::string_view NotALearnChance =
+    "'{}' is not a learning chance: original, 25, 50, 75 or 100";
 inline constexpr std::string_view NotAFraction = "'{}' is not a fraction of a frame";
 inline constexpr std::string_view NotARandomState = "'{}' is not a random state";
 inline constexpr std::string_view MissingRandomKey = "the random state has no '{}'";
@@ -151,6 +157,10 @@ inline constexpr std::string_view StoryRunnerKept =
 inline constexpr std::string_view StoryNumberOutside = "{} is {}, outside 0 to {}";
 // The story section's capacity for mods (#97).
 inline constexpr std::string_view StoryCapacityText = "the story section's capacity";
+inline constexpr std::string_view StoryRoamingRaresText = "the story section's roaming_rares";
+inline constexpr std::string_view StoryRoamingRareText = "a roaming_rares roll";
+inline constexpr std::string_view RoamingRareRollTuned =
+    "[mod:story] roaming rare roll of script {} section {:#04x} at {}%";
 inline constexpr std::string_view StoryExtraRaisedText = "the capacity's extra_raised";
 // The extra raised range (its first and last trigger) is not within the extra triggers (the first
 // and last of those).

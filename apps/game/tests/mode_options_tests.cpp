@@ -14,6 +14,7 @@
 
 #include "mode_options.hpp"
 #include "new_game_mode.hpp"
+#include "rule_options.hpp"
 #include "user_settings.hpp"
 
 using dwe::app::ModeOptions;
@@ -50,9 +51,11 @@ UserSettings everythingOn() {
   settings.freeExploration = true;
   settings.extraToilets = true;
   settings.chooseEggAfterLivesLost = true;
+  settings.boostedTechniques = true;
   settings.fairSicknessChance = true;
   settings.battleSpeed = "fast";
   settings.smoothMotion = false;
+  settings.roamingRareChance = "percent_50";
   return settings;
 }
 
@@ -63,7 +66,7 @@ TEST_CASE("Classic Enhanced fixes the options that change the rules, and keeps t
   const GameMode* classic = modes.find(dwe::game::modes::ClassicMode);
   REQUIRE(classic != nullptr);
   ModeOptions fixed{classic, nullptr};
-  CHECK(fixed.pins().size() == 5);
+  CHECK(fixed.pins().size() == 7);
   const UserSettings player = everythingOn();
   const UserSettings played = fixed.over(player);
   CHECK(played.difficulty == "normal");
@@ -71,6 +74,8 @@ TEST_CASE("Classic Enhanced fixes the options that change the rules, and keeps t
   CHECK(played.freeExploration == false);
   CHECK(played.extraToilets == false);
   CHECK(played.chooseEggAfterLivesLost == false);
+  CHECK(played.boostedTechniques == false);
+  CHECK(played.roamingRareChance == "original");
   CHECK(played.fairSicknessChance == true);
   CHECK(played.battleSpeed == "fast");
   CHECK(played.smoothMotion == false);
@@ -149,4 +154,23 @@ TEST_CASE("the new game asks Classic Enhanced or Folder Mode; only Folder Mode a
   CHECK(modes.choose("folder", folder) == NewGameModes::Next::AskRules);
   CHECK(folder.modeId == "folder");
   CHECK_FALSE(folder.rulesetId.has_value());
+}
+
+TEST_CASE("the roaming rares appear 10% of the time by default and as the original in Classic") {
+  const ModeCatalog modes = shippedModes();
+  const UserSettings fresh;
+  ModeOptions folder{modes.find(dwe::game::modes::FolderMode), nullptr};
+  const std::string_view folderStep =
+      dwe::app::roamingRareStep(folder.over(fresh).roamingRareChance);
+  CHECK(folderStep == "percent_10");
+  CHECK(dwe::app::roamingRarePercent(folderStep) == 10);
+  ModeOptions classic{modes.find(dwe::game::modes::ClassicMode), nullptr};
+  CHECK(classic.refuse("roaming_rare_chance"));
+  const std::string_view classicStep =
+      dwe::app::roamingRareStep(classic.over(fresh).roamingRareChance);
+  CHECK(classicStep == "original");
+  CHECK_FALSE(dwe::app::roamingRarePercent(classicStep).has_value());
+  CHECK(dwe::app::roamingRareStep(std::string{"percent_25"}) == "percent_25");
+  CHECK(dwe::app::roamingRarePercent("percent_50") == 50);
+  CHECK(dwe::app::roamingRareStep(std::string{"often"}) == "percent_10");
 }

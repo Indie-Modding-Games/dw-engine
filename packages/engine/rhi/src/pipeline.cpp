@@ -173,15 +173,11 @@ core::Result<GraphicsPipeline> GraphicsPipeline::create(Device& device, const Bi
     return std::unexpected{valid.error()};
   }
   const VkDevice gpu = device.nativeHandles().device;
-  // A driver whose optimized shader compiler crashes (the AMD proprietary one, on some pipelines,
-  // and an Intel iGPU driver at times) dies during this build, before returning any VkResult. The
-  // breadcrumb names the pipeline and hashes its SPIR-V so the crash report and an allow-list point
-  // at the same shader without shipping its source.
+  if (device.lost()) {
+    return core::fail(std::format("{}: the GPU device was lost", desc.name));
+  }
   gpuNoteActivity(
       std::format("building pipeline '{}' (spirv {:#x})", desc.name, gpuSpirvHash(desc.spirv)));
-  if (gpuDeviceLost()) {
-    return core::fail("the GPU device was lost; cannot build a pipeline");
-  }
 
   const VkShaderModuleCreateInfo moduleInfo{.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
                                             .pNext = nullptr,
@@ -310,6 +306,7 @@ core::Result<GraphicsPipeline> GraphicsPipeline::create(Device& device, const Bi
   const auto build = [&](VkPipelineCreateFlags flags, VkPipeline& single,
                          VkPipeline& multisampledPipeline) {
     pipelineInfo.flags = flags;
+    multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
     VkResult status = gpuCheck(
         "vkCreateGraphicsPipelines",
         vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &single));
@@ -326,11 +323,8 @@ core::Result<GraphicsPipeline> GraphicsPipeline::create(Device& device, const Bi
   VkPipeline single = VK_NULL_HANDLE;
   VkPipeline multisampledPipeline = VK_NULL_HANDLE;
   VkResult result = build(0, single, multisampledPipeline);
-  if (result != VK_SUCCESS && !gpuDeviceLost()) {
-    // Some proprietary drivers fail while optimizing a shader and return VK_ERROR_UNKNOWN or
-    // VK_ERROR_INITIALIZATION_FAILED. One retry with optimization off builds a slower pipeline,
-    // which is better than the game refusing to start. The hash ties this log line to the crash
-    // report's last pipeline.
+  if (result != VK_SUCCESS && !device.lost()) {
+    // Some drivers fail while optimizing a shader: a slower pipeline beats not starting.
     core::logWarning("{}: pipeline build failed (Vulkan error {}, spirv {:#x}); retrying without "
                      "optimization",
                      desc.name, static_cast<int>(result), gpuSpirvHash(desc.spirv));

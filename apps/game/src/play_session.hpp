@@ -44,6 +44,7 @@ class InventoryAdapter;
 #include "coop_npc_presence.hpp"
 #include "coop_world_state.hpp"
 #include "curling_screen.hpp"
+#include "danger_alert.hpp"
 #include "death_scene.hpp"
 #include "dev_menu_screen.hpp"
 #include "egg_box_screen.hpp"
@@ -152,6 +153,10 @@ inline constexpr std::string_view AngemonEventZoneSetting = "angemon_event_zone"
 // session::StoryImprovement::WhamonInWater): before the Ogremon event, Whamon waits in the water by
 // its confirm cell at the Secret Beach Cave.
 inline constexpr std::string_view WhamonInWaterSetting = "whamon_in_water";
+// Boosted techniques (a balance improvement, on unless turned off;
+// session::BattleAdapter::setBoostedMoves): the partner hits harder and pays less MP with its
+// species' boosted technique once it knows it.
+inline constexpr std::string_view BoostedTechniquesSetting = "boosted_techniques";
 // The canyon shop's job (game::shop_job; session::ShopJobAdapter): improved, the default, plays the
 // line of customers and the haggle screen; original plays the original's price menus.
 inline constexpr std::string_view ShopJobModeSetting = "shop_job_mode";
@@ -532,6 +537,8 @@ private:
   void showButterfly(bool partnerNormal, const session::GameSession& session);
   // The shop job's progress bar (shop_job_bar.hpp), published when what it shows changed.
   void publishShopJob();
+  // The danger alert's marks (danger_alert.hpp), published when they changed.
+  void publishDangerMarks(bool fieldRunning, const assets::DigimonTable* species);
   // Publishes hud.minimap_allowed when it changes.
   // Draws the minimap of the map's collision and of the step cells that change the map now again
   // (on entering a map, after a preview swapped it in place or a trigger changed those cells).
@@ -584,6 +591,7 @@ private:
   // The shop job's progress bar (an engine improvement) and what it last published.
   ShopJobBar shopJobBar_;
   std::optional<ShopJobBarView> publishedShopJob_;
+  std::optional<DangerMarks> publishedDanger_;
   SleepScreen sleepScreen_;
   SaveMachine saveMachine_;
   // The story's textboxes, when the game runs the story.

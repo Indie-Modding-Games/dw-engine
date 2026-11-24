@@ -11,9 +11,11 @@
 #include <dwe/ruleset/random.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dwe::assets {
@@ -43,6 +45,12 @@ public:
                                       const ruleset::Ruleset& ruleset);
 
   [[nodiscard]] const EvolutionRules& rules() const { return rules_; }
+
+  // The form a natural evolution from a species into a chart target gives instead (a randomized
+  // run): the target's requirements still decide, the given form's stats are what it gets. Megas,
+  // specials, items and scripts keep their forms. An empty map plays the chart as it is.
+  using NaturalMap = std::function<Species(Species from, Species target)>;
+  void mapNaturalTargets(NaturalMap map) { naturalMap_ = std::move(map); }
   [[nodiscard]] const EvolutionTables& tables() const { return tables_; }
 
   // The periodic check (partner_impl.c: tickConditions), for the session to call while the partner
@@ -135,6 +143,7 @@ private:
                                                           ruleset::Random& random) const;
   [[nodiscard]] std::optional<std::int32_t> checkHours(Level level) const;
   [[nodiscard]] Species require(std::string_view id) const;
+  [[nodiscard]] Species mapped(Species from, Species target) const;
 
   // A form that learns no technique and has none equipped learns and equips the first known move
   // of its list.
@@ -148,6 +157,7 @@ private:
   EvolutionTables tables_;
   std::unique_ptr<EvolutionSelection> selection_;
   std::unique_ptr<RequirementScoring> scoring_;
+  NaturalMap naturalMap_;
 };
 
 } // namespace dwe::game::evolution

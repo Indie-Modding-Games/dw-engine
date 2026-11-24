@@ -6,8 +6,14 @@
 
 #include <cstdint>
 #include <optional>
+#include <string_view>
 
 namespace dwe::app {
+
+// The need meters (an engine improvement; it changes no rule): hunger, the toilet and tiredness
+// as bars on the field that fill as each need nears. A UI setting the HUD reads and the command of
+// the same name, saved with the user's settings (need_meters: true, false), on when not chosen yet.
+inline constexpr std::string_view NeedMetersSetting = "need_meters";
 
 // The field HUD's status panel: it publishes the game time and the partner's state
 // (packages/screens: field_hud_view.hpp) to the HUD document, only when something it shows has

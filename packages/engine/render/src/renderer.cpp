@@ -48,7 +48,7 @@ core::Result<rhi::Image> sceneTargetColor(rhi::Device& device, rhi::Extent exten
 
 core::Result<std::unique_ptr<Renderer>> Renderer::create(rhi::Device& device,
                                                          const RendererDesc& desc) {
-  auto bindless = rhi::BindlessTable::create(device, desc.maxTextures, desc.rdna2Safe);
+  auto bindless = rhi::BindlessTable::create(device, desc.maxTextures);
   if (!bindless) {
     return std::unexpected{bindless.error()};
   }

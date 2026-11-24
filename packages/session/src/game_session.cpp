@@ -51,6 +51,9 @@ ruleset::SectionChecks allChecks(const std::vector<std::unique_ptr<SessionSystem
   for (auto& [name, check] : sessionSectionChecks()) {
     checks.insert_or_assign(name, std::move(check));
   }
+  for (auto& [name, check] : game::randomizer::randomizerSectionChecks()) {
+    checks.insert_or_assign(name, std::move(check));
+  }
   for (const std::unique_ptr<SessionSystem>& system : systems) {
     for (auto& [name, check] : system->sectionChecks()) {
       checks.insert_or_assign(name, std::move(check));
@@ -267,10 +270,19 @@ core::Result<void> GameSession::readRules() {
   if (!autosaveRules) {
     return std::unexpected{autosaveRules.error()};
   }
+  game::randomizer::RandomizerRules randomizerRules;
+  if (const ruleset::Section* section = current.section(game::randomizer::RandomizerSection)) {
+    auto read = game::randomizer::readRandomizerRules(*section);
+    if (!read) {
+      return std::unexpected{read.error()};
+    }
+    randomizerRules = std::move(*read);
+  }
   state_->clock.setRules(*clockRules);
   state_->partnerRules = std::move(*partnerRules);
   state_->partner.setRules(state_->partnerRules);
   state_->rules = std::move(*sessionRules);
+  state_->randomizer.setRules(std::move(randomizerRules));
   if (autosave_) {
     autosave_->setRules(*autosaveRules);
   }
@@ -334,6 +346,11 @@ core::Result<void> GameSession::startNewGame(const NewGameChoice& choice) {
     core::logDebug("[port:story] main (main.c:3445): the opening picked partner {}",
                    choice.partner);
     start.partner = choice.partner;
+  }
+  state_->randomizer.setSettings(desc_.randomizer);
+  if (auto starter = state_->randomizer.starter(start.partner, rookies())) {
+    core::logInfo("{}", formatMessage(messages::RandomStarter, start.partner, *starter));
+    start.partner = std::move(*starter);
   }
   ruleset::GameClock& clock = state_->clock;
   const double speed = clock.speed();
@@ -680,6 +697,28 @@ const std::string& GameSession::mode() const {
   return state_->mode;
 }
 
+const game::randomizer::Randomizer& GameSession::randomizer() const {
+  return state_->randomizer;
+}
+
+std::vector<std::string> GameSession::roster() const {
+  std::vector<std::string> ids;
+  for (const auto& [id, care] : species_->species()) {
+    ids.push_back(id);
+  }
+  return ids;
+}
+
+std::vector<std::string> GameSession::rookies() const {
+  std::vector<std::string> ids;
+  for (const auto& [id, care] : species_->species()) {
+    if (care.level == game::partner::Level::Rookie) {
+      ids.push_back(id);
+    }
+  }
+  return ids;
+}
+
 bool GameSession::gameCleared() const {
   return state_->cleared;
 }
@@ -936,7 +975,11 @@ game::save::SaveHeader GameSession::headerNow() const {
                                   .species = state_->partner.state().species,
                                   .nickname = names_.partner,
                                   .map = place ? place->map : std::string{},
-                                  .mode = state_->mode};
+                                  .mode = state_->mode,
+                                  .randomizer =
+                                      state_->randomizer.settings().active()
+                                          ? game::randomizer::runCode(state_->randomizer.settings())
+                                          : std::string{}};
   std::string label = summary.species;
   if (place) {
     label += LabelSeparator;

@@ -5,6 +5,7 @@
 #include <dwe/game/partner/partner.hpp>
 #include <dwe/game/partner/rules.hpp>
 #include <dwe/game/partner/species.hpp>
+#include <dwe/game/randomizer/randomizer.hpp>
 #include <dwe/ruleset/game_clock.hpp>
 #include <dwe/ruleset/random.hpp>
 #include <dwe/session/game_session.hpp>
@@ -56,6 +57,8 @@ struct SessionState {
   std::optional<std::string> clearedMap;
   // The game mode the playthrough plays (packages/game/modes), saved in its own section.
   std::string mode{game::modes::DefaultMode};
+  // The randomized run's settings and the ruleset's randomizer rules, saved in their own section.
+  game::randomizer::Randomizer randomizer;
   const game::field::Field* field = nullptr;
 };
 

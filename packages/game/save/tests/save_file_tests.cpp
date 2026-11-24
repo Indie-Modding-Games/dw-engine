@@ -54,7 +54,7 @@ TEST_CASE("a save file is written and read back byte-identical") {
   file.sections.emplace("partner", SavedSection{.version = 3, .state = state});
   const auto text = writeSaveFile(file);
   REQUIRE(text);
-  CHECK(text->starts_with("format: dwe-save\nformat_version: 4\n"));
+  CHECK(text->starts_with("format: dwe-save\nformat_version: 5\n"));
   CHECK(text->ends_with("complete: true\n"));
 
   const auto read = parseSaveFile(*text);
@@ -186,7 +186,7 @@ TEST_CASE("the header is migrated by the format's chain") {
     YamlNode renamed = renamedKey(root, "title", "label");
     renamed.set("autosave_reasons", YamlNode::sequence());
     YamlNode summary = YamlNode::mapping();
-    for (const char* key : {"slot", "tamer", "species", "nickname", "map", "mode"}) {
+    for (const char* key : {"slot", "tamer", "species", "nickname", "map", "mode", "randomizer"}) {
       summary.set(key, YamlNode::scalar(""));
     }
     renamed.set("summary", summary);
@@ -199,8 +199,8 @@ TEST_CASE("the header is migrated by the format's chain") {
   CHECK(read->header.label == "File City");
 
   const auto newer = parseSaveFile(
-      replaced(readFixture("partner_v1.yaml"), "format_version: 4", "format_version: 5"));
-  CHECK(errorOf(newer).contains("the save format is version 5, newer than this game reads (4)"));
+      replaced(readFixture("partner_v1.yaml"), "format_version: 5", "format_version: 6"));
+  CHECK(errorOf(newer).contains("the save format is version 6, newer than this game reads (5)"));
 }
 
 TEST_CASE("format 1 saves load with no autosave reasons, and autosaves list theirs") {
@@ -234,12 +234,13 @@ TEST_CASE("the summary is written and read back, and format 2 saves load with an
                          .species = "base:sp_01",
                          .nickname = "Spark",
                          .map = "base:map_01",
-                         .mode = "classic"};
+                         .mode = "classic",
+                         .randomizer = "K7QH2M9X-3Z"};
   const auto text = writeSaveFile(file);
   REQUIRE(text);
   CHECK(text->contains("label: \"File City\"\nsummary:\n  slot: \"slot_03\"\n  tamer: \"Juan\"\n"
                        "  species: \"base:sp_01\"\n  nickname: \"Spark\"\n  map: \"base:map_01\"\n"
-                       "  mode: \"classic\"\ncreated:"));
+                       "  mode: \"classic\"\n  randomizer: \"K7QH2M9X-3Z\"\ncreated:"));
   const auto read = parseSaveFile(*text);
   REQUIRE_MESSAGE(read, errorOf(read));
   CHECK(read->header == file.header);
@@ -264,6 +265,16 @@ TEST_CASE("format 3 saves load with no game mode in their summary") {
   CHECK(writeSaveFile(*old).value() == readFixture("partner_v1.yaml"));
   CHECK(errorOf(parseSaveFile(replaced(readFixture("partner_v1.yaml"), "  mode: \"\"\n", "")))
             .contains("mode"));
+}
+
+TEST_CASE("format 4 saves load as games that are no randomized run") {
+  const auto old = parseSaveFile(readFixture("format_v4.yaml"));
+  REQUIRE_MESSAGE(old, errorOf(old));
+  CHECK(old->header.summary.randomizer.empty());
+  CHECK(old->header == sampleFile().header);
+  CHECK(writeSaveFile(*old).value() == readFixture("partner_v1.yaml"));
+  CHECK(errorOf(parseSaveFile(replaced(readFixture("partner_v1.yaml"), "  randomizer: \"\"\n", "")))
+            .contains("randomizer"));
 }
 
 TEST_CASE("corrupt and truncated files are errors") {

@@ -191,12 +191,12 @@ Paquete nuevo, al lado de `game/versus` y con la misma forma:
 | Pieza | Lado | Qué hace |
 |---|---|---|
 | `protocol` | los dos | DTOs de mensaje con rango propio, saludo cooperativo con campos/versiones equivalentes a `Identity` (sin depender del módulo `versus`) y códecs `WireWriter`/`WireReader`. |
-| `CoopLink` | los dos | Implementado: saludo, validación de identidad, dirección permitida por rol, 10 s para responder, 8 s de silencio y salida sobre un `PeerLink` inyectado. |
+| `CoopLink` | los dos | Implementado: saludo, validación de identidad, dirección permitida por rol, 10 s para responder, 8 s de silencio y salida sobre un `PeerLink` inyectado. La primera forma en que termina un enlace (rechazo, fallo o salida) es la que conserva: un `Leave` del anfitrión que llega junto con el cierre de su transporte sigue contando como que el anfitrión se fue, no como una caída. |
 | `RemoteCommandBuffer` | host | Implementado: acepta secuencias nuevas con rollover y entrega entrada neutral tras 250 ms sin comandos. |
 | `ProfileAssembler` | host / cliente | Implementado: reensambla `ProfileChunk` desordenados con límite de tamaño y reintentos idénticos. |
-| `CoopGameplayBridge` | los dos | Integrado al loop para enviar comandos del invitado, recibirlos en el controlador del host y enviar snapshots a 20 Hz. El cliente interpola y presenta el avatar remoto del host; el resto de entidades aún no se replica visualmente. La transferencia de perfiles está implementada, pero todavía no se transfiere ni carga el guardado autoritativo del host. |
+| `CoopGameplayBridge` | los dos | Integrado al loop para enviar comandos del invitado, recibirlos en el controlador del host y enviar snapshots a 20 Hz. Reparte cada mensaje a la cola de la parte del juego que lo lee y descarta los demás (`ignored()`); los guardados viajan por el lobby (`CoopScreen`), no por el puente. |
 | `CoopSnapshotBuilder` | host | Implementado para jugador host, compañero host e invitado; la captura de NPCs y aplicación del espejo cliente siguen pendientes. |
-| `CoopGuestPartnerProfile` | host | Implementado en `apps/game`: valida y parsea el guardado completo (máximo 128 KiB), migra solo `partner` y extrae especie, apodo y estado. No carga otras secciones; conectar el `ProfileAssembler` al flujo de unión y crear/replicar el actor del compañero invitado sigue pendiente. |
+| `CoopGuestPartnerProfile` | host | Implementado en `apps/game`: valida y parsea el guardado completo (como mucho `MaxProfileBytes`, lo que cabe en una transferencia), migra solo `partner` y extrae especie, apodo y estado. No carga otras secciones; conectar el `ProfileAssembler` al flujo de unión y crear/replicar el actor del compañero invitado sigue pendiente. |
 | `CoopHost` / `CoopClient` | los dos | Pendiente: ciclo de vida de sesión, replicación del mundo y aplicación de snapshots, sin acoplar transporte a Field. |
 | `Replicator` / `WorldMirror` | host / cliente | El DTO/serializador puede estar en `game/coop`; la captura y aplicación de estado del mundo viven en `apps/game`, donde se permite componer `Field`, `PlaySession` y `FieldScene`. |
 
@@ -347,7 +347,7 @@ Un byte de tipo al principio de cada mensaje, en el rango `0x60–0x6F` (el vers
 | `0x6A` | `Leave` | fiable | los dos | Motivo de salida. |
 | `0x6B` | `ActionResult` | fiable | host → cliente | Reservado; resultado y deduplicación de acciones quedan pendientes. |
 | `0x6C` | `ViewState` | no fiable | cliente → host | Límites del rectángulo visible en píxeles del fondo, mapa y secuencia; metadatos de vista validados por el host. |
-| `0x6D` | `ProfileChunk` | fiable | ambos sentidos | Fragmento de perfil acotado a 128 KiB, con tipo `GuestSave` o `HostSave`. El ensamblador tolera orden variable y reintentos idénticos y rechaza duplicados conflictivos; la app valida e interpreta el guardado completo del invitado. |
+| `0x6D` | `ProfileChunk` | fiable | ambos sentidos | Fragmento de perfil (hasta 128 fragmentos de 1000 B, `MaxProfileBytes`), con tipo `GuestSave` o `HostSave`. El ensamblador tolera orden variable y reintentos idénticos y rechaza duplicados conflictivos; la app valida e interpreta el guardado completo del invitado. |
 
 `CoopLink` aplica 10 s para la respuesta inicial y 8 s de silencio tras recibir tráfico; el protocolo no añade un
 mensaje de latido propio. El buffer neutraliza el comando actual tras 250 ms sin uno nuevo.
@@ -656,7 +656,9 @@ propio jugador (`GuestFieldIntent`), sus estados llegan a la autoridad con su id
 jugadores le llegan solo a él, y cada uno recibe las instantáneas con el acuse de sus propios comandos. Un invitado
 dibuja a todos desde las instantáneas y pone una etiqueta a cada otro jugador (`coop_hud.tag.<n>.*`). El enlace de
 cada invitado lleva sus propios mensajes de combate: cualquier invitado puede empezar un combate, y cada jugador libre
-de ese mapa pelea en él ([combate cooperativo](coop-combat.md) §12).
+de ese mapa pelea en él ([combate cooperativo](coop-combat.md) §12). Un puente descarta los mensajes que ninguna parte
+del juego lee (el listo de un lobby, los fragmentos de un guardado) en vez de encolarlos, así que un compañero que los
+siga enviando no hace crecer nada del otro lado.
 
 **Diagnóstico de sincronía.** Una herramienta de desarrollo detrás de la consola (F1), que solo se abre con las
 herramientas de desarrollo activas, así que nunca corre en las builds de release. `coop_sync("on")` en el anfitrión

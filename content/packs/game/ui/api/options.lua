@@ -251,6 +251,18 @@ local descriptors = {
     help = "pause_menu.help.fair_card_stock",
     original = false,
   },
+  -- Roaming rares' chance: how often a map entry places a roaming rare, the same single roll (10%
+  -- by default; original, the original's 3%).
+  {
+    name = "roaming_rare_chance",
+    label = "pause_menu.roaming_rare_chance",
+    values = { "original", "percent_5", "percent_10", "percent_25", "percent_50" },
+    texts = "pause_menu.roaming_rare_chance",
+    default = "percent_10",
+    tab = "game",
+    help = "pause_menu.help.roaming_rare_chance",
+    original = "original",
+  },
   -- Choose the egg after losing all lives: the egg box opens then too, as after a natural death
   -- (off by default: the original draws the egg at random).
   {
@@ -301,6 +313,17 @@ local descriptors = {
     default = true,
     tab = "game",
     help = "pause_menu.help.whamon_in_water",
+    original = false,
+  },
+  -- Boosted techniques: each species has one technique it is better at; once the partner knows it,
+  -- it hits 25% harder and costs 25% less MP (on by default; off, as the original, every technique
+  -- is the table's).
+  {
+    name = "boosted_techniques",
+    label = "pause_menu.boosted_techniques",
+    default = true,
+    tab = "game",
+    help = "pause_menu.help.boosted_techniques",
     original = false,
   },
   -- Co-op difficulty: how a co-op battle scales its enemies by the partners that fight and the
@@ -571,6 +594,26 @@ local descriptors = {
     default = true,
     tab = "interface",
     help = "pause_menu.help.need_bubble_stack",
+    original = false,
+  },
+  -- Need meters: hunger, the toilet and tiredness as bars on the field that fill as each need nears
+  -- (on by default; off leaves the original's happiness and discipline bars only).
+  {
+    name = "need_meters",
+    label = "pause_menu.need_meters",
+    default = true,
+    tab = "interface",
+    help = "pause_menu.help.need_meters",
+    original = false,
+  },
+  -- Danger alert: a small devil over each wild monster on the field that would crush the partner
+  -- (on by default; off shows none, as the original).
+  {
+    name = "danger_alert",
+    label = "pause_menu.danger_alert",
+    default = true,
+    tab = "interface",
+    help = "pause_menu.help.danger_alert",
     original = false,
   },
   -- Recruit bar: while a job or a match decides whether someone joins the city, a bar shows how

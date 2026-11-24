@@ -135,7 +135,7 @@ no mark.
   - `route-skins` with `tests/mods/ui_skin`;
   - `route-save-load` with `--saves <run folder>/saves`, and in the same job, only if it passes,
     `route-save-load-check` with the same folder and `--load slot_01` (see below);
-  - those in `saves_routes` (`route-sleep-save`, `route-skin-original` and `route-game-modes`), with an empty
+  - those in `saves_routes` (`route-sleep-save`, `route-skin-original`, `route-game-modes` and `route-randomizer`), with an empty
     `--saves <run folder>/saves`, because they start a new game in a slot and save into it;
   - the 4 on the cooked `.pak`, in which it also checks that the bitmap map font was loaded.
 

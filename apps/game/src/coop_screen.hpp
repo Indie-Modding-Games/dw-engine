@@ -21,7 +21,15 @@
 
 namespace dwe::app {
 
+// The lobby's commands (ui_contract.cpp names those the rooms screens send).
 inline constexpr std::string_view CoopOpenCommand = "coop_open";
+inline constexpr std::string_view CoopHostCommand = "coop_host";
+inline constexpr std::string_view CoopJoinCommand = "coop_join";
+inline constexpr std::string_view CoopConnectCommand = "coop_connect";
+inline constexpr std::string_view CoopReadyCommand = "coop_ready";
+inline constexpr std::string_view CoopOpenToJoinCommand = "coop_open_to_join";
+inline constexpr std::string_view CoopStartCommand = "coop_start";
+inline constexpr std::string_view CoopCloseCommand = "coop_close";
 
 // The signaling server the co-op rooms use: --versus-server, else the packs' network config; empty
 // when neither names one.
@@ -173,6 +181,8 @@ private:
   [[nodiscard]] core::Result<void> sendProfile(game::coop::CoopLink& link,
                                                game::coop::ProfilePayloadKind kind,
                                                std::uint32_t transferId, std::string_view saveText);
+  // A fresh save transfer's id, never 0 (the protocol's "none").
+  [[nodiscard]] std::uint32_t nextTransferId();
 
   ui::Ui* ui_;
   std::shared_ptr<net::RtcSettings> rtc_;

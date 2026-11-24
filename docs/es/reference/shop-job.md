@@ -27,13 +27,15 @@ Los números de la versión mejorada están en `rules/original/shop_job.yaml` de
 
 - Al empezar el trabajo (primer cliente) se hace la fila de los 20 con la semilla de la partida y el número del
   trabajo: guardar y cargar no la cambia y no gasta números aleatorios del juego.
-- Especies y objetos salen de bolsas barajadas (las cuentas, en el ruleset). Cada especie tiene paciencia y carácter
+- Especies y objetos salen de las cuentas del ruleset: cada copia de un objeto va a la especie que menos lo ha pedido
+  hasta entonces (un empate, al azar), así ninguna acapara un objeto. Cada especie tiene paciencia y carácter
   (derrochador, regateador, tacaño, caprichoso), que se ven en el mostrador.
 - Cada cliente llega con un humor que se ve (alegre, normal, serio) y mueve su presupuesto un nivel arriba o abajo.
 - El presupuesto (el precio más caro que acepta) es oculto y sale de la tabla de aceptación del original de su
   especie; algunos no compran nada.
-- La fila se sortea de nuevo hasta que la puntuación perfecta (vender a cada uno a su presupuesto después de una
-  charla) cae entre 4000 y 4300: la meta siempre se puede alcanzar.
+- La puntuación perfecta (vender a cada uno a su presupuesto después de una charla) tiene que caer entre 4000 y 4300,
+  así la meta siempre se puede alcanzar: si no cae, los presupuestos pasan al nivel más cercano que la especie y el
+  humor del cliente podían dar, y una fila que sigue fuera se sortea de nuevo.
 - Un cliente que se va gasta un solo hueco.
 
 ### En el mostrador

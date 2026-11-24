@@ -107,9 +107,9 @@ private:
   // partnerTickEvolving sub state 1: the field holds the player with the game time stopped and the
   // partner walks up to it; once it is near, glow().
   void approach(float seconds);
-  // Carries on a scripted warp that is still fading out or loading its map while the scene holds
-  // the field, so the field is never left on a frozen black frame when the scene ends.
-  void advanceWarp(float seconds);
+  // The field's map change and fade in go on under the scene, as the original draws its fades on
+  // every frame: the screen never stays black for the whole scene.
+  void runFieldFade(float seconds);
   // getEvoSequenceState (main/evl.c:77): the partner stands idle where it got to, the scene's
   // sounds, and tickEvoSequenceLoading's first wait.
   void glow();

@@ -275,6 +275,33 @@ button:focus .original-look, button.original-look:focus {
 #techs-heading, #tech-help, #tech-help-page { display: none; }
 .tech-cell-shade { display: none; }
 
+/* The partner's boosted technique (docs/modules/game/battle.md, «Boosted techniques»): its power in red with an arrow
+   up and its MP in light blue with an arrow down, in the table and the data box, and an arrow up over its cell. The
+   padding makes room for the arrow past the number, so the number stays where it was. */
+#scrim .tech-row .tech-power.boosted,
+#scrim .info-value.info-power.boosted {
+	color: #ff5a48;
+	padding-right: 16dp;
+	decorator: image(boost-up scale-none right center);
+}
+#scrim .tech-row .tech-mp.boosted,
+#scrim .info-value.info-mp.boosted {
+	color: #8ad6ff;
+	padding-right: 16dp;
+	decorator: image(boost-down scale-none right center);
+}
+.tech-boost { display: none; }
+#scrim .tech-choice.boosted .tech-boost {
+	display: block;
+	position: absolute;
+	left: 33dp;
+	top: 0dp;
+	width: 14dp;
+	height: 16dp;
+	pointer-events: none;
+	decorator: image(boost-up);
+}
+
 /* The battle opens only the bag (battle_tick.c: tamerTickBattle calls addInventoryUI): no tabs, and the fight stays in
    sight under a lighter scrim. */
 #scrim.battle-bag { background-color: #05080c40; }

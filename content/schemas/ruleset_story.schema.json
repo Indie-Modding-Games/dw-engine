@@ -120,6 +120,22 @@
           }
         }
       }
+    },
+    "roaming_rares": {
+      "description": "The map entries' rolls that place a roaming rare, whose chance the option roaming_rare_chance tunes. Left out, none.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["script", "section", "variable", "highest", "hits_at_most"],
+        "additionalProperties": false,
+        "properties": {
+          "script": {"type": "integer", "minimum": 0, "maximum": 65535},
+          "section": {"type": "integer", "minimum": 0, "maximum": 65535},
+          "variable": {"description": "The variable the section's store_random writes.", "type": "integer", "minimum": 0, "maximum": 255},
+          "highest": {"description": "The store_random's highest value.", "type": "integer", "minimum": 0, "maximum": 255},
+          "hits_at_most": {"description": "The highest value that places the roaming rare.", "type": "integer", "minimum": 0, "maximum": 255}
+        }
+      }
     }
   }
 }

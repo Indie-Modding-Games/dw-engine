@@ -26,6 +26,7 @@ constexpr std::string_view RulesetKey = "ruleset";
 constexpr std::string_view RulesetsKey = "rulesets";
 constexpr std::string_view OrderKey = "order";
 constexpr std::string_view OptionsKey = "options";
+constexpr std::string_view RandomizerKey = "randomizer";
 
 bool isModeId(std::string_view id) {
   return !id.empty() && id.front() >= 'a' && id.front() <= 'z' &&
@@ -88,7 +89,7 @@ core::Result<GameMode> parseGameMode(std::string_view yaml, std::string_view fol
   YamlReader reader;
   if (!reader.expectKeys(root, messages::ModeText,
                          {IdKey, NameKey, DescriptionKey, RulesetKey, RulesetsKey, OrderKey},
-                         {OptionsKey})) {
+                         {OptionsKey, RandomizerKey})) {
     return std::unexpected{reader.error(messages::ModeText)};
   }
   GameMode mode;
@@ -117,6 +118,9 @@ core::Result<GameMode> parseGameMode(std::string_view yaml, std::string_view fol
   mode.order = reader.integer<std::int32_t>(reader.field(root, OrderKey));
   if (const YamlNode* options = root.find(OptionsKey); options != nullptr && reader.ok()) {
     mode.options = readPins(reader, *options);
+  }
+  if (const YamlNode* randomizer = root.find(RandomizerKey); randomizer != nullptr) {
+    mode.randomizer = reader.boolean(*randomizer);
   }
   return reader.finish(std::move(mode), messages::ModeText);
 }

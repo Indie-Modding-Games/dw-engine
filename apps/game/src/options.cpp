@@ -307,8 +307,8 @@ bool readFlag(Options& options, std::string_view argument) {
     options.compatibleMode = true;
   } else if (argument == LowPerformanceOption) {
     options.lowPerformance = true;
-  } else if (argument == Rdna2SafeOption) {
-    options.rdna2Safe = true;
+  } else if (argument == RetiredRdna2SafeOption) {
+    core::logInfo("game: {} is retired and does nothing", argument);
   } else if (argument == ExploreOption) {
     options.explore = true;
   } else if (argument == ChibiOption) {

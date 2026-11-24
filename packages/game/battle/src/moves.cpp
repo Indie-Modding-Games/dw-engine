@@ -42,6 +42,7 @@ BattleMove battleMoveOf(const assets::MoveEntry& entry, const MoveRules& rules) 
                   .finisher = rules.finishers.contains(entry),
                   .counter = entry.id == rules.counter,
                   .learnable = rules.learnable.contains(entry),
+                  .boosted = false,
                   .learnChances = entry.learnChances,
                   .buff = std::nullopt};
   const auto buff = std::ranges::find(rules.buffs, entry.id, &BuffRule::move);
@@ -110,6 +111,16 @@ MoveRef MoveCatalog::addVariant(MoveRef move, std::optional<std::int32_t> power,
   variant.iframes = iframes.value_or(variant.iframes);
   variant.learnable = false;
   moves_.push_back(std::move(variant));
+  return moves_.size() - 1;
+}
+
+MoveRef MoveCatalog::addBoosted(MoveRef move, const BoostedMoveRules& rules) {
+  BattleMove boosted = moves_.at(move);
+  boosted.power = boostedPower(rules, boosted.power);
+  boosted.mpCost = boostedMpCost(rules, boosted.mpCost);
+  boosted.learnable = false;
+  boosted.boosted = true;
+  moves_.push_back(std::move(boosted));
   return moves_.size() - 1;
 }
 

@@ -171,6 +171,10 @@ struct AutotestRoute {
   // Whether a new game from the main menu shows its rules screen (ui/new_game_rules) for the route
   // to answer (new_game_rules); otherwise it starts with the command line's ruleset.
   bool newGameRules = false;
+  // Whether a new game of a mode that offers it shows the randomizer's setup
+  // (ui/new_game_randomizer) after its rules (new_game_randomizer); otherwise it starts as no
+  // randomized run.
+  bool newGameRandomizer = false;
   // Whether a new game from the main menu asks the opening's questions and the names first
   // (new_game_scene), as without a route; otherwise it starts without them.
   bool newGameScene = false;
@@ -269,6 +273,7 @@ public:
   [[nodiscard]] bool asksSkinFirst() const { return route_.skinFirst; }
   // Whether a new game shows its rules screen (AutotestRoute::newGameRules).
   [[nodiscard]] bool asksNewGameRules() const { return route_.newGameRules; }
+  [[nodiscard]] bool asksNewGameRandomizer() const { return route_.newGameRandomizer; }
   // Whether a new game asks the opening's questions (AutotestRoute::newGameScene).
   [[nodiscard]] bool asksNewGameScene() const { return route_.newGameScene; }
   // Whether the mouse walks the player (AutotestRoute::walksWithMouse).

@@ -172,8 +172,9 @@ bool reactionsValid(const ShopJobRules& rules) {
 
 core::Result<void> validate(const ShopJobRules& rules, std::string_view file) {
   const auto counted = [](const auto& entries) {
-    return std::accumulate(entries.begin(), entries.end(), std::int64_t{0},
-                           [](std::int64_t sum, const auto& entry) { return sum + entry.count; });
+    return std::accumulate(
+        entries.begin(), entries.end(), std::int64_t{0},
+        [](std::int64_t sum, const auto& entry) { return sum + std::max(entry.count, 0); });
   };
   if (counted(rules.species) != counted(rules.items)) {
     return core::fail(std::format(messages::BagsDiffer, file));

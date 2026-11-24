@@ -163,15 +163,30 @@ function renderNotice() {
 // ---- What this computer needs (check_system) -------------------------------------------------
 
 const MAKERS = { nvidia: "NVIDIA", amd: "AMD", intel: "Intel" };
+const LAUNCH_MODES = { auto: "s.launchModeAuto", skip: "s.launchModeSkip", software: "s.launchModeSoftware" };
 
-// Turns the compatibility mode on from the blocked notice and re-checks the GPU with the relaxed
-// Vulkan floor, so the notice clears and play starts working (system_check.rs).
+function switchRow(id, label, hint, checked, onchange, disabled = false) {
+  const input = el("input", { type: "checkbox", role: "switch", class: "switch", id, onchange: (e) => onchange(e.target.checked) });
+  input.checked = checked;
+  input.disabled = disabled;
+  return el("div", { class: "row between" }, el("label", { for: id, class: "row-label" }, el("span", { text: label }), el("span", { class: "muted small", text: hint })), input);
+}
+
+// The computer's drivers fail the Vulkan 1.3 check but pass it with --compatible, still off.
+const compatRescues = (graphics, s) => Boolean(graphics?.compat_rescues && !s?.compatibility_mode);
+
+async function setCompatibility(on) {
+  await settingCall(() => api.setGraphicsSwitch("compatibility", on));
+  await checkRequirements(true);
+}
+
 async function enableCompatibility() {
   if (state.checkingSystem) return;
   state.compatSeen = true;
-  await settingCall(() => api.setCompatibilityMode(true));
-  await checkRequirements(true);
+  await setCompatibility(true);
 }
+
+const compatButton = () => el("button", { class: "button primary", type: "button", text: t("req.vulkan12Enable"), onclick: enableCompatibility });
 
 async function checkRequirements(again = false) {
   if (state.checkingSystem) return;
@@ -233,29 +248,24 @@ function requirementNotice() {
   const graphics = req.graphics;
   if (graphics?.graphics === "blocked") {
     const base = t(req.os === "linux" ? "req.blockedBodyLinux" : "req.blockedBody", { gpu: gpuName(graphics) });
-    // The launcher never refuses to play: pressing Play still starts the game, and the game writes
-    // to its log what it could not find. When the relaxed Vulkan floor would pass, turning the
-    // compatibility mode on and checking again is the primary fix, above "update the driver".
-    const rescue = graphics?.compat_rescues && !s.compatibility_mode;
+    const rescue = compatRescues(graphics, s);
     return {
       title: t("req.blockedTitle"),
-      body: rescue ? `${base} ${t("req.compatRescueHint")}` : base,
-      actions: el("div", { class: "row" }, ...(rescue
-        ? [
-            el("button", { class: "button primary", type: "button", text: t("req.compatModeTitle"), onclick: enableCompatibility }),
-            againButton(),
-          ]
-        : [againButton(true)]), ...driverButtons(req)),
+      body: rescue ? `${base} ${t("req.vulkan12Rescue")}` : base,
+      actions: el("div", { class: "row" }, ...(rescue ? [compatButton(), againButton()] : [againButton(true)]), ...driverButtons(req)),
     };
   }
   if ((graphics?.graphics === "fallback" || graphics?.graphics === "software") && !state.compatSeen) {
+    const rescue = compatRescues(graphics, s);
+    const body = t(graphics.graphics === "fallback" ? "req.compatBody" : "req.compatSoftwareBody", { gpu: gpuName(graphics) });
     return {
       title: t("req.compatTitle"),
-      body: t(graphics.graphics === "fallback" ? "req.compatBody" : "req.compatSoftwareBody", { gpu: gpuName(graphics) }),
+      body: rescue ? `${body} ${t("req.vulkan12Rescue")}` : body,
       actions: el(
         "div",
         { class: "row" },
-        el("button", { class: "button primary", type: "button", text: t("req.compatOk"), onclick: () => { state.compatSeen = true; renderAll(); } }),
+        rescue ? compatButton() : null,
+        el("button", { class: `button${rescue ? "" : " primary"}`, type: "button", text: t("req.compatOk"), onclick: () => { state.compatSeen = true; renderAll(); } }),
         ...driverButtons(req),
         againButton(),
       ),
@@ -560,6 +570,19 @@ function showFailure(failure) {
 
 // ---- Tasks -----------------------------------------------------------------------------------
 
+function exitText(exit) {
+  const path = (...keys) => keys.map((key) => t(key)).join(" › ");
+  if (exit.reason === "device-lost") {
+    const lines = [t("gameLostBody")];
+    if (exit.offer_compatible) lines.push(t("gameLostCompatible", { mode: t("req.vulkan12Title"), where: path("nav.settings", "st.general", "req.title") }));
+    if (exit.offer_software) lines.push(t("gameLostSoftware", { mode: t("s.launchModeSoftware"), where: path("nav.settings", "st.advanced", "s.launchTitle") }));
+    if (exit.log.length > 0) lines.push(t("gameLogLines"));
+    return [t("gameLostTitle"), lines.join(" ")];
+  }
+  if (exit.reason === "windows-hang") return [t("gameHangTitle"), exit.log.length > 0 ? `${t("gameHangBody")} ${t("gameLogLines")}` : t("gameHangBody")];
+  return [t("gameFailedTitle"), exit.code == null ? t("gameFailedSignal") : t("gameFailedBody", { code: exit.code })];
+}
+
 function showMessage(title, body, log = null) {
   $("messageTitle").textContent = title;
   $("messageBody").textContent = body;
@@ -659,7 +682,7 @@ async function play() {
     await refresh();
   } catch (failure) {
     // The notice on the home view says what is missing and what to do.
-    if (failure?.code === "no-space" || failure?.code === "no-gpu") checkRequirements(true);
+    if (failure?.code === "no-space") checkRequirements(true);
     else showFailure(failure);
   }
 }
@@ -830,12 +853,6 @@ function registerBuiltIns() {
     const req = state.requirements;
     const s = state.status;
     const lines = [el("p", { text: t("req.body") })];
-    // A small on/off switch for the graphics modes: the same look as the updates toggles.
-    const modeSwitch = (id, label, hint, checked, onSet) => {
-      const input = el("input", { type: "checkbox", role: "switch", class: "switch", id, onchange: (e) => onSet(e.target.checked) });
-      input.checked = checked;
-      return el("div", { class: "row between" }, el("label", { for: id, class: "row-label" }, el("span", { text: label }), el("span", { class: "muted small", text: hint })), input);
-    };
     if (!req) {
       lines.push(el("p", { class: "muted", text: t("req.checking") }));
     } else {
@@ -858,21 +875,15 @@ function registerBuiltIns() {
       }[kind];
       lines.push(el("p", { class: `status-line ${kind === "hardware" ? "accent" : kind === "unknown" ? "muted" : "warning"}`, role: "status", text }));
       if (kind === "fallback" || kind === "software" || kind === "blocked") lines.push(el("div", { class: "row" }, ...driverButtons(req)));
-      // The strict check failed but the relaxed Vulkan floor passed: offer the switch. Only when
-      // compatibility mode is not already on (then the probe above already ran with it).
-      if (kind === "blocked" && graphics?.compat_rescues && !s?.compatibility_mode) {
-        lines.push(el("p", { class: "muted small", text: t("req.compatRescueHint") }));
-        lines.push(el("div", { class: "row" }, el("button", { class: "button primary", type: "button", text: t("req.compatModeTitle"), onclick: enableCompatibility })));
+      if (compatRescues(graphics, s)) {
+        lines.push(el("p", { class: "muted small", text: t("req.vulkan12Rescue") }), el("div", { class: "row" }, compatButton()));
       }
     }
     if (s) {
+      const graphicsSwitch = (what) => (on) => settingCall(() => api.setGraphicsSwitch(what, on));
       lines.push(
-        modeSwitch("compatMode", t("req.compatModeTitle"), t("req.compatModeHint"), s.compatibility_mode, async (on) => {
-          await settingCall(() => api.setCompatibilityMode(on));
-          checkRequirements(true);
-        }),
-        modeSwitch("lowPerfMode", t("req.lowPerfTitle"), t("req.lowPerfHint"), s.low_performance_mode, (on) => settingCall(() => api.setLowPerformanceMode(on))),
-        modeSwitch("rdna2SafeMode", t("req.rdna2SafeTitle"), t("req.rdna2SafeHint"), s.rdna2_safe_mode, (on) => settingCall(() => api.setRdna2SafeMode(on))),
+        switchRow("compatMode", t("req.vulkan12Title"), t("req.vulkan12Hint"), s.compatibility_mode, setCompatibility),
+        switchRow("lowPerfMode", t("req.lowPerfTitle"), t("req.lowPerfHint"), s.low_performance_mode, graphicsSwitch("low-performance")),
       );
     }
     lines.push(el("div", { class: "row" }, againButton()));
@@ -881,12 +892,8 @@ function registerBuiltIns() {
 
   section("updates", "updates", 0, "s.updatesTitle", (box) => {
     const s = state.status;
-    const toggle = (id, label, hint, checked, onchange, disabled = false) => {
-      const input = el("input", { type: "checkbox", role: "switch", class: "switch", id, onchange: (e) => settingCall(() => onchange(e.target.checked)) });
-      input.checked = checked;
-      input.disabled = disabled;
-      return el("div", { class: "row between" }, el("label", { for: id, class: "row-label" }, el("span", { text: label }), el("span", { class: "muted small", text: hint })), input);
-    };
+    const toggle = (id, label, hint, checked, onchange, disabled = false) =>
+      switchRow(id, label, hint, checked, (on) => settingCall(() => onchange(on)), disabled);
     const channel = el(
       "select",
       { id: "updateChannel", class: "compact", onchange: (e) => changeChannel(e.target.value) },
@@ -956,18 +963,13 @@ function registerBuiltIns() {
   section("launch", "advanced", 0, "s.launchTitle", (box) => {
     const s = state.status;
     if (!s) return;
-    const option = (mode) => el("option", { value: mode, text: t(`s.launchMode${mode[0].toUpperCase()}${mode.slice(1)}`) });
-    const mode = el("select", { id: "launchModeSelect", onchange: (e) => settingCall(() => api.setLaunchMode(e.target.value)) }, ...["auto", "skip", "software"].map(option));
-    mode.value = s.launch_mode || "auto";
-    const args = el("input", {
-      type: "text", id: "extraArgs", value: s.extra_args ?? "", spellcheck: "false", placeholder: t("s.launchArgsHint"),
-      onchange: (e) => settingCall(() => api.setExtraArgs(e.target.value)),
-    });
-    const env = el("textarea", {
-      id: "extraEnv", rows: "4", spellcheck: "false", placeholder: t("s.launchEnvHint"),
-      onchange: (e) => settingCall(() => api.setExtraEnv(e.target.value)),
-    });
-    env.value = s.extra_env ?? "";
+    const save = () => settingCall(() => api.setLaunchOptions(mode.value, args.value, env.value));
+    const mode = el("select", { id: "launchModeSelect", onchange: save },
+      ...Object.entries(LAUNCH_MODES).map(([value, key]) => el("option", { value, text: t(key) })));
+    mode.value = s.launch_mode;
+    const args = el("input", { type: "text", id: "extraArgs", value: s.extra_args, spellcheck: "false", placeholder: t("s.launchArgsHint"), onchange: save });
+    const env = el("textarea", { id: "extraEnv", rows: "4", spellcheck: "false", placeholder: t("s.launchEnvHint"), onchange: save });
+    env.value = s.extra_env;
     add(box,
       el("p", { text: t("s.launchBody") }),
       el("div", { class: "row between" }, el("label", { for: "launchModeSelect", class: "row-label" }, el("span", { text: t("s.launchMode") })), mode),
@@ -1194,8 +1196,8 @@ async function start() {
     // An update found while the game ran waited for it to end.
     if (state.update?.launcher_plan === "wait" || state.update?.game_plan === "wait") checkUpdates();
     if (exit.failed) {
-      const body = exit.code == null ? t("gameFailedSignal") : t("gameFailedBody", { code: exit.code });
-      showMessage(t("gameFailedTitle"), body, exit.log.join("\n"));
+      const [title, body] = exitText(exit);
+      showMessage(title, body, exit.log.join("\n"));
     }
   });
   await onDragDrop((event) => {

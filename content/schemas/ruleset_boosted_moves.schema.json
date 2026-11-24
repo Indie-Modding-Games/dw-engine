@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: boosted_moves",
+  "description": "rules/<id>/boosted_moves.yaml: the one technique each species fights with boosted as a partner, an engine improvement behind the boosted techniques option (packages/game/battle: BoostedMoveRules, docs/modules/game/battle.md). Enemies never use it.",
+  "type": "object",
+  "required": ["power_percent", "mp_cost_percent", "species"],
+  "additionalProperties": false,
+  "properties": {
+    "power_percent": { "description": "The boosted technique's power in percent of the table's, rounded down.", "type": "integer", "minimum": 1 },
+    "mp_cost_percent": { "description": "The boosted technique's MP cost in percent of the table's, rounded up; a technique that costs MP never becomes free.", "type": "integer", "minimum": 1 },
+    "species": {
+      "description": "Species id -> the id of its boosted technique (data/moves), one it can learn (the species table's moves).",
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    }
+  }
+}

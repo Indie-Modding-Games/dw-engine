@@ -1,0 +1,45 @@
+/* The randomizer of a new game, in the rules box (new_game_rules/style): the two presets as tiles with the shared
+   four-corner cursor (theme.rcss), the chosen one in gold; the run code in gold under the seed. */
+
+#panel {
+	top: 24dp;
+}
+
+/* The title's picture would peek out under the taller box. */
+#picture {
+	display: none;
+}
+
+#panel #presets .preset {
+	margin: 0 14dp 0 0;
+	padding: 4dp 18dp;
+	border-width: 0;
+	line-height: 30dp;
+	color: #93a6bc;
+}
+
+#panel #presets .preset.selected {
+	color: #efc63c;
+}
+
+#panel button {
+	line-height: 28dp;
+}
+
+#seed.editing .rule-value {
+	color: #f2f0e1;
+}
+
+.code {
+	padding: 6dp 12dp 0 12dp;
+	color: #efc63c;
+}
+
+.about {
+	padding: 0 12dp 8dp 12dp;
+	line-height: 30dp;
+}
+
+#start {
+	margin-top: 10dp;
+}

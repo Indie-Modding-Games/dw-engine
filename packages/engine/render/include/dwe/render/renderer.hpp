@@ -40,9 +40,6 @@ struct RendererDesc {
   std::uint32_t maxTextures = 4096;
   // Bytes of per-frame data (joint matrices, UI vertices) each frame may upload.
   std::size_t uploadBytesPerFrame = std::size_t{16} << 20U;
-  // The launcher's AMD RX 6000 (RDNA2) safe mode: simplifies the bindless layout. The RHI ignores
-  // it on any other GPU, so it is safe to leave on. Off by default.
-  bool rdna2Safe = false;
 };
 
 // One frame: what each pass draws, in order. Drawers are borrowed for the call. Name every field

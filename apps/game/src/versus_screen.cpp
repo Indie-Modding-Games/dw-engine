@@ -231,6 +231,7 @@ bool VersusScreen::open() {
               std::random_device device;
               return (static_cast<std::uint64_t>(device()) << 32U) | device();
             },
+        .boostedMoves = [this] { return boostedMoves_; },
         .view = nullptr,
         .placement = [this](std::int32_t arena) -> std::optional<session::VersusPlacement> {
           if (arena < 0 || static_cast<std::size_t>(arena) >= placements_.size()) {
