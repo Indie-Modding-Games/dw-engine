@@ -102,6 +102,7 @@ struct Player {
                          return std::make_unique<BorrowedLink>(*peer);
                        },
                        .seed = [] { return std::uint64_t{4321}; },
+                       .boostedMoves = [] { return true; },
                        .view = view,
                        .placement = {}});
     flow->open();

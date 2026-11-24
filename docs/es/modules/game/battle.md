@@ -70,6 +70,154 @@ enemies=<especie>` ([Simulaciones](../../guides/simulations.md)).
 - El reloj del combate es propio: fotograma 1 al empezar, 20 por segundo (`FramesPerSecond`); el reloj del juego se
   para y luego avanza `elapsedMinutes`.
 
+## Técnicas potenciadas
+
+Una mejora del motor, no está en el original: cada especie tiene una técnica en la que es mejor como compañero. La
+elegida es una técnica que la especie puede aprender en el original, de su propio elemento o temática y nunca su
+técnica final.
+
+- **Reglas.** La sección `boosted_moves` del ruleset (`content/packs/game/rules/original/boosted_moves.yaml`, esquema
+  `ruleset_boosted_moves`) guarda los multiplicadores y la tabla: `power_percent: 125` (poder +25 %, redondeado hacia
+  abajo) y `mp_cost_percent: 75` (coste de MP -25 %, redondeado hacia arriba, nunca 0 si la técnica cuesta MP;
+  `boostedPower` y `boostedMpCost` en `boosted_moves.hpp`). El coste es el que muestran el combate y el menú (el de la
+  tabla por 3); el descuento por cerebro del compañero se aplica después, como a cualquier técnica. Un ruleset que
+  extiende el original lo hereda.
+- **Quién.** Solo el compañero, solo cuando ya conoce la técnica (el aprendizaje no cambia) y solo con la opción de
+  juego `boosted_techniques` activa (activa por defecto). `BattleAdapter::readRules` crea la copia potenciada de cada
+  técnica en el catálogo (`MoveCatalog::addBoosted`, desde la variante `partner_moves` de la especie si tiene una);
+  `BattleAdapter::boost` la pone en `Combatant::moveVariants` del compañero, así que el daño, el MP, la reserva de
+  velocidad y la IA la usan. Los enemigos, los jefes y cualquier luchador que no sea compañero de alguien nunca la
+  tienen. Una técnica que la especie no puede aprender con la tabla del ruleset se descarta: los
+  modelos de personaje del final de la tabla solo aprenden la suya con todas las especies como compañero (`todas`),
+  que les copia una fila de técnicas.
+- **En línea.** Los combates cooperativos corren en la simulación del anfitrión, así que su opción y su tabla valen
+  para el compañero de cada jugador. En versus la opción del anfitrión viaja en `SeriesSetup` (`boostedMoves`,
+  protocolo 3) y los dos pares arman a los luchadores con ella, así el lockstep sigue sincronizado; un luchador va
+  potenciado cuando lleva equipada la técnica.
+- **Vanilla.** El Clásico Mejorado fija la opción en apagado ([variantes del juego](../../architecture/game-variants.md)).
+- **Menú.** La pestaña Técnicas del compañero muestra el poder potenciado en rojo con una flecha pequeña hacia arriba
+  y el MP en azul claro con una flecha hacia abajo, en la tabla y en el cuadro de datos, y una flecha roja pequeña
+  hacia arriba sobre la casilla de la técnica en la cuadrícula (`partner.technique.<n>.boosted`,
+  `partner.technique.choice.<n>.boosted`; API de la interfaz 0.31.0).
+
+| Especie | Técnica potenciada | Por qué |
+|---|---|---|
+| Agumon (`agum`) | Spit Fire (`spit_fire`) | El pequeño aliento de fuego por el que se le conoce |
+| Betamon (`beta`) | Electric Cloud (`electric_cloud`) | Un anfibio eléctrico, como su descarga |
+| Greymon (`grey`) | Magma Bomb (`magma_bomb`) | Grandes bolas de fuego, como su llamarada |
+| Devimon (`devi`) | Megaton Punch (`megaton_punch`) | Golpea con sus largos brazos con garras |
+| Airdramon (`aird`) | Hurricane (`hurricane`) | Un dragón de los vientos |
+| Tyrannomon (`tyra`) | Red Inferno (`red_inferno`) | Un dinosaurio que escupe fuego |
+| Meramon (`mera`) | Fire Tower (`fire_tower`) | Un cuerpo hecho de llama |
+| Seadramon (`sead`) | Winter Blast (`winter_blast`) | Una serpiente marina de hielo |
+| Numemon (`nume`) | Poop Spd Toss (`poop_spd_toss`) | El lanzador de porquería que todos conocen |
+| MetalGreymon (`mtgr`) | Power Crane (`power_crane`) | Su brazo con garra de metal |
+| Mamemon (`mame`) | Megaton Punch (`megaton_punch`) | Pequeño pero pega fuerte |
+| Monzaemon (`monz`) | Confused Storm (`confused_storm`) | Su encanto confunde a los rivales |
+| Gabumon (`gabu`) | Fire Tower (`fire_tower`) | Su llama azul, alzada en columna |
+| Elecmon (`elec`) | Static Elect (`static_elect`) | Un cuerpo que chisporrotea de estática |
+| Kabuterimon (`kabu`) | Danger Sting (`danger_sting`) | Embiste con su cuerno |
+| Angemon (`ange`) | Megalo Spark (`megalo_spark`) | Luz sagrada en un estallido |
+| Birdramon (`bird`) | Meltdown (`meltdown`) | Hace llover fuego desde el cielo |
+| Garurumon (`garu`) | Giga Freeze (`giga_freeze`) | Colmillos helados, como su aullido |
+| Frigimon (`yuki`) | Ice Statue (`ice_statue`) | Un muñeco de nieve que congela a sus rivales |
+| Whamon (`hoee`) | Aurora Freeze (`aurora_freeze`) | Una ballena de los mares polares |
+| Vegiemon (`vegi`) | Green Trap (`green_trap`) | Una planta que ata con sus lianas |
+| SkullGreymon (`skul`) | Buster Dive (`buster_dive`) | Una embestida temeraria de esqueleto |
+| MetalMamemon (`mtma`) | Metal Sprinter (`metal_sprinter`) | Un cuerpo de metal que se lanza al ataque |
+| Vademon (`veda`) | DG Dimension (`dg_dimension`) | Un alienígena de otra dimensión |
+| Patamon (`pata`) | Wind Cutter (`wind_cutter`) | Vuela con sus orejas y corta el aire |
+| Kunemon (`kune`) | Danger Sting (`danger_sting`) | Una larva con aguijón, de su propio elemento naturaleza |
+| Unimon (`unim`) | Wind Cutter (`wind_cutter`) | Un caballo alado del aire |
+| Ogremon (`ogre`) | Megaton Punch (`megaton_punch`) | Blande su garrote de hueso |
+| Shellmon (`shel`) | Water Blit (`water_blit`) | Una concha que dispara agua |
+| Centarumon (`cent`) | Heat Laser (`heat_laser`) | Dispara con el cañón de su brazo |
+| Bakemon (`bake`) | Winter Blast (`winter_blast`) | El frío de un fantasma |
+| Drimogemon (`dori`) | Buster Dive (`buster_dive`) | Se lanza con su taladro |
+| Sukamon (`scum`) | Big Poop Toss (`big_poop_toss`) | Un montón de porquería que lanza a lo grande |
+| Andromon (`andr`) | Pulse Laser (`pulse_laser`) | Un androide que dispara láseres |
+| Giromon (`giro`) | All Range Beam (`all_range_beam`) | Una máquina bomba que estalla en todas direcciones |
+| Etemon (`etem`) | Tremar (`tremar`) | Pisotea el escenario |
+| Biyomon (`piyo`) | Confused Storm (`confused_storm`) | Un ave de remolinos |
+| Palmon (`palm`) | Poison Claw (`poison_claw`) | Una planta con garras de enredadera venenosas |
+| Monochromon (`mono`) | Tremar (`tremar`) | Un dinosaurio con cuernos que arrasa |
+| Leomon (`leom`) | Dynamite Kick (`dynamite_kick`) | Un artista marcial |
+| Coelamon (`sira`) | Ice Needle (`ice_needle`) | Un pez que se lanza en agua fría |
+| Kokatorimon (`coca`) | Spinning Shot (`spinning_shot`) | Un ave que gira contra su rival |
+| Kuwagamon (`kuwa`) | Poison Claw (`poison_claw`) | Corta con sus pinzas |
+| Mojyamon (`moja`) | Winter Blast (`winter_blast`) | Un yeti de la ventisca |
+| Nanimon (`nani`) | Odor Spray (`odor_spray`) | Un pendenciero apestoso de la porquería |
+| Megadramon (`mgdr`) | Delete Program (`delete_program`) | Un dragón cíborg que propaga un virus |
+| Piximon (`picc`) | Bug (`bug`) | Un hada del elemento naturaleza |
+| Digitamamon (`digi`) | Inifinity Burn (`inifinity_burn`) | Un huevo de fuego sin fin |
+| Penguinmon (`penm`) | Ice Needle (`ice_needle`) | Un pingüino del hielo |
+| Ninjamon (`igam`) | Danger Sting (`danger_sting`) | Lanza agujas ninja |
+| Phoenixmon (`houo`) | Prominence Beam (`prominence_beam`) | Un fénix de fuego |
+| H-Kabuterimon (`hkab`) | Bug (`bug`) | Un escarabajo gigante |
+| MegaSeadramon (`mgsd`) | Aurora Freeze (`aurora_freeze`) | Una gran serpiente de los mares polares |
+| Panjyamon (`panj`) | Sonic Jab (`sonic_jab`) | Puñetazos rápidos de un guerrero nacido del hielo |
+| Gigadramon (`ggdr`) | Reverse Prog (`reverse_prog`) | Un dragón cíborg que reescribe a su rival |
+| MetalEtemon (`mtet`) | Thunder Justice (`thunder_justice`) | Una estrella de metal con un show atronador |
+| Myotismon (`vand`) | Hurricane (`hurricane`) | Envía su enjambre de murciélagos |
+| Yanmamon (`yanm`) | Spinning Shot (`spinning_shot`) | Una libélula que cruza el aire como una flecha |
+| Gotsumon (`gotu`) | Tremar (`tremar`) | Un cuerpo de roca que sacude el suelo |
+| Flarerizamon (`flar`) | Magma Bomb (`magma_bomb`) | Un lagarto envuelto en llamas |
+| WaruMonzaemon (`waru`) | Megaton Punch (`megaton_punch`) | Un oso oscuro de golpes pesados |
+| SnowAgumon (`ykag`) | Winter Blast (`winter_blast`) | Un aliento de nieve en vez de fuego |
+| Hyogamon (`hyog`) | Giga Freeze (`giga_freeze`) | Un ogro del hielo |
+| PlatinumSukamon (`pcsc`) | Rnd Spd Toss (`rnd_spd_toss`) | Un montón brillante que lanza con prisa |
+| Dokunemon (`doku`) | Poison Powder (`poison_powder`) | Una larva venenosa |
+| ShimaUnimon (`sima`) | Electric Cloud (`electric_cloud`) | Un caballo rayado de nubes de tormenta |
+| Tankmon (`tank`) | Red Inferno (`red_inferno`) | Un tanque que dispara llamas |
+| RedVegiemon (`redv`) | Poison Powder (`poison_powder`) | Una planta venenosa |
+| J-Mojyamon (`jmoj`) | Dynamite Kick (`dynamite_kick`) | Un yeti fuerte que pelea de cerca |
+| NiseDrimogemon (`nise`) | Tremar (`tremar`) | Un falso topo que sacude el suelo |
+| Goburimon (`gobr`) | Megaton Punch (`megaton_punch`) | Blande su garrote |
+| MudFrigimon (`tuti`) | Sonic Jab (`sonic_jab`) | Un muñeco de barro que pelea de cerca |
+| Psychemon (`psyc`) | Dynamite Kick (`dynamite_kick`) | Un luchador de patadas rápidas |
+| ModokiBetamon (`modo`) | Water Blit (`water_blit`) | Un anfibio de agua del elemento hielo |
+| ToyAgumon (`toya`) | Heat Laser (`heat_laser`) | Un lanzarrayos de juguete, de fuego |
+| Piddomon (`pidd`) | Spinning Shot (`spinning_shot`) | Un ave angelical que gira en vuelo |
+| Aruraumon (`arur`) | Charm Perfume (`charm_perfume`) | Una flor que pelea con su aroma |
+| Geremon (`gere`) | Poop Rnd Toss (`poop_rnd_toss`) | Un lanzador de porquería de puntería loca |
+| Vermilimon (`varm`) | Meltdown (`meltdown`) | Un dinosaurio volcánico |
+| Fugamon (`fuga`) | Hurricane (`hurricane`) | Un ogro del viento |
+| Tekkamon (`tkka`) | Reverse Prog (`reverse_prog`) | Un ninja máquina |
+| MoriShellmon (`mris`) | Charm Perfume (`charm_perfume`) | Un caparazón musgoso del bosque |
+| Guardromon (`gard`) | Power Crane (`power_crane`) | Un robot guardián con brazos de metal |
+| Muchomon (`mcho`) | Poison Claw (`poison_claw`) | Un ave de su propio elemento naturaleza |
+| Icemon (`icem`) | Giga Freeze (`giga_freeze`) | Un cuerpo de hielo macizo |
+| Akatorimon (`akat`) | Wind Cutter (`wind_cutter`) | Un ave luchadora del aire |
+| Tsukaimon (`tuka`) | Spinning Shot (`spinning_shot`) | Un murciélago oscuro que se lanza girando |
+| Sharmamon (`sham`) | Magma Bomb (`magma_bomb`) | Un chamán duende del fuego |
+| ClearAgumon (`clea`) | Magma Bomb (`magma_bomb`) | Un fuego más pesado de lo que aparenta |
+| Weedmon (`zass`) | Green Trap (`green_trap`) | Una mala hierba que ata |
+| IceDevimon (`icdv`) | Ice Statue (`ice_statue`) | Un demonio de hielo |
+| Darkrizamon (`dkrz`) | Red Inferno (`red_inferno`) | Un lagarto de fuego oscuro |
+| SandYanmamon (`sndy`) | Hurricane (`hurricane`) | Levanta tormentas de arena con sus alas |
+| SnowGoburimon (`sngb`) | Giga Freeze (`giga_freeze`) | Un duende de la nieve |
+| BlueMeramon (`blmr`) | Giga Freeze (`giga_freeze`) | Una fría llama azul |
+| Gururumon (`grur`) | Winter Blast (`winter_blast`) | Un lobo de la nieve |
+| Saberdramon (`sabd`) | Wind Cutter (`wind_cutter`) | Un ave con alas de cuchilla |
+| Soulmon (`soul`) | Megalo Spark (`megalo_spark`) | Un fantasma de chispas oscuras |
+| Rockmon (`gole`) | Ice Statue (`ice_statue`) | Una roca de hielo |
+| Otamamon (`otam`) | Water Blit (`water_blit`) | Un renacuajo que dispara agua |
+| Gekomon (`geco`) | Water Blit (`water_blit`) | Una rana que rocía agua |
+| Tentomon (`tent`) | Insect Plague (`insect_plague`) | Un escarabajo que llama a su enjambre |
+| WaruSeadramon (`wrse`) | Giga Freeze (`giga_freeze`) | Una serpiente oscura del mar frío |
+| Meteormon (`inse`) | Magma Bomb (`magma_bomb`) | Una roca ardiente, como un meteoro |
+| Machinedramon (`muge`) | All Range Beam (`all_range_beam`) | Una máquina de guerra llena de cañones |
+| Analogman (`anlg`) | Metal Sprinter (`metal_sprinter`) | Un hombre de máquinas |
+| Jijimon (`jiji`) | Pulse Laser (`pulse_laser`) | Un viejo maestro con un disparo oculto |
+| Market Manager (`tens`) | Sonic Jab (`sonic_jab`) | Un tendero rápido |
+| ShogunGekomon (`tono`) | Megalo Spark (`megalo_spark`) | Un shogun del trueno |
+| King of Sukamon (`scud`) | Poop Rnd Toss (`poop_rnd_toss`) | Un lanzador de porquería de puntería loca |
+| Cherrymon (`jure`) | Charm Perfume (`charm_perfume`) | Un árbol en flor |
+| Hagurumon (`hagu`) | Megalo Spark (`megalo_spark`) | Un engranaje que lanza chispas |
+| Tinmon (`brik`) | Tremar (`tremar`) | Un pesado cuerpo de hojalata que sacude el suelo |
+| Master Tyrannomon (`tirs`) | Prominence Beam (`prominence_beam`) | El maestro del aliento de fuego |
+| Brachiomon (`brak`) | Megaton Punch (`megaton_punch`) | Un cuerpo enorme que aplasta |
+
 ## Paridad con el original
 
 Estado: **Igual** (hace lo mismo que el decomp), **Suposición** (el decomp no lo deja claro; se eligió lo más

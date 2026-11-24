@@ -135,7 +135,7 @@ marca.
   - `route-skins` con `tests/mods/ui_skin`;
   - `route-save-load` con `--saves <carpeta de la ejecución>/saves`, y en el mismo trabajo, solo si pasa,
     `route-save-load-check` con la misma carpeta y `--load slot_01` (ver abajo);
-  - las de `saves_routes` (`route-sleep-save`, `route-skin-original` y `route-game-modes`), con `--saves <carpeta de la ejecución>/saves` vacía, porque
+  - las de `saves_routes` (`route-sleep-save`, `route-skin-original`, `route-game-modes` y `route-randomizer`), con `--saves <carpeta de la ejecución>/saves` vacía, porque
     empiezan una partida nueva en una ranura y guardan en ella;
   - las 4 del `.pak` cocinado, en las que además comprueba que se cargó la fuente de mapa de bits.
 

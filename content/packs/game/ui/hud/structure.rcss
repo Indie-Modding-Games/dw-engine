@@ -150,3 +150,40 @@
 /* The minimap clock's day-part chip (morning, day, late, night): a picture only a skin paints;
    the document carries it hidden otherwise (ui/hud/logic.lua: clock_phase sets its class). */
 #minimap-phase { display: none; }
+
+/* The need meters (the option need_meters): a skin that draws them shows #field-gauges; the script hides them with
+   the class hidden when the option is off. */
+#field-gauges,
+#field-status #field-gauges.hidden {
+	display: none;
+}
+
+/* The danger marks (the option danger_alert): each hangs from the point the game places it at (over a wild monster's
+   head, hud.danger.<n>.x and .y), by the middle of its bottom edge, only while it has the class shown; its icon bobs
+   gently. A skin gives the icon a size and a picture. */
+#field-dangers {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.field-danger {
+	display: none;
+	position: absolute;
+	transform: translate(-50%, -100%);
+}
+
+.field-danger.shown {
+	display: block;
+}
+
+.field-danger .icon {
+	animation: 0.7s sine-in-out infinite alternate danger-bob;
+}
+
+@keyframes danger-bob {
+	from { transform: translateY(0dp); }
+	to { transform: translateY(-5dp); }
+}

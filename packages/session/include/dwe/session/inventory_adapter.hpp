@@ -7,6 +7,7 @@
 #include <dwe/game/inventory/rules.hpp>
 #include <dwe/game/inventory/shop.hpp>
 #include <dwe/game/inventory/use.hpp>
+#include <dwe/game/randomizer/randomizer.hpp>
 #include <dwe/session/item_use_rules.hpp>
 #include <dwe/session/session_system.hpp>
 
@@ -87,6 +88,10 @@ public:
   [[nodiscard]] const game::inventory::Inventory& inventory() const;
   [[nodiscard]] const assets::ItemTable& items() const;
   [[nodiscard]] const ItemUseRules& itemUseRules() const { return itemUse_; }
+  // The items a randomized run may place or drop, sorted: the original's, without key items and
+  // the ones the run keeps or excludes.
+  [[nodiscard]] std::vector<std::string>
+  randomItems(const game::randomizer::Randomizer& randomizer) const;
   // The partner's favourite food as the screens show it (the favorite_food option): its species'
   // (RAISE_DATA.favoriteFood) when that item is a meal (item_use.meals). None for a species whose
   // entry names another item: the original gives the fresh forms item 0, which is no food.

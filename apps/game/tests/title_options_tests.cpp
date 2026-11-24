@@ -16,6 +16,8 @@
 #include <tuple>
 #include <vector>
 
+#include "danger_alert.hpp"
+#include "field_hud.hpp"
 #include "pause_menu_ui.hpp"
 #include "title_options.hpp"
 #include "user_settings.hpp"
@@ -109,6 +111,25 @@ TEST_CASE("the widescreen pictures are the UI's option: on until the player turn
                      *menu.ui, settings, file));
   CHECK(menu.ui->setting(WidescreenPicturesSetting) == ui::UiValue{false});
   CHECK(loadUserSettings(file).widescreenPictures == std::optional<bool>{false});
+}
+
+TEST_CASE(
+    "the need meters and the danger alert are UI options, on until the player turns them off") {
+  const test_support::TempFolder folder;
+  const std::filesystem::path file = folder.path() / "settings.yaml";
+  test::MenuUi menu;
+  UserSettings settings;
+  publishGameToggles(*menu.ui, settings);
+  for (const std::string_view setting : {NeedMetersSetting, DangerAlertSetting}) {
+    CAPTURE(setting);
+    CHECK(menu.ui->setting(setting) == ui::UiValue{true});
+    CHECK(changeUiToggle(ui::UiCommand{.name = std::string{setting}, .value = false}, *menu.ui,
+                         settings, file));
+    CHECK(menu.ui->setting(setting) == ui::UiValue{false});
+  }
+  const UserSettings saved = loadUserSettings(file);
+  CHECK(saved.needMeters == std::optional<bool>{false});
+  CHECK(saved.dangerAlert == std::optional<bool>{false});
 }
 
 TEST_CASE("a game option's command keeps a true or false and leaves other commands alone") {

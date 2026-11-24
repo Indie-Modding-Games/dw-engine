@@ -82,7 +82,7 @@ TEST_CASE("vs_scene.c VS_loadFighterEntities: the record at full HP and MP with 
   const TestPacks packs;
   Machine machine{packs};
   auto combatant =
-      machine.battle->versusCombatant(fighterOf(registered("pal", "first_kind", 300, 70)));
+      machine.battle->versusCombatant(fighterOf(registered("pal", "first_kind", 300, 70)), false);
   REQUIRE_MESSAGE(combatant, errorOf(combatant));
   CHECK(combatant->stats.maxHp == 400);
   CHECK(combatant->hp == 400);
@@ -95,24 +95,24 @@ TEST_CASE("vs_scene.c VS_loadFighterEntities: the record at full HP and MP with 
   CHECK(combatant->moves.at(dwe::game::battle::FinisherSlot) == "big_finish");
 
   VersusFighter stranger = fighterOf(registered("odd", "no_such_kind", 300, 70));
-  CHECK_FALSE(machine.battle->versusCombatant(stranger));
+  CHECK_FALSE(machine.battle->versusCombatant(stranger, false));
   VersusFighter badMove = fighterOf(registered("odd", "first_kind", 300, 70));
   badMove.techniques.at(2) = "no_such_move";
-  CHECK_FALSE(machine.battle->versusCombatant(badMove));
+  CHECK_FALSE(machine.battle->versusCombatant(badMove, false));
   VersusFighter tooStrong = fighterOf(registered("odd", "first_kind", 300, 70));
   tooStrong.offense = 5000;
-  CHECK_FALSE(machine.battle->versusCombatant(tooStrong));
+  CHECK_FALSE(machine.battle->versusCombatant(tooStrong, false));
   tooStrong.offense = 100;
   tooStrong.hp = 0;
-  CHECK_FALSE(machine.battle->versusCombatant(tooStrong));
+  CHECK_FALSE(machine.battle->versusCombatant(tooStrong, false));
 }
 
 TEST_CASE("a versus battle: host 1P against guest 2P, each with its brain's menu and discipline") {
   const TestPacks packs;
   Machine machine{packs};
-  auto battle =
-      machine.battle->startVersus(fighterOf(registered("one", "first_kind", 300, 90)),
-                                  fighterOf(registered("two", "second_kind", 600, 20)), Arena, 11);
+  auto battle = machine.battle->startVersus(fighterOf(registered("one", "first_kind", 300, 90)),
+                                            fighterOf(registered("two", "second_kind", 600, 20)),
+                                            Arena, 11, false);
   REQUIRE_MESSAGE(battle, errorOf(battle));
   CHECK(battle->state().fighters.size() == 2);
   REQUIRE(battle->state().versus());
@@ -139,8 +139,10 @@ TEST_CASE("vs_combat.c VS__combatMain: a battle's end as the series counts it") 
   CHECK(dwe::session::roundResultOf(lost) == RoundResult::BothLost);
   CHECK(dwe::session::versusCommandOf(0x1'0004) == Command::Moderate);
   CHECK(dwe::session::versusCommandOf(0xEE) == Command::None);
-  CHECK(dwe::session::roundSeed(SeriesSetup{.battles = 3, .arena = 0, .seed = 40, .inputDelay = 2},
-                                2) == 42);
+  CHECK(
+      dwe::session::roundSeed(
+          SeriesSetup{.battles = 3, .arena = 0, .seed = 40, .inputDelay = 2, .boostedMoves = false},
+          2) == 42);
 }
 
 TEST_CASE("the content hash is the same for the same content and differs for another") {
@@ -169,7 +171,8 @@ TEST_CASE("a whole versus series between two machines over a bad link plays the 
       dwe::session::versusIdentity("0.1.0", hostMachine.session->rules().current(), packs.files());
   REQUIRE_MESSAGE(identity, errorOf(identity));
   LoopbackNetwork network{{.latency = Millis{30}, .jitter = Millis{40}, .lossPercent = 10}, 9};
-  const SeriesSetup setup{.battles = 3, .arena = 0, .seed = 1234, .inputDelay = 3};
+  const SeriesSetup setup{
+      .battles = 3, .arena = 0, .seed = 1234, .inputDelay = 3, .boostedMoves = false};
   VersusSeries host{*hostMachine.battle, VersusLink::host(network.link(0), *identity, setup),
                     Arena};
   VersusSeries guest{*guestMachine.battle, VersusLink::guest(network.link(1), *identity), Arena};

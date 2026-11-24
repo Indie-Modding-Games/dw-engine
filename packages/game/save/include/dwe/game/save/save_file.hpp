@@ -18,7 +18,7 @@ namespace dwe::game::save {
 // The version of the file layout (the header keys and how sections are stored), written as
 // `format_version`. Each section has its own version on top of this one
 // (docs/architecture/save.md).
-inline constexpr std::int32_t FormatVersion = 4;
+inline constexpr std::int32_t FormatVersion = 5;
 
 // The value of the `format` key, which tells a save apart from any other YAML document.
 inline constexpr std::string_view FormatName = "dwe-save";
@@ -42,6 +42,8 @@ struct SaveSummary {
   // The ID of the map the player is on.
   std::string map;
   std::string mode;
+  // The run code of a randomized run (game::randomizer::runCode); empty for any other game.
+  std::string randomizer;
 
   friend bool operator==(const SaveSummary&, const SaveSummary&) = default;
 };

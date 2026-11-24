@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dwe/game/coop/protocol.hpp>
+
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -11,11 +13,10 @@
 
 namespace dwe::app {
 
-using PlayerId = std::uint8_t;
-inline constexpr PlayerId HostPlayerId = 0;
-inline constexpr PlayerId GuestPlayerId = 1;
-// The host and up to three guests (game::coop::MaxPlayers).
-inline constexpr std::size_t MaxPlayerCount = 4;
+using game::coop::GuestPlayerId;
+using game::coop::HostPlayerId;
+using game::coop::PlayerId;
+inline constexpr std::size_t MaxPlayerCount = game::coop::MaxPlayers;
 
 enum class PlayerLink : std::uint8_t { Local, Joining, Connected, Dropped };
 

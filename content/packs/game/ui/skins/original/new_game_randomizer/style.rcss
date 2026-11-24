@@ -1,0 +1,22 @@
+/* The randomizer's setup in the original look, over the rules box (../new_game_rules/style.rcss): twice its rows, so the
+   box is wider, higher and its rows closer, to fit a 720dp window. */
+
+#panel {
+	left: 50%;
+	top: 12dp;
+	width: 800dp;
+	margin-left: -400dp;
+	padding: 8dp 27dp 10dp 27dp;
+}
+
+#panel button {
+	line-height: 27dp;
+}
+
+#title {
+	margin-bottom: 2dp;
+}
+
+#presets {
+	margin-bottom: 2dp;
+}

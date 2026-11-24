@@ -99,6 +99,7 @@ void addEntry(screens::ScreenSettings& settings, std::size_t index, const SlotIn
       info.header ? game::modes::currentModeId(header.summary.mode) : std::string_view{};
   add("mode", std::string{mode});
   add("mode_key", keyOf(names.mode, mode));
+  add("randomizer", header.summary.randomizer);
   add("play_seconds", static_cast<double>(header.playSeconds));
   add("updated", info.header ? std::format("{:%Y-%m-%d}", header.updated) : std::string{});
 }

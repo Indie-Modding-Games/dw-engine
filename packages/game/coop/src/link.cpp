@@ -145,6 +145,9 @@ void CoopLink::poll(net::Millis now) {
   link_->poll(now);
   for (const auto lane : {net::Lane::Reliable, net::Lane::Unreliable}) {
     while (auto bytes = link_->receive(lane)) {
+      if (ended()) {
+        continue;
+      }
       auto decoded = decode(*bytes);
       if (!decoded || !*decoded) {
         fail(LinkFailure::Damaged);
@@ -153,14 +156,16 @@ void CoopLink::poll(net::Millis now) {
       handle(**decoded);
     }
   }
+  if (ended()) {
+    return;
+  }
   if (link_->state() == net::PeerState::Failed) {
     fail(LinkFailure::Disconnected);
     return;
   }
   if (link_->state() == net::PeerState::Open && !opened_)
     opened_ = now;
-  if (!opened_ || phase_ == LinkPhase::Rejected || phase_ == LinkPhase::Failed ||
-      phase_ == LinkPhase::Left)
+  if (!opened_)
     return;
   if (phase_ == LinkPhase::Connecting && now - *opened_ >= timeouts_.answer) {
     fail(LinkFailure::NoAnswer);

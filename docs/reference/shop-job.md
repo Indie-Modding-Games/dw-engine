@@ -15,10 +15,10 @@ Monochromon's job at the canyon shop (map gcan11): the player serves 20 customer
 ### Customers
 
 - When the job starts (first customer) the line of 20 is made with the playthrough's seed and the job number: saving and loading does not change it and it spends no game random numbers.
-- Species and items come from shuffled bags (the counts, in the ruleset). Each species has patience and a character (spendthrift, haggler, miser, fickle), which show at the counter.
+- The species and the items come from the counts in the ruleset: each copy of an item goes to the species that has asked for it the least so far (a tie at random), so no species hoards one item. Each species has patience and a character (spendthrift, haggler, miser, fickle), which show at the counter.
 - Each customer arrives in a mood that is visible (cheerful, normal, serious) and moves its budget one level up or down.
 - The budget (the highest price it accepts) is hidden and comes from the original's acceptance table for its species; some buy nothing.
-- The line is drawn again until the perfect score (selling to each one at its budget after a chat) falls between 4000 and 4300: the goal can always be reached.
+- The perfect score (selling to each one at its budget after a chat) must fall between 4000 and 4300, so the goal can always be reached: when it does not, budgets move to the nearest level the customer's species and mood could have given, and a line that still misses is drawn again.
 - A customer who leaves uses up a single slot.
 
 ### At the counter

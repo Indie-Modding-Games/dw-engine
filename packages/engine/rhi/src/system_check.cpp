@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "renderer_requirements.hpp"
+#include "vulkan_util.hpp"
 
 namespace dwe::rhi {
 
@@ -87,7 +88,9 @@ std::string_view fixedText(const char (&text)[Size]) {
   return {std::begin(text), std::ranges::find(text, '\0')};
 }
 
-GpuInfo describe(VkPhysicalDevice device) {
+} // namespace
+
+GpuInfo describeGpu(VkPhysicalDevice device) {
   // NOLINTNEXTLINE(bugprone-invalid-enum-default-initialization): Vulkan fills it in.
   VkPhysicalDeviceProperties properties{};
   vkGetPhysicalDeviceProperties(device, &properties);
@@ -120,6 +123,8 @@ GpuInfo describe(VkPhysicalDevice device) {
   return info;
 }
 
+namespace {
+
 // The listed GPU whose vendor the player should look at when none fits: a real GPU before a
 // virtual or a software one.
 std::optional<GpuInfo> bestListed(VkInstance instance) {
@@ -133,7 +138,7 @@ std::optional<GpuInfo> bestListed(VkInstance instance) {
   std::vector<GpuInfo> listed;
   listed.reserve(devices.size());
   for (VkPhysicalDevice device : devices) {
-    listed.push_back(describe(device));
+    listed.push_back(describeGpu(device));
   }
   constexpr std::array Order{GpuKind::Discrete, GpuKind::Integrated, GpuKind::Virtual,
                              GpuKind::Other, GpuKind::Software};
@@ -162,7 +167,17 @@ std::string_view resultName(SystemCheckResult result) {
   return "no-vulkan";
 }
 
-std::string_view kindName(GpuKind kind) {
+// One line: line breaks of a driver's or Vulkan's text become spaces.
+std::string oneLine(std::string_view text) {
+  std::string line{text};
+  std::ranges::replace(line, '\n', ' ');
+  std::ranges::replace(line, '\r', ' ');
+  return line;
+}
+
+} // namespace
+
+std::string_view gpuKindName(GpuKind kind) {
   switch (kind) {
   case GpuKind::Discrete:
     return "discrete";
@@ -177,16 +192,6 @@ std::string_view kindName(GpuKind kind) {
   }
   return "other";
 }
-
-// One line: line breaks of a driver's or Vulkan's text become spaces.
-std::string oneLine(std::string_view text) {
-  std::string line{text};
-  std::ranges::replace(line, '\n', ' ');
-  std::ranges::replace(line, '\r', ' ');
-  return line;
-}
-
-} // namespace
 
 SystemCheck checkSystem(bool compatibleMode) {
   SystemCheck check;
@@ -215,7 +220,7 @@ SystemCheck checkSystem(bool compatibleMode) {
   auto selected = selector.defer_surface_initialization().select();
   if (selected) {
     check.result = SystemCheckResult::Ok;
-    check.gpu = describe(selected->physical_device);
+    check.gpu = describeGpu(selected->physical_device);
   } else {
     check.result = SystemCheckResult::Unsuitable;
     check.detail = selected.error().message();
@@ -232,7 +237,7 @@ std::string formatSystemCheck(const SystemCheck& check) {
   if (check.gpu) {
     const GpuInfo& gpu = *check.gpu;
     text += std::format("gpu={}\nvendor={:#06x}\nkind={}\napi={}.{}.{}\ndriver={}\n",
-                        oneLine(gpu.name), gpu.vendorId, kindName(gpu.kind),
+                        oneLine(gpu.name), gpu.vendorId, gpuKindName(gpu.kind),
                         VK_API_VERSION_MAJOR(gpu.apiVersion), VK_API_VERSION_MINOR(gpu.apiVersion),
                         VK_API_VERSION_PATCH(gpu.apiVersion), oneLine(gpu.driver));
   }

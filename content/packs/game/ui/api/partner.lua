@@ -81,6 +81,28 @@ function partner.needs()
   return list
 end
 
+-- The need meters (need_meters, an improvement): hunger, the toilet and tiredness as they build up,
+-- each {id, label_key, value, max, fill, active}: value from 0 (the need just met) to max (it is
+-- due), fill the bar's whole percent the game works out, active whether the partner has the need
+-- now.
+local gauges = { "hunger", "toilet", "tired" }
+
+function partner.gauges()
+  local list = {}
+  for index, id in ipairs(gauges) do
+    local base = "hud.gauge." .. (index - 1) .. "."
+    list[index] = {
+      id = id,
+      label_key = key(base .. "label"),
+      value = whole(base .. "value"),
+      max = whole(base .. "max"),
+      fill = math.max(0, math.min(100, whole(base .. "fill"))),
+      active = ui.setting("hud.need." .. whole(base .. "need") .. ".active") == true,
+    }
+  end
+  return list
+end
+
 -- Where the partner's head is on the window, for what a UI hangs over it: visible (false while the
 -- field is stopped or the partner is off the window), x and y in percent of the window, and the
 -- evolving bubble's frame (1 to 51) while the partner starts to evolve, else nil.
@@ -144,4 +166,7 @@ event_source("hud.need.2.label", "partner.changed")
 event_source("hud.need.3.label", "partner.changed")
 event_source("hud.need.4.label", "partner.changed")
 event_source("hud.need.5.label", "partner.changed")
+event_source("hud.gauge.0.label", "partner.changed")
+event_source("hud.gauge.1.label", "partner.changed")
+event_source("hud.gauge.2.label", "partner.changed")
 event_source("hud.partner.revision", "partner.bubble_moved")

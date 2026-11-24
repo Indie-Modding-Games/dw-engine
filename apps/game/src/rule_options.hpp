@@ -35,6 +35,17 @@ inline constexpr std::string_view FairCardStockSetting = "fair_card_stock";
 // An improvement of the original's rules the player may turn on (true or false).
 inline constexpr std::string_view ChooseEggAfterLivesLostSetting = "choose_egg_after_lives_lost";
 
+// The roaming rares' chance (session::StoryAdapter::setRoamingRareChance): how often a map
+// entry's roll places a roaming rare, with the original's single draw. percent_10 is the default;
+// original rolls as the original, 3 in 100.
+inline constexpr std::string_view RoamingRareChanceSetting = "roaming_rare_chance";
+inline constexpr std::string_view RoamingRareOriginal = "original";
+inline constexpr std::string_view RoamingRareDefault = "percent_10";
+// The saved roaming_rare_chance as one of its steps (the default when not chosen or unknown), and
+// that step's chance in 100, none for the original.
+[[nodiscard]] std::string_view roamingRareStep(const std::optional<std::string>& saved);
+[[nodiscard]] std::optional<std::int32_t> roamingRarePercent(std::string_view step);
+
 // A change of a ruleset value: its section, its dotted path ("hunger.window_minutes") and either
 // the new value (a YAML text) or a percent of the ruleset's own whole number, rounded down.
 struct RuleChange {

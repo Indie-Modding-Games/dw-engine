@@ -88,6 +88,19 @@ TEST_CASE("the pixel skin draws the gold four corners round the egg in focus onl
   CHECK_FALSE(drawsCorners(ui, "egg_box", "egg-2"));
 }
 
+TEST_CASE("the pixel skin draws the gold four corners round the randomizer's focused preset") {
+  fixture::Screen screen{"new_game_randomizer"};
+  screen.skin("pixel");
+  Ui& ui = *screen.ui;
+  ui.show("new_game_randomizer", true);
+  screen.frames(20);
+  REQUIRE(ui.focusedElementId("new_game_randomizer") == "preset-off");
+
+  CHECK(drawsCorners(ui, "new_game_randomizer", "preset-off"));
+  CHECK_FALSE(drawsCorners(ui, "new_game_randomizer", "preset-chaos"));
+  CHECK_FALSE(drawsCorners(ui, "new_game_randomizer", "evolutions"));
+}
+
 TEST_CASE("the pixel skin keeps its four-corner cursor in one shared rule") {
   const std::filesystem::path pixel = std::filesystem::path{DWE_GAME_PACK} / "ui/skins/pixel";
   for (const auto& entry : std::filesystem::recursive_directory_iterator{pixel}) {

@@ -31,8 +31,9 @@ core::Result<void> VersusSeries::startNext(const BattlePrep& prepare) {
     link_.leave(game::versus::LeaveReason::BadLineup);
     return core::fail("versus: a lineup lacks the partner of this battle");
   }
-  auto started = battles_->startVersus(host->at(place), guest->at(place), placement_,
-                                       roundSeed(*link_.setup(), round));
+  auto started =
+      battles_->startVersus(host->at(place), guest->at(place), placement_,
+                            roundSeed(*link_.setup(), round), link_.setup()->boostedMoves);
   if (!started) {
     link_.leave(game::versus::LeaveReason::BadLineup);
     return std::unexpected{started.error()};

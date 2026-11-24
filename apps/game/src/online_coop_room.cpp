@@ -26,7 +26,8 @@ std::string_view coopDifficultyName(game::coop::CoopDifficulty difficulty) {
 
 void CoopRoomBackend::host(bool listed, double /*nowSeconds*/) {
   listed_ = listed;
-  static_cast<void>(coop_->handle(ui::UiCommand{.name = "coop_host", .value = listed}));
+  static_cast<void>(
+      coop_->handle(ui::UiCommand{.name = std::string{CoopHostCommand}, .value = listed}));
 }
 
 void CoopRoomBackend::join(const RoomListing& listing, double /*nowSeconds*/) {
@@ -47,19 +48,22 @@ void CoopRoomBackend::setReady(bool ready) {
   // Readying asks for the save the guest brings (the game opens the save slots); unreadying tells
   // the host at once.
   if (ready != coop_->localReady()) {
-    static_cast<void>(coop_->handle(ui::UiCommand{.name = "coop_ready", .value = {}}));
+    static_cast<void>(
+        coop_->handle(ui::UiCommand{.name = std::string{CoopReadyCommand}, .value = {}}));
   }
 }
 
 void CoopRoomBackend::setOpenToNewPlayers(bool open) {
-  static_cast<void>(coop_->handle(ui::UiCommand{.name = "coop_open_to_join", .value = open}));
+  static_cast<void>(
+      coop_->handle(ui::UiCommand{.name = std::string{CoopOpenToJoinCommand}, .value = open}));
 }
 
 std::optional<std::string> CoopRoomBackend::start() {
   if (!coop_->canStart()) {
     return std::string{"not_ready"};
   }
-  static_cast<void>(coop_->handle(ui::UiCommand{.name = "coop_start", .value = {}}));
+  static_cast<void>(
+      coop_->handle(ui::UiCommand{.name = std::string{CoopStartCommand}, .value = {}}));
   return std::nullopt;
 }
 

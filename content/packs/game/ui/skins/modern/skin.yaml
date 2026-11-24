@@ -36,6 +36,9 @@ screens:
   # The new game's mode (only with more than one mode), too.
   new_game_mode:
     styles: [ui/skins/modern/pause_menu/style]
+  # The randomizer of a new game (a mode that offers it), too.
+  new_game_randomizer:
+    styles: [ui/skins/modern/pause_menu/style]
   # The box of each start that asks for the look, too.
   skin_picker:
     styles: [ui/skins/modern/pause_menu/style, ui/skins/modern/skin_picker/style]
@@ -122,3 +125,12 @@ layout:
   new_game_rules: {menu: modern, picture: modern}
   egg_box: {box: modern}
   field_item_notice: {box: modern}
+sprite_sheets:
+  # The boosted technique's marks (docs/modules/game/battle.md, «Boosted techniques»): the red arrow up over its
+  # power and its cell, the light blue one down over its MP. Pixel art, 2 pixels per dp; every look extends this one.
+  - name: boost-arrows
+    image: ui/skins/modern/assets/boost_arrows
+    dp_per_pixel: 0.5
+    sprites:
+      boost-up: [0, 0, 28, 32]
+      boost-down: [36, 0, 28, 32]

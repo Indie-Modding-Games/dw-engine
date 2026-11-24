@@ -55,6 +55,9 @@ public:
   // may show an on-screen keyboard while it is on.
   core::Result<void> setTextInput(bool on);
 
+  // The system clipboard's text, empty when it holds none.
+  [[nodiscard]] static std::string clipboardText();
+
   [[nodiscard]] SDL_Window* sdlWindow() const { return window_; }
 
 private:

@@ -179,10 +179,10 @@ void recordImageWrite(VkCommandBuffer commands, VkImage image, VkBuffer source, 
                       const Rect& region, Extent extent, std::uint32_t mipLevels) {
   // Earlier draws may still sample the image: the barrier waits for them before the copy overwrites
   // it.
-  transitionImage(commands, image, VK_IMAGE_ASPECT_COLOR_BIT,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                  VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, VK_ACCESS_2_NONE,
-                  VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
+  transitionImage(
+      commands, image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, VK_ACCESS_2_NONE,
+      VK_PIPELINE_STAGE_2_COPY_BIT | VK_PIPELINE_STAGE_2_BLIT_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
   const VkBufferImageCopy copy{
       .bufferOffset = offset,
       .bufferRowLength = 0,
@@ -228,6 +228,9 @@ struct OneOff {
 
 core::Result<void> submitAndWait(Device& device,
                                  const std::function<void(VkCommandBuffer)>& record) {
+  if (device.lost()) {
+    return core::fail("the GPU device was lost");
+  }
   const NativeHandles gpu = device.nativeHandles();
   OneOff oneOff;
   oneOff.device = gpu.device;
@@ -258,7 +261,9 @@ core::Result<void> submitAndWait(Device& device,
       VK_SUCCESS) {
     return core::fail("could not begin recording an upload");
   }
+  gpuNoteActivity("upload");
   record(commands);
+  gpuMarker(commands, GpuWork::Upload);
   if (gpuCheck("vkEndCommandBuffer (upload)", vkEndCommandBuffer(commands)) != VK_SUCCESS) {
     return core::fail("could not finish recording an upload");
   }

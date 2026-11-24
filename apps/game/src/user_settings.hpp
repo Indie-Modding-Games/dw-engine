@@ -93,6 +93,12 @@ struct UserSettings {
   // five of the partner's needs side by side in one balloon, the one that does harm soonest first,
   // instead of the original's two taking turns; on when not chosen yet.
   std::optional<bool> needBubbleStack = std::nullopt;
+  // The need meters on the field (need_meters: true, false; ui/hud): hunger, the toilet and
+  // tiredness as bars that fill as each need nears; on when not chosen yet.
+  std::optional<bool> needMeters = std::nullopt;
+  // The danger alert (danger_alert: true, false; danger_alert.hpp): a mark over each wild monster
+  // on the field that would crush the partner; on when not chosen yet.
+  std::optional<bool> dangerAlert = std::nullopt;
   // Whether M opens the island map (world_map: true, false; world_map.hpp); on when not chosen.
   std::optional<bool> worldMap = std::nullopt;
   // The chibi style (chibi_style: off, external; an old all reads as external; chibi_style.hpp):
@@ -159,6 +165,9 @@ struct UserSettings {
   // chosen.
   std::optional<std::string> coopDifficulty = std::nullopt;
   std::optional<bool> coopOpenToJoin = std::nullopt;
+  // The roaming rares' chance (roaming_rare_chance: original, percent_5, percent_10, percent_25,
+  // percent_50; rule_options.hpp): percent_10 when not chosen.
+  std::optional<std::string> roamingRareChance = std::nullopt;
   // Skip the evolution (skip_evolution: true, false; EvolutionScene::skip): confirm or cancel ends
   // the evolution's scene at once; off when not chosen yet.
   std::optional<bool> skipEvolution = std::nullopt;
@@ -196,6 +205,10 @@ struct UserSettings {
   // before the Ogremon event, Whamon waits in the water by its confirm cell at the Secret Beach
   // Cave; on when not chosen yet.
   std::optional<bool> whamonInWater = std::nullopt;
+  // Boosted techniques (boosted_techniques: true, false; session::BattleAdapter::setBoostedMoves):
+  // the partner hits harder and pays less MP with its species' boosted technique; on when not
+  // chosen yet.
+  std::optional<bool> boostedTechniques = std::nullopt;
   // Shop extras (shop_extras: true, false; the shop document reads it): the focused item's
   // description under a shop's list, the bag's count of each item and the money a trade leaves; off
   // when not chosen yet.

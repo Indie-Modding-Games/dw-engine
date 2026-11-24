@@ -278,6 +278,14 @@ first ride from frzl16 (175 and 352 set) runs the entry with routine 262 answeri
 section 0x3C plays as the original's (Whamon at (1465, 2906), rotation 0). Sheet:
 `_work/tmp/w112/sheets/whamon-improvement.png`.
 
+## Boosted techniques
+
+The `boosted_techniques` setting (row "Boosted techniques", "Técnicas potenciadas" in Spanish, Game tab, on by
+default, saved in the user's settings) reaches `session::BattleAdapter::setBoostedMoves` in `PlaySession`'s
+`applyPlayOptions`, so it takes effect from the next battle. With it on, the partner fights with its species' boosted
+technique once it knows it ([battle](../game/battle.md#boosted-techniques)). Classic Enhanced fixes it off. The versus
+screen hands the host's value to the series (`VersusScreen::setBoostedMoves`, `SeriesSetup::boostedMoves`).
+
 ## Co-op difficulty
 
 An optional improvement, standard by default, for co-op only ([co-op difficulty](../../architecture/coop-difficulty.md)):
@@ -481,6 +489,12 @@ Measured in the original (forced with the time on `twna01`) and compared frame b
   vlall at the same moment the form changes, and battle cries do not use this. Test: `session_sound_tests.cpp`
   ("slots 3 and 4 keep the old form's banks while the evolution scene holds them"); live, the burst plays
   `slot=3 sound=50 bank=sound/vlall/001` and the `finish` clip `sound/vlall/002`.
+- Same (2026-11-23, a tester's report: leaving the canyon shop as the partner evolves left the screen black): the
+  original draws its fades on every frame (`fade.c: renderFadeIn`), whatever holds the logic. The scene stopped the
+  field, so a scripted warp's fade out and the new map's fade in froze until it ended. Now a pending warp runs on under
+  the scene (`EvolutionScene::runFieldFade`), a script-held scene starts once the warp has landed, and the fade in runs
+  on under the scene and the care holds (`Field::tickCare`). Tests: `field_tests.cpp` ("a map change's fade in runs on
+  while a care scene holds the player"); `tests/autotest/route-evolve-warp.yaml`.
 
 Assumptions:
 
@@ -1537,6 +1551,28 @@ hurts first coming first (`hud.need.<i>.urgency`, from `game::partner::needDeadl
 | Bubble with two or more needs | `partner_impl.c: handleConditionBubble`: one at a time, by priority (sleep, tiredness, hunger, toilet, wound, sickness); at 50 frames it switches to the highest of the rest, so the two most urgent alternate and a third does not appear | Up to five in a row of a bubble widened with the original's pieces (50, 68, 86 or 104 pixels), ordered by the time left until each does lasting damage (toilet, hunger, sleep, wound, sickness; tiredness, with no deadline, last; ties by the original's priority), the most urgent on the left, and tucked into the window near an edge; with only one, the original's; off, the original's whole | `need_deadlines_tests.cpp`; `field_hud_view_tests.cpp`; `ui_tests`: "the need bubble shows several needs side by side ..."; `hud_fit_tests`; `user_settings_tests`; `in_game_options_tests`; captures with 1, 3 and 5 needs at 100 % and at 130 % | Improvement (option) |
 | Bubble frames: it grows in 10, each need animates by the bubble's counter (the three "Z"s of sleep, the drop that falls for tiredness, the frames of food, toilet, wound and sickness), bursts at 51 and is not seen until 60 | `bubble.c: tickConditionBubble`, `renderConditionBubble` (`CONDITION_ICON_SLEEPY`, `CONDITION_TIRED_FRAME_U`/`_MY`, `CONDITION_HUNGRY_FRAMES`); `partner_impl.c: handleConditionBubble` (`CONDITION_BUBBLE_TIMER`). Measured in DuckStation: 180 vblanks per bubble, 150 on switching need; "Z" on frames 12, 17, 23 and 28 | `ui/hud/presenter.lua` counts the frames and `view.lua` publishes `frame-<n>`; the original skin draws it (`style.rcss`, `skin.yaml`). Before, only the first frame of each need appeared and the "Z" went down | `ui_tests`: "the need bubble plays the original's frames ..." | Same (without the 12-unit sway) |
 
+## Need meters
+
+An optional improvement, on by default (it changes no rule): the `need_meters` setting (row "Need meters" of the
+Interface tab of the options, at the title and in a game; saved in the user's settings) shows hunger, the toilet and
+tiredness as three bars on the field next to the happiness and discipline bars, all the time while the field runs. They
+hide with the rest of the field status in a battle, a menu, a scene or a chat (`hud.shown`). Off, the field shows the
+original's two bars only.
+
+Each bar fills as its need comes due, so a full bar means the partner is about to ask (or already does, then it turns
+red: `hud.need.<i>.active`). The values are the care state's own (`packages/game/partner`: `needGaugesOf`,
+`need_gauges.hpp`), published as `hud.gauge.<i>.{value,max,fill}` ([ui.md](../../architecture/ui.md#field-status)):
+
+| Bar | Value | Range |
+|---|---|---|
+| Hunger | Game minutes since the last meal time: the span minus `HungerState::foodLevel` (minutes to the next meal) | The gap between the previous and the next meal time of the species (`hunger_times`), or the baby's and in-training's fixed intervals (`care.hunger`) |
+| Toilet | Steps walked since the last time: the interval minus `ToiletState::poopLevel` (steps left) | The species' `poop_interval`, doubled after going for a species with the original's quirk (`toiletDoublesPoopInterval`) |
+| Tiredness | `MoodState::tiredness` | 0 to 100 (`tirednessMax`); the partner gets tired at 80 |
+
+| What | Original | dwe | Test | Status |
+|---|---|---|---|---|
+| Need meters on the field | Does not exist: a need only shows as the bubble over the partner once it is due (`partner_impl.c: handleConditionBubble`) | Hunger, toilet and tiredness bars with their own pixel icons (meal, toilet, drops), gold while the need builds up, red once due; in the pixel look, left of the happiness and discipline bars, sliding in and out with them. The other looks leave them out | `need_gauges_tests.cpp`; `field_hud_view_tests.cpp` ("the need meters take hunger, the toilet and tiredness…", "a need meter's fill…"); `hud_fit_tests.cpp` ("the need meters fill to the game's share…", "the pixel look's need meters stay in the window…"); `title_options_tests.cpp`; `in_game_options_tests.cpp` ("the options page turns the need meters and the danger alert on and off…") | Improvement (option) |
+
 ## Round minimap
 
 An optional improvement, on by default with both skins (it changes no rule; the original has no
@@ -1582,6 +1618,29 @@ do not. An enemy outside the disc's view is not painted (it is not pinned to the
 | What | Original | dwe | Test | Status |
 |---|---|---|---|---|
 | Enemies on the minimap | Does not exist | An orange-red dot with a dark border for each character on the map that can fight, where it is, under the player's arrow; with both skins. Measured in dwe: on the second map of the fog the three wild ones appear and move with them, one leaves the view; in the tunnel (two that chase but only talk) and in the town, none. Off, none | `minimap_enemies_tests.cpp` (sections that fight, friends out, live positions, off, listing reader); `ui_tests.cpp` ("the minimap marks the enemies in view round the player, under the player's arrow"); `minimap_tests.cpp` (the dot); `in_game_options_tests.cpp` ("the options page turns the enemies on the minimap on and off…"); `user_settings_tests`; route `route-minimap-enemies.yaml` | Improvement (option) |
+
+## Danger alert
+
+An optional improvement, on by default (it changes no rule): the `danger_alert` setting (row "Danger alert" of the
+Interface tab of the options, at the title and in a game; saved in the user's settings) floats a small purple devil
+over each wild monster on the field that would crush the partner. Off, none shows.
+
+The rule (`crushes`, `apps/game/src/danger_alert.hpp`): the wild one's HP × (offense + defense) is at least 2.5 times
+the partner's. Each side counts what its battle would use: the wild one, its map record (`map/<id>/data.yaml`: `hp`,
+`current_hp` when the record keeps some, `off`, `def`), as `game::battle::enemyFromMap` reads it; the partner, its HP
+now and its offense and defense, as `session::BattleAdapter::visitorOf` sends it into battle. The marks are worked out
+every frame, so they follow the partner's stats and HP as they change.
+
+What a wild monster is: one whose section of the map's script can reach `start_battle` without the story's marks of a
+fixed fight (the ruleset's `story_scenes.yaml`: `battle.fixed_fight_trigger`, set with `set_trigger`, and
+`battle.predefined_variable`, named with `set_pstat`) on the way (`wildFightingSections`,
+`apps/game/src/minimap_enemies.hpp`). Town folk who only talk, recruitable friends and story bosses carry no mark.
+`PlaySession::publishDangerMarks` places each mark a little above the monster's head (its species' height) and
+publishes `hud.danger.<n>.{visible,x,y}` per NPC slot only while the field runs ([ui.md](../../architecture/ui.md#field-status)).
+
+| What | Original | dwe | Test | Status |
+|---|---|---|---|---|
+| Danger mark over strong wild monsters | Does not exist | A small purple devil, our own pixel drawing, bobbing gently over each wild monster on screen that would crush the partner; gone in battles, menus and scenes | `danger_alert_tests.cpp` (exactly 2.5 times, a partner with no HP or stats, battle HP, only wild ones on screen, story fights left out); `hud_fit_tests.cpp` ("a danger mark hangs over the point the game names…"); `title_options_tests.cpp`; `in_game_options_tests.cpp` | Improvement (option) |
 
 ## Items on the minimap
 
@@ -2146,6 +2205,54 @@ hidden content (rulesets `oculto` or `oculto_mega`, which bring the `rare_items`
 spots may leave a rare evolution item instead of their own
 ([evolution.md](../game/evolution.md#rare-evolution-items)). Off, or with the `original` ruleset, the field's
 items are the original's. Its help (`pause_menu.help.rare_items`) warns that it needs hidden content.
+
+## Roaming rare chance
+
+An optional improvement, 10% by default, from a community proposal: in the original the roaming rares show up so seldom
+that players spend hours walking in and out of their maps. The `roaming_rare_chance` setting (row "Roaming rares",
+"Raros errantes" in Spanish, Game tab of the pause menu's options and the title's, values `original`, `percent_5`,
+`percent_10`, `percent_25` and `percent_50`, saved in the user's settings) reaches
+`session::StoryAdapter::setRoamingRareChance` from `PlaySession::applyPlayOptions` (`rule_options.hpp`:
+`roamingRareStep`, `roamingRarePercent`). Classic Enhanced fixes it at `original` (`modes/classic/mode.yaml`); Folder
+Mode leaves it to the player.
+
+**The original's rule.** Each roaming rare is placed by its map's MAPHEAD section (script 0), which runs on every entry
+to the map: `store_random` (`script_interp.c: scriptInstruction10to27`, `SCRIPT_OP_STORE_RANDOM`) writes
+`randomLimit(100)` (`math.c`: `(100 * rand()) >> 15`) into a variable, and the section places the rare when it is 2 or
+less: 984 of the 32768 draws of `rand()`, 3.0%. There is no time, day or story-stage condition besides the rare's own
+"joined" trigger, and no other roaming rare: the other MAPHEAD rolls place town residents after they joined (Piximon 2
+in 10, MetalMamemon 1 in 8 in their town spots) or common characters (Otamamon 1 in 3).
+
+| Rare | Map | MAPHEAD section | Roll | Places it when | Notes |
+|---|---|---|---|---|---|
+| Piximon | trop01 (Tropical Jungle) | 0x0C | `store_random(100, 99)` | variable 100 ≤ 2 | Only rolls while trigger 255 (joined) is clear: once it joined, the entry draws nothing |
+| Mamemon | miha01 (Mt. Panorama plains) | 0x13 | `store_random(100, 99)` | variable 100 ≤ 2 and trigger 213 clear | Always draws; otherwise three Tutimon (81) stand there |
+| MetalMamemon | fact02 (Factorial Town) | 0x99 | `store_random(110, 99)` | variable 110 ≤ 2 and trigger 227 clear | Always draws; otherwise the guards by day (7 to 18 h) or the night ones |
+
+**The improvement.** The rolls are data: the `roaming_rares` list of the ruleset's story section
+(`rules/original/story.yaml`, schema `ruleset_story`), each `{script, section, variable, highest, hits_at_most}`, so a
+mod lists its own. `StoryOrders::storeRandom` asks a `StoryRollPort` at each roll; the adapter's answers only when a
+step other than `original` is chosen, the running section (`StoryRunner::runningSections`, the last one) is listed and
+the variable and highest match. Then `game::story::tunedRollValue` turns the same single draw into the value: a hit
+(0 to `hits_at_most`) for the lowest `percent * 32768 / 100` draws, a miss (above it, up to 99) for the rest, spread
+evenly. Only the chance changes: the section's own conditions (the joined trigger, the time of day) still decide, and
+the variable still takes a value from 0 to 99.
+
+- **Original** is the original's code path untouched: no port answer, `(100 * r) >> 15`, so vanilla seeds and the
+  oracle compare stay the same.
+- **RNG.** Every step draws once per roll, as the original, so every later roll of the session (the battle, the care,
+  the next map) gets the same numbers whatever the step. Piximon's map still draws nothing once it joined.
+- **Co-op.** Each game runs its own map entries with its own session random and its own setting, as it already rolls
+  the original's other entry dice (File City's visitors); the rares are not shared spawns. A rare that joins sets its
+  trigger in the shared world, so it leaves the other games' maps ([multiplayer](../../architecture/multiplayer.md),
+  `CoopNpcPresence`). Versus has no field.
+
+Tests: "without a tuned roll store_random is the original's…", "a tuned roll hits its chance in 100 of the draws with
+the same single draw", "a tuned roll hits about its chance over many seeded draws" and "a tuned roll's hits stay at
+hits_at_most or less…" (`story_orders_tests.cpp`); "a roaming rare's tuned chance places it about that often, with the
+original's draws" and "the tuned chance leaves the original's conditions and other rolls alone"
+(`story_adapter_tests.cpp`); "the roaming rares appear 10% of the time by default and as the original in Classic"
+(`mode_options_tests.cpp`).
 
 ## Quick battles
 

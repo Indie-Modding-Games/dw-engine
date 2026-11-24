@@ -27,7 +27,9 @@ options:                              # optional: option name -> the value its g
   rare_items: false
 ```
 
-All the keys but `options` are required and no others are accepted. `options` is read into `GameMode::options`
+All the keys but `options` and `randomizer` are required and no others are accepted. `randomizer: true` lets the
+mode's new games be [randomized runs](randomizer.md) (`GameMode::randomizer`, off by default); the game sets it on
+Folder Mode only. `options` is read into `GameMode::options`
 (`OptionPin`: option and value as text); the game applies it (`apps/game/src/mode_options.hpp`). A pack on top replaces a mode by giving the same folder,
 like any asset.
 
@@ -49,7 +51,8 @@ const dwe::game::modes::GameMode* mode = catalog.defaultMode();   // folder, or 
   offers `original` and `oculto`; in the intended flow it only picks a Folder Mode ruleset and never asks to activate
   hidden content ([task 10](../../architecture/game-variants.md#task-plan)). Another mode starts with its `ruleset`. The
   test routes that do not ask for rules do not ask for a mode either: they play Folder Mode (`DefaultMode`) with the
-  command line's `--ruleset`.
+  command line's `--ruleset`. After the mode and its rules, a mode with `randomizer: true` shows the
+  [randomizer's setup](randomizer.md) (`ui/new_game_randomizer`).
 - **Saving**: the session saves the mode in the `mode` section (`id`) and in the header's summary (format 4); a game
   saved before modes does not have it, and one saved before the variants has `original`: both load as `folder`
   (`currentModeId`, `session::ModeSave`). `GameSession::mode()` returns it.

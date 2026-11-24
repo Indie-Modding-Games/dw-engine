@@ -3,6 +3,7 @@
 #include <dwe/game/partner/care_rules.hpp>
 #include <dwe/game/partner/effects.hpp>
 #include <dwe/game/partner/need_deadlines.hpp>
+#include <dwe/game/partner/need_gauges.hpp>
 #include <dwe/game/partner/partner.hpp>
 #include <dwe/game/partner/species.hpp>
 #include <dwe/game/partner/state.hpp>
@@ -50,6 +51,10 @@ struct PartnerView {
   // Game minutes to the next meal and steps to the next need of the toilet.
   std::int32_t minutesToMeal = 0;
   std::int32_t stepsToToilet = 0;
+  // How far hunger and the toilet have built up, for the need meters (game::partner::NeedGauges):
+  // 0 right after the need was met, max when it is due.
+  CareMeter hungerGauge;
+  CareMeter toiletGauge;
 
   game::partner::Conditions conditions;
   // How soon each need does lasting harm if left alone, from the clock's time now

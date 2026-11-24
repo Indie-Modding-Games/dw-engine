@@ -1,0 +1,48 @@
+# The need meters and the danger alert (engine improvements, docs/modules/apps/game.md, «Need meters» and «Danger
+# alert»): on the plain below the mountain (run with --start miha01 --story-stage all --ui-skin pixel) the field
+# shows the hunger, toilet and tiredness bars next to the happiness and discipline bars, and a devil over each wild
+# one in view, far stronger than a new game's partner. Then both rows on the options' Interface tab. Run it once
+# per language (--lang es, de) with its own capture folder; how to run it: docs/guides/vertical-slice.md.
+name: field-alerts
+device: keyboard
+timeout: 180
+steps:
+  - wait: {map: miha01, seconds: 1.5, timeout: 120}
+  - resize: [1280, 720]
+  - wait: {seconds: 0.5}
+  - expect_setting: {need_meters: "true"}
+  - expect_setting: {danger_alert: "true"}
+  - screenshot: meters
+  # Between two of the wild ones (original axes).
+  - script: place("player 2848 1150 0")
+  - script: place("partner 2700 1100 0")
+  - wait: {seconds: 0.3}
+  - screenshot: danger
+  - wait: {seconds: 0.4}
+  - screenshot: danger-bob
+  # Away from them again before the menu, so none walks into the player meanwhile.
+  - script: place("player 1500 -500 0")
+  - script: place("partner 1400 -550 0")
+  - wait: {seconds: 0.3}
+  - menu: open
+  - wait: {seconds: 0.6}
+  # The pixel look keeps the original's layout: the options are among the player page's tools (Tab there).
+  - menu_select: open-player
+  - wait: {seconds: 0.5}
+  - tap: {key: tab}
+  - wait: {seconds: 0.3}
+  - menu_select: player-options
+  - wait: {seconds: 0.4}
+  # Q from the first tab wraps round to the last, Interface.
+  - tap: {key: q}
+  - wait: {seconds: 0.4}
+  # The need meters' row is the eleventh of the tab, the danger alert's the twelfth.
+  - repeat: {times: 10, steps: [{tap: {key: down}}, {wait: {seconds: 0.1}}]}
+  - wait: {seconds: 0.3}
+  - expect_text_fits: all
+  - screenshot: options-need-meters
+  - tap: {key: down}
+  - wait: {seconds: 0.3}
+  - screenshot: options-danger-alert
+  - menu: close
+  - wait: {menu_open: false}

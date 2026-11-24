@@ -4,6 +4,8 @@
 #include <dwe/core/message.hpp>
 #include <dwe/core/yaml.hpp>
 
+#include <algorithm>
+#include <array>
 #include <charconv>
 #include <iterator>
 #include <limits>
@@ -87,6 +89,17 @@ core::Result<RuleChange> changeOf(const ruleset::Section& section, const YamlNod
   }
   return change;
 }
+
+struct RoamingRareStep {
+  std::string_view name;
+  std::optional<std::int32_t> percent;
+};
+constexpr std::array RoamingRareSteps{
+    RoamingRareStep{.name = RoamingRareOriginal, .percent = std::nullopt},
+    RoamingRareStep{.name = "percent_5", .percent = 5},
+    RoamingRareStep{.name = RoamingRareDefault, .percent = 10},
+    RoamingRareStep{.name = "percent_25", .percent = 25},
+    RoamingRareStep{.name = "percent_50", .percent = 50}};
 
 } // namespace
 
@@ -252,6 +265,17 @@ void RuleOptions::restore(ruleset::RulesetStore& store, const ValueKey& key,
   }
   core::logInfo("{}",
                 core::formatMessage(messages::RuleOptionSet, key.first, key.second, changed.own));
+}
+
+std::string_view roamingRareStep(const std::optional<std::string>& saved) {
+  const auto step = std::ranges::find(RoamingRareSteps, std::string_view{saved.value_or("")},
+                                      &RoamingRareStep::name);
+  return step != RoamingRareSteps.end() ? step->name : RoamingRareDefault;
+}
+
+std::optional<std::int32_t> roamingRarePercent(std::string_view step) {
+  const auto found = std::ranges::find(RoamingRareSteps, step, &RoamingRareStep::name);
+  return found != RoamingRareSteps.end() ? found->percent : std::nullopt;
 }
 
 } // namespace dwe::app

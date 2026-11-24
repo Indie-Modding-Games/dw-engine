@@ -2,55 +2,53 @@
 
 #include <dwe/rhi/device.hpp>
 
+#include <cstdint>
 #include <span>
-#include <string>
 #include <string_view>
 
 namespace dwe::rhi {
 
-// A record of the GPU the renderer runs on and the work it was doing, so that a graphics failure
-// leaves a report that names them. A Vulkan error, a lost device, a fault that brings the program
-// down inside a driver (the AMD proprietary compiler, an Intel iGPU driver) and a hung GPU all come
-// back to this: gpuReportDevice says what the machine is, gpuNoteActivity and gpuCheck keep a trail
-// of the calls and the work in flight, and the crash handlers in gpuInstallCrashReporter write the
-// trail out when the process dies before it could log it.
-//
-// Everything here is process-wide (like the validation message counter): the trail is read by a
-// crash handler that has no Device to ask.
+// A process-wide record of the GPU and of the last Vulkan calls, so a graphics failure, a lost
+// device or a crash inside a driver leaves a report that names them. Process-wide because the crash
+// handlers that print it have no Device to ask.
 
-// Records the GPU, its driver (vendor, driver id and version, decoded) and the limits the renderer
-// cares about (the ones AMD and Intel drivers crash on), and writes a summary line to the log. Call
-// once, after the device is created. `validation` is whether the validation layer is on.
-void gpuReportDevice(const NativeHandles& handles, bool validation);
+// The optional breadcrumbs a device enabled, read back when it is lost.
+struct GpuDiagnostics {
+  bool deviceFault = false;   // VK_EXT_device_fault
+  bool bufferMarkers = false; // VK_AMD_buffer_marker
+};
 
-// Says what the renderer is about to do (building a pipeline, submitting a frame, starting a pass)
-// so a crash names what was in flight. Cheap: it only updates a short label, kept for the report.
+// Work whose markers run in recording order: the frames, and the uploads that wait on their own.
+enum class GpuWork : std::uint8_t { Frame, Upload };
+
+// Records the GPU, its driver and the limits the renderer depends on, and logs them. Call once,
+// after the device is created.
+void gpuReportDevice(const Device& device, GpuDiagnostics diagnostics);
+
+// Releases what gpuReportDevice took from `device`, before its allocator is destroyed.
+void gpuForgetDevice(VkDevice device);
+
+// Names what the renderer is about to do (building a pipeline, a pass, a present), for the report.
 void gpuNoteActivity(std::string_view activity);
 
-// The current activity label, for callers that want it in their own message.
-std::string gpuActivity();
+// Records in `commands` that the GPU finished the current activity, so the report of a lost device
+// names the last work done and the first left undone. Does nothing without VK_AMD_buffer_marker.
+void gpuMarker(VkCommandBuffer commands, GpuWork work);
 
-// Wraps a Vulkan call whose VkResult matters. It records the call and its result in the trail and,
-// when the result is a failure, writes the GPU, driver, activity and recent trail to the error log.
-// A VK_ERROR_DEVICE_LOST is recorded so beginFrame stops drawing (the device cannot be used again)
-// and the message says so. Returns `result` unchanged, so callers can keep their own handling.
+// Records a Vulkan call and its result in the report's trail and logs the report when it failed.
+// A VK_ERROR_DEVICE_LOST marks the device lost for good and adds the device fault and the markers
+// to the report. Returns `result` unchanged.
 VkResult gpuCheck(std::string_view call, VkResult result);
 
-// Whether a VK_ERROR_DEVICE_LOST has been seen: the device is gone, no further drawing is possible.
+// Whether a VK_ERROR_DEVICE_LOST has been seen: the device can draw nothing more.
 bool gpuDeviceLost();
 
-// The whole report (GPU, driver, limits, activity, recent calls) as text, for a crash dump or a
-// log.
-std::string gpuFailureReport();
-
-// A small, stable hash of a SPIR-V module (FNV-1a): names the shader that broke a driver's compiler
-// so a player's report can be matched to an allow-list without shipping the shader's source.
+// A stable hash of a SPIR-V module (FNV-1a), to name the shader that broke a driver's compiler.
 std::uint64_t gpuSpirvHash(std::span<const std::uint32_t> spirv);
 
-// Installs handlers so an uncaught C++ exception, a fatal signal (Linux) or an access violation
-// raised inside a graphics driver (Windows) writes gpuFailureReport() to the log and to stderr
-// before the process dies. The first call wins; later calls do nothing. It does not stop WER or the
-// launcher's own crash capture: the handler returns so they still run. Safe on any thread.
+// Prints the report to stderr when the process dies of an uncaught exception, a fatal signal or an
+// unhandled native exception, then hands the crash on to whatever handled it before. Only the first
+// call installs.
 void gpuInstallCrashReporter();
 
 } // namespace dwe::rhi

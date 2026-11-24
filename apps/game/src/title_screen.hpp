@@ -6,12 +6,17 @@
 #include <dwe/ui/ui.hpp>
 
 #include <array>
+#include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
+#include <utility>
 
 #include "app_flow.hpp"
 #include "new_game_mode.hpp"
+#include "new_game_randomizer.hpp"
 #include "options.hpp"
 #include "save_flow.hpp"
 #include "ui_skin_setting.hpp"
@@ -65,12 +70,23 @@ public:
   // one) and its rules (ui/new_game_rules): always for the player; a test route only when it says
   // so (new_game_rules), the others start the original's story with the command line's ruleset.
   void setAsksRules(bool asks) { asksRules_ = asks; }
+  // Whether a new game of a mode that offers it asks the randomizer (ui/new_game_randomizer):
+  // always for the player; a test route only when it says so (new_game_randomizer).
+  void setAsksRandomizer(bool asks) { asksRandomizer_ = asks; }
 
   // Whether the title asks the UI skin (ui/skin_picker, an addition) on this boot (asksUiSkin, only
   // until the player has chosen one): after the language box, before the "Press Start" screen; a
   // test route only when it says so (skin_first). Asked once a run: the title shown again later
   // goes straight on.
   void setAsksSkin(bool asks) { skinPicker_ = SkinPickerStep{asks}; }
+
+  // The system clipboard, for the randomizer's seed.
+  void setClipboard(std::function<std::string()> clipboard) {
+    randomizer_.setClipboard(std::move(clipboard));
+  }
+  // Whether the randomizer's seed field takes the keyboard's letters, and the letters typed.
+  [[nodiscard]] bool takesText() const { return randomizerShown_ && randomizer_.takesText(); }
+  void type(std::string_view text, bool enter);
 
   // The game a command chose to start, once.
   [[nodiscard]] std::optional<PlayStart> takeStart();
@@ -96,6 +112,11 @@ private:
   // The new game waiting goes on in a mode: it asks its rules, or starts.
   void chooseMode(std::string_view mode);
   void showRules();
+  // The new game's mode and rules are chosen: a mode that offers it asks the randomizer, then the
+  // game starts.
+  void finishNewGame();
+  void showRandomizer();
+  void handleRandomizer(std::string_view action);
 
   ui::Ui* ui_;
   std::unique_ptr<game::save::DiskSaveStorage> storage_;
@@ -105,7 +126,12 @@ private:
   // The new game waiting for its mode or its rules.
   std::optional<PlayStart> pending_;
   NewGameModes modes_;
+  NewGameRandomizer randomizer_;
+  bool randomizerShown_ = false;
+  // The command line's --seed, which a route's randomizer seed starts from.
+  std::optional<std::uint64_t> fixedSeed_;
   bool asksRules_ = true;
+  bool asksRandomizer_ = true;
   SkinPickerStep skinPicker_{false};
   // Whether the packs have the ruleset with the Mega step, which the rules offer.
   bool megaOffered_ = false;

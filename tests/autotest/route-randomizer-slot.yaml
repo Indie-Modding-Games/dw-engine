@@ -1,0 +1,15 @@
+# The slot list after route-randomizer, with the same --saves folder: the randomized run's slot shows its run code
+# next to the mode (docs/modules/game/randomizer.md, «Saving»).
+name: randomizer-slot
+device: keyboard
+timeout: 120
+main_menu: true
+text_fit: true
+steps:
+  - wait: {shown: main_menu, seconds: 1, timeout: 60}
+  - resize: [1280, 720]
+  - wait: {seconds: 0.5}
+  - menu_select: continue
+  - wait: {shown: save_slots, seconds: 0.8, timeout: 30}
+  - expect_text_fits: all
+  - screenshot: randomizer-slot

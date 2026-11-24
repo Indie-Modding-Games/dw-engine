@@ -48,6 +48,7 @@ layers and what each one may use are in the [dependency rules](../architecture/d
 | [story](game/story.md) | The story state and the event script runtime |
 | [save](game/save.md) | Versioned saved games, slots and autosave |
 | [modes](game/modes.md) | The game modes: the `mode.yaml` manifest and the packs' catalog |
+| [randomizer](game/randomizer.md) | The seeded randomizer of a new run: its options, seeds and run codes |
 
 ## Shared libraries (`packages/`)
 

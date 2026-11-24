@@ -67,6 +67,8 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.31.0 | The partner menu marks the partner's boosted technique (`partner.technique.<n>.boosted`, `partner.technique.choice.<n>.boosted`: its power and MP are already the boosted ones), and the `boosted_techniques` option arrives ([battle](../modules/game/battle.md#boosted-techniques)) |
+| 0.30.0 | The field's need meters and danger alert: `partner.gauges()` (hunger, the toilet and tiredness as they build up: `hud.gauge.<n>.label`, `need`, `value`, `max` and `fill`), `field.dangers()` and its event `field.danger` (the marks over the wild monsters that would crush the partner: `hud.danger.<n>.visible`, `x`, `y` and `hud.danger.revision`), and the options `need_meters` and `danger_alert` |
 | 0.29.0 | The `coop_battle` screen tells a player who cannot close the end box whom it waits on (`coop_battle.waiting`, the starter's `coop_battle.starter.name`, `name_key` and `number`) |
 | 0.28.0 | Game variants: `options.variant()` names the variant of the game being played (its mode's name key, nil at the title) and `options.locked(name)` says whether that variant fixes an option (`options.variant` and `options.locked.<name>` settings); `options.set` refuses a fixed option ([game variants](../architecture/game-variants.md)) |
 | 0.27.0 | The room shows the host's co-op difficulty before a guest readies (`online.current.coop_difficulty`, `online.room()` `coop_difficulty` and `coop_difficulty_key`), and the `coop_open_to_join` option arrives: whether a co-op game the player hosts takes new players once under way, applied at once to the room it hosts |
@@ -106,7 +108,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.29.0**.
+UI API version: **0.31.0**.
 
 ### `ui`
 
@@ -205,6 +207,15 @@ UI API version: **0.29.0**.
 | `hud.need.<n>.label` | setting | text | The text key of a need (hunger, sleep, toilet...). |
 | `hud.need.<n>.active` | setting | yes/no | Whether the partner has that need now. |
 | `hud.need.<n>.urgency` | setting | number | Its rank among the active needs; 1 is the most urgent. |
+| `hud.gauge.<n>.label` | setting | text | The text key of a need meter's need (hunger, toilet, tiredness). |
+| `hud.gauge.<n>.need` | setting | number | The place in the hud.need list of the meter's need. |
+| `hud.gauge.<n>.value` | setting | number | How far the need has built up: 0 just met, max when it is due. |
+| `hud.gauge.<n>.max` | setting | number | The value at which the need is due. |
+| `hud.gauge.<n>.fill` | setting | number | The meter's bar in whole percent, from 0 to 100. |
+| `hud.danger.revision` | setting | number | Goes up each time a danger mark below changes. |
+| `hud.danger.<n>.visible` | setting | yes/no | Whether the wild monster in that map slot shows the danger mark. |
+| `hud.danger.<n>.x` | setting | number | Where the mark hangs, as a percentage of the window's width. |
+| `hud.danger.<n>.y` | setting | number | Where the mark hangs, as a percentage of the window's height. |
 | `hud.partner.area` | setting | number | 1 if the partner likes the area, 2 if it dislikes it, 0 if neither. |
 | `hud.partner.revision` | setting | number | Goes up each time the partner position below changes. |
 | `hud.partner.x` | setting | number | The partner's position in the window, as a percentage of its width. |
@@ -233,6 +244,8 @@ UI API version: **0.29.0**.
 | `minimap_size` | option | text | The minimap's size. |
 | `digital_time` | option | yes/no | The time in digits. |
 | `need_bubble_stack` | option | yes/no | All the active needs over the partner, not only the first. |
+| `need_meters` | option | yes/no | The need meters on the field. |
+| `danger_alert` | option | yes/no | The mark over the wild monsters that would crush the partner. |
 | `open_menu` | command | — | Opens the pause menu (the HUD's menu button). |
 | `shop_job_rules` | command | — | Opens the shop job's rules panel (the ? button on its bar). |
 
@@ -334,6 +347,7 @@ UI API version: **0.29.0**.
 | `shop_job_mode` | option | text | The canyon shop job: improved or original. |
 | `coop_difficulty` | option | text | How co-op battles scale their enemies: off, standard or hard. |
 | `coop_open_to_join` | option | yes/no | Whether a co-op game this player hosts takes new players once under way. |
+| `roaming_rare_chance` | option | text | How often the roaming rares appear: original, percent_5, percent_10, percent_25 or percent_50. |
 | `skip_evolution` | option | yes/no | Skip the evolution scene. |
 | `choice_cancel_closes` | option | yes/no | Cancel closes a choice. |
 | `fair_sickness_chance` | option | yes/no | Fair chance of falling sick. |
@@ -345,6 +359,7 @@ UI API version: **0.29.0**.
 | `extra_toilets` | option | yes/no | Extra toilets. |
 | `angemon_event_zone` | option | yes/no | Angemon's event zone. |
 | `whamon_in_water` | option | yes/no | Whamon in the water. |
+| `boosted_techniques` | option | yes/no | Boosted techniques. |
 | `smooth_motion` | option | yes/no | Smooth motion. |
 | `hd_scenery` | option | yes/no | HD scenery. |
 | `scenery_quality` | option | text | Scenery quality: upscaled or smooth. |
@@ -366,6 +381,8 @@ UI API version: **0.29.0**.
 | `digital_time` | option | yes/no | The time in digits. |
 | `save_notice` | option | yes/no | The save notice. |
 | `need_bubble_stack` | option | yes/no | All the active needs over the partner. |
+| `need_meters` | option | yes/no | The need meters. |
+| `danger_alert` | option | yes/no | The danger alert. |
 | `shop_job_bar` | option | yes/no | The shop job bar. |
 | `name_spacing` | option | yes/no | Name spacing. |
 | `free_exploration` | option | yes/no | Free exploration. |
@@ -584,8 +601,8 @@ UI API version: **0.29.0**.
 | `partner.profile.type` | setting | number | Its type. |
 | `partner.profile.active` | setting | number | Its activity pattern. |
 | `partner.profile.special.<n>` | setting | number | A special type; -1 if none. |
-| `partner.technique.<n>.<id>` | setting | number or text | An equipped move: empty, name, power, mp, range, effect. |
-| `partner.technique.choice.<n>.<id>` | setting | number or text | A move of the grid: name, available, equipped, known, power, mp, range, effect, slot, special. |
+| `partner.technique.<n>.<id>` | setting | number or text | An equipped move: empty, name, power, mp, range, effect, boosted. |
+| `partner.technique.choice.<n>.<id>` | setting | number or text | A move of the grid: name, available, equipped, known, power, mp, range, effect, slot, special, boosted. |
 | `partner.technique.can_finish` | setting | yes/no | Whether the move editing can finish (a damage move is left). |
 | `partner.technique.result` | setting | text | The text key of the last change's message; empty if there is none. |
 | `partner.care_result` | setting | text | The text key of the last praise or scolding's message. |
@@ -722,7 +739,9 @@ UI API version: **0.29.0**.
 | `field.fade` | event | table | The fade changed. Comes from `screen_fade`. |
 | `field.map_title` | event | table | The map name shown changed. Comes from `map_title_key`. |
 | `field.minimap` | event | table | Whether the minimap can be seen, or whether something covers it, changed. Comes from `hud.minimap_allowed hud.minimap_covered battle.active`. |
+| `field.dangers(): table` | query | table | The danger marks over the wild monsters that would crush the partner: slot, x and y (percentage); empty with the option off or the field stopped. |
 | `field.shop_job` | event | table | The shop job changed. Comes from `shop_job.revision`. |
+| `field.danger` | event | table | The danger marks changed. Comes from `hud.danger.revision`. |
 
 ### `partner`
 
@@ -730,12 +749,13 @@ UI API version: **0.29.0**.
 |---|---|---|---|
 | `partner.status(): table` | query | table | The bars (meters: id, label_key, value, min, max, two_tone, mood), the HP and MP (pools) and what it thinks of the map (area: liked, disliked or nil). |
 | `partner.needs(): table` | query | table | The needs in order: id, label_key, active and urgency (1 the most urgent; 0 if it does not have it). |
+| `partner.gauges(): table` | query | table | The need meters in order (hunger, toilet, tired): id, label_key, value, max, fill (percentage) and active. |
 | `partner.bubble(): table` | query | table | Where its head is in the window: visible, x, y (percentage) and evolving (the evolution bubble's box, or nil). |
 | `partner.extras(): table?` | query | table | Care mistakes, battles and hours lived; nil if the player has the status extras off. |
 | `partner.praise(): boolean` | action | yes/no | Asks to praise it. |
 | `partner.scold(): boolean` | action | yes/no | Asks to scold it. |
 | `partner.toggle_technique(slot: integer): boolean, string?` | action | yes/no | Asks to equip or remove the move of that slot of the species. |
-| `partner.changed` | event | table | Something about the partner changed; name says which setting. Comes from `hud.revision partner.revision hud.meter.0.label hud.meter.1.label hud.pool.0.label hud.pool.1.label hud.need.0.label hud.need.1.label hud.need.2.label hud.need.3.label hud.need.4.label hud.need.5.label`. |
+| `partner.changed` | event | table | Something about the partner changed; name says which setting. Comes from `hud.revision partner.revision hud.meter.0.label hud.meter.1.label hud.pool.0.label hud.pool.1.label hud.need.0.label hud.need.1.label hud.need.2.label hud.need.3.label hud.need.4.label hud.need.5.label hud.gauge.0.label hud.gauge.1.label hud.gauge.2.label`. |
 | `partner.bubble_moved` | event | table | Its head moved in the window. Comes from `hud.partner.revision`. |
 
 ### `bag`

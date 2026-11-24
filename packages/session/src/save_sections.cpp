@@ -24,6 +24,13 @@ using messages::formatMessage;
 
 constexpr std::string_view ElapsedFramesKey = "elapsed_frames";
 constexpr std::string_view ModeIdKey = "id";
+constexpr std::string_view SeedKey = "seed";
+constexpr std::string_view EvolutionsKey = "evolutions";
+constexpr std::string_view LearnChanceKey = "learn_chance";
+constexpr std::string_view StarterKey = "starter";
+constexpr std::string_view EnemiesKey = "enemies";
+constexpr std::string_view ItemsKey = "items";
+constexpr std::string_view DropsKey = "drops";
 constexpr std::string_view PendingFramesKey = "pending_frames";
 constexpr std::string_view LevelKey = "level";
 constexpr std::string_view RaisedKey = "raised";
@@ -119,6 +126,27 @@ std::string sectionText(const game::save::SaveFile& file, std::string_view secti
   }
   const YamlNode* value = found->second.state.find(key);
   return value != nullptr && value->isScalar() ? value->text() : std::string{};
+}
+
+// The run code of a randomized save, or empty: like the rest of a summary, read but not trusted.
+std::string runCodeText(const game::save::SaveFile& file) {
+  const auto flag = [&file](std::string_view key) {
+    return sectionText(file, RandomizerName, key) == "true";
+  };
+  const auto code = game::randomizer::parseCode(sectionText(file, RandomizerName, SeedKey));
+  const auto learn =
+      game::randomizer::learnChanceNamed(sectionText(file, RandomizerName, LearnChanceKey));
+  if (!code || code->options || !learn) {
+    return {};
+  }
+  const game::randomizer::RunSettings run{.seed = code->seed,
+                                          .evolutions = flag(EvolutionsKey),
+                                          .learnChance = *learn,
+                                          .starter = flag(StarterKey),
+                                          .enemies = flag(EnemiesKey),
+                                          .items = flag(ItemsKey),
+                                          .drops = flag(DropsKey)};
+  return run.active() ? game::randomizer::runCode(run) : std::string{};
 }
 
 } // namespace
@@ -323,6 +351,64 @@ core::Result<void> ModeSave::readMissing() {
   return {};
 }
 
+core::Result<YamlNode> RandomizerSave::write() const {
+  const game::randomizer::RunSettings& run = state_->randomizer.settings();
+  const auto flag = [](bool on) { return YamlNode::scalar(on ? "true" : "false"); };
+  YamlNode node = YamlNode::mapping();
+  node.set(std::string{SeedKey},
+           YamlNode::scalar(game::randomizer::seedText(run.seed), YamlNode::ScalarStyle::Quoted));
+  node.set(std::string{EvolutionsKey}, flag(run.evolutions));
+  node.set(std::string{LearnChanceKey},
+           YamlNode::scalar(std::string{game::randomizer::nameOf(run.learnChance)},
+                            YamlNode::ScalarStyle::Quoted));
+  node.set(std::string{StarterKey}, flag(run.starter));
+  node.set(std::string{EnemiesKey}, flag(run.enemies));
+  node.set(std::string{ItemsKey}, flag(run.items));
+  node.set(std::string{DropsKey}, flag(run.drops));
+  return node;
+}
+
+core::Result<void> RandomizerSave::read(const YamlNode& state) {
+  YamlReader reader;
+  if (!reader.expectKeys(
+          state, messages::RandomizerStateText,
+          {SeedKey, EvolutionsKey, LearnChanceKey, StarterKey, EnemiesKey, ItemsKey, DropsKey})) {
+    return std::unexpected{reader.error(messages::RandomizerStateText)};
+  }
+  game::randomizer::RunSettings run{.seed = 0,
+                                    .evolutions =
+                                        reader.boolean(reader.field(state, EvolutionsKey)),
+                                    .learnChance = game::randomizer::LearnChance::Original,
+                                    .starter = reader.boolean(reader.field(state, StarterKey)),
+                                    .enemies = reader.boolean(reader.field(state, EnemiesKey)),
+                                    .items = reader.boolean(reader.field(state, ItemsKey)),
+                                    .drops = reader.boolean(reader.field(state, DropsKey))};
+  const YamlNode& seed = reader.field(state, SeedKey);
+  const std::string seedText = reader.text(seed);
+  if (const auto code = game::randomizer::parseCode(seedText); code && !code->options) {
+    run.seed = code->seed;
+  } else if (reader.ok()) {
+    reader.fail(seed, formatMessage(messages::NotARunSeed, seedText));
+  }
+  const YamlNode& learn = reader.field(state, LearnChanceKey);
+  const std::string learnText = reader.text(learn);
+  if (const auto chance = game::randomizer::learnChanceNamed(learnText)) {
+    run.learnChance = *chance;
+  } else if (reader.ok()) {
+    reader.fail(learn, formatMessage(messages::NotALearnChance, learnText));
+  }
+  if (auto done = reader.finish(true, messages::RandomizerStateText); !done) {
+    return std::unexpected{done.error()};
+  }
+  state_->randomizer.setSettings(run);
+  return {};
+}
+
+core::Result<void> RandomizerSave::readMissing() {
+  state_->randomizer.setSettings({});
+  return {};
+}
+
 core::Result<void> SessionSerializers::addTo(game::save::SaveSections& sections) {
   for (auto& [name, serializer, migrations] :
        {SectionEntry{.name = ClockName, .serializer = &clock, .migrations = {}},
@@ -331,7 +417,8 @@ core::Result<void> SessionSerializers::addTo(game::save::SaveSections& sections)
         SectionEntry{.name = TamerName, .serializer = &tamer, .migrations = {}},
         SectionEntry{.name = FieldName, .serializer = &field, .migrations = {}},
         SectionEntry{.name = RandomName, .serializer = &random, .migrations = randomMigrations()},
-        SectionEntry{.name = ModeName, .serializer = &mode, .migrations = {}}}) {
+        SectionEntry{.name = ModeName, .serializer = &mode, .migrations = {}},
+        SectionEntry{.name = RandomizerName, .serializer = &randomizer, .migrations = {}}}) {
     if (auto added = sections.add(std::string{name}, *serializer, migrations); !added) {
       return added;
     }
@@ -350,7 +437,8 @@ game::save::SaveSummary summaryFromSections(const game::save::SaveFile& file) {
           .nickname = {},
           .map = sections::sectionText(file, sections::FieldName, sections::MapKey),
           .mode = std::string{game::modes::currentModeId(
-              sections::sectionText(file, sections::ModeName, sections::ModeIdKey))}};
+              sections::sectionText(file, sections::ModeName, sections::ModeIdKey))},
+          .randomizer = sections::runCodeText(file)};
 }
 
 } // namespace dwe::session

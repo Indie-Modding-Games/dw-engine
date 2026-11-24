@@ -39,11 +39,11 @@ constexpr std::array<std::string_view, 6> Screens{"hud",    "pause_menu",   "mai
                                                   "battle", "partner_menu", "save_slots"};
 
 // The other screens that take the pause menu's panel and entries in both looks (skin.yaml).
-constexpr std::array<std::string_view, 15> PanelScreens{
+constexpr std::array<std::string_view, 16> PanelScreens{
     "destination_choice", "dialog",    "new_game_rules", "sleep_menu",
     "gym_stats",          "shop_menu", "naming_box",     "fishing_bait",
     "fishing_notice",     "gym_slots", "egg_box",        "new_game_mode",
-    "dev_menu",           "versus",    "skin_picker"};
+    "dev_menu",           "versus",    "skin_picker",    "new_game_randomizer"};
 
 // The screens with a look of their own in every skin, loaded with the rest to check they load
 // cleanly.

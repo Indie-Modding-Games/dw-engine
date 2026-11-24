@@ -6,10 +6,12 @@
 #include <dwe/game/evolution/result.hpp>
 #include <dwe/game/evolution/state.hpp>
 #include <dwe/game/evolution/tables.hpp>
+#include <dwe/game/randomizer/randomizer.hpp>
 #include <dwe/session/session_system.hpp>
 
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -60,6 +62,7 @@ public:
   void routePartnerEvent(GameSession& session, const game::partner::PartnerEvent& event) override;
   void afterPraiseOrScold(GameSession& session, const PraiseOrScold& event) override;
   void afterWakeUp(GameSession& session) override;
+  void afterLoad(GameSession& session) override;
 
   // Where the partner's moves are: the session's battle adapter, which owns them and must outlive
   // this adapter. The battle adapter is built after this one (it needs the inventory, which needs
@@ -136,6 +139,9 @@ private:
   static void syncRaised(const StoryAdapter* story, game::evolution::EvolutionState& state);
   // Marks a form raised in the story and in the rules' view of it.
   void raise(game::evolution::Species species);
+  // Hands the run's evolution picks to the rules: each chart target's stage is its pool.
+  void bindRandomizer(const GameSession& session);
+  void mapEvolutions();
 
   EvolutionAdapterDesc desc_;
   BattleAdapter* battle_ = nullptr;
@@ -148,6 +154,8 @@ private:
   game::evolution::EvolutionState state_;
   std::vector<game::evolution::EvolutionResult> evolutions_;
   std::unique_ptr<Serializer> serializer_;
+  std::map<game::evolution::Level, std::vector<std::string>> stagePools_;
+  const game::randomizer::Randomizer* randomizer_ = nullptr;
 };
 
 } // namespace dwe::session

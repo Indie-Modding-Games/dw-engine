@@ -62,16 +62,13 @@ Level drawBudget(const SpeciesRules& species, ruleset::Random& random) {
   return NoSale;
 }
 
-// The species and item of one customer, before its mood and budget.
 struct Pair {
   std::size_t species = 0;
   std::size_t item = 0;
 };
 
-// How many of each item the species ask for, spread as evenly as the species' capacities allow:
-// each item's copies go to the species that has asked for it fewest so far (a tie broken at
-// random), so no species hoards an expensive item and none is left without one the bag has. The
-// rows are each species' count and the columns each item's, like the bags this replaces.
+// Each copy of an item goes to the species with room that has asked for it the least, a tie broken
+// at random, so no species hoards one item.
 std::vector<Pair> assignPairs(const ShopJobRules& rules, ruleset::Random& random) {
   const std::size_t speciesCount = rules.species.size();
   const std::size_t itemCount = rules.items.size();
@@ -89,7 +86,6 @@ std::vector<Pair> assignPairs(const ShopJobRules& rules, ruleset::Random& random
   for (const std::size_t item : order) {
     const std::int32_t toGive = std::max(rules.items[item].count, 0);
     for (std::int32_t copy = 0; copy < toGive; ++copy) {
-      // The species with room that has asked for this item the least; a tie is broken at random.
       std::vector<std::size_t> best;
       std::int32_t least = std::numeric_limits<std::int32_t>::max();
       for (std::size_t species = 0; species < speciesCount; ++species) {
@@ -123,106 +119,58 @@ std::vector<Pair> assignPairs(const ShopJobRules& rules, ruleset::Random& random
   return pairs;
 }
 
-std::size_t customersOf(const std::vector<Pair>& pairs) {
-  return pairs.size();
-}
-
-// The distribution the even fill guarantees: every item the bag carries reaches the counter at
-// least once, so a line shows the whole shelf instead of quietly dropping an item type. With
-// assignPairs this always holds; the check is the second metric makeLineup keeps, the one the
-// old single total could not see (a line could pass on its sum yet hide an item type).
-bool distributionIsComplete(const ShopJobRules& rules, const std::vector<Customer>& line) {
-  for (std::size_t item = 0; item < rules.items.size(); ++item) {
-    if (rules.items[item].count <= 0) {
+// The budget nearest in perfect profit that moves the line's score up (or down), among those the
+// customer's species and mood can give: the counter's odds never rule out the real budget.
+std::optional<std::pair<Level, std::int64_t>>
+stepToward(const ShopJobRules& rules, const Customer& customer, bool up, ruleset::Random& random) {
+  const BudgetWeights possible = shiftWeights(budgetWeights(rules.species.at(customer.species)),
+                                              rules.moods.at(customer.mood).shift);
+  const std::int64_t now = perfectProfit(rules, customer);
+  std::int64_t nearest = 0;
+  std::vector<Level> candidates;
+  for (std::size_t level = 0; level < possible.size(); ++level) {
+    if (possible.at(level) <= 0) {
       continue;
     }
-    const bool present = std::ranges::any_of(line, [item](const Customer& customer) {
-      return customer.item == item;
-    });
-    if (!present) {
-      return false;
-    }
-  }
-  return true;
-}
-
-// The move of one customer's budget to the neighbour (in perfect profit) that shifts the line's
-// total toward the window the least: `wantUp` raises it, `wantDown` lowers it. The budgets the
-// species' table would never give are reached only when the window needs it (the small bias the
-// guarantee accepts). Returns the new budget and the profit it adds (positive up, negative down),
-// or none when no move in that direction exists.
-std::optional<std::pair<Level, std::int64_t>> stepToward(const ShopJobRules& rules,
-                                                         const Customer& customer, bool wantUp,
-                                                         ruleset::Random& random) {
-  const std::int64_t now = perfectProfit(rules, customer);
-  std::int64_t bestDelta = 0;
-  std::vector<Level> candidates;
-  for (std::size_t level = 0; level <= NoSale; ++level) {
     Customer moved = customer;
     moved.budget = static_cast<Level>(level);
     const std::int64_t delta = perfectProfit(rules, moved) - now;
-    if (delta == 0 || (wantUp ? delta < 0 : delta > 0)) {
+    if (delta == 0 || (up ? delta < 0 : delta > 0)) {
       continue;
     }
-    const std::int64_t size = std::abs(delta);
-    if (candidates.empty() || size < std::abs(bestDelta)) {
-      bestDelta = delta;
+    if (candidates.empty() || std::abs(delta) < std::abs(nearest)) {
+      nearest = delta;
       candidates.clear();
-      candidates.push_back(moved.budget);
-    } else if (size == std::abs(bestDelta)) {
+    }
+    if (std::abs(delta) == std::abs(nearest)) {
       candidates.push_back(moved.budget);
     }
   }
   if (candidates.empty()) {
     return std::nullopt;
   }
-  const Level chosen =
-      candidates[static_cast<std::size_t>(random.below(static_cast<std::int32_t>(candidates.size())))];
-  return std::make_pair(chosen, bestDelta);
+  const Level chosen = candidates[static_cast<std::size_t>(
+      random.below(static_cast<std::int32_t>(candidates.size())))];
+  return std::pair{chosen, nearest};
 }
 
-// Draws the line so its perfect score always lands in the window: the pairs are spread evenly,
-// each customer's mood and budget come from the rules as before, and the score is then repaired
-// with the smallest moves until it is inside. The guarantee removes the old risk that a seed ran
-// out of tries and shipped a line a perfect player could not finish in the window.
-Lineup drawLine(const ShopJobRules& rules, ruleset::Random& random) {
-  const std::vector<Pair> pairs = assignPairs(rules, random);
-  Lineup line;
-  line.customers.reserve(customersOf(pairs));
-  for (const Pair& pair : pairs) {
-    Customer customer{.species = pair.species, .item = pair.item, .mood = 0, .budget = 0};
-    customer.mood = drawMood(rules, random);
-    customer.budget = shiftBudget(drawBudget(rules.species[customer.species], random),
-                                  rules.moods[customer.mood].shift);
-    line.customers.push_back(customer);
-  }
-  for (const Customer& customer : line.customers) {
-    line.perfectScore += perfectProfit(rules, customer);
-  }
-  // Repair with the smallest moves the window allows, raising or lowering whole customers at a
-  // time; a few dozen steps bound the work because the spread is under the whole bag's margin.
+bool inWindow(const ShopJobRules& rules, std::int64_t score) {
+  return score >= rules.perfectLeast && score <= rules.perfectMost;
+}
+
+// Every move goes the same way without crossing the window, so the repair ends.
+void repairIntoWindow(const ShopJobRules& rules, Lineup& line, ruleset::Random& random) {
   std::vector<std::size_t> order(line.customers.size());
   std::iota(order.begin(), order.end(), 0);
-  const std::int32_t guard =
-      static_cast<std::int32_t>(line.customers.size()) * (NoSale + 1) + 16;
-  for (std::int32_t steps = 0; steps < guard; ++steps) {
-    if (line.perfectScore >= rules.perfectLeast && line.perfectScore <= rules.perfectMost) {
-      break;
-    }
-    const bool wantUp = line.perfectScore < rules.perfectLeast;
+  while (!inWindow(rules, line.perfectScore)) {
+    const bool up = line.perfectScore < rules.perfectLeast;
     shuffle(order, random);
     bool moved = false;
     for (const std::size_t index : order) {
       Customer& customer = line.customers[index];
-      const auto step = stepToward(rules, customer, wantUp, random);
-      if (!step) {
-        continue;
-      }
-      // Keep the move from overshooting the window when a nearer one exists.
-      if (wantUp && line.perfectScore + step->second > rules.perfectMost) {
-        continue;
-      }
-      if (!wantUp && line.perfectScore + step->second < rules.perfectLeast) {
+      const auto step = stepToward(rules, customer, up, random);
+      if (!step || (up ? line.perfectScore + step->second > rules.perfectMost
+                       : line.perfectScore + step->second < rules.perfectLeast)) {
         continue;
       }
       customer.budget = step->first;
@@ -231,9 +179,22 @@ Lineup drawLine(const ShopJobRules& rules, ruleset::Random& random) {
       break;
     }
     if (!moved) {
-      break;
+      return;
     }
   }
+}
+
+Lineup drawLine(const ShopJobRules& rules, ruleset::Random& random) {
+  Lineup line;
+  for (const Pair& pair : assignPairs(rules, random)) {
+    Customer customer{.species = pair.species, .item = pair.item, .mood = 0, .budget = 0};
+    customer.mood = drawMood(rules, random);
+    customer.budget = shiftBudget(drawBudget(rules.species[customer.species], random),
+                                  rules.moods[customer.mood].shift);
+    line.perfectScore += perfectProfit(rules, customer);
+    line.customers.push_back(customer);
+  }
+  repairIntoWindow(rules, line, random);
   return line;
 }
 
@@ -261,6 +222,15 @@ Level shiftBudget(Level budget, std::int32_t shift) {
   return std::clamp(budget - shift, Level{0}, Cheapest);
 }
 
+BudgetWeights shiftWeights(const BudgetWeights& weights, std::int32_t shift) {
+  BudgetWeights moved{};
+  for (std::size_t budget = 0; budget < weights.size(); ++budget) {
+    moved.at(static_cast<std::size_t>(shiftBudget(static_cast<Level>(budget), shift))) +=
+        weights.at(budget);
+  }
+  return moved;
+}
+
 Reaction reactionTo(const ShopJobRules& rules, Level offer, Level budget) {
   if (budget == NoSale) {
     return rules.reactions.back().reaction;
@@ -283,14 +253,10 @@ std::int64_t perfectProfit(const ShopJobRules& rules, const Customer& customer) 
 }
 
 Lineup makeLineup(const ShopJobRules& rules, ruleset::Random& random) {
-  // The draw already lands in the window and fills the shelf, so this is the safety net the old
-  // rejection-only loop was: a line that for any reason fails either metric is drawn again, up to
-  // maxLines. In practice it passes on the first draw.
   Lineup line;
   for (std::int32_t tries = 0; tries < rules.maxLines; ++tries) {
     line = drawLine(rules, random);
-    if (line.perfectScore >= rules.perfectLeast && line.perfectScore <= rules.perfectMost &&
-        distributionIsComplete(rules, line.customers)) {
+    if (inWindow(rules, line.perfectScore)) {
       break;
     }
   }

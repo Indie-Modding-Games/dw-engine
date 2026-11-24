@@ -40,8 +40,9 @@ std::int64_t subtractInRange(std::int64_t current, std::int64_t amount, std::int
 
 } // namespace
 
-StoryOrders::StoryOrders(StoryStatePort& state, StoryRandomPort& random, StoryRules rules)
-    : state_{&state}, random_{&random}, rules_{rules} {
+StoryOrders::StoryOrders(StoryStatePort& state, StoryRandomPort& random, StoryRules rules,
+                         const StoryRollPort* rolls)
+    : state_{&state}, random_{&random}, rules_{rules}, rolls_{rolls} {
   DWE_ASSERT(rules_.variableMax > 0);
 }
 
@@ -79,7 +80,24 @@ core::Result<void> StoryOrders::storeRandom(std::int64_t variable, std::int64_t 
   const std::int64_t limit = inVariableRange(variable, highest) + 1;
   const std::int64_t r = random_->next();
   DWE_ASSERT(r >= 0 && r <= StoryRandomPort::RandomMax);
+  if (const std::optional<TunedRoll> tuned =
+          rolls_ != nullptr ? rolls_->tuned(variable, highest) : std::nullopt) {
+    return writeVariable(variable, tunedRollValue(r, limit, *tuned));
+  }
   return writeVariable(variable, (limit * r) >> RandomBits);
+}
+
+std::int64_t tunedRollValue(std::int64_t drawn, std::int64_t limit, TunedRoll roll) {
+  constexpr std::int64_t Draws = StoryRandomPort::RandomMax + 1;
+  const std::int64_t hits = std::clamp<std::int64_t>(roll.hitsAtMost + 1, 1, limit);
+  const std::int64_t cut = std::clamp<std::int64_t>(roll.percent, 0, 100) * Draws / 100;
+  if (drawn < cut) {
+    return drawn * hits / cut;
+  }
+  if (hits == limit) {
+    return limit - 1;
+  }
+  return hits + ((drawn - cut) * (limit - hits) / (Draws - cut));
 }
 
 FrameWait StoryOrders::delay(std::int64_t frames) {

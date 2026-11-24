@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.29.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.31.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -338,6 +338,10 @@ function field.player() end
 ---@return table?
 function field.shop_job() end
 
+--- The danger marks over the wild monsters that would crush the partner: slot, x and y (percentage); empty with the option off or the field stopped.
+---@return table
+function field.dangers() end
+
 partner = {}
 
 --- The bars (meters: id, label_key, value, min, max, two_tone, mood), the HP and MP (pools) and what it thinks of the map (area: liked, disliked or nil).
@@ -347,6 +351,10 @@ function partner.status() end
 --- The needs in order: id, label_key, active and urgency (1 the most urgent; 0 if it does not have it).
 ---@return table
 function partner.needs() end
+
+--- The need meters in order (hunger, toilet, tired): id, label_key, value, max, fill (percentage) and active.
+---@return table
+function partner.gauges() end
 
 --- Where its head is in the window: visible, x, y (percentage) and evolving (the evolution bubble's box, or nil).
 ---@return table
@@ -774,6 +782,7 @@ function online.set_sample(on) end
 ---| "field.map_title" The map name shown changed.
 ---| "field.minimap" Whether the minimap can be seen, or whether something covers it, changed.
 ---| "field.shop_job" The shop job changed.
+---| "field.danger" The danger marks changed.
 ---| "partner.changed" Something about the partner changed; name says which setting.
 ---| "partner.bubble_moved" Its head moved in the window.
 ---| "bag.changed" The bag changed.

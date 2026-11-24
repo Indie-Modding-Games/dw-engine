@@ -47,6 +47,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
                               .difficulty = "easy",
                               .coopDifficulty = "hard",
                               .coopOpenToJoin = false,
+                              .roamingRareChance = "percent_25",
                               .skipEvolution = true,
                               .choiceCancelCloses = true,
                               .fairSicknessChance = true,
@@ -103,6 +104,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK(read->quickBattleStart == std::optional<bool>{true});
   CHECK(read->difficulty == std::optional<std::string>{"easy"});
   CHECK(read->coopDifficulty == std::optional<std::string>{"hard"});
+  CHECK(read->roamingRareChance == std::optional<std::string>{"percent_25"});
   CHECK(read->coopOpenToJoin == std::optional<bool>{false});
   CHECK(read->skipEvolution == std::optional<bool>{true});
   CHECK(read->choiceCancelCloses == std::optional<bool>{true});

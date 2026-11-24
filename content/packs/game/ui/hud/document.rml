@@ -32,10 +32,25 @@
 		<div id="field-needs">
 			<span class="need" id="field-need-0"></span><span class="need" id="field-need-1"></span><span class="need" id="field-need-2"></span><span class="need" id="field-need-3"></span><span class="need" id="field-need-4"></span><span class="need" id="field-need-5"></span>
 		</div>
+		<div id="field-gauges">
+			<div class="field-gauge" id="field-gauge-0"><span class="label" id="field-gauge-0-label"></span><div class="icon"></div><div class="bar"><div class="fill" id="field-gauge-0-fill"></div></div></div>
+			<div class="field-gauge" id="field-gauge-1"><span class="label" id="field-gauge-1-label"></span><div class="icon"></div><div class="bar"><div class="fill" id="field-gauge-1-fill"></div></div></div>
+			<div class="field-gauge" id="field-gauge-2"><span class="label" id="field-gauge-2-label"></span><div class="icon"></div><div class="bar"><div class="fill" id="field-gauge-2-fill"></div></div></div>
+		</div>
 		<div id="field-pools">
 			<div class="field-pool"><span class="label" id="field-pool-0-label"></span><div class="bar" id="field-pool-0-bar"><div class="fill" id="field-pool-0-fill"></div></div><span class="value" id="field-pool-0-value"></span></div>
 			<div class="field-pool"><span class="label" id="field-pool-1-label"></span><div class="bar" id="field-pool-1-bar"><div class="fill" id="field-pool-1-fill"></div></div><span class="value" id="field-pool-1-value"></span></div>
 		</div>
+	</div>
+	<div id="field-dangers">
+		<div class="field-danger" id="field-danger-0"><div class="icon"></div></div>
+		<div class="field-danger" id="field-danger-1"><div class="icon"></div></div>
+		<div class="field-danger" id="field-danger-2"><div class="icon"></div></div>
+		<div class="field-danger" id="field-danger-3"><div class="icon"></div></div>
+		<div class="field-danger" id="field-danger-4"><div class="icon"></div></div>
+		<div class="field-danger" id="field-danger-5"><div class="icon"></div></div>
+		<div class="field-danger" id="field-danger-6"><div class="icon"></div></div>
+		<div class="field-danger" id="field-danger-7"><div class="icon"></div></div>
 	</div>
 	<div id="field-partner-bubble">
 		<div class="balloon-half" id="field-partner-bubble-left"></div>

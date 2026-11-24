@@ -7,6 +7,7 @@
 #include <doctest/doctest.h>
 
 #include <array>
+#include <cstddef>
 #include <format>
 #include <string>
 #include <string_view>
@@ -163,6 +164,97 @@ TEST_CASE("the minimap's north mark sits on its own badge over the ring, in both
       CHECK_FALSE(overflow.element.contains("minimap"));
     }
   }
+}
+
+namespace {
+
+// The need meters' state as the game publishes it (FieldHudView: hud.gauge.<i>), and the clock
+// running, so the field status shows.
+void publishGauges(Ui& ui, const std::array<double, 3>& fills, std::size_t activeNeed) {
+  ui.setSetting("hud.shown", true);
+  constexpr std::array<int, 3> Needs{0, 2, 3};
+  for (std::size_t index = 0; index < Needs.size(); ++index) {
+    ui.setSetting(std::format("hud.gauge.{}.need", index), static_cast<double>(Needs.at(index)));
+    ui.setSetting(std::format("hud.gauge.{}.fill", index), fills.at(index));
+    ui.setSetting(std::format("hud.need.{}.active", Needs.at(index)), index == activeNeed);
+  }
+  bump(ui, "hud.revision");
+  ui.update();
+}
+
+constexpr std::size_t NoNeed = 3;
+
+} // namespace
+
+TEST_CASE("the need meters fill to the game's share, turn red when due and hide with the option") {
+  Screen screen{"hud", "en"};
+  screen.skin("pixel");
+  screen.ui->show("hud");
+  publishGauges(*screen.ui, {30.0, 140.0, 80.0}, 2);
+  // The pixel look lays its bars out in the original's 25 pips (4 % each), rounding down.
+  CHECK(screen.ui->styleProperty("hud", "field-gauge-0-fill", "width") == "28%");
+  CHECK(screen.ui->styleProperty("hud", "field-gauge-1-fill", "width") == "100%");
+  CHECK(screen.ui->styleProperty("hud", "field-gauge-2-fill", "width") == "80%");
+  CHECK(screen.ui->elementHasClass("hud", "field-gauge-0", "hunger"));
+  CHECK(screen.ui->elementHasClass("hud", "field-gauge-2", "tired"));
+  CHECK(screen.ui->elementHasClass("hud", "field-gauge-2", "active"));
+  CHECK_FALSE(screen.ui->elementHasClass("hud", "field-gauge-0", "active"));
+  CHECK_FALSE(screen.ui->elementHasClass("hud", "field-gauges", "hidden"));
+  screen.ui->setSetting("need_meters", false);
+  screen.ui->update();
+  CHECK(screen.ui->elementHasClass("hud", "field-gauges", "hidden"));
+}
+
+TEST_CASE("the pixel look's need meters stay in the window, clear of the bars, at every UI scale") {
+  for (const Window& window : Windows) {
+    CAPTURE(window.width);
+    CAPTURE(window.height);
+    CAPTURE(window.scale);
+    Screen screen{"hud", "en"};
+    screen.skin("pixel");
+    screen.ui->resize(window.width, window.height);
+    screen.ui->setScale(window.scale);
+    screen.ui->show("hud");
+    publishGauges(*screen.ui, {50.0, 50.0, 50.0}, NoNeed);
+    // Past the panel's slide in.
+    screen.frames(20);
+    const Ui::Rect whole{.left = 0.0F,
+                         .top = 0.0F,
+                         .right = static_cast<float>(window.width),
+                         .bottom = static_cast<float>(window.height)};
+    const auto bar = screen.ui->elementDrawnRect("hud", "field-meter-0");
+    REQUIRE(bar.has_value());
+    for (int index = 0; index < 3; ++index) {
+      CAPTURE(index);
+      const auto gauge = screen.ui->elementDrawnRect("hud", std::format("field-gauge-{}", index));
+      REQUIRE(gauge.has_value());
+      CHECK(gauge->right - gauge->left > 0.0F);
+      checkInside(*gauge, whole);
+      CHECK(gauge->right <= bar->left + 0.5F);
+    }
+  }
+}
+
+TEST_CASE("a danger mark hangs over the point the game names, and leaves when the game drops it") {
+  Screen screen{"hud", "en"};
+  screen.skin("pixel");
+  screen.ui->show("hud");
+  screen.ui->setSetting("hud.danger.3.visible", true);
+  screen.ui->setSetting("hud.danger.3.x", 40.0);
+  screen.ui->setSetting("hud.danger.3.y", 30.0);
+  bump(*screen.ui, "hud.danger.revision");
+  screen.frames(2);
+  CHECK(screen.ui->elementHasClass("hud", "field-danger-3", "shown"));
+  CHECK_FALSE(screen.ui->elementHasClass("hud", "field-danger-0", "shown"));
+  const auto mark = screen.ui->elementDrawnRect("hud", "field-danger-3");
+  REQUIRE(mark.has_value());
+  CHECK(mark->right - mark->left > 0.0F);
+  CHECK((mark->left + mark->right) / 2.0F == doctest::Approx(1280.0F * 0.4F).epsilon(0.01));
+  CHECK(mark->bottom == doctest::Approx(720.0F * 0.3F).epsilon(0.01));
+  screen.ui->setSetting("hud.danger.3.visible", false);
+  bump(*screen.ui, "hud.danger.revision");
+  screen.frames(2);
+  CHECK_FALSE(screen.ui->elementHasClass("hud", "field-danger-3", "shown"));
 }
 
 } // namespace dwe::ui

@@ -55,6 +55,9 @@ struct CombatStats {
   friend bool operator==(const CombatStats&, const CombatStats&) = default;
 };
 
+// A move id -> the catalog's variant of it.
+using MoveVariants = std::map<std::string, std::size_t, std::less<>>;
+
 // Everything the battle needs to know about one fighter before it starts. The session builds the
 // partner's from the partner state; enemies come from the Digimon table and the map's NPC records
 // (enemyFromMap).
@@ -86,8 +89,9 @@ struct Combatant {
   // The species' move list, for learning in battle.
   std::array<std::optional<std::string>, SpeciesMoves> speciesMoves{};
   // The partner's own versions of moves (a ruleset's species patches: partner_moves): a move id
-  // -> the catalog's variant of it (MoveCatalog::addVariant), used instead of the table's.
-  std::map<std::string, std::size_t, std::less<>> moveVariants;
+  // -> the catalog's variant of it (MoveCatalog::addVariant, addBoosted), used instead of the
+  // table's.
+  MoveVariants moveVariants;
   // Where it stands when the battle starts, in world axes, as every position of the battle.
   Point position;
 };

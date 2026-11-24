@@ -69,6 +69,8 @@ screens:
     styles: [title/style, panel/style, new_game_mode/style]
   new_game_rules:
     styles: [title/style, panel/style, new_game_rules/style]
+  new_game_randomizer:
+    styles: [title/style, panel/style, new_game_rules/style, new_game_randomizer/style]
   online_hub:
     styles: [online_hub/style]
   online_profile:
@@ -253,3 +255,13 @@ sprite_sheets:
       nb-on-device: [0, 64, 119, 112]
       nb-on-island: [119, 64, 258, 84]
       nb-on-forest: [377, 64, 196, 160]
+  # The field's need meters and danger alert (scripts/art/make_field_alerts.py: pixel drawings in the skin's
+  # colours, 4 pixels per art pixel): the meal, the toilet, the tiredness's drops and the danger's devil, 32 dp each.
+  - name: nb-field-alerts
+    image: ui/skins/pixel/assets/field_alerts
+    dp_per_pixel: 0.5
+    sprites:
+      nb-gauge-hunger: [0, 0, 64, 64]
+      nb-gauge-toilet: [64, 0, 64, 64]
+      nb-gauge-tired: [128, 0, 64, 64]
+      nb-danger-devil: [192, 0, 64, 64]

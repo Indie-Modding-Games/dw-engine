@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/core/error.hpp>
+#include <dwe/game/battle/boosted_moves.hpp>
 #include <dwe/game/battle/rules.hpp>
 
 #include <array>
@@ -59,6 +60,8 @@ struct BattleMove {
   bool finisher = false;
   bool counter = false;
   bool learnable = false;
+  // A partner's boosted technique (MoveCatalog::addBoosted).
+  bool boosted = false;
   std::optional<std::array<std::int32_t, 3>> learnChances;
   std::optional<BuffPercents> buff;
 };
@@ -84,6 +87,9 @@ public:
   // lookups by number keep returning the table's.
   MoveRef addVariant(MoveRef move, std::optional<std::int32_t> power,
                      std::optional<std::int32_t> iframes);
+  // A copy of a move with the boosted power and MP cost (BoostedMoveRules), for a partner whose
+  // species is better at it; like addVariant, find() keeps returning the table's.
+  MoveRef addBoosted(MoveRef move, const BoostedMoveRules& rules);
 
 private:
   std::vector<BattleMove> moves_;

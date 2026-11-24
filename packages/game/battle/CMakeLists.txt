@@ -4,6 +4,7 @@ dwe_add_module(battle
         src/rules.cpp
         src/combatant.cpp
         src/moves.cpp
+        src/boosted_moves.cpp
         src/state.cpp
         src/strategies.cpp
         src/original_damage.cpp

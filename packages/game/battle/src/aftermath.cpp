@@ -146,7 +146,8 @@ std::int32_t mpDiscountLearned(const std::vector<MpDiscount>& discounts, std::in
 // battle_ui.c: battleMoveLearning: one of the enemy techniques seen, of the partner's specials and
 // in its species' list, by the move's chance for that special.
 std::vector<std::string> learnedMoves(const PartnerSide& side, const BattleState& state,
-                                      const MoveCatalog& moves, ruleset::Random& random) {
+                                      const MoveCatalog& moves, std::optional<std::int32_t> fixed,
+                                      ruleset::Random& random) {
   const Combatant& partner = side.combatant;
   const std::vector<std::string>& known = side.condition.knownMoves;
   std::vector<MoveRef> candidates;
@@ -165,7 +166,7 @@ std::vector<std::string> learnedMoves(const PartnerSide& side, const BattleState
       continue;
     }
     const auto slot = static_cast<std::size_t>(std::distance(partner.specials.begin(), special));
-    const std::int32_t chance = move.learnChances ? move.learnChances->at(slot) : 0;
+    const std::int32_t chance = fixed.value_or(move.learnChances ? move.learnChances->at(slot) : 0);
     if (chance > random.below(Hundred)) {
       candidates.push_back(ref);
     }
@@ -260,7 +261,7 @@ BattleResult settlePartner(Outcome outcome, const BattleSetup& setup, const Batt
         result.commandsLearned = commandsLearned(rules.menus, brain, raised);
         result.mpDiscountLearned = mpDiscountLearned(rules.condition.mpDiscounts, brain, raised);
       }
-      result.learnedMoves = learnedMoves(side, state, moves, random);
+      result.learnedMoves = learnedMoves(side, state, moves, setup.learnChance, random);
       result.care = consequences.victory;
       if (world) {
         result.recruitJoined = setup.recruitOnVictory;

@@ -2,12 +2,15 @@
 #include <dwe/game/coop/profile_transfer.hpp>
 #include <dwe/game/coop/protocol.hpp>
 #include <dwe/net/loopback.hpp>
+#include <dwe/net/peer_link.hpp>
 #include <dwe/net/wire.hpp>
 
 #include <doctest/doctest.h>
 
 #include <array>
 #include <cstdint>
+#include <optional>
+#include <span>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -489,6 +492,92 @@ TEST_CASE("cooperative handshake and silence timeouts end the link") {
     guest.poll(network.now());
     CHECK(guest.phase() == LinkPhase::Failed);
     CHECK(guest.failure() == LinkFailure::Silence);
+  }
+}
+
+namespace {
+
+// A transport whose incoming messages and state the test sets.
+class ScriptedPeer final : public net::PeerLink {
+public:
+  void send(net::Lane /*lane*/, std::span<const std::uint8_t> /*message*/) override {}
+  std::optional<net::Bytes> receive(net::Lane lane) override {
+    auto& queue = lane == net::Lane::Reliable ? reliable : unreliable;
+    if (queue.empty()) {
+      return std::nullopt;
+    }
+    net::Bytes bytes = std::move(queue.front());
+    queue.erase(queue.begin());
+    return bytes;
+  }
+  void poll(net::Millis /*now*/) override {}
+  [[nodiscard]] net::PeerState state() const override { return peerState; }
+  [[nodiscard]] net::PeerFailure failure() const override {
+    return peerState == net::PeerState::Failed ? net::PeerFailure::Closed : net::PeerFailure::None;
+  }
+  [[nodiscard]] std::optional<net::Millis> lastHeard() const override { return net::Millis{0}; }
+
+  std::vector<net::Bytes> reliable;
+  std::vector<net::Bytes> unreliable;
+  net::PeerState peerState = net::PeerState::Open;
+};
+
+net::Bytes welcome() {
+  return encode(Message{Welcome{.identity = identity(),
+                                .accepted = true,
+                                .assignedPlayer = GuestPlayerId,
+                                .reason = RejectReason::None,
+                                .sessionId = 1,
+                                .hostName = "Host",
+                                .seatKey = 0}});
+}
+
+} // namespace
+
+TEST_CASE("a link keeps how it ended whatever its transport does next") {
+  SUBCASE("the host's goodbye and the closing transport in one poll read as the host leaving") {
+    ScriptedPeer peer;
+    CoopLink guest = CoopLink::guest(peer, identity(), "Guest");
+    peer.reliable.push_back(welcome());
+    guest.poll(net::Millis{1});
+    REQUIRE(guest.phase() == LinkPhase::Ready);
+    peer.reliable.push_back(encode(Message{Leave{LeaveReason::Quit}}));
+    peer.peerState = net::PeerState::Failed;
+    guest.poll(net::Millis{2});
+    CHECK(guest.phase() == LinkPhase::Left);
+    CHECK(guest.leaveReason() == LeaveReason::Quit);
+    guest.poll(net::Millis{3});
+    CHECK(guest.phase() == LinkPhase::Left);
+    CHECK(guest.failure() == LinkFailure::None);
+  }
+  SUBCASE("a damaged message ends the link; a goodbye after it changes nothing") {
+    ScriptedPeer peer;
+    CoopLink guest = CoopLink::guest(peer, identity(), "Guest");
+    peer.reliable.push_back(welcome());
+    guest.poll(net::Millis{1});
+    REQUIRE(guest.phase() == LinkPhase::Ready);
+    peer.reliable.push_back(net::Bytes{WelcomeKind});
+    peer.reliable.push_back(encode(Message{Leave{LeaveReason::Quit}}));
+    guest.poll(net::Millis{2});
+    CHECK(guest.phase() == LinkPhase::Failed);
+    CHECK(guest.failure() == LinkFailure::Damaged);
+    CHECK_FALSE(guest.leaveReason());
+  }
+  SUBCASE("a refused guest keeps the host's reason") {
+    ScriptedPeer peer;
+    CoopLink guest = CoopLink::guest(peer, identity(), "Guest");
+    peer.reliable.push_back(encode(Message{Welcome{.identity = identity(),
+                                                   .accepted = false,
+                                                   .assignedPlayer = GuestPlayerId,
+                                                   .reason = RejectReason::RoomFull,
+                                                   .sessionId = 0,
+                                                   .hostName = {},
+                                                   .seatKey = 0}}));
+    peer.reliable.push_back(encode(Message{Leave{LeaveReason::SessionEnded}}));
+    peer.peerState = net::PeerState::Failed;
+    guest.poll(net::Millis{1});
+    CHECK(guest.phase() == LinkPhase::Rejected);
+    CHECK(guest.failure() == LinkFailure::RoomFull);
   }
 }
 

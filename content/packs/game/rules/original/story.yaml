@@ -28,3 +28,13 @@ capacity:
   extra_raised:
     first_trigger: 800
     species: 0
+# The map entries' rolls that place a roaming rare (docs/modules/apps/game.md, «Roaming rare chance»): each
+# section's store_random into the variable, from 0 to highest, places it on hits_at_most or less. The option
+# roaming_rare_chance tunes their chance with the same single draw; its original setting rolls them as they are.
+roaming_rares:
+  # Piximon in the jungle (trop01, MAPHEAD 0x0c) until trigger 255.
+  - {script: 0, section: 12, variable: 100, highest: 99, hits_at_most: 2}
+  # Mamemon on the plains (miha01, MAPHEAD 0x13) until trigger 213.
+  - {script: 0, section: 19, variable: 100, highest: 99, hits_at_most: 2}
+  # MetalMamemon in Factorial Town (fact02, MAPHEAD 0x99) until trigger 227.
+  - {script: 0, section: 153, variable: 110, highest: 99, hits_at_most: 2}

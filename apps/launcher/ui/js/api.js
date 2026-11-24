@@ -24,18 +24,10 @@ export const api = {
   installLauncherUpdate: () => call("install_launcher_update"),
   restartLauncher: () => call("restart_launcher"),
   setAutoUpdate: (what, enabled) => call("set_auto_update", { what, enabled }),
-  // The GPU compatibility mode (Vulkan 1.2 floor), the low-performance mode (potato preset) and the
-  // AMD RX 6000 safe mode: the launcher's switches that pass --compatible / --low-performance /
-  // --rdna2-safe to the game (system_check.rs, launch.rs).
-  setCompatibilityMode: (enabled) => call("set_compatibility_mode", { enabled }),
-  setLowPerformanceMode: (enabled) => call("set_low_performance_mode", { enabled }),
-  // The AMD RX 6000 (RDNA2) safe mode: --rdna2-safe. The game only applies it on those cards.
-  setRdna2SafeMode: (enabled) => call("set_rdna2_safe_mode", { enabled }),
-  // Manual ways out of a wrong GPU check: "auto", "skip" or "software", plus the game's own
-  // arguments and environment (settings.rs). None of them can keep Play from starting the game.
-  setLaunchMode: (mode) => call("set_launch_mode", { mode }),
-  setExtraArgs: (args) => call("set_extra_args", { args }),
-  setExtraEnv: (env) => call("set_extra_env", { env }),
+  // what: "compatibility" or "low-performance".
+  setGraphicsSwitch: (what, enabled) => call("set_graphics_switch", { switch: what, enabled }),
+  // mode: "auto", "skip" or "software"; args and env as the player typed them.
+  setLaunchOptions: (mode, args, env) => call("set_launch_options", { mode, args, env }),
   // "stable" or "testing"; the release found by the last check is dropped.
   setUpdateChannel: (channel) => call("set_update_channel", { channel }),
   // Free space and the GPU check (src-tauri/src/system_check.rs); again: check once more.

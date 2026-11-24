@@ -1,5 +1,6 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/game/battle/boosted_moves.hpp>
 #include <dwe/game/battle/messages.hpp>
 #include <dwe/game/battle/strategies.hpp>
 #include <dwe/game/inventory/item_effect.hpp>
@@ -26,6 +27,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace dwe::session {
 
@@ -362,6 +364,29 @@ core::Result<void> BattleAdapter::readRules(const ruleset::Ruleset& rules) {
           move, catalog->addVariant(*ref, change.power, change.iframes));
     }
   }
+  boostedVariants_.clear();
+  if (const ruleset::Section* boostedSection = rules.section(game::battle::BoostedMovesSection)) {
+    auto boosted = game::battle::readBoostedMoveRules(*boostedSection);
+    if (!boosted) {
+      return std::unexpected{boosted.error()};
+    }
+    for (const auto& [species, move] : boosted->species) {
+      const assets::DigimonRow* row = rowOf(species);
+      const auto ref = catalog->find(move);
+      if (row == nullptr || !ref || !catalog->at(*ref).learnable ||
+          !std::ranges::contains(row->moves, std::optional<std::string>{move})) {
+        continue;
+      }
+      std::size_t base = *ref;
+      if (const auto own = partnerVariants_.find(species); own != partnerVariants_.end()) {
+        if (const auto variant = own->second.find(move); variant != own->second.end()) {
+          base = variant->second;
+        }
+      }
+      boostedVariants_.insert_or_assign(species,
+                                        std::pair{move, catalog->addBoosted(base, *boosted)});
+    }
+  }
   auto movesSection = rules.requireSection(PartnerMovesSection);
   if (!movesSection) {
     return std::unexpected{movesSection.error()};
@@ -496,6 +521,27 @@ void BattleAdapter::scaleBody(game::battle::Combatant& fighter, std::string_view
   fighter.height = scaled(fighter.height);
 }
 
+std::optional<std::string_view> BattleAdapter::boostedMoveOf(std::string_view species) const {
+  const auto pick = boostedVariants_.find(species);
+  if (pick == boostedVariants_.end()) {
+    return std::nullopt;
+  }
+  return pick->second.first;
+}
+
+void BattleAdapter::boost(game::battle::Combatant& fighter, std::string_view species,
+                          std::vector<std::string> known) const {
+  const auto pick = boostedVariants_.find(species);
+  if (!boostedOn_ || !catalog_ || pick == boostedVariants_.end()) {
+    return;
+  }
+  const auto& [move, ref] = pick->second;
+  std::ranges::sort(known);
+  if (knowsTechnique(PartnerMoves{.learned = std::move(known), .equipped = {}}, *catalog_, move)) {
+    fighter.moveVariants.insert_or_assign(move, ref);
+  }
+}
+
 core::Result<game::battle::Combatant>
 BattleAdapter::partnerCombatant(const GameSession& session) const {
   return visitingCombatant(visitorOf(session));
@@ -531,6 +577,7 @@ BattleAdapter::visitingCombatant(const VisitingPartner& partner) const {
       variants != partnerVariants_.end()) {
     fighter.moveVariants = variants->second;
   }
+  boost(fighter, partner.species, partner.condition.knownMoves);
   const StatBlock& base = partner.stats;
   fighter.stats = {.maxHp = base[Stat::Hp],
                    .maxMp = base[Stat::Mp],
@@ -591,7 +638,9 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
                                   .recruitOnVictory = std::move(request.recruitOnVictory),
                                   .versus = std::nullopt,
                                   .allies = {},
-                                  .coopScaling = request.coopScaling};
+                                  .coopScaling = request.coopScaling,
+                                  .learnChance = session.randomizer().learnChance()};
+  randomizeDrops(session, setup.enemies);
   for (const BattleAlly& ally : request.allies) {
     const VisitingPartner joining = ally.visitor ? *ally.visitor : visitorOf(session);
     auto fighter = visitingCombatant(joining);
@@ -619,7 +668,7 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
 }
 
 core::Result<game::battle::Combatant>
-BattleAdapter::versusCombatant(const game::versus::VersusFighter& fighter) const {
+BattleAdapter::versusCombatant(const game::versus::VersusFighter& fighter, bool boosted) const {
   if (!catalog_) {
     return core::fail(std::string{messages::BattleNotRead});
   }
@@ -659,6 +708,15 @@ BattleAdapter::versusCombatant(const game::versus::VersusFighter& fighter) const
     }
     combatant.moves.at(place) = move;
   }
+  if (boosted) {
+    std::vector<std::string> equipped;
+    for (const std::optional<std::string>& move : fighter.techniques) {
+      if (move) {
+        equipped.push_back(*move);
+      }
+    }
+    boost(combatant, fighter.species, std::move(equipped));
+  }
   // moves[3] = VS_getFirstSpecialMove(species): the species' finisher, as a raised partner's.
   if (const std::optional<MoveSlot> slot = finisherSlot(*row)) {
     combatant.moves.at(game::battle::FinisherSlot) = row->moves.at(static_cast<std::size_t>(*slot));
@@ -666,21 +724,20 @@ BattleAdapter::versusCombatant(const game::versus::VersusFighter& fighter) const
   return combatant;
 }
 
-core::Result<game::battle::Battle>
-BattleAdapter::startVersus(const game::versus::VersusFighter& host,
-                           const game::versus::VersusFighter& guest,
-                           const VersusPlacement& placement, std::uint64_t seed) const {
+core::Result<game::battle::Battle> BattleAdapter::startVersus(
+    const game::versus::VersusFighter& host, const game::versus::VersusFighter& guest,
+    const VersusPlacement& placement, std::uint64_t seed, bool boosted) const {
   if (!rules_ || !section_) {
     return core::fail(std::string{messages::BattleNotRead});
   }
   if (!rules_->versus) {
     return core::fail(std::string{messages::VersusNotRead});
   }
-  auto first = versusCombatant(host);
+  auto first = versusCombatant(host, boosted);
   if (!first) {
     return std::unexpected{first.error()};
   }
-  auto second = versusCombatant(guest);
+  auto second = versusCombatant(guest, boosted);
   if (!second) {
     return std::unexpected{second.error()};
   }
@@ -714,6 +771,22 @@ BattleAdapter::startVersus(const game::versus::VersusFighter& host,
       .coopScaling = {}};
   return game::battle::Battle::start(std::move(setup), *rules_, *catalog_, std::move(*strategies),
                                      seed);
+}
+
+void BattleAdapter::randomizeDrops(const GameSession& session,
+                                   std::vector<game::battle::Combatant>& enemies) const {
+  const game::randomizer::Randomizer& randomizer = session.randomizer();
+  if (!randomizer.settings().drops || desc_.inventory == nullptr) {
+    return;
+  }
+  const std::vector<std::string> pool = desc_.inventory->randomItems(randomizer);
+  for (game::battle::Combatant& enemy : enemies) {
+    if (enemy.dropItem) {
+      if (auto drop = randomizer.drop(enemy.species, *enemy.dropItem, pool)) {
+        enemy.dropItem = std::move(*drop);
+      }
+    }
+  }
 }
 
 void BattleAdapter::giveRewards(GameSession& session, const BattleResult& result,

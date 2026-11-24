@@ -78,19 +78,28 @@ async fn call(data: &Path, id: &str, method: &str, params: Value) -> Result<Valu
     bridge::run(data, id, active, call, facts()).await
 }
 
+/// Every command the launcher registers (lib.rs, generate_handler!).
+fn registered_commands() -> Vec<String> {
+    let lib = include_str!("../src/lib.rs");
+    let start = lib.find("generate_handler![").expect("lib.rs registers its commands");
+    let end = start + lib[start..].find(']').unwrap();
+    lib[start..end]
+        .split(',')
+        .filter_map(|item| item.trim().rsplit("::").next().filter(|name| !name.is_empty()))
+        .map(str::to_string)
+        .collect()
+}
+
 #[test]
 fn no_launcher_command_can_be_named() {
-    // Every command of the launcher (lib.rs), the plugins' and a few tricks.
-    let privileged = [
-        "status", "background", "check_updates", "install_disc", "reextract", "update_game", "rollback_game", "cancel",
-        "play", "set_language", "set_check_updates", "set_data_folder", "save_token", "clear_token", "open_logs",
-        "install_launcher_update", "restart_launcher", "set_auto_update", "set_update_channel", "addons_list", "addon_inspect", "addon_install", "addon_set_enabled",
-        "set_compatibility_mode", "set_low_performance_mode", "set_rdna2_safe_mode", "set_launch_mode", "set_extra_args", "set_extra_env",
-        "addon_uninstall", "addons_safe_mode", "addons_dismiss_crash", "addon_call", "plugin:dialog|open",
-        "plugin:opener|open_path", "plugin:opener|open_url", "plugin:updater|check", "plugin:updater|download_and_install",
-        "token", "beta_key", "storage", "storage.get.token", "net", "net.fetch ", "Context", "__proto__", "constructor", "",
+    let registered = registered_commands();
+    assert!(registered.len() >= 30 && registered.iter().any(|c| c == "set_launch_options"), "{registered:?}");
+    let tricks = [
+        "save_token", "clear_token", "plugin:dialog|open", "plugin:opener|open_path", "plugin:opener|open_url", "plugin:updater|check",
+        "plugin:updater|download_and_install", "token", "beta_key", "storage", "storage.get.token", "net", "net.fetch ",
+        "Context", "__proto__", "constructor", "",
     ];
-    for method in privileged {
+    for method in registered.iter().map(String::as_str).chain(tricks) {
         let failure = bridge::parse(method, &json!({ "key": "a", "url": "https://example.org", "path": "/" })).unwrap_err();
         assert_eq!(failure.code, code::ADDON_DENIED, "{method:?} must be refused");
     }

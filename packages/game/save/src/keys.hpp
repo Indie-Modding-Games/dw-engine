@@ -32,6 +32,7 @@ inline constexpr std::string_view Species = "species";
 inline constexpr std::string_view Nickname = "nickname";
 inline constexpr std::string_view Map = "map";
 inline constexpr std::string_view Mode = "mode";
+inline constexpr std::string_view Randomizer = "randomizer";
 } // namespace summary_key
 
 // The keys of the save settings.

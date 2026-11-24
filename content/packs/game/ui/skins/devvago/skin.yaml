@@ -45,6 +45,8 @@ screens:
   # The new game's mode (only with more than one mode), with the rules box.
   new_game_mode:
     styles: [pause_menu/style, new_game_rules/style, new_game_mode/style]
+  new_game_randomizer:
+    styles: [pause_menu/style, new_game_rules/style]
   skin_picker:
     styles: [pause_menu/style, new_game_rules/style, skin_picker/style]
   sleep_menu:
@@ -177,6 +179,8 @@ document_classes:
   dialog:
     panel: [skin-original]
   new_game_mode:
+    panel: [skin-original]
+  new_game_randomizer:
     panel: [skin-original]
   versus:
     panel: [skin-original]

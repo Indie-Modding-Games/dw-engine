@@ -4,6 +4,7 @@
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/game/field/field_items.hpp>
+#include <dwe/game/randomizer/randomizer.hpp>
 #include <dwe/ruleset/random.hpp>
 #include <dwe/session/session_system.hpp>
 
@@ -172,6 +173,8 @@ public:
   [[nodiscard]] ruleset::SectionChecks sectionChecks() const override;
   // Reads the field_items section; without one, nothing lies on the ground.
   core::Result<void> readRules(const ruleset::Ruleset& rules) override;
+  core::Result<void> startNewGame(GameSession& session) override;
+  void afterLoad(GameSession& session) override;
 
   // The field's sounds; none without a field_items section.
   [[nodiscard]] const std::optional<FieldItemsRules>& rules() const { return rules_; }
@@ -220,6 +223,10 @@ public:
 
 private:
   [[nodiscard]] std::optional<assets::ItemHandle> itemOf(std::int32_t originalItem) const;
+  // The item a randomized run lays on a spot instead of the script's.
+  [[nodiscard]] std::optional<assets::ItemHandle>
+  placed(std::string_view mapId, std::string_view spot, assets::ItemHandle original) const;
+  void bindRandomizer(const GameSession& session);
 
   InventoryAdapter* inventory_;
   StoryAdapter* story_;
@@ -232,6 +239,8 @@ private:
   bool rareItemsOn_ = false;
   // The spots of this load where a rare item lies.
   std::vector<assets::CollisionCell> rareCells_;
+  const game::randomizer::Randomizer* randomizer_ = nullptr;
+  std::vector<std::string> randomItems_;
 };
 
 } // namespace dwe::session

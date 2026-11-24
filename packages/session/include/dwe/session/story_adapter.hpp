@@ -88,6 +88,17 @@ struct ExtraRaisedRange {
   friend bool operator==(const ExtraRaisedRange&, const ExtraRaisedRange&) = default;
 };
 
+// A map entry's roll that places a roaming rare: the section's store_random into `variable` from
+// 0 to `highest` places it on `hitsAtMost` or less.
+struct RoamingRareRoll {
+  game::story::SectionRef section;
+  std::int64_t variable = 0;
+  std::int64_t highest = 0;
+  std::int64_t hitsAtMost = 0;
+
+  friend bool operator==(const RoamingRareRoll&, const RoamingRareRoll&) = default;
+};
+
 struct StorySectionRules {
   // Engine ticks per frame of the original: the engine ticks at 60 Hz and the original's story ran
   // at 20 frames a second, so the original's is 3.
@@ -98,6 +109,7 @@ struct StorySectionRules {
   // the section leaves it out).
   game::story::StoryCapacity capacity;
   ExtraRaisedRange extraRaised;
+  std::vector<RoamingRareRoll> roamingRares;
 };
 
 core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section);
@@ -264,10 +276,15 @@ public:
   [[nodiscard]] std::int64_t shopTally() const { return shopTally_; }
   void setShopTally(std::int64_t tally) { shopTally_ = tally; }
 
+  // The chance in 100 that a roaming rare's roll places it (the option roaming_rare_chance);
+  // nothing rolls as the original.
+  void setRoamingRareChance(std::optional<std::int32_t> percent) { roamingRareChance_ = percent; }
+
 private:
   class Serializer;
   class StatePort;
   class RandomPort;
+  class RollPort;
   class SoundRelay;
   class MusicRelay;
 
@@ -311,6 +328,9 @@ private:
   std::unique_ptr<script::ScriptVm> vm_;
   std::unique_ptr<StatePort> statePort_;
   std::unique_ptr<RandomPort> randomPort_;
+  std::unique_ptr<RollPort> rollPort_;
+  std::vector<RoamingRareRoll> roamingRares_;
+  std::optional<std::int32_t> roamingRareChance_;
   std::unique_ptr<SoundRelay> sound_;
   std::unique_ptr<MusicRelay> music_;
   std::unique_ptr<game::story::StoryOrders> orders_;

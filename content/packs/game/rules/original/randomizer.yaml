@@ -1,0 +1,138 @@
+# The randomizer (packages/game/randomizer, docs/modules/game/randomizer.md): what a randomized run may change. A run
+# only changes what its settings turn on; an inactive one, and every game of Classic Enhanced, plays as the original.
+#
+# The wild enemies: map NPC slots whose talk section only shows a line and starts a free battle (start_battle(0),
+# with at most a set_trigger outside the recruits' 200-262). Bosses, story and predefined fights, recruits (their
+# section sets 200 + n), the roaming rares and every other character keep their species. Listed from the base pack's
+# maps (npc_spawns, map NPC records, story/<script>.lua sections).
+enemies:
+  betl01: [0, 1, 2, 3, 4, 5, 6, 7]
+  dgha01: [0, 1, 2, 3, 4, 5, 6, 7]
+  dgha02: [1, 2, 3, 4, 5, 6]
+  fact01: [0, 1, 2, 3]
+  fact02: [0, 1, 2, 3]
+  fact03: [0, 1, 2, 3, 4, 5]
+  fact04: [0, 1, 2, 3, 4]
+  fact07: [0, 1, 2, 3, 4, 5]
+  fact09: [0, 1, 2, 3, 4, 5]
+  fact10: [1, 2]
+  frzl01: [0, 1, 2, 3]
+  frzl02: [0, 1, 2, 3]
+  frzl03: [0, 1, 2, 3]
+  frzl04: [0, 1, 2, 3, 4, 5]
+  frzl06: [0, 1, 2, 3, 4, 5]
+  frzl07: [0, 1, 2, 3]
+  frzl08: [1, 2, 3, 4]
+  frzl12: [0, 1, 2, 3]
+  frzl13: [0, 1, 2, 3]
+  frzl16: [0, 2]
+  gcan01: [0, 1, 2, 3]
+  gcan02: [0, 1, 2, 3, 4, 5]
+  gcan03: [0, 1, 2, 3, 4]
+  gcan04: [1]
+  gcan04_2: [1]
+  gcan06: [0, 1, 2, 3, 4, 5]
+  gcan07: [0, 1, 2, 3, 4, 5]
+  gcan08_1: [0, 1, 2]
+  gcan08_2: [0, 1, 2]
+  gcan09: [0, 1, 2, 3]
+  gias00: [0, 1, 2, 3]
+  gias01: [0, 1, 2, 3, 4, 5]
+  gias02: [1, 2, 3, 4, 5, 6]
+  gias03: [1, 2, 3]
+  gias04: [1, 2, 3, 4, 5]
+  gias05: [0, 1, 2, 3, 4, 5]
+  gias06a: [2, 3, 4, 5]
+  gias07: [3, 4]
+  gias08: [0, 1, 2, 3, 4, 5]
+  gomi01: [0, 1, 2, 3, 4, 5]
+  icsa02: [0, 1, 2]
+  icsa04: [0, 1, 2]
+  icsa05: [0, 1, 2, 3]
+  icsa06: [0, 1, 2]
+  icsa07: [0, 1]
+  koda00: [1, 2, 3, 4]
+  koda01: [0, 1, 2, 3, 4, 5]
+  koda04: [0, 1, 2, 3, 4, 5]
+  koda08: [0, 1, 2, 3]
+  mayo00: [0, 1, 3, 4]
+  mayo01: [0, 1, 2, 3, 4, 5, 6, 7]
+  mayo02: [0, 2, 3, 4]
+  mayo03: [0, 1, 3, 4]
+  mayo04a: [1, 2, 3, 4]
+  mayo08a: [0, 2]
+  mayo08b: [0, 1, 2, 3, 4, 5]
+  mgen01: [0, 1, 2, 3, 4]
+  mgen02: [0, 1, 2, 3, 4]
+  mgen03: [0, 1, 2, 3, 4]
+  mgen04: [0, 1, 2, 3, 4]
+  mgen05: [0, 1, 2]
+  mgen06: [0, 1, 2, 3, 4]
+  mgen07: [0, 1, 2]
+  mgen08: [0, 1, 2, 3]
+  mgen09: [0, 1, 2]
+  mgen10: [0, 1, 2, 3, 4, 5]
+  mgen11: [0, 1, 2, 3]
+  mgen12: [0, 1, 2]
+  mgen13: [0, 1, 2, 3]
+  miha00: [0, 1, 2, 3, 4, 5, 6, 7]
+  miha01: [1, 2, 3]
+  miha02: [0, 1, 2, 3]
+  miha04a: [0, 1, 2, 3, 4, 5, 6, 7]
+  miha04b: [0, 1, 2, 3, 4, 5, 6, 7]
+  mist01: [0, 1, 2, 3, 4, 5]
+  mist02: [0, 1, 2, 3, 4, 5, 6]
+  mist03: [1, 2, 3, 4, 5, 6, 7]
+  mist04: [0, 1, 2, 3, 4]
+  mist06: [1, 2, 3, 4]
+  mist07: [0, 1, 2, 3, 4, 5, 6, 7]
+  ogre00: [0, 1, 2]
+  ogre01: [0, 1, 2]
+  omoc05: [0, 1, 2]
+  omoc06: [0, 1]
+  omoc07: [0, 1]
+  saib02: [1, 2, 3, 4, 5]
+  stic01: [0, 1, 2, 3, 4, 5]
+  stic02: [0, 1, 2, 3]
+  trop00: [0, 1, 2, 3]
+  trop01: [1, 2, 3]
+  trop02: [0, 1, 2, 3, 4, 5]
+  trop03: [0, 2, 3, 4]
+  trop04: [1, 2, 3]
+  trop05: [0, 1, 2, 3, 4, 5]
+  yaka02: [0, 1]
+  yaka14: [0, 1, 2]
+  yaka16: [0]
+  yaka17: [0]
+# Items that keep every place they are found in, lying, in a chest or given, and never appear anywhere else: the key
+# items (droppable 0) and every item the story checks in the bag (story.items) to go on or to recruit. The session adds
+# any other key item a pack brings (game::inventory::isKeyItem).
+kept_items:
+  - bandage
+  - medicine
+  - meat
+  - giant_meat
+  - sirloin
+  - digimushrm
+  - digiseabass
+  - spike_club
+  - gold_banana
+  - blue_flute
+  - old_fishrod
+  - amazing_rod
+  - leomonstone
+  - mansion_key
+  - gear
+  - steak
+  - frig_key
+  - as_decoder
+# Items the randomizer never places or drops: the rare evolution items belong to the rare_items option,
+# and the last three of the original's table are unused entries with no price.
+excluded_items:
+  - "game:steel_heart"
+  - "game:blood_moon"
+  - giga_hand
+  - noble_mane
+  - metalbanana
+# Species no pick gives (evolution, starter, wild enemy).
+excluded_species: []

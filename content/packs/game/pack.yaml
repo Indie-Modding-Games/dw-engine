@@ -92,6 +92,8 @@ schemas:
     - rules/*/item_use
   ruleset_partner_moves:
     - rules/*/partner_moves
+  ruleset_boosted_moves:
+    - rules/*/boosted_moves
   ruleset_item_keeper:
     - rules/*/item_keeper
   ruleset_discard_menu:
@@ -138,6 +140,8 @@ schemas:
     - rules/*/dialogue
   ruleset_field_items:
     - rules/*/field_items
+  ruleset_randomizer:
+    - rules/*/randomizer
   ruleset_fishing:
     - rules/*/fishing
   ruleset_story:

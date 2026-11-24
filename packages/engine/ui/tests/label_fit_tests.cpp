@@ -167,7 +167,74 @@ void publishShop(Ui& ui, std::string_view language, std::string_view phase, int 
   ui.setSetting("shop.revision", (count == nullptr ? 0.0 : *count) + 1.0);
 }
 
+struct RandomizerState {
+  bool active = false;
+  bool editing = false;
+  bool invalid = false;
+};
+
+void publishRandomizer(Ui& ui, const RandomizerState& state) {
+  for (const std::string_view option : {"evolutions", "starter", "enemies", "items", "drops"}) {
+    ui.setSetting(std::format("new_game_randomizer.{}", option), state.active);
+  }
+  ui.setSetting("new_game_randomizer.learn", std::string{state.active ? "100" : "original"});
+  ui.setSetting("new_game_randomizer.seed", std::string{"WWWWWWWW"});
+  ui.setSetting("new_game_randomizer.code", std::string{"WWWWWWWW-WW"});
+  ui.setSetting("new_game_randomizer.active", state.active);
+  ui.setSetting("new_game_randomizer.editing", state.editing);
+  ui.setSetting("new_game_randomizer.draft", std::string{"WWWWWWWW-WW"});
+  ui.setSetting("new_game_randomizer.invalid", state.invalid);
+  const UiValue revision = ui.setting("new_game_randomizer.revision");
+  const double* count = std::get_if<double>(&revision);
+  ui.setSetting("new_game_randomizer.revision", (count == nullptr ? 0.0 : *count) + 1.0);
+}
+
 } // namespace
+
+TEST_CASE(
+    "the randomizer's setup stays inside its boxes on every row, in every skin and language") {
+  constexpr std::string_view Document = "new_game_randomizer";
+  constexpr int Rows = 16;
+  for (const std::string_view language : Languages) {
+    CAPTURE(language);
+    const auto screen = screenIn(Document, language);
+    Ui& ui = *screen->ui;
+    for (const std::string_view skin : Skins) {
+      CAPTURE(skin);
+      screen->skin(skin);
+      for (const bool active : {false, true}) {
+        CAPTURE(active);
+        publishRandomizer(ui, {.active = active});
+        ui.show(Document, true);
+        screen->frames(8);
+        CHECK(overflowsOf(ui, Document).empty());
+        for (int row = 0; row < Rows; ++row) {
+          screen->press(input::keys::Down);
+          screen->frames(2);
+          CAPTURE(ui.focusedElementId(Document));
+          CHECK(overflowsOf(ui, Document).empty());
+        }
+        ui.hide(Document);
+        screen->frames(1);
+      }
+      publishRandomizer(ui, {});
+      ui.show(Document, true);
+      screen->frames(4);
+      for (int row = 0; row < Rows && ui.focusedElementId(Document) != "seed"; ++row) {
+        screen->press(input::keys::Down);
+      }
+      REQUIRE(ui.focusedElementId(Document) == "seed");
+      publishRandomizer(ui, {.active = true, .editing = true});
+      screen->frames(4);
+      CHECK(overflowsOf(ui, Document).empty());
+      publishRandomizer(ui, {.active = true, .invalid = true});
+      screen->frames(4);
+      CHECK(overflowsOf(ui, Document).empty());
+      ui.hide(Document);
+      screen->frames(1);
+    }
+  }
+}
 
 TEST_CASE("every screen's labels stay inside their boxes in every skin and language") {
   const std::vector<std::string> names = documents();

@@ -37,6 +37,8 @@ struct GameMode {
   // Where the mode goes in the list: lower first, then by id.
   std::int32_t order = 0;
   std::vector<OptionPin> options;
+  // Whether a new game of the mode may be a randomized run (docs/modules/game/randomizer.md).
+  bool randomizer = false;
 
   friend bool operator==(const GameMode&, const GameMode&) = default;
 };

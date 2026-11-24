@@ -7,6 +7,11 @@
 
 namespace dwe::game::coop {
 
+// How many chunks of MaxProfileChunkBytes a profile of `bytes` takes.
+[[nodiscard]] constexpr std::size_t profileChunkCount(std::size_t bytes) {
+  return (bytes + MaxProfileChunkBytes - 1) / MaxProfileChunkBytes;
+}
+
 // Reassembles one reliable save-profile transfer. It accepts chunks in any order, tolerates an
 // identical retry, and refuses conflicting duplicates or allocations beyond MaxProfileBytes.
 class ProfileAssembler {

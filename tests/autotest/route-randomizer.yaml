@@ -1,0 +1,55 @@
+# The randomizer (docs/modules/game/randomizer.md): a new Folder Mode game goes from its rules to the randomizer's
+# setup, which starts off with a random seed; the Chaos preset turns every option on, and the run starts with a random
+# rookie, shown on the partner's page. The partner sleeps and saves, so the slot keeps the run code
+# (route-randomizer-slot shows it). Run it with --saves <empty folder>, once per language; how to run it:
+# docs/guides/vertical-slice.md.
+name: randomizer
+device: keyboard
+timeout: 300
+main_menu: true
+new_game_rules: true
+new_game_randomizer: true
+text_fit: true
+steps:
+  - wait: {shown: main_menu, seconds: 1, timeout: 60}
+  - resize: [1280, 720]
+  - wait: {seconds: 0.5}
+  - menu_select: play
+  - wait: {shown: save_slots, seconds: 0.5, timeout: 30}
+  - menu_select: slot-1
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - menu_select: yes
+  - wait: {shown: new_game_mode, seconds: 0.5, timeout: 30}
+  - menu_select: mode-2
+  - wait: {shown: new_game_rules, hidden: new_game_mode, seconds: 0.5, timeout: 30}
+  - menu_select: rules-start
+  - wait: {shown: new_game_randomizer, hidden: new_game_rules, seconds: 0.5, timeout: 30}
+  - expect_setting: {new_game_randomizer.active: "false"}
+  - expect_text_fits: all
+  - screenshot: randomizer-off
+  - tap: {key: right}
+  - menu_select: preset-chaos
+  - wait: {setting: {new_game_randomizer.active: "true"}, seconds: 0.3, timeout: 10}
+  - expect_text_fits: all
+  - screenshot: randomizer-chaos
+  - menu_select: start
+  - wait: {map: twna01, hidden: new_game_randomizer, seconds: 2, timeout: 120}
+  - screenshot: randomized-starter
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.8, timeout: 10}
+  - screenshot: randomized-partner
+  - tap: {key: left_ctrl}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false, timeout: 5}
+  - script: clock_speed("120")
+  - wait: {setting: {pause_menu.sleep_enabled: "true"}, timeout: 60}
+  - script: clock_speed("1")
+  - menu: open
+  - menu_select: sleep
+  - wait: {shown: sleep_menu, timeout: 10}
+  - menu_select: save-and-sleep
+  - wait: {setting: {save.last_result: saved}, hidden: sleep_menu, timeout: 10}
+  - wait: {seconds: 1}

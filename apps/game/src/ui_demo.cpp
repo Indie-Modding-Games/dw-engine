@@ -478,7 +478,7 @@ struct DemoTechniques {
     const screens::NameKeys names{nullptr, nullptr, &catalog};
     status.techniques = screens::equippedTechniqueViewsOf(partner, catalog, names);
     status.techniqueChoices = {};
-    screens::setTechniqueChoices(status, species, moves, catalog, names);
+    screens::setTechniqueChoices(status, species, moves, catalog, partner.moveVariants, names);
     screens::publish(ui, screens::settingsOf(status), screens::PartnerRevisionSetting);
   }
 

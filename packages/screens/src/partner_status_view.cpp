@@ -140,12 +140,14 @@ equippedTechniqueViewsOf(const game::battle::Combatant& partner,
     const auto move = catalog.find(*partner.moves[index]);
     if (!move)
       continue;
-    const auto& entry = catalog.at(*move);
+    const auto variant = partner.moveVariants.find(*partner.moves[index]);
+    const auto& entry = catalog.at(variant != partner.moveVariants.end() ? variant->second : *move);
     result[index] = TechniqueView{.nameKey = names.move(*move),
                                   .power = entry.power,
                                   .mpCost = entry.mpCost,
                                   .range = static_cast<std::int32_t>(entry.range),
-                                  .effect = static_cast<std::int32_t>(entry.status)};
+                                  .effect = static_cast<std::int32_t>(entry.status),
+                                  .boosted = entry.boosted};
   }
   return result;
 }
@@ -164,7 +166,8 @@ void setFavoriteFood(PartnerStatusView& view, std::optional<std::string_view> it
 
 void setTechniqueChoices(PartnerStatusView& view, const assets::DigimonRow& species,
                          const session::PartnerMoves& moves,
-                         const game::battle::MoveCatalog& catalog, const NameKeys& names) {
+                         const game::battle::MoveCatalog& catalog,
+                         const game::battle::MoveVariants& variants, const NameKeys& names) {
   // The original's visual order of categories; the variants share a cell with their base technique.
   constexpr std::array<int, 7> Groups{0, 5, 1, 4, 2, 3, 6};
   view.techniqueChoices = {};
@@ -176,7 +179,7 @@ void setTechniqueChoices(PartnerStatusView& view, const assets::DigimonRow& spec
     std::optional<game::battle::MoveRef> selected;
     for (std::size_t ref = 0; ref < catalog.size(); ++ref) {
       const auto& entry = catalog.at(ref);
-      if (entry.index != canonical && entry.index != variant)
+      if ((entry.index != canonical && entry.index != variant) || catalog.find(entry.id) != ref)
         continue;
       if (entry.index == canonical || !selected)
         selected = ref;
@@ -191,10 +194,14 @@ void setTechniqueChoices(PartnerStatusView& view, const assets::DigimonRow& spec
     }
     if (!selected)
       continue;
-    const auto& entry = catalog.at(*selected);
-    choice.technique = TechniqueView{names.move(*selected), entry.power, entry.mpCost,
-                                     static_cast<std::int32_t>(entry.range),
-                                     static_cast<std::int32_t>(entry.status)};
+    const auto own = variants.find(catalog.at(*selected).id);
+    const auto& entry = catalog.at(own != variants.end() ? own->second : *selected);
+    choice.technique = TechniqueView{.nameKey = names.move(*selected),
+                                     .power = entry.power,
+                                     .mpCost = entry.mpCost,
+                                     .range = static_cast<std::int32_t>(entry.range),
+                                     .effect = static_cast<std::int32_t>(entry.status),
+                                     .boosted = entry.boosted};
     choice.special = entry.special;
     choice.available = choice.known && choice.speciesSlot >= 0;
     for (std::size_t place = 0; place < game::battle::FinisherSlot; ++place) {
@@ -284,6 +291,7 @@ ScreenSettings settingsOf(const PartnerStatusView& view) {
         {.name = base + "range", .value = static_cast<double>(move ? move->range : 0)});
     settings.push_back(
         {.name = base + "effect", .value = static_cast<double>(move ? move->effect : 0)});
+    settings.push_back({.name = base + "boosted", .value = move && move->boosted});
   }
   settings.push_back(
       {.name = "partner.technique.can_finish", .value = view.canFinishTechniqueEdit});
@@ -309,6 +317,8 @@ ScreenSettings settingsOf(const PartnerStatusView& view) {
          .value = static_cast<double>(choice.technique ? choice.technique->effect : 0)});
     settings.push_back({.name = base + "slot", .value = static_cast<double>(choice.speciesSlot)});
     settings.push_back({.name = base + "special", .value = static_cast<double>(choice.special)});
+    settings.push_back(
+        {.name = base + "boosted", .value = choice.technique && choice.technique->boosted});
   }
   return settings;
 }

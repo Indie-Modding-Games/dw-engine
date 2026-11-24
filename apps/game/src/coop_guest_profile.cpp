@@ -1,5 +1,6 @@
 #include "coop_guest_profile.hpp"
 
+#include <dwe/game/coop/protocol.hpp>
 #include <dwe/game/modes/game_mode.hpp>
 #include <dwe/game/partner/state_yaml.hpp>
 #include <dwe/game/save/save_file.hpp>
@@ -16,7 +17,6 @@ namespace {
 constexpr std::string_view PartnerSection = "partner";
 constexpr std::string_view ModeSection = "mode";
 constexpr std::string_view ModeIdKey = "id";
-constexpr std::size_t MaxGuestSaveBytes = 128U * 1024U;
 static_assert(CoopGuestOwnSections[0] == PartnerSection);
 static_assert(CoopGuestOwnSections[1] == session::MovesSaveName);
 static_assert(CoopGuestOwnSections[2] == session::EvolutionSaveName);
@@ -24,8 +24,8 @@ static_assert(CoopGuestOwnSections[3] == session::InventorySaveName);
 } // namespace
 
 core::Result<CoopGuestPartnerProfile> extractCoopGuestPartnerProfile(std::string_view saveText) {
-  if (saveText.empty() || saveText.size() > MaxGuestSaveBytes) {
-    return core::fail("cooperative guest save is empty or exceeds 128 KiB");
+  if (saveText.empty() || saveText.size() > game::coop::MaxProfileBytes) {
+    return core::fail("cooperative guest save is empty or larger than a profile transfer");
   }
   auto parsed = game::save::parseSaveFile(saveText);
   if (!parsed)

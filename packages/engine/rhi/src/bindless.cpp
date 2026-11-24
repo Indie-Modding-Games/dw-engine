@@ -7,7 +7,6 @@
 #include <array>
 #include <cstddef>
 #include <format>
-#include <string_view>
 #include <utility>
 
 namespace dwe::rhi {
@@ -18,26 +17,11 @@ constexpr std::uint32_t SamplerBinding = 1;
 
 // Anisotropy of the linear samplers, clamped to the GPU's limit.
 constexpr float MaxAnisotropy = 16.0F;
-// Anisotropic sampling with VK_LOD_CLAMP_NONE faults on some RDNA drivers. Our textures have far
-// fewer levels than this, so clamping the upper LOD changes no image and avoids the fault.
+// Above any mip level a texture has: anisotropic sampling with VK_LOD_CLAMP_NONE faults on some
+// RDNA drivers.
 constexpr float MaxAnisotropicLod = 24.0F;
 
-// Opt-in safety mode for AMD's RX 6000 (RDNA2), switched on in the launcher's settings (the game
-// receives --rdna2-safe). Every other GPU keeps the original descriptor layout even if the switch
-// was left on by mistake: the vendor and the model are checked here as well as in the interface.
-bool rdna2SafeMode(VkPhysicalDevice physicalDevice, bool requested) {
-  if (!requested) {
-    return false;
-  }
-  // NOLINTNEXTLINE(bugprone-invalid-enum-default-initialization): Vulkan fills it in.
-  VkPhysicalDeviceProperties properties{};
-  vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-  return properties.vendorID == 0x1002U &&
-         std::string_view{properties.deviceName}.find("RX 6") != std::string_view::npos;
-}
-
-// Points a texture descriptor at an image view without needing the table: the deferred releases
-// run after frames finish, possibly after the table itself is gone.
+// Free of the table: the deferred resets of remove() may run after it is gone.
 void writeView(VkDevice device, VkDescriptorSet set, std::uint32_t slot, VkImageView view) {
   const VkDescriptorImageInfo imageInfo{.sampler = VK_NULL_HANDLE,
                                         .imageView = view,
@@ -70,8 +54,7 @@ constexpr std::array<SamplerSettings, SamplerKindCount> SamplerTable{{
 } // namespace
 
 core::Result<std::unique_ptr<BindlessTable>> BindlessTable::create(Device& device,
-                                                                   std::uint32_t capacity,
-                                                                   bool rdna2Safe) {
+                                                                   std::uint32_t capacity) {
   const NativeHandles gpu = device.nativeHandles();
   // NOLINTNEXTLINE(bugprone-invalid-enum-default-initialization): Vulkan fills it in.
   VkPhysicalDeviceVulkan12Properties properties12{};
@@ -130,26 +113,14 @@ core::Result<std::unique_ptr<BindlessTable>> BindlessTable::create(Device& devic
                                    .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
                                    .pImmutableSamplers = table->samplers_.data()},
   };
-  const bool safe = rdna2SafeMode(gpu.physicalDevice, rdna2Safe);
-  if (rdna2Safe && !safe) {
-    core::logInfo("--rdna2-safe was passed but this is not an AMD RX 6000; "
-                  "keeping the default descriptor layout");
-  }
-  // By default we keep every flag the GPU advertises, so this changes nothing for existing
-  // players. In the opt-in RX 6000 mode we drop the two extra guarantees: every slot already holds
-  // a live view (create() fills them with a white texel, add() writes only a freshly acquired slot
-  // and remove() defers its reset and reuse until the frames in flight are done), so neither
-  // partially bound nor update-unused-while-pending is needed. The simpler layout avoids asking
-  // AMD's proprietary driver to track those paths.
-  const VkDescriptorBindingFlags textureFlags =
+  // Textures come and go while frames that use the set are in flight, and shaders only touch the
+  // registered ones: a slot is written only while no pending frame uses it (remove() defers its
+  // reset and reuse).
+  const std::array<VkDescriptorBindingFlags, 2> bindingFlags{
       VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT |
-      (safe ? 0
-            : VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT |
-                  VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
-  const std::array<VkDescriptorBindingFlags, 2> bindingFlags{textureFlags, 0};
-  if (safe) {
-    core::logInfo("AMD RX 6000 safe mode: bindless table uses only UPDATE_AFTER_BIND");
-  }
+          VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT |
+          VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
+      0};
   const VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo{
       .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
       .pNext = nullptr,
@@ -192,8 +163,7 @@ core::Result<std::unique_ptr<BindlessTable>> BindlessTable::create(Device& devic
     return core::fail("could not allocate the bindless table");
   }
 
-  // Pre-fill every slot with a live white texel. A shader that reads an unregistered or stale
-  // id then samples defined pixels instead of a descriptor whose image may have been destroyed.
+  // A stale id then samples a live white texel, not a destroyed image.
   constexpr std::array WhiteTexel{std::byte{255}, std::byte{255}, std::byte{255}, std::byte{255}};
   auto fallback = Image::createTexture(device, {.width = 1, .height = 1}, WhiteTexel);
   if (!fallback) {
@@ -266,9 +236,8 @@ bool BindlessTable::remove(TextureId texture) {
                      texture.generation);
     return false;
   }
-  // Ids of the removed texture stop matching at once; its slot is reused only after the frames in
-  // flight. In the same deferred step, point the slot back at the fallback: a driver that reads a
-  // stale id while the old image is being destroyed then samples a live view, not freed memory.
+  // Ids of the removed texture stop matching at once; its slot is reset and reused only after the
+  // frames in flight.
   live_[texture.index] = false;
   ++generations_[texture.index];
   const VkDevice gpu = device_->nativeHandles().device;

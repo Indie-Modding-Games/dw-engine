@@ -237,3 +237,47 @@ TEST_CASE("the field HUD tells the night, the part of the day and a bar's low ha
   CHECK(dwe::screens::meterMoodOf({.value = 49, .min = 0, .max = 100}) == "low");
   CHECK(dwe::screens::meterMoodOf({.value = 50, .min = 0, .max = 100}) == "high");
 }
+
+TEST_CASE("the need meters take hunger, the toilet and tiredness from the session's gauges") {
+  auto gauges = partner();
+  gauges.hungerGauge = {.value = 180, .min = 0, .max = 240};
+  gauges.toiletGauge = {.value = 15, .min = 0, .max = 60};
+  gauges.tiredness = {.value = 80, .min = 0, .max = 100};
+  const dwe::ruleset::GameTime time{.year = 0, .day = 0, .hour = 8, .minute = 0};
+  const auto view = dwe::screens::fieldHudViewOf(time, gauges, true);
+  CHECK(view.gauges.at(0) == dwe::screens::FieldMeterView{.value = 180, .min = 0, .max = 240});
+  CHECK(view.gauges.at(1) == dwe::screens::FieldMeterView{.value = 15, .min = 0, .max = 60});
+  CHECK(view.gauges.at(2) == dwe::screens::FieldMeterView{.value = 80, .min = 0, .max = 100});
+  const auto settings = dwe::screens::settingsOf(view);
+  CHECK(*find(settings, "hud.gauge.0.value") == dwe::ui::UiValue{180.0});
+  CHECK(*find(settings, "hud.gauge.0.max") == dwe::ui::UiValue{240.0});
+  CHECK(*find(settings, "hud.gauge.0.fill") == dwe::ui::UiValue{75.0});
+  CHECK(*find(settings, "hud.gauge.1.fill") == dwe::ui::UiValue{25.0});
+  CHECK(*find(settings, "hud.gauge.2.fill") == dwe::ui::UiValue{80.0});
+  auto later = gauges;
+  later.hungerGauge.value = 181;
+  CHECK_FALSE(dwe::screens::fieldHudViewOf(time, later, true) == view);
+}
+
+TEST_CASE("a need meter's fill is its share of the range in whole percent, kept inside the bar") {
+  using dwe::screens::FieldMeterView;
+  using dwe::screens::gaugeFillOf;
+  CHECK(gaugeFillOf(FieldMeterView{.value = 0, .min = 0, .max = 240}) == 0);
+  CHECK(gaugeFillOf(FieldMeterView{.value = 240, .min = 0, .max = 240}) == 100);
+  CHECK(gaugeFillOf(FieldMeterView{.value = 239, .min = 0, .max = 240}) == 99);
+  CHECK(gaugeFillOf(FieldMeterView{.value = 1, .min = 0, .max = 3}) == 33);
+  CHECK(gaugeFillOf(FieldMeterView{.value = -5, .min = 0, .max = 100}) == 0);
+  CHECK(gaugeFillOf(FieldMeterView{.value = 130, .min = 0, .max = 100}) == 100);
+  CHECK(gaugeFillOf(FieldMeterView{.value = 0, .min = -100, .max = 100}) == 50);
+  CHECK(gaugeFillOf(FieldMeterView{.value = 7, .min = 0, .max = 0}) == 0);
+}
+
+TEST_CASE("the need meters' labels name their needs once") {
+  const auto labels = dwe::screens::fieldHudLabelSettings();
+  CHECK(*find(labels, "hud.gauge.0.label") == dwe::ui::UiValue{std::string{"hud.need.hunger"}});
+  CHECK(*find(labels, "hud.gauge.1.label") == dwe::ui::UiValue{std::string{"hud.need.toilet"}});
+  CHECK(*find(labels, "hud.gauge.2.label") == dwe::ui::UiValue{std::string{"hud.need.tired"}});
+  CHECK(*find(labels, "hud.gauge.0.need") == dwe::ui::UiValue{0.0});
+  CHECK(*find(labels, "hud.gauge.1.need") == dwe::ui::UiValue{2.0});
+  CHECK(*find(labels, "hud.gauge.2.need") == dwe::ui::UiValue{3.0});
+}

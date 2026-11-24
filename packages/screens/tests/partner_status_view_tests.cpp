@@ -1,4 +1,5 @@
 #include <dwe/assets/digimon_table.hpp>
+#include <dwe/game/battle/boosted_moves.hpp>
 #include <dwe/screens/partner_status_view.hpp>
 
 #include <doctest/doctest.h>
@@ -11,6 +12,7 @@
 #include <variant>
 #include <vector>
 
+#include "packages/game/battle/tests/fixture.hpp"
 #include "packages/game/inventory/tests/fixture.hpp"
 
 namespace {
@@ -196,4 +198,59 @@ TEST_CASE("the status page's extras carry the battles, the lifetime, the evoluti
   view.evolutionCheckHours = 72;
   CHECK(numberOf(dwe::screens::settingsOf(view), "partner.evolution.check_hours") ==
         doctest::Approx(72.0));
+}
+
+TEST_CASE(
+    "the tech page shows the partner's boosted technique with its boosted values, and only it") {
+  dwe::game::battle::MoveCatalog catalog = battle_test::testCatalog();
+  const dwe::game::battle::BoostedMoveRules rules{
+      .powerPercent = 125, .mpCostPercent = 75, .species = {}};
+  const auto punch = catalog.addBoosted(*catalog.find("punch"), rules);
+  // Another species' boosted shot sits in the catalog too: the grid keeps the table's.
+  catalog.addBoosted(*catalog.find("shot"), rules);
+  dwe::game::battle::Combatant partner;
+  partner.moves.at(0) = "punch";
+  partner.moves.at(1) = "shot";
+  partner.moveVariants.emplace("punch", punch);
+  const dwe::screens::NameKeys names{nullptr, nullptr, &catalog};
+
+  dwe::screens::PartnerStatusView view;
+  view.techniques = dwe::screens::equippedTechniqueViewsOf(partner, catalog, names);
+  REQUIRE(view.techniques.at(0).has_value());
+  CHECK(view.techniques.at(0)->boosted);
+  CHECK(view.techniques.at(0)->power == 37);
+  CHECK(view.techniques.at(0)->mpCost == 12);
+  REQUIRE(view.techniques.at(1).has_value());
+  CHECK_FALSE(view.techniques.at(1)->boosted);
+  CHECK(view.techniques.at(1)->power == 40);
+
+  dwe::assets::DigimonRow species;
+  species.id = "hero";
+  species.moves.at(0) = "punch";
+  species.moves.at(1) = "shot";
+  const dwe::session::PartnerMoves moves{.learned = {"punch", "shot"}, .equipped = {0, 1}};
+  dwe::screens::setTechniqueChoices(view, species, moves, catalog, partner.moveVariants, names);
+  // The fire block's first cells: punch (index 0) and shot (index 1).
+  const auto& punchCell = view.techniqueChoices.at(0);
+  REQUIRE(punchCell.technique.has_value());
+  CHECK(punchCell.technique->boosted);
+  CHECK(punchCell.technique->power == 37);
+  const auto& shotCell = view.techniqueChoices.at(1);
+  REQUIRE(shotCell.technique.has_value());
+  CHECK_FALSE(shotCell.technique->boosted);
+  CHECK(shotCell.technique->power == 40);
+  CHECK(std::ranges::count_if(view.techniqueChoices, [](const auto& cell) {
+          return cell.technique && cell.technique->boosted;
+        }) == 1);
+
+  const auto settings = dwe::screens::settingsOf(view);
+  const auto valueOf = [&](std::string_view name) {
+    const auto found = std::ranges::find(settings, name, &dwe::screens::ScreenSetting::name);
+    REQUIRE(found != settings.end());
+    return found->value;
+  };
+  CHECK(std::get<bool>(valueOf("partner.technique.0.boosted")));
+  CHECK_FALSE(std::get<bool>(valueOf("partner.technique.1.boosted")));
+  CHECK(std::get<bool>(valueOf("partner.technique.choice.0.boosted")));
+  CHECK_FALSE(std::get<bool>(valueOf("partner.technique.choice.1.boosted")));
 }

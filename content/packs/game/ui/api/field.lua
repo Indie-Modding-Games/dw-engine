@@ -79,6 +79,28 @@ function field.shop_job()
   }
 end
 
+-- The danger alert (danger_alert, an improvement, on unless turned off): the marks over the wild
+-- monsters on the field that would crush the partner, each {x, y} in percent of the window, at most
+-- one per character of the map (the game rules which ones; empty while the field is stopped or the
+-- option is off).
+field.danger_count = 8
+
+function field.dangers()
+  local marks = {}
+  for index = 0, field.danger_count - 1 do
+    local base = "hud.danger." .. index .. "."
+    if ui.setting(base .. "visible") == true then
+      local x, y = ui.setting(base .. "x"), ui.setting(base .. "y")
+      marks[#marks + 1] = {
+        slot = index,
+        x = type(x) == "number" and x or 0,
+        y = type(y) == "number" and y or 0,
+      }
+    end
+  end
+  return marks
+end
+
 -- The field's events (hooks.on).
 event_source("screen_fade", "field.fade")
 event_source("map_title_key", "field.map_title")
@@ -86,3 +108,4 @@ event_source("hud.minimap_allowed", "field.minimap")
 event_source("hud.minimap_covered", "field.minimap")
 event_source("battle.active", "field.minimap")
 event_source("shop_job.revision", "field.shop_job")
+event_source("hud.danger.revision", "field.danger")

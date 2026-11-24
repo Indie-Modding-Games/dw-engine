@@ -81,6 +81,15 @@ TEST_CASE("a mode manifest names its id, texts, rulesets and order") {
                           .options = {}});
 }
 
+TEST_CASE("a mode manifest may offer randomized runs") {
+  const auto mode = parseGameMode(std::string{ArenaMode} + "randomizer: true\n", "arena");
+  REQUIRE_MESSAGE(mode.has_value(), errorOf(mode));
+  CHECK(mode->randomizer);
+  const auto plain = parseGameMode(ArenaMode, "arena");
+  REQUIRE(plain.has_value());
+  CHECK_FALSE(plain->randomizer);
+}
+
 TEST_CASE("a mode manifest with a wrong id, a missing key or a ruleset it does not list fails") {
   CHECK(errorOf(parseGameMode(ArenaMode, "other")).contains("must be its folder's, 'other'"));
   std::string missing{ArenaMode};
@@ -133,7 +142,10 @@ TEST_CASE("the game pack ships the two variants, Classic Enhanced first, and Fol
                                {.option = "rare_items", .value = "false"},
                                {.option = "free_exploration", .value = "false"},
                                {.option = "extra_toilets", .value = "false"},
-                               {.option = "choose_egg_after_lives_lost", .value = "false"}});
+                               {.option = "choose_egg_after_lives_lost", .value = "false"},
+                               {.option = "boosted_techniques", .value = "false"},
+                               {.option = "roaming_rare_chance", .value = "original"}});
+  CHECK_FALSE(classic.randomizer);
   const GameMode* folder = catalog.defaultMode();
   REQUIRE(folder != nullptr);
   CHECK(folder->id == FolderMode);
@@ -142,6 +154,7 @@ TEST_CASE("the game pack ships the two variants, Classic Enhanced first, and Fol
   CHECK(folder->rulesets == std::vector<std::string>{"original", "oculto", "oculto_mega", "todas",
                                                      "todas_oculto", "todas_oculto_mega"});
   CHECK(folder->options.empty());
+  CHECK(folder->randomizer);
 }
 
 TEST_CASE("a Folder Mode save takes progress from a Classic Enhanced world, not the other way") {

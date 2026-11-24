@@ -19,6 +19,12 @@
 -- class "evolving" on it and on its first icon. How the partner feels about the map puts the class
 -- "area-liked" or "area-disliked" on #field-status, where a skin can swap the happiness face as the
 -- original does.
+--
+-- The need meters (#field-gauge-<i>: hunger, the toilet and tiredness) carry the need's id as a
+-- class for the skin's icon, fill as the need comes due and take the class "active" once the
+-- partner has it; #field-gauges takes "hidden" with the option need_meters off. The danger marks
+-- (#field-danger-<n>, one per NPC slot) hang over the wild monsters the game names and take the
+-- class "shown"; a skin draws their icon and how it bobs.
 
 local function refresh(document)
   local state = hud.minimap()
@@ -35,7 +41,7 @@ local function refresh_prompts(document)
   document:get("prompt-shop-job-rules"):set_prompt("help")
 end
 
-local panels = { "minimap", "menu-button", "field-status" }
+local panels = { "minimap", "menu-button", "field-status", "field-dangers" }
 
 local function refresh_fade(document)
   local opacity = string.format("%.3f", hud.opacity())
@@ -88,6 +94,9 @@ local function draw_field_labels(document)
   end
   for index = 0, hud.pool_count - 1 do
     document:get("field-pool-" .. index .. "-label"):set_text(label(labels.pools[index]))
+  end
+  for index = 0, hud.gauge_count - 1 do
+    document:get("field-gauge-" .. index .. "-label"):set_text(label(labels.gauges[index]))
   end
 end
 
@@ -164,6 +173,35 @@ local function draw_field_pool(document, index, pool)
     :get("field-pool-" .. index .. "-fill")
     :set_property("width", bar_fill(pool.value, 0, pool.max) .. "%")
   document:get("field-pool-" .. index .. "-value"):set_text(pool.value .. " / " .. pool.max)
+end
+
+local function draw_field_gauges(document, gauges)
+  document:get("field-gauges"):set_class("hidden", not hud.need_meters())
+  for index = 0, hud.gauge_count - 1 do
+    local gauge = gauges[index]
+    local element = document:get("field-gauge-" .. index)
+    element:set_class(gauge.id, true)
+    element:set_class("active", gauge.active)
+    document
+      :get("field-gauge-" .. index .. "-fill")
+      :set_property("width", bar_fill(gauge.fill, 0, 100) .. "%")
+  end
+end
+
+local function draw_dangers(document)
+  local shown = {}
+  for _, mark in ipairs(hud.dangers()) do
+    shown[mark.slot] = mark
+  end
+  for index = 0, hud.danger_count - 1 do
+    local element = document:get("field-danger-" .. index)
+    local mark = shown[index]
+    element:set_class("shown", mark ~= nil)
+    if mark ~= nil then
+      element:set_property("left", string.format("%.1f%%", mark.x))
+      element:set_property("top", string.format("%.1f%%", mark.y))
+    end
+  end
 end
 
 -- The room a stacked balloon keeps from the window's sides, in dp.
@@ -272,6 +310,7 @@ local function draw_field(document)
   for index = 0, hud.pool_count - 1 do
     draw_field_pool(document, index, field.pools[index])
   end
+  draw_field_gauges(document, field.gauges)
   pick_bubble(document)
 end
 
@@ -349,6 +388,7 @@ function on_show(document)
   refresh_prompts(document)
   draw_field_labels(document)
   draw_field(document)
+  draw_dangers(document)
   draw_shop_job(document)
 end
 
@@ -389,6 +429,9 @@ end)
 on("field.shop_job", function(_, document)
   draw_shop_job(document)
 end)
+on("field.danger", function(_, document)
+  draw_dangers(document)
+end)
 on("partner.changed", function(event, document)
   if string.find(event.name, "%.label$") then
     draw_field_labels(document)
@@ -404,6 +447,8 @@ on("options.changed", function(event, document)
     draw_bubble(document)
   elseif event.name == "digital_time" then
     draw_digital(document)
+  elseif event.name == "need_meters" then
+    draw_field(document)
   elseif event.name == "ui_skin" then
     -- A new skin may set or clear classes the drawing reads (pips): draw the field status and the
     -- bubble again.

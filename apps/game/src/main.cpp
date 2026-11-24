@@ -1,6 +1,7 @@
 #include <dwe/content/disc_install.hpp>
 #include <dwe/content/user_data.hpp>
 #include <dwe/platform/platform.hpp>
+#include <dwe/rhi/gpu_report.hpp>
 #include <dwe/rhi/system_check.hpp>
 
 #include <cstdio>
@@ -41,6 +42,7 @@ int main(int argc, char** argv) {
   if (options->checkContent) {
     return checkContentFolder(options->content);
   }
+  dwe::rhi::gpuInstallCrashReporter();
   if (options->uiDemo) {
     UiDemoOptions demo{.content = options->content,
                        .language = options->language,

@@ -39,7 +39,7 @@ VersusFighter fighter(std::string name, std::int32_t brains) {
 }
 
 SeriesSetup threeBattles() {
-  return {.battles = 3, .arena = 1, .seed = 77, .inputDelay = 3};
+  return {.battles = 3, .arena = 1, .seed = 77, .inputDelay = 3, .boostedMoves = true};
 }
 
 struct Pair {

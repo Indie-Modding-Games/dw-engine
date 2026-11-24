@@ -8,6 +8,9 @@ use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 
+use semver::Version;
+use serde::Serialize;
+
 use crate::content::content_folder;
 use crate::custom_images::CustomImages;
 use crate::failure::{code, Failure, Result};
@@ -18,46 +21,73 @@ pub fn game_log(data: &Path) -> PathBuf {
     logs_folder(data).join("game.log")
 }
 
-/// The graphics switches from the launcher's settings (settings.rs), turned into game flags.
-/// `compatibility` relaxes the Vulkan floor to 1.2 plus the dynamic-rendering and synchronization2
-/// extensions (--compatible); `low_performance` starts the run from the potato preset
-/// (--low-performance); `rdna2_safe` asks the game to simplify its bindless layout (--rdna2-safe),
-/// which the game applies only on AMD RX 6000 cards. All are off unless the player turns them on.
+/// The graphics switches from the launcher's settings, as game flags.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct GraphicsFlags {
     pub compatibility: bool,
     pub low_performance: bool,
-    pub rdna2_safe: bool,
+}
+
+pub const COMPATIBLE_FLAG: &str = "--compatible";
+pub const LOW_PERFORMANCE_FLAG: &str = "--low-performance";
+/// The first releases whose game knows each flag; an older game refuses the whole command line.
+const FIRST_WITH_MODES: &str = "0.1.0-beta.1127";
+
+/// A development build ("dev", or anything that is not a version) knows every flag.
+fn knows(game: &Game, since: &str) -> bool {
+    match (Version::parse(&game.version), Version::parse(since)) {
+        (Ok(version), Ok(since)) => version >= since,
+        _ => true,
+    }
+}
+
+pub fn knows_modes(game: &Game) -> bool {
+    knows(game, FIRST_WITH_MODES)
+}
+
+/// DeviceLostExitCode in the game's common.hpp.
+pub const DEVICE_LOST_EXIT_CODE: i32 = 113;
+/// Windows closes a program that stopped responding with 0xCFFFFFFF.
+pub const WINDOWS_HANG_EXIT_CODE: i32 = 0xCFFF_FFFF_u32 as i32;
+/// An older game never returned it on purpose.
+const FIRST_WITH_DEVICE_LOST_CODE: &str = "0.1.0-beta.1133";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ExitReason {
+    DeviceLost,
+    WindowsHang,
+}
+
+pub fn exit_reason(game: &Game, code: Option<i32>) -> Option<ExitReason> {
+    match code? {
+        DEVICE_LOST_EXIT_CODE if knows(game, FIRST_WITH_DEVICE_LOST_CODE) => Some(ExitReason::DeviceLost),
+        WINDOWS_HANG_EXIT_CODE => Some(ExitReason::WindowsHang),
+        _ => None,
+    }
 }
 
 impl GraphicsFlags {
-    /// The flags for the probe and the game: --compatible changes what `--check-system` accepts, so
-    /// the launcher's Blocked/ok status must be read with the same switch the game will start with.
-    pub fn args(&self) -> Vec<&'static str> {
-        let mut flags = Vec::new();
-        if self.compatibility {
-            flags.push("--compatible");
-        }
-        if self.low_performance {
-            flags.push("--low-performance");
-        }
-        if self.rdna2_safe {
-            flags.push("--rdna2-safe");
-        }
-        flags
+    /// The flags that are on and that this game knows.
+    pub fn args(&self, game: &Game) -> Vec<&'static str> {
+        [
+            (self.compatibility, COMPATIBLE_FLAG, FIRST_WITH_MODES),
+            (self.low_performance, LOW_PERFORMANCE_FLAG, FIRST_WITH_MODES),
+        ]
+        .into_iter()
+        .filter(|&(on, _, since)| on && knows(game, since))
+        .map(|(_, flag, _)| flag)
+        .collect()
     }
 }
 
 /// The game's command line. A data folder the player picked also gets the saves and the reports
 /// there, so everything the player chose to move stays together; the default one leaves them in the
-/// game's own folder (settings::default_data_folder). `extra` are the player's manual arguments
-/// (settings.rs), added last: they are plain arguments, not text for a shell to parse.
+/// game's own folder (settings::default_data_folder). The player's own arguments go last.
 pub fn command(game: &Game, data: &Path, own_data_folder: bool, graphics: GraphicsFlags, extra: &[String]) -> Command {
     let mut command = Command::new(game.game_program());
     command.arg("--content").arg(content_folder(data));
-    for flag in graphics.args() {
-        command.arg(flag);
-    }
+    command.args(graphics.args(game));
     command.args(extra);
     if !own_data_folder {
         command.arg("--saves").arg(data.join("saves")).arg("--reports").arg(data.join("reports"));
@@ -70,8 +100,7 @@ pub fn command(game: &Game, data: &Path, own_data_folder: bool, graphics: Graphi
 }
 
 /// `env`: what the game starts with besides the launcher's own environment (the software Vulkan
-/// driver's, system_check.rs, plus the player's manual variables).
-#[allow(clippy::too_many_arguments)]
+/// driver's, system_check.rs, then the player's own variables).
 pub fn start(game: &Game, data: &Path, own_data_folder: bool, env: &[(OsString, OsString)], graphics: GraphicsFlags, extra_args: &[String]) -> Result<Child> {
     let log = game_log(data);
     fs::create_dir_all(logs_folder(data))?;
@@ -133,8 +162,33 @@ mod tests {
         };
         assert!(args(GraphicsFlags { compatibility: true, ..Default::default() }).contains(&"--compatible".to_string()));
         assert!(args(GraphicsFlags { low_performance: true, ..Default::default() }).contains(&"--low-performance".to_string()));
-        assert!(args(GraphicsFlags { rdna2_safe: true, ..Default::default() }).contains(&"--rdna2-safe".to_string()));
-        assert_eq!(args(GraphicsFlags { compatibility: true, low_performance: true, ..Default::default() }).len(), 4, "both flags, next to --content");
+        assert_eq!(args(GraphicsFlags { compatibility: true, low_performance: true }).len(), 4, "both flags, next to --content");
+    }
+
+    #[test]
+    fn an_older_game_gets_only_the_flags_it_knows() {
+        let all = GraphicsFlags { compatibility: true, low_performance: true };
+        let game = |version: &str| Game { dir: "/g".into(), version: version.into(), commit: String::new(), extractor_version: None };
+        assert!(all.args(&game("0.1.0-beta.1126")).is_empty());
+        assert_eq!(all.args(&game("0.1.0-beta.1127")), ["--compatible", "--low-performance"]);
+        assert_eq!(all.args(&game("0.2.0")).len(), 2);
+        assert_eq!(all.args(&game("dev")).len(), 2);
+        assert!(GraphicsFlags::default().args(&game("dev")).is_empty());
+    }
+
+    #[test]
+    fn the_exit_code_names_a_lost_gpu_or_a_windows_hang() {
+        let game = |version: &str| Game { dir: "/g".into(), version: version.into(), commit: String::new(), extractor_version: None };
+        for new in ["0.1.0-beta.1133", "0.2.0", "dev"] {
+            assert_eq!(exit_reason(&game(new), Some(113)), Some(ExitReason::DeviceLost), "{new}");
+        }
+        assert_eq!(exit_reason(&game("0.1.0-beta.1132"), Some(113)), None, "an older game's 113 is no promise");
+        assert_eq!(exit_reason(&game("dev"), Some(3)), None, "3 is what raise(SIGABRT) gives on Windows");
+        assert_eq!(exit_reason(&game("0.1.0-beta.1100"), Some(-805_306_369)), Some(ExitReason::WindowsHang));
+        assert_eq!(exit_reason(&game("dev"), Some(1)), None);
+        assert_eq!(exit_reason(&game("dev"), Some(2)), None);
+        assert_eq!(exit_reason(&game("dev"), None), None, "a signal is no exit code");
+        assert_eq!(serde_json::to_string(&ExitReason::DeviceLost).unwrap(), r#""device-lost""#);
     }
 
     #[test]

@@ -15,7 +15,7 @@ namespace dwe::game::versus {
 
 // The version of the messages below and of the lockstep's: two machines talk only with the same
 // one.
-inline constexpr std::uint32_t ProtocolVersion = 2;
+inline constexpr std::uint32_t ProtocolVersion = 3;
 // The battle frames each side's commands are scheduled ahead: a 150 ms delay at 20 frames a
 // second, which hides most of a home connection's round trip.
 inline constexpr std::uint32_t DefaultInputDelay = 3;
@@ -60,6 +60,8 @@ struct SeriesSetup {
   std::uint64_t seed = 0;
   // The frames each side's commands are scheduled ahead.
   std::uint32_t inputDelay = 0;
+  // Whether the partners fight with their boosted techniques: the host's option.
+  bool boostedMoves = false;
 
   friend bool operator==(const SeriesSetup&, const SeriesSetup&) = default;
 };

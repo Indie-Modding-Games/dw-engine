@@ -15,6 +15,8 @@ float CareMeter::fill() const {
 PartnerView viewOf(const game::partner::Partner& partner, const game::partner::CareRules& rules) {
   const game::partner::PartnerState& state = partner.state();
   const game::partner::CareLimits& limits = rules.limits;
+  const game::partner::NeedGauges gauges =
+      game::partner::needGaugesOf(state, partner.species(), rules);
   return {
       .species = state.species,
       .nickname = {},
@@ -36,6 +38,8 @@ PartnerView viewOf(const game::partner::Partner& partner, const game::partner::C
       .virusBar = {.value = state.toilet.virusBar, .min = 0, .max = rules.toilet.virusBarLimit},
       .minutesToMeal = state.hunger.foodLevel,
       .stepsToToilet = state.toilet.poopLevel,
+      .hungerGauge = {.value = gauges.hunger.value, .min = 0, .max = gauges.hunger.max},
+      .toiletGauge = {.value = gauges.toilet.value, .min = 0, .max = gauges.toilet.max},
       .conditions = state.conditions,
       .needDeadlines = {},
       .careMistakes = state.evolution.careMistakes,

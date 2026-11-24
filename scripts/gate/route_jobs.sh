@@ -23,7 +23,7 @@ saved_slot="slot_01"
 # Routes that play with saves of their own, which the gate runs, like the save route, with an empty
 # saves folder of the job's: they start a new game in a slot and save to it, or go through the
 # slot list to play without saving.
-saves_routes=(route-sleep-save route-skin-original route-game-modes)
+saves_routes=(route-sleep-save route-skin-original route-game-modes route-randomizer)
 smoke_lang="en"
 languages=(en es)
 # The job list's separators: fields, and the arguments of a run.

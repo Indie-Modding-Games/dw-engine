@@ -16,6 +16,7 @@ dwe_add_module(partner
         src/partner_story.cpp
         src/poop_piles.cpp
         src/need_deadlines.cpp
+        src/need_gauges.cpp
         src/field_animation.cpp
         src/state_yaml.cpp
     DEPS core assets ruleset)

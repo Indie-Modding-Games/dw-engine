@@ -1,0 +1,13 @@
+/* How the randomizer's setup behaves whatever the skin: the list wraps around and the two presets share a row. The
+   look is the rules box's (the skins' new_game_rules style). */
+
+#preset-off { nav-up: #back; nav-left: #preset-chaos; nav-right: #preset-chaos; }
+#preset-chaos { nav-up: #back; nav-left: #preset-off; nav-right: #preset-off; nav-down: #evolutions; }
+#evolutions { nav-up: #preset-off; }
+#back { nav-down: #preset-off; }
+#title { margin-bottom: 6dp; }
+#presets { margin-bottom: 8dp; }
+.preset { display: inline-block; width: auto; margin-right: 12dp; }
+.about { margin: 0 0 8dp 18dp; }
+.code { margin: 4dp 0 0 18dp; }
+#picture { display: none; pointer-events: none; }

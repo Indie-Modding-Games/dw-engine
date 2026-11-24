@@ -766,6 +766,9 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
   if (!scene) {
     return core::fail(std::format("map {}: {}", mapId, scene.error().message));
   }
+  if (mapNpcs_) {
+    mapNpcs_(mapId, scene->document.npcs);
+  }
   if (mapTable_) {
     // Where each warp leads: a warp with a problem is named in the log, and disabled unless it
     // still leads to a map of the original.

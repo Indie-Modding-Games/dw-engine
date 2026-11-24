@@ -80,6 +80,8 @@ public:
   // Connect the next links through the signaling server's relay (TURN) only (the online
   // profile's «relay only»).
   void setRelayOnly(bool on) { relayOnly_ = on; }
+  // The boosted techniques option (boosted_techniques) for the series this player hosts.
+  void setBoostedMoves(bool on) { boostedMoves_ = on; }
   // Drops the battles and the arena's models now, for a teardown that ends the renderer before
   // this screen (an autotest's); the screen shows nothing more.
   void shutDown();
@@ -99,6 +101,7 @@ private:
   audio::Audio* audio_;
   bool smoothMotion_ = true;
   bool relayOnly_ = false;
+  bool boostedMoves_ = true;
   std::unique_ptr<ruleset::Ruleset> rules_;
   std::unique_ptr<session::BattleAdapter> battles_;
   // Where each arena's battles start (vs_intro.c: VS__placePlayer1), once the arena is built.

@@ -70,7 +70,7 @@ net::Bytes encode(const Message& message) {
           out.put(WelcomeKind);
           put(out, body.identity);
           out.put(body.setup.battles).put(body.setup.arena).put(body.setup.seed);
-          out.put(body.setup.inputDelay);
+          out.put(body.setup.inputDelay).put(body.setup.boostedMoves);
         } else if constexpr (std::is_same_v<T, Lineup>) {
           out.put(LineupKind).put(static_cast<std::uint8_t>(body.fighters.size()));
           for (const VersusFighter& fighter : body.fighters) {
@@ -103,6 +103,7 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     welcome.setup.arena = in.get<std::int32_t>();
     welcome.setup.seed = in.get<std::uint64_t>();
     welcome.setup.inputDelay = in.get<std::uint32_t>();
+    welcome.setup.boostedMoves = in.get<bool>();
     message = welcome;
     break;
   }

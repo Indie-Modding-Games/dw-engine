@@ -12,8 +12,9 @@ namespace dwe::app {
 inline constexpr std::array<std::string_view, 4> CoopGuestOwnSections{"partner", "moves",
                                                                       "evolution", "inventory"};
 
-// The only guest-save data admitted into a host session. The save's map, story, inventory,
-// clock, and other sections are intentionally not represented here.
+// The guest's partner as its save holds it. The rest of what the guest brings into the host's
+// world is CoopGuestOwnSections (hostWorldWithGuestPartner); the save's map, story and clock stay
+// the host's.
 struct CoopGuestPartnerProfile {
   std::string species;
   std::string nickname;

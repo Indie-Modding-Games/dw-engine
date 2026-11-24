@@ -1,3 +1,4 @@
+#include <dwe/game/battle/boosted_moves.hpp>
 #include <dwe/game/battle/hit_particles.hpp>
 #include <dwe/game/battle/joining.hpp>
 #include <dwe/game/battle/simulation.hpp>
@@ -71,6 +72,73 @@ TEST_CASE("a partner's move variant replaces the table's move for it alone") {
   REQUIRE_MESSAGE(battle, errorOf(battle));
   CHECK(battle->state().partner().moves.at(0) == variant);
   CHECK(battle->state().fighters.at(1).moves.at(0) == punch);
+}
+
+namespace {
+
+BoostedMoveRules boostRules() {
+  return {.powerPercent = 125, .mpCostPercent = 75, .species = {}};
+}
+
+} // namespace
+
+TEST_CASE("a boosted technique: power rounded down, MP cost rounded up and never free") {
+  const BoostedMoveRules rules = boostRules();
+  CHECK(boostedPower(rules, 30) == 37);
+  CHECK(boostedPower(rules, 40) == 50);
+  CHECK(boostedPower(rules, 3) == 3);
+  CHECK(boostedPower(rules, 0) == 0);
+  CHECK(boostedMpCost(rules, 15) == 12);
+  CHECK(boostedMpCost(rules, 4) == 3);
+  CHECK(boostedMpCost(rules, 1) == 1);
+  CHECK(boostedMpCost(rules, 0) == 0);
+  const BoostedMoveRules free{.powerPercent = 100, .mpCostPercent = 1, .species = {}};
+  CHECK(boostedMpCost(free, 30) == 1);
+
+  MoveCatalog moves = testCatalog();
+  const MoveRef punch = refOf(moves, "punch");
+  const MoveRef boosted = moves.addBoosted(punch, rules);
+  CHECK(moves.at(boosted).id == "punch");
+  CHECK(moves.at(boosted).boosted);
+  CHECK(moves.at(boosted).power == 37);
+  CHECK(moves.at(boosted).mpCost == 12);
+  CHECK_FALSE(moves.at(boosted).learnable);
+  CHECK_FALSE(moves.at(punch).boosted);
+  CHECK(moves.at(punch).power == 30);
+  CHECK(moves.at(punch).mpCost == 15);
+  CHECK(moves.at(moves.addBoosted(refOf(moves, "counter"), rules)).mpCost == 0);
+}
+
+TEST_CASE("a boosted technique hits harder and costs less for the partner alone") {
+  MoveCatalog moves = testCatalog();
+  const MoveRef punch = refOf(moves, "punch");
+  const MoveRef boosted = moves.addBoosted(punch, boostRules());
+  Bench plain{duel(evenStats(500, 200), evenStats(500, 200))};
+  Bench strong{duel(evenStats(500, 200), evenStats(500, 200))};
+  BattleContext plainContext = plain.context();
+  BattleContext strongContext = strong.context();
+  strongContext.moves = &moves;
+  // Same seed, same rolls: affinity 30 * power / 30, then the same 90 to 110 percent roll.
+  for (int roll = 0; roll < 20; ++roll) {
+    const std::int32_t base =
+        plain.strategies.damage->damage(plainContext.view(), PartnerId, 1, punch);
+    const std::int32_t more =
+        strong.strategies.damage->damage(strongContext.view(), PartnerId, 1, boosted);
+    CHECK(more > base);
+    CHECK(std::abs((more * 30 / 37) - base) <= 1);
+  }
+
+  BattleSetup setup = duel(evenStats(500, 100), evenStats(500, 100));
+  setup.partner.moveVariants.emplace("punch", boosted);
+  auto battle = Battle::start(std::move(setup), originalRules(), moves, originalStrategies(), 1);
+  REQUIRE_MESSAGE(battle, errorOf(battle));
+  CHECK(battle->state().partner().moves.at(0) == boosted);
+  CHECK(battle->state().fighters.at(1).moves.at(0) == punch);
+  CHECK(battle->partnerMoveCost(0, PartnerId) ==
+        partnerMpCost(originalRules(), 12, 100, false, MpCostUse::Payment));
+  Battle unboosted = startBattle(duel(evenStats(500, 100), evenStats(500, 100)), 1);
+  CHECK(unboosted.partnerMoveCost(0, PartnerId) ==
+        partnerMpCost(originalRules(), 15, 100, false, MpCostUse::Payment));
 }
 
 TEST_CASE("a sick partner loses a fifth of its offense, defense, speed and brain") {
@@ -1354,4 +1422,41 @@ TEST_CASE("no command, finisher press or bag cuts the partner's hit reaction sho
     CAPTURE(command);
     CHECK(reactionFrames(static_cast<Command>(command), Press::Nothing) == alone);
   }
+}
+
+TEST_CASE("a fixed learning chance of 100 always teaches a seen technique, 0 never, with the same "
+          "rolls") {
+  BattleSetup setup = duel(evenStats(3000, 400), evenStats(200, 100), {"punch"}, {"dynamite_kick"});
+  setup.partner.speciesMoves.at(0) = "dynamite_kick";
+  constexpr std::uint64_t Seeds = 24;
+  std::uint64_t seenIn = 0;
+  for (std::uint64_t seed = 1; seed <= Seeds; ++seed) {
+    CAPTURE(seed);
+    BattleSetup always = setup;
+    always.learnChance = 100;
+    Battle taught = startBattle(always, seed);
+    runToEnd(taught);
+    REQUIRE(resultOf(taught).outcome == Outcome::Victory);
+    if (taught.state().seenMoves.empty()) {
+      CHECK(resultOf(taught).learnedMoves.empty());
+    } else {
+      ++seenIn;
+      CHECK(resultOf(taught).learnedMoves ==
+            std::vector<std::string>{"dynamite_kick", "dynamite_kick_48"});
+    }
+
+    BattleSetup never = setup;
+    never.learnChance = 0;
+    Battle untaught = startBattle(never, seed);
+    runToEnd(untaught);
+    CHECK(resultOf(untaught).learnedMoves.empty());
+
+    Battle table = startBattle(setup, seed);
+    runToEnd(table);
+    CHECK(resultOf(untaught).frames == resultOf(table).frames);
+    CHECK(resultOf(untaught).statGains == resultOf(table).statGains);
+    CHECK(resultOf(untaught).drops == resultOf(table).drops);
+    CHECK(resultOf(untaught).injured == resultOf(table).injured);
+  }
+  CHECK(seenIn > Seeds / 2);
 }

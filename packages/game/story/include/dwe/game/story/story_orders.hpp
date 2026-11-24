@@ -24,7 +24,8 @@ struct StoryRules {
 class StoryOrders {
 public:
   // The rules must give a base variable range past 0.
-  StoryOrders(StoryStatePort& state, StoryRandomPort& random, StoryRules rules);
+  StoryOrders(StoryStatePort& state, StoryRandomPort& random, StoryRules rules,
+              const StoryRollPort* rolls = nullptr);
 
   // set_trigger and unset_trigger.
   core::Result<void> setTrigger(std::int64_t trigger);
@@ -62,6 +63,12 @@ private:
   StoryStatePort* state_;
   StoryRandomPort* random_;
   StoryRules rules_;
+  const StoryRollPort* rolls_;
 };
+
+// The value a tuned roll writes from one draw of 0 to StoryRandomPort::RandomMax: a hit (0 to
+// `hitsAtMost`) for the lowest `percent` in 100 of the draws, a miss (above it, up to limit - 1)
+// for the rest.
+[[nodiscard]] std::int64_t tunedRollValue(std::int64_t drawn, std::int64_t limit, TunedRoll roll);
 
 } // namespace dwe::game::story

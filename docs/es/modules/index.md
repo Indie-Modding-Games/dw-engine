@@ -48,6 +48,7 @@ capas y lo que puede usar cada una están en las [reglas de dependencias](../arc
 | [story](game/story.md) | El estado de la historia y el runtime de los scripts de eventos |
 | [save](game/save.md) | Partidas guardadas versionadas, ranuras y autoguardado |
 | [modes](game/modes.md) | Los modos de juego: el manifiesto `mode.yaml` y el catálogo de los paquetes |
+| [randomizer](game/randomizer.md) | El aleatorizador con semilla de una partida nueva: sus opciones, semillas y códigos de partida |
 
 ## Librerías compartidas (`packages/`)
 

@@ -29,6 +29,8 @@ inline constexpr std::string_view FieldHudPhaseSetting = "hud.clock.phase";
 inline constexpr std::string_view FieldHudMeterList = "hud.meter";
 inline constexpr std::string_view FieldHudNeedList = "hud.need";
 inline constexpr std::string_view FieldHudPoolList = "hud.pool";
+// The need meters (an engine improvement): how far hunger, the toilet and tiredness have built up.
+inline constexpr std::string_view FieldHudGaugeList = "hud.gauge";
 // How the partner feels about the map, as the original's numbers (map.c:
 // MAP_TILE_DATA.partnerAreaResponse): 0 neutral, 1 it likes the area, 2 it dislikes it. It goes
 // with the field status, on FieldHudRevisionSetting.
@@ -42,6 +44,11 @@ inline constexpr std::size_t PoolCount = 2;
 // The needs the field HUD shows, in the order of the hud.need list: hunger, sleep, toilet,
 // tiredness, injury and sickness.
 inline constexpr std::size_t NeedCount = 6;
+
+// The need meters, in the order of the hud.gauge list: hunger, toilet and tiredness, each the need
+// of the hud.need list at GaugeNeeds' place.
+inline constexpr std::size_t GaugeCount = 3;
+inline constexpr std::array<std::size_t, GaugeCount> GaugeNeeds{0, 2, 3};
 
 // The game time as the player reads it: the hour (0-23) and minute, and the day of the year and the
 // year counted from 1, as the original's menu shows them (game_menu.c: renderDateDigits writes DAY
@@ -80,6 +87,10 @@ struct FieldMeterView {
 // renderStatusBars), else "high".
 [[nodiscard]] std::string_view meterMoodOf(const FieldMeterView& meter);
 
+// How full a need meter's bar is, in whole percent of its range, rounded down: 0 right after the
+// need was met, 100 when it is due.
+[[nodiscard]] std::int32_t gaugeFillOf(const FieldMeterView& gauge);
+
 // HP or MP: what is left and the maximum.
 struct FieldPoolView {
   std::int32_t current = 0;
@@ -108,6 +119,9 @@ struct FieldHudView {
   // hunger, toilet, injury, sickness: partner_impl.c: handleConditionBubble). For the stacked need
   // bubble, an engine improvement; the original's bubble keeps its own order.
   std::array<std::int32_t, NeedCount> urgency{};
+  // Hunger, toilet and tiredness as they build up (session::PartnerView: hungerGauge, toiletGauge,
+  // tiredness), from 0 to their max.
+  std::array<FieldMeterView, GaugeCount> gauges;
   // HP (0) and MP (1).
   std::array<FieldPoolView, PoolCount> pools;
   // How the partner feels about the map: the original's happiness icon alternates with another face
@@ -165,8 +179,8 @@ struct FieldPartnerView {
 [[nodiscard]] FieldHudView fieldHudViewOf(const ruleset::GameTime& time,
                                           const session::PartnerView& partner, bool shown);
 
-// The labels of the field HUD's bars, needs and pools, as text keys, and which bars are two-tone.
-// They never change.
+// The labels of the field HUD's bars, needs, need meters and pools, as text keys, which bars are
+// two-tone and which need each meter shows. They never change.
 [[nodiscard]] ScreenSettings fieldHudLabelSettings();
 
 [[nodiscard]] ScreenSettings settingsOf(const FieldHudView& view);

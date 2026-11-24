@@ -658,6 +658,14 @@ private:
     // Where the owner says the body is (drivePlayer): placed there instead of walking.
     std::optional<CharacterState> driven;
   };
+  [[nodiscard]] static PlayerId playerIdOf(const PlayerRuntime& player) {
+    return player.fieldPlayer.id;
+  }
+  [[nodiscard]] PlayerRuntime* otherPlayer(PlayerId id);
+  [[nodiscard]] const PlayerRuntime* otherPlayer(PlayerId id) const;
+  // Leaving, changing or waiting for a map, a choice, a script, care or an item hold: no player
+  // walks.
+  [[nodiscard]] bool worldHeld() const;
   void tickOtherPlayers(float seconds);
   void placeDrivenPlayers();
   void moveOtherPartners(std::int32_t frames);

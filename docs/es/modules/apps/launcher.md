@@ -273,6 +273,11 @@ sus paquetes en `packs/` junto a `bin/`), con la salida en `<datos>/logs/game.lo
 lo arranca sin ventana de consola. Si el jugador eligió otra carpeta de datos, añade
 `--saves <datos>/saves --reports <datos>/reports`; con la de por defecto las partidas quedan en la carpeta del juego. Cuando el juego
 termina, el lanzador vuelve; si terminó con error, muestra las últimas 30 líneas de su registro.
+Dos códigos de salida tienen su propio mensaje. El 113 (desde 0.1.0-beta.1133, o una compilación que no es una versión)
+significa que la tarjeta gráfica dejó de responder: pide actualizar el controlador y, cuando aplican, sugiere el modo
+Vulkan 1.2 (apagado y conocido por ese juego) y el controlador por software del paquete (no usado en esa partida). El 113
+de un juego anterior recibe el mensaje genérico, porque nunca lo devolvía a propósito. El 0xCFFFFFFF
+significa que Windows cerró el juego porque se colgó.
 
 ## Requisitos del equipo
 
@@ -295,7 +300,8 @@ estándar líneas `clave=valor` bajo la cabecera `dwe-check-system 1`: `result` 
 `virtual`, `software`, `other`), `api` y `driver`; sale con 0 solo si es `ok`. Cuando ninguna sirve nombra la mejor de
 las que hay, para saber de qué fabricante es el controlador. La rama que limita las opciones de las compilaciones de
 distribución tiene que dejar pasar `--check-system`. El lanzador le da 20 s; sin respuesta (un juego anterior a la
-opción, que dice «bad argument») juega como antes.
+opción, que dice «bad argument») juega como antes. Con `--compatible` acepta Vulkan 1.2 cuando el controlador tiene
+las extensiones de renderizado dinámico y synchronization2.
 
 **Modo de compatibilidad.** El paquete trae el cargador de Vulkan (en Linux, `lib/libvulkan.so.1`, que el juego
 busca primero; en Windows, `bin/vulkan-1.dll`) y el controlador de Vulkan por software de Mesa, lavapipe, en
@@ -308,20 +314,29 @@ pero el juego arranca en una máquina virtual o con un controlador viejo o ausen
 (`dwe` en Linux, `dwe.cmd` en Windows) hacen lo mismo para quien juega sin lanzador. Un equipo cuyo único Vulkan
 es uno por software del sistema (llvmpipe) también ve el aviso, sin cambiar de controlador.
 
-**Salidas manuales de arranque.** En Ajustes › Avanzado › Arranque del juego se puede dejar de depender de esa
-comprobación: «Modo de arranque» elige Automático (el de arriba), Sin comprobar (arranca con el controlador del
-sistema, sin sondeo y sin cambiar de controlador) o Software del paquete (usa lavapipe sin sondeo, para probar aunque
-la detección diga otra cosa). También se pueden escribir argumentos extra del juego y variables de entorno
-(`NOMBRE=valor`, una por línea, hasta 32 de cada); las del jugador se aplican después de las del controlador por
-software, así que pueden corregir un `VK_DRIVER_FILES` mal detectado. Las líneas que no se entienden se ignoran,
-nunca impiden jugar, y nada de esto se pasa al sondeo: solo cambia el arranque del juego. Se guarda en
-`settings.json`.
+**Interruptores gráficos.** Ajustes › General › Requisitos del equipo tiene dos interruptores, apagados por defecto,
+que añaden un flag del juego a cada arranque:
 
-**Modo seguro AMD RX 6000 (RDNA2).** En Ajustes › General › Requisitos hay un interruptor «Modo seguro AMD RX 6000».
-Al activarlo el juego arranca con `--rdna2-safe` y simplifica el layout bindless (deja sólo `UPDATE_AFTER_BIND`) para
-probar el TDR de esas tarjetas. El juego comprueba de nuevo la GPU: si no es AMD y de la serie RX 6000, ignora el flag,
-así que en cualquier otra tarjeta no cambia nada aunque lo dejes activado. Escribe `AMD RX 6000 safe mode: ...` en
-`game.log` cuando está activo. No sustituye al modo software.
+| Interruptor | Flag | Qué hace |
+|---|---|---|
+| Modo Vulkan 1.2 | `--compatible` | El juego y su comprobación aceptan Vulkan 1.2 con esas dos extensiones, para tarjetas y controladores antiguos. Cuando los controladores del equipo no pasan la comprobación normal pero sí esta, el aviso del inicio ofrece «Activar el modo Vulkan 1.2», tanto si nada puede mover el juego como si entró el controlador por software; al activarlo se comprueba de nuevo. |
+| Modo de bajo rendimiento | `--low-performance` | Cada arranque empieza con el preset gráfico más ligero; las opciones del juego pueden cambiar cada una durante la partida. |
+
+Un juego anterior a un flag rechaza toda la línea de órdenes («bad argument»), así que el lanzador solo pasa cada flag
+a los juegos que lo conocen: los dos desde 0.1.0-beta.1127 (una compilación de desarrollo los recibe). Volver a la
+versión anterior no rompe «Jugar». Los lanzadores antiguos pueden seguir pasando `--rdna2-safe`, que el juego acepta e
+ignora; este lanzador ya no tiene ese interruptor, y un `rdna2_safe_mode` que quede en `settings.json` se conserva
+pero no se usa.
+
+**Opciones manuales de arranque.** En Ajustes › Avanzado › Arranque del juego se puede dejar de depender de esa
+comprobación: «Modo de arranque» elige Automático (el de arriba), Sin comprobar (arranca con el controlador del
+sistema, sin sondeo y sin cambiar de controlador) o el controlador por software del paquete (usa lavapipe sin sondeo,
+para probar aunque la detección diga otra cosa; un paquete sin lavapipe, como el de macOS, arranca con el del
+sistema). También se pueden escribir argumentos extra del juego y variables de entorno (`NOMBRE=valor`, una por línea,
+hasta 32 de cada); las del jugador se aplican después de las del controlador por software, así que pueden corregir un
+`VK_DRIVER_FILES` mal detectado. Las líneas que no se entienden se ignoran, nunca impiden jugar, y nada de esto se pasa
+al sondeo: solo cambia el arranque del juego. Se guarda en `settings.json`, que conserva los campos que escribió un
+lanzador más nuevo, y un modo de arranque desconocido ahí se lee como Automático.
 
 **AppImage.** El arranque de la AppImage pone sus carpetas delante de `XDG_DATA_DIRS`, donde el cargador de Vulkan
 busca los controladores del equipo; el lanzador las quita del entorno de `--check-system` y del juego

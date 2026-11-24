@@ -1,7 +1,7 @@
 //! What this computer needs to install and play, checked before it is needed: free space in the
 //! data folder, and a GPU the renderer can use (`dwe-game --check-system`, rhi/system_check.hpp).
 //! Nothing is installed on the player's computer: the game package brings its own Vulkan loader
-//! and, on Linux, Mesa's software Vulkan driver (lib/lavapipe, scripts/package_linux.sh). When no
+//! and, on Linux and Windows, Mesa's software Vulkan driver (lib/lavapipe). When no
 //! GPU can run the game the launcher starts it on that driver and says so; only when even that
 //! cannot work does the page show what to do (the driver page of the GPU's maker).
 
@@ -12,6 +12,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
+use crate::launch::GraphicsFlags;
 use crate::log_line;
 use crate::store::Game;
 
@@ -163,17 +164,14 @@ pub fn software_manifest(game: &Game) -> Option<PathBuf> {
     SOFTWARE_MANIFESTS.iter().map(|name| folder.join(name)).find(|manifest| manifest.is_file())
 }
 
-/// The software driver's environment for a game that has one, empty when the package has no driver
-/// (a game made before the fallback, or a non-Windows non-Linux build). Used by the manual "software"
-/// launch mode, which does not probe first.
+/// Empty when the package brings no software driver (macOS, or a game made before it).
 pub fn software_env_for(game: &Game) -> Vec<(OsString, OsString)> {
     software_manifest(game).as_deref().map(software_env).unwrap_or_default()
 }
 
 /// The environment that makes the game use only the package's software driver: the loader reads
-/// VK_DRIVER_FILES (VK_ICD_FILENAMES before 1.3.207). Linux needs LD_LIBRARY_PATH for the driver's
-/// libraries; on Windows the manifest names the DLL next to it, and PATH is added as well for any
-/// library that DLL loads.
+/// VK_DRIVER_FILES (VK_ICD_FILENAMES before 1.3.207), and the driver's folder goes first in
+/// LD_LIBRARY_PATH on Linux and PATH on Windows, so the loader finds the library the manifest names.
 pub fn software_env(manifest: &Path) -> Vec<(OsString, OsString)> {
     let folder = manifest.parent().unwrap_or(manifest);
     let mut env: Vec<(OsString, OsString)> = vec![
@@ -221,9 +219,7 @@ pub fn outside_appimage(command: &mut Command) {
     };
 }
 
-/// Runs the probe of a game with an extra environment and extra flags (the compatibility mode's
-/// `--compatible`, so the check reports what the game will really find); None when it gives no
-/// answer in time.
+/// Runs the probe of a game with extra flags and environment; None when it gives no answer in time.
 pub fn run_probe(program: &Path, extra_args: &[&str], env: &[(OsString, OsString)], timeout: Duration) -> Option<Probe> {
     let mut command = Command::new(program);
     command.arg(PROBE_FLAG);
@@ -276,9 +272,8 @@ pub struct GraphicsCheck {
     /// Why the computer's drivers were not enough (the probe's result), when they were not.
     pub reason: Option<ProbeResult>,
     pub detail: String,
-    /// The compatibility mode would let this machine run the game: the strict Vulkan 1.3 check
-    /// failed but the 1.2-plus-extensions one passed. The page offers the switch (only when
-    /// `compatibility` was not already on, since then it is the probe that ran).
+    /// The computer's drivers failed the check but pass it with --compatible, which is off: the
+    /// page offers that switch whether or not the software driver took over.
     pub compat_rescues: bool,
     /// The extra environment the game starts with (the software driver's), not for the page.
     #[serde(skip)]
@@ -292,26 +287,19 @@ impl GraphicsCheck {
     }
 }
 
-/// Checks the game's GPU with the chosen Vulkan floor (`compatibility`): the strict Vulkan 1.3
-/// probe with it off, the 1.2-plus-extensions one with it on. When the chosen probe fails, the
-/// compatibility probe is tried too, so the page can offer the switch; and when even that fails,
-/// with the package's software driver.
+/// Checks the game's GPU with the computer's drivers and the chosen Vulkan floor (`compatibility`);
+/// when they fail, also with --compatible (to offer it) and with the package's software driver.
 pub fn check_graphics(game: &Game, compatibility: bool) -> GraphicsCheck {
     let program = game.game_program();
-    let chosen: &[&str] = if compatibility { &["--compatible"] } else { &[] };
-    let system = run_probe(&program, chosen, &[], PROBE_TIMEOUT);
+    let chosen = GraphicsFlags { compatibility, ..Default::default() }.args(game);
+    let relaxed = GraphicsFlags { compatibility: true, ..Default::default() }.args(game);
+    let system = run_probe(&program, &chosen, &[], PROBE_TIMEOUT);
     let failed = system.as_ref().is_some_and(|p| p.result != ProbeResult::Ok);
-    // The switch would rescue a machine whose strict probe failed: ask the relaxed one, unless the
-    // relaxed one is what already failed.
-    let compat_rescues = if failed && !compatibility {
-        run_probe(&program, &["--compatible"], &[], PROBE_TIMEOUT)
-            .is_some_and(|p| p.result == ProbeResult::Ok)
-    } else {
-        false
-    };
+    let compat_rescues =
+        failed && chosen != relaxed && run_probe(&program, &relaxed, &[], PROBE_TIMEOUT).is_some_and(|p| p.result == ProbeResult::Ok);
     let software = if failed { software_manifest(game) } else { None };
     let env = software.as_deref().map(software_env).unwrap_or_default();
-    let fallback = software.as_ref().and_then(|_| run_probe(&program, chosen, &env, PROBE_TIMEOUT));
+    let fallback = software.as_ref().and_then(|_| run_probe(&program, &chosen, &env, PROBE_TIMEOUT));
     let graphics = decide(system.as_ref(), fallback.as_ref());
     let gpu = system.as_ref().and_then(|p| p.gpu.clone());
     let check = GraphicsCheck {
@@ -543,5 +531,44 @@ mod tests {
         assert!(run_probe(&hangs, &[], &[], Duration::from_millis(300)).is_none());
         assert!(start.elapsed() < Duration::from_secs(5));
         assert!(run_probe(&dir.path().join("missing"), &[], &[], PROBE_TIMEOUT).is_none());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_compatible_switch_is_offered_even_when_the_software_driver_takes_over() {
+        use std::os::unix::fs::PermissionsExt;
+        let answer = |result: &str| format!("printf 'dwe-check-system 1\\nresult={result}\\ndetail=\\ndevices=1\\n'");
+        let fake = |dir: &Path, knows_compatible: bool| {
+            let bin = dir.join("bin");
+            std::fs::create_dir_all(&bin).unwrap();
+            let program = bin.join("dwe-game");
+            let refuses = if knows_compatible { "" } else { "[ -n \"$2\" ] && { echo \"bad argument '$2'\" >&2; exit 1; }\n" };
+            let body = format!(
+                "#!/bin/sh\n{refuses}[ \"$2\" = --compatible ] || [ -n \"$VK_DRIVER_FILES\" ] && {{ {}; exit 0; }}\n{}\nexit 1\n",
+                answer("ok"),
+                answer("unsuitable")
+            );
+            std::fs::write(&program, body).unwrap();
+            std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755)).unwrap();
+            let lavapipe = dir.join(SOFTWARE_DRIVER);
+            std::fs::create_dir_all(&lavapipe).unwrap();
+            std::fs::write(lavapipe.join(SOFTWARE_MANIFESTS[0]), "{}").unwrap();
+        };
+        let game = |dir: &Path, version: &str| Game { dir: dir.into(), version: version.into(), commit: String::new(), extractor_version: None };
+
+        let new = tempfile::tempdir().unwrap();
+        fake(new.path(), true);
+        let strict = check_graphics(&game(new.path(), "dev"), false);
+        assert_eq!(strict.graphics, Graphics::Fallback);
+        assert!(strict.compat_rescues);
+        let relaxed = check_graphics(&game(new.path(), "dev"), true);
+        assert_eq!(relaxed.graphics, Graphics::Hardware);
+        assert!(!relaxed.compat_rescues);
+
+        let old = tempfile::tempdir().unwrap();
+        fake(old.path(), false);
+        let older = check_graphics(&game(old.path(), "0.1.0-beta.1100"), true);
+        assert_eq!(older.graphics, Graphics::Fallback, "a game without --compatible is probed without it");
+        assert!(!older.compat_rescues);
     }
 }

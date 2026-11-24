@@ -39,6 +39,79 @@
 	background-color: #4aa6ff;
 }
 
+/* The need meters (the option need_meters): hunger, the toilet and tiredness in a column of thin boxes left of the
+   bars, each with its icon over the box's left end and a gold bar that fills as the need comes due, red once the
+   partner has it. They slide in and out with the bars. */
+#field-gauges {
+	display: block;
+}
+
+.field-gauge {
+	display: block;
+	position: absolute;
+	right: -465dp;
+	width: 180dp;
+	height: 24dp;
+	margin: 0;
+	decorator: ninepatch(nb-thin-outer, nb-thin-inner, 1) border-box;
+	transition: right 0.17s linear-in-out;
+}
+
+#field-status.shown .field-gauge {
+	right: 265dp;
+}
+
+#field-gauge-0 { bottom: 104dp; }
+#field-gauge-1 { bottom: 66dp; }
+#field-gauge-2 { bottom: 28dp; }
+
+.field-gauge .label {
+	display: none;
+}
+
+.field-gauge .icon {
+	position: absolute;
+	left: 4dp;
+	top: -6dp;
+	width: 32dp;
+	height: 32dp;
+}
+
+.field-gauge.hunger .icon { decorator: image(nb-gauge-hunger); }
+.field-gauge.toilet .icon { decorator: image(nb-gauge-toilet); }
+.field-gauge.tired .icon { decorator: image(nb-gauge-tired); }
+
+.field-gauge .bar {
+	position: absolute;
+	left: 42dp;
+	top: 6dp;
+	width: 126dp;
+	height: 12dp;
+	margin: 0;
+	background-color: #181f2c;
+}
+
+.field-gauge .fill {
+	position: absolute;
+	left: 0;
+	top: 0;
+	height: 9dp;
+	border-top: 3dp #f7e08a;
+	background-color: #efc63c;
+}
+
+.field-gauge.active .fill {
+	border-top-color: #f29a90;
+	background-color: #e2483d;
+}
+
+/* The danger mark: the purple devil, 32 dp, a little over the wild monster's head. */
+.field-danger .icon {
+	width: 32dp;
+	height: 32dp;
+	decorator: image(nb-danger-devil);
+}
+
 /* The need balloon: a cream pill with an ink rim (66 x 60) round the need, as wide as the stack when there are
    several; the balloon's own pictures stay for the burst. */
 #field-partner-bubble.shown {

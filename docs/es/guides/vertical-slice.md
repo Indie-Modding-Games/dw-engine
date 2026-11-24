@@ -224,6 +224,10 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   en el segundo mapa de la niebla (`--start mist03 --story-stage all`): los puntos al llegar, con el jugador entre
   los tres salvajes y moviéndose, y luego la opción apagada en el menú de pausa (`expect_setting`) y el minimapa sin
   puntos. Se corre con los dos aspectos (`--ui-skin original`, `modern`).
+- `route-field-alerts.yaml`: los [medidores de necesidades](../modules/apps/game.md#medidores-de-necesidades) y el
+  [aviso de peligro](../modules/apps/game.md#aviso-de-peligro) en la llanura al pie de la montaña (`--start miha01
+  --story-stage all --ui-skin pixel`): los medidores al llegar, los diablos sobre los salvajes a la vista y las dos filas en
+  la pestaña Interfaz de las opciones (`expect_text_fits`). Se corre una vez por idioma (`--lang es`, `de`).
 - `route-digital-time.yaml`: la [hora en dígitos](../modules/apps/game.md#hora-en-dígitos) bajo el reloj del HUD
   desde una partida nueva con el teclado: las 08:00 a 1280x720, 1920x1080 y 1024x768, la noche (las 20:00), el menú
   de pausa abierto (el reloj se va con su caja) y la opción apagada desde el menú. Cada captura con la caja comprueba
@@ -327,6 +331,19 @@ done
 for lang in en es; do
     scripts/dev.sh run --content <carpeta> --mods tests/mods/game_mode --saves <carpeta vacía> --lang $lang \
         --autotest tests/autotest/route-game-modes.yaml --shots <capturas>/$lang
+done
+```
+- `route-randomizer.yaml`: una partida del Modo Folder por la configuración del
+  [aleatorizador](../modules/game/randomizer.md) (apagado y luego el preajuste Caos), su compañero inicial al azar en el
+  campo y en la página del compañero, y un guardado; `route-randomizer-slot.yaml`, corrida después con la misma carpeta
+  de partidas, muestra el código de partida en la lista de ranuras. Necesita una carpeta de partidas vacía:
+
+```sh
+for lang in en es; do
+    scripts/dev.sh run --content <carpeta> --saves <carpeta vacía>/$lang --lang $lang \
+        --autotest tests/autotest/route-randomizer.yaml --shots <capturas>/$lang
+    scripts/dev.sh run --content <carpeta> --saves <carpeta vacía>/$lang --lang $lang \
+        --autotest tests/autotest/route-randomizer-slot.yaml --shots <capturas>/$lang
 done
 ```
 - `route-stage2.yaml` y `route-stage2-jungle.yaml`: la Etapa 2 de la historia, con el candado tal como sale (la

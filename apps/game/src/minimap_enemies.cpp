@@ -77,9 +77,39 @@ std::string_view opOf(const core::YamlNode& instruction) {
   return op != nullptr && op->isScalar() ? std::string_view{op->text()} : std::string_view{};
 }
 
-} // namespace
+// What the walk has set on its way: the fixed-fight trigger and the predefined enemies' variable
+// (StoryFightMarks), as two bits of its state.
+constexpr unsigned FixedFightBit = 1U;
+constexpr unsigned PredefinedBit = 2U;
+constexpr unsigned WalkStates = 4U;
 
-std::set<std::int32_t> fightingSections(const core::YamlNode& listing) {
+std::optional<std::int64_t> fieldNumber(const core::YamlNode& instruction, std::string_view key) {
+  const core::YamlNode* value = instruction.find(key);
+  if (value == nullptr || !value->isScalar()) {
+    return std::nullopt;
+  }
+  return numberOf(value->text());
+}
+
+// The state after an instruction: set_trigger and unset_trigger of the fixed-fight trigger, and
+// set_pstat of the predefined enemies' variable, turn their bits on or off.
+unsigned stateAfter(const core::YamlNode& instruction, std::string_view op, unsigned state,
+                    const StoryFightMarks& marks) {
+  if ((op == "set_trigger" || op == "unset_trigger") &&
+      fieldNumber(instruction, "trigger") == marks.fixedFightTrigger) {
+    return op == "set_trigger" ? (state | FixedFightBit) : (state & ~FixedFightBit);
+  }
+  if (op == "set_pstat" && fieldNumber(instruction, "pstat") == marks.predefinedVariable) {
+    const std::optional<std::int64_t> value = fieldNumber(instruction, "value");
+    return value.value_or(0) != 0 ? (state | PredefinedBit) : (state & ~PredefinedBit);
+  }
+  return state;
+}
+
+// The sections from whose first instruction a start_battle can be reached, following every jump,
+// branch, choice, switch and call; with `marks`, only along a path that leaves the battle wild.
+std::set<std::int32_t> sectionsReachingBattle(const core::YamlNode& listing,
+                                              const std::optional<StoryFightMarks>& marks) {
   std::set<std::int32_t> fighting;
   const core::YamlNode* instructions = listing.find("instructions");
   const core::YamlNode* sections = listing.find("sections");
@@ -95,8 +125,10 @@ std::set<std::int32_t> fightingSections(const core::YamlNode& listing) {
       labels.emplace(label->text(), index);
     }
   }
-  // Whether a start_battle can be reached from each instruction, worked out once per listing: a
-  // walk from each section's start that marks what it reached.
+  struct Step {
+    std::size_t index;
+    unsigned state;
+  };
   for (const core::YamlNode& section : sections->items()) {
     const core::YamlNode* id = section.find("id");
     const core::YamlNode* at = section.find("at");
@@ -108,31 +140,32 @@ std::set<std::int32_t> fightingSections(const core::YamlNode& listing) {
     if (!sectionId || start == labels.end()) {
       continue;
     }
-    std::vector<bool> seen(code.size(), false);
-    std::vector<std::size_t> pending{start->second};
+    std::vector<bool> seen(code.size() * WalkStates, false);
+    std::vector<Step> pending{{.index = start->second, .state = 0}};
     bool fights = false;
     while (!pending.empty() && !fights) {
-      const std::size_t index = pending.back();
+      const Step step = pending.back();
       pending.pop_back();
-      if (index >= code.size() || seen[index]) {
+      if (step.index >= code.size() || seen[(step.index * WalkStates) + step.state]) {
         continue;
       }
-      seen[index] = true;
-      const core::YamlNode& instruction = code[index];
+      seen[(step.index * WalkStates) + step.state] = true;
+      const core::YamlNode& instruction = code[step.index];
       const std::string_view op = opOf(instruction);
-      if (op == BattleOp) {
+      if (op == BattleOp && (!marks || step.state == 0)) {
         fights = true;
         break;
       }
+      const unsigned next = marks ? stateAfter(instruction, op, step.state, *marks) : 0;
       std::vector<std::string> targets;
       targetsOf(instruction, targets);
       for (const std::string& target : targets) {
         if (const auto found = labels.find(target); found != labels.end()) {
-          pending.push_back(found->second);
+          pending.push_back({.index = found->second, .state = next});
         }
       }
       if (std::ranges::find(StopOps, op) == StopOps.end()) {
-        pending.push_back(index + 1);
+        pending.push_back({.index = step.index + 1, .state = next});
       }
     }
     if (fights) {
@@ -140,6 +173,40 @@ std::set<std::int32_t> fightingSections(const core::YamlNode& listing) {
     }
   }
   return fighting;
+}
+
+std::optional<core::YamlNode> readListing(const assets::VirtualFileSystem& files,
+                                          std::uint16_t script) {
+  const std::string id = std::format("script/dg/{:03}", script);
+  auto asset = assets::AssetId::parse(id);
+  if (!asset) {
+    return std::nullopt;
+  }
+  auto bytes = files.read(*asset);
+  if (!bytes) {
+    core::logWarning("minimap: the listing {} is not read ({}): no enemy is marked", id,
+                     bytes.error().message);
+    return std::nullopt;
+  }
+  auto listing = core::parseYaml(
+      std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+  if (!listing) {
+    core::logWarning("minimap: the listing {} is not read ({}): no enemy is marked", id,
+                     listing.error().message);
+    return std::nullopt;
+  }
+  return std::move(*listing);
+}
+
+} // namespace
+
+std::set<std::int32_t> fightingSections(const core::YamlNode& listing) {
+  return sectionsReachingBattle(listing, std::nullopt);
+}
+
+std::set<std::int32_t> wildFightingSections(const core::YamlNode& listing,
+                                            const StoryFightMarks& marks) {
+  return sectionsReachingBattle(listing, marks);
 }
 
 std::vector<ui::MinimapMarker> minimapEnemies(bool shown, std::span<const assets::MapNpc> records,
@@ -162,35 +229,33 @@ std::vector<ui::MinimapMarker> minimapEnemies(bool shown, std::span<const assets
   return enemies;
 }
 
-const std::set<std::int32_t>& MinimapEnemyFinder::sectionsOf(std::optional<std::uint16_t> script) {
+void MinimapEnemyFinder::read(std::optional<std::uint16_t> script) {
   if (read_ == script) {
-    return sections_;
+    return;
   }
   read_ = script;
   sections_.clear();
+  wildSections_.clear();
   if (!script) {
-    return sections_;
+    return;
   }
-  const std::string id = std::format("script/dg/{:03}", *script);
-  auto asset = assets::AssetId::parse(id);
-  if (!asset) {
-    return sections_;
-  }
-  auto bytes = files_->read(*asset);
-  if (!bytes) {
-    core::logWarning("minimap: the listing {} is not read ({}): no enemy is marked", id,
-                     bytes.error().message);
-    return sections_;
-  }
-  auto listing = core::parseYaml(
-      std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+  const std::optional<core::YamlNode> listing = readListing(*files_, *script);
   if (!listing) {
-    core::logWarning("minimap: the listing {} is not read ({}): no enemy is marked", id,
-                     listing.error().message);
-    return sections_;
+    return;
   }
   sections_ = fightingSections(*listing);
+  wildSections_ = wildFightingSections(*listing, marks_);
+}
+
+const std::set<std::int32_t>& MinimapEnemyFinder::sectionsOf(std::optional<std::uint16_t> script) {
+  read(script);
   return sections_;
+}
+
+const std::set<std::int32_t>&
+MinimapEnemyFinder::wildSectionsOf(std::optional<std::uint16_t> script) {
+  read(script);
+  return wildSections_;
 }
 
 } // namespace dwe::app

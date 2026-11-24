@@ -18,6 +18,7 @@ inline constexpr std::string_view TamerName = "tamer";
 inline constexpr std::string_view FieldName = "field";
 inline constexpr std::string_view RandomName = "random";
 inline constexpr std::string_view ModeName = "mode";
+inline constexpr std::string_view RandomizerName = "randomizer";
 
 // The game clock: its frames since year 0 and the fraction of a frame real time has run past them.
 class ClockSave final : public game::save::SectionSerializer {
@@ -86,6 +87,18 @@ private:
   SessionState* state_;
 };
 
+// The randomized run's settings and seed; a save without the section is no randomized run.
+class RandomizerSave final : public game::save::SectionSerializer {
+public:
+  explicit RandomizerSave(SessionState& state) : state_(&state) {}
+  [[nodiscard]] core::Result<core::YamlNode> write() const override;
+  core::Result<void> read(const core::YamlNode& state) override;
+  core::Result<void> readMissing() override;
+
+private:
+  SessionState* state_;
+};
+
 // A section to register: its name, serializer and versions.
 struct SectionEntry {
   std::string_view name;
@@ -97,7 +110,8 @@ struct SectionEntry {
 // numbers.
 struct SessionSerializers {
   explicit SessionSerializers(SessionState& state)
-      : clock(state), partner(state), tamer(state), field(state), random(state), mode(state) {}
+      : clock(state), partner(state), tamer(state), field(state), random(state), mode(state),
+        randomizer(state) {}
 
   // Registers them all.
   core::Result<void> addTo(game::save::SaveSections& sections);
@@ -108,6 +122,7 @@ struct SessionSerializers {
   FieldSave field;
   RandomSave random;
   ModeSave mode;
+  RandomizerSave randomizer;
 };
 
 } // namespace dwe::session::sections

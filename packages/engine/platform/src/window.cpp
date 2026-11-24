@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 
 #include <format>
+#include <string>
 #include <utility>
 
 namespace dwe::platform {
@@ -76,6 +77,16 @@ core::Result<void> Window::setTextInput(bool on) {
     return core::fail(std::format("could not switch the text input: {}", SDL_GetError()));
   }
   return {};
+}
+
+std::string Window::clipboardText() {
+  char* text = SDL_GetClipboardText();
+  if (text == nullptr) {
+    return {};
+  }
+  std::string copy{text};
+  SDL_free(text);
+  return copy;
 }
 
 bool Window::isFullscreen() const {

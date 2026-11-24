@@ -1,13 +1,5 @@
-# A scripted warp that runs while the partner is evolving must not freeze the screen on black.
-# Leaving the canyon's Monochromon shop (story scripts 49/199-202, `shop_job_mode: improved`) can
-# start the field's evolution scene (routine 10, the map scripts evolve the partner) with a map
-# change still resolving (the exit warp). The evolution scene holds the field; without pumping the
-# warp underneath it, `Field::tick` is never reached again until the scene ends and the player is
-# left on the frozen black of the fade out (apps/game/src/evolution_scene.cpp: advanceWarp).
-#
-# The regression waits for the new map WHILE the evolution scene is still running: with the fix the
-# warp loads its map under the cinematic, so `map` turns over before `evolution.active` goes false;
-# without it the map only changes after the scene ends and this wait never succeeds.
+# A scripted warp while the partner evolves (as when leaving the canyon shop): the warp and the new map's fade in go
+# on under the scene, so the evolution is seen on the new map instead of a black screen.
 # How to run: docs/guides/vertical-slice.md.
 name: evolve-warp
 device: keyboard
@@ -15,13 +7,10 @@ timeout: 120
 steps:
   - wait: {map: twna01, seconds: 1}
   - resize: [1280, 720]
-  # The evolution scene takes the field; the scripted warp follows in the same frame batch.
   - script: evolve("grey")
   - script: warp("room08")
-  # The warp's fade and the new map's load carry on under the scene, so the new map is reached
-  # before the evolution's cinematic is over.
   - wait: {map: room08, setting: {evolution.active: true}, timeout: 30, seconds: 1}
-  # The scene lets the field go, the new map fades in and the partner keeps the evolved form.
+  - screenshot: evolve-warp-scene
   - wait: {partner_model: digimon/grey/model, timeout: 60}
   - wait: {setting: {evolution.active: false}, timeout: 60, seconds: 1}
   - screenshot: evolve-warp
