@@ -54,6 +54,19 @@ enum class OrderProblem : std::uint8_t {
   ByTrainer,
 };
 
+// How long the HUD tells an order's ending: 5 seconds of battle frames.
+inline constexpr std::int32_t OrderNoticeFrames = 100;
+
+// An order that ended other than done, which the HUD tells for `frames` more frames (§10.4).
+struct OrderNotice {
+  Order order;
+  OrderEnd end = OrderEnd::Done;
+  OrderProblem problem = OrderProblem::None;
+  std::int32_t frames = 0;
+
+  friend bool operator==(const OrderNotice&, const OrderNotice&) = default;
+};
+
 struct FolderFighter {
   Stance stance = Stance::Aggressive;
   std::vector<Order> queue;
@@ -74,6 +87,7 @@ struct FolderFighter {
   std::optional<Order> lastOrder;
   OrderEnd lastEnd = OrderEnd::Done;
   OrderProblem lastProblem = OrderProblem::None;
+  std::optional<OrderNotice> notice;
   // A status effect (stun, confusion, flattening) holds it: the original's behaviour for the
   // status runs meanwhile.
   bool held = false;

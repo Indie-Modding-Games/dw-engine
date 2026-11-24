@@ -70,6 +70,22 @@ TEST_CASE("an order the partner cannot pay is invalid and says why") {
   CHECK(eventsOf(events, EventKind::AttackStarted, PartnerId).empty());
 }
 
+TEST_CASE("an order that ends other than done is told for a while") {
+  Battle battle = startBattle(folderDuel(evenStats(300, 100), evenStats(300, 100)), 1);
+  REQUIRE(battle.order(0, 1));
+  REQUIRE(battle.cancelOrders());
+  const FolderFighter& own = *battle.folderOf(PartnerId);
+  CHECK(own.lastEnd == OrderEnd::Cancelled);
+  CHECK(own.lastProblem == OrderProblem::ByTrainer);
+  REQUIRE(own.lastOrder.has_value());
+  CHECK(own.lastOrder->slot == 0);
+  REQUIRE(own.notice.has_value());
+  CHECK(own.notice->end == OrderEnd::Cancelled);
+  CHECK(own.notice->frames == OrderNoticeFrames);
+  runFrames(battle, OrderNoticeFrames + 1);
+  CHECK_FALSE(battle.folderOf(PartnerId)->notice.has_value());
+}
+
 TEST_CASE("the folder battle is deterministic") {
   const auto run = [] {
     Battle battle = startBattle(folderDuel(evenStats(400, 150), evenStats(400, 120)), 11);

@@ -822,6 +822,7 @@ UI API version: **0.33.0**.
 | `battle.menu.<n>.available` | setting | yes/no | Whether the command can be given now. |
 | `battle.menu.<n>.current` | setting | yes/no | Whether it is the command the partner follows now. |
 | `battle.menu.<n>.mp_cost` | setting | number | The MP the move costs the partner now; 0 for the other commands. |
+| `battle.menu.<n>.problem` | setting | text | In a folder battle, the text key of why the move cannot be ordered now (not enough MP, finisher not ready...); empty when it can. |
 | `battle.menu.motion` | setting | number | Goes up each time the strip or the partner's bars move, or the icon under the cursor blinks. |
 | `battle.menu.top` | setting | number | The strip's top edge, in lines from the screen's center. |
 | `battle.menu.bottom` | setting | number | The strip's bottom edge. |
@@ -868,6 +869,9 @@ UI API version: **0.33.0**.
 | `battle.folder.bar_max` | setting | number | The defense bar's capacity; full, the defense breaks. |
 | `battle.folder.broken` | setting | yes/no | Whether the partner's defense is broken now. |
 | `battle.folder.target` | setting | text | The name key of the foe the next orders aim at; empty without one. |
+| `battle.folder.notice` | setting | text | For a few seconds after an order ends other than done, the text key of how (cancelled, interrupted, invalid, replaced); empty otherwise. |
+| `battle.folder.notice_move` | setting | text | The move name key of the order the notice tells about. |
+| `battle.folder.notice_reason` | setting | text | The text key of why that order ended; empty when the ending says it all. |
 | `battle.item_in_flight` | setting | yes/no | Whether a thrown item is on its way to the partner. |
 | `battle.end.outcome` | setting | text | The text key of the result in the end box. |
 | `battle.end.count` | setting | number | How many lines the end box has. |
@@ -920,9 +924,9 @@ UI API version: **0.33.0**.
 | `battle.state(): table` | query | table | The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil) and cup (a cup battle). |
 | `battle.fighters(): table` | query | table | The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted and hp_bar. |
 | `battle.allies(): table` | query | table | The other players' partners fighting beside this player's in a co-op battle (empty otherwise): name_key, status_key, hp, max_hp, mp, max_mp, fainted and revive_seconds (a fallen ally's countdown, or nil). |
-| `battle.commands(): table` | query | table | The command strip, the finisher first: command, label_key, icon, available, current and mp_cost. |
+| `battle.commands(): table` | query | table | The command strip, the finisher first: command, label_key, icon, available, current, mp_cost and problem_key (folder battle: why the move cannot be ordered now, or ""). |
 | `battle.finisher(): table` | query | table | The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil). |
-| `battle.folder(): table` | query | table | The folder battle's order panel: active, move_key, phase, phase_percent, queue (move keys), queue_targets (their foes' name keys), target_key, bar, bar_max and broken. |
+| `battle.folder(): table` | query | table | The folder battle's order panel: active, move_key, phase, phase_percent, queue (move keys), queue_targets (their foes' name keys), target_key, bar, bar_max, broken and notice (an order that just ended other than done: key, move_key, reason_key; or nil). |
 | `battle.strip(): table` | query | table | Where the strip and the partner's bars are when entering and leaving: top, bottom, blink, hp_x and mp_x (or nil). |
 | `battle.intro(): table` | query | table | The opening: step, anger (3 marks), flee (8), anger_scale, flash and pieces (the banner's pieces, with key). |
 | `battle.numbers(): table` | query | table | The numbers over the fighters: x, y (percentage), dx, dy, value, kind (damage, gain, poison) and icon. |

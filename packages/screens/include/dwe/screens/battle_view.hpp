@@ -50,6 +50,9 @@ inline constexpr std::string_view FolderBarSetting = "battle.folder.bar";
 inline constexpr std::string_view FolderBarMaxSetting = "battle.folder.bar_max";
 inline constexpr std::string_view FolderBrokenSetting = "battle.folder.broken";
 inline constexpr std::string_view FolderTargetSetting = "battle.folder.target";
+inline constexpr std::string_view FolderNoticeSetting = "battle.folder.notice";
+inline constexpr std::string_view FolderNoticeMoveSetting = "battle.folder.notice_move";
+inline constexpr std::string_view FolderNoticeReasonSetting = "battle.folder.notice_reason";
 
 // A command's label: a technique's or the finisher's move name, the others the original's command
 // name (battle_main.c: BTL_COMMAND_NAMES; vs_main.c: VS_renderMoveName).
@@ -103,6 +106,9 @@ struct CommandEntry {
   std::string icon;
   // The MP a technique costs the partner now (Battle::partnerMoveCost); 0 for the other commands.
   std::int32_t mpCost = 0;
+  // In the Folder battle, the text key of why a technique or the finisher cannot be ordered now
+  // (Battle::orderProblem); empty when it can, and in the Classic battle.
+  std::string problemKey;
 
   friend bool operator==(const CommandEntry&, const CommandEntry&) = default;
 };
@@ -154,6 +160,12 @@ struct BattleView {
     std::int32_t bar = 0;
     std::int32_t barMax = 0;
     bool broken = false;
+    // For a few seconds after an order ends other than done (cancelled, interrupted, invalid,
+    // replaced): the text key of how, its move's name key and the key of why (empty when the
+    // ending says it all).
+    std::string noticeKey;
+    std::string noticeMoveKey;
+    std::string noticeReasonKey;
 
     friend bool operator==(const Folder&, const Folder&) = default;
   };

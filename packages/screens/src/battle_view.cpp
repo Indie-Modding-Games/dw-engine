@@ -43,6 +43,7 @@ constexpr std::string_view AvailableField = "available";
 constexpr std::string_view CurrentField = "current";
 constexpr std::string_view IconField = "icon";
 constexpr std::string_view MpCostField = "mp_cost";
+constexpr std::string_view ProblemField = "problem";
 // BTL_COMMAND_ICON_UVS and BTL_SPECIAL_ICON_UVS: seven icons in each row of BTLCOMND.
 constexpr std::int32_t IconsPerRow = 7;
 constexpr std::string_view PartsField = "parts";
@@ -117,6 +118,7 @@ void addCommand(ScreenSettings& settings, std::size_t index, const CommandEntry&
   add(CurrentField, entry.current);
   add(IconField, entry.icon);
   add(MpCostField, static_cast<double>(entry.mpCost));
+  add(ProblemField, entry.problemKey);
 }
 
 std::string countName(std::string_view list) {
@@ -204,6 +206,57 @@ std::string_view phaseName(battle::OrderPhase phase) {
   return {};
 }
 
+std::string problemKeyOf(battle::OrderProblem problem) {
+  switch (problem) {
+  case battle::OrderProblem::None:
+  case battle::OrderProblem::ByTrainer:
+    break;
+  case battle::OrderProblem::EmptySlot:
+    return "battle.folder.problem.empty_slot";
+  case battle::OrderProblem::NotEnoughMp:
+    return "battle.folder.problem.not_enough_mp";
+  case battle::OrderProblem::FinisherNotReady:
+    return "battle.folder.problem.finisher_not_ready";
+  case battle::OrderProblem::NoTarget:
+    return "battle.folder.problem.no_target";
+  case battle::OrderProblem::TargetGone:
+    return "battle.folder.problem.target_gone";
+  case battle::OrderProblem::Unreachable:
+    return "battle.folder.problem.unreachable";
+  }
+  return {};
+}
+
+std::string endKeyOf(battle::OrderEnd end) {
+  switch (end) {
+  case battle::OrderEnd::Done:
+    break;
+  case battle::OrderEnd::Interrupted:
+    return "battle.folder.end.interrupted";
+  case battle::OrderEnd::Invalid:
+    return "battle.folder.end.invalid";
+  case battle::OrderEnd::Cancelled:
+    return "battle.folder.end.cancelled";
+  case battle::OrderEnd::Replaced:
+    return "battle.folder.end.replaced";
+  }
+  return {};
+}
+
+std::string commandProblemOf(const battle::Battle& battle, battle::Command command,
+                             battle::FighterId own) {
+  const auto number = static_cast<std::int32_t>(command);
+  constexpr auto FirstTechnique = static_cast<std::int32_t>(battle::Command::Technique1);
+  constexpr auto LastTechnique = static_cast<std::int32_t>(battle::Command::Technique3);
+  if (command == battle::Command::Finisher) {
+    return problemKeyOf(battle.orderProblem(battle::FinisherSlot, own));
+  }
+  if (number < FirstTechnique || number > LastTechnique) {
+    return {};
+  }
+  return problemKeyOf(battle.orderProblem(static_cast<std::size_t>(number - FirstTechnique), own));
+}
+
 std::string orderMoveKey(const battle::Battle& battle, battle::FighterId own,
                          const battle::Order& order, const NameKeys& names) {
   const auto& move = battle.state().fighters[own].moves.at(order.slot);
@@ -235,6 +288,11 @@ BattleView::Folder folderViewOf(const battle::Battle& battle, const battle::Fold
   view.bar = folder.defenseBar;
   view.barMax = battle.defenseBarCapacity(own);
   view.broken = folder.broken();
+  if (folder.notice) {
+    view.noticeKey = endKeyOf(folder.notice->end);
+    view.noticeMoveKey = orderMoveKey(battle, own, folder.notice->order, names);
+    view.noticeReasonKey = problemKeyOf(folder.notice->problem);
+  }
   return view;
 }
 
@@ -265,15 +323,17 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names,
   const battle::CommandState& commands = state.commandsOf(own);
   const bool folder = battle.system() == battle::BattleSystemId::Folder;
   for (const battle::Command command : commands.menu) {
-    view.menu.push_back({.command = command,
-                         .labelKey = folder && battle::folderCommandTextKey(command) !=
-                                                   battle::commandTextKey(command)
-                                         ? std::string{battle::folderCommandTextKey(command)}
-                                         : commandLabelOf(command, partner, names),
-                         .available = command != battle::Command::Finisher || gaugeFull(partner),
-                         .current = command == commands.current,
-                         .icon = commandIconOf(command, partner, battle.moves()),
-                         .mpCost = techniqueCostOf(battle, command, own)});
+    view.menu.push_back(
+        {.command = command,
+         .labelKey =
+             folder && battle::folderCommandTextKey(command) != battle::commandTextKey(command)
+                 ? std::string{battle::folderCommandTextKey(command)}
+                 : commandLabelOf(command, partner, names),
+         .available = command != battle::Command::Finisher || gaugeFull(partner),
+         .current = command == commands.current,
+         .icon = commandIconOf(command, partner, battle.moves()),
+         .mpCost = techniqueCostOf(battle, command, own),
+         .problemKey = folder ? commandProblemOf(battle, command, own) : std::string{}});
   }
   const bool partnerCharging = state.finisher.fighter == own;
   view.finisher = {.progress = partner.finisherProgress,
@@ -467,6 +527,10 @@ ScreenSettings settingsOf(const BattleView& view) {
       {.name = std::string{FolderBarMaxSetting}, .value = static_cast<double>(folder.barMax)});
   settings.push_back({.name = std::string{FolderBrokenSetting}, .value = folder.broken});
   settings.push_back({.name = std::string{FolderTargetSetting}, .value = folder.targetKey});
+  settings.push_back({.name = std::string{FolderNoticeSetting}, .value = folder.noticeKey});
+  settings.push_back({.name = std::string{FolderNoticeMoveSetting}, .value = folder.noticeMoveKey});
+  settings.push_back(
+      {.name = std::string{FolderNoticeReasonSetting}, .value = folder.noticeReasonKey});
   return settings;
 }
 

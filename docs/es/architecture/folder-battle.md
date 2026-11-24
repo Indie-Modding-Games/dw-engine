@@ -47,7 +47,17 @@ cada luchador comandado tiene todas las entradas, sea cual sea su cerebro, y cad
 
 Una placa abajo a la izquierda (`battle.folder()` en la API de la interfaz) muestra la barra de defensa del partner y su
 ruptura, el enemigo al que apuntan las próximas órdenes (Cambiar lo elige), la técnica y la fase de la orden activa con
-el progreso de la fase temporizada, y las órdenes en espera con su enemigo.
+el progreso de la fase temporizada, y las órdenes en espera (una orden nombra a su enemigo solo cuando no es el objetivo
+actual). Debajo indica el estado alterado del partner, en las skins cuyas barras del partner no lo muestran, y, durante
+cinco segundos, cómo terminó la última orden cuando no se completó: anulada, interrumpida, inválida o reemplazada, con el
+motivo (MP insuficientes, su enemigo ya no está, fuera de alcance...). La línea bajo la tira dice por qué la técnica
+enfocada o el remate no se pueden ordenar ahora; en la skin moderna, cuyos botones ya nombran los comandos y cuyo nombre
+de técnica se anuncia al empezar, esa línea solo muestra el motivo.
+
+La placa se queda en su propia región para no tapar nunca otro recuadro: en la skin moderna está entre la tarjeta del
+partner y las ayudas de teclas, bajo las tarjetas de los enemigos; en las skins original, pixel y DevVago ocupa la
+esquina inferior izquierda y sube sobre la tira de un combate de copa. En todas las skins se aparta mientras la bolsa
+está abierta, porque sus recuadros llegan a su sitio. Cada línea ocupa una sola fila.
 
 ## Arquitectura
 
@@ -193,7 +203,7 @@ Cada fase se entrega con tests y, donde se ve, con capturas de pantalla.
 | 7 | IA: ejecuta órdenes, nunca cambia de técnica ni de objetivo; los enemigos conservan la IA original | Hecha |
 | 8 | Co-op: la tira del invitado se convierte en órdenes en el anfitrión; acciones de combate `Order` y `Stance`; una cola por partner; la tira del invitado muestra las etiquetas de Folder | Hecha |
 | 9 | Objetos: los objetos lanzados compartidos, sin cambios en Folder | Hecha (compartida) |
-| 10 | Interfaz: la tira da órdenes y posturas, `Change` elige el objetivo; la placa muestra la cola, la fase, la barra de defensa y la ruptura | Hecha (primera versión) |
+| 10 | Interfaz: la tira da órdenes y posturas, `Change` elige el objetivo; la placa muestra la cola, la fase, la barra de defensa y la ruptura, el estado alterado y cómo terminó una orden no completada y por qué; la tira dice por qué no se puede ordenar una técnica; la placa se queda en su propia región en cada skin | Hecha |
 | 11 | Datos de técnicas: ejecución y recuperación por tramo de MP con entradas por técnica; área, funciones y fuego amigo por técnica | Parcial (tiempos hechos) |
 | 12 | Balance: escala de atributos (provisional, de la sonda), bonus de bloqueo por distancia, costes (`costo-mp.md`) | Parcial |
 | 13 | Volver a Classic desde el juego en una partida de Folder Mode: la opción `battle_system` | Hecha |

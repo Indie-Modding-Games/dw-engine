@@ -160,6 +160,9 @@ void tickDefense(BattleContext& context, FighterId id) {
   const FolderRules& rules = folderRules(context);
   FolderFighter& own = folderFighter(context, id);
   Fighter& fighter = context.fighter(id);
+  if (own.notice && --own.notice->frames <= 0) {
+    own.notice.reset();
+  }
   if (own.broken() && --own.brokenFrames == 0) {
     own.brokenLength = 0;
     emitFor(context, EventKind::DefenseRestored, id, 0);

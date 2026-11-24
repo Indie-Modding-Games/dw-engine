@@ -1302,7 +1302,12 @@ void BattleScreen::shout(game::battle::Command command) {
                static_cast<double>(camera->viewportSize().y);
     }
   }
-  shout_.shout(screens::shoutTextKey(command, battle_->state().partner(), names()), node, aspect);
+  const bool remapped =
+      battle_->system() == game::battle::BattleSystemId::Folder &&
+      game::battle::folderCommandTextKey(command) != game::battle::commandTextKey(command);
+  shout_.shout(remapped ? std::string{game::battle::folderCommandTextKey(command)}
+                        : screens::shoutTextKey(command, battle_->state().partner(), names()),
+               node, aspect);
   core::logDebug("[port:battle] BTL_drawCommandShout (command_shout.c:54): command {}{}",
                  static_cast<int>(command), node ? "" : " off the camera");
   publishShout();

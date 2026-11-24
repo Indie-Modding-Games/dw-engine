@@ -368,3 +368,30 @@ TEST_CASE("a folder battle's view shows the target, the orders and the defense b
   REQUIRE(target != nullptr);
   CHECK(std::get<std::string>(target->value) == "main.digimon_names.0012");
 }
+
+TEST_CASE("a folder battle's view says why a move cannot be ordered and how an order ended") {
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  BattleSetup setup = duel(evenStats(900, 100), evenStats(700, 80), {"punch", "shot"});
+  setup.system = BattleSystemId::Folder;
+  setup.partner.mp = 0;
+  Battle battle = startBattle(std::move(setup), 3);
+  auto view = dwe::screens::battleViewOf(battle, names);
+  const auto technique = [&](Command command) {
+    return std::ranges::find(view.menu, command, &dwe::screens::CommandEntry::command);
+  };
+  REQUIRE(technique(Command::Technique2) != view.menu.end());
+  CHECK(technique(Command::Technique2)->problemKey == "battle.folder.problem.not_enough_mp");
+  CHECK(view.folder->noticeKey.empty());
+
+  REQUIRE(battle.order(1, 1));
+  REQUIRE(battle.cancelOrders());
+  view = dwe::screens::battleViewOf(battle, names);
+  CHECK(view.folder->noticeKey == "battle.folder.end.cancelled");
+  CHECK_FALSE(view.folder->noticeMoveKey.empty());
+  CHECK(view.folder->noticeReasonKey.empty());
+  const auto settings = dwe::screens::settingsOf(view);
+  const auto* notice = settingNamed(settings, dwe::screens::FolderNoticeSetting);
+  REQUIRE(notice != nullptr);
+  CHECK(std::get<std::string>(notice->value) == "battle.folder.end.cancelled");
+}

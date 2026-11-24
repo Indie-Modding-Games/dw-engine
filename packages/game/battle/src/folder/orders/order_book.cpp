@@ -31,6 +31,16 @@ void enterPhase(const BattleContext& context, FighterId id, OrderPhase phase, st
   }
 }
 
+void remember(FolderFighter& own, const Order& order, OrderEnd end, OrderProblem problem) {
+  own.lastOrder = order;
+  own.lastEnd = end;
+  own.lastProblem = problem;
+  if (end != OrderEnd::Done) {
+    own.notice =
+        OrderNotice{.order = order, .end = end, .problem = problem, .frames = OrderNoticeFrames};
+  }
+}
+
 // The active order leaves the fighter, which goes back to idle.
 void endOrder(BattleContext& context, FighterId id, OrderEnd end, OrderProblem problem) {
   FolderFighter& own = folderFighter(context, id);
@@ -38,9 +48,7 @@ void endOrder(BattleContext& context, FighterId id, OrderEnd end, OrderProblem p
     return;
   }
   const Order order = *own.active;
-  own.lastOrder = order;
-  own.lastEnd = end;
-  own.lastProblem = problem;
+  remember(own, order, end, problem);
   switch (end) {
   case OrderEnd::Done:
     emitOrder(context, EventKind::OrderDone, id, order, static_cast<std::int32_t>(order.id));
@@ -87,9 +95,7 @@ void setBack(BattleContext& context, FighterId id) {
   if (!own.active) {
     return;
   }
-  own.lastOrder = own.active;
-  own.lastEnd = OrderEnd::Interrupted;
-  own.lastProblem = OrderProblem::None;
+  remember(own, *own.active, OrderEnd::Interrupted, OrderProblem::None);
   emitOrder(context, EventKind::OrderInterrupted, id, *own.active,
             static_cast<std::int32_t>(own.active->id));
   enterPhase(context, id, OrderPhase::Positioning, 0);
@@ -109,9 +115,7 @@ core::Result<void> folderOrder(BattleContext& context, std::size_t slot,
   const Order order{.slot = slot, .target = target, .id = folder.nextOrder++};
   if (own.queue.size() >= OrderQueueSize) {
     const Order replaced = own.queue.back();
-    own.lastOrder = replaced;
-    own.lastEnd = OrderEnd::Replaced;
-    own.lastProblem = OrderProblem::ByTrainer;
+    remember(own, replaced, OrderEnd::Replaced, OrderProblem::ByTrainer);
     emitOrder(context, EventKind::OrderReplaced, side, replaced,
               static_cast<std::int32_t>(replaced.id));
     own.queue.back() = order;
@@ -124,6 +128,9 @@ core::Result<void> folderOrder(BattleContext& context, std::size_t slot,
 
 void folderCancelOrders(BattleContext& context, FighterId side) {
   FolderFighter& own = folderFighter(context, side);
+  if (!own.queue.empty()) {
+    remember(own, own.queue.front(), OrderEnd::Cancelled, OrderProblem::ByTrainer);
+  }
   for (const Order& order : own.queue) {
     emitOrder(context, EventKind::OrderCancelled, side, order,
               static_cast<std::int32_t>(OrderProblem::ByTrainer));

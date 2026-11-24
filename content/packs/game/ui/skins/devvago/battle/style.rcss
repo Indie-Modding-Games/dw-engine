@@ -1272,7 +1272,7 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 	left: 30dp;
 	bottom: 30dp;
 	box-sizing: border-box;
-	width: 432dp;
+	width: 580dp;
 	padding: 9dp 15dp;
 	border: 2dp #72c7ff;
 	border-radius: 0;
@@ -1338,4 +1338,43 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 #folder-target,
 #folder-queue {
 	color: #a8c7d9;
+}
+
+/* The panel's state lines: the partner's status (its panel carries none) in the cyan of the statuses and how the last
+   order ended in the accent yellow. Each line keeps to one row. */
+#folder-status {
+	display: block;
+	color: #72c7ff;
+}
+
+#folder-notice {
+	color: #ffb347;
+}
+
+#folder-target,
+#folder-queue,
+#folder-active {
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#fight.folder #command-label {
+	display: inline;
+}
+
+#fight.folder #command-name,
+#fight.folder #command-name.problem {
+	display: block;
+	padding: 3dp 12dp;
+	border-radius: 0;
+	border: 0;
+	border-left: 3dp #ffd51e;
+	background-color: #0b1c2de8;
+}
+
+#command-problem {
+	margin-left: 15dp;
+	font-family: "Pixel Small";
+	font-size: 22dp;
+	color: #ff7775;
 }

@@ -436,7 +436,7 @@
 #folder-panel {
 	left: 40dp;
 	bottom: 24dp;
-	width: 480dp;
+	width: 580dp;
 	padding: 18dp 24dp;
 	background-color: transparent;
 	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
@@ -492,4 +492,19 @@
 #folder-target,
 #folder-queue {
 	color: #93a6bc;
+}
+
+#folder-status {
+	color: #93a6bc;
+}
+
+#folder-notice {
+	color: #efc63c;
+}
+
+#command-problem {
+	margin-left: 16dp;
+	font-family: "Pixel Small";
+	font-size: 24dp;
+	color: #e2483d;
 }

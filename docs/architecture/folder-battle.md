@@ -43,7 +43,17 @@ strip has every entry, whatever its brain, and each entry means something else.
 
 A plate at the bottom left (`battle.folder()` in the UI API) shows the partner's defense bar and its break, the foe
 the next orders aim at (Change picks it), the active order's technique and phase with the timed phase's progress, and
-the waiting orders with their foes.
+the waiting orders (an order names its foe only when it is not the current target). Under them it tells the partner's
+altered state, in the skins whose partner bars carry none, and, for five seconds, how the last order ended when it
+did not finish: cancelled, interrupted, invalid or replaced, with the reason (not enough MP, its foe is gone, out of
+reach...). The line under the strip says why the focused technique or the finisher cannot be ordered now; in the
+modern skin, whose buttons already name the commands and whose move name shouts when it starts, that line shows only
+the reason.
+
+The plate keeps to its own region so it never covers another box: in the modern skin it sits between the partner's
+card and the key hints, under the enemies' cards; in the original, pixel and DevVago skins it takes the bottom left and
+moves up over a cup match's strip. In every skin it gives way while the bag is open, whose boxes reach its place. Each
+line keeps to one row.
 
 ## Architecture
 
@@ -187,7 +197,7 @@ Each phase ships with tests, and with screenshots where it shows.
 | 7 | AI: executes orders, never swaps technique or target; enemies keep the original AI | Done |
 | 8 | Co-op: the guest's strip becomes orders on the host; `Order` and `Stance` battle actions; one queue per partner; the guest's strip shows the Folder labels | Done |
 | 9 | Items: the shared thrown items, unchanged in Folder | Done (shared) |
-| 10 | UI: the strip gives orders and stances, Change picks the target; the plate shows the queue, the phase, the defense bar and the break | Done (first version) |
+| 10 | UI: the strip gives orders and stances, Change picks the target; the plate shows the queue, the phase, the defense bar and the break, the altered state and how an unfinished order ended and why; the strip says why a technique cannot be ordered; the plate keeps its own region in every skin | Done |
 | 11 | Technique data: execution and recovery by MP tier with per-technique entries; area, functions and friendly fire per technique | Partial (timings done) |
 | 12 | Balance: attribute scale (provisional, from the probe), block bonus by distance, costs (`costo-mp.md`) | Partial |
 | 13 | Switching a Folder Mode game back to Classic from the game: the `battle_system` option | Done |

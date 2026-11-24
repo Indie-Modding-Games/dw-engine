@@ -1207,7 +1207,7 @@
 	left: 30dp;
 	bottom: 30dp;
 	box-sizing: border-box;
-	width: 432dp;
+	width: 580dp;
 	padding: 9dp 18dp;
 	border: 3dp transparent;
 	border-radius: 0;
@@ -1254,8 +1254,8 @@
 }
 
 #folder-active {
-	font-size: 33dp;
-	line-height: 36dp;
+	font-size: 26dp;
+	line-height: 30dp;
 }
 
 #folder-broken {
@@ -1265,4 +1265,42 @@
 #folder-target,
 #folder-queue {
 	color: #b2b2b2;
+}
+
+/* The panel's state lines in the small size: the partner's status (its bars carry none) in the descriptions' grey and
+   how the last order ended in the gold of a warning. Waiting orders keep to one row each line. */
+#folder-status {
+	color: #b2b2b2;
+}
+
+#folder-notice {
+	color: #f0a040;
+}
+
+#folder-target,
+#folder-queue,
+#folder-active {
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+/* The strip names the hovered icon in a Folder battle too (the modern skin's Folder pill does not apply), and says why
+   the focused move cannot be ordered now after its name, in red at the small size. */
+#fight.folder #command-name,
+#fight.folder #command-name.problem {
+	display: block;
+}
+
+#fight.folder #command-label {
+	display: inline;
+}
+
+#command-problem {
+	margin-left: 18dp;
+	font-size: 22dp;
+	color: #e04030;
+}
+
+#command-problem.hidden {
+	display: none;
 }

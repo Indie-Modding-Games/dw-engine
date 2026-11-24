@@ -281,7 +281,7 @@ end
 -- short while the command cannot be given now: the finisher before its gauge is full, a technique
 -- the partner has not the MP for.
 local function draw_command_name(document)
-  local name, cost, short = "", 0, false
+  local name, cost, short, problem = "", 0, false, ""
   for index = 0, command_count() - 1 do
     if lookup(document, "command-" .. index):has_focus() then
       local entry = command(index)
@@ -289,6 +289,7 @@ local function draw_command_name(document)
       cost = entry.mp_cost
       local partner = fighters[1]
       short = not entry.available or (cost > 0 and (partner ~= nil and partner.mp or 0) < cost)
+      problem = entry.problem_key ~= "" and text(entry.problem_key) or ""
     end
   end
   lookup(document, "command-label"):set_text(name)
@@ -298,7 +299,13 @@ local function draw_command_name(document)
     lookup(document, "command-cost"):set_text(cost_text)
   end
   set_class(document, "command-cost", "hidden", cost_text == "")
-  set_class(document, "command-name", "short", short)
+  if applied["command-problem text"] ~= problem then
+    applied["command-problem text"] = problem
+    lookup(document, "command-problem"):set_text(problem)
+  end
+  set_class(document, "command-problem", "hidden", problem == "")
+  set_class(document, "command-name", "short", short or problem ~= "")
+  set_class(document, "command-name", "problem", problem ~= "")
 end
 
 local function focus_command(document)
@@ -1270,12 +1277,35 @@ end
 local function draw_folder(document)
   local folder = battle.folder()
   set_class(document, "folder-panel", "hidden", not folder.active)
+  lookup(document, "fight"):set_class("folder", folder.active)
   if not folder.active then
     return
   end
   set_property(document, "folder-bar-fill", "width", percent(folder.bar, folder.bar_max) .. "%")
   set_class(document, "folder-bar-fill", "broken", folder.broken)
   set_class(document, "folder-broken", "hidden", not folder.broken)
+  local partner = fighters[1]
+  local status = partner ~= nil and partner.status_key ~= "" and text(partner.status_key) or ""
+  if applied["folder-status text"] ~= status then
+    applied["folder-status text"] = status
+    lookup(document, "folder-status"):set_text(status)
+  end
+  set_class(document, "folder-status", "hidden", status == "")
+  local notice = ""
+  if folder.notice ~= nil then
+    notice = text(folder.notice.key)
+    if folder.notice.move_key ~= "" then
+      notice = text(folder.notice.move_key) .. ": " .. notice
+    end
+    if folder.notice.reason_key ~= "" then
+      notice = notice .. " (" .. text(folder.notice.reason_key) .. ")"
+    end
+  end
+  if applied["folder-notice text"] ~= notice then
+    applied["folder-notice text"] = notice
+    lookup(document, "folder-notice"):set_text(notice)
+  end
+  set_class(document, "folder-notice", "hidden", notice == "")
   local target = folder.target_key ~= ""
       and (text("battle.folder.target") .. ": " .. text(folder.target_key))
     or ""
@@ -1298,8 +1328,10 @@ local function draw_folder(document)
   set_property(document, "folder-phase-fill", "width", folder.phase_percent .. "%")
   local names = {}
   for index, key in ipairs(folder.queue) do
+    -- The target line names the usual foe; an order names its own only when it is another one.
     local foe = folder.queue_targets and folder.queue_targets[index] or ""
-    names[#names + 1] = foe ~= "" and (text(key) .. " (" .. text(foe) .. ")") or text(key)
+    local other = foe ~= "" and foe ~= folder.target_key
+    names[#names + 1] = other and (text(key) .. " (" .. text(foe) .. ")") or text(key)
   end
   local queue = #names > 0 and (text("battle.folder.queue") .. ": " .. table.concat(names, ", "))
     or ""
@@ -1344,6 +1376,8 @@ local function draw(document)
   end
   draw_allies(document)
   bag_open = state.bag.open
+  -- The skins whose bag covers the Folder panel's place give that place to the bag meanwhile.
+  lookup(document, "fight"):set_class("bag-open", bag_open)
   draw_bag(document, state)
   draw_commands(document)
   -- Under the open bag the row keeps its cursor and the hovered command's name: the bag's

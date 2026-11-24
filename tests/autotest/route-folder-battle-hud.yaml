@@ -1,0 +1,50 @@
+# The Folder battle's HUD next to the rest of the battle screen (docs/architecture/folder-battle.md): three enemies,
+# two orders in the strip, a replaced order's notice, a finisher that cannot be ordered yet and the bag open, on a wide
+# and a 4:3 window. Run it once per look with --battle folder and --ui-skin <look> (the gate runs the default look);
+# the original, pixel and DevVago looks stop before the finisher, which has no icon on their strip. How to run it:
+# docs/guides/vertical-slice.md.
+name: folder-battle-hud
+device: keyboard
+timeout: 300
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - script: partner_set("hp 2000")
+  - script: partner_set("defense 999")
+  - script: warp("gcan08_1")
+  - wait: {map: gcan08_1, seconds: 1, timeout: 60}
+  - script: battle("1,2,3")
+  - wait: {shown: battle, seconds: 1}
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
+  - expect_setting: {battle.folder.active: true}
+  - screenshot: folder-start
+  # The partner's first technique after the stances: an order, then a second one that waits.
+  - menu_select: command-7
+  - tap: {key: space}
+  - wait: {seconds: 0.6}
+  - screenshot: folder-orders
+  - resize: [1920, 1080]
+  - screenshot: folder-orders
+  - resize: [960, 720]
+  - screenshot: folder-orders
+  - resize: [1280, 720]
+  # Four orders in a row: one runs, two wait and the last replaces the second waiting one, which the plate tells.
+  - menu_select: command-7
+  - tap: {key: space}
+  - tap: {key: space}
+  - tap: {key: space}
+  - wait: {setting: {battle.folder.notice: battle.folder.end.replaced}, seconds: 0.2, timeout: 5}
+  - screenshot: folder-notice
+  - resize: [1920, 1080]
+  - screenshot: folder-notice
+  - resize: [1280, 720]
+  - tap: {key: tab}
+  - wait: {shown: partner_menu, seconds: 0.5}
+  - screenshot: folder-bag
+  - tap: {key: tab}
+  - wait: {hidden: partner_menu, seconds: 3}
+  - screenshot: folder-later
+  # Last, as the original look's strip has no icon for the finisher to hover.
+  - menu_select: command-0
+  - wait: {seconds: 0.2}
+  - screenshot: folder-problem

@@ -111,7 +111,8 @@ end
 
 -- The command strip in the game's order, the finisher first: command (the number battle.command
 -- takes), label_key, icon (its icon in the skins' sheets, "" for the finisher), available (it can
--- be given now), current (the partner follows it now) and mp_cost (a technique's MP now, else 0).
+-- be given now), current (the partner follows it now), mp_cost (a technique's MP now, else 0) and
+-- problem_key (in a Folder battle, the text key of why a move cannot be ordered now, or "").
 function battle.commands()
   local list = {}
   for index = 0, whole("battle.menu.count") - 1 do
@@ -122,6 +123,7 @@ function battle.commands()
       available = value(entry("battle.menu", index, "available"), false),
       current = value(entry("battle.menu", index, "current"), false),
       mp_cost = whole(entry("battle.menu", index, "mp_cost")),
+      problem_key = value(entry("battle.menu", index, "problem"), ""),
     }
   end
   return list
@@ -132,12 +134,22 @@ end
 -- ""), phase ("processing", "positioning", "preparing", "executing", "recovering", or ""),
 -- phase_percent (how far a timed phase is), queue (the waiting orders' move keys, the next first),
 -- queue_targets (the name key of each waiting order's foe, or ""), target_key (the foe Change
--- picked), bar and bar_max (the partner's defense bar: full, its defense breaks) and broken.
+-- picked), bar and bar_max (the partner's defense bar: full, its defense breaks), broken and notice
+-- (for a few seconds after an order ends other than done: key, how it ended; move_key; reason_key,
+-- why, or ""; nil otherwise).
 function battle.folder()
   local queue, queue_targets = {}, {}
   for index = 0, whole("battle.folder.queue.count") - 1 do
     queue[index + 1] = value(entry("battle.folder.queue", index, "move"), "")
     queue_targets[index + 1] = value(entry("battle.folder.queue", index, "target"), "")
+  end
+  local notice = nil
+  if value("battle.folder.notice", "") ~= "" then
+    notice = {
+      key = value("battle.folder.notice", ""),
+      move_key = value("battle.folder.notice_move", ""),
+      reason_key = value("battle.folder.notice_reason", ""),
+    }
   end
   return {
     active = value("battle.folder.active", false),
@@ -150,6 +162,7 @@ function battle.folder()
     bar_max = whole("battle.folder.bar_max"),
     broken = value("battle.folder.broken", false),
     target_key = value("battle.folder.target", ""),
+    notice = notice,
   }
 end
 

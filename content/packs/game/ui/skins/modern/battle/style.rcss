@@ -767,3 +767,46 @@
 #folder-panel .hidden {
 	display: none;
 }
+
+/* The panel's state lines: the partner's status is on its card already; how the last order ended, in amber. */
+#folder-status {
+	display: none;
+}
+
+#folder-notice {
+	color: #ffb347;
+}
+
+/* In the Folder battle the strip's buttons name the commands and the move's name shouts when it starts, so the line
+   under the strip only says why the focused move cannot be ordered now, in a small red pill, and takes no room
+   otherwise. */
+#fight.folder #command-label {
+	display: none;
+}
+
+#command-problem {
+	font-size: 18dp;
+	color: #ff7a6b;
+}
+
+#fight.folder #command-name {
+	display: none;
+}
+
+#fight.folder #command-name.problem {
+	display: inline-block;
+	padding: 2dp 10dp;
+	background-color: #10161ee0;
+	border: 1dp #5a3a3a;
+	border-radius: 6dp;
+}
+
+#command-problem.hidden {
+	display: none;
+}
+
+/* The open bag covers the middle of the screen down to the panel, and in the boxed skins the bottom too: the panel
+   gives way until the bag closes. */
+#fight.bag-open #folder-panel {
+	display: none;
+}

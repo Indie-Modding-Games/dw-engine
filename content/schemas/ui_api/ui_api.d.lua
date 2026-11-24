@@ -483,7 +483,7 @@ function battle.fighters() end
 ---@return table
 function battle.allies() end
 
---- The command strip, the finisher first: command, label_key, icon, available, current and mp_cost.
+--- The command strip, the finisher first: command, label_key, icon, available, current, mp_cost and problem_key (folder battle: why the move cannot be ordered now, or "").
 ---@return table
 function battle.commands() end
 
@@ -491,7 +491,7 @@ function battle.commands() end
 ---@return table
 function battle.finisher() end
 
---- The folder battle's order panel: active, move_key, phase, phase_percent, queue (move keys), queue_targets (their foes' name keys), target_key, bar, bar_max and broken.
+--- The folder battle's order panel: active, move_key, phase, phase_percent, queue (move keys), queue_targets (their foes' name keys), target_key, bar, bar_max, broken and notice (an order that just ended other than done: key, move_key, reason_key; or nil).
 ---@return table
 function battle.folder() end
 
