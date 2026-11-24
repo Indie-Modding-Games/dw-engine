@@ -17,6 +17,8 @@ bool newer(std::uint32_t candidate, std::uint32_t current) {
 bool roleAllows(BattleRole role, BattleActionKind kind) {
   switch (kind) {
   case BattleActionKind::Command:
+  case BattleActionKind::Order:
+  case BattleActionKind::Stance:
     return role != BattleRole::Helper;
   case BattleActionKind::CloseEnd:
     return role == BattleRole::Starter;
@@ -63,7 +65,7 @@ std::optional<BattleRefusal> BattleReferee::judge(const BattleAsk& ask, std::str
 BattleBegin BattleReferee::begin(PlayerId starter, std::uint32_t ask, std::string mapId,
                                  std::vector<std::int16_t> enemyNpcs,
                                  std::vector<std::string> species, bool fixedFight,
-                                 std::vector<PlayerId> allies) {
+                                 std::vector<PlayerId> allies, bool folder) {
   const std::uint32_t battle = next_++;
   if (next_ == 0) {
     next_ = 1;
@@ -76,7 +78,8 @@ BattleBegin BattleReferee::begin(PlayerId starter, std::uint32_t ask, std::strin
           .enemyNpcs = std::move(enemyNpcs),
           .species = std::move(species),
           .fixedFight = fixedFight,
-          .allies = std::move(allies)};
+          .allies = std::move(allies),
+          .folder = folder};
 }
 
 void BattleReferee::receive(PlayerId guest, const BattleOffer& offer) {

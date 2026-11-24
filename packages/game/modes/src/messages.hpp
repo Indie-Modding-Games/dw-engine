@@ -21,6 +21,10 @@ inline constexpr std::string_view ModeBadOption =
 inline constexpr std::string_view ModeOptionNotScalar =
     "the option '{}' must be fixed to one value";
 inline constexpr std::string_view ModeRulesetTwice = "the ruleset '{}' is listed twice";
+inline constexpr std::string_view ModeBadBattle = "'{}' is no battle system (classic or folder)";
+inline constexpr std::string_view ModeBattleTwice = "the battle system '{}' is listed twice";
+inline constexpr std::string_view ModeBattleNotListed =
+    "the mode's battle system '{}' is not one of its battles";
 // A mode names a ruleset no pack has (the mode, the ruleset).
 inline constexpr std::string_view ModeNoRuleset = "mode '{}': no pack has the ruleset '{}'";
 // A mode left out of the catalog (the mode, the reason).

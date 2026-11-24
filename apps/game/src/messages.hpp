@@ -267,5 +267,7 @@ inline constexpr std::string_view ModeOptionsNotApplied =
 inline constexpr std::string_view ModeNotMounted =
     "options: no pack has the game's mode {}; it fixes no option";
 inline constexpr std::string_view ModeOptionLocked = "options: {} is fixed at {} in this game";
+inline constexpr std::string_view BattleSystemChanged =
+    "options: the next battles play the {} battle system";
 
 } // namespace dwe::app::messages

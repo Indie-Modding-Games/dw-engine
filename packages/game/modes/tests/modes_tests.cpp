@@ -106,6 +106,27 @@ TEST_CASE("a mode manifest with a wrong id, a missing key or a ruleset it does n
   CHECK(errorOf(parseGameMode(badId, "Arena")).contains("is not a mode id"));
 }
 
+TEST_CASE("a mode manifest may name its battle system and the ones its player may switch to") {
+  GameMode plain = *parseGameMode(ArenaMode, "arena");
+  CHECK(plain.battle == "classic");
+  CHECK(plain.battles == std::vector<std::string>{"classic"});
+  const auto folder = parseGameMode(
+      std::string{ArenaMode} + "battle: folder\nbattles: [folder, classic]\n", "arena");
+  REQUIRE_MESSAGE(folder.has_value(), errorOf(folder));
+  CHECK(folder->battle == "folder");
+  CHECK(folder->battles == std::vector<std::string>{"folder", "classic"});
+  const auto alone = parseGameMode(std::string{ArenaMode} + "battle: folder\n", "arena");
+  REQUIRE(alone.has_value());
+  CHECK(alone->battles == std::vector<std::string>{"folder"});
+  CHECK(errorOf(parseGameMode(std::string{ArenaMode} + "battle: turns\n", "arena"))
+            .contains("no battle system"));
+  CHECK(errorOf(
+            parseGameMode(std::string{ArenaMode} + "battle: folder\nbattles: [classic]\n", "arena"))
+            .contains("not one of its battles"));
+  CHECK(errorOf(parseGameMode(std::string{ArenaMode} + "battles: [classic, classic]\n", "arena"))
+            .contains("listed twice"));
+}
+
 TEST_CASE("a mode manifest may fix options of the options page at one value each") {
   std::string fixed{ArenaMode};
   fixed += "options:\n  difficulty: normal\n  rare_items: false\n  gym_sessions: 1\n";
@@ -137,6 +158,8 @@ TEST_CASE("the game pack ships the two variants, Classic Enhanced first, and Fol
   CHECK(classic.id == ClassicMode);
   CHECK(classic.ruleset == "original");
   CHECK(classic.rulesets == std::vector<std::string>{"original"});
+  CHECK(classic.battle == "classic");
+  CHECK(classic.battles == std::vector<std::string>{"classic"});
   CHECK(classic.options ==
         std::vector<OptionPin>{{.option = "difficulty", .value = "normal"},
                                {.option = "rare_items", .value = "false"},
@@ -155,6 +178,8 @@ TEST_CASE("the game pack ships the two variants, Classic Enhanced first, and Fol
                                                      "todas_oculto", "todas_oculto_mega"});
   CHECK(folder->options.empty());
   CHECK(folder->randomizer);
+  CHECK(folder->battle == "folder");
+  CHECK(folder->battles == std::vector<std::string>{"folder", "classic"});
 }
 
 TEST_CASE("a Folder Mode save takes progress from a Classic Enhanced world, not the other way") {

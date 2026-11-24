@@ -127,6 +127,32 @@ function battle.commands()
   return list
 end
 
+-- The Folder battle's HUD (docs/architecture/folder-battle.md): active (the battle is a Folder one:
+-- its strip gives orders and stances, battle.commands()), move_key (the active order's move, or
+-- ""), phase ("processing", "positioning", "preparing", "executing", "recovering", or ""),
+-- phase_percent (how far a timed phase is), queue (the waiting orders' move keys, the next first),
+-- queue_targets (the name key of each waiting order's foe, or ""), target_key (the foe Change
+-- picked), bar and bar_max (the partner's defense bar: full, its defense breaks) and broken.
+function battle.folder()
+  local queue, queue_targets = {}, {}
+  for index = 0, whole("battle.folder.queue.count") - 1 do
+    queue[index + 1] = value(entry("battle.folder.queue", index, "move"), "")
+    queue_targets[index + 1] = value(entry("battle.folder.queue", index, "target"), "")
+  end
+  return {
+    active = value("battle.folder.active", false),
+    move_key = value("battle.folder.move", ""),
+    phase = value("battle.folder.phase", ""),
+    phase_percent = whole("battle.folder.phase_percent"),
+    queue = queue,
+    queue_targets = queue_targets,
+    bar = whole("battle.folder.bar"),
+    bar_max = whole("battle.folder.bar_max"),
+    broken = value("battle.folder.broken", false),
+    target_key = value("battle.folder.target", ""),
+  }
+end
+
 -- The finisher's gauge: progress of goal, ready (full), charging (its aura: each battle.charge()
 -- counts), charge (the aura's charge, in percent) and gauge, the charge gauge over the partner
 -- while the aura lasts ({x, y}: its top-left corner, in percent), or nil.

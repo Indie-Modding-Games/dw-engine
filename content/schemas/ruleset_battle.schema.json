@@ -1491,6 +1491,219 @@
         }
       }
     },
+    "folder": {
+      "type": "object",
+      "description": "The Folder battle's numbers (docs/architecture/folder-battle.md).",
+      "required": [
+        "stat_scale",
+        "processing_frames",
+        "preparation_frames",
+        "recovery_frames",
+        "give_up_frames",
+        "chase_frames",
+        "movement_min_percent",
+        "movement_span_percent",
+        "execution_cut_percent",
+        "processing_cut_percent",
+        "attack_percent",
+        "element_percent",
+        "stab_percent",
+        "type_percent",
+        "beats",
+        "cover_max_percent",
+        "cover_defense_times",
+        "bar_defense_times",
+        "bar_drain_frames",
+        "bar_rest_frames",
+        "break_frames",
+        "break_debuff_percent",
+        "per_stat_cut_percent",
+        "stat_cut_cap_percent",
+        "timings",
+        "finisher_timing",
+        "techniques"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "stat_scale": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "processing_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "preparation_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "recovery_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "give_up_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "chase_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "movement_min_percent": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "movement_span_percent": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "execution_cut_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "processing_cut_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "attack_percent": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "element_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "stab_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "type_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "beats": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "The specialty each specialty beats, by specialty number (combat-design.md §3.8)."
+        },
+        "cover_max_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "cover_defense_times": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bar_defense_times": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bar_drain_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bar_rest_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "break_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "break_debuff_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "per_stat_cut_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "stat_cut_cap_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "timings": {
+          "type": "array",
+          "description": "Preparation and recovery by MP cost, the cheapest tier first.",
+          "items": {
+            "type": "object",
+            "required": [
+              "mp_up_to",
+              "preparation_frames",
+              "recovery_frames"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "mp_up_to": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "preparation_frames": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "recovery_frames": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "finisher_timing": {
+          "type": "object",
+          "required": [
+            "preparation_frames",
+            "recovery_frames"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "preparation_frames": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "recovery_frames": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "description": "The finishers' preparation and recovery."
+        },
+        "techniques": {
+          "type": "object",
+          "description": "One technique's own preparation and recovery, by move id.",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "preparation_frames",
+              "recovery_frames"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "preparation_frames": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "recovery_frames": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
     "quirks": {
       "type": "object",
       "required": [],

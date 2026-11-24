@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.32.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.33.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -490,6 +490,10 @@ function battle.commands() end
 --- The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil).
 ---@return table
 function battle.finisher() end
+
+--- The folder battle's order panel: active, move_key, phase, phase_percent, queue (move keys), queue_targets (their foes' name keys), target_key, bar, bar_max and broken.
+---@return table
+function battle.folder() end
 
 --- Where the strip and the partner's bars are when entering and leaving: top, bottom, blink, hp_x and mp_x (or nil).
 ---@return table

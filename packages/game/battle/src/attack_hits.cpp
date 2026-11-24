@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "battle_context.hpp"
+#include "battle_system.hpp"
 
 namespace dwe::game::battle {
 
@@ -85,6 +86,8 @@ std::vector<FighterId> reachedBy(const BattleContext& context, FighterId id, con
   return {*target};
 }
 
+} // namespace
+
 // battle_main.c: BTL_applyBuffMove, BTL_buffStats: a support move raises the caster's stats, up to
 // the cap, and shows each raise over the caster (addEntityText(entity, slot, 0xb, value, icon)):
 // the raise as the percentage gives it, before the cap, for each stat the move raises at all.
@@ -124,6 +127,8 @@ void applyBuff(BattleContext& context, FighterId id, MoveRef move) {
                 .command = Command::None});
 }
 
+namespace {
+
 // battle_main.c: BTL_retargetAfterHit.
 void retargetAfterHit(BattleContext& context, FighterId id, FighterId attacker) {
   if (context.state->versus()) {
@@ -132,14 +137,17 @@ void retargetAfterHit(BattleContext& context, FighterId id, FighterId attacker) 
   }
   if (context.state->isPlayerSide(id)) {
     const Fighter& partner = context.fighter(id);
-    const bool turns = context.strategies->obedience->partnerTurnsToAttacker(
-        context.view(id), context.disciplineOf(id));
+    const bool turns =
+        !context.state->folder && context.strategies->obedience->partnerTurnsToAttacker(
+                                      context.view(id), context.disciplineOf(id));
     if (!turns && partner.target && !context.fighter(*partner.target).defeated()) {
       return;
     }
   }
   selectTarget(context, id, attacker, true);
 }
+
+} // namespace
 
 void addPendingDamage(BattleContext& context, Fighter& fighter, std::int32_t damage) {
   fighter.pendingDamage =
@@ -170,6 +178,8 @@ bool counteringAttacker(const BattleContext& context, const Fighter& fighter, Fi
   return fighter.attack && context.moves->at(fighter.attack->move).counter &&
          fighter.target == attacker;
 }
+
+namespace {
 
 // battle_main.c: BTL_tickAttackHits: a melee attack that misses may be countered.
 bool tryCounter(BattleContext& context, FighterId id, FighterId attacker) {
@@ -203,6 +213,8 @@ bool tryCounter(BattleContext& context, FighterId id, FighterId attacker) {
   return false;
 }
 
+} // namespace
+
 // Where the attack's effect hit the defender (addAttackObject's position): its own point, or for a
 // check that hit the body (no point) the defender's body at its radius toward the source
 // (BTL_calculateAttackHitPosition): the attacker where it stands now for a followed effect, its
@@ -226,6 +238,8 @@ HitParticles::Vec3 sparkPointOf(const BattleContext& context, const AttackInFlig
   return {at.x, -(context.fighter(attack.defender).combatant.height >> 1), -at.z};
 }
 
+namespace {
+
 // The damage strategy's damage of a hit, with the difficulty's share for the partner (an engine
 // improvement, damage.partner_dealt_percent and partner_taken_percent; both 100 in the original's
 // ruleset), kept within the formula's min and max.
@@ -243,12 +257,12 @@ std::int32_t damageOf(BattleContext& context, const AttackInFlight& attack) {
   return damage;
 }
 
-void hit(BattleContext& context, const AttackInFlight& attack) {
+} // namespace
+
+void landHit(BattleContext& context, const AttackInFlight& attack, std::int32_t damage) {
   const FighterId id = attack.defender;
   Fighter& fighter = context.fighter(id);
   const BattleMove& move = context.moves->at(attack.move);
-  retargetAfterHit(context, id, attack.attacker);
-  const std::int32_t damage = damageOf(context, attack);
   // BTL_handleHitReaction: the spark of the hit, unless the fighter is flattened.
   if (context.particles != nullptr && !fighter.status.flattened) {
     const HitParticles::Vec3 spark = sparkPointOf(context, attack);
@@ -287,6 +301,13 @@ void hit(BattleContext& context, const AttackInFlight& attack) {
                 .status = StatusEffect::None,
                 .command = Command::None});
   applyMoveStatus(context, id, attack.move);
+}
+
+namespace {
+
+void hit(BattleContext& context, const AttackInFlight& attack) {
+  retargetAfterHit(context, attack.defender, attack.attacker);
+  landHit(context, attack, damageOf(context, attack));
 }
 
 void block(BattleContext& context, const AttackInFlight& attack) {
@@ -337,7 +358,9 @@ void block(BattleContext& context, const AttackInFlight& attack) {
                 .command = Command::None});
 }
 
-void handleAttack(BattleContext& context, const AttackInFlight& attack) {
+} // namespace
+
+void handleOriginalAttack(BattleContext& context, const AttackInFlight& attack) {
   const FighterId id = attack.defender;
   Fighter& fighter = context.fighter(id);
   if (counteringAttacker(context, fighter, attack.attacker)) {
@@ -370,6 +393,8 @@ void handleAttack(BattleContext& context, const AttackInFlight& attack) {
     block(context, attack);
   }
 }
+
+namespace {
 
 // Where the effect of an attack in flight touches its defender, asked again where the fighters
 // stand now: its timing, spark and facing follow the answer. False when the effect would not touch
@@ -665,7 +690,7 @@ void tickAttackHits(BattleContext& context) {
     if (flee && *flee >= context.rules->ending.fleeIgnoresHitsFrom) {
       continue;
     }
-    handleAttack(context, attack);
+    context.system->handleAttack(context, attack);
   }
 }
 

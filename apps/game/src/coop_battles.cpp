@@ -3,6 +3,7 @@
 #include "coop_battles.hpp"
 
 #include <dwe/core/log.hpp>
+#include <dwe/game/battle/text_keys.hpp>
 #include <dwe/screens/battle_view.hpp>
 #include <dwe/screens/name_keys.hpp>
 
@@ -138,8 +139,12 @@ session::VisitingPartner visitorOf(const coop::BattleFighterProfile& profile) {
 }
 
 // The label of an order on the guest's document: the original's command names, the techniques'
-// and the finisher's own words.
-std::string orderLabelKey(game::battle::Command command) {
+// and the finisher's own words; the Folder battle's strip names its stances.
+std::string orderLabelKey(game::battle::Command command, bool folder) {
+  if (folder &&
+      game::battle::folderCommandTextKey(command) != game::battle::commandTextKey(command)) {
+    return std::string{game::battle::folderCommandTextKey(command)};
+  }
   if (std::string key = screens::commandLabelKey(command); !key.empty()) {
     return key;
   }
@@ -517,6 +522,13 @@ void CoopBattles::apply(PlaySession& play, coop::PlayerId from, const coop::Batt
   case coop::BattleActionKind::Cheer:
     screen.cheer(from);
     break;
+  case coop::BattleActionKind::Order:
+    static_cast<void>(screen.orderFromPlayer(from, action.value));
+    break;
+  case coop::BattleActionKind::Stance:
+    static_cast<void>(
+        screen.stanceFromPlayer(from, static_cast<game::battle::Stance>(action.value)));
+    break;
   case coop::BattleActionKind::CloseEnd:
     if (screen.coopPhase() == coop::BattlePhase::End) {
       screen.closeEnd();
@@ -534,7 +546,9 @@ coop::BattleBegin CoopBattles::beginOf(PlaySession& play, coop::PlayerId starter
   }
   std::vector<std::string> species;
   std::vector<coop::PlayerId> allies;
+  bool folder = false;
   if (const game::battle::Battle* battle = screen.battle()) {
+    folder = battle->system() == game::battle::BattleSystemId::Folder;
     for (const auto& fighter : battle->state().fighters) {
       species.push_back(fighter.combatant.species);
     }
@@ -544,7 +558,7 @@ coop::BattleBegin CoopBattles::beginOf(PlaySession& play, coop::PlayerId starter
   }
   frames_ = 0;
   return referee_.begin(starter, ask, play.scene().field().mapId(), std::move(enemies),
-                        std::move(species), screen.fixedFight(), std::move(allies));
+                        std::move(species), screen.fixedFight(), std::move(allies), folder);
 }
 
 coop::BattleFrame CoopBattles::frameOf(const PlaySession& play, coop::PlayerId to) {
@@ -691,6 +705,7 @@ void CoopBattles::startShowing(PlaySession& play, const coop::BattleBegin& begin
     return;
   }
   shownFixedFight_ = begin.fixedFight;
+  shownFolder_ = begin.folder;
   core::logInfo("coop: battle {} began on the host; this player {}", begin.battle,
                 ownBattle_    ? "commands its partner"
                 : allyBattle_ ? "commands its partner beside the host's"
@@ -1101,7 +1116,7 @@ void CoopBattles::publish(const PlaySession& play) {
       settings.push_back({.name = screens::listEntryName("coop_battle.order", orders, "command"),
                           .value = static_cast<double>(number)});
       settings.push_back({.name = screens::listEntryName("coop_battle.order", orders, "label_key"),
-                          .value = orderLabelKey(command)});
+                          .value = orderLabelKey(command, shownFolder_)});
       ++orders;
     }
   }

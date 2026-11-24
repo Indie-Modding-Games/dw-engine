@@ -537,6 +537,23 @@ void tickPartnerAi(BattleContext& context) {
   }
 }
 
+void tickEnemyDecisions(BattleContext& context) {
+  BattleState& state = *context.state;
+  if (state.frame % context.rules->partnerAi.buffPriorityDecayFrames == 0) {
+    for (Fighter& fighter : state.fighters) {
+      if (fighter.buffPriority != 0) {
+        --fighter.buffPriority;
+      }
+    }
+  }
+  bool stop = false;
+  for (FighterId id = 1; id < state.fighters.size() && !stop; ++id) {
+    if (!state.fighters[id].gone() && !state.commanded(id)) {
+      tickEnemy(context, id, stop);
+    }
+  }
+}
+
 void tickEnemyAi(BattleContext& context) {
   BattleState& state = *context.state;
   if (state.frame % context.rules->partnerAi.buffPriorityDecayFrames == 0) {

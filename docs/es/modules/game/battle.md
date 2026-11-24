@@ -5,7 +5,9 @@ a 20 fotogramas por segundo, las órdenes, la obediencia, la IA del partner y de
 bloqueo y el contraataque, los estados alterados, el remate, el final del combate y sus consecuencias, las
 recompensas, el aprendizaje de técnicas y los enemigos que se unen. Las reglas están en la
 [ficha de referencia](../../reference/battle.md). La reinvención del combate que vendrá en un ruleset propio está
-especificada en el [Diseño del sistema de combate](../../architecture/combat-design.md).
+especificada en el [Diseño del sistema de combate](../../architecture/combat-design.md); se juega como el sistema de
+combate **Folder** junto al **Classic** del original, tras la interfaz interna `BattleSystem`
+([Sistemas de combate](../../architecture/folder-battle.md)).
 
 No conoce al partner ni a las partidas: no incluye `packages/game/partner` ni `packages/game/save`. Recibe `Combatant` (declarado aquí)
 y la condición del partner, y devuelve un `BattleResult` que la sesión aplica. No tiene estado que guardar: un combate

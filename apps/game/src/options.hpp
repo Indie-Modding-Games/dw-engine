@@ -36,6 +36,9 @@ struct Options {
   bool devAssets = false;
   // The ruleset the game plays with (--ruleset <id>): rules/<id>/ in the packs.
   std::string ruleset{dwe::ruleset::OriginalRuleset};
+  // The battle system the game's battles play (--battle classic|folder), over the mode's or the
+  // save's; nothing: theirs.
+  std::optional<std::string> battle;
   // The story lock's stage to play (--story-stage <id>|all) instead of the ruleset's active_stage;
   // "all" opens everything, for development and tests. Empty: the ruleset's.
   std::string storyStage;
@@ -181,7 +184,7 @@ struct Options {
 };
 
 inline constexpr std::string_view Usage =
-    "dwe-game [--content <folder>] [--mods <folder>]... [--dev-assets] [--ruleset <id>] [--story-stage <id>|all] "
+    "dwe-game [--content <folder>] [--mods <folder>]... [--dev-assets] [--ruleset <id>] [--battle classic|folder] [--story-stage <id>|all] "
     "[--saves <folder>] [--reports <folder>] [--versus-server <url>] [--size "
     "<width>x<height>] "
     "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--chibi] [--start <map>[,<exit>]] [--time day|dusk|night] [--weather <kind>] [--season <season>] [--lang "
@@ -197,6 +200,7 @@ inline constexpr std::string_view Usage =
     "[--virtual-gamepad <file>] | --model-viewer [character or species model id...] [--viewer-yaw <degrees>] [--viewer-frame <units>]";
 
 inline constexpr std::string_view RulesetOption = "--ruleset";
+inline constexpr std::string_view BattleOption = "--battle";
 inline constexpr std::string_view StoryStageOption = "--story-stage";
 inline constexpr std::string_view NewGameChainOption = "--new-game-chain";
 

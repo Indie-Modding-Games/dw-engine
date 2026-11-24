@@ -105,6 +105,19 @@ void addFighter(Hasher& hash, const Fighter& fighter) {
   hash.add(fighter.shown.frame);
 }
 
+void addFolder(Hasher& hash, const FolderState& folder) {
+  hash.add(folder.nextOrder);
+  for (const FolderFighter& own : folder.fighters) {
+    hash.add(own.stance);
+    hash.add(own.queue.size());
+    hash.add(own.active.has_value() ? own.active->id : 0U);
+    hash.add(own.phase);
+    hash.add(own.phaseFrames);
+    hash.add(own.defenseBar);
+    hash.add(own.brokenFrames);
+  }
+}
+
 } // namespace
 
 std::uint64_t Battle::checksum() const {
@@ -137,6 +150,9 @@ std::uint64_t Battle::checksum() const {
   if (state_.matchClock) {
     hash.add(state_.matchClock->seconds);
     hash.add(state_.matchClock->frames);
+  }
+  if (state_.folder) {
+    addFolder(hash, *state_.folder);
   }
   return hash.value();
 }

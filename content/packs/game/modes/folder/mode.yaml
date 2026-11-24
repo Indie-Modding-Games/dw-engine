@@ -7,6 +7,9 @@ name: modes.folder_name
 description: modes.folder_description
 ruleset: original
 rulesets: [original, oculto, oculto_mega, todas, todas_oculto, todas_oculto_mega]
+# The combat design's battle (docs/architecture/folder-battle.md); the player may go back to the original's.
+battle: folder
+battles: [folder, classic]
 order: 1
 # New games may be randomized runs (docs/modules/game/randomizer.md).
 randomizer: true

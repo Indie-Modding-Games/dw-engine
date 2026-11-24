@@ -150,6 +150,7 @@ private:
   // that one is a fixed fight (its enemies stay where it left them).
   bool watching_ = false;
   bool shownFixedFight_ = false;
+  bool shownFolder_ = false;
   std::optional<std::uint32_t> shownFrame_;
   // The fighters as the last frame with them showed them (the end's frames have none).
   std::vector<game::coop::BattleFighterState> fighters_;

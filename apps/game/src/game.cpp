@@ -906,6 +906,8 @@ int runGame(const Options& requested) {
                     userSettings.difficulty.value_or(std::string{DifficultyNormal}));
   (*ui)->setSetting(ShopJobModeSetting,
                     userSettings.shopJobMode.value_or(std::string{ShopJobImproved}));
+  (*ui)->setSetting(BattleSystemSetting, std::string{game::modes::DefaultBattle});
+  (*ui)->setSetting(std::string{OptionsLockedPrefix} + std::string{BattleSystemSetting}, true);
   (*ui)->setSetting(CoopDifficultySetting,
                     std::string{coopLevelName(coopLevelOf(userSettings.coopDifficulty))});
   (*ui)->setSetting(RoamingRareChanceSetting,
@@ -987,6 +989,12 @@ int runGame(const Options& requested) {
   std::optional<std::string> consoleShopJobMode;
   (*scripts)->bindCommand(ShopJobModeSetting, [&consoleShopJobMode](std::string_view mode) {
     consoleShopJobMode = std::string{mode};
+  });
+  // The console's and the routes' battle_system("classic"|"folder"), the options row's setting,
+  // applied between frames in the same way.
+  std::optional<std::string> consoleBattleSystem;
+  (*scripts)->bindCommand(BattleSystemSetting, [&consoleBattleSystem](std::string_view name) {
+    consoleBattleSystem = std::string{name};
   });
   // The console's ui_skin("<id>"), the menus' skin setting, applied between frames in the same way.
   std::optional<std::string> consoleUiSkin;
@@ -2629,6 +2637,13 @@ int runGame(const Options& requested) {
         }
         continue;
       }
+      if (command.name == BattleSystemSetting) {
+        const std::string* name = std::get_if<std::string>(&command.value);
+        if (PlaySession* play = flow.playing(); play != nullptr && name != nullptr) {
+          play->changeBattleSystem(*name);
+        }
+        continue;
+      }
       if (command.name == CoopOpenToJoinSetting) {
         if (const bool* open = std::get_if<bool>(&command.value)) {
           userSettings.coopOpenToJoin = *open;
@@ -2915,6 +2930,11 @@ int runGame(const Options& requested) {
     }
     if (consoleShopJobMode) {
       changeShopJobMode(*std::exchange(consoleShopJobMode, std::nullopt));
+    }
+    if (const auto name = std::exchange(consoleBattleSystem, std::nullopt)) {
+      if (PlaySession* play = flow.playing()) {
+        play->changeBattleSystem(*name);
+      }
     }
     if (consoleBattleSpeed) {
       battleSpeed.change(ui::UiValue{*std::exchange(consoleBattleSpeed, std::nullopt)});

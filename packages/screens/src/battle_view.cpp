@@ -186,6 +186,58 @@ std::int32_t techniqueCostOf(const battle::Battle& battle, battle::Command comma
   return battle.partnerMoveCost(static_cast<std::size_t>(number - FirstTechnique), own).value_or(0);
 }
 
+std::string_view phaseName(battle::OrderPhase phase) {
+  switch (phase) {
+  case battle::OrderPhase::Idle:
+    break;
+  case battle::OrderPhase::Processing:
+    return "processing";
+  case battle::OrderPhase::Positioning:
+    return "positioning";
+  case battle::OrderPhase::Preparing:
+    return "preparing";
+  case battle::OrderPhase::Executing:
+    return "executing";
+  case battle::OrderPhase::Recovering:
+    return "recovering";
+  }
+  return {};
+}
+
+std::string orderMoveKey(const battle::Battle& battle, battle::FighterId own,
+                         const battle::Order& order, const NameKeys& names) {
+  const auto& move = battle.state().fighters[own].moves.at(order.slot);
+  return move ? names.move(*move) : std::string{};
+}
+
+BattleView::Folder folderViewOf(const battle::Battle& battle, const battle::FolderFighter& folder,
+                                battle::FighterId own, const NameKeys& names) {
+  constexpr std::int32_t Hundred = 100;
+  BattleView::Folder view;
+  if (folder.active) {
+    view.moveKey = orderMoveKey(battle, own, *folder.active, names);
+    view.phase = std::string{phaseName(folder.phase)};
+    if (folder.phaseLength > 0) {
+      view.phasePercent = (folder.phaseLength - folder.phaseFrames) * Hundred / folder.phaseLength;
+    }
+  }
+  const battle::BattleState& state = battle.state();
+  const auto foeKey = [&](std::optional<battle::FighterId> target) {
+    return target && *target < state.fighters.size() && state.foes(own, *target)
+               ? names.species(state.fighters[*target].combatant.species)
+               : std::string{};
+  };
+  for (const battle::Order& order : folder.queue) {
+    view.queue.push_back(orderMoveKey(battle, own, order, names));
+    view.queueTargets.push_back(foeKey(order.target));
+  }
+  view.targetKey = foeKey(state.fighters[own].target);
+  view.bar = folder.defenseBar;
+  view.barMax = battle.defenseBarCapacity(own);
+  view.broken = folder.broken();
+  return view;
+}
+
 } // namespace
 
 BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names,
@@ -211,9 +263,13 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names,
   }
   const battle::Fighter& partner = state.fighters[own];
   const battle::CommandState& commands = state.commandsOf(own);
+  const bool folder = battle.system() == battle::BattleSystemId::Folder;
   for (const battle::Command command : commands.menu) {
     view.menu.push_back({.command = command,
-                         .labelKey = commandLabelOf(command, partner, names),
+                         .labelKey = folder && battle::folderCommandTextKey(command) !=
+                                                   battle::commandTextKey(command)
+                                         ? std::string{battle::folderCommandTextKey(command)}
+                                         : commandLabelOf(command, partner, names),
                          .available = command != battle::Command::Finisher || gaugeFull(partner),
                          .current = command == commands.current,
                          .icon = commandIconOf(command, partner, battle.moves()),
@@ -228,6 +284,9 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names,
   view.reviveSeconds = reviveSecondsOf(battle, own);
   if (state.matchClock) {
     view.matchSeconds = state.matchClock->seconds;
+  }
+  if (const battle::FolderFighter* orders = battle.folderOf(own)) {
+    view.folder = folderViewOf(battle, *orders, own, names);
   }
   view.bagAvailable = battle.bagAvailableFor(own);
   view.bagOpen = battle.bagOpen();
@@ -388,6 +447,26 @@ ScreenSettings settingsOf(const BattleView& view) {
   settings.push_back({.name = std::string{BagAvailableSetting}, .value = view.bagAvailable});
   settings.push_back({.name = std::string{BagOpenSetting}, .value = view.bagOpen});
   settings.push_back({.name = std::string{ItemInFlightSetting}, .value = view.itemInFlight});
+  settings.push_back({.name = std::string{FolderActiveSetting}, .value = view.folder.has_value()});
+  const BattleView::Folder folder = view.folder.value_or(BattleView::Folder{});
+  settings.push_back({.name = std::string{FolderMoveSetting}, .value = folder.moveKey});
+  settings.push_back({.name = std::string{FolderPhaseSetting}, .value = folder.phase});
+  settings.push_back({.name = std::string{FolderPhasePercentSetting},
+                      .value = static_cast<double>(folder.phasePercent)});
+  settings.push_back(
+      {.name = countName(FolderQueueList), .value = static_cast<double>(folder.queue.size())});
+  for (std::size_t index = 0; index < folder.queue.size(); ++index) {
+    settings.push_back(
+        {.name = listEntryName(FolderQueueList, index, "move"), .value = folder.queue[index]});
+    settings.push_back({.name = listEntryName(FolderQueueList, index, "target"),
+                        .value = folder.queueTargets[index]});
+  }
+  settings.push_back(
+      {.name = std::string{FolderBarSetting}, .value = static_cast<double>(folder.bar)});
+  settings.push_back(
+      {.name = std::string{FolderBarMaxSetting}, .value = static_cast<double>(folder.barMax)});
+  settings.push_back({.name = std::string{FolderBrokenSetting}, .value = folder.broken});
+  settings.push_back({.name = std::string{FolderTargetSetting}, .value = folder.targetKey});
   return settings;
 }
 

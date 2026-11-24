@@ -426,6 +426,7 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
   auto play = std::make_unique<PlaySession>(Key{}, context, std::move(*game), std::move(*scene));
   play->coopGame_ = start.coop();
   play->coopGuest_ = start.coopGuest();
+  play->publishBattleSystem();
   // Co-op (docs/architecture/coop-training.md): one clock for the world, the host's.
   session.shareClock(start.coopGuest() ? session::ClockShare::Guest
                      : start.coop()    ? session::ClockShare::Host
@@ -786,6 +787,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
 }
 
 PlaySession::~PlaySession() {
+  context_.ui->setSetting(BattleSystemSetting, std::string{game::modes::DefaultBattle});
+  context_.ui->setSetting(std::string{OptionsLockedPrefix} + std::string{BattleSystemSetting},
+                          true);
   // The frames in flight may still draw the field's textures.
   context_.device->waitIdle();
   context_.debugUi->detachTuning();
@@ -1307,6 +1311,29 @@ UserSettings PlaySession::playSettings() const {
 
 bool PlaySession::refusesFixedOption(const ui::UiCommand& command) {
   return modeOptions_.refuse(command.name);
+}
+
+bool PlaySession::battleSystemSwitchable() const {
+  const game::modes::GameMode* mode = modeOf(context_, *game_.session);
+  return !coopGuest_ && mode != nullptr && mode->battles.size() > 1;
+}
+
+void PlaySession::publishBattleSystem() {
+  context_.ui->setSetting(BattleSystemSetting, game_.session->battleSystem());
+  context_.ui->setSetting(std::string{OptionsLockedPrefix} + std::string{BattleSystemSetting},
+                          !battleSystemSwitchable());
+}
+
+void PlaySession::changeBattleSystem(std::string_view name) {
+  const game::modes::GameMode* mode = modeOf(context_, *game_.session);
+  if (battleSystemSwitchable() && std::ranges::contains(mode->battles, name)) {
+    if (const auto changed = game_.session->setBattleSystem(name); !changed) {
+      core::logWarning("options: battle system: {}", changed.error().message);
+    } else {
+      core::logInfo(messages::BattleSystemChanged, name);
+    }
+  }
+  publishBattleSystem();
 }
 
 void PlaySession::applyPlayOptions() {
@@ -2544,7 +2571,20 @@ TraceFrame PlaySession::traceFrame(std::uint64_t tick, const input::InputState& 
         traced.phase = *text;
       }
     }
-    for (const game::battle::Fighter& fighter : battle->state().fighters) {
+    for (game::battle::FighterId id = 0; id < battle->state().fighters.size(); ++id) {
+      const game::battle::Fighter& fighter = battle->state().fighters[id];
+      std::optional<TraceFighter::Orders> orders;
+      if (const game::battle::FolderFighter* own = battle->folderOf(id)) {
+        orders = TraceFighter::Orders{
+            .phase = static_cast<std::int32_t>(own->phase),
+            .frames = own->phaseFrames,
+            .queued = static_cast<std::int32_t>(own->queue.size()),
+            .stance = static_cast<std::int32_t>(own->stance),
+            .lastEnd = static_cast<std::int32_t>(own->lastEnd),
+            .lastProblem = static_cast<std::int32_t>(own->lastProblem),
+            .bar = own->defenseBar,
+        };
+      }
       traced.fighters.push_back({
           .x = fighter.position.x,
           .z = fighter.position.z,
@@ -2561,6 +2601,7 @@ TraceFrame PlaySession::traceFrame(std::uint64_t tick, const input::InputState& 
           .pose = std::string{poseName(fighter.pose)},
           .pending = fighter.pendingDamage,
           .move = fighter.attack ? battle->moves().at(fighter.attack->move).index : -1,
+          .orders = orders,
       });
     }
     frame.battle = std::move(traced);

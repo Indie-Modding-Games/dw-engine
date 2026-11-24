@@ -507,6 +507,7 @@ net::Bytes encode(const Message& message) {
           for (const PlayerId ally : body.allies) {
             out.put(ally);
           }
+          out.put(body.folder);
         } else if constexpr (std::is_same_v<T, BattleOffer>) {
           out.put(BattleOfferKind).put(body.available);
           put(out, body.fighter);
@@ -764,8 +765,8 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     for (std::uint8_t i = 0; i < allies && in.ok() && allies < MaxPlayers; ++i) {
       begin.allies.push_back(in.get<PlayerId>());
     }
-    if (!in.ok() || allies >= MaxPlayers || begin.battle == 0 || begin.starter > GuestPlayerId ||
-        begin.mapId.empty() || begin.enemyNpcs.empty() ||
+    if (!getFlag(in, begin.folder) || !in.ok() || allies >= MaxPlayers || begin.battle == 0 ||
+        begin.starter > GuestPlayerId || begin.mapId.empty() || begin.enemyNpcs.empty() ||
         begin.species.size() != begin.enemyNpcs.size() + 1 + begin.allies.size() ||
         (begin.starter == GuestPlayerId) != (begin.ask != 0) ||
         !std::ranges::all_of(begin.allies, [&](PlayerId ally) {
@@ -858,7 +859,7 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     action.value = in.get<std::int32_t>();
     action.item = in.text();
     if (!in.ok() || action.battle == 0 ||
-        actionKind > static_cast<std::uint8_t>(BattleActionKind::CloseEnd)) {
+        actionKind > static_cast<std::uint8_t>(BattleActionKind::Stance)) {
       return core::fail("invalid cooperative battle action");
     }
     action.kind = static_cast<BattleActionKind>(actionKind);
@@ -866,7 +867,12 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
          (action.value <= 0 || action.value > LastBattleCommand)) ||
         (action.kind == BattleActionKind::ThrowItem &&
          (action.item.empty() || action.item.size() > MaxBattleText || action.value < 0 ||
-          std::cmp_greater(action.value, MaxBattleFighters)))) {
+          std::cmp_greater(action.value, MaxBattleFighters))) ||
+        (action.kind == BattleActionKind::Order &&
+         (action.value < 0 ||
+          action.value >= battleOrderValue(0, static_cast<std::int32_t>(MaxBattleFighters) + 1))) ||
+        (action.kind == BattleActionKind::Stance &&
+         (action.value < 0 || action.value > LastStance))) {
       return core::fail("invalid cooperative battle action value");
     }
     message = std::move(action);

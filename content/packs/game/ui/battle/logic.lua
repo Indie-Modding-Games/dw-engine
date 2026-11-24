@@ -1265,6 +1265,50 @@ local function draw_intro(document)
   lookup(document, "fight"):set_class("veiled", intro_step == "anger")
 end
 
+-- The Folder battle's panel (battle.folder()): the defense bar, the active order with its phase and
+-- the orders that wait.
+local function draw_folder(document)
+  local folder = battle.folder()
+  set_class(document, "folder-panel", "hidden", not folder.active)
+  if not folder.active then
+    return
+  end
+  set_property(document, "folder-bar-fill", "width", percent(folder.bar, folder.bar_max) .. "%")
+  set_class(document, "folder-bar-fill", "broken", folder.broken)
+  set_class(document, "folder-broken", "hidden", not folder.broken)
+  local target = folder.target_key ~= ""
+      and (text("battle.folder.target") .. ": " .. text(folder.target_key))
+    or ""
+  if applied["folder-target text"] ~= target then
+    applied["folder-target text"] = target
+    lookup(document, "folder-target"):set_text(target)
+  end
+  local active = ""
+  if folder.move_key ~= "" then
+    active = text(folder.move_key)
+    if folder.phase ~= "" then
+      active = active .. " - " .. text("battle.folder.phase." .. folder.phase)
+    end
+  end
+  if applied["folder-active text"] ~= active then
+    applied["folder-active text"] = active
+    lookup(document, "folder-active"):set_text(active)
+  end
+  set_class(document, "folder-phase", "hidden", folder.phase == "")
+  set_property(document, "folder-phase-fill", "width", folder.phase_percent .. "%")
+  local names = {}
+  for index, key in ipairs(folder.queue) do
+    local foe = folder.queue_targets and folder.queue_targets[index] or ""
+    names[#names + 1] = foe ~= "" and (text(key) .. " (" .. text(foe) .. ")") or text(key)
+  end
+  local queue = #names > 0 and (text("battle.folder.queue") .. ": " .. table.concat(names, ", "))
+    or ""
+  if applied["folder-queue text"] ~= queue then
+    applied["folder-queue text"] = queue
+    lookup(document, "folder-queue"):set_text(queue)
+  end
+end
+
 local function draw(document)
   local state = battle.state()
   phase = state.phase
@@ -1312,6 +1356,7 @@ local function draw(document)
   draw_finisher(document)
   draw_revive(document, state)
   draw_match_clock(document, state)
+  draw_folder(document)
 end
 
 function choose(index)

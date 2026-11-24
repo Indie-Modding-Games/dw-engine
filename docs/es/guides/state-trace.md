@@ -37,7 +37,10 @@ La primera línea es la cabecera: `{"src":"dwe","meta":true,"hz":60}`. Cada lín
 Cada combatiente de `fighters` es `{x, z, yaw, hp, mp, max_hp, max_mp, off, def, spd, brain, pose, pending, move}`.
 `pending` es el daño recibido que aún no se ha restado de `hp` (el `hpDamageBuffer` del original: un golpe baja
 `hp - pending` de una vez) y `move`, el número del original de la técnica que está usando, o −1. El compañero va
-primero y luego los enemigos, en su orden.
+primero y luego los enemigos, en su orden. En una batalla Folder cada combatiente lleva además `orders`:
+`{phase, frames, queued, stance, last_end, last_problem, bar}`, los números de la fase de la orden (0 inactiva a 5
+recuperando), los frames de esa fase, las órdenes en espera, la postura, cómo y por qué terminó la última orden y la
+barra de defensa ([batalla Folder](../architecture/folder-battle.md)). Una batalla Classic no tiene `orders`.
 
 Las posiciones y los giros están en los ejes y unidades del original, las mismas que guarda su memoria:
 

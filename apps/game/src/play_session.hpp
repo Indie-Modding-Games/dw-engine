@@ -160,6 +160,9 @@ inline constexpr std::string_view BoostedTechniquesSetting = "boosted_techniques
 // The canyon shop's job (game::shop_job; session::ShopJobAdapter): improved, the default, plays the
 // line of customers and the haggle screen; original plays the original's price menus.
 inline constexpr std::string_view ShopJobModeSetting = "shop_job_mode";
+// The options' battle system row (docs/architecture/folder-battle.md): the save's system, which the
+// next battle plays; fixed unless the game's mode lists more than one or for a co-op guest.
+inline constexpr std::string_view BattleSystemSetting = "battle_system";
 inline constexpr std::string_view ShopJobImproved = "improved";
 inline constexpr std::string_view ShopJobOriginal = "original";
 // Co-op difficulty (an engine improvement; docs/architecture/coop-difficulty.md): how a co-op
@@ -308,6 +311,7 @@ public:
   // Applies the play options of the user's settings (quick battle start, skip the evolution, a
   // cancel closes a choice and the rules' options: rule_options.hpp) after one of them changed.
   void applyPlayOptions();
+  void changeBattleSystem(std::string_view name);
   // What the fight on screen asks of a quick battle's speed (battle_speed.hpp).
   [[nodiscard]] BattleSpeedMoment battleSpeedMoment() const {
     return {.fighting = battleScreen_.fighting(), .reacting = battleScreen_.reacting()};
@@ -539,6 +543,8 @@ private:
   void publishShopJob();
   // The danger alert's marks (danger_alert.hpp), published when they changed.
   void publishDangerMarks(bool fieldRunning, const assets::DigimonTable* species);
+  void publishBattleSystem();
+  [[nodiscard]] bool battleSystemSwitchable() const;
   // Publishes hud.minimap_allowed when it changes.
   // Draws the minimap of the map's collision and of the step cells that change the map now again
   // (on entering a map, after a preview swapped it in place or a trigger changed those cells).

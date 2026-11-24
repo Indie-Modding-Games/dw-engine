@@ -344,3 +344,27 @@ TEST_CASE("std_main.c STD_renderFighterCounter: a tournament match shows its clo
   REQUIRE(shown != nullptr);
   CHECK(std::get<double>(shown->value) == 98.0);
 }
+
+TEST_CASE("a folder battle's view shows the target, the orders and the defense bar") {
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  Battle classic = startBattle(duel(evenStats(900, 100), evenStats(700, 80)), 3);
+  CHECK_FALSE(dwe::screens::battleViewOf(classic, names).folder.has_value());
+
+  BattleSetup setup = duel(evenStats(900, 100), evenStats(700, 80), {"punch", "shot"});
+  setup.system = BattleSystemId::Folder;
+  Battle battle = startBattle(std::move(setup), 3);
+  REQUIRE(battle.order(1, 1));
+  REQUIRE(battle.order(0, 1));
+  const auto view = dwe::screens::battleViewOf(battle, names);
+  REQUIRE(view.folder.has_value());
+  CHECK(view.folder->targetKey == "main.digimon_names.0012");
+  CHECK(view.folder->queue.size() == 2);
+  CHECK(view.folder->queueTargets ==
+        std::vector<std::string>{"main.digimon_names.0012", "main.digimon_names.0012"});
+  CHECK(view.folder->barMax > 0);
+  const auto settings = dwe::screens::settingsOf(view);
+  const auto* target = settingNamed(settings, dwe::screens::FolderTargetSetting);
+  REQUIRE(target != nullptr);
+  CHECK(std::get<std::string>(target->value) == "main.digimon_names.0012");
+}

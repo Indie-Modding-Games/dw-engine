@@ -15,6 +15,7 @@ namespace dwe::game::battle {
 
 namespace {
 
+constexpr std::int32_t Hundred = 100;
 // The largest turn of a confused fighter, in the original's angle units (4096 a turn): rand(0x400)
 // - 0x200.
 constexpr std::int32_t ConfusedTurnSpan = 0x400;
@@ -475,6 +476,9 @@ void moveAlongFacing(BattleContext& context, FighterId id, std::int32_t step, bo
   if (gated && blockerAhead(context, id, fighter.facing) != Blocker::None) {
     return;
   }
+  if (fighter.moveScalePercent != Hundred) {
+    step = step * fighter.moveScalePercent / Hundred;
+  }
   fighter.position = stepFrom(fighter.position, fighter.facing, step);
 }
 
@@ -638,6 +642,10 @@ void tickRootMotion(BattleContext& context) {
     const std::int64_t fz = fighter.facing.z;
     std::int64_t moveX = (step->side * fz) + (step->forward * fx);
     std::int64_t moveZ = (-step->side * fx) + (step->forward * fz);
+    if (fighter.moveScalePercent != Hundred && fighter.pose == Pose::Walking) {
+      moveX = moveX * fighter.moveScalePercent / Hundred;
+      moveZ = moveZ * fighter.moveScalePercent / Hundred;
+    }
     // anim.c: applyRootMomentum: no move along a way collisionGrace found blocked.
     for (std::int32_t quarter = 0; quarter < 4; ++quarter) {
       if ((fighter.blockedWays & (1U << static_cast<unsigned>(quarter))) == 0) {

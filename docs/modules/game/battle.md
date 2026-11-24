@@ -5,7 +5,8 @@ at 20 frames per second, commands, obedience, the partner's and enemies' AI, tec
 and counterattack, status effects, the finisher, the end of the battle and its consequences, rewards,
 technique learning, and enemies that join. The rules are in the
 [reference sheet](../../reference/battle.md). The combat reinvention coming in an own ruleset is specified in [Combat
-system design](../../architecture/combat-design.md).
+system design](../../architecture/combat-design.md); it plays as the **Folder** battle system next to the original's
+**Classic** one, behind the internal `BattleSystem` interface ([Battle systems](../../architecture/folder-battle.md)).
 
 It knows nothing about the partner or saves: it does not include `packages/game/partner` or `packages/game/save`. It receives `Combatant` (declared here)
 and the partner's condition, and returns a `BattleResult` that the session applies. It has no state to save: a battle

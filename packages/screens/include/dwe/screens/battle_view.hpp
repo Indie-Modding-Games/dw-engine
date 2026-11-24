@@ -40,6 +40,16 @@ inline constexpr std::string_view BagAvailableSetting = "battle.bag.available";
 inline constexpr std::string_view BagOpenSetting = "battle.bag.open";
 inline constexpr std::string_view ItemInFlightSetting = "battle.item_in_flight";
 inline constexpr std::string_view MatchSecondsSetting = "battle.match_seconds";
+// The Folder battle's HUD (docs/architecture/folder-battle.md).
+inline constexpr std::string_view FolderActiveSetting = "battle.folder.active";
+inline constexpr std::string_view FolderMoveSetting = "battle.folder.move";
+inline constexpr std::string_view FolderPhaseSetting = "battle.folder.phase";
+inline constexpr std::string_view FolderPhasePercentSetting = "battle.folder.phase_percent";
+inline constexpr std::string_view FolderQueueList = "battle.folder.queue";
+inline constexpr std::string_view FolderBarSetting = "battle.folder.bar";
+inline constexpr std::string_view FolderBarMaxSetting = "battle.folder.bar_max";
+inline constexpr std::string_view FolderBrokenSetting = "battle.folder.broken";
+inline constexpr std::string_view FolderTargetSetting = "battle.folder.target";
 
 // A command's label: a technique's or the finisher's move name, the others the original's command
 // name (battle_main.c: BTL_COMMAND_NAMES; vs_main.c: VS_renderMoveName).
@@ -128,6 +138,26 @@ struct BattleView {
   bool bagAvailable = false;
   bool bagOpen = false;
   bool itemInFlight = false;
+  // The Folder battle's HUD for the own partner; nothing in the Classic battle.
+  struct Folder {
+    // The active order's move name key and phase ("processing"... "recovering"), with the timed
+    // phase's progress in percent; empty while it has none.
+    std::string moveKey;
+    std::string phase;
+    std::int32_t phasePercent = 0;
+    // The waiting orders' move name keys, the next first, and the name key of each one's foe
+    // (empty when it aims at none).
+    std::vector<std::string> queue;
+    std::vector<std::string> queueTargets;
+    // The name key of the foe the next orders aim at (Change picks it); empty without one.
+    std::string targetKey;
+    std::int32_t bar = 0;
+    std::int32_t barMax = 0;
+    bool broken = false;
+
+    friend bool operator==(const Folder&, const Folder&) = default;
+  };
+  std::optional<Folder> folder;
 };
 
 // A line of the end box as the original builds it in BTL_END_BOX_TEXTBUFFER (battle_hud.c:

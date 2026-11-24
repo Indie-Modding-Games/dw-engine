@@ -39,6 +39,10 @@ dwe_add_module(battle
         src/joining.cpp
         src/coop_scaling.cpp
         src/simulation.cpp
+        src/classic_battle.cpp
+        src/folder_battle.cpp
+        src/folder_orders.cpp
+        src/folder_formulas.cpp
         src/text_keys.cpp
     DEPS core assets ruleset)
 

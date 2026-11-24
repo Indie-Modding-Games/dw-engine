@@ -53,7 +53,7 @@ public:
   // the partners of `allies` beside the starter's. The message that tells every guest.
   BattleBegin begin(PlayerId starter, std::uint32_t ask, std::string mapId,
                     std::vector<std::int16_t> enemyNpcs, std::vector<std::string> species,
-                    bool fixedFight, std::vector<PlayerId> allies = {});
+                    bool fixedFight, std::vector<PlayerId> allies = {}, bool folder = false);
   // Guest `guest`'s newest offer of its partner for the host's battles.
   void receive(PlayerId guest, const BattleOffer& offer);
   // The partner `guest` offers now: none when it is not free to join or not there.

@@ -704,3 +704,63 @@
 .ally-revive.hidden {
 	display: none;
 }
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The Folder battle (not in the original): the partner's defense bar, its active order with the phase's progress and
+   the orders that wait, in a plate at the bottom left. */
+#folder-panel {
+	position: absolute;
+	left: 16dp;
+	bottom: 16dp;
+	width: 300dp;
+	padding: 6dp 10dp;
+	font-size: 18dp;
+	color: #ffffff;
+	background-color: #000000b0;
+	border-radius: 8dp;
+}
+
+#folder-panel.hidden,
+#folder-panel .hidden {
+	display: none;
+}
+
+#folder-panel .folder-row {
+	display: block;
+}
+
+#folder-panel .folder-label {
+	display: inline-block;
+	width: 80dp;
+}
+
+#folder-panel .folder-track {
+	display: inline-block;
+	width: 190dp;
+	height: 10dp;
+	background-color: #ffffff30;
+}
+
+#folder-panel #folder-phase {
+	display: block;
+	width: 280dp;
+	height: 6dp;
+	margin-top: 2dp;
+}
+
+#folder-panel .folder-fill {
+	height: 100%;
+	background-color: #f0c040;
+}
+
+#folder-panel #folder-bar-fill.broken {
+	background-color: #e04040;
+}
+
+#folder-panel #folder-broken {
+	color: #ff6060;
+}
+
+#folder-panel p {
+	margin: 2dp 0;
+}

@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.33.0 | The Folder battle's order panel: `battle.folder()` and its `battle.folder.*` settings (the active order, its phase, the waiting orders, the target, each waiting order's foe, the defense bar and the break), and the `battle_system` option ([Folder battle](../architecture/folder-battle.md)) |
 | 0.32.0 | Software mode ([software mode](../architecture/software-mode.md)): the options `auto_quality`, `render_scale` and `frame_limit`, and the `software_notice` notice with the `software_mode` setting |
 | 0.31.0 | The partner menu marks the partner's boosted technique (`partner.technique.<n>.boosted`, `partner.technique.choice.<n>.boosted`: its power and MP are already the boosted ones), and the `boosted_techniques` option arrives ([battle](../modules/game/battle.md#boosted-techniques)) |
 | 0.30.0 | The field's need meters and danger alert: `partner.gauges()` (hunger, the toilet and tiredness as they build up: `hud.gauge.<n>.label`, `need`, `value`, `max` and `fill`), `field.dangers()` and its event `field.danger` (the marks over the wild monsters that would crush the partner: `hud.danger.<n>.visible`, `x`, `y` and `hud.danger.revision`), and the options `need_meters` and `danger_alert` |
@@ -109,7 +110,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.32.0**.
+UI API version: **0.33.0**.
 
 ### `ui`
 
@@ -346,6 +347,7 @@ UI API version: **0.32.0**.
 | `quick_battle_start` | option | yes/no | Quick battle start. |
 | `difficulty` | option | text | Difficulty: normal or easy. |
 | `shop_job_mode` | option | text | The canyon shop job: improved or original. |
+| `battle_system` | option | text | The game's battle system, classic or folder; the next battle plays it. Fixed unless the game's mode offers both. |
 | `coop_difficulty` | option | text | How co-op battles scale their enemies: off, standard or hard. |
 | `coop_open_to_join` | option | yes/no | Whether a co-op game this player hosts takes new players once under way. |
 | `roaming_rare_chance` | option | text | How often the roaming rares appear: original, percent_5, percent_10, percent_25 or percent_50. |
@@ -855,6 +857,17 @@ UI API version: **0.32.0**.
 | `battle.match_seconds` | setting | number | The clock of a cup battle; -1 in the other battles. |
 | `battle.bag.available` | setting | yes/no | Whether the bag can be opened. |
 | `battle.bag.open` | setting | yes/no | Whether the bag is open over the battle. |
+| `battle.folder.active` | setting | yes/no | Whether the battle is a Folder battle: the strip gives orders and stances. |
+| `battle.folder.move` | setting | text | The text key of the active order's move, or empty. |
+| `battle.folder.phase` | setting | text | The active order's phase: processing, positioning, preparing, executing, recovering or empty. |
+| `battle.folder.phase_percent` | setting | number | How far a timed phase is, in percent. |
+| `battle.folder.queue.count` | setting | number | How many orders wait. |
+| `battle.folder.queue.<n>.move` | setting | text | The text key of a waiting order's move, the next first. |
+| `battle.folder.queue.<n>.target` | setting | text | The name key of the foe a waiting order aims at; empty when it aims at none. |
+| `battle.folder.bar` | setting | number | The partner's defense bar: the damage taken lately. |
+| `battle.folder.bar_max` | setting | number | The defense bar's capacity; full, the defense breaks. |
+| `battle.folder.broken` | setting | yes/no | Whether the partner's defense is broken now. |
+| `battle.folder.target` | setting | text | The name key of the foe the next orders aim at; empty without one. |
 | `battle.item_in_flight` | setting | yes/no | Whether a thrown item is on its way to the partner. |
 | `battle.end.outcome` | setting | text | The text key of the result in the end box. |
 | `battle.end.count` | setting | number | How many lines the end box has. |
@@ -909,6 +922,7 @@ UI API version: **0.32.0**.
 | `battle.allies(): table` | query | table | The other players' partners fighting beside this player's in a co-op battle (empty otherwise): name_key, status_key, hp, max_hp, mp, max_mp, fainted and revive_seconds (a fallen ally's countdown, or nil). |
 | `battle.commands(): table` | query | table | The command strip, the finisher first: command, label_key, icon, available, current and mp_cost. |
 | `battle.finisher(): table` | query | table | The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil). |
+| `battle.folder(): table` | query | table | The folder battle's order panel: active, move_key, phase, phase_percent, queue (move keys), queue_targets (their foes' name keys), target_key, bar, bar_max and broken. |
 | `battle.strip(): table` | query | table | Where the strip and the partner's bars are when entering and leaving: top, bottom, blink, hp_x and mp_x (or nil). |
 | `battle.intro(): table` | query | table | The opening: step, anger (3 marks), flee (8), anger_scale, flash and pieces (the banner's pieces, with key). |
 | `battle.numbers(): table` | query | table | The numbers over the fighters: x, y (percentage), dx, dy, value, kind (damage, gain, poison) and icon. |

@@ -134,6 +134,8 @@ struct SessionDesc {
   // The randomizer a new game plays with (docs/modules/game/randomizer.md); a loaded game plays its
   // save's.
   game::randomizer::RunSettings randomizer{};
+  // The battle system a new game plays (its mode's `battle`); a loaded game plays its save's.
+  std::string battle{game::modes::DefaultBattle};
   // The partner species, when already read (dwe-sim shares one table between its runs, tests make
   // their own); otherwise read from the ruleset's digimon and raise tables.
   std::shared_ptr<const game::partner::SpeciesTable> species;
@@ -382,6 +384,10 @@ public:
   [[nodiscard]] const game::randomizer::Randomizer& randomizer() const;
   // The species of the partner's raise rows, by id: what a randomized run picks wild enemies from.
   [[nodiscard]] std::vector<std::string> roster() const;
+  // The battle system its battles play (game::modes::ClassicBattle or FolderBattle): the new game's
+  // (SessionDesc::battle) or the loaded save's. The next battle plays the one set.
+  [[nodiscard]] const std::string& battleSystem() const;
+  core::Result<void> setBattleSystem(std::string_view battle);
   // The game events mods handle (game_hooks.hpp); they fire once ModScripts bound them.
   [[nodiscard]] GameHooks& hooks() { return hooks_; }
   // The story's sound slots, or nullptr for a silent session.

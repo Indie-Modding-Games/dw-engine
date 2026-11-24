@@ -206,6 +206,10 @@ public:
   // A command of another player for its own partner (the visitor's or its ally), as its strip
   // would give it; false when the battle does not take it now.
   bool commandFromPlayer(game::coop::PlayerId owner, game::battle::Command command);
+  // The same in a Folder battle: an order (protocol's battleOrderValue) or a stance of a player's
+  // partner.
+  bool orderFromPlayer(game::coop::PlayerId owner, std::int32_t order);
+  bool stanceFromPlayer(game::coop::PlayerId owner, game::battle::Stance stance);
   // Another player's press of the finisher's charge buttons: its own partner's finisher takes it
   // whole, another's as a cheer.
   void cheer(game::coop::PlayerId from);

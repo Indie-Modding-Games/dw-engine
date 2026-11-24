@@ -8,6 +8,8 @@
 
 namespace dwe::game::battle {
 
+class BattleSystem;
+
 // Everything one frame of the battle works on, passed to the parts of the loop.
 struct BattleContext {
   const BattleRules* rules = nullptr;
@@ -25,6 +27,8 @@ struct BattleContext {
   bool originalRolls = false;
   // What the fighters' statuses show over them (status_visuals.hpp).
   StatusVisuals* visuals = nullptr;
+  // The rules of the battle system it plays (battle_system.hpp).
+  BattleSystem* system = nullptr;
 
   [[nodiscard]] BattleView view() const { return view(PartnerId); }
   // The view the partner strategies decide for `actor` with.
@@ -67,6 +71,8 @@ struct BattleContext {
 // (vs_combat.c: VS__tickDigimonAI for each side) within tickEnemyAi.
 void tickPartnerAi(BattleContext& context);
 void tickEnemyAi(BattleContext& context);
+// The enemies' decisions alone, the commanded fighters left to the battle system (Folder).
+void tickEnemyDecisions(BattleContext& context);
 
 // Plans a move of a slot and its charge requirement (battle_main.c: BTL_setupQueuedMove).
 void queueMove(BattleContext& context, FighterId id, std::size_t slot);
@@ -112,6 +118,24 @@ void tickAttackHits(BattleContext& context);
 // guard took it already, which keeps its spark from showing again.
 bool registerBlockedAttack(const BattleContext& context, const AttackInFlight& attack);
 void drainPendingDamage(BattleContext& context);
+// The original's resolution of an attack that reached its defender: counter, support, hit chance,
+// hit or block (battle_main.c: BTL_tickAttackHits).
+void handleOriginalAttack(BattleContext& context, const AttackInFlight& attack);
+// What a hit of `damage` does to the defender: its spark, the counters, the pending damage, its hit
+// reaction and the move's status (BTL_handleHitReaction).
+void landHit(BattleContext& context, const AttackInFlight& attack, std::int32_t damage);
+// battle_main.c: BTL_applyBuffMove: a support move raises the stats of `id`.
+void applyBuff(BattleContext& context, FighterId id, MoveRef move);
+void addPendingDamage(BattleContext& context, Fighter& fighter, std::int32_t damage);
+// The finisher of `id` is lost (a hit during its aura).
+void cancelFinisherOf(BattleContext& context, FighterId id);
+// battle_main.c: BTL_removeMoveEffect: what of the own technique of `id` is still on its way stops.
+void stopOwnTechnique(BattleContext& context, FighterId id);
+// The fighter is countering `attacker` with a counter move right now.
+bool counteringAttacker(const BattleContext& context, const Fighter& fighter, FighterId attacker);
+// Where an attack's effect touched its defender, and where its spark bursts.
+Point hitPointOf(const BattleContext& context, const AttackInFlight& attack);
+HitParticles::Vec3 sparkPointOf(const BattleContext& context, const AttackInFlight& attack);
 // The battle_win debug command's blow: `id` takes damage enough to fall, and what a hit does to the
 // fighter it reaches comes first (BTL_tickAttackHits): its own technique, with whatever of it is
 // still on its way, and its finisher stop. The AttackHit it emits carries no move.

@@ -59,6 +59,8 @@ struct SessionState {
   std::string mode{game::modes::DefaultMode};
   // The randomized run's settings and the ruleset's randomizer rules, saved in their own section.
   game::randomizer::Randomizer randomizer;
+  // The battle system its battles play (docs/architecture/folder-battle.md), saved with the mode.
+  std::string battle{game::modes::DefaultBattle};
   const game::field::Field* field = nullptr;
 };
 

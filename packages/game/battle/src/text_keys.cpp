@@ -32,6 +32,23 @@ std::string_view commandTextKey(Command command) {
   return "battle.command.none";
 }
 
+std::string_view folderCommandTextKey(Command command) {
+  switch (command) {
+  case Command::Attack:
+    return "battle.stance.aggressive";
+  case Command::Moderate:
+    return "battle.stance.hold";
+  case Command::Distance:
+    return "battle.stance.distance";
+  case Command::Defend:
+    return "battle.stance.guard";
+  case Command::YourCall:
+    return "battle.folder.cancel_orders";
+  default:
+    return commandTextKey(command);
+  }
+}
+
 std::string_view outcomeTextKey(Outcome outcome) {
   switch (outcome) {
   case Outcome::Victory:

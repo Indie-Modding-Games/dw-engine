@@ -146,7 +146,8 @@ TEST_CASE("cooperative battle messages round trip") {
                         .enemyNpcs = {1},
                         .species = {"gabumon", "kunemon"},
                         .fixedFight = true,
-                        .allies = {}});
+                        .allies = {},
+                        .folder = true});
   roundTrip(BattleRefused{.ask = 3, .reason = BattleRefusal::Busy});
   roundTrip(BattleRefused{.ask = 4, .reason = BattleRefusal::NotHere});
   roundTrip(frame(9, 42));
@@ -154,6 +155,8 @@ TEST_CASE("cooperative battle messages round trip") {
   roundTrip(act(9, BattleActionKind::ThrowItem, 0, "medicine"));
   roundTrip(act(9, BattleActionKind::Cheer));
   roundTrip(act(9, BattleActionKind::CloseEnd));
+  roundTrip(act(9, BattleActionKind::Order, battleOrderValue(2, 1)));
+  roundTrip(act(9, BattleActionKind::Stance, 3));
   roundTrip(ending(9, BattleOutcome::Victory, std::vector<std::int16_t>{4, 6, 7}, 120, spoils()));
   roundTrip(ending(10, BattleOutcome::Fled, std::vector<std::int16_t>{}, 0));
 }
@@ -214,6 +217,10 @@ TEST_CASE("cooperative battle messages reject what the battle cannot be") {
   // A command that is none, an item with no id.
   rejects(act(1, BattleActionKind::Command, 0));
   rejects(act(1, BattleActionKind::ThrowItem));
+  // A stance that is none, an order at a fighter past the battle's.
+  rejects(act(1, BattleActionKind::Stance, LastStance + 1));
+  rejects(act(1, BattleActionKind::Order,
+              battleOrderValue(0, static_cast<std::int32_t>(MaxBattleFighters) + 1)));
   rejects(BattleRefused{.ask = 0});
   // An unknown action kind on the wire.
   auto bytes = encode(Message{act(1, BattleActionKind::Cheer)});
@@ -270,6 +277,8 @@ TEST_CASE("the referee runs one battle at a time and pulls the second player in 
   CHECK(referee.allows(GuestPlayerId, act(1, BattleActionKind::ThrowItem, 0, "meat")));
   CHECK(referee.allows(GuestPlayerId, act(1, BattleActionKind::Cheer)));
   CHECK_FALSE(referee.allows(GuestPlayerId, act(1, BattleActionKind::Command, 2)));
+  CHECK_FALSE(referee.allows(GuestPlayerId, act(1, BattleActionKind::Order, 1)));
+  CHECK_FALSE(referee.allows(GuestPlayerId, act(1, BattleActionKind::Stance, 1)));
   CHECK_FALSE(referee.allows(GuestPlayerId, act(1, BattleActionKind::CloseEnd)));
   CHECK_FALSE(referee.allows(GuestPlayerId, act(2, BattleActionKind::Cheer)));
   // A guest the referee does not know (not joined) is not heard.

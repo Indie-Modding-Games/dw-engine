@@ -14,6 +14,12 @@ inline constexpr std::string_view FolderMode = "folder";
 inline constexpr std::string_view LegacyStoryMode = "original";
 inline constexpr std::string_view DefaultMode = FolderMode;
 
+// The battle systems a mode may play (battle::battleSystemOf's names); a save from before them
+// plays the original's.
+inline constexpr std::string_view ClassicBattle = "classic";
+inline constexpr std::string_view FolderBattle = "folder";
+inline constexpr std::string_view DefaultBattle = ClassicBattle;
+
 [[nodiscard]] std::string_view currentModeId(std::string_view saved);
 
 struct OptionPin {
@@ -34,6 +40,10 @@ struct GameMode {
   // The rulesets the new game's rules screen may choose from for this mode; `ruleset` is one. With
   // only one, the screen is not shown.
   std::vector<std::string> rulesets;
+  // The battle system a new game of the mode plays, and the ones its player may switch to; `battle`
+  // is one. Without them, the original's alone.
+  std::string battle{DefaultBattle};
+  std::vector<std::string> battles{std::string{DefaultBattle}};
   // Where the mode goes in the list: lower first, then by id.
   std::int32_t order = 0;
   std::vector<OptionPin> options;

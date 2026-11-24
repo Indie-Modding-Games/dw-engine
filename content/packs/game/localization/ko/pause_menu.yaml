@@ -252,6 +252,9 @@ difficulty.easy: "쉬움"
 shop_job_mode: "가게 일"
 shop_job_mode.improved: "개선판"
 shop_job_mode.original: "원작"
+battle_system: "배틀 방식"
+battle_system.classic: "클래식"
+battle_system.folder: "Folder"
 # Skip evolutions: confirm or cancel ends an evolution's scene at once (off by default).
 skip_evolution: "진화 장면 건너뛰기"
 # Cancel closes choices: a cancel in a choice only closes it (off by default: the original's cancel).
@@ -300,6 +303,7 @@ help.enemy_hp_bars: "배틀 내내 모든 적 위에 체력 막대가 보여요.
 help.gym_sessions: "체육관 훈련을 이만큼 연달아 해요. 파트너를 돌보는 동안은 기다리고, 취소하거나 자리를 뜨거나 파트너가 다치거나 병에 걸리면 멈춰요."
 help.quick_battle_start: "필드의 배틀이 시작 연출 없이 바로 시작돼요. 대회는 그대로예요."
 help.shop_job_mode: "개선판: 공정한 손님 줄과 가격별 성공 확률이 보이는 흥정 화면. 원작: 원작의 가격 메뉴."
+help.battle_system: "클래식은 원작 배틀입니다. Folder: 파트너에게 명령과 자세를 주고, 명령한 기술만 씁니다. 다음 배틀부터 적용됩니다."
 help.difficulty: "보통은 원작 그대로. 쉬움: 파트너가 더 세게 때리고, 덜 맞고, 더 많이 성장하고, 밥 먹을 시간이 길고, 병에 덜 걸려요."
 help.skip_evolution: "선택이나 취소를 누르면 진화 장면이 바로 끝나요. 진화 결과는 같아요."
 help.choice_cancel_closes: "선택지에서 취소하면 닫히기만 해요. 원작에서는 첫 번째 답을 고르는 선택지도 있어요."

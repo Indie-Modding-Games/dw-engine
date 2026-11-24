@@ -153,6 +153,7 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
        .rules = std::nullopt,
        .modeId = play.modeId.value_or(std::string{game::modes::DefaultMode}),
        .randomizer = play.randomizer.value_or(game::randomizer::RunSettings{}),
+       .battle = play.battle.value_or(std::string{game::modes::DefaultBattle}),
        .species = nullptr,
        .seed = seed,
        .storage = start.storage.get(),
@@ -166,6 +167,9 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
   start.session = std::move(*session);
   if (auto begun = begin(*start.session, play, seed); !begun) {
     return core::fail(core::formatMessage(messages::SessionFailed, begun.error().message));
+  }
+  if (options.battle) {
+    (void)start.session->setBattleSystem(*options.battle);
   }
   if (options.clockSpeed) {
     start.session->clock().setSpeed(*options.clockSpeed);

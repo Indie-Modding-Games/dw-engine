@@ -374,6 +374,7 @@ core::Result<void> GameSession::startNewGame(const NewGameChoice& choice) {
   state_->cleared = false;
   state_->clearedMap.reset();
   state_->mode = desc_.modeId;
+  state_->battle = desc_.battle;
   file_ = {};
   file_.header.created = now();
   homeSlot_.reset();
@@ -717,6 +718,18 @@ std::vector<std::string> GameSession::rookies() const {
     }
   }
   return ids;
+}
+
+const std::string& GameSession::battleSystem() const {
+  return state_->battle;
+}
+
+core::Result<void> GameSession::setBattleSystem(std::string_view battle) {
+  if (battle != game::modes::ClassicBattle && battle != game::modes::FolderBattle) {
+    return core::fail(messages::formatMessage(messages::UnknownBattleSystem, battle));
+  }
+  state_->battle = std::string{battle};
+  return {};
 }
 
 bool GameSession::gameCleared() const {

@@ -43,6 +43,19 @@
         "minLength": 1
       }
     },
+    "battle": {
+      "description": "The battle system a new game of the mode plays: classic (the original's) or folder (docs/architecture/folder-battle.md); classic when left out.",
+      "enum": ["classic", "folder"]
+    },
+    "battles": {
+      "description": "The battle systems the mode's player may switch between; battle is one. Only battle when left out.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["classic", "folder"]
+      }
+    },
     "order": {
       "description": "Where the mode goes in the mode list: lower first, then by id.",
       "type": "integer"

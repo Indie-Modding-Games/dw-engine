@@ -4,9 +4,11 @@
 // time.
 
 #include <cstdint>
+#include <memory>
 #include <utility>
 
 #include "../src/battle_context.hpp"
+#include "../src/battle_system.hpp"
 #include "fixture.hpp"
 
 namespace battle_test {
@@ -28,7 +30,8 @@ struct Bench {
             .events = &events,
             .condition = &condition,
             .particles = &particles,
-            .visuals = &visuals};
+            .visuals = &visuals,
+            .system = system.get()};
   }
   // The same with the original's rolls on (Battle::useOriginalRolls): the visuals and the sparks
   // roll the battle's.
@@ -43,6 +46,7 @@ struct Bench {
   const BattleRules* rules;
   BattleState state;
   BattleStrategies strategies = originalStrategies();
+  std::unique_ptr<BattleSystem> system = makeClassicBattle();
   PartnerCondition condition;
   dwe::ruleset::Random random;
   BattleEvents events;

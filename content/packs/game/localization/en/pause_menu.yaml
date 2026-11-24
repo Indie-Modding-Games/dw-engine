@@ -254,6 +254,9 @@ difficulty.easy: "Easy"
 shop_job_mode: "Shop job"
 shop_job_mode.improved: "Improved"
 shop_job_mode.original: "Original"
+battle_system: "Battle system"
+battle_system.classic: "Classic"
+battle_system.folder: "Folder"
 # Skip evolutions: confirm or cancel ends an evolution's scene at once (off by default).
 skip_evolution: "Skip evolutions"
 # Cancel closes choices: a cancel in a choice only closes it (off by default: the original's cancel).
@@ -302,6 +305,7 @@ help.enemy_hp_bars: "A life bar over every enemy for the whole fight, cups too. 
 help.gym_sessions: "A gym course trains this many sessions in a row. Waits while you tend your partner; stops if you cancel, walk away or it gets hurt or sick."
 help.quick_battle_start: "A fight in the field starts as soon as it triggers, without the lead-in. Cups keep theirs."
 help.shop_job_mode: "Improved: a fair line of customers and a haggle screen that shows each price's odds. Original: the original's price menus."
+help.battle_system: "Classic is the original battle. Folder: you give your partner orders and stances, and it only uses the techniques you order. The next battle plays it."
 help.difficulty: "Normal is the original. Easy: your partner hits harder, takes less, trains more, has longer to eat and gets sick less."
 help.skip_evolution: "Confirm or cancel ends an evolution's scene at once. The new form is the same."
 help.choice_cancel_closes: "Cancelling a choice only closes it. In the original some choices run their first answer."

@@ -46,8 +46,16 @@ void appendFighter(std::string& out, const TraceFighter& fighter) {
                  fighter.maxHp, fighter.maxMp, fighter.offense, fighter.defense, fighter.speed,
                  fighter.brain);
   appendText(out, fighter.pose);
-  std::format_to(std::back_inserter(out), R"(,"pending":{},"move":{}}})", fighter.pending,
+  std::format_to(std::back_inserter(out), R"(,"pending":{},"move":{})", fighter.pending,
                  fighter.move);
+  if (const auto& orders = fighter.orders) {
+    std::format_to(std::back_inserter(out),
+                   R"(,"orders":{{"phase":{},"frames":{},"queued":{},"stance":{},"last_end":{},)"
+                   R"("last_problem":{},"bar":{}}})",
+                   orders->phase, orders->frames, orders->queued, orders->stance, orders->lastEnd,
+                   orders->lastProblem, orders->bar);
+  }
+  out += '}';
 }
 
 } // namespace

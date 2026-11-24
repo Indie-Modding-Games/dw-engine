@@ -7,6 +7,8 @@ name: modes.classic_name
 description: modes.classic_description
 ruleset: original
 rulesets: [original]
+# The original's battle, and no other.
+battle: classic
 order: 0
 options:
   # The easy difficulty changes the original's balance.

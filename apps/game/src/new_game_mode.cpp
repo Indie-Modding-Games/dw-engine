@@ -41,6 +41,7 @@ NewGameModes::Next NewGameModes::choose(std::string_view id, PlayStart& start) c
     return Next::Unknown;
   }
   start.modeId = mode->id;
+  start.battle = mode->battle;
   if (offers(*mode, ruleset::OriginalRuleset) && offers(*mode, HiddenContentRuleset)) {
     return Next::AskRules;
   }

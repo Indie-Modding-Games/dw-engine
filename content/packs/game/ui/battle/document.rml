@@ -150,6 +150,16 @@
 		<div id="match-clock" class="hidden"><div id="mc-side-1" class="mc-side"></div><div id="mc-side-2" class="mc-side"></div><div id="mc-d-0" class="mc-digit hidden"></div><div id="mc-d-1" class="mc-digit hidden"></div></div>
 
 
+		<!-- The Folder battle (battle.folder): the partner's defense bar, its active order and the waiting ones. -->
+		<div id="folder-panel" class="hidden">
+			<div class="folder-row"><span class="folder-label" text-key="battle.folder.guard"></span><div class="folder-track"><div class="folder-fill" id="folder-bar-fill"></div></div></div>
+			<p id="folder-broken" class="hidden" text-key="battle.folder.broken"></p>
+			<p id="folder-target"></p>
+			<p id="folder-active"></p>
+			<div class="folder-track" id="folder-phase"><div class="folder-fill" id="folder-phase-fill"></div></div>
+			<p id="folder-queue"></p>
+		</div>
+
 		<div id="speed-plate" class="hidden"><span text-key="battle.fast"></span></div>
 
 		<div id="prompts">

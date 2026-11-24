@@ -179,6 +179,18 @@ local descriptors = {
     help = "pause_menu.help.difficulty",
     original = "normal",
   },
+  -- The battle system of the game being played (docs/architecture/folder-battle.md): the save keeps
+  -- it and the next battle plays it; fixed unless the game's mode offers both.
+  {
+    name = "battle_system",
+    label = "pause_menu.battle_system",
+    values = { "classic", "folder" },
+    texts = "pause_menu.battle_system",
+    default = "classic",
+    tab = "game",
+    help = "pause_menu.help.battle_system",
+    original = "classic",
+  },
   -- The canyon shop's job: improved (the default) plays a fair line of customers and a haggle
   -- screen with the odds in sight; original plays the original's price menus.
   {

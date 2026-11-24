@@ -252,6 +252,9 @@ difficulty.easy: "Leicht"
 shop_job_mode: "Ladenjob"
 shop_job_mode.improved: "Verbessert"
 shop_job_mode.original: "Original"
+battle_system: "Kampfsystem"
+battle_system.classic: "Klassisch"
+battle_system.folder: "Folder"
 # Skip evolutions: confirm or cancel ends an evolution's scene at once (off by default).
 skip_evolution: "Evolutionen überspringen"
 # Cancel closes choices: a cancel in a choice only closes it (off by default: the original's cancel).
@@ -300,6 +303,7 @@ help.enemy_hp_bars: "Ein Lebensbalken über jedem Gegner, den ganzen Kampf lang,
 help.gym_sessions: "Ein Trainingsgerät trainiert so viele Einheiten am Stück. Es wartet, während du dich um deinen Partner kümmerst; es stoppt, wenn du abbrichst, weggehst oder dein Partner verletzt oder krank wird."
 help.quick_battle_start: "Ein Kampf im Gelände beginnt sofort, ohne Vorlauf. Pokale behalten ihren."
 help.shop_job_mode: "Verbessert: eine faire Kundenschlange und ein Feilsch-Bildschirm mit den Chancen jedes Preises. Original: die Preismenüs des Originals."
+help.battle_system: "Klassisch ist der Originalkampf. Folder: Du gibst deinem Partner Befehle und Haltungen, er nutzt nur befohlene Techniken. Gilt ab dem nächsten Kampf."
 help.difficulty: "Normal ist das Original. Leicht: dein Partner trifft härter, steckt mehr ein, trainiert mehr, hat länger Zeit zum Essen und wird seltener krank."
 help.skip_evolution: "Bestätigen oder Abbrechen beendet die Szene einer Evolution sofort. Die neue Form bleibt gleich."
 help.choice_cancel_closes: "Abbrechen schließt eine Auswahl nur. Im Original wählen manche Auswahlen dann ihre erste Antwort."

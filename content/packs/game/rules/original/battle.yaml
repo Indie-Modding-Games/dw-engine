@@ -575,6 +575,65 @@ coop_scaling:
   hard_hp_bonus_percent: 25
 
 # Quirks of the original (docs/reference/battle.md, "Quirks"). true reproduces the original; another ruleset turns them off.
+# The Folder battle (docs/architecture/folder-battle.md), an engine addition the original does not have: the numbers of
+# the combat design (docs/architecture/combat-design.md) that Folder Mode's battle plays with. Times are battle frames
+# (20 per second); percents are of the base value. Values marked provisional wait for balance.
+folder:
+  # §6.3: the formulas read the stats out of 1000 (the game caps them at 999).
+  stat_scale: 1000
+  # §4.2, §6.5: an order is processed in 0.8 s, shortened by INT. Provisional.
+  processing_frames: 16
+  # §4.2, §6.4: the preparation before the technique starts, shortened by VEL. Provisional.
+  preparation_frames: 10
+  # §4.2: the recovery after a technique whose MP cost no tier of `timings` reaches. Provisional.
+  recovery_frames: 20
+  # §5: each technique's preparation and recovery by its MP cost, the dearer the slower (the original's costs: 40 MP
+  # for most). `finisher_timing` is the finishers'; `techniques` gives one technique, by move id, its own. Provisional:
+  # the catalogue is pending balance.
+  timings:
+    - {mp_up_to: 20, preparation_frames: 6, recovery_frames: 14}
+    - {mp_up_to: 45, preparation_frames: 10, recovery_frames: 20}
+    - {mp_up_to: 80, preparation_frames: 14, recovery_frames: 26}
+    - {mp_up_to: 999, preparation_frames: 18, recovery_frames: 32}
+  finisher_timing: {preparation_frames: 20, recovery_frames: 36}
+  techniques: {}
+  # §4.6: positioning this long without reaching the range gives the order up.
+  give_up_frames: 200
+  # §2.9: Aggressive chases its target to point-blank this long, then uses the technique from its reach. Provisional.
+  chase_frames: 40
+  # §6.4: MovementMultiplier = 0.75 + 0.5 x VEL / 1000.
+  movement_min_percent: 75
+  movement_span_percent: 50
+  # §6.4: ExecutionMultiplier = 1 - 0.4 x VEL / 1000.
+  execution_cut_percent: 40
+  # §6.5: ResponseMultiplier = 1 - 0.5 x INT / 1000.
+  processing_cut_percent: 50
+  # §6.2: the attribute modifier is ATK times this percent. Provisional: 200 keeps the duels' odds closest to Classic's
+  # (the balance probe in folder_battle_tests.cpp); at 100 DEF outweighs ATK and any stronger foe always wins.
+  attack_percent: 200
+  # §3.8: every elemental advantage or resistance is worth 20 % of the technique's power, STAB 20 % more, and the
+  # Vaccine, Data and Virus cycle 25 %.
+  element_percent: 20
+  stab_percent: 20
+  type_percent: 25
+  # §3.8: the specialty each specialty beats (0 fire, 1 battle, 2 air, 3 earth, 4 ice, 5 mech, 6 filth): fire > earth >
+  # air > fire, ice > filth > mech > battle > ice.
+  beats: [3, 4, 0, 2, 6, 1, 5]
+  # §2.9: outside Guard a hit is covered with a chance of DEF / 1000 x 30 %; Guard and cover subtract DEF twice.
+  cover_max_percent: 30
+  cover_defense_times: 2
+  # §2.9: the defense bar holds 6 x DEF of damage and empties from full in 6 s; it waits 1 s after a hit before it
+  # drains (provisional).
+  bar_defense_times: 6
+  bar_drain_frames: 120
+  bar_rest_frames: 20
+  # §2.9: the break lasts 4 s with -50 % ATK, VEL and DEF; VEL and DEF shorten it and speed the drain by up to 15 %
+  # each, 30 % together.
+  break_frames: 80
+  break_debuff_percent: 50
+  per_stat_cut_percent: 15
+  stat_cut_cap_percent: 30
+
 quirks:
   # partner_impl.c: handlePostBattleTiredness divides the spent MP by the max before multiplying by 10, so it
   # almost always adds 0.

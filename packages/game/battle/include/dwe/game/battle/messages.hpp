@@ -53,6 +53,13 @@ inline constexpr std::string_view VersusShape =
     "a versus match needs exactly one enemy, a time limit and the versus kind";
 inline constexpr std::string_view NotCommanded = "that fighter takes no commands in this battle";
 inline constexpr std::string_view BagOpen = "the tamer's bag is open";
+inline constexpr std::string_view NotFolder = "orders and stances belong to the Folder battle";
+inline constexpr std::string_view NotInFolder = "the Folder battle takes orders, not this command";
+inline constexpr std::string_view NoFolderRules =
+    "the ruleset has no Folder battle (battle.folder)";
+inline constexpr std::string_view FolderVersus = "a versus match plays the Classic battle";
+inline constexpr std::string_view NoSuchSlot = "no technique slot {}";
+inline constexpr std::string_view NotATarget = "fighter {} is not a target for that order";
 inline constexpr std::string_view Fleeing =
     "the partner is running away and takes no more commands";
 inline constexpr std::string_view BagUnavailable =

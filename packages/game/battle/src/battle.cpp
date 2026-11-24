@@ -1,3 +1,4 @@
+#include <dwe/game/battle/folder_formulas.hpp>
 #include <dwe/game/battle/messages.hpp>
 
 #include <algorithm>
@@ -11,6 +12,8 @@
 
 #include "aftermath.hpp"
 #include "battle_context.hpp"
+#include "battle_system.hpp"
+#include "folder_battle.hpp"
 #include "usability.hpp"
 
 namespace dwe::game::battle {
@@ -207,6 +210,14 @@ Battle::Battle(const BattleRules& rules, const MoveCatalog& moves, BattleStrateg
     : rules_{&rules}, moves_{&moves}, strategies_{std::move(strategies)}, random_{seed},
       clock_{1.0 / FramesPerSecond, MaxFrameSeconds} {}
 
+Battle::Battle(Battle&&) noexcept = default;
+Battle& Battle::operator=(Battle&&) noexcept = default;
+Battle::~Battle() = default;
+
+BattleSystemId Battle::system() const {
+  return system_->id();
+}
+
 core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
                                    const MoveCatalog& moves, BattleStrategies strategies,
                                    std::uint64_t seed) {
@@ -220,7 +231,17 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
       (!versus || setup.kind != BattleKind::Versus || enemies != 1 || !setup.timeLimit)) {
     return core::fail(std::string{messages::VersusShape});
   }
+  if (setup.system == BattleSystemId::Folder) {
+    if (versus) {
+      return core::fail(std::string{messages::FolderVersus});
+    }
+    if (!rules.folder) {
+      return core::fail(std::string{messages::NoFolderRules});
+    }
+  }
   Battle battle{rules, moves, std::move(strategies), seed};
+  battle.system_ =
+      setup.system == BattleSystemId::Folder ? makeFolderBattle() : makeClassicBattle();
   BattleState& state = battle.state_;
   auto partner = makeFighter(setup.partner, rules, moves, Side::Partner);
   if (!partner) {
@@ -319,6 +340,8 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
   startShownClips(state);
   battle.setup_ = std::move(setup);
   battle.scaleEnemies();
+  BattleContext context = battle.contextOf(battle.pending());
+  battle.system_->start(context);
   return battle;
 }
 
@@ -372,7 +395,7 @@ core::Result<void> Battle::command(Command command) {
   return this->command(command, PartnerId);
 }
 
-core::Result<void> Battle::command(Command command, FighterId side) {
+core::Result<void> Battle::commandable(FighterId side) const {
   if (result_) {
     return core::fail(std::string{messages::BattleOver});
   }
@@ -395,12 +418,23 @@ core::Result<void> Battle::command(Command command, FighterId side) {
   if (state_.fleeFramesOf(side) || state_.fighters.at(side).gone()) {
     return core::fail(std::string{messages::Fleeing});
   }
+  return {};
+}
+
+core::Result<void> Battle::command(Command command, FighterId side) {
+  if (core::Result<void> open = commandable(side); !open) {
+    return open;
+  }
   CommandState& commands = state_.commandsOf(side);
   if (std::ranges::find(commands.menu, command) == commands.menu.end()) {
     return core::fail(std::string{messages::CommandNotInMenu});
   }
   if (state_.remainingOthers(side).empty()) {
     return {};
+  }
+  if (system() == BattleSystemId::Folder && command != Command::Flee) {
+    BattleContext context = contextOf(pending());
+    return folderCommand(context, command, side);
   }
   const Fighter& partner = state_.fighters.at(side);
   switch (command) {
@@ -449,13 +483,89 @@ core::Result<void> Battle::command(Command command, FighterId side) {
                         .flights = flights_,
                         .particles = &hitParticles_,
                         .originalRolls = originalRolls_,
-                        .visuals = &statusVisuals_};
+                        .visuals = &statusVisuals_,
+                        .system = system_.get()};
   // vs_combat.c: VS___tickVSInput works the delay out and then sets it to 0.
   commands.delay =
       state_.versus()
           ? 0
           : strategies_.obedience->commandDelay(context.view(side), context.disciplineOf(side));
   return {};
+}
+
+core::Result<void> Battle::order(std::size_t slot, std::optional<FighterId> target,
+                                 FighterId side) {
+  if (system() != BattleSystemId::Folder) {
+    return core::fail(std::string{messages::NotFolder});
+  }
+  if (core::Result<void> open = commandable(side); !open) {
+    return open;
+  }
+  BattleContext context = contextOf(pending());
+  return folderOrder(context, slot, target, side);
+}
+
+core::Result<void> Battle::cancelOrders(FighterId side) {
+  if (system() != BattleSystemId::Folder) {
+    return core::fail(std::string{messages::NotFolder});
+  }
+  if (core::Result<void> open = commandable(side); !open) {
+    return open;
+  }
+  BattleContext context = contextOf(pending());
+  folderCancelOrders(context, side);
+  return {};
+}
+
+core::Result<void> Battle::setStance(Stance stance, FighterId side) {
+  if (system() != BattleSystemId::Folder) {
+    return core::fail(std::string{messages::NotFolder});
+  }
+  if (core::Result<void> open = commandable(side); !open) {
+    return open;
+  }
+  BattleContext context = contextOf(pending());
+  folderSetStance(context, stance, side);
+  return {};
+}
+
+core::Result<void> Battle::setTarget(FighterId target, FighterId side) {
+  if (system() != BattleSystemId::Folder) {
+    return core::fail(std::string{messages::NotFolder});
+  }
+  if (core::Result<void> open = commandable(side); !open) {
+    return open;
+  }
+  if (target >= state_.fighters.size() || !state_.foes(side, target) ||
+      state_.fighters[target].gone() || state_.fighters[target].defeated()) {
+    return core::fail(messages::formatMessage(messages::NotATarget, target));
+  }
+  BattleContext context = contextOf(pending());
+  battle::setTarget(context, side, target);
+  return {};
+}
+
+OrderProblem Battle::orderProblem(std::size_t slot, FighterId side) const {
+  const AllyState* ally = state_.allyOf(side);
+  return folderSlotProblem(state_, *moves_, *rules_,
+                           ally != nullptr ? ally->condition : setup_.condition, side, slot);
+}
+
+const FolderFighter* Battle::folderOf(FighterId fighter) const {
+  if (!state_.folder || fighter >= state_.folder->fighters.size()) {
+    return nullptr;
+  }
+  return &state_.folder->fighters[fighter];
+}
+
+std::int32_t Battle::defenseBarCapacity(FighterId fighter) const {
+  const FolderFighter* own = folderOf(fighter);
+  if (own == nullptr || !rules_->folder) {
+    return 0;
+  }
+  const std::int32_t defense = state_.fighters.at(fighter).stats.defense;
+  return folder::barCapacity(
+      *rules_->folder, own->broken() ? folder::brokenStat(*rules_->folder, defense) : defense);
 }
 
 void Battle::defeatEnemies() {
@@ -679,7 +789,8 @@ BattleContext Battle::contextOf(BattleEvents& events) {
           .flights = flights_,
           .particles = &hitParticles_,
           .originalRolls = originalRolls_,
-          .visuals = &statusVisuals_};
+          .visuals = &statusVisuals_,
+          .system = system_.get()};
 }
 
 BattleEvents& Battle::pending() {
@@ -708,7 +819,8 @@ const BattleEvents& Battle::step() {
                         .flights = flights_,
                         .particles = &hitParticles_,
                         .originalRolls = originalRolls_,
-                        .visuals = &statusVisuals_};
+                        .visuals = &statusVisuals_,
+                        .system = system_.get()};
   if (state_.matchClock && endMatch()) {
     return events_;
   }
@@ -736,8 +848,7 @@ const BattleEvents& Battle::step() {
     finish(Outcome::Victory);
     return events_;
   }
-  tickPartnerAi(context);
-  tickEnemyAi(context);
+  system_->tickDecisions(context);
   tickFighterStates(context);
   tickThrownItem(context);
   // command_menu.c: BTL_tickFinisherChargeup.
@@ -767,6 +878,7 @@ const BattleEvents& Battle::step() {
   hitParticles_.tick(particleRolls(), state_.fighters);
   // The status visuals' world objects, with the bubbles' rolls.
   statusVisuals_.tick(originalRolls_ ? random_ : statusVisuals_.ownRolls(), state_.fighters);
+  system_->endFrame(context);
   if (state_.fleeFrames) {
     ++*state_.fleeFrames;
   }

@@ -27,6 +27,20 @@ constexpr std::string_view RulesetsKey = "rulesets";
 constexpr std::string_view OrderKey = "order";
 constexpr std::string_view OptionsKey = "options";
 constexpr std::string_view RandomizerKey = "randomizer";
+constexpr std::string_view BattleKey = "battle";
+constexpr std::string_view BattlesKey = "battles";
+
+bool isBattleSystem(std::string_view name) {
+  return name == ClassicBattle || name == FolderBattle;
+}
+
+std::string battleName(YamlReader& reader, const YamlNode& node) {
+  std::string name = reader.text(node);
+  if (reader.ok() && !isBattleSystem(name)) {
+    reader.fail(node, core::formatMessage(messages::ModeBadBattle, name));
+  }
+  return name;
+}
 
 bool isModeId(std::string_view id) {
   return !id.empty() && id.front() >= 'a' && id.front() <= 'z' &&
@@ -89,7 +103,7 @@ core::Result<GameMode> parseGameMode(std::string_view yaml, std::string_view fol
   YamlReader reader;
   if (!reader.expectKeys(root, messages::ModeText,
                          {IdKey, NameKey, DescriptionKey, RulesetKey, RulesetsKey, OrderKey},
-                         {OptionsKey, RandomizerKey})) {
+                         {OptionsKey, RandomizerKey, BattleKey, BattlesKey})) {
     return std::unexpected{reader.error(messages::ModeText)};
   }
   GameMode mode;
@@ -116,6 +130,23 @@ core::Result<GameMode> parseGameMode(std::string_view yaml, std::string_view fol
     reader.fail(rulesetNode, core::formatMessage(messages::ModeRulesetNotListed, mode.ruleset));
   }
   mode.order = reader.integer<std::int32_t>(reader.field(root, OrderKey));
+  if (const YamlNode* battle = root.find(BattleKey); battle != nullptr && reader.ok()) {
+    mode.battle = battleName(reader, *battle);
+    mode.battles = {mode.battle};
+  }
+  if (const YamlNode* battles = root.find(BattlesKey); battles != nullptr && reader.ok()) {
+    mode.battles.clear();
+    for (const YamlNode& item : reader.sequence(*battles, BattlesKey)) {
+      std::string name = battleName(reader, item);
+      if (reader.ok() && std::ranges::contains(mode.battles, name)) {
+        reader.fail(item, core::formatMessage(messages::ModeBattleTwice, name));
+      }
+      mode.battles.push_back(std::move(name));
+    }
+    if (reader.ok() && !std::ranges::contains(mode.battles, mode.battle)) {
+      reader.fail(*battles, core::formatMessage(messages::ModeBattleNotListed, mode.battle));
+    }
+  }
   if (const YamlNode* options = root.find(OptionsKey); options != nullptr && reader.ok()) {
     mode.options = readPins(reader, *options);
   }

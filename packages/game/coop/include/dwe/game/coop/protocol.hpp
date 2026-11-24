@@ -33,7 +33,7 @@ inline constexpr std::size_t MaxPlayers = 4;
 // world's clock, the host's, told to every guest, and who of the players trains (#365). 12: the
 // items thrown in a battle in its frames (the guest's screen draws them) and the host's co-op
 // difficulty in the lobby (#351, #361, #352).
-inline constexpr std::uint32_t ProtocolVersion = 12;
+inline constexpr std::uint32_t ProtocolVersion = 13;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
   return id < MaxPlayers;
@@ -256,7 +256,8 @@ struct BattleOffer {
 
 // A battle began on the host: who started it (that player's partner fights), the guest's ask it
 // answers (0 when the host started it), the map, the NPC slot of each enemy, each fighter's
-// species (the partner's first, then the enemies', then the allies') and the player of each ally.
+// species (the partner's first, then the enemies', then the allies'), the player of each ally and
+// whether it plays the Folder battle system, whose strip the guests label with stances.
 struct BattleBegin {
   std::uint32_t battle = 0;
   PlayerId starter = HostPlayerId;
@@ -266,6 +267,7 @@ struct BattleBegin {
   std::vector<std::string> species;
   bool fixedFight = false;
   std::vector<PlayerId> allies;
+  bool folder = false;
 
   friend bool operator==(const BattleBegin&, const BattleBegin&) = default;
 };
@@ -359,8 +361,18 @@ struct BattleFrame {
 // What the guest does in a battle: with a partner in it, a command of the strip for that partner
 // (`value`, the battle's command number); as its starter the end box's close; in any role an item
 // of its own bag thrown (`item`, an item id; `value` the fighter it flies to plus one, 0 for the
-// thrower's own partner or the fighting one) and a cheer (a press of the finisher's charge).
-enum class BattleActionKind : std::uint8_t { Command, ThrowItem, Cheer, CloseEnd };
+// thrower's own partner or the fighting one) and a cheer (a press of the finisher's charge). In a
+// Folder battle (docs/architecture/folder-battle.md) its partner takes orders instead of commands:
+// an order (`value`, battleOrderValue's slot and target) and a stance (`value`, the Stance).
+enum class BattleActionKind : std::uint8_t { Command, ThrowItem, Cheer, CloseEnd, Order, Stance };
+
+// An order's slot and target in one value: (target + 1) x OrderSlots + slot, target 0 for none.
+inline constexpr std::int32_t OrderSlots = 4;
+inline constexpr std::int32_t LastStance = 3;
+[[nodiscard]] constexpr std::int32_t battleOrderValue(std::int32_t slot,
+                                                      std::optional<std::int32_t> target) {
+  return ((target ? *target + 1 : 0) * OrderSlots) + slot;
+}
 
 struct BattleAction {
   std::uint32_t battle = 0;

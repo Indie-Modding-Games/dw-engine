@@ -257,6 +257,9 @@ difficulty.easy: "Fácil"
 shop_job_mode: "Trabajo en la tienda"
 shop_job_mode.improved: "Mejorado"
 shop_job_mode.original: "Original"
+battle_system: "Sistema de batalla"
+battle_system.classic: "Clásico"
+battle_system.folder: "Folder"
 # Skip evolutions: confirm or cancel ends an evolution's scene at once (off by default).
 skip_evolution: "Saltar evoluciones"
 # Cancel closes choices: a cancel in a choice only closes it (off by default: the original's cancel).
@@ -305,6 +308,7 @@ help.enemy_hp_bars: "Una barra de vida sobre cada rival todo el combate, tambié
 help.gym_sessions: "Un curso del gimnasio entrena estas sesiones seguidas. Espera a que atiendas a tu compañero; para si cancelas, te alejas o se hiere o enferma."
 help.quick_battle_start: "Un combate en el mapa empieza en cuanto salta, sin la espera previa. Las copas mantienen la suya."
 help.shop_job_mode: "Mejorado: una fila de clientes justa y una pantalla de regateo que enseña las opciones de cada precio. Original: los menús de precios del original."
+help.battle_system: "Clásico es la batalla original. Folder: das a tu compañero órdenes y posturas, y solo usa las técnicas que le ordenas. Se aplica desde la próxima batalla."
 help.difficulty: "Normal es el original. Fácil: tu compañero pega más, recibe menos, entrena más, tiene más tiempo para comer y enferma menos."
 help.skip_evolution: "Confirmar o cancelar acaba al momento la escena de una evolución. La nueva forma es la misma."
 help.choice_cancel_closes: "Cancelar una elección solo la cierra. En el original algunas ejecutan su primera respuesta."
