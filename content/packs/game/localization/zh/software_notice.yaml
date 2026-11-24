@@ -1,0 +1,4 @@
+# The notice that the game draws without a graphics card (ui/software_notice, docs/architecture/software-mode.md).
+title: "正在无显卡模式下游戏"
+body: "游戏正在用处理器绘制画面，因此可能会比较慢。画质会自动调整，也可以在 选项 > 画面 中修改。"
+fix: "要解决此问题，请从显卡制造商的网站安装或更新显卡驱动程序。"

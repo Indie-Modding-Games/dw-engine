@@ -310,7 +310,9 @@ guide](../../guides/beta-windows-macos.md)). If the first check finds no GPU tha
 folder; on Windows, `PATH`. If it works that way, it starts the game with that same environment. It is slower (the
 processor draws it), but the game starts on a virtual machine or with an old or missing driver. The package's
 scripts (`dwe` on Linux, `dwe.cmd` on Windows) do the same for those who play without the launcher. A computer
-whose only Vulkan is a system software one (llvmpipe) also sees the notice, without switching drivers.
+whose only Vulkan is a system software one (llvmpipe) also sees the notice, without switching drivers. Inside the
+game, [software mode](../../architecture/software-mode.md) takes over from there: a cheap preset, automatic quality,
+its own notice and the minimum requirements measured on lavapipe.
 
 **Graphics switches.** Settings › General › Computer requirements has two switches, off by default, that add a
 game flag to every start:

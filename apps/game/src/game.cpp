@@ -25,6 +25,7 @@
 #include <dwe/render/screen_fade.hpp>
 #include <dwe/render/upscale_cache.hpp>
 #include <dwe/rhi/device.hpp>
+#include <dwe/rhi/system_check.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/script/script_vm.hpp>
 #include <dwe/session/session_sound.hpp>
@@ -52,6 +53,7 @@
 #include <span>
 #include <string>
 #include <system_error>
+#include <thread>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -110,6 +112,7 @@
 #include "save_indicator.hpp"
 #include "screenshot.hpp"
 #include "slow_frame_log.hpp"
+#include "software_mode.hpp"
 #include "state_trace.hpp"
 #include "text_font_setting.hpp"
 #include "title_options.hpp"
@@ -650,8 +653,41 @@ int runGame(const Options& requested) {
   GraphicsOptions startGraphics = startGraphicsOptions(userSettings);
   // The launcher's low-performance mode starts the run from the potato preset; --graphics still
   // overrides on top of it, and the player can change each option in the menus as usual.
+  const rhi::GpuInfo gpu = rhi::deviceGpu(**device);
+  const bool softwareMode =
+      softwareModeActive(parseSoftwareMode(options.softwareMode).value_or(SoftwareMode::Auto),
+                         gpu.kind == rhi::GpuKind::Software, autotest != nullptr);
+  GraphicsKnobs automaticKnobs;
+  std::optional<QualityTuner> qualityTuner;
+  if (softwareMode) {
+    // NOLINTNEXTLINE(concurrency-mt-unsafe): read once at start; nothing sets it.
+    const char* lpThreads = std::getenv("LP_NUM_THREADS");
+    const unsigned threads = softwareThreads(
+        lpThreads != nullptr ? std::optional<std::string_view>{lpThreads} : std::nullopt,
+        std::thread::hardware_concurrency());
+    const int level = startQuality(threads);
+    automaticKnobs = unchosenKnobs(userSettings);
+    startGraphics = withQuality(startGraphics, level, automaticKnobs);
+    startGraphics.autoQuality = userSettings.autoQuality.value_or(true);
+    if (automaticKnobs.test(knobIndex(GraphicsKnob::Weather))) {
+      userSettings.weatherDefault = qualityStep(level).weather;
+    }
+    qualityTuner.emplace(level, startGraphics.frameLimit > 0 ? startGraphics.frameLimit
+                                                             : SoftwareFrameLimit);
+    core::logInfo("game: software mode on {} ({} threads): quality {}, scale {}%, {} fps limit, "
+                  "automatic quality {}",
+                  gpu.name, threads, level, startGraphics.renderScale, startGraphics.frameLimit,
+                  startGraphics.autoQuality ? "on" : "off");
+  }
   if (options.lowPerformance) {
+    const GraphicsOptions kept = startGraphics;
     startGraphics = potatoGraphicsOptions();
+    startGraphics.renderScale = kept.renderScale;
+    startGraphics.frameLimit = kept.frameLimit;
+    startGraphics.autoQuality = kept.autoQuality;
+    automaticKnobs &= GraphicsKnobs{}
+                          .set(knobIndex(GraphicsKnob::RenderScale))
+                          .set(knobIndex(GraphicsKnob::FrameLimit));
   }
   if (options.graphics) {
     startGraphics = withGraphicsFlag(startGraphics, *options.graphics).value_or(startGraphics);
@@ -830,6 +866,14 @@ int runGame(const Options& requested) {
                              : asksLanguage(options.language, userSettings.language));
   MinimapChanger minimapChanger{userSettings, settingsFile};
   GraphicsChanger graphics{userSettings, settingsFile, startGraphics};
+  graphics.setAutomatic(automaticKnobs);
+  (*ui)->setSetting(SoftwareModeSetting, softwareMode);
+  double softwareNoticeLeft = softwareMode ? SoftwareNoticeSeconds : 0.0;
+  if (softwareMode) {
+    (*ui)->show(SoftwareNoticeDocument);
+  }
+  FrameLimiter frameLimiter;
+  double limiterWaited = 0.0;
   // The title's pictures, smoothed with the texture filter «upscaled», keep what the upscaler made
   // where the models' textures do.
   (*ui)->setUpscaleCache(upscaleCache);
@@ -871,7 +915,7 @@ int runGame(const Options& requested) {
   publishGameToggles(**ui, userSettings);
   (*ui)->setSetting(MinimapSetting, std::string{startMinimapMode(userSettings.minimap)});
   (*ui)->setSetting(MinimapSizeSetting, std::string{display.minimapSize});
-  (*ui)->setSetting(WeatherSetting, userSettings.weather.value_or(true));
+  (*ui)->setSetting(WeatherSetting, userSettings.weather.value_or(userSettings.weatherDefault));
   (*ui)->setSetting(SeasonsSetting, userSettings.seasons.value_or(true));
   (*ui)->setSetting(HdScenerySetting, hdScenery.on());
   (*ui)->setSetting(FullscreenSetting, settings.fullscreen);
@@ -2641,6 +2685,7 @@ int runGame(const Options& requested) {
         // The weather (an engine improvement): shown or hidden at once, on the title screen too.
         if (const bool* shown = std::get_if<bool>(&command.value)) {
           userSettings.weather = *shown;
+          graphics.release(GraphicsKnob::Weather);
           if (settingsFile) {
             saveUserSettings(*settingsFile, userSettings);
           }
@@ -2648,7 +2693,8 @@ int runGame(const Options& requested) {
             play->scene().setWeatherEnabled(*shown);
           }
         }
-        (*ui)->setSetting(WeatherSetting, userSettings.weather.value_or(true));
+        (*ui)->setSetting(WeatherSetting,
+                          userSettings.weather.value_or(userSettings.weatherDefault));
         continue;
       }
       if (command.name == SeasonsSetting) {
@@ -3033,8 +3079,34 @@ int runGame(const Options& requested) {
         .overlay = std::ref(drawOverlay),
         .textureScenes = portraitScenes,
         .post = postDrawer,
+        .sceneScale =
+            showingMovie ? 1.0F : static_cast<float>(graphics.options().renderScale) / 100.0F,
     });
     phases.mark(FramePhases::Render, platform->nowSeconds());
+    if (softwareNoticeLeft > 0.0) {
+      softwareNoticeLeft -= std::clamp(frameSeconds, 0.0, MaxFrameSeconds);
+      if (softwareNoticeLeft <= 0.0) {
+        (*ui)->hide(SoftwareNoticeDocument);
+      }
+    }
+    if (qualityTuner && graphics.options().autoQuality && drawn && !showingMovie &&
+        flow.playing() != nullptr && !loadAfterIndicator) {
+      qualityTuner->setTargetFps(graphics.options().frameLimit > 0 ? graphics.options().frameLimit
+                                                                   : SoftwareFrameLimit);
+      if (const auto level = qualityTuner->frame(frameSeconds, frameSeconds - limiterWaited)) {
+        graphics.applyAutomatic(withQuality(graphics.options(), *level, graphics.automatic()),
+                                **ui);
+        if (graphics.automatic().test(knobIndex(GraphicsKnob::Weather))) {
+          userSettings.weatherDefault = qualityStep(*level).weather;
+          flow.playing()->scene().setWeatherEnabled(userSettings.weatherDefault);
+          (*ui)->setSetting(WeatherSetting, userSettings.weatherDefault);
+        }
+        core::logInfo("game: automatic quality {} (ceiling {}), scale {}%", *level,
+                      qualityTuner->ceiling(), graphics.options().renderScale);
+      }
+    } else if (qualityTuner) {
+      qualityTuner->pause();
+    }
     if (loadAfterIndicator) {
       loadingIndicatorSeconds += std::max(0.0, frameSeconds);
       if (loadingIndicatorSeconds >= 0.3) {
@@ -3047,6 +3119,10 @@ int runGame(const Options& requested) {
     }
     if (!drawn || (control && control->idle())) {
       platform->waitForEvents(IdleWait);
+    }
+    limiterWaited = frameLimiter.wait(platform->nowSeconds(), graphics.options().frameLimit);
+    if (limiterWaited > 0.0) {
+      std::this_thread::sleep_for(std::chrono::duration<double>(limiterWaited));
     }
   }
   (*device)->waitIdle();

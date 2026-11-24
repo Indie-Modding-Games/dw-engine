@@ -55,6 +55,8 @@ constexpr auto Screens = std::to_array<ScreenScripts>({
     {.screen = "money_box", .files = {"money_box/logic.lua", "money_box/document.rml"}},
     {.screen = "lives_box", .files = {"lives_box/logic.lua", "lives_box/document.rml"}},
     {.screen = "ui_notice", .files = {"ui_notice/logic.lua", "ui_notice/document.rml"}},
+    {.screen = "software_notice",
+     .files = {"software_notice/logic.lua", "software_notice/document.rml"}},
     {.screen = "coop_hud", .files = {"coop_hud/logic.lua", "coop_hud/document.rml"}},
     {.screen = "battle", .files = {"battle/logic.lua", "battle/document.rml"}},
     {.screen = "tournament_match",

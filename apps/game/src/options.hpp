@@ -136,6 +136,8 @@ struct Options {
   // off, graphics_options.hpp). The launcher's low-performance mode. Off by default.
   bool lowPerformance = false;
 
+  std::string softwareMode = "auto";
+
   // The language of the texts (--lang en|es...), instead of the saved one or the system's; for
   // autotests.
   std::optional<std::string> language;
@@ -185,7 +187,7 @@ inline constexpr std::string_view Usage =
     "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--chibi] [--start <map>[,<exit>]] [--time day|dusk|night] [--weather <kind>] [--season <season>] [--lang "
     "<language>] "
     "[--text-font modern|original] [--ui-skin <id>] [--safe-ui] [--graphics <option>=<value>[,...]] "
-    "[--compatible] [--vulkan13] [--low-performance] "
+    "[--compatible] [--vulkan13] [--low-performance] [--software-mode auto|on|off] "
     "[--new-game | --load <slot>] "
     "[--new-game-chain original|seeded] [--clock-speed <x>] "
     "[--seed <n>] [--original-rolls <state>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] [--trace <file>] "

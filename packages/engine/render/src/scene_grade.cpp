@@ -25,6 +25,7 @@ struct GradePush {
   glm::vec4 tint;
   glm::vec4 grade;
   glm::ivec2 lastPixel;
+  glm::vec2 toScene;
   std::int32_t bloomReach;
   std::uint32_t scene;
   std::uint32_t lightCount;
@@ -101,8 +102,14 @@ void SceneGrade::draw(DrawContext& context) {
   if (!lights) {
     return;
   }
-  const auto width = static_cast<std::int32_t>(context.extent().width);
-  const auto height = static_cast<std::int32_t>(context.extent().height);
+  const rhi::Extent window = context.extent();
+  const rhi::Extent drawn = context.sceneExtent().width > 0 ? context.sceneExtent() : window;
+  const auto width = static_cast<std::int32_t>(drawn.width);
+  const auto height = static_cast<std::int32_t>(drawn.height);
+  const glm::vec2 toScene{
+      window.width > 0 ? static_cast<float>(drawn.width) / static_cast<float>(window.width) : 1.0F,
+      window.height > 0 ? static_cast<float>(drawn.height) / static_cast<float>(window.height)
+                        : 1.0F};
   rhi::CommandList& commands = context.commands();
   commands.bindPipeline(pipeline_);
   commands.pushConstants(GradePush{
@@ -111,6 +118,7 @@ void SceneGrade::draw(DrawContext& context) {
       .tint = glm::vec4{params_.tint, 1.0F},
       .grade = {params_.vibrance, params_.contrast, params_.bloom, params_.bloomThreshold},
       .lastPixel = {std::max(width - 1, 0), std::max(height - 1, 0)},
+      .toScene = toScene,
       .bloomReach = std::max(1, static_cast<std::int32_t>(std::lround(height * BloomReachPerLine))),
       .scene = scene.index,
       .lightCount = count,

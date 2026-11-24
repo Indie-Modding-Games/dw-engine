@@ -312,7 +312,9 @@ repite `--check-system` con `VK_DRIVER_FILES` (y `VK_ICD_FILENAMES`) apuntando a
 Windows, `PATH`. Si así sirve, arranca el juego con ese mismo entorno. Va más lento (lo dibuja el procesador),
 pero el juego arranca en una máquina virtual o con un controlador viejo o ausente. Los scripts del paquete
 (`dwe` en Linux, `dwe.cmd` en Windows) hacen lo mismo para quien juega sin lanzador. Un equipo cuyo único Vulkan
-es uno por software del sistema (llvmpipe) también ve el aviso, sin cambiar de controlador.
+es uno por software del sistema (llvmpipe) también ve el aviso, sin cambiar de controlador. Dentro del juego sigue el
+[modo software](../../architecture/software-mode.md): un ajuste ligero, calidad automática, su propio aviso y los
+requisitos mínimos medidos con lavapipe.
 
 **Interruptores gráficos.** Ajustes › General › Requisitos del equipo tiene dos interruptores, apagados por defecto,
 que añaden un flag del juego a cada arranque:

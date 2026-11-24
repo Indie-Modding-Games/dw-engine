@@ -62,6 +62,9 @@ constexpr std::string_view VividColorsKey = "vivid_colors";
 constexpr std::string_view SceneryQualityKey = "scenery_quality";
 constexpr std::string_view AntialiasingKey = "antialiasing";
 constexpr std::string_view TextureFilterKey = "texture_filter";
+constexpr std::string_view RenderScaleKey = "render_scale";
+constexpr std::string_view FrameLimitKey = "frame_limit";
+constexpr std::string_view AutoQualityKey = "auto_quality";
 constexpr std::string_view WeatherKey = "weather";
 constexpr std::string_view SeasonsKey = "seasons";
 constexpr std::string_view HdSceneryKey = "hd_scenery";
@@ -231,6 +234,15 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* filter = tree->find(TextureFilterKey)) {
       settings.textureFilter = reader.text(*filter);
+    }
+    if (const core::YamlNode* scale = tree->find(RenderScaleKey)) {
+      settings.renderScale = reader.text(*scale);
+    }
+    if (const core::YamlNode* limit = tree->find(FrameLimitKey)) {
+      settings.frameLimit = reader.text(*limit);
+    }
+    if (const core::YamlNode* tuning = tree->find(AutoQualityKey)) {
+      settings.autoQuality = reader.boolean(*tuning);
     }
     if (const core::YamlNode* weather = tree->find(WeatherKey)) {
       settings.weather = reader.boolean(*weather);
@@ -470,6 +482,16 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   }
   if (settings.textureFilter) {
     root.set(std::string{TextureFilterKey}, core::YamlNode::scalar(*settings.textureFilter));
+  }
+  if (settings.renderScale) {
+    root.set(std::string{RenderScaleKey}, core::YamlNode::scalar(*settings.renderScale));
+  }
+  if (settings.frameLimit) {
+    root.set(std::string{FrameLimitKey}, core::YamlNode::scalar(*settings.frameLimit));
+  }
+  if (settings.autoQuality) {
+    root.set(std::string{AutoQualityKey},
+             core::YamlNode::scalar(*settings.autoQuality ? "true" : "false"));
   }
   if (settings.weather) {
     root.set(std::string{WeatherKey}, core::YamlNode::scalar(*settings.weather ? "true" : "false"));

@@ -1,6 +1,7 @@
 #include <dwe/core/log.hpp>
 #include <dwe/render/camera.hpp>
 #include <dwe/render/renderer.hpp>
+#include <dwe/render/scene_grade.hpp>
 #include <dwe/render/screen_target.hpp>
 #include <dwe/render/upload_budget.hpp>
 #include <dwe/rhi/command_list.hpp>
@@ -82,6 +83,19 @@ Renderer::Renderer(rhi::Device& device, std::unique_ptr<rhi::BindlessTable> bind
 // The images go to Device::destroyLater, like the table and its set: nothing here waits for the
 // GPU.
 Renderer::~Renderer() = default;
+
+Drawer* Renderer::stretchDrawer() {
+  if (!stretch_ && !stretchFailed_) {
+    auto made = SceneGrade::create(*this);
+    if (!made) {
+      core::logError("renderer: no render scale without a post pass ({})", made.error().message);
+      stretchFailed_ = true;
+      return nullptr;
+    }
+    stretch_ = std::move(*made);
+  }
+  return stretch_.get();
+}
 
 const rhi::Image* Renderer::depthTarget(rhi::Extent extent) {
   if (depth_ && depth_->extent() == extent) {
@@ -181,14 +195,22 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
   fitScreenTargets(extent);
 
   rhi::CommandList commands{begun->commands, *bindless_};
-  PrepareContext prepare{upload_, extent};
-  for (const std::span<Drawer* const> drawers : {frame.scene, frame.ui}) {
-    for (Drawer* drawer : drawers) {
-      drawer->prepare(prepare);
-    }
+  const rhi::Extent sceneExtent = sceneTargetExtent(extent, frame.sceneScale);
+  Drawer* post = frame.post;
+  if (post == nullptr && sceneExtent != extent) {
+    post = stretchDrawer();
   }
-  if (frame.post != nullptr) {
-    frame.post->prepare(prepare);
+  const rhi::Extent drawnExtent = post != nullptr ? sceneExtent : extent;
+  PrepareContext scenePrepare{upload_, drawnExtent};
+  for (Drawer* drawer : frame.scene) {
+    drawer->prepare(scenePrepare);
+  }
+  PrepareContext prepare{upload_, extent};
+  for (Drawer* drawer : frame.ui) {
+    drawer->prepare(prepare);
+  }
+  if (post != nullptr) {
+    post->prepare(prepare);
   }
   for (const TextureScene& scene : frame.textureScenes) {
     const auto target = std::ranges::find(sceneTargets_, scene.target, &SceneTarget::color);
@@ -208,14 +230,17 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
 
   // Multisampled, the scene draws into targets of its own, averaged into the frame (or the post
   // pass's texture) at the end of its pass.
-  const bool multisampled = multisampling_ && multisampledTargets(extent);
-  const rhi::Image* depth = multisampled ? &*msaaDepth_ : depthTarget(extent);
+  const bool multisampled = multisampling_ && multisampledTargets(drawnExtent);
+  const rhi::Image* depth = multisampled ? &*msaaDepth_ : depthTarget(drawnExtent);
   const rhi::Viewport viewport = fullViewport(extent);
   const rhi::Rect scissor{.x = 0, .y = 0, .width = extent.width, .height = extent.height};
+  const rhi::Viewport sceneViewport = fullViewport(drawnExtent);
+  const rhi::Rect sceneScissor{
+      .x = 0, .y = 0, .width = drawnExtent.width, .height = drawnExtent.height};
 
   // With a post drawer the scene goes into a texture, which the post pass draws into the window.
   const rhi::Image* sceneColor =
-      frame.post != nullptr && depth != nullptr ? sceneColorTarget(extent) : nullptr;
+      post != nullptr && depth != nullptr ? sceneColorTarget(drawnExtent) : nullptr;
   if (depth != nullptr) {
     commands.prepareDepthTarget(*depth);
   }
@@ -227,7 +252,7 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
     commands.prepareColorTarget(*msaaColor_);
   }
   commands.beginRendering(
-      {.extent = extent,
+      {.extent = sceneColor != nullptr ? drawnExtent : extent,
        .color = {.view = multisampled ? msaaColor_->view() : frameView,
                  .clear = frame.clearColor,
                  .resolve = multisampled ? frameView : VK_NULL_HANDLE},
@@ -236,10 +261,11 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
   // Without a depth target the scene's pipelines cannot draw; the frame still clears and shows the
   // UI.
   if (depth != nullptr) {
-    DrawContext context{commands, upload_, Pass::Scene, extent};
+    const bool scaled = sceneColor != nullptr;
+    DrawContext context{commands, upload_, Pass::Scene, scaled ? drawnExtent : extent};
     for (Drawer* drawer : frame.scene) {
-      commands.setViewport(viewport);
-      commands.setScissor(scissor);
+      commands.setViewport(scaled ? sceneViewport : viewport);
+      commands.setScissor(scaled ? sceneScissor : scissor);
       drawer->draw(context);
     }
   }
@@ -249,10 +275,10 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
     commands.finishSampledTarget(*sceneColor);
     commands.beginRendering(
         {.extent = extent, .color = {.view = begun->view, .clear = frame.clearColor}, .depth = {}});
-    DrawContext context{commands, upload_, Pass::Post, extent, *sceneColor_};
+    DrawContext context{commands, upload_, Pass::Post, extent, *sceneColor_, drawnExtent};
     commands.setViewport(viewport);
     commands.setScissor(scissor);
-    frame.post->draw(context);
+    post->draw(context);
     commands.endRendering();
   }
 

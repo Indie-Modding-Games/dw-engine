@@ -59,6 +59,7 @@ struct FrameDesc {
   // a texture the window's size instead of the window, and this drawer draws that texture
   // (DrawContext::sceneColor) into the window before the UI. The field's light and colour pass.
   Drawer* post = nullptr;
+  float sceneScale = 1.0F;
 };
 
 // The render foundation (docs/architecture/render.md): owns the bindless table, the upload ring,
@@ -223,6 +224,9 @@ private:
   TextureId white_;
   std::vector<PendingWrite> pending_;
   std::function<void(core::Result<rhi::CapturedImage>)> captureDone_;
+  std::unique_ptr<Drawer> stretch_;
+  bool stretchFailed_ = false;
+  Drawer* stretchDrawer();
 };
 
 } // namespace dwe::render

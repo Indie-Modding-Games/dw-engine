@@ -3,6 +3,7 @@
 #include <dwe/core/log.hpp>
 
 #include <ranges>
+#include <string>
 #include <utility>
 #include <variant>
 
@@ -118,6 +119,52 @@ std::string_view textureFilterName(TextureFilter filter) {
   return QualityUpscaled;
 }
 
+std::optional<int> parseRenderScale(std::string_view name) {
+  for (const int percent : {100, 75, 50}) {
+    if (name == renderScaleName(percent)) {
+      return percent;
+    }
+  }
+  return std::nullopt;
+}
+
+std::string renderScaleName(int percent) {
+  return std::to_string(percent);
+}
+
+std::optional<int> parseFrameLimit(std::string_view name) {
+  if (name == "off") {
+    return 0;
+  }
+  for (const int fps : {30, 60}) {
+    if (name == frameLimitName(fps)) {
+      return fps;
+    }
+  }
+  return std::nullopt;
+}
+
+std::string frameLimitName(int framesPerSecond) {
+  return framesPerSecond > 0 ? std::to_string(framesPerSecond) : std::string{"off"};
+}
+
+GraphicsKnobs unchosenKnobs(const UserSettings& settings) {
+  GraphicsKnobs knobs;
+  const auto unless = [&knobs](bool chosen, GraphicsKnob knob) {
+    knobs.set(knobIndex(knob), !chosen);
+  };
+  unless(settings.shadows.has_value(), GraphicsKnob::Shadows);
+  unless(settings.enhancedLighting.has_value(), GraphicsKnob::EnhancedLighting);
+  unless(settings.vividColors.has_value(), GraphicsKnob::VividColors);
+  unless(settings.sceneryQuality.has_value(), GraphicsKnob::SceneryQuality);
+  unless(settings.antialiasing.has_value(), GraphicsKnob::Antialiasing);
+  unless(settings.textureFilter.has_value(), GraphicsKnob::TextureFilter);
+  unless(settings.renderScale.has_value(), GraphicsKnob::RenderScale);
+  unless(settings.frameLimit.has_value(), GraphicsKnob::FrameLimit);
+  unless(settings.weather.has_value(), GraphicsKnob::Weather);
+  return knobs;
+}
+
 GraphicsOptions startGraphicsOptions(const UserSettings& settings) {
   GraphicsOptions options;
   if (settings.shadows) {
@@ -146,6 +193,23 @@ GraphicsOptions startGraphicsOptions(const UserSettings& settings) {
                        *settings.textureFilter);
     }
   }
+  if (settings.renderScale) {
+    if (const auto scale = parseRenderScale(*settings.renderScale)) {
+      options.renderScale = *scale;
+    } else {
+      core::logWarning(messages::UnknownSavedGraphicsValue, RenderScaleSetting,
+                       *settings.renderScale);
+    }
+  }
+  if (settings.frameLimit) {
+    if (const auto limit = parseFrameLimit(*settings.frameLimit)) {
+      options.frameLimit = *limit;
+    } else {
+      core::logWarning(messages::UnknownSavedGraphicsValue, FrameLimitSetting,
+                       *settings.frameLimit);
+    }
+  }
+  options.autoQuality = settings.autoQuality.value_or(false);
   return options;
 }
 
@@ -185,6 +249,12 @@ std::optional<GraphicsOptions> withGraphicsFlag(GraphicsOptions options, std::st
       options.antialiasing = *onOff(value);
     } else if (key == "textures" && parseTextureFilter(value)) {
       options.textureFilter = *parseTextureFilter(value);
+    } else if (key == "scale" && parseRenderScale(value)) {
+      options.renderScale = *parseRenderScale(value);
+    } else if (key == "fps" && parseFrameLimit(value)) {
+      options.frameLimit = *parseFrameLimit(value);
+    } else if (key == "auto" && onOff(value)) {
+      options.autoQuality = *onOff(value);
     } else {
       return std::nullopt;
     }
@@ -203,18 +273,21 @@ bool GraphicsChanger::handle(const ui::UiCommand& command, ui::Ui& ui) {
     if (const auto mode = name == nullptr ? std::nullopt : parseShadowMode(*name)) {
       options_.shadows = *mode;
       settings_->shadows = std::string{shadowModeName(*mode)};
+      release(GraphicsKnob::Shadows);
       save();
     }
   } else if (command.name == EnhancedLightingSetting) {
     if (const bool* on = std::get_if<bool>(&command.value)) {
       options_.enhancedLighting = *on;
       settings_->enhancedLighting = *on;
+      release(GraphicsKnob::EnhancedLighting);
       save();
     }
   } else if (command.name == VividColorsSetting) {
     if (const bool* on = std::get_if<bool>(&command.value)) {
       options_.vividColors = *on;
       settings_->vividColors = *on;
+      release(GraphicsKnob::VividColors);
       save();
     }
   } else if (command.name == SceneryQualitySetting) {
@@ -222,12 +295,14 @@ bool GraphicsChanger::handle(const ui::UiCommand& command, ui::Ui& ui) {
     if (const auto quality = name == nullptr ? std::nullopt : parseSceneryQuality(*name)) {
       options_.sceneryQuality = *quality;
       settings_->sceneryQuality = std::string{sceneryQualityName(*quality)};
+      release(GraphicsKnob::SceneryQuality);
       save();
     }
   } else if (command.name == AntialiasingSetting) {
     if (const bool* on = std::get_if<bool>(&command.value)) {
       options_.antialiasing = *on;
       settings_->antialiasing = *on;
+      release(GraphicsKnob::Antialiasing);
       save();
     }
   } else if (command.name == TextureFilterSetting) {
@@ -235,6 +310,29 @@ bool GraphicsChanger::handle(const ui::UiCommand& command, ui::Ui& ui) {
     if (const auto filter = name == nullptr ? std::nullopt : parseTextureFilter(*name)) {
       options_.textureFilter = *filter;
       settings_->textureFilter = std::string{textureFilterName(*filter)};
+      release(GraphicsKnob::TextureFilter);
+      save();
+    }
+  } else if (command.name == RenderScaleSetting) {
+    const std::string* name = std::get_if<std::string>(&command.value);
+    if (const auto scale = name == nullptr ? std::nullopt : parseRenderScale(*name)) {
+      options_.renderScale = *scale;
+      settings_->renderScale = renderScaleName(*scale);
+      release(GraphicsKnob::RenderScale);
+      save();
+    }
+  } else if (command.name == FrameLimitSetting) {
+    const std::string* name = std::get_if<std::string>(&command.value);
+    if (const auto limit = name == nullptr ? std::nullopt : parseFrameLimit(*name)) {
+      options_.frameLimit = *limit;
+      settings_->frameLimit = frameLimitName(*limit);
+      release(GraphicsKnob::FrameLimit);
+      save();
+    }
+  } else if (command.name == AutoQualitySetting) {
+    if (const bool* on = std::get_if<bool>(&command.value)) {
+      options_.autoQuality = *on;
+      settings_->autoQuality = *on;
       save();
     }
   } else {
@@ -251,8 +349,40 @@ void GraphicsChanger::publish(ui::Ui& ui) const {
   ui.setSetting(SceneryQualitySetting, std::string{sceneryQualityName(options_.sceneryQuality)});
   ui.setSetting(AntialiasingSetting, options_.antialiasing);
   ui.setSetting(TextureFilterSetting, std::string{textureFilterName(options_.textureFilter)});
+  ui.setSetting(RenderScaleSetting, renderScaleName(options_.renderScale));
+  ui.setSetting(FrameLimitSetting, frameLimitName(options_.frameLimit));
+  ui.setSetting(AutoQualitySetting, options_.autoQuality);
   // The skins' pictures that may be smoothed (the title's) go through the models' upscaler with it.
   ui.setSmoothPictures(options_.textureFilter == TextureFilter::Upscaled);
+}
+
+void GraphicsChanger::applyAutomatic(const GraphicsOptions& tuned, ui::Ui& ui) {
+  const auto take = [this](GraphicsKnob knob) { return automatic_.test(knobIndex(knob)); };
+  if (take(GraphicsKnob::Shadows)) {
+    options_.shadows = tuned.shadows;
+  }
+  if (take(GraphicsKnob::EnhancedLighting)) {
+    options_.enhancedLighting = tuned.enhancedLighting;
+  }
+  if (take(GraphicsKnob::VividColors)) {
+    options_.vividColors = tuned.vividColors;
+  }
+  if (take(GraphicsKnob::SceneryQuality)) {
+    options_.sceneryQuality = tuned.sceneryQuality;
+  }
+  if (take(GraphicsKnob::Antialiasing)) {
+    options_.antialiasing = tuned.antialiasing;
+  }
+  if (take(GraphicsKnob::TextureFilter)) {
+    options_.textureFilter = tuned.textureFilter;
+  }
+  if (take(GraphicsKnob::RenderScale)) {
+    options_.renderScale = tuned.renderScale;
+  }
+  if (take(GraphicsKnob::FrameLimit)) {
+    options_.frameLimit = tuned.frameLimit;
+  }
+  publish(ui);
 }
 
 void GraphicsChanger::save() {

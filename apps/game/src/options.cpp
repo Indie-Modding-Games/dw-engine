@@ -14,6 +14,7 @@
 
 #include "graphics_options.hpp"
 #include "messages.hpp"
+#include "software_mode.hpp"
 
 namespace dwe::app {
 namespace {
@@ -245,6 +246,10 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
   if (argument == "--text-font") {
     options.textFont = ui::textFontNamed(value);
     return options.textFont.has_value();
+  }
+  if (argument == "--software-mode") {
+    options.softwareMode = std::string{value};
+    return parseSoftwareMode(value).has_value();
   }
   if (argument == "--graphics") {
     options.graphics = std::string{value};

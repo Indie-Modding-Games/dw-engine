@@ -348,6 +348,31 @@ local descriptors = {
     original = true,
   },
   -- Graphics tab.
+  {
+    name = "auto_quality",
+    label = "pause_menu.auto_quality",
+    default = false,
+    tab = "graphics",
+    help = "pause_menu.help.auto_quality",
+  },
+  {
+    name = "render_scale",
+    label = "pause_menu.render_scale",
+    values = { "100", "75", "50" },
+    texts = "pause_menu.render_scale",
+    default = "100",
+    tab = "graphics",
+    help = "pause_menu.help.render_scale",
+  },
+  {
+    name = "frame_limit",
+    label = "pause_menu.frame_limit",
+    values = { "off", "60", "30" },
+    texts = "pause_menu.frame_limit",
+    default = "off",
+    tab = "graphics",
+    help = "pause_menu.help.frame_limit",
+  },
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).
   {
