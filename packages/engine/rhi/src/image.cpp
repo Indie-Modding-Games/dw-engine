@@ -9,6 +9,8 @@
 #include <array>
 #include <cstring>
 #include <format>
+#include <optional>
+#include <span>
 #include <utility>
 
 #include "vulkan_util.hpp"
@@ -67,6 +69,11 @@ core::Result<void> checkImageWrite(Extent extent, Format format, const Rect& reg
 }
 
 core::Result<Image> Image::create(Device& device, const ImageDesc& desc) {
+  return make(device, desc, 0);
+}
+
+core::Result<Image> Image::make(Device& device, const ImageDesc& desc,
+                                VkImageUsageFlags extraUsage) {
   const NativeHandles gpu = device.nativeHandles();
   VkPhysicalDeviceProperties properties{};
   vkGetPhysicalDeviceProperties(gpu.physicalDevice, &properties);
@@ -101,7 +108,7 @@ core::Result<Image> Image::create(Device& device, const ImageDesc& desc) {
       .arrayLayers = 1,
       .samples = static_cast<VkSampleCountFlagBits>(desc.samples),
       .tiling = VK_IMAGE_TILING_OPTIMAL,
-      .usage = toVulkan(desc.usage, mipmapped),
+      .usage = toVulkan(desc.usage, mipmapped) | extraUsage,
       .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
       .queueFamilyIndexCount = 0,
       .pQueueFamilyIndices = nullptr,
@@ -154,6 +161,38 @@ core::Result<Image> Image::createTexture(Device& device, Extent extent,
                                    pixels.size());
       !valid) {
     return std::unexpected{valid.error()};
+  }
+  if (const auto host = mipmapped ? std::nullopt
+                                  : device.hostImageCopy(toVulkan(Format::Rgba8Unorm),
+                                                         toVulkan(ImageUsage::Sampled, false))) {
+    auto image = make(device,
+                      {.extent = extent,
+                       .format = Format::Rgba8Unorm,
+                       .usage = ImageUsage::Sampled,
+                       .initialize = false},
+                      VK_IMAGE_USAGE_HOST_TRANSFER_BIT);
+    if (!image) {
+      return image;
+    }
+    const VkMemoryToImageCopy region{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY,
+        .pNext = nullptr,
+        .pHostPointer = pixels.data(),
+        .memoryRowLength = 0,
+        .memoryImageHeight = 0,
+        .imageSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                             .mipLevel = 0,
+                             .baseArrayLayer = 0,
+                             .layerCount = 1},
+        .imageOffset = {.x = 0, .y = 0, .z = 0},
+        .imageExtent = {.width = extent.width, .height = extent.height, .depth = 1},
+    };
+    if (auto written = hostWriteImage(device.nativeHandles().device, *host, image->image_, 1,
+                                      std::span{&region, 1});
+        !written) {
+      return std::unexpected{written.error()};
+    }
+    return image;
   }
   auto image = create(device, {.extent = extent,
                                .format = Format::Rgba8Unorm,

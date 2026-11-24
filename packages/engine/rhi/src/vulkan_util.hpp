@@ -7,7 +7,9 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstdint>
 #include <functional>
+#include <span>
 #include <string_view>
 
 namespace dwe::rhi {
@@ -43,6 +45,12 @@ void recordImageClear(VkCommandBuffer commands, VkImage image);
 // from it.
 void recordImageWrite(VkCommandBuffer commands, VkImage image, VkBuffer source, VkDeviceSize offset,
                       const Rect& region, Extent extent = {}, std::uint32_t mipLevels = 1);
+
+// Moves a fresh color image to the shader read layout and fills it from the CPU (Vulkan 1.4 host
+// image copy), with no command buffer or staging buffer. The GPU must not be using the image.
+core::Result<void> hostWriteImage(VkDevice device, const HostImageCopy& host, VkImage image,
+                                  std::uint32_t mipLevels,
+                                  std::span<const VkMemoryToImageCopy> regions);
 
 // Records commands with record, submits them and waits for the GPU to finish them. For uploads
 // outside the frame: they come after every frame submitted so far in submission order, and before

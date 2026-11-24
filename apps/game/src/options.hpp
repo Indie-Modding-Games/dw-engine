@@ -129,6 +129,9 @@ struct Options {
   // compatibility mode; rhi/renderer_requirements.hpp). Off by default.
   bool compatibleMode = false;
 
+  // Set by --vulkan13: stays on the Vulkan 1.3 path when the driver offers 1.4 (debugging).
+  bool forceVulkan13 = false;
+
   // Set by --low-performance: starts the run with the potato preset (every heavy graphics option
   // off, graphics_options.hpp). The launcher's low-performance mode. Off by default.
   bool lowPerformance = false;
@@ -182,7 +185,7 @@ inline constexpr std::string_view Usage =
     "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--chibi] [--start <map>[,<exit>]] [--time day|dusk|night] [--weather <kind>] [--season <season>] [--lang "
     "<language>] "
     "[--text-font modern|original] [--ui-skin <id>] [--safe-ui] [--graphics <option>=<value>[,...]] "
-    "[--compatible] [--low-performance] "
+    "[--compatible] [--vulkan13] [--low-performance] "
     "[--new-game | --load <slot>] "
     "[--new-game-chain original|seeded] [--clock-speed <x>] "
     "[--seed <n>] [--original-rolls <state>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] [--trace <file>] "
@@ -202,6 +205,7 @@ inline constexpr std::string_view CheckSystemOption = "--check-system";
 inline constexpr std::string_view TuningOption = "--tuning";
 inline constexpr std::string_view SafeUiOption = "--safe-ui";
 inline constexpr std::string_view CompatibleOption = "--compatible";
+inline constexpr std::string_view Vulkan13Option = "--vulkan13";
 inline constexpr std::string_view LowPerformanceOption = "--low-performance";
 // Accepted and ignored: launchers up to 0.1.13 may still pass it.
 inline constexpr std::string_view RetiredRdna2SafeOption = "--rdna2-safe";

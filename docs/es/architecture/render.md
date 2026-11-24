@@ -255,7 +255,9 @@ de su origen), no por triángulo. Cómo pinta luz, transparencias y caras está 
 
 Vulkan 1.3 con dynamic rendering y synchronization2; de 1.2, descriptor indexing (array en runtime, partially bound,
 update-after-bind y update-unused-while-pending de imágenes, índices no uniformes), buffer device address y layouts
-de profundidad separados; filtrado anisótropo ([ADR 0019](../adr/0019-bindless-descriptors.md)). Swapchain
+de profundidad separados; filtrado anisótropo ([ADR 0019](../adr/0019-bindless-descriptors.md)). Cuando el loader y
+la GPU informan Vulkan 1.4 el dispositivo se crea en la ruta 1.4, que sube las texturas con copia desde el host donde
+el controlador la ofrece; `--vulkan13` mantiene la ruta 1.3 ([rhi](../modules/engine/rhi.md)). Swapchain
 `B8G8R8A8_UNORM` o `R8G8B8A8_UNORM`, con la mezcla en espacio gamma. Profundidad: `D32_SFLOAT`, o `X8_D24` o `D16` si
 no hay.
 
