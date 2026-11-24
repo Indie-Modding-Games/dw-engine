@@ -289,7 +289,8 @@ core::Result<Texture> Texture::create(Device& device, const TextureDesc& desc) {
   const auto host = device.hostImageCopy(format, VK_IMAGE_USAGE_SAMPLED_BIT);
   const VkImageUsageFlags usage =
       VK_IMAGE_USAGE_SAMPLED_BIT |
-      VkImageUsageFlags{host ? VK_IMAGE_USAGE_HOST_TRANSFER_BIT : VK_IMAGE_USAGE_TRANSFER_DST_BIT};
+      static_cast<VkImageUsageFlags>(host ? VK_IMAGE_USAGE_HOST_TRANSFER_BIT
+                                          : VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
   const VkImageCreateInfo imageInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                                     .pNext = nullptr,
