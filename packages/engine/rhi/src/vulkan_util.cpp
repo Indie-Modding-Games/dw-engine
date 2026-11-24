@@ -205,6 +205,35 @@ void recordImageWrite(VkCommandBuffer commands, VkImage image, VkBuffer source, 
                   VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
 }
 
+core::Result<void> hostWriteImage(VkDevice device, const HostImageCopy& host, VkImage image,
+                                  std::uint32_t mipLevels,
+                                  std::span<const VkMemoryToImageCopy> regions) {
+  VkHostImageLayoutTransitionInfo transition{};
+  transition.sType = VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO;
+  transition.image = image;
+  transition.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  transition.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  transition.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                 .baseMipLevel = 0,
+                                 .levelCount = mipLevels,
+                                 .baseArrayLayer = 0,
+                                 .layerCount = 1};
+  if (gpuCheck("vkTransitionImageLayout", host.transitionLayout(device, 1, &transition)) !=
+      VK_SUCCESS) {
+    return core::fail("could not prepare an image for a host copy");
+  }
+  VkCopyMemoryToImageInfo copy{};
+  copy.sType = VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO;
+  copy.dstImage = image;
+  copy.dstImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  copy.regionCount = static_cast<std::uint32_t>(regions.size());
+  copy.pRegions = regions.data();
+  if (gpuCheck("vkCopyMemoryToImage", host.copyToImage(device, &copy)) != VK_SUCCESS) {
+    return core::fail("could not copy texels into an image from the CPU");
+  }
+  return {};
+}
+
 namespace {
 
 // The one-off command pool and fence of a submission, destroyed when it ends.

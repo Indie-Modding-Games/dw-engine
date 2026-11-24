@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "transition.hpp"
+#include "vulkan_util.hpp"
 
 namespace dwe::rhi {
 namespace {
@@ -228,6 +229,29 @@ core::Result<void> copyToImage(const NativeHandles& gpu, const TextureDesc& desc
   return {};
 }
 
+core::Result<void> hostCopyToImage(const NativeHandles& gpu, const HostImageCopy& host,
+                                   const TextureDesc& desc, VkImage image) {
+  std::vector<VkMemoryToImageCopy> regions;
+  regions.reserve(desc.levels.size());
+  for (std::uint32_t level = 0; level < desc.levels.size(); ++level) {
+    regions.push_back(VkMemoryToImageCopy{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY,
+        .pNext = nullptr,
+        .pHostPointer = desc.levels[level].data(),
+        .memoryRowLength = 0,
+        .memoryImageHeight = 0,
+        .imageSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                             .mipLevel = level,
+                             .baseArrayLayer = 0,
+                             .layerCount = 1},
+        .imageOffset = {.x = 0, .y = 0, .z = 0},
+        .imageExtent = levelExtent(desc.width, desc.height, level),
+    });
+  }
+  return hostWriteImage(gpu.device, host, image, static_cast<std::uint32_t>(regions.size()),
+                        regions);
+}
+
 } // namespace
 
 core::Result<Texture> Texture::create(Device& device, const TextureDesc& desc) {
@@ -262,6 +286,11 @@ core::Result<Texture> Texture::create(Device& device, const TextureDesc& desc) {
   Texture texture{device, desc.width, desc.height};
   const VkFormat format = vulkanFormat(desc.format);
   const auto levelCount = static_cast<std::uint32_t>(desc.levels.size());
+  const auto host = device.hostImageCopy(format, VK_IMAGE_USAGE_SAMPLED_BIT);
+  const VkImageUsageFlags usage =
+      VK_IMAGE_USAGE_SAMPLED_BIT |
+      static_cast<VkImageUsageFlags>(host ? VK_IMAGE_USAGE_HOST_TRANSFER_BIT
+                                          : VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
   const VkImageCreateInfo imageInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                                     .pNext = nullptr,
@@ -273,8 +302,7 @@ core::Result<Texture> Texture::create(Device& device, const TextureDesc& desc) {
                                     .arrayLayers = 1,
                                     .samples = VK_SAMPLE_COUNT_1_BIT,
                                     .tiling = VK_IMAGE_TILING_OPTIMAL,
-                                    .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                                             VK_IMAGE_USAGE_SAMPLED_BIT,
+                                    .usage = usage,
                                     .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
                                     .queueFamilyIndexCount = 0,
                                     .pQueueFamilyIndices = nullptr,
@@ -291,7 +319,9 @@ core::Result<Texture> Texture::create(Device& device, const TextureDesc& desc) {
   texture.memory_ = *memory;
   vkBindImageMemory(gpu.device, texture.image_, texture.memory_, 0);
 
-  if (auto copied = copyToImage(gpu, desc, texture.image_); !copied) {
+  if (auto copied = host ? hostCopyToImage(gpu, *host, desc, texture.image_)
+                         : copyToImage(gpu, desc, texture.image_);
+      !copied) {
     return std::unexpected{copied.error()};
   }
 

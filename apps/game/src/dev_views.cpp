@@ -83,7 +83,8 @@ int runDevView(const Options& options) {
     core::logError("{}", window.error().message);
     return EXIT_FAILURE;
   }
-  auto device = rhi::Device::create(*window, {.validation = Validation, .vsync = true});
+  auto device = rhi::Device::create(
+      *window, {.validation = Validation, .vsync = true, .forceVulkan13 = options.forceVulkan13});
   if (!device) {
     core::logError("{}", device.error().message);
     return EXIT_FAILURE;

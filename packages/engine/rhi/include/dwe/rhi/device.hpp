@@ -2,6 +2,7 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/platform/window.hpp>
+#include <dwe/rhi/vulkan_path.hpp>
 
 #include <vulkan/vulkan.h>
 
@@ -30,6 +31,13 @@ struct DeviceDesc {
   // extensions instead of requiring Vulkan 1.3 core (the launcher's compatibility mode,
   // renderer_requirements.hpp). Off by default.
   bool compatibleMode = false;
+  // Stays on the Vulkan 1.3 path even when the driver offers 1.4 (--vulkan13).
+  bool forceVulkan13 = false;
+};
+
+struct HostImageCopy {
+  PFN_vkTransitionImageLayout transitionLayout;
+  PFN_vkCopyMemoryToImage copyToImage;
 };
 
 // One frame being recorded: its command buffer and the swapchain image it draws into.
@@ -108,6 +116,12 @@ public:
   [[nodiscard]] bool supportsBc7() const;
 
   [[nodiscard]] NativeHandles nativeHandles() const;
+
+  [[nodiscard]] VulkanPath vulkanPath() const;
+  // The Vulkan 1.4 host copy entry points, when images of this format and usage can be written
+  // from the CPU without a staging buffer.
+  [[nodiscard]] std::optional<HostImageCopy> hostImageCopy(VkFormat format,
+                                                           VkImageUsageFlags usage) const;
 
   // Whether the validation layer is on: requested in DeviceDesc and installed.
   [[nodiscard]] bool validationEnabled() const;

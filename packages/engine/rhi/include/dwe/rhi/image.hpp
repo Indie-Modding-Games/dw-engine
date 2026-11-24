@@ -79,6 +79,9 @@ public:
   [[nodiscard]] std::uint32_t mipLevels() const { return mipLevels_; }
 
 private:
+  static core::Result<Image> make(Device& device, const ImageDesc& desc,
+                                  VkImageUsageFlags extraUsage);
+
   Image(Device& device, Extent extent, Format format, std::uint32_t mipLevels)
       : device_(&device), extent_(extent), format_(format), mipLevels_(mipLevels) {}
 

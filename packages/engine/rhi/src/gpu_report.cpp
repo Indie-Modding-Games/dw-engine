@@ -317,8 +317,9 @@ void gpuReportDevice(const Device& device, GpuDiagnostics diagnostics) {
   const std::string gpuText =
       std::format("{} (vendor {:#06x}, {})", gpu.name, gpu.vendorId, gpuKindName(gpu.kind));
   const std::string driverText =
-      std::format("{}; api {}.{}.{}", gpu.driver, VK_API_VERSION_MAJOR(gpu.apiVersion),
-                  VK_API_VERSION_MINOR(gpu.apiVersion), VK_API_VERSION_PATCH(gpu.apiVersion));
+      std::format("{}; api {}.{}.{}; {} path", gpu.driver, VK_API_VERSION_MAJOR(gpu.apiVersion),
+                  VK_API_VERSION_MINOR(gpu.apiVersion), VK_API_VERSION_PATCH(gpu.apiVersion),
+                  vulkanPathName(device.vulkanPath()));
   const std::string limitsText = std::format(
       "max image {}, max anisotropy {}, BC7 {}, bindless images up to {}; validation {}",
       limits.maxImageDimension2D, limits.maxSamplerAnisotropy, device.supportsBc7() ? "yes" : "no",

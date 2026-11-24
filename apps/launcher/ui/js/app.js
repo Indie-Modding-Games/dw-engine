@@ -867,7 +867,7 @@ function registerBuiltIns() {
       const kind = graphics?.graphics ?? "unknown";
       const gpu = graphics?.gpu;
       const text = {
-        hardware: t("req.gpuHardware", { name: gpu?.name ?? "", driver: gpu?.driver ?? "" }),
+        hardware: t("req.gpuHardware", { name: gpu?.name ?? "", driver: gpu?.api ? `${gpu.driver}, Vulkan ${gpu.api}` : gpu?.driver ?? "" }),
         software: t("req.gpuSoftware", { gpu: gpuName(graphics) }),
         fallback: t("req.gpuFallback", { gpu: gpuName(graphics) }),
         blocked: t("req.gpuBlocked", { gpu: gpuName(graphics) }),

@@ -7,12 +7,15 @@
 #include <VkBootstrap.h>
 #include <vk_mem_alloc.h>
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <cstdint>
 #include <deque>
 #include <format>
 #include <functional>
+#include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -58,6 +61,65 @@ VkBool32 VKAPI_PTR logValidationMessage(VkDebugUtilsMessageSeverityFlagBitsEXT s
     core::logDebug("vulkan: {}", data->pMessage);
   }
   return VK_FALSE;
+}
+
+std::string versionText(std::uint32_t version) {
+  return std::format("{}.{}.{}", VK_API_VERSION_MAJOR(version), VK_API_VERSION_MINOR(version),
+                     VK_API_VERSION_PATCH(version));
+}
+
+VulkanSupport querySupport(VkPhysicalDevice physicalDevice, std::uint32_t instanceVersion,
+                           bool instance14) {
+  // NOLINTNEXTLINE(bugprone-invalid-enum-default-initialization): Vulkan fills it in.
+  VkPhysicalDeviceProperties properties{};
+  vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+  VulkanSupport support{.instanceVersion = instanceVersion,
+                        .deviceVersion = properties.apiVersion,
+                        .hostImageCopy = false,
+                        .hostCopyToShaderRead = false};
+  if (!instance14 || !versionAtLeast(properties.apiVersion, 1, 4)) {
+    return support;
+  }
+  VkPhysicalDeviceVulkan14Features features14{};
+  features14.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
+  VkPhysicalDeviceFeatures2 features{};
+  features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+  features.pNext = &features14;
+  vkGetPhysicalDeviceFeatures2(physicalDevice, &features);
+  support.hostImageCopy = features14.hostImageCopy == VK_TRUE;
+  if (!support.hostImageCopy) {
+    return support;
+  }
+  VkPhysicalDeviceHostImageCopyProperties hostCopy{};
+  hostCopy.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES;
+  VkPhysicalDeviceProperties2 properties2{};
+  properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+  properties2.pNext = &hostCopy;
+  vkGetPhysicalDeviceProperties2(physicalDevice, &properties2);
+  std::vector<VkImageLayout> dstLayouts(hostCopy.copyDstLayoutCount);
+  hostCopy.copySrcLayoutCount = 0;
+  hostCopy.pCopyDstLayouts = dstLayouts.data();
+  vkGetPhysicalDeviceProperties2(physicalDevice, &properties2);
+  dstLayouts.resize(hostCopy.copyDstLayoutCount);
+  support.hostCopyToShaderRead =
+      std::ranges::find(dstLayouts, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) != dstLayouts.end();
+  return support;
+}
+
+void logVulkanPath(const VulkanChoice& choice, const VulkanSupport& support,
+                   const DeviceDesc& desc) {
+  std::string why;
+  if (desc.compatibleMode) {
+    why = "compatible mode";
+  } else if (desc.forceVulkan13) {
+    why = "1.4 turned off by --vulkan13";
+  } else if (choice.path == VulkanPath::Core14) {
+    why = choice.hostImageCopy ? "host image copy on" : "host image copy off";
+  } else {
+    why = "the driver or loader is older than 1.4";
+  }
+  core::logInfo("vulkan: {} path ({}; device {}, loader {})", vulkanPathName(choice.path), why,
+                versionText(support.deviceVersion), versionText(support.instanceVersion));
 }
 
 struct FrameSlot {
@@ -114,6 +176,8 @@ struct Device::Impl {
   VkSurfaceKHR surface = VK_NULL_HANDLE;
   vkb::PhysicalDevice physicalDevice;
   vkb::Device device;
+  VulkanChoice vulkan;
+  HostImageCopy hostCopy{.transitionLayout = nullptr, .copyToImage = nullptr};
   VkQueue queue = VK_NULL_HANDLE;
   std::uint32_t queueFamily = 0;
   VmaAllocator allocator = VK_NULL_HANDLE;
@@ -301,15 +365,18 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
     return core::fail(std::format("Vulkan is not available: {}", SDL_GetError()));
   }
 
+  const auto system = vkb::SystemInfo::get_system_info(vulkanEntry());
+  const std::uint32_t loaderVersion = system ? system->instance_api_version : VK_API_VERSION_1_0;
+  const bool instance14 = wantsVulkan14(loaderVersion, desc.compatibleMode, desc.forceVulkan13);
   vkb::InstanceBuilder instanceBuilder{vulkanEntry()};
-  instanceBuilder.set_app_name("dwe").set_engine_name("dwe").require_api_version(1, 3, 0);
+  instanceBuilder.set_app_name("dwe").set_engine_name("dwe").require_api_version(
+      instance14 ? VK_API_VERSION_1_4 : VK_API_VERSION_1_3);
   for (Uint32 i = 0; i < extensionCount; ++i) {
     instanceBuilder.enable_extension(extensions[i]);
   }
   if (desc.validation) {
     // Builds without the validation feature, and players' machines, may lack the layer: run without
     // it.
-    const auto system = vkb::SystemInfo::get_system_info(vulkanEntry());
     impl->validation = system && system->validation_layers_available;
     if (impl->validation) {
       instanceBuilder.enable_validation_layers(true).set_debug_callback(logValidationMessage);
@@ -352,7 +419,16 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
         impl->physicalDevice.enable_extension_if_present(VK_EXT_DEVICE_FAULT_EXTENSION_NAME);
   }
 
-  auto device = vkb::DeviceBuilder{impl->physicalDevice}.build();
+  const VulkanSupport support = querySupport(impl->physicalDevice, loaderVersion, instance14);
+  impl->vulkan = chooseVulkanPath(support, desc.compatibleMode, desc.forceVulkan13);
+  VkPhysicalDeviceVulkan14Features features14{};
+  features14.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
+  features14.hostImageCopy = impl->vulkan.hostImageCopy ? VK_TRUE : VK_FALSE;
+  vkb::DeviceBuilder deviceBuilder{impl->physicalDevice};
+  if (impl->vulkan.path == VulkanPath::Core14) {
+    deviceBuilder.add_pNext(&features14);
+  }
+  auto device = deviceBuilder.build();
   if (!device) {
     return core::fail(
         std::format("could not create the Vulkan device: {}", device.error().message()));
@@ -366,6 +442,15 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   }
   impl->queue = queue.value();
   impl->queueFamily = queueFamily.value();
+  if (impl->vulkan.hostImageCopy) {
+    impl->hostCopy = {.transitionLayout = reinterpret_cast<PFN_vkTransitionImageLayout>(
+                          vkGetDeviceProcAddr(impl->device, "vkTransitionImageLayout")),
+                      .copyToImage = reinterpret_cast<PFN_vkCopyMemoryToImage>(
+                          vkGetDeviceProcAddr(impl->device, "vkCopyMemoryToImage"))};
+    impl->vulkan.hostImageCopy =
+        impl->hostCopy.transitionLayout != nullptr && impl->hostCopy.copyToImage != nullptr;
+  }
+  logVulkanPath(impl->vulkan, support, desc);
 
   VkBool32 canPresent = VK_FALSE;
   vkGetPhysicalDeviceSurfaceSupportKHR(impl->physicalDevice, impl->queueFamily, impl->surface,
@@ -376,7 +461,7 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
 
   VmaAllocatorCreateInfo allocatorInfo{};
   allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-  allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+  allocatorInfo.vulkanApiVersion = apiVersionOf(impl->vulkan.path);
   allocatorInfo.instance = impl->instance;
   allocatorInfo.physicalDevice = impl->physicalDevice;
   allocatorInfo.device = impl->device;
@@ -627,8 +712,46 @@ NativeHandles Device::nativeHandles() const {
       .queue = impl.queue,
       .swapchainFormat = impl.swapchain.image_format,
       .imageCount = static_cast<std::uint32_t>(impl.images.size()),
-      .apiVersion = VK_API_VERSION_1_3,
+      .apiVersion = apiVersionOf(impl.vulkan.path),
   };
+}
+
+VulkanPath Device::vulkanPath() const {
+  return impl_->vulkan.path;
+}
+
+std::optional<HostImageCopy> Device::hostImageCopy(VkFormat format, VkImageUsageFlags usage) const {
+  if (!impl_->vulkan.hostImageCopy) {
+    return std::nullopt;
+  }
+  // NOLINTNEXTLINE(bugprone-invalid-enum-default-initialization): Vulkan fills it in.
+  VkFormatProperties3 features3{};
+  features3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
+  VkFormatProperties2 features{};
+  features.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+  features.pNext = &features3;
+  vkGetPhysicalDeviceFormatProperties2(impl_->physicalDevice, format, &features);
+  const bool hostTransfer =
+      (features3.optimalTilingFeatures & VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT) != 0;
+
+  VkHostImageCopyDevicePerformanceQuery performance{};
+  performance.sType = VK_STRUCTURE_TYPE_HOST_IMAGE_COPY_DEVICE_PERFORMANCE_QUERY;
+  VkImageFormatProperties2 properties{};
+  properties.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+  properties.pNext = &performance;
+  VkPhysicalDeviceImageFormatInfo2 info{};
+  info.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2;
+  info.format = format;
+  info.type = VK_IMAGE_TYPE_2D;
+  info.tiling = VK_IMAGE_TILING_OPTIMAL;
+  info.usage = usage | VK_IMAGE_USAGE_HOST_TRANSFER_BIT;
+  const bool supported =
+      hostTransfer && vkGetPhysicalDeviceImageFormatProperties2(impl_->physicalDevice, &info,
+                                                                &properties) == VK_SUCCESS;
+  if (!hostCopyFormatUsable(hostTransfer, supported, performance.optimalDeviceAccess == VK_TRUE)) {
+    return std::nullopt;
+  }
+  return impl_->hostCopy;
 }
 
 } // namespace dwe::rhi

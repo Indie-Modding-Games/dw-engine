@@ -1,7 +1,7 @@
 # rhi
 
-The only module that talks to Vulkan 1.3 ([ADR 0003](../../adr/0003-vulkan-and-sdl3.md)). See
-[render.md](../../architecture/render.md) for the whole.
+The only module that talks to Vulkan: 1.3 at least, 1.4 when the driver has it
+([ADR 0003](../../adr/0003-vulkan-and-sdl3.md)). See [render.md](../../architecture/render.md) for the whole.
 
 - `Device`: GPU, queue, swapchain and frames with dynamic rendering (two in flight; `Frame::slot` says which). The
   swapchain is rebuilt by itself when the window size changes. What is released while the GPU may still be using it
@@ -28,6 +28,29 @@ The only module that talks to Vulkan 1.3 ([ADR 0003](../../adr/0003-vulkan-and-s
   push constants, buffers, draws).
 - `Texture`: uploads to the GPU an image with its mipmap chain, in 8-bit RGBA or in BC7 (today, the overlay's asset
   viewer); `Device::supportsBc7` says whether the GPU samples BC7.
+
+**Vulkan path** (`vulkan_path.hpp`). `Device::create` picks one of three paths and logs it with the versions it saw,
+for example `vulkan: Vulkan 1.4 path (host image copy on; device 1.4.318, loader 1.4.341)`:
+
+- **Vulkan 1.4**: the loader and the selected GPU both report 1.4. The instance asks for 1.4 and the device enables
+  the 1.4 features it uses, after querying `VkPhysicalDeviceVulkan14Features` (nothing is assumed). Today that is
+  **host image copy**: `Image::createTexture` (without mips) and `Texture::create` fill a fresh image from the CPU with
+  `vkTransitionImageLayout` + `vkCopyMemoryToImage`, straight into `SHADER_READ_ONLY_OPTIMAL`, with no staging buffer,
+  no command buffer and no wait on the queue. It is used only when the feature is on, the driver lists that layout
+  among its host copy destinations, the format has `HOST_IMAGE_TRANSFER` and the driver says host copy does not slow
+  down sampling (`VkHostImageCopyDevicePerformanceQuery::optimalDeviceAccess`); the entry points are loaded with
+  `vkGetDeviceProcAddr`, so an older loader cannot keep the game from starting. Otherwise that image goes through
+  the 1.3 upload. Writes into images that frames may still be using (`Image::write`, `CommandList::writeImage`)
+  stay on the GPU with their barriers. Push descriptors and maintenance5/6 are not used: the renderer has a single
+  bindless set and no per-draw descriptors, and they would add a second branch without removing code.
+- **Vulkan 1.3**: the loader or the GPU stop at 1.3, or `--vulkan13` (`DeviceDesc::forceVulkan13`) asks for it to
+  debug or compare. The instance then asks for 1.3 and nothing from 1.4 is queried.
+- **Vulkan 1.2 compatible**: `--compatible` on a GPU below 1.3. The compatible mode never takes the 1.4 path, even on
+  a 1.4 GPU.
+
+`chooseVulkanPath` is a pure function (versions and feature bits in, path out) with its tests in
+`tests/vulkan_path_test.cpp`. `Device::vulkanPath` says which one runs, and the graphics report adds it to the driver
+line. `NativeHandles::apiVersion` and VMA get the version of the path.
 
 `LinearAllocator` and `SlotAllocator` are the CPU bookkeeping of the ring and of the table; their tests do not need a GPU.
 

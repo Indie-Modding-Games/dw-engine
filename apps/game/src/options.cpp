@@ -310,6 +310,8 @@ bool readFlag(Options& options, std::string_view argument) {
     options.safeUi = true;
   } else if (argument == CompatibleOption) {
     options.compatibleMode = true;
+  } else if (argument == Vulkan13Option) {
+    options.forceVulkan13 = true;
   } else if (argument == LowPerformanceOption) {
     options.lowPerformance = true;
   } else if (argument == RetiredRdna2SafeOption) {

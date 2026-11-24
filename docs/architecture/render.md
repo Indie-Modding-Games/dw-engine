@@ -274,7 +274,9 @@ How it paints light, transparency and faces is in [models](models.md#drawing-mod
 
 Vulkan 1.3 with dynamic rendering and synchronization2; from 1.2, descriptor indexing (runtime array, partially bound,
 update-after-bind and update-unused-while-pending of images, non-uniform indexing), buffer device address and separate
-depth layouts; anisotropic filtering ([ADR 0019](../adr/0019-bindless-descriptors.md)). Swapchain `B8G8R8A8_UNORM` or
+depth layouts; anisotropic filtering ([ADR 0019](../adr/0019-bindless-descriptors.md)). When the loader and the GPU
+report Vulkan 1.4 the device is created on the 1.4 path, which uploads textures with host image copy where the driver
+offers it; `--vulkan13` keeps the 1.3 path ([rhi](../modules/engine/rhi.md)). Swapchain `B8G8R8A8_UNORM` or
 `R8G8B8A8_UNORM`, with blending in gamma space. Depth: `D32_SFLOAT`, or `X8_D24` or `D16` if there is none.
 
 To test the life of the textures, `dwe-game --texture-churn` creates and destroys a texture on each frame (the little

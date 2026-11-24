@@ -583,9 +583,10 @@ int runGame(const Options& requested) {
       core::logWarning("game: {}", changed.error().message);
     }
   }
-  auto device = rhi::Device::create(
-      *window,
-      {.validation = Validation, .vsync = display.vsync, .compatibleMode = options.compatibleMode});
+  auto device = rhi::Device::create(*window, {.validation = Validation,
+                                              .vsync = display.vsync,
+                                              .compatibleMode = options.compatibleMode,
+                                              .forceVulkan13 = options.forceVulkan13});
   if (!device) {
     core::logError("{}", device.error().message);
     return EXIT_FAILURE;

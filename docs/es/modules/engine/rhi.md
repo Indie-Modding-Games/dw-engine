@@ -1,7 +1,7 @@
 # rhi
 
-El único módulo que habla con Vulkan 1.3 ([ADR 0003](../../adr/0003-vulkan-and-sdl3.md)). Ver
-[render.md](../../architecture/render.md) para el conjunto.
+El único módulo que habla con Vulkan: 1.3 como mínimo, 1.4 cuando el controlador lo tiene
+([ADR 0003](../../adr/0003-vulkan-and-sdl3.md)). Ver [render.md](../../architecture/render.md) para el conjunto.
 
 - `Device`: GPU, cola, swapchain y frames con dynamic rendering (dos en vuelo; `Frame::slot` dice cuál). El
   swapchain se reconstruye solo al cambiar el tamaño de la ventana. Lo que se suelta mientras la GPU aún puede usarlo
@@ -28,6 +28,30 @@ El único módulo que habla con Vulkan 1.3 ([ADR 0003](../../adr/0003-vulkan-and
   push constants, buffers, draws).
 - `Texture`: sube a la GPU una imagen con su cadena de mipmaps, en RGBA de 8 bits o en BC7 (hoy, el visor de assets
   del overlay); `Device::supportsBc7` dice si la GPU muestrea BC7.
+
+**Ruta de Vulkan** (`vulkan_path.hpp`). `Device::create` elige una de tres rutas y la escribe en el log con las
+versiones que vio, por ejemplo `vulkan: Vulkan 1.4 path (host image copy on; device 1.4.318, loader 1.4.341)`:
+
+- **Vulkan 1.4**: el loader y la GPU elegida informan 1.4. La instancia pide 1.4 y el dispositivo activa las
+  características de 1.4 que usa, después de consultar `VkPhysicalDeviceVulkan14Features` (no se da nada por hecho).
+  Hoy es la **copia de imágenes desde el host**: `Image::createTexture` (sin mips) y `Texture::create` llenan una
+  imagen nueva desde la CPU con `vkTransitionImageLayout` + `vkCopyMemoryToImage`, directo a
+  `SHADER_READ_ONLY_OPTIMAL`, sin buffer de staging, sin command buffer y sin esperar a la cola. Solo se usa cuando la
+  característica está activa, el controlador lista ese layout entre los destinos de la copia desde el host, el formato
+  tiene `HOST_IMAGE_TRANSFER` y el controlador dice que la copia desde el host no hace más lento el muestreo
+  (`VkHostImageCopyDevicePerformanceQuery::optimalDeviceAccess`); las funciones se cargan con `vkGetDeviceProcAddr`,
+  así que un loader viejo no impide que el juego arranque. Si no, esa imagen va por la subida de 1.3. Las escrituras
+  en imágenes que los frames aún pueden usar (`Image::write`, `CommandList::writeImage`) siguen en la GPU con sus
+  barreras. No se usan push descriptors ni maintenance5/6: el renderer tiene un único set bindless y ningún
+  descriptor por draw, y solo añadirían una segunda rama sin quitar código.
+- **Vulkan 1.3**: el loader o la GPU se quedan en 1.3, o `--vulkan13` (`DeviceDesc::forceVulkan13`) la pide para
+  depurar o comparar. La instancia pide entonces 1.3 y no se consulta nada de 1.4.
+- **Vulkan 1.2 compatible**: `--compatible` en una GPU por debajo de 1.3. El modo compatible nunca toma la ruta 1.4,
+  ni en una GPU 1.4.
+
+`chooseVulkanPath` es una función pura (versiones y bits de características de entrada, ruta de salida) con sus tests
+en `tests/vulkan_path_test.cpp`. `Device::vulkanPath` dice cuál corre, y el informe gráfico la añade a la línea del
+controlador. `NativeHandles::apiVersion` y VMA reciben la versión de la ruta.
 
 `LinearAllocator` y `SlotAllocator` son la contabilidad de CPU del anillo y de la tabla; sus tests no necesitan GPU.
 
