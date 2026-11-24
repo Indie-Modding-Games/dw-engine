@@ -107,9 +107,10 @@ extracted again.
 Optional improvement, off by default: the `oculto` ruleset ("Original + hidden content", `extends: original`) gives a
 natural path to three forms that the disc carries complete but that the original only gives with items: `species_k`
 (champion), `species_m` and `species_o` (ultimates), and to `species_q` (ultimate), which the disc only carries as a
-boss. It is chosen when starting a new game ([rules screen](../apps/game.md#hidden-content)) and stays in the saved
-game; the `original` ruleset stays the same. The items that give them (`noble_mane`, `giga_hand`, `metalbanana`) keep
-working with both.
+boss. It is available through Folder Mode's `oculto` ruleset: the new-save mode selector defines the save type and
+replaces the old hidden-content activation ([mode selector](../../architecture/game-variants.md#choosing-a-variant)).
+The chosen ruleset stays in the saved game; the `original` ruleset stays the same. The items that give them
+(`noble_mane`, `giga_hand`, `metalbanana`) keep working with both.
 
 All of it is in `rules/oculto/species_extra.yaml` (the section for [per-species
 patches](../../architecture/rulesets.md#per-species-patches)), with design numbers of our own, not game data:

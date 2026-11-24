@@ -9,3 +9,8 @@ that are agreed before programming and end up split into cards. The principles t
 
 - [Online: rooms, matchmaking and profile](online-rooms.md) (#289): public rooms and "Find a match" as an optional
   Improvement alongside the versus by code.
+
+## Agreed designs
+
+- [Game variants: Classic Enhanced and Folder Mode](../architecture/game-variants.md) (#364): variant matrix, shared
+  architecture, save compatibility, distribution strategy and task plan; the first four tasks are in `main`.

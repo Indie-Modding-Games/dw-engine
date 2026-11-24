@@ -16,7 +16,9 @@ Project terms and their names in the code. If a term is not here, it is added in
 | Reference sheet | A summary of how a system of the original worked ([reference/](reference/index.md)) | `docs/reference/` |
 | Source (state) | An asset in an open, editable format | — |
 | Asset ID | A stable name for an asset, like `map/file_city_01/background` | — |
-| Game mode | A combination of systems with their own rules (phase 5) | — |
+| Game mode | A way of playing chosen for a new game: a preset of rulesets and, optionally, fixed options ([game variants](architecture/game-variants.md)) | `dwe::game::modes` |
+| Game variant | A game mode that offers one of the two main experiences ([game variants](architecture/game-variants.md)) | `dwe::game::modes::ClassicMode`, `dwe::game::modes::FolderMode` |
+| Save type | The variant chosen when a new save is created and stored in that save; it replaces the old hidden-content activation ([game variants](architecture/game-variants.md#choosing-a-variant)) | `PlayStart::modeId`, `mode.id` |
 | Pack | A content layer with its manifest (`pack.yaml`) | `dwe::assets::PackManifest` |
 | Partner | The Digimon the player raises | `dwe::game::partner` |
 | Design pillar | A GDD sentence that says what part of the game's essence is not touched | — |

@@ -2,9 +2,11 @@
 
 Mejora opcional, **encendida por defecto** (excepción a la regla de «el original por defecto», decidida el
 2026-11-10): toda especie con modelo que el original nunca deja criar se alcanza evolucionando en una partida
-normal, con sus clips de combate o con los que el motor le hace. Se elige en la [pantalla de reglas](../apps/game.md#contenido-oculto) de la partida nueva con la
-fila «Todas las especies como compañero» (Sí por defecto); con No la partida usa las reglas del original sin cambiar
-nada. La partida guardada recuerda el ruleset.
+normal, con sus clips de combate o con los que el motor le hace. Se elige entre los rulesets del Modo Folder al crear
+una partida nueva: el [selector de modo](../../architecture/game-variants.md#elegir-una-variante) define el tipo de
+guardado y reemplaza la antigua activación de contenido oculto. La [pantalla de reglas](../apps/game.md#contenido-oculto)
+heredada todavía ofrece la fila «Todas las especies como compañero» (Sí por defecto); con No la partida usa las reglas
+del original sin cambiar nada. La partida guardada recuerda el ruleset.
 
 Este documento es el diseño: qué especies entran, de dónde salen, con qué requisitos y por qué. El formato de los
 parches está en [rulesets](../../architecture/rulesets.md#parches-por-especie) y las reglas de la revisión en

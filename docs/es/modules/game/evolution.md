@@ -108,9 +108,12 @@ hay que extraerlo de nuevo.
 
 Mejora opcional, apagada por defecto: el ruleset `oculto` («Original + contenido oculto», `extends: original`) da un
 camino natural a tres formas que el disco trae completas pero que el original solo da con objetos: `species_k`
-(campeón), `species_m` y `species_o` (ultras), y a `species_q` (ultra), que el disco solo trae como jefe. Se elige al empezar una partida nueva
-([pantalla de reglas](../apps/game.md#contenido-oculto)) y queda en la partida guardada; el ruleset `original` sigue
-igual. Los objetos que las dan (`noble_mane`, `giga_hand`, `metalbanana`) siguen funcionando con los dos.
+(campeón), `species_m` y `species_o` (ultras), y a `species_q` (ultra), que el disco solo trae como jefe. Está disponible
+en el ruleset `oculto` del Modo Folder: el selector de modo de la partida nueva define el tipo de guardado y reemplaza
+la antigua activación de contenido oculto
+([selector de modo](../../architecture/game-variants.md#elegir-una-variante)). El ruleset elegido queda en la partida
+guardada; el `original` sigue igual. Los objetos que las dan (`noble_mane`, `giga_hand`, `metalbanana`) siguen
+funcionando con los dos.
 
 Todo está en `rules/oculto/species_extra.yaml` (la sección de [parches por
 especie](../../architecture/rulesets.md#parches-por-especie)), con números de diseño nuestros, no datos del juego:

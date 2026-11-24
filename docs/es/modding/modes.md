@@ -3,8 +3,9 @@
 Un modo es una forma de jugar que el jugador elige al empezar una partida nueva, con el ruleset con el que empieza.
 El juego trae dos, las [variantes de juego](../architecture/game-variants.md) **Clásico Mejorado** y **Modo Folder**; un
 mod añade otro con una carpeta `modes/<id>/` y su `mode.yaml`. Con un
-solo modo montado el juego no pregunta nada; con dos o más, la partida nueva enseña la lista antes de las reglas. La
-partida guarda su modo. Los detalles del módulo están en [modes](../modules/game/modes.md).
+solo modo montado el juego no pregunta nada; con dos o más, la partida nueva enseña la lista cuando se crea el
+guardado. Esa elección reemplaza la antigua activación de contenido oculto y define el tipo de guardado, que la partida
+guarda. Los detalles del módulo están en [modes](../modules/game/modes.md).
 
 ## El manifiesto
 
@@ -28,7 +29,9 @@ paquete `game` ya lo declara para `modes/*/mode`, así que `dwx validate` compru
   el motivo en el log. Un ruleset de mod suele extender el original y cambiar solo lo suyo
   ([rulesets](../architecture/rulesets.md)).
 - **Reglas.** La pantalla de reglas de la partida nueva (contenido oculto y paso a Mega) sale solo para un modo que
-  admite `original` y `oculto`; cualquier otro modo empieza directamente con su `ruleset`.
+  admite `original` y `oculto`; cualquier otro modo empieza directamente con su `ruleset`. Es el paso heredado posterior
+  a la elección de modo: el contenido oculto no es una activación aparte, sino un ruleset del Modo Folder, e integrar
+  estas filas en el selector de modo es la [tarea 10](../architecture/game-variants.md#plan-de-tareas).
 - **Opciones fijas.** `options` asocia nombres de opciones (las claves de la configuración) al valor con el que se
   juegan las partidas del modo, elija lo que elija el jugador; la página de opciones las muestra bloqueadas. Solo se
   pueden fijar las opciones que una partida aplica desde su propia configuración (las reglas y opciones de juego de la
@@ -44,3 +47,4 @@ paquete `game` ya lo declara para `modes/*/mode`, así que `dwx validate` compru
 - Un modo no elige qué sistemas corren: la partida monta siempre los de la historia (campo, combate, cuidado…). Un
   modo sin campo, como una arena pura, espera al diseño del modo arena.
 - La lista enseña los seis primeros modos (por `order`).
+- El resto del trabajo está en el [plan de tareas de variantes](../architecture/game-variants.md#plan-de-tareas).

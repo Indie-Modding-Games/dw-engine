@@ -7,7 +7,8 @@ with a manifest. It depends on `core` and `assets`; it draws nothing.
 
 The original has no modes: its new game is always the same story. Modes are there so that the player picks the
 original's rules or the expanded game, and so that a mod can bring, for example, a battle arena without the story
-(card #111).
+(card #111). At new-save creation the mode selector replaces the old hidden-content activation: the chosen mode defines
+the save type and is stored in the new save.
 
 ## The manifest
 
@@ -42,11 +43,13 @@ const dwe::game::modes::GameMode* mode = catalog.defaultMode();   // folder, or 
   (`rules/<id>/ruleset`) and leaves out, with its reason in the log, the mode that cannot be read: a broken mod does not stop
   the game from starting. It sorts by `order` and then by id.
 - **New game**: the title screen (`apps/game/src/title_screen.cpp`, `NewGameModes`) shows the
-  `ui/new_game_mode` list only if there is more than one mode; with one (a mod that replaces both), nothing is asked. Then,
-  the rules screen (`ui/new_game_rules`) appears only for a mode that offers the original's rules and its hidden
-  content (`original` and `oculto` in `rulesets`); another mode starts with its `ruleset`. The test routes
-  that do not ask for rules do not ask for a mode either: they play Folder Mode (`DefaultMode`) with the command
-  line's `--ruleset`.
+  `ui/new_game_mode` list only if there is more than one mode; with one (a mod that replaces both), nothing is asked.
+  This is the step that replaces the old "activate hidden content" question: choosing the mode when the save is created
+  defines its type and writes `PlayStart::modeId`. The rules screen (`ui/new_game_rules`) still appears for a mode that
+  offers `original` and `oculto`; in the intended flow it only picks a Folder Mode ruleset and never asks to activate
+  hidden content ([task 10](../../architecture/game-variants.md#task-plan)). Another mode starts with its `ruleset`. The
+  test routes that do not ask for rules do not ask for a mode either: they play Folder Mode (`DefaultMode`) with the
+  command line's `--ruleset`.
 - **Saving**: the session saves the mode in the `mode` section (`id`) and in the header's summary (format 4); a game
   saved before modes does not have it, and one saved before the variants has `original`: both load as `folder`
   (`currentModeId`, `session::ModeSave`). `GameSession::mode()` returns it.
@@ -57,3 +60,6 @@ const dwe::game::modes::GameMode* mode = catalog.defaultMode();   // folder, or 
   story. It waits for the arena mode's design (#118).
 - The list shows the first six modes; it does not paginate.
 - There is no command-line option to choose a mode (`--mode`).
+- The legacy `ui/new_game_rules` still asks to activate hidden content after the mode choice; task 10 folds it into the
+  new-save mode selector.
+- The rest of the work is tracked in the [game variants task plan](../../architecture/game-variants.md#task-plan).

@@ -196,6 +196,12 @@ la regla de la fase 4 (IDs, no índices).
 la `PlaySession` de partida nueva y **se guarda ya en la ranura**, como el original crea el fichero al empezar. Con las 15 ocupadas: aviso «No hay ranuras libres» y solo «Jugar sin
 guardar» o volver. «Jugar sin guardar» avisa de que no se podrá guardar (como «sin tarjeta»).
 
+El selector de modo pertenece a este paso: al crear el guardado nuevo el jugador elige Clásico Mejorado o Modo Folder,
+y esa elección define el tipo de guardado que se escribe en el primer fichero (`mode.id`, y `summary.mode` desde el
+formato 4). Reemplaza la antigua pregunta «activar contenido oculto»; el contenido oculto es un ruleset del Modo Folder,
+no un interruptor posterior. Las filas heredadas de `ui/new_game_rules` se están integrando en esa elección
+([tarea 10](game-variants.md#plan-de-tareas)).
+
 Sin carpeta de partidas (las rutas de humo) `Nueva partida` entra directo, sin lista: es el camino «sin
 tarjeta». Así `route-loop-keyboard` y las demás siguen igual, con el botón `play`.
 
