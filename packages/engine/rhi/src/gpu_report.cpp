@@ -2,7 +2,6 @@
 #include <dwe/rhi/gpu_report.hpp>
 
 #include <vk_mem_alloc.h>
-#include <vulkan/vk_enum_string_helper.h>
 
 #include <algorithm>
 #include <array>
@@ -235,6 +234,72 @@ void installNativeCrashHandler() {
 
 #endif
 
+std::string resultText(VkResult result) {
+  switch (result) {
+  case VK_SUCCESS:
+    return "VK_SUCCESS";
+  case VK_NOT_READY:
+    return "VK_NOT_READY";
+  case VK_TIMEOUT:
+    return "VK_TIMEOUT";
+  case VK_INCOMPLETE:
+    return "VK_INCOMPLETE";
+  case VK_SUBOPTIMAL_KHR:
+    return "VK_SUBOPTIMAL_KHR";
+  case VK_ERROR_OUT_OF_HOST_MEMORY:
+    return "VK_ERROR_OUT_OF_HOST_MEMORY";
+  case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+    return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
+  case VK_ERROR_INITIALIZATION_FAILED:
+    return "VK_ERROR_INITIALIZATION_FAILED";
+  case VK_ERROR_DEVICE_LOST:
+    return "VK_ERROR_DEVICE_LOST";
+  case VK_ERROR_MEMORY_MAP_FAILED:
+    return "VK_ERROR_MEMORY_MAP_FAILED";
+  case VK_ERROR_LAYER_NOT_PRESENT:
+    return "VK_ERROR_LAYER_NOT_PRESENT";
+  case VK_ERROR_EXTENSION_NOT_PRESENT:
+    return "VK_ERROR_EXTENSION_NOT_PRESENT";
+  case VK_ERROR_FEATURE_NOT_PRESENT:
+    return "VK_ERROR_FEATURE_NOT_PRESENT";
+  case VK_ERROR_INCOMPATIBLE_DRIVER:
+    return "VK_ERROR_INCOMPATIBLE_DRIVER";
+  case VK_ERROR_TOO_MANY_OBJECTS:
+    return "VK_ERROR_TOO_MANY_OBJECTS";
+  case VK_ERROR_FORMAT_NOT_SUPPORTED:
+    return "VK_ERROR_FORMAT_NOT_SUPPORTED";
+  case VK_ERROR_FRAGMENTED_POOL:
+    return "VK_ERROR_FRAGMENTED_POOL";
+  case VK_ERROR_OUT_OF_POOL_MEMORY:
+    return "VK_ERROR_OUT_OF_POOL_MEMORY";
+  case VK_ERROR_SURFACE_LOST_KHR:
+    return "VK_ERROR_SURFACE_LOST_KHR";
+  case VK_ERROR_OUT_OF_DATE_KHR:
+    return "VK_ERROR_OUT_OF_DATE_KHR";
+  default:
+    return std::format("VkResult {}", static_cast<int>(result));
+  }
+}
+
+std::string_view faultAddressText(VkDeviceFaultAddressTypeEXT type) {
+  switch (type) {
+  case VK_DEVICE_FAULT_ADDRESS_TYPE_READ_INVALID_EXT:
+    return "invalid read";
+  case VK_DEVICE_FAULT_ADDRESS_TYPE_WRITE_INVALID_EXT:
+    return "invalid write";
+  case VK_DEVICE_FAULT_ADDRESS_TYPE_EXECUTE_INVALID_EXT:
+    return "invalid execute";
+  case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_UNKNOWN_EXT:
+    return "instruction pointer (unknown)";
+  case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_INVALID_EXT:
+    return "instruction pointer (invalid)";
+  case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_FAULT_EXT:
+    return "instruction pointer (fault)";
+  default:
+    return "address";
+  }
+}
+
 } // namespace
 
 void gpuReportDevice(const Device& device, GpuDiagnostics diagnostics) {
@@ -335,8 +400,7 @@ VkResult gpuCheck(std::string_view call, VkResult result) {
   {
     Record& rec = record();
     const std::lock_guard lock(rec.mutex);
-    store(rec.trail.at(rec.calls % TrailLength),
-          std::format("{} = {}", call, string_VkResult(result)));
+    store(rec.trail.at(rec.calls % TrailLength), std::format("{} = {}", call, resultText(result)));
     ++rec.calls;
     if (result == VK_ERROR_DEVICE_LOST && !rec.deviceLost) {
       rec.deviceLost = true;
@@ -347,7 +411,7 @@ VkResult gpuCheck(std::string_view call, VkResult result) {
     }
   }
   if (result < 0) {
-    core::logError("vulkan: {} failed with {}\n{}", call, string_VkResult(result), report);
+    core::logError("vulkan: {} failed with {}\n{}", call, resultText(result), report);
   }
   return result;
 }
@@ -364,8 +428,7 @@ std::string describeDeviceFault(const VkDeviceFaultCountsEXT& counts,
   for (const VkDeviceFaultAddressInfoEXT& address :
        std::span{fault.pAddressInfos, counts.addressInfoCount}) {
     const VkDeviceSize low = address.reportedAddress & ~(address.addressPrecision - 1);
-    text += std::format("  {} at {:#x}..{:#x}\n",
-                        string_VkDeviceFaultAddressTypeKHR(address.addressType), low,
+    text += std::format("  {} at {:#x}..{:#x}\n", faultAddressText(address.addressType), low,
                         low + std::max<VkDeviceSize>(address.addressPrecision, 1) - 1);
   }
   for (const VkDeviceFaultVendorInfoEXT& vendor :

@@ -40,10 +40,9 @@ TEST_CASE("a device fault lists the faulting address range and the vendor record
                              .pAddressInfos = addresses.data(),
                              .pVendorInfos = vendor.data(),
                              .pVendorBinaryData = nullptr};
-  CHECK(describeDeviceFault(counts, fault) ==
-        "device fault: GPU hang\n"
-        "  VK_DEVICE_FAULT_ADDRESS_TYPE_READ_INVALID_KHR at 0x12345000..0x12345fff\n"
-        "  vendor: page fault (code 0x2a, data 0xbeef)\n");
+  CHECK(describeDeviceFault(counts, fault) == "device fault: GPU hang\n"
+                                              "  invalid read at 0x12345000..0x12345fff\n"
+                                              "  vendor: page fault (code 0x2a, data 0xbeef)\n");
 }
 
 TEST_CASE("the markers name the last pass the GPU finished and the first it never reached") {
