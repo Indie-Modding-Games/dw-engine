@@ -633,6 +633,16 @@ void GameSession::hearWorldClock(const WorldTime& time) {
   }
 }
 
+bool GameSession::aheadOfWorld() const {
+  if (clockShare_ != ClockShare::Guest) {
+    return false;
+  }
+  const ruleset::ClockRules& rules = state_->clock.rules();
+  return follower_
+      .follow(state_->clock.elapsedFrames(), rules.framesPerSecond, rules.framesPerMinute)
+      .backTo.has_value();
+}
+
 WorldTime GameSession::worldTime() const {
   return {.elapsedFrames = state_->clock.elapsedFrames(),
           .running = clockRan_,

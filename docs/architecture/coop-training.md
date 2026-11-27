@@ -118,6 +118,22 @@ sequenceDiagram
   Note over H,G: each session pays its partner one hour; neither clock jumps
 ```
 
+### 4.5 Sleep in a shared world (#424, #411)
+
+Sleeping skips the night, and the night is the world's. The rules:
+
+- **Only the host moves the world's clock.** The host's sleep takes the world to its partner's morning; every guest
+  skips those hours (§4.1).
+- **A guest's sleep does not move the world, and the world does not undo it.** The partner sleeps as alone (the
+  night's rest, lifetime and evolution hours, its next bedtime), then the guest's screen stays dark until the world's
+  clock reaches that morning (`SleepScreen` waits while `GameSession::aheadOfWorld`), with a notice that says so
+  (`online.coop.sleep_wait`). If the host sleeps meanwhile the guest wakes at once. The guest's clock never goes back
+  to the night and the partner never lives those hours twice.
+- **Nobody is forced to sleep.** The others keep playing; the world is never held for a sleeper.
+- **No advantage from sleeping out of step.** A guest cannot rest and still use the night: its game waits with its
+  partner. Its sleep is only possible when its partner is sleepy, as alone.
+- **World events and day changes** follow the world's clock only (§5): a guest's sleep changes no day for anyone.
+
 ## 5. Disconnections and edge cases
 
 - **A guest leaves:** the host clears its course (`CoopTraining::playerLeft`) and tells the others; a guest that comes
@@ -127,8 +143,8 @@ sequenceDiagram
   it by a skip pays it in `skipHours`). Day-time changes follow the shared clock.
 - **Host menus and scripts:** the host's menus and Start's pause no longer hold the world's clock (#415); its scripts
   still do (§7), so the world stands for everyone while the host reads a dialog, and guests wait with it.
-- **A guest sleeps:** its own sleep jumps its clock; it goes back to the world's time and its partner keeps the rest it
-  already got (it does not live those hours twice).
+- **A guest sleeps:** its partner sleeps and its screen waits in the dark for the world's morning (§4.5); it no
+  longer goes back to the night.
 - **The host sleeps:** guests skip those hours (§4.1), as a script time skip.
 - **Battles:** a battle still stops its player's clock while it runs; a guest catches up afterwards by frames or a
   skip.
@@ -145,8 +161,8 @@ sequenceDiagram
 
 ## 7. Limits and follow-ups
 
-- **Co-op sleep** needs its own design: today the host's sleep moves everyone and a guest's sleep is undone by the
-  world (its partner keeps the rest).
+- **Co-op sleep** (§4.5): a guest that sleeps while the host stays awake waits up to a night in real time (about ten
+  minutes); the host is not told that a guest sleeps.
 - **Host dialogs and scripts still hold the world's clock** for everyone (its menus and pause no longer do, #415).
 - **A guest's progress is not saved back** to its own game (phase C4).
 - **The remote partner's training animation** is not drawn on the other machines; only the tag says it.

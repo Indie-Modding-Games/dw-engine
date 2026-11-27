@@ -26,8 +26,9 @@ std::int32_t shadeStep(const game::field::TransitionRules& rules, std::int32_t f
 }
 
 const char* phaseName(std::uint8_t phase) {
-  constexpr std::array<const char*, 7> Names{"awake",     "fading out", "menu",    "fading in",
-                                             "fade tail", "walking up", "settling"};
+  constexpr std::array<const char*, 8> Names{
+      "awake",     "fading out", "menu",     "fading in",
+      "fade tail", "walking up", "settling", "waiting for the world"};
   return phase < Names.size() ? Names.at(phase) : "?";
 }
 
@@ -62,7 +63,8 @@ float SleepScreen::fadeLevel() const {
   const game::partner::SleepFade& fade = session_->partnerRules().care.sleep.fade;
   switch (phase_) {
   case Phase::FadingOut:
-  case Phase::Menu: {
+  case Phase::Menu:
+  case Phase::WaitingWorld: {
     // fade.c: renderFadeOut adds its step to the shade the last fade in left, and goes on drawing
     // until the fade in replaces it.
     const std::int32_t start = game::field::fadeInShade(transition_, transition_.fadeInFrames);
@@ -93,6 +95,12 @@ void SleepScreen::tick(double seconds) {
     return;
   }
   fadeSeconds_ += seconds;
+  if (phase_ == Phase::WaitingWorld) {
+    if (!session_->aheadOfWorld()) {
+      startFadeIn();
+    }
+    return;
+  }
   const game::partner::SleepFade& fade = session_->partnerRules().care.sleep.fade;
   const std::int32_t frame = fadeFrame();
   if (phase_ == Phase::FadingOut && frame >= fade.outFrames) {
@@ -210,6 +218,7 @@ void SleepScreen::tickField(FieldScene& scene, float seconds,
   case Phase::Awake:
   case Phase::Menu:
   case Phase::FadeTail:
+  case Phase::WaitingWorld:
     return;
   }
 }
@@ -289,6 +298,12 @@ void SleepScreen::setPhase(Phase phase) {
 }
 
 void SleepScreen::startFadeIn() {
+  // In co-op the night is the world's: a guest's partner sleeps until the world's clock reaches its
+  // morning, or the host's sleep takes the world there (docs/architecture/coop-training.md §5).
+  if (asleep_ && phase_ != Phase::WaitingWorld && session_->aheadOfWorld()) {
+    setPhase(Phase::WaitingWorld);
+    return;
+  }
   setPhase(Phase::FadingIn);
   fadeSeconds_ = 0.0;
   wakePending_ = true;

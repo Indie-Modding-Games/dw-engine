@@ -497,6 +497,8 @@ public:
   // Co-op events (#417, coop_events.hpp): the NPCs the other players' events hold on this map,
   // whose contacts this game drops, and the NPC whose event this game plays now.
   void leaveNpcsBe(std::vector<std::int32_t> npcs) { npcsLeftBe_ = std::move(npcs); }
+  // A co-op guest's sleep waits in the dark for the world's morning (#424).
+  [[nodiscard]] bool sleepWaitsForWorld() const { return sleepScreen_.waitsForWorld(); }
   [[nodiscard]] std::optional<std::int32_t> eventNpc() const;
   [[nodiscard]] const std::string& modeId() const;
   // The co-op difficulty the battles this game runs scale their enemies by (coop_difficulty).

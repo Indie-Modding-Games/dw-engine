@@ -147,6 +147,7 @@ constexpr double FadeEpsilon = 1e-4;
 
 // The most a closing game waits for its co-op goodbyes and the room's last notice.
 constexpr double CoopShutdownSeconds = 1.5;
+constexpr double CoopSleepWaitSeconds = 8.0;
 
 // Tells the HUD what the map change shows: how much the fade takes away and the key of the map name
 // it shows, which the HUD writes in the player's language.
@@ -1157,6 +1158,8 @@ int runGame(const Options& requested) {
   CoopTraining coopTraining;
   // Which NPC each player's event holds (#417).
   CoopEvents coopEvents;
+  // Whether this guest was told its sleep waits for the world's morning (#424).
+  bool coopSleepWaitShown = false;
   // The host's room went while the guest played: its game ends after this frame's ticks.
   bool coopHostLeft = false;
   // How a player of the session is named (the trades' document and notices): a player of a link
@@ -2427,6 +2430,12 @@ int runGame(const Options& requested) {
             coopEvents.guestTick(ownEvent, self, *coopBridge());
           }
           play->leaveNpcsBe(coopEvents.heldByOthers(self, eventMap));
+        }
+        if (coopLinked && play->sleepWaitsForWorld() != coopSleepWaitShown) {
+          coopSleepWaitShown = !coopSleepWaitShown;
+          if (coopSleepWaitShown) {
+            coopHud.notice(CoopSleepWaitText, {}, CoopSleepWaitSeconds);
+          }
         }
         if (coopLinked && coopTraining.takeClockNotice()) {
           coopHud.notice(CoopTrainingClockText);
