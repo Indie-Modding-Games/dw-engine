@@ -20,8 +20,11 @@ show_name_never: 2
 # Variables each co-op player keeps for itself, so a reward a script gives once goes to every player once
 # (docs/architecture/multiplayer.md, «Shared world interactions»). Single player reads them as any other.
 # 31 counts the days since the meat farm's last meat (a day counter of calendar.yaml; scripts 164 and 207
-# give the meat and set it to 0).
-player_own_variables: [31]
+# give the meat and set it to 0). The canyon shop's job runs on each player's own counter: the customers served
+# (123), the tally's bytes (243, 244), what each turn tells the scripts (110 result, 117 level, 248 face) and its
+# halfway line (trigger 101), so one player's job never moves the other's bar (story_scenes.yaml, shop_job).
+player_own_variables: [31, 110, 117, 123, 243, 244, 248]
+player_own_triggers: [101]
 # What the ruleset adds to the original's 800 triggers and 256 variables, for mods with more story or more
 # species (docs/modding/story.md, «Capacity»). The extra variables are integers from 0 to extra_variable_max and
 # all of them are saved; extra_raised gives "raised" triggers to species from 63 on (the original only has

@@ -541,6 +541,7 @@ el resultado.
 | Medallas, especies criadas, los objetos clave de la página del jugador (cañas) | triggers de historia | local: de cada jugador | nunca se envían |
 | La congelación de un script, el trigger de encarar en una charla, el nombre del mapa siguiente | variables de historia y un trigger | local: siguen los scripts propios de ese jugador | nunca se envían |
 | Recompensas que un script da una vez por jugador: los días desde la última carne de la granja (la carne diaria de Palmon y de la granja, #421) | variables de historia (`player_own_variables` en las reglas de la historia) | local: cada jugador recibe su carne una vez al día | nunca se envían |
+| El trabajo de la tienda del cañón: los clientes atendidos, la cuenta y su medidor, el resultado de cada turno, la frase de la mitad (#423) | variables de historia y un trigger (`player_own_variables`, `player_own_triggers`), la cuenta y el regateo | local: cada jugador hace su propio trabajo; que un jugador abra la tienda nunca mueve el medidor del otro | nunca se envían |
 | La bolsa, los bits, el compañero y sus cuidados, los menús, los diálogos en pantalla, la cámara | sistemas de la sesión | local | nunca se envían (batallas: §6.1) |
 
 Los hechos locales salen de las reglas de la historia (`StoryAdapter::playerOwnTrigger` y `playerOwnVariable`): un

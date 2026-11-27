@@ -113,6 +113,9 @@ struct StorySectionRules {
   // Variables each co-op player keeps for itself (`player_own_variables`): a reward a script gives
   // once per player, as the meat farm's days since its last meat.
   std::vector<std::int32_t> playerOwnVariables;
+  // Triggers each co-op player keeps for itself (`player_own_triggers`), as the shop job's
+  // halfway line.
+  std::vector<std::int32_t> playerOwnTriggers;
 };
 
 core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section);
@@ -335,6 +338,7 @@ private:
   std::unique_ptr<RollPort> rollPort_;
   std::vector<RoamingRareRoll> roamingRares_;
   std::vector<std::int32_t> playerOwnVariables_;
+  std::vector<std::int32_t> playerOwnTriggers_;
   std::optional<std::int32_t> roamingRareChance_;
   std::unique_ptr<SoundRelay> sound_;
   std::unique_ptr<MusicRelay> music_;

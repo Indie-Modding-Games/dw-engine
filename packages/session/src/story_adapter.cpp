@@ -54,6 +54,7 @@ constexpr std::string_view VariableKey = "variable";
 constexpr std::string_view HighestKey = "highest";
 constexpr std::string_view HitsAtMostKey = "hits_at_most";
 constexpr std::string_view PlayerOwnVariablesKey = "player_own_variables";
+constexpr std::string_view PlayerOwnTriggersKey = "player_own_triggers";
 // An engine guard, not a rule: past a second per frame of the original the story would crawl.
 constexpr std::int64_t MaxTicksPerFrame = 60;
 // A story variable is one byte in the state and in saves (script.h:158: ScriptState.pstats).
@@ -168,22 +169,21 @@ std::vector<RoamingRareRoll> readRoamingRares(assets::YamlReader& reader,
   return rolls;
 }
 
-std::vector<std::int32_t> readPlayerOwnVariables(assets::YamlReader& reader,
-                                                 const core::YamlNode& root) {
-  const core::YamlNode* list = root.isMapping() ? root.find(PlayerOwnVariablesKey) : nullptr;
+std::vector<std::int32_t> readPlayerOwn(assets::YamlReader& reader, const core::YamlNode& root,
+                                        std::string_view key, std::int32_t count) {
+  const core::YamlNode* list = root.isMapping() ? root.find(key) : nullptr;
   if (list == nullptr || !reader.ok()) {
     return {};
   }
-  std::vector<std::int32_t> variables;
-  for (const core::YamlNode& item : reader.sequence(*list, PlayerOwnVariablesKey)) {
+  std::vector<std::int32_t> numbers;
+  for (const core::YamlNode& item : reader.sequence(*list, key)) {
     const auto value = reader.integer<std::int64_t>(item);
-    if (reader.ok() && (value < 0 || value >= game::story::BaseVariableCount)) {
-      reader.fail(item, formatMessage(messages::StoryNumberOutside, PlayerOwnVariablesKey, value,
-                                      game::story::BaseVariableCount - 1));
+    if (reader.ok() && (value < 0 || value >= count)) {
+      reader.fail(item, formatMessage(messages::StoryNumberOutside, key, value, count - 1));
     }
-    variables.push_back(static_cast<std::int32_t>(value));
+    numbers.push_back(static_cast<std::int32_t>(value));
   }
-  return variables;
+  return numbers;
 }
 
 } // namespace
@@ -191,11 +191,12 @@ std::vector<std::int32_t> readPlayerOwnVariables(assets::YamlReader& reader,
 core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section) {
   assets::YamlReader reader;
   const core::YamlNode& root = section.node;
-  if (!reader.expectKeys(root, messages::StorySectionText,
-                         {TicksPerFrameKey, VariableMaxKey, FrozenVariableKey, FrozenValueKey,
-                          TalkFacingTriggerKey, ShowNameVariableKey, ShowNameByEventKey,
-                          ShowNameAlwaysKey, ShowNameNeverKey},
-                         {CapacityKey, RoamingRaresKey, PlayerOwnVariablesKey})) {
+  if (!reader.expectKeys(
+          root, messages::StorySectionText,
+          {TicksPerFrameKey, VariableMaxKey, FrozenVariableKey, FrozenValueKey,
+           TalkFacingTriggerKey, ShowNameVariableKey, ShowNameByEventKey, ShowNameAlwaysKey,
+           ShowNameNeverKey},
+          {CapacityKey, RoamingRaresKey, PlayerOwnVariablesKey, PlayerOwnTriggersKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   const core::YamlNode& ticksNode = reader.field(root, TicksPerFrameKey);
@@ -225,7 +226,10 @@ core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section) 
                           .capacity = {},
                           .extraRaised = {},
                           .roamingRares = readRoamingRares(reader, root),
-                          .playerOwnVariables = readPlayerOwnVariables(reader, root)};
+                          .playerOwnVariables = readPlayerOwn(reader, root, PlayerOwnVariablesKey,
+                                                              game::story::BaseVariableCount),
+                          .playerOwnTriggers = readPlayerOwn(reader, root, PlayerOwnTriggersKey,
+                                                             game::story::BaseTriggerCount)};
   readCapacity(reader, root, rules);
   return reader.finish(rules, section.file);
 }
@@ -608,7 +612,8 @@ bool StoryAdapter::playerOwnTrigger(std::int32_t trigger) const {
   return within(FirstRaisedTrigger, RaisedSpeciesLimit) ||
          within(extraRaisedRange_.firstTrigger, extraRaisedRange_.species) ||
          within(FirstMedalTrigger, MedalCount) || within(FirstPlayerItemTrigger, PlayerItemCount) ||
-         std::cmp_equal(trigger, flow_.talkFacingTrigger);
+         std::cmp_equal(trigger, flow_.talkFacingTrigger) ||
+         std::ranges::contains(playerOwnTriggers_, trigger);
 }
 
 bool StoryAdapter::playerOwnVariable(std::int32_t variable) const {
@@ -650,6 +655,7 @@ core::Result<void> StoryAdapter::wire(const StorySectionRules& story,
   rollPort_ = std::make_unique<RollPort>(*this);
   roamingRares_ = story.roamingRares;
   playerOwnVariables_ = story.playerOwnVariables;
+  playerOwnTriggers_ = story.playerOwnTriggers;
   sound_ = std::make_unique<SoundRelay>();
   music_ = std::make_unique<MusicRelay>();
   orders_ = std::make_unique<game::story::StoryOrders>(*statePort_, *randomPort_, story.rules,
@@ -715,6 +721,7 @@ void StoryAdapter::followRules(const StorySectionRules& story,
   *orders_ = game::story::StoryOrders{*statePort_, *randomPort_, story.rules, rollPort_.get()};
   roamingRares_ = story.roamingRares;
   playerOwnVariables_ = story.playerOwnVariables;
+  playerOwnTriggers_ = story.playerOwnTriggers;
   dialogue_->dialogue().setRules(dialogue);
   if (story.ticksPerFrame == ticksPerFrame_ && sameFlow(story.flow, flow_)) {
     return;
