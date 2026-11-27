@@ -351,7 +351,7 @@ void CoopBattles::hostTick(PlaySession& play) {
     }
     while (auto message = peer.bridge->receiveBattle()) {
       if (const auto* ask = std::get_if<coop::BattleAsk>(&*message)) {
-        answer(play, peer, *ask);
+        answer(play, peer.id, *ask);
       } else if (const auto* action = std::get_if<coop::BattleAction>(&*message)) {
         apply(play, peer.id, *action);
       } else if (const auto* offer = std::get_if<coop::BattleOffer>(&*message)) {
@@ -375,6 +375,10 @@ void CoopBattles::hostTick(PlaySession& play) {
   }
   if (referee_.running() && !screen.active()) {
     endBattle(play);
+  }
+  for (const coop::BattleReferee::WaitingAsk& waiting :
+       std::vector<coop::BattleReferee::WaitingAsk>{referee_.waiting()}) {
+    answer(play, waiting.guest, waiting.ask);
   }
   offerAllies(play);
 }
@@ -453,26 +457,26 @@ void CoopBattles::guestLeft(coop::PlayerId guest) {
   }
 }
 
-void CoopBattles::answer(PlaySession& play, const Peer& from, const coop::BattleAsk& ask) {
-  if (!coopPlayerHere(play.scene().field(), here_, from.id)) {
-    // The session puts the guest elsewhere (its states have not reached this map yet).
-    core::logInfo("coop: player {}'s battle {} is refused: it is not on this map", from.id,
-                  ask.ask);
-    send(from.bridge, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::NotHere});
+void CoopBattles::answer(PlaySession& play, coop::PlayerId from, const coop::BattleAsk& ask) {
+  const game::field::Field& field = play.scene().field();
+  const coop::AskVerdict verdict = referee_.judge(
+      ask, {.map = field.mapChangePending() ? std::string_view{} : std::string_view{field.mapId()},
+            .guestHere = coopPlayerHere(field, here_, from),
+            .battling = play.battleScreen().active(),
+            .held = play.coopBattleBlocked()});
+  if (verdict.waits) {
+    if (referee_.wait(from, ask, ticks_)) {
+      return;
+    }
+    core::logInfo("coop: player {}'s battle {} is refused: this game stayed held", from, ask.ask);
+    sendTo(from, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::Busy});
     return;
   }
-  if (const auto refusal =
-          referee_.judge(ask, play.scene().field().mapId(), play.battleScreen().active())) {
-    core::logInfo("coop: player {}'s battle {} is refused: the world is busy or elsewhere", from.id,
+  referee_.forget(from);
+  if (verdict.refusal) {
+    core::logInfo("coop: player {}'s battle {} is refused: the world is busy or elsewhere", from,
                   ask.ask);
-    send(from.bridge, coop::BattleRefused{.ask = ask.ask, .reason = *refusal});
-    return;
-  }
-  if (play.coopBattleBlocked()) {
-    // A screen, a scene or a script holds this game: the guest's game runs the battle, solo.
-    core::logInfo("coop: player {}'s battle {} runs on its own game: this one is held", from.id,
-                  ask.ask);
-    send(from.bridge, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::Failed});
+    sendTo(from, coop::BattleRefused{.ask = ask.ask, .reason = *verdict.refusal});
     return;
   }
   std::vector<std::int32_t> npcs;
@@ -483,22 +487,21 @@ void CoopBattles::answer(PlaySession& play, const Peer& from, const coop::Battle
   // so does every other free guest's on this map.
   std::vector<BattleScreen::CoopAlly> allies{
       {.owner = coop::HostPlayerId, .visitor = std::nullopt}};
-  std::ranges::move(freeAllies(play, from.id), std::back_inserter(allies));
+  std::ranges::move(freeAllies(play, from), std::back_inserter(allies));
   BattleScreen& screen = play.battleScreen();
-  screen.setCoopScaling(scalingOf(play, from.id, allies));
+  screen.setCoopScaling(scalingOf(play, from, allies));
   screen.setCoopAllies(std::move(allies));
-  if (auto started = play.startVisitorBattle(from.id, npcs, visitorOf(ask.fighter), ask.fixedFight,
+  if (auto started = play.startVisitorBattle(from, npcs, visitorOf(ask.fighter), ask.fixedFight,
                                              ask.predefined);
       !started) {
-    core::logWarning("coop: player {}'s battle did not start: {}", from.id,
-                     started.error().message);
-    send(from.bridge, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::Failed});
+    core::logWarning("coop: player {}'s battle did not start: {}", from, started.error().message);
+    sendTo(from, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::Failed});
     return;
   }
-  core::logInfo("coop: player {}'s partner fights{}", from.id,
+  core::logInfo("coop: player {}'s partner fights{}", from,
                 screen.fighterOf(coop::HostPlayerId) ? ", this player's beside it"
                                                      : "; this player helps");
-  sendAll(beginOf(play, from.id, ask.ask));
+  sendAll(beginOf(play, from, ask.ask));
 }
 
 void CoopBattles::apply(PlaySession& play, coop::PlayerId from, const coop::BattleAction& action) {
@@ -679,8 +682,8 @@ void CoopBattles::sendOffer(PlaySession& play, CoopGameplayBridge& bridge) {
   if (ticks_ % OfferTicks != 0) {
     return;
   }
-  const bool available = !mirror_.running() && !mirror_.pendingAsk() && !asked_ &&
-                         !play.heldForCoopBattle() && !play.coopBattleBlocked() &&
+  const bool available = mirror_.partnerFree(!play.coopBattleBlocked()) &&
+                         !play.heldForCoopBattle() &&
                          coopPlayerHere(play.scene().field(), here_, coop::HostPlayerId);
   if (auto offer = mirror_.offer(available, profileOf(play.coopFighter()))) {
     send(&bridge, std::move(*offer));

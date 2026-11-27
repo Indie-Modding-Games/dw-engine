@@ -25,6 +25,24 @@ enum class BattleRole : std::uint8_t { Starter, Helper, Ally };
 
 [[nodiscard]] bool spoilsInRange(const BattleSpoils& spoils);
 
+// In game ticks (60 a second).
+inline constexpr std::uint64_t BattleAskWaitTicks = 600;
+
+// The host's game when it judges a guest's ask; `map` is empty during a map change.
+struct HostMoment {
+  std::string_view map;
+  bool guestHere = false;
+  bool battling = false;
+  bool held = false;
+};
+
+struct AskVerdict {
+  bool waits = false;
+  std::optional<BattleRefusal> refusal;
+
+  [[nodiscard]] bool starts() const { return !waits && !refusal; }
+};
+
 // The host's side of the co-op battles (docs/architecture/multiplayer.md, §6 decision 3;
 // coop-combat.md): the shared world runs one battle at a time, on the host's simulation. It numbers
 // each battle, knows who started the running one and whose partners fight in it, keeps each
@@ -44,11 +62,17 @@ public:
     BattleEnd end;
   };
 
-  // Whether the battle a guest asks for can start: not while another one runs (the guest is pulled
-  // into that one: the second battle never starts), nor on another map than the host's. None: it
-  // can.
-  [[nodiscard]] std::optional<BattleRefusal> judge(const BattleAsk& ask, std::string_view hostMap,
-                                                   bool hostBusy) const;
+  // Busy while a battle runs, NotHere from another map; otherwise it waits until the host is free.
+  [[nodiscard]] AskVerdict judge(const BattleAsk& ask, const HostMoment& host) const;
+  // False once the ask waited BattleAskWaitTicks: the host then refuses it as busy.
+  bool wait(PlayerId guest, const BattleAsk& ask, std::uint64_t tick);
+  struct WaitingAsk {
+    PlayerId guest = GuestPlayerId;
+    BattleAsk ask;
+    std::uint64_t since = 0;
+  };
+  [[nodiscard]] const std::vector<WaitingAsk>& waiting() const { return waiting_; }
+  void forget(PlayerId guest);
   // A battle began in the host's world: the host's own (`ask` 0) or a guest's ask it accepted, with
   // the partners of `allies` beside the starter's. The message that tells every guest.
   BattleBegin begin(PlayerId starter, std::uint32_t ask, std::string mapId,
@@ -84,6 +108,7 @@ public:
 private:
   std::uint32_t next_ = 1;
   std::optional<Running> running_;
+  std::vector<WaitingAsk> waiting_;
   std::array<std::optional<BattleOffer>, MaxPlayers> offers_{};
   std::array<bool, MaxPlayers> present_{};
 };
@@ -113,6 +138,12 @@ public:
   [[nodiscard]] std::optional<BattleRefused> takeRefused();
   [[nodiscard]] std::optional<BattleEnd> takeEnded();
 
+  // Whether this guest's partner is free to join the host's battles: never while one of them runs,
+  // and while its own ask waits for the host even though its game waits on that battle, so an
+  // encounter the host starts meanwhile takes it as an ally, not a helper.
+  [[nodiscard]] bool partnerFree(bool gameFree) const {
+    return !running_ && (gameFree || pending_.has_value());
+  }
   // The offer of this guest's partner for the host's battles to send, when it changed since the
   // last one sent (`available` with its fighter); none when it did not.
   [[nodiscard]] std::optional<BattleOffer> offer(bool available, BattleFighterProfile fighter);
