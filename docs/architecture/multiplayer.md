@@ -480,6 +480,15 @@ player, so its take within the same round trip comes first; a take that finds th
 gets the same notice. On a map the host is not on, a guest's ground is its own and needs no claim. Single player never
 claims.
 
+**Events start once (#417).** Each game runs its own story, so two players who talk to the same NPC used to both
+play its event, each with their own name, and both start its battle. While a player's game plays an NPC's event (a
+section a touch or a talk started, until the script ends), that NPC is held: a guest tells the host with `EventStatus`
+(`0xC2`, protocol 14), the host tells every guest about everyone's, its own included, and every other game on that map
+drops its own touches and talks with the NPC meanwhile. Once the event ends its story changes reach the others as
+usual, so the next player who talks to the NPC sees what the event left. A player who leaves lets its NPC go. NPCs
+that share a script id (a map's wild NPCs of one species) are held together. Two touches within the same round trip
+can still both start.
+
 **Joining late and changing map.** A guest that joins gets the whole shared story (`WorldSync`, in parts that fit a
 datagram) and the host's ground; every guest gets them again when the host enters a map. The sync carries the host's
 revision, so a change already in it is not applied again.

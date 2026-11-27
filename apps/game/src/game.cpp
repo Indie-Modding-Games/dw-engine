@@ -69,6 +69,7 @@
 #include "control_log.hpp"
 #include "control_socket.hpp"
 #include "coop_battles.hpp"
+#include "coop_events.hpp"
 #include "coop_gameplay_bridge.hpp"
 #include "coop_guest_return.hpp"
 #include "coop_hud.hpp"
@@ -1154,6 +1155,8 @@ int runGame(const Options& requested) {
   CoopTrades coopTrades{**ui};
   // The world's clock and who trains (#365).
   CoopTraining coopTraining;
+  // Which NPC each player's event holds (#417).
+  CoopEvents coopEvents;
   // The host's room went while the guest played: its game ends after this frame's ticks.
   bool coopHostLeft = false;
   // How a player of the session is named (the trades' document and notices): a player of a link
@@ -2080,6 +2083,7 @@ int runGame(const Options& requested) {
           // A trade with that player closes; a swap the host applied for it is undone.
           coopTrades.playerLeft(peer->id);
           coopTraining.playerLeft(peer->id);
+          coopEvents.playerLeft(peer->id);
           coopHud.notice(CoopDisconnectedText, peer->label);
           break;
         case CoopLinkLoss::HostLeft:
@@ -2101,6 +2105,10 @@ int runGame(const Options& requested) {
         coopGuestWorld.reset();
         coopSync.reset();
         coopTraining.reset();
+        coopEvents.reset();
+        if (play != nullptr) {
+          play->leaveNpcsBe({});
+        }
         coop.takeLinkBack();
         core::logInfo("coop: the link or the game ended, the gameplay bridges were dropped");
         // A co-op game that ended (back to the title) ends its room: the others hear it leave
@@ -2395,6 +2403,30 @@ int runGame(const Options& requested) {
         } else if (coopLinked && coopGuestWorld) {
           coopTraining.guestTick(play->gameSession(), play->trainingCourse(),
                                  coopGuestWorld->self(), *coopBridge());
+        }
+        // An event starts once in the shared world: the NPCs in the others' events are left be.
+        if (coopLinked && (coop.isHost() || coopGuestWorld)) {
+          const std::string_view eventMap = play->scene().field().mapId();
+          const std::optional<CoopEvent> ownEvent =
+              play->eventNpc().and_then([&](std::int32_t npc) -> std::optional<CoopEvent> {
+                if (!std::in_range<std::uint16_t>(npc)) {
+                  return std::nullopt;
+                }
+                return CoopEvent{.mapId = std::string{eventMap},
+                                 .npc = static_cast<std::uint16_t>(npc)};
+              });
+          game::coop::PlayerId self = game::coop::HostPlayerId;
+          if (coop.isHost()) {
+            std::vector<CoopEventPeer> others;
+            for (CoopPeer& peer : coopPeers) {
+              others.push_back({.id = peer.id, .bridge = peer.bridge.get()});
+            }
+            coopEvents.hostTick(ownEvent, others);
+          } else {
+            self = coopGuestWorld->self();
+            coopEvents.guestTick(ownEvent, self, *coopBridge());
+          }
+          play->leaveNpcsBe(coopEvents.heldByOthers(self, eventMap));
         }
         if (coopLinked && coopTraining.takeClockNotice()) {
           coopHud.notice(CoopTrainingClockText);

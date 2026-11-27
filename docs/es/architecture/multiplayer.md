@@ -574,6 +574,16 @@ partida de un jugador, así que si toma dentro del mismo viaje de ida y vuelta v
 está porque otro lo tomó con el aviso abierto, recibe el mismo aviso. En un mapa en el que no está el anfitrión, el
 suelo de un invitado es suyo y no hace falta reclamar. La partida de un jugador nunca reclama.
 
+**Los eventos empiezan una vez (#417).** Cada partida ejecuta su propia historia, así que dos jugadores que hablaban
+con el mismo NPC jugaban los dos su evento, cada uno con su nombre, y empezaban los dos su combate. Mientras la partida
+de un jugador juega el evento de un NPC (una sección que empezó un toque o una charla, hasta que acaba el script), ese
+NPC queda retenido: un invitado se lo dice al anfitrión con `EventStatus` (`0xC2`, protocolo 14), el anfitrión le dice
+a cada invitado los de todos, el suyo incluido, y las demás partidas en ese mapa descartan entretanto sus toques y
+charlas con ese NPC. Cuando el evento acaba, sus cambios de historia llegan a los demás como siempre, así que el
+siguiente jugador que habla con el NPC ve lo que dejó el evento. Un jugador que se va suelta su NPC. Los NPC que
+comparten id de script (los salvajes de una especie en un mapa) quedan retenidos juntos. Dos toques dentro del mismo
+viaje de ida y vuelta aún pueden empezar los dos.
+
 **Entrar tarde y cambiar de mapa.** Un invitado que entra recibe toda la historia compartida (`WorldSync`, en partes
 que caben en un datagrama) y el suelo del anfitrión; todos los invitados los reciben otra vez cuando el anfitrión entra
 en un mapa. La sincronización lleva la revisión del anfitrión, así que un cambio que ya está en ella no se aplica otra

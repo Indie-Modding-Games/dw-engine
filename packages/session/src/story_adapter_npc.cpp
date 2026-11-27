@@ -2,6 +2,7 @@
 #include <dwe/session/messages.hpp>
 #include <dwe/session/story_adapter.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -44,11 +45,20 @@ void StoryAdapter::followNpcHolds() {
   scriptRan_ = runs;
 }
 
-void StoryAdapter::runNpcContacts(std::span<const game::field::NpcContact> contacts) {
+void StoryAdapter::runNpcContacts(std::span<const game::field::NpcContact> contacts,
+                                  std::span<const std::int32_t> leftBe) {
+  if (!scriptRunning()) {
+    eventNpc_.reset();
+  }
   if (!runner_) {
     return;
   }
   for (const game::field::NpcContact& contact : contacts) {
+    if (std::ranges::contains(leftBe, contact.scriptId)) {
+      core::logDebug("coop: NPC section {} is another player's event now; dropped",
+                     contact.scriptId);
+      continue;
+    }
     if (!std::in_range<std::uint16_t>(contact.scriptId)) {
       core::logError("[port:npc] callScriptSection (tamer.c:677): script id {} is no section",
                      contact.scriptId);
@@ -59,6 +69,7 @@ void StoryAdapter::runNpcContacts(std::span<const game::field::NpcContact> conta
                                                     game::story::SectionSource::Event);
     if (outcome == game::story::RequestOutcome::Accepted) {
       talkedTo_ = contact.scriptId;
+      eventNpc_ = contact.scriptId;
       talkedNpc_ = contact.entity;
     }
     core::logDebug("[port:npc] callScriptSection (tamer.c:677, overworld.c:1333): NPC section {} "

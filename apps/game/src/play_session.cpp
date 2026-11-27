@@ -1145,7 +1145,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
     // Without a course it only closes the last one's stats box.
     gymScreen_.tick(TickSeconds, intent);
     scene_->tick(fieldIntent, guests, static_cast<float>(TickSeconds));
-    game_.systems.story->runNpcContacts(scene_->field().npcContacts());
+    game_.systems.story->runNpcContacts(scene_->field().npcContacts(), npcsLeftBe_);
     storyLink_->afterFieldTick();
     game_.session->tick(TickSeconds);
     std::vector<game::coop::WorldEdit> mapEdits =

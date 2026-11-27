@@ -4,10 +4,12 @@
 #include <dwe/game/field/field.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/story_adapter.hpp>
 
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -86,6 +88,10 @@ core::Result<void> PlaySession::startVisitorBattle(game::field::PlayerId owner,
 
 session::VisitingPartner PlaySession::coopFighter() const {
   return game_.systems.battle->visitorOf(*game_.session);
+}
+
+std::optional<std::int32_t> PlaySession::eventNpc() const {
+  return game_.systems.story != nullptr ? game_.systems.story->eventNpc() : std::nullopt;
 }
 
 core::Result<void> PlaySession::applyCoopSpoils(const game::battle::BattleResult& result) {

@@ -494,6 +494,10 @@ public:
   void runHandedBattleHere() { storyScenes_.runHandedBattleHere(); }
   // The guest: its partner as the host's battle builds its fighter.
   [[nodiscard]] session::VisitingPartner coopFighter() const;
+  // Co-op events (#417, coop_events.hpp): the NPCs the other players' events hold on this map,
+  // whose contacts this game drops, and the NPC whose event this game plays now.
+  void leaveNpcsBe(std::vector<std::int32_t> npcs) { npcsLeftBe_ = std::move(npcs); }
+  [[nodiscard]] std::optional<std::int32_t> eventNpc() const;
   [[nodiscard]] const std::string& modeId() const;
   // The co-op difficulty the battles this game runs scale their enemies by (coop_difficulty).
   [[nodiscard]] game::battle::CoopLevel coopLevel() const { return coopLevel_; }
@@ -680,6 +684,7 @@ private:
   bool coopGuest_ = false;
   // The map edits this tick's scripts made, for co-op to share (takeCoopWorld).
   std::vector<game::coop::WorldEdit> coopMapEdits_;
+  std::vector<std::int32_t> npcsLeftBe_;
   // What other players' story changes do to this map's NPCs, and the map heads' spawns it reads
   // (field/npc_spawns, read on the first change).
   CoopNpcPresence coopNpcs_;
