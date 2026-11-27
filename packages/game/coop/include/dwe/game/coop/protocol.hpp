@@ -33,7 +33,8 @@ inline constexpr std::size_t MaxPlayers = 4;
 // world's clock, the host's, told to every guest, and who of the players trains (#365). 12: the
 // items thrown in a battle in its frames (the guest's screen draws them) and the host's co-op
 // difficulty in the lobby (#351, #361, #352). 14: a character's scripted clip in the snapshots and
-// the guest's states, the guest's held partner and its partner form (#412, #420).
+// the guest's states, the guest's held partner and its partner form, and the host's map NPCs in
+// the snapshots (#412, #420, #419).
 inline constexpr std::uint32_t ProtocolVersion = 14;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
@@ -46,6 +47,8 @@ inline constexpr std::uint32_t ProtocolVersion = 14;
 // A worst-case 255-byte map id plus 48 entities fits in one 1200-byte unreliable datagram,
 // including ChannelPeerLink's one-byte lane tag. JoinState travels reliably and can carry more.
 inline constexpr std::size_t MaxSnapshotEntities = 48;
+// A map NPC's id in the snapshots is this plus its slot; the players' and partners' stay under it.
+inline constexpr std::uint16_t NpcNetworkBase = 0x100;
 inline constexpr std::size_t MaxJoinEntities = 128;
 inline constexpr std::int32_t MaxWorldCoordinate = 1'000'000;
 inline constexpr std::int32_t MaxViewCoordinate = 1'000'000;

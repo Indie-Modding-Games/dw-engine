@@ -89,6 +89,17 @@ struct NpcBody {
 };
 
 // The other characters an NPC can bump into.
+// Where an NPC stands and how it moves, by slot: what a co-op host's field tells the guests' about
+// its NPCs.
+struct NpcPose {
+  std::size_t slot = 0;
+  glm::vec3 position{};
+  float yaw = 0.0F;
+  scene::Motion motion = scene::Motion::Idle;
+
+  bool operator==(const NpcPose&) const = default;
+};
+
 struct NpcSurroundings {
   GroundSquare player;
   GroundSquare partner;
@@ -154,6 +165,16 @@ public:
   bool restartPathAt(std::size_t slot);
   // The slot of the NPC on an entity, or nothing.
   [[nodiscard]] std::optional<std::size_t> slotOf(scene::Entity entity) const;
+
+  // The NPCs on the map, by slot.
+  [[nodiscard]] std::vector<NpcPose> poses() const;
+  // Another game's field says where an NPC stands (a co-op guest shows the host's): its path and
+  // its reaction to the player stop and it stands so until let go. A script's hold or animation
+  // still comes first. False when no NPC is in the pose's slot.
+  bool mirror(const NpcPose& pose);
+  bool releaseMirror(std::size_t slot);
+  void releaseMirrors();
+  [[nodiscard]] bool mirrored(std::size_t slot) const;
 
   // Holds an NPC still for a script, or lets it go (overworld.c: setMovementEnabled, stopAnim):
   // held, it stands idle; holding it starts its path over (clearMapAITable). False when no NPC has
@@ -239,6 +260,7 @@ private:
     // How far it is in its reaction to the player (MapDigimonEntity.lookAtTamerState): 0 while it
     // has not seen the player, and its path runs only then.
     std::uint8_t trackState = 0;
+    bool mirrored = false;
   };
 
   [[nodiscard]] Npc* find(std::int32_t scriptId);

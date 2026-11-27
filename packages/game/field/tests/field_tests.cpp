@@ -2648,6 +2648,37 @@ TEST_CASE("an NPC a battle took off stays off through a save until the map loads
   REQUIRE(spawnNpc(loaded, beaten));
 }
 
+TEST_CASE("an NPC another game's field places stands as told instead of walking its path") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  const std::size_t slot = addNpc(map, 1000.0F, 0.0F, 7);
+  map.npcs[slot].aiSections = {0, 0, 1, -1, -1, -1, -1, -1};
+  map.npcs[slot].waypoints = {{1, 0, 0}};
+  field.enterMapAt(map, at(-1500.0F, 0.0F, 1500.0F));
+  REQUIRE(spawnNpc(field, slot));
+  const dwe::game::field::NpcPose told{
+      .slot = slot, .position = {400.0F, 0.0F, -300.0F}, .yaw = 1.0F, .motion = Motion::Walk};
+  CHECK_FALSE(field.npcs().mirror({.slot = slot + 1}));
+  REQUIRE(field.npcs().mirror(told));
+  run(field, 3.0F);
+  const auto poses = field.npcs().poses();
+  REQUIRE(poses.size() == 1);
+  CHECK(poses.front() == told);
+
+  // A script's hold still comes first.
+  REQUIRE(field.npcs().hold(7, true));
+  CHECK(field.npcs().mirror({.slot = slot, .position = {0.0F, 0.0F, 900.0F}}));
+  CHECK(field.npcs().poses().front().position == told.position);
+  REQUIRE(field.npcs().hold(7, false));
+
+  // Let go, it walks its own path again.
+  CHECK(field.npcs().releaseMirror(slot));
+  CHECK_FALSE(field.npcs().mirrored(slot));
+  run(field, 3.0F);
+  CHECK(groundDistance(*field.npcs().positionOf(7), told.position) > 100.0F);
+}
+
 TEST_CASE("an NPC off screen is out of the collision, as Etemon up in his tree") {
   // mayo04a: Etemon waits 1000 units up over the tree's door until the story drops him; off screen
   // (entity.isOnScreen 0) the original's collision skips him (utils2.c: isInvisible), so the

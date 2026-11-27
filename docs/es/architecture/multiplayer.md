@@ -340,7 +340,7 @@ Un byte de tipo al principio de cada mensaje, en el rango `0x60–0x6F` (el vers
 | `0x63` | `Commands` | no fiable | cliente → host | Un comando cuantizado con secuencia. El buffer acepta solo secuencias nuevas con rollover y lo vuelve neutral tras 250 ms; repetición de las últimas 3 secuencias queda pendiente. |
 | `0x64` | reservado | — | — | Sin mensaje de posición del cliente. |
 | `0x65` | reservado | — | — | Sin mensaje de corrección; se reconcilia con snapshots. |
-| `0x66` | `Snapshot` | no fiable | host → cliente | Tick, ACK de comando y hasta 48 entidades cuantizadas. El capturador actual incluye jugador host, compañero host e invitado. El tamaño se limita a 1200 bytes; NPCs, HUD, recepción e interpolación del cliente siguen pendientes. |
+| `0x66` | `Snapshot` | no fiable | host → cliente | Tick, ACK de comando y hasta 48 entidades cuantizadas. El capturador incluye a cada jugador y su compañero y después los NPC del mapa (#419). El tamaño se limita a 1200 bytes; el HUD sigue pendiente. |
 | `0x67` | reservado | — | — | No se requiere ACK para snapshots completos. |
 | `0x68` | `Event` | fiable | host → cliente | Reservado en el protocolo actual; planificado para cambio de mapa, diálogo e inicio/fin de combate. |
 | `0x69` | `Action` | fiable | cliente → host | Reservado; planificado para acciones críticas con id monotónico y secuencia de origen. |
@@ -526,6 +526,16 @@ dibuja allí al compañero del invitado en lugar de hacerlo seguir, y lo deja se
 estado deja de llevarlo. Un compañero retenido a más de 2000 unidades de su jugador no se dibuja allí. Un clip que un
 script ya no reproduce no deja nada: el cuerpo vuelve al clip de su movimiento en todas las máquinas.
 
+**Los NPC del mapa (#419).** Antes cada partida movía sus NPC del mapa por su cuenta, así que uno salvaje estaba,
+perseguía y se iba distinto en cada pantalla. Desde el protocolo 14 las instantáneas del anfitrión listan también los
+NPC de su mapa, con id `0x100` más el hueco, después de los jugadores (ninguno si no caben en un datagrama). En un
+invitado que está en el mapa del anfitrión, cada NPC listado está donde el del anfitrión y se mueve igual, tan suave
+como los jugadores; un script de la partida del propio invitado que lo retenga o lo anime sigue mandando. Uno que el
+anfitrión ya no tiene (una batalla lo quitó, un cambio de historia lo hizo irse) sale del mapa del invitado cuando
+lleva un segundo sin aparecer y no corre ningún script allí, así que no queda nada atrás. En otro mapa, durante un
+cambio de mapa o una batalla co-op, o sin enlace, los NPC del invitado se mueven por su cuenta. Reaccionan al jugador
+del anfitrión, como los ve su partida; un NPC que solo tiene el anfitrión no se añade en el invitado.
+
 **Ciclo de vida.** Un invitado entra cuando termina su saludo: recibe el id libre más bajo, un cuerpo y un compañero
 en el campo del anfitrión junto a él, una corrección a ese sitio y un roster nuevo. Sale con `Leave`, con un enlace
 caído o con un cierre inesperado: su registro, cuerpo, compañero y búferes desaparecen en los dos lados, y el roster
@@ -539,6 +549,7 @@ como nuevo, con un estado limpio.
 
 Pruebas: `packages/game/coop/tests/authority_tests.cpp`, `packages/game/coop/tests/replication_tests.cpp`,
 `apps/game/tests/coop_world_tests.cpp`, `apps/game/tests/coop_replication_tests.cpp`,
+`apps/game/tests/coop_npc_mirror_tests.cpp`,
 `apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` y los casos
 cooperativos de `packages/game/field/tests/field_tests.cpp`.
 

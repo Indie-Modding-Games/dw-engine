@@ -116,6 +116,25 @@ core::Result<game::coop::Snapshot> makeCoopSnapshot(const game::field::Field& fi
       snapshot.entities.push_back(*state);
     }
   }
+  // The map's NPCs in the room left, by slot (#419); none when they do not all fit in one datagram,
+  // so a guest never takes one the host still has for gone.
+  const std::size_t players = snapshot.entities.size();
+  for (const game::field::NpcPose& pose : field.npcs().poses()) {
+    if (snapshot.entities.size() >= game::coop::MaxSnapshotEntities ||
+        pose.slot > std::numeric_limits<std::uint16_t>::max() - game::coop::NpcNetworkBase) {
+      break;
+    }
+    auto state =
+        toCoopEntityState(static_cast<std::uint16_t>(game::coop::NpcNetworkBase + pose.slot),
+                          game::coop::HostPlayerId, game::coop::EntityRole::Npc,
+                          {.position = pose.position, .yaw = pose.yaw, .motion = pose.motion});
+    if (state) {
+      snapshot.entities.push_back(*state);
+    }
+  }
+  if (game::coop::encode(snapshot).size() + 1 > net::MaxDatagram) {
+    snapshot.entities.resize(players);
+  }
   return snapshot;
 }
 

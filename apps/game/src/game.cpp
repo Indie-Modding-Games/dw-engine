@@ -2880,6 +2880,9 @@ int runGame(const Options& requested) {
         const auto presented = coopBridge()->presentedWorld(drawnAt);
         presentCoopPlayers(play->scene(), presented ? &*presented : nullptr, *coopGuestWorld,
                            coop.remotePartnerSpecies());
+        play->mirrorCoopNpcs(presented ? &*presented : nullptr, drawnAt);
+      } else {
+        play->mirrorCoopNpcs(nullptr, {});
       }
       play->update(sessionCommands, autotest.get(), frameStats, gameSeconds, drawAlpha);
       // A tag over each other player: the host's guests; on a guest the host and the other

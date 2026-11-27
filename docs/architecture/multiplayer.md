@@ -275,7 +275,7 @@ A type byte at the start of each message, in the range `0x60–0x6F` (versus use
 | `0x63` | `Commands` | unreliable | client → host | `PlayerCommands` of the last 3 ticks. |
 | `0x64` | `OwnPose` | unreliable | client → host | Position, heading and animation of the client's player. |
 | `0x65` | `PoseFix` | reliable | host → client | Corrected position when the client's is not possible. |
-| `0x66` | `Snapshot` | unreliable | host → client | Tick, game clock, entities (delta against the last confirmed), HUD of the two partners. |
+| `0x66` | `Snapshot` | unreliable | host → client | Tick, game clock, entities (delta against the last confirmed): every player and partner, then the map's NPCs (#419). HUD of the two partners. |
 | `0x67` | `SnapshotAck` | unreliable | client → host | Last snapshot received, for the deltas. |
 | `0x68` | `Event` | reliable | host → client | Map change, dialog, battle start and end, shared menu. |
 | `0x69` | `Action` | reliable | client → host | An action that cannot be lost (it also goes in `Commands`; the host discards duplicates per tick). |
@@ -434,6 +434,15 @@ the guest's partner there instead of following, and lets it follow again from th
 carrying it. A held partner reported more than 2000 units from its player is not drawn there. A clip a script no
 longer plays leaves nothing behind: the body goes back to its motion's clip on every machine.
 
+**The map's NPCs (#419).** Each game used to walk its map NPCs on its own, so a wild one stood, chased and left
+differently on each screen. With protocol 14 the host's snapshots also list its map's NPCs, id `0x100` plus the slot,
+after the players (none when they do not fit in one datagram). On a guest standing on the host's map, every NPC the
+snapshot lists stands where the host's does and moves its way, as smoothly as the players; a script of the guest's own
+game holding or animating one still comes first. One the host no longer has (a battle took it off, a story change made
+it leave) leaves the guest's map once it has been missing for a second while no script runs there, so nothing stays
+behind. On another map, during a map change or a co-op battle, or with no link, the guest's NPCs walk on their own.
+They react to the host's player, as the host's game sees them; an NPC only the host has is not added on the guest.
+
 **Lifecycle.** A guest joins when its handshake completes: it gets the lowest free id, a body and partner in the
 host's field next to the host, a correction to that spot and a new roster. It leaves on `Leave`, a dropped link or a
 crash: its record, body, partner and buffers go on both sides, and the roster drops it. When a co-op game ends on
@@ -446,6 +455,7 @@ objects).
 
 Tests: `packages/game/coop/tests/authority_tests.cpp`, `packages/game/coop/tests/replication_tests.cpp`,
 `apps/game/tests/coop_world_tests.cpp`, `apps/game/tests/coop_replication_tests.cpp`,
+`apps/game/tests/coop_npc_mirror_tests.cpp`,
 `apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` and the
 co-op cases of `packages/game/field/tests/field_tests.cpp`.
 
