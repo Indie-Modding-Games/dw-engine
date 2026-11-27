@@ -32,8 +32,10 @@ inline constexpr std::size_t MaxPlayers = 4;
 // and whether it takes new players, and the refusal of a room closed to them (#352, #356). 11: the
 // world's clock, the host's, told to every guest, and who of the players trains (#365). 12: the
 // items thrown in a battle in its frames (the guest's screen draws them) and the host's co-op
-// difficulty in the lobby (#351, #361, #352).
-inline constexpr std::uint32_t ProtocolVersion = 13;
+// difficulty in the lobby (#351, #361, #352). 13: the folder battle mode. 14: a
+// guest's world ask says the host revision it had seen, so the host drops what a newer change of
+// the world (a room reset) overtook (#422).
+inline constexpr std::uint32_t ProtocolVersion = 14;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
   return id < MaxPlayers;
@@ -515,10 +517,11 @@ struct WorldEdit {
 inline constexpr std::size_t MaxWorldEdits = 64;
 
 // A guest's game changed the shared world (its script set a trigger, a door moved): the host takes
-// what is shared. `ask` is the guest's own count;
-// `mapId` the map the guest was on.
+// what is shared. `ask` is the guest's own count, `seen` the newest host revision its game had
+// taken when it made the edits, `mapId` the map the guest was on.
 struct WorldAsk {
   std::uint32_t ask = 0;
+  std::uint32_t seen = 0;
   std::string mapId;
   std::vector<WorldEdit> edits;
 

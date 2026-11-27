@@ -266,7 +266,7 @@ TEST_CASE(
       WorldChange{.revision = 1, .origin = 0, .ask = 0, .mapId = "m", .edits = {}}};
   const Message claim{
       ItemClaim{.claim = 1, .kind = ClaimKind::Chest, .key = 3, .id = 0, .mapId = "m"}};
-  CHECK(guest.send(Message{WorldAsk{.ask = 1, .mapId = "m", .edits = {}}}));
+  CHECK(guest.send(Message{WorldAsk{.ask = 1, .seen = 0, .mapId = "m", .edits = {}}}));
   CHECK(guest.send(claim));
   CHECK(host.send(change));
   CHECK(host.send(Message{ClaimAnswer{.claim = 1, .granted = true}}));

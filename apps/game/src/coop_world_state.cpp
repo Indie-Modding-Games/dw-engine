@@ -366,6 +366,14 @@ CoopWorldShare CoopHostWorld::share(CoopWorldView& view) {
   if (!facts_.ready()) {
     facts_.reset(story);
   }
+  // A new load of the map, the same one reset by a script's warp included: what a guest's game did
+  // on the last load, and had not seen replaced, is overtaken.
+  const bool newMap = view.settled && syncSerial_ != view.mapSerial;
+  if (newMap) {
+    syncSerial_ = view.mapSerial;
+    synced_.clear();
+    ledger_.newMapLoad();
+  }
   // The host's own interactions: its game is the world, so they only need telling.
   std::vector<coop::WorldEdit> own = facts_.changes(story, view.shared, &share.ownFacts);
   if (view.settled) {
@@ -405,6 +413,20 @@ CoopWorldShare CoopHostWorld::share(CoopWorldView& view) {
                     taken.change->edits.size(), taken.change->revision);
       append(share.out, toEveryGuest(authority_, *taken.change));
     }
+    if (!taken.overtaken.empty()) {
+      // The guest's game holds values the world replaced since: it gets the world's again.
+      std::vector<coop::WorldEdit> world;
+      for (const coop::WorldEdit& edit : taken.overtaken) {
+        if (auto now = CoopStoryBaseline::current(story, edit)) {
+          world.push_back(*now);
+        }
+      }
+      core::logInfo("coop: player {}'s world ask {}: {} edits overtaken by newer changes", from,
+                    ask.ask, taken.overtaken.size());
+      for (const coop::WorldChange& change : ledger_.record(view.mapId, world)) {
+        append(share.out, toEveryGuest(authority_, change));
+      }
+    }
     if (!taken.refused.empty()) {
       // A player's own facts never reach the world (the guest's game keeps them to itself).
       core::logDebug("coop: player {}'s world ask {}: {} edits of its own left out", from, ask.ask,
@@ -434,11 +456,6 @@ CoopWorldShare CoopHostWorld::share(CoopWorldView& view) {
   }
 
   // The whole story to a guest that just joined, and to everyone on a new map.
-  const bool newMap = view.settled && syncSerial_ != view.mapSerial;
-  if (newMap) {
-    syncSerial_ = view.mapSerial;
-    synced_.clear();
-  }
   for (const coop::PlayerRecord& record : authority_.players()) {
     if (record.id == coop::HostPlayerId || synced_.contains(record.id)) {
       continue;
@@ -493,9 +510,14 @@ CoopWorldShare CoopGuestWorld::share(CoopWorldView& view) {
           if (sharedBy(view.shared, edit)) {
             chestsMayChange |= facts_.apply(story, edit, share.facts);
           }
-        } else if (isMapEdit(edit) && change->origin != self_ && change->mapId == view.mapId &&
-                   view.settled) {
-          share.mapEdits.push_back(edit);
+        } else if (isMapEdit(edit) && change->origin != self_ && change->mapId == view.mapId) {
+          if (view.settled) {
+            share.mapEdits.push_back(edit);
+          } else {
+            // This game is loading that map again: the edits wait for its load to end.
+            heldMap_ = view.mapId;
+            heldEdits_.push_back(edit);
+          }
         }
       }
     } else if (const auto* sync = std::get_if<coop::WorldSync>(&message)) {
@@ -507,6 +529,12 @@ CoopWorldShare CoopGuestWorld::share(CoopWorldView& view) {
         }
       }
     }
+  }
+  if (view.settled && !heldEdits_.empty()) {
+    if (heldMap_ == view.mapId) {
+      share.mapEdits.insert(share.mapEdits.begin(), heldEdits_.begin(), heldEdits_.end());
+    }
+    heldEdits_.clear();
   }
   if (chestsMayChange && view.items != nullptr) {
     (void)followChestTriggers(*view.items, story);

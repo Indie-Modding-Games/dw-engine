@@ -482,6 +482,17 @@ crash the guest, #414).
 datagram) and the host's ground; every guest gets them again when the host enters a map. The sync carries the host's
 revision, so a change already in it is not applied again.
 
+**Room resets (#422).** A script's warp back onto the map the group is on reloads it: a trial room starts over this way
+(the Centarumon forest's path, the arrows' route and its gates). Every load of the host's map takes a revision of its
+own, and each `WorldAsk` says the newest revision the guest's game had taken (`seen`). What a guest asked for that map
+before it saw the reload (a step on the old path, a gate its script moved) is overtaken: map edits are dropped and facts
+are told back to everyone with the world's value, so nothing of the old room survives the reset. A fact another player
+changed after the revision a guest had seen overtakes that guest's ask the same way; a player's own earlier change never
+overtakes its later asks. A guest the reset brings back (a `PlayerCorrection` with an exit on the map it already stands
+on) loads the map again as the host did, instead of only being put at the host's spot with what its scripts left there;
+the host's map edits that come while it loads wait for the load to end. A guest's asks from the map the group left keep
+their facts.
+
 **Saves (§5.6).** The world is the host's: what a guest changes in it is in the host's next save, like anything the
 host does. Nothing of the world goes into the guest's own save: only its partner and bag go home (§5.6).
 
@@ -489,7 +500,7 @@ host does. Nothing of the world goes into the guest's own save: only its partner
 
 | Type | Name | Channel | Direction | Content |
 |---|---|---|---|---|
-| `0x90` | `WorldAsk` | reliable | client → host | The guest's ask number, its map and the edits (trigger, variable, map object, closed cells). |
+| `0x90` | `WorldAsk` | reliable | client → host | The guest's ask number, the newest host revision it had taken (protocol version 14), its map and the edits (trigger, variable, map object, closed cells). |
 | `0x91` | `WorldChange` | reliable | host → client | Revision, the player it came from and its ask, the map, the edits. |
 | `0x92` | `WorldSync` | reliable | host → client | Revision, part, and a run of triggers (bits) and variables. |
 | `0x93` | `GroundItems` | reliable | host → client | The host's map and map load, and each item on the ground: id, slot, item, cell and place. |

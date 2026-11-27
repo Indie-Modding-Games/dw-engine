@@ -316,8 +316,8 @@ void FieldScene::placeCoopProxy(scene::Entity entity, const game::field::Charact
 }
 
 void FieldScene::moveCoopSelf(const std::string& mapId, std::optional<std::int32_t> exit,
-                              assets::SpawnPoint at) {
-  if (field_->mapId() == mapId && !field_->mapChangePending()) {
+                              assets::SpawnPoint at, bool reload) {
+  if (field_->mapId() == mapId && !field_->mapChangePending() && !reload) {
     coopArrival_.reset();
     field_->placeAt(field_->playerEntity(), at.position, at.yaw);
     return;

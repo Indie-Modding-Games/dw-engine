@@ -455,7 +455,7 @@ net::Bytes encode(const Message& message) {
             out.put(std::string_view{entry.partnerSpecies});
           }
         } else if constexpr (std::is_same_v<T, WorldAsk>) {
-          out.put(WorldAskKind).put(body.ask).put(std::string_view{body.mapId});
+          out.put(WorldAskKind).put(body.ask).put(body.seen).put(std::string_view{body.mapId});
           putEdits(out, body.edits);
         } else if constexpr (std::is_same_v<T, WorldChange>) {
           out.put(WorldChangeKind).put(body.revision).put(body.origin).put(body.ask);
@@ -973,7 +973,10 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     break;
   }
   case WorldAskKind: {
-    WorldAsk ask{.ask = in.get<std::uint32_t>(), .mapId = in.text(), .edits = {}};
+    WorldAsk ask{.ask = in.get<std::uint32_t>(),
+                 .seen = in.get<std::uint32_t>(),
+                 .mapId = in.text(),
+                 .edits = {}};
     if (!getEdits(in, ask.edits) || ask.mapId.empty()) {
       return core::fail("invalid cooperative world ask");
     }

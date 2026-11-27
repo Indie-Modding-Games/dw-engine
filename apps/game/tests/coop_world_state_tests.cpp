@@ -396,6 +396,35 @@ TEST_CASE("a guest's granted pick-up of the last item on the ground leaves its s
   CHECK_FALSE(session.secondGame.items.ground()[0]);
 }
 
+TEST_CASE("a guest's step from before the host reset the room does not outlive the reset") {
+  constexpr std::int32_t Path = 161;
+  constexpr std::int32_t NextPath = 162;
+  Session session;
+  REQUIRE(session.firstGame.story.setTrigger(Path, true));
+  session.exchange();
+  session.exchange();
+  REQUIRE(session.hostGame.trigger(Path));
+  // The host's script warps it back onto the room and clears the path while the guest's next
+  // step is on its way.
+  session.hostGame.serial = 2;
+  REQUIRE(session.hostGame.story.setTrigger(Path, false));
+  REQUIRE(session.firstGame.story.setTrigger(NextPath, true));
+  session.exchange();
+  session.exchange();
+  session.exchange();
+  CHECK_FALSE(session.hostGame.trigger(Path));
+  CHECK_FALSE(session.hostGame.trigger(NextPath));
+  CHECK_FALSE(session.firstGame.trigger(Path));
+  CHECK_FALSE(session.firstGame.trigger(NextPath));
+  CHECK_FALSE(session.secondGame.trigger(NextPath));
+  // After the reset the guest's steps count again.
+  REQUIRE(session.firstGame.story.setTrigger(NextPath, true));
+  session.exchange();
+  session.exchange();
+  CHECK(session.hostGame.trigger(NextPath));
+  CHECK(session.secondGame.trigger(NextPath));
+}
+
 TEST_CASE("a door a guest's script moves moves on the host's map and for the others there") {
   Session session;
   const coop::WorldEdit door{.kind = coop::WorldEditKind::MapObject, .key = 3, .value = 1};

@@ -578,6 +578,18 @@ que caben en un datagrama) y el suelo del anfitrión; todos los invitados los re
 en un mapa. La sincronización lleva la revisión del anfitrión, así que un cambio que ya está en ella no se aplica otra
 vez.
 
+**Reinicios de sala (#422).** Un warp de script de vuelta al mapa en el que está el grupo lo carga otra vez: así
+empieza de nuevo una sala de prueba (el camino del bosque de Centarumon, la ruta de las flechas y sus vallas). Cada carga
+del mapa del anfitrión tiene su propia revisión, y cada `WorldAsk` dice la revisión más nueva que había tomado la
+partida del invitado (`seen`). Lo que un invitado pidió para ese mapa antes de ver la recarga (un paso por el camino
+viejo, una valla que movió su script) queda superado: las ediciones del mapa se descartan y los hechos se vuelven a
+contar a todos con el valor del mundo, así que nada de la sala vieja sobrevive al reinicio. Un hecho que otro jugador
+cambió después de la revisión que había visto un invitado supera igual la petición de ese invitado; un cambio anterior
+del mismo jugador nunca supera sus peticiones siguientes. Un invitado al que el reinicio trae de vuelta (un
+`PlayerCorrection` con salida en el mapa en el que ya está) carga el mapa otra vez como hizo el anfitrión, en lugar de
+solo ponerse junto al anfitrión con lo que sus scripts dejaron allí; las ediciones del mapa del anfitrión que llegan
+mientras carga esperan a que termine. Las peticiones de un invitado desde el mapa que el grupo dejó conservan sus hechos.
+
 **Guardado (§5.6).** El mundo es del anfitrión: lo que un invitado cambia en él está en el siguiente guardado del
 anfitrión, como cualquier cosa que haga el anfitrión. Nada del mundo entra en el guardado propio del invitado: solo
 vuelven a casa su compañero y su bolsa (§5.6).
@@ -586,7 +598,7 @@ vuelven a casa su compañero y su bolsa (§5.6).
 
 | Tipo | Nombre | Canal | Dirección | Contenido |
 |---|---|---|---|---|
-| `0x90` | `WorldAsk` | fiable | cliente → anfitrión | El número de petición del invitado, su mapa y las ediciones (trigger, variable, objeto del mapa, celdas cerradas). |
+| `0x90` | `WorldAsk` | fiable | cliente → anfitrión | El número de petición del invitado, la revisión más nueva del anfitrión que había tomado (versión 14 del protocolo), su mapa y las ediciones (trigger, variable, objeto del mapa, celdas cerradas). |
 | `0x91` | `WorldChange` | fiable | anfitrión → cliente | Revisión, el jugador del que vino y su petición, el mapa, las ediciones. |
 | `0x92` | `WorldSync` | fiable | anfitrión → cliente | Revisión, parte, y un tramo de triggers (bits) y variables. |
 | `0x93` | `GroundItems` | fiable | anfitrión → cliente | El mapa del anfitrión y su carga, y cada objeto del suelo: id, ranura, objeto, celda y lugar. |
