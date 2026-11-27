@@ -91,6 +91,9 @@ struct FolderFighter {
   // A status effect (stun, confusion, flattening) holds it: the original's behaviour for the
   // status runs meanwhile.
   bool held = false;
+  // A hit came after the technique of the order committed (its effect already threw what lands):
+  // the order counts as done instead of going back to positioning.
+  bool committed = false;
 
   [[nodiscard]] bool broken() const { return brokenFrames > 0; }
   // The stance it moves by now: the break keeps it holding (§2.9).

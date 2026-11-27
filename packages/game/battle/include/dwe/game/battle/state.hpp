@@ -181,6 +181,8 @@ struct AttackInFlight {
   // one still in its hit reaction by.
   std::vector<std::int32_t> laterContacts;
   bool contacted = false;
+  // The attack frame after which a hit on the attacker no longer stops it (EffectLanding).
+  std::optional<std::int32_t> committed;
 };
 
 // battle_effect.c: BTL_addAuraProjectile, BTL_tickAuraProjectile: the shot a flattened fighter

@@ -199,7 +199,10 @@ std::optional<std::size_t> EffectRunner::start(std::size_t slot, std::optional<F
   activeSection_.reset();
   startSource_ = source;
   startTarget_ = target;
+  effect.tick = -1;
+  effect.started.reset();
   run(slot, effect.script.startScript);
+  effect.started = activeSection_;
   return activeSection_;
 }
 
@@ -216,6 +219,7 @@ void EffectRunner::tick() {
   fixedCamera_ = false;
   mapHidden_ = false;
   for (std::size_t slot = 0; slot < slots_.size(); ++slot) {
+    ++slots_[slot].tick;
     for (std::size_t index = 0; index < slots_[slot].subEffects.size(); ++index) {
       const SubEffect& subEffect = slots_[slot].subEffects[index];
       if (!subEffect.tick) {
@@ -433,12 +437,19 @@ std::optional<std::size_t> EffectRunner::spawn(Slot& slot, const EffectInstructi
   }
   const std::optional<FighterId> source = slot.subEffects[subEffect_].source;
   const std::optional<FighterId> target = slot.subEffects[subEffect_].target;
+  const std::optional<std::size_t> stopped = slot.started ? slot.started : activeSection_;
+  const bool fromLine = current_.has_value() && subEffect_ != stopped;
+  const std::optional<std::int32_t> detached =
+      free == stopped
+          ? std::nullopt
+          : (fromLine ? slot.subEffects[subEffect_].detached : std::optional{slot.tick});
   subEffect_ = free;
   previous_ = current_;
   current_ = instance;
   SubEffect& spawned = slot.subEffects[free];
   spawned.instance = current_;
   spawned.parent = previous_;
+  spawned.detached = detached;
   // The first spawn of a start takes the attacker and its target; the others their parent's.
   spawned.source = previous_ ? source : startSource_;
   spawned.target = previous_ ? target : startTarget_;
@@ -486,7 +497,10 @@ void EffectRunner::subOp(Slot& slot, const EffectInstruction& in) {
       slot.hitTargets.push_back(*target);
       if (touchBodies_) {
         // The hit is registered at the instance.
-        touched_.push_back({.fighter = *target, .at = instancePosition(slot), .onBody = false});
+        touched_.push_back({.fighter = *target,
+                            .at = instancePosition(slot),
+                            .onBody = false,
+                            .committed = context(slot).detached});
       }
     }
   } else if (in.sub == CheckTargetCollision && args.size() > TargetCollisionHitArg) {

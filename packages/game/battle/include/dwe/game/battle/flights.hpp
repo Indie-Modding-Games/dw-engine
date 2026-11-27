@@ -33,6 +33,10 @@ struct EffectLanding {
   // to be touched: a check that runs over several frames touches a fighter that blocked the
   // contact before (BTL_tickAttackHits clears its isHit), never one still in its hit reaction.
   std::vector<std::int32_t> laterContacts;
+  // The attack frame after which a hit on the attacker no longer stops this touch: the effect's
+  // part that touches has left the part the hit stops (EffectTouch::committed). Nothing when that
+  // part touches itself: a hit on the attacker before the touch loses it.
+  std::optional<std::int32_t> committed;
 
   bool operator==(const EffectLanding&) const = default;
 };

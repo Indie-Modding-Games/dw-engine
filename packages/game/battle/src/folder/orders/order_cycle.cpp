@@ -1,6 +1,7 @@
 #include <dwe/game/battle/folder/formulas.hpp>
 
 #include <cstdint>
+#include <utility>
 
 #include "folder/fighters.hpp"
 #include "folder/folder.hpp"
@@ -66,10 +67,11 @@ bool holdForStatus(BattleContext& context, FighterId id) {
 void followExecution(BattleContext& context, FighterId id) {
   Fighter& self = context.fighter(id);
   FolderFighter& own = folderFighter(context, id);
+  const bool committed = std::exchange(own.committed, false);
   if (own.phase != OrderPhase::Executing || self.attack || context.state->finisher.fighter == id) {
     return;
   }
-  if (self.coolingDown) {
+  if (self.coolingDown || committed) {
     self.coolingDown = false;
     self.cooldown = 0;
     enterPhase(context, id, OrderPhase::Recovering,

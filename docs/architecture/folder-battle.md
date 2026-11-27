@@ -123,7 +123,7 @@ by mechanic. **Implemented**: the current battle does it as designed; **partial*
 | 3.10 | Technique data | Partial | Power, MP, distance, range, status, accuracy, iframes; no execution or recovery time, area size, functions | Technique data |
 | 4.2 | Order cycle | Missing | Commands set a standing behaviour | Execution cycle |
 | 4.3 | Execution states | Partial | Internal flags (planned, charging, cooling down, attacking) but no states the player sees | Execution cycle |
-| 4.5 | Interruption, cancellation, replacement | Partial | A hit cancels the attack; nothing tells the player | Execution cycle |
+| 4.5 | Interruption, cancellation, replacement | Partial | A hit cancels the technique until it commits (the original's commit point); poison never interrupts; nothing tells the player | Execution cycle |
 | 4.6 | Invalid order resolves | Partial | Ranged attacks give up after a patience; no notice | Execution cycle |
 | 6.2 | One speed attribute (VEL) | Implemented | The battle only has speed | — |
 | 6.2 | DEF flat subtraction | Contradicts | `(offense − defense)` scales power, clamped | Damage |
@@ -166,7 +166,7 @@ small function, so it can change without touching the rest.
 | Target defeated or gone | The order is **cancelled** with a reason; the partner keeps its stance (§2.4). |
 | Target of an order | Each order keeps the foe Change had picked when it was given, so two orders can split two foes. A partner that gets hit no longer turns to the attacker (the original's `BTL_retargetAfterHit`): it only changes target when told to or when its target is gone (§2.4, §4.3). Enemies keep turning. |
 | Not enough MP | The order is **invalid** and leaves the queue; the partner keeps moving by its stance (§2.8, §4.6). |
-| Interrupted by a hit | A hit while preparing or executing keeps the order: after the hit reaction it goes back to positioning, without processing it again; MP already paid is spent (§2.8 "retries it"). A status effect (stun, confusion, flattening) puts it back at the front of the queue instead. |
+| Interrupted by a hit | A hit while preparing or executing keeps the order: after the hit reaction it goes back to positioning, without processing it again; MP already paid is spent (§2.8 "retries it"). A status effect (stun, confusion, flattening) puts it back at the front of the queue instead. The design set no commit point, so Folder takes the original's (#425): once the technique's effect has thrown the part that hits (Spit Fire's fireball, about half its animation in), a hit on the user no longer stops it; it lands and the order counts as done, with its recovery after the hit reaction. A poison tick never interrupts. |
 | Aggressive and range | Aggressive chases its target to point-blank for `folder.chase_frames`, then uses the technique from its reach, so a target that keeps away still gets hit (§2.9 leaves the tolerances open). The technique goes off when its preparation ends if the target is still in reach; a ranged one keeps the Classic band around its distance. |
 | Technique timings | Each technique prepares and recovers by its MP cost in `folder.timings` tiers (the dearer the slower), the finishers by `folder.finisher_timing`, and `folder.techniques` gives one technique its own; VEL still cuts the preparation (§5, §6.4). Area, functions and friendly fire per technique wait for the catalogue. |
 | Unreachable range | After `folder.give_up_frames` positioning without reaching range the order fails as unreachable (§4.6). |

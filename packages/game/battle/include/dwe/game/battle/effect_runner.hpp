@@ -96,11 +96,15 @@ public:
 
 // A fighter a hit check touched and the point of the hit, the attack object's position
 // (graphics.c: addAttackObject), in the console's axes: the instance's for a box check or
-// hit_target, the fighter's body toward the source for a radius or line check (onBody).
+// hit_target, the fighter's body toward the source for a radius or line check (onBody). A hit on
+// the attacker stops only the sub-effect its start returned (battle_main.c: BTL_removeMoveEffect,
+// battle_effect.c: BTL_stopEFESubEffect); a touch made by any other sub-effect is committed from
+// the tick its line left that one (committed), and still lands after the attacker is hit.
 struct EffectTouch {
   FighterId fighter = 0;
   EffectVector at;
   bool onBody = false;
+  std::optional<std::int32_t> committed;
 
   bool operator==(const EffectTouch&) const = default;
 };
@@ -412,6 +416,8 @@ private:
     std::optional<FighterId> source;
     std::optional<FighterId> target;
     std::optional<assets::EffectBoneOffset> boneOffset;
+    // The slot's tick from which a hit on the attacker no longer ends it (EffectTouch::committed).
+    std::optional<std::int32_t> detached;
   };
 
   // An object's UV animation (battle_effect.c: EfeUvAnim): its keyframes' offset, the keyframe and
@@ -439,6 +445,10 @@ private:
     std::vector<FighterId> hitTargets;
     // Its init script failed (EFE_ACTIVE_SECTION -2): it never starts.
     bool failed = false;
+    // The ticks since its start (-1 during the start) and the sub-effect a hit on the attacker
+    // stops (BTL_startEFE's answer, the attacker's efeSubEffect).
+    std::int32_t tick = -1;
+    std::optional<std::size_t> started;
     EffectPalettes palettes;
   };
 
