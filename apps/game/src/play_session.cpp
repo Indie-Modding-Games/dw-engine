@@ -1076,6 +1076,10 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
       return;
     }
   }
+  // A battle another player started takes this player's screen: its game menu closes (#415).
+  if (worldShared_ && (battleScreen_.active() || coopBattleHold_) && ui.isVisible(MenuDocument)) {
+    context_.ui->hide(MenuDocument);
+  }
   // A co-op guest's field holds while the host's battle runs; its fighters are drawn as the host
   // sends them (coop_battles.hpp).
   if (coopBattleHold_) {
@@ -1084,14 +1088,17 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
     return;
   }
   scene_->holdCamera(battleScreen_.active());
+  const LocalScreens open = localScreens();
   if (battleScreen_.active()) {
     // fade.c: a fade in the battle started under runs on with the drawing.
     scene_->field().tickFadeIn(static_cast<float>(TickSeconds));
-    if (!ui.isVisible(MenuDocument)) {
+    if (!localScreensHoldWorld({.gameMenu = open.gameMenu}, worldShared_)) {
       battleScreen_.tick(TickSeconds);
     }
-  } else if (!ui.isVisible(MenuDocument) && !ui.isVisible(MainMenuDocument) &&
-             !ui.isVisible(PartnerMenuDocument)) {
+  } else if (!localScreensHoldWorld({.gameMenu = open.gameMenu,
+                                     .mainMenu = open.mainMenu,
+                                     .partnerMenu = open.partnerMenu},
+                                    worldShared_)) {
     // The fishing runs instead of the field and the game time (clock.c: tickGameClock).
     if (fishingScreen_.active()) {
       fishingScreen_.tick(*scene_, fishing, TickSeconds);
@@ -1138,7 +1145,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
     // Without a course it only closes the last one's stats box.
     gymScreen_.tick(TickSeconds, intent);
     scene_->tick(fieldIntent, guests, static_cast<float>(TickSeconds));
-    game_.systems.story->runNpcContacts(scene_->field().npcContacts());
+    game_.systems.story->runNpcContacts(scene_->field().npcContacts(), npcsLeftBe_);
     storyLink_->afterFieldTick();
     game_.session->tick(TickSeconds);
     std::vector<game::coop::WorldEdit> mapEdits =
@@ -2318,18 +2325,29 @@ const game::story::StoryState* PlaySession::storyState() const {
   return game_.systems.story != nullptr ? &game_.systems.story->state() : nullptr;
 }
 
-bool PlaySession::paused() const {
+LocalScreens PlaySession::localScreens() const {
   const ui::Ui& ui = *context_.ui;
-  return ui.isVisible(MenuDocument) || ui.isVisible(MainMenuDocument) ||
-         ui.isVisible(PartnerMenuDocument) || screenStops();
+  return {.gameMenu = ui.isVisible(MenuDocument),
+          .mainMenu = ui.isVisible(MainMenuDocument),
+          .partnerMenu = ui.isVisible(PartnerMenuDocument),
+          .pauseBox = ui.isVisible(PauseBoxDocument)};
+}
+
+bool PlaySession::paused() const {
+  LocalScreens open = localScreens();
+  open.pauseBox = false;
+  return localScreensHoldWorld(open, worldShared_) || screenStops();
 }
 
 FieldClock PlaySession::fieldClock() const {
-  const ui::Ui& ui = *context_.ui;
-  return fieldClockOf({.gameMenu = ui.isVisible(MenuDocument) || ui.isVisible(PartnerMenuDocument),
-                       .battle = battleScreen_.active() || coopBattleHold_,
-                       .otherScreen = ui.isVisible(MainMenuDocument) ||
-                                      ui.isVisible(PauseBoxDocument) || otherScreenStops()});
+  const LocalScreens open = localScreens();
+  return fieldClockOf(
+      {.gameMenu = localScreensHoldWorld(
+           {.gameMenu = open.gameMenu, .partnerMenu = open.partnerMenu}, worldShared_),
+       .battle = battleScreen_.active() || coopBattleHold_,
+       .otherScreen = localScreensHoldWorld({.mainMenu = open.mainMenu, .pauseBox = open.pauseBox},
+                                            worldShared_) ||
+                      otherScreenStops()});
 }
 
 bool PlaySession::screenStops() const {

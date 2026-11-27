@@ -7,6 +7,7 @@
 #include <dwe/ui/ui.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -112,6 +113,9 @@ public:
   // commands, except that a code joins at once and leaving closes even a connected room.
   void joinCode(std::string_view code);
   void leave();
+  // The game is closing: everyone in the room hears this player leave and a public room leaves
+  // the directory, waiting for both at most `budgetSeconds` on the clock `now`.
+  void shutDown(const std::function<double()>& now, double budgetSeconds);
   [[nodiscard]] bool takeStartRequested() { return std::exchange(startRequested_, false); }
   [[nodiscard]] bool takeGuestProfileRequest() {
     return std::exchange(guestProfileRequest_, false);

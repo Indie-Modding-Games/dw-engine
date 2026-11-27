@@ -12,7 +12,7 @@ namespace dwe::game::coop {
 namespace {
 
 // The highest kind: the ranges below it that hold no kind decode as another protocol's.
-constexpr std::uint8_t LastKind = TrainingStatusKind;
+constexpr std::uint8_t LastKind = EventStatusKind;
 // A motion byte with this bit set is followed by the character's scripted clip (ActionClip).
 constexpr std::uint8_t ActionBit = 0x80;
 
@@ -609,6 +609,8 @@ net::Bytes encode(const Message& message) {
           out.put(body.speedThousandths);
         } else if constexpr (std::is_same_v<T, TrainingStatus>) {
           out.put(TrainingStatusKind).put(body.player).put(std::string_view{body.course});
+        } else if constexpr (std::is_same_v<T, EventStatus>) {
+          out.put(EventStatusKind).put(body.player).put(std::string_view{body.mapId}).put(body.npc);
         } else {
           out.put(ProfileChunkKind)
               .put(body.transferId)
@@ -1337,6 +1339,17 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     status.course = in.text();
     if (!in.ok() || !validPlayer(status.player) || status.course.size() > MaxCourseText) {
       return core::fail("invalid cooperative training status");
+    }
+    message = std::move(status);
+    break;
+  }
+  case EventStatusKind: {
+    EventStatus status;
+    status.player = in.get<PlayerId>();
+    status.mapId = in.text();
+    status.npc = in.get<std::uint16_t>();
+    if (!in.ok() || !validPlayer(status.player) || status.mapId.size() > MaxEventMapText) {
+      return core::fail("invalid cooperative event status");
     }
     message = std::move(status);
     break;

@@ -76,6 +76,9 @@ bool directionAllowed(Side receiver, const Message& message) {
     if (std::holds_alternative<TrainingStatus>(message) ||
         std::holds_alternative<PartnerForm>(message))
       return true;
+    // The NPC whose event the guest's own game plays (#417); the host takes it as that guest's.
+    if (std::holds_alternative<EventStatus>(message))
+      return true;
     if (std::holds_alternative<TradeAsk>(message) || std::holds_alternative<TradeAnswer>(message) ||
         std::holds_alternative<TradeOffer>(message) ||
         std::holds_alternative<TradeConfirm>(message) ||
@@ -106,7 +109,8 @@ bool directionAllowed(Side receiver, const Message& message) {
     return true;
   // The world's clock is the host's, and so is the word of who trains (#365).
   if (std::holds_alternative<WorldClock>(message) ||
-      std::holds_alternative<TrainingStatus>(message))
+      std::holds_alternative<TrainingStatus>(message) ||
+      std::holds_alternative<EventStatus>(message))
     return true;
   if (const auto* chunk = std::get_if<ProfileChunk>(&message))
     return chunk->kind == ProfilePayloadKind::HostSave;

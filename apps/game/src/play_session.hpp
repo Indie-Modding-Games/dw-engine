@@ -81,6 +81,7 @@ class InventoryAdapter;
 #include "save_indicator.hpp"
 #include "save_machine.hpp"
 #include "session_start.hpp"
+#include "shared_pause.hpp"
 #include "shop_haggle_screen.hpp"
 #include "shop_job_bar.hpp"
 #include "shop_job_rules_panel.hpp"
@@ -497,11 +498,21 @@ public:
   void runHandedBattleHere() { storyScenes_.runHandedBattleHere(); }
   // The guest: its partner as the host's battle builds its fighter.
   [[nodiscard]] session::VisitingPartner coopFighter() const;
+  // Co-op events (#417, coop_events.hpp): the NPCs the other players' events hold on this map,
+  // whose contacts this game drops, and the NPC whose event this game plays now.
+  void leaveNpcsBe(std::vector<std::int32_t> npcs) { npcsLeftBe_ = std::move(npcs); }
+  // A co-op guest's sleep waits in the dark for the world's morning (#424).
+  [[nodiscard]] bool sleepWaitsForWorld() const { return sleepScreen_.waitsForWorld(); }
+  [[nodiscard]] std::optional<std::int32_t> eventNpc() const;
   [[nodiscard]] const std::string& modeId() const;
   // The co-op difficulty the battles this game runs scale their enemies by (coop_difficulty).
   [[nodiscard]] game::battle::CoopLevel coopLevel() const { return coopLevel_; }
   // The guest: the field holds while the host's battle runs (its figures are the host's).
   void holdForCoopBattle(bool on) { coopBattleHold_ = on; }
+  // Other players share this game's world now (co-op, #415): this player's menus and pause no
+  // longer stop it (shared_pause.hpp).
+  void shareWorld(bool shared) { worldShared_ = shared; }
+  [[nodiscard]] bool worldShared() const { return worldShared_; }
   [[nodiscard]] bool heldForCoopBattle() const { return coopBattleHold_; }
   // The guest: what the host's battle left its partner, given as its own battle's result.
   core::Result<void> applyCoopSpoils(const game::battle::BattleResult& result);
@@ -528,6 +539,7 @@ private:
                    std::span<const GuestFieldIntent> guests);
   void tickWater();
   [[nodiscard]] bool paused() const;
+  [[nodiscard]] LocalScreens localScreens() const;
   // How the field animates: running, resting behind the game menu, in a battle or frozen
   // (field_clock.hpp).
   [[nodiscard]] FieldClock fieldClock() const;
@@ -651,6 +663,7 @@ private:
   bool battleRanLastFrame_ = false;
   // The guest's field holds for the host's battle (holdForCoopBattle).
   bool coopBattleHold_ = false;
+  bool worldShared_ = false;
   bool evolutionRanLastFrame_ = false;
   // The play options (applyPlayOptions): skip the evolution's scene on confirm or cancel, and the
   // options that change the running game's rules.
@@ -677,6 +690,7 @@ private:
   bool coopGuest_ = false;
   // The map edits this tick's scripts made, for co-op to share (takeCoopWorld).
   std::vector<game::coop::WorldEdit> coopMapEdits_;
+  std::vector<std::int32_t> npcsLeftBe_;
   // What other players' story changes do to this map's NPCs, and the map heads' spawns it reads
   // (field/npc_spawns, read on the first change).
   CoopNpcPresence coopNpcs_;

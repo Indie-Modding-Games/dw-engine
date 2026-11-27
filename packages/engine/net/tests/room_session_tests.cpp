@@ -204,8 +204,9 @@ TEST_CASE(
   CHECK(room.phase() == RoomPhase::Playing);
   room.close();
   CHECK(room.phase() == RoomPhase::Closed);
-  CHECK(server.notices == std::vector<std::string>{"K7Q2 ready", "K7Q2 playing", "K7Q2 closed"});
-  CHECK(room.sentNotices() == std::deque<std::string>{"ready", "playing", "closed"});
+  CHECK(server.notices ==
+        std::vector<std::string>{"K7Q2 ready", "K7Q2 connected", "K7Q2 playing", "K7Q2 closed"});
+  CHECK(room.sentNotices() == std::deque<std::string>{"ready", "connected", "playing", "closed"});
   CHECK(room.noticeError().empty());
   CHECK_FALSE(room.noticesPending());
   // Closed is the end: nothing moves it again.
@@ -278,6 +279,63 @@ TEST_CASE(
   waiting.close();
   CHECK(waiting.sentNotices().empty());
   CHECK(roomPhaseName(RoomPhase::Ready) == "ready");
+}
+
+TEST_CASE("a public room's host repeats its state every minute while the room lasts (#416)") {
+  FakeSignalServer server;
+  SignalClient signal{server.open(hostUrl("wss://fake", true))};
+  signal.poll();
+  FakeLink link;
+  link.code = signal.roomCode();
+  link.token = signal.roomToken();
+  RoomSession room{{.hosting = true, .code = {}, .server = "wss://fake", .open = openerOf(server)}};
+  room.observe(link);
+  // Open: the room's own socket keeps its entry, nothing is repeated.
+  room.poll(Millis{0});
+  room.poll(RoomRefreshEvery * 3);
+  CHECK(server.notices.empty());
+  SignalClient guest{server.open(joinUrl("wss://fake", "K7Q2"))};
+  link.found = true;
+  room.observe(link);
+  Millis now = RoomRefreshEvery * 3;
+  room.poll(now);
+  room.poll(now + RoomRefreshEvery - Millis{1});
+  CHECK(server.notices.empty());
+  room.poll(now + RoomRefreshEvery);
+  CHECK(server.notices == std::vector<std::string>{"K7Q2 connected"});
+  room.markPlaying();
+  now += RoomRefreshEvery * 2;
+  room.poll(now);
+  room.poll(now + RoomRefreshEvery);
+  room.poll(now + RoomRefreshEvery * 2);
+  CHECK(server.notices ==
+        std::vector<std::string>{"K7Q2 connected", "K7Q2 playing", "K7Q2 playing", "K7Q2 playing"});
+  room.close();
+  room.poll(now + RoomRefreshEvery * 5);
+  CHECK(server.notices.back() == "K7Q2 closed");
+  CHECK(server.notices.size() == 5);
+
+  // A server that predates the «connected» notice refuses it once and hears no more of it.
+  FakeSignalServer older;
+  older.takesConnected = false;
+  SignalClient oldSignal{older.open(hostUrl("wss://fake", true))};
+  oldSignal.poll();
+  FakeLink oldLink;
+  oldLink.code = oldSignal.roomCode();
+  oldLink.token = oldSignal.roomToken();
+  oldLink.found = true;
+  RoomSession oldRoom{
+      {.hosting = true, .code = {}, .server = "wss://fake", .open = openerOf(older)}};
+  oldRoom.observe(oldLink);
+  for (int minute = 0; minute <= 5; ++minute) {
+    oldRoom.poll(RoomRefreshEvery * minute);
+  }
+  CHECK(oldRoom.noticeError() == "bad-state");
+  CHECK(older.notices.empty());
+  oldRoom.markReady(true);
+  oldRoom.poll(RoomRefreshEvery * 6);
+  oldRoom.poll(RoomRefreshEvery * 7);
+  CHECK(older.notices == std::vector<std::string>{"K7Q2 ready", "K7Q2 ready"});
 }
 
 TEST_CASE("relay only fails at once without a relay, and with one it uses no direct route") {

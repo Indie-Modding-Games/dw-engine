@@ -879,6 +879,20 @@ struct TrainingStatus {
   friend bool operator==(const TrainingStatus&, const TrainingStatus&) = default;
 };
 
+// A map id longer than this is damaged.
+inline constexpr std::size_t MaxEventMapText = 64;
+
+// The NPC whose event a player's game plays now (#417): its map and the NPC's script id while the
+// event runs, an empty map once it ends. A guest tells the host about its own; the host tells every
+// guest about everyone's. The other games leave that NPC be meanwhile, so the event starts once.
+struct EventStatus {
+  PlayerId player = HostPlayerId;
+  std::string mapId;
+  std::uint16_t npc = 0;
+
+  friend bool operator==(const EventStatus&, const EventStatus&) = default;
+};
+
 using Message =
     std::variant<Hello, Welcome, Ready, JoinState, Commands, Snapshot, ViewState, Leave,
                  ProfileChunk, BattleAsk, BattleBegin, BattleRefused, BattleFrame, BattleAction,
@@ -886,7 +900,7 @@ using Message =
                  GroundItems, ItemClaim, ClaimAnswer, BattleOffer, Lobby, SyncWatch, SyncReport,
                  TradeAsk, TradeAnswer, TradeOffer, TradeConfirm, TradeCancel, TradeState,
                  TradePrepare, TradeCommit, TradeRevert, TradeReply, TradeClosed, WorldClock,
-                 TrainingStatus, PartnerForm>;
+                 TrainingStatus, PartnerForm, EventStatus>;
 
 inline constexpr std::uint8_t HelloKind = 0x60;
 inline constexpr std::uint8_t WelcomeKind = 0x61;
@@ -936,6 +950,7 @@ inline constexpr std::uint8_t TradeClosedKind = 0xBA;
 // Training in a shared world (#365): 0xC0-0xCF.
 inline constexpr std::uint8_t WorldClockKind = 0xC0;
 inline constexpr std::uint8_t TrainingStatusKind = 0xC1;
+inline constexpr std::uint8_t EventStatusKind = 0xC2;
 
 [[nodiscard]] net::Bytes encode(const Message& message);
 // Returns empty for a message owned by another protocol. Messages in this range are validated and

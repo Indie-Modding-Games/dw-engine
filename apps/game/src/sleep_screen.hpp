@@ -33,6 +33,9 @@ public:
   // Whether the player waits on a sleep: the field and the game time wait meanwhile.
   [[nodiscard]] bool active() const;
 
+  // A co-op guest asleep in the dark until the world's clock reaches its partner's morning (#424).
+  [[nodiscard]] bool waitsForWorld() const { return phase_ == Phase::WaitingWorld; }
+
   // Whether the field still moves, without the player: the partner walks up, the two play their
   // clips, and the screen fades out and in (partner.c: partnerTickSleep runs in the field's state).
   [[nodiscard]] bool fieldRuns() const;
@@ -57,7 +60,8 @@ public:
 
 private:
   // Settling: the player's and the partner's clips before the fade out (SleepSteps). FadeTail: the
-  // player has control back, and the fade in draws its last frames.
+  // player has control back, and the fade in draws its last frames. WaitingWorld: a co-op guest's
+  // dark screen until the world's morning.
   enum class Phase : std::uint8_t {
     Awake,
     FadingOut,
@@ -65,7 +69,8 @@ private:
     FadingIn,
     FadeTail,
     WalkingUp,
-    Settling
+    Settling,
+    WaitingWorld
   };
 
   [[nodiscard]] std::int32_t fadeFrame() const;

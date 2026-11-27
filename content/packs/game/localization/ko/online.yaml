@@ -210,6 +210,7 @@ coop.came_home: "{name}의 세계에서 돌아왔어요: 파트너와 가방도 
 # (coop-training.md): the world's clock does not stop for it.
 coop.training: "훈련 중"
 coop.training_clock: "함께 훈련해요: 세계의 시간은 계속 흐르고, 훈련마다 파트너에게 한 시간씩 따로 계산돼요."
+coop.sleep_wait: "아침까지 자는 중: 함께하는 세계에서는 세계의 시계가 일어날 시간이 되거나 호스트도 잠들면 파트너가 깨어나요."
 # A guest who brought a save of the other game variant, and the host's notice of it (game-variants.md, "Co-op").
 coop.guest_other_variant: "{name}의 세계는 다른 버전이라 그 규칙을 따라요. 파트너와 가방은 그래도 함께 돌아와요."
 coop.guest_other_variant_kept: "{name}의 세계는 다른 버전이에요: 아무것도 가져오지 않고, 저장 데이터는 그대로예요."

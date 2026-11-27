@@ -222,3 +222,39 @@ TEST_CASE("coop clock: the host slept: a guest skips those hours, as a script's 
   CHECK(guest->clock().time().hour == 16);
   CHECK(guest->partner().state().evolution.hours == hours + 8);
 }
+
+TEST_CASE("coop clock: a guest's sleep waits for the world's morning; it neither goes back to the "
+          "night nor lives the night twice (#424)") {
+  TestPacks packs;
+  MemorySaveStorage storage;
+  const auto guest = newGame(packs, &storage);
+  const auto& sleep = guest->partner().state().sleep;
+  static_cast<void>(guest->clock().jumpTo(sleep.sleepyHour, sleep.sleepyMinute));
+  run(*guest, 0.2);
+  REQUIRE(guest->partner().canSleep());
+  guest->shareClock(ClockShare::Guest);
+  const std::int64_t night = guest->clock().elapsedFrames();
+  guest->hearWorldClock({.elapsedFrames = night, .running = true, .speed = 1.0});
+  CHECK_FALSE(guest->aheadOfWorld());
+
+  REQUIRE(guest->fallAsleep({}));
+  const std::int64_t morning = guest->clock().elapsedFrames();
+  REQUIRE(morning > night + FramesPerHour);
+  CHECK(guest->aheadOfWorld());
+  const std::int32_t hours = guest->partner().state().evolution.hours;
+  const std::int32_t age = guest->partner().state().life.age;
+
+  // The world's clock reaches the partner's morning while it sleeps.
+  for (std::int64_t world = night; world < morning - FramesPerMinute; world += FramesPerHour) {
+    guest->hearWorldClock({.elapsedFrames = world, .running = true, .speed = 1.0});
+    CHECK(guest->aheadOfWorld());
+  }
+  guest->hearWorldClock(
+      {.elapsedFrames = morning - FramesPerMinute, .running = true, .speed = 1.0});
+  CHECK_FALSE(guest->aheadOfWorld());
+  guest->wakeUp();
+  run(*guest, 0.5);
+  CHECK(guest->clock().elapsedFrames() >= morning);
+  CHECK(guest->partner().state().evolution.hours == hours);
+  CHECK(guest->partner().state().life.age == age);
+}

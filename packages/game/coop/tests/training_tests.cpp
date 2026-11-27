@@ -27,6 +27,11 @@ TEST_CASE("coop training: the world clock and the training status round trip, da
 
   CHECK_FALSE(decode(encode(WorldClock{.elapsedFrames = -1})));
   CHECK_FALSE(decode(encode(TrainingStatus{.player = MaxPlayers, .course = "trn_hp"})));
+  roundTrip(EventStatus{.player = 3, .mapId = "town_01", .npc = 12});
+  roundTrip(EventStatus{.player = HostPlayerId, .mapId = "", .npc = 0});
+  CHECK_FALSE(decode(encode(EventStatus{.player = MaxPlayers, .mapId = "town_01", .npc = 1})));
+  CHECK_FALSE(decode(
+      encode(EventStatus{.player = 1, .mapId = std::string(MaxEventMapText + 1, 'a'), .npc = 1})));
   CHECK_FALSE(
       decode(encode(TrainingStatus{.player = 1, .course = std::string(MaxCourseText + 1, 'a')})));
   // A clock cut short is damaged.

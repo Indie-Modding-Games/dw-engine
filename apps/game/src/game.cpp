@@ -69,6 +69,7 @@
 #include "control_log.hpp"
 #include "control_socket.hpp"
 #include "coop_battles.hpp"
+#include "coop_events.hpp"
 #include "coop_gameplay_bridge.hpp"
 #include "coop_guest_return.hpp"
 #include "coop_hud.hpp"
@@ -111,6 +112,7 @@
 #include "save_figure.hpp"
 #include "save_indicator.hpp"
 #include "screenshot.hpp"
+#include "shared_pause.hpp"
 #include "slow_frame_log.hpp"
 #include "software_mode.hpp"
 #include "state_trace.hpp"
@@ -142,6 +144,10 @@ core::Result<game::save::SaveFile> readSaveSlot(const assets::VirtualFileSystem&
 
 // Smaller changes of the map change's fade are not worth telling the UI.
 constexpr double FadeEpsilon = 1e-4;
+
+// The most a closing game waits for its co-op goodbyes and the room's last notice.
+constexpr double CoopShutdownSeconds = 1.5;
+constexpr double CoopSleepWaitSeconds = 8.0;
 
 // Tells the HUD what the map change shows: how much the fade takes away and the key of the map name
 // it shows, which the HUD writes in the player's language.
@@ -1150,6 +1156,10 @@ int runGame(const Options& requested) {
   CoopTrades coopTrades{**ui};
   // The world's clock and who trains (#365).
   CoopTraining coopTraining;
+  // Which NPC each player's event holds (#417).
+  CoopEvents coopEvents;
+  // Whether this guest was told its sleep waits for the world's morning (#424).
+  bool coopSleepWaitShown = false;
   // The host's room went while the guest played: its game ends after this frame's ticks.
   bool coopHostLeft = false;
   // How a player of the session is named (the trades' document and notices): a player of a link
@@ -1888,6 +1898,13 @@ int runGame(const Options& requested) {
       if (!(*ui)->isVisible(MenuDocument)) {
         optionsDirect = false;
       }
+      // Other players share this world (co-op): this player's menus and pause hold only its own
+      // input, the world goes on (#415, shared_pause.hpp).
+      const bool coopShared =
+          flow.playing() != nullptr && flow.playing()->coopGame() && coop.connected();
+      if (PlaySession* shared = flow.playing()) {
+        shared->shareWorld(coopShared);
+      }
       // Start's pause freezes everything but the box, menus and battle included (handlePause).
       if (const PauseStep pause =
               pauseBox.tick(input.wasPressed("pause") || (settingsAsked && pauseBox.paused()),
@@ -1899,10 +1916,13 @@ int runGame(const Options& requested) {
         } else if (pause.closed) {
           (*ui)->hide(PauseBoxDocument);
         }
-        if (pause.paused) {
+        if (pause.paused && localScreensHoldWorld({.pauseBox = true}, coopShared)) {
           input.endTick();
           ++ticksRun;
           continue;
+        }
+        if (pause.paused) {
+          input.endTick();
         }
       }
       if (flow.playing() != nullptr && input.wasPressed("menu")) {
@@ -2066,6 +2086,7 @@ int runGame(const Options& requested) {
           // A trade with that player closes; a swap the host applied for it is undone.
           coopTrades.playerLeft(peer->id);
           coopTraining.playerLeft(peer->id);
+          coopEvents.playerLeft(peer->id);
           coopHud.notice(CoopDisconnectedText, peer->label);
           break;
         case CoopLinkLoss::HostLeft:
@@ -2087,6 +2108,10 @@ int runGame(const Options& requested) {
         coopGuestWorld.reset();
         coopSync.reset();
         coopTraining.reset();
+        coopEvents.reset();
+        if (play != nullptr) {
+          play->leaveNpcsBe({});
+        }
         coop.takeLinkBack();
         core::logInfo("coop: the link or the game ended, the gameplay bridges were dropped");
         // A co-op game that ended (back to the title) ends its room: the others hear it leave
@@ -2269,7 +2294,7 @@ int runGame(const Options& requested) {
       if (!pointerWalks) {
         mouse.release();
       }
-      if (play != nullptr && !(*ui)->capturesInput()) {
+      if (play != nullptr && !(*ui)->capturesInput() && !pauseBox.paused()) {
         move = input.vector("move_left", "move_right", "move_up", "move_down");
         // Up gives a negative y; the field's y points away from the camera.
         walk = walkOrderOf(
@@ -2396,6 +2421,36 @@ int runGame(const Options& requested) {
         } else if (coopLinked && coopGuestWorld) {
           coopTraining.guestTick(play->gameSession(), play->trainingCourse(),
                                  coopGuestWorld->self(), *coopBridge());
+        }
+        // An event starts once in the shared world: the NPCs in the others' events are left be.
+        if (coopLinked && (coop.isHost() || coopGuestWorld)) {
+          const std::string_view eventMap = play->scene().field().mapId();
+          const std::optional<CoopEvent> ownEvent =
+              play->eventNpc().and_then([&](std::int32_t npc) -> std::optional<CoopEvent> {
+                if (!std::in_range<std::uint16_t>(npc)) {
+                  return std::nullopt;
+                }
+                return CoopEvent{.mapId = std::string{eventMap},
+                                 .npc = static_cast<std::uint16_t>(npc)};
+              });
+          game::coop::PlayerId self = game::coop::HostPlayerId;
+          if (coop.isHost()) {
+            std::vector<CoopEventPeer> others;
+            for (CoopPeer& peer : coopPeers) {
+              others.push_back({.id = peer.id, .bridge = peer.bridge.get()});
+            }
+            coopEvents.hostTick(ownEvent, others);
+          } else {
+            self = coopGuestWorld->self();
+            coopEvents.guestTick(ownEvent, self, *coopBridge());
+          }
+          play->leaveNpcsBe(coopEvents.heldByOthers(self, eventMap));
+        }
+        if (coopLinked && play->sleepWaitsForWorld() != coopSleepWaitShown) {
+          coopSleepWaitShown = !coopSleepWaitShown;
+          if (coopSleepWaitShown) {
+            coopHud.notice(CoopSleepWaitText, {}, CoopSleepWaitSeconds);
+          }
         }
         if (coopLinked && coopTraining.takeClockNotice()) {
           coopHud.notice(CoopTrainingClockText);
@@ -3167,6 +3222,9 @@ int runGame(const Options& requested) {
   if (PlaySession* play = flow.playing()) {
     bringGuestHome(*play, true);
   }
+  // Closing the window ends a co-op room as leaving it does: the others hear it at once instead
+  // of waiting on a link kept alive by the transport, and a public room leaves the list.
+  coop.shutDown([&] { return platform->nowSeconds(); }, CoopShutdownSeconds);
   if (!autotest) {
     // The locals go in reverse order: the scene and the UI release their textures into the renderer
     // before it.

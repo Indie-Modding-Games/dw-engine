@@ -1,3 +1,4 @@
+#include <dwe/game/field/npcs.hpp>
 #include <dwe/game/save/migration.hpp>
 #include <dwe/game/story/story_state_yaml.hpp>
 #include <dwe/session/game_session.hpp>
@@ -435,4 +436,57 @@ TEST_CASE("the tuned chance leaves the original's conditions and other rolls alo
   const MapEntries original = enterRepeatedly(std::nullopt, Unlisted);
   CHECK(unlisted.placed == original.placed);
   CHECK(unlisted.laterRolls == original.laterRolls);
+}
+
+namespace {
+
+// A map whose entry names script 1, whose section 7 (an NPC's) runs a few frames.
+constexpr std::string_view EventMapHead = R"lua(-- dwx lua 3: a module of the tests
+local story <const> = story
+return { script = 0, sections = { [19] = function()
+  story.set_script(1, 19)
+  return story.ENDED
+end } }
+)lua";
+constexpr std::string_view EventScript = R"lua(-- dwx lua 3: a module of the tests
+local story <const> = story
+return { script = 1, sections = {
+  [0] = function() return story.ENDED end,
+  [7] = function()
+    story.delay(5)
+    return story.ENDED
+  end,
+} }
+)lua";
+
+} // namespace
+
+TEST_CASE("co-op: an NPC in another player's event is left be, and this game's event names its "
+          "NPC while it runs (#417)") {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory},
+                        {"story/000.lua", EventMapHead},
+                        {"story/001.lua", EventScript}};
+  const auto [session, story] = storySession(packs);
+  const auto settle = [&] {
+    for (int tick = 0; tick < 120 && story->scriptRunning(); ++tick) {
+      session->tick(dwe::session::testing::Tick);
+    }
+  };
+  story->mapEntered(19);
+  settle();
+  REQUIRE_FALSE(story->scriptRunning());
+  const std::vector<dwe::game::field::NpcContact> touch{
+      {.scriptId = 7, .entity = {}, .cause = dwe::game::field::NpcContactCause::Touch}};
+  const std::vector<std::int32_t> otherEvent{7};
+  story->runNpcContacts(touch, otherEvent);
+  CHECK_FALSE(story->scriptRunning());
+  CHECK_FALSE(story->eventNpc().has_value());
+
+  story->runNpcContacts(touch);
+  REQUIRE(story->scriptRunning());
+  CHECK(story->eventNpc() == std::optional<std::int32_t>{7});
+  settle();
+  CHECK_FALSE(story->scriptRunning());
+  CHECK_FALSE(story->eventNpc().has_value());
 }

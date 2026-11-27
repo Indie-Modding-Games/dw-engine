@@ -542,6 +542,11 @@ caído o con un cierre inesperado: su registro, cuerpo, compañero y búferes de
 lo quita. Cuando una partida cooperativa termina en cualquiera de los lados (volver a la portada, salir), ese lado
 envía `Leave` y cierra la sala; un invitado cuyo anfitrión se fue vuelve a la portada. Un jugador que vuelve entra
 como nuevo, con un estado limpio.
+Cerrar la ventana cuenta como salir (#416): el juego manda `Leave` a todos y el último aviso de la sala antes de
+apagarse (1,5 s como mucho), y un enlace que se despidió conserva su transporte un segundo (`CoopLeaveFlush`) para que
+la despedida llegue, en vez de que los demás vean un enlace caído e intenten volver. El anfitrión de una sala pública
+repite el estado de su sala al directorio cada minuto (`net::RoomRefreshEvery`), así que la entrada de un anfitrión que
+se colgó o perdió la línea sale de la lista en menos de tres minutos.
 
 **Presencia.** `WorldAuthority::playersOn(map)` (anfitrión) y `CoopGameplayBridge::playersOn(map)` (invitado, desde la
 última instantánea) dicen qué jugadores están en un mapa, para los sistemas que necesitan a los demás cerca
@@ -604,6 +609,16 @@ suelo de un invitado es suyo y no hace falta reclamar. La partida de un jugador 
 reemplaza el suelo del invitado pero conserva su largo, así que el hueco que sostiene el aviso abierto de un invitado se
 sigue pudiendo leer cuando la lista del anfitrión ya no trae su objeto (tomar el último objeto con permiso leía fuera
 del suelo y cerraba el juego del invitado, #414).
+
+**Los eventos empiezan una vez (#417).** Cada partida ejecuta su propia historia, así que dos jugadores que hablaban
+con el mismo NPC jugaban los dos su evento, cada uno con su nombre, y empezaban los dos su combate. Mientras la partida
+de un jugador juega el evento de un NPC (una sección que empezó un toque o una charla, hasta que acaba el script), ese
+NPC queda retenido: un invitado se lo dice al anfitrión con `EventStatus` (`0xC2`, protocolo 14), el anfitrión le dice
+a cada invitado los de todos, el suyo incluido, y las demás partidas en ese mapa descartan entretanto sus toques y
+charlas con ese NPC. Cuando el evento acaba, sus cambios de historia llegan a los demás como siempre, así que el
+siguiente jugador que habla con el NPC ve lo que dejó el evento. Un jugador que se va suelta su NPC. Los NPC que
+comparten id de script (los salvajes de una especie en un mapa) quedan retenidos juntos. Dos toques dentro del mismo
+viaje de ida y vuelta aún pueden empezar los dos.
 
 **Entrar tarde y cambiar de mapa.** Un invitado que entra recibe toda la historia compartida (`WorldSync`, en partes
 que caben en un datagrama) y el suelo del anfitrión; todos los invitados los reciben otra vez cuando el anfitrión entra
@@ -784,7 +799,7 @@ Propuestas el 2026-11-16 con una recomendación cada una; así quedaron hechas.
 | 2 | ¿Mapa compartido? | Sí: el grupo va donde va el anfitrión. Las salidas propias de un invitado se retienen y el cambio de mapa del anfitrión los lleva a todos (§5.7). Cada partida sigue conociendo su mapa, así que un jugador que aún carga simplemente no se dibuja. |
 | 3 | Combate | **Pelean todos los compañeros.** Lo empiece quien lo empiece, se suma cada compañero libre de ese mapa, hasta cuatro (§6.1, [combate cooperativo](coop-combat.md) §12), y los enemigos escalan según cuántos pelean ([dificultad cooperativa](coop-difficulty.md)). |
 | 4 | Progreso | La historia, los triggers, el dinero y el mundo son **del anfitrión**, guardados en su propia ranura como en un jugador (§5.6). Los cambios de cualquier jugador a ese mundo pasan por el anfitrión (§5.8). El invitado juega con su propio compañero, sus técnicas, las especies que crió y su bolsa con sus bits, y se los lleva a su propia ranura al salir y en puntos seguros mientras tanto (C4, §5.6); nada del mundo del anfitrión va con ellos. |
-| 5 | Pausa y menús | Cada partida corre su propia copia del mundo del anfitrión, así que un menú o la pausa solo paran la partida de ese jugador; los demás siguen. Un combate compartido espera mientras el anfitrión tiene el menú abierto (§6.1). |
+| 5 | Pausa y menús | Un menú o la pausa de Start son solo de ese jugador, también del anfitrión (#415): mientras otros comparten el mundo solo retienen la entrada de ese jugador, y el mundo, su reloj y sus combates siguen para todos. Un combate que empieza cierra el menú de juego de quien lo tenga abierto. A solas, los menús y la pausa paran la partida como en el original (`shared_pause.hpp`). |
 | 6 | Diálogos y escenas | Los scripts de un jugador corren en su partida: sus diálogos y escenas son suyos y los demás siguen jugando. Lo que una escena cambia en el mundo llega a los demás por el anfitrión (§5.8), y los NPCs que trae o se lleva aparecen al momento en todas las partidas. |
 
 ### 6.1 Combates (decisión 3)
@@ -853,8 +868,8 @@ Límites de esta primera versión: los efectos de las técnicas, los números de
 en el anfitrión; el invitado ve moverse a los luchadores y las barras de vida. Los luchadores de torneo que no son NPC
 del mapa no se dibujan en el invitado. El objeto del ayudante se dibuja lanzado desde el domador del anfitrión. Los
 enemigos saltan a los sitios del anfitrión cuando empieza el combate (hasta entonces cada juego simula sus propios
-NPC). Los objetos que caen solo aparecen en el mundo del anfitrión. Mientras el anfitrión tiene su menú abierto, el
-combate espera para los dos. Un combate que otro jugador mira o pelea va a la velocidad original: el combate rápido del
+NPC). Los objetos que caen solo aparecen en el mundo del anfitrión. El combate ya no espera al menú ni
+a la pausa del anfitrión (#415). Un combate que otro jugador mira o pelea va a la velocidad original: el combate rápido del
 anfitrión (`battle_speed`) solo acelera sus propios combates, porque los invitados animan los frames a 1x. En el
 anfitrión, un combate del invitado muestra la bolsa, la cuenta atrás de revivir y la carga del remate del compañero al
 que da órdenes el anfitrión. En el campo, el cuerpo de otro jugador no detiene a un compañero (a un domador sí), así que

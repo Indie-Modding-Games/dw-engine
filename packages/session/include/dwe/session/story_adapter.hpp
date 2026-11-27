@@ -166,8 +166,14 @@ public:
   // (docs/architecture/multiplayer.md). False when nothing spawned.
   bool spawnNpc(std::int64_t species, std::int64_t slot, bool autotalk);
   // Asks for the sections of the NPCs the player touched or talked to in the last field tick, as
-  // events, at the next frame; a running script drops them (tamer.c: checkMapInteraction).
-  void runNpcContacts(std::span<const game::field::NpcContact> contacts);
+  // events, at the next frame; a running script drops them (tamer.c: checkMapInteraction). In a
+  // co-op game the NPCs of `leftBe` (script ids) are in another player's event: their contacts go.
+  void runNpcContacts(std::span<const game::field::NpcContact> contacts,
+                      std::span<const std::int32_t> leftBe = {});
+  // The script id of the NPC whose event the running script is, while it runs (#417).
+  [[nodiscard]] std::optional<std::int32_t> eventNpc() const {
+    return scriptRunning() ? eventNpc_ : std::nullopt;
+  }
   // The script id of the NPC whose section last ran from a contact (TALKED_TO_ENTITY): a battle
   // with no predefined enemies fights it.
   [[nodiscard]] std::optional<std::int32_t> talkedTo() const { return talkedTo_; }
@@ -348,6 +354,7 @@ private:
   // Whether a script ran at the end of the last tick.
   bool scriptRan_ = false;
   std::optional<std::int32_t> talkedTo_;
+  std::optional<std::int32_t> eventNpc_;
   std::optional<scene::Entity> talkedNpc_;
   std::unique_ptr<StoryMapChanges> mapChanges_;
   std::unique_ptr<StoryFieldControl> fieldControl_;

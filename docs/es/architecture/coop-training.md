@@ -123,6 +123,24 @@ sequenceDiagram
   Note over H,G: cada sesión cobra una hora a su compañero; ningún reloj salta
 ```
 
+### 4.5 Dormir en un mundo compartido (#424, #411)
+
+Dormir salta la noche, y la noche es del mundo. Las reglas:
+
+- **Solo el anfitrión mueve el reloj del mundo.** El sueño del anfitrión lleva el mundo a la mañana de su compañero;
+  cada invitado salta esas horas (§4.1).
+- **El sueño de un invitado no mueve el mundo, y el mundo no lo deshace.** El compañero duerme como a solas (el
+  descanso de la noche, las horas de vida y de evolución, su siguiente hora de dormir), y luego la pantalla del
+  invitado queda a oscuras hasta que el reloj del mundo llega a esa mañana (`SleepScreen` espera mientras
+  `GameSession::aheadOfWorld`), con un aviso que lo dice (`online.coop.sleep_wait`). Si el anfitrión duerme entretanto
+  el invitado despierta al momento. El reloj del invitado nunca vuelve a la noche y el compañero nunca vive esas horas
+  dos veces.
+- **Nadie está obligado a dormir.** Los demás siguen jugando; el mundo nunca se retiene por quien duerme.
+- **Dormir a destiempo no da ventaja.** Un invitado no puede descansar y aun así usar la noche: su partida espera con
+  su compañero. Solo puede dormir cuando su compañero tiene sueño, como a solas.
+- **Los eventos del mundo y los cambios de día** siguen solo el reloj del mundo (§5): el sueño de un invitado no cambia
+  el día de nadie.
+
 ## 5. Desconexiones y casos límite
 
 - **Un invitado se va:** el anfitrión borra su curso (`CoopTraining::playerLeft`) y se lo dice a los demás; si vuelve,
@@ -130,10 +148,10 @@ sequenceDiagram
 - **El anfitrión se va:** el invitado vuelve al título como antes; nada de este ticket sobrevive a la partida.
 - **Cambio de día y eventos:** solo la medianoche del mundo cambia el día, para todos a la vez (un invitado que la
   saltó la paga en `skipHours`). Los momentos del día siguen el reloj compartido.
-- **Menús y scripts del anfitrión:** siguen reteniendo su reloj (§7), así que el mundo se para para todos mientras el
-  anfitrión lee un diálogo; los invitados esperan con él.
-- **Un invitado duerme:** su propio sueño salta su reloj; vuelve a la hora del mundo y su compañero conserva el
-  descanso que ya tuvo (no vive esas horas dos veces).
+- **Menús y scripts del anfitrión:** sus menús y la pausa de Start ya no retienen el reloj del mundo (#415); sus scripts
+  sí (§7), así que el mundo se para para todos mientras el anfitrión lee un diálogo, y los invitados esperan con él.
+- **Un invitado duerme:** su compañero duerme y su pantalla espera a oscuras la mañana del mundo (§4.5); ya no vuelve
+  a la noche.
 - **El anfitrión duerme:** los invitados saltan esas horas (§4.1), como un salto de tiempo de script.
 - **Combates:** un combate sigue parando el reloj de su jugador mientras dura; un invitado se pone al día después con
   frames o un salto.
@@ -150,10 +168,10 @@ sequenceDiagram
 
 ## 7. Límites y pendientes
 
-- **El sueño en cooperativo** necesita su propio diseño: hoy el sueño del anfitrión mueve a todos y el de un invitado
-  lo deshace el mundo (su compañero conserva el descanso).
-- **Los menús, diálogos y scripts del anfitrión siguen reteniendo el reloj del mundo** para todos (la decisión 5 no se
-  cumple del todo para el reloj).
+- **El sueño en cooperativo** (§4.5): un invitado que duerme mientras el anfitrión sigue despierto espera hasta una
+  noche en tiempo real (unos diez minutos); al anfitrión no se le avisa de que un invitado duerme.
+- **Los diálogos y scripts del anfitrión siguen reteniendo el reloj del mundo** para todos (sus menús y su pausa ya no,
+  #415).
 - **El progreso del invitado no se guarda de vuelta** en su propia partida (fase C4).
 - **La animación de entrenamiento del compañero remoto** no se dibuja en las otras máquinas; solo lo dice la etiqueta.
 

@@ -332,6 +332,9 @@ public:
   [[nodiscard]] ClockShare clockShare() const { return clockShare_; }
   // A guest: the host's clock as it heard it. Its own clock follows it from then on.
   void hearWorldClock(const WorldTime& time);
+  // A guest whose own clock is far past the world's (its partner slept): its sleep waits for the
+  // world's morning instead of going back to the night (#424).
+  [[nodiscard]] bool aheadOfWorld() const;
   // The host: its clock as the world's, to tell the guests.
   [[nodiscard]] WorldTime worldTime() const;
   // A training course holds its player and partner (tamerSetState(8)). In co-op the world's clock

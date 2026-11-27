@@ -304,13 +304,25 @@ export class Seats {
 
   /**
    * A listed room leaves the list when it closes with nobody in, and stays (for its host's
-   * notices, as a two-seat room does) when the host holds guests. A game under way leaves it: its
-   * host can no longer seat anyone.
+   * notices, as a two-seat room does) when the host holds guests, but full: nobody can join a room
+   * that is gone. A game under way leaves it: its host can no longer seat anyone.
    */
   async #forget(seating: Seating): Promise<void> {
     const listing = (await this.#state.get("listing")) as DirectoryEntry | undefined;
     await this.#state.clear();
-    if (listing && (seating.taken === 0 || seating.playing)) await this.#state.publish?.(listing.joinCode, null);
+    if (!listing) return;
+    if (seating.taken === 0 || seating.playing) {
+      await this.#state.publish?.(listing.joinCode, null);
+      return;
+    }
+    await this.#state.publish?.(listing.joinCode, {
+      ...listing,
+      players: Math.min(seating.seats, 1 + seating.taken),
+      state: "full",
+      phase: listing.phase === "open" ? "connected" : listing.phase,
+      message: "Connected",
+      updatedAt: this.#now(),
+    });
   }
 
   async #publish(seating: Seating): Promise<void> {
