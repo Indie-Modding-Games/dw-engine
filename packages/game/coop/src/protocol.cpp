@@ -13,6 +13,8 @@ namespace {
 
 // The highest kind: the ranges below it that hold no kind decode as another protocol's.
 constexpr std::uint8_t LastKind = TrainingStatusKind;
+// A motion byte with this bit set is followed by the character's scripted clip (ActionClip).
+constexpr std::uint8_t ActionBit = 0x80;
 
 // A kind this protocol may decode: any byte outside is another protocol's (versus, lockstep).
 constexpr bool coopKind(std::uint8_t kind) {
@@ -38,20 +40,44 @@ void put(net::WireWriter& out, const FieldCommand& field) {
   }
 }
 
-void put(net::WireWriter& out, const EntityState& entity) {
-  out.put(entity.networkId).put(entity.owner).put(entity.role);
-  out.put(entity.x).put(entity.y).put(entity.z).put(entity.yaw).put(entity.motion);
+void putMotion(net::WireWriter& out, Motion motion, const std::optional<ActionClip>& action) {
+  const auto byte = static_cast<std::uint8_t>(static_cast<std::uint8_t>(motion) |
+                                              (action ? ActionBit : std::uint8_t{0}));
+  out.put(byte);
+  if (action) {
+    out.put(action->clip).put(action->starts);
+  }
 }
 
-EntityState readEntity(net::WireReader& in) {
-  return {.networkId = in.get<std::uint16_t>(),
-          .owner = in.get<PlayerId>(),
-          .role = static_cast<EntityRole>(in.get<std::uint8_t>()),
-          .x = in.get<std::int32_t>(),
-          .y = in.get<std::int32_t>(),
-          .z = in.get<std::int32_t>(),
-          .yaw = in.get<std::uint16_t>(),
-          .motion = static_cast<Motion>(in.get<std::uint8_t>())};
+// The motion byte and the clip it may carry; false for a motion this protocol does not know.
+bool getMotion(net::WireReader& in, Motion& motion, std::optional<ActionClip>& action) {
+  const std::uint8_t byte = in.get<std::uint8_t>();
+  const auto value = static_cast<std::uint8_t>(byte & ~ActionBit);
+  if ((byte & ActionBit) != 0) {
+    action = ActionClip{.clip = in.get<std::uint16_t>(), .starts = in.get<std::uint8_t>()};
+  }
+  motion = static_cast<Motion>(value);
+  return value <= static_cast<std::uint8_t>(Motion::Run);
+}
+
+void put(net::WireWriter& out, const EntityState& entity) {
+  out.put(entity.networkId).put(entity.owner).put(entity.role);
+  out.put(entity.x).put(entity.y).put(entity.z).put(entity.yaw);
+  putMotion(out, entity.motion, entity.action);
+}
+
+std::optional<EntityState> readEntity(net::WireReader& in) {
+  EntityState entity{.networkId = in.get<std::uint16_t>(),
+                     .owner = in.get<PlayerId>(),
+                     .role = static_cast<EntityRole>(in.get<std::uint8_t>()),
+                     .x = in.get<std::int32_t>(),
+                     .y = in.get<std::int32_t>(),
+                     .z = in.get<std::int32_t>(),
+                     .yaw = in.get<std::uint16_t>()};
+  if (!getMotion(in, entity.motion, entity.action)) {
+    return std::nullopt;
+  }
+  return entity;
 }
 
 bool validIdentity(const Identity& identity) {
@@ -439,7 +465,14 @@ net::Bytes encode(const Message& message) {
         } else if constexpr (std::is_same_v<T, PlayerState>) {
           out.put(PlayerStateKind).put(body.player).put(body.sequence).put(body.epoch);
           out.put(std::string_view{body.mapId});
-          out.put(body.x).put(body.y).put(body.z).put(body.yaw).put(body.motion);
+          out.put(body.x).put(body.y).put(body.z).put(body.yaw);
+          putMotion(out, body.motion, body.action);
+          out.put(body.partner.has_value());
+          if (body.partner) {
+            out.put(body.partner->x).put(body.partner->y).put(body.partner->z);
+            out.put(body.partner->yaw);
+            putMotion(out, body.partner->motion, body.partner->action);
+          }
         } else if constexpr (std::is_same_v<T, PlayerCorrection>) {
           out.put(PlayerCorrectionKind).put(body.player).put(body.epoch);
           out.put(std::string_view{body.mapId}).put(body.exit.has_value());
@@ -454,6 +487,8 @@ net::Bytes encode(const Message& message) {
             out.put(entry.id).put(std::string_view{entry.name});
             out.put(std::string_view{entry.partnerSpecies});
           }
+        } else if constexpr (std::is_same_v<T, PartnerForm>) {
+          out.put(PartnerFormKind).put(body.player).put(std::string_view{body.species});
         } else if constexpr (std::is_same_v<T, WorldAsk>) {
           out.put(WorldAskKind).put(body.ask).put(body.seen).put(std::string_view{body.mapId});
           putEdits(out, body.edits);
@@ -653,11 +688,11 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     }
     std::unordered_set<std::uint16_t> ids;
     for (std::uint16_t i = 0; i < count && in.ok(); ++i) {
-      EntityState entity = readEntity(in);
-      if (!validEntity(entity) || !ids.insert(entity.networkId).second) {
+      const std::optional<EntityState> entity = readEntity(in);
+      if (!entity || !validEntity(*entity) || !ids.insert(entity->networkId).second) {
         return core::fail("invalid or duplicate entity in cooperative join state");
       }
-      state.entities.push_back(entity);
+      state.entities.push_back(*entity);
     }
     if (state.formatVersion != 1 || state.mapId.empty() || state.saveTransferId == 0 ||
         state.saveChunkCount == 0 || state.saveChunkCount > MaxProfileChunks) {
@@ -686,11 +721,11 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     }
     std::unordered_set<std::uint16_t> ids;
     for (std::uint16_t i = 0; i < count && in.ok(); ++i) {
-      EntityState entity = readEntity(in);
-      if (!validEntity(entity) || !ids.insert(entity.networkId).second) {
+      const std::optional<EntityState> entity = readEntity(in);
+      if (!entity || !validEntity(*entity) || !ids.insert(entity->networkId).second) {
         return core::fail("invalid or duplicate entity in cooperative snapshot");
       }
-      snapshot.entities.push_back(entity);
+      snapshot.entities.push_back(*entity);
     }
     if (snapshot.mapId.empty()) {
       return core::fail("cooperative snapshot has no map id");
@@ -912,15 +947,24 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     state.y = in.get<std::int32_t>();
     state.z = in.get<std::int32_t>();
     state.yaw = in.get<std::uint16_t>();
-    const std::uint8_t motion = in.get<std::uint8_t>();
-    if (!in.ok() || !validGuest(state.player) || state.mapId.empty() ||
-        motion > static_cast<std::uint8_t>(Motion::Run) ||
+    bool motionKnown = getMotion(in, state.motion, state.action);
+    if (in.get<bool>()) {
+      HeldPartner partner{.x = in.get<std::int32_t>(),
+                          .y = in.get<std::int32_t>(),
+                          .z = in.get<std::int32_t>(),
+                          .yaw = in.get<std::uint16_t>()};
+      motionKnown = getMotion(in, partner.motion, partner.action) && motionKnown &&
+                    validCoordinate(partner.x, MaxWorldCoordinate) &&
+                    validCoordinate(partner.y, MaxWorldCoordinate) &&
+                    validCoordinate(partner.z, MaxWorldCoordinate);
+      state.partner = partner;
+    }
+    if (!in.ok() || !validGuest(state.player) || state.mapId.empty() || !motionKnown ||
         !validCoordinate(state.x, MaxWorldCoordinate) ||
         !validCoordinate(state.y, MaxWorldCoordinate) ||
         !validCoordinate(state.z, MaxWorldCoordinate)) {
       return core::fail("invalid cooperative player state");
     }
-    state.motion = static_cast<Motion>(motion);
     message = std::move(state);
     break;
   }
@@ -1277,6 +1321,14 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
       return core::fail("invalid cooperative world clock");
     }
     message = clock;
+    break;
+  }
+  case PartnerFormKind: {
+    PartnerForm form{.player = in.get<PlayerId>(), .species = in.text()};
+    if (!in.ok() || !validGuest(form.player) || form.species.size() > MaxRosterText) {
+      return core::fail("invalid cooperative partner form");
+    }
+    message = std::move(form);
     break;
   }
   case TrainingStatusKind: {

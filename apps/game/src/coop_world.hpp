@@ -60,7 +60,11 @@ public:
        std::optional<game::coop::PlayerId> as = {});
   // A guest left, dropped or went quiet: its record and its track go.
   void leave(game::coop::PlayerId id);
-  // A message received on guest `from`'s link (its PlayerState, WorldAsk and ItemClaim matter).
+  // Player `id`'s partner is now of `species` (#412: the host's own evolved): the roster that
+  // lists it goes to every guest with the next tick.
+  void setPartner(game::coop::PlayerId id, std::string species);
+  // A message received on guest `from`'s link (its PlayerState, PartnerForm, WorldAsk and
+  // ItemClaim matter).
   void receive(game::coop::PlayerId from, const game::coop::Message& message, net::Millis now);
   // After the host's field tick: the host's pose and map into the authority, the guests' bodies
   // driven or put in place, and what to send (corrections, the roster when it changed).
@@ -77,6 +81,10 @@ public:
   [[nodiscard]] const game::coop::WorldLedger& ledger() const { return ledger_; }
 
 private:
+  struct OwnerHeld;
+  // A guest's player and partner as its own game shows them (#420): the clip its scripts play,
+  // and its partner where its game holds it (back to following it without).
+  void showHeld(game::field::Field& field, game::coop::PlayerId id, const OwnerHeld& held);
   // Whether a claim's item is still there; taking it off the world (and telling the guests) if so.
   bool grant(CoopWorldView& view, const game::coop::ItemClaim& claim, CoopWorldShare& share,
              bool& chestsMayChange);
@@ -93,6 +101,13 @@ private:
   std::set<game::coop::PlayerId> synced_;
   std::optional<std::uint32_t> syncSerial_;
   std::map<game::coop::PlayerId, game::coop::PoseTrack> tracks_;
+  // What each guest's newest taken state says its own scripts play on its player and where its
+  // game holds its partner (#420): the host's field shows them so.
+  struct OwnerHeld {
+    std::optional<game::coop::ActionClip> action;
+    std::optional<game::coop::HeldPartner> partner;
+  };
+  std::map<game::coop::PlayerId, OwnerHeld> held_;
   // Guests put in the field on the current map (the others get a correction on the next tick).
   std::set<game::coop::PlayerId> placed_;
   std::optional<std::uint32_t> mapSerial_;
@@ -127,6 +142,10 @@ public:
   // ticks, while the player stands on the map the host put it on.
   [[nodiscard]] std::optional<game::coop::PlayerState>
   report(const game::field::Field& field, bool moving, std::uint64_t tick) const;
+  // After the tick: this guest's partner form for the host while the host's roster lists another
+  // (#412: it evolved), at most once a second, so a form lost on the way is told again.
+  [[nodiscard]] std::optional<game::coop::PartnerForm> partnerForm(std::string_view species,
+                                                                   std::uint64_t tick);
   // The session's players as the host last listed them (none before its first roster).
   [[nodiscard]] const std::optional<game::coop::Roster>& roster() const { return roster_; }
   [[nodiscard]] bool inSession(game::coop::PlayerId id) const;
@@ -162,6 +181,9 @@ private:
   std::vector<game::coop::WorldEdit> heldEdits_;
   std::string heldMap_;
   std::optional<game::coop::Roster> roster_;
+  // The partner form last told to the host, and when.
+  std::string formSent_;
+  std::optional<std::uint64_t> formSentAt_;
 };
 
 // The presence check of what is shared per map, such as battles (#351): whether `player` stands on

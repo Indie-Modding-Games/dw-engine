@@ -63,6 +63,7 @@ void CoopGameplayBridge::poll(net::Millis now) {
     } else if (std::holds_alternative<game::coop::PlayerState>(*message) ||
                std::holds_alternative<game::coop::PlayerCorrection>(*message) ||
                std::holds_alternative<game::coop::Roster>(*message) ||
+               std::holds_alternative<game::coop::PartnerForm>(*message) ||
                std::holds_alternative<game::coop::WorldAsk>(*message) ||
                std::holds_alternative<game::coop::WorldChange>(*message) ||
                std::holds_alternative<game::coop::WorldSync>(*message) ||

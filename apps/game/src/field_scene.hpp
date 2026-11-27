@@ -757,10 +757,15 @@ public:
   // Presents another player `id` of a co-op game and its partner (of `partnerSpecies`) as the host
   // reported them, already smoothed for this frame. Render-only: no collision, triggers or world
   // simulation of this instance takes them in; a missing state hides that body.
+  // `playerClip` and `partnerClip` are what their owner's scripts play on them (a gym course).
   core::Result<void> presentCoopPlayer(game::field::PlayerId id,
                                        std::optional<game::field::CharacterState> player,
                                        std::optional<game::field::CharacterState> partner = {},
-                                       std::string_view partnerSpecies = {});
+                                       std::string_view partnerSpecies = {},
+                                       std::optional<game::field::PlayedClip> playerClip = {},
+                                       std::optional<game::field::PlayedClip> partnerClip = {});
+  // The species co-op player `id`'s partner is drawn as; empty while it has none.
+  [[nodiscard]] std::string_view coopPartnerSpecies(game::field::PlayerId id) const;
   // A co-op guest's own player, put where the host says (a PlayerCorrection, #354): on this map at
   // once; on another through a map change that arrives at `at` (the exit, if any, is the one the
   // host came in by, for the change's look; the place is `at` either way). `reload` loads this map
@@ -1279,7 +1284,8 @@ private:
     bool sceneClip = false;
   };
   core::Result<void> addCoopGuestPlayer(game::field::PlayerId id, CoopBody& body);
-  void placeCoopProxy(scene::Entity entity, const game::field::CharacterState& state);
+  void placeCoopProxy(scene::Entity entity, const game::field::CharacterState& state,
+                      std::optional<game::field::PlayedClip> clip);
   core::Result<void> loadCoopPartner(CoopPartner& partner, scene::Entity entity,
                                      std::string_view species);
   // The partner drawn for co-op player `id`, if this scene has that player.

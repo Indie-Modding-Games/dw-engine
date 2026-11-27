@@ -250,10 +250,17 @@ core::Result<void> FieldScene::loadCoopPartner(CoopPartner& partner, scene::Enti
   return {};
 }
 
-core::Result<void> FieldScene::presentCoopPlayer(game::field::PlayerId id,
-                                                 std::optional<game::field::CharacterState> state,
-                                                 std::optional<game::field::CharacterState> partner,
-                                                 std::string_view partnerSpecies) {
+std::string_view FieldScene::coopPartnerSpecies(game::field::PlayerId id) const {
+  const CoopPartner* partner = coopPartnerOf(id);
+  return partner != nullptr && partner->actor ? std::string_view{partner->species}
+                                              : std::string_view{};
+}
+
+core::Result<void> FieldScene::presentCoopPlayer(
+    game::field::PlayerId id, std::optional<game::field::CharacterState> state,
+    std::optional<game::field::CharacterState> partner, std::string_view partnerSpecies,
+    std::optional<game::field::PlayedClip> playerClip,
+    std::optional<game::field::PlayedClip> partnerClip) {
   CoopBody& body = coopBodies_[id];
   if (body.fieldBody) {
     return core::fail("a co-op field body is not presented");
@@ -278,7 +285,7 @@ core::Result<void> FieldScene::presentCoopPlayer(game::field::PlayerId id,
       }
       body.player = std::move(*actor);
     }
-    placeCoopProxy(body.player->entity, *state);
+    placeCoopProxy(body.player->entity, *state, playerClip);
     body.shown = true;
   }
   CoopPartner& drawn = body.partner;
@@ -300,12 +307,14 @@ core::Result<void> FieldScene::presentCoopPlayer(game::field::PlayerId id,
       return loaded;
     }
   }
-  placeCoopProxy(drawn.actor->entity, *partner);
+  placeCoopProxy(drawn.actor->entity, *partner, partnerClip);
   drawn.shown = true;
   return {};
 }
 
-void FieldScene::placeCoopProxy(scene::Entity entity, const game::field::CharacterState& state) {
+void FieldScene::placeCoopProxy(scene::Entity entity, const game::field::CharacterState& state,
+                                std::optional<game::field::PlayedClip> clip) {
+  field_->showOwnerClip(entity, clip);
   // The state is already smoothed for this frame, so the transform draws it as it is.
   auto& transform = world_.registry().get<scene::Transform>(entity);
   transform.position = state.position;

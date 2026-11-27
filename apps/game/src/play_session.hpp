@@ -41,6 +41,7 @@ class InventoryAdapter;
 #include "care_commands.hpp"
 #include "chart_requirements.hpp"
 #include "coop_guest_return.hpp"
+#include "coop_npc_mirror.hpp"
 #include "coop_npc_presence.hpp"
 #include "coop_world_state.hpp"
 #include "curling_screen.hpp"
@@ -431,6 +432,9 @@ public:
   // to it, shown once it stands still (coop_npc_presence.hpp).
   void followCoopFacts(std::span<const CoopFactChange> facts,
                        std::span<const CoopFactChange> ownFacts = {});
+  // A guest's map NPCs where the host's snapshots (`world`, as drawn `now`) put them; with none,
+  // or in a co-op battle, they walk on their own (coop_npc_mirror.hpp).
+  void mirrorCoopNpcs(const PresentedCoopWorld* world, net::Millis now);
   [[nodiscard]] std::string_view partnerSpecies() const {
     return game_.session->partner().state().species;
   }
@@ -676,6 +680,7 @@ private:
   // What other players' story changes do to this map's NPCs, and the map heads' spawns it reads
   // (field/npc_spawns, read on the first change).
   CoopNpcPresence coopNpcs_;
+  CoopNpcMirror coopNpcMirror_;
   std::optional<std::vector<game::field::NpcSpawnRule>> npcSpawns_;
   // Whether the dialog on screen is the story lock's message.
   bool lockNoticeShown_ = false;

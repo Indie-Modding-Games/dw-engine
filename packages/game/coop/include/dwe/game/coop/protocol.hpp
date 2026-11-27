@@ -32,9 +32,9 @@ inline constexpr std::size_t MaxPlayers = 4;
 // and whether it takes new players, and the refusal of a room closed to them (#352, #356). 11: the
 // world's clock, the host's, told to every guest, and who of the players trains (#365). 12: the
 // items thrown in a battle in its frames (the guest's screen draws them) and the host's co-op
-// difficulty in the lobby (#351, #361, #352). 13: the folder battle mode. 14: a
-// guest's world ask says the host revision it had seen, so the host drops what a newer change of
-// the world (a room reset) overtook (#422).
+// difficulty in the lobby (#351, #361, #352). 13: the folder battle mode. 14: a guest's world ask
+// says the host revision it had seen (#422), scripted clips, held partners, partner forms and the
+// host's map NPCs ride the snapshots (#412, #420, #419), and NPC events are held per player (#417).
 inline constexpr std::uint32_t ProtocolVersion = 14;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
@@ -47,6 +47,8 @@ inline constexpr std::uint32_t ProtocolVersion = 14;
 // A worst-case 255-byte map id plus 48 entities fits in one 1200-byte unreliable datagram,
 // including ChannelPeerLink's one-byte lane tag. JoinState travels reliably and can carry more.
 inline constexpr std::size_t MaxSnapshotEntities = 48;
+// A map NPC's id in the snapshots is this plus its slot; the players' and partners' stay under it.
+inline constexpr std::uint16_t NpcNetworkBase = 0x100;
 inline constexpr std::size_t MaxJoinEntities = 128;
 inline constexpr std::int32_t MaxWorldCoordinate = 1'000'000;
 inline constexpr std::int32_t MaxViewCoordinate = 1'000'000;
@@ -129,6 +131,16 @@ struct Commands {
 enum class Motion : std::uint8_t { Idle, Walk, Run };
 enum class EntityRole : std::uint8_t { Player, Partner, Npc };
 
+// A clip a script plays on a character instead of its motion's (a gym course, a scene): the
+// original's animation id and how many times a script started it, so the same clip started again
+// plays again on the other machines.
+struct ActionClip {
+  std::uint16_t clip = 0;
+  std::uint8_t starts = 0;
+
+  friend bool operator==(const ActionClip&, const ActionClip&) = default;
+};
+
 // Positions are signed integral world units and yaw covers one turn in 16 bits. Quantization is
 // part of the protocol so the host and guests do not exchange native floats.
 struct EntityState {
@@ -140,6 +152,7 @@ struct EntityState {
   std::int32_t z = 0;
   std::uint16_t yaw = 0;
   Motion motion = Motion::Idle;
+  std::optional<ActionClip> action = std::nullopt;
 
   friend bool operator==(const EntityState&, const EntityState&) = default;
 };
@@ -429,6 +442,19 @@ struct BattleEnd {
 };
 
 // A player's own transform, sent by the guest that owns it (unreliable, about 20 per second). The
+// The guest's partner while its own game holds it (a gym course, a care scene, a script): where it
+// stands and what it plays. The host draws it there instead of letting it follow the player.
+struct HeldPartner {
+  std::int32_t x = 0;
+  std::int32_t y = 0;
+  std::int32_t z = 0;
+  std::uint16_t yaw = 0;
+  Motion motion = Motion::Idle;
+  std::optional<ActionClip> action = std::nullopt;
+
+  friend bool operator==(const HeldPartner&, const HeldPartner&) = default;
+};
+
 // host keeps the newest valid one per player (authority.hpp) and drops stale ones: `sequence` is
 // the sender's tick count (60 per second), so it also times the movement, and `epoch` is the newest
 // host correction the guest applied, so states sent before it are told apart.
@@ -442,6 +468,8 @@ struct PlayerState {
   std::int32_t z = 0;
   std::uint16_t yaw = 0;
   Motion motion = Motion::Idle;
+  std::optional<ActionClip> action = std::nullopt;
+  std::optional<HeldPartner> partner = std::nullopt;
 
   friend bool operator==(const PlayerState&, const PlayerState&) = default;
 };
@@ -479,6 +507,15 @@ struct Roster {
   std::vector<RosterEntry> players;
 
   friend bool operator==(const Roster&, const Roster&) = default;
+};
+
+// A guest's partner as its own game has it now (#412): it evolved, or a load gave it another form.
+// The host takes it as the link's player's, never the one named here, and lists it in the roster.
+struct PartnerForm {
+  PlayerId player = GuestPlayerId;
+  std::string species;
+
+  friend bool operator==(const PartnerForm&, const PartnerForm&) = default;
 };
 
 // The shared world (#357, multiplayer.md "Shared world interactions"). Every game of the session
@@ -849,7 +886,7 @@ using Message =
                  GroundItems, ItemClaim, ClaimAnswer, BattleOffer, Lobby, SyncWatch, SyncReport,
                  TradeAsk, TradeAnswer, TradeOffer, TradeConfirm, TradeCancel, TradeState,
                  TradePrepare, TradeCommit, TradeRevert, TradeReply, TradeClosed, WorldClock,
-                 TrainingStatus>;
+                 TrainingStatus, PartnerForm>;
 
 inline constexpr std::uint8_t HelloKind = 0x60;
 inline constexpr std::uint8_t WelcomeKind = 0x61;
@@ -870,6 +907,7 @@ inline constexpr std::uint8_t ReadyKind = 0x6E;
 inline constexpr std::uint8_t PlayerStateKind = 0x70;
 inline constexpr std::uint8_t PlayerCorrectionKind = 0x71;
 inline constexpr std::uint8_t RosterKind = 0x72;
+inline constexpr std::uint8_t PartnerFormKind = 0x73;
 // Co-op combat owns 0x80-0x8F.
 inline constexpr std::uint8_t BattleOfferKind = 0x80;
 // The shared world's interactions (#357) take 0x90-0x9F.

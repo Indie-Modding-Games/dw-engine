@@ -2238,6 +2238,18 @@ screens::ScreenSettings PlaySession::partnerStatus() const {
   return partnerMenu_.statusSettings();
 }
 
+void PlaySession::mirrorCoopNpcs(const PresentedCoopWorld* world, net::Millis now) {
+  const game::field::Field& field = scene_->field();
+  const bool sameMap = world != nullptr && !coopBattleHold_ && world->mapId == field.mapId() &&
+                       !field.mapChangePending() && !scene_->movingCoopSelf();
+  const session::StoryAdapter* story = game_.systems.story;
+  (void)coopNpcMirror_.show(scene_->npcs(),
+                            {.world = sameMap ? world : nullptr,
+                             .mapSerial = scene_->mapSerial(),
+                             .ready = story == nullptr || !story->scriptRunning()},
+                            now);
+}
+
 void PlaySession::followCoopFacts(std::span<const CoopFactChange> facts,
                                   std::span<const CoopFactChange> ownFacts) {
   session::StoryAdapter* story = game_.systems.story;

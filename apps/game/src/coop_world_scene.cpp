@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <set>
 
+#include "coop_snapshot.hpp"
 #include "coop_snapshot_interpolation.hpp"
 #include "coop_world.hpp"
 #include "field_scene.hpp"
@@ -28,16 +29,26 @@ void presentCoopPlayers(FieldScene& scene, const PresentedCoopWorld* world,
                        !field.mapChangePending() && !scene.movingCoopSelf();
   std::set<coop::PlayerId> shown;
   if (sameMap) {
-    const auto stateOf = [&](coop::PlayerId owner,
-                             coop::EntityRole role) -> std::optional<game::field::CharacterState> {
+    const auto entityOf = [&](coop::PlayerId owner,
+                              coop::EntityRole role) -> const PresentedCoopEntity* {
       const auto found = std::ranges::find_if(world->entities, [&](const auto& entity) {
         return entity.owner == owner && entity.role == role;
       });
-      if (found == world->entities.end()) {
+      return found != world->entities.end() ? &*found : nullptr;
+    };
+    const auto stateOf = [&](coop::PlayerId owner,
+                             coop::EntityRole role) -> std::optional<game::field::CharacterState> {
+      const PresentedCoopEntity* found = entityOf(owner, role);
+      if (found == nullptr) {
         return std::nullopt;
       }
       return game::field::CharacterState{
           .position = found->position, .yaw = found->yaw, .motion = sceneMotionOf(found->motion)};
+    };
+    const auto clipOf = [&](coop::PlayerId owner,
+                            coop::EntityRole role) -> std::optional<game::field::PlayedClip> {
+      const PresentedCoopEntity* found = entityOf(owner, role);
+      return found != nullptr ? playedClipOf(found->action) : std::nullopt;
     };
     for (const PresentedCoopEntity& entity : world->entities) {
       const coop::PlayerId owner = entity.owner;
@@ -50,7 +61,9 @@ void presentCoopPlayers(FieldScene& scene, const PresentedCoopWorld* world,
         partner = std::string{hostPartner};
       }
       if (auto drawn = scene.presentCoopPlayer(owner, stateOf(owner, coop::EntityRole::Player),
-                                               stateOf(owner, coop::EntityRole::Partner), partner);
+                                               stateOf(owner, coop::EntityRole::Partner), partner,
+                                               clipOf(owner, coop::EntityRole::Player),
+                                               clipOf(owner, coop::EntityRole::Partner));
           !drawn) {
         core::logWarning("coop: could not present player {}: {}", owner, drawn.error().message);
       }
