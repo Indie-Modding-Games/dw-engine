@@ -91,6 +91,10 @@ public:
   // The ground items, by slot; an empty slot holds nothing.
   [[nodiscard]] std::span<const std::optional<GroundItem>> ground() const { return ground_; }
   [[nodiscard]] std::span<const std::optional<Chest>> chests() const { return chests_; }
+  // The item in a ground slot and the chest in a chest slot; none for a slot past the list (a map
+  // load emptied it while a notice held the slot).
+  [[nodiscard]] std::optional<GroundItem> groundAt(std::size_t slot) const;
+  [[nodiscard]] std::optional<Chest> chestAt(std::size_t chest) const;
 
   // The item the player picks up standing on `cell` (checkItemPickup): the first in reach, once;
   // it is offered again only after the player stood out of reach of every item.
@@ -110,7 +114,8 @@ public:
   bool takenElsewhere(std::size_t chest);
 
   // The ground as the co-op host has it on this map (#357): exactly these items in these slots
-  // (slots past the ground's are dropped), and nothing of this game's own.
+  // (slots past the ground's room are dropped), and nothing of this game's own. The ground keeps
+  // its length, so a slot a notice holds stays a slot after the host's list lost its item.
   void replaceGround(std::span<const std::optional<GroundItem>> ground);
 
   // One original frame of a chest's drawer sliding out (map_object.c: tickOpenChestTray) or back in

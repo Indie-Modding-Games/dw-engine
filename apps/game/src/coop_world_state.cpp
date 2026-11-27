@@ -310,6 +310,9 @@ void CoopGroundMirror::show(CoopWorldView& view) {
     shown[entry.slot] = entry.id;
   }
   const auto now = view.items->ground();
+  if (ground.size() < now.size()) {
+    ground.resize(now.size());
+  }
   const bool same = std::ranges::equal(
       now, ground,
       [](const std::optional<game::field::GroundItem>& a,

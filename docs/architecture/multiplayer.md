@@ -473,7 +473,9 @@ id, and then it sets the trigger or takes the item off its ground and tells ever
 nothing and the notice says another player took it (`online.coop.item_gone`). The host takes at once, as in single
 player, so its take within the same round trip comes first; a take that finds the item gone while its notice was open
 gets the same notice. On a map the host is not on, a guest's ground is its own and needs no claim. Single player never
-claims.
+claims. The host's ground list replaces the guest's ground but keeps its length, so the slot a guest's open notice holds
+stays readable after the host's list dropped its item (a granted take of the last item used to read past the ground and
+crash the guest, #414).
 
 **Joining late and changing map.** A guest that joins gets the whole shared story (`WorldSync`, in parts that fit a
 datagram) and the host's ground; every guest gets them again when the host enters a map. The sync carries the host's

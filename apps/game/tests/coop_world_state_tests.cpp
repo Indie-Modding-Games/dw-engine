@@ -378,6 +378,24 @@ TEST_CASE("an item on the ground goes to the one player who picks it up, once") 
   CHECK(sent<coop::ItemClaim>(session.lastFirst.out, coop::HostPlayerId).empty());
 }
 
+TEST_CASE("a guest's granted pick-up of the last item on the ground leaves its slot readable") {
+  using State = FieldItemClaim::State;
+  Session session;
+  REQUIRE(session.hostGame.items.spawn(itemTable().handleOf(itemTable().entries().front()),
+                                       {.column = 4, .row = 5}, 0.0F));
+  session.exchange();
+  REQUIRE(session.firstGame.items.groundAt(0));
+  session.firstGame.claimTake(false, 0);
+  session.exchange();
+  session.exchange();
+  REQUIRE(session.firstGame.claimed() == State::Granted);
+  CHECK_FALSE(session.hostGame.items.groundAt(0));
+  // The item notice reads its slot again once the host's word is in (FieldItemsScreen).
+  REQUIRE_FALSE(session.firstGame.items.ground().empty());
+  CHECK_FALSE(session.firstGame.items.ground()[0]);
+  CHECK_FALSE(session.secondGame.items.ground()[0]);
+}
+
 TEST_CASE("a door a guest's script moves moves on the host's map and for the others there") {
   Session session;
   const coop::WorldEdit door{.kind = coop::WorldEditKind::MapObject, .key = 3, .value = 1};

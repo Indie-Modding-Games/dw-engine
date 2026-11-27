@@ -567,7 +567,10 @@ mete la partida del invitado el objeto en la bolsa; rechazada (o sin respuesta e
 nada y el aviso dice que otro jugador lo tomó (`online.coop.item_gone`). El anfitrión toma al momento, como en la
 partida de un jugador, así que si toma dentro del mismo viaje de ida y vuelta va primero; si al tomar el objeto ya no
 está porque otro lo tomó con el aviso abierto, recibe el mismo aviso. En un mapa en el que no está el anfitrión, el
-suelo de un invitado es suyo y no hace falta reclamar. La partida de un jugador nunca reclama.
+suelo de un invitado es suyo y no hace falta reclamar. La partida de un jugador nunca reclama. La lista del anfitrión
+reemplaza el suelo del invitado pero conserva su largo, así que el hueco que sostiene el aviso abierto de un invitado se
+sigue pudiendo leer cuando la lista del anfitrión ya no trae su objeto (tomar el último objeto con permiso leía fuera
+del suelo y cerraba el juego del invitado, #414).
 
 **Entrar tarde y cambiar de mapa.** Un invitado que entra recibe toda la historia compartida (`WorldSync`, en partes
 que caben en un datagrama) y el suelo del anfitrión; todos los invitados los reciben otra vez cuando el anfitrión entra
