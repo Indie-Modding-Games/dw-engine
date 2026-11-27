@@ -36,7 +36,7 @@ struct HostMoment {
   bool held = false;
 };
 
-struct AskVerdict {
+struct BattleAskVerdict {
   bool waits = false;
   std::optional<BattleRefusal> refusal;
 
@@ -63,7 +63,7 @@ public:
   };
 
   // Busy while a battle runs, NotHere from another map; otherwise it waits until the host is free.
-  [[nodiscard]] AskVerdict judge(const BattleAsk& ask, const HostMoment& host) const;
+  [[nodiscard]] BattleAskVerdict judge(const BattleAsk& ask, const HostMoment& host) const;
   // False once the ask waited BattleAskWaitTicks: the host then refuses it as busy.
   bool wait(PlayerId guest, const BattleAsk& ask, std::uint64_t tick);
   struct WaitingAsk {

@@ -303,7 +303,7 @@ TEST_CASE("an ask the host cannot take yet waits for it instead of being refused
        {HostMoment{.map = "", .guestHere = true}, HostMoment{.map = "forest", .guestHere = false},
         HostMoment{.map = "forest", .guestHere = true, .battling = true},
         HostMoment{.map = "forest", .guestHere = true, .held = true}}) {
-    const AskVerdict verdict = referee.judge(ask, held);
+    const BattleAskVerdict verdict = referee.judge(ask, held);
     CHECK(verdict.waits);
     CHECK_FALSE(verdict.refusal);
   }

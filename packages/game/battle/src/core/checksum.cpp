@@ -115,6 +115,7 @@ void addFolder(Hasher& hash, const FolderState& folder) {
     hash.add(own.phaseFrames);
     hash.add(own.defenseBar);
     hash.add(own.brokenFrames);
+    hash.add(own.committed);
   }
 }
 

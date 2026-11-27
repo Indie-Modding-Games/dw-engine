@@ -51,7 +51,7 @@ bool spoilsInRange(const BattleSpoils& spoils) {
          within(spoils.frames, std::int64_t{0}, FramesPerDay);
 }
 
-AskVerdict BattleReferee::judge(const BattleAsk& ask, const HostMoment& host) const {
+BattleAskVerdict BattleReferee::judge(const BattleAsk& ask, const HostMoment& host) const {
   if (running_) {
     return {.waits = false, .refusal = BattleRefusal::Busy};
   }

@@ -464,7 +464,7 @@ void CoopBattles::guestLeft(coop::PlayerId guest) {
 
 void CoopBattles::answer(PlaySession& play, coop::PlayerId from, const coop::BattleAsk& ask) {
   const game::field::Field& field = play.scene().field();
-  const coop::AskVerdict verdict = referee_.judge(
+  const coop::BattleAskVerdict verdict = referee_.judge(
       ask, {.map = field.mapChangePending() ? std::string_view{} : std::string_view{field.mapId()},
             .guestHere = coopPlayerHere(field, here_, from),
             .battling = play.battleScreen().active(),
