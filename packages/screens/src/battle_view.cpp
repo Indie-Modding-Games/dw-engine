@@ -349,7 +349,7 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names,
     view.folder = folderViewOf(battle, *orders, own, names);
   }
   view.bagAvailable = battle.bagAvailableFor(own);
-  view.bagOpen = battle.bagOpen();
+  view.bagOpen = battle.bagOpen(own);
   view.itemInFlight = battle.thrownItemOf(own).has_value();
   return view;
 }

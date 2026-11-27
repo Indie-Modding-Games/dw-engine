@@ -376,6 +376,11 @@ void CoopBattles::hostTick(PlaySession& play) {
   if (referee_.running() && !screen.active()) {
     endBattle(play);
   }
+  screen.setCoopShared(referee_.running() &&
+                       std::ranges::any_of(referee_.guests(), [&](coop::PlayerId guest) {
+                         return referee_.roleOf(guest) != coop::BattleRole::Helper ||
+                                coopPlayerHere(play.scene().field(), here_, guest);
+                       }));
   for (const coop::BattleReferee::WaitingAsk& waiting :
        std::vector<coop::BattleReferee::WaitingAsk>{referee_.waiting()}) {
     answer(play, waiting.guest, waiting.ask);
