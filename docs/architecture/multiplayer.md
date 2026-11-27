@@ -448,6 +448,7 @@ applies a shared interaction to the world; the others' games ask, and are told t
 | Doors and mechanisms a script moves while players watch | live map edits (object flags, closed cells) | shared with the players on that map; on the next visit the map's head script rebuilds them from the shared triggers | `WorldAsk` → host → `WorldChange` |
 | Medals, raised species, the player page's key items (rods) | story triggers | local: each player's own | never sent |
 | A script's freeze, the talk facing trigger, the next map's name | story variables and a trigger | local: they follow that player's own scripts | never sent |
+| Rewards a script gives once per player: the meat farm's days since its last meat (Palmon's and the farm's daily meat, #421) | story variables (`player_own_variables` in the story rules) | local: each player gets its own meat once a day | never sent |
 | The bag, bits, the partner and its care, menus, dialogs on screen, the camera | session systems | local | never sent (battles: §6.1) |
 
 The local facts come from the story rules (`StoryAdapter::playerOwnTrigger` and `playerOwnVariable`): a ruleset that

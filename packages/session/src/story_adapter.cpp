@@ -53,6 +53,7 @@ constexpr std::string_view SectionKey = "section";
 constexpr std::string_view VariableKey = "variable";
 constexpr std::string_view HighestKey = "highest";
 constexpr std::string_view HitsAtMostKey = "hits_at_most";
+constexpr std::string_view PlayerOwnVariablesKey = "player_own_variables";
 // An engine guard, not a rule: past a second per frame of the original the story would crawl.
 constexpr std::int64_t MaxTicksPerFrame = 60;
 // A story variable is one byte in the state and in saves (script.h:158: ScriptState.pstats).
@@ -167,6 +168,24 @@ std::vector<RoamingRareRoll> readRoamingRares(assets::YamlReader& reader,
   return rolls;
 }
 
+std::vector<std::int32_t> readPlayerOwnVariables(assets::YamlReader& reader,
+                                                 const core::YamlNode& root) {
+  const core::YamlNode* list = root.isMapping() ? root.find(PlayerOwnVariablesKey) : nullptr;
+  if (list == nullptr || !reader.ok()) {
+    return {};
+  }
+  std::vector<std::int32_t> variables;
+  for (const core::YamlNode& item : reader.sequence(*list, PlayerOwnVariablesKey)) {
+    const auto value = reader.integer<std::int64_t>(item);
+    if (reader.ok() && (value < 0 || value >= game::story::BaseVariableCount)) {
+      reader.fail(item, formatMessage(messages::StoryNumberOutside, PlayerOwnVariablesKey, value,
+                                      game::story::BaseVariableCount - 1));
+    }
+    variables.push_back(static_cast<std::int32_t>(value));
+  }
+  return variables;
+}
+
 } // namespace
 
 core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section) {
@@ -176,7 +195,7 @@ core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section) 
                          {TicksPerFrameKey, VariableMaxKey, FrozenVariableKey, FrozenValueKey,
                           TalkFacingTriggerKey, ShowNameVariableKey, ShowNameByEventKey,
                           ShowNameAlwaysKey, ShowNameNeverKey},
-                         {CapacityKey, RoamingRaresKey})) {
+                         {CapacityKey, RoamingRaresKey, PlayerOwnVariablesKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   const core::YamlNode& ticksNode = reader.field(root, TicksPerFrameKey);
@@ -205,7 +224,8 @@ core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section) 
                           .flow = flow,
                           .capacity = {},
                           .extraRaised = {},
-                          .roamingRares = readRoamingRares(reader, root)};
+                          .roamingRares = readRoamingRares(reader, root),
+                          .playerOwnVariables = readPlayerOwnVariables(reader, root)};
   readCapacity(reader, root, rules);
   return reader.finish(rules, section.file);
 }
@@ -593,7 +613,8 @@ bool StoryAdapter::playerOwnTrigger(std::int32_t trigger) const {
 
 bool StoryAdapter::playerOwnVariable(std::int32_t variable) const {
   return std::cmp_equal(variable, flow_.frozenVariable) ||
-         std::cmp_equal(variable, flow_.showNameVariable);
+         std::cmp_equal(variable, flow_.showNameVariable) ||
+         std::ranges::contains(playerOwnVariables_, variable);
 }
 
 core::Result<void> StoryAdapter::clearFixedFight(game::story::StoryState& state) const {
@@ -628,6 +649,7 @@ core::Result<void> StoryAdapter::wire(const StorySectionRules& story,
   randomPort_ = std::make_unique<RandomPort>();
   rollPort_ = std::make_unique<RollPort>(*this);
   roamingRares_ = story.roamingRares;
+  playerOwnVariables_ = story.playerOwnVariables;
   sound_ = std::make_unique<SoundRelay>();
   music_ = std::make_unique<MusicRelay>();
   orders_ = std::make_unique<game::story::StoryOrders>(*statePort_, *randomPort_, story.rules,
@@ -692,6 +714,7 @@ void StoryAdapter::followRules(const StorySectionRules& story,
                                const game::story::DialogueRules& dialogue) {
   *orders_ = game::story::StoryOrders{*statePort_, *randomPort_, story.rules, rollPort_.get()};
   roamingRares_ = story.roamingRares;
+  playerOwnVariables_ = story.playerOwnVariables;
   dialogue_->dialogue().setRules(dialogue);
   if (story.ticksPerFrame == ticksPerFrame_ && sameFlow(story.flow, flow_)) {
     return;

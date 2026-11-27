@@ -302,6 +302,16 @@ TEST_CASE("co-op keeps a player's own story facts out of the shared world") {
   CHECK_FALSE(story.playerOwnVariable(259));
 }
 
+TEST_CASE("co-op: the meat farm's day count is each player's, so every player gets the meat") {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory}};
+  const auto session = storySession(packs);
+  CHECK(session.story->playerOwnVariable(31));
+  // The other day counters place NPCs on the maps: the world's.
+  CHECK_FALSE(session.story->playerOwnVariable(28));
+  CHECK_FALSE(session.story->playerOwnVariable(30));
+}
+
 TEST_CASE("a story section saved at version 1 still loads") {
   const TestPacks packs{{"data/digimon.yaml", digimonTable},
                         {"data/new_game_story.yaml", newGameStory}};
