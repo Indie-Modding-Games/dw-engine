@@ -111,6 +111,7 @@
 #include "save_figure.hpp"
 #include "save_indicator.hpp"
 #include "screenshot.hpp"
+#include "shared_pause.hpp"
 #include "slow_frame_log.hpp"
 #include "software_mode.hpp"
 #include "state_trace.hpp"
@@ -1891,6 +1892,13 @@ int runGame(const Options& requested) {
       if (!(*ui)->isVisible(MenuDocument)) {
         optionsDirect = false;
       }
+      // Other players share this world (co-op): this player's menus and pause hold only its own
+      // input, the world goes on (#415, shared_pause.hpp).
+      const bool coopShared =
+          flow.playing() != nullptr && flow.playing()->coopGame() && coop.connected();
+      if (PlaySession* shared = flow.playing()) {
+        shared->shareWorld(coopShared);
+      }
       // Start's pause freezes everything but the box, menus and battle included (handlePause).
       if (const PauseStep pause =
               pauseBox.tick(input.wasPressed("pause") || (settingsAsked && pauseBox.paused()),
@@ -1902,10 +1910,13 @@ int runGame(const Options& requested) {
         } else if (pause.closed) {
           (*ui)->hide(PauseBoxDocument);
         }
-        if (pause.paused) {
+        if (pause.paused && localScreensHoldWorld({.pauseBox = true}, coopShared)) {
           input.endTick();
           ++ticksRun;
           continue;
+        }
+        if (pause.paused) {
+          input.endTick();
         }
       }
       if (flow.playing() != nullptr && input.wasPressed("menu")) {
@@ -2262,7 +2273,7 @@ int runGame(const Options& requested) {
       if (!pointerWalks) {
         mouse.release();
       }
-      if (play != nullptr && !(*ui)->capturesInput()) {
+      if (play != nullptr && !(*ui)->capturesInput() && !pauseBox.paused()) {
         move = input.vector("move_left", "move_right", "move_up", "move_down");
         // Up gives a negative y; the field's y points away from the camera.
         walk = walkOrderOf(

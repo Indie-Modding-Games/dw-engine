@@ -634,7 +634,7 @@ Proposed on 2026-11-16 with a recommendation each; this is how they were built.
 | 2 | Shared map? | Yes: the group goes where the host goes. A guest's own exits are held and the host's map change takes everyone (§5.7). Each game still knows its own map, so a player who is still loading is simply not drawn. |
 | 3 | Battle | **Every partner fights.** Whoever starts it, every free partner on that map joins, up to four (§6.1, [co-op combat](coop-combat.md) §12), and the enemies scale with how many fight ([co-op difficulty](coop-difficulty.md)). |
 | 4 | Progress | The story, the triggers, the money and the world are **the host's**, saved in the host's own slot as single-player (§5.6). Every player's changes to that world go through the host (§5.8). The guest plays with its own partner, moves, raised species and bag with its bits, and takes them home to its own slot when it leaves and at safe points meanwhile (C4, §5.6); nothing of the host's world goes with them. |
-| 5 | Pause and menus | Every game runs its own copy of the host's world, so a menu or the pause stops only that player's game; the others play on. A shared battle waits while the host has its menu open (§6.1). |
+| 5 | Pause and menus | A menu or Start's pause is that player's only, the host's too (#415): while others share the world it holds only that player's input, and the world, its clock and its battles go on for everyone. A battle that starts closes the game menu of whoever has it open. Alone, menus and the pause stop the game as in the original (`shared_pause.hpp`). |
 | 6 | Dialogs and scenes | A player's scripts run in that player's game: its dialogs and scenes are its own, and the others keep playing. What a scene changes in the world reaches the others through the host (§5.8), and the NPCs it brings or takes away show at once in every game. |
 
 ### 6.1 Battles (decision 3)
@@ -691,8 +691,8 @@ helps as above. Each partner runs or is knocked out on its own; the team loses o
 Limits of this first version: the techniques' effects, the damage numbers and the status marks are drawn only on the
 host; the guest sees the fighters move and the life bars. Tournament fighters that are not map NPCs are not drawn on
 the guest. A helper's item is drawn thrown from the host's tamer. The enemies jump to the host's places when the battle
-starts (each game simulates its own NPCs until then). Drops fall only in the host's world. While the host has its menu
-open, the battle waits for both.
+starts (each game simulates its own NPCs until then). Drops fall only in the host's world. A battle no longer waits
+for the host's menu or pause (#415).
 
 ### 6.2 Item trades (#360)
 

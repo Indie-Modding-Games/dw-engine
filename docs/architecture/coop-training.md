@@ -125,8 +125,8 @@ sequenceDiagram
 - **The host leaves:** the guest goes back to the title as before; nothing of this ticket outlives the game.
 - **Day change and events:** only the world's midnight changes the day, for every player at once (a guest that missed
   it by a skip pays it in `skipHours`). Day-time changes follow the shared clock.
-- **Host menus and scripts:** they still hold the host's clock (§7), so the world stands for everyone while the host
-  reads a dialog; guests wait with it.
+- **Host menus and scripts:** the host's menus and Start's pause no longer hold the world's clock (#415); its scripts
+  still do (§7), so the world stands for everyone while the host reads a dialog, and guests wait with it.
 - **A guest sleeps:** its own sleep jumps its clock; it goes back to the world's time and its partner keeps the rest it
   already got (it does not live those hours twice).
 - **The host sleeps:** guests skip those hours (§4.1), as a script time skip.
@@ -147,8 +147,7 @@ sequenceDiagram
 
 - **Co-op sleep** needs its own design: today the host's sleep moves everyone and a guest's sleep is undone by the
   world (its partner keeps the rest).
-- **Host menus, dialogs and scripts still hold the world's clock** for everyone (decision 5 is not fully met for the
-  clock).
+- **Host dialogs and scripts still hold the world's clock** for everyone (its menus and pause no longer do, #415).
 - **A guest's progress is not saved back** to its own game (phase C4).
 - **The remote partner's training animation** is not drawn on the other machines; only the tag says it.
 

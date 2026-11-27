@@ -80,6 +80,7 @@ class InventoryAdapter;
 #include "save_indicator.hpp"
 #include "save_machine.hpp"
 #include "session_start.hpp"
+#include "shared_pause.hpp"
 #include "shop_haggle_screen.hpp"
 #include "shop_job_bar.hpp"
 #include "shop_job_rules_panel.hpp"
@@ -498,6 +499,10 @@ public:
   [[nodiscard]] game::battle::CoopLevel coopLevel() const { return coopLevel_; }
   // The guest: the field holds while the host's battle runs (its figures are the host's).
   void holdForCoopBattle(bool on) { coopBattleHold_ = on; }
+  // Other players share this game's world now (co-op, #415): this player's menus and pause no
+  // longer stop it (shared_pause.hpp).
+  void shareWorld(bool shared) { worldShared_ = shared; }
+  [[nodiscard]] bool worldShared() const { return worldShared_; }
   [[nodiscard]] bool heldForCoopBattle() const { return coopBattleHold_; }
   // The guest: what the host's battle left its partner, given as its own battle's result.
   core::Result<void> applyCoopSpoils(const game::battle::BattleResult& result);
@@ -524,6 +529,7 @@ private:
                    std::span<const GuestFieldIntent> guests);
   void tickWater();
   [[nodiscard]] bool paused() const;
+  [[nodiscard]] LocalScreens localScreens() const;
   // How the field animates: running, resting behind the game menu, in a battle or frozen
   // (field_clock.hpp).
   [[nodiscard]] FieldClock fieldClock() const;
@@ -647,6 +653,7 @@ private:
   bool battleRanLastFrame_ = false;
   // The guest's field holds for the host's battle (holdForCoopBattle).
   bool coopBattleHold_ = false;
+  bool worldShared_ = false;
   bool evolutionRanLastFrame_ = false;
   // The play options (applyPlayOptions): skip the evolution's scene on confirm or cancel, and the
   // options that change the running game's rules.

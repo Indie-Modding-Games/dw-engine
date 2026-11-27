@@ -741,7 +741,7 @@ Propuestas el 2026-11-16 con una recomendación cada una; así quedaron hechas.
 | 2 | ¿Mapa compartido? | Sí: el grupo va donde va el anfitrión. Las salidas propias de un invitado se retienen y el cambio de mapa del anfitrión los lleva a todos (§5.7). Cada partida sigue conociendo su mapa, así que un jugador que aún carga simplemente no se dibuja. |
 | 3 | Combate | **Pelean todos los compañeros.** Lo empiece quien lo empiece, se suma cada compañero libre de ese mapa, hasta cuatro (§6.1, [combate cooperativo](coop-combat.md) §12), y los enemigos escalan según cuántos pelean ([dificultad cooperativa](coop-difficulty.md)). |
 | 4 | Progreso | La historia, los triggers, el dinero y el mundo son **del anfitrión**, guardados en su propia ranura como en un jugador (§5.6). Los cambios de cualquier jugador a ese mundo pasan por el anfitrión (§5.8). El invitado juega con su propio compañero, sus técnicas, las especies que crió y su bolsa con sus bits, y se los lleva a su propia ranura al salir y en puntos seguros mientras tanto (C4, §5.6); nada del mundo del anfitrión va con ellos. |
-| 5 | Pausa y menús | Cada partida corre su propia copia del mundo del anfitrión, así que un menú o la pausa solo paran la partida de ese jugador; los demás siguen. Un combate compartido espera mientras el anfitrión tiene el menú abierto (§6.1). |
+| 5 | Pausa y menús | Un menú o la pausa de Start son solo de ese jugador, también del anfitrión (#415): mientras otros comparten el mundo solo retienen la entrada de ese jugador, y el mundo, su reloj y sus combates siguen para todos. Un combate que empieza cierra el menú de juego de quien lo tenga abierto. A solas, los menús y la pausa paran la partida como en el original (`shared_pause.hpp`). |
 | 6 | Diálogos y escenas | Los scripts de un jugador corren en su partida: sus diálogos y escenas son suyos y los demás siguen jugando. Lo que una escena cambia en el mundo llega a los demás por el anfitrión (§5.8), y los NPCs que trae o se lleva aparecen al momento en todas las partidas. |
 
 ### 6.1 Combates (decisión 3)
@@ -805,8 +805,8 @@ Límites de esta primera versión: los efectos de las técnicas, los números de
 en el anfitrión; el invitado ve moverse a los luchadores y las barras de vida. Los luchadores de torneo que no son NPC
 del mapa no se dibujan en el invitado. El objeto del ayudante se dibuja lanzado desde el domador del anfitrión. Los
 enemigos saltan a los sitios del anfitrión cuando empieza el combate (hasta entonces cada juego simula sus propios
-NPC). Los objetos que caen solo aparecen en el mundo del anfitrión. Mientras el anfitrión tiene su menú abierto, el
-combate espera para los dos.
+NPC). Los objetos que caen solo aparecen en el mundo del anfitrión. El combate ya no espera al menú ni a la pausa del
+anfitrión (#415).
 
 ### 6.2 Intercambio de objetos (#360)
 

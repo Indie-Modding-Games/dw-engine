@@ -130,8 +130,8 @@ sequenceDiagram
 - **El anfitrión se va:** el invitado vuelve al título como antes; nada de este ticket sobrevive a la partida.
 - **Cambio de día y eventos:** solo la medianoche del mundo cambia el día, para todos a la vez (un invitado que la
   saltó la paga en `skipHours`). Los momentos del día siguen el reloj compartido.
-- **Menús y scripts del anfitrión:** siguen reteniendo su reloj (§7), así que el mundo se para para todos mientras el
-  anfitrión lee un diálogo; los invitados esperan con él.
+- **Menús y scripts del anfitrión:** sus menús y la pausa de Start ya no retienen el reloj del mundo (#415); sus scripts
+  sí (§7), así que el mundo se para para todos mientras el anfitrión lee un diálogo, y los invitados esperan con él.
 - **Un invitado duerme:** su propio sueño salta su reloj; vuelve a la hora del mundo y su compañero conserva el
   descanso que ya tuvo (no vive esas horas dos veces).
 - **El anfitrión duerme:** los invitados saltan esas horas (§4.1), como un salto de tiempo de script.
@@ -152,8 +152,8 @@ sequenceDiagram
 
 - **El sueño en cooperativo** necesita su propio diseño: hoy el sueño del anfitrión mueve a todos y el de un invitado
   lo deshace el mundo (su compañero conserva el descanso).
-- **Los menús, diálogos y scripts del anfitrión siguen reteniendo el reloj del mundo** para todos (la decisión 5 no se
-  cumple del todo para el reloj).
+- **Los diálogos y scripts del anfitrión siguen reteniendo el reloj del mundo** para todos (sus menús y su pausa ya no,
+  #415).
 - **El progreso del invitado no se guarda de vuelta** en su propia partida (fase C4).
 - **La animación de entrenamiento del compañero remoto** no se dibuja en las otras máquinas; solo lo dice la etiqueta.
 
