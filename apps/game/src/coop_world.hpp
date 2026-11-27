@@ -110,11 +110,14 @@ public:
   [[nodiscard]] game::coop::PlayerId self() const { return self_; }
   void receive(const game::coop::Message& message);
   // Where the host put this guest's player and the field has yet to take it: on this map a place,
-  // on another a map change that arrives at the host's spot (FieldScene::moveCoopSelf).
+  // on another a map change that arrives at the host's spot (FieldScene::moveCoopSelf). `reload`:
+  // the host loaded the map the group is on again (a script's warp reset the room), so this game
+  // loads it again too instead of keeping what its scripts left on the old load.
   struct Move {
     std::string map;
     std::optional<std::int32_t> exit;
     assets::SpawnPoint at;
+    bool reload = false;
   };
   // Before the guest's field tick, with the field and whether it still goes to the map the last
   // move asked for: the move to make now, if any. Once the player stands where the host said, the
@@ -153,6 +156,11 @@ private:
   std::optional<game::coop::PlayerCorrection> pending_;
   // The move asked for pending_, until the field arrives.
   bool asked_ = false;
+  // The map the newest correction placed this player on.
+  std::string placedOn_;
+  // The host's map edits that came while this game was loading their map, for once it stands there.
+  std::vector<game::coop::WorldEdit> heldEdits_;
+  std::string heldMap_;
   std::optional<game::coop::Roster> roster_;
 };
 

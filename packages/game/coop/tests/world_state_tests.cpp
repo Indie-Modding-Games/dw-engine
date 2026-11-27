@@ -37,6 +37,7 @@ bool sharedRule(const WorldEdit& edit) {
 TEST_CASE("the shared world's messages round trip within one datagram") {
   const WorldAsk ask{
       .ask = 7,
+      .seen = 41,
       .mapId = std::string(255, 'm'),
       .edits = std::vector<WorldEdit>(
           MaxWorldEdits,
@@ -103,7 +104,7 @@ TEST_CASE("damaged shared world messages are refused") {
   CHECK_FALSE(decode(bytes));
   CHECK_FALSE(decode(encode(
       Message{WorldChange{.revision = 0, .origin = 0, .ask = 0, .mapId = "M", .edits = {}}})));
-  CHECK_FALSE(decode(encode(Message{WorldAsk{.ask = 1, .mapId = {}, .edits = {}}})));
+  CHECK_FALSE(decode(encode(Message{WorldAsk{.ask = 1, .seen = 0, .mapId = {}, .edits = {}}})));
   CHECK_FALSE(decode(encode(Message{GroundItems{
       .mapId = "M",
       .mapSerial = 1,
@@ -145,7 +146,7 @@ TEST_CASE("the host numbers its own shared changes and keeps a player's own fact
 TEST_CASE("the host takes a guest's ask once, only the shared part, and only on its map") {
   WorldLedger ledger{sharedRule};
   const auto always = [](const WorldEdit&) { return true; };
-  const WorldAsk ask{.ask = 1, .mapId = "START", .edits = {trigger(12), trigger(44)}};
+  const WorldAsk ask{.ask = 1, .seen = 0, .mapId = "START", .edits = {trigger(12), trigger(44)}};
 
   CHECK(ledger.accept(1, ask, "START", false, always).verdict == AskVerdict::UnknownPlayer);
   CHECK(ledger.accept(HostPlayerId, ask, "START", true, always).verdict ==
@@ -165,25 +166,30 @@ TEST_CASE("the host takes a guest's ask once, only the shared part, and only on 
   CHECK(ledger.revision() == 1);
 
   // What changes nothing on the host is not news.
-  const auto none = ledger.accept(1, {.ask = 2, .mapId = "START", .edits = {trigger(12)}}, "START",
-                                  true, [](const WorldEdit&) { return false; });
+  const auto none =
+      ledger.accept(1, {.ask = 2, .seen = 0, .mapId = "START", .edits = {trigger(12)}}, "START",
+                    true, [](const WorldEdit&) { return false; });
   CHECK(none.verdict == AskVerdict::Nothing);
   CHECK_FALSE(none.change);
 
   // A door on a map the session left is nobody's; the facts in the same ask still count.
   const WorldEdit door{.kind = WorldEditKind::MapObject, .key = 3, .value = 1};
-  CHECK(ledger.accept(1, {.ask = 3, .mapId = "OLD", .edits = {door}}, "START", true, always)
-            .verdict == AskVerdict::WrongMap);
-  const auto mixed = ledger.accept(1, {.ask = 4, .mapId = "OLD", .edits = {door, trigger(20)}},
-                                   "START", true, always);
+  CHECK(
+      ledger
+          .accept(1, {.ask = 3, .seen = 0, .mapId = "OLD", .edits = {door}}, "START", true, always)
+          .verdict == AskVerdict::WrongMap);
+  const auto mixed =
+      ledger.accept(1, {.ask = 4, .seen = 0, .mapId = "OLD", .edits = {door, trigger(20)}}, "START",
+                    true, always);
   REQUIRE(mixed.change);
   CHECK(mixed.change->edits == std::vector<WorldEdit>{trigger(20)});
 
   // A guest that leaves and comes back with the same id starts its asks over.
   ledger.leave(1);
-  CHECK(
-      ledger.accept(1, {.ask = 1, .mapId = "START", .edits = {trigger(21)}}, "START", true, always)
-          .verdict == AskVerdict::Accepted);
+  CHECK(ledger
+            .accept(1, {.ask = 1, .seen = 0, .mapId = "START", .edits = {trigger(21)}}, "START",
+                    true, always)
+            .verdict == AskVerdict::Accepted);
 }
 
 TEST_CASE("a guest applies each host change once and in order, and a sync covers the rest") {
@@ -217,4 +223,72 @@ TEST_CASE("a guest applies each host change once and in order, and a sync covers
   CHECK(asks[0].ask == 1);
   CHECK(asks[1].ask == 2);
   CHECK(replica.ask("M", {}).empty());
+}
+
+TEST_CASE("a room reset overtakes what a guest asked before it saw the reset") {
+  WorldLedger ledger{sharedRule};
+  const auto always = [](const WorldEdit&) { return true; };
+  ledger.newMapLoad();
+  REQUIRE(ledger.revision() == 1);
+  // The guest walks the trial: its step sets a path trigger the host takes.
+  const auto step = ledger.accept(
+      1, {.ask = 1, .seen = 1, .mapId = "ROOM", .edits = {trigger(161)}}, "ROOM", true, always);
+  REQUIRE(step.verdict == AskVerdict::Accepted);
+  // The host's game resets the room: a new load of the map and the path cleared.
+  ledger.newMapLoad();
+  const auto reset = ledger.record("ROOM", std::vector{trigger(161, false), trigger(162, false)});
+  REQUIRE(reset.size() == 1);
+  const std::uint32_t afterReset = reset.front().revision;
+  // An ask the guest's game made before it saw the reset: its path and its gate are the old room's.
+  const WorldEdit gate{.kind = WorldEditKind::MapObject, .key = 38, .value = 0};
+  const auto stale =
+      ledger.accept(1, {.ask = 2, .seen = 2, .mapId = "ROOM", .edits = {trigger(162), gate}},
+                    "ROOM", true, always);
+  CHECK(stale.verdict == AskVerdict::Overtaken);
+  CHECK_FALSE(stale.change);
+  CHECK(stale.overtaken == std::vector{trigger(162)});
+  CHECK(ledger.revision() == afterReset);
+  // Even a path trigger the reset found clear: it was stepped on in the old room.
+  CHECK(ledger
+            .accept(1, {.ask = 3, .seen = 2, .mapId = "ROOM", .edits = {trigger(170)}}, "ROOM",
+                    true, always)
+            .overtaken == std::vector{trigger(170)});
+  // A guest's asks from the map the group left keep their facts: only the room's load is gone.
+  CHECK(ledger
+            .accept(1, {.ask = 4, .seen = 2, .mapId = "HALL", .edits = {trigger(171), gate}},
+                    "ROOM", true, always)
+            .change->edits == std::vector{trigger(171)});
+  // Another guest's change it had not seen overtakes it too; its own earlier change never does.
+  REQUIRE(ledger
+              .accept(2, {.ask = 1, .seen = afterReset, .mapId = "ROOM", .edits = {trigger(165)}},
+                      "ROOM", true, always)
+              .change);
+  CHECK(ledger
+            .accept(1,
+                    {.ask = 7, .seen = afterReset, .mapId = "ROOM", .edits = {trigger(165, false)}},
+                    "ROOM", true, always)
+            .verdict == AskVerdict::Overtaken);
+  CHECK(ledger
+            .accept(2,
+                    {.ask = 2, .seen = afterReset, .mapId = "ROOM", .edits = {trigger(165, false)}},
+                    "ROOM", true, always)
+            .verdict == AskVerdict::Accepted);
+  // Once the guest saw the reset its asks count again, and a fact nobody touched never waits.
+  const auto fresh = ledger.accept(
+      1, {.ask = 8, .seen = afterReset, .mapId = "ROOM", .edits = {trigger(162), gate}}, "ROOM",
+      true, always);
+  REQUIRE(fresh.verdict == AskVerdict::Accepted);
+  CHECK(fresh.change->edits == std::vector{trigger(162), gate});
+  const auto untouched =
+      ledger.accept(1, {.ask = 9, .seen = afterReset, .mapId = "ROOM", .edits = {trigger(300)}},
+                    "ROOM", true, always);
+  CHECK(untouched.verdict == AskVerdict::Accepted);
+}
+
+TEST_CASE("a guest's asks say the newest revision it took") {
+  WorldReplica replica;
+  CHECK(replica.ask("M", std::vector{trigger(1)}).front().seen == 0);
+  REQUIRE(
+      replica.take(WorldChange{.revision = 5, .origin = 0, .ask = 0, .mapId = "M", .edits = {}}));
+  CHECK(replica.ask("M", std::vector{trigger(1)}).front().seen == 5);
 }

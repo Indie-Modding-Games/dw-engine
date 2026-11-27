@@ -121,6 +121,16 @@
         }
       }
     },
+    "player_own_variables": {
+      "description": "Story variables each co-op player keeps for itself, never sent between players (docs/architecture/multiplayer.md). Left out, none.",
+      "type": "array",
+      "items": {"type": "integer", "minimum": 0, "maximum": 255}
+    },
+    "player_own_triggers": {
+      "description": "Story triggers each co-op player keeps for itself, never sent between players (docs/architecture/multiplayer.md). Left out, none.",
+      "type": "array",
+      "items": {"type": "integer", "minimum": 0, "maximum": 799}
+    },
     "roaming_rares": {
       "description": "The map entries' rolls that place a roaming rare, whose chance the option roaming_rare_chance tunes. Left out, none.",
       "type": "array",

@@ -16,6 +16,7 @@ auto result = haggle.offer(3);       // reaction, sale, what it adds, whether it
 - **Line** (`makeLineup`): each item's copies spread over the species, arrival mood by weight and a budget drawn with the original's acceptance table; budgets then move to the nearest level the customer could have had (`shiftWeights`) until the perfect score (`perfectProfit`: one chat and the sale at the budget) falls in the window, and a line that still misses is drawn again. The seed (`lineupSeed`) mixes the playthrough's seed with the job number: it spends no game random numbers and a load gives the same line.
 - **Haggling** (`Haggle`): the probability of each price comes from the weights of the budgets the player still knows (species, mood and refusals); each offer gets a reaction by its distance from the budget and costs patience if the customer does not buy; chatting raises the budget one level, once; dismissing ends without anger.
 - **Pay** (`payTierOf`): the original's three tiers by the tally, and the bonus on top.
+- **Co-op**: every player runs its own job. The customers served, the tally, each turn's result and the halfway line are each player's own story state (`player_own_variables` and `player_own_triggers` in the story rules), so a player opening the shop never starts or moves the other's meter (#423, [multiplayer](../../architecture/multiplayer.md)). Monochromon joining the city stays shared.
 
 ## Parity with the original
 

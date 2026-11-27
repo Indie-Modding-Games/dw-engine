@@ -16,7 +16,7 @@ namespace coop = game::coop;
 
 void applyCoopMove(FieldScene& scene, CoopGuestWorld& guest) {
   if (auto move = guest.apply(scene.field(), scene.movingCoopSelf())) {
-    scene.moveCoopSelf(move->map, move->exit, move->at);
+    scene.moveCoopSelf(move->map, move->exit, move->at, move->reload);
   }
 }
 

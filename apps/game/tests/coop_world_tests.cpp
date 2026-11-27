@@ -294,6 +294,51 @@ TEST_CASE("a guest follows the host's corrections and reports with their epoch")
   CHECK(arrived->epoch == 2);
 }
 
+TEST_CASE("a room the host's warp reset is loaded again by the guest, not kept as it was") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  CoopGuestWorld guest{coop::GuestPlayerId};
+  const auto correction = [](std::uint16_t epoch, std::optional<std::int32_t> exit,
+                             std::int32_t x) {
+    return coop::PlayerCorrection{.player = coop::GuestPlayerId,
+                                  .epoch = epoch,
+                                  .mapId = "room",
+                                  .exit = exit,
+                                  .x = x,
+                                  .y = 0,
+                                  .z = 0,
+                                  .yaw = 0};
+  };
+  // Joining on the map it already shows: a place, no load.
+  guest.receive(correction(1, 0, 300));
+  const auto joined = guest.apply(field, false);
+  REQUIRE(joined);
+  CHECK_FALSE(joined->reload);
+  field.placeAt(field.playerEntity(), joined->at.position, joined->at.yaw);
+  CHECK_FALSE(guest.apply(field, false));
+
+  // The host's script warps it back onto the same map (a room reset): this game loads it too.
+  guest.receive(correction(2, 0, 100));
+  const auto reset = guest.apply(field, false);
+  REQUIRE(reset);
+  CHECK(reset->reload);
+  CHECK(reset->map == "room");
+  CHECK_FALSE(guest.report(field, false, 3));
+  CHECK_FALSE(guest.apply(field, true));
+  field.enterMapAt(roomMap("room"), reset->at);
+  CHECK_FALSE(guest.apply(field, false));
+  const auto state = guest.report(field, false, 6);
+  REQUIRE(state);
+  CHECK(state->epoch == 2);
+
+  // A correction of refused states (no exit) only puts the player back.
+  guest.receive(correction(3, std::nullopt, 400));
+  const auto back = guest.apply(field, false);
+  REQUIRE(back);
+  CHECK_FALSE(back->reload);
+}
+
 TEST_CASE("a guest keeps the newest roster and knows who is in the session") {
   CoopGuestWorld guest{coop::GuestPlayerId};
   CHECK(guest.inSession(coop::HostPlayerId));

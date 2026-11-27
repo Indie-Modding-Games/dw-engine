@@ -110,6 +110,12 @@ struct StorySectionRules {
   game::story::StoryCapacity capacity;
   ExtraRaisedRange extraRaised;
   std::vector<RoamingRareRoll> roamingRares;
+  // Variables each co-op player keeps for itself (`player_own_variables`): a reward a script gives
+  // once per player, as the meat farm's days since its last meat.
+  std::vector<std::int32_t> playerOwnVariables;
+  // Triggers each co-op player keeps for itself (`player_own_triggers`), as the shop job's
+  // halfway line.
+  std::vector<std::int32_t> playerOwnTriggers;
 };
 
 core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section);
@@ -234,7 +240,8 @@ public:
   // Which triggers and variables belong to one player rather than to the world co-op players
   // share (multiplayer.md, "Shared world interactions"): the raised species, the medals and the
   // player page's items are the player's own, and so are the script flow's own (the freeze, the
-  // talk's facing, the next map's name), which follow that player's scripts. The rest is the world.
+  // talk's facing, the next map's name), which follow that player's scripts, and the ruleset's
+  // player_own_variables (a reward each player gets once). The rest is the world.
   [[nodiscard]] bool playerOwnTrigger(std::int32_t trigger) const;
   [[nodiscard]] bool playerOwnVariable(std::int32_t variable) const;
   // The ruleset's digimon table, when the rules named one the packs have.
@@ -330,6 +337,8 @@ private:
   std::unique_ptr<RandomPort> randomPort_;
   std::unique_ptr<RollPort> rollPort_;
   std::vector<RoamingRareRoll> roamingRares_;
+  std::vector<std::int32_t> playerOwnVariables_;
+  std::vector<std::int32_t> playerOwnTriggers_;
   std::optional<std::int32_t> roamingRareChance_;
   std::unique_ptr<SoundRelay> sound_;
   std::unique_ptr<MusicRelay> music_;

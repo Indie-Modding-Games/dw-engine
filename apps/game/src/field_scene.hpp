@@ -763,9 +763,10 @@ public:
                                        std::string_view partnerSpecies = {});
   // A co-op guest's own player, put where the host says (a PlayerCorrection, #354): on this map at
   // once; on another through a map change that arrives at `at` (the exit, if any, is the one the
-  // host came in by, for the change's look; the place is `at` either way).
+  // host came in by, for the change's look; the place is `at` either way). `reload` loads this map
+  // again as well, as the host's game did (a room a script's warp reset).
   void moveCoopSelf(const std::string& mapId, std::optional<std::int32_t> exit,
-                    assets::SpawnPoint at);
+                    assets::SpawnPoint at, bool reload = false);
   // Whether the field still goes to the map moveCoopSelf asked for.
   [[nodiscard]] bool movingCoopSelf() const { return coopArrival_.has_value(); }
   // The other players this scene draws, by id (field bodies on the host, presented ones on a

@@ -448,6 +448,8 @@ applies a shared interaction to the world; the others' games ask, and are told t
 | Doors and mechanisms a script moves while players watch | live map edits (object flags, closed cells) | shared with the players on that map; on the next visit the map's head script rebuilds them from the shared triggers | `WorldAsk` → host → `WorldChange` |
 | Medals, raised species, the player page's key items (rods) | story triggers | local: each player's own | never sent |
 | A script's freeze, the talk facing trigger, the next map's name | story variables and a trigger | local: they follow that player's own scripts | never sent |
+| Rewards a script gives once per player: the meat farm's days since its last meat (Palmon's and the farm's daily meat, #421) | story variables (`player_own_variables` in the story rules) | local: each player gets its own meat once a day | never sent |
+| The canyon shop's job: customers served, the tally and its meter, each turn's result, the halfway line (#423) | story variables and a trigger (`player_own_variables`, `player_own_triggers`), the tally and the haggle | local: each player runs its own job; one player opening the shop never moves the other's meter | never sent |
 | The bag, bits, the partner and its care, menus, dialogs on screen, the camera | session systems | local | never sent (battles: §6.1) |
 
 The local facts come from the story rules (`StoryAdapter::playerOwnTrigger` and `playerOwnVariable`): a ruleset that
@@ -473,11 +475,24 @@ id, and then it sets the trigger or takes the item off its ground and tells ever
 nothing and the notice says another player took it (`online.coop.item_gone`). The host takes at once, as in single
 player, so its take within the same round trip comes first; a take that finds the item gone while its notice was open
 gets the same notice. On a map the host is not on, a guest's ground is its own and needs no claim. Single player never
-claims.
+claims. The host's ground list replaces the guest's ground but keeps its length, so the slot a guest's open notice holds
+stays readable after the host's list dropped its item (a granted take of the last item used to read past the ground and
+crash the guest, #414).
 
 **Joining late and changing map.** A guest that joins gets the whole shared story (`WorldSync`, in parts that fit a
 datagram) and the host's ground; every guest gets them again when the host enters a map. The sync carries the host's
 revision, so a change already in it is not applied again.
+
+**Room resets (#422).** A script's warp back onto the map the group is on reloads it: a trial room starts over this way
+(the Centarumon forest's path, the arrows' route and its gates). Every load of the host's map takes a revision of its
+own, and each `WorldAsk` says the newest revision the guest's game had taken (`seen`). What a guest asked for that map
+before it saw the reload (a step on the old path, a gate its script moved) is overtaken: map edits are dropped and facts
+are told back to everyone with the world's value, so nothing of the old room survives the reset. A fact another player
+changed after the revision a guest had seen overtakes that guest's ask the same way; a player's own earlier change never
+overtakes its later asks. A guest the reset brings back (a `PlayerCorrection` with an exit on the map it already stands
+on) loads the map again as the host did, instead of only being put at the host's spot with what its scripts left there;
+the host's map edits that come while it loads wait for the load to end. A guest's asks from the map the group left keep
+their facts.
 
 **Saves (§5.6).** The world is the host's: what a guest changes in it is in the host's next save, like anything the
 host does. Nothing of the world goes into the guest's own save: only its partner and bag go home (§5.6).
@@ -486,7 +501,7 @@ host does. Nothing of the world goes into the guest's own save: only its partner
 
 | Type | Name | Channel | Direction | Content |
 |---|---|---|---|---|
-| `0x90` | `WorldAsk` | reliable | client → host | The guest's ask number, its map and the edits (trigger, variable, map object, closed cells). |
+| `0x90` | `WorldAsk` | reliable | client → host | The guest's ask number, the newest host revision it had taken (protocol version 14), its map and the edits (trigger, variable, map object, closed cells). |
 | `0x91` | `WorldChange` | reliable | host → client | Revision, the player it came from and its ask, the map, the edits. |
 | `0x92` | `WorldSync` | reliable | host → client | Revision, part, and a run of triggers (bits) and variables. |
 | `0x93` | `GroundItems` | reliable | host → client | The host's map and map load, and each item on the ground: id, slot, item, cell and place. |

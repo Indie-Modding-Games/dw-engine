@@ -231,9 +231,19 @@ bool FieldItems::takenElsewhere(std::size_t chest) {
 }
 
 void FieldItems::replaceGround(std::span<const std::optional<GroundItem>> ground) {
-  const auto slots =
-      std::min(ground.size(), static_cast<std::size_t>(std::max(rules_.groundSlots, 0)));
-  ground_.assign(ground.begin(), ground.begin() + static_cast<std::ptrdiff_t>(slots));
+  const auto room = static_cast<std::size_t>(std::max(rules_.groundSlots, 0));
+  const auto slots = std::min(ground.size(), room);
+  ground_.resize(std::min(std::max(ground_.size(), slots), room));
+  std::ranges::fill(ground_, std::nullopt);
+  std::ranges::copy(ground.first(slots), ground_.begin());
+}
+
+std::optional<GroundItem> FieldItems::groundAt(std::size_t slot) const {
+  return slot < ground_.size() ? ground_[slot] : std::nullopt;
+}
+
+std::optional<Chest> FieldItems::chestAt(std::size_t chest) const {
+  return chest < chests_.size() ? chests_[chest] : std::nullopt;
 }
 
 void FieldItems::enterMap(std::string_view mapId) {

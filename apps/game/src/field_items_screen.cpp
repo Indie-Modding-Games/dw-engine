@@ -84,7 +84,7 @@ bool FieldItemsScreen::tick(FieldScene& scene, bool confirm, double seconds) {
   items.enterMap(field.mapId());
   const assets::CollisionCell cell = assets::collisionCellAt(field.player().position);
   if (const std::optional<std::size_t> slot = items.offerPickup(cell)) {
-    if (const auto& ground = items.ground()[*slot]) {
+    if (const auto ground = items.groundAt(*slot)) {
       slot_ = *slot;
       // tamerTickPickupItem state 0: the player crouches for the item, the words are written, and
       // the box opens on the next frame (state 1).
@@ -109,7 +109,7 @@ bool FieldItemsScreen::tick(FieldScene& scene, bool confirm, double seconds) {
   if (!chest) {
     return false;
   }
-  const auto& inReach = items.chests()[*chest];
+  const auto inReach = items.chestAt(*chest);
   if (!inReach) {
     return false;
   }
@@ -142,7 +142,7 @@ void FieldItemsScreen::originalFrame() {
   game::field::FieldItems& items = items_->items();
   if (boxDue_) {
     // tamerTickPickupItem state 1: createAnimatedUIBox, and the counter waits from 0.
-    const auto& ground = items.ground()[slot_];
+    const auto ground = items.groundAt(slot_);
     if (!ground) {
       close();
       return;
@@ -157,7 +157,7 @@ void FieldItemsScreen::originalFrame() {
       return;
     }
     counter_.reset();
-    const auto& chest = items.chests()[slot_];
+    const auto chest = items.chestAt(slot_);
     if (!chest) {
       close();
     } else if (chest->taken) {
@@ -273,13 +273,13 @@ void FieldItemsScreen::answer() {
   counter_.reset();
   switch (step_) {
   case Step::GroundItem: {
-    if (const auto& lying = items_->items().ground()[slot_]; lying && claimTake(lying->item)) {
+    if (const auto lying = items_->items().groundAt(slot_); lying && claimTake(lying->item)) {
       return;
     }
     const session::TakeOutcome outcome = items_->pickUp(slot_);
     if (outcome == session::TakeOutcome::BagFull) {
       // tamerTickPickupItem state 3: the second words, and the counter waits again.
-      if (const auto& ground = items_->items().ground()[slot_]) {
+      if (const auto ground = items_->items().groundAt(slot_)) {
         show(Step::BagFull, BagFullText, ground->item);
         publishReady();
         return;
@@ -296,7 +296,7 @@ void FieldItemsScreen::answer() {
     return;
   }
   case Step::Chest: {
-    if (const auto& chest = items_->items().chests()[slot_];
+    if (const auto chest = items_->items().chestAt(slot_);
         chest && !chest->taken && claimTake(chest->item)) {
       return;
     }
@@ -306,7 +306,7 @@ void FieldItemsScreen::answer() {
     const session::TakeOutcome outcome = items_->takeChest(slot_);
     if (outcome == session::TakeOutcome::Taken) {
       step_ = Step::Taken;
-    } else if (const auto& chest = items_->items().chests()[slot_];
+    } else if (const auto chest = items_->items().chestAt(slot_);
                outcome == session::TakeOutcome::BagFull && chest) {
       closing_ = true;
       show(Step::BagFull, BagFullText, chest->item);
@@ -356,7 +356,7 @@ void FieldItemsScreen::settleClaim() {
       // The host set the chest's trigger; the drawer stays out and the notice waits for the
       // confirm that closes it, as for a chest taken in single player.
       (void)items_->receive(*claimed_);
-      if (const auto& placed = items.chests()[slot_]; placed && !placed->taken) {
+      if (const auto placed = items.chestAt(slot_); placed && !placed->taken) {
         items.markTaken(slot_);
       }
       step_ = Step::Taken;
@@ -364,7 +364,7 @@ void FieldItemsScreen::settleClaim() {
       publishReady();
       return;
     }
-    const auto& lying = items.ground()[slot_];
+    const auto lying = items.groundAt(slot_);
     const session::TakeOutcome outcome =
         lying && lying->item == *claimed_ ? items_->pickUp(slot_) : items_->receive(*claimed_);
     if (outcome == session::TakeOutcome::Taken) {

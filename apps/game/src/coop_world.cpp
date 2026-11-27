@@ -239,12 +239,20 @@ std::optional<CoopGuestWorld::Move> CoopGuestWorld::apply(const game::field::Fie
     // On its way (the host's move, or one of the guest's own story): wait for the arrival.
     return std::nullopt;
   }
+  if (!asked_ && correction.exit && epoch_ != 0 && placedOn_ == correction.mapId &&
+      field.mapId() == correction.mapId) {
+    core::logInfo("coop: the host loaded {} again: this game loads it again too", correction.mapId);
+    asked_ = true;
+    move.reload = true;
+    return move;
+  }
   if (field.mapId() == correction.mapId &&
       (asked_ || glm::distance(field.player().position, move.at.position) <= 1.0F)) {
     // Arrived (or already there): from now on the reports carry this correction's epoch.
     core::logInfo("coop: placed by the host on {} at ({}, {}), epoch {}", correction.mapId,
                   correction.x, correction.z, correction.epoch);
     epoch_ = correction.epoch;
+    placedOn_ = correction.mapId;
     pending_.reset();
     asked_ = false;
     if (field.mapId() == move.map &&
