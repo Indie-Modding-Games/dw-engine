@@ -392,7 +392,7 @@ These situations must be distinguished:
 - **Cancellation:** the order stops being valid or is cancelled by a system rule.
 - **Replacement:** the trainer issues a new order that supersedes the previous one, according to priority rules.
 
-The handling of animations, recovery, MP cost, penalties and the possibility of resuming remains pending per-technique specification and testing.
+The handling of animations, recovery, MP cost, penalties and the possibility of resuming remains pending per-technique specification and testing. Decided for now (folder-battle.md, "Interrupted by a hit"): a hit interrupts a technique only until it commits, at the original's commit point (once its effect has thrown the part that hits); damage over time such as poison never interrupts.
 ## 4.6 Invalid or impossible order
 
 If an order cannot be executed (insufficient MP, technique unavailable, invalid target, blocked, unreachable range or other condition), the Digimon must exit the attempt and enter a valid state. It must not repeat the same movement indefinitely, switch techniques or pick an alternative target without authorization.

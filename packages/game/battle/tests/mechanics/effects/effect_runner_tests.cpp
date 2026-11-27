@@ -1144,8 +1144,10 @@ TEST_CASE("touching bodies, a line check hits the fighter on its body toward the
   // BTL_applyLineAttackHit registers the hit at BTL_calculateAttackHitPosition: the defender's
   // radius from its root toward the source, at its height.
   CHECK(runner.touched() ==
-        std::vector<dwe::game::battle::EffectTouch>{
-            {.fighter = 1, .at = {.x = 550, .y = -50, .z = 0}, .onBody = true}});
+        std::vector<dwe::game::battle::EffectTouch>{{.fighter = 1,
+                                                     .at = {.x = 550, .y = -50, .z = 0},
+                                                     .onBody = true,
+                                                     .committed = std::nullopt}});
 }
 
 TEST_CASE("a scripted flight lands on the frame the move's effect touches the defender") {
@@ -1197,6 +1199,165 @@ TEST_CASE("a scripted flight keeps the later contacts of a check that runs over 
   REQUIRE(breath.has_value());
   CHECK(breath->frame == 0);
   CHECK(breath->laterContacts.empty());
+}
+
+// A made-up thrower: its first sub-effect waits two frames, then spawns a second one that checks
+// the box each frame and ends on a hit, the way Spit Fire throws its fireball.
+constexpr std::string_view ThrowerYaml = R"(start_script:
+- label: "start"
+  at: "0x0100"
+  op: spawn
+  count: 2
+  table: "base+0x0010"
+  stride: 8
+  ordinal: 0
+- at: "0x0110"
+  op: push_address
+  address: "base+0x0300"
+- at: "0x0120"
+  op: push_address
+  address: "base+0x0250"
+- at: "0x0130"
+  op: sub
+  sub: set_sub_effect_scripts
+  args:
+    tick_script: "l_0300"
+    render_script: "l_0250"
+- at: "0x0140"
+  op: return
+- label: "l_0200"
+  at: "0x0200"
+  op: push_address
+  address: "base+0x0020"
+- at: "0x0210"
+  op: push_address
+  address: "base+0x0000"
+- at: "0x0220"
+  op: sub
+  sub: check_collision
+  args:
+    extent: "&base+0x0020"
+    hit: "&base+0x0000"
+- at: "0x0230"
+  op: load_immediate
+  value: 0
+- at: "0x0240"
+  op: branch_if
+  variable: "base+0x0000"
+  width: 4
+  comparison: not_equal
+  target: "l_0260"
+- label: "l_0250"
+  at: "0x0250"
+  op: return
+- label: "l_0260"
+  at: "0x0260"
+  op: load_immediate
+  value: -1
+- at: "0x0270"
+  op: apply_operator
+  variable: "instance+0x0000"
+  width: 4
+  operator: set
+- at: "0x0280"
+  op: return
+- label: "l_0300"
+  at: "0x0300"
+  op: load_immediate
+  value: 2
+- at: "0x0310"
+  op: branch_if
+  variable: "instance+0x0000"
+  width: 4
+  comparison: less
+  target: "l_0250"
+- at: "0x0320"
+  op: spawn
+  count: 2
+  table: "base+0x0010"
+  stride: 8
+  ordinal: 0
+- at: "0x0330"
+  op: push_address
+  address: "base+0x0200"
+- at: "0x0340"
+  op: push_address
+  address: "base+0x0250"
+- at: "0x0350"
+  op: sub
+  sub: set_sub_effect_scripts
+  args:
+    tick_script: "l_0200"
+    render_script: "l_0250"
+- at: "0x0360"
+  op: return
+init_script:
+- label: "init"
+  at: "0x0370"
+  op: stop
+data:
+- at: "0x0000"
+  kind: variable
+  width: 4
+  value: 0
+- at: "0x0010"
+  kind: instances
+  count: 2
+  stride: 8
+  free: true
+- at: "0x0014"
+  kind: variable
+  width: 4
+  value: 0
+- at: "0x001c"
+  kind: variable
+  width: 4
+  value: 0
+- at: "0x0020"
+  kind: variable
+  width: 4
+  value: 0
+- at: "0x0024"
+  kind: variable
+  width: 4
+  value: 0
+- at: "0x0028"
+  kind: variable
+  width: 4
+  value: 0
+)";
+
+TEST_CASE(
+    "a touch by a part the effect spawned is committed from that spawn, its own part's never") {
+  // battle_main.c: BTL_removeMoveEffect stops the sub-effect BTL_startEFE returned (the first
+  // spawn); a sub-effect it spawned runs on (measured: Spit Fire's fireball, spawned 29 of 53
+  // frames in, still lands 84 damage after the partner is hit).
+  const auto source = [](std::string_view move) -> std::optional<EffectScript> {
+    if (move == "made_up_breath") {
+      return placedBreath(BreathCheck::Box);
+    }
+    if (move != "made_up_thrower") {
+      return std::nullopt;
+    }
+    const auto effect = dwe::core::parseYaml(EffectYaml);
+    const auto parsed = dwe::core::parseYaml(ThrowerYaml);
+    REQUIRE(effect.has_value());
+    REQUIRE(parsed.has_value());
+    auto read = dwe::assets::readEffectScript(*effect, *parsed);
+    REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+    return std::move(*read);
+  };
+  const StandingPair near{0, Wide};
+  const dwe::game::battle::ScriptedFlights flights{source, near};
+  const std::optional<dwe::game::battle::EffectLanding> thrown =
+      flights.landing("made_up_thrower", 0, 1, std::nullopt);
+  REQUIRE(thrown.has_value());
+  CHECK(thrown->frame == 1);
+  CHECK(thrown->committed == std::optional<std::int32_t>{1});
+  const std::optional<dwe::game::battle::EffectLanding> breath =
+      flights.landing("made_up_breath", 0, 1, std::nullopt);
+  REQUIRE(breath.has_value());
+  CHECK_FALSE(breath->committed.has_value());
 }
 
 TEST_CASE("a scripted flight aimed at one fighter touches a bystander in its reach") {

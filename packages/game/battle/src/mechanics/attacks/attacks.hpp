@@ -33,7 +33,8 @@ void addPendingDamage(BattleContext& context, Fighter& fighter, std::int32_t dam
 // The finisher of `id` is lost (a hit during its aura).
 void cancelFinisherOf(BattleContext& context, FighterId id);
 // battle_main.c: BTL_removeMoveEffect: what of the own technique of `id` is still on its way stops.
-void stopOwnTechnique(BattleContext& context, FighterId id);
+// True when part of the technique was already committed and still flies.
+bool stopOwnTechnique(BattleContext& context, FighterId id);
 // The fighter is countering `attacker` with a counter move right now.
 bool counteringAttacker(const BattleContext& context, const Fighter& fighter, FighterId attacker);
 // Where an attack's effect touched its defender, and where its spark bursts.

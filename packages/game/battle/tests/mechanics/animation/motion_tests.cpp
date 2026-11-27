@@ -118,7 +118,8 @@ public:
                          .at = at_.has_value() ? at_ : std::optional{attackerAt},
                          .touch = std::nullopt,
                          .facingTarget = {},
-                         .laterContacts = {}};
+                         .laterContacts = {},
+                         .committed = std::nullopt};
   }
 
   struct Question {
@@ -367,7 +368,8 @@ public:
                          .at = std::nullopt,
                          .touch = std::nullopt,
                          .facingTarget = {},
-                         .laterContacts = {}};
+                         .laterContacts = {},
+                         .committed = std::nullopt};
   }
 
 private:
@@ -390,7 +392,8 @@ public:
                            .at = std::nullopt,
                            .touch = std::nullopt,
                            .facingTarget = {},
-                           .laterContacts = {}};
+                           .laterContacts = {},
+                           .committed = std::nullopt};
     }
     std::vector<std::int32_t> facing(static_cast<std::size_t>(facing_));
     std::ranges::iota(facing, 0);
@@ -398,7 +401,8 @@ public:
                          .at = std::nullopt,
                          .touch = std::nullopt,
                          .facingTarget = facing,
-                         .laterContacts = {}};
+                         .laterContacts = {},
+                         .committed = std::nullopt};
   }
 
 private:
@@ -678,7 +682,8 @@ public:
                          .at = std::nullopt,
                          .touch = std::nullopt,
                          .facingTarget = {},
-                         .laterContacts = {}};
+                         .laterContacts = {},
+                         .committed = std::nullopt};
   }
   [[nodiscard]] std::optional<EffectLanding>
   landingOn(std::string_view /*move*/, FighterId /*attacker*/, FighterId /*aim*/,
@@ -690,7 +695,8 @@ public:
                          .at = std::nullopt,
                          .touch = std::nullopt,
                          .facingTarget = {},
-                         .laterContacts = {}};
+                         .laterContacts = {},
+                         .committed = std::nullopt};
   }
 
 private:

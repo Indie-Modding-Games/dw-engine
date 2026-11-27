@@ -134,7 +134,9 @@ void handleFolderAttack(BattleContext& context, const AttackInFlight& attack) {
                                                              folderStats(context, id).defense));
   const std::int32_t damage = damageOf(context, attack, covered);
   if (!covered || !fighter.attack) {
-    stopOwnTechnique(context, id);
+    if (stopOwnTechnique(context, id) && fighter.attack) {
+      folderFighter(context, id).committed = true;
+    }
     fighter.knockedBack = false;
     fighter.blocking = false;
     fighter.attack.reset();
