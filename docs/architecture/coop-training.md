@@ -150,7 +150,9 @@ sequenceDiagram
 - **Host menus, dialogs and scripts still hold the world's clock** for everyone (decision 5 is not fully met for the
   clock).
 - **A guest's progress is not saved back** to its own game (phase C4).
-- **The remote partner's training animation** is not drawn on the other machines; only the tag says it.
+- **The remote partner's training animation** is drawn on the other machines since protocol 14 (#420): the course's
+  clips and the partner's place on the equipment travel in the snapshots and the guest's states
+  ([multiplayer](multiplayer.md) §5.7, "What a script plays").
 
 ## 8. Tests
 
@@ -162,3 +164,5 @@ sequenceDiagram
 - `packages/game/coop/tests/training_tests.cpp`: round trip, refusals and the direction rules through a real
   `CoopLink`.
 - `apps/game/tests/coop_training_tests.cpp`: a host and three guests on loopback links training at once.
+- `apps/game/tests/coop_replication_tests.cpp`: a guest's course drawn on the host's field and in its snapshot, and
+  let go when it ends.

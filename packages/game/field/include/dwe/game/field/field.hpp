@@ -116,6 +116,14 @@ struct DestinationChoice {
   std::optional<std::size_t> vanilla;
 };
 
+// A clip a script plays on a character (ScriptedActor) and how many times one was started.
+struct PlayedClip {
+  std::uint32_t clip = 0;
+  std::uint32_t starts = 0;
+
+  friend bool operator==(const PlayedClip&, const PlayedClip&) = default;
+};
+
 // A character as the minimap and the debug views see it.
 struct CharacterState {
   glm::vec3 position{};
@@ -226,6 +234,14 @@ public:
   // as usual. Nothing undoes it until the player is placed again (placeOtherPlayersNearHost) or
   // driven with nothing. False when there is no such guest.
   bool drivePlayer(PlayerId id, std::optional<CharacterState> state);
+  // The same for a guest's partner while its owner's game holds it (a gym course, a scene): placed
+  // where the owner says on every tick instead of following its player; driven with nothing it
+  // follows again from where it stands. False when that guest has no partner.
+  bool drivePartner(PlayerId id, std::optional<CharacterState> state);
+  // The clip a script plays on a character now (ScriptedActor), nothing while its motion picks it.
+  [[nodiscard]] std::optional<PlayedClip> scriptedClipOf(scene::Entity entity) const;
+  // A co-op body plays the clip its owner's script plays on it, or its motion's again with none.
+  void showOwnerClip(scene::Entity entity, std::optional<PlayedClip> clip);
   [[nodiscard]] std::optional<CharacterState> player(PlayerId id) const;
   [[nodiscard]] std::optional<scene::Entity> playerEntity(PlayerId id) const;
   [[nodiscard]] bool waitingAtWarp(PlayerId id) const;
@@ -657,6 +673,8 @@ private:
     std::optional<OtherPartner> partner;
     // Where the owner says the body is (drivePlayer): placed there instead of walking.
     std::optional<CharacterState> driven;
+    // Where the owner says its held partner is (drivePartner): placed there instead of following.
+    std::optional<CharacterState> drivenPartner;
   };
   [[nodiscard]] static PlayerId playerIdOf(const PlayerRuntime& player) {
     return player.fieldPlayer.id;

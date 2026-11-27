@@ -20,6 +20,8 @@ struct PresentedCoopEntity {
   glm::vec3 position{};
   float yaw = 0.0F;
   game::coop::Motion motion = game::coop::Motion::Idle;
+  // The clip a script plays on it, as the newest snapshot says.
+  std::optional<game::coop::ActionClip> action = std::nullopt;
 };
 
 struct PresentedCoopWorld {

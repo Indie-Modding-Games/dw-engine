@@ -2201,11 +2201,21 @@ int runGame(const Options& requested) {
       // the others must still hear from the host in between.
       if (play != nullptr && coop.isHost()) {
         for (CoopPeer& peer : coopPeers) {
+          // A guest's partner that evolved is drawn in its new form (#412).
+          if (const game::coop::PlayerRecord* record =
+                  coopHostWorld ? coopHostWorld->authority().find(peer.id) : nullptr;
+              record != nullptr && !record->partnerSpecies.empty() &&
+              record->partnerSpecies != peer.partner) {
+            peer.partner = record->partnerSpecies;
+            peer.attachFailed = nullptr;
+          }
           if (peer.attachFailed == play) {
             continue;
           }
           const game::field::Field& field = play->scene().field();
-          const bool partnerMissing = !peer.partner.empty() && !field.partner(peer.id);
+          const bool partnerMissing =
+              !peer.partner.empty() && (!field.partner(peer.id) ||
+                                        play->scene().coopPartnerSpecies(peer.id) != peer.partner);
           if (!field.player(peer.id) || partnerMissing) {
             if (auto added = play->scene().addCoopGuest(peer.id, peer.partner); !added) {
               core::logError("coop: could not add player {} to the field: {}", peer.id,
@@ -2324,12 +2334,17 @@ int runGame(const Options& requested) {
         if (coopLinked) {
           std::vector<CoopOutgoing> outgoing;
           if (coopHostWorld) {
+            coopHostWorld->setPartner(game::coop::HostPlayerId,
+                                      std::string{play->partnerSpecies()});
             outgoing = coopHostWorld->tick(play->scene().field(), play->scene().mapSerial(),
                                            play->scene().mapArrival().exit, coopNow);
           } else if (coopGuestWorld) {
             if (auto state = coopGuestWorld->report(play->scene().field(),
                                                     play->scene().movingCoopSelf(), ticksRun)) {
               outgoing.push_back({.to = game::coop::HostPlayerId, .message = std::move(*state)});
+            }
+            if (auto form = coopGuestWorld->partnerForm(play->partnerSpecies(), ticksRun)) {
+              outgoing.push_back({.to = game::coop::HostPlayerId, .message = std::move(*form)});
             }
           }
           // The world's interactions (#357): what this game changed of the shared world, and the

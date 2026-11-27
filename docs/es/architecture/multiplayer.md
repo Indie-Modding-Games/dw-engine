@@ -485,6 +485,7 @@ del protocolo):
 | `0x70` | `PlayerState` | no fiable | cliente → anfitrión | Id del jugador, secuencia (el tick del invitado), la época de corrección que sigue, mapa, posición, orientación, movimiento. Cada 3 ticks. |
 | `0x71` | `PlayerCorrection` | fiable | anfitrión → cliente | Dónde pone el anfitrión a ese jugador: mapa, posición, orientación, la salida en un cambio de mapa y una época nueva. |
 | `0x72` | `Roster` | fiable | anfitrión → cliente | Revisión y, por jugador, id, nombre y especie del compañero. |
+| `0x73` | `PartnerForm` | fiable | cliente → anfitrión | La especie actual del compañero del invitado (protocolo 14, #412). |
 
 **Sincronización de la transformación.** El invitado mueve su propio jugador y lo informa. El anfitrión acepta un
 estado solo si el enlace es dueño de ese jugador, es más nuevo que el último aceptado (los paquetes tardíos,
@@ -507,6 +508,24 @@ mapa o una corrección) se dibuja como salto, y un emisor cuyo reloj se pausó s
 anfitrión dibuja así a los invitados, y los invitados dibujan a todos desde las instantáneas del anfitrión, con la
 hora del reloj del anfitrión. Dibujar es solo presentación: nunca cambia lo que guarda la autoridad.
 
+**La forma del compañero (#412).** Cada compañero vive y evoluciona solo en la partida de su dueño, así que su forma
+viaja como los nombres del roster. El anfitrión pone la especie de su propio compañero en el roster en cada tick en que
+cambia; un invitado dice la suya con `PartnerForm` mientras el roster diga otra, una vez por segundo hasta que la diga
+(una forma enviada antes de que el juego del anfitrión leyera el enlace se vuelve a decir). El anfitrión la toma como
+del jugador del enlace, sube la revisión del roster y la envía a todos; cada partida carga entonces el modelo nuevo en
+lugar del viejo, en el cuerpo de campo del anfitrión y en el dibujo de cada invitado, así que ninguna partida conserva
+la forma vieja ni dibuja dos. Las estadísticas y el estado del compañero son de la partida de su dueño: una batalla los
+toma de allí al empezar (§6.1).
+
+**Lo que reproduce un script (#420).** Un curso del gimnasio, una escena o una charla reproducen clips en el jugador y
+el compañero en lugar de los de su movimiento. Las instantáneas y los estados del invitado llevan ese clip (el id de
+animación del original y cuántas veces lo arrancó un script, para que un empujón arrancado de nuevo se vuelva a
+reproducir) desde el protocolo 14. Mientras la partida de un invitado retiene a su compañero (un script retiene su
+campo, o un script le reproduce un clip), sus estados llevan también el sitio y el clip del compañero: el anfitrión
+dibuja allí al compañero del invitado en lugar de hacerlo seguir, y lo deja seguir de nuevo desde ese sitio cuando el
+estado deja de llevarlo. Un compañero retenido a más de 2000 unidades de su jugador no se dibuja allí. Un clip que un
+script ya no reproduce no deja nada: el cuerpo vuelve al clip de su movimiento en todas las máquinas.
+
 **Ciclo de vida.** Un invitado entra cuando termina su saludo: recibe el id libre más bajo, un cuerpo y un compañero
 en el campo del anfitrión junto a él, una corrección a ese sitio y un roster nuevo. Sale con `Leave`, con un enlace
 caído o con un cierre inesperado: su registro, cuerpo, compañero y búferes desaparecen en los dos lados, y el roster
@@ -518,7 +537,8 @@ como nuevo, con un estado limpio.
 última instantánea) dicen qué jugadores están en un mapa, para los sistemas que necesitan a los demás cerca
 (batallas, objetos compartidos).
 
-Pruebas: `packages/game/coop/tests/authority_tests.cpp`, `apps/game/tests/coop_world_tests.cpp`,
+Pruebas: `packages/game/coop/tests/authority_tests.cpp`, `packages/game/coop/tests/replication_tests.cpp`,
+`apps/game/tests/coop_world_tests.cpp`, `apps/game/tests/coop_replication_tests.cpp`,
 `apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` y los casos
 cooperativos de `packages/game/field/tests/field_tests.cpp`.
 

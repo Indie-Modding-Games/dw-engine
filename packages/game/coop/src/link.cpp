@@ -71,8 +71,10 @@ bool directionAllowed(Side receiver, const Message& message) {
         std::holds_alternative<BattleOffer>(message))
       return true;
     // A trade's asks, answers, offers and replies; the host referees them (trade.hpp).
-    // Whether the guest's own partner trains (#365); the host takes it as that guest's.
-    if (std::holds_alternative<TrainingStatus>(message))
+    // Whether the guest's own partner trains (#365) and its form (#412); the host takes them as
+    // that guest's.
+    if (std::holds_alternative<TrainingStatus>(message) ||
+        std::holds_alternative<PartnerForm>(message))
       return true;
     if (std::holds_alternative<TradeAsk>(message) || std::holds_alternative<TradeAnswer>(message) ||
         std::holds_alternative<TradeOffer>(message) ||

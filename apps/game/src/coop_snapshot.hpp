@@ -5,6 +5,12 @@
 
 namespace dwe::app {
 
+// A script's clip on the wire and back (clips past 16 bits are not sent).
+[[nodiscard]] std::optional<game::coop::ActionClip>
+coopActionOf(std::optional<game::field::PlayedClip> clip);
+[[nodiscard]] std::optional<game::field::PlayedClip>
+playedClipOf(std::optional<game::coop::ActionClip> action);
+
 [[nodiscard]] core::Result<game::coop::EntityState>
 toCoopEntityState(std::uint16_t networkId, game::coop::PlayerId owner, game::coop::EntityRole role,
                   const game::field::CharacterState& state);

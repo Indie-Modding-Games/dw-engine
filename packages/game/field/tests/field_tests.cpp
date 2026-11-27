@@ -388,6 +388,39 @@ TEST_CASE("the guest's partner follows the guest, not the host") {
   CHECK(glm::distance(followed->position, moved->position) < 400.0F);
 }
 
+TEST_CASE("a guest's held partner stands where its owner says and plays its owner's clip") {
+  using dwe::game::field::GuestPlayerId;
+  using dwe::game::field::PlayedClip;
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(-1500.0F, 0.0F));
+  CHECK_FALSE(field.drivePartner(GuestPlayerId, std::nullopt));
+  REQUIRE(field.addPlayer(GuestPlayerId, at(0.0F, 0.0F)));
+  REQUIRE(field.addPartner(GuestPlayerId, "models/guest_partner", 120.0F));
+  const auto entity = *field.partnerEntity(GuestPlayerId);
+
+  // The owner's gym course put it on the equipment and plays its push there (#420).
+  const glm::vec3 equipment{700.0F, 0.0F, 600.0F};
+  REQUIRE(field.drivePartner(GuestPlayerId,
+                             dwe::game::field::CharacterState{
+                                 .position = equipment, .yaw = 1.0F, .motion = Motion::Idle}));
+  field.showOwnerClip(entity, PlayedClip{.clip = 41, .starts = 3});
+  run(field, 0.5F);
+  CHECK(field.partner(GuestPlayerId)->position == equipment);
+  CHECK(field.scriptedClipOf(entity) == PlayedClip{.clip = 41, .starts = 3});
+  CHECK(world.registry().get<dwe::scene::Transform>(entity).position == equipment);
+
+  // Let go: no clip left on it, and it follows its player again from the equipment.
+  field.showOwnerClip(entity, std::nullopt);
+  REQUIRE(field.drivePartner(GuestPlayerId, std::nullopt));
+  CHECK_FALSE(world.registry().all_of<dwe::game::field::ScriptedActor>(entity));
+  CHECK_FALSE(field.scriptedClipOf(entity));
+  run(field, 2.0F);
+  const auto back = field.partner(GuestPlayerId);
+  REQUIRE(back.has_value());
+  CHECK(glm::distance(back->position, field.player(GuestPlayerId)->position) < 400.0F);
+}
+
 TEST_CASE("the same input gives the same move at any tick rate") {
   auto map = roomMap("room");
   fill(map, {.column = 60, .row = 30}, {.column = 60, .row = 69}, Blocked);

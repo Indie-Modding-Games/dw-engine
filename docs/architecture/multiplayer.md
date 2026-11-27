@@ -396,6 +396,7 @@ version 4):
 | `0x70` | `PlayerState` | unreliable | client → host | Player id, sequence (the guest's tick), the correction epoch it follows, map, position, heading, motion. Every 3 ticks. |
 | `0x71` | `PlayerCorrection` | reliable | host → client | Where the host puts that player: map, position, heading, the exit for a map change, and a new epoch. |
 | `0x72` | `Roster` | reliable | host → client | Revision and, per player, id, name and partner species. |
+| `0x73` | `PartnerForm` | reliable | client → host | The guest's partner species now (protocol 14, #412). |
 
 **Transform sync.** The guest moves its own player and reports it. The host takes a state only when the link owns that
 player, it is newer than the last one taken (late, duplicated and reordered packets are dropped), it carries the
@@ -417,6 +418,22 @@ jump, and a sender whose clock paused is picked up again without a slow catch-up
 and guests draw everyone from the host's snapshots, timed on the host's clock. Drawing is presentation only: it
 never changes what the authority holds.
 
+**The partner's form (#412).** Each partner lives and evolves in its owner's game only, so its form travels like the
+roster's names. The host lists its own partner's species in the roster on every tick it changes; a guest tells its own
+with `PartnerForm` while the roster lists another, once a second until it does (a form sent before the host's play
+read the link is told again). The host takes the form as the link's player's, bumps the roster's revision and sends
+it to everyone; each game then loads the new model in place of the old one, on the host's field body and on every
+guest's drawing, so no game keeps the old form or draws two. The partner's stats and condition are its owner's game's:
+a battle takes them from there when it starts (§6.1).
+
+**What a script plays (#420).** A gym course, a scene or a talk plays clips on the player and the partner instead of
+their motion's. Snapshots and guest states carry that clip (the original's animation id and how many times a script
+started it, so a push started again plays again) with protocol 14. While a guest's game holds its partner (a script
+holds its field, or a script plays a clip on it), its states also carry the partner's place and clip: the host draws
+the guest's partner there instead of following, and lets it follow again from that spot once the state stops
+carrying it. A held partner reported more than 2000 units from its player is not drawn there. A clip a script no
+longer plays leaves nothing behind: the body goes back to its motion's clip on every machine.
+
 **Lifecycle.** A guest joins when its handshake completes: it gets the lowest free id, a body and partner in the
 host's field next to the host, a correction to that spot and a new roster. It leaves on `Leave`, a dropped link or a
 crash: its record, body, partner and buffers go on both sides, and the roster drops it. When a co-op game ends on
@@ -427,7 +444,8 @@ to the title. A player who comes back joins as new, with a clean state.
 latest snapshot) say which players stand on a map, for systems that need the others nearby (battles, shared
 objects).
 
-Tests: `packages/game/coop/tests/authority_tests.cpp`, `apps/game/tests/coop_world_tests.cpp`,
+Tests: `packages/game/coop/tests/authority_tests.cpp`, `packages/game/coop/tests/replication_tests.cpp`,
+`apps/game/tests/coop_world_tests.cpp`, `apps/game/tests/coop_replication_tests.cpp`,
 `apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` and the
 co-op cases of `packages/game/field/tests/field_tests.cpp`.
 

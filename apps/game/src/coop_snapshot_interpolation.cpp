@@ -49,7 +49,8 @@ std::optional<PresentedCoopWorld> CoopSnapshotInterpolation::sample(net::Millis 
                               .role = state.role,
                               .position = {pose->x, pose->y, pose->z},
                               .yaw = pose->yaw,
-                              .motion = pose->motion});
+                              .motion = pose->motion,
+                              .action = state.action});
   }
   return world;
 }
