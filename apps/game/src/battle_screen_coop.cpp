@@ -94,6 +94,13 @@ void BattleScreen::releaseAlly(game::coop::PlayerId owner) {
   }
 }
 
+std::optional<std::int32_t> BattleScreen::npcOfFighter(game::battle::FighterId id) const {
+  if (id == game::battle::PartnerId || id > fighterNpcs_.size()) {
+    return std::nullopt;
+  }
+  return fighterNpcs_[id - 1];
+}
+
 game::battle::FighterId BattleScreen::throwTargetOf(game::battle::FighterId thrower) const {
   if (battle_ && !battle_->state().fighters.at(thrower).gone()) {
     return thrower;

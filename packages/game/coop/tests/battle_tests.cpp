@@ -261,16 +261,16 @@ TEST_CASE("the referee runs one battle at a time and pulls the second player in 
   BattleReferee referee;
   referee.guestJoined(GuestPlayerId);
   const BattleAsk ask{.ask = 4, .mapId = "forest", .enemyNpcs = {2}, .fighter = fighter()};
-  CHECK(referee.judge(ask, "forest", false) == std::nullopt);
-  CHECK(referee.judge(ask, "beach", false) == BattleRefusal::NotHere);
-  // The host's own battle started first: the guest's ask waits for nothing, it is refused, and the
-  // guest helps in the host's battle.
-  CHECK(referee.judge(ask, "forest", true) == BattleRefusal::Busy);
+  const HostMoment free{.map = "forest", .guestHere = true};
+  CHECK(referee.judge(ask, free).starts());
+  CHECK(referee.judge(ask, HostMoment{.map = "beach", .guestHere = true}).refusal ==
+        BattleRefusal::NotHere);
+  // The host's own battle started first: the guest's ask is refused and the guest helps in it.
   const BattleBegin hosts =
       referee.begin(HostPlayerId, 0, "forest", {3}, {"gabumon", "kunemon"}, false);
   CHECK(hosts.battle == 1);
   CHECK(hosts.ask == 0);
-  CHECK(referee.judge(ask, "forest", false) == BattleRefusal::Busy);
+  CHECK(referee.judge(ask, free).refusal == BattleRefusal::Busy);
   CHECK(referee.roleOf(HostPlayerId) == BattleRole::Starter);
   CHECK(referee.roleOf(GuestPlayerId) == BattleRole::Helper);
   // A helper throws its own items and cheers; it neither commands nor closes the end box.
@@ -293,6 +293,68 @@ TEST_CASE("the referee runs one battle at a time and pulls the second player in 
   CHECK_FALSE(end.spoils);
   CHECK_FALSE(referee.running());
   CHECK(referee.end(BattleOutcome::Victory, {}, 0, {}).empty());
+}
+
+TEST_CASE("an ask the host cannot take yet waits for it instead of being refused (#413)") {
+  BattleReferee referee;
+  referee.guestJoined(GuestPlayerId);
+  const BattleAsk ask{.ask = 4, .mapId = "forest", .enemyNpcs = {2}, .fighter = fighter()};
+  for (const HostMoment& held :
+       {HostMoment{.map = "", .guestHere = true}, HostMoment{.map = "forest", .guestHere = false},
+        HostMoment{.map = "forest", .guestHere = true, .battling = true},
+        HostMoment{.map = "forest", .guestHere = true, .held = true}}) {
+    const AskVerdict verdict = referee.judge(ask, held);
+    CHECK(verdict.waits);
+    CHECK_FALSE(verdict.refusal);
+  }
+  CHECK(referee.wait(GuestPlayerId, ask, 100));
+  CHECK(referee.wait(GuestPlayerId, ask, 100 + BattleAskWaitTicks - 1));
+  REQUIRE(referee.waiting().size() == 1);
+  CHECK(referee.waiting().front().ask.ask == ask.ask);
+
+  // Taken once the host is free: the begin forgets the waiting ask, so it never starts twice.
+  CHECK(referee.judge(ask, HostMoment{.map = "forest", .guestHere = true}).starts());
+  static_cast<void>(
+      referee.begin(GuestPlayerId, ask.ask, "forest", {2}, {"agumon", "kunemon"}, false));
+  CHECK(referee.waiting().empty());
+}
+
+TEST_CASE("an ask that waits too long is refused as busy, and a guest leaving drops it (#413)") {
+  BattleReferee referee;
+  referee.guestJoined(GuestPlayerId);
+  const BattleAsk ask{.ask = 4, .mapId = "forest", .enemyNpcs = {2}, .fighter = fighter()};
+  CHECK(referee.wait(GuestPlayerId, ask, 0));
+  CHECK_FALSE(referee.wait(GuestPlayerId, ask, BattleAskWaitTicks));
+  CHECK(referee.waiting().empty());
+
+  // A newer ask replaces the older one and starts its own wait.
+  CHECK(referee.wait(GuestPlayerId, ask, 0));
+  const BattleAsk newer{.ask = 5, .mapId = "forest", .enemyNpcs = {3}, .fighter = fighter()};
+  CHECK(referee.wait(GuestPlayerId, newer, BattleAskWaitTicks));
+  REQUIRE(referee.waiting().size() == 1);
+  CHECK(referee.waiting().front().ask.ask == newer.ask);
+
+  referee.guestLeft(GuestPlayerId);
+  CHECK(referee.waiting().empty());
+}
+
+TEST_CASE("a guest keeps its partner offered while its own ask waits on the host (#411)") {
+  BattleMirror mirror;
+  CHECK(mirror.partnerFree(true));
+  CHECK_FALSE(mirror.partnerFree(false));
+  const BattleAsk ask = mirror.ask("forest", {2}, false, false, fighter());
+  CHECK(mirror.partnerFree(false));
+  mirror.receive(BattleBegin{.battle = 2,
+                             .starter = HostPlayerId,
+                             .ask = 0,
+                             .mapId = "forest",
+                             .enemyNpcs = {2},
+                             .species = {"gabumon", "kunemon", "agumon"},
+                             .fixedFight = false,
+                             .allies = {GuestPlayerId}});
+  CHECK(mirror.role() == BattleRole::Ally);
+  CHECK_FALSE(mirror.partnerFree(true));
+  static_cast<void>(ask);
 }
 
 TEST_CASE("the guest's battle takes its commands and gives its partner the spoils") {
@@ -447,7 +509,7 @@ TEST_CASE("a co-op battle runs over the link from the guest's ask to its end") {
   REQUIRE(asked);
   const auto& ask = std::get<BattleAsk>(*asked);
   CHECK(ask.fighter == fighter());
-  REQUIRE_FALSE(referee.judge(ask, "forest", false));
+  REQUIRE(referee.judge(ask, HostMoment{.map = "forest", .guestHere = true}).starts());
   const BattleBegin begin = referee.begin(GuestPlayerId, ask.ask, ask.mapId, ask.enemyNpcs,
                                           {ask.fighter.species, "kunemon"}, ask.fixedFight);
   REQUIRE(linked.host.send(Message{begin}));

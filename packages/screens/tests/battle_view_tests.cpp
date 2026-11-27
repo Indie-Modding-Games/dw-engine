@@ -1,6 +1,7 @@
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/assets/item_table.hpp>
 #include <dwe/screens/battle_view.hpp>
+#include <dwe/screens/death_countdown.hpp>
 
 #include <doctest/doctest.h>
 
@@ -9,6 +10,7 @@
 #include <cstdint>
 #include <format>
 #include <iterator>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -112,6 +114,31 @@ TEST_CASE("a co-op ally's countdown shows while it can get up, and not once it i
   REQUIRE(battle.state().fighters[ally].gone());
   CHECK_FALSE(dwe::screens::reviveSecondsOf(battle, ally).has_value());
   CHECK_FALSE(dwe::screens::battleViewOf(battle, names).allies.front().reviveSeconds.has_value());
+}
+
+TEST_CASE("a player commanding an ally sees its own bag and its own countdown (#418)") {
+  BattleSetup setup = duel(evenStats(400, 100), evenStats(400, 100));
+  setup.allies.push_back(
+      {.partner = fighterWith("buddy", evenStats(400, 300), {"punch"}, {.x = 300, .z = 0}),
+       .condition =
+           {.discipline = 50, .tiredness = 0, .sick = false, .injured = false, .knownMoves = {}},
+       .tamer = {.x = 300, .z = -800},
+       .owner = 0});
+  Battle battle = startBattle(std::move(setup), 9);
+  const dwe::game::battle::FighterId ally = battle.state().allies.front().id;
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  REQUIRE(battle.openBag(ally));
+  CHECK(dwe::screens::battleViewOf(battle, names, ally).bagOpen);
+  CHECK_FALSE(dwe::screens::battleViewOf(battle, names, PartnerId).bagOpen);
+  battle.closeBag(ally);
+  battle.defeatPartner(ally);
+  while (!battle.finished() && !dwe::screens::deathCountdownTimerOf(battle, ally) &&
+         battle.state().frame < 20000) {
+    battle.step();
+  }
+  CHECK(dwe::screens::deathCountdownTimerOf(battle, ally) == std::optional<std::int32_t>{1});
+  CHECK_FALSE(dwe::screens::deathCountdownTimerOf(battle).has_value());
 }
 
 TEST_CASE("the battle view's menu is the battle's, with the original's command names") {

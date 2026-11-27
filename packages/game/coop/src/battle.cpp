@@ -51,15 +51,35 @@ bool spoilsInRange(const BattleSpoils& spoils) {
          within(spoils.frames, std::int64_t{0}, FramesPerDay);
 }
 
-std::optional<BattleRefusal> BattleReferee::judge(const BattleAsk& ask, std::string_view hostMap,
-                                                  bool hostBusy) const {
-  if (running_ || hostBusy) {
-    return BattleRefusal::Busy;
+AskVerdict BattleReferee::judge(const BattleAsk& ask, const HostMoment& host) const {
+  if (running_) {
+    return {.waits = false, .refusal = BattleRefusal::Busy};
   }
-  if (ask.mapId != hostMap) {
-    return BattleRefusal::NotHere;
+  if (!host.map.empty() && ask.mapId != host.map) {
+    return {.waits = false, .refusal = BattleRefusal::NotHere};
   }
-  return std::nullopt;
+  if (host.map.empty() || !host.guestHere || host.battling || host.held) {
+    return {.waits = true, .refusal = std::nullopt};
+  }
+  return {};
+}
+
+bool BattleReferee::wait(PlayerId guest, const BattleAsk& ask, std::uint64_t tick) {
+  auto kept = std::ranges::find(waiting_, guest, &WaitingAsk::guest);
+  if (kept == waiting_.end() || kept->ask.ask != ask.ask) {
+    forget(guest);
+    waiting_.push_back({.guest = guest, .ask = ask, .since = tick});
+    return true;
+  }
+  if (tick - kept->since < BattleAskWaitTicks) {
+    return true;
+  }
+  forget(guest);
+  return false;
+}
+
+void BattleReferee::forget(PlayerId guest) {
+  std::erase_if(waiting_, [guest](const WaitingAsk& waiting) { return waiting.guest == guest; });
 }
 
 BattleBegin BattleReferee::begin(PlayerId starter, std::uint32_t ask, std::string mapId,
@@ -71,6 +91,7 @@ BattleBegin BattleReferee::begin(PlayerId starter, std::uint32_t ask, std::strin
     next_ = 1;
   }
   running_ = Running{.battle = battle, .starter = starter, .ask = ask, .allies = allies};
+  forget(starter);
   return {.battle = battle,
           .starter = starter,
           .ask = starter != HostPlayerId ? ask : 0,
@@ -151,6 +172,7 @@ void BattleReferee::guestLeft(PlayerId guest) {
   if (validGuest(guest)) {
     present_.at(guest) = false;
     offers_.at(guest).reset();
+    forget(guest);
   }
 }
 

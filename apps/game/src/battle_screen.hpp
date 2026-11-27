@@ -135,6 +135,8 @@ public:
   // open over the fight or an item in the hand or on its way. A quick battle waits at the
   // original's speed meanwhile (battle_speed.hpp).
   [[nodiscard]] bool reacting() const;
+  // Other players watch or fight it: no quick battle speed-up.
+  void setCoopShared(bool shared) { coopShared_ = shared; }
   // The outcome of the last battle, once, after its end box is closed: what a story battle reads.
   [[nodiscard]] std::optional<game::battle::Outcome> takeOutcome();
   // The battle_win debug command: the enemies fall at once; false when no fight is running.
@@ -241,6 +243,7 @@ private:
   // battle_screen_coop.cpp: the co-op allies a field battle starts with (setCoopAllies), where the
   // field has them and their players.
   void addCoopAllies(session::BattleRequest& request) const;
+  [[nodiscard]] std::optional<std::int32_t> npcOfFighter(game::battle::FighterId id) const;
   // The partner a thrower's item lands on: its own while it is in the battle, else the fighting
   // one.
   [[nodiscard]] game::battle::FighterId throwTargetOf(game::battle::FighterId thrower) const;
@@ -443,6 +446,7 @@ private:
   // Who each fighter after the partner is drawn on: the enemies' NPCs, then the co-op allies'
   // slots (FieldScene::allyFighterSlot). The beaten enemies' figures are let go as they get up.
   std::vector<std::int32_t> fighterNpcs_;
+  bool coopShared_ = false;
   bool enemiesLeft_ = false;
   // Where the fallen partner's countdown stands, taken when it shows (command_menu.c:
   // BTL_addDeathCountdown reads the partner's node once).

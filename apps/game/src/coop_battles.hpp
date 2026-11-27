@@ -100,7 +100,7 @@ public:
 
 private:
   void hostTick(PlaySession& play);
-  void answer(PlaySession& play, const Peer& from, const game::coop::BattleAsk& ask);
+  void answer(PlaySession& play, game::coop::PlayerId from, const game::coop::BattleAsk& ask);
   void apply(PlaySession& play, game::coop::PlayerId from, const game::coop::BattleAction& action);
   void endBattle(PlaySession& play);
   void offerAllies(PlaySession& play);

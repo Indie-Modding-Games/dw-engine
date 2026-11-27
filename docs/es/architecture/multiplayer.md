@@ -761,9 +761,14 @@ que correr en un solo sitio. Corre en la **simulación del anfitrión**:
 - **Un combate a la vez.** El mundo compartido corre un combate, así que un encuentro nunca crea dos. Una petición
   mientras corre uno se rechaza por ocupado (`BattleRefused`): el script del invitado recibe «no empezó», como cuando
   un combate no puede empezar en el original, y el invitado entra al combate en curso como ayudante. Una petición que el
-  anfitrión no puede aceptar por otro motivo (se fue del mapa entretanto, o está en una pantalla, escena o script)
-  también se rechaza, y entonces el juego del invitado corre ese combate él mismo, en solitario. Cada combate que empieza
-  el anfitrión en el mapa del invitado (el de su historia, el de un torneo) se le muestra al invitado igual.
+  anfitrión aún no puede aceptar (está en una pantalla, escena o script, en un cambio de mapa, al final de un combate, o
+  su consulta de presencia aún no pone al invitado ahí) espera en el anfitrión, como mucho `BattleAskWaitTicks` (10
+  segundos), y empieza en cuanto el anfitrión queda libre; si espera más, se rechaza por ocupado. Solo una petición desde
+  otro mapa que el del anfitrión se rechaza por no estar ahí, y entonces el juego del invitado corre ese combate él
+  mismo, en solitario. Así el invitado nunca pelea solo un encuentro que el anfitrión aún podía empezar, y un encuentro
+  nunca se pelea dos veces. Mientras su petición espera, el invitado sigue ofreciendo a su compañero, así que un combate
+  que el anfitrión empiece entretanto lo toma como aliado, no como ayudante. Cada combate que empieza el anfitrión en el
+  mapa del invitado (el de su historia, el de un torneo) se le muestra al invitado igual.
 - **Qué ve el otro jugador.** El anfitrión envía `BattleBegin`, luego un `BattleFrame` cada 3 ticks (fase, orden
   actual, órdenes disponibles, si se puede usar la bolsa, PV y PM de los luchadores y cada figura retenida: sitio,
   orientación, clip y su inicio) y luego `BattleEnd`. El campo del invitado se detiene y dibuja sus propios actores
@@ -801,7 +806,11 @@ en el anfitrión; el invitado ve moverse a los luchadores y las barras de vida. 
 del mapa no se dibujan en el invitado. El objeto del ayudante se dibuja lanzado desde el domador del anfitrión. Los
 enemigos saltan a los sitios del anfitrión cuando empieza el combate (hasta entonces cada juego simula sus propios
 NPC). Los objetos que caen solo aparecen en el mundo del anfitrión. Mientras el anfitrión tiene su menú abierto, el
-combate espera para los dos.
+combate espera para los dos. Un combate que otro jugador mira o pelea va a la velocidad original: el combate rápido del
+anfitrión (`battle_speed`) solo acelera sus propios combates, porque los invitados animan los frames a 1x. En el
+anfitrión, un combate del invitado muestra la bolsa, la cuenta atrás de revivir y la carga del remate del compañero al
+que da órdenes el anfitrión. En el campo, el cuerpo de otro jugador no detiene a un compañero (a un domador sí), así que
+un compañero que queda sobre otro domador tras un combate se aparta caminando en vez de ponerse detrás de su jugador.
 
 ### 6.2 Intercambio de objetos (#360)
 
