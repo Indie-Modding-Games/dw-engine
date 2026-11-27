@@ -651,10 +651,14 @@ the **host's simulation**:
   guest's partner stands in its field (`session::BattleRequest::visitor`); the host's own partner takes no part.
 - **One battle at a time.** The shared world runs one battle, so one encounter never makes two. An ask while one
   runs is refused as busy (`BattleRefused`): the guest's script gets "not started", as when a battle cannot start in
-  the original, and the guest is pulled into the running battle as its helper. An ask the host cannot take for any
-  other reason (it left the map meanwhile, or it is in a screen, scene or script) is refused too, and the guest's game
-  then runs that battle itself, solo. Every battle the host starts on the guest's map (its story's, a tournament's) is
-  shown to the guest the same way.
+  the original, and the guest is pulled into the running battle as its helper. An ask the host cannot take yet (it is
+  in a screen, scene or script, a map change, the end of a battle, or its presence query does not place the guest
+  there yet) waits on the host, at most `BattleAskWaitTicks` (10 seconds), and starts as soon as the host is free; one
+  that waits longer is refused as busy. Only an ask from another map than the host's is refused as not here, and the
+  guest's game then runs that battle itself, solo. So the guest never fights alone an encounter the host could still
+  start, and one encounter is never fought twice. While its ask waits the guest keeps its partner offered, so a battle
+  the host starts meanwhile takes it as an ally, not as a helper. Every battle the host starts on the guest's map (its
+  story's, a tournament's) is shown to the guest the same way.
 - **What the other player sees.** The host sends `BattleBegin`, then a `BattleFrame` every 3 ticks (phase, current
   order, the orders available, whether the bag can be used, the fighters' HP and MP, and every held figure: place,
   heading, clip and its start), then `BattleEnd`. The guest's field holds and draws its own actors where the frames put
@@ -687,7 +691,11 @@ Limits of this first version: the techniques' effects, the damage numbers and th
 host; the guest sees the fighters move and the life bars. Tournament fighters that are not map NPCs are not drawn on
 the guest. A helper's item is drawn thrown from the host's tamer. The enemies jump to the host's places when the battle
 starts (each game simulates its own NPCs until then). Drops fall only in the host's world. While the host has its menu
-open, the battle waits for both.
+open, the battle waits for both. A battle another player watches or fights in keeps the original speed: the host's
+quick battle (`battle_speed`) speeds up only its own battles, since the guests animate the frames at 1x. On the host,
+a guest's battle shows the host's bag, revive countdown and finisher gauge for the partner the host commands. In the
+field a partner is not stopped by another player's body (a tamer still is), so a partner left on another tamer after a
+battle walks off it instead of being placed behind its player.
 
 ### 6.2 Item trades (#360)
 
