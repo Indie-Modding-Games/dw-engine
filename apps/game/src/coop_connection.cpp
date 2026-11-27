@@ -198,13 +198,39 @@ void CoopConnection::pollRoom() {
   std::erase_if(closing_, [](const net::RoomSession& room) { return !room.noticesPending(); });
 }
 
+void CoopConnection::settle(net::Millis now) {
+  now_ = std::max(now_, now);
+  if (room_) {
+    room_->poll(now_);
+  }
+  pollRoom();
+  std::erase_if(leaving_, [&](Leaving& leaving) {
+    leaving.peer->poll(now_);
+    return now_ >= leaving.until || leaving.peer->state() == net::PeerState::Failed;
+  });
+}
+
+bool CoopConnection::settled() const {
+  return leaving_.empty() && closing_.empty() && (!room_ || !room_->noticesPending());
+}
+
+CoopConnection::~CoopConnection() {
+  close();
+}
+
 void CoopConnection::close() {
   closeRoom({});
-  if (link_ && view_ == View::Connected)
+  if (link_ && view_ == View::Connected && link_->phase() == game::coop::LinkPhase::Ready) {
     link_->leave();
+    leaving_.push_back(
+        {.peer = std::move(peer_), .link = std::move(link_), .until = now_ + CoopLeaveFlush});
+  }
   for (Seat& seat : seats_) {
     if (seat.link->phase() == game::coop::LinkPhase::Ready) {
       seat.link->leave();
+      leaving_.push_back({.peer = std::move(seat.peer),
+                          .link = std::move(seat.link),
+                          .until = now_ + CoopLeaveFlush});
     }
   }
   seats_.clear();
@@ -610,7 +636,7 @@ void CoopConnection::tickHost(net::Millis now) {
 }
 
 void CoopConnection::tick(net::Millis now) {
-  pollRoom();
+  settle(now);
   if (view_ == View::Error)
     return;
   if (hosting_) {

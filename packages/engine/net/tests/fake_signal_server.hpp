@@ -172,6 +172,8 @@ public:
   std::vector<std::string> opened;
   // The host notices the directory took, as "<code> <state>".
   std::vector<std::string> notices;
+  // Whether the directory takes the «connected» notice (a server before #416 does not).
+  bool takesConnected = true;
   // The guests a seated room's host said it holds: with each next seat, then by message.
   std::vector<int> seatsTaken;
   // What the seat notices said of a game under way: "open" or "closed" to new players (#356).
@@ -240,7 +242,8 @@ private:
     const std::string token = query(url, "token");
     const std::string state = query(url, "state");
     const auto room = rooms_.find(code);
-    if (state != "ready" && state != "playing" && state != "closed") {
+    if (state != "ready" && state != "playing" && state != "closed" &&
+        (state != "connected" || !takesConnected)) {
       socket.answer({{"type", "error"}, {"reason", "bad-state"}});
     } else if (room == rooms_.end() || !room->second.listed) {
       socket.answer({{"type", "error"}, {"reason", "no-room"}});

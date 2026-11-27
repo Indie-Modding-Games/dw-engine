@@ -513,6 +513,11 @@ caído o con un cierre inesperado: su registro, cuerpo, compañero y búferes de
 lo quita. Cuando una partida cooperativa termina en cualquiera de los lados (volver a la portada, salir), ese lado
 envía `Leave` y cierra la sala; un invitado cuyo anfitrión se fue vuelve a la portada. Un jugador que vuelve entra
 como nuevo, con un estado limpio.
+Cerrar la ventana cuenta como salir (#416): el juego manda `Leave` a todos y el último aviso de la sala antes de
+apagarse (1,5 s como mucho), y un enlace que se despidió conserva su transporte un segundo (`CoopLeaveFlush`) para que
+la despedida llegue, en vez de que los demás vean un enlace caído e intenten volver. El anfitrión de una sala pública
+repite el estado de su sala al directorio cada minuto (`net::RoomRefreshEvery`), así que la entrada de un anfitrión que
+se colgó o perdió la línea sale de la lista en menos de tres minutos.
 
 **Presencia.** `WorldAuthority::playersOn(map)` (anfitrión) y `CoopGameplayBridge::playersOn(map)` (invitado, desde la
 última instantánea) dicen qué jugadores están en un mapa, para los sistemas que necesitan a los demás cerca

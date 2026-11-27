@@ -12,6 +12,11 @@
 
 namespace dwe::net {
 
+// How often a public room's host tells the directory its state again while the room lasts, so the
+// entry of a host that crashed or lost its line leaves the list a few minutes later
+// (apps/versus-signal/src/directory.ts, ROOM_REFRESH_MS and STATE_MAX_AGE_MS).
+inline constexpr Millis RoomRefreshEvery{60 * 1000};
+
 // A room's phase (docs/plan/online-rooms.md, "Room states"), the same the signaling server's
 // directory keeps (apps/versus-signal/src/room.ts, RoomPhase):
 // - Connecting: the room is being made or joined (no code yet, or the guest is on its way).
@@ -56,6 +61,9 @@ public:
   void close(std::string reason = {});
   // Moves the host's notices on.
   void poll();
+  // poll(), and once the guests are in, tells the directory the room's state again every
+  // RoomRefreshEvery.
+  void poll(Millis now);
 
   [[nodiscard]] RoomPhase phase() const { return phase_; }
   [[nodiscard]] bool hosting() const { return desc_.hosting; }
@@ -69,7 +77,7 @@ public:
   // The last notice the server refused or never answered, by its error ("bad-token",
   // "no-room", "unreachable"...); empty while they all went through.
   [[nodiscard]] const std::string& noticeError() const { return noticeError_; }
-  // The notices the server took, in order ("ready", "playing", "closed").
+  // The notices the server took, in order ("connected", "ready", "playing", "closed").
   [[nodiscard]] const std::deque<std::string>& sentNotices() const { return sent_; }
 
 private:
@@ -90,6 +98,9 @@ private:
   std::string noticeState_;
   std::string noticeError_;
   std::deque<std::string> sent_;
+  std::optional<Millis> toldAt_;
+  // A server that predates the «connected» notice refused it: the lobby is not repeated to it.
+  bool connectedRefused_ = false;
 };
 
 } // namespace dwe::net

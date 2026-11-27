@@ -43,6 +43,9 @@ struct CoopConnectionDesc {
 // How long a guest that dropped out of a game under way keeps its seat: coming back within it, it
 // gets the same player id (its seat key says it is the same player, #356).
 inline constexpr net::Millis CoopRejoinGrace{5 * 60 * 1000};
+// How long a link that said goodbye keeps its transport, so its Leave reaches the other side
+// before the route closes.
+inline constexpr net::Millis CoopLeaveFlush{1000};
 
 // App-level host/join handshake. It owns the transports and CoopLinks for as long as the room is
 // open, and keeps the room code and failure state available to the UI. The room's phase is a
@@ -71,6 +74,12 @@ public:
   };
 
   explicit CoopConnection(CoopConnectionDesc desc) : desc_{std::move(desc)} {}
+  CoopConnection(const CoopConnection&) = delete;
+  CoopConnection& operator=(const CoopConnection&) = delete;
+  CoopConnection(CoopConnection&&) = delete;
+  CoopConnection& operator=(CoopConnection&&) = delete;
+  // A game that ends without closing its room still says goodbye to everyone in it.
+  ~CoopConnection();
   void open();
   void close();
   [[nodiscard]] bool host(bool listed = false);
@@ -126,6 +135,10 @@ public:
   [[nodiscard]] bool returning() const { return returning_; }
   // Moves the room's notices on, also once the lobby closed (tick() does it as well).
   void pollRoom();
+  // pollRoom(), and moves the goodbyes of the links that left on until they went out.
+  void settle(net::Millis now);
+  // Nothing of a closed room is still on its way: its goodbyes and its notices to the directory.
+  [[nodiscard]] bool settled() const;
   // The other player's name once it is in (the first guest's on the host, the host's on the
   // guest); empty otherwise.
   [[nodiscard]] std::string remoteName() const {
@@ -229,6 +242,13 @@ private:
   std::string playerIcon_;
   std::optional<net::RoomSession> room_;
   std::vector<net::RoomSession> closing_;
+  // Links that said goodbye, kept until `until` so their Leave goes out.
+  struct Leaving {
+    std::unique_ptr<net::PeerLink> peer;
+    std::unique_ptr<game::coop::CoopLink> link;
+    net::Millis until{0};
+  };
+  std::vector<Leaving> leaving_;
   std::uint64_t generation_ = 0;
   std::set<std::uint64_t> inPlay_;
 };

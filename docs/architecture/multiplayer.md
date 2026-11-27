@@ -422,6 +422,11 @@ host's field next to the host, a correction to that spot and a new roster. It le
 crash: its record, body, partner and buffers go on both sides, and the roster drops it. When a co-op game ends on
 either side (return to title, quit), that side sends `Leave` and closes the room; a guest whose host left goes back
 to the title. A player who comes back joins as new, with a clean state.
+Closing the window counts as quitting (#416): the game sends `Leave` to everyone and the room's last notice before it
+shuts down (at most 1.5 s), and a link that said goodbye keeps its transport for a second (`CoopLeaveFlush`) so the
+goodbye gets through instead of the others seeing a dropped link and trying to rejoin. A public room's host repeats
+its room's state to the directory every minute (`net::RoomRefreshEvery`), so the entry of a host that crashed or lost
+its line leaves the list within three minutes.
 
 **Presence.** `WorldAuthority::playersOn(map)` (host) and `CoopGameplayBridge::playersOn(map)` (guest, from the
 latest snapshot) say which players stand on a map, for systems that need the others nearby (battles, shared

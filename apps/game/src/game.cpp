@@ -143,6 +143,9 @@ core::Result<game::save::SaveFile> readSaveSlot(const assets::VirtualFileSystem&
 // Smaller changes of the map change's fade are not worth telling the UI.
 constexpr double FadeEpsilon = 1e-4;
 
+// The most a closing game waits for its co-op goodbyes and the room's last notice.
+constexpr double CoopShutdownSeconds = 1.5;
+
 // Tells the HUD what the map change shows: how much the fade takes away and the key of the map name
 // it shows, which the HUD writes in the player's language.
 class MapChangeView {
@@ -3149,6 +3152,9 @@ int runGame(const Options& requested) {
   if (PlaySession* play = flow.playing()) {
     bringGuestHome(*play, true);
   }
+  // Closing the window ends a co-op room as leaving it does: the others hear it at once instead
+  // of waiting on a link kept alive by the transport, and a public room leaves the list.
+  coop.shutDown([&] { return platform->nowSeconds(); }, CoopShutdownSeconds);
   if (!autotest) {
     // The locals go in reverse order: the scene and the UI release their textures into the renderer
     // before it.
