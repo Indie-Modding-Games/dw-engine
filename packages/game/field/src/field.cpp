@@ -2162,19 +2162,8 @@ void Field::movePartner(float seconds) {
                 .playerRadius = static_cast<std::int32_t>(std::lround(rules_.player.radius)),
                 .npcBlocks =
                     [&](OriginalPoint from, OriginalPoint to) {
-                      const glm::vec3 worldFrom = worldPointOf(from, height);
-                      const glm::vec3 worldTo = worldPointOf(to, height);
-                      if (npcs_.blocks(worldFrom, worldTo, radius)) {
-                        return true;
-                      }
-                      const GroundSquare nextPartner{.centre = ground(worldTo), .half = radius};
-                      return std::ranges::any_of(otherPlayers_, [&](const PlayerRuntime& other) {
-                        const GroundSquare player{
-                            .centre =
-                                ground(registry.get<Transform>(other.fieldPlayer.entity).position),
-                            .half = rules_.player.radius};
-                        return overlaps(nextPartner, player);
-                      });
+                      return npcs_.blocks(worldPointOf(from, height), worldPointOf(to, height),
+                                          radius);
                     },
                 .mood = partnerMood_,
                 .randomBelow = partnerRandom_});

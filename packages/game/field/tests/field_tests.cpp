@@ -335,6 +335,23 @@ TEST_CASE("the guest body also respects the host partner's collision boundary") 
   }
 }
 
+TEST_CASE("a partner left on another player's body walks off it to its own player (#413)") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, -Pi / 2.0F));
+  REQUIRE(field.addPlayer(dwe::game::field::GuestPlayerId, at(-600.0F, 600.0F)));
+  REQUIRE(field.drivePlayer(dwe::game::field::GuestPlayerId,
+                            CharacterState{.position = {-1200.0F, 0.0F, 0.0F}}));
+  dwe::scene::place(world.registry().get<dwe::scene::Transform>(field.partnerEntity()),
+                    {-1200.0F, 0.0F, 0.0F}, Pi / 2.0F);
+
+  run(field, 3.0F);
+
+  CHECK(field.partnerTeleports() == 0);
+  CHECK(partnerDistance(field) <
+        (field.rules().partner.walkDistance * field.rules().partner.mover.radius) + 1.0F);
+}
+
 TEST_CASE("map entry keeps the guest beside the host in the shared map") {
   dwe::scene::World world;
   Field field{world, originalRules()};
