@@ -226,6 +226,10 @@ public:
 
   // One tick of the game loop, of real seconds (the menu, which pauses the game, does not tick).
   void tick(double realSeconds);
+  // A tick a screen of the player's own runs instead of the field (a shop, the fishing, a care
+  // scene). Alone and on a guest nothing runs, as before. On the co-op host the world's clock runs
+  // on for the others and its partner lives that time once let go (coop-training.md T9).
+  void tickHeldPlayer(double realSeconds);
   // Counts play time, once per tick of the whole game while a game is played and not paused: the
   // field, the menus, the battles and the scenes alike (clock.c: tickPlaytime, the object addClock
   // adds next to the game clock). It stops at 999:59 (PLAYTIME_HOURS 999, minutes held at 59).
@@ -437,6 +441,15 @@ private:
   void followRules();
   core::Result<void> registerSaveSections();
   void advanceGameTime(double realSeconds);
+  // The co-op host's player is held by a script of its own (a talk, the gym's menu), not by a map
+  // change, which takes every player.
+  [[nodiscard]] bool hostHeldByOwnScript() const;
+  // The co-op host's world clock runs while its own player is held; its partner stands.
+  void runWorldPastHeldPlayer(double realSeconds);
+  // The host's partner lives the time it stood, as a guest's catches up with the world: whole hours
+  // as a time skip, the rest frame by frame. What the clock crossed in those frames, for the
+  // systems.
+  ruleset::ClockAdvance liveStoodTime();
   // A guest's step after the world's clock; the partner's skipped hours, when the world skipped
   // some, are paid here.
   ruleset::ClockAdvance followWorld(double realSeconds);
@@ -510,6 +523,9 @@ private:
   // A guest's partner lived up to this frame of the clock: a guest that went back to the world's
   // time does not live those frames again.
   std::int64_t livedUntil_ = 0;
+  // The co-op host: the frames the world's clock ran while a script or a screen of its own held its
+  // player, which its partner has not lived yet.
+  std::int64_t stoodFrames_ = 0;
 };
 
 } // namespace dwe::session
