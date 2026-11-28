@@ -369,6 +369,8 @@ play on.
   button; `BattleAction.value` carries the target), and an item a guest throws leaves that player's body on the host's
   screen with the throw's clip. Each ally sounds as its own species (allies' sound banks in slots 16–18; a visitor's
   partner keeps its own species in the partner slots).
+- Task 10, rows: each ally's card shows its current order next to its name (`battle.ally.<n>.order`: its command,
+  its Folder move or its stance); with three allies the cards drop the MP bar to stay compact.
 - Task 11: co-op difficulty, see [co-op difficulty](coop-difficulty.md) §9.
 - Task 10, the guest's screen (protocol version 12): the host's `BattleFrame` carries the items thrown (`throws`: who
   threw it, the item, in the hand, on its way with its point, or landed on a fighter), and a guest's screen draws them

@@ -129,12 +129,16 @@ Dormir salta la noche, y la noche es del mundo. Las reglas:
 
 - **Solo el anfitrión mueve el reloj del mundo.** El sueño del anfitrión lleva el mundo a la mañana de su compañero;
   cada invitado salta esas horas (§4.1).
-- **El sueño de un invitado no mueve el mundo, y el mundo no lo deshace.** El compañero duerme como a solas (el
-  descanso de la noche, las horas de vida y de evolución, su siguiente hora de dormir), y luego la pantalla del
-  invitado queda a oscuras hasta que el reloj del mundo llega a esa mañana (`SleepScreen` espera mientras
-  `GameSession::aheadOfWorld`), con un aviso que lo dice (`online.coop.sleep_wait`). Si el anfitrión duerme entretanto
-  el invitado despierta al momento. El reloj del invitado nunca vuelve a la noche y el compañero nunca vive esas horas
-  dos veces.
+- **El sueño de un invitado no mueve el mundo, y el mundo no lo deshace.** El compañero duerme como a solas (el descanso
+  de la noche, las horas de vida y de evolución, su siguiente hora de dormir), y luego la pantalla del invitado queda a
+  oscuras hasta que el reloj del mundo llega a esa mañana (`SleepScreen` espera mientras `GameSession::aheadOfWorld`),
+  con un aviso que lo dice (`online.coop.sleep_wait`); el panel del menú de sueño cuenta atrás lo que falta para esa
+  mañana (`sleep_menu.wait_seconds`, de `WorldClockFollower::waitSeconds`). Si el anfitrión duerme entretanto el
+  invitado despierta al momento. Mientras espera, el reloj del invitado nunca vuelve a la noche y el compañero nunca
+  vive esas horas dos veces.
+- **Un invitado puede despertar antes.** La tecla del menú (Tab) o cancelar corta la espera (`sleep_wake`): la
+  pantalla vuelve, el reloj del invitado vuelve a la noche del mundo y el compañero, ya descansado, no vive esas horas
+  otra vez (`GameSession::unlived`).
 - **Nadie está obligado a dormir.** Los demás siguen jugando; el mundo nunca se retiene por quien duerme.
 - **Dormir a destiempo no da ventaja.** Un invitado no puede descansar y aun así usar la noche: su partida espera con
   su compañero. Solo puede dormir cuando su compañero tiene sueño, como a solas.

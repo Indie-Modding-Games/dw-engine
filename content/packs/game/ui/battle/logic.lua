@@ -170,8 +170,8 @@ local function draw_fighter(document, index)
   panel:set_class("fainted", fighter.fainted)
 end
 
--- An ally's card (co-op): its name and status, its HP and MP as the partner's bars draw them and,
--- once it falls, its revive countdown.
+-- An ally's card (co-op): its name and status, its current order, its HP and MP as the partner's
+-- bars draw them and, once it falls, its revive countdown.
 local function draw_ally(document, index, ally)
   local prefix = "ally-" .. index
   lookup(document, prefix):set_class("hidden", ally == nil)
@@ -192,6 +192,8 @@ local function draw_ally(document, index, ally)
     )
   end
   lookup(document, prefix):set_class("fainted", ally.fainted)
+  local order = (ally.fainted or ally.order_key == "") and "" or text(ally.order_key)
+  set_text_once(document, prefix .. "-order", order)
   -- A fallen ally's revive countdown, as the partner's own over its body.
   local revive = lookup(document, prefix .. "-revive")
   revive:set_class("hidden", ally.revive_seconds == nil)
@@ -202,6 +204,7 @@ end
 
 local function draw_allies(document)
   local allies = battle.allies()
+  set_class(document, "allies", "compact", #allies >= max_allies)
   for index = 0, max_allies - 1 do
     draw_ally(document, index, allies[index + 1])
   end
@@ -440,7 +443,8 @@ local function draw_command_name(document)
       problem = entry.problem_key ~= "" and text(entry.problem_key) or ""
     end
   end
-  lookup(document, "command-label"):set_text(name)
+  -- A text strip already names the focused button; only an icon strip needs the name under it.
+  lookup(document, "command-label"):set_text(ui.layout("strip") == "icons" and name or "")
   local cost_text = cost > 0 and t("battle.mp_cost", { mp = cost }) or ""
   if applied["command-cost text"] ~= cost_text then
     applied["command-cost text"] = cost_text
@@ -958,6 +962,7 @@ local function draw_end(document)
   lookup(document, "balance-label"):set_text(t("battle.outcome.total"))
   lookup(document, "balance-value"):set_text(tostring(ending.balance))
   lookup(document, "end-boxes"):set_class("with-text", #ending.rows > 0)
+  lookup(document, "end-boxes"):set_class("with-balance", ending.balance_open)
   local waiting = ending.row <= #ending.rows and not ending.typing
   set_class(document, "end-more", "hidden", not waiting)
   lookup(document, "end-more"):set_prompt("confirm")
@@ -1597,8 +1602,22 @@ local function draw_folder(document)
       active = active .. " > " .. foe
     end
   end
-  set_text_once(document, "folder-active", active)
-  set_class(document, "folder-phase", "hidden", folder.phase == "")
+  -- A long target is drawn narrower rather than losing its letter at the plate's edge.
+  local alone = folder.phase == ""
+  set_class(document, "folder-active", "alone", alone)
+  if applied["folder-active-text text"] ~= active then
+    set_text_once(document, "folder-active-text", active)
+    local room = function()
+      local _, _, row = lookup(document, "folder-order"):rect()
+      return row * (alone and 1 or 0.56)
+    end
+    fit_text.fit(
+      lookup(document, "folder-active"),
+      { lookup(document, "folder-active-text") },
+      room
+    )
+  end
+  set_class(document, "folder-phase", "hidden", alone)
   local now = 0
   for index, name in ipairs(folder_steps) do
     if name == folder.phase then
@@ -1778,6 +1797,7 @@ on("battle.shout", draw_shout)
 on("battle.speed", draw_speed)
 
 function on_tick(document, seconds)
+  fit_text.tick()
   if phase == "end" and ending ~= nil then
     tick_end(document, seconds)
   elseif phase == "fight" then

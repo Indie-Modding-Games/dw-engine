@@ -16,6 +16,11 @@
 namespace dwe::app {
 
 inline constexpr std::string_view SleepMenuDocument = "sleep_menu";
+// A co-op guest's wait in the dark for the world's morning (#424): the sleep menu shows it instead
+// of its entries, with the real seconds left (-1 while the world's clock stands), and sends
+// sleep_wake to end it.
+inline constexpr std::string_view SleepWaitingSetting = "sleep_menu.waiting";
+inline constexpr std::string_view SleepWaitSecondsSetting = "sleep_menu.wait_seconds";
 
 // The pause menu's Sleep (docs/architecture/save-and-load.md, 3.6), as partner.c's
 // partnerTickSleep: the partner walks up to the player, the player plays its clip, the partner
@@ -33,7 +38,8 @@ public:
   // Whether the player waits on a sleep: the field and the game time wait meanwhile.
   [[nodiscard]] bool active() const;
 
-  // A co-op guest asleep in the dark until the world's clock reaches its partner's morning (#424).
+  // A co-op guest asleep in the dark until the world's clock reaches its partner's morning (#424);
+  // sleep_wake wakes it now, and its clock goes back to the world's night.
   [[nodiscard]] bool waitsForWorld() const { return phase_ == Phase::WaitingWorld; }
 
   // Whether the field still moves, without the player: the partner walks up, the two play their
@@ -80,6 +86,8 @@ private:
   void showMenu();
   void follow(const SaveStep& step);
   void startFadeIn();
+  void wakeNow();
+  void publishWait();
   void apply(FieldScene& scene, const SleepSteps::Order& order);
 
   session::GameSession* session_;
@@ -101,6 +109,7 @@ private:
   bool dialogShown_ = false;
   bool fieldIdle_ = false;
   std::optional<bool> canSleep_;
+  std::optional<double> waitShown_;
 };
 
 } // namespace dwe::app

@@ -104,6 +104,9 @@ struct FighterView {
   // In the Folder battle, the foe the next orders aim at and a foe an order aims at.
   bool targeted = false;
   bool queued = false;
+  // A co-op ally's current order: the text key of its command, its Folder order's move or its
+  // stance; empty for the others.
+  std::string orderKey;
 
   friend bool operator==(const FighterView&, const FighterView&) = default;
 };

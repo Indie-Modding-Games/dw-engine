@@ -41,6 +41,7 @@ constexpr std::string_view IdField = "id";
 constexpr std::string_view TagField = "tag";
 constexpr std::string_view TargetedField = "targeted";
 constexpr std::string_view QueuedField = "queued";
+constexpr std::string_view OrderField = "order";
 constexpr std::string_view CommandField = "command";
 constexpr std::string_view LabelField = "label";
 constexpr std::string_view AvailableField = "available";
@@ -88,7 +89,8 @@ FighterView fighterViewOf(const battle::Fighter& fighter, bool hpBarShown, const
           .id = 0,
           .tag = {},
           .targeted = false,
-          .queued = false};
+          .queued = false,
+          .orderKey = {}};
 }
 
 bool gaugeFull(const battle::Fighter& fighter) {
@@ -112,6 +114,7 @@ void addFighter(ScreenSettings& settings, std::size_t index, const FighterView& 
   if (list == BattleAllyList) {
     add(ReviveSecondsField,
         fighter.reviveSeconds ? static_cast<double>(*fighter.reviveSeconds) : NoValue);
+    add(OrderField, fighter.orderKey);
     return;
   }
   add(IdField, static_cast<double>(fighter.id));
@@ -312,6 +315,18 @@ std::string orderMoveKey(const battle::Battle& battle, battle::FighterId own,
   return move ? names.move(*move) : std::string{};
 }
 
+std::string allyOrderKeyOf(const battle::Battle& battle, battle::FighterId id,
+                           const NameKeys& names) {
+  if (const battle::FolderFighter* folder = battle.folderOf(id)) {
+    return folder->active ? orderMoveKey(battle, id, *folder->active, names)
+                          : std::format("battle.stance.{}", stanceName(folder->effectiveStance()));
+  }
+  const battle::Command current = battle.state().commandsOf(id).current;
+  return current == battle::Command::None
+             ? std::string{}
+             : commandLabelOf(current, battle.state().fighters[id], names);
+}
+
 BattleView::Folder folderViewOf(const battle::Battle& battle, const battle::FolderFighter& folder,
                                 battle::FighterId own, const NameKeys& names) {
   constexpr std::int32_t Hundred = 100;
@@ -388,6 +403,7 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names,
       const std::optional<std::int32_t> revive = reviveSecondsOf(battle, id);
       view.allies.back().reviveSeconds =
           revive && *revive > 0 ? revive : std::optional<std::int32_t>{};
+      view.allies.back().orderKey = allyOrderKeyOf(battle, id, names);
     }
   }
   const battle::Fighter& partner = state.fighters[own];

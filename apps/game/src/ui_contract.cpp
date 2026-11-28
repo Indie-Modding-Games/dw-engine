@@ -1075,6 +1075,9 @@ constexpr auto Contract =
         entry(Battle, Setting, "battle.ally.<n>.hp_bar", Boolean, "Always on for an ally."),
         entry(Battle, Setting, "battle.ally.<n>.revive_seconds", Number,
               "The countdown to revive a fainted ally; -1 without one."),
+        entry(
+            Battle, Setting, "battle.ally.<n>.order", Text,
+            "The text key of an ally's current order: its command, its Folder move or stance."),
         entry(Battle, Setting, "battle.finisher.progress", Number,
               "How much the finisher gauge has charged."),
         entry(Battle, Setting, "battle.finisher.goal", Number,

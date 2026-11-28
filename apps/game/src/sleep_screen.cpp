@@ -99,6 +99,7 @@ void SleepScreen::tick(double seconds) {
     if (!session_->aheadOfWorld()) {
       startFadeIn();
     }
+    publishWait();
     return;
   }
   const game::partner::SleepFade& fade = session_->partnerRules().care.sleep.fade;
@@ -127,6 +128,12 @@ bool SleepScreen::handle(const ui::UiCommand& command) {
       ui_->hide(MenuDocument);
       setPhase(Phase::WalkingUp);
       holdPending_ = true;
+    }
+    return true;
+  }
+  if (name == "sleep_wake") {
+    if (phase_ == Phase::WaitingWorld) {
+      wakeNow();
     }
     return true;
   }
@@ -295,6 +302,7 @@ void SleepScreen::setPhase(Phase phase) {
                  phaseName(static_cast<std::uint8_t>(phase_)),
                  phaseName(static_cast<std::uint8_t>(phase)));
   phase_ = phase;
+  publishWait();
 }
 
 void SleepScreen::startFadeIn() {
@@ -304,9 +312,34 @@ void SleepScreen::startFadeIn() {
     setPhase(Phase::WaitingWorld);
     return;
   }
+  wakeNow();
+}
+
+void SleepScreen::wakeNow() {
   setPhase(Phase::FadingIn);
   fadeSeconds_ = 0.0;
   wakePending_ = true;
+}
+
+void SleepScreen::publishWait() {
+  std::optional<double> seconds;
+  if (phase_ == Phase::WaitingWorld) {
+    seconds = std::ceil(session_->secondsAheadOfWorld().value_or(-1.0));
+  }
+  if (seconds == waitShown_) {
+    return;
+  }
+  const bool started = seconds.has_value() && !waitShown_.has_value();
+  const bool ended = !seconds.has_value() && waitShown_.has_value();
+  waitShown_ = seconds;
+  ui_->setSetting(SleepWaitSecondsSetting, seconds.value_or(-1.0));
+  if (started) {
+    ui_->setSetting(SleepWaitingSetting, true);
+    ui_->show(SleepMenuDocument, true);
+  } else if (ended) {
+    ui_->setSetting(SleepWaitingSetting, false);
+    ui_->hide(SleepMenuDocument);
+  }
 }
 
 } // namespace dwe::app

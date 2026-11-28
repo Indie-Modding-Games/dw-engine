@@ -279,7 +279,8 @@ anfitrión a la que sumar), los `overrides` por combate, las opciones de recompe
 
 - `UserSettings::coopScaling` en `apps/game/src/user_settings.hpp` con los valores `off`, `standard` (valor por defecto
   recomendado para las sesiones cooperativas) y `hard` (HP +25 puntos sobre cada tabla). Se muestra en las opciones de
-  juego y en la sala. Solo cuenta el valor del anfitrión; los invitados lo ven.
+  juego y en la sala. Solo cuenta el valor del anfitrión; los invitados lo ven, y el invitado cuya opción es otra ve
+  las dos.
 - Se aplica igual que la dificultad existente (`RuleOptions` en `apps/game/src/rule_options.hpp`, cambios a través de
   `RulesetStore`), pero el escalado no es un cambio fijo: depende de `N`, así que se calcula en cada combate.
 - Con `N = 1` y sin ayudantes, todos los factores valen 100 sea cual sea el ajuste: el juego de un jugador nunca se toca.

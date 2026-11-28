@@ -265,7 +265,7 @@ to), the per-fight `overrides`, the reward options of §5.3 and the lobby displa
 
 - `UserSettings::coopScaling` in `apps/game/src/user_settings.hpp` with the values `off`, `standard` (recommended
   default for co-op sessions) and `hard` (HP +25 points on top of each table). Shown in the Game options and in the
-  room lobby. Only the host's value counts; guests see it.
+  room lobby. Only the host's value counts; guests see it, and a guest whose own option differs sees both.
 - It is applied the same way as the existing difficulty (`RuleOptions` in `apps/game/src/rule_options.hpp`, changes
   through `RulesetStore`), but scaling is not a fixed change: it depends on `N`, so it is computed per battle.
 - With `N = 1` and no helpers, every factor is 100 whatever the setting: single player is never touched.

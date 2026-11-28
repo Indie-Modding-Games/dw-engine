@@ -94,6 +94,9 @@ local function fighters_of(list)
     if ui.setting(entry(list, index, "revive_seconds")) ~= nil then
       found[index + 1].revive_seconds = seconds(entry(list, index, "revive_seconds"))
     end
+    if list == "battle.ally" then
+      found[index + 1].order_key = value(entry(list, index, "order"), "")
+    end
   end
   return found
 end
@@ -109,8 +112,8 @@ function battle.fighters()
 end
 
 -- The other players' partners fighting beside this player's in a co-op battle, with the same
--- fields as battle.fighters and revive_seconds (a fallen ally's countdown, or nil); empty in any
--- other battle.
+-- fields as battle.fighters, revive_seconds (a fallen ally's countdown, or nil) and order_key (the
+-- text key of its current command, Folder move or stance); empty in any other battle.
 function battle.allies()
   return fighters_of("battle.ally")
 end

@@ -393,6 +393,8 @@ siguen jugando.
   del cuerpo de ese jugador en la pantalla del anfitrión, con la animación de lanzar. Cada aliado suena como su especie
   (los bancos de sonido de los aliados en las ranuras 16–18; el compañero visitante conserva su especie en las del
   compañero).
+- Tarea 10, filas: la tarjeta de cada aliado enseña su orden en curso junto al nombre (`battle.ally.<n>.order`: su
+  comando, su técnica de Folder o su postura); con tres aliados las tarjetas quitan la barra de MP para ser compactas.
 - Tarea 11: la dificultad cooperativa, ver [dificultad cooperativa](coop-difficulty.md) §9.
 - Tarea 10, la pantalla del invitado (versión 12 del protocolo): el `BattleFrame` del anfitrión lleva los objetos
   lanzados (`throws`: quién lo lanzó, el objeto, en la mano, en vuelo con su punto, o caído sobre un luchador), y la

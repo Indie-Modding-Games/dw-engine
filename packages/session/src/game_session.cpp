@@ -643,6 +643,15 @@ bool GameSession::aheadOfWorld() const {
       .backTo.has_value();
 }
 
+std::optional<double> GameSession::secondsAheadOfWorld() const {
+  if (clockShare_ != ClockShare::Guest) {
+    return std::nullopt;
+  }
+  const ruleset::ClockRules& rules = state_->clock.rules();
+  return follower_.waitSeconds(state_->clock.elapsedFrames(), rules.framesPerSecond,
+                               rules.framesPerMinute);
+}
+
 WorldTime GameSession::worldTime() const {
   return {.elapsedFrames = state_->clock.elapsedFrames(),
           .running = clockRan_,

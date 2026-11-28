@@ -651,6 +651,7 @@
       {"name": "battle.ally.<n>.fainted", "kind": "setting", "value": "boolean", "summary": "Whether an ally has fainted."},
       {"name": "battle.ally.<n>.hp_bar", "kind": "setting", "value": "boolean", "summary": "Always on for an ally."},
       {"name": "battle.ally.<n>.revive_seconds", "kind": "setting", "value": "number", "summary": "The countdown to revive a fainted ally; -1 without one."},
+      {"name": "battle.ally.<n>.order", "kind": "setting", "value": "text", "summary": "The text key of an ally's current order: its command, its Folder move or stance."},
       {"name": "battle.finisher.progress", "kind": "setting", "value": "number", "summary": "How much the finisher gauge has charged."},
       {"name": "battle.finisher.goal", "kind": "setting", "value": "number", "summary": "How much it has to charge to be full."},
       {"name": "battle.finisher.ready", "kind": "setting", "value": "boolean", "summary": "Whether the finisher is ready."},

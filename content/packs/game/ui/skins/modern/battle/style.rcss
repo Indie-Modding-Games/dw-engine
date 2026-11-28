@@ -705,6 +705,22 @@
 	display: none;
 }
 
+/* Its current order, at the right of its name. With three allies each card keeps its name, order and HP only. */
+.ally-order {
+	float: right;
+	margin-right: 8dp;
+	font-size: 16dp;
+	color: #8fd0ff;
+}
+
+#allies.compact .ally-mp {
+	display: none;
+}
+
+#allies.compact .ally {
+	padding: 4dp 10dp;
+}
+
 /* ------------------------------------------------------------------------------------------------------------------
    The Folder battle (not in the original): the partner's defense bar, the foe the orders aim at, the active order with
    the phase's progress and the orders that wait, in a card like the fighters' beside the partner's panel at the bottom
@@ -997,4 +1013,9 @@
 
 #finisher.ready #finisher-percent {
 	color: #ffd34f;
+}
+
+/* Without an order the target takes the whole row: the phase is hidden. */
+#folder-active.alone {
+	width: 100%;
 }

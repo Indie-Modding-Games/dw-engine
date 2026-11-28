@@ -702,9 +702,15 @@
 #dc-digit.digit-2 { decorator: image(death-digit-2); }
 #dc-digit.digit-1 { decorator: image(death-digit-1); }
 
-/* The original shows no button hints in battle. */
+/* The original shows no button hints in battle; a small corner hint keeps the PC keys in sight. */
 #prompts {
-	display: none;
+	right: 16dp;
+	bottom: 12dp;
+	padding: 2dp 8dp;
+	font-size: 13dp;
+	color: #9cc2d8;
+	background-color: #0a1420d0;
+	border-radius: 0dp;
 }
 
 /* The numbers over the fighters (utils2.c: drawEntityText): the digits of BI_IN with palette 4, untinted (TEXT_COLORS
@@ -1015,6 +1021,19 @@
 	display: none;
 }
 
+/* With the total, the boxes go in every skin's order: stats, total, then the bits with the text that continues. */
+#end-boxes.with-balance #balance {
+	top: 288dp;
+}
+
+#end-boxes.with-balance #bits {
+	top: 381dp;
+}
+
+#end-boxes.with-balance #end-text {
+	top: 489dp;
+}
+
 #end-text {
 	margin: 0;
 	position: absolute;
@@ -1290,6 +1309,13 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 .ally .hp-label { decorator: image(battle-hp); }
 .ally .mp-label { decorator: image(battle-mp); }
 
+.ally-order {
+	font-size: 18dp;
+	line-height: 30dp;
+	margin-right: 12dp;
+	color: #9cd8ff;
+}
+
 @media (max-width: 760dp) {
 	#allies { right: 12dp; }
 }
@@ -1354,8 +1380,6 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 }
 
 #folder-active {
-	padding-left: 9dp;
-	border-left: 3dp #ffd51e;
 	font-family: "Pixel Body";
 	font-size: 30dp;
 	line-height: 33dp;
@@ -1475,4 +1499,30 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 
 #finisher-percent {
 	display: none;
+}
+
+/* Without an order the target takes the whole row: the phase is hidden. */
+#folder-active.alone {
+	max-width: 100%;
+}
+
+/* A Folder battle names its foes by letter: a compact list at the left under the strip, as the bars hanging from a foe
+   high in the field can sit past the screen's top. */
+#fight.folder #enemies {
+	display: block;
+	position: absolute;
+	left: 30dp;
+	top: 210dp;
+	width: 300dp;
+}
+
+#fight.folder .fighter.enemy {
+	padding: 4dp 10dp;
+	margin: 0 0 6dp 0;
+	background-color: #0b1c2de8;
+	color: #d8f1ff;
+}
+
+#fight.folder .fighter.enemy .fighter-name {
+	font-size: 22dp;
 }

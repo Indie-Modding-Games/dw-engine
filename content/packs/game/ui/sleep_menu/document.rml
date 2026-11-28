@@ -8,11 +8,13 @@
 <body>
 	<div id="scrim">
 		<div id="panel">
+			<div id="wait" class="hidden"><p id="wait-left"></p></div>
 			<button id="sleep" autofocus="autofocus" onclick="ui.send('sleep_only')" text-key="save.sleep"></button>
 			<button id="save-and-sleep" onclick="ui.send('sleep_and_save')" text-key="save.sleep_and_save"></button>
 
 			<div id="prompts">
-				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+				<span class="prompt" id="prompt-accept"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+				<span class="prompt hidden" id="prompt-wake-box"><span class="key" id="prompt-wake"></span><span text-key="online.coop.sleep_wake"></span></span>
 			</div>
 		</div>
 	</div>

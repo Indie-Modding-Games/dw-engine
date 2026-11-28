@@ -46,6 +46,7 @@ info.state: "State:"
 info.players: "Players:"
 info.visibility: "Access:"
 info.difficulty: "Difficulty:"
+info.difficulty_own: "{host} · yours: {own} (not used)"
 visibility.public: "Public"
 visibility.private: "Private"
 # Access, and whether a game under way takes new players (#356).
@@ -213,6 +214,8 @@ coop.came_home: "Back from {name}'s world: your partner and your bag came home w
 coop.training: "Training"
 coop.training_clock: "Training in company: the world's time keeps running, and each session counts its own hour for your partner."
 coop.sleep_wait: "Asleep until morning: in a shared world your partner wakes when the world's clock reaches its hour, or when the host sleeps too."
+coop.sleep_left: "Morning in {time}"
+coop.sleep_wake: "Wake up now"
 # A guest who brought a save of the other game variant, and the host's notice of it (game-variants.md, "Co-op").
 coop.guest_other_variant: "{name}'s world plays another variant, under its rules. Your partner and bag still go home."
 coop.guest_other_variant_kept: "{name}'s world plays another variant: nothing goes home, your save stays as it was."

@@ -258,3 +258,16 @@ TEST_CASE("coop clock: a guest's sleep waits for the world's morning; it neither
   CHECK(guest->partner().state().evolution.hours == hours);
   CHECK(guest->partner().state().life.age == age);
 }
+
+TEST_CASE("coop clock: a guest asleep ahead of the world knows how long it still waits (#424)") {
+  WorldClockFollower follower;
+  CHECK_FALSE(follower.waitSeconds(Start, FramesPerSecond, FramesPerMinute));
+  follower.hear({.elapsedFrames = Start, .running = true, .speed = 1.0});
+  const std::int64_t waits = WorldClockFollower::BackAfterMinutes * FramesPerMinute;
+  CHECK(follower.waitSeconds(Start, FramesPerSecond, FramesPerMinute) == 0.0);
+  CHECK(follower.waitSeconds(Start + waits + 200, FramesPerSecond, FramesPerMinute) == 10.0);
+  follower.hear({.elapsedFrames = Start, .running = true, .speed = 2.0});
+  CHECK(follower.waitSeconds(Start + waits + 200, FramesPerSecond, FramesPerMinute) == 5.0);
+  follower.hear({.elapsedFrames = Start, .running = false, .speed = 1.0});
+  CHECK_FALSE(follower.waitSeconds(Start + waits + 200, FramesPerSecond, FramesPerMinute));
+}

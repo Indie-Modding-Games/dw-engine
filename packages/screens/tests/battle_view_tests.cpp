@@ -116,6 +116,27 @@ TEST_CASE("a co-op ally's countdown shows while it can get up, and not once it i
   CHECK_FALSE(dwe::screens::battleViewOf(battle, names).allies.front().reviveSeconds.has_value());
 }
 
+TEST_CASE("a co-op ally's card names the order it follows now") {
+  BattleSetup setup = duel(evenStats(400, 100), evenStats(400, 100));
+  setup.allies.push_back(
+      {.partner = fighterWith("buddy", evenStats(400, 300), {"punch"}, {.x = 300, .z = 0}),
+       .condition =
+           {.discipline = 50, .tiredness = 0, .sick = false, .injured = false, .knownMoves = {}},
+       .tamer = {.x = 300, .z = -800},
+       .owner = 1});
+  Battle battle = startBattle(std::move(setup), 9);
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  const dwe::game::battle::FighterId ally = battle.state().allies.front().id;
+  const auto view = dwe::screens::battleViewOf(battle, names);
+  REQUIRE(view.allies.size() == 1);
+  CHECK(view.allies.front().orderKey ==
+        dwe::screens::commandLabelOf(battle.state().commandsOf(ally).current,
+                                     battle.state().fighters[ally], names));
+  CHECK_FALSE(view.allies.front().orderKey.empty());
+  CHECK(view.fighters.front().orderKey.empty());
+}
+
 TEST_CASE("a player commanding an ally sees its own bag and its own countdown (#418)") {
   BattleSetup setup = duel(evenStats(400, 100), evenStats(400, 100));
   setup.allies.push_back(

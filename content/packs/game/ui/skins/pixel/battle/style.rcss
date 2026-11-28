@@ -428,6 +428,13 @@
 	font-effect: shadow(2dp 2dp #050c1a);
 }
 
+.ally-order {
+	font-family: "Pixel Small";
+	font-size: 18dp;
+	color: #9cc2ff;
+	font-effect: shadow(2dp 2dp #050c1a);
+}
+
 /* ------------------------------------------------------------------------------------------------------------------
    The Folder battle (not in the concept): the half window with brackets at the stage's bottom left, 40 and 24 from its
    edges as the menu button. "Guard" in gold and the active order in the body font; the foe and the waiting orders in

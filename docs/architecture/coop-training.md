@@ -124,11 +124,15 @@ Sleeping skips the night, and the night is the world's. The rules:
 
 - **Only the host moves the world's clock.** The host's sleep takes the world to its partner's morning; every guest
   skips those hours (§4.1).
-- **A guest's sleep does not move the world, and the world does not undo it.** The partner sleeps as alone (the
-  night's rest, lifetime and evolution hours, its next bedtime), then the guest's screen stays dark until the world's
-  clock reaches that morning (`SleepScreen` waits while `GameSession::aheadOfWorld`), with a notice that says so
-  (`online.coop.sleep_wait`). If the host sleeps meanwhile the guest wakes at once. The guest's clock never goes back
-  to the night and the partner never lives those hours twice.
+- **A guest's sleep does not move the world, and the world does not undo it.** The partner sleeps as alone (the night's
+  rest, lifetime and evolution hours, its next bedtime), then the guest's screen stays dark until the world's clock
+  reaches that morning (`SleepScreen` waits while `GameSession::aheadOfWorld`), with a notice that says so
+  (`online.coop.sleep_wait`); the sleep menu's panel counts down the time left to that morning
+  (`sleep_menu.wait_seconds`, from `WorldClockFollower::waitSeconds`). If the host sleeps meanwhile the guest wakes at
+  once. While it waits the guest's clock never goes back to the night, and the partner never lives those hours twice.
+- **A guest may wake early.** The menu key (Tab) or cancel ends the wait (`sleep_wake`): the screen fades in, the
+  guest's clock goes back to the world's night and the partner, already rested, does not live those hours again
+  (`GameSession::unlived`).
 - **Nobody is forced to sleep.** The others keep playing; the world is never held for a sleeper.
 - **No advantage from sleeping out of step.** A guest cannot rest and still use the night: its game waits with its
   partner. Its sleep is only possible when its partner is sleepy, as alone.
