@@ -47,19 +47,20 @@ cada luchador comandado tiene todas las entradas, sea cual sea su cerebro, y cad
 | `YourCall` | Descarta las órdenes en espera; la que se está ejecutando continúa |
 | `Run` | La huida, como en Classic |
 
-Una placa abajo a la izquierda (`battle.folder()` en la API de la interfaz) muestra la barra de defensa del partner y su
-ruptura, el enemigo al que apuntan las próximas órdenes (Cambiar lo elige), la técnica y la fase de la orden activa con
-el progreso de la fase temporizada, y las órdenes en espera (una orden nombra a su enemigo solo cuando no es el objetivo
-actual). Debajo indica el estado alterado del partner, en las skins cuyas barras del partner no lo muestran, y, durante
-cinco segundos, cómo terminó la última orden cuando no se completó: anulada, interrumpida, inválida o reemplazada, con el
-motivo (MP insuficientes, su enemigo ya no está, fuera de alcance...). La línea bajo la tira dice por qué la técnica
-enfocada o el remate no se pueden ordenar ahora; en la skin moderna, cuyos botones ya nombran los comandos y cuyo nombre
-de técnica se anuncia al empezar, esa línea solo muestra el motivo.
+Una placa abajo a la izquierda (`battle.folder()` en la API de la interfaz) tiene cuatro filas de altura fija, así que
+nunca crece sobre los luchadores: la barra de defensa del partner; un mensaje, primero la ruptura, si no, durante cinco
+segundos, cómo terminó la última orden cuando no se completó (anulada, interrumpida, inválida o reemplazada, con el
+motivo: MP insuficientes, su enemigo ya no está, fuera de alcance...), y si no, el estado alterado del partner; la
+técnica, el enemigo y la fase de la orden activa con el progreso de la fase temporizada, o el enemigo al que apuntan las
+próximas órdenes mientras no corre ninguna (Cambiar lo elige); y las órdenes en espera. La línea bajo la tira dice por
+qué la técnica enfocada o el remate no se pueden ordenar ahora; en la skin moderna, cuyos botones ya nombran los
+comandos y cuyo nombre de técnica se anuncia al empezar, esa línea solo muestra el motivo.
 
 La placa se queda en su propia región para no tapar nunca otro recuadro: en la skin moderna está entre la tarjeta del
 partner y las ayudas de teclas, bajo las tarjetas de los enemigos; en las skins original, pixel y DevVago ocupa la
 esquina inferior izquierda y sube sobre la tira de un combate de copa. En todas las skins se aparta mientras la bolsa
-está abierta, porque sus recuadros llegan a su sitio. Cada línea ocupa una sola fila.
+está abierta, y todo el HUD se va al abrirse los resultados. Los números, las barras de los enemigos y los gritos sobre
+los luchadores se apartan de los recuadros del HUD.
 
 ## Arquitectura
 

@@ -15,6 +15,8 @@ command.finisher: "Spezialtechnik"
 outcome.victory: "Sieg!"
 outcome.fled: "Entkommen."
 outcome.defeat: "Verloren..."
+# The bits the player holds, in the box the won bits move into.
+outcome.total: "Gesamt"
 status.poison: "Vergiftet"
 status.confusion: "Verwirrt"
 status.stun: "Betäubt"

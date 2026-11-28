@@ -13,6 +13,8 @@ command.finisher: "Golpe final"
 outcome.victory: "Vitória!"
 outcome.fled: "Você escapou."
 outcome.defeat: "Derrota..."
+# The bits the player holds, in the box the won bits move into.
+outcome.total: "Total"
 status.poison: "Envenenado"
 status.confusion: "Confuso"
 status.stun: "Atordoado"

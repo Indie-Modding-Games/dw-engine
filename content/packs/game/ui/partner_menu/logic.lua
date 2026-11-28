@@ -123,6 +123,22 @@ local function slot_filled(index)
   return index < number("bag.slot.count") and not setting(slot_setting(index, "empty"), true)
 end
 
+-- The slots the bag lays out: in a battle only up to the last filled row, so the bag stays short
+-- over the fight.
+local function shown_slot_count()
+  local count = number("bag.slot.count")
+  if not in_battle() then
+    return count
+  end
+  local last = -1
+  for index = 0, count - 1 do
+    if slot_filled(index) then
+      last = index
+    end
+  end
+  return math.min(count, (math.floor(math.max(last, 0) / 2) + 1) * 2)
+end
+
 local function draw_bar(document, prefix, list, index)
   local base = list .. "." .. index .. "."
   local value = number(base .. "value")
@@ -622,7 +638,7 @@ local function mark_picked(document)
 end
 
 local function draw_bag(document)
-  local count = number("bag.slot.count")
+  local count = shown_slot_count()
   local original = original_menu()
   local rows = count > 10 and 9 or 5
   row_offset = math.max(0, math.min(row_offset, math.ceil(count / 2) - rows))
@@ -661,7 +677,7 @@ end
 local function focus_slot(document, index)
   if original_menu() then
     local row = math.floor(index / 2)
-    local rows = number("bag.slot.count") > 10 and 9 or 5
+    local rows = shown_slot_count() > 10 and 9 or 5
     if row < row_offset then
       row_offset = row
     elseif row >= row_offset + rows then
@@ -1057,7 +1073,8 @@ local function fit_to_window(document)
     local left, top, width, height = panel:rect()
     local right, bottom = left + width, top + height
     local prompts_left, prompts_top, prompts_width, prompts_height = document:get("prompts"):rect()
-    if prompts_width > 0 and prompts_height > 0 then
+    -- The battle's bag shows no prompts, whose box keeps its last place while hidden.
+    if prompts_width > 0 and prompts_height > 0 and not in_battle() then
       left, top = math.min(left, prompts_left), math.min(top, prompts_top)
       right = math.max(right, prompts_left + prompts_width)
       bottom = math.max(bottom, prompts_top + prompts_height)
@@ -1346,11 +1363,11 @@ function on_action(document, action)
         local next_index = index
         if action == "up" and index >= 2 then
           next_index = index - 2
-        elseif action == "down" and index < number("bag.slot.count") - 2 then
+        elseif action == "down" and index < shown_slot_count() - 2 then
           next_index = index + 2
         elseif action == "left" and index % 2 == 1 then
           next_index = index - 1
-        elseif action == "right" and index % 2 == 0 and index + 1 < number("bag.slot.count") then
+        elseif action == "right" and index % 2 == 0 and index + 1 < shown_slot_count() then
           next_index = index + 1
         end
         focus_slot(document, next_index)

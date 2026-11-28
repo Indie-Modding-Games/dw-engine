@@ -13,6 +13,8 @@ command.finisher: "Coup final"
 outcome.victory: "Victoire !"
 outcome.fled: "Fuite réussie."
 outcome.defeat: "Défaite..."
+# The bits the player holds, in the box the won bits move into.
+outcome.total: "Total"
 status.poison: "Empoisonné"
 status.confusion: "Confus"
 status.stun: "Étourdi"

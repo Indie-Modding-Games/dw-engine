@@ -754,27 +754,9 @@
 	margin: 2dp 0 4dp 0;
 }
 
-#folder-broken {
-	color: #ff5a48;
-}
-
-#folder-target,
-#folder-queue {
-	color: #9aa7b6;
-}
-
 #folder-panel.hidden,
 #folder-panel .hidden {
 	display: none;
-}
-
-/* The panel's state lines: the partner's status is on its card already; how the last order ended, in amber. */
-#folder-status {
-	display: none;
-}
-
-#folder-notice {
-	color: #ffb347;
 }
 
 /* In the Folder battle the strip's buttons name the commands and the move's name shouts when it starts, so the line
@@ -808,5 +790,55 @@
 /* The open bag covers the middle of the screen down to the panel, and in the boxed skins the bottom too: the panel
    gives way until the bag closes. */
 #fight.bag-open #folder-panel {
+	display: none;
+}
+
+/* The key that types on the end box's text, while the text waits for it. */
+#end-more {
+	display: block;
+	float: right;
+	margin-top: 2dp;
+}
+
+#end-more.hidden {
+	display: none;
+}
+
+/* The Folder plate keeps a fixed height at the bottom left, four rows of one line each: the defense bar, the message
+   (a broken defense, else how an order ended, else an altered state), the active order beside its phase, the queue. */
+#folder-panel {
+	height: 136dp;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+#folder-message,
+#folder-active,
+#folder-queue {
+	height: 26dp;
+	line-height: 26dp;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#folder-message.status { color: #c9a3ff; }
+#folder-message.notice { color: #ffb347; }
+#folder-message.broken { color: #ff5a48; }
+#folder-queue { color: #9aa7b6; }
+
+#folder-active {
+	flex: 0 1 auto;
+	max-width: 75%;
+	margin-right: 10dp;
+}
+
+#folder-phase {
+	flex: 1;
+	margin: 0;
+}
+
+/* A Classic battle's strip holds the commands the original's strip draws: the finisher, which has no icon there, goes
+   with its own key from the gauge's card, the same in every skin. */
+#fight:not(.folder) .command.no-icon {
 	display: none;
 }

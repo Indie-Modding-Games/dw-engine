@@ -13,6 +13,8 @@ command.finisher: "必殺技"
 outcome.victory: "勝利！"
 outcome.fled: "無事に逃げきった。"
 outcome.defeat: "負けてしまった…"
+# The bits the player holds, in the box the won bits move into.
+outcome.total: "合計"
 status.poison: "毒"
 status.confusion: "混乱"
 status.stun: "マヒ"

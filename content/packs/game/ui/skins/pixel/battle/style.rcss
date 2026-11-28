@@ -99,14 +99,14 @@
 
 .partner .bar-label {
 	left: -2dp;
-	top: -2dp;
-	width: 24dp;
-	height: 24dp;
+	top: -4dp;
+	width: 40dp;
+	height: 28dp;
 	border: 2dp #7cb6e2;
 	background-color: #050c1a;
 	font-family: "Pixel Small";
-	font-size: 13dp;
-	line-height: 24dp;
+	font-size: 26dp;
+	line-height: 28dp;
 	text-align: center;
 	white-space: nowrap;
 	color: #f2f0e1;
@@ -118,9 +118,9 @@
 }
 
 .partner .bar {
-	left: 30dp;
+	left: 46dp;
 	top: 3dp;
-	width: 196dp;
+	width: 180dp;
 	height: 10dp;
 	padding: 2dp;
 	border: 2dp #557ea8;
@@ -485,26 +485,45 @@
 	line-height: 36dp;
 }
 
-#folder-broken {
-	color: #e2483d;
-}
-
-#folder-target,
-#folder-queue {
-	color: #93a6bc;
-}
-
-#folder-status {
-	color: #93a6bc;
-}
-
-#folder-notice {
-	color: #efc63c;
-}
-
 #command-problem {
 	margin-left: 16dp;
 	font-family: "Pixel Small";
 	font-size: 24dp;
 	color: #e2483d;
+}
+
+/* The Folder plate keeps a fixed height at the bottom left, four rows of one line each: the defense bar, the message
+   (a broken defense, else how an order ended, else an altered state), the active order beside its phase, the queue. */
+#folder-panel {
+	left: 30dp;
+	bottom: 30dp;
+	padding: 12dp 24dp;
+	height: 168dp;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+#folder-message,
+#folder-active,
+#folder-queue {
+	height: 30dp;
+	line-height: 30dp;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#folder-message.status { color: #93a6bc; }
+#folder-message.notice { color: #efc63c; }
+#folder-message.broken { color: #e2483d; }
+#folder-queue { color: #93a6bc; }
+
+#folder-active {
+	flex: 0 1 auto;
+	max-width: 75%;
+	margin-right: 10dp;
+}
+
+#folder-phase {
+	flex: 1;
+	margin: 0;
 }
