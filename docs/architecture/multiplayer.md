@@ -407,8 +407,9 @@ agree again. A guest-side jump (a script's `place`) is one of those refusals: it
 
 **Maps (decision 2 of §6).** The group goes where the host goes. The guest's own exits are held
 (`Field::holdExits`); when the host changes map, every guest gets a correction with the new map, the exit and the
-host's spawn spot, and arrives there exactly. States from the old map or epoch are refused, and the guest reports
-nothing while it travels. Each player still has its own current map: a remote player on another map is neither drawn
+host's spawn spot, and arrives there exactly. Its partner arrives next to it, as on any map entry, and a correction on
+the map it already stands on (a join, a reset) brings the partner along too (`Field::placePlayerWithPartner`). States
+from the old map or epoch are refused, and the guest reports nothing while it travels. Each player still has its own current map: a remote player on another map is neither drawn
 nor driven, and is shown again when it arrives.
 
 **The zone notice (#356).** Before a guest follows the host to another map, its game waits

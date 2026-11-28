@@ -497,8 +497,10 @@ salto del lado del invitado (un `place` de un script) es uno de esos rechazos: s
 
 **Mapas (decisión 2 de §6).** El grupo va adonde va el anfitrión. Las salidas propias del invitado quedan retenidas
 (`Field::holdExits`); cuando el anfitrión cambia de mapa, cada invitado recibe una corrección con el mapa nuevo, la
-salida y el punto de aparición del anfitrión, y llega justo allí. Los estados del mapa o la época anteriores se
-rechazan, y el invitado no informa nada mientras viaja. Cada jugador sigue teniendo su propio mapa actual: un jugador
+salida y el punto de aparición del anfitrión, y llega justo allí. Su compañero llega a su lado, como en cualquier
+entrada a un mapa, y una corrección en el mapa en el que ya está (al unirse, un reinicio) también lo trae
+(`Field::placePlayerWithPartner`). Los estados del mapa o la época anteriores se rechazan, y el invitado no informa nada
+mientras viaja. Cada jugador sigue teniendo su propio mapa actual: un jugador
 remoto en otro mapa no se dibuja ni se mueve, y vuelve a mostrarse cuando llega.
 
 **El aviso de zona (#356).** Antes de seguir al anfitrión a otro mapa, el juego del invitado espera

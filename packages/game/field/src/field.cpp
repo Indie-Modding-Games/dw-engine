@@ -2399,6 +2399,17 @@ bool Field::placePartnerOffScreen() {
   return false;
 }
 
+void Field::placePlayerWithPartner(assets::SpawnPoint spot) {
+  placeAt(player_, spot.position, spot.yaw);
+  lastPlayerCell_ = assets::collisionCellAt(spot.position);
+  playerTrail_.enter(lastPlayerCell_);
+  lastTrigger_ = collision_.trigger(assets::originalCellAt(spot.position)).value_or(0);
+  follow_.forgetTrail(originalPointOf(spot.position));
+  if (!scriptedClipOf(partner_)) {
+    placePartnerNearPlayer();
+  }
+}
+
 void Field::placePartnerNearPlayer() {
   entt::registry& registry = world_->registry();
   const auto& player = registry.get<Transform>(player_);

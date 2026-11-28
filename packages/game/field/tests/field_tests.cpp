@@ -3317,3 +3317,20 @@ TEST_CASE("an autotalk NPC walking into the co-op guest's body runs no section o
   CHECK(touches(false));
   CHECK_FALSE(touches(true));
 }
+
+TEST_CASE("a co-op placement on the same map brings the partner next to the player") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.setOffScreenTest([](glm::vec3) { return false; });
+  field.enterMapAt(roomMap("room"), at(-1500.0F, 0.0F));
+  field.setInput({.stick = {1.0F, 0.0F}, .run = true});
+  run(field, 1.0F);
+  field.setInput({});
+  run(field, 2.0F);
+  const glm::vec3 spot{1200.0F, 0.0F, 400.0F};
+  field.placePlayerWithPartner(at(spot.x, spot.z, -Pi / 2.0F));
+  CHECK(field.player().position == spot);
+  CHECK(partnerDistance(field) == doctest::Approx(field.rules().partner.spawnDistance));
+  run(field, 3.0F);
+  CHECK(partnerDistance(field) == doctest::Approx(field.rules().partner.spawnDistance));
+}

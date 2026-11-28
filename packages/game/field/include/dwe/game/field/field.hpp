@@ -614,6 +614,9 @@ public:
   // starts). It lets go as above, but nothing moves them off it: no release check and no making
   // room, as the original's characters stand where its trace starts.
   void placeAt(scene::Entity entity, glm::vec3 position, float yaw);
+  // Moves the player to a spot of this map and its partner next to it, as a map entry does (a
+  // co-op host placing its guest). A partner a script plays stays.
+  void placePlayerWithPartner(assets::SpawnPoint spot);
   // The release rule now, the engine's (the original has none): the partner in a wall cell or deep
   // in another's collision square (overlaps), or the player in a wall cell, goes to the nearest
   // spot where it fits on the grid, touches nobody, reaches from where it stood and warps nothing.
