@@ -205,6 +205,7 @@ end
 local function draw_allies(document)
   local allies = battle.allies()
   set_class(document, "allies", "compact", #allies >= max_allies)
+  lookup(document, "fight"):set_class("with-allies", #allies > 0)
   for index = 0, max_allies - 1 do
     draw_ally(document, index, allies[index + 1])
   end
@@ -389,13 +390,24 @@ local function lay_out_strip(document)
   for _, each in ipairs(rows) do
     widest = math.max(widest, each.width)
   end
+  if widest <= 0 then
+    return
+  end
   local pad = gap * 0.4
+  local from_left, from_top = lookup(document, "commands"):rect()
+  local row_left, row_top, row_width, row_height = lookup(document, "command-row"):rect()
+  local inner_left = row_left - from_left + (row_width - (widest + pad * 2)) / 2
   local top = pad
   for _, each in ipairs(rows) do
-    local left = pad + (widest - each.width) / 2
+    top = top + each.height + pad
+  end
+  local inner_top = row_top - from_top + (row_height - top) / 2
+  top = pad
+  for _, each in ipairs(rows) do
+    local left = inner_left + pad + (widest - each.width) / 2
     for _, item in ipairs(each) do
       set_property(document, item.id, "left", string.format("%.0fpx", left + item.x))
-      set_property(document, item.id, "top", string.format("%.0fpx", top))
+      set_property(document, item.id, "top", string.format("%.0fpx", inner_top + top))
     end
     top = top + each.height + pad
   end
