@@ -17,6 +17,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dwe::app {
@@ -72,7 +73,8 @@ inline constexpr std::string_view BagThrowPickSetting = "bag.throw_pick";
 
 // The HUD learns the bag is open before it shows, so the battle document yields the focus.
 void showCoopHudBag(ui::Ui& ui, const screens::ScreenSettings& bag, const screens::BattleView& hud);
-void closeCoopHudBag(ui::Ui& ui, std::optional<std::size_t>& throwTarget);
+class CoopThrowPick;
+void closeCoopHudBag(ui::Ui& ui, CoopThrowPick& throwTarget);
 
 // Empty while the battle has not ended.
 [[nodiscard]] std::string_view coopOutcomeName(std::optional<game::coop::BattleOutcome> outcome);
@@ -82,6 +84,29 @@ void closeCoopHudBag(ui::Ui& ui, std::optional<std::size_t>& throwTarget);
 
 // The host's battle takes this screen: the field bag's Use would feed the field partner.
 void closeFieldBag(ui::Ui& ui);
+
+// The partner the guest's items fly to (a fighter's number; nullopt: its own, or the fighting
+// one). The bag's Use comes once the bag closed (partner_menu/logic.lua): closing darkens the card
+// and keeps the pick for that Use.
+class CoopThrowPick {
+public:
+  [[nodiscard]] const std::optional<std::size_t>& lit() const { return lit_; }
+  void pick(std::optional<std::size_t> target) {
+    lit_ = target;
+    kept_.reset();
+  }
+  void close() { kept_ = std::exchange(lit_, std::nullopt); }
+  // The throw's target for the host: the fighter's number + 1, 0 for its own or the fighting one.
+  [[nodiscard]] std::int32_t take();
+  void reset() {
+    lit_.reset();
+    kept_.reset();
+  }
+
+private:
+  std::optional<std::size_t> lit_;
+  std::optional<std::size_t> kept_;
+};
 
 class CoopThrowFollower {
 public:

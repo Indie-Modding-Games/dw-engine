@@ -166,8 +166,7 @@ private:
   std::optional<std::uint32_t> shownFrame_;
   // The fighters as the last frame with them showed them (the end's frames have none).
   std::vector<game::coop::BattleFighterState> fighters_;
-  // The partner the guest's items fly to (a fighter's number), when it picked one.
-  std::optional<std::size_t> target_;
+  CoopThrowPick target_;
   CoopBattleSounds sounds_;
   CoopThrowFollower throws_;
   CoopThrowPurse purse_;

@@ -159,7 +159,8 @@ hit each other: their area moves skip allies (enemies keep the original's friend
 - A guest on the skin's battle screen picks with Q and E (`tab_previous`, `tab_next`; the shoulder buttons on a pad)
   while its bag is open: its own partner, then each other partner in turn; the picked ally's card gets
   `battle.ally.<n>.throw_target` and lights up in every skin, and the bag shows the Q/E hint (`bag.throw_pick`). The
-  pick lasts while the bag is open: closing the bag or throwing from it clears it, so no card stays lit.
+  card stays lit while the bag is open: closing the bag or throwing from it puts the card out, but an item chosen just
+  as the bag closes still flies to the ally that was picked.
 - The bag does not pause the battle in co-op (decision 5 of [multiplayer](multiplayer.md) §6).
 - One item in flight per player (`ThrownItemState` per player); any item in flight toward a partner pauses that
   partner's countdown, as in the original.

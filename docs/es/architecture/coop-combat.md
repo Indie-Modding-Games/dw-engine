@@ -169,8 +169,8 @@ sus técnicas de área ignoran a los aliados (los enemigos conservan el fuego am
 - Un invitado en la pantalla de combate de la skin elige con Q y E (`tab_previous`, `tab_next`; los gatillos en un
   mando) con la bolsa abierta: su propio compañero y luego cada otro compañero por turno; la tarjeta del aliado elegido
   lleva `battle.ally.<n>.throw_target` y se ilumina en todas las skins, y la bolsa enseña la pista de Q/E
-  (`bag.throw_pick`). La elección dura mientras la bolsa está abierta: cerrarla o lanzar desde ella la borra, así que
-  ninguna tarjeta queda iluminada.
+  (`bag.throw_pick`). La tarjeta queda iluminada mientras la bolsa está abierta: cerrarla o lanzar desde ella la
+  apaga, pero un objeto elegido justo cuando la bolsa se cierra sigue volando al aliado elegido.
 - La bolsa no pausa el combate en cooperativo (decisión 5 de [multijugador](multiplayer.md) §6).
 - Un objeto en vuelo por jugador (`ThrownItemState` por jugador); cualquier objeto en vuelo hacia un compañero pausa la
   cuenta atrás de ese compañero, como en el original.

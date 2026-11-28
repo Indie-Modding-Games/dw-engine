@@ -1018,7 +1018,7 @@ bool CoopBattles::handle(const ui::UiCommand& command) {
       return true;
     }
     purse_.asked(frame->frame);
-    value = target_ ? static_cast<std::int32_t>(*target_) + 1 : 0;
+    value = target_.take();
   }
   if (auto action = mirror_.action(*kind, value, std::move(item))) {
     actions_.push_back(std::move(*action));
@@ -1031,9 +1031,9 @@ void CoopBattles::press(const input::InputState& input) {
     return;
   }
   if (hudBag_ && (input.wasPressed("tab_previous") || input.wasPressed("tab_next"))) {
-    target_ =
+    target_.pick(
         coopNextThrowTarget(*mirror_.running(), mirror_.role().value_or(coop::BattleRole::Helper),
-                            mirror_.self(), target_, input.wasPressed("tab_next") ? 1 : -1);
+                            mirror_.self(), target_.lit(), input.wasPressed("tab_next") ? 1 : -1));
     if (play_ != nullptr) {
       publish(*play_);
     }
@@ -1066,7 +1066,8 @@ void CoopBattles::pickTarget(const ui::UiValue& value) {
     const auto index = static_cast<std::size_t>(*number);
     const std::size_t enemies = running->enemyNpcs.size();
     const bool partner = index < fighters_.size() && (index == 0 || index > enemies);
-    target_ = partner && target_ != index ? std::optional<std::size_t>{index} : std::nullopt;
+    target_.pick(partner && target_.lit() != index ? std::optional<std::size_t>{index}
+                                                   : std::nullopt);
   }
   if (play_ != nullptr) {
     publish(*play_);
@@ -1103,7 +1104,8 @@ void CoopBattles::publish(const PlaySession& play) {
       {.name = "coop_battle.command", .value = static_cast<double>(frame ? frame->command : 0)},
       {.name = "coop_battle.bag", .value = frame && frame->bagAvailable},
       {.name = "coop_battle.fighter_count", .value = static_cast<double>(fighters_.size())},
-      {.name = "coop_battle.target", .value = target_ ? static_cast<double>(*target_) : NoTarget}};
+      {.name = "coop_battle.target",
+       .value = target_.lit() ? static_cast<double>(*target_.lit()) : NoTarget}};
   const std::optional<coop::PlayerId> waitingFor = mirror_.waitingFor();
   const CoopPeerLabel starter = labelOf_ ? labelOf_(running->starter) : CoopPeerLabel{};
   settings.push_back({.name = "coop_battle.waiting", .value = waitingFor.has_value()});
@@ -1190,7 +1192,7 @@ screens::BattleView CoopBattles::hudViewOf(const PlaySession& play) const {
        .partner = role != coop::BattleRole::Helper && hudPartner_ ? &*hudPartner_ : nullptr,
        .moves = play.coopMoves(),
        .bagOpen = hudBag_,
-       .throwTarget = target_},
+       .throwTarget = target_.lit()},
       play.coopNameKeys());
 }
 
@@ -1340,6 +1342,7 @@ void CoopBattles::openHudBag() {
     return;
   }
   hudBag_ = true;
+  target_.reset();
   publishPlayerPoint(*ui_, play_->scene());
   showCoopHudBag(*ui_,
                  screens::settingsOf(screens::bagViewOf(inventory->inventory(), inventory->items(),

@@ -532,8 +532,14 @@ std::string_view coopOutcomeName(std::optional<coop::BattleOutcome> outcome) {
   return {};
 }
 
-void closeCoopHudBag(ui::Ui& ui, std::optional<std::size_t>& throwTarget) {
-  throwTarget.reset();
+std::int32_t CoopThrowPick::take() {
+  const std::optional<std::size_t> target = lit_ ? lit_ : kept_;
+  kept_.reset();
+  return target ? static_cast<std::int32_t>(*target) + 1 : 0;
+}
+
+void closeCoopHudBag(ui::Ui& ui, CoopThrowPick& throwTarget) {
+  throwTarget.close();
   ui.setSetting(PartnerMenuContextSetting, std::string{});
   ui.setSetting(BagThrowPickSetting, false);
   ui.hide(PartnerMenuDocument);
