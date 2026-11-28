@@ -502,6 +502,13 @@
 	color: #e2483d;
 }
 
+#command-reach {
+	display: block;
+	font-family: "Pixel Small";
+	font-size: 24dp;
+	color: #93a6bc;
+}
+
 /* The Folder plate keeps a fixed height at the bottom left, four rows of one line each: the defense bar, the message
    (a broken defense, else how an order ended, else an altered state), the active order beside its phase, the queue. */
 #folder-panel {

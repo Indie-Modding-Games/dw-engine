@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -49,6 +50,8 @@ constexpr std::string_view CurrentField = "current";
 constexpr std::string_view IconField = "icon";
 constexpr std::string_view MpCostField = "mp_cost";
 constexpr std::string_view ProblemField = "problem";
+constexpr std::string_view AreaField = "area";
+constexpr std::string_view FriendlyFireField = "friendly_fire";
 // BTL_COMMAND_ICON_UVS and BTL_SPECIAL_ICON_UVS: seven icons in each row of BTLCOMND.
 constexpr std::int32_t IconsPerRow = 7;
 constexpr std::string_view PartsField = "parts";
@@ -135,6 +138,8 @@ void addCommand(ScreenSettings& settings, std::size_t index, const CommandEntry&
   add(IconField, entry.icon);
   add(MpCostField, static_cast<double>(entry.mpCost));
   add(ProblemField, entry.problemKey);
+  add(AreaField, entry.area);
+  add(FriendlyFireField, entry.friendlyFire);
 }
 
 std::string countName(std::string_view list) {
@@ -309,6 +314,35 @@ std::string commandProblemOf(const battle::Battle& battle, battle::Command comma
   return problemKeyOf(battle.orderProblem(static_cast<std::size_t>(number - FirstTechnique), own));
 }
 
+std::string_view areaName(battle::AreaShape area) {
+  switch (area) {
+  case battle::AreaShape::Single:
+    break;
+  case battle::AreaShape::AroundSelf:
+    return "around_self";
+  case battle::AreaShape::AroundTarget:
+    return "around_target";
+  case battle::AreaShape::Global:
+    return "global";
+  }
+  return {};
+}
+
+void addFolderTechnique(CommandEntry& entry, const battle::Battle& battle, battle::FighterId own) {
+  const auto number = static_cast<std::int32_t>(entry.command);
+  constexpr auto FirstTechnique = static_cast<std::int32_t>(battle::Command::Technique1);
+  constexpr auto LastTechnique = static_cast<std::int32_t>(battle::Command::Technique3);
+  if (number < FirstTechnique || number > LastTechnique) {
+    return;
+  }
+  const std::optional<battle::folder::Technique> technique =
+      battle.folderTechnique(static_cast<std::size_t>(number - FirstTechnique), own);
+  if (technique) {
+    entry.area = std::string{areaName(technique->area)};
+    entry.friendlyFire = technique->friendlyFire;
+  }
+}
+
 std::string orderMoveKey(const battle::Battle& battle, battle::FighterId own,
                          const battle::Order& order, const NameKeys& names) {
   const auto& move = battle.state().fighters[own].moves.at(order.slot);
@@ -420,7 +454,12 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names,
          .current = command == commands.current,
          .icon = commandIconOf(command, partner, battle.moves()),
          .mpCost = techniqueCostOf(battle, command, own),
-         .problemKey = folder ? commandProblemOf(battle, command, own) : std::string{}});
+         .problemKey = folder ? commandProblemOf(battle, command, own) : std::string{},
+         .area = {},
+         .friendlyFire = false});
+    if (folder) {
+      addFolderTechnique(view.menu.back(), battle, own);
+    }
   }
   const bool partnerCharging = state.finisher.fighter == own;
   view.finisher = {.progress = partner.finisherProgress,

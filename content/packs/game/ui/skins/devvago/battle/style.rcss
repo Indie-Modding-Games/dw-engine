@@ -1395,7 +1395,8 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 }
 
 #fight.folder #command-name,
-#fight.folder #command-name.problem {
+#fight.folder #command-name.problem,
+#fight.folder #command-name.reach {
 	display: block;
 	padding: 3dp 12dp;
 	border-radius: 0;
@@ -1409,6 +1410,13 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 	font-family: "Pixel Small";
 	font-size: 22dp;
 	color: #ff7775;
+}
+
+#command-reach {
+	display: block;
+	font-family: "Pixel Small";
+	font-size: 22dp;
+	color: #9fb4c8;
 }
 
 /* The key that types on the end box's text, while the text waits for it. */
@@ -1519,6 +1527,10 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 	left: 30dp;
 	top: 210dp;
 	width: 300dp;
+}
+
+#fight.folder.reach #enemies {
+	top: 240dp;
 }
 
 #fight.folder .fighter.enemy {

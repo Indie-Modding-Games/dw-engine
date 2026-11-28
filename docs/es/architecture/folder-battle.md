@@ -50,7 +50,8 @@ cada luchador comandado tiene todas las entradas, sea cual sea su cerebro, y cad
 La skin moderna agrupa la tira en tres bloques: las técnicas con su coste de MP, las cuatro posturas juntas como un solo
 control, y después el objetivo, anular la cola, la bolsa y la huida. Las skins con la tira de iconos del original
 (`strip: icons`) conservan sus sitios y tiñen aparte los marcos de las posturas. Una técnica para la que el partner no
-tiene MP se ve gris con el coste en rojo antes de pulsarla, y el motivo sale debajo.
+tiene MP se ve gris con el coste en rojo antes de pulsarla, y el motivo sale debajo. El nombre de la técnica enfocada
+dice además a qué llega aparte de su objetivo (alrededor de sí, del objetivo, todo el campo) y si daña aliados.
 
 Los enemigos de la misma especie llevan una letra (A, B...) en su tarjeta y sobre ellos en el mundo, y la barra de vida
 de cada enemigo se ve todo el combate; la tarjeta del enemigo al que apuntan las próximas órdenes se ilumina, y la de

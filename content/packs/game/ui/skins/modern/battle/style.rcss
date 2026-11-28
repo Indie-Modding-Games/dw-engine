@@ -790,7 +790,8 @@
 	display: none;
 }
 
-#fight.folder #command-name.problem {
+#fight.folder #command-name.problem,
+#fight.folder #command-name.reach {
 	display: inline-block;
 	padding: 2dp 10dp;
 	background-color: #10161ee0;
@@ -800,6 +801,19 @@
 
 #command-problem.hidden {
 	display: none;
+}
+
+#command-reach {
+	font-size: 18dp;
+	color: #b9c6d4;
+}
+
+#command-reach.hidden {
+	display: none;
+}
+
+#command-name.reach #command-problem {
+	margin-left: 10dp;
 }
 
 /* The open bag covers the middle of the screen down to the panel, and in the boxed skins the bottom too: the panel
@@ -895,7 +909,8 @@
 	background-color: #2a2228;
 }
 
-#fight.folder #command-name.problem {
+#fight.folder #command-name.problem,
+#fight.folder #command-name.reach {
 	position: absolute;
 	margin: 0;
 }

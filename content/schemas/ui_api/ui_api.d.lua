@@ -483,7 +483,7 @@ function battle.fighters() end
 ---@return table
 function battle.allies() end
 
---- The command strip, the finisher first: command, label_key, icon, available, current, mp_cost and problem_key (folder battle: why the move cannot be ordered now, or "").
+--- The command strip, the finisher first: command, label_key, icon, available, current, mp_cost, problem_key (folder battle: why the move cannot be ordered now, or ""), area and friendly_fire (folder battle: the technique's area, "" for one target, and whether it hits allies).
 ---@return table
 function battle.commands() end
 

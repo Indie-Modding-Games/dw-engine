@@ -427,12 +427,24 @@ local function draw_cursor(document)
   end
 end
 
+-- What a Folder technique reaches besides its target: its area and whether it hits allies too.
+local function reach_text(entry)
+  local parts = {}
+  if entry.area ~= "" then
+    parts[#parts + 1] = text("battle.folder.area." .. entry.area)
+  end
+  if entry.friendly_fire then
+    parts[#parts + 1] = text("battle.folder.friendly_fire")
+  end
+  return table.concat(parts, ", ")
+end
+
 -- The name of the focused command under the row, as the original names the hovered icon, and a
--- technique's MP cost after it (a skin that shows it styles #command-cost). The name gets the class
--- short while the command cannot be given now: the finisher before its gauge is full, a technique
--- the partner has not the MP for.
+-- technique's MP cost after it (a skin that shows it styles #command-cost), then in a Folder battle
+-- its reach. The name gets the class short while the command cannot be given now: the finisher
+-- before its gauge is full, a technique the partner has not the MP for.
 local function draw_command_name(document)
-  local name, cost, short, problem = "", 0, false, ""
+  local name, cost, short, problem, reach = "", 0, false, "", ""
   for index = 0, command_count() - 1 do
     if lookup(document, "command-" .. index):has_focus() then
       local entry = command(index)
@@ -441,6 +453,7 @@ local function draw_command_name(document)
       local partner = fighters[1]
       short = not entry.available or (cost > 0 and (partner ~= nil and partner.mp or 0) < cost)
       problem = entry.problem_key ~= "" and text(entry.problem_key) or ""
+      reach = folder.active and reach_text(entry) or ""
     end
   end
   -- A text strip already names the focused button; only an icon strip needs the name under it.
@@ -456,10 +469,18 @@ local function draw_command_name(document)
     lookup(document, "command-problem"):set_text(problem)
   end
   set_class(document, "command-problem", "hidden", problem == "")
+  if applied["command-reach text"] ~= reach then
+    applied["command-reach text"] = reach
+    lookup(document, "command-reach"):set_text(reach)
+  end
+  set_class(document, "command-reach", "hidden", reach == "")
+  set_class(document, "command-name", "reach", reach ~= "")
+  lookup(document, "fight"):set_class("reach", reach ~= "")
   set_class(document, "command-name", "short", short or problem ~= "")
   set_class(document, "command-name", "problem", problem ~= "")
-  -- The modern layout's Folder strip says why under the strip, below the button itself.
-  if problem ~= "" and folder.active and ui.layout("strip") ~= "icons" then
+  -- The modern layout's Folder strip says why and what it reaches under the strip, below the
+  -- button.
+  if (problem ~= "" or reach ~= "") and folder.active and ui.layout("strip") ~= "icons" then
     for index = 0, command_count() - 1 do
       local button = lookup(document, "command-" .. index)
       if button:has_focus() then

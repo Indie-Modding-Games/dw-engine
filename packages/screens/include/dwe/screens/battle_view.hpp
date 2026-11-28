@@ -128,6 +128,11 @@ struct CommandEntry {
   // In the Folder battle, the text key of why a technique or the finisher cannot be ordered now
   // (Battle::orderProblem); empty when it can, and in the Classic battle.
   std::string problemKey;
+  // In the Folder battle, a technique's area (Battle::folderTechnique): "around_self",
+  // "around_target" or "global", empty for one that reaches its target alone; and whether it also
+  // hits the partner's own side.
+  std::string area;
+  bool friendlyFire = false;
 
   friend bool operator==(const CommandEntry&, const CommandEntry&) = default;
 };

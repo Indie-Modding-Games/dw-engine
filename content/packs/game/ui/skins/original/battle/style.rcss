@@ -1337,6 +1337,17 @@
 	display: none;
 }
 
+/* A Folder technique's reach takes a line of its own under the name, and the foe list makes room for it. */
+#command-reach {
+	display: block;
+	font-size: 22dp;
+	color: #a8b8c8;
+}
+
+#command-reach.hidden {
+	display: none;
+}
+
 /* The key that types on the end box's text, while the text waits for it. */
 #end-more {
 	display: block;
@@ -1441,6 +1452,10 @@
 	left: 30dp;
 	top: 210dp;
 	width: 300dp;
+}
+
+#fight.folder.reach #enemies {
+	top: 240dp;
 }
 
 #fight.folder .fighter.enemy {
