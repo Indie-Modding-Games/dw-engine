@@ -932,8 +932,12 @@ el equipo solo pierde cuando no queda ningún compañero.
 el renacer del huevo: el script de la muerte retiene al jugador, así que ninguna charla ni roce llega a un combate. En
 cooperativo no empieza ningún combate mientras el compañero del anfitrión, o el de un invitado en su mapa, muere o
 espera a renacer (la escena de la muerte corre o espera; la oferta del invitado lo dice): el combate de historia del
-anfitrión acaba como no empezado (el NPC puede volver a empezarlo), la petición de un invitado espera y luego se
-rechaza como ocupado, y la historia de un invitado que muere no entrega ningún combate. Un jugador solo no cambia.
+anfitrión se rechaza y su sección acaba donde está, sin huida a la pantalla anterior (el NPC puede volver a
+empezarlo), la petición de un invitado espera y luego se rechaza como ocupado, y la historia de un invitado que muere
+acaba su sección igual. Un invitado cuyo compañero muere se queda en su mapa de despertar, fuera de los movimientos del
+anfitrión, hasta que acaba el script del renacer; luego vuelve a seguir al anfitrión. Una sección de muerte que un
+cambio de mapa descarta antes de correr se vuelve a pedir mientras el compañero sigue muerto. Un jugador solo no
+cambia.
 
 Límites de esta primera versión: los efectos de las técnicas, los números de daño y las marcas de estado solo se dibujan
 en el anfitrión; el invitado ve moverse a los luchadores y las barras de vida. Los luchadores de torneo que no son NPC

@@ -9,9 +9,11 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 #include "coop_world.hpp"
+#include "death_scene.hpp"
 #include "packages/game/field/tests/fixture.hpp"
 
 using namespace dwe::app;
@@ -485,4 +487,70 @@ TEST_CASE("shared battles see a player here only on this map and not between map
   session.field.startScriptedMapChange(
       {.map = "next", .exit = 0, .trigger = 0, .arrivalSection = std::nullopt}, true);
   CHECK_FALSE(coopPlayerHere(session.field, here, coop::GuestPlayerId));
+}
+
+TEST_CASE(
+    "a guest's partner dies and is reborn on its wake map, then follows the host and fights") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  CoopGuestWorld guest{coop::GuestPlayerId};
+  guest.receive(coop::PlayerCorrection{.player = coop::GuestPlayerId,
+                                       .epoch = 1,
+                                       .mapId = "room",
+                                       .exit = std::nullopt,
+                                       .x = 0,
+                                       .y = 0,
+                                       .z = 0,
+                                       .yaw = 0});
+  CHECK_FALSE(guest.apply(field, false));
+  coop::BattleMirror mirror{coop::GuestPlayerId};
+  coop::BattleReferee referee;
+  referee.guestJoined(coop::GuestPlayerId);
+  const std::array<coop::PlayerId, 1> here{coop::GuestPlayerId};
+  const coop::BattleFighterProfile fighter{};
+  const coop::BattleAsk ask = mirror.ask("room", {0}, false, false, fighter);
+  const auto judged = [&] {
+    return referee.judge(
+        ask,
+        {.map = "room", .guestHere = true, .battling = false, .held = referee.partnerDying(here)});
+  };
+
+  // The death's scene takes the guest to its own wake map; the host sends it back to the group's.
+  bool held = dwe::app::deathHoldsWakeMap(false, true, true);
+  referee.receive(coop::GuestPlayerId, *mirror.offer(false, fighter, true));
+  field.enterMapAt(roomMap("wake"), at(0.0F, 0.0F));
+  guest.receive(coop::PlayerCorrection{.player = coop::GuestPlayerId,
+                                       .epoch = 2,
+                                       .mapId = "room",
+                                       .exit = 1,
+                                       .x = 100,
+                                       .y = 0,
+                                       .z = 0,
+                                       .yaw = 0});
+  CHECK(referee.partnerDying(here));
+  CHECK_FALSE(judged().starts());
+  // The scene, then the egg box and the rebirth the story's script plays: the guest stays.
+  for (const bool scene : {true, true, false, false}) {
+    held = dwe::app::deathHoldsWakeMap(held, scene, true);
+    REQUIRE(held);
+    CHECK_FALSE(guest.apply(field, held));
+    CHECK_FALSE(guest.report(field, held, 30));
+    CHECK(field.mapId() == "wake");
+  }
+
+  // Reborn and the script over: it follows the host, its offer no longer holds the battles.
+  held = dwe::app::deathHoldsWakeMap(held, false, false);
+  CHECK_FALSE(held);
+  referee.receive(coop::GuestPlayerId, *mirror.offer(true, fighter, false));
+  CHECK_FALSE(referee.partnerDying(here));
+  const auto back = guest.apply(field, held);
+  REQUIRE(back);
+  CHECK(back->map == "room");
+  field.enterMapAt(roomMap("room"), back->at);
+  CHECK_FALSE(guest.apply(field, false));
+  const auto state = guest.report(field, false, 33);
+  REQUIRE(state);
+  CHECK(state->epoch == 2);
+  CHECK(judged().starts());
 }

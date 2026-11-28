@@ -802,8 +802,11 @@ helps as above. Each partner runs or is knocked out on its own; the team loses o
 **No battle while a partner dies.** In the original no encounter starts while the death and the egg's rebirth play: the
 death script holds the player, so no talk or touch reaches a battle. In co-op no battle starts while the partner of the
 host, or of a guest on its map, dies or waits to be reborn (the death's scene runs or waits; the guest's offer says so):
-the host's story battle ends as not started (the NPC can start it again), a guest's ask waits and is then refused as
-busy, and a dying guest's own story hands no battle over. Single player is unchanged.
+the host's story battle is refused and its section ends where it stands, with no flight back to the previous screen
+(the NPC can start it again), a guest's ask waits and is then refused as busy, and a dying guest's own story ends its
+section the same way. A guest whose own partner dies stays on its wake map, out of the host's moves, until the
+rebirth script ends; then it follows the host again. A death section that a map change drops before it runs is asked
+for again while the partner stays dead. Single player is unchanged.
 
 Limits of this first version: the techniques' effects, the damage numbers and the status marks are drawn only on the
 host; the guest sees the fighters move and the life bars. Tournament fighters that are not map NPCs are not drawn on

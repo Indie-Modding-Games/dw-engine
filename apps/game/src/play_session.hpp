@@ -492,6 +492,8 @@ public:
   // The guest: the battles its story asks for go to the host (StorySceneGlue::handBattlesOver).
   void handBattlesToHost(bool on) { storyScenes_.handBattlesOver(on); }
   [[nodiscard]] bool partnerDying() const { return deathScene_.active(); }
+  // deathHoldsWakeMap: a co-op guest stays on its own wake map meanwhile.
+  [[nodiscard]] bool ownDeathHoldsMap() const { return deathScene_.active() || deathScript_; }
   void holdCoopBattles(bool on) { storyScenes_.holdBattles(on); }
   [[nodiscard]] std::optional<StorySceneGlue::HandedBattle> takeHandedBattle() {
     return storyScenes_.takeHandedBattle();
@@ -626,6 +628,7 @@ private:
   std::unique_ptr<StoryFieldLink> storyLink_;
   EvolutionScene evolutionScene_;
   DeathScene deathScene_;
+  bool deathScript_ = false;
   EndingScene endingScene_;
   EggBoxScreen eggBoxScreen_;
   // The improved shop job's rules panel and counter (game::shop_job).

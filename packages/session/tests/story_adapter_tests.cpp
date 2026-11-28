@@ -1,5 +1,7 @@
 #include <dwe/game/field/npcs.hpp>
+#include <dwe/game/partner/state.hpp>
 #include <dwe/game/save/migration.hpp>
+#include <dwe/game/story/story_runner.hpp>
 #include <dwe/game/story/story_state_yaml.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/story_adapter.hpp>
@@ -503,4 +505,40 @@ TEST_CASE("co-op: an NPC in another player's event is left be, and this game's e
   settle();
   CHECK_FALSE(story->scriptRunning());
   CHECK_FALSE(story->eventNpc().has_value());
+}
+
+TEST_CASE("a dead partner's death section a map entry dropped before it ran is asked for again") {
+  // The host of a co-op test loaded a save with its partner dead: the first map entry ran over the
+  // death section it had just asked for, and the partner stayed dead with no scene for hours.
+  // partner_impl.c: tickDeathCondition calls the section on every frame until its scene starts.
+  constexpr std::int32_t ClearedVariable = 255;
+  constexpr std::int32_t MapHead = 37;
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory}};
+  auto adapter =
+      std::make_unique<StoryAdapter>(dwe::session::StoryAdapterDesc{.files = &packs.files()});
+  StoryAdapter* story = adapter.get();
+  auto ownedScenes =
+      std::make_unique<dwe::session::StoryScenes>(dwe::session::StoryScenesDesc{.story = story});
+  dwe::session::StoryScenes* scenes = ownedScenes.get();
+  std::vector<std::unique_ptr<SessionSystem>> systems;
+  systems.push_back(std::move(adapter));
+  systems.push_back(std::move(ownedScenes));
+  const auto session = newGameWith(packs, std::move(systems));
+  REQUIRE(story->runner() != nullptr);
+  dwe::game::partner::PartnerState dead = session->partner().state();
+  dead.life.lives = 0;
+  dead.life.phase = dwe::game::partner::LifePhase::DiedOtherwise;
+  REQUIRE(session->partner().restore(dead).has_value());
+  const auto asksForDeath = [&] {
+    REQUIRE(story->state().setVariable(ClearedVariable, 7).has_value());
+    scenes->tick(*session, {});
+    return story->scriptRunning() && story->state().variable(ClearedVariable).value_or(-1) == 0;
+  };
+
+  CHECK(asksForDeath());
+  REQUIRE(scenes->playsDeath());
+  story->runner()->enterMap(MapHead);
+  REQUIRE_FALSE(story->scriptRunning());
+  CHECK(asksForDeath());
 }

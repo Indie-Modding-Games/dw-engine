@@ -2429,7 +2429,7 @@ int runGame(const Options& requested) {
           }
         }
         if (coopGuestWorld && coopLinked) {
-          applyCoopMove(play->scene(), *coopGuestWorld);
+          applyCoopMove(play->scene(), *coopGuestWorld, play->ownDeathHoldsMap());
           if (coopGuestWorld->takeZoneChange()) {
             coopHud.notice(CoopHostChangedZoneText, coopLabelOf(game::coop::HostPlayerId));
           }
@@ -2443,8 +2443,9 @@ int runGame(const Options& requested) {
             outgoing = coopHostWorld->tick(play->scene().field(), play->scene().mapSerial(),
                                            play->scene().mapArrival().exit, coopNow);
           } else if (coopGuestWorld) {
-            if (auto state = coopGuestWorld->report(play->scene().field(),
-                                                    play->scene().movingCoopSelf(), ticksRun)) {
+            if (auto state = coopGuestWorld->report(
+                    play->scene().field(),
+                    play->scene().movingCoopSelf() || play->ownDeathHoldsMap(), ticksRun)) {
               outgoing.push_back({.to = game::coop::HostPlayerId, .message = std::move(*state)});
             }
             if (auto form = coopGuestWorld->partnerForm(play->partnerSpecies(), ticksRun)) {

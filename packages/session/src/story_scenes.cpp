@@ -487,8 +487,9 @@ void StoryScenes::askForDeath(const GameSession& session) {
       game::story::RequestOutcome::Accepted) {
     return;
   }
+  // The partner counts as dying once the section starts its scene (PARTNER_STATE 8): until then
+  // tickDeathCondition calls the section again, as when a map entry drops it before it starts.
   scenes.deathPending = false;
-  scenes.dying = !session.partner().alive();
   if (auto cleared = scenes.state().setVariable(death.clearedVariable, 0); !cleared) {
     core::logWarning("{}", cleared.error().message);
   }

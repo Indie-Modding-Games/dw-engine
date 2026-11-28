@@ -100,7 +100,7 @@ struct StoryScenesContext {
   // A rebirth with no lives left that waits for the egg box first (life.rebirth's
   // random_egg_without_lives off, the option choose_egg_after_lives_lost).
   bool rebirthAfterEggBox = false;
-  // A death whose section ran: the partner stays dead until the rebirth's scene.
+  // A death whose section started its scene: the partner stays dead until the rebirth's scene.
   bool dying = false;
 };
 

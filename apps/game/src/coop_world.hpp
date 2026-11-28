@@ -147,9 +147,9 @@ public:
     bool reload = false;
   };
   // Before the guest's field tick, with the field and whether it still goes to the map the last
-  // move asked for: the move to make now, if any. Once the player stands where the host said, the
-  // reports carry that correction's epoch.
-  // Waits ZoneLeadTicks first, so the zone notice shows before this game's fade.
+  // move asked for, or its own death holds it on its wake map: the move to make now, if any. Once
+  // the player stands where the host said, the reports carry that correction's epoch. Waits
+  // ZoneLeadTicks first, so the zone notice shows before this game's fade.
   [[nodiscard]] std::optional<Move> apply(const game::field::Field& field, bool moving);
   static constexpr std::uint32_t ZoneLeadTicks = 45;
   // Once per change, when its lead starts.
@@ -225,8 +225,10 @@ private:
                                   std::span<const game::coop::PlayerId> here,
                                   game::coop::PlayerId player);
 
-// The guest's side, against its scene: the host's move of its player, before the field tick.
-void applyCoopMove(FieldScene& scene, CoopGuestWorld& guest);
+// The guest's side, against its scene: the host's move of its player, before the field tick. While
+// `ownDeath` (PlaySession::ownDeathHoldsMap) the move waits: the guest's partner dies and is reborn
+// on its own wake map, as in its solo game.
+void applyCoopMove(FieldScene& scene, CoopGuestWorld& guest, bool ownDeath);
 
 // The other players' doors and mechanisms on this game's map (#357), as its own scripts' edits.
 void applyCoopMapEdits(FieldScene& scene, std::span<const game::coop::WorldEdit> edits);

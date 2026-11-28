@@ -18,8 +18,8 @@ namespace dwe::app {
 
 namespace coop = game::coop;
 
-void applyCoopMove(FieldScene& scene, CoopGuestWorld& guest) {
-  if (auto move = guest.apply(scene.field(), scene.movingCoopSelf())) {
+void applyCoopMove(FieldScene& scene, CoopGuestWorld& guest, bool ownDeath) {
+  if (auto move = guest.apply(scene.field(), scene.movingCoopSelf() || ownDeath)) {
     scene.moveCoopSelf(move->map, move->exit, move->at, move->reload);
   }
 }

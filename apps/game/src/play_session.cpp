@@ -982,6 +982,7 @@ void PlaySession::tick(const PlayerCommands& commands, std::span<const GuestFiel
   coopMapEdits_.clear();
   tickSystems(commands.field, commands.fishing, guests);
   tickWater();
+  deathScript_ = deathHoldsWakeMap(deathScript_, deathScene_.active(), storyBusy());
   // A tick that did not leave the player walking freely (a talk, a battle, a gym course, a screen)
   // drops the click's target, so the player does not walk on to it once he is let go.
   if (!walksByPointer()) {
