@@ -130,6 +130,7 @@ private:
   void lookBack(PlaySession& play);
   void pickTarget(const ui::UiValue& value);
   void publish(const PlaySession& play);
+  [[nodiscard]] screens::BattleView hudViewOf(const PlaySession& play) const;
   void publishHud(const PlaySession& play);
   void publishHudBars(const PlaySession& play);
   void stepHud();

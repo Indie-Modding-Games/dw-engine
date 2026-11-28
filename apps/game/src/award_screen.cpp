@@ -69,11 +69,15 @@ void AwardScreen::openSickness() {
                  "for {}",
                  *sickPartner_);
   show(SickLine, SickColor, *sickPartner_);
+  shownSickness_ = std::move(sickPartner_);
   sickPartner_.reset();
 }
 
 void AwardScreen::show(std::string_view lines, double color, std::string_view name) {
   active_ = true;
+  if (lines != SickLine) {
+    shownSickness_.reset();
+  }
   ui_->setSetting(ColorSetting, color);
   ui_->setSetting(NameSetting, std::string{name});
   ui_->setSetting(LinesSetting, std::string{lines});
@@ -89,12 +93,25 @@ bool AwardScreen::handle(const ui::UiCommand& command) {
     return false;
   }
   active_ = false;
+  shownSickness_.reset();
   if (medals_ != nullptr) {
     medals_->clearAward();
   }
   session_->clearTamerLevelAward();
   ui_->hide(AwardNoticeDocument);
   return true;
+}
+
+void AwardScreen::putAway() {
+  if (!active_) {
+    return;
+  }
+  active_ = false;
+  ui_->hide(AwardNoticeDocument);
+  if (shownSickness_) {
+    sickPartner_ = std::move(shownSickness_);
+    shownSickness_.reset();
+  }
 }
 
 } // namespace dwe::app

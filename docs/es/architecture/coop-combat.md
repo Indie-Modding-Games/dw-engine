@@ -265,7 +265,7 @@ jugador puede acaparar las decisiones porque cada uno solo da órdenes a su prop
 Límites: `MaxBattleFighters` 4 → 7. `ProtocolVersion` sube.
 
 El protocolo 15 da además a cada luchador de un `BattleFrame` su orden actual (un comando, o en un combate Folder la
-ranura activa y la postura), y el fotograma de cada invitado lleva el progreso y la meta de su remate y, en un combate
+ranura activa y la postura) y el estado que nombra su fila, y el fotograma de cada invitado lleva el progreso y la meta de su remate y, en un combate
 Folder, la placa de su compañero: orden activa y su fase, la cola con objetivos, el objetivo, la postura, la barra de
 defensa, la cuenta atrás de la ruptura, el compromiso y el aviso de la última orden. Una placa ocupa como mucho 23
 bytes.
@@ -424,9 +424,15 @@ siguen jugando.
     desde la del compañero de este juego.
 - Tarea 10, el HUD del invitado (protocolo 15): la pantalla de combate de la skin de un invitado lee los mismos ajustes
   que la del anfitrión. Las tarjetas de los aliados nombran la orden de cada compañero, el indicador del remate se
-  llena, la placa Folder enseña al compañero propio del invitado y los enemigos a los que apunta o que tiene en cola, y
-  la bolsa elige el aliado al que vuela un objeto. Aún no se envía: la esquina del indicador de carga del remate, el
-  coste de PM y el problema de las entradas del menú, y el estado de un aliado.
+  llena, la placa Folder enseña al compañero propio del invitado y los enemigos a los que apunta o que tiene en cola (con
+  las letras de los gemelos), las tarjetas nombran también el estado de cada compañero, y la bolsa elige el aliado al
+  que vuela un objeto. Aún no se envía: la esquina del indicador de carga del remate, y el coste de PM y el problema de
+  las entradas del menú.
+- El HUD del invitado se ve desde la presentación del anfitrión, sin el cartel. Su bolsa se abre como la del anfitrión:
+  el HUD sabe que la bolsa está abierta antes de que se vea, así el documento de combate nunca le quita el foco (el
+  propio menú del compañero del invitado vuelve a publicar la bolsa en ese tick), y su Usar siempre lanza, aunque la
+  bolsa ya se haya cerrado. Cuando el combate del anfitrión ocupa la pantalla de un invitado, una bolsa de campo abierta
+  se cierra y un aviso de campo (una enfermedad, una medalla) espera a que acabe el combate.
 - Falta: la tarea 12 (un combate por mapa: mientras uno sigue, otro en otro mapa se rechaza), las mecánicas opcionales
   de §8 y un grito por domador.
 

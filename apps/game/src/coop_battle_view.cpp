@@ -1,6 +1,7 @@
 #include "coop_battle_view.hpp"
 
 #include <dwe/game/battle/text_keys.hpp>
+#include <dwe/screens/bag_view.hpp>
 #include <dwe/session/session_sound.hpp>
 
 #include <algorithm>
@@ -8,7 +9,13 @@
 #include <format>
 #include <limits>
 #include <map>
+#include <string>
 #include <tuple>
+#include <variant>
+
+#include "bag_slots.hpp"
+#include "battle_screen.hpp"
+#include "partner_menu.hpp"
 
 namespace dwe::app {
 
@@ -28,6 +35,8 @@ static_assert(coop::LastOrderProblem ==
               static_cast<std::uint8_t>(game::battle::OrderProblem::ByTrainer));
 static_assert(coop::LastStance == static_cast<std::int32_t>(game::battle::Stance::Guard));
 static_assert(coop::MaxBattleQueue == game::battle::OrderQueueSize);
+static_assert(coop::LastBattleStatus ==
+              static_cast<std::uint8_t>(game::battle::StatusEffect::Flatten));
 static_assert(std::tuple_size_v<coop::BattleMoveIds> == game::battle::EquippedSlots);
 
 template <typename T>
@@ -121,6 +130,10 @@ screens::FighterView fighterViewOf(const CoopBattleViewSource& source, std::size
     view.fainted = fighter.down;
     if (fighter.reviveSeconds > 0) {
       view.reviveSeconds = fighter.reviveSeconds;
+    }
+    if (const auto status = static_cast<game::battle::StatusEffect>(fighter.status);
+        status != game::battle::StatusEffect::None) {
+      view.statusKey = std::string{game::battle::statusTextKey(status)};
     }
   }
   return view;
@@ -333,6 +346,7 @@ coop::BattleFrame coopBattleFrameOf(const game::battle::Battle& battle, FighterI
                                  .maxMp = fighter.stats.maxMp,
                                  .down = fighter.hp <= 0,
                                  .reviveSeconds = clampedTo<std::uint8_t>(revive.value_or(0))});
+    shown.status = static_cast<std::uint8_t>(screens::shownStatusOf(fighter.status));
     addOrderOf(shown, battle, id);
   }
   return frame;
@@ -477,6 +491,47 @@ std::vector<std::string> CoopThrowPurse::due(std::span<const game::coop::BattleT
 void CoopThrowPurse::reset() {
   asked_.reset();
   paid_.clear();
+}
+
+std::optional<std::string_view> coopHudPhaseOf(coop::BattlePhase phase) {
+  switch (phase) {
+  case coop::BattlePhase::Intro:
+    return IntroPhase;
+  case coop::BattlePhase::Fight:
+    return FightPhase;
+  case coop::BattlePhase::Victory:
+    return VictoryPhase;
+  case coop::BattlePhase::End:
+  case coop::BattlePhase::Closing:
+    break;
+  }
+  return std::nullopt;
+}
+
+void showCoopHudBag(ui::Ui& ui, const screens::ScreenSettings& bag,
+                    const screens::BattleView& hud) {
+  screens::publish(ui, bag, screens::BagRevisionSetting);
+  screens::publish(ui, screens::settingsOf(hud), screens::BattleRevisionSetting);
+  ui.setSetting(screens::BagResultSetting, std::string{});
+  ui.setSetting(PartnerMenuStartPageSetting, std::string{PartnerMenuItemsPage});
+  ui.setSetting(PartnerMenuContextSetting, std::string{PartnerMenuBattleContext});
+  ui.show(PartnerMenuDocument, true);
+}
+
+std::optional<std::size_t> coopHudThrownSlot(const ui::UiCommand& command) {
+  const auto* number = std::get_if<double>(&command.value);
+  if ((command.name != BattleThrowCommand && command.name != BagUseCommand) || number == nullptr) {
+    return std::nullopt;
+  }
+  return slotOf(*number);
+}
+
+void closeFieldBag(ui::Ui& ui) {
+  const ui::UiValue context = ui.setting(PartnerMenuContextSetting);
+  const auto* name = std::get_if<std::string>(&context);
+  if (ui.isVisible(PartnerMenuDocument) && (name == nullptr || *name != PartnerMenuBattleContext)) {
+    ui.hide(PartnerMenuDocument);
+  }
 }
 
 } // namespace dwe::app

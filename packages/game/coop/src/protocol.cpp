@@ -681,7 +681,11 @@ net::Bytes encode(const Message& message) {
           out.put(static_cast<std::uint8_t>(body.fighters.size()));
           for (const BattleFighterState& fighter : body.fighters) {
             out.put(fighter.hp).put(fighter.mp).put(fighter.maxHp).put(fighter.maxMp);
-            out.put(fighter.down).put(fighter.reviveSeconds).put(fighter.order).put(fighter.stance);
+            out.put(fighter.down)
+                .put(fighter.reviveSeconds)
+                .put(fighter.order)
+                .put(fighter.stance)
+                .put(fighter.status);
           }
           out.put(static_cast<std::uint8_t>(body.figures.size()));
           for (const BattleFigure& figure : body.figures) {
@@ -994,7 +998,9 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
       fighter.reviveSeconds = in.get<std::uint8_t>();
       fighter.order = in.get<std::uint8_t>();
       fighter.stance = in.get<std::uint8_t>();
-      if (!in.ok() || fighter.order > LastBattleCommand || fighter.stance > LastStance) {
+      fighter.status = in.get<std::uint8_t>();
+      if (!in.ok() || fighter.order > LastBattleCommand || fighter.stance > LastStance ||
+          fighter.status > LastBattleStatus) {
         return core::fail("invalid cooperative battle fighter");
       }
       frame.fighters.push_back(fighter);

@@ -518,7 +518,8 @@ public:
   // The co-op difficulty the battles this game runs scale their enemies by (coop_difficulty).
   [[nodiscard]] game::battle::CoopLevel coopLevel() const { return coopLevel_; }
   // The guest: the field holds while the host's battle runs (its figures are the host's).
-  void holdForCoopBattle(bool on) { coopBattleHold_ = on; }
+  // A field bag or notice open then goes; the notice opens again once the battle is over.
+  void holdForCoopBattle(bool on);
   // Other players share this game's world now (co-op, #415): this player's menus and pause no
   // longer stop it (shared_pause.hpp).
   void shareWorld(bool shared) { worldShared_ = shared; }

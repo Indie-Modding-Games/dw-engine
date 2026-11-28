@@ -54,6 +54,7 @@
 #include "bulk_amount.hpp"
 #include "common.hpp"
 #include "condition_point.hpp"
+#include "coop_battle_view.hpp"
 #include "evolving_bubble.hpp"
 #include "gym_box_close.hpp"
 #include "hd_scenery_setting.hpp"
@@ -1920,8 +1921,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   ui.setMinimapMarkers(markerOf(field.player()), markerOf(field.partner()), minimapEnemyMarkers(),
                        minimapItemMarkers());
 
-  partnerMenu_.setBagContext(battleScreen_.active() ? game::inventory::UseContext::Battle
-                                                    : game::inventory::UseContext::Field);
+  partnerMenu_.setBagContext(battleScreen_.active() || coopBattleHold_
+                                 ? game::inventory::UseContext::Battle
+                                 : game::inventory::UseContext::Field);
   partnerMenu_.update();
   chartRequirements_.update(*game_.session);
   shopScreen_.update();
@@ -2372,6 +2374,14 @@ FieldClock PlaySession::fieldClock() const {
        .otherScreen = localScreensHoldWorld({.mainMenu = open.mainMenu, .pauseBox = open.pauseBox},
                                             worldShared_) ||
                       otherScreenStops()});
+}
+
+void PlaySession::holdForCoopBattle(bool on) {
+  if (on && !coopBattleHold_) {
+    closeFieldBag(*context_.ui);
+    awardScreen_.putAway();
+  }
+  coopBattleHold_ = on;
 }
 
 bool PlaySession::screenStops() const {

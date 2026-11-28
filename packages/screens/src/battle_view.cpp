@@ -61,21 +61,8 @@ constexpr std::string_view MaxField = "max";
 constexpr std::string_view ValueField = "value";
 constexpr std::string_view CountSuffix = ".count";
 
-battle::StatusEffect statusOf(const battle::StatusState& status) {
-  if (status.flattened) {
-    return battle::StatusEffect::Flatten;
-  }
-  if (status.stunned) {
-    return battle::StatusEffect::Stun;
-  }
-  if (status.confused) {
-    return battle::StatusEffect::Confusion;
-  }
-  return status.poisoned ? battle::StatusEffect::Poison : battle::StatusEffect::None;
-}
-
 FighterView fighterViewOf(const battle::Fighter& fighter, bool hpBarShown, const NameKeys& names) {
-  const battle::StatusEffect status = statusOf(fighter.status);
+  const battle::StatusEffect status = shownStatusOf(fighter.status);
   return {.nameKey = names.species(fighter.combatant.species),
           .hp = fighter.hp,
           .maxHp = fighter.stats.maxHp,
@@ -191,6 +178,19 @@ std::string commandIconOf(battle::Command command, const battle::Fighter& partne
     return {};
   }
   return std::format("special-{}", std::clamp(moves.at(*move).special, 0, IconsPerRow - 1));
+}
+
+battle::StatusEffect shownStatusOf(const battle::StatusState& status) {
+  if (status.flattened) {
+    return battle::StatusEffect::Flatten;
+  }
+  if (status.stunned) {
+    return battle::StatusEffect::Stun;
+  }
+  if (status.confused) {
+    return battle::StatusEffect::Confusion;
+  }
+  return status.poisoned ? battle::StatusEffect::Poison : battle::StatusEffect::None;
 }
 
 std::string_view stanceName(battle::Stance stance) {

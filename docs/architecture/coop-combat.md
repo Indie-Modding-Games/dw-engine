@@ -249,7 +249,7 @@ one only orders their own partner.
 Limits: `MaxBattleFighters` 4 → 7. `ProtocolVersion` goes up.
 
 Protocol 15 also gives each fighter of a `BattleFrame` its current order (a command, or in a Folder battle the active
-slot and stance), and the frame for one guest carries that guest's finisher progress and goal and, in a Folder battle,
+slot and stance) and the status its row names, and the frame for one guest carries that guest's finisher progress and goal and, in a Folder battle,
 its partner's plate: active order and phase, the queue with targets, the target, stance, defense bar, break countdown,
 commit lock and the last order's notice. A plate costs at most 23 bytes.
 
@@ -395,9 +395,14 @@ play on.
   - Sound slots: this game's partner keeps slot 4 and the enemies take 5 on, as in the original; each other partner
     takes the next ally slot. Past the three ally slots, a body plays from this game's partner's slot.
 - Task 10, the guest's HUD (protocol 15): a guest's skin battle screen reads the same settings as the host's. The
-  ally cards name each partner's order, the finisher gauge fills, the Folder plate shows the guest's own partner and the
-  foes it targets or has queued, and the bag picks the ally an item flies to. Not sent yet: the finisher's charge
-  gauge corner, the menu entries' MP cost and problem, and an ally's status.
+  ally cards name each partner's order and status, the finisher gauge fills, the Folder plate shows the guest's own
+  partner and the foes it targets or has queued (with the twins' letters), and the bag picks the ally an item flies to.
+  Not sent yet: the finisher's charge gauge corner, and the menu entries' MP cost and problem.
+- The guest's HUD shows from the host's intro on, without the banner. Its bag opens as the host's does: the HUD learns
+  the bag is open before the bag shows, so the battle document never takes the focus back (the guest's own partner
+  menu republishes the bag in that tick), and its Use always throws, even once the bag has closed. When the host's
+  battle takes a guest's screen, a field bag left open closes and a field notice (a sickness, a medal) waits until the
+  battle is over.
 - Not yet: task 12 (one battle per map: a second battle on another map is still refused while one runs), the optional
   mechanics of §8 and a per-player shout.
 

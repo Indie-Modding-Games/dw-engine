@@ -996,6 +996,8 @@ bool CoopBattles::handle(const ui::UiCommand& command) {
     if (play == nullptr || !frame || !frame->bagAvailable || !purse_.canAsk() ||
         !std::ranges::any_of(play->coopThrowableItems(),
                              [&](const auto& stack) { return stack.first == item; })) {
+      core::logInfo("coop: the throw of {} is refused here (bag {}, a throw awaits {})", item,
+                    frame && frame->bagAvailable ? "free" : "busy", !purse_.canAsk());
       return true;
     }
     purse_.asked(frame->frame);
@@ -1160,18 +1162,11 @@ void CoopBattles::publish(const PlaySession& play) {
   }
 }
 
-void CoopBattles::publishHud(const PlaySession& play) {
-  const auto& running = mirror_.running();
-  const auto& frame = mirror_.frame();
-  if (!running || !frame ||
-      (frame->phase != coop::BattlePhase::Fight && frame->phase != coop::BattlePhase::Victory)) {
-    hideHud();
-    return;
-  }
+screens::BattleView CoopBattles::hudViewOf(const PlaySession& play) const {
   const coop::BattleRole role = mirror_.role().value_or(coop::BattleRole::Helper);
-  const screens::BattleView view = coopBattleViewOf(
-      {.begin = &*running,
-       .frame = &*frame,
+  return coopBattleViewOf(
+      {.begin = &*mirror_.running(),
+       .frame = &*mirror_.frame(),
        .fighters = fighters_,
        .role = role,
        .self = mirror_.self(),
@@ -1180,10 +1175,25 @@ void CoopBattles::publishHud(const PlaySession& play) {
        .bagOpen = hudBag_,
        .throwTarget = target_},
       play.coopNameKeys());
-  screens::publish(*ui_, screens::settingsOf(view), screens::BattleRevisionSetting);
-  ui_->setSetting(
-      BattlePhaseSetting,
-      std::string{frame->phase == coop::BattlePhase::Victory ? VictoryPhase : FightPhase});
+}
+
+void CoopBattles::publishHud(const PlaySession& play) {
+  const auto& running = mirror_.running();
+  const auto& frame = mirror_.frame();
+  const std::optional<std::string_view> phase =
+      running && frame ? coopHudPhaseOf(frame->phase) : std::nullopt;
+  if (!phase) {
+    hideHud();
+    return;
+  }
+  // The host's intro draws its banner over the HUD; a guest's shows the HUD under none.
+  if (!hudShown_) {
+    screens::publish(*ui_,
+                     screens::settingsOf(screens::BattleIntroView{}, running->enemyNpcs.size()),
+                     screens::IntroRevisionSetting);
+  }
+  screens::publish(*ui_, screens::settingsOf(hudViewOf(play)), screens::BattleRevisionSetting);
+  ui_->setSetting(BattlePhaseSetting, std::string{*phase});
   publishHudBars(play);
   if (!hudShown_) {
     hudShown_ = true;
@@ -1243,6 +1253,9 @@ void CoopBattles::stepHud() {
   if (hudBag_ && !ui_->isVisible(PartnerMenuDocument)) {
     hudBag_ = false;
     ui_->setSetting(PartnerMenuContextSetting, std::string{});
+    if (play_ != nullptr) {
+      publishHud(*play_);
+    }
   }
   hudMenu_.step(true);
   hudBars_.step(hudMenu_.active());
@@ -1286,17 +1299,22 @@ bool CoopBattles::handleHud(const ui::UiCommand& command) {
     ui_->hide(PartnerMenuDocument);
     return true;
   }
-  if (hudBag_ && (command.name == BattleThrowCommand || command.name == BagUseCommand)) {
+  // The bag over the HUD is this player's battle bag, closed by the time its Use comes: the Use
+  // throws, never feeds on the field.
+  if (command.name == BattleThrowCommand || command.name == BagUseCommand) {
     hudBag_ = false;
     ui_->setSetting(PartnerMenuContextSetting, std::string{});
     ui_->hide(PartnerMenuDocument);
     session::InventoryAdapter* inventory = play_ != nullptr ? play_->coopInventory() : nullptr;
-    const auto* number = std::get_if<double>(&command.value);
-    if (inventory == nullptr || number == nullptr) {
+    if (play_ != nullptr) {
+      publishHud(*play_);
+    }
+    const std::optional<std::size_t> slot = coopHudThrownSlot(command);
+    if (inventory == nullptr || !slot) {
       return true;
     }
     if (const std::optional<assets::ItemHandle> item =
-            itemAt(inventory->inventory().slots(), slotOf(*number))) {
+            itemAt(inventory->inventory().slots(), slot)) {
       return handle(
           {.name = std::string{CoopBattleItemCommand}, .value = inventory->items().at(*item).id});
     }
@@ -1312,16 +1330,13 @@ void CoopBattles::openHudBag() {
   if (!frame || !frame->bagAvailable || inventory == nullptr) {
     return;
   }
-  screens::publish(*ui_,
-                   screens::settingsOf(screens::bagViewOf(inventory->inventory(),
-                                                          inventory->items(), play_->coopNameKeys(),
-                                                          game::inventory::UseContext::Battle)),
-                   screens::BagRevisionSetting);
-  ui_->setSetting(screens::BagResultSetting, std::string{});
-  ui_->setSetting(PartnerMenuStartPageSetting, std::string{PartnerMenuItemsPage});
-  ui_->setSetting(PartnerMenuContextSetting, std::string{PartnerMenuBattleContext});
-  ui_->show(PartnerMenuDocument, true);
   hudBag_ = true;
+  publishPlayerPoint(*ui_, play_->scene());
+  showCoopHudBag(*ui_,
+                 screens::settingsOf(screens::bagViewOf(inventory->inventory(), inventory->items(),
+                                                        play_->coopNameKeys(),
+                                                        game::inventory::UseContext::Battle)),
+                 hudViewOf(*play_));
 }
 
 void CoopBattles::hideDocument() {

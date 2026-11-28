@@ -1,26 +1,42 @@
 // A guest's battle HUD over real links (coop-combat.md §7.1): the host's battle, sent as its begin
 // and frames, draws on the guest's battle document as the host's own HUD draws it.
 
+#include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/digimon_table.hpp>
+#include <dwe/assets/file_system.hpp>
+#include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/game/battle/text_keys.hpp>
 #include <dwe/game/coop/battle.hpp>
 #include <dwe/game/coop/protocol.hpp>
+#include <dwe/input/input_state.hpp>
+#include <dwe/localization/catalog.hpp>
+#include <dwe/screens/bag_view.hpp>
 #include <dwe/screens/battle_view.hpp>
 #include <dwe/screens/name_keys.hpp>
+#include <dwe/ui/ui.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <iterator>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
 #include <variant>
 #include <vector>
 
+#include "battle_screen.hpp"
 #include "coop_battle_view.hpp"
 #include "packages/game/battle/tests/fixture.hpp"
 #include "packages/game/coop/tests/support/coop_room.hpp"
+#include "partner_menu.hpp"
 
 namespace coop = dwe::game::coop;
 using dwe::game::battle::Battle;
@@ -107,8 +123,12 @@ struct GuestSide {
 
   // The host's frame for this guest, over the link, as its HUD draws it.
   BattleView see(const Battle& battle, FighterId own, const NameKeys& names,
-                 std::optional<std::size_t> throwTarget = std::nullopt) {
+                 std::optional<std::size_t> throwTarget = std::nullopt,
+                 const std::function<void(coop::BattleFrame&)>& edit = {}) {
     coop::BattleFrame frame = dwe::app::coopBattleFrameOf(battle, own);
+    if (edit) {
+      edit(frame);
+    }
     frame.battle = mirror.running()->battle;
     frame.frame = ++frames;
     frame.phase = coop::BattlePhase::Fight;
@@ -130,6 +150,92 @@ struct GuestSide {
                                       names);
   }
 };
+
+// The game pack's battle document and bag (the partner menu) at 1280x720, as a guest's game shows
+// them over the host's battle.
+struct BattleUi {
+  dwe::assets::MemoryFileSystem memory;
+  std::unique_ptr<dwe::assets::VirtualFileSystem> files;
+  std::unique_ptr<dwe::localization::Catalog> texts;
+  std::unique_ptr<dwe::ui::Ui> ui;
+  dwe::input::InputState input{dwe::input::defaultActionMap()};
+
+  BattleUi() {
+    const std::filesystem::path pack{DWE_GAME_PACK};
+    for (const auto& entry : std::filesystem::recursive_directory_iterator{pack}) {
+      if (entry.is_regular_file()) {
+        std::ifstream stream{entry.path(), std::ios::binary};
+        memory.addFile(
+            std::filesystem::path{"packs/game"} / entry.path().lexically_relative(pack),
+            std::string{std::istreambuf_iterator<char>{stream}, std::istreambuf_iterator<char>{}});
+      }
+    }
+    memory.addFile("packs/base/pack.yaml", "id: base\nversion: 0.1.0\nlayer: base\npriority: 0\n");
+    const auto location = [this](std::string_view root) {
+      return dwe::assets::PackLocation{.fileSystem = &memory,
+                                       .root = std::string{root},
+                                       .origin = dwe::assets::PackOrigin::Engine};
+    };
+    const std::array locations{location("packs/base"), location("packs/game")};
+    auto mounted = dwe::assets::VirtualFileSystem::mount(locations);
+    REQUIRE_MESSAGE(mounted.has_value(), mounted.error().message);
+    files = std::make_unique<dwe::assets::VirtualFileSystem>(std::move(*mounted));
+    auto catalog = dwe::localization::Catalog::load(*files, "en");
+    REQUIRE_MESSAGE(catalog.has_value(), catalog.error().message);
+    texts = std::make_unique<dwe::localization::Catalog>(std::move(*catalog));
+    auto created = dwe::ui::Ui::create(dwe::ui::UiDesc{.files = files.get(),
+                                                       .texts = texts.get(),
+                                                       .width = 1280,
+                                                       .height = 720,
+                                                       .clock = {},
+                                                       .scripts = {},
+                                                       .cursor = {}});
+    REQUIRE_MESSAGE(created.has_value(), created.error().message);
+    ui = std::move(*created);
+    for (const std::string_view name : {dwe::app::BattleDocument, dwe::app::PartnerMenuDocument}) {
+      auto asset = dwe::assets::AssetId::parse("ui/" + std::string{name} + "/document");
+      REQUIRE_MESSAGE(asset.has_value(), asset.error().message);
+      auto loaded = ui->loadDocument(name, *asset);
+      REQUIRE_MESSAGE(loaded.has_value(), loaded.error().message);
+    }
+  }
+
+  void frames(int count) {
+    for (int frame = 0; frame < count; ++frame) {
+      ui->tick(input, 1.0 / 60.0);
+      ui->update();
+      input.endTick();
+    }
+  }
+
+  // The guest's HUD as CoopBattles::publishHud shows it.
+  void showHud(const BattleView& view) {
+    dwe::screens::publish(*ui, dwe::screens::settingsOf(view), dwe::screens::BattleRevisionSetting);
+    ui->setSetting(dwe::app::BattlePhaseSetting, std::string{dwe::app::FightPhase});
+    if (!ui->isVisible(dwe::app::BattleDocument)) {
+      ui->setSetting(dwe::app::BattleActiveSetting, true);
+      ui->show(dwe::app::BattleDocument, true);
+    }
+  }
+};
+
+dwe::screens::ScreenSettings bagOfMeat(std::int32_t count) {
+  dwe::screens::BagView bag;
+  bag.slots.push_back({.empty = false,
+                       .item = "meat",
+                       .nameKey = "meat",
+                       .descriptionKey = "meat",
+                       .descriptionSpeciesKey = {},
+                       .count = count,
+                       .dimmed = false,
+                       .usable = true,
+                       .discardable = false,
+                       .itemColor = 1,
+                       .icon = {},
+                       .iconRect = {},
+                       .favorite = false});
+  return dwe::screens::settingsOf(bag);
+}
 
 void checkSameOrders(const BattleView& guest, const BattleView& host) {
   REQUIRE(guest.allies.size() == host.allies.size());
@@ -187,6 +293,11 @@ TEST_CASE("a guest's battle HUD shows its partner's Folder plate as the host rea
   CHECK(!host.folder->moveKey.empty());
   CHECK_FALSE(host.folder->queue.empty());
   CHECK(seen.folder == host.folder);
+  const dwe::screens::ScreenSettings settings = dwe::screens::settingsOf(seen);
+  CHECK(std::ranges::any_of(settings, [](const dwe::screens::ScreenSetting& setting) {
+    const auto* on = std::get_if<bool>(&setting.value);
+    return setting.name == dwe::screens::FolderActiveSetting && on != nullptr && *on;
+  }));
   REQUIRE(seen.fighters.size() == host.fighters.size());
   for (std::size_t index = 0; index < host.fighters.size(); ++index) {
     CHECK(seen.fighters[index].targeted == host.fighters[index].targeted);
@@ -243,4 +354,95 @@ TEST_CASE("a guest picks the partner its items fly to, and its throw names it to
   const auto taken = receiveOf<coop::BattleAction>(guest.room.host(Guest));
   REQUIRE(taken);
   CHECK(taken->value == static_cast<std::int32_t>(dwe::game::battle::PartnerId) + 1);
+}
+
+TEST_CASE("a guest's bag opens over its battle HUD with the focus, as the host's does") {
+  const auto species = speciesTable();
+  const NameKeys names{&species, nullptr, &battle_test::testCatalog()};
+  Battle battle = allyBattle(BattleSystemId::Classic);
+  const FighterId ally = battle.state().allies.front().id;
+  GuestSide guest;
+  guest.begin(beginOf(battle));
+  BattleUi screen;
+  BattleView hud = guest.see(battle, ally, names);
+  screen.showHud(hud);
+  screen.frames(3);
+  REQUIRE_FALSE(screen.ui->focusedElementId(dwe::app::BattleDocument).empty());
+
+  hud.bagOpen = true;
+  dwe::app::showCoopHudBag(*screen.ui, bagOfMeat(2), hud);
+  // The guest's own partner menu publishes the open bag again in the same tick
+  // (PartnerMenu::update).
+  dwe::screens::publish(*screen.ui, bagOfMeat(3), dwe::screens::BagRevisionSetting);
+  screen.frames(3);
+  // The host's next frames redraw the HUD under the bag; the focus stays on the bag.
+  for (int step = 0; step < 6; ++step) {
+    battle.step();
+  }
+  BattleView later = guest.see(battle, ally, names);
+  later.bagOpen = true;
+  screen.showHud(later);
+  screen.frames(10);
+  CHECK(screen.ui->isVisible(dwe::app::PartnerMenuDocument));
+  CHECK(screen.ui->focusedElementId(dwe::app::BattleDocument).empty());
+  CHECK_FALSE(screen.ui->focusedElementId(dwe::app::PartnerMenuDocument).empty());
+  CHECK(std::get<bool>(screen.ui->setting(dwe::screens::BagOpenSetting)));
+}
+
+TEST_CASE("the host's battle closes a guest's field bag, never the bag of its battle HUD") {
+  BattleUi screen;
+  screen.ui->setSetting(dwe::app::PartnerMenuContextSetting, std::string{});
+  screen.ui->show(dwe::app::PartnerMenuDocument, true);
+  dwe::app::closeFieldBag(*screen.ui);
+  CHECK_FALSE(screen.ui->isVisible(dwe::app::PartnerMenuDocument));
+
+  screen.ui->setSetting(dwe::app::PartnerMenuContextSetting,
+                        std::string{dwe::app::PartnerMenuBattleContext});
+  screen.ui->show(dwe::app::PartnerMenuDocument, true);
+  dwe::app::closeFieldBag(*screen.ui);
+  CHECK(screen.ui->isVisible(dwe::app::PartnerMenuDocument));
+}
+
+TEST_CASE("a guest's battle HUD shows from the host's intro and leaves the end box to its own") {
+  CHECK(dwe::app::coopHudPhaseOf(coop::BattlePhase::Intro) == dwe::app::IntroPhase);
+  CHECK(dwe::app::coopHudPhaseOf(coop::BattlePhase::Fight) == dwe::app::FightPhase);
+  CHECK(dwe::app::coopHudPhaseOf(coop::BattlePhase::Victory) == dwe::app::VictoryPhase);
+  CHECK_FALSE(dwe::app::coopHudPhaseOf(coop::BattlePhase::End).has_value());
+  CHECK_FALSE(dwe::app::coopHudPhaseOf(coop::BattlePhase::Closing).has_value());
+}
+
+TEST_CASE("a guest's ally rows name each partner's status as the host's rows do") {
+  const auto species = speciesTable();
+  const NameKeys names{&species, nullptr, &battle_test::testCatalog()};
+  Battle battle = allyBattle(BattleSystemId::Classic);
+  const FighterId ally = battle.state().allies.front().id;
+  GuestSide guest;
+  guest.begin(beginOf(battle));
+  BattleView seen = guest.see(battle, ally, names);
+  REQUIRE(seen.allies.size() == 1);
+  CHECK(seen.allies.front().statusKey.empty());
+
+  // The host's partner stunned: the frame names it, and the guest's row the host's key.
+  seen = guest.see(battle, ally, names, std::nullopt, [](coop::BattleFrame& frame) {
+    frame.fighters.at(dwe::game::battle::PartnerId).status =
+        static_cast<std::uint8_t>(dwe::game::battle::StatusEffect::Stun);
+  });
+  CHECK(seen.allies.front().statusKey ==
+        dwe::game::battle::statusTextKey(dwe::game::battle::StatusEffect::Stun));
+  const coop::BattleFrame sent = dwe::app::coopBattleFrameOf(battle, ally);
+  for (std::size_t index = 0; index < sent.fighters.size(); ++index) {
+    CHECK(sent.fighters[index].status == static_cast<std::uint8_t>(dwe::screens::shownStatusOf(
+                                             battle.state().fighters.at(index).status)));
+  }
+}
+
+TEST_CASE("the Use of a guest's battle bag is a throw, even when its bag has already closed") {
+  CHECK(dwe::app::coopHudThrownSlot({.name = std::string{dwe::app::BagUseCommand}, .value = 2.0}) ==
+        std::optional<std::size_t>{2});
+  CHECK(dwe::app::coopHudThrownSlot({.name = std::string{dwe::app::BattleThrowCommand},
+                                     .value = 0.0}) == std::optional<std::size_t>{0});
+  CHECK_FALSE(
+      dwe::app::coopHudThrownSlot({.name = std::string{dwe::app::BagUseCommand}, .value = {}})
+          .has_value());
+  CHECK_FALSE(dwe::app::coopHudThrownSlot({.name = "bag_drop", .value = 1.0}).has_value());
 }

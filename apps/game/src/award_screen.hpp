@@ -41,6 +41,10 @@ public:
   // Takes the notice's answer; false for any other command.
   bool handle(const ui::UiCommand& command);
 
+  // Another screen takes the player's (a co-op guest's battle): the notice goes unanswered and
+  // opens again on a later tick.
+  void putAway();
+
 private:
   void open(bool medal, session::TamerLevelChange change);
   void openSickness();
@@ -52,6 +56,7 @@ private:
   game::story::SoundPort* sound_;
   bool active_ = false;
   std::optional<std::string> sickPartner_;
+  std::optional<std::string> shownSickness_;
 };
 
 } // namespace dwe::app

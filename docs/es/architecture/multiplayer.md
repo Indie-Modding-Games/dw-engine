@@ -893,7 +893,8 @@ que correr en un solo sitio. Corre en la **simulación del anfitrión**:
   actual, órdenes disponibles, si se puede usar la bolsa, PV y PM de los luchadores y cada figura retenida: sitio,
   orientación, clip y su inicio) y luego `BattleEnd`. El campo del invitado se detiene y dibuja sus propios actores
   donde los ponen los frames; su pantalla `battle` muestra el combate como el HUD del propio anfitrión en su piel (con las
-  órdenes actuales de los compañeros, y la carga de remate y la placa Folder de su propio compañero), y la pantalla
+  órdenes actuales y el estado de los compañeros, y la carga de remate y la placa Folder de su propio compañero, desde
+  la presentación del anfitrión), y la pantalla
   `coop_battle` solo la caja final. La cámara del ayudante se gira hacia el combate cuando empieza y vuelve
   cuando termina.
 - **Qué puede hacer cada jugador.** El que empezó da las órdenes (los comandos de la tira, el remate) y cierra el
@@ -941,7 +942,7 @@ Los mensajes del combate (el enlace de cada invitado lleva los suyos):
 | `0x64` | `BattleAsk` | fiable | cliente → anfitrión | El número de petición del invitado, el mapa, las ranuras NPC de los enemigos, las marcas de combate fijo y predefinido, y el luchador de su compañero. |
 | `0x65` | `BattleBegin` | fiable | anfitrión → cliente | Número de combate, quien lo empezó, la petición que responde, mapa, ranuras NPC de los enemigos, la especie de cada luchador, combate fijo, los jugadores de los aliados, si es un combate Folder y (versión de protocolo 15) los ids de los cuatro movimientos equipados de cada luchador, vacíos los de los enemigos, que nombran las órdenes de los compañeros en el HUD del invitado. |
 | `0x67` | `BattleRefused` | fiable | anfitrión → cliente | El número de petición y por qué (ocupado, no está aquí, falló). |
-| `0x68` | `BattleFrame` | no fiable | anfitrión → cliente | Número de combate y de frame, fase; del compañero propio del invitado (el que pelea, para un ayudante) su comando actual, la tira, la bolsa y (versión de protocolo 15) el progreso y la meta de su carga de remate y, en un combate Folder, su placa (orden activa con fase y progreso, compromiso, órdenes en espera con sus objetivos, objetivo, postura, barra de defensa y su capacidad, segundos de rotura, el aviso de la última orden); si se carga un remate; de cada luchador PV, PM, máximos, caído, segundos para revivir y (versión de protocolo 15) orden actual y postura; las figuras retenidas; los objetos lanzados. |
+| `0x68` | `BattleFrame` | no fiable | anfitrión → cliente | Número de combate y de frame, fase; del compañero propio del invitado (el que pelea, para un ayudante) su comando actual, la tira, la bolsa y (versión de protocolo 15) el progreso y la meta de su carga de remate y, en un combate Folder, su placa (orden activa con fase y progreso, compromiso, órdenes en espera con sus objetivos, objetivo, postura, barra de defensa y su capacidad, segundos de rotura, el aviso de la última orden); si se carga un remate; de cada luchador PV, PM, máximos, caído, segundos para revivir y (versión de protocolo 15) orden actual, postura y estado; las figuras retenidas; los objetos lanzados. |
 | `0x69` | `BattleAction` | fiable | cliente → anfitrión | Un comando, una orden, una postura, un ánimo, el cierre de la caja final, o un objeto lanzado con el compañero al que vuela (luchador más uno, 0 para el propio o el que pelea). |
 | `0x6B` | `BattleEnd` | fiable | anfitrión → cliente | Resultado, los NPC que dejaron el mapa, bits y el botín del compañero de este invitado. |
 | `0x80` | `BattleOffer` | fiable | cliente → anfitrión | Si el compañero del invitado puede unirse a los combates del anfitrión, y como qué luchador. |

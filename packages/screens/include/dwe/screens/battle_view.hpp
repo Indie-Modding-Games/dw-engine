@@ -77,6 +77,8 @@ inline constexpr std::string_view FolderCommittedSetting = "battle.folder.commit
 // ("aggressive"...), an order phase's ("processing"..., empty while idle), the text key of why an
 // order cannot go on and of how one ended other than done (empty when that says nothing).
 [[nodiscard]] std::string_view stanceName(game::battle::Stance stance);
+// The one status a fighter's row names: flattened, stunned, confused, poisoned, in that order.
+[[nodiscard]] game::battle::StatusEffect shownStatusOf(const game::battle::StatusState& status);
 [[nodiscard]] std::string_view orderPhaseName(game::battle::OrderPhase phase);
 [[nodiscard]] std::string orderProblemKey(game::battle::OrderProblem problem);
 [[nodiscard]] std::string orderEndKey(game::battle::OrderEnd end,

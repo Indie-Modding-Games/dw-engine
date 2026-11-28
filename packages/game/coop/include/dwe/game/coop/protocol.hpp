@@ -37,7 +37,8 @@ inline constexpr std::size_t MaxPlayers = 4;
 // host's map NPCs ride the snapshots (#412, #420, #419), and NPC events are held per player (#417).
 // 15: the partners' poop piles are the host's world: its lists of each map's piles, a guest's pile
 // left or eaten asked of the host, and its answer to an eat; the guests' battle HUD: each partner's
-// moves and current order, the own partner's finisher gauge and Folder plate.
+// moves and current order, the own partner's finisher gauge and Folder plate, each partner's
+// status.
 inline constexpr std::uint32_t ProtocolVersion = 15;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
@@ -320,7 +321,7 @@ enum class BattlePhase : std::uint8_t { Intro, Fight, Victory, End, Closing };
 // whole seconds its revive countdown shows (0: none shown). A partner's current order, as its ally
 // row names it: in the Classic battle `order` is its command's number (0: none); in a Folder
 // battle its active order's move place plus one (0: none, the row names `stance`, the
-// game::battle::Stance it moves by).
+// game::battle::Stance it moves by). `status` is the game::battle::StatusEffect its row shows.
 struct BattleFighterState {
   std::int32_t hp = 0;
   std::int32_t mp = 0;
@@ -330,6 +331,7 @@ struct BattleFighterState {
   std::uint8_t reviveSeconds = 0;
   std::uint8_t order = 0;
   std::uint8_t stance = 0;
+  std::uint8_t status = 0;
 
   friend bool operator==(const BattleFighterState&, const BattleFighterState&) = default;
 };
@@ -446,6 +448,7 @@ enum class BattleActionKind : std::uint8_t { Command, ThrowItem, Cheer, CloseEnd
 // An order's slot and target in one value: (target + 1) x OrderSlots + slot, target 0 for none.
 inline constexpr std::int32_t OrderSlots = 4;
 inline constexpr std::int32_t LastStance = 3;
+inline constexpr std::uint8_t LastBattleStatus = 4;
 [[nodiscard]] constexpr std::int32_t battleOrderValue(std::int32_t slot,
                                                       std::optional<std::int32_t> target) {
   return ((target ? *target + 1 : 0) * OrderSlots) + slot;

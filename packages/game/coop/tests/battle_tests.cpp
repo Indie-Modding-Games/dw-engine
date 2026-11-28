@@ -782,6 +782,7 @@ TEST_CASE("a battle's begin and frames carry the guests' HUD: moves, orders, gau
   BattleFrame hud = frame(4, 8);
   hud.fighters.front().order = 4;
   hud.fighters.front().stance = 2;
+  hud.fighters.front().status = LastBattleStatus;
   hud.finisherProgress = 150;
   hud.finisherGoal = 200;
   hud.folder = fullPlate();
@@ -806,6 +807,7 @@ TEST_CASE("a battle's begin and frames carry the guests' HUD: moves, orders, gau
   };
   rejects(withFighter([](BattleFighterState& fighter) { fighter.order = 12; }));
   rejects(withFighter([](BattleFighterState& fighter) { fighter.stance = LastStance + 1; }));
+  rejects(withFighter([](BattleFighterState& fighter) { fighter.status = LastBattleStatus + 1; }));
   const auto withPlate = [](auto change) {
     BattleFrame bad = frame(4, 8);
     bad.folder = fullPlate();

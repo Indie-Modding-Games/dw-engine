@@ -6,6 +6,8 @@
 #include <dwe/game/coop/protocol.hpp>
 #include <dwe/screens/battle_view.hpp>
 #include <dwe/screens/name_keys.hpp>
+#include <dwe/screens/screen_settings.hpp>
+#include <dwe/ui/ui.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -14,6 +16,7 @@
 #include <set>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace dwe::app {
@@ -70,6 +73,22 @@ struct CoopBattleViewSource {
 };
 [[nodiscard]] screens::BattleView coopBattleViewOf(const CoopBattleViewSource& source,
                                                    const screens::NameKeys& names);
+
+// The battle document's phase on a guest's HUD for the host's: from the host's intro on, as the
+// host's own HUD shows; none at the end box, which is the coop_battle document's.
+[[nodiscard]] std::optional<std::string_view> coopHudPhaseOf(game::coop::BattlePhase phase);
+
+// Opens this player's bag over its battle HUD as BattleScreen::openBag opens the host's: the HUD
+// learns the bag is open before the bag shows, so the battle document leaves the focus to it.
+void showCoopHudBag(ui::Ui& ui, const screens::ScreenSettings& bag, const screens::BattleView& hud);
+
+// The bag slot a command thrown from the bag over a guest's battle HUD names: the bag's Use (sent
+// once the bag has closed, partner_menu/logic.lua) or the battle document's throw.
+[[nodiscard]] std::optional<std::size_t> coopHudThrownSlot(const ui::UiCommand& command);
+
+// The field's bag (the partner menu outside a battle) closes when the host's battle takes this
+// player's screen: its Use would feed the partner on the field.
+void closeFieldBag(ui::Ui& ui);
 
 class CoopThrowFollower {
 public:

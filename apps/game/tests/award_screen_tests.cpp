@@ -109,4 +109,30 @@ TEST_CASE("the partner falling sick opens the award box with its name and the si
   CHECK_FALSE(screen.active());
 }
 
+TEST_CASE("a co-op guest's battle puts the sickness notice away until the field goes on") {
+  const session::testing::TestPacks packs;
+  game::save::MemorySaveStorage storage;
+  const auto session = session::testing::newGame(packs, &storage);
+  NoticeUi notice;
+  AwardScreen screen{nullptr, *session, *notice.ui, nullptr};
+  screen.noteSickness("Agumon");
+  screen.tick();
+  REQUIRE(screen.active());
+
+  screen.putAway();
+  CHECK_FALSE(screen.active());
+  notice.ui->update();
+  CHECK_FALSE(notice.ui->isVisible(AwardNoticeDocument));
+
+  screen.tick();
+  REQUIRE(screen.active());
+  notice.ui->update();
+  CHECK(notice.ui->isVisible(AwardNoticeDocument));
+  CHECK(notice.text("name") == "Agumon ");
+  CHECK(screen.handle({.name = "award_notice_ok", .value = {}}));
+  screen.putAway();
+  screen.tick();
+  CHECK_FALSE(screen.active());
+}
+
 } // namespace dwe::app
