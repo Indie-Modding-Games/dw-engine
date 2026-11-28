@@ -60,14 +60,24 @@ void presentCoopPlayers(FieldScene& scene, const PresentedCoopWorld* world,
     if (field.scriptedClipOf(field.partnerEntity())) {
       taken.push_back(field.partner().position);
     }
-    const auto partnerDrawn = [&](coop::PlayerId owner) {
-      std::optional<game::field::CharacterState> partner =
-          stateOf(owner, coop::EntityRole::Partner);
-      if (partner && clipOf(owner, coop::EntityRole::Partner)) {
-        partner->position = machineSpotBeside(partner->position, partner->yaw, taken);
-        taken.push_back(partner->position);
+    struct Drawn {
+      std::optional<game::field::CharacterState> player;
+      std::optional<game::field::CharacterState> partner;
+    };
+    const auto drawnOf = [&](coop::PlayerId owner) {
+      Drawn drawn{.player = stateOf(owner, coop::EntityRole::Player),
+                  .partner = stateOf(owner, coop::EntityRole::Partner)};
+      if (drawn.partner && clipOf(owner, coop::EntityRole::Partner)) {
+        const MachinePair pair =
+            machinePairBeside(drawn.player ? drawn.player->position : drawn.partner->position,
+                              drawn.partner->position, drawn.partner->yaw, taken);
+        if (drawn.player) {
+          drawn.player->position = pair.player;
+        }
+        drawn.partner->position = pair.partner;
+        taken.push_back(pair.partner);
       }
-      return partner;
+      return drawn;
     };
     for (const PresentedCoopEntity& entity : world->entities) {
       const coop::PlayerId owner = entity.owner;
@@ -79,11 +89,12 @@ void presentCoopPlayers(FieldScene& scene, const PresentedCoopWorld* world,
       if (partner.empty() && owner == coop::HostPlayerId) {
         partner = std::string{hostPartner};
       }
-      if (auto drawn = scene.presentCoopPlayer(
-              owner, stateOf(owner, coop::EntityRole::Player), partnerDrawn(owner), partner,
-              clipOf(owner, coop::EntityRole::Player), clipOf(owner, coop::EntityRole::Partner));
-          !drawn) {
-        core::logWarning("coop: could not present player {}: {}", owner, drawn.error().message);
+      Drawn drawn = drawnOf(owner);
+      if (auto presented = scene.presentCoopPlayer(owner, drawn.player, drawn.partner, partner,
+                                                   clipOf(owner, coop::EntityRole::Player),
+                                                   clipOf(owner, coop::EntityRole::Partner));
+          !presented) {
+        core::logWarning("coop: could not present player {}: {}", owner, presented.error().message);
       }
       shown.insert(owner);
     }

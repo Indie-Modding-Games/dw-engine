@@ -43,4 +43,18 @@ inline constexpr float MachineSpotStep = 300.0F;
   return at;
 }
 
+struct MachinePair {
+  glm::vec3 player;
+  glm::vec3 partner;
+};
+
+// A player and its partner on a course: the partner beside the others (machineSpotBeside) and the
+// player moved as far, so two players at one machine stand apart too.
+[[nodiscard]] inline MachinePair machinePairBeside(glm::vec3 player, glm::vec3 partner, float yaw,
+                                                   std::span<const glm::vec3> taken,
+                                                   float step = MachineSpotStep) {
+  const glm::vec3 beside = machineSpotBeside(partner, yaw, taken, step);
+  return {.player = player + (beside - partner), .partner = beside};
+}
+
 } // namespace dwe::app
