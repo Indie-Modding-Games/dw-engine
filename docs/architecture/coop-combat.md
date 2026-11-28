@@ -230,7 +230,9 @@ one only orders their own partner.
   model of [ADR 0024](../adr/0024-co-op-with-authoritative-host.md) and PR #363.
 - The host validates every action: a `Command` only for the sender's own partner, an item only from the sender's bag
   (the guest's bag copy that came with its profile; the guest removes the item when the host confirms the throw), a
-  cheer only during an ally's aura.
+  cheer only during an ally's aura. The confirmation is the throw showing in the host's `BattleFrame` under the
+  guest's id: until then the item stays in the guest's bag, so a throw the host refuses (another in flight) costs
+  nothing; one throw waits for the answer at a time, for at most 40 frames (2 s).
 
 ### 7.2 What replicates
 

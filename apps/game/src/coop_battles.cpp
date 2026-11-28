@@ -312,6 +312,7 @@ void CoopBattles::reset() {
   shownFrame_.reset();
   fighters_.clear();
   target_.reset();
+  purse_.reset();
   actions_.clear();
   cameraOnBattle_ = false;
   play_ = nullptr;
@@ -661,8 +662,10 @@ void CoopBattles::guestTick(PlaySession& play, CoopGameplayBridge& bridge) {
     }
   }
   if (const auto began = mirror_.takeBegan()) {
+    purse_.reset();
     startShowing(play, *began);
   }
+  followPurse(play);
   for (coop::BattleAction& action : std::exchange(actions_, {})) {
     send(&bridge, std::move(action));
   }
@@ -676,6 +679,19 @@ void CoopBattles::guestTick(PlaySession& play, CoopGameplayBridge& bridge) {
       core::logInfo("coop: battle {} ended elsewhere", ended->battle);
       applySpoils(play, *ended);
       allyBattle_ = false;
+    }
+  }
+}
+
+void CoopBattles::followPurse(PlaySession& play) {
+  const auto& frame = mirror_.frame();
+  if (!frame) {
+    return;
+  }
+  for (const std::string& item : purse_.due(frame->throws, mirror_.self(), frame->frame)) {
+    if (!play.takeCoopItem(item)) {
+      core::logWarning("coop: the host threw {} for this player, which its bag no longer has",
+                       item);
     }
   }
 }
@@ -965,6 +981,7 @@ void CoopBattles::hostLeft(PlaySession* play) {
   shownFrame_.reset();
   fighters_.clear();
   actions_.clear();
+  purse_.reset();
   hideDocument();
 }
 
@@ -999,13 +1016,17 @@ bool CoopBattles::handle(const ui::UiCommand& command) {
     item = *text;
   }
   if (*kind == coop::BattleActionKind::ThrowItem) {
-    // The item comes out of this player's own bag; the host's lends one to throw, at the partner
-    // picked (its fighter's number + 1; 0 for this player's own or the fighting one).
+    // The item comes out of this player's own bag once the host throws it (followPurse); the
+    // host's lends one to throw, at the partner picked (its fighter's number + 1; 0 for this
+    // player's own or the fighting one).
     const auto& frame = mirror_.frame();
     PlaySession* play = play_;
-    if (play == nullptr || !frame || !frame->bagAvailable || !play->takeCoopItem(item)) {
+    if (play == nullptr || !frame || !frame->bagAvailable || !purse_.canAsk() ||
+        !std::ranges::any_of(play->coopThrowableItems(),
+                             [&](const auto& stack) { return stack.first == item; })) {
       return true;
     }
+    purse_.asked(frame->frame);
     value = target_ ? static_cast<std::int32_t>(*target_) + 1 : 0;
   }
   if (auto action = mirror_.action(*kind, value, std::move(item))) {

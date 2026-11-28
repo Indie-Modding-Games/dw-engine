@@ -69,4 +69,24 @@ void CoopThrowFollower::reset() {
   landed_.clear();
 }
 
+std::vector<std::string> CoopThrowPurse::due(std::span<const game::coop::BattleThrow> throws,
+                                             game::coop::PlayerId self, std::uint32_t frame) {
+  std::vector<std::string> items;
+  for (const game::coop::BattleThrow& thrown : throws) {
+    if (thrown.thrower == self && paid_.insert(thrown.serial).second) {
+      items.push_back(thrown.item);
+      asked_.reset();
+    }
+  }
+  if (asked_ && frame - *asked_ > WaitFrames) {
+    asked_.reset();
+  }
+  return items;
+}
+
+void CoopThrowPurse::reset() {
+  asked_.reset();
+  paid_.clear();
+}
+
 } // namespace dwe::app
