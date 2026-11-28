@@ -33,6 +33,34 @@ Left out, with the reason:
 
 The bosses come in (`vand`, `muge`): their models have the combat clips.
 
+## Species without a model
+
+Two of the 180 rows of the species table have no bones and no model on the disc, in no form (partner, enemy or
+character), so there is no other model of theirs to borrow:
+
+- `weag`, WereGarurumon (62): a form cut from the disc. It keeps its evolution rows (requirements, reference stats, a
+  chart that comes from Leomon, Garurumon, Frigimon and Mojyamon and leads nowhere, and the Moon mirror item), but its
+  move list is a placeholder (16 times Fire Tower) and its texture is the player's.
+- `taka` (114): an empty slot, with no name and no rows.
+
+Neither can be a partner:
+
+- No evolution makes the partner a species without a model (`Evolution::evolve` refuses the target, whatever the reason:
+  natural, item, special, event script or Mega step) and no chart leads to one (`EvolutionTables::pathTargets` leaves it
+  out), not even a ruleset's or a pack's. The developer menu does not list them and `evolve` refuses them
+  (`EvolutionTables::cheatTargets`). Vanilla play does not change: no chart of the original leads to WereGarurumon, and
+  the Moon mirror finds no form one stage up (WereGarurumon has no stage).
+- A partner already saved as one (a save made before this guard) keeps its species and stats, but the field no longer
+  keeps the previous model: it and the status portrait draw the form its chart comes from whose name ends its own, else the first of those with
+  a model (`EvolutionTables::drawnAs`, `EvolutionAdapter::drawnSpecies`), with that form's size and clips, and the log
+  says so (`game: weag has no model of its own; the partner is drawn as garu`). WereGarurumon is drawn as Garurumon. Its
+  techniques stay the placeholder list. `taka` has no chart and keeps the game pack's partner model.
+
+Custom models from packs are not supported yet. A pack would need to ship `digimon/<id>/model.glb` and its texture, give
+the species bones in its row (`bone_count`), the partner clips (its own or a recipe in `animations/partner_clips.yaml`)
+and a real move list; the guards above then let it in on their own. What is missing is checking such a model when the
+pack loads (skeleton against clips) and a way for a pack to patch one row of the base species table.
+
 ## Rulesets
 
 The option is three more rulesets, one for each combination the rules screen already offers:
@@ -239,6 +267,9 @@ targets; the extra paths exist but are not drawn.
   advance step by step like the donor's and each technique is released on the same frame.
 - `an upright body moves forward where it would lean` (`clip_synthesis_tests.cpp`) and `a species drawn at another size
   fights with its body at that size` (`packages/session/tests/battle_adapter_tests.cpp`).
+- `a form with no model is no chart's target and is drawn as the form it comes from` (`tables_tests.cpp`), `no
+  evolution makes the partner a form with no model` (`specials_tests.cpp`) and `the developer's evolve refuses a form
+  with no model and keeps the partner as it was` (`packages/session/tests/evolution_adapter_tests.cpp`).
 - `a form only a ruleset's wake-up special leads to gets its cell` (`apps/game/tests/player_chart_tests.cpp`).
 - Route `route-all-species.yaml` ([vertical slice](../../guides/vertical-slice.md)): the option on by default, the tree
   with 121 cells and `tane` → `otam` → `geco` in the game. The routes for the hidden content, the Mega step and the

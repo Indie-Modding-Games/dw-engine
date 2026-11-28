@@ -177,9 +177,10 @@ core::Result<void> FieldScene::addCoopGuest(game::field::PlayerId id,
   CoopPartner& partner = body.partner;
   if (partnerSpecies.empty() || (partner.actor && partner.species == partnerSpecies))
     return {};
-  const float scale = speciesScale_ ? speciesScale_(partnerSpecies) : 1.0F;
-  const float radius = speciesRadius_ ? speciesRadius_(partnerSpecies) * scale : 0.0F;
-  auto added = field_->addPartner(id, speciesModelOf(partnerSpecies), radius);
+  const std::string drawn = drawnSpeciesOf(partnerSpecies);
+  const float scale = speciesScale_ ? speciesScale_(drawn) : 1.0F;
+  const float radius = speciesRadius_ ? speciesRadius_(drawn) * scale : 0.0F;
+  auto added = field_->addPartner(id, speciesModelOf(drawn), radius);
   if (!added)
     return added;
   const auto entity = field_->partnerEntity(id);
@@ -189,7 +190,7 @@ core::Result<void> FieldScene::addCoopGuest(game::field::PlayerId id,
     return loaded;
   partner.shown = true;
   // It walks by its clips' root motion, as the host's partner does.
-  return field_->addPartner(id, speciesModelOf(partnerSpecies), radius,
+  return field_->addPartner(id, speciesModelOf(drawn), radius,
                             battleClipsOf(*partner.actor->model));
 }
 
@@ -234,19 +235,20 @@ void FieldScene::removeCoopPlayer(game::field::PlayerId id) {
 
 core::Result<void> FieldScene::loadCoopPartner(CoopPartner& partner, scene::Entity entity,
                                                std::string_view species) {
-  auto model = assets::AssetId::parse(speciesModelOf(species));
+  const std::string drawn = drawnSpeciesOf(species);
+  auto model = assets::AssetId::parse(speciesModelOf(drawn));
   if (!model)
     return std::unexpected{model.error()};
-  const ClipStandIns standIns = speciesClips_ ? speciesClips_(species) : ClipStandIns{};
+  const ClipStandIns standIns = speciesClips_ ? speciesClips_(drawn) : ClipStandIns{};
   auto actor = loadActor(PartnerCharacter, entity, partnerMover_, *model, MissingClips::StandIn,
-                         standIns, species);
+                         standIns, drawn);
   if (!actor)
     return std::unexpected{actor.error()};
   if (partner.actor)
     models_->remove(partner.actor->handle);
   partner.actor = std::move(*actor);
   partner.species = std::string{species};
-  partner.scale = speciesScale_ ? speciesScale_(species) : 1.0F;
+  partner.scale = speciesScale_ ? speciesScale_(drawn) : 1.0F;
   return {};
 }
 
@@ -299,7 +301,8 @@ core::Result<void> FieldScene::presentCoopPlayer(
       world_.registry().emplace<scene::Transform>(entity);
       world_.registry().emplace<scene::AnimationIntent>(entity);
     }
-    world_.registry().emplace_or_replace<scene::ModelRef>(entity, speciesModelOf(partnerSpecies));
+    world_.registry().emplace_or_replace<scene::ModelRef>(
+        entity, speciesModelOf(drawnSpeciesOf(partnerSpecies)));
     if (auto loaded = loadCoopPartner(drawn, entity, partnerSpecies); !loaded) {
       if (fresh)
         world_.destroy(entity);
@@ -531,21 +534,25 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
 }
 
 core::Result<void> FieldScene::showPartnerSpecies(std::string_view species) {
+  const std::string drawn = drawnSpeciesOf(species);
   // map.c and partner.c size the partner by its species' radius in the species table.
-  partnerSpeciesScale_ = speciesScale_ ? speciesScale_(species) : 1.0F;
+  partnerSpeciesScale_ = speciesScale_ ? speciesScale_(drawn) : 1.0F;
   if (speciesRadius_) {
-    field_->setPartnerRadius(speciesRadius_(species) * partnerSpeciesScale_);
+    field_->setPartnerRadius(speciesRadius_(drawn) * partnerSpeciesScale_);
   }
-  auto model = assets::AssetId::parse(speciesModelOf(species));
+  auto model = assets::AssetId::parse(speciesModelOf(drawn));
   if (!model) {
     return std::unexpected{model.error()};
   }
   if (model->str() == partnerModel().str()) {
     return {};
   }
-  const ClipStandIns standIns = speciesClips_ ? speciesClips_(species) : ClipStandIns{};
+  if (drawn != species) {
+    core::logWarning("{}", core::formatMessage(messages::PartnerDrawnAs, species, drawn));
+  }
+  const ClipStandIns standIns = speciesClips_ ? speciesClips_(drawn) : ClipStandIns{};
   auto partner = loadActor(PartnerCharacter, partnerActor_->entity, partnerMover_, *model,
-                           MissingClips::StandIn, standIns, species);
+                           MissingClips::StandIn, standIns, drawn);
   if (!partner) {
     return std::unexpected{partner.error()};
   }

@@ -439,6 +439,11 @@ public:
   [[nodiscard]] std::string_view partnerSpecies() const {
     return game_.session->partner().state().species;
   }
+  // The species whose model draws the partner (FieldScene::drawnSpeciesOf): its own, or for a form
+  // with no model the one it comes from.
+  [[nodiscard]] std::string drawnPartnerSpecies() const {
+    return scene_->drawnSpeciesOf(partnerSpecies());
+  }
   [[nodiscard]] const game::partner::Conditions& partnerConditions() const {
     return game_.session->partner().state().conditions;
   }
