@@ -1,5 +1,4 @@
 #panel {
-	width: 34%;
 	border: 3dp transparent;
 	border-radius: 0;
 	background-color: #0b1c2df2;
@@ -16,40 +15,8 @@
 	color: #ffe64a;
 }
 
-#phase,
-#items-title,
-#no-items {
+#phase {
 	color: #a8c7d9;
-}
-
-.fighter.partner .name {
-	color: #ffe64a;
-}
-
-.fighter .bar {
-	width: 56%;
-	border-radius: 0;
-	background-color: #1d3a55;
-}
-
-.fighter .fill {
-	border-radius: 0;
-	background-color: #6fe07a;
-}
-
-.fighter .hp,
-.fighter .mp,
-.fighter .revive {
-	font-family: "Pixel Small";
-	font-size: 26dp;
-}
-
-.fighter .mp {
-	color: #72c7ff;
-}
-
-.fighter.mine {
-	border-left-color: #ffd51e;
 }
 
 #panel button {
@@ -69,31 +36,4 @@
 	border-color: #ffd51e;
 	background-color: #153653;
 	color: #ffe64a;
-}
-
-#panel button.current {
-	border-color: #ffd51e;
-	background-color: #ffd51e;
-	color: #081724;
-}
-
-.fighter .revive {
-	padding: 0 6dp;
-	color: #081724;
-	background-color: #ffd51e;
-}
-
-.fighter.down .name {
-	color: #6c8396;
-}
-
-.fighter.down {
-	opacity: 1;
-}
-
-.fighter.down .name,
-.fighter.down .bar,
-.fighter.down .hp,
-.fighter.down .mp {
-	opacity: 0.5;
 }

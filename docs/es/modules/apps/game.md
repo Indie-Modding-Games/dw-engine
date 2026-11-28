@@ -2525,11 +2525,14 @@ con el compañero del invitado como `session::BattleRequest::visitor` (`PlaySess
 `FieldScene::BattlePartner::CoopGuest` lo dibuja sobre el compañero del invitado) y le cuenta al invitado cada combate
 que corre (`BattleBegin`, un `BattleFrame` cada 3 ticks, `BattleEnd`). El campo del invitado se detiene
 (`PlaySession::holdForCoopBattle`) y sus actores toman las figuras de los frames (`FieldScene::holdFighter`; el
-compañero del anfitrión es `BattlePartner::CoopHost`); el documento `coop_battle` muestra las barras de vida, las
-órdenes para el compañero de este jugador, el ánimo y los objetos de su propia bolsa. En el anfitrión,
-`BattleScreen::visiting` bloquea sus propias órdenes y el remate y toma las del invitado (`commandFromPlayer`, `cheer`,
-`throwLentItem`, `closeEnd`). Cuando los dos compañeros están en el mapa del combate, el del invitado se une como aliado
-(`CoopBattles` lee el `BattleOffer` del invitado; `BattleScreen::setCoopAllies`): cada juego da órdenes a su propio
+compañero del anfitrión es `BattlePartner::CoopHost`). El documento `battle` dibuja el combate como el HUD del propio
+anfitrión en la piel del jugador (`coopBattleViewOf`, `CoopBattles::publishHud`): la tarjeta de su compañero, los demás
+compañeros como filas de aliados, los enemigos y su tira; la tira da órdenes a su compañero, la carga anima y la bolsa
+lanza objetos de su propia bolsa. El documento `coop_battle` solo es la caja final que cierra el que empezó. En el
+anfitrión, `BattleScreen::visiting` bloquea sus propias órdenes y el remate y toma las del invitado
+(`commandFromPlayer`, `cheer`, `throwLentItem`, `closeEnd`). Cuando los dos compañeros están en el mapa del combate, el
+del invitado se une como aliado (`CoopBattles` lee el `BattleOffer` del invitado; `BattleScreen::setCoopAllies`): cada
+juego da órdenes a su propio
 compañero (`BattleScreen::fighterOf`), la pantalla de combate muestra la tarjeta del otro (`battle.allies`) y el
 resultado del aliado vuelve en el botín (`BattleScreen::takeAllyResults`);
 `BattleAdapter::finishVisitor` deja los bits y los objetos en el mundo del anfitrión, y la parte del compañero vuelve

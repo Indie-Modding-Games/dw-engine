@@ -1,7 +1,13 @@
 #pragma once
 
+#include <dwe/game/battle/moves.hpp>
+#include <dwe/game/battle/state.hpp>
+#include <dwe/game/coop/battle.hpp>
 #include <dwe/game/coop/protocol.hpp>
+#include <dwe/screens/battle_view.hpp>
+#include <dwe/screens/name_keys.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -21,6 +27,31 @@ struct CoopBattleSounds {
 };
 [[nodiscard]] CoopBattleSounds coopBattleSoundsOf(const game::coop::BattleBegin& begin,
                                                   game::coop::PlayerId self);
+
+// A command's label without its partner's moves: the original's command names, the techniques'
+// and the finisher's own words; the Folder battle's strip names its stances.
+[[nodiscard]] std::string coopOrderLabelKey(game::battle::Command command, bool folder);
+
+// The fighter a guest's HUD shows as its own partner: its own when it fights, the starter's for a
+// helper. The frames list the starter's partner, then the enemies, then the allies.
+[[nodiscard]] std::size_t coopOwnFighterOf(const game::coop::BattleBegin& begin,
+                                           game::coop::BattleRole role, game::coop::PlayerId self);
+
+// The host's battle as a guest's battle document draws it (the host's own HUD): its partner in
+// zone B, the other partners as ally rows, the enemies, and the commands its frame offers.
+struct CoopBattleViewSource {
+  const game::coop::BattleBegin* begin = nullptr;
+  const game::coop::BattleFrame* frame = nullptr;
+  std::span<const game::coop::BattleFighterState> fighters;
+  game::coop::BattleRole role = game::coop::BattleRole::Helper;
+  game::coop::PlayerId self = game::coop::HostPlayerId;
+  // This player's partner with its moves, for its techniques' names and icons.
+  const game::battle::Fighter* partner = nullptr;
+  const game::battle::MoveCatalog* moves = nullptr;
+  bool bagOpen = false;
+};
+[[nodiscard]] screens::BattleView coopBattleViewOf(const CoopBattleViewSource& source,
+                                                   const screens::NameKeys& names);
 
 class CoopThrowFollower {
 public:

@@ -5,6 +5,8 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/debug/debug_ui.hpp>
+#include <dwe/game/battle/moves.hpp>
+#include <dwe/game/battle/state.hpp>
 #include <dwe/game/coop/protocol.hpp>
 #include <dwe/game/modes/mode_catalog.hpp>
 #include <dwe/game/save/save_file.hpp>
@@ -503,6 +505,9 @@ public:
   void runHandedBattleHere() { storyScenes_.runHandedBattleHere(); }
   // The guest: its partner as the host's battle builds its fighter.
   [[nodiscard]] session::VisitingPartner coopFighter() const;
+  // The guest: that partner with its moves, and the move catalog, for its battle HUD's strip.
+  [[nodiscard]] std::optional<game::battle::Fighter> coopBattleFighter() const;
+  [[nodiscard]] const game::battle::MoveCatalog* coopMoves() const;
   // Co-op events (#417, coop_events.hpp): the NPCs the other players' events hold on this map,
   // whose contacts this game drops, and the NPC whose event this game plays now.
   void leaveNpcsBe(std::vector<std::int32_t> npcs) { npcsLeftBe_ = std::move(npcs); }

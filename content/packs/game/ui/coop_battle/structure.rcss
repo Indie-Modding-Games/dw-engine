@@ -1,7 +1,6 @@
-/* The host's battle on a co-op guest's screen (apps/game/src/coop_battles.hpp): a panel on the right with the fighters'
-   life bars (the partners' MP too, this player's own marked), the orders for this player's partner, the cheer and the
-   items to throw. This is the plain look; a skin restyles it (skins/<skin>/coop_battle/style.rcss). Over the field,
-   under the interface's own notices. */
+/* The end of the host's battle on a co-op guest's screen (apps/game/src/coop_battles.hpp): a box low in the middle
+   with what the end waits on and, for the starter, the button that closes it. This is the plain look; a skin restyles
+   it (skins/<skin>/coop_battle/style.rcss). Over the field, under the interface's own notices. */
 body {
 	width: 100%;
 	height: 100%;
@@ -11,15 +10,16 @@ body {
 
 #panel {
 	position: absolute;
-	right: 16dp;
-	top: 16dp;
-	width: 30%;
+	left: 30%;
+	bottom: 16%;
+	width: 40%;
 	padding: 12dp 16dp;
 	border: 3dp #c9d3de;
 	border-radius: 8dp;
 	background-color: #1a1f27e0;
 	color: #f2f4f7;
 	font-size: 18dp;
+	text-align: center;
 	pointer-events: auto;
 }
 
@@ -33,114 +33,15 @@ body {
 	margin-bottom: 8dp;
 }
 
-.fighter {
-	display: block;
-	margin: 4dp 0;
-}
-
-.fighter .name {
-	display: block;
-}
-
-.fighter.partner .name {
-	color: #ffe08a;
-}
-
-.fighter.down {
-	opacity: 0.5;
-}
-
-.fighter .bar {
-	display: inline-block;
-	width: 70%;
-	height: 10dp;
-	background-color: #3a4350;
-	border-radius: 3dp;
-}
-
-.fighter .fill {
-	display: block;
-	height: 100%;
-	background-color: #5fd16b;
-	border-radius: 3dp;
-}
-
-.fighter .hp {
-	margin-left: 8dp;
-	font-size: 16dp;
-}
-
-/* The partners show their MP after the HP; the one this player commands is marked with a line at its left. */
-.fighter .line {
-	display: block;
-}
-
-.fighter .mp {
-	font-size: 16dp;
-	color: #8fc4ff;
-}
-
-.fighter.mine {
-	padding-left: 6dp;
-	border-left: 3dp #ffe08a;
-}
-
-/* A fallen partner's revive countdown, and the button that makes a partner the target of this player's items (the
-   picked one marked as the current order is). */
-.fighter .revive {
-	margin-left: 8dp;
-	font-size: 16dp;
-	color: #ffd34a;
-}
-
-.fighter .target {
-	margin: 0 0 0 8dp;
-	padding: 0 8dp;
-	font-size: 15dp;
-}
-
-#orders,
-#help {
-	display: block;
-	margin-top: 10dp;
-}
-
-#items-title,
-#no-items {
-	margin-top: 6dp;
-	color: #aeb8c4;
-}
-
-button {
-	display: inline-block;
-	margin: 3dp;
-	padding: 4dp 10dp;
-	border: 2dp #6d7a8a;
-	border-radius: 5dp;
-	background-color: #2b333f;
-	color: #f2f4f7;
-}
-
-button:hover,
-button:focus {
-	border-color: #ffe08a;
-}
-
-button.current {
-	background-color: #4a5a2b;
-}
-
-button.unavailable {
-	opacity: 0.45;
-}
-
 #close {
-	display: block;
-	margin-top: 10dp;
-	text-align: center;
+	display: inline-block;
+	margin-top: 4dp;
+	padding: 4dp 16dp;
+	border: 2dp #c9d3de;
+	border-radius: 4dp;
 }
 
-.hidden,
-#close.hidden {
-	display: none;
+#close:hover,
+#close:focus {
+	background-color: #3a4350;
 }

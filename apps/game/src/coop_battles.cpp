@@ -4,8 +4,12 @@
 
 #include <dwe/core/log.hpp>
 #include <dwe/game/battle/text_keys.hpp>
+#include <dwe/render/map_camera.hpp>
+#include <dwe/screens/bag_view.hpp>
 #include <dwe/screens/battle_view.hpp>
+#include <dwe/screens/enemy_hp_bars.hpp>
 #include <dwe/screens/name_keys.hpp>
+#include <dwe/session/inventory_adapter.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -21,9 +25,11 @@
 #include <variant>
 #include <vector>
 
+#include "bag_slots.hpp"
 #include "coop_gameplay_bridge.hpp"
 #include "coop_world.hpp"
 #include "fighter_figure.hpp"
+#include "partner_menu.hpp"
 #include "play_session.hpp"
 
 namespace dwe::app {
@@ -43,6 +49,10 @@ constexpr float YawSteps = 65536.0F;
 constexpr float PaceSteps = 16.0F;
 // A number the guest's document reads as none (no target picked, no countdown shown).
 constexpr double NoTarget = -1.0;
+// The guest's HUD: the model node the foes' bars point at (BattleScreen's), and how long a foe's
+// bar shows after its HP moved, in ticks.
+constexpr std::uint32_t HudHpBarNode = 1;
+constexpr std::uint64_t HudHpBarTicks = 180;
 
 std::uint16_t yawOf(float radians) {
   float turn = std::fmod(radians, FullTurn);
@@ -136,30 +146,6 @@ session::VisitingPartner visitorOf(const coop::BattleFighterProfile& profile) {
     }
   }
   return partner;
-}
-
-// The label of an order on the guest's document: the original's command names, the techniques'
-// and the finisher's own words; the Folder battle's strip names its stances.
-std::string orderLabelKey(game::battle::Command command, bool folder) {
-  if (folder &&
-      game::battle::folderCommandTextKey(command) != game::battle::commandTextKey(command)) {
-    return std::string{game::battle::folderCommandTextKey(command)};
-  }
-  if (std::string key = screens::commandLabelKey(command); !key.empty()) {
-    return key;
-  }
-  switch (command) {
-  case game::battle::Command::Technique1:
-    return "battle.command.technique_1";
-  case game::battle::Command::Technique2:
-    return "battle.command.technique_2";
-  case game::battle::Command::Technique3:
-    return "battle.command.technique_3";
-  case game::battle::Command::Finisher:
-    return "battle.command.finisher";
-  default:
-    return "battle.command.none";
-  }
 }
 
 std::string_view phaseName(coop::BattlePhase phase) {
@@ -671,6 +657,7 @@ void CoopBattles::guestTick(PlaySession& play, CoopGameplayBridge& bridge) {
   }
   if (mirror_.running() && watching_) {
     showFrame(play);
+    stepHud();
   }
   if (const auto ended = mirror_.takeEnded()) {
     if (watching_) {
@@ -730,6 +717,7 @@ void CoopBattles::startShowing(PlaySession& play, const coop::BattleBegin& begin
   }
   shownFixedFight_ = begin.fixedFight;
   shownFolder_ = begin.folder;
+  hudPartner_ = play.coopBattleFighter();
   core::logInfo("coop: battle {} began on the host; this player {}", begin.battle,
                 ownBattle_    ? "commands its partner"
                 : allyBattle_ ? "commands its partner beside the host's"
@@ -986,6 +974,9 @@ void CoopBattles::hostLeft(PlaySession* play) {
 }
 
 bool CoopBattles::handle(const ui::UiCommand& command) {
+  if (handleHud(command)) {
+    return true;
+  }
   const auto kind = [&]() -> std::optional<coop::BattleActionKind> {
     if (command.name == CoopBattleOrderCommand) {
       return coop::BattleActionKind::Command;
@@ -1145,7 +1136,7 @@ void CoopBattles::publish(const PlaySession& play) {
       settings.push_back({.name = screens::listEntryName("coop_battle.order", orders, "command"),
                           .value = static_cast<double>(number)});
       settings.push_back({.name = screens::listEntryName("coop_battle.order", orders, "label_key"),
-                          .value = orderLabelKey(command, shownFolder_)});
+                          .value = coopOrderLabelKey(command, shownFolder_)});
       ++orders;
     }
   }
@@ -1162,13 +1153,185 @@ void CoopBattles::publish(const PlaySession& play) {
   settings.push_back(
       {.name = "coop_battle.item_count", .value = static_cast<double>(items.size())});
   screens::publish(*ui_, settings, CoopBattleRevisionSetting);
-  if (!documentShown_ || !ui_->isVisible(CoopBattleDocument)) {
+  publishHud(play);
+  // The battle document draws the fight (publishHud); this one the end box the starter closes and
+  // the others wait on.
+  const bool endBox = frame && (frame->phase == coop::BattlePhase::End ||
+                                frame->phase == coop::BattlePhase::Closing);
+  if (endBox && (!documentShown_ || !ui_->isVisible(CoopBattleDocument))) {
     ui_->show(CoopBattleDocument, true);
     documentShown_ = true;
+  } else if (!endBox && documentShown_) {
+    documentShown_ = false;
+    ui_->hide(CoopBattleDocument);
   }
 }
 
+void CoopBattles::publishHud(const PlaySession& play) {
+  const auto& running = mirror_.running();
+  const auto& frame = mirror_.frame();
+  if (!running || !frame ||
+      (frame->phase != coop::BattlePhase::Fight && frame->phase != coop::BattlePhase::Victory)) {
+    hideHud();
+    return;
+  }
+  const coop::BattleRole role = mirror_.role().value_or(coop::BattleRole::Helper);
+  const screens::BattleView view = coopBattleViewOf(
+      {.begin = &*running,
+       .frame = &*frame,
+       .fighters = fighters_,
+       .role = role,
+       .self = mirror_.self(),
+       .partner = role != coop::BattleRole::Helper && hudPartner_ ? &*hudPartner_ : nullptr,
+       .moves = play.coopMoves(),
+       .bagOpen = hudBag_},
+      play.coopNameKeys());
+  screens::publish(*ui_, screens::settingsOf(view), screens::BattleRevisionSetting);
+  ui_->setSetting(
+      BattlePhaseSetting,
+      std::string{frame->phase == coop::BattlePhase::Victory ? VictoryPhase : FightPhase});
+  publishHudBars(play);
+  if (!hudShown_) {
+    hudShown_ = true;
+    hudMenu_.open();
+    hudBars_.reset();
+    ui_->setSetting(BattleActiveSetting, true);
+    ui_->show(BattleDocument, true);
+  }
+}
+
+// The foes' bars over them as the host's battle screen draws them (BattleScreen::publishHpBars):
+// every standing foe's in a Folder battle or with the option, else a while after its HP moved.
+void CoopBattles::publishHudBars(const PlaySession& play) {
+  const auto& running = mirror_.running();
+  std::vector<screens::EnemyHpBar> bars;
+  const render::MapCamera* camera = play.scene().camera();
+  if (running && camera != nullptr && camera->viewportSize().y > 0.0F) {
+    const double aspect = static_cast<double>(camera->viewportSize().x) /
+                          static_cast<double>(camera->viewportSize().y);
+    const ui::UiValue option = ui_->setting(screens::EnemyHpBarsAlwaysSetting);
+    const auto* always = std::get_if<bool>(&option);
+    const std::size_t enemies = running->enemyNpcs.size();
+    hudFoes_.resize(enemies + 1);
+    for (std::size_t enemy = 1; enemy <= enemies && enemy < fighters_.size(); ++enemy) {
+      const coop::BattleFighterState& foe = fighters_[enemy];
+      FoeHp& seen = hudFoes_[enemy];
+      if (foe.hp != seen.hp) {
+        seen.hitAt = seen.hp != 0 || seen.hitAt ? std::optional{ticks_} : std::nullopt;
+        seen.hp = foe.hp;
+      }
+      const bool recentlyHit = seen.hitAt && ticks_ - *seen.hitAt < HudHpBarTicks;
+      if (!screens::enemyHpBarShown({.always = shownFolder_ || (always != nullptr && *always),
+                                     .match = false,
+                                     .recentlyHit = recentlyHit,
+                                     .standing = foe.hp > 0 && !foe.down})) {
+        continue;
+      }
+      const std::optional<glm::vec2> node =
+          play.scene().fighterNodeOnWindow(running->enemyNpcs[enemy - 1], HudHpBarNode);
+      if (!node) {
+        continue;
+      }
+      bars.push_back(screens::enemyHpBarOf({.enemy = enemy,
+                                            .node = {.x = node->x, .y = node->y},
+                                            .aspect = aspect,
+                                            .hp = foe.hp,
+                                            .maxHp = foe.maxHp}));
+    }
+  }
+  screens::publish(*ui_, screens::settingsOf(bars), screens::HpBarsRevisionSetting);
+}
+
+void CoopBattles::stepHud() {
+  if (!hudShown_) {
+    return;
+  }
+  if (hudBag_ && !ui_->isVisible(PartnerMenuDocument)) {
+    hudBag_ = false;
+    ui_->setSetting(PartnerMenuContextSetting, std::string{});
+  }
+  hudMenu_.step(true);
+  hudBars_.step(hudMenu_.active());
+  screens::ScreenSettings settings = hudMenu_.settings();
+  std::ranges::move(hudBars_.settings(), std::back_inserter(settings));
+  screens::publish(*ui_, settings, screens::CommandMenuRevisionSetting);
+}
+
+void CoopBattles::hideHud() {
+  if (!hudShown_) {
+    return;
+  }
+  hudShown_ = false;
+  if (hudBag_) {
+    hudBag_ = false;
+    ui_->setSetting(PartnerMenuContextSetting, std::string{});
+    ui_->hide(PartnerMenuDocument);
+  }
+  hudFoes_.clear();
+  ui_->setSetting(BattleActiveSetting, false);
+  ui_->hide(BattleDocument);
+}
+
+// The battle document's commands on a guest: its strip orders this player's partner, the charge's
+// press cheers, and its bag throws from this player's own bag.
+bool CoopBattles::handleHud(const ui::UiCommand& command) {
+  if (!hudShown_) {
+    return false;
+  }
+  if (command.name == BattleCommandName) {
+    return handle({.name = std::string{CoopBattleOrderCommand}, .value = command.value});
+  }
+  if (command.name == BattleChargeCommand) {
+    return handle({.name = std::string{CoopBattleCheerCommand}, .value = {}});
+  }
+  if (command.name == BattleBagOpenCommand) {
+    openHudBag();
+    return true;
+  }
+  if (command.name == BattleBagCloseCommand) {
+    ui_->hide(PartnerMenuDocument);
+    return true;
+  }
+  if (hudBag_ && (command.name == BattleThrowCommand || command.name == BagUseCommand)) {
+    hudBag_ = false;
+    ui_->setSetting(PartnerMenuContextSetting, std::string{});
+    ui_->hide(PartnerMenuDocument);
+    session::InventoryAdapter* inventory = play_ != nullptr ? play_->coopInventory() : nullptr;
+    const auto* number = std::get_if<double>(&command.value);
+    if (inventory == nullptr || number == nullptr) {
+      return true;
+    }
+    if (const std::optional<assets::ItemHandle> item =
+            itemAt(inventory->inventory().slots(), slotOf(*number))) {
+      return handle(
+          {.name = std::string{CoopBattleItemCommand}, .value = inventory->items().at(*item).id});
+    }
+    return true;
+  }
+  return command.name == BattleCloseCommand || command.name == BattleEndCountCommand ||
+         command.name == BattleEndCountedCommand;
+}
+
+void CoopBattles::openHudBag() {
+  const auto& frame = mirror_.frame();
+  session::InventoryAdapter* inventory = play_ != nullptr ? play_->coopInventory() : nullptr;
+  if (!frame || !frame->bagAvailable || inventory == nullptr) {
+    return;
+  }
+  screens::publish(*ui_,
+                   screens::settingsOf(screens::bagViewOf(inventory->inventory(),
+                                                          inventory->items(), play_->coopNameKeys(),
+                                                          game::inventory::UseContext::Battle)),
+                   screens::BagRevisionSetting);
+  ui_->setSetting(screens::BagResultSetting, std::string{});
+  ui_->setSetting(PartnerMenuStartPageSetting, std::string{PartnerMenuItemsPage});
+  ui_->setSetting(PartnerMenuContextSetting, std::string{PartnerMenuBattleContext});
+  ui_->show(PartnerMenuDocument, true);
+  hudBag_ = true;
+}
+
 void CoopBattles::hideDocument() {
+  hideHud();
   if (!documentShown_) {
     return;
   }

@@ -2500,8 +2500,10 @@ asks for to the host as a `BattleAsk`; the host checks it (`game::coop::BattleRe
 partner as `session::BattleRequest::visitor` (`PlaySession::startVisitorBattle`; `FieldScene::BattlePartner::CoopGuest`
 draws it on the guest's partner) and tells the guest of every battle it runs (`BattleBegin`, a `BattleFrame` every 3
 ticks, `BattleEnd`). The guest's field holds (`PlaySession::holdForCoopBattle`) and its actors take the frames'
-figures (`FieldScene::holdFighter`; the host's partner is `BattlePartner::CoopHost`); the `coop_battle` document shows
-the life bars, the orders for this player's partner, the cheer and the items of its own bag. On the host,
+figures (`FieldScene::holdFighter`; the host's partner is `BattlePartner::CoopHost`). The `battle` document draws the
+fight as the host's own HUD in the player's skin (`coopBattleViewOf`, `CoopBattles::publishHud`): its own partner's
+card, the other partners as ally rows, the foes and its strip; the strip orders its partner, the charge cheers and the
+bag throws from its own bag. The `coop_battle` document is only the end box the starter closes. On the host,
 `BattleScreen::visiting` blocks its own orders and finisher and takes the guest's (`commandFromPlayer`, `cheer`,
 `throwLentItem`, `closeEnd`). When both partners are on the battle's map, the guest's partner joins as an ally
 (`CoopBattles` reads the guest's `BattleOffer`; `BattleScreen::setCoopAllies`): each game commands its own partner

@@ -190,6 +190,11 @@
 	font-effect: shadow(3dp 3dp #a33a12);
 }
 
+#finisher-word-dim {
+	color: #ffe58a40;
+	font-effect: none;
+}
+
 #finisher-ready {
 	box-sizing: border-box;
 	min-width: 123dp;
