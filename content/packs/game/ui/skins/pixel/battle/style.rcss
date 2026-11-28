@@ -421,21 +421,21 @@
 
 .ally .fighter-name {
 	font-family: "Pixel Small";
-	font-size: 22dp;
+	font-size: 26dp;
 	color: #f2f0e1;
 	font-effect: shadow(2dp 2dp #050c1a);
 }
 
 .ally-revive {
 	font-family: "Pixel Small";
-	font-size: 22dp;
+	font-size: 26dp;
 	color: #ffe64a;
 	font-effect: shadow(2dp 2dp #050c1a);
 }
 
 .ally-order {
 	font-family: "Pixel Small";
-	font-size: 18dp;
+	font-size: 24dp;
 	color: #9cc2ff;
 	font-effect: shadow(2dp 2dp #050c1a);
 }
@@ -500,6 +500,13 @@
 	font-family: "Pixel Small";
 	font-size: 24dp;
 	color: #e2483d;
+}
+
+#command-reach {
+	display: block;
+	font-family: "Pixel Small";
+	font-size: 24dp;
+	color: #93a6bc;
 }
 
 /* The Folder plate keeps a fixed height at the bottom left, four rows of one line each: the defense bar, the message

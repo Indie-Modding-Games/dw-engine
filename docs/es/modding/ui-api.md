@@ -742,6 +742,8 @@ Versión de la API de la interfaz: **0.32.0**.
 | `battle.menu.<n>.available` | ajuste | sí/no | Si la orden se puede dar ahora. |
 | `battle.menu.<n>.current` | ajuste | sí/no | Si es la orden que sigue el compañero ahora. |
 | `battle.menu.<n>.mp_cost` | ajuste | número | Los PM que le cuesta la técnica al compañero ahora; 0 en las demás órdenes. |
+| `battle.menu.<n>.area` | ajuste | texto | En un combate Folder, el área de la técnica: around_self, around_target o global; vacío si solo llega a su objetivo. |
+| `battle.menu.<n>.friendly_fire` | ajuste | booleano | En un combate Folder, si la técnica daña también al bando del compañero. |
 | `battle.menu.motion` | ajuste | número | Sube cada vez que la tira o las barras del compañero se mueven, o el icono bajo el cursor parpadea. |
 | `battle.menu.top` | ajuste | número | El borde de arriba de la tira, en líneas desde el centro de la pantalla. |
 | `battle.menu.bottom` | ajuste | número | El borde de abajo de la tira. |
@@ -829,7 +831,7 @@ Versión de la API de la interfaz: **0.32.0**.
 | `battle.state(): table` | consulta | tabla | El combate: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds y match_seconds (o nil) y cup (un combate de copa). |
 | `battle.fighters(): table` | consulta | tabla | Los luchadores, el compañero primero: name_key, status_key, hp, max_hp, mp, max_mp, fainted y hp_bar. |
 | `battle.allies(): table` | consulta | tabla | Los compañeros de los otros jugadores que pelean junto al de este en un combate cooperativo (vacío si no): name_key, status_key, hp, max_hp, mp, max_mp, fainted y revive_seconds (la cuenta atrás de un aliado caído, o nil). |
-| `battle.commands(): table` | consulta | tabla | La tira de órdenes, el golpe final primero: command, label_key, icon, available, current y mp_cost. |
+| `battle.commands(): table` | consulta | tabla | La tira de órdenes, el golpe final primero: command, label_key, icon, available, current, mp_cost, problem_key, area y friendly_fire (combate Folder: el área de la técnica y si daña aliados). |
 | `battle.finisher(): table` | consulta | tabla | El golpe final: progress, goal, ready, charging (el aura), charge (en porcentaje) y gauge (la esquina superior izquierda del indicador de carga sobre el compañero: x, y en porcentaje, o nil). |
 | `battle.strip(): table` | consulta | tabla | Dónde están la tira y las barras del compañero al entrar y salir: top, bottom, blink, hp_x y mp_x (o nil). |
 | `battle.intro(): table` | consulta | tabla | La apertura: step, anger (3 marcas), flee (8), anger_scale, flash y pieces (las piezas del cartel, con key). |

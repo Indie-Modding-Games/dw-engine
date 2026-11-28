@@ -790,7 +790,8 @@
 	display: none;
 }
 
-#fight.folder #command-name.problem {
+#fight.folder #command-name.problem,
+#fight.folder #command-name.reach {
 	display: inline-block;
 	padding: 2dp 10dp;
 	background-color: #10161ee0;
@@ -800,6 +801,19 @@
 
 #command-problem.hidden {
 	display: none;
+}
+
+#command-reach {
+	font-size: 18dp;
+	color: #b9c6d4;
+}
+
+#command-reach.hidden {
+	display: none;
+}
+
+#command-name.reach #command-problem {
+	margin-left: 10dp;
 }
 
 /* The open bag covers the middle of the screen down to the panel, and in the boxed skins the bottom too: the panel
@@ -862,8 +876,10 @@
 /* The Folder strip in three blocks, each button placed by logic.lua (lay_out_strip): the techniques with their MP,
    the four stances side by side as one control, then the target, clearing the queue, the bag and fleeing. A technique
    the partner has not the MP for is greyed with its cost in red before it is pressed, and why shows under it. */
+/* The grouped buttons are placed against the full-width #commands, not the row: a row sized by them would squeeze
+   them as it narrowed. */
 #command-row.grouped {
-	position: relative;
+	position: static;
 	padding: 0;
 }
 
@@ -895,7 +911,8 @@
 	background-color: #2a2228;
 }
 
-#fight.folder #command-name.problem {
+#fight.folder #command-name.problem,
+#fight.folder #command-name.reach {
 	position: absolute;
 	margin: 0;
 }

@@ -1029,6 +1029,12 @@ constexpr auto Contract =
             "In a folder battle, the text key of why the move cannot be ordered now (not enough "
             "MP, finisher not ready...); empty when it can."),
         entry(
+            Battle, Setting, "battle.menu.<n>.area", Text,
+            "In a folder battle, a technique's area: around_self, around_target or global; empty "
+            "when it reaches its target alone."),
+        entry(Battle, Setting, "battle.menu.<n>.friendly_fire", Boolean,
+              "In a folder battle, whether the technique also hits the partner's own side."),
+        entry(
             Battle, Setting, "battle.menu.motion", Number,
             "Goes up each time the strip or the partner's bars move, or the icon under the cursor blinks."),
         entry(Battle, Setting, "battle.menu.top", Number,
@@ -1254,8 +1260,10 @@ constexpr auto Contract =
             "otherwise): name_key, status_key, hp, max_hp, mp, max_mp, fainted and revive_seconds (a "
             "fallen ally's countdown, or nil)."),
         api(Battle, Query, "battle.commands", Table, "(): table",
-            "The command strip, the finisher first: command, label_key, icon, available, current, mp_cost "
-            "and problem_key (folder battle: why the move cannot be ordered now, or \"\")."),
+            "The command strip, the finisher first: command, label_key, icon, available, current, mp_cost, "
+            "problem_key (folder battle: why the move cannot be ordered now, or \"\"), area and "
+            "friendly_fire (folder battle: the technique's area, \"\" for one target, and whether "
+            "it hits allies)."),
         api(Battle, Query, "battle.finisher", Table, "(): table",
             "The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and "
             "gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil)."),

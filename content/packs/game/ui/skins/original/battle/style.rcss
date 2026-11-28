@@ -1256,6 +1256,34 @@
 	color: #a8d8f8;
 }
 
+/* The name and order sit on a dark strip, as the plate's labels do, so they read over the bright sand; the strip's
+   command name does too in a co-op fight. */
+.partner.ally .fighter-head {
+	display: inline-block;
+	height: auto;
+	padding: 0 10dp 6dp 10dp;
+	margin-bottom: 4dp;
+	background-color: #0b1218c8;
+}
+
+.ally .fighter-name {
+	color: #ffffff;
+}
+
+.ally {
+	margin: 0 0 10dp 0;
+}
+
+/* The open bag spans the top of the screen: the ally rows move under it. */
+#fight.bag-open #allies {
+	top: 380dp;
+}
+
+#fight.with-allies #command-label {
+	padding: 0 10dp;
+	background-color: #0b1218c8;
+}
+
 /* ------------------------------------------------------------------------------------------------------------------
    The Folder battle (not in the original; it follows this skin's boxes): one of the original's boxes (theme.rcss:
    .original-box) at the bottom left, 10 pixels from the edges as the partner's bars are from theirs. "Guard" in the
@@ -1334,6 +1362,17 @@
 }
 
 #command-problem.hidden {
+	display: none;
+}
+
+/* A Folder technique's reach takes a line of its own under the name, and the foe list makes room for it. */
+#command-reach {
+	display: block;
+	font-size: 22dp;
+	color: #a8b8c8;
+}
+
+#command-reach.hidden {
 	display: none;
 }
 
@@ -1441,6 +1480,10 @@
 	left: 30dp;
 	top: 210dp;
 	width: 300dp;
+}
+
+#fight.folder.reach #enemies {
+	top: 240dp;
 }
 
 #fight.folder .fighter.enemy {

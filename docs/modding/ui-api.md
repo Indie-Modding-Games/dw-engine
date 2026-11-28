@@ -823,6 +823,8 @@ UI API version: **0.33.0**.
 | `battle.menu.<n>.current` | setting | yes/no | Whether it is the command the partner follows now. |
 | `battle.menu.<n>.mp_cost` | setting | number | The MP the move costs the partner now; 0 for the other commands. |
 | `battle.menu.<n>.problem` | setting | text | In a folder battle, the text key of why the move cannot be ordered now (not enough MP, finisher not ready...); empty when it can. |
+| `battle.menu.<n>.area` | setting | text | In a folder battle, a technique's area: around_self, around_target or global; empty when it reaches its target alone. |
+| `battle.menu.<n>.friendly_fire` | setting | yes/no | In a folder battle, whether the technique also hits the partner's own side. |
 | `battle.menu.motion` | setting | number | Goes up each time the strip or the partner's bars move, or the icon under the cursor blinks. |
 | `battle.menu.top` | setting | number | The strip's top edge, in lines from the screen's center. |
 | `battle.menu.bottom` | setting | number | The strip's bottom edge. |
@@ -937,7 +939,7 @@ UI API version: **0.33.0**.
 | `battle.state(): table` | query | table | The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil) and cup (a cup battle). |
 | `battle.fighters(): table` | query | table | The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted, hp_bar, id, tag, targeted and queued. |
 | `battle.allies(): table` | query | table | The other players' partners fighting beside this player's in a co-op battle (empty otherwise): name_key, status_key, hp, max_hp, mp, max_mp, fainted and revive_seconds (a fallen ally's countdown, or nil). |
-| `battle.commands(): table` | query | table | The command strip, the finisher first: command, label_key, icon, available, current, mp_cost and problem_key (folder battle: why the move cannot be ordered now, or ""). |
+| `battle.commands(): table` | query | table | The command strip, the finisher first: command, label_key, icon, available, current, mp_cost, problem_key (folder battle: why the move cannot be ordered now, or ""), area and friendly_fire (folder battle: the technique's area, "" for one target, and whether it hits allies). |
 | `battle.finisher(): table` | query | table | The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil). |
 | `battle.folder(): table` | query | table | The folder battle's order panel: active, move_key, phase, phase_percent, committed, active_target_key, active_tag, queue (move keys), queue_targets (their foes' name keys), queue_tags, target_key, target_tag, stance, bar, bar_max, broken, broken_seconds and notice (an order that just ended other than done: key, move_key, reason_key, by_key; or nil). |
 | `battle.strip(): table` | query | table | Where the strip and the partner's bars are when entering and leaving: top, bottom, blink, hp_x and mp_x (or nil). |
