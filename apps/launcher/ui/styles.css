@@ -588,7 +588,7 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
   background: transparent;
   color: var(--text-muted);
   text-align: left; line-height: 1.25;
-  overflow-wrap: anywhere; hyphens: auto;
+  overflow-wrap: break-word;
   transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 .settings-tab .icon { display: grid; place-items: center; flex: none; }
@@ -805,7 +805,7 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
 .notice .row { display: flex; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap; }
 
 @media (max-width: 1100px) {
-  .settings-layout { grid-template-columns: 12.5rem 1fr; }
+  .settings-layout { grid-template-columns: 13.75rem 1fr; }
   .settings-panel { padding: var(--space-5); }
 }
 .message { width: min(40rem, 92vw); }
