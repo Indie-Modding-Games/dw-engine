@@ -328,6 +328,9 @@ end
 local action_places = { [7] = 1, [3] = 2, [1] = 4 }
 -- The grouped strip's buttons in the order they show, which left and right walk; empty otherwise.
 local strip_order = {}
+-- Ticks left to lay the strip out again: a label that changed (the target's) measures its new
+-- width only on the next frame.
+local strip_settle = 0
 
 local function lay_out_strip(document)
   local grouped = folder.active and ui.layout("strip") ~= "icons"
@@ -610,11 +613,13 @@ local function draw_finisher(document)
   local finisher = battle.finisher()
   local progress, goal = finisher.progress, finisher.goal
   local filled = goal > 0 and math.floor(progress * finisher_segments / goal) or 0
-  local ready = finisher.ready
   -- The gauge's word has two marks more than its steps; they show once it is full.
-  if ready then
+  if finisher.ready then
     filled = finisher_marks
   end
+  -- A fallen partner cannot take the finisher: the full gauge stays, its prompt goes.
+  local partner = fighters[1]
+  local ready = finisher.ready and not (partner ~= nil and (partner.fainted or partner.hp <= 0))
   for index = 0, finisher_marks - 1 do
     lookup(document, "finisher-" .. index):set_class("filled", index < filled)
   end
@@ -1134,6 +1139,11 @@ local reserved_zones = {
   "ally-0",
   "ally-1",
   "ally-2",
+  "prompt-command",
+  "prompt-bag",
+  "prompt-cheer",
+  "death-countdown",
+  "dc-badge",
 }
 local zone_gap = 6
 
@@ -1923,6 +1933,7 @@ local function draw(document)
   draw_bag(document, state)
   draw_commands(document)
   lay_out_strip(document)
+  strip_settle = 2
   -- Under the open bag the row keeps its cursor and the hovered command's name: the bag's
   -- document holds the focus meanwhile.
   if not bag_open then
@@ -2034,6 +2045,10 @@ function on_tick(document, seconds)
   if phase == "end" and ending ~= nil then
     tick_end(document, seconds)
   elseif phase == "fight" then
+    if strip_settle > 0 then
+      strip_settle = strip_settle - 1
+      lay_out_strip(document)
+    end
     if not bag_open then
       draw_command_name(document)
       draw_cursor(document)

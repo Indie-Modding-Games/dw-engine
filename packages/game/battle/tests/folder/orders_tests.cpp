@@ -111,3 +111,36 @@ TEST_CASE("an aggressive partner under attack still lands its order") {
                  static_cast<OrderPhase>(event.amount) == OrderPhase::Processing;
         }) == 1);
 }
+
+TEST_CASE("a finisher order runs to its aura and its hit, and a hit on its aura keeps the gauge") {
+  // Three foes keep hitting the partner: a hit during the aura cuts the finisher, and the order
+  // retries it instead of failing for an empty gauge.
+  std::int32_t landed = 0;
+  for (std::uint64_t seed = 1; seed <= 12; ++seed) {
+    CAPTURE(seed);
+    BattleSetup setup = folderDuel(evenStats(9999, 100), evenStats(9999, 100),
+                                   {"punch", "shot", "", "big_finish"}, {"punch", "shot"});
+    for (const std::int32_t x : {300, -300}) {
+      setup.enemies.push_back(setup.enemies.front());
+      setup.enemies.back().position = {.x = x, .z = 500};
+    }
+    Battle battle = startBattle(std::move(setup), seed);
+    const Fighter& partner = battle.state().partner();
+    for (std::int64_t frame = 0; frame < 8000 && partner.finisherProgress < partner.finisherGoal;
+         ++frame) {
+      if (battle.folderOf(PartnerId)->queue.empty() && !battle.folderOf(PartnerId)->active) {
+        static_cast<void>(battle.order(0, 1));
+      }
+      battle.step();
+    }
+    REQUIRE(partner.finisherProgress == partner.finisherGoal);
+    runFrames(battle, 200);
+    REQUIRE(battle.order(FinisherSlot, 1));
+    const BattleEvents events = runFrames(battle, 600);
+    CHECK(eventsOf(events, EventKind::OrderInvalid, PartnerId).empty());
+    landed += std::ranges::any_of(
+        eventsOf(events, EventKind::AttackStarted, PartnerId),
+        [](const BattleEvent& event) { return event.move == refOf(testCatalog(), "big_finish"); });
+  }
+  CHECK(landed >= 10);
+}

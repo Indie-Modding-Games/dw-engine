@@ -136,6 +136,10 @@ void handleFolderAttack(BattleContext& context, const AttackInFlight& attack) {
   const bool covered = !own.broken() && (guarding || context.random->below(Hundred) < chance);
   const std::int32_t damage = damageOf(context, attack, covered);
   if (!covered || !fighter.attack) {
+    // A finisher cut during its aura keeps its gauge, so the order retries it.
+    if (state.finisher.fighter == id && !fighter.attack && state.commanded(id)) {
+      fighter.finisherProgress = fighter.finisherGoal;
+    }
     if (stopOwnTechnique(context, id) && fighter.attack) {
       folderFighter(context, id).committed = true;
     }
