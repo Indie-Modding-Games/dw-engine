@@ -1,6 +1,9 @@
 #include <dwe/game/field/npcs.hpp>
+#include <dwe/game/partner/effects.hpp>
+#include <dwe/game/partner/partner.hpp>
 #include <dwe/game/partner/state.hpp>
 #include <dwe/game/save/migration.hpp>
+#include <dwe/game/story/partner_routines.hpp>
 #include <dwe/game/story/story_runner.hpp>
 #include <dwe/game/story/story_state_yaml.hpp>
 #include <dwe/session/game_session.hpp>
@@ -541,4 +544,117 @@ TEST_CASE("a dead partner's death section a map entry dropped before it ran is a
   story->runner()->enterMap(MapHead);
   REQUIRE_FALSE(story->scriptRunning());
   CHECK(asksForDeath());
+}
+
+namespace {
+
+// A stand-in for the death section of the map-head script on a partner with lives and lifetime
+// left (MAPHEAD 0x4DE: the lost life, routine 9) and the head section of map 37.
+constexpr std::string_view DeathMapHead = R"lua(-- dwx lua 4: a stand-in for script 0
+local story <const> = story
+local ENDED <const> = story.ENDED
+return { script = 0, sections = {
+  [0x04de] = function()
+    story.call_partner_routine(9)
+    story.wait_for_entity(255)
+    return ENDED
+  end,
+  [37] = function()
+    return ENDED
+  end,
+} }
+)lua";
+
+struct DeathPlay {
+  std::unique_ptr<dwe::session::GameSession> session;
+  StoryAdapter* story = nullptr;
+  dwe::session::StoryScenes* scenes = nullptr;
+
+  // The partner scenes the session starts within `frames` frames.
+  std::vector<dwe::game::story::PartnerScene> run(int frames) {
+    std::vector<dwe::game::story::PartnerScene> started;
+    for (int frame = 0; frame < frames; ++frame) {
+      session->tick(1.0 / 60.0);
+      if (auto request = scenes->takePartnerScene()) {
+        started.push_back(request->scene);
+        scenes->partnerSceneFinished();
+      }
+    }
+    return started;
+  }
+};
+
+DeathPlay deathPlay(const TestPacks& packs) {
+  auto adapter =
+      std::make_unique<StoryAdapter>(dwe::session::StoryAdapterDesc{.files = &packs.files()});
+  StoryAdapter* story = adapter.get();
+  auto ownedScenes =
+      std::make_unique<dwe::session::StoryScenes>(dwe::session::StoryScenesDesc{.story = story});
+  dwe::session::StoryScenes* scenes = ownedScenes.get();
+  std::vector<std::unique_ptr<SessionSystem>> systems;
+  systems.push_back(std::move(adapter));
+  systems.push_back(std::move(ownedScenes));
+  auto session = newGameWith(packs, std::move(systems));
+  REQUIRE(story->runner() != nullptr);
+  REQUIRE(scenes->playsDeath());
+  return {.session = std::move(session), .story = story, .scenes = scenes};
+}
+
+constexpr int SceneFrames = 30;
+
+dwe::game::partner::BattleConsequences defeat() {
+  dwe::game::partner::BattleConsequences lost;
+  lost.result = dwe::game::partner::BattleResult::Lost;
+  lost.livesLost = 1;
+  return lost;
+}
+
+} // namespace
+
+TEST_CASE("a lost life whose scene started costs one life when the host changes the map after") {
+  // Co-op QA: a guest lost a battle, its lost life's scene played and the host led the group to
+  // another map. The death section must not run again for that life.
+  using dwe::game::story::PartnerScene;
+  constexpr std::int32_t ClearedVariable = 255;
+  constexpr std::int32_t MapHead = 37;
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory},
+                        {"story/000.lua", DeathMapHead}};
+  DeathPlay play = deathPlay(packs);
+  dwe::game::partner::Partner& partner = play.session->partner();
+  const std::int32_t lives = partner.state().life.lives;
+  REQUIRE(lives > 1);
+
+  partner.applyBattle(defeat(), play.session->clock());
+  CHECK(play.run(SceneFrames) == std::vector{PartnerScene::BattleLostLife});
+  REQUIRE(play.story->state().setVariable(ClearedVariable, 7).has_value());
+  play.story->runner()->enterMap(MapHead);
+  CHECK(play.run(SceneFrames).empty());
+  CHECK(play.story->state().variable(ClearedVariable).value_or(-1) == 7);
+  CHECK(partner.state().life.lives == lives - 1);
+  CHECK(partner.alive());
+}
+
+TEST_CASE("a partner saved dead with lives left lives on after its lost life and loses the next") {
+  // Co-op QA: the host's save had its partner dead with three lives (a debug command gave them
+  // back). The death section played the lost life (murd.c: MURD_tick with lives left), the partner
+  // stayed dead and no defeat took a life from it again.
+  using dwe::game::story::PartnerScene;
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory},
+                        {"story/000.lua", DeathMapHead}};
+  DeathPlay play = deathPlay(packs);
+  dwe::game::partner::Partner& partner = play.session->partner();
+  dwe::game::partner::PartnerState dead = partner.state();
+  constexpr std::int32_t Lives = 3;
+  dead.life.lives = Lives;
+  dead.life.phase = dwe::game::partner::LifePhase::DiedOtherwise;
+  REQUIRE(dead.life.remainingLifetime > 0);
+  REQUIRE(partner.restore(dead).has_value());
+
+  CHECK(play.run(SceneFrames) == std::vector{PartnerScene::BattleLostLife});
+  CHECK(partner.alive());
+  partner.applyBattle(defeat(), play.session->clock());
+  CHECK(partner.state().life.lives == Lives - 1);
+  CHECK(play.run(SceneFrames) == std::vector{PartnerScene::BattleLostLife});
 }

@@ -225,7 +225,24 @@ struct FieldStage {
   [[nodiscard]] bool showsPartner() const { return !partnerHidden; }
   // The map's characters: all while the scenery shows, else only shownNpc.
   [[nodiscard]] bool showsNpcs() const { return !sceneryHidden; }
+  // The other co-op players and their partners: this player's scene is its own, so they go with
+  // the scenery.
+  [[nodiscard]] bool showsOtherPlayers() const { return !sceneryHidden; }
 };
+
+// The time of day the field turns to on reaching `hour`, if it turns. map.c: renderMap starts the
+// fade only at the hours a time of day starts. A co-op game turns at any hour: its clock may pass
+// such an hour unseen (its player held, a jump to the world's time), and every player is to see
+// the world's time of day.
+[[nodiscard]] inline std::optional<render::TimeOfDay>
+timeOfDayTurn(std::int32_t hour, render::TimeOfDay shown, const render::TimeOfDaySchedule& schedule,
+              bool sharedClock) {
+  const render::TimeOfDay now = render::timeOfDayAt(hour, schedule);
+  if (now == shown || (!sharedClock && !render::timeOfDayChangesAt(hour, schedule))) {
+    return std::nullopt;
+  }
+  return now;
+}
 
 // The first state of the field effects' rolls (libc rand's increment).
 inline constexpr std::uint64_t FieldEffectsSeed = 0x3039;
@@ -286,6 +303,8 @@ public:
   // from the frame the clock enters the hour that starts it (before finishTick follows the clock,
   // as the player's clock tick starts it before the partner's tickConditions) until it ends.
   [[nodiscard]] bool daytimeFadeRunning() const;
+  // A co-op game's clock is the world's (timeOfDayTurn).
+  void shareClock(bool on) { sharedClock_ = on; }
   // The player turns to the partner (Field::playerFacePartner).
   void playerFacePartner();
   // Starts a logic tick of every character on the field without moving it (Field::settle): each
@@ -1187,6 +1206,7 @@ private:
   const ruleset::GameClock* clock_ = nullptr;
   std::int32_t clockHour_ = 0;
   bool fixedTime_ = false;
+  bool sharedClock_ = false;
   // The map's own lights, and how long until the time of day's change reaches them: the original
   // switches them when the palette fade ends.
   render::ModelLighting mapLighting_;

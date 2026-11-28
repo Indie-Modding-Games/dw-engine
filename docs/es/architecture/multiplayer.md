@@ -933,11 +933,13 @@ el renacer del huevo: el script de la muerte retiene al jugador, así que ningun
 cooperativo no empieza ningún combate mientras el compañero del anfitrión, o el de un invitado en su mapa, muere o
 espera a renacer (la escena de la muerte corre o espera; la oferta del invitado lo dice): el combate de historia del
 anfitrión se rechaza y su sección acaba donde está, sin huida a la pantalla anterior (el NPC puede volver a
-empezarlo), la petición de un invitado espera y luego se rechaza como ocupado, y la historia de un invitado que muere
-acaba su sección igual. Un invitado cuyo compañero muere se queda en su mapa de despertar, fuera de los movimientos del
+empezarlo), la petición de un invitado espera y luego se rechaza porque un compañero renace, y la historia de un
+invitado que muere acaba su sección igual. El jugador que lo pidió ve un aviso de que el combate espera al renacer de un
+compañero. Un invitado cuyo compañero muere se queda en su mapa de despertar, fuera de los movimientos del
 anfitrión, hasta que acaba el script del renacer; luego vuelve a seguir al anfitrión. Una sección de muerte que un
-cambio de mapa descarta antes de correr se vuelve a pedir mientras el compañero sigue muerto. Un jugador solo no
-cambia.
+cambio de mapa descarta antes de correr se vuelve a pedir mientras el compañero sigue muerto. La escena de una muerte,
+una evolución o una vida perdida es solo de ese jugador: los demás jugadores y sus compañeros no se dibujan en su
+escenario negro y se oscurecen con su escenario. Un jugador solo no cambia.
 
 Límites de esta primera versión: los efectos de las técnicas, los números de daño y las marcas de estado solo se dibujan
 en el anfitrión; el invitado ve moverse a los luchadores y las barras de vida. Los luchadores de torneo que no son NPC
@@ -956,7 +958,7 @@ Los mensajes del combate (el enlace de cada invitado lleva los suyos):
 |---|---|---|---|---|
 | `0x64` | `BattleAsk` | fiable | cliente → anfitrión | El número de petición del invitado, el mapa, las ranuras NPC de los enemigos, las marcas de combate fijo y predefinido, y el luchador de su compañero. |
 | `0x65` | `BattleBegin` | fiable | anfitrión → cliente | Número de combate, quien lo empezó, la petición que responde, mapa, ranuras NPC de los enemigos, la especie de cada luchador, combate fijo, los jugadores de los aliados, si es un combate Folder y (versión de protocolo 15) los ids de los cuatro movimientos equipados de cada luchador, vacíos los de los enemigos, que nombran las órdenes de los compañeros en el HUD del invitado. |
-| `0x67` | `BattleRefused` | fiable | anfitrión → cliente | El número de petición y por qué (ocupado, no está aquí, falló). |
+| `0x67` | `BattleRefused` | fiable | anfitrión → cliente | El número de petición y por qué (ocupado, no está aquí, falló, un compañero renace). |
 | `0x68` | `BattleFrame` | no fiable | anfitrión → cliente | Número de combate y de frame, fase; del compañero propio del invitado (el que pelea, para un ayudante) su comando actual, la tira, la bolsa y (versión de protocolo 15) el progreso y la meta de su carga de remate y, en un combate Folder, su placa (orden activa con fase y progreso, compromiso, órdenes en espera con sus objetivos, objetivo, postura, barra de defensa y su capacidad, segundos de rotura, el aviso de la última orden); si se carga un remate; de cada luchador PV, PM, máximos, caído, segundos para revivir y (versión de protocolo 15) orden actual, postura, estado y si se ve su barra de PV; las figuras retenidas; los objetos lanzados; (versión de protocolo 15) cómo acabó el combate, cuando ya acabó. |
 | `0x69` | `BattleAction` | fiable | cliente → anfitrión | Un comando, una orden, una postura, un ánimo, el cierre de la caja final, o un objeto lanzado con el compañero al que vuela (luchador más uno, 0 para el propio o el que pelea). |
 | `0x6B` | `BattleEnd` | fiable | anfitrión → cliente | Resultado, los NPC que dejaron el mapa, bits y el botín del compañero de este invitado. |

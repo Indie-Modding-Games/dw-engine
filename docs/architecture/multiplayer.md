@@ -803,10 +803,12 @@ helps as above. Each partner runs or is knocked out on its own; the team loses o
 death script holds the player, so no talk or touch reaches a battle. In co-op no battle starts while the partner of the
 host, or of a guest on its map, dies or waits to be reborn (the death's scene runs or waits; the guest's offer says so):
 the host's story battle is refused and its section ends where it stands, with no flight back to the previous screen
-(the NPC can start it again), a guest's ask waits and is then refused as busy, and a dying guest's own story ends its
-section the same way. A guest whose own partner dies stays on its wake map, out of the host's moves, until the
+(the NPC can start it again), a guest's ask waits and is then refused because a partner is reborn, and a dying guest's
+own story ends its section the same way. The player who asked sees a notice that the battle waits for a partner's
+rebirth. A guest whose own partner dies stays on its wake map, out of the host's moves, until the
 rebirth script ends; then it follows the host again. A death section that a map change drops before it runs is asked
-for again while the partner stays dead. Single player is unchanged.
+for again while the partner stays dead. A death, an evolution or a lost life's scene is this player's own: the other
+players and their partners are not drawn on its black stage and darken with its scenery. Single player is unchanged.
 
 Limits of this first version: the techniques' effects, the damage numbers and the status marks are drawn only on the
 host; the guest sees the fighters move and the life bars. Tournament fighters that are not map NPCs are not drawn on
@@ -824,7 +826,7 @@ The battle messages (each guest's link carries its own):
 |---|---|---|---|---|
 | `0x64` | `BattleAsk` | reliable | client → host | The guest's ask number, map, the enemies' NPC slots, the fixed-fight and predefined flags, and its partner's fighter. |
 | `0x65` | `BattleBegin` | reliable | host → client | Battle number, starter, the ask it answers, map, the enemies' NPC slots, every fighter's species, fixed fight, the allies' players, whether it is a Folder battle and (protocol version 15) every fighter's four equipped move ids, the enemies' empty, which name the partners' orders on the guest's HUD. |
-| `0x67` | `BattleRefused` | reliable | host → client | The ask number and why (busy, not here, failed). |
+| `0x67` | `BattleRefused` | reliable | host → client | The ask number and why (busy, not here, failed, a partner is reborn). |
 | `0x68` | `BattleFrame` | unreliable | host → client | Battle and frame number, phase; for the guest's own partner (the fighting one for a helper) its current command, the strip, the bag, and (protocol version 15) its finisher gauge's progress and goal and, in a Folder battle, its plate (active order with phase and progress, commit, waiting orders with their targets, target, stance, defense bar and capacity, break seconds, the last order's notice); whether a finisher charges; every fighter's HP, MP, maxima, down, revive seconds and (protocol version 15) current order, stance, status and whether its HP bar shows; the held figures; the items thrown; (protocol version 15) how the battle ended, once it has. |
 | `0x69` | `BattleAction` | reliable | client → host | A command, an order, a stance, a cheer, the end box's close, or an item thrown with the partner it flies to (fighter plus one, 0 for its own or the fighting one). |
 | `0x6B` | `BattleEnd` | reliable | host → client | Outcome, the NPCs that left the map, bits, and this guest's partner's spoils. |

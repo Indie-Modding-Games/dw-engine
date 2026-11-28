@@ -162,6 +162,10 @@ public:
   // the rebirth strategy picks.
   core::Result<void> rebirth(const ruleset::GameClock& clock, std::int32_t tamerLevel,
                              std::optional<std::size_t> egg = std::nullopt);
+  // The lost life's scene ran on a partner counted dead with lives and lifetime left (a save or a
+  // debug command made it so): it lives on, as the original's partner does once MURD_tick is over.
+  // False when the partner stays as it was.
+  bool surviveLostLife();
 
   // A story order changed the partner's numbers or conditions in place (script_interp.c:
   // scriptInstruction28to3F, scriptInstruction64to7E): the species stays and nothing else runs.

@@ -235,6 +235,7 @@ void StorySceneGlue::startBattle(session::StoryScenes& scenes, BattleScreen& bat
   }
   if (holdBattles_) {
     core::logInfo("coop: no battle starts while a partner dies or waits to be reborn");
+    heldBattle_ = true;
     scenes.battleFinished(game::story::BattleOutcome::Refused);
     return;
   }

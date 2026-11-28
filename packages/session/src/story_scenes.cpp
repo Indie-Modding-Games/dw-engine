@@ -223,6 +223,12 @@ private:
     case PartnerScene::SicknessLostLife:
     case PartnerScene::BattleLostLife:
       scenes_->deathPending = false;
+      if (scene != PartnerScene::Dying && scenes_->session != nullptr &&
+          scenes_->session->partner().surviveLostLife()) {
+        core::logWarning("[port:death] MURD_tick (murd.c:756): the partner was counted dead with "
+                         "{} lives left; it lives on after its lost life",
+                         scenes_->session->partner().state().life.lives);
+      }
       scenes_->dying = scenes_->session != nullptr && !scenes_->session->partner().alive();
       break;
     case PartnerScene::LostAllLives:

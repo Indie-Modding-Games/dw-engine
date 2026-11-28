@@ -970,7 +970,8 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     BattleRefused refused;
     refused.ask = in.get<std::uint32_t>();
     const auto reason = in.get<std::uint8_t>();
-    if (!in.ok() || refused.ask == 0 || reason > static_cast<std::uint8_t>(BattleRefusal::Failed)) {
+    if (!in.ok() || refused.ask == 0 ||
+        reason > static_cast<std::uint8_t>(BattleRefusal::PartnerDying)) {
       return core::fail("invalid cooperative battle refusal");
     }
     refused.reason = static_cast<BattleRefusal>(reason);

@@ -17,6 +17,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "battle_screen.hpp"
@@ -100,6 +101,10 @@ public:
   // No game is played any more: everything goes.
   void reset();
   [[nodiscard]] std::vector<game::coop::PlayerId> fighting() const { return mirror_.fighting(); }
+  // The notice for this player since the last call: its battle waits for a partner's rebirth.
+  [[nodiscard]] std::optional<std::string_view> takeNotice() {
+    return std::exchange(notice_, std::nullopt);
+  }
 
 private:
   void hostTick(PlaySession& play);
@@ -155,6 +160,7 @@ private:
   game::coop::BattleMirror mirror_;
   // The guest's ask waiting for its answer, and whether the battle shown is the one it asked for.
   std::optional<std::uint32_t> asked_;
+  std::optional<std::string_view> notice_;
   bool ownBattle_ = false;
   // Whether this player's partner fights in the host's battle beside the host's.
   bool allyBattle_ = false;

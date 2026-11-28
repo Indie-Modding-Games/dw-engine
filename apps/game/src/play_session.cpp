@@ -423,6 +423,7 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
   if (savedPlace) {
     (*scene)->field().yieldPlayerToNpcsOnLoad();
   }
+  (*scene)->shareClock(start.coop());
   const bool cleared = start.load.has_value() && session.gameCleared();
   auto play = std::make_unique<PlaySession>(Key{}, context, std::move(*game), std::move(*scene));
   play->coopGame_ = start.coop();

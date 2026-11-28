@@ -58,8 +58,10 @@ BattleAskVerdict BattleReferee::judge(const BattleAsk& ask, const HostMoment& ho
   if (!host.map.empty() && ask.mapId != host.map) {
     return {.waits = false, .refusal = BattleRefusal::NotHere};
   }
-  if (host.map.empty() || !host.guestHere || host.battling || host.held) {
-    return {.waits = true, .refusal = std::nullopt};
+  if (host.map.empty() || !host.guestHere || host.battling || host.held || host.partnerDying) {
+    return {.waits = true,
+            .refusal = std::nullopt,
+            .waitRefusal = host.partnerDying ? BattleRefusal::PartnerDying : BattleRefusal::Busy};
   }
   return {};
 }
