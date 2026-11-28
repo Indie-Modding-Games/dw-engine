@@ -924,10 +924,12 @@ el color 1 de su CLUT, `0x6B5A`). Cualquier documento puede usarla para otro tex
   (`Ａ`) y a su equivalente ASCII (`A`), la tinta es blanca y la tiñe el `color` de RCSS, y crece en múltiplos enteros
   (a 720 de alto, `round(tamaño / 11)`, al menos 1; a otra altura ese múltiplo por los píxeles por dp,
   redondeado hacia abajo, para que el texto no crezca más que sus cajas) con los píxeles en coordenadas enteras, así que se ve nítida a cualquier
-  resolución. Cada glifo cae en la rejilla de 4 píxeles del original desde el inicio de su texto (`font.c: drawGlyph`
-  sube el glifo al área de texto de 4 bits en `x / 4`), redondeando hacia abajo, mientras la pluma avanza lo que dice
-  cada glifo: tras uno de 5 píxeles (`,` `.` `!`) el siguiente cae hasta 3 píxeles antes. Eso solo mueve el dibujo; los
-  anchos que mide la maquetación no cambian.
+  resolución. Cada glifo se dibuja donde está la pluma. El original lo ajusta a una rejilla de 4 píxeles (`font.c:
+  drawGlyph` sube el glifo al área de texto de 4 bits en `x / 4`) mientras la pluma avanza el ancho de cada glifo, así
+  que tras un signo de 5 píxeles (`,` `.` `;`) el glifo siguiente caía hasta 3 píxeles antes y se comía el espacio, y
+  las letras tras una `j` se separaban; dwe no ajusta (una mejora sobre el original). Además un glifo deja como mucho 3
+  columnas vacías tras su tinta (`MaxBlankAfterInk`, como la `i`): la tabla del original da una más a la `j`, la `I` y
+  `+ - =`, que se leía como un espacio dentro de la palabra. Las cifras conservan su ancho para que los números cuadren.
 - **Las letras con tilde y los signos que el original no tiene** se componen al cargar la fuente
   (`src/composed_glyphs.cpp`) con sus propios glifos, en celdas nuevas bajo las del atlas: la letra base con una marca
   (aguda, grave, circunfleja, diéresis, virgulilla, cedilla) de un píxel de grosor centrada sobre su tinta con una fila
@@ -989,7 +991,9 @@ borde mezcla los dos texels (`rml.slang: sharpUv`). Con muestreo lineal sin más
 cercano sin más, a una proporción que no es entera (3dp por píxel del original, a 1,5 o 2 píxeles por dp, dibujan un texel de la copia
 ×4 de 1,125 o 1,5 píxeles) los texels salen de uno o dos píxeles a turnos y la imagen tiembla al moverse o al crecer
 la burbuja. Se comprobó con capturas a 1920 × 1080 (1,5) y 2560 × 1440 (2), fuera del repositorio porque llevan arte
-del disco; el resto de imágenes de la UI se siguen filtrando.
+del disco; el resto de imágenes de la UI se siguen filtrando. El atlas de la fuente de mapa de bits también se muestrea
+nítido (`FontEngine::setBeforeBitmapAtlas` pide `RenderBridge::generateNextSharp`): filtrado, un glifo en una posición
+fraccionaria cogía una columna de la tinta de la celda vecina, una barra tenue tras la última letra de un título grande.
 
 | Pantalla | Qué dibuja | Fuente |
 |---|---|---|

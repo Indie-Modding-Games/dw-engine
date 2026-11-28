@@ -84,6 +84,10 @@ void GymFieldPorts::setTraining(bool training) {
   }
 }
 
+bool GymFieldPorts::hourRuns() {
+  return session().courseHourRuns();
+}
+
 void GymFieldPorts::animate(Actor actor, std::int32_t animation) {
   if (animation < 0) {
     return;

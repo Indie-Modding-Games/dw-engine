@@ -7,6 +7,7 @@
 #include <cmath>
 #include <numbers>
 
+#include "coop_machine_spot.hpp"
 #include "coop_snapshot.hpp"
 
 namespace dwe::app {
@@ -196,6 +197,10 @@ std::vector<CoopOutgoing> CoopHostWorld::tick(game::field::Field& field, std::ui
     placed_.clear();
   }
   const float radius = field.rules().player.radius;
+  takenSpots_.clear();
+  if (field.scriptedClipOf(field.partnerEntity())) {
+    takenSpots_.push_back(field.partner().position);
+  }
   for (const coop::PlayerRecord& record : authority_.players()) {
     const coop::PlayerId id = record.id;
     if (id == coop::HostPlayerId) {
@@ -272,6 +277,10 @@ void CoopHostWorld::showHeld(game::field::Field& field, coop::PlayerId id, const
     if (body && glm::distance(body->position, partnerPose->position) <= HeldPartnerReach) {
       at = partnerPose;
     }
+  }
+  if (at && held.partner->action) {
+    at->position = machineSpotBeside(at->position, at->yaw, takenSpots_);
+    takenSpots_.push_back(at->position);
   }
   (void)field.drivePartner(id, at);
   field.showOwnerClip(*partner, at ? playedClipOf(held.partner->action) : std::nullopt);

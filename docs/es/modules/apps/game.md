@@ -1483,7 +1483,8 @@ los personajes, aunque ninguna evolución del juego los alcance. Con los datos d
 sin modelo). Una especie sin modelo queda fuera aunque tenga fila de evolución propia, y `evolve` la rechaza:
 WereGarurumon, una forma recortada del disco, conserva su fila pero no tiene huesos, ni modelo, y su lista de ataques es
 de relleno (16 veces Torre de fuego: ni final ni nada que aprender); evolucionar a ella dejaba el estado diciendo
-WereGarurumon mientras el campo seguía dibujando la forma anterior. El menú y `evolve` usan `evolveByCheat`, que solo se alcanza desde las herramientas de desarrollo; las
+WereGarurumon mientras el campo seguía dibujando la forma anterior (ninguna evolución llega ya a una forma así, y una ya
+guardada se dibuja como la forma de la que viene: [especies sin modelo](../game/extra-evolutions.md#especies-sin-modelo)). El menú y `evolve` usan `evolveByCheat`, que solo se alcanza desde las herramientas de desarrollo; las
 evoluciones de la partida no cambian. Lo que le falta a una especie sin fila se toma de un sustituto
 (`assets::standInRow`): la primera especie con fila del mismo nombre (la copia de enemigo de una forma de compañero),
 luego del mismo nivel y tipo, luego del mismo nivel y si no la de un Novato. Así salen:

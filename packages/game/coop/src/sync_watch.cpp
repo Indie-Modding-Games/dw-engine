@@ -46,12 +46,18 @@ float distanceOf(const SyncHeld& a, const SyncHeld& b) {
 
 } // namespace
 
+void SyncMonitor::note(std::string text) {
+  events_.push_back(std::format("{} ms, tick {}: {}", now_.count(), worldTick_, text));
+}
+
 void SyncMonitor::authority(std::vector<SyncHeld> players, std::uint32_t worldTick,
                             net::Millis now) {
+  now_ = now;
+  worldTick_ = worldTick;
   for (const SyncHeld& player : players) {
     const auto known = maps_.find(player.id);
     if (known != maps_.end() && known->second != player.mapId) {
-      events_.push_back(
+      note(
           std::format("map: player {} went from {} to {}", player.id, known->second, player.mapId));
     }
     maps_[player.id] = player.mapId;
@@ -60,7 +66,6 @@ void SyncMonitor::authority(std::vector<SyncHeld> players, std::uint32_t worldTi
     return std::ranges::none_of(players, [&](const SyncHeld& p) { return p.id == entry.first; });
   });
   authority_ = std::move(players);
-  worldTick_ = worldTick;
   for (const auto& [guest, state] : guests_) {
     if (state.newest) {
       compare(guest, now);
@@ -69,28 +74,39 @@ void SyncMonitor::authority(std::vector<SyncHeld> players, std::uint32_t worldTi
 }
 
 void SyncMonitor::report(PlayerId guest, const SyncReport& report, net::Millis now) {
+  now_ = now;
   Guest& state = guests_[guest];
   if (const auto arrival = state.reports.observe(report.sequence);
       arrival == SequenceWatch::Arrival::Late || arrival == SequenceWatch::Arrival::Repeat) {
     return;
   }
+  if (trace_) {
+    for (const SyncHeld& held : report.players) {
+      const auto truth = std::ranges::find(authority_, held.id, &SyncHeld::id);
+      note(std::format("update: player {} report {} (snapshot tick {}) holds player {} at {}; the "
+                       "host has {}",
+                       guest, report.sequence, report.snapshotTick, held.id,
+                       placeText(held.mapId, held.x, held.y, held.z),
+                       truth == authority_.end()
+                           ? std::string{"nothing"}
+                           : placeText(truth->mapId, truth->x, truth->y, truth->z)));
+    }
+  }
   if (report.snapshotsLost > state.snapshotsLost) {
-    events_.push_back(std::format("lost: player {} missed {} more snapshots ({} in all)", guest,
-                                  report.snapshotsLost - state.snapshotsLost,
-                                  report.snapshotsLost));
+    note(std::format("lost: player {} missed {} more snapshots ({} in all)", guest,
+                     report.snapshotsLost - state.snapshotsLost, report.snapshotsLost));
   }
   if (report.snapshotsLate > state.snapshotsLate) {
-    events_.push_back(std::format("late: player {} got {} more snapshots out of order ({} in all)",
-                                  guest, report.snapshotsLate - state.snapshotsLate,
-                                  report.snapshotsLate));
+    note(std::format("late: player {} got {} more snapshots out of order ({} in all)", guest,
+                     report.snapshotsLate - state.snapshotsLate, report.snapshotsLate));
   }
   state.snapshotsLost = report.snapshotsLost;
   state.snapshotsLate = report.snapshotsLate;
   for (const SyncHeld& held : report.players) {
     const auto known = state.heldMaps.find(held.id);
     if (known != state.heldMaps.end() && known->second != held.mapId) {
-      events_.push_back(std::format("map: player {} now holds player {} on {} (was {})", guest,
-                                    held.id, held.mapId, known->second));
+      note(std::format("map: player {} now holds player {} on {} (was {})", guest, held.id,
+                       held.mapId, known->second));
     }
     state.heldMaps[held.id] = held.mapId;
   }
@@ -102,12 +118,12 @@ void SyncMonitor::report(PlayerId guest, const SyncReport& report, net::Millis n
 void SyncMonitor::states(PlayerId guest, const SequenceWatch& watch) {
   Guest& state = guests_[guest];
   if (watch.lost() > state.statesLost) {
-    events_.push_back(std::format("lost: the host missed {} more states of player {} ({} in all)",
-                                  watch.lost() - state.statesLost, guest, watch.lost()));
+    note(std::format("lost: the host missed {} more states of player {} ({} in all)",
+                     watch.lost() - state.statesLost, guest, watch.lost()));
   }
   if (watch.late() > state.statesLate) {
-    events_.push_back(std::format("late: the host got {} more states of player {} out of order",
-                                  watch.late() - state.statesLate, guest));
+    note(std::format("late: the host got {} more states of player {} out of order",
+                     watch.late() - state.statesLate, guest));
   }
   state.statesLost = watch.lost();
   state.statesLate = watch.late();
@@ -153,8 +169,8 @@ void SyncMonitor::compare(PlayerId guest, net::Millis now) {
     if (!found) {
       if (open != divergences_.end()) {
         if (open->second.persistent) {
-          events_.push_back(std::format(
-              "in sync: player {} holds player {} where the host has it again", guest, held.id));
+          note(std::format("in sync: player {} holds player {} where the host has it again", guest,
+                           held.id));
         }
         divergences_.erase(open);
       }
@@ -166,7 +182,7 @@ void SyncMonitor::compare(PlayerId guest, net::Millis now) {
     }
     if (!found->persistent && now - found->since >= rules_.persistAfter) {
       found->persistent = true;
-      events_.push_back(std::format(
+      note(std::format(
           "diverged: player {} holds player {} at {} for {} ms; the host has it on {}{}", guest,
           held.id, placeText(held.mapId, held.x, held.y, held.z), (now - found->since).count(),
           found->authorityMap.empty() ? std::string{"nothing (gone)"} : found->authorityMap,

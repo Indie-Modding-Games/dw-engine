@@ -35,6 +35,9 @@ public:
   // tamerSetState and partnerSetState: the actors are the course's while training, the player's
   // after.
   virtual void setTraining(bool training) = 0;
+  // Co-op: the world's clock has not yet run the hour this session costs, so the course waits for
+  // it before it lets the actors go. Alone a session's hour is a jump and nothing waits.
+  [[nodiscard]] virtual bool hourRuns() { return false; }
   virtual void animate(Actor actor, std::int32_t animation) = 0;
   // anim.c: animFlag 2: the actor's clip plays on where it stands (applyRootMomentum skips its
   // root motion) until cleared or the next animate (startAnimation resets animFlag).
@@ -182,6 +185,7 @@ private:
   const CourseRules* course_;
   std::int32_t state_ = 0;
   bool finished_ = false;
+  bool waitingForHour_ = false;
   // tamer.c: tamerSetState(8): the player watches the partner train.
   bool watching_ = false;
   double pendingSeconds_ = 0.0;

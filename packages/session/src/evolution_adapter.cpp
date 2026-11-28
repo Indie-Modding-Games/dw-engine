@@ -474,6 +474,15 @@ std::vector<std::string> EvolutionAdapter::cheatTargets() const {
   return ids;
 }
 
+std::string EvolutionAdapter::drawnSpecies(std::string_view species) const {
+  if (!evolution_) {
+    return std::string{species};
+  }
+  const EvolutionTables& tables = evolution_->tables();
+  const auto found = tables.find(species);
+  return found ? std::string{tables.idOf(tables.drawnAs(*found))} : std::string{species};
+}
+
 game::evolution::Level EvolutionAdapter::levelOf(std::string_view species) const {
   if (!evolution_) {
     return game::evolution::Level::None;

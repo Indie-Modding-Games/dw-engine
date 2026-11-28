@@ -68,14 +68,31 @@ TEST_CASE("forcing 1.3 ignores what the driver offers") {
   CHECK_FALSE(wantsVulkan14(Loader14, false, true));
 }
 
-TEST_CASE("the compatible mode never takes the 1.4 path") {
+TEST_CASE("the compatible mode runs every GPU on the 1.2 path") {
   CHECK(chooseVulkanPath(full14(), true, false) ==
-        VulkanChoice{.path = VulkanPath::Core13, .hostImageCopy = false});
+        VulkanChoice{.path = VulkanPath::Compatible12, .hostImageCopy = false});
   VulkanSupport old = full14();
   old.deviceVersion = Device12;
   CHECK(chooseVulkanPath(old, true, false) ==
         VulkanChoice{.path = VulkanPath::Compatible12, .hostImageCopy = false});
   CHECK_FALSE(wantsVulkan14(Loader14, true, false));
+  CHECK(apiVersionOf(VulkanPath::Compatible12) == VK_API_VERSION_1_2);
+  CHECK(instanceVersionFor(true, false) == VK_API_VERSION_1_2);
+  CHECK(instanceVersionFor(false, false) == VK_API_VERSION_1_3);
+  CHECK(instanceVersionFor(false, true) == VK_API_VERSION_1_4);
+}
+
+TEST_CASE("a failed device falls back from 1.4 to 1.3 to the compatible mode") {
+  constexpr VulkanAttempt Normal{};
+  constexpr VulkanAttempt Only13{.compatibleMode = false, .forceVulkan13 = true};
+  constexpr VulkanAttempt Compatible{.compatibleMode = true, .forceVulkan13 = true};
+  CHECK(nextVulkanAttempt(Normal, VulkanPath::Core14) == Only13);
+  CHECK(nextVulkanAttempt(Only13, VulkanPath::Core13) == Compatible);
+  CHECK(nextVulkanAttempt(Normal, VulkanPath::Core13) == Compatible);
+  CHECK(nextVulkanAttempt(Normal, std::nullopt) == Compatible);
+  CHECK(nextVulkanAttempt(Only13, std::nullopt) == Compatible);
+  CHECK_FALSE(nextVulkanAttempt(Compatible, VulkanPath::Compatible12));
+  CHECK_FALSE(nextVulkanAttempt(Compatible, std::nullopt));
 }
 
 TEST_CASE("a format is copied on the host only with its feature, support and fast device access") {

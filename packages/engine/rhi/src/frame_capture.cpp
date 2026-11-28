@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "transition.hpp"
+#include "vulkan_calls.hpp"
 
 namespace dwe::rhi {
 
@@ -73,7 +74,7 @@ core::Result<FrameCapture> FrameCapture::record(Device& device, const Frame& fra
   dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
   dependency.bufferMemoryBarrierCount = 1;
   dependency.pBufferMemoryBarriers = &toHost;
-  vkCmdPipelineBarrier2(frame.commands, &dependency);
+  sync2().pipelineBarrier2(frame.commands, &dependency);
   transitionImage(frame.commands, frame.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_PIPELINE_STAGE_2_COPY_BIT,
                   VK_ACCESS_2_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,

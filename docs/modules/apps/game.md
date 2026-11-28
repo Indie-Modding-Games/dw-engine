@@ -1472,7 +1472,8 @@ the characters, even if no evolution in the game reaches them. With the original
 with no model). A species with no model is left out even with an evolution row of its own, and `evolve` refuses
 it: WereGarurumon, a form cut from the disc, keeps its row but has no bones, no model and a placeholder move list (16
 times Fire Tower: no finisher and nothing it learns); evolving into it left the status saying WereGarurumon while the field
-kept drawing the previous form. The menu and `evolve` use `evolveByCheat`, which is only reached from the development tools; the
+kept drawing the previous form (no evolution reaches such a form now, and one already saved is drawn as the form it
+comes from: [species without a model](../game/extra-evolutions.md#species-without-a-model)). The menu and `evolve` use `evolveByCheat`, which is only reached from the development tools; the
 game's evolutions do not change. What a species with no row lacks is taken from a stand-in
 (`assets::standInRow`): the first species with a row of the same name (the enemy copy of a partner form),
 then of the same level and type, then of the same level and if not that of a Rookie. This is how these come out:

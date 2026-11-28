@@ -47,7 +47,7 @@ is on screen (no movie, no load), and only on the automatic options:
 - A **window** lasts 3 s and at least 20 frames. It measures each frame's busy time: the frame time without the
   frame limit's wait. A frame of more than 1 s (a load) starts the window again.
 - **Down** one level when the window's mean busy time is over the budget (1 / frame limit, or 1/30 without a limit)
-  by 8 %.
+  by 8 %, and **two** levels when it is 75 % over (a slow machine reaches a playable level in one window).
 - **Up** one level when the 90th percentile leaves 40 % of the budget unused.
 - **Hysteresis.** After a change the first 2 s are not counted, and a level the tuner had to leave becomes the
   ceiling for the rest of the run, so it never swings between two levels. Between the two thresholds nothing
@@ -69,10 +69,11 @@ They are in Options > Graphics in every mode, after vertical sync, and saved in 
 
 ## The notice
 
-`ui/software_notice` shows for 12 s at start, over everything and taking no input: "Playing without a graphics
-card", that the processor draws the game so it may be slow, that the quality adjusts itself and where to change it,
-and how to fix it (install or update the graphics card's driver from its maker's site). It is translated into the
-nine languages (`localization/<lang>/software_notice.yaml`). The `software_mode` setting says whether it applies.
+`ui/software_notice` shows for 12 s at start (a movie does not count, so it is seen after the intro), over everything
+and taking no input: "Playing without a graphics card", that the processor draws the game so it may be slow, that the
+quality adjusts itself and where to change it, and how to fix it (install or update the graphics card's driver from
+its maker's site). It is translated into the nine languages (`localization/<lang>/software_notice.yaml`). The
+`software_mode` setting says whether it applies.
 
 ## Measurements and minimum requirements
 

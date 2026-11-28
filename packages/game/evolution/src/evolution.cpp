@@ -477,6 +477,9 @@ std::optional<EvolutionResult> Evolution::rebirth(const EvolutionInputs& inputs,
 std::optional<EvolutionResult> Evolution::evolve(const EvolutionInputs& inputs,
                                                  const EvolutionState& state, Species target,
                                                  EvolutionReason reason) const {
+  if (!tables_.drawable(target)) {
+    return std::nullopt;
+  }
   const StatReference* reference = tables_.statReference(target);
   if (reference == nullptr || tables_.species(reference->loads) == nullptr) {
     return std::nullopt;

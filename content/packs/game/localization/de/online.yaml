@@ -211,7 +211,7 @@ coop.came_home: "Zurück aus {name}s Welt: Dein Partner und deine Tasche sind mi
 # A player training at the gym, under their tag; and the first course of a co-op game
 # (coop-training.md): the world's clock does not stop for it.
 coop.training: "Training"
-coop.training_clock: "Training zu zweit: Die Zeit der Welt läuft weiter, und jede Sitzung zählt ihre eigene Stunde für deinen Partner."
+coop.training_clock: "Training zu zweit: Die Zeit der Welt läuft weiter, und jede Sitzung dauert eine Stunde davon; eine übersprungene Sitzung wartet den Rest ihrer Stunde ab."
 coop.sleep_wait: "Schlaf bis zum Morgen: In einer geteilten Welt wacht dein Partner auf, wenn die Uhr der Welt seine Stunde erreicht oder der Gastgeber auch schläft."
 coop.sleep_left: "Morgen in {time}"
 coop.sleep_wake: "Jetzt aufwachen"

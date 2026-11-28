@@ -214,6 +214,8 @@ inline constexpr std::string_view ExitTimedOut =
     "battle: an NPC leaving after the battle is still on screen after {} s; the battle ends";
 inline constexpr std::string_view PartnerModelNotShown =
     "game: the partner cannot be drawn as {}: {}";
+inline constexpr std::string_view PartnerDrawnAs =
+    "game: {} has no model of its own; the partner is drawn as {}";
 inline constexpr std::string_view PartnerEventNotShown =
     "game: partner event {} (value {}) is not shown yet";
 inline constexpr std::string_view EvolveFailed = "game: evolve: {}";

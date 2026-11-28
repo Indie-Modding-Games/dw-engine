@@ -10,8 +10,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <format>
 #include <memory>
 #include <optional>
+#include <set>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include "coop_gameplay_bridge.hpp"
@@ -72,6 +76,9 @@ struct Session {
   CoopHostWorld host{"Host", ""};
   CoopSync sync;
   std::vector<std::unique_ptr<Guest>> guests;
+  // Guests the host's snapshots do not reach (a one-way loss).
+  std::set<coop::PlayerId> starved;
+  std::vector<std::string> log;
   std::uint32_t worldTick = 0;
   std::uint64_t ticks = 0;
   Millis now{0};
@@ -168,14 +175,19 @@ struct Session {
       auto snapshot = makeCoopSnapshot(field, field.mapId(), ++worldTick, 0);
       REQUIRE(snapshot);
       for (auto& guest : guests) {
-        (void)guest->hostSide.sendHostSnapshot(*snapshot);
+        if (!starved.contains(guest->id)) {
+          (void)guest->hostSide.sendHostSnapshot(*snapshot);
+        }
       }
     }
     std::vector<CoopSyncPeer> peers;
     for (auto& guest : guests) {
       peers.push_back({.id = guest->id, .bridge = &guest->hostSide});
     }
-    events += sync.hostTick(field, worldTick, peers, now).size();
+    for (std::string& line : sync.hostTick(field, worldTick, peers, now, &host.authority())) {
+      log.push_back(std::move(line));
+      ++events;
+    }
   }
 
   std::size_t events = 0;
@@ -230,6 +242,46 @@ void runConverging(std::size_t players) {
   }
   CHECK(lost > 0);
   CHECK(session.events > 0);
+}
+
+bool logged(const Session& session, std::string_view words) {
+  return std::ranges::any_of(session.log,
+                             [&](const std::string& line) { return line.contains(words); });
+}
+
+// The host's snapshots stop reaching the last guest and the host's player is put 1000 units away:
+// that guest, and only it, holds the host elsewhere for good until the snapshots come again.
+void runStarved(std::size_t players) {
+  CAPTURE(players);
+  Session session{players, {.latency = Millis{30}, .jitter = Millis{10}}};
+  for (int step = 0; step < 120; ++step) {
+    session.tick(false);
+  }
+  const auto cutOff = static_cast<coop::PlayerId>(players - 1);
+  session.starved.insert(cutOff);
+  session.field.placeAt(session.field.playerEntity(),
+                        session.field.player().position + glm::vec3{1000.0F, 0.0F, 0.0F}, 0.0F);
+  for (int step = 0; step < 180; ++step) {
+    session.tick(false);
+  }
+  const coop::SyncMonitor* monitor = session.sync.monitor();
+  REQUIRE(monitor != nullptr);
+  const auto divergences = monitor->divergences();
+  REQUIRE(divergences.size() == 1);
+  CHECK(divergences.front().guest == cutOff);
+  CHECK(divergences.front().player == coop::HostPlayerId);
+  CHECK(divergences.front().persistent);
+  CHECK(divergences.front().distance == doctest::Approx(1000.0F).epsilon(0.05));
+  CHECK(logged(session, std::format("diverged: player {} holds player 0", cutOff)));
+  // Every line says when, on the host's clock and world tick.
+  CHECK(logged(session, " ms, tick "));
+  session.starved.clear();
+  for (int step = 0; step < 120; ++step) {
+    session.tick(false);
+  }
+  CHECK(monitor->divergences().empty());
+  CHECK(monitor->converged(session.now - Millis{1000}));
+  CHECK(logged(session, std::format("in sync: player {} holds player 0", cutOff)));
 }
 
 // Four players; one side loads for 30 s without running its loop while the others play on.
@@ -328,6 +380,67 @@ TEST_CASE("three players converge over lossy links (#359)") {
 
 TEST_CASE("four players converge over lossy links (#359)") {
   runConverging(4);
+}
+
+TEST_CASE("two players: a guest cut off from the snapshots shows as a lasting divergence (#359)") {
+  runStarved(2);
+}
+
+TEST_CASE("three players: only the guest cut off from the snapshots diverges (#359)") {
+  runStarved(3);
+}
+
+TEST_CASE("four players: only the guest cut off from the snapshots diverges (#359)") {
+  runStarved(4);
+}
+
+TEST_CASE("traced, the diagnostics log every report next to where the host has each player") {
+  Session session{3, {}};
+  session.sync.ask("trace");
+  for (int step = 0; step < 90; ++step) {
+    session.tick(false);
+  }
+  CHECK(logged(session, "update: player 1 report"));
+  CHECK(logged(session, "update: player 2 report"));
+  CHECK(logged(session, "holds player 0 at room"));
+  const std::size_t traced = session.log.size();
+  session.sync.ask("on");
+  for (int step = 0; step < 90; ++step) {
+    session.tick(false);
+  }
+  CHECK(session.log.size() == traced);
+}
+
+TEST_CASE("a build without the sync diagnostics never watches, and its guests never report") {
+  Session session{3, {}};
+  // A host built without them: nothing switches them on, nothing goes to the guests.
+  session.sync = CoopSync{false};
+  session.sync.ask("on");
+  for (int step = 0; step < 90; ++step) {
+    session.tick(false);
+  }
+  CHECK_FALSE(session.sync.watching());
+  CHECK(session.sync.monitor() == nullptr);
+  for (const auto& guest : session.guests) {
+    CHECK_FALSE(guest->sync.watched());
+  }
+  // Guests built without them: the host watches, but hears no report from any.
+  session.sync = CoopSync{};
+  session.sync.ask("on");
+  for (const auto& guest : session.guests) {
+    guest->sync = CoopSync{false};
+  }
+  for (int step = 0; step < 90; ++step) {
+    session.tick(false);
+  }
+  for (const auto& guest : session.guests) {
+    CHECK_FALSE(guest->sync.watched());
+  }
+  REQUIRE(session.sync.monitor() != nullptr);
+  CHECK_FALSE(session.sync.monitor()->converged(Millis{0}));
+  session.sync.ask("report");
+  session.tick(false);
+  CHECK(logged(session, "guest 1: no report yet"));
 }
 
 TEST_CASE("the sync diagnostics send nothing until switched on, and stop when switched off") {

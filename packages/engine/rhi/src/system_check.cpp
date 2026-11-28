@@ -1,5 +1,6 @@
 #include <dwe/rhi/device.hpp>
 #include <dwe/rhi/system_check.hpp>
+#include <dwe/rhi/vulkan_path.hpp>
 
 #include <VkBootstrap.h>
 
@@ -198,14 +199,17 @@ std::string_view gpuKindName(GpuKind kind) {
   return "other";
 }
 
-SystemCheck checkSystem(bool compatibleMode) {
+namespace {
+
+SystemCheck checkFloor(bool compatibleMode) {
   SystemCheck check;
+  check.compatible = compatibleMode;
   // Not headless: the builder asks for the window-system extensions a window will need. The
   // linked loader's vkGetInstanceProcAddr (vulkanEntry), as for the game's own instance.
   auto instance = vkb::InstanceBuilder{vulkanEntry()}
                       .set_app_name("dwe")
                       .set_engine_name("dwe")
-                      .require_api_version(1, 3, 0)
+                      .require_api_version(instanceVersionFor(compatibleMode, false))
                       .build();
   if (!instance) {
     check.result = SystemCheckResult::NoVulkan;
@@ -235,10 +239,27 @@ SystemCheck checkSystem(bool compatibleMode) {
   return check;
 }
 
+} // namespace
+
+SystemCheck checkSystem(bool compatibleMode) {
+  SystemCheck check = checkFloor(compatibleMode);
+  const bool retry =
+      check.result == SystemCheckResult::Unsuitable || check.result == SystemCheckResult::NoVulkan;
+  if (compatibleMode || !retry) {
+    return check;
+  }
+  SystemCheck compatible = checkFloor(true);
+  if (compatible.result != SystemCheckResult::Ok) {
+    return check;
+  }
+  compatible.detail = check.detail;
+  return compatible;
+}
+
 std::string formatSystemCheck(const SystemCheck& check) {
   std::string text = "dwe-check-system 1\n";
-  text += std::format("result={}\ndetail={}\ndevices={}\n", resultName(check.result),
-                      oneLine(check.detail), check.deviceCount);
+  text += std::format("result={}\ndetail={}\ndevices={}\nfloor={}\n", resultName(check.result),
+                      oneLine(check.detail), check.deviceCount, check.compatible ? "1.2" : "1.3");
   if (check.gpu) {
     const GpuInfo& gpu = *check.gpu;
     text += std::format("gpu={}\nvendor={:#06x}\nkind={}\napi={}.{}.{}\ndriver={}\n",

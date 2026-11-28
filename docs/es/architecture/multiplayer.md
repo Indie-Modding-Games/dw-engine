@@ -509,12 +509,19 @@ aguarda mientras corre un cambio de mapa propio del invitado. Unirse, un reinici
 tras un salto de historia propio del invitado no muestran aviso ni esperan. El invitado no informa nada durante la
 espera, igual que durante el viaje.
 
-**Interpolación.** Los jugadores remotos se dibujan desde un búfer corto de estados con hora (`PoseTrack`): 100 ms por
-detrás del más nuevo, mezclando los dos que rodean ese momento. Los estados tardíos nunca hacen retroceder una pista,
-un hueco corto se extrapola como mucho 100 ms y luego se queda quieto, un paso de más de 800 unidades (un salto de
-mapa o una corrección) se dibuja como salto, y un emisor cuyo reloj se pausó se retoma sin una recuperación lenta. El
-anfitrión dibuja así a los invitados, y los invitados dibujan a todos desde las instantáneas del anfitrión, con la
-hora del reloj del anfitrión. Dibujar es solo presentación: nunca cambia lo que guarda la autoridad.
+**Interpolación (#358).** Los jugadores remotos y sus compañeros se dibujan desde un búfer corto de estados con hora
+(`PoseTrack`): 100 ms por detrás del más nuevo, mezclando los dos que rodean ese momento. Un estado tardío que aún va
+por delante de la reproducción ocupa su sitio; uno ya reproducido, o repetido, se descarta, y uno rezagado del mapa
+anterior a un cambio nunca devuelve la pista allí. Un hueco se extrapola como mucho 100 ms y luego se queda quieto;
+cuando vuelven los estados, la pista alcanza desde donde se quedó dentro de los 100 ms de retraso en vez de saltar. Un
+paso más largo de lo que el emisor pudo moverse entre dos estados (2500 unidades por segundo más 64, en el reloj del
+emisor) es un teletransporte, como un salto dentro de un mapa, un script que pone a un personaje en otro sitio o una
+corrección, y se dibuja como salto, nunca como deslizamiento; un cambio de mapa empieza la pista de nuevo. Un emisor
+cuyo reloj se pausó se retoma sin una recuperación lenta. El anfitrión dibuja así a los invitados, y los invitados
+dibujan a todos desde las instantáneas del anfitrión, con la hora del reloj del anfitrión. Dibujar es solo
+presentación: nunca cambia lo que guarda la autoridad. Un teletransporte escondido dentro de una pérdida larga no se
+distingue de una carrera, así que se dibuja como la recuperación de 100 ms. Auditoría:
+[#358](audits/358-audit.md).
 
 **La forma del compañero (#412).** Cada compañero vive y evoluciona solo en la partida de su dueño, así que su forma
 viaja como los nombres del roster. El anfitrión pone la especie de su propio compañero en el roster en cada tick en que
@@ -566,6 +573,7 @@ se colgó o perdió la línea sale de la lista en menos de tres minutos.
 Pruebas: `packages/game/coop/tests/authority_tests.cpp`, `packages/game/coop/tests/replication_tests.cpp`,
 `apps/game/tests/coop_world_tests.cpp`, `apps/game/tests/coop_replication_tests.cpp`,
 `apps/game/tests/coop_npc_mirror_tests.cpp`,
+`packages/game/coop/tests/pose_track_tests.cpp`,
 `apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` y los casos
 cooperativos de `packages/game/field/tests/field_tests.cpp`.
 
@@ -744,17 +752,22 @@ empezó (antes la comprobación impedía que saliera un combate empezado por el 
 [#352](audits/352-audit.md).
 
 **Diagnóstico de sincronía.** Una herramienta de desarrollo detrás de la consola (F1), que solo se abre con las
-herramientas de desarrollo activas, así que nunca corre en las builds de release. `coop_sync("on")` en el anfitrión
-pide a cada invitado que informe; `coop_sync("report")` imprime el cuadro completo una vez y `coop_sync("off")` lo
-para. Mientras está activo, el log dice cuándo un jugador cambia de mapa, cuándo se pierden o llegan tarde
-instantáneas o comandos, y cuándo un invitado tiene a un jugador en otro sitio (otro mapa, o a más de 600 unidades)
-durante más de dos segundos, y otra vez cuando vuelve a estar sincronizado. El informe lista dónde tiene el anfitrión a
-cada jugador y, por invitado, dónde lo tiene él, cuántos ticks del mundo va por detrás y qué perdió.
+herramientas de desarrollo activas. Una build configurada con `DWE_COOP_SYNC=OFF` (lo predeterminado en un paquete,
+`DWE_PACKAGE`) lo deja fuera: su anfitrión nunca lo pide y sus invitados nunca informan. `coop_sync("on")` en el
+anfitrión pide a cada invitado que informe; `coop_sync("trace")` hace lo mismo y además registra cada informe, jugador
+por jugador, junto a dónde tiene el anfitrión a ese jugador; `coop_sync("report")` imprime el cuadro completo una vez y
+`coop_sync("off")` lo para. Mientras está activo, el log dice cuándo un jugador cambia de mapa, cuándo se pierden o
+llegan tarde instantáneas o comandos, y cuándo un invitado tiene a un jugador en otro sitio (otro mapa, o a más de 600
+unidades) durante más de dos segundos, y otra vez cuando vuelve a estar sincronizado. Cada una de esas líneas empieza
+con la hora y el tick del mundo del anfitrión. El informe lista el sitio autoritativo de cada jugador (el del anfitrión
+en su campo, y el de cada invitado según su último estado válido aceptado por la autoridad) y, por invitado, dónde lo
+tiene él, cuántos ticks del mundo va por detrás y qué perdió. Auditoría: [#359](audits/359-audit.md).
 `coop_fell("<jugador>")` (la misma consola, solo en el anfitrión) derriba al compañero de ese jugador en el combate
 cooperativo del anfitrión, para probar la cuenta atrás del aliado y Apuntar de la bolsa sin un combate largo.
 
 Tests: `packages/game/coop/tests/sync_watch_tests.cpp`, `apps/game/tests/coop_connection_tests.cpp` (cuatro plazas),
-`apps/game/tests/coop_sync_tests.cpp` (2, 3 y 4 jugadores sin ventana sobre enlaces con pérdidas, convergiendo) y los
+`apps/game/tests/coop_sync_tests.cpp` (2, 3 y 4 jugadores sin ventana sobre enlaces con pérdidas, convergiendo, y un
+invitado sin instantáneas que diverge solo) y los
 tests de plazas de `apps/versus-signal/test`.
 
 ### 5.10 Unirse y volver a una partida en curso
@@ -819,7 +832,7 @@ Propuestas el 2026-11-16 con una recomendación cada una; así quedaron hechas.
 | 2 | ¿Mapa compartido? | Sí: el grupo va donde va el anfitrión. Las salidas propias de un invitado se retienen y el cambio de mapa del anfitrión los lleva a todos (§5.7). Cada partida sigue conociendo su mapa, así que un jugador que aún carga simplemente no se dibuja. |
 | 3 | Combate | **Pelean todos los compañeros.** Lo empiece quien lo empiece, se suma cada compañero libre de ese mapa, hasta cuatro (§6.1, [combate cooperativo](coop-combat.md) §12), y los enemigos escalan según cuántos pelean ([dificultad cooperativa](coop-difficulty.md)). |
 | 4 | Progreso | La historia, los triggers, el dinero y el mundo son **del anfitrión**, guardados en su propia ranura como en un jugador (§5.6). Los cambios de cualquier jugador a ese mundo pasan por el anfitrión (§5.8). El invitado juega con su propio compañero, sus técnicas, las especies que crió y su bolsa con sus bits, y se los lleva a su propia ranura al salir y en puntos seguros mientras tanto (C4, §5.6); nada del mundo del anfitrión va con ellos. |
-| 5 | Pausa y menús | Un menú o la pausa de Start son solo de ese jugador, también del anfitrión (#415): mientras otros comparten el mundo solo retienen la entrada de ese jugador, y el mundo, su reloj y sus combates siguen para todos. Un combate que empieza cierra el menú de juego de quien lo tenga abierto. A solas, los menús y la pausa paran la partida como en el original (`shared_pause.hpp`). |
+| 5 | Pausa y menús | Un menú o la pausa de Start son solo de ese jugador, también del anfitrión (#415): mientras otros comparten el mundo solo retienen la entrada de ese jugador, y el mundo, su reloj y sus combates siguen para todos. Un combate que empieza cierra el menú de juego de quien lo tenga abierto. Los scripts del anfitrión y sus propias pantallas completas (una charla, el menú del gimnasio, una tienda, la pesca) tampoco paran ya el reloj del mundo: su compañero se queda quieto y vive ese tiempo al quedar libre ([entrenamiento](coop-training.md) §4.8). A solas, los menús, los scripts y la pausa paran la partida como en el original (`shared_pause.hpp`). |
 | 6 | Diálogos y escenas | Los scripts de un jugador corren en su partida: sus diálogos y escenas son suyos y los demás siguen jugando. Lo que una escena cambia en el mundo llega a los demás por el anfitrión (§5.8), y los NPCs que trae o se lleva aparecen al momento en todas las partidas. |
 
 ### 6.1 Combates (decisión 3)

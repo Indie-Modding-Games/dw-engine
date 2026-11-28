@@ -491,6 +491,7 @@ struct Ui::Impl {
       return std::unexpected{chains.error()};
     }
     fontEngine->setFallbacks(std::move(*chains));
+    fontEngine->setBeforeBitmapAtlas([this] { render.generateNextSharp(); });
     Rml::SetFontEngineInterface(fontEngine.get());
     return {};
   }

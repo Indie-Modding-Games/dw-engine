@@ -54,10 +54,12 @@ dwe_add_module(battle
         src/folder/fighters.cpp
         src/folder/folder_battle.cpp
         src/folder/formulas/folder_formulas.cpp
+        src/folder/formulas/technique_catalog.cpp
         src/folder/orders/order_book.cpp
         src/folder/orders/order_checks.cpp
         src/folder/orders/order_cycle.cpp
         src/folder/stances/stances.cpp
+        src/folder/techniques/techniques.cpp
         src/folder/strip.cpp
     DEPS core assets ruleset)
 

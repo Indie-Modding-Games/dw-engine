@@ -186,7 +186,7 @@ coop.went_home: "De volta do mundo de {name}: seu parceiro e sua bolsa estão no
 coop.home_failed: "Seu parceiro e sua bolsa não conseguiram voltar. Seu jogo salvo ficou como estava."
 coop.came_home: "De volta do mundo de {name}: seu parceiro e sua bolsa voltaram com você."
 coop.training: "Treinando"
-coop.training_clock: "Treino em companhia: o tempo do mundo continua correndo e cada sessão conta sua própria hora para o seu parceiro."
+coop.training_clock: "Treino em companhia: o tempo do mundo continua correndo e cada sessão dura uma hora dele; uma sessão que você pula espera o resto da sua hora."
 coop.sleep_wait: "Dormindo até de manhã: num mundo compartilhado, seu parceiro acorda quando o relógio do mundo chega à hora dele, ou quando o anfitrião também dorme."
 coop.sleep_left: "Amanhece em {time}"
 coop.sleep_wake: "Acordar agora"

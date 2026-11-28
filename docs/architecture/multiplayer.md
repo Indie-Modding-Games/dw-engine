@@ -418,12 +418,17 @@ gives the map and the correction's epoch for a skin that wants its own look) and
 change runs. Joining, a room reset on the same map and being brought back after a guest's own story warp show no
 notice and do not wait. The guest reports nothing during the lead, as during the trip.
 
-**Interpolation.** Remote players are drawn from a short buffer of timed states (`PoseTrack`): 100 ms behind the
-newest one, blending between the two around that moment. Late states never move a track back, a short gap
-extrapolates for at most 100 ms and then holds, a step longer than 800 units (a warp or a correction) is drawn as a
-jump, and a sender whose clock paused is picked up again without a slow catch-up. The host draws guests this way,
-and guests draw everyone from the host's snapshots, timed on the host's clock. Drawing is presentation only: it
-never changes what the authority holds.
+**Interpolation (#358).** Remote players and their partners are drawn from a short buffer of timed states
+(`PoseTrack`): 100 ms behind the newest one, blending between the two around that moment. A late state that is still
+ahead of the playback fills its place; one already played, or repeated, is dropped, and a straggler from the map before
+a change never takes the track back there. A gap extrapolates for at most 100 ms and then holds; when states come
+again the track catches up from where it held within the 100 ms delay instead of jumping. A step longer than the
+sender could have moved in the time between two states (2500 units a second plus 64, on the sender's clock) is a
+teleport, such as a warp inside a map, a script putting a character somewhere or a correction, and is drawn as a jump,
+never a slide; a map change starts the track over. A sender whose clock paused is picked up again without a slow
+catch-up. The host draws guests this way, and guests draw everyone from the host's snapshots, timed on the host's
+clock. Drawing is presentation only: it never changes what the authority holds. A teleport hidden inside a long loss
+cannot be told from a run, so it is drawn as the 100 ms catch-up. Audit: [#358](audits/358-audit.md).
 
 **The partner's form (#412).** Each partner lives and evolves in its owner's game only, so its form travels like the
 roster's names. The host lists its own partner's species in the roster on every tick it changes; a guest tells its own
@@ -471,6 +476,7 @@ objects).
 Tests: `packages/game/coop/tests/authority_tests.cpp`, `packages/game/coop/tests/replication_tests.cpp`,
 `apps/game/tests/coop_world_tests.cpp`, `apps/game/tests/coop_replication_tests.cpp`,
 `apps/game/tests/coop_npc_mirror_tests.cpp`,
+`packages/game/coop/tests/pose_track_tests.cpp`,
 `apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` and the
 co-op cases of `packages/game/field/tests/field_tests.cpp`.
 
@@ -634,17 +640,22 @@ moment the roster loses them, so their partner never borrows this guest's own pa
 takes any player as its starter; before, the check stopped a battle that the third or fourth player started from going
 out. Audit: [#352](audits/352-audit.md).
 
-**Sync diagnostics.** A developer tool behind the console (F1), which only opens with the developer tools on, so it
-never runs in release builds. `coop_sync("on")` on the host tells every guest to report; `coop_sync("report")` prints
-the whole picture once and `coop_sync("off")` stops it. While on, the log says when a player changes map, when
-snapshots or commands are lost or come late, and when a guest holds a player somewhere else (another map, or farther
-than 600 units) for more than two seconds, and again when it is back in sync. The report lists every player's place
-on the host and, per guest, what it holds, how many world ticks it is behind and what it lost.
+**Sync diagnostics.** A developer tool behind the console (F1), which only opens with the developer tools on. A build
+configured with `DWE_COOP_SYNC=OFF` (the default of a package, `DWE_PACKAGE`) leaves it out: its host never asks and its
+guests never report. `coop_sync("on")` on the host tells every guest to report; `coop_sync("trace")` does the same and
+also logs every report, player by player, next to where the host has that player; `coop_sync("report")` prints the
+whole picture once and `coop_sync("off")` stops it. While on, the log says when a player changes map, when snapshots or
+commands are lost or come late, and when a guest holds a player somewhere else (another map, or farther than 600
+units) for more than two seconds, and again when it is back in sync. Every such line starts with the host's time and
+world tick. The report lists every player's authoritative place (the host's own in its field, each guest's newest
+valid state as the authority took it) and, per guest, what it holds, how many world ticks it is behind and what it
+lost. Audit: [#359](audits/359-audit.md).
 `coop_fell("<player>")` (same console, host only) fells that player's partner in the host's co-op battle, so the ally
 countdown and the Aim of the bag can be checked without a long fight.
 
 Tests: `packages/game/coop/tests/sync_watch_tests.cpp`, `apps/game/tests/coop_connection_tests.cpp` (four seats),
-`apps/game/tests/coop_sync_tests.cpp` (2, 3 and 4 players headless over lossy links, converging) and the seat tests of
+`apps/game/tests/coop_sync_tests.cpp` (2, 3 and 4 players headless over lossy links, converging, and one guest cut off
+from the snapshots diverging alone) and the seat tests of
 `apps/versus-signal/test`.
 
 ### 5.10 Joining and rejoining a game in progress
@@ -704,7 +715,7 @@ Proposed on 2026-11-16 with a recommendation each; this is how they were built.
 | 2 | Shared map? | Yes: the group goes where the host goes. A guest's own exits are held and the host's map change takes everyone (§5.7). Each game still knows its own map, so a player who is still loading is simply not drawn. |
 | 3 | Battle | **Every partner fights.** Whoever starts it, every free partner on that map joins, up to four (§6.1, [co-op combat](coop-combat.md) §12), and the enemies scale with how many fight ([co-op difficulty](coop-difficulty.md)). |
 | 4 | Progress | The story, the triggers, the money and the world are **the host's**, saved in the host's own slot as single-player (§5.6). Every player's changes to that world go through the host (§5.8). The guest plays with its own partner, moves, raised species and bag with its bits, and takes them home to its own slot when it leaves and at safe points meanwhile (C4, §5.6); nothing of the host's world goes with them. |
-| 5 | Pause and menus | A menu or Start's pause is that player's only, the host's too (#415): while others share the world it holds only that player's input, and the world, its clock and its battles go on for everyone. A battle that starts closes the game menu of whoever has it open. Alone, menus and the pause stop the game as in the original (`shared_pause.hpp`). |
+| 5 | Pause and menus | A menu or Start's pause is that player's only, the host's too (#415): while others share the world it holds only that player's input, and the world, its clock and its battles go on for everyone. A battle that starts closes the game menu of whoever has it open. The host's scripts and full screens of its own (a talk, the gym's menu, a shop, the fishing) no longer stand the world's clock either: its partner stands and lives that time once let go ([training](coop-training.md) §4.8). Alone, menus, scripts and the pause stop the game as in the original (`shared_pause.hpp`). |
 | 6 | Dialogs and scenes | A player's scripts run in that player's game: its dialogs and scenes are its own, and the others keep playing. What a scene changes in the world reaches the others through the host (§5.8), and the NPCs it brings or takes away show at once in every game. |
 
 ### 6.1 Battles (decision 3)

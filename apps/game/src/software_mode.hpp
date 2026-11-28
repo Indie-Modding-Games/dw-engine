@@ -51,6 +51,7 @@ struct QualityDecision {
 };
 
 inline constexpr double DownMargin = 1.08;
+inline constexpr double FarDownMargin = 1.75;
 inline constexpr double UpHeadroom = 0.6;
 
 [[nodiscard]] QualityDecision decideQuality(std::span<const double> busySeconds, double targetFps,

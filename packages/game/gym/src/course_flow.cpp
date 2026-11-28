@@ -33,6 +33,10 @@ void CourseRun::tick(GymPorts& ports, double seconds, double frameSeconds, const
 }
 
 void CourseRun::frame(GymPorts& ports, const GymInput& input) {
+  if (waitingForHour_) {
+    finish(ports);
+    return;
+  }
   // The box ticks on its own (trn_hud.c: TRN_tickPostTrainingStatsBox), whatever the course does.
   if (countup_.has_value() && !countup_->done()) {
     if (countup_->standing() && (input.confirm || input.cancel)) {
@@ -194,6 +198,13 @@ bool CourseRun::rested() {
 void CourseRun::finish(GymPorts& ports) {
   // TRN_applyBaseStats (TRN2_applyBaseStats, the same) and TRN_closeUIBox: the session already gave
   // the gains, with the caps the box counts up to.
+  if (ports.hourRuns()) {
+    if (!std::exchange(waitingForHour_, true)) {
+      core::logInfo("gym: course {} waits for the world's clock to run its hour", course_->id);
+    }
+    return;
+  }
+  waitingForHour_ = false;
   ports.setTraining(false);
   watching_ = false;
   stopLoop(ports);

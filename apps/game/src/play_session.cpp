@@ -646,6 +646,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
     const auto* row = species_ ? species_->find(species) : nullptr;
     return row != nullptr ? static_cast<float>(row->radius) : 0.0F;
   });
+  scene_->attachDrawnSpecies([this](std::string_view species) {
+    return game_.systems.evolution != nullptr ? game_.systems.evolution->drawnSpecies(species)
+                                              : std::string{species};
+  });
   const ruleset::SpeciesExtra extra = speciesExtraOf(session);
   scene_->attachSpeciesClips([extra](std::string_view species) {
     const ruleset::SpeciesPatch* patch = extra.find(species);
@@ -1037,34 +1041,45 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
   if (closesGymBoxBesideScene(gymScreen_.active(), holds)) {
     gymScreen_.tick(TickSeconds, {});
   }
-  if (sleepScreen_.active() || shopScreen_.active() || devMenu_.isOpen() ||
-      itemKeeperScreen_.active() || discardScreen_.active() || jukeboxScreen_.active() ||
-      tradeScreen_.active() || birdScreen_.active() || cardShopScreen_.active() ||
-      meritShopScreen_.active() || scheduleScreen_.active() || bracketScreen_.playing() ||
-      storyScenes_.tournamentIntro() || worldMapScreen_.isOpen()) {
+  if (sleepScreen_.active() || bracketScreen_.playing() || storyScenes_.tournamentIntro()) {
+    return;
+  }
+  // A screen or a scene of the player's own runs instead of the field and the game time. On the
+  // co-op host the world's clock runs on for the others meanwhile (GameSession::tickHeldPlayer).
+  session::GameSession& session = *game_.session;
+  if (shopScreen_.active() || devMenu_.isOpen() || itemKeeperScreen_.active() ||
+      discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
+      birdScreen_.active() || cardShopScreen_.active() || meritShopScreen_.active() ||
+      scheduleScreen_.active() || worldMapScreen_.isOpen()) {
+    session.tickHeldPlayer(TickSeconds);
     return;
   }
   if (fieldPoop_.active()) {
     guardFactsChanged_ = fieldPoop_.tick(static_cast<float>(TickSeconds)) || guardFactsChanged_;
+    session.tickHeldPlayer(TickSeconds);
     return;
   }
   if (fieldToilet_.active()) {
     guardFactsChanged_ = fieldToilet_.tick(static_cast<float>(TickSeconds)) || guardFactsChanged_;
+    session.tickHeldPlayer(TickSeconds);
     return;
   }
   if (feedScene_.active()) {
     guardFactsChanged_ = feedScene_.tick(static_cast<float>(TickSeconds)) || guardFactsChanged_;
+    session.tickHeldPlayer(TickSeconds);
     return;
   }
   if (praiseScold_.active()) {
     guardFactsChanged_ =
         praiseScold_.tick(*scene_, static_cast<float>(TickSeconds), *game_.systems.fieldItems) ||
         guardFactsChanged_;
+    session.tickHeldPlayer(TickSeconds);
     return;
   }
   // partner.c: partnerTickEvolving stops the game time and holds the player for the scene.
   evolutionScene_.tick(TickSeconds);
   if (evolutionScene_.active()) {
+    session.tickHeldPlayer(TickSeconds);
     return;
   }
   // murd.c and dooa.c: a lost life's or a death's scene holds the field once a battle is over; one
@@ -1102,6 +1117,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
     // The fishing runs instead of the field and the game time (clock.c: tickGameClock).
     if (fishingScreen_.active()) {
       fishingScreen_.tick(*scene_, fishing, TickSeconds);
+      session.tickHeldPlayer(TickSeconds);
       return;
     }
     // kar.c: the stones game runs instead of the field while the story waits on it. It starts on
@@ -1109,6 +1125,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
     if (curlingScreen_.active()) {
       scene_->field().tickFadeIn(static_cast<float>(TickSeconds));
       curlingScreen_.tick(*scene_, TickSeconds);
+      session.tickHeldPlayer(TickSeconds);
       return;
     }
     // tamer.c: checkMapInteraction talks and confirms on a cell only while no script runs
@@ -1135,6 +1152,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
       awardScreen_.tick();
     }
     if (awardScreen_.active()) {
+      session.tickHeldPlayer(TickSeconds);
       return;
     }
     // A gym course takes the player's control; its buttons are the course's.
@@ -1147,7 +1165,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
     scene_->tick(fieldIntent, guests, static_cast<float>(TickSeconds));
     game_.systems.story->runNpcContacts(scene_->field().npcContacts(), npcsLeftBe_);
     storyLink_->afterFieldTick();
-    game_.session->tick(TickSeconds);
+    session.tick(TickSeconds);
     std::vector<game::coop::WorldEdit> mapEdits =
         applyStoryMapEdits(*scene_, game_.systems.storyOrders);
     if (coopGame_) {

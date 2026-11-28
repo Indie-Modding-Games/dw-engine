@@ -595,7 +595,7 @@ int runGame(const Options& requested) {
                                               .forceVulkan13 = options.forceVulkan13});
   if (!device) {
     core::logError("{}", device.error().message);
-    return EXIT_FAILURE;
+    return GraphicsStartExitCode;
   }
   core::logInfo("game: validation layer {}, vsync {}",
                 validationState((*device)->validationEnabled()), display.vsync ? "on" : "off");
@@ -2406,7 +2406,8 @@ int runGame(const Options& requested) {
             watched.push_back({.id = peer.id, .bridge = peer.bridge.get()});
           }
           for (const std::string& line :
-               coopSync.hostTick(play->scene().field(), coopWorldTick, watched, coopNow)) {
+               coopSync.hostTick(play->scene().field(), coopWorldTick, watched, coopNow,
+                                 coopHostWorld ? &coopHostWorld->authority() : nullptr)) {
             core::logInfo("coop sync: {}", line);
           }
         } else if (coopLinked && coopGuestWorld) {
@@ -3107,7 +3108,7 @@ int runGame(const Options& requested) {
       // The portrait follows the partner's form ahead of the status page: loaded on that page's
       // first frame, its model and textures stalled the menu (#221). A new form comes in as the
       // game starts (under its fade in) or evolves.
-      const std::string species{flow.playing()->partnerSpecies()};
+      const std::string species = flow.playing()->drawnPartnerSpecies();
       if (species != portraitSpecies) {
         portraitSpecies = species;
         (*portrait)->clear();
@@ -3179,7 +3180,7 @@ int runGame(const Options& requested) {
             showingMovie ? 1.0F : static_cast<float>(graphics.options().renderScale) / 100.0F,
     });
     phases.mark(FramePhases::Render, platform->nowSeconds());
-    if (softwareNoticeLeft > 0.0) {
+    if (softwareNoticeLeft > 0.0 && !showingMovie) {
       softwareNoticeLeft -= std::clamp(frameSeconds, 0.0, MaxFrameSeconds);
       if (softwareNoticeLeft <= 0.0) {
         (*ui)->hide(SoftwareNoticeDocument);

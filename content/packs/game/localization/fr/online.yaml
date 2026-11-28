@@ -198,7 +198,7 @@ coop.went_home: "De retour du monde de {name} : ton partenaire et ton sac sont d
 coop.home_failed: "Ton partenaire et ton sac n'ont pas pu rentrer. Ta sauvegarde reste telle quelle."
 coop.came_home: "De retour du monde de {name} : ton partenaire et ton sac sont rentrés avec toi."
 coop.training: "Entraînement"
-coop.training_clock: "Entraînement à plusieurs : le temps du monde continue de tourner, et chaque séance compte sa propre heure pour ton partenaire."
+coop.training_clock: "Entraînement à plusieurs : le temps du monde continue de tourner et chaque séance en dure une heure ; une séance que tu passes attend la fin de son heure."
 coop.sleep_wait: "Endormi jusqu'au matin : dans un monde partagé, ton partenaire se réveille quand l'horloge du monde atteint son heure, ou quand l'hôte dort aussi."
 coop.sleep_left: "Matin dans {time}"
 coop.sleep_wake: "Se réveiller maintenant"
