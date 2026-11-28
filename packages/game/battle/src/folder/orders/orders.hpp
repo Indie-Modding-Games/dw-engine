@@ -16,7 +16,6 @@ void emitOrder(const BattleContext& context, EventKind kind, FighterId id, const
 void enterPhase(const BattleContext& context, FighterId id, OrderPhase phase, std::int32_t frames);
 // The last order that ended; one that did not finish becomes the HUD's notice (§10.4).
 void remember(FolderFighter& own, const Order& order, OrderEnd end, OrderProblem problem);
-// The active order leaves the fighter, which goes back to idle.
 void endOrder(BattleContext& context, FighterId id, OrderEnd end, OrderProblem problem);
 // §2.8, §4.5: an interrupted order waits again at the front of the queue; a full queue drops its
 // last order for it.

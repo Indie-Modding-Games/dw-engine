@@ -199,7 +199,7 @@ struct BattleView {
     // holds it, for brokenSeconds more seconds.
     std::string stance;
     std::int32_t brokenSeconds = 0;
-    // The active order's technique has thrown what lands (#425): a hit no longer stops it.
+    // The active order's technique has thrown what lands: a hit no longer stops it.
     bool committed = false;
     std::int32_t bar = 0;
     std::int32_t barMax = 0;

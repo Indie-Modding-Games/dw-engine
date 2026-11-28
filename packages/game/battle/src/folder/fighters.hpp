@@ -4,7 +4,6 @@
 
 #include "core/battle_context.hpp"
 
-// The fighters as the Folder battle sees them.
 namespace dwe::game::battle {
 
 [[nodiscard]] const FolderRules& folderRules(const BattleContext& context);

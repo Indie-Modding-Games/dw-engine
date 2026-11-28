@@ -365,7 +365,7 @@ void strikeDown(BattleContext& context, FighterId id) {
     return;
   }
   // BTL_tickAttackHits, for the fighter an attack reaches: its technique and its finisher stop. The
-  // debug blow also drops what of it was committed, so nothing of it lands after the win (#326).
+  // debug blow also drops what of it was committed, so nothing of it lands after the win.
   std::erase_if(context.state->inFlight,
                 [id](const AttackInFlight& flying) { return flying.attacker == id; });
   fighter.knockedBack = false;
