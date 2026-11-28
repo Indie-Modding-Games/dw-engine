@@ -212,3 +212,31 @@ TEST_CASE("a battle that cannot start is taken as a flight, never as a win") {
   // A flight the player never took is not counted.
   CHECK(battles.counters().fled == 0);
 }
+
+TEST_CASE("a battle the shared world refuses ends the section where it stands, with no flight") {
+  // Co-op holds its battles while one runs or a partner dies: the refusal used to run the flight
+  // and send the group back to the previous screen on every touch.
+  FakeState state;
+  REQUIRE(state.setVariable(Rules.outcomeVariable, 1));
+  FakeBattle battle = bridge();
+  ScreenHistory screens;
+  screens.start(3, 0);
+  screens.enter(5, 2);
+  StoryBattles battles{state, battle, screens, Rules};
+  const auto task = battles.startBattle();
+  REQUIRE(task.has_value());
+  battle.outcome = BattleOutcome::Refused;
+  CHECK(std::holds_alternative<TaskEnded>((*task)->tick()));
+  CHECK(screens.place().screen == 5);
+  CHECK(screens.place().previousScreen == 3);
+  CHECK(state.variable(Rules.outcomeVariable).value_or(-1) == 1);
+  CHECK(state.variable(Rules.showNameVariable).value_or(-1) != Rules.showNameNever);
+  CHECK(battle.cameraReturns == 0);
+  CHECK(battles.counters().fled == 0);
+
+  // The NPC can start it again, and this time it is fought.
+  const auto again = battles.startBattle();
+  REQUIRE(again.has_value());
+  battle.outcome = BattleOutcome::Victory;
+  CHECK(std::holds_alternative<TaskRunning>((*again)->tick()));
+}

@@ -619,7 +619,7 @@ void CoopBattles::guestTick(PlaySession& play, CoopGameplayBridge& bridge) {
   // A battle the guest's own story asked for: the host runs it, or it does not happen (one runs).
   if (auto handed = play.takeHandedBattle()) {
     if (mirror_.running() || mirror_.pendingAsk()) {
-      play.finishHandedBattle(game::story::BattleOutcome::NotStarted);
+      play.finishHandedBattle(game::story::BattleOutcome::Refused);
     } else {
       std::vector<std::int16_t> enemies;
       for (const std::int32_t npc : handed->npcs) {
@@ -639,7 +639,7 @@ void CoopBattles::guestTick(PlaySession& play, CoopGameplayBridge& bridge) {
     if (refused->reason == coop::BattleRefusal::Busy) {
       // Another battle runs in the world: this player watches and helps in that one.
       core::logInfo("coop: the host refused battle {}: another one runs", refused->ask);
-      play.finishHandedBattle(game::story::BattleOutcome::NotStarted);
+      play.finishHandedBattle(game::story::BattleOutcome::Refused);
     } else {
       // The host left the map or could not start it: the battle is this game's own, solo.
       core::logInfo("coop: the host refused battle {}: it runs here", refused->ask);

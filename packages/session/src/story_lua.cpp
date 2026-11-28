@@ -467,6 +467,9 @@ std::optional<SectionStep> StoryLuaHost::driveTask(game::story::SectionHandle ha
   if (const auto* jump = std::get_if<game::story::TaskJump>(&step)) {
     return game::story::Wait{FileJump{.target = jump->target, .linkDepth = linkDepth}};
   }
+  if (std::holds_alternative<game::story::TaskEnded>(step)) {
+    return game::story::SectionEnded{};
+  }
   return game::story::Wait{std::get<game::story::TaskMapChange>(step).change};
 }
 
