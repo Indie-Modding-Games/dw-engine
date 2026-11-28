@@ -34,8 +34,9 @@ std::size_t CoopNpcMirror::show(game::field::FieldNpcs& npcs, const View& view, 
                        .yaw = entity.yaw,
                        .motion = sceneMotionOf(entity.motion)});
   }
-  // A snapshot with no NPC, or full, may leave some out: it tells nothing of those missing.
-  const bool whole = !listed.empty() && view.world->entities.size() < coop::MaxSnapshotEntities;
+  // A snapshot that left NPCs out tells nothing of those missing; one listing them all, even none,
+  // does (the last enemy a battle took off).
+  const bool whole = view.world->npcsWhole;
   std::size_t removed = 0;
   std::set<std::size_t> missing;
   for (const game::field::NpcPose& pose : npcs.poses()) {

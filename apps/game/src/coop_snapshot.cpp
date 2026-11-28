@@ -1,5 +1,6 @@
 #include "coop_snapshot.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <numbers>
@@ -74,7 +75,8 @@ core::Result<game::coop::EntityState> toCoopEntityState(std::uint16_t networkId,
 
 core::Result<game::coop::Snapshot> makeCoopSnapshot(const game::field::Field& field,
                                                     std::string mapId, std::uint32_t worldTick,
-                                                    std::uint32_t acknowledgedCommand) {
+                                                    std::uint32_t acknowledgedCommand,
+                                                    std::span<const game::coop::PlayerId> away) {
   if (mapId.empty())
     return core::fail("cooperative snapshot has no map id");
   game::coop::Snapshot snapshot{.mapId = std::move(mapId),
@@ -96,6 +98,9 @@ core::Result<game::coop::Snapshot> makeCoopSnapshot(const game::field::Field& fi
   // Every guest body in the host's field, and its partner: ids 2n+1 and 2n+2 for player n.
   for (game::coop::PlayerId id = game::coop::GuestPlayerId; game::coop::validPlayer(id); ++id) {
     const auto playerId = static_cast<std::uint16_t>((id * 2) + 1);
+    if (std::ranges::contains(away, id)) {
+      continue;
+    }
     if (const auto guest = field.player(id)) {
       auto state = toCoopEntityState(playerId, id, game::coop::EntityRole::Player, *guest);
       if (!state)
@@ -118,9 +123,11 @@ core::Result<game::coop::Snapshot> makeCoopSnapshot(const game::field::Field& fi
   }
   // None when the NPCs don't all fit one datagram, so a guest never takes a listed one for gone.
   const std::size_t players = snapshot.entities.size();
+  snapshot.npcsWhole = true;
   for (const game::field::NpcPose& pose : field.npcs().poses()) {
     if (snapshot.entities.size() >= game::coop::MaxSnapshotEntities ||
         pose.slot > std::numeric_limits<std::uint16_t>::max() - game::coop::NpcNetworkBase) {
+      snapshot.npcsWhole = false;
       break;
     }
     auto state =
@@ -133,6 +140,7 @@ core::Result<game::coop::Snapshot> makeCoopSnapshot(const game::field::Field& fi
   }
   if (game::coop::encode(snapshot).size() + 1 > net::MaxDatagram) {
     snapshot.entities.resize(players);
+    snapshot.npcsWhole = false;
   }
   return snapshot;
 }

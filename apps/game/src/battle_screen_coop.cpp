@@ -12,6 +12,7 @@
 #include <string_view>
 
 #include "battle_screen.hpp"
+#include "coop_battle_view.hpp"
 #include "field_scene.hpp"
 
 namespace dwe::app {
@@ -82,14 +83,14 @@ std::optional<game::battle::FighterId> BattleScreen::fighterOf(game::coop::Playe
   return std::nullopt;
 }
 
-void BattleScreen::releaseAlly(game::coop::PlayerId owner) {
+void BattleScreen::withdrawAlly(game::coop::PlayerId owner) {
   if (!battle_) {
     return;
   }
   for (const game::battle::AllyState& ally : battle_->state().allies) {
-    if (ally.owner == owner) {
-      battle_->releaseAlly(ally.id);
-      core::logInfo("coop: player {}'s partner fights on its own call", owner);
+    if (ally.owner == owner && !ally.released) {
+      withdrawCoopAlly(*battle_, ally.id);
+      core::logInfo("coop: player {} left the battle, its partner runs off", owner);
     }
   }
 }

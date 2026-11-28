@@ -64,7 +64,8 @@ PresentedCoopWorld drawn(const Field& host) {
   PresentedCoopWorld world{.mapId = snapshot->mapId,
                            .worldTick = snapshot->worldTick,
                            .acknowledgedCommand = 0,
-                           .entities = {}};
+                           .entities = {},
+                           .npcsWhole = snapshot->npcsWhole};
   for (const coop::EntityState& entity : snapshot->entities) {
     world.entities.push_back(
         {.networkId = entity.networkId,
@@ -140,17 +141,30 @@ TEST_CASE("co-op NPCs: one the host took off leaves the guest's map a second lat
   CHECK_FALSE(guest.field.npcs().entityAt(1).has_value());
   CHECK(guest.field.npcs().entityAt(0).has_value());
 
+  // The host's last NPCs went (a battle won against all of them): the guest's go too (#410).
   Side empty;
   Side other;
   REQUIRE(empty.field.npcs().unloadAt(0));
   REQUIRE(empty.field.npcs().unloadAt(1));
   const PresentedCoopWorld none = drawn(empty.field);
+  REQUIRE(none.npcsWhole);
   CoopNpcMirror fresh;
+  CHECK(fresh.show(other.field.npcs(), {.world = &none, .mapSerial = 1, .ready = true},
+                   Millis{0}) == 0);
+  CHECK(fresh.show(other.field.npcs(), {.world = &none, .mapSerial = 1, .ready = true},
+                   Millis{1100}) == 2);
+  CHECK(other.field.npcs().poses().empty());
+
+  // A snapshot that left its NPCs out to fit tells nothing of them.
+  Side kept;
+  PresentedCoopWorld partial = none;
+  partial.npcsWhole = false;
+  CoopNpcMirror careful;
   for (const Millis now : {Millis{0}, Millis{5000}}) {
-    CHECK(fresh.show(other.field.npcs(), {.world = &none, .mapSerial = 1, .ready = true}, now) ==
-          0);
+    CHECK(careful.show(kept.field.npcs(), {.world = &partial, .mapSerial = 1, .ready = true},
+                       now) == 0);
   }
-  CHECK(other.field.npcs().poses().size() == 2);
+  CHECK(kept.field.npcs().poses().size() == 2);
 }
 
 TEST_CASE("co-op NPCs: a battle of the guest's own keeps its NPCs where it put them") {

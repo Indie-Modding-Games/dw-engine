@@ -99,6 +99,7 @@ void CoopHostWorld::leave(coop::PlayerId id) {
   forgetTracks(id);
   placed_.erase(id);
   verdicts_.erase(id);
+  whereabouts_.erase(id);
   ledger_.leave(id);
   synced_.erase(id);
   std::erase_if(asks_, [id](const auto& ask) { return ask.first == id; });
@@ -137,6 +138,18 @@ void CoopHostWorld::receive(coop::PlayerId from, const coop::Message& message, n
   if (state == nullptr) {
     return;
   }
+  if (state->player == from && authority_.find(from) != nullptr) {
+    if (const auto known = whereabouts_.find(from);
+        known == whereabouts_.end() ||
+        static_cast<std::int32_t>(state->sequence - known->second.sequence) > 0) {
+      whereabouts_[from] = {
+          .sequence = state->sequence, .mapId = state->mapId, .away = state->away};
+    }
+    if (state->away) {
+      authority_.heard(from, now);
+      return;
+    }
+  }
   const coop::StateVerdict verdict = authority_.accept(from, *state, now);
   const auto last = verdicts_.find(from);
   if (verdict != coop::StateVerdict::Accepted &&
@@ -163,6 +176,16 @@ void CoopHostWorld::receive(coop::PlayerId from, const coop::Message& message, n
                                     now);
   }
   held_[from] = {.action = state->action, .partner = state->partner};
+}
+
+std::vector<coop::PlayerId> CoopHostWorld::away(std::string_view mapId) const {
+  std::vector<coop::PlayerId> gone;
+  for (const auto& [id, where] : whereabouts_) {
+    if (where.away || where.mapId != mapId) {
+      gone.push_back(id);
+    }
+  }
+  return gone;
 }
 
 std::optional<game::field::CharacterState>
@@ -382,9 +405,19 @@ std::optional<CoopGuestWorld::Move> CoopGuestWorld::apply(const game::field::Fie
 }
 
 std::optional<coop::PlayerState> CoopGuestWorld::report(const game::field::Field& field,
-                                                        bool moving, std::uint64_t tick) const {
-  if (tick % ReportTicks != 0 || pending_ || epoch_ == 0 || field.mapId().empty() ||
-      field.mapChangePending() || moving) {
+                                                        bool moving, std::uint64_t tick,
+                                                        bool away) const {
+  if (tick % ReportTicks != 0 || pending_ || epoch_ == 0 || field.mapId().empty()) {
+    return std::nullopt;
+  }
+  if (away) {
+    return coop::PlayerState{.player = self_,
+                             .sequence = static_cast<std::uint32_t>(tick),
+                             .epoch = epoch_,
+                             .mapId = field.mapId(),
+                             .away = true};
+  }
+  if (field.mapChangePending() || moving) {
     return std::nullopt;
   }
   const coop::PlayerPose pose = coopPoseOf(field.mapId(), field.player());

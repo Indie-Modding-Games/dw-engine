@@ -200,8 +200,8 @@ public:
   [[nodiscard]] std::vector<game::battle::AllyResult> takeAllyResults() {
     return std::exchange(allyResults_, {});
   }
-  // A player whose link went: its partner fights on its own call.
-  void releaseAlly(game::coop::PlayerId owner);
+  // A player who left the battle (its link went, or it changed maps): withdrawCoopAlly.
+  void withdrawAlly(game::coop::PlayerId owner);
   [[nodiscard]] std::vector<game::coop::BattleThrow> coopThrows() const;
   // What the screen shows, for the other player's screen: the opening, the fight, the victory's
   // poses, the end box, or what follows it.

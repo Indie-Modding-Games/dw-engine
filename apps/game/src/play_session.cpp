@@ -982,6 +982,12 @@ void PlaySession::tick(const PlayerCommands& commands, std::span<const GuestFiel
   // Only this tick's: co-op takes them right after it (takeCoopWorld).
   coopMapEdits_.clear();
   tickSystems(commands.field, commands.fishing, guests);
+  if (worldShared_ && (battleScreen_.active() || coopBattleHold_)) {
+    putAwayFieldMenus();
+  }
+  if (game_.session->takeWorldJump()) {
+    scene_->matchClock();
+  }
   tickWater();
   deathScript_ = deathHoldsWakeMap(deathScript_, deathScene_.active(), storyBusy());
   // A tick that did not leave the player walking freely (a talk, a battle, a gym course, a screen)
@@ -1016,7 +1022,6 @@ void PlaySession::tickWater() {
 
 void PlaySession::tickSystems(const game::field::FieldInput& intent, const FishingButtons& fishing,
                               std::span<const GuestFieldIntent> guests) {
-  const ui::Ui& ui = *context_.ui;
   // Every tick starts with the characters where they stand: the screens below that run instead of
   // the field (a battle, the evolution, a sleep, the fishing, a menu) move them themselves or not
   // at all, and none is drawn sliding from where an older tick left it.
@@ -1093,10 +1098,6 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
     if (deathScene_.holdsField()) {
       return;
     }
-  }
-  // A battle another player started takes this player's screen: its game menu closes.
-  if (worldShared_ && (battleScreen_.active() || coopBattleHold_) && ui.isVisible(MenuDocument)) {
-    context_.ui->hide(MenuDocument);
   }
   // A co-op guest's field holds while the host's battle runs; its fighters are drawn as the host
   // sends them (coop_battles.hpp).
@@ -2356,7 +2357,25 @@ LocalScreens PlaySession::localScreens() const {
   return {.gameMenu = ui.isVisible(MenuDocument),
           .mainMenu = ui.isVisible(MainMenuDocument),
           .partnerMenu = ui.isVisible(PartnerMenuDocument),
-          .pauseBox = ui.isVisible(PauseBoxDocument)};
+          .pauseBox = ui.isVisible(PauseBoxDocument),
+          .dialog = ui.isVisible(DialogDocument) || ui.isVisible(StoryTextboxDocument)};
+}
+
+bool PlaySession::localScreensBusy() const {
+  return app::localScreensBusy(localScreens());
+}
+
+bool PlaySession::localMenusOpen() const {
+  return app::localMenusOpen(localScreens());
+}
+
+// A battle in a shared world takes the player's screen: the game menu and the field's partner
+// pages close, and do not come back after it.
+void PlaySession::putAwayFieldMenus() {
+  if (context_.ui->isVisible(MenuDocument)) {
+    context_.ui->hide(MenuDocument);
+  }
+  closeFieldBag(*context_.ui);
 }
 
 bool PlaySession::paused() const {
@@ -2380,6 +2399,7 @@ void PlaySession::holdForCoopBattle(bool on) {
   if (on && !coopBattleHold_) {
     closeFieldBag(*context_.ui);
     awardScreen_.putAway();
+    scene_->matchClock();
   }
   coopBattleHold_ = on;
 }

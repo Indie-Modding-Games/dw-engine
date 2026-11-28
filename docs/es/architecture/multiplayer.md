@@ -764,7 +764,9 @@ listo y un invitado cuyo enlace aún se está conectando (`online.member.<n>.arr
 **Juego.** En el anfitrión cada invitado tiene su propio puente de juego, controlador y cuerpo: sus comandos mueven a su
 propio jugador (`GuestFieldIntent`), sus estados llegan a la autoridad con su id, las correcciones y las listas de
 jugadores le llegan solo a él, y cada uno recibe las instantáneas con el acuse de sus propios comandos. Un invitado
-dibuja a todos desde las instantáneas y pone una etiqueta a cada otro jugador (`coop_hud.tag.<n>.*`). El enlace de
+dibuja a todos desde las instantáneas y pone una etiqueta a cada otro jugador (`coop_hud.tag.<n>.*`); las etiquetas se
+ocultan mientras el menú del juego o las páginas del compañero de este jugador están abiertos, y los avisos del HUD duran
+sus segundos en ticks del juego, no en fotogramas de la ventana. El enlace de
 cada invitado lleva sus propios mensajes de combate: cualquier invitado puede empezar un combate, y cada jugador libre
 de ese mapa pelea en él ([combate cooperativo](coop-combat.md) §12). Un puente descarta los mensajes que ninguna parte
 del juego lee (el listo de un lobby, los fragmentos de un guardado) en vez de encolarlos, así que un compañero que los

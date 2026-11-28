@@ -117,6 +117,26 @@ TEST_CASE("a guest pays for its thrown item only once the host's frames show the
   CHECK(purse.due(mine, self, 1) == std::vector<std::string>{"meat"});
 }
 
+TEST_CASE("a guest's strip keeps the host's command order") {
+  const coop::BattleBegin begin = fourPlayers();
+  coop::BattleFrame frame;
+  frame.phase = coop::BattlePhase::Fight;
+  frame.menu = {11, 1, 7, 6, 5, 4, 2, 8, 3};
+  const std::vector<coop::BattleFighterState> fighters(5, {.hp = 100, .maxHp = 100});
+  const dwe::screens::NameKeys names{nullptr, nullptr, nullptr};
+  const dwe::screens::BattleView view = dwe::app::coopBattleViewOf({.begin = &begin,
+                                                                    .frame = &frame,
+                                                                    .fighters = fighters,
+                                                                    .role = coop::BattleRole::Ally,
+                                                                    .self = 3},
+                                                                   names);
+  std::vector<std::uint8_t> shown;
+  for (const dwe::screens::CommandEntry& entry : view.menu) {
+    shown.push_back(static_cast<std::uint8_t>(entry.command));
+  }
+  CHECK(shown == frame.menu);
+}
+
 TEST_CASE("a guest's battle HUD shows its own partner first and the other partners as allies") {
   const coop::BattleBegin begin = fourPlayers();
   const std::vector<coop::BattleFighterState> fighters{
@@ -128,7 +148,7 @@ TEST_CASE("a guest's battle HUD shows its own partner first and the other partne
   coop::BattleFrame frame;
   frame.phase = coop::BattlePhase::Fight;
   frame.command = 2;
-  frame.menu = (1U << 1U) | (1U << 2U) | (1U << 8U);
+  frame.menu = {1, 2, 8};
   frame.bagAvailable = true;
   const dwe::screens::NameKeys names{nullptr, nullptr, nullptr};
   CHECK(dwe::app::coopOwnFighterOf(begin, coop::BattleRole::Ally, 3) == 4);

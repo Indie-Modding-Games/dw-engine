@@ -156,11 +156,14 @@ struct EntityState {
   friend bool operator==(const EntityState&, const EntityState&) = default;
 };
 
+// `npcsWhole`: every NPC of the map is listed (none, when it has none); false when some were left
+// out to fit the datagram, so a guest takes no missing one for gone.
 struct Snapshot {
   std::string mapId;
   std::uint32_t worldTick = 0;
   std::uint32_t acknowledgedCommand = 0;
   std::vector<EntityState> entities;
+  bool npcsWhole = false;
 
   friend bool operator==(const Snapshot&, const Snapshot&) = default;
 };
@@ -412,8 +415,8 @@ enum class BattleOutcome : std::uint8_t { Victory, Fled, Defeat };
 
 // One battle frame as the host shows it (20 a second, unreliable: a lost one is followed by the
 // next). `command` is the current command of the partner the guest commands (the fighting one when
-// it has none in the battle) and `menu` a bit per command the strip offers it now (bit n: battle
-// command n); `bagAvailable`, the finisher gauge's progress and goal (0 without a finisher) and
+// it has none in the battle) and `menu` the battle command numbers the strip offers it now, in the
+// strip's order; `bagAvailable`, the finisher gauge's progress and goal (0 without a finisher) and
 // the Folder plate (in a Folder battle) are that partner's too; `finisherCharging` is the battle's.
 // `outcome`: how the battle ended, once it has.
 struct BattleFrame {
@@ -421,7 +424,7 @@ struct BattleFrame {
   std::uint32_t frame = 0;
   BattlePhase phase = BattlePhase::Intro;
   std::uint8_t command = 0;
-  std::uint16_t menu = 0;
+  std::vector<std::uint8_t> menu;
   bool bagAvailable = false;
   bool finisherCharging = false;
   std::vector<BattleFighterState> fighters;
@@ -531,6 +534,9 @@ struct PlayerState {
   Motion motion = Motion::Idle;
   std::optional<ActionClip> action = std::nullopt;
   std::optional<HeldPartner> partner = std::nullopt;
+  // The player is in a scene of its own (its partner's death or rebirth, an evolution): the others
+  // do not draw it, and the host takes no pose from it.
+  bool away = false;
 
   friend bool operator==(const PlayerState&, const PlayerState&) = default;
 };

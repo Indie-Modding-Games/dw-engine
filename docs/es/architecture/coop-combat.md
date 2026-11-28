@@ -148,7 +148,10 @@ sus técnicas de área ignoran a los aliados (los enemigos conservan el fuego am
 - Cada compañero tiene su propio `CommandState`; el combate busca las órdenes por luchador (`commandsOf(id)`), como
   hace el versus.
 - Cambiar de objetivo (orden 7) rota el objetivo de ese compañero entre los enemigos.
-- Nadie puede dar órdenes al compañero de otro jugador. Un compañero cuyo jugador se desconectó pasa a A tu modo.
+- Nadie puede dar órdenes al compañero de otro jugador. Un compañero cuyo jugador se fue (se desconectó o cambió de
+  mapa) huye y cuenta como huido; en un combate de la historia se queda y pasa a A tu modo.
+- La barra de órdenes de un invitado muestra las órdenes en el orden del anfitrión: el fotograma las envía como lista
+  ordenada.
 
 ### 4.5 Remate y ánimos
 
@@ -302,8 +305,9 @@ sequenceDiagram
 
 ### 7.4 Desconexión
 
-- **Se desconecta un invitado:** su compañero sigue peleando en A tu modo hasta el final; su botín se descarta (el
-  guardado propio del invitado no se toca, como en el PR #363). Sigue contando para el escalado.
+- **Un invitado se desconecta o deja el mapa:** el anfitrión cierra su bolsa y su compañero huye, contado como huido; el
+  combate sigue sin él. En un combate de la historia el compañero se queda en A tu modo hasta el final. El invitado que
+  cambió de mapa quita su HUD de combate al momento y recibe el resultado cuando el combate termina.
 - **Se desconecta el anfitrión:** la sesión termina (ADR 0024); el combate de cada invitado termina sin resultado y el
   invitado vuelve a su propia partida.
 
@@ -313,7 +317,15 @@ sequenceDiagram
   enemigos salvajes esperan como hoy («ocupado», después ayudante). Varios combates a la vez en mapas distintos es la
   tarea 12.
 - Cuando empieza un combate, los actores de campo de sus compañeros y enemigos salen del campo en todos los clientes;
-  cuando termina, los enemigos retirados por el combate salen de todos los campos (el PR #363 ya los envía).
+  cuando termina, los enemigos retirados por el combate salen de todos los campos (el PR #363 ya los envía). Una
+  instantánea dice cuándo lleva todos los NPC del mapa (`npcsWhole`), así que un mapa vacío también retira los últimos
+  enemigos en los invitados.
+- Un combate que empieza en el mundo compartido cierra el menú del juego y las páginas del compañero de cada jugador que
+  está en él. Un jugador con un menú, una página del compañero o un diálogo abiertos no ofrece su compañero como aliado.
+- Un jugador en una escena propia en otro mapa (muerte, renacimiento) o en otro mapa se oculta en los mundos de los
+  demás, con su compañero, hasta que vuelve.
+- Un invitado toma la hora del día del mundo al momento, sin fundido, cuando su reloj salta al del mundo (al unirse, al
+  volver atrás, horas saltadas) y cuando queda retenido por un combate.
 
 ## 8. Mecánicas cooperativas (mejoras opcionales)
 

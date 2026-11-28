@@ -321,7 +321,7 @@ coop::BattleFrame coopBattleFrameOf(const game::battle::Battle& battle, FighterI
   const game::battle::CommandState& commands = state.commandsOf(own);
   frame.command = static_cast<std::uint8_t>(commands.current);
   for (const Command command : commands.menu) {
-    frame.menu = static_cast<std::uint16_t>(frame.menu | (1U << static_cast<unsigned>(command)));
+    frame.menu.push_back(static_cast<std::uint8_t>(command));
   }
   frame.bagAvailable = battle.bagAvailableFor(own);
   frame.finisherCharging = state.finisher.charging;
@@ -399,12 +399,10 @@ screens::BattleView coopBattleViewOf(const CoopBattleViewSource& source,
     view.finisher.ready = frame->finisherGoal > 0 && frame->finisherProgress >= frame->finisherGoal;
     view.finisher.charging = frame->finisherCharging;
     if (source.role != coop::BattleRole::Helper) {
-      for (unsigned number = 1; number <= static_cast<unsigned>(Command::Finisher); ++number) {
-        if ((frame->menu & (1U << number)) != 0) {
-          screens::CommandEntry& entry =
-              view.menu.emplace_back(commandEntryOf(source, number, names));
-          entry.available = entry.command != Command::Finisher || view.finisher.ready;
-        }
+      for (const std::uint8_t number : frame->menu) {
+        screens::CommandEntry& entry =
+            view.menu.emplace_back(commandEntryOf(source, number, names));
+        entry.available = entry.command != Command::Finisher || view.finisher.ready;
       }
     }
     if (frame->folder) {
@@ -559,6 +557,16 @@ void closeFieldBag(ui::Ui& ui) {
   if (ui.isVisible(PartnerMenuDocument) && (name == nullptr || *name != PartnerMenuBattleContext)) {
     ui.hide(PartnerMenuDocument);
   }
+}
+
+void withdrawCoopAlly(game::battle::Battle& battle, FighterId ally) {
+  const game::battle::AllyState* state = battle.state().allyOf(ally);
+  if (state == nullptr || state->released) {
+    return;
+  }
+  battle.closeBag(ally);
+  static_cast<void>(battle.command(Command::Flee, ally));
+  battle.releaseAlly(ally);
 }
 
 } // namespace dwe::app

@@ -339,6 +339,9 @@ public:
   [[nodiscard]] bool aheadOfWorld() const;
   // How many real seconds such a guest still waits for the world; none while the world stands.
   [[nodiscard]] std::optional<double> secondsAheadOfWorld() const;
+  // A guest's clock took the world's time in one step (it joined, went back or skipped hours) since
+  // the last call: its time of day shows at once, with no fade.
+  [[nodiscard]] bool takeWorldJump() { return std::exchange(worldJumped_, false); }
   // The host: its clock as the world's, to tell the guests.
   [[nodiscard]] WorldTime worldTime() const;
   // A training course holds its player and partner (tamerSetState(8)). In co-op the world's clock
@@ -519,6 +522,8 @@ private:
   // A guest's partner lived up to this frame of the clock: a guest that went back to the world's
   // time does not live those frames again.
   std::int64_t livedUntil_ = 0;
+  bool followedWorld_ = false;
+  bool worldJumped_ = false;
   // The co-op host: the frames the world's clock ran while a script or a screen of its own held its
   // player, which its partner has not lived yet.
   std::int64_t stoodFrames_ = 0;

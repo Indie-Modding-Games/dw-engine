@@ -47,7 +47,8 @@ std::optional<PresentedCoopWorld> CoopSnapshotInterpolation::sample(net::Millis 
   PresentedCoopWorld world{.mapId = latest_->mapId,
                            .worldTick = latest_->worldTick,
                            .acknowledgedCommand = latest_->acknowledgedCommand,
-                           .entities = {}};
+                           .entities = {},
+                           .npcsWhole = latest_->npcsWhole};
   world.entities.reserve(latest_->entities.size());
   for (const game::coop::EntityState& state : latest_->entities) {
     const auto track = tracks_.find(state.networkId);

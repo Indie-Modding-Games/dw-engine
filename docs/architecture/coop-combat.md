@@ -140,7 +140,9 @@ hit each other: their area moves skip allies (enemies keep the original's friend
   its discipline). Same keys as in solo ([controls](controls.md)).
 - Each partner has its own `CommandState`; the battle looks orders up by fighter (`commandsOf(id)`), as versus does.
 - Change target (command 7) cycles that partner's target among the enemies.
-- Nobody can give orders to another player's partner. A partner whose player dropped goes on Your Call.
+- Nobody can give orders to another player's partner. A partner whose player left (dropped or changed map) runs off
+  and counts as fled; in a story battle it stays and goes on Your Call.
+- A guest's order strip shows the commands in the host's order: the frame sends them as an ordered list.
 
 ### 4.5 Finisher and cheering
 
@@ -285,8 +287,9 @@ sequenceDiagram
 
 ### 7.4 Disconnection
 
-- **A guest drops:** its partner keeps fighting on Your Call until the end; its spoils are dropped (the guest's own save
-  is untouched, as in PR #363). It still counts for the scaling.
+- **A guest drops or leaves the map:** the host closes its bag and its partner runs off, counted as fled; the battle
+  goes on without it. In a story battle the partner stays on Your Call until the end. The guest that changed map drops
+  its battle HUD at once and gets the result when the battle ends.
 - **The host drops:** the session ends (ADR 0024); each guest's battle ends with no result and the guest returns to its
   own game.
 
@@ -295,7 +298,14 @@ sequenceDiagram
 - One battle per host world (PR #363). Players on other maps keep playing; their own wild touches wait as today
   ("busy", then helper). Several battles at once on different maps is task 12.
 - When a battle starts, the field actors of its partners and enemies leave the field on every client; when it ends,
-  the enemies removed by the battle leave every field (PR #363 already sends them).
+  the enemies removed by the battle leave every field (PR #363 already sends them). A snapshot says when it carries
+  every NPC of the map (`npcsWhole`), so an empty map also removes the last enemies on the guests.
+- A battle starting in the shared world closes the game menu and the partner pages of every player in it. A player with
+  a menu, a partner page or a dialog open does not offer its partner as an ally.
+- A player in its own scene on another map (death, rebirth) or on another map is hidden in the others' worlds, with its
+  partner, until it is back.
+- A guest takes the world's time of day at once, with no fade, when its clock jumps to the world's (joining, going back,
+  skipped hours) and when it is held for a battle.
 
 ## 8. Cooperative mechanics (optional improvements)
 

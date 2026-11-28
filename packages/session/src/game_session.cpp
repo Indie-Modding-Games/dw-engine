@@ -646,6 +646,8 @@ ruleset::ClockAdvance GameSession::followWorld(double realSeconds) {
   const ruleset::ClockRules& rules = clock.rules();
   const ClockFollow step =
       follower_.follow(clock.elapsedFrames(), rules.framesPerSecond, rules.framesPerMinute);
+  const bool first = !std::exchange(followedWorld_, true);
+  worldJumped_ = worldJumped_ || first || step.backTo || step.skippedHours > 0;
   if (step.backTo) {
     core::logInfo("[coop] the guest's clock goes back to the world's: frame {} to {}",
                   clock.elapsedFrames(), *step.backTo);
@@ -688,6 +690,8 @@ void GameSession::shareClock(ClockShare share) {
   follower_.reset();
   livedUntil_ = 0;
   stoodFrames_ = 0;
+  followedWorld_ = false;
+  worldJumped_ = false;
 }
 
 void GameSession::hearWorldClock(const WorldTime& time) {

@@ -143,6 +143,7 @@ private:
   bool handleHud(const ui::UiCommand& command);
   void openHudBag();
   void hideDocument();
+  void walkAway(PlaySession& play);
   void send(CoopGameplayBridge* bridge, game::coop::Message message);
   void sendTo(game::coop::PlayerId to, game::coop::Message message);
   void sendAll(const game::coop::Message& message);
