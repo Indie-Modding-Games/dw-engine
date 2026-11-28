@@ -223,8 +223,12 @@ public:
   landing(std::string_view /*move*/, dwe::game::battle::FighterId /*attacker*/,
           dwe::game::battle::FighterId /*defender*/,
           std::optional<std::int32_t> /*clip*/) const override {
-    return dwe::game::battle::EffectLanding{
-        .frame = 37, .at = {}, .touch = {}, .facingTarget = {}, .laterContacts = {}};
+    return dwe::game::battle::EffectLanding{.frame = 37,
+                                            .at = {},
+                                            .touch = {},
+                                            .facingTarget = {},
+                                            .laterContacts = {},
+                                            .committed = std::nullopt};
   }
 };
 

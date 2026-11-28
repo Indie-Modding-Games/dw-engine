@@ -63,7 +63,8 @@ void land(BattleContext& context, const FlattenedShot& shot, FighterId defender)
                      .facingTarget = {},
                      .aim = std::nullopt,
                      .laterContacts = {},
-                     .contacted = false});
+                     .contacted = false,
+                     .committed = std::nullopt});
   context.emit({.kind = EventKind::AttackLanded,
                 .fighter = defender,
                 .other = shot.attacker,

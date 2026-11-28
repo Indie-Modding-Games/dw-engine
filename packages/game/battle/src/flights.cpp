@@ -138,7 +138,8 @@ std::optional<EffectLanding> ScriptedFlights::probe(std::string_view move, Fight
                                                     : std::optional{bodies.ground(touch->at)},
                                 .touch = touch->at,
                                 .facingTarget = std::move(facingTarget),
-                                .laterContacts = {}};
+                                .laterContacts = {},
+                                .committed = touch->committed};
       }
       // A later check may touch the defender again should the battle take this touch as a block.
       runner.releaseTouch(touched);
