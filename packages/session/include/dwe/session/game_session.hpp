@@ -342,6 +342,9 @@ public:
   // original's clock stands still for it.
   void holdForCourse(bool held);
   [[nodiscard]] bool heldForCourse() const { return courseHeld_; }
+  // Co-op: a held course whose session the world's clock has not yet run an hour for (#411). Its
+  // partner was charged that hour, so the course lasts it; never alone.
+  [[nodiscard]] bool courseHourRuns() const;
 
   // After a system's command changed the partner (an item, an evolution): routes the partner's
   // events and writes a requested autosave, as the session's own commands do.
@@ -501,6 +504,7 @@ private:
   ClockShare clockShare_ = ClockShare::Own;
   WorldClockFollower follower_;
   bool courseHeld_ = false;
+  std::int64_t courseStart_ = 0;
   // Whether the clock ran on the last tick (the world's, told to the guests on the host).
   bool clockRan_ = false;
   // A guest's partner lived up to this frame of the clock: a guest that went back to the world's

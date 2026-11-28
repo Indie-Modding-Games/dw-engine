@@ -13,6 +13,13 @@ documentation; its chapter 8 sets the co-op scaling target for the new system.
 this document is exactly 100 % and no code path differs from today. Co-op scaling is an improvement, documented and
 optional, chosen by the host.
 
+**Audit (2026-11-27):** checked against the issue's deliverables in the [#361 audit](audits/361-audit.md); §5.5, §8,
+§11 and §12.8 were completed then.
+
+**Alternative under evaluation (2026-11-27):** §12 records the unimplemented "+20 % per player on screen and wider
+contact reach" model raised in ticket #361. The tables of §5 and the implementation of §9 remain the behaviour that
+shipped.
+
 ## 1. How the original sets difficulty
 
 The original has no difficulty setting and no scaling. Every number below comes from the decomp (function names) or
@@ -175,7 +182,7 @@ A Gear Savanna placement (illustrative: HP 1200, MP 300, Off 340, Def 300), norm
 | MP | 300 | 450 | 600 | 750 |
 | Off | 340 | 340 | 357 | 374 |
 | Finisher goal (Speed 200) | 2800 ticks of fill | ~2240 | ~1870 | ~1600 |
-| Chance that a second enemy of the same type joins (base 60 %) | 60 % | 75 % | 85 % | 95 % |
+| Chance that a second enemy of the same type joins (base 60 %, proposal: the join bonus is not built) | 60 % | 75 % | 85 % | 95 % |
 
 Machinedramon at the summit (184:51; 9400 HP, Off 999, Def 650), fixed fight:
 
@@ -184,6 +191,31 @@ Machinedramon at the summit (184:51; 9400 HP, Off 999, Def 650), fixed fight:
 | HP | 9400 | 18800 | 27260 | 34780 |
 | Off | 999 | 999 (cap) | 999 | 999 |
 | Stat gains for each partner | from 9400 HP, 999 Off | same | same | same |
+
+### 5.5 What ships, by level
+
+The values the game applies today (`coop_scaling` in `battle.yaml`, `game::battle::coopScalingFactors`). `N` counts the
+partners fighting; each helper (a player on the map whose partner does not fight) adds 15 points of HP; `hard` adds 25
+points of HP on top. `off` is 100 everywhere. With `N = 1` and no helper every level is 100 (rule zero).
+
+| Normal fight | N = 1 | N = 2 | N = 3 | N = 4 |
+|---|---|---|---|---|
+| HP, standard | 100 | 180 | 250 | 320 |
+| HP, hard | 100 | 205 | 275 | 345 |
+| MP | 100 | 150 | 200 | 250 |
+| Off | 100 | 100 | 105 | 110 |
+| Finisher fill | 100 | 125 | 150 | 175 |
+
+| Fixed fight (trigger 1) | N = 1 | N = 2 | N = 3 | N = 4 |
+|---|---|---|---|---|
+| HP, standard | 100 | 200 | 290 | 370 |
+| HP, hard | 100 | 225 | 315 | 395 |
+| MP | 100 | 100 | 100 | 100 |
+| Off | 100 | 105 | 110 | 115 |
+| Finisher fill | 100 | 125 | 150 | 175 |
+
+One fighter with one helper (a partner that stays out) is 115 % HP in standard and 140 % in hard; its other values
+stay at 100.
 
 The canyon ambush (43:51, three foes, fixed) is a story trio, so each foe gets the boss table (HP ×2.0/2.9/3.7) instead
 of the normal one (×1.8/2.5/3.2).
@@ -247,6 +279,11 @@ Ids are `script:section` (or map), as in [the battle module](../modules/game/bat
 To verify before tuning (not found in the sources read): Myotismon (Grey Lord's Mansion), Devimon (51:57, mgen06),
 Mamemon and Piximon. Every row can be overridden by id in the data (§9).
 
+**What the game does today with this table.** Per-fight overrides are not built (§9): a fight gets the fixed table
+when its script starts it with trigger 1, and the normal one otherwise. So every "Fixed" row above already gets its
+handling; a recruit or ambush the script starts with another trigger gets the normal table until an override exists.
+Tournaments and versus never scale.
+
 ## 9. Implementation
 
 **What landed (2026-11-20).** The option is `coop_difficulty` (Game tab: off, standard by default, hard; saved as
@@ -259,13 +296,14 @@ partner does not fight) in `BattleSetup::coopScaling`, and `Battle::start` scale
 finisher goal from their unscaled stats. `startStats` stay unscaled, so stat gains are the original's. When a partner
 runs, the enemies scale again for the partners left, each keeping its HP and MP share; a knocked-out partner still
 counts. Not built from the proposal below: the join roll bonus (a guest-started battle has no roll on the host to add
-to), the per-fight `overrides`, the reward options of §5.3 and the lobby display.
+to), the per-fight `overrides` and the reward options of §5.3. The room lobby shows the host's level to everyone
+(`online.current.coop_difficulty` and its `_key`, read by `ui/online_room/logic.lua`).
 
 ### 9.1 Setting
 
-- `UserSettings::coopScaling` in `apps/game/src/user_settings.hpp` with the values `off`, `standard` (recommended
-  default for co-op sessions) and `hard` (HP +25 points on top of each table). Shown in the Game options and in the
-  room lobby. Only the host's value counts; guests see it.
+- `UserSettings::coopDifficulty` in `apps/game/src/user_settings.hpp` (the proposal called it `coopScaling`) with the
+  values `off`, `standard` (the default) and `hard` (HP +25 points on top of each table). Shown in the Game options
+  and in the room lobby. Only the host's value counts; guests see it.
 - It is applied the same way as the existing difficulty (`RuleOptions` in `apps/game/src/rule_options.hpp`, changes
   through `RulesetStore`), but scaling is not a fixed change: it depends on `N`, so it is computed per battle.
 - With `N = 1` and no helpers, every factor is 100 whatever the setting: single player is never touched.
@@ -354,8 +392,175 @@ Extend the `battle` scenario with `--param partners=<species>,<species>...` (one
 1. Default of `coopScaling` in co-op sessions: `standard` (recommended) or `off`.
 2. Bits: host keeps all (recommended, decision 4) or even split.
 3. Stat gain cap for carried partners: off (recommended, original behaviour) or on.
+4. Which model to keep: the shipped per-fighter tables (§5/§9) or the flat +20 % per player on screen (§12, not built).
 
-## 12. Related documents
+**Technical recommendation (2026-11-27).** Keep the shipped model as the default and add §12 as a third level
+(`linear_20`), not as a replacement, once §10.2 is measured for both:
+
+- the shipped model counts fighting partners, which is what changes the damage dealt and taken; §12 counts bodies on the
+  map, so a spectator or a Rookie raises a fight as much as an endgame partner (§12.6, §12.7);
+- §12 needs three new hooks (a damage multiplier in the damage strategy, a join roll bonus, a hostile contact reach)
+  while the shipped model needs none; the join roll bonus is worth building for both, since it is the original's own
+  way to make bigger fights;
+- a level is data in `coop_scaling`, so the host can choose either without a code path for solo play.
+
+Order: the join roll bonus first (both models want it), then the per-fight overrides of §8, then `linear_20`, each
+behind the setting and measured with the §10.2 cases before it becomes a default.
+
+## 12. Alternative: flat +20 % per player on screen (2026-11-27)
+
+Status: **proposal, not implemented.** It answers the idea raised in ticket #361 after the model that shipped: use one
+rule a player can read ("one more player on screen = 20 % more life and damage"), and make fights with several enemies
+more common by widening the field contact reach. It would replace §4–§5 only if chosen; it changes nothing that is in
+the game today. Rule zero still applies: with one player on the map, every value is 100 %.
+
+### 12.1 Counting `P`
+
+`P` = players with a field entity on the host's current map: the host plus every guest in `coopPlayerHere` whose player
+was added with `Field::addPlayerNearHost` (`apps/game/src/coop_world.cpp`, `packages/game/field/src/field.cpp`).
+Connected players on another map do not count: `coopPlayerHere` already checks the map id and a pending map change.
+`P` counts tamers, not Digimon partners.
+
+Unlike §4, `P` does not ask whether a partner fights: a player who only throws items or watches counts fully. That is
+the point of the alternative, but it also means a spectator makes a fight harder; §12.6 lists the mitigations. The host
+has every guest's position in the field (`Field::moveOtherPlayer`), so reach can be tested against any of them, not only
+the local player. All factors and rolls stay on the host, as in §9.3.
+
+### 12.2 Parameters
+
+Percent of the original value. `P = 1` is solo: 100 everywhere, with no code path changed. The +20 % is per
+**additional** player, so `factor = 1 + 0.2·(P − 1)`.
+
+| Value | P = 1 | P = 2 | P = 3 | P = 4 |
+|---|---|---|---|---|
+| Enemy max HP | 100 | 120 | 140 | 160 |
+| Enemy damage dealt | 100 | 120 | 140 | 160 |
+| Enemy max MP | 100 | 100 | 100 | 100 |
+| Enemy finisher fill rate | 100 | 100 | 100 | 100 |
+| Join roll bonus (lower roll = more joiners) | 0 | −10 | −20 | −30 |
+| Hostile contact reach | 100 | 120 | 140 | 160 |
+
+Offense, Defense, Speed and Brains stay as in the placement. The +20 % is applied to the **damage result**, not to the
+Offense stat: `OriginalDamage::damage` (`packages/game/battle/src/original_damage.cpp`) multiplies by the factor for
+enemy attackers after affinity, the ±500 difference cap and variance, and before the 1–9999 clamp. Scaling Offense
+instead would not give +20 % damage: with Off 340, Def 300, move power 100 and affinity 1, the original hit is 3.6,
+Off ×1.2 gives 4.05 (+12.6 %) and Off ×1.4 gives 4.51 (+25.2 %); at the Off cap (999) it gives nothing. Finishers are
+multiplied too, including the enemy's random ×1–2. Def is never scaled, as in §3.
+
+Fixed fights use the same HP and damage columns; they have no join roll because everyone already joins, and their
+contact reach only decides who starts the fight. Tournaments, the arena and versus stay unscaled (§8).
+
+### 12.3 A wider reach is not a join bonus
+
+`Field::touchNpcs` builds the player's box from `rules_.player.radius` (100 in
+`content/packs/game/field/rules.yaml`) one frame ahead, and `FieldNpcs::touchFromPlayer`
+(`packages/game/field/src/npcs.cpp`) reports **the first** colliding autotalk NPC. Widening that box means the host, or
+a guest standing near an enemy on the host's map, starts the battle sooner and can reach an NPC that was previously out
+of range; it does not increase the number of enemies in the battle. Group size comes from `rollJoiningEnemies`
+(`packages/game/battle/src/joining.cpp`), which reads `joining.chances` (3×3, plus `untypedChance`) and stops at
+`limits.max_enemies` (3).
+
+To actually make multi-enemy battles common, add the join roll bonus of §12.2 inside `rollJoiningEnemies`, after the
+Enemy bell (−50) / Enemy repel (+20) modifiers and before the comparison with the chance. Keep the cap of 3 and the
+scripted-fight rule (everyone joins). Changing the radius alone only moves the place where a fight starts, not its
+size.
+
+### 12.4 Where it hooks in
+
+- **Data:** a third level of `coop_scaling` in `content/packs/game/rules/original/battle.yaml` (for example
+  `linear_20`) with `hp_percent`, `damage_percent` and `join_roll` per player count; `content/packs/game/field/rules.yaml`
+  gains a `coop_contact_reach_percent` for hostile NPCs only. The current level and solo behaviour are untouched.
+- **Battle:** `game::battle::coopScalingFactors` takes `P` in this mode and returns the damage multiplier alongside the
+  HP multiplier; `Battle::start` scales HP as today and the damage multiplier goes to the damage strategy. Stat gains
+  keep reading the unscaled `rewardStats`.
+- **Contact:** a separate pass in `Field::touchNpcs` with a larger box only for NPCs that can fight (`canFight`,
+  `npcsOf` in `apps/game/src/battle_trigger.cpp`). Never change `player.radius` globally: talking, collisions and other
+  NPCs would change too. The box stays axis-aligned as in the original; only its half-size grows, and only while the
+  co-op option is on.
+- **Rewards:** unchanged from §6 and §9 (bits once for the host, one drop roll per enemy, per-partner gains).
+- **Guests:** the host checks reach against all field players; guests neither compute factors nor start a separate
+  battle for an enemy owned by the host's world.
+
+### 12.5 Comparison with the built model
+
+| | Built (§5/§9) | Alternative §12 |
+|---|---|---|
+| Counter | Fighting partners plus a small helper weight | All players on the host's map |
+| HP at 2/3/4 players | 180/250/320 | 120/140/160 |
+| Pressure | Off 100/105/110, finisher 125/150/175 | Exact damage ×1.2/1.4/1.6, finisher unchanged |
+| Group size | Join bonus planned, not built | Join bonus part of the model: −10/−20/−30 |
+| Where fights start | Original touch | Wider contact for hostile NPCs |
+| Feel | Longer fights, grindier bosses | Shorter fights, more enemies, original rhythm kept |
+
+The alternative is cheaper (160 % HP instead of 320 % with four players) and easier to explain, but it puts more weight
+on extra damage and on the join roll: with three enemies the reward factor is still F = 16 (§1.3), so fights get short.
+The built model already shipped and is measured by §10; this one needs the same measurements before replacing it.
+
+### 12.6 Risks and tests
+
+| Risk | Mitigation |
+|---|---|
+| A spectator counts as a full player | Count only players with a field entity on the map; optional "free of menus/scenes" flag (the `offered` flag already exists for fighters); decide before implementing |
+| Enemies notice the player from too far away | Reach grows only for hostile NPCs and only in co-op; `P = 1` uses the original box; keep the one-frame look-ahead |
+| Damage above the cap or too spiky | Apply the multiplier before the 1–9999 clamp; test normal hits, finishers and the ±500 cap separately |
+| More joiners inflate stat gains | Keep the cap of 3 and `rewardStats` unscaled; measure the F = 16 case |
+| Guest latency | Reach is checked on the host against each guest's interpolated position; no guest-side trigger |
+| Bosses melt | Measure Machinedramon 184:51 at `P = 4`; raise only the HP column if time-to-win drops below 0.9× solo |
+| The Mega step breaks the original envelope | Read the tables per ruleset and test with `oculto_mega`; see §12.7 |
+
+### 12.7 Interaction with the Mega step (future ruleset)
+
+The `oculto_mega` ruleset (the Ultimate → Mega step,
+[evolution](../modules/game/evolution.md#ultimate--mega-step)) changes the envelope these percentages were written
+against: `species_t` as a partner is designed with 9999/9999/999/900/700/800 (HP/MP/Off/Def/Speed/Brains) and its
+Infinity Cannon has power 240 with 1 iframe instead of the original 777 with 38
+([extra evolutions](../modules/game/extra-evolutions.md#balance)). It reaches the original's stat caps and goes past
+its regional curve, so "100 %" no longer means what it means in §1.
+
+Consequences to check before adopting this model:
+
+- The fixed limits of §1.2 (`Off − Def` clamped at ±500, 1–9999 damage per hit, Off capped at 999) were written for
+  original placements. A flat multiplier can push a Mega's hits into the 9999 damage cap, and scaling Offense instead
+  does nothing when the stat is already at 999. Apply the multiplier to the damage result and clamp once, as in §12.2.
+- HP percentages apply to the enemy placement, not to the partner, so the table itself stays valid; but a Mega partner
+  deletes a ×1.6 HP pool while a Rookie in the same party does not. Here one Mega plus three Rookies counts `P = 4` and
+  receives the full 60 % extra HP and damage: the counter measures bodies, not power, so the objection of §4 is stronger.
+- More joiners raise `F` (up to 16) for stat gains that already read unscaled stats. A Mega partner near the caps gains
+  little, but a carried Rookie still gains a lot (§7).
+- The Mega step lives in another ruleset: the co-op tables must be read per ruleset, with values derived from that
+  ruleset's caps and placements instead of hard-coded 999/9999, and the `hard` level must be checked against Mega bosses
+  as well.
+- Test before enabling: the six cases of §10.2 with `oculto_mega` and a mixed party (one Mega plus three Rookies), plus
+  a four-Mega party; watch time-to-win, hits that reach the damage cap and HP displayed with more than four digits. If
+  the limits break, keep the built model for Mega rulesets or disable co-op scaling there.
+
+Unit tests: `P = 1` unchanged for every setting; tables at `P = 2–4`; the damage multiplier exact on normal hits and
+finishers; the join roll never above 3 enemies; reach identical to the original with one player. Balance (`dwe-sim`):
+the six cases of §10.2 plus a four-player run with two helpers and a three-enemy group fight; target win rate ±10 points
+and time to win 0.9–1.3× solo. Game: repeat §10.3 with the new setting, and check that a guest standing near an enemy
+on the host's map starts the fight under the host's rules.
+
+### 12.8 Examples
+
+The same placements as §5.4, with the alternative (enemy hit: an illustrative 150 damage before the multiplier).
+
+| Gear Savanna placement, normal fight | P = 1 | P = 2 | P = 3 | P = 4 |
+|---|---|---|---|---|
+| HP | 1200 | 1440 | 1680 | 1920 |
+| MP | 300 | 300 | 300 | 300 |
+| An enemy hit of 150 | 150 | 180 | 210 | 240 |
+| Chance that a second enemy of the same type joins (base 60 %) | 60 % | 70 % | 80 % | 90 % |
+
+| Machinedramon 184:51, fixed fight | P = 1 | P = 2 | P = 3 | P = 4 |
+|---|---|---|---|---|
+| HP | 9400 | 11280 | 13160 | 15040 |
+| Off | 999 | 999 | 999 | 999 |
+| Damage of each hit | ×1.0 | ×1.2 | ×1.4 | ×1.6 |
+
+Against the shipped model at four players, the boss has 15040 HP instead of 34780, and each of its hits deals 60 % more
+where the shipped model cannot raise its Off past the cap: fights are shorter and each hit matters more.
+
+## 13. Related documents
 
 - [Combat system design](combat-design.md) —the base: chapter 8, co-op combat and scaling.
 - [Online co-op multiplayer](multiplayer.md) and [ADR 0024](../adr/0024-co-op-with-authoritative-host.md).

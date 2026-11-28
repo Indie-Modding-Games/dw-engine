@@ -1,6 +1,6 @@
 # Entrenar en un mundo compartido (documento de diseño)
 
-Estado: **hecho** (2026-11-20, ticket #365). Se apoya en el [cooperativo en línea](multiplayer.md) (§5.7 mundo
+Estado: **hecho** (2026-11-20, ticket #365; auditado y completado el 2026-11-27, ver la [auditoría de #365](audits/365-audit.md)). Se apoya en el [cooperativo en línea](multiplayer.md) (§5.7 mundo
 compartido, §6 decisiones 4 y 5), el [ADR 0024](../adr/0024-co-op-with-authoritative-host.md) y las pantallas del
 gimnasio del módulo [partner](../modules/game/partner.md).
 
@@ -27,6 +27,24 @@ mientras corre una partida cooperativa.
 Un minuto de juego es un segundo real (20 frames por segundo), así que una hora de juego es un minuto real. Un jugador
 que entrena diez sesiones seguidas adelanta el mundo diez horas en unos pocos minutos reales; es el ritmo del original,
 y a solas está bien.
+
+El resto de una sesión, según el [módulo gym](../modules/game/gym.md) y la [ficha de cuidados](../reference/care.md#training):
+
+- **Inicio.** Un curso empieza en la casilla de confirmar del gimnasio: el script ofrece Empezar, Explicar o Salir,
+  luego Normal o Intento extra, pone las variables 254 (el curso) y 246 (la ruleta) y llama a la rutina 7 (script 108
+  en el gimnasio del pueblo). El script no mira antes al compañero: uno cansado o con hambre entrena y lo paga (la
+  penalización por sobreentrenamiento de arriba).
+- **Final.** Una sesión corre los frames de su curso (1200 en casi todos, un minuto de juego) o termina con el botón de
+  cancelar mantenido, con lo ganado; con la ruleta, los rodillos deciden cuándo termina. Luego el recuadro cuenta las
+  ganancias.
+- **Ganancias.** Una base por gimnasio por la aptitud de la especie, su nivel, un gimnasio mejorado, el bono de
+  práctica, el manual de entrenamiento y el bono de una comida; la ruleta multiplica el resultado entre 0,5 y 10; cada
+  sesión suma uno al temporizador de evolución.
+- **Descanso y recuperación.** El cansancio solo baja descansando, durmiendo y con algunas comidas; nada del gimnasio
+  lo repone.
+- **Lo que el cooperativo debe conservar:** la fórmula de ganancias y sus topes, los costes de la hora, la penalización
+  por sobreentrenamiento, la duración de la sesión, la ruleta y el recuadro de estadísticas, y el orden en que pasan.
+  Solo cambia quién mueve el reloj.
 
 ## 2. Qué hacía el cooperativo antes de este ticket
 
@@ -94,6 +112,18 @@ ni energía), igual que el reloj del original se queda quieto para él. Al termi
 el tiempo del mundo. La retención es `GameSession::holdForCourse`, que pone el puerto de campo del gimnasio junto a la
 retención del campo.
 
+**Una sesión dura su hora del reloj del mundo (#411).** Una sesión completa son 1200 frames de curso, un minuto real,
+así que el reloj del mundo ya corre más o menos una hora durante ella (medido: 1241 frames del inicio del curso a su
+último recuadro, frente al salto de 1200 a solas). Una sesión cortada corría solo segundos: cancelar, o parar pronto la
+ruleta del intento extra, cobraba una hora al compañero mientras el mundo avanzaba un minuto o dos (medido: 41 frames),
+así que un jugador que saltaba diez sesiones no veía pasar el tiempo para nadie. Ahora, en cooperativo, el curso
+retiene a sus actores tras el recuadro de estadísticas hasta que el reloj del mundo ha corrido una hora desde el inicio
+del curso (`GameSession::courseHourRuns`, `GymPorts::hourRuns`; el curso espera antes de `TRAINING_COMPLETE`). Los
+cuidados del compañero siguen retenidos mientras tanto, así que paga justo la hora que se le cobró, la etiqueta del
+jugador sigue diciendo **Entrenando** y la siguiente sesión de una tanda empieza después. Las sesiones de varios
+jugadores se solapan sobre la misma hora del mundo; ninguna mueve el reloj. A solas nada espera: el salto de la sesión
+es el del original.
+
 ### 4.3 Quién entrena
 
 `TrainingStatus` (`0xC1`, en ambos sentidos, fiable) lleva un jugador y un id de curso (32 caracteres como mucho, vacío
@@ -105,7 +135,8 @@ enlace, nunca el del mensaje, y dice a cada invitado los cursos de los demás cu
 - Un jugador que entrena está ocupado para intercambios y no se ofrece como aliado de combate; a un jugador en el
   gimnasio no se le puede meter en un combate.
 - El primer curso de un jugador en una partida cooperativa muestra un aviso una vez: el tiempo del mundo sigue
-  corriendo y cada sesión cuenta su propia hora para el compañero (`online.coop.training_clock`).
+  corriendo, cada sesión dura una hora de ese tiempo y una sesión saltada espera el resto de su hora
+  (`online.coop.training_clock`).
 
 ### 4.4 Flujo
 
@@ -121,6 +152,21 @@ sequenceDiagram
   N->>H: TrainingStatus (jugador = el del enlace)
   H->>N: TrainingStatus a los demás invitados
   Note over H,G: cada sesión cobra una hora a su compañero; ningún reloj salta
+```
+
+La sesión de un jugador en cooperativo, de la casilla de confirmar al siguiente paso libre:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Script: casilla de confirmar (el reloj del mundo se para mientras el anfitrión la lee)
+  Script --> Curso: rutina 7; holdForCourse(true), se guarda el inicio
+  Curso --> Premio: se acaban los frames, cancelar mantenido o paran los rodillos
+  Premio --> Cuenta: se cobra una hora al compañero (sharedClock, sin salto)
+  Cuenta --> EsperaHora: recuadro cerrado, el mundo corrió menos de una hora
+  Cuenta --> Hecho: el mundo ya corrió su hora
+  EsperaHora --> Hecho: el reloj del mundo llega al inicio + 1 hora
+  Hecho --> [*]: holdForCourse(false), TRAINING_COMPLETE, el script sigue
+  Curso --> [*]: enlace perdido en un invitado (vuelve al título)
 ```
 
 ### 4.5 Dormir en un mundo compartido (#424, #411)
@@ -141,6 +187,38 @@ Dormir salta la noche, y la noche es del mundo. Las reglas:
 - **Los eventos del mundo y los cambios de día** siguen solo el reloj del mundo (§5): el sueño de un invitado no cambia
   el día de nadie.
 
+### 4.6 De dos a cuatro jugadores
+
+Las mismas reglas valen para cualquier tamaño de sala; nada escala con el número de jugadores.
+
+| Jugadores | Quién mueve el reloj | Quién puede entrenar | Qué ven los demás |
+|---|---|---|---|
+| 1 (a solas) | El salto de la sesión, como el original | El jugador | — |
+| 2 | El reloj del anfitrión, solo tiempo real | Los dos, a la vez o no, en cualquier gimnasio | La etiqueta **Entrenando** del otro y los clips de su compañero en la máquina |
+| 3 | Igual | Los tres, por separado | Las etiquetas y clips de los demás, a través del anfitrión |
+| 4 | Igual | Los cuatro, por separado | Igual; cuatro sesiones a la vez siguen corriendo el mundo una hora por minuto real (probado) |
+
+- **Una sesión por jugador.** La partida de un jugador corre un curso a la vez (`GymScreen::start` no hace nada mientras
+  corre uno); una tanda corre sus sesiones una tras otra, cada una esperando su hora.
+- **La misma máquina.** Cada partida corre el gimnasio en su propia copia del mapa, así que dos jugadores pueden usar la
+  misma máquina a la vez. Sus compañeros se dibujan en el mismo sitio en las pantallas de los demás, y solo la pantalla
+  de cada jugador mueve los objetos de la máquina (la roca, el tronco): un límite visual, ticket T8 en §9.
+- **Entrenar y explorar.** Un jugador en un curso está ocupado: sin intercambios, sin ofertas de aliado, no se le mete
+  en un combate. Los demás siguen explorando, luchando e intercambiando; el mundo nunca se retiene por quien entrena.
+
+### 4.7 Resultados y autoridad
+
+- **Las ganancias de cada compañero son de su partida.** La partida de quien entrena corre el curso, tira la ruleta con
+  el estado aleatorio de su compañero y aplica ganancias, costes y la hora (`GameSession::train`). Ningún resultado
+  viaja por sí solo: los demás ven la etiqueta y los clips.
+- **El anfitrión no valida las ganancias de un invitado**, igual que no valida sus cuidados: el cooperativo confía a cada
+  partida su propio compañero ([ADR 0024](../adr/0024-co-op-with-authoritative-host.md)). Una sesión la aplica una sola
+  vez una sola partida, así que no puede contarse dos veces.
+- **La hora se comprueba contra el mundo.** La retención del curso dura hasta que el reloj del mundo corrió la hora que
+  cobró (§4.2), así que ni el anfitrión ni un invitado pueden encadenar sesiones más rápido que el tiempo del mundo.
+- **El progreso vuelve a casa.** El compañero entrenado de un invitado vuelve a su propio guardado con el resto de su
+  progreso (#383, [multijugador](multiplayer.md), «Qué vuelve a casa»).
+
 ## 5. Desconexiones y casos límite
 
 - **Un invitado se va:** el anfitrión borra su curso (`CoopTraining::playerLeft`) y se lo dice a los demás; si vuelve,
@@ -156,12 +234,27 @@ Dormir salta la noche, y la noche es del mundo. Las reglas:
 - **Combates:** un combate sigue parando el reloj de su jugador mientras dura; un invitado se pone al día después con
   frames o un salto.
 
+Los casos que lista el issue:
+
+| Caso | Qué pasa |
+|---|---|
+| Un jugador termina antes que los demás | Queda libre al momento (tras su hora); las sesiones de los demás siguen, ninguna espera a otra. |
+| Un jugador empieza mientras otro entrena | Se puede, en cualquier gimnasio, incluso en la misma máquina (§4.6). Al reloj le da igual. |
+| Un invitado se desconecta en mitad de un curso | Su partida vuelve al título y conserva su último punto seguro (#383); el anfitrión borra su curso y su etiqueta. |
+| El anfitrión se va en mitad de un curso | Todos los invitados vuelven al título con su último punto seguro (#383); una sesión en curso puede perderse. |
+| El compañero no tiene energía | El script del gimnasio no se niega: la sesión corre y se aplican el hambre de la hora y el error de cuidado, como a solas. |
+| Cambia el día durante una sesión | Solo la medianoche del mundo cambia el día; una sesión nunca suma uno (§4.2). |
+| Salta un evento con hora durante una sesión | Los eventos del mundo siguen el reloj del mundo; en la partida de quien entrena el curso retiene el campo, así que un evento que lo necesita empieza tras el curso, como a solas. |
+| Un jugador intenta varias sesiones a la vez | Un curso por partida; una tanda las corre seguidas, cada una dura su hora. |
+| Latencia o pérdida de paquetes | `WorldClock` y `TrainingStatus` son fiables; un invitado corre como mucho dos segundos más allá del último aviso y luego espera; un aviso tardío se juega como frames o un salto. Un curso que espera su hora espera más mientras el reloj del anfitrión está parado (un diálogo del anfitrión). |
+
 ## 6. Código
 
 | Pieza | Dónde |
 |---|---|
 | La hora del compañero sin salto | `packages/game/partner` (`TrainingRequest::sharedClock`, `Partner::passTrainingHour`) |
-| Compartir, seguir y decir el reloj | `packages/session` (`shared_clock.hpp`, `GameSession::shareClock`, `hearWorldClock`, `worldTime`, `holdForCourse`) |
+| Compartir, seguir y decir el reloj | `packages/session` (`shared_clock.hpp`, `GameSession::shareClock`, `hearWorldClock`, `worldTime`, `holdForCourse`, `courseHourRuns`) |
+| El curso espera su hora | `packages/game/gym` (`GymPorts::hourRuns`, `CourseRun::finish`), `packages/session` (`GymFieldPorts::hourRuns`) |
 | Mensajes `0xC0`, `0xC1`, protocolo 11 | `packages/game/coop` (`protocol.hpp`, `link.cpp` `directionAllowed`) |
 | Enrutado y bucle del juego | `apps/game` (`coop_gameplay_bridge`, `coop_training`, `game.cpp`, `play_session`) |
 | La etiqueta | `content/packs/game/ui/coop_hud`, API de UI 0.25.0 |
@@ -172,11 +265,18 @@ Dormir salta la noche, y la noche es del mundo. Las reglas:
   noche en tiempo real (unos diez minutos); al anfitrión no se le avisa de que un invitado duerme.
 - **Los diálogos y scripts del anfitrión siguen reteniendo el reloj del mundo** para todos (sus menús y su pausa ya no,
   #415).
-- **El progreso del invitado no se guarda de vuelta** en su propia partida (fase C4).
-- **La animación de entrenamiento del compañero remoto** no se dibuja en las otras máquinas; solo lo dice la etiqueta.
+- **Un curso espera la hora del mundo (#411)**: una sesión que el jugador salta retiene a sus actores hasta un minuto real
+  en cooperativo, y más mientras un diálogo del anfitrión para el reloj del mundo.
+- **La animación de entrenamiento del compañero remoto** se dibuja en las otras máquinas desde el protocolo 14 (#420):
+  los clips del curso y el sitio del compañero en la máquina viajan en las instantáneas y en los estados del invitado
+  ([multijugador](multiplayer.md) §5.7, «Lo que reproduce un script»).
 
 ## 8. Pruebas
 
+- `packages/session/tests/gym_course_tests.cpp`: un curso entero en un campo real retenido por la historia, a solas (el
+  reloj se queda quieto y luego salta 1200 frames, saltado o no) y en cooperativo como anfitrión e invitado (el mundo
+  corre de 1200 a 1300 frames, saltado o no).
+- `packages/game/gym/tests/course_flow_tests.cpp`: una sesión cortada retiene a sus actores hasta que acaba la hora.
 - `packages/game/partner/tests/training_tests.cpp`: una sesión con reloj compartido no mueve el reloj y paga las mismas
   ganancias y costes que a solas; una a las 23:30 no suma edad.
 - `packages/session/tests/shared_clock_tests.cpp`: seguir (diferencia, salto, esperar, volver), el aviso, a solas
@@ -184,3 +284,22 @@ Dormir salta la noche, y la noche es del mundo. Las reglas:
   propio de un invitado sin vivirlo dos veces, el sueño del anfitrión.
 - `packages/game/coop/tests/training_tests.cpp`: ida y vuelta, rechazos y las reglas de sentido con un `CoopLink` real.
 - `apps/game/tests/coop_training_tests.cpp`: un anfitrión y tres invitados en enlaces loopback entrenando a la vez.
+- `apps/game/tests/coop_replication_tests.cpp`: el curso de un invitado dibujado en el campo del anfitrión y en su
+  instantánea, y soltado al acabar.
+
+## 9. Tickets
+
+Lo que se construyó y lo que queda, como tickets de implementación. Todos mantienen la regla cero: a solas nada cambia.
+
+| Ticket | Alcance | Estado |
+|---|---|---|
+| T1. Un reloj del mundo | `WorldClock`, el seguidor y el que avisa, `ClockShare` | Hecho (#381) |
+| T2. La hora del compañero sin salto | `TrainingRequest::sharedClock`, `Partner::passTrainingHour` | Hecho (#381) |
+| T3. Quién entrena | `TrainingStatus`, la etiqueta **Entrenando**, ocupado para intercambios y combates | Hecho (#381) |
+| T4. Clips de entrenamiento remotos | Clips y sitio del compañero en instantáneas y estados del invitado | Hecho (#420) |
+| T5. Dormir en cooperativo | El sueño de un invitado espera la mañana del mundo | Hecho (#424) |
+| T6. Una sesión dura su hora | El curso espera la hora del mundo antes de terminar | Hecho (#411) |
+| T7. Diálogos del anfitrión y el reloj del mundo | Dejar correr el reloj del mundo mientras el anfitrión lee un script que solo retiene a su jugador (el menú del gimnasio entre ellos) | Abierto |
+| T8. Máquinas compartidas | Dibujar un segundo compañero junto a una máquina en uso, o mostrarla ocupada | Abierto |
+| T9. Pantallas locales del anfitrión | Las tiendas y otras pantallas completas del anfitrión siguen parando el reloj del mundo (`PlaySession::tickSystems` vuelve antes del tick de la sesión) | Abierto |
+| T10. Validación de ganancias por el anfitrión | Opcional: el anfitrión comprueba las ganancias de un invitado contra los límites de la fórmula | Abierto, solo si importan las trampas |

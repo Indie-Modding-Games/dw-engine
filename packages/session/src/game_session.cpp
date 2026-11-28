@@ -650,7 +650,20 @@ WorldTime GameSession::worldTime() const {
 }
 
 void GameSession::holdForCourse(bool held) {
+  if (held && !courseHeld_) {
+    courseStart_ = state_->clock.elapsedFrames();
+  }
   courseHeld_ = held;
+}
+
+bool GameSession::courseHourRuns() const {
+  if (clockShare_ == ClockShare::Own || !courseHeld_) {
+    return false;
+  }
+  const ruleset::ClockRules& rules = state_->clock.rules();
+  const auto framesPerHour =
+      static_cast<std::int64_t>(rules.framesPerMinute) * ruleset::MinutesPerHour;
+  return state_->clock.elapsedFrames() < courseStart_ + framesPerHour;
 }
 
 bool GameSession::playerFree() const {

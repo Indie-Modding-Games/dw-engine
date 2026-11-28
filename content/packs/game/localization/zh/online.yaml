@@ -185,7 +185,7 @@ coop.went_home: "已从{name}的世界回来：伙伴和背包都在你的存档
 coop.home_failed: "伙伴和背包没能回家。你的存档保持原样。"
 coop.came_home: "已从{name}的世界回来：伙伴和背包跟你一起回家了。"
 coop.training: "训练"
-coop.training_clock: "一起训练：世界的时间照常流逝，每个人的训练都为伙伴单独计算时间。"
+coop.training_clock: "一起训练：世界的时间照常流逝，每次训练都占用其中一小时；跳过的训练会等到这一小时结束。"
 coop.sleep_wait: "睡到早上：在共享世界中，当世界的时钟走到伙伴醒来的时间，或房主也睡觉时，伙伴就会醒来。"
 # A guest who brought a save of the other game variant, and the host's notice of it (game-variants.md, "Co-op").
 coop.guest_other_variant: "{name}的世界是另一个版本，按它的规则来玩。你的伙伴和背包照样会跟你回家。"

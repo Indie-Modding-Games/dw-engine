@@ -185,7 +185,7 @@ coop.went_home: "{name}の世界からもどりました。パートナーと持
 coop.home_failed: "パートナーと持ち物を持ち帰れませんでした。セーブデータは元のままです。"
 coop.came_home: "{name}の世界からもどりました。パートナーと持ち物もいっしょに帰ってきました。"
 coop.training: "トレーニング中"
-coop.training_clock: "いっしょにトレーニング：世界の時間は止まらず、セッションごとにパートナーの1時間が進みます。"
+coop.training_clock: "いっしょにトレーニング：世界の時間は止まらず、セッションごとにその1時間を使います。スキップしたセッションは残りの時間を待ちます。"
 coop.sleep_wait: "朝までおやすみ：共有の世界では、世界の時計が起きる時間になるか、ホストも眠るとパートナーが目を覚まします。"
 # A guest who brought a save of the other game variant, and the host's notice of it (game-variants.md, "Co-op").
 coop.guest_other_variant: "{name}の世界は別のバージョンで、そのルールで遊びます。パートナーと持ち物はちゃんと持ち帰れます。"

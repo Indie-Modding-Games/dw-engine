@@ -1,6 +1,6 @@
 # Training in a shared world (design document)
 
-Status: **built** (2026-11-20, ticket #365). It builds on [online co-op](multiplayer.md) (§5.7 shared world, §6
+Status: **built** (2026-11-20, ticket #365; audited and completed 2026-11-27, see the [#365 audit](audits/365-audit.md)). It builds on [online co-op](multiplayer.md) (§5.7 shared world, §6
 decisions 4 and 5), [ADR 0024](../adr/0024-co-op-with-authoritative-host.md) and the gym screens of the
 [partner](../modules/game/partner.md) module.
 
@@ -25,6 +25,21 @@ game runs.
 
 One game minute is one real second (20 frames a second), so a game hour is a real minute. A player that trains ten
 sessions in a row moves the world ten hours in a few real minutes; that is the original's pacing, and fine alone.
+
+The rest of a session, from the [gym module](../modules/game/gym.md) and the [care sheet](../reference/care.md#training):
+
+- **Start.** A course starts from the gym's confirm cell: the script offers Begin, Explain or Quit, then Normal or
+  Bonus Try, sets variables 254 (the course) and 246 (the roulette) and calls routine 7 (script 108 at the town gym).
+  The script does not look at the partner first: a tired or hungry partner trains and pays for it (the overwork
+  penalty above).
+- **End.** A session runs its course's frames (1200 for most, a minute of play) or ends on the cancel button held,
+  with what it gained; with the roulette, the reels decide when it ends. The stats box then counts the gains.
+- **Gains.** A base per gym times the species' aptitude, its level, an upgraded gym, the practice bonus, the training
+  manual and a food's training boost; the roulette multiplies the result by 0.5 to 10; each session adds one to the
+  evolution timer.
+- **Rest and recovery.** Tiredness falls only by resting, sleeping and some foods; nothing in the gym restores it.
+- **What co-op must keep:** the gains formula and its caps, the costs of the hour, the overwork penalty, the session's
+  length, the roulette and the stats box, and the order in which they happen. Only who moves the clock changes.
 
 ## 2. What co-op did before this ticket
 
@@ -89,6 +104,17 @@ While a course runs in co-op the world's clock keeps running, but the partner's 
 energy), as the original's stands still for it. When the course ends the partner lives the world's time again. The
 hold is `GameSession::holdForCourse`, set by the gym's field port next to the field hold.
 
+**A session lasts its hour of the world's clock (#411).** A whole session is 1200 course frames, a real minute, so
+the world's clock already runs about an hour through it (measured: 1241 frames from the course's start to its last box,
+against the 1200-frame jump alone). A session cut short ran only seconds: a cancel, or the bonus try's roulette
+stopped early, charged the partner an hour while the world moved a minute or two (measured: 41 frames), so a player
+that skipped ten sessions saw no time pass for anyone. Now, in co-op, the course keeps its actors after the stats box
+until the world's clock has run one hour from the course's start (`GameSession::courseHourRuns`, `GymPorts::hourRuns`;
+the course run waits before `TRAINING_COMPLETE`). The partner's care stays held meanwhile, so it pays exactly the hour
+it was charged, the player's tag still says **Training**, and the next session of a batch starts after it. Sessions of
+several players overlap on the same world hour; none of them moves the clock. Alone nothing waits: the session's jump
+is the original's.
+
 ### 4.3 Who trains
 
 `TrainingStatus` (`0xC1`, both ways, reliable) carries a player and a course id (at most 32 characters, empty when the
@@ -99,8 +125,8 @@ one in the message, and tells every guest the others' courses as they change.
   0.25.0).
 - A player that trains is busy for trades and is not offered as a battle ally; a player in a gym screen cannot be
   pulled into a battle.
-- A player's first course in a co-op game shows a notice once: the world's time keeps running and each session counts
-  its own hour for the partner (`online.coop.training_clock`).
+- A player's first course in a co-op game shows a notice once: the world's time keeps running, each session lasts one
+  hour of it, and a skipped session waits for the rest of its hour (`online.coop.training_clock`).
 
 ### 4.4 Flow
 
@@ -116,6 +142,21 @@ sequenceDiagram
   N->>H: TrainingStatus (player = link's)
   H->>N: TrainingStatus to the other guests
   Note over H,G: each session pays its partner one hour; neither clock jumps
+```
+
+One player's session in co-op, from the confirm cell to the next free step:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Script: confirm cell (the host's world clock stands while the host reads it)
+  Script --> Course: routine 7; holdForCourse(true), clock start kept
+  Course --> Award: frames run out, cancel held or reels stop
+  Award --> Count: partner charged one hour (sharedClock, no jump)
+  Count --> HourWait: box closed, world ran less than one hour
+  Count --> Done: world already ran its hour
+  HourWait --> Done: world clock reaches start + 1 hour
+  Done --> [*]: holdForCourse(false), TRAINING_COMPLETE, script goes on
+  Course --> [*]: link lost on a guest (back to the title)
 ```
 
 ### 4.5 Sleep in a shared world (#424, #411)
@@ -134,6 +175,38 @@ Sleeping skips the night, and the night is the world's. The rules:
   partner. Its sleep is only possible when its partner is sleepy, as alone.
 - **World events and day changes** follow the world's clock only (§5): a guest's sleep changes no day for anyone.
 
+### 4.6 Two to four players
+
+The same rules hold for every size of room; nothing scales with the number of players.
+
+| Players | Who moves the clock | Who can train | What the others see |
+|---|---|---|---|
+| 1 (alone) | The session's jump, as the original | The player | — |
+| 2 | The host's clock, real time only | Both, at once or not, on any gym | The other's **Training** tag and its partner's clips at the machine |
+| 3 | Same | All three, independently | Each other's tags and clips, through the host |
+| 4 | Same | All four, independently | Same; four sessions at once still run the world one hour per real minute (tested) |
+
+- **One session per player.** A player's game runs one course at a time (`GymScreen::start` does nothing while a
+  course runs); a batch runs its sessions one after the other, each waiting for its hour.
+- **The same machine.** Each game runs the gym on its own copy of the map, so two players can use the same machine at
+  once. Their partners are drawn on the same spot on the others' screens, and only each player's own screen moves the
+  machine's objects (the boulder, the log): a visual limit, ticket T8 in §9.
+- **Training and exploring.** A player on a course is busy: no trades, no battle ally offers, not pulled into a battle.
+  The others keep exploring, fighting and trading; the world is never held for a trainer.
+
+### 4.7 Results and authority
+
+- **Each partner's gains are its own game's.** The trainer's game runs the course, rolls the roulette with its
+  partner's own random state and applies the gains, costs and the hour (`GameSession::train`). No result travels on
+  its own: the others see the tag and the clips.
+- **The host does not validate a guest's gains**, as it does not validate a guest's care: co-op trusts each game with
+  its own partner ([ADR 0024](../adr/0024-co-op-with-authoritative-host.md)). A session is applied once, by one game, so it cannot be
+  counted twice.
+- **The hour is checked against the world.** The course's hold lasts until the world's clock ran the hour it charged
+  (§4.2), so neither the host nor a guest can farm sessions faster than the world's time runs.
+- **Progress goes home.** A guest's trained partner goes back to its own save with the rest of its progress (#383,
+  [multiplayer](multiplayer.md), "What goes home").
+
 ## 5. Disconnections and edge cases
 
 - **A guest leaves:** the host clears its course (`CoopTraining::playerLeft`) and tells the others; a guest that comes
@@ -149,12 +222,27 @@ Sleeping skips the night, and the night is the world's. The rules:
 - **Battles:** a battle still stops its player's clock while it runs; a guest catches up afterwards by frames or a
   skip.
 
+The cases the issue lists:
+
+| Case | What happens |
+|---|---|
+| A player finishes before the others | It is free at once (after its hour); the others' sessions go on, none waits for another. |
+| A player starts while another trains | Allowed, on any gym, even the same machine (§4.6). The clock does not care. |
+| A guest disconnects mid-course | Its game goes back to the title and keeps its last safe point (#383); the host clears its course and tag. |
+| The host leaves mid-course | Every guest goes back to the title with its last safe point (#383); a session still running may be lost. |
+| The partner has no energy | The gym's script does not refuse: the session runs and the hour's hunger and care mistake apply, as alone. |
+| The day changes during a session | Only the world's midnight changes the day; a session never adds one (§4.2). |
+| A timed event fires during a session | World events follow the world's clock; on the trainer's own game the course holds the field, so an event that needs it starts after the course, as alone. |
+| A player tries several sessions at once | One course per game; a batch runs them in a row, each lasting its hour. |
+| Latency or packet loss | `WorldClock` and `TrainingStatus` are reliable; a guest runs on at most two seconds past the last word, then waits; a late word is played as frames or a skip. A course waiting for its hour waits longer while the host's clock stands (a host dialog). |
+
 ## 6. Code
 
 | Piece | Where |
 |---|---|
 | The partner's hour without a jump | `packages/game/partner` (`TrainingRequest::sharedClock`, `Partner::passTrainingHour`) |
-| Clock sharing, follow and tell | `packages/session` (`shared_clock.hpp`, `GameSession::shareClock`, `hearWorldClock`, `worldTime`, `holdForCourse`) |
+| Clock sharing, follow and tell | `packages/session` (`shared_clock.hpp`, `GameSession::shareClock`, `hearWorldClock`, `worldTime`, `holdForCourse`, `courseHourRuns`) |
+| The course waits for its hour | `packages/game/gym` (`GymPorts::hourRuns`, `CourseRun::finish`), `packages/session` (`GymFieldPorts::hourRuns`) |
 | Messages `0xC0`, `0xC1`, protocol 11 | `packages/game/coop` (`protocol.hpp`, `link.cpp` `directionAllowed`) |
 | Routing and the game loop | `apps/game` (`coop_gameplay_bridge`, `coop_training`, `game.cpp`, `play_session`) |
 | The tag | `content/packs/game/ui/coop_hud`, UI API 0.25.0 |
@@ -164,13 +252,18 @@ Sleeping skips the night, and the night is the world's. The rules:
 - **Co-op sleep** (§4.5): a guest that sleeps while the host stays awake waits up to a night in real time (about ten
   minutes); the host is not told that a guest sleeps.
 - **Host dialogs and scripts still hold the world's clock** for everyone (its menus and pause no longer do, #415).
-- **A guest's progress is not saved back** to its own game (phase C4).
+- **A course waits for the world's hour (#411)**: a session the player skips holds its actors up to a real minute in
+  co-op, and longer while a host dialog stands the world's clock.
 - **The remote partner's training animation** is drawn on the other machines since protocol 14 (#420): the course's
   clips and the partner's place on the equipment travel in the snapshots and the guest's states
   ([multiplayer](multiplayer.md) §5.7, "What a script plays").
 
 ## 8. Tests
 
+- `packages/session/tests/gym_course_tests.cpp`: a whole course on a real field held by the story, alone (the clock
+  stands, then jumps 1200 frames, skipped or not) and in co-op as host and guest (the world runs 1200 to 1300 frames,
+  skipped or not).
+- `packages/game/gym/tests/course_flow_tests.cpp`: a session cut short holds its actors until the hour is over.
 - `packages/game/partner/tests/training_tests.cpp`: a shared-clock session leaves the clock and pays the same gains and
   costs as one alone; one at 23:30 adds no age.
 - `packages/session/tests/shared_clock_tests.cpp`: follow (gap, skip, wait, go back), the teller, alone vs co-op,
@@ -181,3 +274,20 @@ Sleeping skips the night, and the night is the world's. The rules:
 - `apps/game/tests/coop_training_tests.cpp`: a host and three guests on loopback links training at once.
 - `apps/game/tests/coop_replication_tests.cpp`: a guest's course drawn on the host's field and in its snapshot, and
   let go when it ends.
+
+## 9. Tickets
+
+What was built, and what is left, as implementation tickets. Each keeps rule zero: alone nothing changes.
+
+| Ticket | Scope | Status |
+|---|---|---|
+| T1. One world clock | `WorldClock`, the follower and the teller, `ClockShare` | Done (#381) |
+| T2. The partner's hour without a jump | `TrainingRequest::sharedClock`, `Partner::passTrainingHour` | Done (#381) |
+| T3. Who trains | `TrainingStatus`, the **Training** tag, busy for trades and battles | Done (#381) |
+| T4. Remote training clips | Clips and partner place in snapshots and guest states | Done (#420) |
+| T5. Co-op sleep | A guest's sleep waits for the world's morning | Done (#424) |
+| T6. A session lasts its hour | The course waits for the world's hour before it ends | Done (#411) |
+| T7. Host dialogs and the world's clock | Let the world's clock run while the host reads a script that holds only its own player (the gym's menu among them) | Open |
+| T8. Shared machines | Draw a second partner at a used machine beside it, or show the machine busy | Open |
+| T9. Host local screens | The host's shops and other full screens still stand the world's clock (`PlaySession::tickSystems` returns before the session's tick) | Open |
+| T10. Host validation of gains | Optional: the host checks a guest's gains against the formula's bounds | Open, only if cheating matters |
