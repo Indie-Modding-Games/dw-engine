@@ -2354,6 +2354,9 @@ int runGame(const Options& requested) {
         }
         if (coopGuestWorld && coopLinked) {
           applyCoopMove(play->scene(), *coopGuestWorld);
+          if (coopGuestWorld->takeZoneChange()) {
+            coopHud.notice(CoopHostChangedZoneText, coopLabelOf(game::coop::HostPlayerId));
+          }
         }
         play->tick(commands, guestIntents);
         if (coopLinked) {

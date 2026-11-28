@@ -501,6 +501,14 @@ salida y el punto de aparición del anfitrión, y llega justo allí. Los estados
 rechazan, y el invitado no informa nada mientras viaja. Cada jugador sigue teniendo su propio mapa actual: un jugador
 remoto en otro mapa no se dibuja ni se mueve, y vuelve a mostrarse cuando llega.
 
+**El aviso de zona (#356).** Antes de seguir al anfitrión a otro mapa, el juego del invitado espera
+`CoopGuestWorld::ZoneLeadTicks` (45 ticks, 0,75 s) con el aviso `online.coop.host_changed_zone` («{name} cambió de
+zona», el nombre del anfitrión) en pantalla, y luego hace el fundido. La espera empieza una vez por cambio
+(`CoopGuestWorld::takeZoneChange` da el mapa y la época de la corrección, para una skin que quiera su propio aspecto) y
+aguarda mientras corre un cambio de mapa propio del invitado. Unirse, un reinicio de sala en el mismo mapa y volver
+tras un salto de historia propio del invitado no muestran aviso ni esperan. El invitado no informa nada durante la
+espera, igual que durante el viaje.
+
 **Interpolación.** Los jugadores remotos se dibujan desde un búfer corto de estados con hora (`PoseTrack`): 100 ms por
 detrás del más nuevo, mezclando los dos que rodean ese momento. Los estados tardíos nunca hacen retroceder una pista,
 un hueco corto se extrapola como mucho 100 ms y luego se queda quieto, un paso de más de 800 unidades (un salto de
@@ -581,6 +589,7 @@ el resultado.
 | La congelación de un script, el trigger de encarar en una charla, el nombre del mapa siguiente | variables de historia y un trigger | local: siguen los scripts propios de ese jugador | nunca se envían |
 | Recompensas que un script da una vez por jugador: los días desde la última carne de la granja (la carne diaria de Palmon y de la granja, #421) | variables de historia (`player_own_variables` en las reglas de la historia) | local: cada jugador recibe su carne una vez al día | nunca se envían |
 | El trabajo de la tienda del cañón: los clientes atendidos, la cuenta y su medidor, el resultado de cada turno, la frase de la mitad (#423) | variables de historia y un trigger (`player_own_variables`, `player_own_triggers`), la cuenta y el regateo | local: cada jugador hace su propio trabajo; que un jugador abra la tienda nunca mueve el medidor del otro | nunca se envían |
+| Lo que un script pasa a las rutinas del motor justo antes de llamarlas: un objeto del mapa y su animación, el personaje y la cara de una burbuja de humor, el mapa y la entrada del pájaro (variables 247 y 248); la tirada de trabajo en 110 (las puertas de la Mansión de juguetes la tiran al entrar al mapa, scripts 142 a 144) | variables de historia (`player_own_variables`) | local: ningún script las vuelve a leer, así que la llamada de otro jugador nunca las cambia bajo un script en marcha | nunca se envían |
 | La bolsa, los bits, el compañero y sus cuidados, los menús, los diálogos en pantalla, la cámara | sistemas de la sesión | local | nunca se envían (batallas: §6.1) |
 
 Los hechos locales salen de las reglas de la historia (`StoryAdapter::playerOwnTrigger` y `playerOwnVariable`): un

@@ -327,6 +327,20 @@ TEST_CASE("co-op: the canyon shop's job runs on each player's own counter") {
   CHECK_FALSE(session.story->playerOwnVariable(1));
 }
 
+TEST_CASE("co-op: the variables scripts hand to the engine's routines stay in each game") {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory}};
+  const auto session = storySession(packs);
+  // A routine's map object and animation, a mood bubble's character and face, the bird's map and
+  // entrance: set right before the call that reads them, in the game that runs the script.
+  CHECK(session.story->playerOwnVariable(247));
+  CHECK(session.story->playerOwnVariable(248));
+  // The roll a map entry keeps for its doors (the Toy Mansion) is each game's too.
+  CHECK(session.story->playerOwnVariable(110));
+  CHECK_FALSE(session.story->playerOwnVariable(246));
+  CHECK_FALSE(session.story->playerOwnVariable(249));
+}
+
 TEST_CASE("a story section saved at version 1 still loads") {
   const TestPacks packs{{"data/digimon.yaml", digimonTable},
                         {"data/new_game_story.yaml", newGameStory}};
