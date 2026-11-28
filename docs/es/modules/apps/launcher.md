@@ -278,6 +278,20 @@ significa que la tarjeta gráfica dejó de responder: pide actualizar el control
 Vulkan 1.2 (apagado y conocido por ese juego) y el controlador por software del paquete (no usado en esa partida). El 113
 de un juego anterior recibe el mensaje genérico, porque nunca lo devolvía a propósito. El 0xCFFFFFFF
 significa que Windows cerró el juego porque se colgó.
+El 114 significa que ninguna ruta de Vulkan de la tarjeta pudo crear el dispositivo ([rhi](../engine/rhi.md)). El
+diálogo muestra primero una frase sencilla y debajo el final del registro, con un botón «Copiar detalles» para un
+reporte; ningún código de Vulkan es el mensaje en sí.
+
+**Pasos gráficos.** En el modo de arranque automático, un arranque que falla por los gráficos baja el siguiente un
+paso sin preguntar (`graphics_step.rs`): la tarjeta como la elige el juego (1.4 o 1.3), la tarjeta en 1.3
+(`--vulkan13`, solo cuando la tarjeta ofrece 1.4 y el juego conoce el flag, desde 0.1.0-beta.1136), la tarjeta en el
+modo compatible 1.2 (`--compatible`) y, por último, el controlador por software del paquete. Un arranque falla por los
+gráficos cuando sale con 114, o con 113 o un cuelgue de Windows en sus primeros 90 s; un dispositivo perdido después es
+un cierre durante la partida y conserva el paso. El diálogo dice qué paso usará el siguiente arranque y dónde volver
+atrás. El paso se guarda en `settings.json` (`graphics_step`, con la tarjeta y el controlador en que pasó,
+`graphics_step_gpu`); Ajustes › General › Requisitos del equipo lo muestra con «Volver a usar la tarjeta gráfica», y
+una comprobación que encuentra otra tarjeta u otro controlador (una actualización) lo devuelve a la tarjeta sola. Los
+modos de arranque manuales lo ignoran.
 
 ## Requisitos del equipo
 
@@ -289,7 +303,7 @@ Ajustes › General › Requisitos del equipo.
 | Qué | Cómo se comprueba | Qué ve el jugador |
 |---|---|---|
 | Espacio libre | El del disco donde está `<datos>` (la carpeta existente más cercana): `statvfs` en Linux y macOS, `GetDiskFreeSpaceExW` en Windows. Leer el disco necesita unos 3 GB (la copia parcial, el archivo descomprimido y la descarga del juego); jugar, unos 200 MB. | Si falta, «Falta espacio en el disco» en el inicio con cuánto hace falta, dónde y cuánto hay, y los botones «Comprobar de nuevo» y «Elegir otra carpeta». Leer el disco y «Jugar» se niegan con `no-space` en vez de fallar a medias. |
-| Tarjeta gráfica | `dwe-game --check-system` del juego instalado (abajo), primero con los controladores del equipo. | Si sirve, la tarjeta, su controlador y la versión de Vulkan que informa (`api`); el juego mismo elige la ruta 1.3 o 1.4 al arrancar. Si ninguna tarjeta sirve, el juego arranca igual en **modo de compatibilidad** (abajo): un aviso que se cierra con «Entendido», una etiqueta «Modo de compatibilidad» arriba y el botón del controlador del fabricante. |
+| Tarjeta gráfica | `dwe-game --check-system` del juego instalado (abajo), primero con los controladores del equipo. | Si sirve, la tarjeta, su controlador y la versión de Vulkan que informa (`api`); el juego mismo elige la ruta 1.3 o 1.4 al arrancar. Si la tarjeta solo sirve en el modo compatible 1.2 (un controlador antiguo), el juego usa ese modo por su cuenta: un aviso «Modo gráfico compatible» que dice que no hay que cambiar nada y ofrece la página de controladores del fabricante, y una etiqueta «Gráficos compatibles» arriba. Si ninguna tarjeta sirve, el juego arranca igual en **modo de compatibilidad** (abajo): un aviso que se cierra con «Entendido», una etiqueta «Modo de compatibilidad» arriba y el botón del controlador del fabricante. |
 | Nada puede mover el juego | Ni las tarjetas del equipo ni el controlador por software del paquete (o el paquete no lo trae: macOS por ahora). | «Tu tarjeta gráfica no puede mover el juego»: qué hacer, el botón de la página de controladores del fabricante (NVIDIA, AMD o Intel, según el `vendor` de la tarjeta; las tres si no se sabe), en Windows también «Abrir Windows Update», y «Comprobar de nuevo». Pulsar «Jugar» sigue intentando arrancar: el juego escribe el motivo en su registro y el lanzador muestra el final. |
 
 **`dwe-game --check-system`** (`packages/engine/rhi/include/dwe/rhi/system_check.hpp`) crea una instancia de Vulkan y elige
@@ -301,7 +315,10 @@ estándar líneas `clave=valor` bajo la cabecera `dwe-check-system 1`: `result` 
 las que hay, para saber de qué fabricante es el controlador. La rama que limita las opciones de las compilaciones de
 distribución tiene que dejar pasar `--check-system`. El lanzador le da 20 s; sin respuesta (un juego anterior a la
 opción, que dice «bad argument») juega como antes. Con `--compatible` acepta Vulkan 1.2 cuando el controlador tiene
-las extensiones de renderizado dinámico y synchronization2.
+las extensiones de renderizado dinámico y synchronization2. Sin él, una GPU que no pasa el mínimo 1.3 se comprueba otra
+vez con ese, como el propio juego cae a él: `result=ok` con `floor=1.2` (y el fallo de 1.3 en `detail`) significa que
+la tarjeta sirve en el modo compatible. Para un juego anterior a ese respaldo el lanzador prueba `--compatible` por su
+cuenta y, si pasa, añade el flag a «Jugar»: la tarjeta en modo 1.2 va antes que el controlador por software.
 
 **Modo de compatibilidad.** El paquete trae el cargador de Vulkan (en Linux, `lib/libvulkan.so.1`, que el juego
 busca primero; en Windows, `bin/vulkan-1.dll`) y el controlador de Vulkan por software de Mesa, lavapipe, en
@@ -321,7 +338,7 @@ que añaden un flag del juego a cada arranque:
 
 | Interruptor | Flag | Qué hace |
 |---|---|---|
-| Modo Vulkan 1.2 | `--compatible` | El juego y su comprobación aceptan Vulkan 1.2 con esas dos extensiones, para tarjetas y controladores antiguos. Cuando los controladores del equipo no pasan la comprobación normal pero sí esta, el aviso del inicio ofrece «Activar el modo Vulkan 1.2», tanto si nada puede mover el juego como si entró el controlador por software; al activarlo se comprueba de nuevo. |
+| Modo Vulkan 1.2 | `--compatible` | Fuerza el modo compatible 1.2 en cada arranque, también en una tarjeta que mueve 1.3. Ya no hace falta para una tarjeta antigua: el juego y el lanzador eligen ese modo por su cuenta cuando solo ese sirve. |
 | Modo de bajo rendimiento | `--low-performance` | Cada arranque empieza con el preset gráfico más ligero; las opciones del juego pueden cambiar cada una durante la partida. |
 
 Un juego anterior a un flag rechaza toda la línea de órdenes («bad argument»), así que el lanzador solo pasa cada flag
