@@ -425,6 +425,32 @@ TEST_CASE("a guest's bag opens over its battle HUD with the focus, as the host's
   CHECK(screen.ui->elementHasClass(dwe::app::BattleDocument, "ally-0", "throw-target"));
 }
 
+TEST_CASE("the ally a guest picked to throw to goes dark once its battle bag closes") {
+  const auto species = speciesTable();
+  const NameKeys names{&species, nullptr, &battle_test::testCatalog()};
+  Battle battle = allyBattle(BattleSystemId::Classic);
+  const FighterId ally = battle.state().allies.front().id;
+  GuestSide guest;
+  guest.begin(beginOf(battle));
+  BattleUi screen;
+  std::optional<std::size_t> target = dwe::game::battle::PartnerId;
+  BattleView picked = guest.see(battle, ally, names, target);
+  picked.bagOpen = true;
+  screen.showHud(picked);
+  dwe::app::showCoopHudBag(*screen.ui, bagOfMeat(2), picked);
+  screen.frames(3);
+  REQUIRE(screen.ui->elementHasClass(dwe::app::BattleDocument, "ally-0", "throw-target"));
+  REQUIRE(std::get<bool>(screen.ui->setting(dwe::app::BagThrowPickSetting)));
+
+  dwe::app::closeCoopHudBag(*screen.ui, target);
+  CHECK_FALSE(target.has_value());
+  screen.showHud(guest.see(battle, ally, names, target));
+  screen.frames(3);
+  CHECK_FALSE(screen.ui->isVisible(dwe::app::PartnerMenuDocument));
+  CHECK_FALSE(std::get<bool>(screen.ui->setting(dwe::app::BagThrowPickSetting)));
+  CHECK_FALSE(screen.ui->elementHasClass(dwe::app::BattleDocument, "ally-0", "throw-target"));
+}
+
 TEST_CASE("the host's battle closes a guest's field bag, never the bag of its battle HUD") {
   BattleUi screen;
   screen.ui->setSetting(dwe::app::PartnerMenuContextSetting, std::string{});

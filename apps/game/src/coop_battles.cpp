@@ -1252,8 +1252,7 @@ void CoopBattles::stepHud() {
   }
   if (hudBag_ && !ui_->isVisible(PartnerMenuDocument)) {
     hudBag_ = false;
-    ui_->setSetting(PartnerMenuContextSetting, std::string{});
-    ui_->setSetting(BagThrowPickSetting, false);
+    closeCoopHudBag(*ui_, target_);
     if (play_ != nullptr) {
       publishHud(*play_);
     }
@@ -1272,9 +1271,7 @@ void CoopBattles::hideHud() {
   hudShown_ = false;
   if (hudBag_) {
     hudBag_ = false;
-    ui_->setSetting(PartnerMenuContextSetting, std::string{});
-    ui_->setSetting(BagThrowPickSetting, false);
-    ui_->hide(PartnerMenuDocument);
+    closeCoopHudBag(*ui_, target_);
   }
   hudFoes_.clear();
   ui_->setSetting(BattleActiveSetting, false);
@@ -1304,22 +1301,19 @@ bool CoopBattles::handleHud(const ui::UiCommand& command) {
   // The bag over the HUD is this player's battle bag, closed by the time its Use comes: the Use
   // throws, never feeds on the field.
   if (command.name == BattleThrowCommand || command.name == BagUseCommand) {
-    hudBag_ = false;
-    ui_->setSetting(PartnerMenuContextSetting, std::string{});
-    ui_->setSetting(BagThrowPickSetting, false);
-    ui_->hide(PartnerMenuDocument);
     session::InventoryAdapter* inventory = play_ != nullptr ? play_->coopInventory() : nullptr;
+    const std::optional<std::size_t> slot = coopHudThrownSlot(command);
+    if (inventory != nullptr && slot) {
+      if (const std::optional<assets::ItemHandle> item =
+              itemAt(inventory->inventory().slots(), slot)) {
+        handle(
+            {.name = std::string{CoopBattleItemCommand}, .value = inventory->items().at(*item).id});
+      }
+    }
+    hudBag_ = false;
+    closeCoopHudBag(*ui_, target_);
     if (play_ != nullptr) {
       publishHud(*play_);
-    }
-    const std::optional<std::size_t> slot = coopHudThrownSlot(command);
-    if (inventory == nullptr || !slot) {
-      return true;
-    }
-    if (const std::optional<assets::ItemHandle> item =
-            itemAt(inventory->inventory().slots(), slot)) {
-      return handle(
-          {.name = std::string{CoopBattleItemCommand}, .value = inventory->items().at(*item).id});
     }
     return true;
   }

@@ -521,6 +521,13 @@ void showCoopHudBag(ui::Ui& ui, const screens::ScreenSettings& bag,
   ui.show(PartnerMenuDocument, true);
 }
 
+void closeCoopHudBag(ui::Ui& ui, std::optional<std::size_t>& throwTarget) {
+  throwTarget.reset();
+  ui.setSetting(PartnerMenuContextSetting, std::string{});
+  ui.setSetting(BagThrowPickSetting, false);
+  ui.hide(PartnerMenuDocument);
+}
+
 std::optional<std::size_t> coopHudThrownSlot(const ui::UiCommand& command) {
   const auto* number = std::get_if<double>(&command.value);
   if ((command.name != BattleThrowCommand && command.name != BagUseCommand) || number == nullptr) {

@@ -84,6 +84,8 @@ inline constexpr std::string_view BagThrowPickSetting = "bag.throw_pick";
 // Opens this player's bag over its battle HUD as BattleScreen::openBag opens the host's: the HUD
 // learns the bag is open before the bag shows, so the battle document leaves the focus to it.
 void showCoopHudBag(ui::Ui& ui, const screens::ScreenSettings& bag, const screens::BattleView& hud);
+// Closes that bag, closed or thrown from: no ally stays picked to throw to.
+void closeCoopHudBag(ui::Ui& ui, std::optional<std::size_t>& throwTarget);
 
 // The bag slot a command thrown from the bag over a guest's battle HUD names: the bag's Use (sent
 // once the bag has closed, partner_menu/logic.lua) or the battle document's throw.
