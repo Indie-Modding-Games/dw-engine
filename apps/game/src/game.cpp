@@ -1080,8 +1080,8 @@ int runGame(const Options& requested) {
   (*scripts)->bindCommand(ShopJobModeSetting, [&consoleShopJobMode](std::string_view mode) {
     consoleShopJobMode = std::string{mode};
   });
-  // The console's and the routes' battle_system("classic"|"folder"), the options row's setting,
-  // applied between frames in the same way.
+  // The console's and routes' battle_system("classic"|"folder"), applied between frames like the
+  // options row.
   std::optional<std::string> consoleBattleSystem;
   (*scripts)->bindCommand(BattleSystemSetting, [&consoleBattleSystem](std::string_view name) {
     consoleBattleSystem = std::string{name};

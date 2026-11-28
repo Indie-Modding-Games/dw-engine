@@ -36,8 +36,7 @@ struct Options {
   bool devAssets = false;
   // The ruleset the game plays with (--ruleset <id>): rules/<id>/ in the packs.
   std::string ruleset{dwe::ruleset::OriginalRuleset};
-  // The battle system the game's battles play (--battle classic|folder), over the mode's or the
-  // save's; nothing: theirs.
+  // --battle classic|folder, over the mode's or the save's system; nullopt: theirs.
   std::optional<std::string> battle;
   // The story lock's stage to play (--story-stage <id>|all) instead of the ruleset's active_stage;
   // "all" opens everything, for development and tests. Empty: the ruleset's.

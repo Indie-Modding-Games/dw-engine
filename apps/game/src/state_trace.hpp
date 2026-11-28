@@ -59,7 +59,6 @@ struct TraceFighter {
   std::int32_t pending = 0;
   // The original's number of the move being used, or -1 for none.
   std::int32_t move = -1;
-  // A Folder battle's order state: phase, waiting orders, stance and how the last order ended.
   struct Orders {
     std::int32_t phase = 0;
     std::int32_t frames = 0;

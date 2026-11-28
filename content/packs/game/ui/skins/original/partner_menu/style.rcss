@@ -1226,8 +1226,7 @@ button:focus .original-look, button.original-look:focus {
     padding: 0 9dp; line-height: 36dp; white-space: nowrap;
 }
 
-/* In a battle the bag opens under the command strip and the partner's bars, with only its filled rows and the
-   description right under them, so the fight stays in sight. */
+/* In a battle the bag opens under the strip and the partner's bars, short, so the fight stays in sight. */
 #scrim.battle-bag #panel { top: 120dp; width: 900dp; margin: 0 0 0 -450dp; }
 #scrim.battle-bag #page-items { height: auto; }
 #scrim.battle-bag #bag-grid { height: auto; min-height: 0; }

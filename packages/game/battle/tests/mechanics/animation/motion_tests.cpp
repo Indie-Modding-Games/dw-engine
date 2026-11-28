@@ -23,7 +23,6 @@ using namespace battle_test;
 
 namespace {
 
-// The original's animation ids the battle shows (mechanics/animation/animation.hpp).
 constexpr std::int32_t Stance = 0x21;
 constexpr std::int32_t WeakStance = 0x22;
 constexpr std::int32_t WeakWalk = 0x23;

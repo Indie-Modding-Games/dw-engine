@@ -12,8 +12,8 @@ namespace dwe::game::battle {
 
 // The menu label of a command: battle.command.<name>.
 std::string_view commandTextKey(Command command);
-// The same in the Folder battle, whose strip gives stances and orders (folder-battle.md, "The
-// strip"): the stance commands name their stance and your call drops the waiting orders.
+// The same for the Folder strip: stance commands name their stance and your call drops the waiting
+// orders.
 [[nodiscard]] std::string_view folderCommandTextKey(Command command);
 // The line of an outcome: battle.outcome.<name>.
 std::string_view outcomeTextKey(Outcome outcome);

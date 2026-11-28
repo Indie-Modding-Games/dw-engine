@@ -16,9 +16,8 @@ namespace dwe::game::battle {
 // strip.cpp: a command of the strip, the flee aside (battle_tick.c: handleCommands).
 core::Result<void> classicCommand(BattleContext& context, Command command, FighterId side);
 
-// commanded_decisions.cpp: the partner's and the enemies' decisions of a frame (battle_main.c:
-// BTL_tickPartnerAI, BTL_tickEnemyAI). In a versus match the rival decides as the partner does
-// (vs_combat.c: VS__tickDigimonAI for each side) within tickEnemyAi.
+// commanded_decisions.cpp (battle_main.c: BTL_tickPartnerAI, BTL_tickEnemyAI); in a versus match
+// the rival decides as the partner (vs_combat.c: VS__tickDigimonAI) within tickEnemyAi.
 void tickPartnerAi(BattleContext& context);
 void tickEnemyAi(BattleContext& context);
 

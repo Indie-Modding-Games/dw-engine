@@ -8,8 +8,8 @@
 #include <cstdint>
 #include <optional>
 
-// Every formula of the Folder battle in one place (combat-design.md chapter 6, §2.9, §3.8), on the
-// ruleset's `battle.folder` numbers. Stats are read out of `stat_scale` (§6.3).
+// Every Folder battle formula (combat-design.md ch. 6, §2.9, §3.8); stats read out of `stat_scale`
+// (§6.3).
 namespace dwe::game::battle::folder {
 
 // §6.4: the walking speed in percent of the base speed (75 to 125).
@@ -21,10 +21,9 @@ namespace dwe::game::battle::folder {
 [[nodiscard]] std::int32_t processingFrames(const FolderRules& rules, std::int32_t base,
                                             std::int32_t intelligence);
 
-// §3.8: the elemental modifier in percent of the technique's power: +elementPercent for each
-// attribute of the defender the move's beats, -elementPercent for each that beats the move's (a
-// mutual pair, as Holy and Dark, is an advantage both ways), and STAB when the attacker has the
-// move's attribute.
+// §3.8: +elementPercent per defender attribute the move's beats, -elementPercent per one beating it
+// (Holy/Dark beat each other), and STAB when the attacker has the move's attribute; percent of
+// power.
 using Specials = std::array<std::optional<std::int32_t>, SpeciesSpecials>;
 [[nodiscard]] std::int32_t elementPercent(const FolderRules& rules, std::int32_t moveSpecial,
                                           const Specials& attacker, const Specials& defender);
@@ -57,7 +56,6 @@ struct DamageInputs {
                                     std::int32_t vel, std::int32_t defense);
 // §5: the preparation and recovery of `move` (FolderRules::techniques, then its tier).
 [[nodiscard]] TechniqueTiming timingOf(const FolderRules& rules, const BattleMove& move);
-// §2.9: a stat during the break.
 [[nodiscard]] std::int32_t brokenStat(const FolderRules& rules, std::int32_t stat);
 // §7.4: the points the cover chance gains when the attack comes from `distance` pixels away.
 [[nodiscard]] std::int32_t coverDistanceBonus(const FolderRules& rules, std::int64_t distance);

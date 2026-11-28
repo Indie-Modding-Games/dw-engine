@@ -37,7 +37,6 @@ void face(const BattleContext& context, FighterId id, FighterId target) {
   }
 }
 
-// §2.9: where the stance keeps the fighter while it has no technique to position for.
 void moveByStance(BattleContext& context, FighterId id) {
   Fighter& self = context.fighter(id);
   if (!validFoe(context, id, self.target)) {
@@ -93,7 +92,6 @@ void moveByStance(BattleContext& context, FighterId id) {
   }
 }
 
-// Whether `move` reaches `target` now; a ranged one keeps the Classic band around its distance.
 bool inReach(const BattleContext& context, FighterId id, FighterId target, const BattleMove& move) {
   const std::int64_t reach = reachOf(context, id, target, move);
   const std::int64_t band = move.range == MoveRange::Melee
@@ -103,8 +101,6 @@ bool inReach(const BattleContext& context, FighterId id, FighterId target, const
          reach + band;
 }
 
-// §2.9, §7.4: walks until the technique reaches its target; true once it does. `pointBlank`
-// (Aggressive, for `folder.chase_frames`) closes to contact first.
 bool positionFor(BattleContext& context, FighterId id, FighterId target, const BattleMove& move,
                  bool pointBlank) {
   if (target == id || move.range == MoveRange::Self || move.range == MoveRange::None) {

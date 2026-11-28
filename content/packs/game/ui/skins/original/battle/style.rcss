@@ -1256,8 +1256,7 @@
 	color: #a8d8f8;
 }
 
-/* The name and order sit on a dark strip, as the plate's labels do, so they read over the bright sand; the strip's
-   command name does too in a co-op fight. */
+/* Name and order on a dark strip, as the plate's labels, so they read over the bright sand. */
 .partner.ally .fighter-head {
 	display: inline-block;
 	height: auto;
@@ -1344,8 +1343,7 @@
 	line-height: 30dp;
 }
 
-/* The strip names the hovered icon in a Folder battle too (the modern skin's Folder pill does not apply), and says why
-   the focused move cannot be ordered now after its name, in red at the small size. */
+/* The strip names the hovered icon in a Folder battle too, with why it cannot be ordered after it in red. */
 #fight.folder #command-name,
 #fight.folder #command-name.problem {
 	display: block;
@@ -1389,8 +1387,7 @@
 	display: none;
 }
 
-/* The Folder plate keeps a fixed height at the bottom left, four rows of one line each: the defense bar, the message
-   (a broken defense, else how an order ended, else an altered state), the active order beside its phase, the queue. */
+/* The Folder plate: a fixed height at the bottom left, four one-line rows. */
 #folder-panel {
 	height: 156dp;
 	box-sizing: border-box;
@@ -1422,8 +1419,7 @@
 	margin: 0;
 }
 
-/* The Folder plate's stance chip, phases and queue chips in the boxes' colours; the stances' frames on the strip
-   tinted apart from the techniques and the actions. The finisher's word already fills as its gauge does. */
+/* The Folder plate's chips and phases in the boxes' colours; the strip's stance frames tinted apart. */
 #folder-stance {
 	font-size: 20dp;
 	line-height: 26dp;
@@ -1472,8 +1468,7 @@
 	max-width: 100%;
 }
 
-/* A Folder battle names its foes by letter: a compact list at the left under the strip, as the bars hanging from a foe
-   high in the field can sit past the screen's top. */
+/* A Folder battle lists its foes by letter at the left under the strip: bars of high foes can sit past the top. */
 #fight.folder #enemies {
 	display: block;
 	position: absolute;

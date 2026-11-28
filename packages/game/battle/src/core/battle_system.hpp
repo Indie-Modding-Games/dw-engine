@@ -12,11 +12,9 @@ namespace dwe::game::battle {
 
 struct BattleContext;
 
-// The rules that differ between the battle systems (docs/architecture/folder-battle.md): what the
-// trainer's commands do, who decides what each fighter does on a frame, and how an attack that
-// reaches a fighter resolves. Everything else of the frame (walking, animations, effects, statuses,
-// the finisher, items) is shared (mechanics/). Each system lives in its own folder: classic/ and
-// folder/.
+// What differs between battle systems (docs/architecture/folder-battle.md): commands, decisions and
+// how a reaching attack resolves; the rest of the frame is shared (mechanics/). Each lives in
+// classic/ or folder/.
 class BattleSystem {
 public:
   BattleSystem() = default;
@@ -29,8 +27,8 @@ public:
   [[nodiscard]] virtual BattleSystemId id() const = 0;
   // Once, after the fighters are placed.
   virtual void start(BattleContext& context) = 0;
-  // A command of the strip by the trainer of `side`, once it is in the menu; the flee is the
-  // battle's own (Battle::command).
+  // A strip command by the trainer of `side`, once in the menu; flee is the battle's own
+  // (Battle::command).
   virtual core::Result<void> command(BattleContext& context, Command command, FighterId side) = 0;
   // The decisions of the frame, before the fighters act.
   virtual void tickDecisions(BattleContext& context) = 0;
@@ -52,7 +50,6 @@ public:
                                      FighterId other, MoveRef move) const;
 };
 
-// The system a battle plays (battle_systems.cpp).
 [[nodiscard]] std::unique_ptr<BattleSystem> makeBattleSystem(BattleSystemId id);
 
 } // namespace dwe::game::battle

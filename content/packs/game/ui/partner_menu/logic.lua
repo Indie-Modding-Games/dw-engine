@@ -123,8 +123,7 @@ local function slot_filled(index)
   return index < number("bag.slot.count") and not setting(slot_setting(index, "empty"), true)
 end
 
--- The slots the bag lays out: in a battle only up to the last filled row, so the bag stays short
--- over the fight.
+-- In a battle the bag lays out only up to its last filled row, so it stays short over the fight.
 local function shown_slot_count()
   local count = number("bag.slot.count")
   if not in_battle() then

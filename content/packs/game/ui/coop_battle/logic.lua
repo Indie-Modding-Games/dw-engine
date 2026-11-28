@@ -1,6 +1,5 @@
--- The end of the host's battle on a co-op guest's screen (apps/game/src/coop_battles.hpp). The
--- fight itself shows in the battle document, as the host's own HUD; this box only comes with the
--- end box: the starter closes it, the others wait for the starter (coop_battle.waiting).
+-- The end box of the host's battle on a co-op guest's screen (apps/game/src/coop_battles.hpp); the
+-- starter closes it, the others wait (coop_battle.waiting).
 -- Everything redraws when coop_battle.revision counts up.
 
 local function number(name)

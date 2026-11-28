@@ -27,8 +27,7 @@ std::int64_t longestReach(const BattleContext& context, FighterId id);
 bool followMoveCommand(BattleContext& context, FighterId id);
 // The end of a fighter's attack, hit or block animation (battle_main.c: BTL_tickFighterAction).
 void endAnimation(BattleContext& context, FighterId id);
-// Starts the attack of the queued move (battle_main.c: BTL_setupMoveExecution and the attack
-// animation).
+// Starts the queued move's attack (battle_main.c: BTL_setupMoveExecution and the attack animation).
 void beginAttack(BattleContext& context, FighterId id);
 
 } // namespace dwe::game::battle

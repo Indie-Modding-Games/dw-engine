@@ -20,8 +20,7 @@ using core::YamlNode;
 
 inline constexpr std::int32_t PercentMax = 100;
 
-// Reads the values of the section with the checks every kind of value needs, naming the key in the
-// errors.
+// Reads the section's values with the checks every kind needs, naming the key in the errors.
 class ValueReader {
 public:
   explicit ValueReader(YamlReader& reader) : reader_(&reader) {}

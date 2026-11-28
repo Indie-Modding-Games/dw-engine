@@ -44,7 +44,6 @@ void remember(FolderFighter& own, const Order& order, OrderEnd end, OrderProblem
   }
 }
 
-// The active order leaves the fighter, which goes back to idle.
 void endOrder(BattleContext& context, FighterId id, OrderEnd end, OrderProblem problem) {
   FolderFighter& own = folderFighter(context, id);
   if (!own.active) {
@@ -74,8 +73,6 @@ void endOrder(BattleContext& context, FighterId id, OrderEnd end, OrderProblem p
   own.phaseLength = 0;
 }
 
-// §2.8, §4.5: an interrupted order waits again at the front of the queue; a full queue drops its
-// last order for it.
 void interrupt(BattleContext& context, FighterId id) {
   FolderFighter& own = folderFighter(context, id);
   if (!own.active) {
@@ -91,8 +88,6 @@ void interrupt(BattleContext& context, FighterId id) {
   own.queue.insert(own.queue.begin(), order);
 }
 
-// §4.5: a hit cut the order's preparation or its technique; the order stays and is retried from
-// positioning once the hit reaction ends.
 void setBack(BattleContext& context, FighterId id) {
   FolderFighter& own = folderFighter(context, id);
   if (!own.active) {

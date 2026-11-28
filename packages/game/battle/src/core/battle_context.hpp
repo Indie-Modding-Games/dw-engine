@@ -10,7 +10,6 @@ namespace dwe::game::battle {
 
 class BattleSystem;
 
-// Everything one frame of the battle works on, passed to the parts of the loop.
 struct BattleContext {
   const BattleRules* rules = nullptr;
   const MoveCatalog* moves = nullptr;
@@ -21,17 +20,13 @@ struct BattleContext {
   const PartnerCondition* condition = nullptr;
   const BattleGround* ground = nullptr;
   const AttackFlights* flights = nullptr;
-  // The hit sparks and what they leave (Battle::hitParticles).
   HitParticles* particles = nullptr;
   // Whether `random` is the original's generator (Battle::useOriginalRolls).
   bool originalRolls = false;
-  // What the fighters' statuses show over them (status_visuals.hpp).
   StatusVisuals* visuals = nullptr;
-  // The rules of the battle system it plays (core/battle_system.hpp).
   BattleSystem* system = nullptr;
 
   [[nodiscard]] BattleView view() const { return view(PartnerId); }
-  // The view the partner strategies decide for `actor` with.
   [[nodiscard]] BattleView view(FighterId actor) const {
     const PartnerCondition& own = conditionOf(actor);
     return {.rules = rules,

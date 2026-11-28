@@ -6,9 +6,8 @@
 namespace dwe::game::battle {
 
 [[nodiscard]] Command stanceCommand(Stance stance);
-// The fighter stands and looks at `target`.
 void face(const BattleContext& context, FighterId id, FighterId target);
-// Where the stance keeps the fighter while it has no technique to position for.
+// §2.9: where the stance keeps the fighter while it has no technique to position for.
 void moveByStance(BattleContext& context, FighterId id);
 // §2.9, §7.4: walks until the technique reaches its target; true once it does. `pointBlank`
 // (Aggressive, for `folder.chase_frames`) closes to contact first.

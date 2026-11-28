@@ -98,14 +98,14 @@ struct FighterView {
   std::optional<std::int32_t> reviveSeconds;
   // Its number in the battle, which the enemies' HP bars name it by.
   std::size_t id = 0;
-  // A foe of the same species as another foe: its letter ("A", "B"...) in the battle's order, the
-  // HUD's mark for it; empty otherwise.
+  // A twin foe's letter ("A", "B"...) in the battle's order, the HUD's mark for it; empty
+  // otherwise.
   std::string tag;
   // In the Folder battle, the foe the next orders aim at and a foe an order aims at.
   bool targeted = false;
   bool queued = false;
-  // A co-op ally's current order: the text key of its command, its Folder order's move or its
-  // stance; empty for the others.
+  // A co-op ally's current order: its command's, Folder move's or stance's text key; empty for the
+  // others.
   std::string orderKey;
 
   friend bool operator==(const FighterView&, const FighterView&) = default;
@@ -125,12 +125,11 @@ struct CommandEntry {
   std::string icon;
   // The MP a technique costs the partner now (Battle::partnerMoveCost); 0 for the other commands.
   std::int32_t mpCost = 0;
-  // In the Folder battle, the text key of why a technique or the finisher cannot be ordered now
-  // (Battle::orderProblem); empty when it can, and in the Classic battle.
+  // Folder only: the text key of why a technique or the finisher cannot be ordered now
+  // (Battle::orderProblem).
   std::string problemKey;
-  // In the Folder battle, a technique's area (Battle::folderTechnique): "around_self",
-  // "around_target" or "global", empty for one that reaches its target alone; and whether it also
-  // hits the partner's own side.
+  // Folder only: a technique's area (Battle::folderTechnique): "around_self", "around_target",
+  // "global" or empty for one target; and whether it also hits the partner's own side.
   std::string area;
   bool friendlyFire = false;
 
@@ -170,17 +169,15 @@ struct BattleView {
   bool itemInFlight = false;
   // The Folder battle's HUD for the own partner; nothing in the Classic battle.
   struct Folder {
-    // The active order's move name key and phase ("processing"... "recovering"), with the timed
-    // phase's progress in percent; empty while it has none.
+    // The active order's move name key and phase ("processing"... "recovering"), progress in
+    // percent.
     std::string moveKey;
     std::string phase;
     std::int32_t phasePercent = 0;
-    // The waiting orders' move name keys, the next first, and the name key of each one's foe
-    // (empty when it aims at none).
+    // The waiting orders' move name keys, next first, and each one's foe name key (empty for none).
     std::vector<std::string> queue;
     std::vector<std::string> queueTargets;
     std::vector<std::string> queueTargetTags;
-    // The active order's foe, by name key and letter (FighterView::tag).
     std::string activeTargetKey;
     std::string activeTargetTag;
     // The name key of the foe the next orders aim at (Change picks it); empty without one.
@@ -195,9 +192,8 @@ struct BattleView {
     std::int32_t bar = 0;
     std::int32_t barMax = 0;
     bool broken = false;
-    // For a few seconds after an order ends other than done (cancelled, interrupted, invalid,
-    // replaced): the text key of how, its move's name key and the key of why (empty when the
-    // ending says it all).
+    // After an order ends other than done, for a few seconds: the text key of how, its move's name
+    // key and the key of why (empty when the ending says it all).
     std::string noticeKey;
     std::string noticeMoveKey;
     std::string noticeReasonKey;

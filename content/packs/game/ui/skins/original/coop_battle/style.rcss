@@ -1,5 +1,4 @@
-/* The co-op battle's end box in the original look: one of the original's windows (the box border and corners of
-   theme.rcss), its grey ink and the heading in yellow. */
+/* The co-op battle's end box in the original look: one of the original's windows (theme.rcss). */
 
 #panel {
 	border: 3dp transparent;
