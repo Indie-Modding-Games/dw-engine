@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.36.0 | Cómo acabó el combate del anfitrión en el cuadro final de un invitado en cooperativo: `coop_battle.outcome` (victory, fled o defeat), que el titular de `coop_battle` nombra en vez de la invitación del combate |
 | 0.35.0 | El aliado al que vuela el próximo objeto de un invitado en cooperativo: `battle.ally.<n>.throw_target` y `throw_target` en `battle.allies()` (las skins iluminan su tarjeta con la clase `throw-target`), y `bag.throw_pick`, activo mientras la bolsa es la de combate de un invitado, cuyas Q y E lo eligen (la bolsa enseña esa pista) |
 | 0.34.0 | La razón del aviso gráfico: `software_notice.kind`, `software_notice.reason` y sus valores `software_notice.<valor>` ([diagnóstico gráfico](../architecture/graphics-diagnosis.md)) |
 | 0.33.0 | El panel de órdenes del combate Folder: `battle.folder()` y sus ajustes `battle.folder.*` (la orden activa, su fase, las órdenes en espera, el objetivo, el enemigo de cada orden en espera, la barra de defensa y la ruptura, la postura, el punto de compromiso, las letras de los enemigos y a qué enemigos apuntan las órdenes, la técnica que reemplazó una orden), la opción `battle_system` y la opción de layout `strip` de las skins ([Combate Folder](../architecture/folder-battle.md)); la orden en curso de cada aliado en cooperativo (`order_key` en `battle.allies()`) |

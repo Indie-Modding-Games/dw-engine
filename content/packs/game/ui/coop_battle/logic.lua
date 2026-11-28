@@ -1,5 +1,6 @@
--- The end box of the host's battle on a co-op guest's screen (apps/game/src/coop_battles.hpp); the
--- starter closes it, the others wait (coop_battle.waiting).
+-- The end box of the host's battle on a co-op guest's screen (apps/game/src/coop_battles.hpp): it
+-- says how the battle ended (coop_battle.outcome); the starter closes it, the others wait
+-- (coop_battle.waiting).
 -- Everything redraws when coop_battle.revision counts up.
 
 local function number(name)
@@ -43,7 +44,12 @@ local function draw(document)
   end
   local role = text("coop_battle.role")
   local commands = role == "starter" or role == "ally"
-  document:get("title"):set_text(t("coop_battle.title_" .. (commands and role or "helper")))
+  local outcome = text("coop_battle.outcome")
+  local title = "title_" .. (commands and role or "helper")
+  if outcome ~= "" then
+    title = "outcome_" .. outcome
+  end
+  document:get("title"):set_text(t("coop_battle." .. title))
   document:get("phase"):set_text(phase_text(text("coop_battle.phase")))
   local close = document:get("close")
   close:set_text(t("coop_battle.close"))

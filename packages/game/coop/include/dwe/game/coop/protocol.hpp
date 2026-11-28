@@ -418,11 +418,14 @@ struct BattleFolderPlate {
   friend bool operator==(const BattleFolderPlate&, const BattleFolderPlate&) = default;
 };
 
+enum class BattleOutcome : std::uint8_t { Victory, Fled, Defeat };
+
 // One battle frame as the host shows it (20 a second, unreliable: a lost one is followed by the
 // next). `command` is the current command of the partner the guest commands (the fighting one when
 // it has none in the battle) and `menu` a bit per command the strip offers it now (bit n: battle
 // command n); `bagAvailable`, the finisher gauge's progress and goal (0 without a finisher) and
 // the Folder plate (in a Folder battle) are that partner's too; `finisherCharging` is the battle's.
+// `outcome` is how the battle ended, once it has (its end box names it).
 struct BattleFrame {
   std::uint32_t battle = 0;
   std::uint32_t frame = 0;
@@ -437,6 +440,7 @@ struct BattleFrame {
   std::uint16_t finisherProgress = 0;
   std::uint16_t finisherGoal = 0;
   std::optional<BattleFolderPlate> folder{};
+  std::optional<BattleOutcome> outcome{};
 
   friend bool operator==(const BattleFrame&, const BattleFrame&) = default;
 };
@@ -466,8 +470,6 @@ struct BattleAction {
 
   friend bool operator==(const BattleAction&, const BattleAction&) = default;
 };
-
-enum class BattleOutcome : std::uint8_t { Victory, Fled, Defeat };
 
 // What the battle left the visiting partner (game::battle::BattleResult's partner side), for the
 // guest's game to apply to it: HP and MP at the end, the stat raises, the moves learned, the care

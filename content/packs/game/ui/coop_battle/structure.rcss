@@ -41,6 +41,10 @@ body {
 	border-radius: 4dp;
 }
 
+#close.hidden {
+	display: none;
+}
+
 #close:hover,
 #close:focus {
 	background-color: #3a4350;

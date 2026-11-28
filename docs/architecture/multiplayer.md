@@ -777,7 +777,8 @@ the **host's simulation**:
   A helper's camera turns to the battle when it begins and comes back when it ends.
 - **What each player can do.** The starter gives the orders (the strip's commands, the finisher) and closes the end
   box; the others see whom they wait on in its place (`Waiting for <name> to continue...`, `BattleMirror::waitingFor`)
-  until the starter closes it. Both can throw an item **from their own bag** (the guest's item leaves its bag; the host's game lends one and
+  until the starter closes it. The end box's headline says how the battle ended (victory, defeat or a retreat; the
+  frame's outcome, `coop_battle.outcome`), not the invitation the battle started with. Both can throw an item **from their own bag** (the guest's item leaves its bag; the host's game lends one and
   throws it) and **cheer** (a press of the finisher's charge). On the host, a guest's battle blocks the host's strip and
   finisher button; its bag works. The screen's buttons take the mouse, or the arrows and confirm; the field's extra
   button calls the finisher for the starter and cheers for the helper.
@@ -821,7 +822,7 @@ The battle messages (each guest's link carries its own):
 | `0x64` | `BattleAsk` | reliable | client → host | The guest's ask number, map, the enemies' NPC slots, the fixed-fight and predefined flags, and its partner's fighter. |
 | `0x65` | `BattleBegin` | reliable | host → client | Battle number, starter, the ask it answers, map, the enemies' NPC slots, every fighter's species, fixed fight, the allies' players, whether it is a Folder battle and (protocol version 15) every fighter's four equipped move ids, the enemies' empty, which name the partners' orders on the guest's HUD. |
 | `0x67` | `BattleRefused` | reliable | host → client | The ask number and why (busy, not here, failed). |
-| `0x68` | `BattleFrame` | unreliable | host → client | Battle and frame number, phase; for the guest's own partner (the fighting one for a helper) its current command, the strip, the bag, and (protocol version 15) its finisher gauge's progress and goal and, in a Folder battle, its plate (active order with phase and progress, commit, waiting orders with their targets, target, stance, defense bar and capacity, break seconds, the last order's notice); whether a finisher charges; every fighter's HP, MP, maxima, down, revive seconds and (protocol version 15) current order, stance, status and whether its HP bar shows; the held figures; the items thrown. |
+| `0x68` | `BattleFrame` | unreliable | host → client | Battle and frame number, phase; for the guest's own partner (the fighting one for a helper) its current command, the strip, the bag, and (protocol version 15) its finisher gauge's progress and goal and, in a Folder battle, its plate (active order with phase and progress, commit, waiting orders with their targets, target, stance, defense bar and capacity, break seconds, the last order's notice); whether a finisher charges; every fighter's HP, MP, maxima, down, revive seconds and (protocol version 15) current order, stance, status and whether its HP bar shows; the held figures; the items thrown; (protocol version 15) how the battle ended, once it has. |
 | `0x69` | `BattleAction` | reliable | client → host | A command, an order, a stance, a cheer, the end box's close, or an item thrown with the partner it flies to (fighter plus one, 0 for its own or the fighting one). |
 | `0x6B` | `BattleEnd` | reliable | host → client | Outcome, the NPCs that left the map, bits, and this guest's partner's spoils. |
 | `0x80` | `BattleOffer` | reliable | client → host | Whether the guest's partner can join the host's battles, and as what fighter; (protocol version 15) whether it dies or waits to be reborn. |

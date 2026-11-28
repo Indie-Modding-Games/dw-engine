@@ -232,6 +232,9 @@ public:
   [[nodiscard]] std::optional<game::battle::Outcome> takeCoopOutcome() {
     return std::exchange(coopOutcome_, std::nullopt);
   }
+  [[nodiscard]] const std::optional<game::battle::Outcome>& coopOutcome() const {
+    return coopOutcome_;
+  }
   // Whether the running battle is a fixed fight (story trigger 1: no Run).
   [[nodiscard]] bool fixedFight() const { return fixedFight_; }
   // The original's square button (battle_tick.c: handleCommands): calls the finisher once its

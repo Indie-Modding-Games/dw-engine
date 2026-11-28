@@ -521,6 +521,21 @@ void showCoopHudBag(ui::Ui& ui, const screens::ScreenSettings& bag,
   ui.show(PartnerMenuDocument, true);
 }
 
+std::string_view coopOutcomeName(std::optional<coop::BattleOutcome> outcome) {
+  if (!outcome) {
+    return {};
+  }
+  switch (*outcome) {
+  case coop::BattleOutcome::Victory:
+    return "victory";
+  case coop::BattleOutcome::Fled:
+    return "fled";
+  case coop::BattleOutcome::Defeat:
+    return "defeat";
+  }
+  return {};
+}
+
 void closeCoopHudBag(ui::Ui& ui, std::optional<std::size_t>& throwTarget) {
   throwTarget.reset();
   ui.setSetting(PartnerMenuContextSetting, std::string{});

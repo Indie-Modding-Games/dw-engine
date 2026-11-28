@@ -701,6 +701,10 @@ net::Bytes encode(const Message& message) {
           if (body.folder) {
             put(out, *body.folder);
           }
+          out.put(body.outcome.has_value());
+          if (body.outcome) {
+            out.put(*body.outcome);
+          }
         } else if constexpr (std::is_same_v<T, BattleAction>) {
           out.put(BattleActionMessageKind).put(body.battle).put(body.kind).put(body.value);
           out.put(std::string_view{body.item});
@@ -1038,6 +1042,17 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     bool plate = false;
     if (!getFlag(in, plate) || (plate && !getPlate(in, frame.folder.emplace()))) {
       return core::fail("invalid cooperative battle frame plate");
+    }
+    bool ended = false;
+    if (!getFlag(in, ended)) {
+      return core::fail("invalid cooperative battle frame outcome");
+    }
+    if (ended) {
+      const auto outcome = in.get<std::uint8_t>();
+      if (!in.ok() || outcome > static_cast<std::uint8_t>(BattleOutcome::Defeat)) {
+        return core::fail("invalid cooperative battle frame outcome");
+      }
+      frame.outcome = static_cast<BattleOutcome>(outcome);
     }
     if (bytes.size() + 1 > net::MaxDatagram) {
       return core::fail("cooperative battle frame exceeds the unreliable datagram limit");

@@ -87,6 +87,10 @@ void showCoopHudBag(ui::Ui& ui, const screens::ScreenSettings& bag, const screen
 // Closes that bag, closed or thrown from: no ally stays picked to throw to.
 void closeCoopHudBag(ui::Ui& ui, std::optional<std::size_t>& throwTarget);
 
+// How the host's battle ended as the guest's end box names it (coop_battle.outcome): victory, fled
+// or defeat; empty while it has not.
+[[nodiscard]] std::string_view coopOutcomeName(std::optional<game::coop::BattleOutcome> outcome);
+
 // The bag slot a command thrown from the bag over a guest's battle HUD names: the bag's Use (sent
 // once the bag has closed, partner_menu/logic.lua) or the battle document's throw.
 [[nodiscard]] std::optional<std::size_t> coopHudThrownSlot(const ui::UiCommand& command);

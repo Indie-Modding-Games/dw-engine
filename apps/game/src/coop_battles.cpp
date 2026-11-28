@@ -588,6 +588,10 @@ coop::BattleFrame CoopBattles::frameOf(const PlaySession& play, coop::PlayerId t
   frame.battle = referee_.running()->battle;
   frame.frame = frames_;
   frame.phase = screen.coopPhase();
+  if (const auto& outcome = screen.coopOutcome();
+      outcome && frame.phase != coop::BattlePhase::Fight) {
+    frame.outcome = coopOutcomeOf(*outcome);
+  }
   frame.throws = screen.coopThrows();
   for (const FieldScene::HeldFigure& held : play.scene().heldFigures()) {
     if (frame.figures.size() >= coop::MaxBattleFigures) {
@@ -1107,6 +1111,9 @@ void CoopBattles::publish(const PlaySession& play) {
   const std::optional<coop::PlayerId> waitingFor = mirror_.waitingFor();
   const CoopPeerLabel starter = labelOf_ ? labelOf_(running->starter) : CoopPeerLabel{};
   settings.push_back({.name = "coop_battle.waiting", .value = waitingFor.has_value()});
+  settings.push_back(
+      {.name = "coop_battle.outcome",
+       .value = std::string{coopOutcomeName(frame ? frame->outcome : std::nullopt)}});
   settings.push_back({.name = "coop_battle.starter.name", .value = starter.name});
   settings.push_back({.name = "coop_battle.starter.name_key", .value = starter.key});
   settings.push_back(

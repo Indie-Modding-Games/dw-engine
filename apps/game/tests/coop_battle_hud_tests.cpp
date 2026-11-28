@@ -34,6 +34,7 @@
 
 #include "battle_screen.hpp"
 #include "coop_battle_view.hpp"
+#include "coop_battles.hpp"
 #include "packages/game/battle/tests/fixture.hpp"
 #include "packages/game/coop/tests/support/coop_room.hpp"
 #include "partner_menu.hpp"
@@ -507,4 +508,43 @@ TEST_CASE("the Use of a guest's battle bag is a throw, even when its bag has alr
       dwe::app::coopHudThrownSlot({.name = std::string{dwe::app::BagUseCommand}, .value = {}})
           .has_value());
   CHECK_FALSE(dwe::app::coopHudThrownSlot({.name = "bag_drop", .value = 1.0}).has_value());
+}
+
+TEST_CASE("a guest's end box says how the battle ended and whom it waits on") {
+  CHECK(dwe::app::coopOutcomeName(std::nullopt).empty());
+  CHECK(dwe::app::coopOutcomeName(coop::BattleOutcome::Victory) == "victory");
+  CHECK(dwe::app::coopOutcomeName(coop::BattleOutcome::Fled) == "fled");
+  CHECK(dwe::app::coopOutcomeName(coop::BattleOutcome::Defeat) == "defeat");
+
+  BattleUi screen;
+  auto asset = dwe::assets::AssetId::parse("ui/coop_battle/document");
+  REQUIRE(asset.has_value());
+  REQUIRE(screen.ui->loadDocument(dwe::app::CoopBattleDocument, *asset).has_value());
+  const auto showEnd = [&](std::string_view role, std::string_view outcome, bool waiting) {
+    dwe::screens::publish(*screen.ui,
+                          {{.name = "coop_battle.shown", .value = true},
+                           {.name = "coop_battle.role", .value = std::string{role}},
+                           {.name = "coop_battle.phase", .value = std::string{"end"}},
+                           {.name = "coop_battle.outcome", .value = std::string{outcome}},
+                           {.name = "coop_battle.waiting", .value = waiting},
+                           {.name = "coop_battle.starter.name", .value = std::string{"Rivarux"}}},
+                          dwe::app::CoopBattleRevisionSetting);
+    screen.ui->show(dwe::app::CoopBattleDocument, true);
+    screen.frames(2);
+  };
+  const auto text = [&](std::string_view element) {
+    return screen.ui->elementText(dwe::app::CoopBattleDocument, element);
+  };
+  showEnd("helper", "defeat", true);
+  CHECK(text("title") == screen.texts->text("coop_battle.outcome_defeat"));
+  CHECK(text("title") != screen.texts->text("coop_battle.title_helper"));
+  CHECK(text("phase").find("Rivarux") != std::string::npos);
+  CHECK_FALSE(screen.ui->elementShown(dwe::app::CoopBattleDocument, "close"));
+
+  showEnd("ally", "victory", true);
+  CHECK(text("title") == screen.texts->text("coop_battle.outcome_victory"));
+
+  showEnd("starter", "defeat", false);
+  CHECK(text("title") == screen.texts->text("coop_battle.outcome_defeat"));
+  CHECK(screen.ui->elementShown(dwe::app::CoopBattleDocument, "close"));
 }

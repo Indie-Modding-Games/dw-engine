@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.36.0 | How the host's battle ended on a co-op guest's end box: `coop_battle.outcome` (victory, fled or defeat), which the `coop_battle` headline names instead of the battle's invitation |
 | 0.35.0 | The ally a co-op guest's next item flies to: `battle.ally.<n>.throw_target` and `throw_target` in `battle.allies()` (the skins light that ally's card with the class `throw-target`), and `bag.throw_pick`, set while the bag is a guest's battle bag whose Q and E pick it (the bag shows that hint) |
 | 0.34.0 | The graphics notice's reason: `software_notice.kind`, `software_notice.reason` and its values `software_notice.<value>` ([graphics diagnosis](../architecture/graphics-diagnosis.md)) |
 | 0.33.0 | The Folder battle's order panel: `battle.folder()` and its `battle.folder.*` settings (the active order, its phase, the waiting orders, the target, each waiting order's foe, the defense bar and the break, the stance, the commit point, the foes' letters and which foes the orders aim at, the move that replaced an order), and the `battle_system` option and the `strip` skin layout option ([Folder battle](../architecture/folder-battle.md)); each co-op ally's current order (`order_key` in `battle.allies()`) |
@@ -112,7 +113,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.35.0**.
+UI API version: **0.36.0**.
 
 ### `ui`
 
@@ -515,6 +516,7 @@ UI API version: **0.35.0**.
 | `coop_battle.item.<n>.name_key` | setting | text | The text key of an item's name. |
 | `coop_battle.item.<n>.count` | setting | number | How many of an item this player has. |
 | `coop_battle.waiting` | setting | yes/no | Whether the end box is up and this player waits on the starter to close it. |
+| `coop_battle.outcome` | setting | text | How the battle ended, for the end box: victory, fled or defeat; empty before it ends. |
 | `coop_battle.starter.name` | setting | text | The name of the player who started the battle; empty when it has none. |
 | `coop_battle.starter.name_key` | setting | text | Without a name, the text key that names the starter (Host, Guest {number}). |
 | `coop_battle.starter.number` | setting | number | The number in the starter's name_key text. |

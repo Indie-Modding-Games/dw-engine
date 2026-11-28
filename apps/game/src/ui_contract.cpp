@@ -474,6 +474,10 @@ constexpr auto Contract =
               "How many of an item this player has."),
         entry(CoopBattle, Setting, "coop_battle.waiting", Boolean,
               "Whether the end box is up and this player waits on the starter to close it."),
+        entry(
+            CoopBattle, Setting, "coop_battle.outcome", Text,
+            "How the battle ended, for the end box: victory, fled or defeat; empty before it "
+            "ends."),
         entry(CoopBattle, Setting, "coop_battle.starter.name",
               Text, "The name of the player who started the battle; empty when it has none."),
         entry(CoopBattle, Setting, "coop_battle.starter.name_key",

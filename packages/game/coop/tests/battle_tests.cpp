@@ -245,11 +245,25 @@ TEST_CASE("cooperative battle messages reject what the battle cannot be") {
   CHECK_FALSE(decode(bytes));
 }
 
+TEST_CASE("an end frame says how the battle ended") {
+  BattleFrame end = frame(2, 9);
+  end.phase = BattlePhase::End;
+  for (const BattleOutcome outcome :
+       {BattleOutcome::Victory, BattleOutcome::Fled, BattleOutcome::Defeat}) {
+    end.outcome = outcome;
+    roundTrip(end);
+  }
+  auto bytes = encode(Message{end});
+  bytes.back() = static_cast<std::uint8_t>(BattleOutcome::Defeat) + 1;
+  CHECK_FALSE(decode(bytes));
+}
+
 TEST_CASE("a full battle frame fits one unreliable datagram") {
   BattleFrame full = frame(1, 1);
   full.fighters.assign(MaxBattleFighters, {.hp = 1, .mp = 1, .maxHp = 1, .maxMp = 1});
   full.figures.assign(MaxBattleFigures, {.slot = 300, .x = -999'999, .z = 999'999});
   full.folder = fullPlate();
+  full.outcome = BattleOutcome::Defeat;
   const auto bytes = encode(Message{full});
   CHECK(bytes.size() + 1 <= net::MaxDatagram);
   roundTrip(full);
