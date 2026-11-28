@@ -117,6 +117,15 @@
 	decorator: none;
 }
 
+/* Each label in its bar's colour: in the small font the M reads close to an H. */
+#fighter-0-hp-label {
+	color: #8fe08a;
+}
+
+#fighter-0-mp-label {
+	color: #7cc4ff;
+}
+
 .partner .bar {
 	left: 46dp;
 	top: 3dp;

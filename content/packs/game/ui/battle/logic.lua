@@ -1094,6 +1094,30 @@ local function clear_of_hud(hud, x_percent, y_percent, dx, dy, w, h)
   return (y - dy) * 100 / hud.height
 end
 
+-- Foes standing close would draw their bars and HP over each other: a later bar moves above the
+-- ones already placed.
+local function clear_of_bars(hud, placed, x_percent, y_percent, dx, dy, w, h)
+  if hud.width <= 0 or hud.height <= 0 then
+    return y_percent
+  end
+  local x = x_percent * hud.width / 100 + dx
+  local y = y_percent * hud.height / 100 + dy
+  local moved = true
+  while moved do
+    moved = false
+    for _, box in ipairs(placed) do
+      local across = x + w >= box.left - zone_gap and x <= box.right + zone_gap
+      local within = y + h >= box.top - zone_gap and y <= box.bottom + zone_gap
+      if across and within then
+        y = box.top - zone_gap - h - 1
+        moved = true
+      end
+    end
+  end
+  placed[#placed + 1] = { left = x, top = y, right = x + w, bottom = y + h }
+  return (y - dy) * 100 / hud.height
+end
+
 -- The numbers over the fighters (packages/screens: damage_numbers.hpp; battle.numbers()): the
 -- anchor in percent of the window, the first digit's offset from it in the original's pixels, the
 -- value, its kind and its icon. Each digit is 8 pixels square, 7 apart (utils2.c: drawEntityText);
@@ -1255,6 +1279,7 @@ local function draw_hp_bars(document)
     bars[bar.enemy] = bar
   end
   local hud = nil
+  local placed = {}
   for enemy = 1, max_enemies do
     local bar = bars[enemy]
     local id = "hb-" .. enemy
@@ -1263,6 +1288,7 @@ local function draw_hp_bars(document)
       local x, y = bar.left, bar.top
       hud = hud or hud_zones(document)
       local top = clear_of_hud(hud, bar.x, bar.y, x * 3, (y - 9) * 3, 132, 42)
+      top = clear_of_bars(hud, placed, bar.x, top, x * 3 - 36, (y - 9) * 3, 168, 42)
       set_property(document, id, "left", bar.x .. "%")
       set_property(document, id, "top", top .. "%")
       set_property(document, id .. "-frame", "left", pixels(x))
